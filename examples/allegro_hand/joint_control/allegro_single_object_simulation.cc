@@ -38,7 +38,9 @@ namespace examples {
 namespace allegro_hand {
 namespace {
 
-using drake::multibody::MultibodyPlant;
+using math::RigidTransformd;
+using math::RollPitchYawd;
+using multibody::MultibodyPlant;
 
 DEFINE_double(simulation_time, std::numeric_limits<double>::infinity(),
               "Desired duration of the simulation in seconds");
@@ -177,12 +179,9 @@ void DoMain() {
   // Initialize the mug pose to be right in the middle between the fingers.
   const Eigen::Vector3d& p_WHand =
       plant.EvalBodyPoseInWorld(plant_context, hand).translation();
-  Eigen::Isometry3d X_WM;
-  Eigen::Vector3d rpy(M_PI / 2, 0, 0);
-  X_WM.linear() =
-      math::RotationMatrix<double>(math::RollPitchYaw<double>(rpy)).matrix();
-  X_WM.translation() = p_WHand + Eigen::Vector3d(0.095, 0.062, 0.095);
-  X_WM.makeAffine();
+  RigidTransformd X_WM(
+      RollPitchYawd(M_PI / 2, 0, 0),
+      p_WHand + Eigen::Vector3d(0.095, 0.062, 0.095));
   plant.SetFreeBodyPose(&plant_context, mug, X_WM);
 
   // Set up simulator.

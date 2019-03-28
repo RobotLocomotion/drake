@@ -51,8 +51,6 @@ DEFINE_double(time_step, 1.0e-3,
               "for the plant modeled as a discrete system."
               "This parameter must be non-negative.");
 
-using Eigen::Isometry3d;
-using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using geometry::SceneGraph;
 using lcm::DrakeLcm;
@@ -115,8 +113,7 @@ int do_main() {
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
   // Set at height z0.
-  Isometry3d X_WB = Isometry3d::Identity();
-  X_WB.translation() = Vector3d(0.0, 0.0, FLAGS_z0);
+  math::RigidTransformd X_WB(Vector3d(0.0, 0.0, FLAGS_z0));
   const auto& cylinder = plant.GetBodyByName("Cylinder");
   plant.SetFreeBodyPose(&plant_context, cylinder, X_WB);
   plant.SetFreeBodySpatialVelocity(

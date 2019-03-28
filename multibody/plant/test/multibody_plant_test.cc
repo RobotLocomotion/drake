@@ -1149,7 +1149,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   // Place sphere 2 on top of the ground, with offset x = x_offset.
   plant.SetFreeBodyPose(
       context.get(), sphere2,
-      Isometry3d(Translation3d(x_offset, radius, 0.0)));
+      RigidTransformd(Vector3d(x_offset, radius, 0.0)));
 
   unique_ptr<AbstractValue> poses_value =
       plant.get_geometry_poses_output_port().Allocate();
@@ -1362,8 +1362,7 @@ GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBack) {
        2.0 * Vector3d::UnitY() +
        3.0 * Vector3d::UnitZ()).normalized();
   const math::RigidTransformd X_WB(AngleAxisd(M_PI / 3.0, axis_W), p_WB);
-  plant.SetFreeBodyPose(
-      context.get(), body, X_WB.GetAsIsometry3());
+  plant.SetFreeBodyPose(context.get(), body, X_WB);
 
   // Set an arbitrary, non-zero, spatial velocity of B in W.
   const SpatialVelocity<double> V_WB(Vector3d(1.0, 2.0, 3.0),
@@ -1596,10 +1595,8 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
         RigidTransform<double>(RotationMatrix<double>::Identity(),
                Vector3<double>(0, small_box_size_ / 2.0 - penetration_, 0));
 
-    plant_.SetFreeBodyPose(
-        context, large_box, X_WLb.GetAsIsometry3());
-    plant_.SetFreeBodyPose(
-        context, small_box, X_WSb.GetAsIsometry3());
+    plant_.SetFreeBodyPose(context, large_box, X_WLb);
+    plant_.SetFreeBodyPose(context, small_box, X_WSb);
   }
 
   // Generate a valid set of penetrations for this particular setup that
