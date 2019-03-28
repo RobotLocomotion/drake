@@ -349,7 +349,7 @@ void ManipulationStation<T>::SetDefaultState(
   for (uint64_t i = 0; i < object_ids_.size(); i++) {
     plant_->SetFreeBodyPose(plant_context, &plant_state,
                             plant_->get_body(object_ids_[i]),
-                            object_poses_[i].GetAsIsometry3());
+                            object_poses_[i]);
   }
 
   // Use SetIiwaPosition to make sure the controller state is initialized to
@@ -384,8 +384,7 @@ void ManipulationStation<T>::SetRandomState(
     pose.set_translation(pose.translation() + Vector3d{0, 0, z_offset});
     z_offset += 0.1;
     plant_->SetFreeBodyPose(plant_context, &plant_state,
-                            plant_->get_body(body_index),
-                            pose.GetAsIsometry3());
+                            plant_->get_body(body_index), pose);
   }
 
   // Use SetIiwaPosition to make sure the controller state is initialized to
