@@ -365,13 +365,6 @@ class ManipulationStation : public systems::Diagram<T> {
     SetIiwaPosition(*station_context, &station_context->get_mutable_state(), q);
   }
 
-  DRAKE_DEPRECATED("2019-04-01",
-      "Prefer the version with the Context as the first argument.")
-  void SetIiwaPosition(const Eigen::Ref<const VectorX<T>>& q,
-                       systems::Context<T>* station_context) const {
-    SetIiwaPosition(station_context, q);
-  }
-
   /// Convenience method for getting all of the joint velocities of the Kuka
   // IIWA.  This does not include the gripper.
   VectorX<T> GetIiwaVelocity(const systems::Context<T>& station_context) const;
@@ -389,13 +382,6 @@ class ManipulationStation : public systems::Diagram<T> {
   void SetIiwaVelocity(systems::Context<T>* station_context,
                        const Eigen::Ref<const VectorX<T>>& v) const {
     SetIiwaVelocity(*station_context, &station_context->get_mutable_state(), v);
-  }
-
-  DRAKE_DEPRECATED("2019-04-01",
-      "Prefer the version with the Context as the first argument.")
-  void SetIiwaVelocity(const Eigen::Ref<const VectorX<T>>& v,
-                       systems::Context<T>* station_context) const {
-    SetIiwaVelocity(station_context, v);
   }
 
   /// Convenience method for getting the position of the Schunk WSG. Note
@@ -423,12 +409,6 @@ class ManipulationStation : public systems::Diagram<T> {
     SetWsgPosition(*station_context, &station_context->get_mutable_state(), q);
   }
 
-  DRAKE_DEPRECATED("2019-04-01",
-      "Prefer the version with the Context as the first argument.")
-  void SetWsgPosition(const T& q, systems::Context<T>* station_context) const {
-    SetWsgPosition(station_context, q);
-  }
-
   /// Convenience method for setting the velocity of the Schunk WSG.
   /// @pre `state` must be the systems::State<T> object contained in
   /// `station_context`.
@@ -438,12 +418,6 @@ class ManipulationStation : public systems::Diagram<T> {
   /// Convenience method for setting the velocity of the Schunk WSG.
   void SetWsgVelocity(systems::Context<T>* station_context, const T& v) const {
     SetWsgVelocity(*station_context, &station_context->get_mutable_state(), v);
-  }
-
-  DRAKE_DEPRECATED("2019-04-01",
-      "Prefer the version with the Context as the first argument.")
-  void SetWsgVelocity(const T& v, systems::Context<T>* station_context) const {
-    SetWsgVelocity(station_context, v);
   }
 
   /// Returns a map from camera name to X_WCameraBody for all the static

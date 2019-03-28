@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_ids.h"
 
 namespace drake {
@@ -244,39 +243,6 @@ class GeometrySet {
 
   //@}
 
-  // TODO(SeanCurtis-TRI): Remove these deprecated methods and rename the
-  // private methods below to the simpler names - 2018-02-15.
-
-  /** Returns the frame ids in the set. */
-  DRAKE_DEPRECATED("2018-02-15", "Test-only utility function.")
-  const std::unordered_set<FrameId> frames() const { return frames_; }
-
-  /** Reports the number of frames in the set. */
-  DRAKE_DEPRECATED("2018-02-15", "Test-only utility function.")
-  int num_frames() const { return static_cast<int>(frames_.size()); }
-
-  /** Returns the geometry ids in the set. */
-  DRAKE_DEPRECATED("2018-02-15", "Test-only utility function.")
-  const std::unordered_set<GeometryId> geometries() const {
-    return geometries_;
-  }
-
-  /** Reports the number of geometries _explicitly_ in the set. It does
-   _not_ count the geometries that belong to the added frames.  */
-  DRAKE_DEPRECATED("2018-02-15", "Test-only utility function.")
-  int num_geometries() const { return static_cast<int>(geometries_.size()); }
-
-  /** Reports if the given `frame_id` has been added to the group. */
-  DRAKE_DEPRECATED("2018-02-15", "Test-only utility function.")
-  bool contains(FrameId frame_id) const { return frames_.count(frame_id) > 0; }
-
-  /** Reports if the given `geometry_id` has been *explicitly* added to the
-   group. It will *not* capture geometry ids affixed to added frames.  */
-  DRAKE_DEPRECATED("2018-02-15", "Test-only utility function.")
-  bool contains(GeometryId geometry_id) const {
-    return geometries_.count(geometry_id) > 0;
-  }
-
  private:
   // Provide access to the two entities that need access to the set's internals.
   friend class GeometrySetTester;
@@ -284,31 +250,31 @@ class GeometrySet {
   friend class GeometryState;
 
   // Returns the frame ids in the set.
-  const std::unordered_set<FrameId> frames_internal() const { return frames_; }
+  const std::unordered_set<FrameId> frames() const { return frames_; }
 
   // Reports the number of frames in the set.
-  int num_frames_internal() const { return static_cast<int>(frames_.size()); }
+  int num_frames() const { return static_cast<int>(frames_.size()); }
 
   // Returns the geometry ids in the set -- these are only the geometry ids
   // explicitly added to the set and _not_ those implied by added frames.
-  const std::unordered_set<GeometryId> geometries_internal() const {
+  const std::unordered_set<GeometryId> geometries() const {
     return geometries_;
   }
 
   // Reports the number of geometries _explicitly_ in the set. It does _not_
   // count the geometries that belong to the added frames.
-  int num_geometries_internal() const {
+  int num_geometries() const {
     return static_cast<int>(geometries_.size());
   }
 
   // Reports if the given `frame_id` has been added to the group.
-  bool contains_internal(FrameId frame_id) const {
+  bool contains(FrameId frame_id) const {
     return frames_.count(frame_id) > 0;
   }
 
   // Reports if the given `geometry_id` has been *explicitly* added to the
   // group. It will *not* capture geometry ids affixed to added frames.
-  bool contains_internal(GeometryId geometry_id) const {
+  bool contains(GeometryId geometry_id) const {
     return geometries_.count(geometry_id) > 0;
   }
 

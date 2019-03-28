@@ -150,14 +150,6 @@ PYBIND11_MODULE(tree, m) {
             doc.Joint.acceleration_lower_limits.doc)
         .def("acceleration_upper_limits", &Class::acceleration_upper_limits,
             doc.Joint.acceleration_upper_limits.doc);
-
-    // Add deprecated methods.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("num_dofs", &Class::num_dofs, doc.Joint.num_dofs.doc);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-    cls.attr("message_num_dofs") = "Please use num_velocities().";
-    DeprecateAttribute(cls, "num_dofs", cls.attr("message_num_dofs"));
   }
 
   {

@@ -430,8 +430,7 @@ class ExampleDiagram : public Diagram<double> {
     builder.ExportOutput(integrator1_->get_output_port());
 
     if (use_abstract) {
-      builder.AddSystem<ConstantValueSource<double>>(
-          std::make_unique<Value<int>>(0));
+      builder.AddSystem<ConstantValueSource<double>>(Value<int>(0));
     }
     if (use_double_only) {
       builder.AddSystem<DoubleOnlySystem>();

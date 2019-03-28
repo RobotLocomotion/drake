@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/mobilizer.h"
 #include "drake/multibody/tree/multibody_forces.h"
@@ -163,13 +162,6 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   /// Returns a const reference to the frame M attached on the child body B.
   const Frame<T>& frame_on_child() const {
     return frame_on_child_;
-  }
-
-  /// Returns the number of degrees of freedom for `this` joint.
-  /// E.g., one for a revolute joint and three for a ball joint.
-  DRAKE_DEPRECATED("2019-04-01", "Please use num_velocities().")
-  int num_dofs() const {
-    return num_velocities();
   }
 
   /// Returns the index to the first generalized velocity for this joint

@@ -9,7 +9,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
@@ -153,11 +152,6 @@ template <typename T>
 class SystemConstraint final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemConstraint)
-
-  using CalcCallback
-      DRAKE_DEPRECATED("2019-04-01",
-          "Use drake::systems::ContextConstraintCalc instead.")
-      = ContextConstraintCalc<T>;
 
   /// (Advanced) Constructs a default (zero-sized) SystemConstraint.
   ///
