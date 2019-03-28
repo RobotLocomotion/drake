@@ -8,7 +8,7 @@
 namespace drake {
 namespace multibody {
 // An abstract class that computes the contact wrench between a pair of
-// geometries. The input to the Eval function is q and λ, where λ is the
+// geometries. The input to the Eval function are q and λ, where λ is the
 // user-specified parameterization of the contact wrench. The output is the
 // Fapp_AB_W, namely the 6 x 1 wrench (torque/force) applied at the witness
 // point of geometry B from geometry A, expressed in the world frame.
@@ -24,7 +24,7 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
   typename std::enable_if<std::is_same<T, typename Derived::Scalar>::value,
                           VectorX<T>>::type
   ComposeVariableValues(const systems::Context<T>& context,
-                    const Derived& lambda_value) const {
+                        const Derived& lambda_value) const {
     VectorX<T> x(num_vars());
     x.template head(plant_->num_positions()) = plant_->GetPositions(context);
     x.template tail(num_lambda_) = lambda_value;
@@ -47,7 +47,7 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
  protected:
   /**
    * Each derived class should call this constructor.
-   * @param plant The robot on which the contact wrench is computed.
+   * @param plant The MultibodyPlant on which the contact wrench is computed.
    * @param geometry_id_pair The pair of geometries for which the contact wrench
    * is computed. Notice that the order of the geometries in the pair should
    * match with that in SceneGraphInspector::GetCollisionCandidates().
@@ -98,14 +98,14 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
  * Namely we assume that λ is the contact force from A to B, applied directly
  * at B's witness point.
  */
-class ContactWrenchFromForceInWorldFrameEvaluator
+class ContactWrenchFromForceInWorldFrameEvaluator final
     : public ContactWrenchEvaluator {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactWrenchFromForceInWorldFrameEvaluator)
 
   /**
-   * @param plant The robot on which the contact wrench is computed.
-   * @param context The context of the robot.
+   * @param plant The MultibodyPlant on which the contact wrench is computed.
+   * @param context The context of the MultibodyPlant.
    * @param geometry_id_pair The pair of geometries for which the contact wrench
    * is computed. Notice that the order of the geometries in the pair should
    * match with that in SceneGraphInspector::GetCollisionCandidates().
