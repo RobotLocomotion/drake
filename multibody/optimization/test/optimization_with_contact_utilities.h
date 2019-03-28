@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "drake/geometry/scene_graph.h"
@@ -11,9 +12,9 @@ namespace drake {
 namespace multibody {
 // Create the test on free spheres/blocks and a ground
 struct SphereSpecification {
-  SphereSpecification(double radius_in, double density, double static_friction,
-                      double dynamic_friction)
-      : radius{radius_in}, friction{static_friction, dynamic_friction} {
+  SphereSpecification(double radius_in, double density,
+                      CoulombFriction<double> friction_in)
+      : radius{radius_in}, friction{std::move(friction_in)} {
     const double mass = 4.0 / 3 * M_PI * std::pow(radius, 3) * density;
     const double I = 2.0 / 5.0 * mass * std::pow(radius, 2);
     inertia = SpatialInertia<double>(mass, Eigen::Vector3d::Zero(),

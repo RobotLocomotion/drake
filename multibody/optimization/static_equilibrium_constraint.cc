@@ -7,7 +7,7 @@ namespace multibody {
 namespace {
 int GetLambdaSize(
     const std::map<std::pair<geometry::GeometryId, geometry::GeometryId>,
-                   GeometryPairContactWrenchEvaluatorBinding>&
+                   internal::GeometryPairContactWrenchEvaluatorBinding>&
         contact_pair_to_wrench_evaluator) {
   int num_lambda = 0;
   for (const auto& term : contact_pair_to_wrench_evaluator) {
@@ -20,7 +20,7 @@ StaticEquilibriumConstraint::StaticEquilibriumConstraint(
     const MultibodyPlant<AutoDiffXd>* plant,
     systems::Context<AutoDiffXd>* context,
     const std::map<std::pair<geometry::GeometryId, geometry::GeometryId>,
-                   GeometryPairContactWrenchEvaluatorBinding>&
+                   internal::GeometryPairContactWrenchEvaluatorBinding>&
         contact_pair_to_wrench_evaluator)
     : solvers::Constraint(plant->num_velocities(),
                           plant->num_positions() + plant->num_actuated_dofs() +
@@ -45,7 +45,7 @@ void StaticEquilibriumConstraint::DoEval(
   const auto& u =
       x.segment(plant_->num_positions(), plant_->num_actuated_dofs());
   *y = B_actuation_ * u;
-  if (internal::AreAutoDiffVecXdEqual(q, plant_->GetPositions(*context_))) {
+  if (!internal::AreAutoDiffVecXdEqual(q, plant_->GetPositions(*context_))) {
     plant_->SetPositions(context_, q);
   }
   *y += plant_->CalcGravityGeneralizedForces(*context_);
@@ -111,13 +111,13 @@ void StaticEquilibriumConstraint::DoEval(
 
     AutoDiffVecXd F_AB_W;
     it->second.contact_wrench_evaluator->Eval(
-        it->second.contact_wrench_evaluator->SetVariableValues(*context_,
-                                                               lambda),
+        it->second.contact_wrench_evaluator->ComposeVariableValues(*context_,
+                                                                   lambda),
         &F_AB_W);
 
     // By definition, F_AB_W is the contact wrench applied to id_B from id_A,
     // at the contact point. By Newton's third law, the contact wrench applied
-    // to id_A from id_B at the contact point is -lambda.
+    // to id_A from id_B at the contact point is -F_AB_W.
     *y += Jv_V_WCa.transpose() * -F_AB_W + Jv_V_WCb.transpose() * F_AB_W;
   }
 }
@@ -138,7 +138,7 @@ solvers::Binding<StaticEquilibriumConstraint> CreateStaticEquilibriumConstraint(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& u_vars) {
   std::map<std::pair<geometry::GeometryId, geometry::GeometryId>,
-           GeometryPairContactWrenchEvaluatorBinding>
+           internal::GeometryPairContactWrenchEvaluatorBinding>
       contact_pair_to_wrench_evaluator;
   const int num_lambda = std::accumulate(
       contact_wrench_evaluators_and_lambda.begin(),
@@ -163,8 +163,8 @@ solvers::Binding<StaticEquilibriumConstraint> CreateStaticEquilibriumConstraint(
     }
     contact_pair_to_wrench_evaluator.emplace(
         contact_wrench_evaluator->geometry_id_pair(),
-        GeometryPairContactWrenchEvaluatorBinding{lambda_indices_in_all_lambda,
-                                                  contact_wrench_evaluator});
+        internal::GeometryPairContactWrenchEvaluatorBinding{
+            lambda_indices_in_all_lambda, contact_wrench_evaluator});
     lambda_count += lambda_i.rows();
   }
   DRAKE_DEMAND(q_vars.rows() == plant->num_positions());

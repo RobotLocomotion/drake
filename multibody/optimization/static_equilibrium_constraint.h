@@ -14,6 +14,16 @@
 namespace drake {
 namespace multibody {
 
+namespace internal {
+/**
+ * This struct records the contact wrench evaluator, together with the indices
+ * of lambda used in this evaluator, among all lambda (the variable bound with
+ * the StaticEquilibriumConstraint).
+ *
+ * The user is not supposed to use this struct. To create a
+ * StaticEquilibriumConstraint, the user should call
+ * CreateStaticEquilibriumConstraint.
+ */
 struct GeometryPairContactWrenchEvaluatorBinding {
   GeometryPairContactWrenchEvaluatorBinding(
       std::vector<int> lambda_indices_in_all_lambda_in,
@@ -27,19 +37,24 @@ struct GeometryPairContactWrenchEvaluatorBinding {
   std::vector<int> lambda_indices_in_all_lambda;
   std::shared_ptr<ContactWrenchEvaluator> contact_wrench_evaluator;
 };
+}  // namespace internal
 
 /**
- * Impose the constraint 0 = τ_g + Bu + ∑J_WBᵀ(q) Fapp_B_W
+ * Impose the static equilibrium constraint 0 = τ_g + Bu + ∑J_WBᵀ(q) * Fapp_B_W
  */
 class StaticEquilibriumConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StaticEquilibriumConstraint)
 
+  /**
+   * The user should not call this constructor, as it is inconvenient to do so.
+   * The user is encouraged to call CreateStaticEquilibriumConstraint().
+   */
   StaticEquilibriumConstraint(
       const MultibodyPlant<AutoDiffXd>* plant,
       systems::Context<AutoDiffXd>* context,
       const std::map<std::pair<geometry::GeometryId, geometry::GeometryId>,
-                     GeometryPairContactWrenchEvaluatorBinding>&
+                     internal::GeometryPairContactWrenchEvaluatorBinding>&
           contact_pair_to_wrench_evaluator);
 
   ~StaticEquilibriumConstraint() override {}
@@ -48,7 +63,7 @@ class StaticEquilibriumConstraint : public solvers::Constraint {
    * Getter for contact_pair_to_wrench_evaluator, passed in the constructor.
    */
   const std::map<std::pair<geometry::GeometryId, geometry::GeometryId>,
-                 GeometryPairContactWrenchEvaluatorBinding>&
+                 internal::GeometryPairContactWrenchEvaluatorBinding>&
   contact_pair_to_wrench_evaluator() const {
     return contact_pair_to_wrench_evaluator_;
   }
@@ -64,7 +79,7 @@ class StaticEquilibriumConstraint : public solvers::Constraint {
   const MultibodyPlant<AutoDiffXd>* const plant_;
   systems::Context<AutoDiffXd>* const context_;
   const std::map<std::pair<geometry::GeometryId, geometry::GeometryId>,
-                 GeometryPairContactWrenchEvaluatorBinding>
+                 internal::GeometryPairContactWrenchEvaluatorBinding>
       contact_pair_to_wrench_evaluator_;
   const MatrixX<AutoDiffXd> B_actuation_;
 };
@@ -81,7 +96,8 @@ class StaticEquilibriumConstraint : public solvers::Constraint {
  * contact_wrench_evaluators_and_lambda.first is the evaluator for computing
  * this contact wrench from the variables λᵢ. @p
  * contact_wrench_evaluators_and_lambda.second are the decision variable λᵢ used
- * in computing the contact wrench.
+ * in computing the contact wrench. Notice the generalized position `q` is not
+ * included in variables contact_wrench_evaluators_and_lambda.second.
  * @param q_vars The decision variables for q (the generalized position).
  * @param u_vars The decision variables for u (the input).
  * @return binding The binding between the static equilibrium constraint and the
