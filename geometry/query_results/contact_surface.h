@@ -10,8 +10,7 @@
 namespace drake {
 namespace geometry {
 
-// TODO(DamrongGuoy): Move this documentation to QueryObject.
-/*
+/**
   The classes in this file collectively represent the contact surface Sₘₙ
   between two compliant bodies M and N.  A contact surface is a surface of
   equilibrium eₘ = eₙ, where eₘ and eₙ are the given scalar fields on
