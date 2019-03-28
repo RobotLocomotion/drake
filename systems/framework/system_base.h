@@ -217,8 +217,16 @@ class SystemBase : public internal::SystemMessageInterface {
     return static_cast<int>(cache_entries_.size());
   }
 
-  /** Return a reference to a CacheEntry given its `index`. */
+  /** Returns a reference to a CacheEntry given its `index`. */
   const CacheEntry& get_cache_entry(CacheIndex index) const {
+    DRAKE_ASSERT(0 <= index && index < num_cache_entries());
+    return *cache_entries_[index];
+  }
+
+  /** (Advanced) Returns a mutable reference to a CacheEntry given its `index`.
+  Note that you do not need mutable access to a CacheEntry to modify its value
+  in a Context, so most users should not use this method. */
+  CacheEntry& get_mutable_cache_entry(CacheIndex index) {
     DRAKE_ASSERT(0 <= index && index < num_cache_entries());
     return *cache_entries_[index];
   }
