@@ -18,6 +18,7 @@ using std::make_unique;
 namespace {
 constexpr int kStateIndexMessage = 0;
 constexpr int kStateIndexMessageCount = 1;
+constexpr int kMagic = 6832;  // An arbitrary value.
 }  // namespace
 
 // TODO(jwnimmer-tri) The "serializer xor translator" disjoint implementations
@@ -39,17 +40,18 @@ LcmSubscriberSystem::LcmSubscriberSystem(
     : channel_(channel),
       translator_(translator),
       serializer_(std::move(serializer)),
-      fixed_encoded_size_(fixed_encoded_size) {
+      fixed_encoded_size_(fixed_encoded_size),
+      magic_number_{kMagic} {
   DRAKE_DEMAND((translator_ != nullptr) != (serializer_ != nullptr));
   DRAKE_DEMAND(lcm);
 
-  auto subscription = lcm->Subscribe(
+  subscription_ = lcm->Subscribe(
       channel_, [this](const void* buffer, int size) {
         this->HandleMessage(buffer, size);
       });
-  // To retain historical behavior we don't subscription->unsubscribe_on_delete,
-  // but in the future we may choose to do so.
-  subscription.reset();
+  if (subscription_) {
+    subscription_->set_unsubscribe_on_delete(true);
+  }
 
   // Declare the single output port.
   if (translator_ != nullptr) {
@@ -109,7 +111,10 @@ LcmSubscriberSystem::LcmSubscriberSystem(
                           lcm) {}
 #pragma GCC diagnostic pop
 
-LcmSubscriberSystem::~LcmSubscriberSystem() {}
+LcmSubscriberSystem::~LcmSubscriberSystem() {
+  // Violate our class invariant, to help catch use-after-free.
+  magic_number_ = 0;
+}
 
 void LcmSubscriberSystem::CopyLatestMessageInto(State<double>* state) const {
   if (is_discrete_state()) {
@@ -271,6 +276,7 @@ void LcmSubscriberSystem::CalcSerializerOutputValue(
 
 void LcmSubscriberSystem::HandleMessage(const void* buffer, int size) {
   SPDLOG_TRACE(drake::log(), "Receiving LCM {} message", channel_);
+  DRAKE_DEMAND(magic_number_ == kMagic);
 
   const uint8_t* const rbuf_begin = static_cast<const uint8_t*>(buffer);
   const uint8_t* const rbuf_end = rbuf_begin + size;

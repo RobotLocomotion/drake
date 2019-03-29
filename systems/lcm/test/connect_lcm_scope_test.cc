@@ -27,11 +27,12 @@ GTEST_TEST(ScopeTest, PublishTest) {
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
 
+  drake::lcm::Subscriber<lcmt_drake_signal> sub(&lcm, channel);
   diagram->Publish(*context);
+  lcm.HandleSubscriptions(0);
 
-  auto message = lcm.DecodeLastPublishedMessageAs<lcmt_drake_signal>(channel);
-
-  EXPECT_EQ(message.dim, vec.size());
+  const auto& message = sub.message();
+  ASSERT_EQ(message.dim, vec.size());
   for (int i = 0; i < vec.size(); i++) {
     EXPECT_EQ(message.val[i], vec[i]);
   }

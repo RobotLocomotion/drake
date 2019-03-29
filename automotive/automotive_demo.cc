@@ -456,7 +456,6 @@ int main(int argc, char* argv[]) {
   const maliput::api::RoadGeometry* road_geometry =
       AddTerrain(road_network_type, simulator.get());
   AddVehicles(road_network_type, road_geometry, simulator.get());
-  lcm->StartReceiveThread();
   simulator->Start(FLAGS_target_realtime_rate);
   simulator->StepBy(FLAGS_simulation_sec);
   return 0;

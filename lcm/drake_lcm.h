@@ -40,7 +40,7 @@ class DrakeLcm : public DrakeLcmInterface {
    * this method must be called for subscribers to receive any messages.
    *
    * @warning Almost no Drake uses of LCM should require a background thread.
-   * Please use HandleSubscriptions() instead.
+   * Please use HandleSubscriptions() or systems::LcmInterfaceSystem instead.
    *
    * @pre StartReceiveThread() was not called.
    */
@@ -51,7 +51,7 @@ class DrakeLcm : public DrakeLcmInterface {
    * subscribers being destroyed.
    *
    * @warning Almost no Drake uses of LCM should require a background thread.
-   * Please use HandleSubscriptions() instead.
+   * Please use HandleSubscriptions() or systems::LcmInterfaceSystem instead.
    *
    * @pre StartReceiveThread() was called.
    */
@@ -61,7 +61,7 @@ class DrakeLcm : public DrakeLcmInterface {
    * (Advanced.) Indicates that the receiving thread is running.
    *
    * @warning Almost no Drake uses of LCM should require a background thread.
-   * Please use HandleSubscriptions() instead.
+   * Please use HandleSubscriptions() or systems::LcmInterfaceSystem instead.
    */
   bool IsReceiveThreadRunning() const;
 

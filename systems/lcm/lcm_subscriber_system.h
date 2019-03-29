@@ -254,6 +254,13 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   // A message counter that's incremented every time the handler is called.
   int received_message_count_{0};
+
+  // When we are destroyed, our subscription will be automatically removed
+  // (if the DrakeLcmInterface supports removal).
+  std::shared_ptr<drake::lcm::DrakeSubscriptionInterface> subscription_;
+
+  // A little hint to help catch use-after-free.
+  int magic_number_{};
 };
 
 }  // namespace lcm
