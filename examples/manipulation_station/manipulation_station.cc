@@ -256,8 +256,8 @@ void ManipulationStation<T>::SetupDefaultStation(
         "amazon_table_simplified.sdf");
 
     const Isometry3<double> X_WT =
-        RigidTransform<double>(Vector3d(dx_table_center_to_robot_base, 0,
-                                        -dz_table_top_robot_base))
+        RigidTransform<double>({dx_table_center_to_robot_base, 0,
+                                -dz_table_top_robot_base})
             .GetAsIsometry3();
     internal::AddAndWeldModelFrom(sdf_path, "table", plant_->world_frame(),
                                   "amazon_table", X_WT, plant_);

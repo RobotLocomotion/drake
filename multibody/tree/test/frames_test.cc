@@ -61,7 +61,7 @@ class FrameTests : public ::testing::Test {
     // Some arbitrary pose of frame P in the body frame B.
     X_BP_ = RigidTransformd(AngleAxisd(M_PI / 6.0, Vector3d::UnitZ()) *
                             AngleAxisd(M_PI / 5.0, Vector3d::UnitX()) *
-                            Translation3d(0.0, -1.0, 0.0));
+                            {0.0, -1.0, 0.0});
     // Frame P is rigidly attached to B with pose X_BP.
     frameP_ =
         &model->AddFrame<FixedOffsetFrame>(bodyB_->body_frame(), X_BP_);
@@ -69,7 +69,7 @@ class FrameTests : public ::testing::Test {
     // Some arbitrary pose of frame Q in frame P.
     X_PQ_ = RigidTransformd(AngleAxisd(-M_PI / 3.0, Vector3d::UnitZ()) *
                             AngleAxisd(M_PI / 7.0, Vector3d::UnitX()) *
-                            Translation3d(0.5, 1.0, -2.0));
+                            {0.5, 1.0, -2.0});
     // Frame Q is rigidly attached to P with pose X_PQ.
     frameQ_ =
         &model->AddFrame<FixedOffsetFrame>(*frameP_, X_PQ_);
@@ -97,7 +97,7 @@ class FrameTests : public ::testing::Test {
     X_FG_ = RigidTransformd(AngleAxisd(M_PI / 6.0, Vector3d::UnitY()) *
                             AngleAxisd(M_PI / 8.0, Vector3d::UnitZ()) *
                             AngleAxisd(M_PI / 5.0, Vector3d::UnitX()) *
-                            Translation3d(2.0, -1.0, 0.5));
+                            {2.0, -1.0, 0.5});
 
     // An arbitrary pose of an arbitrary frame F in an arbitrary frame Q.
     X_QF_ = X_FG_;

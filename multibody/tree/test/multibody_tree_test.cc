@@ -1208,8 +1208,8 @@ class WeldMobilizerTest : public ::testing::Test {
                                     Eigen::Translation3d(0.5, 0.0, 0.0)};
   math::RigidTransformd X_WB1_{X_WB1};
   math::RigidTransformd X_FM_{math::RotationMatrixd::MakeZRotation(-M_PI_2)};
-  math::RigidTransformd X_B1F_{Vector3d(0.5, 0.0, 0.0)};
-  math::RigidTransformd X_B2M_{Vector3d(-0.5, 0.0, 0.0)};
+  math::RigidTransformd X_B1F_{{0.5, 0.0, 0.0}};
+  math::RigidTransformd X_B2M_{{-0.5, 0.0, 0.0}};
   math::RigidTransformd X_WB2_;
 };
 

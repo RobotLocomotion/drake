@@ -214,8 +214,8 @@ class DepthImageToPointCloudTest : public ::testing::Test {
 
   const CameraInfo single_pixel_camera_{1, 1, 1.0, 1.0, 0.5, 0.5};
   const RigidTransformd random_transform_{RollPitchYawd(0.1, -0.2, 0.3),
-                                          Vector3d(1.1, -1.2, 1.3)};
-  const RigidTransformd z_translation_{Vector3d(0.0, 0.0, 1.3)};
+                                          {1.1, -1.2, 1.3}};
+  const RigidTransformd z_translation_{{0.0, 0.0, 1.3}};
 };
 TYPED_TEST_CASE(DepthImageToPointCloudTest, AllConfigs);
 

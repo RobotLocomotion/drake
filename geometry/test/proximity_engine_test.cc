@@ -710,7 +710,7 @@ std::vector<SignedDistanceToPointTestData> GenDistanceTestDataTranslateBox() {
       // The position of the query point p_WQ(23,20,30) is closest to G at
       // (20,20,30) in World frame, which is p_GN=(10,0,0) in G's frame.
       // The gradient vector is expressed in both frames as (1,0,0).
-      {box, RigidTransformd(Vector3d(10., 20., 30.)), Vector3d{23., 20., 30.},
+      {box, RigidTransformd({10., 20., 30.}), Vector3d{23., 20., 30.},
        SignedDistanceToPoint<double>(GeometryId::get_new_id(),
                                      Vector3d(10., 0., 0.), 3.,
                                      Vector3d(1., 0., 0.))}};
@@ -2530,8 +2530,8 @@ GenDistPairRepeatabilityTestData() {
       make_shared<const Convex>(
           drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj"),
           1.1)};
-  const RigidTransformd X_WA = RigidTransformd(Vector3d(0.1, 0.2, 0.3));
-  const RigidTransformd X_WB = RigidTransformd(Vector3d(0.11, 0.21, 0.31));
+  const RigidTransformd X_WA = RigidTransformd({0.1, 0.2, 0.3});
+  const RigidTransformd X_WB = RigidTransformd({0.11, 0.21, 0.31});
   std::vector<SignedDistancePairRepeatTestData> test_data;
   for (shared_ptr<const Shape>& a : shapes_A)
     for (shared_ptr<const Shape>& b : shapes_B)
@@ -2910,7 +2910,7 @@ class BoxPenetrationTest : public ::testing::Test {
     // a. Orient the box so that the corner p_BoC_B = (-0.5, -0.5, -0.5) lies in
     //    the most -z extent. With only rotation, p_BoC_B != p_WC.
     const math::RotationMatrixd R_WB(AngleAxisd(std::atan(M_SQRT2),
-                                     Vector3d(M_SQRT1_2, -M_SQRT1_2, 0)));
+                                     {M_SQRT1_2, -M_SQRT1_2, 0}));
 
     // b. Translate it so that the rotated corner p_BoC_W lies at
     //    (0, 0, -d).

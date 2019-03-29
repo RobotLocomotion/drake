@@ -1139,7 +1139,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   unique_ptr<Context<double>> context = plant.CreateDefaultContext();
 
   // Test the API taking a RigidTransform.
-  auto X_WS1 = RigidTransformd(Vector3d(-x_offset, radius, 0.0));
+  auto X_WS1 = RigidTransformd({-x_offset, radius, 0.0});
 
   // Place sphere 1 on top of the ground, with offset x = -x_offset.
   plant.SetFreeBodyPose(
@@ -2383,7 +2383,7 @@ GTEST_TEST(StateSelection, FloatingBodies) {
       0.057 / 2;
   plant.WeldFrames(
       plant.world_frame(), plant.GetFrameByName("iiwa_link_0", arm_model),
-      RigidTransform<double>(Vector3d(0, 0, table_top_z_in_world))
+      RigidTransform<double>({0, 0, table_top_z_in_world})
           .GetAsIsometry3());
 
   // Load a second table for objects.

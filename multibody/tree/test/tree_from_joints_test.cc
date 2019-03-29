@@ -136,7 +136,7 @@ class DoublePendulumModel {
     // L1's origin is located at the com of link 1.
     // X_L1So defines the pose of the shoulder outboard frame So in link 1's
     // frame.
-    const math::RigidTransformd X_L1So{Vector3d(0.0, half_length1_, 0.0)};
+    const math::RigidTransformd X_L1So{{0.0, half_length1_, 0.0}};
 
     shoulder_ = &model->template AddJoint<RevoluteJoint>(
         "ShoulderJoint",
@@ -154,7 +154,7 @@ class DoublePendulumModel {
     // The elbow's outboard frame Eo is taken to be coincident with link 2's
     // frame L2 (i.e. L2o != L2cm).
     // X_L1Ei defines the pose of the elbow inboard frame Ei link 1's frame L1.
-    const math::RigidTransformd X_L1Ei{Vector3d(0.0, -half_length1_, 0.0)};
+    const math::RigidTransformd X_L1Ei{{0.0, -half_length1_, 0.0}};
 
     elbow_ = &model->template AddJoint<RevoluteJoint>(
         "ElbowJoint",

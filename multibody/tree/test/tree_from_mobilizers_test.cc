@@ -311,13 +311,13 @@ class PendulumTests : public ::testing::Test {
   const double acceleration_of_gravity_ = 9.81;
   // Poses:
   // Desired pose of the lower link frame L in the world frame W.
-  const RigidTransformd X_WL_{Vector3d(0.0, -half_link1_length_, 0.0)};
+  const RigidTransformd X_WL_{{0.0, -half_link1_length_, 0.0}};
   // Pose of the shoulder outboard frame So in the upper link frame U.
-  const RigidTransformd X_USo_{Vector3d(0.0, half_link1_length_, 0.0)};
+  const RigidTransformd X_USo_{{0.0, half_link1_length_, 0.0}};
   // Pose of the elbow inboard frame Ei in the upper link frame U.
-  const RigidTransformd X_UEi_{Vector3d(0.0, -half_link1_length_, 0.0)};
+  const RigidTransformd X_UEi_{{0.0, -half_link1_length_, 0.0}};
   // Pose of the elbow outboard frame Eo in the lower link frame L.
-  const RigidTransformd X_LEo_{Vector3d(0.0, half_link2_length_, 0.0)};
+  const RigidTransformd X_LEo_{{0.0, half_link2_length_, 0.0}};
 };
 
 TEST_F(PendulumTests, CreateModelBasics) {
