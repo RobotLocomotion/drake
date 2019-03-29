@@ -10,7 +10,7 @@ diag_kinematics;
 diag_configuration;
 { rank=same; diag_x; diag_p; diag_a; diag_t; diag_u; }
 { rank=same; diag_xc; diag_xd; diag_xa; diag_pn; diag_pa; }
-{ rank=same; diag_q; diag_v; diag_z; }
+{ rank=same; diag_q; diag_v; diag_z; diag_u_i_all; }
 node[shape="rect",style="rounded"];
 { rank=same; leaf_xcdot; leaf_ke; leaf_pc; leaf_pnc; leaf_pe; }
 leaf_all_sources;
@@ -19,13 +19,13 @@ leaf_configuration;
 { rank=same; leaf_x; leaf_p; leaf_a; leaf_t; leaf_u; }
 { rank=same; leaf_xc; leaf_xd; leaf_xa; leaf_pn; leaf_pa; }
 { rank=same; leaf_q; leaf_v; leaf_z; leaf_xd_i_all; leaf_xa_i_all;
-    leaf_pn_i_all; leaf_pa_i_all; leaf_u_i_all; }
+    leaf_pn_i_all; leaf_pa_i_all; leaf_u_oneof; leaf_u_i_all; }
 
 // Tweak the top-to-bottom order, beyond what's implied by the underlying
 // graph rankings.
 // - Stack diag atop leaf, don't intermingle their rows.
 { rank=same; leaf_xcdot; leaf_xcdot_invis[style=invis,label=""]; }
-diag_q -> leaf_xcdot_invis[style=invis];
+diag_u_i_all -> leaf_xcdot_invis[style=invis];
 // - Stack ..._all_sources atop ..._kinematics, not as a sibling.
 { rank=same; diag_kinematics; dkinvis[style=invis,label=""]; }
 { rank=same; leaf_kinematics; lkinvis[style=invis,label=""]; }
@@ -37,6 +37,8 @@ leaf_all_sources[ordering="in"]; diag_all_sources[ordering="in"];
 leaf_x[ordering="out"]; diag_x[ordering="out"];
 leaf_p[ordering="out"]; diag_p[ordering="out"];
 leaf_xc[ordering="out"]; diag_xc[ordering="out"];
+leaf_z -> leaf_xd_i_all[style=invis];
+leaf_xa_i_all -> leaf_u_i_all[style=invis];
 
 // This list exactly mirrors the "Predefined dependency tickets" table.
 // We omit some nodes for conciseness.
@@ -129,7 +131,13 @@ diag_pc -> diag_all_sources[style="dashed"];      // Footnote 5.
 diag_pnc -> diag_all_sources[style="dashed"];     // Footnote 5.
 
 // Per "Predefined dependency tickets" table footnote 4.
-diag_u_i_all -> leaf_u_i_all[dir="back",label="(for exported input ports only)"];
+leaf_u_oneof[label="at-most-one",shape=diamond];
+peer_u[label="output port of peer sub-System"];
+fixed_u[label="fixed value in Context"];
+leaf_u_i_all -> leaf_u_oneof[constraint=false,label="for each i"];
+leaf_u_oneof -> peer_u
+leaf_u_oneof -> fixed_u;
+diag_u_i_all -> leaf_u_oneof[dir=back];
 
 // This list exactly mirrors the "Diagram-specific implementation" table, for
 // the "Subscribes to" column.
