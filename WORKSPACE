@@ -26,3 +26,5 @@ load("@bazel_skylib//:lib.bzl", "versions")
 # to actually be defined. The minimum_bazel_version value should match the
 # version passed to the find_package(Bazel) call in the root CMakeLists.txt.
 versions.check(minimum_bazel_version = "0.19.2")
+
+SKIP_CI
