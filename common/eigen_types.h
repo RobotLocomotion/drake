@@ -461,8 +461,8 @@ class EigenPtr {
 template <typename T, int N = Eigen::Dynamic>
 class VectorOrInitList {
  public:
-  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   template <typename Derived>
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   VectorOrInitList(const Eigen::MatrixBase<Derived>& value) : value_(value) {}
 
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.

@@ -176,6 +176,8 @@ GTEST_TEST(RigidTransform, ConstructorQuaternionPositionVector) {
   const RotationMatrix<double> R(quaternion);
   EXPECT_TRUE(X.rotation().IsExactlyEqualTo(R));
   EXPECT_TRUE(X.translation() == position);
+  const RigidTransform<double> X2(quaternion, {4, 5, 6});
+  EXPECT_TRUE(X2.translation() == position);
 }
 
 // Tests constructing a RigidTransform from an AngleAxis and a position vector.

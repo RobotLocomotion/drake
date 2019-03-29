@@ -63,6 +63,7 @@ class RigidTransform {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidTransform)
 
+
   /// Constructs the %RigidTransform that corresponds to aligning the two frames
   /// so unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is coincident with
   /// Bo.  Hence, the constructed %RigidTransform contains an identity
@@ -76,7 +77,9 @@ class RigidTransform {
   /// @param[in] R rotation matrix relating frames A and B (e.g., `R_AB`).
   /// @param[in] p position vector from frame A's origin to frame B's origin,
   /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
-  RigidTransform(const RotationMatrix<T>& R, const Vector3<T>& p) { set(R, p); }
+  RigidTransform(
+      const RotationMatrix<T>& R,
+      const VectorOrInitList<T, 3>& p) { set(R, p.value()); }
 
   /// Constructs a %RigidTransform from a RollPitchYaw and a position vector.
   /// @param[in] rpy a %RollPitchYaw which is a Space-fixed (extrinsic) X-Y-Z
@@ -85,7 +88,7 @@ class RigidTransform {
   /// @see RotationMatrix::RotationMatrix(const RollPitchYaw<T>&)
   /// @param[in] p position vector from frame A's origin to frame B's origin,
   /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
-  RigidTransform(const RollPitchYaw<T>& rpy, const Vector3<T>& p)
+  RigidTransform(const RollPitchYaw<T>& rpy, const VectorOrInitList<T, 3>& p)
       : RigidTransform(RotationMatrix<T>(rpy), p) {}
 
   /// Constructs a %RigidTransform from a Quaternion and a position vector.
@@ -96,7 +99,8 @@ class RigidTransform {
   /// @throws std::logic_error in debug builds if the rotation matrix
   /// that is built from `quaternion` is invalid.
   /// @see RotationMatrix::RotationMatrix(const Eigen::Quaternion<T>&)
-  RigidTransform(const Eigen::Quaternion<T>& quaternion, const Vector3<T>& p)
+  RigidTransform(
+      const Eigen::Quaternion<T>& quaternion, const VectorOrInitList<T, 3>& p)
       : RigidTransform(RotationMatrix<T>(quaternion), p) {}
 
   /// Constructs a %RigidTransform from a AngleAxis and a position vector.
@@ -108,7 +112,8 @@ class RigidTransform {
   /// @throws std::logic_error in debug builds if the rotation matrix
   /// that is built from `theta_lambda` is invalid.
   /// @see RotationMatrix::RotationMatrix(const Eigen::AngleAxis<T>&)
-  RigidTransform(const Eigen::AngleAxis<T>& theta_lambda, const Vector3<T>& p)
+  RigidTransform(
+      const Eigen::AngleAxis<T>& theta_lambda, const VectorOrInitList<T, 3>& p)
       : RigidTransform(RotationMatrix<T>(theta_lambda), p) {}
 
   /// Constructs a %RigidTransform with a given RotationMatrix and a zero
@@ -122,7 +127,8 @@ class RigidTransform {
   /// position vector 'p'.
   /// @param[in] p position vector from frame A's origin to frame B's origin,
   /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
-  explicit RigidTransform(const Vector3<T>& p) { set_translation(p); }
+  explicit RigidTransform(const VectorOrInitList<T, 3>& p) {
+      set_translation(p.value()); }
 
   /// Constructs a %RigidTransform from an Eigen Isometry3.
   /// @param[in] pose Isometry3 that contains an allegedly valid rotation matrix
@@ -138,9 +144,9 @@ class RigidTransform {
   /// @param[in] R rotation matrix relating frames A and B (e.g., `R_AB`).
   /// @param[in] p position vector from frame A's origin to frame B's origin,
   /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
-  void set(const RotationMatrix<T>& R, const Vector3<T>& p) {
+  void set(const RotationMatrix<T>& R, const VectorOrInitList<T, 3>& p) {
     set_rotation(R);
-    set_translation(p);
+    set_translation(p.value());
   }
 
   /// Sets `this` %RigidTransform from an Eigen Isometry3.
