@@ -34,7 +34,7 @@ class AffineSystemTest : public AffineLinearSystemTest {
 
 // Tests that the affine system is correctly setup.
 TEST_F(AffineSystemTest, Construction) {
-  EXPECT_EQ(1, context_->get_num_input_ports());
+  EXPECT_EQ(1, context_->num_input_ports());
   EXPECT_EQ("test_affine_system", dut_->get_name());
   EXPECT_EQ(dut_->A(), A_);
   EXPECT_EQ(dut_->B(), B_);
@@ -42,8 +42,8 @@ TEST_F(AffineSystemTest, Construction) {
   EXPECT_EQ(dut_->D(), D_);
   EXPECT_EQ(dut_->f0(), f0_);
   EXPECT_EQ(dut_->y0(), y0_);
-  EXPECT_EQ(dut_->get_num_output_ports(), 1);
-  EXPECT_EQ(dut_->get_num_input_ports(), 1);
+  EXPECT_EQ(dut_->num_output_ports(), 1);
+  EXPECT_EQ(dut_->num_input_ports(), 1);
 
   // Test TimeVaryingAffineSystem accessor methods.
   const double t = 3.5;

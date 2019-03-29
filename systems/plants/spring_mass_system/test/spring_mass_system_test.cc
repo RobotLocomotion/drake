@@ -71,7 +71,7 @@ class SpringMassSystemTest : public ::testing::Test {
 
 TEST_F(SpringMassSystemTest, Construction) {
   // Asserts zero inputs for this case.
-  EXPECT_EQ(0, context_->get_num_input_ports());
+  EXPECT_EQ(0, context_->num_input_ports());
   EXPECT_EQ("test_system", system_->get_name());
   EXPECT_EQ(kSpring, system_->get_spring_constant());
   EXPECT_EQ(kMass, system_->get_mass());
@@ -111,7 +111,7 @@ TEST_F(SpringMassSystemTest, Output) {
   // Displacement 100cm, vel 250cm/s (.25 is exact in binary).
   InitializeState(0.1, 0.25);
   system_->CalcOutput(*context_, system_output_.get());
-  ASSERT_EQ(1, system_output_->get_num_ports());
+  ASSERT_EQ(1, system_output_->num_ports());
 
   // Check the output through the application-specific interface.
   EXPECT_NEAR(0.1, output_->get_position(), 1e-14);
@@ -185,7 +185,7 @@ TEST_F(SpringMassSystemTest, DynamicsWithExternalForce) {
   EXPECT_FALSE(system_->HasAnyDirectFeedthrough());
 
   // Asserts exactly one input for this case expecting an external force.
-  ASSERT_EQ(1, context_->get_num_input_ports());
+  ASSERT_EQ(1, context_->num_input_ports());
 
   // Creates a vector holding the data entry to the supplied input force.
   auto force_vector = make_unique<BasicVector<double>>(1 /* size */);

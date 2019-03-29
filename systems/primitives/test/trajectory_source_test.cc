@@ -45,7 +45,7 @@ TEST_F(TrajectorySourceTest, OutputTest) {
   const std::vector<Polynomiald> p_vec {yyyy};
   Reset(PiecewisePolynomial<double>(p_vec, {0.0, 3}));
 
-  ASSERT_EQ(0, context_->get_num_input_ports());
+  ASSERT_EQ(0, context_->num_input_ports());
 
   const double kTestTime = 1.75;
   context_->SetTime(kTestTime);
@@ -70,7 +70,7 @@ TEST_F(TrajectorySourceTest, OutputTest) {
 // Tests that ConstantVectorSource allocates no state variables in the context_.
 TEST_F(TrajectorySourceTest, ConstantVectorSourceIsStateless) {
   Reset(PiecewisePolynomial<double>(MatrixXd::Constant(2, 1, 1.5)));
-  EXPECT_EQ(0, context_->get_continuous_state().size());
+  EXPECT_EQ(0, context_->num_continuous_states());
 }
 
 }  // namespace

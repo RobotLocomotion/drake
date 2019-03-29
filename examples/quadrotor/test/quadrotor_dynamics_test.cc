@@ -44,7 +44,7 @@ class GenericQuadrotor: public systems::Diagram<T> {
     plant_ = builder.template AddSystem<QuadrotorPlant<T>>();
     plant_->set_name("plant");
 
-    VectorX<T> hover_input(plant_->get_num_total_inputs());
+    VectorX<T> hover_input(plant_->num_total_inputs());
     hover_input.setZero();
     systems::ConstantVectorSource<T>* source =
         builder.template AddSystem<systems::ConstantVectorSource<T>>(

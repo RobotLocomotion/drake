@@ -134,7 +134,7 @@ TYPED_TEST(TrajectoryCarTest, ConstantSpeedTest) {
 
       car_dut.CalcOutput(context, all_output.get());
 
-      ASSERT_EQ(3, all_output->get_num_ports());
+      ASSERT_EQ(3, all_output->num_ports());
 
       // Tests the raw pose output.
       const SimpleCarState<T>* raw_pose =

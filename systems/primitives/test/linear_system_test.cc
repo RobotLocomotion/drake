@@ -82,7 +82,7 @@ class LinearSystemTest : public AffineLinearSystemTest {
 
 // Tests that the linear system is correctly setup.
 TEST_F(LinearSystemTest, Construction) {
-  EXPECT_EQ(1, context_->get_num_input_ports());
+  EXPECT_EQ(1, context_->num_input_ports());
   EXPECT_EQ("test_linear_system", dut_->get_name());
   EXPECT_EQ(dut_->A(), A_);
   EXPECT_EQ(dut_->B(), B_);
@@ -90,8 +90,8 @@ TEST_F(LinearSystemTest, Construction) {
   EXPECT_EQ(dut_->C(), C_);
   EXPECT_EQ(dut_->D(), D_);
   EXPECT_EQ(dut_->y0(), y0_);
-  EXPECT_EQ(1, dut_->get_num_output_ports());
-  EXPECT_EQ(1, dut_->get_num_input_ports());
+  EXPECT_EQ(1, dut_->num_output_ports());
+  EXPECT_EQ(1, dut_->num_input_ports());
 }
 
 // Tests that the derivatives are correctly computed.
@@ -177,8 +177,8 @@ class SimpleTimeVaryingLinearSystem final
 GTEST_TEST(SimpleTimeVaryingLinearSystemTest, ConstructorTest) {
   SimpleTimeVaryingLinearSystem sys;
 
-  EXPECT_EQ(sys.get_num_output_ports(), 1);
-  EXPECT_EQ(sys.get_num_input_ports(), 1);
+  EXPECT_EQ(sys.num_output_ports(), 1);
+  EXPECT_EQ(sys.num_input_ports(), 1);
   EXPECT_TRUE(CompareMatrices(sys.A(0.), Eigen::Matrix2d::Identity()));
   EXPECT_TRUE(CompareMatrices(sys.B(0.), Eigen::Matrix<double, 2, 1>::Ones()));
   EXPECT_TRUE(CompareMatrices(sys.C(0.), Eigen::Matrix2d::Identity()));

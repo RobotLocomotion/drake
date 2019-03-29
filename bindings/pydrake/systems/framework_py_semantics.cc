@@ -140,8 +140,19 @@ void DefineFrameworkPySemantics(py::module m) {
         .def("__str__", &Context<T>::to_string, doc.Context.to_string.doc)
         .def("num_input_ports", &Context<T>::num_input_ports,
             doc.ContextBase.num_input_ports.doc)
-        .def("get_num_input_ports", &Context<T>::get_num_input_ports,
+        .def("get_num_input_ports",
+            [](const Context<T>* self) {
+              WarnDeprecated(
+                  "Use num_input_ports() instead. Will be removed on or after "
+                  "2019-07-01.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->get_num_input_ports();
+#pragma GCC diagnostic pop
+            },
             "Use num_input_ports() instead.")
+        .def("num_output_ports", &Context<T>::num_output_ports,
+            doc.ContextBase.num_output_ports.doc)
         .def("FixInputPort",
             py::overload_cast<int, const BasicVector<T>&>(
                 &Context<T>::FixInputPort),
@@ -218,7 +229,15 @@ void DefineFrameworkPySemantics(py::module m) {
             &Context<T>::num_discrete_state_groups,
             doc.Context.num_discrete_state_groups.doc)
         .def("get_num_discrete_state_groups",
-            &Context<T>::get_num_discrete_state_groups,
+            [](const Context<T>* self) {
+              WarnDeprecated(
+                  "Use num_discrete_state_groups() instead. Will be removed "
+                  "on or after 2019-07-01.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->get_num_discrete_state_groups();
+#pragma GCC diagnostic pop
+            },
             "Use num_discrete_state_groups() instead.")
         .def("get_discrete_state",
             overload_cast_explicit<const DiscreteValues<T>&>(
@@ -258,7 +277,16 @@ void DefineFrameworkPySemantics(py::module m) {
         // - Abstract.
         .def("num_abstract_states", &Context<T>::num_abstract_states,
             doc.Context.num_abstract_states.doc)
-        .def("get_num_abstract_states", &Context<T>::get_num_abstract_states,
+        .def("get_num_abstract_states",
+            [](const Context<T>* self) {
+              WarnDeprecated(
+                  "Use num_abstract_states() instead. Will be removed on or "
+                  "after 2019-07-01.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->get_num_abstract_states();
+#pragma GCC diagnostic pop
+            },
             "Use num_abstract_states() instead.")
         .def("get_abstract_state",
             static_cast<const AbstractValues& (Context<T>::*)() const>(
@@ -396,7 +424,16 @@ void DefineFrameworkPySemantics(py::module m) {
     system_output
         .def("num_ports", &SystemOutput<T>::num_ports,
             doc.SystemOutput.num_ports.doc)
-        .def("get_num_ports", &SystemOutput<T>::get_num_ports,
+        .def("get_num_ports",
+            [](const SystemOutput<T>* self) {
+              WarnDeprecated(
+                  "Use num_ports() instead. Will be removed on or after "
+                  "2019-07-01.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->get_num_ports();
+#pragma GCC diagnostic pop
+            },
             "Use num_ports() instead.")
         .def("get_data", &SystemOutput<T>::get_data, py_reference_internal,
             doc.SystemOutput.get_data.doc)
@@ -584,7 +621,7 @@ void DefineFrameworkPySemantics(py::module m) {
             doc.DiscreteValues.get_mutable_vector.doc_1args);
   };
   type_visit(bind_common_scalar_types, pysystems::CommonScalarPack{});
-}
+}  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake
 }  // namespace drake

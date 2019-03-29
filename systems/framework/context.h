@@ -207,11 +207,13 @@ class Context : public ContextBase {
   }
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // These are to-be-deprecated. Use methods without the initial get_.
+  DRAKE_DEPRECATED("2019-07-01", "Use num_discrete_state_groups() instead.")
   int get_num_discrete_state_groups() const {
     return num_discrete_state_groups();
   }
+  DRAKE_DEPRECATED("2019-07-01", "Use num_abstract_states() instead.")
   int get_num_abstract_states() const { return num_abstract_states(); }
+  DRAKE_DEPRECATED("2019-07-01", "Use num_total_states() instead.")
   int get_num_total_states() const { return num_total_states(); }
 #endif
   //@}

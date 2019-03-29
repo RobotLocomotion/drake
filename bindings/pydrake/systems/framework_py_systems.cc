@@ -274,7 +274,16 @@ struct Impl {
         // Topology.
         .def("num_input_ports", &System<T>::num_input_ports,
             doc.SystemBase.num_input_ports.doc)
-        .def("get_num_input_ports", &System<T>::get_num_input_ports,
+        .def("get_num_input_ports",
+            [](const System<T>* self) {
+              WarnDeprecated(
+                  "Use num_input_ports() instead. Will be removed on or after "
+                  "2019-07-01.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->get_num_input_ports();
+#pragma GCC diagnostic pop
+            },
             "Use num_input_ports() instead.")
         .def("get_input_port", &System<T>::get_input_port,
             py_reference_internal, py::arg("port_index"),
@@ -283,7 +292,16 @@ struct Impl {
             py::arg("port_name"), doc.System.GetInputPort.doc)
         .def("num_output_ports", &System<T>::num_output_ports,
             doc.SystemBase.num_output_ports.doc)
-        .def("get_num_output_ports", &System<T>::get_num_output_ports,
+        .def("get_num_output_ports",
+            [](const System<T>* self) {
+              WarnDeprecated(
+                  "Use num_output_ports() instead. Will be removed on or "
+                  "after 2019-07-01.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->get_num_output_ports();
+#pragma GCC diagnostic pop
+            },
             "Use num_output_ports() instead.")
         .def("get_output_port", &System<T>::get_output_port,
             py_reference_internal, py::arg("port_index"),

@@ -78,7 +78,7 @@ class SystemOutput {
   }
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // This is to-be-deprecated. Use num_ports() instead.
+  DRAKE_DEPRECATED("2019-07-01", "Use num_ports() instead.")
   int get_num_ports() const { return num_ports(); }
 #endif
 

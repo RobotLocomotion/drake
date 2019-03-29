@@ -1603,9 +1603,11 @@ class System : public SystemBase {
   // Don't promote output_port_ticket() since it is for internal use only.
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // These are to-be-deprecated. Use methods without the initial get_.
+  DRAKE_DEPRECATED("2019-07-01", "Use num_continuous_states() instead.")
   int get_num_continuous_states() const { return num_continuous_states(); }
+  DRAKE_DEPRECATED("2019-07-01", "Use num_constraints() instead.")
   int get_num_constraints() const { return num_constraints(); }
+  DRAKE_DEPRECATED("2019-07-01", "Use num_constraint_equations() instead.")
   int get_num_constraint_equations(const Context<T>& context) const {
     return num_constraint_equations(context);
   }

@@ -102,10 +102,10 @@ class ZeroOrderHoldTest : public ::testing::TestWithParam<bool> {
 
 // Tests that the zero-order hold has one input and one output.
 TEST_P(ZeroOrderHoldTest, Topology) {
-  EXPECT_EQ(1, hold_->get_num_input_ports());
-  EXPECT_EQ(1, context_->get_num_input_ports());
+  EXPECT_EQ(1, hold_->num_input_ports());
+  EXPECT_EQ(1, context_->num_input_ports());
 
-  EXPECT_EQ(1, hold_->get_num_output_ports());
+  EXPECT_EQ(1, hold_->num_output_ports());
 
   EXPECT_FALSE(hold_->HasAnyDirectFeedthrough());
 }
