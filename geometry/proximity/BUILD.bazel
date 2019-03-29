@@ -1,0 +1,40 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "proximity",
+    deps = [
+        ":distance_to_point_with_gradient",
+    ],
+)
+
+drake_cc_library(
+    name = "distance_to_point_with_gradient",
+    srcs = ["distance_to_point_with_gradient.cc"],
+    hdrs = ["distance_to_point_with_gradient.h"],
+    deps = [
+        "//geometry:geometry_ids",
+        "//geometry/query_results:signed_distance_to_point_with_gradient",
+        "//math",
+        "@fcl",
+    ],
+)
+
+drake_cc_googletest(
+    name = "distance_to_point_with_gradient_test",
+    deps = [
+        ":distance_to_point_with_gradient",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+add_lint_tests()
