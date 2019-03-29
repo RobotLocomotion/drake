@@ -131,6 +131,9 @@ PYBIND11_MODULE(plant, m) {
             [](Class * self,
                 std::unique_ptr<UniformGravityFieldElement<T>> force_element)
                 -> auto& {
+              // N.B. We need to make sure we call the correct specialization in
+              // MultibodyPlant for it to take note we are adding gravity to the
+              // model. This is ugly API needs to be updated, see #11080.
               return self->AddForceElement<UniformGravityFieldElement>(
                   force_element->gravity_vector());
             },
