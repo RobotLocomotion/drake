@@ -334,7 +334,7 @@ _Notes_
 4. Input ports are dependent on the source that provides their values. That
    may be the output port of a peer subsystem, the input port of the parent
    diagram, or a locally-stored fixed input port value.
-5. %Diagram current subscribes to all_sources for this tracker, but in the
+5. %Diagram currently subscribes to all_sources for this tracker, but in the
    future it will only subscribe to the corresponding leaf trackers and no
    longer subscribe to the Diagram's all_sources tracker.  The leaf trackers
    are sufficient on their own; the all_sources tracker is redundant.
@@ -507,6 +507,8 @@ The arrow direction reads as "subscribes to (up)", i.e., "depends on":
 - <span style="border-bottom: 1px dashed">\b Dashed</span> lines indicate an
   overly conservative subscription, planned to be made more precise in the
   future.  See the specific text in the prior sections for details.
+- Doubled-line nodes and edges indicate that the item has a multiplicity of
+  0..many (∀i).
 
 @dotfile systems/framework/images/cache_doxygen_trackers.dot
 
