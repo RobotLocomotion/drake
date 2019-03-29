@@ -180,10 +180,6 @@ class LeafSystem : public System<T> {
     // Allow derived LeafSystem to validate allocated Context.
     DoValidateAllocatedLeafContext(*context);
 
-    // TODO(sherm1) Remove this line and the corresponding one in
-    // Diagram to enable caching by default in Drake.
-    context->DisableCaching();
-
     return context;
   }
 
