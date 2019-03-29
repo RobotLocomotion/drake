@@ -177,7 +177,7 @@ int DoMain() {
   status_sub->SetDefaultContext(&status_sub_context);
 
   // Explicit initialization.
-  diagram_context.set_time(msg_time);
+  diagram_context.SetTime(msg_time);
   auto& plan_source_context =
       diagram->GetMutableSubsystemContext(*plan_source, &diagram_context);
   plan_source->Initialize(msg_time, q0,

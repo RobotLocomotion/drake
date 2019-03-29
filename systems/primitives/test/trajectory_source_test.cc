@@ -48,7 +48,7 @@ TEST_F(TrajectorySourceTest, OutputTest) {
   ASSERT_EQ(0, context_->get_num_input_ports());
 
   const double kTestTime = 1.75;
-  context_->set_time(kTestTime);
+  context_->SetTime(kTestTime);
 
   const auto& output = source_->get_output_port(0).Eval(*context_);
 

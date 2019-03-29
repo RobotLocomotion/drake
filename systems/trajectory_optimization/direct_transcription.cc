@@ -75,7 +75,7 @@ class DiscreteTimeSystemConstraint : public solvers::Constraint {
     const auto state = x.segment(num_inputs_, num_states_);
     const auto next_state = x.tail(num_states_);
 
-    context_->set_time(evaluation_time_);
+    context_->SetTime(evaluation_time_);
     if (context_->get_num_input_ports() > 0) {
       input_port_value_->GetMutableVectorData<AutoDiffXd>()->SetFromVector(
           input);

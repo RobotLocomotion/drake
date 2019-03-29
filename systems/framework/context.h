@@ -547,8 +547,9 @@ class Context : public ContextBase {
   }
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // These are to-be-deprecated. Use SetTime() and SetAccuracy() instead.
+  DRAKE_DEPRECATED("2019-07-01", "Use SetTime() instead.")
   void set_time(const T& time_sec) { SetTime(time_sec); }
+  DRAKE_DEPRECATED("2019-07-01", "Use SetAccuracy() instead.")
   void set_accuracy(const optional<double>& accuracy) { SetAccuracy(accuracy); }
 #endif
   //@}

@@ -106,7 +106,7 @@ TEST_P(PiecewisePolynomialLinearSystemTest, Derivatives) {
                             1.5 * kDiscreteTimeStep};
   const double tol = 1e-10;
   for (const double t : times) {
-    context_->set_time(t);
+    context_->SetTime(t);
     const Eigen::Matrix2d A = ltv_data_.A.value(t);
     const Eigen::Matrix2d B = ltv_data_.B.value(t);
     if (time_period_ == 0.) {
@@ -141,7 +141,7 @@ TEST_P(PiecewisePolynomialLinearSystemTest, Output) {
                             1.5 * kDiscreteTimeStep};
   const double tol = 1e-10;
   for (const double t : times) {
-    context_->set_time(t);
+    context_->SetTime(t);
 
     const Eigen::Matrix2d C = ltv_data_.C.value(t);
     const Eigen::Matrix2d D = ltv_data_.D.value(t);

@@ -41,7 +41,7 @@ GTEST_TEST(RimlessWheelTest, StepTest) {
 
   systems::Simulator<double> simulator(rw);
   auto& context = simulator.get_mutable_context();
-  context.set_accuracy(1e-8);
+  context.SetAccuracy(1e-8);
 
   RimlessWheelContinuousState<double>& state =
       rw.get_mutable_continuous_state(&context);
@@ -61,7 +61,7 @@ GTEST_TEST(RimlessWheelTest, StepTest) {
   const double step_length = 2 * params.length() * sin(alpha);
 
   // A point on that limit cycle just before a forward step:
-  context.set_time(0.0);
+  context.SetTime(0.0);
   state.set_theta(params.slope() + alpha / 2.0);
   toe = 0.0;
   double_support = false;
@@ -80,7 +80,7 @@ GTEST_TEST(RimlessWheelTest, StepTest) {
   const double threshold = 0.01;
 
   // Walking too fast should lose energy through impact.
-  context.set_time(0.0);
+  context.SetTime(0.0);
   state.set_theta(params.slope() + alpha / 2.0);
   toe = 0.0;
   double_support = false;
@@ -96,7 +96,7 @@ GTEST_TEST(RimlessWheelTest, StepTest) {
   EXPECT_LT(rw.CalcTotalEnergy(context), initial_energy - threshold);
 
   // Walking too slow should gain energy through impact.
-  context.set_time(0.0);
+  context.SetTime(0.0);
   state.set_theta(params.slope() + alpha / 2.0);
   toe = 0.0;
   double_support = false;
@@ -112,7 +112,7 @@ GTEST_TEST(RimlessWheelTest, StepTest) {
   EXPECT_GT(rw.CalcTotalEnergy(context), initial_energy + threshold);
 
   // Rolling uphill should always lose energy.
-  context.set_time(0.0);
+  context.SetTime(0.0);
   // Leaning uphill.
   state.set_theta(params.slope() - alpha / 2.0);
   state.set_thetadot(-4.);
@@ -135,7 +135,7 @@ GTEST_TEST(RimlessWheelTest, FixedPointTest) {
 
   systems::Simulator<double> simulator(rw);
   auto& context = simulator.get_mutable_context();
-  context.set_accuracy(1e-8);
+  context.SetAccuracy(1e-8);
 
   RimlessWheelContinuousState<double>& state =
       rw.get_mutable_continuous_state(&context);
@@ -151,7 +151,7 @@ GTEST_TEST(RimlessWheelTest, FixedPointTest) {
   const double angle_above_touchdown = 1e-5;
 
   // Front foot down.
-  context.set_time(0.0);
+  context.SetTime(0.0);
   state.set_theta(params.slope() + alpha - angle_above_touchdown);
   state.set_thetadot(0.0);
   toe = 0.0;
@@ -162,7 +162,7 @@ GTEST_TEST(RimlessWheelTest, FixedPointTest) {
   EXPECT_EQ(state.thetadot(), 0.0);
 
   // Back foot down.
-  context.set_time(0.0);
+  context.SetTime(0.0);
   state.set_theta(params.slope() - alpha + angle_above_touchdown);
   state.set_thetadot(0.0);
   toe = 0.0;

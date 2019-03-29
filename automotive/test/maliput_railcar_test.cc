@@ -316,7 +316,7 @@ class MaliputRailcarTest : public ::testing::Test {
     params.set_velocity_limit_kp(8);
     SetParams(params);
 
-    context_->set_time(straight_lane->length() / kForwardSpeed);
+    context_->SetTime(straight_lane->length() / kForwardSpeed);
 
     // Verifies that MaliputRailcar::DoCalcUnrestrictedUpdate() switches to the
     // start of curved lane when it is traveling forward and reaches the end of
@@ -829,7 +829,7 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeDragwayWithS) {
 
   // Verifies that the time till reaching the end of the lane is equal to the
   // lane length divided by the vehicle's speed.
-  context_->set_time(0);
+  context_->SetTime(0);
   continuous_state()->set_s(0);
   continuous_state()->set_speed(kSpeed);
   systems::LeafCompositeEventCollection<double> events;
@@ -868,7 +868,7 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeDragwayAgainstS) {
   // Verifies that the time till reaching the end of the lane is equal to the
   // lane length divided by the vehicle's speed.
   systems::LeafCompositeEventCollection<double> events;
-  context_->set_time(0);
+  context_->SetTime(0);
   continuous_state()->set_s(lane->length());
   continuous_state()->set_speed(kSpeed);
   double t = dut_->CalcNextUpdateTime(*context_, &events);
@@ -909,7 +909,7 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeCurvedRoadWithS) {
 
   // Verifies that the time till reaching the end of the lane is equal to the
   // lane length divided by the vehicle's speed.
-  context_->set_time(0);
+  context_->SetTime(0);
   continuous_state()->set_s(0);
   continuous_state()->set_speed(kSpeed);
   systems::LeafCompositeEventCollection<double> events;
@@ -950,7 +950,7 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeCurvedRoadAgainstS) {
 
   // Verifies that the time till reaching the end of the lane is equal to the
   // lane length divided by the vehicle's speed.
-  context_->set_time(0);
+  context_->SetTime(0);
   continuous_state()->set_s(lane->length());
   continuous_state()->set_speed(kSpeed);
   systems::LeafCompositeEventCollection<double> events;

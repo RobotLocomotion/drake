@@ -201,7 +201,7 @@ GTEST_TEST(TranslatorTest, EncodeBasicVectorVersion) {
   auto context = dut.CreateDefaultContext();
   auto output = dut.AllocateOutput();
   context->FixInputPort(0, vec.Clone());
-  context->set_time(233);
+  context->SetTime(233);
 
   dut.CalcOutput(*context, output.get());
   const lcmt_drake_signal& msg =
@@ -225,7 +225,7 @@ GTEST_TEST(TranslatorTest, EncodeAbstractValVersion) {
   auto context = dut.CreateDefaultContext();
   auto output = dut.AllocateOutput();
   context->FixInputPort(0, AbstractValue::Make<TestData>(data));
-  context->set_time(233);
+  context->SetTime(233);
 
   dut.CalcOutput(*context, output.get());
   const lcmt_drake_signal& msg =
