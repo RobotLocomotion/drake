@@ -394,6 +394,9 @@ class TestPlant(unittest.TestCase):
             plant.get_actuation_input_port(iiwa_model), InputPort)
         self.assertIsInstance(
             plant.get_continuous_state_output_port(gripper_model), OutputPort)
+        self.assertIsInstance(
+            plant.get_generalized_contact_forces_output_port(gripper_model),
+            OutputPort)
 
     def test_model_instance_state_access(self):
         # Create a MultibodyPlant with a kuka arm and a schunk gripper.
