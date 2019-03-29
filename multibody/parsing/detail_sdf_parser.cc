@@ -29,6 +29,7 @@ using Eigen::Translation3d;
 using Eigen::Vector3d;
 using geometry::GeometryInstance;
 using geometry::SceneGraph;
+using math::RigidTransformd;
 using std::unique_ptr;
 
 // Unnamed namespace for free functions local to this file.
@@ -435,8 +436,8 @@ void AddLinksFromSpecification(
               geometry_instance->illustration_properties() != nullptr);
 
           plant->RegisterVisualGeometry(
-              body, geometry_instance->pose(), geometry_instance->shape(),
-              geometry_instance->name(),
+              body, RigidTransformd(geometry_instance->pose()),
+              geometry_instance->shape(), geometry_instance->name(),
               *geometry_instance->illustration_properties());
         }
       }
@@ -448,8 +449,8 @@ void AddLinksFromSpecification(
         const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
         ThrowIfPoseFrameSpecified(sdf_collision.Element());
         if (sdf_geometry.Type() != sdf::GeometryType::EMPTY) {
-          const Isometry3d X_LG =
-              MakeGeometryPoseFromSdfCollision(sdf_collision);
+          const RigidTransformd X_LG(
+              MakeGeometryPoseFromSdfCollision(sdf_collision));
           std::unique_ptr<geometry::Shape> shape =
               MakeShapeFromSdfGeometry(sdf_geometry);
           const CoulombFriction<double> coulomb_friction =

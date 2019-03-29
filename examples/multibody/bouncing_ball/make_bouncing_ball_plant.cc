@@ -7,15 +7,16 @@ namespace examples {
 namespace multibody {
 namespace bouncing_ball {
 
-using geometry::Sphere;
-using geometry::HalfSpace;
-using geometry::SceneGraph;
 using drake::multibody::CoulombFriction;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::RigidBody;
 using drake::multibody::SpatialInertia;
 using drake::multibody::UniformGravityFieldElement;
 using drake::multibody::UnitInertia;
+using math::RigidTransformd;
+using geometry::Sphere;
+using geometry::HalfSpace;
+using geometry::SceneGraph;
 
 std::unique_ptr<drake::multibody::MultibodyPlant<double>>
 MakeBouncingBallPlant(double radius, double mass,
@@ -35,29 +36,24 @@ MakeBouncingBallPlant(double radius, double mass,
     Vector3<double> normal_W(0, 0, 1);
     Vector3<double> point_W(0, 0, 0);
 
+    const RigidTransformd X_WG(HalfSpace::MakePose(normal_W, point_W));
     // A half-space for the ground geometry.
-    plant->RegisterCollisionGeometry(
-        plant->world_body(), HalfSpace::MakePose(normal_W, point_W),
-        HalfSpace(), "collision", surface_friction);
+    plant->RegisterCollisionGeometry(plant->world_body(), X_WG, HalfSpace(),
+                                     "collision", surface_friction);
 
     // Add visual for the ground.
-    plant->RegisterVisualGeometry(
-        plant->world_body(), HalfSpace::MakePose(normal_W, point_W),
-        HalfSpace(), "visual");
+    plant->RegisterVisualGeometry(plant->world_body(), X_WG, HalfSpace(),
+                                  "visual");
 
     // Add sphere geometry for the ball.
-    plant->RegisterCollisionGeometry(
-        ball,
-        /* Pose X_BG of the geometry frame G in the ball frame B. */
-        Isometry3<double>::Identity(), Sphere(radius), "collision",
-            surface_friction);
+    // Pose of sphere geometry S in body frame B.
+    const RigidTransformd X_BS = RigidTransformd::Identity();
+    plant->RegisterCollisionGeometry(ball, X_BS, Sphere(radius), "collision",
+                                     surface_friction);
 
     // Add visual for the ball.
     const Vector4<double> orange(1.0, 0.55, 0.0, 1.0);
-    plant->RegisterVisualGeometry(
-        ball,
-        /* Pose X_BG of the geometry frame G in the ball frame B. */
-        Isometry3<double>::Identity(), Sphere(radius), "visual", orange);
+    plant->RegisterVisualGeometry(ball, X_BS, Sphere(radius), "visual", orange);
   }
 
   // Gravity acting in the -z direction.

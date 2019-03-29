@@ -15,6 +15,8 @@ using drake::geometry::SceneGraph;
 namespace drake {
 namespace multibody {
 
+using math::RigidTransformd;
+
 IiwaKinematicConstraintTest::IiwaKinematicConstraintTest() {
   const std::string iiwa_path = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/"
@@ -101,11 +103,11 @@ std::unique_ptr<systems::Diagram<T>> BuildTwoFreeSpheresDiagram(
   const auto& sphere1 = (*plant)->GetBodyByName("body1");
   const auto& sphere2 = (*plant)->GetBodyByName("body2");
   (*plant)->RegisterCollisionGeometry(
-      sphere1, X_B1S1, geometry::Sphere(radius1), "sphere1_collision",
-      multibody::CoulombFriction<double>(), *scene_graph);
+      sphere1, RigidTransformd(X_B1S1), geometry::Sphere(radius1),
+      "sphere1_collision", multibody::CoulombFriction<double>(), *scene_graph);
   (*plant)->RegisterCollisionGeometry(
-      sphere2, X_B2S2, geometry::Sphere(radius2), "sphere2_collision",
-      multibody::CoulombFriction<double>(), *scene_graph);
+      sphere2, RigidTransformd(X_B2S2), geometry::Sphere(radius2),
+      "sphere2_collision", multibody::CoulombFriction<double>(), *scene_graph);
   *sphere1_index = sphere1.body_frame().index();
   *sphere2_index = sphere2.body_frame().index();
   (*plant)->Finalize(*scene_graph);
@@ -145,7 +147,7 @@ std::unique_ptr<systems::Diagram<T>> ConstructBoxSphereDiagram(
       "box", SpatialInertia<double>(1, Eigen::Vector3d(0, 0, 0),
                                     UnitInertia<double>(1, 1, 1)));
   (*plant)->RegisterCollisionGeometry(
-      box, Isometry3<double>::Identity(),
+      box, RigidTransformd::Identity(),
       geometry::Box(box_size(0), box_size(1), box_size(2)), "box",
       CoulombFriction<double>(0.9, 0.8), *scene_graph);
 
@@ -153,7 +155,7 @@ std::unique_ptr<systems::Diagram<T>> ConstructBoxSphereDiagram(
       "sphere", SpatialInertia<double>(1, Eigen::Vector3d::Zero(),
                                        UnitInertia<double>(1, 1, 1)));
   (*plant)->RegisterCollisionGeometry(
-      sphere, Isometry3<double>::Identity(), geometry::Sphere(radius), "sphere",
+      sphere, RigidTransformd::Identity(), geometry::Sphere(radius), "sphere",
       CoulombFriction<double>(0.9, 0.8), *scene_graph);
 
   (*plant)->Finalize();
