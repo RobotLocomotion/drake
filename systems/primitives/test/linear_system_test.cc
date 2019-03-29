@@ -411,27 +411,23 @@ GTEST_TEST(TestLinearize, LinearizingOnAbstractPortThrows) {
       "abstract ports is not supported.");
 }
 
-// Test that linearizing a system with mixed (vector and abstract) inputs does
-// not throw an exception when the abstract input port is unconnected and
-// does throw an exception when the abstract input port is connected.
+// Test linearizing a system with mixed (vector and abstract) inputs.
 GTEST_TEST(TestLinearize, LinearizingWithMixedInputs) {
   EmptyStateSystemWithMixedInputs<double> system;
   auto context = system.CreateDefaultContext();
 
   // First check without the vector-valued input port connected.
   DRAKE_EXPECT_THROWS_MESSAGE(Linearize(system, *context), std::logic_error,
-      "Vector-valued input port.*must be either fixed or connected to "
-          "the output of another system.");
+      "InputPort.*is not connected");
 
-  // Now check with the vector-valued input port connect but without the
-  // abstract input port connected.
+  // Now check with the vector-valued input port connected but the abstract
+  // input port not yet connected.
   context->FixInputPort(0, Vector1<double>(0.0));
   EXPECT_NO_THROW(Linearize(system, *context));
 
   // Now check with the abstract input port connected.
   context->FixInputPort(1, Value<std::vector<double>>());
-  DRAKE_EXPECT_THROWS_MESSAGE(Linearize(system, *context), std::logic_error,
-      "Unable to linearize system with connected abstract port.*");
+  EXPECT_NO_THROW(Linearize(system, *context));
 }
 
 // Test that Linearize throws when called on a discrete but non-periodic system.
