@@ -44,7 +44,7 @@ class Intersection : public api::Intersection {
   const optional<api::rules::RightOfWayPhaseProvider::Result> Phase() const;
 
   /// Sets the current phase.
-  void SetPhase(const api::rules::RightOfWayPhase::Id& phase_id);
+  void SetPhase(const api::rules::Phase::Id& phase_id);
 
   // TODO(liang.fok) Add method for obtaining the current bulb states
 

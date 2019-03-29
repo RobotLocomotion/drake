@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/automotive/maliput/api/rules/right_of_way_phase.h"
+#include "drake/automotive/maliput/api/rules/phase.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
 #include "drake/automotive/maliput/api/rules/traffic_lights.h"
 #include "drake/automotive/maliput/api/test_utilities/rules_test_utilities.h"
@@ -18,8 +18,8 @@ namespace api {
 namespace rules {
 namespace {
 
-RightOfWayPhase CreateFullPhase(const RightOfWayPhase::Id& id) {
-  return RightOfWayPhase{
+Phase CreateFullPhase(const Phase::Id& id) {
+  return Phase{
       id,
       {{RightOfWayRule::Id("rule_a"), RightOfWayRule::State::Id("GO")},
        {RightOfWayRule::Id("rule_b"), RightOfWayRule::State::Id("STOP")}},
@@ -29,49 +29,47 @@ RightOfWayPhase CreateFullPhase(const RightOfWayPhase::Id& id) {
         {Bulb::Id("rule_b_red"), BulbState::kOn}}}};
 }
 
-RightOfWayPhase CreatePhaseWithMissingRuleStates(
-    const RightOfWayPhase::Id& id) {
-  const RightOfWayPhase mock_phase = CreateFullPhase(id);
+Phase CreatePhaseWithMissingRuleStates(const Phase::Id& id) {
+  const Phase mock_phase = CreateFullPhase(id);
   RuleStates rule_states = mock_phase.rule_states();
   rule_states.erase(rule_states.begin());
-  return RightOfWayPhase(id, rule_states, mock_phase.bulb_states());
+  return Phase(id, rule_states, mock_phase.bulb_states());
 }
 
-RightOfWayPhase CreatePhaseWithMissingBulbStates(
-    const RightOfWayPhase::Id& id) {
-  const RightOfWayPhase mock_phase = CreateFullPhase(id);
+Phase CreatePhaseWithMissingBulbStates(const Phase::Id& id) {
+  const Phase mock_phase = CreateFullPhase(id);
   BulbStates bulb_states = *mock_phase.bulb_states();
   bulb_states.erase(bulb_states.begin());
-  return RightOfWayPhase(id, mock_phase.rule_states(), bulb_states);
+  return Phase(id, mock_phase.rule_states(), bulb_states);
 }
 
 GTEST_TEST(PhaseRingTest, Constructor) {
   EXPECT_NO_THROW(
       PhaseRing(PhaseRing::Id("dut"),
-                {CreateFullPhase(RightOfWayPhase::Id("my_phase_1")),
-                 CreateFullPhase(RightOfWayPhase::Id("my_phase_2"))}));
+                {CreateFullPhase(Phase::Id("my_phase_1")),
+                 CreateFullPhase(Phase::Id("my_phase_2"))}));
 
   // No phases.
   EXPECT_THROW(PhaseRing(PhaseRing::Id("dut"), {}), std::exception);
 
   // Duplicate phases.
   EXPECT_THROW(PhaseRing(PhaseRing::Id("dut"),
-                         {CreateFullPhase(RightOfWayPhase::Id("my_phase")),
-                          CreateFullPhase(RightOfWayPhase::Id("my_phase"))}),
+                         {CreateFullPhase(Phase::Id("my_phase")),
+                          CreateFullPhase(Phase::Id("my_phase"))}),
                std::exception);
 
   // Phases that differ in RightOfWayRule coverage.
   EXPECT_THROW(PhaseRing(PhaseRing::Id("dut"),
-                         {CreateFullPhase(RightOfWayPhase::Id("full")),
+                         {CreateFullPhase(Phase::Id("full")),
                           CreatePhaseWithMissingRuleStates(
-                              RightOfWayPhase::Id("missing_rules"))}),
+                              Phase::Id("missing_rules"))}),
                std::exception);
 
   // Phases that differ in bulb state coverage.
   EXPECT_THROW(PhaseRing(PhaseRing::Id("dut"),
-                         {CreateFullPhase(RightOfWayPhase::Id("full")),
+                         {CreateFullPhase(Phase::Id("full")),
                           CreatePhaseWithMissingBulbStates(
-                              RightOfWayPhase::Id("missing_rules"))}),
+                              Phase::Id("missing_rules"))}),
                std::exception);
 }
 

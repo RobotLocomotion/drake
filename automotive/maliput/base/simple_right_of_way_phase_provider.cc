@@ -11,7 +11,7 @@ using api::rules::RightOfWayPhaseProvider;
 
 void SimpleRightOfWayPhaseProvider::AddPhaseRing(
     const api::rules::PhaseRing::Id& id,
-    const api::rules::RightOfWayPhase::Id& initial_phase) {
+    const api::rules::Phase::Id& initial_phase) {
   auto result = phases_.emplace(id, initial_phase);
   if (!result.second) {
      throw std::logic_error(
@@ -22,7 +22,7 @@ void SimpleRightOfWayPhaseProvider::AddPhaseRing(
 
 void SimpleRightOfWayPhaseProvider::SetPhase(
     const api::rules::PhaseRing::Id& id,
-    const api::rules::RightOfWayPhase::Id& phase) {
+    const api::rules::Phase::Id& phase) {
   phases_.at(id) = phase;
 }
 

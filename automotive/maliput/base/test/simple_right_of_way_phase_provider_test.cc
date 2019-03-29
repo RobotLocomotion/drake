@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/automotive/maliput/api/rules/phase.h"
 #include "drake/automotive/maliput/api/rules/phase_ring.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_phase_provider.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
 #include "drake/common/drake_optional.h"
@@ -14,9 +14,9 @@ namespace drake {
 namespace maliput {
 namespace {
 
+using api::rules::Phase;
 using api::rules::PhaseRing;
 using api::rules::RightOfWayRule;
-using api::rules::RightOfWayPhase;
 using api::rules::RightOfWayPhaseProvider;
 using api::rules::RuleStates;
 
@@ -26,8 +26,8 @@ struct SimpleRightOfWayPhaseProviderTest : public ::testing::Test {
       : phase_id_1("foo"), phase_id_2("bar"), phase_ring_id("bar") {
   }
 
-  const RightOfWayPhase::Id phase_id_1;
-  const RightOfWayPhase::Id phase_id_2;
+  const Phase::Id phase_id_1;
+  const Phase::Id phase_id_2;
   const PhaseRing::Id phase_ring_id;
   SimpleRightOfWayPhaseProvider dut;
 };
@@ -60,9 +60,9 @@ GTEST_TEST(PhaseRingTest, InvalidPhases) {
                                    RightOfWayRule::State::Id("2")}};
   const RuleStates rule_states_2 {{RightOfWayRule::Id("a"),
                                    RightOfWayRule::State::Id("1")}};
-  RightOfWayPhase phase_1(RightOfWayPhase::Id("bar"), rule_states_1);
-  RightOfWayPhase phase_2(RightOfWayPhase::Id("baz"), rule_states_2);
-  const std::vector<RightOfWayPhase> phases{phase_1, phase_2};
+  Phase phase_1(Phase::Id("bar"), rule_states_1);
+  Phase phase_2(Phase::Id("baz"), rule_states_2);
+  const std::vector<Phase> phases{phase_1, phase_2};
   EXPECT_THROW(PhaseRing(PhaseRing::Id("foo"), phases), std::exception);
 }
 

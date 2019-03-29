@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/automotive/maliput/api/rules/phase.h"
 #include "drake/automotive/maliput/api/rules/phase_ring.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
 #include "drake/common/drake_optional.h"
 
@@ -13,15 +13,15 @@ namespace drake {
 namespace maliput {
 namespace {
 
+using api::rules::Phase;
 using api::rules::PhaseRing;
 using api::rules::RightOfWayRule;
-using api::rules::RightOfWayPhase;
 
 struct SimpleRightOfWayPhaseBookTest : public ::testing::Test {
   SimpleRightOfWayPhaseBookTest()
       : rule_id_a("rule a"),
         rule_id_b("rule b"),
-        phase(RightOfWayPhase::Id("phase"),
+        phase(Phase::Id("phase"),
               {{rule_id_a, RightOfWayRule::State::Id("a")},
                {rule_id_b, RightOfWayRule::State::Id("b")}}),
         ring_id("ring"),
@@ -29,7 +29,7 @@ struct SimpleRightOfWayPhaseBookTest : public ::testing::Test {
 
   const RightOfWayRule::Id rule_id_a;
   const RightOfWayRule::Id rule_id_b;
-  const RightOfWayPhase phase;
+  const Phase phase;
   const PhaseRing::Id ring_id;
   const PhaseRing ring;
 };
@@ -63,8 +63,8 @@ TEST_F(SimpleRightOfWayPhaseBookTest, RingWithSameId) {
   SimpleRightOfWayPhaseBook dut;
   dut.AddPhaseRing(ring);
   const RightOfWayRule::Id rule_id_c("rule c");
-  const RightOfWayPhase different_phase(
-      RightOfWayPhase::Id("different phase with different rules"),
+  const Phase different_phase(
+      Phase::Id("different phase with different rules"),
       {{rule_id_c, RightOfWayRule::State::Id("c")}});
   const PhaseRing ring_with_same_id(ring_id, {different_phase});
   EXPECT_THROW(dut.AddPhaseRing(ring_with_same_id), std::logic_error);
@@ -76,8 +76,8 @@ TEST_F(SimpleRightOfWayPhaseBookTest, RingWithSameId) {
 TEST_F(SimpleRightOfWayPhaseBookTest, RingWithOverlappingRule) {
   SimpleRightOfWayPhaseBook dut;
   dut.AddPhaseRing(ring);
-  const RightOfWayPhase phase_with_overlapping_rule(
-      RightOfWayPhase::Id("different phase with overlapping rules"),
+  const Phase phase_with_overlapping_rule(
+      Phase::Id("different phase with overlapping rules"),
       {{rule_id_a, RightOfWayRule::State::Id("a")}});
   const PhaseRing ring_with_overlapping_rule(PhaseRing::Id("unique phase ID"),
                                              {phase_with_overlapping_rule});

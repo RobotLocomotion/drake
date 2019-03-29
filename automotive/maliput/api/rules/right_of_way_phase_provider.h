@@ -1,7 +1,7 @@
 #pragma once
 
+#include "drake/automotive/maliput/api/rules/phase.h"
 #include "drake/automotive/maliput/api/rules/phase_ring.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
 
@@ -10,8 +10,8 @@ namespace maliput {
 namespace api {
 namespace rules {
 
-/// Abstract interface for providing the dynamic states (RightOfWayPhase::Id) of
-/// a collection of PhaseRings.
+/// Abstract interface for providing the dynamic states (Phase::Id) of a
+/// collection of PhaseRings.
 class RightOfWayPhaseProvider {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RightOfWayPhaseProvider);
@@ -23,13 +23,13 @@ class RightOfWayPhaseProvider {
     /// Information about a subsequent phase.
     struct Next {
       /// ID of the next phase.
-      RightOfWayPhase::Id id;
+      Phase::Id id;
       /// If known, estimated time until the transition to the next phase.
       drake::optional<double> duration_until;
     };
 
     /// ID of the current phase.
-    RightOfWayPhase::Id id;
+    Phase::Id id;
     /// Information about the upcoming phase if a phase transition is
     /// anticipated.
     drake::optional<Next> next;
