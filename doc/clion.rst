@@ -36,10 +36,10 @@ Many versions of the above (Bazel / CLion / Bazel plugin) are *not* compatible
 with each other.  We strongly suggest using only the versions shown above, when
 working with Drake.
 
-At the time of this writing, CLion 2018.3.4 will pick Bazel plugin 2019.03.05.0.1,
-which has a problem with ``Run > Debug...`` (``Run > Run...`` is fine). We have
-to downgrade Bazel plugin to 2019.01.14.0.5. See `Downgrading the Bazel
-Plugin`_.
+At the time of this writing, CLion 2018.3.4 will pick Bazel plugin
+2019.03.05.0.1, which has a problem with ``Run > Debug...``
+(``Run > Run...`` is fine). We have to downgrade Bazel plugin to
+2019.01.14.0.5. See `Downgrading the Bazel Plugin`_.
 
 For developers on macOS, see the :ref:`macOS` details.
 
@@ -356,7 +356,7 @@ Building the drake addenda lint tool:
 macOS support
 =============
 
-Google's Bazel plug-in for CLion does not officially support macOS, per
+Google's Bazel plugin for CLion does not officially support macOS, per
 `bazelbuild/intellij#109 <https://github.com/bazelbuild/intellij/issues/109>`_.
 However, on a best-effort basis, we will document here any tips that Drake
 developers have discovered to fix the compatibility problems.
