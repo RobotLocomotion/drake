@@ -18,6 +18,7 @@ using Eigen::VectorXcd;
 namespace {
 const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 bool is_zero(double x, double eps = 1e-10) { return std::fabs(x) < eps; }
+// TODO(weiqiao.han): figure out what the tolerance ε ought to be.
 }  // namespace
 
 MatrixXd RealContinuousLyapunovEquation(const Eigen::Ref<const MatrixXd>& A,

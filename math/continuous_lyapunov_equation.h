@@ -45,8 +45,6 @@ namespace math {
  * λ̅ⱼ = 0, ∀ i,j; (2) if A is a 1-by-1 zero matrix; (3) if A's trace or
  * determinant is 0 when A is a 2-by-2 matrix.
  *
- * TODO(weiqiao.han): figure out what the tolerance ε ought to be.
- *
  * [1] Bartels, R.H. and G.W. Stewart, "Solution of the Matrix Equation AX + XB
  * = C," Comm. of the ACM, Vol. 15, No. 9, 1972.
  *
