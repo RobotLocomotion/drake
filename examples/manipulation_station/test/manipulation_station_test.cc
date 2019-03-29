@@ -351,18 +351,18 @@ GTEST_TEST(ManipulationStationTest, RegisterRgbdCameraTest) {
     geometry::dev::render::DepthCameraProperties camera_properties(
         640, 480, M_PI_4, dut.default_renderer_name(), 0.1, 2.0);
 
-    math::RigidTransform<double> X_WF0(Eigen::Vector3d(0, 0, 0.2));
-    math::RigidTransform<double> X_F0C0(Eigen::Vector3d(0.3, 0.2, 0.0));
+    Eigen::Translation3d X_WF0(0, 0, 0.2);
+    Eigen::Translation3d X_F0C0(0.3, 0.2, 0.0);
     const auto& frame0 =
         plant.AddFrame(std::make_unique<multibody::FixedOffsetFrame<double>>(
-            "frame0", plant.world_frame(), X_WF0.GetAsIsometry3()));
+            "frame0", plant.world_frame(), X_WF0));
     dut.RegisterRgbdCamera("camera0", frame0, X_F0C0, camera_properties);
 
-    math::RigidTransform<double> X_F0F1(Eigen::Vector3d(0, -0.1, 0.2));
-    math::RigidTransform<double> X_F1C1(Eigen::Vector3d(-0.2, 0.2, 0.33));
+    Eigen::Translation3d X_F0F1(0, -0.1, 0.2);
+    Eigen::Translation3d X_F1C1(-0.2, 0.2, 0.33);
     const auto& frame1 =
         plant.AddFrame(std::make_unique<multibody::FixedOffsetFrame<double>>(
-            "frame1", frame0, X_F0F1.GetAsIsometry3()));
+            "frame1", frame0, X_F0F1));
     dut.RegisterRgbdCamera("camera1", frame1, X_F1C1, camera_properties);
 
     std::map<std::string, math::RigidTransform<double>> camera_poses =

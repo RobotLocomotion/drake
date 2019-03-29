@@ -124,6 +124,12 @@ class RigidTransform {
   /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
   explicit RigidTransform(const Vector3<T>& p) { set_translation(p); }
 
+  /// Constructs a %RigidTransform with an identity RotationMatrix and a given
+  /// position vector 'p'.
+  /// @param[in] p position vector from frame A's origin to frame B's origin,
+  /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
+  RigidTransform(const Eigen::Translation<T, 3>& p) { set_translation(p.translation()); }
+
   /// Constructs a %RigidTransform from an Eigen Isometry3.
   /// @param[in] pose Isometry3 that contains an allegedly valid rotation matrix
   /// `R_AB` and also contains a position vector `p_AoBo_A` from frame A's
