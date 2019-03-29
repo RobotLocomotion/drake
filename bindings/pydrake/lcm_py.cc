@@ -7,6 +7,7 @@
 #include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/common/unused.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcm/drake_mock_lcm.h"
@@ -38,8 +39,10 @@ PYBIND11_MODULE(lcm, m) {
               self->Publish(channel, str.data(), str.size(), time_sec);
             },
             py::arg("channel"), py::arg("buffer"),
-            py::arg("time_sec") = py::none(),
-            doc.DrakeLcmInterface.Publish.doc);
+            py::arg("time_sec") = py::none(), doc.DrakeLcmInterface.Publish.doc)
+        .def("HandleSubscriptions", &DrakeLcmInterface::HandleSubscriptions,
+            py::arg("timeout_millis"),
+            doc.DrakeLcmInterface.HandleSubscriptions.doc);
   }
 
   {

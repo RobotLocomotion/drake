@@ -142,8 +142,6 @@ drake_cc_binary(
         ":image_to_lcm_image_array_t",
         ":lcm_image_array_to_images",
         "//common:text_logging_gflags",
-        "//common:unused",
-        "//lcm",
         "//systems/analysis:simulator",
         "//systems/lcm:lcm_pubsub_system",
         "@gflags",

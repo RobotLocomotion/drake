@@ -60,12 +60,8 @@ void TestSubscriber(drake::lcm::DrakeMockLcm* lcm,
   }
   message.timestamp = kTimestamp;
 
-  std::vector<uint8_t> buffer(message.getEncodedSize());
-  EXPECT_EQ(message.encode(&buffer[0], 0, message.getEncodedSize()),
-            message.getEncodedSize());
-
-  lcm->InduceSubscriberCallback(dut->get_channel_name(), &buffer[0],
-                                message.getEncodedSize());
+  Publish(lcm, dut->get_channel_name(), message);
+  lcm->HandleSubscriptions(0);
 
   EvalOutputHelper(*dut, context.get(), output.get());
 
@@ -148,10 +144,8 @@ struct SampleData {
 
   void MockPublish(
       drake::lcm::DrakeMockLcm* lcm, const std::string& channel_name) const {
-    const int num_bytes = value.getEncodedSize();
-    std::vector<uint8_t> buffer(num_bytes);
-    value.encode(buffer.data(), 0, num_bytes);
-    lcm->InduceSubscriberCallback(channel_name, buffer.data(), num_bytes);
+    Publish(lcm, channel_name, value);
+    lcm->HandleSubscriptions(0);
   }
 };
 
