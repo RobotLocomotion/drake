@@ -630,8 +630,11 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       .def("GetAllConstraints", &MathematicalProgram::GetAllConstraints,
           doc.MathematicalProgram.GetAllConstraints.doc)
       .def("FindDecisionVariableIndex",
-          &MathematicalProgram::FindDecisionVariableIndex,
+          &MathematicalProgram::FindDecisionVariableIndex, py::arg("var"),
           doc.MathematicalProgram.FindDecisionVariableIndex.doc)
+      .def("FindDecisionVariableIndices",
+          &MathematicalProgram::FindDecisionVariableIndices, py::arg("vars"),
+          doc.MathematicalProgram.FindDecisionVariableIndices.doc)
       .def("num_vars", &MathematicalProgram::num_vars,
           doc.MathematicalProgram.num_vars.doc)
       .def("decision_variables", &MathematicalProgram::decision_variables,
@@ -691,10 +694,26 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           },
           py::arg("binding"), py::arg("prog_var_vals"),
           doc.MathematicalProgram.EvalBinding.doc)
+      .def("EvalBinding",
+          [](const MathematicalProgram& prog,
+              const Binding<EvaluatorBase>& binding,
+              const VectorX<AutoDiffXd>& prog_var_vals) {
+            return prog.EvalBinding(binding, prog_var_vals);
+          },
+          py::arg("binding"), py::arg("prog_var_vals"),
+          doc.MathematicalProgram.EvalBinding.doc)
       .def("EvalBindings",
           [](const MathematicalProgram& prog,
               const std::vector<Binding<EvaluatorBase>>& binding,
               const VectorX<double>& prog_var_vals) {
+            return prog.EvalBindings(binding, prog_var_vals);
+          },
+          py::arg("bindings"), py::arg("prog_var_vals"),
+          doc.MathematicalProgram.EvalBindings.doc)
+      .def("EvalBindings",
+          [](const MathematicalProgram& prog,
+              const std::vector<Binding<EvaluatorBase>>& binding,
+              const VectorX<AutoDiffXd>& prog_var_vals) {
             return prog.EvalBindings(binding, prog_var_vals);
           },
           py::arg("bindings"), py::arg("prog_var_vals"),
