@@ -27,10 +27,10 @@ DEFINE_double(target_realtime_rate, 1.0,
               "This is documented in Simulator::set_target_realtime_rate().");
 DEFINE_double(simulation_time, 2.0, "Simulation duration in seconds");
 DEFINE_double(time_step, 1.0E-3,
-              "If positive, the period (in seconds) of the discrete updates "
-              "for the plant modeled as a discrete system.  If time_step = 0, "
-              "the plant is modeled as a continuous system and no contact "
-              "forces are displayed.  Note: time_step must be >= 0.");
+              "If time_step > 0, the fixed-time step period (in seconds) of "
+              "discrete updates for the plant (modeled as a discrete system). "
+              "If time_step = 0, the plant is modeled as a continuous system "
+              "and no contact forces are displayed.  time_step must be >= 0.");
 DEFINE_double(integration_accuracy, 1.0E-6,
               "When time_step = 0 (plant is modeled as a continuous system), "
               "this is the desired integration accuracy.  This value is not "
@@ -38,18 +38,19 @@ DEFINE_double(integration_accuracy, 1.0E-6,
 DEFINE_double(penetration_allowance, 1.0E-5, "Allowable penetration (meters).");
 DEFINE_double(stiction_tolerance, 1.0E-5,
               "Allowable drift speed during stiction (m/s).");
-DEFINE_double(slope_degrees, 15.0, "Inclined-plane angle (degrees).");
+DEFINE_double(inclined_plane_angle_degrees, 15.0,
+              "Inclined-plane angle (degrees), i.e., angle from Wx to Ax.");
 DEFINE_double(inclined_plane_coef_static_friction, 0.3,
               "Inclined-plane's coefficient of static friction (no units).");
 DEFINE_double(inclined_plane_coef_kinetic_friction, 0.3,
               "Inclined-plane's coefficient of kinetic friction (no units).  "
-              "When time_step > 0, this value is ignored since only the "
+              "When time_step > 0, this value is ignored.  Only the "
               "coefficient of static friction is used in fixed-time step.");
 DEFINE_double(bodyB_coef_static_friction, 0.3,
               "Body B's coefficient of static friction (no units).");
 DEFINE_double(bodyB_coef_kinetic_friction, 0.3,
               "Body B's coefficient of kinetic friction (no units).  "
-              "When time_step > 0, this value is ignored since only the "
+              "When time_step > 0, this value is ignored.  Only the "
               "coefficient of static friction is used in fixed-time step.");
 DEFINE_bool(is_inclined_plane_half_space, true,
             "Is inclined-plane a half-space (true) or box (false).");
@@ -68,7 +69,8 @@ int do_main() {
   // Set constants that are relevant whether body B is a sphere or block.
   const double massB = 0.1;       // Body B's mass (kg).
   const double gravity = 9.8;     // Earth's gravitational acceleration (m/s^2).
-  const double slope_radians = FLAGS_slope_degrees / 180 * M_PI;
+  const double inclined_plane_angle =
+      FLAGS_inclined_plane_angle_degrees / 180 * M_PI;
 
   // Information on how coefficients of friction are used in the file README.md
   // (which is in the folder associated with this example).
@@ -83,9 +85,10 @@ int do_main() {
     const double LAx = 20 * radiusB;  // Inclined-plane length in Ax direction.
     const double LAy = 10 * radiusB;  // Inclined-plane length in Ay direction.
     const double LAz = radiusB;       // Inclined-plane length in Az direction.
-    benchmarks::inclined_plane::AddInclinedPlaneWithSpherePlant(
-        gravity, slope_radians,
-        FLAGS_is_inclined_plane_half_space, LAx, LAy, LAz,
+    const Vector3<double> inclined_plane_dimensions(LAx, LAy, LAz);
+    benchmarks::inclined_plane::AddInclinedPlaneWithSphereToPlant(
+        gravity, inclined_plane_angle,
+        FLAGS_is_inclined_plane_half_space, inclined_plane_dimensions,
         radiusB, massB,
         coef_friction_inclined_plane, coef_friction_bodyB, &plant);
   } else if (FLAGS_bodyB_type == "block" ||
@@ -99,10 +102,12 @@ int do_main() {
     const double LAx = 8 * LBx;  // Inclined-plane A's length in Ax direction.
     const double LAy = 8 * LBy;  // Inclined-plane A's length in Ay direction.
     const double LAz = 0.04;     // Inclined-plane A's length in Az direction.
-    benchmarks::inclined_plane::AddInclinedPlaneWithBlockPlant(
-        gravity, slope_radians,
-        FLAGS_is_inclined_plane_half_space, LAx, LAy, LAz,
-        LBx, LBy, LBz, massB,
+    const Vector3<double> inclined_plane_dimensions(LAx, LAy, LAz);
+    const Vector3<double> block_dimensions(LBx, LBy, LBz);
+    benchmarks::inclined_plane::AddInclinedPlaneWithBlockToPlant(
+        gravity, inclined_plane_angle,
+        FLAGS_is_inclined_plane_half_space, inclined_plane_dimensions,
+        block_dimensions, massB,
         coef_friction_inclined_plane, coef_friction_bodyB,
         is_bodyB_block_with_4Spheres, &plant);
   } else {
@@ -112,9 +117,7 @@ int do_main() {
   }
 
   plant.Finalize();
-
-  // Set allowable penetration (in meters) for body B to inclined-plane.
-  plant.set_penetration_allowance(FLAGS_penetration_allowance);
+  plant.set_penetration_allowance(FLAGS_penetration_allowance);  // (meters).
 
   // Set the speed tolerance (m/s) for the underlying Stribeck friction model
   // (the allowable drift speed during stiction).  For two points in contact,
@@ -140,13 +143,14 @@ int do_main() {
   diagram->SetDefaultContext(diagram_context.get());
   systems::Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
+
+  // Set the default initial configuration and motion of body B in World W.
+  // R_WB = 3x3 identity matrix (B's initial rotation matrix in W),
+  // p_Wo_Bo = [0; 0; 0]  (position from Wo (World origin) to Bo (B's origin)),
+  // p_Bo_Bcm = [0; 0; 0] (position from Bo to Bcm (B's center of mass)),
+  // B is stationary in world (B's velocity and angular velocity in W are zero).
   plant.SetDefaultContext(&plant_context);
 
-  // The default initial configuration and motion of body B in World W are:
-  // R_WB (B's initial rotation matrix in W) is 3x3 identity matrix,
-  // p_Wo_Bcm [position from Wo (World origin) to Bcm (B's center of mass)] and
-  // p_Wo_Bo  [position from Wo to Bo (B's origin)] is zero vector [0; 0; 0],
-  // B is stationary in world (B's velocity and angular velocity in W are zero).
   // Overwrite B's default initial position so it is above the inclined-plane.
   const drake::multibody::Body<double>& bodyB = plant.GetBodyByName("BodyB");
   const Vector3<double> p_WoBo_W(-1.0, 0, 1.2);
@@ -179,8 +183,8 @@ int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
       "\nSimulation of a body (e.g., sphere or block) on an inclined-plane."
       "\nThe type of body is user-selected and may slip or stick (roll)."
-      "\nInformation on how to build, run, and visualize this example and how "
-      "\nto use command-line arguments is in the file README.md "
+      "\nInformation on how to build, run, and visualize this example and how"
+      "\nto use command-line arguments is in the file README.md"
       "\n(which is in the folder associated with this example).\n");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   drake::logging::HandleSpdlogGflags();

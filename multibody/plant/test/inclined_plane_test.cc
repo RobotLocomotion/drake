@@ -25,28 +25,28 @@ using systems::Simulator;
 namespace multibody {
 namespace {
 
+using math::RigidTransform;
+using math::RotationMatrix;
+
 // This parameterized fixture allows us to run inclined planes tests using
 // either a continuous plant model or a discrete plant model.
 class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
  public:
   void SetUp() override {
-    // If "true" the plant is modeled as a discrete system with periodic
-    // updates.
+    // If "true", the plant is a discrete system with a fixed-step periodic
+    // discrete update, otherwise the plant is modeled as a continuous system.
     time_stepping_ = GetParam();
 
-    // The period of the periodic updates for the discrete plant model or zero
-    // when the plant is modeled as a continuous system.
+    // The period (in seconds) of the periodic updates for the discrete plant
+    // model or zero when the plant is modeled as a continuous system.
     time_step_ = time_stepping_ ? 1.0e-3 : 0.0;
 
     // Contact parameters. Results converge to the analytical solution as the
     // penetration allowance and the stiction tolerance go to zero.
     // Since the discrete system uses an implicit scheme, we can use much
     // tighter contact parameters than those used with a continuous plant model.
-
-    // The penetration allowance in meters.
-    penetration_allowance_ = time_stepping_ ? 1.0e-6 : 1.0e-3;
-    // The stiction tolerance in meters per second.
-    stiction_tolerance_ = time_stepping_ ? 1.0e-5 : 1.0e-3;
+    penetration_allowance_ = time_stepping_ ? 1.0e-6 : 1.0e-3;  // (meters)
+    stiction_tolerance_ = time_stepping_ ? 1.0e-5 : 1.0e-3;     // (m/s)
 
     // Relative tolerance (unitless) used to verify the numerically computed
     // results against the analytical solution.
@@ -65,8 +65,8 @@ class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
   double relative_tolerance_{1.0e-3};  // dimensionless.
 };
 
-// This test creates a simple multibody model of a sphere B rolling down an
-// inclined-plane A. After simulating the model for a given length of time, this
+// This test creates a multibody model of a uniform-density sphere B rolling
+// down an inclined-plane A.  After simulating for a given length of time, this
 // test verifies the numerical solution against analytical results obtained from
 // an energy conservation analysis.
 TEST_P(InclinedPlaneTest, RollingSphereTest) {
@@ -83,7 +83,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   const double radius = 0.05;   // Rolling sphere radius, [m]
   const double mass = 0.1;      // Rolling sphere mass, [kg]
   const double gravity = 9.81;  // Acceleration of gravity, [m/s²]
-  const double slope_radians = 15.0 / 180 * M_PI;  // Inclined-plane slope.
+  const double inclined_plane_angle = 15.0 / 180 * M_PI;
   const bool is_inclined_plane_half_space = true;
   const double muS_inclined_plane = 1.0;  // Coefficient static friction.
   const double muK_inclined_plane = 0.5;  // Coefficient kinetic friction.
@@ -96,13 +96,13 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
 
   MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(
       &builder, std::make_unique<MultibodyPlant<double>>(time_step_));
-  benchmarks::inclined_plane::AddInclinedPlaneWithSpherePlant(
-    gravity, slope_radians, is_inclined_plane_half_space, 0, 0, 0, radius, mass,
-    coefficient_friction_inclined_plane, coefficient_friction_sphere, &plant);
+  benchmarks::inclined_plane::AddInclinedPlaneWithSphereToPlant(
+      gravity, inclined_plane_angle, is_inclined_plane_half_space, 0, 0, 0,
+      radius, mass, coefficient_friction_inclined_plane,
+      coefficient_friction_sphere, &plant);
 
   plant.Finalize();
-  // Set how much penetration (in meters) we are willing to accept.
-  plant.set_penetration_allowance(penetration_allowance_);
+  plant.set_penetration_allowance(penetration_allowance_);  // (in meters)
   plant.set_stiction_tolerance(stiction_tolerance_);
   const RigidBody<double>& ball = plant.GetRigidBodyByName("BodyB");
 
@@ -120,28 +120,25 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
-  // This will set a default initial condition with the sphere located at
-  // p_WBcm = (0; 0; 0) and zero spatial velocity.
+  // Set the default initial configuration and motion of body B in World W.
+  // R_WB = 3x3 identity matrix (B's initial rotation matrix in W),
+  // p_Wo_Bo = [0; 0; 0]  (position from Wo (World origin) to Bo (B's origin)),
+  // p_Bo_Bcm = [0; 0; 0] (position from Bo to Bcm (B's center of mass)),
+  // B is stationary in world (B's velocity and angular velocity in W are zero).
   plant.SetDefaultContext(&plant_context);
 
-  // The default initial configuration and motion of body B in World W are:
-  // R_WB (B's initial rotation matrix in W) is 3x3 identity matrix,
-  // p_Wo_Bcm [position from Wo (World origin) to Bcm (B's center of mass)] and
-  // p_Wo_Bo  [position from Wo to Bo (B's origin)] is zero vector [0; 0; 0],
-  // B is stationary in world (B's velocity and angular velocity in W are zero).
   // Overwrite B's default initial position so it contacts the inclined-plane A.
   const Vector3<double> p_WoBo_A_initial(0, 0, radius);
 
-  // Express p_WoBo_A in terms of Wx, Wy, Wz.  To that end, remember that
-  // the inclined-plane A is oriented by initially setting Ax=Wx, Ay=Wy, Az=Wz,
-  // and then subjecting A to a right-handed rotation in W about Ay=Wy, so that
-  // Ax is directed downhill.  Wz points locally upward (opposite gravity).
-  const math::RotationMatrix<double> R_WA =
-    math::RotationMatrix<double>::MakeYRotation(slope_radians);
+  // Express p_WoBo_A in terms of Wx, Wy, Wz so that the bottom-most point of
+  // sphere B is in contact with the top surface of inclined-plane A.
+  // Note: The direction of unit vectors Ax, Ay, Az relative to Wx, Wy, Wz is
+  // described in AddInclinedPlaneAndGravityToPlant().
+  const RotationMatrix<double> R_WA =
+    RotationMatrix<double>::MakeYRotation(inclined_plane_angle);
   const Vector3<double> p_WoBo_W_initial = R_WA * p_WoBo_A_initial;
-  const math::RigidTransform<double> X_WB_initial(p_WoBo_W_initial);
-  plant.SetFreeBodyPoseInWorldFrame(&plant_context, ball,
-    X_WB_initial.GetAsIsometry3());
+  const RigidTransform<double> X_WB_initial(p_WoBo_W_initial);
+  plant.SetFreeBodyPoseInWorldFrame(&plant_context, ball, X_WB_initial);
 
   Simulator<double> simulator(*diagram, std::move(diagram_context));
   IntegratorBase<double>* integrator = simulator.get_mutable_integrator();
@@ -154,9 +151,9 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   const SpatialVelocity<double>& V_WB =
       plant.EvalBodySpatialVelocityInWorld(plant_context, ball);
   const SpatialInertia<double> M_BBo_B = ball.default_spatial_inertia();
-  const math::RigidTransform<double> X_WB(
+  const RigidTransform<double> X_WB(
       plant.EvalBodyPoseInWorld(plant_context, ball));
-  const math::RotationMatrix<double>& R_WB = X_WB.rotation();
+  const RotationMatrix<double>& R_WB = X_WB.rotation();
   const SpatialInertia<double> M_BBo_W = M_BBo_B.ReExpress(R_WB);
   const double ke = 0.5 * V_WB.dot(M_BBo_W * V_WB);
   const double v = V_WB.translational().norm();
@@ -170,7 +167,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   const double h = h_initial - h_actual;                  // Positive number.
   const double pe_change = -mass * gravity * h;           // Negative number.
 
-  // Sphere's moment of inertia about is centroid is 2/5 * mass * radius^2,
+  // Sphere's moment of inertia about its centroid is 2/5 * mass * radius^2,
   // so the sphere's unit-mass inertia is 2/5 * radius^2
   const double G_Bcm = 0.4 * radius * radius;
 
@@ -197,9 +194,9 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   // kinetic energy is expected to be twice that in the velocities. Thus the
   // factor of two used below for the relative error in kinetic energy.
   const double delta_energy = ke + pe_change;
-  EXPECT_TRUE(std::abs(delta_energy) < ke * 2 * relative_tolerance_);
-  EXPECT_TRUE(std::abs(v - v_expected) < v_expected * relative_tolerance_);
-  EXPECT_TRUE(std::abs(wy - wy_expected) < wy_expected * relative_tolerance_);
+  EXPECT_NEAR(std::abs(delta_energy), ke * 2 * relative_tolerance_);
+  EXPECT_NEAR(std::abs(v - v_expected), v_expected * relative_tolerance_);
+  EXPECT_NEAR(std::abs(wy - wy_expected), wy_expected * relative_tolerance_);
 
   // Verify the value of the contact forces when using time stepping.
   if (time_stepping_) {
@@ -217,7 +214,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
     const double G_Bc = G_Bcm + radius * radius;
     // Analytical value of the friction force at the contact point.
     const double ft_expected = mass * gravity * (1.0 - radius * radius / G_Bc) *
-                               std::sin(slope_radians);
+                               std::sin(inclined_plane_angle);
     // The expected value of the moment due to friction applied to the sphere.
     const double friction_moment_expected = ft_expected * radius;
 

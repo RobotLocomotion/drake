@@ -27,7 +27,6 @@ drake_cc_library(
         "inclined_plane_plant.h",
     ],
     deps = [
-        "//geometry:scene_graph",
         "//multibody/plant",
     ],
 )
