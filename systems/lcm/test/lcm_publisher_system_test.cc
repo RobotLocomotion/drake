@@ -60,7 +60,7 @@ void TestPublisher(const std::string& channel_name, lcm::DrakeMockLcm* lcm,
   // Sets the timestamp within the context. This timestamp should be transmitted
   // by the LCM message.
   const double time = 1.41421356;
-  context->set_time(time);
+  context->SetTime(time);
 
   dut->Publish(*context.get());
 

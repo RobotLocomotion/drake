@@ -248,7 +248,7 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest, EvalTest) {
   Eigen::Vector2d x(1, 2);
 
   auto context = sys.CreateDefaultContext();
-  context->set_time(t);
+  context->SetTime(t);
   context->get_mutable_continuous_state_vector().SetFromVector(x);
   context->FixInputPort(0, BasicVector<double>::Make(42.0));
 
@@ -267,7 +267,7 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest, DiscreteEvalTest) {
   Eigen::Vector2d x(1, 2);
 
   auto context = sys.CreateDefaultContext();
-  context->set_time(t);
+  context->SetTime(t);
   context->get_mutable_discrete_state().get_mutable_vector().SetFromVector(x);
   context->FixInputPort(0, BasicVector<double>::Make(42.0));
 
@@ -300,7 +300,7 @@ GTEST_TEST(IllegalTimeVaryingAffineSystemTest, EvalDeathTest) {
   const double t = 2.5;
 
   auto context = sys.CreateDefaultContext();
-  context->set_time(t);
+  context->SetTime(t);
 
   auto derivatives = sys.AllocateTimeDerivatives();
   ASSERT_DEATH(sys.CalcTimeDerivatives(*context, derivatives.get()), "rows");
