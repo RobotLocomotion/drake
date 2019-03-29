@@ -504,7 +504,7 @@ PYBIND11_MODULE(plant, m) {
             overload_cast_explicit<const systems::OutputPort<T>&,
                 multibody::ModelInstanceIndex>(
                 &Class::get_generalized_contact_forces_output_port),
-            py_reference_internal,
+            py_reference_internal, py::arg("model_instance"),
             doc.MultibodyPlant.get_generalized_contact_forces_output_port.doc);
     // Property accessors.
     cls  // BR

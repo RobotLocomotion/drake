@@ -380,7 +380,7 @@ class TestPlant(unittest.TestCase):
             "drake/manipulation/models/" +
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
-        plant = MultibodyPlant()
+        plant = MultibodyPlant(time_step=2e-3)
         parser = Parser(plant)
         iiwa_model = parser.AddModelFromFile(
             file_name=iiwa_sdf_path, model_name='robot')
@@ -395,7 +395,8 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(
             plant.get_continuous_state_output_port(gripper_model), OutputPort)
         self.assertIsInstance(
-            plant.get_generalized_contact_forces_output_port(gripper_model),
+            plant.get_generalized_contact_forces_output_port(
+                model_instance=gripper_model),
             OutputPort)
 
     def test_model_instance_state_access(self):
