@@ -11,8 +11,11 @@ namespace drake {
 namespace lcm {
 
 /**
- * Maintains a thread that receives LCM messages and dispatches the messages to
- * the appropriate message handlers.
+ * (Advanced.)  Maintains a thread that receives LCM messages and dispatches
+ * the messages to the appropriate message handlers.
+ *
+ * @warning Almost no Drake uses of LCM should require a background thread.
+ * Please use DrakeLcmInterface::HandleSubscriptions() instead.
  */
 class LcmReceiveThread {
  public:
@@ -41,10 +44,10 @@ class LcmReceiveThread {
  private:
   // Loops waiting for LCM messages and dispatching them to the appropriate
   // subscriber message handlers when they arrive.
-  void LoopWithSelect();
+  void Looper();
 
   // Whether to stop lcm_thread_.
-  std::atomic<bool> stop_{false};
+  std::atomic_bool stop_{false};
 
   // A pointer to the LCM instance.
   ::lcm::LCM* const lcm_{nullptr};

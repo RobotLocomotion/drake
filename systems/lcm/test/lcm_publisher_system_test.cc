@@ -32,6 +32,8 @@ using drake::lcm::DrakeLcmInterface;
 using drake::lcm::DrakeMockLcm;
 using drake::lcm::DrakeLcm;
 
+using Subscriber = drake::lcm::Subscriber<lcmt_drake_signal>;
+
 void TestPublisher(const std::string& channel_name, lcm::DrakeMockLcm* lcm,
                    LcmPublisherSystem* dut) {
   EXPECT_EQ(dut->get_name(), "LcmPublisherSystem(" + channel_name + ")");
@@ -200,6 +202,7 @@ GTEST_TEST(LcmPublisherSystemTest, PublishTestUsingDictionary) {
 GTEST_TEST(LcmPublisherSystemTest, SerializerTest) {
   lcm::DrakeMockLcm lcm;
   const std::string channel_name = "channel_name";
+  lcm.EnableLoopBack();
 
   // The "device under test".
   auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name, &lcm);
@@ -215,21 +218,16 @@ GTEST_TEST(LcmPublisherSystemTest, SerializerTest) {
                         make_unique<Value<lcmt_drake_signal>>(sample_data));
 
   // Verifies that a correct message is published.
+  Subscriber sub(&lcm, channel_name);
   dut->Publish(*context.get());
-  const auto& bytes = lcm.get_last_published_message(channel_name);
-  drake::lcmt_drake_signal received_message{};
-  received_message.decode(bytes.data(), 0, bytes.size());
-  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received_message, sample_data));
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(sub.message(), sample_data));
 }
 
 // Tests that per-step publish generates the expected number of publishes.
 GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublish) {
   lcm::DrakeMockLcm lcm;
   const std::string channel_name = "channel_name";
-  int transmission_count = 0;
-  lcm.Subscribe(channel_name, [&transmission_count](const void*, int) {
-    ++transmission_count;
-  });
+  Subscriber sub(&lcm, channel_name);
   lcm.EnableLoopBack();
 
   // Instantiate the "device under test" in per-step publishing mode.
@@ -247,7 +245,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublish) {
   simulator.Initialize();
 
   // Check that a message was transmitted during initialization.
-  EXPECT_EQ(transmission_count, 1);
+  EXPECT_EQ(sub.count(), 1);
 
   // Ensure that the integrator takes at least a few steps.
   for (double time = 0; time < 1; time += 0.25)
@@ -255,7 +253,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublish) {
 
   // Check that we get exactly the number of publishes desired: one (at
   // initialization) plus another for each step.
-  EXPECT_EQ(transmission_count, 1 + simulator.get_num_steps_taken());
+  EXPECT_EQ(sub.count(), 1 + simulator.get_num_steps_taken());
 }
 
 // When constructed via a publish_triggers set, tests that per-step publish
@@ -263,10 +261,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublish) {
 GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublishTrigger) {
   lcm::DrakeMockLcm lcm;
   const std::string channel_name = "channel_name";
-  int transmission_count = 0;
-  lcm.Subscribe(channel_name, [&transmission_count](const void*, int) {
-    ++transmission_count;
-  });
+  Subscriber sub(&lcm, channel_name);
   lcm.EnableLoopBack();
 
   auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name,
@@ -284,7 +279,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublishTrigger) {
   simulator.Initialize();
 
   // Check that a message was transmitted during initialization.
-  EXPECT_EQ(transmission_count, 1);
+  EXPECT_EQ(sub.count(), 1);
 
   // Ensure that the integrator takes at least a few steps.
   // Since there is no internal continuous state for the system, the integrator
@@ -294,7 +289,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublishTrigger) {
 
   // Check that we get exactly the number of publishes desired: one (at
   // initialization) plus another for each step.
-  EXPECT_EQ(transmission_count, 1 + simulator.get_num_steps_taken());
+  EXPECT_EQ(sub.count(), 1 + simulator.get_num_steps_taken());
 }
 
 // When constructed via a publish_triggers set, tests that forced publish
@@ -302,11 +297,8 @@ GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublishTrigger) {
 GTEST_TEST(LcmPublisherSystemTest, TestForcedPublishTrigger) {
   lcm::DrakeMockLcm lcm;
   const std::string channel_name = "channel_name";
-  int transmission_count = 0;
   int force_publish_count = 3;
-  lcm.Subscribe(channel_name, [&transmission_count](const void*, int) {
-    ++transmission_count;
-  });
+  Subscriber sub(&lcm, channel_name);
   lcm.EnableLoopBack();
 
   auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name,
@@ -322,7 +314,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestForcedPublishTrigger) {
   }
 
   // Check that we get exactly the number of publishes desired.
-  EXPECT_EQ(transmission_count, force_publish_count);
+  EXPECT_EQ(sub.count(), force_publish_count);
 }
 
 // Tests that the published LCM message has the expected timestamps.
@@ -331,10 +323,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
 
   lcm::DrakeMockLcm lcm;
   const std::string channel_name = "channel_name";
-  int transmission_count = 0;
-  lcm.Subscribe(channel_name, [&transmission_count](const void*, int) {
-    ++transmission_count;
-  });
+  Subscriber sub(&lcm, channel_name);
   lcm.EnableLoopBack();
 
   // Instantiates the "device under test".
@@ -353,7 +342,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
   simulator.Initialize();
 
   // Check that a message was transmitted during initialization.
-  EXPECT_EQ(transmission_count, 1);
+  EXPECT_EQ(sub.count(), 1);
 
   for (double time = 0; time < 4; time += 0.01) {
     simulator.AdvanceTo(time);
@@ -361,13 +350,12 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
     // Note that the expected time is in milliseconds.
     const double expected_time =
         std::floor(time / kPublishPeriod) * kPublishPeriod * 1000;
-    EXPECT_EQ(lcm.DecodeLastPublishedMessageAs<lcmt_drake_signal>(
-      channel_name).timestamp, expected_time);
+    EXPECT_EQ(sub.message().timestamp, expected_time);
   }
 
   // Check that we get the expected number of messages: one at initialization
   // plus two from periodic publishing.
-  EXPECT_EQ(transmission_count, 3);
+  EXPECT_EQ(sub.count(), 3);
 }
 
 // When constructed via a publish_triggers set, tests that periodic publishing
@@ -377,10 +365,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodTrigger) {
 
   lcm::DrakeMockLcm lcm;
   const std::string channel_name = "channel_name";
-  int transmission_count = 0;
-  lcm.Subscribe(channel_name, [&transmission_count](const void*, int) {
-    ++transmission_count;
-  });
+  Subscriber sub(&lcm, channel_name);
   lcm.EnableLoopBack();
 
   // Instantiates the "device under test".
@@ -399,7 +384,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodTrigger) {
   simulator.Initialize();
 
   // Check that a message was transmitted during initialization.
-  EXPECT_EQ(transmission_count, 1);
+  EXPECT_EQ(sub.count(), 1);
 
   for (double time = 0.0; time < 4; time += 0.01) {
     simulator.AdvanceTo(time);
@@ -408,7 +393,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodTrigger) {
 
   // Check that we get the expected number of messages: one at initialization
   // plus two from periodic publishing.
-  EXPECT_EQ(transmission_count, 3);
+  EXPECT_EQ(sub.count(), 3);
 }
 
 // Tests that the published LCM message has the expected timestamps using the
@@ -418,10 +403,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodDeprecated) {
 
   lcm::DrakeMockLcm lcm;
   const std::string channel_name = "channel_name";
-  int transmission_count = 0;
-  lcm.Subscribe(channel_name, [&transmission_count](const void*, int) {
-    ++transmission_count;
-  });
+  Subscriber sub(&lcm, channel_name);
   lcm.EnableLoopBack();
 
   LcmtDrakeSignalTranslator translator(kDim);
@@ -444,7 +426,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodDeprecated) {
   simulator.Initialize();
 
   // Check that a message was transmitted during initialization.
-  EXPECT_EQ(transmission_count, 1);
+  EXPECT_EQ(sub.count(), 1);
 
   // Step the simulator to one second.
   const double time = 1.0;
@@ -453,12 +435,11 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodDeprecated) {
   // Note that the expected time is in milliseconds.
   const double expected_time =
       std::floor(time / kPublishPeriod) * kPublishPeriod * 1000;
-  EXPECT_EQ(lcm.DecodeLastPublishedMessageAs<lcmt_drake_signal>(
-    channel_name).timestamp, expected_time);
+  EXPECT_EQ(sub.message().timestamp, expected_time);
 
   // Check that we get the expected number of messages transmitted. One will
   // happen at initialization and one will happen at time 0.75.
-  EXPECT_EQ(transmission_count, 2);
+  EXPECT_EQ(sub.count(), 2);
   EXPECT_EQ(simulator.get_num_steps_taken(), 2);
 }
 
