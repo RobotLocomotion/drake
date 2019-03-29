@@ -1,5 +1,7 @@
 #include "drake/automotive/maliput/api/rules/phase_ring.h"
 
+#include <utility>
+
 #include "drake/common/drake_throw.h"
 
 namespace drake {
@@ -35,16 +37,39 @@ void VerifyAllPhasesHaveSameCoverage(const std::vector<Phase>& phases) {
   }
 }
 
+/// Tests that `next_phases` defines the possible next phases of every
+/// phase in `phases` and nothing more.
+void VerifyNextPhases(
+    const std::vector<Phase>& phases,
+    const std::unordered_map<Phase::Id,
+                             std::vector<PhaseRing::NextPhase>>& next_phases) {
+  DRAKE_THROW_UNLESS(phases.size() == next_phases.size());
+  for (const auto& phase : phases) {
+    DRAKE_THROW_UNLESS(next_phases.find(phase.id()) != next_phases.end());
+  }
+}
+
 }  // namespace
 
-PhaseRing::PhaseRing(
-    const Id& id, const std::vector<Phase>& phases)
+PhaseRing::PhaseRing(const Id& id, const std::vector<Phase>& phases,
+                     const optional<const std::unordered_map<Phase::Id,
+                                                       std::vector<NextPhase>>>&
+                         next_phases)
     : id_(id) {
   DRAKE_THROW_UNLESS(phases.size() >= 1);
   for (const Phase& phase : phases) {
     // Construct index of phases by ID, ensuring uniqueness of ID's.
     auto result = phases_.emplace(phase.id(), phase);
     DRAKE_THROW_UNLESS(result.second);
+  }
+  if (next_phases != nullopt) {
+    next_phases_ = *next_phases;
+    VerifyNextPhases(phases, next_phases_);
+  } else {
+    for (const auto& phase : phases) {
+      next_phases_.emplace(
+          std::make_pair(phase.id(), std::vector<NextPhase>()));
+    }
   }
   VerifyAllPhasesHaveSameCoverage(phases);
 }
