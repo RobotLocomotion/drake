@@ -9,23 +9,23 @@ namespace maliput {
 
 using api::rules::Phase;
 using api::rules::PhaseRing;
-using api::rules::RightOfWayPhaseBook;
+using api::rules::PhaseRingBook;
 using api::rules::RightOfWayPhaseProvider;
 using api::rules::RightOfWayRule;
 using api::rules::RightOfWayStateProvider;
 
 PhaseBasedRightOfWayStateProvider::PhaseBasedRightOfWayStateProvider(
-    const RightOfWayPhaseBook* phase_book,
+    const PhaseRingBook* phase_ring_book,
     const RightOfWayPhaseProvider* phase_provider)
-    : phase_book_(phase_book),
+    : phase_ring_book_(phase_ring_book),
       phase_provider_(phase_provider) {
-  DRAKE_DEMAND(phase_book_ != nullptr && phase_provider != nullptr);
+  DRAKE_DEMAND(phase_ring_book_ != nullptr && phase_provider != nullptr);
 }
 
 optional<RightOfWayStateProvider::Result>
 PhaseBasedRightOfWayStateProvider::DoGetState(const RightOfWayRule::Id& rule_id)
     const {
-  optional<PhaseRing> ring = phase_book_->FindPhaseRing(rule_id);
+  optional<PhaseRing> ring = phase_ring_book_->FindPhaseRing(rule_id);
   if (ring.has_value()) {
     const optional<RightOfWayPhaseProvider::Result> phase_result
         = phase_provider_->GetPhase(ring->id());

@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/automotive/maliput/base/simple_right_of_way_phase_book.h"
+#include "drake/automotive/maliput/base/simple_phase_ring_book.h"
 #include "drake/automotive/maliput/base/simple_right_of_way_phase_provider.h"
 
 namespace drake {
@@ -31,15 +31,15 @@ GTEST_TEST(PhaseBasedRightOfWayStateProviderTest, BasicTest) {
   const PhaseRing::Id ring_id("ring");
   const PhaseRing ring(ring_id, {phase1, phase2});
 
-  SimpleRightOfWayPhaseBook phase_book;
-  phase_book.AddPhaseRing(ring);
+  SimplePhaseRingBook phase_ring_book;
+  phase_ring_book.AddPhaseRing(ring);
 
   SimpleRightOfWayPhaseProvider phase_provider;
   phase_provider.AddPhaseRing(ring_id, phase_id_1);
 
-  PhaseBasedRightOfWayStateProvider dut(&phase_book, &phase_provider);
+  PhaseBasedRightOfWayStateProvider dut(&phase_ring_book, &phase_provider);
 
-  EXPECT_EQ(&dut.phase_book(), &phase_book);
+  EXPECT_EQ(&dut.phase_ring_book(), &phase_ring_book);
   EXPECT_EQ(&dut.phase_provider(), &phase_provider);
 
   struct ExpectedState {

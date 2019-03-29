@@ -12,11 +12,11 @@ namespace rules {
 
 /// Abstract interface for providing the mapping from RightOfWayRule::Id to
 /// PhaseRing.
-class RightOfWayPhaseBook {
+class PhaseRingBook {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RightOfWayPhaseBook);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PhaseRingBook);
 
-  virtual ~RightOfWayPhaseBook() = default;
+  virtual ~PhaseRingBook() = default;
 
   /// Gets the specified PhaseRing. Returns nullopt if @p ring_id is
   /// unrecognized.
@@ -31,7 +31,7 @@ class RightOfWayPhaseBook {
   }
 
  protected:
-  RightOfWayPhaseBook() = default;
+  PhaseRingBook() = default;
 
  private:
   virtual optional<PhaseRing> DoGetPhaseRing(const PhaseRing::Id& ring_id)

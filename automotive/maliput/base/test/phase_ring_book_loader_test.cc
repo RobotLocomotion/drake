@@ -26,7 +26,7 @@ namespace {
 using api::RoadGeometry;
 using api::rules::Phase;
 using api::rules::PhaseRing;
-using api::rules::RightOfWayPhaseBook;
+using api::rules::PhaseRingBook;
 using api::rules::RightOfWayRule;
 using api::rules::RoadRulebook;
 
@@ -98,12 +98,12 @@ class TestLoading2x2IntersectionPhasebook : public ::testing::Test {
 };
 
 TEST_F(TestLoading2x2IntersectionPhasebook, LoadFromFile) {
-  std::unique_ptr<RightOfWayPhaseBook> phasebook =
+  std::unique_ptr<PhaseRingBook> phase_ring_book =
       LoadPhaseRingBookFromFile(rulebook_.get(), filepath_);
-  EXPECT_NE(phasebook, nullptr);
+  EXPECT_NE(phase_ring_book, nullptr);
   const PhaseRing::Id ring_id("2x2Intersection");
   const optional<PhaseRing> ring =
-      phasebook->GetPhaseRing(PhaseRing::Id(ring_id));
+      phase_ring_book->GetPhaseRing(PhaseRing::Id(ring_id));
   EXPECT_NE(ring, nullopt);
   EXPECT_EQ(ring->id(), ring_id);
   const auto& phases = ring->phases();
