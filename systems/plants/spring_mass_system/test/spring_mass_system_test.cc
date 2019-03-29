@@ -284,7 +284,7 @@ void StepExplicitEuler(
       context.get_mutable_continuous_state_vector();
   const auto& dxc = derivs.get_vector();
   xc.PlusEqScaled(h, dxc);  // xc += h*dxc
-  context.set_time(t + h);
+  context.SetTime(t + h);
 }
 
 /* Semi-explicit Euler (neutrally stable):
@@ -310,7 +310,7 @@ void StepSemiExplicitEuler(
   const auto& dxv = derivs.get_generalized_velocity();
   xv.PlusEqScaled(h, dxv);  // xv += h*dxv
 
-  context.set_time(t + h);
+  context.SetTime(t + h);
 
   // Invalidate q-dependent quantities.
   VectorBase<double>& xq = xc.get_mutable_generalized_position();
@@ -341,7 +341,7 @@ void StepImplicitEuler(
   const auto vx0 = x1.CopyToVector();
   const auto& dx0 = derivs.get_vector();
   x1.PlusEqScaled(h, dx0);  // x1 += h*dx0 (initial guess)
-  context.set_time(t + h);   // t=t1
+  context.SetTime(t + h);   // t=t1
   const int nx = static_cast<int>(vx0.size());
   const auto I = MatrixX<double>::Identity(nx, nx);
 
@@ -400,7 +400,7 @@ TEST_F(SpringMassSystemTest, Integrate) {
 
   // Set initial conditions in each Context.
   for (auto& context : contexts) {
-    context->set_time(0);
+    context->SetTime(0);
     system_->set_position(context.get(), 0.1);  // Displacement 0.1m, vel. 0m/s.
     system_->set_velocity(context.get(), 0.);
   }
@@ -461,7 +461,7 @@ TEST_F(SpringMassSystemTest, IntegrateConservativePower) {
       system_->AllocateTimeDerivatives();
 
   // Set initial conditions..
-  context->set_time(0);
+  context->SetTime(0);
   system_->set_position(context.get(), 0.1);  // Displacement 0.1m, vel. 0m/s.
   system_->set_velocity(context.get(), 0.);
   system_->set_conservative_work(context.get(), 0.);  // W(0)=0

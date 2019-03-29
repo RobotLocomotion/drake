@@ -59,6 +59,7 @@ from pydrake.systems.primitives import (
     PassThrough,
     SignalLogger,
     )
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
 # TODO(eric.cousineau): The scope of this test file and and `custom_test.py`
 # is poor. Move these tests into `framework_test` and `analysis_test`, and
@@ -253,8 +254,12 @@ class TestGeneral(unittest.TestCase):
 
             # Create simulator specifying context.
             context = system.CreateDefaultContext()
+            with catch_drake_warnings(expected_count=1):
+                context.set_time(0.)
             context.SetTime(0.)
 
+            with catch_drake_warnings(expected_count=1):
+                context.set_accuracy(1e-4)
             context.SetAccuracy(1e-4)
             self.assertEqual(context.get_accuracy(), 1e-4)
 

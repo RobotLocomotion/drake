@@ -159,11 +159,31 @@ void DefineFrameworkPySemantics(py::module m) {
             py::arg("index"), py::arg("data"), py_reference_internal,
             doc.Context.FixInputPort.doc_2args_index_data)
         .def("get_time", &Context<T>::get_time, doc.Context.get_time.doc)
-        .def("SetTime", &Context<T>::SetTime, doc.Context.SetTime.doc)
-        .def("set_time", &Context<T>::set_time, "Use SetTime() instead.")
-        .def("SetAccuracy", &Context<T>::SetAccuracy,
+        .def("SetTime", &Context<T>::SetTime, py::arg("time_sec"),
+            doc.Context.SetTime.doc)
+        .def("set_time",
+            [](Context<T>* self, const T& time) {
+              WarnDeprecated(
+                  "Use SetTime() instead. Will be removed on or after "
+                  "2019-07-01.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->set_time(time);
+#pragma GCC diagnostic pop
+            },
+            "Use SetTime() instead.")
+        .def("SetAccuracy", &Context<T>::SetAccuracy, py::arg("accuracy"),
             doc.Context.SetAccuracy.doc)
-        .def("set_accuracy", &Context<T>::set_accuracy,
+        .def("set_accuracy",
+            [](Context<T>* self, const optional<double>& accuracy) {
+              WarnDeprecated(
+                  "Use SetAccuracy() instead. Will be removed on or after "
+                  "2019-07-01.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->set_accuracy(accuracy);
+#pragma GCC diagnostic pop
+            },
             "Use SetAccuracy() instead.")
         .def("get_accuracy", &Context<T>::get_accuracy,
             doc.Context.get_accuracy.doc)

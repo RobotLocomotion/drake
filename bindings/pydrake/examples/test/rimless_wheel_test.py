@@ -38,7 +38,7 @@ class TestRimlessWheel(unittest.TestCase):
         # Create the simulator.
         simulator = Simulator(rimless_wheel)
         context = simulator.get_mutable_context()
-        context.set_accuracy(1e-8)
+        context.SetAccuracy(1e-8)
 
         # Set the initial state.
         state = context.get_mutable_continuous_state_vector()

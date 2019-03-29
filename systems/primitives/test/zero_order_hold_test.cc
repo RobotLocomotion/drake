@@ -154,7 +154,7 @@ TEST_P(ZeroOrderHoldTest, Output) {
 // is requested in the future.
 TEST_P(ZeroOrderHoldTest, NextUpdateTimeMustNotBeCurrentTime) {
   // Calculate the next update time *after* 0.
-  context_->set_time(0.0);
+  context_->SetTime(0.0);
   const double t_next = hold_->CalcNextUpdateTime(*context_, event_info_.get());
 
   // Check that the time is correct.
@@ -168,7 +168,7 @@ TEST_P(ZeroOrderHoldTest, NextUpdateTimeMustNotBeCurrentTime) {
 // at the appropriate time in the future.
 TEST_P(ZeroOrderHoldTest, NextUpdateTimeIsInTheFuture) {
   // Calculate the next update time.
-  context_->set_time(763.2 * kPeriod);
+  context_->SetTime(763.2 * kPeriod);
 
   // Check that the time is correct.
   const double t_next = hold_->CalcNextUpdateTime(*context_, event_info_.get());

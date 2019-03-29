@@ -55,7 +55,7 @@ class PoseSmootherTest : public ::testing::Test {
         AbstractValue::Make(Isometry3<double>::Identity()));
     input->set_value(input_pose);
     context_->FixInputPort(0 /* input port ID*/, std::move(input));
-    context_->set_time(input_time);
+    context_->SetTime(input_time);
 
     dut_->CalcUnrestrictedUpdate(*context_, &context_->get_mutable_state());
     dut_->CalcOutput(*context_, output_.get());

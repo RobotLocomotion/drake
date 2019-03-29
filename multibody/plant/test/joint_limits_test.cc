@@ -107,7 +107,7 @@ GTEST_TEST(JointLimitsTest, PrismaticJointConvergenceTest) {
     context.FixInputPort(
       plant.get_actuation_input_port().get_index(),
       Vector1<double>::Constant(10.0));
-    context.set_time(0.0);
+    context.SetTime(0.0);
     simulator.AdvanceTo(simulation_time);
 
     // Verify we are at rest near the upper limit.
@@ -183,7 +183,7 @@ GTEST_TEST(JointLimitsTest, RevoluteJoint) {
     context.FixInputPort(
       plant.get_actuation_input_port().get_index(),
       Vector1<double>::Constant(-1.5));
-    context.set_time(0.0);
+    context.SetTime(0.0);
     simulator.AdvanceTo(simulation_time);
 
     // Verify we are at rest near the lower limit.
@@ -284,7 +284,7 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
     plant.get_actuation_input_port().get_index(),
     VectorX<double>::Constant(nq, -0.4));
   plant.SetDefaultContext(&context);
-  context.set_time(0.0);
+  context.SetTime(0.0);
   simulator.AdvanceTo(simulation_time);
   for (int joint_number = 1; joint_number <= nq; ++joint_number) {
     const std::string joint_name = "iiwa_joint_" + std::to_string(joint_number);
