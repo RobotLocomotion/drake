@@ -219,5 +219,32 @@ GTEST_TEST(EigenTypesTest, FixedSizeVector) {
   EXPECT_EQ(row.cols(), 2);
 }
 
+// Check implicit casts.
+template <int N>
+void CheckValue(
+    const VectorOrInitList<double, N>& actual,
+    const Vector<double, N>& expected) {
+  EXPECT_TRUE((actual.value().array() == expected.array()).all());
+}
+
+GTEST_TEST(EigenTypesTest, VectorOrInitList) {
+  // Test dynamic vectors.
+  static_assert(
+      std::is_same<
+          VectorOrInitList<double>, VectorOrInitList<double, -1>>::value,
+      "Bad aliasing?");
+
+  VectorXd expected(5);
+  expected << 1, 2, 3, 4, 5;
+  CheckValue<Eigen::Dynamic>(expected, expected);
+  CheckValue<Eigen::Dynamic>({1, 2, 3, 4, 5}, expected);
+  CheckValue<5>({1, 2, 3, 4, 5}, expected);
+
+  Vector<double, 5> expected5;
+  expected5 << 1, 2, 3, 4, 5;
+  CheckValue<5>(expected, expected5);
+  CheckValue<5>(expected5, expected);
+}
+
 }  // namespace
 }  // namespace drake

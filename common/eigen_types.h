@@ -455,4 +455,31 @@ class EigenPtr {
   }
 };
 
+/// Permits specifying values via a Vector<> or an initializer list. Useful for
+/// function arguments.
+/// N.B. This may cause a performance impact.
+template <typename T, int N = Eigen::Dynamic>
+class VectorOrInitList {
+ public:
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  template <typename Derived>
+  VectorOrInitList(const Eigen::MatrixBase<Derived>& value) : value_(value) {}
+
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  VectorOrInitList(const std::initializer_list<T>& list) {
+    DRAKE_DEMAND(N == Eigen::Dynamic || static_cast<int>(list.size()) == N);
+    auto iter = list.begin();
+    value_.resize(list.size());
+    for (size_t i = 0; i < list.size(); ++i) {
+      value_[i] = *iter;
+      ++iter;
+    }
+    DRAKE_DEMAND(iter == list.end());
+  }
+
+  const Vector<T, N>& value() const { return value_; }
+ private:
+  Vector<T, N> value_{};
+};
+
 }  // namespace drake
