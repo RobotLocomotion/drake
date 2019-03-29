@@ -22,7 +22,7 @@ void SetInput(double time, const std::string& name, double val,
   msg.val.resize(kDim, val);
   msg.coord.resize(kDim, name);
   msg.timestamp = time * 1e6;
-  context->set_time(time);
+  context->SetTime(time);
   context->FixInputPort(0, AbstractValue::Make<lcmt_drake_signal>(msg));
 }
 

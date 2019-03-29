@@ -105,7 +105,7 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
     diagram_ = builder.Build();
 
     context_ = diagram_->CreateDefaultContext();
-    context_->set_time(0);
+    context_->SetTime(0);
     output_ = diagram_->AllocateOutput();
 
     // Initializes.

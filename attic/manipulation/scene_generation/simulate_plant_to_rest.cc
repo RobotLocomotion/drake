@@ -86,7 +86,7 @@ VectorX<double> SimulatePlantToRest::Run(const VectorX<double>& q_ik,
         .get_mutable_continuous_state_vector()
         .SetFromVector(x_initial);
     simulator.Initialize();
-    simulator.get_mutable_context().set_time(0.0);
+    simulator.get_mutable_context().SetTime(0.0);
 
     simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
         *diagram_, 0.0001, &simulator.get_mutable_context());

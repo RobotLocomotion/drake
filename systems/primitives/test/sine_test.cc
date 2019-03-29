@@ -44,7 +44,7 @@ void TestSineSystem(const Sine<T>& sine_system,
 
     for (int i = 0; i < input_vectors.cols(); i++) {
       // Initialize the time in seconds to be used by the Sine system.
-      context->set_time(input_vectors(0, i));
+      context->SetTime(input_vectors(0, i));
 
       // Check the Sine output.
       ASSERT_EQ(3, sine_system.get_num_output_ports());

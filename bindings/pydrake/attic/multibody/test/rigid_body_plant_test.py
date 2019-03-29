@@ -226,10 +226,10 @@ class TestRigidBodyPlant(unittest.TestCase):
         context = viz.CreateDefaultContext()
         x0 = np.zeros(tree.get_num_positions() + tree.get_num_velocities())
         context.FixInputPort(0, BasicVector(x0))
-        context.set_time(0.)
+        context.SetTime(0.)
         viz.Publish(context)
         # Use a small time period, since it uses realtime playback.
-        context.set_time(0.01)
+        context.SetTime(0.01)
         viz.Publish(context)
         viz.ReplayCachedSimulation()
         # - Check that PublishLoadRobot can be called.

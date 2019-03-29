@@ -120,7 +120,7 @@ GTEST_TEST(SystemConstraintAdapterTest,
       Vector3<symbolic::Expression>(a, x1_val, x2_val));
   context_symbolic->get_mutable_discrete_state_vector().SetAtIndex(0, c);
   context_symbolic->get_mutable_numeric_parameter(0).GetAtIndex(0) = b;
-  context_symbolic->set_time(t);
+  context_symbolic->SetTime(t);
 
   optional<solvers::Binding<solvers::Constraint>> binding =
       adapter.MaybeCreateGenericConstraintSymbolically(
@@ -175,8 +175,8 @@ GTEST_TEST(SystemConstraintAdapterTest,
   context_double->get_mutable_discrete_state_vector().SetAtIndex(0, c_val);
   context_autodiff->get_mutable_discrete_state_vector().GetAtIndex(0) =
       abct_autodiff(2);
-  context_double->set_time(t_val);
-  context_autodiff->set_time(abct_autodiff(3));
+  context_double->SetTime(t_val);
+  context_autodiff->SetTime(abct_autodiff(3));
   Eigen::VectorXd constraint_val_expected;
   DummySystemConstraintCalc(*context_double, &constraint_val_expected);
 

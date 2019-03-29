@@ -109,7 +109,7 @@ TEST_P(PiecewisePolynomialAffineSystemTest, DiscreteUpdates) {
 
   const double tol = 1e-10;
   for (const double t : mat_data_.times) {
-    context_->set_time(t);
+    context_->SetTime(t);
     const Eigen::Matrix2d A = ltv_data_.A.value(t);
     const Eigen::Matrix2d B = ltv_data_.B.value(t);
     const Eigen::Vector2d f0 = ltv_data_.f0.value(t);
@@ -142,7 +142,7 @@ TEST_P(PiecewisePolynomialAffineSystemTest, Output) {
 
   const double tol = 1e-10;
   for (const double t : mat_data_.times) {
-    context_->set_time(t);
+    context_->SetTime(t);
 
     const Eigen::Matrix2d C = ltv_data_.C.value(t);
     const Eigen::Matrix2d D = ltv_data_.D.value(t);

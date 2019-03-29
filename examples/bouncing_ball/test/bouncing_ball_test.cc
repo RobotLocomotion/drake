@@ -165,7 +165,7 @@ TEST_F(BouncingBallTest, Simulate) {
   drake::systems::Simulator<double> simulator(*dut_, std::move(context_));
   simulator.reset_integrator<systems::RungeKutta3Integrator<double>>(*dut_,
       &simulator.get_mutable_context());
-  simulator.get_mutable_context().set_accuracy(accuracy);
+  simulator.get_mutable_context().SetAccuracy(accuracy);
   simulator.get_mutable_integrator()->request_initial_step_size_target(1e-3);
   simulator.get_mutable_integrator()->set_target_accuracy(accuracy);
   simulator.Initialize();

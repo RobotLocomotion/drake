@@ -94,7 +94,7 @@ class UpdateContextForSymbolicSystemConstraint {
                   Context<T>* context) const {
     // Time.
     if (time_var_index_.has_value()) {
-      context->set_time(x(time_var_index_.value()));
+      context->SetTime(x(time_var_index_.value()));
     }
     for (const auto& item : context_indices_) {
       switch (item.kind) {
@@ -172,7 +172,7 @@ SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
   VectorX<symbolic::Variable> bound_variables;
   // context_fixed stores the constant values in @p context
   auto context_fixed = system_double_->CreateDefaultContext();
-  context_fixed->set_accuracy(context.get_accuracy());
+  context_fixed->SetAccuracy(context.get_accuracy());
 
   std::vector<ContextIndex> context_indices;
   optional<int> time_var_index{};
@@ -186,7 +186,7 @@ SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
     return {};
   }
   if (constant_val.has_value()) {
-    context_fixed->set_time(constant_val.value());
+    context_fixed->SetTime(constant_val.value());
   } else {
     time_var_index = variable_index.value();
   }
