@@ -14,8 +14,9 @@ import warnings
 import numpy as np
 
 import pydrake
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.forwarddiff import jacobian
 import pydrake.symbolic as sym
 
 SNOPT_NO_GUROBI = SnoptSolver().available() and not GurobiSolver().available()
@@ -160,6 +161,9 @@ class TestMathematicalProgram(unittest.TestCase):
         qp = TestQP()
         prog = qp.prog
         x = qp.x
+
+        self.assertEqual(prog.FindDecisionVariableIndices([x[0], x[1]]),
+                         [0, 1])
 
         for binding in prog.GetAllCosts():
             self.assertIsInstance(binding.evaluator(), mp.Cost)
@@ -311,11 +315,20 @@ class TestMathematicalProgram(unittest.TestCase):
                 value = prog.EvalBindingAtSolution(cost)
                 self.assertTrue(np.allclose(value, value_expected))
 
-            # Existence check.
+            # Existence check for non-autodiff versions.
             self.assertIsInstance(
                 prog.EvalBinding(costs[0], x_expected), np.ndarray)
             self.assertIsInstance(
                 prog.EvalBindings(prog.GetAllConstraints(), x_expected),
+                np.ndarray)
+            # Existence check for autodiff versions.
+            self.assertIsInstance(
+                jacobian(lambda x: prog.EvalBinding(costs[0], x), x_expected),
+                np.ndarray)
+            self.assertIsInstance(
+                jacobian(
+                    lambda x: prog.EvalBindings(prog.GetAllConstraints(), x),
+                    x_expected),
                 np.ndarray)
 
             # Bindings for `Eval`.
