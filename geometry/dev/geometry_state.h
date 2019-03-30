@@ -861,8 +861,7 @@ class GeometryState {
   // version.
   void RegisterValidSource(SourceId source_id, const std::string& name);
   void RegisterValidFrame(SourceId source_id, FrameId frame_id,
-                          const std::string& name,
-                          const Isometry3<double>& X_PF, int frame_group,
+                          const std::string& name, int frame_group,
                           FrameId parent_id, int clique, FrameIdSet* frame_set);
   void RegisterValidGeometry(SourceId source_id, FrameId frame_id,
                              GeometryId geometry_id,

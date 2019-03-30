@@ -172,7 +172,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   const double kEarthBottom = orrery_bottom + 0.25;
   Isometry3<double> X_SOe{Translation3<double>{0, 0, kEarthBottom}};
   FrameId planet_id = scene_graph->RegisterFrame(
-      source_id_, GeometryFrame("EarthOrbit", X_SOe));
+      source_id_, GeometryFrame("EarthOrbit"));
   body_ids_.push_back(planet_id);
   body_offset_.push_back(X_SOe);
   axes_.push_back(Vector3<double>::UnitZ());
@@ -196,7 +196,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   // So, X_OeOl = X_OeE.
   const Isometry3<double>& X_OeOl = X_OeE;
   FrameId luna_id = scene_graph->RegisterFrame(
-      source_id_, planet_id, GeometryFrame("LunaOrbit", X_OeOl));
+      source_id_, planet_id, GeometryFrame("LunaOrbit"));
   body_ids_.push_back(luna_id);
   body_offset_.push_back(X_OeOl);
   const Vector3<double> luna_axis_Oe{1, 1, 1};
@@ -221,7 +221,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   // Convex satellite orbits Earth in the same revolution as Luna but with
   // different initial position. See SetDefaultState().
   FrameId convexsat_id = scene_graph->RegisterFrame(source_id_, planet_id,
-                                          GeometryFrame("Convexsat", X_OeOl));
+                                          GeometryFrame("Convexsat"));
   body_ids_.push_back(convexsat_id);
   body_offset_.push_back(X_OeOl);
   axes_.push_back(luna_axis_Oe.normalized());
@@ -239,7 +239,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   // Box satellite orbits Earth in the same revolution as Luna but with
   // different initial position. See SetDefaultState().
   FrameId boxsat_id = scene_graph->RegisterFrame(
-      source_id_, planet_id, GeometryFrame("Boxsat", X_OeOl));
+      source_id_, planet_id, GeometryFrame("Boxsat"));
   body_ids_.push_back(boxsat_id);
   body_offset_.push_back(X_OeOl);
   axes_.push_back(luna_axis_Oe.normalized());
@@ -255,7 +255,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   // orrery arm).
   Isometry3<double> X_SOm{Translation3<double>{0, 0, orrery_bottom}};
   planet_id =
-      scene_graph->RegisterFrame(source_id_, GeometryFrame("MarsOrbit", X_SOm));
+      scene_graph->RegisterFrame(source_id_, GeometryFrame("MarsOrbit"));
   body_ids_.push_back(planet_id);
   body_offset_.push_back(X_SOm);
   Vector3<double>  mars_axis_S {0, 0.1, 1};
@@ -296,7 +296,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   // opposite direction.
   const Isometry3<double>& X_OmOp = X_OmM;
   FrameId phobos_id = scene_graph->RegisterFrame(
-      source_id_, planet_id, GeometryFrame("PhobosOrbit", X_OmOp));
+      source_id_, planet_id, GeometryFrame("PhobosOrbit"));
   body_ids_.push_back(phobos_id);
   body_offset_.push_back(X_OmOp);
   mars_axis_S << 0, 0, -1;

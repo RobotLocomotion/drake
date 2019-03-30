@@ -137,7 +137,7 @@ void PendulumPlant<T>::RegisterGeometry(
       source_id_, id, MakeDrakeVisualizerProperties(Vector4d(.3, .6, .4, 1)));
 
   frame_id_ = scene_graph->RegisterFrame(
-      source_id_, GeometryFrame("arm", Isometry3d::Identity()));
+      source_id_, GeometryFrame("arm"));
 
   // The arm.
   id = scene_graph->RegisterGeometry(
