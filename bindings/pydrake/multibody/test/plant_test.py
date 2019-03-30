@@ -731,8 +731,13 @@ class TestPlant(unittest.TestCase):
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         plant = MultibodyPlant()
         Parser(plant).AddModelFromFile(file_name)
+        # Getting ready for when we set foot on Mars :-).
+        plant.AddForceElement(UniformGravityFieldElement([0.0, 0.0, -3.71]))
         plant.Finalize()
         context = plant.CreateDefaultContext()
+
+        # Set an arbitrary configuration away from the model's fixed point.
+        plant.SetPositions(context, [0.1, 0.2])
 
         H = plant.CalcMassMatrixViaInverseDynamics(context)
         Cv = plant.CalcBiasTerm(context)
@@ -748,11 +753,12 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(tau.shape, (2,))
         self.assert_sane(tau, nonzero=False)
         # - Existence checks.
-        self.assertEqual(plant.CalcPotentialEnergy(context), 0)
+        # Gravity leads to non-zero potential energy.
+        self.assertNotEqual(plant.CalcPotentialEnergy(context), 0)
         plant.CalcConservativePower(context)
         tau_g = plant.CalcGravityGeneralizedForces(context)
         self.assertEqual(tau_g.shape, (nv,))
-        self.assert_sane(tau_g, nonzero=False)
+        self.assert_sane(tau_g, nonzero=True)
 
         forces = MultibodyForces(plant=plant)
         plant.CalcForceElementsContribution(context=context, forces=forces)

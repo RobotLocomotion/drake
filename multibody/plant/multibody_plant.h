@@ -896,6 +896,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 #ifndef DRAKE_DOXYGEN_CXX
   // SFINAE overload for ForceElementType = UniformGravityFieldElement.
   // This allow us to keep track of the gravity field parameters.
+  // TODO(amcastro-tri): This specialization pattern leads to difficult to
+  // mantain indirection layers between MBP/MBT and can cause difficult to find
+  // bugs, see #11051. It is bad practice and should removed, see #11080.
   template <template <typename Scalar> class ForceElementType, typename... Args>
   typename std::enable_if<
       std::is_same<ForceElementType<T>, UniformGravityFieldElement<T>>::value,

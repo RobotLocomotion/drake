@@ -124,6 +124,21 @@ PYBIND11_MODULE(plant, m) {
             py::arg("A"), py::arg("B"),
             py::arg("X_AB") = RigidTransform<double>::Identity(),
             py_reference_internal, doc.MultibodyPlant.WeldFrames.doc)
+        // N.B. This overload of `AddForceElement` is required to precede
+        // the generic overload below so we can use our internal specialization
+        // to label this as our unique gravity field, mimicking the C++ API.
+        .def("AddForceElement",
+            [](Class * self,
+                std::unique_ptr<UniformGravityFieldElement<T>> force_element)
+                -> auto& {
+              // N.B. We need to make sure we call the correct specialization in
+              // MultibodyPlant for it to take note we are adding gravity to the
+              // model. This is ugly API needs to be updated, see #11080.
+              return self->AddForceElement<UniformGravityFieldElement>(
+                  force_element->gravity_vector());
+            },
+            py::arg("force_element"), py_reference_internal,
+            doc.MultibodyPlant.AddForceElement.doc)
         .def("AddForceElement",
             [](Class * self,
                 std::unique_ptr<ForceElement<T>> force_element) -> auto& {
