@@ -1,8 +1,10 @@
 #pragma once
 
 #include <string>
+#include <type_traits>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 
@@ -40,14 +42,27 @@ class GeometryFrame {
    @param frame_group_id    The optional frame group identifier. If unspecified,
                             defaults to the common, 0 group. Must be
                             non-negative.  */
-  GeometryFrame(const std::string& frame_name, const Isometry3<double>& X_PF,
+  GeometryFrame(const std::string& frame_name,
                 int frame_group_id = 0)
       : id_(FrameId::get_new_id()),
         name_(frame_name),
-        X_PF_(X_PF),
         frame_group_(frame_group_id) {
     ThrowIfInvalid();
   }
+
+  /** Constructor.
+   @param frame_name        The name of the frame.
+   @param X_PF              The initial pose of this frame F, measured and
+                            expressed in the _intended_ parent frame P.
+   @param frame_group_id    The optional frame group identifier. If unspecified,
+                            defaults to the common, 0 group. Must be
+                            non-negative.  */
+  DRAKE_DEPRECATED("2019-06-26",
+                   "GeometryFrame no longer requires a pose X_PF; prefer the "
+                   "constructor without pose.")
+  GeometryFrame(const std::string& frame_name, const Isometry3<double>&,
+                int frame_group_id = 0)
+      : GeometryFrame(frame_name, frame_group_id) {}
 
   /** Returns the globally unique id for this geometry specification. Every
    instantiation of %FrameInstance will contain a unique id value. The id
@@ -57,8 +72,6 @@ class GeometryFrame {
   FrameId id() const { return id_; }
 
   const std::string& name() const { return name_; }
-
-  const Isometry3<double>& pose() const { return X_PF_; }
 
   int frame_group() const { return frame_group_; }
 
@@ -79,9 +92,6 @@ class GeometryFrame {
   // The name of the frame. Must be unique across frames from the same geometry
   // source.
   std::string name_;
-
-  // The initial pose of frame F, measured and expressed in the parent frame P.
-  Isometry3<double> X_PF_;
 
   // TODO(SeanCurtis-TRI): Consider whether this should be an Identifier or
   // TypeSafeIndex type.

@@ -121,7 +121,7 @@ GTEST_TEST(QueryObjectInspectTest, CreateValidInspector) {
   SourceId source_id = scene_graph.RegisterSource("source");
   auto identity = Isometry3<double>::Identity();
   FrameId frame_id =
-      scene_graph.RegisterFrame(source_id, GeometryFrame("frame", identity));
+      scene_graph.RegisterFrame(source_id, GeometryFrame("frame"));
   GeometryId geometry_id = scene_graph.RegisterGeometry(
       source_id, frame_id, make_unique<GeometryInstance>(
                                identity, make_unique<Sphere>(1.0), "sphere"));

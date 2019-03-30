@@ -178,7 +178,7 @@ void AutomotiveSimulator<T>::ConnectCarOutputsAndPriusVis(
       "car_" + std::to_string(id));
   const geometry::FrameId frame_id = scene_graph_->RegisterFrame(
       source_id,
-      geometry::GeometryFrame("car_origin", Isometry3d::Identity()));
+      geometry::GeometryFrame("car_origin"));
 
   // Defines the distance between the SDF model's origin and the middle of the
   // rear axle.  This offset is necessary because the pose_output frame's

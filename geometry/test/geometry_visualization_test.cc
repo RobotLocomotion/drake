@@ -35,7 +35,7 @@ GTEST_TEST(GeometryVisualization, SimpleScene) {
 
   const std::string frame_name("frame");
   FrameId frame_id = scene_graph.RegisterFrame(
-      source_id, GeometryFrame(frame_name, Isometry3d::Identity()));
+      source_id, GeometryFrame(frame_name));
 
   // Floats because the lcm messages store floats.
   const float radius = 1.25f;
@@ -54,7 +54,7 @@ GTEST_TEST(GeometryVisualization, SimpleScene) {
   // Add a second frame and geometry that only has proximity properties. It
   // should not impact the result.
   FrameId collision_frame_id = scene_graph.RegisterFrame(
-      source_id, GeometryFrame("collision frame", Isometry3d::Identity()));
+      source_id, GeometryFrame("collision frame"));
   GeometryId collision_id = scene_graph.RegisterGeometry(
       source_id, collision_frame_id,
       make_unique<GeometryInstance>(Isometry3d::Identity(),

@@ -142,8 +142,7 @@ void RigidBodyPlantBridge<T>::RegisterTree(SceneGraph<T>* scene_graph) {
       // All other bodies register a frame and (possibly) get a unique label.
       body_id = scene_graph->RegisterFrame(
           source_id_,
-          GeometryFrame(body.get_name(), Isometry3<double>::Identity(),
-                        body.get_model_instance_id()));
+          GeometryFrame(body.get_name(), body.get_model_instance_id()));
     }
     body_ids_.push_back(body_id);
 
