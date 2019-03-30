@@ -50,8 +50,9 @@ void ComputeDistanceToPrimitive(const fcl::Sphered& sphere,
   // Gradient vector expressed in G's frame.
   const Vector3<T> grad_G = (dist_GQ > tolerance) ? p_GQ_G / dist_GQ : Gx;
 
-  // Do not compute distance as |p_GQ|, as the gradient of |p_GQ| is not well
-  // defined at p_GQ = 0. Instead, compute it as p_GQ.dot(grad_G).
+  // Do not compute distance as |p_GQ|, as the gradient of |p_GQ| w.r.t p_GQ is
+  // p_GQᵀ/|p_GQ|, not well defined at p_GQ = 0. Instead, compute the distance
+  // as p_GQ.dot(grad_G).
   *distance = p_GQ_G.dot(grad_G) - T(radius);
 
   // Position vector of the nearest point N on G's surface from the query
@@ -67,12 +68,14 @@ void ComputeDistanceToPrimitive(const fcl::Halfspaced& halfspace,
                                 const Vector3<T>& p_WQ, Vector3<T>* p_GN,
                                 T* distance, Vector3<T>* grad_W) {
   // FCL stores the halfspace as {x | nᵀ * x <= d}, with n being a unit length
-  // normal vector.
+  // normal vector. Both n and x are expressed in the halfspace frame.
+  const Vector3<T> n_G = halfspace.n.cast<T>();
   const Vector3<T> p_GQ = X_WG.inverse() * p_WQ;
-  *distance = halfspace.n.cast<T>().dot(p_GQ) - T(halfspace.d);
-  *p_GN = p_GQ - *distance * halfspace.n.cast<T>();
-  *grad_W = (X_WG.rotation() * halfspace.n).template cast<T>();
+  *distance = n_G.dot(p_GQ) - T(halfspace.d);
+  *p_GN = p_GQ - *distance * n_G;
+  *grad_W = (X_WG.rotation() * n_G).template cast<T>();
 }
+
 /**
  * An internal functor to support the call back function in proximity_engine.cc.
  * It computes the signed distance to a query point from a supported geometry.
