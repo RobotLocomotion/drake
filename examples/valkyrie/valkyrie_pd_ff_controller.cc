@@ -11,11 +11,11 @@
 #include "drake/common/find_resource.h"
 #include "drake/examples/valkyrie/robot_state_decoder.h"
 #include "drake/examples/valkyrie/valkyrie_constants.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/kinematics_cache.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_interface_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/util/drakeUtil.h"
@@ -158,7 +158,6 @@ void run_valkyrie_pd_ff_controller() {
       10, 10, 10, 10, 10, 10,  // r leg
       10, 10, 10, 10, 10, 10;  // l leg
 
-  DrakeLcm lcm;
   DiagramBuilder<double> builder;
   RobotStateDecoder* state_decoder =
       builder.AddSystem(std::make_unique<RobotStateDecoder>(*robot));
@@ -169,12 +168,13 @@ void run_valkyrie_pd_ff_controller() {
           examples::valkyrie::RPYValkyrieFixedPointTorque(), Kp, Kd));
 
   // lcm
+  auto lcm = builder.AddSystem<systems::lcm::LcmInterfaceSystem>();
   auto& robot_state_subscriber =
       *builder.AddSystem(LcmSubscriberSystem::Make<bot_core::robot_state_t>(
-          "EST_ROBOT_STATE", &lcm));
+          "EST_ROBOT_STATE", lcm));
   auto& atlas_command_publisher =
       *builder.AddSystem(LcmPublisherSystem::Make<bot_core::atlas_command_t>(
-          "ROBOT_COMMAND", &lcm));
+          "ROBOT_COMMAND", lcm));
 
   // lcm sub -> state decoder
   builder.Connect(robot_state_subscriber.get_output_port(),
@@ -192,7 +192,6 @@ void run_valkyrie_pd_ff_controller() {
   auto context = diagram->CreateDefaultContext();
   auto output = diagram->AllocateOutput();
 
-  lcm.StartReceiveThread();
   std::cout << "controller started\n";
 
   // Call controller.

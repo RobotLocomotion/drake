@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/lcm/drake_lcm_interface.h"
 
@@ -34,6 +35,8 @@ class DrakeMockLcm : public DrakeLcmInterface {
    * enabled, the only way to induce a call to a subscriber's callback function
    * is through InduceSubscriberCallback().
    */
+  DRAKE_DEPRECATED("2019-06-01",
+      "Call HandleSubscriptions periodically instead.")
   void EnableLoopBack() { enable_loop_back_ = true; }
 
   /**
@@ -53,9 +56,13 @@ class DrakeMockLcm : public DrakeLcmInterface {
    * channel.
    */
   template<typename T>
+  DRAKE_DEPRECATED("2019-06-01", "Use a drake::lcm::Subscriber instead.")
   T DecodeLastPublishedMessageAs(const std::string& channel) const {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
       const std::vector<uint8_t>& message_bytes =
           get_last_published_message(channel);
+#pragma GCC diagnostic pop
 
     T transmitted_message{};
     const int num_bytes = transmitted_message.decode(message_bytes.data(), 0,
@@ -83,6 +90,7 @@ class DrakeMockLcm : public DrakeLcmInterface {
    *
    * @pre A message was previously published on channel @p channel.
    */
+  DRAKE_DEPRECATED("2019-06-01", "Use a drake::lcm::Subscriber instead.")
   const std::vector<uint8_t>& get_last_published_message(
       const std::string& channel) const;
 
@@ -91,6 +99,7 @@ class DrakeMockLcm : public DrakeLcmInterface {
    * Returns nullopt iff a message has never been published on this channel or
    * the most recent Publish call had no time_sec.
    */
+  DRAKE_DEPRECATED("2019-06-01", "Use a DrakeLcmLog to record times instead.")
   optional<double> get_last_publication_time(const std::string& channel) const;
 
   /**
@@ -104,6 +113,7 @@ class DrakeMockLcm : public DrakeLcmInterface {
    *
    * @param[in] data_size The length of @data in bytes.
    */
+  DRAKE_DEPRECATED("2019-06-01", "Call drake::lcm::Publish instead.")
   void InduceSubscriberCallback(const std::string& channel, const void* data,
                                int data_size);
 
