@@ -8,26 +8,30 @@
 
 namespace drake {
 namespace multibody {
+namespace {
 class ContactWrenchEvaluatorTest : public ::testing::Test {
  public:
   ContactWrenchEvaluatorTest() {
-    std::vector<SphereSpecification> spheres;
+    std::vector<test::SphereSpecification> spheres;
     spheres.emplace_back(0.1, 1E3, CoulombFriction<double>(0.5, 0.4));
     spheres.emplace_back(0.2, 2E3, CoulombFriction<double>(1, 0.9));
     spheres.emplace_back(0.3, 2E3, CoulombFriction<double>(1, 0.8));
-    std::vector<BoxSpecification> boxes;
+    std::vector<test::BoxSpecification> boxes;
 
     const CoulombFriction<double> ground_friction(1.5, 0.9);
-    free_spheres_ = std::make_unique<FreeSpheresAndBoxes<AutoDiffXd>>(
+    free_spheres_ = std::make_unique<test::FreeSpheresAndBoxes<AutoDiffXd>>(
         spheres, boxes, ground_friction);
   }
 
  protected:
-  std::unique_ptr<FreeSpheresAndBoxes<AutoDiffXd>> free_spheres_;
+  // Only add free spheres, no boxes yet, as we can't compute the signed
+  // distance between boxes with high precision yet.
+  std::unique_ptr<test::FreeSpheresAndBoxes<AutoDiffXd>> free_spheres_;
 };
 
 TEST_F(ContactWrenchEvaluatorTest,
        ContactWrenchFromForceInWorldFrameEvaluator) {
+  // Test the constructor, `ComposeVariableValues` and `Eval` functions.
   systems::Context<AutoDiffXd>* plant_context =
       free_spheres_->get_mutable_plant_context();
   ContactWrenchFromForceInWorldFrameEvaluator evaluator(
@@ -50,5 +54,6 @@ TEST_F(ContactWrenchEvaluatorTest,
   EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(y.tail<3>()),
                               math::autoDiffToGradientMatrix(lambda_val)));
 }
+}  // namespace
 }  // namespace multibody
 }  // namespace drake

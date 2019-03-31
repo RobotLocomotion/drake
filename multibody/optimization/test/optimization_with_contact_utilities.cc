@@ -6,6 +6,7 @@
 
 namespace drake {
 namespace multibody {
+namespace test {
 template <typename T>
 FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
     std::vector<SphereSpecification> spheres,
@@ -18,6 +19,7 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
   const int num_boxes = static_cast<int>(boxes_.size());
   systems::DiagramBuilder<T> builder;
   std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder);
+  // Add spheres and register collision geometry.
   for (int i = 0; i < num_spheres; ++i) {
     const auto& sphere =
         plant_->AddRigidBody("sphere" + std::to_string(i), spheres_[i].inertia);
@@ -27,6 +29,7 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
         "sphere" + std::to_string(i) + "_collision", spheres_[i].friction,
         scene_graph_));
   }
+  // Add boxes and register collision geometry.
   for (int i = 0; i < num_boxes; ++i) {
     const auto& box =
         plant_->AddRigidBody("box" + std::to_string(i), boxes_[i].inertia);
@@ -36,7 +39,9 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
         "box" + std::to_string(i) + "_collision", boxes_[i].friction,
         scene_graph_));
   }
-  // Add the ground
+  // Add the ground, register collision geometry.
+  // The mass and inertia of the ground don't matter. Set them to arbitrary
+  // values.
   const auto& ground = plant_->AddRigidBody(
       "ground", SpatialInertia<double>(1, Eigen::Vector3d::Zero(),
                                        UnitInertia<double>(1, 1, 1)));
@@ -49,10 +54,13 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
   X_WG.translation()(2) = -ground_box_size(2) / 2;
   plant_->WeldFrames(plant_->world_frame(), ground.body_frame(), X_WG);
 
+  // Add gravity.
   plant_->template AddForceElement<UniformGravityFieldElement>();
+
   plant_->Finalize();
   diagram_ = builder.Build();
 
+  // Create context.
   diagram_context_ = diagram_->CreateDefaultContext();
   plant_context_ =
       &(diagram_->GetMutableSubsystemContext(*plant_, diagram_context_.get()));
@@ -60,5 +68,6 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
 
 template class FreeSpheresAndBoxes<double>;
 template class FreeSpheresAndBoxes<AutoDiffXd>;
+}  // namespace test
 }  // namespace multibody
 }  // namespace drake

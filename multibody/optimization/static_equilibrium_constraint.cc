@@ -1,5 +1,7 @@
 #include "drake/multibody/optimization/static_equilibrium_constraint.h"
 
+#include <unordered_map>
+
 #include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
 
 namespace drake {
@@ -125,8 +127,8 @@ void StaticEquilibriumConstraint::DoEval(
     const Eigen::Ref<const VectorX<symbolic::Variable>>&,
     VectorX<symbolic::Expression>*) const {
   throw std::runtime_error(
-      "StaticEquilibriumConstraint: do not support Eval with symbolic variable "
-      "and expressions.");
+      "StaticEquilibriumConstraint: does not support Eval with symbolic "
+      "variable and expressions.");
 }
 
 solvers::Binding<StaticEquilibriumConstraint>
@@ -138,18 +140,17 @@ StaticEquilibriumConstraint::MakeBinding(
         contact_wrench_evaluators_and_lambda,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& u_vars) {
+  // contact_pair_to_wrench_evaluator will be used in the constructor of
+  // StaticEquilibriumConstraint.
   std::map<std::pair<geometry::GeometryId, geometry::GeometryId>,
            internal::GeometryPairContactWrenchEvaluatorBinding>
       contact_pair_to_wrench_evaluator;
-  const int num_lambda = std::accumulate(
-      contact_wrench_evaluators_and_lambda.begin(),
-      contact_wrench_evaluators_and_lambda.end(), 0,
-      [](int a, const std::pair<std::shared_ptr<ContactWrenchEvaluator>,
-                                VectorX<symbolic::Variable>>&
-                    contact_wrench_evaluator_and_lambda) {
-        return a + contact_wrench_evaluator_and_lambda.second.rows();
-      });
-  VectorX<symbolic::Variable> all_lambda(num_lambda);
+  // Get the total size of lambda used in this StaticEquilibriumConstraint. We
+  // find the unique lambda variable for all contact wrench evaluators.
+  // We will aggregate the lambda variables for each contact wrench evaluator
+  // into a vector `all_lambda`. map_lambda_id_to_index records the index of
+  // a lambda variable in the vector all_lambda.
+  std::unordered_map<symbolic::Variable::Id, int> map_lambda_id_to_index;
   int lambda_count = 0;
   for (const auto& contact_wrench_evaluator_and_lambda :
        contact_wrench_evaluators_and_lambda) {
@@ -158,18 +159,37 @@ StaticEquilibriumConstraint::MakeBinding(
     const auto& lambda_i = contact_wrench_evaluator_and_lambda.second;
     DRAKE_DEMAND(contact_wrench_evaluator->num_lambda() == lambda_i.rows());
     std::vector<int> lambda_indices_in_all_lambda(lambda_i.rows());
-    for (int j = 0; j < lambda_i.rows(); ++j) {
-      lambda_indices_in_all_lambda[j] = lambda_count + j;
-      all_lambda(lambda_count + j) = lambda_i(j);
+    // Loop through each lambda variable bound with the contact wrench
+    // evaluator, record the index of the lambda variable in all_lambda.
+    for (int i = 0; i < contact_wrench_evaluator_and_lambda.second.rows();
+         ++i) {
+      const auto& id = contact_wrench_evaluator_and_lambda.second(i).get_id();
+      auto it = map_lambda_id_to_index.find(id);
+      if (it == map_lambda_id_to_index.end()) {
+        lambda_indices_in_all_lambda[i] = lambda_count;
+        map_lambda_id_to_index.emplace_hint(it, id, lambda_count++);
+      } else {
+        lambda_indices_in_all_lambda[i] = it->second;
+      }
     }
     contact_pair_to_wrench_evaluator.emplace(
         contact_wrench_evaluator->geometry_id_pair(),
         internal::GeometryPairContactWrenchEvaluatorBinding{
             lambda_indices_in_all_lambda, contact_wrench_evaluator});
-    lambda_count += lambda_i.rows();
+  }
+  // Now compose the vector all_lambda.
+  const int num_lambda = lambda_count;
+  VectorX<symbolic::Variable> all_lambda(num_lambda);
+  for (const auto& contact_wrench_evaluator_and_lambda :
+       contact_wrench_evaluators_and_lambda) {
+    const auto& lambda_i = contact_wrench_evaluator_and_lambda.second;
+    for (int j = 0; j < lambda_i.rows(); ++j) {
+      all_lambda(map_lambda_id_to_index.at(lambda_i[j].get_id())) = lambda_i(j);
+    }
   }
   DRAKE_DEMAND(q_vars.rows() == plant->num_positions());
   DRAKE_DEMAND(u_vars.rows() == plant->num_actuated_dofs());
+  // The bound variable for this StaticEquilibriumConstraint is q_u_lambda.
   VectorX<symbolic::Variable> q_u_lambda(
       plant->num_positions() + plant->num_actuated_dofs() + num_lambda);
   q_u_lambda << q_vars, u_vars, all_lambda;

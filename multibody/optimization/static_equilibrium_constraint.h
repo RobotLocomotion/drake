@@ -42,22 +42,22 @@ struct GeometryPairContactWrenchEvaluatorBinding {
 /**
  * Impose the static equilibrium constraint 0 = τ_g + Bu + ∑J_WBᵀ(q) * Fapp_B_W
  */
-class StaticEquilibriumConstraint : public solvers::Constraint {
+class StaticEquilibriumConstraint final : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StaticEquilibriumConstraint)
 
   /**
    * Create a static equilibrium constraint
    * 0 = g(q) + Bu + ∑ᵢ JᵢᵀFᵢ_AB_W(λᵢ)
-   * This constraint depends on the variable q, u and λ.
+   * This constraint depends on the variables q, u and λ.
    * @param plant The plant on which the constraint is imposed.
    * @param context The context for the subsystem @p plant.
-   * @param contact_wrench_evaluators_and_lambda For each pair of contact, we
+   * @param contact_wrench_evaluators_and_lambda For each contact pair, we
    * need to compute the contact wrench applied at the point of contact,
-   * expressed in the world frame, namely Fᵢ_AB_W(λᵢ). @p
-   * contact_wrench_evaluators_and_lambda.first is the evaluator for computing
-   * this contact wrench from the variables λᵢ. @p
-   * contact_wrench_evaluators_and_lambda.second are the decision variable λᵢ
+   * expressed in the world frame, namely Fᵢ_AB_W(λᵢ).
+   * `contact_wrench_evaluators_and_lambda.first` is the evaluator for computing
+   * this contact wrench from the variables λᵢ.
+   * `contact_wrench_evaluators_and_lambda.second` are the decision variable λᵢ
    * used in computing the contact wrench. Notice the generalized position `q`
    * is not included in variables contact_wrench_evaluators_and_lambda.second.
    * @param q_vars The decision variables for q (the generalized position).
@@ -90,8 +90,9 @@ class StaticEquilibriumConstraint : public solvers::Constraint {
 
  private:
   /**
-   * The user should not call this constructor, as it is inconvenient to do so.
-   * The user should call MakeBinding().
+   * The user cannot call this constructor, as it is inconvenient to do so.
+   * The user must call MakeBinding() to construct a
+   * StaticEquilibriumConstraint.
    */
   StaticEquilibriumConstraint(
       const MultibodyPlant<AutoDiffXd>* plant,
@@ -101,11 +102,11 @@ class StaticEquilibriumConstraint : public solvers::Constraint {
           contact_pair_to_wrench_evaluator);
 
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd* y) const override;
+              Eigen::VectorXd* y) const final;
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd* y) const override;
+              AutoDiffVecXd* y) const final;
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
-              VectorX<symbolic::Expression>* y) const override;
+              VectorX<symbolic::Expression>* y) const final;
 
   const MultibodyPlant<AutoDiffXd>* const plant_;
   systems::Context<AutoDiffXd>* const context_;
