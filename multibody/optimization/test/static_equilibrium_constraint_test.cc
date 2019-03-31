@@ -10,17 +10,18 @@
 
 namespace drake {
 namespace multibody {
+namespace {
 const double kEps = std::numeric_limits<double>::epsilon();
 class TwoFreeSpheresTest : public ::testing::Test {
  public:
   TwoFreeSpheresTest() {
-    std::vector<SphereSpecification> spheres;
+    std::vector<test::SphereSpecification> spheres;
     spheres.emplace_back(0.1, 1E3, CoulombFriction<double>(0.8, 0.7));
     spheres.emplace_back(0.2, 1E3, CoulombFriction<double>(0.9, 0.7));
-    spheres_ = std::make_unique<FreeSpheresAndBoxes<AutoDiffXd>>(
-        spheres, std::vector<BoxSpecification>() /* no boxes */,
+    spheres_ = std::make_unique<test::FreeSpheresAndBoxes<AutoDiffXd>>(
+        spheres, std::vector<test::BoxSpecification>() /* no boxes */,
         CoulombFriction<double>(1, 0.8));
-    spheres_double_ = std::make_unique<FreeSpheresAndBoxes<double>>(
+    spheres_double_ = std::make_unique<test::FreeSpheresAndBoxes<double>>(
         spheres_->spheres(), spheres_->boxes(), spheres_->ground_friction());
     const auto& query_port = spheres_->plant().get_geometry_query_input_port();
     const auto& query_object =
@@ -124,8 +125,8 @@ class TwoFreeSpheresTest : public ::testing::Test {
   }
 
  protected:
-  std::unique_ptr<FreeSpheresAndBoxes<AutoDiffXd>> spheres_;
-  std::unique_ptr<FreeSpheresAndBoxes<double>> spheres_double_;
+  std::unique_ptr<test::FreeSpheresAndBoxes<AutoDiffXd>> spheres_;
+  std::unique_ptr<test::FreeSpheresAndBoxes<double>> spheres_double_;
   std::unique_ptr<solvers::Binding<StaticEquilibriumConstraint>>
       static_equilibrium_binding_;
   solvers::MathematicalProgram prog_;
@@ -136,13 +137,14 @@ class TwoFreeSpheresTest : public ::testing::Test {
       contact_wrench_evaluators_and_lambda_;
 };
 
-TEST_F(TwoFreeSpheresTest, Constructor) {
+TEST_F(TwoFreeSpheresTest, Construction) {
+  // Test the static method MakeBinding.
   const auto& plant = spheres_->plant();
   const auto static_equilibrium_binding =
       StaticEquilibriumConstraint::MakeBinding(
           &plant, spheres_->get_mutable_plant_context(),
           contact_wrench_evaluators_and_lambda_, q_vars_, u_vars_);
-  // Test constructor of StaticEquilibriumConstraint
+  // Test the size of StaticEquilibriumConstraint
   EXPECT_EQ(static_equilibrium_binding.evaluator()->num_vars(),
             23 /* 14 for position, 9 for lambda */);
   EXPECT_EQ(static_equilibrium_binding.evaluator()->num_constraints(),
@@ -173,6 +175,7 @@ TEST_F(TwoFreeSpheresTest, Constructor) {
 }
 
 TEST_F(TwoFreeSpheresTest, Eval) {
+  // Test Eval method of StaticEquilibriumConstraint.
   const auto& plant = spheres_->plant();
   const auto static_equilibrium_binding =
       StaticEquilibriumConstraint::MakeBinding(
@@ -207,11 +210,11 @@ TEST_F(TwoFreeSpheresTest, Eval) {
   CheckStaticEquilibriumConstraintEval(
       static_equilibrium_binding, x_autodiff.head<14>(), x_autodiff.tail<9>());
 
-  // Solves the optimization problem
+  // Solves the optimization problem.
   // Note that we don't impose the complementarity constraint signed_distance *
   // contact_force = 0, or the friction cone constraint.
-  // First set the spheres position, such that they are both on the ground, and
-  // touching each other.
+  // First set the spheres' positions, such that they are both on the ground,
+  // and touching each other.
   X_WS0.set_translation(Eigen::Vector3d(0, 0, spheres_->spheres()[0].radius));
   X_WS1.set_translation(
       Eigen::Vector3d(std::sqrt(4 * spheres_->spheres()[0].radius *
@@ -230,7 +233,8 @@ TEST_F(TwoFreeSpheresTest, Eval) {
   auto result = solvers::Solve(prog_, x_init);
   EXPECT_TRUE(result.is_success());
 
-  // TODO(hongkai.dai): Now check if the system is in static equilibrium.
+  // Given the solution, now manually check if the system is in static
+  // equilibrium.
   spheres_double_->plant().SetPositions(
       spheres_double_->get_mutable_plant_context(),
       result.GetSolution(q_vars_));
@@ -292,11 +296,14 @@ TEST_F(TwoFreeSpheresTest, Eval) {
       throw std::runtime_error("Unknown contact geometry pairs.");
     }
   }
+  // The solver's default tolerance is 1E-6 (with normalization). The
+  // unnormalized tolerance is about 1E-5.
   const double tol = 1E-5;
   EXPECT_TRUE(
       CompareMatrices(sphere0_total_wrench, Vector6<double>::Zero(), tol));
   EXPECT_TRUE(
       CompareMatrices(sphere1_total_wrench, Vector6<double>::Zero(), tol));
 }
+}  // namespace
 }  // namespace multibody
 }  // namespace drake

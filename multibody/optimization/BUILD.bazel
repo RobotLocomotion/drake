@@ -44,6 +44,7 @@ drake_cc_library(
     testonly = 1,
     srcs = ["test/optimization_with_contact_utilities.cc"],
     hdrs = ["test/optimization_with_contact_utilities.h"],
+    visibility = ["//visibility:private"],
     deps = [
         "//geometry:scene_graph",
         "//multibody/plant",

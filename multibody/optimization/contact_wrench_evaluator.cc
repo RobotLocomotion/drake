@@ -5,7 +5,7 @@ namespace multibody {
 template <typename T, typename U>
 void ContactWrenchFromForceInWorldFrameEvaluator::DoEvalGeneric(
     const Eigen::Ref<const VectorX<T>>& x, VectorX<U>* y) const {
-  y->template resize(6);
+  y->resize(6);
   y->template head<3>().setZero();
   const auto lambda_val = lambda(x);
   (*y)(3) = static_cast<U>(lambda_val(0));

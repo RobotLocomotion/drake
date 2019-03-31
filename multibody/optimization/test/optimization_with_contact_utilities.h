@@ -10,13 +10,14 @@
 
 namespace drake {
 namespace multibody {
+namespace test {
 // Create the test on free spheres/blocks and a ground
 struct SphereSpecification {
   SphereSpecification(double radius_in, double density,
                       CoulombFriction<double> friction_in)
       : radius{radius_in}, friction{std::move(friction_in)} {
     const double mass = 4.0 / 3 * M_PI * std::pow(radius, 3) * density;
-    const double I = 2.0 / 5.0 * mass * std::pow(radius, 2);
+    const double I = 2.0 / 5.0 * mass * std::pow(radius, 2);  // inertia
     inertia = SpatialInertia<double>(mass, Eigen::Vector3d::Zero(),
                                      UnitInertia<double>(I, I, I));
   }
@@ -26,6 +27,7 @@ struct SphereSpecification {
 };
 
 struct BoxSpecification {
+  // Full dimensions of a box (not the half dimensions).
   Eigen::Vector3d size;
   SpatialInertia<double> inertia;
   CoulombFriction<double> friction;
@@ -89,5 +91,6 @@ class FreeSpheresAndBoxes {
   std::unique_ptr<systems::Context<T>> diagram_context_{nullptr};
   systems::Context<T>* plant_context_{nullptr};
 };
+}  // namespace test
 }  // namespace multibody
 }  // namespace drake
