@@ -2202,8 +2202,8 @@ class MathematicalProgram {
   template <typename DerivedA, typename DerivedB>
   void SetInitialGuess(const Eigen::MatrixBase<DerivedA>& decision_variable_mat,
                        const Eigen::MatrixBase<DerivedB>& x0) {
-    DRAKE_ASSERT(decision_variable_mat.rows() == x0.rows());
-    DRAKE_ASSERT(decision_variable_mat.cols() == x0.cols());
+    DRAKE_DEMAND(decision_variable_mat.rows() == x0.rows());
+    DRAKE_DEMAND(decision_variable_mat.cols() == x0.cols());
     for (int i = 0; i < decision_variable_mat.rows(); ++i) {
       for (int j = 0; j < decision_variable_mat.cols(); ++j) {
         SetInitialGuess(decision_variable_mat(i, j), x0(i, j));
