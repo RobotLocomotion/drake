@@ -15,7 +15,7 @@ namespace maliput {
 ///
 /// @param rulebook Contains the rules that apply to @p road_geometry.
 ///
-/// @param input The YAML Intersections document.
+/// @param input The YAML PhaseRings document.
 ///
 /// @return The newly created api::rules::RightOfWayPhaseBook instance.
 std::unique_ptr<api::rules::RightOfWayPhaseBook> LoadPhaseRingBook(
@@ -26,7 +26,7 @@ std::unique_ptr<api::rules::RightOfWayPhaseBook> LoadPhaseRingBook(
 ///
 /// @param rulebook Contains the rules that apply to @p road_geometry.
 ///
-/// @param filename The YAML file that contains an Intersections document.
+/// @param filename The YAML file that contains a PhaseRings document.
 ///
 /// @return The newly created api::rules::RightOfWayPhaseBook instance.
 std::unique_ptr<api::rules::RightOfWayPhaseBook> LoadPhaseRingBookFromFile(
