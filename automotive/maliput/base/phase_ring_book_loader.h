@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "drake/automotive/maliput/api/rules/right_of_way_phase_book.h"
 #include "drake/automotive/maliput/api/rules/road_rulebook.h"
