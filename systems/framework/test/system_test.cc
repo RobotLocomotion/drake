@@ -164,10 +164,23 @@ class TestSystem : public System<double> {
     }
   }
 
+  void DoApplyDiscreteVariableUpdate(
+      const EventCollection<DiscreteUpdateEvent<double>>& events,
+      DiscreteValues<double>* discrete_state,
+      Context<double>* context) const final {
+    ADD_FAILURE() << "Implementation is required, but unused here.";
+  }
+
   void DispatchUnrestrictedUpdateHandler(
       const Context<double>&,
       const EventCollection<UnrestrictedUpdateEvent<double>>&,
       State<double>*) const final {
+    ADD_FAILURE() << "Implementation is required, but unused here.";
+  }
+
+  void DoApplyUnrestrictedUpdate(
+      const EventCollection<UnrestrictedUpdateEvent<double>>& events,
+      State<double>* state, Context<double>* context) const final {
     ADD_FAILURE() << "Implementation is required, but unused here.";
   }
 
@@ -621,10 +634,23 @@ class ValueIOTestSystem : public System<T> {
     ADD_FAILURE() << "Implementation is required, but unused here.";
   }
 
+  void DoApplyDiscreteVariableUpdate(
+      const EventCollection<DiscreteUpdateEvent<T>>& events,
+      DiscreteValues<T>* discrete_state,
+      Context<T>* context) const final {
+    ADD_FAILURE() << "Implementation is required, but unused here.";
+  }
+
   void DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& event_info,
       State<T>* state) const final {
+    ADD_FAILURE() << "Implementation is required, but unused here.";
+  }
+
+  void DoApplyUnrestrictedUpdate(
+      const EventCollection<UnrestrictedUpdateEvent<T>>& events,
+      State<T>* state, Context<T>* context) const final {
     ADD_FAILURE() << "Implementation is required, but unused here.";
   }
 
@@ -967,12 +993,27 @@ class ComputationTestSystem final : public System<double> {
       DiscreteValues<double>* discrete_state) const final {
     ADD_FAILURE() << "Implementation is required, but unused here.";
   }
+
+  void DoApplyDiscreteVariableUpdate(
+      const EventCollection<DiscreteUpdateEvent<double>>& events,
+      DiscreteValues<double>* discrete_state,
+      Context<double>* context) const final {
+    ADD_FAILURE() << "Implementation is required, but unused here.";
+  }
+
   void DispatchUnrestrictedUpdateHandler(
       const Context<double>&,
       const EventCollection<UnrestrictedUpdateEvent<double>>&,
       State<double>*) const final {
     ADD_FAILURE() << "Implementation is required, but unused here.";
   }
+
+  void DoApplyUnrestrictedUpdate(
+      const EventCollection<UnrestrictedUpdateEvent<double>>& events,
+      State<double>* state, Context<double>* context) const final {
+    ADD_FAILURE() << "Implementation is required, but unused here.";
+  }
+
   std::map<PeriodicEventData, std::vector<const Event<double>*>,
            PeriodicEventDataComparator>
   DoGetPeriodicEvents() const final { return {}; }
