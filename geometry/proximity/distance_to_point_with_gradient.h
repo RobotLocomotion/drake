@@ -36,7 +36,7 @@ double DistanceToPointRelativeTolerance(double size);
  * @{
  */
 
-/** Overload of @ref ComputeDistanceToPrimitive for sphere primitive. */
+/** Overload of ComputeDistanceToPrimitive() for sphere primitive. */
 template <typename T>
 void ComputeDistanceToPrimitive(const fcl::Sphered& sphere,
                                 const math::RigidTransform<T>& X_WG,
@@ -73,7 +73,7 @@ void ComputeDistanceToPrimitive(const fcl::Sphered& sphere,
   *grad_W = X_WG.rotation() * grad_G;
 }
 
-/** Overload of @ref ComputeDistanceToPrimitive for halfspace primitive. */
+/** Overload of ComputeDistanceToPrimitive() for halfspace primitive. */
 template <typename T>
 void ComputeDistanceToPrimitive(const fcl::Halfspaced& halfspace,
                                 const math::RigidTransform<T>& X_WG,
