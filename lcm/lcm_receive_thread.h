@@ -15,7 +15,8 @@ namespace lcm {
  * the messages to the appropriate message handlers.
  *
  * @warning Almost no Drake uses of LCM should require a background thread.
- * Please use DrakeLcmInterface::HandleSubscriptions() instead.
+ * Please use DrakeLcmInterface::HandleSubscriptions() or
+ * drake::systems::lcm::LcmInterfaceSystem instead.
  */
 class LcmReceiveThread {
  public:
