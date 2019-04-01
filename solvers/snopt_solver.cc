@@ -1015,8 +1015,27 @@ void SnoptSolver::DoSolve(
   Eigen::VectorXd x_val(prog.num_vars());
   SnoptSolverDetails& solver_details =
       result->SetSolverDetailsType<SnoptSolverDetails>();
+  std::unordered_map<std::string, int> int_options =
+      merged_options.GetOptionsInt(id());
+
+  // If "Timing level" is not zero, then snopt periodically calls etime to
+  // determine it's usage of cpu time (which on Linux calls getrusage in the
+  // libgfortran implementation).  Unfortunately getrusage is called using
+  // RUSAGE_SELF, which has unfortunate consenquences when using threads,
+  // namely (1) It returns the total count of CPU usage for all threads, so
+  // the result is garbage, and (2) on Linux the kernel holds a process wide
+  // lock inside getrusage when RUSAGE_SELF is specified, so other threads
+  // using snopt end up blocking on their getrusage calls.  Under the theory
+  // that a user who actually wants this behavior will turn it on
+  // deliberately, set "Timing level" to zero if the user hasn't requested
+  // another value.
+  const std::string kTimingLevel = "Timing level";
+  if (int_options.count(kTimingLevel) == 0) {
+    int_options[kTimingLevel] = 0;
+  }
+
   SolveWithGivenOptions(prog, initial_guess, merged_options.GetOptionsStr(id()),
-                        merged_options.GetOptionsInt(id()),
+                        int_options,
                         merged_options.GetOptionsDouble(id()), &snopt_status,
                         &objective, &x_val, &solver_details);
 
