@@ -15,17 +15,27 @@ namespace drake {
 namespace geometry {
 namespace internal {
 /**
- * Calculates a tolerance relative to a given `size` parameter with a lower
- * bound of 1e-14 meter. If the `size` parameter is larger than 1 meter, we
- * use the relative tolerance of 1e-14 times the `size`.  If the `size` is
- * smaller than 1 meter, we use the absolute tolerance 1e-14 meter. The
- * 1e-14-meter lower bound helps us handle possible round off errors arising
- * from applying a pose X_WG to a geometry G. Given a query point Q exactly
- * on the boundary ∂G, if we apply X_WG to both Q and G, the point Q is likely
- * to deviate from ∂G more than the machine epsilon, which is around 2e-16.
+ *Calculates an absolute tolerance value conditioned to a problem's
+ *characteristic `size`. The tolerance is sufficient to account for round-off
+ *error which arises due to transformations.
  */
 double DistanceToPointRelativeTolerance(double size);
 
+/**
+ * Computes the signed distance from a point Q to a sphere.
+ * @param sphere The distance from a point Q to this sphere is computed.
+ * @param X_WG The pose of the sphere geometry G in the world frame.
+ * @param p_WQ The position of the point Q in the world frame.
+ * @param p_GN[out] The position of the witness point N on the sphere, expressed
+ * in the sphere geometry frame G.
+ * @param distance[out] The signed distance from the point Q to the sphere.
+ * @param grad_W[out] The gradient of the distance function w.r.t p_GQ (the
+ * position of the point Q in the sphere frame). This gradient vector is
+ * expressed in the world frame.
+ * @note When the point Q coincides the center of the sphere, we set grad_W to
+ * be X_WG.rotation() * [1;0;0]. Namely we arbitrarily pick the unit vector in
+ * the x direction of the sphere geometry frame.
+ */
 template <typename T>
 void ComputeDistanceToPrimitive(const fcl::Sphered& sphere,
                                 const math::RigidTransform<T>& X_WG,
@@ -46,7 +56,7 @@ void ComputeDistanceToPrimitive(const fcl::Sphered& sphere,
   // query_object.h (QueryObject::ComputeSignedDistanceToPoint).
   const double tolerance = DistanceToPointRelativeTolerance(radius);
   // Unit vector in x-direction of G's frame.
-  const Vector3<T> Gx(T(1.), T(0.), T(0.));
+  const Vector3<T> Gx = Vector3<T>::UnitX();
   // Gradient vector expressed in G's frame.
   const Vector3<T> grad_G = (dist_GQ > tolerance) ? p_GQ_G / dist_GQ : Gx;
 
@@ -62,6 +72,19 @@ void ComputeDistanceToPrimitive(const fcl::Sphered& sphere,
   *grad_W = X_WG.rotation() * grad_G;
 }
 
+/**
+ * Computes the signed distance from a point Q to a halfspace.
+ * @param halfspace The halfspace to which the distance is computed.
+ * @param X_WG The pose of the halfspace geometry frame G expressed in the world
+ * frame W.
+ * @param p_WQ The position of the point Q expressed in the world frame.
+ * @param p_GN[out] The position of the witness point N on the halfspace,
+ * expressed in the halfspace geometry frame G.
+ * @param distance[out] The signed distance from the point Q to the halfspace.
+ * @param grad_W[out] The gradient of the distance function w.r.t p_GQ (the
+ * position of the point Q in the halfspace frame). This gradient vector is
+ * expressed in the world frame.
+ */
 template <typename T>
 void ComputeDistanceToPrimitive(const fcl::Halfspaced& halfspace,
                                 const math::RigidTransform<T>& X_WG,
@@ -73,7 +96,7 @@ void ComputeDistanceToPrimitive(const fcl::Halfspaced& halfspace,
   const Vector3<T> p_GQ = X_WG.inverse() * p_WQ;
   *distance = n_G.dot(p_GQ) - T(halfspace.d);
   *p_GN = p_GQ - *distance * n_G;
-  *grad_W = (X_WG.rotation() * n_G).template cast<T>();
+  *grad_W = X_WG.rotation() * n_G;
 }
 
 /**
@@ -82,6 +105,8 @@ void ComputeDistanceToPrimitive(const fcl::Halfspaced& halfspace,
  */
 class DistanceToPointWithGradient {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DistanceToPointWithGradient)
+
   DistanceToPointWithGradient(const GeometryId id, math::RigidTransformd X_WG,
                               Eigen::Vector3d p_WQ)
       : geometry_id_(id), X_WG_(std::move(X_WG)), p_WQ_(std::move(p_WQ)) {}

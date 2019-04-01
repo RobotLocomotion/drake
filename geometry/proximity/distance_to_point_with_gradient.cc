@@ -5,6 +5,11 @@
 namespace drake {
 namespace geometry {
 namespace internal {
+
+double DistanceToPointRelativeTolerance(double size) {
+  return 1e-14 * std::max(1., size);
+}
+
 template <typename PrimitiveType>
 SignedDistanceToPointWithGradient DistanceToPointWithGradient::ComputeDistance(
     const PrimitiveType& primitive) const {
@@ -13,6 +18,8 @@ SignedDistanceToPointWithGradient DistanceToPointWithGradient::ComputeDistance(
   Vector3<AutoDiffd<3>> p_WQ_autodiff;
   for (int i = 0; i < 3; ++i) {
     p_WQ_autodiff(i).value() = p_WQ_(i);
+    // derivatives() is a column vector. Hence we need the transpose on the
+    // right-hand side.
     p_WQ_autodiff(i).derivatives() = X_WG_.rotation().row(i).transpose();
   }
   X_WG_autodiff.set_rotation(X_WG_.rotation().cast<AutoDiffd<3>>());
@@ -32,10 +39,6 @@ SignedDistanceToPointWithGradient DistanceToPointWithGradient::ComputeDistance(
   signed_distance.dgrad_W_dp_GQ =
       math::autoDiffToGradientMatrix(grad_W_autodiff);
   return signed_distance;
-}
-
-double DistanceToPointRelativeTolerance(double size) {
-  return 1e-14 * std::max(1., size);
 }
 
 SignedDistanceToPointWithGradient DistanceToPointWithGradient::operator()(
