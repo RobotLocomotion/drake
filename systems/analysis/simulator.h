@@ -842,10 +842,9 @@ void Simulator<T>::HandleUnrestrictedUpdate(
     // First, compute the unrestricted updates into a temporary buffer.
     system_.CalcUnrestrictedUpdate(*context_, events,
         unrestricted_updates_.get());
-    // TODO(edrumwri): simply swap the states for additional speed.
     // Now write the update back into the context.
-    State<T>& x = context_->get_mutable_state();
-    x.SetFrom(*unrestricted_updates_);
+    system_.ApplyUnrestrictedUpdate(events, unrestricted_updates_.get(),
+        context_.get());
     ++num_unrestricted_updates_;
 
     // Mark the witness function vector as needing to be redetermined.
@@ -862,8 +861,8 @@ void Simulator<T>::HandleDiscreteUpdate(
     system_.CalcDiscreteVariableUpdates(*context_, events,
         discrete_updates_.get());
     // Then, write them back into the context.
-    DiscreteValues<T>& xd = context_->get_mutable_discrete_state();
-    xd.SetFrom(*discrete_updates_);
+    system_.ApplyDiscreteVariableUpdate(events, discrete_updates_.get(),
+        context_.get());
     ++num_discrete_updates_;
   }
 }
