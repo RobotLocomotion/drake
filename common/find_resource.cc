@@ -10,6 +10,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/find_loaded_library.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/text_logging.h"
 
 using std::string;
 
@@ -278,6 +279,7 @@ void AddResourceSearchPath(string search_path) {
 }
 
 Result FindResource(string resource_path) {
+  drake::log()->trace("FindResource: '{}'", resource_path);
   // Check if resource_path is well-formed: a relative path that starts with
   // "drake" as its first directory name.  A valid example would look like:
   // "drake/common/test/find_resource_test_data.txt".  Requiring strings passed
@@ -339,6 +341,8 @@ Result FindResource(string resource_path) {
 
   // See which (if any) candidate contains the requested resource.
   for (const auto& candidate_dir : candidate_dirs) {
+    drake::log()->trace("FindResource: candidate_dir = '{}'",
+        candidate_dir ? *candidate_dir : "nullopt");
     if (auto absolute_path = FileExists(candidate_dir, resource_path_substr)) {
       return Result::make_success(
           std::move(resource_path), std::move(*absolute_path));
