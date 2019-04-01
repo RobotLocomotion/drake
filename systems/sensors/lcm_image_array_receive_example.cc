@@ -8,10 +8,9 @@
 #include "robotlocomotion/image_array_t.hpp"
 
 #include "drake/common/text_logging_gflags.h"
-#include "drake/common/unused.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_interface_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/sensors/image.h"
@@ -32,12 +31,12 @@ namespace sensors {
 namespace {
 
 int DoMain() {
-  drake::lcm::DrakeLcm lcm;
   DiagramBuilder<double> builder;
 
+  auto lcm = builder.AddSystem<systems::lcm::LcmInterfaceSystem>();
   auto image_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<image_array_t>(
-          FLAGS_channel_name, &lcm));
+          FLAGS_channel_name, lcm));
   auto array_to_images = builder.AddSystem<LcmImageArrayToImages>();
   builder.Connect(image_sub->get_output_port(),
                   array_to_images->image_array_t_input_port());
@@ -54,7 +53,7 @@ int DoMain() {
 
   auto image_array_lcm_publisher = builder.AddSystem(
       lcm::LcmPublisherSystem::Make<robotlocomotion::image_array_t>(
-          FLAGS_publish_name, &lcm, 0.1 /* publish period */));
+          FLAGS_publish_name, lcm, 0.1 /* publish period */));
   builder.Connect(
       image_to_lcm_image_array->image_array_t_msg_output_port(),
       image_array_lcm_publisher->get_input_port());
@@ -64,7 +63,6 @@ int DoMain() {
   auto simulator = std::make_unique<systems::Simulator<double>>(
       *diagram, std::move(context));
 
-  lcm.StartReceiveThread();
   simulator->set_publish_at_initialization(true);
   simulator->set_publish_every_time_step(false);
   simulator->set_target_realtime_rate(1.0);

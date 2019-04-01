@@ -91,8 +91,8 @@ class TestSystemsLcm(unittest.TestCase):
         dut = mut.LcmSubscriberSystem.Make(
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm)
         model_message = self._model_message()
-        lcm.InduceSubscriberCallback(
-            channel="TEST_CHANNEL", buffer=model_message.encode())
+        lcm.Publish(channel="TEST_CHANNEL", buffer=model_message.encode())
+        lcm.HandleSubscriptions(0)
         actual_message = self._calc_output(dut).get_value()
         self.assert_lcm_equal(actual_message, model_message)
 
@@ -102,8 +102,8 @@ class TestSystemsLcm(unittest.TestCase):
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
             use_cpp_serializer=True)
         model_message = self._model_message()
-        lcm.InduceSubscriberCallback(
-            channel="TEST_CHANNEL", buffer=model_message.encode())
+        lcm.Publish(channel="TEST_CHANNEL", buffer=model_message.encode())
+        lcm.HandleSubscriptions(0)
         actual_message = self._cpp_value_to_py_message(self._calc_output(dut))
         self.assert_lcm_equal(actual_message, model_message)
 

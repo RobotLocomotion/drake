@@ -28,6 +28,7 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
+#include "drake/systems/lcm/lcm_interface_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/rendering/render_pose_to_geometry_pose.h"
@@ -41,6 +42,7 @@ using maliput::api::LaneEnd;
 using maliput::api::LaneId;
 using maliput::api::RoadGeometry;
 using maliput::api::RoadGeometryId;
+using systems::lcm::LcmInterfaceSystem;
 using systems::lcm::LcmPublisherSystem;
 using systems::lcm::LcmSubscriberSystem;
 using systems::OutputPort;
@@ -129,27 +131,24 @@ AutomotiveSimulator<T>::AutomotiveSimulator()
 template <typename T>
 AutomotiveSimulator<T>::AutomotiveSimulator(
     std::unique_ptr<lcm::DrakeLcmInterface> lcm)
-    : lcm_(std::move(lcm)) {
+    : owned_lcm_(std::move(lcm)) {
   aggregator_ =
       builder_->template AddSystem<systems::rendering::PoseAggregator<T>>();
   aggregator_->set_name("pose_aggregator");
 
-  if (lcm_) {
+  if (owned_lcm_) {
+    lcm_ = builder_->template AddSystem<LcmInterfaceSystem>(owned_lcm_.get());
     scene_graph_ = builder_->template AddSystem<geometry::SceneGraph>();
-    geometry::ConnectDrakeVisualizer(builder_.get(), *scene_graph_, lcm_.get());
+    geometry::ConnectDrakeVisualizer(builder_.get(), *scene_graph_, lcm_);
   }
 }
 
 template <typename T>
-AutomotiveSimulator<T>::~AutomotiveSimulator() {
-  // Forces the LCM instance to be destroyed before any of the subscribers are
-  // destroyed.
-  lcm_.reset();
-}
+AutomotiveSimulator<T>::~AutomotiveSimulator() {}
 
 template <typename T>
 lcm::DrakeLcmInterface* AutomotiveSimulator<T>::get_lcm() {
-  return lcm_.get();
+  return owned_lcm_.get();
 }
 
 template <typename T>
@@ -285,7 +284,7 @@ int AutomotiveSimulator<T>::AddPriusSimpleCar(
   if (!channel_name.empty() && lcm_) {
     auto command_subscriber = builder_->AddSystem(
         LcmSubscriberSystem::Make<drake::lcmt_driving_command_t>(
-            channel_name, lcm_.get()));
+            channel_name, lcm_));
     auto command_decoder =
         builder_->template AddSystem<DrivingCommandDecoder>();
     builder_->Connect(*command_subscriber, *command_decoder);
@@ -625,7 +624,7 @@ void AutomotiveSimulator<T>::AddPublisher(const MaliputRailcar<T>& system,
   auto encoder = builder_->template AddSystem<MaliputRailcarStateEncoder>();
   auto publisher = builder_->AddSystem(
       LcmPublisherSystem::Make<lcmt_maliput_railcar_state_t>(
-          channel, lcm_.get()));
+          channel, lcm_));
   builder_->Connect(system.state_output(), encoder->get_input_port(0));
   builder_->Connect(encoder->get_output_port(0), publisher->get_input_port());
 }
@@ -640,7 +639,7 @@ void AutomotiveSimulator<T>::AddPublisher(const SimpleCar<T>& system,
   auto encoder = builder_->template AddSystem<SimpleCarStateEncoder>();
   auto publisher = builder_->AddSystem(
       LcmPublisherSystem::Make<lcmt_simple_car_state_t>(
-          channel, lcm_.get()));
+          channel, lcm_));
   builder_->Connect(system.state_output(), encoder->get_input_port(0));
   builder_->Connect(encoder->get_output_port(0), publisher->get_input_port());
 }
@@ -655,7 +654,7 @@ void AutomotiveSimulator<T>::AddPublisher(const TrajectoryCar<T>& system,
   auto encoder = builder_->template AddSystem<SimpleCarStateEncoder>();
   auto publisher = builder_->AddSystem(
       LcmPublisherSystem::Make<lcmt_simple_car_state_t>(
-          channel, lcm_.get()));
+          channel, lcm_));
   builder_->Connect(system.raw_pose_output(), encoder->get_input_port(0));
   builder_->Connect(encoder->get_output_port(0), publisher->get_input_port());
 }

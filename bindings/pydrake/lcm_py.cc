@@ -38,8 +38,10 @@ PYBIND11_MODULE(lcm, m) {
               self->Publish(channel, str.data(), str.size(), time_sec);
             },
             py::arg("channel"), py::arg("buffer"),
-            py::arg("time_sec") = py::none(),
-            doc.DrakeLcmInterface.Publish.doc);
+            py::arg("time_sec") = py::none(), doc.DrakeLcmInterface.Publish.doc)
+        .def("HandleSubscriptions", &DrakeLcmInterface::HandleSubscriptions,
+            py::arg("timeout_millis"),
+            doc.DrakeLcmInterface.HandleSubscriptions.doc);
   }
 
   {
