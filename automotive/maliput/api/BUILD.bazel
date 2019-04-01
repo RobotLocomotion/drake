@@ -49,6 +49,7 @@ drake_cc_library(
         "rules/right_of_way_state_provider.h",
         "rules/road_rulebook.h",
         "rules/speed_limit_rule.h",
+        "rules/traffic_light_book.h",
         "rules/traffic_lights.h",
         "segment.h",
         "type_specific_identifier.h",

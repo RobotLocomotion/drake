@@ -20,6 +20,7 @@ drake_cc_package_library(
         ":simple_right_of_way_phase_book",
         ":simple_right_of_way_phase_provider",
         ":simple_rulebook",
+        ":traffic_light_book",
         ":trivial_right_of_way_state_provider",
         ":yaml_io",
     ],
@@ -132,6 +133,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "traffic_light_book",
+    srcs = [
+        "traffic_light_book.cc",
+    ],
+    hdrs = [
+        "traffic_light_book.h",
+    ],
+    deps = [
+        "//automotive/maliput/api",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "trivial_right_of_way_state_provider",
     srcs = [
         "trivial_right_of_way_state_provider.cc",
@@ -221,6 +236,14 @@ drake_cc_googletest(
     name = "simple_rulebook_test",
     deps = [
         ":simple_rulebook",
+        "//automotive/maliput/api/test_utilities:rules_test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "traffic_light_book_test",
+    deps = [
+        ":traffic_light_book",
         "//automotive/maliput/api/test_utilities:rules_test_utilities",
     ],
 )
