@@ -321,11 +321,15 @@ void reorder_eigen(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
         continue;
       }
     } else {  // p block size = 2
-      double det_S = S(p, p) * S(p + 1, p + 1) - S(p + 1, p) * S(p, p + 1);
-      double det_T = T(p, p) * T(p + 1, p + 1) - T(p + 1, p) * T(p, p + 1);
-      if (fabs(det_T) > eps && fabs(det_S) <= fabs(det_T)) {  // stable
-        p += 2;
-        continue;
+      const double det_T =
+          T(p, p) * T(p + 1, p + 1) - T(p + 1, p) * T(p, p + 1);
+      if (fabs(det_T) > eps) {
+        const double det_S =
+            S(p, p) * S(p + 1, p + 1) - S(p + 1, p) * S(p, p + 1);
+        if (fabs(det_S) <= fabs(det_T)) {  // stable
+          p += 2;
+          continue;
+        }
       }
     }
     break;
@@ -344,11 +348,15 @@ void reorder_eigen(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
         }
         q++;
       } else {  // block size = 2
-        double det_S = S(q, q) * S(q + 1, q + 1) - S(q + 1, q) * S(q, q + 1);
-        double det_T = T(q, q) * T(q + 1, q + 1) - T(q + 1, q) * T(q, q + 1);
-        if (fabs(det_T) > eps && fabs(det_S) <= fabs(det_T)) {
-          q_block_size = 2;
-          break;
+        const double det_T =
+            T(q, q) * T(q + 1, q + 1) - T(q + 1, q) * T(q, q + 1);
+        if (fabs(det_T) > eps) {
+          const double det_S =
+              S(q, q) * S(q + 1, q + 1) - S(q + 1, q) * S(q, q + 1);
+          if (fabs(det_S) <= fabs(det_T)) {
+            q_block_size = 2;
+            break;
+          }
         }
         q += 2;
       }

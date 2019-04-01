@@ -59,6 +59,12 @@ GTEST_TEST(DARE, SolveDAREandVerify) {
   Q3 << 1, 0, 0, 1;
   R3 << 1;
   SolveDAREandVerify(A3, B3, Q3, R3);
+  // Test 4: A = B = Q = R = I_2 (2-by-2 identity matrix)
+  const Eigen::MatrixXd A4{Eigen::Matrix2d::Identity()};
+  const Eigen::MatrixXd B4{Eigen::Matrix2d::Identity()};
+  const Eigen::MatrixXd Q4{Eigen::Matrix2d::Identity()};
+  const Eigen::MatrixXd R4{Eigen::Matrix2d::Identity()};
+  SolveDAREandVerify(A4, B4, Q4, R4);
 }
 }  // namespace
 }  // namespace math
