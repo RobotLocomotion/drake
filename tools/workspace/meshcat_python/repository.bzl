@@ -41,9 +41,9 @@ def _impl(repository_ctx):
     github_download_and_extract(
         repository_ctx,
         "rdeits/meshcat-python",
-        "d26423c5efe776a811319a09c9fb0304211b5a2a",
+        "aa3865143120f5ace8e62aab71d825e33674d277",
         repository_ctx.attr.mirrors,
-        sha256 = "06b08281ee174573ebc3dbb6065ba5952e4c95375b70ae59e0145ef577a93bec",  # noqa
+        sha256 = "e35bdcaf54cc5226db1cab15d5a34ebbeebe829542d00e4842ba3c956d9d9ade",  # noqa
     )
 
     repository_ctx.symlink(
