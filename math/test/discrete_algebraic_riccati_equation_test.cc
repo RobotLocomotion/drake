@@ -59,6 +59,14 @@ GTEST_TEST(DARE, SolveDAREandVerify) {
   Q3 << 1, 0, 0, 1;
   R3 << 1;
   SolveDAREandVerify(A3, B3, Q3, R3);
+  // Test 4: A = B = Q = R = I_2 (2-by-2 identity matrix)
+  int n4 = 2, m4 = 2;
+  MatrixXd A4(n4, n4), B4(n4, m4), Q4(n4, n4), R4(m4, m4);
+  A4 << 1, 0, 0, 1;
+  B4 << 1, 0, 0, 1;
+  Q4 << 1, 0, 0, 1;
+  R4 << 1, 0, 0, 1;
+  SolveDAREandVerify(A4, B4, Q4, R4);
 }
 }  // namespace
 }  // namespace math
