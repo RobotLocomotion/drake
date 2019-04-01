@@ -720,6 +720,29 @@ class System : public SystemBase {
     DispatchDiscreteVariableUpdateHandler(context, events, discrete_state);
   }
 
+  /// Given the @p discrete_state results of a previous call to
+  /// CalcDiscreteVariableUpdates() that processed the given collection of
+  /// events, modifies the @p context to reflect the updated @p discrete_state.
+  /// @param[in] events
+  ///     The Event collection that resulted in the given @p discrete_state.
+  /// @param[in,out] discrete_state
+  ///     The updated discrete state from a CalcDiscreteVariableUpdates()
+  ///     call. This is mutable to permit its contents to be swapped with the
+  ///     corresponding @p context contents (rather than copied).
+  /// @param[in,out] context
+  ///     The Context whose discrete state is modified to match
+  ///     @p discrete_state. Note that swapping contents with @p discrete_state
+  ///     may cause addresses of individual discrete state group vectors in
+  ///     @p context to be different on return than they were on entry.
+  /// @pre @p discrete_state is the result of a previous
+  ///      CalcDiscreteVariableUpdates() call that processed this @p events
+  ///      collection.
+  void ApplyDiscreteVariableUpdate(
+      const EventCollection<DiscreteUpdateEvent<T>>& events,
+      DiscreteValues<T>* discrete_state, Context<T>* context) const {
+    DoApplyDiscreteVariableUpdate(events, discrete_state, context);
+  }
+
   /// This method forces a discrete update on the system given a @p context,
   /// and the updated discrete state is stored in @p discrete_state. The
   /// discrete update event will have a trigger type of kForced, with no
@@ -760,6 +783,28 @@ class System : public SystemBase {
       throw std::logic_error(
           "State variable dimensions cannot be changed "
           "in CalcUnrestrictedUpdate().");
+  }
+
+  /// Given the @p state results of a previous call to CalcUnrestrictedUpdate()
+  /// that processed the given collection of events, modifies the @p context to
+  /// reflect the updated @p state.
+  /// @param[in] events
+  ///     The Event collection that resulted in the given @p state.
+  /// @param[in,out] state
+  ///     The updated State from a CalcUnrestrictedUpdate() call. This is
+  ///     mutable to permit its contents to be swapped with the corresponding
+  ///     @p context contents (rather than copied).
+  /// @param[in,out] context
+  ///     The Context whose State is modified to match @p state. Note that
+  ///     swapping contents with the @p state may cause addresses of
+  ///     continuous, discrete, and abstract state containers in @p context
+  ///     to be different on return than they were on entry.
+  /// @pre @p state is the result of a previous CalcUnrestrictedUpdate() call
+  ///      that processed this @p events collection.
+  void ApplyUnrestrictedUpdate(
+      const EventCollection<UnrestrictedUpdateEvent<T>>& events,
+      State<T>* state, Context<T>* context) const {
+    DoApplyUnrestrictedUpdate(events, state, context);
   }
 
   /// This method forces an unrestricted update on the system given a
@@ -1675,12 +1720,20 @@ class System : public SystemBase {
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const = 0;
 
+  virtual void DoApplyDiscreteVariableUpdate(
+      const EventCollection<DiscreteUpdateEvent<T>>& events,
+      DiscreteValues<T>* discrete_state, Context<T>* context) const = 0;
+
   /// This function dispatches all unrestricted update events to the appropriate
   /// handlers. @p state cannot be null.
   virtual void DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const = 0;
+
+  virtual void DoApplyUnrestrictedUpdate(
+      const EventCollection<UnrestrictedUpdateEvent<T>>& events,
+      State<T>* state, Context<T>* context) const = 0;
   //@}
 
   //----------------------------------------------------------------------------

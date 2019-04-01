@@ -2352,6 +2352,20 @@ class LeafSystem : public System<T> {
         discrete_state);
   }
 
+  // To get here:
+  // - The EventCollection must be a LeafEventCollection, and
+  // - There must be at least one Event belonging to this leaf subsystem.
+  void DoApplyDiscreteVariableUpdate(
+      const EventCollection<DiscreteUpdateEvent<T>>& events,
+      DiscreteValues<T>* discrete_state, Context<T>* context) const final {
+    DRAKE_ASSERT(
+        dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<T>>*>(
+            &events) != nullptr);
+    DRAKE_DEMAND(events.HasEvents());
+    // TODO(sherm1) Should swap rather than copy.
+    context->get_mutable_discrete_state().SetFrom(*discrete_state);
+  }
+
   // Calls DoCalcUnrestrictedUpdate.
   // Assumes @param events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
@@ -2367,6 +2381,20 @@ class LeafSystem : public System<T> {
     // events.
     DRAKE_DEMAND(leaf_events.HasEvents());
     this->DoCalcUnrestrictedUpdate(context, leaf_events.get_events(), state);
+  }
+
+  // To get here:
+  // - The EventCollection must be a LeafEventCollection, and
+  // - There must be at least one Event belonging to this leaf subsystem.
+  void DoApplyUnrestrictedUpdate(
+      const EventCollection<UnrestrictedUpdateEvent<T>>& events,
+      State<T>* state, Context<T>* context) const final {
+    DRAKE_ASSERT(
+        dynamic_cast<const LeafEventCollection<UnrestrictedUpdateEvent<T>>*>(
+            &events) != nullptr);
+    DRAKE_DEMAND(events.HasEvents());
+    // TODO(sherm1) Should swap rather than copy.
+    context->get_mutable_state().SetFrom(*state);
   }
 
   void DoGetPerStepEvents(
