@@ -75,13 +75,12 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
     HumanoidStatus robot_status(&robot, alias_groups);
     robot_status.UpdateKinematics(0, q, v);
     auto state_source = builder.AddSystem<systems::ConstantValueSource<double>>(
-        AbstractValue::Make<RobotKinematicState<double>>(
-            robot_status));
+        Value<RobotKinematicState<double>>(robot_status));
 
     // Adds a dummy plan message.
     robotlocomotion::robot_plan_t msg{};
     auto plan_source = builder.AddSystem<systems::ConstantValueSource<double>>(
-        AbstractValue::Make<robotlocomotion::robot_plan_t>(msg));
+        Value<robotlocomotion::robot_plan_t>(msg));
 
     // State -> qp inverse dynamics.
     builder.Connect(state_source->get_output_port(0),

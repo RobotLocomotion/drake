@@ -425,7 +425,7 @@ int AutomotiveSimulator<T>::AddIdmControlledCar(
   const LaneDirection lane_direction(goal_lane, initial_with_s);
   auto lane_source =
       builder_->template AddSystem<systems::ConstantValueSource<T>>(
-          AbstractValue::Make<LaneDirection>(lane_direction));
+          Value<LaneDirection>(lane_direction));
 
   auto simple_car = builder_->template AddSystem<SimpleCar<T>>();
   simple_car->set_name(name + "_simple_car");
