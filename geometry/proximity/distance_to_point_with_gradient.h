@@ -15,27 +15,28 @@ namespace drake {
 namespace geometry {
 namespace internal {
 /**
- *Calculates an absolute tolerance value conditioned to a problem's
- *characteristic `size`. The tolerance is sufficient to account for round-off
- *error which arises due to transformations.
+ * Calculates an absolute tolerance value conditioned to a problem's
+ * characteristic `size`. The tolerance is sufficient to account for round-off
+ * error which arises due to transformations.
  */
 double DistanceToPointRelativeTolerance(double size);
 
 /**
- * Computes the signed distance from a point Q to a sphere.
- * @param sphere The distance from a point Q to this sphere is computed.
- * @param X_WG The pose of the sphere geometry G in the world frame.
+ * @name ComputeDistanceToPrimitive
+ * Computes the signed distance from a point Q to a primitive.
+ * Refer to QueryObject::ComputeSignedDistanceToPoint for more details.
+ * @param X_WG The pose of the primitive geometry G in the world frame.
  * @param p_WQ The position of the point Q in the world frame.
- * @param p_GN[out] The position of the witness point N on the sphere, expressed
- * in the sphere geometry frame G.
- * @param distance[out] The signed distance from the point Q to the sphere.
+ * @param p_GN[out] The position of the witness point N on the primitive,
+ * expressed in the primitive geometry frame G.
+ * @param distance[out] The signed distance from the point Q to the primitive.
  * @param grad_W[out] The gradient of the distance function w.r.t p_GQ (the
- * position of the point Q in the sphere frame). This gradient vector is
+ * position of the point Q in the primitiveframe). This gradient vector is
  * expressed in the world frame.
- * @note When the point Q coincides the center of the sphere, we set grad_W to
- * be X_WG.rotation() * [1;0;0]. Namely we arbitrarily pick the unit vector in
- * the x direction of the sphere geometry frame.
+ * @{
  */
+
+/** Overload of @ref ComputeDistanceToPrimitive for sphere primitive. */
 template <typename T>
 void ComputeDistanceToPrimitive(const fcl::Sphered& sphere,
                                 const math::RigidTransform<T>& X_WG,
@@ -72,19 +73,7 @@ void ComputeDistanceToPrimitive(const fcl::Sphered& sphere,
   *grad_W = X_WG.rotation() * grad_G;
 }
 
-/**
- * Computes the signed distance from a point Q to a halfspace.
- * @param halfspace The halfspace to which the distance is computed.
- * @param X_WG The pose of the halfspace geometry frame G expressed in the world
- * frame W.
- * @param p_WQ The position of the point Q expressed in the world frame.
- * @param p_GN[out] The position of the witness point N on the halfspace,
- * expressed in the halfspace geometry frame G.
- * @param distance[out] The signed distance from the point Q to the halfspace.
- * @param grad_W[out] The gradient of the distance function w.r.t p_GQ (the
- * position of the point Q in the halfspace frame). This gradient vector is
- * expressed in the world frame.
- */
+/** Overload of @ref ComputeDistanceToPrimitive for halfspace primitive. */
 template <typename T>
 void ComputeDistanceToPrimitive(const fcl::Halfspaced& halfspace,
                                 const math::RigidTransform<T>& X_WG,
@@ -98,6 +87,7 @@ void ComputeDistanceToPrimitive(const fcl::Halfspaced& halfspace,
   *p_GN = p_GQ - *distance * n_G;
   *grad_W = X_WG.rotation() * n_G;
 }
+//@}
 
 /**
  * An internal functor to support the call back function in proximity_engine.cc.

@@ -42,6 +42,9 @@ void CheckDistanceToSphere(const fcl::Sphered& sphere,
     EXPECT_NEAR(signed_distance.distance, -sphere.radius, tol);
     grad_W_expected =
         X_WG.rotation().cast<AutoDiffd<3>>() * Vector3<AutoDiffd<3>>::UnitX();
+    // since p_GN is fixed when Q coincides with the sphere, dp_GN_dp_GQ = 0.
+    EXPECT_TRUE(CompareMatrices(signed_distance.dp_GN_dp_GQ,
+                                Eigen::Matrix3d::Zero(), tol));
   }
   // Check grad_W and its gradient.
   EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(grad_W_expected),
@@ -89,13 +92,12 @@ void CheckDistanceToHalfspace(const fcl::Halfspaced& halfspace,
   const double tol = 100 * kEps;
   // First check that p_GN is on the boundary of the halfspace.
   EXPECT_NEAR(signed_distance.p_GN.dot(halfspace.n), halfspace.d, tol);
-  // Now check that p_GQ - p_GN is parallel to ddistance_dp_GQ
-  const Eigen::Vector3d p_NQ_G = p_GQ - signed_distance.p_GN;
-  EXPECT_NEAR(p_NQ_G.cross(signed_distance.ddistance_dp_GQ.transpose()).norm(),
-              0, tol);
   // ddistance_dp_GQ is the same as n
   EXPECT_TRUE(CompareMatrices(signed_distance.ddistance_dp_GQ.transpose(),
                               halfspace.n, tol));
+  // Now check that p_GQ - p_GN is parallel to n
+  const Eigen::Vector3d p_NQ_G = p_GQ - signed_distance.p_GN;
+  EXPECT_NEAR(std::abs(p_NQ_G.dot(halfspace.n)), p_NQ_G.norm(), tol);
   // Check |NQ| = distance
   EXPECT_NEAR(p_NQ_G.norm(), signed_distance.distance, tol);
   EXPECT_NEAR(signed_distance.distance, halfspace.signedDistance(p_GQ), tol);

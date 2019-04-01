@@ -19,8 +19,7 @@ struct SignedDistanceToPointWithGradient {
   SignedDistanceToPointWithGradient() = default;
 
   /**
-   * Same as SignedDistanceToPoint::id_G. The id of the geometry G to which we
-   * measure distance from the query point Q.
+   * Same as SignedDistanceToPoint::id_G.
    */
   GeometryId id_G;
   /**
@@ -35,9 +34,7 @@ struct SignedDistanceToPointWithGradient {
   Eigen::Matrix3d dp_GN_dp_GQ;
   /**
    * Same as SignedDistanceToPoint::distance.The signed distance from the query
-   * point Q to the nearest point N on the surface of geometry G. It is positive
-   * if Q is outside G. It is negative if Q is inside G. It is zero if Q is on
-   * the boundary of G.
+   * point Q to the nearest point N on the surface of geometry G.
    */
   double distance{};
   /** The gradient of the distance w.r.t p_GQ. */
