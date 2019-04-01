@@ -30,9 +30,9 @@ config_setting(
     visibility = ["//visibility:private"],
 )
 
-PROJECT_MAJOR = 5
+PROJECT_MAJOR = 6
 
-PROJECT_MINOR = 0
+PROJECT_MINOR = 1
 
 PROJECT_PATCH = 0
 
