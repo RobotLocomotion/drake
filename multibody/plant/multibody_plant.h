@@ -3009,6 +3009,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                    math::RigidTransform<T>(X_FB));
   }
 
+  DRAKE_DEPRECATED(
+      "2019-06-15",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
@@ -3018,6 +3022,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                   shape, name, properties, scene_graph);
   }
 
+  DRAKE_DEPRECATED(
+      "2019-06-15",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
@@ -3027,6 +3035,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                   shape, name, diffuse_color, scene_graph);
   }
 
+  DRAKE_DEPRECATED(
+      "2019-06-15",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
@@ -3035,6 +3047,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                   shape, name, scene_graph);
   }
 
+  DRAKE_DEPRECATED(
+      "2019-06-15",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   geometry::GeometryId RegisterCollisionGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,

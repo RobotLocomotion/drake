@@ -43,13 +43,13 @@ MakePendulumPlant(const PendulumParameters& params,
     plant->RegisterAsSourceForSceneGraph(scene_graph);
     // Pose of the sphere used to visualize the point mass in the body frame B.
     const math::RigidTransformd X_BGs(-params.l() * Vector3d::UnitZ());
-    plant->RegisterVisualGeometry(point_mass, X_BGs.GetAsIsometry3(),
+    plant->RegisterVisualGeometry(point_mass, X_BGs,
                                   Sphere(params.point_mass_radius()),
                                   params.body_name());
 
     // Pose of the cylinder used to visualize the massless rod in frame B.
     const math::RigidTransformd X_BGc(-params.l() / 2.0 * Vector3d::UnitZ());
-    plant->RegisterVisualGeometry(point_mass, X_BGc.GetAsIsometry3(),
+    plant->RegisterVisualGeometry(point_mass, X_BGc,
         Cylinder(params.massless_rod_radius(), params.l()), "arm");
   }
 
