@@ -112,14 +112,18 @@ optional<std::string> getenv_optional(const char* const name) {
 // based on libdrake_marker.so's path; otherwise, return nullopt.  The
 // resulting string will already end with "drake"; that is, the directory will
 // contain files named like "common/foo.txt", not "drake/common/foo.txt".
-optional<std::string>  GetCandidateDirFromLibDrakeMarker() {
+void AppendCandidateDirsFromLibDrakeMarker(
+    std::vector<optional<std::string>>* candidate_dirs) {
   // Ensure that we have the library loaded.
   DRAKE_DEMAND(drake::internal::drake_marker_lib_check() == 1234);
   optional<std::string> libdrake_dir = LoadedLibraryPath("libdrake_marker.so");
   if (libdrake_dir) {
-    libdrake_dir = libdrake_dir.value() + "/../share/drake";
+    // This is the install path.
+    candidate_dirs->emplace_back(libdrake_dir.value() + "/../share/drake");
+    // This is the directory for `.runfiles`.
+    candidate_dirs->emplace_back(
+        libdrake_dir.value() + "/../../external/drake");
   }
-  return libdrake_dir;
 }
 
 // Returns true iff the path is relative (not absolute).
@@ -314,7 +318,7 @@ Result FindResource(string resource_path) {
   // (3) Find where `libdrake_marker.so` is, and add search path that
   // corresponds to resource folder in install tree based on
   // `libdrake_marker.so` location.
-  candidate_dirs.emplace_back(GetCandidateDirFromLibDrakeMarker());
+  AppendCandidateDirsFromLibDrakeMarker(&candidate_dirs);
 
   // (4) Find resources during `bazel test` execution.
   candidate_dirs.emplace_back(GetTestRunfilesDir());
