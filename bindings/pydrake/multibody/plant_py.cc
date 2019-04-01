@@ -423,14 +423,6 @@ PYBIND11_MODULE(plant, m) {
             &Class::RegisterAsSourceForSceneGraph, py::arg("scene_graph"),
             doc.MultibodyPlant.RegisterAsSourceForSceneGraph.doc)
         .def("RegisterVisualGeometry",
-            py::overload_cast<const Body<T>&, const Isometry3<double>&,
-                const geometry::Shape&, const std::string&,
-                const Vector4<double>&, geometry::SceneGraph<T>*>(
-                &Class::RegisterVisualGeometry),
-            py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
-            py::arg("diffuse_color"), py::arg("scene_graph") = nullptr,
-            doc_iso3_deprecation)
-        .def("RegisterVisualGeometry",
             py::overload_cast<const Body<T>&, const RigidTransform<double>&,
                 const geometry::Shape&, const std::string&,
                 const Vector4<double>&, geometry::SceneGraph<T>*>(
@@ -439,13 +431,18 @@ PYBIND11_MODULE(plant, m) {
             py::arg("diffuse_color"), py::arg("scene_graph") = nullptr,
             doc.MultibodyPlant.RegisterVisualGeometry
                 .doc_6args_body_X_BG_shape_name_diffuse_color_scene_graph)
-        .def("RegisterCollisionGeometry",
-            py::overload_cast<const Body<T>&, const Isometry3<double>&,
-                const geometry::Shape&, const std::string&,
-                const CoulombFriction<double>&, geometry::SceneGraph<T>*>(
-                &Class::RegisterCollisionGeometry),
+        .def("RegisterVisualGeometry",
+            [doc_iso3_deprecation](Class* self, const Body<T>& body,
+                const Isometry3<double>& X_BG, const geometry::Shape& shape,
+                const std::string& name, const Vector4<double>& diffuse_color,
+                geometry::SceneGraph<T>* scene_graph) {
+              WarnDeprecated(doc_iso3_deprecation);
+              return self->RegisterVisualGeometry(body,
+                  RigidTransform<double>(X_BG), shape, name, diffuse_color,
+                  scene_graph);
+            },
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
-            py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
+            py::arg("diffuse_color"), py::arg("scene_graph") = nullptr,
             doc_iso3_deprecation)
         .def("RegisterCollisionGeometry",
             py::overload_cast<const Body<T>&, const RigidTransform<double>&,
@@ -455,6 +452,20 @@ PYBIND11_MODULE(plant, m) {
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
             py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
             doc.MultibodyPlant.RegisterCollisionGeometry.doc)
+        .def("RegisterCollisionGeometry",
+            [doc_iso3_deprecation](Class* self, const Body<T>& body,
+                const Isometry3<double>& X_BG, const geometry::Shape& shape,
+                const std::string& name,
+                const CoulombFriction<double>& coulomb_friction,
+                geometry::SceneGraph<T>* scene_graph) {
+              WarnDeprecated(doc_iso3_deprecation);
+              return self->RegisterCollisionGeometry(body,
+                  RigidTransform<double>(X_BG), shape, name, coulomb_friction,
+                  scene_graph);
+            },
+            py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
+            py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
+            doc_iso3_deprecation)
         .def("get_source_id", &Class::get_source_id,
             doc.MultibodyPlant.get_source_id.doc)
         .def("get_geometry_query_input_port",
