@@ -55,7 +55,7 @@ void Multiplexer<T>::CombineInputsToOutput(const Context<T>& context,
                                            BasicVector<T>* output) const {
   auto output_vector = output->get_mutable_value();
   int output_vector_index{0};
-  for (int i = 0; i < this->get_num_input_ports(); ++i) {
+  for (int i = 0; i < this->num_input_ports(); ++i) {
     const int input_size = input_sizes_[i];
     output_vector.segment(output_vector_index, input_size) =
         this->get_input_port(i).Eval(context);

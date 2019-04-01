@@ -208,7 +208,7 @@ SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
     }
   }
   // Discrete state.
-  for (int i = 0; i < context.get_num_discrete_state_groups(); ++i) {
+  for (int i = 0; i < context.num_discrete_state_groups(); ++i) {
     for (int j = 0; j < context.get_discrete_state(i).size(); ++j) {
       success = ParseSymbolicVariableOrConstant(
           context.get_discrete_state(i).GetAtIndex(j), &map_var_to_index,
@@ -249,7 +249,7 @@ SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
   // input ports
   // TODO(hongkai.dai): parse fixed values in the input ports, when we can copy
   // the fixed input port value from Context<double> to Context<AutoDiffXd>.
-  for (int i = 0; i < context.get_num_input_ports(); ++i) {
+  for (int i = 0; i < context.num_input_ports(); ++i) {
     if (context.MaybeGetFixedInputPortValue(i) != nullptr) {
       throw std::runtime_error(
           "SystemConstraintAdapter doesn't support system with fixed input "
@@ -258,7 +258,7 @@ SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
   }
 
   // abstract state
-  if (context.get_num_abstract_states() != 0) {
+  if (context.num_abstract_states() != 0) {
     throw std::invalid_argument(
         "SystemConstraintAdapter: cannot handle system with abstract state "
         "using symbolic Context, try SystemConstraintAdapter::Create() "

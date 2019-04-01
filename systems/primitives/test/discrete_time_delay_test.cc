@@ -94,10 +94,10 @@ class DiscreteTimeDelayTest : public ::testing::TestWithParam<bool> {
 // Tests that the time delay has one input, one output and no direct
 // feedthrough.
 TEST_P(DiscreteTimeDelayTest, Topology) {
-  EXPECT_EQ(1, delay_->get_num_input_ports());
-  EXPECT_EQ(1, context_->get_num_input_ports());
+  EXPECT_EQ(1, delay_->num_input_ports());
+  EXPECT_EQ(1, context_->num_input_ports());
 
-  EXPECT_EQ(1, delay_->get_num_output_ports());
+  EXPECT_EQ(1, delay_->num_output_ports());
 
   EXPECT_FALSE(delay_->HasAnyDirectFeedthrough());
 }

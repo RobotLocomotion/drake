@@ -42,7 +42,7 @@ void TestPublisher(const std::string& channel_name, lcm::DrakeMockLcm* lcm,
   unique_ptr<SystemOutput<double>> output = dut->AllocateOutput();
 
   // Verifies that the context has one input port.
-  EXPECT_EQ(context->get_num_input_ports(), 1);
+  EXPECT_EQ(context->num_input_ports(), 1);
 
   // Instantiates a BasicVector with known state. This is the basic vector that
   // we want the LcmPublisherSystem to publish as a drake::lcmt_drake_signal

@@ -95,7 +95,7 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
 
   const bool has_only_discrete_states_contained_in_one_group =
       context.has_only_discrete_state() &&
-      context.get_num_discrete_state_groups() == 1;
+      context.num_discrete_state_groups() == 1;
   DRAKE_DEMAND(context.is_stateless() || context.has_only_continuous_state() ||
                has_only_discrete_states_contained_in_one_group);
 

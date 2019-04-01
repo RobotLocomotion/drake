@@ -23,7 +23,7 @@ DirectCollocationConstraint::DirectCollocationConstraint(
     variant<InputPortSelection, InputPortIndex> input_port_index,
     bool assume_non_continuous_states_are_fixed)
     : DirectCollocationConstraint(
-          system, context, context.get_continuous_state().size(),
+          system, context, context.num_continuous_states(),
           system.get_input_port_selection(input_port_index)
               ? system.get_input_port_selection(input_port_index)->size()
               : 0,
@@ -157,7 +157,7 @@ DirectCollocation::DirectCollocation(
           system->get_input_port_selection(input_port_index)
               ? system->get_input_port_selection(input_port_index)->size()
               : 0,
-          context.get_continuous_state().size(), num_time_samples,
+          context.num_continuous_states(), num_time_samples,
           minimum_timestep, maximum_timestep),
       system_(system),
       context_(context.Clone()),

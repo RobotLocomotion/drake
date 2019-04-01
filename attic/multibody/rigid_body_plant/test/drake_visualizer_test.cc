@@ -470,7 +470,7 @@ GTEST_TEST(DrakeVisualizerTests, BasicTest) {
 
   auto context = dut.CreateDefaultContext();
 
-  EXPECT_EQ(1, context->get_num_input_ports());
+  EXPECT_EQ(1, context->num_input_ports());
 
   // Initializes the system's input vector to contain all zeros.
   const int vector_size =

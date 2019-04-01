@@ -514,8 +514,8 @@ TEST_F(KukaIiwaModelTests, CalcPointsGeometricJacobianExpressedInWorld) {
   ASSERT_EQ(tree_autodiff().num_positions(), kNumPositions);
   ASSERT_EQ(tree_autodiff().num_states(), kNumStates);
 
-  ASSERT_EQ(context_->get_continuous_state().size(), kNumStates);
-  ASSERT_EQ(context_autodiff_->get_continuous_state().size(), kNumStates);
+  ASSERT_EQ(context_->num_continuous_states(), kNumStates);
+  ASSERT_EQ(context_autodiff_->num_continuous_states(), kNumStates);
 
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
@@ -832,8 +832,8 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
   ASSERT_EQ(tree_autodiff().num_positions(), kNumPositions);
   ASSERT_EQ(tree_autodiff().num_states(), kNumStates);
 
-  ASSERT_EQ(context_->get_continuous_state().size(), kNumStates);
-  ASSERT_EQ(context_autodiff_->get_continuous_state().size(), kNumStates);
+  ASSERT_EQ(context_->num_continuous_states(), kNumStates);
+  ASSERT_EQ(context_autodiff_->num_continuous_states(), kNumStates);
 
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
@@ -1037,8 +1037,8 @@ TEST_F(KukaIiwaModelTests, CalcRelativeFrameGeometricJacobian) {
   ASSERT_EQ(tree_autodiff().num_positions(), kNumPositions);
   ASSERT_EQ(tree_autodiff().num_states(), kNumStates);
 
-  ASSERT_EQ(context_->get_continuous_state().size(), kNumStates);
-  ASSERT_EQ(context_autodiff_->get_continuous_state().size(), kNumStates);
+  ASSERT_EQ(context_->num_continuous_states(), kNumStates);
+  ASSERT_EQ(context_autodiff_->num_continuous_states(), kNumStates);
 
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
@@ -1216,7 +1216,7 @@ class WeldMobilizerTest : public ::testing::Test {
 TEST_F(WeldMobilizerTest, StateHasZeroSize) {
   EXPECT_EQ(tree().num_positions(), 0);
   EXPECT_EQ(tree().num_velocities(), 0);
-  EXPECT_EQ(context_->get_continuous_state().size(), 0);
+  EXPECT_EQ(context_->num_continuous_states(), 0);
 }
 
 TEST_F(WeldMobilizerTest, PositionKinematics) {

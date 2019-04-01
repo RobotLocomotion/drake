@@ -46,20 +46,20 @@ class InverseDynamicsTest : public ::testing::Test {
     // Checks that the number of input ports in the Gravity Compensator system
     // and the Context are consistent.
     if (mode == InverseDynamics<double>::kGravityCompensation) {
-      EXPECT_EQ(inverse_dynamics_->get_num_input_ports(), 1);
-      EXPECT_EQ(inverse_dynamics_context_->get_num_input_ports(), 1);
+      EXPECT_EQ(inverse_dynamics_->num_input_ports(), 1);
+      EXPECT_EQ(inverse_dynamics_context_->num_input_ports(), 1);
     } else {
-      EXPECT_EQ(inverse_dynamics_->get_num_input_ports(), 2);
-      EXPECT_EQ(inverse_dynamics_context_->get_num_input_ports(), 2);
+      EXPECT_EQ(inverse_dynamics_->num_input_ports(), 2);
+      EXPECT_EQ(inverse_dynamics_context_->num_input_ports(), 2);
     }
 
     // Checks that no state variables are allocated in the context.
-    EXPECT_EQ(inverse_dynamics_context_->get_continuous_state().size(), 0);
+    EXPECT_EQ(inverse_dynamics_context_->num_continuous_states(), 0);
 
     // Checks that the number of output ports in the Gravity Compensator system
     // and the SystemOutput are consistent.
-    EXPECT_EQ(output_->get_num_ports(), 1);
-    EXPECT_EQ(inverse_dynamics_->get_num_output_ports(), 1);
+    EXPECT_EQ(output_->num_ports(), 1);
+    EXPECT_EQ(inverse_dynamics_->num_output_ports(), 1);
   }
 
   void CheckGravityTorque(const Eigen::VectorXd& position) {

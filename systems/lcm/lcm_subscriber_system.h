@@ -129,7 +129,7 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   /// Returns the sole output port.
   const OutputPort<double>& get_output_port() const {
-    DRAKE_THROW_UNLESS(this->get_num_output_ports() == 1);
+    DRAKE_THROW_UNLESS(this->num_output_ports() == 1);
     return LeafSystem<double>::get_output_port(0);
   }
 

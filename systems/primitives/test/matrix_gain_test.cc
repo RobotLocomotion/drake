@@ -33,7 +33,7 @@ class MatrixGainTest : public AffineLinearSystemTest {
 
 // Tests that the MatrixGain system is correctly setup.
 TEST_F(MatrixGainTest, Construction) {
-  EXPECT_EQ(context_->get_num_input_ports(), 1);
+  EXPECT_EQ(context_->num_input_ports(), 1);
   EXPECT_EQ(dut_->get_name(), "test_matrix_gain_system");
   EXPECT_EQ(dut_->A(), MatrixX<double>::Zero(kNumStates, kNumStates));
   EXPECT_EQ(dut_->B(), MatrixX<double>::Zero(kNumStates, D_.cols()));
@@ -41,8 +41,8 @@ TEST_F(MatrixGainTest, Construction) {
   EXPECT_EQ(dut_->C(), MatrixX<double>::Zero(D_.rows(), kNumStates));
   EXPECT_EQ(dut_->D(), D_);
   EXPECT_EQ(dut_->y0(), Eigen::VectorXd::Zero(2));
-  EXPECT_EQ(dut_->get_num_output_ports(), 1);
-  EXPECT_EQ(dut_->get_num_input_ports(), 1);
+  EXPECT_EQ(dut_->num_output_ports(), 1);
+  EXPECT_EQ(dut_->num_input_ports(), 1);
 }
 
 // Tests that the derivatives are correctly computed.

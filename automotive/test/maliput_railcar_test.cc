@@ -391,9 +391,9 @@ class MaliputRailcarTest : public ::testing::Test {
 
 TEST_F(MaliputRailcarTest, Topology) {
   EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane());
-  ASSERT_EQ(dut_->get_num_input_ports(), 1);
+  ASSERT_EQ(dut_->num_input_ports(), 1);
 
-  ASSERT_EQ(dut_->get_num_output_ports(), 4);
+  ASSERT_EQ(dut_->num_output_ports(), 4);
   const auto& state_output = dut_->state_output();
   EXPECT_EQ(systems::kVectorValued, state_output.get_data_type());
   EXPECT_EQ(MaliputRailcarStateIndices::kNumCoordinates, state_output.size());

@@ -59,11 +59,11 @@ class IdmControllerTest
                        const double relative_sdot = 0.,
                        const double relative_rdot = 0.) {
     DRAKE_DEMAND(ego_pose_input_index_ >= 0 &&
-                 ego_pose_input_index_ < dut_->get_num_input_ports());
+                 ego_pose_input_index_ < dut_->num_input_ports());
     DRAKE_DEMAND(ego_velocity_input_index_ >= 0 &&
-                 ego_velocity_input_index_ < dut_->get_num_input_ports());
+                 ego_velocity_input_index_ < dut_->num_input_ports());
     DRAKE_DEMAND(traffic_input_index_ >= 0 &&
-                 traffic_input_index_ < dut_->get_num_input_ports());
+                 traffic_input_index_ < dut_->num_input_ports());
 
     auto ego_pose = std::make_unique<PoseVector<double>>();
     auto ego_velocity = std::make_unique<FrameVelocity<double>>();
@@ -115,7 +115,7 @@ class IdmControllerTest
 TEST_P(IdmControllerTest, Topology) {
   SetUpIdm(ScanStrategy::kPath);
 
-  ASSERT_EQ(3, dut_->get_num_input_ports());
+  ASSERT_EQ(3, dut_->num_input_ports());
   const auto& ego_pose_input_port =
       dut_->get_input_port(ego_pose_input_index_);
   EXPECT_EQ(systems::kVectorValued, ego_pose_input_port.get_data_type());
@@ -129,7 +129,7 @@ TEST_P(IdmControllerTest, Topology) {
       dut_->get_input_port(traffic_input_index_);
   EXPECT_EQ(systems::kAbstractValued, traffic_input_port.get_data_type());
 
-  ASSERT_EQ(1, dut_->get_num_output_ports());
+  ASSERT_EQ(1, dut_->num_output_ports());
   const auto& output_port = dut_->get_output_port(acceleration_output_index_);
   EXPECT_EQ(systems::kVectorValued, output_port.get_data_type());
   EXPECT_EQ(1 /* acceleration output */, output_port.size());
@@ -140,7 +140,7 @@ TEST_P(IdmControllerTest, Topology) {
 TEST_P(IdmControllerTest, UnrestrictedUpdate) {
   SetUpIdm(ScanStrategy::kPath);
   if (cache_or_search_ == RoadPositionStrategy::kCache) {
-    EXPECT_EQ(1, context_->get_num_abstract_states());
+    EXPECT_EQ(1, context_->num_abstract_states());
 
     SetDefaultPoses(10. /* ego_speed */, 0. /* s_offset */, -5. /* rel_sdot */);
 

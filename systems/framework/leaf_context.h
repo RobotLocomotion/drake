@@ -134,8 +134,8 @@ class LeafContext : public Context<T> {
           os << "       " << this->get_discrete_state(i) << "\n";
         }
       }
-      if (this->get_num_abstract_states()) {
-        os << "  " << this->get_num_abstract_states() << " abstract states\n";
+      if (this->num_abstract_states()) {
+        os << "  " << this->num_abstract_states() << " abstract states\n";
       }
       os << "\n";
     }

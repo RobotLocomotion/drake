@@ -124,19 +124,26 @@ class TestCustom(unittest.TestCase):
 
     def _fix_adder_inputs(self, context):
         self.assertEqual(context.num_input_ports(), 2)
+        with catch_drake_warnings(expected_count=1):
+            context.get_num_input_ports()
         context.FixInputPort(0, BasicVector([1, 2, 3]))
         context.FixInputPort(1, BasicVector([4, 5, 6]))
 
     def test_diagram_adder(self):
         system = CustomDiagram(2, 3)
         self.assertEqual(system.num_input_ports(), 2)
+        with catch_drake_warnings(expected_count=1):
+            system.get_num_input_ports()
         self.assertEqual(system.get_input_port(0).size(), 3)
         self.assertEqual(system.num_output_ports(), 1)
+        with catch_drake_warnings(expected_count=1):
+            system.get_num_output_ports()
         self.assertEqual(system.get_output_port(0).size(), 3)
 
     def test_adder_execution(self):
         system = self._create_adder_system()
         context = system.CreateDefaultContext()
+        self.assertEqual(context.num_output_ports(), 1)
         self._fix_adder_inputs(context)
         output = system.AllocateOutput()
         self.assertEqual(output.num_ports(), 1)
@@ -407,6 +414,8 @@ class TestCustom(unittest.TestCase):
             context.get_continuous_state_vector() is
             context.get_mutable_continuous_state_vector())
         self.assertEqual(context.num_discrete_state_groups(), 1)
+        with catch_drake_warnings(expected_count=1):
+            context.get_num_discrete_state_groups()
         self.assertTrue(
             context.get_discrete_state_vector() is
             context.get_mutable_discrete_state_vector())
@@ -423,6 +432,8 @@ class TestCustom(unittest.TestCase):
             context.get_mutable_discrete_state(0) is
             context.get_mutable_discrete_state().get_vector(0))
         self.assertEqual(context.num_abstract_states(), 1)
+        with catch_drake_warnings(expected_count=1):
+            context.get_num_abstract_states()
         self.assertTrue(
             context.get_abstract_state() is
             context.get_mutable_abstract_state())
@@ -560,6 +571,8 @@ class TestCustom(unittest.TestCase):
             context.FixInputPort(0, AbstractValue.Make(expected_input_value))
             output = system.AllocateOutput()
             self.assertEqual(output.num_ports(), 1)
+            with catch_drake_warnings(expected_count=1):
+                output.get_num_ports()
             system.CalcOutput(context, output)
             value = output.get_data(0)
             self.assertEqual(value.get_value(), expected_output_value)

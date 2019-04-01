@@ -32,8 +32,8 @@ void SecondElementOnlyTest() {
 
   EXPECT_EQ(dut.get_size(), 2);
 
-  EXPECT_EQ(dut.get_num_input_ports(), 1);
-  EXPECT_EQ(dut.get_num_output_ports(), 1);
+  EXPECT_EQ(dut.num_input_ports(), 1);
+  EXPECT_EQ(dut.num_output_ports(), 1);
 
   CheckOutput<T>(dut, Vector2<T>{.1, .5}, Vector2<T>{.1, 2.5});
   CheckOutput<T>(dut, Vector2<T>{.3, -.2}, Vector2<T>{.3, 2.8});

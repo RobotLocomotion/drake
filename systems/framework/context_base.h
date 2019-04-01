@@ -238,8 +238,9 @@ class ContextBase : public internal::ContextMessageInterface {
   }
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // These are to-be-deprecated. Use methods without the initial get_.
+  DRAKE_DEPRECATED("2019-07-01", "Use num_input_ports() instead.")
   int get_num_input_ports() const { return num_input_ports(); }
+  DRAKE_DEPRECATED("2019-07-01", "Use num_output_ports() instead.")
   int get_num_output_ports() const { return num_output_ports(); }
 #endif
 

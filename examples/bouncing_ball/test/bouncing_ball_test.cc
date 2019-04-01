@@ -100,9 +100,9 @@ TEST_F(BouncingBallTest, Transmogrification) {
 }
 
 TEST_F(BouncingBallTest, Topology) {
-  ASSERT_EQ(0, dut_->get_num_input_ports());
+  ASSERT_EQ(0, dut_->num_input_ports());
 
-  ASSERT_EQ(1, dut_->get_num_output_ports());
+  ASSERT_EQ(1, dut_->num_output_ports());
   const auto& output_port = dut_->get_output_port(0);
   EXPECT_EQ(systems::kVectorValued, output_port.get_data_type());
 }

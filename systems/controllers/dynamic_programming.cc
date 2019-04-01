@@ -46,10 +46,10 @@ FittedValueIteration(
 
   // TODO(russt): handle discrete state.
   DRAKE_DEMAND(context.has_only_continuous_state());
-  DRAKE_DEMAND(context.get_continuous_state().size() == state_size);
+  DRAKE_DEMAND(context.num_continuous_states() == state_size);
 
-  DRAKE_DEMAND(context.get_num_input_ports() == 1);
-  DRAKE_DEMAND(system.get_num_total_inputs() == input_size);
+  DRAKE_DEMAND(context.num_input_ports() == 1);
+  DRAKE_DEMAND(system.num_total_inputs() == input_size);
 
   DRAKE_DEMAND(timestep > 0.);
 
@@ -180,10 +180,10 @@ Eigen::VectorXd LinearProgrammingApproximateDynamicProgramming(
 
   // TODO(russt): handle discrete state.
   DRAKE_DEMAND(context.has_only_continuous_state());
-  DRAKE_DEMAND(context.get_continuous_state().size() == state_size);
+  DRAKE_DEMAND(context.num_continuous_states() == state_size);
 
-  DRAKE_DEMAND(context.get_num_input_ports() == 1);
-  DRAKE_DEMAND(system.get_num_total_inputs() == input_size);
+  DRAKE_DEMAND(context.num_input_ports() == 1);
+  DRAKE_DEMAND(system.num_total_inputs() == input_size);
 
   DRAKE_DEMAND(timestep > 0.);
 

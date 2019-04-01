@@ -122,7 +122,7 @@ class SpringMassSystem : public LeafSystem<T> {
   /// @returns the external driving force to the system.
   T get_input_force(const Context<T>& context) const {
     T external_force = 0;
-    DRAKE_ASSERT(system_is_forced_ == (context.get_num_input_ports() == 1));
+    DRAKE_ASSERT(system_is_forced_ == (context.num_input_ports() == 1));
     if (system_is_forced_) {
       external_force = get_force_port().Eval(context)[0];
     }

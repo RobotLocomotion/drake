@@ -53,12 +53,12 @@ class FirstOrderLowPassFilterTest : public ::testing::Test {
 // Tests that the system exports the correct topology.
 TEST_F(FirstOrderLowPassFilterTest, Topology) {
   SetUpSingleTimeConstantFilter();
-  ASSERT_EQ(1, filter_->get_num_input_ports());
+  ASSERT_EQ(1, filter_->num_input_ports());
   const auto& input_input_port = filter_->get_input_port();
   EXPECT_EQ(kVectorValued, input_input_port.get_data_type());
   EXPECT_EQ(kSignalSize, input_input_port.size());
 
-  ASSERT_EQ(1, filter_->get_num_output_ports());
+  ASSERT_EQ(1, filter_->num_output_ports());
   const auto& output_port = filter_->get_output_port();
   EXPECT_EQ(kVectorValued, output_port.get_data_type());
   EXPECT_EQ(kSignalSize, output_port.size());
@@ -67,10 +67,10 @@ TEST_F(FirstOrderLowPassFilterTest, Topology) {
 // Tests that the output of a low pass filter is its state.
 TEST_F(FirstOrderLowPassFilterTest, Output) {
   SetUpSingleTimeConstantFilter();
-  ASSERT_EQ(1, context_->get_num_input_ports());
+  ASSERT_EQ(1, context_->num_input_ports());
   context_->FixInputPort(0, BasicVector<double>::Make({1.0, 2.0, 3.0}));
 
-  ASSERT_EQ(1, filter_->get_num_output_ports());
+  ASSERT_EQ(1, filter_->num_output_ports());
 
   Eigen::Vector3d expected = Eigen::Vector3d::Zero();
   EXPECT_EQ(expected, filter_->get_output_port().Eval(*context_));
@@ -83,7 +83,7 @@ TEST_F(FirstOrderLowPassFilterTest, Output) {
 // Verifies the correctness of the time derivatives implementation.
 TEST_F(FirstOrderLowPassFilterTest, Derivatives) {
   SetUpMultipleTimeConstantsFilter();
-  ASSERT_EQ(1, context_->get_num_input_ports());
+  ASSERT_EQ(1, context_->num_input_ports());
   Vector3<double> u({1.0, 2.0, 3.0});  // The input signal.
   context_->FixInputPort(0, u);
 

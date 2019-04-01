@@ -60,7 +60,7 @@ class PiecewisePolynomialAffineSystemTest
 };
 
 TEST_P(PiecewisePolynomialAffineSystemTest, Constructor) {
-  EXPECT_EQ(1, context_->get_num_input_ports());
+  EXPECT_EQ(1, context_->num_input_ports());
   EXPECT_EQ(dut_->A(0.), ltv_data_.A.value(0.));
   EXPECT_EQ(dut_->B(0.), ltv_data_.B.value(0.));
   EXPECT_EQ(dut_->C(0.), ltv_data_.C.value(0.));
@@ -68,8 +68,8 @@ TEST_P(PiecewisePolynomialAffineSystemTest, Constructor) {
   EXPECT_EQ(dut_->f0(0.), ltv_data_.f0.value(0.));
   EXPECT_EQ(dut_->y0(0.), ltv_data_.y0.value(0.));
   EXPECT_EQ(dut_->time_period(), time_period_);
-  EXPECT_EQ(1, dut_->get_num_output_ports());
-  EXPECT_EQ(1, dut_->get_num_input_ports());
+  EXPECT_EQ(1, dut_->num_output_ports());
+  EXPECT_EQ(1, dut_->num_input_ports());
 }
 
 TEST_P(PiecewisePolynomialAffineSystemTest, KnotPointConsistency) {
