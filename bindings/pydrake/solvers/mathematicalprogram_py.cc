@@ -819,7 +819,11 @@ PYBIND11_MODULE(mathematicalprogram, m) {
     py::class_<Class, std::shared_ptr<EvaluatorBase>> cls(m, "EvaluatorBase");
     cls  // BR
         .def("num_outputs", &Class::num_outputs, cls_doc.num_outputs.doc)
-        .def("num_vars", &Class::num_vars, cls_doc.num_vars.doc);
+        .def("num_vars", &Class::num_vars, cls_doc.num_vars.doc)
+        .def("get_description", &Class::get_description,
+            cls_doc.get_description.doc)
+        .def("set_description", &Class::set_description,
+            cls_doc.set_description.doc);
     auto bind_eval = [&cls, &cls_doc](auto dummy_x, auto dummy_y) {
       using T_x = decltype(dummy_x);
       using T_y = decltype(dummy_y);
@@ -983,7 +987,10 @@ PYBIND11_MODULE(mathematicalprogram, m) {
               const optional<Eigen::VectorXd>&, const optional<SolverOptions>&>(
               &solvers::Solve),
           py::arg("prog"), py::arg("initial_guess") = py::none(),
-          py::arg("solver_options") = py::none(), doc.Solve.doc_3args);
+          py::arg("solver_options") = py::none(), doc.Solve.doc_3args)
+      .def("GetInfeasibleConstraints", &solvers::GetInfeasibleConstraints,
+          py::arg("prog"), py::arg("result"), py::arg("tol") = nullopt,
+          doc.GetInfeasibleConstraints.doc);
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake
