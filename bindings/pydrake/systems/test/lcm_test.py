@@ -197,9 +197,9 @@ class TestSystemsLcm(unittest.TestCase):
             # Converts message to time in seconds.
             def __init__(self):
                 LeafSystem.__init__(self)
-                self._DeclareAbstractInputPort(
+                self.DeclareAbstractInputPort(
                     "header_t", AbstractValue.Make(header_t))
-                self._DeclareVectorOutputPort(
+                self.DeclareVectorOutputPort(
                     BasicVector(1), self._calc_output)
 
             def _calc_output(self, context, output):
