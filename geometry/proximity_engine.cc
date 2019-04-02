@@ -24,6 +24,7 @@
 #include "drake/common/drake_variant.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_vectors_have_intersection.h"
+#include "drake/geometry/proximity/distance_to_point_with_gradient.h"
 #include "drake/geometry/utilities.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
@@ -305,16 +306,8 @@ class DistanceToPoint {
   SignedDistanceToPoint<double> operator()(const fcl::Cylinderd& cylinder);
 
  private:
-  // Calculates a tolerance relative to a given `size` parameter with a lower
-  // bound of 1e-14 meter. If the `size` parameter is larger than 1 meter, we
-  // use the relative tolerance of 1e-14 times the `size`.  If the `size` is
-  // smaller than 1 meter, we use the absolute tolerance 1e-14 meter. The
-  // 1e-14-meter lower bound helps us handle possible round off errors arising
-  // from applying a pose X_WG to a geometry G. Given a query point Q exactly
-  // on the boundary ∂G, if we apply X_WG to both Q and G, the point Q is likely
-  // to deviate from ∂G more than the machine epsilon, which is around 2e-16.
   static double RelativeTolerance(double size) {
-    return 1e-14 * std::max(1., size);
+    return DistanceToPointRelativeTolerance(size);
   }
   // This version of Sign(x) returns +1.0 for zero.
   static double Sign(double x) { return (x < 0.0) ? -1. : 1.; }
@@ -563,7 +556,6 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd* a,
   }
 }
 
-
 // The callback function in fcl::distance request. The final unnamed parameter
 // is `dist`, which is used in fcl::distance, that if the distance between two
 // geometries is proved to be greater than `dist` (for example, the smallest
@@ -637,31 +629,9 @@ bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
 // Overload for Sphere.
 SignedDistanceToPoint<double> DistanceToPoint::operator()(
     const fcl::Sphered& sphere) {
-  // TODO(DamrongGuoy): Move most code of this function into FCL.
-  const double radius = sphere.radius;
-  const Vector3d p_GQ_G = X_WG_.inverse() * p_WQ_;
-  const double dist_GQ = p_GQ_G.norm();
-  const double distance = dist_GQ - radius;
-
-  // The gradient is always in the direction from the center of the sphere to
-  // the query point Q, regardless of whether the point Q is outside or inside
-  // the sphere G.  The gradient is undefined if the query point Q is at the
-  // center of the sphere G.
-  //
-  // If the query point Q is near the center of the sphere G within a
-  // tolerance, we arbitrarily set the gradient vector as documented in
-  // query_object.h (QueryObject::ComputeSignedDistanceToPoint).
-  const double tolerance = RelativeTolerance(radius);
-  // Unit vector in x-direction of G's frame.
-  const Vector3d Gx(1., 0., 0.);
-  // Gradient vector expressed in G's frame.
-  Vector3d grad_G = (dist_GQ > tolerance) ? p_GQ_G / dist_GQ : Gx;
-
-  // Position vector of the nearest point N on G's surface from the query
-  // point Q, expressed in G's frame.
-  const Vector3d p_GN_G = radius * grad_G;
-  // Gradient vector expressed in World frame.
-  const Vector3d grad_W = X_WG_.rotation() * grad_G;
+  double distance{};
+  Vector3d p_GN_G, grad_W;
+  ComputeDistanceToPrimitive(sphere, X_WG_, p_WQ_, &p_GN_G, &distance, &grad_W);
 
   return SignedDistanceToPoint<double>{geometry_id_, p_GN_G, distance,
                                        grad_W};
