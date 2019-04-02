@@ -200,8 +200,6 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "lcm_interface_system_test",
-    # TODO(jwnimmer-tri) Re-enable this after fixing the race condition.
-    tags = ["manual"],
     deps = [
         ":lcm_interface_system",
         ":lcm_subscriber_system",
@@ -221,7 +219,7 @@ drake_cc_googletest(
         "//common/test_utilities:is_dynamic_castable",
         "//lcm:lcmt_drake_signal_utils",
         "//lcm:mock",
-        "//systems/analysis",
+        "//systems/analysis:simulator",
     ],
 )
 
@@ -231,7 +229,8 @@ drake_cc_googletest(
         ":lcm_log_playback_system",
         ":lcm_pubsub_system",
         "//lcmtypes:drake_signal",
-        "//systems/analysis",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
     ],
 )
 
