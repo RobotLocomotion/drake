@@ -67,7 +67,7 @@ class PurePursuitControllerTest : public ::testing::Test {
 };
 
 TEST_F(PurePursuitControllerTest, Topology) {
-  ASSERT_EQ(2, dut_->get_num_input_ports());
+  ASSERT_EQ(2, dut_->num_input_ports());
   const auto& lane_input_port =
       dut_->get_input_port(dut_->lane_input().get_index());
   EXPECT_EQ(systems::kAbstractValued, lane_input_port.get_data_type());
@@ -76,7 +76,7 @@ TEST_F(PurePursuitControllerTest, Topology) {
   EXPECT_EQ(systems::kVectorValued, ego_input_port.get_data_type());
   EXPECT_EQ(7 /* PoseVector input */, ego_input_port.size());
 
-  ASSERT_EQ(1, dut_->get_num_output_ports());
+  ASSERT_EQ(1, dut_->num_output_ports());
   const auto& command_output_port =
       dut_->get_output_port(dut_->steering_command_output().get_index());
   EXPECT_EQ(systems::kVectorValued, command_output_port.get_data_type());

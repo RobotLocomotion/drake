@@ -30,7 +30,7 @@ SystemSymbolicInspector::SystemSymbolicInspector(
 
   // Time.
   time_ = symbolic::Variable("t");
-  context_->set_time(time_);
+  context_->SetTime(time_);
 
   // Input.
   InitializeVectorInputs(system);

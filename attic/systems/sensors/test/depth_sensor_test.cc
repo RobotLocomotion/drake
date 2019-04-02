@@ -40,8 +40,8 @@ GTEST_TEST(TestDepthSensor, AccessorsAndToStringTest) {
 
   DepthSensor dut(kSensorName, tree, frame, specification);
   EXPECT_EQ(dut.get_specification(), specification);
-  EXPECT_EQ(dut.get_num_input_ports(), 1);
-  EXPECT_EQ(dut.get_num_output_ports(), 2);
+  EXPECT_EQ(dut.num_input_ports(), 1);
+  EXPECT_EQ(dut.num_output_ports(), 2);
 
   stringstream string_buffer;
   string_buffer << dut;

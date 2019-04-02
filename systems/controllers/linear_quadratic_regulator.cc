@@ -101,7 +101,7 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
   // but note that it will be a full quadratic form (x'S2x + s1'x + s0).
 
   const int num_inputs = system.get_input_port(input_port_index).size();
-  const int num_states = context.get_num_total_states();
+  const int num_states = context.num_total_states();
   DRAKE_DEMAND(num_states > 0);
   // The Linearize method call below will verify that the system has either
   // continuous-time OR (only simple) discrete-time dyanmics.
@@ -111,7 +111,7 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
   // Use specified input and no outputs (the output dynamics are irrelevant for
   // LQR design).
   auto linear_system = Linearize(
-    system, context, input_port_index, kNoOutput);
+    system, context, input_port_index, OutputPortSelection::kNoOutput);
 
   // DiscreteTimeLinearQuadraticRegulator does not support N yet.
   DRAKE_DEMAND(linear_system->time_period() == 0.0 || N.rows() == 0);

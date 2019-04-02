@@ -5,10 +5,10 @@
 #include "drake/automotive/maliput/api/intersection.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/api/rules/direction_usage_rule.h"
+#include "drake/automotive/maliput/api/rules/phase_ring.h"
+#include "drake/automotive/maliput/api/rules/phase_ring_book.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_book.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_phase_provider.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_ring.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_state_provider.h"
 #include "drake/automotive/maliput/api/rules/road_rulebook.h"
@@ -48,8 +48,8 @@ std::unique_ptr<RoadGeometry> CreateRoadGeometry();
 /// Returns an arbitrary rules::RoadRulebook.
 std::unique_ptr<rules::RoadRulebook> CreateRoadRulebook();
 
-/// Returns an arbitrary rules::RightOfWayPhaseBook.
-std::unique_ptr<rules::RightOfWayPhaseBook> CreateRightOfWayPhaseBook();
+/// Returns an arbitrary rules::PhaseRingBook.
+std::unique_ptr<rules::PhaseRingBook> CreatePhaseRingBook();
 
 /// Returns an arbitrary rules::RightOfWayStateProvider.
 std::unique_ptr<rules::RightOfWayStateProvider> CreateRightOfWayStateProvider();
@@ -59,7 +59,7 @@ std::unique_ptr<rules::RightOfWayPhaseProvider> CreateRightOfWayPhaseProvider();
 
 /// Returns an arbitrary Intersection.
 std::unique_ptr<Intersection> CreateIntersection(
-    const Intersection::Id& id, const rules::RightOfWayPhaseRing::Id& ring_id);
+    const Intersection::Id& id, const rules::PhaseRing::Id& ring_id);
 
 }  // namespace test
 }  // namespace api

@@ -603,6 +603,7 @@ drake_cc_library(
     deps = [
         ":choose_best_solver",
         ":mathematical_program_lite",
+        "//common:nice_type_name",
     ],
 )
 

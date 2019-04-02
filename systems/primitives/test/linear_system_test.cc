@@ -82,7 +82,7 @@ class LinearSystemTest : public AffineLinearSystemTest {
 
 // Tests that the linear system is correctly setup.
 TEST_F(LinearSystemTest, Construction) {
-  EXPECT_EQ(1, context_->get_num_input_ports());
+  EXPECT_EQ(1, context_->num_input_ports());
   EXPECT_EQ("test_linear_system", dut_->get_name());
   EXPECT_EQ(dut_->A(), A_);
   EXPECT_EQ(dut_->B(), B_);
@@ -90,8 +90,8 @@ TEST_F(LinearSystemTest, Construction) {
   EXPECT_EQ(dut_->C(), C_);
   EXPECT_EQ(dut_->D(), D_);
   EXPECT_EQ(dut_->y0(), y0_);
-  EXPECT_EQ(1, dut_->get_num_output_ports());
-  EXPECT_EQ(1, dut_->get_num_input_ports());
+  EXPECT_EQ(1, dut_->num_output_ports());
+  EXPECT_EQ(1, dut_->num_input_ports());
 }
 
 // Tests that the derivatives are correctly computed.
@@ -177,8 +177,8 @@ class SimpleTimeVaryingLinearSystem final
 GTEST_TEST(SimpleTimeVaryingLinearSystemTest, ConstructorTest) {
   SimpleTimeVaryingLinearSystem sys;
 
-  EXPECT_EQ(sys.get_num_output_ports(), 1);
-  EXPECT_EQ(sys.get_num_input_ports(), 1);
+  EXPECT_EQ(sys.num_output_ports(), 1);
+  EXPECT_EQ(sys.num_input_ports(), 1);
   EXPECT_TRUE(CompareMatrices(sys.A(0.), Eigen::Matrix2d::Identity()));
   EXPECT_TRUE(CompareMatrices(sys.B(0.), Eigen::Matrix<double, 2, 1>::Ones()));
   EXPECT_TRUE(CompareMatrices(sys.C(0.), Eigen::Matrix2d::Identity()));
@@ -411,27 +411,23 @@ GTEST_TEST(TestLinearize, LinearizingOnAbstractPortThrows) {
       "abstract ports is not supported.");
 }
 
-// Test that linearizing a system with mixed (vector and abstract) inputs does
-// not throw an exception when the abstract input port is unconnected and
-// does throw an exception when the abstract input port is connected.
+// Test linearizing a system with mixed (vector and abstract) inputs.
 GTEST_TEST(TestLinearize, LinearizingWithMixedInputs) {
   EmptyStateSystemWithMixedInputs<double> system;
   auto context = system.CreateDefaultContext();
 
   // First check without the vector-valued input port connected.
   DRAKE_EXPECT_THROWS_MESSAGE(Linearize(system, *context), std::logic_error,
-      "Vector-valued input port.*must be either fixed or connected to "
-          "the output of another system.");
+      "InputPort.*is not connected");
 
-  // Now check with the vector-valued input port connect but without the
-  // abstract input port connected.
+  // Now check with the vector-valued input port connected but the abstract
+  // input port not yet connected.
   context->FixInputPort(0, Vector1<double>(0.0));
   EXPECT_NO_THROW(Linearize(system, *context));
 
   // Now check with the abstract input port connected.
   context->FixInputPort(1, Value<std::vector<double>>());
-  DRAKE_EXPECT_THROWS_MESSAGE(Linearize(system, *context), std::logic_error,
-      "Unable to linearize system with connected abstract port.*");
+  EXPECT_NO_THROW(Linearize(system, *context));
 }
 
 // Test that Linearize throws when called on a discrete but non-periodic system.

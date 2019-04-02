@@ -2,9 +2,9 @@
 
 #include <vector>
 
+#include "drake/automotive/maliput/api/rules/phase_ring.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_phase_provider.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_ring.h"
 #include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
@@ -34,7 +34,7 @@ class Intersection {
   /// @param ring_id The ID of the ring that defines the phases within the
   /// intersection.
   Intersection(const Id& id, const std::vector<rules::LaneSRange>& region,
-               const rules::RightOfWayPhaseRing::Id& ring_id);
+               const rules::PhaseRing::Id& ring_id);
 
   virtual ~Intersection() = default;
 
@@ -48,15 +48,14 @@ class Intersection {
   /// Returns the region. See constructor parameter @p region for more details.
   const std::vector<rules::LaneSRange>& region() const { return region_; }
 
-  /// Returns the rules::RightOfWayPhaseRing::Id of the
-  /// rules::RightOfWayPhaseRing that applies to this intersection.
-  /// See constructor parameter @p ring_id for more details.
-  const rules::RightOfWayPhaseRing::Id& ring_id() const { return ring_id_; }
+  /// Returns the rules::PhaseRing::Id of the rules::PhaseRing that applies to
+  /// this intersection. See constructor parameter @p ring_id for more details.
+  const rules::PhaseRing::Id& ring_id() const { return ring_id_; }
 
  private:
   const Id id_;
   const std::vector<rules::LaneSRange> region_;
-  const rules::RightOfWayPhaseRing::Id ring_id_;
+  const rules::PhaseRing::Id ring_id_;
 };
 
 }  // namespace api

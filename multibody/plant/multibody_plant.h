@@ -896,6 +896,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 #ifndef DRAKE_DOXYGEN_CXX
   // SFINAE overload for ForceElementType = UniformGravityFieldElement.
   // This allow us to keep track of the gravity field parameters.
+  // TODO(amcastro-tri): This specialization pattern leads to difficult to
+  // mantain indirection layers between MBP/MBT and can cause difficult to find
+  // bugs, see #11051. It is bad practice and should removed, see #11080.
   template <template <typename Scalar> class ForceElementType, typename... Args>
   typename std::enable_if<
       std::is_same<ForceElementType<T>, UniformGravityFieldElement<T>>::value,
@@ -3006,6 +3009,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                    math::RigidTransform<T>(X_FB));
   }
 
+  DRAKE_DEPRECATED(
+      "2019-06-15",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
@@ -3015,6 +3022,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                   shape, name, properties, scene_graph);
   }
 
+  DRAKE_DEPRECATED(
+      "2019-06-15",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
@@ -3024,6 +3035,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                   shape, name, diffuse_color, scene_graph);
   }
 
+  DRAKE_DEPRECATED(
+      "2019-06-15",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
@@ -3032,6 +3047,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                   shape, name, scene_graph);
   }
 
+  DRAKE_DEPRECATED(
+      "2019-06-15",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   geometry::GeometryId RegisterCollisionGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,

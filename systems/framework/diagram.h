@@ -1004,10 +1004,6 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
           i, ConvertToContextPortIdentifier(id));
     }
 
-    // TODO(sherm1) Remove this line and the corresponding one in
-    // LeafSystem to enable caching by default in Drake (issue #9205).
-    context->DisableCaching();
-
     return context;
   }
 
@@ -1182,6 +1178,32 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     }
   }
 
+  void DoApplyDiscreteVariableUpdate(
+      const EventCollection<DiscreteUpdateEvent<T>>& events,
+      DiscreteValues<T>* discrete_state, Context<T>* context) const final {
+    // If this method is called, these are all Diagram objects.
+    const auto& diagram_events =
+        dynamic_cast<const DiagramEventCollection<DiscreteUpdateEvent<T>>&>(
+            events);
+    auto& diagram_discrete =
+        dynamic_cast<DiagramDiscreteValues<T>&>(*discrete_state);
+    auto& diagram_context = dynamic_cast<DiagramContext<T>&>(*context);
+
+    for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
+      const EventCollection<DiscreteUpdateEvent<T>>& subevents =
+          diagram_events.get_subevent_collection(i);
+
+      if (subevents.HasEvents()) {
+        DiscreteValues<T>& subdiscrete =
+            diagram_discrete.get_mutable_subdiscrete(i);
+        Context<T>& subcontext = diagram_context.GetMutableSubsystemContext(i);
+
+        registered_systems_[i]->ApplyDiscreteVariableUpdate(
+            subevents, &subdiscrete, &subcontext);
+      }
+    }
+  }
+
   // For each subsystem, if there is an unrestricted update event in its
   // corresponding subevent collection, calls its CalcUnrestrictedUpdate
   // method with the appropriate subcontext, subevent collection and substate.
@@ -1211,6 +1233,30 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
         registered_systems_[i]->CalcUnrestrictedUpdate(subcontext, subinfo,
             &substate);
+      }
+    }
+  }
+
+  void DoApplyUnrestrictedUpdate(
+      const EventCollection<UnrestrictedUpdateEvent<T>>& events,
+      State<T>* state, Context<T>* context) const final {
+    // If this method is called, these are all Diagram objects.
+    const auto& diagram_events =
+        dynamic_cast<const DiagramEventCollection<UnrestrictedUpdateEvent<T>>&>(
+            events);
+    auto& diagram_state = dynamic_cast<DiagramState<T>&>(*state);
+    auto& diagram_context = dynamic_cast<DiagramContext<T>&>(*context);
+
+    for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
+      const EventCollection<UnrestrictedUpdateEvent<T>>& subevents =
+          diagram_events.get_subevent_collection(i);
+
+      if (subevents.HasEvents()) {
+        State<T>& substate = diagram_state.get_mutable_substate(i);
+        Context<T>& subcontext = diagram_context.GetMutableSubsystemContext(i);
+
+        registered_systems_[i]->ApplyUnrestrictedUpdate(subevents, &substate,
+                                                        &subcontext);
       }
     }
   }

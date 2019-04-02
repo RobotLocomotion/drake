@@ -386,11 +386,13 @@ PYBIND11_MODULE(mathematicalprogram, m) {
               MathematicalProgram::*)(
               const Eigen::Ref<const VectorX<Monomial>>&)>(
               &MathematicalProgram::NewSosPolynomial),
+          py::arg("monomial_basis"),
           doc.MathematicalProgram.NewSosPolynomial.doc_1args)
       .def("NewSosPolynomial",
           static_cast<std::pair<Polynomial, MatrixXDecisionVariable> (
               MathematicalProgram::*)(const Variables&, int)>(
               &MathematicalProgram::NewSosPolynomial),
+          py::arg("indeterminates"), py::arg("degree"),
           doc.MathematicalProgram.NewSosPolynomial.doc_2args)
       .def("NewIndeterminates",
           static_cast<VectorXIndeterminate (MathematicalProgram::*)(int,
@@ -628,8 +630,11 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       .def("GetAllConstraints", &MathematicalProgram::GetAllConstraints,
           doc.MathematicalProgram.GetAllConstraints.doc)
       .def("FindDecisionVariableIndex",
-          &MathematicalProgram::FindDecisionVariableIndex,
+          &MathematicalProgram::FindDecisionVariableIndex, py::arg("var"),
           doc.MathematicalProgram.FindDecisionVariableIndex.doc)
+      .def("FindDecisionVariableIndices",
+          &MathematicalProgram::FindDecisionVariableIndices, py::arg("vars"),
+          doc.MathematicalProgram.FindDecisionVariableIndices.doc)
       .def("num_vars", &MathematicalProgram::num_vars,
           doc.MathematicalProgram.num_vars.doc)
       .def("decision_variables", &MathematicalProgram::decision_variables,
@@ -689,10 +694,26 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           },
           py::arg("binding"), py::arg("prog_var_vals"),
           doc.MathematicalProgram.EvalBinding.doc)
+      .def("EvalBinding",
+          [](const MathematicalProgram& prog,
+              const Binding<EvaluatorBase>& binding,
+              const VectorX<AutoDiffXd>& prog_var_vals) {
+            return prog.EvalBinding(binding, prog_var_vals);
+          },
+          py::arg("binding"), py::arg("prog_var_vals"),
+          doc.MathematicalProgram.EvalBinding.doc)
       .def("EvalBindings",
           [](const MathematicalProgram& prog,
               const std::vector<Binding<EvaluatorBase>>& binding,
               const VectorX<double>& prog_var_vals) {
+            return prog.EvalBindings(binding, prog_var_vals);
+          },
+          py::arg("bindings"), py::arg("prog_var_vals"),
+          doc.MathematicalProgram.EvalBindings.doc)
+      .def("EvalBindings",
+          [](const MathematicalProgram& prog,
+              const std::vector<Binding<EvaluatorBase>>& binding,
+              const VectorX<AutoDiffXd>& prog_var_vals) {
             return prog.EvalBindings(binding, prog_var_vals);
           },
           py::arg("bindings"), py::arg("prog_var_vals"),
@@ -817,7 +838,11 @@ PYBIND11_MODULE(mathematicalprogram, m) {
     py::class_<Class, std::shared_ptr<EvaluatorBase>> cls(m, "EvaluatorBase");
     cls  // BR
         .def("num_outputs", &Class::num_outputs, cls_doc.num_outputs.doc)
-        .def("num_vars", &Class::num_vars, cls_doc.num_vars.doc);
+        .def("num_vars", &Class::num_vars, cls_doc.num_vars.doc)
+        .def("get_description", &Class::get_description,
+            cls_doc.get_description.doc)
+        .def("set_description", &Class::set_description,
+            cls_doc.set_description.doc);
     auto bind_eval = [&cls, &cls_doc](auto dummy_x, auto dummy_y) {
       using T_x = decltype(dummy_x);
       using T_y = decltype(dummy_y);
@@ -981,7 +1006,10 @@ PYBIND11_MODULE(mathematicalprogram, m) {
               const optional<Eigen::VectorXd>&, const optional<SolverOptions>&>(
               &solvers::Solve),
           py::arg("prog"), py::arg("initial_guess") = py::none(),
-          py::arg("solver_options") = py::none(), doc.Solve.doc_3args);
+          py::arg("solver_options") = py::none(), doc.Solve.doc_3args)
+      .def("GetInfeasibleConstraints", &solvers::GetInfeasibleConstraints,
+          py::arg("prog"), py::arg("result"), py::arg("tol") = nullopt,
+          doc.GetInfeasibleConstraints.doc);
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake

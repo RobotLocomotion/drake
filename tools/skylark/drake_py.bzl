@@ -188,6 +188,7 @@ def drake_py_test(
         deps = None,
         isolate = True,
         allow_import_unittest = False,
+        tags = [],
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
 
@@ -204,7 +205,8 @@ def drake_py_test(
         (thus disabling this interlock), but can override this parameter in
         case something unique is happening and the other macro can't be used.
 
-    By default, sets test size to "small" to indicate a unit test.
+    By default, sets test size to "small" to indicate a unit test. Adds the tag
+    "py" if not already present.
     """
     if size == None:
         size = "small"
@@ -217,6 +219,8 @@ def drake_py_test(
         deps += ["//:module_py"]
     if not allow_import_unittest:
         deps = deps + ["//common/test_utilities:disable_python_unittest"]
+    if "py" not in tags:
+        tags = tags + ["py"]
     _py_target_isolated(
         name = name,
         py_target = native.py_test,
@@ -224,6 +228,7 @@ def drake_py_test(
         size = size,
         srcs = srcs,
         deps = deps,
+        tags = tags,
         **kwargs
     )
 

@@ -2,14 +2,15 @@
 
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "yaml-cpp/yaml.h"
 
+#include "drake/automotive/maliput/api/rules/phase.h"
+#include "drake/automotive/maliput/api/rules/phase_ring.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_ring.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
-#include "drake/automotive/maliput/base/simple_right_of_way_phase_book.h"
+#include "drake/automotive/maliput/base/simple_phase_ring_book.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 
@@ -18,9 +19,9 @@ namespace maliput {
 namespace {
 
 using api::rules::LaneSRange;
-using api::rules::RightOfWayPhase;
-using api::rules::RightOfWayPhaseBook;
-using api::rules::RightOfWayPhaseRing;
+using api::rules::Phase;
+using api::rules::PhaseRing;
+using api::rules::PhaseRingBook;
 using api::rules::RightOfWayRule;
 using api::rules::RoadRulebook;
 using api::rules::RuleStates;
@@ -81,21 +82,20 @@ RuleStates CreateDefaultRuleStates(
   return result;
 }
 
-RightOfWayPhaseRing BuildPhaseRing(const RoadRulebook* rulebook,
-                                   const YAML::Node& phase_ring_node) {
+PhaseRing BuildPhaseRing(const RoadRulebook* rulebook,
+                         const YAML::Node& phase_ring_node) {
   DRAKE_DEMAND(phase_ring_node.IsMap());
-  const RightOfWayPhaseRing::Id ring_id(
-      phase_ring_node["ID"].as<std::string>());
+  const PhaseRing::Id ring_id(phase_ring_node["ID"].as<std::string>());
   const std::unordered_map<RightOfWayRule::Id, RightOfWayRule> rules =
       GetRules(rulebook, phase_ring_node["Rules"]);
 
   const YAML::Node& phases_node = phase_ring_node["Phases"];
   DRAKE_THROW_UNLESS(phases_node.IsDefined());
   DRAKE_DEMAND(phases_node.IsSequence());
-  std::vector<RightOfWayPhase> phases;
+  std::vector<Phase> phases;
   for (const YAML::Node& phase_node : phases_node) {
     DRAKE_DEMAND(phase_node.IsMap());
-    const RightOfWayPhase::Id phase_id(phase_node["ID"].as<std::string>());
+    const Phase::Id phase_id(phase_node["ID"].as<std::string>());
     // First get a RuleStates object populated with default states of all rules.
     // Then, override the defaults with the states specified in the YAML
     // document.
@@ -110,18 +110,18 @@ RightOfWayPhaseRing BuildPhaseRing(const RoadRulebook* rulebook,
       DRAKE_THROW_UNLESS(rule_states.find(rule_id) != rule_states.end());
       rule_states.at(rule_id) = state_id;
     }
-    phases.push_back(RightOfWayPhase(phase_id, rule_states));
+    phases.push_back(Phase(phase_id, rule_states));
   }
-  return RightOfWayPhaseRing(ring_id, phases);
+  return PhaseRing(ring_id, phases);
 }
 
-std::unique_ptr<api::rules::RightOfWayPhaseBook> BuildFrom(
+std::unique_ptr<api::rules::PhaseRingBook> BuildFrom(
     const RoadRulebook* rulebook, const YAML::Node& root_node) {
   DRAKE_DEMAND(root_node.IsMap());
   const YAML::Node& phase_rings_node = root_node["PhaseRings"];
   DRAKE_THROW_UNLESS(phase_rings_node.IsDefined());
   DRAKE_DEMAND(phase_rings_node.IsSequence());
-  auto result = std::make_unique<SimpleRightOfWayPhaseBook>();
+  auto result = std::make_unique<SimplePhaseRingBook>();
   for (const YAML::Node& phase_ring_node : phase_rings_node) {
     result->AddPhaseRing(BuildPhaseRing(rulebook, phase_ring_node));
   }
@@ -130,12 +130,12 @@ std::unique_ptr<api::rules::RightOfWayPhaseBook> BuildFrom(
 
 }  // namespace
 
-std::unique_ptr<api::rules::RightOfWayPhaseBook> LoadPhaseRingBook(
+std::unique_ptr<api::rules::PhaseRingBook> LoadPhaseRingBook(
     const RoadRulebook* rulebook, const std::string& input) {
   return BuildFrom(rulebook, YAML::Load(input));
 }
 
-std::unique_ptr<api::rules::RightOfWayPhaseBook> LoadPhaseRingBookFromFile(
+std::unique_ptr<api::rules::PhaseRingBook> LoadPhaseRingBookFromFile(
     const RoadRulebook* rulebook, const std::string& filename) {
   return BuildFrom(rulebook, YAML::LoadFile(filename));
 }

@@ -25,6 +25,7 @@ using Eigen::Isometry3d;
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
+using math::RigidTransformd;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
@@ -125,11 +126,10 @@ void ParseBody(const multibody::PackageMap& package_map,
           ParseVisual(body_name, package_map, root_dir, visual_node, materials);
       // The parsing should *always* produce an IllustrationProperties
       // instance, even if it is empty.
-      DRAKE_DEMAND(
-          geometry_instance.illustration_properties() != nullptr);
+      DRAKE_DEMAND(geometry_instance.illustration_properties() != nullptr);
       plant->RegisterVisualGeometry(
-          body, geometry_instance.pose(), geometry_instance.shape(),
-          geometry_instance.name(),
+          body, RigidTransformd(geometry_instance.pose()),
+          geometry_instance.shape(), geometry_instance.name(),
           *geometry_instance.illustration_properties(), scene_graph);
     }
 
@@ -141,8 +141,9 @@ void ParseBody(const multibody::PackageMap& package_map,
           ParseCollision(body_name, package_map, root_dir, collision_node,
                          &friction);
       plant->RegisterCollisionGeometry(
-          body, geometry_instance.pose(), geometry_instance.shape(),
-          geometry_instance.name(), friction, scene_graph);
+          body, RigidTransformd(geometry_instance.pose()),
+          geometry_instance.shape(), geometry_instance.name(), friction,
+          scene_graph);
     }
   }
 }

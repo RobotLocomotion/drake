@@ -380,12 +380,17 @@ class System : public SystemBase {
   /// @retval xcdot The time derivatives of `xc` returned as a reference to an
   ///               object of the same type and size as this %Context's
   ///               continuous state.
-  /// @see CalcTimeDerivatives()
+  /// @see CalcTimeDerivatives(), get_time_derivatives_cache_entry()
   const ContinuousState<T>& EvalTimeDerivatives(
       const Context<T>& context) const {
-    const CacheEntry& entry =
-        this->get_cache_entry(time_derivatives_cache_index_);
+    const CacheEntry& entry = get_time_derivatives_cache_entry();
     return entry.Eval<ContinuousState<T>>(context);
+  }
+
+  /// (Advanced) Returns the CacheEntry used to cache time derivatives for
+  /// EvalTimeDerivatives().
+  const CacheEntry& get_time_derivatives_cache_entry() const {
+    return this->get_cache_entry(time_derivatives_cache_index_);
   }
 
   /// Returns a reference to the cached value of the potential energy (PE),
@@ -715,6 +720,29 @@ class System : public SystemBase {
     DispatchDiscreteVariableUpdateHandler(context, events, discrete_state);
   }
 
+  /// Given the @p discrete_state results of a previous call to
+  /// CalcDiscreteVariableUpdates() that processed the given collection of
+  /// events, modifies the @p context to reflect the updated @p discrete_state.
+  /// @param[in] events
+  ///     The Event collection that resulted in the given @p discrete_state.
+  /// @param[in,out] discrete_state
+  ///     The updated discrete state from a CalcDiscreteVariableUpdates()
+  ///     call. This is mutable to permit its contents to be swapped with the
+  ///     corresponding @p context contents (rather than copied).
+  /// @param[in,out] context
+  ///     The Context whose discrete state is modified to match
+  ///     @p discrete_state. Note that swapping contents with @p discrete_state
+  ///     may cause addresses of individual discrete state group vectors in
+  ///     @p context to be different on return than they were on entry.
+  /// @pre @p discrete_state is the result of a previous
+  ///      CalcDiscreteVariableUpdates() call that processed this @p events
+  ///      collection.
+  void ApplyDiscreteVariableUpdate(
+      const EventCollection<DiscreteUpdateEvent<T>>& events,
+      DiscreteValues<T>* discrete_state, Context<T>* context) const {
+    DoApplyDiscreteVariableUpdate(events, discrete_state, context);
+  }
+
   /// This method forces a discrete update on the system given a @p context,
   /// and the updated discrete state is stored in @p discrete_state. The
   /// discrete update event will have a trigger type of kForced, with no
@@ -757,6 +785,28 @@ class System : public SystemBase {
           "in CalcUnrestrictedUpdate().");
   }
 
+  /// Given the @p state results of a previous call to CalcUnrestrictedUpdate()
+  /// that processed the given collection of events, modifies the @p context to
+  /// reflect the updated @p state.
+  /// @param[in] events
+  ///     The Event collection that resulted in the given @p state.
+  /// @param[in,out] state
+  ///     The updated State from a CalcUnrestrictedUpdate() call. This is
+  ///     mutable to permit its contents to be swapped with the corresponding
+  ///     @p context contents (rather than copied).
+  /// @param[in,out] context
+  ///     The Context whose State is modified to match @p state. Note that
+  ///     swapping contents with the @p state may cause addresses of
+  ///     continuous, discrete, and abstract state containers in @p context
+  ///     to be different on return than they were on entry.
+  /// @pre @p state is the result of a previous CalcUnrestrictedUpdate() call
+  ///      that processed this @p events collection.
+  void ApplyUnrestrictedUpdate(
+      const EventCollection<UnrestrictedUpdateEvent<T>>& events,
+      State<T>* state, Context<T>* context) const {
+    DoApplyUnrestrictedUpdate(events, state, context);
+  }
+
   /// This method forces an unrestricted update on the system given a
   /// @p context, and the updated state is stored in @p state. The
   /// unrestricted update event will have a trigger type of kForced, with no
@@ -792,8 +842,8 @@ class System : public SystemBase {
     return time;
   }
 
-  /// This method is called by Simulator::Initialize() to gather all
-  /// update and publish events that are to be handled in StepTo() at the point
+  /// This method is called by Simulator::Initialize() to gather all update
+  /// and publish events that are to be handled in AdvanceTo() at the point
   /// before Simulator integrates continuous state. It is assumed that these
   /// events remain constant throughout the simulation. The "step" here refers
   /// to the major time step taken by the Simulator. During every simulation
@@ -1099,6 +1149,28 @@ class System : public SystemBase {
         this->GetInputPortBaseOrThrow(__func__, port_index));
   }
 
+  /// Returns the typed input port specified by the InputPortSelection or by
+  /// the InputPortIndex.  Returns nullptr if no port is selected.  This is
+  /// provided as a convenience method since many algorithms provide the same
+  /// common default or optional port semantics.
+  const InputPort<T>* get_input_port_selection(
+      variant<InputPortSelection, InputPortIndex> port_index) const {
+    if (holds_alternative<InputPortIndex>(port_index)) {
+      return &get_input_port(get<InputPortIndex>(port_index));
+    }
+
+    switch (get<InputPortSelection>(port_index)) {
+      case InputPortSelection::kUseFirstInputIfItExists:
+        if (num_input_ports() > 0) {
+          return &get_input_port(0);
+        }
+        return nullptr;
+      case InputPortSelection::kNoInput:
+        return nullptr;
+    }
+    return nullptr;
+  }
+
   /// Returns the typed input port with the unique name @p port_name.
   /// The current implementation performs a linear search over strings; prefer
   /// get_input_port() when performance is a concern.
@@ -1119,6 +1191,27 @@ class System : public SystemBase {
   const OutputPort<T>& get_output_port(int port_index) const {
     return dynamic_cast<const OutputPort<T>&>(
         this->GetOutputPortBaseOrThrow(__func__, port_index));
+  }
+
+  /// Returns the typed output port specified by the OutputPortSelection or by
+  /// the OutputPortIndex.  Returns nullptr if no port is selected. This is
+  /// provided as a convenience method since many algorithms provide the same
+  /// common default or optional port semantics.
+  const OutputPort<T>* get_output_port_selection(
+      variant<OutputPortSelection, OutputPortIndex> port_index) const {
+    if (holds_alternative<OutputPortIndex>(port_index)) {
+      return &get_output_port(get<OutputPortIndex>(port_index));
+    }
+    switch (get<OutputPortSelection>(port_index)) {
+      case OutputPortSelection::kUseFirstOutputIfItExists:
+        if (num_output_ports() > 0) {
+          return &get_output_port(0);
+        }
+        return nullptr;
+      case OutputPortSelection::kNoOutput:
+        return nullptr;
+    }
+    return nullptr;
   }
 
   /// Returns the typed output port with the unique name @p port_name.
@@ -1555,9 +1648,11 @@ class System : public SystemBase {
   // Don't promote output_port_ticket() since it is for internal use only.
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // These are to-be-deprecated. Use methods without the initial get_.
+  DRAKE_DEPRECATED("2019-07-01", "Use num_continuous_states() instead.")
   int get_num_continuous_states() const { return num_continuous_states(); }
+  DRAKE_DEPRECATED("2019-07-01", "Use num_constraints() instead.")
   int get_num_constraints() const { return num_constraints(); }
+  DRAKE_DEPRECATED("2019-07-01", "Use num_constraint_equations() instead.")
   int get_num_constraint_equations(const Context<T>& context) const {
     return num_constraint_equations(context);
   }
@@ -1625,12 +1720,20 @@ class System : public SystemBase {
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const = 0;
 
+  virtual void DoApplyDiscreteVariableUpdate(
+      const EventCollection<DiscreteUpdateEvent<T>>& events,
+      DiscreteValues<T>* discrete_state, Context<T>* context) const = 0;
+
   /// This function dispatches all unrestricted update events to the appropriate
   /// handlers. @p state cannot be null.
   virtual void DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const = 0;
+
+  virtual void DoApplyUnrestrictedUpdate(
+      const EventCollection<UnrestrictedUpdateEvent<T>>& events,
+      State<T>* state, Context<T>* context) const = 0;
   //@}
 
   //----------------------------------------------------------------------------

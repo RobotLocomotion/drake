@@ -30,6 +30,11 @@ PYBIND11_MODULE(_module_py, m) {
   constexpr auto& doc = pydrake_doc.drake;
   m.attr("_HAVE_SPDLOG") = logging::kHaveSpdlog;
 
+  // TODO(eric.cousineau): Provide a Pythonic spdlog sink that connects to
+  // Python's `logging` module; possibly use `pyspdlog`.
+  m.def("set_log_level", &logging::set_log_level, py::arg("level"),
+      doc.logging.set_log_level.doc);
+
   py::enum_<drake::RandomDistribution>(
       m, "RandomDistribution", doc.RandomDistribution.doc)
       .value("kUniform", drake::RandomDistribution::kUniform,

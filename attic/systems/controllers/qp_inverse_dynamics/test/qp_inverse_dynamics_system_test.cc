@@ -61,7 +61,7 @@ GTEST_TEST(testQpInverseDynamicsSystem, IiwaInverseDynamics) {
   robot_status.UpdateKinematics(0 /* time */, q, v);
   ConstantValueSource<double>* state_source =
       builder.AddSystem<ConstantValueSource<double>>(
-          AbstractValue::Make<RobotKinematicState<double>>(robot_status));
+          Value<RobotKinematicState<double>>(robot_status));
   state_source->set_name("state_source");
 
   // Makes a source for qp input.
@@ -84,7 +84,7 @@ GTEST_TEST(testQpInverseDynamicsSystem, IiwaInverseDynamics) {
 
   ConstantValueSource<double>* qp_input_source =
       builder.AddSystem<ConstantValueSource<double>>(
-          AbstractValue::Make<QpInput>(input));
+          Value<QpInput>(input));
   qp_input_source->set_name("qp_input_source");
 
   // Connects the diagram.
@@ -103,7 +103,7 @@ GTEST_TEST(testQpInverseDynamicsSystem, IiwaInverseDynamics) {
   std::unique_ptr<SystemOutput<double>> output =
       diagram->AllocateOutput();
   sim.Initialize();
-  sim.StepTo(controller->get_control_dt());
+  sim.AdvanceTo(controller->get_control_dt());
 
   // Gets the output from the plan eval block.
   diagram->CalcOutput(sim.get_context(), output.get());

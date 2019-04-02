@@ -7,8 +7,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/api/road_geometry.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_ring.h"
+#include "drake/automotive/maliput/api/rules/phase.h"
+#include "drake/automotive/maliput/api/rules/phase_ring.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
 #include "drake/automotive/maliput/api/rules/road_rulebook.h"
 #include "drake/automotive/maliput/api/test_utilities/rules_test_utilities.h"
@@ -24,9 +24,9 @@ namespace maliput {
 namespace {
 
 using api::RoadGeometry;
-using api::rules::RightOfWayPhase;
-using api::rules::RightOfWayPhaseBook;
-using api::rules::RightOfWayPhaseRing;
+using api::rules::Phase;
+using api::rules::PhaseRing;
+using api::rules::PhaseRingBook;
 using api::rules::RightOfWayRule;
 using api::rules::RoadRulebook;
 
@@ -38,73 +38,72 @@ class TestLoading2x2IntersectionPhasebook : public ::testing::Test {
         road_geometry_(
             multilane::LoadFile(multilane::BuilderFactory(), filepath_)),
         rulebook_(LoadRoadRulebookFromFile(road_geometry_.get(), filepath_)),
-        expected_phases_(
-            {RightOfWayPhase(RightOfWayPhase::Id("NorthSouthPhase"),
-                             {{RightOfWayRule::Id("NorthStraight"),
-                               RightOfWayRule::State::Id("Go")},
-                              {RightOfWayRule::Id("SouthStraight"),
-                               RightOfWayRule::State::Id("Go")},
-                              {RightOfWayRule::Id("EastStraight"),
-                               RightOfWayRule::State::Id("Stop")},
-                              {RightOfWayRule::Id("WestStraight"),
-                               RightOfWayRule::State::Id("Stop")},
-                              {RightOfWayRule::Id("NorthRightTurn"),
-                               RightOfWayRule::State::Id("Go")},
-                              {RightOfWayRule::Id("SouthRightTurn"),
-                               RightOfWayRule::State::Id("Go")},
-                              {RightOfWayRule::Id("EastRightTurn"),
-                               RightOfWayRule::State::Id("StopThenGo")},
-                              {RightOfWayRule::Id("WestRightTurn"),
-                               RightOfWayRule::State::Id("StopThenGo")},
-                              {RightOfWayRule::Id("NorthLeftTurn"),
-                               RightOfWayRule::State::Id("Go")},
-                              {RightOfWayRule::Id("SouthLeftTurn"),
-                               RightOfWayRule::State::Id("Go")},
-                              {RightOfWayRule::Id("EastLeftTurn"),
-                               RightOfWayRule::State::Id("Stop")},
-                              {RightOfWayRule::Id("WestLeftTurn"),
-                               RightOfWayRule::State::Id("Stop")}},
-                             nullopt),
-             RightOfWayPhase(RightOfWayPhase::Id("EastWestPhase"),
-                             {{RightOfWayRule::Id("NorthStraight"),
-                               RightOfWayRule::State::Id("Stop")},
-                              {RightOfWayRule::Id("SouthStraight"),
-                               RightOfWayRule::State::Id("Stop")},
-                              {RightOfWayRule::Id("EastStraight"),
-                               RightOfWayRule::State::Id("Go")},
-                              {RightOfWayRule::Id("WestStraight"),
-                               RightOfWayRule::State::Id("Go")},
-                              {RightOfWayRule::Id("NorthRightTurn"),
-                               RightOfWayRule::State::Id("StopThenGo")},
-                              {RightOfWayRule::Id("SouthRightTurn"),
-                               RightOfWayRule::State::Id("StopThenGo")},
-                              {RightOfWayRule::Id("EastRightTurn"),
-                               RightOfWayRule::State::Id("Go")},
-                              {RightOfWayRule::Id("WestRightTurn"),
-                               RightOfWayRule::State::Id("Go")},
-                              {RightOfWayRule::Id("NorthLeftTurn"),
-                               RightOfWayRule::State::Id("Stop")},
-                              {RightOfWayRule::Id("SouthLeftTurn"),
-                               RightOfWayRule::State::Id("Stop")},
-                              {RightOfWayRule::Id("EastLeftTurn"),
-                               RightOfWayRule::State::Id("Go")},
-                              {RightOfWayRule::Id("WestLeftTurn"),
-                               RightOfWayRule::State::Id("Go")}},
-                             nullopt)}) {}
+        expected_phases_({Phase(Phase::Id("NorthSouthPhase"),
+                                {{RightOfWayRule::Id("NorthStraight"),
+                                  RightOfWayRule::State::Id("Go")},
+                                 {RightOfWayRule::Id("SouthStraight"),
+                                  RightOfWayRule::State::Id("Go")},
+                                 {RightOfWayRule::Id("EastStraight"),
+                                  RightOfWayRule::State::Id("Stop")},
+                                 {RightOfWayRule::Id("WestStraight"),
+                                  RightOfWayRule::State::Id("Stop")},
+                                 {RightOfWayRule::Id("NorthRightTurn"),
+                                  RightOfWayRule::State::Id("Go")},
+                                 {RightOfWayRule::Id("SouthRightTurn"),
+                                  RightOfWayRule::State::Id("Go")},
+                                 {RightOfWayRule::Id("EastRightTurn"),
+                                  RightOfWayRule::State::Id("StopThenGo")},
+                                 {RightOfWayRule::Id("WestRightTurn"),
+                                  RightOfWayRule::State::Id("StopThenGo")},
+                                 {RightOfWayRule::Id("NorthLeftTurn"),
+                                  RightOfWayRule::State::Id("Go")},
+                                 {RightOfWayRule::Id("SouthLeftTurn"),
+                                  RightOfWayRule::State::Id("Go")},
+                                 {RightOfWayRule::Id("EastLeftTurn"),
+                                  RightOfWayRule::State::Id("Stop")},
+                                 {RightOfWayRule::Id("WestLeftTurn"),
+                                  RightOfWayRule::State::Id("Stop")}},
+                                nullopt),
+                          Phase(Phase::Id("EastWestPhase"),
+                                {{RightOfWayRule::Id("NorthStraight"),
+                                  RightOfWayRule::State::Id("Stop")},
+                                 {RightOfWayRule::Id("SouthStraight"),
+                                  RightOfWayRule::State::Id("Stop")},
+                                 {RightOfWayRule::Id("EastStraight"),
+                                  RightOfWayRule::State::Id("Go")},
+                                 {RightOfWayRule::Id("WestStraight"),
+                                  RightOfWayRule::State::Id("Go")},
+                                 {RightOfWayRule::Id("NorthRightTurn"),
+                                  RightOfWayRule::State::Id("StopThenGo")},
+                                 {RightOfWayRule::Id("SouthRightTurn"),
+                                  RightOfWayRule::State::Id("StopThenGo")},
+                                 {RightOfWayRule::Id("EastRightTurn"),
+                                  RightOfWayRule::State::Id("Go")},
+                                 {RightOfWayRule::Id("WestRightTurn"),
+                                  RightOfWayRule::State::Id("Go")},
+                                 {RightOfWayRule::Id("NorthLeftTurn"),
+                                  RightOfWayRule::State::Id("Stop")},
+                                 {RightOfWayRule::Id("SouthLeftTurn"),
+                                  RightOfWayRule::State::Id("Stop")},
+                                 {RightOfWayRule::Id("EastLeftTurn"),
+                                  RightOfWayRule::State::Id("Go")},
+                                 {RightOfWayRule::Id("WestLeftTurn"),
+                                  RightOfWayRule::State::Id("Go")}},
+                                nullopt)}) {}
 
   const std::string filepath_;
   const std::unique_ptr<const RoadGeometry> road_geometry_;
   const std::unique_ptr<const RoadRulebook> rulebook_;
-  const std::vector<RightOfWayPhase> expected_phases_;
+  const std::vector<Phase> expected_phases_;
 };
 
 TEST_F(TestLoading2x2IntersectionPhasebook, LoadFromFile) {
-  std::unique_ptr<RightOfWayPhaseBook> phasebook =
+  std::unique_ptr<PhaseRingBook> phase_ring_book =
       LoadPhaseRingBookFromFile(rulebook_.get(), filepath_);
-  EXPECT_NE(phasebook, nullptr);
-  const RightOfWayPhaseRing::Id ring_id("2x2Intersection");
-  const optional<RightOfWayPhaseRing> ring =
-      phasebook->GetPhaseRing(RightOfWayPhaseRing::Id(ring_id));
+  EXPECT_NE(phase_ring_book, nullptr);
+  const PhaseRing::Id ring_id("2x2Intersection");
+  const optional<PhaseRing> ring =
+      phase_ring_book->GetPhaseRing(PhaseRing::Id(ring_id));
   EXPECT_NE(ring, nullopt);
   EXPECT_EQ(ring->id(), ring_id);
   const auto& phases = ring->phases();

@@ -316,7 +316,7 @@ class MaliputRailcarTest : public ::testing::Test {
     params.set_velocity_limit_kp(8);
     SetParams(params);
 
-    context_->set_time(straight_lane->length() / kForwardSpeed);
+    context_->SetTime(straight_lane->length() / kForwardSpeed);
 
     // Verifies that MaliputRailcar::DoCalcUnrestrictedUpdate() switches to the
     // start of curved lane when it is traveling forward and reaches the end of
@@ -391,9 +391,9 @@ class MaliputRailcarTest : public ::testing::Test {
 
 TEST_F(MaliputRailcarTest, Topology) {
   EXPECT_NO_FATAL_FAILURE(InitializeDragwayLane());
-  ASSERT_EQ(dut_->get_num_input_ports(), 1);
+  ASSERT_EQ(dut_->num_input_ports(), 1);
 
-  ASSERT_EQ(dut_->get_num_output_ports(), 4);
+  ASSERT_EQ(dut_->num_output_ports(), 4);
   const auto& state_output = dut_->state_output();
   EXPECT_EQ(systems::kVectorValued, state_output.get_data_type());
   EXPECT_EQ(MaliputRailcarStateIndices::kNumCoordinates, state_output.size());
@@ -829,7 +829,7 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeDragwayWithS) {
 
   // Verifies that the time till reaching the end of the lane is equal to the
   // lane length divided by the vehicle's speed.
-  context_->set_time(0);
+  context_->SetTime(0);
   continuous_state()->set_s(0);
   continuous_state()->set_speed(kSpeed);
   systems::LeafCompositeEventCollection<double> events;
@@ -868,7 +868,7 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeDragwayAgainstS) {
   // Verifies that the time till reaching the end of the lane is equal to the
   // lane length divided by the vehicle's speed.
   systems::LeafCompositeEventCollection<double> events;
-  context_->set_time(0);
+  context_->SetTime(0);
   continuous_state()->set_s(lane->length());
   continuous_state()->set_speed(kSpeed);
   double t = dut_->CalcNextUpdateTime(*context_, &events);
@@ -909,7 +909,7 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeCurvedRoadWithS) {
 
   // Verifies that the time till reaching the end of the lane is equal to the
   // lane length divided by the vehicle's speed.
-  context_->set_time(0);
+  context_->SetTime(0);
   continuous_state()->set_s(0);
   continuous_state()->set_speed(kSpeed);
   systems::LeafCompositeEventCollection<double> events;
@@ -950,7 +950,7 @@ TEST_F(MaliputRailcarTest, DoCalcNextUpdateTimeCurvedRoadAgainstS) {
 
   // Verifies that the time till reaching the end of the lane is equal to the
   // lane length divided by the vehicle's speed.
-  context_->set_time(0);
+  context_->SetTime(0);
   continuous_state()->set_s(lane->length());
   continuous_state()->set_speed(kSpeed);
   systems::LeafCompositeEventCollection<double> events;

@@ -4,9 +4,9 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/automotive/maliput/api/rules/right_of_way_phase.h"
+#include "drake/automotive/maliput/api/rules/phase.h"
+#include "drake/automotive/maliput/api/rules/phase_ring.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_phase_provider.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_ring.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
 #include "drake/common/drake_optional.h"
 
@@ -14,10 +14,10 @@ namespace drake {
 namespace maliput {
 namespace {
 
+using api::rules::Phase;
+using api::rules::PhaseRing;
 using api::rules::RightOfWayRule;
-using api::rules::RightOfWayPhase;
 using api::rules::RightOfWayPhaseProvider;
-using api::rules::RightOfWayPhaseRing;
 using api::rules::RuleStates;
 
 // Fixture for testing the SimpleRightOfWayPhaseProvider.
@@ -26,9 +26,9 @@ struct SimpleRightOfWayPhaseProviderTest : public ::testing::Test {
       : phase_id_1("foo"), phase_id_2("bar"), phase_ring_id("bar") {
   }
 
-  const RightOfWayPhase::Id phase_id_1;
-  const RightOfWayPhase::Id phase_id_2;
-  const RightOfWayPhaseRing::Id phase_ring_id;
+  const Phase::Id phase_id_1;
+  const Phase::Id phase_id_2;
+  const PhaseRing::Id phase_ring_id;
   SimpleRightOfWayPhaseProvider dut;
 };
 
@@ -51,20 +51,19 @@ TEST_F(SimpleRightOfWayPhaseProviderTest, CurrentPhaseOnly) {
   EXPECT_EQ(returned_phase->next, nullopt);
 }
 
-// Tests that an exception is thrown if the phases within a RightOfWayPhaseRing
-// cover different sets of RightOfWayRules.
-GTEST_TEST(RightOfWayPhaseRingTest, InvalidPhases) {
+// Tests that an exception is thrown if the phases within a PhaseRing cover
+// different sets of RightOfWayRules.
+GTEST_TEST(PhaseRingTest, InvalidPhases) {
   const RuleStates rule_states_1 {{RightOfWayRule::Id("a"),
                                    RightOfWayRule::State::Id("1")},
                                   {RightOfWayRule::Id("b"),
                                    RightOfWayRule::State::Id("2")}};
   const RuleStates rule_states_2 {{RightOfWayRule::Id("a"),
                                    RightOfWayRule::State::Id("1")}};
-  RightOfWayPhase phase_1(RightOfWayPhase::Id("bar"), rule_states_1);
-  RightOfWayPhase phase_2(RightOfWayPhase::Id("baz"), rule_states_2);
-  const std::vector<RightOfWayPhase> phases{phase_1, phase_2};
-  EXPECT_THROW(RightOfWayPhaseRing(RightOfWayPhaseRing::Id("foo"), phases),
-               std::exception);
+  Phase phase_1(Phase::Id("bar"), rule_states_1);
+  Phase phase_2(Phase::Id("baz"), rule_states_2);
+  const std::vector<Phase> phases{phase_1, phase_2};
+  EXPECT_THROW(PhaseRing(PhaseRing::Id("foo"), phases), std::exception);
 }
 
 }  // namespace

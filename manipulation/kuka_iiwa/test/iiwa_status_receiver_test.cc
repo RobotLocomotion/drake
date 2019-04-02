@@ -45,7 +45,7 @@ class IiwaStatusReceiverTest : public testing::Test {
 
 TEST_F(IiwaStatusReceiverTest, AcceptanceTest) {
   // Confirm that output is zero for uninitialized lcm input.
-  const int num_output_ports = dut_.get_num_output_ports();
+  const int num_output_ports = dut_.num_output_ports();
   EXPECT_EQ(num_output_ports, 7);
   for (int i = 0; i < num_output_ports; ++i) {
     const systems::LeafSystem<double>& leaf = dut_;

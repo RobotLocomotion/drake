@@ -180,7 +180,7 @@ int do_main() {
   simulator.Initialize();
   simulator.set_publish_every_time_step(false);
   simulator.set_publish_at_initialization(false);
-  simulator.StepTo(FLAGS_simulation_time);
+  simulator.AdvanceTo(FLAGS_simulation_time);
 
   return 0;
 }

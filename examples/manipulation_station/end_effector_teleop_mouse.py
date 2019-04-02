@@ -355,4 +355,4 @@ simulator.set_publish_every_time_step(False)
 simulator.set_target_realtime_rate(args.target_realtime_rate)
 
 print_instructions()
-simulator.StepTo(args.duration)
+simulator.AdvanceTo(args.duration)

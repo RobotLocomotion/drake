@@ -94,10 +94,10 @@ class DiscreteTimeDelayTest : public ::testing::TestWithParam<bool> {
 // Tests that the time delay has one input, one output and no direct
 // feedthrough.
 TEST_P(DiscreteTimeDelayTest, Topology) {
-  EXPECT_EQ(1, delay_->get_num_input_ports());
-  EXPECT_EQ(1, context_->get_num_input_ports());
+  EXPECT_EQ(1, delay_->num_input_ports());
+  EXPECT_EQ(1, context_->num_input_ports());
 
-  EXPECT_EQ(1, delay_->get_num_output_ports());
+  EXPECT_EQ(1, delay_->num_output_ports());
 
   EXPECT_FALSE(delay_->HasAnyDirectFeedthrough());
 }
@@ -218,20 +218,20 @@ GTEST_TEST(DiscreteTimeDelayTest, DiscreteSimulation) {
   simulator.Initialize();
   EXPECT_EQ(0., eval());  // No update should have occurred yet.
 
-  simulator.StepTo(0);  // Force an update at 0.
+  simulator.AdvancePendingEvents();  // Force an update at 0.
   EXPECT_EQ(0, eval());  // Should output initial value.
 
   // Should output initial value until delay has passed.
-  simulator.StepTo(0.49);
+  simulator.AdvanceTo(0.49);
   EXPECT_EQ(0, eval());
 
   // Should start outputing delayed input.
-  simulator.StepTo(0.5);
-  simulator.StepTo(0.5);
+  simulator.AdvanceTo(0.5);
+  simulator.AdvancePendingEvents();
   EXPECT_NEAR(count_eval(0), eval(), kMachineTol);
 
   // Last sample at 0.9, will output value from 0.4.
-  simulator.StepTo(0.91);
+  simulator.AdvanceTo(0.91);
   EXPECT_NEAR(count_eval(0.4), eval(), kMachineTol);
 }
 
@@ -281,20 +281,20 @@ GTEST_TEST(DiscreteTimeDelayTest, ContinuousSimulation) {
   simulator.Initialize();
   EXPECT_EQ(0., eval());  // No update should have occurred yet.
 
-  simulator.StepTo(0);  // Force an update at 0.
+  simulator.AdvancePendingEvents();  // Force an update at 0.
   EXPECT_EQ(0, eval());  // Should output initial value.
 
   // Should output initial value until delay has passed.
-  simulator.StepTo(0.49);
+  simulator.AdvanceTo(0.49);
   EXPECT_EQ(0, eval());
 
   // Should start outputing delayed input.
-  simulator.StepTo(0.5);
-  simulator.StepTo(0.5);
+  simulator.AdvanceTo(0.5);
+  simulator.AdvancePendingEvents();
   EXPECT_NEAR(sine_eval(0), eval(), kMachineTol);
 
   // Last sample at 0.9, will output value from 0.4.
-  simulator.StepTo(0.91);
+  simulator.AdvanceTo(0.91);
   EXPECT_NEAR(sine_eval(0.4), eval(), kMachineTol);
 }
 

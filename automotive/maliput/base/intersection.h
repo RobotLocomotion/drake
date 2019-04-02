@@ -3,9 +3,9 @@
 #include <vector>
 
 #include "drake/automotive/maliput/api/intersection.h"
+#include "drake/automotive/maliput/api/rules/phase_ring.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_phase_provider.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_ring.h"
 #include "drake/automotive/maliput/base/simple_right_of_way_phase_provider.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
@@ -35,7 +35,7 @@ class Intersection : public api::Intersection {
   /// specified and obtained. The pointer must remain valid throughout this
   /// class instance's lifetime.
   Intersection(const Id& id, const std::vector<api::rules::LaneSRange>& region,
-               const api::rules::RightOfWayPhaseRing::Id& ring_id,
+               const api::rules::PhaseRing::Id& ring_id,
                SimpleRightOfWayPhaseProvider* phase_provider);
 
   virtual ~Intersection() = default;
@@ -44,7 +44,7 @@ class Intersection : public api::Intersection {
   const optional<api::rules::RightOfWayPhaseProvider::Result> Phase() const;
 
   /// Sets the current phase.
-  void SetPhase(const api::rules::RightOfWayPhase::Id& phase_id);
+  void SetPhase(const api::rules::Phase::Id& phase_id);
 
   // TODO(liang.fok) Add method for obtaining the current bulb states
 

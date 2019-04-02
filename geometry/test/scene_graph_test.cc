@@ -329,8 +329,8 @@ TEST_F(SceneGraphTest, TransmogrifyPorts) {
       scene_graph_.ToAutoDiffXd();
   SceneGraph<AutoDiffXd>& scene_graph_ad =
       *dynamic_cast<SceneGraph<AutoDiffXd>*>(system_ad.get());
-  EXPECT_EQ(scene_graph_ad.get_num_input_ports(),
-            scene_graph_.get_num_input_ports());
+  EXPECT_EQ(scene_graph_ad.num_input_ports(),
+            scene_graph_.num_input_ports());
   EXPECT_EQ(scene_graph_ad.get_source_pose_port(s_id).get_index(),
             scene_graph_.get_source_pose_port(s_id).get_index());
   std::unique_ptr<systems::Context<AutoDiffXd>> context_ad =

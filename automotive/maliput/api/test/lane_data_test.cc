@@ -201,6 +201,29 @@ TYPED_TEST(GeoPositionTest, EqualityInequalityOperators) {
   EXPECT_TRUE(gp1 != gp_xerror);
 }
 
+TYPED_TEST(GeoPositionTest, Length) {
+  // Check length of the vector.
+  using T = TypeParam;
+  const GeoPositionT<T> dut(T(3.), T(4.), T(0.));
+  EXPECT_EQ(dut.length(), T(5.));
+}
+
+TYPED_TEST(GeoPositionTest, VectorArithmeticOperators) {
+  // Check vector arithmetic operators +/- and multiply by scalar.
+  using T = TypeParam;
+  const GeoPositionT<T> gp1(T(1.), T(2.), T(3.));
+  const GeoPositionT<T> gp2(T(4.), T(5.), T(6.));
+
+  GeoPositionT<T> dut = gp1 + gp2;
+  EXPECT_TRUE(dut == GeoPositionT<T>(T(5.), T(7.), T(9.)));
+  dut = gp1 - gp2;
+  EXPECT_TRUE(dut == GeoPositionT<T>(T(-3.), T(-3.), T(-3.)));
+  dut = 2. * gp1;
+  EXPECT_TRUE(dut == GeoPositionT<T>(T(2.), T(4.), T(6.)));
+  dut = gp1 * 3.;
+  EXPECT_TRUE(dut == GeoPositionT<T>(T(3.), T(6.), T(9.)));
+}
+
 // An arbitrary very small number (that passes the tests).
 const double kRotationTolerance = 1e-15;
 

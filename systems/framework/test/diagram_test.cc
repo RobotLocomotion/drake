@@ -430,8 +430,7 @@ class ExampleDiagram : public Diagram<double> {
     builder.ExportOutput(integrator1_->get_output_port());
 
     if (use_abstract) {
-      builder.AddSystem<ConstantValueSource<double>>(
-          std::make_unique<Value<int>>(0));
+      builder.AddSystem<ConstantValueSource<double>>(Value<int>(0));
     }
     if (use_double_only) {
       builder.AddSystem<DoubleOnlySystem>();
@@ -1769,8 +1768,8 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
       diagram_
           .GetSubsystemDiscreteValues(*diagram_.hold2(), *updates);
 
-      // Set the time to 8.5, so only hold2 updates.
-      context_->SetTime(8.5);
+  // Set the time to 8.5, so only hold2 updates.
+  context_->SetTime(8.5);
 
   // Request the next update time.
   auto events = diagram_.AllocateCompositeEventCollection();
@@ -1804,6 +1803,68 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
       *context_, events->get_discrete_update_events(), updates.get());
   EXPECT_EQ(17.0, updates1[0]);
   EXPECT_EQ(23.0, updates2[0]);
+}
+
+// Tests that in a Diagram where multiple subsystems have discrete variables,
+// an update in one subsystem doesn't cause invalidation in the other. Note
+// that although we use the caching system to observe what gets invalidated,
+// we are testing for proper Diagram behavior here; we're not testing the
+// caching system (which is well-tested elsewhere).
+TEST_F(DiscreteStateTest, DiscreteUpdateNotificationsAreLocalized) {
+  // Initialize the zero-order holds to different values than their input ports.
+  Context<double>& ctx1 =
+      diagram_.GetMutableSubsystemContext(*diagram_.hold1(), context_.get());
+  ctx1.get_mutable_discrete_state(0)[0] = 1001.0;
+  Context<double>& ctx2 =
+      diagram_.GetMutableSubsystemContext(*diagram_.hold2(), context_.get());
+  ctx2.get_mutable_discrete_state(0)[0] = 1002.0;
+
+  // Allocate space to hold the updated discrete variables.
+  std::unique_ptr<DiscreteValues<double>> updates =
+      diagram_.AllocateDiscreteVariables();
+
+  // Hold1 is due for an update at 2s, so only it should be included in the
+  // next update time event collection.
+  context_->SetTime(1.5);
+
+  // Request the next update time.
+  auto events = diagram_.AllocateCompositeEventCollection();
+  double time = diagram_.CalcNextUpdateTime(*context_, events.get());
+  EXPECT_EQ(2.0, time);
+  EXPECT_TRUE(events->HasDiscreteUpdateEvents());
+  const auto& discrete_events = events->get_discrete_update_events();
+
+  auto num_notifications = [](const Context<double>& context) {
+    return context.get_tracker(SystemBase::xd_ticket())
+        .num_notifications_received();
+  };
+
+  const int64_t notifications_1 = num_notifications(ctx1);
+  const int64_t notifications_2 = num_notifications(ctx2);
+
+  // Fast forward to 2.0 sec and collect the update.
+  context_->SetTime(2.0);
+  diagram_.CalcDiscreteVariableUpdates(
+      *context_, discrete_events, updates.get());
+
+  // Of course nothing should have been notified since nothing's changed yet.
+  EXPECT_EQ(num_notifications(ctx1), notifications_1);
+  EXPECT_EQ(num_notifications(ctx2), notifications_2);
+
+  // Selectively apply the update; only hold1 should get notified.
+  diagram_.ApplyDiscreteVariableUpdate(discrete_events, updates.get(),
+                                       context_.get());
+  // Sanity check that the update did occur!
+  EXPECT_EQ(17.0, ctx1.get_discrete_state(0)[0]);
+  EXPECT_EQ(1002.0, ctx2.get_discrete_state(0)[0]);
+
+  EXPECT_EQ(num_notifications(ctx1), notifications_1 + 1);
+  EXPECT_EQ(num_notifications(ctx2), notifications_2);
+
+  // Now apply the updates the dumb way. Everyone gets notified.
+  context_->get_mutable_discrete_state().SetFrom(*updates);
+  EXPECT_EQ(num_notifications(ctx1), notifications_1 + 2);
+  EXPECT_EQ(num_notifications(ctx2), notifications_2 + 1);
 }
 
 // Tests that a publish action is taken at 19 sec.
@@ -1977,6 +2038,73 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   context_->get_mutable_state().SetFrom(*x_buf);
   EXPECT_EQ(get_sys0_abstract_data_as_double(), (time + 0));
   EXPECT_EQ(get_sys1_abstract_data_as_double(), (time + 1));
+}
+
+// Tests that in a Diagram where multiple subsystems have abstract variables,
+// an unrestricted update in one subsystem doesn't invalidate the other.
+// Note that although we use the caching system to observe what gets
+// invalidated, we are testing for proper Diagram behavior here; we're not
+// testing the caching system.
+TEST_F(AbstractStateDiagramTest, UnrestrictedUpdateNotificationsAreLocalized) {
+  Context<double>& ctx0 =
+      diagram_.GetMutableSubsystemContext(diagram_.get_sys(0), context_.get());
+  Context<double>& ctx1 =
+      diagram_.GetMutableSubsystemContext(diagram_.get_sys(1), context_.get());
+
+  // Allocate space to hold the updated state
+  std::unique_ptr<State<double>> updates = context_->CloneState();
+
+  // sys0 is due for an update at 2s, so only it should be included in the
+  // next update time event collection.
+  context_->SetTime(1.5);
+
+  // Request the next update time.
+  auto events = diagram_.AllocateCompositeEventCollection();
+  const double next_time = diagram_.CalcNextUpdateTime(*context_, events.get());
+  EXPECT_EQ(2.0, next_time);
+  EXPECT_TRUE(events->HasUnrestrictedUpdateEvents());
+  const auto& unrestricted_events = events->get_unrestricted_update_events();
+
+  // Unrestricted update will notify xc, xd, xa and composite x. We'll count
+  // xa notifications as representative. (We're not trying to prove here that
+  // notifications are sent correctly, just that notifications are *not* sent
+  // to uninvolved subsystems.)
+  auto num_notifications = [](const Context<double>& context) {
+    return context.get_tracker(SystemBase::xa_ticket())
+        .num_notifications_received();
+  };
+
+  const int64_t notifications_0 = num_notifications(ctx0);
+  const int64_t notifications_1 = num_notifications(ctx1);
+
+  // The abstract data should be initialized to their ids.
+  EXPECT_EQ(get_sys0_abstract_data_as_double(), 0);
+  EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
+
+  // Fast forward to 2.0 sec and collect the update.
+  context_->SetTime(next_time);
+  diagram_.CalcUnrestrictedUpdate(
+      *context_, unrestricted_events, updates.get());
+
+  // Of course nothing should have been notified since nothing's changed yet.
+  EXPECT_EQ(num_notifications(ctx0), notifications_0);
+  EXPECT_EQ(num_notifications(ctx1), notifications_1);
+
+  // Selectively apply the update; only hold1 should get notified.
+  diagram_.ApplyUnrestrictedUpdate(unrestricted_events, updates.get(),
+                                       context_.get());
+  // Sanity check that the update actually occured -- should have added time
+  // to sys0's abstract id.
+  EXPECT_EQ(get_sys0_abstract_data_as_double(), 0 + next_time);
+  EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
+
+  EXPECT_EQ(num_notifications(ctx0), notifications_0 + 1);
+  EXPECT_EQ(num_notifications(ctx1), notifications_1);
+
+  // Now apply the updates the dumb way. Everyone gets notified.
+  context_->get_mutable_state().SetFrom(*updates);
+  EXPECT_EQ(num_notifications(ctx0), notifications_0 + 2);
+  EXPECT_EQ(num_notifications(ctx1), notifications_1 + 1);
 }
 
 // Test diagram. Top level diagram (big_diagram) has 3 components:

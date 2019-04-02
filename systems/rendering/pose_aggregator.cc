@@ -65,7 +65,7 @@ void PoseAggregator<T>::CalcPoseBundle(const Context<T>& context,
   PoseBundle<T>& bundle = *output;
   int pose_index = 0;
 
-  const int num_ports = this->get_num_input_ports();
+  const int num_ports = this->num_input_ports();
   for (int port_index = 0; port_index < num_ports; ++port_index) {
     const auto& port = this->get_input_port(port_index);
     const InputRecord& record = input_records_[port_index];

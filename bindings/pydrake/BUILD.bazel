@@ -459,6 +459,7 @@ drake_py_unittest(
 drake_py_binary(
     name = "math_example",
     srcs = ["math_example.py"],
+    add_test_rule = 1,
     isolate = 1,
     deps = [
         ":math_py",

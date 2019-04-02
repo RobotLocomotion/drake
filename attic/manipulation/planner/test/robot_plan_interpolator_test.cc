@@ -150,7 +150,7 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
   }
 
   for (const TrajectoryTestCase& kase : cases) {
-    context->set_time(kase.time);
+    context->SetTime(kase.time);
     dut.CalcUnrestrictedUpdate(*context, &context->get_mutable_state());
     dut.CalcOutput(*context, output.get());
     const double position =
@@ -176,7 +176,7 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
   if (interp_type == InterpolatorType::Cubic ||
       interp_type == InterpolatorType::ZeroOrderHold ||
       interp_type == InterpolatorType::Pchip) {
-    context->set_time(t.back() + 0.01);
+    context->SetTime(t.back() + 0.01);
     dut.CalcUnrestrictedUpdate(*context, &context->get_mutable_state());
     dut.CalcOutput(*context, output.get());
     const double velocity =
@@ -193,7 +193,7 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
 
   // Check that sending an empty plan causes us to continue to output
   // the same commanded position.
-  context->set_time(1);
+  context->SetTime(1);
   dut.CalcUnrestrictedUpdate(*context, &context->get_mutable_state());
   dut.CalcOutput(*context, output.get());
   double position =

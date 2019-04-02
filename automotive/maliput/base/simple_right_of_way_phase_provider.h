@@ -2,9 +2,9 @@
 
 #include <unordered_map>
 
-#include "drake/automotive/maliput/api/rules/right_of_way_phase.h"
+#include "drake/automotive/maliput/api/rules/phase.h"
+#include "drake/automotive/maliput/api/rules/phase_ring.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_phase_provider.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_ring.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
 
@@ -25,25 +25,24 @@ class SimpleRightOfWayPhaseProvider
 
   /// Adds a phase ring to this provider.
   ///
-  /// @throws std::exception if a RightOfWayPhaseRing with an ID of @p id
-  /// already exists in this provider.
-  void AddPhaseRing(const api::rules::RightOfWayPhaseRing::Id& id,
-                    const api::rules::RightOfWayPhase::Id& initial_phase);
-
-  /// Sets the current phase of a RightOfWayPhaseRing.
-  ///
-  /// @throws std::exception if no RightOfWayPhaseRing with ID @p id exists
+  /// @throws std::exception if a PhaseRing with an ID of @p id already exists
   /// in this provider.
-  void SetPhase(const api::rules::RightOfWayPhaseRing::Id& id,
-                const api::rules::RightOfWayPhase::Id& phase);
+  void AddPhaseRing(const api::rules::PhaseRing::Id& id,
+                    const api::rules::Phase::Id& initial_phase);
+
+  /// Sets the current phase of a PhaseRing.
+  ///
+  /// @throws std::exception if no PhaseRing with ID @p id exists in this
+  /// provider.
+  void SetPhase(const api::rules::PhaseRing::Id& id,
+                const api::rules::Phase::Id& phase);
 
  private:
   optional<api::rules::RightOfWayPhaseProvider::Result> DoGetPhase(
-      const api::rules::RightOfWayPhaseRing::Id& id) const override;
+      const api::rules::PhaseRing::Id& id) const override;
 
-  std::unordered_map<
-    maliput::api::rules::RightOfWayPhaseRing::Id,
-    maliput::api::rules::RightOfWayPhase::Id> phases_;
+  std::unordered_map<maliput::api::rules::PhaseRing::Id,
+                     maliput::api::rules::Phase::Id> phases_;
 };
 
 }  // namespace maliput

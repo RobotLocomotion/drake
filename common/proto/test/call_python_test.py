@@ -27,7 +27,8 @@ def scoped_file(filepath, is_fifo=False):
 
 assert "TEST_TMPDIR" in os.environ, "Must run under `bazel test`"
 
-# Set backend so that the test does not open windows.
+# TODO(eric.cousineau): See if it's possible to make test usefully pass for
+# "Template" backend.
 os.environ["MPLBACKEND"] = "ps"
 
 SIGPIPE_STATUS = 141

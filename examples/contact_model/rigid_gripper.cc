@@ -160,7 +160,7 @@ int main() {
   for (int i = 1; i <= step_count; ++i) {
     double t = context.get_time();
     std::cout << "time: " << t << "\n";
-    simulator.StepTo(i * kPrintPeriod);
+    simulator.AdvanceTo(i * kPrintPeriod);
   }
 
   while (FLAGS_playback) viz_publisher->ReplayCachedSimulation();

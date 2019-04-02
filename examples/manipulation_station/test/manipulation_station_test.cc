@@ -130,10 +130,10 @@ GTEST_TEST(ManipulationStationTest, CheckDynamics) {
 
   // Expect state from the velocity interpolators in the iiwa and the wsg and
   // from the multibody state of the plant.
-  EXPECT_EQ(context->get_num_discrete_state_groups(), 3);
+  EXPECT_EQ(context->num_discrete_state_groups(), 3);
   // Expect continuous state from the integral term in the PID from the
   // inverse dynamics controller.
-  EXPECT_EQ(context->get_continuous_state().size(), 7);
+  EXPECT_EQ(context->num_continuous_states(), 7);
 
   const auto& plant = station.get_multibody_plant();
 

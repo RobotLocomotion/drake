@@ -170,6 +170,9 @@ class GeoPositionT {
   void set_z(const T& z) { xyz_.z() = z; }
   //@}
 
+  /// Returns L^2 norm of 3-vector.
+  T length() const { return xyz_.norm(); }
+
   /// Constructs a GeoPositionT<double> from other types, producing a clone if
   /// already double.
   GeoPositionT<double> MakeDouble() const {
@@ -202,6 +205,42 @@ auto operator==(const GeoPositionT<T>& lhs, const GeoPositionT<T>& rhs) {
 template <typename T>
 auto operator!=(const GeoPositionT<T>& lhs, const GeoPositionT<T>& rhs) {
   return !(lhs.xyz() == rhs.xyz());
+}
+
+/// GeoPosition overload for the plus operator.
+template <typename T>
+GeoPositionT<T> operator+(const GeoPositionT<T>& lhs,
+                          const GeoPositionT<T>& rhs) {
+  Vector3<T> result = lhs.xyz();
+  result += rhs.xyz();
+  return GeoPositionT<T>::FromXyz(result);
+}
+
+/// GeoPosition overload for the minus operator.
+template <typename T>
+GeoPositionT<T> operator-(const GeoPositionT<T>& lhs,
+                          const GeoPositionT<T>& rhs) {
+  Vector3<T> result = lhs.xyz();
+  result -= rhs.xyz();
+  return GeoPositionT<T>::FromXyz(result);
+}
+
+/// GeoPosition overload for the multiplication by scalar operator.
+template <typename T>
+GeoPositionT<T> operator*(double lhs,
+                          const GeoPositionT<T>& rhs) {
+  Vector3<T> result = rhs.xyz();
+  result *= lhs;
+  return GeoPositionT<T>::FromXyz(result);
+}
+
+/// GeoPosition overload for the multiplication by scalar operator.
+template <typename T>
+GeoPositionT<T> operator*(const GeoPositionT<T>& lhs,
+                          double rhs) {
+  Vector3<T> result = lhs.xyz();
+  result *= rhs;
+  return GeoPositionT<T>::FromXyz(result);
 }
 
 /// A 3-dimensional position in a `Lane`-frame, consisting of three components:

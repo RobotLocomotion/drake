@@ -15,9 +15,13 @@ drake_cc_package_library(
     deps = [
         ":connect_lcm_scope",
         ":lcm_driven_loop",
+        ":lcm_interface_system",
         ":lcm_log_playback_system",
+        ":lcm_publisher_system",
         ":lcm_pubsub_system",
+        ":lcm_subscriber_system",
         ":lcmt_drake_signal_translator",
+        ":serializer",
         ":translator",
         ":translator_system",
     ],
@@ -32,7 +36,7 @@ drake_cc_library(
         "connect_lcm_scope.h",
     ],
     deps = [
-        ":lcm_pubsub_system",
+        ":lcm_publisher_system",
         ":lcmt_drake_signal_translator",
         "//systems/framework:diagram_builder",
     ],
@@ -67,22 +71,56 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "lcm_pubsub_system",
-    srcs = [
-        "lcm_publisher_system.cc",
-        "lcm_subscriber_system.cc",
-        "serializer.cc",
-    ],
-    hdrs = [
-        "lcm_publisher_system.h",
-        "lcm_subscriber_system.h",
-        "serializer.h",
-    ],
+    name = "serializer",
+    srcs = ["serializer.cc"],
+    hdrs = ["serializer.h"],
+    visibility = ["//visibility:private"],
     deps = [
-        ":translator",
         "//common:value",
-        "//lcm:real",
+    ],
+)
+
+drake_cc_library(
+    name = "lcm_publisher_system",
+    srcs = ["lcm_publisher_system.cc"],
+    hdrs = ["lcm_publisher_system.h"],
+    deps = [
+        ":serializer",
+        ":translator",
+        "//lcm:drake_lcm",
         "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "lcm_subscriber_system",
+    srcs = ["lcm_subscriber_system.cc"],
+    hdrs = ["lcm_subscriber_system.h"],
+    deps = [
+        ":serializer",
+        ":translator",
+        "//lcm:drake_lcm",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "lcm_interface_system",
+    srcs = ["lcm_interface_system.cc"],
+    hdrs = ["lcm_interface_system.h"],
+    deps = [
+        "//lcm:drake_lcm",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+# This is a convenience alias to get all three systems at once.
+drake_cc_library(
+    name = "lcm_pubsub_system",
+    deps = [
+        ":lcm_interface_system",
+        ":lcm_publisher_system",
+        ":lcm_subscriber_system",
     ],
 )
 
@@ -95,7 +133,6 @@ drake_cc_library(
         "lcm_log_playback_system.h",
     ],
     deps = [
-        ":lcm_pubsub_system",
         "//lcm:lcm_log",
         "//systems/framework:leaf_system",
     ],
@@ -162,15 +199,27 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "lcm_interface_system_test",
+    deps = [
+        ":lcm_interface_system",
+        ":lcm_subscriber_system",
+        "//lcm:drake_lcm",
+        "//lcmtypes:drake_signal",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
     name = "lcm_publisher_system_test",
     deps = [
         ":custom_drake_signal_translator",
-        ":lcm_pubsub_system",
+        ":lcm_publisher_system",
         ":lcmt_drake_signal_translator",
         "//common/test_utilities:is_dynamic_castable",
         "//lcm:lcmt_drake_signal_utils",
         "//lcm:mock",
-        "//systems/analysis",
+        "//systems/analysis:simulator",
     ],
 )
 
@@ -178,8 +227,10 @@ drake_cc_googletest(
     name = "lcm_log_playback_test",
     deps = [
         ":lcm_log_playback_system",
+        ":lcm_pubsub_system",
         "//lcmtypes:drake_signal",
-        "//systems/analysis",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
     ],
 )
 
@@ -187,7 +238,7 @@ drake_cc_googletest(
     name = "lcm_subscriber_system_test",
     deps = [
         ":custom_drake_signal_translator",
-        ":lcm_pubsub_system",
+        ":lcm_subscriber_system",
         ":lcmt_drake_signal_translator",
         "//lcm:lcmt_drake_signal_utils",
         "//lcm:mock",
@@ -207,8 +258,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "serializer_test",
     deps = [
-        ":lcm_pubsub_system",
         ":lcmt_drake_signal_translator",
+        ":serializer",
         "//lcm:lcmt_drake_signal_utils",
         "//lcm:mock",
     ],

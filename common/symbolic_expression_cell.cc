@@ -839,20 +839,26 @@ Expression ExpressionMul::Differentiate(const Variable& x) const {
   //                      ...          +
   //       expr * (∂/∂x fₙ^gₙ) / fₙ^gₙ]
   // = c * expr * (∑ᵢ (∂/∂x fᵢ^gᵢ) / fᵢ^gᵢ)
-  //
   // where expr = (f₁^g₁ * f₂^g₂ * ... * fₙn^gₙ).
+  //
+  // We distribute (c * expr) into the summation. This possibly cancels the
+  // division, "/ fᵢ^gᵢ", and results in a simpler formula.
+  //
+  // = ∑ᵢ (c * (∂/∂x fᵢ^gᵢ) / fᵢ^gᵢ * expr)
+
   // This factory will form the expression that we will return.
-  ExpressionMulFactory mul_fac{constant_, base_to_exponent_map_};
-  // This factory will form (∑ᵢ (∂/∂x fᵢ^gᵢ) / fᵢ^gᵢ).
   ExpressionAddFactory add_fac;
   for (const pair<const Expression, Expression>& term : base_to_exponent_map_) {
     const Expression& base{term.first};
     const Expression& exponent{term.second};
-    add_fac.AddExpression(DifferentiatePow(base, exponent, x) *
-                          pow(base, -exponent));
+    // This factory will form (c * (∂/∂x fᵢ^gᵢ) / fᵢ^gᵢ * expr).
+    ExpressionMulFactory mul_fac{constant_, base_to_exponent_map_};
+    mul_fac.AddExpression(DifferentiatePow(base, exponent, x));
+    mul_fac.AddExpression(pow(base, -exponent));
+
+    add_fac.AddExpression(mul_fac.GetExpression());
   }
-  mul_fac.AddExpression(add_fac.GetExpression());
-  return mul_fac.GetExpression();
+  return add_fac.GetExpression();
 }
 
 ostream& ExpressionMul::Display(ostream& os) const {

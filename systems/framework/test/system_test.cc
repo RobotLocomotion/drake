@@ -164,10 +164,23 @@ class TestSystem : public System<double> {
     }
   }
 
+  void DoApplyDiscreteVariableUpdate(
+      const EventCollection<DiscreteUpdateEvent<double>>& events,
+      DiscreteValues<double>* discrete_state,
+      Context<double>* context) const final {
+    ADD_FAILURE() << "Implementation is required, but unused here.";
+  }
+
   void DispatchUnrestrictedUpdateHandler(
       const Context<double>&,
       const EventCollection<UnrestrictedUpdateEvent<double>>&,
       State<double>*) const final {
+    ADD_FAILURE() << "Implementation is required, but unused here.";
+  }
+
+  void DoApplyUnrestrictedUpdate(
+      const EventCollection<UnrestrictedUpdateEvent<double>>& events,
+      State<double>* state, Context<double>* context) const final {
     ADD_FAILURE() << "Implementation is required, but unused here.";
   }
 
@@ -374,6 +387,37 @@ TEST_F(SystemTest, PortNameTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       system_.GetOutputPort("not_my_output"),
       std::logic_error, ".*does not have an output port named.*");
+}
+
+TEST_F(SystemTest, PortSelectionTest) {
+  // Input ports.
+  EXPECT_EQ(system_.get_input_port_selection(InputPortSelection::kNoInput),
+            nullptr);
+  EXPECT_EQ(system_.get_input_port_selection(
+                InputPortSelection::kUseFirstInputIfItExists),
+            nullptr);
+
+  const auto& input_port =
+      system_.DeclareInputPort("my_input", kVectorValued, 3);
+  EXPECT_EQ(system_.get_input_port_selection(
+                InputPortSelection::kUseFirstInputIfItExists),
+            &input_port);
+
+  EXPECT_EQ(system_.get_input_port_selection(0), &system_.get_input_port(0));
+
+  // Output ports.
+  EXPECT_EQ(system_.get_output_port_selection(OutputPortSelection::kNoOutput),
+            nullptr);
+  EXPECT_EQ(system_.get_output_port_selection(
+                OutputPortSelection::kUseFirstOutputIfItExists),
+            nullptr);
+
+  const auto& output_port = system_.AddAbstractOutputPort();
+  EXPECT_EQ(system_.get_output_port_selection(
+                OutputPortSelection::kUseFirstOutputIfItExists),
+            &output_port);
+
+  EXPECT_EQ(system_.get_output_port_selection(0), &system_.get_output_port(0));
 }
 
 // Tests the constraint list logic.
@@ -590,10 +634,23 @@ class ValueIOTestSystem : public System<T> {
     ADD_FAILURE() << "Implementation is required, but unused here.";
   }
 
+  void DoApplyDiscreteVariableUpdate(
+      const EventCollection<DiscreteUpdateEvent<T>>& events,
+      DiscreteValues<T>* discrete_state,
+      Context<T>* context) const final {
+    ADD_FAILURE() << "Implementation is required, but unused here.";
+  }
+
   void DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& event_info,
       State<T>* state) const final {
+    ADD_FAILURE() << "Implementation is required, but unused here.";
+  }
+
+  void DoApplyUnrestrictedUpdate(
+      const EventCollection<UnrestrictedUpdateEvent<T>>& events,
+      State<T>* state, Context<T>* context) const final {
     ADD_FAILURE() << "Implementation is required, but unused here.";
   }
 
@@ -936,12 +993,27 @@ class ComputationTestSystem final : public System<double> {
       DiscreteValues<double>* discrete_state) const final {
     ADD_FAILURE() << "Implementation is required, but unused here.";
   }
+
+  void DoApplyDiscreteVariableUpdate(
+      const EventCollection<DiscreteUpdateEvent<double>>& events,
+      DiscreteValues<double>* discrete_state,
+      Context<double>* context) const final {
+    ADD_FAILURE() << "Implementation is required, but unused here.";
+  }
+
   void DispatchUnrestrictedUpdateHandler(
       const Context<double>&,
       const EventCollection<UnrestrictedUpdateEvent<double>>&,
       State<double>*) const final {
     ADD_FAILURE() << "Implementation is required, but unused here.";
   }
+
+  void DoApplyUnrestrictedUpdate(
+      const EventCollection<UnrestrictedUpdateEvent<double>>& events,
+      State<double>* state, Context<double>* context) const final {
+    ADD_FAILURE() << "Implementation is required, but unused here.";
+  }
+
   std::map<PeriodicEventData, std::vector<const Event<double>*>,
            PeriodicEventDataComparator>
   DoGetPeriodicEvents() const final { return {}; }
@@ -1031,6 +1103,15 @@ TEST_F(ComputationTest, Eval) {
   test_sys_.ExpectCount(4, 3, 3, 3, 3);
   EXPECT_EQ(test_sys_.EvalNonConservativePower(*context_), 8.);  // Again.
   test_sys_.ExpectCount(4, 3, 3, 3, 4);
+
+  // Check that the reported time derivatives cache entry is the right one.
+  context_->SetTime(3.);  // Invalidate.
+  const CacheEntry& entry = test_sys_.get_time_derivatives_cache_entry();
+  const int64_t serial_number =
+      entry.get_cache_entry_value(*context_).serial_number();
+  test_sys_.EvalTimeDerivatives(*context_);
+  EXPECT_NE(entry.get_cache_entry_value(*context_).serial_number(),
+            serial_number);
 }
 
 }  // namespace

@@ -112,7 +112,7 @@ class TestGeneral(unittest.TestCase):
         diagram = builder.Build()
         simulator = Simulator(diagram)
         kTime = 1.
-        simulator.StepTo(kTime)
+        simulator.AdvanceTo(kTime)
 
         # Verify outputs of the every-step logger
         t = logger_per_step.sample_times()
@@ -281,8 +281,8 @@ class TestGeneral(unittest.TestCase):
                                       time_period=0.0)
         context = system.CreateDefaultContext()
 
-        self.assertEqual(context.get_continuous_state().size(), 2)
-        self.assertEqual(context.get_num_discrete_state_groups(), 0)
+        self.assertEqual(context.num_continuous_states(), 2)
+        self.assertEqual(context.num_discrete_state_groups(), 0)
         self.assertEqual(system.get_input_port(0).size(), 2)
         self.assertEqual(system.get_output_port(0).size(), 1)
 

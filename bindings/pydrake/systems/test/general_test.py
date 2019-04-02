@@ -59,6 +59,7 @@ from pydrake.systems.primitives import (
     PassThrough,
     SignalLogger,
     )
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
 # TODO(eric.cousineau): The scope of this test file and and `custom_test.py`
 # is poor. Move these tests into `framework_test` and `analysis_test`, and
@@ -249,12 +250,16 @@ class TestGeneral(unittest.TestCase):
             self.assertTrue(simulator.get_context() is
                             simulator.get_mutable_context())
             check_output(simulator.get_context())
-            simulator.StepTo(1)
+            simulator.AdvanceTo(1)
 
             # Create simulator specifying context.
             context = system.CreateDefaultContext()
+            with catch_drake_warnings(expected_count=1):
+                context.set_time(0.)
             context.SetTime(0.)
 
+            with catch_drake_warnings(expected_count=1):
+                context.set_accuracy(1e-4)
             context.SetAccuracy(1e-4)
             self.assertEqual(context.get_accuracy(), 1e-4)
 
@@ -262,7 +267,7 @@ class TestGeneral(unittest.TestCase):
             simulator = Simulator_[T](system, context)
             self.assertTrue(simulator.get_context() is context)
             check_output(context)
-            simulator.StepTo(1)
+            simulator.AdvanceTo(1)
 
     def test_copy(self):
         # Copy a context using `deepcopy` or `clone`.
@@ -337,7 +342,7 @@ class TestGeneral(unittest.TestCase):
         times = np.linspace(0, 1, n)
         context_log = []
         for t in times:
-            simulator.StepTo(t)
+            simulator.AdvanceTo(t)
             # Record snapshot of *entire* context.
             context_log.append(context.Clone())
 

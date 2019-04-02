@@ -4,6 +4,7 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/drake_variant_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -183,16 +184,27 @@ PYBIND11_MODULE(trajectory_optimization, m) {
   py::class_<DirectCollocation, MultipleShooting>(
       m, "DirectCollocation", doc.DirectCollocation.doc)
       .def(py::init<const systems::System<double>*,
-               const systems::Context<double>&, int, double, double>(),
+               const systems::Context<double>&, int, double, double,
+               variant<systems::InputPortSelection, systems::InputPortIndex>,
+               bool>(),
           py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
           py::arg("minimum_timestep"), py::arg("maximum_timestep"),
+          py::arg("input_port_index") =
+              systems::InputPortSelection::kUseFirstInputIfItExists,
+          py::arg("assume_non_continuous_states_are_fixed") = false,
           doc.DirectCollocation.ctor.doc);
 
   py::class_<DirectCollocationConstraint, solvers::Constraint,
       std::shared_ptr<DirectCollocationConstraint>>(
       m, "DirectCollocationConstraint", doc.DirectCollocationConstraint.doc)
       .def(py::init<const systems::System<double>&,
-               const systems::Context<double>&>(),
+               const systems::Context<double>&,
+               variant<systems::InputPortSelection, systems::InputPortIndex>,
+               bool>(),
+          py::arg("system"), py::arg("context"),
+          py::arg("input_port_index") =
+              systems::InputPortSelection::kUseFirstInputIfItExists,
+          py::arg("assume_non_continuous_states_are_fixed") = false,
           doc.DirectCollocationConstraint.ctor.doc);
 
   m.def("AddDirectCollocationConstraint", &AddDirectCollocationConstraint,

@@ -217,8 +217,16 @@ class SystemBase : public internal::SystemMessageInterface {
     return static_cast<int>(cache_entries_.size());
   }
 
-  /** Return a reference to a CacheEntry given its `index`. */
+  /** Returns a reference to a CacheEntry given its `index`. */
   const CacheEntry& get_cache_entry(CacheIndex index) const {
+    DRAKE_ASSERT(0 <= index && index < num_cache_entries());
+    return *cache_entries_[index];
+  }
+
+  /** (Advanced) Returns a mutable reference to a CacheEntry given its `index`.
+  Note that you do not need mutable access to a CacheEntry to modify its value
+  in a Context, so most users should not use this method. */
+  CacheEntry& get_mutable_cache_entry(CacheIndex index) {
     DRAKE_ASSERT(0 <= index && index < num_cache_entries());
     return *cache_entries_[index];
   }
@@ -749,16 +757,19 @@ class SystemBase : public internal::SystemMessageInterface {
   //@}
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // These are to-be-deprecated. Use methods without the initial get_.
+  DRAKE_DEPRECATED("2019-07-01", "Use num_total_inputs() instead.")
   int get_num_total_inputs() const {
     return num_total_inputs();
   }
+  DRAKE_DEPRECATED("2019-07-01", "Use num_total_outputs() instead.")
   int get_num_total_outputs() const {
     return num_total_outputs();
   }
+  DRAKE_DEPRECATED("2019-07-01", "Use num_input_ports() instead.")
   int get_num_input_ports() const {
     return num_input_ports();
   }
+  DRAKE_DEPRECATED("2019-07-01", "Use num_output_ports() instead.")
   int get_num_output_ports() const {
     return num_output_ports();
   }
@@ -1003,7 +1014,7 @@ class SystemBase : public internal::SystemMessageInterface {
   }
 
   /** (Internal use only) Returns the OutputPortBase at index `port_index`,
-  throwing std::out_of_range we don't like the port index. The name of the
+  throwing std::out_of_range if we don't like the port index. The name of the
   public API method that received the bad index is provided in `func` and is
   included in the error message. */
   const OutputPortBase& GetOutputPortBaseOrThrow(const char* func,

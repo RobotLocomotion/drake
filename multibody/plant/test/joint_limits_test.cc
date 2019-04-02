@@ -90,7 +90,7 @@ GTEST_TEST(JointLimitsTest, PrismaticJointConvergenceTest) {
       plant.get_actuation_input_port().get_index(),
       Vector1<double>::Constant(-10.0));
     simulator.Initialize();
-    simulator.StepTo(simulation_time);
+    simulator.AdvanceTo(simulation_time);
 
     // We expect a second order convergence with the time step. That is, we
     // expect the error to be lower than:
@@ -107,8 +107,8 @@ GTEST_TEST(JointLimitsTest, PrismaticJointConvergenceTest) {
     context.FixInputPort(
       plant.get_actuation_input_port().get_index(),
       Vector1<double>::Constant(10.0));
-    context.set_time(0.0);
-    simulator.StepTo(simulation_time);
+    context.SetTime(0.0);
+    simulator.AdvanceTo(simulation_time);
 
     // Verify we are at rest near the upper limit.
     EXPECT_NEAR(slider.get_translation(context), slider.position_upper_limit(),
@@ -166,7 +166,7 @@ GTEST_TEST(JointLimitsTest, RevoluteJoint) {
       plant.get_actuation_input_port().get_index(),
       Vector1<double>::Constant(1.5));
     simulator.Initialize();
-    simulator.StepTo(simulation_time);
+    simulator.AdvanceTo(simulation_time);
 
     // We expect a second order convergence with the time step. That is, we
     // expect the error to be lower than:
@@ -183,8 +183,8 @@ GTEST_TEST(JointLimitsTest, RevoluteJoint) {
     context.FixInputPort(
       plant.get_actuation_input_port().get_index(),
       Vector1<double>::Constant(-1.5));
-    context.set_time(0.0);
-    simulator.StepTo(simulation_time);
+    context.SetTime(0.0);
+    simulator.AdvanceTo(simulation_time);
 
     // Verify we are at rest near the lower limit.
     EXPECT_NEAR(pin.get_angle(context), pin.position_lower_limit(),
@@ -267,7 +267,7 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
     plant.get_actuation_input_port().get_index(),
     VectorX<double>::Constant(nq, 0.4));
   simulator.Initialize();
-  simulator.StepTo(simulation_time);
+  simulator.AdvanceTo(simulation_time);
 
   for (int joint_number = 1; joint_number <= nq; ++joint_number) {
     const std::string joint_name = "iiwa_joint_" + std::to_string(joint_number);
@@ -284,8 +284,8 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
     plant.get_actuation_input_port().get_index(),
     VectorX<double>::Constant(nq, -0.4));
   plant.SetDefaultContext(&context);
-  context.set_time(0.0);
-  simulator.StepTo(simulation_time);
+  context.SetTime(0.0);
+  simulator.AdvanceTo(simulation_time);
   for (int joint_number = 1; joint_number <= nq; ++joint_number) {
     const std::string joint_name = "iiwa_joint_" + std::to_string(joint_number);
     const auto& joint = plant.GetJointByName<RevoluteJoint>(joint_name);

@@ -124,6 +124,21 @@ PYBIND11_MODULE(plant, m) {
             py::arg("A"), py::arg("B"),
             py::arg("X_AB") = RigidTransform<double>::Identity(),
             py_reference_internal, doc.MultibodyPlant.WeldFrames.doc)
+        // N.B. This overload of `AddForceElement` is required to precede
+        // the generic overload below so we can use our internal specialization
+        // to label this as our unique gravity field, mimicking the C++ API.
+        .def("AddForceElement",
+            [](Class * self,
+                std::unique_ptr<UniformGravityFieldElement<T>> force_element)
+                -> auto& {
+              // N.B. We need to make sure we call the correct specialization in
+              // MultibodyPlant for it to take note we are adding gravity to the
+              // model. This is ugly API needs to be updated, see #11080.
+              return self->AddForceElement<UniformGravityFieldElement>(
+                  force_element->gravity_vector());
+            },
+            py::arg("force_element"), py_reference_internal,
+            doc.MultibodyPlant.AddForceElement.doc)
         .def("AddForceElement",
             [](Class * self,
                 std::unique_ptr<ForceElement<T>> force_element) -> auto& {
@@ -205,11 +220,12 @@ PYBIND11_MODULE(plant, m) {
         // reference, while `GetX(context, model_instance)` returns a copy.
         .def("GetPositions",
             [](const Class* self, const Context<T>& context) {
-              // Reference. Hack in effective `keep_alive` for Eigen casting.
-              return py::cast(self->GetPositions(context),
-                  py_reference_internal, py::cast(&context, py_reference));
+              // Reference.
+              return self->GetPositions(context);
             },
-            py::arg("context"), doc.MultibodyPlant.GetPositions.doc_1args)
+            py::arg("context"), py_reference_internal,
+            // Keep alive, ownership: `return` keeps `context` alive.
+            py::keep_alive<0, 2>(), doc.MultibodyPlant.GetPositions.doc_1args)
         .def("GetPositions",
             [](const Class* self, const Context<T>& context,
                 ModelInstanceIndex model_instance) {
@@ -220,11 +236,12 @@ PYBIND11_MODULE(plant, m) {
             doc.MultibodyPlant.GetPositions.doc_2args)
         .def("GetVelocities",
             [](const Class* self, const Context<T>& context) {
-              // Reference. Hack in effective `keep_alive` for Eigen casting.
-              return py::cast(self->GetVelocities(context),
-                  py_reference_internal, py::cast(&context, py_reference));
+              // Reference.
+              return self->GetVelocities(context);
             },
-            py::arg("context"), doc.MultibodyPlant.GetVelocities.doc_1args)
+            py::arg("context"), py_reference_internal,
+            // Keep alive, ownership: `return` keeps `context` alive.
+            py::keep_alive<0, 2>(), doc.MultibodyPlant.GetVelocities.doc_1args)
         .def("GetVelocities",
             [](const Class* self, const Context<T>& context,
                 ModelInstanceIndex model_instance) {
@@ -421,14 +438,6 @@ PYBIND11_MODULE(plant, m) {
             &Class::RegisterAsSourceForSceneGraph, py::arg("scene_graph"),
             doc.MultibodyPlant.RegisterAsSourceForSceneGraph.doc)
         .def("RegisterVisualGeometry",
-            py::overload_cast<const Body<T>&, const Isometry3<double>&,
-                const geometry::Shape&, const std::string&,
-                const Vector4<double>&, geometry::SceneGraph<T>*>(
-                &Class::RegisterVisualGeometry),
-            py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
-            py::arg("diffuse_color"), py::arg("scene_graph") = nullptr,
-            doc_iso3_deprecation)
-        .def("RegisterVisualGeometry",
             py::overload_cast<const Body<T>&, const RigidTransform<double>&,
                 const geometry::Shape&, const std::string&,
                 const Vector4<double>&, geometry::SceneGraph<T>*>(
@@ -437,13 +446,18 @@ PYBIND11_MODULE(plant, m) {
             py::arg("diffuse_color"), py::arg("scene_graph") = nullptr,
             doc.MultibodyPlant.RegisterVisualGeometry
                 .doc_6args_body_X_BG_shape_name_diffuse_color_scene_graph)
-        .def("RegisterCollisionGeometry",
-            py::overload_cast<const Body<T>&, const Isometry3<double>&,
-                const geometry::Shape&, const std::string&,
-                const CoulombFriction<double>&, geometry::SceneGraph<T>*>(
-                &Class::RegisterCollisionGeometry),
+        .def("RegisterVisualGeometry",
+            [doc_iso3_deprecation](Class* self, const Body<T>& body,
+                const Isometry3<double>& X_BG, const geometry::Shape& shape,
+                const std::string& name, const Vector4<double>& diffuse_color,
+                geometry::SceneGraph<T>* scene_graph) {
+              WarnDeprecated(doc_iso3_deprecation);
+              return self->RegisterVisualGeometry(body,
+                  RigidTransform<double>(X_BG), shape, name, diffuse_color,
+                  scene_graph);
+            },
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
-            py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
+            py::arg("diffuse_color"), py::arg("scene_graph") = nullptr,
             doc_iso3_deprecation)
         .def("RegisterCollisionGeometry",
             py::overload_cast<const Body<T>&, const RigidTransform<double>&,
@@ -453,6 +467,20 @@ PYBIND11_MODULE(plant, m) {
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
             py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
             doc.MultibodyPlant.RegisterCollisionGeometry.doc)
+        .def("RegisterCollisionGeometry",
+            [doc_iso3_deprecation](Class* self, const Body<T>& body,
+                const Isometry3<double>& X_BG, const geometry::Shape& shape,
+                const std::string& name,
+                const CoulombFriction<double>& coulomb_friction,
+                geometry::SceneGraph<T>* scene_graph) {
+              WarnDeprecated(doc_iso3_deprecation);
+              return self->RegisterCollisionGeometry(body,
+                  RigidTransform<double>(X_BG), shape, name, coulomb_friction,
+                  scene_graph);
+            },
+            py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
+            py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
+            doc_iso3_deprecation)
         .def("get_source_id", &Class::get_source_id,
             doc.MultibodyPlant.get_source_id.doc)
         .def("get_geometry_query_input_port",
@@ -497,7 +525,13 @@ PYBIND11_MODULE(plant, m) {
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_contact_results_output_port),
             py_reference_internal,
-            doc.MultibodyPlant.get_contact_results_output_port.doc);
+            doc.MultibodyPlant.get_contact_results_output_port.doc)
+        .def("get_generalized_contact_forces_output_port",
+            overload_cast_explicit<const systems::OutputPort<T>&,
+                multibody::ModelInstanceIndex>(
+                &Class::get_generalized_contact_forces_output_port),
+            py_reference_internal, py::arg("model_instance"),
+            doc.MultibodyPlant.get_generalized_contact_forces_output_port.doc);
     // Property accessors.
     cls  // BR
         .def("world_body", &Class::world_body, py_reference_internal,
@@ -684,13 +718,13 @@ PYBIND11_MODULE(plant, m) {
             builder, std::move(plant), std::move(scene_graph));
         // Must do manual keep alive to dig into tuple.
         py::object builder_py = py::cast(builder, py_reference);
-        // Keep alive, ownership: `plant` keeps `builder` alive.
-        py::object plant_py =
-            py::cast(pair.plant, py_reference_internal, builder_py);
-        // Keep alive, ownership: `scene_graph` keeps `builder` alive.
-        py::object scene_graph_py =
-            py::cast(pair.scene_graph, py_reference_internal, builder_py);
-        return py::make_tuple(plant_py, scene_graph_py);
+        py::object plant_py = py::cast(pair.plant, py_reference);
+        py::object scene_graph_py = py::cast(pair.scene_graph, py_reference);
+        return py::make_tuple(
+            // Keep alive, ownership: `plant` keeps `builder` alive.
+            py_keep_alive(plant_py, builder_py),
+            // Keep alive, ownership: `scene_graph` keeps `builder` alive.
+            py_keep_alive(scene_graph_py, builder_py));
       },
       py::arg("builder"), py::arg("plant") = nullptr,
       py::arg("scene_graph") = nullptr, doc.AddMultibodyPlantSceneGraph.doc);

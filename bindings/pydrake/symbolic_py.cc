@@ -13,6 +13,16 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 
+#pragma GCC diagnostic push
+// Apple LLVM version 10.0.1 (clang-1001.0.46.3) adds `-Wself-assign-overloaded`
+// to `-Wall`, which generates warnings on Pybind11's operator-overloading idiom
+// that is using py::self (example: `def(py::self + py::self)`).
+// Here, we suppress the warning using `#pragma diagnostic`.
+#if (__APPLE__) && (__clang__) && (__clang_major__ >= 10) && \
+    (__clang_minor__ >= 0) && (__clang_patchlevel__ >= 1)
+#pragma GCC diagnostic ignored "-Wself-assign-overloaded"
+#endif
+
 namespace drake {
 namespace pydrake {
 
@@ -379,6 +389,17 @@ PYBIND11_MODULE(symbolic, m) {
       py::arg("m"), py::arg("env") = Environment::map{},
       py::arg("generator") = nullptr, doc.Evaluate.doc);
 
+  m.def("Substitute",
+      [](const MatrixX<Expression>& M, const Substitution& subst) {
+        return Substitute(M, subst);
+      },
+      py::arg("m"), py::arg("subst"), doc.Substitute.doc_2args);
+
+  m.def("Substitute",
+      [](const MatrixX<Expression>& M, const Variable& var,
+          const Expression& e) { return Substitute(M, var, e); },
+      py::arg("m"), py::arg("var"), py::arg("e"), doc.Substitute.doc_3args);
+
   py::class_<Formula> formula_cls(m, "Formula", doc.Formula.doc);
   formula_cls
       .def("GetFreeVariables", &Formula::GetFreeVariables,
@@ -594,3 +615,5 @@ PYBIND11_MODULE(symbolic, m) {
 
 }  // namespace pydrake
 }  // namespace drake
+
+#pragma GCC diagnostic pop

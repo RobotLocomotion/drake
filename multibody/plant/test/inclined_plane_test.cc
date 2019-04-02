@@ -145,7 +145,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   integrator->set_target_accuracy(target_accuracy);
   simulator.set_publish_every_time_step(true);
   simulator.Initialize();
-  simulator.StepTo(simulation_time);
+  simulator.AdvanceTo(simulation_time);
 
   // Compute B's kinetic energy ke in W from V_WB (B's spatial velocity in W).
   const SpatialVelocity<double>& V_WB =

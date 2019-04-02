@@ -17,9 +17,10 @@ drake_cc_package_library(
         ":phase_based_right_of_way_state_provider",
         ":phase_ring_book_loader",
         ":road_rulebook_loader",
-        ":simple_right_of_way_phase_book",
+        ":simple_phase_ring_book",
         ":simple_right_of_way_phase_provider",
         ":simple_rulebook",
+        ":traffic_light_book",
         ":trivial_right_of_way_state_provider",
         ":yaml_io",
     ],
@@ -63,7 +64,7 @@ drake_cc_library(
         "phase_ring_book_loader.h",
     ],
     deps = [
-        ":simple_right_of_way_phase_book",
+        ":simple_phase_ring_book",
         "//automotive/maliput/api",
         "//common:essential",
         "@yaml_cpp",
@@ -87,12 +88,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "simple_right_of_way_phase_book",
+    name = "simple_phase_ring_book",
     srcs = [
-        "simple_right_of_way_phase_book.cc",
+        "simple_phase_ring_book.cc",
     ],
     hdrs = [
-        "simple_right_of_way_phase_book.h",
+        "simple_phase_ring_book.h",
     ],
     deps = [
         "//automotive/maliput/api",
@@ -128,6 +129,20 @@ drake_cc_library(
         "//common:unused",
         "//math:geometric_transform",
         "//math:saturate",
+    ],
+)
+
+drake_cc_library(
+    name = "traffic_light_book",
+    srcs = [
+        "traffic_light_book.cc",
+    ],
+    hdrs = [
+        "traffic_light_book.h",
+    ],
+    deps = [
+        "//automotive/maliput/api",
+        "//common:essential",
     ],
 )
 
@@ -204,9 +219,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "simple_right_of_way_phase_book_test",
+    name = "simple_phase_ring_book_test",
     deps = [
-        ":simple_right_of_way_phase_book",
+        ":simple_phase_ring_book",
     ],
 )
 
@@ -221,6 +236,14 @@ drake_cc_googletest(
     name = "simple_rulebook_test",
     deps = [
         ":simple_rulebook",
+        "//automotive/maliput/api/test_utilities:rules_test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "traffic_light_book_test",
+    deps = [
+        ":traffic_light_book",
         "//automotive/maliput/api/test_utilities:rules_test_utilities",
     ],
 )

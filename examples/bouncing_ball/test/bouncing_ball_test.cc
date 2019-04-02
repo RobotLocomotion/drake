@@ -100,9 +100,9 @@ TEST_F(BouncingBallTest, Transmogrification) {
 }
 
 TEST_F(BouncingBallTest, Topology) {
-  ASSERT_EQ(0, dut_->get_num_input_ports());
+  ASSERT_EQ(0, dut_->num_input_ports());
 
-  ASSERT_EQ(1, dut_->get_num_output_ports());
+  ASSERT_EQ(1, dut_->num_output_ports());
   const auto& output_port = dut_->get_output_port(0);
   EXPECT_EQ(systems::kVectorValued, output_port.get_data_type());
 }
@@ -165,7 +165,7 @@ TEST_F(BouncingBallTest, Simulate) {
   drake::systems::Simulator<double> simulator(*dut_, std::move(context_));
   simulator.reset_integrator<systems::RungeKutta3Integrator<double>>(*dut_,
       &simulator.get_mutable_context());
-  simulator.get_mutable_context().set_accuracy(accuracy);
+  simulator.get_mutable_context().SetAccuracy(accuracy);
   simulator.get_mutable_integrator()->request_initial_step_size_target(1e-3);
   simulator.get_mutable_integrator()->set_target_accuracy(accuracy);
   simulator.Initialize();
@@ -177,7 +177,7 @@ TEST_F(BouncingBallTest, Simulate) {
   xc.SetAtIndex(1, v0);
 
   // Integrate.
-  simulator.StepTo(t_final);
+  simulator.AdvanceTo(t_final);
   EXPECT_EQ(simulator.get_mutable_context().get_time(), t_final);
 
   // Check against closed form solution for the bouncing ball. We anticipate

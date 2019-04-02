@@ -28,8 +28,8 @@ GTEST_TEST(TrajectoryFollowerTest, Topology) {
   const TrajectoryFollower<double> follower(
       Trajectory::Make(times, rotations, translations));
 
-  ASSERT_EQ(0, follower.get_num_input_ports());
-  ASSERT_EQ(3, follower.get_num_output_ports());
+  ASSERT_EQ(0, follower.num_input_ports());
+  ASSERT_EQ(3, follower.num_output_ports());
 
   const auto& state_output = follower.state_output();
   EXPECT_EQ(systems::kVectorValued, state_output.get_data_type());
@@ -93,7 +93,7 @@ GTEST_TEST(TrajectoryFollowerTest, Outputs) {
 
     const double end_time = it.distance / kSpeed;
     for (double time = 0.; time <= end_time; time += 0.1) {
-      simulator.StepTo(time);
+      simulator.AdvanceTo(time);
 
       const double scalar =
           std::min(std::max(0.0, (time * kSpeed) / it.distance), 1.);

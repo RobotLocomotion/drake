@@ -24,6 +24,7 @@
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_interface_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
@@ -36,8 +37,10 @@ namespace valkyrie {
 
 class ValkyrieSimulationDiagram : public systems::Diagram<double> {
  public:
-  ValkyrieSimulationDiagram(lcm::DrakeLcm* lcm, double dt) {
+  ValkyrieSimulationDiagram(lcm::DrakeLcm* lcm_arg, double dt) {
     systems::DiagramBuilder<double> builder;
+
+    auto lcm = builder.AddSystem<systems::lcm::LcmInterfaceSystem>(lcm_arg);
 
     // Create RigidBodyTree.
     auto tree_ptr = std::make_unique<RigidBodyTree<double>>();

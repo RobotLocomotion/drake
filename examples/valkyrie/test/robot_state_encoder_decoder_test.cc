@@ -125,7 +125,7 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
 
   auto& kinematics_results_source =
       *builder.AddSystem<ConstantValueSource<double>>(
-          move(kinematics_results_value));
+          *kinematics_results_value);
   kinematics_results_source.set_name("kinematics_results_source");
 
   // Effort sources.
@@ -190,7 +190,7 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
 
   auto& contact_results_source =
       *builder.AddSystem<ConstantValueSource<double>>(
-          move(contact_results_value));
+          *contact_results_value);
   contact_results_source.set_name("contact_results_source");
 
   // RobotStateEncoder and RobotStateDecoder.

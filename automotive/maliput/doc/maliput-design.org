@@ -15,8 +15,8 @@
 #    Typing "C-c C-e l o" will even open it for you.
 
 #+TITLE: maliput: Modeling Road Networks for Simulation
-#+AUTHOR: Matt Marjanović (maddog@tri.global)
-#+DATE: March 1, 2019
+#+AUTHOR: Matt Marjanović and Chien-Liang Fok
+#+DATE: March 26, 2019
 
 This document describes =maliput=, a model of road networks for use in
 agent and traffic simulations.  At the core of =maliput= is a
@@ -97,12 +97,17 @@ In super-mathy terms:
  * The road surface is extended via its normals into a bounded compact
    orientable 3-dimensional road volume, also embedded in the $\mathbb{R}^3$
    world frame via a $G^1$ continuous map from $\mathbb{R}^3 \to \mathbb{R}^3$.
- * We impose the $G^1$ continuity constraint to ensure that there is a
-   consistent, well-defined orientation everywhere on the manifold.
-   (Abrupt changes in curvature are allowed, but cusps/kinks are not.)
+ * We impose the $G^1$ continuity constraint on all roads to ensure that there
+   is a consistent, well-defined orientation everywhere on the road's manifold.
+   (Abrupt changes in curvature are allowed, but cusps/kinks are not. Realistic
+   violations of this rule like potholes are modeled in a different layer.)
 #   Furthermore, we construct the maps over a finite partition of the
 #   road volume, and over each partition, we require that the maps are
 #   $C^1$ continuous.
+ * No continuity requirement is imposed on the portion of the world that is
+   not part of the road's manifold, including at the boundary between the road
+   and its surroundings. For example, the edge of a road may have a curb, which
+   can have a sudden elevation change.
 
 In the lexicon of =maliput= and its C++ API, the road volume manifold is
 called a =RoadGeometry=.  A =RoadGeometry= is partitioned into
@@ -112,9 +117,9 @@ adjacent =Lanes=.  A =Lane= corresponds to a lane of travel on a road,
 and defines a specific parameterization of the parent =Segment='s
 volume from a local /lane frame/ into the world frame.  =Lanes= are
 connected at =BranchPoints=, and the graph of =Lanes= and
-=BranchPoints= describes the topology of a =RoadGeometry=.  Finally,
-=Segments= which map to intersecting volumes of the world frame (e.g.,
-intersections) are grouped together into =Junctions=.
+=BranchPoints= describes the topology of a =RoadGeometry=. =Segments= which map
+to intersecting volumes of the world frame (e.g., intersections) are grouped
+together into =Junctions=.
 
 In a sense, there are two complementary object graphs in =maliput=.
 The container hierarchy (=Junctions= contain =Segments=, which contain
@@ -122,6 +127,12 @@ The container hierarchy (=Junctions= contain =Segments=, which contain
 surface.  The routing graph (=Lanes= are joined end-to-end via
 =BranchPoints=) describes how one can get from one region of the road
 network to another.
+
+A =RoadGeometry= may also model paths that are adjacent to roads like sidewalks.
+If there is no $G^1$ continuity between the road and its adjacent paths, the two
+must be separated by =Segment= boundaries. This is not in violation of Maliput's
+continuity requirements because Maliput has no notion of laterally-adjacent
+=Segments=.
 
 *** Scale Length and Tolerances
 /TODO: Explain the concepts of linear tolerance, angular tolerance, and

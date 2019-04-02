@@ -137,7 +137,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
       mobilizer.get_position(context), Vector3d::Zero(),
       kEpsilon, MatrixCompareType::relative));
 
-  EXPECT_EQ(context.get_continuous_state().size(), 13);
+  EXPECT_EQ(context.num_continuous_states(), 13);
 
   // Retrieve the angular velocity from the context, which ultimately was set by
   // FreeRotatingBodyPlant::SetDefaultState().
@@ -163,7 +163,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   EXPECT_EQ(integrator->get_target_accuracy(), kAccuracy);
 
   // Simulate:
-  simulator.StepTo(kEndTime);
+  simulator.AdvanceTo(kEndTime);
 
   // Get solution:
   const math::RigidTransformd X_WB =

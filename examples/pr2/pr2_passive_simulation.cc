@@ -6,7 +6,6 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -14,6 +13,7 @@
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_interface_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
@@ -26,7 +26,7 @@ namespace pr2 {
 int DoMain() {
   // Declare the diagram builder and lcm.
   systems::DiagramBuilder<double> diagram_builder;
-  drake::lcm::DrakeLcm lcm;
+  auto lcm = diagram_builder.AddSystem<systems::lcm::LcmInterfaceSystem>();
 
   // Construct the tree for the PR2.
   auto tree_ = std::make_unique<RigidBodyTree<double>>();
@@ -59,7 +59,7 @@ int DoMain() {
   // Add a visualizer.
   systems::DrakeVisualizer& visualizer_publisher =
       *diagram_builder.template AddSystem<systems::DrakeVisualizer>(
-          plant_->get_rigid_body_tree(), &lcm);
+          plant_->get_rigid_body_tree(), lcm);
   visualizer_publisher.set_name("visualizer_publisher");
   diagram_builder.Connect(plant_->state_output_port(),
                           visualizer_publisher.get_input_port(0));
@@ -107,11 +107,9 @@ int DoMain() {
   }
 
   // Start the simulation.
-  lcm.StartReceiveThread();
   simulator.Initialize();
-  simulator.StepTo(FLAGS_simulation_sec);
+  simulator.AdvanceTo(FLAGS_simulation_sec);
 
-  lcm.StopReceiveThread();
   return 0;
 }
 

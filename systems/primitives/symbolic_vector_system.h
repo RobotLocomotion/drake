@@ -88,13 +88,13 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
 
   /// Returns the sole input port.
   const InputPort<T>& get_input_port() const {
-    DRAKE_DEMAND(this->get_num_input_ports() == 1);
+    DRAKE_DEMAND(this->num_input_ports() == 1);
     return LeafSystem<T>::get_input_port(0);
   }
 
   /// Returns the sole output port.
   const OutputPort<T>& get_output_port() const {
-    DRAKE_DEMAND(this->get_num_output_ports() == 1);
+    DRAKE_DEMAND(this->num_output_ports() == 1);
     return LeafSystem<T>::get_output_port(0);
   }
 

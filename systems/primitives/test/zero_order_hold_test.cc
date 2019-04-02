@@ -102,10 +102,10 @@ class ZeroOrderHoldTest : public ::testing::TestWithParam<bool> {
 
 // Tests that the zero-order hold has one input and one output.
 TEST_P(ZeroOrderHoldTest, Topology) {
-  EXPECT_EQ(1, hold_->get_num_input_ports());
-  EXPECT_EQ(1, context_->get_num_input_ports());
+  EXPECT_EQ(1, hold_->num_input_ports());
+  EXPECT_EQ(1, context_->num_input_ports());
 
-  EXPECT_EQ(1, hold_->get_num_output_ports());
+  EXPECT_EQ(1, hold_->num_output_ports());
 
   EXPECT_FALSE(hold_->HasAnyDirectFeedthrough());
 }
@@ -154,7 +154,7 @@ TEST_P(ZeroOrderHoldTest, Output) {
 // is requested in the future.
 TEST_P(ZeroOrderHoldTest, NextUpdateTimeMustNotBeCurrentTime) {
   // Calculate the next update time *after* 0.
-  context_->set_time(0.0);
+  context_->SetTime(0.0);
   const double t_next = hold_->CalcNextUpdateTime(*context_, event_info_.get());
 
   // Check that the time is correct.
@@ -168,7 +168,7 @@ TEST_P(ZeroOrderHoldTest, NextUpdateTimeMustNotBeCurrentTime) {
 // at the appropriate time in the future.
 TEST_P(ZeroOrderHoldTest, NextUpdateTimeIsInTheFuture) {
   // Calculate the next update time.
-  context_->set_time(763.2 * kPeriod);
+  context_->SetTime(763.2 * kPeriod);
 
   // Check that the time is correct.
   const double t_next = hold_->CalcNextUpdateTime(*context_, event_info_.get());
@@ -254,16 +254,16 @@ GTEST_TEST(ZeroOrderHoldTest, UseInDiagram) {
   // No update should have occurred yet.
   EXPECT_EQ(0., eval());
 
-  simulator.StepTo(0);  // Force an update at 0.
+  simulator.AdvancePendingEvents();  // Force an update at 0.
 
   // Should have sampled at t=0.
   EXPECT_NEAR(sine_eval(0.), eval(), kMachineTol);
 
-  simulator.StepTo(1.5 * kPeriod);
+  simulator.AdvanceTo(1.5 * kPeriod);
   // Should have sampled at t=kPeriod, NOT 1.5 * kPeriod.
   EXPECT_NEAR(sine_eval(kPeriod), eval(), kMachineTol);
 
-  simulator.StepTo(9.1 * kPeriod);  // Last sample at 9 * kPeriod.
+  simulator.AdvanceTo(9.1 * kPeriod);  // Last sample at 9 * kPeriod.
   EXPECT_NEAR(sine_eval(9 * kPeriod), eval(), kMachineTol);
 }
 

@@ -99,6 +99,7 @@ drake_pybind_library(
         ":systems_pybind",
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:drake_optional_pybind",
+        "//bindings/pydrake/common:drake_variant_pybind",
     ],
     cc_srcs = ["primitives_py.cc"],
     package_info = PACKAGE_INFO,
@@ -185,6 +186,7 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:drake_variant_pybind",
     ],
     cc_srcs = ["trajectory_optimization_py.cc"],
     package_info = PACKAGE_INFO,
@@ -243,6 +245,7 @@ drake_pybind_library(
 drake_py_unittest(
     name = "lcm_test",
     deps = [
+        ":analysis_py",
         ":lcm_py",
         ":primitives_py",
     ],
@@ -310,6 +313,7 @@ drake_py_unittest(
         ":analysis_py",
         ":framework_py",
         ":primitives_py",
+        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/examples:pendulum_py",
         "//bindings/pydrake/examples:rimless_wheel_py",
     ],
@@ -322,7 +326,6 @@ drake_py_binary(
     data = [
         "//examples/multibody/cart_pole:cart_pole.sdf",
     ],
-    test_rule_args = ["--test"],
     test_rule_timeout = "moderate",
     deps = [
         ":drawing_py",

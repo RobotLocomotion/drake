@@ -32,25 +32,25 @@ namespace simple_gripper {
 namespace {
 
 using Eigen::Isometry3d;
-using Eigen::Translation3d;
 using Eigen::Vector3d;
-using drake::geometry::SceneGraph;
-using drake::geometry::Sphere;
-using drake::lcm::DrakeLcm;
-using drake::math::RollPitchYaw;
-using drake::math::RotationMatrix;
-using drake::multibody::Body;
-using drake::multibody::CoulombFriction;
-using drake::multibody::ConnectContactResultsToDrakeVisualizer;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::Parser;
-using drake::multibody::PrismaticJoint;
-using drake::multibody::UniformGravityFieldElement;
-using drake::systems::ImplicitEulerIntegrator;
-using drake::systems::RungeKutta2Integrator;
-using drake::systems::RungeKutta3Integrator;
-using drake::systems::SemiExplicitEulerIntegrator;
-using drake::systems::Sine;
+using geometry::SceneGraph;
+using geometry::Sphere;
+using lcm::DrakeLcm;
+using math::RigidTransformd;
+using math::RollPitchYaw;
+using math::RotationMatrix;
+using multibody::Body;
+using multibody::CoulombFriction;
+using multibody::ConnectContactResultsToDrakeVisualizer;
+using multibody::MultibodyPlant;
+using multibody::Parser;
+using multibody::PrismaticJoint;
+using multibody::UniformGravityFieldElement;
+using systems::ImplicitEulerIntegrator;
+using systems::RungeKutta2Integrator;
+using systems::RungeKutta3Integrator;
+using systems::SemiExplicitEulerIntegrator;
+using systems::Sine;
 
 // TODO(amcastro-tri): Consider moving this large set of parameters to a
 // configuration file (e.g. YAML).
@@ -149,7 +149,7 @@ void AddGripperPads(MultibodyPlant<double>* plant,
     p_FSo(2) = std::sin(d_theta * i + sample_rotation) * kPadMajorRadius;
 
     // Pose of the sphere frame S in the finger frame F.
-    const Isometry3d X_FS = Isometry3d(Translation3d(p_FSo));
+    const RigidTransformd X_FS(p_FSo);
 
     CoulombFriction<double> friction(
         FLAGS_ring_static_friction, FLAGS_ring_static_friction);
@@ -381,7 +381,7 @@ int do_main() {
   simulator.set_publish_every_time_step(true);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
-  simulator.StepTo(FLAGS_simulation_time);
+  simulator.AdvanceTo(FLAGS_simulation_time);
 
   if (FLAGS_time_stepping) {
     fmt::print("Used time stepping with dt={}\n", FLAGS_max_time_step);
