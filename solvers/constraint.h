@@ -174,7 +174,6 @@ class Constraint : public EvaluatorBase {
                  "Size of lower bound must match number of constraints.");
     DRAKE_ASSERT(upper_bound_.size() == num_constraints &&
                  "Size of upper bound must match number of constraints.");
-    DRAKE_ASSERT((lower_bound_.array() <= upper_bound_.array()).all());
   }
 
   Eigen::VectorXd lower_bound_;
