@@ -771,10 +771,6 @@ class System : public SystemBase {
     const int discrete_state_dim = state->get_discrete_state().num_groups();
     const int abstract_state_dim = state->get_abstract_state().size();
 
-    // Copy current state to the passed-in state, as specified in the
-    // documentation for DoCalcUnrestrictedUpdate().
-    state->SetFrom(context.get_state());
-
     DispatchUnrestrictedUpdateHandler(context, events, state);
 
     if (continuous_state_dim != state->get_continuous_state().size() ||

@@ -2333,9 +2333,9 @@ class LeafSystem : public System<T> {
   }
 
   // Calls DoCalcDiscreteVariableUpdates.
-  // Assumes @param events is an instance of LeafEventCollection, throws
+  // Assumes @p events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
-  // Assumes @param events is not empty. Aborts otherwise.
+  // Assumes @p events is not empty. Aborts otherwise.
   void DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& events,
@@ -2343,13 +2343,13 @@ class LeafSystem : public System<T> {
     const LeafEventCollection<DiscreteUpdateEvent<T>>& leaf_events =
         dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<T>>&>(
             events);
-    // TODO(siyuan): should have a API level SetFrom for DiscreteValues.
-    discrete_state->SetFrom(context.get_discrete_state());
-    // Only call DoCalcDiscreteVariableUpdates if there are discrete update
-    // events.
     DRAKE_DEMAND(leaf_events.HasEvents());
+
+    // Must initialize the output argument with the current contents of the
+    // discrete state.
+    discrete_state->SetFrom(context.get_discrete_state());
     this->DoCalcDiscreteVariableUpdates(context, leaf_events.get_events(),
-        discrete_state);
+        discrete_state);  // in/out
   }
 
   // To get here:
@@ -2367,9 +2367,9 @@ class LeafSystem : public System<T> {
   }
 
   // Calls DoCalcUnrestrictedUpdate.
-  // Assumes @param events is an instance of LeafEventCollection, throws
+  // Assumes @p events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
-  // Assumes @param events is not empty. Aborts otherwise.
+  // Assumes @p events is not empty. Aborts otherwise.
   void DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
@@ -2377,10 +2377,13 @@ class LeafSystem : public System<T> {
     const LeafEventCollection<UnrestrictedUpdateEvent<T>>& leaf_events =
         dynamic_cast<const LeafEventCollection<UnrestrictedUpdateEvent<T>>&>(
             events);
-    // Only call DoCalcUnrestrictedUpdate if there are unrestricted update
-    // events.
     DRAKE_DEMAND(leaf_events.HasEvents());
-    this->DoCalcUnrestrictedUpdate(context, leaf_events.get_events(), state);
+
+    // Must initialize the output argument with the current contents of the
+    // state.
+    state->SetFrom(context.get_state());
+    this->DoCalcUnrestrictedUpdate(context, leaf_events.get_events(),
+        state);  // in/out
   }
 
   // To get here:
