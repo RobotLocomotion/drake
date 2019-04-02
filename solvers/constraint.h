@@ -905,5 +905,19 @@ class ExpressionConstraint : public Constraint {
   mutable symbolic::Environment environment_;
 };
 
+/**
+ * An exponential cone constraint is a special type of convex cone constraint.
+ * The constraint is that
+ * {x₀, x₁, x₂ | x₀ ≥ x₁ * exp(x₂ / x₁), x₀ > 0, x₁ > 0}.
+ * Equivalently, this constraint can be refomulated with logarithm function
+ * {x₀, x₁, x₂ | x₂ ≤ x₁ * log(x₀ / x₁), x₀ > 0, x₁ > 0}
+ */
+class ExponentialConeConstraint : public Constraint {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExponentialConeConstraint)
+
+  
+};
+
 }  // namespace solvers
 }  // namespace drake
