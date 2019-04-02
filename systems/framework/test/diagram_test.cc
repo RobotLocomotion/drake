@@ -1767,6 +1767,8 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   const DiscreteValues<double>& updates2 =
       diagram_
           .GetSubsystemDiscreteValues(*diagram_.hold2(), *updates);
+  updates->get_mutable_vector(0)[0] = 0.0;  // Start with known values.
+  updates->get_mutable_vector(1)[0] = 0.0;
 
   // Set the time to 8.5, so only hold2 updates.
   context_->SetTime(8.5);
@@ -1781,11 +1783,15 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   context_->SetTime(9.0);
   diagram_.CalcDiscreteVariableUpdates(
       *context_, events->get_discrete_update_events(), updates.get());
-  EXPECT_EQ(1001.0, updates1[0]);
-  EXPECT_EQ(23.0, updates2[0]);
+
+  // Note that non-participating hold1's state should not have been
+  // copied (if it had been it would be 1001.0).
+  EXPECT_EQ(0.0, updates1[0]);  // Same as we started with.
+  EXPECT_EQ(23.0, updates2[0]);  // Updated.
 
   // Apply the updates to the context_.
-  context_->get_mutable_discrete_state().SetFrom(*updates);
+  diagram_.ApplyDiscreteVariableUpdate(events->get_discrete_update_events(),
+      updates.get(), context_.get());
   EXPECT_EQ(1001.0, ctx1.get_discrete_state(0)[0]);
   EXPECT_EQ(23.0, ctx2.get_discrete_state(0)[0]);
 
@@ -1867,6 +1873,125 @@ TEST_F(DiscreteStateTest, DiscreteUpdateNotificationsAreLocalized) {
   EXPECT_EQ(num_notifications(ctx2), notifications_2 + 1);
 }
 
+// A system with a single discrete variable that is initialized to the
+// system's id as supplied at construction. A periodic update modifies the
+// state in a way which lets us see whether the framework passed in the right
+// state value to the handler.
+class SystemWithDiscreteState : public LeafSystem<double> {
+ public:
+  SystemWithDiscreteState(int id, double update_period) : id_(id) {
+    // Just one discrete variable, initialized to id.
+    DeclareDiscreteState(Vector1d(id_));
+    DeclarePeriodicDiscreteUpdateEvent(
+        update_period, 0, &SystemWithDiscreteState::AddTimeToDiscreteVariable);
+  }
+
+  int get_id() const { return id_; }
+
+ private:
+  // Discrete state is set to input state value + time.
+  void AddTimeToDiscreteVariable(
+      const Context<double>& context,
+      DiscreteValues<double>* discrete_state) const {
+    (*discrete_state)[0] += context.get_time();
+  }
+
+  const int id_;
+};
+
+class TwoDiscreteSystemDiagram : public Diagram<double> {
+ public:
+  TwoDiscreteSystemDiagram() : Diagram<double>() {
+    DiagramBuilder<double> builder;
+    sys1_ = builder.template AddSystem<SystemWithDiscreteState>(1, 2.);
+    sys2_ = builder.template AddSystem<SystemWithDiscreteState>(2, 3.);
+    builder.BuildInto(this);
+  }
+
+  const SystemWithDiscreteState& get_sys(int i) const {
+    DRAKE_DEMAND(i == 1 || i == 2);
+    return i == 1 ? *sys1_ : *sys2_;
+  }
+
+ private:
+  SystemWithDiscreteState* sys1_{nullptr};
+  SystemWithDiscreteState* sys2_{nullptr};
+};
+
+// Tests CalcDiscreteVariableUpdates() when there are multiple subsystems and
+// only one has an event to handle (call that the "participating subsystem"). We
+// want to verify that only the participating subsystem's State gets copied, and
+// that the update gets performed properly. We also check that it works properly
+// when multiple subsystems have events to handle.
+GTEST_TEST(DiscreteStateDiagramTest, CalcDiscreteVariableUpdates) {
+  TwoDiscreteSystemDiagram diagram;
+  auto context = diagram.CreateDefaultContext();
+  context->SetTime(1.5);
+
+  // The discrete states should be initialized to their ids.
+  EXPECT_EQ(context->get_discrete_state(0)[0], 1);  // sys1
+  EXPECT_EQ(context->get_discrete_state(1)[0], 2);  // sys2
+
+  // First action time should be 2 sec, and only sys1 will be updating.
+  auto events = diagram.AllocateCompositeEventCollection();
+  EXPECT_EQ(diagram.CalcNextUpdateTime(*context, events.get()), 2.);
+  {
+    const auto& subevent_collection =
+        diagram.GetSubsystemCompositeEventCollection(diagram.get_sys(1),
+                                                     *events);
+    EXPECT_TRUE(subevent_collection.get_discrete_update_events().HasEvents());
+  }
+  {
+    const auto& subevent_collection =
+        diagram.GetSubsystemCompositeEventCollection(diagram.get_sys(2),
+                                                     *events);
+    EXPECT_FALSE(subevent_collection.get_discrete_update_events().HasEvents());
+  }
+
+  // Creates a temp state and sets it to some recognizable values.
+  std::unique_ptr<DiscreteValues<double>> x_buf =
+      diagram.AllocateDiscreteVariables();
+  x_buf->get_mutable_vector(0)[0] = 98.0;
+  x_buf->get_mutable_vector(1)[0] = 99.0;
+
+  double time = 2.0;
+  context->SetTime(time);
+  diagram.CalcDiscreteVariableUpdates(
+      *context, events->get_discrete_update_events(), x_buf.get());
+
+  // The non-participating sys2 state shouldn't have been copied (if it had
+  // it would now be 2). sys1's state should have been copied, replacing the
+  // 98 with a 1, then updated by adding time.
+  EXPECT_EQ(x_buf->get_vector(0)[0], 1 + time);  // Updated.
+  EXPECT_EQ(x_buf->get_vector(1)[0], 99.0);      // Unchanged.
+
+  // Swaps in the new state, and the discrete data for sys1 should be updated.
+  diagram.ApplyDiscreteVariableUpdate(events->get_discrete_update_events(),
+                                      x_buf.get(), context.get());
+  EXPECT_EQ(context->get_discrete_state(0)[0], 1 + time);  // == 3
+  EXPECT_EQ(context->get_discrete_state(1)[0], 2);
+
+  // Sets time to 5.5, both systems should be updating at 6 sec.
+  context->SetTime(5.5);
+  EXPECT_EQ(diagram.CalcNextUpdateTime(*context, events.get()), 6.);
+  for (int i = 1; i <= 2; i++) {
+    const auto& subevent_collection =
+        diagram.GetSubsystemCompositeEventCollection(diagram.get_sys(i),
+                                                     *events);
+    EXPECT_TRUE(subevent_collection.get_discrete_update_events().HasEvents());
+  }
+
+  time = 6.0;
+  context->SetTime(time);
+  diagram.CalcDiscreteVariableUpdates(
+      *context, events->get_discrete_update_events(), x_buf.get());
+  // Both sys1 and sys2's discrete data should be updated.
+  diagram.ApplyDiscreteVariableUpdate(events->get_discrete_update_events(),
+                                      x_buf.get(), context.get());
+  EXPECT_EQ(context->get_discrete_state(0)[0], 3 + time);
+  EXPECT_EQ(context->get_discrete_state(1)[0], 2 + time);
+}
+
 // Tests that a publish action is taken at 19 sec.
 TEST_F(DiscreteStateTest, Publish) {
   context_->SetTime(18.5);
@@ -1918,7 +2043,7 @@ class SystemWithAbstractState : public LeafSystem<double> {
 
   ~SystemWithAbstractState() override {}
 
-  // Abstract state is set to time + id.
+  // Abstract state is set to input state value + time.
   void DoCalcUnrestrictedUpdate(
       const Context<double>& context,
       const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
@@ -1926,7 +2051,7 @@ class SystemWithAbstractState : public LeafSystem<double> {
     double& state_num = state->get_mutable_abstract_state()
                             .get_mutable_value(0)
                             .get_mutable_value<double>();
-    state_num = id_ + context.get_time();
+    state_num += context.get_time();
   }
 
   int get_id() const { return id_; }
@@ -1980,9 +2105,13 @@ class AbstractStateDiagramTest : public ::testing::Test {
   std::unique_ptr<Context<double>> context_;
 };
 
+// Tests CalcUnrestrictedUpdate() when there are multiple subsystems and only
+// one has an event to handle (call that the "participating subsystem"). We want
+// to verify that only the participating subsystem's State gets copied, and that
+// the update gets performed properly. We also check that it works properly
+// when multiple subsystems have events to handle.
 TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
-  double time = 1;
-  context_->SetTime(time);
+  context_->SetTime(1.5);
 
   // The abstract data should be initialized to their ids.
   EXPECT_EQ(get_sys0_abstract_data_as_double(), 0);
@@ -2006,23 +2135,34 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
         subevent_collection.get_unrestricted_update_events().HasEvents());
   }
 
-  // Creates a temp state and does unrestricted updates.
+  // Creates a temp state and sets it to some recognizable values.
   std::unique_ptr<State<double>> x_buf = context_->CloneState();
+  x_buf->get_mutable_abstract_state<double>(0) = 98.0;
+  x_buf->get_mutable_abstract_state<double>(1) = 99.0;
+
+  double time = 2.0;
+  context_->SetTime(time);
   diagram_.CalcUnrestrictedUpdate(
       *context_, events->get_unrestricted_update_events(), x_buf.get());
+
+  // The non-participating sys1 state shouldn't have been copied (if it had
+  // it would now be 1). sys0's state should have been copied, replacing the
+  // 98 with a 0, then updated by adding time.
+  EXPECT_EQ(x_buf->get_abstract_state<double>(0), 0 + time);  // Updated.
+  EXPECT_EQ(x_buf->get_abstract_state<double>(1), 99.0);  // Unchanged.
 
   // The abstract data in the current context should be the same as before.
   EXPECT_EQ(get_sys0_abstract_data_as_double(), 0);
   EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
 
   // Swaps in the new state, and the abstract data for sys0 should be updated.
-  context_->get_mutable_state().SetFrom(*x_buf);
-  EXPECT_EQ(get_sys0_abstract_data_as_double(), (time + 0));
+  diagram_.ApplyUnrestrictedUpdate(events->get_unrestricted_update_events(),
+      x_buf.get(), context_.get());
+  EXPECT_EQ(get_sys0_abstract_data_as_double(), 0 + time);  // == 2
   EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
 
-  // Sets time to 5.5, both system should be updating at 6 sec.
-  time = 5.5;
-  context_->SetTime(time);
+  // Sets time to 5.5, both systems should be updating at 6 sec.
+  context_->SetTime(5.5);
   EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, events.get()), 6.);
   for (int i = 0; i < 2; i++) {
     const auto& subevent_collection =
@@ -2032,12 +2172,15 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
         subevent_collection.get_unrestricted_update_events().HasEvents());
   }
 
+  time = 6.0;
+  context_->SetTime(time);
   diagram_.CalcUnrestrictedUpdate(
       *context_, events->get_unrestricted_update_events(), x_buf.get());
   // Both sys0 and sys1's abstract data should be updated.
-  context_->get_mutable_state().SetFrom(*x_buf);
-  EXPECT_EQ(get_sys0_abstract_data_as_double(), (time + 0));
-  EXPECT_EQ(get_sys1_abstract_data_as_double(), (time + 1));
+  diagram_.ApplyUnrestrictedUpdate(events->get_unrestricted_update_events(),
+                                   x_buf.get(), context_.get());
+  EXPECT_EQ(get_sys0_abstract_data_as_double(), 2 + time);
+  EXPECT_EQ(get_sys1_abstract_data_as_double(), 1 + time);
 }
 
 // Tests that in a Diagram where multiple subsystems have abstract variables,
