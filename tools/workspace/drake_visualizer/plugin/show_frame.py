@@ -11,6 +11,15 @@ import robotlocomotion as lcmrobotlocomotion
 from drake.tools.workspace.drake_visualizer.plugin import scoped_singleton_func
 
 
+def updateFrameUnbroken(frame, name, parent=None, **kwargs):
+    # TODO(eric.cousineau): Replace with `vis.updateFrame` once director#621
+    # lands.
+    obj = om.findObjectByName(name, parent=parent)
+    obj = obj or vis.showFrame(frame, name, parent=parent, **kwargs)
+    obj.copyFrame(frame)
+    return obj
+
+
 class FrameChannel(object):
 
     def __init__(self, parent_folder, channel):
@@ -31,9 +40,9 @@ class FrameChannel(object):
             name = msg.link_name[i]
             transform = transformUtils.transformFromPose(
                 msg.position[i], msg.quaternion[i])
-            # `vis.updateFrame` will either create or update the frame
+            # This will either create or update the frame
             # according to its name within its parent folder.
-            vis.updateFrame(transform, name, parent=folder, scale=0.1)
+            updateFrameUnbroken(transform, name, parent=folder, scale=0.1)
 
     def _get_folder(self):
         return om.getOrCreateContainer(
