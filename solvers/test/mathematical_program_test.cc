@@ -1053,7 +1053,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic3) {
       -7,
        2,
       1;
-  M_ub << 9,
+  M_ub << -7,
       10,
       12,
       3,

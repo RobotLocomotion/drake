@@ -118,12 +118,10 @@ TEST_F(IiwaKinematicConstraintTest,
                    Eigen::Vector3d::Ones(), -0.1, 0.2, plant_context_),
                std::invalid_argument);
   // angle_upper < angle_lower
-  if (!kDrakeAssertIsArmed) {
-    EXPECT_THROW(AngleBetweenVectorsConstraint(
-                     plant_, frameA, Eigen::Vector3d::Ones(), frameB,
-                     Eigen::Vector3d::Zero(), 0.1, 0.09, plant_context_),
-                 std::invalid_argument);
-  }
+  EXPECT_THROW(AngleBetweenVectorsConstraint(
+                   plant_, frameA, Eigen::Vector3d::Ones(), frameB,
+                   Eigen::Vector3d::Zero(), 0.1, 0.09, plant_context_),
+               std::invalid_argument);
   // angle_upper > pi
   EXPECT_THROW(AngleBetweenVectorsConstraint(
                    plant_, frameA, Eigen::Vector3d::Ones(), frameB,
