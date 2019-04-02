@@ -210,3 +210,20 @@ class TestMath(unittest.TestCase):
         self.assertEqual(np.size(R, 0), 4)
         self.assertEqual(np.size(R, 1), 3)
         self.assertEqual(len(d), 4)
+
+    def test_riccati_lyapunov(self):
+        A = 0.1*np.eye(2)
+        B = np.eye(2)
+        Q = np.eye(2)
+        R = np.eye(2)
+
+        mut.ContinuousAlgebraicRiccatiEquation(A=A, B=B, Q=Q, R=R)
+        mut.RealContinuousLyapunovEquation(A=A, Q=Q)
+        mut.RealDiscreteLyapunovEquation(A=A, Q=Q)
+
+        A = np.array([[1, 1], [0, 1]])
+        B = np.array([[0], [1]])
+        Q = np.array([[1, 0], [0, 0]])
+        R = [0.3]
+
+        mut.DiscreteAlgebraicRiccatiEquation(A=A, B=B, Q=Q, R=R)
