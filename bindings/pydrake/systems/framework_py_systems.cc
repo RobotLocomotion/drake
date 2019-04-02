@@ -336,7 +336,7 @@ struct Impl {
               self->get_num_input_ports();
 #pragma GCC diagnostic pop
             },
-            "Use num_input_ports() instead.")
+            doc.SystemBase.get_num_input_ports.doc_deprecated)
         .def("get_input_port", &System<T>::get_input_port,
             py_reference_internal, py::arg("port_index"),
             doc.System.get_input_port.doc)
@@ -354,7 +354,7 @@ struct Impl {
               self->get_num_output_ports();
 #pragma GCC diagnostic pop
             },
-            "Use num_output_ports() instead.")
+            doc.SystemBase.get_num_output_ports.doc_deprecated)
         .def("get_output_port", &System<T>::get_output_port,
             py_reference_internal, py::arg("port_index"),
             doc.System.get_output_port.doc)

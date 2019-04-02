@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/unused.h"
 
 /// @def PREPROCESSOR_DEFINITION
@@ -365,6 +366,25 @@ enum {
   /// Anonymous enum's constant.
   AnonymousConstant,
 };
+
+/// I am measurably old.
+class DRAKE_DEPRECATED("2038-01-19", "Use MyNewClass instead.")
+DrakeDeprecatedClass {
+ public:
+  DRAKE_DEPRECATED("2038-01-19",
+    "f() is slow; use g() instead. "
+    "Also, I like hats.")
+  int f(int arg);
+
+  /// Ideally this overview would still appear, but it does not yet.
+  DRAKE_DEPRECATED("2038-01-19", "a() is slow; use b() instead.")
+  int a();
+};
+
+/// I am symbolically old.
+template <typename T>
+class DRAKE_DEPRECATED("2038-01-19", "Templates rule!")
+DrakeDeprecatedTemplateClass {};
 
 }  // namespace mkdoc_test
 }  // namespace drake

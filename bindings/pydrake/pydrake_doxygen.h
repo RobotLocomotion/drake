@@ -193,6 +193,8 @@ count.
 `@exclude_from_pydrake_mkdoc{Explanatory text.}` to the API comment text.
 (This is useful to help dismiss unbound overloads, so that mkdoc's choice of
 `_something` name suffix is simpler for the remaining overloads.)
+- The docstring for a method that is marked as deprecated in C++ Doxygen will
+be named `.doc_deprecated...` instead of just `.doc...`.
 
 @anchor PydrakeKeepAlive
 ## Keep Alive Behavior

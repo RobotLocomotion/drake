@@ -295,10 +295,6 @@ class MultipleShooting : public solvers::MathematicalProgram {
   Eigen::MatrixXd GetStateSamples(
       const solvers::MathematicalProgramResult& result) const;
 
-  /// Get the input trajectory at the solution as a PiecewisePolynomial.  The
-  /// order of the trajectory will be determined by the integrator used in
-  /// the dynamic constraints.  Requires that the system has at least one input
-  /// port.
   DRAKE_DEPRECATED("2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
@@ -306,6 +302,10 @@ class MultipleShooting : public solvers::MathematicalProgram {
   virtual trajectories::PiecewisePolynomial<double>
   ReconstructInputTrajectory() const = 0;
 
+  /// Get the input trajectory at the solution as a PiecewisePolynomial.  The
+  /// order of the trajectory will be determined by the integrator used in
+  /// the dynamic constraints.  Requires that the system has at least one input
+  /// port.
   virtual trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory(
       const solvers::MathematicalProgramResult&) const {
     // TODO(hongkai.dai): make this function an abstract virtual function, when
@@ -316,9 +316,6 @@ class MultipleShooting : public solvers::MathematicalProgram {
         "The derived class has to override this function.");
   }
 
-  /// Get the state trajectory at the solution as a PiecewisePolynomial.  The
-  /// order of the trajectory will be determined by the integrator used in
-  /// the dynamic constraints.
   DRAKE_DEPRECATED("2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
@@ -326,6 +323,9 @@ class MultipleShooting : public solvers::MathematicalProgram {
   virtual trajectories::PiecewisePolynomial<double>
   ReconstructStateTrajectory() const = 0;
 
+  /// Get the state trajectory at the solution as a PiecewisePolynomial.  The
+  /// order of the trajectory will be determined by the integrator used in
+  /// the dynamic constraints.
   virtual trajectories::PiecewisePolynomial<double> ReconstructStateTrajectory(
       const solvers::MathematicalProgramResult&) const {
     // TODO(hongkai.dai): make this function an abstract virtual function, when
