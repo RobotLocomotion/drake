@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_book.h"
+#include "drake/automotive/maliput/api/rules/phase_ring_book.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_phase_provider.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_state_provider.h"
@@ -34,17 +34,16 @@ class PhaseBasedRightOfWayStateProvider final
   /// All pointer parameters are aliased; they must not be nullptr and their
   /// lifespans must exceed that of this instance.
   PhaseBasedRightOfWayStateProvider(
-      const api::rules::RightOfWayPhaseBook* phase_book,
+      const api::rules::PhaseRingBook* phase_ring_book,
       const api::rules::RightOfWayPhaseProvider* phase_provider);
 
   ~PhaseBasedRightOfWayStateProvider() final = default;
 
-  const api::rules::RightOfWayPhaseBook& phase_book() const {
-    return *phase_book_;
+  const api::rules::PhaseRingBook& phase_ring_book() const {
+    return *phase_ring_book_;
   }
 
-  const api::rules::RightOfWayPhaseProvider& phase_provider()
-      const {
+  const api::rules::RightOfWayPhaseProvider& phase_provider() const {
     return *phase_provider_;
   }
 
@@ -52,7 +51,7 @@ class PhaseBasedRightOfWayStateProvider final
   optional<api::rules::RightOfWayStateProvider::Result>
       DoGetState(const api::rules::RightOfWayRule::Id& id) const final;
 
-  const api::rules::RightOfWayPhaseBook* phase_book_;
+  const api::rules::PhaseRingBook* phase_ring_book_;
   const api::rules::RightOfWayPhaseProvider* phase_provider_;
 };
 

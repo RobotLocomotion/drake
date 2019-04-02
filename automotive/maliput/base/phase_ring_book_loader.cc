@@ -10,7 +10,7 @@
 #include "drake/automotive/maliput/api/rules/phase_ring.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
-#include "drake/automotive/maliput/base/simple_right_of_way_phase_book.h"
+#include "drake/automotive/maliput/base/simple_phase_ring_book.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 
@@ -21,7 +21,7 @@ namespace {
 using api::rules::LaneSRange;
 using api::rules::Phase;
 using api::rules::PhaseRing;
-using api::rules::RightOfWayPhaseBook;
+using api::rules::PhaseRingBook;
 using api::rules::RightOfWayRule;
 using api::rules::RoadRulebook;
 using api::rules::RuleStates;
@@ -115,13 +115,13 @@ PhaseRing BuildPhaseRing(const RoadRulebook* rulebook,
   return PhaseRing(ring_id, phases);
 }
 
-std::unique_ptr<api::rules::RightOfWayPhaseBook> BuildFrom(
+std::unique_ptr<api::rules::PhaseRingBook> BuildFrom(
     const RoadRulebook* rulebook, const YAML::Node& root_node) {
   DRAKE_DEMAND(root_node.IsMap());
   const YAML::Node& phase_rings_node = root_node["PhaseRings"];
   DRAKE_THROW_UNLESS(phase_rings_node.IsDefined());
   DRAKE_DEMAND(phase_rings_node.IsSequence());
-  auto result = std::make_unique<SimpleRightOfWayPhaseBook>();
+  auto result = std::make_unique<SimplePhaseRingBook>();
   for (const YAML::Node& phase_ring_node : phase_rings_node) {
     result->AddPhaseRing(BuildPhaseRing(rulebook, phase_ring_node));
   }
@@ -130,12 +130,12 @@ std::unique_ptr<api::rules::RightOfWayPhaseBook> BuildFrom(
 
 }  // namespace
 
-std::unique_ptr<api::rules::RightOfWayPhaseBook> LoadPhaseRingBook(
+std::unique_ptr<api::rules::PhaseRingBook> LoadPhaseRingBook(
     const RoadRulebook* rulebook, const std::string& input) {
   return BuildFrom(rulebook, YAML::Load(input));
 }
 
-std::unique_ptr<api::rules::RightOfWayPhaseBook> LoadPhaseRingBookFromFile(
+std::unique_ptr<api::rules::PhaseRingBook> LoadPhaseRingBookFromFile(
     const RoadRulebook* rulebook, const std::string& filename) {
   return BuildFrom(rulebook, YAML::LoadFile(filename));
 }

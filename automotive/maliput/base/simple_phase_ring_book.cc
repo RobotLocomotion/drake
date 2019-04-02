@@ -1,4 +1,4 @@
-#include "drake/automotive/maliput/base/simple_right_of_way_phase_book.h"
+#include "drake/automotive/maliput/base/simple_phase_ring_book.h"
 
 #include <stdexcept>
 #include <string>
@@ -14,7 +14,7 @@ using api::rules::Phase;
 using api::rules::PhaseRing;
 using api::rules::RightOfWayRule;
 
-class SimpleRightOfWayPhaseBook::Impl {
+class SimplePhaseRingBook::Impl {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Impl)
 
@@ -72,25 +72,25 @@ class SimpleRightOfWayPhaseBook::Impl {
   std::unordered_map<RightOfWayRule::Id, const PhaseRing::Id> rule_book_;
 };
 
-SimpleRightOfWayPhaseBook::SimpleRightOfWayPhaseBook()
+SimplePhaseRingBook::SimplePhaseRingBook()
     : impl_(std::make_unique<Impl>()) {}
 
-SimpleRightOfWayPhaseBook::~SimpleRightOfWayPhaseBook() = default;
+SimplePhaseRingBook::~SimplePhaseRingBook() = default;
 
-void SimpleRightOfWayPhaseBook::AddPhaseRing(const PhaseRing& ring) {
+void SimplePhaseRingBook::AddPhaseRing(const PhaseRing& ring) {
   impl_->AddPhaseRing(ring);
 }
 
-void SimpleRightOfWayPhaseBook::RemovePhaseRing(const PhaseRing::Id& ring_id) {
+void SimplePhaseRingBook::RemovePhaseRing(const PhaseRing::Id& ring_id) {
   impl_->RemovePhaseRing(ring_id);
 }
 
-optional<PhaseRing> SimpleRightOfWayPhaseBook::DoGetPhaseRing(
+optional<PhaseRing> SimplePhaseRingBook::DoGetPhaseRing(
     const PhaseRing::Id& ring_id) const {
   return impl_->DoGetPhaseRing(ring_id);
 }
 
-optional<PhaseRing> SimpleRightOfWayPhaseBook::DoFindPhaseRing(
+optional<PhaseRing> SimplePhaseRingBook::DoFindPhaseRing(
     const RightOfWayRule::Id& rule_id) const {
   return impl_->DoFindPhaseRing(rule_id);
 }
