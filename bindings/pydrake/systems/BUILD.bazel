@@ -245,6 +245,7 @@ drake_pybind_library(
 drake_py_unittest(
     name = "lcm_test",
     deps = [
+        ":analysis_py",
         ":lcm_py",
         ":primitives_py",
     ],

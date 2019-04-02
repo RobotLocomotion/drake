@@ -162,6 +162,8 @@ class LcmSubscriberSystem : public LeafSystem<double> {
    * into @p state.  If no messages have been received, only the message count
    * is updated.  This is primarily useful for unit testing.
    */
+  DRAKE_DEPRECATED("2019-06-01",
+      "This unit-test-only method is being made non-public.")
   void CopyLatestMessageInto(State<double>* state) const;
 
   /**

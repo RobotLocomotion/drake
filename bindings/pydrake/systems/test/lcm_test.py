@@ -11,6 +11,7 @@ from six import text_type as unicode
 from robotlocomotion import header_t, quaternion_t
 
 from pydrake.lcm import DrakeLcm, DrakeMockLcm
+from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
     AbstractValue, BasicVector, DiagramBuilder, LeafSystem)
 from pydrake.systems.primitives import ConstantVectorSource, LogOutput
@@ -78,13 +79,13 @@ class TestSystemsLcm(unittest.TestCase):
         self.assert_lcm_equal(
             self._cpp_value_to_py_message(model_value), model_message)
 
-    def _calc_output(self, dut):
-        context = dut.CreateDefaultContext()
-        output = dut.AllocateOutput()
-        dut.CopyLatestMessageInto(context.get_mutable_state())
-        dut.CalcOutput(context, output)
-        actual = output.get_data(0)
-        return actual
+    def _process_event(self, dut):
+        # Use a Simulator to invoke the update event on `dut`.  (Wouldn't it be
+        # nice if the Systems API was simple enough that we could apply events
+        # without calling a Simulator!)
+        simulator = Simulator(dut)
+        simulator.AdvanceTo(0.00025)  # Arbitrary positive value.
+        return simulator.get_context().Clone()
 
     def test_subscriber(self):
         lcm = DrakeMockLcm()
@@ -93,7 +94,8 @@ class TestSystemsLcm(unittest.TestCase):
         model_message = self._model_message()
         lcm.Publish(channel="TEST_CHANNEL", buffer=model_message.encode())
         lcm.HandleSubscriptions(0)
-        actual_message = self._calc_output(dut).get_value()
+        context = self._process_event(dut)
+        actual_message = dut.get_output_port(0).Eval(context)
         self.assert_lcm_equal(actual_message, model_message)
 
     def test_subscriber_cpp(self):
@@ -104,7 +106,9 @@ class TestSystemsLcm(unittest.TestCase):
         model_message = self._model_message()
         lcm.Publish(channel="TEST_CHANNEL", buffer=model_message.encode())
         lcm.HandleSubscriptions(0)
-        actual_message = self._cpp_value_to_py_message(self._calc_output(dut))
+        context = self._process_event(dut)
+        abstract = dut.get_output_port(0).EvalAbstract(context)
+        actual_message = self._cpp_value_to_py_message(abstract)
         self.assert_lcm_equal(actual_message, model_message)
 
     def test_subscriber_wait_for_message(self):
