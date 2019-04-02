@@ -1003,6 +1003,21 @@ class TestSymbolicPolynomial(SymbolicTestCase):
         self.assertEqualStructure(J[0], p_dx)
         self.assertEqualStructure(J[1], p_dy)
 
+    def test_matrix_substitute_with_substitution(self):
+        m = np.array([[x + y, x * y]])
+        env = {x: x + 2, y:  y + 3}
+        substituted = sym.Substitute(m, env)
+        self.assertEqualStructure(substituted[0, 0], m[0, 0].Substitute(env))
+        self.assertEqualStructure(substituted[0, 1], m[0, 1].Substitute(env))
+
+    def test_matrix_substitute_with_variable_and_expression(self):
+        m = np.array([[x + y, x * y]])
+        substituted = sym.Substitute(m, x, 3.0)
+        self.assertEqualStructure(substituted[0, 0],
+                                  m[0, 0].Substitute(x, 3.0))
+        self.assertEqualStructure(substituted[0, 1],
+                                  m[0, 1].Substitute(x, 3.0))
+
     def test_matrix_evaluate_without_env(self):
         m = np.array([[3, 4]])
         evaluated1 = sym.Evaluate(m)
