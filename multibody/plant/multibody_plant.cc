@@ -734,10 +734,6 @@ void MultibodyPlant<T>::FilterAdjacentBodies() {
     const Joint<T>& joint = internal_tree().get_joint(j);
     const Body<T>& child = joint.child_body();
     const Body<T>& parent = joint.parent_body();
-    // TODO(SeanCurtis-TRI): Determine the correct action for a body
-    // joined to the world -- should it filter out collisions between the
-    // body and all *anchored* geometry? That seems really heavy-handed. So,
-    // for now, we skip the joints to the world.
     if (parent.index() == world_index()) continue;
     optional<FrameId> child_id = GetBodyFrameIdIfExists(child.index());
     optional<FrameId> parent_id = GetBodyFrameIdIfExists(parent.index());
@@ -748,6 +744,11 @@ void MultibodyPlant<T>::FilterAdjacentBodies() {
           geometry::GeometrySet(*parent_id));
     }
   }
+  // We must explictly exclude collisions between all geometries registered
+  // against the world.
+  // TODO(eric.cousineau): Do this in a better fashion (#11117).
+  auto g_world = CollectRegisteredGeometries(GetBodiesWeldedTo(world_body()));
+  member_scene_graph().ExcludeCollisionsWithin(g_world);
 }
 
 template <typename T>
