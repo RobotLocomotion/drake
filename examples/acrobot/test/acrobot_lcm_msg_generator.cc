@@ -31,7 +31,6 @@ int DoMain() {
     msg_x = received;
   });
 
-  lcm.StartReceiveThread();
   for (int i = 0; i < 1e5; ++i) {
     // Publishes a dummy msg_x.
     {
@@ -54,10 +53,9 @@ int DoMain() {
       }
     }
 
-    sleep_for(milliseconds(500));
+    lcm.HandleSubscriptions(500);
   }
 
-  lcm.StopReceiveThread();
   return 0;
 }
 }  // namespace

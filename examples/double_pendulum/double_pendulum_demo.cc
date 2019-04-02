@@ -8,12 +8,12 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/double_pendulum/sdf_helpers.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_interface_system.h"
 
 DEFINE_double(realtime_rate, 1.0,
               "Rate at which to run the simulation, relative to realtime");
@@ -37,8 +37,6 @@ int main(int argc, char* argv[]) {
                           "make sure drake-visualizer is running!");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   logging::HandleSpdlogGflags();
-  // Instantiate LCM interface.
-  auto lcm_interface = std::make_unique<lcm::DrakeLcm>();
   // Load and parse double pendulum SDF from file into a tree.
   const std::string sdf_path = FindResourceOrThrow(kDoublePendulumSdfPath);
   auto tree = std::make_unique<RigidBodyTree<double>>();
@@ -46,12 +44,14 @@ int main(int argc, char* argv[]) {
   tree->compile();
   // Instantiate builder.
   systems::DiagramBuilder<double> builder;
+  // Instantiate LCM interface.
+  auto lcm = builder.AddSystem<systems::lcm::LcmInterfaceSystem>();
   // Move double pendulum tree to plant.
   auto plant = builder.template AddSystem<systems::RigidBodyPlant<double>>(
       std::move(tree));
   // Add visualizer client.
   auto visualizer = builder.template AddSystem<systems::DrakeVisualizer>(
-      plant->get_rigid_body_tree(), lcm_interface.get());
+      plant->get_rigid_body_tree(), lcm);
   // Wire all blocks together.
   builder.Connect(plant->get_output_port(0),
                   visualizer->get_input_port(0));
@@ -61,9 +61,7 @@ int main(int argc, char* argv[]) {
   simulator->set_target_realtime_rate(FLAGS_realtime_rate);
   simulator->Initialize();
   // Run simulation.
-  lcm_interface->StartReceiveThread();
   simulator->AdvanceTo(FLAGS_simulation_time);
-  lcm_interface->StopReceiveThread();
   return 0;
 }
 
