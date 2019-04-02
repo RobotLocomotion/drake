@@ -248,6 +248,9 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertFalse(c.CheckSatisfied([AutoDiffXd(1.)]))
         self.assertIsInstance(c.CheckSatisfied([x0]), sym.Formula)
 
+        ce.set_description("my favorite constraint")
+        self.assertEqual(ce.get_description(), "my favorite constraint")
+
         def check_bounds(c, A, lb, ub):
             self.assertTrue(np.allclose(c.A(), A))
             self.assertTrue(np.allclose(c.lower_bound(), lb))
@@ -557,3 +560,11 @@ class TestMathematicalProgram(unittest.TestCase):
         # For now, just make sure the constructor exists.  Once we bind more
         # accessors, we can test them here.
         options_object = SolverOptions()
+
+    def test_infeasible_constraints(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(1)
+        result = mp.Solve(prog)
+        infeasible = mp.GetInfeasibleConstraints(prog=prog, result=result,
+                                                 tol=1e-4)
+        self.assertEquals(len(infeasible), 0)
