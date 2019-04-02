@@ -389,6 +389,17 @@ PYBIND11_MODULE(symbolic, m) {
       py::arg("m"), py::arg("env") = Environment::map{},
       py::arg("generator") = nullptr, doc.Evaluate.doc);
 
+  m.def("Substitute",
+      [](const MatrixX<Expression>& M, const Substitution& subst) {
+        return Substitute(M, subst);
+      },
+      py::arg("m"), py::arg("subst"), doc.Substitute.doc_2args);
+
+  m.def("Substitute",
+      [](const MatrixX<Expression>& M, const Variable& var,
+          const Expression& e) { return Substitute(M, var, e); },
+      py::arg("m"), py::arg("var"), py::arg("e"), doc.Substitute.doc_3args);
+
   py::class_<Formula> formula_cls(m, "Formula", doc.Formula.doc);
   formula_cls
       .def("GetFreeVariables", &Formula::GetFreeVariables,
