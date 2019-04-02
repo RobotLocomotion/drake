@@ -200,8 +200,6 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "lcm_interface_system_test",
-    # TODO(jwnimmer-tri) Re-enable this after fixing the race condition.
-    tags = ["manual"],
     deps = [
         ":lcm_interface_system",
         ":lcm_subscriber_system",
