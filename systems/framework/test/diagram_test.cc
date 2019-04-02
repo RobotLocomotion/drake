@@ -1767,6 +1767,8 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   const DiscreteValues<double>& updates2 =
       diagram_
           .GetSubsystemDiscreteValues(*diagram_.hold2(), *updates);
+  updates->get_mutable_vector(0)[0] = 0.0;  // Start with known values.
+  updates->get_mutable_vector(1)[0] = 0.0;
 
   // Set the time to 8.5, so only hold2 updates.
   context_->SetTime(8.5);
@@ -1781,11 +1783,15 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   context_->SetTime(9.0);
   diagram_.CalcDiscreteVariableUpdates(
       *context_, events->get_discrete_update_events(), updates.get());
-  EXPECT_EQ(1001.0, updates1[0]);
-  EXPECT_EQ(23.0, updates2[0]);
+
+  // Note that non-participating hold1's state should not have been
+  // copied (if it had been it would be 1001.0).
+  EXPECT_EQ(0.0, updates1[0]);  // Same as we started with.
+  EXPECT_EQ(23.0, updates2[0]);  // Updated.
 
   // Apply the updates to the context_.
-  context_->get_mutable_discrete_state().SetFrom(*updates);
+  diagram_.ApplyDiscreteVariableUpdate(events->get_discrete_update_events(),
+      updates.get(), context_.get());
   EXPECT_EQ(1001.0, ctx1.get_discrete_state(0)[0]);
   EXPECT_EQ(23.0, ctx2.get_discrete_state(0)[0]);
 
@@ -2006,18 +2012,27 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
         subevent_collection.get_unrestricted_update_events().HasEvents());
   }
 
-  // Creates a temp state and does unrestricted updates.
+  // Creates a temp state and set it to some recognizable values.
   std::unique_ptr<State<double>> x_buf = context_->CloneState();
+  x_buf->get_mutable_abstract_state<double>(0) = 98.0;
+  x_buf->get_mutable_abstract_state<double>(1) = 99.0;
+
   diagram_.CalcUnrestrictedUpdate(
       *context_, events->get_unrestricted_update_events(), x_buf.get());
+
+  // The non-participating sys1 state shouldn't have been copied (if it had
+  // it would now be 1).
+  EXPECT_EQ(x_buf->get_abstract_state<double>(0), time + 0);  // Updated.
+  EXPECT_EQ(x_buf->get_abstract_state<double>(1), 99.0);  // Unchanged.
 
   // The abstract data in the current context should be the same as before.
   EXPECT_EQ(get_sys0_abstract_data_as_double(), 0);
   EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
 
   // Swaps in the new state, and the abstract data for sys0 should be updated.
-  context_->get_mutable_state().SetFrom(*x_buf);
-  EXPECT_EQ(get_sys0_abstract_data_as_double(), (time + 0));
+  diagram_.ApplyUnrestrictedUpdate(events->get_unrestricted_update_events(),
+      x_buf.get(), context_.get());
+  EXPECT_EQ(get_sys0_abstract_data_as_double(), time + 0);
   EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
 
   // Sets time to 5.5, both system should be updating at 6 sec.
@@ -2035,7 +2050,8 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   diagram_.CalcUnrestrictedUpdate(
       *context_, events->get_unrestricted_update_events(), x_buf.get());
   // Both sys0 and sys1's abstract data should be updated.
-  context_->get_mutable_state().SetFrom(*x_buf);
+  diagram_.ApplyUnrestrictedUpdate(events->get_unrestricted_update_events(),
+                                   x_buf.get(), context_.get());
   EXPECT_EQ(get_sys0_abstract_data_as_double(), (time + 0));
   EXPECT_EQ(get_sys1_abstract_data_as_double(), (time + 1));
 }
