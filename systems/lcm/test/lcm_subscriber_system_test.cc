@@ -73,6 +73,8 @@ void TestSubscriber(drake::lcm::DrakeMockLcm* lcm,
     EXPECT_EQ(value[i], i);
   }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // Confirm that the unit test sugar used by pydrake is another equally-valid
   // way to read messages.
   auto new_context = dut->CreateDefaultContext();
@@ -81,6 +83,7 @@ void TestSubscriber(drake::lcm::DrakeMockLcm* lcm,
   for (int i = 0; i < kDim; ++i) {
     EXPECT_EQ(new_y[i], i);
   }
+#pragma GCC diagnostic pop
 }
 
 #pragma GCC diagnostic push
