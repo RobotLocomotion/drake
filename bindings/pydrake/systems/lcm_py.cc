@@ -157,7 +157,7 @@ PYBIND11_MODULE(lcm, m) {
               self->set_publish_period(period);
 #pragma GCC diagnostic pop
             },
-            py::arg("period"), cls_doc.set_publish_period.doc);
+            py::arg("period"), cls_doc.set_publish_period.doc_deprecated);
   }
 
   {
@@ -180,7 +180,7 @@ PYBIND11_MODULE(lcm, m) {
               self->CopyLatestMessageInto(state);
 #pragma GCC diagnostic pop
             },
-            py::arg("state"), cls_doc.CopyLatestMessageInto.doc)
+            py::arg("state"), cls_doc.CopyLatestMessageInto.doc_deprecated)
         .def("WaitForMessage", &Class::WaitForMessage,
             py::arg("old_message_count"), py::arg("message") = nullptr,
             py::arg("timeout") = -1, cls_doc.WaitForMessage.doc);
