@@ -16,11 +16,11 @@
 
 #include "drake/examples/acrobot/acrobot_lcm.h"
 #include "drake/examples/acrobot/spong_controller.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_acrobot_u.hpp"
 #include "drake/lcmt_acrobot_x.hpp"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/lcm/lcm_interface_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 
@@ -36,19 +36,19 @@ int DoMain() {
   drake::systems::DiagramBuilder<double> builder;
   const std::string channel_x = "acrobot_xhat";
   const std::string channel_u = "acrobot_u";
-  lcm::DrakeLcm lcm;
 
   // -----------------controller--------------------------------------
   // Create state receiver.
+  auto lcm = builder.AddSystem<systems::lcm::LcmInterfaceSystem>();
   auto state_sub = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::Make<lcmt_acrobot_x>(channel_x, &lcm));
+      systems::lcm::LcmSubscriberSystem::Make<lcmt_acrobot_x>(channel_x, lcm));
   auto state_receiver = builder.AddSystem<AcrobotStateReceiver>();
   builder.Connect(state_sub->get_output_port(),
                   state_receiver->get_input_port(0));
 
   // Create command sender.
   auto command_pub = builder.AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<lcmt_acrobot_u>(channel_u, &lcm));
+      systems::lcm::LcmPublisherSystem::Make<lcmt_acrobot_u>(channel_u, lcm));
   auto command_sender = builder.AddSystem<AcrobotCommandSender>();
   builder.Connect(command_sender->get_output_port(0),
                   command_pub->get_input_port());
@@ -62,19 +62,17 @@ int DoMain() {
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
 
-  lcm.StartReceiveThread();
-
   using clock = std::chrono::system_clock;
   const auto& start_time = clock::now();
   const auto& max_duration =
       std::chrono::duration<double>(FLAGS_time_limit_sec);
   while ((clock::now() - start_time) <= max_duration) {
+    lcm->HandleSubscriptions(0);
     const systems::Context<double>& pub_context =
         diagram->GetSubsystemContext(*command_pub, *context);
     command_pub->Publish(pub_context);
   }
 
-  lcm.StopReceiveThread();
   return 0;
 }
 
