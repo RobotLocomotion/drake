@@ -26,6 +26,7 @@ void CheckDistanceToSphere(const fcl::Sphered& sphere,
   const double tol = DistanceToPointRelativeTolerance(sphere.radius);
   Vector3<AutoDiffd<3>> grad_W_expected;
   if (p_GQ_norm > DistanceToPointRelativeTolerance(sphere.radius)) {
+    // Q is away from the sphere center beyond a distance tolerance.
     const AutoDiffd<3> dist_autodiff =
         p_GQ_autodiff.norm() - AutoDiffd<3>(sphere.radius);
     EXPECT_NEAR(dist_autodiff.value(), signed_distance.distance, tol);
@@ -39,10 +40,12 @@ void CheckDistanceToSphere(const fcl::Sphered& sphere,
                                 signed_distance.dp_GN_dp_GQ, tol));
     grad_W_expected = X_WG.rotation().cast<AutoDiffd<3>>() * grad_G;
   } else {
+    // Q is close to the sphere center.
     EXPECT_NEAR(signed_distance.distance, -sphere.radius, tol);
     grad_W_expected =
         X_WG.rotation().cast<AutoDiffd<3>>() * Vector3<AutoDiffd<3>>::UnitX();
-    // since p_GN is fixed when Q coincides with the sphere, dp_GN_dp_GQ = 0.
+    // Since p_GN is fixed when Q coincides with the sphere center, dp_GN_dp_GQ
+    // is a zero matrix.
     EXPECT_TRUE(CompareMatrices(signed_distance.dp_GN_dp_GQ,
                                 Eigen::Matrix3d::Zero(), tol));
   }
@@ -52,13 +55,13 @@ void CheckDistanceToSphere(const fcl::Sphered& sphere,
   EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(grad_W_expected),
                               signed_distance.dgrad_W_dp_GQ, tol));
   // The invariance is ∂ distance / ∂ p_GQ = R_GW * grad_W.
+  const Eigen::Vector3d grad_G =
+      X_WG.rotation().inverse() * signed_distance.grad_W;
+  EXPECT_TRUE(CompareMatrices(signed_distance.ddistance_dp_GQ.transpose(),
+                              grad_G, tol));
+  // The invariance is p_GN = grad_G * radius
   EXPECT_TRUE(
-      CompareMatrices(signed_distance.ddistance_dp_GQ.transpose(),
-                      X_WG.rotation().inverse() * signed_distance.grad_W, tol));
-  // The invariance is p_GN = R_GW *grad_W * radius
-  EXPECT_TRUE(CompareMatrices(
-      signed_distance.p_GN,
-      X_WG.rotation().inverse() * signed_distance.grad_W * sphere.radius, tol));
+      CompareMatrices(signed_distance.p_GN, grad_G * sphere.radius, tol));
 }
 
 GTEST_TEST(DistanceToPointTest, TestSphere) {
@@ -99,7 +102,8 @@ void CheckDistanceToHalfspace(const fcl::Halfspaced& halfspace,
   const Eigen::Vector3d p_NQ_G = p_GQ - signed_distance.p_GN;
   EXPECT_NEAR(std::abs(p_NQ_G.dot(halfspace.n)), p_NQ_G.norm(), tol);
   // Check |NQ| = distance
-  EXPECT_NEAR(p_NQ_G.norm(), signed_distance.distance, tol);
+  const int sign = p_GQ.dot(halfspace.n) >= halfspace.d ? 1 : -1;
+  EXPECT_NEAR(sign * p_NQ_G.norm(), signed_distance.distance, tol);
   EXPECT_NEAR(signed_distance.distance, halfspace.signedDistance(p_GQ), tol);
   // Check grad_W = R_WG * n
   EXPECT_TRUE(CompareMatrices(signed_distance.grad_W,
@@ -141,6 +145,7 @@ GTEST_TEST(DistanceToPointTest, TestHalfspace) {
   CheckDistanceToHalfspace(halfspace, X_WG, p_GQ);
   // Check Q inside the halfspace.
   p_GQ = 0.5 * halfspace.d * halfspace.n;
+  CheckDistanceToHalfspace(halfspace, X_WG, p_GQ);
 }
 }  // namespace internal
 }  // namespace geometry

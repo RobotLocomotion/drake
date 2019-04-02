@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <utility>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -16,7 +17,19 @@ namespace geometry {
 struct SignedDistanceToPointWithGradient {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SignedDistanceToPointWithGradient)
 
-  SignedDistanceToPointWithGradient() = default;
+  SignedDistanceToPointWithGradient(GeometryId id_G_in, Eigen::Vector3d p_GN_in,
+                                    Eigen::Matrix3d dp_GN_dp_GQ_in,
+                                    double distance_in,
+                                    Eigen::RowVector3d ddistance_dp_GQ_in,
+                                    Eigen::Vector3d grad_W_in,
+                                    Eigen::Matrix3d dgrad_W_dp_GQ_in)
+      : id_G(std::move(id_G_in)),
+        p_GN(std::move(p_GN_in)),
+        dp_GN_dp_GQ(std::move(dp_GN_dp_GQ_in)),
+        distance(distance_in),
+        ddistance_dp_GQ(std::move(ddistance_dp_GQ_in)),
+        grad_W(std::move(grad_W_in)),
+        dgrad_W_dp_GQ(std::move(dgrad_W_dp_GQ_in)) {}
 
   /**
    * Same as SignedDistanceToPoint::id_G.
@@ -45,7 +58,7 @@ struct SignedDistanceToPointWithGradient {
    * frame W.
    */
   Eigen::Vector3d grad_W;
-  /** The gradient of grad_W w.r.t p_GQ. */
+  /** The derivative of grad_W w.r.t p_GQ. */
   Eigen::Matrix3d dgrad_W_dp_GQ;
 };
 }  // namespace geometry
