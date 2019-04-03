@@ -160,11 +160,11 @@ PYBIND11_MODULE(rigid_body_tree, m) {
       .def("getBodyOrFrameName", &RigidBodyTree<double>::getBodyOrFrameName,
           py::arg("body_or_frame_id"), doc.RigidBodyTree.getBodyOrFrameName.doc)
       .def("number_of_positions", &RigidBodyTree<double>::get_num_positions,
-          doc.RigidBodyTree.number_of_positions.doc)
+          doc.RigidBodyTree.number_of_positions.doc_deprecated)
       .def("get_num_positions", &RigidBodyTree<double>::get_num_positions,
           doc.RigidBodyTree.get_num_positions.doc)
       .def("number_of_velocities", &RigidBodyTree<double>::get_num_velocities,
-          doc.RigidBodyTree.number_of_velocities.doc)
+          doc.RigidBodyTree.number_of_velocities.doc_deprecated)
       .def("get_num_velocities", &RigidBodyTree<double>::get_num_velocities,
           doc.RigidBodyTree.get_num_velocities.doc)
       .def("get_body", &RigidBodyTree<double>::get_body,

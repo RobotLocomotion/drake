@@ -196,8 +196,7 @@ class DummyRenderEngine final : public render::RenderEngine {
 class GeometryStateTest : public ::testing::Test {
  protected:
   void SetUp() {
-    frame_ = make_unique<GeometryFrame>("ref_frame",
-                                        Isometry3<double>::Identity());
+    frame_ = make_unique<GeometryFrame>("ref_frame");
     instance_pose_.translation() << 10, 20, 30;
     instance_ = make_unique<GeometryInstance>(
         instance_pose_, make_unique<Sphere>(1.0), "instance");
@@ -263,7 +262,7 @@ class GeometryStateTest : public ::testing::Test {
     pose.translation() << 1, 2, 3;
     pose.linear() << 1, 0, 0, 0, 0, 1, 0, -1, 0;  // 90° around x-axis.
     frames_.push_back(geometry_state_.RegisterFrame(
-        source_id_, GeometryFrame("f0", pose)));
+        source_id_, GeometryFrame("f0")));
     X_WF_.push_back(pose);
     X_PF_.push_back(pose);
 
@@ -271,14 +270,14 @@ class GeometryStateTest : public ::testing::Test {
     pose.translation() << 10, 20, 30;
     pose.linear() << 0, 0, -1, 0, 1, 0, 1, 0, 0;  // 90° around y-axis.
     frames_.push_back(geometry_state_.RegisterFrame(
-        source_id_, GeometryFrame("f1", pose)));
+        source_id_, GeometryFrame("f1")));
     X_WF_.push_back(pose);
     X_PF_.push_back(pose);
 
     // Create f2.
     pose = pose.inverse();
     frames_.push_back(geometry_state_.RegisterFrame(
-        source_id_, frames_[1], GeometryFrame("f2", pose)));
+        source_id_, frames_[1], GeometryFrame("f2")));
     X_WF_.push_back(X_WF_[1] * pose);
     X_PF_.push_back(pose);
 
@@ -617,6 +616,25 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
           CompareMatrices(frame_in_parent[frame.internal_index()].matrix(),
                           X_PF_[i].matrix()));
     };
+
+    // When added, all frames' poses w.r.t. their parents are the identity.
+    const auto& frame_in_parent = gs_tester_.get_frame_parent_poses();
+    for (FrameId frame_id : frames_) {
+      const auto& frame = internal_frames.at(frame_id);
+      EXPECT_TRUE(
+          CompareMatrices(frame_in_parent[frame.internal_index()].matrix(),
+                          Isometry3<double>::Identity().matrix()));
+    }
+
+    // Confirm posing positions the frames properly.
+    FramePoseVector<double> poses(source_id_, frames_);
+    poses.clear();
+    for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
+      poses.set_value(frames_[f], X_PF_[f]);
+    }
+    gs_tester_.SetFramePoses(poses);
+    gs_tester_.FinalizePoseUpdate();
+
     test_frame(0, gs_tester_.get_world_frame(), 0);
     test_frame(1, gs_tester_.get_world_frame(), 1);
     test_frame(2, frames_[1], 0);

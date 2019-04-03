@@ -118,7 +118,7 @@ PYBIND11_MODULE(trajectory_optimization, m) {
             return prog.GetSampleTimes();
 #pragma GCC diagnostic pop
           },
-          doc.MultipleShooting.GetSampleTimes.doc)
+          doc.MultipleShooting.GetSampleTimes.doc_deprecated)
       .def("GetSampleTimes",
           overload_cast_explicit<Eigen::VectorXd,
               const solvers::MathematicalProgramResult&>(
@@ -132,7 +132,7 @@ PYBIND11_MODULE(trajectory_optimization, m) {
             return prog.GetInputSamples();
 #pragma GCC diagnostic pop
           },
-          doc.MultipleShooting.GetInputSamples.doc)
+          doc.MultipleShooting.GetInputSamples.doc_deprecated)
       .def("GetInputSamples",
           overload_cast_explicit<Eigen::MatrixXd,
               const solvers::MathematicalProgramResult&>(
@@ -146,7 +146,7 @@ PYBIND11_MODULE(trajectory_optimization, m) {
             return prog.GetStateSamples();
 #pragma GCC diagnostic pop
           },
-          doc.MultipleShooting.GetStateSamples.doc)
+          doc.MultipleShooting.GetStateSamples.doc_deprecated)
       .def("GetStateSamples",
           overload_cast_explicit<Eigen::MatrixXd,
               const solvers::MathematicalProgramResult&>(
@@ -160,7 +160,7 @@ PYBIND11_MODULE(trajectory_optimization, m) {
             return prog.ReconstructInputTrajectory();
 #pragma GCC diagnostic pop
           },
-          doc.MultipleShooting.ReconstructInputTrajectory.doc)
+          doc.MultipleShooting.ReconstructInputTrajectory.doc_deprecated)
       .def("ReconstructInputTrajectory",
           overload_cast_explicit<trajectories::PiecewisePolynomial<double>,
               const solvers::MathematicalProgramResult&>(
@@ -174,7 +174,7 @@ PYBIND11_MODULE(trajectory_optimization, m) {
             return prog.ReconstructStateTrajectory();
 #pragma GCC diagnostic pop
           },
-          doc.MultipleShooting.ReconstructStateTrajectory.doc)
+          doc.MultipleShooting.ReconstructStateTrajectory.doc_deprecated)
       .def("ReconstructStateTrajectory",
           overload_cast_explicit<trajectories::PiecewisePolynomial<double>,
               const solvers::MathematicalProgramResult&>(

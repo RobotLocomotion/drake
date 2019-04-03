@@ -90,7 +90,8 @@ auto RegisterBinding(py::handle* scope, const string& name) {
     py::implicitly_convertible<B, Binding<EvaluatorBase>>();
   }
   // Add deprecated `constraint`.
-  binding_cls.def("constraint", &B::evaluator, cls_doc.constraint.doc);
+  binding_cls.def(
+      "constraint", &B::evaluator, cls_doc.constraint.doc_deprecated);
   DeprecateAttribute(binding_cls, "constraint",
       "`constraint` is deprecated; please use `evaluator` instead.");
   return binding_cls;
