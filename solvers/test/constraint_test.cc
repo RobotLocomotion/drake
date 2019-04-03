@@ -491,6 +491,26 @@ GTEST_TEST(testConstraint, testEvaluatorConstraint) {
       -1 <= y_sym[0] && y_sym[0] <= 1 && -1 <= y_sym[1] && y_sym[1] <= 1);
 }
 
+GTEST_TEST(testConstraint, testExponentialConeConstraint) {
+  Eigen::SparseMatrix<double> A(3, 2);
+  A.coeffRef(0, 0) = 2;
+  A.coeffRef(1, 1) = 3;
+  A.coeffRef(2, 0) = 1;
+  Eigen::Vector3d b(1, 2, 3);
+  ExponentialConeConstraint constraint(A, b);
+
+  Eigen::Vector2d x(3, 4);
+  Eigen::VectorXd y;
+  constraint.Eval(x, &y);
+  // Now evaluate z manually.
+  const Eigen::Vector3d z = A * x + b;
+  Eigen::Vector2d y_expected;
+  y_expected(0) = z(0) - z(1) * std::exp(z(2) / z(1));
+  y_expected(1) = z(1);
+  const double tol = 5 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(y, y_expected, tol));
+}
+
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
