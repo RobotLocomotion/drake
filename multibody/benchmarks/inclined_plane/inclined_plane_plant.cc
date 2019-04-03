@@ -15,8 +15,7 @@ using math::RotationMatrix;
 
 void AddInclinedPlaneAndGravityToPlant(
     double gravity, double inclined_plane_angle,
-    bool is_inclined_plane_half_space,
-    const Vector3<double>& inclined_plane_dimensions,
+    const optional<Vector3<double>>& inclined_plane_dimensions,
     const CoulombFriction<double>& coefficient_friction_inclined_plane,
     MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
@@ -25,11 +24,10 @@ void AddInclinedPlaneAndGravityToPlant(
   const RotationMatrix<double> R_WA =
       RotationMatrix<double>::MakeYRotation(inclined_plane_angle);
 
-  // The inclined-plane is either a half-space or a box.
+  // The inclined plane A is either a half-space or a box.
   const Vector4<double> green(0.5, 1.0, 0.5, 1.0);
-  if (is_inclined_plane_half_space) {
-    // Set inclined plane A's visual geometry and collision geometry to a
-    // half-space whose top surface passes through world origin Wo.
+  if (inclined_plane_dimensions == nullopt) {
+    // Set A's geometry so its top surface passes through world origin Wo.
     const Vector3<double> p_WoAo_W = Vector3<double>::Zero();
     const RigidTransform<double> X_WA(R_WA, p_WoAo_W);
     plant->RegisterVisualGeometry(plant->world_body(), X_WA,
@@ -42,9 +40,9 @@ void AddInclinedPlaneAndGravityToPlant(
                                      coefficient_friction_inclined_plane);
   } else {
     // If using a box, ensure its dimensions are positive.
-    const double LAx = inclined_plane_dimensions.x();
-    const double LAy = inclined_plane_dimensions.y();
-    const double LAz = inclined_plane_dimensions.z();
+    const double LAx = inclined_plane_dimensions->x();
+    const double LAy = inclined_plane_dimensions->y();
+    const double LAz = inclined_plane_dimensions->z();
     DRAKE_THROW_UNLESS(LAx > 0 && LAy > 0 && LAz > 0);
 
     // Set inclined plane A's visual geometry and collision geometry to a
@@ -70,18 +68,15 @@ void AddInclinedPlaneAndGravityToPlant(
 
 void AddInclinedPlaneWithBlockToPlant(
     double gravity, double inclined_plane_angle,
-    bool is_inclined_plane_half_space,
-    const Vector3<double>& inclined_plane_dimensions,
-    const Vector3<double>& block_dimensions, double massB,
+    const optional<Vector3<double>>& inclined_plane_dimensions,
     const CoulombFriction<double>& coefficient_friction_inclined_plane,
     const CoulombFriction<double>& coefficient_friction_bodyB,
-    bool is_block_with_4Spheres,
-    MultibodyPlant<double>* plant) {
+    double massB, const Vector3<double>& block_dimensions,
+    bool is_block_with_4Spheres, MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
 
   AddInclinedPlaneAndGravityToPlant(
-      gravity, inclined_plane_angle,
-      is_inclined_plane_half_space, inclined_plane_dimensions,
+      gravity, inclined_plane_angle, inclined_plane_dimensions,
       coefficient_friction_inclined_plane, plant);
 
   // Ensure the block's dimensions are mass are positive.
@@ -143,18 +138,15 @@ void AddInclinedPlaneWithBlockToPlant(
 
 void AddInclinedPlaneWithSphereToPlant(
     double gravity, double inclined_plane_angle,
-    bool is_inclined_plane_half_space,
-    const Vector3<double>& inclined_plane_dimensions,
-    double radiusB, double massB,
+    const optional<Vector3<double>>& inclined_plane_dimensions,
     const CoulombFriction<double>& coefficient_friction_inclined_plane,
     const CoulombFriction<double>& coefficient_friction_bodyB,
-    MultibodyPlant<double>* plant) {
+    double massB, double radiusB, MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(radiusB > 0 && massB > 0);
 
   AddInclinedPlaneAndGravityToPlant(
-      gravity, inclined_plane_angle,
-      is_inclined_plane_half_space, inclined_plane_dimensions,
+      gravity, inclined_plane_angle, inclined_plane_dimensions,
       coefficient_friction_inclined_plane, plant);
 
   // Describe body B's mass, center of mass, and inertia properties.

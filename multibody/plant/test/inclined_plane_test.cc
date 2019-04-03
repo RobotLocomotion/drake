@@ -66,7 +66,7 @@ class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
 };
 
 // This test creates a multibody model of a uniform-density sphere B rolling
-// down an inclined-plane A.  After simulating for a given length of time, this
+// down an inclined plane A.  After simulating for a given length of time, this
 // test verifies the numerical solution against analytical results obtained from
 // an energy conservation analysis.
 TEST_P(InclinedPlaneTest, RollingSphereTest) {
@@ -84,7 +84,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   const double mass = 0.1;      // Rolling sphere mass, [kg]
   const double gravity = 9.81;  // Acceleration of gravity, [m/s²]
   const double inclined_plane_angle = 15.0 / 180 * M_PI;
-  const bool is_inclined_plane_half_space = true;
+  const Vector3<double> inclined_plane_dimensions(0, 0, 0);
   const double muS_inclined_plane = 1.0;  // Coefficient static friction.
   const double muK_inclined_plane = 0.5;  // Coefficient kinetic friction.
   const double muS_sphere = 1.0;          // Coefficient static friction.
@@ -97,9 +97,9 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(
       &builder, std::make_unique<MultibodyPlant<double>>(time_step_));
   benchmarks::inclined_plane::AddInclinedPlaneWithSphereToPlant(
-      gravity, inclined_plane_angle, is_inclined_plane_half_space, 0, 0, 0,
-      radius, mass, coefficient_friction_inclined_plane,
-      coefficient_friction_sphere, &plant);
+      gravity, inclined_plane_angle, nullopt,
+      coefficient_friction_inclined_plane, coefficient_friction_sphere,
+      mass, radius, &plant);
 
   plant.Finalize();
   plant.set_penetration_allowance(penetration_allowance_);  // (in meters)
@@ -120,20 +120,15 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
-  // Set the default initial configuration and motion of body B in World W.
-  // R_WB = 3x3 identity matrix (B's initial rotation matrix in W),
-  // p_Wo_Bo = [0; 0; 0]  (position from Wo (World origin) to Bo (B's origin)),
-  // p_Bo_Bcm = [0; 0; 0] (position from Bo to Bcm (B's center of mass)),
-  // B is stationary in world (B's velocity and angular velocity in W are zero).
+  // In the plant's default context, we assume the state of body B in world W is
+  // such that X_WB is an identity transform and B's spatial velocity is zero.
   plant.SetDefaultContext(&plant_context);
 
-  // Overwrite B's default initial position so it contacts the inclined-plane A.
+  // The next several lines of code change the plant's context to overwrite B's
+  // default initial position so sphere B contacts the top surface of inclined
+  // plane A.  Note: The direction of unit vectors Ax, Ay, Az relative to
+  // Wx, Wy, Wz is described in AddInclinedPlaneAndGravityToPlant().
   const Vector3<double> p_WoBo_A_initial(0, 0, radius);
-
-  // Express p_WoBo_A in terms of Wx, Wy, Wz so that the bottom-most point of
-  // sphere B is in contact with the top surface of inclined-plane A.
-  // Note: The direction of unit vectors Ax, Ay, Az relative to Wx, Wy, Wz is
-  // described in AddInclinedPlaneAndGravityToPlant().
   const RotationMatrix<double> R_WA =
     RotationMatrix<double>::MakeYRotation(inclined_plane_angle);
   const Vector3<double> p_WoBo_W_initial = R_WA * p_WoBo_A_initial;
@@ -193,10 +188,9 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   // squared, standard error propagation shows that the relative error in the
   // kinetic energy is expected to be twice that in the velocities. Thus the
   // factor of two used below for the relative error in kinetic energy.
-  const double delta_energy = ke + pe_change;
-  EXPECT_NEAR(std::abs(delta_energy), ke * 2 * relative_tolerance_);
-  EXPECT_NEAR(std::abs(v - v_expected), v_expected * relative_tolerance_);
-  EXPECT_NEAR(std::abs(wy - wy_expected), wy_expected * relative_tolerance_);
+  EXPECT_NEAR(ke, -pe_change, ke * 2 * relative_tolerance_);
+  EXPECT_NEAR(v, v_expected, v_expected * relative_tolerance_);
+  EXPECT_NEAR(wy, wy_expected, wy_expected * relative_tolerance_);
 
   // Verify the value of the contact forces when using time stepping.
   if (time_stepping_) {
