@@ -14,11 +14,11 @@ drake_cc_package_library(
     name = "base",
     deps = [
         ":intersection",
+        ":manual_phase_provider",
         ":phase_based_right_of_way_state_provider",
         ":phase_ring_book_loader",
         ":road_rulebook_loader",
         ":simple_phase_ring_book",
-        ":simple_right_of_way_phase_provider",
         ":simple_rulebook",
         ":traffic_light_book",
         ":trivial_right_of_way_state_provider",
@@ -35,7 +35,21 @@ drake_cc_library(
         "intersection.h",
     ],
     deps = [
-        ":simple_right_of_way_phase_provider",
+        ":manual_phase_provider",
+        "//automotive/maliput/api",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "manual_phase_provider",
+    srcs = [
+        "manual_phase_provider.cc",
+    ],
+    hdrs = [
+        "manual_phase_provider.h",
+    ],
+    deps = [
         "//automotive/maliput/api",
         "//common:essential",
     ],
@@ -94,20 +108,6 @@ drake_cc_library(
     ],
     hdrs = [
         "simple_phase_ring_book.h",
-    ],
-    deps = [
-        "//automotive/maliput/api",
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
-    name = "simple_right_of_way_phase_provider",
-    srcs = [
-        "simple_right_of_way_phase_provider.cc",
-    ],
-    hdrs = [
-        "simple_right_of_way_phase_provider.h",
     ],
     deps = [
         "//automotive/maliput/api",
@@ -226,9 +226,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "simple_right_of_way_phase_provider_test",
+    name = "manual_phase_provider_test",
     deps = [
-        ":simple_right_of_way_phase_provider",
+        ":manual_phase_provider",
     ],
 )
 

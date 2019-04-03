@@ -3,25 +3,23 @@
 #include <unordered_map>
 
 #include "drake/automotive/maliput/api/rules/phase.h"
+#include "drake/automotive/maliput/api/rules/phase_provider.h"
 #include "drake/automotive/maliput/api/rules/phase_ring.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_provider.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
 
 namespace drake {
 namespace maliput {
 
-/// A simple concrete implementation of the
-/// api::rules::RightOfWayPhaseProvider abstract interface. It allows the
-/// current phase to be explicitly set.
-class SimpleRightOfWayPhaseProvider
-    : public api::rules::RightOfWayPhaseProvider {
+/// A concrete implementation of the api::rules::PhaseProvider abstract
+/// interface that allows the current phase to be manually set.
+class ManualPhaseProvider : public api::rules::PhaseProvider {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleRightOfWayPhaseProvider);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManualPhaseProvider);
 
-  SimpleRightOfWayPhaseProvider() {}
+  ManualPhaseProvider() {}
 
-  ~SimpleRightOfWayPhaseProvider() override = default;
+  ~ManualPhaseProvider() override = default;
 
   /// Adds a phase ring to this provider.
   ///
@@ -38,7 +36,7 @@ class SimpleRightOfWayPhaseProvider
                 const api::rules::Phase::Id& phase);
 
  private:
-  optional<api::rules::RightOfWayPhaseProvider::Result> DoGetPhase(
+  optional<api::rules::PhaseProvider::Result> DoGetPhase(
       const api::rules::PhaseRing::Id& id) const override;
 
   std::unordered_map<maliput::api::rules::PhaseRing::Id,

@@ -25,9 +25,9 @@ class PhaseRing final {
 
     /// The default time before transitioning to the next phase. This is
     /// relative to when the current phase began. It is just a recommendation,
-    /// the actual duration is determined by the RightOfWayPhaseProvider and
-    /// may depend on events like a vehicle arriving at a left-turn lane or a
-    /// pedestrian hitting a crosswalk button.
+    /// the actual duration is determined by the PhaseProvider and may depend on
+    /// events like a vehicle arriving at a left-turn lane or a pedestrian
+    /// hitting a crosswalk button.
     optional<double> duration_until;
   };
 

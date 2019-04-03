@@ -12,11 +12,11 @@ namespace rules {
 
 /// Abstract interface for providing the dynamic states (Phase::Id) of a
 /// collection of PhaseRings.
-class RightOfWayPhaseProvider {
+class PhaseProvider {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RightOfWayPhaseProvider);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PhaseProvider);
 
-  virtual ~RightOfWayPhaseProvider() = default;
+  virtual ~PhaseProvider() = default;
 
   /// Result returned by GetPhase().
   struct Result {
@@ -42,7 +42,7 @@ class RightOfWayPhaseProvider {
   }
 
  protected:
-  RightOfWayPhaseProvider() = default;
+  PhaseProvider() = default;
 
  private:
   virtual optional<Result> DoGetPhase(const PhaseRing::Id& id)

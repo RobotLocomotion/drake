@@ -14,8 +14,8 @@ namespace {
 
 using rules::DirectionUsageRule;
 using rules::LaneSRange;
+using rules::PhaseProvider;
 using rules::PhaseRingBook;
-using rules::RightOfWayPhaseProvider;
 using rules::RightOfWayStateProvider;
 using rules::RoadRulebook;
 using rules::SpeedLimitRule;
@@ -28,7 +28,7 @@ class RoadNetworkTest : public ::testing::Test {
     road_rulebook_ = test::CreateRoadRulebook();
     phase_ring_book_ = test::CreatePhaseRingBook();
     state_provider_ = test::CreateRightOfWayStateProvider();
-    phase_provider_ = test::CreateRightOfWayPhaseProvider();
+    phase_provider_ = test::CreatePhaseProvider();
 
     road_geometry_ptr_ = road_geometry_.get();
     road_rulebook_ptr_ = road_rulebook_.get();
@@ -41,14 +41,14 @@ class RoadNetworkTest : public ::testing::Test {
   std::unique_ptr<RoadRulebook> road_rulebook_;
   std::unique_ptr<PhaseRingBook> phase_ring_book_;
   std::unique_ptr<RightOfWayStateProvider> state_provider_;
-  std::unique_ptr<RightOfWayPhaseProvider> phase_provider_;
+  std::unique_ptr<PhaseProvider> phase_provider_;
 
   RoadGeometry* road_geometry_ptr_{};
   RoadRulebook* road_rulebook_ptr_{};
   Intersection* intersection_ptr_{};
   PhaseRingBook* phase_ring_book_ptr_{};
   RightOfWayStateProvider* state_provider_ptr_{};
-  RightOfWayPhaseProvider* phase_provider_ptr_{};
+  PhaseProvider* phase_provider_ptr_{};
 };
 
 TEST_F(RoadNetworkTest, MissingParameters) {

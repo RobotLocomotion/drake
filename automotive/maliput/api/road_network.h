@@ -7,8 +7,8 @@
 #include "drake/automotive/maliput/api/intersection.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/api/rules/direction_usage_rule.h"
+#include "drake/automotive/maliput/api/rules/phase_provider.h"
 #include "drake/automotive/maliput/api/rules/phase_ring_book.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_provider.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_state_provider.h"
 #include "drake/automotive/maliput/api/rules/road_rulebook.h"
 #include "drake/automotive/maliput/api/rules/speed_limit_rule.h"
@@ -31,7 +31,7 @@ class RoadNetwork {
               std::vector<std::unique_ptr<Intersection>> intersections,
               std::unique_ptr<rules::PhaseRingBook> phase_ring_book,
               std::unique_ptr<rules::RightOfWayStateProvider> state_provider,
-              std::unique_ptr<rules::RightOfWayPhaseProvider> phase_provider,
+              std::unique_ptr<rules::PhaseProvider> phase_provider,
               std::vector<rules::SpeedLimitRule> speed_limits,
               std::vector<rules::DirectionUsageRule> direction_usage_rules);
 
@@ -53,7 +53,7 @@ class RoadNetwork {
     return state_provider_.get();
   }
 
-  const rules::RightOfWayPhaseProvider* phase_provider() const {
+  const rules::PhaseProvider* phase_provider() const {
     return phase_provider_.get();
   }
 
@@ -72,7 +72,7 @@ class RoadNetwork {
   std::unordered_map<Intersection::Id, Intersection*> intersections_map_;
   std::unique_ptr<rules::PhaseRingBook> phase_ring_book_;
   std::unique_ptr<rules::RightOfWayStateProvider> state_provider_;
-  std::unique_ptr<rules::RightOfWayPhaseProvider> phase_provider_;
+  std::unique_ptr<rules::PhaseProvider> phase_provider_;
   std::vector<rules::SpeedLimitRule> speed_limits_;
   std::vector<rules::DirectionUsageRule> direction_usage_rules_;
 };

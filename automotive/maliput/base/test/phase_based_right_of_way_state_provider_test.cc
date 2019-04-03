@@ -2,8 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/automotive/maliput/base/manual_phase_provider.h"
 #include "drake/automotive/maliput/base/simple_phase_ring_book.h"
-#include "drake/automotive/maliput/base/simple_right_of_way_phase_provider.h"
 
 namespace drake {
 namespace maliput {
@@ -34,7 +34,7 @@ GTEST_TEST(PhaseBasedRightOfWayStateProviderTest, BasicTest) {
   SimplePhaseRingBook phase_ring_book;
   phase_ring_book.AddPhaseRing(ring);
 
-  SimpleRightOfWayPhaseProvider phase_provider;
+  ManualPhaseProvider phase_provider;
   phase_provider.AddPhaseRing(ring_id, phase_id_1);
 
   PhaseBasedRightOfWayStateProvider dut(&phase_ring_book, &phase_provider);
