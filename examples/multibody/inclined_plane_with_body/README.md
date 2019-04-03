@@ -15,8 +15,8 @@ finite box (if a finite box, the block can fall off the inclined plane).
    by combining the coefficients of friction assigned to each object.
 2. When time_step > 0 (fixed-time step), the coefficient of kinetic friction is 
    ignored.  Only the coefficient of static friction is used.
-3. More information on the friction model being used is in coulomb_friction.h.
-https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_coulomb_friction.html
+3. More information on the friction model being used is in
+[coulomb_friction.h](https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_coulomb_friction.html).
 
 ### Building and running this example
 

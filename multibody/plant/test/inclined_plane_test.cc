@@ -84,7 +84,6 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   const double mass = 0.1;      // Rolling sphere mass, [kg]
   const double gravity = 9.81;  // Acceleration of gravity, [m/s²]
   const double inclined_plane_angle = 15.0 / 180 * M_PI;
-  const Vector3<double> inclined_plane_dimensions(0, 0, 0);
   const double muS_inclined_plane = 1.0;  // Coefficient static friction.
   const double muK_inclined_plane = 0.5;  // Coefficient kinetic friction.
   const double muS_sphere = 1.0;          // Coefficient static friction.

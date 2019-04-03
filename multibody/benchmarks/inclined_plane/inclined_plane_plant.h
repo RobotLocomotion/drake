@@ -30,22 +30,20 @@ namespace inclined_plane {
 ///   in m/s².  Earth's gravity is in the world's -z direction.
 /// @param[in] inclined_plane_angle Inclined plane angle (slope) i.e., angle
 ///   from Wx to Ax with positive sense Wy (radians).
-/// @param[in] is_inclined_plane_half_space If `true`, the inclined plane is an
-///   infinite half-space whereas `false` means the inclined is a box.
-/// @param[in] inclined_plane_dimensions When the inclined plane is modeled as a
-///   box, its dimensions (lengths) in the Ax, Ay, Az directions (meters).
-///   Note: To be valid data, these dimensions must be positive.
+/// @param[in] inclined_plane_dimensions non-negative dimensions (meters) in the
+///   Ax, Ay, Az directions when the inclined plane is modeled as a box,
+///   otherwise nullopt if the inclined plane is an infinite half-space.
 /// @param[in] coefficient_friction_inclined_plane Coulomb's coefficient of
 ///   friction for inclined plane A (sliding friction and static friction).
 /// @param[in] coefficient_friction_bodyB Coulomb's coefficient of friction
 ///   data for body B's surfaces (sliding friction and static friction).
-/// @param[in] massB The mass of sphere B (kilograms), which must be positive.
+/// @param[in] massB The mass of body B (kilograms), which must be positive.
 /// @param[out] plant Plant that will contain inclined plane A.
 /// @throws std::exception if plant is nullptr or there is invalid data.
 /// @pre plant must be registered with a scene graph.
 //@{
 
-/// This method creates an inclined plane A and adds it to an existing plant.
+/// Creates an inclined plane A and adds it to an existing plant.
 /// @see @ref inclined_plane_parameters "Description of parameters"
 void AddInclinedPlaneAndGravityToPlant(
     double gravity, double inclined_plane_angle,
@@ -53,8 +51,8 @@ void AddInclinedPlaneAndGravityToPlant(
     const CoulombFriction<double>& coefficient_friction_inclined_plane,
     MultibodyPlant<double>* plant);
 
-/// This method creates a uniform-density block (body B) and an inclined plane A
-/// and adds both A and B to an existing plant.
+/// Creates an inclined plane A and a uniform-density block (body B) that may
+/// have 4 spheres welded to it and adds them to an existing plant.
 /// @param[in] block_dimensions Dimensions (lengths) of block in the Bx, By, Bz
 ///   directions (meters). To be valid data, these dimensions must be positive.
 /// @param[in] is_block_with_4Spheres This flag is `true` if block B's contact
@@ -70,8 +68,8 @@ void AddInclinedPlaneWithBlockToPlant(
     double massB, const Vector3<double>& block_dimensions,
     bool is_block_with_4Spheres, MultibodyPlant<double>* plant);
 
-/// This method creates a uniform-density sphere (body B) and an inclined plane
-/// A and adds both A and B to an existing plant.
+/// Creates an inclined plane A and a uniform-density sphere (body B) and adds
+/// them to an existing plant.
 /// @param[in] radiusB The radius of sphere B (meters), which must be positive.
 /// @see @ref inclined_plane_parameters "Description of other parameters"
 /// @note Decorative visual geometry is added to the sphere to facilitate

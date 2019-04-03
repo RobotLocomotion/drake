@@ -19,8 +19,8 @@ namespace {
 
 // This simulates the motion of a rigid body B (e.g., a sphere or a block) on an
 // inclined plane A (which may be an infinite half-space or a finite box).
-// TODO(Mitiguy) Always start with body B in contact with inclined plane A or
-// allow for user-defined initial configuration and/or motion.
+// TODO(Mitiguy) Consider an option to configure body B to be in contact with
+// inclined plane A, or allow for user-defined initial configuration/motion.
 //
 // Information on how to build, run, and visualize this example and how to use
 // command-line arguments is in the accompanying file README.md.

@@ -232,8 +232,6 @@ class RigidBody : public Body<T> {
   /// with context.  These method APIs will be deprecated when caching arrives.
   ///@{
 
-
-
   /// (Advanced) Extract this body spatial acceleration in world, expressed in
   /// world.
   /// @param[in] ac acceleration kinematics cache.
