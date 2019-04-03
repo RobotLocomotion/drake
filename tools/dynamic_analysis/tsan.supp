@@ -46,3 +46,17 @@ called_from_lib:libembree3.so
 # second time inside a global destructor.
 race:__cxa_finalize
 mutex:__cxa_finalize
+
+# In the lcm_memq handler, while correctly holding a mutex it obtains exclusive
+# access to the next message by popping it off of the queue, but then it
+# releases the mutex before passing the message along to the user code.  TSan
+# does not understand the ownership (exclusivity) transfer of the message so
+# reports false positive races during the "pass along to the user".
+#
+# TODO(jwnimmer-tri) Unfortunately, this suppresses any races with
+# lcm_memq_handle in the call stack anywhere, which includes the user's
+# callback handlers.  To suppress only *inside* of this one problematic
+# function, we'd need to use a tsan.blacklist file, but that's currently
+# a TODO in our dynamic_analysis/bazel.rc.  Once our toolchain supports
+# a blacklist, we should use it instead of this.
+race:^lcm_memq_handle$
