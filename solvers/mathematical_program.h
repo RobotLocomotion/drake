@@ -2146,11 +2146,36 @@ class MathematicalProgram {
   std::pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>>
   AddSosConstraint(const symbolic::Expression& e);
 
-  // template <typename FunctionType>
-  // void AddCost(std::function..);
-  // void AddLinearCost(const Eigen::MatrixBase<Derived>& c, const vector<const
-  // DecisionVariable&>& vars)
-  // void addQuadraticCost ...
+  /**
+   * Adds the exponential cone constraint, that z = binding.evaluator()->A() *
+   * binding.variables()+ binding.evaluator()->b() should be in the exponential
+   * cone. Namely {z₀, z₁, z₂ | z₀ ≥ z₁ * exp(z₂ / z₁), z₁ > 0}.
+   * @param binding The binding of ExponentialConeConstraint, and its bound
+   * variables.
+   */
+  Binding<ExponentialConeConstraint> AddConstraint(
+      const Binding<ExponentialConeConstraint>& binding);
+
+  /**
+   * Adds an exponential cone constraint, that z = A * vars + b should be in
+   * the exponential cone. Namely {z₀, z₁, z₂ | z₀ ≥ z₁ * exp(z₂ / z₁), z₁ >
+   * 0}.
+   * @param A The A matrix in the documentation above. A must have 3 rows.
+   * @param b The b vector in the documentation above.
+   * @param vars The variables bound with this constraint.
+   */
+  Binding<ExponentialConeConstraint> AddExponentialConeConstraint(
+      const Eigen::Ref<const Eigen::SparseMatrix<double>>& A,
+      const Eigen::Ref<const Eigen::Vector3d>& b,
+      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
+   * Add the constraint that z is in the exponetial cone. 
+   * @param z The expression in the exponential cone. 
+   * @pre each entry in `z` is a linear expression of the decision variables.
+   */
+  Binding<ExponentialConeConstraint> AddExponentialConeConstraint(
+      const Eigen::Ref<const Vector3<symbolic::Expression>>& z);
 
   /**
    * Gets the initial guess for a single variable.
@@ -2384,28 +2409,34 @@ class MathematicalProgram {
     return linear_constraints_;
   }
 
-  /** Getter for Lorentz cone constraint */
+  /** Getter for Lorentz cone constraints */
   const std::vector<Binding<LorentzConeConstraint>>& lorentz_cone_constraints()
       const {
     return lorentz_cone_constraint_;
   }
 
-  /** Getter for rotated Lorentz cone constraint */
+  /** Getter for rotated Lorentz cone constraints */
   const std::vector<Binding<RotatedLorentzConeConstraint>>&
   rotated_lorentz_cone_constraints() const {
     return rotated_lorentz_cone_constraint_;
   }
 
-  /** Getter for positive semidefinite constraint */
+  /** Getter for positive semidefinite constraints */
   const std::vector<Binding<PositiveSemidefiniteConstraint>>&
   positive_semidefinite_constraints() const {
     return positive_semidefinite_constraint_;
   }
 
-  /** Getter for linear matrix inequality constraint */
+  /** Getter for linear matrix inequality constraints */
   const std::vector<Binding<LinearMatrixInequalityConstraint>>&
   linear_matrix_inequality_constraints() const {
     return linear_matrix_inequality_constraint_;
+  }
+
+  /** Getter for exponential cone constraints. */
+  const std::vector<Binding<ExponentialConeConstraint>>&
+  exponential_cone_constraints() const {
+    return exponential_cone_constraints_;
   }
 
   /**
@@ -2774,6 +2805,7 @@ class MathematicalProgram {
       positive_semidefinite_constraint_;
   std::vector<Binding<LinearMatrixInequalityConstraint>>
       linear_matrix_inequality_constraint_;
+  std::vector<Binding<ExponentialConeConstraint>> exponential_cone_constraints_;
 
   // Invariant:  The bindings in this list must be non-overlapping, when calling
   // Linear Complementarity solver like Moby. If this constraint is solved

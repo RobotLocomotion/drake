@@ -738,6 +738,9 @@ GTEST_TEST(testMathematicalProgram, testBadBindingVariable) {
   ExpectBadVar<PositiveSemidefiniteConstraint>(&prog, num_var * num_var,
                                                num_var);
   ExpectBadVar<LinearMatrixInequalityConstraint>(&prog, F.size() - 1, F);
+  ExpectBadVar<ExponentialConeConstraint>(
+      &prog, num_var, Eigen::MatrixXd::Ones(3, num_var).sparseView(),
+      Eigen::Vector3d::Zero());
   ExpectBadVar<LinearComplementarityConstraint>(&prog, num_var, A, f);
   // Use this as a test for nonlinear constraints.
   ExpectBadVar<EvaluatorConstraint<>>(&prog, 1, func, lb.head(1), ub.head(1));
@@ -2378,6 +2381,25 @@ GTEST_TEST(testMathematicalProgram, AddPositiveSemidefiniteConstraint) {
   CheckAddedSymbolicPositiveSemidefiniteConstraint(&prog, Y);
 }
 
+GTEST_TEST(testMathematicalProgram, testExponentialConeConstraint) {
+  MathematicalProgram prog;
+  EXPECT_EQ(prog.required_capabilities().count(
+                ProgramAttribute::kExponentialConeConstraint), 0);
+  auto x = prog.NewContinuousVariables<4>();
+  const Vector3<symbolic::Expression> expr(2 * x(0) + x(1) + 2, 1,
+                                           -2 * x(0) + 3);
+  auto binding = prog.AddExponentialConeConstraint(expr);
+  EXPECT_GT(prog.required_capabilities().count(
+                ProgramAttribute::kExponentialConeConstraint),
+            0);
+  const VectorX<symbolic::Expression> expr_reconstructed =
+      binding.evaluator()->A() * binding.variables() + binding.evaluator()->b();
+  EXPECT_EQ(expr_reconstructed.rows(), 3);
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_PRED2(ExprEqual, expr(i), expr_reconstructed(i));
+  }
+}
+
 void CheckAddedQuadraticCost(MathematicalProgram* prog,
                              const Eigen::MatrixXd& Q, const Eigen::VectorXd& b,
                              const VectorXDecisionVariable& x) {
@@ -2695,6 +2717,8 @@ GTEST_TEST(testMathematicalProgram, testClone) {
                                           Eigen::Vector2d::Ones(), x.head<2>());
   prog.AddLinearComplementarityConstraint(2 * Eigen::Matrix2d::Identity(),
                                           Eigen::Vector2d::Ones(), x.tail<2>());
+  prog.AddExponentialConeConstraint(Eigen::Matrix3d::Identity().sparseView(),
+                                    Eigen::Vector3d::Ones(), x.head<3>());
 
   // Set initial guess
   prog.SetInitialGuessForAllVariables(Eigen::VectorXd::Ones(prog.num_vars()));
@@ -2753,6 +2777,8 @@ GTEST_TEST(testMathematicalProgram, testClone) {
   EXPECT_TRUE(
       IsVectorOfBindingEqual(prog.linear_matrix_inequality_constraints(),
                              new_prog->linear_matrix_inequality_constraints()));
+  EXPECT_TRUE(IsVectorOfBindingEqual(prog.exponential_cone_constraints(),
+                                     new_prog->exponential_cone_constraints()));
   EXPECT_TRUE(
       IsVectorOfBindingEqual(prog.linear_complementarity_constraints(),
                              new_prog->linear_complementarity_constraints()));
