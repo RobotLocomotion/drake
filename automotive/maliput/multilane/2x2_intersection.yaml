@@ -200,6 +200,260 @@ RoadRulebook:
       Zone:
       - Lane: l:west_left_turn_segment_0
 
+TrafficLights:
+# The traffic light IDs denote the intersection entrance they regulate. For
+# example, the "SouthFacing" traffic light is responsible for signaling
+# vehicles that enter the intersection from the south (meaning the vehicles are
+# facing north). In this intersection, a single traffic light is used for all
+# vehicles at a particular entrance regardless of whether they are traveling
+# straight through, making a left turn, or making a right turn while in the
+# intersection.
+#
+# Most 2x2 intersections use bulb groups containing only three round bulbs: red,
+# yellow, and green. To demonstrate the use of arrows, however, a yellow
+# left-arrow bulb is included. It is positioned left of the green round bulb.
+# The ASCII art diagram below shows the bulb configuration within a bulb group.
+# It also shows the traffic light's frame when you are looking at the traffic
+# light (the bulbs are facing you, the +X-axis is pointing out of the screen):
+#
+#                +Z
+#                 ^
+#                 |
+#                 |
+#              -------
+#              |     |      Legend:
+#              | (R) |        - (R): Round red bulb
+#              |     |        - (Y): Round yellow bulb
+#              -------        - (G): Round green bulb
+#              |     |        - <Y-: Left arrow yellow bulb
+#    <---------| (Y) |-----------------------------------------> +Y
+#              |     |
+#        -------------
+#        |     |     |
+#        | <Y- | (G) |
+#        |     |     |
+#        -------------
+#                 |
+#                 |
+#                 V
+#
+# Notice that the X and Y axes of the traffic light's frame is chosen to be in
+# the middle of the vertical stack of three bulbs. This is because the yellow
+# left-arrow is optional. The intersection *could* be signalized without it. It
+# simply tells left-turning vehicles to employ extra caution.
+#
+# The Z-offset of the traffic light's frame within the world frame is computed
+# as follows. The goal is for the bottom edge of the traffic light to be about
+# 18' above the ground. A typical traffic light is about 45" tall since each of
+# the three bulbs is 14" tall plus 1.5" gaps between them. Thus, the traffic
+# light's Z-offset above the road surface is 18 * 12 + (45 / 2) = 238.5"
+# (6.0579 m). Assuming the road surface is at the world frame's Z = 0, the
+# Z-component of the traffic light's pose within the world frame is also
+# 6.0579 m.
+#
+# Since each traffic light only has one bulb group in this intersection, there
+# is zero lateral and rotational offset between the traffic light's frame and
+# the bulb group's frame.
+#
+# Within the bulb group frame, the positions of the bulbs are as follows:
+#
+#  - Round red light: This bulb is at the top of the stack, so it has a
+#    position of x = 0 m, y = 0 m, and z = 45" / 2 - 14" / 2 = 15.5" (0.3937 m).
+#
+#  - Round yellow light: This bulb is in the middle of the stack, so it has a
+#    position of x = 0 m, y = 0 m, and z = 0 m.
+#
+#  - Round green light: This bulb is in the bottom of the stack and is thus
+#    opposite of the round red light. It has a position of x = 0, y = 0,
+#    z = -0.3937 m.
+#
+#  - Yellow left-arrow: This bulb is to the left of the green round bulb. A 1.5"
+#    gap separates the two bulbs. Thus it has a position of x = 0 m,
+#    y = -14" - 1.5" = -15.5" (-0.3937 m), and z = -0.3937 m.
+#
+# The rotations of the bulb frames are all zero since the entire traffic light
+# and its bulb group is already oriented such that their x-axes are pointing
+# towards the intersection entrance to which they apply).
+#
+# The bounding boxes are omitted because the default values as defined by
+# drake::maliput::api::rules::Bulb are sufficient.
+- ID: SouthFacing
+  Pose:
+    orientation_road_network: [0.707107, 0, 0, -0.707107]  # RPY = (0, 0, -PI/2)
+    position_road_network: [1.875, 9.375, 6.0579]
+  BulbGroups:
+   - ID: SouthFacingBulbs
+     Pose:
+       orientation_traffic_light: [1, 0, 0, 0]  # RPY = (0, 0, 0)
+       position_traffic_light: [0, 0, 0]
+     Bulbs:
+     - ID: RedBulb
+       Pose:
+         orientation_bulb_group: [1, 0, 0, 0]  # RPY = (0, 0, 0)
+         position_bulb_group: [0, 0, 0.3937]
+       BoundingBox:
+         min: [-0.0889, -0.1778, -0.1778]
+         max: [0.0889, 0.1778, 0.1778]
+       Color: Red
+       Type: Round
+       States: [On, Off]
+     - ID: YellowBulb
+       Pose:
+         orientation_bulb_group: [1, 0, 0, 0]  # RPY = (0, 0, 0)
+         position_bulb_group: [0, 0, 0]
+       BoundingBox:
+         min: [-0.0889, -0.1778, -0.1778]
+         max: [0.0889, 0.1778, 0.1778]
+       Color: Yellow
+       Type: Round
+       States: [On, Off]
+     - ID: GreenBulb
+       Pose:
+         orientation_bulb_group: [1, 0, 0, 0]  # RPY = (0, 0, 0)
+         position_bulb_group: [0, 0, -0.3937]
+       BoundingBox:
+         min: [-0.0889, -0.1778, -0.1778]
+         max: [0.0889, 0.1778, 0.1778]
+       Color: Green
+       Type: Round
+       States: [On, Off]
+     - ID: YellowLeftArrowBulb
+       Pose:
+         orientation_bulb_group: [1, 0, 0, 0]  # RPY = (0, 0, 0)
+         position_bulb_group: [0, -0.3937, -0.3937]
+       BoundingBox:
+         min: [-0.0889, -0.1778, -0.1778]
+         max: [0.0889, 0.1778, 0.1778]
+       Color: Yellow
+       Type: Arrow
+       ArrowOrientation: 3.14  # Points left.
+       States: [Off, Blinking]
+- ID: NorthFacing
+  Pose:
+    orientation_road_network: [0.707107, 0, 0, -0.707107]  # RPY = (0, 0, PI/2)
+    position_road_network: [-1.875, -9.375, 6.0579]
+  BulbGroups:
+   - ID: NorthFacingBulbs
+     Pose:
+       orientation_traffic_light: [1, 0, 0, 0]  # RPY = (0, 0, 0)
+       position_traffic_light: [0, 0, 0]
+     Bulbs:
+     - ID: RedBulb
+       Pose:
+         orientation_bulb_group: [1, 0, 0, 0]  # RPY = (0, 0, 0)
+         position_bulb_group: [0, 0, 0.3937]
+       Color: Red
+       Type: Round
+       States: [On, Off]
+     - ID: YellowBulb
+       Pose:
+         orientation_bulb_group: [1, 0, 0, 0]  # RPY = (0, 0, 0)
+         position_bulb_group: [0, 0, 0]
+       Color: Yellow
+       Type: Round
+       States: [On, Off]
+     - ID: GreenBulb
+       Pose:
+         orientation_bulb_group: [1, 0, 0, 0]  # RPY = (0, 0, 0)
+         position_bulb_group: [0, 0, -0.3937]
+       Color: Green
+       Type: Round
+     - ID: YellowLeftArrowBulb
+       Pose:
+         orientation_bulb_group: [1, 0, 0, 0]  # RPY = (0, 0, 0)
+         position_bulb_group: [0, -0.3937, -0.3937]
+       BoundingBox:
+         min: [-0.0889, -0.1778, -0.1778]
+         max: [0.0889, 0.1778, 0.1778]
+       Color: Yellow
+       Type: Arrow
+       ArrowOrientation: 3.14  # Points left.
+       States: [Off, Blinking]
+- ID: WestFacing
+  Pose:
+    orientation_road_network: [0, 0, 0, 1]  # RPY = (0, 0, PI)
+    position_road_network: [9.375, -1.875, 6.0579]
+  BulbGroups:
+   - ID: WestFacingBulbs
+     Pose:
+       orientation_traffic_light: [1, 0, 0, 0]  # RPY = (0, 0, 0)
+       position_traffic_light: [0, 0, 0]
+     Bulbs:
+     - ID: RedBulb
+       Pose:
+         orientation_bulb_group: [1, 0, 0, 0]  # RPY = (0, 0, 0)
+         position_bulb_group: [0, 0, 0.3937]
+       Color: Red
+       Type: Round
+       States: [On, Off]
+     - ID: YellowBulb
+       Pose:
+         orientation_bulb_group: [1, 0, 0, 0]  # RPY = (0, 0, 0)
+         position_bulb_group: [0, 0, 0]
+       Color: Yellow
+       Type: Round
+       States: [On, Off]
+     - ID: GreenBulb
+       Pose:
+         orientation_bulb_group: [1, 0, 0, 0]  # RPY = (0, 0, 0)
+         position_bulb_group: [0, 0, -0.3937]
+       Color: Green
+       Type: Round
+       States: [On, Off]
+     - ID: YellowLeftArrowBulb
+       Pose:
+         orientation_bulb_group: [1, 0, 0, 0]  # RPY = (0, 0, 0)
+         position_bulb_group: [0, -0.3937, -0.3937]
+       BoundingBox:
+         min: [-0.0889, -0.1778, -0.1778]
+         max: [0.0889, 0.1778, 0.1778]
+       Color: Yellow
+       Type: Arrow
+       ArrowOrientation: 3.14  # Points left.
+       States: [Off, Blinking]
+- ID: EastFacing
+  Pose:
+    orientation_road_network: [1, 0, 0, 0]  # RPY = (0, 0, 0)
+    position_road_network: [-9.375, 1.875, 6.0579]
+  BulbGroups:
+   - ID: EastFacingBulbs
+     Pose:
+       orientation_traffic_light: [1, 0, 0, 0]  # RPY = (0, 0, 0)
+       position_traffic_light: [0, 0, 0]
+     Bulbs:
+     - ID: RedBulb
+       Pose:
+         orientation_bulb_group: [1, 0, 0, 0]  # RPY = (0, 0, 0)
+         position_bulb_group: [0, 0, 0.3937]
+       Color: Red
+       Type: Round
+       States: [On, Off]
+     - ID: YellowBulb
+       Pose:
+         orientation_bulb_group: [1, 0, 0, 0]  # RPY = (0, 0, 0)
+         position_bulb_group: [0, 0, 0]
+       Color: Yellow
+       Type: Round
+       States: [On, Off]
+     - ID: GreenBulb
+       Pose:
+         orientation_bulb_group: [1, 0, 0, 0]  # RPY = (0, 0, 0)
+         position_bulb_group: [0, 0, -0.3937]
+       Color: Green
+       Type: Round
+       States: [On, Off]
+     - ID: YellowLeftArrowBulb
+       Pose:
+         orientation_bulb_group: [1, 0, 0, 0]  # RPY = (0, 0, 0)
+         position_bulb_group: [0, -0.3937, -0.3937]
+       BoundingBox:
+         min: [-0.0889, -0.1778, -0.1778]
+         max: [0.0889, 0.1778, 0.1778]
+       Color: Yellow
+       Type: Arrow
+       ArrowOrientation: 3.14  # Points left.
+       States: [Off, Blinking]
+
 PhaseRings:
 - ID: 2x2Intersection
   Rules: [NorthStraight, SouthStraight, EastStraight, WestStraight,
