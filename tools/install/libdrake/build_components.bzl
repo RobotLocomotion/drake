@@ -93,7 +93,6 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/parsing",
     "//multibody/plant",
     "//multibody/plant:contact_results_to_lcm",  # unpackaged
-    "//multibody/plant:implicit_stribeck_solver_results",  # unpackaged
     "//multibody/tree",
     "//perception",
     "//solvers",
