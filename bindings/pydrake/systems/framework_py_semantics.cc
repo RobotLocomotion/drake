@@ -115,7 +115,7 @@ void DefineFrameworkPySemantics(py::module m) {
             self->CopyFrom(other);
 #pragma GCC diagnostic pop
           },
-          doc.AbstractValues.CopyFrom.doc)
+          doc.AbstractValues.CopyFrom.doc_deprecated)
       .def("SetFrom", &AbstractValues::SetFrom, doc.AbstractValues.SetFrom.doc);
 
   {
@@ -150,7 +150,7 @@ void DefineFrameworkPySemantics(py::module m) {
               self->get_num_input_ports();
 #pragma GCC diagnostic pop
             },
-            "Use num_input_ports() instead.")
+            doc.ContextBase.get_num_input_ports.doc_deprecated)
         .def("num_output_ports", &Context<T>::num_output_ports,
             doc.ContextBase.num_output_ports.doc)
         .def("FixInputPort",
@@ -182,7 +182,7 @@ void DefineFrameworkPySemantics(py::module m) {
               self->set_time(time);
 #pragma GCC diagnostic pop
             },
-            "Use SetTime() instead.")
+            doc.Context.set_time.doc_deprecated)
         .def("SetAccuracy", &Context<T>::SetAccuracy, py::arg("accuracy"),
             doc.Context.SetAccuracy.doc)
         .def("set_accuracy",
@@ -195,7 +195,7 @@ void DefineFrameworkPySemantics(py::module m) {
               self->set_accuracy(accuracy);
 #pragma GCC diagnostic pop
             },
-            "Use SetAccuracy() instead.")
+            doc.Context.set_accuracy.doc_deprecated)
         .def("get_accuracy", &Context<T>::get_accuracy,
             doc.Context.get_accuracy.doc)
         .def("Clone", &Context<T>::Clone, doc.Context.Clone.doc)
@@ -238,7 +238,7 @@ void DefineFrameworkPySemantics(py::module m) {
               self->get_num_discrete_state_groups();
 #pragma GCC diagnostic pop
             },
-            "Use num_discrete_state_groups() instead.")
+            doc.Context.get_num_discrete_state_groups.doc_deprecated)
         .def("get_discrete_state",
             overload_cast_explicit<const DiscreteValues<T>&>(
                 &Context<T>::get_discrete_state),
@@ -287,7 +287,7 @@ void DefineFrameworkPySemantics(py::module m) {
               self->get_num_abstract_states();
 #pragma GCC diagnostic pop
             },
-            "Use num_abstract_states() instead.")
+            doc.Context.get_num_abstract_states.doc_deprecated)
         .def("get_abstract_state",
             static_cast<const AbstractValues& (Context<T>::*)() const>(
                 &Context<T>::get_abstract_state),
@@ -434,7 +434,7 @@ void DefineFrameworkPySemantics(py::module m) {
               self->get_num_ports();
 #pragma GCC diagnostic pop
             },
-            "Use num_ports() instead.")
+            doc.SystemOutput.get_num_ports.doc_deprecated)
         .def("get_data", &SystemOutput<T>::get_data, py_reference_internal,
             doc.SystemOutput.get_data.doc)
         .def("get_vector_data", &SystemOutput<T>::get_vector_data,
