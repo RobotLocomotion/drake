@@ -681,6 +681,7 @@ drake_cc_googletest(
         ":cache_and_dependency_tracker",
         ":context_base",
         "//common:essential",
+        "//common/test_utilities:expect_throws_message",
         "//systems/framework/test_utilities",
     ],
 )

@@ -207,6 +207,9 @@ class ContextMessageInterface {
   // and the path separator from SystemMessageInterface::path_separator().
   virtual std::string GetSystemPathname() const = 0;
 
+  // Returns true if the cache in this subcontext has been frozen.
+  virtual bool is_cache_frozen() const = 0;
+
  protected:
   ContextMessageInterface() = default;
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContextMessageInterface);
