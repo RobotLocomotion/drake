@@ -78,10 +78,16 @@ void StaticEquilibriumConstraint::DoEval(
         plant_->GetBodyFromFrameId(frame_B_id)->body_frame();
 
     // Compute the Jacobian.
-    const Vector3<double> p_ACa =
-        inspector.X_FG(signed_distance_pair.id_A) * signed_distance_pair.p_ACa;
-    const Vector3<double> p_BCb =
-        inspector.X_FG(signed_distance_pair.id_B) * signed_distance_pair.p_BCb;
+    // Define Body A's frame as A, the geometry attached to body A has frame Ga,
+    // and the witness point on geometry Ga is Ca.
+    const auto& X_AGa = inspector.X_FG(signed_distance_pair.id_A);
+    const auto& p_GaCa = signed_distance_pair.p_ACa;
+    const Vector3<double> p_ACa = X_AGa * p_GaCa;
+    // Define Body B's frame as B, the geometry attached to body B has frame Gb,
+    // and the witness point on geometry Ga is Cb.
+    const auto& X_BGb = inspector.X_FG(signed_distance_pair.id_B);
+    const auto& p_GbCb = signed_distance_pair.p_BCb;
+    const Vector3<double> p_BCb = X_BGb * p_GbCb;
     Eigen::Matrix<AutoDiffXd, 6, Eigen::Dynamic> Jv_V_WCa(
         6, plant_->num_velocities());
     Eigen::Matrix<AutoDiffXd, 6, Eigen::Dynamic> Jv_V_WCb(

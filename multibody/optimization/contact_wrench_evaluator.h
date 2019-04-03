@@ -124,10 +124,10 @@ class ContactWrenchFromForceInWorldFrameEvaluator final
       const MultibodyPlant<AutoDiffXd>* plant,
       systems::Context<AutoDiffXd>* context,
       const std::pair<geometry::GeometryId, geometry::GeometryId>&
-          geometry_id_pair,
-      const std::string& description = "")
-      : ContactWrenchEvaluator(plant, context, 3, geometry_id_pair,
-                               description) {}
+          geometry_id_pair)
+      : ContactWrenchEvaluator(
+            plant, context, 3, geometry_id_pair,
+            "contact_wrench_from_pure_force_in_world_frame") {}
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
