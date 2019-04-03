@@ -1,5 +1,7 @@
 #include "drake/automotive/maliput/base/intersection.h"
 
+#include "drake/common/drake_throw.h"
+
 namespace drake {
 namespace maliput {
 
