@@ -1147,7 +1147,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // substate.
   void DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
-      const EventCollection<DiscreteUpdateEvent<T>>& event_info,
+      const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const final {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context);
@@ -1155,25 +1155,21 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
         dynamic_cast<DiagramDiscreteValues<T>*>(discrete_state);
     DRAKE_DEMAND(diagram_discrete);
 
-    // As a baseline, initialize all the discrete variables to their
-    // current values.
-    diagram_discrete->SetFrom(context.get_discrete_state());
-
-    const DiagramEventCollection<DiscreteUpdateEvent<T>>& info =
+    const DiagramEventCollection<DiscreteUpdateEvent<T>>& diagram_events =
         dynamic_cast<const DiagramEventCollection<DiscreteUpdateEvent<T>>&>(
-            event_info);
+            events);
 
     for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
-      const EventCollection<DiscreteUpdateEvent<T>>& subinfo =
-          info.get_subevent_collection(i);
+      const EventCollection<DiscreteUpdateEvent<T>>& subevents =
+          diagram_events.get_subevent_collection(i);
 
-      if (subinfo.HasEvents()) {
+      if (subevents.HasEvents()) {
         const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
         DiscreteValues<T>& subdiscrete =
             diagram_discrete->get_mutable_subdiscrete(i);
 
-        registered_systems_[i]->CalcDiscreteVariableUpdates(subcontext, subinfo,
-                                                            &subdiscrete);
+        registered_systems_[i]->CalcDiscreteVariableUpdates(
+            subcontext, subevents, &subdiscrete);
       }
     }
   }
@@ -1209,30 +1205,27 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // method with the appropriate subcontext, subevent collection and substate.
   void DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
-      const EventCollection<UnrestrictedUpdateEvent<T>>& event_info,
+      const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const final {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context);
     auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
     DRAKE_DEMAND(diagram_state != nullptr);
 
-    // No need to set state to context's state, since it has already been done
-    // in System::CalcUnrestrictedUpdate().
-
-    const DiagramEventCollection<UnrestrictedUpdateEvent<T>>& info =
+    const DiagramEventCollection<UnrestrictedUpdateEvent<T>>& diagram_events =
         dynamic_cast<const DiagramEventCollection<UnrestrictedUpdateEvent<T>>&>(
-            event_info);
+            events);
 
     for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
-      const EventCollection<UnrestrictedUpdateEvent<T>>& subinfo =
-          info.get_subevent_collection(i);
+      const EventCollection<UnrestrictedUpdateEvent<T>>& subevents =
+          diagram_events.get_subevent_collection(i);
 
-      if (subinfo.HasEvents()) {
+      if (subevents.HasEvents()) {
         const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
         State<T>& substate = diagram_state->get_mutable_substate(i);
 
-        registered_systems_[i]->CalcUnrestrictedUpdate(subcontext, subinfo,
-            &substate);
+        registered_systems_[i]->CalcUnrestrictedUpdate(subcontext, subevents,
+                                                       &substate);
       }
     }
   }
