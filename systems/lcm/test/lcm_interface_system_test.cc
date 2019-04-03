@@ -103,11 +103,6 @@ TEST_P(LcmInterfaceSystemTest, AcceptanceTest) {
     // still publish and service subscriptions.  The LcmSubscriberSystem's
     // subscriptions should NOT be called anymore.
     simulator.reset();
-    // Empty the queue of anything that was published subsequent to the final
-    // simulator.AdvanceTo call, but prior to the simulator.reset call.
-    drake_lcm->HandleSubscriptions(0);
-    // Even though the transmit thread is still publishing, nothing else should
-    // appear at the handlers because there are no more active subscriptions.
     int total = 0;
     for (int i = 0; i < 100; ++i) {
       total += drake_lcm->HandleSubscriptions(1);
