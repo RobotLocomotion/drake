@@ -15,7 +15,7 @@ RoadNetwork::RoadNetwork(
     std::vector<std::unique_ptr<Intersection>> intersections,
     std::unique_ptr<rules::PhaseRingBook> phase_ring_book,
     std::unique_ptr<rules::RightOfWayStateProvider> state_provider,
-    std::unique_ptr<rules::RightOfWayPhaseProvider> phase_provider,
+    std::unique_ptr<rules::PhaseProvider> phase_provider,
     std::vector<rules::SpeedLimitRule> speed_limits,
     std::vector<rules::DirectionUsageRule> direction_usage_rules)
     : road_geometry_(std::move(road_geometry)),

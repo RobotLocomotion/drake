@@ -123,11 +123,10 @@ class MockRightOfWayStateProvider final
   }
 };
 
-class MockRightOfWayPhaseProvider final
-    : public rules::RightOfWayPhaseProvider {
+class MockPhaseProvider final : public rules::PhaseProvider {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MockRightOfWayPhaseProvider)
-  MockRightOfWayPhaseProvider() {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MockPhaseProvider)
+  MockPhaseProvider() {}
 
  private:
   optional<Result> DoGetPhase(const rules::PhaseRing::Id&) const override {
@@ -143,8 +142,7 @@ class MockIntersection final : public Intersection {
       : Intersection(id, {}, ring_id) {}
 
  private:
-  const optional<rules::RightOfWayPhaseProvider::Result> Phase()
-      const override {
+  const optional<rules::PhaseProvider::Result> Phase() const override {
     return nullopt;
   }
 };
@@ -212,9 +210,8 @@ CreateRightOfWayStateProvider() {
   return std::make_unique<MockRightOfWayStateProvider>();
 }
 
-std::unique_ptr<rules::RightOfWayPhaseProvider>
-CreateRightOfWayPhaseProvider() {
-  return std::make_unique<MockRightOfWayPhaseProvider>();
+std::unique_ptr<rules::PhaseProvider> CreatePhaseProvider() {
+  return std::make_unique<MockPhaseProvider>();
 }
 
 std::unique_ptr<Intersection> CreateIntersection(

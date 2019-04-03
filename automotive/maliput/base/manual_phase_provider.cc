@@ -1,4 +1,4 @@
-#include "drake/automotive/maliput/base/simple_right_of_way_phase_provider.h"
+#include "drake/automotive/maliput/base/manual_phase_provider.h"
 
 #include <string>
 
@@ -7,9 +7,9 @@
 namespace drake {
 namespace maliput {
 
-using api::rules::RightOfWayPhaseProvider;
+using api::rules::PhaseProvider;
 
-void SimpleRightOfWayPhaseProvider::AddPhaseRing(
+void ManualPhaseProvider::AddPhaseRing(
     const api::rules::PhaseRing::Id& id,
     const api::rules::Phase::Id& initial_phase) {
   auto result = phases_.emplace(id, initial_phase);
@@ -20,14 +20,13 @@ void SimpleRightOfWayPhaseProvider::AddPhaseRing(
 }
 
 
-void SimpleRightOfWayPhaseProvider::SetPhase(
+void ManualPhaseProvider::SetPhase(
     const api::rules::PhaseRing::Id& id,
     const api::rules::Phase::Id& phase) {
   phases_.at(id) = phase;
 }
 
-optional<RightOfWayPhaseProvider::Result>
-SimpleRightOfWayPhaseProvider::DoGetPhase(
+optional<PhaseProvider::Result> ManualPhaseProvider::DoGetPhase(
     const api::rules::PhaseRing::Id& id) const {
   auto it = phases_.find(id);
   if (it == phases_.end()) {

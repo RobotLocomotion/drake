@@ -36,7 +36,7 @@ class IntersectionTest : public ::testing::Test {
 
 TEST_F(IntersectionTest, BasicTest) {
   const Intersection::Id intersection_id("foo");
-  SimpleRightOfWayPhaseProvider phase_provider;
+  ManualPhaseProvider phase_provider;
   Intersection dut(intersection_id, ranges_, dummy_ring_.id(), &phase_provider);
   EXPECT_EQ(dut.id(), intersection_id);
   EXPECT_EQ(dut.Phase(), nullopt);
