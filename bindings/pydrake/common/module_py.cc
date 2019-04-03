@@ -96,7 +96,8 @@ PYBIND11_MODULE(_module_py, m) {
 // Returns the fully-qualified path to the root of the `drake` source tree.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  m.def("GetDrakePath", &GetDrakePath, "Get Drake path", doc.GetDrakePath.doc);
+  m.def("GetDrakePath", &GetDrakePath, "Get Drake path",
+      doc.GetDrakePath.doc_deprecated);
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
   // These are meant to be called internally by pydrake; not by users.
   m.def("set_assertion_failure_to_throw_exception",
