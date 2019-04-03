@@ -51,8 +51,8 @@ class PhaseBasedRightOfWayStateProvider final
   optional<api::rules::RightOfWayStateProvider::Result>
       DoGetState(const api::rules::RightOfWayRule::Id& id) const final;
 
-  const api::rules::PhaseRingBook* phase_ring_book_;
-  const api::rules::RightOfWayPhaseProvider* phase_provider_;
+  const api::rules::PhaseRingBook* phase_ring_book_{};
+  const api::rules::RightOfWayPhaseProvider* phase_provider_{};
 };
 
 }  // namespace maliput
