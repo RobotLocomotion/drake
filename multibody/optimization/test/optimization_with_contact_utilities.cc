@@ -24,7 +24,7 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
     const auto& sphere =
         plant_->AddRigidBody("sphere" + std::to_string(i), spheres_[i].inertia);
     sphere_geometry_ids_.push_back(plant_->RegisterCollisionGeometry(
-        sphere, Eigen::Isometry3d::Identity(),
+        sphere, math::RigidTransformd::Identity(),
         geometry::Sphere(spheres_[i].radius),
         "sphere" + std::to_string(i) + "_collision", spheres_[i].friction,
         scene_graph_));
@@ -34,7 +34,7 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
     const auto& box =
         plant_->AddRigidBody("box" + std::to_string(i), boxes_[i].inertia);
     box_geometry_ids_.push_back(plant_->RegisterCollisionGeometry(
-        box, Eigen::Isometry3d::Identity(),
+        box, math::RigidTransformd::Identity(),
         geometry::Box(boxes_[i].size(0), boxes_[i].size(1), boxes_[i].size(2)),
         "box" + std::to_string(i) + "_collision", boxes_[i].friction,
         scene_graph_));
@@ -47,11 +47,11 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
                                        UnitInertia<double>(1, 1, 1)));
   const Eigen::Vector3d ground_box_size(100, 100, 100);
   ground_geometry_id_ = plant_->RegisterCollisionGeometry(
-      ground, Eigen::Isometry3d::Identity(),
+      ground, math::RigidTransformd::Identity(),
       geometry::Box(ground_box_size(0), ground_box_size(1), ground_box_size(2)),
       "ground", ground_friction_, scene_graph_);
-  Eigen::Isometry3d X_WG = Eigen::Isometry3d::Identity();
-  X_WG.translation()(2) = -ground_box_size(2) / 2;
+  math::RigidTransformd X_WG = math::RigidTransformd::Identity();
+  X_WG.set_translation(Eigen::Vector3d(0, 0, -ground_box_size(2) / 2));
   plant_->WeldFrames(plant_->world_frame(), ground.body_frame(), X_WG);
 
   // Add gravity.
