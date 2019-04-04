@@ -4,6 +4,9 @@
 // TODO(liang.fok) Satisfy clang-format via rules tests directory reorg.
 
 #include <exception>
+#include <string>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -250,6 +253,56 @@ TEST_F(TrafficLightTest, Assignment) {
                    {bulb_group});
   dut = traffic_light_;
   EXPECT_TRUE(MALIPUT_IS_EQUAL(dut, traffic_light_));
+}
+
+GTEST_TEST(UniqueBulbIdTest, Usage) {
+  const std::string traffic_light_name{"MyTrafficLight"};
+  const std::string bulb_group_name{"MyBulbGroup"};
+  const std::string bulb_name{"MyBulb"};
+
+  const TrafficLight::Id traffic_light_id(traffic_light_name);
+  const BulbGroup::Id bulb_group_id(bulb_group_name);
+  const Bulb::Id bulb_id(bulb_name);
+
+  const UniqueBulbId dut{traffic_light_id, bulb_group_id, bulb_id};
+
+  // A mismatch of just one internal ID results in the UniqueBulbId no longer
+  // matching.
+  EXPECT_NE(dut,
+            (UniqueBulbId{TrafficLight::Id("foo"), bulb_group_id, bulb_id}));
+  EXPECT_NE(dut, (UniqueBulbId{traffic_light_id, BulbGroup::Id("foo"),
+                               Bulb::Id(bulb_name)}));
+  EXPECT_NE(dut,
+            (UniqueBulbId{traffic_light_id, bulb_group_id, Bulb::Id("foo")}));
+
+  const std::string dut_string = dut.string();
+  for (const auto& name : {traffic_light_name, bulb_group_name, bulb_name}) {
+    EXPECT_NE(dut_string.find(name), std::string::npos);
+  }
+
+  const UniqueBulbId copied_dut = dut;
+  EXPECT_EQ(copied_dut, dut);
+
+  UniqueBulbId assigned_dut{TrafficLight::Id("foo"), BulbGroup::Id("bar"),
+                            Bulb::Id("baz")};
+  EXPECT_NE(assigned_dut, dut);
+  assigned_dut = dut;
+  EXPECT_EQ(assigned_dut, dut);
+
+  std::unordered_map<UniqueBulbId, BulbState> unordered_map;
+  const BulbState bulb_state = BulbState::kOn;
+  unordered_map.emplace(std::make_pair(dut, bulb_state));
+  EXPECT_NE(unordered_map.find(dut), unordered_map.end());
+  EXPECT_EQ(unordered_map.at(dut), bulb_state);
+  const UniqueBulbId other_dut{TrafficLight::Id("foo"), BulbGroup::Id("bar"),
+                               Bulb::Id("baz")};
+  EXPECT_EQ(unordered_map.find(other_dut), unordered_map.end());
+
+  std::map<UniqueBulbId, BulbState> ordered_map;
+  ordered_map.emplace(std::make_pair(dut, bulb_state));
+  EXPECT_NE(ordered_map.find(dut), ordered_map.end());
+  EXPECT_EQ(ordered_map.at(dut), bulb_state);
+  EXPECT_EQ(ordered_map.find(other_dut), ordered_map.end());
 }
 
 }  // namespace
