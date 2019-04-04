@@ -178,6 +178,7 @@ drake_pybind_library(
         ":module_py",
         "//bindings/pydrake/common:eigen_geometry_py",
     ],
+    py_srcs = ["_math_extra.py"],
 )
 
 drake_pybind_library(
