@@ -174,7 +174,7 @@ Proprietary Solvers
 
 The Drake Bazel build currently supports the following proprietary solvers:
 
- * Gurobi 8.0.0
+ * Gurobi 8.1.1
  * MOSEK 8.1
  * SNOPT 7.4
 
