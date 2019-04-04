@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "drake/automotive/maliput/api/branch_point.h"
@@ -182,6 +183,11 @@ class RoadGeometry::IdIndex {
   /// Returns the Lane identified by @p id, or `nullptr` if @p id is unknown.
   const Lane* GetLane(const LaneId& id) const { return DoGetLane(id); }
 
+  // Returns all of the Lane instances.
+  const std::unordered_map<LaneId, const Lane*>& GetLanes() const {
+    return DoGetLanes();
+  }
+
   /// Returns the Segment identified by @p id, or `nullptr` if @p id is
   /// unknown.
   const Segment* GetSegment(const SegmentId& id) const {
@@ -205,6 +211,7 @@ class RoadGeometry::IdIndex {
 
  private:
   virtual const Lane* DoGetLane(const LaneId& id) const = 0;
+  virtual const std::unordered_map<LaneId, const Lane*>& DoGetLanes() const = 0;
   virtual const Segment* DoGetSegment(const SegmentId& id) const = 0;
   virtual const Junction* DoGetJunction(const JunctionId& id) const = 0;
   virtual const BranchPoint* DoGetBranchPoint(

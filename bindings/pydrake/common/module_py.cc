@@ -30,6 +30,11 @@ PYBIND11_MODULE(_module_py, m) {
   constexpr auto& doc = pydrake_doc.drake;
   m.attr("_HAVE_SPDLOG") = logging::kHaveSpdlog;
 
+  // TODO(eric.cousineau): Provide a Pythonic spdlog sink that connects to
+  // Python's `logging` module; possibly use `pyspdlog`.
+  m.def("set_log_level", &logging::set_log_level, py::arg("level"),
+      doc.logging.set_log_level.doc);
+
   py::enum_<drake::RandomDistribution>(
       m, "RandomDistribution", doc.RandomDistribution.doc)
       .value("kUniform", drake::RandomDistribution::kUniform,
@@ -91,7 +96,8 @@ PYBIND11_MODULE(_module_py, m) {
 // Returns the fully-qualified path to the root of the `drake` source tree.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  m.def("GetDrakePath", &GetDrakePath, "Get Drake path", doc.GetDrakePath.doc);
+  m.def("GetDrakePath", &GetDrakePath, "Get Drake path",
+      doc.GetDrakePath.doc_deprecated);
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
   // These are meant to be called internally by pydrake; not by users.
   m.def("set_assertion_failure_to_throw_exception",

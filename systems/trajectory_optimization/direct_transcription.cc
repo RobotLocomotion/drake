@@ -46,7 +46,7 @@ class DiscreteTimeSystemConstraint : public solvers::Constraint {
     DRAKE_DEMAND(context_->has_only_discrete_state());
     DRAKE_DEMAND(context_ != nullptr);
     DRAKE_DEMAND(discrete_state_ != nullptr);
-    DRAKE_DEMAND(context_->get_num_input_ports() == 0 ||
+    DRAKE_DEMAND(context_->num_input_ports() == 0 ||
                  input_port_value_ != nullptr);
 
     // Makes sure the autodiff vector is properly initialized.
@@ -75,8 +75,8 @@ class DiscreteTimeSystemConstraint : public solvers::Constraint {
     const auto state = x.segment(num_inputs_, num_states_);
     const auto next_state = x.tail(num_states_);
 
-    context_->set_time(evaluation_time_);
-    if (context_->get_num_input_ports() > 0) {
+    context_->SetTime(evaluation_time_);
+    if (context_->num_input_ports() > 0) {
       input_port_value_->GetMutableVectorData<AutoDiffXd>()->SetFromVector(
           input);
     }
@@ -117,7 +117,7 @@ DirectTranscription::DirectTranscription(const System<double>* system,
                                          const Context<double>& context,
                                          int num_time_samples)
     : MultipleShooting(
-          system->get_num_total_inputs(), context.get_num_total_states(),
+          system->num_total_inputs(), context.num_total_states(),
           num_time_samples, get_period(system)),
       discrete_time_system_(true) {
   // Note: this constructor is for discrete-time systems.  For continuous-time
@@ -135,8 +135,8 @@ DirectTranscription::DirectTranscription(
     const LinearSystem<double>* linear_system,
     const Context<double>& context,
     int num_time_samples)
-    : MultipleShooting(linear_system->get_num_total_inputs(),
-                       context.get_num_total_states(), num_time_samples,
+    : MultipleShooting(linear_system->num_total_inputs(),
+                       context.num_total_states(), num_time_samples,
                        std::max(linear_system->time_period(),
                                 std::numeric_limits<double>::epsilon())
                        /* N.B. Ensures that MultipleShooting is well-formed */),
@@ -157,8 +157,8 @@ DirectTranscription::DirectTranscription(
 DirectTranscription::DirectTranscription(
     const TimeVaryingLinearSystem<double>* system,
     const Context<double>& context, int num_time_samples)
-    : MultipleShooting(system->get_num_total_inputs(),
-                       context.get_num_total_states(), num_time_samples,
+    : MultipleShooting(system->num_total_inputs(),
+                       context.num_total_states(), num_time_samples,
                        std::max(system->time_period(),
                                 std::numeric_limits<double>::epsilon())
                        /* N.B. Ensures that MultipleShooting is well-formed */),
@@ -299,7 +299,7 @@ void DirectTranscription::AddAutodiffDynamicConstraints(
 
   context_->SetTimeStateAndParametersFrom(context);
 
-  if (context_->get_num_input_ports() > 0) {
+  if (context_->num_input_ports() > 0) {
     // Allocate the input port and keep an alias around.
     input_port_value_ = &context_->FixInputPort(
         0, system_->AllocateInputVector(system_->get_input_port(0)));
@@ -327,10 +327,10 @@ void DirectTranscription::ConstrainEqualInputAtFinalTwoTimesteps() {
 void DirectTranscription::ValidateSystem(const System<double>& system,
                                          const Context<double>& context) {
   DRAKE_DEMAND(context.has_only_discrete_state());
-  DRAKE_DEMAND(context.get_num_discrete_state_groups() == 1);
+  DRAKE_DEMAND(context.num_discrete_state_groups() == 1);
   DRAKE_DEMAND(num_states() == context.get_discrete_state(0).size());
-  DRAKE_DEMAND(system.get_num_input_ports() <= 1);
-  DRAKE_DEMAND(num_inputs() == (context.get_num_input_ports() > 0
+  DRAKE_DEMAND(system.num_input_ports() <= 1);
+  DRAKE_DEMAND(num_inputs() == (context.num_input_ports() > 0
                                 ? system.get_input_port(0).size()
                                 : 0));
 }

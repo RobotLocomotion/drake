@@ -61,8 +61,8 @@ class PassThroughTest : public ::testing::TestWithParam<bool> {
 TEST_P(PassThroughTest, VectorThroughPassThroughSystem) {
   /// Checks that the number of input ports in the system and in the context
   // are consistent.
-  ASSERT_EQ(1, context_->get_num_input_ports());
-  ASSERT_EQ(1, pass_through_->get_num_input_ports());
+  ASSERT_EQ(1, context_->num_input_ports());
+  ASSERT_EQ(1, pass_through_->num_input_ports());
 
   // Hook input of the expected size.
   if (!is_abstract_) {
@@ -75,7 +75,7 @@ TEST_P(PassThroughTest, VectorThroughPassThroughSystem) {
 
   // Checks that the number of output ports in the system and in the
   // output are consistent.
-  ASSERT_EQ(1, pass_through_->get_num_output_ports());
+  ASSERT_EQ(1, pass_through_->num_output_ports());
 
   Eigen::VectorXd output;
   if (!is_abstract_) {
@@ -89,9 +89,9 @@ TEST_P(PassThroughTest, VectorThroughPassThroughSystem) {
 
 // Tests that PassThrough allocates no state variables in the context_.
 TEST_P(PassThroughTest, PassThroughIsStateless) {
-  EXPECT_EQ(0, context_->get_continuous_state().size());
-  EXPECT_EQ(0, context_->get_abstract_state().size());
-  EXPECT_EQ(0, context_->get_discrete_state().num_groups());
+  EXPECT_EQ(0, context_->num_continuous_states());
+  EXPECT_EQ(0, context_->num_abstract_states());
+  EXPECT_EQ(0, context_->num_discrete_state_groups());
 }
 
 // Tests that PassThrough is direct feedthrough.

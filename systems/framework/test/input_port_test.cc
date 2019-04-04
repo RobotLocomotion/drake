@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 
@@ -143,6 +144,165 @@ GTEST_TEST(InputPortTest, AbstractTest) {
       "InputPort::Eval..: wrong value type int specified; "
       "actual type was std::string "
       "for InputPort.*2.*of.*dummy.*DummySystem.*");
+}
+
+// This struct is for testing the FixValue() variants.
+struct SystemWithInputPorts final : public LeafSystem<double> {
+ public:
+  SystemWithInputPorts()
+      : basic_vec_port{DeclareVectorInputPort("basic_vec_port",
+                                              BasicVector<double>(3))},
+        derived_vec_port{DeclareVectorInputPort(
+            "derived_vec_port",
+            MyVector3d(Eigen::Vector3d(1., 2., 3.)))},
+        int_port{DeclareAbstractInputPort("int_port", Value<int>(5))},
+        double_port{
+            DeclareAbstractInputPort("double_port", Value<double>(1.25))},
+        string_port{DeclareAbstractInputPort("string_port",
+                                             Value<std::string>("hello"))} {}
+  const InputPort<double>& basic_vec_port;
+  const InputPort<double>& derived_vec_port;
+  const InputPort<double>& int_port;
+  const InputPort<double>& double_port;
+  const InputPort<double>& string_port;
+};
+
+// Test the FixValue() method. Note that the conversion of its value argument
+// to an AbstractValue is handled by internal::ValueToAbstractValue which has
+// its own unit tests. Here we need just check the input-port specific
+// behavior for vector and abstract intput ports.
+// Also for sanity, make sure the returned FixedInputPortValue object works,
+// although its API is so awful no one should use it.
+GTEST_TEST(InputPortTest, FixValueTests) {
+  SystemWithInputPorts dut;
+  std::unique_ptr<Context<double>> context = dut.CreateDefaultContext();
+
+  // None of the ports should have a value initially.
+  for (int i = 0; i < dut.num_input_ports(); ++i) {
+    EXPECT_FALSE(dut.get_input_port(i).HasValue(*context));
+  }
+
+  // First pound on the vector ports.
+
+  // An Eigen vector value should be stored as a BasicVector.
+  const Eigen::Vector3d expected_vec(10., 20., 30.);
+  dut.basic_vec_port.FixValue(&*context, expected_vec);
+  EXPECT_EQ(dut.basic_vec_port.Eval(*context), expected_vec);
+  EXPECT_EQ(
+      dut.basic_vec_port.Eval<BasicVector<double>>(*context).CopyToVector(),
+      expected_vec);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.basic_vec_port.Eval<std::string>(*context), std::logic_error,
+      ".*wrong value type.*std::string.*actual type.*BasicVector.*");
+
+  // TODO(sherm1) It would be nice to make this work rather than throw.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.basic_vec_port.Eval<Eigen::Vector3d>(*context), std::logic_error,
+      ".*wrong value type.*Eigen.*actual type.*BasicVector.*");
+
+  // Pass a more complicated Eigen object; should still work.
+  const Eigen::Vector4d long_vec(.25, .5, .75, 1.);
+  dut.basic_vec_port.FixValue(&*context, 2. * long_vec.tail(3));
+  EXPECT_EQ(dut.basic_vec_port.Eval(*context),
+            2. * Eigen::Vector3d(.5, .75, 1.));
+
+  // Should return a runtime error if the size is wrong.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.basic_vec_port.FixValue(&*context, long_vec.segment<2>(1)),
+      std::logic_error, ".*expected.*size=3.*actual.*size=2.*");
+
+  // A BasicVector-derived type should be acceptable to vector ports with
+  // either a BasicVector model or the derived-type model (sizes must match).
+  const MyVector3d my_vector(expected_vec);
+  dut.basic_vec_port.FixValue(&*context, my_vector);
+  dut.derived_vec_port.FixValue(&*context, my_vector);
+
+  // Either way the concrete type should be preserved.
+  EXPECT_EQ(dut.basic_vec_port.Eval<MyVector3d>(*context).CopyToVector(),
+            expected_vec);
+  EXPECT_EQ(dut.derived_vec_port.Eval<MyVector3d>(*context).CopyToVector(),
+            expected_vec);
+
+  // A plain BasicVector should work in the BasicVector-modeled port but
+  // NOT in the MyVector3-modeled port.
+  const BasicVector<double> basic_vector3({7., 8., 9.});
+  dut.basic_vec_port.FixValue(&*context, basic_vector3);  // (2)
+
+  // TODO(sherm1) This shouldn't work, but does. See issue #9669.
+  dut.derived_vec_port.FixValue(&*context, basic_vector3);
+
+  // This is the right type, wrong size for the vector ports.
+  const MyVector2d my_vector2(Eigen::Vector2d{19., 20.});
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.basic_vec_port.FixValue(&*context, my_vector2), std::logic_error,
+      ".*expected.*size=3.*actual.*size=2.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.derived_vec_port.FixValue(&*context, my_vector2), std::logic_error,
+      ".*expected.*size=3.*actual.*size=2.*");
+
+  // Now try the abstract ports.
+
+  dut.int_port.FixValue(&*context, 17);
+  EXPECT_EQ(dut.int_port.Eval<int>(*context), 17);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.int_port.FixValue(&*context, 1.25), std::logic_error,
+      ".*expected value of type int.*actual type was double.*");
+
+  dut.double_port.FixValue(&*context, 1.25);
+  EXPECT_EQ(dut.double_port.Eval<double>(*context), 1.25);
+
+  // Without an explicit template argument, FixValue() won't do numerical
+  // conversions.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.double_port.FixValue(&*context, 4), std::logic_error,
+      ".*expected value of type double.*actual type was int.*");
+
+  // But an explicit template argument can serve as a workaround.
+  dut.double_port.FixValue<double>(&*context, 4);
+  EXPECT_EQ(dut.double_port.Eval<double>(*context), 4.0);
+
+  // Use the string port for a variety of tests:
+  // - the port value can be set as a string or char* constant
+  // - the generic AbstractValue API works
+  // - we can use the returned FixedInputPortValue object to change the value
+
+  // Check the basics.
+  dut.string_port.FixValue(&*context, std::string("dummy"));
+  EXPECT_EQ(dut.string_port.Eval<std::string>(*context), "dummy");
+
+  // Test special case API for C string constant, treated as an std::string.
+  dut.string_port.FixValue(&*context, "a c string");
+  EXPECT_EQ(dut.string_port.Eval<std::string>(*context), "a c string");
+
+  // Test that we can take an AbstractValue or Value<T> object as input.
+  const Value<int> int_value(42);
+  const AbstractValue& int_value_as_abstract = Value<int>(43);
+  dut.int_port.FixValue(&*context, int_value);
+  EXPECT_EQ(dut.int_port.Eval<int>(*context), 42);
+  dut.int_port.FixValue(&*context, int_value_as_abstract);
+  EXPECT_EQ(dut.int_port.Eval<int>(*context), 43);
+
+  // We should only accept the right kind of abstract value.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.string_port.FixValue(&*context, int_value), std::logic_error,
+      ".*expected.*type std::string.*actual type was int.*");
+
+  auto& fixed_value =
+      dut.string_port.FixValue(&*context, Value<std::string>("abstract"));
+  EXPECT_EQ(dut.string_port.Eval<std::string>(*context), "abstract");
+
+  // FixedInputPortValue has a very clunky interface, but let's make sure we
+  // at least got the right object.
+  fixed_value.GetMutableData()->get_mutable_value<std::string>() =
+      "replacement string";
+  EXPECT_EQ(dut.string_port.Eval<std::string>(*context), "replacement string");
+
+  // All of the ports should have values by now.
+  for (int i = 0; i < dut.num_input_ports(); ++i) {
+    EXPECT_TRUE(dut.get_input_port(i).HasValue(*context));
+  }
 }
 
 }  // namespace

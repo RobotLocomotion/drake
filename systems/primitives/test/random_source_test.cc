@@ -43,7 +43,7 @@ void CheckStatistics(
   }
 
   simulator.Initialize();
-  simulator.StepTo(20);
+  simulator.AdvanceTo(20);
 
   const auto& x = logger->data();
 
@@ -186,7 +186,7 @@ GTEST_TEST(RandomSourceTest, AddToDiagramBuilderTest) {
       diagram->GetSubsystemContext(*sys2, *context)));
 
   // Check that the exported input remained exported.
-  EXPECT_EQ(diagram->get_num_input_ports(), 1);
+  EXPECT_EQ(diagram->num_input_ports(), 1);
   EXPECT_EQ(diagram->get_input_port(0).size(), 2);
 
   // Check that the previously connected input remained connected.
@@ -214,7 +214,7 @@ GTEST_TEST(RandomSourceTest, CorrelationTest) {
 
   systems::Simulator<double> simulator(*diagram);
   simulator.Initialize();
-  simulator.StepTo(20);
+  simulator.AdvanceTo(20);
 
   const auto& x1 = log1->data();
   const auto& x2 = log2->data();

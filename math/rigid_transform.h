@@ -5,6 +5,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/math/rotation_matrix.h"
@@ -39,7 +40,19 @@ namespace math {
 /// operator*() methods act like 4x4 matrix multiplication.  Instead, this class
 /// contains a rotation matrix class as well as a 3x1 position vector.  To form
 /// a 4x4 matrix, use GetAsMatrix().  GetAsIsometry() is treated similarly.
+///
 /// @note An isometry is sometimes regarded as synonymous with rigid transform.
+/// The %RigidTransform class has important advantages over Eigen::Isometry.
+/// - %RigidTransform is built on an underlying rigorous 3x3 RotationMatrix
+///   class that has significant functionality for 3D orientation.
+/// - In Debug builds, %RigidTransform requires a valid 3x3 rotation matrix
+///   and a valid (non-NAN) position vector.  Eigen::Isometry does not.
+/// - %RigidTransform catches bugs that are undetected by Eigen::Isometry.
+/// - %RigidTransform has additional functionality and ease-of-use,
+///   resulting in shorter, easier to write, and easier to read code.
+/// - The name Isometry is unfamiliar to many roboticists and dynamicists and
+///   for them Isometry.linear() is (for example) a counter-intuitive method
+///   name to return a rotation matrix.
 ///
 /// @authors Paul Mitiguy (2018) Original author.
 /// @authors Drake team (see https://drake.mit.edu/credits).
@@ -274,6 +287,25 @@ class RigidTransform {
     const RotationMatrix<T> R_BA = R_AB_.inverse();
     return RigidTransform<T>(R_BA, R_BA * (-p_AoBo_A_));
   }
+
+#ifndef DRAKE_DOXYGEN_CXX
+  /// Until #9865 is resolved, this operator temporarily allows users mixing the
+  /// use of %RigidTransform with Isometry3.
+  DRAKE_DEPRECATED("2019-06-26",
+                   "Do not mix RigidTransform with Isometry3. Only use "
+                   "RigidTransform per #9865.")
+  RigidTransform<T> operator*(const Isometry3<T>& isometry3) const {
+    return *this * RigidTransform<T>(isometry3);
+  }
+
+  // DO NOT USE. These methods will soon be deprecated as #9865 is resolved.
+  // They are only provided to support backwards compatibility with
+  // Isometry3 as we migrate Drake's codebase to use RigidTransform. New uses of
+  // Isometry3 are discouraged.
+  operator Isometry3<T>() const { return GetAsIsometry3(); }
+  const Matrix3<T>& linear() const { return R_AB_.matrix(); }
+  Matrix4<T> matrix() const { return GetAsMatrix4(); }
+#endif
 
   /// In-place multiply of `this` %RigidTransform `X_AB` by `other`
   /// %RigidTransform `X_BC`.

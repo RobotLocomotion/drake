@@ -94,7 +94,7 @@ class UpdateContextForSymbolicSystemConstraint {
                   Context<T>* context) const {
     // Time.
     if (time_var_index_.has_value()) {
-      context->set_time(x(time_var_index_.value()));
+      context->SetTime(x(time_var_index_.value()));
     }
     for (const auto& item : context_indices_) {
       switch (item.kind) {
@@ -172,7 +172,7 @@ SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
   VectorX<symbolic::Variable> bound_variables;
   // context_fixed stores the constant values in @p context
   auto context_fixed = system_double_->CreateDefaultContext();
-  context_fixed->set_accuracy(context.get_accuracy());
+  context_fixed->SetAccuracy(context.get_accuracy());
 
   std::vector<ContextIndex> context_indices;
   optional<int> time_var_index{};
@@ -186,7 +186,7 @@ SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
     return {};
   }
   if (constant_val.has_value()) {
-    context_fixed->set_time(constant_val.value());
+    context_fixed->SetTime(constant_val.value());
   } else {
     time_var_index = variable_index.value();
   }
@@ -208,7 +208,7 @@ SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
     }
   }
   // Discrete state.
-  for (int i = 0; i < context.get_num_discrete_state_groups(); ++i) {
+  for (int i = 0; i < context.num_discrete_state_groups(); ++i) {
     for (int j = 0; j < context.get_discrete_state(i).size(); ++j) {
       success = ParseSymbolicVariableOrConstant(
           context.get_discrete_state(i).GetAtIndex(j), &map_var_to_index,
@@ -249,7 +249,7 @@ SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
   // input ports
   // TODO(hongkai.dai): parse fixed values in the input ports, when we can copy
   // the fixed input port value from Context<double> to Context<AutoDiffXd>.
-  for (int i = 0; i < context.get_num_input_ports(); ++i) {
+  for (int i = 0; i < context.num_input_ports(); ++i) {
     if (context.MaybeGetFixedInputPortValue(i) != nullptr) {
       throw std::runtime_error(
           "SystemConstraintAdapter doesn't support system with fixed input "
@@ -258,7 +258,7 @@ SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
   }
 
   // abstract state
-  if (context.get_num_abstract_states() != 0) {
+  if (context.num_abstract_states() != 0) {
     throw std::invalid_argument(
         "SystemConstraintAdapter: cannot handle system with abstract state "
         "using symbolic Context, try SystemConstraintAdapter::Create() "

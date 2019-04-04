@@ -65,16 +65,19 @@ def _add_linter_rules(
     # (Projects that want their own config can place a CPPLINT.cfg in their
     # root package.  Projects that want to use exactly the Drake defaults can
     # alias Drake's config file into their top-level BUILD.bazel file.)
-    cpplint_cfg = ["//:CPPLINT.cfg"] + native.glob([
-        "CPPLINT.cfg",
-        "test/CPPLINT.cfg",
-    ])
+    cpplint_data = list(data)
+    cpplint_cfgs = ["//:CPPLINT.cfg"]
+    for x in native.glob(["CPPLINT.cfg", "test/CPPLINT.cfg"]):
+        cpplint_cfgs.append("//" + native.package_name() + ":" + x)
+    for item in cpplint_cfgs:
+        if item not in cpplint_data:
+            cpplint_data.append(item)
 
     # Google cpplint.
     py_test_isolated(
         name = name + "_cpplint",
         srcs = ["@styleguide//:cpplint"],
-        data = data + cpplint_cfg + source_labels,
+        data = cpplint_data + source_labels,
         args = _EXTENSIONS_ARGS + source_filenames,
         main = "@styleguide//:cpplint/cpplint.py",
         size = size,

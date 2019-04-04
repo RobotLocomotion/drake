@@ -411,9 +411,6 @@ const Isometry3<T>& GeometryState<T>::get_pose_in_world(
 template <typename T>
 const Isometry3<T>& GeometryState<T>::get_pose_in_world(
     GeometryId geometry_id) const {
-  // TODO(SeanCurtis-TRI): This is a BUG! If you pass in the id of an
-  // anchored geometry, this will throw an exception. See
-  // https://github.com/RobotLocomotion/drake/issues/9145.
   FindOrThrow(geometry_id, geometries_, [geometry_id]() {
     return "No world pose available for invalid geometry id: " +
            to_string(geometry_id);
@@ -482,7 +479,7 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
 
   DRAKE_ASSERT(X_PF_.size() == frame_index_to_id_map_.size());
   FrameIndex index(X_PF_.size());
-  X_PF_.emplace_back(frame.pose());
+  X_PF_.emplace_back(Isometry3<double>::Identity());
   X_WF_.emplace_back(Isometry3<double>::Identity());
   frame_index_to_id_map_.push_back(frame_id);
   f_set.insert(frame_id);
@@ -540,7 +537,11 @@ GeometryId GeometryState<T>::RegisterGeometry(
   // compactly distributed. Is there a more robust way to do this?
   DRAKE_ASSERT(geometry_index_to_id_map_.size() == X_WG_.size());
   FrameIndex index(static_cast<int>(X_WG_.size()));
-  X_WG_.push_back(Isometry3<T>::Identity());
+  // NOTE: No implicit conversion from Isometry3<double> to Isometry3<AutoDiff>.
+  // However, we can implicitly assign Matrix<double> to Matrix<AutoDiff>.
+  Isometry3<T> X_WG;
+  X_WG.matrix() = geometry->pose().matrix();
+  X_WG_.push_back(X_WG);
   geometry_index_to_id_map_.push_back(geometry_id);
 
   geometries_.emplace(geometry_id,
@@ -760,8 +761,8 @@ void GeometryState<T>::ExcludeCollisionsWithin(const GeometrySet& set) {
   //   1. the set contains a single frame and no geometries -- geometries *on*
   //      that single frame have already been handled, or
   //   2. there are no frames and a single geometry.
-  if ((set.num_frames_internal() == 1 && set.num_geometries_internal() == 0) ||
-      (set.num_frames_internal() == 0 && set.num_geometries_internal() == 1)) {
+  if ((set.num_frames() == 1 && set.num_geometries() == 0) ||
+      (set.num_frames() == 0 && set.num_geometries() == 1)) {
     return;
   }
 
@@ -799,7 +800,7 @@ void GeometryState<T>::CollectIndices(
   // TODO(SeanCurtis-TRI): Consider expanding this to include Role if it proves
   // that collecting indices for *other* role-related tasks prove necessary.
   std::unordered_set<GeometryIndex>* target;
-  for (auto frame_id : geometry_set.frames_internal()) {
+  for (auto frame_id : geometry_set.frames()) {
     const auto& frame = GetValueOrThrow(frame_id, frames_);
     target = frame.is_world() ? anchored : dynamic;
     for (auto geometry_id : frame.child_geometries()) {
@@ -810,7 +811,7 @@ void GeometryState<T>::CollectIndices(
     }
   }
 
-  for (auto geometry_id : geometry_set.geometries_internal()) {
+  for (auto geometry_id : geometry_set.geometries()) {
     const InternalGeometry* geometry = GetGeometry(geometry_id);
     if (geometry == nullptr) {
       throw std::logic_error(

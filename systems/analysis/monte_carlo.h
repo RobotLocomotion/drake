@@ -51,7 +51,7 @@ typedef std::function<double(const System<double>& system,
  * @code
  *   simulator = make_simulator(generator)
  *   simulator.get_system().SetRandomContext(generator)
- *   simulator.StepTo(final_time)
+ *   simulator.AdvanceTo(final_time)
  *   return output(simulator.get_context())
  * @endcode
  *

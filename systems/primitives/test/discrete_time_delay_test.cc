@@ -28,8 +28,36 @@ namespace {
 const double kMachineTol = 10 * std::numeric_limits<double>::epsilon();
 
 const double kUpdatePeriod = 0.1;
-const double kBuffer = 5;  // Number of timesteps the signal is delayed.
+const int kBuffer = 5;  // Number of timesteps the signal is delayed.
 const int kLength = 3;  // Length of vector passing through the block.
+
+// A simple type containing a vector, to simplify checking expected values for
+// a vector-valued DiscreteTimeDelay (`BasicVector`) and an abstract-valued
+// DiscreteTimeDelay (`Value<SimpleAbstractType>`).
+class SimpleAbstractType {
+ public:
+  explicit SimpleAbstractType(const Eigen::Vector3d& value)
+      : value_(value) {}
+  const Eigen::Vector3d& value() const { return value_; }
+ private:
+  Eigen::Vector3d value_;
+};
+
+Eigen::VectorXd ConcatenateAbstractBufferToVector(Context<double>* context) {
+  // Preallocate a properly sized vector so it can be overwritten one buffer
+  // entry at a time without memory issues.
+  Eigen::VectorXd value =
+      Eigen::VectorXd::Constant(kLength * (kBuffer + 1), -1);
+  const int& oldest_index =
+      context->template get_abstract_state<int>(kBuffer + 1);
+  for (int ii = 0; ii < kBuffer + 1; ii++) {
+    const SimpleAbstractType& next_value =
+        context->get_abstract_state<SimpleAbstractType>((oldest_index + ii) %
+                                                        (kBuffer + 1));
+    value.segment(ii * kLength, kLength) = next_value.value();
+  }
+  return value;
+}
 
 class DiscreteTimeDelayTest : public ::testing::TestWithParam<bool> {
  protected:
@@ -38,11 +66,21 @@ class DiscreteTimeDelayTest : public ::testing::TestWithParam<bool> {
     state_value_override_ << 1.0, 3.14, 2.18;
     input_value_ << 1.0, 1.0, 3.0;
 
-    delay_ = std::make_unique<DiscreteTimeDelay<double>>(
-        kUpdatePeriod, kBuffer, kLength);
+    if (!is_abstract_) {
+      delay_ = std::make_unique<DiscreteTimeDelay<double>>(
+          kUpdatePeriod, kBuffer, kLength);
+    } else {
+      delay_ = std::make_unique<DiscreteTimeDelay<double>>(
+          kUpdatePeriod, kBuffer,
+          Value<SimpleAbstractType>(Eigen::Vector3d::Zero()));
+    }
     context_ = delay_->CreateDefaultContext();
-    context_->FixInputPort(
-        0, std::make_unique<BasicVector<double>>(input_value_));
+    if (!is_abstract_) {
+      delay_->get_input_port().FixValue(context_.get(), input_value_);
+    } else {
+      delay_->get_input_port().FixValue(context_.get(),
+                                        SimpleAbstractType(input_value_));
+    }
   }
 
   std::unique_ptr<DiscreteTimeDelay<double>> delay_;
@@ -56,10 +94,10 @@ class DiscreteTimeDelayTest : public ::testing::TestWithParam<bool> {
 // Tests that the time delay has one input, one output and no direct
 // feedthrough.
 TEST_P(DiscreteTimeDelayTest, Topology) {
-  EXPECT_EQ(1, delay_->get_num_input_ports());
-  EXPECT_EQ(1, context_->get_num_input_ports());
+  EXPECT_EQ(1, delay_->num_input_ports());
+  EXPECT_EQ(1, context_->num_input_ports());
 
-  EXPECT_EQ(1, delay_->get_num_output_ports());
+  EXPECT_EQ(1, delay_->num_output_ports());
 
   EXPECT_FALSE(delay_->HasAnyDirectFeedthrough());
 }
@@ -69,31 +107,53 @@ TEST_P(DiscreteTimeDelayTest, Topology) {
 TEST_P(DiscreteTimeDelayTest, InitialState) {
   const Eigen::VectorXd value_expected =
       Eigen::VectorXd::Zero(kLength * (kBuffer + 1));
-  const BasicVector<double>& xd = context_->get_discrete_state(0);
-  EXPECT_EQ(kLength * (kBuffer + 1), xd.size());
-  Eigen::VectorXd value = xd.CopyToVector();
+  Eigen::VectorXd value;
+  if (!is_abstract_) {
+    const BasicVector<double>& xd = context_->get_discrete_state(0);
+    EXPECT_EQ(kLength * (kBuffer + 1), xd.size());
+    value = xd.CopyToVector();
+  } else {
+    value = ConcatenateAbstractBufferToVector(context_.get());
+  }
   EXPECT_EQ(value_expected, value);
 }
 
-// Tests that the output is the delayed input (head of the state vector.
+// Tests that the output is the delayed input.
 TEST_P(DiscreteTimeDelayTest, Output) {
   const Eigen::Vector3d output_expected = state_value_override_;
-  BasicVector<double>& xd = context_->get_mutable_discrete_state(0);
-  xd.get_mutable_value().head(kLength) = output_expected;
-  Eigen::Vector3d output = delay_->get_output_port().Eval(*context_);
+  Eigen::Vector3d output;
+  if (!is_abstract_) {
+    BasicVector<double>& xd = context_->get_mutable_discrete_state(0);
+    xd.get_mutable_value().head(kLength) = output_expected;
+    output = delay_->get_output_port().Eval(*context_);
+  } else {
+    const int& oldest_index =
+        context_->template get_abstract_state<int>(kBuffer + 1);
+    SimpleAbstractType& next_value =
+        context_->get_mutable_abstract_state<SimpleAbstractType>(oldest_index);
+    next_value = SimpleAbstractType(state_value_override_);
+    output = delay_->get_output_port()
+                 .template Eval<SimpleAbstractType>(*context_)
+                 .value();
+  }
   EXPECT_EQ(output_expected, output);
 }
 
-// Tests that SaveInputVectorToBuffer updates the state.
+// Tests that SaveInputToBuffer updates the state.
 TEST_P(DiscreteTimeDelayTest, Update) {
   // Emulate an update event.
-  delay_->SaveInputToBuffer(&*context_);
+  delay_->SaveInputToBuffer(context_.get());
   Eigen::VectorXd value_expected =
       Eigen::VectorXd::Zero(kLength * (kBuffer + 1));
   value_expected.tail(kLength) = input_value_;
+  Eigen::VectorXd value;
   // Check that the state has been updated to the input.
-  const BasicVector<double>& xd = context_->get_discrete_state(0);
-  Eigen::VectorXd value = xd.CopyToVector();
+  if (!is_abstract_) {
+    const BasicVector<double>& xd = context_->get_discrete_state(0);
+    value = xd.CopyToVector();
+  } else {
+    value = ConcatenateAbstractBufferToVector(context_.get());
+  }
   EXPECT_EQ(value_expected, value);
 }
 
@@ -106,7 +166,8 @@ TEST_P(DiscreteTimeDelayTest, ToSymbolic) {
 }
 
 // Instantiate parameterized test cases for is_abstract_ = {false, true}
-INSTANTIATE_TEST_CASE_P(test, DiscreteTimeDelayTest, ::testing::Values(false));
+INSTANTIATE_TEST_CASE_P(test, DiscreteTimeDelayTest,
+                        ::testing::Values(false, true));
 
 // Create a simple Diagram to simulate:
 //    +----------------------------------------------------------+
@@ -157,20 +218,20 @@ GTEST_TEST(DiscreteTimeDelayTest, DiscreteSimulation) {
   simulator.Initialize();
   EXPECT_EQ(0., eval());  // No update should have occurred yet.
 
-  simulator.StepTo(0);  // Force an update at 0.
+  simulator.AdvancePendingEvents();  // Force an update at 0.
   EXPECT_EQ(0, eval());  // Should output initial value.
 
   // Should output initial value until delay has passed.
-  simulator.StepTo(0.49);
+  simulator.AdvanceTo(0.49);
   EXPECT_EQ(0, eval());
 
   // Should start outputing delayed input.
-  simulator.StepTo(0.5);
-  simulator.StepTo(0.5);
+  simulator.AdvanceTo(0.5);
+  simulator.AdvancePendingEvents();
   EXPECT_NEAR(count_eval(0), eval(), kMachineTol);
 
   // Last sample at 0.9, will output value from 0.4.
-  simulator.StepTo(0.91);
+  simulator.AdvanceTo(0.91);
   EXPECT_NEAR(count_eval(0.4), eval(), kMachineTol);
 }
 
@@ -220,20 +281,20 @@ GTEST_TEST(DiscreteTimeDelayTest, ContinuousSimulation) {
   simulator.Initialize();
   EXPECT_EQ(0., eval());  // No update should have occurred yet.
 
-  simulator.StepTo(0);  // Force an update at 0.
+  simulator.AdvancePendingEvents();  // Force an update at 0.
   EXPECT_EQ(0, eval());  // Should output initial value.
 
   // Should output initial value until delay has passed.
-  simulator.StepTo(0.49);
+  simulator.AdvanceTo(0.49);
   EXPECT_EQ(0, eval());
 
   // Should start outputing delayed input.
-  simulator.StepTo(0.5);
-  simulator.StepTo(0.5);
+  simulator.AdvanceTo(0.5);
+  simulator.AdvancePendingEvents();
   EXPECT_NEAR(sine_eval(0), eval(), kMachineTol);
 
   // Last sample at 0.9, will output value from 0.4.
-  simulator.StepTo(0.91);
+  simulator.AdvanceTo(0.91);
   EXPECT_NEAR(sine_eval(0.4), eval(), kMachineTol);
 }
 
@@ -271,7 +332,7 @@ TEST_F(SymbolicDiscreteTimeDelayTest, Update) {
   for (int ii = 0; ii < (kBuffer + 1); ii++) {
     EXPECT_EQ("x" + std::to_string(ii), xd[ii].to_string());
   }
-  delay_->SaveInputToBuffer(&*context_);
+  delay_->SaveInputToBuffer(context_.get());
   for (int ii = 0; ii < kBuffer; ii++) {
     EXPECT_EQ("x" + std::to_string(ii + 1), xd[ii].to_string());
   }

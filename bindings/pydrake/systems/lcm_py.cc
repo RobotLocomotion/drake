@@ -157,7 +157,7 @@ PYBIND11_MODULE(lcm, m) {
               self->set_publish_period(period);
 #pragma GCC diagnostic pop
             },
-            py::arg("period"), cls_doc.set_publish_period.doc);
+            py::arg("period"), cls_doc.set_publish_period.doc_deprecated);
   }
 
   {
@@ -167,13 +167,23 @@ PYBIND11_MODULE(lcm, m) {
         .def(py::init<const std::string&, std::unique_ptr<SerializerInterface>,
                  DrakeLcmInterface*>(),
             py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
+            // Keep alive: `self` keeps `SerializerInterface` alive.
+            py::keep_alive<1, 3>(),
             // Keep alive: `self` keeps `DrakeLcmInterface` alive.
-            py::keep_alive<1, 3>(), doc.LcmSubscriberSystem.ctor.doc)
-        .def("CopyLatestMessageInto", &Class::CopyLatestMessageInto,
-            py::arg("state"), cls_doc.CopyLatestMessageInto.doc)
+            py::keep_alive<1, 4>(), doc.LcmSubscriberSystem.ctor.doc)
+        .def("CopyLatestMessageInto",
+            [](Class* self, State<double>* state) {
+              WarnDeprecated(
+                  "This unit-test-only method is being made non-public.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->CopyLatestMessageInto(state);
+#pragma GCC diagnostic pop
+            },
+            py::arg("state"), cls_doc.CopyLatestMessageInto.doc_deprecated)
         .def("WaitForMessage", &Class::WaitForMessage,
             py::arg("old_message_count"), py::arg("message") = nullptr,
-            cls_doc.WaitForMessage.doc);
+            py::arg("timeout") = -1, cls_doc.WaitForMessage.doc);
   }
 
   {

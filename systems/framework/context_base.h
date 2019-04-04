@@ -90,6 +90,31 @@ class ContextBase : public internal::ContextMessageInterface {
     PropagateCachingChange(*this, &Cache::SetAllEntriesOutOfDate);
   }
 
+  /** (Advanced) Freezes the cache at its current contents, preventing any
+  further cache updates. When frozen, accessing an out-of-date cache entry
+  causes an exception to be throw. This is applied recursively to this
+  %Context and all its subcontexts, but _not_ to its parent or siblings so
+  it is most useful when called on the root %Context. If the cache was already
+  frozen this method does nothing but waste a little time. */
+  void FreezeCache() const {
+    PropagateCachingChange(*this, &Cache::freeze_cache);
+  }
+
+  /** (Advanced) Unfreezes the cache if it was previously frozen. This is
+  applied recursively to this %Context and all its subcontexts, but _not_
+  to its parent or siblings. If the cache was not frozen, this does nothing
+  but waste a little time. */
+  void UnfreezeCache() const {
+    PropagateCachingChange(*this, &Cache::unfreeze_cache);
+  }
+
+  /** (Advanced) Reports whether this %Context's cache is currently frozen.
+  This checks only locally; it is possible that parent, child, or sibling
+  subcontext caches are in a different state than this one. */
+  bool is_cache_frozen() const final {
+    return get_cache().is_cache_frozen();
+  }
+
   /** Returns the local name of the subsystem for which this is the Context.
   This is intended primarily for error messages and logging.
   @see SystemBase::GetSystemName() for details.
@@ -147,25 +172,25 @@ class ContextBase : public internal::ContextMessageInterface {
   }
 
   /** Returns the number of input ports in this context. */
-  int get_num_input_ports() const {
+  int num_input_ports() const {
     DRAKE_ASSERT(input_port_tickets_.size() == input_port_values_.size());
     return static_cast<int>(input_port_tickets_.size());
   }
 
   /** Returns the number of output ports represented in this context. */
-  int get_num_output_ports() const {
+  int num_output_ports() const {
     return static_cast<int>(output_port_tickets_.size());
   }
 
   /** Returns the dependency ticket associated with a particular input port. */
   DependencyTicket input_port_ticket(InputPortIndex port_num) {
-    DRAKE_DEMAND(port_num < get_num_input_ports());
+    DRAKE_DEMAND(port_num < num_input_ports());
     return input_port_tickets_[port_num];
   }
 
   /** Returns the dependency ticket associated with a particular output port. */
   DependencyTicket output_port_ticket(OutputPortIndex port_num) {
-    DRAKE_DEMAND(port_num < get_num_output_ports());
+    DRAKE_DEMAND(port_num < num_output_ports());
     return output_port_tickets_[port_num];
   }
 
@@ -209,7 +234,7 @@ class ContextBase : public internal::ContextMessageInterface {
   fixed, otherwise nullptr.
   @pre `index` selects an existing input port of this Context. */
   const FixedInputPortValue* MaybeGetFixedInputPortValue(int index) const {
-    DRAKE_DEMAND(0 <= index && index < get_num_input_ports());
+    DRAKE_DEMAND(0 <= index && index < num_input_ports());
     return input_port_values_[index].get();
   }
 
@@ -217,7 +242,7 @@ class ContextBase : public internal::ContextMessageInterface {
   is fixed, otherwise nullptr.
   @pre `index` selects an existing input port of this Context. */
   FixedInputPortValue* MaybeGetMutableFixedInputPortValue(int index) {
-    DRAKE_DEMAND(0 <= index && index < get_num_input_ports());
+    DRAKE_DEMAND(0 <= index && index < num_input_ports());
     return input_port_values_[index].get_mutable();
   }
 
@@ -236,6 +261,13 @@ class ContextBase : public internal::ContextMessageInterface {
     DRAKE_ASSERT(context->current_change_event_ >= 0);
     return ++context->current_change_event_;
   }
+
+#ifndef DRAKE_DOXYGEN_CXX
+  DRAKE_DEPRECATED("2019-07-01", "Use num_input_ports() instead.")
+  int get_num_input_ports() const { return num_input_ports(); }
+  DRAKE_DEPRECATED("2019-07-01", "Use num_output_ports() instead.")
+  int get_num_output_ports() const { return num_output_ports(); }
+#endif
 
  protected:
   /** Default constructor creates an empty ContextBase but initializes all the

@@ -420,6 +420,37 @@ TEST_F(SymbolicSubstitutionTest, UninterpretedFunction) {
                uninterpreted_function("uf2", {3.0, 4.0}));
 }
 
+TEST_F(SymbolicSubstitutionTest, MatrixWithSubstitution) {
+  Eigen::Matrix<Expression, 2, 2> m;
+  // clang-format off
+  // | x + y + z    x * y * z |
+  // | x / y / z    xʸ * z    |
+  m << x_ + y_ + z_, x_ * y_ * z_,
+       x_ / y_ * z_, pow(x_, y_) * z_;
+  // clang-format on
+  const Substitution subst{{var_x_, 1.0}, {var_y_, 2.0}};
+  const auto substituted{Substitute(m, subst)};
+  EXPECT_PRED2(ExprEqual, substituted(0, 0), m(0, 0).Substitute(subst));
+  EXPECT_PRED2(ExprEqual, substituted(1, 0), m(1, 0).Substitute(subst));
+  EXPECT_PRED2(ExprEqual, substituted(0, 1), m(0, 1).Substitute(subst));
+  EXPECT_PRED2(ExprEqual, substituted(1, 1), m(1, 1).Substitute(subst));
+}
+
+TEST_F(SymbolicSubstitutionTest, MatrixWithVariableAndExpression) {
+  Eigen::Matrix<Expression, 2, 2> m;
+  // clang-format off
+  // | x + y + z    x * y * z |
+  // | x / y / z    xʸ * z    |
+  m << x_ + y_ + z_, x_ * y_ * z_,
+       x_ / y_ * z_, pow(x_, y_) * z_;
+  // clang-format on
+  const auto substituted{Substitute(m, var_x_, 3.0)};
+  EXPECT_PRED2(ExprEqual, substituted(0, 0), m(0, 0).Substitute(var_x_, 3.0));
+  EXPECT_PRED2(ExprEqual, substituted(1, 0), m(1, 0).Substitute(var_x_, 3.0));
+  EXPECT_PRED2(ExprEqual, substituted(0, 1), m(0, 1).Substitute(var_x_, 3.0));
+  EXPECT_PRED2(ExprEqual, substituted(1, 1), m(1, 1).Substitute(var_x_, 3.0));
+}
+
 class ForallFormulaSubstitutionTest : public SymbolicSubstitutionTest {
  protected:
   const Expression e_{x_ + y_ + z_};

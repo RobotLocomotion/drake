@@ -42,8 +42,7 @@ KukaIiwaModelBuilder<T>::AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
   const math::RigidTransformd X_BBa;  // Identity transform.
 
   return model->template AddJoint<RevoluteJoint>(joint_name,
-                              A, X_AAb.GetAsIsometry3(),
-                              B, X_BBa.GetAsIsometry3(), revolute_unit_vector);
+                              A, X_AAb, B, X_BBa, revolute_unit_vector);
 }
 
 template <typename T>

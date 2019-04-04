@@ -7,9 +7,7 @@
 
 
 //------------------------------------------------------------------------------
-/** @addtogroup multibody Multibody Dynamics
-@{
-    @ingroup algorithms
+/** @addtogroup multibody_notation
 
 Translating from the mathematics of multibody mechanics to correct code is a
 difficult process and requires careful discipline to ensure that the resulting
@@ -19,7 +17,8 @@ these observations:
 - Good abstractions lead to good code.
 - You can't reason properly about spatial algorithms if you treat translation
 and rotation separately.
-- Coded algorithms should be comparable line-by-line against the typeset
+- Disciplined notation is essential to prevent coordinate frame errors.
+- Coded algorithms should be comparable equation-by-equation against the typeset
 literature sources from which they are derived.
 - We need a shared, unambiguous notation in code that can employ programmers'
 awesome pattern-matching skills to make errors visible.
@@ -34,37 +33,6 @@ source code used to generate it (for example, ASCII drawings instead of image
 files, simple Markdown tables rather than fancy-but-unreadable html ones).
 However, much of this can be useful to users of the Drake API also so it
 is included in the external documentation.
-
-@warning Drake is under development and these concepts have not yet been
-adopted consistently throughout the code. New code uses these concepts and
-older code will be retrofitted over time. The documentation here applies to
-the new @ref drake::multibody::MultibodyTree "MultibodyTree "/
-@ref drake::multibody::MultibodyPlant "MultibodyPlant"
-family of classes; there are some differences from the earlier `RigidBodyTree`
-family.
-
-<em><b>Developers</b>: you can link directly to specific discussion topics here
-from your Doxygen comments; instructions are at the top of the source file used
-to generate them.</em>
-
-Next topic: @ref multibody_notation
-
-  @defgroup multibody_notation Terminology and Notation
-  @defgroup multibody_spatial_algebra Spatial Algebra
-  @defgroup constraint_overview Multibody dynamics constraints
-@}
-*/
-
-
-//------------------------------------------------------------------------------
-/** @addtogroup multibody_notation
-@ingroup multibody
-
-Drake uses consistent terminology and notation for multibody mechanics
-- for clear communication among Drake programmers and users,
-- to reduce the likelihood of errors in translating mathematical algorithms
-  into code, and
-- to facilitate verification of the code's correctness.
 
 Where possible, we refer to published literature to supplement our code
 documentation. That literature can provide clear, concise, and unambiguous
@@ -104,6 +72,10 @@ decide to format a complicated equation in LaTeX, where it will appear in
 a typeset font like @f$A@f$ (which appears in the source as @c \@f\$A\@f\$),
 but then refer in the text to A (source: just @c A) using the
 default font that is much easier to write and to read in the source.
+
+<em><b>Developers</b>: you can link directly to specific discussion topics here
+from your Doxygen comments; instructions are at the top of the source file used
+to generate them.</em>
 
 Next topic: @ref multibody_notation_basics
 */
@@ -439,8 +411,8 @@ Next topic: @ref multibody_spatial_algebra
 */
 
 //------------------------------------------------------------------------------
-/** @addtogroup multibody_spatial_algebra
-@ingroup multibody
+/** @defgroup multibody_spatial_algebra Spatial Algebra
+@ingroup multibody_notation
 
 Multibody dynamics involves both rotational and translational quantities, for
 motion, forces, and mass properties. It is much more effective to group

@@ -114,9 +114,10 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
       default_object->ComputeSignedDistancePairwiseClosestPoints(),
       std::logic_error,
       "The development SceneGraph only supports render queries");
+  // I don't need a valid name for the renderer, because we'll never get that
+  // far.
   const render::DepthCameraProperties camera_properties(320, 240, M_PI_4,
-                                                        render::Fidelity::kLow,
-                                                        0.1, 1.0);
+                                                        "some_name", 0.1, 1.0);
   const FrameId parent_frame = FrameId::get_new_id();
   const Isometry3<double> X_PC = Isometry3<double>::Identity();
   systems::sensors::ImageRgba8U color_image;
@@ -148,7 +149,7 @@ GTEST_TEST(QueryObjectInspectTest, CreateValidInspector) {
   SourceId source_id = scene_graph.RegisterSource("source");
   auto identity = Isometry3<double>::Identity();
   FrameId frame_id =
-      scene_graph.RegisterFrame(source_id, GeometryFrame("frame", identity));
+      scene_graph.RegisterFrame(source_id, GeometryFrame("frame"));
   GeometryId geometry_id = scene_graph.RegisterGeometry(
       source_id, frame_id, make_unique<GeometryInstance>(
                                identity, make_unique<Sphere>(1.0), "sphere"));

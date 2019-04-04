@@ -264,8 +264,8 @@ class DynamicBicycleCarTest : public ::testing::Test {
 
 TEST_F(DynamicBicycleCarTest, Construction) {
   // Test that the system has one input port and one output port.
-  EXPECT_EQ(1, test_car_->get_num_input_ports());
-  EXPECT_EQ(1, test_car_->get_num_output_ports());
+  EXPECT_EQ(1, test_car_->num_input_ports());
+  EXPECT_EQ(1, test_car_->num_output_ports());
 
   // Test if the input and output ports are vectors of Eigen scalars.
   EXPECT_EQ(systems::kVectorValued,

@@ -129,7 +129,7 @@ int do_main() {
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
-  simulator.StepTo(simulation_time);
+  simulator.AdvanceTo(simulation_time);
 
   // Some sanity checks:
   if (FLAGS_integration_scheme == "semi_explicit_euler") {

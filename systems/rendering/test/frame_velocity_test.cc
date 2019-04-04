@@ -43,7 +43,8 @@ GTEST_TEST(FrameVelocityTest, CopyAndAssign) {
   vec[2] = 42;
 
   // Self-assignment.
-  vec = vec;
+  const auto& other = vec;
+  vec = other;
   EXPECT_EQ(42, vec[2]);
 
   // Copying.

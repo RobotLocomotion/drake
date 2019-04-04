@@ -44,146 +44,6 @@ namespace solvers {
 
 class SolverInterface;
 
-/** @addtogroup solvers
- * @{
- * Drake wraps a number of commercial solvers (+ a few custom solvers) to
- * provide a common interface for convex optimization, mixed-integer convex
- * optimization, and other non-convex mathematical programs.
- *
- * The MathematicalProgram class handles the coordination of decision variables,
- * objectives, and constraints.  The MathematicalProgram::Solve() method
- * reflects on the accumulated objectives and constraints and will dispatch to
- * the most appropriate solver.  Alternatively, one can invoke specific solver
- * by instantiating its SolverInterface and passing the MathematicalProgram
- * directly to the SolverInterface::Solve() method.
- *
- * Our solver coverage still has many gaps, but is under active development.
- *
- * <b>Closed-form solutions</b>
- *
- * The LinearSystemSolver and EqualityConstrainedQPSolver classes provide
- * efficient closed-form solutions to these special cases.
- *
- * <b>Convex Optimization</b>
- *
- * <table>
- * <tr>
- *   <td>Solver</td>
- *   <td><a href="https://en.wikipedia.org/wiki/Linear_programming">LP</a></td>
- *   <td><a href="https://en.wikipedia.org/wiki/Quadratic_programming">
- *     QP</a></td>
- *   <td><a href="https://en.wikipedia.org/wiki/Second-order_cone_programming">
- *     SOCP</a></td>
- *   <td><a href="https://en.wikipedia.org/wiki/Semidefinite_programming">
- *     SDP</a></td>
- *   <td><a href="https://en.wikipedia.org/wiki/Sum-of-squares_optimization">
- *     SOS</a></td>
- * </tr>
- * <tr><td>&dagger; <a href="https://www.gurobi.com/products/gurobi-optimizer">
- *    Gurobi</a></td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td></td>
- *    <td></td>
- *  </tr>
- * <tr><td>&dagger; <a href="https://www.mosek.com/products/mosek">
- *    Mosek</a></td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- * </tr>
- * <tr><td> <a href="https://github.com/cvxgrp/scs">
- *    SCS</a></td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- * </tr>
- * <tr><td> <a href="https://github.com/oxfordcontrol/osqp">
- *    OSQP</a></td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td></td>
- *    <td></td>
- *    <td></td>
- * </tr>
- * </table>
- *
- * <b>Mixed-Integer Convex Optimization</b>
- *
- * <table>
- * <tr>
- *   <td>Solver</td>
- *   <td>MILP</a></td>
- *   <td>MIQP</a></td>
- *   <td>MISOCP</a></td>
- *   <td>MISDP</a></td>
- * </tr>
- * <tr><td>&dagger; <a href="https://www.gurobi.com/products/gurobi-optimizer">
- *    Gurobi</a></td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td></td>
- *  </tr>
- * <tr><td>&dagger; <a href="https://www.mosek.com/products/mosek">
- *    Mosek</a></td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td align="center">&diams;</td>
- *    <td></td>
- * </tr>
- * </table>
- *
- * <b>Nonconvex Programming</b>
- *
- * <table>
- * <tr>
- *   <td>Solver</td>
- *   <td><a href="https://en.wikipedia.org/wiki/Nonlinear_programming">
- *     Nonlinear Program</a></td>
- *   <td><a href="https://en.wikipedia.org/wiki/Linear_complementarity_problem">
- *   LCP</a></td>
- *   <td><a href="https://en.wikipedia.org/wiki/Satisfiability_modulo_theories">
- *     SMT</a></td>
- * </tr>
- * <tr><td>&dagger;
- *   <a href="http://www.sbsi-sol-optimize.com/asp/sol_product_snopt.htm">
- *    SNOPT</a></td></tr>
- *    <td align="center">&diams;</td>
- *    <td></td>
- *    <td></td>
- * <tr><td><a href="https://projects.coin-or.org/Ipopt">Ipopt</a></td></tr>
- *    <td align="center">&diams;</td>
- *    <td></td>
- *    <td></td>
- * <tr><td><a href="http://ab-initio.mit.edu/wiki/index.php/NLopt">
- *    NLopt</a></td></tr>
- *    <td align="center">&diams;</td>
- *    <td></td>
- *    <td></td>
- * <tr><td><a href="https://github.com/PositronicsLab/Moby">
- *    Moby LCP</a></td>
- *    <td></td>
- *    <td align="center">&diams;</td>
- *    <td></td>
- * <tr><td><a href="https://dreal.github.io/">dReal</a></td>
- *    <td></td>
- *    <td></td>
- *    <td align="center">&diams;</td>
- * </tr>
- * </table>
- *
- * &dagger; indicates that this is a commercial solver which requires a license
- * (note that some have free licenses for academics).
- * @}
- */
-class MathematicalProgram;
-
 template <int...>
 struct NewVariableNames {};
 /**
@@ -280,8 +140,8 @@ struct assert_if_is_constraint {
 
 /**
  * MathematicalProgram stores the decision variables, the constraints and costs
- * of an optimization problem. The user can solve the problem by calling Solve()
- * function, and obtain the results of the optimization.
+ * of an optimization problem. The user can solve the problem by calling
+ * solvers::Solve() function, and obtain the results of the optimization.
  *
  * @ingroup solvers
  */
@@ -2342,8 +2202,8 @@ class MathematicalProgram {
   template <typename DerivedA, typename DerivedB>
   void SetInitialGuess(const Eigen::MatrixBase<DerivedA>& decision_variable_mat,
                        const Eigen::MatrixBase<DerivedB>& x0) {
-    DRAKE_ASSERT(decision_variable_mat.rows() == x0.rows());
-    DRAKE_ASSERT(decision_variable_mat.cols() == x0.cols());
+    DRAKE_DEMAND(decision_variable_mat.rows() == x0.rows());
+    DRAKE_DEMAND(decision_variable_mat.cols() == x0.cols());
     for (int i = 0; i < decision_variable_mat.rows(); ++i) {
       for (int j = 0; j < decision_variable_mat.cols(); ++j) {
         SetInitialGuess(decision_variable_mat(i, j), x0(i, j));

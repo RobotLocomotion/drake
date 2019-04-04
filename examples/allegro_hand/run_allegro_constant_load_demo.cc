@@ -73,8 +73,8 @@ void DoMain() {
 
   // Weld the hand to the world frame
   const auto& joint_hand_root = plant.GetBodyByName("hand_root");
-  plant.AddJoint<multibody::WeldJoint>("weld_hand", plant.world_body(), {},
-      joint_hand_root, {}, Isometry3<double>::Identity());
+  plant.AddJoint<multibody::WeldJoint>("weld_hand", plant.world_body(), nullopt,
+      joint_hand_root, nullopt, Isometry3<double>::Identity());
 
   // Add gravity, if needed
   if (FLAGS_add_gravity) {
@@ -131,7 +131,7 @@ void DoMain() {
   simulator.set_publish_every_time_step(true);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
-  simulator.StepTo(FLAGS_simulation_time);
+  simulator.AdvanceTo(FLAGS_simulation_time);
 }
 
 }  // namespace allegro_hand

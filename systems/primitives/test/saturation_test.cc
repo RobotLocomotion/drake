@@ -17,21 +17,15 @@ void TestInputAndOutput(const Saturation<T>& saturation_system,
                         std::unique_ptr<Context<T>> context,
                         const VectorX<T>& input_vector,
                         const VectorX<T>& expected_output) {
-  const int port_size = saturation_system.get_size();
-
   // Verifies that Saturation allocates no state variables in the context.
-  EXPECT_EQ(context->get_continuous_state().size(), 0);
-  auto input = std::make_unique<BasicVector<T>>(port_size);
-
-  input->get_mutable_value() << input_vector;
+  EXPECT_EQ(context->num_continuous_states(), 0);
 
   // Hook input of the expected size.
-  context->FixInputPort(saturation_system.get_input_port().get_index(),
-                        std::move(input));
+  saturation_system.get_input_port().FixValue(context.get(), input_vector);
 
   // Checks that the number of output ports in the Saturation system and the
   // SystemOutput are consistent.
-  ASSERT_EQ(saturation_system.get_num_output_ports(), 1);
+  ASSERT_EQ(saturation_system.num_output_ports(), 1);
   EXPECT_EQ(saturation_system.get_output_port().Eval(*context),
             expected_output);
 }
@@ -44,8 +38,8 @@ void TestConstantSaturation(const Saturation<T>& saturation_system,
 
   // Checks that the number of input ports in the Saturation system and the
   // Context are consistent.
-  ASSERT_EQ(saturation_system.get_num_input_ports(), 1);
-  ASSERT_EQ(context->get_num_input_ports(), 1);
+  ASSERT_EQ(saturation_system.num_input_ports(), 1);
+  ASSERT_EQ(context->num_input_ports(), 1);
 
   TestInputAndOutput<T>(saturation_system, std::move(context), input_vector,
                         expected_output);
@@ -59,28 +53,22 @@ void TestVariableSaturation(const Saturation<T>& saturation_system,
                             const VectorX<T>& expected_output) {
   auto context = saturation_system.CreateDefaultContext();
 
-  const int port_size = saturation_system.get_size();
-
   // Checks that the number of input ports in the Saturation system and the
   // Context are consistent.
-  ASSERT_EQ(saturation_system.get_num_input_ports(), 3);
-  ASSERT_EQ(context->get_num_input_ports(), 3);
+  ASSERT_EQ(saturation_system.num_input_ports(), 3);
+  ASSERT_EQ(context->num_input_ports(), 3);
 
   // Applies the min and max values as inputs to the context.
   if (min_value_vector.size() > 0) {
-    auto min_value = std::make_unique<BasicVector<T>>(port_size);
-    min_value->get_mutable_value() << min_value_vector;
     // Hook min value of the expected size.
-    context->FixInputPort(saturation_system.get_min_value_port().get_index(),
-                          std::move(min_value));
+    saturation_system.get_min_value_port().FixValue(context.get(),
+                                                    min_value_vector);
   }
 
   if (max_value_vector.size()) {
-    auto max_value = std::make_unique<BasicVector<T>>(port_size);
-    max_value->get_mutable_value() << max_value_vector;
     // Hook max value of the expected size.
-    context->FixInputPort(saturation_system.get_max_value_port().get_index(),
-                          std::move(max_value));
+    saturation_system.get_max_value_port().FixValue(context.get(),
+                                                    max_value_vector);
   }
 
   TestInputAndOutput<T>(saturation_system, std::move(context), input_vector,

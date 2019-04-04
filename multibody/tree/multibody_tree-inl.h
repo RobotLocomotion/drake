@@ -317,8 +317,8 @@ template <typename T>
 template<template<typename> class JointType, typename... Args>
 const JointType<T>& MultibodyTree<T>::AddJoint(
     const std::string& name,
-    const Body<T>& parent, const optional<Isometry3<double>>& X_PF,
-    const Body<T>& child, const optional<Isometry3<double>>& X_BM,
+    const Body<T>& parent, const optional<math::RigidTransform<double>>& X_PF,
+    const Body<T>& child, const optional<math::RigidTransform<double>>& X_BM,
     Args&&... args) {
   static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
                 "JointType<T> must be a sub-class of Joint<T>.");
@@ -580,7 +580,7 @@ Eigen::VectorBlock<const VectorX<T>>
 MultibodyTree<T>::get_discrete_state_vector(
     const systems::Context<T>& context) const {
   DRAKE_ASSERT(is_state_discrete());
-  DRAKE_ASSERT(context.get_num_discrete_state_groups() == 1);
+  DRAKE_ASSERT(context.num_discrete_state_groups() == 1);
   const systems::BasicVector<T>& discrete_state_vector =
       context.get_discrete_state(0);  // Only q and v.
   DRAKE_ASSERT(discrete_state_vector.size() ==
@@ -594,7 +594,7 @@ MultibodyTree<T>::get_mutable_discrete_state_vector(
     systems::Context<T>* context) const {
   DRAKE_ASSERT(context != nullptr);
   DRAKE_ASSERT(is_state_discrete());
-  DRAKE_ASSERT(context->get_num_discrete_state_groups() == 1);
+  DRAKE_ASSERT(context->num_discrete_state_groups() == 1);
   systems::BasicVector<T>& discrete_state_vector =
       context->get_mutable_discrete_state(0);  // Only q and v.
   DRAKE_ASSERT(discrete_state_vector.size() ==

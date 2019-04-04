@@ -41,6 +41,9 @@ test --test_env=MOSEKLM_LICENSE_FILE
 # instance has a consistent, but non-default, LCM URL.
 test --test_env=LCM_DEFAULT_URL=memq://
 
+# Prevent matplotlib from showing windows (#11029).
+test --test_env=MPLBACKEND=Template
+
 ### A configuration that enables Gurobi. ###
 # -- To use this config, the GRB_LICENSE_FILE environment variable must be set
 # -- to the location of the Gurobi license key file. On Ubuntu, the GUROBI_PATH

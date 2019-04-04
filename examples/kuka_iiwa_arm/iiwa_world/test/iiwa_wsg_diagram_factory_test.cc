@@ -94,7 +94,7 @@ void CheckNumPorts(
   // Check the number of input/output ports
   const int num_input_ports_per_iiwa = 2;
   const int num_input_ports_per_wsg = 1;
-  EXPECT_EQ(iiwa_and_wsg_plant.get_num_input_ports(),
+  EXPECT_EQ(iiwa_and_wsg_plant.num_input_ports(),
             num_iiwas * num_input_ports_per_iiwa +
                 num_wsgs * num_input_ports_per_wsg);
   const int num_output_ports_per_iiwa = 4;
@@ -105,7 +105,7 @@ void CheckNumPorts(
   //  - a port for the contact results of the RigidBodyPlant
   //  - a port for the kinematics results of the RigidBodyPlant
   const int num_other_output_ports = 3;
-  EXPECT_EQ(iiwa_and_wsg_plant.get_num_output_ports(),
+  EXPECT_EQ(iiwa_and_wsg_plant.num_output_ports(),
             num_iiwas * num_output_ports_per_iiwa +
                 num_wsgs * num_output_ports_per_wsg +
                 num_objects * num_output_ports_per_object +

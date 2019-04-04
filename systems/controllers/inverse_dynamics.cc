@@ -59,7 +59,7 @@ void InverseDynamics<T>::CalcOutputForce(const Context<T>& context,
 
   auto& plant = *multibody_plant_;
   // Set the position and velocity in the context.
-  plant.GetMutablePositionsAndVelocities(multibody_plant_context_.get()) = x;
+  plant.SetPositionsAndVelocities(multibody_plant_context_.get(), x);
 
   if (this->is_pure_gravity_compensation()) {
     output->get_mutable_value() =

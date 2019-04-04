@@ -2,9 +2,9 @@
 
 #include <vector>
 
+#include "drake/automotive/maliput/api/rules/phase_provider.h"
+#include "drake/automotive/maliput/api/rules/phase_ring.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_provider.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_ring.h"
 #include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
@@ -31,10 +31,10 @@ class Intersection {
   /// @param region The region of the road network that should be considered
   /// part of the intersection.
   ///
-  /// @param ring The ring that defines the phases within the intersection. The
-  /// pointer must remain valid throughout this class instance's lifetime.
+  /// @param ring_id The ID of the ring that defines the phases within the
+  /// intersection.
   Intersection(const Id& id, const std::vector<rules::LaneSRange>& region,
-               const rules::RightOfWayPhaseRing* ring);
+               const rules::PhaseRing::Id& ring_id);
 
   virtual ~Intersection() = default;
 
@@ -42,20 +42,19 @@ class Intersection {
   const Id id() const { return id_; }
 
   /// Returns the current phase.
-  virtual const optional<rules::RightOfWayPhaseProvider::Result> Phase()
-      const = 0;
+  virtual const optional<rules::PhaseProvider::Result> Phase() const = 0;
 
   /// Returns the region. See constructor parameter @p region for more details.
   const std::vector<rules::LaneSRange>& region() const { return region_; }
 
-  /// Returns the rules::RightOfWayPhaseRing that applies to this intersection.
-  /// See constructor parameter @p ring for more details.
-  const rules::RightOfWayPhaseRing* ring() const { return ring_; }
+  /// Returns the rules::PhaseRing::Id of the rules::PhaseRing that applies to
+  /// this intersection. See constructor parameter @p ring_id for more details.
+  const rules::PhaseRing::Id& ring_id() const { return ring_id_; }
 
  private:
   const Id id_;
   const std::vector<rules::LaneSRange> region_;
-  const rules::RightOfWayPhaseRing* ring_{};
+  const rules::PhaseRing::Id ring_id_;
 };
 
 }  // namespace api

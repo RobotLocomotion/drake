@@ -2,15 +2,15 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/automotive/maliput/base/simple_right_of_way_phase_book.h"
-#include "drake/automotive/maliput/base/simple_right_of_way_phase_provider.h"
+#include "drake/automotive/maliput/base/manual_phase_provider.h"
+#include "drake/automotive/maliput/base/simple_phase_ring_book.h"
 
 namespace drake {
 namespace maliput {
 namespace {
 
-using maliput::api::rules::RightOfWayPhase;
-using maliput::api::rules::RightOfWayPhaseRing;
+using maliput::api::rules::Phase;
+using maliput::api::rules::PhaseRing;
 using maliput::api::rules::RightOfWayRule;
 using maliput::api::rules::RightOfWayStateProvider;
 
@@ -21,27 +21,25 @@ GTEST_TEST(PhaseBasedRightOfWayStateProviderTest, BasicTest) {
   const RightOfWayRule::State::Id state_id_go("GO");
   const RightOfWayRule::State::Id state_id_stop("STOP");
 
-  const RightOfWayPhase::Id phase_id_1("phase1");
-  const RightOfWayPhase phase1(phase_id_1,
-      {{rule_id_a, state_id_go},
-       {rule_id_b, state_id_stop}});
-  const RightOfWayPhase::Id phase_id_2("phase2");
-  const RightOfWayPhase phase2(phase_id_2,
-      {{rule_id_a, state_id_stop},
-       {rule_id_b, state_id_go}});
+  const Phase::Id phase_id_1("phase1");
+  const Phase phase1(phase_id_1, {{rule_id_a, state_id_go},
+                                  {rule_id_b, state_id_stop}});
+  const Phase::Id phase_id_2("phase2");
+  const Phase phase2(phase_id_2, {{rule_id_a, state_id_stop},
+                                  {rule_id_b, state_id_go}});
 
-  const RightOfWayPhaseRing::Id ring_id("ring");
-  const RightOfWayPhaseRing ring(ring_id, {phase1, phase2});
+  const PhaseRing::Id ring_id("ring");
+  const PhaseRing ring(ring_id, {phase1, phase2});
 
-  SimpleRightOfWayPhaseBook phase_book;
-  phase_book.AddPhaseRing(ring);
+  SimplePhaseRingBook phase_ring_book;
+  phase_ring_book.AddPhaseRing(ring);
 
-  SimpleRightOfWayPhaseProvider phase_provider;
+  ManualPhaseProvider phase_provider;
   phase_provider.AddPhaseRing(ring_id, phase_id_1);
 
-  PhaseBasedRightOfWayStateProvider dut(&phase_book, &phase_provider);
+  PhaseBasedRightOfWayStateProvider dut(&phase_ring_book, &phase_provider);
 
-  EXPECT_EQ(&dut.phase_book(), &phase_book);
+  EXPECT_EQ(&dut.phase_ring_book(), &phase_ring_book);
   EXPECT_EQ(&dut.phase_provider(), &phase_provider);
 
   struct ExpectedState {

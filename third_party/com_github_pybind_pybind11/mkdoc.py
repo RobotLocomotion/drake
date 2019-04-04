@@ -12,8 +12,8 @@ from fnmatch import fnmatch
 import os
 import platform
 import re
+import shutil
 import sys
-from tempfile import NamedTemporaryFile, mkdtemp
 import textwrap
 
 from clang import cindex
@@ -157,6 +157,70 @@ def sanitize_name(name):
     name = ''.join([ch if ch.isalnum() else '_' for ch in name])
     name = re.sub('_+', '_', name)
     return name
+
+
+def extract_comment(cursor, deprecations):
+    # Returns the cursor's docstring INCLUDING any deprecation text.
+
+    # Start with the cursor's docstring.
+    result = ''
+    if cursor.raw_comment is not None:
+        result = utf8(cursor.raw_comment)
+
+    # Look for a DRAKE_DEPRECATED macro.
+    c = cursor  # The cursor whose deprecation macro we want to find.
+    found = None  # The DRAKE_DEPRECATED cursor associated with `c`.
+    possible_d = [
+        d for d in deprecations
+        if d.extent.start.file.name == c.extent.start.file.name
+    ]
+
+    # For a method declaration, the extent-begin-column for both will be
+    # identical and the MACRO_INSTATIATION will end immediately prior to
+    # the FUNCTION_DECL begin.
+    for d in possible_d:
+        if all([d.extent.start.column == c.extent.start.column,
+                (d.extent.end.line + 1) == c.extent.start.line]):
+            found = d
+            break
+
+    # For a class declaration, the MACRO_INSTATIATION extent will lie fully
+    # within the CLASS_DECL extent, near the top.  Allow up to 5 lines between
+    # the `class Foo` or `template <> class Foo` and the DRAKE_DEPRECATED macro
+    # so that we're sure NOT to match a deprecated inline method near the top
+    # of the class, but we DO allow various whitespace arrangements of template
+    # parameters, class decl, and macro.
+    for d in possible_d:
+        if all([d.extent.start.line >= c.extent.start.line,
+                d.extent.start.line <= (c.extent.start.line + 5),
+                d.extent.end.line <= c.extent.end.line]):
+            found = d
+            break
+
+    # If no deprecations matched, we are done.
+    if not found:
+        return result
+
+    # Extract the DRAKE_DEPRECATED macro arguments.
+    tokens = [x.spelling for x in found.get_tokens()]
+    assert len(tokens) >= 6, tokens
+    assert tokens[0] == b'DRAKE_DEPRECATED', tokens
+    assert tokens[1] == b'(', tokens
+    assert tokens[3] == b',', tokens
+    assert tokens[-1] == b')', tokens
+    removal_date = utf8(tokens[2])[1:-1]  # 1:-1 to strip quotes.
+    message = "".join([
+        utf8(x)[1:-1]
+        for x in tokens[4:-1]
+    ])
+
+    # Append the deprecation text.
+    result += (
+        " (Deprecated.) \deprecated {} " +
+        "This will be removed from Drake on or after {}.").format(
+            message, removal_date)
+
+    return result
 
 
 # TODO(jamiesnape): Refactor into multiple functions and unit test.
@@ -632,15 +696,22 @@ class SymbolTree(object):
             return self.children_map[piece]
 
 
-def extract(include_file_map, cursor, symbol_tree):
+def extract(include_file_map, cursor, symbol_tree, deprecations=None):
     """
     Extracts libclang cursors and add to a symbol tree.
     """
     if cursor.kind == CursorKind.TRANSLATION_UNIT:
+        deprecations = []
         for i in cursor.get_children():
-            extract(include_file_map, i, symbol_tree)
+            if i.kind == CursorKind.MACRO_DEFINITION:
+                continue
+            if i.kind == CursorKind.MACRO_INSTANTIATION:
+                if i.spelling == b'DRAKE_DEPRECATED':
+                    deprecations.append(i)
+                continue
+            extract(include_file_map, i, symbol_tree, deprecations)
         return
-    assert cursor.location.file is not None
+    assert cursor.location.file is not None, cursor.kind
     filename = utf8(cursor.location.file.name)
     include = include_file_map.get(filename)
     line = cursor.location.line
@@ -662,13 +733,12 @@ def extract(include_file_map, cursor, symbol_tree):
         if node is None:
             node = get_node()
         for i in cursor.get_children():
-            extract(include_file_map, i, symbol_tree)
+            extract(include_file_map, i, symbol_tree, deprecations)
     if cursor.kind in PRINT_LIST:
         if node is None:
             node = get_node()
         if len(cursor.spelling) > 0:
-            comment = utf8(
-                cursor.raw_comment) if cursor.raw_comment is not None else ''
+            comment = extract_comment(cursor, deprecations)
             comment = process_comment(comment)
             symbol = Symbol(cursor, name_chain, include, line, comment)
             node.doc_symbols.append(symbol)
@@ -758,6 +828,8 @@ def choose_doc_var_names(symbols):
                 # have a nice short name for these, that doesn't necessarily
                 # conflte with any *other* 1-argument constructor.
                 result[i] = "doc_copyconvert"
+            elif "\nDeprecated:" in symbols[i].comment:
+                result[i] = "doc_deprecated" + result[i][3:]
             else:
                 # If no special cases matched, leave the name alone.
                 continue
@@ -1006,24 +1078,26 @@ def main():
             include_file_map[filename] = include_file
     assert len(include_files) > 0
     # Generate the glue include file, which will include all relevant include
-    # files, and parse. Add a unique prefix so we do not leak accidentally leak
-    # in paths in `/tmp`.
-    dir_prefix = mkdtemp(prefix="drake_mkdoc_")
-    glue_include_file = NamedTemporaryFile(
-        'w', prefix="glue_include_file_", dir=dir_prefix)
-    with glue_include_file:
+    # files, and parse. Use a tempdir that is relative to the output file for
+    # usage with Bazel.
+    tmpdir = output_filename + ".tmp_artifacts"
+    os.mkdir(tmpdir)
+    glue_filename = os.path.join(tmpdir, "mkdoc_glue.h")
+    with open(glue_filename, 'w') as glue_f:
         for include_file in sorted(include_files):
             line = "#include \"{}\"".format(include_file)
-            glue_include_file.write(line + "\n")
+            glue_f.write(line + "\n")
             f.write("// " + line + "\n")
         f.write("\n")
-        glue_include_file.flush()
+        glue_f.flush()
         if not quiet:
             eprint("Parse headers...")
         index = cindex.Index(
             cindex.conf.lib.clang_createIndex(False, True))
-        translation_unit = index.parse(glue_include_file.name, parameters)
-    os.rmdir(dir_prefix)
+        translation_unit = index.parse(
+            glue_filename, parameters,
+            options=cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD)
+    shutil.rmtree(tmpdir)
     # Extract symbols.
     if not quiet:
         eprint("Extract relevant symbols...")

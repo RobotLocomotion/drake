@@ -60,12 +60,8 @@ void TestSubscriber(drake::lcm::DrakeMockLcm* lcm,
   }
   message.timestamp = kTimestamp;
 
-  std::vector<uint8_t> buffer(message.getEncodedSize());
-  EXPECT_EQ(message.encode(&buffer[0], 0, message.getEncodedSize()),
-            message.getEncodedSize());
-
-  lcm->InduceSubscriberCallback(dut->get_channel_name(), &buffer[0],
-                                message.getEncodedSize());
+  Publish(lcm, dut->get_channel_name(), message);
+  lcm->HandleSubscriptions(0);
 
   EvalOutputHelper(*dut, context.get(), output.get());
 
@@ -77,6 +73,8 @@ void TestSubscriber(drake::lcm::DrakeMockLcm* lcm,
     EXPECT_EQ(value[i], i);
   }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // Confirm that the unit test sugar used by pydrake is another equally-valid
   // way to read messages.
   auto new_context = dut->CreateDefaultContext();
@@ -85,6 +83,7 @@ void TestSubscriber(drake::lcm::DrakeMockLcm* lcm,
   for (int i = 0; i < kDim; ++i) {
     EXPECT_EQ(new_y[i], i);
   }
+#pragma GCC diagnostic pop
 }
 
 #pragma GCC diagnostic push
@@ -148,10 +147,8 @@ struct SampleData {
 
   void MockPublish(
       drake::lcm::DrakeMockLcm* lcm, const std::string& channel_name) const {
-    const int num_bytes = value.getEncodedSize();
-    std::vector<uint8_t> buffer(num_bytes);
-    value.encode(buffer.data(), 0, num_bytes);
-    lcm->InduceSubscriberCallback(channel_name, buffer.data(), num_bytes);
+    Publish(lcm, channel_name, value);
+    lcm->HandleSubscriptions(0);
   }
 };
 
@@ -257,6 +254,32 @@ GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
   sample_data.MockPublish(&lcm, channel_name);
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(
       future_message.get(), sample_data.value));
+
+  // Test WaitForMessageTimeout, when no message is sent
+  int old_count = dut->GetInternalMessageCount();
+  started = false;
+  auto timeout_count = std::async(std::launch::async, [&]() {
+    started = true;
+    return dut->WaitForMessage(old_count, nullptr, 0.01 /** 10 ms */);
+  });
+  wait();
+  // Expect a timeout, since no message has been sent
+  EXPECT_EQ(timeout_count.get(), old_count);
+
+  // Reset atomic and test WaitForMessageTimeout, with a message
+  // Note: this generates a race condition between the timeout and the receive
+  // thread. Success relies on the probability of failure being extremely small,
+  // but it is theoretically possible for WaitForMessageTimeout to timeout
+  // before the message is received, leading to test failure.
+  started = false;
+  auto second_timeout_count = std::async(std::launch::async, [&]() {
+    EXPECT_EQ(dut->GetInternalMessageCount(), old_count);
+    started = true;
+    return dut->WaitForMessage(old_count, nullptr, 0.02 /** 20 ms */);
+  });
+  wait();
+  sample_data.MockPublish(&lcm, channel_name);
+  EXPECT_GE(second_timeout_count.get(), old_count + 1);
 }
 
 #pragma GCC diagnostic push

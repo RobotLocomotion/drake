@@ -20,3 +20,12 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(result.is_success())
         x_expected = np.array([1, 1])
         self.assertTrue(np.allclose(result.GetSolution(x), x_expected))
+
+    def test_gurobi_license(self):
+        # Nominal use case.
+        with GurobiSolver.AcquireLicense():
+            pass
+        # Inspect.
+        with GurobiSolver.AcquireLicense() as license:
+            self.assertTrue(license.is_valid())
+        self.assertFalse(license.is_valid())

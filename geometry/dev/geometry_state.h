@@ -15,7 +15,6 @@
 #include "drake/geometry/dev/internal_frame.h"
 #include "drake/geometry/dev/internal_geometry.h"
 #include "drake/geometry/dev/proximity_engine.h"
-#include "drake/geometry/dev/render/fidelity.h"
 #include "drake/geometry/dev/render/render_engine.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_ids.h"
@@ -619,6 +618,21 @@ class GeometryState {
    */
   //@{
 
+  /** Implementation support for SceneGraph::AddRenderer().  */
+  void AddRenderer(std::string name,
+                   std::unique_ptr<render::RenderEngine> renderer);
+
+  /** Implementation support for SceneGraph::HasRenderer().  */
+  bool HasRenderer(const std::string& name) const {
+    return render_engines_.count(name) > 0;
+  }
+
+  /** Implementation support for SceneGraph::RendererCount().  */
+  int RendererCount() const { return static_cast<int>(render_engines_.size()); }
+
+  /** Implementation support for SceneGraph::RegisteredRendererNames().  */
+  std::vector<std::string> RegisteredRendererNames() const;
+
   /** Renders and outputs the rendered color image.
 
    @param camera                The intrinsic properties of the camera.
@@ -629,7 +643,7 @@ class GeometryState {
                         const Isometry3<double>& X_WC,
                         systems::sensors::ImageRgba8U* color_image_out,
                         bool show_window) const {
-    render::RenderEngine* engine = GetRenderEngineOrThrow(camera.fidelity);
+    render::RenderEngine* engine = GetRenderEngineOrThrow(camera.renderer_name);
     engine->UpdateViewpoint(X_WC);
     engine->RenderColorImage(camera, color_image_out, show_window);
   }
@@ -654,7 +668,7 @@ class GeometryState {
       const render::DepthCameraProperties& camera,
       const Isometry3<double>& X_WC,
       systems::sensors::ImageDepth32F* depth_image_out) const {
-    render::RenderEngine* engine = GetRenderEngineOrThrow(camera.fidelity);
+    render::RenderEngine* engine = GetRenderEngineOrThrow(camera.renderer_name);
     engine->UpdateViewpoint(X_WC);
     engine->RenderDepthImage(camera, depth_image_out);
   }
@@ -676,7 +690,7 @@ class GeometryState {
                         const Isometry3<double>& X_WC,
                         systems::sensors::ImageLabel16I* label_image_out,
                         bool show_window) const {
-    render::RenderEngine* engine = GetRenderEngineOrThrow(camera.fidelity);
+    render::RenderEngine* engine = GetRenderEngineOrThrow(camera.renderer_name);
     engine->UpdateViewpoint(X_WC);
     engine->RenderLabelImage(camera, label_image_out, show_window);
   }
@@ -721,7 +735,7 @@ class GeometryState {
         geometry_index_id_map_(source.geometry_index_id_map_),
         frame_index_to_frame_map_(source.frame_index_to_frame_map_),
         geometry_engine_(std::move(source.geometry_engine_->ToAutoDiffXd())),
-        low_render_engine_(source.low_render_engine_->Clone()) {
+        render_engines_(source.render_engines_) {
     // NOTE: Can't assign Isometry3<double> to Isometry3<AutoDiff>. But we *can*
     // assign Matrix<double> to Matrix<AutoDiff>, so that's what we're doing.
     auto convert = [](const std::vector<Isometry3<U>>& s,
@@ -822,28 +836,20 @@ class GeometryState {
   // @pre geometry_id is a valid geometry.
   int RemoveRoleUnchecked(GeometryId geometry_id, Role role);
 
+  // Removes the geometry with the given `id` from the named renderer. Returns 1
+  // if the geometry formerly had been included in the renderer, 0 ir not. This
+  // does no checking on ownership.
+  // @pre geometry_id maps to a registered geometry.
+  int RemoveFromRendererUnchecked(const std::string& renderer_name,
+                                  GeometryId id);
+
   int RemoveIllustrationRole(GeometryId geometry_id);
   int RemovePerceptionRole(GeometryId geometry_id);
 
+  // TODO(SeanCurtis-TRI): Should this return a non-const renderer?
   // Retrieves the requested renderer (if supported), throwing otherwise.
   render::RenderEngine* GetRenderEngineOrThrow(
-      render::Fidelity fidelity) const {
-    // NOTE: The render engines are contained in copyable unique pointers so
-    // that the geometry state can be copied. However, getting a mutable pointer
-    // triggers a copy. So, we const cast it as a short-term hack until we work
-    // out caching issues.
-    render::RenderEngine* engine{nullptr};
-    switch (fidelity) {
-      case render::Fidelity::kLow:
-        engine = const_cast<render::RenderEngine*>(low_render_engine_.get());
-        break;
-      case render::Fidelity::kMedium:
-        throw std::logic_error("Medium-fidelity engine not implemented");
-      case render::Fidelity::kHigh:
-        throw std::logic_error("High-fidelity engine not implemented");
-    }
-    return engine;
-  }
+      const std::string& renderer_name) const;
 
   // Utility function to facilitate getting a double-valued pose for a frame,
   // regardless of the value of T.
@@ -855,8 +861,7 @@ class GeometryState {
   // version.
   void RegisterValidSource(SourceId source_id, const std::string& name);
   void RegisterValidFrame(SourceId source_id, FrameId frame_id,
-                          const std::string& name,
-                          const Isometry3<double>& X_PF, int frame_group,
+                          const std::string& name, int frame_group,
                           FrameId parent_id, int clique, FrameIdSet* frame_set);
   void RegisterValidGeometry(SourceId source_id, FrameId frame_id,
                              GeometryId geometry_id,
@@ -987,13 +992,9 @@ class GeometryState {
   // and copy it.
   copyable_unique_ptr<internal::ProximityEngine<T>> geometry_engine_;
 
-  // The *simple* render engine; provides the low-fidelity visual representation
-  // of the *color* image.
-  copyable_unique_ptr<render::RenderEngine> low_render_engine_;
-
-  // TODO(SeanCurtis-TRI): Provide renderers with improved rendering fidelity:
-  // medium- and high-fidelity renderers. The former will be a PBR game-engine-
-  // style renderer and the latter a path-tracer/ray tracer.
+  // The collection of all registered renderers.
+  std::unordered_map<std::string, copyable_unique_ptr<render::RenderEngine>>
+      render_engines_;
 };
 }  // namespace dev
 }  // namespace geometry

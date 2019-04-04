@@ -40,7 +40,7 @@ std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
     const Eigen::Ref<const Eigen::MatrixXd>& V) {
   DRAKE_DEMAND(context->get_continuous_state_vector().size() >
                0);  // Otherwise, I don't need an estimator.
-  DRAKE_DEMAND(system->get_num_output_ports() ==
+  DRAKE_DEMAND(system->num_output_ports() ==
                1);  // Need measurements to estimate state.
 
   // TODO(russt): Demand time-invariant once we can.

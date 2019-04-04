@@ -76,8 +76,8 @@ int DoMain() {
   state.set_swingdot(-2.0);
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
-  simulator.get_mutable_context().set_accuracy(1e-4);
-  simulator.StepTo(10);
+  simulator.get_mutable_context().SetAccuracy(1e-4);
+  simulator.AdvanceTo(10);
 
   return 0;
 }

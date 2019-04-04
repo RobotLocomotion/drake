@@ -14,10 +14,14 @@ drake_cc_package_library(
     name = "base",
     deps = [
         ":intersection",
+        ":manual_phase_provider",
         ":phase_based_right_of_way_state_provider",
-        ":simple_right_of_way_phase_book",
-        ":simple_right_of_way_phase_provider",
+        ":phase_ring_book_loader",
+        ":road_rulebook_loader",
+        ":simple_phase_ring_book",
         ":simple_rulebook",
+        ":traffic_light_book",
+        ":traffic_light_book_loader",
         ":trivial_right_of_way_state_provider",
         ":yaml_io",
     ],
@@ -32,7 +36,21 @@ drake_cc_library(
         "intersection.h",
     ],
     deps = [
-        ":simple_right_of_way_phase_provider",
+        ":manual_phase_provider",
+        "//automotive/maliput/api",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "manual_phase_provider",
+    srcs = [
+        "manual_phase_provider.cc",
+    ],
+    hdrs = [
+        "manual_phase_provider.h",
+    ],
+    deps = [
         "//automotive/maliput/api",
         "//common:essential",
     ],
@@ -53,26 +71,44 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "simple_right_of_way_phase_book",
+    name = "phase_ring_book_loader",
     srcs = [
-        "simple_right_of_way_phase_book.cc",
+        "phase_ring_book_loader.cc",
     ],
     hdrs = [
-        "simple_right_of_way_phase_book.h",
+        "phase_ring_book_loader.h",
     ],
     deps = [
+        ":simple_phase_ring_book",
         "//automotive/maliput/api",
         "//common:essential",
+        "@yaml_cpp",
     ],
 )
 
 drake_cc_library(
-    name = "simple_right_of_way_phase_provider",
+    name = "road_rulebook_loader",
     srcs = [
-        "simple_right_of_way_phase_provider.cc",
+        "road_rulebook_loader.cc",
     ],
     hdrs = [
-        "simple_right_of_way_phase_provider.h",
+        "road_rulebook_loader.h",
+    ],
+    deps = [
+        ":simple_rulebook",
+        "//common:essential",
+        "//common:find_resource",
+        "@yaml_cpp",
+    ],
+)
+
+drake_cc_library(
+    name = "simple_phase_ring_book",
+    srcs = [
+        "simple_phase_ring_book.cc",
+    ],
+    hdrs = [
+        "simple_phase_ring_book.h",
     ],
     deps = [
         "//automotive/maliput/api",
@@ -94,6 +130,36 @@ drake_cc_library(
         "//common:unused",
         "//math:geometric_transform",
         "//math:saturate",
+    ],
+)
+
+drake_cc_library(
+    name = "traffic_light_book",
+    srcs = [
+        "traffic_light_book.cc",
+    ],
+    hdrs = [
+        "traffic_light_book.h",
+    ],
+    deps = [
+        "//automotive/maliput/api",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "traffic_light_book_loader",
+    srcs = [
+        "traffic_light_book_loader.cc",
+    ],
+    hdrs = [
+        "traffic_light_book_loader.h",
+    ],
+    deps = [
+        ":traffic_light_book",
+        "//automotive/maliput/api",
+        "//common:essential",
+        "@yaml_cpp",
     ],
 )
 
@@ -143,16 +209,43 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "simple_right_of_way_phase_book_test",
+    name = "phase_ring_book_loader_test",
+    data = [
+        "//automotive/maliput/multilane:yamls",
+    ],
     deps = [
-        ":simple_right_of_way_phase_book",
+        ":phase_ring_book_loader",
+        ":road_rulebook_loader",
+        ":simple_rulebook",
+        "//automotive/maliput/api/test_utilities:rules_test_utilities",
+        "//automotive/maliput/multilane:loader",
+        "//common:find_resource",
     ],
 )
 
 drake_cc_googletest(
-    name = "simple_right_of_way_phase_provider_test",
+    name = "road_rulebook_loader_test",
+    data = [
+        "//automotive/maliput/multilane:yamls",
+    ],
     deps = [
-        ":simple_right_of_way_phase_provider",
+        ":road_rulebook_loader",
+        "//automotive/maliput/api/test_utilities:rules_test_utilities",
+        "//automotive/maliput/multilane:loader",
+    ],
+)
+
+drake_cc_googletest(
+    name = "simple_phase_ring_book_test",
+    deps = [
+        ":simple_phase_ring_book",
+    ],
+)
+
+drake_cc_googletest(
+    name = "manual_phase_provider_test",
+    deps = [
+        ":manual_phase_provider",
     ],
 )
 
@@ -161,6 +254,27 @@ drake_cc_googletest(
     deps = [
         ":simple_rulebook",
         "//automotive/maliput/api/test_utilities:rules_test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "traffic_light_book_test",
+    deps = [
+        ":traffic_light_book",
+        "//automotive/maliput/api/test_utilities:rules_test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "traffic_light_book_loader_test",
+    data = [
+        "//automotive/maliput/multilane:yamls",
+    ],
+    deps = [
+        ":traffic_light_book_loader",
+        "//automotive/maliput/api/test_utilities:rules_test_utilities",
+        "//automotive/maliput/multilane:loader",
+        "//common:find_resource",
     ],
 )
 

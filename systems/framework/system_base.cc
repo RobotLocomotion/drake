@@ -164,7 +164,7 @@ void SystemBase::CreateSourceTrackers(ContextBase* context_ptr) const {
 const AbstractValue* SystemBase::EvalAbstractInputImpl(
     const char* func, const ContextBase& context,
     InputPortIndex port_index) const {
-  if (port_index >= get_num_input_ports())
+  if (port_index >= num_input_ports())
     ThrowInputPortIndexOutOfRange(func, port_index);
 
   const FixedInputPortValue* const free_port_value =
@@ -197,7 +197,7 @@ void SystemBase::ThrowInputPortIndexOutOfRange(const char* func,
   throw std::out_of_range(fmt::format(
       "{}: there is no input port with index {} because there "
       "are only {} input ports in system {}.",
-      FmtFunc(func),  port, get_num_input_ports(), GetSystemPathname()));
+      FmtFunc(func),  port, num_input_ports(), GetSystemPathname()));
 }
 
 void SystemBase::ThrowOutputPortIndexOutOfRange(const char* func,
@@ -206,7 +206,7 @@ void SystemBase::ThrowOutputPortIndexOutOfRange(const char* func,
       "{}: there is no output port with index {} because there "
       "are only {} output ports in system {}.",
       FmtFunc(func), port,
-      get_num_output_ports(), GetSystemPathname()));
+      num_output_ports(), GetSystemPathname()));
 }
 
 void SystemBase::ThrowNotAVectorInputPort(const char* func,

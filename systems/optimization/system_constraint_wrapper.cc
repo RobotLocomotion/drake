@@ -27,7 +27,7 @@ SystemConstraintWrapper::SystemConstraintWrapper(
       updater_double_(std::move(updater_double)),
       updater_autodiff_(std::move(updater_autodiff)) {
   context_autodiff_->SetTimeStateAndParametersFrom(*context_double_);
-  for (int i = 0; i < context_double_->get_num_input_ports(); ++i) {
+  for (int i = 0; i < context_double_->num_input_ports(); ++i) {
     if (context_double_->MaybeGetFixedInputPortValue(i) != nullptr) {
       // TODO(hongkai.dai): support system with fixed values in the input ports,
       // when we can copy the fixed input port value from Context<double> to

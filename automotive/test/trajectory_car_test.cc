@@ -123,7 +123,7 @@ TYPED_TEST(TrajectoryCarTest, ConstantSpeedTest) {
     simulator.Initialize();
 
     for (double time = start_time; time <= end_time; time += 0.1) {
-      simulator.StepTo(time - start_time);
+      simulator.AdvanceTo(time - start_time);
 
       const double fractional_progress =
           std::min(std::max(0.0, (time * it.speed) / total_distance), 1.0);
@@ -134,7 +134,7 @@ TYPED_TEST(TrajectoryCarTest, ConstantSpeedTest) {
 
       car_dut.CalcOutput(context, all_output.get());
 
-      ASSERT_EQ(3, all_output->get_num_ports());
+      ASSERT_EQ(3, all_output->num_ports());
 
       // Tests the raw pose output.
       const SimpleCarState<T>* raw_pose =

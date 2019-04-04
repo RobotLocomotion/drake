@@ -69,11 +69,10 @@ class ZeroOrderHoldTest : public ::testing::TestWithParam<bool> {
     }
     context_ = hold_->CreateDefaultContext();
     if (!is_abstract_) {
-      context_->FixInputPort(
-          0, std::make_unique<BasicVector<double>>(input_value_));
+      hold_->get_input_port().FixValue(&*context_, input_value_);
     } else {
-      context_->FixInputPort(
-          0, AbstractValue::Make(SimpleAbstractType(input_value_)));
+      hold_->get_input_port().FixValue(&*context_,
+                                       SimpleAbstractType(input_value_));
     }
 
     event_info_ = hold_->AllocateCompositeEventCollection();
@@ -103,10 +102,10 @@ class ZeroOrderHoldTest : public ::testing::TestWithParam<bool> {
 
 // Tests that the zero-order hold has one input and one output.
 TEST_P(ZeroOrderHoldTest, Topology) {
-  EXPECT_EQ(1, hold_->get_num_input_ports());
-  EXPECT_EQ(1, context_->get_num_input_ports());
+  EXPECT_EQ(1, hold_->num_input_ports());
+  EXPECT_EQ(1, context_->num_input_ports());
 
-  EXPECT_EQ(1, hold_->get_num_output_ports());
+  EXPECT_EQ(1, hold_->num_output_ports());
 
   EXPECT_FALSE(hold_->HasAnyDirectFeedthrough());
 }
@@ -155,7 +154,7 @@ TEST_P(ZeroOrderHoldTest, Output) {
 // is requested in the future.
 TEST_P(ZeroOrderHoldTest, NextUpdateTimeMustNotBeCurrentTime) {
   // Calculate the next update time *after* 0.
-  context_->set_time(0.0);
+  context_->SetTime(0.0);
   const double t_next = hold_->CalcNextUpdateTime(*context_, event_info_.get());
 
   // Check that the time is correct.
@@ -169,7 +168,7 @@ TEST_P(ZeroOrderHoldTest, NextUpdateTimeMustNotBeCurrentTime) {
 // at the appropriate time in the future.
 TEST_P(ZeroOrderHoldTest, NextUpdateTimeIsInTheFuture) {
   // Calculate the next update time.
-  context_->set_time(763.2 * kPeriod);
+  context_->SetTime(763.2 * kPeriod);
 
   // Check that the time is correct.
   const double t_next = hold_->CalcNextUpdateTime(*context_, event_info_.get());
@@ -255,16 +254,16 @@ GTEST_TEST(ZeroOrderHoldTest, UseInDiagram) {
   // No update should have occurred yet.
   EXPECT_EQ(0., eval());
 
-  simulator.StepTo(0);  // Force an update at 0.
+  simulator.AdvancePendingEvents();  // Force an update at 0.
 
   // Should have sampled at t=0.
   EXPECT_NEAR(sine_eval(0.), eval(), kMachineTol);
 
-  simulator.StepTo(1.5 * kPeriod);
+  simulator.AdvanceTo(1.5 * kPeriod);
   // Should have sampled at t=kPeriod, NOT 1.5 * kPeriod.
   EXPECT_NEAR(sine_eval(kPeriod), eval(), kMachineTol);
 
-  simulator.StepTo(9.1 * kPeriod);  // Last sample at 9 * kPeriod.
+  simulator.AdvanceTo(9.1 * kPeriod);  // Last sample at 9 * kPeriod.
   EXPECT_NEAR(sine_eval(9 * kPeriod), eval(), kMachineTol);
 }
 
@@ -281,8 +280,8 @@ class SymbolicZeroOrderHoldTest : public ::testing::Test {
 
     // Initialize the context with symbolic variables.
     context_ = hold_->CreateDefaultContext();
-    context_->FixInputPort(0, BasicVector<symbolic::Expression>::Make(
-        symbolic::Variable("u0")));
+    hold_->get_input_port().FixValue(context_.get(),
+        symbolic::Expression(symbolic::Variable("u0")));
     auto& xd = context_->get_mutable_discrete_state(0);
     xd[0] = symbolic::Variable("x0");
 
@@ -303,7 +302,7 @@ TEST_F(SymbolicZeroOrderHoldTest, Update) {
   // Before latching the input, the output should just show the initial
   // state value "x0".
   EXPECT_EQ("x0", hold_->get_output_port().Eval(*context_)[0].to_string());
-  hold_->LatchInputPortToState(&*context_);
+  hold_->LatchInputPortToState(context_.get());
   EXPECT_EQ("u0", hold_->get_output_port().Eval(*context_)[0].to_string());
 }
 

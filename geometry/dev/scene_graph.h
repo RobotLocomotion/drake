@@ -209,11 +209,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   SceneGraph();
 
-  /** Constructs a *development* %SceneGraph instances from a mainstream
-   geometry::SceneGraph instance. All registered sources are shared with the
-   newly constructed development %SceneGraph instance and its model is
-   constructed from the given geometry::SceneGraph's model.  */
-  explicit SceneGraph(const geometry::SceneGraph<T>& other);
+  /** Populate `this` _development_ %SceneGraph instance from a mainstream
+   geometry::SceneGraph instance. It is important to add renderers to the
+   SceneGraph after constructing but _before_ calling this -- all renderers
+   must be added prior to registering the first geometry (see AddRenderer()).
+   */
+  void CopyFrom(const geometry::SceneGraph<T>& other);
 
   /** Constructor used for scalar conversions. It should only be used to convert
    _from_ double _to_ other scalar types. */
@@ -387,6 +388,28 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   //@}
 
+  /** Adds a new render engine to this %SceneGraph. The %SceneGraph owns the
+   render engine. All render engines must be assigned prior to any geometry
+   registration. The render engine's name should be referenced in the
+   @ref render::CameraProperties "CameraProperties" provided in the render
+   queries (see QueryObject::RenderColorImage as an example).
+   @param name      The unique name of the renderer.
+   @param renderer  The `renderer` to add.
+   @throws std::logic_error if the name is not unique, or geometry has already
+                               been registered.  */
+  void AddRenderer(std::string name,
+                   std::unique_ptr<render::RenderEngine> renderer);
+
+  /** Reports if this %SceneGraph has a renderer registered to the given name.
+   */
+  bool HasRenderer(const std::string& name) const;
+
+  /** Reports the number of renderers registered to this %SceneGraph.  */
+  int RendererCount() const;
+
+  /** Reports the names of all registered renderers.  */
+  std::vector<std::string> RegisteredRendererNames() const;
+
   /** @name     Assigning roles to geometry
 
    Geometries must be assigned one or more *roles* before they have an effect
@@ -542,8 +565,16 @@ class SceneGraph final : public systems::LeafSystem<T> {
   void CalcPoseBundle(const systems::Context<T>& context,
                       systems::rendering::PoseBundle<T>* output) const;
 
-  // Updates the state of geometry world from *all* the inputs.
-  void FullPoseUpdate(const GeometryContext<T>& context) const;
+  // Refreshes the pose of the various engines which exploits the caching
+  // infrastructure.
+  void FullPoseUpdate(const GeometryContext<T>& context) const {
+    this->get_cache_entry(pose_update_index_).template Eval<int>(context);
+  }
+
+  // Updates the state of geometry world from *all* the inputs. This is the calc
+  // method for the corresponding cache entry. The entry *value* (the int) is
+  // strictly a dummy -- the value is unimportant; only the side effect matters.
+  void CalcPoseUpdate(const GeometryContext<T>& context, int*) const;
 
   // Override of construction to account for
   //    - instantiating a GeometryContext instance (as opposed to LeafContext),
@@ -587,6 +618,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   // The index of the geometry state in the context's abstract state.
   int geometry_state_index_{-1};
+
+  // The cache index for the pose update cache entry.
+  systems::CacheIndex pose_update_index_{};
 };
 
 }  // namespace dev

@@ -47,8 +47,8 @@ int do_main() {
       diagram->GetMutableSubsystemContext(*acrobot,
                                           &simulator.get_mutable_context());
 
-  double tau = 0;
-  acrobot_context.FixInputPort(0, Eigen::Matrix<double, 1, 1>::Constant(tau));
+  const double tau = 0;
+  acrobot->GetInputPort("elbow_torque").FixValue(&acrobot_context, tau);
 
   // Set an initial condition that is sufficiently far from the downright fixed
   // point.
@@ -62,7 +62,7 @@ int do_main() {
 
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
-  simulator.StepTo(FLAGS_simulation_sec);
+  simulator.AdvanceTo(FLAGS_simulation_sec);
   return 0;
 }
 

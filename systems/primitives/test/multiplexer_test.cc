@@ -38,12 +38,12 @@ TEST_F(MultiplexerTest, Basic) {
   InitializeFromSizes({2, 1, 3});
 
   // Confirm the shape.
-  ASSERT_EQ(3, mux_->get_num_input_ports());
+  ASSERT_EQ(3, mux_->num_input_ports());
   ASSERT_EQ(2, mux_->get_input_port(0).size());
   ASSERT_EQ(1, mux_->get_input_port(1).size());
   ASSERT_EQ(3, mux_->get_input_port(2).size());
-  ASSERT_EQ(3, context_->get_num_input_ports());
-  ASSERT_EQ(1, mux_->get_num_output_ports());
+  ASSERT_EQ(3, context_->num_input_ports());
+  ASSERT_EQ(1, mux_->num_output_ports());
   ASSERT_EQ(6, mux_->get_output_port(0).size());
 
   // Provide input data.
@@ -67,13 +67,13 @@ TEST_F(MultiplexerTest, ScalarConstructor) {
   context_ = mux_->CreateDefaultContext();
 
   // Confirm the shape.
-  ASSERT_EQ(4, mux_->get_num_input_ports());
+  ASSERT_EQ(4, mux_->num_input_ports());
   ASSERT_EQ(1, mux_->get_input_port(0).size());
   ASSERT_EQ(1, mux_->get_input_port(1).size());
   ASSERT_EQ(1, mux_->get_input_port(2).size());
   ASSERT_EQ(1, mux_->get_input_port(3).size());
-  ASSERT_EQ(4, context_->get_num_input_ports());
-  ASSERT_EQ(1, mux_->get_num_output_ports());
+  ASSERT_EQ(4, context_->num_input_ports());
+  ASSERT_EQ(1, mux_->num_output_ports());
   ASSERT_EQ(4, mux_->get_output_port(0).size());
 }
 
@@ -81,11 +81,11 @@ TEST_F(MultiplexerTest, ModelVectorConstructor) {
   InitializeFromMyVector();
 
   // Confirm the shape.
-  ASSERT_EQ(2, mux_->get_num_input_ports());
+  ASSERT_EQ(2, mux_->num_input_ports());
   ASSERT_EQ(1, mux_->get_input_port(0).size());
   ASSERT_EQ(1, mux_->get_input_port(1).size());
-  ASSERT_EQ(2, context_->get_num_input_ports());
-  ASSERT_EQ(1, mux_->get_num_output_ports());
+  ASSERT_EQ(2, context_->num_input_ports());
+  ASSERT_EQ(1, mux_->num_output_ports());
   ASSERT_EQ(2, mux_->get_output_port(0).size());
 
   // Confirm that the vector is truly MyVector2d.
@@ -96,14 +96,14 @@ TEST_F(MultiplexerTest, ModelVectorConstructor) {
 
 TEST_F(MultiplexerTest, IsStateless) {
   InitializeFromSizes({1});
-  EXPECT_EQ(0, context_->get_continuous_state().size());
+  EXPECT_EQ(0, context_->num_continuous_states());
 }
 
 TEST_F(MultiplexerTest, ToAutoDiffPass) {
   InitializeFromSizes({1, 1, 1});
   EXPECT_TRUE(is_autodiffxd_convertible(*mux_, [&](const auto& converted) {
-    EXPECT_EQ(3, converted.get_num_input_ports());
-    EXPECT_EQ(1, converted.get_num_output_ports());
+    EXPECT_EQ(3, converted.num_input_ports());
+    EXPECT_EQ(1, converted.num_output_ports());
 
     EXPECT_EQ(1, converted.get_input_port(0).size());
     EXPECT_EQ(1, converted.get_input_port(1).size());
@@ -123,8 +123,8 @@ TEST_F(MultiplexerTest, ToAutoDiffFail) {
 TEST_F(MultiplexerTest, ToSymbolic) {
   InitializeFromSizes({1, 1, 1});
   EXPECT_TRUE(is_symbolic_convertible(*mux_, [&](const auto& converted) {
-    EXPECT_EQ(3, converted.get_num_input_ports());
-    EXPECT_EQ(1, converted.get_num_output_ports());
+    EXPECT_EQ(3, converted.num_input_ports());
+    EXPECT_EQ(1, converted.num_output_ports());
 
     EXPECT_EQ(1, converted.get_input_port(0).size());
     EXPECT_EQ(1, converted.get_input_port(1).size());

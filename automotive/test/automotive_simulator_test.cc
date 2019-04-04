@@ -24,30 +24,18 @@ namespace drake {
 namespace automotive {
 namespace {
 
+using ViewerLoadRobotSubscriber =
+    drake::lcm::Subscriber<lcmt_viewer_load_robot>;
+using ViewerDrawSubscriber =
+    drake::lcm::Subscriber<lcmt_viewer_draw>;
+using SimpleCarStateSubscriber =
+    drake::lcm::Subscriber<lcmt_simple_car_state_t>;
+
 // Simple touches on the getters.
 GTEST_TEST(AutomotiveSimulatorTest, BasicTest) {
   auto simulator = std::make_unique<AutomotiveSimulator<double>>();
   EXPECT_NE(nullptr, simulator->get_lcm());
   EXPECT_NE(nullptr, simulator->get_builder());
-}
-
-// Obtains the serialized version of the last message transmitted on LCM channel
-// @p channel into @p result.
-void GetLastPublishedSimpleCarState(
-    const std::string& channel,
-    const lcm::DrakeMockLcm* mock_lcm,
-    SimpleCarState<double>* result) {
-  const std::vector<uint8_t>& bytes =
-      mock_lcm->get_last_published_message(channel);
-  drake::lcmt_simple_car_state_t message{};
-  const int status = message.decode(bytes.data(), 0, bytes.size());
-  if (status < 0) {
-    throw std::runtime_error("Failed to decode LCM message simple_car_state.");
-  }
-  result->set_x(message.x);
-  result->set_y(message.y);
-  result->set_heading(message.heading);
-  result->set_velocity(message.velocity);
 }
 
 // Covers AddPriusSimpleCar (and thus AddPublisher), Start, StepBy,
@@ -65,6 +53,10 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCar) {
   // Set up a basic simulation with just a Prius SimpleCar.
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
+  lcm::DrakeLcmInterface* const mock_lcm = simulator->get_lcm();
+  ASSERT_NE(nullptr, mock_lcm);
+  ViewerDrawSubscriber draw_sub(mock_lcm, "DRAKE_VIEWER_DRAW");
+  SimpleCarStateSubscriber state_sub(mock_lcm, kSimpleCarStateChannelName);
 
   const int id = simulator->AddPriusSimpleCar("Foo", kCommandChannelName);
   EXPECT_EQ(id, 0);
@@ -82,15 +74,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCar) {
   // Set full throttle.
   drake::lcmt_driving_command_t command{};
   command.acceleration = 11.0;  // Arbitrary large positive.
-  lcm::DrakeMockLcm* mock_lcm =
-      dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm());
-  ASSERT_NE(nullptr, mock_lcm);
-  std::vector<uint8_t> message_bytes;
-  message_bytes.resize(command.getEncodedSize());
-  ASSERT_EQ(command.encode(message_bytes.data(), 0, message_bytes.size()),
-            message_bytes.size());
-  mock_lcm->InduceSubscriberCallback(kCommandChannelName, &message_bytes[0],
-                                     message_bytes.size());
+  Publish(mock_lcm, kCommandChannelName, command);
 
   // Shortly after starting, we should have not have moved much. Take two
   // small steps so that we get a publish a small time after zero (publish
@@ -98,27 +82,21 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCar) {
   // set).
   simulator->StepBy(0.005);
   simulator->StepBy(0.005);
-  SimpleCarState<double> simple_car_state;
-  GetLastPublishedSimpleCarState(
-      kSimpleCarStateChannelName, mock_lcm, &simple_car_state);
-  EXPECT_GT(simple_car_state.x(), 0.0);
-  EXPECT_LT(simple_car_state.x(), 0.001);
+  lcmt_simple_car_state_t simple_car_state = state_sub.message();
+  EXPECT_GT(simple_car_state.x, 0.0);
+  EXPECT_LT(simple_car_state.x, 0.001);
 
   // Move a lot.  Confirm that we're moving in +x.
   for (int i = 0; i < 100; ++i) {
     simulator->StepBy(0.01);
   }
   // TODO(jwnimmer-tri) Check the timestamp of the final publication.
-  GetLastPublishedSimpleCarState(
-      kSimpleCarStateChannelName, mock_lcm, &simple_car_state);
-  EXPECT_GT(simple_car_state.x(), 1.0);
+  simple_car_state = state_sub.message();
+  EXPECT_GT(simple_car_state.x, 1.0);
 
   // Confirm that appropriate draw messages are coming out. Just a few of the
   // message's fields are checked.
-  const std::string channel_name = "DRAKE_VIEWER_DRAW";
-  lcmt_viewer_draw published_draw_message =
-      mock_lcm->DecodeLastPublishedMessageAs<lcmt_viewer_draw>(channel_name);
-
+  const auto& published_draw_message = draw_sub.message();
   EXPECT_EQ(published_draw_message.num_links, 1);
   EXPECT_EQ(published_draw_message.link_name.at(0), "car_0::car_origin");
 
@@ -133,6 +111,10 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCar) {
 GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCarInitialState) {
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
+  lcm::DrakeLcmInterface* const mock_lcm = simulator->get_lcm();
+  ASSERT_NE(mock_lcm, nullptr);
+  SimpleCarStateSubscriber state_sub(mock_lcm, "0_SIMPLE_CAR_STATE");
+
   const double kX{10};
   const double kY{5.5};
   const double kHeading{M_PI_2};
@@ -149,15 +131,10 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCarInitialState) {
   simulator->Start();
   simulator->StepBy(kStepSize);
 
-  lcm::DrakeMockLcm* mock_lcm =
-      dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm());
-  ASSERT_NE(mock_lcm, nullptr);
-  const lcmt_simple_car_state_t state_message =
-      mock_lcm->DecodeLastPublishedMessageAs<lcmt_simple_car_state_t>(
-          "0_SIMPLE_CAR_STATE");
-
   // Final publish happens at time kStepSize. Since the heading is pi/2, only
   // the y-component of state should be updated.
+  mock_lcm->HandleSubscriptions(0);
+  const auto& state_message = state_sub.message();
   EXPECT_EQ(state_message.x, kX);
   EXPECT_EQ(state_message.y, kY + kVelocity * kStepSize);
   EXPECT_EQ(state_message.heading, kHeading);
@@ -171,6 +148,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMobilControlledSimpleCar) {
   lcm::DrakeMockLcm* lcm =
       dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm());
   ASSERT_NE(lcm, nullptr);
+  ViewerDrawSubscriber draw_sub(lcm, "DRAKE_VIEWER_DRAW");
 
   const maliput::api::RoadGeometry* road{};
   EXPECT_NO_THROW(road = simulator->SetRoadGeometry(
@@ -219,8 +197,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMobilControlledSimpleCar) {
   // Advances the simulation.
   simulator->StepBy(0.5);
 
-  const lcmt_viewer_draw draw_message =
-      lcm->DecodeLastPublishedMessageAs<lcmt_viewer_draw>("DRAKE_VIEWER_DRAW");
+  const auto& draw_message = draw_sub.message();
   EXPECT_EQ(draw_message.num_links, 3);
 
   // Expect the SimpleCar to start steering to the left; y value increases.
@@ -330,6 +307,10 @@ std::unique_ptr<AutomotiveSimulator<double>> MakeWithIdmCarAndDecoy(
 GTEST_TEST(AutomotiveSimulatorTest, TestIdmControlledSimpleCar) {
   auto simulator =
       MakeWithIdmCarAndDecoy(std::make_unique<lcm::DrakeMockLcm>());
+  lcm::DrakeMockLcm* lcm =
+      dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm());
+  ASSERT_NE(lcm, nullptr);
+  ViewerDrawSubscriber draw_sub(lcm, "DRAKE_VIEWER_DRAW");
 
   // Finish all initialization, so that we can test the post-init state.
   simulator->Start();
@@ -338,11 +319,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestIdmControlledSimpleCar) {
   simulator->StepBy(0.5);
 
   // Set up LCM and obtain draw messages.
-  lcm::DrakeMockLcm* lcm =
-      dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm());
-  ASSERT_NE(lcm, nullptr);
-  const lcmt_viewer_draw draw_message =
-      lcm->DecodeLastPublishedMessageAs<lcmt_viewer_draw>("DRAKE_VIEWER_DRAW");
+  const auto& draw_message = draw_sub.message();
   EXPECT_EQ(draw_message.num_links, 2);
 
   // Expect the car to start steering to the left; y value increases.
@@ -377,14 +354,14 @@ GTEST_TEST(AutomotiveSimulatorTest, TestIdmControlledSimpleCarAutoDiff) {
   auto plant_simulator =
       std::make_unique<systems::Simulator<double>>(plant);
 
-  plant_simulator->StepTo(0.5);
+  plant_simulator->AdvanceTo(0.5);
 
   // Converts to AutoDiffXd.
   auto plant_ad = plant.ToAutoDiffXd();
   auto plant_ad_simulator =
       std::make_unique<systems::Simulator<AutoDiffXd>>(*plant_ad);
 
-  plant_ad_simulator->StepTo(0.5);
+  plant_ad_simulator->AdvanceTo(0.5);
 }
 
 // Returns the x-position of the vehicle based on an lcmt_viewer_draw message.
@@ -404,6 +381,9 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMaliputRailcar) {
   lcm::DrakeMockLcm* lcm =
       dynamic_cast<lcm::DrakeMockLcm*>(simulator->get_lcm());
   ASSERT_NE(lcm, nullptr);
+  ASSERT_NE(lcm, nullptr);
+  ViewerDrawSubscriber draw_sub(lcm, "DRAKE_VIEWER_DRAW");
+
   const double kR{0.5};
   MaliputRailcarParams<double> params;
   params.set_r(kR);
@@ -456,8 +436,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMaliputRailcar) {
 
   // Verifies the acceleration is zero even if
   // AutomotiveSimulator::SetMaliputRailcarAccelerationCommand() was not called.
-  const lcmt_viewer_draw draw_message0 =
-      lcm->DecodeLastPublishedMessageAs<lcmt_viewer_draw>("DRAKE_VIEWER_DRAW");
+  const lcmt_viewer_draw draw_message0 = draw_sub.message();
   // The following tolerance was determined empirically.
   EXPECT_NEAR(GetPosition(draw_message0, kR), initial_x, 1e-4);
 
@@ -467,8 +446,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMaliputRailcar) {
 
   // Verifies that the vehicle hasn't moved yet. This is expected since the
   // commanded acceleration is zero.
-  const lcmt_viewer_draw draw_message1 =
-      lcm->DecodeLastPublishedMessageAs<lcmt_viewer_draw>("DRAKE_VIEWER_DRAW");
+  const lcmt_viewer_draw draw_message1 = draw_sub.message();
   // The following tolerance was determined empirically.
   EXPECT_NEAR(GetPosition(draw_message1, kR), initial_x, 1e-4);
 
@@ -477,11 +455,11 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMaliputRailcar) {
 
   // Advances the simulation to allow the MaliputRailcar to begin accelerating.
   simulator->StepBy(step_size);
+  lcm->HandleSubscriptions(0);
 
   // Verifies that the MaliputRailcar has moved forward relative to prior to
   // the nonzero acceleration command being issued.
-  const lcmt_viewer_draw draw_message2 =
-      lcm->DecodeLastPublishedMessageAs<lcmt_viewer_draw>("DRAKE_VIEWER_DRAW");
+  const lcmt_viewer_draw draw_message2 = draw_sub.message();
   EXPECT_LT(draw_message1.position.at(0).at(0), GetPosition(draw_message2, kR));
 }
 
@@ -489,6 +467,10 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMaliputRailcar) {
 GTEST_TEST(AutomotiveSimulatorTest, TestLcmOutput) {
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
+  lcm::DrakeLcmInterface* const mock_lcm = simulator->get_lcm();
+  ASSERT_NE(mock_lcm, nullptr);
+  ViewerLoadRobotSubscriber load_robot_sub(mock_lcm, "DRAKE_VIEWER_LOAD_ROBOT");
+  ViewerDrawSubscriber draw_sub(mock_lcm, "DRAKE_VIEWER_DRAW");
 
   simulator->AddPriusSimpleCar("Model1", "Channel1");
   simulator->AddPriusSimpleCar("Model2", "Channel2");
@@ -505,26 +487,15 @@ GTEST_TEST(AutomotiveSimulatorTest, TestLcmOutput) {
   simulator->Start();
   simulator->StepBy(1e-3);
 
-  const lcm::DrakeLcmInterface* lcm = simulator->get_lcm();
-  ASSERT_NE(lcm, nullptr);
-
-  const lcm::DrakeMockLcm* mock_lcm =
-      dynamic_cast<const lcm::DrakeMockLcm*>(lcm);
-  ASSERT_NE(mock_lcm, nullptr);
-
   const int expected_num_links = 4;
 
   // Verifies that an lcmt_viewer_load_robot message was transmitted.
-  const lcmt_viewer_load_robot load_message =
-      mock_lcm->DecodeLastPublishedMessageAs<lcmt_viewer_load_robot>(
-          "DRAKE_VIEWER_LOAD_ROBOT");
+  const auto& load_message = load_robot_sub.message();
   EXPECT_EQ(load_message.num_links, expected_num_links);
 
   // Verifies that an lcmt_viewer_draw message was transmitted.
-  const lcmt_viewer_draw draw_message =
-      mock_lcm->DecodeLastPublishedMessageAs<lcmt_viewer_draw>(
-          "DRAKE_VIEWER_DRAW");
-  EXPECT_EQ(load_message.num_links, expected_num_links);
+  const auto& draw_message = draw_sub.message();
+  EXPECT_EQ(draw_message.num_links, expected_num_links);
 }
 
 // Verifies that exceptions are thrown if a vehicle with a non-unique name is

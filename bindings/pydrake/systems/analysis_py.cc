@@ -82,7 +82,8 @@ PYBIND11_MODULE(analysis, m) {
             py::keep_alive<3, 1>(), doc.Simulator.ctor.doc)
         .def("Initialize", &Simulator<T>::Initialize,
             doc.Simulator.Initialize.doc)
-        .def("StepTo", &Simulator<T>::StepTo, doc.Simulator.StepTo.doc)
+        .def("AdvanceTo", &Simulator<T>::AdvanceTo, doc.Simulator.AdvanceTo.doc)
+        .def("StepTo", &Simulator<T>::StepTo, "Use AdvanceTo() instead.")
         .def("get_context", &Simulator<T>::get_context, py_reference_internal,
             doc.Simulator.get_context.doc)
         .def("get_integrator", &Simulator<T>::get_integrator,
@@ -96,7 +97,7 @@ PYBIND11_MODULE(analysis, m) {
                 std::unique_ptr<IntegratorBase<T>> integrator) {
               return self->reset_integrator(std::move(integrator));
             },
-            // Keep alive, ownership: 'Integrator' keeps 'self' alive.
+            // Keep alive, ownership: `Integrator` keeps `self` alive.
             py::keep_alive<2, 1>(),
             doc.Simulator.reset_integrator.doc_1args_stduniqueptr)
         .def("set_publish_every_time_step",

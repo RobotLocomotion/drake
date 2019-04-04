@@ -120,7 +120,7 @@ int DoMain() {
   systems::Simulator<double> simulator(*diagram);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
-  simulator.StepTo(pp_xtraj.end_time());
+  simulator.AdvanceTo(pp_xtraj.end_time());
 
   const auto& pendulum_state =
       PendulumPlant<double>::get_state(diagram->GetSubsystemContext(

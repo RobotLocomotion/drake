@@ -157,7 +157,7 @@ TEST_P(MobilPlannerTest, Topology) {
   InitializeDragway(2 /* num_lanes */);
   InitializeMobilPlanner(true /* initial_with_s */);
 
-  ASSERT_EQ(4, dut_->get_num_input_ports());
+  ASSERT_EQ(4, dut_->num_input_ports());
   const auto& ego_pose_input_port =
       dut_->get_input_port(ego_pose_input_index_);
   EXPECT_EQ(systems::kVectorValued, ego_pose_input_port.get_data_type());
@@ -177,7 +177,7 @@ TEST_P(MobilPlannerTest, Topology) {
       dut_->get_input_port(traffic_input_index_);
   EXPECT_EQ(systems::kAbstractValued, traffic_input_port.get_data_type());
 
-  ASSERT_EQ(1, dut_->get_num_output_ports());
+  ASSERT_EQ(1, dut_->num_output_ports());
   const auto& lane_output_port = dut_->get_output_port(lane_output_index_);
   EXPECT_EQ(systems::kAbstractValued, lane_output_port.get_data_type());
 }
@@ -210,7 +210,7 @@ TEST_P(MobilPlannerTest, UnrestrictedUpdate) {
   InitializeMobilPlanner(true /* initial_with_s */);
 
   if (cache_or_search_ == RoadPositionStrategy::kCache) {
-    EXPECT_EQ(1, context_->get_num_abstract_states());
+    EXPECT_EQ(1, context_->num_abstract_states());
 
     // Arrange the ego car in the right lane with a traffic car placed
     // arbitrarily.

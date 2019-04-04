@@ -129,7 +129,7 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   /// Returns the sole output port.
   const OutputPort<double>& get_output_port() const {
-    DRAKE_THROW_UNLESS(this->get_num_output_ports() == 1);
+    DRAKE_THROW_UNLESS(this->num_output_ports() == 1);
     return LeafSystem<double>::get_output_port(0);
   }
 
@@ -141,19 +141,29 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   /**
    * Blocks the caller until its internal message count exceeds
-   * `old_message_count`.
+   * `old_message_count` with an optional timeout.
    * @param old_message_count Internal message counter.
+   *
    * @param message If non-null, will return the received message.
+   *
+   * @param timeout The duration (in seconds) to wait before returning; a
+   * non-positive duration will not time out.
+   *
+   * @return Returns the new count of received messages. If a timeout occurred,
+   * this will be less than or equal to old_message_count.
+   *
    * @pre If `message` is specified, this system must be abstract-valued.
    */
-  int WaitForMessage(
-      int old_message_count, AbstractValue* message = nullptr) const;
+  int WaitForMessage(int old_message_count, AbstractValue* message = nullptr,
+                     double timeout = -1.) const;
 
   /**
    * (Advanced.) Writes the most recently received message (and message count)
    * into @p state.  If no messages have been received, only the message count
    * is updated.  This is primarily useful for unit testing.
    */
+  DRAKE_DEPRECATED("2019-06-01",
+      "This unit-test-only method is being made non-public.")
   void CopyLatestMessageInto(State<double>* state) const;
 
   /**
@@ -246,6 +256,13 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   // A message counter that's incremented every time the handler is called.
   int received_message_count_{0};
+
+  // When we are destroyed, our subscription will be automatically removed
+  // (if the DrakeLcmInterface supports removal).
+  std::shared_ptr<drake::lcm::DrakeSubscriptionInterface> subscription_;
+
+  // A little hint to help catch use-after-free.
+  int magic_number_{};
 };
 
 }  // namespace lcm

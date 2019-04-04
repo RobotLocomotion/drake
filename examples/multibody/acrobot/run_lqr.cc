@@ -168,12 +168,12 @@ int do_main() {
   elbow.set_random_angle_distribution(0.05*gaussian(generator));
 
   for (int i = 0; i < 5; i++) {
-    simulator.get_mutable_context().set_time(0.0);
+    simulator.get_mutable_context().SetTime(0.0);
     simulator.get_system().SetRandomContext(&simulator.get_mutable_context(),
                                             &generator);
 
     simulator.Initialize();
-    simulator.StepTo(FLAGS_simulation_time);
+    simulator.AdvanceTo(FLAGS_simulation_time);
   }
 
   return 0;

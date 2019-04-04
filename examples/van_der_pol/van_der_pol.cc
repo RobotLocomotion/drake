@@ -1,8 +1,11 @@
 #include "drake/examples/van_der_pol/van_der_pol.h"
 
 #include "drake/common/default_scalars.h"
+#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/system_constraint.h"
+#include "drake/systems/primitives/signal_logger.h"
 
 namespace drake {
 namespace examples {
@@ -27,12 +30,35 @@ VanDerPolOscillator<T>::VanDerPolOscillator()
   this->DeclareNumericParameter(systems::BasicVector<T>(Vector1<T>(1.0)));
 
   // Declare μ≥0 constraint.
-  systems::ContextConstraintCalc<T> mu =
-      [](const systems::Context<T>& context, VectorX<T>* value) {
-        // Extract μ from the parameters.
-        *value = Vector1<T>(context.get_numeric_parameter(0).GetAtIndex(0));
-      };
-  this->DeclareInequalityConstraint(mu, { Vector1d(0), nullopt }, "mu ≥ 0");
+  systems::ContextConstraintCalc<T> mu = [](const systems::Context<T>& context,
+                                            VectorX<T>* value) {
+    // Extract μ from the parameters.
+    *value = Vector1<T>(context.get_numeric_parameter(0).GetAtIndex(0));
+  };
+  this->DeclareInequalityConstraint(mu, {Vector1d(0), nullopt}, "mu ≥ 0");
+}
+
+template <typename T>
+Eigen::Matrix2Xd VanDerPolOscillator<T>::CalcLimitCycle() {
+  systems::DiagramBuilder<double> builder;
+
+  auto vdp = builder.AddSystem<VanDerPolOscillator<double>>();
+  auto logger = LogOutput(vdp->get_full_state_output_port(), &builder);
+  auto diagram = builder.Build();
+
+  systems::Simulator<double> simulator(*diagram);
+
+  // The following initial state was pre-computed (by running the simulation
+  // with μ=1 long enough for it to effectively reach the steady-state limit
+  // cycle).
+  simulator.get_mutable_context().SetContinuousState(
+      Eigen::Vector2d{-0.1144, 2.0578});
+
+  // Simulate for the approximate period (acquired by inspection of numerical
+  // simulation results) of the cycle for μ=1.
+  simulator.AdvanceTo(6.667);
+
+  return logger->data();
 }
 
 // q̈ + μ(q² - 1)q̇ + q = 0

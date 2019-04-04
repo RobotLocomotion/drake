@@ -32,7 +32,7 @@ GTEST_TEST(QpOutputTranslatorTest, QpOutputTranslatorTest) {
   auto context = dut->CreateDefaultContext();
   auto output = dut->AllocateOutput();
 
-  context->set_time(3.);
+  context->SetTime(3.);
 
   auto qp_output = std::make_unique<QpOutput>(GetDofNames(*robot));
   for (int i = 0; i < qp_output->dof_torques().size(); i++) {

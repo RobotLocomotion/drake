@@ -176,8 +176,7 @@ std::string get_missing_id_message<GeometryId>(const GeometryId& key) {
 template <typename T>
 GeometryState<T>::GeometryState()
     : self_source_(SourceId::get_new_id()),
-      geometry_engine_(make_unique<internal::ProximityEngine<T>>()),
-      low_render_engine_(make_unique<render::RenderEngineVtk>()) {
+      geometry_engine_(make_unique<internal::ProximityEngine<T>>()) {
   source_names_[self_source_] = "SceneGraphInternal";
 
   const FrameId world = InternalFrame::world_frame_id();
@@ -265,7 +264,6 @@ GeometryState<T>& GeometryState<T>::operator=(
       const geometry::internal::InternalFrame& source_frame =
           tester.frames().at(frame_id);
       RegisterValidFrame(source_id, frame_id, source_frame.name(),
-                         Isometry3<double>::Identity(),
                          source_frame.frame_group(),
                          source_frame.parent_frame_id(), source_frame.clique(),
                          &frame_set);
@@ -588,8 +586,8 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
 
   int clique = GeometryStateCollisionFilterAttorney::get_next_clique(
       geometry_engine_.get_mutable());
-  RegisterValidFrame(source_id, frame_id, frame.name(), frame.pose(),
-                     frame.frame_group(), parent_id, clique, &f_set);
+  RegisterValidFrame(source_id, frame_id, frame.name(), frame.frame_group(),
+                     parent_id, clique, &f_set);
   return frame_id;
 }
 
@@ -776,21 +774,18 @@ void GeometryState<T>::AssignRole(SourceId source_id,
   AssignRoleInternal(source_id, geometry_id, std::move(properties),
                      Role::kPerception);
 
-  // TODO(SeanCurtis-TRI): Add every render engine when they become available.
   InternalGeometry* geometry = GetMutableGeometry(geometry_id);
   // This *must* be non-null, otherwise the role assignment would have failed.
   DRAKE_DEMAND(geometry != nullptr);
-  RenderIndex index = low_render_engine_->RegisterVisual(
-      geometry->shape(), *geometry->perception_properties(),
-      geometry->X_FG());
-  geometry->set_render_index(index);
-  if (geometry->is_dynamic()) {
-    // Save the geometry's internal index in its render index slot.
-    // NOTE: These are only the indices of *dynamic* geometries with perception
-    // roles. As such, we have no guarantee that they'll grow in lockstep.
-    // This is in stark contrast to the dynamic/anchored dichotomy in the
-    // proximity role.
-    X_WG_perception_.insert({index, geometry->internal_index()});
+
+  for (auto& pair : render_engines_) {
+    const std::string& renderer_name = pair.first;
+    auto& engine = pair.second;
+    optional<RenderIndex> index =
+        engine->RegisterVisual(geometry->internal_index(), geometry->shape(),
+                               *geometry->perception_properties(),
+                               geometry->X_FG(), geometry->is_dynamic());
+    if (index) geometry->set_render_index(renderer_name, *index);
   }
 }
 
@@ -926,13 +921,38 @@ void GeometryState<T>::ExcludeCollisionsBetween(const GeometrySet& setA,
 }
 
 template <typename T>
+void GeometryState<T>::AddRenderer(
+    std::string name, std::unique_ptr<render::RenderEngine> renderer) {
+  if (geometries_.size() > 0) {
+    throw std::logic_error(fmt::format(
+        "Error adding renderer '{}'; geometries have already been registered",
+        name));
+  }
+  if (render_engines_.count(name) > 0) {
+    throw std::logic_error(
+        fmt::format("A renderer with the name '{}' already exists", name));
+  }
+  render_engines_[move(name)] = move(renderer);
+}
+
+template <typename T>
+std::vector<std::string> GeometryState<T>::RegisteredRendererNames() const {
+  std::vector<std::string> names;
+  names.reserve(render_engines_.size());
+  for (const auto& pair : render_engines_) {
+    names.push_back(pair.first);
+  }
+  return names;
+}
+
+template <typename T>
 void GeometryState<T>::RenderColorImage(const render::CameraProperties& camera,
                                         FrameId parent_frame,
                                         const Isometry3<double>& X_PC,
                                         ImageRgba8U* color_image_out,
                                         bool show_window) const {
   // This assumes that the poses in the engine have already been updated.
-  render::RenderEngine* engine = GetRenderEngineOrThrow(camera.fidelity);
+  render::RenderEngine* engine = GetRenderEngineOrThrow(camera.renderer_name);
   const Isometry3<double> X_WC = GetDoubleWorldPose(parent_frame) * X_PC;
   engine->UpdateViewpoint(X_WC);
   engine->RenderColorImage(camera, color_image_out, show_window);
@@ -944,7 +964,7 @@ void GeometryState<T>::RenderDepthImage(
     FrameId parent_frame, const Isometry3<double>& X_PC,
     ImageDepth32F* depth_image_out) const {
   // This assumes that the poses in the engine have already been updated.
-  render::RenderEngine* engine = GetRenderEngineOrThrow(camera.fidelity);
+  render::RenderEngine* engine = GetRenderEngineOrThrow(camera.renderer_name);
   const Isometry3<double> X_WC = GetDoubleWorldPose(parent_frame) * X_PC;
   engine->UpdateViewpoint(X_WC);
   engine->RenderDepthImage(camera, depth_image_out);
@@ -957,7 +977,7 @@ void GeometryState<T>::RenderLabelImage(const render::CameraProperties& camera,
                                         ImageLabel16I* label_image_out,
                                         bool show_window) const {
   // This assumes that the poses in the engine have already been updated.
-  render::RenderEngine* engine = GetRenderEngineOrThrow(camera.fidelity);
+  render::RenderEngine* engine = GetRenderEngineOrThrow(camera.renderer_name);
   const Isometry3<double> X_WC = GetDoubleWorldPose(parent_frame) * X_PC;
   engine->UpdateViewpoint(X_WC);
   engine->RenderLabelImage(camera, label_image_out, show_window);
@@ -1043,11 +1063,8 @@ void GeometryState<T>::ValidateFrameIds(
 template <typename T>
 void GeometryState<T>::FinalizePoseUpdate() {
   geometry_engine_->UpdateWorldPoses(X_WG_, X_WG_proximity_);
-  for (const auto& pair : X_WG_perception_) {
-    const RenderIndex render_index = pair.first;
-    const InternalIndex in_index = pair.second;
-    low_render_engine_->UpdateVisualPose(convert(X_WG_[in_index]),
-                                         render_index);
+  for (auto& pair : render_engines_) {
+    pair.second->UpdatePoses(X_WG_);
   }
 }
 
@@ -1180,6 +1197,32 @@ int GeometryState<T>::RemoveRoleUnchecked(GeometryId geometry_id, Role role) {
 }
 
 template <typename T>
+int GeometryState<T>::RemoveFromRendererUnchecked(
+    const std::string& renderer_name, GeometryId id) {
+  internal::InternalGeometry* geometry = GetMutableGeometry(id);
+  optional<RenderIndex> render_index = geometry->render_index(renderer_name);
+  if (render_index) {
+    render::RenderEngine* engine = render_engines_[renderer_name].get_mutable();
+    geometry->ClearRenderIndex(renderer_name);
+    optional<InternalIndex> moved_geometry_index =
+        engine->RemoveGeometry(*render_index);
+    if (moved_geometry_index) {
+      GeometryId moved_id = geometry_index_id_map_[*moved_geometry_index];
+      InternalGeometry& moved_geometry = geometries_.at(moved_id);
+      optional<RenderIndex> old_render_index =
+          moved_geometry.render_index(renderer_name);
+      // This must be the case, or else the renderer would _not_ have been
+      // able to move this geometry.
+      DRAKE_DEMAND(old_render_index.has_value());
+      moved_geometry.ClearRenderIndex(renderer_name);
+      moved_geometry.set_render_index(renderer_name, *render_index);
+    }
+    return 1;
+  }
+  return 0;
+}
+
+template <typename T>
 int GeometryState<T>::RemoveIllustrationRole(GeometryId geometry_id) {
   internal::InternalGeometry* geometry = GetMutableGeometry(geometry_id);
   DRAKE_DEMAND(geometry != nullptr);
@@ -1195,42 +1238,32 @@ int GeometryState<T>::RemovePerceptionRole(GeometryId geometry_id) {
   internal::InternalGeometry* geometry = GetMutableGeometry(geometry_id);
   DRAKE_DEMAND(geometry != nullptr);
   if (geometry->has_perception_role()) {
-    RenderIndex index = geometry->render_index();
-    optional<RenderIndex> moved_render_index =
-        low_render_engine_->RemoveVisual(index);
-    // I HAVE A PROBLEM HERE!
-    //  Only dynamic geometries appear in X_WG_perception_
-    //  the render engine doesn't distinguish between anchored and dynamic
-    //  geometries.
-    // So, if the render engine *moves* the index of an anchored geometry, I
-    // have no means of simply finding that geometry.
-    if (moved_render_index) {
-      if (X_WG_perception_.count(*moved_render_index) > 0) {
-        // The geometry that the render engine moved is dynamic.
-        InternalIndex moved_index = X_WG_perception_[*moved_render_index];
-        internal::InternalGeometry& moved_geometry =
-            geometries_[geometry_index_id_map_[moved_index]];
-        DRAKE_DEMAND(moved_geometry.has_perception_role());
-        moved_geometry.set_render_index(index);
-        X_WG_perception_[index] = moved_geometry.internal_index();
-        X_WG_perception_.erase(*moved_render_index);
-      } else {
-        // The moved geometry must be an anchored geometry. Go find it. This is
-        // *very* heavy handed, but this operation would be done during
-        // configuration and not simulation *and* this is dev.
-        for (auto& pair : geometries_) {
-          if (pair.second.has_perception_role() &&
-              pair.second.render_index() == *moved_render_index) {
-            pair.second.set_render_index(index);
-            break;
-          }
-        }
-      }
+    int count = 0;
+    for (auto& pair : render_engines_) {
+      const std::string& engine_name = pair.first;
+      count = RemoveFromRendererUnchecked(engine_name, geometry_id);
     }
     geometry->RemovePerceptionRole();
-    return 1;
+    return count;
   }
   return 0;
+}
+
+template <typename T>
+render::RenderEngine* GeometryState<T>::GetRenderEngineOrThrow(
+    const std::string& renderer_name) const {
+  auto iter = render_engines_.find(renderer_name);
+  if (iter != render_engines_.end()) {
+    // NOTE: The render engines are contained in copyable unique pointers so
+    // that the geometry state can be copied. However, getting a mutable pointer
+    // can't be done via a `const copyable_unique_ptr`. So, we const cast it as
+    // a short-term hack until we work out caching issues -- i.e. where this is
+    // called in a cache calc method.
+    return const_cast<render::RenderEngine*>(iter->second.get());
+  }
+
+  throw std::logic_error(
+      fmt::format("No renderer exists with name: '{}'", renderer_name));
 }
 
 template <typename T>
@@ -1254,7 +1287,6 @@ void GeometryState<T>::RegisterValidSource(SourceId source_id,
 template <typename T>
 void GeometryState<T>::RegisterValidFrame(SourceId source_id, FrameId frame_id,
                                           const std::string& name,
-                                          const Isometry3<double>& X_PF,
                                           int frame_group, FrameId parent_id,
                                           int clique, FrameIdSet* frame_set) {
   if (parent_id != InternalFrame::world_frame_id()) {
@@ -1270,7 +1302,7 @@ void GeometryState<T>::RegisterValidFrame(SourceId source_id, FrameId frame_id,
 
   DRAKE_ASSERT(X_PF_.size() == frame_index_to_frame_map_.size());
   InternalIndex internal_index(X_PF_.size());
-  X_PF_.emplace_back(X_PF);
+  X_PF_.emplace_back(Isometry3<double>::Identity());
   X_WF_.emplace_back(Isometry3<double>::Identity());
   frame_index_to_frame_map_.push_back(frame_id);
   frame_set->insert(frame_id);

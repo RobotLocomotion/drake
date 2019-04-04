@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/geometry/dev/render/render_engine.h"
 #include "drake/geometry/dev/scene_graph.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
@@ -272,6 +273,13 @@ class ManipulationStation : public systems::Diagram<T> {
   /// @see multibody::MultibodyPlant<T>::Finalize()
   void Finalize();
 
+  /// Finalizes the station with the option of specifying the renderers the
+  /// manipulation station uses. Calling this method with an empty map is
+  /// equivalent to calling Finalize(). See Finalize() for more details.
+  void Finalize(std::map<std::string,
+                         std::unique_ptr<geometry::dev::render::RenderEngine>>
+                    render_engines);
+
   /// Returns a reference to the main plant responsible for the dynamics of
   /// the robot and the environment.  This can be used to, e.g., add
   /// additional elements into the world before calling Finalize().
@@ -297,6 +305,9 @@ class ManipulationStation : public systems::Diagram<T> {
   /// geometry for the robot and the environment.  This can be used to, e.g.,
   /// add additional elements into the world before calling Finalize().
   geometry::SceneGraph<T>& get_mutable_scene_graph() { return *scene_graph_; }
+
+  /// Returns the name of the station's default renderer.
+  static std::string default_renderer_name() { return default_renderer_name_; }
 
   /// Returns a const reference to the SceneGraph used for rendering
   /// camera images. Since the SceneGraph for rendering is constructed in
@@ -354,13 +365,6 @@ class ManipulationStation : public systems::Diagram<T> {
     SetIiwaPosition(*station_context, &station_context->get_mutable_state(), q);
   }
 
-  DRAKE_DEPRECATED("2019-04-01",
-      "Prefer the version with the Context as the first argument.")
-  void SetIiwaPosition(const Eigen::Ref<const VectorX<T>>& q,
-                       systems::Context<T>* station_context) const {
-    SetIiwaPosition(station_context, q);
-  }
-
   /// Convenience method for getting all of the joint velocities of the Kuka
   // IIWA.  This does not include the gripper.
   VectorX<T> GetIiwaVelocity(const systems::Context<T>& station_context) const;
@@ -378,13 +382,6 @@ class ManipulationStation : public systems::Diagram<T> {
   void SetIiwaVelocity(systems::Context<T>* station_context,
                        const Eigen::Ref<const VectorX<T>>& v) const {
     SetIiwaVelocity(*station_context, &station_context->get_mutable_state(), v);
-  }
-
-  DRAKE_DEPRECATED("2019-04-01",
-      "Prefer the version with the Context as the first argument.")
-  void SetIiwaVelocity(const Eigen::Ref<const VectorX<T>>& v,
-                       systems::Context<T>* station_context) const {
-    SetIiwaVelocity(station_context, v);
   }
 
   /// Convenience method for getting the position of the Schunk WSG. Note
@@ -412,12 +409,6 @@ class ManipulationStation : public systems::Diagram<T> {
     SetWsgPosition(*station_context, &station_context->get_mutable_state(), q);
   }
 
-  DRAKE_DEPRECATED("2019-04-01",
-      "Prefer the version with the Context as the first argument.")
-  void SetWsgPosition(const T& q, systems::Context<T>* station_context) const {
-    SetWsgPosition(station_context, q);
-  }
-
   /// Convenience method for setting the velocity of the Schunk WSG.
   /// @pre `state` must be the systems::State<T> object contained in
   /// `station_context`.
@@ -427,12 +418,6 @@ class ManipulationStation : public systems::Diagram<T> {
   /// Convenience method for setting the velocity of the Schunk WSG.
   void SetWsgVelocity(systems::Context<T>* station_context, const T& v) const {
     SetWsgVelocity(*station_context, &station_context->get_mutable_state(), v);
-  }
-
-  DRAKE_DEPRECATED("2019-04-01",
-      "Prefer the version with the Context as the first argument.")
-  void SetWsgVelocity(const T& v, systems::Context<T>* station_context) const {
-    SetWsgVelocity(station_context, v);
   }
 
   /// Returns a map from camera name to X_WCameraBody for all the static
@@ -483,7 +468,7 @@ class ManipulationStation : public systems::Diagram<T> {
     const multibody::Frame<T>* parent_frame{};
     math::RigidTransform<double> X_PC{math::RigidTransform<double>::Identity()};
     geometry::dev::render::DepthCameraProperties properties{
-        0, 0, 0, geometry::dev::render::Fidelity::kLow, 0, 0};
+        0, 0, 0, default_renderer_name_, 0, 0};
   };
 
   // Assumes iiwa_model_info_ and wsg_model_info_ have already being populated.
@@ -503,6 +488,8 @@ class ManipulationStation : public systems::Diagram<T> {
   geometry::SceneGraph<T>* scene_graph_;
   // This is made in Finalize().
   geometry::dev::SceneGraph<T>* render_scene_graph_{};
+  static constexpr const char* default_renderer_name_ =
+      "manip_station_renderer";
 
   // Populated by RegisterIiwaControllerModel() and
   // RegisterWsgControllerModel().

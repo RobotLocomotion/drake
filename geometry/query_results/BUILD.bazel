@@ -16,6 +16,7 @@ drake_cc_package_library(
         ":penetration_as_point_pair",
         ":signed_distance_pair",
         ":signed_distance_to_point",
+        ":signed_distance_to_point_with_gradient",
     ],
 )
 
@@ -43,6 +44,16 @@ drake_cc_library(
     name = "signed_distance_to_point",
     srcs = [],
     hdrs = ["signed_distance_to_point.h"],
+    deps = [
+        "//common",
+        "//geometry:geometry_ids",
+    ],
+)
+
+drake_cc_library(
+    name = "signed_distance_to_point_with_gradient",
+    srcs = [],
+    hdrs = ["signed_distance_to_point_with_gradient.h"],
     deps = [
         "//common",
         "//geometry:geometry_ids",

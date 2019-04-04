@@ -30,6 +30,39 @@
 namespace drake {
 namespace systems {
 
+namespace internal {
+
+/// Destroys owned systems in the reverse order they were added; this enables
+/// Systems to refer to each other during destruction, in the usual "undo"
+/// resource order one would expect for C++.
+template <typename T>
+class OwnedSystems {
+ public:
+  OwnedSystems() = default;
+  OwnedSystems(OwnedSystems&&) = default;
+  OwnedSystems& operator=(OwnedSystems&&) = default;
+  ~OwnedSystems() {
+    while (!vec_.empty()) {
+      vec_.pop_back();
+    }
+  }
+
+  // These mimic the std::vector APIs directly.
+  decltype(auto) empty() const { return vec_.empty(); }
+  decltype(auto) size() const { return vec_.size(); }
+  decltype(auto) begin() const { return vec_.begin(); }
+  decltype(auto) end() const { return vec_.end(); }
+  decltype(auto) operator[](size_t i) const { return vec_[i]; }
+  void push_back(std::unique_ptr<System<T>>&& sys) {
+    vec_.push_back(std::move(sys));
+  }
+
+ private:
+  std::vector<std::unique_ptr<System<T>>> vec_;
+};
+
+}  // namespace internal
+
 template <typename T>
 class DiagramBuilder;
 
@@ -69,8 +102,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   std::multimap<int, int> GetDirectFeedthroughs() const final {
     std::multimap<int, int> pairs;
-    for (InputPortIndex u(0); u < this->get_num_input_ports(); ++u) {
-      for (OutputPortIndex v(0); v < this->get_num_output_ports(); ++v) {
+    for (InputPortIndex u(0); u < this->num_input_ports(); ++u) {
+      for (OutputPortIndex v(0); v < this->num_output_ports(); ++v) {
         if (DoHasDirectFeedthrough(u, v)) {
           pairs.emplace(u, v);
         }
@@ -423,7 +456,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
       // Append input ports to the label.
       *dot << "{";
-      for (int i = 0; i < this->get_num_input_ports(); ++i) {
+      for (int i = 0; i < this->num_input_ports(); ++i) {
         if (i != 0) *dot << "|";
         *dot << "<u" << i << ">" << this->get_input_port(i).get_name();
       }
@@ -431,7 +464,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
       // Append output ports to the label.
       *dot << " | {";
-      for (int i = 0; i < this->get_num_output_ports(); ++i) {
+      for (int i = 0; i < this->num_output_ports(); ++i) {
         if (i != 0) *dot << "|";
         *dot << "<y" << i << ">" << this->get_output_port(i).get_name();
       }
@@ -455,7 +488,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     *dot << "color=lightgrey" << std::endl;
     *dot << "style=filled" << std::endl;
     *dot << "label=\"input ports\"" << std::endl;
-    for (int i = 0; i < this->get_num_input_ports(); ++i) {
+    for (int i = 0; i < this->num_input_ports(); ++i) {
       this->GetGraphvizInputPortToken(this->get_input_port(i), max_depth,
                                       dot);
       *dot << "[color=blue, label=\"u" << i << "\"];" << std::endl;
@@ -468,7 +501,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     *dot << "color=lightgrey" << std::endl;
     *dot << "style=filled" << std::endl;
     *dot << "label=\"output ports\"" << std::endl;
-    for (int i = 0; i < this->get_num_output_ports(); ++i) {
+    for (int i = 0; i < this->num_output_ports(); ++i) {
       this->GetGraphvizOutputPortToken(this->get_output_port(i), max_depth,
                                        dot);
       *dot << "[color=green, label=\"y" << i << "\"];" << std::endl;
@@ -500,7 +533,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     // -- Add edges from the input and output port nodes to the subsystems that
     //    actually service that port.  These edges are highlighted in blue
     //    (input) and green (output), matching the port nodes.
-    for (int i = 0; i < this->get_num_input_ports(); ++i) {
+    for (int i = 0; i < this->num_input_ports(); ++i) {
       const auto& port_id = input_port_ids_[i];
       this->GetGraphvizInputPortToken(this->get_input_port(i), max_depth,
                                       dot);
@@ -510,7 +543,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       *dot << " [color=blue];" << std::endl;
     }
 
-    for (int i = 0; i < this->get_num_output_ports(); ++i) {
+    for (int i = 0; i < this->num_output_ports(); ++i) {
       const auto& port_id = output_port_ids_[i];
       port_id.first->GetGraphvizOutputPortToken(
           port_id.first->get_output_port(port_id.second), max_depth - 1, dot);
@@ -563,15 +596,6 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     auto it = system_index_map_.find(sys);
     DRAKE_DEMAND(it != system_index_map_.end());
     return it->second;
-  }
-
-  int get_num_continuous_states() const final {
-    int num_states = 0;
-    for (const auto& system : registered_systems_) {
-      num_states += system->get_num_continuous_states();
-    }
-
-    return num_states;
   }
 
  protected:
@@ -901,6 +925,15 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   }
 
  private:
+  int do_get_num_continuous_states() const final {
+    int num_states = 0;
+    for (const auto& system : registered_systems_) {
+      num_states += system->num_continuous_states();
+    }
+
+    return num_states;
+  }
+
   std::unique_ptr<AbstractValue> DoAllocateInput(
       const InputPort<T>& input_port) const final {
     // Ask the subsystem to perform the allocation.
@@ -956,7 +989,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     // the Diagram input is fed into the input of one of its children.
     // Subscribe the child subsystem's input port to its parent Diagram's input
     // port on which it depends.
-    for (InputPortIndex i(0); i < this->get_num_input_ports(); ++i) {
+    for (InputPortIndex i(0); i < this->num_input_ports(); ++i) {
       const InputPortLocator& id = input_port_ids_[i];
       context->SubscribeExportedInputPortToDiagramPort(
           i, ConvertToContextPortIdentifier(id));
@@ -965,15 +998,11 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     // Diagram-external output ports are exported from child subsystem output
     // ports. Subscribe each Diagram-level output to the child-level output on
     // which it depends.
-    for (OutputPortIndex i(0); i < this->get_num_output_ports(); ++i) {
+    for (OutputPortIndex i(0); i < this->num_output_ports(); ++i) {
       const OutputPortLocator& id = output_port_ids_[i];
       context->SubscribeDiagramPortToExportedOutputPort(
           i, ConvertToContextPortIdentifier(id));
     }
-
-    // TODO(sherm1) Remove this line and the corresponding one in
-    // LeafSystem to enable caching by default in Drake (issue #9205).
-    context->DisableCaching();
 
     return context;
   }
@@ -1033,9 +1062,9 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // @p input_port of the Diagram to the given @p output_port of the Diagram.
   bool DoHasDirectFeedthrough(int input_port, int output_port) const {
     DRAKE_ASSERT(input_port >= 0);
-    DRAKE_ASSERT(input_port < this->get_num_input_ports());
+    DRAKE_ASSERT(input_port < this->num_input_ports());
     DRAKE_ASSERT(output_port >= 0);
-    DRAKE_ASSERT(output_port < this->get_num_output_ports());
+    DRAKE_ASSERT(output_port < this->num_output_ports());
 
     const InputPortLocator& target_input_id = input_port_ids_[input_port];
 
@@ -1049,7 +1078,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       size_t removed_count = active_set.erase(current_output_id);
       DRAKE_ASSERT(removed_count == 1);
       const System<T>* sys = current_output_id.first;
-      for (InputPortIndex i(0); i < sys->get_num_input_ports(); ++i) {
+      for (InputPortIndex i(0); i < sys->num_input_ports(); ++i) {
         if (sys->HasDirectFeedthrough(i, current_output_id.second)) {
           const InputPortLocator curr_input_id(sys, i);
           if (curr_input_id == target_input_id) {
@@ -1118,7 +1147,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // substate.
   void DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
-      const EventCollection<DiscreteUpdateEvent<T>>& event_info,
+      const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const final {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context);
@@ -1126,25 +1155,47 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
         dynamic_cast<DiagramDiscreteValues<T>*>(discrete_state);
     DRAKE_DEMAND(diagram_discrete);
 
-    // As a baseline, initialize all the discrete variables to their
-    // current values.
-    diagram_discrete->SetFrom(context.get_discrete_state());
-
-    const DiagramEventCollection<DiscreteUpdateEvent<T>>& info =
+    const DiagramEventCollection<DiscreteUpdateEvent<T>>& diagram_events =
         dynamic_cast<const DiagramEventCollection<DiscreteUpdateEvent<T>>&>(
-            event_info);
+            events);
 
     for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
-      const EventCollection<DiscreteUpdateEvent<T>>& subinfo =
-          info.get_subevent_collection(i);
+      const EventCollection<DiscreteUpdateEvent<T>>& subevents =
+          diagram_events.get_subevent_collection(i);
 
-      if (subinfo.HasEvents()) {
+      if (subevents.HasEvents()) {
         const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
         DiscreteValues<T>& subdiscrete =
             diagram_discrete->get_mutable_subdiscrete(i);
 
-        registered_systems_[i]->CalcDiscreteVariableUpdates(subcontext, subinfo,
-                                                            &subdiscrete);
+        registered_systems_[i]->CalcDiscreteVariableUpdates(
+            subcontext, subevents, &subdiscrete);
+      }
+    }
+  }
+
+  void DoApplyDiscreteVariableUpdate(
+      const EventCollection<DiscreteUpdateEvent<T>>& events,
+      DiscreteValues<T>* discrete_state, Context<T>* context) const final {
+    // If this method is called, these are all Diagram objects.
+    const auto& diagram_events =
+        dynamic_cast<const DiagramEventCollection<DiscreteUpdateEvent<T>>&>(
+            events);
+    auto& diagram_discrete =
+        dynamic_cast<DiagramDiscreteValues<T>&>(*discrete_state);
+    auto& diagram_context = dynamic_cast<DiagramContext<T>&>(*context);
+
+    for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
+      const EventCollection<DiscreteUpdateEvent<T>>& subevents =
+          diagram_events.get_subevent_collection(i);
+
+      if (subevents.HasEvents()) {
+        DiscreteValues<T>& subdiscrete =
+            diagram_discrete.get_mutable_subdiscrete(i);
+        Context<T>& subcontext = diagram_context.GetMutableSubsystemContext(i);
+
+        registered_systems_[i]->ApplyDiscreteVariableUpdate(
+            subevents, &subdiscrete, &subcontext);
       }
     }
   }
@@ -1154,30 +1205,51 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // method with the appropriate subcontext, subevent collection and substate.
   void DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
-      const EventCollection<UnrestrictedUpdateEvent<T>>& event_info,
+      const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const final {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context);
     auto diagram_state = dynamic_cast<DiagramState<T>*>(state);
     DRAKE_DEMAND(diagram_state != nullptr);
 
-    // No need to set state to context's state, since it has already been done
-    // in System::CalcUnrestrictedUpdate().
-
-    const DiagramEventCollection<UnrestrictedUpdateEvent<T>>& info =
+    const DiagramEventCollection<UnrestrictedUpdateEvent<T>>& diagram_events =
         dynamic_cast<const DiagramEventCollection<UnrestrictedUpdateEvent<T>>&>(
-            event_info);
+            events);
 
     for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
-      const EventCollection<UnrestrictedUpdateEvent<T>>& subinfo =
-          info.get_subevent_collection(i);
+      const EventCollection<UnrestrictedUpdateEvent<T>>& subevents =
+          diagram_events.get_subevent_collection(i);
 
-      if (subinfo.HasEvents()) {
+      if (subevents.HasEvents()) {
         const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
         State<T>& substate = diagram_state->get_mutable_substate(i);
 
-        registered_systems_[i]->CalcUnrestrictedUpdate(subcontext, subinfo,
-            &substate);
+        registered_systems_[i]->CalcUnrestrictedUpdate(subcontext, subevents,
+                                                       &substate);
+      }
+    }
+  }
+
+  void DoApplyUnrestrictedUpdate(
+      const EventCollection<UnrestrictedUpdateEvent<T>>& events,
+      State<T>* state, Context<T>* context) const final {
+    // If this method is called, these are all Diagram objects.
+    const auto& diagram_events =
+        dynamic_cast<const DiagramEventCollection<UnrestrictedUpdateEvent<T>>&>(
+            events);
+    auto& diagram_state = dynamic_cast<DiagramState<T>&>(*state);
+    auto& diagram_context = dynamic_cast<DiagramContext<T>&>(*context);
+
+    for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
+      const EventCollection<UnrestrictedUpdateEvent<T>>& subevents =
+          diagram_events.get_subevent_collection(i);
+
+      if (subevents.HasEvents()) {
+        State<T>& substate = diagram_state.get_mutable_substate(i);
+        Context<T>& subcontext = diagram_context.GetMutableSubsystemContext(i);
+
+        registered_systems_[i]->ApplyUnrestrictedUpdate(subevents, &substate,
+                                                        &subcontext);
       }
     }
   }
@@ -1245,7 +1317,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   template <typename NewType>
   std::unique_ptr<typename Diagram<NewType>::Blueprint> ConvertScalarType()
       const {
-    std::vector<std::unique_ptr<System<NewType>>> new_systems;
+    internal::OwnedSystems<NewType> new_systems;
     // Recursively convert all the subsystems.
     std::map<const System<T>*, const System<NewType>*> old_to_new_map;
     for (const auto& old_system : registered_systems_) {
@@ -1268,7 +1340,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       const InputPortIndex port = id.second;
       blueprint->input_port_ids.emplace_back(new_system, port);
     }
-    for (InputPortIndex i{0}; i < this->get_num_input_ports(); i++) {
+    for (InputPortIndex i{0}; i < this->num_input_ports(); i++) {
       blueprint->input_port_names.emplace_back(
           this->get_input_port(i).get_name());
     }
@@ -1277,7 +1349,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       const OutputPortIndex port = id.second;
       blueprint->output_port_ids.emplace_back(new_system, port);
     }
-    for (OutputPortIndex i{0}; i < this->get_num_output_ports(); i++) {
+    for (OutputPortIndex i{0}; i < this->num_output_ports(); i++) {
       blueprint->output_port_names.emplace_back(
           this->get_output_port(i).get_name());
     }
@@ -1372,7 +1444,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     // contain an algebraic loop.
     std::map<InputPortLocator, OutputPortLocator> connection_map;
     // All of the systems to be included in the diagram.
-    std::vector<std::unique_ptr<System<T>>> systems;
+    internal::OwnedSystems<T> systems;
   };
 
   // Constructs a Diagram from the Blueprint that a DiagramBuilder produces.
@@ -1406,7 +1478,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     // subsystems.
     for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
       const auto sys = registered_systems_[i].get();
-      for (SystemConstraintIndex j(0); j < sys->get_num_constraints(); ++j) {
+      for (SystemConstraintIndex j(0); j < sys->num_constraints(); ++j) {
         const auto c = &(sys->get_constraint(j));
         ContextConstraintCalc<T> diagram_calc =
             [this, sys, c](const Context<T>& context, VectorX<T>* value) {
@@ -1483,7 +1555,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     auto diagram_port = internal::FrameworkFactory::Make<DiagramOutputPort<T>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<SystemBase*>(this)
-        std::move(name), OutputPortIndex(this->get_num_output_ports()),
+        std::move(name), OutputPortIndex(this->num_output_ports()),
         this->assign_next_dependency_ticket(), &source_output_port,
         GetSystemIndexOrAbort(&source_output_port.get_system()));
     this->AddOutputPort(std::move(diagram_port));
@@ -1532,10 +1604,10 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     for (const auto& entry : connection_map_) {
       const InputPortLocator& dest = entry.first;
       const OutputPortLocator& src = entry.second;
-      if (dest.second < 0 || dest.second >= dest.first->get_num_input_ports()) {
+      if (dest.second < 0 || dest.second >= dest.first->num_input_ports()) {
         return false;
       }
-      if (src.second < 0 || src.second >= src.first->get_num_output_ports()) {
+      if (src.second < 0 || src.second >= src.first->num_output_ports()) {
         return false;
       }
     }
@@ -1576,7 +1648,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   // The Systems in this Diagram, which are owned by this Diagram, in the order
   // they were registered. Index by SubsystemIndex.
-  std::vector<std::unique_ptr<System<T>>> registered_systems_;
+  internal::OwnedSystems<T> registered_systems_;
 
   // Map to quickly satisfy "What is the subsystem index of the child system?"
   std::map<const System<T>*, SubsystemIndex> system_index_map_;

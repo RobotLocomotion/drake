@@ -293,8 +293,7 @@ void ShapeMatcher<Convex>::TestShapeParameters(const Convex& test) {
 class GeometryStateTest : public ::testing::Test {
  protected:
   void SetUp() {
-    frame_ = make_unique<GeometryFrame>("ref_frame",
-                                        Isometry3<double>::Identity());
+    frame_ = make_unique<GeometryFrame>("ref_frame");
     instance_pose_.translation() << 10, 20, 30;
     instance_ = make_unique<GeometryInstance>(
         instance_pose_, make_unique<Sphere>(1.0), "instance");
@@ -357,7 +356,7 @@ class GeometryStateTest : public ::testing::Test {
     pose.translation() << 1, 2, 3;
     pose.linear() << 1, 0, 0, 0, 0, 1, 0, -1, 0;  // 90° around x-axis.
     frames_.push_back(geometry_state_.RegisterFrame(
-        source_id_, GeometryFrame("f0", pose)));
+        source_id_, GeometryFrame("f0")));
     X_WF_.push_back(pose);
     X_PF_.push_back(pose);
 
@@ -365,14 +364,14 @@ class GeometryStateTest : public ::testing::Test {
     pose.translation() << 10, 20, 30;
     pose.linear() << 0, 0, -1, 0, 1, 0, 1, 0, 0;  // 90° around y-axis.
     frames_.push_back(geometry_state_.RegisterFrame(
-        source_id_, GeometryFrame("f1", pose)));
+        source_id_, GeometryFrame("f1")));
     X_WF_.push_back(pose);
     X_PF_.push_back(pose);
 
     // Create f2.
     pose = pose.inverse();
     frames_.push_back(geometry_state_.RegisterFrame(
-        source_id_, frames_[1], GeometryFrame("f2", pose)));
+        source_id_, frames_[1], GeometryFrame("f2")));
     X_WF_.push_back(X_WF_[1] * pose);
     X_PF_.push_back(pose);
 
@@ -534,7 +533,7 @@ TEST_F(GeometryStateTest, Constructor) {
 TEST_F(GeometryStateTest, IntrospectShapes) {
   SourceId source_id = geometry_state_.RegisterNewSource("test_source");
   FrameId frame_id = geometry_state_.RegisterFrame(
-      source_id, GeometryFrame("frame", Isometry3d::Identity()));
+      source_id, GeometryFrame("frame"));
 
   // Test across all valid shapes.
   {
@@ -758,6 +757,7 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
     const auto& internal_frames = gs_tester_.get_frames();
     // The world frame + the frames added by s_id.
     EXPECT_EQ(internal_frames.size(), kFrameCount + 1);
+
     auto test_frame = [internal_frames, this, s_id](
         FrameIndex i, FrameId parent_id, int num_child_frames) {
       const auto& frame = internal_frames.at(frames_[i]);
@@ -779,6 +779,24 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
           CompareMatrices(frame_in_parent[frame.index()].matrix(),
                           X_PF_[i].matrix()));
     };
+
+    // When added, all frames' poses w.r.t. their parents are the identity.
+    const auto& frame_in_parent = gs_tester_.get_frame_parent_poses();
+    for (FrameId frame_id : frames_) {
+      const auto& frame = internal_frames.at(frame_id);
+      EXPECT_TRUE(CompareMatrices(frame_in_parent[frame.index()].matrix(),
+                                  Isometry3<double>::Identity().matrix()));
+    }
+
+    // Confirm posing positions the frames properly.
+    FramePoseVector<double> poses(source_id_, frames_);
+    poses.clear();
+    for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
+      poses.set_value(frames_[f], X_PF_[f]);
+    }
+    gs_tester_.SetFramePoses(poses);
+    gs_tester_.FinalizePoseUpdate();
+
     test_frame(FrameIndex(0), gs_tester_.get_world_frame(), 0);
     test_frame(FrameIndex(1), gs_tester_.get_world_frame(), 1);
     test_frame(FrameIndex(2), frames_[1], 0);
@@ -1688,6 +1706,9 @@ TEST_F(GeometryStateTest, QueryFrameProperties) {
       geometry_state_.get_pose_in_world(GeometryId::get_new_id()),
       std::logic_error,
       "No world pose available for invalid geometry id: \\d+");
+  EXPECT_TRUE(CompareMatrices(
+      geometry_state_.get_pose_in_world(anchored_geometry_).matrix(),
+      X_WA_.matrix()));
 
   EXPECT_TRUE(
       CompareMatrices(geometry_state_.get_pose_in_parent(frames_[0]).matrix(),
@@ -2301,7 +2322,7 @@ TEST_F(GeometryStateTest, AssignRolesToGeometry) {
 TEST_F(GeometryStateTest, InstanceRoleAssignment) {
   SourceId s_id = NewSource();
   FrameId f_id = geometry_state_.RegisterFrame(
-      s_id, GeometryFrame("frame", Isometry3<double>::Identity()));
+      s_id, GeometryFrame("frame"));
 
   auto make_instance = [this](const std::string& name) {
     return make_unique<GeometryInstance>(

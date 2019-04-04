@@ -194,12 +194,12 @@ class MeshcatVisualizer(LeafSystem):
         LeafSystem.__init__(self)
 
         self.set_name('meshcat_visualizer')
-        self._DeclarePeriodicPublish(draw_period, 0.0)
+        self.DeclarePeriodicPublish(draw_period, 0.0)
         self.draw_period = draw_period
 
         # Pose bundle (from SceneGraph) input port.
-        self._DeclareAbstractInputPort("lcm_visualization",
-                                       AbstractValue.Make(PoseBundle(0)))
+        self.DeclareAbstractInputPort("lcm_visualization",
+                                      AbstractValue.Make(PoseBundle(0)))
 
         if zmq_url == "default":
             zmq_url = "tcp://127.0.0.1:6000"
@@ -223,7 +223,7 @@ class MeshcatVisualizer(LeafSystem):
         def on_initialize(context, event):
             self.load()
 
-        self._DeclareInitializationEvent(
+        self.DeclareInitializationEvent(
             event=PublishEvent(
                 trigger_type=TriggerType.kInitialization,
                 callback=on_initialize))
@@ -250,10 +250,16 @@ class MeshcatVisualizer(LeafSystem):
         self.vis[self.prefix].delete()
 
         # Intercept load message via mock LCM.
+        def handle_load_robot(raw):
+            load_robot_msgs.append(lcmt_viewer_load_robot.decode(raw))
+        load_robot_msgs = []
         mock_lcm = DrakeMockLcm()
+        mock_lcm.Subscribe(
+            channel="DRAKE_VIEWER_LOAD_ROBOT",
+            handler=handle_load_robot)
         DispatchLoadMessage(self._scene_graph, mock_lcm)
-        load_robot_msg = lcmt_viewer_load_robot.decode(
-            mock_lcm.get_last_published_message("DRAKE_VIEWER_LOAD_ROBOT"))
+        mock_lcm.HandleSubscriptions(0)
+        load_robot_msg = load_robot_msgs[0]
         # Translate elements to `meshcat`.
         for i in range(load_robot_msg.num_links):
             link = load_robot_msg.link[i]
@@ -274,10 +280,10 @@ class MeshcatVisualizer(LeafSystem):
                     cur_vis.set_object(meshcat_geom, material)
                     cur_vis.set_transform(element_local_tf)
 
-    def _DoPublish(self, context, event):
+    def DoPublish(self, context, event):
         # TODO(russt): Change this to declare a periodic event with a
-        # callback instead of overriding _DoPublish, pending #9992.
-        LeafSystem._DoPublish(self, context, event)
+        # callback instead of overriding DoPublish, pending #9992.
+        LeafSystem.DoPublish(self, context, event)
 
         pose_bundle = self.EvalAbstractInput(context, 0).get_value()
 
@@ -336,12 +342,12 @@ class MeshcatContactVisualizer(LeafSystem):
         self._plant = plant
 
         self.set_name('meshcat_contact_visualizer')
-        self._DeclarePeriodicPublish(self._meshcat_viz.draw_period, 0.0)
+        self.DeclarePeriodicPublish(self._meshcat_viz.draw_period, 0.0)
         # Pose bundle (from SceneGraph) input port.
-        self._DeclareAbstractInputPort("pose_bundle",
-                                       AbstractValue.Make(PoseBundle(0)))
+        self.DeclareAbstractInputPort("pose_bundle",
+                                      AbstractValue.Make(PoseBundle(0)))
         # Contact results input port from MultibodyPlant
-        self._DeclareAbstractInputPort(
+        self.DeclareAbstractInputPort(
             "contact_results", AbstractValue.Make(ContactResults()))
 
         # Make force cylinders smaller at initialization.
@@ -356,8 +362,8 @@ class MeshcatContactVisualizer(LeafSystem):
         # - Previous time at which contact was published.
         self._t_previous = 0.
 
-    def _DoPublish(self, context, event):
-        LeafSystem._DoPublish(self, context, event)
+    def DoPublish(self, context, event):
+        LeafSystem.DoPublish(self, context, event)
         pose_bundle = self.EvalAbstractInput(context, 0).get_value()
         X_WB_map = self._get_pose_map(pose_bundle)
         self._draw_contact_forces(context, X_WB_map)
@@ -548,13 +554,13 @@ class MeshcatPointCloudVisualizer(LeafSystem):
         self._name = name
 
         self.set_name('meshcat_point_cloud_visualizer')
-        self._DeclarePeriodicPublish(draw_period, 0.0)
+        self.DeclarePeriodicPublish(draw_period, 0.0)
 
-        self._DeclareAbstractInputPort("point_cloud_P",
-                                       AbstractValue.Make(mut.PointCloud()))
+        self.DeclareAbstractInputPort("point_cloud_P",
+                                      AbstractValue.Make(mut.PointCloud()))
 
-    def _DoPublish(self, context, event):
-        LeafSystem._DoPublish(self, context, event)
+    def DoPublish(self, context, event):
+        LeafSystem.DoPublish(self, context, event)
         point_cloud_P = self.EvalAbstractInput(context, 0).get_value()
 
         # `Q` is a point in the point cloud.

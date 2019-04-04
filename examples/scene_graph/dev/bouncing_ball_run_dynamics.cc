@@ -5,6 +5,7 @@
 
 #include "drake/examples/scene_graph/dev/bouncing_ball_plant.h"
 #include "drake/geometry/dev/geometry_visualization.h"
+#include "drake/geometry/dev/render/render_engine_vtk.h"
 #include "drake/geometry/dev/scene_graph.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/scene_graph.h"
@@ -37,19 +38,19 @@ template <typename T>
 using ProximitySceneGraph = geometry::SceneGraph<T>;
 template <typename T>
 using RenderSceneGraph = geometry::dev::SceneGraph<T>;
-using geometry::dev::ConnectDrakeVisualizer;
-using geometry::dev::render::DepthCameraProperties;
-using geometry::dev::render::Fidelity;
 using geometry::GeometryId;
 using geometry::HalfSpace;
 using geometry::IllustrationProperties;
 using geometry::ProximityProperties;
 using geometry::SourceId;
+using geometry::dev::ConnectDrakeVisualizer;
+using geometry::dev::render::DepthCameraProperties;
+using geometry::dev::render::RenderEngineVtk;
 using lcm::DrakeLcm;
-using systems::InputPort;
-using systems::sensors::dev::RgbdCamera;
-using systems::sensors::PixelType;
 using std::make_unique;
+using systems::InputPort;
+using systems::sensors::PixelType;
+using systems::sensors::dev::RgbdCamera;
 
 int do_main() {
   systems::DiagramBuilder<double> builder;
@@ -95,9 +96,11 @@ int do_main() {
                   bouncing_ball2->get_geometry_query_input_port());
 
   // Add rendering scene graph -- use it for both illustration and perception.
-  auto render_scene_graph =
-      builder.AddSystem<RenderSceneGraph<double>>(*proximity_scene_graph);
+  auto render_scene_graph = builder.AddSystem<RenderSceneGraph<double>>();
   render_scene_graph->set_name("render_scene_graph");
+  const std::string render_name("renderer");
+  render_scene_graph->AddRenderer(render_name, make_unique<RenderEngineVtk>());
+  render_scene_graph->CopyFrom(*proximity_scene_graph);
   builder.Connect(bouncing_ball1->get_geometry_pose_output_port(),
                   render_scene_graph->get_source_pose_port(ball_source_id1));
   builder.Connect(bouncing_ball2->get_geometry_pose_output_port(),
@@ -108,9 +111,8 @@ int do_main() {
 
   if (FLAGS_render_on) {
     // Create the camera.
-    DepthCameraProperties
-        camera_properties(640, 480, M_PI_4, Fidelity::kLow, 0.1,
-                          2.0);
+    DepthCameraProperties camera_properties(640, 480, M_PI_4, render_name, 0.1,
+                                            2.0);
     Vector3<double> p_WC(-0.25, -0.75, 0.15);
     Vector3<double> rpy_WC(0, 0, M_PI_2 * 0.9);
     auto camera = builder.AddSystem<RgbdCamera>("fixed", p_WC, rpy_WC,
@@ -178,7 +180,7 @@ int do_main() {
   simulator.Initialize();
   simulator.set_publish_every_time_step(false);
   simulator.set_publish_at_initialization(false);
-  simulator.StepTo(FLAGS_simulation_time);
+  simulator.AdvanceTo(FLAGS_simulation_time);
 
   return 0;
 }

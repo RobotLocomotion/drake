@@ -5,6 +5,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_stl_types.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 
@@ -39,10 +41,13 @@ class PositionKinematicsCache {
  public:
   DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(PositionKinematicsCache)
 
+  template <typename U>
+  using RigidTransform = drake::math::RigidTransform<U>;
+
   /// Constructs a position kinematics cache entry for the given
   /// MultibodyTreeTopology.
-  explicit PositionKinematicsCache(const MultibodyTreeTopology& topology) :
-      num_nodes_(topology.num_bodies()) {
+  explicit PositionKinematicsCache(const MultibodyTreeTopology& topology)
+      : num_nodes_(topology.num_bodies()) {
     Allocate();
   }
 
@@ -53,13 +58,13 @@ class PositionKinematicsCache {
   ///                            BodyNode object associated with body B.
   /// @returns `X_WB` the pose of the the body frame B measured and
   ///                 expressed in the world frame W.
-  const Isometry3<T>& get_X_WB(BodyNodeIndex body_node_index) const {
+  const RigidTransform<T>& get_X_WB(BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return X_WB_pool_[body_node_index];
   }
 
   /// See documentation on the const version get_X_WB() for details.
-  Isometry3<T>& get_mutable_X_WB(BodyNodeIndex body_node_index) {
+  RigidTransform<T>& get_mutable_X_WB(BodyNodeIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return X_WB_pool_[body_node_index];
   }
@@ -70,13 +75,13 @@ class PositionKinematicsCache {
   ///                         BodyNode object associated with body B.
   /// @returns `X_PB` a const reference to the pose of the the body frame B
   ///                 measured and expressed in the parent body frame P.
-  const Isometry3<T>& get_X_PB(BodyNodeIndex body_node_id) const {
+  const RigidTransform<T>& get_X_PB(BodyNodeIndex body_node_id) const {
     DRAKE_ASSERT(0 <= body_node_id && body_node_id < num_nodes_);
     return X_PB_pool_[body_node_id];
   }
 
   /// See documentation on the const version get_X_PB() for details.
-  Isometry3<T>& get_mutable_X_PB(BodyNodeIndex body_node_id) {
+  RigidTransform<T>& get_mutable_X_PB(BodyNodeIndex body_node_id) {
     DRAKE_ASSERT(0 <= body_node_id && body_node_id < num_nodes_);
     return X_PB_pool_[body_node_id];
   }
@@ -91,13 +96,13 @@ class PositionKinematicsCache {
   ///                            of interest.
   /// @returns A const reference to the pose `X_FM` of the outboard frame M
   ///          as measured and expressed in the inboard frame F.
-  const Isometry3<T>& get_X_FM(BodyNodeIndex body_node_index) const {
+  const RigidTransform<T>& get_X_FM(BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return X_FM_pool_[body_node_index];
   }
 
   /// See documentation on the const version get_X_FM() for details.
-  Isometry3<T>& get_mutable_X_FM(BodyNodeIndex body_node_index) {
+  RigidTransform<T>& get_mutable_X_FM(BodyNodeIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return X_FM_pool_[body_node_index];
   }
@@ -110,12 +115,14 @@ class PositionKinematicsCache {
   // `get_X_WB()` for instance.
 
   // The type of pools for storing poses.
-  typedef eigen_aligned_std_vector<Isometry3<T>> X_PoolType;
+  typedef eigen_aligned_std_vector<RigidTransform<T>> X_PoolType;
 
   // Allocates resources for this position kinematics cache.
   void Allocate() {
     X_WB_pool_.resize(num_nodes_);
-    X_WB_pool_[world_index()] = Isometry3<T>::Identity();
+    // Even though RigidTransform defaults to identity, we make it explicit.
+    // This pose will never change after this initialization.
+    X_WB_pool_[world_index()] = RigidTransform<T>::Identity();
 
     X_PB_pool_.resize(num_nodes_);
     X_PB_pool_[world_index()] = NaNPose();  // It should never be used.
@@ -127,10 +134,14 @@ class PositionKinematicsCache {
     X_MB_pool_[world_index()] = NaNPose();  // It should never be used.
   }
 
-  // Helper method to initialize poses to NaN.
-  static Isometry3<T> NaNPose() {
-    return Isometry3<T>(
-        Matrix4<T>::Constant(Eigen::NumTraits<double>::quiet_NaN()));
+  // Helper method to initialize poses to garbage values including NaNs.
+  // This allow us to quickly verify some of the values stored in the pools are
+  // never used (however we store them anyway to simplify the indexing).
+  static RigidTransform<T> NaNPose() {
+    // Note: RotationMatrix will throw in Debug builds if values are NaN. For
+    // our purposes, it is enough the translation has NaN values.
+    return RigidTransform<T>(math::RotationMatrix<T>::Identity(),
+        Vector3<T>::Constant(Eigen::NumTraits<double>::quiet_NaN()));
   }
 
   // Number of body nodes in the corresponding MultibodyTree.

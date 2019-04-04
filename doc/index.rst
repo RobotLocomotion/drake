@@ -1,8 +1,8 @@
+.. raw:: html
 
-.. image:: images/logo_w_text.jpg
-	:align: center
-	:width: 60%
-
+    <div style="text-align: center; padding: 10px">
+        <img src="_images/logo_w_text.jpg" width="400px"/>
+    </div>
 
 ********
 Overview
@@ -15,82 +15,51 @@ It is a collection of tools for analyzing the dynamics of our robots and buildin
 
 While there are an increasing number of simulation tools available for robotics, most of them function like a black box: commands go in, sensors come out.  Drake aims to simulate even very complex dynamics of robots (e.g. including friction, contact, aerodynamics, ...), but always with an emphasis on exposing the structure in the governing equations (sparsity, analytical gradients, polynomial structure, uncertainty quantification, ...) and making this information available for advanced planning, control, and analysis algorithms.  Drake provides interfaces to high-level languages (MATLAB, Python, ...) to enable rapid-prototyping of new algorithms, and also aims to provide solid open-source implementations for many state-of-the-art algorithms.  Finally, we hope Drake provides many compelling examples that can help people get started and provide much needed benchmarks.   We are excited to accept user contributions to improve the coverage.
 
-Here is a quick summary of capabilities:
-
-* `Modeling Dynamical Systems <https://drake.mit.edu/doxygen_cxx/group__systems.html>`_
-	* C++ `block-diagram <https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_diagram_builder.html#details>`_  modeling environment with support for:
-		* Continuous, discrete, hybrid, event-triggered, and multi-rate systems
-		* `Stochastic systems <https://drake.mit.edu/doxygen_cxx/stochastic_systems.html>`_
-		* `System constraints <https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_system_constraint.html#details>`_
-	* `Rigid-body kinematics and dynamics <https://drake.mit.edu/doxygen_cxx/group__rigid__body__systems.html>`_
-		* Rigorously designed and tested, well-documented `multi-body library <https://drake.mit.edu/doxygen_cxx/group__multibody__concepts.html>`_
-		* Load from :doc:`SDF / URDF models <models>` (+ a few custom tags)
-		* Contact/collisions modeled with either `compliant <https://drake.mit.edu/doxygen_cxx/group__drake__contacts.html>`_  or rigid contact using continuous (differential equation) and discrete (difference equation, i.e., time stepping) models; **Coming soon**: hybrid models for rigid contact
-		* Geometry queries (e.g. collision detection, contact queries, and sensor queries) for simple geometries and convex meshes;  **Coming soon**: non-convex meshes and multi-contact
-		* `Rich library of kinematic and dynamic queries <https://drake.mit.edu/doxygen_cxx/class_rigid_body_tree.html>`_ (e.g. Centroidal dynamics, Center of Pressure, Kinematic Jacobians, ...)
-	* `Sensor models <https://drake.mit.edu/doxygen_cxx/group__sensor__systems.html>`_ (lidar, RGB-D camera, imu, contact force/torque)
-	* Hand-derived models for many canonical control dynamical systems
-	* `Easily add your own models/components <https://github.com/RobotLocomotion/drake/blob/master/examples/simple_continuous_time_system.cc>`_
-	* For nearly all of the above we aim to expose sparsity in the governing equations and provide analytical gradients / symbolic analysis
-	* **Coming soon**:
-		* API upgrade from `RigidBodyTree <https://drake.mit.edu/doxygen_cxx/class_rigid_body_tree.html>`_ to `MultiBodyTree <https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_multibody_tree.html>`_
-		* Soft-body kinematics and dynamics
-		* More sophisticated rendering (towards photo-realism) and noise models for perception
-* Core Libraries / Utilities
-	* `MathematicalProgram <https://drake.mit.edu/doxygen_cxx/group__solvers.html>`_, a C++ interface wrapping many open-source and commercial solvers
-	* `Symbolic Computation <https://drake.mit.edu/doxygen_cxx/namespacedrake_1_1symbolic.html>`_, Eigen-compatible scalar types for symbolic design and analysis
-* Simulation and Analysis
-	* `Simulation <https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_simulator.html>`_ with a suite of `numerical integration routines <https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_integrator_base.html>`_
-	* Local stability/controllability/observability analysis (via linearization / semi-definite programming)
-	* **To be ported from MATLAB to C++**:
-		* Find fixed points / trim conditions
-		* Region of attraction analysis using sums-of-squares optimization
-		* Finite-time verification (e.g. forward/backward reachability analysis)
-	* **Coming soon**:
-		* Uncertainty quantification
-* Planning
-	* Optimization-based inverse kinematics (fast `SQP-based methods <https://drake.mit.edu/doxygen_cxx/rigid__body__ik_8h.html>`_ and `Global IK <https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_global_inverse_kinematics.html>`_)
-	* `Trajectory optimization <https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_direct_trajectory_optimization.html>`_ (`kinematic <https://drake.mit.edu/doxygen_cxx/rigid__body__ik_8h.html#a6a69c1ef8426e4729ea1c7d4c11e6021>`_ and dynamic)
-	* `Rich library of constraints <https://drake.mit.edu/doxygen_cxx/class_rigid_body_constraint.html>`_ used by all of the above
-	* **To be ported from MATLAB to C++**
-		* Contact-implicit trajectory optimization
-		* `Mixed-integer-convex trajectory optimization <https://github.com/RobotLocomotion/drake/issues/6243>`_
-		* Footstep/Gait planning for walking robots
-		* Grasp optimization
-		* Feedback motion planning
-	* **Coming soon**:
-		* `Sample-based motion planning <https://github.com/RobotLocomotion/drake/issues/3413>`_
-* `Feedback Control Design <https://drake.mit.edu/doxygen_cxx/group__control__systems.html>`_
-	* LQR design for fixed-points
-	* `Inverse-dynamics controller with contact constraints <https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_inverse_dynamics_controller.html#details>`_ using Quadratic Programming (e.g. for humanoid whole-body control)
-	* **To be ported from MATLAB to C++**
-		* Time-varying LQR
-		* Sums-of-squares-based feedback design
-		* Value iteration algorithms (for low dimensional systems)
-* `State Estimation <https://drake.mit.edu/doxygen_cxx/group__estimator__systems.html>`_
-	* Recursive filter design (Kalman Filters, Luenberger observers)
-	* **Coming soon**:
-		* "Smoothing" estimators for nonlinear systems
-* `System Identification <https://drake.mit.edu/doxygen_cxx/classdrake_1_1solvers_1_1_system_identification.html>`_
-	* Least-squares "equation error" minimization for rigid body systems (with automatic extraction of identifiable lumped parameters)
-	* Nonlinear "simulation error" minimization
-* `Many examples / benchmarks / model systems <https://github.com/RobotLocomotion/drake/tree/master/examples>`_
-	* Acrobot, Cart-Pole, Bouncing balls, ...
-	* Quadrotors
-	* `Automotive/Traffic <https://drake.mit.edu/doxygen_cxx/group__automotive__systems.html>`_
-	* Manipulation
-	* **To be ported from MATLAB to C++**
-		* Fixed-Wing UAVs
-		* Walking Robots
-		* Humanoids (most notably including the bulk of our codebase for Atlas from `MIT's entry in the DARPA Robotics Challenge <http://drc.mit.edu>`_)
-* Other
-	* `Message passing interfaces <https://drake.mit.edu/doxygen_cxx/group__message__passing.html>`_  (`LCM <https://github.com/lcm-proj/lcm>`_)
-
-Most of these models/tools are described in `the companion textbook from an MIT course/MOOC <https://people.csail.mit.edu/russt/underactuated/underactuated.html?chapter=drake>`_.  We've also recently started populating the :doc:`gallery` (contributions welcome!).
-
 We hope you find this tool useful.  Please see :ref:`getting_help` if you wish
 to share your comments, questions, success stories, or frustrations.  And please contribute your best bug fixes, features, and examples!
 
+************
+Core Library
+************
+
+.. raw:: html
+
+    <table align="center" style="border-spacing: 50px">
+        <tr>
+            <td style="text-align:center;vertical-align:top" width="200px" height="150px">
+                <a href="https://drake.mit.edu/doxygen_cxx/group__systems.html">Modeling Dynamical Systems</a>
+                <p/>
+                <img src="_images/systems.svg" width="195px"/>
+            </td>
+            <td style="text-align:center;vertical-align:top" width="200px">
+                <a target="_mathematical_program" href="https://colab.research.google.com/github/RussTedrake/underactuated/blob/master/src/mathematical_program_examples.ipynb">
+                Solving Mathematical Programs</a>
+                <p/>
+                <img src="_images/mathematical_program.svg" width="150px"/>
+            </td>
+            <td style="text-align:center;vertical-align:top" width="200px">
+                <a href="https://drake.mit.edu/doxygen_cxx/group__multibody.html">Multibody Kinematics and Dynamics</a>
+                <p/>
+                <img src="https://github.com/caelan/pddlstream/raw/d0eb256e88b8b5174fbd136a82867fd9e9cebc67/images/drake_kuka.png" width="195px"/>
+            </td>
+        </tr>
+    </table>
+
+********
+Examples
+********
+
+.. TODO(russt): make this a table with different algorithms, too.
+
+We have a number of use cases demonstrated in `the examples directory of
+the source tree
+<https://github.com/RobotLocomotion/drake/tree/master/examples>`_, and
+more available through our :doc:`gallery` (contributions welcome!).
+
+We also have a number of `examples of using Drake as a external library
+<https://github.com/RobotLocomotion/drake-external-examples>`_
+in your own projects, including examples with various build systems and
+examples of how you might set up continuous integration.
 
 ************
 Citing Drake
@@ -100,8 +69,8 @@ If you would like to cite Drake in your academic publications, we suggest the fo
 
 	@misc{drake,
 	 author = "Russ Tedrake and the Drake Development Team",
-	 title = "Drake: A planning, control, and analysis toolbox for nonlinear dynamical systems",
-	 year = 2016,
+	 title = "Drake: Model-based design and verification for robotics",
+	 year = 2019,
 	 url = "https://drake.mit.edu"
 	}
 
@@ -142,11 +111,3 @@ Using Drake from other Programming Languages
 		julia_bindings
 		matlab_bindings
 
-
-***************************************************
-Documentation that may be useful but needs updating
-***************************************************
-
-* `Introduction and Examples <http://underactuated.csail.mit.edu/underactuated.html?chapter=drake>`_
-* :doc:`design`
-* :doc:`video_tutorials`

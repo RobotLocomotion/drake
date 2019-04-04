@@ -290,8 +290,8 @@ TEST_P(KukaArmTest, EvalOutput) {
 
   // Checks that the number of input and output ports in the system and context
   // are consistent.
-  ASSERT_EQ(1, kuka_plant_->get_num_input_ports());
-  ASSERT_EQ(1, context_->get_num_input_ports());
+  ASSERT_EQ(1, kuka_plant_->num_input_ports());
+  ASSERT_EQ(1, context_->num_input_ports());
   ASSERT_EQ(1, kuka_plant_->get_num_model_instances());
 
   const int kModelInstanceId =
@@ -346,9 +346,9 @@ TEST_P(KukaArmTest, EvalOutput) {
   // (In this context, there is only one model instance and thus only one model
   // instance state port.)
   if (kuka_plant_->is_state_discrete()) {
-    ASSERT_EQ(5, output_->get_num_ports());
+    ASSERT_EQ(5, output_->num_ports());
   } else {
-    ASSERT_EQ(6, output_->get_num_ports());
+    ASSERT_EQ(6, output_->num_ports());
   }
 
   kuka_plant_->CalcOutput(*context_, output_.get());
@@ -567,7 +567,7 @@ GTEST_TEST(rigid_body_plant_test, BasicTimeSteppingTest) {
   // but as discrete state.
   EXPECT_TRUE(continuous_context->has_only_continuous_state());
   EXPECT_TRUE(time_stepping_context->has_only_discrete_state());
-  EXPECT_EQ(continuous_context->get_continuous_state().size(),
+  EXPECT_EQ(continuous_context->num_continuous_states(),
             time_stepping_context->get_discrete_state(0).size());
 
   // Check that the dynamics of the time-stepping model match the

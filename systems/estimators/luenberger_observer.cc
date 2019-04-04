@@ -23,8 +23,8 @@ LuenbergerObserver<T>::LuenbergerObserver(
   DRAKE_DEMAND(observed_system_ != nullptr);
 
   // Note: Could potentially extend this to MIMO systems.
-  DRAKE_DEMAND(observed_system_->get_num_input_ports() <= 1);
-  DRAKE_DEMAND(observed_system_->get_num_output_ports() == 1);
+  DRAKE_DEMAND(observed_system_->num_input_ports() <= 1);
+  DRAKE_DEMAND(observed_system_->num_output_ports() == 1);
 
   DRAKE_DEMAND(observed_system_context_->has_only_continuous_state());
   // Otherwise there is nothing to estimate.
@@ -57,7 +57,7 @@ LuenbergerObserver<T>::LuenbergerObserver(
                observed_system_->get_output_port(0).size());
 
   // Second input port is the input to the observed system (if it exists).
-  if (observed_system_->get_num_input_ports() > 0) {
+  if (observed_system_->num_input_ports() > 0) {
     auto input_vec = observed_system_->AllocateInputVector(
         observed_system_->get_input_port(0));
     this->DeclareVectorInputPort(*input_vec);
@@ -79,11 +79,11 @@ void LuenbergerObserver<T>::DoCalcTimeDerivatives(
   // hidden undeclared state).
 
   // Set observed system input.
-  if (observed_system_->get_num_input_ports() > 0) {
+  if (observed_system_->num_input_ports() > 0) {
     // TODO(russt): Avoid this dynamic allocation by fixing the input port once
     // and updating it here.
-    observed_system_context_->FixInputPort(
-        0, this->get_input_port(1).Eval(context));
+    observed_system_->get_input_port(0).FixValue(
+        observed_system_context_.get(), this->get_input_port(1).Eval(context));
   }
   // Set observed system state.
   observed_system_context_->get_mutable_continuous_state_vector().SetFrom(

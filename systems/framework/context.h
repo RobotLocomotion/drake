@@ -67,6 +67,7 @@ class Context : public ContextBase {
   //@{
 
   /// Returns the current time in seconds.
+  /// @see SetTime()
   const T& get_time() const { return get_step_info().time_sec; }
 
   /// Returns a const reference to the whole State.
@@ -76,39 +77,44 @@ class Context : public ContextBase {
 
   /// Returns true if the Context has no state.
   bool is_stateless() const {
-    const int nxc = get_continuous_state().size();
-    const int nxd = get_num_discrete_state_groups();
-    const int nxa = get_num_abstract_states();
+    const int nxc = num_continuous_states();
+    const int nxd = num_discrete_state_groups();
+    const int nxa = num_abstract_states();
     return nxc == 0 && nxd == 0 && nxa == 0;
   }
 
   /// Returns true if the Context has continuous state, but no discrete or
   /// abstract state.
   bool has_only_continuous_state() const {
-    const int nxc = get_continuous_state().size();
-    const int nxd = get_num_discrete_state_groups();
-    const int nxa = get_num_abstract_states();
+    const int nxc = num_continuous_states();
+    const int nxd = num_discrete_state_groups();
+    const int nxa = num_abstract_states();
     return nxc > 0 && nxd == 0 && nxa == 0;
   }
 
   /// Returns true if the Context has discrete state, but no continuous or
   /// abstract state.
   bool has_only_discrete_state() const {
-    const int nxc = get_continuous_state().size();
-    const int nxd = get_num_discrete_state_groups();
-    const int nxa = get_num_abstract_states();
+    const int nxc = num_continuous_states();
+    const int nxd = num_discrete_state_groups();
+    const int nxa = num_abstract_states();
     return nxd > 0 && nxc == 0 && nxa == 0;
   }
 
   /// Returns the total dimension of all of the basic vector states (as if they
   /// were muxed).
   /// @throws std::runtime_error if the system contains any abstract state.
-  int get_num_total_states() const {
-    DRAKE_THROW_UNLESS(get_num_abstract_states() == 0);
-    int count = get_continuous_state().size();
-    for (int i = 0; i < get_num_discrete_state_groups(); i++)
+  int num_total_states() const {
+    DRAKE_THROW_UNLESS(num_abstract_states() == 0);
+    int count = num_continuous_states();
+    for (int i = 0; i < num_discrete_state_groups(); i++)
       count += get_discrete_state(i).size();
     return count;
+  }
+
+  /// Returns the number of continuous state variables `xc = {q, v, z}`.
+  int num_continuous_states() const {
+    return get_continuous_state().size();
   }
 
   /// Returns a const reference to the continuous component of the state,
@@ -124,7 +130,7 @@ class Context : public ContextBase {
   }
 
   /// Returns the number of vectors (groups) in the discrete state.
-  int get_num_discrete_state_groups() const {
+  int num_discrete_state_groups() const {
     return get_state().get_discrete_state().num_groups();
   }
 
@@ -150,7 +156,7 @@ class Context : public ContextBase {
   }
 
   /// Returns the number of elements in the abstract state.
-  int get_num_abstract_states() const {
+  int num_abstract_states() const {
     return get_state().get_abstract_state().size();
   }
 
@@ -172,7 +178,7 @@ class Context : public ContextBase {
 
   /// Returns the accuracy setting (if any). Note that the return type is
   /// `optional<double>` rather than the double value itself.
-  /// @see set_accuracy() for details.
+  /// @see SetAccuracy() for details.
   const optional<double>& get_accuracy() const { return accuracy_; }
 
   /// Returns a const reference to this %Context's parameters.
@@ -199,8 +205,20 @@ class Context : public ContextBase {
   const AbstractValue& get_abstract_parameter(int index) const {
     return get_parameters().get_abstract_parameter(index);
   }
+
+#ifndef DRAKE_DOXYGEN_CXX
+  DRAKE_DEPRECATED("2019-07-01", "Use num_discrete_state_groups() instead.")
+  int get_num_discrete_state_groups() const {
+    return num_discrete_state_groups();
+  }
+  DRAKE_DEPRECATED("2019-07-01", "Use num_abstract_states() instead.")
+  int get_num_abstract_states() const { return num_abstract_states(); }
+  DRAKE_DEPRECATED("2019-07-01", "Use num_total_states() instead.")
+  int get_num_total_states() const { return num_total_states(); }
+#endif
   //@}
-  /** @anchor context_value_change_methods */
+
+  /// @anchor context_value_change_methods
   /// @name           Methods for changing locally-stored values
   /// Methods in this group allow changes to the values of quantities stored
   /// locally in this %Context. The changeable quantities are:
@@ -301,6 +319,9 @@ class Context : public ContextBase {
   /// sweep to occur. Instead, request the mutable reference again when
   /// you need it so that the necessary notification sweep can be performed.
   ///
+  /// The dangerous methods are segregated into their own
+  /// @ref dangerous_context_value_change_methods "documentation group".
+  ///
   /// <h4>Advanced context-modifying methods</h4>
   /// Specialized methods are provided for expert users implementing
   /// integrators and other state-modifying solvers. Those are segregated to
@@ -320,48 +341,17 @@ class Context : public ContextBase {
   /// notifications.
   //@{
 
-  // TODO(sherm1) All these methods perform invalidation sweeps so aren't
-  // entitled to lower_case_names. Deprecate and replace (see #9205).
-
+  // TODO(sherm1) Consider whether this should avoid the notification sweep
+  // if the new time is the same as the old time.
   /// Sets the current time in seconds. Sends out of date notifications for all
   /// time-dependent computations (at least if the time has actually changed).
   /// Time must have the same value in every subcontext within the same Diagram
   /// context tree so may only be modified at the root context of the tree.
   /// @throws std::logic_error if this is not the root context.
-  // TODO(sherm1) Consider whether this should avoid the notification sweep
-  // if the new time is the same as the old time.
-  void set_time(const T& time_sec) {
+  void SetTime(const T& time_sec) {
     ThrowIfNotRootContext(__func__, "Time");
     const int64_t change_event = this->start_new_change_event();
     PropagateTimeChange(this, time_sec, change_event);
-  }
-
-  /// Returns a mutable reference to the whole State, potentially invalidating
-  /// _all_ state-dependent computations so requiring out of date notifications
-  /// to be made for all such computations. If you don't mean to change the
-  /// whole state, use more focused methods to modify only a portion of the
-  /// state. See class documentation for more information.
-  State<T>& get_mutable_state() {
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event, &Context<T>::NoteAllStateChanged);
-    return do_access_mutable_state();
-  }
-
-  /// Returns a mutable reference to the continuous component of the state,
-  /// which may be of size zero. Sends out of date notifications for all
-  /// continuous-state-dependent computations.
-  ContinuousState<T>& get_mutable_continuous_state() {
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event,
-                        &Context<T>::NoteAllContinuousStateChanged);
-    return do_access_mutable_state().get_mutable_continuous_state();
-  }
-
-  /// Returns a mutable reference to the continuous state vector, devoid
-  /// of second-order structure. The vector may be of size zero. Sends out of
-  /// date notifications for all continuous-state-dependent computations.
-  VectorBase<T>& get_mutable_continuous_state_vector() {
-    return get_mutable_continuous_state().get_mutable_vector();
   }
 
   // TODO(sherm1) Add more-specific state "set" methods for smaller
@@ -375,12 +365,12 @@ class Context : public ContextBase {
     get_mutable_continuous_state().SetFromVector(xc);
   }
 
+  // TODO(sherm1) Consider whether this should avoid invalidation of
+  // time-dependent quantities if the new time is the same as the old time.
   /// Sets time to @p time_sec and continuous state to @p xc. Performs a single
   /// notification sweep to avoid duplicate notifications for computations that
   /// depend on both time and state.
   /// @throws std::logic_error if this is not the root context.
-  // TODO(sherm1) Consider whether this should avoid invalidation of
-  // time-dependent quantities if the new time is the same as the old time.
   void SetTimeAndContinuousState(const T& time_sec,
                                  const Eigen::Ref<const VectorX<T>>& xc) {
     VectorBase<T>& xc_vector =
@@ -389,96 +379,53 @@ class Context : public ContextBase {
     xc_vector.SetFromVector(xc);
   }
 
-  /// Returns a mutable reference to the discrete component of the state,
-  /// which may be of size zero. Sends out of date notifications for all
-  /// discrete-state-dependent computations.
-  DiscreteValues<T>& get_mutable_discrete_state() {
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event,
-                        &Context<T>::NoteAllDiscreteStateChanged);
-    return do_access_mutable_state().get_mutable_discrete_state();
+  /// Sets the discrete state to @p xd, assuming there is just one discrete
+  /// state group. The supplied vector must be the same size as the existing
+  /// discrete state. Sends out of date notifications for all
+  /// discrete-state-dependent computations. Use the other signature for this
+  /// method if you have multiple discrete state groups.
+  /// @pre There is exactly one discrete state group.
+  void SetDiscreteState(const Eigen::Ref<const VectorX<T>>& xd) {
+    if (num_discrete_state_groups() != 1) {
+      throw std::logic_error(fmt::format(
+          "Context::SetDiscreteState(): expected exactly 1 discrete state "
+          "group but there were {} groups. Use the other signature if "
+          "you have multiple groups.", num_discrete_state_groups()));
+    }
+    SetDiscreteState(DiscreteStateIndex(0), xd);
   }
 
-  /// Returns a mutable reference to the _only_ discrete state vector.
-  /// Sends out of date notifications for all discrete-state-dependent
-  /// computations.
-  /// @sa get_discrete_state_vector().
-  /// @pre There is only one discrete state group.
-  BasicVector<T>& get_mutable_discrete_state_vector() {
-    return get_mutable_discrete_state().get_mutable_vector();
-  }
-
-  /// Returns a mutable reference to group (vector) @p index of the discrete
-  /// state. Sends out of date notifications for all computations that depend
-  /// on this discrete state group.
-  /// @pre @p index must identify an existing group.
-  /// @note Currently notifies dependents of _all_ groups.
   // TODO(sherm1) Invalidate only dependents of this one discrete group.
-  BasicVector<T>& get_mutable_discrete_state(int index) {
-    DiscreteValues<T>& xd = get_mutable_discrete_state();
-    return xd.get_mutable_vector(index);
+  /// Sets the discrete state group indicated by @p group_index to @p xd.
+  /// The supplied vector @p xd must be the same size as the existing discrete
+  /// state group. Sends out of date notifications for all computations that
+  /// depend on this discrete state group.
+  /// @pre @p group_index identifies an existing group.
+  /// @note Currently notifies dependents of _all_ groups.
+  void SetDiscreteState(int group_index,
+                        const Eigen::Ref<const VectorX<T>>& xd) {
+    get_mutable_discrete_state(DiscreteStateIndex(group_index))
+        .SetFromVector(xd);
   }
 
-  /// Returns a mutable reference to the abstract component of the state,
-  /// which may be of size zero. Sends out of date notifications for all
-  /// abstract-state-dependent computations.
-  AbstractValues& get_mutable_abstract_state() {
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event,
-                        &Context<T>::NoteAllAbstractStateChanged);
-    return do_access_mutable_state().get_mutable_abstract_state();
-  }
-
-  /// Returns a mutable reference to element @p index of the abstract state.
-  /// Sends out of date notifications for all computations that depend on this
-  /// abstract state variable.
-  /// @pre @p index must identify an existing element.
+  // TODO(sherm1) Invalidate only dependents of this one abstract variable.
+  /// Sets the value of the abstract state variable selected by @p index. Sends
+  /// out of date notifications for all computations that depend on that
+  /// abstract state variable. The template type will be inferred and need not
+  /// be specified explicitly.
+  ///
+  /// @pre @p index must identify an existing abstract state variable.
   /// @pre the abstract state's type must match the template argument.
   /// @note Currently notifies dependents of _any_ abstract state variable.
-  // TODO(sherm1) Invalidate only dependents of this one abstract variable.
-  template <typename U>
-  U& get_mutable_abstract_state(int index) {
-    AbstractValues& xa = get_mutable_abstract_state();
-    return xa.get_mutable_value(index).get_mutable_value<U>();
+  template <typename ValueType>
+  void SetAbstractState(int index, const ValueType& value) {
+    get_mutable_abstract_state<ValueType>(index) = value;
   }
 
-  /// Returns a mutable reference to this %Context's parameters. Sends out of
-  /// date notifications for all parameter-dependent computations. If you don't
-  /// mean to change all the parameters, use the indexed methods to modify only
-  /// some of the parameters so that fewer computations are invalidated and
-  /// fewer notifications need be sent.
-  Parameters<T>& get_mutable_parameters() {
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event, &Context<T>::NoteAllParametersChanged);
-    return *parameters_;
-  }
-
-  /// Returns a mutable reference to element @p index of the vector-valued
-  /// (numeric) parameters. Sends out of date notifications for all computations
-  /// dependent on this parameter.
-  /// @pre @p index must identify an existing numeric parameter.
-  /// @note Currently notifies dependents of _all_ numeric parameters.
-  // TODO(sherm1) Invalidate only dependents of this one parameter.
-  BasicVector<T>& get_mutable_numeric_parameter(int index) {
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event,
-                        &Context<T>::NoteAllNumericParametersChanged);
-    return parameters_->get_mutable_numeric_parameter(index);
-  }
-
-  /// Returns a mutable reference to element @p index of the abstract-valued
-  /// parameters. Sends out of date notifications for all computations dependent
-  /// on this parameter.
-  /// @pre @p index must identify an existing abstract parameter.
-  /// @note Currently notifies dependents of _all_ abstract parameters.
-  // TODO(sherm1) Invalidate only dependents of this one parameter.
-  AbstractValue& get_mutable_abstract_parameter(int index) {
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event,
-                        &Context<T>::NoteAllAbstractParametersChanged);
-    return parameters_->get_mutable_abstract_parameter(index);
-  }
-
+  // TODO(sherm1) Should treat fixed input port values same as parameters.
+  // TODO(sherm1) Change the name of this method to be more inclusive since it
+  //              also copies accuracy (now) and fixed input port values
+  //              (pending above TODO).
   /// Sets this context's time, accuracy, state, and parameters from the
   /// `double` values in @p source, regardless of this context's scalar type.
   /// Sends out of date notifications for all dependent computations in this
@@ -486,10 +433,6 @@ class Context : public ContextBase {
   /// @throws std::logic_error if this is not the root context.
   /// @note Currently does not copy fixed input port values from `source`.
   /// See System::FixInputPortsFrom() if you want to copy those.
-  // TODO(sherm1) Should treat fixed input port values same as parameters.
-  // TODO(sherm1) Change the name of this method to be more inclusive since it
-  //              also copies accuracy (now) and fixed input port values
-  //              (pending above TODO).
   template <typename U>
   void SetTimeStateAndParametersFrom(const Context<U>& source) {
     ThrowIfNotRootContext(__func__, "Time");
@@ -563,6 +506,8 @@ class Context : public ContextBase {
     return FixInputPort(index, *vec);
   }
 
+  // TODO(sherm1) Consider whether to avoid invalidation if the new value is
+  // the same as the old one.
   /// Records the user's requested accuracy. If no accuracy is requested,
   /// computations are free to choose suitable defaults, or to refuse to
   /// proceed without an explicit accuracy setting. Any accuracy-dependent
@@ -597,16 +542,154 @@ class Context : public ContextBase {
   /// The common thread among these examples is that they all share the
   /// same %Context, so by keeping accuracy here it can be used effectively to
   /// control all accuracy-dependent computations.
-  // TODO(sherm1) Consider whether to avoid invalidation if the new value is
-  // the same as the old one.
-  void set_accuracy(const optional<double>& accuracy) {
+  void SetAccuracy(const optional<double>& accuracy) {
     ThrowIfNotRootContext(__func__, "Accuracy");
     const int64_t change_event = this->start_new_change_event();
     PropagateAccuracyChange(this, accuracy, change_event);
   }
+
+#ifndef DRAKE_DOXYGEN_CXX
+  DRAKE_DEPRECATED("2019-07-01", "Use SetTime() instead.")
+  void set_time(const T& time_sec) { SetTime(time_sec); }
+  DRAKE_DEPRECATED("2019-07-01", "Use SetAccuracy() instead.")
+  void set_accuracy(const optional<double>& accuracy) { SetAccuracy(accuracy); }
+#endif
   //@}
 
-  /** @anchor advanced_context_value_change_methods */
+  /// @anchor dangerous_context_value_change_methods
+  /// @name    Dangerous methods for changing locally-stored values
+  /// Methods in this group return mutable references into the state and
+  /// parameters in the %Context. Although they do issue out-of-date
+  /// notifications when invoked, so you can safely write to the reference
+  /// _once_, there is no way to issue notifications if you make subsequent
+  /// changes. So you _must not_ hold these references for writing. See
+  /// @ref dangerous_get_mutable "Dangerous GetMutable methods"
+  /// for more information.
+  //@{
+
+  // TODO(sherm1) All these methods perform invalidation sweeps so aren't
+  // entitled to lower_case_names. Deprecate and replace (see #9205).
+
+  /// Returns a mutable reference to the whole State, potentially invalidating
+  /// _all_ state-dependent computations so requiring out of date notifications
+  /// to be made for all such computations. If you don't mean to change the
+  /// whole state, use more focused methods to modify only a portion of the
+  /// state. See class documentation for more information.
+  State<T>& get_mutable_state() {
+    const int64_t change_event = this->start_new_change_event();
+    PropagateBulkChange(change_event, &Context<T>::NoteAllStateChanged);
+    return do_access_mutable_state();
+  }
+
+  /// Returns a mutable reference to the continuous component of the state,
+  /// which may be of size zero. Sends out of date notifications for all
+  /// continuous-state-dependent computations.
+  ContinuousState<T>& get_mutable_continuous_state() {
+    const int64_t change_event = this->start_new_change_event();
+    PropagateBulkChange(change_event,
+                        &Context<T>::NoteAllContinuousStateChanged);
+    return do_access_mutable_state().get_mutable_continuous_state();
+  }
+
+  /// Returns a mutable reference to the continuous state vector, devoid
+  /// of second-order structure. The vector may be of size zero. Sends out of
+  /// date notifications for all continuous-state-dependent computations.
+  VectorBase<T>& get_mutable_continuous_state_vector() {
+    return get_mutable_continuous_state().get_mutable_vector();
+  }
+
+  /// Returns a mutable reference to the discrete component of the state,
+  /// which may be of size zero. Sends out of date notifications for all
+  /// discrete-state-dependent computations.
+  DiscreteValues<T>& get_mutable_discrete_state() {
+    const int64_t change_event = this->start_new_change_event();
+    PropagateBulkChange(change_event,
+                        &Context<T>::NoteAllDiscreteStateChanged);
+    return do_access_mutable_state().get_mutable_discrete_state();
+  }
+
+  /// Returns a mutable reference to the _only_ discrete state vector.
+  /// Sends out of date notifications for all discrete-state-dependent
+  /// computations.
+  /// @sa get_discrete_state_vector().
+  /// @pre There is only one discrete state group.
+  BasicVector<T>& get_mutable_discrete_state_vector() {
+    return get_mutable_discrete_state().get_mutable_vector();
+  }
+
+  // TODO(sherm1) Invalidate only dependents of this one discrete group.
+  /// Returns a mutable reference to group (vector) @p index of the discrete
+  /// state. Sends out of date notifications for all computations that depend
+  /// on this discrete state group.
+  /// @pre @p index must identify an existing group.
+  /// @note Currently notifies dependents of _all_ groups.
+  BasicVector<T>& get_mutable_discrete_state(int index) {
+    DiscreteValues<T>& xd = get_mutable_discrete_state();
+    return xd.get_mutable_vector(index);
+  }
+
+  /// Returns a mutable reference to the abstract component of the state,
+  /// which may be of size zero. Sends out of date notifications for all
+  /// abstract-state-dependent computations.
+  AbstractValues& get_mutable_abstract_state() {
+    const int64_t change_event = this->start_new_change_event();
+    PropagateBulkChange(change_event,
+                        &Context<T>::NoteAllAbstractStateChanged);
+    return do_access_mutable_state().get_mutable_abstract_state();
+  }
+
+  // TODO(sherm1) Invalidate only dependents of this one abstract variable.
+  /// Returns a mutable reference to element @p index of the abstract state.
+  /// Sends out of date notifications for all computations that depend on this
+  /// abstract state variable.
+  /// @pre @p index must identify an existing element.
+  /// @pre the abstract state's type must match the template argument.
+  /// @note Currently notifies dependents of _any_ abstract state variable.
+  template <typename U>
+  U& get_mutable_abstract_state(int index) {
+    AbstractValues& xa = get_mutable_abstract_state();
+    return xa.get_mutable_value(index).get_mutable_value<U>();
+  }
+
+  /// Returns a mutable reference to this %Context's parameters. Sends out of
+  /// date notifications for all parameter-dependent computations. If you don't
+  /// mean to change all the parameters, use the indexed methods to modify only
+  /// some of the parameters so that fewer computations are invalidated and
+  /// fewer notifications need be sent.
+  Parameters<T>& get_mutable_parameters() {
+    const int64_t change_event = this->start_new_change_event();
+    PropagateBulkChange(change_event, &Context<T>::NoteAllParametersChanged);
+    return *parameters_;
+  }
+
+  // TODO(sherm1) Invalidate only dependents of this one parameter.
+  /// Returns a mutable reference to element @p index of the vector-valued
+  /// (numeric) parameters. Sends out of date notifications for all computations
+  /// dependent on this parameter.
+  /// @pre @p index must identify an existing numeric parameter.
+  /// @note Currently notifies dependents of _all_ numeric parameters.
+  BasicVector<T>& get_mutable_numeric_parameter(int index) {
+    const int64_t change_event = this->start_new_change_event();
+    PropagateBulkChange(change_event,
+                        &Context<T>::NoteAllNumericParametersChanged);
+    return parameters_->get_mutable_numeric_parameter(index);
+  }
+
+  // TODO(sherm1) Invalidate only dependents of this one parameter.
+  /// Returns a mutable reference to element @p index of the abstract-valued
+  /// parameters. Sends out of date notifications for all computations dependent
+  /// on this parameter.
+  /// @pre @p index must identify an existing abstract parameter.
+  /// @note Currently notifies dependents of _all_ abstract parameters.
+  AbstractValue& get_mutable_abstract_parameter(int index) {
+    const int64_t change_event = this->start_new_change_event();
+    PropagateBulkChange(change_event,
+                        &Context<T>::NoteAllAbstractParametersChanged);
+    return parameters_->get_mutable_abstract_parameter(index);
+  }
+  //@}
+
+  /// @anchor advanced_context_value_change_methods
   /// @name    Advanced methods for changing locally-stored values
   /// Methods in this group are specialized for expert users writing numerical
   /// integrators and other context-modifying solvers where careful cache

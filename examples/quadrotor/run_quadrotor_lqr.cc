@@ -78,7 +78,7 @@ int do_main() {
     // The following accuracy is necessary for the example to satisfy its
     // ending state tolerances.
     simulator.get_mutable_integrator()->set_target_accuracy(5e-5);
-    simulator.StepTo(FLAGS_trial_duration);
+    simulator.AdvanceTo(FLAGS_trial_duration);
 
     // Goal state verification.
     const Context<double>& context = simulator.get_context();

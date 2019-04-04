@@ -33,6 +33,7 @@ from pydrake.systems.meshcat_visualizer import (
     MeshcatPointCloudVisualizer
 )
 from pydrake.common.eigen_geometry import Isometry3
+from pydrake.math import RigidTransform
 from pydrake.multibody.plant import MultibodyPlant
 
 import pydrake.perception as mut
@@ -78,7 +79,7 @@ class TestMeshcat(unittest.TestCase):
 
         simulator = Simulator(diagram, diagram_context)
         simulator.set_publish_every_time_step(False)
-        simulator.StepTo(.1)
+        simulator.AdvanceTo(.1)
 
     def test_kuka(self):
         """Kuka IIWA with mesh geometry."""
@@ -109,7 +110,7 @@ class TestMeshcat(unittest.TestCase):
 
         simulator = Simulator(diagram, diagram_context)
         simulator.set_publish_every_time_step(False)
-        simulator.StepTo(.1)
+        simulator.AdvanceTo(.1)
 
     def test_contact_force(self):
         """A block sitting on a table."""
@@ -120,8 +121,7 @@ class TestMeshcat(unittest.TestCase):
             "extra_heavy_duty_table_surface_only_collision.sdf")
 
         # T: tabletop frame.
-        X_TObject = Isometry3.Identity()
-        X_TObject.set_translation([0, 0, 0.2])
+        X_TObject = RigidTransform([0, 0, 0.2])
 
         builder = DiagramBuilder()
         plant = MultibodyPlant(0.002)
@@ -179,7 +179,7 @@ class TestMeshcat(unittest.TestCase):
 
         simulator = Simulator(diagram, diagram_context)
         simulator.set_publish_every_time_step(False)
-        simulator.StepTo(1.0)
+        simulator.AdvanceTo(1.0)
 
         contact_viz_context = (
             diagram.GetMutableSubsystemContext(contact_viz, diagram_context))
@@ -218,7 +218,7 @@ class TestMeshcat(unittest.TestCase):
 
         simulator = Simulator(diagram, diagram_context)
         simulator.set_publish_every_time_step(False)
-        simulator.StepTo(1.0)
+        simulator.AdvanceTo(1.0)
 
     def test_point_cloud_visualization(self):
         """A small point cloud"""
@@ -255,7 +255,7 @@ class TestMeshcat(unittest.TestCase):
                 AbstractValue.Make(pc))
             simulator = Simulator(diagram, diagram_context)
             simulator.set_publish_every_time_step(False)
-            simulator.StepTo(sim_time)
+            simulator.AdvanceTo(sim_time)
 
         # Generate some random points that are visually noticeable.
         # ~300000 makes the visualizer less responsive on my (Eric) machine.

@@ -219,9 +219,9 @@ class SteeringCommandPublisher:
             else:
                 self.last_value = self.event_processor.processEvent(
                     event, self.last_value)
-                msg = make_driving_command(self.last_value.steering_angle,
-                                           self.last_value.throttle -
-                                           self.last_value.brake)
+                msg = make_driving_command(self.last_value.throttle -
+                                           self.last_value.brake,
+                                           self.last_value.steering_angle)
                 self.lc.publish(self.lcm_tag, msg.encode())
                 self.printLCMValues()
 

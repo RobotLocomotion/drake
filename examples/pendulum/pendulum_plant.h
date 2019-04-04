@@ -71,7 +71,7 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   /// Evaluates the input port and returns the scalar value
   /// of the commanded torque.
   T get_tau(const systems::Context<T>& context) const {
-    return this->EvalVectorInput(context, 0)->GetAtIndex(0);
+    return this->get_input_port().Eval(context)(0);
   }
 
   static const PendulumState<T>& get_state(

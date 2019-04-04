@@ -7,6 +7,11 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+)
 load("@drake//tools/skylark:test_tags.bzl", "vtk_test_tags")
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -31,6 +36,7 @@ drake_cc_library(
         "//common:find_resource",
         "//geometry:scene_graph",
         "//geometry/dev:scene_graph",
+        "//geometry/dev/render:render_engine_vtk",
         "//manipulation/schunk_wsg:schunk_wsg_constants",
         "//manipulation/schunk_wsg:schunk_wsg_position_controller",
         "//math:geometric_transform",
@@ -129,10 +135,13 @@ drake_cc_googletest(
 
 # Python examples
 
-load(
-    "@drake//tools/skylark:drake_py.bzl",
-    "drake_py_binary",
-    "drake_py_library",
+drake_py_library(
+    name = "differential_ik",
+    srcs = ["differential_ik.py"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//bindings/pydrake",
+    ],
 )
 
 drake_py_binary(
@@ -155,6 +164,7 @@ drake_py_binary(
     test_rule_args = ["--test --target_realtime_rate=0.0 --duration=0.1"],
     test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
+        ":differential_ik",
         "//bindings/pydrake",
     ],
 )
@@ -167,6 +177,7 @@ drake_py_binary(
     test_rule_args = ["--test --target_realtime_rate=0.0 --duration=0.1"],
     test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
+        ":differential_ik",
         "//bindings/pydrake",
     ],
 )

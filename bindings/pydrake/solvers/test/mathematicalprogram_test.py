@@ -8,14 +8,16 @@ from pydrake.solvers.mathematicalprogram import (
     SolverType
     )
 
+from functools import partial
 import unittest
 import warnings
 
 import numpy as np
 
 import pydrake
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.forwarddiff import jacobian
 import pydrake.symbolic as sym
 
 SNOPT_NO_GUROBI = SnoptSolver().available() and not GurobiSolver().available()
@@ -161,6 +163,9 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = qp.prog
         x = qp.x
 
+        self.assertEqual(prog.FindDecisionVariableIndices(vars=[x[0], x[1]]),
+                         [0, 1])
+
         for binding in prog.GetAllCosts():
             self.assertIsInstance(binding.evaluator(), mp.Cost)
         for binding in prog.GetLinearConstraints():
@@ -183,8 +188,8 @@ class TestMathematicalProgram(unittest.TestCase):
         for (i, binding) in enumerate(prog.bounding_box_constraints()):
             constraint = binding.evaluator()
             self.assertEqual(
-                prog.FindDecisionVariableIndex(binding.variables()[0]),
-                prog.FindDecisionVariableIndex(x[i]))
+                prog.FindDecisionVariableIndex(var=binding.variables()[0]),
+                prog.FindDecisionVariableIndex(var=x[i]))
             num_constraints = constraint.num_constraints()
             if num_constraints == 1:
                 self.assertEqual(constraint.A(), 1)
@@ -201,11 +206,11 @@ class TestMathematicalProgram(unittest.TestCase):
         for (i, binding) in enumerate(prog.linear_constraints()):
             constraint = binding.evaluator()
             self.assertEqual(
-                prog.FindDecisionVariableIndex(binding.variables()[0]),
-                prog.FindDecisionVariableIndex(x[0]))
+                prog.FindDecisionVariableIndex(var=binding.variables()[0]),
+                prog.FindDecisionVariableIndex(var=x[0]))
             self.assertEqual(
-                prog.FindDecisionVariableIndex(binding.variables()[1]),
-                prog.FindDecisionVariableIndex(x[1]))
+                prog.FindDecisionVariableIndex(var=binding.variables()[1]),
+                prog.FindDecisionVariableIndex(var=x[1]))
             self.assertTrue(np.allclose(constraint.A(), [3, -1]))
             self.assertTrue(constraint.lower_bound(), -2)
             self.assertTrue(constraint.upper_bound(), np.inf)
@@ -214,11 +219,11 @@ class TestMathematicalProgram(unittest.TestCase):
         for (i, binding) in enumerate(prog.linear_equality_constraints()):
             constraint = binding.evaluator()
             self.assertEqual(
-                prog.FindDecisionVariableIndex(binding.variables()[0]),
-                prog.FindDecisionVariableIndex(x[0]))
+                prog.FindDecisionVariableIndex(var=binding.variables()[0]),
+                prog.FindDecisionVariableIndex(var=x[0]))
             self.assertEqual(
-                prog.FindDecisionVariableIndex(binding.variables()[1]),
-                prog.FindDecisionVariableIndex(x[1]))
+                prog.FindDecisionVariableIndex(var=binding.variables()[1]),
+                prog.FindDecisionVariableIndex(var=x[1]))
             self.assertTrue(np.allclose(constraint.A(), [1, 2]))
             self.assertTrue(constraint.lower_bound(), 3)
             self.assertTrue(constraint.upper_bound(), 3)
@@ -242,6 +247,9 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(c.CheckSatisfied([2.], tol=1e-3))
         self.assertFalse(c.CheckSatisfied([AutoDiffXd(1.)]))
         self.assertIsInstance(c.CheckSatisfied([x0]), sym.Formula)
+
+        ce.set_description("my favorite constraint")
+        self.assertEqual(ce.get_description(), "my favorite constraint")
 
         def check_bounds(c, A, lb, ub):
             self.assertTrue(np.allclose(c.A(), A))
@@ -311,11 +319,20 @@ class TestMathematicalProgram(unittest.TestCase):
                 value = prog.EvalBindingAtSolution(cost)
                 self.assertTrue(np.allclose(value, value_expected))
 
-            # Existence check.
+            # Existence check for non-autodiff versions.
             self.assertIsInstance(
                 prog.EvalBinding(costs[0], x_expected), np.ndarray)
             self.assertIsInstance(
                 prog.EvalBindings(prog.GetAllConstraints(), x_expected),
+                np.ndarray)
+
+            # Existence check for autodiff versions.
+            self.assertIsInstance(
+                jacobian(partial(prog.EvalBinding, costs[0]), x_expected),
+                np.ndarray)
+            self.assertIsInstance(
+                jacobian(partial(prog.EvalBindings, prog.GetAllConstraints()),
+                         x_expected),
                 np.ndarray)
 
             # Bindings for `Eval`.
@@ -366,10 +383,11 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = mp.MathematicalProgram()
         x = prog.NewIndeterminates(1, "x")
         poly = prog.NewFreePolynomial(sym.Variables(x), 1)
-        (poly, binding) = prog.NewSosPolynomial(sym.Variables(x), 2)
+        (poly, binding) = prog.NewSosPolynomial(
+            indeterminates=sym.Variables(x), degree=2)
         y = prog.NewIndeterminates(1, "y")
-        (poly, binding) = prog.NewSosPolynomial((sym.Monomial(x[0]),
-                                                 sym.Monomial(y[0])))
+        (poly, binding) = prog.NewSosPolynomial(
+            monomial_basis=(sym.Monomial(x[0]), sym.Monomial(y[0])))
         d = prog.NewContinuousVariables(2, "d")
         prog.AddSosConstraint(d[0]*x.dot(x))
         prog.AddSosConstraint(d[1]*x.dot(x), [sym.Monomial(x[0])])
@@ -439,10 +457,16 @@ class TestMathematicalProgram(unittest.TestCase):
         def constraint(x):
             return x
 
-        prog.AddCost(cost, vars=x)
-        prog.AddConstraint(constraint, lb=[0.], ub=[2.], vars=x)
+        cost_binding = prog.AddCost(cost, vars=x)
+        constraint_binding = prog.AddConstraint(
+            constraint, lb=[0.], ub=[2.], vars=x)
         result = mp.Solve(prog)
-        self.assertAlmostEqual(result.GetSolution(x)[0], 1.)
+        xstar = result.GetSolution(x)
+        self.assertAlmostEqual(xstar[0], 1.)
+
+        # Verify that they can be evaluated.
+        self.assertAlmostEqual(cost_binding.evaluator().Eval(xstar), 0.)
+        self.assertAlmostEqual(constraint_binding.evaluator().Eval(xstar), 1.)
 
     def test_addcost_symbolic(self):
         prog = mp.MathematicalProgram()
@@ -536,3 +560,11 @@ class TestMathematicalProgram(unittest.TestCase):
         # For now, just make sure the constructor exists.  Once we bind more
         # accessors, we can test them here.
         options_object = SolverOptions()
+
+    def test_infeasible_constraints(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(1)
+        result = mp.Solve(prog)
+        infeasible = mp.GetInfeasibleConstraints(prog=prog, result=result,
+                                                 tol=1e-4)
+        self.assertEquals(len(infeasible), 0)

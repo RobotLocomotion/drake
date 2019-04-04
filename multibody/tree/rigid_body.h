@@ -166,7 +166,7 @@ class RigidBody : public Body<T> {
   // TODO(amcastro-tri) When cache entries are in the context, replace this
   // method by Body<T>::get_pose_in_world(const Context<T>&).
   //----------------------------------------------------------------------------
-  const Isometry3<T>& get_pose_in_world(
+  const math::RigidTransform<T>& get_pose_in_world(
       const internal::PositionKinematicsCache<T>& pc) const {
     return pc.get_X_WB(this->node_index());
   }
