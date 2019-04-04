@@ -10,44 +10,40 @@ import warnings
 import unittest
 import numpy as np
 
-from pydrake.autodiffutils import (
-    AutoDiffXd,
-    )
+from pydrake.autodiffutils import AutoDiffXd
 from pydrake.examples.pendulum import PendulumPlant
 from pydrake.examples.rimless_wheel import RimlessWheel
-from pydrake.symbolic import (
-    Expression,
-    )
+from pydrake.symbolic import Expression
 from pydrake.systems.analysis import (
-    IntegratorBase_,
+    IntegratorBase, IntegratorBase_,
     RungeKutta2Integrator, RungeKutta3Integrator,
     Simulator, Simulator_,
     )
 from pydrake.systems.framework import (
     AbstractValue,
     BasicVector, BasicVector_,
-    Context_,
+    Context, Context_,
     ContinuousState, ContinuousState_,
     Diagram, Diagram_,
     DiagramBuilder, DiagramBuilder_,
-    DiscreteUpdateEvent_,
-    DiscreteValues_,
+    DiscreteUpdateEvent, DiscreteUpdateEvent_,
+    DiscreteValues, DiscreteValues_,
     Event, Event_,
-    InputPort_,
+    InputPort, InputPort_,
     kUseDefaultName,
-    LeafContext_,
-    LeafSystem_,
-    OutputPort_,
-    Parameters_,
+    LeafContext, LeafContext_,
+    LeafSystem, LeafSystem_,
+    OutputPort, OutputPort_,
+    Parameters, Parameters_,
     PublishEvent, PublishEvent_,
-    State_,
-    Subvector_,
-    Supervector_,
-    System_,
-    SystemOutput_,
+    State, State_,
+    Subvector, Subvector_,
+    Supervector, Supervector_,
+    System, System_,
+    SystemOutput, SystemOutput_,
     VectorBase, VectorBase_,
     TriggerType,
-    VectorSystem_,
+    VectorSystem, VectorSystem_,
     )
 from pydrake.systems.primitives import (
     Adder, Adder_,
@@ -67,12 +63,13 @@ from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
 
 class TestGeneral(unittest.TestCase):
-    def _check_instantiations(self, template, supports_symbolic=True):
-        default_cls = template[None]
-        self.assertTrue(template[float] is default_cls)
-        self.assertTrue(template[AutoDiffXd] is not default_cls)
+    def _check_instantiations(
+            self, template, default_cls, supports_symbolic=True):
+        self.assertIs(template[None], default_cls)
+        self.assertIs(template[float], default_cls)
+        self.assertIsNot(template[AutoDiffXd], default_cls)
         if supports_symbolic:
-            self.assertTrue(template[Expression] is not default_cls)
+            self.assertIsNot(template[Expression], default_cls)
 
     def _compare_system_instances(self, lhs, rhs):
         # Compares two different scalar type instantiation instances of a
@@ -174,32 +171,32 @@ class TestGeneral(unittest.TestCase):
         # N.B. These checks are ordered according to their binding definitions
         # in the corresponding source file.
         # `analysis_py.cc`
-        self._check_instantiations(IntegratorBase_, False)
-        self._check_instantiations(Simulator_, False)
-        # `analysis_py_semantics.cc`
-        self._check_instantiations(Context_)
-        self._check_instantiations(LeafContext_)
-        self._check_instantiations(Event_)
-        self._check_instantiations(PublishEvent_)
-        self._check_instantiations(DiscreteUpdateEvent_)
-        self._check_instantiations(DiagramBuilder_)
-        self._check_instantiations(OutputPort_)
-        self._check_instantiations(SystemOutput_)
-        self._check_instantiations(InputPort_)
-        self._check_instantiations(Parameters_)
-        self._check_instantiations(State_)
-        self._check_instantiations(ContinuousState_)
-        self._check_instantiations(DiscreteValues_)
-        # `analysis_py_systems.cc`
-        self._check_instantiations(System_)
-        self._check_instantiations(LeafSystem_)
-        self._check_instantiations(Diagram_)
-        self._check_instantiations(VectorSystem_)
-        # `analysis_py_values.cc`
-        self._check_instantiations(VectorBase_)
-        self._check_instantiations(BasicVector_)
-        self._check_instantiations(Supervector_)
-        self._check_instantiations(Subvector_)
+        self._check_instantiations(IntegratorBase_, IntegratorBase, False)
+        self._check_instantiations(Simulator_, Simulator, False)
+        # `framework_py_semantics.cc`
+        self._check_instantiations(Context_, Context)
+        self._check_instantiations(LeafContext_, LeafContext)
+        self._check_instantiations(Event_, Event)
+        self._check_instantiations(PublishEvent_, PublishEvent)
+        self._check_instantiations(DiscreteUpdateEvent_, DiscreteUpdateEvent)
+        self._check_instantiations(DiagramBuilder_, DiagramBuilder)
+        self._check_instantiations(OutputPort_, OutputPort)
+        self._check_instantiations(SystemOutput_, SystemOutput)
+        self._check_instantiations(InputPort_, InputPort)
+        self._check_instantiations(Parameters_, Parameters)
+        self._check_instantiations(State_, State)
+        self._check_instantiations(ContinuousState_, ContinuousState)
+        self._check_instantiations(DiscreteValues_, DiscreteValues)
+        # `framework_py_systems.cc`
+        self._check_instantiations(System_, System)
+        self._check_instantiations(LeafSystem_, LeafSystem)
+        self._check_instantiations(Diagram_, Diagram)
+        self._check_instantiations(VectorSystem_, VectorSystem)
+        # `framework_py_values.cc`
+        self._check_instantiations(VectorBase_, VectorBase)
+        self._check_instantiations(BasicVector_, BasicVector)
+        self._check_instantiations(Supervector_, Supervector)
+        self._check_instantiations(Subvector_, Subvector)
 
     def test_scalar_type_conversion(self):
         for T in [float, AutoDiffXd, Expression]:
