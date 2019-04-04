@@ -356,14 +356,11 @@ class BilinearProductMcCormickEnvelopeTest {
       UpdateBound(&y_constraint, y_val);
       UpdateBound(&w_constraint, w_val);
 
-      prog->SetSolverOption(GurobiSolver::id(), "DualReductions", 0);
-
       GurobiSolver solver;
       if (solver.available()) {
-        const auto result = solver.Solve(*prog);
-        EXPECT_EQ(result,
-                  is_feasible ? SolutionResult::kSolutionFound
-                              : SolutionResult::kInfeasibleConstraints);
+        MathematicalProgramResult result;
+        solver.Solve(*prog, {}, {}, &result);
+        EXPECT_EQ(result.is_success(), is_feasible);
       }
     };
 
