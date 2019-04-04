@@ -130,6 +130,7 @@ LaneSRoute BuildLaneSRoute(const api::RoadGeometry* road_geometry,
   std::vector<LaneSRange> ranges;
   for (const YAML::Node& lane_node : zone_node) {
     DRAKE_DEMAND(lane_node.IsMap());
+    DRAKE_THROW_UNLESS(lane_node["Lane"].IsDefined());
     const LaneId lane_id(lane_node["Lane"].as<std::string>());
     const Lane* lane = road_geometry->ById().GetLane(lane_id);
     DRAKE_DEMAND(lane != nullptr);
@@ -160,6 +161,7 @@ RightOfWayRule::ZoneType BuildZoneType(const YAML::Node& rule_node) {
 RightOfWayRule BuildRightOfWayRule(const api::RoadGeometry* road_geometry,
                                    const YAML::Node& rule_node) {
   DRAKE_DEMAND(rule_node.IsMap());
+  DRAKE_THROW_UNLESS(rule_node["ID"].IsDefined());
   const RightOfWayRule::Id rule_id(rule_node["ID"].as<std::string>());
 
   const YAML::Node& states_node = rule_node["States"];
