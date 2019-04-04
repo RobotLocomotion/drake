@@ -177,6 +177,8 @@ GTEST_TEST(LcmSubscriberSystemTest, SerializerTest) {
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(value, sample_data.value));
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Tests LcmSubscriberSystem using a fixed-size Serializer.
 GTEST_TEST(LcmSubscriberSystemTest, FixedSizeSerializerTest) {
   drake::lcm::DrakeMockLcm lcm;
@@ -212,6 +214,7 @@ GTEST_TEST(LcmSubscriberSystemTest, FixedSizeSerializerTest) {
   auto small_value = small_abstract_value->get_value<lcmt_drake_signal>();
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(small_value, smaller_data.value));
 }
+#pragma GCC diagnostic pop
 
 GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
   // Ensure that `WaitForMessage` works as expected.

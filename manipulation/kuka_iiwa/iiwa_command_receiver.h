@@ -95,8 +95,7 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   const systems::CacheEntry* groomed_input_{};
 };
 
-/// Creates a LcmSubscriberSystem for lcmt_iiwa_command, using the fixed-size
-/// message optimization; see LcmSubscriberSystem::MakeFixedSize for details.
+/// Creates a LcmSubscriberSystem for lcmt_iiwa_command.
 std::unique_ptr<systems::lcm::LcmSubscriberSystem>
 MakeIiwaCommandLcmSubscriberSystem(
     int num_joints, const std::string& channel,

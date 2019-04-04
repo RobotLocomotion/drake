@@ -56,8 +56,8 @@ int DoMain() {
       builder.AddSystem<DrakeVisualizer>(tree, lcm);
   visualizer->set_name("visualizer");
   auto command_sub = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::MakeFixedSize(
-          lcmt_schunk_wsg_command{}, "SCHUNK_WSG_COMMAND", lcm));
+      systems::lcm::LcmSubscriberSystem::Make<lcmt_schunk_wsg_command>(
+          "SCHUNK_WSG_COMMAND", lcm));
   command_sub->set_name("command_subscriber");
 
   auto wsg_controller = builder.AddSystem<SchunkWsgController>();
