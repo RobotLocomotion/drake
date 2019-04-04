@@ -250,10 +250,16 @@ class MeshcatVisualizer(LeafSystem):
         self.vis[self.prefix].delete()
 
         # Intercept load message via mock LCM.
+        def handle_load_robot(raw):
+            load_robot_msgs.append(lcmt_viewer_load_robot.decode(raw))
+        load_robot_msgs = []
         mock_lcm = DrakeMockLcm()
+        mock_lcm.Subscribe(
+            channel="DRAKE_VIEWER_LOAD_ROBOT",
+            handler=handle_load_robot)
         DispatchLoadMessage(self._scene_graph, mock_lcm)
-        load_robot_msg = lcmt_viewer_load_robot.decode(
-            mock_lcm.get_last_published_message("DRAKE_VIEWER_LOAD_ROBOT"))
+        mock_lcm.HandleSubscriptions(0)
+        load_robot_msg = load_robot_msgs[0]
         # Translate elements to `meshcat`.
         for i in range(load_robot_msg.num_links):
             link = load_robot_msg.link[i]
