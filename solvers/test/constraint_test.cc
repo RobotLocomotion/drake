@@ -509,6 +509,25 @@ GTEST_TEST(testConstraint, testExponentialConeConstraint) {
   y_expected(1) = z(1);
   const double tol = 5 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(y, y_expected, tol));
+
+  // Check autodiff evaluation.
+  Eigen::MatrixXd dx(2, 1);
+  dx << 1, 1;
+  const auto x_autodiff =
+      math::initializeAutoDiffGivenGradientMatrix(Eigen::VectorXd(x), dx);
+  AutoDiffVecXd y_autodiff;
+  constraint.Eval(x_autodiff, &y_autodiff);
+  // Now compute the gradient manually.
+  const AutoDiffVecXd z_autodiff = A * x_autodiff + b;
+  AutoDiffVecXd y_autodiff_expected(2);
+  y_autodiff_expected(0) =
+      z_autodiff(0) - z_autodiff(1) * exp(z_autodiff(2) / z_autodiff(1));
+  y_autodiff_expected(1) = z_autodiff(1);
+  EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(y_autodiff),
+                              y_expected, tol));
+  EXPECT_TRUE(CompareMatrices(
+      math::autoDiffToGradientMatrix(y_autodiff),
+      math::autoDiffToGradientMatrix(y_autodiff_expected), tol));
 }
 
 }  // namespace

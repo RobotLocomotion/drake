@@ -2147,11 +2147,13 @@ class MathematicalProgram {
   AddSosConstraint(const symbolic::Expression& e);
 
   /**
-   * Adds the exponential cone constraint, that z = binding.evaluator()->A() *
+   * Adds the exponential cone constraint that z = binding.evaluator()->A() *
    * binding.variables()+ binding.evaluator()->b() should be in the exponential
    * cone. Namely {z₀, z₁, z₂ | z₀ ≥ z₁ * exp(z₂ / z₁), z₁ > 0}.
-   * @param binding The binding of ExponentialConeConstraint, and its bound
+   * @param binding The binding of ExponentialConeConstraint and its bound
    * variables.
+   *
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<ExponentialConeConstraint> AddConstraint(
       const Binding<ExponentialConeConstraint>& binding);
@@ -2170,8 +2172,8 @@ class MathematicalProgram {
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
-   * Add the constraint that z is in the exponetial cone. 
-   * @param z The expression in the exponential cone. 
+   * Add the constraint that z is in the exponential cone.
+   * @param z The expression in the exponential cone.
    * @pre each entry in `z` is a linear expression of the decision variables.
    */
   Binding<ExponentialConeConstraint> AddExponentialConeConstraint(
