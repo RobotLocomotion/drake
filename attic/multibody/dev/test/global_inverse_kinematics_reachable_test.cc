@@ -31,8 +31,8 @@ TEST_F(KukaTest, ReachableTest) {
 
     EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
 
-    double pos_tol = 0.061;
-    double orient_tol = 0.24;
+    double pos_tol = 0.066;
+    double orient_tol = 0.27;
     CheckGlobalIKSolution(pos_tol, orient_tol);
     // Now call nonlinear IK with the solution from global IK as the initial
     // seed. If the global IK provides a good initial seed, then the nonlinear
