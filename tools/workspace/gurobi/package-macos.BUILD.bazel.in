@@ -30,7 +30,8 @@ cc_library(
     includes = ["gurobi-distro/include"],
     linkopts = [
         "-L{gurobi_path}/lib",
-        "-lgurobi80",
+        "-lgurobi81",
+        "-Wl,-rpath,{gurobi_path}/lib",
     ],
     visibility = ["//visibility:public"],
 )
@@ -41,8 +42,9 @@ cc_library(
     includes = ["gurobi-distro/include"],
     linkopts = [
         "-L{gurobi_path}/lib",
-        "-lgurobi80",
+        "-lgurobi81",
         "-lgurobi_stdc++",
+        "-Wl,-rpath,{gurobi_path}/lib",
     ],
     visibility = ["//visibility:public"],
 )
