@@ -84,7 +84,9 @@ drake_cc_library(
     name = "pleides_system",
     testonly = 1,
     hdrs = ["pleides_system.h"],
-    deps = [],
+    deps = [
+        "//systems/framework:leaf_system",
+    ],
 )
 
 drake_cc_library(
