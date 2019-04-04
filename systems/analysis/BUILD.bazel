@@ -327,6 +327,8 @@ drake_cc_googletest(
     name = "runge_kutta3_integrator_test",
     # Test timeout increased to not timeout when run with Valgrind.
     timeout = "moderate",
+    # This test is prohibitively slow with --compilation_mode=dbg.
+    disable_in_compilation_mode_dbg = True,
     deps = [
         ":runge_kutta3_integrator",
         "//common/test_utilities:eigen_matrix_compare",

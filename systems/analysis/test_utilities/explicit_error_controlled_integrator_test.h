@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
+#include "drake/systems/analysis/test_utilities/pleides_system.h"
 
 namespace drake {
 namespace systems {
@@ -444,6 +445,63 @@ REGISTER_TYPED_TEST_CASE_P(ExplicitErrorControlledIntegratorTest,
     ReqInitialStepTarget, ContextAccess, ErrorEstSupport, MagDisparity, Scaling,
     BulletProofSetup, ErrEst, SpringMassStepEC, MaxStepSizeRespected,
     IllegalFixedStep, CheckStat, StepToCurrentTimeNoOp);
+
+// T is the integrator type (e.g., RungeKutta3Integrator<double>).
+template <class T>
+struct PleidesTest : public ::testing::Test {
+ public:
+  PleidesTest() {
+    // Create the Pleides system.
+    pleides = std::make_unique<analysis::test::PleidesSystem>();
+    context = pleides->CreateDefaultContext();
+
+    // Create the integrator.
+    integrator = std::make_unique<T>(*pleides, context.get());
+  }
+
+  std::unique_ptr<analysis::test::PleidesSystem> pleides;
+  std::unique_ptr<Context<double>> context;
+  std::unique_ptr<IntegratorBase<double>> integrator;
+};
+
+TYPED_TEST_CASE_P(PleidesTest);
+
+// Verifies that the Pleides system can be integrated accurately.
+TYPED_TEST_P(PleidesTest, Pleides) {
+  // Set integrator to use variable-step (not fixed-step) with a tight accuracy
+  // requirement for each variable step. Due to step size cutting, a variable
+  // step can be substantially smaller than the initial step size. By default,
+  // the initial step size is 1/10 of maximum step size (chosen below). We
+  // request semi-tight accuracy, allowing us to use this test for various
+  // error controlled integrators.
+  this->integrator->set_maximum_step_size(0.1);
+  this->integrator->set_fixed_step_mode(false);
+  const double requested_local_accuracy = 1e-7;
+  this->integrator->set_target_accuracy(requested_local_accuracy);
+
+  // kTolerance = 100 is a heuristic derived from simulation experiments and
+  // based on the fact that all tests pass within a tolerance of 25. The
+  // extra factor of 4 (2 bits) helps ensure the tests also pass on
+  // various compilers and computer architectures.
+  const double kTolerance = 100 * requested_local_accuracy;
+
+  // Initialize the integrator.
+  this->integrator->Initialize();
+
+  // Simulate to the designated time.
+  const double t_final = this->pleides->get_end_time();
+  this->integrator->IntegrateWithMultipleStepsToTime(t_final);
+
+  // Check the result.
+  const VectorX<double> q = this->context->get_continuous_state().
+    get_generalized_position().CopyToVector();
+  const VectorX<double> q_des = analysis::test::PleidesSystem::GetSolution(
+        this->context->get_time());
+  for (int i = 0; i < q.size(); ++i)
+    EXPECT_NEAR(q[i], q_des[i], kTolerance) << i;
+}
+
+REGISTER_TYPED_TEST_CASE_P(PleidesTest, Pleides);
 
 }  // namespace analysis_test
 }  // namespace systems
