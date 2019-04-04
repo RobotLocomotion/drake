@@ -468,14 +468,22 @@ TYPED_TEST_CASE_P(PleidesTest);
 
 // Verifies that the Pleides system can be integrated accurately.
 TYPED_TEST_P(PleidesTest, Pleides) {
-  // Set integrator parameters: do error control.
+  // Set integrator to use variable-step (not fixed-step) with a tight accuracy
+  // requirement for each variable step. Due to step size cutting, a variable
+  // step can be substantially smaller than the initial step size. By default,
+  // the initial step size is 1/10 of maximum step size (chosen below). We
+  // request semi-tight accuracy, allowing us to use this test for various
+  // error controlled integrators.
   this->integrator->set_maximum_step_size(0.1);
   this->integrator->set_fixed_step_mode(false);
+  const double requested_local_accuracy = 1e-7;
+  this->integrator->set_target_accuracy(requested_local_accuracy);
 
-  // Request semi-tight accuracy, allowing us to use this test for various
-  // error controlled integrators.
-  const double requested_accuracy = 1e-7;
-  this->integrator->set_target_accuracy(requested_accuracy);
+  // kTolerance = 100 is a heuristic derived from simulation experiments and
+  // based on the fact that all tests pass within a tolerance of 25. The
+  // extra factor of 4 (2 bits) helps ensure the tests also pass on
+  // various compilers, and computer architectures.
+  const double kTolerance = 100 * requested_local_accuracy;
 
   // Initialize the integrator.
   this->integrator->Initialize();
@@ -490,7 +498,7 @@ TYPED_TEST_P(PleidesTest, Pleides) {
   const VectorX<double> q_des = analysis::test::PleidesSystem::GetSolution(
         this->context->get_time());
   for (int i = 0; i < q.size(); ++i)
-    EXPECT_NEAR(q[i], q_des[i], 100 * requested_accuracy) << i;
+    EXPECT_NEAR(q[i], q_des[i], kTolerance) << i;
 }
 
 REGISTER_TYPED_TEST_CASE_P(PleidesTest, Pleides);

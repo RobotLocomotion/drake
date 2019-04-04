@@ -13,7 +13,12 @@ namespace test {
 using Vector2d = Vector2<double>;
 
 /// A system of ODEs that can be used to test performance of the initial value
-/// problem solvers. This problem is taken from:
+/// problem (IVP) solvers. This problem corresponds to the "n-body-problem"
+/// (where n = 7); in short, given initial positions and velocities of seven
+/// particles that move according to Newtonian Mechanics (F=ma) and subject to
+/// inverse-square gravitational forces, compute their positions and velocities
+/// at a given time in the future. One potentially useful aspect of this problem
+/// is that it is energy conserving. The problem setup and data are taken from:
 /// https://archimede.dm.uniba.it/~testset/report/plei.pdf, which is part of the
 /// IVP benchmark suite described in:
 ///
@@ -24,7 +29,11 @@ class PleidesSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PleidesSystem)
   PleidesSystem() {
-    this->DeclareContinuousState(14 /* nq */, 14 /* nv */, 0 /* nz */);
+    const int nq = 14;  // Number of generalized positions.
+    const int nv = 14;  // Number of generalized velocities.
+    const int nz = 0;   // No additional state variables.
+
+    this->DeclareContinuousState(nq, nv, nz);
 
     // Set masses (as defined in plei.pdf).
     for (int i = 0; i < kNumParticles; ++i) mass_[i] = i + 1;
@@ -39,8 +48,8 @@ class PleidesSystem : public LeafSystem<double> {
 
     // Set the initial positions. Note that these are all representable in
     // IEEE 754 without any representation error. Each pair of initial positions
-    // corresponds to the location (x, y coordinate) of a particle. So the
-    // initial position for the first particle is given in q[0], q[7] = 3, 3.
+    // corresponds to the (x, y) location of a particle. From plei.pdf,
+    // the first particle's initial position is x0 = q[0] = 3, y0 = q[7] = 3.
     q.head(kNumParticles)[0] =  3.0;   q.tail(kNumParticles)[0] =  3.0;
     q.head(kNumParticles)[1] =  3.0;   q.tail(kNumParticles)[1] = -3.0;
     q.head(kNumParticles)[2] = -1.0;   q.tail(kNumParticles)[2] =  2.0;
@@ -86,13 +95,13 @@ class PleidesSystem : public LeafSystem<double> {
     for (int i = 0; i < kNumParticles; ++i) {
       Vector2d Fi(0.0, 0.0);
 
-      // Accumulate the forces due to gravitational interaction with every other
-      // particle. See (II.6.5) in plei.pdf.
+      // Accumulate the net forces due to inverse-square law gravitational
+      // interaction with every other particle. See (II.6.5) in plei.pdf.
       for (int j = 0; j < kNumParticles; ++j) {
         if (i == j) continue;
-        const Vector2d dij(x[j] - x[i], y[j] - y[i]);
-        const double distance = dij.norm();
-        Fi += g() * (mass_[i] * mass_[j]) * dij /
+        const Vector2d rij(x[j] - x[i], y[j] - y[i]);
+        const double distance = rij.norm();
+        Fi += G() * (mass_[i] * mass_[j]) * rij /
             (distance * distance * distance);
       }
 
@@ -105,8 +114,9 @@ class PleidesSystem : public LeafSystem<double> {
   // Gets the end time for integration (to be consistent with plei.pdf).
   double get_end_time() const { return 3.0; }
 
-  // The gravitational constant (defined in plei.pdf).
-  double g() const { return 1.0; }
+  // Non-physical inverse-square law gravitational constant (defined in
+  // plei.pdf).
+  double G() const { return 1.0; }
 
   // Gets the system solution *for the positions only*. Only valid for
   // time=3.0. Solutions are provided to sixteen decimal digits in plei.pdf.
