@@ -85,6 +85,7 @@ RuleStates CreateDefaultRuleStates(
 PhaseRing BuildPhaseRing(const RoadRulebook* rulebook,
                          const YAML::Node& phase_ring_node) {
   DRAKE_DEMAND(phase_ring_node.IsMap());
+  DRAKE_THROW_UNLESS(phase_ring_node["ID"].IsDefined());
   const PhaseRing::Id ring_id(phase_ring_node["ID"].as<std::string>());
   const std::unordered_map<RightOfWayRule::Id, RightOfWayRule> rules =
       GetRules(rulebook, phase_ring_node["Rules"]);
@@ -95,6 +96,7 @@ PhaseRing BuildPhaseRing(const RoadRulebook* rulebook,
   std::vector<Phase> phases;
   for (const YAML::Node& phase_node : phases_node) {
     DRAKE_DEMAND(phase_node.IsMap());
+    DRAKE_THROW_UNLESS(phase_node["ID"].IsDefined());
     const Phase::Id phase_id(phase_node["ID"].as<std::string>());
     // First get a RuleStates object populated with default states of all rules.
     // Then, override the defaults with the states specified in the YAML
