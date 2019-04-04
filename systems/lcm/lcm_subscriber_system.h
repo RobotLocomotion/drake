@@ -75,6 +75,7 @@ class LcmSubscriberSystem : public LeafSystem<double> {
    * System must be no larger than this encoded size.
    */
   template <typename LcmMessage>
+  DRAKE_DEPRECATED("2019-05-01", "Use Make<LcmMessage>() instead.")
   static std::unique_ptr<LcmSubscriberSystem> MakeFixedSize(
       const LcmMessage& exemplar, const std::string& channel,
       drake::lcm::DrakeLcmInterface* lcm) {

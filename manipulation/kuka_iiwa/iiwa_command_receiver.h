@@ -20,7 +20,7 @@ namespace kuka_iiwa {
 ///
 /// Note that this system does not actually subscribe to an LCM channel. To
 /// receive the message, the input of this system should be connected to a
-/// MakeIiwaCommandLcmSubscriberSystem().
+/// LcmSubscriberSystem::Make<drake::lcmt_iiwa_command>().
 ///
 /// It has one input port, "lcmt_iiwa_command".
 /// (As well as some deprecated input ports; see below.)
@@ -95,8 +95,9 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   const systems::CacheEntry* groomed_input_{};
 };
 
-/// Creates a LcmSubscriberSystem for lcmt_iiwa_command, using the fixed-size
-/// message optimization; see LcmSubscriberSystem::MakeFixedSize for details.
+/// Creates a LcmSubscriberSystem for lcmt_iiwa_command.
+DRAKE_DEPRECATED("2019-07-01",
+    "Call LcmSubscriberSystem::Make<drake::lcmt_iiwa_command> instead.")
 std::unique_ptr<systems::lcm::LcmSubscriberSystem>
 MakeIiwaCommandLcmSubscriberSystem(
     int num_joints, const std::string& channel,

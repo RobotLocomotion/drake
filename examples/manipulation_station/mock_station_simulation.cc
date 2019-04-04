@@ -71,8 +71,8 @@ int do_main(int argc, char* argv[]) {
   auto lcm = builder.AddSystem<systems::lcm::LcmInterfaceSystem>();
 
   auto iiwa_command_subscriber = builder.AddSystem(
-      kuka_iiwa_arm::MakeIiwaCommandLcmSubscriberSystem(
-          kuka_iiwa_arm::kIiwaArmNumJoints, "IIWA_COMMAND", lcm));
+      systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_iiwa_command>(
+          "IIWA_COMMAND", lcm));
   auto iiwa_command = builder.AddSystem<kuka_iiwa_arm::IiwaCommandReceiver>();
   builder.Connect(iiwa_command_subscriber->get_output_port(),
                   iiwa_command->GetInputPort("command_message"));
@@ -104,8 +104,8 @@ int do_main(int argc, char* argv[]) {
 
   // Receive the WSG commands.
   auto wsg_command_subscriber = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::MakeFixedSize(
-          drake::lcmt_schunk_wsg_command{}, "SCHUNK_WSG_COMMAND", lcm));
+      systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_schunk_wsg_command>(
+          "SCHUNK_WSG_COMMAND", lcm));
   auto wsg_command =
       builder.AddSystem<manipulation::schunk_wsg::SchunkWsgCommandReceiver>();
   builder.Connect(wsg_command_subscriber->get_output_port(),
