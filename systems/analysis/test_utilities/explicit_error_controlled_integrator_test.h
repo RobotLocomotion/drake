@@ -482,7 +482,7 @@ TYPED_TEST_P(PleidesTest, Pleides) {
   // kTolerance = 100 is a heuristic derived from simulation experiments and
   // based on the fact that all tests pass within a tolerance of 25. The
   // extra factor of 4 (2 bits) helps ensure the tests also pass on
-  // various compilers, and computer architectures.
+  // various compilers and computer architectures.
   const double kTolerance = 100 * requested_local_accuracy;
 
   // Initialize the integrator.
