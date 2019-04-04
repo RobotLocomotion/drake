@@ -57,14 +57,15 @@ void AddDeprecatedProtectedAliases(
         DeprecatedProtectedAliasMessage(name, "call");
     py::handle cls_handle = *cls;
     cls->def(alias.c_str(),
-        [cls_handle, name](py::object self, py::args args, py::kwargs kwargs) {
+        [cls_handle, name, deprecation](
+            py::object self, py::args args, py::kwargs kwargs) {
           // N.B. Trying to capture a `py::handle` for `original` does not work
           // and causes segfaults.
           py::object original = cls_handle.attr(name.c_str());
+          WarnDeprecated(deprecation);
           return original(self, *args, **kwargs);
         },
         deprecation.c_str());
-    DeprecateAttribute(*cls, alias, deprecation);
   }
 }
 

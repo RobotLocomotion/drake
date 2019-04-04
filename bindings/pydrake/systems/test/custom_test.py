@@ -330,8 +330,7 @@ class TestCustom(unittest.TestCase):
         self.assertTrue(system.called_publish)
 
         # Ensure documentation doesn't duplicate stuff.
-        with catch_drake_warnings(expected_count=1):
-            self.assertIn("deprecated", LeafSystem._DoPublish.__doc__)
+        self.assertIn("deprecated", LeafSystem._DoPublish.__doc__)
         # This will warn both on (a) calling the method and (b) on the
         # invocation of the override.
         with catch_drake_warnings(expected_count=2):
