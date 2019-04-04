@@ -1,4 +1,4 @@
-#include "drake/automotive/maliput/base/trivial_right_of_way_state_provider.h"
+#include "drake/automotive/maliput/base/manual_rule_state_provider.h"
 
 #include <stdexcept>
 
@@ -11,10 +11,10 @@ namespace maliput {
 namespace {
 
 using maliput::api::rules::RightOfWayRule;
-using maliput::api::rules::RightOfWayStateProvider;
+using maliput::api::rules::RuleStateProvider;
 
-GTEST_TEST(TrivialRightOfWayStateProviderTest, BasicTest) {
-  TrivialRightOfWayStateProvider dut;
+GTEST_TEST(ManualRuleStateProviderTest, BasicTest) {
+  ManualRuleStateProvider dut;
   const RightOfWayRule::Id kRuleId("foo");
   const RightOfWayRule::State::Id kStateId("bar");
 
@@ -25,7 +25,7 @@ GTEST_TEST(TrivialRightOfWayStateProviderTest, BasicTest) {
   dut.AddState(kRuleId, kStateId);
   EXPECT_TRUE(MALIPUT_IS_EQUAL(
       dut.GetState(kRuleId).value(),
-      (RightOfWayStateProvider::Result{kStateId, nullopt})));
+      (RuleStateProvider::RightOfWayResult{kStateId, nullopt})));
 
   // Attempting to add duplicate state.
   EXPECT_THROW(dut.AddState(kRuleId, kStateId), std::logic_error);
@@ -34,7 +34,7 @@ GTEST_TEST(TrivialRightOfWayStateProviderTest, BasicTest) {
   dut.SetState(kRuleId, kOtherStateId);
   EXPECT_TRUE(MALIPUT_IS_EQUAL(
       dut.GetState(kRuleId).value(),
-      (RightOfWayStateProvider::Result{kOtherStateId, nullopt})));
+      (RuleStateProvider::RightOfWayResult{kOtherStateId, nullopt})));
 }
 
 }  // namespace

@@ -15,14 +15,14 @@ drake_cc_package_library(
     deps = [
         ":intersection",
         ":manual_phase_provider",
-        ":phase_based_right_of_way_state_provider",
+        ":manual_rule_state_provider",
+        ":phase_based_rule_state_provider",
         ":phase_ring_book_loader",
         ":road_rulebook_loader",
         ":simple_phase_ring_book",
         ":simple_rulebook",
         ":traffic_light_book",
         ":traffic_light_book_loader",
-        ":trivial_right_of_way_state_provider",
         ":yaml_io",
     ],
 )
@@ -57,12 +57,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "phase_based_right_of_way_state_provider",
+    name = "phase_based_rule_state_provider",
     srcs = [
-        "phase_based_right_of_way_state_provider.cc",
+        "phase_based_rule_state_provider.cc",
     ],
     hdrs = [
-        "phase_based_right_of_way_state_provider.h",
+        "phase_based_rule_state_provider.h",
     ],
     deps = [
         "//automotive/maliput/api",
@@ -164,12 +164,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "trivial_right_of_way_state_provider",
+    name = "manual_rule_state_provider",
     srcs = [
-        "trivial_right_of_way_state_provider.cc",
+        "manual_rule_state_provider.cc",
     ],
     hdrs = [
-        "trivial_right_of_way_state_provider.h",
+        "manual_rule_state_provider.h",
     ],
     deps = [
         "//automotive/maliput/api",
@@ -201,9 +201,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "phase_based_right_of_way_state_provider_test",
+    name = "phase_based_rule_state_provider_test",
     deps = [
-        ":phase_based_right_of_way_state_provider",
+        ":phase_based_rule_state_provider",
         "//automotive/maliput/base",
     ],
 )
@@ -279,9 +279,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "trivial_right_of_way_state_provider_test",
+    name = "manual_rule_state_provider_test",
     deps = [
-        ":trivial_right_of_way_state_provider",
+        ":manual_rule_state_provider",
         "//automotive/maliput/api/test_utilities:rules_test_utilities",
     ],
 )

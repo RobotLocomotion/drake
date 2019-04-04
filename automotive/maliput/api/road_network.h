@@ -9,8 +9,8 @@
 #include "drake/automotive/maliput/api/rules/direction_usage_rule.h"
 #include "drake/automotive/maliput/api/rules/phase_provider.h"
 #include "drake/automotive/maliput/api/rules/phase_ring_book.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_state_provider.h"
 #include "drake/automotive/maliput/api/rules/road_rulebook.h"
+#include "drake/automotive/maliput/api/rules/rule_state_provider.h"
 #include "drake/automotive/maliput/api/rules/speed_limit_rule.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
@@ -30,7 +30,7 @@ class RoadNetwork {
               std::unique_ptr<const rules::RoadRulebook> rulebook,
               std::vector<std::unique_ptr<Intersection>> intersections,
               std::unique_ptr<rules::PhaseRingBook> phase_ring_book,
-              std::unique_ptr<rules::RightOfWayStateProvider> state_provider,
+              std::unique_ptr<rules::RuleStateProvider> rule_state_provider,
               std::unique_ptr<rules::PhaseProvider> phase_provider,
               std::vector<rules::SpeedLimitRule> speed_limits,
               std::vector<rules::DirectionUsageRule> direction_usage_rules);
@@ -49,8 +49,8 @@ class RoadNetwork {
     return phase_ring_book_.get();
   }
 
-  const rules::RightOfWayStateProvider* state_provider() const {
-    return state_provider_.get();
+  const rules::RuleStateProvider* rule_state_provider() const {
+    return rule_state_provider_.get();
   }
 
   const rules::PhaseProvider* phase_provider() const {
@@ -71,7 +71,7 @@ class RoadNetwork {
   std::vector<std::unique_ptr<Intersection>> intersections_;
   std::unordered_map<Intersection::Id, Intersection*> intersections_map_;
   std::unique_ptr<rules::PhaseRingBook> phase_ring_book_;
-  std::unique_ptr<rules::RightOfWayStateProvider> state_provider_;
+  std::unique_ptr<rules::RuleStateProvider> rule_state_provider_;
   std::unique_ptr<rules::PhaseProvider> phase_provider_;
   std::vector<rules::SpeedLimitRule> speed_limits_;
   std::vector<rules::DirectionUsageRule> direction_usage_rules_;

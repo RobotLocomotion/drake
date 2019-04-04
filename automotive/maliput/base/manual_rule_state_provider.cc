@@ -1,4 +1,4 @@
-#include "drake/automotive/maliput/base/trivial_right_of_way_state_provider.h"
+#include "drake/automotive/maliput/base/manual_rule_state_provider.h"
 
 #include <stdexcept>
 #include <string>
@@ -10,7 +10,7 @@ namespace maliput {
 
 using api::rules::RightOfWayRule;
 
-void TrivialRightOfWayStateProvider::AddState(
+void ManualRuleStateProvider::AddState(
     const RightOfWayRule::Id& id,
     const RightOfWayRule::State::Id& initial_state) {
   auto result = states_.emplace(id, initial_state);
@@ -20,20 +20,20 @@ void TrivialRightOfWayStateProvider::AddState(
   }
 }
 
-void TrivialRightOfWayStateProvider::SetState(
+void ManualRuleStateProvider::SetState(
     const RightOfWayRule::Id& id,
     const RightOfWayRule::State::Id& state) {
   states_.at(id) = state;
 }
 
-drake::optional<maliput::api::rules::RightOfWayStateProvider::Result>
-TrivialRightOfWayStateProvider::DoGetState(
+drake::optional<api::rules::RuleStateProvider::RightOfWayResult>
+ManualRuleStateProvider::DoGetState(
     const RightOfWayRule::Id& id) const {
   auto it = states_.find(id);
   if (it == states_.end()) {
     return nullopt;
   }
-  return Result{it->second, nullopt};
+  return api::rules::RuleStateProvider::RightOfWayResult{it->second, nullopt};
 }
 
 }  // namespace maliput
