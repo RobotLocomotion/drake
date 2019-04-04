@@ -10,8 +10,10 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_binary(
-    name = "inclined_plane_run_dynamics",
-    srcs = ["inclined_plane_run_dynamics.cc"],
+    name = "inclined_plane_with_body",
+    srcs = [
+        "inclined_plane_with_body.cc",
+    ],
     add_test_rule = 1,
     test_rule_args = [
         "--simulation_time=0.1",
@@ -21,6 +23,7 @@ drake_cc_binary(
         "//common:text_logging_gflags",
         "//geometry:geometry_visualization",
         "//multibody/benchmarks/inclined_plane",
+        "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "@gflags",
