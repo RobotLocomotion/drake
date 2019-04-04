@@ -30,16 +30,17 @@ namespace inclined_plane {
 ///   in m/s².  Earth's gravity is in the world's -z direction.
 /// @param[in] inclined_plane_angle Inclined plane angle (slope) i.e., angle
 ///   from Wx to Ax with positive sense Wy (radians).
-/// @param[in] inclined_plane_dimensions non-negative dimensions (meters) in the
-///   Ax, Ay, Az directions when the inclined plane is modeled as a box,
-///   otherwise nullopt if the inclined plane is an infinite half-space.
+/// @param[in] inclined_plane_dimensions Optional box dimensions (meters) in the
+///   Ax, Ay, Az directions.  If dimensions are given, the inclined plane is
+///   modeled as a box, otherwise it is a half-space.
 /// @param[in] coefficient_friction_inclined_plane Coulomb's coefficient of
 ///   friction for inclined plane A (sliding friction and static friction).
 /// @param[in] coefficient_friction_bodyB Coulomb's coefficient of friction
 ///   data for body B's surfaces (sliding friction and static friction).
 /// @param[in] massB The mass of body B (kilograms), which must be positive.
 /// @param[out] plant Plant that will contain inclined plane A.
-/// @throws std::exception if plant is nullptr or there is invalid data.
+/// @throws std::exception if plant is nullptr or there is invalid data, e.g.,
+///   non-negative mass, dimensions, etc.
 /// @pre plant must be registered with a scene graph.
 //@{
 
@@ -51,8 +52,8 @@ void AddInclinedPlaneAndGravityToPlant(
     const CoulombFriction<double>& coefficient_friction_inclined_plane,
     MultibodyPlant<double>* plant);
 
-/// Creates an inclined plane A and a uniform-density block (body B) that may
-/// have 4 spheres welded to it and adds them to an existing plant.
+/// Creates an inclined plane A and a uniform-density block (body B), optionally
+/// with 4 spheres welded to it, and adds them to an existing plant.
 /// @param[in] block_dimensions Dimensions (lengths) of block in the Bx, By, Bz
 ///   directions (meters). To be valid data, these dimensions must be positive.
 /// @param[in] is_block_with_4Spheres This flag is `true` if block B's contact
