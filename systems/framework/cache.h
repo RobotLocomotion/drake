@@ -27,8 +27,14 @@ class DependencyGraph;
 //==============================================================================
 //                             CACHE ENTRY VALUE
 //==============================================================================
-/** This is the representation in the Context for the value of one of a System's
-CacheEntry objects. It consists of a single type-erased value, a serial number,
+/** (Advanced) This is the representation in the Context for the value of one of
+a System's CacheEntry objects. Most users will not use this class directly --
+System and CacheEntry provide the most common APIs, and Context provides
+additional useful methods.
+
+@see System, CacheEntry, Context for user-facing APIs.
+
+A %CacheEntryValue consists of a single type-erased value, a serial number,
 an `out_of_date` flag, and a DependencyTracker ticket. Details:
 - "Out of date" means that some prerequisite of this cache entry's computation
   has been changed in the current Context since the stored value was last
@@ -81,7 +87,11 @@ class CacheEntryValue {
   is marked out of date. It is an error to call this if there is already
   a value here; use has_value() if you want to check first. Also, the given
   initial value may not be null. The serial number is set to 1. No out-of-date
-  notifications are sent to downstream dependents.
+  notifications are sent to downstream dependents. Operation of this
+  initialization method is not affected by whether the cache is currently
+  frozen. However, the corresponding value won't be accessible while the cache
+  remains frozen (since it is out of date).
+
   @throws std::logic_error if the given value is null or if there is already a
                            value, or if this %CacheEntryValue is malformed in
                            some detectable way. */
@@ -148,6 +158,7 @@ class CacheEntryValue {
   GetMutableValueOrThrow().
   @throws std::logic_error if there is no value, or the value is already up
                            to date, of it doesn't actually have type V.
+  @throws std::logic_error if the cache is frozen.
   @see set_value(), GetMutableValueOrThrow() */
   template <typename V>
   void SetValueOrThrow(const V& new_value) {
@@ -170,6 +181,7 @@ class CacheEntryValue {
   want anyone to be able to use the new value.
   @throws std::logic_error if there is no value, or if the value is already
                            up to date.
+  @throws std::logic_error if the cache is frozen.
   @see SetValueOrThrow(), set_value(), mark_up_to_date() */
   AbstractValue& GetMutableAbstractValueOrThrow() {
     return GetMutableAbstractValueOrThrowHelper(__func__);
@@ -182,6 +194,7 @@ class CacheEntryValue {
   reference. See GetMutableAbstractValueOrThrow() above for more information.
   @throws std::logic_error if there is no value, or if the value is already
                            up to date, of it doesn't actually have type V.
+  @throws std::logic_error if the cache is frozen.
   @see SetValueOrThrow(), set_value(), mark_up_to_date()
   @tparam V The known actual value type. */
   template <typename V>
@@ -264,12 +277,14 @@ class CacheEntryValue {
   this value went out of date. The serial number is incremented. If you are not
   in a performance-critical situation (and you probably are not!), use
   `SetValueOrThrow<V>()` instead.
+  @throws std::logic_error if the cache is frozen.
   @tparam V The known actual value type. */
   template <typename V>
   void set_value(const V& new_value) {
 #ifdef DRAKE_ASSERT_IS_ARMED
     SetValueOrThrowHelper<V>(__func__, new_value);
 #else
+    ThrowIfFrozen(__func__);
     value_->set_value<V>(new_value);
 #endif
     ++serial_number_;
@@ -280,10 +295,13 @@ class CacheEntryValue {
   one. The value is marked out of date and the serial number is incremented.
   This is useful for discrete updates of abstract state variables that contain
   large objects. Both values must be non-null and of the same concrete type but
-  we won't check for errors except in Debug builds. */
+  we won't check for errors except in Debug builds.
+  @throws std::logic_error if the cache is frozen.
+  */
   void swap_value(std::unique_ptr<AbstractValue>* other_value) {
     DRAKE_ASSERT_VOID(ThrowIfNoValuePresent(__func__));
     DRAKE_ASSERT_VOID(ThrowIfBadOtherValue(__func__, other_value));
+    ThrowIfFrozen(__func__);
     value_.swap(*other_value);
     ++serial_number_;
     mark_out_of_date();
@@ -309,7 +327,11 @@ class CacheEntryValue {
   is disabled for this entry. This is a _very_ fast inline method intended
   to be called every time a cache value is obtained with Eval(). This is
   equivalent to `is_out_of_date() || is_entry_disabled()` but faster.  Don't
-  call this if there is no value here; use has_value() if you aren't sure.*/
+  call this if there is no value here; use has_value() if you aren't sure.
+  Note that if this returns true while the cache is frozen, any attempt to
+  access the value will fail since recomputation is forbidden in that case.
+  However, operation of _this_ method is unaffected by whether the cache
+  is frozen. */
   bool needs_recomputation() const {
     DRAKE_ASSERT_VOID(ThrowIfNoValuePresent(__func__));
     return flags_ != kReadyToUse;
@@ -324,7 +346,13 @@ class CacheEntryValue {
   really up to date. You should not call it unless you really know what you're
   doing, or have a death wish. Do not call this method if there is no stored
   value object; use has_value() if you aren't sure. This is intended
-  to be very fast so doesn't check for a value object except in Debug builds. */
+  to be very fast so doesn't check for a value object except in Debug builds.
+
+  @note Operation of this method is unaffected by whether the cache is
+  frozen. It may be useful for testing and debugging in that case but you
+  should be _very_ careful if you use it -- once you call this the value
+  will be accessible in the frozen cache, regardless of whether it is any
+  good! */
   void mark_up_to_date() {
     DRAKE_ASSERT_VOID(ThrowIfNoValuePresent(__func__));
     flags_ &= ~kValueIsOutOfDate;
@@ -335,7 +363,11 @@ class CacheEntryValue {
   the value, does not change the serial number, and does not notify downstream
   dependents. You should not call this method unless you know that dependent
   notification has already been taken care of. There are no error conditions;
-  even an empty cache entry can be marked out of date. */
+  even an empty cache entry can be marked out of date.
+
+  @note Operation of this method is unaffected by whether the cache is frozen.
+  If you call it in that case the corresponding value will become
+  inaccessible since it would require recomputation. */
   void mark_out_of_date() {
     flags_ |= kValueIsOutOfDate;
   }
@@ -393,7 +425,11 @@ class CacheEntryValue {
   disabled, the corresponding entry's Eval() method will unconditionally invoke
   Calc() to recompute the value, regardless of the setting of the `out_of_date`
   flag. The `disabled` flag is independent of the `out_of_date` flag, which
-  will continue to be managed even if caching is disabled. */
+  will continue to be managed even if caching is disabled. It is also
+  independent of whether the cache is frozen, although in that case any
+  cache access will fail since recomputation is not permitted in a frozen
+  cache. Once unfrozen, caching will remain disabled unless enable_caching()
+  is called. */
   void disable_caching() {
     flags_ |= kCacheEntryIsDisabled;
   }
@@ -401,13 +437,15 @@ class CacheEntryValue {
   /** (Advanced) Enables caching for this cache entry value if it was previously
   disabled. When enabled (the default condition) the corresponding entry's
   Eval() method will check the `out_of_date` flag and invoke Calc() only if the
-  entry is marked out of date. */
+  entry is marked out of date. It is also independent of whether the cache is
+  frozen; in that case caching will be enabled once the cache is unfrozen. */
   void enable_caching() {
     flags_ &= ~kCacheEntryIsDisabled;
   }
 
   /** (Advanced) Returns `true` if caching is disabled for this cache entry.
-  This is independent of the `out_of_date` flag. */
+  This is independent of the `out_of_date` flag, and independent of whether
+  the cache is currently frozen. */
   bool is_cache_entry_disabled() const {
     return (flags_ & kCacheEntryIsDisabled) != 0;
   }
@@ -489,6 +527,7 @@ class CacheEntryValue {
   AbstractValue& GetMutableAbstractValueOrThrowHelper(const char* api) {
     ThrowIfNoValuePresent(api);
     ThrowIfAlreadyComputed(api);  // *Must* be out of date!
+    ThrowIfFrozen(api);
     ++serial_number_;
     return *value_;
   }
@@ -503,7 +542,8 @@ class CacheEntryValue {
   template <typename T>
   void SetValueOrThrowHelper(const char* api, const T& new_value) const {
     ThrowIfNoValuePresent(api);
-    ThrowIfAlreadyComputed(api);
+    ThrowIfAlreadyComputed(api);  // *Must* be out of date!
+    ThrowIfFrozen(api);
     return value_->set_value<T>(new_value);
   }
 
@@ -540,6 +580,15 @@ class CacheEntryValue {
     if (!needs_recomputation()) {
       throw std::logic_error(FormatName(api) +
           "the current value is already up to date.");
+    }
+  }
+
+  // Invoke from any attempt to set or get mutable access to an out-of-date
+  // cache entry value.
+  void ThrowIfFrozen(const char* api) const {
+    if (owning_subcontext_->is_cache_frozen()) {
+      throw std::logic_error(FormatName(api) +
+          "the cache is frozen but this entry is out of date.");
     }
   }
 
@@ -584,11 +633,16 @@ class CacheEntryValue {
 //==============================================================================
 //                                  CACHE
 //==============================================================================
-/** Stores all the CacheEntryValue objects owned by a particular Context,
-organized to allow fast access using a CacheIndex as an index. Memory addresses
-of CacheEntryValue objects are stable once allocated, but CacheIndex numbers are
-stable even after a Context has been copied so should be preferred as a means
-for identifying particular cache entries. */
+/** (Advanced) Stores all the CacheEntryValue objects owned by a particular
+Context, organized to allow fast access using a CacheIndex as an index. Most
+users will not use this class directly -- System and CacheEntry provide the
+most common APIs, and Context provides additional useful methods.
+
+@see System, CacheEntry, Context for user-facing APIs.
+
+Memory addresses of CacheEntryValue objects are stable once allocated, but
+CacheIndex numbers are stable even after a Context has been copied so should be
+preferred as a means for identifying particular cache entries. */
 class Cache {
  public:
   /** @name  Does not allow move or assignment; copy constructor is private. */
@@ -678,6 +732,24 @@ class Cache {
   normal caching behavior resumes. */
   void SetAllEntriesOutOfDate();
 
+  /** (Advanced) Sets the "is frozen" flag. Cache entry values should check this
+  before permitting mutable access to values.
+  @see ContextBase::FreezeCache() for the user-facing API */
+  void freeze_cache() {
+    is_cache_frozen_ = true;
+  }
+
+  /** (Advanced) Clears the "is frozen" flag, permitting normal cache
+  activity.
+  @see ContextBase::UnfreezeCache() for the user-facing API */
+  void unfreeze_cache() {
+    is_cache_frozen_ = false;
+  }
+
+  /** (Advanced) Reports the current value of the "is frozen" flag.
+  @see ContextBase::is_cache_frozen() for the user-facing API */
+  bool is_cache_frozen() const { return is_cache_frozen_; }
+
  private:
   // So ContextBase and no one else can copy a Cache.
   friend class ContextBase;
@@ -703,6 +775,9 @@ class Cache {
 
   // All CacheEntryValue objects, indexed by CacheIndex.
   std::vector<copyable_unique_ptr<CacheEntryValue>> store_;
+
+  // Whether we are currently preventing mutable access to the cache.
+  bool is_cache_frozen_{false};
 };
 
 }  // namespace systems
