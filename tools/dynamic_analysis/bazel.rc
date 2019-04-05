@@ -99,44 +99,6 @@ build:lsan_everything --test_env=LSAN_OPTIONS
 build:lsan_everything --test_env=LSAN_SYMBOLIZER_PATH
 build:lsan_everything --test_lang_filters=-sh,-py
 
-### MSan build. ###
-build:msan --build_tests_only
-build:msan --copt -g
-build:msan --copt -fsanitize=memory
-build:msan --copt -fsanitize-memory-track-origins
-build:msan --copt -O1
-build:msan --copt -fno-omit-frame-pointer
-build:msan --linkopt -fsanitize=memory
-build:msan --run_under=//tools/dynamic_analysis:msan
-build:msan --test_tag_filters=-gurobi,-mosek,-snopt,-no_msan
-build:msan --test_lang_filters=-sh,-py
-build:msan --test_env=MSAN_OPTIONS
-build:msan --test_env=MSAN_SYMBOLIZER_PATH
-# Typical slowdown introduced by MemorySanitizer is 3x.
-# See https://clang.llvm.org/docs/MemorySanitizer.html
-build:msan --test_timeout=180,900,2700,10800
-
-### MSan everything build. ###
-build:msan_everything --build_tests_only
-build:msan_everything --define=WITH_GUROBI=ON
-build:msan_everything --define=WITH_MOSEK=ON
-build:msan_everything --define=WITH_SNOPT=ON
-build:msan_everything --copt -g
-build:msan_everything --copt -fsanitize=memory
-build:msan_everything --copt -fsanitize-memory-track-origins
-build:msan_everything --copt -O1
-build:msan_everything --copt -fno-omit-frame-pointer
-build:msan_everything --linkopt -fsanitize=memory
-
-build:msan_everything --test_tag_filters=-no_msan
-build:msan_everything --run_under=//tools/dynamic_analysis:msan
-build:msan_everything --test_lang_filters=-sh,-py
-build:msan_everything --test_env=MSAN_OPTIONS
-build:msan_everything --test_env=MSAN_SYMBOLIZER_PATH
-# Typical slowdown introduced by MemorySanitizer is 3x.
-# See https://clang.llvm.org/docs/MemorySanitizer.html
-build:msan_everything --test_timeout=180,900,2700,10800
-
 ### TSan build. ###
 build:tsan --build_tests_only
 build:tsan --copt -g
