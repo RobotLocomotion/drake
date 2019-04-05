@@ -83,6 +83,7 @@ drake_pybind_library(
         "//bindings/pydrake:symbolic_py",
         "//bindings/pydrake/common:cpp_template_py",
     ],
+    py_srcs = ["_framework_extra.py"],
 )
 
 drake_py_library(

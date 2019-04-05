@@ -13,6 +13,7 @@ from pydrake.symbolic import Expression
 from pydrake.systems.framework import (
     AbstractValue,
     BasicVector, BasicVector_,
+    MakeNamedVectorType, MakeNamedVectorScalarTypes,
     Parameters,
     Value,
     VectorBase,
@@ -207,3 +208,29 @@ class TestValue(unittest.TestCase):
             Parameters(vec=model_numeric.Clone()),
             Parameters(value=model_abstract.Clone()),
             ]
+
+    def test_make_named_vector_type(self):
+        MyVector = MakeNamedVectorType('MyVector', ['x', 'y', 'z'])
+        a = MyVector()
+        self.assertEqual(a.size(), 3)
+        a.SetAtIndex(0, 0.1)
+        a.set_z(0.3)
+        self.assertEqual(a.x(), 0.1)
+        self.assertEqual(a.z(), 0.3)
+        b = MyVector([1, 2, 3])
+        self.assertEqual(b.x(), 1)
+        self.assertEqual(b.y(), 2)
+        self.assertEqual(b.z(), 3)
+
+        # Test that we assert if we initialize with the wrong size.
+        with self.assertRaises(AssertionError):
+            c = MyVector(np.zeros(5))
+
+        MyVector_ = MakeNamedVectorScalarTypes('MyVector', ['x', 'y', 'z'])
+        a = MyVector_[float]()
+        b = MyVector_[AutoDiffXd]()
+        c = MyVector_[Expression](np.zeros(3))
+
+        self.assertIsInstance(a.x(), float)
+        self.assertIsInstance(b.y(), AutoDiffXd)
+        self.assertIsInstance(c.z(), Expression)
