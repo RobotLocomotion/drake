@@ -939,6 +939,7 @@ MultibodyPlant<double>::CalcPointPairPenetrations(
 
 // Specialize this function so that AutoDiffXd is (partially) supported. This
 // AutoDiffXd specialization will throw if there are any collisions.
+// TODO(SeanCurtis-TRI): Move this logic into SceneGraph.
 template <>
 std::vector<PenetrationAsPointPair<AutoDiffXd>>
 MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
@@ -948,8 +949,9 @@ MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
         Eval<geometry::QueryObject<AutoDiffXd>>(context);
     auto results = query_object.ComputePointPairPenetration();
     if (results.size() > 0) {
-      throw std::logic_error("This function does not support AutoDiffXd when"
-                             "the number of penetration pairs is non-zero.");
+      throw std::logic_error(
+          "CalcPointPairPenetration() with AutoDiffXd requires scenarios with "
+          "no collisions.");
     }
   }
   return {};

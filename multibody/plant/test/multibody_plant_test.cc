@@ -1261,6 +1261,26 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   }
 }
 
+GTEST_TEST(MultibodyPlantTest, AutoDiffCalcPointPairPenetrations) {
+  PendulumParameters parameters;
+  unique_ptr<MultibodyPlant<double>> pendulum = MakePendulumPlant(parameters);
+  unique_ptr<Context<double>> context = pendulum->CreateDefaultContext();
+
+  // We connect a SceneGraph to the pendulum plant in order to enforce the
+  // creation of geometry input/output ports. This ensures the call to
+  // CalcPointPairPenetrations evaluates appropriately.
+  geometry::SceneGraph<double> scene_graph;
+  pendulum->RegisterAsSourceForSceneGraph(&scene_graph);
+
+  auto autodiff_pendulum =
+      drake::systems::System<double>::ToAutoDiffXd(*pendulum.get());
+  auto autodiff_context = autodiff_pendulum->CreateDefaultContext();
+
+  // This test case contains no collisions, and hence we should not throw.
+  EXPECT_NO_THROW(
+  autodiff_pendulum->EvalPointPairPenetrations(*autodiff_context.get()));
+}
+
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 
