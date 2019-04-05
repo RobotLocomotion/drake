@@ -245,7 +245,7 @@ PYBIND11_MODULE(math, m) {
       .def("RealDiscreteLyapunovEquation", &RealDiscreteLyapunovEquation,
           py::arg("A"), py::arg("Q"), doc.RealDiscreteLyapunovEquation.doc);
 
-  // General math overloads.
+  // General scalar math overloads.
   // N.B. Additional overloads will be added for autodiff, symbolic, etc, by
   // those respective modules.
   // TODO(eric.cousineau): If possible, delegate these to NumPy UFuncs,
@@ -277,6 +277,12 @@ PYBIND11_MODULE(math, m) {
       .def("max", [](double x, double y) { return fmax(x, y); })
       .def("ceil", [](double x) { return ceil(x); })
       .def("floor", [](double x) { return floor(x); });
+
+  // General vectorized / matrix overloads.
+  m  // BR
+      .def("inv", [](const Eigen::MatrixXd& X) -> Eigen::MatrixXd {
+        return X.inverse();
+      });
 
   // Add testing module.
   {

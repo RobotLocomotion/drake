@@ -370,7 +370,11 @@ PYBIND11_MODULE(symbolic, m) {
       .def("min", &symbolic::min)
       .def("max", &symbolic::max)
       .def("ceil", &symbolic::ceil)
-      .def("floor", &symbolic::floor);
+      .def("floor", &symbolic::floor)
+      // Matirx overloads.
+      .def("inv", [](const MatrixX<Expression>& X) -> MatrixX<Expression> {
+        return X.inverse();
+      });
 
   m.def("if_then_else", &symbolic::if_then_else);
 

@@ -207,3 +207,10 @@ class TestAutoDiffXd(unittest.TestCase):
         # to do so. See #8116 for alternative.
         with self.assertRaises(TypeError):
             Y = np.linalg.inv(X)
+
+        to_value = np.vectorize(AutoDiffXd.value)
+        # Use workaround for inverse. For now, just check values.
+        X_float = to_value(X)
+        Xinv_float = np.linalg.inv(X_float)
+        Xinv = drake_math.inv(X)
+        np.testing.assert_equal(to_value(Xinv), Xinv_float)

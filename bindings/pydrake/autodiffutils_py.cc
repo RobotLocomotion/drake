@@ -103,7 +103,11 @@ PYBIND11_MODULE(autodiffutils, m) {
       .def("max",
           [](const AutoDiffXd& x, const AutoDiffXd& y) { return max(x, y); })
       .def("ceil", [](const AutoDiffXd& x) { return ceil(x); })
-      .def("floor", [](const AutoDiffXd& x) { return floor(x); });
+      .def("floor", [](const AutoDiffXd& x) { return floor(x); })
+      // Matrix
+      .def("inv", [](const MatrixX<AutoDiffXd>& X) -> MatrixX<AutoDiffXd> {
+        return X.inverse();
+      });
   // Mirror for numpy.
   autodiff.attr("arcsin") = autodiff.attr("asin");
   autodiff.attr("arccos") = autodiff.attr("acos");

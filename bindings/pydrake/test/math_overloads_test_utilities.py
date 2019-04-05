@@ -16,6 +16,8 @@ import subprocess
 import sys
 import unittest
 
+import numpy as np
+
 # Change this to inspect output.
 VERBOSE = False
 
@@ -78,6 +80,7 @@ class AutoDiffOverloads(Overloads):
             "log",
             "tan", "asin", "acos", "atan2",
             "sinh", "cosh", "tanh",
+            "inv",
         ]
         if func.__name__ in backwards_compat:
             # Check backwards compatibility.
@@ -105,6 +108,7 @@ class SymbolicOverloads(Overloads):
             "sin", "cos", "tan", "asin", "acos", "atan",
             "sinh", "cosh", "tanh", "ceil", "floor",
             "min", "max", "pow", "atan2",
+            "inv",
         ]
         supported = backwards_compat
         if func.__name__ in backwards_compat:
@@ -194,3 +198,18 @@ class MathOverloadsBase(unittest.TestCase):
         check_eval(unary, 1)
         debug_print("Binary:")
         check_eval(binary, 2)
+
+        # Check specialized linear / array algebra.
+        if overload.supports(drake_math.inv):
+            f_drake, f_builtin = drake_math.inv, np.linalg.inv
+            X_float = np.eye(2)
+            Y_builtin = f_builtin(X_float)
+            Y_float = f_drake(X_float)
+            self.assertIsInstance(Y_float[0, 0].item(), float)
+            np.testing.assert_equal(Y_builtin, Y_float)
+            to_type_array = np.vectorize(overload.to_type)
+            to_float_array = np.vectorize(overload.to_float)
+            X_T = to_type_array(X_float)
+            Y_T = drake_math.inv(X_T)
+            self.assertIsInstance(Y_T[0, 0], overload.T)
+            np.testing.assert_equal(to_float_array(Y_T), Y_float)
