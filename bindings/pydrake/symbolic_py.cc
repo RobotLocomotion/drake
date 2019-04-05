@@ -347,7 +347,8 @@ PYBIND11_MODULE(symbolic, m) {
       .def("floor", &symbolic::floor, doc.floor.doc);
   DefCopyAndDeepCopy(&expr_cls);
 
-  // TODO(eric.cousineau): Consider deprecating these methods?
+  // TODO(eric.cousineau): Deprecate these methods if/when we support proper
+  // NumPy UFuncs.
   // TODO(m-chaturvedi) Add Pybind11 documentation.
   auto math = py::module::import("pydrake.math");
   MirrorDef<py::module, py::module>(&math, &m)
@@ -370,7 +371,11 @@ PYBIND11_MODULE(symbolic, m) {
       .def("min", &symbolic::min)
       .def("max", &symbolic::max)
       .def("ceil", &symbolic::ceil)
-      .def("floor", &symbolic::floor);
+      .def("floor", &symbolic::floor)
+      // Matrix overloads.
+      .def("inv", [](const MatrixX<Expression>& X) -> MatrixX<Expression> {
+        return X.inverse();
+      });
 
   m.def("if_then_else", &symbolic::if_then_else);
 
