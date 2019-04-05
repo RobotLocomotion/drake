@@ -2,7 +2,9 @@
 # rationale.
 
 
-# This is a python reimplementation of drake::lcm::Subscriber.
+# This is a python reimplementation of drake::lcm::Subscriber.  We reimplement
+# (rather than bind) the C++ class because we want message() to be a python LCM
+# message, not a C++ object.
 class Subscriber:
     """Subscribes to and stores a copy of the most recent message on a given
     channel, for some message type.  This class does NOT provide any mutex
