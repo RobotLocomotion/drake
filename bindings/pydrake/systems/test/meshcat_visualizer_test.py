@@ -229,7 +229,7 @@ class TestMeshcat(unittest.TestCase):
         def se3_from_xyz(xyz):
             return Isometry3(np.eye(3), xyz)
 
-        def show_cloud(pc, use_native=False, **kwargs):
+        def show_cloud(pc, pc2=None, use_native=False, **kwargs):
             # kwargs go to ctor.
             builder = DiagramBuilder()
             # Add point cloud visualization.
@@ -245,6 +245,13 @@ class TestMeshcat(unittest.TestCase):
                     viz.get_input_port(0))
             pc_viz = builder.AddSystem(
                 MeshcatPointCloudVisualizer(viz, **kwargs))
+            if pc2:
+                pc_viz2 = builder.AddSystem(
+                    MeshcatPointCloudVisualizer(
+                        viz, name='second_point_cloud',
+                        X_WP=se3_from_xyz([0, 0.3, 0]),
+                        default_rgb=[0., 255., 0.]))
+
             # Make sure the system runs.
             diagram = builder.Build()
             diagram_context = diagram.CreateDefaultContext()
@@ -253,6 +260,12 @@ class TestMeshcat(unittest.TestCase):
             context.FixInputPort(
                 pc_viz.GetInputPort("point_cloud_P").get_index(),
                 AbstractValue.Make(pc))
+            if pc2:
+                context = diagram.GetMutableSubsystemContext(
+                    pc_viz2, diagram_context)
+                context.FixInputPort(
+                    pc_viz2.GetInputPort("point_cloud_P").get_index(),
+                    AbstractValue.Make(pc2))
             simulator = Simulator(diagram, diagram_context)
             simulator.set_publish_every_time_step(False)
             simulator.AdvanceTo(sim_time)
@@ -282,3 +295,6 @@ class TestMeshcat(unittest.TestCase):
         show_cloud(
             pc_no_rgbs, name="point_cloud_5", X_WP=se3_from_xyz([1.2, 0, 0]),
             default_rgb=[255., 0., 0.])
+        show_cloud(
+            pc, pc_no_rgbs, name="point_cloud_6",
+            X_WP=se3_from_xyz([1.5, 0, 0]), default_rgb=[0., 255., 0.])
