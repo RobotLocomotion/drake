@@ -145,6 +145,19 @@ drake_cc_library(
         "implicit_euler_integrator-inl.h",
     ],
     deps = [
+        ":implicit_integrator",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_library(
+    name = "implicit_integrator",
+    srcs = ["implicit_integrator.cc"],
+    hdrs = [
+        "implicit_integrator.h",
+        "implicit_integrator-inl.h",
+    ],
+    deps = [
         ":integrator_base",
         "//math:gradient",
     ],
