@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """Reports summary data related to Drake's repository rules.  This
 implementation uses Bazel command-line actions so is suitable only
 for manual use, not any build rules or test automation.
@@ -49,8 +47,3 @@ def read_repository_metadata():
             pass
 
     return result
-
-
-if __name__ == '__main__':
-    # This is for manual previews only; do not use this program from scripts.
-    print(json.dumps(read_repository_metadata(), sort_keys=True, indent=2))
