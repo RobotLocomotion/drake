@@ -6,6 +6,7 @@
 #include "lcm/lcm-cpp.hpp"
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 
 namespace drake {
 namespace lcm {
@@ -18,9 +19,15 @@ namespace lcm {
  * Please use DrakeLcmInterface::HandleSubscriptions() or
  * drake::systems::lcm::LcmInterfaceSystem instead.
  */
-class LcmReceiveThread {
+class DRAKE_DEPRECATED("2019-08-01",
+    "There is no replacement.  This class is trivially simple; feel free to "
+    "copy and adapt it instead, if needed.")
+LcmReceiveThread {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmReceiveThread);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmReceiveThread)
+#pragma GCC diagnostic pop
 
   /**
    * A constructor that instantiates the thread.

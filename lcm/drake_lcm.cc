@@ -266,8 +266,11 @@ int DrakeLcm::HandleSubscriptions(int timeout_millis) {
 }
 
 DrakeLcm::~DrakeLcm() {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // Stop invoking the subscriptions, prior to destroying them.
   StopReceiveThread();
+#pragma GCC diagnostic pop
 
   // Invalidate our DrakeSubscription objects.
   for (const auto& weak_subscription : impl_->subscriptions_) {
