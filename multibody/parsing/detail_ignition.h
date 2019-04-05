@@ -3,6 +3,7 @@
 #include <ignition/math/Pose3.hh>
 
 #include "drake/common/eigen_types.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace multibody {
@@ -13,8 +14,8 @@ namespace detail {
 Eigen::Vector3d ToVector3(const ignition::math::Vector3d& vector);
 
 /// Helper function to express an ignition::math::Pose3d instance as
-/// an Isometry3d instance.
-Eigen::Isometry3d ToIsometry3(const ignition::math::Pose3d& pose);
+/// a RigidTransform instance.
+math::RigidTransformd ToRigidTransform(const ignition::math::Pose3d& pose);
 
 }  // namespace detail
 }  // namespace multibody

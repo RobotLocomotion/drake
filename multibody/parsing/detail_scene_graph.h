@@ -6,6 +6,7 @@
 #include <sdf/sdf.hh>
 
 #include "drake/geometry/scene_graph.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 
@@ -80,7 +81,7 @@ geometry::IllustrationProperties MakeVisualPropertiesFromSdfVisual(
 /** Given `sdf_collision` stemming from the parsing of a `<collision>` element
  in an SDF file, this method makes the pose `X_LG` of frame G for the geometry
  of that collision element in the frame L of the link it belongs to.  */
-Eigen::Isometry3d MakeGeometryPoseFromSdfCollision(
+math::RigidTransformd MakeGeometryPoseFromSdfCollision(
     const sdf::Collision& sdf_collision);
 
 /** Parses friction coefficients from `sdf_collision`.
