@@ -54,9 +54,10 @@ PYBIND11_MODULE(plant, m) {
   py::module::import("pydrake.multibody.tree");
   py::module::import("pydrake.systems.framework");
 
-  const char* doc_iso3_deprecation =
-      "This API using Isometry3 will be deprecated soon with the resolution of "
-      "#9865. We only offer it for backwards compatibility. DO NOT USE!.";
+  constexpr char doc_iso3_deprecation[] =
+      "This API using Isometry3 is / will be deprecated soon with the "
+      "resolution of #9865. We only offer it for backwards compatibility. DO "
+      "NOT USE!.";
 
   {
     using Class = MultibodyPlant<T>;
@@ -177,14 +178,18 @@ PYBIND11_MODULE(plant, m) {
         // association that is less awkward than implicit BodyNodeIndex.
         .def("SetFreeBodyPose",
             overload_cast_explicit<void, Context<T>*, const Body<T>&,
-                const Isometry3<T>&>(&Class::SetFreeBodyPose),
-            py::arg("context"), py::arg("body"), py::arg("X_WB"),
-            doc_iso3_deprecation)
-        .def("SetFreeBodyPose",
-            overload_cast_explicit<void, Context<T>*, const Body<T>&,
                 const RigidTransform<T>&>(&Class::SetFreeBodyPose),
             py::arg("context"), py::arg("body"), py::arg("X_WB"),
             doc.MultibodyPlant.SetFreeBodyPose.doc_3args)
+        .def("SetFreeBodyPose",
+            [doc_iso3_deprecation](const Class* self, Context<T>* context,
+                const Body<T>& body, const Isometry3<T>& X_WB) {
+              WarnDeprecated(doc_iso3_deprecation);
+              return self->SetFreeBodyPose(
+                  context, body, RigidTransform<T>(X_WB));
+            },
+            py::arg("context"), py::arg("body"), py::arg("X_WB"),
+            doc_iso3_deprecation)
         .def("SetActuationInArray",
             [](const Class* self, multibody::ModelInstanceIndex model_instance,
                 const Eigen::Ref<const VectorX<T>> u_instance,

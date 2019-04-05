@@ -31,14 +31,12 @@ namespace examples {
 namespace simple_gripper {
 namespace {
 
-using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using geometry::SceneGraph;
 using geometry::Sphere;
 using lcm::DrakeLcm;
 using math::RigidTransformd;
-using math::RollPitchYaw;
-using math::RotationMatrix;
+using math::RollPitchYawd;
 using multibody::Body;
 using multibody::CoulombFriction;
 using multibody::ConnectContactResultsToDrakeVisualizer;
@@ -332,12 +330,10 @@ int do_main() {
       plant_context, left_finger).translation();
   const double mug_y_W = (p_WBr(1) + p_WBl(1)) / 2.0;
 
-  Isometry3d X_WM;
-  Vector3d rpy(FLAGS_rx * M_PI / 180,
-               FLAGS_ry * M_PI / 180,
-               (FLAGS_rz * M_PI / 180) + M_PI);
-  X_WM.linear() = RotationMatrix<double>(RollPitchYaw<double>(rpy)).matrix();
-  X_WM.translation() = Vector3d(0.0, mug_y_W, 0.0);
+  RigidTransformd X_WM(
+      RollPitchYawd(FLAGS_rx * M_PI / 180, FLAGS_ry * M_PI / 180,
+                    (FLAGS_rz * M_PI / 180) + M_PI),
+      Vector3d(0.0, mug_y_W, 0.0));
   plant.SetFreeBodyPose(&plant_context, mug, X_WM);
 
   // Set the initial height of the gripper and its initial velocity so that with

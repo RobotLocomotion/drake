@@ -664,7 +664,7 @@ class TestPlant(unittest.TestCase):
         plant.SetFreeBodyPose(
             context, plant.GetBodyByName("iiwa_link_0"),
             RigidTransform(RollPitchYaw([0.1, 0.2, 0.3]),
-                           p=[0.4, 0.5, 0.6]).GetAsIsometry3())
+                           p=[0.4, 0.5, 0.6]))
         v_expected = np.linspace(start=-1.0, stop=-nv, num=nv)
         qdot = plant.MapVelocityToQDot(context, v_expected)
         v_remap = plant.MapQDotToVelocity(context, qdot)

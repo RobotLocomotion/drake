@@ -2942,11 +2942,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // These APIs using Isometry3 will be deprecated soon with the resolution of
   // #9865. Right now we offer them for backwards compatibility.
 
+  DRAKE_DEPRECATED(
+      "2019-06-15",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   void SetFreeBodyPose(systems::Context<T>* context, const Body<T>& body,
                        const Isometry3<T>& X_WB) const {
     SetFreeBodyPose(context, body, math::RigidTransform<T>(X_WB));
   }
 
+  DRAKE_DEPRECATED(
+      "2019-06-15",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   void SetFreeBodyPose(const systems::Context<T>& context,
                        systems::State<T>* state, const Body<T>& body,
                        const Isometry3<T>& X_WB) const {
