@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -279,7 +281,70 @@ class TrafficLight final {
   std::vector<BulbGroup> bulb_groups_;
 };
 
+/// Uniquely identifies a bulb in the world. This consists of the concatenation
+/// of the bulb's ID, the ID of the bulb group that contains the bulb, and the
+/// the ID of the traffic light that contains the bulb group.
+struct UniqueBulbId {
+  /// Returns the string representation of the %TypeSpecificIdentifier.
+  const std::string to_string() const {
+    return traffic_light_id.string() + "-" + bulb_group_id.string() + "-" +
+           bulb_id.string();
+  }
+
+  /// Tests for equality with another UniqueBulbId.
+  bool operator==(const UniqueBulbId& rhs) const {
+    return traffic_light_id == rhs.traffic_light_id &&
+           bulb_group_id == rhs.bulb_group_id && bulb_id == rhs.bulb_id;
+  }
+
+  /// Tests for inequality with another UniqueBulbId, specifically
+  /// returning the opposite of operator==().
+  bool operator!=(const UniqueBulbId& rhs) const { return !(*this == rhs); }
+
+  /// Implements the @ref hash_append concept.
+  template <class HashAlgorithm>
+  friend void hash_append(HashAlgorithm& hasher,
+                          const UniqueBulbId& id) noexcept {
+    using drake::hash_append;
+    hash_append(hasher, id.traffic_light_id);
+    hash_append(hasher, id.bulb_group_id);
+    hash_append(hasher, id.bulb_id);
+  }
+
+  TrafficLight::Id traffic_light_id;
+  BulbGroup::Id bulb_group_id;
+  Bulb::Id bulb_id;
+};
+
 }  // namespace rules
 }  // namespace api
 }  // namespace maliput
 }  // namespace drake
+
+namespace std {
+
+/// Specialization of std::hash for drake::maliput::api::rules::UniqueBulbId.
+template <>
+struct hash<drake::maliput::api::rules::UniqueBulbId>
+    : public drake::DefaultHash {};
+
+/// Specialization of std::less for drake::maliput::api::rules::UniqueBulbId
+/// providing a strict ordering over drake::maliput::api::rules::UniqueBulbId
+/// suitable for use with ordered containers.
+template <>
+struct less<drake::maliput::api::rules::UniqueBulbId> {
+  bool operator()(const drake::maliput::api::rules::UniqueBulbId& lhs,
+                  const drake::maliput::api::rules::UniqueBulbId& rhs) const {
+    if (lhs.traffic_light_id.string() < rhs.traffic_light_id.string()) {
+      return true;
+    }
+    if (lhs.traffic_light_id.string() > rhs.traffic_light_id.string()) {
+      return false;
+    }
+    if (lhs.bulb_group_id.string() < rhs.bulb_group_id.string()) return true;
+    if (lhs.bulb_group_id.string() > rhs.bulb_group_id.string()) return false;
+    return lhs.bulb_id.string() < rhs.bulb_id.string();
+  }
+};
+
+}  // namespace std
