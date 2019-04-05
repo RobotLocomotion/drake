@@ -18,6 +18,7 @@ import pydrake
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.forwarddiff import jacobian
+from pydrake.math import ge
 import pydrake.symbolic as sym
 
 SNOPT_NO_GUROBI = SnoptSolver().available() and not GurobiSolver().available()
@@ -132,8 +133,9 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_qp(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
-        prog.AddLinearConstraint(x[0] >= 1)
-        prog.AddLinearConstraint(x[1] >= 1)
+        # N.B. Scalar-wise logical ops work for Expression, but array ops need
+        # the workaround overloads from `pydrake.math`.
+        prog.AddLinearConstraint(ge(x, 1))
         prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
         # Redundant cost just to check the spelling.
         prog.AddQuadraticErrorCost(vars=x, Q=np.eye(2),

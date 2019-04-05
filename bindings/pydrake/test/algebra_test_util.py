@@ -2,7 +2,10 @@
 Provides utilities to test different algebra.
 """
 
+import operator
+
 import numpy as np
+
 import pydrake.math as drake_math
 
 
@@ -70,6 +73,13 @@ class ScalarAlgebra(BaseAlgebra):
         self.max = drake_math.max
         self.ceil = drake_math.ceil
         self.floor = drake_math.floor
+        # Comparison. Defined in same order as in `_math_extra.py`.
+        self.lt = operator.lt
+        self.le = operator.le
+        self.eq = operator.eq
+        self.ne = operator.ne
+        self.ge = operator.ge
+        self.gt = operator.gt
 
     def to_algebra(self, scalar):
         return scalar
@@ -101,6 +111,13 @@ class VectorizedAlgebra(BaseAlgebra):
         self.max = np.fmax
         self.ceil = np.ceil
         self.floor = np.floor
+        # Comparison. Defined in same order as in `_math_extra.py`.
+        self.lt = drake_math.lt
+        self.le = drake_math.le
+        self.eq = drake_math.eq
+        self.ne = drake_math.ne
+        self.ge = drake_math.ge
+        self.gt = drake_math.gt
 
     def to_algebra(self, scalar):
         return np.array([scalar, scalar])

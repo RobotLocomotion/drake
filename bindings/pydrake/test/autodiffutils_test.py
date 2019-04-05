@@ -125,11 +125,17 @@ class TestAutoDiffXd(unittest.TestCase):
         algebra.check_value(2 / a, AD(2, [-2, 0]))
         # Logical
         algebra.check_logical(lambda x, y: x == y, a, a, True)
+        algebra.check_logical(algebra.eq, a, a, True)
         algebra.check_logical(lambda x, y: x != y, a, a, False)
+        algebra.check_logical(algebra.ne, a, a, False)
         algebra.check_logical(lambda x, y: x < y, a, b, True)
+        algebra.check_logical(algebra.lt, a, b, True)
         algebra.check_logical(lambda x, y: x <= y, a, b, True)
+        algebra.check_logical(algebra.le, a, b, True)
         algebra.check_logical(lambda x, y: x > y, a, b, False)
+        algebra.check_logical(algebra.gt, a, b, False)
         algebra.check_logical(lambda x, y: x >= y, a, b, False)
+        algebra.check_logical(algebra.ge, a, b, False)
         # Additional math
         # - See `math_overloads_test` for scalar overloads.
         algebra.check_value(a**2, AD(1, [2., 0]))

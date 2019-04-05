@@ -292,6 +292,8 @@ PYBIND11_MODULE(math, m) {
     mtest.def(
         "TakeRigidTransform", [](const RigidTransform<T>&) { return true; });
   }
+
+  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake
