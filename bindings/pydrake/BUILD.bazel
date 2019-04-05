@@ -164,6 +164,7 @@ drake_pybind_library(
     py_deps = [
         ":module_py",
     ],
+    py_srcs = ["_lcm_extra.py"],
 )
 
 drake_pybind_library(

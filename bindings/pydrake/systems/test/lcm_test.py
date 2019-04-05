@@ -10,7 +10,7 @@ from six import text_type as unicode
 
 from robotlocomotion import header_t, quaternion_t
 
-from pydrake.lcm import DrakeLcm, DrakeMockLcm
+from pydrake.lcm import DrakeLcm, DrakeMockLcm, Subscriber
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
     AbstractValue, BasicVector, DiagramBuilder, LeafSystem)
@@ -145,23 +145,23 @@ class TestSystemsLcm(unittest.TestCase):
         dut = mut.LcmPublisherSystem.Make(
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
             publish_period=0.1)
+        subscriber = Subscriber(lcm, "TEST_CHANNEL", quaternion_t)
         model_message = self._model_message()
         self._fix_and_publish(dut, AbstractValue.Make(model_message))
-        raw = lcm.get_last_published_message("TEST_CHANNEL")
-        actual_message = quaternion_t.decode(raw)
-        self.assert_lcm_equal(actual_message, model_message)
+        lcm.HandleSubscriptions(0)
+        self.assert_lcm_equal(subscriber.message, model_message)
 
     def test_publisher_cpp(self):
         lcm = DrakeMockLcm()
         dut = mut.LcmPublisherSystem.Make(
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
             use_cpp_serializer=True)
+        subscriber = Subscriber(lcm, "TEST_CHANNEL", quaternion_t)
         model_message = self._model_message()
         model_value = self._model_value_cpp()
         self._fix_and_publish(dut, model_value)
-        raw = lcm.get_last_published_message("TEST_CHANNEL")
-        actual_message = quaternion_t.decode(raw)
-        self.assert_lcm_equal(actual_message, model_message)
+        lcm.HandleSubscriptions(0)
+        self.assert_lcm_equal(subscriber.message, model_message)
 
     def test_connect_lcm_scope(self):
         builder = DiagramBuilder()

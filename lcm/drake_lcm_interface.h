@@ -225,16 +225,16 @@ class Subscriber final {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Subscriber)
 
   /**
-   * Subscribes to the (non-empty) @p channel_name on the given (non-null)
+   * Subscribes to the (non-empty) @p channel on the given (non-null)
    * @p lcm instance.  The `lcm` pointer is only used during construction; it
    * is not retained by this object.  When a undecodable message is received,
    * @p on_error handler is invoked; when `on_error` is not provided, an
    * exception will be thrown instead.
    */
-  Subscriber(DrakeLcmInterface* lcm, const std::string& channel_name,
+  Subscriber(DrakeLcmInterface* lcm, const std::string& channel,
              std::function<void()> on_error = {}) {
     subscription_ = drake::lcm::Subscribe<Message>(
-        lcm, channel_name, [data = data_](const Message& message) {
+        lcm, channel, [data = data_](const Message& message) {
           data->message = message;
           data->count++;
         }, std::move(on_error));
