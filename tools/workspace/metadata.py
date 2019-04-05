@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """Reports summary data related to Drake's repository rules.  This
 implementation uses Bazel command-line actions so is suitable only
 for manual use, not any build rules or test automation.
