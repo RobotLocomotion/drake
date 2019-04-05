@@ -110,8 +110,8 @@ int DoMain() {
 
   // Create the command subscriber and status publisher.
   auto command_sub = base_builder->AddSystem(
-      MakeIiwaCommandLcmSubscriberSystem(
-          num_joints, "IIWA_COMMAND", lcm));
+      systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_iiwa_command>(
+          "IIWA_COMMAND", lcm));
   command_sub->set_name("command_subscriber");
   auto command_receiver =
       base_builder->AddSystem<IiwaCommandReceiver>(num_joints);

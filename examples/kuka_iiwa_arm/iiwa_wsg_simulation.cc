@@ -161,8 +161,8 @@ int DoMain() {
 
   // Create the command subscriber and status publisher.
   auto iiwa_command_sub = builder.AddSystem(
-      MakeIiwaCommandLcmSubscriberSystem(
-          kIiwaArmNumJoints, "IIWA_COMMAND", lcm));
+      systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_iiwa_command>(
+          "IIWA_COMMAND", lcm));
   iiwa_command_sub->set_name("iiwa_command_subscriber");
   auto iiwa_command_receiver = builder.AddSystem<IiwaCommandReceiver>();
   iiwa_command_receiver->set_name("iwwa_command_receiver");
@@ -219,8 +219,8 @@ int DoMain() {
                   iiwa_status_pub->get_input_port());
 
   auto wsg_command_sub = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::MakeFixedSize(
-          lcmt_schunk_wsg_command{}, "SCHUNK_WSG_COMMAND", lcm));
+      systems::lcm::LcmSubscriberSystem::Make<lcmt_schunk_wsg_command>(
+          "SCHUNK_WSG_COMMAND", lcm));
   wsg_command_sub->set_name("wsg_command_subscriber");
   auto wsg_controller = builder.AddSystem<SchunkWsgController>();
 

@@ -170,15 +170,10 @@ void IiwaCommandReceiver::CalcStateOutput(
 
 std::unique_ptr<systems::lcm::LcmSubscriberSystem>
 MakeIiwaCommandLcmSubscriberSystem(
-    int num_joints, const std::string& channel,
+    int, const std::string& channel,
     drake::lcm::DrakeLcmInterface* lcm) {
-  drake::lcmt_iiwa_command message_size_exemplar;
-  message_size_exemplar.num_joints = num_joints;
-  message_size_exemplar.joint_position.resize(num_joints);
-  message_size_exemplar.num_torques = num_joints;
-  message_size_exemplar.joint_torque.resize(num_joints);
-  return systems::lcm::LcmSubscriberSystem::MakeFixedSize(
-      message_size_exemplar, channel, lcm);
+  return systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_iiwa_command>(
+      channel, lcm);
 }
 
 }  // namespace kuka_iiwa
