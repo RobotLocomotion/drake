@@ -473,6 +473,14 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Formula&)>(&MathematicalProgram::AddLinearConstraint),
           py::arg("f"), doc.MathematicalProgram.AddLinearConstraint.doc_1args_f)
+      .def("AddLinearConstraint",
+          [](MathematicalProgram* self,
+              const Eigen::Ref<const VectorX<Formula>>& formulas) {
+            return self->AddLinearConstraint(formulas.array());
+          },
+          py::arg("formulas"),
+          doc.MathematicalProgram.AddLinearConstraint
+              .doc_1args_constEigenArrayBase)
       .def("AddLinearEqualityConstraint",
           static_cast<Binding<LinearEqualityConstraint> (
               MathematicalProgram::*)(const Eigen::Ref<const Eigen::MatrixXd>&,
