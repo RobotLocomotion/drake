@@ -705,7 +705,7 @@ class TestPlant(unittest.TestCase):
                     distal_frame, instances[0]).body_frame(),
                 child_frame_C=plant.GetBodyByName(
                     proximal_frame, instances[1]).body_frame(),
-                X_PC=Isometry3.Identity()),
+                X_PC=RigidTransform.Identity()),
         ]
         for joint in joints:
             joint_out = plant.AddJoint(joint)
@@ -720,8 +720,8 @@ class TestPlant(unittest.TestCase):
     def test_multibody_add_frame(self):
         plant = MultibodyPlant()
         frame = plant.AddFrame(frame=FixedOffsetFrame(
-            name="frame", P=plant.world_frame(), X_PF=Isometry3.Identity(),
-            model_instance=None))
+            name="frame", P=plant.world_frame(),
+            X_PF=RigidTransform.Identity(), model_instance=None))
         self.assertIsInstance(frame, Frame)
         np.testing.assert_equal(
             np.eye(4), frame.GetFixedPoseInBodyFrame().GetAsMatrix4())
