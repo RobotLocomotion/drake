@@ -15,7 +15,7 @@ import numpy as np
 from drake import lcmt_viewer_load_robot
 from pydrake.common.eigen_geometry import Quaternion, Isometry3
 from pydrake.geometry import DispatchLoadMessage, SceneGraph
-from pydrake.lcm import DrakeMockLcm
+from pydrake.lcm import DrakeMockLcm, Subscriber
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.systems.framework import (
     AbstractValue, LeafSystem, PublishEvent, TriggerType
@@ -250,16 +250,16 @@ class MeshcatVisualizer(LeafSystem):
         self.vis[self.prefix].delete()
 
         # Intercept load message via mock LCM.
-        def handle_load_robot(raw):
-            load_robot_msgs.append(lcmt_viewer_load_robot.decode(raw))
-        load_robot_msgs = []
         mock_lcm = DrakeMockLcm()
-        mock_lcm.Subscribe(
+        mock_lcm_subscriber = Subscriber(
+            lcm=mock_lcm,
             channel="DRAKE_VIEWER_LOAD_ROBOT",
-            handler=handle_load_robot)
+            lcm_type=lcmt_viewer_load_robot)
         DispatchLoadMessage(self._scene_graph, mock_lcm)
         mock_lcm.HandleSubscriptions(0)
-        load_robot_msg = load_robot_msgs[0]
+        assert mock_lcm_subscriber.count > 0
+        load_robot_msg = mock_lcm_subscriber.message
+
         # Translate elements to `meshcat`.
         for i in range(load_robot_msg.num_links):
             link = load_robot_msg.link[i]

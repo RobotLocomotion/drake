@@ -92,6 +92,8 @@ PYBIND11_MODULE(lcm, m) {
             doc.DrakeMockLcm.get_last_published_message.doc);
     // TODO(eric.cousineau): Add remaining methods.
   }
+
+  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake

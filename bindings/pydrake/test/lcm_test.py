@@ -1,6 +1,6 @@
 import unittest
 
-from pydrake.lcm import DrakeLcm, DrakeLcmInterface, DrakeMockLcm
+from pydrake.lcm import DrakeLcm, DrakeLcmInterface, DrakeMockLcm, Subscriber
 
 from robotlocomotion import quaternion_t
 
@@ -37,6 +37,24 @@ class TestLcm(unittest.TestCase):
         self.assertEqual(self.count, 0)
         dut.HandleSubscriptions(0)
         self.assertEqual(self.count, 1)
+
+    def test_subscriber(self):
+        mock = DrakeMockLcm()
+        dut = Subscriber(lcm=mock, channel="CHANNEL", lcm_type=quaternion_t)
+        mock.Publish(channel="CHANNEL", buffer=self.quat.encode())
+        self.assertEqual(dut.count, 0)
+        self.assertEqual(len(dut.raw), 0)
+        self.assertEqual(dut.message.w, 0)
+        self.assertEqual(dut.message.x, 0)
+        self.assertEqual(dut.message.y, 0)
+        self.assertEqual(dut.message.z, 0)
+        mock.HandleSubscriptions(0)
+        self.assertEqual(dut.count, 1)
+        self.assertEqual(dut.raw, self.quat.encode())
+        self.assertEqual(dut.message.w, self.quat.w)
+        self.assertEqual(dut.message.x, self.quat.x)
+        self.assertEqual(dut.message.y, self.quat.y)
+        self.assertEqual(dut.message.z, self.quat.z)
 
     def test_mock_lcm_get_last_published_message(self):
         dut = DrakeMockLcm()
