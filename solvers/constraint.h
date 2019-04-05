@@ -907,7 +907,8 @@ class ExpressionConstraint : public Constraint {
 
 /**
  * An exponential cone constraint is a special type of convex cone constraint.
- * We constrain A * x + b to be in the exponential cone.
+ * We constrain A * x + b to be in the exponential cone, where A has 3 rows, and
+ * b is in ℝ³, x is the decision variable.
  * A vector z in ℝ³ is in the exponential cone, if
  * {z₀, z₁, z₂ | z₀ ≥ z₁ * exp(z₂ / z₁), z₁ > 0}.
  * Equivalently, this constraint can be refomulated with logarithm function
@@ -930,6 +931,7 @@ class ExponentialConeConstraint : public Constraint {
   /**
    * Constructor for exponential cone.
    * Constrains A * x + b to be in the exponential cone.
+   * @pre A has 3 rows.
    */
   ExponentialConeConstraint(
       const Eigen::Ref<const Eigen::SparseMatrix<double>>& A,
