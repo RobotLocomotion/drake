@@ -132,6 +132,19 @@ void DefineFrameworkPySemantics(py::module m) {
         .value("kWitness", Class::kWitness, cls_doc.kWitness.doc);
   }
 
+  py::enum_<WitnessFunctionDirection>(
+      m, "WitnessFunctionDirection", doc.WitnessFunctionDirection.doc)
+      .value("kNone", WitnessFunctionDirection::kNone,
+          doc.WitnessFunctionDirection.kNone.doc)
+      .value("kPositiveThenNonPositive",
+          WitnessFunctionDirection::kPositiveThenNonPositive,
+          doc.WitnessFunctionDirection.kPositiveThenNonPositive.doc)
+      .value("kNegativeThenNonNegative",
+          WitnessFunctionDirection::kNegativeThenNonNegative,
+          doc.WitnessFunctionDirection.kNegativeThenNonNegative.doc)
+      .value("kCrossesZero", WitnessFunctionDirection::kCrossesZero,
+          doc.WitnessFunctionDirection.kCrossesZero.doc);
+
   // N.B. Capturing `&doc` should not be required; workaround per #9600.
   auto bind_common_scalar_types = [m, &doc](auto dummy) {
     using T = decltype(dummy);
@@ -343,6 +356,11 @@ void DefineFrameworkPySemantics(py::module m) {
             doc.Event.get_trigger_type.doc);
     DefineTemplateClassWithDefault<PublishEvent<T>, Event<T>>(
         m, "PublishEvent", GetPyParam<T>(), doc.PublishEvent.doc)
+        .def(py::init(WrapCallbacks(
+                 [](const typename PublishEvent<T>::PublishCallback& callback) {
+                   return std::make_unique<PublishEvent<T>>(callback);
+                 })),
+            py::arg("callback"), doc.PublishEvent.ctor.doc_1args)
         .def(
             py::init(WrapCallbacks(
                 [](const TriggerType& trigger_type,
@@ -354,6 +372,16 @@ void DefineFrameworkPySemantics(py::module m) {
             "Users should not be calling these");
     DefineTemplateClassWithDefault<DiscreteUpdateEvent<T>, Event<T>>(
         m, "DiscreteUpdateEvent", GetPyParam<T>(), doc.DiscreteUpdateEvent.doc);
+    DefineTemplateClassWithDefault<UnrestrictedUpdateEvent<T>, Event<T>>(m,
+        "UnrestrictedUpdateEvent", GetPyParam<T>(),
+        doc.UnrestrictedUpdateEvent.doc)
+        .def(py::init(
+                 WrapCallbacks([](const typename UnrestrictedUpdateEvent<
+                                   T>::UnrestrictedUpdateCallback& callback) {
+                   return std::make_unique<UnrestrictedUpdateEvent<T>>(
+                       callback);
+                 })),
+            py::arg("callback"), doc.UnrestrictedUpdateEvent.ctor.doc_1args);
 
     // Glue mechanisms.
     DefineTemplateClassWithDefault<DiagramBuilder<T>>(
@@ -502,6 +530,11 @@ void DefineFrameworkPySemantics(py::module m) {
             py::arg("context"), py::arg("value"), py_reference,
             // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), doc.InputPort.FixValue.doc);
+
+    // TODO(russt): Bind relevant WitnessFunction methods.  This is the
+    // minimal binding required to support DeclareWitnessFunction.
+    DefineTemplateClassWithDefault<WitnessFunction<T>>(
+        m, "WitnessFunction", GetPyParam<T>(), doc.WitnessFunction.doc);
 
     // Parameters.
     auto parameters = DefineTemplateClassWithDefault<Parameters<T>>(

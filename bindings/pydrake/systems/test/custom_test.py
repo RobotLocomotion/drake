@@ -22,8 +22,11 @@ from pydrake.systems.framework import (
     LeafSystem, LeafSystem_,
     PortDataType,
     PublishEvent,
+    State,
     TriggerType,
+    UnrestrictedUpdateEvent,
     VectorSystem,
+    WitnessFunctionDirection,
     )
 from pydrake.systems.primitives import (
     Adder,
@@ -187,6 +190,10 @@ class TestCustom(unittest.TestCase):
                 self.called_initialize = False
                 self.called_per_step = False
                 self.called_periodic = False
+                self.called_getwitness = False
+                self.called_witness = False
+                self.called_guard = False
+                self.called_reset = False
                 # Ensure we have desired overloads.
                 self.DeclarePeriodicPublish(1.0)
                 self.DeclarePeriodicPublish(1.0, 0)
@@ -216,6 +223,12 @@ class TestCustom(unittest.TestCase):
                     name="test_input", model_vector=BasicVector(1),
                     random_type=None)
                 self.DeclareVectorOutputPort(BasicVector(1), noop)
+                self.witness = self.MakeWitnessFunction(
+                    "witness", WitnessFunctionDirection.kCrossesZero,
+                    self._witness)
+                self.reset_witness = self.MakeWitnessFunction(
+                    "reset", WitnessFunctionDirection.kCrossesZero,
+                    self._guard, UnrestrictedUpdateEvent(self._reset))
 
             def DoPublish(self, context, events):
                 # Call base method to ensure we do not get recursion.
@@ -253,6 +266,10 @@ class TestCustom(unittest.TestCase):
                     self, context, events, discrete_state)
                 self.called_discrete = True
 
+            def DoGetWitnessFunctions(self, context):
+                self.called_getwitness = True
+                return [self.witness, self.reset_witness]
+
             def _on_initialize(self, context, event):
                 test.assertIsInstance(context, Context)
                 test.assertIsInstance(event, PublishEvent)
@@ -267,8 +284,25 @@ class TestCustom(unittest.TestCase):
             def _on_periodic(self, context, event):
                 test.assertIsInstance(context, Context)
                 test.assertIsInstance(event, PublishEvent)
-                test.assertFalse(self.called_periodic)
+                # TODO(edrumwri): Uncomment this pending resolution of #11185
+                # test.assertFalse(self.called_periodic)
                 self.called_periodic = True
+
+            def _witness(self, context):
+                test.assertIsInstance(context, Context)
+                self.called_witness = True
+                return 1.0
+
+            def _guard(self, context):
+                test.assertIsInstance(context, Context)
+                self.called_guard = True
+                return context.get_time() - 0.5
+
+            def _reset(self, context, event, state):
+                test.assertIsInstance(context, Context)
+                test.assertIsInstance(event, UnrestrictedUpdateEvent)
+                test.assertIsInstance(state, State)
+                self.called_reset = True
 
         system = TrivialSystem()
         self.assertFalse(system.called_publish)
@@ -299,14 +333,21 @@ class TestCustom(unittest.TestCase):
         system.CalcTimeDerivatives(
             context, context_update.get_mutable_continuous_state())
         self.assertTrue(system.called_continuous)
+        witnesses = system.GetWitnessFunctions(context)
+        self.assertEqual(len(witnesses), 2)
 
-        # Test per-step and periodic call backs
+        # Test per-step, periodic, and witness call backs
         system = TrivialSystem()
         simulator = Simulator(system)
+        simulator.get_mutable_context().SetAccuracy(0.1)
         # Stepping to 0.99 so that we get exactly one periodic event.
         simulator.AdvanceTo(0.99)
         self.assertTrue(system.called_per_step)
         self.assertTrue(system.called_periodic)
+        self.assertTrue(system.called_getwitness)
+        self.assertTrue(system.called_witness)
+        self.assertTrue(system.called_guard)
+        self.assertTrue(system.called_reset)
 
     def test_deprecated_protected_aliases(self):
         """Tests a subset of protected aliases, pursuant to #9651."""

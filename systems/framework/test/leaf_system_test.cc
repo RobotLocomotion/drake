@@ -434,6 +434,7 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   EXPECT_EQ(witness2->description(), "dummy2");
   EXPECT_EQ(witness2->direction_type(), WitnessFunctionDirection::kNone);
   EXPECT_TRUE(witness2->get_event());
+  EXPECT_EQ(witness2->get_event()->get_trigger_type(), TriggerType::kWitness);
   EXPECT_EQ(witness2->CalcWitnessValue(context_), 2.0);
 
   auto witness3 = system_.MakeWitnessWithPublish();
@@ -442,6 +443,7 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   EXPECT_EQ(witness3->direction_type(),
       WitnessFunctionDirection::kNone);
   EXPECT_TRUE(witness3->get_event());
+  EXPECT_EQ(witness3->get_event()->get_trigger_type(), TriggerType::kWitness);
   EXPECT_EQ(witness3->CalcWitnessValue(context_), 3.0);
   auto pe = dynamic_cast<const PublishEvent<double>*>(witness3->get_event());
   ASSERT_TRUE(pe);
@@ -454,6 +456,7 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   EXPECT_EQ(witness4->direction_type(),
       WitnessFunctionDirection::kNone);
   EXPECT_TRUE(witness4->get_event());
+  EXPECT_EQ(witness4->get_event()->get_trigger_type(), TriggerType::kWitness);
   EXPECT_EQ(witness4->CalcWitnessValue(context_), 4.0);
   auto de = dynamic_cast<const DiscreteUpdateEvent<double>*>(
       witness4->get_event());
@@ -467,6 +470,7 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   EXPECT_EQ(witness5->direction_type(),
       WitnessFunctionDirection::kNone);
   EXPECT_TRUE(witness5->get_event());
+  EXPECT_EQ(witness5->get_event()->get_trigger_type(), TriggerType::kWitness);
   EXPECT_EQ(witness5->CalcWitnessValue(context_), 5.0);
   auto ue = dynamic_cast<const UnrestrictedUpdateEvent<double>*>(
       witness5->get_event());
@@ -487,6 +491,7 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   EXPECT_EQ(witness7->direction_type(),
             WitnessFunctionDirection::kPositiveThenNonPositive);
   EXPECT_TRUE(witness7->get_event());
+  EXPECT_EQ(witness7->get_event()->get_trigger_type(), TriggerType::kWitness);
   EXPECT_EQ(witness7->CalcWitnessValue(context_), 11.0);
   ue = dynamic_cast<const UnrestrictedUpdateEvent<double>*>(
       witness7->get_event());
