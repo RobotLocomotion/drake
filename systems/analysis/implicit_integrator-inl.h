@@ -52,7 +52,7 @@ MatrixX<T> ImplicitIntegrator<T>::ComputeAutoDiffJacobian(
     const System<T>& system, const T& t, const VectorX<T>& xt,
     const Context<T>& context) {
   SPDLOG_DEBUG(drake::log(), "  ImplicitIntegrator Compute Autodiff Jacobian "
-               "t={}",t);
+               "t={}", t);
   // Create AutoDiff versions of the state vector.
   VectorX<AutoDiffXd> a_xt = xt;
 

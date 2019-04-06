@@ -219,7 +219,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
     num_nr_iterations_++;
 
     // Compute the state update using the equation A*x = -g(), where A is the
-    // iteration matrix. 
+    // iteration matrix.
     // TODO(edrumwri): Allow caller to provide their own solver.
     VectorX<T> dx = iteration_matrix_.Solve(-goutput);
 
