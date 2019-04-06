@@ -154,6 +154,9 @@ class WitnessFunction final {
     DRAKE_DEMAND(system);
     DRAKE_DEMAND(dynamic_cast<const MySystem*>(system));
     set_calculator_function(calc);
+    if (event_) {
+      event_->set_trigger_type(TriggerType::kWitness);
+    }
   }
 
   // See documentation for above constructor, which applies here without
@@ -170,6 +173,9 @@ class WitnessFunction final {
     static_assert(std::is_base_of<Event<T>, EventType>::value,
                   "EventType must be a descendant of Event");
     DRAKE_DEMAND(system);
+    if (event_) {
+      event_->set_trigger_type(TriggerType::kWitness);
+    }
   }
   #endif
 
