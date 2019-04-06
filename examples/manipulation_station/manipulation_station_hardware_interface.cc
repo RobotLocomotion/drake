@@ -139,7 +139,7 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
   owned_controller_plant_->WeldFrames(owned_controller_plant_->world_frame(),
                                       owned_controller_plant_->GetFrameByName(
                                           "iiwa_link_0", controller_iiwa_model),
-                                      Isometry3d::Identity());
+                                      math::RigidTransformd::Identity());
   owned_controller_plant_
       ->template AddForceElement<multibody::UniformGravityFieldElement>();
   owned_controller_plant_->Finalize();

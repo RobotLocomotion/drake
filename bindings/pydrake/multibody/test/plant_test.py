@@ -419,10 +419,8 @@ class TestPlant(unittest.TestCase):
             file_name=wsg50_sdf_path, model_name='gripper')
 
         # Weld the base of arm and gripper to reduce the number of states.
-        X_EeGripper = Isometry3.Identity()
-        X_EeGripper.set_translation([0, 0, 0.081])
-        X_EeGripper.set_rotation(
-            RollPitchYaw(np.pi / 2, 0, np.pi / 2).ToRotationMatrix().matrix())
+        X_EeGripper = RigidTransform(
+            RollPitchYaw(np.pi / 2, 0, np.pi / 2), [0, 0, 0.081])
         plant.WeldFrames(A=plant.world_frame(),
                          B=plant.GetFrameByName("iiwa_link_0", iiwa_model))
         plant.WeldFrames(
