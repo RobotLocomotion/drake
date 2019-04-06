@@ -51,10 +51,10 @@ class WeldJoint final : public Joint<T> {
         X_PC_(X_PC) {}
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // TODO(amcastro-tri): This constructor is provided only for backwards
-  // compatibilty until #9865 is fully resolved. DO NOT USE IT. It'll very
-  // soon go through a deprecation process.
-
+  DRAKE_DEPRECATED(
+      "2019-06-15",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   WeldJoint(const std::string& name, const Frame<T>& parent_frame_P,
             const Frame<T>& child_frame_C, const Isometry3<double>& X_PC)
       : WeldJoint(name, parent_frame_P, child_frame_C,
