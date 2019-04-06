@@ -184,13 +184,6 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // The continuous state update vector used during Newton-Raphson.
   std::unique_ptr<ContinuousState<T>> dx_state_;
 
-  // The last computed Jacobian matrix. Keeping this data in the class
-  // definitions serves to minimize heap allocations and deallocations.
-  MatrixX<T> J_;
-
-  // Whether the last call to StepAbstract() was a failure.
-  bool last_call_failed_{false};
-
   // Various statistics.
   int64_t num_nr_iterations_{0};
   int64_t num_iter_factorizations_{0};

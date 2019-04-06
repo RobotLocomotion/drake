@@ -70,9 +70,9 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
   this->get_mutable_jacobian().resize(0, 0);
 }
 
-// Computes any necessary matrices for the Newton-Raphson iteration in
-// StepAbstract(). Parameters are identical to those for StepAbstract;
-// @see StepAbstract() for their documentation.
+// Computes any necessary matrices (Jacobian, iteration matrix, or both)
+// for the Newton-Raphson iteration in StepAbstract() around time/state `(t,xt)`
+// and using the same `scale` parameter as in StepAbstract().
 // @returns `false` if the calling StepAbstract method should indicate failure;
 //          `true` otherwise.
 template <class T>
@@ -82,7 +82,7 @@ bool ImplicitEulerIntegrator<T>::CalcMatrices(const T& t, const T& h,
   // rationale for the negation below) and factor them, if necessary.
   MatrixX<T>& J = this->get_mutable_jacobian();
   if (!this->get_reuse() || J.rows() == 0 || this->IsBadJacobian(J)) {
-    // Note that the Jacobian can become bad through a divergent Newton-Raphson
+    // The Jacobian can become bad through a divergent Newton-Raphson
     // iteration, which causes the state to overflow, which then causes the
     // Jacobian to overflow. If the state overflows, recomputing the Jacobian
     // using this bad state will result in another bad Jacobian, eventually
@@ -111,13 +111,10 @@ bool ImplicitEulerIntegrator<T>::CalcMatrices(const T& t, const T& h,
       // the Jacobian matrix is fresh and the iteration matrix has been newly
       // formed and factored (on Trial #2), so there is nothing more to be
       // done.
-      if (last_call_failed_) {
+      if (!this->last_call_succeeded()) {
         return false;
       } else {
-        // Reform the Jacobian matrix and refactor the negation of
-        // the iteration matrix. The idea of using the negation of this matrix
-        // is that an O(n^2) subtraction is not necessary as would
-        // be the case with MatrixX<T>::Identity(n, n) - J * (h / scale).
+        // Reform the Jacobian matrix and refactor the iteration matrix.
         J = this->CalcJacobian(t, xt);
         ComputeAndFactorIterationMatrix(J, h, scale);
       }
@@ -140,30 +137,31 @@ void ImplicitEulerIntegrator<T>::ComputeAndFactorIterationMatrix(
     ++num_iter_factorizations_;
     const int n = J.rows();
     // TODO(edrumwri) Investigate using a move-type operation below.
+    // We form the iteration matrix in this particular way to avoid an O(n^2)
+    // subtraction as would be the case with:
+    // MatrixX<T>::Identity(n, n) - J * (h / scale).
     iteration_matrix_.SetAndFactorIterationMatrix(
         J * (-h / static_cast<double>(scale)) + MatrixX<T>::Identity(n, n));
 }
 
 // Performs the bulk of the stepping computation for both implicit Euler and
 // implicit trapezoid method; all those methods need to do is provide a
-// residual function (@p g) and a scale factor (@p scale) specific to the
+// residual function (`g`) and a scale factor (`scale`) specific to the
 // particular integrator scheme and this method does the rest.
-// @param h the integration step size to attempt.
-// @param g the particular implicit function to zero.
+// @param t0 the time at the left end of the integration interval.
+// @param h the integration step size (> 0) to attempt.
+// @param xt0 the continuous state at t0.
+// @param g the particular implicit function to compute the root of.
 // @param scale a scale factor- either 1 or 2- that allows this method to be
 //        used by both implicit Euler and implicit trapezoid methods.
-// @param [in,out] the starting guess for x(t+h); the value for x(t+h) on
-//        return (assuming that h > 0)
+// @param [in, out] the starting guess for x(t0+h); the value for x(t0+h) on
+//        return.
 // @param trial the attempt for this approach (1-4). StepAbstract() uses more
 //        computationally expensive methods as the trial numbers increase.
 // @returns `true` if the method was successfully able to take an integration
-//           step of size @p h (or `false` otherwise).
-// @pre The time and state of the system's context (stored by the integrator)
-//      are t0 and x(t0) on entry.
-// @post The time and state of the system's context (stored by the integrator)
-//       will be set to t0+h and x(t0+h) on successful exit (indicated by
-//       this function returning `true`) and will be indeterminate on
-//       unsuccessful exit (indicated by this function returning `false`).
+//           step of size h (or `false` otherwise).
+// @note The time and continuous state in the context are indeterminate upon
+//       exit.
 template <class T>
 bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
     const VectorX<T>& xt0, const std::function<VectorX<T>()>& g,
@@ -187,12 +185,12 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
   SPDLOG_DEBUG(drake::log(), "StepAbstract() entered for t={}, h={}, trial={}",
       t0, h, trial);
 
-  // Advance the context time and state to compute derivatives at t + h.
+  // Advance the context time and state to compute derivatives at t0 + h.
   const T tf = t0 + h;
   context->SetTimeAndContinuousState(tf, *xtplus);
 
-  // Evaluate the residual error using the current x(t+h) as x⁰(t+h):
-  // g(x⁰(t+h)) = x⁰(t+h) - x(t) - h f(t+h,x⁰(t+h)), where h = h;
+  // Evaluate the residual error using:
+  // g(x(t0+h)) = x(t0+h) - x(t0) - h f(t0+h,x(t0+h)).
   VectorX<T> goutput = g();
 
   // Initialize the "last" state update norm; this will be used to detect
@@ -202,7 +200,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
   // Calculate Jacobian and iteration matrices (and factorizations), as needed,
   // around (tf, xtplus).
   if (!CalcMatrices(tf, h, *xtplus, scale, trial)) {
-    last_call_failed_ = true;
+    this->set_last_call_succeeded(false);
     return false;
   }
 
@@ -262,7 +260,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
 
       // Look for convergence using Equation 8.10 from [Hairer, 1996].
       // [Hairer, 1996] determined values of kappa in [0.01, 0.1] work most
-      // efficiently on a number of test problems with *RADAU5* (a fifth order
+      // efficiently on a number of test problems with Radau5 (a fifth order
       // implicit integrator), p. 121. We select a value halfway in-between.
       const double kappa = 0.05;
       const double k_dot_tol = kappa * this->get_accuracy_in_use();
@@ -297,8 +295,15 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
 
 // Steps the system forward by a single step of at most h using the implicit
 // Euler method.
+// @param t0 the time at the left end of the integration interval.
 // @param h the maximum time increment to step forward.
-// @returns the amount actually stepped forward by a single step.
+// @param xt0 the continuous state at t0.
+// @param [in,out] xtplus a guess for the continuous state at the right end of
+//                 the integration interval (i.e., `x(t0+h)`), on entry, and
+//                 the computed value for `x(t0+h)` on successful return.
+// @returns `true` if the step of size `h` was successful, `false` otherwise.
+// @note The time and continuous state in the context are indeterminate upon
+//       exit.
 template <class T>
 bool ImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0, const T& h,
     const VectorX<T>& xt0, VectorX<T>* xtplus) {
@@ -322,20 +327,18 @@ bool ImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0, const T& h,
   return StepAbstract(t0, h, xt0, g, 1, &*xtplus);
 }
 
-// Steps forward by a single step of @p h using the implicit trapezoid
+// Steps forward by a single step of `h` using the implicit trapezoid
 // method, if possible.
+// @param t0 the time at the left end of the integration interval.
 // @param h the maximum time increment to step forward.
-// @param dx0 the time derivatives computed at the beginning of the integration
-//        step.
-// @param xtplus the state computed by the implicit Euler method.
+// @param dx0 the time derivatives computed at time and state (t0, xt0).
+// @param [in,out] xtplus the continuous state at the right end of the
+//                 integration (i.e., x(t0+h)) computed by implicit Euler
+//                 on entry; x(t0+h) computed by the implicit trapezoid method
+//                 on successful return.
 // @returns `true` if the step was successful and `false` otherwise.
-// @pre The time and state in the system's context (stored within the
-//      integrator) are set to those at t0 (the beginning of the integration
-//      step).
-// @post The time and state in the system's context (stored within the
-//       integrator) are set to those at t0+h on successful return (i.e., when
-//       the function returns `true`). State will be indeterminate on `false`
-//       return.
+// @note The time and continuous state in the context are indeterminate upon
+//       exit.
 template <class T>
 bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& t0, const T& h,
     const VectorX<T>& xt0, const VectorX<T>& dx0, VectorX<T>* xtplus) {
@@ -344,7 +347,7 @@ bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& t0, const T& h,
   SPDLOG_DEBUG(drake::log(), "StepImplicitTrapezoid(h={}) t={}", h, t0);
 
   // Set g for the implicit trapezoid method.
-  // Define g(x(t+h)) ≡ x(t+h) - x(t) - h/2 (f(t,x(t)) + f(t+h,x(t+h)) and
+  // Define g(x(t+h)) ≡ x(t0+h) - x(t0) - h/2 (f(t0,x(t0)) + f(t0+h,x(t0+h)) and
   // evaluate it at the current x(t+h).
   Context<T>* context = this->get_mutable_context();
   std::function<VectorX<T>()> g =
@@ -365,7 +368,7 @@ bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& t0, const T& h,
       this->get_num_derivative_evaluations_for_jacobian();
   int stored_num_nr_iterations = this->get_num_newton_raphson_iterations();
 
-  // Step.
+  // Attempt to step.
   bool success = StepAbstract(t0, h, xt0, g, 2, xtplus);
 
   // Move statistics to implicit trapezoid-specific.
@@ -386,17 +389,13 @@ bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& t0, const T& h,
 }
 
 // Steps both implicit Euler and implicit trapezoid forward by h, if possible.
+// @param t0 the time at the left end of the integration interval.
 // @param h the integration step size to attempt.
-// @param [out] xtplus_ie contains the Euler integrator solution on return
-// @param [out] xtplus_itr contains the implicit trapezoid solution on return
-// @returns `true` if the integration was successful at the requested step size
-//          and `false` otherwise.
-// @pre The time and state in the system's context (stored by the integrator)
-//      are set to {t0,x0} on entry (those at the beginning of the interval.
-// @post The time and state of the system's context (stored by the integrator)
-//       will be set to t0+h and @p xtplus_ie on successful exit (indicated by
-//       this function returning `true`) and will be indeterminate on
-//       unsuccessful exit (indicated by this function returning `false`).
+// @param [out] xtplus_ie contains the Euler integrator solution (i.e.,
+//              `x(t0+h)`) on return.
+// @param [out] xtplus_itr contains the implicit trapezoid solution (i.e.,
+//              `x(t0+h)`) on return.
+// @returns `true` if the step of size `h` was successful, `false` otherwise.
 template <class T>
 bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
     const VectorX<T>& xt0, VectorX<T>* xtplus_ie, VectorX<T>* xtplus_itr) {
@@ -404,10 +403,10 @@ bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
   DRAKE_ASSERT(xtplus_ie);
   DRAKE_ASSERT(xtplus_itr);
 
-  // Compute the derivative at xt0. NOTE: the derivative is calculated at this
-  // point (early on in the integration process) in order to reuse the
-  // derivative evaluation, via the cache, from the last integration step (if
-  // possible).
+  // Compute the derivative at time and state (t0, x(t0)). NOTE: the derivative
+  // is calculated at this point (early on in the integration process) in order
+  // to reuse the derivative evaluation, via the cache, from the last
+  // integration step (if possible).
   const VectorX<T> dx0 = this->EvalTimeDerivativesUsingContext();
 
   // Do the Euler step.
@@ -419,17 +418,17 @@ bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
 
   // The error estimation process uses the implicit trapezoid method, which
   // is defined as:
-  // x(t+h) = x(t) + h/2 (f(t, x(t) + f(t+h, x(t+h))
-  // x(t+h) from the implicit Euler method is presumably a good starting point.
+  // x(t0+h) = x(t0) + h/2 (f(t0, x(t0) + f(t0+h, x(t0+h))
+  // x(t0+h) from the implicit Euler method is presumably a good starting point.
 
   // The error estimate is derived as follows (thanks to Michael Sherman):
-  // x*(t+h) = xᵢₑ(t+h) + O(h²)      [implicit Euler]
-  //         = xₜᵣ(t+h) + O(h³)      [implicit trapezoid]
-  // where x*(t+h) is the true (generally unknown) answer that we seek.
+  // x*(t0+h) = xᵢₑ(t0+h) + O(h²)      [implicit Euler]
+  //          = xₜᵣ(t0+h) + O(h³)      [implicit trapezoid]
+  // where x*(t0+h) is the true (generally unknown) answer that we seek.
   // This implies:
-  // xᵢₑ(t+h) + O(h²) = xₜᵣ(t+h) + O(h³)
+  // xᵢₑ(t0+h) + O(h²) = xₜᵣ(t0+h) + O(h³)
   // Given that the second order term subsumes the third order one:
-  // xᵢₑ(t+h) - xₜᵣ(t+h) = O(h²)
+  // xᵢₑ(t0+h) - xₜᵣ(t0+h) = O(h²)
   // Therefore the difference between the implicit trapezoid solution and the
   // implicit Euler solution gives a second-order error estimate for the
   // implicit Euler result xᵢₑ.
@@ -452,9 +451,10 @@ bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
 }
 
 /// Takes a given step of the requested size, if possible.
-/// @returns `true` if successful and `false` otherwise.
-/// @post the time and continuous state will be advanced only if `true` is
-///       returned.
+/// @returns `true` if successful and `false` otherwise; on `true`, the time
+///          and continuous state will be advanced in the context (e.g., from
+///          t0 to t0 + h). On `false` return, the time and continuous state in
+///          the context will be restored to its original value (at t0).
 template <class T>
 bool ImplicitEulerIntegrator<T>::DoStep(const T& h) {
   // Save the current time and state.
@@ -485,18 +485,18 @@ bool ImplicitEulerIntegrator<T>::DoStep(const T& h) {
     // The error estimation process for explicit Euler uses two half-steps
     // of explicit Euler (for a total of two derivative evaluations). The error
     // estimation process is derived as follows:
-    // (1) x*(t+h) = xₑ(t+h) + h²/2 df/h + ...                [full step]
-    // (2) x*(t+h) = ̅xₑ(t+h) + h²/8 (df/h + df₊/h) + ...    [two 1/2-steps]
+    // (1) x*(t0+h) = xₑ(t0+h) + h²/2 df/h + ...                [full step]
+    // (2) x*(t0+h) = ̅xₑ(t0+h) + h²/8 (df/h + df₊/h) + ...      [two 1/2-steps]
     //
-    // where x*(t+h) is the true (generally unknown) answer that we seek,
-    // f() is the ordinary differential equation evaluated at x(t), and
-    // f₊() is the derivative evaluated at x(t + h/2). Subtracting (1) from
+    // where x*(t0+h) is the true (generally unknown) answer that we seek,
+    // f() is the ordinary differential equation evaluated at x(t0), and
+    // f₊() is the derivative evaluated at x(t0 + h/2). Subtracting (1) from
     // (2), the above equations are rewritten as:
-    // 0 = x̅ₑ(t+h) - xₑ(t+h) + h²/8 (-3df/h + df₊/h) + ...
+    // 0 = x̅ₑ(t0+h) - xₑ(t0+h) + h²/8 (-3df/h + df₊/h) + ...
     // The sum of all but the first two terms on the right hand side
     // of the above equation is less in magnitude than ch², for some
     // sufficiently large c. Or, written using Big-Oh notation:
-    // x̅ₑ(t+h) - xₑ(t+h) = O(h²)
+    // x̅ₑ(t0+h) - xₑ(t0+h) = O(h²)
     // Thus, subtracting the two solutions yields a second order error estimate
     // (we compute norms on the error estimate, so the apparent sign error
     // in the algebra when arriving at the final equation is inconsequential).
@@ -508,14 +508,14 @@ bool ImplicitEulerIntegrator<T>::DoStep(const T& h) {
 
     // Do one half step.
     // TODO(sherm1) Heap allocation here; consider mutable temporary instead.
-    const VectorX<T> xtpoint5 = xt0 + h/2 * xdot;
-    context->SetTimeAndContinuousState(t0 + h/2, xtpoint5);
+    const VectorX<T> xtpoint5 = xt0 + h / 2.0 * xdot;
+    context->SetTimeAndContinuousState(t0 + h / 2.0, xtpoint5);
 
     // Do another half step, then set the "trapezoid" state to be the result of
     // taking two explicit Euler half steps. The code below the if/then/else
     // block simply subtracts the two results to obtain the error estimate.
     xdot = this->EvalTimeDerivatives(*context).CopyToVector();  // xdot(t + h/2)
-    xtplus_itr = xtpoint5 + h/2 * xdot;
+    xtplus_itr = xtpoint5 + h / 2 * xdot;
     context->SetTimeAndContinuousState(t0 + h, xtplus_itr);
 
     // Update the error estimation ODE counts.

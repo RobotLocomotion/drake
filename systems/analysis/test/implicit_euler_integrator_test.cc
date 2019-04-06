@@ -7,8 +7,6 @@
 #include "drake/systems/analysis/test_utilities/spring_mass_damper_system.h"
 #include "drake/systems/analysis/test_utilities/stiff_double_mass_spring_system.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
-// TODO(edrumwri) Remove.
-#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace systems {
@@ -76,7 +74,6 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Stationary) {
 // This problem is particularly good at testing large step sizes (since the
 // solution quickly converges) and long simulation times.
 GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
-  //drake::logging::set_log_level("debug");
   std::unique_ptr<analysis::test::RobertsonSystem<double>> robertson =
     std::make_unique<analysis::test::RobertsonSystem<double>>();
   std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext();

@@ -156,13 +156,15 @@ class ImplicitIntegrator : public IntegratorBase<T> {
    private:
     bool matrix_factored_{false};
 
-    // A simple LU factorization is all that is needed; robustness in the solve
+    // A simple LU factorization is all that is needed for ImplicitIntegrator
+    // templated on scalar type `double`; robustness in the solve
     // comes naturally as dt << 1. Keeping this data in the class definition
     // serves to minimize heap allocations and deallocations.
     Eigen::PartialPivLU<MatrixX<double>> LU_;
 
-    // Only factorization supported by automatic differentiation in Eigen is
-    // currently QR.
+    // The only factorization supported by automatic differentiation in Eigen is
+    // currently QR. When ImplicitIntegrator is templated on type AutoDiffXd,
+    // this will be the factorization that is used.
     Eigen::HouseholderQR<MatrixX<AutoDiffXd>> QR_;
   };
 
@@ -186,8 +188,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   JacobianComputationScheme jacobian_scheme_{
       JacobianComputationScheme::kForwardDifference};
 
-  // The last computed Jacobian matrix. Keeping this data in the class
-  // definitions serves to minimize heap allocations and deallocations.
+  // The last computed Jacobian matrix.
   MatrixX<T> J_;
 
   // Whether the last stepping call was successful.
