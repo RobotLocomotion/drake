@@ -19,6 +19,7 @@
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_scalar_converter.h"
 #include "drake/systems/framework/vector_system.h"
+#include "drake/systems/framework/witness_function.h"
 
 using std::make_unique;
 using std::string;
@@ -92,6 +93,7 @@ using systems::PublishEvent;
 using systems::System;
 using systems::SystemScalarConverter;
 using systems::VectorSystem;
+using systems::WitnessFunction;
 
 // Provides a templated 'namespace'.
 template <typename T>
@@ -136,6 +138,7 @@ struct Impl {
     using Base::DeclarePerStepEvent;
     using Base::DeclareVectorInputPort;
     using Base::DeclareVectorOutputPort;
+    using Base::DeclareWitnessFunction;
 
     // Because `LeafSystem<T>::DoPublish` is protected, and we had to override
     // this method in `PyLeafSystem`, expose the method here for direct(-ish)
@@ -144,6 +147,7 @@ struct Impl {
     // bind `PyLeafSystem::DoPublish` to `py::class_<LeafSystem<T>, ...>`.
     using Base::DoCalcDiscreteVariableUpdates;
     using Base::DoCalcTimeDerivatives;
+    using Base::DoGetWitnessFunctions;
     using Base::DoHasDirectFeedthrough;
     using Base::DoPublish;
   };
@@ -197,6 +201,25 @@ struct Impl {
           "DoCalcDiscreteVariableUpdates", &context, events, discrete_state);
       // If the macro did not return, use default functionality.
       Base::DoCalcDiscreteVariableUpdates(context, events, discrete_state);
+    }
+
+    // This actually changes the signature of DoGetWitnessFunction,
+    // expecting the python overload to return a list of witnesses (instead
+    // of taking in an empty pointer to std::vector<>.
+    // TODO(russt): This is actually a System method, so make a PySystem
+    // trampoline if this is needed outside of LeafSystem.
+    void DoGetWitnessFunctions(const Context<T>& context,
+        std::vector<const WitnessFunction<T>*>* witnesses) const override {
+      auto wrapped = [&]() -> std::vector<const WitnessFunction<T>*> {
+        PYBIND11_OVERLOAD_INT(std::vector<const WitnessFunction<T>*>,
+            LeafSystem<T>, "DoGetWitnessFunctions", &context);
+        std::vector<const WitnessFunction<T>*> w;
+        // If the macro did not return, use default functionality.
+        Base::DoGetWitnessFunctions(context, &w);
+        return w;
+      };
+      std::vector<const WitnessFunction<T>*> w = wrapped();
+      witnesses->insert(witnesses->end(), w.begin(), w.end());
     }
   };
 
@@ -560,6 +583,29 @@ struct Impl {
               self->DeclarePerStepEvent(event);
             },
             py::arg("event"), doc.LeafSystem.DeclarePerStepEvent.doc)
+        .def("DeclareWitnessFunction",
+            WrapCallbacks([](PyLeafSystem* self, const std::string& description,
+                              const WitnessFunctionDirection& direction_type,
+                              std::function<T(const Context<T>&)> calc)
+                              -> std::unique_ptr<WitnessFunction<T>> {
+              return self->DeclareWitnessFunction(
+                  description, direction_type, calc);
+            }),
+            py_reference_internal, py::arg("description"),
+            py::arg("direction_type"), py::arg("calc"),
+            doc.LeafSystem.DeclareWitnessFunction.doc_3args)
+        .def("DeclareWitnessFunction",
+            WrapCallbacks(
+                [](PyLeafSystem* self, const std::string& description,
+                    const WitnessFunctionDirection& direction_type,
+                    std::function<T(const Context<T>&)> calc,
+                    const Event<T>& e) -> std::unique_ptr<WitnessFunction<T>> {
+                  return self->DeclareWitnessFunction(
+                      description, direction_type, calc, e);
+                }),
+            py_reference_internal, py::arg("description"),
+            py::arg("direction_type"), py::arg("calc"), py::arg("e"),
+            doc.LeafSystem.DeclareWitnessFunction.doc_4args)
         .def("DoPublish", &LeafSystemPublic::DoPublish,
             doc.LeafSystem.DoPublish.doc)
         // System attributes.
@@ -609,6 +655,12 @@ struct Impl {
         .def("DoCalcDiscreteVariableUpdates",
             &LeafSystemPublic::DoCalcDiscreteVariableUpdates,
             doc.LeafSystem.DoCalcDiscreteVariableUpdates.doc)
+        .def("DoGetWitnessFunctions", &LeafSystemPublic::DoGetWitnessFunctions,
+            py::arg("context"),
+            (string(doc.System.DoGetWitnessFunctions.doc) + R""(
+Note: The above is for the C++ documentation. For Python, use
+`witnesses = DoGetWitnessFunctions(context)`)"")
+                .c_str())
         // Abstract state.
         .def("DeclareAbstractState", &LeafSystemPublic::DeclareAbstractState,
             // Keep alive, ownership: `AbstractValue` keeps `self` alive.
