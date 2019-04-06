@@ -24,10 +24,18 @@ Phase CreateFullPhase(const Phase::Id& id) {
       id,
       {{RightOfWayRule::Id("rule_a"), RightOfWayRule::State::Id("GO")},
        {RightOfWayRule::Id("rule_b"), RightOfWayRule::State::Id("STOP")}},
-      {{{Bulb::Id("rule_a_green"), BulbState::kOn},
-        {Bulb::Id("rule_a_red"), BulbState::kOff},
-        {Bulb::Id("rule_b_green"), BulbState::kOff},
-        {Bulb::Id("rule_b_red"), BulbState::kOn}}}};
+      {{{{TrafficLight::Id("my_intersection"), BulbGroup::Id("my_bulb_group"),
+          Bulb::Id("rule_a_green")},
+         BulbState::kOn},
+        {{TrafficLight::Id("my_intersection"), BulbGroup::Id("my_bulb_group"),
+          Bulb::Id("rule_a_red")},
+         BulbState::kOff},
+        {{TrafficLight::Id("my_intersection"), BulbGroup::Id("my_bulb_group"),
+          Bulb::Id("rule_b_green")},
+         BulbState::kOff},
+        {{TrafficLight::Id("my_intersection"), BulbGroup::Id("my_bulb_group"),
+          Bulb::Id("rule_b_red")},
+         BulbState::kOn}}}};
 }
 
 Phase CreatePhaseWithMissingRuleStates(
