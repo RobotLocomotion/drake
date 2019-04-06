@@ -50,8 +50,7 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
       ground, math::RigidTransformd::Identity(),
       geometry::Box(ground_box_size(0), ground_box_size(1), ground_box_size(2)),
       "ground", ground_friction_, scene_graph_);
-  math::RigidTransformd X_WG = math::RigidTransformd::Identity();
-  X_WG.set_translation(Eigen::Vector3d(0, 0, -ground_box_size(2) / 2));
+  math::RigidTransformd X_WG(Eigen::Vector3d(0, 0, -ground_box_size(2) / 2));
   plant_->WeldFrames(plant_->world_frame(), ground.body_frame(), X_WG);
 
   // Add gravity.

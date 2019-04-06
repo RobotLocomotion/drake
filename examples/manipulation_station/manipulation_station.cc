@@ -398,7 +398,7 @@ void ManipulationStation<T>::MakeIiwaControllerModel() {
       owned_controller_plant_->world_frame(),
       owned_controller_plant_->GetFrameByName(iiwa_model_.child_frame->name(),
                                               controller_iiwa_model),
-      iiwa_model_.X_PC.GetAsIsometry3());
+      iiwa_model_.X_PC);
   // Add a single body to represent the IIWA pendant's calibration of the
   // gripper.  The body of the WSG accounts for >90% of the total mass
   // (according to the sdf)... and we don't believe our inertia calibration
@@ -415,7 +415,7 @@ void ManipulationStation<T>::MakeIiwaControllerModel() {
   owned_controller_plant_->WeldFrames(
       owned_controller_plant_->GetFrameByName(wsg_model_.parent_frame->name(),
                                               controller_iiwa_model),
-      wsg_equivalent.body_frame(), wsg_model_.X_PC.GetAsIsometry3());
+      wsg_equivalent.body_frame(), wsg_model_.X_PC);
 
   owned_controller_plant_
       ->template AddForceElement<multibody::UniformGravityFieldElement>();

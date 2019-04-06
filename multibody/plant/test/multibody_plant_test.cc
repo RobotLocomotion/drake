@@ -58,6 +58,7 @@ using math::RigidTransform;
 using math::RigidTransformd;
 using math::RollPitchYaw;
 using math::RotationMatrix;
+using math::RotationMatrixd;
 using multibody::benchmarks::Acrobot;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
@@ -2401,26 +2402,25 @@ GTEST_TEST(StateSelection, FloatingBodies) {
       0.736 +
       // table's top width
       0.057 / 2;
+  const RigidTransformd X_W_Link0(Vector3d(0, 0, table_top_z_in_world));
   plant.WeldFrames(
       plant.world_frame(), plant.GetFrameByName("iiwa_link_0", arm_model),
-      RigidTransform<double>(Vector3d(0, 0, table_top_z_in_world))
-          .GetAsIsometry3());
+      X_W_Link0);
 
   // Load a second table for objects.
   const ModelInstanceIndex objects_table_model =
       parser.AddModelFromFile(table_sdf_path, "objects_table");
-  const Isometry3d X_WT(Translation3d(0.8, 0.0, 0.0));
+  const RigidTransformd X_WT(Vector3d(0.8, 0.0, 0.0));
   plant.WeldFrames(plant.world_frame(),
                    plant.GetFrameByName("link", objects_table_model), X_WT);
 
   // Define a fixed frame on the -x, -y corner of the objects table.
-  const Isometry3d X_TO = RigidTransform<double>(
-      RotationMatrix<double>::MakeXRotation(-M_PI_2),
-      Vector3<double>(-0.3, -0.3, table_top_z_in_world)).GetAsIsometry3();
+  const RigidTransformd X_TO(RotationMatrixd::MakeXRotation(-M_PI_2),
+                             Vector3d(-0.3, -0.3, table_top_z_in_world));
   const auto& objects_frame_O =
       plant.AddFrame(std::make_unique<FixedOffsetFrame<double>>(
           "objects_frame", plant.GetFrameByName("link", objects_table_model),
-          X_TO));
+          X_TO.GetAsIsometry3()));
 
   // Add a floating mug.
   const ModelInstanceIndex mug_model =
@@ -2437,7 +2437,8 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   auto context = plant.CreateDefaultContext();
 
   // Initialize the pose X_OM of the mug frame M in the objects table frame O.
-  const Isometry3d X_OM(Translation3d(0.05, 0.0, 0.05));
+  const Vector3d p_Oo_Mo_O(0.05, 0.0, 0.05);
+  const RigidTransformd X_OM(p_Oo_Mo_O);
   plant.SetFreeBodyPoseInAnchoredFrame(
       context.get(), objects_frame_O, mug, X_OM);
 
