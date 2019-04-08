@@ -53,7 +53,7 @@ class WeldJointTest : public ::testing::Test {
 
   const RigidBody<double>* body_{nullptr};
   const WeldJoint<double>* joint_{nullptr};
-  const math::RigidTransformd X_FM_{Vector3d(0, 0.5, 0)};
+  const Translation3d X_FM_{0, 0.5, 0};
 };
 
 // Verify the expected number of dofs.

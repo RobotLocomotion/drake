@@ -485,6 +485,31 @@ GTEST_TEST(RigidTransform, SymbolicRigidTransformThrowsExceptions) {
   EXPECT_THROW(test_Bool.Evaluate(), std::runtime_error);
 }
 
+GTEST_TEST(RigidTransform, EigenTranslationCtor) {
+  const RigidTransformd X_AB(Eigen::Translation3d(1., 2., 3.));
+  EXPECT_EQ(X_AB.translation(), Vector3d(1., 2., 3.));
+  EXPECT_TRUE(X_AB.rotation().IsExactlyEqualTo(
+      math::RotationMatrixd::Identity()));
+}
+
+GTEST_TEST(RigidTransform, EigenTranslataionMul1) {
+  const RigidTransformd X_AB;
+  const Eigen::Translation3d X_BC(1., 2., 3.);
+  const RigidTransformd X_AC = X_AB * X_BC;
+  EXPECT_EQ(X_AC.translation(), Vector3d(1., 2., 3.));
+  EXPECT_TRUE(X_AC.rotation().IsExactlyEqualTo(
+      math::RotationMatrixd::Identity()));
+}
+
+GTEST_TEST(RigidTransform, EigenTranslataionMul2) {
+  const Eigen::Translation3d X_AB(1., 2., 3.);
+  const RigidTransformd X_BC;
+  const RigidTransformd X_AC = X_AB * X_BC;
+  EXPECT_EQ(X_AC.translation(), Vector3d(1., 2., 3.));
+  EXPECT_TRUE(X_AC.rotation().IsExactlyEqualTo(
+      math::RotationMatrixd::Identity()));
+}
+
 }  // namespace
 }  // namespace math
 }  // namespace drake
