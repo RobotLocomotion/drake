@@ -198,11 +198,11 @@ class CompositeSystem : public analysis_test::LogisticSystem<double> {
       : LogisticSystem(k, alpha, nu), trigger_time_(trigger_time) {
     this->DeclareContinuousState(1);
 
-    logistic_witness_ = this->DeclareWitnessFunction(
+    logistic_witness_ = this->MakeWitnessFunction(
         "logistic witness", WitnessFunctionDirection::kCrossesZero,
         &CompositeSystem::GetStateValue,
         &CompositeSystem::CallLogisticsCallback);
-    clock_witness_ = this->DeclareWitnessFunction(
+    clock_witness_ = this->MakeWitnessFunction(
         "clock witness", WitnessFunctionDirection::kCrossesZero,
         &CompositeSystem::CalcClockWitness,
         &CompositeSystem::CallLogisticsCallback);
@@ -251,11 +251,11 @@ class TwoWitnessStatelessSystem : public LeafSystem<double> {
 
   explicit TwoWitnessStatelessSystem(double off1, double off2)
       : offset1_(off1), offset2_(off2) {
-    witness1_ = this->DeclareWitnessFunction("clock witness1",
+    witness1_ = this->MakeWitnessFunction("clock witness1",
             WitnessFunctionDirection::kCrossesZero,
             &TwoWitnessStatelessSystem::CalcClockWitness1,
             PublishEvent<double>());
-    witness2_ = this->DeclareWitnessFunction("clock witness2",
+    witness2_ = this->MakeWitnessFunction("clock witness2",
             WitnessFunctionDirection::kCrossesZero,
             &TwoWitnessStatelessSystem::CalcClockWitness2,
             PublishEvent<double>());

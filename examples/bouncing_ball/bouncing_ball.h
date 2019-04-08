@@ -43,7 +43,7 @@ class BouncingBall final : public systems::LeafSystem<T> {
                                   &BouncingBall::CopyStateOut);
 
     // Declare the witness function.
-    signed_distance_witness_ = this->DeclareWitnessFunction(
+    signed_distance_witness_ = this->MakeWitnessFunction(
         "Signed distance",
         systems::WitnessFunctionDirection::kPositiveThenNonPositive,
         &BouncingBall::CalcSignedDistance,
