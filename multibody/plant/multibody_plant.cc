@@ -918,8 +918,7 @@ void MultibodyPlant<T>::set_penetration_allowance(
   penalty_method_contact_parameters_.time_scale = time_scale;
 }
 
-// Specialize this function so that *only* double is supported; we cannot
-// compute penetrations for AutoDiff or Expression currently.
+// Specialize this function so that double is fully supported.
 template <>
 std::vector<PenetrationAsPointPair<double>>
 MultibodyPlant<double>::CalcPointPairPenetrations(
@@ -938,11 +937,31 @@ MultibodyPlant<double>::CalcPointPairPenetrations(
   return std::vector<PenetrationAsPointPair<double>>();
 }
 
+// Specialize this function so that AutoDiffXd is (partially) supported. This
+// AutoDiffXd specialization will throw if there are any collisions.
+// TODO(SeanCurtis-TRI): Move this logic into SceneGraph.
+template <>
+std::vector<PenetrationAsPointPair<AutoDiffXd>>
+MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
+    const systems::Context<AutoDiffXd>& context) const {
+  if (num_collision_geometries() > 0) {
+    const auto &query_object = get_geometry_query_input_port().
+        Eval<geometry::QueryObject<AutoDiffXd>>(context);
+    auto results = query_object.ComputePointPairPenetration();
+    if (results.size() > 0) {
+      throw std::logic_error(
+          "CalcPointPairPenetration() with AutoDiffXd requires scenarios with "
+          "no collisions.");
+    }
+  }
+  return {};
+}
+
 template<typename T>
 std::vector<PenetrationAsPointPair<T>>
-MultibodyPlant<T>::CalcPointPairPenetrations(
-    const systems::Context<T>&) const {
-  throw std::domain_error("This method only supports T = double.");
+MultibodyPlant<T>::CalcPointPairPenetrations(const systems::Context<T>&) const {
+  throw std::domain_error(fmt::format("This method doesn't support T = {}.",
+                                      NiceTypeName::Get<T>()));
 }
 
 template<typename T>
