@@ -18,9 +18,9 @@ namespace rules {
 using RuleStates =
     std::unordered_map<RightOfWayRule::Id, RightOfWayRule::State::Id>;
 
-/// A mapping from a Bulb::Id to a BulbState. Just an alias for user
+/// A mapping from a UniqueBulbId to a BulbState. Just an alias for user
 /// convenience.
-using BulbStates = std::unordered_map<Bulb::Id, BulbState>;
+using BulbStates = std::unordered_map<UniqueBulbId, BulbState>;
 
 /// A group of RightOfWayRule instances and their states. It models coupling
 /// between these rules due to, for example, spatial co-location at
