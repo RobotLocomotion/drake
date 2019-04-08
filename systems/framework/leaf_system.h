@@ -1349,6 +1349,47 @@ class LeafSystem : public System<T> {
   }
   //@}
 
+  /// Declares a function that is called whenever a user directly calls
+  /// CalcDiscreteVariableUpdates(const Context&, DiscreteValues<T>*). Multiple
+  /// calls to DeclareForcedDiscreteVariableUpdatesEvent() will register
+  /// multiple callbacks, which will be called with the same const Context in
+  /// arbitrary order. The handler should be a class member function (method)
+  /// with this signature:
+  /// @code
+  ///   EventStatus MySystem::MyDiscreteVariableUpdates(const Context<T>&,
+  ///   DiscreteValues<T>*);
+  /// @endcode
+  /// where `MySystem` is a class derived from `LeafSystem<T>` and the method
+  /// name is arbitrary.
+  ///
+  /// See @ref declare_forced_events "Declare forced events" for more
+  /// information.
+  /// @pre `this` must be dynamic_cast-able to MySystem.
+  /// @pre `update` must not be null.
+  template <class MySystem>
+  void DeclareForcedDiscreteVariableUpdatesEvent(EventStatus
+      (MySystem::*update)(const Context<T>&, DiscreteValues<T>*) const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    DRAKE_DEMAND(update != nullptr);
+
+    // Instantiate the event.
+    auto forced = std::make_unique<DiscreteUpdateEvent<T>>(
+        TriggerType::kForced,
+        [this_ptr, update](const Context<T>& context,
+                           const DiscreteUpdateEvent<T>&,
+                           DiscreteValues<T>* discrete_state) {
+          // TODO(sherm1) Forward the return status.
+          (this_ptr->*update)(
+              context, discrete_state);  // Ignore return status for now.
+        });
+
+    // Add the event to the collection of forced discrete update events.
+    this->get_mutable_forced_discrete_update_events().add_event(
+        std::move(forced));
+  }
 
   /// @name          Declare continuous state variables
   /// Continuous state consists of up to three kinds of variables: generalized
