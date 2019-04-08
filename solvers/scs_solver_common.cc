@@ -26,6 +26,7 @@ bool ScsSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
                          ProgramAttribute::kLorentzConeConstraint,
                          ProgramAttribute::kRotatedLorentzConeConstraint,
                          ProgramAttribute::kPositiveSemidefiniteConstraint,
+                         ProgramAttribute::kExponentialConeConstraint,
                          ProgramAttribute::kLinearCost,
                          ProgramAttribute::kQuadraticCost}));
 }

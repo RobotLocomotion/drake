@@ -425,6 +425,39 @@ void ParsePositiveSemidefiniteConstraint(
   }
 }
 
+void ParseExponentialConeConstraint(
+    const MathematicalProgram& prog,
+    std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
+    int* A_row_count, ScsCone* cone) {
+  cone->ep = static_cast<int>(prog.exponential_cone_constraints().size());
+  for (const auto& binding : prog.exponential_cone_constraints()) {
+    // drake::solvers::ExponentialConstraint enforces that A * x + b is in the
+    // exponential cone. This is equivalent to -A * x + s = b, and s is in the
+    // exponential cone. Hence we will multiply "-1" to the matrix
+    // binding.evaluator()->A().
+    const int num_bound_variables = binding.variables().rows();
+    for (int i = 0; i < num_bound_variables; ++i) {
+      A_triplets->reserve(A_triplets->size() +
+                          binding.evaluator()->A().nonZeros());
+      const int decision_variable_index =
+          prog.FindDecisionVariableIndex(binding.variables()(i));
+      for (Eigen::SparseMatrix<double>::InnerIterator it(
+               binding.evaluator()->A(), i);
+           it; ++it) {
+        A_triplets->emplace_back(*A_row_count + it.row(),
+                                 decision_variable_index, -it.value());
+      }
+    }
+    // The exponential cone constraint is on a 3 x 1 vector, hence for each
+    // ExponentialConeConstraint, we append 3 rows to A and b.
+    b->reserve(b->size() + 3);
+    for (int i = 0; i < 3; ++i) {
+      b->push_back(binding.evaluator()->b()(i));
+    }
+    *A_row_count += 3;
+  }
+}
+
 std::string Scs_return_info(scs_int scs_status) {
   switch (scs_status) {
     case SCS_INFEASIBLE_INACCURATE:
@@ -667,6 +700,9 @@ void ScsSolver::DoSolve(
   // Parse PositiveSemidefiniteConstraint and LinearMatrixInequalityConstraint.
   ParsePositiveSemidefiniteConstraint(prog, &A_triplets, &b, &A_row_count,
                                       cone);
+
+  // Parse ExponentialConeConstraint.
+  ParseExponentialConeConstraint(prog, &A_triplets, &b, &A_row_count, cone);
 
   Eigen::SparseMatrix<double> A(A_row_count, num_x);
   A.setFromTriplets(A_triplets.begin(), A_triplets.end());
