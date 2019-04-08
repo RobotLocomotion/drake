@@ -2437,7 +2437,7 @@ GTEST_TEST(StateSelection, FloatingBodies) {
 
   // Initialize the pose X_OM of the mug frame M in the objects table frame O.
   const Vector3d p_OoMo_O(0.05, 0.0, 0.05);
-  const RigidTransformd X_OM(p_Oo_Mo_O);
+  const RigidTransformd X_OM(p_OoMo_O);
   plant.SetFreeBodyPoseInAnchoredFrame(
       context.get(), objects_frame_O, mug, X_OM);
 
