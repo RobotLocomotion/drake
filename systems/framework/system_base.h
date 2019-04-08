@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <map>
 #include <memory>
 #include <set>
 #include <string>
@@ -182,7 +183,6 @@ class SystemBase : public internal::SystemMessageInterface {
     return static_cast<int>(output_ports_.size());
   }
 
-
   /** Returns a reference to an InputPort given its `port_index`.
   @pre `port_index` selects an existing input port of this System. */
   const InputPortBase& get_input_port_base(InputPortIndex port_index) const {
@@ -210,6 +210,16 @@ class SystemBase : public internal::SystemMessageInterface {
     for (const auto& out : output_ports_) count += out->size();
     return count;
   }
+
+  /** Reports all direct feedthroughs from input ports to output ports. For
+  a system with m input ports: `I = i₀, i₁, ..., iₘ₋₁`, and n output ports,
+  `O = o₀, o₁, ..., oₙ₋₁`, the return map will contain pairs (u, v) such that
+
+  - 0 ≤ u < m,
+  - 0 ≤ v < n,
+  - and there _might_ be a direct feedthrough from input iᵤ to each output oᵥ.
+  */
+  virtual std::multimap<int, int> GetDirectFeedthroughs() const = 0;
 
   /** Returns the number nc of cache entries currently allocated in this System.
   These are indexed from 0 to nc-1. */
