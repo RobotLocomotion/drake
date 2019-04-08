@@ -39,7 +39,7 @@ enum class WitnessFunctionDirection {
 /// state at which a step of the initial value problem integration of a System
 /// should end, which may be done for any number of purposes, including
 /// publishing or state reinitialization (i.e., event handling). System authors
-/// declare witness functions through LeafSystem::DeclareWitnessFunction().
+/// declare witness functions through LeafSystem::MakeWitnessFunction().
 ///
 /// For the ensuing discussion, consider two times (`t₀` and `t₁ > t₀`) and
 /// states corresponding to those times (`x(t₀)` and `x(t₁)`). A
@@ -98,7 +98,7 @@ class WitnessFunction final {
   using CalcCallback = std::function<T(const Context<T>&)>;
 
   // The preferred method to construct a witness function is through
-  // LeafSystem::DeclareWitnessFunction(), so we hide the constructors from
+  // LeafSystem::MakeWitnessFunction(), so we hide the constructors from
   // Doxygen.
 #ifndef DRAKE_DOXYGEN_CXX
   // Constructs the witness function with the pointer to the given non-null

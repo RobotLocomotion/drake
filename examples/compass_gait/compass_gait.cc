@@ -33,7 +33,7 @@ CompassGait<T>::CompassGait()
   this->DeclareNumericParameter(CompassGaitParams<T>());
 
   // Create the witness function.
-  foot_collision_ = this->DeclareWitnessFunction(
+  foot_collision_ = this->MakeWitnessFunction(
       "foot collision",
       systems::WitnessFunctionDirection::kPositiveThenNonPositive,
       &CompassGait::FootCollision, &CompassGait::CollisionDynamics);
