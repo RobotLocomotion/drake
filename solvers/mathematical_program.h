@@ -2148,7 +2148,7 @@ class MathematicalProgram {
 
   /**
    * Adds the exponential cone constraint that
-   * z = binding.evaluator()->A() * binding.variables() + 
+   * z = binding.evaluator()->A() * binding.variables() +
    *     binding.evaluator()->b()
    * should be in the exponential cone. Namely
    * {(z₀, z₁, z₂) | z₀ ≥ z₁ * exp(z₂ / z₁), z₁ > 0}.
