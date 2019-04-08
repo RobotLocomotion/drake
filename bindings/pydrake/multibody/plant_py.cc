@@ -123,9 +123,9 @@ PYBIND11_MODULE(plant, m) {
         .def("WeldFrames",
             [doc_iso3_deprecation](Class* self, const Frame<T>& A,
                 const Frame<T>& B,
-                const Isometry3<double>& X_BG) -> const WeldJoint<T>& {
+                const Isometry3<double>& X_AB) -> const WeldJoint<T>& {
               WarnDeprecated(doc_iso3_deprecation);
-              return self->WeldFrames(A, B, RigidTransform<double>(X_BG));
+              return self->WeldFrames(A, B, RigidTransform<double>(X_AB));
             },
             py::arg("A"), py::arg("B"), py::arg("X_AB"), py_reference_internal,
             doc_iso3_deprecation)
