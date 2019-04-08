@@ -3006,7 +3006,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   DRAKE_DEPRECATED(
-      "2019-06-15",
+      "2019-07-01",
       "This Isometry3 overload will be removed pending the resolution of "
       "#9865. Use the RigidTransform overload instead.")
   const WeldJoint<T>& WeldFrames(
@@ -3016,7 +3016,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   DRAKE_DEPRECATED(
-      "2019-06-15",
+      "2019-07-01",
       "This Isometry3 overload will be removed pending the resolution of "
       "#9865. Use the RigidTransform overload instead.")
   void SetFreeBodyPoseInWorldFrame(systems::Context<T>* context,
@@ -3026,7 +3026,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   DRAKE_DEPRECATED(
-      "2019-06-15",
+      "2019-07-01",
       "This Isometry3 overload will be removed pending the resolution of "
       "#9865. Use the RigidTransform overload instead.")
   void SetFreeBodyPoseInAnchoredFrame(systems::Context<T>* context,

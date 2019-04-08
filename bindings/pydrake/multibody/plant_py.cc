@@ -127,7 +127,7 @@ PYBIND11_MODULE(plant, m) {
               WarnDeprecated(doc_iso3_deprecation);
               return self->WeldFrames(A, B, RigidTransform<double>(X_BG));
             },
-            py::arg("A"), py::arg("B"), py::arg("X_BG"), py_reference_internal,
+            py::arg("A"), py::arg("B"), py::arg("X_AB"), py_reference_internal,
             doc_iso3_deprecation)
         // N.B. This overload of `AddForceElement` is required to precede
         // the generic overload below so we can use our internal specialization

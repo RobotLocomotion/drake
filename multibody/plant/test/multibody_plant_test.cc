@@ -40,7 +40,6 @@
 namespace drake {
 
 using Eigen::AngleAxisd;
-using Eigen::Isometry3d;
 using Eigen::Matrix2d;
 using Eigen::Translation3d;
 using Eigen::Vector2d;
@@ -2402,10 +2401,10 @@ GTEST_TEST(StateSelection, FloatingBodies) {
       0.736 +
       // table's top width
       0.057 / 2;
-  const RigidTransformd X_W_Link0(Vector3d(0, 0, table_top_z_in_world));
+  const RigidTransformd X_WLink0(Vector3d(0, 0, table_top_z_in_world));
   plant.WeldFrames(
       plant.world_frame(), plant.GetFrameByName("iiwa_link_0", arm_model),
-      X_W_Link0);
+      X_WLink0);
 
   // Load a second table for objects.
   const ModelInstanceIndex objects_table_model =
@@ -2437,15 +2436,15 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   auto context = plant.CreateDefaultContext();
 
   // Initialize the pose X_OM of the mug frame M in the objects table frame O.
-  const Vector3d p_Oo_Mo_O(0.05, 0.0, 0.05);
+  const Vector3d p_OoMo_O(0.05, 0.0, 0.05);
   const RigidTransformd X_OM(p_Oo_Mo_O);
   plant.SetFreeBodyPoseInAnchoredFrame(
       context.get(), objects_frame_O, mug, X_OM);
 
   // Retrieve the pose of the mug in the world.
-  const Isometry3d& X_WM = plant.EvalBodyPoseInWorld(*context, mug);
+  const RigidTransformd X_WM = plant.EvalBodyPoseInWorld(*context, mug);
 
-  const Isometry3d X_WM_expected = X_WT * X_TO * X_OM;
+  const RigidTransformd X_WM_expected = X_WT * X_TO * X_OM;
 
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(X_WM.matrix(), X_WM_expected.matrix(),
