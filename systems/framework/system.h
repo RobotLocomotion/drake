@@ -265,17 +265,6 @@ class System : public SystemBase {
     }
   }
 
-  /// Reports all direct feedthroughs from input ports to output ports. For
-  /// a system with m input ports: `I = i₀, i₁, ..., iₘ₋₁`, and n output ports,
-  /// `O = o₀, o₁, ..., oₙ₋₁`, the return map will contain pairs (u, v) such
-  /// that
-  ///
-  /// - 0 ≤ u < m,
-  /// - 0 ≤ v < n,
-  /// - and there _might_ be a direct feedthrough from input iᵤ to each
-  ///   output oᵥ.
-  virtual std::multimap<int, int> GetDirectFeedthroughs() const = 0;
-
   /// Returns `true` if any of the inputs to the system might be directly
   /// fed through to any of its outputs and `false` otherwise.
   bool HasAnyDirectFeedthrough() const {
@@ -302,6 +291,8 @@ class System : public SystemBase {
     }
     return false;
   }
+
+  using SystemBase::GetDirectFeedthroughs;
   //@}
 
   //----------------------------------------------------------------------------
