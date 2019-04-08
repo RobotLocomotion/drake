@@ -10,6 +10,7 @@ from six import text_type as unicode
 
 from robotlocomotion import header_t, quaternion_t
 
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.lcm import DrakeLcm, DrakeMockLcm, Subscriber
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
@@ -117,7 +118,8 @@ class TestSystemsLcm(unittest.TestCase):
         # N.B. This will fail with `threading`. See below for using
         # `multithreading`.
         lcm = DrakeLcm("memq://")
-        lcm.StartReceiveThread()
+        with catch_drake_warnings(expected_count=1):
+            lcm.StartReceiveThread()
         sub = mut.LcmSubscriberSystem.Make("TEST_LOOP", header_t, lcm)
         value = AbstractValue.Make(header_t())
         for i in range(3):
@@ -130,7 +132,8 @@ class TestSystemsLcm(unittest.TestCase):
     def test_subscriber_wait_for_message_with_timeout(self):
         """Confirms that the subscriber times out."""
         lcm = DrakeLcm("memq://")
-        lcm.StartReceiveThread()
+        with catch_drake_warnings(expected_count=1):
+            lcm.StartReceiveThread()
         sub = mut.LcmSubscriberSystem.Make("TEST_LOOP", header_t, lcm)
         sub.WaitForMessage(0, timeout=0.02)
         # This test fails if the test hangs.
