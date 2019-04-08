@@ -80,6 +80,9 @@ builder.Connect(wsg_buttons.GetOutputPort("force_limit"),
 diagram = builder.Build()
 simulator = Simulator(diagram)
 
+# This is important to avoid duplicate publishes to the hardware interface:
+simulator.set_publish_every_time_step(False)
+
 station_context = diagram.GetMutableSubsystemContext(
     station, simulator.get_mutable_context())
 
@@ -87,14 +90,12 @@ station_context.FixInputPort(station.GetInputPort(
     "iiwa_feedforward_torque").get_index(), np.zeros(7))
 
 # Eval the output port once to read the initial positions of the IIWA.
+simulator.AdvanceTo(1e-6)
 q0 = station.GetOutputPort("iiwa_position_measured").Eval(
     station_context)
 teleop.set_position(q0)
 filter.set_initial_output_value(diagram.GetMutableSubsystemContext(
     filter, simulator.get_mutable_context()), q0)
-
-# This is important to avoid duplicate publishes to the hardware interface:
-simulator.set_publish_every_time_step(False)
 
 simulator.set_target_realtime_rate(args.target_realtime_rate)
 simulator.AdvanceTo(args.duration)
