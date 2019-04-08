@@ -29,6 +29,8 @@ enum class ProgramAttribute {
 
   kPositiveSemidefiniteConstraint,  /// A positive semidefinite constraint.
 
+  kExponentialConeConstraint,  /// An exponential cone constraint.
+
   kBinaryVariable,  /// variable taking binary value {0, 1}.
 
   kCallback,  /// support callback during solving the problem.

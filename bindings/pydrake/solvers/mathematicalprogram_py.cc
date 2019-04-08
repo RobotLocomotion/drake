@@ -29,6 +29,7 @@ using solvers::BoundingBoxConstraint;
 using solvers::Constraint;
 using solvers::Cost;
 using solvers::EvaluatorBase;
+using solvers::ExponentialConeConstraint;
 using solvers::LinearComplementarityConstraint;
 using solvers::LinearConstraint;
 using solvers::LinearCost;
@@ -524,6 +525,12 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           },
           doc.MathematicalProgram.AddPositiveSemidefiniteConstraint
               .doc_1args_constEigenMatrixBase)
+      .def("AddExponentialConeConstraint",
+          [](MathematicalProgram* self,
+              const Eigen::Ref<const Vector3<symbolic::Expression>>& z) {
+            return self->AddExponentialConeConstraint(z);
+          },
+          doc.MathematicalProgram.AddExponentialConeConstraint.doc_1args)
       .def("AddCost",
           [](MathematicalProgram* self, py::function func,
               const Eigen::Ref<const VectorXDecisionVariable>& vars,
@@ -957,6 +964,10 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       "LinearComplementarityConstraint",
       doc.LinearComplementarityConstraint.doc);
 
+  py::class_<ExponentialConeConstraint, Constraint,
+      std::shared_ptr<ExponentialConeConstraint>>(
+      m, "ExponentialConeConstraint", doc.ExponentialConeConstraint.doc);
+
   RegisterBinding<Constraint>(&m, "Constraint");
   RegisterBinding<LinearConstraint>(&m, "LinearConstraint");
   RegisterBinding<LorentzConeConstraint>(&m, "LorentzConeConstraint");
@@ -966,6 +977,7 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       &m, "PositiveSemidefiniteConstraint");
   RegisterBinding<LinearComplementarityConstraint>(
       &m, "LinearComplementarityConstraint");
+  RegisterBinding<ExponentialConeConstraint>(&m, "ExponentialConeConstraint");
 
   // Mirror procedure for costs
   py::class_<Cost, EvaluatorBase, std::shared_ptr<Cost>> cost(

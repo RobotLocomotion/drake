@@ -89,6 +89,7 @@ std::unique_ptr<MathematicalProgram> MathematicalProgram::Clone() const {
       positive_semidefinite_constraint_;
   new_prog->linear_matrix_inequality_constraint_ =
       linear_matrix_inequality_constraint_;
+  new_prog->exponential_cone_constraints_ = exponential_cone_constraints_;
   new_prog->linear_complementarity_constraints_ =
       linear_complementarity_constraints_;
 
@@ -880,6 +881,32 @@ MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
   return M;
 }
 
+Binding<ExponentialConeConstraint> MathematicalProgram::AddConstraint(
+    const Binding<ExponentialConeConstraint>& binding) {
+  CheckBinding(binding);
+  required_capabilities_.insert(ProgramAttribute::kExponentialConeConstraint);
+  exponential_cone_constraints_.push_back(binding);
+  return exponential_cone_constraints_.back();
+}
+
+Binding<ExponentialConeConstraint>
+MathematicalProgram::AddExponentialConeConstraint(
+    const Eigen::Ref<const Eigen::SparseMatrix<double>>& A,
+    const Eigen::Ref<const Eigen::Vector3d>& b,
+    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+  auto constraint = std::make_shared<ExponentialConeConstraint>(A, b);
+  return AddConstraint(constraint, vars);
+}
+
+Binding<ExponentialConeConstraint>
+MathematicalProgram::AddExponentialConeConstraint(
+    const Eigen::Ref<const Vector3<symbolic::Expression>>& z) {
+  Eigen::MatrixXd A{};
+  Eigen::VectorXd b(3);
+  VectorXDecisionVariable vars{};
+  internal::DecomposeLinearExpression(z, &A, &b, &vars);
+  return AddExponentialConeConstraint(A.sparseView(), Eigen::Vector3d(b), vars);
+}
 
 int MathematicalProgram::FindDecisionVariableIndex(const Variable& var) const {
   auto it = decision_variable_index_.find(var.get_id());

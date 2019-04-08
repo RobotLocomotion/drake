@@ -44,6 +44,8 @@ std::string to_string(const ProgramAttribute& attr) {
       return "RotatedLorentzConeConstraint";
     case ProgramAttribute::kPositiveSemidefiniteConstraint:
       return "PositiveSemidefiniteConstraint";
+    case ProgramAttribute::kExponentialConeConstraint:
+      return "ExponentialConeConstraint";
     case ProgramAttribute::kBinaryVariable:
       return "BinaryVariable";
     case ProgramAttribute::kCallback:
