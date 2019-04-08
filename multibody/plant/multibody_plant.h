@@ -2963,6 +2963,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Allows having a non-empty X_PF isometry and a nullopt X_BM.
   template <template <typename> class JointType, typename... Args>
+  DRAKE_DEPRECATED(
+      "2019-06-15",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   const JointType<T>& AddJoint(const std::string& name, const Body<T>& parent,
                                const Isometry3<double>& X_PF,
                                const Body<T>& child,
@@ -2981,6 +2985,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Allows having a nullopt X_PF and a non-empty X_BM isometry.
   template <template <typename> class JointType, typename... Args>
+  DRAKE_DEPRECATED(
+      "2019-06-15",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   const JointType<T>& AddJoint(const std::string& name, const Body<T>& parent,
                                const optional<Isometry3<double>>& X_PF,
                                const Body<T>& child,
