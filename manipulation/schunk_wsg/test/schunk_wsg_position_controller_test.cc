@@ -67,7 +67,7 @@ GTEST_TEST(SchunkWsgPositionControllerTest, SimTest) {
       "wsg_50_description/sdf/schunk_wsg_50.sdf");
   const auto wsg_model = Parser(wsg).AddModelFromFile(wsg_sdf_path, "gripper");
   wsg->WeldFrames(wsg->world_frame(), wsg->GetFrameByName("body", wsg_model),
-                  Eigen::Isometry3d::Identity());
+                  math::RigidTransformd::Identity());
   wsg->Finalize();
 
   const auto controller = builder.AddSystem<SchunkWsgPositionController>();

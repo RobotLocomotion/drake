@@ -116,15 +116,19 @@ PYBIND11_MODULE(plant, m) {
             doc.MultibodyPlant.AddRigidBody.doc_2args)
         .def("WeldFrames",
             py::overload_cast<const Frame<T>&, const Frame<T>&,
-                const Isometry3<double>&>(&Class::WeldFrames),
-            py::arg("A"), py::arg("B"), py::arg("X_AB"), py_reference_internal,
-            doc_iso3_deprecation)
-        .def("WeldFrames",
-            py::overload_cast<const Frame<T>&, const Frame<T>&,
                 const RigidTransform<double>&>(&Class::WeldFrames),
             py::arg("A"), py::arg("B"),
             py::arg("X_AB") = RigidTransform<double>::Identity(),
             py_reference_internal, doc.MultibodyPlant.WeldFrames.doc)
+        .def("WeldFrames",
+            [doc_iso3_deprecation](Class* self, const Frame<T>& A,
+                const Frame<T>& B,
+                const Isometry3<double>& X_AB) -> const WeldJoint<T>& {
+              WarnDeprecated(doc_iso3_deprecation);
+              return self->WeldFrames(A, B, RigidTransform<double>(X_AB));
+            },
+            py::arg("A"), py::arg("B"), py::arg("X_AB"), py_reference_internal,
+            doc_iso3_deprecation)
         // N.B. This overload of `AddForceElement` is required to precede
         // the generic overload below so we can use our internal specialization
         // to label this as our unique gravity field, mimicking the C++ API.
