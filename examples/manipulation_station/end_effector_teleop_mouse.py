@@ -123,16 +123,16 @@ class TeleopMouseKeyboardManager():
 class MouseKeyboardTeleop(LeafSystem):
     def __init__(self, grab_focus=True):
         LeafSystem.__init__(self)
-        self._DeclareVectorOutputPort("rpy_xyz", BasicVector(6),
-                                      self._DoCalcOutput)
-        self._DeclareVectorOutputPort("position", BasicVector(1),
-                                      self.CalcPositionOutput)
-        self._DeclareVectorOutputPort("force_limit", BasicVector(1),
-                                      self.CalcForceLimitOutput)
+        self.DeclareVectorOutputPort("rpy_xyz", BasicVector(6),
+                                     self._DoCalcOutput)
+        self.DeclareVectorOutputPort("position", BasicVector(1),
+                                     self.CalcPositionOutput)
+        self.DeclareVectorOutputPort("force_limit", BasicVector(1),
+                                     self.CalcForceLimitOutput)
 
         # Note: This timing affects the keyboard teleop performance. A larger
         #       time step causes more lag in the response.
-        self._DeclarePeriodicPublish(0.01, 0.0)
+        self.DeclarePeriodicPublish(0.01, 0.0)
 
         self.teleop_manager = TeleopMouseKeyboardManager(grab_focus=grab_focus)
         self.roll = self.pitch = self.yaw = 0

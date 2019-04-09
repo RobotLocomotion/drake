@@ -141,7 +141,7 @@ TEST_F(SpringMassSystemTest, UnDampedCase) {
   slider_->set_translation(&context, free_length_ + amplitude);
   slider_->set_translation_rate(&context, 0.0);
   simulator.Initialize();
-  simulator.get_mutable_integrator()->set_target_accuracy(integration_accuracy);
+  simulator.get_mutable_integrator().set_target_accuracy(integration_accuracy);
   simulator.AdvanceTo(simulation_time);
 
   const double x_analytic = CalcAnalyticSolution(
@@ -172,7 +172,7 @@ TEST_F(SpringMassSystemTest, UnderDampedCase) {
   slider_->set_translation(&context, free_length_ + amplitude);
   slider_->set_translation_rate(&context, 0.0);
   simulator.Initialize();
-  simulator.get_mutable_integrator()->set_target_accuracy(integration_accuracy);
+  simulator.get_mutable_integrator().set_target_accuracy(integration_accuracy);
   simulator.AdvanceTo(simulation_time);
 
   const double x_analytic = CalcAnalyticSolution(
@@ -203,7 +203,7 @@ TEST_F(SpringMassSystemTest, OverDampedCase) {
   slider_->set_translation(&context, free_length_ + amplitude);
   slider_->set_translation_rate(&context, 0.0);
   simulator.Initialize();
-  simulator.get_mutable_integrator()->set_target_accuracy(integration_accuracy);
+  simulator.get_mutable_integrator().set_target_accuracy(integration_accuracy);
   simulator.AdvanceTo(simulation_time);
 
   const double x_analytic = CalcAnalyticSolution(

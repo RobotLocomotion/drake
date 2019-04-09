@@ -101,7 +101,7 @@ int DoMain() {
   systems::Simulator<double> simulator(*diagram);
   simulator.Initialize();
   simulator.set_target_realtime_rate(1.0);
-  simulator.get_mutable_integrator()->set_target_accuracy(1e-3);
+  simulator.get_mutable_integrator().set_target_accuracy(1e-3);
 
   simulator.AdvanceTo(FLAGS_simulation_sec);
   return 0;

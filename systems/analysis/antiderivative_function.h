@@ -196,13 +196,13 @@ class AntiderivativeFunction {
         std::forward<Args>(args)...);
   }
 
-  /// Gets a pointer to the internal integrator instance.
-  const IntegratorBase<T>* get_integrator() const {
+  /// Gets a reference to the internal integrator instance.
+  const IntegratorBase<T>& get_integrator() const {
     return scalar_ivp_->get_integrator();
   }
 
-  /// Gets a pointer to the internal mutable integrator instance.
-  IntegratorBase<T>* get_mutable_integrator() {
+  /// Gets a mutable reference to the internal integrator instance.
+  IntegratorBase<T>& get_mutable_integrator() {
     return scalar_ivp_->get_mutable_integrator();
   }
 

@@ -135,8 +135,8 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   plant.SetFreeBodyPoseInWorldFrame(&plant_context, ball, X_WB_initial);
 
   Simulator<double> simulator(*diagram, std::move(diagram_context));
-  IntegratorBase<double>* integrator = simulator.get_mutable_integrator();
-  integrator->set_target_accuracy(target_accuracy);
+  IntegratorBase<double>& integrator = simulator.get_mutable_integrator();
+  integrator.set_target_accuracy(target_accuracy);
   simulator.set_publish_every_time_step(true);
   simulator.Initialize();
   simulator.AdvanceTo(simulation_time);

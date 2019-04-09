@@ -148,7 +148,7 @@ GTEST_TEST(TestAccelerometer, TestSensorAttachedToSwingingPendulum) {
   Simulator<double> simulator(diagram, std::move(context));
   // Decrease the step size to get x_dot(0) to be closer to x(1).
   const double stepSize = 1e-4;
-  simulator.get_mutable_integrator()->set_maximum_step_size(stepSize);
+  simulator.get_mutable_integrator().set_maximum_step_size(stepSize);
   simulator.Initialize();
 
   const AccelerometerTestLogger& logger = diagram.get_logger();
