@@ -75,7 +75,7 @@ int do_main(int argc, char* argv[]) {
           "IIWA_COMMAND", lcm));
   auto iiwa_command = builder.AddSystem<kuka_iiwa_arm::IiwaCommandReceiver>();
   builder.Connect(iiwa_command_subscriber->get_output_port(),
-                  iiwa_command->GetInputPort("command_message"));
+                  iiwa_command->get_input_port());
 
   // Pull the positions out of the state.
   builder.Connect(iiwa_command->get_commanded_position_output_port(),
