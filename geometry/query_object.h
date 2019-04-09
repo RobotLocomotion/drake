@@ -42,9 +42,19 @@ class SceneGraph;
  operation, but the result is not live, and any geometry query performed on the
  copy will throw an exception.
 
+ <h2>Queries and scalar type</h2>
+
  A %QueryObject _cannot_ be converted to a different scalar type. A %QueryObject
- of scalar type S can only be acquired from the output port of a SceneGraph
- of type S evaluated on a corresponding GeometryContext, also of type S.
+ of scalar type T can only be acquired from the output port of a SceneGraph
+ of type T evaluated on a corresponding GeometryContext, also of type T.
+
+ %QueryObject's support for arbitrary scalar type is incomplete. Not all queries
+ support all scalar types to the same degree. In some cases the level of support
+ is obvious (such as when the query is declared *explicitly* in terms of a
+ double-valued scalar -- see ComputePointPairPenetration()). In other cases,
+ where the query is expressed in terms of scalar `T`, the query may have
+ restrictions. If a query has restricted scalar support, it is included in
+ the query's documentation.
 
  @tparam T The scalar type. Must be a valid Eigen scalar.
 
@@ -107,9 +117,18 @@ class QueryObject {
    have been filtered will not produce contacts, even if their collision
    geometry is penetrating.
 
+   <h3>Scalar support</h3>
+   This method only provides double-valued penetration results.
+
    <!--
-   NOTE: This is currently declared as double because we haven't exposed FCL's
-   templated functionality yet. When that happens, double -> T.
+   TODO (SeanCurtis-TRI): This can/should be changed to offer at least partial
+   AutoDiffXd support. At the very least, it should be declared on T and throw
+   for AutoDiffXd. This is related to PR 11143
+   https://github.com/RobotLocomotion/drake/pull/11143. In that PR, MBP is
+   taking responsibility to know whether or not QueryObject supports AutoDiff
+   penetration queries; MBP should not be responsible for that knowledge. By
+   moving the exception into SceneGraph, it removes the false dependency and
+   allows us to gradually increase the AutoDiff support for penetration.
    -->
 
    @returns A vector populated with all detected penetrations characterized as
@@ -216,6 +235,12 @@ class QueryObject {
    Note that ∇φᵢ(p) is also defined on Gᵢ's surface, but we cannot use the
    above formula.
 
+   <h3>Scalar support</h3>
+   This query only supports computing distances from the point to spheres,
+   boxes, and cylinders for both `double` and `AutoDiffXd` scalar types. If
+   the SceneGraph contains any other geometry shapes, they will be silently
+   ignored.
+
    @note For a sphere G, the signed distance function φᵢ(p) has an undefined
    gradient vector at the center of the sphere--every point on the sphere's
    surface has the same distance to the center.  In this case, we will assign
@@ -254,8 +279,8 @@ class QueryObject {
                               distance values (and supporting data).
                               See SignedDistanceToPoint.
    */
-  std::vector<SignedDistanceToPoint<double>>
-  ComputeSignedDistanceToPoint(const Vector3<double> &p_WQ,
+  std::vector<SignedDistanceToPoint<T>>
+  ComputeSignedDistanceToPoint(const Vector3<T> &p_WQ,
                                const double threshold
                                = std::numeric_limits<double>::infinity()) const;
   //@}

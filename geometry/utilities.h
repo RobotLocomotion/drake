@@ -66,6 +66,20 @@ class MapKeyRange {
 // TODO(SeanCurtis-TRI): Get rid of these when I finally swap for
 // RigidTransforms.
 
+inline const Vector3<double>& convert(const Vector3<double>& vec) {
+  return vec;
+}
+
+template <class VectorType>
+Vector3<double> convert(
+    const Vector3<Eigen::AutoDiffScalar<VectorType>>& vec) {
+  Vector3<double> result;
+  for (int r = 0; r < 3; ++r) {
+      result(r) = ExtractDoubleOrThrow(vec(r));
+  }
+  return result;
+}
+
 inline const Isometry3<double>& convert(const Isometry3<double>& transform) {
   return transform;
 }
