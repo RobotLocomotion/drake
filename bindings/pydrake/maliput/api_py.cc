@@ -60,7 +60,7 @@ PYBIND11_MODULE(api, m) {
       .def("rpy", &Rotation::rpy, doc.Rotation.rpy.doc);
 
   py::class_<RoadNetwork>(m, "RoadNetwork", doc.RoadNetwork.doc)
-      .def("road_geometry", &RoadNetwork::road_geometry,
+      .def("road_geometry", &RoadNetwork::road_geometry, py_reference_internal,
           doc.RoadNetwork.road_geometry.doc);
 
   py::class_<RoadGeometry>(m, "RoadGeometry", doc.RoadGeometry.doc)
