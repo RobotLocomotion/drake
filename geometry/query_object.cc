@@ -41,9 +41,9 @@ QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints() const {
 }
 
 template <typename T>
-std::vector<SignedDistanceToPoint<double>>
+std::vector<SignedDistanceToPoint<T>>
 QueryObject<T>::ComputeSignedDistanceToPoint(
-    const Vector3<double>& p_WQ,
+    const Vector3<T>& p_WQ,
     const double threshold) const {
   ThrowIfDefault();
 
