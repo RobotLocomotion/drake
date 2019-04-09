@@ -163,6 +163,8 @@ TEST_F(BulbGroupTest, Accessors) {
   EXPECT_EQ(bulb_group_.orientation_traffic_light().matrix(),
             Rotation::FromRpy(4, 5, 6).matrix());
   EXPECT_EQ(bulb_group_.bulbs().size(), 3);
+  EXPECT_EQ(bulb_group_.GetBulb(Bulb::Id("unknown_bulb")), nullopt);
+  EXPECT_NE(bulb_group_.GetBulb(Bulb::Id("red_bulb")), nullopt);
 }
 
 TEST_F(BulbGroupTest, Copying) {
@@ -233,6 +235,9 @@ TEST_F(TrafficLightTest, Accessors) {
   EXPECT_EQ(traffic_light_.orientation_road_network().matrix(),
             Rotation::FromRpy(0, 0, 0).matrix());
   EXPECT_EQ(traffic_light_.bulb_groups().size(), 4);
+  EXPECT_EQ(traffic_light_.GetBulbGroup(BulbGroup::Id("unknown_bulb_group")),
+            nullopt);
+  EXPECT_NE(traffic_light_.GetBulbGroup(BulbGroup::Id("north_group")), nullopt);
 }
 
 TEST_F(TrafficLightTest, Copying) {
