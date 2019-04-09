@@ -58,20 +58,36 @@ class MapKeyRange {
 /** @name Isometry scalar conversion
 
  Some of SceneGraph's inner-workings are _not_ templated on scalar type and
- always require Isometry3<double>. These functions work in an ADL-compatible
- manner to allow SceneGraph to mindlessly convert templated Isometry3 to
- double-valued transforms.  */
+ always require double values. These functions work in an ADL-compatible
+ manner to allow SceneGraph to mindlessly convert Quantity<T> to
+ Quantity<double> efficiently. There is *particular* emphasis on making the
+ Quantity<double> -> Quantity<double> as cheap as possible.  */
 //@{
+
+inline const Vector3<double>& convert_to_double(const Vector3<double>& vec) {
+  return vec;
+}
+
+template <class VectorType>
+Vector3<double> convert_to_double(
+    const Vector3<Eigen::AutoDiffScalar<VectorType>>& vec) {
+  Vector3<double> result;
+  for (int r = 0; r < 3; ++r) {
+    result(r) = ExtractDoubleOrThrow(vec(r));
+  }
+  return result;
+}
 
 // TODO(SeanCurtis-TRI): Get rid of these when I finally swap for
 // RigidTransforms.
 
-inline const Isometry3<double>& convert(const Isometry3<double>& transform) {
+inline const Isometry3<double>& convert_to_double(
+    const Isometry3<double>& transform) {
   return transform;
 }
 
 template <class VectorType>
-Isometry3<double> convert(
+Isometry3<double> convert_to_double(
     const Isometry3<Eigen::AutoDiffScalar<VectorType>>& transform) {
   Isometry3<double> result;
   for (int r = 0; r < 4; ++r) {
