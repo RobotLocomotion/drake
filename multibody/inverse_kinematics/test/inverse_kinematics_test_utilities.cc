@@ -93,8 +93,8 @@ Eigen::Vector4d QuaternionToVectorWxyz(const Eigen::Quaterniond& q) {
 namespace {
 template <typename T>
 std::unique_ptr<systems::Diagram<T>> BuildTwoFreeSpheresDiagram(
-    double radius1, double radius2, const Eigen::Isometry3d& X_B1S1,
-    const Eigen::Isometry3d& X_B2S2, MultibodyPlant<T>** plant,
+    double radius1, double radius2, const RigidTransformd& X_B1S1,
+    const RigidTransformd& X_B2S2, MultibodyPlant<T>** plant,
     geometry::SceneGraph<T>** scene_graph, FrameIndex* sphere1_index,
     FrameIndex* sphere2_index) {
   systems::DiagramBuilder<T> builder;
@@ -117,10 +117,8 @@ std::unique_ptr<systems::Diagram<T>> BuildTwoFreeSpheresDiagram(
 }  // namespace
 
 TwoFreeSpheresTest::TwoFreeSpheresTest() {
-  X_B1S1_.setIdentity();
-  X_B1S1_.translation() << 0.01, 0.02, 0.03;
-  X_B2S2_.setIdentity();
-  X_B2S2_.translation() << 0.02, -0.01, -0.02;
+  X_B1S1_.set_translation({0.01, 0.02, 0.03});
+  X_B2S2_.set_translation({0.02, -0.01, -0.02});
   diagram_double_ = BuildTwoFreeSpheresDiagram(
       radius1_, radius2_, X_B1S1_, X_B2S2_, &plant_double_,
       &scene_graph_double_, &sphere1_index_, &sphere2_index_);
