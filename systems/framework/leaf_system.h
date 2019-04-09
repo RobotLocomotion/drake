@@ -1950,6 +1950,10 @@ class LeafSystem : public System<T> {
   ///       maximum values can be realized with a witness that triggers on a
   ///       sign change of the function's time derivative, ensuring that the
   ///       actual extreme value is present in the discretized trajectory.
+  ///
+  /// @note In order for the witness function to be used, you MUST
+  /// overload System::DoGetWitnessFunctions().
+  /// @exclude_from_pydrake_mkdoc{Only the std::function versions are bound.}
   template <class MySystem>
   std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
@@ -1962,6 +1966,9 @@ class LeafSystem : public System<T> {
   /// Constructs the witness function with the given description (used primarily
   /// for debugging and logging), direction type, and calculator function; and
   /// with no event object.
+  ///
+  /// @note In order for the witness function to be used, you MUST
+  /// overload System::DoGetWitnessFunctions().
   std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
@@ -1973,6 +1980,10 @@ class LeafSystem : public System<T> {
   /// Constructs the witness function with the given description (used primarily
   /// for debugging and logging), direction type, calculator function, and
   /// publish event callback function for when this triggers.
+  ///
+  /// @note In order for the witness function to be used, you MUST
+  /// overload System::DoGetWitnessFunctions().
+  /// @exclude_from_pydrake_mkdoc{Only the std::function versions are bound.}
   template <class MySystem>
   std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
@@ -1997,6 +2008,10 @@ class LeafSystem : public System<T> {
   /// Constructs the witness function with the given description (used primarily
   /// for debugging and logging), direction type, calculator function, and
   /// discrete update event callback function for when this triggers.
+  ///
+  /// @note In order for the witness function to be used, you MUST
+  /// overload System::DoGetWitnessFunctions().
+  /// @exclude_from_pydrake_mkdoc{Only the std::function versions are bound.}
   template <class MySystem>
   std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
@@ -2021,6 +2036,10 @@ class LeafSystem : public System<T> {
   /// Constructs the witness function with the given description (used primarily
   /// for debugging and logging), direction type, calculator function, and
   /// unrestricted update event callback function for when this triggers.
+  ///
+  /// @note In order for the witness function to be used, you MUST
+  /// overload System::DoGetWitnessFunctions().
+  /// @exclude_from_pydrake_mkdoc{Only the std::function versions are bound.}
   template <class MySystem>
   std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
@@ -2049,6 +2068,10 @@ class LeafSystem : public System<T> {
   /// objects are publish, discrete variable update, unrestricted update events.
   /// A clone of the event will be owned by the newly constructed
   /// WitnessFunction.
+  ///
+  /// @note In order for the witness function to be used, you MUST
+  /// overload System::DoGetWitnessFunctions().
+  /// @exclude_from_pydrake_mkdoc{Only the std::function versions are bound.}
   template <class MySystem>
   std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
@@ -2068,6 +2091,9 @@ class LeafSystem : public System<T> {
   /// objects are publish, discrete variable update, unrestricted update events.
   /// A clone of the event will be owned by the newly constructed
   /// WitnessFunction.
+  ///
+  /// @note In order for the witness function to be used, you MUST
+  /// overload System::DoGetWitnessFunctions().
   std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,

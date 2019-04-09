@@ -19,6 +19,7 @@
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_scalar_converter.h"
 #include "drake/systems/framework/vector_system.h"
+#include "drake/systems/framework/witness_function.h"
 
 using std::make_unique;
 using std::string;
@@ -92,6 +93,7 @@ using systems::PublishEvent;
 using systems::System;
 using systems::SystemScalarConverter;
 using systems::VectorSystem;
+using systems::WitnessFunction;
 
 // Provides a templated 'namespace'.
 template <typename T>
@@ -136,6 +138,7 @@ struct Impl {
     using Base::DeclarePerStepEvent;
     using Base::DeclareVectorInputPort;
     using Base::DeclareVectorOutputPort;
+    using Base::MakeWitnessFunction;
 
     // Because `LeafSystem<T>::DoPublish` is protected, and we had to override
     // this method in `PyLeafSystem`, expose the method here for direct(-ish)
@@ -197,6 +200,24 @@ struct Impl {
           "DoCalcDiscreteVariableUpdates", &context, events, discrete_state);
       // If the macro did not return, use default functionality.
       Base::DoCalcDiscreteVariableUpdates(context, events, discrete_state);
+    }
+
+    // This actually changes the signature of DoGetWitnessFunction,
+    // expecting the python overload to return a list of witnesses (instead
+    // of taking in an empty pointer to std::vector<>.
+    // TODO(russt): This is actually a System method, so make a PySystem
+    // trampoline if this is needed outside of LeafSystem.
+    void DoGetWitnessFunctions(const Context<T>& context,
+        std::vector<const WitnessFunction<T>*>* witnesses) const override {
+      auto wrapped = [&]() -> std::vector<const WitnessFunction<T>*> {
+        PYBIND11_OVERLOAD_INT(std::vector<const WitnessFunction<T>*>,
+            LeafSystem<T>, "DoGetWitnessFunctions", &context);
+        std::vector<const WitnessFunction<T>*> result;
+        // If the macro did not return, use default functionality.
+        Base::DoGetWitnessFunctions(context, &result);
+        return result;
+      };
+      *witnesses = wrapped();
     }
   };
 
@@ -449,7 +470,18 @@ struct Impl {
             [](const System<T>& self) { return self.ToSymbolic(); },
             doc.System.ToSymbolic.doc_0args)
         .def("ToSymbolicMaybe", &System<T>::ToSymbolicMaybe,
-            doc.System.ToSymbolicMaybe.doc);
+            doc.System.ToSymbolicMaybe.doc)
+        .def("GetWitnessFunctions",
+            [](const System<T>& self, const Context<T>& context) {
+              std::vector<const WitnessFunction<T>*> witnesses;
+              self.GetWitnessFunctions(context, &witnesses);
+              return witnesses;
+            },
+            py::arg("context"),
+            (string(doc.System.DoGetWitnessFunctions.doc) + R""(
+Note: The above is for the C++ documentation. For Python, use
+`witnesses = GetWitnessFunctions(context)`)"")
+                .c_str());
     AddDeprecatedProtectedAliases(&system_cls, {"DeclareInputPort"});
 
     using AllocCallback = typename LeafOutputPort<T>::AllocCallback;
@@ -560,6 +592,29 @@ struct Impl {
               self->DeclarePerStepEvent(event);
             },
             py::arg("event"), doc.LeafSystem.DeclarePerStepEvent.doc)
+        .def("MakeWitnessFunction",
+            WrapCallbacks([](PyLeafSystem* self, const std::string& description,
+                              const WitnessFunctionDirection& direction_type,
+                              std::function<T(const Context<T>&)> calc)
+                              -> std::unique_ptr<WitnessFunction<T>> {
+              return self->MakeWitnessFunction(
+                  description, direction_type, calc);
+            }),
+            py_reference_internal, py::arg("description"),
+            py::arg("direction_type"), py::arg("calc"),
+            doc.LeafSystem.MakeWitnessFunction.doc_3args)
+        .def("MakeWitnessFunction",
+            WrapCallbacks(
+                [](PyLeafSystem* self, const std::string& description,
+                    const WitnessFunctionDirection& direction_type,
+                    std::function<T(const Context<T>&)> calc,
+                    const Event<T>& e) -> std::unique_ptr<WitnessFunction<T>> {
+                  return self->MakeWitnessFunction(
+                      description, direction_type, calc, e);
+                }),
+            py_reference_internal, py::arg("description"),
+            py::arg("direction_type"), py::arg("calc"), py::arg("e"),
+            doc.LeafSystem.MakeWitnessFunction.doc_4args)
         .def("DoPublish", &LeafSystemPublic::DoPublish,
             doc.LeafSystem.DoPublish.doc)
         // System attributes.
