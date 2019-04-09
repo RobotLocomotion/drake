@@ -10,8 +10,8 @@
 #include "drake/automotive/maliput/api/rules/phase_ring_book.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_state_provider.h"
 #include "drake/automotive/maliput/api/rules/road_rulebook.h"
+#include "drake/automotive/maliput/api/rules/rule_state_provider.h"
 
 namespace drake {
 namespace maliput {
@@ -51,8 +51,8 @@ std::unique_ptr<rules::RoadRulebook> CreateRoadRulebook();
 /// Returns an arbitrary rules::PhaseRingBook.
 std::unique_ptr<rules::PhaseRingBook> CreatePhaseRingBook();
 
-/// Returns an arbitrary rules::RightOfWayStateProvider.
-std::unique_ptr<rules::RightOfWayStateProvider> CreateRightOfWayStateProvider();
+/// Returns an arbitrary rules::RuleStateProvider.
+std::unique_ptr<rules::RuleStateProvider> CreateRuleStateProvider();
 
 /// Returns an arbitrary rules::PhaseProvider.
 std::unique_ptr<rules::PhaseProvider> CreatePhaseProvider();

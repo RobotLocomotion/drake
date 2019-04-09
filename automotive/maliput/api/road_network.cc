@@ -14,7 +14,7 @@ RoadNetwork::RoadNetwork(
     std::unique_ptr<const rules::RoadRulebook> rulebook,
     std::vector<std::unique_ptr<Intersection>> intersections,
     std::unique_ptr<rules::PhaseRingBook> phase_ring_book,
-    std::unique_ptr<rules::RightOfWayStateProvider> state_provider,
+    std::unique_ptr<rules::RuleStateProvider> rule_state_provider,
     std::unique_ptr<rules::PhaseProvider> phase_provider,
     std::vector<rules::SpeedLimitRule> speed_limits,
     std::vector<rules::DirectionUsageRule> direction_usage_rules)
@@ -22,14 +22,14 @@ RoadNetwork::RoadNetwork(
       rulebook_(std::move(rulebook)),
       intersections_(std::move(intersections)),
       phase_ring_book_(std::move(phase_ring_book)),
-      state_provider_(std::move(state_provider)),
+      rule_state_provider_(std::move(rule_state_provider)),
       phase_provider_(std::move(phase_provider)),
       speed_limits_(std::move(speed_limits)),
       direction_usage_rules_(std::move(direction_usage_rules)) {
   DRAKE_THROW_UNLESS(road_geometry_.get() != nullptr);
   DRAKE_THROW_UNLESS(rulebook_.get() != nullptr);
   DRAKE_THROW_UNLESS(phase_ring_book_.get() != nullptr);
-  DRAKE_THROW_UNLESS(state_provider_.get() != nullptr);
+  DRAKE_THROW_UNLESS(rule_state_provider_.get() != nullptr);
   DRAKE_THROW_UNLESS(phase_provider_.get() != nullptr);
   for (int i = 0; i < static_cast<int>(intersections_.size()); ++i) {
     intersections_map_[intersections_.at(i)->id()] = intersections_.at(i).get();

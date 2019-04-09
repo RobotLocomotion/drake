@@ -3,22 +3,21 @@
 #include <unordered_map>
 
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_state_provider.h"
+#include "drake/automotive/maliput/api/rules/rule_state_provider.h"
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace maliput {
 
-/// A trivial implementation of an api::rules::RightOfWayStateProvider.
-class TrivialRightOfWayStateProvider final
-    : public api::rules::RightOfWayStateProvider {
+/// A trivial implementation of an api::rules::RuleStateProvider.
+class ManualRuleStateProvider final : public api::rules::RuleStateProvider {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrivialRightOfWayStateProvider)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManualRuleStateProvider)
 
   /// Default constructor.
-  TrivialRightOfWayStateProvider() {}
+  ManualRuleStateProvider() {}
 
-  ~TrivialRightOfWayStateProvider() final = default;
+  ~ManualRuleStateProvider() final = default;
 
   /// Adds a dynamic state to this provider.
   ///
@@ -37,9 +36,8 @@ class TrivialRightOfWayStateProvider final
                 const api::rules::RightOfWayRule::State::Id& state);
 
  private:
-  drake::optional<api::rules::RightOfWayStateProvider::Result>
-      DoGetState(
-          const api::rules::RightOfWayRule::Id& id) const final;
+  drake::optional<api::rules::RuleStateProvider::RightOfWayResult>
+      DoGetState(const api::rules::RightOfWayRule::Id& id) const final;
 
   std::unordered_map<
     api::rules::RightOfWayRule::Id,

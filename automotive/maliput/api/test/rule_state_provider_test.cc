@@ -1,5 +1,5 @@
 /* clang-format off to disable clang-format-includes */
-#include "drake/automotive/maliput/api/rules/right_of_way_state_provider.h"
+#include "drake/automotive/maliput/api/rules/rule_state_provider.h"
 /* clang-format on */
 // TODO(liang.fok) Satisfy clang-format via rules tests directory reorg.
 
@@ -13,7 +13,7 @@ namespace api {
 namespace rules {
 namespace {
 
-class RightOfWayStateProviderTest : public ::testing::Test {
+class RuleStateProviderTest : public ::testing::Test {
  protected:
   const RightOfWayRule::Id kExistingId{"aye"};
   const RightOfWayRule::Id kNonExistingId{"nay"};
@@ -22,28 +22,29 @@ class RightOfWayStateProviderTest : public ::testing::Test {
   const RightOfWayRule::State::Id kNextStateId{"next"};
   const double kDurationUntil{99.};
 
-  class MockStateProvider : public RightOfWayStateProvider {
+  class MockStateProvider : public RuleStateProvider {
    public:
-    explicit MockStateProvider(const RightOfWayStateProviderTest* fixture)
+    explicit MockStateProvider(const RuleStateProviderTest* fixture)
         : fixture_(fixture) {}
    private:
-    drake::optional<Result> DoGetState(
+    drake::optional<RightOfWayResult> DoGetState(
         const RightOfWayRule::Id& id) const final {
       if (id == fixture_->kExistingId) {
-        return Result{fixture_->kCurrentStateId,
-                      Result::Next{fixture_->kNextStateId,
-                                   fixture_->kDurationUntil}};
+        return RightOfWayResult{fixture_->kCurrentStateId,
+                                RightOfWayResult::Next{
+                                    fixture_->kNextStateId,
+                                    fixture_->kDurationUntil}};
       }
       return nullopt;
     }
 
-    const RightOfWayStateProviderTest* const fixture_;
+    const RuleStateProviderTest* const fixture_;
   };
 };
 
 
-TEST_F(RightOfWayStateProviderTest, ExerciseInterface) {
-  using Result = RightOfWayStateProvider::Result;
+TEST_F(RuleStateProviderTest, ExerciseInterface) {
+  using Result = RuleStateProvider::RightOfWayResult;
 
   const MockStateProvider dut(this);
 

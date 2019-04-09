@@ -1,4 +1,4 @@
-#include "drake/automotive/maliput/base/phase_based_right_of_way_state_provider.h"
+#include "drake/automotive/maliput/base/phase_based_rule_state_provider.h"
 
 #include <gtest/gtest.h>
 
@@ -12,9 +12,9 @@ namespace {
 using maliput::api::rules::Phase;
 using maliput::api::rules::PhaseRing;
 using maliput::api::rules::RightOfWayRule;
-using maliput::api::rules::RightOfWayStateProvider;
+using maliput::api::rules::RuleStateProvider;
 
-GTEST_TEST(PhaseBasedRightOfWayStateProviderTest, BasicTest) {
+GTEST_TEST(PhaseBasedRuleStateProviderTest, BasicTest) {
   const RightOfWayRule::Id rule_id_a("rule a");
   const RightOfWayRule::Id rule_id_b("rule b");
 
@@ -37,19 +37,19 @@ GTEST_TEST(PhaseBasedRightOfWayStateProviderTest, BasicTest) {
   ManualPhaseProvider phase_provider;
   phase_provider.AddPhaseRing(ring_id, phase_id_1);
 
-  PhaseBasedRightOfWayStateProvider dut(&phase_ring_book, &phase_provider);
+  PhaseBasedRuleStateProvider dut(&phase_ring_book, &phase_provider);
 
   EXPECT_EQ(&dut.phase_ring_book(), &phase_ring_book);
   EXPECT_EQ(&dut.phase_provider(), &phase_provider);
 
   struct ExpectedState {
     const RightOfWayRule::Id rule;
-    const RightOfWayStateProvider::Result result;
+    const RuleStateProvider::RightOfWayResult result;
   };
 
   auto compare_expected = [&](const std::vector<ExpectedState>& test_cases) {
     for (const auto& test : test_cases) {
-      optional<RightOfWayStateProvider::Result> result =
+      optional<RuleStateProvider::RightOfWayResult> result =
           dut.GetState(test.rule);
       EXPECT_TRUE(result.has_value());
       EXPECT_EQ(result->current_id, test.result.current_id);
