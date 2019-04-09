@@ -146,6 +146,17 @@ class Bulb final {
   /// Returns the possible states of this bulb.
   const std::vector<BulbState>& states() const { return states_; }
 
+  /// Returns the default state of the bulb. The priority order is
+  /// BulbState::kOff, BulbState::kOn, then BulbState::kBlinking. For example,
+  /// if a bulb can be in states {BulbState::kOff, BulbState::kOn}, its default
+  /// state will be BulbState::kOff. Likewise, if a bulb can be in states
+  /// {BulbState::kOn, BulbState::kBlinking}, its default state will be
+  /// BulbState::kOn.
+  BulbState GetDefaultState() const;
+
+  /// Returns true if @p bulb_state is one of this bulb's possible states.
+  bool IsValidState(const BulbState& bulb_state) const;
+
   /// Returns the bounding box of the bulb.
   const BoundingBox& bounding_box() const { return bounding_box_; }
 

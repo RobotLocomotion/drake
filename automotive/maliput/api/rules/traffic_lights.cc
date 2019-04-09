@@ -1,7 +1,9 @@
 #include "drake/automotive/maliput/api/rules/traffic_lights.h"
 
+#include <algorithm>
 #include <utility>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 
 namespace drake {
@@ -54,6 +56,20 @@ Bulb::Bulb(const Bulb::Id& id, const GeoPosition& position_bulb_group,
   } else {
     states_ = *states;
   }
+}
+
+BulbState Bulb::GetDefaultState() const {
+  for (const auto& bulb_state :
+       {BulbState::kOff, BulbState::kOn, BulbState::kBlinking}) {
+    if (IsValidState(bulb_state)) {
+      return bulb_state;
+    }
+  }
+  DRAKE_UNREACHABLE();
+}
+
+bool Bulb::IsValidState(const BulbState& bulb_state) const {
+  return std::find(states_.begin(), states_.end(), bulb_state) != states_.end();
 }
 
 BulbGroup::BulbGroup(const BulbGroup::Id& id,

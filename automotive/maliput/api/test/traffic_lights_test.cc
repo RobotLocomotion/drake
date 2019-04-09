@@ -112,6 +112,10 @@ TEST_F(BulbTest, Accessors) {
   EXPECT_EQ(bulb_.states().size(), 2);
   EXPECT_EQ(bulb_.states().at(0), BulbState::kOff);
   EXPECT_EQ(bulb_.states().at(1), BulbState::kOn);
+  EXPECT_EQ(bulb_.GetDefaultState(), BulbState::kOff);
+  EXPECT_TRUE(bulb_.IsValidState(BulbState::kOff));
+  EXPECT_TRUE(bulb_.IsValidState(BulbState::kOn));
+  EXPECT_FALSE(bulb_.IsValidState(BulbState::kBlinking));
   MALIPUT_IS_EQUAL(bulb_.bounding_box(), Bulb::BoundingBox());
 }
 
@@ -127,6 +131,33 @@ TEST_F(BulbTest, Assignment) {
            std::vector<BulbState>{BulbState::kBlinking});
   dut = bulb_;
   EXPECT_TRUE(MALIPUT_IS_EQUAL(dut, bulb_));
+}
+
+GTEST_TEST(DefaultBulbStateTest, BasicTest) {
+  struct TestCase {
+    std::vector<BulbState> states;
+    BulbState default_state;
+  };
+  const std::vector<TestCase> test_cases = {
+      {{BulbState::kBlinking, BulbState::kOn}, BulbState::kOn},
+      {{BulbState::kOn, BulbState::kBlinking}, BulbState::kOn},
+      {{BulbState::kBlinking, BulbState::kOff}, BulbState::kOff},
+      {{BulbState::kOff, BulbState::kBlinking}, BulbState::kOff},
+      {{BulbState::kOff, BulbState::kOn}, BulbState::kOff},
+      {{BulbState::kOn, BulbState::kOff}, BulbState::kOff},
+      {{BulbState::kOn, BulbState::kOff, BulbState::kBlinking},
+       BulbState::kOff},
+      {{BulbState::kBlinking}, BulbState::kBlinking}};
+  for (const auto& test_case : test_cases) {
+    const Bulb dut(Bulb::Id("id"), GeoPosition(0, 0, 0),
+                   Rotation::FromRpy(0, 0, 0), BulbColor::kGreen,
+                   BulbType::kRound, nullopt /* arrow_orientation_rad */,
+                   test_case.states);
+    EXPECT_EQ(dut.GetDefaultState(), test_case.default_state);
+    for (const auto& state : test_case.states) {
+      EXPECT_TRUE(dut.IsValidState(state));
+    }
+  }
 }
 
 GTEST_TEST(BulbGroupConstructorTest, InvalidGroupSize) {
