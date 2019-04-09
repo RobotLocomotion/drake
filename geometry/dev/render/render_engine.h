@@ -94,8 +94,9 @@ class RenderEngine : public ShapeReifier {
     for (auto pair : update_indices_) {
       RenderIndex render_index = pair.first;
       InternalIndex global_index = pair.second;
-      DoUpdateVisualPose(geometry::internal::convert(X_WG[global_index]),
-                         render_index);
+      DoUpdateVisualPose(
+          geometry::internal::convert_to_double(X_WG[global_index]),
+          render_index);
     }
   }
 
