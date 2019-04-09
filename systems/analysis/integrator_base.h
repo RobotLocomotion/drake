@@ -316,7 +316,7 @@ class IntegratorBase {
    *
    * #### Details
    * Because time is maintained to finite precision, the integrator uses a
-   * scalar `h_floor` to constrain time step h ≥ `h_floor` such that 
+   * scalar `h_floor` to constrain time step h ≥ `h_floor` such that
    * `current_time + h > current_time` will be strictly satisfied.
    * The integrator will never automatically decrease its step below `h_floor`.
    * We calculate `h_floor=max(ε, ε⋅t)`, where t is the current time and ε is a
@@ -560,6 +560,8 @@ class IntegratorBase {
    *                          of publish_time, update_time, or boundary_time is
    *                          in the past.
    * @return The reason for the integration step ending.
+   * @post The time in the context will be no greater than
+   *       `min(publish_time, update_time, boundary_time)`.
    * @warning Users should generally not call this function directly; within
    *          simulation circumstances, users will typically call
    *          `Simulator::AdvanceTo()`. In other circumstances, users will

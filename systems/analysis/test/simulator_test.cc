@@ -731,6 +731,91 @@ GTEST_TEST(SimulatorTest, WitnessTestCountChallenging) {
   EXPECT_EQ(1, num_publishes);
 }
 
+// A system that publishes with a period of 1s and offset of 0.5s and also
+// publishes when a witness function triggers (happens when a time is crossed).
+class PeriodicPublishWithTimedWitnessSystem final : public LeafSystem<double> {
+ public:
+  explicit PeriodicPublishWithTimedWitnessSystem(double witness_trigger_time) {
+    // Declare the periodic publish.
+    this->DeclarePeriodicPublishEvent(
+      1.0, 0.5, &PeriodicPublishWithTimedWitnessSystem::PublishPeriodic);
+
+    // Declare the publish event for the witness trigger.
+    auto fn = [this](const Context<double>& context,
+        const PublishEvent<double>& witness_publish_event) {
+      return this->PublishWitness(context, witness_publish_event);
+    };
+    PublishEvent<double> witness_publish(fn);
+    witness_ = this->MakeWitnessFunction(
+      "timed_witness", WitnessFunctionDirection::kPositiveThenNonPositive,
+      [witness_trigger_time](const Context<double>& context) {
+        return witness_trigger_time - context.get_time();
+      }, witness_publish);
+  }
+
+  double periodic_publish_time() const { return periodic_publish_time_; }
+  double witness_publish_time() const { return witness_publish_time_; }
+
+ private:
+  std::unique_ptr<WitnessFunction<double>> witness_;
+  mutable double periodic_publish_time_{-1.0};
+  mutable double witness_publish_time_{-1.0};
+
+  void DoGetWitnessFunctions(
+      const Context<double>&,
+      std::vector<const WitnessFunction<double>*>* w) const {
+    *w = { witness_.get() };
+  }
+
+  // Modifying system members in System callbacks is an anti-pattern.
+  // It is done here (and below) only to simplify the testing code.
+  void PublishPeriodic(const Context<double>& context) const {
+    ASSERT_LT(periodic_publish_time_, 0.0);
+    periodic_publish_time_ = context.get_time();
+  }
+
+  void PublishWitness(const Context<double>& context,
+      const PublishEvent<double>&) const {
+    ASSERT_LT(witness_publish_time_, 0.0);
+    witness_publish_time_ = context.get_time();
+  }
+};
+
+// Tests ability of simulation to properly handle a sequence of a timed event
+// and a witnessed triggered event. All three combinations of sequences are
+// tested: witnessed then timed, timed then witnessed, and both triggering
+// simultaneously.
+GTEST_TEST(SimulatorTest, WitnessAndTimedSequences) {
+  // System will publish at 0.5. Witness function triggers at the specified
+  // time.
+  PeriodicPublishWithTimedWitnessSystem sys_25(0.25), sys_50(0.5), sys_75(0.75);
+
+  // Note: setting accuracy in the Context will not guarantee that the values
+  // in the tests are satisfied to the same accuracy. The test tolerances might
+  // need to be slightly adjusted in the future (with different integrators,
+  // adjustments to the witness isolation interval, etc.)
+  const double accuracy = 1e-12;
+  Simulator<double> sim_25(sys_25);
+  sim_25.get_mutable_context().SetAccuracy(accuracy);
+  sim_25.AdvanceTo(1.0);
+  EXPECT_NEAR(sys_25.witness_publish_time(), 0.25, accuracy);
+
+  // Timed events (here and below) should be bit exact.
+  EXPECT_EQ(sys_25.periodic_publish_time(), 0.5);
+
+  Simulator<double> sim_50(sys_50);
+  sim_50.get_mutable_context().SetAccuracy(accuracy);
+  sim_50.AdvanceTo(1.0);
+  EXPECT_NEAR(sys_50.witness_publish_time(), 0.5, accuracy);
+  EXPECT_EQ(sys_50.periodic_publish_time(), 0.5);
+
+  Simulator<double> sim_75(sys_75);
+  sim_75.get_mutable_context().SetAccuracy(accuracy);
+  sim_75.AdvanceTo(1.0);
+  EXPECT_NEAR(sys_75.witness_publish_time(), 0.75, accuracy);
+  EXPECT_EQ(sys_75.periodic_publish_time(), 0.5);
+}
+
 // TODO(edrumwri): Add tests for verifying that correct interval returned
 // in the case of multiple witness functions. See issue #6184.
 
