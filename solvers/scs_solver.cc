@@ -433,11 +433,11 @@ void ParseExponentialConeConstraint(
   for (const auto& binding : prog.exponential_cone_constraints()) {
     // drake::solvers::ExponentialConstraint enforces that z = A * x + b is in
     // the exponential cone (z₀ ≥ z₁*exp(z₂ / z₁)). This is different from the
-    // exponential cone used in SCS. In SCS, a vector s in in the exponential
+    // exponential cone used in SCS. In SCS, a vector s is in the exponential
     // cone, if s₂≥ s₁*exp(s₀ / s₁). To transform drake's Exponential cone to
     // SCS's exponential cone, we use
     // -[A.row(2); A.row(1); A.row(0)] * x + s = [b(2); b(1); b(0)], and s is
-    // in the exponential cone, where A = binding.evaluator()->A(), b =
+    // in SCS's exponential cone, where A = binding.evaluator()->A(), b =
     // binding.evaluator()->b().
     const int num_bound_variables = binding.variables().rows();
     for (int i = 0; i < num_bound_variables; ++i) {

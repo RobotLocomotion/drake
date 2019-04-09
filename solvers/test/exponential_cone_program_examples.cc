@@ -44,9 +44,9 @@ void MinimizeKLDivergence(const SolverInterface& solver, double tol) {
   // A valid probability should be non-negative.
   prog.AddBoundingBoxConstraint(0, kInf, q);
 
-  // prog minimizes the KL divergence KL(p || q) = ∑ₓ p(x)* log(p(x) / q(x)).
-  // equivalently, the KL divergence is ∑ₓ -p(x)* log(q(x) / p(x))
-  // we introduce a slack variable t(x), such that t(x) >= -p(x)* log(q(x) /
+  // prog minimizes the KL divergence KL(p || q) = ∑ₓ p(x) * log(p(x) / q(x)).
+  // Equivalently, the KL divergence is ∑ₓ -p(x) * log(q(x) / p(x)).
+  // We introduce a slack variable t(x), such that t(x) >= -p(x)* log(q(x) /
   // p(x)) namely (q(x), p(x), -t(x)) is in the exponential cone, and we
   // minimize ∑ₓ t(x).
   const auto t = prog.NewContinuousVariables<4>();
