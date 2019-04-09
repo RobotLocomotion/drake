@@ -129,7 +129,7 @@ int DoMain() {
   status_sender->set_name("status_sender");
 
   base_builder->Connect(command_sub->get_output_port(),
-                        command_receiver->GetInputPort("command_message"));
+                        command_receiver->get_input_port());
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // TODO(jwnimmer-tri) The IIWA LCM systems should not know about velocities,

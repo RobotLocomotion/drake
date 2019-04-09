@@ -187,7 +187,7 @@ int DoMain() {
   iiwa_zero_acceleration_source->set_name("zero_acceleration");
 
   builder.Connect(iiwa_command_sub->get_output_port(),
-                  iiwa_command_receiver->GetInputPort("command_message"));
+                  iiwa_command_receiver->get_input_port());
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // TODO(jwnimmer-tri) The IIWA LCM systems should not know about velocities,
