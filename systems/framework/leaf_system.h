@@ -1928,8 +1928,8 @@ class LeafSystem : public System<T> {
   //@}
 
   // =========================================================================
-  /// @name                    Declare witness functions
-  /// Methods in this section are used by derived classes to declare any
+  /// @name                    Make witness functions
+  /// Methods in this section are used by derived classes to make any
   /// witness functions useful for ensuring that integration ends a step upon
   /// entering particular times or states.
   ///
@@ -1951,7 +1951,7 @@ class LeafSystem : public System<T> {
   ///       sign change of the function's time derivative, ensuring that the
   ///       actual extreme value is present in the discretized trajectory.
   template <class MySystem>
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+  std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const) const {
@@ -1962,7 +1962,7 @@ class LeafSystem : public System<T> {
   /// Constructs the witness function with the given description (used primarily
   /// for debugging and logging), direction type, and calculator function; and
   /// with no event object.
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+  std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       std::function<T(const Context<T>&)> calc) const {
@@ -1974,7 +1974,7 @@ class LeafSystem : public System<T> {
   /// for debugging and logging), direction type, calculator function, and
   /// publish event callback function for when this triggers.
   template <class MySystem>
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+  std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const,
@@ -1998,7 +1998,7 @@ class LeafSystem : public System<T> {
   /// for debugging and logging), direction type, calculator function, and
   /// discrete update event callback function for when this triggers.
   template <class MySystem>
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+  std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const,
@@ -2022,7 +2022,7 @@ class LeafSystem : public System<T> {
   /// for debugging and logging), direction type, calculator function, and
   /// unrestricted update event callback function for when this triggers.
   template <class MySystem>
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+  std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const,
@@ -2050,7 +2050,7 @@ class LeafSystem : public System<T> {
   /// A clone of the event will be owned by the newly constructed
   /// WitnessFunction.
   template <class MySystem>
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+  std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const,
@@ -2068,13 +2068,85 @@ class LeafSystem : public System<T> {
   /// objects are publish, discrete variable update, unrestricted update events.
   /// A clone of the event will be owned by the newly constructed
   /// WitnessFunction.
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+  std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       std::function<T(const Context<T>&)> calc,
       const Event<T>& e) const {
     return std::make_unique<WitnessFunction<T>>(
         this, description, direction_type, calc, e.Clone());
+  }
+
+  template <class MySystem>
+  DRAKE_DEPRECATED("2019-06-31", "Please use MakeWitnessFunction().")
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      T (MySystem::*calc)(const Context<T>&) const) const {
+    return MakeWitnessFunction(description, direction_type, calc);
+  }
+
+  DRAKE_DEPRECATED("2019-06-31", "Please use MakeWitnessFunction().")
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      std::function<T(const Context<T>&)> calc) const {
+    return MakeWitnessFunction(description, direction_type, calc);
+  }
+
+  template <class MySystem>
+  DRAKE_DEPRECATED("2019-06-31", "Please use MakeWitnessFunction().")
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      T (MySystem::*calc)(const Context<T>&) const,
+      void (MySystem::*publish_callback)(
+          const Context<T>&, const PublishEvent<T>&) const) const {
+    return MakeWitnessFunction(description, direction_type, calc,
+        publish_callback);
+  }
+
+  template <class MySystem>
+  DRAKE_DEPRECATED("2019-06-31", "Please use MakeWitnessFunction().")
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      T (MySystem::*calc)(const Context<T>&) const,
+      void (MySystem::*du_callback)(const Context<T>&,
+                                    const DiscreteUpdateEvent<T>&,
+                                    DiscreteValues<T>*) const) const {
+    return MakeWitnessFunction(description, direction_type, calc, du_callback);
+  }
+
+  template <class MySystem>
+  DRAKE_DEPRECATED("2019-06-31", "Please use MakeWitnessFunction().")
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      T (MySystem::*calc)(const Context<T>&) const,
+      void (MySystem::*uu_callback)(const Context<T>&,
+                                    const UnrestrictedUpdateEvent<T>&,
+                                    State<T>*) const) const {
+    return MakeWitnessFunction(description, direction_type, calc, uu_callback);
+  }
+
+  template <class MySystem>
+  DRAKE_DEPRECATED("2019-06-31", "Please use MakeWitnessFunction().")
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      T (MySystem::*calc)(const Context<T>&) const,
+      const Event<T>& e) const {
+    return MakeWitnessFunction(description, direction_type, calc, e);
+  }
+
+  DRAKE_DEPRECATED("2019-06-31", "Please use MakeWitnessFunction().")
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      std::function<T(const Context<T>&)> calc,
+      const Event<T>& e) const {
+    return MakeWitnessFunction(description, direction_type, calc, e);
   }
   //@}
 
