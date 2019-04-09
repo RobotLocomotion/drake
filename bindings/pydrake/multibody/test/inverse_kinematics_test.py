@@ -9,7 +9,7 @@ import numpy as np
 from numpy.linalg import norm
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.eigen_geometry import Quaternion, AngleAxis, Isometry3
+from pydrake.common.eigen_geometry import Quaternion
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.plant import (
