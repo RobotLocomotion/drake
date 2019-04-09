@@ -12,32 +12,52 @@ namespace solvers {
 namespace test {
 const double kInf = std::numeric_limits<double>::infinity();
 
+void ExponentialConeTrivialExample(const SolverInterface& solver, double tol) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>()(0);
+  auto y = prog.NewContinuousVariables<1>()(0);
+  auto z = prog.NewContinuousVariables<1>()(0);
+  prog.AddExponentialConeConstraint(Vector3<symbolic::Expression>(x, y, z));
+  prog.AddLinearEqualityConstraint(y + z == 1);
+  prog.AddLinearCost(x);
+
+  MathematicalProgramResult result;
+  solver.Solve(prog, {}, {}, &result);
+  EXPECT_TRUE(result.is_success());
+  // Check the solution. We can rewrite the problem as a single variable
+  // optimization min y * exp(1 - y / y). The gradient of this cost function is
+  // (y - 1)/y * exp(1-y / y). The optimal value is when the gradient is 0.
+  // Namely y =1
+  EXPECT_NEAR(result.GetSolution(y), 1, tol);
+  EXPECT_NEAR(result.GetSolution(z), 0, tol);
+}
+
 void MinimizeKLDivergence(const SolverInterface& solver, double tol) {
   // The probability p(x)
   const Eigen::Vector4d p(0.1, 0.2, 0.3, 0.4);
 
-  MathematicalProgram prog1;
+  MathematicalProgram prog;
   // q is the other probabilty distribution
-  const auto q = prog1.NewContinuousVariables<4>();
+  const auto q = prog.NewContinuousVariables<4>();
   // A valid probability should sum up to 1.
-  prog1.AddLinearEqualityConstraint(Eigen::RowVector4d::Ones(), 1, q);
+  prog.AddLinearEqualityConstraint(Eigen::RowVector4d::Ones(), 1, q);
   // A valid probability should be non-negative.
-  prog1.AddBoundingBoxConstraint(0, kInf, q);
+  prog.AddBoundingBoxConstraint(0, kInf, q);
 
-  // prog1 minimizes the KL divergence KL(p || q) = ∑ₓ p(x)* log(p(x) / q(x)).
+  // prog minimizes the KL divergence KL(p || q) = ∑ₓ p(x)* log(p(x) / q(x)).
   // equivalently, the KL divergence is ∑ₓ -p(x)* log(q(x) / p(x))
   // we introduce a slack variable t(x), such that t(x) >= -p(x)* log(q(x) /
   // p(x)) namely (q(x), p(x), -t(x)) is in the exponential cone, and we
   // minimize ∑ₓ t(x).
-  const auto t = prog1.NewContinuousVariables<4>();
+  const auto t = prog.NewContinuousVariables<4>();
   for (int i = 0; i < 4; ++i) {
-    prog1.AddExponentialConeConstraint(
+    prog.AddExponentialConeConstraint(
         Vector3<symbolic::Expression>(q(i), p(i), -t(i)));
   }
-  prog1.AddLinearCost(t.cast<symbolic::Expression>().sum());
+  prog.AddLinearCost(t.cast<symbolic::Expression>().sum());
 
   MathematicalProgramResult result;
-  solver.Solve(prog1, {}, {}, &result);
+  solver.Solve(prog, {}, {}, &result);
   EXPECT_TRUE(result.is_success());
   EXPECT_TRUE(CompareMatrices(result.GetSolution(q), p, tol));
   EXPECT_TRUE(

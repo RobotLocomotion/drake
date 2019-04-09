@@ -431,10 +431,14 @@ void ParseExponentialConeConstraint(
     int* A_row_count, ScsCone* cone) {
   cone->ep = static_cast<int>(prog.exponential_cone_constraints().size());
   for (const auto& binding : prog.exponential_cone_constraints()) {
-    // drake::solvers::ExponentialConstraint enforces that A * x + b is in the
-    // exponential cone. This is equivalent to -A * x + s = b, and s is in the
-    // exponential cone. Hence we will multiply "-1" to the matrix
-    // binding.evaluator()->A().
+    // drake::solvers::ExponentialConstraint enforces that z = A * x + b is in
+    // the exponential cone (z₀ ≥ z₁*exp(z₂ / z₁)). This is different from the
+    // exponential cone used in SCS. In SCS, a vector s in in the exponential
+    // cone, if s₂≥ s₁*exp(s₀ / s₁). To transform drake's Exponential cone to
+    // SCS's exponential cone, we use
+    // -[A.row(2); A.row(1); A.row(0)] * x + s = [b(2); b(1); b(0)], and s is
+    // in the exponential cone, where A = binding.evaluator()->A(), b =
+    // binding.evaluator()->b().
     const int num_bound_variables = binding.variables().rows();
     for (int i = 0; i < num_bound_variables; ++i) {
       A_triplets->reserve(A_triplets->size() +
@@ -444,7 +448,9 @@ void ParseExponentialConeConstraint(
       for (Eigen::SparseMatrix<double>::InnerIterator it(
                binding.evaluator()->A(), i);
            it; ++it) {
-        A_triplets->emplace_back(*A_row_count + it.row(),
+        // 2 - it.row() is used for reverse the row order, as mentioned in the
+        // function documentation above.
+        A_triplets->emplace_back(*A_row_count + 2 - it.row(),
                                  decision_variable_index, -it.value());
       }
     }
@@ -452,7 +458,7 @@ void ParseExponentialConeConstraint(
     // ExponentialConeConstraint, we append 3 rows to A and b.
     b->reserve(b->size() + 3);
     for (int i = 0; i < 3; ++i) {
-      b->push_back(binding.evaluator()->b()(i));
+      b->push_back(binding.evaluator()->b()(2 - i));
     }
     *A_row_count += 3;
   }

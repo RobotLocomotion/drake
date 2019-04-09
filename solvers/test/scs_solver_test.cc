@@ -272,6 +272,13 @@ GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithOverlappingVariables) {
   }
 }
 
+GTEST_TEST(TestExponentialConeProgram, ExponentialConeTrivialExample) {
+  ScsSolver solver;
+  if (solver.available()) {
+    ExponentialConeTrivialExample(solver, 1E-5);
+  }
+}
+
 GTEST_TEST(TestExponentialConeProgram, MinimizeKLDivengence) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
