@@ -104,8 +104,8 @@ class Bulb final {
   /// will be thrown. An exception will also be thrown if this parameter is
   /// defined for non-arrow BulbType values.
   ///
-  /// @param states The possible states of this bulb. If this is nullopt, this
-  /// bulb has states {BulbState::kOff, BulbState::kOn}.
+  /// @param states The possible states of this bulb. If this is nullopt or an
+  /// empty vector, this bulb has states {BulbState::kOff, BulbState::kOn}.
   ///
   /// @param bounding_box The bounding box of the bulb. See BoundingBox for
   /// details about the default value.
@@ -145,6 +145,18 @@ class Bulb final {
 
   /// Returns the possible states of this bulb.
   const std::vector<BulbState>& states() const { return states_; }
+
+  /// Returns the default state of the bulb. The priority order is
+  /// BulbState::kOff, BulbState::kBlinking, then BulbState::kOn. For example,
+  /// if a bulb can be in states {BulbState::kOff, BulbState::kOn}, its default
+  /// state will be BulbState::kOff. Likewise, if a bulb can be in states
+  /// {BulbState::kOn, BulbState::kBlinking}, its default state will be
+  /// BulbState::kBlinking. The only case where the default state is
+  /// BulbState::kOn is when this is the bulb's only possible state.
+  BulbState GetDefaultState() const;
+
+  /// Returns true if @p bulb_state is one of this bulb's possible states.
+  bool IsValidState(const BulbState& bulb_state) const;
 
   /// Returns the bounding box of the bulb.
   const BoundingBox& bounding_box() const { return bounding_box_; }
