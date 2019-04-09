@@ -7,6 +7,7 @@
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -80,6 +81,17 @@ Isometry3<double> convert(
     }
   }
   return result;
+}
+
+// Don't needlessly copy transforms that are already scalar-valued.
+inline const math::RigidTransformd& convert(const math::RigidTransformd& X_AB) {
+  return X_AB;
+}
+
+template <class VectorType>
+math::RigidTransformd convert(
+    const math::RigidTransform<Eigen::AutoDiffScalar<VectorType>>& X_AB) {
+  return X_AB.template cast<double>();
 }
 
 //@}
