@@ -221,6 +221,9 @@ class BulbGroup final {
   /// Returns the bulbs contained within this bulb group.
   const std::vector<Bulb>& bulbs() const { return bulbs_; }
 
+  /// Gets the specified Bulb. Returns nullopt if @p id is unrecognized.
+  optional<Bulb> GetBulb(const Bulb::Id& id) const;
+
  private:
   Id id_;
   GeoPosition position_traffic_light_;
@@ -285,6 +288,9 @@ class TrafficLight final {
 
   /// Returns the bulb groups contained within this traffic light.
   const std::vector<BulbGroup>& bulb_groups() const { return bulb_groups_; }
+
+  /// Gets the specified BulbGroup. Returns nullopt if @p id is unrecognized.
+  optional<BulbGroup> GetBulbGroup(const BulbGroup::Id& id) const;
 
  private:
   Id id_;

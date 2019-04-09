@@ -83,6 +83,15 @@ BulbGroup::BulbGroup(const BulbGroup::Id& id,
   DRAKE_THROW_UNLESS(bulbs_.size() > 0);
 }
 
+optional<Bulb> BulbGroup::GetBulb(const Bulb::Id& id) const {
+  for (const auto& bulb : bulbs_) {
+    if (bulb.id() == id) {
+      return bulb;
+    }
+  }
+  return nullopt;
+}
+
 TrafficLight::TrafficLight(const TrafficLight::Id& id,
                            const GeoPosition& position_road_network,
                            const Rotation& orientation_road_network,
@@ -91,6 +100,15 @@ TrafficLight::TrafficLight(const TrafficLight::Id& id,
       position_road_network_(position_road_network),
       orientation_road_network_(orientation_road_network),
       bulb_groups_(bulb_groups) {}
+
+optional<BulbGroup> TrafficLight::GetBulbGroup(const BulbGroup::Id& id) const {
+  for (const auto& bulb_group : bulb_groups_) {
+    if (bulb_group.id() == id) {
+      return bulb_group;
+    }
+  }
+  return nullopt;
+}
 
 }  // namespace rules
 }  // namespace api
