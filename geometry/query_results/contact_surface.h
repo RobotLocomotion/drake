@@ -1,6 +1,8 @@
 #pragma once
 
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
@@ -102,6 +104,17 @@ class ContactSurface {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactSurface)
 
+  /** Constructs a ContactSurface from SurfaceMesh and SurfaceMeshField's. */
+  ContactSurface(GeometryId id_M, GeometryId id_N,
+                 std::shared_ptr<SurfaceMesh<T>> mesh,
+                 SurfaceMeshField<T, T>&& e,
+                 SurfaceMeshField<Vector3<T>, T>&& grad_h_M)
+      : id_M_(id_M),
+        id_N_(id_N),
+        mesh_(mesh),
+        e_(std::move(e)),
+        grad_h_M_(std::move(grad_h_M)) {}
+
   /** Returns the geometry id of the body M. */
   GeometryId id_M() const { return id_M_; }
 
@@ -129,11 +142,11 @@ class ContactSurface {
 
   /** Returns the number of triangular faces.
    */
-  int num_faces() { return mesh_.num_faces(); }
+  int num_faces() { return mesh_->num_faces(); }
 
   /** Returns the number of vertices.
    */
-  int num_vertices() { return mesh_.num_vertices(); }
+  int num_vertices() { return mesh_->num_vertices(); }
 
  private:
   /// The id of the first geometry in the contact.
@@ -141,7 +154,7 @@ class ContactSurface {
   /// The id of the second geometry in the contact.
   GeometryId id_N_;
 
-  SurfaceMesh<T> mesh_;
+  std::shared_ptr<SurfaceMesh<T>> mesh_;
   // Scalar field `e`.
   SurfaceMeshField<T, T> e_;
   // Vector field ∇hₘₙ, expressed in M's frame.

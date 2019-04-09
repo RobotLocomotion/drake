@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -41,7 +42,7 @@ class SurfaceMeshField {
    */
   SurfaceMeshField(const std::string& name,
             std::vector<FieldValueType>&& values,
-            const SurfaceMesh<CoordType>& mesh)
+            std::shared_ptr<SurfaceMesh<CoordType>> mesh)
   : name_(name), values_(std::move(values)), mesh_(mesh)
   {}
 
@@ -50,11 +51,12 @@ class SurfaceMeshField {
     @param s The standard coordinates (s1, s2).
     @pre s1, s2 ∈ [0,1] and s1 + s2 ≤ 1.
    */
-  FieldValueType Evaluate(SurfaceFaceIndex f, const Vector2<CoordType>& s) {
+  FieldValueType Evaluate(SurfaceFaceIndex f,
+                          const Vector2<CoordType>& s) const {
     DRAKE_DEMAND(CoordType(0.0) <= s(0) && s(1) <= CoordType(1.0));
     DRAKE_DEMAND(CoordType(0.0) <= s(1) && s(1) <= CoordType(1.0));
     DRAKE_DEMAND(s(0) + s(1) <= CoordType(1.0));
-    const auto& face = mesh_.face(f);
+    const auto& face = mesh_->face(f);
     CoordType barycentric[3] = {CoordType(1.0) - s(0) - s(1), s(0), s(1)};
     FieldValueType value = barycentric[0] * values_[face.vertex(0)];
     for (int i = 1; i < 3; ++i)
@@ -62,10 +64,14 @@ class SurfaceMeshField {
     return value;
   }
 
+  FieldValueType AtVertex(SurfaceVertexIndex v) {
+    return values_[v];
+  }
+
  private:
   std::string name_;
   std::vector<FieldValueType> values_;
-  const SurfaceMesh<CoordType>& mesh_;
+  std::shared_ptr<SurfaceMesh<CoordType>> mesh_;
 };
 
 // TODO(DamrongGuoy): Establish a system of classes for several

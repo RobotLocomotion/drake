@@ -22,7 +22,8 @@ using SurfaceVertexIndex = TypeSafeIndex<class SurfaceVertexTag>;
 using SurfaceFaceIndex = TypeSafeIndex<class SurfaceFaceTag>;
 
 /** %SurfaceVertex represents a vertex in SurfaceMesh of a contact surface
- between bodies M and N.
+ between bodies M and N. Right now it has only one member variable, but we
+ plan to add more later.
  @tparam T the underlying scalar type. Must be a valid Eigen scalar.
 */
 template <class T>
@@ -31,32 +32,16 @@ class SurfaceVertex {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SurfaceVertex)
 
   /** Constructs SurfaceVertex.
-   @param index  vertex index in the contact surface.
    @param r_MV   position of vertex v in M's frame.
    */
-  SurfaceVertex(SurfaceVertexIndex index, const Vector3<T>& r_MV)
-      : index_(index), r_MV_(r_MV) {}
-
-  /** Returns the vertex index of this vertex in SurfaceMesh.
-    We use it for consistency check.
-   */
-  SurfaceVertexIndex index() const { return index_; }
+  explicit SurfaceVertex(const Vector3<T>& r_MV)
+      : r_MV_(r_MV) {}
 
   /** Returns the position of this vertex in M's frame.
    */
   const Vector3<T>& r_MV() const { return r_MV_; }
 
-  friend std::ostream& operator<<(std::ostream& os,
-                                  const SurfaceVertex<T>& vertex) {
-    return os << "Surface vertex"
-              << "\n  index() = " << vertex.index()
-              << "\n  r_MV() = " << vertex.r_MV().transpose()
-              << std::endl;
-  }
-
  private:
-  // Index of this vertex in SurfaceMesh. We use it for consistency check.
-  SurfaceVertexIndex index_;
   // Position of this vertex in M's frame.
   Vector3<T> r_MV_;
 };
@@ -69,23 +54,27 @@ class SurfaceFace {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SurfaceFace)
 
   /** Constructs ContactSurfaceFace.
-   @param f  Index of this face in SurfaceMesh. We use it for consistency check
-             later.
    @param v0 Index of the first vertex in SurfaceMesh.
    @param v1 Index of the second vertex in SurfaceMesh.
    @param v2 Index of the last vertex in SurfaceMesh.
    @note   The order of the three vertices gives the counterclockwise normal
           direction towards increasing eₘ the scalar field on body M.
    */
-  SurfaceFace(SurfaceFaceIndex f, SurfaceVertexIndex v0, SurfaceVertexIndex v1,
+  SurfaceFace(SurfaceVertexIndex v0,
+              SurfaceVertexIndex v1,
               SurfaceVertexIndex v2)
-      : index_(f), vertex_({v0, v1, v2}) {}
+      : vertex_({v0, v1, v2}) {}
 
-
-  /** Returns the face index of this face in SurfaceMesh.
-    We use it for consistency check.
+  /** Constructs ContactSurfaceFace.
+   @param v  array of three integer indices of the vertices of the face in
+             SurfaceMesh.
+   @note   The order of the three vertices gives the counterclockwise normal
+          direction towards increasing eₘ the scalar field on body M.
    */
-  SurfaceFaceIndex index() { return index_; }
+  explicit SurfaceFace(const int v[3])
+      : vertex_({SurfaceVertexIndex(v[0]),
+                 SurfaceVertexIndex(v[1]),
+                 SurfaceVertexIndex(v[2])}) {}
 
   /** Returns the vertex index in SurfaceMesh of the i-th vertex of this face.
    @param i  The local index of the vertex in this face.
@@ -97,8 +86,6 @@ class SurfaceFace {
   }
 
  private:
-  // Index of this face in SurfaceMesh. We use it for consistency check.
-  SurfaceFaceIndex index_;
   // The vertices of this face.
   std::array<SurfaceVertexIndex, 3> vertex_;
 };
@@ -133,12 +120,14 @@ class SurfaceMesh {
   /** Returns the triangular face identified by a given index.
     @param f   The index of the triangular face.
    */
-  const SurfaceFace& face(SurfaceFaceIndex f) { return faces_[f]; }
+  const SurfaceFace& face(SurfaceFaceIndex f) const { return faces_[f]; }
 
   /** Returns the vertex identified by a given index.
     @param v  The index of the vertex.
    */
-  const SurfaceVertex<T>& vertex(SurfaceVertexIndex v) { return vertices_[v]; }
+  const SurfaceVertex<T>& vertex(SurfaceVertexIndex v) const {
+    return vertices_[v];
+  }
 
  private:
   // Triangles comprising the surface.
