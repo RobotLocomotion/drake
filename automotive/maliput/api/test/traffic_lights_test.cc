@@ -271,8 +271,8 @@ GTEST_TEST(UniqueBulbIdTest, Usage) {
   // matching.
   EXPECT_NE(dut,
             (UniqueBulbId{TrafficLight::Id("foo"), bulb_group_id, bulb_id}));
-  EXPECT_NE(dut, (UniqueBulbId{traffic_light_id, BulbGroup::Id("foo"),
-                               bulb_id}));
+  EXPECT_NE(dut,
+            (UniqueBulbId{traffic_light_id, BulbGroup::Id("foo"), bulb_id}));
   EXPECT_NE(dut,
             (UniqueBulbId{traffic_light_id, bulb_group_id, Bulb::Id("foo")}));
 
