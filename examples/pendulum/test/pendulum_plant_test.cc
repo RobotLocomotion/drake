@@ -34,8 +34,17 @@ GTEST_TEST(PendulumPlantTest, ToAutoDiff) {
   // At this point, users could initialize the partials as they pleased.
 }
 
-GTEST_TEST(PendulumPlantTest, DirectFeedthrough) {
+GTEST_TEST(PendulumPlantTest, DirectFeedthroughSimple) {
   PendulumPlant<double> plant;
+  EXPECT_FALSE(plant.HasAnyDirectFeedthrough());
+}
+
+GTEST_TEST(PendulumPlantTest, DirectFeedthroughWithVisualization) {
+  const PendulumParams<double> params;
+  geometry::SceneGraph<double> scene_graph;
+
+  PendulumPlant<double> plant;
+  plant.RegisterGeometry(params, &scene_graph);
   EXPECT_FALSE(plant.HasAnyDirectFeedthrough());
 }
 

@@ -80,7 +80,7 @@ class TestSystem : public System<double> {
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
         "y" + std::to_string(num_output_ports()),
-        OutputPortIndex(this->num_output_ports()),
+        OutputPortIndex(this->num_output_ports()), nullopt /* inputs */,
         assign_next_dependency_ticket(),
         kAbstractValued, 0, &cache_entry);
     LeafOutputPort<double>* const port_ptr = port.get();
@@ -511,7 +511,7 @@ class ValueIOTestSystem : public System<T> {
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
         "absport",
-        OutputPortIndex(this->num_output_ports()),
+        OutputPortIndex(this->num_output_ports()), nullopt /* inputs */,
         this->assign_next_dependency_ticket(),
         kAbstractValued, 0 /* size */,
         &this->DeclareCacheEntry(
@@ -529,7 +529,7 @@ class ValueIOTestSystem : public System<T> {
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
         "vecport",
-        OutputPortIndex(this->num_output_ports()),
+        OutputPortIndex(this->num_output_ports()), nullopt /* inputs */,
         this->assign_next_dependency_ticket(),
         kVectorValued, 1 /* size */,
         &this->DeclareCacheEntry(

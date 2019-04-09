@@ -1050,6 +1050,10 @@ class SystemBase : public internal::SystemMessageInterface {
   builds. */
   virtual void DoCheckValidContext(const ContextBase&) const = 0;
 
+  // XXX
+  OutputPortBase::OptionalInputPortIndices InputsFromTickets(
+      const std::set<DependencyTicket>& prerequisites) const;
+
  private:
   void CreateSourceTrackers(ContextBase*) const;
 

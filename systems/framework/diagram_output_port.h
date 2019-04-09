@@ -83,8 +83,8 @@ class DiagramOutputPort final : public OutputPort<T> {
                     DependencyTicket ticket,
                     const OutputPort<T>* source_output_port,
                     SubsystemIndex source_subsystem_index)
-      : OutputPort<T>(diagram, system_base, std::move(name), index, ticket,
-                      source_output_port->get_data_type(),
+      : OutputPort<T>(diagram, system_base, std::move(name), index, nullopt,
+                      ticket, source_output_port->get_data_type(),
                       source_output_port->size()),
         source_output_port_(source_output_port),
         source_subsystem_index_(source_subsystem_index) {

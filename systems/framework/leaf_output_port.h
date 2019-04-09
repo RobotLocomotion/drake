@@ -70,12 +70,15 @@ class LeafOutputPort final : public OutputPort<T> {
 
   // Constructs a cached output port. The `system` parameter must be the same
   // object as the `system_base` parameter.
-  LeafOutputPort(const System<T>* system, SystemBase* system_base,
-                 std::string name, OutputPortIndex index,
-                 DependencyTicket ticket, PortDataType data_type, int size,
-                 const CacheEntry* cache_entry)
-      : OutputPort<T>(system, system_base, std::move(name), index, ticket,
-                      data_type, size),
+  LeafOutputPort(
+      const System<T>* system, SystemBase* system_base,
+      std::string name, OutputPortIndex index,
+      OutputPortBase::OptionalInputPortIndices direct_feedthrough_inputs,
+      DependencyTicket ticket, PortDataType data_type, int size,
+      const CacheEntry* cache_entry)
+      : OutputPort<T>(
+            system, system_base, std::move(name), index,
+            std::move(direct_feedthrough_inputs), ticket, data_type, size),
         cache_entry_(cache_entry) {
     DRAKE_DEMAND(cache_entry != nullptr);
   }

@@ -104,6 +104,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     std::multimap<int, int> pairs;
     for (InputPortIndex u(0); u < this->num_input_ports(); ++u) {
       for (OutputPortIndex v(0); v < this->num_output_ports(); ++v) {
+        // TODO(jwnimmer-tri) We should store the DoHasDirectFeedthrough result
+        // in our DiagramOutputPort, instead of recomputing it every time.
         if (DoHasDirectFeedthrough(u, v)) {
           pairs.emplace(u, v);
         }

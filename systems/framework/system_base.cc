@@ -1,5 +1,8 @@
 #include "drake/systems/framework/system_base.h"
 
+#include <algorithm>
+#include <deque>
+
 #include <fmt/format.h>
 
 #include "drake/systems/framework/fixed_input_port_value.h"
@@ -98,6 +101,89 @@ void SystemBase::InitializeContextBase(ContextBase* context_ptr) const {
 
   detail::SystemBaseContextBaseAttorney::mark_context_base_initialized(
       &context);
+}
+
+OutputPortBase::OptionalInputPortIndices SystemBase::InputsFromTickets(
+    const std::set<DependencyTicket>& prerequisites) const {
+  OutputPortBase::OptionalInputPortIndices result;
+
+  // Fast-path handling for the default case.  If all_sources is used, then we
+  // should let other mechanisms (symbolic, DoHasDirectFeedthrough) respond.
+  if (prerequisites.count(all_sources_ticket()) > 0) {
+    DRAKE_DEMAND(!result.has_value());
+    return result;
+  }
+
+  // If the output depends on all inputs, then we can't enumerate all of their
+  // indices here because they might not have been declared yet.
+  if (prerequisites.count(all_input_ports_ticket()) > 0) {
+    DRAKE_DEMAND(!result.has_value());
+    return result;
+  }
+
+  // For now, we can't check the dependencies of cache entries.
+  for (const auto& cache_entry_ptr : cache_entries_) {
+    if (prerequisites.count(cache_entry_ptr->ticket()) > 0) {
+      DRAKE_DEMAND(!result.has_value());
+      return result;
+    }
+  }
+
+  // Collect the list of tickets known to never depend on the inputs.
+  std::vector<DependencyTicket> non_inputs{
+      nothing_ticket(),
+      time_ticket(),
+      accuracy_ticket(),
+      q_ticket(),
+      v_ticket(),
+      z_ticket(),
+      xc_ticket(),
+      xd_ticket(),
+      xa_ticket(),
+      all_state_ticket(),
+      pn_ticket(),
+      pa_ticket(),
+      all_parameters_ticket(),
+      configuration_ticket(),
+      kinematics_ticket(),
+      xcdot_ticket(),
+      pe_ticket(),
+      ke_ticket(),
+      pc_ticket(),
+      pnc_ticket(),
+  };
+  for (const auto& ticket_vector : {
+          discrete_state_tickets_, abstract_state_tickets_,
+          numeric_parameter_tickets_, abstract_parameter_tickets_ }) {
+    for (const auto& tracker_info : ticket_vector) {
+      non_inputs.push_back(tracker_info.ticket);
+    }
+  }
+  for (const auto& output_port_base_ptr : output_ports_) {
+    non_inputs.push_back(output_port_base_ptr->ticket());
+  }
+  std::sort(non_inputs.begin(), non_inputs.end());
+
+  // Compute (prerequisites - non_inputs) which should be only input tickets.
+  std::deque<DependencyTicket> inputs;
+  std::set_difference(
+      prerequisites.begin(), prerequisites.end(),
+      non_inputs.begin(), non_inputs.end(),
+      std::back_inserter(inputs));
+
+  // Convert input tickets to input indices.
+  result = std::vector<InputPortIndex>();
+  for (const auto& input_port_base_ptr : input_ports_) {
+    if (!inputs.empty() && (inputs.front() == input_port_base_ptr->ticket())) {
+      result->push_back(input_port_base_ptr->get_index());
+      inputs.pop_front();
+    }
+  }
+
+  // At this point we've covered *all* tickets.
+  DRAKE_DEMAND(inputs.empty());
+
+  return result;
 }
 
 // Set up trackers for variable-numbered independent sources: discrete and

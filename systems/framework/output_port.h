@@ -197,6 +197,8 @@ class OutputPort : public OutputPortBase {
   }
 
  protected:
+  using OutputPortBase::OptionalInputPortIndices;
+
   /** Provides derived classes the ability to set the base class members at
   construction. See OutputPortBase::OutputPortBase() for the meaning of these
   parameters.
@@ -206,9 +208,12 @@ class OutputPort : public OutputPortBase {
   // The System and SystemBase are provided separately since we don't have
   // access to System's declaration here so can't cast but the caller can.
   OutputPort(const System<T>* system, SystemBase* system_base, std::string name,
-             OutputPortIndex index, DependencyTicket ticket,
+             OutputPortIndex index,
+             OptionalInputPortIndices direct_feedthrough_inputs,
+             DependencyTicket ticket,
              PortDataType data_type, int size)
-      : OutputPortBase(system_base, std::move(name), index, ticket, data_type,
+      : OutputPortBase(system_base, std::move(name), index,
+                       std::move(direct_feedthrough_inputs), ticket, data_type,
                        size),
         system_{*system} {
     DRAKE_DEMAND(static_cast<const void*>(system) == system_base);

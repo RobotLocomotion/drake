@@ -105,6 +105,8 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   }
 
  private:
+  using systems::LeafSystem<T>::all_state_ticket;
+
   systems::OutputPortIndex AllocateGeometryPoseOutputPort();
 
   // This is the calculator method for the state output port.

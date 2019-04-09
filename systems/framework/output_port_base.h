@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/port_base.h"
@@ -16,6 +17,10 @@ class OutputPortBase : public PortBase {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OutputPortBase)
 
   ~OutputPortBase() override;
+
+  /** (Advanced.) This is typically only used internally to Drake, and not by
+  users.  The contents must always be in sorted order. */
+  using OptionalInputPortIndices = optional<std::vector<InputPortIndex>>;
 
   /** Returns the index of this output port within the owning System. For a
   Diagram, this will be the index within the Diagram, _not_ the index within
@@ -38,6 +43,12 @@ class OutputPortBase : public PortBase {
   internal::OutputPortPrerequisite GetPrerequisite() const {
     return DoGetPrerequisite();
   }
+
+  // Internal use only. Returns the set of input ports that this output depends
+  // on, or nullopt if unknown (implying potentially ALL input ports are used).
+  const OptionalInputPortIndices& direct_feedthrough_inputs() const {
+    return direct_feedthrough_inputs_;
+  }
 #endif
 
  protected:
@@ -51,6 +62,8 @@ class OutputPortBase : public PortBase {
     within a single System.
   @param index
     The index to be assigned to this OutputPort.
+  @param direct_feedthrough_inputs
+    The inputs used by this output (if known).
   @param ticket
     The DependencyTicket to be assigned to this OutputPort.
   @param data_type
@@ -60,13 +73,17 @@ class OutputPortBase : public PortBase {
     otherwise ignored. */
   OutputPortBase(
       internal::SystemMessageInterface* owning_system, std::string name,
-      OutputPortIndex index, DependencyTicket ticket, PortDataType data_type,
+      OutputPortIndex index, OptionalInputPortIndices direct_feedthrough_inputs,
+      DependencyTicket ticket, PortDataType data_type,
       int size);
 
   /** Concrete output ports must implement this to return the prerequisite
   dependency ticket for this port, which may be in the current System or one
   of its immediate child subsystems. */
   virtual internal::OutputPortPrerequisite DoGetPrerequisite() const = 0;
+
+ private:
+  const OptionalInputPortIndices direct_feedthrough_inputs_;
 };
 
 }  // namespace systems

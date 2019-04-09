@@ -262,38 +262,41 @@ class LeafSystem : public System<T> {
     // whether or not symbolic form is supported.
     optional<std::unique_ptr<SystemSymbolicInspector>> inspector;
 
-    // This predicate answers a feedthrough query using symbolic form, or
-    // returns "true" if symbolic form is unavailable.  It is lazy, in that it
-    // will not create the symbolic form until the first time it is invoked.
-    auto inspect_symbolic_feedthrough = [this, &inspector](int u, int v) {
-      // The very first time we are called, latch-initialize the inspector.
-      if (!inspector) { inspector = MakeSystemSymbolicInspector(); }
-
-      // If we have an inspector, delegate to it.  Otherwise, be conservative.
-      if (SystemSymbolicInspector* inspector_value = inspector.value().get()) {
-        return inspector_value->IsConnectedInputToOutput(u, v);
-      } else {
-        return true;
-      }
-    };
-
     // Iterate all input-output pairs, populating the map with the "true" terms.
-    std::multimap<int, int> pairs;
-    for (int u = 0; u < this->num_input_ports(); ++u) {
-      for (int v = 0; v < this->num_output_ports(); ++v) {
-        // Ask our subclass whether it wants to directly express feedthrough.
+    std::multimap<int, int> result;
+    for (int v = 0; v < this->num_output_ports(); ++v) {
+      // Ask the output port declaration about feedthrough.
+      if (const auto& maybe_declared_inputs =
+              this->get_output_port_base(OutputPortIndex{v}).
+                  direct_feedthrough_inputs()) {
+        for (const auto& u : maybe_declared_inputs.value()) {
+          result.emplace(u, v);
+        }
+        continue;
+      }
+      for (int u = 0; u < this->num_input_ports(); ++u) {
+        // Otherwise, ask our subclass override about feedthrough.
         const optional<bool> overridden_feedthrough =
             DoHasDirectFeedthrough(u, v);
-        // If our subclass didn't provide an answer, use symbolic form instead.
-        const bool direct_feedthrough =
-            overridden_feedthrough ? overridden_feedthrough.value() :
-            inspect_symbolic_feedthrough(u, v);
-        if (direct_feedthrough) {
-          pairs.emplace(u, v);
+        if (overridden_feedthrough) {
+          if (overridden_feedthrough.value()) {
+            result.emplace(u, v);
+          }
+          continue;
         }
+        // Otherwise, ask the symbolic inspector about feedthrough.
+        if (!inspector) { inspector = MakeSystemSymbolicInspector(); }
+        if (inspector.value().get()) {
+          if (inspector.value()->IsConnectedInputToOutput(u, v)) {
+            result.emplace(u, v);
+          }
+          continue;
+        }
+        // Failing all other options, be conservative.
+        result.emplace(u, v);
       }
     }
-    return pairs;
+    return result;
   };
 
  protected:
@@ -2604,6 +2607,11 @@ class LeafSystem : public System<T> {
       typename CacheEntry::CalcCallback calculator,
       std::set<DependencyTicket> calc_prerequisites) {
     DRAKE_DEMAND(!calc_prerequisites.empty());
+
+    // Determine which input ports this output feeds through.
+    const OutputPortBase::OptionalInputPortIndices direct_feedthrough_inputs =
+        SystemBase::InputsFromTickets(calc_prerequisites);
+
     // Create a cache entry for this output port.
     const OutputPortIndex oport_index(this->num_output_ports());
     const CacheEntry& cache_entry = this->DeclareCacheEntry(
@@ -2618,8 +2626,8 @@ class LeafSystem : public System<T> {
     auto port = internal::FrameworkFactory::Make<LeafOutputPort<T>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
-        std::move(name),
-        oport_index, this->assign_next_dependency_ticket(),
+        std::move(name), oport_index, std::move(direct_feedthrough_inputs),
+        this->assign_next_dependency_ticket(),
         fixed_size.has_value() ? kVectorValued : kAbstractValued,
         fixed_size.value_or(0),
         &cache_entry);

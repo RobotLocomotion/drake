@@ -46,8 +46,8 @@ class MyOutputPort : public OutputPort<double> {
  public:
   MyOutputPort(const System<double>* diagram, SystemBase* system_base,
                OutputPortIndex index, DependencyTicket ticket)
-      : OutputPort<double>(diagram, system_base, "my_output", index, ticket,
-                           kVectorValued, 2) {}
+      : OutputPort<double>(diagram, system_base, "my_output", index, nullopt,
+                           ticket, kVectorValued, 2) {}
 
   std::unique_ptr<AbstractValue> DoAllocate() const override {
     return AbstractValue::Make<BasicVector<double>>(
@@ -196,7 +196,7 @@ class LeafOutputPortTest : public ::testing::Test {
           &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
           &dummy_,  // implicit_cast<SystemBase*>(&dummy_)
           "absport",
-          OutputPortIndex(dummy_.num_output_ports()),
+          OutputPortIndex(dummy_.num_output_ports()), nullopt /* inputs */,
           dummy_.assign_next_dependency_ticket(), kAbstractValued, 0 /* size */,
           &dummy_.DeclareCacheEntry(
               "absport", alloc_string, calc_string));
@@ -206,7 +206,7 @@ class LeafOutputPortTest : public ::testing::Test {
           &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
           &dummy_,  // implicit_cast<SystemBase*>(&dummy_)
           "vecport",
-          OutputPortIndex(dummy_.num_output_ports()),
+          OutputPortIndex(dummy_.num_output_ports()), nullopt /* inputs */,
           dummy_.assign_next_dependency_ticket(), kVectorValued, 3 /* size */,
           &dummy_.DeclareCacheEntry(
               "vecport", alloc_myvector3, calc_vector3));
@@ -289,7 +289,7 @@ TEST_F(LeafOutputPortTest, ThrowIfNullAlloc) {
       &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
       &dummy_,  // implicit_cast<SystemBase*>(&dummy_),
       "null_port",
-      OutputPortIndex(dummy_.num_output_ports()),
+      OutputPortIndex(dummy_.num_output_ports()), nullopt /* inputs */,
       dummy_.assign_next_dependency_ticket(),
       kAbstractValued, 0 /* size */,
       &dummy_.DeclareCacheEntry("null", alloc_null, calc_string));
