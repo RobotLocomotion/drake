@@ -535,10 +535,18 @@ class Simulator {
   const System<T>& get_system() const { return system_; }
 
  private:
+  enum TimeOrWitnessTriggered {
+    kNothingTriggered = 0,
+    kTimeTriggered = 1,
+    kWitnessTriggered = 2,
+    kBothTriggered = 3
+  };
+
   // All constructors delegate to here.
-  Simulator(const System<T>* system,
-            std::unique_ptr<const System<T>> owned_system,
-            std::unique_ptr<Context<T>> context);
+  Simulator(
+      const System<T>* system,
+      std::unique_ptr<const System<T>> owned_system,
+      std::unique_ptr<Context<T>> context);
 
   void HandleUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events);
@@ -548,11 +556,12 @@ class Simulator {
 
   void HandlePublish(const EventCollection<PublishEvent<T>>& events);
 
-  bool IntegrateContinuousState(const T& next_publish_dt,
-                                const T& next_update_dt,
-                                const T& time_of_next_timed_event,
-                                const T& boundary_dt,
-                                CompositeEventCollection<T>* events);
+  TimeOrWitnessTriggered IntegrateContinuousState(
+      const T& next_publish_dt,
+      const T& next_update_dt,
+      const T& time_of_next_timed_event,
+      const T& boundary_dt,
+      CompositeEventCollection<T>* events);
 
   void IsolateWitnessTriggers(
       const std::vector<const WitnessFunction<T>*>& witnesses,
@@ -644,7 +653,9 @@ class Simulator {
 
   // Indicates when a timed or witnessed event needs to be handled on the next
   // call to AdvanceTo().
-  bool timed_or_witnessed_event_triggered_{false};
+  TimeOrWitnessTriggered time_or_witness_triggered_{
+      TimeOrWitnessTriggered::kNothingTriggered
+  };
 
   // The time that the next timed event is to be handled. This value is set in
   // both Initialize() and AdvanceTo().
@@ -806,8 +817,11 @@ void Simulator<T>::Initialize() {
   context_->SetTime(current_time);
 
   // Indicate a timed event is to be handled, if appropriate.
-  timed_or_witnessed_event_triggered_ =
-      (next_timed_event_time_ == current_time);
+  if (next_timed_event_time_ == current_time) {
+    time_or_witness_triggered_ = kTimeTriggered;
+  } else {
+    time_or_witness_triggered_ = kNothingTriggered;
+  }
 
   // Allocate the witness function collection.
   witnessed_events_ = system_.AllocateCompositeEventCollection();
@@ -818,9 +832,8 @@ void Simulator<T>::Initialize() {
   // Note that per-step and timed discrete/unrestricted update events are *not*
   // processed here; just publish events.
   init_events->Merge(*per_step_events_);
-  if (timed_or_witnessed_event_triggered_) {
+  if ((time_or_witness_triggered_ & kTimeTriggered) > 0)
     init_events->Merge(*timed_events_);
-  }
   HandlePublish(init_events->get_publish_events());
 
   // TODO(siyuan): transfer publish entirely to individual systems.
@@ -894,10 +907,10 @@ void Simulator<T>::AdvanceTo(const T &boundary_time) {
   merged_events->Merge(*per_step_events_);
 
   // Merge in timed and witnessed events, if necessary.
-  if (timed_or_witnessed_event_triggered_) {
+  if ((time_or_witness_triggered_ & TimeOrWitnessTriggered::kTimeTriggered) > 0)
     merged_events->Merge(*timed_events_);
+  if ((time_or_witness_triggered_ & kWitnessTriggered) > 0)
     merged_events->Merge(*witnessed_events_);
-  }
 
   while (true) {
     // Starting a new step on the trajectory.
@@ -935,7 +948,7 @@ void Simulator<T>::AdvanceTo(const T &boundary_time) {
     }
 
     // Integrate the continuous state forward in time.
-    timed_or_witnessed_event_triggered_ = IntegrateContinuousState(
+    time_or_witness_triggered_ = IntegrateContinuousState(
         next_publish_time,
         next_update_time,
         next_timed_event_time_,
@@ -954,10 +967,10 @@ void Simulator<T>::AdvanceTo(const T &boundary_time) {
     merged_events->Merge(*per_step_events_);
 
     // Only merge timed / witnessed events in if an event was triggered.
-    if (timed_or_witnessed_event_triggered_) {
+    if ((time_or_witness_triggered_ & kTimeTriggered) > 0)
       merged_events->Merge(*timed_events_);
+    if ((time_or_witness_triggered_ & kWitnessTriggered) > 0)
       merged_events->Merge(*witnessed_events_);
-    }
 
     // Handle any publish events at the end of the loop.
     HandlePublish(merged_events->get_publish_events());
@@ -1025,7 +1038,7 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
              iso_scale_factor * accuracy.value() * characteristic_time);
 }
 
-// Isolates the first time at one or more witness functions triggered (in the
+// Isolates the first time that one or more witness functions triggered (in the
 // interval [t0, tf]), to the requisite interval length.
 // @param[in,out] on entry, the set of witness functions that triggered over
 //                [t0, tf]; on exit, the set of witness functions that triggered
@@ -1131,10 +1144,10 @@ void Simulator<T>::IsolateWitnessTriggers(
 // @param boundary_time the maximum time to advance to.
 // @param events a non-null collection of events, which the method will clear
 //        on entry.
-// @returns `true` if integration terminated on an event trigger, indicating
-//          that an event needs to be handled at the state on return.
+// @returns the event triggers that terminated integration.
 template <class T>
-bool Simulator<T>::IntegrateContinuousState(
+typename Simulator<T>::TimeOrWitnessTriggered
+Simulator<T>::IntegrateContinuousState(
     const T& next_publish_time, const T& next_update_time,
     const T&, const T& boundary_time,
     CompositeEventCollection<T>* events) {
@@ -1232,13 +1245,31 @@ bool Simulator<T>::IntegrateContinuousState(
           events);
     }
 
-    // Indicate an event should be triggered if at least one witness function
-    // triggered (meaning that an event should be handled on the next simulation
-    // loop). If no witness functions triggered over a smaller interval (recall
-    // that we're in this if/then conditional block because a witness triggered
-    // over a larger interval), we know that time advanced and that no events
-    // triggered.
-    return !triggered_witnesses_.empty();
+    // The isolation process removes witnesses that should only trigger if
+    // [t0, tf] is sufficiently small from the triggered_witnesses_ container.
+    // If this container is now empty, we know that time advanced to some time
+    // ti and that no witness triggered.
+    const T& ti = context_->get_time();
+    if (!triggered_witnesses_.empty()) {
+      // We now know that integration terminated at a witness function crossing.
+      // Now we need to look for the unusual case in which a timed event should
+      // also trigger simultaneously.
+      if (ti >= next_update_time || ti >= next_publish_time) {
+        return kBothTriggered;
+      } else {
+        return kWitnessTriggered;
+      }
+    } else {
+      // Since we're here, we know that integration didn't succeed on the
+      // larger interval [t0, tf]; instead, the continuous state was integrated
+      // to the intermediate time ti, where t0 < ti < tf. Since any
+      // publishes/updates must occur at tf, there should be no triggers.
+      DRAKE_DEMAND(t0 < ti && ti < tf);
+
+      // Barring some floating point gremlins, the following should hold.
+      DRAKE_DEMAND(next_update_time > ti && next_publish_time > ti);
+      return kNothingTriggered;
+    }
   }
 
   // No witness function triggered; handle integration as usual.
@@ -1248,11 +1279,12 @@ bool Simulator<T>::IntegrateContinuousState(
   switch (result) {
     case IntegratorBase<T>::kReachedUpdateTime:
     case IntegratorBase<T>::kReachedPublishTime:
-      return true;
+      return kTimeTriggered;
 
+    // We do nothing for these two cases.
     case IntegratorBase<T>::kTimeHasAdvanced:
     case IntegratorBase<T>::kReachedBoundaryTime:
-      return false;           // Did not hit a time for a timed event.
+      return kNothingTriggered;
 
     case IntegratorBase<T>::kReachedZeroCrossing:
     case IntegratorBase<T>::kReachedStepLimit:
