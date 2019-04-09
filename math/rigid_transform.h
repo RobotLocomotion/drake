@@ -124,6 +124,15 @@ class RigidTransform {
   /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
   explicit RigidTransform(const Vector3<T>& p) { set_translation(p); }
 
+  /// Constructs a %RigidTransform with an identity RotationMatrix and a
+  /// position vector from a given Eigen Translation3 transform `p`.
+  /// @param[in] p Translation3 that contains `p_AoBo_A`, the position vector
+  /// from frame A's origin to frame B's origin, expressed in frame A.
+  RigidTransform(  // NOLINT(runtime/explicit)
+      const Eigen::Translation<T, 3>& p) {
+    set_translation(p.translation());
+  }
+
   /// Constructs a %RigidTransform from an Eigen Isometry3.
   /// @param[in] pose Isometry3 that contains an allegedly valid rotation matrix
   /// `R_AB` and also contains a position vector `p_AoBo_A` from frame A's
@@ -325,6 +334,25 @@ class RigidTransform {
   RigidTransform<T> operator*(const RigidTransform<T>& other) const {
     const Vector3<T> p_AoCo_A = *this * other.translation();
     return RigidTransform<T>(rotation() * other.rotation(), p_AoCo_A);
+  }
+
+  /// Efficiently calculates `this` %RigidTransform `X_AB` multiplied by `other`
+  /// Eigen Translation3 transform `X_BC`.
+  /// @param[in] other Translation3 that post-multiplies `this`.
+  /// @retval X_AC = X_AB * X_BC
+  RigidTransform<T> operator*(const Eigen::Translation<T, 3>& other) const {
+    const Vector3<T> p_AoCo_A = *this * other.translation();
+    return RigidTransform<T>(rotation(), p_AoCo_A);
+  }
+
+  /// Efficiently calculates an Eigen Translation3 transform `X_AB` multiplied
+  /// by a %RigidTransform `X_BC`.
+  /// @retval X_AC = X_AB * X_BC
+  friend RigidTransform<T> operator*(const Eigen::Translation<T, 3>& X_AB,
+      const RigidTransform<T>& X_BC) {
+    const RotationMatrix<T>& R_AC = X_BC.rotation();
+    const Vector3<T> p_AoCo_A = X_AB.translation() + X_BC.translation();
+    return RigidTransform<T>(R_AC, p_AoCo_A);
   }
 
   /// Calculates `this` %RigidTransform `X_AB` multiplied by the position vector
