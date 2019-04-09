@@ -553,6 +553,7 @@ class MeshcatPointCloudVisualizer(LeafSystem):
         self._default_rgb = np.array(default_rgb)
         self._name = name
 
+        self.set_name('meshcat_point_cloud_visualizer_' + name)
         self.DeclarePeriodicPublish(draw_period, 0.0)
 
         self.DeclareAbstractInputPort("point_cloud_P",
