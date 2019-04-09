@@ -527,8 +527,8 @@ GTEST_TEST(RigidTransform, MultiplyByTranslation3AndViceVersa) {
   const RotationMatrixd  R_CB = RotationMatrixd::Identity();
 
   // Verify the translation portion of the previous multiply.
-  const Vector3d p_CoBo_C = X_CB.translation();
-  const Vector3d p_BoAo_B = X_BA.translation();
+  const Vector3d& p_CoBo_C = X_CB.translation();
+  const Vector3d& p_BoAo_B = X_BA.translation();
   const Vector3d p_BoAo_C = R_CB * p_BoAo_B;
   const Vector3d p_CoAo_C = p_CoBo_C + p_BoAo_C;
   EXPECT_TRUE(X_CA.translation().isApprox(p_CoAo_C, 32 * kEpsilon));
