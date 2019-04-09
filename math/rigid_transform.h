@@ -124,13 +124,15 @@ class RigidTransform {
   /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
   explicit RigidTransform(const Vector3<T>& p) { set_translation(p); }
 
-  /// Constructs a %RigidTransform with an identity RotationMatrix and a
-  /// position vector from a given Eigen Translation3 transform `p`.
-  /// @param[in] p Translation3 that contains `p_AoBo_A`, the position vector
+  /// Constructs a %RigidTransform that represents a translation between two
+  /// frames A and B.  Hence, the constructed %RigidTransform contains an
+  /// identity RotationMatrix and the position vector underlying the given
+  /// Eigen Translation3 transform `X_AB`.
+  /// @param[in] X_AB Translation3 that stores `p_AoBo_A`, the position vector
   /// from frame A's origin to frame B's origin, expressed in frame A.
   RigidTransform(  // NOLINT(runtime/explicit)
-      const Eigen::Translation<T, 3>& p) {
-    set_translation(p.translation());
+      const Eigen::Translation<T, 3>& X_AB) {
+    set_translation(X_AB.translation());
   }
 
   /// Constructs a %RigidTransform from an Eigen Isometry3.
@@ -139,7 +141,7 @@ class RigidTransform {
   /// origin to frame B's origin.  `p_AoBo_A` must be expressed in frame A.
   /// @throws std::logic_error in debug builds if R_AB is not a proper
   /// orthonormal 3x3 rotation matrix.
-  /// @note no attempt is made to orthogonalize the 3x3 rotation matrix part of
+  /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
   explicit RigidTransform(const Isometry3<T>& pose) { SetFromIsometry3(pose); }
 
@@ -158,7 +160,7 @@ class RigidTransform {
   /// origin to frame B's origin.  `p_AoBo_A` must be expressed in frame A.
   /// @throws std::logic_error in debug builds if R_AB is not a proper
   /// orthonormal 3x3 rotation matrix.
-  /// @note no attempt is made to orthogonalize the 3x3 rotation matrix part of
+  /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
   void SetFromIsometry3(const Isometry3<T>& pose) {
     set(RotationMatrix<T>(pose.linear()), pose.translation());
@@ -336,16 +338,16 @@ class RigidTransform {
     return RigidTransform<T>(rotation() * other.rotation(), p_AoCo_A);
   }
 
-  /// Efficiently calculates `this` %RigidTransform `X_AB` multiplied by `other`
-  /// Eigen Translation3 transform `X_BC`.
-  /// @param[in] other Translation3 that post-multiplies `this`.
+  /// Calculates `this` %RigidTransform `X_AB` multiplied by the Eigen
+  /// Translation3 transform `X_BC`.
+  /// @param[in] X_BC Translation3 that post-multiplies `this`.
   /// @retval X_AC = X_AB * X_BC
-  RigidTransform<T> operator*(const Eigen::Translation<T, 3>& other) const {
-    const Vector3<T> p_AoCo_A = *this * other.translation();
+  RigidTransform<T> operator*(const Eigen::Translation<T, 3>& X_BC) const {
+    const Vector3<T> p_AoCo_A = *this * X_BC.translation();
     return RigidTransform<T>(rotation(), p_AoCo_A);
   }
 
-  /// Efficiently calculates an Eigen Translation3 transform `X_AB` multiplied
+  /// Calculates an Eigen Translation3 transform `X_AB` multiplied
   /// by a %RigidTransform `X_BC`.
   /// @retval X_AC = X_AB * X_BC
   friend RigidTransform<T> operator*(const Eigen::Translation<T, 3>& X_AB,
