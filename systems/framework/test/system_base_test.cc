@@ -59,6 +59,10 @@ class MySystemBase final : public SystemBase {
       InputPortIndex) const override {
     return {};
   }
+
+  std::multimap<int, int> GetDirectFeedthroughs() const final {
+    throw std::logic_error("GetDirectFeedthroughs is not implemented");
+  }
 };
 
 // Verify that system name methods work properly. Can't fully test the
