@@ -154,12 +154,7 @@ class PendulumPlant final : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
-  void DoCalcDiscreteVariableUpdates(
-      const systems::Context<T>& context,
-      const std::vector<const systems::DiscreteUpdateEvent<T>*>& events,
-      systems::DiscreteValues<T>* discrete_state) const override;
-
-  void DoStateUpdate(const systems::Context<T>& context,
+  systems::EventStatus DoDiscreteStateUpdate(const systems::Context<T>& context,
                      systems::DiscreteValues<T>* discrete_state) const;
 
   // Port handles.

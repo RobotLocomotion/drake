@@ -38,8 +38,10 @@ PendulumPlant<T>::PendulumPlant(double time_step)
 
   if (is_discrete()) {
     this->DeclareDiscreteState(PendulumState<T>());
-    this->DeclarePeriodicDiscreteUpdateEvent(time_step_, 0,
-                                             &PendulumPlant::DoStateUpdate);
+    this->DeclarePeriodicDiscreteUpdateEvent(
+        time_step_, 0, &PendulumPlant::DoDiscreteStateUpdate);
+    this->DeclareForcedDiscreteUpdateEvent(
+        &PendulumPlant::DoDiscreteStateUpdate);
   } else {
     this->DeclareContinuousState(PendulumState<T>(), 1 /* num_q */,
                                  1 /* num_v */, 0 /* num_z */);
@@ -147,17 +149,7 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
 }
 
 template <typename T>
-void PendulumPlant<T>::DoCalcDiscreteVariableUpdates(
-    const systems::Context<T>& context,
-    const std::vector<const systems::DiscreteUpdateEvent<T>*>& events,
-    systems::DiscreteValues<T>* discrete_state) const {
-  DoStateUpdate(context, discrete_state);
-  unused(events);
-}
-
-//// Compute the actual physics for an Euler update.
-template <typename T>
-void PendulumPlant<T>::DoStateUpdate(
+systems::EventStatus PendulumPlant<T>::DoDiscreteStateUpdate(
     const systems::Context<T>& context,
     systems::DiscreteValues<T>* discrete_state) const {
   const PendulumState<T>& state = get_discrete_state(context);
@@ -172,11 +164,12 @@ void PendulumPlant<T>::DoStateUpdate(
        params.damping() * state.thetadot()) /
       (params.mass() * params.length() * params.length()));
 
-  // compute the euler update
+  // Compute the Euler update.
   state_vector.set_theta(state.theta() +
                          derivative_vector.theta() * time_step_);
   state_vector.set_thetadot(state.thetadot() +
                             derivative_vector.thetadot() * time_step_);
+  return systems::EventStatus::Succeeded();
 }
 
 template <typename T>
