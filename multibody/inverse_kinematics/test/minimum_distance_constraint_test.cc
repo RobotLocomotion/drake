@@ -3,6 +3,7 @@
 #include <limits>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
 
 namespace drake {
@@ -132,12 +133,10 @@ void CheckMinimumDistanceConstraintEval(
 }
 
 template <typename T>
-Vector3<T> ComputeCollisionSphereCenterPosition(const Vector3<T>& p_WB,
-                                                const Quaternion<T>& quat_WB,
-                                                const Eigen::Isometry3d& X_BS) {
-  Isometry3<T> X_WB;
-  X_WB.linear() = quat_WB.toRotationMatrix();
-  X_WB.translation() = p_WB;
+Vector3<T> ComputeCollisionSphereCenterPosition(
+    const Vector3<T>& p_WB, const Quaternion<T>& quat_WB,
+    const math::RigidTransformd& X_BS) {
+  math::RigidTransform<T> X_WB{quat_WB, p_WB};
   return X_WB * (X_BS.translation().cast<T>());
 }
 
