@@ -97,15 +97,14 @@ MultipleShooting::MultipleShooting(int num_inputs, int num_states,
                        true /* timesteps_are_decision_variables */,
                        minimum_timestep, maximum_timestep) {}
 
-solvers::VectorXDecisionVariable
-MultipleShooting::NewSequentialContinuousVariables(int rows,
-                                                   const std::string& name) {
+solvers::VectorXDecisionVariable MultipleShooting::NewSequentialVariable(
+    int rows, const std::string& name) {
   return sequential_expression_manager_.RegisterSequentialExpressions(
       NewContinuousVariables(rows, N_, name).cast<symbolic::Expression>(),
       name);
 }
 
-solvers::VectorXDecisionVariable MultipleShooting::GetSequentialVariablesByName(
+solvers::VectorXDecisionVariable MultipleShooting::GetSequentialVariableAtIndex(
     const std::string& name, int index) const {
   return symbolic::GetVariableVector(
       sequential_expression_manager_.GetSequentialExpressionsByName(name,
@@ -267,10 +266,8 @@ Eigen::MatrixXd MultipleShooting::GetStateSamples(
 symbolic::Substitution
 MultipleShooting::ConstructPlaceholderVariableSubstitution(
     int interval_index) const {
-  symbolic::Substitution sub;
-  sequential_expression_manager_.AddPlaceholderVariableSubstitutionsForIndex(
-      interval_index, &sub);
-  return sub;
+  return sequential_expression_manager_
+      .ConstructPlaceholderVariableSubstitution(interval_index);
 }
 
 symbolic::Expression MultipleShooting::SubstitutePlaceholderVariables(

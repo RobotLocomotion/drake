@@ -12,6 +12,7 @@ namespace trajectory_optimization {
 namespace internal {
 
 using symbolic::Expression;
+using symbolic::Substitution;
 using symbolic::Variable;
 
 class SequentialExpressionManagerTests : public testing::Test {
@@ -49,8 +50,7 @@ TEST_F(SequentialExpressionManagerTests, RegisterAndSubstituteExpressionTest) {
   for (int j = 0; j < num_samples; ++j) {
     MatrixX<Expression> expected_expression =
         x_sequential.col(j) * x_sequential.col(j).transpose();
-    symbolic::Substitution subs;
-    dut.AddPlaceholderVariableSubstitutionsForIndex(j, &subs);
+    Substitution subs = dut.ConstructPlaceholderVariableSubstitution(j);
     EXPECT_EQ(symbolic::Substitute(placeholder_expression, subs),
               expected_expression);
   }
@@ -70,8 +70,7 @@ TEST_F(SequentialExpressionManagerTests, RegisterAndSubstituteMapTest) {
     MatrixX<Expression> expected_expression =
         x_sequential.segment(j * num_variables, num_variables) *
         x_sequential.segment(j * num_variables, num_variables).transpose();
-    symbolic::Substitution subs;
-    dut.AddPlaceholderVariableSubstitutionsForIndex(j, &subs);
+    Substitution subs = dut.ConstructPlaceholderVariableSubstitution(j);
     EXPECT_EQ(symbolic::Substitute(placeholder_expression, subs),
               expected_expression);
   }
@@ -92,8 +91,7 @@ TEST_F(SequentialExpressionManagerTests, RegisterAndSubstituteMapCastTest) {
     MatrixX<Expression> expected_expression =
         x_sequential.segment(j * num_variables, num_variables) *
         x_sequential.segment(j * num_variables, num_variables).transpose();
-    symbolic::Substitution subs;
-    dut.AddPlaceholderVariableSubstitutionsForIndex(j, &subs);
+    Substitution subs = dut.ConstructPlaceholderVariableSubstitution(j);
     EXPECT_EQ(symbolic::Substitute(placeholder_expression, subs),
               expected_expression);
   }

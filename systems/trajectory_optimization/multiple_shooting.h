@@ -112,29 +112,30 @@ class MultipleShooting : public solvers::MathematicalProgram {
     return u_vars_.segment(index * num_inputs_, num_inputs_);
   }
 
-  /// Adds a `rows`-element sequential variable to the optimization problem and
-  /// returns a placeholder decision variable (not actually declared as a
-  /// decision variable in the MathematicalProgram). This variable will be
-  /// substituted for real decision variables at particular times in methods
-  /// like AddRunningCost.  Passing this variable directly into
-  /// objectives/constraints for the parent classes will result in an error.
-  solvers::VectorXDecisionVariable NewSequentialContinuousVariables(
+  /// Adds a sequential variable (a variable that has associated decision
+  /// variables for each time index) to the optimization problem and returns a
+  /// placeholder variable (not actually declared as a decision variable in the
+  /// MathematicalProgram).  This variable will be substituted for real decision
+  /// variables at particular times in methods like AddRunningCost().  Passing
+  /// this variable directly into objectives/constraints for the parent classes
+  /// will result in an error.
+  solvers::VectorXDecisionVariable NewSequentialVariable(
       int rows, const std::string& name);
 
   /// Returns the decision variables associated with the sequential variable
   /// `name` at time index `index`.
-  solvers::VectorXDecisionVariable GetSequentialVariablesByName(
+  /// @see NewSequentialVariable().
+  solvers::VectorXDecisionVariable GetSequentialVariableAtIndex(
       const std::string& name, int index) const;
 
   /// Adds an integrated cost to all time steps, of the form
   ///    @f[ cost = \int_0^T g(t,x,u) dt, @f]
   /// where any instances of time(), state(), and/or input() placeholder
-  /// variables are substituted with the relevant variables for each current
-  /// time index.  The particular integration scheme is determined by the
+  /// variables, as well as placeholder variables returned by calls to
+  /// NewSequentialVariable(), are substituted with the relevant variables for
+  /// each time index.  The particular integration scheme is determined by the
   /// derived class implementation.
-  void AddRunningCost(const symbolic::Expression& g) {
-    DoAddRunningCost(g);
-  }
+  void AddRunningCost(const symbolic::Expression& g) { DoAddRunningCost(g); }
 
   /// Adds support for passing in a (scalar) matrix Expression, which is a
   /// common output of most symbolic linear algebra operations.
@@ -145,8 +146,9 @@ class MultipleShooting : public solvers::MathematicalProgram {
   }
 
   /// Adds a constraint to all knot points, where any instances of time(),
-  /// state(), and/or input() placeholder variables are substituted with the
-  /// relevant variables for each current time index.
+  /// state(), and/or input() placeholder variables, as well as placeholder
+  /// variables returned by calls to NewSequentialVariable(), are substituted
+  /// with the relevant variables for each time index.
   void AddConstraintToAllKnotPoints(const symbolic::Formula& f) {
     for (int i = 0; i < N_; i++) {
       // TODO(russt): update this to AddConstraint once MathematicalProgram
@@ -184,8 +186,9 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// Adds a cost to the final time, of the form
   ///    @f[ cost = e(t,x,u), @f]
   /// where any instances of time(), state(), and/or input() placeholder
-  /// variables are substituted with the relevant variables for each current
-  /// time index.
+  /// variables, as well as placeholder variables returned by calls to
+  /// NewSequentialVariable(), are substituted with the relevant variables for
+  /// the final time index.
   void AddFinalCost(const symbolic::Expression& e) {
     AddCost(SubstitutePlaceholderVariables(e, N_ - 1));
   }
@@ -357,11 +360,6 @@ class MultipleShooting : public solvers::MathematicalProgram {
     return fixed_timestep_;
   }
 
-  /// Constructs a symbolic substitution object for all placeholder variables at
-  /// the `interval_index`-th interval.
-  symbolic::Substitution ConstructPlaceholderVariableSubstitution(
-      int interval_index) const;
-
  protected:
   /// Constructs a MultipleShooting instance with fixed sample times.
   ///
@@ -410,6 +408,10 @@ class MultipleShooting : public solvers::MathematicalProgram {
   const solvers::VectorXDecisionVariable& x_vars() const { return x_vars_; }
 
   virtual void DoAddRunningCost(const symbolic::Expression& g) = 0;
+
+  // Helper method that performs the work for SubstitutePlaceHolderVariables
+  symbolic::Substitution ConstructPlaceholderVariableSubstitution(
+      int interval_index) const;
 
   const int num_inputs_{};
   const int num_states_{};

@@ -13,8 +13,13 @@ namespace systems {
 namespace trajectory_optimization {
 namespace internal {
 /**
- * Represents a collection of quantities characterized by a sequence of symbolic
- * expressions, one for each index in [0,  num_samples].
+ * Represents a collection of sequential expression vectors (expression vectors
+ * that take on different values for each index in {0, ..., num_samples - 1}).
+ * Each sequential expression vector is identified by a name and has an
+ * associated vector of placeholder variables. These placeholder varibles can be
+ * replaced with the corresponding expressions for a given index by means of the
+ * symbolic::Substitution that ConstructPlaceholderVariableSubstitution()
+ * returns.
  */
 class SequentialExpressionManager {
  public:
@@ -25,10 +30,18 @@ class SequentialExpressionManager {
   ~SequentialExpressionManager() = default;
 
   /**
-   * Registers `sequential_expressions` with `this`.
+   * Registers a sequential expression vector and returns a vector of
+   * placeholder variables.
+   * @param sequential_expressions [num_expressions x num_samples] matrix of
+   * symbolic expressions. sequential_expressions(i, j) is the value of the i-th
+   * expression at the j-th index.
+   * @param name Name for the newly registered sequential expression vector. The
+   * i-th element of the placeholder variable vector will be named name_i.
    * @pre `sequential_expressions` has num_samples() columns.
-   * @return placeholder variable vector for use with
-   * AddPlaceholderVariableSubstitutionsForIndex().
+   * @pre `name` must not duplicate the name of any previously registered
+   * sequential expression vector.
+   * @returns placeholder variable vector for use with
+   * ConstructPlaceholderVariableSubstitution().
    */
   VectorX<symbolic::Variable> RegisterSequentialExpressions(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>&
@@ -36,15 +49,16 @@ class SequentialExpressionManager {
       const std::string& name);
 
   /**
-   * Adds terms for substituting all placeholder variables (returned by
-   * RegisterSequentialExpressions) with their respective `index`-th expression.
+   * Returns a symbolic::Substitution for replacing all placeholder variables
+   * with their respective `index`-th expression.
    * @pre 0 <= index < num_samples()
    */
-  void AddPlaceholderVariableSubstitutionsForIndex(
-      int index, symbolic::Substitution* substitution) const;
+  symbolic::Substitution ConstructPlaceholderVariableSubstitution(
+      int index) const;
 
   /**
-   * Returns the `index`-th expression for each element of `name`.
+   * Returns the `index`-th vector of expressions for `name`.
+   * @pre `name` is associated with a registered sequential expression vector.
    * @pre 0 <= index < num_samples()
    **/
   VectorX<symbolic::Expression> GetSequentialExpressionsByName(

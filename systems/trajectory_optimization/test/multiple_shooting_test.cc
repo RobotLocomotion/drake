@@ -423,7 +423,7 @@ GTEST_TEST(MultipleShootingTest, ResultSamplesTest) {
       CompareMatrices(prog.GetStateSamples(result), state_trajectory, 0.0));
 }
 
-GTEST_TEST(MultipleShootingTest, NewSequentialContinuousVariablesTest) {
+GTEST_TEST(MultipleShootingTest, NewSequentialVariableTest) {
   const int kNumInputs{1};
   const int kNumStates{2};
   const int kNumSampleTimes{3};
@@ -435,7 +435,7 @@ GTEST_TEST(MultipleShootingTest, NewSequentialContinuousVariablesTest) {
   prog.AddConstraintToAllKnotPoints(prog.state() == state_value);
 
   solvers::VectorXDecisionVariable new_sequential_variable =
-      prog.NewSequentialContinuousVariables(kNumStates, "w");
+      prog.NewSequentialVariable(kNumStates, "w");
   prog.AddConstraintToAllKnotPoints(-2.0 * new_sequential_variable ==
                                     prog.state());
 
@@ -446,16 +446,9 @@ GTEST_TEST(MultipleShootingTest, NewSequentialContinuousVariablesTest) {
     // 1E-6.
     const double tol =
         result.get_solver_id() == solvers::OsqpSolver::id() ? 4E-6 : 1E-6;
-    // Verify that ConstructPlaceholderVariableSubstitution() works for the new
-    // sequential variable.
-    EXPECT_TRUE(
-        CompareMatrices(result.GetSolution(symbolic::Substitute(
-                            -2.0 * new_sequential_variable,
-                            prog.ConstructPlaceholderVariableSubstitution(i))),
-                        state_value, tol));
-    // Verify that GetSequentialVariablesByName() works as expected.
+    // Verify that GetSequentialVariableAtIndex() works as expected.
     EXPECT_TRUE(CompareMatrices(
-        -2.0 * result.GetSolution(prog.GetSequentialVariablesByName("w", i)),
+        -2.0 * result.GetSolution(prog.GetSequentialVariableAtIndex("w", i)),
         state_value, tol));
   }
 

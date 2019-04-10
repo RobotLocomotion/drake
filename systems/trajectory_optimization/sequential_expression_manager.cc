@@ -32,20 +32,22 @@ VectorX<Variable> SequentialExpressionManager::RegisterSequentialExpressions(
   return placeholders;
 }
 
-void SequentialExpressionManager::AddPlaceholderVariableSubstitutionsForIndex(
-    int index, Substitution* substitution) const {
-  DRAKE_DEMAND(substitution);
+Substitution
+SequentialExpressionManager::ConstructPlaceholderVariableSubstitution(
+    int index) const {
   DRAKE_DEMAND(0 <= index && index < num_samples_);
+  Substitution substitution;
   for (const auto& pair : name_to_placeholders_and_sequential_expressions_) {
     // pair.first is the name, which we don't need here.
     const VectorX<Variable>& placeholders = pair.second.first;
     const MatrixX<Expression>& sequential_expressions = pair.second.second;
     const int rows = placeholders.rows();
     for (int row = 0; row < rows; ++row) {
-      substitution->emplace(placeholders(row),
-                            sequential_expressions(row, index));
+      substitution.emplace(placeholders(row),
+                           sequential_expressions(row, index));
     }
   }
+  return substitution;
 }
 
 VectorX<Expression>
