@@ -1,4 +1,4 @@
-#include "drake/automotive/maliput/base/simple_phase_ring_book.h"
+#include "drake/automotive/maliput/base/manual_phase_ring_book.h"
 
 #include <stdexcept>
 
@@ -17,8 +17,8 @@ using api::rules::Phase;
 using api::rules::PhaseRing;
 using api::rules::RightOfWayRule;
 
-struct SimplePhaseRingBookTest : public ::testing::Test {
-  SimplePhaseRingBookTest()
+struct ManualPhaseRingBookTest : public ::testing::Test {
+  ManualPhaseRingBookTest()
       : rule_id_a("rule a"),
         rule_id_b("rule b"),
         phase(Phase::Id("phase"),
@@ -34,8 +34,8 @@ struct SimplePhaseRingBookTest : public ::testing::Test {
   const PhaseRing ring;
 };
 
-TEST_F(SimplePhaseRingBookTest, BasicTest) {
-  SimplePhaseRingBook dut;
+TEST_F(ManualPhaseRingBookTest, BasicTest) {
+  ManualPhaseRingBook dut;
   EXPECT_NO_THROW(dut.AddPhaseRing(ring));
   optional<PhaseRing> result = dut.GetPhaseRing(ring_id);
   EXPECT_TRUE(result.has_value());
@@ -59,8 +59,8 @@ TEST_F(SimplePhaseRingBookTest, BasicTest) {
 
 // Verifies that an exception is thrown when the user attempts to add a
 // different PhaseRing that has the same ID as a previously added PhaseRing.
-TEST_F(SimplePhaseRingBookTest, RingWithSameId) {
-  SimplePhaseRingBook dut;
+TEST_F(ManualPhaseRingBookTest, RingWithSameId) {
+  ManualPhaseRingBook dut;
   dut.AddPhaseRing(ring);
   const RightOfWayRule::Id rule_id_c("rule c");
   const Phase different_phase(
@@ -73,8 +73,8 @@ TEST_F(SimplePhaseRingBookTest, RingWithSameId) {
 // Verifies that an exception is thrown when the user attempts to add a
 // PhaseRing with a unique ID but contains a phase with a RightOfWayRule::Id
 // that overlaps the rules covered by a previously added PhaseRing.
-TEST_F(SimplePhaseRingBookTest, RingWithOverlappingRule) {
-  SimplePhaseRingBook dut;
+TEST_F(ManualPhaseRingBookTest, RingWithOverlappingRule) {
+  ManualPhaseRingBook dut;
   dut.AddPhaseRing(ring);
   const Phase phase_with_overlapping_rule(
       Phase::Id("different phase with overlapping rules"),

@@ -10,7 +10,7 @@
 #include "drake/automotive/maliput/api/rules/phase_ring.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
-#include "drake/automotive/maliput/base/simple_phase_ring_book.h"
+#include "drake/automotive/maliput/base/manual_phase_ring_book.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 
@@ -123,7 +123,7 @@ std::unique_ptr<api::rules::PhaseRingBook> BuildFrom(
   const YAML::Node& phase_rings_node = root_node["PhaseRings"];
   DRAKE_THROW_UNLESS(phase_rings_node.IsDefined());
   DRAKE_DEMAND(phase_rings_node.IsSequence());
-  auto result = std::make_unique<SimplePhaseRingBook>();
+  auto result = std::make_unique<ManualPhaseRingBook>();
   for (const YAML::Node& phase_ring_node : phase_rings_node) {
     result->AddPhaseRing(BuildPhaseRing(rulebook, phase_ring_node));
   }
