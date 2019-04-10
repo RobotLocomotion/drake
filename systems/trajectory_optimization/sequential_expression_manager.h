@@ -14,17 +14,20 @@ namespace trajectory_optimization {
 namespace internal {
 /**
  * Represents a collection of sequential expression vectors (expression vectors
- * that take on different values for each index in {0, ..., num_samples - 1}).
+ * that take on different values for each index in {0, ..., `num_samples` - 1}).
  * Each sequential expression vector is identified by a name and has an
- * associated vector of placeholder variables. These placeholder varibles can be
- * replaced with the corresponding expressions for a given index by means of the
- * symbolic::Substitution that ConstructPlaceholderVariableSubstitution()
+ * associated vector of placeholder variables. These placeholder variables can
+ * be replaced with the corresponding expressions for a given index by means of
+ * the symbolic::Substitution that ConstructPlaceholderVariableSubstitution()
  * returns.
  */
 class SequentialExpressionManager {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SequentialExpressionManager);
 
+  /**
+   * @pre `num_samples` > 0
+   */
   explicit SequentialExpressionManager(int num_samples);
 
   ~SequentialExpressionManager() = default;
@@ -68,13 +71,13 @@ class SequentialExpressionManager {
    * Returns the number of samples for the sequential expressions managed by
    * `this`.
    */
-  int num_samples() const;
+  int num_samples() const { return num_samples_; }
 
  private:
   int num_samples_{};
   std::unordered_map<std::string, std::pair<VectorX<symbolic::Variable>,
                                             MatrixX<symbolic::Expression>>>
-      name_to_placeholders_and_sequential_expressions_{};
+      name_to_placeholders_and_sequential_expressions_;
 };
 }  // namespace internal
 }  // namespace trajectory_optimization

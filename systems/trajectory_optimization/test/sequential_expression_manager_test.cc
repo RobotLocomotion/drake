@@ -17,7 +17,7 @@ using symbolic::Variable;
 
 class SequentialExpressionManagerTests : public testing::Test {
  public:
-  MatrixX<Variable> MakeVariableMatrix(int rows, int cols) const {
+  static MatrixX<Variable> MakeVariableMatrix(int rows, int cols) {
     MatrixX<Variable> variable{rows, cols};
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
@@ -28,29 +28,29 @@ class SequentialExpressionManagerTests : public testing::Test {
   }
 
  protected:
-  const int num_variables{3};
-  const int num_samples{5};
-  SequentialExpressionManager dut{num_samples};
+  const int num_variables_{3};
+  const int num_samples_{5};
+  SequentialExpressionManager dut_{num_samples_};
 };
 
 // Verify that num_samples() works as expected.
 TEST_F(SequentialExpressionManagerTests, NumSamplesTest) {
-  EXPECT_EQ(dut.num_samples(), num_samples);
+  EXPECT_EQ(dut_.num_samples(), num_samples_);
 }
 
 // Test with a matrix of Expressions.
 TEST_F(SequentialExpressionManagerTests, RegisterAndSubstituteExpressionTest) {
   MatrixX<Expression> x_sequential =
-      MakeVariableMatrix(num_variables, num_samples);
+      MakeVariableMatrix(num_variables_, num_samples_);
   x_sequential.cwiseSqrt();
   VectorX<Variable> x_placeholder =
-      dut.RegisterSequentialExpressions(x_sequential.cast<Expression>(), "x");
+      dut_.RegisterSequentialExpressions(x_sequential.cast<Expression>(), "x");
   MatrixX<Expression> placeholder_expression =
       x_placeholder * x_placeholder.transpose();
-  for (int j = 0; j < num_samples; ++j) {
+  for (int j = 0; j < num_samples_; ++j) {
     MatrixX<Expression> expected_expression =
         x_sequential.col(j) * x_sequential.col(j).transpose();
-    Substitution subs = dut.ConstructPlaceholderVariableSubstitution(j);
+    Substitution subs = dut_.ConstructPlaceholderVariableSubstitution(j);
     EXPECT_EQ(symbolic::Substitute(placeholder_expression, subs),
               expected_expression);
   }
@@ -59,18 +59,18 @@ TEST_F(SequentialExpressionManagerTests, RegisterAndSubstituteExpressionTest) {
 // Test with an Eigen::Map applied to a vector of Expressions.
 TEST_F(SequentialExpressionManagerTests, RegisterAndSubstituteMapTest) {
   VectorX<Expression> x_sequential =
-      MakeVariableMatrix(num_variables * num_samples, 1);
-  VectorX<Variable> x_placeholder = dut.RegisterSequentialExpressions(
-      Eigen::Map<MatrixX<Expression>>(x_sequential.data(), num_variables,
-                                      num_samples),
+      MakeVariableMatrix(num_variables_ * num_samples_, 1);
+  VectorX<Variable> x_placeholder = dut_.RegisterSequentialExpressions(
+      Eigen::Map<MatrixX<Expression>>(x_sequential.data(), num_variables_,
+                                      num_samples_),
       "x");
   MatrixX<Expression> placeholder_expression =
       x_placeholder * x_placeholder.transpose();
-  for (int j = 0; j < num_samples; ++j) {
+  for (int j = 0; j < num_samples_; ++j) {
     MatrixX<Expression> expected_expression =
-        x_sequential.segment(j * num_variables, num_variables) *
-        x_sequential.segment(j * num_variables, num_variables).transpose();
-    Substitution subs = dut.ConstructPlaceholderVariableSubstitution(j);
+        x_sequential.segment(j * num_variables_, num_variables_) *
+        x_sequential.segment(j * num_variables_, num_variables_).transpose();
+    Substitution subs = dut_.ConstructPlaceholderVariableSubstitution(j);
     EXPECT_EQ(symbolic::Substitute(placeholder_expression, subs),
               expected_expression);
   }
@@ -79,19 +79,19 @@ TEST_F(SequentialExpressionManagerTests, RegisterAndSubstituteMapTest) {
 // Test with an Eigen::Map and cast() applied to a vector of Variables.
 TEST_F(SequentialExpressionManagerTests, RegisterAndSubstituteMapCastTest) {
   VectorX<Variable> x_sequential =
-      MakeVariableMatrix(num_variables * num_samples, 1);
-  VectorX<Variable> x_placeholder = dut.RegisterSequentialExpressions(
-      Eigen::Map<MatrixX<Variable>>(x_sequential.data(), num_variables,
-                                    num_samples)
+      MakeVariableMatrix(num_variables_ * num_samples_, 1);
+  VectorX<Variable> x_placeholder = dut_.RegisterSequentialExpressions(
+      Eigen::Map<MatrixX<Variable>>(x_sequential.data(), num_variables_,
+                                    num_samples_)
           .cast<Expression>(),
       "x");
   MatrixX<Expression> placeholder_expression =
       x_placeholder * x_placeholder.transpose();
-  for (int j = 0; j < num_samples; ++j) {
+  for (int j = 0; j < num_samples_; ++j) {
     MatrixX<Expression> expected_expression =
-        x_sequential.segment(j * num_variables, num_variables) *
-        x_sequential.segment(j * num_variables, num_variables).transpose();
-    Substitution subs = dut.ConstructPlaceholderVariableSubstitution(j);
+        x_sequential.segment(j * num_variables_, num_variables_) *
+        x_sequential.segment(j * num_variables_, num_variables_).transpose();
+    Substitution subs = dut_.ConstructPlaceholderVariableSubstitution(j);
     EXPECT_EQ(symbolic::Substitute(placeholder_expression, subs),
               expected_expression);
   }
@@ -100,13 +100,12 @@ TEST_F(SequentialExpressionManagerTests, RegisterAndSubstituteMapCastTest) {
 // Verify that GetSequentialExpressionsByName behaves as expected.
 TEST_F(SequentialExpressionManagerTests, GetSequentialExpressionsByNameTest) {
   MatrixX<Expression> x_sequential =
-      MakeVariableMatrix(num_variables, num_samples);
+      MakeVariableMatrix(num_variables_, num_samples_);
   x_sequential.cwiseSqrt();
-  VectorX<Variable> x_placeholder =
-      dut.RegisterSequentialExpressions(x_sequential.cast<Expression>(), "x");
-  for (int j = 0; j < num_samples; ++j) {
+  dut_.RegisterSequentialExpressions(x_sequential.cast<Expression>(), "x");
+  for (int j = 0; j < num_samples_; ++j) {
     VectorX<Expression> expected_expression = x_sequential.col(j);
-    EXPECT_EQ(dut.GetSequentialExpressionsByName("x", j), expected_expression);
+    EXPECT_EQ(dut_.GetSequentialExpressionsByName("x", j), expected_expression);
   }
 }
 }  // namespace internal

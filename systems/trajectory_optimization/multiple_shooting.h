@@ -407,6 +407,11 @@ class MultipleShooting : public solvers::MathematicalProgram {
 
   const solvers::VectorXDecisionVariable& x_vars() const { return x_vars_; }
 
+ private:
+  MultipleShooting(int num_inputs, int num_states, int num_time_samples,
+                   bool timesteps_are_decision_variables,
+                   double minimum_timestep, double maximum_timestep);
+
   virtual void DoAddRunningCost(const symbolic::Expression& g) = 0;
 
   // Helper method that performs the work for SubstitutePlaceHolderVariables
@@ -430,11 +435,6 @@ class MultipleShooting : public solvers::MathematicalProgram {
   solvers::VectorDecisionVariable<1> placeholder_t_var_;
   solvers::VectorXDecisionVariable placeholder_x_vars_;
   solvers::VectorXDecisionVariable placeholder_u_vars_;
-
- private:
-  MultipleShooting(int num_inputs, int num_states, int num_time_samples,
-                   bool timesteps_are_decision_variables,
-                   double minimum_timestep, double maximum_timestep);
 
   internal::SequentialExpressionManager sequential_expression_manager_;
 };

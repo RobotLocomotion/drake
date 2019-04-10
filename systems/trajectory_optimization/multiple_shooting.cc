@@ -28,6 +28,20 @@ using internal::SequentialExpressionManager;
 // u control input
 
 MultipleShooting::MultipleShooting(int num_inputs, int num_states,
+                                   int num_time_samples, double fixed_timestep)
+    : MultipleShooting(num_inputs, num_states, num_time_samples,
+                       false /* timesteps_are_decision_variables */,
+                       fixed_timestep, fixed_timestep) {}
+
+MultipleShooting::MultipleShooting(int num_inputs, int num_states,
+                                   int num_time_samples,
+                                   double minimum_timestep,
+                                   double maximum_timestep)
+    : MultipleShooting(num_inputs, num_states, num_time_samples,
+                       true /* timesteps_are_decision_variables */,
+                       minimum_timestep, maximum_timestep) {}
+
+MultipleShooting::MultipleShooting(int num_inputs, int num_states,
                                    int num_time_samples,
                                    bool timesteps_are_decision_variables,
                                    double minimum_timestep,
@@ -82,20 +96,6 @@ MultipleShooting::MultipleShooting(int num_inputs, int num_states,
             "t")(0);
   }
 }
-
-MultipleShooting::MultipleShooting(int num_inputs, int num_states,
-                                   int num_time_samples, double fixed_timestep)
-    : MultipleShooting(num_inputs, num_states, num_time_samples,
-                       false /* timesteps_are_decision_variables */,
-                       fixed_timestep, fixed_timestep) {}
-
-MultipleShooting::MultipleShooting(int num_inputs, int num_states,
-                                   int num_time_samples,
-                                   double minimum_timestep,
-                                   double maximum_timestep)
-    : MultipleShooting(num_inputs, num_states, num_time_samples,
-                       true /* timesteps_are_decision_variables */,
-                       minimum_timestep, maximum_timestep) {}
 
 solvers::VectorXDecisionVariable MultipleShooting::NewSequentialVariable(
     int rows, const std::string& name) {
