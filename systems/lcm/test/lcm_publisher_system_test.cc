@@ -82,9 +82,12 @@ void TestPublisher(const std::string& channel_name, lcm::DrakeMockLcm* lcm,
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received_message,
                                              expected_message));
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_EQ(
       lcm->get_last_publication_time(dut->get_channel_name()).value_or(-1.0),
       time);
+#pragma GCC diagnostic pop
 }
 
 #pragma GCC diagnostic push

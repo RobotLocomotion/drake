@@ -4,6 +4,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -50,10 +51,26 @@ PYBIND11_MODULE(lcm, m) {
         .def(py::init<>(), doc.DrakeLcm.ctor.doc_0args)
         .def(py::init<std::string>(), py::arg("lcm_url"),
             doc.DrakeLcm.ctor.doc_1args)
-        .def("StartReceiveThread", &Class::StartReceiveThread,
-            doc.DrakeLcm.StartReceiveThread.doc)
-        .def("StopReceiveThread", &Class::StopReceiveThread,
-            doc.DrakeLcm.StopReceiveThread.doc);
+        .def("StartReceiveThread",
+            [](DrakeLcm* self) {
+              WarnDeprecated(
+                  "Call DrakeLcm.HandleSubscriptions periodically instead.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->StartReceiveThread();
+#pragma GCC diagnostic pop
+            },
+            doc.DrakeLcm.StartReceiveThread.doc_deprecated)
+        .def("StopReceiveThread",
+            [](DrakeLcm* self) {
+              WarnDeprecated(
+                  "Call DrakeLcm.HandleSubscriptions periodically instead.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->StopReceiveThread();
+#pragma GCC diagnostic pop
+            },
+            doc.DrakeLcm.StopReceiveThread.doc_deprecated);
     // TODO(eric.cousineau): Add remaining methods.
   }
 
@@ -76,21 +93,28 @@ PYBIND11_MODULE(lcm, m) {
             doc.DrakeMockLcm.Subscribe.doc)
         .def("InduceSubscriberCallback",
             [](Class* self, const std::string& channel, py::bytes buffer) {
+              WarnDeprecated("Use Publish + HandleSubscriptions instead.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
               std::string str = buffer;
               self->InduceSubscriberCallback(channel, str.data(), str.size());
+#pragma GCC diagnostic pop
             },
             py::arg("channel"), py::arg("buffer"),
-            doc.DrakeMockLcm.InduceSubscriberCallback.doc)
+            doc.DrakeMockLcm.InduceSubscriberCallback.doc_deprecated)
         .def("get_last_published_message",
             [](const Class* self, const std::string& channel) {
+              WarnDeprecated("Use pydrake.lcm.Subscriber instead.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
               const std::vector<uint8_t>& bytes =
                   self->get_last_published_message(channel);
               return py::bytes(
                   reinterpret_cast<const char*>(bytes.data()), bytes.size());
+#pragma GCC diagnostic pop
             },
             py::arg("channel"),
-            doc.DrakeMockLcm.get_last_published_message.doc);
-    // TODO(eric.cousineau): Add remaining methods.
+            doc.DrakeMockLcm.get_last_published_message.doc_deprecated);
   }
 
   ExecuteExtraPythonCode(m);

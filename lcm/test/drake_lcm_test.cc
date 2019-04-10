@@ -58,13 +58,19 @@ class DrakeLcmTest : public ::testing::Test {
 };
 
 TEST_F(DrakeLcmTest, DefaultUrlTest) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_EQ(dut_->get_requested_lcm_url(), "");
+#pragma GCC diagnostic pop
   EXPECT_GT(dut_->get_lcm_url().size(), 0);
 }
 
 TEST_F(DrakeLcmTest, CustomUrlTest) {
   dut_ = std::make_unique<DrakeLcm>(kUdpmUrl);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_EQ(dut_->get_requested_lcm_url(), kUdpmUrl);
+#pragma GCC diagnostic pop
   EXPECT_EQ(dut_->get_lcm_url(), kUdpmUrl);
 }
 
