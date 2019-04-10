@@ -143,6 +143,12 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "drake_mock_lcm_test",
+    copts = [
+        # TODO(jwnimmer-tri) Almost all of this unit test can be purged or
+        # simplified once the deprecated methods are purged.  We'll defer that
+        # work until the slate is clean, so just suppress the warnings for now.
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":lcmt_drake_signal_utils",
         ":mock",

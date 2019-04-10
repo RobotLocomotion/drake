@@ -101,9 +101,14 @@ class DrakeLcmThreadTest : public ::testing::Test {
   // Call publish() until the mailbox matches our expected message.
   void LoopUntilDone(const MessageMailbox& mailbox,
                      const std::function<void(void)>& publish) {
+    // TODO(jwnimmer-tri) When DrakeLcm loses its Thread methods, just make a
+    // std::thread here instead.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     EXPECT_FALSE(dut_.IsReceiveThreadRunning());
     dut_.StartReceiveThread();
     EXPECT_TRUE(dut_.IsReceiveThreadRunning());
+#pragma GCC diagnostic pop
 
     // Try until we're either done, or we timeout (5 seconds).
     const std::chrono::milliseconds kDelay(50);
@@ -118,8 +123,11 @@ class DrakeLcmThreadTest : public ::testing::Test {
     }
     EXPECT_TRUE(message_was_received);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     dut_.StopReceiveThread();
     EXPECT_FALSE(dut_.IsReceiveThreadRunning());
+#pragma GCC diagnostic pop
   }
 
   // The device under test.

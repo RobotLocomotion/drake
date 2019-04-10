@@ -4,6 +4,8 @@ from pydrake.lcm import DrakeLcm, DrakeLcmInterface, DrakeMockLcm, Subscriber
 
 from robotlocomotion import quaternion_t
 
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+
 
 class TestLcm(unittest.TestCase):
     def setUp(self):
@@ -18,8 +20,9 @@ class TestLcm(unittest.TestCase):
         dut = DrakeLcm()
         self.assertIsInstance(dut, DrakeLcmInterface)
         # Quickly start and stop the receiving thread.
-        dut.StartReceiveThread()
-        dut.StopReceiveThread()
+        with catch_drake_warnings(expected_count=2):
+            dut.StartReceiveThread()
+            dut.StopReceiveThread()
         # Test virtual function names.
         dut.Publish
         dut.HandleSubscriptions
@@ -56,15 +59,17 @@ class TestLcm(unittest.TestCase):
         self.assertEqual(dut.message.y, self.quat.y)
         self.assertEqual(dut.message.z, self.quat.z)
 
-    def test_mock_lcm_get_last_published_message(self):
+    def test_mock_lcm_get_last_published_message_deprecated(self):
         dut = DrakeMockLcm()
         dut.Publish(channel="TEST_CHANNEL", buffer=self.quat.encode())
-        raw = dut.get_last_published_message("TEST_CHANNEL")
-        self.assertEqual(raw, self.quat.encode())
+        with catch_drake_warnings(expected_count=1):
+            raw = dut.get_last_published_message("TEST_CHANNEL")
+            self.assertEqual(raw, self.quat.encode())
 
-    def test_mock_lcm_induce_subscriber_callback(self):
+    def test_mock_lcm_induce_subscriber_callback_deprecated(self):
         dut = DrakeMockLcm()
         dut.Subscribe(channel="TEST_CHANNEL", handler=self._handler)
-        dut.InduceSubscriberCallback(
-            channel="TEST_CHANNEL", buffer=self.quat.encode())
+        with catch_drake_warnings(expected_count=1):
+            dut.InduceSubscriberCallback(
+                channel="TEST_CHANNEL", buffer=self.quat.encode())
         self.assertEqual(self.count, 1)
