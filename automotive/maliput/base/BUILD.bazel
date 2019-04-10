@@ -23,7 +23,6 @@ drake_cc_package_library(
         ":simple_rulebook",
         ":traffic_light_book",
         ":traffic_light_book_loader",
-        ":yaml_io",
     ],
 )
 
@@ -177,20 +176,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "yaml_io",
-    srcs = [
-        "yaml_io.cc",
-    ],
-    hdrs = [
-        "yaml_io.h",
-    ],
-    deps = [
-        ":simple_rulebook",
-        "@yaml_cpp",
-    ],
-)
-
 # === test/ ===
 
 drake_cc_googletest(
@@ -283,15 +268,6 @@ drake_cc_googletest(
     deps = [
         ":manual_rule_state_provider",
         "//automotive/maliput/api/test_utilities:rules_test_utilities",
-    ],
-)
-
-drake_cc_googletest(
-    name = "yaml_io_test",
-    deps = [
-        ":yaml_io",
-        "//automotive/maliput/api/test_utilities:rules_test_utilities",
-        "//common/test_utilities:expect_throws_message",
     ],
 )
 
