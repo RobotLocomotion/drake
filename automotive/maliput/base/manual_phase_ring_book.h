@@ -12,17 +12,17 @@ namespace drake {
 namespace maliput {
 
 /// A simple concrete implementation of the api::rules::PhaseRingBook abstract
-/// interface. It allows users to obtain the ID of the PhaseRing that includes a
-/// particular RightOfWayRule.
-class SimplePhaseRingBook : public api::rules::PhaseRingBook {
+/// interface that enables manual addition and removal of api::rules::PhaseRing
+/// instances.
+class ManualPhaseRingBook : public api::rules::PhaseRingBook {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimplePhaseRingBook);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManualPhaseRingBook)
 
-  SimplePhaseRingBook();
+  ManualPhaseRingBook();
 
-  ~SimplePhaseRingBook() override;
+  ~ManualPhaseRingBook() override;
 
-  /// Adds @p ring to this SimplePhaseRingBook.
+  /// Adds @p ring to this ManualPhaseRingBook.
   ///
   /// @throws std::exception if an api::rules::PhaseRing with the same ID
   /// already exists, or if @p ring contains a rule that already exists in a
@@ -30,7 +30,7 @@ class SimplePhaseRingBook : public api::rules::PhaseRingBook {
   void AddPhaseRing(const api::rules::PhaseRing& ring);
 
   /// Removes an api::rules::PhaseRing with an ID of @p ring_id from this
-  /// SimplePhaseRingBook.
+  /// ManualPhaseRingBook.
   ///
   /// @throws std::exception if the specified api::rules::PhaseRing does not
   /// exist.
