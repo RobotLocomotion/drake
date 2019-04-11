@@ -126,13 +126,23 @@ may use `using namespace drake::systems::sensors` within functions or
 anonymous namespaces. Avoid `using namespace` directives otherwise.
 
 @anchor PydrakeDoc
-## Documentation
+## Documentation and API
+
+In general, for both documentation and public API purposes, best efforts should
+be made to:
+
+- Provide docstrings to bound elements. This includes classes, as well as
+functions, methods, and properties.
+- Provide argument names that correspond exactly to the C++ signatures using
+`py::arg("arg_name")`. This permits the C++ documentation to be relevant to the
+Sphinx-generated documentation, and allows for the keyword-arguments to be used
+in Python.
 
 Drake uses a modified version of `mkdoc.py` from `pybind11`, where `libclang`
 Python bindings are used to generate C++ docstrings accessible to the C++
 binding code.
 
-An example of incorporating docstrings:
+An example of incorporating docstrings and argument names:
 
     #include "drake/bindings/pydrake/documentation_pybind.h"
 
@@ -141,10 +151,10 @@ An example of incorporating docstrings:
       constexpr auto& doc = pydrake_doc.drake.math;
       using T = double;
       py::class_<RigidTransform<T>>(m, "RigidTransform", doc.RigidTransform.doc)
-          .def(py::init(), doc.ExampleClass.ctor.doc_0args)
+          .def(py::init(), doc.RigidTransform.ctor.doc_0args)
           ...
           .def(py::init<const RotationMatrix<T>&>(), py::arg("R"),
-              doc.RigidTransform.ctor.doc_1args)
+              doc.RigidTransform.ctor.doc_1args_R)
           .def(py::init<const Eigen::Quaternion<T>&, const Vector3<T>&>(),
               py::arg("quaternion"), py::arg("p"),
               doc.RigidTransform.ctor.doc_2args_quaternion_p)
