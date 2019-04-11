@@ -9,6 +9,7 @@
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/solvers/solve.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram.h"
@@ -25,6 +26,7 @@ namespace pendulum {
 
 using trajectories::PiecewisePolynomial;
 
+/* Adds the swing-up constraints to the MathematicalProgram. */
 void AddSwingupConstraints(
     systems::trajectory_optimization::MultipleShooting* prog) {
   // TODO(russt): Add this constraint to PendulumPlant and get it automatically
@@ -52,6 +54,7 @@ void AddSwingupConstraints(
   prog->SetInitialTrajectory(PiecewisePolynomial<double>(), traj_init_x);
 }
 
+/* Verifies the result of the optimization is successful. */
 bool ResultIsSuccess(solvers::MathematicalProgramResult result) {
   if (!result.is_success()) {
     std::cerr << "Failed to solve optimization for the swing-up trajectory"
@@ -63,6 +66,50 @@ bool ResultIsSuccess(solvers::MathematicalProgramResult result) {
   }
 }
 
+// Creates the MathematicalProgram with the chosen transcription method and
+// calls the solver. If the solve is successful, returns a unique pointer to the
+// MathematicalProgram object. Otherwise, returns a nullptr.
+template <typename Plant>
+std::unique_ptr<systems::trajectory_optimization::MultipleShooting>
+DoTrajectoryOptimization(Plant* pendulum, bool use_dircol,
+                         drake::solvers::MathematicalProgramResult* result) {
+  std::unique_ptr<systems::trajectory_optimization::MultipleShooting> prog;
+  auto context = pendulum->CreateDefaultContext();
+  const int actuation_port_index =
+      pendulum->get_actuation_input_port().get_index();
+
+  // Setup the appropriate transcription method.
+  if (use_dircol) {  // Use DirectCollocation.
+    const int kNumTimeSamples = 21;
+    const double kMinimumTimeStep = 0.2;
+    const double kMaximumTimeStep = 0.5;
+    prog =
+        std::make_unique<systems::trajectory_optimization::DirectCollocation>(
+            pendulum, *context, kNumTimeSamples, kMinimumTimeStep,
+            kMaximumTimeStep, actuation_port_index);
+    prog->AddEqualTimeIntervalsConstraints();
+  } else {  // Use DirectTranscription.
+    const int kNumTimeSamples = 100;
+    prog =
+        std::make_unique<systems::trajectory_optimization::DirectTranscription>(
+            pendulum, *context, kNumTimeSamples, actuation_port_index,
+            true);
+  }
+
+  AddSwingupConstraints(prog.get());
+  DRAKE_DEMAND(result);
+  *result = solvers::Solve(*prog);
+
+  // Confirm the optimization succeeded.
+  if (!ResultIsSuccess(*result)) {
+    return nullptr;
+  }
+
+  return prog;
+}
+
+/* Simulates the result of the trajectory optimization. Uses a simple PD
+ * controller to stabilize the computed trajectory.*/
 template <class Plant>
 void SimulateTrajectory(
     const double realtime_rate, std::unique_ptr<Plant> pendulum,

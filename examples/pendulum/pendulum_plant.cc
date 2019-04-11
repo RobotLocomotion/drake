@@ -27,32 +27,12 @@ using geometry::Sphere;
 using std::make_unique;
 
 template <typename T>
-PendulumPlant<T>::PendulumPlant(double time_step)
-    : systems::LeafSystem<T>(
-          systems::SystemTypeTag<pendulum::PendulumPlant>{}),
-          time_step_(time_step), is_discrete_(time_step > 0) {
-  this->DeclareVectorInputPort(PendulumInput<T>());
-  state_port_ = this->DeclareVectorOutputPort(PendulumState<T>(),
-                                              &PendulumPlant::CopyStateOut)
-                    .get_index();
-
-  if (is_discrete()) {
-    this->DeclareDiscreteState(PendulumState<T>());
-    this->DeclarePeriodicDiscreteUpdateEvent(
-        time_step_, 0, &PendulumPlant::DoDiscreteStateUpdate);
-    this->DeclareForcedDiscreteUpdateEvent(
-        &PendulumPlant::DoDiscreteStateUpdate);
-  } else {
-    this->DeclareContinuousState(PendulumState<T>(), 1 /* num_q */,
-                                 1 /* num_v */, 0 /* num_z */);
-  }
-  this->DeclareNumericParameter(PendulumParams<T>());
-}
+PendulumPlant<T>::PendulumPlant()
+    : PendulumPlant(systems::SystemTypeTag<pendulum::PendulumPlant>{}) {}
 
 template <typename T>
 template <typename U>
-PendulumPlant<T>::PendulumPlant(const PendulumPlant<U>& p)
-    : PendulumPlant(p.time_step()) {
+PendulumPlant<T>::PendulumPlant(const PendulumPlant<U>& p) : PendulumPlant() {
   source_id_ = p.source_id();
   frame_id_ = p.frame_id();
 
@@ -92,11 +72,7 @@ const {
 template <typename T>
 void PendulumPlant<T>::CopyStateOut(const systems::Context<T>& context,
                                     PendulumState<T>* output) const {
-  if (is_discrete()) {
-    output->set_value(get_discrete_state(context).get_value());
-  } else {
-    output->set_value(get_continuous_state(context).get_value());
-  }
+  output->set_value(get_continuous_state(context).get_value());
 }
 
 template <typename T>
@@ -105,8 +81,7 @@ void PendulumPlant<T>::CopyPoseOut(const systems::Context<T>& context,
   DRAKE_DEMAND(poses->size() == 1);
   DRAKE_DEMAND(poses->source_id() == source_id_);
 
-  const T theta = (is_discrete() ? get_discrete_state(context).theta()
-                                 : get_continuous_state(context).theta());
+  const T theta = get_continuous_state(context).theta();
 
   poses->clear();
   Isometry3<T> pose = Isometry3<T>::Identity();
@@ -128,48 +103,27 @@ T PendulumPlant<T>::CalcTotalEnergy(const systems::Context<T>& context) const {
   return kinetic_energy + potential_energy;
 }
 
-// Compute the actual physics.
 template <typename T>
-void PendulumPlant<T>::DoCalcTimeDerivatives(
-    const systems::Context<T>& context,
-    systems::ContinuousState<T>* derivatives) const {
-  // No derivatives to compute if state is discrete.
-  if (is_discrete()) return;
-  const PendulumState<T>& state = get_continuous_state(context);
-  const PendulumParams<T>& params = get_parameters(context);
-  PendulumState<T>& derivative_vector =
-      get_mutable_continuous_state(derivatives);
-
-  derivative_vector.set_theta(state.thetadot());
-  derivative_vector.set_thetadot(
-      (get_tau(context) -
+void PendulumPlant<T>::CalcPendulumDerivatives(
+    const PendulumParams<T>& params, const PendulumState<T>& state, T tau,
+    PendulumState<T>* derivatives) const {
+  derivatives->set_theta(state.thetadot());
+  derivatives->set_thetadot(
+      (tau -
        params.mass() * params.gravity() * params.length() * sin(state.theta()) -
        params.damping() * state.thetadot()) /
       (params.mass() * params.length() * params.length()));
 }
 
 template <typename T>
-systems::EventStatus PendulumPlant<T>::DoDiscreteStateUpdate(
+void PendulumPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
-    systems::DiscreteValues<T>* discrete_state) const {
-  const PendulumState<T>& state = get_discrete_state(context);
+    systems::ContinuousState<T>* derivatives) const {
+  const PendulumState<T>& state = get_continuous_state(context);
   const PendulumParams<T>& params = get_parameters(context);
-  PendulumState<T>& state_vector = get_mutable_discrete_state(discrete_state);
-
-  PendulumState<T> derivative_vector;
-  derivative_vector.set_theta(state.thetadot());
-  derivative_vector.set_thetadot(
-      (get_tau(context) -
-       params.mass() * params.gravity() * params.length() * sin(state.theta()) -
-       params.damping() * state.thetadot()) /
-      (params.mass() * params.length() * params.length()));
-
-  // Compute the Euler update.
-  state_vector.set_theta(state.theta() +
-                         derivative_vector.theta() * time_step_);
-  state_vector.set_thetadot(state.thetadot() +
-                            derivative_vector.thetadot() * time_step_);
-  return systems::EventStatus::Succeeded();
+  PendulumState<T>& derivative_vector =
+      get_mutable_continuous_state(derivatives);
+  CalcPendulumDerivatives(params, state, get_tau(context), &derivative_vector);
 }
 
 template <typename T>

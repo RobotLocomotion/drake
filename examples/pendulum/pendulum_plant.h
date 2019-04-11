@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "drake/common/symbolic.h"
@@ -31,12 +32,12 @@ namespace pendulum {
 /// - AutoDiffXd
 /// - symbolic::Expression
 template <typename T>
-class PendulumPlant final : public systems::LeafSystem<T> {
+class PendulumPlant : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PendulumPlant);
 
   /** Constructs a default plant. */
-  explicit PendulumPlant(double time_step = 0);
+  PendulumPlant();
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -103,26 +104,6 @@ class PendulumPlant final : public systems::LeafSystem<T> {
         &context->get_mutable_continuous_state());
   }
 
-  static const PendulumState<T>& get_discrete_state(
-      const systems::DiscreteValues<T>& dstate) {
-    return dynamic_cast<const PendulumState<T>&>(dstate.get_vector());
-  }
-
-  static const PendulumState<T>& get_discrete_state(
-      const systems::Context<T>& context) {
-    return get_discrete_state(context.get_discrete_state());
-  }
-
-  static PendulumState<T>& get_mutable_discrete_state(
-      systems::DiscreteValues<T>* dstate) {
-    return dynamic_cast<PendulumState<T>&>(dstate->get_mutable_vector());
-  }
-
-  static PendulumState<T>& get_mutable_discrete_state(
-      systems::Context<T>* context) {
-    return get_mutable_discrete_state(&context->get_mutable_discrete_state());
-  }
-
   const PendulumParams<T>& get_parameters(
       const systems::Context<T>& context) const {
     return this->template GetNumericParameter<PendulumParams>(context, 0);
@@ -134,8 +115,27 @@ class PendulumPlant final : public systems::LeafSystem<T> {
         context, 0);
   }
 
-  double time_step() const {return time_step_; }
-  bool is_discrete() const { return is_discrete_; }
+ protected:
+  // Constructor that specifies scalar-type conversion support.
+  // @param converter scalar-type conversion support helper (i.e., AutoDiff,
+  // etc.); pass a default-constructed object if such support is not desired.
+  explicit PendulumPlant(systems::SystemScalarConverter converter)
+  : systems::LeafSystem<T>(std::move(converter)) {
+    this->DeclareVectorInputPort(PendulumInput<T>());
+    state_port_ = this->DeclareVectorOutputPort(PendulumState<T>(),
+                                                &PendulumPlant::CopyStateOut)
+                      .get_index();
+
+    this->DeclareContinuousState(PendulumState<T>(), 1 /* num_q */,
+                                 1 /* num_v */, 0 /* num_z */);
+    this->DeclareNumericParameter(PendulumParams<T>());
+  }
+
+  // Computes the actual physics. Inhereted classes (e.g.,
+  // DiscretePendulumPlant) may call this directly for discrete state updates.
+  void CalcPendulumDerivatives(const PendulumParams<T>& params,
+                               const PendulumState<T>& state, T tau,
+                               PendulumState<T>* derivatives) const;
 
  private:
   systems::OutputPortIndex AllocateGeometryPoseOutputPort();
@@ -154,19 +154,10 @@ class PendulumPlant final : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
-  systems::EventStatus DoDiscreteStateUpdate(const systems::Context<T>& context,
-                     systems::DiscreteValues<T>* discrete_state) const;
-
   // Port handles.
   int state_port_{-1};
   int geometry_pose_port_{-1};
   int geometry_query_port_{-1};
-
-  // If the plant is modeled as a discrete system with periodic updates,
-  // time_step_ corresponds to the period of those updates. Otherwise, if the
-  // plant is modeled as a continuous system, it is exactly zero.
-  double time_step_{0};
-  bool is_discrete_{false};
 
   // Geometry source identifier for this system to interact with SceneGraph.
   geometry::SourceId source_id_{};

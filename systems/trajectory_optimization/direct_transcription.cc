@@ -31,7 +31,8 @@ class DiscreteTimeSystemConstraint : public solvers::Constraint {
                                DiscreteValues<AutoDiffXd>* discrete_state,
                                FixedInputPortValue* input_port_value,
                                int num_states, int num_inputs,
-                               double evaluation_time)
+                               double evaluation_time,
+                               bool assume_continuous_states_are_fixed)
       : Constraint(num_states, num_inputs + 2 * num_states,
                    Eigen::VectorXd::Zero(num_states),
                    Eigen::VectorXd::Zero(num_states)),
@@ -42,8 +43,10 @@ class DiscreteTimeSystemConstraint : public solvers::Constraint {
         num_states_(num_states),
         num_inputs_(num_inputs),
         evaluation_time_(evaluation_time) {
+    if (!assume_continuous_states_are_fixed) {
+      DRAKE_DEMAND(context_->has_only_discrete_state());
+    }
     DRAKE_DEMAND(evaluation_time >= 0.0);
-    DRAKE_DEMAND(context_->has_only_discrete_state());
     DRAKE_DEMAND(context_ != nullptr);
     DRAKE_DEMAND(discrete_state_ != nullptr);
     DRAKE_DEMAND(context_->num_input_ports() == 0 ||
@@ -116,37 +119,52 @@ double get_period(const System<double>* system) {
 DirectTranscription::DirectTranscription(
     const System<double>* system, const Context<double>& context,
     int num_time_samples,
-    variant<InputPortSelection, InputPortIndex> input_port_index)
+    variant<InputPortSelection, InputPortIndex> input_port_index,
+    bool assume_continuous_states_are_fixed)
     : MultipleShooting(
           system->get_input_port_selection(input_port_index)
               ? system->get_input_port_selection(input_port_index)->size()
               : 0,
-          context.num_total_states(), num_time_samples, get_period(system)),
+          assume_continuous_states_are_fixed
+              ? context.get_discrete_state(0).size()
+              : context.num_total_states(),
+          num_time_samples, get_period(system)),
       discrete_time_system_(true) {
   // Note: this constructor is for discrete-time systems.  For continuous-time
   // systems, you must use a different constructor that specifies the timesteps.
-  ValidateSystem(*system, context, input_port_index);
+  ValidateSystem(*system, context, input_port_index,
+                 assume_continuous_states_are_fixed);
 
   // First try symbolic dynamics.
   if (!AddSymbolicDynamicConstraints(system, context)) {
-    AddAutodiffDynamicConstraints(system, context, input_port_index);
+    AddAutodiffDynamicConstraints(system, context, input_port_index,
+                                  assume_continuous_states_are_fixed);
   }
   ConstrainEqualInputAtFinalTwoTimesteps();
 }
 
 DirectTranscription::DirectTranscription(
-    const LinearSystem<double>* linear_system,
-    const Context<double>& context,
-    int num_time_samples)
-    : MultipleShooting(linear_system->num_total_inputs(),
-                       context.num_total_states(), num_time_samples,
-                       std::max(linear_system->time_period(),
-                                std::numeric_limits<double>::epsilon())
-                       /* N.B. Ensures that MultipleShooting is well-formed */),
+    const LinearSystem<double>* linear_system, const Context<double>& context,
+    int num_time_samples,
+    variant<InputPortSelection, InputPortIndex> input_port_index,
+    bool assume_continuous_states_are_fixed)
+    : MultipleShooting(
+          linear_system->get_input_port_selection(input_port_index)
+              ? linear_system->get_input_port_selection(input_port_index)
+                    ->size()
+              : 0,
+          assume_continuous_states_are_fixed
+              ? context.get_discrete_state(0).size()
+              : context.num_total_states(),
+          num_time_samples,
+          std::max(linear_system->time_period(),
+                   std::numeric_limits<double>::epsilon())
+          /* N.B. Ensures that MultipleShooting is well-formed */),
       discrete_time_system_(true) {
   // Note: this constructor is for discrete-time systems.  For continuous-time
   // systems, you must use a different constructor that specifies the timesteps.
-  ValidateSystem(*linear_system, context);
+  ValidateSystem(*linear_system, context, input_port_index,
+                 assume_continuous_states_are_fixed);
 
   for (int i = 0; i < N() - 1; i++) {
     AddLinearEqualityConstraint(
@@ -159,16 +177,25 @@ DirectTranscription::DirectTranscription(
 
 DirectTranscription::DirectTranscription(
     const TimeVaryingLinearSystem<double>* system,
-    const Context<double>& context, int num_time_samples)
-    : MultipleShooting(system->num_total_inputs(),
-                       context.num_total_states(), num_time_samples,
-                       std::max(system->time_period(),
-                                std::numeric_limits<double>::epsilon())
-                       /* N.B. Ensures that MultipleShooting is well-formed */),
+    const Context<double>& context, int num_time_samples,
+    variant<InputPortSelection, InputPortIndex> input_port_index,
+    bool assume_continuous_states_are_fixed)
+    : MultipleShooting(
+          system->get_input_port_selection(input_port_index)
+              ? system->get_input_port_selection(input_port_index)->size()
+              : 0,
+          assume_continuous_states_are_fixed
+              ? context.get_discrete_state(0).size()
+              : context.num_total_states(),
+          num_time_samples,
+          std::max(system->time_period(),
+                   std::numeric_limits<double>::epsilon())
+          /* N.B. Ensures that MultipleShooting is well-formed */),
       discrete_time_system_(true) {
   // Note: this constructor is for discrete-time systems.  For continuous-time
   // systems, you must use a different constructor that specifies the timesteps.
-  ValidateSystem(*system, context);
+  ValidateSystem(*system, context, input_port_index,
+                 assume_continuous_states_are_fixed);
 
   for (int i = 0; i < N() - 1; i++) {
     const double t = system->time_period() * i;
@@ -295,7 +322,8 @@ bool DirectTranscription::AddSymbolicDynamicConstraints(
 
 void DirectTranscription::AddAutodiffDynamicConstraints(
     const System<double>* system, const Context<double>& context,
-    variant<InputPortSelection, InputPortIndex> input_port_index) {
+    variant<InputPortSelection, InputPortIndex> input_port_index,
+    bool assume_continuous_states_are_fixed) {
   system_ = system->ToAutoDiffXd();
   DRAKE_DEMAND(system_ != nullptr);
   context_ = system_->CreateDefaultContext();
@@ -325,7 +353,8 @@ void DirectTranscription::AddAutodiffDynamicConstraints(
     // Add the dynamic constraints.
     auto constraint = std::make_shared<DiscreteTimeSystemConstraint>(
         *system_, context_.get(), discrete_state_.get(), input_port_value_,
-        num_states(), num_inputs(), i * fixed_timestep());
+        num_states(), num_inputs(), i * fixed_timestep(),
+        assume_continuous_states_are_fixed);
 
     AddConstraint(constraint, {input(i), state(i), state(i + 1)});
   }
@@ -339,8 +368,11 @@ void DirectTranscription::ConstrainEqualInputAtFinalTwoTimesteps() {
 
 void DirectTranscription::ValidateSystem(
     const System<double>& system, const Context<double>& context,
-    variant<InputPortSelection, InputPortIndex> input_port_index) {
-  DRAKE_DEMAND(context.has_only_discrete_state());
+    variant<InputPortSelection, InputPortIndex> input_port_index,
+    bool assume_continuous_states_are_fixed) {
+  if (!assume_continuous_states_are_fixed) {
+    DRAKE_DEMAND(context.has_only_discrete_state());
+  }
   DRAKE_DEMAND(context.num_discrete_state_groups() == 1);
   DRAKE_DEMAND(num_states() == context.get_discrete_state(0).size());
   DRAKE_DEMAND(num_inputs() ==

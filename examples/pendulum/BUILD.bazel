@@ -39,6 +39,17 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "discrete_pendulum_plant",
+    hdrs = ["discrete_pendulum_plant.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":pendulum_plant",
+        ":pendulum_vector_types",
+        "//systems/framework",
+    ],
+)
+
 drake_cc_binary(
     name = "passive_simulation",
     srcs = ["passive_simulation.cc"],
@@ -102,10 +113,13 @@ drake_cc_library(
         ":pendulum_plant",
         "//geometry:geometry_visualization",
         "//multibody/plant",
+        "//solvers:solve",
         "//systems/analysis:simulator",
         "//systems/controllers:pid_controlled_system",
         "//systems/framework",
         "//systems/primitives:trajectory_source",
+        "//systems/trajectory_optimization:direct_collocation",
+        "//systems/trajectory_optimization:direct_transcription",
     ],
 )
 
@@ -118,37 +132,12 @@ drake_cc_binary(
     # Non-deterministic IPOPT-related failures on macOS, see #10276.
     test_rule_flaky = 1,
     deps = [
+        ":discrete_pendulum_plant",
         ":pendulum_plant",
         ":trajectory_optimization_common",
         "//common:find_resource",
-        "//geometry:geometry_visualization",
-        "//solvers:solve",
-        "//systems/framework",
-        "//systems/trajectory_optimization:direct_collocation",
-        "//systems/trajectory_optimization:direct_transcription",
-        "@gflags",
-    ],
-)
-
-drake_cc_binary(
-    name = "trajectory_optimization_simulation_mbp",
-    srcs = ["trajectory_optimization_simulation_mbp.cc"],
-    add_test_rule = 1,
-    data = [":models"],
-    test_rule_args = ["--target_realtime_rate=0.0"],
-    # Non-deterministic IPOPT-related failures on macOS, see #10276.
-    test_rule_flaky = 1,
-    deps = [
-        ":pendulum_plant",
-        ":trajectory_optimization_common",
-        "//common:find_resource",
-        "//geometry:geometry_visualization",
         "//multibody/parsing",
         "//multibody/plant",
-        "//solvers:solve",
-        "//systems/framework",
-        "//systems/trajectory_optimization:direct_collocation",
-        "//systems/trajectory_optimization:direct_transcription",
         "@gflags",
     ],
 )

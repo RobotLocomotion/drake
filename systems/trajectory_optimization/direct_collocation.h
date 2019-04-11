@@ -32,7 +32,8 @@ class DirectCollocation : public MultipleShooting {
   ///
   /// @param system A dynamical system to be used in the dynamic constraints.
   /// This system must support System::ToAutoDiffXd. Note that this is aliased
-  /// for the lifetime of this object.
+  /// for the lifetime of this object and its lifespan must exceed that of this
+  /// class's instance.
   /// @param context Required to describe any parameters of the system.  The
   /// values of the state in this context do not have any effect.  This context
   /// will also be "cloned" by the optimization; changes to the context after
