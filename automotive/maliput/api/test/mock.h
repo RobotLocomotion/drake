@@ -12,6 +12,7 @@
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
 #include "drake/automotive/maliput/api/rules/road_rulebook.h"
 #include "drake/automotive/maliput/api/rules/rule_state_provider.h"
+#include "drake/automotive/maliput/api/rules/traffic_light_book.h"
 
 namespace drake {
 namespace maliput {
@@ -47,6 +48,9 @@ std::unique_ptr<RoadGeometry> CreateRoadGeometry();
 
 /// Returns an arbitrary rules::RoadRulebook.
 std::unique_ptr<rules::RoadRulebook> CreateRoadRulebook();
+
+/// Returns an arbitrary rules::TrafficLightBook.
+std::unique_ptr<rules::TrafficLightBook> CreateTrafficLightBook();
 
 /// Returns an arbitrary rules::PhaseRingBook.
 std::unique_ptr<rules::PhaseRingBook> CreatePhaseRingBook();
