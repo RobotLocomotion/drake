@@ -1351,7 +1351,7 @@ class LeafSystem : public System<T> {
 
   /// Declares a function that is called whenever a user directly calls
   /// CalcDiscreteVariableUpdates(const Context&, DiscreteValues<T>*). Multiple
-  /// calls to DeclareForcedDiscreteVariableUpdatesEvent() will register
+  /// calls to DeclareForcedDiscreteUpdateEvent() will register
   /// multiple callbacks, which will be called with the same const Context in
   /// arbitrary order. The handler should be a class member function (method)
   /// with this signature:
