@@ -8,8 +8,8 @@ def lcm_repository(
     github_archive(
         name = name,
         repository = "lcm-proj/lcm",
-        commit = "v1.4.0",
-        sha256 = "149d7076369d261e6adbb25d713dc9e30aeba415f4fc62bb41e748b2eb229b46",  # noqa
+        commit = "252444cad5b140331a68bd07488289b558080106",
+        sha256 = "3a5707dc8e5a2e71e16c24d899b54bf10888fe781a7253a363a8eada66c2cb68",  # noqa
         build_file = "@drake//tools/workspace/lcm:package.BUILD.bazel",
         mirrors = mirrors,
     )
