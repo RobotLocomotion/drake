@@ -286,6 +286,13 @@ GTEST_TEST(TestExponentialConeProgram, MinimizeKLDivengence) {
   }
 }
 
+GTEST_TEST(TestExponentialConeProgram, MinimalEllipsoidConveringPoints) {
+  ScsSolver scs_solver;
+  if (scs_solver.available()) {
+    MinimalEllipsoidCoveringPoints(scs_solver, 1E-5);
+  }
+}
+
 GTEST_TEST(TestScs, SetOptions) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();

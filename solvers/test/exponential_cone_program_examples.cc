@@ -63,6 +63,51 @@ void MinimizeKLDivergence(const SolverInterface& solver, double tol) {
   EXPECT_TRUE(
       CompareMatrices(result.GetSolution(t), Eigen::Vector4d::Zero(), tol));
 }
+
+void MinimalEllipsoidCoveringPoints(const SolverInterface& solver, double tol) {
+  // We choose 4 special points as the vertices of a box in 2D. The minimal
+  // ellipsoid must have all these 4 points on the ellipsoid boundary.
+  Eigen::Matrix<double, 2, 4> pts;
+  pts << 1, 1, -1, -1, 1, -1, 1, -1;
+  // Arbitrarily scale, rotate, and translate the box.
+  const double theta = M_PI / 7;
+  Eigen::Matrix2d R;
+  R << std::cos(theta), -std::sin(theta), std::sin(theta), std::cos(theta);
+  pts = R * Eigen::Vector2d(0.3, 0.5).asDiagonal() * pts;
+  pts += Eigen::Vector2d(0.2, 0.5) * Eigen::RowVector4d::Ones();
+  // Create the MathematicalProgram, such that the ellipsoid covers pts.
+  MathematicalProgram prog;
+  auto S = prog.NewSymmetricContinuousVariables<2>();
+  auto b = prog.NewContinuousVariables<2>();
+  auto c = prog.NewContinuousVariables<1>()(0);
+  Matrix3<symbolic::Expression> ellipsoid_psd;
+  ellipsoid_psd << S, b.cast<symbolic::Expression>() / 2,
+      b.cast<symbolic::Expression>().transpose() / 2, c;
+  prog.AddPositiveSemidefiniteConstraint(ellipsoid_psd);
+  prog.AddMaximizeLogDeterminantSymmetricMatrixCost(
+      S.cast<symbolic::Expression>());
+  for (int i = 0; i < 4; ++i) {
+    prog.AddLinearConstraint(
+        pts.col(i).dot(S.cast<symbolic::Expression>() * pts.col(i)) +
+            pts.col(i).dot(b.cast<symbolic::Expression>()) + c <=
+        1);
+  }
+
+  MathematicalProgramResult result;
+  solver.Solve(prog, {}, {}, &result);
+  EXPECT_TRUE(result.is_success());
+  auto S_sol = result.GetSolution(S);
+  auto b_sol = result.GetSolution(b);
+  auto c_sol = result.GetSolution(c);
+  for (int i = 0; i < 4; ++i) {
+    EXPECT_NEAR(
+        pts.col(i).dot(S_sol * pts.col(i)) + b_sol.dot(pts.col(i)) + c_sol, 1,
+        tol);
+  }
+  // Check the volume matches with the cost.
+  const double expected_cost = std::log(1 / S_sol.determinant());
+  EXPECT_NEAR(result.get_optimal_cost(), expected_cost, tol);
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
