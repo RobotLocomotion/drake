@@ -105,8 +105,8 @@ PYBIND11_MODULE(math, m) {
             cls_doc.ctor.doc_1args_R)
         .def(py::init<const Vector3<T>&>(), py::arg("p"),
             cls_doc.ctor.doc_1args_p)
-        .def(py::init<const Eigen::Translation<T, 3>&>(), py::arg("X_AB"),
-            cls_doc.ctor.doc_1args_X_AB)
+        .def(py::init<const Eigen::Translation<T, 3>&>(), py::arg("position"),
+            cls_doc.ctor.doc_1args_position)
         .def(py::init<const Isometry3<T>&>(), py::arg("pose"),
             cls_doc.ctor.doc_1args_pose)
         .def("set", &Class::set, py::arg("R"), py::arg("p"), cls_doc.set.doc)
