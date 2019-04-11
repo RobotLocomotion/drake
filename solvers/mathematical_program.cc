@@ -381,6 +381,41 @@ Binding<Cost> MathematicalProgram::AddCost(const Expression& e) {
   return AddCost(internal::ParseCost(e));
 }
 
+void MathematicalProgram::AddMaximizeLogDeterminantSymmetricMatrixCost(
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
+  DRAKE_DEMAND(X.rows() == X.cols());
+  const int X_rows = X.rows();
+  auto Z_lower = NewContinuousVariables(X_rows * (X_rows + 1) / 2);
+  MatrixX<symbolic::Expression> Z(X_rows, X_rows);
+  Z.setZero();
+  // diag_Z is the diagonal matrix that only contains the diagonal entries of Z.
+  MatrixX<symbolic::Expression> diag_Z(X_rows, X_rows);
+  diag_Z.setZero();
+  int Z_lower_index = 0;
+  for (int j = 0; j < X_rows; ++j) {
+    for (int i = j; i < X_rows; ++i) {
+      Z(i, j) = Z_lower(Z_lower_index++);
+    }
+    diag_Z(j, j) = Z(j, j);
+  }
+
+  MatrixX<symbolic::Expression> psd_mat(2 * X_rows, 2 * X_rows);
+  // clang-format off
+  psd_mat << X,             Z,
+             Z.transpose(), diag_Z;
+  // clang-format on
+  AddPositiveSemidefiniteConstraint(psd_mat);
+  // Now introduce the slack variable t.
+  auto t = NewContinuousVariables(X_rows);
+  // Introduce the constraint log(Z(i, i)) >= t(i).
+  for (int i = 0; i < X_rows; ++i) {
+    AddExponentialConeConstraint(
+        Vector3<symbolic::Expression>(Z(i, i), 1, t(i)));
+  }
+
+  AddLinearCost(-t.cast<symbolic::Expression>().sum());
+}
+
 Binding<Constraint> MathematicalProgram::AddConstraint(
     const Binding<Constraint>& binding) {
   // TODO(eric.cousineau): Use alternative to RTTI.
