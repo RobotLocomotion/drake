@@ -7,6 +7,7 @@
 #include "yaml-cpp/yaml.h"
 
 #include "drake/automotive/maliput/api/lane.h"
+#include "drake/automotive/maliput/api/rules/direction_usage_rule.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
 #include "drake/automotive/maliput/base/simple_rulebook.h"
@@ -15,6 +16,7 @@
 
 using drake::maliput::api::Lane;
 using drake::maliput::api::LaneId;
+using drake::maliput::api::rules::DirectionUsageRule;
 using drake::maliput::api::rules::LaneSRange;
 using drake::maliput::api::rules::LaneSRoute;
 using drake::maliput::api::rules::RightOfWayRule;
@@ -70,6 +72,42 @@ struct convert<RightOfWayRule::State::YieldGroup> {
   }
 };
 
+template <>
+struct convert<DirectionUsageRule::State::Severity> {
+  static Node encode(const DirectionUsageRule::State::Severity& rhs) {
+    Node node;
+    if (rhs == DirectionUsageRule::State::Severity::kPreferred) {
+      node = "Preferred";
+      return node;
+    } else {
+      DRAKE_ASSERT(rhs == DirectionUsageRule::State::Severity::kStrict);
+      node = "Strict";
+      return node;
+    }
+  }
+
+  // The following API is required by yaml-cpp. See this web page for more
+  // information:
+  // https://github.com/jbeder/yaml-cpp/wiki/Tutorial#converting-tofrom-native-data-types
+  static bool decode(const Node& node,
+                     // NOLINTNEXTLINE(runtime/references).
+                     DirectionUsageRule::State::Severity& rhs) {
+    const std::string severity = node.as<std::string>();
+    if (severity == "Strict") {
+      rhs = DirectionUsageRule::State::Severity::kStrict;
+      return true;
+    } else if (severity == "Preferred") {
+      rhs = DirectionUsageRule::State::Severity::kPreferred;
+      return true;
+    } else {
+      std::stringstream s;
+      s << "DirectionUsageRule Severity value: \"" << severity << " is neither "
+        << "\"Preferred\" or \"Strict\"";
+      return false;
+    }
+  }
+};
+
 }  // namespace YAML
 
 namespace drake {
@@ -87,7 +125,32 @@ SRange ObtainSRange(const Lane* lane, const YAML::Node& lane_node) {
   }
 }
 
-std::vector<RightOfWayRule::State> BuildStates(const YAML::Node& states_node) {
+LaneSRange BuildLaneSRange(const api::RoadGeometry* road_geometry,
+                           const YAML::Node& lane_node) {
+  DRAKE_DEMAND(lane_node.IsMap());
+  DRAKE_THROW_UNLESS(lane_node["Lane"].IsDefined());
+  const LaneId lane_id(lane_node["Lane"].as<std::string>());
+  const Lane* lane = road_geometry->ById().GetLane(lane_id);
+  DRAKE_DEMAND(lane != nullptr);
+  const SRange s_range = ObtainSRange(lane, lane_node);
+  return LaneSRange(lane_id, s_range);
+}
+
+LaneSRoute BuildLaneSRoute(const api::RoadGeometry* road_geometry,
+                           const YAML::Node& zone_node) {
+  DRAKE_DEMAND(zone_node.IsSequence());
+  std::vector<LaneSRange> ranges;
+  for (const YAML::Node& lane_node : zone_node) {
+    ranges.emplace_back(BuildLaneSRange(road_geometry, lane_node));
+  }
+  return LaneSRoute(ranges);
+}
+
+// Right of Way Rule Loading
+// {
+
+std::vector<RightOfWayRule::State> BuildRightOfWayStates(
+    const YAML::Node& states_node) {
   DRAKE_DEMAND(states_node.IsMap());
   std::vector<RightOfWayRule::State> states;
   if (states_node["Go"]) {
@@ -124,23 +187,7 @@ std::vector<RightOfWayRule::State> BuildStates(const YAML::Node& states_node) {
   return states;
 }
 
-LaneSRoute BuildLaneSRoute(const api::RoadGeometry* road_geometry,
-                           const YAML::Node& zone_node) {
-  DRAKE_DEMAND(zone_node.IsSequence());
-  std::vector<LaneSRange> ranges;
-  for (const YAML::Node& lane_node : zone_node) {
-    DRAKE_DEMAND(lane_node.IsMap());
-    DRAKE_THROW_UNLESS(lane_node["Lane"].IsDefined());
-    const LaneId lane_id(lane_node["Lane"].as<std::string>());
-    const Lane* lane = road_geometry->ById().GetLane(lane_id);
-    DRAKE_DEMAND(lane != nullptr);
-    const SRange s_range = ObtainSRange(lane, lane_node);
-    ranges.emplace_back(lane_id, s_range);
-  }
-  return LaneSRoute(ranges);
-}
-
-RightOfWayRule::ZoneType BuildZoneType(const YAML::Node& rule_node) {
+RightOfWayRule::ZoneType BuildRightOfWayZoneType(const YAML::Node& rule_node) {
   if (rule_node["ZoneType"]) {
     const std::string zone_type = rule_node["ZoneType"].as<std::string>();
     if (zone_type == "StopExcluded") {
@@ -166,14 +213,102 @@ RightOfWayRule BuildRightOfWayRule(const api::RoadGeometry* road_geometry,
 
   const YAML::Node& states_node = rule_node["States"];
   DRAKE_THROW_UNLESS(states_node.IsDefined());
-  const std::vector<RightOfWayRule::State> states = BuildStates(states_node);
+  const std::vector<RightOfWayRule::State> states =
+      BuildRightOfWayStates(states_node);
 
   const YAML::Node& zone_node = rule_node["Zone"];
   DRAKE_THROW_UNLESS(zone_node.IsDefined());
   const LaneSRoute zone = BuildLaneSRoute(road_geometry, zone_node);
 
-  return RightOfWayRule(rule_id, zone, BuildZoneType(rule_node), states);
+  return RightOfWayRule(rule_id, zone, BuildRightOfWayZoneType(rule_node),
+                        states);
 }
+// }
+
+// DirectionUsageRule loading
+// {
+
+std::vector<DirectionUsageRule::State> BuildDirectionUsageStates(
+    const YAML::Node& states_node) {
+  DRAKE_DEMAND(states_node.IsMap());
+  std::vector<DirectionUsageRule::State> states;
+  if (states_node["WithS"]) {
+    states.push_back(DirectionUsageRule::State(
+        DirectionUsageRule::State::Id("WithS"),
+        DirectionUsageRule::State::Type::kWithS,
+        states_node["WithS"].as<DirectionUsageRule::State::Severity>()));
+  }
+  if (states_node["AgainstS"]) {
+    states.push_back(DirectionUsageRule::State(
+        DirectionUsageRule::State::Id("AgainstS"),
+        DirectionUsageRule::State::Type::kAgainstS,
+        states_node["AgainstS"].as<DirectionUsageRule::State::Severity>()));
+  }
+  if (states_node["Bidirectional"]) {
+    states.push_back(DirectionUsageRule::State(
+        DirectionUsageRule::State::Id("Bidirectional"),
+        DirectionUsageRule::State::Type::kBidirectional,
+        states_node["Bidirectional"]
+            .as<DirectionUsageRule::State::Severity>()));
+  }
+  if (states_node["BidirectionalTurnOnly"]) {
+    states.push_back(DirectionUsageRule::State(
+        DirectionUsageRule::State::Id("BidirectionalTurnOnly"),
+        DirectionUsageRule::State::Type::kBidirectionalTurnOnly,
+        states_node["BidirectionalTurnOnly"]
+            .as<DirectionUsageRule::State::Severity>()));
+  }
+  if (states_node["NoUse"]) {
+    states.push_back(DirectionUsageRule::State(
+        DirectionUsageRule::State::Id("NoUse"),
+        DirectionUsageRule::State::Type::kNoUse,
+        states_node["NoUse"].as<DirectionUsageRule::State::Severity>()));
+  }
+  if (states_node["Parking"]) {
+    states.push_back(DirectionUsageRule::State(
+        DirectionUsageRule::State::Id("Parking"),
+        DirectionUsageRule::State::Type::kParking,
+        states_node["Parking"].as<DirectionUsageRule::State::Severity>()));
+  }
+
+  if (states.size() != states_node.size()) {
+    std::stringstream s;
+    s << "DirectionUsageRule contained invalid states. It specified the "
+      << " following states: [";
+    bool first{true};
+    for (const auto state : states_node) {
+      if (!first) {
+        s << ", ";
+      }
+      s << state.first.as<std::string>();
+      first = false;
+    }
+    s << "]. The valid states are: [WithS, AgainstS, Bidirectional, "
+      << "BidirectionalTurnOnly, NoUse, Parking]";
+    throw std::domain_error(s.str());
+  }
+  return states;
+}
+
+DirectionUsageRule BuildDirectionUsageRule(
+    const api::RoadGeometry* road_geometry, const YAML::Node& rule_node) {
+  DRAKE_DEMAND(rule_node.IsMap());
+  DRAKE_THROW_UNLESS(rule_node["ID"].IsDefined());
+  const DirectionUsageRule::Id rule_id(rule_node["ID"].as<std::string>());
+
+  const YAML::Node& states_node = rule_node["States"];
+  DRAKE_THROW_UNLESS(states_node.IsDefined());
+  const std::vector<DirectionUsageRule::State> states =
+      BuildDirectionUsageStates(states_node);
+
+  const YAML::Node& zone_node = rule_node["Zone"];
+  DRAKE_THROW_UNLESS(zone_node.IsDefined());
+  const LaneSRange zone = BuildLaneSRange(road_geometry, zone_node);
+
+  return DirectionUsageRule(rule_id, zone, states);
+}
+
+// }
 
 std::unique_ptr<api::rules::RoadRulebook> BuildFrom(
     const api::RoadGeometry* road_geometry, const YAML::Node& root_node) {
@@ -188,6 +323,15 @@ std::unique_ptr<api::rules::RoadRulebook> BuildFrom(
   for (const YAML::Node& right_of_way_rule_node : right_of_way_rules_node) {
     rulebook->AddRule(
         BuildRightOfWayRule(road_geometry, right_of_way_rule_node));
+  }
+  const YAML::Node& direction_usage_rules_node =
+      rulebook_node["DirectionUsageRules"];
+  DRAKE_THROW_UNLESS(direction_usage_rules_node.IsDefined());
+  DRAKE_DEMAND(direction_usage_rules_node.IsSequence());
+  for (const YAML::Node& direction_usage_rule_node :
+       direction_usage_rules_node) {
+    rulebook->AddRule(
+        BuildDirectionUsageRule(road_geometry, direction_usage_rule_node));
   }
   // TODO(liang.fok) Add loading of speed limit rules.
   return rulebook;
