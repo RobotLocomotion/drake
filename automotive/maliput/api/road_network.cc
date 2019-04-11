@@ -12,6 +12,7 @@ namespace api {
 RoadNetwork::RoadNetwork(
     std::unique_ptr<const RoadGeometry> road_geometry,
     std::unique_ptr<const rules::RoadRulebook> rulebook,
+    std::unique_ptr<const rules::TrafficLightBook> traffic_light_book,
     std::vector<std::unique_ptr<Intersection>> intersections,
     std::unique_ptr<rules::PhaseRingBook> phase_ring_book,
     std::unique_ptr<rules::RuleStateProvider> rule_state_provider,
@@ -20,6 +21,7 @@ RoadNetwork::RoadNetwork(
     std::vector<rules::DirectionUsageRule> direction_usage_rules)
     : road_geometry_(std::move(road_geometry)),
       rulebook_(std::move(rulebook)),
+      traffic_light_book_(std::move(traffic_light_book)),
       intersections_(std::move(intersections)),
       phase_ring_book_(std::move(phase_ring_book)),
       rule_state_provider_(std::move(rule_state_provider)),
@@ -28,6 +30,7 @@ RoadNetwork::RoadNetwork(
       direction_usage_rules_(std::move(direction_usage_rules)) {
   DRAKE_THROW_UNLESS(road_geometry_.get() != nullptr);
   DRAKE_THROW_UNLESS(rulebook_.get() != nullptr);
+  DRAKE_THROW_UNLESS(traffic_light_book_.get() != nullptr);
   DRAKE_THROW_UNLESS(phase_ring_book_.get() != nullptr);
   DRAKE_THROW_UNLESS(rule_state_provider_.get() != nullptr);
   DRAKE_THROW_UNLESS(phase_provider_.get() != nullptr);
