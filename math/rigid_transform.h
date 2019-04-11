@@ -128,11 +128,11 @@ class RigidTransform {
   /// frames A and B.  Hence, the constructed %RigidTransform contains an
   /// identity RotationMatrix and the position vector underlying the given
   /// Eigen Translation3 transform.
-  /// @param[in] position Translation3 that stores `p_AoBo_A`, the position
+  /// @param[in] translation Translation3 that stores `p_AoBo_A`, the position
   /// vector from frame A's origin to frame B's origin, expressed in frame A.
   RigidTransform(  // NOLINT(runtime/explicit)
-      const Eigen::Translation<T, 3>& position) {
-    set_translation(position.translation());
+      const Eigen::Translation<T, 3>& translation) {
+    set_translation(translation.translation());
   }
 
   /// Constructs a %RigidTransform from an Eigen Isometry3.
@@ -336,14 +336,14 @@ class RigidTransform {
     return RigidTransform<T>(rotation() * other.rotation(), p_AoCo_A);
   }
 
-  /// Multiplies `this` %RigidTransform `X_AB` by the Eigen Translation3
-  /// transform `X_BC` and returns %RigidTransform `X_AC = X_AB * X_BC`.
+  /// Multiplies `this` %RigidTransform `X_AB` by the translation transform
+  /// `X_BC` and returns %RigidTransform `X_AC = X_AB * X_BC`.
   RigidTransform<T> operator*(const Eigen::Translation<T, 3>& X_BC) const {
     const Vector3<T> p_AoCo_A = *this * X_BC.translation();
     return RigidTransform<T>(rotation(), p_AoCo_A);
   }
 
-  /// Multiplies the Eigen Translation3 transform `X_AB` by the %RigidTransform
+  /// Multiplies the translation transform `X_AB` by the %RigidTransform
   /// `X_BC` and returns %RigidTransform `X_AC = X_AB * X_BC`.
   friend RigidTransform<T> operator*(const Eigen::Translation<T, 3>& X_AB,
       const RigidTransform<T>& X_BC) {
