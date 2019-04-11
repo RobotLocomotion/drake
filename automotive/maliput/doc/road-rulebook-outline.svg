@@ -349,11 +349,11 @@
      inkscape:current-layer="g13384"
      showgrid="false"
      units="in"
-     inkscape:window-width="1778"
-     inkscape:window-height="1256"
-     inkscape:window-x="1098"
-     inkscape:window-y="59"
-     inkscape:window-maximized="0" />
+     inkscape:window-width="3375"
+     inkscape:window-height="1416"
+     inkscape:window-x="65"
+     inkscape:window-y="24"
+     inkscape:window-maximized="1" />
   <metadata
      id="metadata7">
     <rdf:RDF>
@@ -526,7 +526,7 @@
            sodipodi:role="line"
            id="tspan13424"
            x="90.913727"
-           y="431.72244">RightOfWayStateProvider</tspan></text>
+           y="431.72244">RuleStateProvider</tspan></text>
       <text
          sodipodi:linespacing="125%"
          id="text13426"
@@ -560,7 +560,7 @@
            sodipodi:role="line"
            id="tspan3572"
            x="90.913727"
-           y="391.72244">SimpleRulebook</tspan></text>
+           y="391.72244">ManualRulebook</tspan></text>
       <text
          xml:space="preserve"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:12.5px;line-height:125%;font-family:FreeMono;-inkscape-font-specification:'FreeMono, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
@@ -851,58 +851,6 @@
          id="tspan24663"
          x="450.89035"
          y="673.21008">via RightOfWayRule::State::Id</tspan></text>
-    <g
-       transform="translate(379.85278,388.94436)"
-       id="g13560"
-       style="opacity:0.5">
-      <rect
-         style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.79999995;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-         id="rect13562"
-         width="217.18282"
-         height="100.00513"
-         x="82.832512"
-         y="374.54987" />
-      <text
-         xml:space="preserve"
-         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:12.5px;line-height:125%;font-family:FreeMono;-inkscape-font-specification:'FreeMono, Bold';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-         x="90.913727"
-         y="391.72244"
-         id="text13564"
-         sodipodi:linespacing="125%"><tspan
-           id="tspan13566"
-           sodipodi:role="line"
-           x="90.913727"
-           y="391.72244">TrivialTrafficLightManager</tspan></text>
-      <text
-         sodipodi:linespacing="125%"
-         id="text13568"
-         y="417.98642"
-         x="87.88327"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:12.5px;line-height:125%;font-family:FreeMono;-inkscape-font-specification:'FreeMono, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-         xml:space="preserve"><tspan
-           id="tspan13570"
-           sodipodi:role="line"
-           x="87.88327"
-           y="417.98642">AddState(id, initial_value)</tspan><tspan
-           id="tspan13572"
-           sodipodi:role="line"
-           x="87.88327"
-           y="433.61142">RemoveState(id)</tspan><tspan
-           id="tspan13574"
-           sodipodi:role="line"
-           x="87.88327"
-           y="449.23642">SetState(id, value)</tspan><tspan
-           id="tspan13576"
-           sodipodi:role="line"
-           x="87.88327"
-           y="464.86142">...</tspan></text>
-    </g>
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.79999995;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:1.79999995, 1.79999995;stroke-dashoffset:0;stroke-opacity:1;marker-end:url(#marker15309)"
-       d="m 552.58886,764.2116 0,-31.8198"
-       id="path13578"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="cc" />
     <path
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.79999995;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker14712)"
        d="m 119.19281,453.31647 -14.14213,0 0,124.75383 12.12183,0"

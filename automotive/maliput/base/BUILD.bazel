@@ -17,10 +17,10 @@ drake_cc_package_library(
         ":manual_phase_provider",
         ":manual_phase_ring_book",
         ":manual_rule_state_provider",
+        ":manual_rulebook",
         ":phase_based_rule_state_provider",
         ":phase_ring_book_loader",
         ":road_rulebook_loader",
-        ":simple_rulebook",
         ":traffic_light_book",
         ":traffic_light_book_loader",
     ],
@@ -70,6 +70,23 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "manual_rulebook",
+    srcs = [
+        "manual_rulebook.cc",
+    ],
+    hdrs = [
+        "manual_rulebook.h",
+    ],
+    deps = [
+        "//automotive/maliput/api",
+        "//common:essential",
+        "//common:unused",
+        "//math:geometric_transform",
+        "//math:saturate",
+    ],
+)
+
+drake_cc_library(
     name = "phase_based_rule_state_provider",
     srcs = [
         "phase_based_rule_state_provider.cc",
@@ -108,27 +125,10 @@ drake_cc_library(
         "road_rulebook_loader.h",
     ],
     deps = [
-        ":simple_rulebook",
+        ":manual_rulebook",
         "//common:essential",
         "//common:find_resource",
         "@yaml_cpp",
-    ],
-)
-
-drake_cc_library(
-    name = "simple_rulebook",
-    srcs = [
-        "simple_rulebook.cc",
-    ],
-    hdrs = [
-        "simple_rulebook.h",
-    ],
-    deps = [
-        "//automotive/maliput/api",
-        "//common:essential",
-        "//common:unused",
-        "//math:geometric_transform",
-        "//math:saturate",
     ],
 )
 
@@ -199,9 +199,9 @@ drake_cc_googletest(
         "//automotive/maliput/multilane:yamls",
     ],
     deps = [
+        ":manual_rulebook",
         ":phase_ring_book_loader",
         ":road_rulebook_loader",
-        ":simple_rulebook",
         ":traffic_light_book_loader",
         "//automotive/maliput/api/test_utilities:rules_test_utilities",
         "//automotive/maliput/multilane:loader",
@@ -236,9 +236,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "simple_rulebook_test",
+    name = "manual_rulebook_test",
     deps = [
-        ":simple_rulebook",
+        ":manual_rulebook",
         "//automotive/maliput/api/test_utilities:rules_test_utilities",
     ],
 )

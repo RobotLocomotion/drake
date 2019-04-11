@@ -9,7 +9,7 @@
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
-#include "drake/automotive/maliput/base/simple_rulebook.h"
+#include "drake/automotive/maliput/base/manual_rulebook.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 
@@ -184,7 +184,7 @@ std::unique_ptr<api::rules::RoadRulebook> BuildFrom(
   const YAML::Node& right_of_way_rules_node = rulebook_node["RightOfWayRules"];
   DRAKE_THROW_UNLESS(right_of_way_rules_node.IsDefined());
   DRAKE_DEMAND(right_of_way_rules_node.IsSequence());
-  std::unique_ptr<SimpleRulebook> rulebook = std::make_unique<SimpleRulebook>();
+  std::unique_ptr<ManualRulebook> rulebook = std::make_unique<ManualRulebook>();
   for (const YAML::Node& right_of_way_rule_node : right_of_way_rules_node) {
     rulebook->AddRule(
         BuildRightOfWayRule(road_geometry, right_of_way_rule_node));
