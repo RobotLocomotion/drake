@@ -29,7 +29,7 @@ list of its links and joints. */
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
 #include "drake/multibody/graph_maker/multibody_graph.h"
-#include "drake/multibody/tree/model_instance.h"
+#include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
 namespace multibody {
