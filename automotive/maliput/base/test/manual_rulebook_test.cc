@@ -1,4 +1,4 @@
-#include "drake/automotive/maliput/base/simple_rulebook.h"
+#include "drake/automotive/maliput/base/manual_rulebook.h"
 
 #include <gtest/gtest.h>
 
@@ -23,7 +23,7 @@ using api::rules::RoadRulebook;
 using api::rules::SpeedLimitRule;
 
 
-class SimpleRulebookTest : public ::testing::Test {
+class ManualRulebookTest : public ::testing::Test {
  protected:
   const LaneSRange kZone{LaneId("a"), {10., 20.}};
 
@@ -48,13 +48,13 @@ class SimpleRulebookTest : public ::testing::Test {
 };
 
 
-TEST_F(SimpleRulebookTest, DefaultConstructor) {
-  SimpleRulebook dut;
+TEST_F(ManualRulebookTest, DefaultConstructor) {
+  ManualRulebook dut;
 }
 
 
-TEST_F(SimpleRulebookTest, AddGetRemoveRightOfWay) {
-  SimpleRulebook dut;
+TEST_F(ManualRulebookTest, AddGetRemoveRightOfWay) {
+  ManualRulebook dut;
 
   EXPECT_THROW(dut.GetRule(kRightOfWay.id()), std::out_of_range);
   dut.AddRule(kRightOfWay);
@@ -66,8 +66,8 @@ TEST_F(SimpleRulebookTest, AddGetRemoveRightOfWay) {
 }
 
 
-TEST_F(SimpleRulebookTest, AddGetRemoveSpeedLimit) {
-  SimpleRulebook dut;
+TEST_F(ManualRulebookTest, AddGetRemoveSpeedLimit) {
+  ManualRulebook dut;
 
   EXPECT_THROW(dut.GetRule(kSpeedLimit.id()), std::out_of_range);
   dut.AddRule(kSpeedLimit);
@@ -78,8 +78,8 @@ TEST_F(SimpleRulebookTest, AddGetRemoveSpeedLimit) {
   EXPECT_THROW(dut.RemoveRule(kSpeedLimit.id()), std::runtime_error);
 }
 
-TEST_F(SimpleRulebookTest, AddGetRemoveDirectionUsage) {
-  SimpleRulebook dut;
+TEST_F(ManualRulebookTest, AddGetRemoveDirectionUsage) {
+  ManualRulebook dut;
 
   EXPECT_THROW(dut.GetRule(kDirectionUsage.id()), std::out_of_range);
   dut.AddRule(kDirectionUsage);
@@ -91,8 +91,8 @@ TEST_F(SimpleRulebookTest, AddGetRemoveDirectionUsage) {
   EXPECT_THROW(dut.RemoveRule(kDirectionUsage.id()), std::runtime_error);
 }
 
-TEST_F(SimpleRulebookTest, RemoveAll) {
-  SimpleRulebook dut;
+TEST_F(ManualRulebookTest, RemoveAll) {
+  ManualRulebook dut;
   dut.RemoveAll();  // I.e., should work on empty rulebook.
   dut.AddRule(kRightOfWay);
   dut.AddRule(kSpeedLimit);
@@ -116,8 +116,8 @@ TEST_F(SimpleRulebookTest, RemoveAll) {
 }
 
 
-TEST_F(SimpleRulebookTest, FindRules) {
-  SimpleRulebook dut;
+TEST_F(ManualRulebookTest, FindRules) {
+  ManualRulebook dut;
   dut.AddRule(kSpeedLimit);
   dut.AddRule(kRightOfWay);
   dut.AddRule(kDirectionUsage);

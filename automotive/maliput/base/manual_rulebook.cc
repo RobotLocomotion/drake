@@ -1,4 +1,4 @@
-#include "drake/automotive/maliput/base/simple_rulebook.h"
+#include "drake/automotive/maliput/base/manual_rulebook.h"
 
 #include <algorithm>
 #include <sstream>
@@ -56,7 +56,7 @@ bool operator==(const IdVariant& lhs, const IdVariant& rhs) {
 
 }  // namespace
 
-class SimpleRulebook::Impl {
+class ManualRulebook::Impl {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Impl)
 
@@ -107,7 +107,7 @@ class SimpleRulebook::Impl {
           result.direction_usage.push_back(direction_usage_rules_.at(*id.d));
         } else {
           std::stringstream s;
-          s << "SimpleRulebook: IdVariant is empty (LaneId: "
+          s << "ManualRulebook: IdVariant is empty (LaneId: "
             << range.lane_id().string() << ", s0: " << range.s_range().s0()
             << ", s1: " << range.s_range().s1() << ")";
           throw std::domain_error(s.str());
@@ -249,50 +249,50 @@ class SimpleRulebook::Impl {
   IdIndex<api::rules::DirectionUsageRule> direction_usage_rules_;
 };
 
-SimpleRulebook::SimpleRulebook() : impl_(std::make_unique<Impl>()) {}
+ManualRulebook::ManualRulebook() : impl_(std::make_unique<Impl>()) {}
 
-SimpleRulebook::~SimpleRulebook() = default;
+ManualRulebook::~ManualRulebook() = default;
 
-void SimpleRulebook::RemoveAll() { impl_->RemoveAll(); }
+void ManualRulebook::RemoveAll() { impl_->RemoveAll(); }
 
-void SimpleRulebook::AddRule(const api::rules::RightOfWayRule& rule) {
+void ManualRulebook::AddRule(const api::rules::RightOfWayRule& rule) {
   impl_->AddRule(rule);
 }
 
-void SimpleRulebook::RemoveRule(const api::rules::RightOfWayRule::Id& id) {
+void ManualRulebook::RemoveRule(const api::rules::RightOfWayRule::Id& id) {
   impl_->RemoveRule(id);
 }
 
-void SimpleRulebook::AddRule(const api::rules::SpeedLimitRule& rule) {
+void ManualRulebook::AddRule(const api::rules::SpeedLimitRule& rule) {
   impl_->AddRule(rule);
 }
 
-void SimpleRulebook::RemoveRule(const api::rules::SpeedLimitRule::Id& id) {
+void ManualRulebook::RemoveRule(const api::rules::SpeedLimitRule::Id& id) {
   impl_->RemoveRule(id);
 }
 
-void SimpleRulebook::AddRule(const api::rules::DirectionUsageRule& rule) {
+void ManualRulebook::AddRule(const api::rules::DirectionUsageRule& rule) {
   impl_->AddRule(rule);
 }
 
-void SimpleRulebook::RemoveRule(const api::rules::DirectionUsageRule::Id& id) {
+void ManualRulebook::RemoveRule(const api::rules::DirectionUsageRule::Id& id) {
   impl_->RemoveRule(id);
 }
 
-QueryResults SimpleRulebook::DoFindRules(const std::vector<LaneSRange>& ranges,
+QueryResults ManualRulebook::DoFindRules(const std::vector<LaneSRange>& ranges,
                                          double tolerance) const {
   return impl_->DoFindRules(ranges, tolerance);
 }
 
-RightOfWayRule SimpleRulebook::DoGetRule(const RightOfWayRule::Id& id) const {
+RightOfWayRule ManualRulebook::DoGetRule(const RightOfWayRule::Id& id) const {
   return impl_->DoGetRule(id);
 }
 
-SpeedLimitRule SimpleRulebook::DoGetRule(const SpeedLimitRule::Id& id) const {
+SpeedLimitRule ManualRulebook::DoGetRule(const SpeedLimitRule::Id& id) const {
   return impl_->DoGetRule(id);
 }
 
-DirectionUsageRule SimpleRulebook::DoGetRule(
+DirectionUsageRule ManualRulebook::DoGetRule(
     const DirectionUsageRule::Id& id) const {
   return impl_->DoGetRule(id);
 }
