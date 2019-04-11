@@ -105,8 +105,6 @@ PYBIND11_MODULE(math, m) {
             cls_doc.ctor.doc_1args_R)
         .def(py::init<const Vector3<T>&>(), py::arg("p"),
             cls_doc.ctor.doc_1args_p)
-        .def(py::init<const Eigen::Translation<T, 3>&>(), py::arg("position"),
-            cls_doc.ctor.doc_1args_position)
         .def(py::init<const Isometry3<T>&>(), py::arg("pose"),
             cls_doc.ctor.doc_1args_pose)
         .def("set", &Class::set, py::arg("R"), py::arg("p"), cls_doc.set.doc)
@@ -132,11 +130,6 @@ PYBIND11_MODULE(math, m) {
         .def("multiply",
             [](const Class* self, const Class& other) { return *self * other; },
             py::arg("other"), cls_doc.operator_mul.doc_1args_other)
-        .def("multiply",
-            [](const Class* self, const Eigen::Translation<T, 3>& X_BC) {
-              return *self * X_BC;
-            },
-            py::arg("X_BC"), cls_doc.operator_mul.doc_1args_X_BC)
         .def("multiply",
             [](const Class* self, const Vector3<T>& p_BoQ_B) {
               return *self * p_BoQ_B;
