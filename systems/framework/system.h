@@ -2203,7 +2203,14 @@ class System : public SystemBase {
   }
 
   EventCollection<PublishEvent<T>>& get_mutable_forced_publish_events() {
+    DRAKE_DEMAND(forced_publish_events_.get());
     return *forced_publish_events_;
+  }
+
+  EventCollection<DiscreteUpdateEvent<T>>&
+  get_mutable_forced_discrete_update_events() {
+    DRAKE_DEMAND(forced_discrete_update_events_.get());
+    return *forced_discrete_update_events_;
   }
 
   const EventCollection<PublishEvent<T>>&
