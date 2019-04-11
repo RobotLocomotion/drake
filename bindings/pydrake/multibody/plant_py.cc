@@ -61,65 +61,60 @@ PYBIND11_MODULE(plant, m) {
 
   {
     using Class = MultibodyPlant<T>;
+    constexpr auto& cls_doc = doc.MultibodyPlant;
     py::class_<Class, systems::LeafSystem<T>> cls(
-        m, "MultibodyPlant", doc.MultibodyPlant.doc);
+        m, "MultibodyPlant", cls_doc.doc);
     // N.B. These are defined as they appear in the class declaration.
     // Forwarded methods from `MultibodyTree`.
     cls  // BR
         .def(py::init<double>(), py::arg("time_step") = 0.)
-        .def(
-            "num_bodies", &Class::num_bodies, doc.MultibodyPlant.num_bodies.doc)
-        .def(
-            "num_joints", &Class::num_joints, doc.MultibodyPlant.num_joints.doc)
-        .def("num_actuators", &Class::num_actuators,
-            doc.MultibodyPlant.num_actuators.doc)
+        .def("num_bodies", &Class::num_bodies, cls_doc.num_bodies.doc)
+        .def("num_joints", &Class::num_joints, cls_doc.num_joints.doc)
+        .def("num_actuators", &Class::num_actuators, cls_doc.num_actuators.doc)
         .def("num_model_instances", &Class::num_model_instances,
-            doc.MultibodyPlant.num_model_instances.doc)
+            cls_doc.num_model_instances.doc)
         .def("num_positions",
             overload_cast_explicit<int>(&Class::num_positions),
-            doc.MultibodyPlant.num_positions.doc_0args)
+            cls_doc.num_positions.doc_0args)
         .def("num_positions",
             overload_cast_explicit<int, ModelInstanceIndex>(
                 &Class::num_positions),
-            py::arg("model_instance"),
-            doc.MultibodyPlant.num_positions.doc_1args)
+            py::arg("model_instance"), cls_doc.num_positions.doc_1args)
         .def("num_velocities",
             overload_cast_explicit<int>(&Class::num_velocities),
-            doc.MultibodyPlant.num_velocities.doc_0args)
+            cls_doc.num_velocities.doc_0args)
         .def("num_velocities",
             overload_cast_explicit<int, ModelInstanceIndex>(
                 &Class::num_velocities),
-            doc.MultibodyPlant.num_velocities.doc_1args)
+            cls_doc.num_velocities.doc_1args)
         .def("num_multibody_states", &Class::num_multibody_states,
-            doc.MultibodyPlant.num_multibody_states.doc)
+            cls_doc.num_multibody_states.doc)
         .def("num_actuated_dofs",
             overload_cast_explicit<int>(&Class::num_actuated_dofs),
-            doc.MultibodyPlant.num_actuated_dofs.doc_0args);
+            cls_doc.num_actuated_dofs.doc_0args);
     // Construction.
     cls  // BR
         .def("AddJoint",
             [](Class * self, std::unique_ptr<Joint<T>> joint) -> auto& {
               return self->AddJoint(std::move(joint));
             },
-            py::arg("joint"), py_reference_internal,
-            doc.MultibodyPlant.AddJoint.doc_1args)
+            py::arg("joint"), py_reference_internal, cls_doc.AddJoint.doc_1args)
         .def("AddFrame",
             [](Class * self, std::unique_ptr<Frame<double>> frame) -> auto& {
               return self->AddFrame(std::move(frame));
             },
-            py_reference_internal, py::arg("frame"),
-            doc.MultibodyPlant.AddFrame.doc)
+            py_reference_internal, py::arg("frame"), cls_doc.AddFrame.doc)
         .def("AddRigidBody",
             py::overload_cast<const std::string&,
                 const SpatialInertia<double>&>(&Class::AddRigidBody),
             py::arg("name"), py::arg("M_BBo_B"), py_reference_internal,
-            doc.MultibodyPlant.AddRigidBody.doc_2args)
+            cls_doc.AddRigidBody.doc_2args)
         .def("WeldFrames",
             py::overload_cast<const Frame<T>&, const Frame<T>&,
                 const RigidTransform<double>&>(&Class::WeldFrames),
             py::arg("A"), py::arg("B"),
             py::arg("X_AB") = RigidTransform<double>::Identity(),
-            py_reference_internal, doc.MultibodyPlant.WeldFrames.doc)
+            py_reference_internal, cls_doc.WeldFrames.doc)
         .def("WeldFrames",
             [](Class* self, const Frame<T>& A, const Frame<T>& B,
                 const Isometry3<double>& X_AB) -> const WeldJoint<T>& {
@@ -142,7 +137,7 @@ PYBIND11_MODULE(plant, m) {
                   force_element->gravity_vector());
             },
             py::arg("force_element"), py_reference_internal,
-            doc.MultibodyPlant.AddForceElement.doc)
+            cls_doc.AddForceElement.doc)
         .def("AddForceElement",
             [](Class * self,
                 std::unique_ptr<ForceElement<T>> force_element) -> auto& {
@@ -150,7 +145,7 @@ PYBIND11_MODULE(plant, m) {
                   std::move(force_element));
             },
             py::arg("force_element"), py_reference_internal,
-            doc.MultibodyPlant.AddForceElement.doc);
+            cls_doc.AddForceElement.doc);
     // Mathy bits
     cls  // BR
         .def("CalcPointsPositions",
@@ -164,7 +159,7 @@ PYBIND11_MODULE(plant, m) {
               return p_AQi;
             },
             py::arg("context"), py::arg("frame_B"), py::arg("p_BQi"),
-            py::arg("frame_A"), doc.MultibodyPlant.CalcPointsPositions.doc)
+            py::arg("frame_A"), cls_doc.CalcPointsPositions.doc)
         .def("CalcFrameGeometricJacobianExpressedInWorld",
             [](const Class* self, const Context<T>& context,
                 const Frame<T>& frame_B, const Vector3<T>& p_BoFo_B) {
@@ -175,7 +170,7 @@ PYBIND11_MODULE(plant, m) {
             },
             py::arg("context"), py::arg("frame_B"),
             py::arg("p_BoFo_B") = Vector3<T>::Zero().eval(),
-            doc.MultibodyPlant.CalcFrameGeometricJacobianExpressedInWorld.doc)
+            cls_doc.CalcFrameGeometricJacobianExpressedInWorld.doc)
         // TODO(eric.cousineau): Include `CalcInverseDynamics` once there is an
         // overload that (a) services MBP directly and (b) uses body
         // association that is less awkward than implicit BodyNodeIndex.
@@ -183,7 +178,7 @@ PYBIND11_MODULE(plant, m) {
             overload_cast_explicit<void, Context<T>*, const Body<T>&,
                 const RigidTransform<T>&>(&Class::SetFreeBodyPose),
             py::arg("context"), py::arg("body"), py::arg("X_WB"),
-            doc.MultibodyPlant.SetFreeBodyPose.doc_3args)
+            cls_doc.SetFreeBodyPose.doc_3args)
         .def("SetFreeBodyPose",
             [](const Class* self, Context<T>* context, const Body<T>& body,
                 const Isometry3<T>& X_WB) {
@@ -200,10 +195,10 @@ PYBIND11_MODULE(plant, m) {
               self->SetActuationInArray(model_instance, u_instance, &u);
             },
             py::arg("model_instance"), py::arg("u_instance"), py::arg("u"),
-            doc.MultibodyPlant.SetActuationInArray.doc)
+            cls_doc.SetActuationInArray.doc)
         .def("GetPositionsFromArray", &Class::GetPositionsFromArray,
             py::arg("model_instance"), py::arg("q"),
-            doc.MultibodyPlant.GetPositionsFromArray.doc)
+            cls_doc.GetPositionsFromArray.doc)
         .def("SetPositionsInArray",
             [](const Class* self, multibody::ModelInstanceIndex model_instance,
                 const Eigen::Ref<const VectorX<T>> q_instance,
@@ -211,10 +206,10 @@ PYBIND11_MODULE(plant, m) {
               self->SetPositionsInArray(model_instance, q_instance, &q);
             },
             py::arg("model_instance"), py::arg("q_instance"), py::arg("q"),
-            doc.MultibodyPlant.SetPositionsInArray.doc)
+            cls_doc.SetPositionsInArray.doc)
         .def("GetVelocitiesFromArray", &Class::GetVelocitiesFromArray,
             py::arg("model_instance"), py::arg("v"),
-            doc.MultibodyPlant.GetVelocitiesFromArray.doc)
+            cls_doc.GetVelocitiesFromArray.doc)
         .def("SetVelocitiesInArray",
             [](const Class* self, multibody::ModelInstanceIndex model_instance,
                 const Eigen::Ref<const VectorX<T>> v_instance,
@@ -222,7 +217,7 @@ PYBIND11_MODULE(plant, m) {
               self->SetVelocitiesInArray(model_instance, v_instance, &v);
             },
             py::arg("model_instance"), py::arg("v_instance"), py::arg("v"),
-            doc.MultibodyPlant.SetVelocitiesInArray.doc)
+            cls_doc.SetVelocitiesInArray.doc)
         // TODO(eric.cousineau): Ensure all of these return either references,
         // or copies, consistently. At present, `GetX(context)` returns a
         // reference, while `GetX(context, model_instance)` returns a copy.
@@ -233,7 +228,7 @@ PYBIND11_MODULE(plant, m) {
             },
             py::arg("context"), py_reference_internal,
             // Keep alive, ownership: `return` keeps `context` alive.
-            py::keep_alive<0, 2>(), doc.MultibodyPlant.GetPositions.doc_1args)
+            py::keep_alive<0, 2>(), cls_doc.GetPositions.doc_1args)
         .def("GetPositions",
             [](const Class* self, const Context<T>& context,
                 ModelInstanceIndex model_instance) {
@@ -241,7 +236,7 @@ PYBIND11_MODULE(plant, m) {
               return self->GetPositions(context, model_instance);
             },
             py::arg("context"), py::arg("model_instance"),
-            doc.MultibodyPlant.GetPositions.doc_2args)
+            cls_doc.GetPositions.doc_2args)
         .def("GetVelocities",
             [](const Class* self, const Context<T>& context) {
               // Reference.
@@ -249,7 +244,7 @@ PYBIND11_MODULE(plant, m) {
             },
             py::arg("context"), py_reference_internal,
             // Keep alive, ownership: `return` keeps `context` alive.
-            py::keep_alive<0, 2>(), doc.MultibodyPlant.GetVelocities.doc_1args)
+            py::keep_alive<0, 2>(), cls_doc.GetVelocities.doc_1args)
         .def("GetVelocities",
             [](const Class* self, const Context<T>& context,
                 ModelInstanceIndex model_instance) {
@@ -257,28 +252,28 @@ PYBIND11_MODULE(plant, m) {
               return self->GetVelocities(context, model_instance);
             },
             py::arg("context"), py::arg("model_instance"),
-            doc.MultibodyPlant.GetVelocities.doc_2args)
+            cls_doc.GetVelocities.doc_2args)
         .def("SetFreeBodySpatialVelocity",
             [](const Class* self, const Body<T>& body,
                 const SpatialVelocity<T>& V_WB, Context<T>* context) {
               self->SetFreeBodySpatialVelocity(context, body, V_WB);
             },
             py::arg("body"), py::arg("V_WB"), py::arg("context"),
-            doc.MultibodyPlant.SetFreeBodySpatialVelocity.doc_3args)
+            cls_doc.SetFreeBodySpatialVelocity.doc_3args)
         .def("EvalBodyPoseInWorld",
             [](const Class* self, const Context<T>& context,
                 const Body<T>& body_B) {
               return self->EvalBodyPoseInWorld(context, body_B);
             },
             py::arg("context"), py::arg("body"),
-            doc.MultibodyPlant.EvalBodyPoseInWorld.doc)
+            cls_doc.EvalBodyPoseInWorld.doc)
         .def("EvalBodySpatialVelocityInWorld",
             [](const Class* self, const Context<T>& context,
                 const Body<T>& body_B) {
               return self->EvalBodySpatialVelocityInWorld(context, body_B);
             },
             py::arg("context"), py::arg("body"),
-            doc.MultibodyPlant.EvalBodySpatialVelocityInWorld.doc)
+            cls_doc.EvalBodySpatialVelocityInWorld.doc)
         .def("CalcJacobianSpatialVelocity",
             [](const Class* self, const systems::Context<T>& context,
                 JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
@@ -291,7 +286,7 @@ PYBIND11_MODULE(plant, m) {
             },
             py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
             py::arg("p_BP"), py::arg("frame_A"), py::arg("frame_E"),
-            doc.MultibodyPlant.CalcJacobianSpatialVelocity.doc)
+            cls_doc.CalcJacobianSpatialVelocity.doc)
         .def("CalcSpatialAccelerationsFromVdot",
             [](const Class* self, const Context<T>& context,
                 const VectorX<T>& known_vdot) {
@@ -302,31 +297,29 @@ PYBIND11_MODULE(plant, m) {
               return A_WB_array;
             },
             py::arg("context"), py::arg("known_vdot"),
-            doc.MultibodyPlant.CalcSpatialAccelerationsFromVdot.doc)
+            cls_doc.CalcSpatialAccelerationsFromVdot.doc)
         .def("CalcInverseDynamics", &Class::CalcInverseDynamics,
             py::arg("context"), py::arg("known_vdot"),
-            py::arg("external_forces"),
-            doc.MultibodyPlant.CalcInverseDynamics.doc)
+            py::arg("external_forces"), cls_doc.CalcInverseDynamics.doc)
         .def("CalcForceElementsContribution",
             &Class::CalcForceElementsContribution, py::arg("context"),
-            py::arg("forces"),
-            doc.MultibodyPlant.CalcForceElementsContribution.doc)
+            py::arg("forces"), cls_doc.CalcForceElementsContribution.doc)
         .def("CalcPotentialEnergy", &Class::CalcPotentialEnergy,
-            py::arg("context"), doc.MultibodyPlant.CalcPotentialEnergy.doc)
+            py::arg("context"), cls_doc.CalcPotentialEnergy.doc)
         .def("CalcConservativePower", &Class::CalcConservativePower,
-            py::arg("context"), doc.MultibodyPlant.CalcConservativePower.doc)
+            py::arg("context"), cls_doc.CalcConservativePower.doc)
         .def("GetPositionLowerLimits", &Class::GetPositionLowerLimits,
-            doc.MultibodyPlant.GetPositionLowerLimits.doc)
+            cls_doc.GetPositionLowerLimits.doc)
         .def("GetPositionUpperLimits", &Class::GetPositionUpperLimits,
-            doc.MultibodyPlant.GetPositionUpperLimits.doc)
+            cls_doc.GetPositionUpperLimits.doc)
         .def("GetVelocityLowerLimits", &Class::GetVelocityLowerLimits,
-            doc.MultibodyPlant.GetVelocityLowerLimits.doc)
+            cls_doc.GetVelocityLowerLimits.doc)
         .def("GetVelocityUpperLimits", &Class::GetVelocityUpperLimits,
-            doc.MultibodyPlant.GetVelocityUpperLimits.doc)
+            cls_doc.GetVelocityUpperLimits.doc)
         .def("GetAccelerationLowerLimits", &Class::GetAccelerationLowerLimits,
-            doc.MultibodyPlant.GetAccelerationLowerLimits.doc)
+            cls_doc.GetAccelerationLowerLimits.doc)
         .def("GetAccelerationUpperLimits", &Class::GetAccelerationUpperLimits,
-            doc.MultibodyPlant.GetAccelerationUpperLimits.doc)
+            cls_doc.GetAccelerationUpperLimits.doc)
         .def("CalcMassMatrixViaInverseDynamics",
             [](const Class* self, const Context<T>& context) {
               MatrixX<T> H;
@@ -342,10 +335,10 @@ PYBIND11_MODULE(plant, m) {
               self->CalcBiasTerm(context, &Cv);
               return Cv;
             },
-            py::arg("context"), doc.MultibodyPlant.CalcBiasTerm.doc)
+            py::arg("context"), cls_doc.CalcBiasTerm.doc)
         .def("CalcGravityGeneralizedForces",
             &Class::CalcGravityGeneralizedForces, py::arg("context"),
-            doc.MultibodyPlant.CalcGravityGeneralizedForces.doc)
+            cls_doc.CalcGravityGeneralizedForces.doc)
         .def("MapVelocityToQDot",
             [](const Class* self, const Context<T>& context,
                 const Eigen::Ref<const VectorX<T>>& v) {
@@ -353,8 +346,7 @@ PYBIND11_MODULE(plant, m) {
               self->MapVelocityToQDot(context, v, &qdot);
               return qdot;
             },
-            py::arg("context"), py::arg("v"),
-            doc.MultibodyPlant.MapVelocityToQDot.doc)
+            py::arg("context"), py::arg("v"), cls_doc.MapVelocityToQDot.doc)
         .def("MapQDotToVelocity",
             [](const Class* self, const Context<T>& context,
                 const Eigen::Ref<const VectorX<T>>& qdot) {
@@ -362,89 +354,87 @@ PYBIND11_MODULE(plant, m) {
               self->MapQDotToVelocity(context, qdot, &v);
               return v;
             },
-            py::arg("context"), py::arg("qdot"),
-            doc.MultibodyPlant.MapQDotToVelocity.doc)
+            py::arg("context"), py::arg("qdot"), cls_doc.MapQDotToVelocity.doc)
         .def("CalcRelativeTransform", &Class::CalcRelativeTransform,
             py::arg("context"), py::arg("frame_A"), py::arg("frame_B"),
-            doc.MultibodyPlant.CalcRelativeTransform.doc);
+            cls_doc.CalcRelativeTransform.doc);
     // Topology queries.
     cls  // BR
-        .def(
-            "num_frames", &Class::num_frames, doc.MultibodyPlant.num_frames.doc)
+        .def("num_frames", &Class::num_frames, cls_doc.num_frames.doc)
         .def("get_body", &Class::get_body, py::arg("body_index"),
-            py_reference_internal, doc.MultibodyPlant.get_body.doc)
+            py_reference_internal, cls_doc.get_body.doc)
         .def("get_joint", &Class::get_joint, py::arg("joint_index"),
-            py_reference_internal, doc.MultibodyPlant.get_joint.doc)
+            py_reference_internal, cls_doc.get_joint.doc)
         .def("get_joint_actuator", &Class::get_joint_actuator,
             py::arg("actuator_index"), py_reference_internal,
-            doc.MultibodyPlant.get_joint_actuator.doc)
+            cls_doc.get_joint_actuator.doc)
         .def("get_frame", &Class::get_frame, py::arg("frame_index"),
-            py_reference_internal, doc.MultibodyPlant.get_frame.doc)
+            py_reference_internal, cls_doc.get_frame.doc)
         .def("GetModelInstanceName",
             overload_cast_explicit<const string&, ModelInstanceIndex>(
                 &Class::GetModelInstanceName),
             py::arg("model_instance"), py_reference_internal,
-            doc.MultibodyPlant.GetModelInstanceName.doc)
+            cls_doc.GetModelInstanceName.doc)
         .def("HasBodyNamed",
             overload_cast_explicit<bool, const string&>(&Class::HasBodyNamed),
-            py::arg("name"), doc.MultibodyPlant.HasBodyNamed.doc_1args)
+            py::arg("name"), cls_doc.HasBodyNamed.doc_1args)
         .def("HasBodyNamed",
             overload_cast_explicit<bool, const string&, ModelInstanceIndex>(
                 &Class::HasBodyNamed),
             py::arg("name"), py::arg("model_instance"),
-            doc.MultibodyPlant.HasBodyNamed.doc_2args)
+            cls_doc.HasBodyNamed.doc_2args)
         .def("HasJointNamed",
             overload_cast_explicit<bool, const string&>(&Class::HasJointNamed),
-            py::arg("name"), doc.MultibodyPlant.HasJointNamed.doc_1args)
+            py::arg("name"), cls_doc.HasJointNamed.doc_1args)
         .def("HasJointNamed",
             overload_cast_explicit<bool, const string&, ModelInstanceIndex>(
                 &Class::HasJointNamed),
             py::arg("name"), py::arg("model_instance"),
-            doc.MultibodyPlant.HasJointNamed.doc_2args)
+            cls_doc.HasJointNamed.doc_2args)
         .def("GetFrameByName",
             overload_cast_explicit<const Frame<T>&, const string&>(
                 &Class::GetFrameByName),
             py::arg("name"), py_reference_internal,
-            doc.MultibodyPlant.GetFrameByName.doc_1args)
+            cls_doc.GetFrameByName.doc_1args)
         .def("GetFrameByName",
             overload_cast_explicit<const Frame<T>&, const string&,
                 ModelInstanceIndex>(&Class::GetFrameByName),
             py::arg("name"), py::arg("model_instance"), py_reference_internal,
-            doc.MultibodyPlant.GetFrameByName.doc_2args)
+            cls_doc.GetFrameByName.doc_2args)
         .def("GetBodyByName",
             overload_cast_explicit<const Body<T>&, const string&>(
                 &Class::GetBodyByName),
             py::arg("name"), py_reference_internal,
-            doc.MultibodyPlant.GetBodyByName.doc_1args)
+            cls_doc.GetBodyByName.doc_1args)
         .def("GetBodyByName",
             overload_cast_explicit<const Body<T>&, const string&,
                 ModelInstanceIndex>(&Class::GetBodyByName),
             py::arg("name"), py::arg("model_instance"), py_reference_internal,
-            doc.MultibodyPlant.GetBodyByName.doc_2args)
+            cls_doc.GetBodyByName.doc_2args)
         .def("GetBodyIndices", &Class::GetBodyIndices,
-            py::arg("model_instance"), doc.MultibodyPlant.GetBodyIndices.doc)
+            py::arg("model_instance"), cls_doc.GetBodyIndices.doc)
         .def("GetJointByName",
             [](const Class* self, const string& name,
                 optional<ModelInstanceIndex> model_instance) -> auto& {
               return self->GetJointByName(name, model_instance);
             },
             py::arg("name"), py::arg("model_instance") = nullopt,
-            py_reference_internal, doc.MultibodyPlant.GetJointByName.doc)
+            py_reference_internal, cls_doc.GetJointByName.doc)
         .def("GetJointActuatorByName",
             overload_cast_explicit<const JointActuator<T>&, const string&>(
                 &Class::GetJointActuatorByName),
             py::arg("name"), py_reference_internal,
-            doc.MultibodyPlant.GetJointActuatorByName.doc_1args)
+            cls_doc.GetJointActuatorByName.doc_1args)
         .def("GetModelInstanceByName",
             overload_cast_explicit<ModelInstanceIndex, const string&>(
                 &Class::GetModelInstanceByName),
             py::arg("name"), py_reference_internal,
-            doc.MultibodyPlant.GetModelInstanceByName.doc);
+            cls_doc.GetModelInstanceByName.doc);
     // Geometry.
     cls  // BR
         .def("RegisterAsSourceForSceneGraph",
             &Class::RegisterAsSourceForSceneGraph, py::arg("scene_graph"),
-            doc.MultibodyPlant.RegisterAsSourceForSceneGraph.doc)
+            cls_doc.RegisterAsSourceForSceneGraph.doc)
         .def("RegisterVisualGeometry",
             py::overload_cast<const Body<T>&, const RigidTransform<double>&,
                 const geometry::Shape&, const std::string&,
@@ -452,7 +442,7 @@ PYBIND11_MODULE(plant, m) {
                 &Class::RegisterVisualGeometry),
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
             py::arg("diffuse_color"), py::arg("scene_graph") = nullptr,
-            doc.MultibodyPlant.RegisterVisualGeometry
+            cls_doc.RegisterVisualGeometry
                 .doc_6args_body_X_BG_shape_name_diffuse_color_scene_graph)
         .def("RegisterVisualGeometry",
             [](Class* self, const Body<T>& body, const Isometry3<double>& X_BG,
@@ -474,7 +464,7 @@ PYBIND11_MODULE(plant, m) {
                 &Class::RegisterCollisionGeometry),
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
             py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
-            doc.MultibodyPlant.RegisterCollisionGeometry.doc)
+            cls_doc.RegisterCollisionGeometry.doc)
         .def("RegisterCollisionGeometry",
             [](Class* self, const Body<T>& body, const Isometry3<double>& X_BG,
                 const geometry::Shape& shape, const std::string& name,
@@ -488,67 +478,62 @@ PYBIND11_MODULE(plant, m) {
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
             py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
             doc_iso3_deprecation)
-        .def("get_source_id", &Class::get_source_id,
-            doc.MultibodyPlant.get_source_id.doc)
+        .def("get_source_id", &Class::get_source_id, cls_doc.get_source_id.doc)
         .def("get_geometry_query_input_port",
             &Class::get_geometry_query_input_port, py_reference_internal,
-            doc.MultibodyPlant.get_geometry_query_input_port.doc)
+            cls_doc.get_geometry_query_input_port.doc)
         .def("get_geometry_poses_output_port",
             &Class::get_geometry_poses_output_port, py_reference_internal,
-            doc.MultibodyPlant.get_geometry_poses_output_port.doc)
+            cls_doc.get_geometry_poses_output_port.doc)
         .def("geometry_source_is_registered",
             &Class::geometry_source_is_registered,
-            doc.MultibodyPlant.geometry_source_is_registered.doc)
+            cls_doc.geometry_source_is_registered.doc)
         .def("GetBodyFromFrameId", &Class::GetBodyFromFrameId,
-            py_reference_internal, doc.MultibodyPlant.GetBodyFromFrameId.doc)
+            py_reference_internal, cls_doc.GetBodyFromFrameId.doc)
         .def("GetBodyFrameIdIfExists", &Class::GetBodyFrameIdIfExists,
             py::arg("body_index"), py_reference_internal,
-            doc.MultibodyPlant.GetBodyFrameIdIfExists.doc);
+            cls_doc.GetBodyFrameIdIfExists.doc);
     // Port accessors.
     cls  // BR
         .def("get_actuation_input_port",
             overload_cast_explicit<const systems::InputPort<T>&>(
                 &Class::get_actuation_input_port),
-            py_reference_internal,
-            doc.MultibodyPlant.get_actuation_input_port.doc_0args)
+            py_reference_internal, cls_doc.get_actuation_input_port.doc_0args)
         .def("get_actuation_input_port",
             overload_cast_explicit<const systems::InputPort<T>&,
                 multibody::ModelInstanceIndex>(
                 &Class::get_actuation_input_port),
-            py_reference_internal,
-            doc.MultibodyPlant.get_actuation_input_port.doc_1args)
+            py_reference_internal, cls_doc.get_actuation_input_port.doc_1args)
         .def("get_continuous_state_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_continuous_state_output_port),
             py_reference_internal,
-            doc.MultibodyPlant.get_continuous_state_output_port.doc_0args)
+            cls_doc.get_continuous_state_output_port.doc_0args)
         .def("get_continuous_state_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&,
                 multibody::ModelInstanceIndex>(
                 &Class::get_continuous_state_output_port),
             py_reference_internal,
-            doc.MultibodyPlant.get_continuous_state_output_port.doc_1args)
+            cls_doc.get_continuous_state_output_port.doc_1args)
         .def("get_contact_results_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_contact_results_output_port),
-            py_reference_internal,
-            doc.MultibodyPlant.get_contact_results_output_port.doc)
+            py_reference_internal, cls_doc.get_contact_results_output_port.doc)
         .def("get_generalized_contact_forces_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&,
                 multibody::ModelInstanceIndex>(
                 &Class::get_generalized_contact_forces_output_port),
             py_reference_internal, py::arg("model_instance"),
-            doc.MultibodyPlant.get_generalized_contact_forces_output_port.doc);
+            cls_doc.get_generalized_contact_forces_output_port.doc);
     // Property accessors.
     cls  // BR
         .def("world_body", &Class::world_body, py_reference_internal,
-            doc.MultibodyPlant.world_body.doc)
+            cls_doc.world_body.doc)
         .def("world_frame", &Class::world_frame, py_reference_internal,
-            doc.MultibodyPlant.world_frame.doc)
-        .def("is_finalized", &Class::is_finalized,
-            doc.MultibodyPlant.is_finalized.doc)
+            cls_doc.world_frame.doc)
+        .def("is_finalized", &Class::is_finalized, cls_doc.is_finalized.doc)
         .def("Finalize", py::overload_cast<SceneGraph<T>*>(&Class::Finalize),
-            py::arg("scene_graph") = nullptr, doc.MultibodyPlant.Finalize.doc);
+            py::arg("scene_graph") = nullptr, cls_doc.Finalize.doc);
     // Position and velocity accessors and mutators.
     cls  // BR
         .def("GetMutablePositionsAndVelocities",
@@ -559,7 +544,7 @@ PYBIND11_MODULE(plant, m) {
             py_reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 2>(), py::arg("context"),
-            doc.MultibodyPlant.GetMutablePositionsAndVelocities.doc)
+            cls_doc.GetMutablePositionsAndVelocities.doc)
         .def("GetMutablePositions",
             [](const MultibodyPlant<T>* self,
                 Context<T>* context) -> Eigen::Ref<VectorX<T>> {
@@ -568,7 +553,7 @@ PYBIND11_MODULE(plant, m) {
             py_reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 2>(), py::arg("context"),
-            doc.MultibodyPlant.GetMutablePositions.doc_1args)
+            cls_doc.GetMutablePositions.doc_1args)
         .def("GetMutableVelocities",
             [](const MultibodyPlant<T>* self,
                 Context<T>* context) -> Eigen::Ref<VectorX<T>> {
@@ -577,24 +562,23 @@ PYBIND11_MODULE(plant, m) {
             py_reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 2>(), py::arg("context"),
-            doc.MultibodyPlant.GetMutableVelocities.doc_1args)
+            cls_doc.GetMutableVelocities.doc_1args)
         .def("GetPositions",
             [](const MultibodyPlant<T>* self, const Context<T>& context)
                 -> VectorX<T> { return self->GetPositions(context); },
-            py_reference, py::arg("context"),
-            doc.MultibodyPlant.GetPositions.doc_1args)
+            py_reference, py::arg("context"), cls_doc.GetPositions.doc_1args)
         .def("GetPositions",
             [](const MultibodyPlant<T>* self, const Context<T>& context,
                 multibody::ModelInstanceIndex model_instance) -> VectorX<T> {
               return self->GetPositions(context, model_instance);
             },
             py_reference, py::arg("context"), py::arg("model_instance"),
-            doc.MultibodyPlant.GetPositions.doc_2args)
+            cls_doc.GetPositions.doc_2args)
         .def("SetPositions",
             [](const MultibodyPlant<T>* self, Context<T>* context,
                 const VectorX<T>& q) { self->SetPositions(context, q); },
             py_reference, py::arg("context"), py::arg("q"),
-            doc.MultibodyPlant.SetPositions.doc_2args)
+            cls_doc.SetPositions.doc_2args)
         .def("SetPositions",
             [](const MultibodyPlant<T>* self, Context<T>* context,
                 multibody::ModelInstanceIndex model_instance,
@@ -602,52 +586,51 @@ PYBIND11_MODULE(plant, m) {
               self->SetPositions(context, model_instance, q);
             },
             py_reference, py::arg("context"), py::arg("model_instance"),
-            py::arg("q"), doc.MultibodyPlant.SetPositions.doc_2args)
+            py::arg("q"), cls_doc.SetPositions.doc_2args)
         .def("GetVelocities",
             [](const MultibodyPlant<T>* self, const Context<T>& context)
                 -> VectorX<T> { return self->GetVelocities(context); },
-            py_reference, py::arg("context"),
-            doc.MultibodyPlant.GetVelocities.doc_1args)
+            py_reference, py::arg("context"), cls_doc.GetVelocities.doc_1args)
         .def("GetVelocities",
             [](const MultibodyPlant<T>* self, const Context<T>& context,
                 multibody::ModelInstanceIndex model_instance) -> VectorX<T> {
               return self->GetVelocities(context, model_instance);
             },
             py_reference, py::arg("context"), py::arg("model_instance"),
-            doc.MultibodyPlant.GetVelocities.doc_2args)
+            cls_doc.GetVelocities.doc_2args)
         .def("SetVelocities",
             [](const MultibodyPlant<T>* self, Context<T>* context,
                 const VectorX<T>& v) { self->SetVelocities(context, v); },
             py_reference, py::arg("context"), py::arg("v"),
-            doc.MultibodyPlant.SetVelocities.doc_2args)
+            cls_doc.SetVelocities.doc_2args)
         .def("SetVelocities",
             [](const MultibodyPlant<T>* self, Context<T>* context,
                 ModelInstanceIndex model_instance, const VectorX<T>& v) {
               self->SetVelocities(context, model_instance, v);
             },
             py_reference, py::arg("context"), py::arg("model_instance"),
-            py::arg("v"), doc.MultibodyPlant.SetVelocities.doc_3args)
+            py::arg("v"), cls_doc.SetVelocities.doc_3args)
         .def("GetPositionsAndVelocities",
             [](const MultibodyPlant<T>* self,
                 const Context<T>& context) -> VectorX<T> {
               return self->GetPositionsAndVelocities(context);
             },
             py_reference, py::arg("context"),
-            doc.MultibodyPlant.GetPositionsAndVelocities.doc_1args)
+            cls_doc.GetPositionsAndVelocities.doc_1args)
         .def("GetPositionsAndVelocities",
             [](const MultibodyPlant<T>* self, const Context<T>& context,
                 multibody::ModelInstanceIndex model_instance) -> VectorX<T> {
               return self->GetPositionsAndVelocities(context, model_instance);
             },
             py_reference, py::arg("context"), py::arg("model_instance"),
-            doc.MultibodyPlant.GetPositionsAndVelocities.doc_2args)
+            cls_doc.GetPositionsAndVelocities.doc_2args)
         .def("SetPositionsAndVelocities",
             [](const MultibodyPlant<T>* self, Context<T>* context,
                 const VectorX<T>& q_v) {
               self->SetPositionsAndVelocities(context, q_v);
             },
             py_reference, py::arg("context"), py::arg("q_v"),
-            doc.MultibodyPlant.SetPositionsAndVelocities.doc_2args)
+            cls_doc.SetPositionsAndVelocities.doc_2args)
         .def("SetPositionsAndVelocities",
             [](const MultibodyPlant<T>* self, Context<T>* context,
                 multibody::ModelInstanceIndex model_instance,
@@ -655,66 +638,72 @@ PYBIND11_MODULE(plant, m) {
               self->SetPositionsAndVelocities(context, model_instance, q_v);
             },
             py_reference, py::arg("context"), py::arg("model_instance"),
-            py::arg("q_v"),
-            doc.MultibodyPlant.SetPositionsAndVelocities.doc_3args)
+            py::arg("q_v"), cls_doc.SetPositionsAndVelocities.doc_3args)
         .def("SetDefaultState",
             [](const Class* self, const Context<T>& context, State<T>* state) {
               self->SetDefaultState(context, state);
             },
-            py::arg("context"), py::arg("state"),
-            doc.MultibodyPlant.SetDefaultState.doc);
+            py::arg("context"), py::arg("state"), cls_doc.SetDefaultState.doc);
   }
 
   // PointPairContactInfo
   {
     using Class = PointPairContactInfo<T>;
-    py::class_<Class>(m, "PointPairContactInfo")
+    constexpr auto& cls_doc = doc.PointPairContactInfo;
+    py::class_<Class>(m, "PointPairContactInfo", cls_doc.doc)
         .def(py::init<BodyIndex, BodyIndex, const Vector3<T>, const Vector3<T>,
                  const T&, const T&,
                  const geometry::PenetrationAsPointPair<T>>(),
             py::arg("bodyA_index"), py::arg("bodyB_index"), py::arg("f_Bc_W"),
             py::arg("p_WC"), py::arg("separation_speed"), py::arg("slip_speed"),
-            py::arg("point_pair"))
-        .def("bodyA_index", &Class::bodyA_index)
-        .def("bodyB_index", &Class::bodyB_index)
-        .def("contact_force", &Class::contact_force)
-        .def("contact_point", &Class::contact_point)
-        .def("slip_speed", &Class::slip_speed)
-        .def("separation_speed", &Class::separation_speed)
-        .def("point_pair", &Class::point_pair);
+            py::arg("point_pair"), cls_doc.ctor.doc)
+        .def("bodyA_index", &Class::bodyA_index, cls_doc.bodyA_index.doc)
+        .def("bodyB_index", &Class::bodyB_index, cls_doc.bodyB_index.doc)
+        .def("contact_force", &Class::contact_force, cls_doc.contact_force.doc)
+        .def("contact_point", &Class::contact_point, cls_doc.contact_point.doc)
+        .def("slip_speed", &Class::slip_speed, cls_doc.slip_speed.doc)
+        .def("separation_speed", &Class::separation_speed,
+            cls_doc.separation_speed.doc)
+        .def("point_pair", &Class::point_pair, cls_doc.point_pair.doc);
   }
 
   // ContactResults
   {
     using Class = ContactResults<T>;
-    py::class_<Class>(m, "ContactResults")
-        .def(py::init<>())
-        .def("num_contacts", &Class::num_contacts)
+    constexpr auto& cls_doc = doc.ContactResults;
+    py::class_<Class>(m, "ContactResults", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc)
+        .def("num_contacts", &Class::num_contacts, cls_doc.num_contacts.doc)
         .def("AddContactInfo", &Class::AddContactInfo,
-            py::arg("point_pair_info"))
-        .def("contact_info", &Class::contact_info, py::arg("i"));
+            py::arg("point_pair_info"), cls_doc.AddContactInfo.doc)
+        .def("contact_info", &Class::contact_info, py::arg("i"),
+            cls_doc.contact_info.doc);
     pysystems::AddValueInstantiation<Class>(m);
   }
 
   // ContactResultsToLcmSystem
   {
     using Class = ContactResultsToLcmSystem<T>;
-    py::class_<Class, systems::LeafSystem<T>>(m, "ContactResultsToLcmSystem")
+    constexpr auto& cls_doc = doc.ContactResultsToLcmSystem;
+    py::class_<Class, systems::LeafSystem<T>>(
+        m, "ContactResultsToLcmSystem", cls_doc.doc)
         .def(py::init<const MultibodyPlant<double>&>(), py::arg("plant"),
             // Keep alive, reference: `self` keeps `plant` alive.
-            py::keep_alive<1, 2>())
+            py::keep_alive<1, 2>(), cls_doc.ctor.doc)
         .def("get_contact_result_input_port",
-            &Class::get_contact_result_input_port, py_reference_internal)
+            &Class::get_contact_result_input_port, py_reference_internal,
+            cls_doc.get_contact_result_input_port.doc)
         .def("get_lcm_message_output_port", &Class::get_lcm_message_output_port,
-            py_reference_internal);
+            py_reference_internal, cls_doc.get_lcm_message_output_port.doc);
   }
 
   // CoulombFriction
   {
     using Class = CoulombFriction<T>;
-    py::class_<Class>(m, "CoulombFriction")
+    constexpr auto& cls_doc = doc.CoulombFriction;
+    py::class_<Class>(m, "CoulombFriction", cls_doc.doc)
         .def(py::init<const T&, const T&>(), py::arg("static_friction"),
-            py::arg("dynamic_friction"), doc.CoulombFriction.ctor.doc_2args);
+            py::arg("dynamic_friction"), cls_doc.ctor.doc_2args);
   }
 
   m.def("AddMultibodyPlantSceneGraph",
@@ -748,7 +737,8 @@ PYBIND11_MODULE(plant, m) {
       py::keep_alive<2, 1>(),
       // Keep alive, reference transfer: `lcm` keeps `builder` alive.
       py::keep_alive<3, 1>(), py_reference, py::arg("builder"),
-      py::arg("plant"), py::arg("lcm") = nullptr);
+      py::arg("plant"), py::arg("lcm") = nullptr,
+      doc.ConnectContactResultsToDrakeVisualizer.doc_3args);
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake

@@ -184,6 +184,19 @@ An example of supplying custom strings:
     }
 ~~~
 
+@note Consider using scoped aliases to abbreviate both the usage of bound types
+and the docstring structures. Borrowing from above:
+
+~~~{.cc}
+    {
+      using Class = RigidTransform<T>;
+      constexpr auto& cls_doc = doc.RigidTransform;
+      py::class_<Class>(m, "RigidTransform", cls_doc.doc)
+          .def(py::init(), cls_doc.ctor.doc_0args)
+          ...
+    }
+~~~
+
 To view the documentation rendered in Sphinx:
 
     bazel run //bindings/pydrake/doc:serve_sphinx [-- --browser=false]
