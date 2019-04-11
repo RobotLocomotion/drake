@@ -199,6 +199,109 @@ RoadRulebook:
         Stop: []
       Zone:
       - Lane: l:west_left_turn_segment_0
+  DirectionUsageRules:
+    - ID: l:north_right_turn_segment_0
+      Zone:
+        Lane: l:north_right_turn_segment_0
+      States:
+        WithS: Strict
+    - ID: l:north_left_turn_segment_0
+      Zone:
+        Lane: l:north_left_turn_segment_0
+      States:
+        WithS: Strict
+    - ID: l:south_right_turn_segment_0
+      Zone:
+        Lane: l:south_right_turn_segment_0
+      States:
+        WithS: Strict
+    - ID: l:south_left_turn_segment_0
+      Zone:
+        Lane: l:south_left_turn_segment_0
+      States:
+        WithS: Strict
+    - ID: l:east_right_turn_segment_0
+      Zone:
+        Lane: l:east_right_turn_segment_0
+      States:
+        WithS: Strict
+    - ID: l:east_left_turn_segment_0
+      Zone:
+        Lane: l:east_left_turn_segment_0
+      States:
+        WithS: Strict
+    - ID: l:west_right_turn_segment_0
+      Zone:
+        Lane: l:west_right_turn_segment_0
+      States:
+        WithS: Strict
+    - ID: l:west_left_turn_segment_0
+      Zone:
+        Lane: l:west_left_turn_segment_0
+      States:
+        WithS: Strict
+    # The rightmost lane in a segment travels +S and the north/south
+    # and east/west pairs  have the same +S direction.
+    - ID: l:n_segment_0
+      Zone:
+        Lane: l:n_segment_0
+      States:
+        WithS: Preferred
+    - ID: l:n_segment_1
+      Zone:
+        Lane: l:n_segment_1
+      States:
+        AgainstS: Preferred
+    - ID: l:s_segment_0
+      Zone:
+        Lane: l:s_segment_0
+      States:
+        WithS: Preferred
+    - ID: l:s_segment_1
+      Zone:
+        Lane: l:s_segment_1
+      States:
+        AgainstS: Preferred
+    - ID: l:e_segment_0
+      Zone:
+        Lane: l:e_segment_0
+      States:
+        WithS: Preferred
+    - ID: l:e_segment_1
+      Zone:
+        Lane: l:e_segment_1
+      States:
+        AgainstS: Preferred
+    - ID: l:w_segment_1
+      Zone:
+        Lane: l:w_segment_1
+      States:
+        AgainstS: Preferred
+    - ID: l:w_segment_0
+      Zone:
+        Lane: l:w_segment_0
+      States:
+        WithS: Preferred
+    - ID: l:ns_intersection_segment_0
+      Zone:
+        Lane: l:ns_intersection_segment_0
+      States:
+        WithS: Strict
+    - ID: l:ns_intersection_segment_1
+      Zone:
+        Lane: l:ns_intersection_segment_1
+      States:
+        AgainstS: Strict
+    - ID: l:ew_intersection_segment_0
+      Zone:
+        Lane: l:ew_intersection_segment_0
+      States:
+        WithS: Strict
+    - ID: l:ew_intersection_segment_1
+      Zone:
+        Lane: l:ew_intersection_segment_1
+      States:
+        AgainstS: Strict
 
 TrafficLights:
 # The traffic light IDs denote the intersection entrance they regulate. For
