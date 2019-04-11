@@ -40,6 +40,11 @@ int GetVariableSize(const multibody::MultibodyPlant<T>& plant,
   DRAKE_UNREACHABLE();
 }
 
+constexpr char doc_iso3_deprecation[] = R"""(
+This API using Isometry3 is / will be deprecated soon with the resolution of
+#9865. We only offer it for backwards compatibility. DO NOT USE!.
+)""";
+
 PYBIND11_MODULE(plant, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
 
@@ -53,11 +58,6 @@ PYBIND11_MODULE(plant, m) {
   py::module::import("pydrake.multibody.math");
   py::module::import("pydrake.multibody.tree");
   py::module::import("pydrake.systems.framework");
-
-  constexpr char doc_iso3_deprecation[] =
-      "This API using Isometry3 is / will be deprecated soon with the "
-      "resolution of #9865. We only offer it for backwards compatibility. DO "
-      "NOT USE!.";
 
   {
     using Class = MultibodyPlant<T>;
@@ -121,8 +121,7 @@ PYBIND11_MODULE(plant, m) {
             py::arg("X_AB") = RigidTransform<double>::Identity(),
             py_reference_internal, doc.MultibodyPlant.WeldFrames.doc)
         .def("WeldFrames",
-            [doc_iso3_deprecation](Class* self, const Frame<T>& A,
-                const Frame<T>& B,
+            [](Class* self, const Frame<T>& A, const Frame<T>& B,
                 const Isometry3<double>& X_AB) -> const WeldJoint<T>& {
               WarnDeprecated(doc_iso3_deprecation);
               return self->WeldFrames(A, B, RigidTransform<double>(X_AB));
@@ -186,8 +185,8 @@ PYBIND11_MODULE(plant, m) {
             py::arg("context"), py::arg("body"), py::arg("X_WB"),
             doc.MultibodyPlant.SetFreeBodyPose.doc_3args)
         .def("SetFreeBodyPose",
-            [doc_iso3_deprecation](const Class* self, Context<T>* context,
-                const Body<T>& body, const Isometry3<T>& X_WB) {
+            [](const Class* self, Context<T>* context, const Body<T>& body,
+                const Isometry3<T>& X_WB) {
               WarnDeprecated(doc_iso3_deprecation);
               return self->SetFreeBodyPose(
                   context, body, RigidTransform<T>(X_WB));
@@ -456,9 +455,9 @@ PYBIND11_MODULE(plant, m) {
             doc.MultibodyPlant.RegisterVisualGeometry
                 .doc_6args_body_X_BG_shape_name_diffuse_color_scene_graph)
         .def("RegisterVisualGeometry",
-            [doc_iso3_deprecation](Class* self, const Body<T>& body,
-                const Isometry3<double>& X_BG, const geometry::Shape& shape,
-                const std::string& name, const Vector4<double>& diffuse_color,
+            [](Class* self, const Body<T>& body, const Isometry3<double>& X_BG,
+                const geometry::Shape& shape, const std::string& name,
+                const Vector4<double>& diffuse_color,
                 geometry::SceneGraph<T>* scene_graph) {
               WarnDeprecated(doc_iso3_deprecation);
               return self->RegisterVisualGeometry(body,
@@ -477,9 +476,8 @@ PYBIND11_MODULE(plant, m) {
             py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
             doc.MultibodyPlant.RegisterCollisionGeometry.doc)
         .def("RegisterCollisionGeometry",
-            [doc_iso3_deprecation](Class* self, const Body<T>& body,
-                const Isometry3<double>& X_BG, const geometry::Shape& shape,
-                const std::string& name,
+            [](Class* self, const Body<T>& body, const Isometry3<double>& X_BG,
+                const geometry::Shape& shape, const std::string& name,
                 const CoulombFriction<double>& coulomb_friction,
                 geometry::SceneGraph<T>* scene_graph) {
               WarnDeprecated(doc_iso3_deprecation);

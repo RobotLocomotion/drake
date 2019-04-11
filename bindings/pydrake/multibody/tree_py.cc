@@ -50,6 +50,11 @@ void BindMultibodyTreeElementMixin(PyClass* pcls) {
       cls, "get_parent_tree", "`get_parent_tree()` will soon be internal.");
 }
 
+constexpr char doc_iso3_deprecation[] = R"""(
+This API using Isometry3 is / will be deprecated soon with the resolution of
+#9865. We only offer it for backwards compatibility. DO NOT USE!.
+)""";
+
 PYBIND11_MODULE(tree, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
@@ -72,11 +77,6 @@ PYBIND11_MODULE(tree, m) {
   BindTypeSafeIndex<ModelInstanceIndex>(
       m, "ModelInstanceIndex", doc.ModelInstanceIndex.doc);
   m.def("world_index", &world_index, doc.world_index.doc);
-
-  constexpr char doc_iso3_deprecation[] =
-      "This API using Isometry3 is / will be deprecated soon with the "
-      "resolution of #9865. We only offer it for backwards compatibility. DO "
-      "NOT USE!.";
 
   // Frames.
   {
@@ -104,8 +104,8 @@ PYBIND11_MODULE(tree, m) {
                  const RigidTransform<T>&, optional<ModelInstanceIndex>>(),
             py::arg("name"), py::arg("P"), py::arg("X_PF"),
             py::arg("model_instance") = nullopt, cls_doc.ctor.doc_4args)
-        .def(py::init([doc_iso3_deprecation](const std::string& name,
-                          const Frame<T>& P, const Isometry3<T>& X_PF,
+        .def(py::init([](const std::string& name, const Frame<T>& P,
+                          const Isometry3<T>& X_PF,
                           optional<ModelInstanceIndex> model_instance) {
           WarnDeprecated(doc_iso3_deprecation);
           return std::make_unique<Class>(
@@ -217,8 +217,7 @@ PYBIND11_MODULE(tree, m) {
             py::arg("name"), py::arg("parent_frame_P"),
             py::arg("child_frame_C"), py::arg("X_PC"), doc.WeldJoint.ctor.doc)
         .def(py::init(
-                 [doc_iso3_deprecation](const std::string& name,
-                     const Frame<T>& parent_frame_P,
+                 [](const std::string& name, const Frame<T>& parent_frame_P,
                      const Frame<T>& child_frame_C, const Isometry3<T>& X_PC) {
                    WarnDeprecated(doc_iso3_deprecation);
                    return std::make_unique<Class>(name, parent_frame_P,
