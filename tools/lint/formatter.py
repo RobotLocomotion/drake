@@ -45,9 +45,11 @@ class FormatterBase(object):
         else:
             self._original_lines = [unicode(line) for line in readlines]
         self._working_lines = list(self._original_lines)
-        self._check_rep()
         if any(["\r" in line for line in self._working_lines]):
             raise Exception("DOS newlines are not supported")
+        if not self._working_lines[-1].endswith("\n"):
+            raise Exception("Missing newline character at end of file")
+        self._check_rep()
 
     def _check_rep(self):
         assert self._filename

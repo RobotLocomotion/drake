@@ -37,7 +37,11 @@ def _check_invalid_line_endings(filename):
 
 def _check_includes(filename):
     """Return 0 if clang-format-includes is a no-op, and 1 otherwise."""
-    tool = IncludeFormatter(filename)
+    try:
+        tool = IncludeFormatter(filename)
+    except Exception as e:
+        print("ERROR: " + filename + ":0: " + e.message)
+        return 1
     tool.format_includes()
     first_difference = tool.get_first_differing_original_index()
     if first_difference is not None:
