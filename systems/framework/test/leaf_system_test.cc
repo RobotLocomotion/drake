@@ -2588,9 +2588,9 @@ class EventSugarTestSystem : public LeafSystem<double> {
 
     // Two forced discrete update callbacks (to ensure that they are
     // additive).
-    DeclareForcedDiscreteVariableUpdatesEvent(
+    DeclareForcedDiscreteUpdateEvent(
         &EventSugarTestSystem::MyDiscreteUpdateHandler);
-    DeclareForcedDiscreteVariableUpdatesEvent(
+    DeclareForcedDiscreteUpdateEvent(
         &EventSugarTestSystem::MySecondDiscreteUpdateHandler);
 
     // These variants don't require an EventStatus return.

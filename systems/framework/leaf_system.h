@@ -1367,7 +1367,7 @@ class LeafSystem : public System<T> {
   /// @pre `this` must be dynamic_cast-able to MySystem.
   /// @pre `update` must not be null.
   template <class MySystem>
-  void DeclareForcedDiscreteVariableUpdatesEvent(EventStatus
+  void DeclareForcedDiscreteUpdateEvent(EventStatus
       (MySystem::*update)(const Context<T>&, DiscreteValues<T>*) const) {
     static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
                   "Expected to be invoked from a LeafSystem-derived System.");
