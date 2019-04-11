@@ -401,7 +401,7 @@ void MathematicalProgram::AddMaximizeLogDeterminantSymmetricMatrixCost(
 
   MatrixX<symbolic::Expression> psd_mat(2 * X_rows, 2 * X_rows);
   // clang-format off
-  psd_mat << X, Z,
+  psd_mat << X,             Z,
              Z.transpose(), diag_Z;
   // clang-format on
   AddPositiveSemidefiniteConstraint(psd_mat);

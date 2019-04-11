@@ -952,7 +952,7 @@ class MathematicalProgram {
   Binding<Cost> AddCost(const symbolic::Expression& e);
 
   /**
-   * Add the cost to maximize the log determinant of symmetric matrix X.
+   * Adds the cost to maximize the log determinant of symmetric matrix X.
    * log(det(X)) is a concave function of X, so we can maximize it through
    * convex optimization. In order to do that, we introduce slack variables t,
    * and a lower triangular matrix Z, with the constraints
@@ -961,7 +961,11 @@ class MathematicalProgram {
    * log(Z(i, i)) >= t(i)
    * and we will minimize -∑ᵢt(i).
    * @param X A symmetric positive semidefinite matrix X, whose log(det(X)) will
-   * be maximized. @pre X is a symmetric matrix.
+   * be maximized.
+   * @pre X is a symmetric matrix.
+   * @note The constraint log(Z(i, i)) >= t(i) is imposed as an exponential cone
+   * constraint. Please make sure your have a solver that supports exponential
+   * cone constraint (currently SCS does).
    */
   void AddMaximizeLogDeterminantSymmetricMatrixCost(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);

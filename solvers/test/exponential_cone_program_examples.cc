@@ -73,8 +73,9 @@ void MinimalEllipsoidCoveringPoints(const SolverInterface& solver, double tol) {
   const double theta = M_PI / 7;
   Eigen::Matrix2d R;
   R << std::cos(theta), -std::sin(theta), std::sin(theta), std::cos(theta);
-  pts = R * Eigen::Vector2d(0.3, 0.5).asDiagonal() * pts;
-  pts += Eigen::Vector2d(0.2, 0.5) * Eigen::RowVector4d::Ones();
+  const Eigen::Vector2d scaling_factor(0.3, 0.5);
+  pts = R * scaling_factor.asDiagonal() * pts;
+  // pts += Eigen::Vector2d(0.2, 0.5) * Eigen::RowVector4d::Ones();
   // Create the MathematicalProgram, such that the ellipsoid covers pts.
   MathematicalProgram prog;
   auto S = prog.NewSymmetricContinuousVariables<2>();
@@ -104,9 +105,14 @@ void MinimalEllipsoidCoveringPoints(const SolverInterface& solver, double tol) {
         pts.col(i).dot(S_sol * pts.col(i)) + b_sol.dot(pts.col(i)) + c_sol, 1,
         tol);
   }
-  // Check the volume matches with the cost.
-  const double expected_cost = std::log(1 / S_sol.determinant());
+  // Check the volume and the cost matches with the expected minimal volume.
+  // We know that for the smallest ellipsoid, S* has eigen values
+  // (0.5 / scaling_factor(0)², 0.5 / scaling_factor(1)²). det(S) is just
+  // (0.25 / (scaling_factor(0)² * scaling_factor(1)²));
+  const double expected_cost =
+      -std::log(0.25 / std::pow(scaling_factor(0) * scaling_factor(1), 2));
   EXPECT_NEAR(result.get_optimal_cost(), expected_cost, tol);
+  EXPECT_NEAR(-std::log(S_sol.determinant()), expected_cost, tol);
 }
 }  // namespace test
 }  // namespace solvers
