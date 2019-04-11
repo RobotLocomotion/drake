@@ -123,6 +123,10 @@ const Body<double>& GetBodyByLinkSpecificationName(
 }
 
 // Extracts a Vector3d representation of the joint axis for joints with an axis.
+// WARNING: SDFormat <=1.6 is presently ambiguous on whether the joint frame J
+// is actually the parent-fixed frame Jp or the child-fixed frame Jc. Since our
+// current joints are either 0- or 1-dof, this does not matter, so we will
+// denoting it as `axis_J` for the time being.
 Vector3d ExtractJointAxis(const sdf::Model& model_spec,
                           const sdf::Joint& joint_spec) {
   DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::REVOLUTE ||
@@ -135,22 +139,24 @@ Vector3d ExtractJointAxis(const sdf::Model& model_spec,
         "An axis must be specified for joint '" + joint_spec.Name() + "'");
   }
 
-  // Joint axis, by default in the joint frame J.
+  // Joint axis in joint frame.
   // TODO(amcastro-tri): Verify JointAxis::UseParentModelFrame is actually
   // supported by sdformat.
-  Vector3d axis_J = ToVector3(axis->Xyz());
+  const Vector3d axis_J = ToVector3(axis->Xyz());
   if (axis->UseParentModelFrame()) {
-    // Pose of the joint frame J in the frame of the child link C.
+    // Pose of the joint frame Jc in the frame of the child link C.
     ThrowIfPoseFrameSpecified(joint_spec.Element());
-    const RigidTransformd X_CJ = ToRigidTransform(joint_spec.Pose());
+    const RigidTransformd X_CJc = ToRigidTransform(joint_spec.Pose());
     // Get the pose of the child link C in the model frame M.
     const RigidTransformd X_MC = ToRigidTransform(
         model_spec.LinkByName(joint_spec.ChildLinkName())->Pose());
-    const RigidTransformd X_MJ = X_MC * X_CJ;
-    // axis_J actually contains axis_M, expressed in the model frame M.
-    axis_J = X_MJ.linear().transpose() * axis_J;
+    // See comments about about Jc and Jp at zero configuration.
+    const RigidTransformd X_MJp = X_MC * X_CJc;
+    const Vector3d axis_M = X_MJp.linear().transpose() * axis_J;
+    return axis_M;
+  } else {
+    return axis_J;
   }
-  return axis_J;
 }
 
 // Helper to parse the damping for a given joint specification.
@@ -271,39 +277,44 @@ void AddJointFromSpecification(
   const Body<double>& child_body = GetBodyByLinkSpecificationName(
       model_spec, joint_spec.ChildLinkName(), model_instance, *plant);
 
-  // Get the pose of frame J in the frame of the child link C, as specified in
-  // <joint> <pose> ... </pose></joint>.
-  // TODO(eric.cousineau): Verify sdformat supports frame specifications
-  // correctly.
-  ThrowIfPoseFrameSpecified(joint_spec.Element());
-  const RigidTransformd X_CJ = ToRigidTransform(joint_spec.Pose());
+  // Frame Jp is the parent-attached frame, and Jc is the child-attached frame.
+  // (In Mobilizer frame terminology, mobilizer_F = Jp, mobilizer_M = Jc)
 
-  // Get the pose of the child link C in the model frame M.
+  // Get the pose of frame Jc in the frame of the child link C, as specified in
+  // <joint> <pose> ... </pose></joint>.
+  ThrowIfPoseFrameSpecified(joint_spec.Element());
+  const RigidTransformd X_CJc = ToRigidTransform(joint_spec.Pose());
+
+  // Get the pose of the child link C in the model frame M. The spec indicates
+  // that //joint/pose is specified w.r.t. the child link, so we will assume
+  // that this is for Jc.
   // TODO(eric.cousineau): Figure out how to use link poses when they are NOT
   // connected to a joint.
   const RigidTransformd X_MC = ToRigidTransform(
       model_spec.LinkByName(joint_spec.ChildLinkName())->Pose());
 
-  // Pose of the joint frame J in the model frame M.
-  const RigidTransformd X_MJ = X_MC * X_CJ;
+  // Pose of the frame Jp in the model frame M.
+  // N.B. At zero configuration, Jp and Jc coincide, so we can compute them
+  // equivalently.
+  const RigidTransformd X_MJp = X_MC * X_CJc;
 
-  // Pose of the frame J in the parent body frame P.
-  optional<RigidTransformd> X_PJ;
+  // Pose of the parent-fixd joint frame Jp in the parent body frame P.
+  optional<RigidTransformd> X_PJp;
   // We need to treat the world case separately since sdformat does not create
   // a "world" link from which we can request its pose (which in that case would
   // be the identity).
   if (parent_body.index() == world_index()) {
-    X_PJ = X_WM * X_MJ;  // Since P == W.
+    X_PJp = X_WM * X_MJp;  // Since P == W.
   } else {
     // Get the pose of the parent link P in the model frame M.
     const RigidTransformd X_MP = ToRigidTransform(
         model_spec.LinkByName(joint_spec.ParentLinkName())->Pose());
-    X_PJ = X_MP.inverse() * X_MJ;
+    X_PJp = X_MP.inverse() * X_MJp;
   }
 
-  // If P and J are coincident, we won't create a new frame for J, but use frame
-  // P directly. We indicate that by passing a nullopt.
-  if (X_PJ.value().IsExactlyIdentity()) X_PJ = nullopt;
+  // If P and Jp are coincident, we won't create a new frame for Jp, but use
+  // frame P directly. We indicate that by passing a nullopt.
+  if (X_PJp.value().IsExactlyIdentity()) X_PJp = nullopt;
 
   // These will only be populated for prismatic and revolute joints.
   double lower_limit = 0;
@@ -312,11 +323,12 @@ void AddJointFromSpecification(
 
   switch (joint_spec.Type()) {
     case sdf::JointType::FIXED: {
+      const RigidTransformd X_JpJc;
       plant->AddJoint<WeldJoint>(
           joint_spec.Name(),
-          parent_body, X_PJ,
-          child_body, X_CJ,
-          RigidTransformd::Identity() /* X_JpJc */);
+          parent_body, X_PJp,
+          child_body, X_CJc,
+          X_JpJc);
       break;
     }
     case sdf::JointType::PRISMATIC: {
@@ -326,8 +338,8 @@ void AddJointFromSpecification(
           ParseJointLimits(joint_spec);
       const auto& joint = plant->AddJoint<PrismaticJoint>(
           joint_spec.Name(),
-          parent_body, X_PJ,
-          child_body, X_CJ, axis_J, lower_limit, upper_limit, damping);
+          parent_body, X_PJp,
+          child_body, X_CJc, axis_J, lower_limit, upper_limit, damping);
       plant->get_mutable_joint(joint.index()).set_velocity_limits(
           Vector1d(-velocity_limit), Vector1d(velocity_limit));
       AddJointActuatorFromSpecification(joint_spec, joint, plant);
@@ -340,8 +352,8 @@ void AddJointFromSpecification(
           ParseJointLimits(joint_spec);
       const auto& joint = plant->AddJoint<RevoluteJoint>(
           joint_spec.Name(),
-          parent_body, X_PJ,
-          child_body, X_CJ, axis_J, lower_limit, upper_limit, damping);
+          parent_body, X_PJp,
+          child_body, X_CJc, axis_J, lower_limit, upper_limit, damping);
       plant->get_mutable_joint(joint.index()).set_velocity_limits(
           Vector1d(-velocity_limit), Vector1d(velocity_limit));
       AddJointActuatorFromSpecification(joint_spec, joint, plant);
