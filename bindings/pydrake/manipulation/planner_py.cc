@@ -28,7 +28,7 @@ PYBIND11_MODULE(planner, m) {
 
   {
     using Class = manipulation::planner::DifferentialInverseKinematicsResult;
-    constexpr auto& class_doc = doc.DifferentialInverseKinematicsResult;
+    constexpr auto& cls_doc = doc.DifferentialInverseKinematicsResult;
     py::class_<Class> cls(m, "DifferentialInverseKinematicsResult",
         doc.DifferentialInverseKinematicsResult.doc);
 
@@ -39,13 +39,13 @@ PYBIND11_MODULE(planner, m) {
        }),
            py::arg("joint_velocities"), py::arg("status"))
         .def_readwrite("joint_velocities", &Class::joint_velocities,
-            class_doc.joint_velocities.doc)
-        .def_readwrite("status", &Class::status, class_doc.status.doc);
+            cls_doc.joint_velocities.doc)
+        .def_readwrite("status", &Class::status, cls_doc.status.doc);
   }
   {
     using Class =
         manipulation::planner::DifferentialInverseKinematicsParameters;
-    constexpr auto& class_doc = doc.DifferentialInverseKinematicsParameters;
+    constexpr auto& cls_doc = doc.DifferentialInverseKinematicsParameters;
 
     py::class_<Class> cls(m, "DifferentialInverseKinematicsParameters",
         doc.DifferentialInverseKinematicsParameters.doc);
@@ -54,43 +54,43 @@ PYBIND11_MODULE(planner, m) {
          return Class{num_positions, num_velocities};
        }),
            py::arg("num_positions") = 0, py::arg("num_velocities") = 0,
-           class_doc.ctor.doc)
-        .def("get_timestep", &Class::get_timestep, class_doc.get_timestep.doc)
-        .def("set_timestep", &Class::set_timestep, class_doc.set_timestep.doc)
+           cls_doc.ctor.doc)
+        .def("get_timestep", &Class::get_timestep, cls_doc.get_timestep.doc)
+        .def("set_timestep", &Class::set_timestep, cls_doc.set_timestep.doc)
         .def("get_num_positions", &Class::get_num_positions,
-            class_doc.get_num_positions.doc)
+            cls_doc.get_num_positions.doc)
         .def("get_num_velocities", &Class::get_num_velocities,
-            class_doc.get_num_velocities.doc)
+            cls_doc.get_num_velocities.doc)
         .def("get_nominal_joint_position", &Class::get_nominal_joint_position,
-            class_doc.get_nominal_joint_position.doc)
+            cls_doc.get_nominal_joint_position.doc)
         .def("set_nominal_joint_position", &Class::set_nominal_joint_position,
-            class_doc.set_nominal_joint_position.doc)
+            cls_doc.set_nominal_joint_position.doc)
         .def("get_end_effector_velocity_gain",
             &Class::get_end_effector_velocity_gain,
-            class_doc.get_end_effector_velocity_gain.doc)
+            cls_doc.get_end_effector_velocity_gain.doc)
         .def("set_end_effector_velocity_gain",
             &Class::set_end_effector_velocity_gain,
-            class_doc.set_end_effector_velocity_gain.doc)
+            cls_doc.set_end_effector_velocity_gain.doc)
         .def("get_unconstrained_degrees_of_freedom_velocity_limit",
             &Class::get_unconstrained_degrees_of_freedom_velocity_limit,
-            class_doc.get_unconstrained_degrees_of_freedom_velocity_limit.doc)
+            cls_doc.get_unconstrained_degrees_of_freedom_velocity_limit.doc)
         .def("set_unconstrained_degrees_of_freedom_velocity_limit",
             &Class::set_unconstrained_degrees_of_freedom_velocity_limit,
-            class_doc.set_unconstrained_degrees_of_freedom_velocity_limit.doc)
+            cls_doc.set_unconstrained_degrees_of_freedom_velocity_limit.doc)
         .def("get_joint_position_limits", &Class::get_joint_position_limits,
-            class_doc.get_joint_position_limits.doc)
+            cls_doc.get_joint_position_limits.doc)
         .def("set_joint_position_limits", &Class::set_joint_position_limits,
-            class_doc.set_joint_position_limits.doc)
+            cls_doc.set_joint_position_limits.doc)
         .def("get_joint_velocity_limits", &Class::get_joint_velocity_limits,
-            class_doc.get_joint_velocity_limits.doc)
+            cls_doc.get_joint_velocity_limits.doc)
         .def("set_joint_velocity_limits", &Class::set_joint_velocity_limits,
-            class_doc.set_joint_velocity_limits.doc)
+            cls_doc.set_joint_velocity_limits.doc)
         .def("get_joint_acceleration_limits",
             &Class::get_joint_acceleration_limits,
-            class_doc.get_joint_acceleration_limits.doc)
+            cls_doc.get_joint_acceleration_limits.doc)
         .def("set_joint_acceleration_limits",
             &Class::set_joint_acceleration_limits,
-            class_doc.set_joint_acceleration_limits.doc);
+            cls_doc.set_joint_acceleration_limits.doc);
   }
 
   m.def("DoDifferentialInverseKinematics",
