@@ -181,8 +181,8 @@ PYBIND11_MODULE(sensors, m) {
           doc.CameraInfo.intrinsic_matrix.doc);
 
   {
-    constexpr auto& cls_doc = doc.ImageToLcmImageArrayT;
     using Class = ImageToLcmImageArrayT;
+    constexpr auto& cls_doc = doc.ImageToLcmImageArrayT;
     py::class_<Class, LeafSystem<T>> cls(
         m, "ImageToLcmImageArrayT", cls_doc.doc);
     cls  // BR
