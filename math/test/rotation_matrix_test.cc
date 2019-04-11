@@ -803,8 +803,8 @@ class RotationMatrixConversionTests : public ::testing::Test {
   std::vector<Eigen::Quaterniond> quaternion_test_cases_;
 };
 
-TEST_F(RotationMatrixConversionTests, RotationMatrixToQuaternionViceVersa) {
-  constexpr double tolerance = 40 * kEpsilon;
+TEST_F(RotationMatrixConversionTests, RotationMatrixToQuaternion) {
+  constexpr double tol = 40 * kEpsilon;
   for (const Eigen::Quaterniond& qi : quaternion_test_cases_) {
     // Step 1: Convert the quaternion qi to a 3x3 matrix mi.
     // Step 2: Construct a RotationMatrix Ri from the 3x3 matrix.
@@ -812,8 +812,52 @@ TEST_F(RotationMatrixConversionTests, RotationMatrixToQuaternionViceVersa) {
     // Step 4: Ensure qi and q_expected represent the same orientation.
     const Matrix3d mi = qi.toRotationMatrix();
     const RotationMatrix<double> Ri(mi);
-    const Eigen::Quaterniond q_expected = Ri.ToQuaternion();
-    EXPECT_TRUE(AreQuaternionsEqualForOrientation(qi, q_expected, tolerance));
+    const Eigen::Quaterniond q_actual = Ri.ToQuaternion();
+    ASSERT_TRUE(AreQuaternionsEqualForOrientation(qi, q_actual, tol));
+  }
+}
+
+// Repeat the prior test case with T = Expression without using Variables.
+TEST_F(RotationMatrixConversionTests, RotationMatrixToQuaternionSymbolic) {
+  using symbolic::Expression;
+  constexpr double tol = 40 * kEpsilon;
+  for (const Eigen::Quaterniond& qi : quaternion_test_cases_) {
+    const Matrix3<Expression> mi = qi.toRotationMatrix();
+    const RotationMatrix<Expression> Ri(mi);
+    const Eigen::Quaternion<Expression> q_actual_expr = Ri.ToQuaternion();
+    const Eigen::Quaterniond q_actual_double(q_actual_expr.coeffs().unaryExpr(
+        [](const Expression& x) { return ExtractDoubleOrThrow(x); }));
+    ASSERT_TRUE(AreQuaternionsEqualForOrientation(qi, q_actual_double, tol));
+  }
+}
+
+// Repeat the prior test case with T = Expression and using Variables.
+TEST_F(RotationMatrixConversionTests, RotationMatrixToQuaternionVariable) {
+  using symbolic::Environment;
+  using symbolic::Expression;
+  using symbolic::Variable;
+  constexpr double tol = 40 * kEpsilon;
+
+  // Perform a fully-symbolic ToQuaternion, where R is only Variables.
+  const Matrix3<Variable> m_var =
+      symbolic::MakeMatrixContinuousVariable<3, 3>("m");
+  const RotationMatrix<Expression> R_expr(m_var);
+  const Eigen::Quaternion<Expression> q_expr = R_expr.ToQuaternion();
+
+  // Evaluate the Quaterionion<Expression> for each Ri.
+  for (const Eigen::Quaterniond& qi : quaternion_test_cases_) {
+    // Prepare the variable substitions.
+    const Matrix3d mi = qi.toRotationMatrix();
+    Environment env;
+    for (int row = 0; row < 3; ++row) {
+      for (int col = 0; col < 3; ++col) {
+        env.insert(m_var(row, col), mi(row, col));
+      }
+    }
+    // Evaluate and compare.
+    const Eigen::Quaterniond q_actual_double(q_expr.coeffs().unaryExpr(
+        [&env](const Expression& x) { return x.Evaluate(env); }));
+    ASSERT_TRUE(AreQuaternionsEqualForOrientation(qi, q_actual_double, tol));
   }
 }
 
@@ -824,7 +868,7 @@ TEST_F(RotationMatrixConversionTests, QuaternionToRotationMatrix) {
     const Matrix3d m_expected = qi.toRotationMatrix();
     const RotationMatrix<double> R_expected(m_expected);
     const RotationMatrix<double> R(qi);
-    EXPECT_TRUE(R.IsNearlyEqualTo(R_expected, 40 * kEpsilon));
+    ASSERT_TRUE(R.IsNearlyEqualTo(R_expected, 40 * kEpsilon));
   }
 
   if (kDrakeAssertIsArmed) {
@@ -846,7 +890,7 @@ TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
     // Compare R with the RotationMatrix constructor that uses Eigen::AngleAxis.
     const Eigen::AngleAxisd angle_axis(qi);
     const RotationMatrix<double> R_expected(angle_axis);
-    EXPECT_TRUE(R.IsNearlyEqualTo(R_expected, 200 * kEpsilon));
+    ASSERT_TRUE(R.IsNearlyEqualTo(R_expected, 200 * kEpsilon));
 
     // Check that inverting this operation (calculating the AngleAxis from
     // rotation matrix R_expected) corresponds to the same orientation.
@@ -856,10 +900,10 @@ TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
     Eigen::AngleAxis<double> inverse_angle_axis;
     inverse_angle_axis.fromRotationMatrix(R_expected.matrix());
     const RotationMatrix<double> R_test(inverse_angle_axis);
-    EXPECT_TRUE(R.IsNearlyEqualTo(R_test, 200 * kEpsilon));
+    ASSERT_TRUE(R.IsNearlyEqualTo(R_test, 200 * kEpsilon));
     // Ensure the angle returned via Eigen's AngleAxis is between 0 and PI.
     const double angle = inverse_angle_axis.angle();
-    EXPECT_TRUE(0 <= angle && angle <= M_PI);
+    ASSERT_TRUE(0 <= angle && angle <= M_PI);
   }
 
   if (kDrakeAssertIsArmed) {
