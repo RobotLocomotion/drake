@@ -13,16 +13,16 @@
 namespace drake {
 namespace maliput {
 
-/// SimpleRulebook is a simple concrete implementation of the
+/// ManualRulebook is a simple concrete implementation of the
 /// api::rules::RoadRulebook abstract interface.
-class SimpleRulebook : public api::rules::RoadRulebook {
+class ManualRulebook : public api::rules::RoadRulebook {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleRulebook);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManualRulebook);
 
-  /// Constructs an empty SimpleRulebook (i.e., containing no rules).
-  SimpleRulebook();
+  /// Constructs an empty ManualRulebook (i.e., containing no rules).
+  ManualRulebook();
 
-  ~SimpleRulebook() override;
+  ~ManualRulebook() override;
 
   /// Removes all rules.
   void RemoveAll();
@@ -30,7 +30,7 @@ class SimpleRulebook : public api::rules::RoadRulebook {
   /// Adds a new RightOfWayRule.
   ///
   /// @throws std::runtime_error if a rule with the same ID already exists
-  /// in the SimpleRulebook.
+  /// in the ManualRulebook.
   void AddRule(const api::rules::RightOfWayRule& rule);
 
   /// Removes the RightOfWayRule labeled by `id`.
@@ -41,7 +41,7 @@ class SimpleRulebook : public api::rules::RoadRulebook {
   /// Adds a new SpeedLimitRule.
   ///
   /// @throws std::runtime_error if a rule with the same ID already exists
-  /// in the SimpleRulebook.
+  /// in the ManualRulebook.
   void AddRule(const api::rules::SpeedLimitRule& rule);
 
   /// Removes the SpeedLimitRule labeled by `id`.
@@ -52,7 +52,7 @@ class SimpleRulebook : public api::rules::RoadRulebook {
   /// Adds a new DirectionUsageRule.
   ///
   /// @throws std::runtime_error if a rule with the same ID already exists
-  /// in the SimpleRulebook.
+  /// in the ManualRulebook.
   void AddRule(const api::rules::DirectionUsageRule& rule);
 
   /// Removes the DirectionUsageRule labeled by `id`.
