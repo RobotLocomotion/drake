@@ -3,6 +3,7 @@
 // pendulum_swing_up.cc.
 
 #include <iostream>
+#include <limits>
 #include <memory>
 
 #include <gflags/gflags.h>
@@ -64,8 +65,10 @@ int do_main() {
   dircol.AddRunningCost((R * u) * u);
 
   const double timespan_init = 4;
-  auto traj_init_x =
-      PiecewisePolynomialType::FirstOrderHold({0, timespan_init}, {x0, xG});
+  auto traj_init_x = PiecewisePolynomialType::FirstOrderHold(
+      {0, timespan_init},
+      {x0 + Eigen::Vector4d(std::numeric_limits<double>::epsilon(), 0, 0, 0),
+       xG});
   dircol.SetInitialTrajectory(PiecewisePolynomialType(), traj_init_x);
   const auto result = solvers::Solve(dircol);
   if (!result.is_success()) {
