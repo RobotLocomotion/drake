@@ -266,3 +266,5 @@ class ImplicitIntegrator : public IntegratorBase<T> {
 };
 }  // namespace systems
 }  // namespace drake
+
+// TODO(edrumwri) Get the DECLARE_CLASS_TEMPLATE_... macro working.
