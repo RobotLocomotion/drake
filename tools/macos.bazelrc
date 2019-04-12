@@ -14,9 +14,4 @@ build --action_env=PATH=/usr/local/bin:/usr/bin:/bin
 
 # Suppress numerous "'_FORTIFY_SOURCE' macro redefined" warnings when using
 # sanitizers.
-build:asan --copt -Wno-macro-redefined
-build:asan_everything --copt -Wno-macro-redefined
-build:tsan --copt -Wno-macro-redefined
-build:tsan_everything --copt -Wno-macro-redefined
-build:ubsan --copt -Wno-macro-redefined
-build:ubsan_everything --copt -Wno-macro-redefined
+build:_san_common --copt=-Wno-macro-redefined

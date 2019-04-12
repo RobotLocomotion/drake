@@ -1,233 +1,152 @@
 # This is a portion of Drake's bazel.rc defaults.
 # This filed is included by //tools:bazel.rc.
 
-### Kcov coverage build. ###
-build:kcov --build_tests_only
-build:kcov --copt -g
-build:kcov --copt -O0
-build:kcov --spawn_strategy=standalone
-build:kcov --run_under //tools/dynamic_analysis:kcov
-build:kcov --local_test_jobs=1
-build:kcov --test_tag_filters=-lint,-gurobi,-mosek,-snopt,-no_kcov
-build:kcov --nocache_test_results
+## Kcov Code Coverage ##
+
+build:_kcov_common --build_tests_only
+build:_kcov_common --copt=-g
+build:_kcov_common --copt=-O0
+build:_kcov_common --local_test_jobs=1
+build:_kcov_common --nocache_test_results
+build:_kcov_common --run_under=//tools/dynamic_analysis:kcov
+build:_kcov_common --spawn_strategy=standalone
 # These increased timeouts were set through experimentation. Because kcov runs
 # in a separate process from the main program, the OS has to context-switch
 # between the processes every time a line is hit, slowing down execution
-# significantly. Timeouts are 3.5x default values.
-build:kcov --test_timeout=210,1050,3150,12600
+# significantly.
+build:_kcov_common --test_timeout=210,1050,3150,12600  # 3.5x
 
-### Kcov everything build. ###
-build:kcov_everything --build_tests_only
-build:kcov_everything --define=WITH_GUROBI=ON
-build:kcov_everything --define=WITH_MOSEK=ON
-build:kcov_everything --define=WITH_SNOPT=ON
-build:kcov_everything --copt -g
-build:kcov_everything --copt -O0
-build:kcov_everything --spawn_strategy=standalone
-build:kcov_everything --run_under=//tools/dynamic_analysis:kcov
-build:kcov_everything --local_test_jobs=1
+build:kcov --config=_kcov_common
+build:kcov --test_tag_filters=-gurobi,-lint,-mosek,-no_kcov,-snopt
+
+build:kcov_everything --config=everything
+build:kcov_everything --config=_kcov_common
 build:kcov_everything --test_tag_filters=-lint,-no_kcov
-build:kcov_everything --nocache_test_results
-# See timeout note above. Timeouts are 5x default values.
-build:kcov_everything --test_timeout=300,1500,4500,18000
 
-### ASan build. ###
-build:asan --build_tests_only
-build:asan --copt -g
-build:asan --copt -fsanitize=address
-build:asan --copt -O1
-build:asan --copt -fno-omit-frame-pointer
-build:asan --linkopt -fsanitize=address
-build:asan --run_under=//tools/dynamic_analysis:asan
-build:asan --test_env=ASAN_OPTIONS
-build:asan --test_env=LSAN_OPTIONS
-build:asan --test_env=ASAN_SYMBOLIZER_PATH
-# LSan is run with ASan by default
-build:asan --test_tag_filters=-gurobi,-mosek,-snopt,-no_asan,-no_lsan
-build:asan --test_lang_filters=-sh,-py
+## Sanitizers ##
+
+build:_san_common --build_tests_only
+build:_san_common --copt=-fno-omit-frame-pointer
+build:_san_common --copt=-g
+build:_san_common --copt=-O1
+build:_san_common --test_lang_filters=-py,-sh
+
+### AddressSanitizer ###
+
+build:_asan_common --config=_san_common
+build:_asan_common --copt=-fsanitize=address
+build:_asan_common --linkopt=-fsanitize=address
+build:_asan_common --run_under=//tools/dynamic_analysis:asan
+build:_asan_common --test_env=ASAN_OPTIONS
+build:_asan_common --test_env=ASAN_SYMBOLIZER_PATH
+build:_asan_common --test_env=LSAN_OPTIONS
 # Typical slowdown introduced by AddressSanitizer is 2x.
 # See https://clang.llvm.org/docs/AddressSanitizer.html
-build:asan --test_timeout=150,750,2250,9000  # 2.5x
+build:_asan_common --test_timeout=150,750,2250,9000  # 2.5x
 
-### ASan everything build. ###
-build:asan_everything --build_tests_only
-build:asan_everything --define=WITH_GUROBI=ON
-build:asan_everything --define=WITH_MOSEK=ON
-build:asan_everything --define=WITH_SNOPT=ON
-build:asan_everything --copt -g
-build:asan_everything --copt -fsanitize=address
-build:asan_everything --copt -O1
-build:asan_everything --copt -fno-omit-frame-pointer
-build:asan_everything --linkopt -fsanitize=address
-# LSan is run with ASan by default
+build:asan --config=_asan_common
+build:asan --test_tag_filters=-gurobi,-mosek,-no_asan,-no_lsan,-snopt
+
+build:asan_everything --config=_asan_common
+build:asan_everything --config=_everything_common
+# LeakSanitizer is run with AddressSanitizer by default.
 build:asan_everything --test_tag_filters=-no_asan,-no_lsan
-build:asan_everything --run_under=//tools/dynamic_analysis:asan
-build:asan_everything --test_env=ASAN_OPTIONS
-build:asan_everything --test_env=LSAN_OPTIONS
-build:asan_everything --test_env=ASAN_SYMBOLIZER_PATH
-build:asan_everything --test_lang_filters=-sh,-py
-# Typical slowdown introduced by AddressSanitizer is 2x.
-# See https://clang.llvm.org/docs/AddressSanitizer.html
-build:asan_everything --test_timeout=150,750,2250,9000  # 2.5x
 
-### LSan build. ###
-build:lsan --build_tests_only
-build:lsan --copt -g
-build:lsan --copt -fsanitize=leak
-build:lsan --copt -O1
-build:lsan --copt -fno-omit-frame-pointer
-build:lsan --linkopt -fsanitize=leak
-build:lsan --run_under=//tools/dynamic_analysis:lsan
-build:lsan --test_env=LSAN_OPTIONS
-build:lsan --test_env=LSAN_SYMBOLIZER_PATH
-build:lsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_lsan
-build:lsan --test_lang_filters=-sh,-py
+### LeakSanitizer ###
 
-### LSan everything build. ###
-build:lsan_everything --build_tests_only
-build:lsan_everything --define=WITH_GUROBI=ON
-build:lsan_everything --define=WITH_MOSEK=ON
-build:lsan_everything --define=WITH_SNOPT=ON
-build:lsan_everything --copt -g
-build:lsan_everything --copt -fsanitize=leak
-build:lsan_everything --copt -O1
-build:lsan_everything --copt -fno-omit-frame-pointer
-build:lsan_everything --linkopt -fsanitize=leak
+build:_lsan_common --config=_san_common
+build:_lsan_common --copt=-fsanitize=leak
+build:_lsan_common --linkopt=-fsanitize=leak
+build:_lsan_common --run_under=//tools/dynamic_analysis:lsan
+build:_lsan_common --test_env=LSAN_OPTIONS
+build:_lsan_common --test_env=LSAN_SYMBOLIZER_PATH
+
+build:lsan --config=_lsan_common
+build:lsan --test_tag_filters=-gurobi,-mosek,-no_lsan,-snopt
+
+build:lsan_everything --config=_everything_common
+build:lsan_everything --config=_lsan_common
 build:lsan_everything --test_tag_filters=-no_lsan
-build:lsan_everything --run_under=//tools/dynamic_analysis:lsan
-build:lsan_everything --test_env=LSAN_OPTIONS
-build:lsan_everything --test_env=LSAN_SYMBOLIZER_PATH
-build:lsan_everything --test_lang_filters=-sh,-py
 
-### TSan build. ###
-build:tsan --build_tests_only
-build:tsan --copt -g
-build:tsan --copt -fsanitize=thread
-build:tsan --copt -O1
-build:tsan --copt -fno-omit-frame-pointer
+### ThreadSanitizer ###
+
+build:_tsan_common --config=_san_common
+build:_tsan_common --copt=-fsanitize=thread
+build:_tsan_common --linkopt=-fsanitize=thread
 # From Tsan documentation for Clang-3.9:
-# fsanitize=thread flag will cause Clang to act as though the -fPIE flag
+# -fsanitize=thread flag will cause Clang to act as though the -fPIE flag
 # had been supplied if compiling without -fPIC, and as though the
 # -pie flag had been supplied if linking an executable
 # Bug in GCC: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=67308
-build:tsan --noforce_pic
-build:tsan --linkopt -fsanitize=thread
-build:tsan --run_under=//tools/dynamic_analysis:tsan
-build:tsan --test_env=TSAN_OPTIONS
-build:tsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_tsan
-build:tsan --test_lang_filters=-sh,-py
-# Typical slowdown introduced by ThreadSanitizer is about 5x-15x
+build:_tsan_common --noforce_pic
+build:_tsan_common --run_under=//tools/dynamic_analysis:tsan
+build:_tsan_common --test_env=TSAN_OPTIONS
+# Typical slowdown introduced by ThreadSanitizer is 5x-15x
 # See https://clang.llvm.org/docs/ThreadSanitizer.html
-build:tsan --test_timeout=300,1500,5400,18000
+build:_tsan_common --test_timeout=300,1500,5400,18000
 
-### TSan everything build. ###
-build:tsan_everything --build_tests_only
-build:tsan_everything --define=WITH_GUROBI=ON
-build:tsan_everything --define=WITH_MOSEK=ON
-build:tsan_everything --define=WITH_SNOPT=ON
-build:tsan_everything --copt -g
-build:tsan_everything --copt -fsanitize=thread
-build:tsan_everything --copt -O1
-build:tsan_everything --copt -fno-omit-frame-pointer
-# From Tsan documentation for Clang-3.9:
-# fsanitize=thread flag will cause Clang to act as though the -fPIE flag
-# had been supplied if compiling without -fPIC, and as though the
-# -pie flag had been supplied if linking an executable
-# Bug in GCC: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=67308
-build:tsan_everything --noforce_pic
-build:tsan_everything --linkopt -fsanitize=thread
+build:tsan --config=_tsan_common
+build:tsan --test_tag_filters=-gurobi,-mosek,-no_tsan,-snopt
+
+build:tsan_everything --config=_everything_common
+build:tsan_everything --config=_tsan_common
 build:tsan_everything --test_tag_filters=-no_tsan
-build:tsan_everything --run_under=//tools/dynamic_analysis:tsan
-build:tsan_everything --test_env=TSAN_OPTIONS
-build:tsan_everything --test_lang_filters=-sh,-py
-# Typical slowdown introduced by ThreadSanitizer is about 5x-15x
-# See https://clang.llvm.org/docs/ThreadSanitizer.html
-build:tsan_everything --test_timeout=300,1500,5400,18000
 
-### UBSan build. ###
-build:ubsan --build_tests_only
-build:ubsan --copt -g
-build:ubsan --copt -fsanitize=undefined
+### UndefinedBehaviorSanitizer ###
+
+build:_ubsan_common --config=_san_common
+build:_ubsan_common --copt=-fsanitize=undefined
 # Since Bazel uses clang instead of clang++, enabling -fsanitize=vptr would
 # require extra linkopts that cause segmentation faults on pure C code.
-build:ubsan --copt -fno-sanitize=float-divide-by-zero,vptr
-build:ubsan --copt -O1
-build:ubsan --copt -fno-omit-frame-pointer
+build:_ubsan_common --copt=-fno-sanitize=float-divide-by-zero,vptr
 # TODO(jamiesnape): Find a solution to using sanitizer blacklists with the
 # autogenerated toolchain.
-# build:ubsan --copt -fsanitize-blacklist=tools/dynamic_analysis/ubsan.blacklist
-build:ubsan --linkopt -fsanitize=undefined
-build:ubsan --run_under=//tools/dynamic_analysis:ubsan
-build:ubsan --test_env=UBSAN_OPTIONS
-build:ubsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_ubsan
-build:ubsan --test_lang_filters=-sh,-py
-# Typical slowdown introduced by UBSan is 1.2x, increasing timeouts to 2x.
+# build:_ubsan_common --copt=-fsanitize-blacklist=tools/dynamic_analysis/ubsan.blacklist
+build:_ubsan_common --linkopt=-fsanitize=undefined
+build:_ubsan_common --run_under=//tools/dynamic_analysis:ubsan
+build:_ubsan_common --test_env=UBSAN_OPTIONS
+# Typical slowdown introduced by UndefinedBehaviorSanitizer is 1.2x.
 # See https://developer.apple.com/documentation/code_diagnostics/undefined_behavior_sanitizer
-build:ubsan --test_timeout=120,600,1800,7200
+build:_ubsan_common --test_timeout=120,600,1800,7200  # 2x
 
-### UBSan everything build. ###
-build:ubsan_everything --build_tests_only
-build:ubsan_everything --define=WITH_GUROBI=ON
-build:ubsan_everything --define=WITH_MOSEK=ON
-build:ubsan_everything --define=WITH_SNOPT=ON
-build:ubsan_everything --copt -g
-build:ubsan_everything --copt -fsanitize=undefined
-# Since Bazel uses clang instead of clang++, enabling -fsanitize=vptr would
-# require extra linkopts that cause segmentation faults on pure C code.
-# TODO(jamiesnape): Enable -fsanitize=pointer-overflow when SNOPT is fixed.
-build:ubsan_everything --copt -fno-sanitize=float-divide-by-zero,pointer-overflow,vptr
-build:ubsan_everything --copt -O1
-build:ubsan_everything --copt -fno-omit-frame-pointer
-# TODO(jamiesnape): Find a solution to using sanitizer blacklists with the
-# autogenerated toolchain.
-# build:ubsan_everything --copt -fsanitize-blacklist=tools/dynamic_analysis/ubsan.blacklist
-build:ubsan_everything --linkopt -fsanitize=undefined
+build:ubsan --config=_ubsan_common
+build:ubsan --test_tag_filters=-gurobi,-mosek,-no_ubsan,-snopt
+
+build:ubsan_everything --config=_everything_common
+build:ubsan_everything --config=_ubsan_common
 build:ubsan_everything --test_tag_filters=-no_ubsan
-build:ubsan_everything --run_under=//tools/dynamic_analysis:ubsan
-build:ubsan_everything --test_env=UBSAN_OPTIONS
-build:ubsan_everything --test_lang_filters=-sh,-py
-# Typical slowdown introduced by UBSan is 1.2x, increasing timeouts to 2x.
-# See https://developer.apple.com/documentation/code_diagnostics/undefined_behavior_sanitizer
-build:ubsan_everything --test_timeout=120,600,1800,7200
 
-### Memcheck build. ###
-build:memcheck --build_tests_only
-build:memcheck --copt -g
+## Valgrind Memcheck ##
+
+build:_memcheck_common --build_tests_only
+build:_memcheck_common --copt=-fno-omit-frame-pointer
+build:_memcheck_common --copt=-g
 # https://sourceforge.net/p/valgrind/mailman/valgrind-developers/?viewmonth=201806&viewday=11&style=flat
-build:memcheck --copt -O2
-build:memcheck --run_under=//tools/dynamic_analysis:valgrind
-build:memcheck --test_tag_filters=-gurobi,-mosek,-snopt,-no_memcheck
-build:memcheck --test_lang_filters=-sh,-py
-# Slowdown factor can range from 5-100.
+build:_memcheck_common --copt=-O2
+build:_memcheck_common --run_under=//tools/dynamic_analysis:valgrind
+build:_memcheck_common --test_lang_filters=-py,-sh
+# Typical slowdown introduced by Valgrind Memcheck is 5x-100x.
 # See http://valgrind.org/info/about.html
-build:memcheck --test_timeout=1500,7500,22500,90000  # 25x
+build:_memcheck_common --test_timeout=1500,7500,22500,90000  # 25x
 
-### Memcheck everything build. ###
-build:memcheck_everything --build_tests_only
-build:memcheck_everything --define=WITH_GUROBI=ON
-build:memcheck_everything --define=WITH_MOSEK=ON
-build:memcheck_everything --define=WITH_SNOPT=ON
-build:memcheck_everything --copt -g
-# https://sourceforge.net/p/valgrind/mailman/valgrind-developers/?viewmonth=201806&viewday=11&style=flat
-build:memcheck_everything --copt -O2
+build:memcheck --config=_memcheck_common
+build:memcheck --test_tag_filters=-gurobi,-mosek,-no_memcheck,-snopt
+
+build:memcheck_everything --config=_everything_common
+build:memcheck_everything --config=_memcheck_common
 build:memcheck_everything --test_tag_filters=-no_memcheck
-build:memcheck_everything --run_under=//tools/dynamic_analysis:valgrind
-build:memcheck_everything --test_lang_filters=-sh,-py
-# Slowdown factor can range from 5-100.
-# See http://valgrind.org/info/about.html
-build:memcheck_everything --test_timeout=1500,7500,22500,90000  # 25x
 
 # Fast memcheck.
 #
-# This build runs tests under valgrind, but (unlike `--config memcheck`) does
+# This build runs tests under valgrind, but (unlike `--config=memcheck`) does
 # not alter the compile flags.  Thus, the already-cached compilation results
 # from a `bazel build` or `bazel test` can be reused.  This is useful to scan a
 # local build for memory errors quickly.  For more specific error reporting
-# when errors are found, try `-c dbg --config fastmemcheck` or `--config
+# when errors are found, try `-c dbg --config=fastmemcheck` or `--config
 # memcheck` to recompile with line numbers and lower optimization levels.
 #
 build:fastmemcheck --run_under=//tools/dynamic_analysis:valgrind
-build:fastmemcheck --test_lang_filters=-sh,-py
+build:fastmemcheck --test_lang_filters=-py,-sh
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
 build:fastmemcheck --test_timeout=1500,7500,22500,90000  # 25x
