@@ -67,7 +67,18 @@ PYBIND11_MODULE(api, m) {
       .def("num_junctions", &RoadGeometry::num_junctions,
           doc.RoadGeometry.num_junctions.doc)
       .def("junction", &RoadGeometry::junction, py_reference_internal,
-          doc.RoadGeometry.junction.doc);
+          doc.RoadGeometry.junction.doc)
+      .def("ById", &RoadGeometry::ById, py_reference_internal,
+          doc.RoadGeometry.ById.doc);
+
+  py::class_<RoadGeometry::IdIndex>(
+      m, "RoadGeometry.IdIndex", doc.RoadGeometry.IdIndex.doc)
+      .def("GetLane",
+          [](const RoadGeometry::IdIndex* self, const std::string& id) {
+            return self->GetLane(LaneId(id));
+          },
+          py::arg("id"), py_reference_internal,
+          doc.RoadGeometry.IdIndex.GetLane.doc);
 
   py::class_<Junction>(m, "Junction", doc.Junction.doc)
       .def("num_segments", &Junction::num_segments,
