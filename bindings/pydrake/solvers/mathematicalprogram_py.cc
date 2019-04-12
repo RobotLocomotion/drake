@@ -585,6 +585,7 @@ PYBIND11_MODULE(mathematicalprogram, m) {
               const Eigen::Ref<const MatrixX<symbolic::Expression>>& X)>(
               &MathematicalProgram::
                   AddMaximizeLogDeterminantSymmetricMatrixCost),
+          py::arg("X"),
           doc.MathematicalProgram.AddMaximizeLogDeterminantSymmetricMatrixCost
               .doc)
       .def("AddSosConstraint",

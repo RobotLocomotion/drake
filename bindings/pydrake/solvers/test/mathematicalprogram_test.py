@@ -419,6 +419,17 @@ class TestMathematicalProgram(unittest.TestCase):
                     poly_sub_expected.ToExpression()),
                 "{} != {}".format(poly_sub_actual, poly_sub_expected))
 
+    def test_log_determinant(self):
+        # Find the minimal ellipsoid that covers some given points.
+        prog = mp.MathematicalProgram()
+        X = prog.NewSymmetricContinuousVariables(2)
+        pts = np.array([[1, 1], [1, -1], [-1, 1]])
+        for i in range(3):
+            prog.AddLinearConstraint(pts[i, :].dot(X.dot(pts[i, :])) <= 1)
+        prog.AddMaximizeLogDeterminantSymmetricMatrixCost(X)
+        result = mp.Solve(prog)
+        self.assertTrue(result.is_success())
+
     def test_lcp(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, 'x')
