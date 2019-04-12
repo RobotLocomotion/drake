@@ -3,6 +3,7 @@
 // pendulum_swing_up.cc.
 
 #include <iostream>
+#include <limits>
 #include <memory>
 
 #include <gflags/gflags.h>
@@ -64,8 +65,13 @@ int do_main() {
   dircol.AddRunningCost((R * u) * u);
 
   const double timespan_init = 4;
-  auto traj_init_x =
-      PiecewisePolynomialType::FirstOrderHold({0, timespan_init}, {x0, xG});
+  // Certain solvers (SNOPT) are very sensitive when the initial guess starts
+  // exactly in the straight-down configuration. This term nudges the initial
+  // guess away from that configuration.
+  const Eigen::Vector4d x0_perturbation{std::numeric_limits<double>::epsilon(),
+                                        0, 0, 0};
+  auto traj_init_x = PiecewisePolynomialType::FirstOrderHold(
+      {0, timespan_init}, {x0 + x0_perturbation, xG});
   dircol.SetInitialTrajectory(PiecewisePolynomialType(), traj_init_x);
   const auto result = solvers::Solve(dircol);
   if (!result.is_success()) {
