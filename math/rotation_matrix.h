@@ -513,7 +513,6 @@ class RotationMatrix {
   /// - [Dahleh] "Lectures on Dynamic Systems and Controls: Electrical
   /// Engineering and Computer Science, Massachusetts Institute of Technology"
   /// https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-241j-dynamic-systems-and-control-spring-2011/readings/MIT6_241JS11_chap04.pdf
-  //  @internal This function's name is referenced in Doxygen documentation.
   static RotationMatrix<T>
   ProjectToRotationMatrix(const Matrix3<T>& M, T* quality_factor = nullptr) {
     const Matrix3<T> M_orthonormalized =
@@ -547,51 +546,16 @@ class RotationMatrix {
   /// For example, if `M` contains NaNs, `q` will not be a valid quaternion.
   static Eigen::Quaternion<T> ToQuaternion(
       const Eigen::Ref<const Matrix3<T>>& M) {
-    // This implementation is adapted from simbody at
-    // https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
-
-    T w, x, y, z;  // Elements of the quaternion, w relates to cos(theta/2).
-
-    const T trace = M.trace();
-    if (trace >= M(0, 0) && trace >= M(1, 1) && trace >= M(2, 2)) {
-      // This branch occurs if the trace is larger than any diagonal element.
-      w = T(1) + trace;
-      x = M(2, 1) - M(1, 2);
-      y = M(0, 2) - M(2, 0);
-      z = M(1, 0) - M(0, 1);
-    } else if (M(0, 0) >= M(1, 1) && M(0, 0) >= M(2, 2)) {
-      // This branch occurs if M(0,0) is largest among the diagonal elements.
-      w = M(2, 1) - M(1, 2);
-      x = T(1) - (trace - 2 * M(0, 0));
-      y = M(0, 1) + M(1, 0);
-      z = M(0, 2) + M(2, 0);
-    } else if (M(1, 1) >= M(2, 2)) {
-      // This branch occurs if M(1,1) is largest among the diagonal elements.
-      w = M(0, 2) - M(2, 0);
-      x = M(0, 1) + M(1, 0);
-      y = T(1) - (trace - 2 * M(1, 1));
-      z = M(1, 2) + M(2, 1);
-    } else {
-      // This branch occurs if M(2,2) is largest among the diagonal elements.
-      w = M(1, 0) - M(0, 1);
-      x = M(0, 2) + M(2, 0);
-      y = M(1, 2) + M(2, 1);
-      z = T(1) - (trace - 2 * M(2, 2));
-    }
-
-    // Create a quantity q (which is not yet a quaternion).
-    // Note: Eigen's Quaternion constructor does not normalize.
-    Eigen::Quaternion<T> q(w, x, y, z);
+    Eigen::Quaternion<T> q = RotationMatrixToUnnormalizedQuaternion(M);
 
     // Since the quaternions q and -q correspond to the same rotation matrix,
     // choose to return a canonical quaternion, i.e., with q(0) >= 0.
-    const T canonical_factor = (w < 0) ? T(-1) : T(1);
+    const T canonical_factor = if_then_else(q.w() < 0, T(-1), T(1));
 
     // The quantity q calculated thus far in this algorithm is not a quaternion
-    // with magnitude 1.  It differs from a quaternion in that all elements of q
-    // are scaled by the same factor (the value of this factor depends on which
-    // branch of the if/else-statements was used). To return a valid quaternion,
-    // q must be normalized so q(0)^2 + q(1)^2 + q(2)^2 + q(3)^2 = 1.
+    // with magnitude 1.  It differs from a quaternion in that all elements of
+    // q are scaled by the same factor. To return a valid quaternion, q must be
+    // normalized so q(0)^2 + q(1)^2 + q(2)^2 + q(3)^2 = 1.
     const T scale = canonical_factor / q.norm();
     q.coeffs() *= scale;
 
@@ -779,6 +743,105 @@ class RotationMatrix {
     return svd.matrixU() * svd.matrixV().transpose();
   }
 
+  // This is a helper method for RotationMatrix::ToQuaternion that returns a
+  // Quaternion that is neither sign-canonicalized nor magnitude-normalized.
+  //
+  // This method is used for scalar types where scalar_predicate<T>::is_bool is
+  // true (e.g., T = `double` and T = `AutoDiffXd`).  For types where is_bool
+  // is false (e.g., T = `symbolic::Expression`), the alternative specialization
+  // below is used instead.  We have two implementations so that this method is
+  // as fast and compact as possible when `T = double`.
+  //
+  // N.B. Keep the math in this method in sync with the other specialization,
+  // immediately below.
+  template <typename S = T>
+  static std::enable_if_t<scalar_predicate<S>::is_bool, Eigen::Quaternion<S>>
+  RotationMatrixToUnnormalizedQuaternion(
+      const Eigen::Ref<const Matrix3<S>>& M) {
+    // This implementation is adapted from simbody at
+    // https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
+    T w, x, y, z;  // Elements of the quaternion, w relates to cos(theta/2).
+    const T trace = M.trace();
+    if (trace >= M(0, 0) && trace >= M(1, 1) && trace >= M(2, 2)) {
+      // This branch occurs if the trace is larger than any diagonal element.
+      w = T(1) + trace;
+      x = M(2, 1) - M(1, 2);
+      y = M(0, 2) - M(2, 0);
+      z = M(1, 0) - M(0, 1);
+    } else if (M(0, 0) >= M(1, 1) && M(0, 0) >= M(2, 2)) {
+      // This branch occurs if M(0,0) is largest among the diagonal elements.
+      w = M(2, 1) - M(1, 2);
+      x = T(1) - (trace - 2 * M(0, 0));
+      y = M(0, 1) + M(1, 0);
+      z = M(0, 2) + M(2, 0);
+    } else if (M(1, 1) >= M(2, 2)) {
+      // This branch occurs if M(1,1) is largest among the diagonal elements.
+      w = M(0, 2) - M(2, 0);
+      x = M(0, 1) + M(1, 0);
+      y = T(1) - (trace - 2 * M(1, 1));
+      z = M(1, 2) + M(2, 1);
+    } else {
+      // This branch occurs if M(2,2) is largest among the diagonal elements.
+      w = M(1, 0) - M(0, 1);
+      x = M(0, 2) + M(2, 0);
+      y = M(1, 2) + M(2, 1);
+      z = T(1) - (trace - 2 * M(2, 2));
+    }
+    // Create a quantity q (which is not yet a unit quaternion).
+    // Note: Eigen's Quaternion constructor does not normalize.
+    return Eigen::Quaternion<T>(w, x, y, z);
+  }
+
+  // Refer to the same-named method above for comments and details about the
+  // algorithm being used, the meaning of the branches, etc.  This method is
+  // identical except that the if-elseif chain is replaced with a symbolic-
+  // conditional formulation.
+  //
+  // N.B. Keep the math in this method in sync with the other specialization,
+  // immediately above.
+  template <typename S = T>
+  static std::enable_if_t<!scalar_predicate<S>::is_bool, Eigen::Quaternion<S>>
+  RotationMatrixToUnnormalizedQuaternion(
+      const Eigen::Ref<const Matrix3<S>>& M) {
+    const T M00 = M(0, 0); const T M01 = M(0, 1); const T M02 = M(0, 2);
+    const T M10 = M(1, 0); const T M11 = M(1, 1); const T M12 = M(1, 2);
+    const T M20 = M(2, 0); const T M21 = M(2, 1); const T M22 = M(2, 2);
+    const T trace = M00 + M11 + M22;
+    auto if_then_else_vec4 = [](
+        const boolean<T>& f_cond,
+        const Vector4<T>& e_then,
+        const Vector4<T>& e_else) -> Vector4<T> {
+      return Vector4<T>(
+          if_then_else(f_cond, e_then[0], e_else[0]),
+          if_then_else(f_cond, e_then[1], e_else[1]),
+          if_then_else(f_cond, e_then[2], e_else[2]),
+          if_then_else(f_cond, e_then[3], e_else[3]));
+    };
+    const Vector4<T> wxyz =
+        if_then_else_vec4(trace >= M00 && trace >= M11 && trace >= M22, {
+          T(1) + trace,
+          M21 - M12,
+          M02 - M20,
+          M10 - M01,
+        }, if_then_else_vec4(M00 >= M11 && M00 >= M22, {
+          M21 - M12,
+          T(1) - (trace - 2 * M00),
+          M01 + M10,
+          M02 + M20,
+        }, if_then_else_vec4(M11 >= M22, {
+          M02 - M20,
+          M01 + M10,
+          T(1) - (trace - 2 * M11),
+          M12 + M21,
+        }, /* else */ {
+          M10 - M01,
+          M02 + M20,
+          M12 + M21,
+          T(1) - (trace - 2 * M22),
+        })));
+    return Eigen::Quaternion<T>(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
+  }
+
   // Constructs a 3x3 rotation matrix from a Quaternion.
   // @param[in] quaternion a quaternion which may or may not have unit length.
   // @param[in] two_over_norm_squared is supplied by the calling method and is
@@ -787,7 +850,7 @@ class RotationMatrix {
   // (unlikely) that the calling method determines that normalization is
   // unwanted, the calling method should just past `two_over_norm_squared = 2`.
   // @internal The cost of Eigen's quaternion.toRotationMatrix() is 12 adds and
-  // 12 multiplies.  This function also costs 12 adds and 12 multiplies, but
+  // 12 multiplies.  This method also costs 12 adds and 12 multiplies, but
   // has a provision for an efficient algorithm for always calculating an
   // orthogonal rotation matrix (whereas Eigen's algorithm does not).
   static Matrix3<T> QuaternionToRotationMatrix(
@@ -845,7 +908,7 @@ using RotationMatrixd = RotationMatrix<double>;
 /// @return Rotation angle θ of the projected matrix, angle_lb <= θ <= angle_ub
 /// @throws std::runtime_error if M is not a 3 x 3 matrix or if
 ///         axis is the zero vector or if angle_lb > angle_ub.
-/// @note This function is useful for reconstructing a rotation matrix for a
+/// @note This method is useful for reconstructing a rotation matrix for a
 /// revolute joint with joint limits.
 /// @note This can be formulated as an optimization problem
 /// <pre>
