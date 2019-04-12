@@ -425,7 +425,8 @@ class TestMathematicalProgram(unittest.TestCase):
         X = prog.NewSymmetricContinuousVariables(2)
         pts = np.array([[1, 1], [1, -1], [-1, 1]])
         for i in range(3):
-            prog.AddLinearConstraint(pts[i, :].dot(X.dot(pts[i, :])) <= 1)
+            pt = pts[i, :]
+            prog.AddLinearConstraint(pt.dot(X.dot(pt)) <= 1)
         prog.AddMaximizeLogDeterminantSymmetricMatrixCost(X)
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
