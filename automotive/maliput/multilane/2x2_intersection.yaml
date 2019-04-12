@@ -199,6 +199,153 @@ RoadRulebook:
         Stop: []
       Zone:
       - Lane: l:west_left_turn_segment_0
+  DirectionUsageRules:
+    - ID: NorthRightTurn
+      Zone:
+        Lane: l:north_right_turn_segment_0
+      States:
+        - ID: default
+          Severity: Strict
+          Type: WithS
+    - ID: NorthLeftTurn
+      Zone:
+        Lane: l:north_left_turn_segment_0
+      States:
+        - ID: default
+          Severity: Strict
+          Type: WithS
+    - ID: SouthRightTurn
+      Zone:
+        Lane: l:south_right_turn_segment_0
+      States:
+        - ID: default
+          Severity: Strict
+          Type: WithS
+    - ID: SouthLeftTurn
+      Zone:
+        Lane: l:south_left_turn_segment_0
+      States:
+        - ID: default
+          Severity: Strict
+          Type: WithS
+    - ID: EastRightTurn
+      Zone:
+        Lane: l:east_right_turn_segment_0
+      States:
+        - ID: default
+          Severity: Strict
+          Type: WithS
+    - ID: EastLeftTurn
+      Zone:
+        Lane: l:east_left_turn_segment_0
+      States:
+        - ID: default
+          Severity: Strict
+          Type: WithS
+    - ID: WestRightTurn
+      Zone:
+        Lane: l:west_right_turn_segment_0
+      States:
+        - ID: default
+          Severity: Strict
+          Type: WithS
+    - ID: WestLeftTurn
+      Zone:
+        Lane: l:west_left_turn_segment_0
+      States:
+        - ID: default
+          Severity: Strict
+          Type: WithS
+    # The rightmost lane in a segment travels +S and the north/south
+    # and east/west pairs have the same +S direction. Rules are defined in order
+    # of increasing S.
+    - ID: NorthApproach
+      Zone:
+        Lane: l:s_segment_0
+        SRange: [0, 50.0]
+      States:
+        - ID: default
+          Severity: Preferred
+          Type: WithS
+    - ID: NorthStraight
+      Zone:
+        Lane: l:ns_intersection_segment_0
+        SRange: [0, 18.75]
+      States:
+        - ID: default
+          Severity: Strict
+          Type: WithS
+    - ID: NorthExit
+      Zone:
+        Lane: l:n_segment_0
+        SRange: [0, 50]
+      States:
+        - ID: default
+          Severity: Preferred
+          Type: WithS
+    - ID: SouthApproach
+      Zone:
+        Lane: l:n_segment_1
+      States:
+        - ID: default
+          Severity: Preferred
+          Type: AgainstS
+    - ID: SouthStraight
+      Zone:
+        Lane: l:ns_intersection_segment_1
+      States:
+        - ID: default
+          Severity: Strict
+          Type: AgainstS
+    - ID: SouthExit
+      Zone:
+        Lane: l:s_segment_1
+      States:
+        - ID: default
+          Severity: Preferred
+          Type: AgainstS
+    - ID: EastApproach
+      Zone:
+        Lane: l:w_segment_0
+      States:
+        - ID: default
+          Severity: Preferred
+          Type: WithS
+    - ID: EastStraight
+      Zone:
+        Lane: l:ew_intersection_segment_0
+      States:
+        - ID: default
+          Severity: Strict
+          Type: WithS
+    - ID: EastExit
+      Zone:
+        Lane: l:e_segment_0
+      States:
+        - ID: default
+          Severity: Preferred
+          Type: WithS
+    - ID: WestEntrance
+      Zone:
+        Lane: l:e_segment_1
+      States:
+        - ID: default
+          Severity: Preferred
+          Type: AgainstS
+    - ID: WestStraight
+      Zone:
+        Lane: l:ew_intersection_segment_1
+      States:
+        - ID: default
+          Severity: Strict
+          Type: AgainstS
+    - ID: WestExit
+      Zone:
+        Lane: l:w_segment_1
+      States:
+        - ID: default
+          Severity: Preferred
+          Type: AgainstS
 
 TrafficLights:
 # The traffic light IDs denote the intersection entrance they regulate. For
