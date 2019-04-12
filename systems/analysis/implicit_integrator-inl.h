@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file
-/// Template method implementations for radau3_integrator.h.
+/// Template method implementations for implicit_integrator.h.
 /// Most users should only include that file, not this one.
 /// For background, see https://drake.mit.edu/cxx_inl.html.
 
@@ -27,13 +27,13 @@ void ImplicitIntegrator<T>::DoResetStatistics() {
   num_jacobian_evaluations_ = 0;
 }
 
-// Computes the Jacobian of the ordinary differential equations around time
-// and continuous state `(t, xt)` using automatic differentiation.
+// We do not support computing the Jacobian matrix using automatic
+// differentiation when the scalar is already an AutoDiff type.
 template <>
-MatrixX<AutoDiffXd> ImplicitIntegrator<AutoDiffXd>::
+void ImplicitIntegrator<AutoDiffXd>::
     ComputeAutoDiffJacobian(const System<AutoDiffXd>&,
       const AutoDiffXd&, const VectorX<AutoDiffXd>&,
-      const Context<AutoDiffXd>&) {
+      const Context<AutoDiffXd>&, MatrixX<AutoDiffXd>*) {
         throw std::runtime_error("AutoDiff'd Jacobian not supported from "
                                      "AutoDiff'd ImplicitIntegrator");
 }
@@ -45,12 +45,12 @@ MatrixX<AutoDiffXd> ImplicitIntegrator<AutoDiffXd>::
 // @param xt the continuous state around which to compute the Jacobian matrix.
 // @param context the Context of the system, at time and continuous state
 //        unknown.
-// @return the Jacobian matrix around time and state `(t, xt)`.
+// @param [out] the Jacobian matrix around time and state `(t, xt)`.
 // @note The continuous state will be indeterminate on return.
 template <class T>
-MatrixX<T> ImplicitIntegrator<T>::ComputeAutoDiffJacobian(
+void ImplicitIntegrator<T>::ComputeAutoDiffJacobian(
     const System<T>& system, const T& t, const VectorX<T>& xt,
-    const Context<T>& context) {
+    const Context<T>& context, MatrixX<T>* J) {
   SPDLOG_DEBUG(drake::log(), "  ImplicitIntegrator Compute Autodiff Jacobian "
                "t={}", t);
   // Create AutoDiff versions of the state vector.
@@ -76,14 +76,13 @@ MatrixX<T> ImplicitIntegrator<T>::ComputeAutoDiffJacobian(
   adiff_system->FixInputPortsFrom(system, context, adiff_context.get());
 
   // Set the continuous state in the context.
-  adiff_context->get_mutable_continuous_state().get_mutable_vector().
-      SetFromVector(a_xt);
+  adiff_context->SetContinuousState(a_xt);
 
   // Evaluate the derivatives at that state.
   const VectorX<AutoDiffXd> result =
       this->EvalTimeDerivatives(*adiff_system, *adiff_context).CopyToVector();
 
-  return math::autoDiffToGradientMatrix(result);
+  *J = math::autoDiffToGradientMatrix(result);
 }
 
 // Evaluates the ordinary differential equations at the time and state in
@@ -101,11 +100,12 @@ VectorX<T> ImplicitIntegrator<T>::EvalTimeDerivativesUsingContext() {
 // @param xt the continuous state around which to compute the Jacobian matrix.
 // @param context the Context of the system, at time and continuous state
 //        unknown.
-// @return the Jacobian matrix around time and state `(t, xt)`.
+// @param [out] the Jacobian matrix around time and state `(t, xt)`.
 // @note The continuous state will be indeterminate on return.
 template <class T>
-MatrixX<T> ImplicitIntegrator<T>::ComputeForwardDiffJacobian(
-    const System<T>&, const T& t, const VectorX<T>& xt, Context<T>* context) {
+void ImplicitIntegrator<T>::ComputeForwardDiffJacobian(
+    const System<T>&, const T& t, const VectorX<T>& xt, Context<T>* context,
+    MatrixX<T>* J) {
   using std::abs;
 
   // Set epsilon to the square root of machine precision.
@@ -119,7 +119,7 @@ MatrixX<T> ImplicitIntegrator<T>::ComputeForwardDiffJacobian(
   SPDLOG_DEBUG(drake::log(), "  computing from state {}", xt.transpose());
 
   // Initialize the Jacobian.
-  MatrixX<T> J(n, n);
+  J->resize(n, n);
 
   // Evaluate f(t,xt).
   context->SetTimeAndContinuousState(t, xt);
@@ -154,13 +154,11 @@ MatrixX<T> ImplicitIntegrator<T>::ComputeForwardDiffJacobian(
     //              partition, and ideally modify only the one changed element.
     // Compute f' and set the relevant column of the Jacobian matrix.
     context->SetTimeAndContinuousState(t, xt_prime);
-    J.col(i) = (EvalTimeDerivativesUsingContext() - f) / dxi;
+    J->col(i) = (EvalTimeDerivativesUsingContext() - f) / dxi;
 
     // Reset xt' to xt.
     xt_prime(i) = xt(i);
   }
-
-  return J;
 }
 
 // Computes the Jacobian of the ordinary differential equations around time
@@ -171,11 +169,12 @@ MatrixX<T> ImplicitIntegrator<T>::ComputeForwardDiffJacobian(
 // @param xt the continuous state around which to compute the Jacobian matrix.
 // @param context the Context of the system, at time and continuous state
 //        unknown.
-// @return the Jacobian matrix around time and state `(t, xt)`.
+// @param [out] the Jacobian matrix around time and state `(t, xt)`.
 // @note The continuous state will be indeterminate on return.
 template <class T>
-MatrixX<T> ImplicitIntegrator<T>::ComputeCentralDiffJacobian(
-    const System<T>&, const T& t, const VectorX<T>& xt, Context<T>* context) {
+void ImplicitIntegrator<T>::ComputeCentralDiffJacobian(
+    const System<T>&, const T& t, const VectorX<T>& xt, Context<T>* context,
+    MatrixX<T>* J) {
   using std::abs;
 
   // Cube root of machine precision (indicated by theory) seems a bit coarse.
@@ -189,7 +188,7 @@ MatrixX<T> ImplicitIntegrator<T>::ComputeCentralDiffJacobian(
                "Centraldiff {}-Jacobian t={}", n, t);
 
   // Initialize the Jacobian.
-  MatrixX<T> J(n, n);
+  J->resize(n, n);
 
   // Evaluate f(t,xt).
   context->SetTimeAndContinuousState(t, xt);
@@ -235,13 +234,11 @@ MatrixX<T> ImplicitIntegrator<T>::ComputeCentralDiffJacobian(
     VectorX<T> fprime_minus = EvalTimeDerivativesUsingContext();
 
     // Set the Jacobian column.
-    J.col(i) = (fprime_plus - fprime_minus) / (dxi_plus + dxi_minus);
+    J->col(i) = (fprime_plus - fprime_minus) / (dxi_plus + dxi_minus);
 
     // Reset xt' to xt.
     xt_prime(i) = xt(i);
   }
-
-  return J;
 }
 
 // Factors a dense matrix (the iteration matrix) using LU factorization,
@@ -284,7 +281,7 @@ VectorX<AutoDiffXd> ImplicitIntegrator<AutoDiffXd>::IterationMatrix::Solve(
 }
 
 // Checks to see whether a Jacobian matrix has "become bad" and needs to be
-// refactorized.
+// recomputed.
 template <class T>
 bool ImplicitIntegrator<T>::IsBadJacobian(const MatrixX<T>& J) const {
   return !J.allFinite();
@@ -295,7 +292,7 @@ bool ImplicitIntegrator<T>::IsBadJacobian(const MatrixX<T>& J) const {
 // @post the context's time and continuous state will be temporarily set during
 //       this call (and then reset to their original values) on return.
 template <class T>
-MatrixX<T> ImplicitIntegrator<T>::CalcJacobian(const T& t,
+const MatrixX<T>& ImplicitIntegrator<T>::CalcJacobian(const T& t,
     const VectorX<T>& x) {
   // We change the context but will change it back.
   Context<T>* context = this->get_mutable_context();
@@ -316,18 +313,20 @@ MatrixX<T> ImplicitIntegrator<T>::CalcJacobian(const T& t,
   const System<T>& system = this->get_system();
 
   // TODO(edrumwri): Give the caller the option to provide their own Jacobian.
-  const MatrixX<T> J = [this, context, &system, &t, &x]() {
+  [this, context, &system, &t, &x]() {
     switch (jacobian_scheme_) {
       case JacobianComputationScheme::kForwardDifference:
-        return ComputeForwardDiffJacobian(system, t, x, &*context);
+        ComputeForwardDiffJacobian(system, t, x, &*context, &J_);
+        break;
 
       case JacobianComputationScheme::kCentralDifference:
-        return ComputeCentralDiffJacobian(system, t, x, &*context);
+        ComputeCentralDiffJacobian(system, t, x, &*context, &J_);
+        break;
 
       case JacobianComputationScheme::kAutomatic:
-        return ComputeAutoDiffJacobian(system, t, x, *context);
+        ComputeAutoDiffJacobian(system, t, x, *context, &J_);
+        break;
     }
-    DRAKE_UNREACHABLE();
   }();
 
   // Use the new number of ODE evaluations to determine the number of Jacobian
@@ -338,7 +337,7 @@ MatrixX<T> ImplicitIntegrator<T>::CalcJacobian(const T& t,
   // Reset the time and state.
   context->SetTimeAndContinuousState(t_current, x_current);
 
-  return J;
+  return J_;
 }
 
 }  // namespace systems

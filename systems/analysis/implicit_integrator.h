@@ -6,6 +6,7 @@
 
 #include <Eigen/LU>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/systems/analysis/integrator_base.h"
@@ -14,33 +15,13 @@ namespace drake {
 namespace systems {
 
 /**
- * A virtual class providing methods shared by implicit integrators.
+ * A class providing methods shared by implicit integrators.
  * @tparam T The vector element type, which must be a valid Eigen scalar.
  *
  * This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
  * this class, please refer to https://drake.mit.edu/cxx_inl.html.
  *
- * Instantiated templates for the following kinds of T's are provided:
- *
- * - double
- * - AutoDiffXd
- *
- * The time complexity of implicit integrators is often dominated by the time to
- * form the Jacobian matrix consisting of the partial derivatives of the
- * nonlinear system (of n dimensions, where n is the number of state variables)
- * taken with respect to the partial derivatives of the state variables at
- * `x(t+h)`. For typical numerical differentiation, f will be evaluated n times
- * during the Jacobian formation; if we liberally assume that the derivative
- * function evaluation code runs in `O(n)` time (e.g., as it would for
- * multi-rigid body dynamics without kinematic loops), the asymptotic complexity
- * to form the Jacobian will be `O(n²)`. This Jacobian matrix needs to be formed
- * repeatedly- as often as every time the state variables are updated-
- * during the solution process. Using automatic differentiation replaces the
- * `n` derivative evaluations with what is hopefully a much less expensive
- * process, though the complexity to form the Jacobian matrix is still `O(n²)`.
- * For large `n`, the time complexity may be dominated by the `O(n³)` time
- * required to (repeatedly) solve linear systems problems as part of the
- * nonlinear system solution process.
+ * @tparam T The scalar type. Must be a valid Eigen scalar.
  */
 template <class T>
 class ImplicitIntegrator : public IntegratorBase<T> {
@@ -51,6 +32,23 @@ class ImplicitIntegrator : public IntegratorBase<T> {
                                    Context<T>* context = nullptr)
       : IntegratorBase<T>(system, context) {}
 
+  enum class JacobianComputationScheme {
+    /// Forward differencing.
+    kForwardDifference,
+
+    /// Central differencing.
+    kCentralDifference,
+
+    /// Automatic differentiation.
+    kAutomatic
+  };
+
+  /// @name Methods for getting and setting the Jacobian scheme.
+  ///
+  /// Methods for getting and setting the scheme used to determine the
+  /// Jacobian matrix necessary for solving the requisite nonlinear system
+  /// if equations.
+  ///
   /// Selecting the wrong Jacobian determination scheme will slow (possibly
   /// critically) the implicit integration process. Automatic differentiation is
   /// recommended if the System supports it for reasons of both higher
@@ -65,23 +63,6 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   ///
   /// - [Nocedal 2004] J. Nocedal and S. Wright. Numerical Optimization.
   ///                  Springer, 2004.
-  enum class JacobianComputationScheme {
-    /// O(h) Forward differencing.
-    kForwardDifference,
-
-    /// O(h²) Central differencing.
-    kCentralDifference,
-
-    /// Automatic differentiation.
-    kAutomatic
-  };
-
-  /// @name Methods for getting and setting the Jacobian scheme.
-  ///
-  /// Methods for getting and setting the scheme used to determine the
-  /// Jacobian matrix necessary for solving the requisite nonlinear system
-  /// if equations.
-  /// @see JacobianComputationScheme
   /// @{
 
   /// Sets whether the integrator attempts to reuse Jacobian matrices and
@@ -121,7 +102,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// @{
 
   /// Gets the number of ODE function evaluations
-  /// (calls to CalcTimeDerivatives()) *used only for computing
+  /// (calls to EvalTimeDerivatives()) *used only for computing
   /// the Jacobian matrices* since the last call to ResetStatistics(). This
   /// count includes those derivative calculations necessary for computing
   /// Jacobian matrices during error estimation processes.
@@ -129,7 +110,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
     return num_jacobian_function_evaluations_;
   }
 
-  /// Gets the number of Jacobian evaluations (i.e., the number of times
+  /// Gets the number of Jacobian computations (i.e., the number of times
   /// that the Jacobian matrix was reformed) since the last call to
   /// ResetStatistics(). This count includes those evaluations necessary
   /// during error estimation processes.
@@ -137,6 +118,66 @@ class ImplicitIntegrator : public IntegratorBase<T> {
         num_jacobian_evaluations_;
   }
 
+  /// @name Cumulative statistics functions.
+  /// The functions return statistics specific to the implicit integration
+  /// process.
+  /// @{
+
+  /// Gets the number of iterations used in the Newton-Raphson nonlinear systems
+  /// of equation solving process since the last call to ResetStatistics(). This
+  /// count includes those Newton-Raphson iterations used during error
+  /// estimation processes.
+  int64_t get_num_newton_raphson_iterations() const {
+    return do_get_num_newton_raphson_iterations();
+  }
+
+  /// Gets the number of factorizations of the iteration matrix since the last
+  /// call to ResetStatistics(). This count includes those refactorizations
+  /// necessary during error estimation processes.
+  int64_t get_num_iteration_matrix_factorizations() const {
+    return do_get_num_iteration_matrix_factorizations();
+  }
+
+  /// Gets the number of ODE function evaluations
+  /// (calls to CalcTimeDerivatives()) *used only for the error estimation
+  /// process* since the last call to ResetStatistics(). This count
+  /// includes those needed to compute Jacobian matrices.
+  int64_t get_num_error_estimator_derivative_evaluations() const {
+    return do_get_num_error_estimator_derivative_evaluations();
+  }
+  /// @}
+
+  /// @name Error-estimation statistics functions.
+  /// The functions return statistics specific to the error estimation
+  /// process.
+  /// @{
+  /// Gets the number of ODE function evaluations (calls to
+  /// CalcTimeDerivatives()) *used only for computing the Jacobian matrices
+  /// needed by the error estimation process* since the last call to
+  /// ResetStatistics().
+  int64_t get_num_error_estimator_derivative_evaluations_for_jacobian() const {
+    return do_get_num_error_estimator_derivative_evaluations_for_jacobian();
+  }
+
+  /// Gets the number of iterations *used in the Newton-Raphson nonlinear
+  /// systems of equation solving process for the error estimation process*
+  /// since the last call to ResetStatistics().
+  int64_t get_num_error_estimator_newton_raphson_iterations() const { return
+        do_get_num_error_estimator_newton_raphson_iterations();
+  }
+
+  /// Gets the number of Jacobian matrix computations *used only during
+  /// the error estimation process* since the last call to ResetStatistics().
+  int64_t get_num_error_estimator_jacobian_evaluations() const {
+    return do_get_num_error_estimator_jacobian_evaluations();
+  }
+
+  /// Gets the number of factorizations of the iteration matrix *used only
+  /// during the error estimation process* since the last call to
+  /// ResetStatistics().
+  int64_t get_num_error_estimator_iteration_matrix_factorizations() const {
+    return do_get_num_error_estimator_iteration_matrix_factorizations();
+  }
   /// @}
 
  protected:
@@ -168,18 +209,39 @@ class ImplicitIntegrator : public IntegratorBase<T> {
     Eigen::HouseholderQR<MatrixX<AutoDiffXd>> QR_;
   };
 
+  /**
+   * Resets any statistics particular to a specific implicit integrator. The
+   * default implementation of this function does nothing. If your integrator
+   * collects its own statistics, you should re-implement this method and
+   * reset them there.
+   */
+  virtual void DoResetImplicitIntegratorStatistics() {}
+
+  // TODO(edrumwri) Document the functions below (or move documentation from
+  // the -inl file to here).
+  virtual int64_t do_get_num_newton_raphson_iterations() const = 0;
+  virtual int64_t do_get_num_iteration_matrix_factorizations() const = 0;
+  virtual int64_t do_get_num_error_estimator_derivative_evaluations() const = 0;
+  virtual int64_t
+      do_get_num_error_estimator_derivative_evaluations_for_jacobian()
+      const = 0;
+  virtual int64_t do_get_num_error_estimator_newton_raphson_iterations()
+      const = 0;
+  virtual int64_t do_get_num_error_estimator_jacobian_evaluations() const = 0;
+  virtual int64_t do_get_num_error_estimator_iteration_matrix_factorizations()
+      const = 0;
   MatrixX<T>& get_mutable_jacobian() { return J_; }
   void set_last_call_succeeded(bool success) { last_call_succeeded_ = success; }
   bool last_call_succeeded() const { return last_call_succeeded_; }
   bool IsBadJacobian(const MatrixX<T>& J) const;
   void DoResetStatistics() override;
-  MatrixX<T> CalcJacobian(const T& tf, const VectorX<T>& xtplus);
-  MatrixX<T> ComputeForwardDiffJacobian(const System<T>&, const T& t,
-      const VectorX<T>& xc, Context<T>*);
-  MatrixX<T> ComputeCentralDiffJacobian(const System<T>&, const T& t,
-      const VectorX<T>& xc, Context<T>*);
-  MatrixX<T> ComputeAutoDiffJacobian(const System<T>& system, const T& t,
-      const VectorX<T>& xc, const Context<T>& context);
+  const MatrixX<T>& CalcJacobian(const T& tf, const VectorX<T>& xtplus);
+  void ComputeForwardDiffJacobian(const System<T>&, const T& t,
+      const VectorX<T>& xc, Context<T>*, MatrixX<T>* J);
+  void ComputeCentralDiffJacobian(const System<T>&, const T& t,
+      const VectorX<T>& xc, Context<T>*, MatrixX<T>* J);
+  void ComputeAutoDiffJacobian(const System<T>& system, const T& t,
+      const VectorX<T>& xc, const Context<T>& context, MatrixX<T>* J);
   VectorX<T> EvalTimeDerivativesUsingContext();
 
  private:

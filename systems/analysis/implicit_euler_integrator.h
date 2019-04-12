@@ -80,83 +80,47 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       : ImplicitIntegrator<T>(system, context) {}
 
   /// The integrator supports error estimation.
-  bool supports_error_estimation() const override { return true; }
+  bool supports_error_estimation() const final { return true; }
 
   /// This integrator provides second order error estimates.
-  int get_error_estimate_order() const override { return 2; }
+  int get_error_estimate_order() const final { return 2; }
 
-  /// @name Cumulative statistics functions.
-  /// The functions return statistics specific to the implicit integration
-  /// process. Adds to the cumulative statistics functions of
-  /// ImplicitIntegrator.
-  /// @{
-
-  /// Gets the number of iterations used in the Newton-Raphson nonlinear systems
-  /// of equation solving process since the last call to ResetStatistics(). This
-  /// count includes those Newton-Raphson iterations used during error
-  /// estimation processes.
-  int64_t get_num_newton_raphson_iterations() const {
+ private:
+  int64_t do_get_num_newton_raphson_iterations() const final {
     return num_nr_iterations_;
   }
 
-  /// Gets the number of factorizations of the iteration matrix since the last
-  /// call to ResetStatistics(). This count includes those refactorizations
-  /// necessary during error estimation processes.
-  int64_t get_num_iteration_matrix_factorizations() const {
+  int64_t do_get_num_iteration_matrix_factorizations() const final {
     return num_iter_factorizations_;
   }
 
-  /// @}
-
-  /// Gets the number of ODE function evaluations
-  /// (calls to CalcTimeDerivatives()) *used only for the error estimation
-  /// process* since the last call to ResetStatistics(). This count
-  /// includes *all* such calls including (1) those necessary to compute
-  /// Jacobian matrices; and (2) calls that exhibit little
-  /// cost (due to results being cached).
-  int64_t get_num_error_estimator_derivative_evaluations() const {
+  int64_t do_get_num_error_estimator_derivative_evaluations() const final {
     return num_err_est_function_evaluations_;
   }
 
-  /// @name Error-estimation statistics functions.
-  /// The functions return statistics specific to the error estimation
-  /// process.
-  /// @{
-  /// Gets the number of ODE function evaluations (calls to
-  /// CalcTimeDerivatives()) *used only for computing the Jacobian matrices
-  /// needed by the error estimation process* since the last call to
-  /// ResetStatistics().
-  int64_t get_num_error_estimator_derivative_evaluations_for_jacobian() const {
+  int64_t do_get_num_error_estimator_derivative_evaluations_for_jacobian()
+      const final {
     return num_err_est_jacobian_function_evaluations_;
   }
 
-  /// Gets the number of iterations *used in the Newton-Raphson nonlinear
-  /// systems of equation solving process for the error estimation process*
-  /// since the last call to ResetStatistics().
-  int64_t get_num_error_estimator_newton_raphson_iterations() const { return
-        num_err_est_nr_iterations_;
+  int64_t do_get_num_error_estimator_newton_raphson_iterations()
+      const final {
+    return num_err_est_nr_iterations_;
   }
 
-  /// Gets the number of Jacobian matrix evaluations *used only during
-  /// the error estimation process* since the last call to ResetStatistics().
-  int64_t get_num_error_estimator_jacobian_evaluations() const {
+  int64_t do_get_num_error_estimator_jacobian_evaluations() const final {
     return num_err_est_jacobian_reforms_;
   }
 
-  /// Gets the number of factorizations of the iteration matrix *used only
-  /// during the error estimation process* since the last call to
-  /// ResetStatistics().
-  int64_t get_num_error_estimator_iteration_matrix_factorizations() const {
+  int64_t do_get_num_error_estimator_iteration_matrix_factorizations()
+      const final {
     return num_err_est_iter_factorizations_;
   }
 
-  /// @}
-
- private:
+  void DoResetImplicitIntegratorStatistics() final;
   void ComputeAndFactorIterationMatrix(
       const MatrixX<T>& J, const T& dt, int scale);
-  void DoInitialize() override;
-  void DoResetStatistics() override;
+  void DoInitialize() final;
   bool AttemptStepPaired(const T& t0, const T& h, const VectorX<T>& xt0,
       VectorX<T>* xtplus_euler, VectorX<T>* xtplus_trap);
   bool StepAbstract(const T& t0, const T& h, const VectorX<T>& xt0,
@@ -164,7 +128,7 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       VectorX<T>* xtplus, int trial = 1);
   bool CalcMatrices(const T& t, const T& h, const VectorX<T>& xt, int scale,
       int trial);
-  bool DoStep(const T& h) override;
+  bool DoStep(const T& h) final;
   bool StepImplicitEuler(const T& t0, const T& h, const VectorX<T>& xt0,
       VectorX<T>* xtplus);
   bool StepImplicitTrapezoid(const T& t0, const T& h, const VectorX<T>& xt0,

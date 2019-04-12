@@ -22,8 +22,7 @@ namespace drake {
 namespace systems {
 
 template <class T>
-void ImplicitEulerIntegrator<T>::DoResetStatistics() {
-  ImplicitIntegrator<T>::DoResetStatistics();
+void ImplicitEulerIntegrator<T>::DoResetImplicitIntegratorStatistics() {
   num_iter_factorizations_ = 0;
   num_nr_iterations_ = 0;
   num_err_est_nr_iterations_ = 0;
@@ -175,10 +174,6 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
   // Verify the scale factor is correct.
   DRAKE_ASSERT(scale == 1 || scale == 2);
 
-  // Set the state and time.
-  Context<T>* context = this->get_mutable_context();
-  context->SetTimeAndContinuousState(t0, xt0);
-
   // Verify xtplus
   DRAKE_ASSERT(xtplus && xtplus->size() == xt0.size());
 
@@ -187,6 +182,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
 
   // Advance the context time and state to compute derivatives at t0 + h.
   const T tf = t0 + h;
+  Context<T>* context = this->get_mutable_context();
   context->SetTimeAndContinuousState(tf, *xtplus);
 
   // Evaluate the residual error using:
@@ -515,7 +511,7 @@ bool ImplicitEulerIntegrator<T>::DoStep(const T& h) {
     // taking two explicit Euler half steps. The code below the if/then/else
     // block simply subtracts the two results to obtain the error estimate.
     xdot = this->EvalTimeDerivatives(*context).CopyToVector();  // xdot(t + h/2)
-    xtplus_itr = xtpoint5 + h / 2 * xdot;
+    xtplus_itr = xtpoint5 + h / 2.0 * xdot;
     context->SetTimeAndContinuousState(t0 + h, xtplus_itr);
 
     // Update the error estimation ODE counts.
