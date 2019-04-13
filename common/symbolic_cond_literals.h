@@ -8,6 +8,14 @@
 
 using std::vector;
 
+// TODOs:
+// Overview / tutorial.
+// Stop using std::function entirely.
+// Short-circuit even T=Formula when there are no free vars, don't use vector.
+// Add mutating_only overload for &eigen_matrix, not just &scalar.
+// Silence the linter on `extra space in '""_if ('`.
+// Silence the linter on `using namespace ..._literals`.
+
 namespace drake {
 namespace symbolic {
 namespace internal {
