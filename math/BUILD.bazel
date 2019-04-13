@@ -116,6 +116,7 @@ drake_cc_library(
         "//common:drake_bool",
         "//common:essential",
         "//common:is_approx_equal_abstol",
+        "//common:symbolic_cond_literals",
     ],
 )
 

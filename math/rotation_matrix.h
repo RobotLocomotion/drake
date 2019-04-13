@@ -14,6 +14,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/symbolic_cond_literals.h"
 #include "drake/math/roll_pitch_yaw.h"
 
 namespace drake {
@@ -553,31 +554,34 @@ class RotationMatrix {
     T w, x, y, z;  // Elements of the quaternion, w relates to cos(theta/2).
 
     const T trace = M.trace();
-    if (trace >= M(0, 0) && trace >= M(1, 1) && trace >= M(2, 2)) {
+
+    using namespace drake::symbolic::cond_literals;  // NOLINT
+    ""_mutating_only(&w, &x, &y, &z) =
+    ""_if (trace >= M(0, 0) && trace >= M(1, 1) && trace >= M(2, 2)) ^[&]() {  // NOLINT
       // This branch occurs if the trace is larger than any diagonal element.
       w = T(1) + trace;
       x = M(2, 1) - M(1, 2);
       y = M(0, 2) - M(2, 0);
       z = M(1, 0) - M(0, 1);
-    } else if (M(0, 0) >= M(1, 1) && M(0, 0) >= M(2, 2)) {
+    } || ""_elif (M(0, 0) >= M(1, 1) && M(0, 0) >= M(2, 2)) ^[&]() {  // NOLINT
       // This branch occurs if M(0,0) is largest among the diagonal elements.
       w = M(2, 1) - M(1, 2);
       x = T(1) - (trace - 2 * M(0, 0));
       y = M(0, 1) + M(1, 0);
       z = M(0, 2) + M(2, 0);
-    } else if (M(1, 1) >= M(2, 2)) {
+    } || ""_elif (M(1, 1) >= M(2, 2)) ^[&]() {  // NOLINT
       // This branch occurs if M(1,1) is largest among the diagonal elements.
       w = M(0, 2) - M(2, 0);
       x = M(0, 1) + M(1, 0);
       y = T(1) - (trace - 2 * M(1, 1));
       z = M(1, 2) + M(2, 1);
-    } else {
+    } || ""_else ^[&]() {
       // This branch occurs if M(2,2) is largest among the diagonal elements.
       w = M(1, 0) - M(0, 1);
       x = M(0, 2) + M(2, 0);
       y = M(1, 2) + M(2, 1);
       z = T(1) - (trace - 2 * M(2, 2));
-    }
+    };
 
     // Create a quantity q (which is not yet a quaternion).
     // Note: Eigen's Quaternion constructor does not normalize.
@@ -585,7 +589,7 @@ class RotationMatrix {
 
     // Since the quaternions q and -q correspond to the same rotation matrix,
     // choose to return a canonical quaternion, i.e., with q(0) >= 0.
-    const T canonical_factor = (w < 0) ? T(-1) : T(1);
+    const T canonical_factor = if_then_else(w < 0, T(-1), T(1));
 
     // The quantity q calculated thus far in this algorithm is not a quaternion
     // with magnitude 1.  It differs from a quaternion in that all elements of q
