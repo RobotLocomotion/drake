@@ -1,6 +1,8 @@
+#pragma once
+
 #include <type_traits>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include "drake/common/symbolic.h"
 
@@ -20,7 +22,7 @@ struct PredFuncList : public std::vector<std::pair<Formula, StdFunc>> {
     DRAKE_DEMAND(other.size() == 1);
     emplace_back(std::move(other.front()));
     return *this;
-  }  
+  }
 };
 struct ImmediateIf {
   template <typename Lambda>
@@ -104,10 +106,10 @@ struct MakerOfMutatingOnly {
 }  // namespace internal
 namespace cond_literals {
 
-internal::MakerOfMutatingOnly operator ""_mutating_only(const char*, std::size_t) { return {}; }
-internal::MakerOfIf operator ""_if (const char*, std::size_t) { return {}; }
-internal::MakerOfIf operator ""_elif (const char*, std::size_t) { return {}; }
-internal::ElseKeyword operator ""_else (const char*, std::size_t) { return {}; }
+inline internal::MakerOfMutatingOnly operator ""_mutating_only(const char*, std::size_t) { return {}; }
+inline internal::MakerOfIf operator ""_if (const char*, std::size_t) { return {}; }
+inline internal::MakerOfIf operator ""_elif (const char*, std::size_t) { return {}; }
+inline internal::ElseKeyword operator ""_else (const char*, std::size_t) { return {}; }
 
 }  // namespace cond_literals
 }  // namespace symbolic

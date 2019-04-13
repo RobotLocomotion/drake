@@ -1,5 +1,5 @@
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -78,7 +78,7 @@ GTEST_TEST(DoubleTest, ShortCircuit2) {
     DRAKE_DEMAND(false);
   };
 }
-  
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

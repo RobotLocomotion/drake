@@ -232,6 +232,10 @@ drake_cc_library(
 drake_cc_library(
     name = "symbolic_cond_literals",
     hdrs = ["symbolic_cond_literals.h"],
+    tags = [
+        "exclude_from_package",
+        "nolint",
+    ],
     deps = [":symbolic"],
 )
 
@@ -977,6 +981,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "symbolic_expression_test2",
+    tags = ["nolint"],
     deps = [
         ":essential",
         ":symbolic",
