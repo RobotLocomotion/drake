@@ -551,7 +551,8 @@ class RotationMatrix {
     // This implementation is adapted from simbody at
     // https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
 
-    T w, x, y, z;  // Elements of the quaternion, w relates to cos(theta/2).
+    // Elements of the quaternion, w relates to cos(theta/2).
+    T w{}, x{}, y{}, z{};
 
     const T trace = M.trace();
 
