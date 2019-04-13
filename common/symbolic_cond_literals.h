@@ -1,3 +1,4 @@
+#include <type_traits>
 #include <vector>
 #include <utility>
 
@@ -52,19 +53,17 @@ struct Else {
 struct ElseKeyword {
   Else operator^(Func&& func) { return Else{&func}; }
 };
-template <typename T>
 struct MutatingOnly {
-  MutatingOnly(const std::initializer_list<T*>& mutables) {
-    for (T* ptr : mutables) {
+  MutatingOnly(const std::initializer_list<Expression*>& mutables) {
+    for (Expression* ptr : mutables) {
       mutable_refs.emplace_back(std::ref(*ptr));
     }
   }
-  void operator=(bool) {}
   void operator=(PredFuncList&& clauses) {
     const int num_clauses = clauses.size();
     const int num_mutables = mutable_refs.size();
     // Save the originals.
-    std::vector<T> e_orig;
+    std::vector<Expression> e_orig;
     for (int i = 0; i < num_mutables; ++i) { e_orig.push_back(mutable_refs[i]); }
     // Evaluate each clause.
     std::vector<std::vector<Expression>> then_values;
@@ -83,12 +82,19 @@ struct MutatingOnly {
       }
     }
   }
-  std::vector<std::reference_wrapper<T>> mutable_refs;
+  std::vector<std::reference_wrapper<Expression>> mutable_refs;
+};
+struct DummyMutatingOnly {
+  void operator=(bool) {}
 };
 struct MakerOfMutatingOnly {
   template <typename T, typename... Args>
-  MutatingOnly<T> operator()(T* arg, Args... args) {
-    return MutatingOnly<T>{arg, args...};
+  DummyMutatingOnly operator()(T*, Args...) {
+    return DummyMutatingOnly{};
+  }
+  template <typename... Args>
+  MutatingOnly operator()(Expression* arg, Args... args) {
+    return MutatingOnly{arg, args...};
   }
 };
 
