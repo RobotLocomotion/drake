@@ -230,6 +230,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "symbolic_cond_literals",
+    hdrs = ["symbolic_cond_literals.h"],
+    deps = [":symbolic"],
+)
+
+drake_cc_library(
     name = "symbolic_decompose",
     srcs = [
         "symbolic_decompose.cc",
@@ -974,6 +980,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
+        ":symbolic_cond_literals",
         "//common/test_utilities:symbolic_test_util",
     ],
 )
