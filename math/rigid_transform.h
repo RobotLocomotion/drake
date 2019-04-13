@@ -130,8 +130,7 @@ class RigidTransform {
   /// Eigen Translation3 transform.
   /// @param[in] translation Translation3 that stores `p_AoBo_A`, the position
   /// vector from frame A's origin to frame B's origin, expressed in frame A.
-  RigidTransform(  // NOLINT(runtime/explicit)
-      const Eigen::Translation<T, 3>& translation) {
+  explicit RigidTransform( const Eigen::Translation<T, 3>& translation) {
     set_translation(translation.translation());
   }
 
@@ -330,25 +329,31 @@ class RigidTransform {
   }
 
   /// Multiplies `this` %RigidTransform `X_AB` by the `other` %RigidTransform
-  /// `X_BC` and returns %RigidTransform `X_AC = X_AB * X_BC`.
+  /// `X_BC` and returns the %RigidTransform `X_AC = X_AB * X_BC`.
   RigidTransform<T> operator*(const RigidTransform<T>& other) const {
     const Vector3<T> p_AoCo_A = *this * other.translation();
     return RigidTransform<T>(rotation() * other.rotation(), p_AoCo_A);
   }
 
-  /// Multiplies `this` %RigidTransform `X_AB` by the translation transform
-  /// `X_BC` and returns %RigidTransform `X_AC = X_AB * X_BC`.
+  /// Multiplies `this` %RigidTransform `X_AB` by the translation-only transform
+  /// `X_BC` and returns the %RigidTransform `X_AC = X_AB * X_BC`.
+  /// @note The rotation matrix returned in `X_AC` is identical to the rotation
+  /// matrix in `X_AB` so `X_AC` and `X_AB` only differ by origin location.
   RigidTransform<T> operator*(const Eigen::Translation<T, 3>& X_BC) const {
-    const Vector3<T> p_AoCo_A = *this * X_BC.translation();
+    const RigidTransform<T> &X_AB = *this;
+    const Vector3<T> p_AoCo_A = X_AB * X_BC.translation();
     return RigidTransform<T>(rotation(), p_AoCo_A);
   }
 
-  /// Multiplies the translation transform `X_AB` by the %RigidTransform
-  /// `X_BC` and returns %RigidTransform `X_AC = X_AB * X_BC`.
+  /// Multiplies the translation-only transform `X_AB` by the %RigidTransform
+  /// `X_BC` and returns the %RigidTransform `X_AC = X_AB * X_BC`.
   friend RigidTransform<T> operator*(const Eigen::Translation<T, 3>& X_AB,
       const RigidTransform<T>& X_BC) {
+    const Vector3<T>& p_AoBo_A = X_AB.translation();
+    const Vector3<T>& p_BoCo_B = X_BC.translation();
+    const Vector3<T>& p_BoCo_A = p_BoCo_B;  // Since A and B bases are aligned.
+    const Vector3<T> p_AoCo_A = p_AoBo_A + p_BoCo_A;
     const RotationMatrix<T>& R_AC = X_BC.rotation();
-    const Vector3<T> p_AoCo_A = X_AB.translation() + X_BC.translation();
     return RigidTransform<T>(R_AC, p_AoCo_A);
   }
 
