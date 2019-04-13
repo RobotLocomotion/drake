@@ -10,27 +10,28 @@ namespace drake {
 namespace symbolic {
 namespace internal {
 
-using Func = std::function<void(void)>;
+using StdFunc = std::function<void(void)>;
 
-struct PredFuncList : public std::vector<std::pair<Formula, Func*>> {
-  PredFuncList(const Formula& pred, Func&& func) {
-    emplace_back(pred, &func);
+struct PredFuncList : public std::vector<std::pair<Formula, StdFunc>> {
+  PredFuncList(const Formula& pred, StdFunc&& func) {
+    emplace_back(pred, func);
   }
   PredFuncList operator||(PredFuncList&& other) {
     DRAKE_DEMAND(other.size() == 1);
-    emplace_back(other.front());
-    return std::move(*this);
+    emplace_back(std::move(other.front()));
+    return *this;
   }  
 };
 struct ImmediateIf {
-  bool operator^(Func&& func) {
+  template <typename Lambda>
+  bool operator^(Lambda&& func) {
     if (pred) { func(); }
     return pred;
   }
   bool pred;
 };
 struct LazyIf {
-  PredFuncList operator^(Func&& func) {
+  PredFuncList operator^(StdFunc&& func) {
     return PredFuncList(pred, std::move(func));
   }
   Formula pred;
@@ -39,19 +40,21 @@ struct MakerOfIf {
   ImmediateIf operator()(bool pred) { return ImmediateIf{pred}; }
   LazyIf operator()(const Formula& pred) { return LazyIf{pred}; }
 };
+template <typename Lambda>
 struct Else {
-  Func* func{};
+  Lambda func;
   operator bool() {
-    (*func)();
+    func();
     return true;
   }
-  friend PredFuncList operator||(PredFuncList&& other, const Else& self) {
-    other.emplace_back(Formula::True(), self.func);
-    return std::move(other);
+  friend PredFuncList operator||(PredFuncList&& other, Else&& self) {
+    other.emplace_back(Formula::True(), StdFunc(self.func));
+    return other;
   }
 };
 struct ElseKeyword {
-  Else operator^(Func&& func) { return Else{&func}; }
+  template <typename Lambda>
+  Else<Lambda> operator^(Lambda func) { return Else<Lambda>{std::move(func)}; }
 };
 struct MutatingOnly {
   MutatingOnly(const std::initializer_list<Expression*>& mutables) {
@@ -69,7 +72,7 @@ struct MutatingOnly {
     std::vector<std::vector<Expression>> then_values;
     for (int j = 0; j < num_clauses; ++j) {
       // Invoke the consequent and save its outcome.
-      (*clauses[j].second)();
+      clauses[j].second();
       then_values.emplace_back(mutable_refs.begin(), mutable_refs.end());
       // Restore the originals.
       for (int i = 0; i < num_mutables; ++i) { mutable_refs[i].get() = e_orig[i]; }
