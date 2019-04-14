@@ -75,40 +75,6 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
   }
 }
 
-class NoisyQuadraticCost {
- public:
-  explicit NoisyQuadraticCost(const double max_noise)
-      : max_noise_(max_noise) {}
-  int numInputs() const { return 1; }
-  int numOutputs() const { return 1; }
-  template <typename T>
-  void eval(detail::VecIn<T> const& x, detail::VecOut<T>* y) const {
-    // Parabola with minimum at (-1, 1) with some deterministic noise applied to
-    // the input so derivatives will be correctish but not easily followable to
-    // the minimum.
-
-    // The sign of the noise alternates between calls. The magnitude of the
-    // noise increases from 0 to max_noise_ over the course of
-    // 2 * noise_counter_limit_ calls, after which it resets to 0.
-    double noise = std::pow(-1., noise_counter_) * max_noise_ * noise_counter_ /
-                   noise_counter_limit_;
-    if (noise_counter_ >= 0) {
-      noise_counter_ = (noise_counter_ + 1) % noise_counter_limit_;
-      noise_counter_ *= -1;
-    } else {
-      noise_counter_ *= -1;
-    }
-    auto noisy_x = x(0) + noise;
-    y->resize(1);
-    (*y)(0) = (noisy_x + 1) * (noisy_x + 1) + 1;
-  }
-
- private:
-  double max_noise_{};
-  mutable int noise_counter_{};
-  const int noise_counter_limit_{10};
-};
-
 GTEST_TEST(IpoptSolverTest, AcceptableResult) {
   IpoptSolver solver;
   SolverOptions options;
@@ -117,13 +83,37 @@ GTEST_TEST(IpoptSolverTest, AcceptableResult) {
   options.SetOption(IpoptSolver::id(), "max_iter", 10);
   const VectorX<double> x_initial_guess = VectorX<double>::Ones(1);
   if (solver.available()) {
-    double max_noise = 1e-2;
+    const double max_noise{1e-2};
+    const int noise_counter_limit{10};
+    int noise_counter{0};
+
+    auto noisy_quadratic_cost = [&noise_counter, max_noise](const auto& x) {
+      // Parabola with minimum at (-1, 1) with some deterministic noise applied
+      // to the input so derivatives will be correctish but not easily
+      // followable to the minimum.
+
+      // The sign of the noise alternates between calls. The magnitude of the
+      // noise increases from 0 to max_noise_ over the course of
+      // 2 * noise_counter_limit_ calls, after which it resets to 0.
+      double noise = std::pow(-1., noise_counter) * max_noise * noise_counter /
+                     noise_counter_limit;
+      if (noise_counter >= 0) {
+        noise_counter = (noise_counter + 1) % noise_counter_limit;
+        noise_counter *= -1;
+      } else {
+        noise_counter *= -1;
+      }
+      auto noisy_x = x(0) + noise;
+      return (noisy_x + 1) * (noisy_x + 1) + 1;
+    };
+
     {
       // Set up a program and give it a relatively large amount of noise for
       // the specified tolerance.
       MathematicalProgram prog;
       auto x = prog.NewContinuousVariables(1);
-      prog.AddCost(NoisyQuadraticCost(max_noise), x);
+
+      prog.AddCost(noisy_quadratic_cost, x);
       auto result = solver.Solve(prog, x_initial_guess, options);
       // Expect to hit iteration limit
       EXPECT_FALSE(result.is_success());
@@ -136,12 +126,13 @@ GTEST_TEST(IpoptSolverTest, AcceptableResult) {
     options.SetOption(IpoptSolver::id(), "acceptable_tol", 1e-3);
     options.SetOption(IpoptSolver::id(), "acceptable_dual_inf_tol", 1e-3);
     options.SetOption(IpoptSolver::id(), "acceptable_iter", 3);
+    noise_counter = 0;
     {
       // Set up  the same program, but provide acceptability criteria that
       // should be feasible with even with the noise.
       MathematicalProgram prog;
       auto x = prog.NewContinuousVariables(1);
-      prog.AddCost(NoisyQuadraticCost(max_noise), x);
+      prog.AddCost(noisy_quadratic_cost, x);
       auto result = solver.Solve(prog, x_initial_guess, options);
       // Expect Ipopt status to be "STOP_AT_ACCEPTABLE_POINT."
       const int kIpoptStopAtAcceptablePoint{4};  // Defined in IpAlgTypes.hpp.

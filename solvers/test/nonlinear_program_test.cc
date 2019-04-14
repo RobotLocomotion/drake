@@ -11,6 +11,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
@@ -32,13 +33,17 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 
-using drake::solvers::detail::VecIn;
-using drake::solvers::detail::VecOut;
 
 using std::numeric_limits;
 
 namespace drake {
 namespace solvers {
+
+template <typename ScalarType>
+using VecIn = Eigen::Ref<const VectorX<ScalarType>>;
+template <typename ScalarType>
+using VecOut = VectorX<ScalarType>;
+
 namespace test {
 void RunNonlinearProgram(const MathematicalProgram& prog,
                          const optional<Eigen::VectorXd>& x_init,
@@ -205,29 +210,20 @@ GTEST_TEST(testNonlinearProgram, testLowerBoundedProblem) {
   }
 }
 
-class SixHumpCamelCost {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SixHumpCamelCost)
-
-  SixHumpCamelCost() = default;
-
-  static size_t numInputs() { return 2; }
-  static size_t numOutputs() { return 1; }
-
-  template <typename ScalarType>
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>* y) const {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y->rows()) == numOutputs());
-    (*y)(0) =
-        x(0) * x(0) * (4 - 2.1 * x(0) * x(0) + x(0) * x(0) * x(0) * x(0) / 3) +
-        x(0) * x(1) + x(1) * x(1) * (-4 + 4 * x(1) * x(1));
-  }
-};
-
 GTEST_TEST(testNonlinearProgram, sixHumpCamel) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(2);
-  auto cost = prog.AddCost(SixHumpCamelCost(), x).evaluator();
+
+  auto cost = prog.AddCost(
+                      [](const auto& v) {
+                        return v(0) * v(0) *
+                                   (4 - 2.1 * v(0) * v(0) +
+                                    v(0) * v(0) * v(0) * v(0) / 3) +
+                               v(0) * v(1) +
+                               v(1) * v(1) * (-4 + 4 * v(1) * v(1));
+                      },
+                      x)
+                  .evaluator();
 
   const Eigen::VectorXd x_init = Eigen::Vector2d(2, 4);
   MathematicalProgramResult result;

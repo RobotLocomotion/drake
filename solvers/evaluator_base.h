@@ -14,7 +14,6 @@
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic.h"
 #include "drake/math/autodiff.h"
-#include "drake/solvers/function.h"
 
 namespace drake {
 namespace solvers {
@@ -208,73 +207,60 @@ class PolynomialEvaluator : public EvaluatorBase {
 };
 
 /**
- * An evaluator that may be specified using a callable object. Consider
- * constructing these instances using MakeFunctionEvaluator(...).
- * @tparam F The function / functor's type.
- * @see detail::FunctionTraits.
  */
-template <typename F>
 class FunctionEvaluator : public EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FunctionEvaluator)
 
-  /**
-   * Constructs an instance by copying from an lvalue or rvalue of `F`.
-   * @tparam FF Perfect-forwarding type of `F` (e.g., `const F&`, `F&&`).
-   * @param f The callable object. If rvalue, this value will be std::move'd.
-   * Otherwise, it will be copied.
-   * @param args Arguments to be forwarded to EvaluatorBase constructor.
-   */
-  template <typename FF, typename... Args>
-  FunctionEvaluator(FF&& f, Args&&... args)
-      : EvaluatorBase(detail::FunctionTraits<F>::numOutputs(f),
-                      detail::FunctionTraits<F>::numInputs(f),
-                      std::forward<Args>(args)...),
-        f_(std::forward<FF>(f)) {}
+  template <typename T, typename U = T>
+  using Calc =
+      std::function<void(const Eigen::Ref<const VectorX<T>>&, VectorX<U>*)>;
+
+  FunctionEvaluator(
+      int num_outputs, int num_vars, Calc<double> calc_double,
+      Calc<AutoDiffXd> calc_autodiffxd = {},
+      Calc<symbolic::Variable, symbolic::Expression> calc_expression = {},
+      const std::string& description = "")
+      : EvaluatorBase(num_outputs, num_vars, description),
+        calc_double_(std::move(calc_double)),
+        calc_autodiffxd_(std::move(calc_autodiffxd)),
+        calc_expression_(std::move(calc_expression)) {}
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override {
-    y->resize(detail::FunctionTraits<F>::numOutputs(f_));
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
-                 detail::FunctionTraits<F>::numInputs(f_));
-    DRAKE_ASSERT(static_cast<size_t>(y->rows()) ==
-                 detail::FunctionTraits<F>::numOutputs(f_));
-    detail::FunctionTraits<F>::eval(f_, x, y);
+    y->resize(this->num_outputs());
+    DRAKE_ASSERT(x.rows() == this->num_vars());
+    calc_double_(x, y);
   }
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd* y) const override {
-    y->resize(detail::FunctionTraits<F>::numOutputs(f_));
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
-                 detail::FunctionTraits<F>::numInputs(f_));
-    DRAKE_ASSERT(static_cast<size_t>(y->rows()) ==
-                 detail::FunctionTraits<F>::numOutputs(f_));
-    detail::FunctionTraits<F>::eval(f_, x, y);
+    if (!calc_autodiffxd_) {
+      throw std::logic_error(
+          "This FunctionEvaluator does not support AutoDiffXd evaluation.");
+    }
+    y->resize(this->num_outputs());
+    DRAKE_ASSERT(x.rows() == this->num_vars());
+    calc_autodiffxd_(x, y);
   }
 
-  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
-              VectorX<symbolic::Expression>*) const override {
-    throw std::logic_error(
-        "FunctionEvaluator does not support symbolic evaluation.");
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override {
+    if (!calc_expression_) {
+      throw std::logic_error(
+          "This FunctionEvaluator does not support symbolic evaluation.");
+    }
+    y->resize(this->num_outputs());
+    DRAKE_ASSERT(x.rows() == this->num_vars());
+    calc_expression_(x, y);
   }
 
-  const F f_;
+  Calc<double> calc_double_;
+  Calc<AutoDiffXd> calc_autodiffxd_;
+  Calc<symbolic::Variable, symbolic::Expression> calc_expression_;
 };
 
-/**
- * Creates a FunctionEvaluator instance bound to a given callable object.
- * @tparam FF Perfect-forwarding type of `F` (e.g., `const F&`, `F&&`).
- * @param f Callable function object.
- * @return An implementation of EvaluatorBase using the callable object.
- * @see detail::FunctionTraits.
- * @relates FunctionEvaluator
- */
-template <typename FF>
-std::shared_ptr<EvaluatorBase> MakeFunctionEvaluator(FF&& f) {
-  using F = std::decay_t<FF>;
-  return std::make_shared<FunctionEvaluator<F>>(std::forward<FF>(f));
-}
 
 /**
  * Defines a simple evaluator with no outputs that takes a callback function

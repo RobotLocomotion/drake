@@ -246,18 +246,6 @@ class PolynomialCost : public EvaluatorCost<PolynomialEvaluator> {
   }
 };
 
-/**
- * Converts an input of type @p F to a nonlinear cost.
- * @tparam FF The forwarded function type (e.g., `const F&, `F&&`, ...).
- * The class `F` should have functions numInputs(), numOutputs(), and
- * eval(x, y).
- * @see detail::FunctionTraits.
- */
-template <typename FF>
-std::shared_ptr<Cost> MakeFunctionCost(FF&& f) {
-  return std::make_shared<EvaluatorCost<>>(
-      MakeFunctionEvaluator(std::forward<FF>(f)));
-}
 
 }  // namespace solvers
 }  // namespace drake

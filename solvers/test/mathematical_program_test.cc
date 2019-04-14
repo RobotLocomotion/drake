@@ -45,8 +45,6 @@ using Eigen::Vector4d;
 using Eigen::VectorXd;
 
 using drake::Vector1d;
-using drake::solvers::detail::VecIn;
-using drake::solvers::detail::VecOut;
 using drake::symbolic::Expression;
 using drake::symbolic::Formula;
 using drake::symbolic::Variable;
@@ -76,38 +74,17 @@ namespace drake {
 namespace solvers {
 namespace test {
 
+template <typename ScalarType>
+using VecIn = Eigen::Ref<const VectorX<ScalarType>>;
+template <typename ScalarType>
+using VecOut = VectorX<ScalarType>;
+
 namespace {
 constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
 }  // namespace
 
-struct Movable {
-  Movable() = default;
-  Movable(Movable&&) = default;
-  Movable(Movable const&) = delete;
-  static size_t numInputs() { return 1; }
-  static size_t numOutputs() { return 1; }
-  template <typename ScalarType>
-  void eval(VecIn<ScalarType> const&, VecOut<ScalarType>*) const {}
-};
-
-struct Copyable {
-  Copyable() = default;
-  Copyable(Copyable&&) = delete;
-  Copyable(Copyable const&) = default;
-  static size_t numInputs() { return 1; }
-  static size_t numOutputs() { return 1; }
-  template <typename ScalarType>
-  void eval(VecIn<ScalarType> const&, VecOut<ScalarType>*) const {}
-};
-
-struct Unique {
-  Unique() = default;
-  Unique(Unique&&) = delete;
-  Unique(Unique const&) = delete;
-  static size_t numInputs() { return 1; }
-  static size_t numOutputs() { return 1; }
-  template <typename ScalarType>
-  void eval(VecIn<ScalarType> const&, VecOut<ScalarType>*) const {}
+const auto generic_trivial_cost2 = [](const auto& x) {
+  return x(0) * x(0) - x(1) * x(1) + 2;
 };
 
 // Check the index, type and name etc of the newly added variables.
@@ -727,7 +704,7 @@ GTEST_TEST(TestMathematicalProgram, TestBadBindingVariable) {
   ub.setConstant(1);
   Eigen::Matrix3d twiceA = 2 * A;
   vector<Eigen::Ref<const MatrixXd>> F{A, twiceA};
-  shared_ptr<EvaluatorBase> func = MakeFunctionEvaluator(Movable());
+  auto func = [](const auto& x, auto* y) {};
 
   // Test each constraint type.
   ExpectBadVar<LinearConstraint>(&prog, num_var, A, lb, ub);
@@ -743,29 +720,15 @@ GTEST_TEST(TestMathematicalProgram, TestBadBindingVariable) {
       Eigen::Vector3d::Zero());
   ExpectBadVar<LinearComplementarityConstraint>(&prog, num_var, A, f);
   // Use this as a test for nonlinear constraints.
-  ExpectBadVar<EvaluatorConstraint<>>(&prog, 1, func, lb.head(1), ub.head(1));
+  ExpectBadVar<EvaluatorConstraint<FunctionEvaluator>>(
+      &prog, 1, std::make_shared<FunctionEvaluator>(1, 1, func), lb.head(1),
+      ub.head(1));
 
   // Test each cost type.
   ExpectBadVar<LinearCost>(&prog, num_var, f);
   ExpectBadVar<QuadraticCost>(&prog, num_var, A, f);
-  ExpectBadVar<EvaluatorCost<>>(&prog, 1, func);
-}
-
-GTEST_TEST(TestMathematicalProgram, TestAddFunction) {
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<1>();
-
-  Movable movable;
-  prog.AddCost(std::move(movable), x);
-  prog.AddCost(Movable(), x);
-
-  Copyable copyable;
-  prog.AddCost(copyable, x);
-
-  Unique unique;
-  prog.AddCost(cref(unique), x);
-  prog.AddCost(make_shared<Unique>(), x);
-  prog.AddCost(unique_ptr<Unique>(new Unique), x);
+  ExpectBadVar<EvaluatorCost<FunctionEvaluator>>(
+      &prog, 1, std::make_shared<FunctionEvaluator>(1, 1, func));
 }
 
 GTEST_TEST(TestMathematicalProgram, BoundingBoxTest2) {
@@ -845,10 +808,9 @@ void VerifyAddedCost1(const MathematicalProgram& prog,
 }
 
 // Verifies if the added cost evaluates the same as the original cost.
-// This function is supposed to test these costs added by converting
-// a class to ConstraintImpl through MakeCost.
+// This function is supposed to test these costs added by the
+// std::function version of AddCost.
 void VerifyAddedCost2(const MathematicalProgram& prog,
-                      const GenericTrivialCost2& cost,
                       const shared_ptr<Cost>& returned_cost,
                       const Eigen::Ref<const Eigen::Vector2d>& x_value,
                       int num_generic_costs_expected) {
@@ -856,7 +818,7 @@ void VerifyAddedCost2(const MathematicalProgram& prog,
             num_generic_costs_expected);
   Eigen::VectorXd y(1), y_expected(1), y_returned;
   prog.generic_costs().back().evaluator()->Eval(x_value, &y);
-  cost.eval<double>(x_value, &y_expected);
+  y_expected[0] = generic_trivial_cost2(x_value);
   EXPECT_TRUE(CompareMatrices(y, y_expected));
   returned_cost->Eval(x_value, &y_returned);
   EXPECT_TRUE(CompareMatrices(y, y_returned));
@@ -902,16 +864,14 @@ GTEST_TEST(TestMathematicalProgram, AddCostTest) {
   VerifyAddedCost1(prog, generic_trivial_cost1, Eigen::Vector3d(2, 3, 4),
                    num_generic_costs);
 
-  GenericTrivialCost2 generic_trivial_cost2;
-
   // Add an object that can be converted to a ConstraintImpl object on a
   // VectorDecisionVariable object.
   auto returned_cost3 =
       prog.AddCost(generic_trivial_cost2, VectorDecisionVariable<2>(x(0), y(1)))
           .evaluator();
   ++num_generic_costs;
-  VerifyAddedCost2(prog, generic_trivial_cost2, returned_cost3,
-                   Eigen::Vector2d(1, 2), num_generic_costs);
+  VerifyAddedCost2(prog, returned_cost3, Eigen::Vector2d(1, 2),
+                   num_generic_costs);
 
   // Add an object that can be converted to a ConstraintImpl object on a
   // VariableRefList object.
@@ -919,8 +879,8 @@ GTEST_TEST(TestMathematicalProgram, AddCostTest) {
       prog.AddCost(generic_trivial_cost2, {x.head<1>(), y.tail<1>()})
           .evaluator();
   ++num_generic_costs;
-  VerifyAddedCost2(prog, generic_trivial_cost2, returned_cost4,
-                   Eigen::Vector2d(1, 2), num_generic_costs);
+  VerifyAddedCost2(prog, returned_cost4, Eigen::Vector2d(1, 2),
+                   num_generic_costs);
 }
 
 void CheckAddedSymbolicLinearCostUserFun(const MathematicalProgram& prog,
@@ -2677,7 +2637,7 @@ GTEST_TEST(TestMathematicalProgram, TestClone) {
   shared_ptr<Cost> generic_trivial_cost1 = make_shared<GenericTrivialCost1>();
   prog.AddCost(Binding<Cost>(generic_trivial_cost1,
                              VectorDecisionVariable<3>(x(0), x(1), x(2))));
-  GenericTrivialCost2 generic_trivial_cost2;
+
   prog.AddCost(generic_trivial_cost2, VectorDecisionVariable<2>(x(2), x(1)));
   prog.AddLinearCost(x(0) + 2);
   prog.AddQuadraticCost(x(0) * x(0) + 2 * x(1) * x(1));
@@ -2884,6 +2844,38 @@ GTEST_TEST(TestMathematicalProgram, TestNonlinearExpressionConstraints) {
     prog.AddConstraint(x.transpose()*x <= 1.);
     prog.AddConstraint((x.transpose()*x)(0), 1., 1.);
     prog.AddConstraint(x.transpose()*x, Vector1d{1.}, Vector1d{1.});
+  }
+
+  prog.AddCost(x(0) + x(1));
+  const MathematicalProgramResult result =
+      Solve(prog, Eigen::Vector2d(-0.5, -0.5));
+  EXPECT_TRUE(result.is_success());
+  EXPECT_TRUE(CompareMatrices(result.get_x_val(),
+                              Vector2d::Constant(-std::sqrt(2.) / 2.), 1e-6));
+}
+
+GTEST_TEST(TestMathematicalProgram, TestAddConstraintViaStdFunction) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<2>();
+
+  auto constraint = [](const auto& x_, auto* y) {
+    (*y)[0] = x_.transpose()*x_;
+  };
+
+  Binding<Constraint> b = prog.AddConstraint(constraint, Vector1d{1},
+      Vector1d{1}, x);
+
+  EXPECT_TRUE(CompareMatrices(b.evaluator()->lower_bound(), Vector1d{1}));
+  EXPECT_TRUE(CompareMatrices(b.evaluator()->upper_bound(), Vector1d{1}));
+
+  if (SnoptSolver().available()) {
+    // Add equivalent constraints using all of the other entry points.
+    // Note: restricted to SNOPT because IPOPT complains about the redundant
+    // constraints.
+    Binding<Constraint> b2 = prog.AddConstraint(constraint, Vector1d{-1.},
+        Vector1d{4.}, {x.head<1>(), x.tail<1>()});
+    EXPECT_TRUE(CompareMatrices(b2.evaluator()->lower_bound(), Vector1d{-1}));
+    EXPECT_TRUE(CompareMatrices(b2.evaluator()->upper_bound(), Vector1d{4}));
   }
 
   prog.AddCost(x(0) + x(1));

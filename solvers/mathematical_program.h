@@ -31,7 +31,6 @@
 #include "drake/solvers/create_constraint.h"
 #include "drake/solvers/create_cost.h"
 #include "drake/solvers/decision_variable.h"
-#include "drake/solvers/function.h"
 #include "drake/solvers/indeterminate.h"
 #include "drake/solvers/program_attribute.h"
 #include "drake/solvers/solution_result.h"
@@ -117,26 +116,6 @@ void SetVariableNames(const std::string& name, int rows, int cols,
   }
 }
 }  // namespace internal
-
-namespace detail {
-/**
- * Template condition to only catch when Constraints are inadvertently passed
- * as an argument. If the class is binding-compatible with a Constraint, then
- * this will provide a static assertion to enable easier debugging of which
- * type failed.
- * @tparam F The type to be tested.
- * @see http://stackoverflow.com/a/13366183/7829525
- */
-template <typename F>
-struct assert_if_is_constraint {
-  static constexpr bool value = is_binding_compatible<F, Constraint>::value;
-  // Use deferred evaluation
-  static_assert(
-      !value,
-      "You cannot pass a Constraint to create a Cost object from a function. "
-      "Please ensure you are passing a Cost.");
-};
-}  // namespace detail
 
 /**
  * MathematicalProgram stores the decision variables, the constraints and costs
@@ -729,7 +708,7 @@ class MathematicalProgram {
   /**
    * Adds a cost type to the optimization program.
    * @param obj The added objective.
-   * @param vars The decision variables on which the cost depend.
+   * @param vars The decision variables on which the cost depends.
    */
   template <typename C>
   auto AddCost(const std::shared_ptr<C>& obj,
@@ -742,60 +721,63 @@ class MathematicalProgram {
   /**
    * Adds a generic cost to the optimization program.
    * @param obj The added objective.
-   * @param vars The decision variables on which the cost depend.
+   * @param vars The decision variables on which the cost depends.
    */
   template <typename C>
   auto AddCost(const std::shared_ptr<C>& obj, const VariableRefList& vars) {
     return AddCost(obj, ConcatenateVariableRefList(vars));
   }
 
-  /**
-   * Convert an input of type @p F to a FunctionCost object.
-   * @tparam F This class should have functions numInputs(), numOutputs and
-   * eval(x, y).
-   * @see drake::solvers::detail::FunctionTraits.
-   */
-  template <typename F>
-  static std::shared_ptr<Cost> MakeCost(F&& f) {
-    return MakeFunctionCost(f);
-  }
+  // A helper type for creating a cost via std::function.
+  template <typename T, typename U = T>
+  using CostCalc = std::function<U(const Eigen::Ref<VectorX<T>>&)>;
 
   /**
-   * Adds a cost to the optimization program on a list of variables.
-   * @tparam F it should define functions numInputs, numOutputs and eval. Check
-   * drake::solvers::detail::FunctionTraits for more detail.
+   * Adds a cost described via a std::function to the optimization program on a
+   * list of decision variables.  See the nearly identical AddCost signature
+   * immediately below.
    */
   template <typename F>
-  typename std::enable_if<detail::is_cost_functor_candidate<F>::value,
-                          Binding<Cost>>::type
+  typename std::enable_if<
+      std::is_convertible<F, CostCalc<double>>::value, Binding<Cost>>::type
   AddCost(F&& f, const VariableRefList& vars) {
     return AddCost(f, ConcatenateVariableRefList(vars));
   }
 
   /**
-   * Adds a cost to the optimization program on an Eigen::Vector containing
-   * decision variables.
-   * @tparam F Type that defines functions numInputs, numOutputs and eval.
-   * @see drake::solvers::detail::FunctionTraits.
+   * Adds a cost described via a std::function to the optimization program on
+   * an Eigen::Vector containing decision variables.
+   * @param f a std::function<T(const Eigen::Ref<VectorX<T>>&)>, with the
+   *   recommended implementation using a lambda expression with an auto
+   *   parameter.  See the example below.
+   * @param vars The decision variables on which the cost depends.
+   *
+   * Example:
+   * @code
+   *   prog.AddCost([](const auto& x) { return 3*sin(x[0])*sin(x[1]); }, vars);
+   * @endcode
    */
   template <typename F>
-  typename std::enable_if<detail::is_cost_functor_candidate<F>::value,
+  typename std::enable_if<std::is_convertible<F, CostCalc<double>>::value,
                           Binding<Cost>>::type
   AddCost(F&& f, const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-    auto c = MakeFunctionCost(std::forward<F>(f));
+    auto wrapper = [&f](const auto& x, auto* y) { (*y)[0] = f(x); };
+    FunctionEvaluator::Calc<AutoDiffXd> wrapper_autodiff{};
+    if (std::is_convertible<F, CostCalc<AutoDiffXd>>::value) {
+      wrapper_autodiff = wrapper;
+    }
+    FunctionEvaluator::Calc<symbolic::Variable, symbolic::Expression>
+        wrapper_expression{};
+    if (std::is_convertible<
+            F, CostCalc<symbolic::Variable, symbolic::Expression>>::value) {
+      // TODO(russt): Check the expression and add the less "generic" cost if
+      // possible.
+      wrapper_expression = wrapper;
+    }
+    auto evaluator = std::make_shared<FunctionEvaluator>(
+        1, vars.rows(), wrapper, wrapper_autodiff, wrapper_expression);
+    auto c = std::make_shared<EvaluatorCost<FunctionEvaluator>>(evaluator);
     return AddCost(c, vars);
-  }
-
-  /**
-   * Statically assert if a user inadvertently passes a
-   * binding-compatible Constraint.
-   * @tparam F The type to check.
-   */
-  template <typename F, typename Vars>
-  typename std::enable_if<detail::assert_if_is_constraint<F>::value,
-                          Binding<Cost>>::type
-  AddCost(F&&, Vars&&) {
-    throw std::runtime_error("This will assert at compile-time.");
   }
 
   /**
@@ -1104,6 +1086,67 @@ class MathematicalProgram {
   auto AddConstraint(std::shared_ptr<C> con,
                      const Eigen::Ref<const VectorXDecisionVariable>& vars) {
     return AddConstraint(internal::CreateBinding(con, vars));
+  }
+
+  /**
+   * Adds a constraint via a std::function to the optimization program on a
+   * list of variables.  See the nearly identical signature immediately below
+   * for details.
+   */
+  template <typename F>
+  typename std::enable_if<
+      std::is_convertible<F, FunctionEvaluator::Calc<double>>::value,
+      Binding<Constraint>>::type
+  AddConstraint(F&& f, const Eigen::Ref<const Eigen::VectorXd>& lb,
+                const Eigen::Ref<const Eigen::VectorXd>& ub,
+                const VariableRefList& vars) {
+    return AddConstraint(f, lb, ub, ConcatenateVariableRefList(vars));
+  }
+
+  /**
+   * Adds a constraint described via a std::function to the optimization
+   * program on an Eigen::Vector containing decision variables.
+   *
+   * @param f a std::function<void(const Eigen::Ref<VectorX<T>>&),
+   * VectorX<T>*>, with the recommended implementation using a lambda
+   * expression with an auto parameter.  See the example below.
+   *
+   * @param lb the element-wise lower bound; must have the same size as the
+   *   number of constraints implemented in f.
+   * @param ub the element-wise upper bound; must be the same size as @p lb.
+   * @param vars The decision variables on which the constraint depends.
+   *
+   * Example:
+   * @code
+   *   prog.AddCost([](const auto& x, auto* y) {
+   *     (*y)[0] = 3*sin(x[0])*sin(x[1]);
+   *   }, lb, ub, vars);
+   * @endcode
+   */
+  template <typename F>
+  typename std::enable_if<
+      std::is_convertible<F, FunctionEvaluator::Calc<double>>::value,
+      Binding<Constraint>>::type
+  AddConstraint(F&& f, const Eigen::Ref<const Eigen::VectorXd>& lb,
+                const Eigen::Ref<const Eigen::VectorXd>& ub,
+                const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+    DRAKE_DEMAND(lb.rows() == ub.rows());
+    FunctionEvaluator::Calc<AutoDiffXd> f_autodiff{};
+    if (std::is_convertible<F, FunctionEvaluator::Calc<AutoDiffXd>>::value) {
+      f_autodiff = f;
+    }
+    FunctionEvaluator::Calc<symbolic::Expression> f_expression{};
+    if (std::is_convertible<
+            F, FunctionEvaluator::Calc<symbolic::Expression>>::value) {
+      // TODO(russt): Check the expression and add the less "generic"
+      // constraint if possible.
+      f_expression = f;
+    }
+    auto evaluator = std::make_shared<FunctionEvaluator>(
+        lb.rows(), vars.rows(), f, f_autodiff, f_expression);
+    auto c = std::make_shared<EvaluatorConstraint<FunctionEvaluator>>(evaluator,
+                                                                      lb, ub);
+    return AddConstraint(c, vars);
   }
 
   /**

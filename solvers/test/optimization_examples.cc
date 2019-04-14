@@ -187,7 +187,13 @@ NonConvexQPproblem1::NonConvexQPproblem1(CostForm cost_form,
   prog_->AddBoundingBoxConstraint(0, 1, x_);
   switch (cost_form) {
     case CostForm::kGeneric: {
-      prog_->AddCost(TestProblem1Cost(), x_);
+      auto cost = [](const auto& x) {
+        return (-50.0 * x(0) * x(0)) + (42 * x(0)) - (50.0 * x(1) * x(1)) +
+               (44 * x(1)) - (50.0 * x(2) * x(2)) + (45 * x(2)) -
+               (50.0 * x(3) * x(3)) + (47 * x(3)) - (50.0 * x(4) * x(4)) +
+               (47.5 * x(4));
+      };
+      prog_->AddCost(cost, x_);
       break;
     }
     case CostForm::kNonSymbolic: {
@@ -258,7 +264,13 @@ NonConvexQPproblem2::NonConvexQPproblem2(CostForm cost_form,
 
   switch (cost_form) {
     case CostForm::kGeneric: {
-      prog_->AddCost(TestProblem2Cost(), x_);
+      auto cost = [](const auto& x) {
+        return (-50.0 * x(0) * x(0)) + (-10.5 * x(0)) - (50.0 * x(1) * x(1)) +
+               (-7.5 * x(1)) - (50.0 * x(2) * x(2)) + (-3.5 * x(2)) -
+               (50.0 * x(3) * x(3)) + (-2.5 * x(3)) - (50.0 * x(4) * x(4)) +
+               (-1.5 * x(4)) + (-10.0 * x(5));
+      };
+      prog_->AddCost(cost, x_);
       break;
     }
     case CostForm::kNonSymbolic: {
@@ -339,7 +351,13 @@ LowerBoundedProblem::LowerBoundedProblem(ConstraintForm constraint_form)
       5, 6, 5, 10;
   prog_->AddBoundingBoxConstraint(lb, ub, x_);
 
-  prog_->AddCost(LowerBoundTestCost(), x_);
+  auto cost = [](const auto& x) {
+    return -25 * (x(0) - 2) * (x(0) - 2) + (x(1) - 2) * (x(1) - 2) -
+           (x(2) - 1) * (x(2) - 1) - (x(3) - 4) * (x(3) - 4) -
+           (x(4) - 1) * (x(4) - 1) - (x(5) - 4) * (x(5) - 4);
+  };
+  prog_->AddCost(cost, x_);
+
   std::shared_ptr<Constraint> con1(new LowerBoundTestConstraint(2, 3));
   prog_->AddConstraint(con1, x_);
   std::shared_ptr<Constraint> con2(new LowerBoundTestConstraint(4, 5));
@@ -473,8 +491,11 @@ void GloptiPolyConstrainedMinimizationProblem::CheckSolution(
 }
 
 void GloptiPolyConstrainedMinimizationProblem::AddGenericCost() {
-  prog_->AddCost(GloptipolyConstrainedExampleCost(), x_);
-  prog_->AddCost(GloptipolyConstrainedExampleCost(), y_);
+  auto example_cost = [](const auto& x) {
+    return -2 * x(0) + x(1) - x(2);
+  };
+  prog_->AddCost(example_cost, x_);
+  prog_->AddCost(example_cost, y_);
 }
 
 void GloptiPolyConstrainedMinimizationProblem::AddSymbolicCost() {
