@@ -36,134 +36,56 @@ namespace drake {
 namespace solvers {
 namespace {
 
-// Generic dereferencing for a value type, or a managed pointer.
-template <typename T>
-const T& deref(const T& x) {
-  return x;
-}
-template <typename T>
-const T& deref(const shared_ptr<T>& x) {
-  return *x;
-}
-template <typename T>
-const T& deref(const unique_ptr<T>& x) {
-  return *x;
-}
-
-struct GenericTrivialFunctor {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GenericTrivialFunctor)
-
-  GenericTrivialFunctor() {}
-
-  int numInputs() const { return 3; }
-  int numOutputs() const { return 3; }
-
-  template <typename T>
-  void eval(const detail::VecIn<T>& x, detail::VecOut<T>* y) const {
-    Eigen::Vector3d c(1, 2, 3);
-    *y = c * x.transpose() * c;
-  }
-};
-
-AssertionResult CompareAutodiff(const AutoDiffVecXd& tx_expected,
-                                const AutoDiffVecXd& tx_actual,
-                                double tolerance = 0.0) {
-  const VectorXd x_expected = math::autoDiffToValueMatrix(tx_expected);
-  const VectorXd x_actual = math::autoDiffToValueMatrix(tx_actual);
-  AssertionResult value_result =
-      CompareMatrices(x_expected, x_actual, tolerance);
-  if (!value_result) {
-    return value_result << "(value)";
-  }
-  const MatrixXd dx_expected = math::autoDiffToGradientMatrix(tx_expected);
-  const MatrixXd dx_actual = math::autoDiffToGradientMatrix(tx_actual);
-  AssertionResult grad_result =
-      CompareMatrices(dx_expected, dx_actual, tolerance);
-  if (!grad_result) {
-    return grad_result << "(gradient)";
-  }
-  return AssertionSuccess();
-}
-
-// Verifies that FunctionEvaluator can be constructed correctly with
-// different callable objects (r/l-value, shared/unique_ptr).
-// TODO(eric.cousineau): Share these function-based test utilities with
-// cost_test.
-template <typename F>
-void VerifyFunctionEvaluator(F&& f, const VectorXd& x) {
-  // Compute expected value prior to forwarding `f` (which may involve
-  // move'ing `unique_ptr<>` or `shared_ptr<>`, making `f` a nullptr).
-  Eigen::VectorXd y_expected(3);
-  // Manually specialize the call to `eval` because compiler may have issues
-  // inferring T from Eigen::Ref<VectorX<T>>. It works in FunctionEvaluator
-  // because Ref<VectorX<T>> is already determined by the function signature.
-  deref(f).template eval<double>(x, &y_expected);
-  const AutoDiffVecXd tx = math::initializeAutoDiff(x);
-  AutoDiffVecXd ty_expected(3);
-  deref(f).template eval<AutoDiffXd>(tx, &ty_expected);
-  Eigen::MatrixXd dy_expected = math::autoDiffToGradientMatrix(ty_expected);
-
-  // Construct evaluator, moving `f` if applicable.
-  shared_ptr<EvaluatorBase> evaluator =
-      MakeFunctionEvaluator(std::forward<F>(f));
-  EXPECT_TRUE(is_dynamic_castable<EvaluatorBase>(evaluator));
-
-  // Compare double.
-  Eigen::VectorXd y(3);
-  evaluator->Eval(x, &y);
-  EXPECT_TRUE(CompareMatrices(y, y_expected));
-  // Check AutoDif.
-  AutoDiffVecXd ty(3);
-  evaluator->Eval(tx, &ty);
-  EXPECT_TRUE(CompareAutodiff(ty, ty_expected));
-}
-
-// Store generic callable (e.g. a lambda), and assign sizes to it manually.
-// TODO(eric.cousineau): Migrate this to function.h or evaluator_base.h.
-template <typename Callable>
-class FunctionWrapper {
- public:
-  template <typename CallableF>
-  FunctionWrapper(CallableF&& callable, int num_outputs, int num_vars)
-      : num_outputs_(num_outputs),
-        num_vars_(num_vars),
-        callable_(std::forward<CallableF>(callable)) {}
-
-  int numInputs() const { return num_vars_; }
-  int numOutputs() const { return num_outputs_; }
-
-  template <typename T>
-  void eval(const detail::VecIn<T>& x, detail::VecOut<T>* y) const {
-    callable_(x, y);
-  }
-
- public:
-  int num_outputs_{};
-  int num_vars_{};
-  Callable callable_;
-};
-
-template <typename CallableF>
-auto MakeFunctionWrapped(CallableF&& c, int num_outputs, int num_vars) {
-  using Callable = std::decay_t<CallableF>;
-  using Wrapped = FunctionWrapper<Callable>;
-  return Wrapped(std::forward<CallableF>(c), num_outputs, num_vars);
-}
-
 GTEST_TEST(EvaluatorBaseTest, FunctionEvaluatorTest) {
   // Test that we can construct FunctionCosts with different signatures.
-  Eigen::Vector3d x(-10, -20, -30);
-  VerifyFunctionEvaluator(GenericTrivialFunctor(), x);
-  const GenericTrivialFunctor obj_const{};
-  VerifyFunctionEvaluator(obj_const, x);
-  VerifyFunctionEvaluator(make_shared<GenericTrivialFunctor>(), x);
-  VerifyFunctionEvaluator(make_unique<GenericTrivialFunctor>(), x);
 
-  auto callable = [](const auto& x1, auto* y1) {
-    Eigen::Vector3d c(1, 2, 3);
-    *y1 = c * x1.transpose() * c;
+  auto callable = [](const auto& x, auto* y) {
+    const Eigen::Vector3d c(1, 2, 3);
+    *y = c * c.transpose() * x;
   };
-  VerifyFunctionEvaluator(MakeFunctionWrapped(callable, 3, 3), x);
+
+  // Test that the various versions of the constructor all succeed.
+  FunctionEvaluator evaluator_double(3, 3, callable);
+  FunctionEvaluator evaluator_nonsymbolic(3, 3, callable, callable);
+  FunctionEvaluator evaluator(3, 3, callable, callable, callable,
+                              "all scalar types");
+
+  { // Test double.
+    const Eigen::Vector3d x(-10, -20, -30);
+    Eigen::VectorXd y(3);
+    const Eigen::Vector3d y_expected{-140, -280, -420};
+
+    evaluator.Eval(x, &y);
+    EXPECT_TRUE(CompareMatrices(y, y_expected));
+  }
+
+  { // Test AutoDiffXd.
+    const Vector3<AutoDiffXd> x =
+        math::initializeAutoDiff(Eigen::Vector3d{-10, -20, -30});
+    VectorX<AutoDiffXd> y(3);
+    const Eigen::Vector3d y_expected{-140, -280, -420};
+    Eigen::Matrix3d grad_expected;
+    grad_expected << 1, 2, 3, 2, 4, 6, 3, 6, 9;
+
+    evaluator.Eval(x, &y);
+    EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(y), y_expected));
+    EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(y),
+        grad_expected));
+
+    EXPECT_THROW(evaluator_double.Eval(x, &y), std::logic_error);
+  }
+
+  { // Test symbolic.
+    const symbolic::Variable x{"x"}, y{"y"}, z{"z"};
+    Vector3<symbolic::Variable> in{x, y, z};
+    VectorX<symbolic::Expression> out(3);
+
+    evaluator.Eval(in, &out);
+    EXPECT_TRUE(out[2].EqualTo(3*x + 6*y + 9*z));
+
+    EXPECT_THROW(evaluator_double.Eval(in, &out), std::logic_error);
+    EXPECT_THROW(evaluator_nonsymbolic.Eval(in, &out), std::logic_error);
+  }
 }
 
 }  // anonymous namespace

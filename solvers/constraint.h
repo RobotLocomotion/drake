@@ -20,7 +20,6 @@
 #include "drake/common/symbolic.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/evaluator_base.h"
-#include "drake/solvers/function.h"
 
 namespace drake {
 namespace solvers {

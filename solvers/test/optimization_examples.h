@@ -189,27 +189,6 @@ class NonConvexQPproblem1 {
   void CheckSolution(const MathematicalProgramResult& result) const;
 
  private:
-  class TestProblem1Cost {
-   public:
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestProblem1Cost)
-
-    TestProblem1Cost() = default;
-
-    static size_t numInputs() { return 5; }
-    static size_t numOutputs() { return 1; }
-
-    template <typename ScalarType>
-    void eval(detail::VecIn<ScalarType> const& x,
-              detail::VecOut<ScalarType>* y) const {
-      DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-      DRAKE_ASSERT(static_cast<size_t>(y->rows()) == numOutputs());
-      (*y)(0) = (-50.0 * x(0) * x(0)) + (42 * x(0)) - (50.0 * x(1) * x(1)) +
-                (44 * x(1)) - (50.0 * x(2) * x(2)) + (45 * x(2)) -
-                (50.0 * x(3) * x(3)) + (47 * x(3)) - (50.0 * x(4) * x(4)) +
-                (47.5 * x(4));
-    }
-  };
-
   void AddConstraint();
 
   void AddSymbolicConstraint();
@@ -249,27 +228,6 @@ class NonConvexQPproblem2 {
   MathematicalProgram* prog() const { return prog_.get(); }
 
  private:
-  class TestProblem2Cost {
-   public:
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestProblem2Cost)
-
-    TestProblem2Cost() = default;
-
-    static size_t numInputs() { return 6; }
-    static size_t numOutputs() { return 1; }
-
-    template <typename ScalarType>
-    void eval(detail::VecIn<ScalarType> const& x,
-              detail::VecOut<ScalarType>* y) const {
-      DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-      DRAKE_ASSERT(static_cast<size_t>(y->rows()) == numOutputs());
-      (*y)(0) = (-50.0 * x(0) * x(0)) + (-10.5 * x(0)) - (50.0 * x(1) * x(1)) +
-                (-7.5 * x(1)) - (50.0 * x(2) * x(2)) + (-3.5 * x(2)) -
-                (50.0 * x(3) * x(3)) + (-2.5 * x(3)) - (50.0 * x(4) * x(4)) +
-                (-1.5 * x(4)) + (-10.0 * x(5));
-    }
-  };
-
   void AddQuadraticCost();
 
   void AddNonSymbolicConstraint();
@@ -306,26 +264,6 @@ class LowerBoundedProblem {
   Vector6<double> initial_guess2() const;
 
  private:
-  class LowerBoundTestCost {
-   public:
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LowerBoundTestCost)
-
-    LowerBoundTestCost() = default;
-
-    static size_t numInputs() { return 6; }
-    static size_t numOutputs() { return 1; }
-
-    template <typename ScalarType>
-    void eval(detail::VecIn<ScalarType> const& x,
-              detail::VecOut<ScalarType>* y) const {
-      DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-      DRAKE_ASSERT(static_cast<size_t>(y->rows()) == numOutputs());
-      (*y)(0) = -25 * (x(0) - 2) * (x(0) - 2) + (x(1) - 2) * (x(1) - 2) -
-                (x(2) - 1) * (x(2) - 1) - (x(3) - 4) * (x(3) - 4) -
-                (x(4) - 1) * (x(4) - 1) - (x(5) - 4) * (x(5) - 4);
-    }
-  };
-
   class LowerBoundTestConstraint : public Constraint {
    public:
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LowerBoundTestConstraint)
@@ -414,24 +352,6 @@ class GloptiPolyConstrainedMinimizationProblem {
   Vector6<double> initial_guess() const;
 
  private:
-  class GloptipolyConstrainedExampleCost {
-   public:
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GloptipolyConstrainedExampleCost)
-
-    GloptipolyConstrainedExampleCost() = default;
-
-    static size_t numInputs() { return 3; }
-    static size_t numOutputs() { return 1; }
-
-    template <typename ScalarType>
-    void eval(detail::VecIn<ScalarType> const& x,
-              detail::VecOut<ScalarType>* y) const {
-      DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-      DRAKE_ASSERT(static_cast<size_t>(y->rows()) == numOutputs());
-      (*y)(0) = -2 * x(0) + x(1) - x(2);
-    }
-  };
-
   class GloptipolyConstrainedExampleConstraint
       : public Constraint {  // Want to also support deriving directly from
                              // constraint without going through Function.

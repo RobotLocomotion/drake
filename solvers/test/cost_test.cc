@@ -31,8 +31,6 @@ using Eigen::Ref;
 using drake::Vector1d;
 using Eigen::Vector2d;
 using Eigen::VectorXd;
-using drake::solvers::detail::is_convertible_workaround;
-using drake::solvers::test::GenericTrivialCost2;
 
 namespace drake {
 
@@ -43,36 +41,6 @@ using symbolic::test::ExprEqual;
 namespace solvers {
 namespace {
 
-// Check for the failure of libstdc++ 4.9's std::is_convertible if used to
-// check From = std::unique_ptr<T>, To = std::shared_ptr<U>
-template <typename From, typename To>
-struct check_ptr_convertible {
-  typedef std::unique_ptr<From> FromPtr;
-  typedef std::shared_ptr<To> ToPtr;
-  // static constexpr bool std_value =
-  //    std::is_convertible<FromPtr, ToPtr>::value;
-  static constexpr bool workaround_value =
-      is_convertible_workaround<FromPtr, ToPtr>::value;
-};
-
-struct A {};
-struct B {};
-struct C : B {};
-
-GTEST_TEST(testCost, testIsConvertibleWorkaround) {
-  EXPECT_TRUE((is_convertible_workaround<C*, B*>::value));
-  EXPECT_TRUE((is_convertible_workaround<shared_ptr<C>, shared_ptr<B>>::value));
-  EXPECT_TRUE((is_convertible_workaround<unique_ptr<C>, unique_ptr<B>>::value));
-  EXPECT_TRUE((is_convertible_workaround<Binding<LinearConstraint>,
-                                         Binding<Constraint>>::value));
-  EXPECT_FALSE((is_convertible_workaround<Binding<LinearConstraint>,
-                                          Binding<Cost>>::value));
-
-  // TODO(eric.cousineau): Determine exact conditions for failure in GCC.
-  // Difficult to pinpoint in a multi-platform fashion via __GLIBCXX__ or
-  // __GNUC_* version macros
-  EXPECT_FALSE((check_ptr_convertible<A, B>::workaround_value));
-}
 
 // For a given Constraint, return the equivalent Cost type
 template <typename C>
@@ -227,47 +195,6 @@ GTEST_TEST(testCost, testCostShim) {
       Vector1d(2), VectorXPoly::Constant(1, poly), var_mapping);
 }
 
-// Generic dereferencing for a value type, or a managed pointer.
-template <typename T>
-const T& deref(const T& x) {
-  return x;
-}
-template <typename T>
-const T& deref(const shared_ptr<T>& x) {
-  return *x;
-}
-template <typename T>
-const T& deref(const unique_ptr<T>& x) {
-  return *x;
-}
-
-// Verifies that FunctionCost form can be constructed correctly.
-template <typename F>
-void VerifyFunctionCost(F&& f, const Ref<const VectorXd>& x_value) {
-  // Compute expected value prior to forwarding `f` (which may involve
-  // move'ing `unique_ptr<>` or `shared_ptr<>`, making `f` a nullptr).
-  Eigen::VectorXd y_expected(1);
-  deref(f).eval(x_value, &y_expected);
-  // Construct cost, moving `f`, if applicable.
-  auto cost = MakeFunctionCost(std::forward<F>(f));
-  EXPECT_TRUE(is_dynamic_castable<Cost>(cost));
-  // Compare values.
-  Eigen::VectorXd y(1);
-  cost->Eval(x_value, &y);
-  EXPECT_TRUE(CompareMatrices(y, y_expected));
-}
-
-GTEST_TEST(testCost, testFunctionCost) {
-  // Test that we can construct FunctionCosts with different signatures.
-  Eigen::Vector2d x(1, 2);
-  VerifyFunctionCost(GenericTrivialCost2(), x);
-  // Ensure that we explicitly call the default constructor for a const class.
-  // @ref http://stackoverflow.com/a/28338123/7829525
-  const GenericTrivialCost2 obj_const{};
-  VerifyFunctionCost(obj_const, x);
-  VerifyFunctionCost(make_shared<GenericTrivialCost2>(), x);
-  VerifyFunctionCost(make_unique<GenericTrivialCost2>(), x);
-}
 
 }  // anonymous namespace
 }  // namespace solvers

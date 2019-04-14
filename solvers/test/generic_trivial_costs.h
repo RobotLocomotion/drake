@@ -9,7 +9,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/autodiff.h"
 #include "drake/solvers/cost.h"
-#include "drake/solvers/function.h"
 
 namespace drake {
 namespace solvers {
@@ -53,26 +52,6 @@ class GenericTrivialCost1 : public Cost {
   double private_val_{0};
 };
 
-// A generic cost. This class is meant for testing adding a cost to the
-// optimization program, by calling `MathematicalProgram::MakeCost` to
-// convert this class to a ConstraintImpl object.
-class GenericTrivialCost2 {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GenericTrivialCost2)
-
-  GenericTrivialCost2() = default;
-
-  static size_t numInputs() { return 2; }
-  static size_t numOutputs() { return 1; }
-
-  template <typename ScalarType>
-  void eval(detail::VecIn<ScalarType> const& x,
-            detail::VecOut<ScalarType>* y) const {
-    DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y->rows()) == numOutputs());
-    (*y)(0) = x(0) * x(0) - x(1) * x(1) + 2;
-  }
-};
 
 }  // namespace test
 }  // namespace solvers
