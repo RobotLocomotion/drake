@@ -38,6 +38,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "multibody_graph",
+    srcs = [
+        "multibody_graph.cc",
+    ],
+    hdrs = [
+        "multibody_graph.h",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
     name = "multibody_plant_core",
     srcs = [
         "multibody_plant.cc",
@@ -391,6 +405,14 @@ drake_cc_googletest(
         "//common/test_utilities:symbolic_test_util",
         "//systems/analysis:simulator",
         "//systems/framework/test_utilities:scalar_conversion",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_graph_test",
+    deps = [
+        ":multibody_graph",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
