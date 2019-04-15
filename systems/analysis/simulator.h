@@ -464,13 +464,13 @@ class Simulator {
   int64_t get_num_unrestricted_updates() const {
     return num_unrestricted_updates_; }
 
-  /// Gets a pointer to the integrator used to advance the continuous aspects
+  /// Gets a reference to the integrator used to advance the continuous aspects
   /// of the system.
-  const IntegratorBase<T>* get_integrator() const { return integrator_.get(); }
+  const IntegratorBase<T>& get_integrator() const { return *integrator_.get(); }
 
-  /// Gets a pointer to the mutable integrator used to advance the continuous
-  /// aspects of the system.
-  IntegratorBase<T>* get_mutable_integrator() { return integrator_.get(); }
+  /// Gets a reference to the mutable integrator used to advance the continuous
+  /// state of the system.
+  IntegratorBase<T>& get_mutable_integrator() { return *integrator_.get(); }
 
   /// Resets the integrator with a new one. An example usage is:
   /// @code
@@ -480,8 +480,11 @@ class Simulator {
   /// ensure the integrator is properly initialized. You can do that explicitly
   /// with the Initialize() method or it will be done implicitly at the first
   /// time step.
+  /// @throws std::logic_error if `integrator` is nullptr.
   template <class U>
   U* reset_integrator(std::unique_ptr<U> integrator) {
+    if (!integrator)
+      throw std::logic_error("Integrator cannot be null.");
     initialization_done_ = false;
     integrator_ = std::move(integrator);
     return static_cast<U*>(integrator_.get());

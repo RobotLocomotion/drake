@@ -162,12 +162,12 @@ int do_main() {
   plant.SetFreeBodyPoseInWorldFrame(&plant_context, bodyB, X_WB);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
-  systems::IntegratorBase<double>* integrator =
+  systems::IntegratorBase<double>& integrator =
       simulator.get_mutable_integrator();
 
   // Set the integration accuracy when the plant is integrated with a variable-
   // step integrator. This value is not used if time_step > 0 (fixed-time step).
-  integrator->set_target_accuracy(FLAGS_integration_accuracy);
+  integrator.set_target_accuracy(FLAGS_integration_accuracy);
 
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);

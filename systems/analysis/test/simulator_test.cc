@@ -10,6 +10,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
@@ -116,6 +117,17 @@ class ExampleDiagram : public Diagram<double> {
  private:
   StatelessDiagram* stateless_diag_ = nullptr;
 };
+
+// Tests that resetting the integrator with a null pointer throws.
+GTEST_TEST(SimulatorTest, ResetWithNullIntegratorThrows) {
+  // We need an arbitrary system to instantiate the Simulator.
+  StatelessSystemPlusDerivs system;
+  Simulator<double> simulator(system);
+  std::unique_ptr<IntegratorBase<double>> null_unique;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      simulator.reset_integrator(std::move(null_unique)),
+      std::logic_error, "Integrator cannot be null.");
+}
 
 // Tests that DoCalcTimeDerivatives() is not called when the system has no
 // continuous state.
@@ -309,8 +321,8 @@ void InitFixedStepIntegratorForWitnessTesting(Simulator<double>* s, double dt) {
   const System<double>& system = s->get_system();
   Context<double>& context = s->get_mutable_context();
   s->reset_integrator<RungeKutta2Integrator<double>>(system, dt, &context);
-  s->get_mutable_integrator()->set_fixed_step_mode(true);
-  s->get_mutable_integrator()->set_maximum_step_size(dt);
+  s->get_mutable_integrator().set_fixed_step_mode(true);
+  s->get_mutable_integrator().set_maximum_step_size(dt);
   DisableDefaultPublishing(s);
 }
 
@@ -484,8 +496,8 @@ GTEST_TEST(SimulatorTest, MultipleWitnesses) {
   DisableDefaultPublishing(&simulator);
   simulator.reset_integrator<ImplicitEulerIntegrator<double>>(system,
                                               &simulator.get_mutable_context());
-  simulator.get_mutable_integrator()->set_maximum_step_size(dt);
-  simulator.get_mutable_integrator()->set_target_accuracy(0.1);
+  simulator.get_mutable_integrator().set_maximum_step_size(dt);
+  simulator.get_mutable_integrator().set_target_accuracy(0.1);
 
   // Set initial time and state.
   Context<double>& context = simulator.get_mutable_context();
@@ -542,7 +554,7 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesIdentical) {
   const double dt = 2;
   simulator = std::make_unique<Simulator<double>>(system);
   DisableDefaultPublishing(simulator.get());
-  simulator->get_mutable_integrator()->set_maximum_step_size(dt);
+  simulator->get_mutable_integrator().set_maximum_step_size(dt);
 
   // Isolate witness functions to high accuracy.
   const double tol = 1e-12;
@@ -581,7 +593,7 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesStaggered) {
   const double dt = 3;
   Simulator<double> simulator(system);
   DisableDefaultPublishing(&simulator);
-  simulator.get_mutable_integrator()->set_maximum_step_size(dt);
+  simulator.get_mutable_integrator().set_maximum_step_size(dt);
 
   // Isolate witness functions to high accuracy.
   const double tol = 1e-12;
@@ -891,7 +903,7 @@ GTEST_TEST(SimulatorTest, RealtimeRate) {
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
   simulator.set_target_realtime_rate(1.);  // No faster than 1X real time.
-  simulator.get_mutable_integrator()->set_maximum_step_size(0.001);
+  simulator.get_mutable_integrator().set_maximum_step_size(0.001);
   simulator.get_mutable_context().SetTime(0.);
   simulator.Initialize();
   simulator.AdvanceTo(1.);  // Simulate for 1 simulated second.
@@ -1449,8 +1461,8 @@ GTEST_TEST(SimulatorTest, ControlledSpringMass) {
 
   // Forces simulator to use fixed-step integration at 1ms (to keep assumptions
   // below accurate).
-  simulator.get_mutable_integrator()->set_fixed_step_mode(true);
-  simulator.get_mutable_integrator()->set_maximum_step_size(0.001);
+  simulator.get_mutable_integrator().set_fixed_step_mode(true);
+  simulator.get_mutable_integrator().set_maximum_step_size(0.001);
 
   // Sets initial condition using the Simulator's internal Context.
   spring_mass.set_position(&simulator.get_mutable_context(), x0);
@@ -1821,9 +1833,9 @@ GTEST_TEST(SimulatorTest, ArtificalLimitingStep) {
   // Initialize the error controlled integrator and the simulator.
   simulator.reset_integrator<RungeKutta3Integrator<double>>(
       spring_mass, &simulator.get_mutable_context());
-  IntegratorBase<double>* integrator = simulator.get_mutable_integrator();
-  integrator->request_initial_step_size_target(req_initial_step_size);
-  integrator->set_target_accuracy(accuracy);
+  IntegratorBase<double>& integrator = simulator.get_mutable_integrator();
+  integrator.request_initial_step_size_target(req_initial_step_size);
+  integrator.set_target_accuracy(accuracy);
   simulator.Initialize();
 
   // Mark the event time.
@@ -1831,15 +1843,15 @@ GTEST_TEST(SimulatorTest, ArtificalLimitingStep) {
 
   // Take a single step with the integrator.
   const double inf = std::numeric_limits<double>::infinity();
-  const Context<double>& context = integrator->get_context();
-  integrator->IntegrateNoFurtherThanTime(inf,
+  const Context<double>& context = integrator.get_context();
+  integrator.IntegrateNoFurtherThanTime(inf,
       context.get_time() + 1.0, context.get_time() + 1.0);
 
   // Verify that the integrator has stepped before the event time.
   EXPECT_LT(context.get_time(), event_time);
 
   // Get the ideal next step size and verify that it is not NaN.
-  const double ideal_next_step_size = integrator->get_ideal_next_step_size();
+  const double ideal_next_step_size = integrator.get_ideal_next_step_size();
 
   // Set the time to right before an event, which should trigger artificial
   // limiting.
@@ -1847,14 +1859,14 @@ GTEST_TEST(SimulatorTest, ArtificalLimitingStep) {
   simulator.get_mutable_context().SetTime(event_time - desired_dt);
 
   // Step to the event time.
-  integrator->IntegrateNoFurtherThanTime(
+  integrator.IntegrateNoFurtherThanTime(
     inf, context.get_time() + desired_dt, inf);
 
   // Verify that the context is at the event time.
   EXPECT_EQ(context.get_time(), event_time);
 
   // Verify that artificial limiting did not change the ideal next step size.
-  EXPECT_EQ(integrator->get_ideal_next_step_size(), ideal_next_step_size);
+  EXPECT_EQ(integrator.get_ideal_next_step_size(), ideal_next_step_size);
 }
 
 // Verifies that an error controlled integrator will stretch its integration
@@ -1883,10 +1895,10 @@ GTEST_TEST(SimulatorTest, StretchedStepPerfectStorm) {
   // Initialize the error controlled integrator and the simulator.
   simulator.reset_integrator<RungeKutta3Integrator<double>>(spring_mass,
       &simulator.get_mutable_context());
-  IntegratorBase<double>* integrator = simulator.get_mutable_integrator();
-  integrator->set_requested_minimum_step_size(req_min_step_size);
-  integrator->request_initial_step_size_target(directed_t_final);
-  integrator->set_target_accuracy(accuracy);
+  IntegratorBase<double>& integrator = simulator.get_mutable_integrator();
+  integrator.set_requested_minimum_step_size(req_min_step_size);
+  integrator.request_initial_step_size_target(directed_t_final);
+  integrator.set_target_accuracy(accuracy);
 
   // Set initial condition using the Simulator's internal Context.
   simulator.get_mutable_context().SetTime(0);
@@ -1895,7 +1907,7 @@ GTEST_TEST(SimulatorTest, StretchedStepPerfectStorm) {
 
   // Activate exceptions on violating the minimum step size to verify that
   // error control is a limiting factor.
-  integrator->set_throw_on_minimum_step_size_violation(true);
+  integrator.set_throw_on_minimum_step_size_violation(true);
   EXPECT_THROW(simulator.AdvanceTo(expected_t_final), std::runtime_error);
 
   // Now disable exceptions on violating the minimum step size and step again.
@@ -1904,7 +1916,7 @@ GTEST_TEST(SimulatorTest, StretchedStepPerfectStorm) {
   simulator.get_mutable_context().SetTime(0);
   spring_mass.set_position(&simulator.get_mutable_context(), 0.1);
   spring_mass.set_velocity(&simulator.get_mutable_context(), 0);
-  integrator->set_throw_on_minimum_step_size_violation(false);
+  integrator.set_throw_on_minimum_step_size_violation(false);
   simulator.Initialize();
   simulator.AdvanceTo(expected_t_final);
 
@@ -2010,8 +2022,8 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
   Simulator<double> sim(sys);
 
   // Forces simulator to use fixed-step integration.
-  sim.get_mutable_integrator()->set_fixed_step_mode(true);
-  sim.get_mutable_integrator()->set_maximum_step_size(0.001);
+  sim.get_mutable_integrator().set_fixed_step_mode(true);
+  sim.get_mutable_integrator().set_maximum_step_size(0.001);
 
   // Disables all simulator induced publish events, so that all publish calls
   // are initiated by sys.
@@ -2020,7 +2032,7 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
   sim.Initialize();
   sim.AdvanceTo(0.1);
 
-  const double dt = sim.get_integrator()->get_maximum_step_size();
+  const double dt = sim.get_integrator().get_maximum_step_size();
   const int N = static_cast<int>(0.1 / dt);
   // Step size was set to 1ms above; make sure we don't have roundoff trouble.
   EXPECT_EQ(N, 100);
@@ -2176,13 +2188,13 @@ GTEST_TEST(SimulatorTest, EvalDerivativesCounter) {
   context.DisableCaching();
   simulator.reset_integrator<WastefulIntegrator>(spring_mass, 0.125, &context);
   simulator.AdvanceTo(1.);  // 8 steps, but 16 evaluations since no caching.
-  EXPECT_EQ(simulator.get_integrator()->get_num_steps_taken(), 8);
-  EXPECT_EQ(simulator.get_integrator()->get_num_derivative_evaluations(), 16);
+  EXPECT_EQ(simulator.get_integrator().get_num_steps_taken(), 8);
+  EXPECT_EQ(simulator.get_integrator().get_num_derivative_evaluations(), 16);
 
   context.EnableCaching();
   simulator.AdvanceTo(2.);  // 8 more steps, but only 8 more evaluations.
-  EXPECT_EQ(simulator.get_integrator()->get_num_steps_taken(), 16);
-  EXPECT_EQ(simulator.get_integrator()->get_num_derivative_evaluations(), 24);
+  EXPECT_EQ(simulator.get_integrator().get_num_steps_taken(), 16);
+  EXPECT_EQ(simulator.get_integrator().get_num_derivative_evaluations(), 24);
 }
 
 }  // namespace

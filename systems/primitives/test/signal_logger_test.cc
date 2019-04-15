@@ -45,7 +45,7 @@ GTEST_TEST(TestSignalLogger, LinearSystemTest) {
   context.get_mutable_continuous_state_vector().SetAtIndex(0, 1.0);
 
   // Make the integrator tolerance sufficiently tight for the test to pass.
-  simulator.get_mutable_integrator()->set_target_accuracy(1e-4);
+  simulator.get_mutable_integrator().set_target_accuracy(1e-4);
 
   simulator.Initialize();
   // The Simulator schedules SignalLogger's default per-step event, which
