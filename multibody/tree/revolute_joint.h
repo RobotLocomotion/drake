@@ -128,6 +128,8 @@ class RevoluteJoint final : public Joint<T> {
     damping_ = damping;
   }
 
+  std::string type_name() const override { return "revolute"; }
+
   /// Returns the axis of revolution of `this` joint as a unit vector.
   /// Since the measures of this axis in either frame F or M are the same (see
   /// this class's documentation for frames's definitions) then,

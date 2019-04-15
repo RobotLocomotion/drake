@@ -1073,23 +1073,25 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
   using ::testing::UnorderedElementsAreArray;
   // This test expects that the following model has a world body and a pair of
   // welded-together bodies.
-  const std::string sdf_file = FindResourceOrThrow(
-      "drake/multibody/plant/test/split_pendulum.sdf");
+  const std::string sdf_file =
+      FindResourceOrThrow("drake/multibody/plant/test/split_pendulum.sdf");
   MultibodyPlant<double> plant;
   Parser(&plant).AddModelFromFile(sdf_file);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.GetBodiesWeldedTo(plant.world_body()), std::logic_error,
-      "Pre-finalize calls to 'GetBodiesWeldedTo\\(\\)' are not "
-      "allowed; you must call Finalize\\(\\) first.");
-  plant.Finalize();
   const Body<double>& upper = plant.GetBodyByName("upper_section");
   const Body<double>& lower = plant.GetBodyByName("lower_section");
-  EXPECT_THAT(
-      plant.GetBodiesWeldedTo(plant.world_body()),
-      UnorderedElementsAreArray({&plant.world_body()}));
-  EXPECT_THAT(
-      plant.GetBodiesWeldedTo(lower),
-      UnorderedElementsAreArray({&upper, &lower}));
+
+  // Verify we can call GetBodiesWeldedTo() pre-finalize.
+  EXPECT_THAT(plant.GetBodiesWeldedTo(plant.world_body()),
+              UnorderedElementsAreArray({&plant.world_body()}));
+  EXPECT_THAT(plant.GetBodiesWeldedTo(lower),
+              UnorderedElementsAreArray({&upper, &lower}));
+
+  // And post-finalize.
+  plant.Finalize();
+  EXPECT_THAT(plant.GetBodiesWeldedTo(plant.world_body()),
+              UnorderedElementsAreArray({&plant.world_body()}));
+  EXPECT_THAT(plant.GetBodiesWeldedTo(lower),
+              UnorderedElementsAreArray({&upper, &lower}));
 }
 
 // Verifies the process of collision geometry registration with a
