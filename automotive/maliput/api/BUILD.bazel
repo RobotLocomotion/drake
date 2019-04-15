@@ -26,6 +26,7 @@ drake_cc_library(
         "lane_data.cc",
         "road_geometry.cc",
         "road_network.cc",
+        "rules/direction_usage_rule.cc",
         "rules/phase.cc",
         "rules/phase_ring.cc",
         "rules/traffic_lights.cc",
