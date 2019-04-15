@@ -30,9 +30,9 @@ PendulumPlant<T>::PendulumPlant()
     : systems::LeafSystem<T>(
           systems::SystemTypeTag<pendulum::PendulumPlant>{}) {
   this->DeclareVectorInputPort(PendulumInput<T>());
-  state_port_ = this->DeclareVectorOutputPort(PendulumState<T>(),
-                                              &PendulumPlant::CopyStateOut)
-                    .get_index();
+  state_port_ = this->DeclareVectorOutputPort(
+      "state", PendulumState<T>(), &PendulumPlant::CopyStateOut,
+      {all_state_ticket()}).get_index();
   this->DeclareContinuousState(PendulumState<T>(), 1 /* num_q */, 1 /* num_v */,
                                0 /* num_z */);
   this->DeclareNumericParameter(PendulumParams<T>());
@@ -164,10 +164,9 @@ void PendulumPlant<T>::RegisterGeometry(
 template <typename T>
 systems::OutputPortIndex PendulumPlant<T>::AllocateGeometryPoseOutputPort() {
   DRAKE_DEMAND(source_id_.is_valid() && frame_id_.is_valid());
-  return this->DeclareAbstractOutputPort("geometry_pose",
-      geometry::FramePoseVector<T>(source_id_, {frame_id_}),
-                                  &PendulumPlant<T>::CopyPoseOut)
-      .get_index();
+  return this->DeclareAbstractOutputPort(
+      "geometry_pose", geometry::FramePoseVector<T>(source_id_, {frame_id_}),
+      &PendulumPlant<T>::CopyPoseOut, {all_state_ticket()}).get_index();
 }
 
 }  // namespace pendulum
