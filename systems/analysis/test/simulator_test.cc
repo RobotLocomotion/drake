@@ -10,6 +10,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
@@ -116,6 +117,17 @@ class ExampleDiagram : public Diagram<double> {
  private:
   StatelessDiagram* stateless_diag_ = nullptr;
 };
+
+// Tests that resetting the integrator with a null pointer throws.
+GTEST_TEST(SimulatorTest, ResetWithNullIntegratorThrows) {
+  // We need an arbitrary system to instantiate the Simulator.
+  StatelessSystemPlusDerivs system;
+  Simulator<double> simulator(system);
+  std::unique_ptr<IntegratorBase<double>> null_unique;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      simulator.reset_integrator(std::move(null_unique)),
+      std::logic_error, "Integrator cannot be null.");
+}
 
 // Tests that DoCalcTimeDerivatives() is not called when the system has no
 // continuous state.
