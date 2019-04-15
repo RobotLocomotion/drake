@@ -58,8 +58,8 @@ class MultibodyGraph {
 
   MultibodyGraph();
 
-  LinkIndex AddLink(const std::string& name,
-               ModelInstanceIndex model_instance = default_model_instance());
+  LinkIndex AddLink(const std::string& name, ModelInstanceIndex model_instance =
+                                                 default_model_instance());
 
   JointIndex AddJoint(const std::string& name,
                       ModelInstanceIndex model_instance,
@@ -72,7 +72,7 @@ class MultibodyGraph {
   bool HasLinkNamed(const std::string& name,
                     ModelInstanceIndex model_instance) const;
 
-  //const Link& GetLinkByName(const std::string& name) const;
+  // const Link& GetLinkByName(const std::string& name) const;
 
   /** @returns `true` if a joint named `name` was added to `model_instance`.
   @see AddRigidBody().
@@ -144,6 +144,10 @@ class MultibodyGraph {
 
   std::vector<std::set<LinkIndex>> FindIslandsOfWeldedLinks() const;
 
+  /// If `link_index` is a valid index to a Link in this graph, then the return
+  /// vector will always contain at least one entry storing `link_index`.
+  std::set<LinkIndex> FindLinksWeldedTo(LinkIndex link_index) const;
+
  private:
   Link& get_mutable_link(LinkIndex link_index) { return links_[link_index]; }
 
@@ -206,13 +210,13 @@ class Link {
   // Notes that this link serves as the parent link for the given joint.
   void add_joint_as_parent(JointIndex joint) {
     joints_as_parent_.push_back(joint);  // "as parent" list.
-    joints_.push_back(joint);  // All joints list.
+    joints_.push_back(joint);            // All joints list.
   }
 
   // Notes that this link serves as the child link for the given joint.
   void add_joint_as_child(JointIndex joint) {
     joints_as_child_.push_back(joint);  // "as child" list.
-    joints_.push_back(joint);  // All joints list.
+    joints_.push_back(joint);           // All joints list.
   }
 
   LinkIndex index_;

@@ -170,7 +170,6 @@ std::vector<std::set<LinkIndex>> MultibodyGraph::FindIslandsOfWeldedLinks()
   // The first link visited is the "world" (link_index = 0), and therefore
   // islands[0] corresponds to the islands of all links welded to the world.
   for (const auto& link : links_) {
-
     if (!visited[link.index()]) {
       // If `link` was not visited yet, we crate an island for it.
       islands.push_back(std::set<LinkIndex>{link.index()});
@@ -183,7 +182,7 @@ std::vector<std::set<LinkIndex>> MultibodyGraph::FindIslandsOfWeldedLinks()
       // this island by recursively traversing the sub-graph of welded joints
       // connected to `link`.
       FindIslandsOfWeldedLinksRecurse(link, &link_island, &islands, &visited);
-    }    
+    }
   }
   return islands;
 }
@@ -197,20 +196,20 @@ void MultibodyGraph::FindIslandsOfWeldedLinksRecurse(
     const Link& parent_link, std::set<LinkIndex>* parent_island,
     std::vector<std::set<LinkIndex>>* islands,
     std::vector<bool>* visited) const {
-  // Mark parent_link as visited in order to detect loops.     
+  // Mark parent_link as visited in order to detect loops.
   visited->at(parent_link.index()) = true;
 
   for (JointIndex joint_index : parent_link.joints()) {
     const Joint& joint = get_joint(joint_index);
 
     const LinkIndex sibling_index = joint.parent_link() == parent_link.index()
-                                  ? joint.child_link()
-                                  : joint.parent_link();
-    
+                                        ? joint.child_link()
+                                        : joint.parent_link();
+
     // If already visited continue with the next joint.
     if (visited->at(sibling_index)) continue;
 
-    const Link& sibling = get_link(sibling_index);                                  
+    const Link& sibling = get_link(sibling_index);
     visited->at(sibling_index) = true;
     if (joint.type_index() == weld_type_index()) {
       parent_island->insert(sibling_index);
@@ -222,6 +221,26 @@ void MultibodyGraph::FindIslandsOfWeldedLinksRecurse(
                                       visited);
     }
   }
+}
+
+std::set<LinkIndex> MultibodyGraph::FindLinksWeldedTo(
+    LinkIndex link_index) const {
+  DRAKE_DEMAND(link_index.is_valid() && link_index < num_links());
+
+  const std::vector<std::set<LinkIndex>> islands = FindIslandsOfWeldedLinks();
+
+  // Find subgraph that contains this link_index.
+  auto predicate = [link_index](auto& island) {
+    return island.count(link_index) > 0;
+  };
+  auto island_iter = std::find_if(islands.begin(), islands.end(), predicate);
+
+  // If link_index is a valid index to a link in this graph, then it MUST belong
+  // to one of the islands. We verify this explicitly.
+  DRAKE_DEMAND(island_iter != islands.end());
+
+  // Copy indexes into a vector.
+  return *island_iter;
 }
 
 }  // namespace internal

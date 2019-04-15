@@ -114,7 +114,7 @@ GTEST_TEST(MultibodyGraph, SerialChain) {
 // Additionally we have the following non-weld joints:
 //  - RevoluteJoint(3, 13): connects link 3 to island A.
 //  - PrimaticJoint(1, 10): connects island A and B.
-// 
+//
 // Therefore we expect the following islands, in no particular oder, but with
 // the "world" island first:
 //   {0, 5, 7, 12}, {1, 4, 13}, {6, 8, 10}, {3}, {9}, {2}, {11}.
@@ -185,22 +185,26 @@ GTEST_TEST(MultibodyGraph, WeldedIslands) {
   const std::vector<std::set<LinkIndex>> welded_islands =
       graph.FindIslandsOfWeldedLinks();
 
-  // Verify number of expected islands.  
+  // Verify number of expected islands.
   EXPECT_EQ(welded_islands.size(), 7);
 
   // The first island must contain the world.
   const std::set<LinkIndex> world_island = welded_islands[0];
   EXPECT_EQ(world_island.count(graph.world_link_index()), 1);
 
-  // Build the expected set of islands.  
+  // Build the expected set of islands.
   std::set<std::set<LinkIndex>> expected_islands;
   //   {0, 5, 7, 12}, {1, 4, 13}, {6, 8, 10}, {3}, {9}, {2}, {11}.
   const std::set<LinkIndex>& expected_world_island =
       *expected_islands
            .insert({LinkIndex(0), LinkIndex(5), LinkIndex(7), LinkIndex(12)})
            .first;
-  expected_islands.insert({LinkIndex(1), LinkIndex(4), LinkIndex(13)});
-  expected_islands.insert({LinkIndex(6), LinkIndex(8), LinkIndex(10)});
+  const std::set<LinkIndex>& expected_islandA =
+      *expected_islands.insert({LinkIndex(1), LinkIndex(4), LinkIndex(13)})
+           .first;
+  const std::set<LinkIndex>& expected_islandB =
+      *expected_islands.insert({LinkIndex(6), LinkIndex(8), LinkIndex(10)})
+           .first;
   expected_islands.insert({LinkIndex(3)});
   expected_islands.insert({LinkIndex(9)});
   expected_islands.insert({LinkIndex(2)});
@@ -216,6 +220,14 @@ GTEST_TEST(MultibodyGraph, WeldedIslands) {
   const std::set<std::set<LinkIndex>> welded_islands_set(welded_islands.begin(),
                                                          welded_islands.end());
   EXPECT_EQ(welded_islands_set, expected_islands);
+
+  // Verify we can query the list of links welded to a particular link.
+  EXPECT_EQ(graph.FindLinksWeldedTo(LinkIndex(9)).size(), 1);
+  EXPECT_EQ(graph.FindLinksWeldedTo(LinkIndex(11)).size(), 1);
+  EXPECT_EQ(graph.FindLinksWeldedTo(LinkIndex(4)), expected_islandA);
+  EXPECT_EQ(graph.FindLinksWeldedTo(LinkIndex(13)), expected_islandA);
+  EXPECT_EQ(graph.FindLinksWeldedTo(LinkIndex(10)), expected_islandB);
+  EXPECT_EQ(graph.FindLinksWeldedTo(LinkIndex(6)), expected_islandB);
 }
 
 }  // namespace internal
