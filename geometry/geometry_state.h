@@ -443,13 +443,14 @@ class GeometryState {
 
   /** Performs work in support of QueryObject::ComputeSignedDistanceToPoint().
    */
-  std::vector<SignedDistanceToPoint<double>>
+  std::vector<SignedDistanceToPoint<T>>
   ComputeSignedDistanceToPoint(
-      const Vector3<double> &p_WQ,
+      const Vector3<T> &p_WQ,
       const double threshold) const {
     return geometry_engine_->ComputeSignedDistanceToPoint(
-        p_WQ, geometry_index_to_id_map_, threshold);
+        p_WQ, geometry_index_to_id_map_, X_WG_, threshold);
   }
+
   //@}
 
   /** @name Scalar conversion  */
