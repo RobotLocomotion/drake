@@ -1,6 +1,8 @@
-from pydrake.common.containers import EqualToDict
+from pydrake.common.containers import EqualToDict, namedview, NamedViewBase
 
 import unittest
+
+import numpy as np
 
 
 class Comparison(object):
@@ -75,3 +77,39 @@ class TestEqualToDict(unittest.TestCase):
         raw = d.raw()
         keys = list(raw.keys())
         self.assertTrue(isinstance(keys[0], Item))
+
+
+def is_same_array(a, b):
+    # Indicates that two arrays (of the same shape and type) are views into the
+    # same memory.
+    # See: https://stackoverflow.com/a/55660651/7829525
+    return (a.ctypes.data == b.ctypes.data and a.shape == b.shape
+            and a.dtype == b.dtype and (a == b).all())
+
+
+class TestNamedView(unittest.TestCase):
+    def test_meta(self):
+        a = np.array([1, 2])
+        self.assertTrue(is_same_array(a, a))
+        self.assertTrue(is_same_array(a, np.asarray(a)))
+        b = a.copy()
+        self.assertFalse(is_same_array(a, b))
+
+    def test_array(self):
+        MyView = namedview("MyView", ["a", "b"])
+        self.assertTrue(issubclass(MyView, NamedViewBase))
+        self.assertEqual(MyView.__name__, "MyView")
+        self.assertEqual(MyView.get_fields(), ("a", "b"))
+        value = np.array([1, 2])
+        view = MyView(value)
+        self.assertEqual(view.a, 1)
+        self.assertEqual(view.b, 2)
+        self.assertTrue(is_same_array(value, np.asarray(view)))
+        view.a = 10
+        self.assertEqual(value[0], 10)
+        value[1] = 100
+        self.assertEqual(view.b, 100)
+        view[:] = 3
+        np.testing.assert_equal(value, [3, 3])
+        self.assertEqual(repr(view), "MyView(a=3, b=3)")
+        self.assertEqual(str(view), repr(view))
