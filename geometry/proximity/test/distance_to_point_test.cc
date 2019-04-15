@@ -63,8 +63,10 @@ class PointShapeAutoDiffSignedDistanceTester {
       : shape_(*shape), X_WG_(X_WG), tolerance_(tolerance) {}
 
   // Perform the test with the particular N and Q.
-  ::testing::AssertionResult Test(
-      const Vector3d& p_GN_G, const Vector3d& p_NQ_G, bool is_inside = false) {
+  ::testing::AssertionResult Test(const Vector3d& p_GN_G,
+                                  const Vector3d& p_NQ_G,
+                                  bool is_inside = false,
+                                  bool is_grad_W_well_defined = true) {
     const double sign = is_inside ? -1 : 1;
     const double expected_distance = sign * p_NQ_G.norm();
     const Vector3d p_GQ = p_GN_G + p_NQ_G;
@@ -73,11 +75,15 @@ class PointShapeAutoDiffSignedDistanceTester {
     ::testing::AssertionResult failure = ::testing::AssertionFailure();
     bool error = false;
 
+    // We take the gradient of the signed distance query w.r.t p_WQ.
     Vector3<AutoDiffXd> p_WQ_ad = math::initializeAutoDiff(p_WQ);
+    // The size of the variables we take gradient with (p_WQ) is 3.
+    const int grad_size = 3;
     DistanceToPoint<AutoDiffXd> distance_to_point(
         GeometryId::get_new_id(), X_WG_.cast<AutoDiffXd>(), p_WQ_ad);
 
     SignedDistanceToPoint<AutoDiffXd> result = distance_to_point(shape_);
+    EXPECT_EQ(result.is_grad_W_well_defined, is_grad_W_well_defined);
     if (std::abs(result.distance.value() - expected_distance) > tolerance_) {
       error = true;
       failure << "The difference between expected distance and tested distance "
@@ -96,19 +102,64 @@ class PointShapeAutoDiffSignedDistanceTester {
       failure << "Test distance has no derivatives";
     }
     const Vector3d ddistance_dp_WQ = result.distance.derivatives();
-    const Vector3d grad_W = math::autoDiffToValueMatrix(result.grad_W);
-    if (grad_W.array().isNaN().any()) {
+    const Vector3d grad_W_val = math::autoDiffToValueMatrix(result.grad_W);
+    if (grad_W_val.array().isNaN().any()) {
       if (error) failure << "\n";
       error = true;
-      failure << "Analytical gradient contains NaN: " << grad_W.transpose();
+      failure << "Analytical gradient contains NaN: " << grad_W_val.transpose();
     }
     auto gradient_compare =
-        CompareMatrices(ddistance_dp_WQ, grad_W, tolerance_);
+        CompareMatrices(ddistance_dp_WQ, grad_W_val, tolerance_);
     if (!gradient_compare) {
       if (error) failure << "\n";
       error = true;
-      failure << gradient_compare.message();
+      failure << "grad_W and distance.derivatives() don't match:\n"
+              << gradient_compare.message();
     }
+
+    // Since grad_W is a unit vector, we know that grad_Wᵀ * grad_W = 1.
+    const AutoDiffXd grad_W_squared_norm = result.grad_W.dot(result.grad_W);
+    EXPECT_NEAR(grad_W_squared_norm.value(), 1, tolerance_);
+    // The gradient of grad_W_squared_norm should be 0.
+    if (grad_W_squared_norm.derivatives().size() > 0) {
+      auto grad_W_unit_length_derivative_compare =
+          CompareMatrices(grad_W_squared_norm.derivatives(),
+                          Eigen::VectorXd::Zero(grad_size), tolerance_);
+      if (!grad_W_unit_length_derivative_compare) {
+        if (error) failure << "\n";
+        error = true;
+        failure << "grad_W_squared_norm.derivatives() isn't right:\n"
+                << grad_W_unit_length_derivative_compare.message();
+      }
+    }
+
+    // We have the invariance p_WQ = p_WN + distance * grad_W.
+    const Vector3<AutoDiffXd> p_WN_ad = X_WG_.cast<AutoDiffXd>() * result.p_GN;
+    const Vector3<AutoDiffXd> p_WQ_ad_expected =
+        p_WN_ad + result.distance * result.grad_W;
+    auto p_WQ_val_compare = CompareMatrices(
+        math::autoDiffToValueMatrix(p_WQ_ad),
+        math::autoDiffToValueMatrix(p_WQ_ad_expected), tolerance_);
+    if (!p_WQ_val_compare) {
+      if (error) failure << "\n";
+      error = true;
+      failure << "p_WQ does not equal to p_WN + distance * grad_W:\n"
+              << p_WQ_val_compare.message();
+    }
+
+    if (is_grad_W_well_defined) {
+      auto p_WQ_derivative_compare = CompareMatrices(
+          math::autoDiffToGradientMatrix(p_WQ_ad),
+          math::autoDiffToGradientMatrix(p_WQ_ad_expected), tolerance_);
+      if (!p_WQ_derivative_compare) {
+        if (error) failure << "\n";
+        error = true;
+        failure << "p_WQ doesn't have the same gradient as p_WN + distance * "
+                   "grad_W:\n"
+                << p_WQ_derivative_compare.message();
+      }
+    }
+
     if (!error) return ::testing::AssertionSuccess();
     return failure;
 }
@@ -154,8 +205,8 @@ GTEST_TEST(DistanceToPoint, Sphere) {
   EXPECT_TRUE(tester.Test(p_GN_G, -0.1 * p_NQ_G, true /* is inside */));
 
   // Case: point lies at origin of the sphere.
-  EXPECT_TRUE(
-      tester.Test(p_GN_G, -sphere.radius * vhat_NQ, true /* is inside */));
+  EXPECT_TRUE(tester.Test(p_GN_G, -sphere.radius * vhat_NQ,
+                          true /* is inside */, false /* ill defined */));
 }
 
 // Simple smoke test for signed distance to Box. It does the following:
@@ -186,7 +237,9 @@ GTEST_TEST(DistanceToPoint, Box) {
           // The query point lies outside the box.
           EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G));
           // The query point lies on the vertex of the box.
-          EXPECT_TRUE(tester.Test(p_GN_G, Vector3d::Zero()));
+          EXPECT_TRUE(tester.Test(p_GN_G, Vector3d::Zero(),
+                                  false /* not inside the box */,
+                                  false /* not well defined */));
         }
       }
     }
@@ -208,7 +261,9 @@ GTEST_TEST(DistanceToPoint, Box) {
         // The query point lies outside the box.
         EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G));
         // The query point lies on the edge of the box.
-        EXPECT_TRUE(tester.Test(p_GN_G, Vector3d::Zero()));
+        EXPECT_TRUE(tester.Test(p_GN_G, Vector3d::Zero(),
+                                false /* not inside the box */,
+                                false /* not well defined */));
 
         // A query point *inside* the box would not be nearest the edge.
       }
