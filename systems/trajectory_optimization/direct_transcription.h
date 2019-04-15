@@ -43,21 +43,11 @@ class DirectTranscription : public MultipleShooting {
   /// disconnected (if they are disconnected in @p context) or will be fixed to
   /// their current values (if they are connected/fixed in @p context).
   /// @default kUseFirstInputIfItExists.
-  /// @param assume_continuous_states_are_fixed Boolean which, if true, allows
-  /// this algorithm to optimize without considering the dynamics of any
-  /// continuous states. This is helpful for optimizing systems which inheret
-  /// from a continuous time systems, solely for the purpose of calculating
-  /// derivatives used in a discrete time approximation update (in this case,
-  /// the inhereted system's continuous state remains unused). Only use this if
-  /// you are sure that the dynamics of the additional continuous state
-  /// variables cannot impact the dynamics of the discrete states. @default
-  /// false.
-  DirectTranscription(
-      const System<double>* system, const Context<double>& context,
-      int num_time_samples,
-      variant<InputPortSelection, InputPortIndex> input_port_index =
-          InputPortSelection::kUseFirstInputIfItExists,
-      bool assume_continuous_states_are_fixed = false);
+  DirectTranscription(const System<double>* system,
+                      const Context<double>& context, int num_time_samples,
+                      variant<InputPortSelection, InputPortIndex>
+                      input_port_index =
+                      InputPortSelection::kUseFirstInputIfItExists);
 
   /// Constructs the MathematicalProgram and adds the dynamic constraints.
   /// This version of the constructor is only for *linear* discrete-time systems
@@ -72,12 +62,11 @@ class DirectTranscription : public MultipleShooting {
   ///    context after calling this method will NOT impact the trajectory
   ///    optimization.
   /// @param num_time_samples The number of knot points in the trajectory.
-  DirectTranscription(
-      const LinearSystem<double>* linear_system, const Context<double>& context,
-      int num_time_samples,
-      variant<InputPortSelection, InputPortIndex> input_port_index =
-          InputPortSelection::kUseFirstInputIfItExists,
-      bool assume_continuous_states_are_fixed = false);
+  DirectTranscription(const LinearSystem<double>* linear_system,
+                      const Context<double>& context, int num_time_samples,
+                      variant<InputPortSelection, InputPortIndex>
+                      input_port_index =
+                      InputPortSelection::kUseFirstInputIfItExists);
 
   /// Constructs the MathematicalProgram and adds the dynamic constraints.  This
   /// version of the constructor is only for *linear time-varying* discrete-time
@@ -96,12 +85,11 @@ class DirectTranscription : public MultipleShooting {
   /// we do bind it, we should probably rename `system` to tv_linear_system` or
   /// similar, so that kwargs determine which overload is suggested, instead of
   /// hoping that type checking does the right thing.}
-  DirectTranscription(
-      const TimeVaryingLinearSystem<double>* system,
-      const Context<double>& context, int num_time_samples,
-      variant<InputPortSelection, InputPortIndex> input_port_index =
-          InputPortSelection::kUseFirstInputIfItExists,
-      bool assume_continuous_states_are_fixed = false);
+  DirectTranscription(const TimeVaryingLinearSystem<double>* system,
+                      const Context<double>& context, int num_time_samples,
+                      variant<InputPortSelection, InputPortIndex>
+                      input_port_index =
+                      InputPortSelection::kUseFirstInputIfItExists);
 
   // TODO(russt):  implement constructors for continuous time systems with
   // fixed timesteps AND the version with time as a decision variable.
@@ -149,8 +137,7 @@ class DirectTranscription : public MultipleShooting {
   // Aborts if the conversion ToAutoDiffXd fails.
   void AddAutodiffDynamicConstraints(
       const System<double>* system, const Context<double>& context,
-      variant<InputPortSelection, InputPortIndex> input_port_index,
-      bool assume_continuous_states_are_fixed);
+      variant<InputPortSelection, InputPortIndex> input_port_index);
 
   // Constrain the final input to match the penultimate, otherwise the final
   // input is unconstrained.
@@ -168,8 +155,7 @@ class DirectTranscription : public MultipleShooting {
                       const Context<double>& context,
                       variant<InputPortSelection, InputPortIndex>
                       input_port_index =
-                      InputPortSelection::kUseFirstInputIfItExists,
-                      bool assume_continuous_states_are_fixed = false);
+                      InputPortSelection::kUseFirstInputIfItExists);
 
   // AutoDiff versions of the System components (for the constraints).
   // These values are allocated iff the dynamic constraints are allocated

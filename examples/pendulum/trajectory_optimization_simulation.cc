@@ -64,28 +64,35 @@ int DoMain() {
 
     // Setup and solve the MathematicalProgram.
     prog = DoTrajectoryOptimization(pendulum.get(), FLAGS_use_dircol, &result);
-    if (prog == nullptr) {
-      return 1;
-    }
-    // Create a new plant which registers geometry.
+    if (!prog) { return 1; }
+
+    // Create a new (continuous) MultibodyPlant for simulation which registers
+    // geometry.
     auto sim_pendulum = BuildMBPlant(0.0, scene_graph);  // Continuous time MBP.
     const geometry::SourceId source_id = sim_pendulum->get_source_id().value();
     SimulateTrajectory(FLAGS_target_realtime_rate, std::move(sim_pendulum),
                        *scene_graph, source_id, *prog, result, &builder);
-  } else {  /* Instantiate a PendulumPlant */
-    // DirectCollocation uses a continuous time plant. DirectTranscription
-    // uses a discrete time plant.
-    auto pendulum = FLAGS_use_dircol
-                        ? std::make_unique<PendulumPlant<double>>()
-                        : std::make_unique<DiscretePendulumPlant<double>>(
-                              0.05 /* time step */);
+  } else if (!FLAGS_use_mbp) {
+    if (FLAGS_use_dircol) {  /* use direct collocation */
+      // Instantiate a continuous time plant for DirectCollocation.
+      auto pendulum = std::make_unique<PendulumPlant<double>>();
 
-    // Setup and solve the MathematicalProgram.
-    prog = DoTrajectoryOptimization(pendulum.get(), FLAGS_use_dircol, &result);
-    if (prog == nullptr) {
-      return 1;
+      // Setup and solve the MathematicalProgram.
+      prog =
+          DoTrajectoryOptimization(pendulum.get(), FLAGS_use_dircol, &result);
+      if (!prog) { return 1; }
+    } else {  /* use direct transcription */
+      // Instantiate a discrete time plant for DirectTranscription.
+      auto pendulum =
+          std::make_unique<DiscretePendulumPlant<double>>(0.05 /* time step */);
+
+      // Setup and solve the MathematicalProgram.
+      prog =
+          DoTrajectoryOptimization(pendulum.get(), FLAGS_use_dircol, &result);
+      if (!prog) { return 1; }
     }
-    // Create a new plant which registers geometry.
+    // Create a new (continuous) PendulumPlant for simulation which registers
+    // geometry.
     auto sim_pendulum = std::make_unique<PendulumPlant<double>>();
     sim_pendulum->RegisterGeometry(
         sim_pendulum->get_parameters(*sim_pendulum->CreateDefaultContext()),
@@ -94,7 +101,6 @@ int DoMain() {
     SimulateTrajectory(FLAGS_target_realtime_rate, std::move(sim_pendulum),
                        *scene_graph, source_id, *prog, result, &builder);
   }
-
   return 0;
 }
 

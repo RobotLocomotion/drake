@@ -6,6 +6,7 @@
 
 #include <gflags/gflags.h>
 
+#include "drake/common/drake_assert.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -79,7 +80,7 @@ DoTrajectoryOptimization(Plant* pendulum, bool use_dircol,
       pendulum->get_actuation_input_port().get_index();
 
   // Setup the appropriate transcription method.
-  if (use_dircol) {  // Use DirectCollocation.
+  if (use_dircol) {  /* use DirectCollocation. */
     const int kNumTimeSamples = 21;
     const double kMinimumTimeStep = 0.2;
     const double kMaximumTimeStep = 0.5;
@@ -88,12 +89,11 @@ DoTrajectoryOptimization(Plant* pendulum, bool use_dircol,
             pendulum, *context, kNumTimeSamples, kMinimumTimeStep,
             kMaximumTimeStep, actuation_port_index);
     prog->AddEqualTimeIntervalsConstraints();
-  } else {  // Use DirectTranscription.
+  } else {  /* use DirectTranscription */
     const int kNumTimeSamples = 100;
     prog =
         std::make_unique<systems::trajectory_optimization::DirectTranscription>(
-            pendulum, *context, kNumTimeSamples, actuation_port_index,
-            true);
+            pendulum, *context, kNumTimeSamples, actuation_port_index);
   }
 
   AddSwingupConstraints(prog.get());
@@ -106,6 +106,27 @@ DoTrajectoryOptimization(Plant* pendulum, bool use_dircol,
   }
 
   return prog;
+}
+
+template <class Plant>
+void ConnectQueryPort(const geometry::SceneGraph<double>& /* scene_graph */,
+                      systems::DiagramBuilder<double>* /* builder */,
+                      systems::controllers::PidControlledSystem<double>*
+                          /* pid_controlled_system */) {}
+
+template <>
+void ConnectQueryPort<MultibodyPlant<double>>(
+    const geometry::SceneGraph<double>& scene_graph,
+    systems::DiagramBuilder<double>* builder,
+    systems::controllers::PidControlledSystem<double>* pid_controlled_system) {
+  auto mbp =
+      dynamic_cast<MultibodyPlant<double>*>(pid_controlled_system->plant());
+  DRAKE_DEMAND(mbp);
+  const int geometry_query_port_index =
+      mbp->get_geometry_query_input_port().get_index();
+  builder->Connect(
+      scene_graph.get_query_output_port(),
+      pid_controlled_system->get_plant_input_port(geometry_query_port_index));
 }
 
 /* Simulates the result of the trajectory optimization. Uses a simple PD
@@ -135,8 +156,6 @@ void SimulateTrajectory(
       pendulum->get_actuation_input_port().get_index();
   const int geometry_poses_port_index =
       pendulum->get_geometry_poses_output_port().get_index();
-  const int geometry_query_port_index =
-      pendulum->get_geometry_query_input_port().get_index();
 
   // The choices of PidController constants here are fairly arbitrary,
   // but seem to effectively swing up the pendulum and hold it.
@@ -156,9 +175,7 @@ void SimulateTrajectory(
   builder->Connect(
       pid_controlled_pendulum->get_output_port(geometry_poses_port_index),
       scene_graph.get_source_pose_port(source_id));
-  builder->Connect(
-      scene_graph.get_query_output_port(),
-      pid_controlled_pendulum->get_plant_input_port(geometry_query_port_index));
+  ConnectQueryPort<Plant>(scene_graph, builder, pid_controlled_pendulum);
 
   geometry::ConnectDrakeVisualizer(builder, scene_graph);
 

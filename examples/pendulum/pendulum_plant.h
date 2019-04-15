@@ -1,8 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <utility>
-#include <vector>
 
 #include "drake/common/symbolic.h"
 #include "drake/examples/pendulum/gen/pendulum_input.h"
@@ -32,7 +30,7 @@ namespace pendulum {
 /// - AutoDiffXd
 /// - symbolic::Expression
 template <typename T>
-class PendulumPlant : public systems::LeafSystem<T> {
+class PendulumPlant final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PendulumPlant);
 
@@ -66,8 +64,6 @@ class PendulumPlant : public systems::LeafSystem<T> {
   /// Returns the port to output the pose to SceneGraph.  Users must call
   /// RegisterGeometry() first to enable this port.
   const systems::OutputPort<T>& get_geometry_poses_output_port() const;
-
-  const systems::InputPort<T>& get_geometry_query_input_port() const;
 
   /// There is no direct-feedthrough in this system.
   optional<bool> DoHasDirectFeedthrough(int, int) const override {
@@ -104,6 +100,7 @@ class PendulumPlant : public systems::LeafSystem<T> {
         &context->get_mutable_continuous_state());
   }
 
+
   const PendulumParams<T>& get_parameters(
       const systems::Context<T>& context) const {
     return this->template GetNumericParameter<PendulumParams>(context, 0);
@@ -115,32 +112,8 @@ class PendulumPlant : public systems::LeafSystem<T> {
         context, 0);
   }
 
- protected:
-  // Constructor that specifies scalar-type conversion support.
-  // @param converter scalar-type conversion support helper (i.e., AutoDiff,
-  // etc.); pass a default-constructed object if such support is not desired.
-  explicit PendulumPlant(systems::SystemScalarConverter converter)
-  : systems::LeafSystem<T>(std::move(converter)) {
-    this->DeclareVectorInputPort(PendulumInput<T>());
-    state_port_ = this->DeclareVectorOutputPort(PendulumState<T>(),
-                                                &PendulumPlant::CopyStateOut)
-                      .get_index();
-
-    this->DeclareContinuousState(PendulumState<T>(), 1 /* num_q */,
-                                 1 /* num_v */, 0 /* num_z */);
-    this->DeclareNumericParameter(PendulumParams<T>());
-  }
-
-  // Computes the actual physics. Inhereted classes (e.g.,
-  // DiscretePendulumPlant) may call this directly for discrete state updates.
-  void CalcPendulumDerivatives(const PendulumParams<T>& params,
-                               const PendulumState<T>& state, T tau,
-                               PendulumState<T>* derivatives) const;
-
  private:
   systems::OutputPortIndex AllocateGeometryPoseOutputPort();
-
-  systems::InputPortIndex AllocateGeometryQueryInputPort();
 
   // This is the calculator method for the state output port.
   void CopyStateOut(const systems::Context<T>& context,
@@ -154,10 +127,10 @@ class PendulumPlant : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
+
   // Port handles.
   int state_port_{-1};
   int geometry_pose_port_{-1};
-  int geometry_query_port_{-1};
 
   // Geometry source identifier for this system to interact with SceneGraph.
   geometry::SourceId source_id_{};

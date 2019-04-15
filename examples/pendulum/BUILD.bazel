@@ -111,6 +111,7 @@ drake_cc_library(
     hdrs = ["trajectory_optimization_common.h"],
     deps = [
         ":pendulum_plant",
+        "//common:essential",
         "//geometry:geometry_visualization",
         "//multibody/plant",
         "//solvers:solve",

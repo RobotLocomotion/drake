@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/examples/pendulum/gen/pendulum_input.h"
 #include "drake/examples/pendulum/gen/pendulum_params.h"
 #include "drake/examples/pendulum/gen/pendulum_state.h"
@@ -11,18 +13,20 @@ namespace examples {
 namespace pendulum {
 
 /// DiscretePendulumPlant implements a discrete time system approximation of the
-/// continuous time PendulumPlant. It inherets directly from PendulumPlant,
-/// which means all input/output ports of the base class remain available. The
-/// current implementation uses an explicit Euler update to the discrete state,
-/// where the time step is provided at construction time.
+/// continuous time PendulumPlant. It contains a PendulumPlant object, which
+/// provides the plant's time derivatives used in an explicit Euler update
+/// to the continuous state. The time step for this update is provided at
+/// construction time.
 template <typename T>
-class DiscretePendulumPlant final : public PendulumPlant<T> {
+class DiscretePendulumPlant final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscretePendulumPlant);
 
   /** Constructs a default plant */
   explicit DiscretePendulumPlant(double time_step = 0)
-      : PendulumPlant<T>(systems::SystemTypeTag<DiscretePendulumPlant>{}),
+      : systems::LeafSystem<T>(systems::SystemTypeTag<DiscretePendulumPlant>{}),
+        pend_plant_(),
+        pend_plant_context_(pend_plant_.CreateDefaultContext()),
         time_step_(time_step) {
     if (time_step_ == 0) {
       throw std::logic_error(
@@ -32,8 +36,10 @@ class DiscretePendulumPlant final : public PendulumPlant<T> {
     // Ensure time step is positive.
     DRAKE_DEMAND(time_step_ > 0);
 
-    // Ensure the underlying PendulumPlant only has continuous states.
-    DRAKE_DEMAND(this->num_discrete_state_groups() == 0);
+    // The input and output port.
+    this->DeclareVectorInputPort(PendulumInput<T>());
+    this->DeclareVectorOutputPort(PendulumState<T>(),
+                                  &DiscretePendulumPlant::CopyStateOut);
 
     // Declare the discrete state held by this class.
     this->DeclareDiscreteState(PendulumState<T>());
@@ -46,33 +52,9 @@ class DiscretePendulumPlant final : public PendulumPlant<T> {
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit DiscretePendulumPlant(const DiscretePendulumPlant<U>& p)
-      : DiscretePendulumPlant<T>(p.time_step()) {}
+      : DiscretePendulumPlant(p.time_step()) {}
 
   ~DiscretePendulumPlant() override {}
-
-  /* The period and forced discrete state update handler */
-  systems::EventStatus DoDiscreteStateUpdate(
-      const systems::Context<T>& context,
-      systems::DiscreteValues<T>* discrete_state) const {
-    // Get the current discrete state.
-    const PendulumState<T>& state = get_discrete_state(context);
-    PendulumState<T>& mutable_state =
-        get_mutable_discrete_state(discrete_state);
-    const PendulumParams<T>& params = this->get_parameters(context);
-
-    // Compute the state derivatives.
-    PendulumState<T> derivatives;
-    this->CalcPendulumDerivatives(params, mutable_state, this->get_tau(context),
-                                  &derivatives);
-
-    // Update the discrete state using Explicit Euler.
-    // TODO(rcory) Support calling any system integrator for this update.
-    mutable_state.set_theta(state.theta() + derivatives.theta() * time_step_);
-    mutable_state.set_thetadot(state.thetadot() +
-                               derivatives.thetadot() * time_step_);
-
-    return systems::EventStatus::Succeeded();
-  }
 
   static const PendulumState<T>& get_discrete_state(
       const systems::DiscreteValues<T>& dstate) {
@@ -94,9 +76,61 @@ class DiscretePendulumPlant final : public PendulumPlant<T> {
     return get_mutable_discrete_state(&context->get_mutable_discrete_state());
   }
 
+  const systems::InputPort<T>& get_actuation_input_port() const {
+    return systems::System<T>::get_input_port(0);
+  }
+
+  T get_tau(const systems::Context<T>& context) const {
+    return this->get_actuation_input_port().Eval(context)(0);
+  }
+
   double time_step() const {return time_step_; }
 
  private:
+  /* The period and forced discrete state update handler */
+  systems::EventStatus DoDiscreteStateUpdate(
+      const systems::Context<T>& context,
+      systems::DiscreteValues<T>* discrete_value_out) const {
+    // Get the current discrete state.
+    const PendulumState<T>& discrete_state = get_discrete_state(context);
+    PendulumState<T>& mutable_discrete_state =
+        get_mutable_discrete_state(discrete_value_out);
+
+    auto& mutable_continuous_state =
+        dynamic_cast<PendulumState<T>&>(
+            pend_plant_context_->get_mutable_continuous_state()
+                .get_mutable_vector());
+    mutable_continuous_state.set_theta(discrete_state.theta());
+    mutable_continuous_state.set_thetadot(discrete_state.thetadot());
+
+    // Set the actuation input port.
+    PendulumInput<T> pend_input;
+    pend_input.set_tau(get_tau(context));
+    pend_plant_.get_actuation_input_port().FixValue(pend_plant_context_.get(),
+                                                    pend_input);
+
+    // Compute the state derivatives.
+    auto const& derivatives = dynamic_cast<const PendulumState<T>&>(
+        pend_plant_.EvalTimeDerivatives(*pend_plant_context_).get_vector());
+
+    // Update the discrete state using explicit Euler.
+    mutable_discrete_state.set_theta(discrete_state.theta() +
+                                     derivatives.theta() * time_step_);
+    mutable_discrete_state.set_thetadot(discrete_state.thetadot() +
+                                        derivatives.thetadot() * time_step_);
+
+    return systems::EventStatus::Succeeded();
+  }
+
+  // This is the calculator method for the state output port.
+  void CopyStateOut(const systems::Context<T>& context,
+                    PendulumState<T>* output) const {
+    output->set_value(get_discrete_state(context).get_value());
+  }
+
+  PendulumPlant<T> pend_plant_;  /* The continuous time plant */
+  std::unique_ptr<systems::Context<T>> pend_plant_context_;
+
   // For a discrete system with periodic updates, time_step_ corresponds to the
   // period of those updates. More explicitly, here it represents the time step
   // used for an explicit Euler update.

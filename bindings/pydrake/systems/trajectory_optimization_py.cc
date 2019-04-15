@@ -216,25 +216,21 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       m, "DirectTranscription", doc.DirectTranscription.doc)
       .def(py::init<const systems::System<double>*,
                const systems::Context<double>&, int,
-               variant<systems::InputPortSelection, systems::InputPortIndex>,
-               bool>(),
+               variant<systems::InputPortSelection, systems::InputPortIndex>>(),
           py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
           py::arg("input_port_index") =
               systems::InputPortSelection::kUseFirstInputIfItExists,
-          py::arg("assume_continuous_states_are_fixed") = false,
           doc.DirectTranscription.ctor
-              .doc_5args_system_context_num_time_samples_input_port_index_assume_continuous_states_are_fixed)
+              .doc_4args_system_context_num_time_samples_input_port_index)
       .def(py::init<const systems::LinearSystem<double>*,
                const systems::Context<double>&, int,
-               variant<systems::InputPortSelection, systems::InputPortIndex>,
-               bool>(),
+               variant<systems::InputPortSelection, systems::InputPortIndex>>(),
           py::arg("linear_system"), py::arg("context"),
           py::arg("num_time_samples"),
           py::arg("input_port_index") =
               systems::InputPortSelection::kUseFirstInputIfItExists,
-          py::arg("assume_continuous_states_are_fixed") = false,
           doc.DirectTranscription.ctor
-              .doc_5args_linear_system_context_num_time_samples_input_port_index_assume_continuous_states_are_fixed);
+              .doc_4args_linear_system_context_num_time_samples_input_port_index);
 }
 
 }  // namespace pydrake

@@ -1,7 +1,6 @@
 #include "drake/examples/pendulum/pendulum_plant.h"
 
 #include <cmath>
-#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/geometry/geometry_frame.h"
@@ -28,7 +27,16 @@ using std::make_unique;
 
 template <typename T>
 PendulumPlant<T>::PendulumPlant()
-    : PendulumPlant(systems::SystemTypeTag<pendulum::PendulumPlant>{}) {}
+    : systems::LeafSystem<T>(
+          systems::SystemTypeTag<pendulum::PendulumPlant>{}) {
+  this->DeclareVectorInputPort(PendulumInput<T>());
+  state_port_ = this->DeclareVectorOutputPort(PendulumState<T>(),
+                                              &PendulumPlant::CopyStateOut)
+                    .get_index();
+  this->DeclareContinuousState(PendulumState<T>(), 1 /* num_q */, 1 /* num_v */,
+                               0 /* num_z */);
+  this->DeclareNumericParameter(PendulumParams<T>());
+}
 
 template <typename T>
 template <typename U>
@@ -38,7 +46,6 @@ PendulumPlant<T>::PendulumPlant(const PendulumPlant<U>& p) : PendulumPlant() {
 
   if (source_id_.is_valid()) {
     geometry_pose_port_ = AllocateGeometryPoseOutputPort();
-    geometry_query_port_ = AllocateGeometryQueryInputPort();
   }
 }
 
@@ -61,12 +68,6 @@ template <typename T>
 const systems::OutputPort<T>& PendulumPlant<T>::get_geometry_poses_output_port()
     const {
   return systems::System<T>::get_output_port(geometry_pose_port_);
-}
-
-template <typename T>
-const systems::InputPort<T>& PendulumPlant<T>::get_geometry_query_input_port()
-const {
-  return systems::System<T>::get_input_port(geometry_query_port_);
 }
 
 template <typename T>
@@ -103,18 +104,7 @@ T PendulumPlant<T>::CalcTotalEnergy(const systems::Context<T>& context) const {
   return kinetic_energy + potential_energy;
 }
 
-template <typename T>
-void PendulumPlant<T>::CalcPendulumDerivatives(
-    const PendulumParams<T>& params, const PendulumState<T>& state, T tau,
-    PendulumState<T>* derivatives) const {
-  derivatives->set_theta(state.thetadot());
-  derivatives->set_thetadot(
-      (tau -
-       params.mass() * params.gravity() * params.length() * sin(state.theta()) -
-       params.damping() * state.thetadot()) /
-      (params.mass() * params.length() * params.length()));
-}
-
+// Compute the actual physics.
 template <typename T>
 void PendulumPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
@@ -123,7 +113,13 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
   const PendulumParams<T>& params = get_parameters(context);
   PendulumState<T>& derivative_vector =
       get_mutable_continuous_state(derivatives);
-  CalcPendulumDerivatives(params, state, get_tau(context), &derivative_vector);
+
+  derivative_vector.set_theta(state.thetadot());
+  derivative_vector.set_thetadot(
+      (get_tau(context) -
+       params.mass() * params.gravity() * params.length() * sin(state.theta()) -
+       params.damping() * state.thetadot()) /
+      (params.mass() * params.length() * params.length()));
 }
 
 template <typename T>
@@ -166,9 +162,6 @@ void PendulumPlant<T>::RegisterGeometry(
 
   // Now allocate the output port.
   geometry_pose_port_ = AllocateGeometryPoseOutputPort();
-
-  // Allocate the geometry query input port
-  geometry_query_port_ = AllocateGeometryQueryInputPort();
 }
 
 template <typename T>
@@ -177,22 +170,6 @@ systems::OutputPortIndex PendulumPlant<T>::AllocateGeometryPoseOutputPort() {
   return this->DeclareAbstractOutputPort("geometry_pose",
       geometry::FramePoseVector<T>(source_id_, {frame_id_}),
                                   &PendulumPlant<T>::CopyPoseOut)
-      .get_index();
-}
-
-// A dummy, placeholder type.
-struct SymbolicGeometryValue {};
-// An alias for QueryObject<T>, except when T = Expression.
-template <typename T>
-using ModelQueryObject = typename std::conditional<
-    std::is_same<T, symbolic::Expression>::value,
-    SymbolicGeometryValue, geometry::QueryObject<T>>::type;
-
-template <typename T>
-systems::InputPortIndex PendulumPlant<T>::AllocateGeometryQueryInputPort() {
-  DRAKE_DEMAND(source_id_.is_valid() && frame_id_.is_valid());
-  return this
-      ->DeclareAbstractInputPort("geometry_query", Value<ModelQueryObject<T>>{})
       .get_index();
 }
 
