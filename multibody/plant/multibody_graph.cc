@@ -9,7 +9,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-MultibodyGraph::MultibodyGraph() { RegisterJointType("weld"); }
+MultibodyGraph::MultibodyGraph() { RegisterJointType(weld_type_name()); }
 
 LinkIndex MultibodyGraph::AddLink(const std::string& link_name,
                                   ModelInstanceIndex model_instance) {
@@ -36,7 +36,7 @@ LinkIndex MultibodyGraph::AddLink(const std::string& link_name,
   link_name_to_index_.insert({link_name, link_index});
 
   // Can't use emplace_back below because the constructor is private.
-  links_.push_back(Link(link_name, model_instance));
+  links_.push_back(Link(link_index, link_name, model_instance));
 
   return link_index;
 }
@@ -154,6 +154,74 @@ JointTypeIndex MultibodyGraph::GetJointTypeIndex(
     const std::string& joint_type_name) const {
   const auto it = joint_type_name_to_index_.find(joint_type_name);
   return it == joint_type_name_to_index_.end() ? JointTypeIndex() : it->second;
+}
+
+std::vector<std::set<LinkIndex>> MultibodyGraph::FindIslandsOfWeldedLinks()
+    const {
+  std::vector<bool> visited(num_links(), false);
+  std::vector<std::set<LinkIndex>> islands;  // islands?
+
+  // Reserve the maximum possible of welded bodies (that is, when each body
+  // forms its own welded body) in advance in order to avoid reallocation in
+  // welded_bodies which would cause the invalidation of references as we
+  // recursively fill it in.
+  islands.reserve(num_links());
+
+  // The first link visited is the "world" (link_index = 0), and therefore
+  // islands[0] corresponds to the islands of all links welded to the world.
+  for (const auto& link : links_) {
+
+    if (!visited[link.index()]) {
+      // If `link` was not visited yet, we crate an island for it.
+      islands.push_back(std::set<LinkIndex>{link.index()});
+
+      // We build the island to which `link` belongs by recursively traversing
+      // the sub-graph it belongs to.
+      std::set<LinkIndex>& link_island = islands.back();
+
+      // Thus far `link` form its own island. Find if other bodies belong to
+      // this island by recursively traversing the sub-graph of welded joints
+      // connected to `link`.
+      FindIslandsOfWeldedLinksRecurse(link, &link_island, &islands, &visited);
+    }    
+  }
+  return islands;
+}
+
+// Recursive helper method for CreateListOfWeldedBodies().
+// This method scans the children of body with parent_index. If a child is
+// welded to body with parent_index, it gets added to the parent's body welded
+// body, parent_welded_body. Otherwise a new welded body is created for the
+// child body and gets added to the list of all welded bodies, welded_bodies.
+void MultibodyGraph::FindIslandsOfWeldedLinksRecurse(
+    const Link& parent_link, std::set<LinkIndex>* parent_island,
+    std::vector<std::set<LinkIndex>>* islands,
+    std::vector<bool>* visited) const {
+  // Mark parent_link as visited in order to detect loops.     
+  visited->at(parent_link.index()) = true;
+
+  for (JointIndex joint_index : parent_link.joints()) {
+    const Joint& joint = get_joint(joint_index);
+
+    const LinkIndex sibling_index = joint.parent_link() == parent_link.index()
+                                  ? joint.child_link()
+                                  : joint.parent_link();
+    
+    // If already visited continue with the next joint.
+    if (visited->at(sibling_index)) continue;
+
+    const Link& sibling = get_link(sibling_index);                                  
+    visited->at(sibling_index) = true;
+    if (joint.type_index() == weld_type_index()) {
+      parent_island->insert(sibling_index);
+      FindIslandsOfWeldedLinksRecurse(sibling, parent_island, islands, visited);
+    } else {
+      islands->push_back(std::set<LinkIndex>{sibling_index});
+      std::set<LinkIndex>& sibling_island = islands->back();
+      FindIslandsOfWeldedLinksRecurse(sibling, &sibling_island, islands,
+                                      visited);
+    }
+  }
 }
 
 }  // namespace internal

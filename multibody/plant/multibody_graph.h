@@ -1,5 +1,6 @@
 #pragma once
 
+#include <set>
 #include <string>
 #include <unordered_map>
 
@@ -97,6 +98,8 @@ class MultibodyGraph {
    */
   JointTypeIndex weld_type_index() const { return JointTypeIndex(0); }
 
+  static std::string weld_type_name() { return "weld"; }
+
   /** Register a joint type by name. In Drake "weld" is reserved to identify
   weld joints constraining two frames to move as one rigid composite. "weld"
   joint type has index `weld_type_index()`.
@@ -139,8 +142,15 @@ class MultibodyGraph {
     return joints_[index];
   }
 
+  std::vector<std::set<LinkIndex>> FindIslandsOfWeldedLinks() const;
+
  private:
   Link& get_mutable_link(LinkIndex link_index) { return links_[link_index]; }
+
+  void FindIslandsOfWeldedLinksRecurse(
+      const Link& parent_link, std::set<LinkIndex>* parent_island,
+      std::vector<std::set<LinkIndex>>* islands,
+      std::vector<bool>* visited) const;
 
   std::vector<Link> links_;  // World is NOT included. Only physical links.
   std::vector<Joint> joints_;
@@ -157,6 +167,8 @@ class MultibodyGraph {
 class Link {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Link)
+
+  LinkIndex index() const { return index_; }
 
   ModelInstanceIndex model_instance() const { return model_instance_; }
 
@@ -181,29 +193,38 @@ class Link {
   /// Returns the list of joints for which this link is the parent link.
   const std::vector<JointIndex>& joints_as_parent() const;
 
+  const std::vector<JointIndex>& joints() const { return joints_; }
+
  private:
   // Restrict construction and modification to only MultibodyGraph.
   friend class MultibodyGraph;
 
-  Link(const std::string& name, ModelInstanceIndex model_instance)
-      : name_(name), model_instance_(model_instance) {}
+  Link(LinkIndex index, const std::string& name,
+       ModelInstanceIndex model_instance)
+      : index_(index), name_(name), model_instance_(model_instance) {}
 
   // Notes that this link serves as the parent link for the given joint.
-  void add_joint_as_parent(JointIndex joint_num) {
-    joints_as_parent_.push_back(joint_num);
+  void add_joint_as_parent(JointIndex joint) {
+    joints_as_parent_.push_back(joint);  // "as parent" list.
+    joints_.push_back(joint);  // All joints list.
   }
 
   // Notes that this link serves as the child link for the given joint.
-  void add_joint_as_child(JointIndex joint_num) {
-    joints_as_child_.push_back(joint_num);
+  void add_joint_as_child(JointIndex joint) {
+    joints_as_child_.push_back(joint);  // "as child" list.
+    joints_.push_back(joint);  // All joints list.
   }
 
+  LinkIndex index_;
   std::string name_;
   ModelInstanceIndex model_instance_;
 
   // How this link appears in joints (input and added).
   std::vector<JointIndex> joints_as_child_;   // where this link is the child
   std::vector<JointIndex> joints_as_parent_;  // where this link is the parent
+  // All joints connecting this link. The union (in no particular order) of
+  // joints_as_parent_ and joints_as_child_.
+  std::vector<JointIndex> joints_;
 };
 
 class Joint {
@@ -214,8 +235,10 @@ class Joint {
 
   const std::string& name() const { return name_; }
 
-  LinkIndex parent_link() const;
-  LinkIndex child_link() const;
+  LinkIndex parent_link() const { return parent_link_index_; }
+  LinkIndex child_link() const { return child_link_index_; }
+
+  JointTypeIndex type_index() const { return type_index_; }
 
  private:
   // Restrict construction and modification to only MultibodyGraph.
