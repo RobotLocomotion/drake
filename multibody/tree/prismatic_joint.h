@@ -95,6 +95,8 @@ class PrismaticJoint final : public Joint<T> {
     damping_ = damping;
   }
 
+  std::string type_name() const override { return "prismatic"; }
+
   /// Returns the axis of translation for `this` joint as a unit vector.
   /// Since the measures of this axis in either frame F or M are the same (see
   /// this class's documentation for frames's definitions) then,

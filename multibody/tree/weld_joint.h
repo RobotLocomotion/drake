@@ -50,6 +50,8 @@ class WeldJoint final : public Joint<T> {
                  VectorX<double>() /* no acc upper limits */),
         X_PC_(X_PC) {}
 
+  std::string type_name() const override { return "weld"; }
+
 #ifndef DRAKE_DOXYGEN_CXX
   DRAKE_DEPRECATED(
       "2019-06-15",

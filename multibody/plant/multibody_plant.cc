@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <limits>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <vector>
 
@@ -253,6 +254,8 @@ MultibodyPlant<T>::MultibodyPlant(
   DRAKE_THROW_UNLESS(time_step >= 0);
   visual_geometries_.emplace_back();  // Entries for the "world" body.
   collision_geometries_.emplace_back();
+  // Add the world body to the graph.
+  multibody_graph_.AddBody(world_body().name(), world_body().model_instance());
 }
 
 template<typename T>
@@ -402,23 +405,12 @@ geometry::GeometrySet MultibodyPlant<T>::CollectRegisteredGeometries(
 template <typename T>
 std::vector<const Body<T>*> MultibodyPlant<T>::GetBodiesWeldedTo(
     const Body<T>& body) const {
-  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  // TODO(eric.cousineau): This is much slower than it should be; this could be
-  // sped up by either (a) caching these results at finalization and store a
-  // mapping from body to a subgraph or (b) starting the search from the query
-  // body.
-  auto sub_graphs = internal_tree().get_topology().CreateListOfWeldedBodies();
-  // Find subgraph that contains this body.
-  auto predicate = [&body](auto& sub_graph) {
-    return sub_graph.count(body.index()) > 0;
-  };
-  auto sub_graph_iter = std::find_if(
-      sub_graphs.begin(), sub_graphs.end(), predicate);
-  DRAKE_THROW_UNLESS(sub_graph_iter != sub_graphs.end());
+  const std::set<BodyIndex> island =
+      multibody_graph_.FindBodiesWeldedTo(body.index());
   // Map body indices to pointers.
   std::vector<const Body<T>*> sub_graph_bodies;
-  for (BodyIndex sub_graph_body_index : *sub_graph_iter) {
-    sub_graph_bodies.push_back(&internal_tree().get_body(sub_graph_body_index));
+  for (BodyIndex body_index : island) {
+    sub_graph_bodies.push_back(&internal_tree().get_body(body_index));
   }
   return sub_graph_bodies;
 }
