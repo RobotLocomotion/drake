@@ -7,6 +7,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/drake_nodiscard.h"
 #include "drake/common/text_logging.h"
 
 namespace drake {
@@ -28,7 +29,7 @@ enum class MatrixCompareType { absolute, relative };
  * @return true if the two matrices are equal based on the specified tolerance.
  */
 template <typename DerivedA, typename DerivedB>
-::testing::AssertionResult CompareMatrices(
+DRAKE_NODISCARD ::testing::AssertionResult CompareMatrices(
     const Eigen::MatrixBase<DerivedA>& m1,
     const Eigen::MatrixBase<DerivedB>& m2, double tolerance = 0.0,
     MatrixCompareType compare_type = MatrixCompareType::absolute) {

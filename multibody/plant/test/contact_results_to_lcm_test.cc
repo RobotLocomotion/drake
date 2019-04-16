@@ -98,12 +98,13 @@ GTEST_TEST(ContactResultToLcmSystem, NonEmptyMultibodyPlantEmptyContact) {
   EXPECT_EQ(info_msg.timestamp, 0);
   EXPECT_EQ(info_msg.body1_name, name1);
   EXPECT_EQ(info_msg.body2_name, name2);
-  CompareMatrices(Vector3<double>(info_msg.contact_point), p_WC, 0,
-                  MatrixCompareType::absolute);
-  CompareMatrices(Vector3<double>(info_msg.contact_force), f_BC_W, 0,
-                  MatrixCompareType::absolute);
-  CompareMatrices(Vector3<double>(info_msg.normal), penetration_data.nhat_BA_W,
-                  0, MatrixCompareType::absolute);
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(info_msg.contact_point), p_WC, 0,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(info_msg.contact_force), f_BC_W,
+                              0, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(info_msg.normal),
+                              penetration_data.nhat_BA_W, 0,
+                              MatrixCompareType::absolute));
 }
 
 // Confirm that the system can be transmogrified to other supported scalars.
