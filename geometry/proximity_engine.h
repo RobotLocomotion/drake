@@ -184,18 +184,15 @@ class ProximityEngine {
    @param[in] p_WQ            Position of a query point Q in world frame W.
    @param[in] geometry_map    A map from geometry _index_ to the corresponding
                               global geometry identifier.
-   @param[in] X_WGs           The pose of all geometries in world, indexed by
-                              each geometry's GeometryIndex.
    @param[in] threshold       Ignore any object beyond this distance.
    @retval signed_distances   A vector populated with per-object signed
                               distance and gradient vector.
-                              See SignedDistanceToPoint for details.
+                              See SignedDistanceFieldValue for details.
    */
-  std::vector<SignedDistanceToPoint<T>>
+  std::vector<SignedDistanceToPoint<double>>
   ComputeSignedDistanceToPoint(
-      const Vector3<T>& p_WQ,
+      const Vector3<double>& p_WQ,
       const std::vector<GeometryId>& geometry_map,
-      const std::vector<Isometry3<T>>& X_WGs,
       const double threshold = std::numeric_limits<double>::infinity()) const;
   //@}
 

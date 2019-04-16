@@ -11,7 +11,6 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 
@@ -62,7 +61,6 @@ class ProximityEngineTester {
 
 namespace {
 
-using math::RigidTransform;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using math::RotationMatrixd;
@@ -357,14 +355,12 @@ using std::shared_ptr;
 GTEST_TEST(SignedDistanceToPointBroadphaseTest, MultipleThreshold) {
   ProximityEngine<double> engine;
   std::vector<GeometryId> geometry_map;
-  std::vector<Isometry3d> X_WGs;
   const double radius = 0.1;
   const Vector3d center1(1., 1., 1.);
   const Vector3d center2(-1, -1, -1.);
   int index = 0;
   for (const Vector3d p_WG : {center1, center2}) {
     const RigidTransformd X_WG(p_WG);
-    X_WGs.push_back(X_WG.GetAsIsometry3());
     engine.AddAnchoredGeometry(Sphere(radius), X_WG.GetAsIsometry3(),
                                GeometryIndex(index++));
     geometry_map.push_back(GeometryId::get_new_id());
@@ -372,44 +368,38 @@ GTEST_TEST(SignedDistanceToPointBroadphaseTest, MultipleThreshold) {
   const Vector3d p_WQ(3., 3., 3.);
   // This small threshold allows no sphere.
   double threshold = 0.001;
-  auto results = engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, X_WGs,
+  auto results = engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map,
                                                      threshold);
   EXPECT_EQ(0, results.size());
   // This threshold touches the corner of the bounding box of the first sphere.
   // It is still too small to yield any result.
   threshold = (p_WQ - (center1 + Vector3d(radius, radius, radius))).norm();
-  results =
-      engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, X_WGs, threshold);
+  results = engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, threshold);
   EXPECT_EQ(0, results.size());
   // This threshold barely touches outside the first sphere, so it still gives
   // no result.
   threshold = (p_WQ - center1).norm() - radius - 1e-10;
-  results =
-      engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, X_WGs, threshold);
+  results = engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, threshold);
   EXPECT_EQ(0, results.size());
   // This threshold barely touches inside the first sphere, so it gives
   // one result.
   threshold = (p_WQ - center1).norm() - radius + 1e-10;
-  results =
-      engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, X_WGs, threshold);
+  results = engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, threshold);
   EXPECT_EQ(1, results.size());
   // This threshold touches the corner of the bounding box of the second
   // sphere, so it is still too small to allow the second sphere.
   threshold = (p_WQ - (center2 + Vector3d(radius, radius, radius))).norm();
-  results =
-      engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, X_WGs, threshold);
+  results = engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, threshold);
   EXPECT_EQ(1, results.size());
   // This threshold barely touches the outside the second sphere, so it still
   // gives one result.
   threshold = (p_WQ - center2).norm() - radius - 1e-10;
-  results =
-      engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, X_WGs, threshold);
+  results = engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, threshold);
   EXPECT_EQ(1, results.size());
   // This threshold barely touches inside the second sphere, so it starts to
   // give two results.
   threshold = (p_WQ - center2).norm() - radius + 1e-10;
-  results =
-      engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, X_WGs, threshold);
+  results = engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, threshold);
   EXPECT_EQ(2, results.size());
 }
 
@@ -1016,7 +1006,6 @@ struct SignedDistanceToPointTest
     : public testing::TestWithParam<SignedDistanceToPointTestData> {
   ProximityEngine<double> engine;
   std::vector<GeometryId> geometry_map;
-  std::vector<Isometry3d> X_WGs;
 
   // The tolerance value for determining equivalency between expected and
   // tested results. The underlying algorithms have an empirically-determined,
@@ -1028,7 +1017,6 @@ struct SignedDistanceToPointTest
     auto data = GetParam();
     engine.AddAnchoredGeometry(*(data.geometry), data.X_WG.GetAsIsometry3(),
                                GeometryIndex(0));
-    X_WGs.push_back(data.X_WG.GetAsIsometry3());
     geometry_map.push_back(data.expected_result.id_G);
   }
 };
@@ -1036,8 +1024,7 @@ struct SignedDistanceToPointTest
 TEST_P(SignedDistanceToPointTest, SingleQueryPoint) {
   auto data = GetParam();
 
-  auto results =
-      engine.ComputeSignedDistanceToPoint(data.p_WQ, geometry_map, X_WGs);
+  auto results = engine.ComputeSignedDistanceToPoint(data.p_WQ, geometry_map);
   EXPECT_EQ(results.size(), 1);
   EXPECT_EQ(results[0].id_G, data.expected_result.id_G);
   EXPECT_TRUE(
@@ -1055,14 +1042,14 @@ TEST_P(SignedDistanceToPointTest, SingleQueryPointWithThreshold) {
 
   const double large_threshold = data.expected_result.distance + 0.01;
   auto results =
-      engine.ComputeSignedDistanceToPoint(data.p_WQ, geometry_map, X_WGs,
+      engine.ComputeSignedDistanceToPoint(data.p_WQ, geometry_map,
                                           large_threshold);
   // The large threshold allows one object in the results.
   EXPECT_EQ(results.size(), 1);
 
   const double small_threshold = data.expected_result.distance - 0.01;
   results =
-      engine.ComputeSignedDistanceToPoint(data.p_WQ, geometry_map, X_WGs,
+      engine.ComputeSignedDistanceToPoint(data.p_WQ, geometry_map,
                                           small_threshold);
   // The small threshold skips all objects.
   EXPECT_EQ(results.size(), 0);
@@ -3213,119 +3200,6 @@ GTEST_TEST(ProximityEngineTests, AnchoredBroadPhaseInitialization) {
   engine_copy.UpdateWorldPoses({X_WD}, {index_D});
   auto pairs_copy = engine_copy.ComputePointPairPenetration(geometry_map);
   EXPECT_EQ(pairs_copy.size(), 1);
-}
-
-// Basic smoke test for the autodiffibility of the signed distance computation.
-// Tests against the anchored geometry. Specifically, it confirms that while
-// poses are set with double, the calculation is done with AutoDiff and
-// derivatives come through.
-GTEST_TEST(ProximityEngineTests, ComputeSignedDistanceAutoDiffAnchored) {
-  ProximityEngine<AutoDiffXd> engine;
-
-  const double kEps = std::numeric_limits<double>::epsilon();
-
-  // Given a sphere with radius 0.7, centered on p_WSo, the point p_SQ = (2,3,6)
-  // is outside G at the positive distance 6.3.
-  const double expected_distance = 6.3;
-  const Vector3d p_SQ_W{2.0, 3.0, 6.0};
-  const Vector3d p_WS_W{0.5, 1.25, -2};
-  const Vector3d p_WQ{p_SQ_W + p_WS_W};
-  Vector3<AutoDiffXd> p_WQ_ad = math::initializeAutoDiff(p_WQ);
-
-  // An empty world inherently produces no results.
-  {
-    std::vector<GeometryId> geometry_map;
-    std::vector<Isometry3<AutoDiffXd>> X_WGs;
-    const auto results = engine.ComputeSignedDistanceToPoint(
-        p_WQ_ad, geometry_map, X_WGs);
-    EXPECT_EQ(results.size(), 0);
-  }
-
-  // Against an anchored sphere.
-  {
-    const RigidTransformd X_WS = RigidTransformd(p_WS_W);
-    engine.AddAnchoredGeometry(Sphere(0.7), X_WS, GeometryIndex(0));
-    std::vector<GeometryId> geometry_map{GeometryId::get_new_id()};
-    const RigidTransform<AutoDiffXd> X_WS_ad = X_WS.cast<AutoDiffXd>();
-    std::vector<Isometry3<AutoDiffXd>> X_WGs{X_WS_ad};
-
-    // Distance is just beyond the threshold.
-    {
-      std::vector<SignedDistanceToPoint<AutoDiffXd>> results =
-          engine.ComputeSignedDistanceToPoint(p_WQ_ad, geometry_map, X_WGs,
-                                              expected_distance - 1e-14);
-      EXPECT_EQ(results.size(), 0);
-    }
-
-    // Distance is just within the threshold
-    {
-      std::vector<SignedDistanceToPoint<AutoDiffXd>> results =
-          engine.ComputeSignedDistanceToPoint(p_WQ_ad, geometry_map, X_WGs,
-                                              expected_distance + 1e-14);
-      EXPECT_EQ(results.size(), 1);
-      const SignedDistanceToPoint<AutoDiffXd>& distance_data = results[0];
-      // The autodiff seems to lose a couple of bits relative to the known
-      // answer.
-      EXPECT_NEAR(distance_data.distance.value(), expected_distance, 4 * kEps);
-      // The analytical `grad_W` value should match the autodiff-computed
-      // gradient.
-      const Vector3d ddistance_dp_WQ = distance_data.distance.derivatives();
-      const Vector3d grad_W = math::autoDiffToValueMatrix(distance_data.grad_W);
-      EXPECT_TRUE(CompareMatrices(ddistance_dp_WQ, grad_W, kEps));
-    }
-  }
-}
-
-// Basic smoke test for the autodiffibility of the signed distance computation.
-// Tests against the dynamic geometry. Specifically, it confirms that while
-// poses are set with double, the calculation is done with AutoDiff and
-// derivatives come through.
-GTEST_TEST(ProximityEngineTests, ComputeSignedDistanceAutoDiffDynamic) {
-  ProximityEngine<AutoDiffXd> engine;
-
-  const double kEps = std::numeric_limits<double>::epsilon();
-
-  // Given a sphere with radius 0.7, centered on p_WSo, the point p_SQ = (2,3,6)
-  // is outside G at the positive distance 6.3.
-  const double expected_distance = 6.3;
-  const Vector3d p_SQ{2.0, 3.0, 6.0};
-  const Vector3d p_WS{0.5, 1.25, -2};
-  const Vector3d p_WQ{p_SQ + p_WS};
-  Vector3<AutoDiffXd> p_WQ_ad = math::initializeAutoDiff(p_WQ);
-
-  // Against a dynamic sphere.
-  GeometryIndex index(0);
-  engine.AddDynamicGeometry(Sphere(0.7), index);
-  std::vector<GeometryId> geometry_map{GeometryId::get_new_id()};
-  const auto X_WS_ad =
-      RigidTransformd(p_WS).cast<AutoDiffXd>().GetAsIsometry3();
-  std::vector<Isometry3<AutoDiffXd>> X_WGs{X_WS_ad};
-  engine.UpdateWorldPoses(X_WGs, {index});
-
-  // Distance is just beyond the threshold.
-  {
-    std::vector<SignedDistanceToPoint<AutoDiffXd>> results =
-        engine.ComputeSignedDistanceToPoint(p_WQ_ad, geometry_map, X_WGs,
-                                            expected_distance - 1e-14);
-    EXPECT_EQ(results.size(), 0);
-  }
-
-  // Distance is just within the threshold
-  {
-    std::vector<SignedDistanceToPoint<AutoDiffXd>> results =
-        engine.ComputeSignedDistanceToPoint(p_WQ_ad, geometry_map, X_WGs,
-                                            expected_distance + 1e-14);
-    EXPECT_EQ(results.size(), 1);
-    const SignedDistanceToPoint<AutoDiffXd>& distance_data = results[0];
-    // The autodiff seems to lose a couple of bits relative to the known
-    // answer.
-    EXPECT_NEAR(distance_data.distance.value(), expected_distance, 4 * kEps);
-    // The analytical `grad_W` value should match the autodiff-computed
-    // gradient.
-    const Vector3d ddistance_dp_WQ = distance_data.distance.derivatives();
-    const Vector3d grad_W = math::autoDiffToValueMatrix(distance_data.grad_W);
-    EXPECT_TRUE(CompareMatrices(ddistance_dp_WQ, grad_W, kEps));
-  }
 }
 
 
