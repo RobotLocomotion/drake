@@ -360,7 +360,8 @@ GTEST_TEST(DistanceToPoint, ScalarShapeSupportDouble) {
   EncodedData encoding(GeometryIndex(0), true);
   encoding.write_to(&query_point);
   std::vector<SignedDistanceToPoint<double>> distances;
-  std::vector<GeometryId> geometry_map{GeometryId::get_new_id()};
+  std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
+                                       GeometryId::get_new_id()};
   double threshold = std::numeric_limits<double>::max();
   std::vector<Isometry3d> X_WGs{X_WQ, Isometry3d::Identity()};
   CallbackData<double> data{&query_point, &geometry_map, threshold,
@@ -420,7 +421,8 @@ GTEST_TEST(DistanceToPoint, ScalarShapeSupportAutoDiff) {
   EncodedData encoding(GeometryIndex(0), true);
   encoding.write_to(&query_point);
   std::vector<SignedDistanceToPoint<AutoDiffXd>> distances;
-  std::vector<GeometryId> geometry_map{GeometryId::get_new_id()};
+std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
+                                     GeometryId::get_new_id()};
   double threshold = std::numeric_limits<double>::max();
   std::vector<Isometry3<AutoDiffXd>> X_WGs{X_WQ,
                                            Isometry3<AutoDiffXd>::Identity()};
