@@ -23,7 +23,7 @@ class DiscretePendulumPlant final : public systems::LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscretePendulumPlant);
 
   /** Constructs a default plant */
-  explicit DiscretePendulumPlant(double time_step = 0)
+  explicit DiscretePendulumPlant(double time_step)
       : systems::LeafSystem<T>(systems::SystemTypeTag<DiscretePendulumPlant>{}),
         pend_plant_(),
         pend_plant_context_(pend_plant_.CreateDefaultContext()),
@@ -34,7 +34,9 @@ class DiscretePendulumPlant final : public systems::LeafSystem<T> {
           "pendulum plant use the PendulumPlant system directly.");
     }
     // Ensure time step is positive.
-    DRAKE_DEMAND(time_step_ > 0);
+    if (time_step_ < 0) {
+      throw std::logic_error("time step must be > 0");
+    }
 
     // The input and output port.
     this->DeclareVectorInputPort(PendulumInput<T>());
@@ -44,7 +46,8 @@ class DiscretePendulumPlant final : public systems::LeafSystem<T> {
     // Declare the discrete state held by this class.
     this->DeclareDiscreteState(PendulumState<T>());
     this->DeclarePeriodicDiscreteUpdateEvent(
-        time_step_, 0, &DiscretePendulumPlant::DoDiscreteStateUpdate);
+        time_step_, 0 /* time offset */,
+        &DiscretePendulumPlant::DoDiscreteStateUpdate);
     this->DeclareForcedDiscreteUpdateEvent(
         &DiscretePendulumPlant::DoDiscreteStateUpdate);
   }
@@ -54,7 +57,7 @@ class DiscretePendulumPlant final : public systems::LeafSystem<T> {
   explicit DiscretePendulumPlant(const DiscretePendulumPlant<U>& p)
       : DiscretePendulumPlant(p.time_step()) {}
 
-  ~DiscretePendulumPlant() override {}
+  ~DiscretePendulumPlant() {}
 
   static const PendulumState<T>& get_discrete_state(
       const systems::DiscreteValues<T>& dstate) {
@@ -84,7 +87,7 @@ class DiscretePendulumPlant final : public systems::LeafSystem<T> {
     return this->get_actuation_input_port().Eval(context)(0);
   }
 
-  double time_step() const {return time_step_; }
+  double time_step() const { return time_step_; }
 
  private:
   /* The period and forced discrete state update handler */
@@ -93,6 +96,8 @@ class DiscretePendulumPlant final : public systems::LeafSystem<T> {
       systems::DiscreteValues<T>* discrete_value_out) const {
     // Get the current discrete state.
     const PendulumState<T>& discrete_state = get_discrete_state(context);
+
+    // Get discrete_value_out as a PendulumState.
     PendulumState<T>& mutable_discrete_state =
         get_mutable_discrete_state(discrete_value_out);
 
@@ -109,7 +114,8 @@ class DiscretePendulumPlant final : public systems::LeafSystem<T> {
     pend_plant_.get_actuation_input_port().FixValue(pend_plant_context_.get(),
                                                     pend_input);
 
-    // Compute the state derivatives.
+    // Compute the state derivatives. PendulumPlant is time-invariant, so no
+    // need to set time in pend_plant_context_.
     auto const& derivatives = dynamic_cast<const PendulumState<T>&>(
         pend_plant_.EvalTimeDerivatives(*pend_plant_context_).get_vector());
 
@@ -134,12 +140,12 @@ class DiscretePendulumPlant final : public systems::LeafSystem<T> {
   // For a discrete system with periodic updates, time_step_ corresponds to the
   // period of those updates. More explicitly, here it represents the time step
   // used for an explicit Euler update.
-  double time_step_{0};
+  double time_step_{-1};
 };
 
 }  // namespace pendulum
 }  // namespace examples
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::examples::pendulum::DiscretePendulumPlant)
