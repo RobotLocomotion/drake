@@ -18,9 +18,6 @@ namespace systems {
  * A class providing methods shared by implicit integrators.
  * @tparam T The vector element type, which must be a valid Eigen scalar.
  *
- * This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
- * this class, please refer to https://drake.mit.edu/cxx_inl.html.
- *
  * @tparam T The scalar type. Must be a valid Eigen scalar.
  */
 template <class T>
@@ -217,8 +214,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
    */
   virtual void DoResetImplicitIntegratorStatistics() {}
 
-  // TODO(edrumwri) Document the functions below (or move documentation from
-  // the -inl file to here).
+  // TODO(edrumwri) Document the functions below.
   virtual int64_t do_get_num_newton_raphson_iterations() const = 0;
   virtual int64_t do_get_num_iteration_matrix_factorizations() const = 0;
   virtual int64_t do_get_num_error_estimator_derivative_evaluations() const = 0;
