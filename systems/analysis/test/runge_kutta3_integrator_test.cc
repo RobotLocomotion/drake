@@ -104,7 +104,7 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, CubicTest) {
   Cubic cubic;
   auto cubic_context = cubic.CreateDefaultContext();
   const double C = 0.0;
-  cubic_context->set_time(0.0);
+  cubic_context->SetTime(0.0);
   cubic_context->get_mutable_continuous_state_vector()[0] = C;
 
   RungeKutta3Integrator<double> rk3(cubic, cubic_context.get());
@@ -128,7 +128,7 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, CubicTest) {
       rk3.get_error_estimate()->get_vector().GetAtIndex(0);
 
   // Now obtain the error estimate using two half steps of h/2.
-  cubic_context->set_time(0.0);
+  cubic_context->SetTime(0.0);
   cubic_context->get_mutable_continuous_state_vector()[0] = C;
   rk3.Initialize();
   rk3.IntegrateWithSingleFixedStepToTime(t_final/2);
@@ -153,7 +153,7 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, QuadraticTest) {
   Quadratic quadratic;
   auto quadratic_context = quadratic.CreateDefaultContext();
   const double C = 0.0;
-  quadratic_context->set_time(0.0);
+  quadratic_context->SetTime(0.0);
   quadratic_context->get_mutable_continuous_state_vector()[0] = C;
 
   RungeKutta3Integrator<double> rk3(quadratic, quadratic_context.get());

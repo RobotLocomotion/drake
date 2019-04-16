@@ -205,7 +205,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEstOrder) {
   const double err_est_h_err = std::abs(err_est_h - (x_true - kXApprox_h));
 
   // Compute the same solution using two half-steps.
-  this->context->set_time(0);
+  this->context->SetTime(0);
   this->spring_mass->set_position(this->integrator->get_mutable_context(),
                              initial_position);
   this->spring_mass->set_velocity(this->integrator->get_mutable_context(),
