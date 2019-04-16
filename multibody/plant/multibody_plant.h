@@ -21,6 +21,7 @@
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/implicit_stribeck_solver.h"
 #include "drake/multibody/plant/implicit_stribeck_solver_results.h"
+#include "drake/multibody/plant/multibody_graph.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
@@ -708,6 +709,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const std::string& name, ModelInstanceIndex model_instance,
       const SpatialInertia<double>& M_BBo_B) {
     DRAKE_MBP_THROW_IF_FINALIZED();
+    // Make note in the graph.
+    multibody_graph_.AddLink(name, model_instance);
+    // Add the actual rigid body to the model.
     const RigidBody<T>& body = this->mutable_tree().AddRigidBody(
         name, model_instance, M_BBo_B);
     // Each entry of visual_geometries_, ordered by body index, contains a
@@ -778,6 +782,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const JointType<T>& AddJoint(std::unique_ptr<JointType<T>> joint) {
     static_assert(std::is_convertible<JointType<T>*, Joint<T>*>::value,
                   "JointType must be a sub-class of Joint<T>.");
+
+    // Currently we assume a one-to-one correspondence between bodies/links.
+    const auto parent_index = to_link_index(joint->parent_body().index());
+    const auto child_index = to_link_index(joint->child_body().index());
+    const std::string type_name = joint->type_name();
+    if (!multibody_graph_.IsJointTypeRegistered(type_name)) {
+      multibody_graph_.RegisterJointType(type_name);
+    }
+
+    // Note changes in the graph.
+    multibody_graph_.AddJoint(joint->name(), joint->model_instance(), type_name,
+                              parent_index, child_index);
+
     return this->mutable_tree().AddJoint(std::move(joint));
   }
 
@@ -859,8 +876,23 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const optional<math::RigidTransform<double>>& X_PF, const Body<T>& child,
       const optional<math::RigidTransform<double>>& X_BM, Args&&... args) {
     DRAKE_MBP_THROW_IF_FINALIZED();
-    return this->mutable_tree().template AddJoint<JointType>(
-        name, parent, X_PF, child, X_BM, std::forward<Args>(args)...);
+    const JointType<T>& joint =
+        this->mutable_tree().template AddJoint<JointType>(
+            name, parent, X_PF, child, X_BM, std::forward<Args>(args)...);
+
+    // Currently we assume a one-to-one correspondence between bodies/links.
+    const auto parent_index = to_link_index(parent.index());
+    const auto child_index = to_link_index(child.index());
+    const std::string type_name = joint.type_name();
+    if (!multibody_graph_.IsJointTypeRegistered(type_name)) {
+      multibody_graph_.RegisterJointType(type_name);
+    }
+
+    // Note changes in the graph.
+    multibody_graph_.AddJoint(joint.name(), joint.model_instance(), type_name,
+                              parent_index, child_index);
+
+    return joint;
   }
 
   /// Adds a new force element model of type `ForceElementType` to `this`
@@ -2438,6 +2470,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// presence of a weld joint, not by other constructs that prevent mobility
   /// (e.g. constraints).
   ///
+  /// This method can be called at any time during the lifetime of `this` plant,
+  /// either pre- or post-finalize, see Finalize().
+  ///
   /// Meant to be used with `CollectRegisteredGeometries`.
   ///
   /// The following example demonstrates filtering collisions between all
@@ -2456,7 +2491,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @returns all bodies rigidly fixed to `body`. This does not return the
   /// bodies in any prescribed order.
-  /// @throws std::exception if called pre-finalize.
   /// @throws std::exception if `body` is not part of this plant.
   std::vector<const Body<T>*> GetBodiesWeldedTo(const Body<T>& body) const;
 
@@ -3114,6 +3148,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex point_pairs;
   };
 
+  // Helper to convert from BodyIndex to LinkIndex.
+  // This assumes a one-to-one correspondence of bodies to links.
+  static internal::LinkIndex to_link_index(BodyIndex index) {
+    return internal::LinkIndex(index.operator int());
+  }
+
   // Constructor to bridge testing from MultibodyTree to MultibodyPlant.
   // WARNING: This may *not* result in a plant with a valid state. Use
   // sparingly to test forwarding methods when the overhead is high to
@@ -3646,6 +3686,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // velocities and thus no generalized forces.
   std::vector<systems::OutputPortIndex>
       instance_generalized_contact_forces_output_ports_;
+
+  // A graph storing the topological information of the model.
+  internal::MultibodyGraph multibody_graph_;    
 
   // If the plant is modeled as a discrete system with periodic updates,
   // time_step_ corresponds to the period of those updates. Otherwise, if the

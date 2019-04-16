@@ -67,6 +67,7 @@ drake_cc_library(
         ":externally_applied_spatial_force",
         ":implicit_stribeck_solver",
         ":implicit_stribeck_solver_results",
+        ":multibody_graph",
         "//common:default_scalars",
         "//geometry:geometry_ids",
         "//geometry:geometry_visualization",
