@@ -38,16 +38,16 @@ struct SignedDistanceToPoint{
    @param grad_W_in   The gradient vector of the distance function with respect
                       to the query point Q, expressed in world frame W.
    @param is_grad_W_well_defined_in
-                      If grad_W is well defined.
-                      grad_W is not well defined everywhere. For example, when
-                      computing the distance from a point to a sphere, and the
-                      point coincides with the center of the sphere, grad_W is
-                      not well defined. When grad_W is not well defined, and we
-                      instantiate SignedDistanceToPoint<T> with T being an
-                      AutoDiffScalar (like AutoDiffXd), the gradient of the
-                      query result is not well defined either, so the user
-                      should use the gradient in p_GN, distance and grad_W with
-                      caution.
+                      true if grad_W is well defined, false otherwise.
+
+   @note grad_W is not well defined everywhere. For example, when computing the
+         distance from a point to a sphere, and the point coincides with the
+         center of the sphere, grad_W is not well defined (as it can be computed
+         as p_GQ / |p_GQ|, but the denominator is 0). When grad_W is not
+         well defined, and we instantiate SignedDistanceToPoint<T> with T being
+         an AutoDiffScalar (like AutoDiffXd), the gradient of the query result
+         is not well defined either, so the user should use the gradient in
+         p_GN, distance and grad_W with caution.
    @pre grad_W_in must not contain NaN.
    */
   SignedDistanceToPoint(GeometryId id_G_in, const Vector3<T>& p_GN_in,
@@ -76,14 +76,8 @@ struct SignedDistanceToPoint{
       point Q, expressed in world frame W. */
   Vector3<T> grad_W;
 
-  /**
-   * grad_W is not well defined everywhere. For example, when computing the
-   * distance from a point to a sphere, and the point coincides with the center
-   * of the sphere, grad_W is not well defined. When grad_W is not well defined,
-   * and we instantiate SignedDistanceToPoint<T> with T being an AutoDiffScalar
-   * (like AutoDiffXd), the gradient of the query result is not well defined
-   * either, so the user should use the gradient in p_GN, distance and grad_W
-   * with caution.
+  /** Whether grad_W is well defined.
+   * Ref to the constructor SignedDistanceToPoint() for an explanation.
    */
   bool is_grad_W_well_defined;
 };

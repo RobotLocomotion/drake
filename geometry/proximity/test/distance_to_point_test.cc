@@ -154,8 +154,8 @@ class PointShapeAutoDiffSignedDistanceTester {
       if (!p_WQ_derivative_compare) {
         if (error) failure << "\n";
         error = true;
-        failure << "p_WQ doesn't have the same gradient as p_WN + distance * "
-                   "grad_W:\n"
+        failure << "Gradient of p_WQ does not equal to gradient of (p_WN + "
+                   "distance * grad_W):\n"
                 << p_WQ_derivative_compare.message();
       }
     }
