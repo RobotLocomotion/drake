@@ -466,14 +466,10 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "monte_carlo_test",
-    data = ["//examples/pendulum:models"],
     deps = [
         ":analysis_py",
-        ":controllers_py",
-        ":framework_py",
         ":primitives_py",
         "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/multibody",
     ],
 )
 
