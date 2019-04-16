@@ -514,7 +514,6 @@ class RotationMatrix {
   /// - [Dahleh] "Lectures on Dynamic Systems and Controls: Electrical
   /// Engineering and Computer Science, Massachusetts Institute of Technology"
   /// https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-241j-dynamic-systems-and-control-spring-2011/readings/MIT6_241JS11_chap04.pdf
-  //  @internal This function's name is referenced in Doxygen documentation.
   static RotationMatrix<T>
   ProjectToRotationMatrix(const Matrix3<T>& M, T* quality_factor = nullptr) {
     const Matrix3<T> M_orthonormalized =
@@ -792,7 +791,7 @@ class RotationMatrix {
   // (unlikely) that the calling method determines that normalization is
   // unwanted, the calling method should just past `two_over_norm_squared = 2`.
   // @internal The cost of Eigen's quaternion.toRotationMatrix() is 12 adds and
-  // 12 multiplies.  This function also costs 12 adds and 12 multiplies, but
+  // 12 multiplies.  This method also costs 12 adds and 12 multiplies, but
   // has a provision for an efficient algorithm for always calculating an
   // orthogonal rotation matrix (whereas Eigen's algorithm does not).
   static Matrix3<T> QuaternionToRotationMatrix(
@@ -850,7 +849,7 @@ using RotationMatrixd = RotationMatrix<double>;
 /// @return Rotation angle θ of the projected matrix, angle_lb <= θ <= angle_ub
 /// @throws std::runtime_error if M is not a 3 x 3 matrix or if
 ///         axis is the zero vector or if angle_lb > angle_ub.
-/// @note This function is useful for reconstructing a rotation matrix for a
+/// @note This method is useful for reconstructing a rotation matrix for a
 /// revolute joint with joint limits.
 /// @note This can be formulated as an optimization problem
 /// <pre>

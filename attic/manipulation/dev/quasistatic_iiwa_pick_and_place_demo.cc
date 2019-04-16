@@ -285,7 +285,7 @@ int do_main() {
   x0.SetAtIndex(15, 0.055);            // right gripper
 
   simulator.set_target_realtime_rate(0);
-  simulator.get_mutable_integrator()->set_maximum_step_size(h);
+  simulator.get_mutable_integrator().set_maximum_step_size(h);
   simulator.Initialize();
   simulator.AdvanceTo(kTimes.back());
 

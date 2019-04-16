@@ -580,6 +580,14 @@ PYBIND11_MODULE(mathematicalprogram, m) {
               &MathematicalProgram::AddL2NormCost),
           py::arg("A"), py::arg("b"), py::arg("vars"),
           doc.MathematicalProgram.AddL2NormCost.doc)
+      .def("AddMaximizeLogDeterminantSymmetricMatrixCost",
+          static_cast<void (MathematicalProgram::*)(
+              const Eigen::Ref<const MatrixX<symbolic::Expression>>& X)>(
+              &MathematicalProgram::
+                  AddMaximizeLogDeterminantSymmetricMatrixCost),
+          py::arg("X"),
+          doc.MathematicalProgram.AddMaximizeLogDeterminantSymmetricMatrixCost
+              .doc)
       .def("AddSosConstraint",
           static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               const Polynomial&, const Eigen::Ref<const VectorX<Monomial>>&)>(

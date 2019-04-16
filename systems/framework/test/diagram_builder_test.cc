@@ -36,10 +36,11 @@ template <typename T>
 class ConstAndEcho final : public LeafSystem<T> {
  public:
   ConstAndEcho() : LeafSystem<T>(SystemTypeTag<systems::ConstAndEcho>{}) {
-    this->DeclareInputPort(kVectorValued, 1);
-    this->DeclareVectorOutputPort(BasicVector<T>(1), &ConstAndEcho::CalcEcho);
-    this->DeclareVectorOutputPort(BasicVector<T>(1),
-                                  &ConstAndEcho::CalcConstant);
+    this->DeclareInputPort("input", kVectorValued, 1);
+    this->DeclareVectorOutputPort(
+        "echo", BasicVector<T>(1), &ConstAndEcho::CalcEcho);
+    this->DeclareVectorOutputPort(
+        "constant", BasicVector<T>(1), &ConstAndEcho::CalcConstant);
   }
 
   // Scalar-converting copy constructor.
@@ -73,14 +74,24 @@ class ConstAndEcho final : public LeafSystem<T> {
 GTEST_TEST(DiagramBuilderTest, AlgebraicLoop) {
   DiagramBuilder<double> builder;
   auto adder = builder.AddSystem<Adder>(1 /* inputs */, 1 /* size */);
-  const std::string name{"adder"};
-  adder->set_name(name);
+  auto pass = builder.AddSystem<PassThrough>(1 /* size */);
+  adder->set_name("adder");
+  pass->set_name("pass");
   // Connect the output port to the input port.
-  builder.Connect(adder->get_output_port(), adder->get_input_port(0));
-  DRAKE_EXPECT_THROWS_MESSAGE(builder.Build(), std::runtime_error,
-                             "Algebraic loop detected in DiagramBuilder:\n"
-                             "\\s+" + name + ":Out\\(0\\).*\n."
-                             "\\s*" + name + ":In\\(0\\)");
+  builder.Connect(adder->get_output_port(), pass->get_input_port());
+  builder.Connect(pass->get_output_port(), adder->get_input_port(0));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.Build(), std::runtime_error,
+      fmt::format(
+          "Reported algebraic loop detected in DiagramBuilder:\n"
+          "  InputPort.0. .u0. of {adder} is direct-feedthrough to\n"
+          "  OutputPort.0. .sum. of {adder} is connected to\n"
+          "  InputPort.0. .u0. of {pass} is direct-feedthrough to\n"
+          "  OutputPort.0. .y0. of {pass} is connected to\n"
+          "  InputPort.0. .u0. of {adder}\n"
+          ".*conservatively reported.*",
+          fmt::arg("adder", "System ::adder .Adder<double>."),
+          fmt::arg("pass", "System ::pass .PassThrough<double>.")));
 }
 
 // Tests that a cycle which is not an algebraic loop is recognized as valid.
@@ -134,10 +145,15 @@ GTEST_TEST(DiagramBuilderTest, CycleAtLoopPortLevel) {
   const std::string name{"echo"};
   echo->set_name(name);
   builder.Connect(echo->get_echo_output_port(), echo->get_vec_input_port());
-  DRAKE_EXPECT_THROWS_MESSAGE(builder.Build(), std::runtime_error,
-                             "Algebraic loop detected in DiagramBuilder:\n"
-                             "\\s+" + name + ":Out\\(0\\).*\n."
-                             "\\s*" + name + ":In\\(0\\)");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      builder.Build(), std::runtime_error,
+      fmt::format(
+          "Reported algebraic loop detected in DiagramBuilder:\n"
+          "  InputPort.0. .input. of {sys} is direct-feedthrough to\n"
+          "  OutputPort.0. .echo. of {sys} is connected to\n"
+          "  InputPort.0. .input. of {sys}\n"
+          ".*conservatively reported.*",
+          fmt::arg("sys", "System ::echo .ConstAndEcho<double>.")));
 }
 
 // Tests that a cycle which is not an algebraic loop is recognized as valid.

@@ -90,8 +90,8 @@ VectorX<double> SimulatePlantToRest::Run(const VectorX<double>& q_ik,
 
     simulator.reset_integrator<systems::RungeKutta2Integrator<double>>(
         *diagram_, 0.0001, &simulator.get_mutable_context());
-    simulator.get_mutable_integrator()->set_maximum_step_size(max_step_size);
-    simulator.get_mutable_integrator()->set_fixed_step_mode(true);
+    simulator.get_mutable_integrator().set_maximum_step_size(max_step_size);
+    simulator.get_mutable_integrator().set_fixed_step_mode(true);
     step_time = 1.0;
     step_delta = 0.1;
     do {

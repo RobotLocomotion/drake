@@ -166,8 +166,8 @@ TEST_F(BouncingBallTest, Simulate) {
   simulator.reset_integrator<systems::RungeKutta3Integrator<double>>(*dut_,
       &simulator.get_mutable_context());
   simulator.get_mutable_context().SetAccuracy(accuracy);
-  simulator.get_mutable_integrator()->request_initial_step_size_target(1e-3);
-  simulator.get_mutable_integrator()->set_target_accuracy(accuracy);
+  simulator.get_mutable_integrator().request_initial_step_size_target(1e-3);
+  simulator.get_mutable_integrator().set_target_accuracy(accuracy);
   simulator.Initialize();
 
   // Set the initial state for the bouncing ball.

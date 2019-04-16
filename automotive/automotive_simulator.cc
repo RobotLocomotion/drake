@@ -730,7 +730,7 @@ void AutomotiveSimulator<T>::Start(
   const double max_step_size = 0.01;
   simulator_->template reset_integrator<RungeKutta2Integrator<T>>(
       *diagram_, max_step_size, &simulator_->get_mutable_context());
-  simulator_->get_mutable_integrator()->set_fixed_step_mode(true);
+  simulator_->get_mutable_integrator().set_fixed_step_mode(true);
   simulator_->Initialize();
 }
 

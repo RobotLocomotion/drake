@@ -136,8 +136,8 @@ int main(int argc, char* argv[]) {
     simulator.reset_integrator<RungeKutta3Integrator<double>>(*diagram,
                                                               &mut_context);
   }
-  simulator.get_mutable_integrator()->set_target_accuracy(FLAGS_accuracy);
-  simulator.get_mutable_integrator()->set_maximum_step_size(FLAGS_dt);
+  simulator.get_mutable_integrator().set_target_accuracy(FLAGS_accuracy);
+  simulator.get_mutable_integrator().set_maximum_step_size(FLAGS_dt);
 
   // Start simulating.
   simulator.set_target_realtime_rate(1.0);
