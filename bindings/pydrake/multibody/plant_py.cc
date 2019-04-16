@@ -431,6 +431,13 @@ PYBIND11_MODULE(plant, m) {
             },
             py::arg("name"), py::arg("model_instance") = nullopt,
             py_reference_internal, doc.MultibodyPlant.GetJointByName.doc)
+        .def("GetMutableJointByName",
+            [](Class* self, const string& name,
+                optional<ModelInstanceIndex> model_instance) -> auto& {
+              return self->GetMutableJointByName(name, model_instance);
+            },
+            py::arg("name"), py::arg("model_instance") = nullopt,
+            py_reference_internal, doc.MultibodyPlant.GetJointByName.doc)
         .def("GetJointActuatorByName",
             overload_cast_explicit<const JointActuator<T>&, const string&>(
                 &Class::GetJointActuatorByName),

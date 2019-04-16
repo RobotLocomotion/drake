@@ -114,6 +114,7 @@ drake_pybind_library(
     cc_deps = [
         ":systems_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:wrap_pybind",
     ],
     cc_srcs = ["analysis_py.cc"],
     package_info = PACKAGE_INFO,

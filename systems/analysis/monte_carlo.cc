@@ -35,6 +35,9 @@ std::vector<RandomSimulationResult> MonteCarloSimulation(
 
   // TODO(russt): Support running these in multiple threads, as they are
   // trivially parallelizable.
+  // TODO(gizatt): I think the generator needs to be explicitely deepcopied --
+  // currently, the simulation result generator snapshots all point to the same
+  // generator.
   for (int i = 0; i < num_samples; i++) {
     RandomSimulationResult result(*generator);
     result.output =

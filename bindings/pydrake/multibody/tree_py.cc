@@ -190,7 +190,9 @@ PYBIND11_MODULE(tree, m) {
             py::arg("context"), doc.PrismaticJoint.get_translation_rate.doc)
         .def("set_translation_rate", &Class::set_translation_rate,
             py::arg("context"), py::arg("translation_dot"),
-            doc.PrismaticJoint.set_translation_rate.doc);
+            doc.PrismaticJoint.set_translation_rate.doc)
+        .def("set_random_translation_distribution", &Class::set_random_translation_distribution,
+            py::arg("translation"), doc.PrismaticJoint.set_random_translation_distribution.doc);
   }
 
   {
@@ -205,7 +207,9 @@ PYBIND11_MODULE(tree, m) {
         .def("get_angle", &Class::get_angle, py::arg("context"),
             doc.RevoluteJoint.get_angle.doc)
         .def("set_angle", &Class::set_angle, py::arg("context"),
-            py::arg("angle"), doc.RevoluteJoint.set_angle.doc);
+            py::arg("angle"), doc.RevoluteJoint.set_angle.doc)
+        .def("set_random_angle_distribution", &Class::set_random_angle_distribution,
+            py::arg("angle"), doc.RevoluteJoint.set_random_angle_distribution.doc);
   }
 
   {
