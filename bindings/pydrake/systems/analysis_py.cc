@@ -122,8 +122,8 @@ PYBIND11_MODULE(analysis, m) {
               return analysis::RandomSimulation(
                   make_simulator, output, final_time, generator);
             }),
-        py_reference_internal, py::arg("make_simulator"), py::arg("output"),
-        py::arg("final_time"), py::arg("generator"), doc.RandomSimulation.doc);
+        py::arg("make_simulator"), py::arg("output"), py::arg("final_time"),
+        py::arg("generator"), doc.RandomSimulation.doc);
 
     py::class_<analysis::RandomSimulationResult>(
         m, "RandomSimulationResult", doc.RandomSimulationResult.doc)
@@ -142,8 +142,8 @@ PYBIND11_MODULE(analysis, m) {
               return analysis::MonteCarloSimulation(
                   make_simulator, output, final_time, num_samples, generator);
             }),
-        py_reference_internal, py::arg("make_simulator"), py::arg("output"),
-        py::arg("final_time"), py::arg("num_samples"), py::arg("generator"),
+        py::arg("make_simulator"), py::arg("output"), py::arg("final_time"),
+        py::arg("num_samples"), py::arg("generator"),
         doc.MonteCarloSimulation.doc);
   }
 }

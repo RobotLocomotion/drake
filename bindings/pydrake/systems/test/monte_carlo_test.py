@@ -13,7 +13,6 @@ from pydrake.common import (
     RandomGenerator,
     FindResourceOrThrow
 )
-from pydrake.examples.pendulum import PendulumPlant
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.tree import UniformGravityFieldElement
