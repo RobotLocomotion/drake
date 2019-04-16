@@ -1302,7 +1302,7 @@ Simulator<T>::IntegrateContinuousState(
 
       // Skip witness functions that have no associated event (i.e., skip
       // witness functions whose sole purpose is to insert a break in the
-      // integration of cotninuous state).
+      // integration of continuous state).
       if (!fn->get_event())
         continue;
 
