@@ -11,11 +11,11 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-const std::string kRevoluteType = "revolute";
-const std::string kPrismaticType = "prismatic";
+const char kRevoluteType[] = "revolute";
+const char kPrismaticType[] = "prismatic";
 
 // Arbitrary world name for testing.
-const std::string kWorldLinkName = "DefaultWorldLinkName";
+const char kWorldLinkName[] = "DefaultWorldLinkName";
 
 // Arbitrary non-zero world model instance for testing.
 const ModelInstanceIndex kWorldModelInstance(999);

@@ -3,6 +3,7 @@
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
@@ -17,7 +18,7 @@ using LinkIndex = TypeSafeIndex<class LinkTag>;
 /** Type used to identify joint types. */
 using JointTypeIndex = TypeSafeIndex<class JointTypeTag>;
 
-/** Defines a multibody graph consisting of links interconnected by joints. 
+/** Defines a multibody graph consisting of links interconnected by joints.
 The graph is defined by a sequence of calls to AddLink() and AddJoint(). Anytime
 during the lifetime of the graph, a user can ask graph specific questions such
 as how links are connected, by which joints or even perform more complex queries
@@ -39,16 +40,16 @@ class MultibodyGraph {
     within their model instance must be unique.
   @param[in] model_instance
     The model instance to which this link belongs, see @ref model_instance.
-  @returns The unique LinkIndex for the added joint in the graph. */  
+  @returns The unique LinkIndex for the added joint in the graph. */
   LinkIndex AddLink(const std::string& name, ModelInstanceIndex model_instance);
 
-  /** Add a new Joint to the graph. 
+  /** Add a new Joint to the graph.
   @param[in] name
     The unique name of the new Joint in the particular `model_instance`. Several
     joints can have the same name within a %MultibodyGraph however, their name
     within their model instance must be unique.
   @param[in] model_instance
-    The model instance to which this joint belongs, see @ref model_instance. 
+    The model instance to which this joint belongs, see @ref model_instance.
   @param[in] type
     A string designating the type of this joint, such as "revolute" or
     "ball". This must be chosen from the set of joint types previously
@@ -86,7 +87,7 @@ class MultibodyGraph {
   static JointTypeIndex weld_type_index() { return JointTypeIndex(0); }
 
   /** Returns the unique name reserved to identify weld joints (always "weld").
-  */
+   */
   static std::string weld_type_name() { return "weld"; }
 
   /** Register a joint type by name.
@@ -107,7 +108,7 @@ class MultibodyGraph {
   int num_joint_types() const;
 
   /** Returns the number of links, including all added links, and the world
-  link. 
+  link.
   @see AddLink(), world_link_index(), world_link_name(). */
   int num_links() const { return static_cast<int>(links_.size()); }
 
@@ -158,7 +159,7 @@ class MultibodyGraph {
   // @throws std::exception if `model_instance` is not a valid index.
   // TODO(amcastro-tri): consider making public.
   bool HasLinkNamed(const std::string& name,
-                    ModelInstanceIndex model_instance) const;  
+                    ModelInstanceIndex model_instance) const;
 
   // @returns `true` if a joint named `name` was added to `model_instance`.
   // @see AddRigidBody().
@@ -170,7 +171,7 @@ class MultibodyGraph {
   // Finds the assigned index for a joint type from the type name. Returns an
   // invalid index if `joint_type_name` was not previously registered with a
   // call to RegisterJointType().
-  JointTypeIndex GetJointTypeIndex(const std::string& joint_type_name) const;                   
+  JointTypeIndex GetJointTypeIndex(const std::string& joint_type_name) const;
 
   Link& get_mutable_link(LinkIndex link_index) { return links_[link_index]; }
 
@@ -239,9 +240,7 @@ class MultibodyGraph::Link {
       : index_(index), name_(name), model_instance_(model_instance) {}
 
   // Notes that this link is connected by `joint`.
-  void add_joint(JointIndex joint) {
-    joints_.push_back(joint);
-  }
+  void add_joint(JointIndex joint) { joints_.push_back(joint); }
 
   LinkIndex index_;
   std::string name_;

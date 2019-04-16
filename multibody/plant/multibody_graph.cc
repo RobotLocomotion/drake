@@ -9,7 +9,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-MultibodyGraph::MultibodyGraph() { 
+MultibodyGraph::MultibodyGraph() {
   RegisterJointType(weld_type_name());
   // Verify invariant promised to users in the documentation.
   DRAKE_DEMAND(joint_type_name_to_index_[weld_type_name()] ==
@@ -221,7 +221,7 @@ void MultibodyGraph::FindIslandsOfWeldedLinksRecurse(
     if (visited->at(sibling_index)) continue;
 
     const Link& sibling = get_link(sibling_index);
-    visited->at(sibling_index) = true;    
+    visited->at(sibling_index) = true;
     if (joint.type_index() == weld_type_index()) {
       // Welded to parent_link, add it to parent_island.
       parent_island->insert(sibling_index);

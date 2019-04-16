@@ -3688,7 +3688,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       instance_generalized_contact_forces_output_ports_;
 
   // A graph storing the topological information of the model.
-  internal::MultibodyGraph multibody_graph_;    
+  internal::MultibodyGraph multibody_graph_;
 
   // If the plant is modeled as a discrete system with periodic updates,
   // time_step_ corresponds to the period of those updates. Otherwise, if the
