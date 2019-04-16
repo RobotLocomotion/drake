@@ -49,8 +49,26 @@ drake_py_binary(
     ],
 )
 
+drake_py_binary(
+    name = "pendulum_lqr_monte_carlo_analysis",
+    srcs = ["pendulum_lqr_monte_carlo_analysis.py"],
+    add_test_rule = 1,
+    data = ["//examples/pendulum:models"],
+    test_rule_args = [
+        "--num_samples=10",
+        "--torque_limit=2.0",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":module_py",
+        "//bindings/pydrake/multibody",
+        "//bindings/pydrake/systems",
+    ],
+)
+
 PY_LIBRARIES = [
     ":cart_pole_passive_simulation",
+    ":pendulum_lqr_monte_carlo_analysis",
 ]
 
 # Package roll-up (for Bazel dependencies).
