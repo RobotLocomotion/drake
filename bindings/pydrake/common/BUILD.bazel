@@ -39,7 +39,10 @@ PACKAGE_INFO = get_pybind_package_info("//bindings")
 # `libdrake.so`.
 drake_pybind_library(
     name = "_init_py",
-    cc_deps = ["//bindings/pydrake:documentation_pybind"],
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
+    ],
     cc_so_name = "_module_py",
     cc_srcs = ["module_py.cc"],
     package_info = PACKAGE_INFO,

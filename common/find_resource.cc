@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
 #include <spruce.hh>
 
 #include "drake/common/drake_marker.h"
@@ -270,6 +271,19 @@ std::vector<string> GetResourceSearchPaths() {
 void AddResourceSearchPath(string search_path) {
   // Throw an error if path is relative.
   DRAKE_THROW_UNLESS(!IsRelativePath(search_path));
+
+  // When the environment variable is aready in play, this function has no
+  // effect.
+  if (getenv_optional(kDrakeResourceRootEnvironmentVariableName)) {
+    throw std::runtime_error(fmt::format(
+        "Cannot AddResourceSearchPath when {} is already set.",
+        kDrakeResourceRootEnvironmentVariableName));
+  }
+
+  // Set the environment variable so that `search_path` will be considered.
+  ::setenv(kDrakeResourceRootEnvironmentVariableName, search_path.c_str(), 1);
+
+  // Add it to the collection so that GetResourceSearchPaths still works.
   GetMutableResourceSearchPaths().push_back(std::move(search_path));
 }
 
@@ -303,13 +317,6 @@ Result FindResource(string resource_path) {
   // win.  TODO(jwnimmer-tri) Should we split on colons, making this a PATH?
   candidate_dirs.emplace_back(AppendDrakeTo(getenv_optional(
       kDrakeResourceRootEnvironmentVariableName)));
-
-  // (2) Add the list of paths given programmatically. Paths are added only
-  // if the sentinel file can be found.
-  for (const auto& search_path : GetMutableResourceSearchPaths()) {
-    spruce::path candidate_dir(*AppendDrakeTo(search_path));
-    candidate_dirs.emplace_back(CheckCandidateDir(candidate_dir));
-  }
 
   // (3) Find where `libdrake_marker.so` is, and add search path that
   // corresponds to resource folder in install tree based on

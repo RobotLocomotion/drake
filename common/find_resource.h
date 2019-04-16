@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 
 namespace drake {
@@ -72,15 +73,18 @@ class FindResourceResult {
   optional<std::string> error_message_;
 };
 
-/// Adds a path in which resources are searched in a persistent variable. Paths
-/// are accumulated each time this function is called. It is searched after the
-/// path given by the environment variable but before the path that can be
-/// found with the sentinel `.drake-resource-sentinel`. This can be used to
-/// find data in installed distributions of drake (or in `pydrake`).
+/// (Deprecated.)  Sets the kDrakeResourceRootEnvironmentVariableName
+/// environment variable to @p root_directory.
+/// @throws std::runtime_error if the environment variable is already set.
 /// @throws std::runtime_error if the given path is not absolute.
+DRAKE_DEPRECATED("2019-08-01",
+    "Call setenv(kDrakeResourceRootEnvironmentVariableName) instead.")
 void AddResourceSearchPath(std::string root_directory);
 
-/// Gets current root directory value from a persistent variable.
+/// Returns a single-element vector containing the last root_directory passed
+/// to AddResourceSearchPath() if any; otherwise, returns an empty vector.
+DRAKE_DEPRECATED("2019-08-01",
+    "Call getenv(kDrakeResourceRootEnvironmentVariableName) instead.")
 std::vector<std::string> GetResourceSearchPaths();
 
 /// Attempts to locate a Drake resource named by the given @p resource_path.
@@ -93,9 +97,9 @@ std::vector<std::string> GetResourceSearchPaths();
 /// The search scans for the resource in the following places and in
 /// the following order:
 ///
-/// 1. In the DRAKE_RESOURCE_ROOT environment variable
-/// 2. In the directories specified by `AddResourceSearchPath()` and
-/// 3. In the drake source workspace.
+/// 1. In the DRAKE_RESOURCE_ROOT environment variable.
+/// 2. In the drake source workspace.
+/// 3. In the drake installed workspace.
 ///
 /// If all of these are unavailable, or do not have the resource, then it will
 /// return a failed result.

@@ -92,6 +92,8 @@ GTEST_TEST(FindResourceTest, FoundDeclaredData) {
   EXPECT_EQ(FindResourceOrThrow(relpath), absolute_path);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Check that adding a relative resource path fails on purpose.
 GTEST_TEST(FindResourceTest, RelativeResourcePathShouldFail) {
   // Test `AddResourceSearchPath()` with a relative path. It is expected to
@@ -99,6 +101,7 @@ GTEST_TEST(FindResourceTest, RelativeResourcePathShouldFail) {
   const std::string test_directory = "find_resource_test_scratch";
   EXPECT_THROW(AddResourceSearchPath(test_directory), std::runtime_error);
 }
+#pragma GCC diagnostic pop
 
 optional<std::string> GetEnv(const std::string& name) {
   const char* result = ::getenv(name.c_str());
@@ -179,6 +182,8 @@ void Touch(const std::string& filename) {
   std::ofstream(filename.c_str(), std::ios::out).close();
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // NOTE: This test modifies the result of calls to GetDrakePath() and variants.
 // However, it does *not* clean up the modifications. As such, it must run
 // *last*. Relying on execution order being alphabetical, we make sure it is
@@ -199,6 +204,7 @@ GTEST_TEST(ZZZ_FindResourceTest, ZZZ_AlternativeDirectory) {
   EXPECT_EQ(GetResourceSearchPaths()[0], test_directory);
   EXPECT_NO_THROW(drake::FindResourceOrThrow(candidate_filename));
 }
+#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace drake
