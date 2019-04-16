@@ -533,8 +533,8 @@ TEST_F(SymbolicExpressionMatrixTest, Inverse) {
       {var_w_, 3.0},
       {var_z_, 4.0},
   };
-  CompareMatrices(Substitute(M.inverse(), subst),
-                  Substitute(M, subst).inverse(), 1e-10);
+  EXPECT_TRUE(CompareMatrices(Substitute(M.inverse(), subst),
+                              Substitute(M, subst).inverse(), 1e-10));
 }
 
 }  // namespace
