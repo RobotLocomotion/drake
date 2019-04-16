@@ -47,6 +47,9 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
 
   const MultibodyPlant<AutoDiffXd>& plant() const { return *plant_; }
 
+  /** Getter for the mutable context */
+  systems::Context<AutoDiffXd>* get_mutable_context() const { return context_; }
+
  protected:
   /**
    * Each derived class should call this constructor.
@@ -92,8 +95,6 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
     return x.tail(num_lambda_);
   }
 
-  /** Getter for the mutable context */
-  systems::Context<AutoDiffXd>* get_mutable_context() const { return context_; }
 
  private:
   const MultibodyPlant<AutoDiffXd>* plant_;
