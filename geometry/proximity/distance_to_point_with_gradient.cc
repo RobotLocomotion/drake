@@ -33,7 +33,7 @@ SignedDistanceToPointWithGradient DistanceToPointWithGradient::ComputeDistance(
       math::autoDiffToGradientMatrix(p_GN_autodiff), distance_autodiff.value(),
       distance_autodiff.derivatives().transpose(),
       math::autoDiffToValueMatrix(grad_W_autodiff),
-      math::autoDiffToGradientMatrix(grad_W_autodiff));
+      math::autoDiffToGradientMatrix(grad_W_autodiff), is_grad_W_well_defined);
 }
 
 SignedDistanceToPointWithGradient DistanceToPointWithGradient::operator()(

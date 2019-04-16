@@ -22,14 +22,16 @@ struct SignedDistanceToPointWithGradient {
                                     double distance_in,
                                     Eigen::RowVector3d ddistance_dp_GQ_in,
                                     Eigen::Vector3d grad_W_in,
-                                    Eigen::Matrix3d dgrad_W_dp_GQ_in)
+                                    Eigen::Matrix3d dgrad_W_dp_GQ_in,
+                                    bool is_grad_W_well_defined_in)
       : id_G(std::move(id_G_in)),
         p_GN(std::move(p_GN_in)),
         dp_GN_dp_GQ(std::move(dp_GN_dp_GQ_in)),
         distance(distance_in),
         ddistance_dp_GQ(std::move(ddistance_dp_GQ_in)),
         grad_W(std::move(grad_W_in)),
-        dgrad_W_dp_GQ(std::move(dgrad_W_dp_GQ_in)) {}
+        dgrad_W_dp_GQ(std::move(dgrad_W_dp_GQ_in)),
+        is_grad_W_well_defined{is_grad_W_well_defined_in} {}
 
   /**
    * Same as SignedDistanceToPoint::id_G.
@@ -60,6 +62,9 @@ struct SignedDistanceToPointWithGradient {
   Eigen::Vector3d grad_W;
   /** The derivative of grad_W w.r.t p_GQ. */
   Eigen::Matrix3d dgrad_W_dp_GQ;
+
+  /** Same as SignedDistanceToPoint::is_grad_W_well_defined. */
+  bool is_grad_W_well_defined;
 };
 }  // namespace geometry
 }  // namespace drake
