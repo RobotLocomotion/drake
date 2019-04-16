@@ -194,6 +194,20 @@ class TestMath(unittest.TestCase):
         self.assertTrue(np.allclose(rpy.ToQuaternion().wxyz(), q_I.wxyz()))
         R = rpy.ToRotationMatrix().matrix()
         self.assertTrue(np.allclose(R, np.eye(3)))
+        # - Converting changes in orientation
+        self.assertTrue(np.allclose(rpy.CalcRotationMatrixDt([0, 0, 0]),
+                                    np.zeros((3, 3))))
+        self.assertTrue(np.allclose(
+            rpy.CalcAngularVelocityInParentFromRpyDt([0, 0, 0]), [0, 0, 0]))
+        self.assertTrue(np.allclose(
+            rpy.CalcAngularVelocityInChildFromRpyDt([0, 0, 0]), [0, 0, 0]))
+        self.assertTrue(np.allclose(
+            rpy.CalcRpyDtFromAngularVelocityInParent([0, 0, 0]), [0, 0, 0]))
+        self.assertTrue(np.allclose(
+            rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(
+                [0, 0, 0], [0, 0, 0]), [0, 0, 0]))
+        self.assertTrue(np.allclose(rpy.CalcRpyDDtFromAngularAccelInChild(
+            [0, 0, 0], [0, 0, 0]), [0, 0, 0]))
 
     def test_orthonormal_basis(self):
         R = mut.ComputeBasisFromAxis(axis_index=0, axis_W=[1, 0, 0])

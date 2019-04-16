@@ -188,7 +188,24 @@ PYBIND11_MODULE(math, m) {
         .def("yaw_angle", &Class::yaw_angle, cls_doc.yaw_angle.doc)
         .def("ToQuaternion", &Class::ToQuaternion, cls_doc.ToQuaternion.doc)
         .def("ToRotationMatrix", &Class::ToRotationMatrix,
-            cls_doc.ToRotationMatrix.doc);
+            cls_doc.ToRotationMatrix.doc)
+        .def("CalcRotationMatrixDt", &Class::CalcRotationMatrixDt,
+            cls_doc.CalcRotationMatrixDt.doc)
+        .def("CalcAngularVelocityInParentFromRpyDt",
+            &Class::CalcAngularVelocityInParentFromRpyDt,
+            cls_doc.CalcAngularVelocityInParentFromRpyDt.doc)
+        .def("CalcAngularVelocityInChildFromRpyDt",
+            &Class::CalcAngularVelocityInChildFromRpyDt,
+            cls_doc.CalcAngularVelocityInChildFromRpyDt.doc)
+        .def("CalcRpyDtFromAngularVelocityInParent",
+            &Class::CalcRpyDtFromAngularVelocityInParent,
+            cls_doc.CalcRpyDtFromAngularVelocityInParent.doc)
+        .def("CalcRpyDDtFromRpyDtAndAngularAccelInParent",
+            &Class::CalcRpyDDtFromRpyDtAndAngularAccelInParent,
+            cls_doc.CalcRpyDDtFromRpyDtAndAngularAccelInParent.doc)
+        .def("CalcRpyDDtFromAngularAccelInChild",
+            &Class::CalcRpyDDtFromAngularAccelInChild,
+            cls_doc.CalcRpyDDtFromAngularAccelInChild.doc);
     DefCopyAndDeepCopy(&cls);
   }
 
