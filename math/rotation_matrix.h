@@ -555,27 +555,27 @@ class RotationMatrix {
 
     const T trace = M.trace();
 
-    using namespace drake::symbolic::cond_literals;  // NOLINT
-    ""_mutating_only(&w, &x, &y, &z) =
-    ""_if (trace >= M(0, 0) && trace >= M(1, 1) && trace >= M(2, 2)) ^[&]() {  // NOLINT
+    using namespace drake::symbolic::branching_literals;  // NOLINT
+    lazy_assign(&w, &x, &y, &z) =
+    lazy_if (trace >= M(0, 0) && trace >= M(1, 1) && trace >= M(2, 2)) ^[&]() {  // NOLINT
       // This branch occurs if the trace is larger than any diagonal element.
       w = T(1) + trace;
       x = M(2, 1) - M(1, 2);
       y = M(0, 2) - M(2, 0);
       z = M(1, 0) - M(0, 1);
-    } || ""_elif (M(0, 0) >= M(1, 1) && M(0, 0) >= M(2, 2)) ^[&]() {  // NOLINT
+    } || lazy_elif (M(0, 0) >= M(1, 1) && M(0, 0) >= M(2, 2)) ^[&]() {  // NOLINT
       // This branch occurs if M(0,0) is largest among the diagonal elements.
       w = M(2, 1) - M(1, 2);
       x = T(1) - (trace - 2 * M(0, 0));
       y = M(0, 1) + M(1, 0);
       z = M(0, 2) + M(2, 0);
-    } || ""_elif (M(1, 1) >= M(2, 2)) ^[&]() {  // NOLINT
+    } || lazy_elif (M(1, 1) >= M(2, 2)) ^[&]() {  // NOLINT
       // This branch occurs if M(1,1) is largest among the diagonal elements.
       w = M(0, 2) - M(2, 0);
       x = M(0, 1) + M(1, 0);
       y = T(1) - (trace - 2 * M(1, 1));
       z = M(1, 2) + M(2, 1);
-    } || ""_else ^[&]() {
+    } || lazy_else ^[&]() {
       // This branch occurs if M(2,2) is largest among the diagonal elements.
       w = M(1, 0) - M(0, 1);
       x = M(0, 2) + M(2, 0);

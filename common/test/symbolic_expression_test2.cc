@@ -27,15 +27,16 @@ class SymbolicExpressionTest : public ::testing::Test {
 
 template <typename T>
 std::pair<T, T> min_max(const T& a, const T& b) {
-  using namespace drake::symbolic::cond_literals;
+  using namespace drake::symbolic::branching_literals;
   T less;
   T more;
-  ""_mutating_only(&less, &more) =
-  ""_if (a < b) ^[&]() {
+  lazy_assign(&less, &more) =
+  lazy_if (a < b) ^[&]() {
     less = a;
     more = b;
-  } || ""_elif (boolean<T>{false}) ^[&]() {
-  } || ""_else ^[&]() {
+  } || lazy_elif (boolean<T>{false}) ^[&]() {
+    // nothing
+  } || lazy_else ^[&]() {
     less = b;
     more = a;
   };
@@ -49,14 +50,14 @@ TEST_F(SymbolicExpressionTest, MinMax) {
 }
 
 GTEST_TEST(DoubleTest, ShortCircuit1) {
-  using namespace drake::symbolic::cond_literals;
+  using namespace drake::symbolic::branching_literals;
   using T = double;
   T a{0.0};
-  ""_mutating_only(&a) =
-  ""_if (a >= 0) ^[&]() {
+  lazy_assign(&a) =
+  lazy_if (a >= 0) ^[&]() {
     a -= 1.0;
     std::cout << "Side effect!\n";
-  } || ""_else ^[&]() {
+  } || lazy_else ^[&]() {
     // This will be skipped, because `a` was >= 0.
     DRAKE_DEMAND(false);
   };
@@ -69,12 +70,12 @@ bool NeverCalled() {
 }
 
 GTEST_TEST(DoubleTest, ShortCircuit2) {
-  using namespace drake::symbolic::cond_literals;
+  using namespace drake::symbolic::branching_literals;
   using T = double;
   T a{0.0};
-  ""_mutating_only(&a) =
-  ""_if (a >= 0) ^[&]() {
-  } || ""_elif (NeverCalled()) ^[&]() {
+  lazy_assign(&a) =
+  lazy_if (a >= 0) ^[&]() {
+  } || lazy_elif (NeverCalled()) ^[&]() {
     DRAKE_DEMAND(false);
   };
 }

@@ -12,7 +12,7 @@ using std::vector;
 // Overview / tutorial.
 // Stop using std::function entirely.
 // Short-circuit even T=Formula when there are no free vars, don't use vector.
-// Add mutating_only overload for &eigen_matrix, not just &scalar.
+// Add lazy_assign overload for &eigen_matrix, not just &scalar.
 // Silence the linter on `extra space in '""_if ('`.
 // Silence the linter on `using namespace ..._literals`.
 
@@ -47,8 +47,8 @@ struct LazyIf {
   Formula pred;
 };
 struct MakerOfIf {
-  ImmediateIf operator()(bool pred) { return ImmediateIf{pred}; }
-  LazyIf operator()(const Formula& pred) { return LazyIf{pred}; }
+  ImmediateIf operator()(bool pred) const { return ImmediateIf{pred}; }
+  LazyIf operator()(const Formula& pred) const { return LazyIf{pred}; }
 };
 template <typename Lambda>
 struct Else {
@@ -64,10 +64,10 @@ struct Else {
 };
 struct ElseKeyword {
   template <typename Lambda>
-  Else<Lambda> operator^(Lambda func) { return Else<Lambda>{std::move(func)}; }
+  Else<Lambda> operator^(Lambda func) const { return Else<Lambda>{std::move(func)}; }
 };
-struct MutatingOnly {
-  MutatingOnly(const std::initializer_list<Expression*>& mutables) {
+struct AssignCapture {
+  AssignCapture(const std::initializer_list<Expression*>& mutables) {
     for (Expression* ptr : mutables) {
       mutable_refs.emplace_back(std::ref(*ptr));
     }
@@ -97,27 +97,27 @@ struct MutatingOnly {
   }
   std::vector<std::reference_wrapper<Expression>> mutable_refs;
 };
-struct DummyMutatingOnly {
+struct DummyAssignCapture {
   void operator=(bool) {}
 };
-struct MakerOfMutatingOnly {
+struct MakerOfAssignCapture {
   template <typename T, typename... Args>
-  DummyMutatingOnly operator()(T*, Args...) {
-    return DummyMutatingOnly{};
+  DummyAssignCapture operator()(T*, Args...) const {
+    return DummyAssignCapture{};
   }
   template <typename... Args>
-  MutatingOnly operator()(Expression* arg, Args... args) {
-    return MutatingOnly{arg, args...};
+  AssignCapture operator()(Expression* arg, Args... args) const {
+    return AssignCapture{arg, args...};
   }
 };
 
 }  // namespace internal
-namespace cond_literals {
+namespace branching_literals {
 
-inline internal::MakerOfMutatingOnly operator ""_mutating_only(const char*, std::size_t) { return {}; }
-inline internal::MakerOfIf operator ""_if (const char*, std::size_t) { return {}; }
-inline internal::MakerOfIf operator ""_elif (const char*, std::size_t) { return {}; }
-inline internal::ElseKeyword operator ""_else (const char*, std::size_t) { return {}; }
+const internal::MakerOfAssignCapture lazy_assign;
+const internal::MakerOfIf lazy_if;
+const internal::MakerOfIf lazy_elif;
+const internal::ElseKeyword lazy_else;
 
 }  // namespace cond_literals
 }  // namespace symbolic
