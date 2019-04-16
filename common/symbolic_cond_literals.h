@@ -6,14 +6,12 @@
 
 #include "drake/common/symbolic.h"
 
-using std::vector;
-
 // TODOs:
 // Overview / tutorial.
 // Stop using std::function entirely.
 // Short-circuit even T=Formula when there are no free vars, don't use vector.
 // Add lazy_assign overload for &eigen_matrix, not just &scalar.
-// Silence the linter on `extra space in '""_if ('`.
+// Silence the linter on `extra space in 'lazy_if ('`.
 // Silence the linter on `using namespace ..._literals`.
 
 namespace drake {
@@ -38,17 +36,13 @@ struct ImmediateIf {
     if (pred) { func(); }
     return pred;
   }
-  bool pred;
+  bool pred{};
 };
 struct LazyIf {
   PredFuncList operator^(StdFunc&& func) {
     return PredFuncList(pred, std::move(func));
   }
   Formula pred;
-};
-struct MakerOfIf {
-  ImmediateIf operator()(bool pred) const { return ImmediateIf{pred}; }
-  LazyIf operator()(const Formula& pred) const { return LazyIf{pred}; }
 };
 template <typename Lambda>
 struct Else {
@@ -97,26 +91,44 @@ struct AssignCapture {
   }
   std::vector<std::reference_wrapper<Expression>> mutable_refs;
 };
+
+template <typename T>
 struct DummyAssignCapture {
+  DummyAssignCapture(const std::initializer_list<T*>& mutables) {}
   void operator=(bool) {}
 };
-struct MakerOfAssignCapture {
-  template <typename T, typename... Args>
-  DummyAssignCapture operator()(T*, Args...) const {
-    return DummyAssignCapture{};
-  }
-  template <typename... Args>
-  AssignCapture operator()(Expression* arg, Args... args) const {
-    return AssignCapture{arg, args...};
-  }
-};
+
+template <typename T, typename... Args>
+auto lazy_assign(T* arg, Args... args) {
+  using ResultType = std::conditional_t<
+      scalar_predicate<T>::is_bool,
+      internal::DummyAssignCapture<T>,
+      internal::AssignCapture>;
+  return ResultType{arg, args...};
+}
+
+ImmediateIf lazy_if(bool pred) {
+  return ImmediateIf{pred};
+}
+
+LazyIf lazy_if(const Formula& pred) {
+  return LazyIf{pred};
+}
+
+ImmediateIf lazy_elif(bool pred) {
+  return ImmediateIf{pred};
+}
+
+LazyIf lazy_elif(const Formula& pred) {
+  return LazyIf{pred};
+}
 
 }  // namespace internal
 namespace branching_literals {
 
-const internal::MakerOfAssignCapture lazy_assign;
-const internal::MakerOfIf lazy_if;
-const internal::MakerOfIf lazy_elif;
+using internal::lazy_assign;
+using internal::lazy_if;
+using internal::lazy_elif;
 const internal::ElseKeyword lazy_else;
 
 }  // namespace cond_literals
