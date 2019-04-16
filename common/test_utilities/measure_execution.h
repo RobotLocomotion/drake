@@ -6,13 +6,15 @@
 #include <chrono>
 #include <utility>
 
+#include "drake/common/drake_nodiscard.h"
+
 namespace drake {
 namespace common {
 namespace test {
 
 /// Returns the elapsed time of `func(args)`, in seconds.
 template <typename F, typename... Args>
-static double MeasureExecutionTime(F func, Args&&... args) {
+DRAKE_NODISCARD static double MeasureExecutionTime(F func, Args&&... args) {
   using clock = std::chrono::steady_clock;
 
   const clock::time_point start = clock::now();
