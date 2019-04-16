@@ -48,6 +48,8 @@ if __name__ == "__main__":
         "--torque_limit", type=float, default=1.0,
         help="Torque limit of the pendulum.")
     args = parser.parse_args()
+    if args.torque_limit < 0:
+        raise InvalidArgumentError("Please supply a nonnegative torque limit.")
 
     # Assemble the Pendulum plant.
     builder = DiagramBuilder()
@@ -66,13 +68,13 @@ if __name__ == "__main__":
     upright_theta = np.pi
     theta_expression = Variable(
         name="theta",
-        type=Variable.Type.RANDOM_UNIFORM)*2*np.pi
+        type=Variable.Type.RANDOM_UNIFORM)*2.*np.pi
     elbow.set_random_angle_distribution(theta_expression)
 
     # Set up LQR, with high position gains to ensure the
     # ROA is close to the theoretical torque-limited limit.
-    Q = np.identity(2)*10.
-    R = np.identity(1)
+    Q = np.diag([100., 1.])
+    R = np.identity(1)*0.01
     linearize_context = pendulum.CreateDefaultContext()
     linearize_context.SetContinuousState(
         np.array([upright_theta, 0.]))
@@ -114,9 +116,9 @@ if __name__ == "__main__":
             fixed point. '''
         state = diagram.GetSubsystemContext(
             pendulum, context).get_continuous_state_vector()
-        error = state.GetAtIndex(0) - upright_theta + np.pi
+        error = state.GetAtIndex(0) - upright_theta
         # Wrap error to [-pi, pi].
-        return (error) % (2*np.pi) - np.pi
+        return (error + np.pi) % (2*np.pi) - np.pi
 
     num_samples = args.num_samples
     results = MonteCarloSimulation(
@@ -133,8 +135,9 @@ if __name__ == "__main__":
     passing_ratio_var = 1.96 * np.sqrt(
         passing_ratio*(1. - passing_ratio)/len(results))
 
-    print("Monte-Carlo estimated performance across %d samples: %f +/- %f" % (
-        num_samples, passing_ratio, passing_ratio_var))
+    print("Monte-Carlo estimated performance across %d samples: "
+          "%.2f%% +/- %0.2f%%" %
+          (num_samples, passing_ratio*100, passing_ratio_var*100))
 
     # Analytically compute the best possible ROA, for comparison, but
     # calculating where the torque needed to lift the pendulum exceeds
@@ -143,8 +146,11 @@ if __name__ == "__main__":
     arm_mass = 1.0
     # torque = r x f = r * (m * 9.81 * sin(theta))
     # theta = asin(torque / (r * m))
-    roa_half_width = np.arcsin(torque_limit /
-                               (arm_radius * arm_mass * 9.81))
-    print("Max possible ROA: %f / 2*pi = %f%% of state space, which should"
+    if torque_limit <= (arm_radius * arm_mass * 9.81):
+        roa_half_width = np.arcsin(torque_limit /
+                                   (arm_radius * arm_mass * 9.81))
+    else:
+        roa_half_width = np.pi
+    print("Max possible ROA = %0.2f%% of state space, which should"
           " match with the above estimate." % (
-            roa_half_width*2, roa_half_width / np.pi))
+            100 * roa_half_width / np.pi))
