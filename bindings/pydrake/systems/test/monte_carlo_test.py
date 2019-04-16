@@ -76,10 +76,13 @@ class TestMonteCarlo(unittest.TestCase):
         self.assertEqual(result[0].output, 42.)
 
     def test_pendulum(self):
-        # Start a pendulum from a random configuration
-        # and use LQR to stabilize the upright fixed point.
-        builder = DiagramBuilder()
+        # This tests the Monte Carlo method's ability to estimate
+        # expected LQR performance balancing a torque-limited single
+        # pendulum by comparing the estimated performance across
+        # a number of samples to the analytical expected performance.
 
+        # Assemble the Pendulum plant.
+        builder = DiagramBuilder()
         pendulum = builder.AddSystem(MultibodyPlant())
         file_name = FindResourceOrThrow(
             "drake/examples/pendulum/Pendulum.urdf")
@@ -89,6 +92,8 @@ class TestMonteCarlo(unittest.TestCase):
                             pendulum.GetFrameByName("base_part2"))
         pendulum.Finalize()
 
+        # Set the pendulum to start at uniformly random
+        # positions (but always zero velocity).
         elbow = pendulum.GetMutableJointByName("theta")
         upright_theta = np.pi
         theta_expression = Variable(
@@ -96,13 +101,13 @@ class TestMonteCarlo(unittest.TestCase):
             type=Variable.Type.RANDOM_UNIFORM)*2*np.pi
         elbow.set_random_angle_distribution(theta_expression)
 
-        # LQR configuration
+        # Set up LQR, with high position gains to ensure the
+        # ROA is close to the theoretical torque-limited limit.
         Q = np.identity(2)*10.
         R = np.identity(1)
         linearize_context = pendulum.CreateDefaultContext()
         linearize_context.SetContinuousState(
             np.array([upright_theta, 0.]))
-
         actuation_port_index = pendulum.get_actuation_input_port().get_index()
         linearize_context.FixInputPort(
             actuation_port_index, np.zeros(1))
@@ -111,6 +116,7 @@ class TestMonteCarlo(unittest.TestCase):
                 pendulum, linearize_context, Q, R,
                 np.zeros(0), actuation_port_index))
 
+        # Apply the torque limit.
         torque_limit = 1.0
         torque_limiter = builder.AddSystem(
             Saturation(min_value=np.array([-torque_limit]),
@@ -122,16 +128,16 @@ class TestMonteCarlo(unittest.TestCase):
                         pendulum.get_actuation_input_port())
         builder.Connect(pendulum.get_output_port(0),
                         controller.get_input_port(0))
-
         diagram = builder.Build()
 
+        # Perform the Monte Carlo simulation.
         def make_simulator(generator):
             simulator = Simulator(diagram)
             simulator.set_target_realtime_rate(0)
             simulator.Initialize()
             return simulator
 
-        def calc_output(system, context):
+        def calc_wrapped_error(system, context):
             state = diagram.GetSubsystemContext(
                 pendulum, context).get_continuous_state_vector()
             error = state.GetAtIndex(0) - upright_theta + np.pi
@@ -139,13 +145,15 @@ class TestMonteCarlo(unittest.TestCase):
             return (error) % (2*np.pi) - np.pi
 
         results = MonteCarloSimulation(
-            make_simulator=make_simulator, output=calc_output,
+            make_simulator=make_simulator, output=calc_wrapped_error,
             final_time=1.0, num_samples=50, generator=RandomGenerator())
 
+        # The acceptably region is fairly large since some "stabilized" trials
+        # may still be oscillating around the fixed point. Failed examples are
+        # consistently much farther from the fixed point than this.
         binary_results = np.array([abs(res.output) < 0.05 for res in results])
         passing_ratio = float(sum(binary_results)) / len(results)
-        # Normal approximation of 95% confidence interval for binomial
-        # prob passing_ratio.
+        # 95% confidence interval for the passing ratio.
         passing_ratio_var = 1.96 * np.sqrt(
             passing_ratio*(1. - passing_ratio)/len(results))
 
