@@ -130,7 +130,7 @@ void ComputeDistanceToPrimitive(const fcl::Sphered& sphere,
   // Gradient vector expressed in G's frame.
   const Vector3<T> grad_G = *is_grad_W_well_defined ? p_GQ_G / dist_GQ : Gx;
 
-  // p_GN is the position of the witness point N in the geometry frame G.
+  // p_GN is the position of a witness point N in the geometry frame G.
   *p_GN = T(radius) * grad_G;
 
   // Do not compute distance as ∥p_GQ∥₂, because the gradient of ∥p_GQ∥₂ w.r.t.
@@ -305,7 +305,8 @@ class DistanceToPoint {
     const Vector3<T> p_WN = X_WG_ * p_GN;
     T distance = grad_W.dot(p_WQ_ - p_WN);
     // TODO(hongkai.dai): grad_W is not well defined when Q is on the top or
-    // bottom rims of the cylinder.
+    // bottom rims of the cylinder, or when it is inside the box and on the
+    // central axis, with the nearest feature being the barrel of the cylinder.
     return SignedDistanceToPoint<T>{geometry_id_, p_GN, distance, grad_W,
                                     true /* is_grad_W_well_defined */};
   }
