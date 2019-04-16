@@ -24,15 +24,16 @@ SignedDistanceToPointWithGradient DistanceToPointWithGradient::ComputeDistance(
   X_WG_autodiff.set_translation(X_WG_.translation().cast<AutoDiffd<3>>());
   Vector3<AutoDiffd<3>> p_GN_autodiff, grad_W_autodiff;
   AutoDiffd<3> distance_autodiff;
+  bool is_grad_W_well_defined{};
   point_distance::ComputeDistanceToPrimitive(
       primitive, X_WG_autodiff, p_WQ_autodiff, &p_GN_autodiff,
-      &distance_autodiff, &grad_W_autodiff);
+      &distance_autodiff, &grad_W_autodiff, &is_grad_W_well_defined);
   return SignedDistanceToPointWithGradient(
       geometry_id_, math::autoDiffToValueMatrix(p_GN_autodiff),
       math::autoDiffToGradientMatrix(p_GN_autodiff), distance_autodiff.value(),
       distance_autodiff.derivatives().transpose(),
       math::autoDiffToValueMatrix(grad_W_autodiff),
-      math::autoDiffToGradientMatrix(grad_W_autodiff));
+      math::autoDiffToGradientMatrix(grad_W_autodiff), is_grad_W_well_defined);
 }
 
 SignedDistanceToPointWithGradient DistanceToPointWithGradient::operator()(
