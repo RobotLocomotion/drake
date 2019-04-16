@@ -74,6 +74,9 @@ class TestMonteCarlo(unittest.TestCase):
         self.assertIsInstance(result[0], RandomSimulationResult)
         self.assertIsInstance(result[0].generator_snapshot, RandomGenerator)
         self.assertEqual(result[0].output, 42.)
+        for i in range(1, len(result)):
+            self.assertNotEqual(result[0].generator_snapshot,
+                                result[i].generator_snapshot)
 
     def test_pendulum(self):
         # This tests the Monte Carlo method's ability to estimate
