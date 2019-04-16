@@ -147,7 +147,7 @@ class PointShapeAutoDiffSignedDistanceTester {
               << p_WQ_val_compare.message();
     }
 
-    if (is_grad_W_well_defined) {
+    if (result.is_grad_W_well_defined) {
       auto p_WQ_derivative_compare = CompareMatrices(
           math::autoDiffToGradientMatrix(p_WQ_ad),
           math::autoDiffToGradientMatrix(p_WQ_ad_expected), tolerance_);

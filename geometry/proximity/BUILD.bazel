@@ -41,7 +41,6 @@ drake_cc_library(
         "//common:essential",
         "//geometry:geometry_ids",
         "//geometry/query_results:signed_distance_to_point",
-        "//math:autodiff",
         "//math:geometric_transform",
         "@fcl",
     ],
