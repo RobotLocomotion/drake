@@ -464,4 +464,19 @@ drake_py_unittest(
     ],
 )
 
+drake_py_unittest(
+    name = "monte_carlo_test",
+    data = [
+        "//examples/pendulum/Pendulum.urdf"
+    ]
+    deps = [
+        ":analysis_py",
+        ":framework_py",
+        ":primitives_py",
+        "//bindings/pydrake/multibody",
+        "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/examples:pendulum_py",
+    ],
+)
+
 add_lint_tests_pydrake()

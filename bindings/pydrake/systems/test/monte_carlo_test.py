@@ -4,25 +4,30 @@ from __future__ import print_function
 
 import copy
 import time
+import unittest
 import warnings
 
-import unittest
 import numpy as np
 
 from pydrake.common import (
     RandomGenerator,
     FindResourceOrThrow
 )
-from pydrake.systems.controllers import (
-    LinearQuadraticRegulator
-)
 from pydrake.examples.pendulum import PendulumPlant
+from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import MultibodyPlant
+from pydrake.multibody.tree import UniformGravityFieldElement
+from pydrake.symbolic import (
+    Expression,
+    Variable
+)
 from pydrake.systems.analysis import (
     MonteCarloSimulation,
     RandomSimulationResult,
     RandomSimulation,
     Simulator
-    )
+)
+from pydrake.systems.controllers import LinearQuadraticRegulator
 from pydrake.systems.framework import (
     Context,
     Diagram,
@@ -33,17 +38,6 @@ from pydrake.systems.primitives import (
     Linearize,
     Saturation
 )
-from pydrake.symbolic import (
-    Expression,
-    Variable
-)
-from pydrake.multibody.tree import (
-    UniformGravityFieldElement
-)
-from pydrake.multibody.plant import (
-    MultibodyPlant
-)
-from pydrake.multibody.parsing import Parser
 
 
 class TestMonteCarlo(unittest.TestCase):
