@@ -45,6 +45,8 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
     return geometry_id_pair_;
   }
 
+  const MultibodyPlant<AutoDiffXd>& plant() const { return *plant_; }
+
  protected:
   /**
    * Each derived class should call this constructor.

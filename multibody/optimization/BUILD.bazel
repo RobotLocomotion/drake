@@ -48,6 +48,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "static_friction_cone_complementary_constraint",
+    srcs = ["static_friction_cone_complementary_constraint.cc"],
+    hdrs = ["static_friction_cone_complementary_constraint.h"],
+    deps = [
+        ":contact_wrench_evaluator",
+        "//geometry:scene_graph",
+        "//multibody/plant",
+        "//solvers:binding",
+        "//solvers:constraint",
+        "//solvers:mathematical_program",
+    ],
+)
+
+drake_cc_library(
     name = "optimization_with_contact_utilities",
     testonly = 1,
     srcs = ["test/optimization_with_contact_utilities.cc"],
