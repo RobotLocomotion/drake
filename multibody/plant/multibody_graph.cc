@@ -9,7 +9,12 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-MultibodyGraph::MultibodyGraph() { RegisterJointType(weld_type_name()); }
+MultibodyGraph::MultibodyGraph() { 
+  RegisterJointType(weld_type_name());
+  // Verify invariant promised to users in the documentation.
+  DRAKE_DEMAND(joint_type_name_to_index_[weld_type_name()] ==
+               JointTypeIndex(0));
+}
 
 LinkIndex MultibodyGraph::AddLink(const std::string& link_name,
                                   ModelInstanceIndex model_instance) {
@@ -128,8 +133,8 @@ JointIndex MultibodyGraph::AddJoint(const std::string& name,
                           child_link_index));
 
   // Connect the graph.
-  get_mutable_link(parent_link_index).add_joint_as_parent(joint_index);
-  get_mutable_link(child_link_index).add_joint_as_child(joint_index);
+  get_mutable_link(parent_link_index).add_joint(joint_index);
+  get_mutable_link(child_link_index).add_joint(joint_index);
 
   return joint_index;
 }
@@ -148,6 +153,12 @@ JointTypeIndex MultibodyGraph::RegisterJointType(
   const JointTypeIndex joint_type_index(num_joint_types());
   joint_type_name_to_index_[joint_type_name] = joint_type_index;
   return joint_type_index;
+}
+
+bool MultibodyGraph::IsJointTypeRegistered(
+    const std::string& joint_type_name) const {
+  const auto it = joint_type_name_to_index_.find(joint_type_name);
+  return it != joint_type_name_to_index_.end() ? true : false;
 }
 
 JointTypeIndex MultibodyGraph::GetJointTypeIndex(
@@ -199,9 +210,9 @@ void MultibodyGraph::FindIslandsOfWeldedLinksRecurse(
   // Mark parent_link as visited in order to detect loops.
   visited->at(parent_link.index()) = true;
 
+  // Scan each sibling link.
   for (JointIndex joint_index : parent_link.joints()) {
     const Joint& joint = get_joint(joint_index);
-
     const LinkIndex sibling_index = joint.parent_link() == parent_link.index()
                                         ? joint.child_link()
                                         : joint.parent_link();
@@ -210,11 +221,15 @@ void MultibodyGraph::FindIslandsOfWeldedLinksRecurse(
     if (visited->at(sibling_index)) continue;
 
     const Link& sibling = get_link(sibling_index);
-    visited->at(sibling_index) = true;
+    visited->at(sibling_index) = true;    
     if (joint.type_index() == weld_type_index()) {
+      // Welded to parent_link, add it to parent_island.
       parent_island->insert(sibling_index);
       FindIslandsOfWeldedLinksRecurse(sibling, parent_island, islands, visited);
     } else {
+      // Disconnected (non-welded) from parent_island. Create its own new island
+      // and continue the recursion from "sibling" with its new island
+      // "sibling_island".
       islands->push_back(std::set<LinkIndex>{sibling_index});
       std::set<LinkIndex>& sibling_island = islands->back();
       FindIslandsOfWeldedLinksRecurse(sibling, &sibling_island, islands,

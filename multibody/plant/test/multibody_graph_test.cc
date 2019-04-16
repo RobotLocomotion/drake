@@ -20,9 +20,9 @@ const std::string kWorldLinkName = "DefaultWorldLinkName";
 // Arbitrary non-zero world model instance for testing.
 const ModelInstanceIndex kWorldModelInstance(999);
 
-// Test a straightforward serial chain of massful links connected by
-// pin joints: world->link1->link2->link3->link4->link5
-// Should produce the obvious multibody tree.
+// Test a straightforward serial chain of links connected by
+// revolute joints: world->link1->link2->link3->link4->link5.
+// We perform a number of sanity checks on the provided API.
 GTEST_TEST(MultibodyGraph, SerialChain) {
   MultibodyGraph graph;
   EXPECT_EQ(graph.num_joint_types(), 1);  // "weld" joint thus far.
@@ -91,7 +91,9 @@ GTEST_TEST(MultibodyGraph, SerialChain) {
   EXPECT_EQ(graph.num_joints(), 5);
 }
 
-// We build a model.
+// We build a model containing a number of kinematic loops and islands of welded
+// links.
+//
 // Island A (forms closed loop):
 //  - WeldJoint(1, 13)
 //  - WeldJoint(1, 4)
@@ -102,7 +104,7 @@ GTEST_TEST(MultibodyGraph, SerialChain) {
 //  - WeldJoint(6, 8)
 //  - WeldJoint(8, 10)
 //
-// Island C:
+// Island C (the "world" island):
 //  - WeldJoint(5, 7)
 //  - WeldJoint(5, 12)
 //

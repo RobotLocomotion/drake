@@ -5,7 +5,6 @@
 #include <unordered_map>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/hash.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
@@ -18,67 +17,22 @@ using LinkIndex = TypeSafeIndex<class LinkTag>;
 /** Type used to identify joint types. */
 using JointTypeIndex = TypeSafeIndex<class JointTypeTag>;
 
-// Forward declarations.
-class Link;
-class Joint;
-
-/** A link has a unique name within a given model instance. However, links can
-have the same name across model instance.
-Therefore a link is uniquely identified given the pair
-(model_instance, link_name). This class represents this pair. */
-class LinkIdentifier {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LinkIdentifier)
-
-  LinkIdentifier(ModelInstanceIndex model_instance,
-                 const std::string& link_name)
-      : model_instance_(model_instance), name_(link_name) {}
-
-  ModelInstanceIndex model_instance() const { return model_instance_; }
-
-  const std::string& name() const { return name_; }
-
-  /// Implements the @ref hash_append concept.
-  template <class HashAlgorithm>
-  friend void hash_append(HashAlgorithm& hasher,
-                          const LinkIdentifier& id) noexcept {
-    using drake::hash_append;
-    hash_append(hasher, id.model_instance_);
-    hash_append(hasher, id.name_);
-  }
-
- private:
-  ModelInstanceIndex model_instance_;
-  std::string name_;
-};
-
 class MultibodyGraph {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyGraph)
 
+  // Local classes.
+  class Link;
+  class Joint;
+
   MultibodyGraph();
 
-  LinkIndex AddLink(const std::string& name, ModelInstanceIndex model_instance =
-                                                 default_model_instance());
+  LinkIndex AddLink(const std::string& name, ModelInstanceIndex model_instance);
 
   JointIndex AddJoint(const std::string& name,
                       ModelInstanceIndex model_instance,
                       const std::string& type, LinkIndex parent_link_index,
                       LinkIndex child_link_index);
-
-  /** @returns `true` if a body named `name` was added to `model_instance`.
-  @see AddRigidBody().
-  @throws std::exception if `model_instance` is not a valid index. */
-  bool HasLinkNamed(const std::string& name,
-                    ModelInstanceIndex model_instance) const;
-
-  // const Link& GetLinkByName(const std::string& name) const;
-
-  /** @returns `true` if a joint named `name` was added to `model_instance`.
-  @see AddRigidBody().
-  @throws std::exception if `model_instance` is not a valid index. */
-  bool HasJointNamed(const std::string& name,
-                     ModelInstanceIndex model_instance) const;
 
   /** Returns the name we recognize as the World (or Ground) link. This is
   the name that was provided in the first AddLink() call.
@@ -92,17 +46,19 @@ class MultibodyGraph {
   ModelInstanceIndex world_model_instance() const;
 
   /** Returns the link number for the World link (always zero). */
-  LinkIndex world_link_index() const { return LinkIndex(0); }
+  static LinkIndex world_link_index() { return LinkIndex(0); }
 
-  /** Returns the unique index identifying the "weld" joint type (always zero).
-   */
-  JointTypeIndex weld_type_index() const { return JointTypeIndex(0); }
+  /** Returns the unique index that identifies the "weld" joint type (always
+  zero). */
+  static JointTypeIndex weld_type_index() { return JointTypeIndex(0); }
 
+  /** Returns the unique name reserved to identify weld joints (always "weld").
+  */
   static std::string weld_type_name() { return "weld"; }
 
-  /** Register a joint type by name. In Drake "weld" is reserved to identify
-  weld joints constraining two frames to move as one rigid composite. "weld"
-  joint type has index `weld_type_index()`.
+  /** Register a joint type by name.
+  MultibodyGraph() registers "weld" at construction as Drake reserves this name
+  to identify weld joints. "weld" joint type has index `weld_type_index()`.
   @param[in] joint_type_name
     A unique string identifying a joint type, such as "pin" or "prismatic".
   @throws std::runtime_error if `joint_type_name` already identifies a
@@ -110,53 +66,99 @@ class MultibodyGraph {
   @retval JointTypeIndex Index uniquely identifying the new joint type. */
   JointTypeIndex RegisterJointType(const std::string& joint_type_name);
 
+  bool IsJointTypeRegistered(const std::string& joint_type_name) const;
+
   /** Returns the number of registered joint types. */
   int num_joint_types() const;
 
-  /** Finds the assigned index for a joint type from the type name. Returns an
-   * invalid index if `joint_type_name` was not previously registered with a
-   * call to RegisterJointType(). */
-  JointTypeIndex GetJointTypeIndex(const std::string& joint_type_name) const;
-
-#if 0
-  /// @returns `true` if this graph contains a link with the given name in any
-  /// of the model instances.
-  /// @see AddLink().
-  bool HasLinkNamed(const std::string& name) const {
-    return link_name_to_index_.count(name) > 0;
-  }
-
-#endif
-
+  /** Returns the number of links, including all added links, and the world
+  link. 
+  @see AddLink(), world_link_index(), world_link_name(). */
   int num_links() const { return static_cast<int>(links_.size()); }
 
+  /** Returns the number joints added with AddJoint(). */
   int num_joints() const { return static_cast<int>(joints_.size()); }
 
+  /** Gets a Link by index. The world link has index world_link_index(). */
   const Link& get_link(LinkIndex index) const {
     DRAKE_THROW_UNLESS(index < num_links());
     return links_[index];
   }
 
+  /** Gets a Joint by index. */
   const Joint& get_joint(JointIndex index) const {
     DRAKE_THROW_UNLESS(index < num_joints());
     return joints_[index];
   }
 
+  /** This method partitions the %MultibodyGraph into islands such that two
+  links are in the same island if there is a path between them which
+  includes only weld joints (see weld_type_name()).
+  Each island of welded links is represented as a set of link indices.
+  By definition, these islands will be disconnected by any non-weld
+  joint between two bodies. The first island will have all of the links
+  welded the world; all subsequent islands will be in no particular order.
+  A few more notes:
+    - Each link in the %MultibodyGraph is included in one set and one set only.
+    - The maximum size of the list equals the number of links in the graph
+      (num_links()). This corresponds to a graph with no weld joints.
+    - The world link is also included in a set of welded links, and this set is
+      element zero in the returned vector.
+    - The minimum size of the list is one. This corresponds to a graph with
+      all links welded to the world. */
   std::vector<std::set<LinkIndex>> FindIslandsOfWeldedLinks() const;
 
-  /// If `link_index` is a valid index to a Link in this graph, then the return
-  /// vector will always contain at least one entry storing `link_index`.
+  /** Returns all links that are transitively welded, or rigidly affixed, to
+  `link_index`, per these two definitions:
+    1. A link is always considered welded to itself.
+    2. Two unique links are considered welded together exclusively by the
+       presence of a weld joint, not by other constructs such as constraints.
+  Therefore, if `link_index` is a valid index to a Link in this graph, then the
+  return vector will always contain at least one entry storing `link_index`. */
   std::set<LinkIndex> FindLinksWeldedTo(LinkIndex link_index) const;
 
  private:
+  // @returns `true` if a body named `name` was added to `model_instance`.
+  // @see AddRigidBody().
+  // @throws std::exception if `model_instance` is not a valid index.
+  // TODO(amcastro-tri): consider making public.
+  bool HasLinkNamed(const std::string& name,
+                    ModelInstanceIndex model_instance) const;  
+
+  // @returns `true` if a joint named `name` was added to `model_instance`.
+  // @see AddRigidBody().
+  // @throws std::exception if `model_instance` is not a valid index.
+  // TODO(amcastro-tri): consider making public.
+  bool HasJointNamed(const std::string& name,
+                     ModelInstanceIndex model_instance) const;
+
+  // Finds the assigned index for a joint type from the type name. Returns an
+  // invalid index if `joint_type_name` was not previously registered with a
+  // call to RegisterJointType().
+  JointTypeIndex GetJointTypeIndex(const std::string& joint_type_name) const;                   
+
   Link& get_mutable_link(LinkIndex link_index) { return links_[link_index]; }
 
+  // Recursive helper method for FindIslandsOfWeldedLinks().
+  // The first think this helper does is to mark `parent_link` as "visited" in
+  // the output array `visited`.
+  // Next, it scans the sibling links connected to `parent_index` by a joint.
+  // If the sibling was already visited, it moves on to the next sibling, if
+  // any. For a sibling visited for the first time there are two options:
+  //   1) if it is connected by a weld joint, it gets added to parent_island.
+  //      Recursion continues starting with parent_index = sibling and the
+  //      parent island. Otherwise,
+  //   2) a new island is created for the sibling and gets added to the
+  //      list of all `islands`. Recursion continues starting with parent_index
+  //      = sibling and the new island for this sibling.
   void FindIslandsOfWeldedLinksRecurse(
       const Link& parent_link, std::set<LinkIndex>* parent_island,
       std::vector<std::set<LinkIndex>>* islands,
       std::vector<bool>* visited) const;
 
-  std::vector<Link> links_;  // World is NOT included. Only physical links.
+  // links_ includes the world link at world_link_index() with name
+  // world_link_name().
+  std::vector<Link> links_;
   std::vector<Joint> joints_;
 
   std::unordered_map<std::string, JointTypeIndex> joint_type_name_to_index_;
@@ -168,7 +170,7 @@ class MultibodyGraph {
   std::unordered_multimap<std::string, JointIndex> joint_name_to_index_;
 };
 
-class Link {
+class MultibodyGraph::Link {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Link)
 
@@ -191,12 +193,6 @@ class Link {
   /// parent or child (this is num_children() + num_parents()). */
   int num_joints() const;
 
-  /// Returns the list of joints for which this link is the child link.
-  const std::vector<JointIndex>& joints_as_child() const;
-
-  /// Returns the list of joints for which this link is the parent link.
-  const std::vector<JointIndex>& joints_as_parent() const;
-
   const std::vector<JointIndex>& joints() const { return joints_; }
 
  private:
@@ -207,16 +203,9 @@ class Link {
        ModelInstanceIndex model_instance)
       : index_(index), name_(name), model_instance_(model_instance) {}
 
-  // Notes that this link serves as the parent link for the given joint.
-  void add_joint_as_parent(JointIndex joint) {
-    joints_as_parent_.push_back(joint);  // "as parent" list.
-    joints_.push_back(joint);            // All joints list.
-  }
-
-  // Notes that this link serves as the child link for the given joint.
-  void add_joint_as_child(JointIndex joint) {
-    joints_as_child_.push_back(joint);  // "as child" list.
-    joints_.push_back(joint);           // All joints list.
+  // Notes that this link is connected by `joint`.
+  void add_joint(JointIndex joint) {
+    joints_.push_back(joint);
   }
 
   LinkIndex index_;
@@ -231,7 +220,7 @@ class Link {
   std::vector<JointIndex> joints_;
 };
 
-class Joint {
+class MultibodyGraph::Joint {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Joint)
 
