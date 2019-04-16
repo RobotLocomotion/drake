@@ -489,9 +489,11 @@ GTEST_TEST(RigidTransform, SymbolicRigidTransformThrowsExceptions) {
 GTEST_TEST(RigidTransform, ConstructRigidTransformFromTranslation3) {
   const Vector3d p_AoBo_A(1.0, 2.0, 3.0);
   const Eigen::Translation3d translation3(p_AoBo_A);
-  const RigidTransformd X_AB(translation3);
+  const RigidTransformd X_AB(translation3);            // Explicit construction
+  const RigidTransformd X_AB_implicit = translation3;  // Implicit construction
   EXPECT_EQ(X_AB.translation(), p_AoBo_A);
   EXPECT_TRUE(X_AB.rotation().IsExactlyIdentity());
+  EXPECT_TRUE(X_AB.IsExactlyEqualTo(X_AB_implicit));
 }
 
 // Test multiplying a RigidTransform by an Eigen::Translation3 and vice-versa.
