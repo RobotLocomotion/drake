@@ -17,6 +17,11 @@ using LinkIndex = TypeSafeIndex<class LinkTag>;
 /** Type used to identify joint types. */
 using JointTypeIndex = TypeSafeIndex<class JointTypeTag>;
 
+/** Defines a multibody graph consisting of links interconnected by joints. 
+The graph is defined by a sequence of calls to AddLink() and AddJoint(). Anytime
+during the lifetime of the graph, a user can ask graph specific questions such
+as how links are connected, by which joints or even perform more complex queries
+such as what set of bodies are welded together. */
 class MultibodyGraph {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyGraph)
@@ -27,8 +32,36 @@ class MultibodyGraph {
 
   MultibodyGraph();
 
+  /** Add a new Link to the graph.
+  @param[in] name
+    The unique name of the new link in the particular `model_instance`. Several
+    links can have the same name within a %MultibodyGraph however, their name
+    within their model instance must be unique.
+  @param[in] model_instance
+    The model instance to which this link belongs, see @ref model_instance.
+  @returns The unique LinkIndex for the added joint in the graph. */  
   LinkIndex AddLink(const std::string& name, ModelInstanceIndex model_instance);
 
+  /** Add a new Joint to the graph. 
+  @param[in] name
+    The unique name of the new Joint in the particular `model_instance`. Several
+    joints can have the same name within a %MultibodyGraph however, their name
+    within their model instance must be unique.
+  @param[in] model_instance
+    The model instance to which this joint belongs, see @ref model_instance. 
+  @param[in] type
+    A string designating the type of this joint, such as "revolute" or
+    "ball". This must be chosen from the set of joint types previously
+    registered with calls to RegisterJointType().
+  @param[in] parent_link_index
+    This must be the index of a link previously obtained with a call to
+    AddLink(), or it must be the designated name for the World body
+    (world_link_name()).
+  @param[in] child_link_index
+    This must be the index of a link previously obtained with a call to
+    AddLink(), or it must be the designated name for the World body
+    (world_link_name()).
+  @returns The unique JointIndex for the added joint in the graph. */
   JointIndex AddJoint(const std::string& name,
                       ModelInstanceIndex model_instance,
                       const std::string& type, LinkIndex parent_link_index,
@@ -66,6 +99,8 @@ class MultibodyGraph {
   @retval JointTypeIndex Index uniquely identifying the new joint type. */
   JointTypeIndex RegisterJointType(const std::string& joint_type_name);
 
+  /** @returns `true` iff the given `joint_type_name` was previously registered
+  via a call to RegisterJointType(), or iff it equals weld_type_name(). */
   bool IsJointTypeRegistered(const std::string& joint_type_name) const;
 
   /** Returns the number of registered joint types. */
