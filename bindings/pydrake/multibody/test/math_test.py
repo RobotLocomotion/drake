@@ -4,6 +4,7 @@ import numpy as np
 
 from pydrake.multibody.math import (
     SpatialAcceleration,
+    SpatialForce,
     SpatialVelocity,
 )
 
@@ -27,7 +28,13 @@ class TestMultibodyTreeMath(unittest.TestCase):
         self.assertTrue(np.allclose(vec1.rotational(), rotation_expected))
         self.assertTrue(
             np.allclose(vec1.translational(), translation_expected))
+        self.assertTrue(
+            np.allclose(cls.Zero().get_coeffs(), cls().get_coeffs()))
+        V_expected = rotation_expected + translation_expected
+        self.assertTrue(
+            np.allclose(cls(V=V_expected).get_coeffs(), V_expected))
 
     def test_spatial_vector_types(self):
         self.check_spatial_vector(SpatialVelocity, 'w', 'v')
         self.check_spatial_vector(SpatialAcceleration, 'alpha', 'a')
+        self.check_spatial_vector(SpatialForce, 'tau', 'f')
