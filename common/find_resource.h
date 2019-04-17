@@ -79,7 +79,7 @@ class FindResourceResult {
 /// @throws std::runtime_error if the given path is not absolute.
 DRAKE_DEPRECATED("2019-08-01",
     "Call setenv(kDrakeResourceRootEnvironmentVariableName) instead.")
-void AddResourceSearchPath(std::string root_directory);
+void AddResourceSearchPath(const std::string& root_directory);
 
 /// Returns a single-element vector containing the last root_directory passed
 /// to AddResourceSearchPath() if any; otherwise, returns an empty vector.
@@ -98,16 +98,16 @@ std::vector<std::string> GetResourceSearchPaths();
 /// the following order:
 ///
 /// 1. In the DRAKE_RESOURCE_ROOT environment variable.
-/// 2. In the drake source workspace.
-/// 3. In the drake installed workspace.
+/// 2. In the Bazel runfiles for a bazel-bin/pkg/program.
+/// 3. In the Drake CMake install directory.
 ///
 /// If all of these are unavailable, or do not have the resource, then it will
 /// return a failed result.
-FindResourceResult FindResource(std::string resource_path);
+FindResourceResult FindResource(const std::string& resource_path);
 
 /// Convenient wrapper for querying FindResource(resource_path) followed by
 /// FindResourceResult::get_absolute_path_or_throw().
-std::string FindResourceOrThrow(std::string resource_path);
+std::string FindResourceOrThrow(const std::string& resource_path);
 
 /// The name of the environment variable that provides the first place where
 /// FindResource attempts to look.  The environment variable is allowed to be

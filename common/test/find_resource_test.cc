@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <string>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <spruce.hh>
 
@@ -42,7 +43,8 @@ GTEST_TEST(FindResourceTest, NonRelativeRequest) {
   // We get an error back.
   const optional<string> error_message = result.get_error_message();
   ASSERT_TRUE(error_message);
-  EXPECT_EQ(*error_message, "resource_path is not a relative path");
+  EXPECT_EQ(*error_message,
+            "Drake resource_path '/dev/null' is not a relative path.");
 }
 
 GTEST_TEST(FindResourceTest, NotFound) {
@@ -57,7 +59,8 @@ GTEST_TEST(FindResourceTest, NotFound) {
   // We get an error back.
   const optional<string> error_message = result.get_error_message();
   ASSERT_TRUE(error_message);
-  EXPECT_EQ(*error_message, "could not find resource: " + relpath);
+  EXPECT_THAT(*error_message, testing::ContainsRegex(
+      "Sought '" + relpath + "' in runfiles.*not exist.*on the manifest"));
 
   // Sugar works the same way.
   EXPECT_THROW(FindResourceOrThrow(relpath), std::runtime_error);
@@ -102,64 +105,6 @@ GTEST_TEST(FindResourceTest, RelativeResourcePathShouldFail) {
   EXPECT_THROW(AddResourceSearchPath(test_directory), std::runtime_error);
 }
 #pragma GCC diagnostic pop
-
-optional<std::string> GetEnv(const std::string& name) {
-  const char* result = ::getenv(name.c_str());
-  if (!result) { return nullopt; }
-  return std::string(result);
-}
-
-void SetEnv(const std::string& name, const optional<std::string>& value) {
-  if (value) {
-    const int result = ::setenv(name.c_str(), value->c_str(), 1);
-    DRAKE_THROW_UNLESS(result == 0);
-  } else {
-    const int result = ::unsetenv(name.c_str());
-    DRAKE_THROW_UNLESS(result == 0);
-  }
-}
-
-// Make a scope exit guard -- an object that when destroyed runs `func`.
-auto MakeGuard(std::function<void()> func) {
-  // The shared_ptr deleter func is always invoked, even for nullptrs.
-  // http://en.cppreference.com/w/cpp/memory/shared_ptr/%7Eshared_ptr
-  return std::shared_ptr<void>(nullptr, [=](void*) { func(); });
-}
-
-GTEST_TEST(FindResourceTest, FindUsingTestSrcdir) {
-  // Confirm that the resource is found normally.
-  const string relpath = "drake/common/test/find_resource_test_data.txt";
-  EXPECT_TRUE(FindResource(relpath).get_absolute_path());
-
-  // If we defeat both (1) the "look in current working directory" heuristic
-  // and (2) the "look in TEST_SRCDIR" heuristic, then we should no longer be
-  // able to find the resource.
-
-  // Change cwd to be "/", but put it back when this test case ends.
-  const spruce::path original_cwd = spruce::dir::getcwd();
-  auto restore_cwd_guard = MakeGuard([original_cwd]() {
-      const bool restore_ok = spruce::dir::chdir(original_cwd);
-      DRAKE_DEMAND(restore_ok);
-    });
-  const bool chdir_ok = spruce::dir::chdir(spruce::path("/"));
-  ASSERT_TRUE(chdir_ok);
-
-  // Unset TEST_SRCDIR for a moment, and confirm that FindResource now fails.
-  const std::string original_test_srcdir = GetEnv("TEST_SRCDIR").value_or("");
-  ASSERT_FALSE(original_test_srcdir.empty());
-  {
-    auto restore_test_srcdir_guard = MakeGuard([original_test_srcdir]() {
-        SetEnv("TEST_SRCDIR", original_test_srcdir);
-      });
-    SetEnv("TEST_SRCDIR", nullopt);
-
-    // Can't find the resource anymore.
-    EXPECT_TRUE(FindResource(relpath).get_error_message());
-  }
-
-  // Having TEST_SRCDIR back again is enough to get us working.
-  EXPECT_TRUE(FindResource(relpath).get_absolute_path());
-}
 
 GTEST_TEST(GetDrakePathTest, BasicTest) {
   // Just test that we find a path, without any exceptions.

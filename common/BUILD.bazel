@@ -32,6 +32,7 @@ drake_cc_package_library(
         ":essential",
         ":extract_double",
         ":find_resource",
+        ":find_runfiles",
         ":hash",
         ":is_approx_equal_abstol",
         ":is_cloneable",
@@ -304,12 +305,6 @@ drake_cc_library(
     name = "find_runfiles",
     srcs = ["find_runfiles.cc"],
     hdrs = ["find_runfiles.h"],
-    tags = [
-        # For the moment, this component is private with only unit tests.  Once
-        # it is used outside of its unit test, we should add it to the package.
-        "exclude_from_package",
-    ],
-    visibility = ["//visibility:private"],
     deps = [
         ":essential",
         "@bazel_tools//tools/cpp/runfiles",
@@ -321,6 +316,7 @@ drake_cc_library(
     srcs = [
         "find_loaded_library.cc",
         "find_resource.cc",
+        "find_resource_deprecated.cc",
     ],
     hdrs = [
         "find_loaded_library.h",
@@ -337,6 +333,7 @@ drake_cc_library(
     deps = [
         ":drake_marker_shared_library",
         ":essential",
+        ":find_runfiles",
         "@spruce",
     ],
 )
