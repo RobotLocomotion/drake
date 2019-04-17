@@ -13,6 +13,7 @@ namespace internal {
  * AddStaticFrictionConeComplementaryConstraint() for more details. The
  * nonlinear constraints are (1), (2), (4) and (6) in
  * AddStaticFrictionConeComplementaryConstraint()
+ * The bound variables for this constraint is x = [q; λ; α; β]
  */
 class StaticFrictionConeComplementaryNonlinearConstraint
     : public solvers::Constraint {
@@ -51,6 +52,18 @@ class StaticFrictionConeComplementaryNonlinearConstraint
     *alpha = x(x.rows() - 2);
     *beta = x(x.rows() - 1);
   }
+
+  /**
+   * Create a binding of the constraint, together with the bound variables
+   * x = [q; λ; α; β]. See StaticFrictionConeComplementaryNonlinearConstraint()
+   * constructor for more details.
+   */
+  static solvers::Binding<
+      internal::StaticFrictionConeComplementaryNonlinearConstraint>
+  MakeBinding(const ContactWrenchEvaluator* contact_wrench_evaluator,
+              double complementary_tolerance,
+              const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
+              const Eigen::Ref<const VectorX<symbolic::Variable>>& lambda_vars);
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -101,9 +114,10 @@ class StaticFrictionConeComplementaryNonlinearConstraint
 solvers::Binding<internal::StaticFrictionConeComplementaryNonlinearConstraint>
 AddStaticFrictionConeComplementaryConstraint(
     const ContactWrenchEvaluator* contact_wrench_evaluator,
+    double complementary_tolerance,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& lambda_vars,
-    double complementary_tolerance, solvers::MathematicalProgram* prog);
+    solvers::MathematicalProgram* prog);
 
 }  // namespace multibody
 }  // namespace drake

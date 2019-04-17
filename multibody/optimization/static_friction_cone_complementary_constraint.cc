@@ -7,7 +7,9 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+
 const double kInf = std::numeric_limits<double>::infinity();
+
 StaticFrictionConeComplementaryNonlinearConstraint::
     StaticFrictionConeComplementaryNonlinearConstraint(
         const ContactWrenchEvaluator* contact_wrench_evaluator,
@@ -26,6 +28,22 @@ void StaticFrictionConeComplementaryNonlinearConstraint::
   Eigen::Vector4d upper_bound = this->upper_bound();
   upper_bound(3) = complementary_tolerance;
   UpdateUpperBound(upper_bound);
+}
+
+solvers::Binding<internal::StaticFrictionConeComplementaryNonlinearConstraint>
+StaticFrictionConeComplementaryNonlinearConstraint::MakeBinding(
+    const ContactWrenchEvaluator* contact_wrench_evaluator,
+    double complementary_tolerance,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& lambda_vars) {
+  auto constraint =
+      std::make_shared<StaticFrictionConeComplementaryNonlinearConstraint>(
+          contact_wrench_evaluator, complementary_tolerance);
+  VectorX<symbolic::Variable> bound_vars(constraint->num_vars());
+  bound_vars << q_vars, lambda_vars, constraint->alpha_var(),
+      constraint->beta_var();
+  return solvers::Binding<StaticFrictionConeComplementaryNonlinearConstraint>(
+      constraint, bound_vars);
 }
 
 void StaticFrictionConeComplementaryNonlinearConstraint::DoEval(
@@ -68,10 +86,10 @@ void StaticFrictionConeComplementaryNonlinearConstraint::DoEval(
   }
   const auto& query_object =
       query_port.Eval<geometry::QueryObject<AutoDiffXd>>(*context);
-  const std::vector<geometry::SignedDistancePair<double>>
+  const std::vector<geometry::SignedDistancePair<AutoDiffXd>>
       signed_distance_pairs =
           query_object.ComputeSignedDistancePairwiseClosestPoints();
-  //const geometry::SceneGraphInspector<AutoDiffXd>& inspector =
+  // const geometry::SceneGraphInspector<AutoDiffXd>& inspector =
   //    query_object.inspector();
   bool found_geometry_pair = false;
   for (const auto& signed_distance_pair : signed_distance_pairs) {
@@ -123,6 +141,31 @@ void StaticFrictionConeComplementaryNonlinearConstraint::DoEval(
   throw std::runtime_error(
       "StaticEquilibriumConstraint: does not support Eval with symbolic "
       "variable and expressions.");
+}
+
+solvers::Binding<internal::StaticFrictionConeComplementaryNonlinearConstraint>
+AddStaticFrictionConeComplementaryConstraint(
+    const ContactWrenchEvaluator* contact_wrench_evaluator,
+    double complementary_tolerance,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& lambda_vars,
+    solvers::MathematicalProgram* prog) {
+  // Create the nonlinear binding.
+  auto nonlinear_binding =
+      internal::StaticFrictionConeComplementaryNonlinearConstraint::MakeBinding(
+          contact_wrench_evaluator, complementary_tolerance, q_vars,
+          lambda_vars);
+  // Add the variable α,β to the program.
+  const Vector2<symbolic::Variable> alpha_beta_var(
+      nonlinear_binding.evaluator()->alpha_var(),
+      nonlinear_binding.evaluator()->beta_var());
+  prog->AddDecisionVariables(alpha_beta_var);
+  // Add the nonlinear binding to the program.
+  prog->AddConstraint(nonlinear_binding);
+  // Add constraint that α >= 0, β >= 0
+  prog->AddBoundingBoxConstraint(
+      Eigen::Vector2d::Zero(), Eigen::Vector2d::Constant(kInf), alpha_beta_var);
+  return nonlinear_binding;
 }
 
 }  // namespace internal
