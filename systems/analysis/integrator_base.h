@@ -898,17 +898,14 @@ class IntegratorBase {
 
   /**
    * Derived classes must override this function to return the order of
-   * the integrator's error estimate, meaning the asymptotic error of the error
-   * estimate. The error estimator approximates the true error e(.) between the
-   * actual state (obtained via a perhaps hypothetical closed form solution to
-   * the initial value problem) and the state computed by the integrator. e(.)
-   * is approximated by a Taylor Series expansion in the neighborhood around t:
+   * the integrator's error estimate. The error estimator approximates the true
+   * error e(.) between the actual state (obtained via a perhaps hypothetical
+   * closed form solution to the initial value problem) and the state computed
+   * by the integrator. e(.) is approximated by a Taylor Series expansion in the
+   * neighborhood around t:
    * @verbatim
    * e(t+h) ≈ e(t) + he(t) + he'(t) + ½h²e''(t) + ...
-   * @endverbatim
-   * The equation above can also be written as:
-   * @verbatim
-   * e(t+h) ≈ e(t) + he(t) + he'(t) + ½h²e''(t) + O(h³)
+   *        ≈ e(t) + he(t) + he'(t) + ½h²e''(t) + O(h³)
    * @endverbatim
    * where we have replaced the "..." with the asymptotic error of all terms
    * truncated from the series. An error estimator that exhibits O(h³)
