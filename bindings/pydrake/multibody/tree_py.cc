@@ -127,7 +127,14 @@ PYBIND11_MODULE(tree, m) {
     cls  // BR
         .def("name", &Class::name, cls_doc.name.doc)
         .def("body_frame", &Class::body_frame, py_reference_internal,
-            cls_doc.body_frame.doc);
+            cls_doc.body_frame.doc)
+        .def("GetForceInWorld", &Class::GetForceInWorld, py::arg("context"),
+            py::arg("forces"), cls_doc.GetForceInWorld.doc)
+        .def("AddInForceInWorld", &Class::AddInForceInWorld, py::arg("context"),
+            py::arg("F_Bo_W"), py::arg("forces"), cls_doc.AddInForceInWorld.doc)
+        .def("AddInForce", &Class::AddInForce, py::arg("context"),
+            py::arg("p_BP_E"), py::arg("F_Bp_E"), py::arg("frame_E"),
+            py::arg("forces"), cls_doc.AddInForce.doc);
   }
 
   {
@@ -273,10 +280,20 @@ PYBIND11_MODULE(tree, m) {
     // N.B. This depends on `plant_py.cc`, but this codepath will only be
     // activated if this module is present, and thus should not create a runtime
     // error.
-    cls.def(py::init([](const MultibodyPlant<T>& plant) {
-      return std::make_unique<MultibodyForces<T>>(plant);
-    }),
-        py::arg("plant"), cls_doc.ctor.doc_1args_plant);
+    cls  // BR
+        .def(py::init([](const MultibodyPlant<T>& plant) {
+          return std::make_unique<Class>(plant);
+        }),
+            py::arg("plant"), cls_doc.ctor.doc_1args_plant)
+        .def("SetZero", &Class::SetZero, cls_doc.SetZero.doc)
+        .def("generalized_forces", &Class::generalized_forces,
+            cls_doc.generalized_forces.doc)
+        .def("mutable_generalized_forces", &Class::mutable_generalized_forces,
+            py_reference_internal, cls_doc.mutable_generalized_forces.doc)
+        // WARNING: Do not bind `body_forces` or `mutable_body_forces` because
+        // they use `internal::BodyNodeIndex`. Instead, use force API in Body.
+        .def("AddInForces", &Class::AddInForces, py::arg("addend"),
+            cls_doc.AddInForces.doc);
   }
 
   {
