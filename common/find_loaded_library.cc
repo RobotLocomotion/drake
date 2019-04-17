@@ -1,6 +1,7 @@
 #include "drake/common/find_loaded_library.h"
 
 #include "drake/common/drake_throw.h"
+#include "drake/common/find_runfiles.h"
 
 #ifdef __APPLE__
 #include <dlfcn.h>
@@ -101,11 +102,8 @@ optional<string> LoadedLibraryPath(const std::string& library_name) {
     if (pos_slash && !strcmp(pos_slash + 1, library_name.c_str())) {
       // Check if path is relative. If so, make it absolute.
       if (map->l_name[0] != '/') {
-        char buf[PATH_MAX];
-        ssize_t readlink_res = readlink("/proc/self/exe", buf, sizeof(buf));
-        DRAKE_THROW_UNLESS(readlink_res >= 0 && readlink_res < PATH_MAX);
-        buf[readlink_res] = '\0';
-        return string(dirname(buf)) + "/" +
+        std::string argv0 = internal::Readlink("/proc/self/exe");
+        return string(dirname(&argv0[0])) + "/" +
               string(map->l_name, pos_slash - map->l_name);
       } else {
         return string(map->l_name, pos_slash - map->l_name);
