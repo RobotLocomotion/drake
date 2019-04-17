@@ -301,6 +301,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "find_runfiles",
+    srcs = ["find_runfiles.cc"],
+    hdrs = ["find_runfiles.h"],
+    tags = [
+        # For the moment, this component is private with only unit tests.  Once
+        # it is used outside of its unit test, we should add it to the package.
+        "exclude_from_package",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":essential",
+        "@bazel_tools//tools/cpp/runfiles",
+    ],
+)
+
+drake_cc_library(
     name = "find_resource",
     srcs = [
         "find_loaded_library.cc",
