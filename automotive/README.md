@@ -64,3 +64,11 @@ setting Drake Visualizer to chase cam mode.  To do this, select Menu, 'View`,
 and 'Camera Control Panel'. Within this control panel, click on 'Select Target',
 and then click on the Toyota Prius.  In the control panel, change 'Track Mode'
 to be 'Smooth Follow' and increase the elevation to 30 degrees.
+
+Code Review
+===========
+
+The entire //automotive/... directory tree is exempt from platform review.
+
+For PRs that affect only this directory tree, two feature reviews are
+sufficient; platform review is not required.
