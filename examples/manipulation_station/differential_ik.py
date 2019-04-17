@@ -69,7 +69,7 @@ class DifferentialIK(LeafSystem):
                             pose.rotation().transpose())
         err_vec[:3] = rot_err.axis() * rot_err.angle()
 
-    def _DoCalcDiscreteVariableUpdates(
+    def DoCalcDiscreteVariableUpdates(
             self, context, events, discrete_state):
         rpy_xyz_desired = self.EvalVectorInput(context, 0).get_value()
         X_WE_desired = RigidTransform(RollPitchYaw(rpy_xyz_desired[:3]),
