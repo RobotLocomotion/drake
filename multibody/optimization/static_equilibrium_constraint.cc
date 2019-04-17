@@ -92,12 +92,12 @@ void StaticEquilibriumConstraint::DoEval(
         6, plant_->num_velocities());
     Eigen::Matrix<AutoDiffXd, 6, Eigen::Dynamic> Jv_V_WCb(
         6, plant_->num_velocities());
-    plant_->CalcJacobianSpatialVelocity(
-        *context_, JacobianWrtVariable::kV, frameA, p_ACa.cast<AutoDiffXd>(),
-        plant_->world_frame(), plant_->world_frame(), &Jv_V_WCa);
-    plant_->CalcJacobianSpatialVelocity(
-        *context_, JacobianWrtVariable::kV, frameB, p_BCb.cast<AutoDiffXd>(),
-        plant_->world_frame(), plant_->world_frame(), &Jv_V_WCb);
+    plant_->CalcJacobianSpatialVelocity(*context_, JacobianWrtVariable::kV,
+                                        frameA, p_ACa, plant_->world_frame(),
+                                        plant_->world_frame(), &Jv_V_WCa);
+    plant_->CalcJacobianSpatialVelocity(*context_, JacobianWrtVariable::kV,
+                                        frameB, p_BCb, plant_->world_frame(),
+                                        plant_->world_frame(), &Jv_V_WCb);
 
     // Find the lambda corresponding to the geometry pair (id_A, id_B).
     const auto it = contact_pair_to_wrench_evaluator_.find(
