@@ -108,6 +108,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//solvers:solve",
         "//systems/primitives:piecewise_polynomial_linear_system",
+        "//systems/primitives:symbolic_vector_system",
     ],
 )
 
