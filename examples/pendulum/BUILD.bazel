@@ -32,10 +32,23 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":pendulum_vector_types",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "pendulum_geometry",
+    srcs = ["pendulum_geometry.cc"],
+    hdrs = ["pendulum_geometry.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":pendulum_plant",
+        ":pendulum_vector_types",
         "//geometry:geometry_visualization",
         "//geometry:scene_graph",
         "//math:geometric_transform",
-        "//systems/framework",
+        "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -46,10 +59,9 @@ drake_cc_binary(
     data = [":models"],
     test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
+        ":pendulum_geometry",
         ":pendulum_plant",
-        "//common:find_resource",
         "//geometry:geometry_visualization",
-        "//lcm",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/primitives:constant_vector_source",
@@ -64,10 +76,9 @@ drake_cc_binary(
     data = [":models"],
     test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
+        ":pendulum_geometry",
         ":pendulum_plant",
-        "//common:find_resource",
         "//geometry:geometry_visualization",
-        "//lcm",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/framework:leaf_system",
@@ -82,11 +93,10 @@ drake_cc_binary(
     data = [":models"],
     test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
+        ":pendulum_geometry",
         ":pendulum_plant",
-        "//common:find_resource",
         "//common:is_approx_equal_abstol",
         "//geometry:geometry_visualization",
-        "//lcm",
         "//systems/analysis:simulator",
         "//systems/controllers:linear_quadratic_regulator",
         "//systems/framework:diagram",
@@ -104,15 +114,14 @@ drake_cc_binary(
     # Non-deterministic IPOPT-related failures on macOS, see #10276.
     test_rule_flaky = 1,
     deps = [
+        ":pendulum_geometry",
         ":pendulum_plant",
-        "//common:find_resource",
         "//common:is_approx_equal_abstol",
         "//geometry:geometry_visualization",
-        "//lcm",
         "//solvers:solve",
         "//systems/analysis:simulator",
         "//systems/controllers:pid_controlled_system",
-        "//systems/framework",
+        "//systems/framework:diagram",
         "//systems/primitives:trajectory_source",
         "//systems/trajectory_optimization:direct_collocation",
         "@gflags",
@@ -154,6 +163,15 @@ drake_cc_googletest(
         "//attic/multibody/rigid_body_plant",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "pendulum_geometry_test",
+    deps = [
+        ":pendulum_geometry",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
     ],
 )
 
