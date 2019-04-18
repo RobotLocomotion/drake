@@ -50,13 +50,3 @@ bazel-bin/examples/kinova_jaco_arm/run_controlled_jaco_demo
 
 Demonstrates planning a trajectory for a Jaco arm using inverse
 kinematics and simulating an arm following that trajectory.
-
-## Control
-
-```
-bazel-bin/examples/kinova_jaco_arm/jaco_controller
-```
-
-Controls a Jaco arm over LCM using joint velocities.  Requires a
-suitable LCM based controller listening for ```lcmt_jaco_command```
-messages and publishing ```lcmt_jaco_status```.

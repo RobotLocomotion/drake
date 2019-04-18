@@ -26,40 +26,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "jaco_lcm",
-    srcs = ["jaco_lcm.cc"],
-    hdrs = ["jaco_lcm.h"],
-    deps = [
-        "//lcmtypes:jaco",
-        "//systems/framework:leaf_system",
-    ],
-)
-
-drake_cc_binary(
-    name = "jaco_controller",
-    srcs = ["jaco_controller.cc"],
-    data = [
-        "//manipulation/models/jaco_description:models",
-    ],
-    deps = [
-        ":jaco_lcm",
-        "//attic/manipulation/planner:robot_plan_interpolator",
-        "//common:find_resource",
-        "//common:text_logging_gflags",
-        "//lcm",
-        "//systems/controllers:pid_controller",
-        "//systems/lcm:lcm_driven_loop",
-        "//systems/lcm:lcm_pubsub_system",
-        "//systems/primitives:adder",
-        "//systems/primitives:demultiplexer",
-        "//systems/primitives:multiplexer",
-        "@gflags",
-        "@lcmtypes_bot2_core",
-        "@lcmtypes_robotlocomotion",
-    ],
-)
-
 drake_cc_binary(
     name = "run_passive_jaco_demo",
     srcs = ["run_passive_jaco_demo.cc"],
@@ -129,14 +95,5 @@ drake_cc_binary(
 )
 
 # === test/ ===
-
-drake_cc_googletest(
-    name = "jaco_lcm_test",
-    deps = [
-        ":jaco_lcm",
-        "//systems/framework:diagram",
-        "//systems/framework:diagram_builder",
-    ],
-)
 
 add_lint_tests()
