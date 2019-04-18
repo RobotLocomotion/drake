@@ -1,6 +1,6 @@
 #pragma once
 
-#include <unordered_map>
+#include <memory>
 
 #include "drake/automotive/maliput/api/rules/phase.h"
 #include "drake/automotive/maliput/api/rules/phase_provider.h"
@@ -17,9 +17,9 @@ class ManualPhaseProvider : public api::rules::PhaseProvider {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManualPhaseProvider);
 
-  ManualPhaseProvider() {}
+  ManualPhaseProvider();
 
-  ~ManualPhaseProvider() override = default;
+  ~ManualPhaseProvider() override;
 
   /// Adds a phase ring to this provider.
   ///
@@ -39,8 +39,8 @@ class ManualPhaseProvider : public api::rules::PhaseProvider {
   optional<api::rules::PhaseProvider::Result> DoGetPhase(
       const api::rules::PhaseRing::Id& id) const override;
 
-  std::unordered_map<maliput::api::rules::PhaseRing::Id,
-                     maliput::api::rules::Phase::Id> phases_;
+  class Impl;
+  std::unique_ptr<Impl> impl_;
 };
 
 }  // namespace maliput
