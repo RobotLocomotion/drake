@@ -9,7 +9,9 @@
 namespace drake {
 namespace maliput {
 
+using api::rules::Phase;
 using api::rules::PhaseProvider;
+using api::rules::PhaseRing;
 
 class ManualPhaseProvider::Impl {
  public:
@@ -18,34 +20,55 @@ class ManualPhaseProvider::Impl {
   Impl() {}
   ~Impl() {}
 
-  void AddPhaseRing(const api::rules::PhaseRing::Id& id,
-                    const api::rules::Phase::Id& initial_phase) {
-    auto result = phases_.emplace(id, initial_phase);
+  void AddPhaseRing(const PhaseRing::Id& id, const Phase::Id& initial_phase,
+                    const optional<Phase::Id>& initial_next_phase,
+                    const optional<double>& initial_duration_until) {
+    if (initial_duration_until.has_value() && !initial_next_phase.has_value()) {
+      throw std::logic_error(
+          "Initial duration-until specified when initial next phase is "
+          "unspecified.");
+    }
+    auto result = phases_.emplace(
+        id, PhaseProvider::Result{
+                initial_phase,
+                ComputeNext(initial_next_phase, initial_duration_until)});
     if (!result.second) {
       throw std::logic_error("Attempted to add multiple phase rings with id " +
                              id.string());
     }
   }
 
-  void SetPhase(const api::rules::PhaseRing::Id& id,
-                const api::rules::Phase::Id& phase) {
-    phases_.at(id) = phase;
+  void SetPhase(const PhaseRing::Id& id, const Phase::Id& phase,
+                const optional<Phase::Id>& next_phase,
+                const optional<double>& duration_until) {
+    if (duration_until.has_value() && !next_phase.has_value()) {
+      throw std::logic_error(
+          "Duration-until specified when next phase is unspecified.");
+    }
+    phases_.at(id) =
+        PhaseProvider::Result{phase, ComputeNext(next_phase, duration_until)};
   }
 
-  optional<PhaseProvider::Result> DoGetPhase(
-      const api::rules::PhaseRing::Id& id) const {
+  optional<PhaseProvider::Result> DoGetPhase(const PhaseRing::Id& id) const {
     auto it = phases_.find(id);
     if (it == phases_.end()) {
       return nullopt;
     }
-    // TODO(liang.fok) Add support for "next phase" and "duration until", #9993.
-    return PhaseProvider::Result{it->second, nullopt};
+    return it->second;
   }
 
  private:
-  std::unordered_map<maliput::api::rules::PhaseRing::Id,
-                     maliput::api::rules::Phase::Id>
-      phases_;
+  optional<PhaseProvider::Result::Next> ComputeNext(
+      const optional<Phase::Id>& next_phase,
+      const optional<double>& duration_until) const {
+    optional<PhaseProvider::Result::Next> result = nullopt;
+    if (next_phase.has_value()) {
+      result = PhaseProvider::Result::Next{*next_phase, duration_until};
+    }
+    return result;
+  }
+
+  std::unordered_map<maliput::PhaseRing::Id, PhaseProvider::Result> phases_;
 };
 
 ManualPhaseProvider::ManualPhaseProvider() : impl_(std::make_unique<Impl>()) {}
@@ -53,18 +76,22 @@ ManualPhaseProvider::ManualPhaseProvider() : impl_(std::make_unique<Impl>()) {}
 ManualPhaseProvider::~ManualPhaseProvider() = default;
 
 void ManualPhaseProvider::AddPhaseRing(
-    const api::rules::PhaseRing::Id& id,
-    const api::rules::Phase::Id& initial_phase) {
-  impl_->AddPhaseRing(id, initial_phase);
+    const PhaseRing::Id& id, const Phase::Id& initial_phase,
+    const optional<Phase::Id>& initial_next_phase,
+    const optional<double>& initial_duration_until) {
+  impl_->AddPhaseRing(id, initial_phase, initial_next_phase,
+                      initial_duration_until);
 }
 
-void ManualPhaseProvider::SetPhase(const api::rules::PhaseRing::Id& id,
-                                   const api::rules::Phase::Id& phase) {
-  impl_->SetPhase(id, phase);
+void ManualPhaseProvider::SetPhase(const PhaseRing::Id& id,
+                                   const Phase::Id& phase,
+                                   const optional<Phase::Id>& next_phase,
+                                   const optional<double>& duration_until) {
+  impl_->SetPhase(id, phase, next_phase, duration_until);
 }
 
 optional<PhaseProvider::Result> ManualPhaseProvider::DoGetPhase(
-    const api::rules::PhaseRing::Id& id) const {
+    const PhaseRing::Id& id) const {
   return impl_->DoGetPhase(id);
 }
 

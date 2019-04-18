@@ -24,16 +24,23 @@ class ManualPhaseProvider : public api::rules::PhaseProvider {
   /// Adds a phase ring to this provider.
   ///
   /// @throws std::exception if a PhaseRing with an ID of @p id already exists
-  /// in this provider.
-  void AddPhaseRing(const api::rules::PhaseRing::Id& id,
-                    const api::rules::Phase::Id& initial_phase);
+  /// in this provider, or if @p initial_duration_until is defined when
+  /// @p next_phase is undefined
+  void AddPhaseRing(
+      const api::rules::PhaseRing::Id& id,
+      const api::rules::Phase::Id& initial_phase,
+      const optional<api::rules::Phase::Id>& initial_next_phase = nullopt,
+      const optional<double>& initial_duration_until = nullopt);
 
   /// Sets the current phase of a PhaseRing.
   ///
   /// @throws std::exception if no PhaseRing with ID @p id exists in this
-  /// provider.
+  /// provider, or if @p duration_until is defined when @p next_phase is
+  /// undefined.
   void SetPhase(const api::rules::PhaseRing::Id& id,
-                const api::rules::Phase::Id& phase);
+                const api::rules::Phase::Id& phase,
+                const optional<api::rules::Phase::Id>& next_phase = nullopt,
+                const optional<double>& duration_until = nullopt);
 
  private:
   optional<api::rules::PhaseProvider::Result> DoGetPhase(
