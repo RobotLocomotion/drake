@@ -13,6 +13,7 @@ class TestFindRunfilesSubprocess(unittest.TestCase):
             ], stderr=subprocess.STDOUT, env=env)
             return output.decode("utf-8")
         except subprocess.CalledProcessError as e:
+            e.output = e.output.decode("utf-8")
             print(e.output)
             raise
 
