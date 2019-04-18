@@ -717,6 +717,7 @@ TEST_F(LeafContextTest, Invalidation) {
   const std::set<CacheIndex> vz_dependent{
       depends[internal::kVTicket], depends[internal::kZTicket],
       depends[internal::kXcTicket], depends[internal::kXTicket],
+      depends[internal::kConfigurationTicket],
       depends[internal::kKinematicsTicket],
       depends[internal::kAllSourcesTicket]};
 

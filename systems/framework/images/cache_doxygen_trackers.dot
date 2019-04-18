@@ -81,6 +81,7 @@ leaf_p -> { leaf_pn leaf_pa };
 leaf_u -> leaf_u_i[color="black:white:black"];
 leaf_all_sources -> { leaf_x, leaf_p, leaf_a, leaf_t, leaf_u };
 leaf_configuration -> { leaf_q, leaf_p, leaf_a };
+  leaf_configuration -> leaf_z[style="dashed"];  // Footnote 3.
   leaf_configuration -> leaf_xd[style="dashed"];  // Footnote 3.
   leaf_configuration -> leaf_xa[style="dashed"];  // Footnote 3.
 leaf_kinematics -> { leaf_configuration, leaf_v };
