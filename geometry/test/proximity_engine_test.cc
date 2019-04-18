@@ -1670,12 +1670,14 @@ class SignedDistancePairTestData {
                              shared_ptr<const Shape> b,
                              const RigidTransformd& X_WA,
                              const RigidTransformd& X_WB,
-                             const SignedDistancePair<double>& expect)
+                             const SignedDistancePair<double>& expect,
+                             const bool check_normal = false)
       : a_(a),
         b_(b),
         X_WA_(X_WA),
         X_WB_(X_WB),
-        expected_result_(expect) {}
+        expected_result_(expect),
+        check_normal_(check_normal) {}
 
   // Generates new test data by swapping geometry A and geometry B. It will
   // help us test the symmetric interface. For example, we can generate the
@@ -1687,9 +1689,11 @@ class SignedDistancePairTestData {
     auto& p_ACa = expected_result_.p_ACa;
     auto& p_BCb = expected_result_.p_BCb;
     auto& distance = expected_result_.distance;
+    auto& nhat_BA_W = expected_result_.nhat_BA_W;
     return SignedDistancePairTestData(
         b_, a_, X_WB_, X_WA_,
-        SignedDistancePair<double>(id_B, id_A, p_BCb, p_ACa, distance));
+        SignedDistancePair<double>(id_B, id_A, p_BCb, p_ACa, distance,
+                                   -nhat_BA_W));
   }
 
   // Google Test uses this operator to report the test data in the log file
@@ -1711,6 +1715,8 @@ class SignedDistancePairTestData {
               << obj.expected_result_.p_ACa.transpose() << "\n"
               << " expected_result.p_BCb: "
               << obj.expected_result_.p_BCb.transpose() << "\n"
+              << " expected_result.nhat_BA_W: "
+              << obj.expected_result_.nhat_BA_W.transpose() << "\n"
               << "}" << std::flush;
   }
 
@@ -1719,6 +1725,11 @@ class SignedDistancePairTestData {
   const RigidTransformd X_WA_;
   const RigidTransformd X_WB_;
   const SignedDistancePair<double> expected_result_;
+  const bool check_normal_;
+  // TODO(DamrongGuoy): Remove check_normal variable and always check against
+  //  nhat_BA_W in the expected_result_.  We have check_normal_ temporarily
+  //  because we want to gradually update all test data to include
+  //  nhat_BA_W.
 };
 
 // Two spheres with varying degrees of overlapping.  The first sphere A is
@@ -1728,6 +1739,7 @@ class SignedDistancePairTestData {
 // move B's center towards A's center along the x-axis of A's frame until B
 // covers A. The expressions of the witness points Ca ∈ ∂A and Cb ∈ ∂B in
 // A's frame and B's frame respectively do not change during this motion.
+// The expression of nhat_BA in A's frame is always (-1,0,0).
 //
 // @param X_WA specifies the pose of A in world.
 // @param R_WB specifies the orientation of B in world.
@@ -1751,7 +1763,8 @@ std::vector<SignedDistancePairTestData> GenDistancePairTestSphereSphere(
   const std::vector<Configuration> configurations {
       // Non-overlapping
       {Vector3d(4., 0., 0.), 1.},
-      // B kisses A.
+      // B kisses A, and we still expect the same nhat_BA_W as other cases,
+      // even though (Cb-Ca)/(signed distance) = divide by zero.
       {Vector3d(3., 0., 0.), 0.},
       // B overlaps A.
       {Vector3d(2.5, 0., 0.), -0.5},
@@ -1761,6 +1774,9 @@ std::vector<SignedDistancePairTestData> GenDistancePairTestSphereSphere(
   // Position from Bo to Cb expressed in A's frame.
   const Vector3d p_BCb_A(-radius_B, 0., 0.);
   const Vector3d p_BCb_B = R_BA * p_BCb_A;
+  const Vector3d nhat_BA_A(-1., 0., 0.);
+  const Vector3d nhat_BA_W = R_WA * nhat_BA_A;
+  const bool check_normal = true;
   std::vector<SignedDistancePairTestData> test_data;
   for (const auto& config : configurations) {
     const RigidTransformd X_AB(R_AB, config.p_ABo);
@@ -1769,7 +1785,8 @@ std::vector<SignedDistancePairTestData> GenDistancePairTestSphereSphere(
         sphere_A, sphere_B, X_WA, X_WB,
         SignedDistancePair<double>(GeometryId::get_new_id(),
                                    GeometryId::get_new_id(), p_ACa_A, p_BCb_B,
-                                   config.pair_distance));
+                                   config.pair_distance, nhat_BA_W),
+        check_normal);
   }
   return test_data;
 }
@@ -2269,12 +2286,17 @@ TEST_P(SignedDistancePairTest, SinglePair) {
   ASSERT_TRUE(a_then_b ^ b_then_a);
   const Vector3d& p_ACa = a_then_b? result.p_ACa : result.p_BCb;
   const Vector3d& p_BCb = a_then_b? result.p_BCb : result.p_ACa;
+  const Vector3d nhat_BA_W = a_then_b? result.nhat_BA_W : -result.nhat_BA_W;
 
   EXPECT_TRUE(CompareMatrices(p_ACa, data.expected_result_.p_ACa, tolerance_))
     << "Incorrect witness point.";
   EXPECT_TRUE(CompareMatrices(p_BCb, data.expected_result_.p_BCb, tolerance_))
     << "Incorrect witness point.";
-
+  if (data.check_normal_) {
+    EXPECT_TRUE(
+        CompareMatrices(nhat_BA_W, data.expected_result_.nhat_BA_W, tolerance_))
+        << "Incorrect outward normal vector nhat_BA_W.";
+  }
   // Check the invariance that the distance between the two witness points
   // equal the signed distance.
   const Vector3d p_WCb = data.X_WB_ * p_BCb;
