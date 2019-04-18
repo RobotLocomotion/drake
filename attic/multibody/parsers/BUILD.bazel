@@ -84,6 +84,7 @@ drake_cc_googletest(
     deps = [
         ":parsers",
         "//common:find_resource",
+        "@spruce",
     ],
 )
 

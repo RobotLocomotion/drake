@@ -75,7 +75,8 @@ class TestResourceTool(unittest.TestCase):
             "--print_resource_path",
             "drake/no_such_file",
             ], expected_returncode=1)
-        self.assertTrue("could not find resource" in output)
+        self.assertIn("Sought 'drake/no_such_file' in runfiles", output)
+        self.assertIn("file does not exist", output)
 
     def test_help_example_is_correct(self):
         # Look at the usage message, and snarf its Pendulum example paths.

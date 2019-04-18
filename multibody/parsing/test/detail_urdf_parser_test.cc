@@ -3,6 +3,7 @@
 #include <limits>
 
 #include <gtest/gtest.h>
+#include <spruce.hh>
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
@@ -28,12 +29,13 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, PackageMapSpecified) {
 
   const std::string full_urdf_filename = FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/urdfs/box.urdf");
-  const std::string package_path = FindResourceOrThrow(
-      "drake/multibody/parsing/test/box_package");
+  spruce::path package_path = full_urdf_filename;
+  package_path = package_path.root();
+  package_path = package_path.root();
 
   // Construct the PackageMap.
   PackageMap package_map;
-  package_map.PopulateFromFolder(package_path);
+  package_map.PopulateFromFolder(package_path.getStr());
 
   // Read in the URDF file.
   AddModelFromUrdfFile(full_urdf_filename, "", package_map, &plant,

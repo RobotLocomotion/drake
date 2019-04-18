@@ -250,6 +250,7 @@ drake_cc_googletest(
         ":detail_sdf_parser",
         "//common:find_resource",
         "//common/test_utilities",
+        "@spruce",
     ],
 )
 
@@ -267,6 +268,7 @@ drake_cc_googletest(
         "//common/test_utilities",
         "//multibody/benchmarks/acrobot",
         "//multibody/benchmarks/acrobot:make_acrobot_plant",
+        "@spruce",
     ],
 )
 

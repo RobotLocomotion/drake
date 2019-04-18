@@ -316,6 +316,7 @@ drake_cc_library(
     srcs = [
         "find_loaded_library.cc",
         "find_resource.cc",
+        "find_resource_deprecated.cc",
     ],
     hdrs = [
         "find_loaded_library.h",
@@ -333,7 +334,6 @@ drake_cc_library(
         ":drake_marker_shared_library",
         ":essential",
         ":find_runfiles",
-        "@spruce",
     ],
 )
 
