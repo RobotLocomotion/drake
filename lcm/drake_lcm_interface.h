@@ -274,5 +274,13 @@ class Subscriber final {
   std::shared_ptr<DrakeSubscriptionInterface> subscription_;
 };
 
+/// Convenience function that repeatedly calls `lcm->HandleSubscriptions()`
+/// with a timeout value of `timeout_millis`, until `finished()` returns true.
+/// Returns the total number of messages handled.
+int LcmHandleSubscriptionsUntil(
+    DrakeLcmInterface* lcm,
+    const std::function<bool(void)>& finished,
+    int timeout_millis = 100);
+
 }  // namespace lcm
 }  // namespace drake

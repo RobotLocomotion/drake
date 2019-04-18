@@ -151,11 +151,9 @@ void ManipulationStationHardwareInterface::Connect(bool wait_for_cameras) {
     std::cout << "Waiting for " << lcm_sub.get_channel_name()
               << " message..." << std::flush;
     const int orig_count = lcm_sub.GetInternalMessageCount();
-    int count = orig_count;
-    do {
-      lcm->HandleSubscriptions(10 /* timeout_millis */);
-      count = lcm_sub.GetInternalMessageCount();
-    } while (count == orig_count);
+    LcmHandleSubscriptionsUntil(lcm, [&]() {
+        return lcm_sub.GetInternalMessageCount() > orig_count;
+      }, 10 /* timeout_millis */);
     std::cout << "Received!" << std::endl;
   };
 
