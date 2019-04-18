@@ -62,6 +62,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "static_equilibrium_solver",
+    srcs = ["static_equilibrium_solver.cc"],
+    hdrs = ["static_equilibrium_solver.h"],
+    deps = [
+        ":contact_wrench_evaluator",
+        ":static_friction_cone_complementary_constraint",
+        ":static_equilibrium_constraint",
+    ],
+)
+
+drake_cc_library(
     name = "optimization_with_contact_utilities",
     testonly = 1,
     srcs = ["test/optimization_with_contact_utilities.cc"],
