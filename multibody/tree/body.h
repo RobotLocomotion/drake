@@ -231,15 +231,24 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
         context, *this);
   }
 
+  /// Gets the sptatial force on `this` body B from `forces` as F_BBo_W:
+  /// applied at body B's origin Bo and expressed in world world frame W.
+  const SpatialForce<T>& GetForceInWorld(
+      const systems::Context<T>&, const MultibodyForces<T>& forces) const {
+    DRAKE_THROW_UNLESS(
+        forces.CheckHasRightSizeForModel(this->get_parent_tree()));
+    return forces.body_forces()[node_index()];
+  }
+
   /// Adds the spatial force on `this` body B, applied at body B's origin Bo and
   /// expressed in the world frame W into `forces`.
-  void AddInForceInWorld(const systems::Context<T>& context,
+  void AddInForceInWorld(const systems::Context<T>&,
                          const SpatialForce<T>& F_Bo_W,
                          MultibodyForces<T>* forces) const {
     DRAKE_THROW_UNLESS(forces != nullptr);
     DRAKE_THROW_UNLESS(
         forces->CheckHasRightSizeForModel(this->get_parent_tree()));
-    forces->mutable_body_forces()[node_index()] = F_Bo_W;
+    forces->mutable_body_forces()[node_index()] += F_Bo_W;
   }
 
   /// Adds the spatial force on `this` body B, applied at point P and

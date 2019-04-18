@@ -22,7 +22,7 @@ from pydrake.multibody.tree import (
     WeldJoint,
     world_index,
 )
-from pydrake.multibody.math import SpatialVelocity
+from pydrake.multibody.math import SpatialForce, SpatialVelocity
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
     ContactResults,
@@ -760,6 +760,29 @@ class TestPlant(unittest.TestCase):
 
         forces = MultibodyForces(plant=plant)
         plant.CalcForceElementsContribution(context=context, forces=forces)
+
+        # Test generalized forces.
+        forces.mutable_generalized_forces()[:] = 1
+        np.testing.assert_equal(forces.generalized_forces(), 1)
+        forces.SetZero()
+        np.testing.assert_equal(forces.generalized_forces(), 0)
+        # Test body force accessors and mutators.
+        link2 = plant.GetBodyByName("Link2")
+        self.assertIsInstance(
+            link2.GetForceInWorld(context, forces), SpatialForce)
+        forces.SetZero()
+        F_expected = np.array([1, 2, 3, 4, 5, 6])
+        link2.AddInForceInWorld(
+            context, F_Bo_W=SpatialForce(F=F_expected), forces=forces)
+        np.testing.assert_equal(
+            link2.GetForceInWorld(context, forces).get_coeffs(), F_expected)
+        link2.AddInForce(
+            context, p_BP_E=[0, 0, 0], F_Bp_E=SpatialForce(F=F_expected),
+            frame_E=plant.world_frame(), forces=forces)
+        # Also check accumulation.
+        np.testing.assert_equal(
+            link2.GetForceInWorld(context, forces).get_coeffs(),
+            2 * F_expected)
 
     def test_contact(self):
         # PenetrationAsContactPair

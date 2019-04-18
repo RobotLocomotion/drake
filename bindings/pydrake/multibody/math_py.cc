@@ -4,6 +4,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/math/spatial_acceleration.h"
+#include "drake/multibody/math/spatial_force.h"
 #include "drake/multibody/math/spatial_velocity.h"
 
 namespace drake {
@@ -29,7 +30,11 @@ void BindSpatialVectorMixin(PyClass* pcls) {
             return self->translational();
           },
           py_reference_internal,
-          doc.SpatialVector.translational.doc_0args_const);
+          doc.SpatialVector.translational.doc_0args_const)
+      .def("SetZero", &Class::SetZero, doc.SpatialVector.SetZero.doc)
+      .def("get_coeffs", [](const Class& self) { return self.get_coeffs(); },
+          doc.SpatialVector.get_coeffs.doc_0args_const)
+      .def_static("Zero", &Class::Zero, doc.SpatialVector.Zero.doc);
 }
 
 PYBIND11_MODULE(math, m) {
@@ -48,7 +53,9 @@ PYBIND11_MODULE(math, m) {
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Vector3<T>>&,
                  const Eigen::Ref<const Vector3<T>>&>(),
-            py::arg("w"), py::arg("v"), cls_doc.ctor.doc_2args);
+            py::arg("w"), py::arg("v"), cls_doc.ctor.doc_2args)
+        .def(py::init<const Vector6<T>&>(), py::arg("V"),
+            cls_doc.ctor.doc_1args);
   }
   {
     using Class = SpatialAcceleration<T>;
@@ -59,7 +66,22 @@ PYBIND11_MODULE(math, m) {
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Vector3<T>>&,
                  const Eigen::Ref<const Vector3<T>>&>(),
-            py::arg("alpha"), py::arg("a"), cls_doc.ctor.doc_2args);
+            py::arg("alpha"), py::arg("a"), cls_doc.ctor.doc_2args)
+        .def(py::init<const Vector6<T>&>(), py::arg("A"),
+            cls_doc.ctor.doc_1args);
+  }
+  {
+    using Class = multibody::SpatialForce<T>;
+    constexpr auto& cls_doc = doc.SpatialForce;
+    py::class_<Class> cls(m, "SpatialForce", cls_doc.doc);
+    BindSpatialVectorMixin(&cls);
+    cls  // BR
+        .def(py::init(), cls_doc.ctor.doc_0args)
+        .def(py::init<const Eigen::Ref<const Vector3<T>>&,
+                 const Eigen::Ref<const Vector3<T>>&>(),
+            py::arg("tau"), py::arg("f"), cls_doc.ctor.doc_2args)
+        .def(py::init<const Vector6<T>&>(), py::arg("F"),
+            cls_doc.ctor.doc_1args);
   }
 }
 
