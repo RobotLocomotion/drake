@@ -15,6 +15,7 @@ drake_cc_package_library(
     deps = [
         ":autodiff",
         ":barycentric",
+        ":compute_numerical_gradient",
         ":continuous_algebraic_riccati_equation",
         ":continuous_lyapunov_equation",
         ":discrete_algebraic_riccati_equation",
@@ -50,6 +51,15 @@ drake_cc_library(
     name = "barycentric",
     srcs = ["barycentric.cc"],
     hdrs = ["barycentric.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "compute_numerical_gradient",
+    srcs = [],
+    hdrs = ["compute_numerical_gradient.h"],
     deps = [
         "//common:essential",
     ],
@@ -266,6 +276,16 @@ drake_cc_googletest(
         ":barycentric",
         "//common:symbolic",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "compute_numerical_gradient_test",
+    deps = [
+        ":compute_numerical_gradient",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:autodiff",
+        "//math:gradient",
     ],
 )
 
