@@ -29,6 +29,7 @@
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
+#include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
@@ -262,6 +263,15 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       plant->GetJointByName<RevoluteJoint>("pin");
   EXPECT_EQ(pin.name(), "pin");
   EXPECT_THROW(plant->GetJointByName(kInvalidName), std::logic_error);
+
+  // Templatized version throws when the requested joint doesn't have the
+  // expected type.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant->GetJointByName<PrismaticJoint>(parameters.shoulder_joint_name(),
+                                            shoulder.model_instance()),
+      std::logic_error,
+      ".*not of type '.*PrismaticJoint<double>' but of type "
+      "'.*RevoluteJoint<double>'.");
 
   // MakeAcrobotPlant() has already called Finalize() on the acrobot model.
   // Therefore no more modeling elements can be added. Verify this.

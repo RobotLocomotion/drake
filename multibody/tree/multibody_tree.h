@@ -952,7 +952,7 @@ class MultibodyTree {
           "Joint '" + name + "' in model instance " +
           instance_index_to_name_.at(*model_instance) + " is not of type '" +
           NiceTypeName::Get<JointType<T>>() + "' but of type '" +
-          NiceTypeName::Get(GetJointByName(name)) + "'.");
+          NiceTypeName::Get(*joint) + "'.");
     }
     return *typed_joint;
   }
