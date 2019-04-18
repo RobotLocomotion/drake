@@ -23,7 +23,8 @@ DiscreteDerivative<T>::DiscreteDerivative(int num_inputs, double time_step)
 
   this->DeclareVectorInputPort("u", systems::BasicVector<T>(n_));
   this->DeclareVectorOutputPort("dudt", systems::BasicVector<T>(n_),
-                                &DiscreteDerivative<T>::CalcOutput);
+                                &DiscreteDerivative<T>::CalcOutput,
+                                {this->xd_ticket()});
 
   // TODO(sherm): Prefer two state vectors of size n_ upon resolution of #9705.
   this->DeclareDiscreteState(2 * n_);

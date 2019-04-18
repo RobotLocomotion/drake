@@ -61,11 +61,6 @@ class LuenbergerObserver : public systems::LeafSystem<T> {
   void CalcEstimatedState(const systems::Context<T>& context,
                           systems::BasicVector<T>* output) const;
 
-  /// This system is not direct feedthrough.
-  optional<bool> DoHasDirectFeedthrough(int, int) const override {
-    return false;
-  }
-
   const std::unique_ptr<systems::System<T>> observed_system_;
   const Eigen::MatrixXd observer_gain_;  // Gain matrix (often called "L").
 

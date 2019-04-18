@@ -67,15 +67,6 @@ class BouncingBallPlant : public systems::LeafSystem<T> {
   /** Gravity in m/s^2. */
   double g() const { return g_; }
 
- protected:
-  // The single input (geometry query) only impacts time derivatives and does
-  // not affect any output port. So, there are no direct feedthroughs.
-  optional<bool> DoHasDirectFeedthrough(int input_port, int) const override {
-    // This prevents addition of new input ports without revisiting this method.
-    DRAKE_THROW_UNLESS(input_port == geometry_query_port_);
-    return false;
-  }
-
  private:
   // Callback for writing the state vector to an output.
   void CopyStateToOutput(const systems::Context<T>& context,

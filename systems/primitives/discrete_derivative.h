@@ -90,10 +90,6 @@ class DiscreteDerivative final : public LeafSystem<T> {
   double time_step() const { return time_step_; }
 
  private:
-  optional<bool> DoHasDirectFeedthrough(int, int) const {
-    return false;
-  }
-
   void DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
       const std::vector<const DiscreteUpdateEvent<T>*>&,

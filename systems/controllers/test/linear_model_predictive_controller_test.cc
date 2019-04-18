@@ -93,7 +93,8 @@ class CubicPolynomialSystem final : public LeafSystem<T> {
         time_step_(time_step) {
     this->DeclareInputPort(systems::kVectorValued, 1);
     this->DeclareVectorOutputPort(BasicVector<T>(2),
-                                  &CubicPolynomialSystem::OutputState);
+                                  &CubicPolynomialSystem::OutputState,
+                                  {this->all_state_ticket()});
     this->DeclareDiscreteState(2);
     this->DeclarePeriodicDiscreteUpdate(time_step);
   }
@@ -121,13 +122,6 @@ class CubicPolynomialSystem final : public LeafSystem<T> {
   void OutputState(const systems::Context<T>& context,
                    BasicVector<T>* output) const {
     output->set_value(context.get_discrete_state(0).get_value());
-  }
-
-  // TODO(jadecastro) We know a discrete system of this format does not have
-  // direct feedthrough, even though sparsity reports the opposite.  This is a
-  // hack to patch in the correct result.
-  optional<bool> DoHasDirectFeedthrough(int, int) const override {
-    return false;
   }
 
   const double time_step_{0.};

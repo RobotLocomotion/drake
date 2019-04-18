@@ -97,10 +97,6 @@ class DiscreteTimeDelay final : public LeafSystem<T> {
   DiscreteTimeDelay(double update_sec, int delay_timesteps, int vector_size,
                     std::unique_ptr<const AbstractValue> model_value);
 
-  // Override feedthrough detection to avoid the need for `DoToSymbolic()`.
-  optional<bool> DoHasDirectFeedthrough(int input_port,
-                                        int output_port) const final;
-
   // Sets the output port value to the properly delayed vector value.
   void CopyDelayedVector(const Context<T>& context,
                          BasicVector<T>* output) const;

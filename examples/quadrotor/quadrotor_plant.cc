@@ -49,7 +49,8 @@ QuadrotorPlant<T>::QuadrotorPlant(double m_arg, double L_arg,
   this->DeclareContinuousState(12);
   state_port_ =
       this->DeclareVectorOutputPort("state", systems::BasicVector<T>(12),
-                                    &QuadrotorPlant::CopyStateOut)
+                                    &QuadrotorPlant::CopyStateOut,
+                                    {this->all_state_ticket()})
           .get_index();
 }
 

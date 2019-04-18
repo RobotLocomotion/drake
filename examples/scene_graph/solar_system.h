@@ -114,12 +114,6 @@ class SolarSystem : public systems::LeafSystem<T> {
   void SetDefaultState(const systems::Context<T>&,
                        systems::State<T>*) const override;
 
- protected:
-  // No inputs implies no feedthrough; this makes it explicit.
-  optional<bool> DoHasDirectFeedthrough(int, int) const override {
-    return false;
-  }
-
  private:
   // Allocate all of the geometry.
   void AllocateGeometry(geometry::SceneGraph<T>* scene_graph);
