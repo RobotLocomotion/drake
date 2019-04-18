@@ -32,7 +32,6 @@ drake_cc_package_library(
         ":essential",
         ":extract_double",
         ":find_resource",
-        ":find_runfiles",
         ":hash",
         ":is_approx_equal_abstol",
         ":is_cloneable",
@@ -302,16 +301,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "find_runfiles",
-    srcs = ["find_runfiles.cc"],
-    hdrs = ["find_runfiles.h"],
-    deps = [
-        ":essential",
-        "@bazel_tools//tools/cpp/runfiles",
-    ],
-)
-
-drake_cc_library(
     name = "find_resource",
     srcs = [
         "find_loaded_library.cc",
@@ -332,7 +321,6 @@ drake_cc_library(
     deps = [
         ":drake_marker_shared_library",
         ":essential",
-        ":find_runfiles",
         "@spruce",
     ],
 )
@@ -859,32 +847,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":find_resource",
-    ],
-)
-
-drake_cc_googletest(
-    name = "find_runfiles_test",
-    data = [
-        "test/find_resource_test_data.txt",
-    ],
-    deps = [
-        ":find_runfiles",
-        ":temp_directory",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "find_runfiles_fail_test",
-    deps = [
-        ":find_runfiles",
-    ],
-)
-
-drake_py_unittest(
-    name = "find_runfiles_subprocess_test",
-    data = [
-        ":find_runfiles_test",
     ],
 )
 
