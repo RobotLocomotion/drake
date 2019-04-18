@@ -1700,32 +1700,55 @@ GTEST_TEST(AutodiffLeafSystemTest, NextUpdateTimeAutodiff) {
   EXPECT_EQ(25.0, time);
 }
 
-// A LeafSystem that uses the default, conservative direct-feedthrough
-// implementation, informed by neither symbolic sparsity analysis nor manual
-// sparsity declarations.
+// A LeafSystem that uses the default direct-feedthrough implementation without
+// symbolic sparsity analysis.  The only sparsity that is (optionally) used is
+// the output port cache prerequisites.  (The particular unit that employs this
+// system chooses those prerequisites.)
 class DefaultFeedthroughSystem : public LeafSystem<double> {
  public:
   DefaultFeedthroughSystem() {}
 
   ~DefaultFeedthroughSystem() override {}
 
-  void AddAbstractInputPort() {
-    this->DeclareAbstractInputPort(kUseDefaultName, Value<std::string>{});
+  InputPortIndex AddAbstractInputPort() {
+    return this->DeclareAbstractInputPort(
+        kUseDefaultName, Value<std::string>{}).get_index();
   }
 
-  void AddAbstractOutputPort() {
-    this->DeclareAbstractOutputPort(
-        kUseDefaultName,
-        []() { return AbstractValue::Make<int>(0); },  // Dummies.
-        [](const ContextBase&, AbstractValue*) {});
+  OutputPortIndex AddAbstractOutputPort(
+      optional<std::set<DependencyTicket>> prerequisites_of_calc = {}) {
+    // Dummies.
+    auto alloc = []() { return AbstractValue::Make<int>(0); };
+    auto calc = [](const ContextBase&, AbstractValue*) {};
+    if (prerequisites_of_calc) {
+      return this->DeclareAbstractOutputPort(
+          kUseDefaultName, alloc, calc, *prerequisites_of_calc).get_index();
+    } else {
+      // The DeclareAbstractOutputPort API's default value for the
+      // prerequisites_of_calc is everything (i.e., "all_sources_ticket()").
+      return this->DeclareAbstractOutputPort(
+          kUseDefaultName, alloc, calc).get_index();
+    }
   }
+
+  // Elevate helper methods to be public.
+  using LeafSystem<double>::accuracy_ticket;
+  using LeafSystem<double>::all_input_ports_ticket;
+  using LeafSystem<double>::all_parameters_ticket;
+  using LeafSystem<double>::all_sources_ticket;
+  using LeafSystem<double>::all_state_ticket;
+  using LeafSystem<double>::configuration_ticket;
+  using LeafSystem<double>::input_port_ticket;
+  using LeafSystem<double>::kinematics_ticket;
+  using LeafSystem<double>::nothing_ticket;
+  using LeafSystem<double>::time_ticket;
 };
 
 GTEST_TEST(FeedthroughTest, DefaultWithNoInputsOrOutputs) {
   DefaultFeedthroughSystem system;
   EXPECT_FALSE(system.HasAnyDirectFeedthrough());
   // No ports implies no pairs reported for direct feedthrough.
-  std::multimap<int, int> expected;
+  const std::multimap<int, int> expected;
   EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
 }
 
@@ -1737,8 +1760,7 @@ GTEST_TEST(FeedthroughTest, DefaultWithBothInputsAndOutputs) {
   EXPECT_TRUE(system.HasDirectFeedthrough(0));
   EXPECT_TRUE(system.HasDirectFeedthrough(0, 0));
   // Confirm all pairs are returned.
-  std::multimap<int, int> expected;
-  expected.emplace(0, 0);
+  const std::multimap<int, int> expected{{0, 0}};
   EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
 }
 
@@ -1747,7 +1769,7 @@ GTEST_TEST(FeedthroughTest, DefaultWithInputsOnly) {
   system.AddAbstractInputPort();
   EXPECT_FALSE(system.HasAnyDirectFeedthrough());
   // No output ports implies no pairs reported for direct feedthrough.
-  std::multimap<int, int> expected;
+  const std::multimap<int, int> expected;
   EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
 }
 
@@ -1757,8 +1779,39 @@ GTEST_TEST(FeedthroughTest, DefaultWithOutputsOnly) {
   EXPECT_FALSE(system.HasAnyDirectFeedthrough());
   EXPECT_FALSE(system.HasDirectFeedthrough(0));
   // No input ports implies no pairs reported for direct feedthrough.
-  std::multimap<int, int> expected;
+  const std::multimap<int, int> expected;
   EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
+}
+
+GTEST_TEST(FeedthroughTest, DefaultWithPrerequisites) {
+  DefaultFeedthroughSystem system;
+  const auto input_port_index0 = system.AddAbstractInputPort();
+  const auto input_port_index1 = system.AddAbstractInputPort();
+
+  const std::vector<DependencyTicket> feedthrough_tickets{
+    system.input_port_ticket(input_port_index0),
+    system.input_port_ticket(input_port_index1),
+    system.all_input_ports_ticket(),
+    system.all_sources_ticket(),
+  };
+  const std::vector<DependencyTicket> non_feedthrough_tickets{
+    system.nothing_ticket(),
+    system.time_ticket(),
+    system.accuracy_ticket(),
+    system.all_state_ticket(),
+    system.all_parameters_ticket(),
+    system.configuration_ticket(),
+    system.kinematics_ticket(),
+  };
+
+  for (const auto& ticket : non_feedthrough_tickets) {
+    const auto output_port_index = system.AddAbstractOutputPort({{ ticket }});
+    EXPECT_FALSE(system.HasDirectFeedthrough(output_port_index));
+  }
+  for (const auto& ticket : feedthrough_tickets) {
+    const auto output_port_index = system.AddAbstractOutputPort({{ ticket }});
+    EXPECT_TRUE(system.HasDirectFeedthrough(output_port_index));
+  }
 }
 
 // With multiple input and output ports, all input ports are thought to feed
@@ -1823,9 +1876,7 @@ GTEST_TEST(FeedthroughTest, ManualSparsity) {
   EXPECT_TRUE(system.HasDirectFeedthrough(1, 0));
   EXPECT_FALSE(system.HasDirectFeedthrough(1, 1));
   // Confirm all pairs are returned.
-  std::multimap<int, int> expected;
-  expected.emplace(1, 0);
-  expected.emplace(0, 1);
+  const std::multimap<int, int> expected{{1, 0}, {0, 1}};
   auto feedthrough_pairs = system.GetDirectFeedthroughs();
   EXPECT_EQ(feedthrough_pairs, expected);
 }
@@ -1847,6 +1898,8 @@ class SymbolicSparsitySystem : public LeafSystem<T> {
  protected:
   explicit SymbolicSparsitySystem(SystemScalarConverter converter)
       : LeafSystem<T>(std::move(converter)) {
+    const int kSize = 1;
+
     this->DeclareInputPort(kVectorValued, kSize);
     this->DeclareInputPort(kVectorValued, kSize);
 
@@ -1868,8 +1921,6 @@ class SymbolicSparsitySystem : public LeafSystem<T> {
     const auto& u0 = this->get_input_port(0).Eval(context);
     y1->set_value(u0);
   }
-
-  const int kSize = 1;
 };
 
 // The sparsity reporting should be the same no matter which scalar type the

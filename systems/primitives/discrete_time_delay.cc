@@ -25,7 +25,8 @@ DiscreteTimeDelay<T>::DiscreteTimeDelay(
     BasicVector<T> model_value(vector_size);
     this->DeclareVectorInputPort("u", model_value);
     this->DeclareVectorOutputPort("delayed_u", model_value,
-                                  &DiscreteTimeDelay::CopyDelayedVector);
+                                  &DiscreteTimeDelay::CopyDelayedVector,
+                                  {this->xd_ticket()});
     this->DeclareDiscreteState(vector_size_ * delay_buffer_size_);
     this->DeclarePeriodicDiscreteUpdateEvent(
         update_sec_, 0., &DiscreteTimeDelay::SaveInputVectorToBuffer);
@@ -38,7 +39,8 @@ DiscreteTimeDelay<T>::DiscreteTimeDelay(
         [this]() { return abstract_model_value_->Clone(); },
         [this](const Context<T>& context, AbstractValue* out) {
           this->CopyDelayedAbstractValue(context, out);
-        });
+        },
+        {this->xa_ticket()});
     for (int ii = 0; ii < delay_buffer_size_; ++ii) {
       this->DeclareAbstractState(abstract_model_value_->Clone());
     }
@@ -107,16 +109,6 @@ void DiscreteTimeDelay<T>::SaveInputAbstractValueToBuffer(
       state->get_mutable_abstract_state().get_mutable_value(oldest_index);
   state_value.SetFrom(input);
   oldest_index = (oldest_index + 1) % delay_buffer_size_;
-}
-
-template <typename T>
-optional<bool> DiscreteTimeDelay<T>::DoHasDirectFeedthrough(
-    int input_port, int output_port) const {
-  DRAKE_DEMAND(input_port == 0);
-  DRAKE_DEMAND(output_port == 0);
-  // By definition, a time delay will not have direct feedthrough, as the
-  // output only depends on the state, not the input.
-  return false;
 }
 
 }  // namespace systems

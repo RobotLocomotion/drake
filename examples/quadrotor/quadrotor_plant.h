@@ -67,17 +67,6 @@ class QuadrotorPlant final : public systems::LeafSystem<T> {
   void CopyPoseOut(const systems::Context<T>& context,
                    geometry::FramePoseVector<T>* poses) const;
 
-  /// Declares that the system has no direct feedthrough from any input to any
-  /// output.
-  ///
-  /// The QuadrotorPlant is incompatible with the symbolic::Expression scalar
-  /// type because it invokes the Cholesky LDLT decomposition, which uses
-  /// conditionals in its implementation. Therefore, we must specify sparsity
-  /// by hand.
-  optional<bool> DoHasDirectFeedthrough(int, int) const override {
-    return false;
-  }
-
   // Allow different specializations to access each other's private data.
   template <typename> friend class QuadrotorPlant;
 
