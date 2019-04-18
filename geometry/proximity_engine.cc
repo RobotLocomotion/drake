@@ -168,15 +168,23 @@ struct CollisionData {
 // functor's stored poses.
 class DistancePairGeometry {
  public:
-  // @param result   We report the signed distance and the witness points in
-  //                 the struct fcl::DistanceResultd pointed by `result`.
+  // @param result[out]   We report the signed distance and the witness
+  //                      points in the struct fcl::DistanceResultd pointed
+  //                      by `result`.
+  // @param nhat_BA_W[out]   The outward unit normal vector to the surface of
+  //                         B at the witness point Cb ∈ ∂B.
   // @note Those aspects of the query geometry that do not depend on the
   // shape type are provided to the constructor. The overloaded call operator
   // takes the actual shape types.
   DistancePairGeometry(const GeometryId& id_A, const GeometryId& id_B,
                        const RigidTransformd& X_WA, const RigidTransformd& X_WB,
-                       fcl::DistanceResultd* result)
-      : id_A_(id_A), id_B_(id_B), X_WA_(X_WA), X_WB_(X_WB), result_(result) {}
+                       fcl::DistanceResultd* result, Vector3d* nhat_BA_W)
+      : id_A_(id_A),
+        id_B_(id_B),
+        X_WA_(X_WA),
+        X_WB_(X_WB),
+        result_(result),
+        nhat_BA_W_(nhat_BA_W) {}
 
   // Given a sphere A centered at Ao with radius r and another geometry B,
   // we want to compute
@@ -222,6 +230,7 @@ class DistancePairGeometry {
   RigidTransformd X_WA_;
   RigidTransformd X_WB_;
   fcl::DistanceResultd* result_;
+  Vector3d* nhat_BA_W_;
 };
 
 Vector3d DistancePairGeometry::WitnessPointOnSphere(
@@ -254,6 +263,7 @@ void DistancePairGeometry::SphereShapeDistance(const fcl::Sphered* sphere_A,
   const Vector3d p_WNa = WitnessPointOnSphere(sphere_A->radius, X_WA_, gradB_W);
   // fcl::DistanceResult expects -1 for primitive shapes.
   result_->update(distance, sphere_A, shape_B, -1, -1, p_WNa, p_WNb);
+  *nhat_BA_W_ = gradB_W;
 }
 
 // Signed distance between two spheres.
@@ -274,13 +284,26 @@ void DistancePairGeometry::operator()(const fcl::Sphered* sphere_A,
   SphereShapeDistance(sphere_A, cylinder_B);
 }
 
+Vector3d CalcNormalFromFclDistanceResult(const fcl::DistanceResultd& result) {
+  const Vector3d& p_WCa = result.nearest_points[0];
+  const Vector3d& p_WCb = result.nearest_points[1];
+  const Vector3d nhat_BA_W =
+      (std::abs(result.min_distance) < std::numeric_limits<double>::epsilon())
+      ? Vector3d(std::numeric_limits<double>::quiet_NaN(),
+                 std::numeric_limits<double>::quiet_NaN(),
+                 std::numeric_limits<double>::quiet_NaN())
+      : (p_WCa - p_WCb) / result.min_distance;
+  return nhat_BA_W;
+}
+
 // Helps DistanceCallback(). Do it in closed forms for sphere-sphere,
 // sphere-box, or sphere-cylinder. Otherwise, use FCL GJK/EPA.
 void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd* a,
                                 const fcl::CollisionObjectd* b,
                                 const std::vector<GeometryId>& geometry_map,
                                 const fcl::DistanceRequestd& request,
-                                fcl::DistanceResultd* result) {
+                                fcl::DistanceResultd* result,
+                                Vector3d* nhat_BA_W) {
   const fcl::CollisionGeometryd* a_geometry = a->collisionGeometry().get();
   const fcl::CollisionGeometryd* b_geometry = b->collisionGeometry().get();
 
@@ -308,6 +331,7 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd* a,
   const bool no_sphere = ((!a_is_sphere) && (!b_is_sphere));
   if (no_sphere) {
     fcl::distance(a, b, request, *result);
+    *nhat_BA_W = CalcNormalFromFclDistanceResult(*result);
     return;
   }
   DRAKE_ASSERT(a_is_sphere || b_is_sphere);
@@ -325,7 +349,9 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd* a,
   const RigidTransformd X_WO(o->getTransform());
   const auto id_S = EncodedData(*s).id(geometry_map);
   const auto id_O = EncodedData(*o).id(geometry_map);
-  DistancePairGeometry distance_pair(id_S, id_O, X_WS, X_WO, result);
+  Vector3d nhat_OS_W;
+  DistancePairGeometry distance_pair(id_S, id_O, X_WS, X_WO, result,
+                                     &nhat_OS_W);
   auto sphere_S = static_cast<const fcl::Sphered*>(s_geometry);
   switch (o_geometry->getNodeType()) {
     case fcl::GEOM_SPHERE: {
@@ -347,6 +373,7 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd* a,
       // We don't have a closed form solution for the other geometry, so we
       // call FCL GJK/EPA.
       fcl::distance(s, o, request, *result);
+      nhat_OS_W = CalcNormalFromFclDistanceResult(*result);
       break;
     }
   }
@@ -355,6 +382,11 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd* a,
     std::swap(result->o1, result->o2);
     std::swap(result->nearest_points[0], result->nearest_points[1]);
   }
+  // If needed, we re-direct the vector nhat_OS_W (other(O)-to-sphere(S)) to
+  // point from B to A. We know that:
+  //      nhat_OS_W = nhat_BA_W, if A is a sphere,
+  //                = nhat_AB_W = -nhat_BA_W, otherwise.
+  *nhat_BA_W = a_is_sphere ? nhat_OS_W : -nhat_OS_W;
 }
 
 // The callback function in fcl::distance request. The final unnamed parameter
@@ -401,22 +433,16 @@ bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
 
   if (can_collide) {
     fcl::DistanceResultd result;
+    // We are not ready to set up another member variable nhat_BA_W in
+    // fcl::DistanceResultd.  Therefore, here we define a local variable
+    // nhat_BA_W.
+    Vector3d nhat_BA_W;
     ComputeNarrowPhaseDistance(&fcl_object_A, &fcl_object_B, geometry_map,
-                               distance_data.request, &result);
+                               distance_data.request, &result, &nhat_BA_W);
     const Vector3d& p_WCa = result.nearest_points[0];
     const Vector3d& p_WCb = result.nearest_points[1];
     const Vector3d p_ACa = fcl_object_A.getTransform().inverse() * p_WCa;
     const Vector3d p_BCb = fcl_object_B.getTransform().inverse() * p_WCb;
-    // TODO(DamrongGuoy): For sphere-{sphere,box,cylinder} we will start
-    //  working on the right nhat when min_distance is 0 or almost 0 after
-    //  PR #10813 lands to avoid conflicts with this PR #10823. For now,
-    //  we simply return NaN in nhat when min_distance is 0 or almost 0.
-    const Vector3d nhat_BA_W =
-        (std::abs(result.min_distance) < std::numeric_limits<double>::epsilon())
-            ? Vector3d(std::numeric_limits<double>::quiet_NaN(),
-                       std::numeric_limits<double>::quiet_NaN(),
-                       std::numeric_limits<double>::quiet_NaN())
-            : (p_WCa - p_WCb) / result.min_distance;
     distance_data.nearest_pairs->emplace_back(id_A, id_B, p_ACa, p_BCb,
                                               result.min_distance, nhat_BA_W);
   }
