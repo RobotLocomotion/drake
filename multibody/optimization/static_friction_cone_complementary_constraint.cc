@@ -6,9 +6,10 @@
 
 namespace drake {
 namespace multibody {
-namespace internal {
 
 const double kInf = std::numeric_limits<double>::infinity();
+
+namespace internal {
 
 StaticFrictionConeComplementaryNonlinearConstraint::
     StaticFrictionConeComplementaryNonlinearConstraint(
@@ -142,6 +143,7 @@ void StaticFrictionConeComplementaryNonlinearConstraint::DoEval(
       "StaticEquilibriumConstraint: does not support Eval with symbolic "
       "variable and expressions.");
 }
+}  // namespace internal
 
 solvers::Binding<internal::StaticFrictionConeComplementaryNonlinearConstraint>
 AddStaticFrictionConeComplementaryConstraint(
@@ -167,7 +169,5 @@ AddStaticFrictionConeComplementaryConstraint(
       Eigen::Vector2d::Zero(), Eigen::Vector2d::Constant(kInf), alpha_beta_var);
   return nonlinear_binding;
 }
-
-}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

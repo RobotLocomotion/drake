@@ -32,6 +32,19 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
     return x;
   }
 
+  template <typename DerivedQ, typename DerivedLambda>
+  typename std::enable_if<std::is_same<typename DerivedQ::Scalar,
+                                       typename DerivedLambda::Scalar>::value,
+                          VectorX<typename DerivedQ::Scalar>>::type
+  ComposeVariableValues(
+      const Eigen::MatrixBase<DerivedQ>& q_value,
+      const Eigen::MatrixBase<DerivedLambda>& lambda_value) const {
+    VectorX<typename DerivedQ::Scalar> x(num_vars());
+    x.template head(plant_->num_positions()) = q_value;
+    x.template tail(num_lambda_) = lambda_value;
+    return x;
+  }
+
   /**
    * Returns the size of lambda.
    */
