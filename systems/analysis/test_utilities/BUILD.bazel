@@ -15,14 +15,18 @@ drake_cc_package_library(
     testonly = 1,
     deps = [
         ":controlled_spring_mass_system",
+        ":cubic_scalar_system",
         ":discontinuous_spring_mass_damper_system",
         ":explicit_error_controlled_integrator_test",
+        ":linear_scalar_system",
         ":logistic_system",
         ":my_spring_mass_system",
         ":pleides_system",
+        ":quadratic_scalar_system",
         ":robertson_system",
         ":spring_mass_damper_system",
         ":stateless_system",
+        ":stationary_system",
         ":stiff_double_mass_spring_system",
     ],
 )
@@ -45,6 +49,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "cubic_scalar_system",
+    testonly = 1,
+    hdrs = ["cubic_scalar_system.h"],
+    deps = [
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
     name = "discontinuous_spring_mass_damper_system",
     testonly = 1,
     hdrs = ["discontinuous_spring_mass_damper_system.h"],
@@ -59,6 +72,15 @@ drake_cc_library(
     hdrs = ["explicit_error_controlled_integrator_test.h"],
     deps = [
         ":my_spring_mass_system",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_scalar_system",
+    testonly = 1,
+    hdrs = ["linear_scalar_system.h"],
+    deps = [
+        "//systems/framework",
     ],
 )
 
@@ -90,6 +112,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "quadratic_scalar_system",
+    testonly = 1,
+    hdrs = ["quadratic_scalar_system.h"],
+    deps = [
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
     name = "robertson_system",
     testonly = 1,
     hdrs = ["robertson_system.h"],
@@ -109,6 +140,15 @@ drake_cc_library(
     name = "stateless_system",
     testonly = 1,
     hdrs = ["stateless_system.h"],
+    deps = [
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "stationary_system",
+    testonly = 1,
+    hdrs = ["stationary_system.h"],
     deps = [
         "//systems/framework",
     ],

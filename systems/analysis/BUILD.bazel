@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":integrator_base",
         ":lyapunov",
         ":monte_carlo",
+        ":radau3_integrator",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
         ":scalar_dense_output",
@@ -160,6 +161,17 @@ drake_cc_library(
     deps = [
         ":integrator_base",
         "//math:gradient",
+    ],
+)
+
+drake_cc_library(
+    name = "radau3_integrator",
+    srcs = ["radau3_integrator.cc"],
+    hdrs = [
+        "radau3_integrator.h",
+    ],
+    deps = [
+        ":implicit_integrator",
     ],
 )
 
@@ -305,6 +317,23 @@ drake_cc_googletest(
     ],
     deps = [
         ":implicit_euler_integrator",
+        "//systems/analysis/test_utilities",
+        "//systems/plants/spring_mass_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "radau3_integrator_test",
+    timeout = "moderate",
+    shard_count = 2,
+    # Adding cache invalidation made this take too long with Valgrind.
+    # See Drake issue #9261.
+    tags = [
+        "no_memcheck",
+    ],
+    deps = [
+        ":implicit_euler_integrator",
+        ":radau3_integrator",
         "//systems/analysis/test_utilities",
         "//systems/plants/spring_mass_system",
     ],

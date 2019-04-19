@@ -9,8 +9,10 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
+#include "drake/systems/analysis/test_utilities/cubic_scalar_system.h"
 #include "drake/systems/analysis/test_utilities/explicit_error_controlled_integrator_test.h"
 #include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
+#include "drake/systems/analysis/test_utilities/quadratic_scalar_system.h"
 
 namespace drake {
 namespace systems {
@@ -63,36 +65,6 @@ class RK3IntegratorTest : public ::testing::Test {
   std::unique_ptr<multibody::MultibodyPlant<double>> plant_{};
 };
 
-// System where the state at t corresponds to the cubic equation
-// t³ + t² + 12t + C, where C is the initial value (the state at t=0).
-class Cubic : public LeafSystem<double> {
- public:
-  Cubic() { this->DeclareContinuousState(1); }
-
- private:
-  void DoCalcTimeDerivatives(
-      const Context<double>& context,
-      ContinuousState<double>* deriv) const override {
-    const double t = context.get_time();
-    (*deriv)[0] = 3 * t * t + 2 * t + 12;
-  }
-};
-
-// System where the state at t corresponds to the quadratic equation
-// 4t² + 4t + C, where C is the initial value (the state at t=0).
-class Quadratic : public LeafSystem<double> {
- public:
-  Quadratic() { this->DeclareContinuousState(1); }
-
- private:
-  void DoCalcTimeDerivatives(
-      const Context<double>& context,
-      ContinuousState<double>* deriv) const override {
-    const double t = context.get_time();
-    (*deriv)[0] = 8 * t + 4;
-  }
-};
-
 // Tests accuracy for integrating the cubic system (with the state at time t
 // corresponding to f(t) ≡ t³ + t² + 12t + C) over t ∈ [0, 1]. RK3 is a third
 // order integrator, meaning that it uses the Taylor Series expansion:
@@ -100,9 +72,9 @@ class Quadratic : public LeafSystem<double> {
 // The formula above indicates that the approximation error will be zero if
 // f''''(t) = 0, which is true for the cubic equation.
 GTEST_TEST(RK3IntegratorErrorEstimatorTest, CubicTest) {
-  Cubic cubic;
+  CubicScalarSystem cubic;
   auto cubic_context = cubic.CreateDefaultContext();
-  const double C = 0.0;
+  const double C = cubic.Evaluate(0);
   cubic_context->SetTime(0.0);
   cubic_context->get_mutable_continuous_state_vector()[0] = C;
 
@@ -145,7 +117,7 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, CubicTest) {
   // K*8 times larger than then 2nd-order error estimate for 2 half-steps;
   // K is a constant term that subsumes the asymptotic error and is dependent
   // upon both the system being integrated and the particular integrator.
-  const double K = 64;
+  const double K = 256;
   const double allowable_2nd_order_error = K *
       std::numeric_limits<double>::epsilon();
   EXPECT_NEAR(err_est_h, 8 * err_est_2h_2, allowable_2nd_order_error);
@@ -160,9 +132,9 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, CubicTest) {
 // f'''(t) = 0, which is true for the quadratic equation. We check that the
 // error estimator gives a perfect error estimate for this function.
 GTEST_TEST(RK3IntegratorErrorEstimatorTest, QuadraticTest) {
-  Quadratic quadratic;
+  QuadraticScalarSystem quadratic;
   auto quadratic_context = quadratic.CreateDefaultContext();
-  const double C = 0.0;
+  const double C = quadratic.Evaluate(0);
   quadratic_context->SetTime(0.0);
   quadratic_context->get_mutable_continuous_state_vector()[0] = C;
 

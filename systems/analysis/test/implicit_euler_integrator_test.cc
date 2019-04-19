@@ -5,6 +5,7 @@
 #include "drake/systems/analysis/test_utilities/discontinuous_spring_mass_damper_system.h"
 #include "drake/systems/analysis/test_utilities/robertson_system.h"
 #include "drake/systems/analysis/test_utilities/spring_mass_damper_system.h"
+#include "drake/systems/analysis/test_utilities/stationary_system.h"
 #include "drake/systems/analysis/test_utilities/stiff_double_mass_spring_system.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
@@ -15,37 +16,11 @@ namespace {
 using implicit_integrator_test::SpringMassDamperSystem;
 using implicit_integrator_test::DiscontinuousSpringMassDamperSystem;
 
-/// System with no state evolution for testing numerical differentiation.
-template <class T>
-class StationarySystem final : public LeafSystem<T> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StationarySystem)
-
-  StationarySystem()
-      : LeafSystem<T>(SystemTypeTag<systems::StationarySystem>{}) {
-    this->DeclareContinuousState(1 /* num q */, 1 /* num v */, 0 /* num z */);
-  }
-
-  /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
-  template <typename U>
-  explicit StationarySystem(const StationarySystem<U>&)
-      : StationarySystem<T>() {}
-
- protected:
-  void DoCalcTimeDerivatives(const Context<T>& context,
-                             ContinuousState<T>* derivatives) const override {
-    // State does not evolve.
-    derivatives->get_mutable_vector().SetAtIndex(0, 0.0);
-    derivatives->get_mutable_vector().SetAtIndex(1, 0.0);
-  }
-};
-
 // Tests the implicit integrator on a stationary system problem, which
 // stresses numerical differentiation (since the state does not change).
 GTEST_TEST(ImplicitEulerIntegratorTest, Stationary) {
-  std::unique_ptr<StationarySystem<double>> stationary =
-    std::make_unique<StationarySystem<double>>();
-  std::unique_ptr<Context<double>> context = stationary->CreateDefaultContext();
+  analysis_test::StationarySystem stationary;
+  std::unique_ptr<Context<double>> context = stationary.CreateDefaultContext();
   context->EnableCaching();
 
   // Set the initial condition for the stationary system.
@@ -55,7 +30,7 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Stationary) {
   state.SetAtIndex(1, 0.0);
 
   // Create the integrator.
-  ImplicitEulerIntegrator<double> integrator(*stationary, context.get());
+  ImplicitEulerIntegrator<double> integrator(stationary, context.get());
   integrator.set_maximum_step_size(1.0);
   integrator.set_target_accuracy(1e-3);
   integrator.request_initial_step_size_target(1e-4);
