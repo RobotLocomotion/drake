@@ -282,10 +282,11 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "compute_numerical_gradient_test",
     deps = [
+        ":autodiff",
         ":compute_numerical_gradient",
+        ":gradient",
         "//common/test_utilities:eigen_matrix_compare",
-        "//math:autodiff",
-        "//math:gradient",
+        "//solvers:evaluator_base",
     ],
 )
 

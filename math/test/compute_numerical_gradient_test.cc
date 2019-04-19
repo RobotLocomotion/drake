@@ -7,6 +7,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/solvers/evaluator_base.h"
 
 namespace drake {
 namespace math {
@@ -72,6 +73,9 @@ GTEST_TEST(ComputeNumericalGradientTest, TestToyFunction) {
     NumericalGradientOption option;
     // forward difference.
     option.method = NumericalGradientMethod::kForward;
+    // I need to create a std::function, rather than passing ToyFunction<double>
+    // to ComputeNumericalGradient directly, as template deduction doesn't work
+    // in the implicit conversion from function object to std::function.
     std::function<void(const Eigen::Vector3d&, Eigen::Vector2d*)>
         ToyFunctionDouble = ToyFunction<double>;
     auto J = ComputeNumericalGradient(ToyFunctionDouble, x, option);
@@ -98,6 +102,53 @@ GTEST_TEST(ComputeNumericalGradientTest, TestToyFunction) {
   check_gradient(Eigen::Vector3d(0, 1, 2));
   check_gradient(Eigen::Vector3d(0, -1, -2));
 }
+
+class ToyEvaluator : public solvers::EvaluatorBase {
+ public:
+  ToyEvaluator() : solvers::EvaluatorBase(2, 3) {}
+
+  ~ToyEvaluator() override {}
+
+ private:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const {
+    Eigen::Vector2d y_double;
+    ToyFunction(Eigen::Vector3d(x), &y_double);
+    *y = y_double;
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const {
+    AutoDiffVecd<Eigen::Dynamic, 2> y_autodiff;
+    ToyFunction(AutoDiffVecd<Eigen::Dynamic, 3>(x), &y_autodiff);
+    *y = y_autodiff;
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const {
+    Vector2<symbolic::Expression> y_sym;
+    ToyFunction(Vector3<symbolic::Expression>(x), &y_sym);
+    *y = y_sym;
+  }
+};
+
+GTEST_TEST(ComputeNumericalGradientTest, TestEvaluator) {
+  // Test compute numerical gradient for solvers::EvaluatorBase
+  ToyEvaluator evaluator;
+  std::function<void(const Eigen::Ref<const Eigen::VectorXd>&,
+                     Eigen::VectorXd*)>
+      evaluator_eval =
+          [&evaluator](const Eigen::Ref<const Eigen::VectorXd>& x,
+                       Eigen::VectorXd* y) { return evaluator.Eval(x, y); };
+  Eigen::Vector3d x(0, 1, 2);
+  const auto J = ComputeNumericalGradient(evaluator_eval, x);
+  AutoDiffVecXd y_autodiff;
+  evaluator.Eval(math::initializeAutoDiff(x), &y_autodiff);
+  const double tol = 1E-7;
+  EXPECT_TRUE(
+      CompareMatrices(J, math::autoDiffToGradientMatrix(y_autodiff), tol));
+}
+
 }  // namespace
 }  // namespace math
 }  // namespace drake
