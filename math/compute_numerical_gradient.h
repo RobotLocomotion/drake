@@ -41,6 +41,15 @@ struct NumericalGradientOption {
  * (*y)(2) = x(0) * std::sin(x(1));};
  * Eigen::Vector3d x_eval(1, 2, 3);
  * auto J = ComputeNumericalGradient(foo, x_eval);
+ * // Note that if we pass in a lambda to ComputeNumericalGradient, then
+ * // ComputeNumericalGradient has to instantiate the template types explicitly,
+ * // as in this example. The issue of template deduction with std::function is
+ * // explained in
+ * // https://stackoverflow.com/questions/48529410/template-arguments-deduction-failed-passing-func-pointer-to-stdfunction
+ * auto bar = [](const Eigen::Vector2d& x, Eigen::Vector2d* y) {*y = x; };
+ * auto J2 = ComputeNumericalGradient<Eigen::Vector2d,
+ * Eigen::Vector2d, Eigen::Vector2d>(bar, Eigen::Vector2d(2, 3));
+ *
  * @endcode
  */
 template <typename DerivedX, typename DerivedY, typename DerivedCalcX>
