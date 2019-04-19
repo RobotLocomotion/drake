@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/api/rules/phase.h"
+#include "drake/automotive/maliput/api/rules/phase_ring.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/api/rules/traffic_lights.h"
 #include "drake/common/unused.h"
@@ -358,6 +359,35 @@ inline ::testing::AssertionResult IsEqual(const char* a_expression,
   MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.id(), b.id()));
   MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.rule_states(), b.rule_states()));
   MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.bulb_states(), b.bulb_states()));
+  return c.result();
+}
+
+/// Predicate-formatter which tests equality of PhaseRing::NextPhase.
+inline ::testing::AssertionResult IsEqual(const char* a_expression,
+                                          const char* b_expression,
+                                          const PhaseRing::NextPhase& a,
+                                          const PhaseRing::NextPhase& b) {
+  unused(a_expression, b_expression);
+  AssertionResultCollector c;
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.id, b.id));
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.duration_until, b.duration_until));
+  return c.result();
+}
+
+/// Predicate-formatter which tests equality of
+/// std::vector<PhaseRing::NextPhase>.
+inline ::testing::AssertionResult IsEqual(
+    const char* a_expression, const char* b_expression,
+    const std::vector<PhaseRing::NextPhase>& a,
+    const std::vector<PhaseRing::NextPhase>& b) {
+  unused(a_expression, b_expression);
+  AssertionResultCollector c;
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.size(), b.size()));
+  if (a.size() == b.size()) {
+    for (size_t i = 0; i < a.size(); ++i) {
+      MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.at(i), b.at(i)));
+    }
+  }
   return c.result();
 }
 

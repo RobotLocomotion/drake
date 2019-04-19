@@ -1,7 +1,7 @@
 #include "drake/automotive/maliput/base/phase_ring_book_loader.h"
 
+#include <algorithm>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include "yaml-cpp/yaml.h"
@@ -73,7 +73,7 @@ std::unordered_map<RightOfWayRule::Id, RightOfWayRule> GetRules(
   std::unordered_map<RightOfWayRule::Id, RightOfWayRule> result;
   for (const YAML::Node& rule_node : rules_node) {
     const RightOfWayRule::Id rule_id(rule_node.as<std::string>());
-    result.emplace(std::make_pair(rule_id, rulebook->GetRule(rule_id)));
+    result.emplace(rule_id, rulebook->GetRule(rule_id));
   }
   return result;
 }
@@ -113,8 +113,7 @@ RuleStates CreateDefaultRuleStates(
     const std::unordered_map<RightOfWayRule::Id, RightOfWayRule> rules) {
   RuleStates result;
   for (const auto& rule : rules) {
-    result.emplace(
-        std::make_pair(rule.first, GetDefaultState(rule.second.states()).id()));
+    result.emplace(rule.first, GetDefaultState(rule.second.states()).id());
   }
   return result;
 }
@@ -171,6 +170,47 @@ optional<BulbStates> LoadBulbStates(const TrafficLightBook* traffic_light_book,
   return result;
 }
 
+void VerifyPhaseExists(const std::vector<Phase>& phases,
+                       const Phase::Id& phase_id) {
+  const auto it =
+      std::find_if(phases.begin(), phases.end(),
+                   [&](const Phase& p) -> bool { return p.id() == phase_id; });
+  DRAKE_DEMAND(it != phases.end());
+}
+
+optional<const std::unordered_map<Phase::Id, std::vector<PhaseRing::NextPhase>>>
+BuildNextPhases(const std::vector<Phase>& phases,
+                const YAML::Node& phase_ring_node) {
+  const YAML::Node& graph_node = phase_ring_node["PhaseTransitionGraph"];
+  if (!graph_node.IsDefined()) {
+    return nullopt;
+  }
+  std::unordered_map<Phase::Id, std::vector<PhaseRing::NextPhase>> result;
+  DRAKE_DEMAND(phase_ring_node.IsMap());
+  for (const auto& graph_node_it : graph_node) {
+    const Phase::Id phase_id(graph_node_it.first.as<std::string>());
+    VerifyPhaseExists(phases, phase_id);
+    const YAML::Node& next_phases_node = graph_node_it.second;
+    DRAKE_DEMAND(next_phases_node.IsSequence());
+    std::vector<PhaseRing::NextPhase> next_phases;
+    for (const YAML::Node& next_phase_node : next_phases_node) {
+      DRAKE_DEMAND(next_phase_node.IsMap());
+      DRAKE_THROW_UNLESS(next_phase_node["ID"].IsDefined());
+      const Phase::Id next_phase_id(next_phase_node["ID"].as<std::string>());
+      VerifyPhaseExists(phases, next_phase_id);
+      optional<double> duration_until = nullopt;
+      if (next_phase_node["duration_until"].IsDefined()) {
+        duration_until = next_phase_node["duration_until"].as<double>();
+      }
+      next_phases.push_back(
+          PhaseRing::NextPhase{next_phase_id, duration_until});
+    }
+    result.emplace(phase_id, next_phases);
+  }
+
+  return result;
+}
+
 PhaseRing BuildPhaseRing(const RoadRulebook* rulebook,
                          const TrafficLightBook* traffic_light_book,
                          const YAML::Node& phase_ring_node) {
@@ -206,7 +246,9 @@ PhaseRing BuildPhaseRing(const RoadRulebook* rulebook,
         LoadBulbStates(traffic_light_book, phase_node);
     phases.push_back(Phase(phase_id, rule_states, bulb_states));
   }
-  return PhaseRing(ring_id, phases);
+
+  const auto next_phases = BuildNextPhases(phases, phase_ring_node);
+  return PhaseRing(ring_id, phases, next_phases);
 }
 
 std::unique_ptr<api::rules::PhaseRingBook> BuildFrom(
