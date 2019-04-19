@@ -41,25 +41,14 @@ class DirectTranscription : public MultipleShooting {
   DirectTranscription(const System<double>* system,
                       const Context<double>& context, int num_time_samples);
 
-  /// Constructs the MathematicalProgram and adds the dynamic constraints.
-  /// This version of the constructor is only for *linear* discrete-time systems
-  /// (with a single periodic timestep update).
-  ///
-  /// @param linear_system A linear system to be used in the dynamic
-  ///    constraints.  Note that this is aliased for the lifetime of this
-  ///    object.
-  /// @param context Required to describe any parameters of the system.  The
-  ///    values of the state in this context do not have any effect.  This
-  ///    context will also be "cloned" by the optimization; changes to the
-  ///    context after calling this method will NOT impact the trajectory
-  ///    optimization.
-  /// @param num_time_samples The number of knot points in the trajectory.
-  DirectTranscription(const LinearSystem<double>* linear_system,
-                      const Context<double>& context, int num_time_samples);
-
+  // TODO(russt): Generalize the symbolic short-cutting to handle this case,
+  //  and remove the special-purpose constructor (unless we want it for
+  //  efficiency).
   /// Constructs the MathematicalProgram and adds the dynamic constraints.  This
   /// version of the constructor is only for *linear time-varying* discrete-time
-  /// systems (with a single periodic timestep update).
+  /// systems (with a single periodic timestep update).  This constructor adds
+  /// value because the symbolic short-cutting does not yet support systems
+  /// that are affine in state/input, but not time.
   ///
   /// @param system A linear time-varying system to be used in the dynamic
   ///    constraints. Note that this is aliased for the lifetime of this object.
@@ -77,8 +66,28 @@ class DirectTranscription : public MultipleShooting {
   DirectTranscription(const TimeVaryingLinearSystem<double>* system,
                       const Context<double>& context, int num_time_samples);
 
-  // TODO(russt):  implement constructors for continuous time systems with
-  // fixed timesteps AND the version with time as a decision variable.
+  // TODO(russt): Support more than just forward Euler integration
+  //  (perhaps by taking IntegratorBase as an optional parameter?).
+  /// Constructs the MathematicalProgram and adds the dynamic constraints.
+  /// This version of the constructor is only for continuous-time systems;
+  /// the dynamics constraints use explicit forward Euler integration.
+  ///
+  /// @param system A dynamical system to be used in the dynamic constraints.
+  ///    This system must support System::ToAutoDiffXd.
+  ///    Note that this is aliased for the lifetime of this object.
+  /// @param context Required to describe any parameters of the system.  The
+  ///    values of the state in this context do not have any effect.  This
+  ///    context will also be "cloned" by the optimization; changes to the
+  ///    context after calling this method will NOT impact the trajectory
+  ///    optimization.
+  /// @param num_time_samples The number of knot points in the trajectory.
+  /// @param fixed_timestep The spacing between sample times.
+  DirectTranscription(const System<double>* system, const Context<double>&
+      context, int num_time_samples, double fixed_timestep);
+
+  // TODO(russt):  Implement constructor for continuous time systems with
+  // time as a decision variable; and perhaps add support for mixed
+  // discrete-/continuous- systems.
 
   ~DirectTranscription() override {}
 
@@ -144,7 +153,6 @@ class DirectTranscription : public MultipleShooting {
   // as DiscreteTimeSystemConstraints, otherwise they are nullptr.
   std::unique_ptr<const System<AutoDiffXd>> system_;
   std::unique_ptr<Context<AutoDiffXd>> context_;
-  std::unique_ptr<DiscreteValues<AutoDiffXd>> discrete_state_;
   FixedInputPortValue* input_port_value_{nullptr};  // Owned by the context.
 
   const bool discrete_time_system_{false};
