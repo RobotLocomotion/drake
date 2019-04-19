@@ -12,8 +12,6 @@ namespace drake {
 namespace math {
 namespace {
 
-const double kEps = std::numeric_limits<double>::epsilon();
-
 GTEST_TEST(ComputeNumericalGradientTest, TestAffineFunction) {
   // Compute the numerical gradient of an affine function y = A * x + b. The
   // numerical gradient be A.

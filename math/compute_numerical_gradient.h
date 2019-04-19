@@ -42,7 +42,7 @@ typename std::enable_if<is_eigen_vector_of<DerivedX, double>::value &&
 ComputeNumericalGradient(
     std::function<void(const DerivedCalcX&, DerivedY* y)> calc_fun,
     const DerivedX& x, const NumericalGradientOption& option = {}) {
-  // First evaluates f(x)
+  // First evaluate f(x).
   Eigen::Matrix<double, DerivedY::RowsAtCompileTime, 1> y;
   calc_fun(x, &y);
 
