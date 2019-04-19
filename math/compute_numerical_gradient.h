@@ -32,6 +32,16 @@ struct NumericalGradientOption {
  * vector of double.
  * @return gradient a matrix of size x.rows() x y.rows(). gradient(i, j) is
  * ∂f(i) / ∂x(j)
+ *
+ * Here are some example code
+ * @code{cc}
+ * // Create a std::function from a lambda expression.
+ * std::function<void (const Eigen::Vector2d&, Vector3d*)> foo = [](const
+ * Eigen::Vector2d& x, Vector3d*y) { (*y)(0) = x(0); (*y)(1) = x(0) * x(1);
+ * (*y)(2) = x(0) * std::sin(x(1));};
+ * Eigen::Vector3d x_eval(1, 2, 3);
+ * auto J = ComputeNumericalGradient(foo, x_eval);
+ * @endcode
  */
 template <typename DerivedX, typename DerivedY, typename DerivedCalcX>
 typename std::enable_if<is_eigen_vector_of<DerivedX, double>::value &&

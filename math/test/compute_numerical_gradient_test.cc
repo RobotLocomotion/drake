@@ -90,6 +90,9 @@ GTEST_TEST(ComputeNumericalGradientTest, TestToyFunction) {
 
     // central difference
     option.method = NumericalGradientMethod::kCentral;
+    // We could use the function object ToyFunction<double> instead of the
+    // std::function ToyFunctionDouble, but then we have to explicitly
+    // instantiate the template parameters for ComputeNumericalGradient.
     J = ComputeNumericalGradient<Eigen::Vector3d, Eigen::Vector2d,
                                  Eigen::Vector3d>(ToyFunction<double>, x,
                                                   option);
@@ -109,21 +112,21 @@ class ToyEvaluator : public solvers::EvaluatorBase {
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd* y) const {
+              Eigen::VectorXd* y) const override {
     Eigen::Vector2d y_double;
     ToyFunction(Eigen::Vector3d(x), &y_double);
     *y = y_double;
   }
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd* y) const {
+              AutoDiffVecXd* y) const override {
     AutoDiffVecd<Eigen::Dynamic, 2> y_autodiff;
     ToyFunction(AutoDiffVecd<Eigen::Dynamic, 3>(x), &y_autodiff);
     *y = y_autodiff;
   }
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
-              VectorX<symbolic::Expression>* y) const {
+              VectorX<symbolic::Expression>* y) const override {
     Vector2<symbolic::Expression> y_sym;
     ToyFunction(Vector3<symbolic::Expression>(x), &y_sym);
     *y = y_sym;
