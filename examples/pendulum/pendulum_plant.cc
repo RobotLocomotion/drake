@@ -13,7 +13,8 @@ PendulumPlant<T>::PendulumPlant()
     : systems::LeafSystem<T>(
           systems::SystemTypeTag<pendulum::PendulumPlant>{}) {
   this->DeclareVectorInputPort("tau", PendulumInput<T>());
-  this->DeclareVectorOutputPort("state", &PendulumPlant::CopyStateOut);
+  this->DeclareVectorOutputPort("state", &PendulumPlant::CopyStateOut,
+                                {this->all_state_ticket()});
   this->DeclareContinuousState(PendulumState<T>(), 1 /* num_q */, 1 /* num_v */,
                                0 /* num_z */);
   this->DeclareNumericParameter(PendulumParams<T>());

@@ -62,7 +62,8 @@ SolarSystem<T>::SolarSystem(SceneGraph<T>* scene_graph) {
   // Now that frames have been registered, allocate the output port.
   geometry_pose_port_ = this->DeclareAbstractOutputPort(
           FramePoseVector<T>(source_id_, body_ids_),
-          &SolarSystem::CalcFramePoseOutput)
+          &SolarSystem::CalcFramePoseOutput,
+          {this->configuration_ticket()})
       .get_index();
 }
 
