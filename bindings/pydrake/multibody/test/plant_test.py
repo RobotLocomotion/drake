@@ -380,7 +380,7 @@ class TestPlant(unittest.TestCase):
             "drake/manipulation/models/" +
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
-        plant = MultibodyPlant()
+        plant = MultibodyPlant(time_step=2e-3)
         parser = Parser(plant)
         iiwa_model = parser.AddModelFromFile(
             file_name=iiwa_sdf_path, model_name='robot')
@@ -394,6 +394,10 @@ class TestPlant(unittest.TestCase):
             plant.get_actuation_input_port(iiwa_model), InputPort)
         self.assertIsInstance(
             plant.get_continuous_state_output_port(gripper_model), OutputPort)
+        self.assertIsInstance(
+            plant.get_generalized_contact_forces_output_port(
+                model_instance=gripper_model),
+            OutputPort)
 
     def test_model_instance_state_access(self):
         # Create a MultibodyPlant with a kuka arm and a schunk gripper.
@@ -415,10 +419,8 @@ class TestPlant(unittest.TestCase):
             file_name=wsg50_sdf_path, model_name='gripper')
 
         # Weld the base of arm and gripper to reduce the number of states.
-        X_EeGripper = Isometry3.Identity()
-        X_EeGripper.set_translation([0, 0, 0.081])
-        X_EeGripper.set_rotation(
-            RollPitchYaw(np.pi / 2, 0, np.pi / 2).ToRotationMatrix().matrix())
+        X_EeGripper = RigidTransform(
+            RollPitchYaw(np.pi / 2, 0, np.pi / 2), [0, 0, 0.081])
         plant.WeldFrames(A=plant.world_frame(),
                          B=plant.GetFrameByName("iiwa_link_0", iiwa_model))
         plant.WeldFrames(
@@ -660,7 +662,7 @@ class TestPlant(unittest.TestCase):
         plant.SetFreeBodyPose(
             context, plant.GetBodyByName("iiwa_link_0"),
             RigidTransform(RollPitchYaw([0.1, 0.2, 0.3]),
-                           p=[0.4, 0.5, 0.6]).GetAsIsometry3())
+                           p=[0.4, 0.5, 0.6]))
         v_expected = np.linspace(start=-1.0, stop=-nv, num=nv)
         qdot = plant.MapVelocityToQDot(context, v_expected)
         v_remap = plant.MapQDotToVelocity(context, qdot)
@@ -701,7 +703,7 @@ class TestPlant(unittest.TestCase):
                     distal_frame, instances[0]).body_frame(),
                 child_frame_C=plant.GetBodyByName(
                     proximal_frame, instances[1]).body_frame(),
-                X_PC=Isometry3.Identity()),
+                X_PC=RigidTransform.Identity()),
         ]
         for joint in joints:
             joint_out = plant.AddJoint(joint)
@@ -716,8 +718,8 @@ class TestPlant(unittest.TestCase):
     def test_multibody_add_frame(self):
         plant = MultibodyPlant()
         frame = plant.AddFrame(frame=FixedOffsetFrame(
-            name="frame", P=plant.world_frame(), X_PF=Isometry3.Identity(),
-            model_instance=None))
+            name="frame", P=plant.world_frame(),
+            X_PF=RigidTransform.Identity(), model_instance=None))
         self.assertIsInstance(frame, Frame)
         np.testing.assert_equal(
             np.eye(4), frame.GetFixedPoseInBodyFrame().GetAsMatrix4())
@@ -727,8 +729,13 @@ class TestPlant(unittest.TestCase):
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         plant = MultibodyPlant()
         Parser(plant).AddModelFromFile(file_name)
+        # Getting ready for when we set foot on Mars :-).
+        plant.AddForceElement(UniformGravityFieldElement([0.0, 0.0, -3.71]))
         plant.Finalize()
         context = plant.CreateDefaultContext()
+
+        # Set an arbitrary configuration away from the model's fixed point.
+        plant.SetPositions(context, [0.1, 0.2])
 
         H = plant.CalcMassMatrixViaInverseDynamics(context)
         Cv = plant.CalcBiasTerm(context)
@@ -744,11 +751,12 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(tau.shape, (2,))
         self.assert_sane(tau, nonzero=False)
         # - Existence checks.
-        self.assertEqual(plant.CalcPotentialEnergy(context), 0)
+        # Gravity leads to non-zero potential energy.
+        self.assertNotEqual(plant.CalcPotentialEnergy(context), 0)
         plant.CalcConservativePower(context)
         tau_g = plant.CalcGravityGeneralizedForces(context)
         self.assertEqual(tau_g.shape, (nv,))
-        self.assert_sane(tau_g, nonzero=False)
+        self.assert_sane(tau_g, nonzero=True)
 
         forces = MultibodyForces(plant=plant)
         plant.CalcForceElementsContribution(context=context, forces=forces)

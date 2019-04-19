@@ -90,6 +90,31 @@ class ContextBase : public internal::ContextMessageInterface {
     PropagateCachingChange(*this, &Cache::SetAllEntriesOutOfDate);
   }
 
+  /** (Advanced) Freezes the cache at its current contents, preventing any
+  further cache updates. When frozen, accessing an out-of-date cache entry
+  causes an exception to be throw. This is applied recursively to this
+  %Context and all its subcontexts, but _not_ to its parent or siblings so
+  it is most useful when called on the root %Context. If the cache was already
+  frozen this method does nothing but waste a little time. */
+  void FreezeCache() const {
+    PropagateCachingChange(*this, &Cache::freeze_cache);
+  }
+
+  /** (Advanced) Unfreezes the cache if it was previously frozen. This is
+  applied recursively to this %Context and all its subcontexts, but _not_
+  to its parent or siblings. If the cache was not frozen, this does nothing
+  but waste a little time. */
+  void UnfreezeCache() const {
+    PropagateCachingChange(*this, &Cache::unfreeze_cache);
+  }
+
+  /** (Advanced) Reports whether this %Context's cache is currently frozen.
+  This checks only locally; it is possible that parent, child, or sibling
+  subcontext caches are in a different state than this one. */
+  bool is_cache_frozen() const final {
+    return get_cache().is_cache_frozen();
+  }
+
   /** Returns the local name of the subsystem for which this is the Context.
   This is intended primarily for error messages and logging.
   @see SystemBase::GetSystemName() for details.
@@ -238,8 +263,9 @@ class ContextBase : public internal::ContextMessageInterface {
   }
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // These are to-be-deprecated. Use methods without the initial get_.
+  DRAKE_DEPRECATED("2019-07-01", "Use num_input_ports() instead.")
   int get_num_input_ports() const { return num_input_ports(); }
+  DRAKE_DEPRECATED("2019-07-01", "Use num_output_ports() instead.")
   int get_num_output_ports() const { return num_output_ports(); }
 #endif
 

@@ -22,6 +22,8 @@ namespace trajectory_optimization {
 /// representation of the state trajectory, and adds dynamic constraints (and
 /// running costs) to the midpoints as well as the knot points in order to
 /// achieve a 3rd order integration accuracy.
+///
+/// Note: This algorithm only works with the continuous states of a system.
 class DirectCollocation : public MultipleShooting {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectCollocation)
@@ -29,19 +31,33 @@ class DirectCollocation : public MultipleShooting {
   /// Constructs the %MathematicalProgram% and adds the collocation constraints.
   ///
   /// @param system A dynamical system to be used in the dynamic constraints.
-  ///    This system must support System::ToAutoDiffXd.
-  ///    Note that this is aliased for the lifetime of this object.
+  /// This system must support System::ToAutoDiffXd. Note that this is aliased
+  /// for the lifetime of this object.
   /// @param context Required to describe any parameters of the system.  The
-  ///    values of the state in this context do not have any effect.  This
-  ///    context will also be "cloned" by the optimization; changes to the
-  ///    context after calling this method will NOT impact the trajectory
-  ///    optimization.
+  /// values of the state in this context do not have any effect.  This context
+  /// will also be "cloned" by the optimization; changes to the context after
+  /// calling this method will NOT impact the trajectory optimization.
   /// @param num_time_samples The number of knot points in the trajectory.
   /// @param minimum_timestep Minimum spacing between sample times.
   /// @param maximum_timestep Maximum spacing between sample times.
+  /// @param input_port_index A valid input port index for @p system or
+  /// InputPortSelection.  All other inputs on the system will be left
+  /// disconnected (if they are disconnected in @p context) or will be fixed to
+  /// their current values (if they are connected/fixed in @p context).
+  /// @default kUseFirstInputIfItExists.
+  /// @param assume_non_continuous_states_are_fixed Boolean which, if true,
+  /// allows this algorithm to optimize without considering the dynamics of any
+  /// non-continuous states. This is helpful for optimizing systems that might
+  /// have some additional book-keeping variables in their state. Only use this
+  /// if you are sure that the dynamics of the additional state variables
+  /// cannot impact the dynamics of the continuous states. @default false.
   DirectCollocation(const System<double>* system,
                     const Context<double>& context, int num_time_samples,
-                    double minimum_timestep, double maximum_timestep);
+                    double minimum_timestep, double maximum_timestep,
+                    variant<InputPortSelection, InputPortIndex>
+                        input_port_index =
+                    InputPortSelection::kUseFirstInputIfItExists,
+                    bool assume_non_continuous_states_are_fixed = false);
 
   // NOTE: The fixed timestep constructor, which would avoid adding h as
   // decision variables, has been removed since it complicates the API and code.
@@ -57,14 +73,14 @@ class DirectCollocation : public MultipleShooting {
       "the program are deprecated; for details and porting advice, see "
       "https://github.com/RobotLocomotion/drake/issues/9633.")
   trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory()
-  const override;
+      const override;
 
   DRAKE_DEPRECATED("2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
       "https://github.com/RobotLocomotion/drake/issues/9633.")
   trajectories::PiecewisePolynomial<double> ReconstructStateTrajectory()
-  const override;
+      const override;
 
   trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory(
       const solvers::MathematicalProgramResult& result) const override;
@@ -79,8 +95,9 @@ class DirectCollocation : public MultipleShooting {
   // Store system-relevant data for e.g. computing the derivatives during
   // trajectory reconstruction.
   const System<double>* system_{nullptr};
-  const std::unique_ptr<Context<double>> context_{nullptr};
-  const std::unique_ptr<ContinuousState<double>> continuous_state_{nullptr};
+  const std::unique_ptr<Context<double>> context_;
+  const std::unique_ptr<ContinuousState<double>> continuous_state_;
+  const InputPort<double>* input_port_{nullptr};
   FixedInputPortValue* input_port_value_{nullptr};
 };
 
@@ -95,8 +112,12 @@ class DirectCollocationConstraint : public solvers::Constraint {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectCollocationConstraint)
 
  public:
-  DirectCollocationConstraint(const System<double>& system,
-                              const Context<double>& context);
+  /// @see DirectCollocation constructor for a description of the parameters.
+  DirectCollocationConstraint(
+      const System<double>& system, const Context<double>& context,
+      variant<InputPortSelection, InputPortIndex> input_port_index =
+          InputPortSelection::kUseFirstInputIfItExists,
+      bool assume_non_continuous_states_are_fixed = false);
 
   ~DirectCollocationConstraint() override = default;
 
@@ -104,6 +125,13 @@ class DirectCollocationConstraint : public solvers::Constraint {
   int num_inputs() const { return num_inputs_; }
 
  protected:
+  DirectCollocationConstraint(
+      const System<double>& system, const Context<double>& context,
+      int num_states, int num_inputs,
+      variant<InputPortSelection, InputPortIndex> input_port_index,
+      bool assume_non_continuous_states_are_fixed);
+
+
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;
 
@@ -114,15 +142,12 @@ class DirectCollocationConstraint : public solvers::Constraint {
               VectorX<symbolic::Expression>* y) const override;
 
  private:
-  DirectCollocationConstraint(const System<double>& system,
-                              const Context<double>& context, int num_states,
-                              int num_inputs);
-
   void dynamics(const AutoDiffVecXd& state, const AutoDiffVecXd& input,
                 AutoDiffVecXd* xdot) const;
 
-  std::unique_ptr<System<AutoDiffXd>> system_;
+  const std::unique_ptr<System<AutoDiffXd>> system_;
   std::unique_ptr<Context<AutoDiffXd>> context_;
+  const InputPort<AutoDiffXd>* input_port_{nullptr};
   FixedInputPortValue* input_port_value_{nullptr};
   std::unique_ptr<ContinuousState<AutoDiffXd>> derivatives_;
 

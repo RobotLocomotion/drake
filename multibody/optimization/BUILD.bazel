@@ -1,0 +1,75 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load(
+    "@drake//tools/skylark:drake_proto.bzl",
+    "drake_cc_proto_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_library(
+    name = "contact_wrench_evaluator",
+    srcs = ["contact_wrench_evaluator.cc"],
+    hdrs = ["contact_wrench_evaluator.h"],
+    deps = [
+        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//multibody/plant",
+        "//solvers:evaluator_base",
+    ],
+)
+
+drake_cc_library(
+    name = "static_equilibrium_constraint",
+    srcs = ["static_equilibrium_constraint.cc"],
+    hdrs = ["static_equilibrium_constraint.h"],
+    deps = [
+        ":contact_wrench_evaluator",
+        "//geometry:scene_graph",
+        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//multibody/plant",
+        "//solvers:binding",
+        "//solvers:constraint",
+    ],
+)
+
+drake_cc_library(
+    name = "optimization_with_contact_utilities",
+    testonly = 1,
+    srcs = ["test/optimization_with_contact_utilities.cc"],
+    hdrs = ["test/optimization_with_contact_utilities.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//geometry:scene_graph",
+        "//multibody/plant",
+        "//systems/framework:diagram",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_wrench_evaluator_test",
+    deps = [
+        ":contact_wrench_evaluator",
+        ":optimization_with_contact_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "static_equilibrium_constraint_test",
+    deps = [
+        ":optimization_with_contact_utilities",
+        ":static_equilibrium_constraint",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
+    ],
+)
+
+add_lint_tests()

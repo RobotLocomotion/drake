@@ -236,7 +236,7 @@ TEST_F(PidControlledSystemTest, PlantWithMoreOutputPorts) {
   PidControlledSystem<double> system(std::move(plant), Kp_, Ki_, Kd_,
                                      state_output_port_index);
 
-  EXPECT_EQ(system.get_num_output_ports(), 2);
+  EXPECT_EQ(system.num_output_ports(), 2);
   EXPECT_EQ(system.get_output_port(0).size(), 3);
   EXPECT_EQ(system.get_output_port(1).size(), 2);
 

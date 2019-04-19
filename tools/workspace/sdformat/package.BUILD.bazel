@@ -107,6 +107,7 @@ SDFORMAT_MOST_PUBLIC_HDRS = [
     "include/sdf/Plane.hh",
     "include/sdf/Root.hh",
     "include/sdf/SDFImpl.hh",
+    "include/sdf/Sensor.hh",
     "include/sdf/Sphere.hh",
     "include/sdf/Types.hh",
     "include/sdf/Visual.hh",
@@ -155,7 +156,7 @@ SDFORMAT_DATA = glob(["sdf/1.6/*.sdf"])
 
 # Generates the library exported to users. The explicitly listed srcs= matches
 # upstream's explicitly listed sources. The explicitly listed hdrs= matches
-# upstream's public headers.
+# upstream's private headers. We exclude the irrelevant ign.hh and ign.cc.
 cc_library(
     name = "sdformat",
     srcs = [
@@ -191,6 +192,7 @@ cc_library(
         "src/Root.cc",
         "src/SDF.cc",
         "src/SDFExtension.cc",
+        "src/Sensor.cc",
         "src/Sphere.cc",
         "src/Types.cc",
         "src/Utils.cc",

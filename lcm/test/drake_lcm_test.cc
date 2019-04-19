@@ -1,14 +1,13 @@
 #include "drake/lcm/drake_lcm.h"
 
 #include <chrono>
-#include <mutex>
 #include <stdexcept>
 #include <thread>
 
 #include <gtest/gtest.h>
+#include "lcm/lcm-cpp.hpp"
 
-#include "drake/common/drake_copyable.h"
-#include "drake/lcm/lcm_receive_thread.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 #include "drake/lcmt_drake_signal.hpp"
 
@@ -16,62 +15,19 @@ namespace drake {
 namespace lcm {
 namespace {
 
-using std::chrono::milliseconds;
-using std::this_thread::sleep_for;
+// A udpm URL that is not the default.  We'll transmit here in our tests.
+constexpr const char* const kUdpmUrl = "udpm://239.255.76.67:7670";
 
-// Subscribes to LCM messages of type `drake::lcmt_drake_signal`. Provides an
-// accessor to the latest message received.
-class MessageSubscriber {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MessageSubscriber)
+// @file
+// This file tests non-threaded use of DrakeLcm.
+// See drake_lcm_thread_test.cc for threaded use.
 
-  // A constructor that sets up the LCM message subscription and initializes the
-  // member variable that will be used to store received LCM messages.
-  MessageSubscriber(const std::string& channel_name, ::lcm::LCM* lcm)
-      : channel_name_(channel_name) {
-    ::lcm::Subscription* sub =
-        lcm->subscribe(channel_name, &MessageSubscriber::HandleMessage, this);
-    sub->setQueueCapacity(1);
+using drake::lcmt_drake_signal;
 
-    // Initializes the fields of received_message_ so the test logic below can
-    // determine whether the desired message was received.
-    received_message_.dim = 0;
-    received_message_.val.resize(received_message_.dim);
-    received_message_.coord.resize(received_message_.dim);
-    received_message_.timestamp = 0;
-  }
-
-  // Returns a copy of the most recently received message.
-  drake::lcmt_drake_signal GetReceivedMessage() {
-    drake::lcmt_drake_signal message_copy;
-    std::lock_guard<std::mutex> lock(message_mutex_);
-    message_copy = received_message_;
-    return message_copy;
-  }
-
- private:
-  // Saves a copy of the most recently received message.
-  void HandleMessage(const ::lcm::ReceiveBuffer* rbuf,
-                     const std::string& channel_name) {
-    if (channel_name_ == channel_name) {
-      std::lock_guard<std::mutex> lock(message_mutex_);
-      // Note: The call to decode() below returns the number of bytes decoded
-      // or a negative value indicating an error occurred. This error is
-      // ignored since the unit test below includes logic that checks every
-      // value within the received message for correctness.
-      received_message_.decode(rbuf->data, 0, rbuf->data_size);
-    }
-  }
-
-  const std::string channel_name_;
-  std::mutex message_mutex_;
-  drake::lcmt_drake_signal received_message_;
-};
-
-// This is a test fixture that defines a `drake::lcmt_drake_signal` message.
+// Test fixture.
 class DrakeLcmTest : public ::testing::Test {
  protected:
-  void SetUp() override {
+  DrakeLcmTest() {
     message_.dim = 2;
     message_.val.push_back(0.3739558136);
     message_.val.push_back(0.2801694990);
@@ -80,153 +36,187 @@ class DrakeLcmTest : public ::testing::Test {
     message_.timestamp = 142857;
   }
 
-  drake::lcmt_drake_signal message_;
-};
-
-// Tests DrakeLcm's ability to publish an LCM message.
-TEST_F(DrakeLcmTest, PublishTest) {
-  const std::string channel_name = "drake_lcm_test_publisher_channel_name";
-
-  // Instantiates the Device Under Test (DUT).
-  DrakeLcm dut;
-
-  MessageSubscriber subscriber(channel_name, dut.get_lcm_instance());
-
-  // Start the LCM receive thread after all objects it can potentially use like
-  // subscribers are instantiated. Since objects are destructed in the reverse
-  // order of construction, this ensures the LCM receive thread stops before any
-  // resources it uses are destroyed. If the Lcm receive thread is stopped after
-  // the resources it relies on are destroyed, a segmentation fault may occur.
-
-  EXPECT_FALSE(dut.IsReceiveThreadRunning());
-  dut.StartReceiveThread();
-  EXPECT_TRUE(dut.IsReceiveThreadRunning());
-
-  // Records whether the receiver received an LCM message published by the DUT.
-  bool done = false;
-
-  // Prevents this unit test from running indefinitely when the receiver fails
-  // to receive the LCM message published by the DUT.
-  int count = 0;
-
-  const int kMaxCount = 10;
-  const int kDelayMS = 500;
-
-  // We must periodically call dut.Publish(...) since we do not know when the
-  // receiver will actually receive the message.
-  while (!done && count++ < kMaxCount) {
-    Publish(&dut, channel_name, message_);
-
-    // Gets the received message.
-    const drake::lcmt_drake_signal received_message =
-        subscriber.GetReceivedMessage();
-
-    done = CompareLcmtDrakeSignalMessages(received_message, message_);
-
-    if (!done) sleep_for(milliseconds(kDelayMS));
+  // Call step() until the `received` matches our expected message.
+  void LoopUntilDone(lcmt_drake_signal* received, int retries,
+                     const std::function<void(void)>& step) {
+    // Try until we're either done, or we reach the retry limit.
+    bool message_was_received = false;
+    int count = 0;
+    while (!message_was_received && count++ < retries) {
+      step();
+      message_was_received =
+          CompareLcmtDrakeSignalMessages(*received, message_);
+    }
+    EXPECT_TRUE(message_was_received);
   }
 
-  dut.StopReceiveThread();
-  EXPECT_TRUE(done);
-  EXPECT_FALSE(dut.IsReceiveThreadRunning());
+  // The device under test.
+  std::unique_ptr<DrakeLcm> dut_ = std::make_unique<DrakeLcm>();
+
+  // A prototypical message with non-default values.
+  lcmt_drake_signal message_{};
+};
+
+TEST_F(DrakeLcmTest, DefaultUrlTest) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_EQ(dut_->get_requested_lcm_url(), "");
+#pragma GCC diagnostic pop
+  EXPECT_GT(dut_->get_lcm_url().size(), 0);
 }
 
-// Handles received LCM messages.
-class MessageHandler final {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MessageHandler)
-
-  // A constructor that initializes the memory for storing received LCM
-  // messages.
-  MessageHandler() {
-    // Initializes the fields of received_message_ so the test logic can
-    // determine whether the desired message was received.
-    received_message_.dim = 0;
-    received_message_.val.resize(received_message_.dim);
-    received_message_.coord.resize(received_message_.dim);
-    received_message_.timestamp = 0;
-  }
-
-  void Subscribe(const std::string& channel, DrakeLcmInterface* dut) {
-    dut->Subscribe(channel, [this](const void* data, int size) {
-        this->HandleMessage(data, size);
-      });
-  }
-
-  // This is the callback method.
-  void HandleMessage(const void* message_buffer, int message_size) {
-    std::lock_guard<std::mutex> lock(message_mutex_);
-    received_message_.decode(message_buffer, 0, message_size);
-  }
-
-  // Returns a copy of the most recently received message.
-  drake::lcmt_drake_signal GetReceivedMessage() {
-    drake::lcmt_drake_signal message_copy;
-    std::lock_guard<std::mutex> lock(message_mutex_);
-    message_copy = received_message_;
-    return message_copy;
-  }
-
- private:
-  std::mutex message_mutex_;
-  drake::lcmt_drake_signal received_message_;
-};
-
-// Tests DrakeLcm's ability to subscribe to an LCM message.
-TEST_F(DrakeLcmTest, SubscribeTest) {
-  const std::string channel_name = "drake_lcm_subscriber_channel_name";
-
-  // Instantiates the Device Under Test (DUT).
-  DrakeLcm dut;
-
-  MessageHandler handler;
-  handler.Subscribe(channel_name, &dut);
-
-  // Starts the LCM receive thread after the subscribers are created.
-  dut.StartReceiveThread();
-  ::lcm::LCM* lcm = dut.get_lcm_instance();
-
-  // Prevents this unit test from running indefinitely when the receiver fails
-  // to receive the LCM message published by the DUT.
-  int count = 0;
-
-  const int kMaxCount = 10;
-  const int kDelayMS = 500;
-
-  bool done = false;
-
-  // We must periodically call dut.Publish(...) since we do not know when the
-  // receiver will actually receive the message.
-  while (!done && count++ < kMaxCount) {
-    lcm->publish(channel_name, &message_);
-    // Gets the received message.
-    const drake::lcmt_drake_signal received_message =
-        handler.GetReceivedMessage();
-    done = CompareLcmtDrakeSignalMessages(received_message, message_);
-    if (!done) sleep_for(milliseconds(kDelayMS));
-  }
-
-  dut.StopReceiveThread();
-  EXPECT_TRUE(done);
+TEST_F(DrakeLcmTest, CustomUrlTest) {
+  dut_ = std::make_unique<DrakeLcm>(kUdpmUrl);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_EQ(dut_->get_requested_lcm_url(), kUdpmUrl);
+#pragma GCC diagnostic pop
+  EXPECT_EQ(dut_->get_lcm_url(), kUdpmUrl);
 }
 
 TEST_F(DrakeLcmTest, EmptyChannelTest) {
-  DrakeLcm dut;
-  EXPECT_EQ(dut.get_requested_lcm_url(), "");
+  auto noop = [](const void*, int) {};
+  DRAKE_EXPECT_THROWS_MESSAGE(dut_->Subscribe("", noop), std::exception,
+      ".*channel.empty.*");
 
-  MessageHandler handler;
-  EXPECT_THROW(handler.Subscribe("", &dut), std::exception);
-
-  lcmt_drake_signal message{};
-  EXPECT_THROW(Publish(&dut, "", message), std::exception);
+  char data[1] = {};
+  DRAKE_EXPECT_THROWS_MESSAGE(dut_->Publish("", data, 1, {}), std::exception,
+      ".*channel.empty.*");
 }
 
+// Tests DrakeLcm's ability to publish an LCM message.
+// We subscribe using the native LCM APIs.
+TEST_F(DrakeLcmTest, PublishTest) {
+  ::lcm::LCM* const native_lcm = dut_->get_lcm_instance();
+  const std::string channel_name = "DrakeLcmTest.PublishTest";
 
-TEST_F(DrakeLcmTest, UrlTest) {
-  const std::string custom_url = "udpm://239.255.66.66:6666?ttl=0";
-  const DrakeLcm dut(custom_url);
+  lcmt_drake_signal received{};
+  ::lcm::LCM::HandlerFunction<lcmt_drake_signal> handler = [&received](
+      const ::lcm::ReceiveBuffer*, const std::string&,
+      const lcmt_drake_signal* new_value) {
+    DRAKE_DEMAND(new_value != nullptr);
+    received = *new_value;
+  };
+  native_lcm->subscribe(channel_name, std::move(handler));
 
-  EXPECT_EQ(dut.get_requested_lcm_url(), custom_url);
+  LoopUntilDone(&received, 20 /* retries */, [&]() {
+    Publish(dut_.get(), channel_name, message_);
+    native_lcm->handleTimeout(50 /* millis */);
+  });
+}
+
+// Tests DrakeLcm's ability to subscribe to an LCM message.
+// We publish using the native LCM APIs.
+TEST_F(DrakeLcmTest, SubscribeTest) {
+  ::lcm::LCM* const native_lcm = dut_->get_lcm_instance();
+  const std::string channel_name = "DrakeLcmTest.SubscribeTest";
+
+  lcmt_drake_signal received{};
+  auto subscription = dut_->Subscribe(channel_name, [&received](
+      const void* data, int size) {
+    received.decode(data, 0, size);
+  });
+  subscription.reset();  // Deleting the subscription should be a no-op.
+
+  int total = 0;
+  LoopUntilDone(&received, 20 /* retries */, [&]() {
+    native_lcm->publish(channel_name, &message_);
+    total += dut_->HandleSubscriptions(50 /* millis */);
+  });
+  EXPECT_EQ(total, 1);
+}
+
+// Repeats the above test, but with explicit opt-out of unsubscribe.
+TEST_F(DrakeLcmTest, SubscribeTest2) {
+  ::lcm::LCM* const native_lcm = dut_->get_lcm_instance();
+  const std::string channel_name = "DrakeLcmTest.SubscribeTest2";
+
+  lcmt_drake_signal received{};
+  auto subscription = dut_->Subscribe(channel_name, [&received](
+      const void* data, int size) {
+    received.decode(data, 0, size);
+  });
+  subscription->set_unsubscribe_on_delete(false);  // We shall be explicit.
+  subscription.reset();
+
+  int total = 0;
+  LoopUntilDone(&received, 20 /* retries */, [&]() {
+    native_lcm->publish(channel_name, &message_);
+    total += dut_->HandleSubscriptions(50 /* millis */);
+  });
+  EXPECT_EQ(total, 1);
+}
+
+// Tests DrakeLcm's round-trip ability using DrakeLcmInterface's sugar,
+// without any native LCM APIs.
+TEST_F(DrakeLcmTest, AcceptanceTest) {
+  const std::string channel_name = "DrakeLcmTest.AcceptanceTest";
+  Subscriber<lcmt_drake_signal> subscriber(dut_.get(), channel_name);
+  LoopUntilDone(&subscriber.message(), 20 /* retries */, [&]() {
+    Publish(dut_.get(), channel_name, message_);
+    dut_->HandleSubscriptions(50 /* millis */);
+  });
+}
+
+// Tests DrakeLcm's unsubscribe.
+TEST_F(DrakeLcmTest, UnsubscribeTest) {
+  const std::string channel_name = "DrakeLcmTest.UnsubscribeTest";
+
+  // First, confirm that the subscriber is active.
+  lcmt_drake_signal received{};
+  auto subscription = dut_->Subscribe(channel_name, [&](
+      const void* data, int size) {
+    received.decode(data, 0, size);
+  });
+  subscription->set_unsubscribe_on_delete(true);
+  LoopUntilDone(&received, 20 /* retries */, [&]() {
+    Publish(dut_.get(), channel_name, message_);
+    dut_->HandleSubscriptions(50 /* millis */);
+  });
+
+  // Then, unsubscribe and make sure no more messages are delivered.
+  subscription.reset();
+  received = {};
+  Publish(dut_.get(), channel_name, message_);
+  ASSERT_EQ(dut_->HandleSubscriptions(1000 /* millis */), 0);
+  ASSERT_EQ(received.timestamp, 0);
+}
+
+// Tests DrakeLcm's queue-size controls.  These do not work with the memq URL,
+// but only with real udpm URLs.
+TEST_F(DrakeLcmTest, QueueCapacityTest) {
+  dut_ = std::make_unique<DrakeLcm>(kUdpmUrl);
+  const std::string channel_name = "DrakeLcmTest.QueueCapacityTest";
+
+  int count = 0;
+  auto subscription = dut_->Subscribe(channel_name, [&count](
+      const void* data, int size) {
+    ++count;
+  });
+  EXPECT_EQ(dut_->HandleSubscriptions(10 /* millis */), 0);
+
+  // Send three messages, but only one comes out.
+  for (int i = 0; i < 3; ++i) {
+    Publish(dut_.get(), channel_name, message_);
+    // Let lcm_udpm's receive thread get scheduled.
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  EXPECT_EQ(dut_->HandleSubscriptions(1000 /* millis */), 1);
+  ASSERT_EQ(dut_->HandleSubscriptions(1000 /* millis */), 0);
+  EXPECT_EQ(count, 1);
+  count = 0;
+
+  // Send five messages, but only three come out.
+  subscription->set_queue_capacity(3);
+  for (int i = 0; i < 5; ++i) {
+    Publish(dut_.get(), channel_name, message_);
+    // Let lcm_udpm's receive thread get scheduled.
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  EXPECT_EQ(dut_->HandleSubscriptions(1000 /* millis */), 3);
+  ASSERT_EQ(dut_->HandleSubscriptions(1000 /* millis */), 0);
+  EXPECT_EQ(count, 3);
+  count = 0;
 }
 
 }  // namespace

@@ -27,8 +27,11 @@ using DrakeShapes::Cylinder;
 using DrakeShapes::Mesh;
 using DrakeShapes::Sphere;
 
+using LoadSubscriber = drake::lcm::Subscriber<lcmt_viewer_load_robot>;
+using DrawSubscriber = drake::lcm::Subscriber<lcmt_viewer_draw>;
+
 // Verifies that @p message is correct.
-void VerifyLoadMessage(const std::vector<uint8_t>& message_bytes) {
+void VerifyLoadMessage(const drake::lcmt_viewer_load_robot& message) {
   // Instantiates the expected message.
   drake::lcmt_viewer_load_robot expected_message;
   expected_message.num_links = 6;
@@ -185,21 +188,20 @@ void VerifyLoadMessage(const std::vector<uint8_t>& message_bytes) {
     expected_message.link.push_back(link_data);
   }
 
-  // Ensures both messages have the same length.
-  EXPECT_EQ(expected_message.getEncodedSize(),
-      static_cast<int>(message_bytes.size()));
-  const int byte_count = expected_message.getEncodedSize();
-
   // Serialize the expected message.
-  std::vector<uint8_t> expected_message_bytes(byte_count);
-  expected_message.encode(expected_message_bytes.data(), 0, byte_count);
+  std::vector<uint8_t> expected_bytes(expected_message.getEncodedSize());
+  expected_message.encode(expected_bytes.data(), 0, expected_bytes.size());
+
+  // Serialize the actual message.
+  std::vector<uint8_t> actual_bytes(message.getEncodedSize());
+  message.encode(actual_bytes.data(), 0, actual_bytes.size());
 
   // Verifies that the messages are equal.
-  EXPECT_EQ(expected_message_bytes, message_bytes);
+  EXPECT_EQ(expected_bytes, actual_bytes);
 }
 
-// Verifies that @p message_bytes is correct.
-void VerifyDrawMessage(const std::vector<uint8_t>& message_bytes) {
+// Verifies that @p message is correct.
+void VerifyDrawMessage(const drake::lcmt_viewer_draw& message) {
   // TODO(liang.fok): Replace the following two lines with
   // `Eigen::Quaterniond::Identity()` and a common helper method that converts
   // it into a std::vector<float>. Related issue: #3470.
@@ -272,16 +274,16 @@ void VerifyDrawMessage(const std::vector<uint8_t>& message_bytes) {
     expected_message.quaternion.push_back(zero_quaternion);
   }
 
-  // Ensures both messages have the same length.
-  const int byte_count = expected_message.getEncodedSize();
-  EXPECT_EQ(byte_count, static_cast<int>(message_bytes.size()));
+  // Serialize the expected message.
+  std::vector<uint8_t> expected_bytes(expected_message.getEncodedSize());
+  expected_message.encode(expected_bytes.data(), 0, expected_bytes.size());
 
-  // Serializes the expected message.
-  std::vector<uint8_t> expected_message_bytes(byte_count);
-  expected_message.encode(expected_message_bytes.data(), 0, byte_count);
+  // Serialize the actual message.
+  std::vector<uint8_t> actual_bytes(message.getEncodedSize());
+  message.encode(actual_bytes.data(), 0, actual_bytes.size());
 
   // Verifies that the messages are equal.
-  EXPECT_EQ(expected_message_bytes, message_bytes);
+  EXPECT_EQ(expected_bytes, actual_bytes);
 }
 
 // Creates a RigidBodyTree. The tree has 6 rigid bodies including the world. The
@@ -465,12 +467,14 @@ GTEST_TEST(DrakeVisualizerTests, BasicTest) {
   unique_ptr<RigidBodyTree<double>> tree = CreateRigidBodyTree();
   drake::lcm::DrakeMockLcm lcm;
   const DrakeVisualizer dut(*tree, &lcm);
+  LoadSubscriber load_sub(&lcm, "DRAKE_VIEWER_LOAD_ROBOT");
+  DrawSubscriber draw_sub(&lcm, "DRAKE_VIEWER_DRAW");
 
   EXPECT_EQ("drake_visualizer", dut.get_name());
 
   auto context = dut.CreateDefaultContext();
 
-  EXPECT_EQ(1, context->get_num_input_ports());
+  EXPECT_EQ(1, context->num_input_ports());
 
   // Initializes the system's input vector to contain all zeros.
   const int vector_size =
@@ -483,10 +487,11 @@ GTEST_TEST(DrakeVisualizerTests, BasicTest) {
   PublishLoadRobotModelMessageHelper(dut, *context);
 
   dut.Publish(*context.get());
+  lcm.HandleSubscriptions(0);
 
   // Verifies that the correct messages were actually transmitted.
-  VerifyLoadMessage(lcm.get_last_published_message("DRAKE_VIEWER_LOAD_ROBOT"));
-  VerifyDrawMessage(lcm.get_last_published_message("DRAKE_VIEWER_DRAW"));
+  VerifyLoadMessage(load_sub.message());
+  VerifyDrawMessage(draw_sub.message());
 }
 
 // Tests that the published LCM message has the expected timestamps.
@@ -495,6 +500,8 @@ GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
 
   unique_ptr<RigidBodyTree<double>> tree = CreateRigidBodyTree();
   drake::lcm::DrakeMockLcm lcm;
+  LoadSubscriber load_sub(&lcm, "DRAKE_VIEWER_LOAD_ROBOT");
+  DrawSubscriber draw_sub(&lcm, "DRAKE_VIEWER_DRAW");
 
   // Instantiates the "device under test".
   DrakeVisualizer dut(*tree, &lcm);
@@ -510,16 +517,17 @@ GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
   drake::systems::Simulator<double> simulator(dut, std::move(context));
   simulator.set_publish_every_time_step(false);
   simulator.Initialize();
-  VerifyLoadMessage(lcm.get_last_published_message("DRAKE_VIEWER_LOAD_ROBOT"));
+  lcm.HandleSubscriptions(0);
+  VerifyLoadMessage(load_sub.message());
 
   for (double time = 0; time < 4; time += 0.01) {
     simulator.AdvanceTo(time);
+    lcm.HandleSubscriptions(0);
     EXPECT_NEAR(simulator.get_mutable_context().get_time(), time, 1e-10);
     // Note that the expected time is in milliseconds.
     const double expected_time =
         std::floor(time / kPublishPeriod) * kPublishPeriod * 1000;
-    EXPECT_EQ(lcm.DecodeLastPublishedMessageAs<lcmt_viewer_draw>(
-        "DRAKE_VIEWER_DRAW").timestamp, expected_time);
+    EXPECT_EQ(draw_sub.message().timestamp, expected_time);
   }
 }
 

@@ -9,6 +9,10 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/math/barycentric.h"
+#include "drake/math/continuous_algebraic_riccati_equation.h"
+#include "drake/math/continuous_lyapunov_equation.h"
+#include "drake/math/discrete_algebraic_riccati_equation.h"
+#include "drake/math/discrete_lyapunov_equation.h"
 #include "drake/math/orthonormal_basis.h"
 #include "drake/math/quadratic_form.h"
 #include "drake/math/rigid_transform.h"
@@ -223,7 +227,25 @@ PYBIND11_MODULE(math, m) {
           py::arg("Q"), py::arg("b"), py::arg("c"), py::arg("tol") = 0,
           doc.DecomposePositiveQuadraticForm.doc);
 
-  // General math overloads.
+  // Riccati and Lyapunov Equations.
+  m  // BR
+      .def("ContinuousAlgebraicRiccatiEquation",
+          py::overload_cast<const Eigen::Ref<const Eigen::MatrixXd>&,
+              const Eigen::Ref<const Eigen::MatrixXd>&,
+              const Eigen::Ref<const Eigen::MatrixXd>&,
+              const Eigen::Ref<const Eigen::MatrixXd>&>(
+              &ContinuousAlgebraicRiccatiEquation),
+          py::arg("A"), py::arg("B"), py::arg("Q"), py::arg("R"),
+          doc.ContinuousAlgebraicRiccatiEquation.doc_4args_A_B_Q_R)
+      .def("RealContinuousLyapunovEquation", &RealContinuousLyapunovEquation,
+          py::arg("A"), py::arg("Q"), doc.RealContinuousLyapunovEquation.doc)
+      .def("DiscreteAlgebraicRiccatiEquation",
+          &DiscreteAlgebraicRiccatiEquation, py::arg("A"), py::arg("B"),
+          py::arg("Q"), py::arg("R"), doc.DiscreteAlgebraicRiccatiEquation.doc)
+      .def("RealDiscreteLyapunovEquation", &RealDiscreteLyapunovEquation,
+          py::arg("A"), py::arg("Q"), doc.RealDiscreteLyapunovEquation.doc);
+
+  // General scalar math overloads.
   // N.B. Additional overloads will be added for autodiff, symbolic, etc, by
   // those respective modules.
   // TODO(eric.cousineau): If possible, delegate these to NumPy UFuncs,
@@ -256,6 +278,12 @@ PYBIND11_MODULE(math, m) {
       .def("ceil", [](double x) { return ceil(x); })
       .def("floor", [](double x) { return floor(x); });
 
+  // General vectorized / matrix overloads.
+  m  // BR
+      .def("inv", [](const Eigen::MatrixXd& X) -> Eigen::MatrixXd {
+        return X.inverse();
+      });
+
   // Add testing module.
   {
     auto mtest = m.def_submodule("_test");
@@ -264,6 +292,8 @@ PYBIND11_MODULE(math, m) {
     mtest.def(
         "TakeRigidTransform", [](const RigidTransform<T>&) { return true; });
   }
+
+  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake

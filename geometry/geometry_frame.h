@@ -1,8 +1,10 @@
 #pragma once
 
 #include <string>
+#include <type_traits>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 
@@ -15,14 +17,11 @@ namespace geometry {
  SceneGraph::RegisterSource()) instantiates a frame and passes ownership
  over to SceneGraph.
 
- A frame is defined by three pieces of information:
+ A frame is defined by two pieces of information:
 
-    - the name, which must be unique within a single geometry source,
+    - the name, which must be unique within a single geometry source and
     - the "frame group", an integer identifier that can be used to group frames
-      together within a geometry source, and
-    - the initial pose of the frame (measured and expressed in its parent
-      frame). The parent is defined at registration. This is only the _initial_
-      pose; registered frames are expected to move with time.
+      together within a geometry source.
 
  @internal The "frame group" is intended as a generic synonym for the model
  instance id defined by the RigidBodyTree and used again in automotive to
@@ -35,19 +34,29 @@ class GeometryFrame {
 
   /** Constructor.
    @param frame_name        The name of the frame.
+   @param frame_group_id    The optional frame group identifier. If unspecified,
+                            defaults to the common, 0 group. Must be
+                            non-negative.  */
+  explicit GeometryFrame(const std::string& frame_name, int frame_group_id = 0)
+      : id_(FrameId::get_new_id()),
+        name_(frame_name),
+        frame_group_(frame_group_id) {
+    ThrowIfInvalid();
+  }
+
+  /** Constructor.
+   @param frame_name        The name of the frame.
    @param X_PF              The initial pose of this frame F, measured and
                             expressed in the _intended_ parent frame P.
    @param frame_group_id    The optional frame group identifier. If unspecified,
                             defaults to the common, 0 group. Must be
                             non-negative.  */
-  GeometryFrame(const std::string& frame_name, const Isometry3<double>& X_PF,
+  DRAKE_DEPRECATED("2019-06-26",
+                   "GeometryFrame no longer requires a pose X_PF; prefer the "
+                   "constructor without pose.")
+  GeometryFrame(const std::string& frame_name, const Isometry3<double>&,
                 int frame_group_id = 0)
-      : id_(FrameId::get_new_id()),
-        name_(frame_name),
-        X_PF_(X_PF),
-        frame_group_(frame_group_id) {
-    ThrowIfInvalid();
-  }
+      : GeometryFrame(frame_name, frame_group_id) {}
 
   /** Returns the globally unique id for this geometry specification. Every
    instantiation of %FrameInstance will contain a unique id value. The id
@@ -57,8 +66,6 @@ class GeometryFrame {
   FrameId id() const { return id_; }
 
   const std::string& name() const { return name_; }
-
-  const Isometry3<double>& pose() const { return X_PF_; }
 
   int frame_group() const { return frame_group_; }
 
@@ -79,9 +86,6 @@ class GeometryFrame {
   // The name of the frame. Must be unique across frames from the same geometry
   // source.
   std::string name_;
-
-  // The initial pose of frame F, measured and expressed in the parent frame P.
-  Isometry3<double> X_PF_;
 
   // TODO(SeanCurtis-TRI): Consider whether this should be an Identifier or
   // TypeSafeIndex type.

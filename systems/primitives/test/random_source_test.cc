@@ -186,7 +186,7 @@ GTEST_TEST(RandomSourceTest, AddToDiagramBuilderTest) {
       diagram->GetSubsystemContext(*sys2, *context)));
 
   // Check that the exported input remained exported.
-  EXPECT_EQ(diagram->get_num_input_ports(), 1);
+  EXPECT_EQ(diagram->num_input_ports(), 1);
   EXPECT_EQ(diagram->get_input_port(0).size(), 2);
 
   // Check that the previously connected input remained connected.

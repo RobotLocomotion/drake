@@ -244,7 +244,7 @@ class ImageWriter : public LeafSystem<double> {
   };
 
   // For each input port, this stores the corresponding image data. It is an
-  // invariant that port_info_.size() == get_num_input_ports().
+  // invariant that port_info_.size() == num_input_ports().
   std::vector<ImagePortInfo> port_info_;
 
   std::unordered_map<PixelType, std::string> labels_;

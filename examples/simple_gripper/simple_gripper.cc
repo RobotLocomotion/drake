@@ -31,26 +31,24 @@ namespace examples {
 namespace simple_gripper {
 namespace {
 
-using Eigen::Isometry3d;
-using Eigen::Translation3d;
 using Eigen::Vector3d;
-using drake::geometry::SceneGraph;
-using drake::geometry::Sphere;
-using drake::lcm::DrakeLcm;
-using drake::math::RollPitchYaw;
-using drake::math::RotationMatrix;
-using drake::multibody::Body;
-using drake::multibody::CoulombFriction;
-using drake::multibody::ConnectContactResultsToDrakeVisualizer;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::Parser;
-using drake::multibody::PrismaticJoint;
-using drake::multibody::UniformGravityFieldElement;
-using drake::systems::ImplicitEulerIntegrator;
-using drake::systems::RungeKutta2Integrator;
-using drake::systems::RungeKutta3Integrator;
-using drake::systems::SemiExplicitEulerIntegrator;
-using drake::systems::Sine;
+using geometry::SceneGraph;
+using geometry::Sphere;
+using lcm::DrakeLcm;
+using math::RigidTransformd;
+using math::RollPitchYawd;
+using multibody::Body;
+using multibody::CoulombFriction;
+using multibody::ConnectContactResultsToDrakeVisualizer;
+using multibody::MultibodyPlant;
+using multibody::Parser;
+using multibody::PrismaticJoint;
+using multibody::UniformGravityFieldElement;
+using systems::ImplicitEulerIntegrator;
+using systems::RungeKutta2Integrator;
+using systems::RungeKutta3Integrator;
+using systems::SemiExplicitEulerIntegrator;
+using systems::Sine;
 
 // TODO(amcastro-tri): Consider moving this large set of parameters to a
 // configuration file (e.g. YAML).
@@ -149,7 +147,7 @@ void AddGripperPads(MultibodyPlant<double>* plant,
     p_FSo(2) = std::sin(d_theta * i + sample_rotation) * kPadMajorRadius;
 
     // Pose of the sphere frame S in the finger frame F.
-    const Isometry3d X_FS = Isometry3d(Translation3d(p_FSo));
+    const RigidTransformd X_FS(p_FSo);
 
     CoulombFriction<double> friction(
         FLAGS_ring_static_friction, FLAGS_ring_static_friction);
@@ -332,12 +330,10 @@ int do_main() {
       plant_context, left_finger).translation();
   const double mug_y_W = (p_WBr(1) + p_WBl(1)) / 2.0;
 
-  Isometry3d X_WM;
-  Vector3d rpy(FLAGS_rx * M_PI / 180,
-               FLAGS_ry * M_PI / 180,
-               (FLAGS_rz * M_PI / 180) + M_PI);
-  X_WM.linear() = RotationMatrix<double>(RollPitchYaw<double>(rpy)).matrix();
-  X_WM.translation() = Vector3d(0.0, mug_y_W, 0.0);
+  RigidTransformd X_WM(
+      RollPitchYawd(FLAGS_rx * M_PI / 180, FLAGS_ry * M_PI / 180,
+                    (FLAGS_rz * M_PI / 180) + M_PI),
+      Vector3d(0.0, mug_y_W, 0.0));
   plant.SetFreeBodyPose(&plant_context, mug, X_WM);
 
   // Set the initial height of the gripper and its initial velocity so that with

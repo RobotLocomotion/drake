@@ -7,8 +7,11 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/examples/rimless_wheel/rimless_wheel.h"
 #include "drake/math/autodiff.h"
+#include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 #include "drake/solvers/ipopt_solver.h"
+#include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
 #include "drake/systems/primitives/linear_system.h"
 
@@ -148,10 +151,10 @@ GTEST_TEST(DirectCollocationTest, TestReconstruction) {
     EXPECT_TRUE(CompareMatrices(result.GetSolution(prog.state(i)),
                                 state_spline.value(time), 1e-6));
 
-    EXPECT_TRUE(CompareMatrices(
-        system->A() * result.GetSolution(prog.state(i)) +
-            system->B() * result.GetSolution(prog.input(i)),
-        derivative_spline.value(time), 1e-6));
+    EXPECT_TRUE(
+        CompareMatrices(system->A() * result.GetSolution(prog.state(i)) +
+                            system->B() * result.GetSolution(prog.input(i)),
+                        derivative_spline.value(time), 1e-6));
 
     if (i < (kNumSampleTimes - 1)) {
       time += result.GetSolution(prog.timestep(i).coeff(0));
@@ -280,14 +283,14 @@ GTEST_TEST(DirectCollocationTest, NoInputs) {
               x0 * std::exp(-duration), 1e-6);
 
   const auto state_trajectory = prog.ReconstructStateTrajectory(result);
-  EXPECT_EQ(state_trajectory.get_number_of_segments(), kNumSampleTimes-1);
+  EXPECT_EQ(state_trajectory.get_number_of_segments(), kNumSampleTimes - 1);
 }
 
 GTEST_TEST(DirectCollocationTest, AddDirectCollocationConstraint) {
   const auto double_integrator = MakeDoubleIntegrator();
   auto context = double_integrator->CreateDefaultContext();
-  auto constraint = std::make_shared<DirectCollocationConstraint>
-      (*double_integrator, *context);
+  auto constraint = std::make_shared<DirectCollocationConstraint>(
+      *double_integrator, *context);
 
   solvers::MathematicalProgram prog;
   const auto h = prog.NewContinuousVariables<1>();
@@ -311,6 +314,63 @@ GTEST_TEST(DirectCollocationTest, AddDirectCollocationConstraint) {
   const Eigen::VectorXd val = prog.EvalBindingAtInitialGuess(binding);
   EXPECT_EQ(val.size(), 2);
   EXPECT_TRUE(val.isZero());
+}
+
+// Almost any optimization with MultibodyPlant will need the input port
+// selection feature.  Add a simple example here.
+GTEST_TEST(DirectCollocation, InputPortSelection) {
+  const auto plant = multibody::benchmarks::pendulum::MakePendulumPlant();
+  auto context = plant->CreateDefaultContext();
+
+  const int kNumSamples = 5;
+  const double kMinStep = 0.05;
+  const double kMaxStep = 0.5;
+  DirectCollocation prog(plant.get(), *context, kNumSamples, kMinStep, kMaxStep,
+                         plant->get_actuation_input_port().get_index());
+
+  prog.AddEqualTimeIntervalsConstraints();
+
+  Eigen::Vector2d initial_state{0.0, 0.1};
+  Eigen::Vector2d final_state{0.0, 0.0};
+
+  prog.AddConstraint(prog.initial_state() == initial_state);
+  prog.AddConstraint(prog.final_state() == final_state);
+
+  const auto& u = prog.input();
+  prog.AddRunningCost(10 * u[0] * u[0]);
+
+  const auto result = Solve(prog);
+  EXPECT_TRUE(result.is_success());
+}
+
+// The Rimless Wheel example has discrete state for book-keeping only.  The
+// following is a simple example of effectively simulating one "step" of the
+// wheel using direct collocation; this system was a motivating example for
+// allowing the target system to have non-participating discrete/abstract
+// states.
+GTEST_TEST(DirectCollocation, IgnoreNonContinuousState) {
+  examples::rimless_wheel::RimlessWheel<double> plant;
+  auto context = plant.CreateDefaultContext();
+
+  const int kNumSamples = 15;
+  const double kMinStep = 0.01;
+  const double kMaxStep = 0.1;
+  const bool kAssumeNonContinuousStatesAreFixed = true;
+  DirectCollocation prog(&plant, *context, kNumSamples, kMinStep, kMaxStep,
+                         InputPortSelection::kNoInput,
+                         kAssumeNonContinuousStatesAreFixed);
+
+  const double slope = 0.08;
+  const double alpha = M_PI / 8;  // half the interleg angle (in radians).
+  prog.AddEqualTimeIntervalsConstraints();
+  prog.AddConstraintToAllKnotPoints(prog.state()[0] >= slope - alpha);
+  prog.AddConstraintToAllKnotPoints(prog.state()[0] <= slope + alpha);
+
+  prog.AddConstraint(prog.initial_state()[0] == slope - alpha);
+  prog.AddConstraint(prog.final_state()[0] == slope + alpha);
+
+  const auto result = Solve(prog);
+  EXPECT_TRUE(result.is_success());
 }
 
 }  // anonymous namespace

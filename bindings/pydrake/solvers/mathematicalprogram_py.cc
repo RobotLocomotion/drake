@@ -29,6 +29,7 @@ using solvers::BoundingBoxConstraint;
 using solvers::Constraint;
 using solvers::Cost;
 using solvers::EvaluatorBase;
+using solvers::ExponentialConeConstraint;
 using solvers::LinearComplementarityConstraint;
 using solvers::LinearConstraint;
 using solvers::LinearCost;
@@ -90,7 +91,8 @@ auto RegisterBinding(py::handle* scope, const string& name) {
     py::implicitly_convertible<B, Binding<EvaluatorBase>>();
   }
   // Add deprecated `constraint`.
-  binding_cls.def("constraint", &B::evaluator, cls_doc.constraint.doc);
+  binding_cls.def(
+      "constraint", &B::evaluator, cls_doc.constraint.doc_deprecated);
   DeprecateAttribute(binding_cls, "constraint",
       "`constraint` is deprecated; please use `evaluator` instead.");
   return binding_cls;
@@ -472,6 +474,14 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Formula&)>(&MathematicalProgram::AddLinearConstraint),
           py::arg("f"), doc.MathematicalProgram.AddLinearConstraint.doc_1args_f)
+      .def("AddLinearConstraint",
+          [](MathematicalProgram* self,
+              const Eigen::Ref<const VectorX<Formula>>& formulas) {
+            return self->AddLinearConstraint(formulas.array());
+          },
+          py::arg("formulas"),
+          doc.MathematicalProgram.AddLinearConstraint
+              .doc_1args_constEigenArrayBase)
       .def("AddLinearEqualityConstraint",
           static_cast<Binding<LinearEqualityConstraint> (
               MathematicalProgram::*)(const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -515,6 +525,12 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           },
           doc.MathematicalProgram.AddPositiveSemidefiniteConstraint
               .doc_1args_constEigenMatrixBase)
+      .def("AddExponentialConeConstraint",
+          [](MathematicalProgram* self,
+              const Eigen::Ref<const Vector3<symbolic::Expression>>& z) {
+            return self->AddExponentialConeConstraint(z);
+          },
+          doc.MathematicalProgram.AddExponentialConeConstraint.doc_1args)
       .def("AddCost",
           [](MathematicalProgram* self, py::function func,
               const Eigen::Ref<const VectorXDecisionVariable>& vars,
@@ -564,6 +580,14 @@ PYBIND11_MODULE(mathematicalprogram, m) {
               &MathematicalProgram::AddL2NormCost),
           py::arg("A"), py::arg("b"), py::arg("vars"),
           doc.MathematicalProgram.AddL2NormCost.doc)
+      .def("AddMaximizeLogDeterminantSymmetricMatrixCost",
+          static_cast<void (MathematicalProgram::*)(
+              const Eigen::Ref<const MatrixX<symbolic::Expression>>& X)>(
+              &MathematicalProgram::
+                  AddMaximizeLogDeterminantSymmetricMatrixCost),
+          py::arg("X"),
+          doc.MathematicalProgram.AddMaximizeLogDeterminantSymmetricMatrixCost
+              .doc)
       .def("AddSosConstraint",
           static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               const Polynomial&, const Eigen::Ref<const VectorX<Monomial>>&)>(
@@ -630,8 +654,11 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       .def("GetAllConstraints", &MathematicalProgram::GetAllConstraints,
           doc.MathematicalProgram.GetAllConstraints.doc)
       .def("FindDecisionVariableIndex",
-          &MathematicalProgram::FindDecisionVariableIndex,
+          &MathematicalProgram::FindDecisionVariableIndex, py::arg("var"),
           doc.MathematicalProgram.FindDecisionVariableIndex.doc)
+      .def("FindDecisionVariableIndices",
+          &MathematicalProgram::FindDecisionVariableIndices, py::arg("vars"),
+          doc.MathematicalProgram.FindDecisionVariableIndices.doc)
       .def("num_vars", &MathematicalProgram::num_vars,
           doc.MathematicalProgram.num_vars.doc)
       .def("decision_variables", &MathematicalProgram::decision_variables,
@@ -691,10 +718,26 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           },
           py::arg("binding"), py::arg("prog_var_vals"),
           doc.MathematicalProgram.EvalBinding.doc)
+      .def("EvalBinding",
+          [](const MathematicalProgram& prog,
+              const Binding<EvaluatorBase>& binding,
+              const VectorX<AutoDiffXd>& prog_var_vals) {
+            return prog.EvalBinding(binding, prog_var_vals);
+          },
+          py::arg("binding"), py::arg("prog_var_vals"),
+          doc.MathematicalProgram.EvalBinding.doc)
       .def("EvalBindings",
           [](const MathematicalProgram& prog,
               const std::vector<Binding<EvaluatorBase>>& binding,
               const VectorX<double>& prog_var_vals) {
+            return prog.EvalBindings(binding, prog_var_vals);
+          },
+          py::arg("bindings"), py::arg("prog_var_vals"),
+          doc.MathematicalProgram.EvalBindings.doc)
+      .def("EvalBindings",
+          [](const MathematicalProgram& prog,
+              const std::vector<Binding<EvaluatorBase>>& binding,
+              const VectorX<AutoDiffXd>& prog_var_vals) {
             return prog.EvalBindings(binding, prog_var_vals);
           },
           py::arg("bindings"), py::arg("prog_var_vals"),
@@ -819,7 +862,11 @@ PYBIND11_MODULE(mathematicalprogram, m) {
     py::class_<Class, std::shared_ptr<EvaluatorBase>> cls(m, "EvaluatorBase");
     cls  // BR
         .def("num_outputs", &Class::num_outputs, cls_doc.num_outputs.doc)
-        .def("num_vars", &Class::num_vars, cls_doc.num_vars.doc);
+        .def("num_vars", &Class::num_vars, cls_doc.num_vars.doc)
+        .def("get_description", &Class::get_description,
+            cls_doc.get_description.doc)
+        .def("set_description", &Class::set_description,
+            cls_doc.set_description.doc);
     auto bind_eval = [&cls, &cls_doc](auto dummy_x, auto dummy_y) {
       using T_x = decltype(dummy_x);
       using T_y = decltype(dummy_y);
@@ -925,6 +972,10 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       "LinearComplementarityConstraint",
       doc.LinearComplementarityConstraint.doc);
 
+  py::class_<ExponentialConeConstraint, Constraint,
+      std::shared_ptr<ExponentialConeConstraint>>(
+      m, "ExponentialConeConstraint", doc.ExponentialConeConstraint.doc);
+
   RegisterBinding<Constraint>(&m, "Constraint");
   RegisterBinding<LinearConstraint>(&m, "LinearConstraint");
   RegisterBinding<LorentzConeConstraint>(&m, "LorentzConeConstraint");
@@ -934,6 +985,7 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       &m, "PositiveSemidefiniteConstraint");
   RegisterBinding<LinearComplementarityConstraint>(
       &m, "LinearComplementarityConstraint");
+  RegisterBinding<ExponentialConeConstraint>(&m, "ExponentialConeConstraint");
 
   // Mirror procedure for costs
   py::class_<Cost, EvaluatorBase, std::shared_ptr<Cost>> cost(
@@ -983,7 +1035,10 @@ PYBIND11_MODULE(mathematicalprogram, m) {
               const optional<Eigen::VectorXd>&, const optional<SolverOptions>&>(
               &solvers::Solve),
           py::arg("prog"), py::arg("initial_guess") = py::none(),
-          py::arg("solver_options") = py::none(), doc.Solve.doc_3args);
+          py::arg("solver_options") = py::none(), doc.Solve.doc_3args)
+      .def("GetInfeasibleConstraints", &solvers::GetInfeasibleConstraints,
+          py::arg("prog"), py::arg("result"), py::arg("tol") = nullopt,
+          doc.GetInfeasibleConstraints.doc);
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake

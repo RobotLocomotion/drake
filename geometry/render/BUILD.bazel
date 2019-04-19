@@ -1,0 +1,74 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "render",
+    deps = [
+        ":render_label",
+        ":render_label_class",
+        ":render_label_manager",
+    ],
+)
+
+drake_cc_library(
+    name = "render_label",
+    srcs = ["render_label.cc"],
+    hdrs = ["render_label.h"],
+    deps = [
+        "//common:essential",
+        "//common:hash",
+        "//systems/sensors:image",
+    ],
+)
+
+drake_cc_library(
+    name = "render_label_class",
+    srcs = ["render_label_class.cc"],
+    hdrs = ["render_label_class.h"],
+    deps = [
+        ":render_label",
+        "//common:essential",
+        "//geometry:geometry_ids",
+    ],
+)
+
+drake_cc_library(
+    name = "render_label_manager",
+    srcs = ["render_label_manager.cc"],
+    hdrs = ["render_label_manager.h"],
+    deps = [
+        ":render_label",
+        ":render_label_class",
+        "@fmt",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "render_label_test",
+    deps = [
+        ":render_label",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "render_label_manager_test",
+    deps = [
+        ":render_label_manager",
+        "//common:value",
+        "//common/test_utilities",
+    ],
+)
+
+add_lint_tests()

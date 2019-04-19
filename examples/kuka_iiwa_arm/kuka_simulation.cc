@@ -16,7 +16,6 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/kuka_torque_controller.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/manipulation/util/sim_diagram_builder.h"
@@ -30,6 +29,7 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/lcm/lcm_interface_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -59,8 +59,8 @@ using systems::controllers::rbt::InverseDynamicsController;
 using systems::controllers::StateFeedbackControllerInterface;
 
 int DoMain() {
-  drake::lcm::DrakeLcm lcm;
   SimDiagramBuilder<double> builder;
+  systems::DiagramBuilder<double>* base_builder = builder.get_mutable_builder();
 
   // Adds a plant.
   RigidBodyPlant<double>* plant = nullptr;
@@ -77,7 +77,8 @@ int DoMain() {
     plant = builder.AddPlant(std::move(tree));
   }
   // Creates and adds LCM publisher for visualization.
-  builder.AddVisualizer(&lcm);
+  auto lcm = base_builder->AddSystem<systems::lcm::LcmInterfaceSystem>();
+  builder.AddVisualizer(lcm);
   builder.get_visualizer()->set_publish_period(kIiwaLcmStatusPeriod);
 
   const RigidBodyTree<double>& tree = plant->get_rigid_body_tree();
@@ -108,10 +109,9 @@ int DoMain() {
   }
 
   // Create the command subscriber and status publisher.
-  systems::DiagramBuilder<double>* base_builder = builder.get_mutable_builder();
   auto command_sub = base_builder->AddSystem(
-      MakeIiwaCommandLcmSubscriberSystem(
-          num_joints, "IIWA_COMMAND", &lcm));
+      systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_iiwa_command>(
+          "IIWA_COMMAND", lcm));
   command_sub->set_name("command_subscriber");
   auto command_receiver =
       base_builder->AddSystem<IiwaCommandReceiver>(num_joints);
@@ -123,13 +123,13 @@ int DoMain() {
           tree, iiwa_instances);
   auto status_pub = base_builder->AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
-          "IIWA_STATUS", &lcm, kIiwaLcmStatusPeriod /* publish period */));
+          "IIWA_STATUS", lcm, kIiwaLcmStatusPeriod /* publish period */));
   status_pub->set_name("status_publisher");
   auto status_sender = base_builder->AddSystem<IiwaStatusSender>(num_joints);
   status_sender->set_name("status_sender");
 
   base_builder->Connect(command_sub->get_output_port(),
-                        command_receiver->GetInputPort("command_message"));
+                        command_receiver->get_input_port());
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // TODO(jwnimmer-tri) The IIWA LCM systems should not know about velocities,
@@ -178,7 +178,7 @@ int DoMain() {
           RigidBodyFrame<double>("iiwa_link_7", tree.FindBody("iiwa_link_7"),
                                  Isometry3<double>::Identity()));
       auto frame_viz = base_builder->AddSystem<systems::FrameVisualizer>(
-          &tree, local_transforms, &lcm);
+          &tree, local_transforms, lcm);
       base_builder->Connect(plant->get_output_port(0),
                             frame_viz->get_input_port(0));
       frame_viz->set_publish_period(kIiwaLcmStatusPeriod);
@@ -194,7 +194,6 @@ int DoMain() {
 
   Simulator<double> simulator(*sys);
 
-  lcm.StartReceiveThread();
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
@@ -207,7 +206,6 @@ int DoMain() {
   // Simulate for a very long time.
   simulator.AdvanceTo(FLAGS_simulation_sec);
 
-  lcm.StopReceiveThread();
   return 0;
 }
 

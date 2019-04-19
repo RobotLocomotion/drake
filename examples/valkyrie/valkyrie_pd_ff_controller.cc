@@ -192,11 +192,11 @@ void run_valkyrie_pd_ff_controller() {
   auto context = diagram->CreateDefaultContext();
   auto output = diagram->AllocateOutput();
 
-  lcm.StartReceiveThread();
   std::cout << "controller started\n";
 
   // Call controller.
   while (true) {
+    lcm.HandleSubscriptions(0);
     const systems::Context<double>& pub_context =
         diagram->GetSubsystemContext(atlas_command_publisher, *context);
     atlas_command_publisher.Publish(pub_context);

@@ -31,8 +31,6 @@ namespace drake {
 namespace examples {
 namespace manipulation_station {
 
-using Eigen::Isometry3d;
-using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using geometry::SceneGraph;
@@ -138,7 +136,7 @@ template <typename T>
 multibody::ModelInstanceIndex AddAndWeldModelFrom(
     const std::string& model_path, const std::string& model_name,
     const multibody::Frame<T>& parent, const std::string& child_frame_name,
-    const Isometry3<double>& X_PC, MultibodyPlant<T>* plant) {
+    const RigidTransform<double>& X_PC, MultibodyPlant<T>* plant) {
   DRAKE_THROW_UNLESS(!plant->HasModelInstanceNamed(model_name));
 
   multibody::Parser parser(plant);
@@ -188,7 +186,7 @@ void ManipulationStation<T>::AddManipulandFromFile(
 
 template <typename T>
 void ManipulationStation<T>::SetupClutterClearingStation(
-    const optional<const math::RigidTransformd>& X_WCameraBody,
+    const optional<const math::RigidTransform<double>>& X_WCameraBody,
     IiwaCollisionModel collision_model) {
   DRAKE_DEMAND(setup_ == Setup::kNone);
   setup_ = Setup::kClutterClearing;
@@ -198,16 +196,13 @@ void ManipulationStation<T>::SetupClutterClearingStation(
     const std::string sdf_path = FindResourceOrThrow(
         "drake/examples/manipulation_station/models/bin.sdf");
 
-    Isometry3<double> X_WC =
-        RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI_2),
-                               Vector3d(-0.145, -0.63, 0.235))
-            .GetAsIsometry3();
+    RigidTransform<double> X_WC(RotationMatrix<double>::MakeZRotation(M_PI_2),
+                                Vector3d(-0.145, -0.63, 0.235));
     internal::AddAndWeldModelFrom(sdf_path, "bin1", plant_->world_frame(),
                                   "bin_base", X_WC, plant_);
 
     X_WC = RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI),
-                                  Vector3d(0.5, -0.1, 0.235))
-               .GetAsIsometry3();
+                                  Vector3d(0.5, -0.1, 0.235));
     internal::AddAndWeldModelFrom(sdf_path, "bin2", plant_->world_frame(),
                                   "bin_base", X_WC, plant_);
   }
@@ -231,7 +226,7 @@ void ManipulationStation<T>::SetupClutterClearingStation(
         kWidth, kHeight, fov_y, default_renderer_name_, 0.1, 2.0);
 
     RegisterRgbdCamera("0", plant_->world_frame(),
-                       X_WCameraBody.value_or(math::RigidTransformd(
+                       X_WCameraBody.value_or(math::RigidTransform<double>(
                            math::RollPitchYaw<double>(-0.3, 0.8, 1.5),
                            Eigen::Vector3d(0, -1.5, 1.5))),
                        camera_properties);
@@ -255,10 +250,8 @@ void ManipulationStation<T>::SetupDefaultStation(
         "drake/examples/manipulation_station/models/"
         "amazon_table_simplified.sdf");
 
-    const Isometry3<double> X_WT =
-        RigidTransform<double>(Vector3d(dx_table_center_to_robot_base, 0,
-                                        -dz_table_top_robot_base))
-            .GetAsIsometry3();
+    RigidTransform<double> X_WT(Vector3d(dx_table_center_to_robot_base, 0,
+                                  -dz_table_top_robot_base));
     internal::AddAndWeldModelFrom(sdf_path, "table", plant_->world_frame(),
                                   "amazon_table", X_WT, plant_);
   }
@@ -274,14 +267,12 @@ void ManipulationStation<T>::SetupDefaultStation(
     const std::string sdf_path = FindResourceOrThrow(
         "drake/examples/manipulation_station/models/cupboard.sdf");
 
-    const Isometry3<double> X_WC =
-        RigidTransform<double>(
+    RigidTransform<double> X_WC(
             RotationMatrix<double>::MakeZRotation(M_PI),
             Vector3d(
                 dx_table_center_to_robot_base + dx_cupboard_to_table_center, 0,
                 dz_cupboard_to_table_center + cupboard_height / 2.0 -
-                    dz_table_top_robot_base))
-            .GetAsIsometry3();
+                    dz_table_top_robot_base));
     internal::AddAndWeldModelFrom(sdf_path, "cupboard", plant_->world_frame(),
                                   "cupboard_body", X_WC, plant_);
   }
@@ -349,7 +340,7 @@ void ManipulationStation<T>::SetDefaultState(
   for (uint64_t i = 0; i < object_ids_.size(); i++) {
     plant_->SetFreeBodyPose(plant_context, &plant_state,
                             plant_->get_body(object_ids_[i]),
-                            object_poses_[i].GetAsIsometry3());
+                            object_poses_[i]);
   }
 
   // Use SetIiwaPosition to make sure the controller state is initialized to
@@ -384,8 +375,7 @@ void ManipulationStation<T>::SetRandomState(
     pose.set_translation(pose.translation() + Vector3d{0, 0, z_offset});
     z_offset += 0.1;
     plant_->SetFreeBodyPose(plant_context, &plant_state,
-                            plant_->get_body(body_index),
-                            pose.GetAsIsometry3());
+                            plant_->get_body(body_index), pose);
   }
 
   // Use SetIiwaPosition to make sure the controller state is initialized to
@@ -408,7 +398,7 @@ void ManipulationStation<T>::MakeIiwaControllerModel() {
       owned_controller_plant_->world_frame(),
       owned_controller_plant_->GetFrameByName(iiwa_model_.child_frame->name(),
                                               controller_iiwa_model),
-      iiwa_model_.X_PC.GetAsIsometry3());
+      iiwa_model_.X_PC);
   // Add a single body to represent the IIWA pendant's calibration of the
   // gripper.  The body of the WSG accounts for >90% of the total mass
   // (according to the sdf)... and we don't believe our inertia calibration
@@ -425,7 +415,7 @@ void ManipulationStation<T>::MakeIiwaControllerModel() {
   owned_controller_plant_->WeldFrames(
       owned_controller_plant_->GetFrameByName(wsg_model_.parent_frame->name(),
                                               controller_iiwa_model),
-      wsg_equivalent.body_frame(), wsg_model_.X_PC.GetAsIsometry3());
+      wsg_equivalent.body_frame(), wsg_model_.X_PC);
 
   owned_controller_plant_
       ->template AddForceElement<multibody::UniformGravityFieldElement>();
@@ -907,7 +897,7 @@ void ManipulationStation<T>::AddDefaultIiwa(
   const auto X_WI = RigidTransform<double>::Identity();
   auto iiwa_instance = internal::AddAndWeldModelFrom(
       sdf_path, "iiwa", plant_->world_frame(), "iiwa_link_0",
-      X_WI.GetAsIsometry3(), plant_);
+      X_WI, plant_);
   RegisterIiwaControllerModel(
       sdf_path, iiwa_instance, plant_->world_frame(),
       plant_->GetFrameByName("iiwa_link_0", iiwa_instance), X_WI);
@@ -923,7 +913,7 @@ void ManipulationStation<T>::AddDefaultWsg() {
   const RigidTransform<double> X_7G(RollPitchYaw<double>(M_PI_2, 0, M_PI_2),
                                     Vector3d(0, 0, 0.114));
   auto wsg_instance = internal::AddAndWeldModelFrom(
-      sdf_path, "gripper", link7, "body", X_7G.GetAsIsometry3(), plant_);
+      sdf_path, "gripper", link7, "body", X_7G, plant_);
   RegisterWsgControllerModel(sdf_path, wsg_instance, link7,
                              plant_->GetFrameByName("body", wsg_instance),
                              X_7G);

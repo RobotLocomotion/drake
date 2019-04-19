@@ -92,7 +92,7 @@ bool ParseVectorAttribute(const tinyxml2::XMLElement* node,
   return false;
 }
 
-Eigen::Isometry3d OriginAttributesToTransform(
+math::RigidTransformd OriginAttributesToTransform(
     const tinyxml2::XMLElement* node) {
 
   Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
@@ -101,10 +101,7 @@ Eigen::Isometry3d OriginAttributesToTransform(
   ParseVectorAttribute(node, "xyz", &xyz);
   ParseVectorAttribute(node, "rpy", &rpy);
 
-  const drake::math::RollPitchYaw<double> roll_pitch_yaw(rpy);
-  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-  T.matrix() << roll_pitch_yaw.ToMatrix3ViaRotationMatrix(), xyz, 0, 0, 0, 1;
-  return T;
+  return {math::RollPitchYawd(rpy), xyz};
 }
 
 bool ParseThreeVectorAttribute(const tinyxml2::XMLElement* node,

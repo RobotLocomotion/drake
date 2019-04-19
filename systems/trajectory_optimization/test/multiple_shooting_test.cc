@@ -153,7 +153,7 @@ GTEST_TEST(MultipleShootingTest, PlaceholderVariableNames) {
   const double kFixedTimeStep{0.1};
   MyDirectTrajOpt prog(kNumInputs, kNumStates, kNumSampleTimes, kFixedTimeStep);
 
-  EXPECT_EQ(prog.time().coeff(0).get_name(), "t");
+  EXPECT_EQ(prog.time().coeff(0).get_name(), "t0");
   EXPECT_EQ(prog.state().coeff(0).get_name(), "x0");
   EXPECT_EQ(prog.state().coeff(1).get_name(), "x1");
   EXPECT_EQ(prog.input().coeff(0).get_name(), "u0");
@@ -421,6 +421,50 @@ GTEST_TEST(MultipleShootingTest, ResultSamplesTest) {
       CompareMatrices(prog.GetInputSamples(result), input_trajectory, 0.0));
   EXPECT_TRUE(
       CompareMatrices(prog.GetStateSamples(result), state_trajectory, 0.0));
+}
+
+GTEST_TEST(MultipleShootingTest, NewSequentialVariableTest) {
+  const int kNumInputs{1};
+  const int kNumStates{2};
+  const int kNumSampleTimes{3};
+  const double kMinTimeStep{0.01};
+  const double kMaxTimeStep{1};
+  MyDirectTrajOpt prog(kNumInputs, kNumStates, kNumSampleTimes, kMinTimeStep,
+                       kMaxTimeStep);
+  const Eigen::Vector2d state_value(4.0, 5.0);
+  prog.AddConstraintToAllKnotPoints(prog.state() == state_value);
+
+  solvers::VectorXDecisionVariable new_sequential_variable =
+      prog.NewSequentialVariable(kNumStates, "w");
+  prog.AddConstraintToAllKnotPoints(-2.0 * new_sequential_variable ==
+                                    prog.state());
+
+  solvers::MathematicalProgramResult result = Solve(prog);
+  ASSERT_TRUE(result.is_success());
+  for (int i = 0; i < kNumSampleTimes; i++) {
+    // osqp can fail in polishing step, such that the accuracy cannot reach
+    // 1E-6.
+    const double tol =
+        result.get_solver_id() == solvers::OsqpSolver::id() ? 4E-6 : 1E-6;
+    // Verify that GetSequentialVariableAtIndex() works as expected.
+    EXPECT_TRUE(CompareMatrices(
+        -2.0 * result.GetSolution(prog.GetSequentialVariableAtIndex("w", i)),
+        state_value, tol));
+  }
+
+  const solvers::VectorDecisionVariable<1>& t = prog.time();
+  const solvers::VectorXDecisionVariable& u = prog.input();
+  prog.AddConstraintToAllKnotPoints(u == t);
+  result = Solve(prog);
+  ASSERT_TRUE(result.is_success());
+  // u(0) = 0.
+  EXPECT_NEAR(result.GetSolution(prog.input(0).coeff(0)), 0.0, 1e-6);
+  // u(1) = h(0).
+  EXPECT_NEAR(result.GetSolution(prog.input(1).coeff(0)),
+              result.GetSolution(prog.timestep(0).coeff(0)), 1e-6);
+  // u(2) = h(0)+h(1).
+  EXPECT_NEAR(result.GetSolution(prog.input(2).coeff(0)),
+              result.GetSolution(prog.h_vars()).sum(), 1e-6);
 }
 
 }  // anonymous namespace

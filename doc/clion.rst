@@ -27,14 +27,19 @@ Installing CLion
 
 The most recent versions that we have tested for compatibility are:
   - Ubuntu 16.04
-  - Bazel 0.21.0
-  - CLion 2018.2.7 with:
+  - Bazel 0.23.1
+  - CLion 2018.3.4 (January 31, 2019) with:
 
-    - Bazel plug-in 2018.12.03.0.2.
+    - Bazel plugin 2019.01.14.0.5.
 
-Many versions the above (Bazel / CLion / plug-in) are *not* compatible with
-each other.  We strongly suggest using only the versions shown above, when
+Many versions of the above (Bazel / CLion / Bazel plugin) are *not* compatible
+with each other.  We strongly suggest using only the versions shown above, when
 working with Drake.
+
+At the time of this writing, CLion 2018.3.4 will pick Bazel plugin
+2019.03.05.0.1, which has a problem with ``Run > Debug...``
+(``Run > Run...`` is fine). We have to downgrade Bazel plugin to
+2019.01.14.0.5. See `Downgrading the Bazel Plugin`_.
 
 For developers on macOS, see the :ref:`macOS` details.
 
@@ -67,6 +72,20 @@ Open ``Settings > Bazel Settings``.  For ``Bazel binary location`` select the
 path to ``drake/tools/clion/bazel_wrapper`` from any recent Drake source tree
 (it doesn't have to match the current project open in CLion).
 
+Downgrading the Bazel Plugin
+----------------------------
+These instructions were tested with CLion 2018.3.4.
+
+1. Goto https://plugins.jetbrains.com/plugin/9554-bazel to download an older
+   version of Bazel Plugin to get the file ``clwb_bazel.zip``.
+
+2. In CLion, go to ``Install Plugin from Disk...`` by:
+
+    a. Select ``File > Settings``.
+    b. Select ``Plugins``.
+    c. Click on the "gear" ⛭ icon to get a pop-up menu.
+    d. Select ``Install Plugin from Disk...`` and then choose the file
+       ``clwb_bazel.zip``.
 
 Setting up Drake in CLion
 -------------------------
@@ -337,7 +356,7 @@ Building the drake addenda lint tool:
 macOS support
 =============
 
-Google's Bazel plug-in for CLion does not officially support macOS, per
+Google's Bazel plugin for CLion does not officially support macOS, per
 `bazelbuild/intellij#109 <https://github.com/bazelbuild/intellij/issues/109>`_.
 However, on a best-effort basis, we will document here any tips that Drake
 developers have discovered to fix the compatibility problems.

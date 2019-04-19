@@ -13,22 +13,22 @@ class GeometrySetTester {
   explicit GeometrySetTester(const GeometrySet* set) : set_(*set) {}
 
   const std::unordered_set<FrameId> frames() const {
-    return set_.frames_internal();
+    return set_.frames();
   }
 
-  int num_frames() const { return set_.num_frames_internal(); }
+  int num_frames() const { return set_.num_frames(); }
 
   const std::unordered_set<GeometryId> geometries() const {
-    return set_.geometries_internal();
+    return set_.geometries();
   }
 
-  int num_geometries() const { return set_.num_geometries_internal(); }
+  int num_geometries() const { return set_.num_geometries(); }
 
   bool contains(FrameId frame_id) const {
-    return set_.contains_internal(frame_id); }
+    return set_.contains(frame_id); }
 
   bool contains(GeometryId geometry_id) const {
-    return set_.contains_internal(geometry_id);;
+    return set_.contains(geometry_id);;
   }
 
  private:

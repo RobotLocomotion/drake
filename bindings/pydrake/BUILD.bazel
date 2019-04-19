@@ -157,6 +157,7 @@ drake_pybind_library(
     name = "lcm_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:drake_optional_pybind",
     ],
     cc_srcs = ["lcm_py.cc"],
@@ -164,6 +165,7 @@ drake_pybind_library(
     py_deps = [
         ":module_py",
     ],
+    py_srcs = ["_lcm_extra.py"],
 )
 
 drake_pybind_library(
@@ -178,6 +180,7 @@ drake_pybind_library(
         ":module_py",
         "//bindings/pydrake/common:eigen_geometry_py",
     ],
+    py_srcs = ["_math_extra.py"],
 )
 
 drake_pybind_library(
@@ -377,6 +380,7 @@ drake_py_unittest(
     name = "lcm_test",
     deps = [
         ":lcm_py",
+        "//bindings/pydrake/common/test_utilities",
         "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_py",
     ],
 )

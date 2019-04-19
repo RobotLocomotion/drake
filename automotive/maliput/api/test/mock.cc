@@ -8,6 +8,7 @@
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/rules/phase_ring.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
+#include "drake/automotive/maliput/api/rules/traffic_lights.h"
 #include "drake/automotive/maliput/api/segment.h"
 #include "drake/common/drake_optional.h"
 
@@ -20,6 +21,7 @@ namespace {
 using rules::DirectionUsageRule;
 using rules::RightOfWayRule;
 using rules::SpeedLimitRule;
+using rules::TrafficLight;
 
 class MockIdIndex final : public RoadGeometry::IdIndex {
  public:
@@ -94,10 +96,22 @@ class MockRoadRulebook final : public rules::RoadRulebook {
   }
 };
 
-class MockRightOfWayPhaseBook final : public rules::RightOfWayPhaseBook {
+class MockTrafficLightBook final : public rules::TrafficLightBook {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MockRightOfWayPhaseBook)
-  MockRightOfWayPhaseBook() {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MockTrafficLightBook)
+  MockTrafficLightBook() {}
+
+ private:
+  optional<TrafficLight> DoGetTrafficLight(const TrafficLight::Id&) const
+      override {
+    return nullopt;
+  }
+};
+
+class MockPhaseRingBook final : public rules::PhaseRingBook {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MockPhaseRingBook)
+  MockPhaseRingBook() {}
 
  private:
   optional<rules::PhaseRing> DoGetPhaseRing(const rules::PhaseRing::Id&) const
@@ -111,23 +125,22 @@ class MockRightOfWayPhaseBook final : public rules::RightOfWayPhaseBook {
   }
 };
 
-class MockRightOfWayStateProvider final
-    : public rules::RightOfWayStateProvider {
+class MockRuleStateProvider final : public rules::RuleStateProvider {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MockRightOfWayStateProvider)
-  MockRightOfWayStateProvider() {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MockRuleStateProvider)
+  MockRuleStateProvider() {}
 
  private:
-  drake::optional<Result> DoGetState(const RightOfWayRule::Id&) const override {
+  drake::optional<RightOfWayResult> DoGetState(const RightOfWayRule::Id&) const
+      override {
     return nullopt;
   }
 };
 
-class MockRightOfWayPhaseProvider final
-    : public rules::RightOfWayPhaseProvider {
+class MockPhaseProvider final : public rules::PhaseProvider {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MockRightOfWayPhaseProvider)
-  MockRightOfWayPhaseProvider() {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MockPhaseProvider)
+  MockPhaseProvider() {}
 
  private:
   optional<Result> DoGetPhase(const rules::PhaseRing::Id&) const override {
@@ -143,8 +156,7 @@ class MockIntersection final : public Intersection {
       : Intersection(id, {}, ring_id) {}
 
  private:
-  const optional<rules::RightOfWayPhaseProvider::Result> Phase()
-      const override {
+  const optional<rules::PhaseProvider::Result> Phase() const override {
     return nullopt;
   }
 };
@@ -203,18 +215,20 @@ std::unique_ptr<rules::RoadRulebook> CreateRoadRulebook() {
   return std::make_unique<MockRoadRulebook>();
 }
 
-std::unique_ptr<rules::RightOfWayPhaseBook> CreateRightOfWayPhaseBook() {
-  return std::make_unique<MockRightOfWayPhaseBook>();
+std::unique_ptr<rules::TrafficLightBook> CreateTrafficLightBook() {
+  return std::make_unique<MockTrafficLightBook>();
 }
 
-std::unique_ptr<rules::RightOfWayStateProvider>
-CreateRightOfWayStateProvider() {
-  return std::make_unique<MockRightOfWayStateProvider>();
+std::unique_ptr<rules::PhaseRingBook> CreatePhaseRingBook() {
+  return std::make_unique<MockPhaseRingBook>();
 }
 
-std::unique_ptr<rules::RightOfWayPhaseProvider>
-CreateRightOfWayPhaseProvider() {
-  return std::make_unique<MockRightOfWayPhaseProvider>();
+std::unique_ptr<rules::RuleStateProvider> CreateRuleStateProvider() {
+  return std::make_unique<MockRuleStateProvider>();
+}
+
+std::unique_ptr<rules::PhaseProvider> CreatePhaseProvider() {
+  return std::make_unique<MockPhaseProvider>();
 }
 
 std::unique_ptr<Intersection> CreateIntersection(

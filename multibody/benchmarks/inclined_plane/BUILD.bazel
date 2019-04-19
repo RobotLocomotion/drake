@@ -14,20 +14,19 @@ package(default_visibility = ["//visibility:private"])
 drake_cc_package_library(
     name = "inclined_plane",
     deps = [
-        ":make_inclined_plane_plant",
+        ":inclined_plane_plant",
     ],
 )
 
 drake_cc_library(
-    name = "make_inclined_plane_plant",
+    name = "inclined_plane_plant",
     srcs = [
-        "make_inclined_plane_plant.cc",
+        "inclined_plane_plant.cc",
     ],
     hdrs = [
-        "make_inclined_plane_plant.h",
+        "inclined_plane_plant.h",
     ],
     deps = [
-        "//geometry:scene_graph",
         "//multibody/plant",
     ],
 )

@@ -84,22 +84,19 @@ class TypeSpecificIdentifier {
 
 namespace std {
 
-/// Specialization of std::hash for TypeSpecificIdentifier<T>
+/// Specialization of std::hash for TypeSpecificIdentifier<T>.
 template <typename T>
 struct hash<drake::maliput::api::TypeSpecificIdentifier<T>>
     : public drake::DefaultHash {};
 
 /// Specialization of std::less for TypeSpecificIdentifier<T> providing a
-/// strict weak ordering over TypeSpecificIdentifier<T> suitable for use with
-/// ordered containers.
+/// strict ordering over TypeSpecificIdentifier<T> suitable for use with ordered
+/// containers.
 template <typename T>
 struct less<drake::maliput::api::TypeSpecificIdentifier<T>> {
-  typedef std::size_t result_type;
-  typedef drake::maliput::api::TypeSpecificIdentifier<T> first_argument_type;
-  typedef drake::maliput::api::TypeSpecificIdentifier<T> second_argument_type;
-
-  result_type operator()(const first_argument_type& lhs,
-                         const second_argument_type& rhs) const {
+  bool operator()(const drake::maliput::api::TypeSpecificIdentifier<T>& lhs,
+                  const drake::maliput::api::TypeSpecificIdentifier<T>& rhs)
+      const {
     return lhs.string() < rhs.string();
   }
 };

@@ -187,7 +187,7 @@ void CheckAddedIndeterminates(const MathematicalProgram& prog,
   }
 }
 
-GTEST_TEST(testMathematicalProgram, testConstructor) {
+GTEST_TEST(TestMathematicalProgram, TestConstructor) {
   MathematicalProgram prog;
   EXPECT_EQ(prog.initial_guess().rows(), 0);
   EXPECT_EQ(prog.num_vars(), 0);
@@ -197,7 +197,7 @@ GTEST_TEST(testMathematicalProgram, testConstructor) {
 #pragma GCC diagnostic pop
 }
 
-GTEST_TEST(testAddVariable, testAddContinuousVariables1) {
+GTEST_TEST(TestAddVariable, TestAddContinuousVariables1) {
   // Adds a dynamic-sized matrix of continuous variables.
   MathematicalProgram prog;
   auto X = prog.NewContinuousVariables(2, 3, "X");
@@ -206,7 +206,7 @@ GTEST_TEST(testAddVariable, testAddContinuousVariables1) {
       MathematicalProgram::VarType::CONTINUOUS);
 }
 
-GTEST_TEST(testAddVariable, testAddContinuousVariable2) {
+GTEST_TEST(TestAddVariable, TestAddContinuousVariable2) {
   // Adds a static-sized matrix of continuous variables.
   MathematicalProgram prog;
   auto X = prog.NewContinuousVariables<2, 3>("X");
@@ -215,7 +215,7 @@ GTEST_TEST(testAddVariable, testAddContinuousVariable2) {
       MathematicalProgram::VarType::CONTINUOUS);
 }
 
-GTEST_TEST(testAddVariable, testAddContinuousVariable3) {
+GTEST_TEST(TestAddVariable, TestAddContinuousVariable3) {
   // Adds a dynamic-sized vector of continuous variables.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(4, "x");
@@ -224,7 +224,7 @@ GTEST_TEST(testAddVariable, testAddContinuousVariable3) {
       MathematicalProgram::VarType::CONTINUOUS);
 }
 
-GTEST_TEST(testAddVariable, testAddContinuousVariable4) {
+GTEST_TEST(TestAddVariable, TestAddContinuousVariable4) {
   // Adds a static-sized vector of continuous variables.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<4>("y");
@@ -233,7 +233,7 @@ GTEST_TEST(testAddVariable, testAddContinuousVariable4) {
       MathematicalProgram::VarType::CONTINUOUS);
 }
 
-GTEST_TEST(testAddVariable, testAddContinuousVariable5) {
+GTEST_TEST(TestAddVariable, TestAddContinuousVariable5) {
   // Adds a static-sized matrix of continuous variables.
   MathematicalProgram prog;
   auto X = prog.NewContinuousVariables<2, 3>(2, 3, "Y");
@@ -242,7 +242,7 @@ GTEST_TEST(testAddVariable, testAddContinuousVariable5) {
       MathematicalProgram::VarType::CONTINUOUS);
 }
 
-GTEST_TEST(testAddVariable, testAddContinuousVariables6) {
+GTEST_TEST(TestAddVariable, TestAddContinuousVariables6) {
   // Adds a dynamic-sized matrix of continuous variables.
   MathematicalProgram prog;
   auto X =
@@ -252,7 +252,7 @@ GTEST_TEST(testAddVariable, testAddContinuousVariables6) {
       MathematicalProgram::VarType::CONTINUOUS);
 }
 
-GTEST_TEST(testAddVariable, testAddContinuousVariables7) {
+GTEST_TEST(TestAddVariable, TestAddContinuousVariables7) {
   // Adds a dynamic-sized matrix of continuous variables.
   MathematicalProgram prog;
   auto X = prog.NewContinuousVariables<2, Eigen::Dynamic>(2, 3, "Y");
@@ -261,7 +261,7 @@ GTEST_TEST(testAddVariable, testAddContinuousVariables7) {
       MathematicalProgram::VarType::CONTINUOUS);
 }
 
-GTEST_TEST(testAddVariable, testAddContinuousVariables8) {
+GTEST_TEST(TestAddVariable, TestAddContinuousVariables8) {
   // Adds a dynamic-sized matrix of continuous variables.
   MathematicalProgram prog;
   auto X = prog.NewContinuousVariables<Eigen::Dynamic, 3>(2, 3, "Y");
@@ -270,7 +270,7 @@ GTEST_TEST(testAddVariable, testAddContinuousVariables8) {
       MathematicalProgram::VarType::CONTINUOUS);
 }
 
-GTEST_TEST(testAddVariable, testAddContinuousVariables9) {
+GTEST_TEST(TestAddVariable, TestAddContinuousVariables9) {
   // Adds continuous variables with default variable name.
   const std::string X_names = "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n";
   MathematicalProgram prog1;
@@ -292,7 +292,7 @@ GTEST_TEST(testAddVariable, testAddContinuousVariables9) {
       MathematicalProgram::VarType::CONTINUOUS);
 }
 
-GTEST_TEST(testAddVariable, testAddSymmetricVariable1) {
+GTEST_TEST(TestAddVariable, TestAddSymmetricVariable1) {
   // Adds a static-sized symmetric matrix of continuous variables.
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<3>("X");
@@ -302,7 +302,7 @@ GTEST_TEST(testAddVariable, testAddSymmetricVariable1) {
       true, MathematicalProgram::VarType::CONTINUOUS);
 }
 
-GTEST_TEST(testAddVariable, testAddSymmetricVariable2) {
+GTEST_TEST(TestAddVariable, TestAddSymmetricVariable2) {
   // Adds a dynamic-sized symmetric matrix of continuous variables.
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables(3, "X");
@@ -312,7 +312,7 @@ GTEST_TEST(testAddVariable, testAddSymmetricVariable2) {
       true, MathematicalProgram::VarType::CONTINUOUS);
 }
 
-GTEST_TEST(testAddVariable, testAddBinaryVariable1) {
+GTEST_TEST(TestAddVariable, TestAddBinaryVariable1) {
   // Adds a dynamic-sized matrix of binary variables.
   MathematicalProgram prog;
   auto X = prog.NewBinaryVariables(2, 3, "B");
@@ -321,7 +321,7 @@ GTEST_TEST(testAddVariable, testAddBinaryVariable1) {
       MathematicalProgram::VarType::BINARY);
 }
 
-GTEST_TEST(testAddVariable, testAddBinaryVariable2) {
+GTEST_TEST(TestAddVariable, TestAddBinaryVariable2) {
   // Adds a dynamic-sized matrix of binary variables.
   MathematicalProgram prog;
   auto X = prog.NewBinaryVariables<Eigen::Dynamic, Eigen::Dynamic>(2, 3, "B");
@@ -330,7 +330,7 @@ GTEST_TEST(testAddVariable, testAddBinaryVariable2) {
       MathematicalProgram::VarType::BINARY);
 }
 
-GTEST_TEST(testAddVariable, testAddBinaryVariable3) {
+GTEST_TEST(TestAddVariable, TestAddBinaryVariable3) {
   // Adds dynamic-sized vector of binary variables.
   MathematicalProgram prog;
   auto X = prog.NewBinaryVariables(4, "B");
@@ -339,7 +339,7 @@ GTEST_TEST(testAddVariable, testAddBinaryVariable3) {
       MathematicalProgram::VarType::BINARY);
 }
 
-GTEST_TEST(testAddVariable, testAddBinaryVariable4) {
+GTEST_TEST(TestAddVariable, TestAddBinaryVariable4) {
   // Adds static-sized vector of binary variables.
   MathematicalProgram prog;
   auto X = prog.NewBinaryVariables<4>("B");
@@ -348,7 +348,7 @@ GTEST_TEST(testAddVariable, testAddBinaryVariable4) {
       MathematicalProgram::VarType::BINARY);
 }
 
-GTEST_TEST(testAddVariable, testAddBinaryVariable5) {
+GTEST_TEST(TestAddVariable, TestAddBinaryVariable5) {
   // Adds a static-sized matrix of binary variables.
   MathematicalProgram prog;
   auto X = prog.NewBinaryVariables<2, 3>("B");
@@ -357,7 +357,7 @@ GTEST_TEST(testAddVariable, testAddBinaryVariable5) {
       MathematicalProgram::VarType::BINARY);
 }
 
-GTEST_TEST(testAddVariable, testAddBinaryVariable6) {
+GTEST_TEST(TestAddVariable, TestAddBinaryVariable6) {
   // Adds a static-sized matrix of binary variables.
   MathematicalProgram prog;
   auto X = prog.NewBinaryVariables<2, 3>(2, 3, "B");
@@ -366,7 +366,7 @@ GTEST_TEST(testAddVariable, testAddBinaryVariable6) {
       MathematicalProgram::VarType::BINARY);
 }
 
-GTEST_TEST(testAddVariable, testAddBinaryVariable7) {
+GTEST_TEST(TestAddVariable, TestAddBinaryVariable7) {
   // Adds a dynamic-sized matrix of binary variables.
   MathematicalProgram prog;
   auto X = prog.NewBinaryVariables<2, Eigen::Dynamic>(2, 3, "B");
@@ -375,7 +375,7 @@ GTEST_TEST(testAddVariable, testAddBinaryVariable7) {
       MathematicalProgram::VarType::BINARY);
 }
 
-GTEST_TEST(testAddVariable, testAddBinaryVariable8) {
+GTEST_TEST(TestAddVariable, TestAddBinaryVariable8) {
   // Adds a dynamic-sized matrix of binary variables.
   MathematicalProgram prog;
   auto X = prog.NewBinaryVariables<Eigen::Dynamic, 3>(2, 3, "B");
@@ -384,7 +384,7 @@ GTEST_TEST(testAddVariable, testAddBinaryVariable8) {
       MathematicalProgram::VarType::BINARY);
 }
 
-GTEST_TEST(testAddDecisionVariables, AddDecisionVariables1) {
+GTEST_TEST(TestAddDecisionVariables, AddDecisionVariables1) {
   // Call AddVariable on an empty program.
   MathematicalProgram prog;
   const Variable x0("x0", Variable::Type::CONTINUOUS);
@@ -410,7 +410,7 @@ GTEST_TEST(testAddDecisionVariables, AddDecisionVariables1) {
 #pragma GCC diagnostic pop
 }
 
-GTEST_TEST(testAddDecisionVariables, AddVariable2) {
+GTEST_TEST(TestAddDecisionVariables, AddVariable2) {
   // Call AddDecisionVariables on a program that has some existing variables.
   MathematicalProgram prog;
   auto y = prog.NewContinuousVariables<3>("y");
@@ -437,7 +437,7 @@ GTEST_TEST(testAddDecisionVariables, AddVariable2) {
 #pragma GCC diagnostic pop
 }
 
-GTEST_TEST(testAddDecisionVariables, AddVariable3) {
+GTEST_TEST(TestAddDecisionVariables, AddVariable3) {
   // Test the error inputs.
   MathematicalProgram prog;
   auto y = prog.NewContinuousVariables<3>("y");
@@ -466,7 +466,7 @@ GTEST_TEST(testAddDecisionVariables, AddVariable3) {
                std::runtime_error);
 }
 
-GTEST_TEST(testAddIndeterminates, testAddIndeterminates1) {
+GTEST_TEST(TestAddIndeterminates, TestAddIndeterminates1) {
   // Adds a dynamic-sized matrix of Indeterminates.
   MathematicalProgram prog;
   auto X = prog.NewIndeterminates(2, 3, "X");
@@ -478,7 +478,7 @@ GTEST_TEST(testAddIndeterminates, testAddIndeterminates1) {
                            "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
 }
 
-GTEST_TEST(testAddIndeterminates, testAddIndeterminates2) {
+GTEST_TEST(TestAddIndeterminates, TestAddIndeterminates2) {
   // Adds a static-sized matrix of Indeterminates.
   MathematicalProgram prog;
   auto X = prog.NewIndeterminates<2, 3>("X");
@@ -488,7 +488,7 @@ GTEST_TEST(testAddIndeterminates, testAddIndeterminates2) {
                            "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
 }
 
-GTEST_TEST(testAddIndeterminates, testAddIndeterminates3) {
+GTEST_TEST(TestAddIndeterminates, TestAddIndeterminates3) {
   // Adds a dynamic-sized vector of Indeterminates.
   MathematicalProgram prog;
   auto x = prog.NewIndeterminates(4, "x");
@@ -498,7 +498,7 @@ GTEST_TEST(testAddIndeterminates, testAddIndeterminates3) {
   CheckAddedIndeterminates(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n");
 }
 
-GTEST_TEST(testAddIndeterminates, testAddIndeterminates4) {
+GTEST_TEST(TestAddIndeterminates, TestAddIndeterminates4) {
   // Adds a static-sized vector of Indeterminate variables.
   MathematicalProgram prog;
   auto x = prog.NewIndeterminates<4>("x");
@@ -531,7 +531,7 @@ CheckGetSolution(const MathematicalProgram& prog,
 }
 #pragma GCC diagnostic pop
 
-GTEST_TEST(testAddIndeterminates, AddIndeterminates1) {
+GTEST_TEST(TestAddIndeterminates, AddIndeterminates1) {
   // Call AddIndeterminates on an empty program.
   MathematicalProgram prog;
   const Variable x0("x0", Variable::Type::CONTINUOUS);
@@ -546,7 +546,7 @@ GTEST_TEST(testAddIndeterminates, AddIndeterminates1) {
   }
 }
 
-GTEST_TEST(testAddIndeterminates, AddIndeterminates2) {
+GTEST_TEST(TestAddIndeterminates, AddIndeterminates2) {
   // Call AddIndeterminates on a program with some indeterminates.
   MathematicalProgram prog;
   auto y = prog.NewIndeterminates<2>("y");
@@ -563,7 +563,7 @@ GTEST_TEST(testAddIndeterminates, AddIndeterminates2) {
   }
 }
 
-GTEST_TEST(testAddIndeterminates, AddIndeterminates3) {
+GTEST_TEST(TestAddIndeterminates, AddIndeterminates3) {
   // Call with erroneous inputs.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
@@ -589,7 +589,7 @@ GTEST_TEST(testAddIndeterminates, AddIndeterminates3) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(testGetSolution, testGetSolution1) {
+GTEST_TEST(TestGetSolution, TestGetSolution1) {
   // Tests setting and getting solution for
   // 1. A static-sized  matrix of decision variables.
   // 2. A dynamic-sized matrix of decision variables.
@@ -648,7 +648,7 @@ GTEST_TEST(testGetSolution, testGetSolution1) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(testGetSolution, testGetSolution2) {
+GTEST_TEST(TestGetSolution, TestGetSolution2) {
   // GetSolution of a symbolic expression/polynomial
   MathematicalProgram prog;
   const auto x = prog.NewIndeterminates<2>();
@@ -714,7 +714,7 @@ void ExpectBadVar(MathematicalProgram* prog, int num_var, Args&&... args) {
 
 }  // namespace
 
-GTEST_TEST(testMathematicalProgram, testBadBindingVariable) {
+GTEST_TEST(TestMathematicalProgram, TestBadBindingVariable) {
   // Attempt to add a binding that does not have a valid decision variable.
   MathematicalProgram prog;
 
@@ -738,6 +738,9 @@ GTEST_TEST(testMathematicalProgram, testBadBindingVariable) {
   ExpectBadVar<PositiveSemidefiniteConstraint>(&prog, num_var * num_var,
                                                num_var);
   ExpectBadVar<LinearMatrixInequalityConstraint>(&prog, F.size() - 1, F);
+  ExpectBadVar<ExponentialConeConstraint>(
+      &prog, num_var, Eigen::MatrixXd::Ones(3, num_var).sparseView(),
+      Eigen::Vector3d::Zero());
   ExpectBadVar<LinearComplementarityConstraint>(&prog, num_var, A, f);
   // Use this as a test for nonlinear constraints.
   ExpectBadVar<EvaluatorConstraint<>>(&prog, 1, func, lb.head(1), ub.head(1));
@@ -748,7 +751,7 @@ GTEST_TEST(testMathematicalProgram, testBadBindingVariable) {
   ExpectBadVar<EvaluatorCost<>>(&prog, 1, func);
 }
 
-GTEST_TEST(testMathematicalProgram, testAddFunction) {
+GTEST_TEST(TestMathematicalProgram, TestAddFunction) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<1>();
 
@@ -765,7 +768,7 @@ GTEST_TEST(testMathematicalProgram, testAddFunction) {
   prog.AddCost(unique_ptr<Unique>(new Unique), x);
 }
 
-GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
+GTEST_TEST(TestMathematicalProgram, BoundingBoxTest2) {
   // Test the scalar version of the bounding box constraint methods.
 
   MathematicalProgram prog;
@@ -859,7 +862,7 @@ void VerifyAddedCost2(const MathematicalProgram& prog,
   EXPECT_TRUE(CompareMatrices(y, y_returned));
 }
 
-GTEST_TEST(testMathematicalProgram, AddCostTest) {
+GTEST_TEST(TestMathematicalProgram, AddCostTest) {
   // Test if the costs are added correctly.
 
   // There are ways to add a generic cost
@@ -950,7 +953,7 @@ void CheckAddedSymbolicLinearCost(MathematicalProgram* prog,
   CheckAddedSymbolicLinearCostUserFun(*prog, e, binding2, ++num_linear_costs);
 }
 
-GTEST_TEST(testMathematicalProgram, AddLinearCostSymbolic) {
+GTEST_TEST(TestMathematicalProgram, AddLinearCostSymbolic) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
   // Add linear cost 2 * x(0) + 3 * x(1)
@@ -973,7 +976,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearCostSymbolic) {
   CheckAddedSymbolicLinearCost(&prog, x(1) * x(1) + x(0) - x(1) * x(1));
 }
 
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic1) {
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic1) {
   // Add linear constraint: -10 <= 3 - 5*x0 + 10*x2 - 7*y1 <= 10
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(3, "x");
@@ -994,7 +997,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic1) {
   EXPECT_TRUE((e - ub).EqualTo(Ax - ub_in_ctr));
 }
 
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic2) {
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic2) {
   // Add linear constraint: -10 <= x0 <= 10
   // Note that this constraint is a bounding-box constraint which is a sub-class
   // of linear-constraint.
@@ -1018,7 +1021,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic2) {
   EXPECT_TRUE((e - 10).EqualTo(Ax - ub_in_ctr));
 }
 
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic3) {
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic3) {
   // Add linear constraints
   //     3 <=  3 - 5*x0 +      + 10*x2        - 7*y1        <= 9
   //   -10 <=                       x2                      <= 10
@@ -1053,7 +1056,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic3) {
       -7,
        2,
       1;
-  M_ub << -7,
+  M_ub << 9,
       10,
       12,
       3,
@@ -1075,7 +1078,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic3) {
   }
 }
 
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic4) {
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic4) {
   // Check the linear constraint 2  <= 2 * x <= 4.
   // Note: this is a bounding box constraint
   MathematicalProgram prog;
@@ -1096,7 +1099,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic4) {
       CompareMatrices(binding.evaluator()->upper_bound(), Vector1d(2)));
 }
 
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic5) {
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic5) {
   // Check the linear constraint 2  <= -2 * x <= 4.
   // Note: this is a bounding box constraint
   MathematicalProgram prog;
@@ -1117,7 +1120,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic5) {
       CompareMatrices(binding.evaluator()->upper_bound(), Vector1d(-1)));
 }
 
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic6) {
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic6) {
   // Checks the linear constraint 1 <= -x <= 3.
   // Note: this is a bounding box constraint.
   MathematicalProgram prog;
@@ -1137,7 +1140,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic6) {
       CompareMatrices(binding.evaluator()->upper_bound(), Vector1d(-1)));
 }
 
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic7) {
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic7) {
   // Checks the linear constraints
   // 1 <= -2 * x0 <= 3
   // 3 <= 4 * x0 + 2<= 5
@@ -1169,7 +1172,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic7) {
                               Vector4d(-0.5, 0.75, 0.5, 0)));
 }
 
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic8) {
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic8) {
   // Test the failure cases for adding linear constraint.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
@@ -1184,7 +1187,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic8) {
   EXPECT_THROW(prog.AddLinearConstraint(x(0) - x(0), 1, 2), runtime_error);
 }
 
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic9) {
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic9) {
   // Test trivial constraint with no variables, such as 1 <= 2 <= 3
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
@@ -1208,7 +1211,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic9) {
                               Eigen::Vector2d(1, 4)));
 }
 
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula1) {
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormula1) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>();
 
@@ -1237,7 +1240,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula1) {
   }
 }
 
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula2) {
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormula2) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>();
 
@@ -1266,7 +1269,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula2) {
   }
 }
 
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula3) {
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormula3) {
   // x(0) + x(2) == 1
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>();
@@ -1293,7 +1296,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula3) {
   }
 }
 
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula4) {
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormula4) {
   // x(0) + 2 * x(2) <= 1
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>();
@@ -1330,7 +1333,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula4) {
   }
 }
 
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula5) {
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormula5) {
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<1>();
   const double inf = std::numeric_limits<double>::infinity();
@@ -1356,7 +1359,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula5) {
   }
 }
 
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula6) {
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormula6) {
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<2>();
   const double inf = std::numeric_limits<double>::infinity();
@@ -1378,7 +1381,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula6) {
   }
 }
 
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula7) {
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormula7) {
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<2>();
   const double inf = std::numeric_limits<double>::infinity();
@@ -1400,7 +1403,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula7) {
   }
 }
 
-GTEST_TEST(testMathematicalProgram,
+GTEST_TEST(TestMathematicalProgram,
            AddLinearConstraintSymbolicFormulaException1) {
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<2>();
@@ -1411,7 +1414,7 @@ GTEST_TEST(testMathematicalProgram,
   EXPECT_THROW(prog.AddLinearConstraint(x(0) <= x(1) - inf), runtime_error);
 }
 
-GTEST_TEST(testMathematicalProgram,
+GTEST_TEST(TestMathematicalProgram,
            AddLinearConstraintSymbolicFormulaException2) {
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<2>();
@@ -1441,7 +1444,7 @@ GTEST_TEST(testMathematicalProgram,
                runtime_error);
 }
 
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd1) {
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd1) {
   // Add linear constraints
   //
   //   (A*x == b) = |1 2| * |x0| == |5|
@@ -1482,7 +1485,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd1) {
   EXPECT_EQ(constraint_set.count(Ax(1) - ub_in_ctr(1)), 1);
 }
 
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd2) {
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd2) {
   // Add linear constraints f1 && f2 && f3 where
   //   f1 := (x0 + 2*x1 >= 3)
   //   f2 := (3*x0 + 4*x1 <= 5)
@@ -1529,7 +1532,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd2) {
   }
 }
 
-GTEST_TEST(testMathematicalProgram,
+GTEST_TEST(TestMathematicalProgram,
            AddLinearConstraintSymbolicFormulaAndException) {
   // Add linear constraints:
   //   (x0 + 2*x1 > 3)
@@ -1553,7 +1556,7 @@ GTEST_TEST(testMathematicalProgram,
 }
 
 // Checks AddLinearConstraint function which takes an Eigen::Array<Formula>.
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicArrayFormula1) {
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicArrayFormula1) {
   // Add linear constraints
   //    3 - 5*x0 +      + 10*x2        - 7*y1         >= 3
   //                         x2                       >= -10
@@ -1607,7 +1610,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicArrayFormula1) {
 // Checks AddLinearConstraint function which takes an Eigen::Array<Formula>.
 // This test uses operator>= provided for Eigen::Array<Expression> and
 // Eigen::Array<double>.
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicArrayFormula2) {
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicArrayFormula2) {
   // Add linear constraints
   //
   //     M_f = |f1 f2|
@@ -1649,7 +1652,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicArrayFormula2) {
 }
 
 // Checks AddLinearConstraint function which takes an Eigen::Array<Formula>.
-GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicArrayFormula3) {
+GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicArrayFormula3) {
   // Add linear constraints
   //
   //   (A*x >= b) = |1 2| * |x0| >= |5|
@@ -1683,7 +1686,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicArrayFormula3) {
 }
 
 // Checks AddLinearConstraint function which takes an Eigen::Array<Formula>.
-GTEST_TEST(testMathematicalProgram,
+GTEST_TEST(TestMathematicalProgram,
            AddLinearConstraintSymbolicArrayFormulaException) {
   // Add linear constraints
   //    3 - 5*x0 + 10*x2 - 7*y1 >  3
@@ -1768,7 +1771,7 @@ void CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
 }
 }  // namespace
 
-GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint1) {
+GTEST_TEST(TestMathematicalProgram, AddSymbolicLinearEqualityConstraint1) {
   // Checks the single row linear equality constraint one by one:
 
   MathematicalProgram prog;
@@ -1820,7 +1823,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint1) {
       &prog, x(0) + 2 * (x(0) + x(2)) + 3 * (x(0) - x(1)), 3);
 }
 
-GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint2) {
+GTEST_TEST(TestMathematicalProgram, AddSymbolicLinearEqualityConstraint2) {
   // Checks adding multiple rows of linear equality constraints.
 
   MathematicalProgram prog;
@@ -1846,7 +1849,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint2) {
       &prog, Vector3<Expression>(+x(0), 1, -x(1)), Eigen::Vector3d(4, 1, 2));
 }
 
-GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint3) {
+GTEST_TEST(TestMathematicalProgram, AddSymbolicLinearEqualityConstraint3) {
   // Checks adding a matrix of linear equality constraints. This matrix is not
   // symmetric.
   MathematicalProgram prog;
@@ -1873,7 +1876,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint3) {
                                                          B_dynamic);
 }
 
-GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint4) {
+GTEST_TEST(TestMathematicalProgram, AddSymbolicLinearEqualityConstraint4) {
   // Checks adding a symmetric matrix of linear equality constraints.
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<2>("X");
@@ -1911,7 +1914,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint4) {
 // Tests `AddLinearEqualityConstraint(const symbolic::Formula& f)` method with a
 // case where `f` is a linear-equality formula (instead of a conjunction of
 // them).
-GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint5) {
+GTEST_TEST(TestMathematicalProgram, AddSymbolicLinearEqualityConstraint5) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>("x");
   // f = (3x₀ + 2x₁ + 3 == 5).
@@ -1934,7 +1937,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint5) {
 
 // Tests `AddLinearEqualityConstraint(const symbolic::Formula& f)` method with a
 // case where `f` is a conjunction of linear-equality formulas .
-GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint6) {
+GTEST_TEST(TestMathematicalProgram, AddSymbolicLinearEqualityConstraint6) {
   // Test problem: Ax = b where
   //
   // A = |-3.0  0.0  2.0|  x = |x0|  b = | 9.0|
@@ -1973,7 +1976,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint6) {
 
 // Checks if `AddLinearEqualityConstraint(f)` throws std::runtime_error if `f`
 // is a non-linear equality formula.
-GTEST_TEST(testMathematicalProgram,
+GTEST_TEST(TestMathematicalProgram,
            AddSymbolicLinearEqualityConstraintException1) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
@@ -1984,7 +1987,7 @@ GTEST_TEST(testMathematicalProgram,
 
 // Checks if `AddLinearEqualityConstraint(f)` throws std::runtime_error if a
 // conjunctive formula `f` includes a relational formula other than equality.
-GTEST_TEST(testMathematicalProgram,
+GTEST_TEST(TestMathematicalProgram,
            AddSymbolicLinearEqualityConstraintException2) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
@@ -1995,7 +1998,7 @@ GTEST_TEST(testMathematicalProgram,
 
 // Checks if `AddLinearEqualityConstraint(f)` throws std::runtime_error if `f`
 // is neither a linear-equality formula nor a conjunctive formula.
-GTEST_TEST(testMathematicalProgram,
+GTEST_TEST(TestMathematicalProgram,
            AddSymbolicLinearEqualityConstraintException3) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
@@ -2221,7 +2224,7 @@ TEST_F(SymbolicLorentzConeTest, TestError) {
                runtime_error);
 }
 
-GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint1) {
+GTEST_TEST(TestMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint1) {
   // Add rotated Lorentz cone constraint:
   // x is in the rotated Lorentz cone constraint.
   MathematicalProgram prog;
@@ -2231,7 +2234,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint1) {
   CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
 }
 
-GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint2) {
+GTEST_TEST(TestMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint2) {
   // Add rotated Lorentz cone constraint:
   // [x(0) + 2 * x(2)]
   // [x(0)           ] is in the rotated Lorentz cone
@@ -2243,7 +2246,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint2) {
   CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
 }
 
-GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint3) {
+GTEST_TEST(TestMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint3) {
   // Add rotated Lorentz cone constraint:
   // [x(0) + 1]
   // [x(1) + 2] is in the rotated Lorentz cone
@@ -2257,7 +2260,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint3) {
   CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
 }
 
-GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint4) {
+GTEST_TEST(TestMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint4) {
   // Add rotated Lorentz cone constraint:
   // [2 * x(0) + 3 * x(2) + 3]
   // [    x(0) - 4 * x(2)    ] is in the rotated Lorentz cone
@@ -2271,7 +2274,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint4) {
   CheckParsedSymbolicRotatedLorentzConeConstraint(&prog, e);
 }
 
-GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint5) {
+GTEST_TEST(TestMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint5) {
   // Add rotated Lorentz cone constraint, using quadratic expression.
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<4>("x");
@@ -2334,7 +2337,7 @@ CheckAddedSymbolicPositiveSemidefiniteConstraint(
 }
 }  // namespace
 
-GTEST_TEST(testMathematicalProgram, AddPositiveSemidefiniteConstraint) {
+GTEST_TEST(TestMathematicalProgram, AddPositiveSemidefiniteConstraint) {
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<4>("X");
 
@@ -2378,6 +2381,25 @@ GTEST_TEST(testMathematicalProgram, AddPositiveSemidefiniteConstraint) {
   CheckAddedSymbolicPositiveSemidefiniteConstraint(&prog, Y);
 }
 
+GTEST_TEST(TestMathematicalProgram, TestExponentialConeConstraint) {
+  MathematicalProgram prog;
+  EXPECT_EQ(prog.required_capabilities().count(
+                ProgramAttribute::kExponentialConeConstraint), 0);
+  auto x = prog.NewContinuousVariables<4>();
+  const Vector3<symbolic::Expression> expr(2 * x(0) + x(1) + 2, 1,
+                                           -2 * x(0) + 3);
+  auto binding = prog.AddExponentialConeConstraint(expr);
+  EXPECT_GT(prog.required_capabilities().count(
+                ProgramAttribute::kExponentialConeConstraint),
+            0);
+  const VectorX<symbolic::Expression> expr_reconstructed =
+      binding.evaluator()->A() * binding.variables() + binding.evaluator()->b();
+  EXPECT_EQ(expr_reconstructed.rows(), 3);
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_PRED2(ExprEqual, expr(i), expr_reconstructed(i));
+  }
+}
+
 void CheckAddedQuadraticCost(MathematicalProgram* prog,
                              const Eigen::MatrixXd& Q, const Eigen::VectorXd& b,
                              const VectorXDecisionVariable& x) {
@@ -2392,7 +2414,7 @@ void CheckAddedQuadraticCost(MathematicalProgram* prog,
   EXPECT_EQ(cnstr->b(), b);
 }
 
-GTEST_TEST(testMathematicalProgram, AddQuadraticCost) {
+GTEST_TEST(TestMathematicalProgram, AddQuadraticCost) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>();
 
@@ -2428,7 +2450,7 @@ void CheckAddedSymbolicQuadraticCost(MathematicalProgram* prog,
                                          ++num_quadratic_cost);
 }
 
-GTEST_TEST(testMathematicalProgram, AddSymbolicQuadraticCost) {
+GTEST_TEST(TestMathematicalProgram, AddSymbolicQuadraticCost) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>();
 
@@ -2466,7 +2488,7 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicQuadraticCost) {
   EXPECT_THROW(prog.AddQuadraticCost(e8), runtime_error);
 }
 
-GTEST_TEST(testMathematicalProgram, TestL2NormCost) {
+GTEST_TEST(TestMathematicalProgram, TestL2NormCost) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
 
@@ -2602,7 +2624,7 @@ void CheckAddedPolynomialCost(MathematicalProgram* prog, const Expression& e) {
   EXPECT_TRUE(ArePolynomialIsomorphic(poly, poly_expected, var_id_to_var));
 }
 
-GTEST_TEST(testMathematicalProgram, testAddPolynomialCost) {
+GTEST_TEST(TestMathematicalProgram, TestAddPolynomialCost) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
   // Add a cubic cost
@@ -2616,7 +2638,7 @@ GTEST_TEST(testMathematicalProgram, testAddPolynomialCost) {
       &prog, x(0) * x(0) * x(1) * x(1) + pow(x(0), 3) * x(1) + 2 * x(1));
 }
 
-GTEST_TEST(testMathematicalProgram, testAddCostThrowError) {
+GTEST_TEST(TestMathematicalProgram, TestAddCostThrowError) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
 
@@ -2629,7 +2651,7 @@ GTEST_TEST(testMathematicalProgram, testAddCostThrowError) {
   EXPECT_THROW(prog.AddCost(x(0) * x(0) + y), runtime_error);
 }
 
-GTEST_TEST(testMathematicalProgram, testAddGenericCost) {
+GTEST_TEST(TestMathematicalProgram, TestAddGenericCost) {
   using GenericPtr = shared_ptr<Cost>;
   using Matrix1d = Vector1d;
 
@@ -2645,7 +2667,7 @@ GTEST_TEST(testMathematicalProgram, testAddGenericCost) {
   EXPECT_EQ(prog.quadratic_costs().size(), 1);
 }
 
-GTEST_TEST(testMathematicalProgram, testClone) {
+GTEST_TEST(TestMathematicalProgram, TestClone) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>("x");
   auto y = prog.NewIndeterminates<2>("y");
@@ -2695,6 +2717,8 @@ GTEST_TEST(testMathematicalProgram, testClone) {
                                           Eigen::Vector2d::Ones(), x.head<2>());
   prog.AddLinearComplementarityConstraint(2 * Eigen::Matrix2d::Identity(),
                                           Eigen::Vector2d::Ones(), x.tail<2>());
+  prog.AddExponentialConeConstraint(Eigen::Matrix3d::Identity().sparseView(),
+                                    Eigen::Vector3d::Ones(), x.head<3>());
 
   // Set initial guess
   prog.SetInitialGuessForAllVariables(Eigen::VectorXd::Ones(prog.num_vars()));
@@ -2753,6 +2777,8 @@ GTEST_TEST(testMathematicalProgram, testClone) {
   EXPECT_TRUE(
       IsVectorOfBindingEqual(prog.linear_matrix_inequality_constraints(),
                              new_prog->linear_matrix_inequality_constraints()));
+  EXPECT_TRUE(IsVectorOfBindingEqual(prog.exponential_cone_constraints(),
+                                     new_prog->exponential_cone_constraints()));
   EXPECT_TRUE(
       IsVectorOfBindingEqual(prog.linear_complementarity_constraints(),
                              new_prog->linear_complementarity_constraints()));
@@ -2764,7 +2790,7 @@ GTEST_TEST(testMathematicalProgram, testClone) {
 #pragma GCC diagnostic pop
 }
 
-GTEST_TEST(testMathematicalProgram, testEvalBinding) {
+GTEST_TEST(TestMathematicalProgram, TestEvalBinding) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>();
 
@@ -2810,7 +2836,7 @@ GTEST_TEST(testMathematicalProgram, testEvalBinding) {
   EXPECT_THROW(prog.EvalBinding(quadratic_cost_y, x_val), std::runtime_error);
 }
 
-GTEST_TEST(testMathematicalProgram, testSetAndGetInitialGuess) {
+GTEST_TEST(TestMathematicalProgram, TestSetAndGetInitialGuess) {
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<3>();
 
@@ -2843,7 +2869,7 @@ GTEST_TEST(testMathematicalProgram, testSetAndGetInitialGuess) {
       std::exception);
 }
 
-GTEST_TEST(testMathematicalProgram, testNonlinearExpressionConstraints) {
+GTEST_TEST(TestMathematicalProgram, TestNonlinearExpressionConstraints) {
   // min ∑ x , subject to x'x = 1.
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<2>();
@@ -2870,7 +2896,7 @@ GTEST_TEST(testMathematicalProgram, testNonlinearExpressionConstraints) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(testMathematicalProgram, testSetSolverResult) {
+GTEST_TEST(TestMathematicalProgram, TestSetSolverResult) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
 
@@ -2913,7 +2939,7 @@ GTEST_TEST(testMathematicalProgram, testSetSolverResult) {
 }
 #pragma GCC diagnostic pop
 
-GTEST_TEST(testMathematicalProgram, testAddVisualizationCallback) {
+GTEST_TEST(TestMathematicalProgram, TestAddVisualizationCallback) {
   MathematicalProgram prog;
 
   auto x = prog.NewContinuousVariables<2>();
@@ -2956,7 +2982,7 @@ GTEST_TEST(testMathematicalProgram, testAddVisualizationCallback) {
   EXPECT_TRUE(was_called);
 }
 
-GTEST_TEST(testMathematicalProgram, TestSolverOptions) {
+GTEST_TEST(TestMathematicalProgram, TestSolverOptions) {
   MathematicalProgram prog;
   const SolverId solver_id("solver_id");
   const SolverId wrong_solver_id("wrong_solver_id");
@@ -2976,7 +3002,7 @@ GTEST_TEST(testMathematicalProgram, TestSolverOptions) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(testMathematicalProgram, TestGetSolution) {
+GTEST_TEST(TestMathematicalProgram, TestGetSolution) {
   // Test GetSolution(var, result)
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
@@ -3028,7 +3054,7 @@ void CheckNewNonnegativePolynomial(
   EXPECT_TRUE(p.EqualTo(p_expected));
 }
 
-GTEST_TEST(testMathematicalProgram, NewNonnegativePolynomial) {
+GTEST_TEST(TestMathematicalProgram, NewNonnegativePolynomial) {
   CheckNewNonnegativePolynomial(
       MathematicalProgram::NonnegativePolynomial::kSos);
   CheckNewNonnegativePolynomial(

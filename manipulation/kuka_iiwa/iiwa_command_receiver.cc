@@ -24,16 +24,19 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
     : num_joints_(num_joints) {
   // Our parameter stores the position when no message has been received.
   const BasicVector<double> default_position(VectorXd::Zero(num_joints));
-  DeclareNumericParameter(default_position);
+  const systems::NumericParameterIndex param{
+      DeclareNumericParameter(default_position)};
+  DRAKE_DEMAND(param == 0);  // We're depending on that elsewhere.
 
   // Our input ports are mutually exclusive; exactly one connected input port
-  // feeds our cache entry.
+  // feeds our cache entry. The computation may be dependent on the above
+  // parameter as well.
   // TODO(jwnimmer-tri) Remove command_message port on 2019-05-01.
   DeclareAbstractInputPort("command_message", *MakeCommandMessage());
   DeclareAbstractInputPort("lcmt_iiwa_command", *MakeCommandMessage());
   groomed_input_ = &DeclareCacheEntry(
       "groomed_input", &IiwaCommandReceiver::CalcInput,
-      {all_input_ports_ticket()});
+      {all_input_ports_ticket(), numeric_parameter_ticket(param)});
 
   // Our state is a ZOH of input.joint_position.
   // TODO(jwnimmer-tri) This system should NOT have any state.  We should
@@ -167,15 +170,10 @@ void IiwaCommandReceiver::CalcStateOutput(
 
 std::unique_ptr<systems::lcm::LcmSubscriberSystem>
 MakeIiwaCommandLcmSubscriberSystem(
-    int num_joints, const std::string& channel,
+    int, const std::string& channel,
     drake::lcm::DrakeLcmInterface* lcm) {
-  drake::lcmt_iiwa_command message_size_exemplar;
-  message_size_exemplar.num_joints = num_joints;
-  message_size_exemplar.joint_position.resize(num_joints);
-  message_size_exemplar.num_torques = num_joints;
-  message_size_exemplar.joint_torque.resize(num_joints);
-  return systems::lcm::LcmSubscriberSystem::MakeFixedSize(
-      message_size_exemplar, channel, lcm);
+  return systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_iiwa_command>(
+      channel, lcm);
 }
 
 }  // namespace kuka_iiwa

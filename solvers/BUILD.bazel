@@ -566,6 +566,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "exponential_cone_program_examples",
+    testonly = 1,
+    srcs = ["test/exponential_cone_program_examples.cc"],
+    hdrs = ["test/exponential_cone_program_examples.h"],
+    deps = [
+        ":mathematical_program_test_util",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_library(
     name = "solution_result",
     srcs = [
         "solution_result.cc",
@@ -603,6 +614,7 @@ drake_cc_library(
     deps = [
         ":choose_best_solver",
         ":mathematical_program_lite",
+        "//common:nice_type_name",
     ],
 )
 
@@ -1367,6 +1379,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "scs_solver_test",
     deps = [
+        ":exponential_cone_program_examples",
         ":linear_program_examples",
         ":mathematical_program_lite",
         ":mathematical_program_test_util",

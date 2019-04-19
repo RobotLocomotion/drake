@@ -29,6 +29,8 @@ using T = double;
 
 using std::string;
 
+using math::RigidTransform;
+
 // Binds `MultibodyTreeElement` methods.
 // N.B. We do this rather than inheritance because this template is more of a
 // mixin than it is a parent class (since it is not used for its dynamic
@@ -47,6 +49,11 @@ void BindMultibodyTreeElementMixin(PyClass* pcls) {
   DeprecateAttribute(
       cls, "get_parent_tree", "`get_parent_tree()` will soon be internal.");
 }
+
+constexpr char doc_iso3_deprecation[] = R"""(
+This API using Isometry3 is / will be deprecated soon with the resolution of
+#9865. We only offer it for backwards compatibility. DO NOT USE!.
+)""";
 
 PYBIND11_MODULE(tree, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -93,10 +100,19 @@ PYBIND11_MODULE(tree, m) {
     using Class = FixedOffsetFrame<T>;
     constexpr auto& cls_doc = doc.FixedOffsetFrame;
     py::class_<Class, Frame<T>>(m, "FixedOffsetFrame", cls_doc.doc)
-        .def(py::init<const std::string&, const Frame<double>&,
-                 const Isometry3<double>&, optional<ModelInstanceIndex>>(),
+        .def(py::init<const std::string&, const Frame<T>&,
+                 const RigidTransform<T>&, optional<ModelInstanceIndex>>(),
             py::arg("name"), py::arg("P"), py::arg("X_PF"),
-            py::arg("model_instance") = nullopt, cls_doc.ctor.doc_4args);
+            py::arg("model_instance") = nullopt, cls_doc.ctor.doc_4args)
+        .def(py::init([](const std::string& name, const Frame<T>& P,
+                          const Isometry3<T>& X_PF,
+                          optional<ModelInstanceIndex> model_instance) {
+          WarnDeprecated(doc_iso3_deprecation);
+          return std::make_unique<Class>(
+              name, P, RigidTransform<T>(X_PF), model_instance);
+        }),
+            py::arg("name"), py::arg("P"), py::arg("X_PF"),
+            py::arg("model_instance") = nullopt, doc_iso3_deprecation);
   }
 
   // Bodies.
@@ -150,14 +166,6 @@ PYBIND11_MODULE(tree, m) {
             doc.Joint.acceleration_lower_limits.doc)
         .def("acceleration_upper_limits", &Class::acceleration_upper_limits,
             doc.Joint.acceleration_upper_limits.doc);
-
-    // Add deprecated methods.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("num_dofs", &Class::num_dofs, doc.Joint.num_dofs.doc);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-    cls.attr("message_num_dofs") = "Please use num_velocities().";
-    DeprecateAttribute(cls, "num_dofs", cls.attr("message_num_dofs"));
   }
 
   {
@@ -205,9 +213,18 @@ PYBIND11_MODULE(tree, m) {
     py::class_<Class, Joint<T>> cls(m, "WeldJoint", doc.WeldJoint.doc);
     cls  // BR
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
-                 const Isometry3<double>&>(),
+                 const RigidTransform<T>&>(),
             py::arg("name"), py::arg("parent_frame_P"),
-            py::arg("child_frame_C"), py::arg("X_PC"), doc.WeldJoint.ctor.doc);
+            py::arg("child_frame_C"), py::arg("X_PC"), doc.WeldJoint.ctor.doc)
+        .def(py::init(
+                 [](const std::string& name, const Frame<T>& parent_frame_P,
+                     const Frame<T>& child_frame_C, const Isometry3<T>& X_PC) {
+                   WarnDeprecated(doc_iso3_deprecation);
+                   return std::make_unique<Class>(name, parent_frame_P,
+                       child_frame_C, RigidTransform<T>(X_PC));
+                 }),
+            py::arg("name"), py::arg("parent_frame_P"),
+            py::arg("child_frame_C"), py::arg("X_PC"), doc_iso3_deprecation);
   }
 
   // Actuators.

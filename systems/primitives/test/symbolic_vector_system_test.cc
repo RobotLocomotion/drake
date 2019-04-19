@@ -84,9 +84,9 @@ GTEST_TEST(SymbolicVectorSystemTest, CubicPolyViaBuilder) {
 
   auto context = system->CreateDefaultContext();
   EXPECT_TRUE(context->has_only_continuous_state());
-  EXPECT_EQ(context->get_num_total_states(), 1);
-  EXPECT_EQ(system->get_num_input_ports(), 0);
-  EXPECT_EQ(system->get_num_output_ports(), 1);
+  EXPECT_EQ(context->num_total_states(), 1);
+  EXPECT_EQ(system->num_input_ports(), 0);
+  EXPECT_EQ(system->num_output_ports(), 1);
 
   double xval = 0.45;
   context->SetContinuousState(Vector1d{xval});
@@ -144,10 +144,10 @@ GTEST_TEST(SymbolicVectorSystemTest, OutputScaledTime) {
 
   auto context = system.CreateDefaultContext();
   EXPECT_TRUE(context->is_stateless());
-  EXPECT_EQ(system.get_num_input_ports(), 0);
+  EXPECT_EQ(system.num_input_ports(), 0);
   EXPECT_EQ(system.get_output_port().size(), 1);
 
-  context->set_time(2.0);
+  context->SetTime(2.0);
   EXPECT_TRUE(CompareMatrices(system.get_output_port()
                                   .template Eval<BasicVector<double>>(*context)
                                   .CopyToVector(),
@@ -163,9 +163,9 @@ GTEST_TEST(SymbolicVectorSystemTest, ContinuousStateOnly) {
 
   auto context = system.CreateDefaultContext();
   EXPECT_TRUE(context->has_only_continuous_state());
-  EXPECT_EQ(context->get_num_total_states(), 1);
-  EXPECT_EQ(system.get_num_input_ports(), 0);
-  EXPECT_EQ(system.get_num_output_ports(), 0);
+  EXPECT_EQ(context->num_total_states(), 1);
+  EXPECT_EQ(system.num_input_ports(), 0);
+  EXPECT_EQ(system.num_output_ports(), 0);
 
   double xval = 0.45;
   context->SetContinuousState(Vector1d{xval});
@@ -183,9 +183,9 @@ GTEST_TEST(SymbolicVectorSystemTest, DiscreteStateOnly) {
 
   auto context = system.CreateDefaultContext();
   EXPECT_TRUE(context->has_only_discrete_state());
-  EXPECT_EQ(context->get_num_total_states(), 1);
-  EXPECT_EQ(system.get_num_input_ports(), 0);
-  EXPECT_EQ(system.get_num_output_ports(), 0);
+  EXPECT_EQ(context->num_total_states(), 1);
+  EXPECT_EQ(system.num_input_ports(), 0);
+  EXPECT_EQ(system.num_output_ports(), 0);
 
   double xval = 0.45;
   context->get_mutable_discrete_state_vector()[0] = xval;
@@ -213,7 +213,7 @@ GTEST_TEST(SymbolicVectorSystemTest, ContinuousTimeSymbolic) {
   Vector2<Expression> xc{Variable{"xc0"}, Variable{"xc1"}};
   Vector2<Expression> uc{Variable{"uc0"}, Variable{"uc1"}};
 
-  context->set_time(tc);
+  context->SetTime(tc);
   context->SetContinuousState(xc);
   context->FixInputPort(0, uc);
 
@@ -247,7 +247,7 @@ GTEST_TEST(SymbolicVectorSystemTest, DiscreteTimeSymbolic) {
   Vector2<Expression> xc{Variable{"xc0"}, Variable{"xc1"}};
   Vector2<Expression> uc{Variable{"uc0"}, Variable{"uc1"}};
 
-  context->set_time(tc);
+  context->SetTime(tc);
   context->get_mutable_discrete_state_vector().SetFromVector(xc);
   context->FixInputPort(0, uc);
 
@@ -295,7 +295,7 @@ GTEST_TEST(SymbolicVectorSystemTest, TestAutodiffXd) {
 
   const VectorX<AutoDiffXd> txu = math::initializeAutoDiff(txuval);
 
-  context->set_time(txu[0]);
+  context->SetTime(txu[0]);
   context->SetContinuousState(txu.segment<1>(1));
   context->FixInputPort(0, txu.tail<2>());
   const auto xdotval =

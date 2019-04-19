@@ -108,12 +108,12 @@ class SimpleCarTest : public ::testing::Test {
 };
 
 TEST_F(SimpleCarTest, Topology) {
-  ASSERT_EQ(1, dut_->get_num_input_ports());
+  ASSERT_EQ(1, dut_->num_input_ports());
   const auto& input_port = dut_->get_input_port(0);
   EXPECT_EQ(systems::kVectorValued, input_port.get_data_type());
   EXPECT_EQ(DrivingCommandIndices::kNumCoordinates, input_port.size());
 
-  ASSERT_EQ(3, dut_->get_num_output_ports());
+  ASSERT_EQ(3, dut_->num_output_ports());
   const auto& state_output = dut_->state_output();
   EXPECT_EQ(systems::kVectorValued, state_output.get_data_type());
   EXPECT_EQ(SimpleCarStateIndices::kNumCoordinates, state_output.size());
@@ -398,7 +398,7 @@ TEST_F(SimpleCarTest, TestConstraints) {
   EXPECT_TRUE(params);
   SimpleCarState<double>* state = continuous_state();
 
-  ASSERT_EQ(dut_->get_num_constraints(), 4);
+  ASSERT_EQ(dut_->num_constraints(), 4);
   const SystemConstraint<double>& params_constraint =
       dut_->get_constraint(SystemConstraintIndex(0));
   const SystemConstraint<double>& steering_constraint =

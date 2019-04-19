@@ -40,7 +40,6 @@
 namespace drake {
 
 using Eigen::AngleAxisd;
-using Eigen::Isometry3d;
 using Eigen::Matrix2d;
 using Eigen::Translation3d;
 using Eigen::Vector2d;
@@ -58,6 +57,7 @@ using math::RigidTransform;
 using math::RigidTransformd;
 using math::RollPitchYaw;
 using math::RotationMatrix;
+using math::RotationMatrixd;
 using multibody::benchmarks::Acrobot;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
@@ -851,7 +851,8 @@ class SphereChainScenario {
     ground_id_ = plant_->RegisterCollisionGeometry(
         plant_->world_body(),
         // A half-space passing through the origin in the x-z plane.
-        geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
+        RigidTransformd(
+            geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero())),
         geometry::HalfSpace(), "ground", CoulombFriction<double>());
 
     auto make_sphere = [this](int i) {
@@ -859,11 +860,11 @@ class SphereChainScenario {
       const RigidBody<double>& sphere = plant_->AddRigidBody(
           "Sphere" + to_string(i), SpatialInertia<double>());
       GeometryId sphere_id = plant_->RegisterCollisionGeometry(
-          sphere, Isometry3d::Identity(), geometry::Sphere(radius), "collision",
-          CoulombFriction<double>());
+          sphere, RigidTransformd::Identity(), geometry::Sphere(radius),
+          "collision", CoulombFriction<double>());
       // We add visual geometry to implicitly test that they are *not* included
       // in the collision results. We don't even save the ids for them.
-      plant_->RegisterVisualGeometry(sphere, Isometry3d::Identity(),
+      plant_->RegisterVisualGeometry(sphere, RigidTransformd::Identity(),
                                      geometry::Sphere(radius), "visual");
       return std::make_tuple(&sphere, sphere_id);
     };
@@ -1111,7 +1112,8 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   GeometryId ground_id = plant.RegisterCollisionGeometry(
       plant.world_body(),
       // A half-space passing through the origin in the x-z plane.
-      geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
+      RigidTransformd(
+          geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero())),
       geometry::HalfSpace(), "ground", ground_friction);
 
   // Add two spherical bodies.
@@ -1119,13 +1121,13 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
       plant.AddRigidBody("Sphere1", SpatialInertia<double>());
   CoulombFriction<double> sphere1_friction(0.8, 0.5);
   GeometryId sphere1_id = plant.RegisterCollisionGeometry(
-      sphere1, Isometry3d::Identity(), geometry::Sphere(radius),
+      sphere1, RigidTransformd::Identity(), geometry::Sphere(radius),
       "collision", sphere1_friction);
   const RigidBody<double>& sphere2 =
       plant.AddRigidBody("Sphere2", SpatialInertia<double>());
   CoulombFriction<double> sphere2_friction(0.7, 0.6);
   GeometryId sphere2_id = plant.RegisterCollisionGeometry(
-      sphere2, Isometry3d::Identity(), geometry::Sphere(radius),
+      sphere2, RigidTransformd::Identity(), geometry::Sphere(radius),
       "collision", sphere2_friction);
 
   // We are done defining the model.
@@ -1147,7 +1149,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   // Place sphere 2 on top of the ground, with offset x = x_offset.
   plant.SetFreeBodyPose(
       context.get(), sphere2,
-      Isometry3d(Translation3d(x_offset, radius, 0.0)));
+      RigidTransformd(Vector3d(x_offset, radius, 0.0)));
 
   unique_ptr<AbstractValue> poses_value =
       plant.get_geometry_poses_output_port().Allocate();
@@ -1195,7 +1197,8 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   GeometryId ground_id = plant.RegisterVisualGeometry(
       plant.world_body(),
       // A half-space passing through the origin in the x-z plane.
-      geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
+      RigidTransformd(
+          geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero())),
       geometry::HalfSpace(), "ground");
 
   // Add two spherical bodies.
@@ -1203,13 +1206,13 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
       plant.AddRigidBody("Sphere1", SpatialInertia<double>());
   Vector4<double> sphere1_diffuse{0.9, 0.1, 0.1, 0.5};
   GeometryId sphere1_id = plant.RegisterVisualGeometry(
-      sphere1, Isometry3d::Identity(), geometry::Sphere(radius),
+      sphere1, RigidTransformd::Identity(), geometry::Sphere(radius),
       "visual", sphere1_diffuse);
   const RigidBody<double>& sphere2 =
       plant.AddRigidBody("Sphere2", SpatialInertia<double>());
   Vector4<double> sphere2_diffuse{0.1, 0.9, 0.1, 0.5};
   GeometryId sphere2_id = plant.RegisterVisualGeometry(
-      sphere2, Isometry3d::Identity(), geometry::Sphere(radius),
+      sphere2, RigidTransformd::Identity(), geometry::Sphere(radius),
       "visual", sphere2_diffuse);
 
   // We are done defining the model.
@@ -1256,6 +1259,26 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
     EXPECT_TRUE(CompareMatrices(test_diffuse, sphere2_diffuse, 0.0,
                                 MatrixCompareType::absolute));
   }
+}
+
+GTEST_TEST(MultibodyPlantTest, AutoDiffCalcPointPairPenetrations) {
+  PendulumParameters parameters;
+  unique_ptr<MultibodyPlant<double>> pendulum = MakePendulumPlant(parameters);
+  unique_ptr<Context<double>> context = pendulum->CreateDefaultContext();
+
+  // We connect a SceneGraph to the pendulum plant in order to enforce the
+  // creation of geometry input/output ports. This ensures the call to
+  // CalcPointPairPenetrations evaluates appropriately.
+  geometry::SceneGraph<double> scene_graph;
+  pendulum->RegisterAsSourceForSceneGraph(&scene_graph);
+
+  auto autodiff_pendulum =
+      drake::systems::System<double>::ToAutoDiffXd(*pendulum.get());
+  auto autodiff_context = autodiff_pendulum->CreateDefaultContext();
+
+  // This test case contains no collisions, and hence we should not throw.
+  EXPECT_NO_THROW(
+  autodiff_pendulum->EvalPointPairPenetrations(*autodiff_context.get()));
 }
 
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
@@ -1359,8 +1382,7 @@ GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBack) {
        2.0 * Vector3d::UnitY() +
        3.0 * Vector3d::UnitZ()).normalized();
   const math::RigidTransformd X_WB(AngleAxisd(M_PI / 3.0, axis_W), p_WB);
-  plant.SetFreeBodyPose(
-      context.get(), body, X_WB.GetAsIsometry3());
+  plant.SetFreeBodyPose(context.get(), body, X_WB);
 
   // Set an arbitrary, non-zero, spatial velocity of B in W.
   const SpatialVelocity<double> V_WB(Vector3d(1.0, 2.0, 3.0),
@@ -1538,14 +1560,14 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     const RigidBody<double>& large_box =
         plant_.AddRigidBody("LargeBox", SpatialInertia<double>());
     large_box_id_ = plant_.RegisterCollisionGeometry(
-        large_box, Isometry3d::Identity(),
+        large_box, RigidTransformd::Identity(),
         geometry::Box(large_box_size_, large_box_size_, large_box_size_),
         "collision", CoulombFriction<double>());
 
     const RigidBody<double>& small_box =
         plant_.AddRigidBody("SmallBox", SpatialInertia<double>());
     small_box_id_ = plant_.RegisterCollisionGeometry(
-        small_box, Isometry3d::Identity(),
+        small_box, RigidTransformd::Identity(),
         geometry::Box(small_box_size_, small_box_size_, small_box_size_),
         "collision", CoulombFriction<double>());
 
@@ -1593,10 +1615,8 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
         RigidTransform<double>(RotationMatrix<double>::Identity(),
                Vector3<double>(0, small_box_size_ / 2.0 - penetration_, 0));
 
-    plant_.SetFreeBodyPose(
-        context, large_box, X_WLb.GetAsIsometry3());
-    plant_.SetFreeBodyPose(
-        context, small_box, X_WSb.GetAsIsometry3());
+    plant_.SetFreeBodyPose(context, large_box, X_WLb);
+    plant_.SetFreeBodyPose(context, small_box, X_WSb);
   }
 
   // Generate a valid set of penetrations for this particular setup that
@@ -2381,26 +2401,25 @@ GTEST_TEST(StateSelection, FloatingBodies) {
       0.736 +
       // table's top width
       0.057 / 2;
+  const RigidTransformd X_WLink0(Vector3d(0, 0, table_top_z_in_world));
   plant.WeldFrames(
       plant.world_frame(), plant.GetFrameByName("iiwa_link_0", arm_model),
-      RigidTransform<double>(Vector3d(0, 0, table_top_z_in_world))
-          .GetAsIsometry3());
+      X_WLink0);
 
   // Load a second table for objects.
   const ModelInstanceIndex objects_table_model =
       parser.AddModelFromFile(table_sdf_path, "objects_table");
-  const Isometry3d X_WT(Translation3d(0.8, 0.0, 0.0));
+  const RigidTransformd X_WT(Vector3d(0.8, 0.0, 0.0));
   plant.WeldFrames(plant.world_frame(),
                    plant.GetFrameByName("link", objects_table_model), X_WT);
 
   // Define a fixed frame on the -x, -y corner of the objects table.
-  const Isometry3d X_TO = RigidTransform<double>(
-      RotationMatrix<double>::MakeXRotation(-M_PI_2),
-      Vector3<double>(-0.3, -0.3, table_top_z_in_world)).GetAsIsometry3();
+  const RigidTransformd X_TO(RotationMatrixd::MakeXRotation(-M_PI_2),
+                             Vector3d(-0.3, -0.3, table_top_z_in_world));
   const auto& objects_frame_O =
       plant.AddFrame(std::make_unique<FixedOffsetFrame<double>>(
           "objects_frame", plant.GetFrameByName("link", objects_table_model),
-          X_TO));
+          X_TO.GetAsIsometry3()));
 
   // Add a floating mug.
   const ModelInstanceIndex mug_model =
@@ -2417,14 +2436,15 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   auto context = plant.CreateDefaultContext();
 
   // Initialize the pose X_OM of the mug frame M in the objects table frame O.
-  const Isometry3d X_OM(Translation3d(0.05, 0.0, 0.05));
+  const Vector3d p_OoMo_O(0.05, 0.0, 0.05);
+  const RigidTransformd X_OM(p_OoMo_O);
   plant.SetFreeBodyPoseInAnchoredFrame(
       context.get(), objects_frame_O, mug, X_OM);
 
   // Retrieve the pose of the mug in the world.
-  const Isometry3d& X_WM = plant.EvalBodyPoseInWorld(*context, mug);
+  const RigidTransformd X_WM = plant.EvalBodyPoseInWorld(*context, mug);
 
-  const Isometry3d X_WM_expected = X_WT * X_TO * X_OM;
+  const RigidTransformd X_WM_expected = X_WT * X_TO * X_OM;
 
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(X_WM.matrix(), X_WM_expected.matrix(),

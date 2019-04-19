@@ -218,17 +218,15 @@ TEST_F(SceneGraphTest, TopologyAfterAllocation) {
 
   // Attach frame to world.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.RegisterFrame(
-          id, GeometryFrame("frame", Isometry3<double>::Identity())),
+      scene_graph_.RegisterFrame(id, GeometryFrame("frame")),
       std::logic_error,
       "The call to RegisterFrame is invalid; a context has already been "
       "allocated.");
 
   // Attach frame to another frame.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.RegisterFrame(
-          id, FrameId::get_new_id(),
-          GeometryFrame("frame", Isometry3<double>::Identity())),
+      scene_graph_.RegisterFrame(id, FrameId::get_new_id(),
+          GeometryFrame("frame")),
       std::logic_error,
       "The call to RegisterFrame is invalid; a context has already been "
       "allocated.");
@@ -326,8 +324,8 @@ TEST_F(SceneGraphTest, TransmogrifyPorts) {
       scene_graph_.ToAutoDiffXd();
   SceneGraph<AutoDiffXd>& scene_graph_ad =
       *dynamic_cast<SceneGraph<AutoDiffXd>*>(system_ad.get());
-  EXPECT_EQ(scene_graph_ad.get_num_input_ports(),
-            scene_graph_.get_num_input_ports());
+  EXPECT_EQ(scene_graph_ad.num_input_ports(),
+            scene_graph_.num_input_ports());
   EXPECT_EQ(scene_graph_ad.get_source_pose_port(s_id).get_index(),
             scene_graph_.get_source_pose_port(s_id).get_index());
   std::unique_ptr<systems::Context<AutoDiffXd>> context_ad =
@@ -388,9 +386,9 @@ TEST_F(SceneGraphTest, ModelInspector) {
   ASSERT_TRUE(scene_graph_.SourceIsRegistered(source_id));
 
   FrameId frame_1 = scene_graph_.RegisterFrame(
-      source_id, GeometryFrame{"f1", Isometry3d::Identity()});
+      source_id, GeometryFrame{"f1"});
   FrameId frame_2 = scene_graph_.RegisterFrame(
-      source_id, GeometryFrame{"f2", Isometry3d::Identity()});
+      source_id, GeometryFrame{"f2"});
 
   // Note: all these geometries have the same *name* -- but because they are
   // affixed to different nodes, that should be alright.
@@ -426,7 +424,7 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
     // Register with SceneGraph.
     source_id_ = scene_graph->RegisterSource();
     FrameId f_id = scene_graph->RegisterFrame(
-        source_id_, GeometryFrame("frame", Isometry3<double>::Identity()));
+        source_id_, GeometryFrame("frame"));
     frame_ids_.push_back(f_id);
 
     // Set up output port now that the frame is registered.
@@ -446,7 +444,7 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
   // will *not* automatically get a pose.
   void add_extra_frame(bool add_to_output = true) {
     FrameId frame_id = scene_graph_->RegisterFrame(
-        source_id_, GeometryFrame("frame", Isometry3<double>::Identity()));
+        source_id_, GeometryFrame("frame"));
     if (add_to_output) extra_frame_ids_.push_back(frame_id);
   }
   // Method used to bring frame ids and poses out of sync. Adds a pose in
@@ -598,8 +596,6 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
                                                      &poses));
   }
 
-  const Isometry3<double> kIdentity = Isometry3<double>::Identity();
-
   // Case: Registered source with anchored geometry and frame but no dynamic
   // geometry --> empty pose vector; only frames with dynamic geometry with an
   // illustration role are included.
@@ -611,7 +607,7 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
         make_unique<GeometryInstance>(Isometry3<double>::Identity(),
                                       make_unique<Sphere>(1.0), "sphere"));
     FrameId f_id =
-        scene_graph.RegisterFrame(s_id, GeometryFrame("f", kIdentity));
+        scene_graph.RegisterFrame(s_id, GeometryFrame("f"));
     PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
     // The frame has no illustration geometry, so it is not part of the pose
     // bundle.

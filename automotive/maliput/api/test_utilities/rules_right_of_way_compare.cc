@@ -111,8 +111,8 @@ namespace test {
 ::testing::AssertionResult IsEqual(
      const char* a_expression,
      const char* b_expression,
-     const rules::RightOfWayStateProvider::Result& a,
-     const rules::RightOfWayStateProvider::Result& b) {
+     const rules::RuleStateProvider::RightOfWayResult& a,
+     const rules::RuleStateProvider::RightOfWayResult& b) {
   unused(a_expression, b_expression);
   AssertionResultCollector c;
   MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.current_id, b.current_id));

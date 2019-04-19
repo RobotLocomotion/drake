@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -102,8 +104,8 @@ class Bulb final {
   /// will be thrown. An exception will also be thrown if this parameter is
   /// defined for non-arrow BulbType values.
   ///
-  /// @param states The possible states of this bulb. If this is nullopt, this
-  /// bulb has states {BulbState::kOff, BulbState::kOn}.
+  /// @param states The possible states of this bulb. If this is nullopt or an
+  /// empty vector, this bulb has states {BulbState::kOff, BulbState::kOn}.
   ///
   /// @param bounding_box The bounding box of the bulb. See BoundingBox for
   /// details about the default value.
@@ -143,6 +145,18 @@ class Bulb final {
 
   /// Returns the possible states of this bulb.
   const std::vector<BulbState>& states() const { return states_; }
+
+  /// Returns the default state of the bulb. The priority order is
+  /// BulbState::kOff, BulbState::kBlinking, then BulbState::kOn. For example,
+  /// if a bulb can be in states {BulbState::kOff, BulbState::kOn}, its default
+  /// state will be BulbState::kOff. Likewise, if a bulb can be in states
+  /// {BulbState::kOn, BulbState::kBlinking}, its default state will be
+  /// BulbState::kBlinking. The only case where the default state is
+  /// BulbState::kOn is when this is the bulb's only possible state.
+  BulbState GetDefaultState() const;
+
+  /// Returns true if @p bulb_state is one of this bulb's possible states.
+  bool IsValidState(const BulbState& bulb_state) const;
 
   /// Returns the bounding box of the bulb.
   const BoundingBox& bounding_box() const { return bounding_box_; }
@@ -206,6 +220,9 @@ class BulbGroup final {
 
   /// Returns the bulbs contained within this bulb group.
   const std::vector<Bulb>& bulbs() const { return bulbs_; }
+
+  /// Gets the specified Bulb. Returns nullopt if @p id is unrecognized.
+  optional<Bulb> GetBulb(const Bulb::Id& id) const;
 
  private:
   Id id_;
@@ -272,6 +289,9 @@ class TrafficLight final {
   /// Returns the bulb groups contained within this traffic light.
   const std::vector<BulbGroup>& bulb_groups() const { return bulb_groups_; }
 
+  /// Gets the specified BulbGroup. Returns nullopt if @p id is unrecognized.
+  optional<BulbGroup> GetBulbGroup(const BulbGroup::Id& id) const;
+
  private:
   Id id_;
   GeoPosition position_road_network_;
@@ -279,7 +299,70 @@ class TrafficLight final {
   std::vector<BulbGroup> bulb_groups_;
 };
 
+/// Uniquely identifies a bulb in the world. This consists of the concatenation
+/// of the bulb's ID, the ID of the bulb group that contains the bulb, and the
+/// the ID of the traffic light that contains the bulb group.
+struct UniqueBulbId {
+  /// Returns the string representation of the %TypeSpecificIdentifier.
+  const std::string to_string() const {
+    return traffic_light_id.string() + "-" + bulb_group_id.string() + "-" +
+           bulb_id.string();
+  }
+
+  /// Tests for equality with another UniqueBulbId.
+  bool operator==(const UniqueBulbId& rhs) const {
+    return traffic_light_id == rhs.traffic_light_id &&
+           bulb_group_id == rhs.bulb_group_id && bulb_id == rhs.bulb_id;
+  }
+
+  /// Tests for inequality with another UniqueBulbId, specifically
+  /// returning the opposite of operator==().
+  bool operator!=(const UniqueBulbId& rhs) const { return !(*this == rhs); }
+
+  /// Implements the @ref hash_append concept.
+  template <class HashAlgorithm>
+  friend void hash_append(HashAlgorithm& hasher,
+                          const UniqueBulbId& id) noexcept {
+    using drake::hash_append;
+    hash_append(hasher, id.traffic_light_id);
+    hash_append(hasher, id.bulb_group_id);
+    hash_append(hasher, id.bulb_id);
+  }
+
+  TrafficLight::Id traffic_light_id;
+  BulbGroup::Id bulb_group_id;
+  Bulb::Id bulb_id;
+};
+
 }  // namespace rules
 }  // namespace api
 }  // namespace maliput
 }  // namespace drake
+
+namespace std {
+
+/// Specialization of std::hash for drake::maliput::api::rules::UniqueBulbId.
+template <>
+struct hash<drake::maliput::api::rules::UniqueBulbId>
+    : public drake::DefaultHash {};
+
+/// Specialization of std::less for drake::maliput::api::rules::UniqueBulbId
+/// providing a strict ordering over drake::maliput::api::rules::UniqueBulbId
+/// suitable for use with ordered containers.
+template <>
+struct less<drake::maliput::api::rules::UniqueBulbId> {
+  bool operator()(const drake::maliput::api::rules::UniqueBulbId& lhs,
+                  const drake::maliput::api::rules::UniqueBulbId& rhs) const {
+    if (lhs.traffic_light_id.string() < rhs.traffic_light_id.string()) {
+      return true;
+    }
+    if (lhs.traffic_light_id.string() > rhs.traffic_light_id.string()) {
+      return false;
+    }
+    if (lhs.bulb_group_id.string() < rhs.bulb_group_id.string()) return true;
+    if (lhs.bulb_group_id.string() > rhs.bulb_group_id.string()) return false;
+    return lhs.bulb_id.string() < rhs.bulb_id.string();
+  }
+};
+
+}  // namespace std

@@ -215,19 +215,18 @@ TEST_F(SceneGraphTest, AcquireInputPortsAfterAllocation) {
 // details are correct.
 TEST_F(SceneGraphTest, TopologyAfterAllocation) {
   SourceId id = scene_graph_.RegisterSource();
-  FrameId old_frame_id = scene_graph_.RegisterFrame(
-      id, GeometryFrame("old_frame", Isometry3<double>::Identity()));
+  FrameId old_frame_id =
+      scene_graph_.RegisterFrame(id, GeometryFrame("old_frame"));
   // This geometry will be removed after allocation.
   GeometryId old_geometry_id = scene_graph_.RegisterGeometry(id, old_frame_id,
       make_sphere_instance());
 
   AllocateContext();
 
-  FrameId parent_frame_id = scene_graph_.RegisterFrame(
-      id, GeometryFrame("frame", Isometry3<double>::Identity()));
-  FrameId child_frame_id = scene_graph_.RegisterFrame(
-      id, parent_frame_id,
-      GeometryFrame("frame", Isometry3<double>::Identity()));
+  FrameId parent_frame_id =
+      scene_graph_.RegisterFrame(id, GeometryFrame("frame"));
+  FrameId child_frame_id =
+      scene_graph_.RegisterFrame(id, parent_frame_id, GeometryFrame("frame"));
   GeometryId parent_geometry_id = scene_graph_.RegisterGeometry(
       id, parent_frame_id, make_sphere_instance());
   GeometryId child_geometry_id = scene_graph_.RegisterGeometry(
@@ -329,8 +328,8 @@ TEST_F(SceneGraphTest, TransmogrifyPorts) {
       scene_graph_.ToAutoDiffXd();
   SceneGraph<AutoDiffXd>& scene_graph_ad =
       *dynamic_cast<SceneGraph<AutoDiffXd>*>(system_ad.get());
-  EXPECT_EQ(scene_graph_ad.get_num_input_ports(),
-            scene_graph_.get_num_input_ports());
+  EXPECT_EQ(scene_graph_ad.num_input_ports(),
+            scene_graph_.num_input_ports());
   EXPECT_EQ(scene_graph_ad.get_source_pose_port(s_id).get_index(),
             scene_graph_.get_source_pose_port(s_id).get_index());
   std::unique_ptr<systems::Context<AutoDiffXd>> context_ad =
@@ -366,8 +365,8 @@ TEST_F(SceneGraphTest, TransmogrifyContext) {
 // allowed.
 TEST_F(SceneGraphTest, PostAllocationCollisionFiltering) {
   SourceId source_id = scene_graph_.RegisterSource("filter_after_allocation");
-  FrameId frame_id = scene_graph_.RegisterFrame(
-      source_id, GeometryFrame("dummy", Isometry3d::Identity()));
+  FrameId frame_id =
+      scene_graph_.RegisterFrame(source_id, GeometryFrame("dummy"));
   AllocateContext();
 
   GeometrySet geometry_set{frame_id};
@@ -386,10 +385,8 @@ TEST_F(SceneGraphTest, ModelInspector) {
   SourceId source_id = scene_graph_.RegisterSource();
   ASSERT_TRUE(scene_graph_.SourceIsRegistered(source_id));
 
-  FrameId frame_1 = scene_graph_.RegisterFrame(
-      source_id, GeometryFrame{"f1", Isometry3d::Identity()});
-  FrameId frame_2 = scene_graph_.RegisterFrame(
-      source_id, GeometryFrame{"f2", Isometry3d::Identity()});
+  FrameId frame_1 = scene_graph_.RegisterFrame(source_id, GeometryFrame{"f1"});
+  FrameId frame_2 = scene_graph_.RegisterFrame(source_id, GeometryFrame{"f2"});
 
   // Note: all these geometries have the same *name* -- but because they are
   // affixed to different nodes, that should be alright.
@@ -424,8 +421,8 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
       : systems::LeafSystem<double>(), scene_graph_(scene_graph) {
     // Register with SceneGraph.
     source_id_ = scene_graph->RegisterSource();
-    FrameId f_id = scene_graph->RegisterFrame(
-        source_id_, GeometryFrame("frame", Isometry3<double>::Identity()));
+    FrameId f_id =
+        scene_graph->RegisterFrame(source_id_, GeometryFrame("frame"));
     frame_ids_.push_back(f_id);
 
     // Set up output port now that the frame is registered.
@@ -444,8 +441,8 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
   // Method used to bring frame ids and poses out of sync. Adds a frame that
   // will *not* automatically get a pose.
   void add_extra_frame(bool add_to_output = true) {
-    FrameId frame_id = scene_graph_->RegisterFrame(
-        source_id_, GeometryFrame("frame", Isometry3<double>::Identity()));
+    FrameId frame_id =
+        scene_graph_->RegisterFrame(source_id_, GeometryFrame("frame"));
     if (add_to_output) extra_frame_ids_.push_back(frame_id);
   }
   // Method used to bring frame ids and poses out of sync. Adds a pose in
@@ -597,8 +594,6 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
                                                      &poses));
   }
 
-  const Isometry3<double> kIdentity = Isometry3<double>::Identity();
-
   // Case: Registered source with anchored geometry and frame but no dynamic
   // geometry --> empty pose vector; only frames with dynamic geometry with an
   // illustration role are included.
@@ -609,8 +604,7 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
         s_id, scene_graph.world_frame_id(),
         make_unique<GeometryInstance>(Isometry3<double>::Identity(),
                                       make_unique<Sphere>(1.0), "sphere"));
-    FrameId f_id =
-        scene_graph.RegisterFrame(s_id, GeometryFrame("f", kIdentity));
+    FrameId f_id = scene_graph.RegisterFrame(s_id, GeometryFrame("f"));
     PoseBundle<double> poses = SceneGraphTester::MakePoseBundle(scene_graph);
     // The frame has no illustration geometry, so it is not part of the pose
     // bundle.
@@ -632,8 +626,7 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
         s_id, scene_graph.world_frame_id(),
         make_unique<GeometryInstance>(Isometry3<double>::Identity(),
                                       make_unique<Sphere>(1.0), "sphere"));
-    FrameId f_id =
-        scene_graph.RegisterFrame(s_id, GeometryFrame("f", kIdentity));
+    FrameId f_id = scene_graph.RegisterFrame(s_id, GeometryFrame("f"));
     scene_graph.RegisterGeometry(
         s_id, f_id,
         make_unique<GeometryInstance>(Isometry3<double>::Identity(),
@@ -658,8 +651,8 @@ GTEST_TEST(SceneGraphContextModifier, RegisterGeometry) {
   // Initializes the scene graph and context.
   SceneGraph<double> scene_graph;
   SourceId source_id = scene_graph.RegisterSource("source");
-  FrameId frame_id = scene_graph.RegisterFrame(
-      source_id, GeometryFrame("frame", Isometry3d::Identity()));
+  FrameId frame_id =
+      scene_graph.RegisterFrame(source_id, GeometryFrame("frame"));
   auto context = scene_graph.AllocateContext();
 
   // Confirms the state. NOTE: All subsequent actions modify `context` in place.
@@ -700,12 +693,12 @@ GTEST_TEST(SceneGraphContextModifier, CollisionFilters) {
   // Simple scene with three frames, each with a sphere which, by default
   // collide.
   SourceId source_id = scene_graph.RegisterSource("source");
-  FrameId f_id1 = scene_graph.RegisterFrame(
-      source_id, GeometryFrame("frame_1", Isometry3d::Identity()));
-  FrameId f_id2 = scene_graph.RegisterFrame(
-      source_id, GeometryFrame("frame_2", Isometry3d::Identity()));
-  FrameId f_id3 = scene_graph.RegisterFrame(
-      source_id, GeometryFrame("frame_3", Isometry3d::Identity()));
+  FrameId f_id1 =
+      scene_graph.RegisterFrame(source_id, GeometryFrame("frame_1"));
+  FrameId f_id2 =
+      scene_graph.RegisterFrame(source_id, GeometryFrame("frame_2"));
+  FrameId f_id3 =
+      scene_graph.RegisterFrame(source_id, GeometryFrame("frame_3"));
   GeometryId g_id1 =
       scene_graph.RegisterGeometry(source_id, f_id1, make_sphere_instance());
   scene_graph.AssignRole(source_id, g_id1, ProximityProperties());

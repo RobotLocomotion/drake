@@ -2,9 +2,9 @@
 
 #include <vector>
 
+#include "drake/automotive/maliput/api/rules/phase_provider.h"
 #include "drake/automotive/maliput/api/rules/phase_ring.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_provider.h"
 #include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
@@ -42,8 +42,7 @@ class Intersection {
   const Id id() const { return id_; }
 
   /// Returns the current phase.
-  virtual const optional<rules::RightOfWayPhaseProvider::Result> Phase()
-      const = 0;
+  virtual const optional<rules::PhaseProvider::Result> Phase() const = 0;
 
   /// Returns the region. See constructor parameter @p region for more details.
   const std::vector<rules::LaneSRange>& region() const { return region_; }

@@ -10,7 +10,9 @@ from six import text_type as unicode
 
 from robotlocomotion import header_t, quaternion_t
 
-from pydrake.lcm import DrakeLcm, DrakeMockLcm
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.lcm import DrakeLcm, DrakeMockLcm, Subscriber
+from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
     AbstractValue, BasicVector, DiagramBuilder, LeafSystem)
 from pydrake.systems.primitives import ConstantVectorSource, LogOutput
@@ -78,22 +80,23 @@ class TestSystemsLcm(unittest.TestCase):
         self.assert_lcm_equal(
             self._cpp_value_to_py_message(model_value), model_message)
 
-    def _calc_output(self, dut):
-        context = dut.CreateDefaultContext()
-        output = dut.AllocateOutput()
-        dut.CopyLatestMessageInto(context.get_mutable_state())
-        dut.CalcOutput(context, output)
-        actual = output.get_data(0)
-        return actual
+    def _process_event(self, dut):
+        # Use a Simulator to invoke the update event on `dut`.  (Wouldn't it be
+        # nice if the Systems API was simple enough that we could apply events
+        # without calling a Simulator!)
+        simulator = Simulator(dut)
+        simulator.AdvanceTo(0.00025)  # Arbitrary positive value.
+        return simulator.get_context().Clone()
 
     def test_subscriber(self):
         lcm = DrakeMockLcm()
         dut = mut.LcmSubscriberSystem.Make(
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm)
         model_message = self._model_message()
-        lcm.InduceSubscriberCallback(
-            channel="TEST_CHANNEL", buffer=model_message.encode())
-        actual_message = self._calc_output(dut).get_value()
+        lcm.Publish(channel="TEST_CHANNEL", buffer=model_message.encode())
+        lcm.HandleSubscriptions(0)
+        context = self._process_event(dut)
+        actual_message = dut.get_output_port(0).Eval(context)
         self.assert_lcm_equal(actual_message, model_message)
 
     def test_subscriber_cpp(self):
@@ -102,9 +105,11 @@ class TestSystemsLcm(unittest.TestCase):
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
             use_cpp_serializer=True)
         model_message = self._model_message()
-        lcm.InduceSubscriberCallback(
-            channel="TEST_CHANNEL", buffer=model_message.encode())
-        actual_message = self._cpp_value_to_py_message(self._calc_output(dut))
+        lcm.Publish(channel="TEST_CHANNEL", buffer=model_message.encode())
+        lcm.HandleSubscriptions(0)
+        context = self._process_event(dut)
+        abstract = dut.get_output_port(0).EvalAbstract(context)
+        actual_message = self._cpp_value_to_py_message(abstract)
         self.assert_lcm_equal(actual_message, model_message)
 
     def test_subscriber_wait_for_message(self):
@@ -113,7 +118,8 @@ class TestSystemsLcm(unittest.TestCase):
         # N.B. This will fail with `threading`. See below for using
         # `multithreading`.
         lcm = DrakeLcm("memq://")
-        lcm.StartReceiveThread()
+        with catch_drake_warnings(expected_count=1):
+            lcm.StartReceiveThread()
         sub = mut.LcmSubscriberSystem.Make("TEST_LOOP", header_t, lcm)
         value = AbstractValue.Make(header_t())
         for i in range(3):
@@ -126,7 +132,8 @@ class TestSystemsLcm(unittest.TestCase):
     def test_subscriber_wait_for_message_with_timeout(self):
         """Confirms that the subscriber times out."""
         lcm = DrakeLcm("memq://")
-        lcm.StartReceiveThread()
+        with catch_drake_warnings(expected_count=1):
+            lcm.StartReceiveThread()
         sub = mut.LcmSubscriberSystem.Make("TEST_LOOP", header_t, lcm)
         sub.WaitForMessage(0, timeout=0.02)
         # This test fails if the test hangs.
@@ -141,23 +148,23 @@ class TestSystemsLcm(unittest.TestCase):
         dut = mut.LcmPublisherSystem.Make(
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
             publish_period=0.1)
+        subscriber = Subscriber(lcm, "TEST_CHANNEL", quaternion_t)
         model_message = self._model_message()
         self._fix_and_publish(dut, AbstractValue.Make(model_message))
-        raw = lcm.get_last_published_message("TEST_CHANNEL")
-        actual_message = quaternion_t.decode(raw)
-        self.assert_lcm_equal(actual_message, model_message)
+        lcm.HandleSubscriptions(0)
+        self.assert_lcm_equal(subscriber.message, model_message)
 
     def test_publisher_cpp(self):
         lcm = DrakeMockLcm()
         dut = mut.LcmPublisherSystem.Make(
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
             use_cpp_serializer=True)
+        subscriber = Subscriber(lcm, "TEST_CHANNEL", quaternion_t)
         model_message = self._model_message()
         model_value = self._model_value_cpp()
         self._fix_and_publish(dut, model_value)
-        raw = lcm.get_last_published_message("TEST_CHANNEL")
-        actual_message = quaternion_t.decode(raw)
-        self.assert_lcm_equal(actual_message, model_message)
+        lcm.HandleSubscriptions(0)
+        self.assert_lcm_equal(subscriber.message, model_message)
 
     def test_connect_lcm_scope(self):
         builder = DiagramBuilder()
@@ -197,9 +204,9 @@ class TestSystemsLcm(unittest.TestCase):
             # Converts message to time in seconds.
             def __init__(self):
                 LeafSystem.__init__(self)
-                self._DeclareAbstractInputPort(
+                self.DeclareAbstractInputPort(
                     "header_t", AbstractValue.Make(header_t))
-                self._DeclareVectorOutputPort(
+                self.DeclareVectorOutputPort(
                     BasicVector(1), self._calc_output)
 
             def _calc_output(self, context, output):

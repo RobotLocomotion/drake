@@ -31,7 +31,10 @@ LcmDrivenLoop::LcmDrivenLoop(
   stepper_->Initialize();
 
   // Starts the subscribing thread.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   lcm_->StartReceiveThread();
+#pragma GCC diagnostic pop
 }
 
 const AbstractValue& LcmDrivenLoop::WaitForMessage() {

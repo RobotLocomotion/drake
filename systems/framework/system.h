@@ -265,17 +265,6 @@ class System : public SystemBase {
     }
   }
 
-  /// Reports all direct feedthroughs from input ports to output ports. For
-  /// a system with m input ports: `I = i₀, i₁, ..., iₘ₋₁`, and n output ports,
-  /// `O = o₀, o₁, ..., oₙ₋₁`, the return map will contain pairs (u, v) such
-  /// that
-  ///
-  /// - 0 ≤ u < m,
-  /// - 0 ≤ v < n,
-  /// - and there _might_ be a direct feedthrough from input iᵤ to each
-  ///   output oᵥ.
-  virtual std::multimap<int, int> GetDirectFeedthroughs() const = 0;
-
   /// Returns `true` if any of the inputs to the system might be directly
   /// fed through to any of its outputs and `false` otherwise.
   bool HasAnyDirectFeedthrough() const {
@@ -302,6 +291,8 @@ class System : public SystemBase {
     }
     return false;
   }
+
+  using SystemBase::GetDirectFeedthroughs;
   //@}
 
   //----------------------------------------------------------------------------
@@ -720,6 +711,29 @@ class System : public SystemBase {
     DispatchDiscreteVariableUpdateHandler(context, events, discrete_state);
   }
 
+  /// Given the @p discrete_state results of a previous call to
+  /// CalcDiscreteVariableUpdates() that processed the given collection of
+  /// events, modifies the @p context to reflect the updated @p discrete_state.
+  /// @param[in] events
+  ///     The Event collection that resulted in the given @p discrete_state.
+  /// @param[in,out] discrete_state
+  ///     The updated discrete state from a CalcDiscreteVariableUpdates()
+  ///     call. This is mutable to permit its contents to be swapped with the
+  ///     corresponding @p context contents (rather than copied).
+  /// @param[in,out] context
+  ///     The Context whose discrete state is modified to match
+  ///     @p discrete_state. Note that swapping contents with @p discrete_state
+  ///     may cause addresses of individual discrete state group vectors in
+  ///     @p context to be different on return than they were on entry.
+  /// @pre @p discrete_state is the result of a previous
+  ///      CalcDiscreteVariableUpdates() call that processed this @p events
+  ///      collection.
+  void ApplyDiscreteVariableUpdate(
+      const EventCollection<DiscreteUpdateEvent<T>>& events,
+      DiscreteValues<T>* discrete_state, Context<T>* context) const {
+    DoApplyDiscreteVariableUpdate(events, discrete_state, context);
+  }
+
   /// This method forces a discrete update on the system given a @p context,
   /// and the updated discrete state is stored in @p discrete_state. The
   /// discrete update event will have a trigger type of kForced, with no
@@ -748,10 +762,6 @@ class System : public SystemBase {
     const int discrete_state_dim = state->get_discrete_state().num_groups();
     const int abstract_state_dim = state->get_abstract_state().size();
 
-    // Copy current state to the passed-in state, as specified in the
-    // documentation for DoCalcUnrestrictedUpdate().
-    state->SetFrom(context.get_state());
-
     DispatchUnrestrictedUpdateHandler(context, events, state);
 
     if (continuous_state_dim != state->get_continuous_state().size() ||
@@ -760,6 +770,28 @@ class System : public SystemBase {
       throw std::logic_error(
           "State variable dimensions cannot be changed "
           "in CalcUnrestrictedUpdate().");
+  }
+
+  /// Given the @p state results of a previous call to CalcUnrestrictedUpdate()
+  /// that processed the given collection of events, modifies the @p context to
+  /// reflect the updated @p state.
+  /// @param[in] events
+  ///     The Event collection that resulted in the given @p state.
+  /// @param[in,out] state
+  ///     The updated State from a CalcUnrestrictedUpdate() call. This is
+  ///     mutable to permit its contents to be swapped with the corresponding
+  ///     @p context contents (rather than copied).
+  /// @param[in,out] context
+  ///     The Context whose State is modified to match @p state. Note that
+  ///     swapping contents with the @p state may cause addresses of
+  ///     continuous, discrete, and abstract state containers in @p context
+  ///     to be different on return than they were on entry.
+  /// @pre @p state is the result of a previous CalcUnrestrictedUpdate() call
+  ///      that processed this @p events collection.
+  void ApplyUnrestrictedUpdate(
+      const EventCollection<UnrestrictedUpdateEvent<T>>& events,
+      State<T>* state, Context<T>* context) const {
+    DoApplyUnrestrictedUpdate(events, state, context);
   }
 
   /// This method forces an unrestricted update on the system given a
@@ -1603,9 +1635,11 @@ class System : public SystemBase {
   // Don't promote output_port_ticket() since it is for internal use only.
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // These are to-be-deprecated. Use methods without the initial get_.
+  DRAKE_DEPRECATED("2019-07-01", "Use num_continuous_states() instead.")
   int get_num_continuous_states() const { return num_continuous_states(); }
+  DRAKE_DEPRECATED("2019-07-01", "Use num_constraints() instead.")
   int get_num_constraints() const { return num_constraints(); }
+  DRAKE_DEPRECATED("2019-07-01", "Use num_constraint_equations() instead.")
   int get_num_constraint_equations(const Context<T>& context) const {
     return num_constraint_equations(context);
   }
@@ -1673,12 +1707,20 @@ class System : public SystemBase {
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const = 0;
 
+  virtual void DoApplyDiscreteVariableUpdate(
+      const EventCollection<DiscreteUpdateEvent<T>>& events,
+      DiscreteValues<T>* discrete_state, Context<T>* context) const = 0;
+
   /// This function dispatches all unrestricted update events to the appropriate
   /// handlers. @p state cannot be null.
   virtual void DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const = 0;
+
+  virtual void DoApplyUnrestrictedUpdate(
+      const EventCollection<UnrestrictedUpdateEvent<T>>& events,
+      State<T>* state, Context<T>* context) const = 0;
   //@}
 
   //----------------------------------------------------------------------------
@@ -2161,7 +2203,14 @@ class System : public SystemBase {
   }
 
   EventCollection<PublishEvent<T>>& get_mutable_forced_publish_events() {
+    DRAKE_DEMAND(forced_publish_events_.get());
     return *forced_publish_events_;
+  }
+
+  EventCollection<DiscreteUpdateEvent<T>>&
+  get_mutable_forced_discrete_update_events() {
+    DRAKE_DEMAND(forced_discrete_update_events_.get());
+    return *forced_discrete_update_events_;
   }
 
   const EventCollection<PublishEvent<T>>&

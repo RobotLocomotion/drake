@@ -19,6 +19,7 @@ drake_cc_package_library(
         ":explicit_error_controlled_integrator_test",
         ":logistic_system",
         ":my_spring_mass_system",
+        ":pleides_system",
         ":robertson_system",
         ":spring_mass_damper_system",
         ":stateless_system",
@@ -76,6 +77,15 @@ drake_cc_library(
     hdrs = ["my_spring_mass_system.h"],
     deps = [
         "//systems/plants/spring_mass_system",
+    ],
+)
+
+drake_cc_library(
+    name = "pleides_system",
+    testonly = 1,
+    hdrs = ["pleides_system.h"],
+    deps = [
+        "//systems/framework:leaf_system",
     ],
 )
 

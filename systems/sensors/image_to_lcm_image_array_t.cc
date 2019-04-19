@@ -186,7 +186,7 @@ void ImageToLcmImageArrayT::CalcImageArray(
   msg->num_images = 0;
   msg->images.clear();
 
-  for (int i = 0; i < get_num_input_ports(); i++) {
+  for (int i = 0; i < num_input_ports(); i++) {
     const auto& image_value = this->get_input_port(i).
         template Eval<AbstractValue>(context);
 

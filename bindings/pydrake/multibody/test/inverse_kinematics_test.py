@@ -9,9 +9,9 @@ import numpy as np
 from numpy.linalg import norm
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.eigen_geometry import Quaternion, AngleAxis, Isometry3
+from pydrake.common.eigen_geometry import Quaternion
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-from pydrake.math import RotationMatrix
+from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.plant import (
     MultibodyPlant, AddMultibodyPlantSceneGraph)
 from pydrake.multibody.parsing import Parser
@@ -242,11 +242,10 @@ class TestInverseKinematics(unittest.TestCase):
 
         ik.AddMinimumDistanceConstraint(minimal_distance=min_distance)
         context = self.plant.CreateDefaultContext()
-        R_I = np.eye(3)
         self.plant.SetFreeBodyPose(
-            context, B1.body(), Isometry3(R_I, [0, 0, 0.01]))
+            context, B1.body(), RigidTransform([0, 0, 0.01]))
         self.plant.SetFreeBodyPose(
-            context, B2.body(), Isometry3(R_I, [0, 0, -0.01]))
+            context, B2.body(), RigidTransform([0, 0, -0.01]))
 
         def get_min_distance_actual():
             X = partial(self.plant.CalcRelativeTransform, context)

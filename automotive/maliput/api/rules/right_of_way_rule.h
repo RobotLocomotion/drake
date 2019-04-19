@@ -36,7 +36,7 @@ namespace rules {
 /// A rule instance with a single State is considered "static", and has fixed
 /// semantics.  A rule instance with multiple States is considered "dynamic"
 /// and determination of the active rule State at any given time is delegated
-/// to a RightOfWayStateProvider agent, linked by the rule's Id.
+/// to a RuleStateProvider agent, linked by the rule's Id.
 class RightOfWayRule final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RightOfWayRule);

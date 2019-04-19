@@ -3,7 +3,11 @@
 /* clang-format on */
 // TODO(liang.fok) Satisfy clang-format via rules tests directory reorg.
 
+#include <algorithm>
 #include <exception>
+#include <string>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -90,6 +94,25 @@ GTEST_TEST(BulbConstructorTest, NonArrowWithOrientation) {
                std::exception);
 }
 
+GTEST_TEST(BulbConstructorTest, EmptyAndNullOptStateVector) {
+  const std::vector<Bulb> test_cases = {
+      Bulb(Bulb::Id("empty_state_vector"), GeoPosition(0, 0, 0),
+           Rotation::FromRpy(0, 0, 0), BulbColor::kGreen,
+           BulbType::kRound, nullopt /* arrow_orientation_rad */,
+           {} /* states */),
+      Bulb(Bulb::Id("nullopt_state_vector"), GeoPosition(0, 0, 0),
+           Rotation::FromRpy(0, 0, 0), BulbColor::kGreen,
+           BulbType::kRound, nullopt /* arrow_orientation_rad */,
+           nullopt /* states */)};
+  for (const auto& test_case : test_cases) {
+    EXPECT_EQ(test_case.states().size(), 2);
+    EXPECT_EQ(test_case.GetDefaultState(), BulbState::kOff);
+    EXPECT_TRUE(test_case.IsValidState(BulbState::kOff));
+    EXPECT_TRUE(test_case.IsValidState(BulbState::kOn));
+    EXPECT_FALSE(test_case.IsValidState(BulbState::kBlinking));
+  }
+}
+
 class BulbTest : public ::testing::Test {
  public:
   BulbTest()
@@ -108,6 +131,10 @@ TEST_F(BulbTest, Accessors) {
   EXPECT_EQ(bulb_.states().size(), 2);
   EXPECT_EQ(bulb_.states().at(0), BulbState::kOff);
   EXPECT_EQ(bulb_.states().at(1), BulbState::kOn);
+  EXPECT_EQ(bulb_.GetDefaultState(), BulbState::kOff);
+  EXPECT_TRUE(bulb_.IsValidState(BulbState::kOff));
+  EXPECT_TRUE(bulb_.IsValidState(BulbState::kOn));
+  EXPECT_FALSE(bulb_.IsValidState(BulbState::kBlinking));
   MALIPUT_IS_EQUAL(bulb_.bounding_box(), Bulb::BoundingBox());
 }
 
@@ -123,6 +150,43 @@ TEST_F(BulbTest, Assignment) {
            std::vector<BulbState>{BulbState::kBlinking});
   dut = bulb_;
   EXPECT_TRUE(MALIPUT_IS_EQUAL(dut, bulb_));
+}
+
+GTEST_TEST(DefaultBulbStateTest, CorrectDefaultAndIsValidStateQueries) {
+  struct TestCase {
+    std::vector<BulbState> states;
+    BulbState default_state;
+  };
+  const std::vector<TestCase> test_cases = {
+      {{BulbState::kBlinking, BulbState::kOn}, BulbState::kBlinking},
+      {{BulbState::kOn, BulbState::kBlinking}, BulbState::kBlinking},
+      {{BulbState::kBlinking, BulbState::kOff}, BulbState::kOff},
+      {{BulbState::kOff, BulbState::kBlinking}, BulbState::kOff},
+      {{BulbState::kOff, BulbState::kOn}, BulbState::kOff},
+      {{BulbState::kOn, BulbState::kOff}, BulbState::kOff},
+      {{BulbState::kOn, BulbState::kOff, BulbState::kBlinking},
+       BulbState::kOff},
+      {{BulbState::kOff, BulbState::kOn, BulbState::kBlinking},
+       BulbState::kOff},
+      {{BulbState::kOff, BulbState::kBlinking, BulbState::kOn},
+       BulbState::kOff},
+      {{BulbState::kBlinking, BulbState::kOn, BulbState::kOff},
+       BulbState::kOff},
+      {{BulbState::kBlinking, BulbState::kOff, BulbState::kOn},
+       BulbState::kOff},
+      {{BulbState::kBlinking}, BulbState::kBlinking},
+      {{BulbState::kOn}, BulbState::kOn},
+      {{BulbState::kOff}, BulbState::kOff}};
+  for (const auto& test_case : test_cases) {
+    const Bulb dut(Bulb::Id("id"), GeoPosition(0, 0, 0),
+                   Rotation::FromRpy(0, 0, 0), BulbColor::kGreen,
+                   BulbType::kRound, nullopt /* arrow_orientation_rad */,
+                   test_case.states);
+    EXPECT_EQ(dut.GetDefaultState(), test_case.default_state);
+    for (const auto& state : test_case.states) {
+      EXPECT_TRUE(dut.IsValidState(state));
+    }
+  }
 }
 
 GTEST_TEST(BulbGroupConstructorTest, InvalidGroupSize) {
@@ -159,6 +223,8 @@ TEST_F(BulbGroupTest, Accessors) {
   EXPECT_EQ(bulb_group_.orientation_traffic_light().matrix(),
             Rotation::FromRpy(4, 5, 6).matrix());
   EXPECT_EQ(bulb_group_.bulbs().size(), 3);
+  EXPECT_EQ(bulb_group_.GetBulb(Bulb::Id("unknown_bulb")), nullopt);
+  EXPECT_NE(bulb_group_.GetBulb(Bulb::Id("red_bulb")), nullopt);
 }
 
 TEST_F(BulbGroupTest, Copying) {
@@ -229,6 +295,9 @@ TEST_F(TrafficLightTest, Accessors) {
   EXPECT_EQ(traffic_light_.orientation_road_network().matrix(),
             Rotation::FromRpy(0, 0, 0).matrix());
   EXPECT_EQ(traffic_light_.bulb_groups().size(), 4);
+  EXPECT_EQ(traffic_light_.GetBulbGroup(BulbGroup::Id("unknown_bulb_group")),
+            nullopt);
+  EXPECT_NE(traffic_light_.GetBulbGroup(BulbGroup::Id("north_group")), nullopt);
 }
 
 TEST_F(TrafficLightTest, Copying) {
@@ -250,6 +319,107 @@ TEST_F(TrafficLightTest, Assignment) {
                    {bulb_group});
   dut = traffic_light_;
   EXPECT_TRUE(MALIPUT_IS_EQUAL(dut, traffic_light_));
+}
+
+GTEST_TEST(UniqueBulbIdTest, Usage) {
+  const std::string traffic_light_name{"MyTrafficLight"};
+  const std::string bulb_group_name{"MyBulbGroup"};
+  const std::string bulb_name{"MyBulb"};
+
+  const TrafficLight::Id traffic_light_id(traffic_light_name);
+  const BulbGroup::Id bulb_group_id(bulb_group_name);
+  const Bulb::Id bulb_id(bulb_name);
+
+  const UniqueBulbId dut{traffic_light_id, bulb_group_id, bulb_id};
+
+  // A mismatch of just one internal ID results in the UniqueBulbId no longer
+  // matching.
+  EXPECT_NE(dut,
+            (UniqueBulbId{TrafficLight::Id("foo"), bulb_group_id, bulb_id}));
+  EXPECT_NE(dut,
+            (UniqueBulbId{traffic_light_id, BulbGroup::Id("foo"), bulb_id}));
+  EXPECT_NE(dut,
+            (UniqueBulbId{traffic_light_id, bulb_group_id, Bulb::Id("foo")}));
+
+  const std::string dut_string = dut.to_string();
+  for (const auto& name : {traffic_light_name, bulb_group_name, bulb_name}) {
+    EXPECT_NE(dut_string.find(name), std::string::npos);
+  }
+
+  const UniqueBulbId copied_dut = dut;
+  EXPECT_EQ(copied_dut, dut);
+
+  UniqueBulbId assigned_dut{TrafficLight::Id("foo"), BulbGroup::Id("bar"),
+                            Bulb::Id("baz")};
+  EXPECT_NE(assigned_dut, dut);
+  assigned_dut = dut;
+  EXPECT_EQ(assigned_dut, dut);
+
+  std::unordered_map<UniqueBulbId, BulbState> unordered_map;
+  const BulbState bulb_state = BulbState::kOn;
+  unordered_map.emplace(std::make_pair(dut, bulb_state));
+  EXPECT_NE(unordered_map.find(dut), unordered_map.end());
+  EXPECT_EQ(unordered_map.at(dut), bulb_state);
+  const UniqueBulbId other_dut{TrafficLight::Id("foo"), BulbGroup::Id("bar"),
+                               Bulb::Id("baz")};
+  EXPECT_EQ(unordered_map.find(other_dut), unordered_map.end());
+
+  std::map<UniqueBulbId, BulbState> ordered_map;
+  ordered_map.emplace(std::make_pair(dut, bulb_state));
+  EXPECT_NE(ordered_map.find(dut), ordered_map.end());
+  EXPECT_EQ(ordered_map.at(dut), bulb_state);
+  EXPECT_EQ(ordered_map.find(other_dut), ordered_map.end());
+
+  // Tests the std::less<UniqueBulbId>() operator.
+  auto make_less = [](const std::string& s) -> std::string {
+    std::string c = s;
+    // Letter "L" is considered less than letter  "M" because its ASCII code is
+    // less (0x4C vs. 0x4D).
+    std::replace(c.begin(), c.end(), 'M', 'L');
+    return c;
+  };
+  auto make_more = [](const std::string& s) -> std::string {
+    std::string c = s;
+    // Letter "N" is greater than "M" because its ASCII code is higher (0x4E vs.
+    // 0x4D).
+    std::replace(c.begin(), c.end(), 'M', 'N');
+    return c;
+  };
+  const TrafficLight::Id less_traffic_light_id(make_less(traffic_light_name));
+  const TrafficLight::Id more_traffic_light_id(make_more(traffic_light_name));
+  const BulbGroup::Id less_bulb_group_id(make_less(bulb_group_name));
+  const BulbGroup::Id more_bulb_group_id(make_more(bulb_group_name));
+  const Bulb::Id less_bulb_id(make_less(bulb_name));
+  const Bulb::Id more_bulb_id(make_more(bulb_name));
+
+  const std::less<UniqueBulbId> less;
+
+  const std::vector<UniqueBulbId> less_set = {
+      {less_traffic_light_id, bulb_group_id, bulb_id},
+      {less_traffic_light_id, less_bulb_group_id, more_bulb_id},
+      {less_traffic_light_id, more_bulb_group_id, more_bulb_id},
+      {less_traffic_light_id, more_bulb_group_id, less_bulb_id},
+      {traffic_light_id, less_bulb_group_id, bulb_id},
+      {traffic_light_id, less_bulb_group_id, more_bulb_id},
+      {traffic_light_id, bulb_group_id, less_bulb_id}};
+
+  for (const auto& test_case : less_set) {
+    EXPECT_TRUE(less(test_case, dut));
+  }
+
+  const std::vector<UniqueBulbId> not_less_set = {
+      dut,
+      {more_traffic_light_id, less_bulb_group_id, less_bulb_id},
+      {more_traffic_light_id, more_bulb_group_id, less_bulb_id},
+      {more_traffic_light_id, less_bulb_group_id, more_bulb_id},
+      {more_traffic_light_id, more_bulb_group_id, more_bulb_id},
+      {traffic_light_id, more_bulb_group_id, more_bulb_id},
+      {traffic_light_id, more_bulb_group_id, less_bulb_id},
+      {traffic_light_id, bulb_group_id, more_bulb_id}};
+
+  for (const auto& test_case : not_less_set) {
+    EXPECT_FALSE(less(test_case, dut));
+  }
 }
 
 }  // namespace

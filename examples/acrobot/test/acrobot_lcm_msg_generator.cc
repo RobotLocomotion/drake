@@ -24,14 +24,9 @@ int DoMain() {
   const std::string channel_u = "acrobot_u";
 
   // Decode channel_x into msg_x.
-  std::mutex msg_x_mutex;  // Guards msg_x.
-  lcmt_acrobot_x msg_x{};
-  lcm::Subscribe<lcmt_acrobot_x>(&lcm, channel_x, [&](const auto& received) {
-    std::lock_guard<std::mutex> lock(msg_x_mutex);
-    msg_x = received;
-  });
+  drake::lcm::Subscriber<lcmt_acrobot_x> subscription(&lcm, channel_x);
+  const lcmt_acrobot_x& msg_x = subscription.message();
 
-  lcm.StartReceiveThread();
   for (int i = 0; i < 1e5; ++i) {
     // Publishes a dummy msg_x.
     {
@@ -44,20 +39,17 @@ int DoMain() {
     }
 
     // Publishes msg_u using received msg_x.
-    {
-      std::lock_guard<std::mutex> lock(msg_x_mutex);
-      if (msg_x.timestamp > 0) {
-        // Calculates some output from received state.
-        lcmt_acrobot_u msg_u{};
-        msg_u.tau = msg_x.theta1 + msg_x.theta2;
-        Publish(&lcm, channel_u, msg_u);
-      }
+    lcm.HandleSubscriptions(0 /* timeout */);
+    if (msg_x.timestamp > 0) {
+      // Calculates some output from received state.
+      lcmt_acrobot_u msg_u{};
+      msg_u.tau = msg_x.theta1 + msg_x.theta2;
+      Publish(&lcm, channel_u, msg_u);
     }
 
     sleep_for(milliseconds(500));
   }
 
-  lcm.StopReceiveThread();
   return 0;
 }
 }  // namespace

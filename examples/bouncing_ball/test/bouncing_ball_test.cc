@@ -12,22 +12,31 @@ namespace drake {
 namespace bouncing_ball {
 namespace {
 
+// Computes the drop time from the initial height and the gravitational
+// acceleration.
+double CalcDropTime(const double g, const double q0) {
+  DRAKE_DEMAND(g < 0.0);
+  DRAKE_DEMAND(q0 > 0.0);
+
+  // The time that the ball will impact the ground is:
+  // gt^2/2 + q0 = 0
+  // Solve the quadratic equation at^2 + bt + c = 0 for t.
+  const double a = g/2;
+  const double c = q0;
+  return std::sqrt(-c/a);
+}
+
 // Computes the closed form height and velocity at tf seconds for a bouncing
-// ball starting from height x0, subject to gravitational acceleration g,
+// ball starting from height q0, subject to gravitational acceleration g,
 // and with coefficient of restitution e, assuming that the initial velocity
 // is zero. Restitution coefficients of 0 and 1 are the only ones supported.
 // Returns a pair of values, the first corresponding to the height at tf,
 // the second corresponding to the velocity at tf.
 std::pair<double, double> CalcClosedFormHeightAndVelocity(double g,
                                                           double e,
-                                                          double x0,
+                                                          double q0,
                                                           double tf) {
-  // The time that the ball will impact the ground is:
-  // gt^2/2 + x0 = 0
-  // Solve the quadratic equation for t.
-  const double a = g/2;
-  const double c = x0;
-  const double drop_time = std::sqrt(-c/a);
+  const double drop_time = CalcDropTime(g, q0);
 
   // Handle the cases appropriately.
   if (e == 0.0) {
@@ -35,7 +44,7 @@ std::pair<double, double> CalcClosedFormHeightAndVelocity(double g,
     // problem.
     if (tf < drop_time) {
       // In a ballistic phase.
-      return std::make_pair(g*tf*tf/2 + x0, g*tf);
+      return std::make_pair(g*tf*tf/2 + q0, g*tf);
     } else {
       // Ball has hit the ground.
       return std::make_pair(0.0, 0.0);
@@ -52,7 +61,7 @@ std::pair<double, double> CalcClosedFormHeightAndVelocity(double g,
     // Even phases mean that the ball is falling, odd phases mean that it is
     // rising.
     if ((num_phases & 1) == 0) {
-      return std::make_pair(g*t*t/2 + x0, g*t);
+      return std::make_pair(g*t*t/2 + q0, g*t);
     } else {
       // Get the ball velocity at the time of impact.
       const double vf = g*drop_time;
@@ -100,9 +109,9 @@ TEST_F(BouncingBallTest, Transmogrification) {
 }
 
 TEST_F(BouncingBallTest, Topology) {
-  ASSERT_EQ(0, dut_->get_num_input_ports());
+  ASSERT_EQ(0, dut_->num_input_ports());
 
-  ASSERT_EQ(1, dut_->get_num_output_ports());
+  ASSERT_EQ(1, dut_->num_output_ports());
   const auto& output_port = dut_->get_output_port(0);
   EXPECT_EQ(systems::kVectorValued, output_port.get_data_type());
 }
@@ -155,7 +164,7 @@ TEST_F(BouncingBallTest, Simulate) {
   // precision requested (via the accuracy setting) for longer running times
   // than t_final = 10.0.
   const double t_final = 10.0;
-  const double x0 = 1.0;
+  const double q0 = 1.0;
   const double v0 = 0.0;
   const double accuracy = 1e-4;
 
@@ -165,9 +174,9 @@ TEST_F(BouncingBallTest, Simulate) {
   drake::systems::Simulator<double> simulator(*dut_, std::move(context_));
   simulator.reset_integrator<systems::RungeKutta3Integrator<double>>(*dut_,
       &simulator.get_mutable_context());
-  simulator.get_mutable_context().set_accuracy(accuracy);
-  simulator.get_mutable_integrator()->request_initial_step_size_target(1e-3);
-  simulator.get_mutable_integrator()->set_target_accuracy(accuracy);
+  simulator.get_mutable_context().SetAccuracy(accuracy);
+  simulator.get_mutable_integrator().request_initial_step_size_target(1e-3);
+  simulator.get_mutable_integrator().set_target_accuracy(accuracy);
 
   // Note: the witness function isolation for the bouncing ball does not require
   // the ball to have a non-negative signed distance, the assumption being that
@@ -180,17 +189,15 @@ TEST_F(BouncingBallTest, Simulate) {
   // works when restitution is unity.
   ASSERT_EQ(dut_->get_restitution_coef(), 1.0);
   const double g = dut_->get_gravitational_acceleration();
-  const double a = g/2;
-  const double c = x0;
-  const double drop_time = std::sqrt(-c/a);
-  simulator.get_mutable_integrator()->set_maximum_step_size(drop_time);
+  const double drop_time = CalcDropTime(g, q0);
+  simulator.get_mutable_integrator().set_maximum_step_size(drop_time);
 
   simulator.Initialize();
 
   // Set the initial state for the bouncing ball.
   systems::VectorBase<double>& xc = simulator.get_mutable_context().
       get_mutable_continuous_state_vector();
-  xc.SetAtIndex(0, x0);
+  xc.SetAtIndex(0, q0);
   xc.SetAtIndex(1, v0);
 
   // Integrate.
@@ -203,7 +210,7 @@ TEST_F(BouncingBallTest, Simulate) {
   double height, velocity;
   std::tie(height, velocity) = CalcClosedFormHeightAndVelocity(
       dut_->get_gravitational_acceleration(),
-      dut_->get_restitution_coef(), x0, t_final);
+      dut_->get_restitution_coef(), q0, t_final);
   EXPECT_NEAR(xc.GetAtIndex(0), height, tol);
   EXPECT_NEAR(xc.GetAtIndex(1), velocity, tol);
 }

@@ -123,16 +123,16 @@ class TeleopMouseKeyboardManager():
 class MouseKeyboardTeleop(LeafSystem):
     def __init__(self, grab_focus=True):
         LeafSystem.__init__(self)
-        self._DeclareVectorOutputPort("rpy_xyz", BasicVector(6),
-                                      self._DoCalcOutput)
-        self._DeclareVectorOutputPort("position", BasicVector(1),
-                                      self.CalcPositionOutput)
-        self._DeclareVectorOutputPort("force_limit", BasicVector(1),
-                                      self.CalcForceLimitOutput)
+        self.DeclareVectorOutputPort("rpy_xyz", BasicVector(6),
+                                     self._DoCalcOutput)
+        self.DeclareVectorOutputPort("position", BasicVector(1),
+                                     self.CalcPositionOutput)
+        self.DeclareVectorOutputPort("force_limit", BasicVector(1),
+                                     self.CalcForceLimitOutput)
 
         # Note: This timing affects the keyboard teleop performance. A larger
         #       time step causes more lag in the response.
-        self._DeclarePeriodicPublish(0.01, 0.0)
+        self.DeclarePeriodicPublish(0.01, 0.0)
 
         self.teleop_manager = TeleopMouseKeyboardManager(grab_focus=grab_focus)
         self.roll = self.pitch = self.yaw = 0
@@ -331,12 +331,16 @@ builder.Connect(teleop.GetOutputPort("force_limit"),
 diagram = builder.Build()
 simulator = Simulator(diagram)
 
+# This is important to avoid duplicate publishes to the hardware interface:
+simulator.set_publish_every_time_step(False)
+
 station_context = diagram.GetMutableSubsystemContext(
     station, simulator.get_mutable_context())
 
 station_context.FixInputPort(station.GetInputPort(
     "iiwa_feedforward_torque").get_index(), np.zeros(7))
 
+simulator.AdvanceTo(1e-6)
 q0 = station.GetOutputPort("iiwa_position_measured").Eval(station_context)
 differential_ik.parameters.set_nominal_joint_position(q0)
 
@@ -348,9 +352,6 @@ filter.set_initial_output_value(
         teleop, simulator.get_mutable_context())))
 differential_ik.SetPositions(diagram.GetMutableSubsystemContext(
     differential_ik, simulator.get_mutable_context()), q0)
-
-# This is important to avoid duplicate publishes to the hardware interface:
-simulator.set_publish_every_time_step(False)
 
 simulator.set_target_realtime_rate(args.target_realtime_rate)
 

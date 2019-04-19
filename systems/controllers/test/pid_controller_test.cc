@@ -112,7 +112,7 @@ TEST_F(PidControllerTest, CalcOutput) {
 
   // Evaluates the output.
   controller_.CalcOutput(*context_, output_.get());
-  ASSERT_EQ(1, output_->get_num_ports());
+  ASSERT_EQ(1, output_->num_ports());
   const BasicVector<double>* output_vector = output_->get_vector_data(0);
   EXPECT_EQ(3, output_vector->size());
   EXPECT_EQ((kp_.array() * error_signal_.array() +

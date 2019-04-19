@@ -55,11 +55,11 @@ GTEST_TEST(InitialValueProblemTest, SolutionUsingMultipleIntegrators) {
 
   // Replaces default integrator.
   const double kMaximumStep = 0.1;
-  const IntegratorBase<double>* default_integrator = ivp.get_integrator();
+  const IntegratorBase<double>& default_integrator = ivp.get_integrator();
   IntegratorBase<double>* configured_integrator =
       ivp.reset_integrator<RungeKutta2Integrator<double>>(kMaximumStep);
-  EXPECT_NE(configured_integrator, default_integrator);
-  EXPECT_EQ(configured_integrator, ivp.get_integrator());
+  EXPECT_NE(configured_integrator, &default_integrator);
+  EXPECT_EQ(configured_integrator, &ivp.get_integrator());
 
   // Specifies a different parameter vector, but leaves both
   // initial time and state as defaults.
@@ -271,9 +271,9 @@ TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasMomentum) {
         return -mu * p / m;
       }, kDefaultValues);
 
-  IntegratorBase<double>* inner_integrator =
+  IntegratorBase<double>& inner_integrator =
       particle_momentum_ivp.get_mutable_integrator();
-  inner_integrator->set_target_accuracy(integration_accuracy_);
+  inner_integrator.set_target_accuracy(integration_accuracy_);
 
   const double kLowestGasViscosity = 1.0;
   const double kHighestGasViscosity = 10.0;
@@ -356,9 +356,9 @@ TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasForcedVelocity) {
         return (F - mu * v) / m;
       }, kDefaultValues);
 
-  IntegratorBase<double>* inner_integrator =
+  IntegratorBase<double>& inner_integrator =
       particle_velocity_ivp.get_mutable_integrator();
-  inner_integrator->set_target_accuracy(integration_accuracy_);
+  inner_integrator.set_target_accuracy(integration_accuracy_);
 
   const double kLowestGasViscosity = 1.0;
   const double kHighestGasViscosity = 10.0;

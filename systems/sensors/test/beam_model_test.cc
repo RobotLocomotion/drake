@@ -78,7 +78,7 @@ GTEST_TEST(BeamModelTest, TestProbabilityDensity) {
   systems::Simulator<double> simulator(*diagram);
 
   // Zero all initial state.
-  for (int i = 0; i < simulator.get_context().get_num_discrete_state_groups();
+  for (int i = 0; i < simulator.get_context().num_discrete_state_groups();
        i++) {
     BasicVector<double>& state =
         simulator.get_mutable_context().get_mutable_discrete_state(0);

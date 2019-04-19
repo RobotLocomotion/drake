@@ -146,8 +146,8 @@ int main() {
   systems::Context<double>& context = simulator.get_mutable_context();
 
   simulator.reset_integrator<RungeKutta3Integrator<double>>(*model, &context);
-  simulator.get_mutable_integrator()->request_initial_step_size_target(1e-4);
-  simulator.get_mutable_integrator()->set_target_accuracy(FLAGS_accuracy);
+  simulator.get_mutable_integrator().request_initial_step_size_target(1e-4);
+  simulator.get_mutable_integrator().set_target_accuracy(FLAGS_accuracy);
   std::cout << "Variable-step integrator accuracy: " << FLAGS_accuracy << "\n";
 
   simulator.Initialize();

@@ -19,6 +19,7 @@
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_scalar_converter.h"
 #include "drake/systems/framework/vector_system.h"
+#include "drake/systems/framework/witness_function.h"
 
 using std::make_unique;
 using std::string;
@@ -29,6 +30,57 @@ namespace drake {
 namespace pydrake {
 
 namespace {
+
+// TODO(eric.cousineau): Remove `*DeprecatedProtectedAlias*` cruft and
+// replace `PYDRAKE_TRY_PROTECTED_OVERLOAD` with `PYBIND11_OVERLOAD` once
+// deprecated methods are removed (on or around 2019-06-15).
+
+// Generates deprecation message pursuant to #9651.
+std::string DeprecatedProtectedAliasMessage(
+    std::string name, std::string verb) {
+  return fmt::format(
+      "'_{0}' is deprecated and will be removed on or around 2019-06-15. "
+      "Please {1} '{0}' instead.",
+      name, verb);
+}
+
+// Deprecates alias pursuant to #9651.
+template <typename PyClass>
+void AddDeprecatedProtectedAliases(
+    PyClass* cls, std::vector<std::string> names) {
+  // Use function-wrapping approach so that we can override documentation.
+  // Ensure that the deprecated overload is a `py::cpp_function` so that
+  // `py::get_overload<>` proprely ignores things (as its logic is relatively
+  // complex).
+  for (const std::string& name : names) {
+    const std::string alias = "_" + name;
+    const std::string deprecation =
+        DeprecatedProtectedAliasMessage(name, "call");
+    py::handle cls_handle = *cls;
+    cls->def(alias.c_str(),
+        [cls_handle, name, deprecation](
+            py::object self, py::args args, py::kwargs kwargs) {
+          // N.B. Trying to capture a `py::handle` for `original` does not work
+          // and causes segfaults.
+          py::object original = cls_handle.attr(name.c_str());
+          WarnDeprecated(deprecation);
+          return original(self, *args, **kwargs);
+        },
+        deprecation.c_str());
+  }
+}
+
+// Deprecates overloads pursuant to #9651. This first attempts to resolve to
+// `{NAME}` overload. If that does not return (via the `PYBIND11_OVERLOAD_INT`
+// macro), then it tries the `_{NAME}` overload.
+// N.B. No control flow will ever make `__VA_ARGS__` be evaluated more than
+// once.
+#define PYDRAKE_TRY_PROTECTED_OVERLOAD(RETURN, CLASS, NAME, ...)       \
+  PYBIND11_OVERLOAD_INT(RETURN, CLASS, NAME, __VA_ARGS__);             \
+  if (py::get_overload<CLASS>(this, "_" NAME)) {                       \
+    WarnDeprecated(DeprecatedProtectedAliasMessage(NAME, "override")); \
+    PYBIND11_OVERLOAD_INT(RETURN, CLASS, "_" NAME, __VA_ARGS__);       \
+  }
 
 using symbolic::Expression;
 using systems::Context;
@@ -41,6 +93,7 @@ using systems::PublishEvent;
 using systems::System;
 using systems::SystemScalarConverter;
 using systems::VectorSystem;
+using systems::WitnessFunction;
 
 // Provides a templated 'namespace'.
 template <typename T>
@@ -85,6 +138,7 @@ struct Impl {
     using Base::DeclarePerStepEvent;
     using Base::DeclareVectorInputPort;
     using Base::DeclareVectorOutputPort;
+    using Base::MakeWitnessFunction;
 
     // Because `LeafSystem<T>::DoPublish` is protected, and we had to override
     // this method in `PyLeafSystem`, expose the method here for direct(-ish)
@@ -115,16 +169,16 @@ struct Impl {
       // @see https://github.com/pybind/pybind11/issues/1241
       // TODO(eric.cousineau): Figure out how to supply different behavior,
       // possibly using function wrapping.
-      PYBIND11_OVERLOAD_INT(
-          void, LeafSystem<T>, "_DoPublish", &context, events);
+      PYDRAKE_TRY_PROTECTED_OVERLOAD(
+          void, LeafSystem<T>, "DoPublish", &context, events);
       // If the macro did not return, use default functionality.
       Base::DoPublish(context, events);
     }
 
     optional<bool> DoHasDirectFeedthrough(
         int input_port, int output_port) const override {
-      PYBIND11_OVERLOAD_INT(optional<bool>, LeafSystem<T>,
-          "_DoHasDirectFeedthrough", input_port, output_port);
+      PYDRAKE_TRY_PROTECTED_OVERLOAD(optional<bool>, LeafSystem<T>,
+          "DoHasDirectFeedthrough", input_port, output_port);
       // If the macro did not return, use default functionality.
       return Base::DoHasDirectFeedthrough(input_port, output_port);
     }
@@ -132,8 +186,8 @@ struct Impl {
     void DoCalcTimeDerivatives(const Context<T>& context,
         ContinuousState<T>* derivatives) const override {
       // See `DoPublish` for explanation.
-      PYBIND11_OVERLOAD_INT(
-          void, LeafSystem<T>, "_DoCalcTimeDerivatives", &context, derivatives);
+      PYDRAKE_TRY_PROTECTED_OVERLOAD(
+          void, LeafSystem<T>, "DoCalcTimeDerivatives", &context, derivatives);
       // If the macro did not return, use default functionality.
       Base::DoCalcTimeDerivatives(context, derivatives);
     }
@@ -142,10 +196,28 @@ struct Impl {
         const std::vector<const DiscreteUpdateEvent<T>*>& events,
         DiscreteValues<T>* discrete_state) const override {
       // See `DoPublish` for explanation.
-      PYBIND11_OVERLOAD_INT(void, LeafSystem<T>,
-          "_DoCalcDiscreteVariableUpdates", &context, events, discrete_state);
+      PYDRAKE_TRY_PROTECTED_OVERLOAD(void, LeafSystem<T>,
+          "DoCalcDiscreteVariableUpdates", &context, events, discrete_state);
       // If the macro did not return, use default functionality.
       Base::DoCalcDiscreteVariableUpdates(context, events, discrete_state);
+    }
+
+    // This actually changes the signature of DoGetWitnessFunction,
+    // expecting the python overload to return a list of witnesses (instead
+    // of taking in an empty pointer to std::vector<>.
+    // TODO(russt): This is actually a System method, so make a PySystem
+    // trampoline if this is needed outside of LeafSystem.
+    void DoGetWitnessFunctions(const Context<T>& context,
+        std::vector<const WitnessFunction<T>*>* witnesses) const override {
+      auto wrapped = [&]() -> std::vector<const WitnessFunction<T>*> {
+        PYBIND11_OVERLOAD_INT(std::vector<const WitnessFunction<T>*>,
+            LeafSystem<T>, "DoGetWitnessFunctions", &context);
+        std::vector<const WitnessFunction<T>*> result;
+        // If the macro did not return, use default functionality.
+        Base::DoGetWitnessFunctions(context, &result);
+        return result;
+      };
+      *witnesses = wrapped();
     }
   };
 
@@ -196,16 +268,16 @@ struct Impl {
       // Copied from above, since we cannot use `PyLeafSystemBase` due to final
       // overrides of some methods.
       // TODO(eric.cousineau): Make this more granular?
-      PYBIND11_OVERLOAD_INT(
-          void, VectorSystem<T>, "_DoPublish", &context, events);
+      PYDRAKE_TRY_PROTECTED_OVERLOAD(
+          void, VectorSystem<T>, "DoPublish", &context, events);
       // If the macro did not return, use default functionality.
       Base::DoPublish(context, events);
     }
 
     optional<bool> DoHasDirectFeedthrough(
         int input_port, int output_port) const override {
-      PYBIND11_OVERLOAD_INT(optional<bool>, VectorSystem<T>,
-          "_DoHasDirectFeedthrough", input_port, output_port);
+      PYDRAKE_TRY_PROTECTED_OVERLOAD(optional<bool>, VectorSystem<T>,
+          "DoHasDirectFeedthrough", input_port, output_port);
       // If the macro did not return, use default functionality.
       return Base::DoHasDirectFeedthrough(input_port, output_port);
     }
@@ -219,7 +291,8 @@ struct Impl {
       // https://github.com/pybind/pybind11/pull/1152#issuecomment-340091423
       // TODO(eric.cousineau): This will be resolved once dtype=custom is
       // resolved.
-      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>, "_DoCalcVectorOutput",
+      PYDRAKE_TRY_PROTECTED_OVERLOAD(void, VectorSystem<T>,
+          "DoCalcVectorOutput",
           // N.B. Passing `Eigen::Map<>` derived classes by reference rather
           // than pointer to ensure conceptual clarity. pybind11 `type_caster`
           // struggles with types of `Map<Derived>*`, but not `Map<Derived>&`.
@@ -234,8 +307,8 @@ struct Impl {
         Eigen::VectorBlock<VectorX<T>>* derivatives) const override {
       // WARNING: Mutating `derivatives` will not work when T is AutoDiffXd,
       // Expression, etc. See above.
-      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>,
-          "_DoCalcVectorTimeDerivatives", &context, input, state,
+      PYDRAKE_TRY_PROTECTED_OVERLOAD(void, VectorSystem<T>,
+          "DoCalcVectorTimeDerivatives", &context, input, state,
           ToEigenRef(derivatives));
       // If the macro did not return, use default functionality.
       Base::DoCalcVectorOutput(context, input, state, derivatives);
@@ -247,8 +320,8 @@ struct Impl {
         Eigen::VectorBlock<VectorX<T>>* next_state) const override {
       // WARNING: Mutating `next_state` will not work when T is AutoDiffXd,
       // Expression, etc. See above.
-      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>,
-          "_DoCalcVectorDiscreteVariableUpdates", &context, input, state,
+      PYDRAKE_TRY_PROTECTED_OVERLOAD(void, VectorSystem<T>,
+          "DoCalcVectorDiscreteVariableUpdates", &context, input, state,
           ToEigenRef(next_state));
       // If the macro did not return, use default functionality.
       Base::DoCalcVectorDiscreteVariableUpdates(
@@ -268,14 +341,24 @@ struct Impl {
     // class.
     // TODO(eric.cousineau): Show constructor, but somehow make sure `pybind11`
     // knows this is abstract?
-    DefineTemplateClassWithDefault<System<T>, PySystem>(
-        m, "System", GetPyParam<T>(), doc.SystemBase.doc)
+    auto system_cls = DefineTemplateClassWithDefault<System<T>, PySystem>(
+        m, "System", GetPyParam<T>(), doc.SystemBase.doc);
+    system_cls  // BR
         .def("set_name", &System<T>::set_name, doc.SystemBase.set_name.doc)
         // Topology.
         .def("num_input_ports", &System<T>::num_input_ports,
             doc.SystemBase.num_input_ports.doc)
-        .def("get_num_input_ports", &System<T>::get_num_input_ports,
-            "Use num_input_ports() instead.")
+        .def("get_num_input_ports",
+            [](const System<T>* self) {
+              WarnDeprecated(
+                  "Use num_input_ports() instead. Will be removed on or after "
+                  "2019-07-01.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->get_num_input_ports();
+#pragma GCC diagnostic pop
+            },
+            doc.SystemBase.get_num_input_ports.doc_deprecated)
         .def("get_input_port", &System<T>::get_input_port,
             py_reference_internal, py::arg("port_index"),
             doc.System.get_input_port.doc)
@@ -283,21 +366,30 @@ struct Impl {
             py::arg("port_name"), doc.System.GetInputPort.doc)
         .def("num_output_ports", &System<T>::num_output_ports,
             doc.SystemBase.num_output_ports.doc)
-        .def("get_num_output_ports", &System<T>::get_num_output_ports,
-            "Use num_output_ports() instead.")
+        .def("get_num_output_ports",
+            [](const System<T>* self) {
+              WarnDeprecated(
+                  "Use num_output_ports() instead. Will be removed on or "
+                  "after 2019-07-01.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->get_num_output_ports();
+#pragma GCC diagnostic pop
+            },
+            doc.SystemBase.get_num_output_ports.doc_deprecated)
         .def("get_output_port", &System<T>::get_output_port,
             py_reference_internal, py::arg("port_index"),
             doc.System.get_output_port.doc)
         .def("GetOutputPort", &System<T>::GetOutputPort, py_reference_internal,
             py::arg("port_name"), doc.System.GetOutputPort.doc)
-        .def("_DeclareInputPort",
+        .def("DeclareInputPort",
             overload_cast_explicit<const InputPort<T>&,
                 variant<std::string, UseDefaultName>, PortDataType, int,
                 optional<RandomDistribution>>(&PySystem::DeclareInputPort),
             py_reference_internal, py::arg("name"), py::arg("type"),
             py::arg("size"), py::arg("random_type") = nullopt,
             doc.System.DeclareInputPort.doc_4args)
-        .def("_DeclareInputPort",
+        .def("DeclareInputPort",
             overload_cast_explicit<  // BR
                 const InputPort<T>&, PortDataType, int,
                 optional<RandomDistribution>>(&PySystem::DeclareInputPort),
@@ -378,14 +470,28 @@ struct Impl {
             [](const System<T>& self) { return self.ToSymbolic(); },
             doc.System.ToSymbolic.doc_0args)
         .def("ToSymbolicMaybe", &System<T>::ToSymbolicMaybe,
-            doc.System.ToSymbolicMaybe.doc);
+            doc.System.ToSymbolicMaybe.doc)
+        .def("GetWitnessFunctions",
+            [](const System<T>& self, const Context<T>& context) {
+              std::vector<const WitnessFunction<T>*> witnesses;
+              self.GetWitnessFunctions(context, &witnesses);
+              return witnesses;
+            },
+            py::arg("context"),
+            (string(doc.System.DoGetWitnessFunctions.doc) + R""(
+Note: The above is for the C++ documentation. For Python, use
+`witnesses = GetWitnessFunctions(context)`)"")
+                .c_str());
+    AddDeprecatedProtectedAliases(&system_cls, {"DeclareInputPort"});
 
     using AllocCallback = typename LeafOutputPort<T>::AllocCallback;
     using CalcCallback = typename LeafOutputPort<T>::CalcCallback;
     using CalcVectorCallback = typename LeafOutputPort<T>::CalcVectorCallback;
 
-    DefineTemplateClassWithDefault<LeafSystem<T>, PyLeafSystem, System<T>>(
-        m, "LeafSystem", GetPyParam<T>(), doc.LeafSystem.doc)
+    auto leaf_system_cls =
+        DefineTemplateClassWithDefault<LeafSystem<T>, PyLeafSystem, System<T>>(
+            m, "LeafSystem", GetPyParam<T>(), doc.LeafSystem.doc);
+    leaf_system_cls  // BR
         .def(py::init<>(), doc.LeafSystem.ctor.doc_0args)
         // TODO(eric.cousineau): It'd be nice if we did not need the user to
         // propagate scalar conversion information. Ideally, if we could
@@ -395,14 +501,14 @@ struct Impl {
         // old-style `py::init`, which is deprecated in Python...
         .def(py::init<SystemScalarConverter>(), py::arg("converter"),
             doc.LeafSystem.ctor.doc_1args)
-        .def("_DeclareAbstractInputPort",
+        .def("DeclareAbstractInputPort",
             [](PyLeafSystem* self, const std::string& name,
                 const AbstractValue& model_value) -> const InputPort<T>& {
               return self->DeclareAbstractInputPort(name, model_value);
             },
             py_reference_internal, py::arg("name"), py::arg("model_value"),
             doc.LeafSystem.DeclareAbstractInputPort.doc_2args)
-        .def("_DeclareAbstractInputPort",
+        .def("DeclareAbstractInputPort",
             [](PyLeafSystem* self,
                 const std::string& name) -> const InputPort<T>& {
               WarnDeprecated(
@@ -413,12 +519,12 @@ struct Impl {
             },
             py_reference_internal, py::arg("name"),
             "(This method is deprecated.)")
-        .def("_DeclareAbstractParameter",
+        .def("DeclareAbstractParameter",
             &PyLeafSystem::DeclareAbstractParameter, py::arg("model_value"),
             doc.LeafSystem.DeclareAbstractParameter.doc)
-        .def("_DeclareNumericParameter", &PyLeafSystem::DeclareNumericParameter,
+        .def("DeclareNumericParameter", &PyLeafSystem::DeclareNumericParameter,
             py::arg("model_vector"), doc.LeafSystem.DeclareNumericParameter.doc)
-        .def("_DeclareAbstractOutputPort",
+        .def("DeclareAbstractOutputPort",
             WrapCallbacks([](PyLeafSystem* self, const std::string& name,
                               AllocCallback arg1,
                               CalcCallback arg2) -> const OutputPort<T>& {
@@ -426,7 +532,7 @@ struct Impl {
             }),
             py_reference_internal, py::arg("name"), py::arg("alloc"),
             py::arg("calc"))
-        .def("_DeclareAbstractOutputPort",
+        .def("DeclareAbstractOutputPort",
             WrapCallbacks([](PyLeafSystem* self, AllocCallback arg1,
                               CalcCallback arg2) -> const OutputPort<T>& {
               return self->DeclareAbstractOutputPort(arg1, arg2);
@@ -434,7 +540,7 @@ struct Impl {
             py_reference_internal, py::arg("alloc"), py::arg("calc"),
             doc.LeafSystem.DeclareAbstractOutputPort
                 .doc_4args_name_alloc_function_calc_function_prerequisites_of_calc)
-        .def("_DeclareVectorInputPort",
+        .def("DeclareVectorInputPort",
             [](PyLeafSystem* self, std::string name,
                 const BasicVector<T>& model_vector,
                 optional<RandomDistribution> random_type)
@@ -445,7 +551,7 @@ struct Impl {
             py_reference_internal, py::arg("name"), py::arg("model_vector"),
             py::arg("random_type") = nullopt,
             doc.LeafSystem.DeclareVectorInputPort.doc_3args)
-        .def("_DeclareVectorOutputPort",
+        .def("DeclareVectorOutputPort",
             WrapCallbacks([](PyLeafSystem* self, const std::string& name,
                               const BasicVector<T>& arg1,
                               CalcVectorCallback arg2) -> const OutputPort<T>& {
@@ -453,7 +559,7 @@ struct Impl {
             }),
             py_reference_internal, py::arg("name"), py::arg("model_value"),
             py::arg("calc"))
-        .def("_DeclareVectorOutputPort",
+        .def("DeclareVectorOutputPort",
             WrapCallbacks([](PyLeafSystem* self, const BasicVector<T>& arg1,
                               CalcVectorCallback arg2) -> const OutputPort<T>& {
               return self->DeclareVectorOutputPort(arg1, arg2);
@@ -461,55 +567,78 @@ struct Impl {
             py_reference_internal,
             doc.LeafSystem.DeclareVectorOutputPort
                 .doc_4args_name_model_vector_vector_calc_function_prerequisites_of_calc)
-        .def("_DeclareInitializationEvent",
+        .def("DeclareInitializationEvent",
             [](PyLeafSystem* self, const Event<T>& event) {
               self->DeclareInitializationEvent(event);
             },
             py::arg("event"), doc.LeafSystem.DeclareInitializationEvent.doc)
-        .def("_DeclarePeriodicPublish",
+        .def("DeclarePeriodicPublish",
             &LeafSystemPublic::DeclarePeriodicPublish, py::arg("period_sec"),
             py::arg("offset_sec") = 0.,
             doc.LeafSystem.DeclarePeriodicPublish.doc)
-        .def("_DeclarePeriodicDiscreteUpdate",
+        .def("DeclarePeriodicDiscreteUpdate",
             &LeafSystemPublic::DeclarePeriodicDiscreteUpdate,
             py::arg("period_sec"), py::arg("offset_sec") = 0.,
             doc.LeafSystem.DeclarePeriodicDiscreteUpdate.doc)
-        .def("_DeclarePeriodicEvent",
+        .def("DeclarePeriodicEvent",
             [](PyLeafSystem* self, double period_sec, double offset_sec,
                 const Event<T>& event) {
               self->DeclarePeriodicEvent(period_sec, offset_sec, event);
             },
             py::arg("period_sec"), py::arg("offset_sec"), py::arg("event"),
             doc.LeafSystem.DeclarePeriodicEvent.doc)
-        .def("_DeclarePerStepEvent",
+        .def("DeclarePerStepEvent",
             [](PyLeafSystem* self, const Event<T>& event) {
               self->DeclarePerStepEvent(event);
             },
             py::arg("event"), doc.LeafSystem.DeclarePerStepEvent.doc)
-        .def("_DoPublish", &LeafSystemPublic::DoPublish,
+        .def("MakeWitnessFunction",
+            WrapCallbacks([](PyLeafSystem* self, const std::string& description,
+                              const WitnessFunctionDirection& direction_type,
+                              std::function<T(const Context<T>&)> calc)
+                              -> std::unique_ptr<WitnessFunction<T>> {
+              return self->MakeWitnessFunction(
+                  description, direction_type, calc);
+            }),
+            py_reference_internal, py::arg("description"),
+            py::arg("direction_type"), py::arg("calc"),
+            doc.LeafSystem.MakeWitnessFunction.doc_3args)
+        .def("MakeWitnessFunction",
+            WrapCallbacks(
+                [](PyLeafSystem* self, const std::string& description,
+                    const WitnessFunctionDirection& direction_type,
+                    std::function<T(const Context<T>&)> calc,
+                    const Event<T>& e) -> std::unique_ptr<WitnessFunction<T>> {
+                  return self->MakeWitnessFunction(
+                      description, direction_type, calc, e);
+                }),
+            py_reference_internal, py::arg("description"),
+            py::arg("direction_type"), py::arg("calc"), py::arg("e"),
+            doc.LeafSystem.MakeWitnessFunction.doc_4args)
+        .def("DoPublish", &LeafSystemPublic::DoPublish,
             doc.LeafSystem.DoPublish.doc)
         // System attributes.
-        .def("_DoHasDirectFeedthrough",
+        .def("DoHasDirectFeedthrough",
             &LeafSystemPublic::DoHasDirectFeedthrough,
             doc.LeafSystem.DoHasDirectFeedthrough.doc)
         // Continuous state.
-        .def("_DeclareContinuousState",
+        .def("DeclareContinuousState",
             py::overload_cast<int>(&LeafSystemPublic::DeclareContinuousState),
             py::arg("num_state_variables"),
             doc.LeafSystem.DeclareContinuousState.doc_1args_num_state_variables)
-        .def("_DeclareContinuousState",
+        .def("DeclareContinuousState",
             py::overload_cast<int, int, int>(
                 &LeafSystemPublic::DeclareContinuousState),
             py::arg("num_q"), py::arg("num_v"), py::arg("num_z"),
             doc.LeafSystem.DeclareContinuousState.doc_3args_num_q_num_v_num_z)
-        .def("_DeclareContinuousState",
+        .def("DeclareContinuousState",
             py::overload_cast<const BasicVector<T>&>(
                 &LeafSystemPublic::DeclareContinuousState),
             py::arg("model_vector"),
             doc.LeafSystem.DeclareContinuousState.doc_1args_model_vector)
         // TODO(eric.cousineau): Ideally the downstream class of
         // `BasicVector<T>` should expose `num_q`, `num_v`, and `num_z`?
-        .def("_DeclareContinuousState",
+        .def("DeclareContinuousState",
             py::overload_cast<const BasicVector<T>&, int, int, int>(
                 &LeafSystemPublic::DeclareContinuousState),
             py::arg("model_vector"), py::arg("num_q"), py::arg("num_v"),
@@ -517,28 +646,38 @@ struct Impl {
             doc.LeafSystem.DeclareContinuousState
                 .doc_4args_model_vector_num_q_num_v_num_z)
         // Discrete state.
-        .def("_DeclareDiscreteState",
+        .def("DeclareDiscreteState",
             py::overload_cast<const BasicVector<T>&>(
                 &LeafSystemPublic::DeclareDiscreteState),
             py::arg("model_vector"),
             doc.LeafSystem.DeclareDiscreteState.doc_1args_model_vector)
-        .def("_DeclareDiscreteState",
+        .def("DeclareDiscreteState",
             py::overload_cast<const Eigen::Ref<const VectorX<T>>&>(
                 &LeafSystemPublic::DeclareDiscreteState),
             py::arg("vector"),
             doc.LeafSystem.DeclareDiscreteState.doc_1args_vector)
-        .def("_DeclareDiscreteState",
+        .def("DeclareDiscreteState",
             py::overload_cast<int>(&LeafSystemPublic::DeclareDiscreteState),
             py::arg("num_state_variables"),
             doc.LeafSystem.DeclareDiscreteState.doc_1args_num_state_variables)
-        .def("_DoCalcTimeDerivatives", &LeafSystemPublic::DoCalcTimeDerivatives)
-        .def("_DoCalcDiscreteVariableUpdates",
+        .def("DoCalcTimeDerivatives", &LeafSystemPublic::DoCalcTimeDerivatives)
+        .def("DoCalcDiscreteVariableUpdates",
             &LeafSystemPublic::DoCalcDiscreteVariableUpdates,
             doc.LeafSystem.DoCalcDiscreteVariableUpdates.doc)
         // Abstract state.
-        .def("_DeclareAbstractState", &LeafSystemPublic::DeclareAbstractState,
+        .def("DeclareAbstractState", &LeafSystemPublic::DeclareAbstractState,
             // Keep alive, ownership: `AbstractValue` keeps `self` alive.
             py::keep_alive<2, 1>(), doc.LeafSystem.DeclareAbstractState.doc);
+    AddDeprecatedProtectedAliases(&leaf_system_cls,
+        {"DeclareAbstractInputPort", "DeclareAbstractParameter",
+            "DeclareNumericParameter", "DeclareAbstractOutputPort",
+            "DeclareVectorInputPort", "DeclareVectorOutputPort",
+            "DeclareInitializationEvent", "DeclarePeriodicPublish",
+            "DeclarePeriodicDiscreteUpdate", "DeclarePeriodicEvent",
+            "DeclarePerStepEvent", "DoPublish", "DoHasDirectFeedthrough",
+            "DeclareContinuousState", "DeclareDiscreteState",
+            "DoCalcTimeDerivatives", "DoCalcDiscreteVariableUpdates",
+            "DeclareAbstractState"});
 
     DefineTemplateClassWithDefault<Diagram<T>, PyDiagram, System<T>>(
         m, "Diagram", GetPyParam<T>(), doc.Diagram.doc)

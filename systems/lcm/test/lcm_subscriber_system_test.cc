@@ -60,12 +60,8 @@ void TestSubscriber(drake::lcm::DrakeMockLcm* lcm,
   }
   message.timestamp = kTimestamp;
 
-  std::vector<uint8_t> buffer(message.getEncodedSize());
-  EXPECT_EQ(message.encode(&buffer[0], 0, message.getEncodedSize()),
-            message.getEncodedSize());
-
-  lcm->InduceSubscriberCallback(dut->get_channel_name(), &buffer[0],
-                                message.getEncodedSize());
+  Publish(lcm, dut->get_channel_name(), message);
+  lcm->HandleSubscriptions(0);
 
   EvalOutputHelper(*dut, context.get(), output.get());
 
@@ -77,6 +73,8 @@ void TestSubscriber(drake::lcm::DrakeMockLcm* lcm,
     EXPECT_EQ(value[i], i);
   }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // Confirm that the unit test sugar used by pydrake is another equally-valid
   // way to read messages.
   auto new_context = dut->CreateDefaultContext();
@@ -85,6 +83,7 @@ void TestSubscriber(drake::lcm::DrakeMockLcm* lcm,
   for (int i = 0; i < kDim; ++i) {
     EXPECT_EQ(new_y[i], i);
   }
+#pragma GCC diagnostic pop
 }
 
 #pragma GCC diagnostic push
@@ -148,10 +147,8 @@ struct SampleData {
 
   void MockPublish(
       drake::lcm::DrakeMockLcm* lcm, const std::string& channel_name) const {
-    const int num_bytes = value.getEncodedSize();
-    std::vector<uint8_t> buffer(num_bytes);
-    value.encode(buffer.data(), 0, num_bytes);
-    lcm->InduceSubscriberCallback(channel_name, buffer.data(), num_bytes);
+    Publish(lcm, channel_name, value);
+    lcm->HandleSubscriptions(0);
   }
 };
 
@@ -180,6 +177,8 @@ GTEST_TEST(LcmSubscriberSystemTest, SerializerTest) {
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(value, sample_data.value));
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Tests LcmSubscriberSystem using a fixed-size Serializer.
 GTEST_TEST(LcmSubscriberSystemTest, FixedSizeSerializerTest) {
   drake::lcm::DrakeMockLcm lcm;
@@ -215,6 +214,7 @@ GTEST_TEST(LcmSubscriberSystemTest, FixedSizeSerializerTest) {
   auto small_value = small_abstract_value->get_value<lcmt_drake_signal>();
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(small_value, smaller_data.value));
 }
+#pragma GCC diagnostic pop
 
 GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
   // Ensure that `WaitForMessage` works as expected.

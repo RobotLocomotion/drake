@@ -5,6 +5,7 @@
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
+#include "drake/automotive/maliput/api/road_network.h"
 #include "drake/automotive/maliput/api/segment.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -58,11 +59,26 @@ PYBIND11_MODULE(api, m) {
           "quat", &Rotation::quat, py_reference_internal, doc.Rotation.quat.doc)
       .def("rpy", &Rotation::rpy, doc.Rotation.rpy.doc);
 
+  py::class_<RoadNetwork>(m, "RoadNetwork", doc.RoadNetwork.doc)
+      .def("road_geometry", &RoadNetwork::road_geometry, py_reference_internal,
+          doc.RoadNetwork.road_geometry.doc);
+
   py::class_<RoadGeometry>(m, "RoadGeometry", doc.RoadGeometry.doc)
       .def("num_junctions", &RoadGeometry::num_junctions,
           doc.RoadGeometry.num_junctions.doc)
       .def("junction", &RoadGeometry::junction, py_reference_internal,
-          doc.RoadGeometry.junction.doc);
+          doc.RoadGeometry.junction.doc)
+      .def("ById", &RoadGeometry::ById, py_reference_internal,
+          doc.RoadGeometry.ById.doc);
+
+  py::class_<RoadGeometry::IdIndex>(
+      m, "RoadGeometry.IdIndex", doc.RoadGeometry.IdIndex.doc)
+      .def("GetLane",
+          [](const RoadGeometry::IdIndex* self, const std::string& id) {
+            return self->GetLane(LaneId(id));
+          },
+          py::arg("id"), py_reference_internal,
+          doc.RoadGeometry.IdIndex.GetLane.doc);
 
   py::class_<Junction>(m, "Junction", doc.Junction.doc)
       .def("num_segments", &Junction::num_segments,

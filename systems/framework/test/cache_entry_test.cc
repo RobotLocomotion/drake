@@ -165,6 +165,10 @@ class MySystemBase final : public SystemBase {
     return {};
   }
 
+  std::multimap<int, int> GetDirectFeedthroughs() const final {
+    throw std::logic_error("GetDirectFeedthroughs is not implemented");
+  }
+
   const CacheEntry& entry0_;
   const CacheEntry& entry1_;
   const CacheEntry& entry2_;

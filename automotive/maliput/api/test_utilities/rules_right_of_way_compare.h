@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_state_provider.h"
+#include "drake/automotive/maliput/api/rules/rule_state_provider.h"
 #include "drake/automotive/maliput/api/test_utilities/rules_test_utilities.h"
 
 namespace drake {
@@ -44,12 +44,13 @@ namespace test {
                                    const rules::RightOfWayRule& b);
 
 
-/// Predicate-formatter which tests equality of RightOfWayStateProvider::Result.
+/// Predicate-formatter which tests equality of
+/// RuleStateProvider::RightOfWayResult.
 ::testing::AssertionResult IsEqual(
      const char* a_expression,
      const char* b_expression,
-     const rules::RightOfWayStateProvider::Result& a,
-     const rules::RightOfWayStateProvider::Result& b);
+     const rules::RuleStateProvider::RightOfWayResult& a,
+     const rules::RuleStateProvider::RightOfWayResult& b);
 
 
 }  // namespace test

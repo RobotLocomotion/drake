@@ -21,10 +21,10 @@ namespace drake {
 namespace multibody {
 namespace detail {
 
-using Eigen::Isometry3d;
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
+using math::RigidTransformd;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
@@ -35,7 +35,7 @@ const char* kWorldName = "world";
 SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
     XMLElement* node) {
 
-  Isometry3d X_BBi = Isometry3d::Identity();
+  RigidTransformd X_BBi;
 
   XMLElement* origin = node->FirstChildElement("origin");
   if (origin) {
@@ -68,7 +68,7 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
   const RotationalInertia<double> I_BBcm_Bi(ixx, iyy, izz, ixy, ixz, iyz);
 
   // B and Bi are not necessarily aligned.
-  const math::RotationMatrix<double> R_BBi(X_BBi.linear());
+  const math::RotationMatrix<double> R_BBi(X_BBi.rotation());
 
   // Re-express in frame B as needed.
   const RotationalInertia<double> I_BBcm_B = I_BBcm_Bi.ReExpress(R_BBi);
@@ -125,11 +125,10 @@ void ParseBody(const multibody::PackageMap& package_map,
           ParseVisual(body_name, package_map, root_dir, visual_node, materials);
       // The parsing should *always* produce an IllustrationProperties
       // instance, even if it is empty.
-      DRAKE_DEMAND(
-          geometry_instance.illustration_properties() != nullptr);
+      DRAKE_DEMAND(geometry_instance.illustration_properties() != nullptr);
       plant->RegisterVisualGeometry(
-          body, geometry_instance.pose(), geometry_instance.shape(),
-          geometry_instance.name(),
+          body, RigidTransformd(geometry_instance.pose()),
+          geometry_instance.shape(), geometry_instance.name(),
           *geometry_instance.illustration_properties(), scene_graph);
     }
 
@@ -141,8 +140,9 @@ void ParseBody(const multibody::PackageMap& package_map,
           ParseCollision(body_name, package_map, root_dir, collision_node,
                          &friction);
       plant->RegisterCollisionGeometry(
-          body, geometry_instance.pose(), geometry_instance.shape(),
-          geometry_instance.name(), friction, scene_graph);
+          body, RigidTransformd(geometry_instance.pose()),
+          geometry_instance.shape(), geometry_instance.name(), friction,
+          scene_graph);
     }
   }
 }
@@ -271,7 +271,7 @@ void ParseJoint(ModelInstanceIndex model_instance,
   const Body<double>& child_body = GetBodyForElement(
       name, child_name, model_instance, plant);
 
-  Isometry3d X_PJ = Isometry3d::Identity();
+  RigidTransformd X_PJ;
   XMLElement* origin = node->FirstChildElement("origin");
   if (origin) {
     X_PJ = OriginAttributesToTransform(origin);
@@ -295,6 +295,8 @@ void ParseJoint(ModelInstanceIndex model_instance,
   double damping = 0;
   double velocity = 0;
 
+  const optional<RigidTransformd> nullopt;  // `drake::nullopt` is ambiguous
+
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
     ParseJointLimits(node, &lower, &upper, &velocity);
     ParseJointDynamics(name, node, &damping);
@@ -306,7 +308,7 @@ void ParseJoint(ModelInstanceIndex model_instance,
   } else if (type.compare("fixed") == 0) {
     plant->AddJoint<WeldJoint>(name, parent_body, X_PJ,
                                child_body, nullopt,
-                               Isometry3d::Identity());
+                               RigidTransformd::Identity());
   } else if (type.compare("prismatic") == 0) {
     ParseJointLimits(node, &lower, &upper, &velocity);
     ParseJointDynamics(name, node, &damping);
@@ -420,7 +422,7 @@ void ParseFrame(ModelInstanceIndex model_instance,
   const Body<double>& body =
       GetBodyForElement(name, body_name, model_instance, plant);
 
-  Isometry3d X_BF = OriginAttributesToTransform(node);
+  RigidTransformd X_BF = OriginAttributesToTransform(node);
   plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
       name, body.body_frame(), X_BF));
 }

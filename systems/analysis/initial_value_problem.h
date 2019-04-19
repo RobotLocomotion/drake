@@ -200,14 +200,16 @@ class InitialValueProblem {
     return static_cast<Integrator*>(integrator_.get());
   }
 
-  /// Gets a pointer to the internal integrator instance.
-  const IntegratorBase<T>* get_integrator() const {
-    return integrator_.get();
+  /// Gets a reference to the internal integrator instance.
+  const IntegratorBase<T>& get_integrator() const {
+    DRAKE_DEMAND(integrator_.get());
+    return *integrator_.get();
   }
 
-  /// Gets a pointer to the internal mutable integrator instance.
-  IntegratorBase<T>* get_mutable_integrator() {
-    return integrator_.get();
+  /// Gets a mutable reference to the internal integrator instance.
+  IntegratorBase<T>& get_mutable_integrator() {
+    DRAKE_DEMAND(integrator_.get());
+    return *integrator_.get();
   }
 
  private:

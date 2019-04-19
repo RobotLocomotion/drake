@@ -264,7 +264,6 @@ GeometryState<T>& GeometryState<T>::operator=(
       const geometry::internal::InternalFrame& source_frame =
           tester.frames().at(frame_id);
       RegisterValidFrame(source_id, frame_id, source_frame.name(),
-                         Isometry3<double>::Identity(),
                          source_frame.frame_group(),
                          source_frame.parent_frame_id(), source_frame.clique(),
                          &frame_set);
@@ -587,8 +586,8 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
 
   int clique = GeometryStateCollisionFilterAttorney::get_next_clique(
       geometry_engine_.get_mutable());
-  RegisterValidFrame(source_id, frame_id, frame.name(), frame.pose(),
-                     frame.frame_group(), parent_id, clique, &f_set);
+  RegisterValidFrame(source_id, frame_id, frame.name(), frame.frame_group(),
+                     parent_id, clique, &f_set);
   return frame_id;
 }
 
@@ -1288,7 +1287,6 @@ void GeometryState<T>::RegisterValidSource(SourceId source_id,
 template <typename T>
 void GeometryState<T>::RegisterValidFrame(SourceId source_id, FrameId frame_id,
                                           const std::string& name,
-                                          const Isometry3<double>& X_PF,
                                           int frame_group, FrameId parent_id,
                                           int clique, FrameIdSet* frame_set) {
   if (parent_id != InternalFrame::world_frame_id()) {
@@ -1304,7 +1302,7 @@ void GeometryState<T>::RegisterValidFrame(SourceId source_id, FrameId frame_id,
 
   DRAKE_ASSERT(X_PF_.size() == frame_index_to_frame_map_.size());
   InternalIndex internal_index(X_PF_.size());
-  X_PF_.emplace_back(X_PF);
+  X_PF_.emplace_back(Isometry3<double>::Identity());
   X_WF_.emplace_back(Isometry3<double>::Identity());
   frame_index_to_frame_map_.push_back(frame_id);
   frame_set->insert(frame_id);

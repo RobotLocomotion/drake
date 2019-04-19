@@ -65,6 +65,13 @@ class TestFormatterBase(unittest.TestCase):
         with self.assertRaisesRegexp(Exception, "DOS newline"):
             FormatterBase("filename.cc", readlines=original_lines)
 
+    def test_missing_eof(self):
+        original_lines = [
+            '#include "line0"',
+        ]
+        with self.assertRaisesRegexp(Exception, "newline.*end of file"):
+            FormatterBase("filename.cc", readlines=original_lines)
+
 
 class TestIncludeFormatter(unittest.TestCase):
 

@@ -164,7 +164,8 @@ class TimeVaryingLinearSystem : public TimeVaryingAffineSystem<T> {
 /// @param context Defines the nominal operating point about which the system
 /// should be linearized.  See note below.
 /// @param input_port_index A valid input port index for @p system or
-/// InputPortSelection @default kUseFirstInputIfItExists.
+/// InputPortSelection.  All other inputs are assumed to be fixed to the
+/// value described by the @p context. @default kUseFirstInputIfItExists.
 /// @param output_port_index A valid output port index for @p system or
 /// an OutputPortSelection. @default kUseFirstOutputIfItExists.
 /// @param equilibrium_check_tolerance Specifies the tolerance on ensuring that

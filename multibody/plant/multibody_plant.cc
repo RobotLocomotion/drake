@@ -436,8 +436,6 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
         source_id_.value(),
         GeometryFrame(
             GetScopedName(*this, body.model_instance(), body.name()),
-            /* Initial pose: Not really used by GS. Will get removed. */
-            Isometry3<double>::Identity(),
             /* TODO(@SeanCurtis-TRI): Add test coverage for this
              * model-instance support as requested in #9390. */
             body.model_instance()));
@@ -734,10 +732,6 @@ void MultibodyPlant<T>::FilterAdjacentBodies() {
     const Joint<T>& joint = internal_tree().get_joint(j);
     const Body<T>& child = joint.child_body();
     const Body<T>& parent = joint.parent_body();
-    // TODO(SeanCurtis-TRI): Determine the correct action for a body
-    // joined to the world -- should it filter out collisions between the
-    // body and all *anchored* geometry? That seems really heavy-handed. So,
-    // for now, we skip the joints to the world.
     if (parent.index() == world_index()) continue;
     optional<FrameId> child_id = GetBodyFrameIdIfExists(child.index());
     optional<FrameId> parent_id = GetBodyFrameIdIfExists(parent.index());
@@ -748,6 +742,11 @@ void MultibodyPlant<T>::FilterAdjacentBodies() {
           geometry::GeometrySet(*parent_id));
     }
   }
+  // We must explictly exclude collisions between all geometries registered
+  // against the world.
+  // TODO(eric.cousineau): Do this in a better fashion (#11117).
+  auto g_world = CollectRegisteredGeometries(GetBodiesWeldedTo(world_body()));
+  member_scene_graph().ExcludeCollisionsWithin(g_world);
 }
 
 template <typename T>
@@ -919,8 +918,7 @@ void MultibodyPlant<T>::set_penetration_allowance(
   penalty_method_contact_parameters_.time_scale = time_scale;
 }
 
-// Specialize this function so that *only* double is supported; we cannot
-// compute penetrations for AutoDiff or Expression currently.
+// Specialize this function so that double is fully supported.
 template <>
 std::vector<PenetrationAsPointPair<double>>
 MultibodyPlant<double>::CalcPointPairPenetrations(
@@ -939,11 +937,31 @@ MultibodyPlant<double>::CalcPointPairPenetrations(
   return std::vector<PenetrationAsPointPair<double>>();
 }
 
+// Specialize this function so that AutoDiffXd is (partially) supported. This
+// AutoDiffXd specialization will throw if there are any collisions.
+// TODO(SeanCurtis-TRI): Move this logic into SceneGraph.
+template <>
+std::vector<PenetrationAsPointPair<AutoDiffXd>>
+MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
+    const systems::Context<AutoDiffXd>& context) const {
+  if (num_collision_geometries() > 0) {
+    const auto &query_object = get_geometry_query_input_port().
+        Eval<geometry::QueryObject<AutoDiffXd>>(context);
+    auto results = query_object.ComputePointPairPenetration();
+    if (results.size() > 0) {
+      throw std::logic_error(
+          "CalcPointPairPenetration() with AutoDiffXd requires scenarios with "
+          "no collisions.");
+    }
+  }
+  return {};
+}
+
 template<typename T>
 std::vector<PenetrationAsPointPair<T>>
-MultibodyPlant<T>::CalcPointPairPenetrations(
-    const systems::Context<T>&) const {
-  throw std::domain_error("This method only supports T = double.");
+MultibodyPlant<T>::CalcPointPairPenetrations(const systems::Context<T>&) const {
+  throw std::domain_error(fmt::format("This method doesn't support T = {}.",
+                                      NiceTypeName::Get<T>()));
 }
 
 template<typename T>
@@ -1405,8 +1423,8 @@ void MultibodyPlant<T>::CalcImplicitStribeckResults(
     const drake::systems::Context<T>& context0,
     internal::ImplicitStribeckSolverResults<T>* results) const {
   // Assert this method was called on a context storing discrete state.
-  DRAKE_ASSERT(context0.get_num_discrete_state_groups() == 1);
-  DRAKE_ASSERT(context0.get_continuous_state().size() == 0);
+  DRAKE_ASSERT(context0.num_discrete_state_groups() == 1);
+  DRAKE_ASSERT(context0.num_continuous_states() == 0);
 
   const int nq = this->num_positions();
   const int nv = this->num_velocities();

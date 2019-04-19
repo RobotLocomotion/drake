@@ -28,8 +28,8 @@ GTEST_TEST(TrajectoryFollowerTest, Topology) {
   const TrajectoryFollower<double> follower(
       Trajectory::Make(times, rotations, translations));
 
-  ASSERT_EQ(0, follower.get_num_input_ports());
-  ASSERT_EQ(3, follower.get_num_output_ports());
+  ASSERT_EQ(0, follower.num_input_ports());
+  ASSERT_EQ(3, follower.num_output_ports());
 
   const auto& state_output = follower.state_output();
   EXPECT_EQ(systems::kVectorValued, state_output.get_data_type());

@@ -21,7 +21,7 @@ class StatelessSystem final : public LeafSystem<T> {
   StatelessSystem(double offset, const WitnessFunctionDirection& dir_type)
       : LeafSystem<T>(SystemTypeTag<analysis_test::StatelessSystem>{}),
         offset_(offset) {
-    witness_ = this->DeclareWitnessFunction(
+    witness_ = this->MakeWitnessFunction(
         "clock witness", dir_type, &StatelessSystem::CalcClockWitness,
         &StatelessSystem::InvokePublishCallback);
   }

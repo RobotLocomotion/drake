@@ -896,6 +896,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 #ifndef DRAKE_DOXYGEN_CXX
   // SFINAE overload for ForceElementType = UniformGravityFieldElement.
   // This allow us to keep track of the gravity field parameters.
+  // TODO(amcastro-tri): This specialization pattern leads to difficult to
+  // mantain indirection layers between MBP/MBT and can cause difficult to find
+  // bugs, see #11051. It is bad practice and should removed, see #11080.
   template <template <typename Scalar> class ForceElementType, typename... Args>
   typename std::enable_if<
       std::is_same<ForceElementType<T>, UniformGravityFieldElement<T>>::value,
@@ -2939,11 +2942,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // These APIs using Isometry3 will be deprecated soon with the resolution of
   // #9865. Right now we offer them for backwards compatibility.
 
+  DRAKE_DEPRECATED(
+      "2019-06-15",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   void SetFreeBodyPose(systems::Context<T>* context, const Body<T>& body,
                        const Isometry3<T>& X_WB) const {
     SetFreeBodyPose(context, body, math::RigidTransform<T>(X_WB));
   }
 
+  DRAKE_DEPRECATED(
+      "2019-06-15",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   void SetFreeBodyPose(const systems::Context<T>& context,
                        systems::State<T>* state, const Body<T>& body,
                        const Isometry3<T>& X_WB) const {
@@ -2952,6 +2963,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Allows having a non-empty X_PF isometry and a nullopt X_BM.
   template <template <typename> class JointType, typename... Args>
+  DRAKE_DEPRECATED(
+      "2019-06-15",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   const JointType<T>& AddJoint(const std::string& name, const Body<T>& parent,
                                const Isometry3<double>& X_PF,
                                const Body<T>& child,
@@ -2970,6 +2985,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Allows having a nullopt X_PF and a non-empty X_BM isometry.
   template <template <typename> class JointType, typename... Args>
+  DRAKE_DEPRECATED(
+      "2019-06-15",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   const JointType<T>& AddJoint(const std::string& name, const Body<T>& parent,
                                const optional<Isometry3<double>>& X_PF,
                                const Body<T>& child,
@@ -2986,18 +3005,30 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         name, parent, X_PF_rt, child, X_BM_rt, std::forward<Args>(args)...);
   }
 
+  DRAKE_DEPRECATED(
+      "2019-07-01",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   const WeldJoint<T>& WeldFrames(
       const Frame<T>& A, const Frame<T>& B,
       const Isometry3<double>& X_AB) {
-    return WeldFrames(A, B, math::RigidTransformd(X_AB));
+    return WeldFrames(A, B, math::RigidTransform<double>(X_AB));
   }
 
+  DRAKE_DEPRECATED(
+      "2019-07-01",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   void SetFreeBodyPoseInWorldFrame(systems::Context<T>* context,
                                    const Body<T>& body,
                                    const Isometry3<T>& X_WB) const {
     SetFreeBodyPoseInWorldFrame(context, body, math::RigidTransform<T>(X_WB));
   }
 
+  DRAKE_DEPRECATED(
+      "2019-07-01",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   void SetFreeBodyPoseInAnchoredFrame(systems::Context<T>* context,
                                       const Frame<T>& frame_F,
                                       const Body<T>& body,
@@ -3006,6 +3037,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                    math::RigidTransform<T>(X_FB));
   }
 
+  DRAKE_DEPRECATED(
+      "2019-06-15",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
@@ -3015,6 +3050,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                   shape, name, properties, scene_graph);
   }
 
+  DRAKE_DEPRECATED(
+      "2019-06-15",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
@@ -3024,6 +3063,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                   shape, name, diffuse_color, scene_graph);
   }
 
+  DRAKE_DEPRECATED(
+      "2019-06-15",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
@@ -3032,6 +3075,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                   shape, name, scene_graph);
   }
 
+  DRAKE_DEPRECATED(
+      "2019-06-15",
+      "This Isometry3 overload will be removed pending the resolution of "
+      "#9865. Use the RigidTransform overload instead.")
   geometry::GeometryId RegisterCollisionGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
@@ -3737,6 +3784,10 @@ template <>
 std::vector<geometry::PenetrationAsPointPair<double>>
 MultibodyPlant<double>::CalcPointPairPenetrations(
     const systems::Context<double>&) const;
+template <>
+std::vector<geometry::PenetrationAsPointPair<AutoDiffXd>>
+MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
+    const systems::Context<AutoDiffXd>&) const;
 #endif
 
 }  // namespace multibody

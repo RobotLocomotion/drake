@@ -6,6 +6,8 @@ For guidance, see:
  - http://www.sphinx-doc.org/en/master/extdev/appapi.html#sphinx.application.Sphinx.add_autodocumenter  # noqa
 """
 
+# TODO(eric.cousineau): Fix for Sphinx >= 2.0.0 per comment in
+# `mac/.../requirements.txt`, most likely due to `IrregularExpression` hack.
 # TODO(eric.cousineau): How to document only protected methods?
 # e.g. `LeafSystem` only consists of private things to overload, but it's
 # important to be user-visible.

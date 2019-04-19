@@ -2,35 +2,43 @@
 
 #include <memory>
 #include <string>
-#include <vector>
 
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_book.h"
+#include "drake/automotive/maliput/api/rules/phase_ring_book.h"
 #include "drake/automotive/maliput/api/rules/road_rulebook.h"
+#include "drake/automotive/maliput/api/rules/traffic_light_book.h"
 
 namespace drake {
 namespace maliput {
 
-/// Instantiates and returns an api::rules::RightOfWayPhaseBook instance based
-/// on the specified @p rulebook, and @p input document.
+/// Instantiates and returns an api::rules::PhaseRingBook instance based on the
+/// specified @p rulebook, and @p input document.
 ///
-/// @param rulebook Contains the rules that apply to @p road_geometry.
+/// @param rulebook Contains the rules.
 ///
-/// @param input The YAML Intersections document.
+/// @param traffic_light_book Contains the traffic lights.
 ///
-/// @return The newly created api::rules::RightOfWayPhaseBook instance.
-std::unique_ptr<api::rules::RightOfWayPhaseBook> LoadPhaseRingBook(
-    const api::rules::RoadRulebook* rulebook, const std::string& input);
+/// @param input The YAML PhaseRings document.
+///
+/// @return The newly created api::rules::PhaseRingBook instance.
+std::unique_ptr<api::rules::PhaseRingBook> LoadPhaseRingBook(
+    const api::rules::RoadRulebook* rulebook,
+    const api::rules::TrafficLightBook* traffic_light_book,
+    const std::string& input);
 
-/// Instantiates and returns an api::rules::RightOfWayPhaseBook instance based
-/// on the specified @p rulebook, and @p filename.
+/// Instantiates and returns an api::rules::PhaseRingBook instance based on the
+/// specified @p rulebook, and @p filename.
 ///
-/// @param rulebook Contains the rules that apply to @p road_geometry.
+/// @param rulebook Contains the rules.
 ///
-/// @param filename The YAML file that contains an Intersections document.
+/// @param traffic_light_book Contains the traffic lights.
 ///
-/// @return The newly created api::rules::RightOfWayPhaseBook instance.
-std::unique_ptr<api::rules::RightOfWayPhaseBook> LoadPhaseRingBookFromFile(
-    const api::rules::RoadRulebook* rulebook, const std::string& filename);
+/// @param filename The YAML file that contains a PhaseRings document.
+///
+/// @return The newly created api::rules::PhaseRingBook instance.
+std::unique_ptr<api::rules::PhaseRingBook> LoadPhaseRingBookFromFile(
+    const api::rules::RoadRulebook* rulebook,
+    const api::rules::TrafficLightBook* traffic_light_book,
+    const std::string& filename);
 
 }  // namespace maliput
 }  // namespace drake

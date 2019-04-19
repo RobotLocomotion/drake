@@ -186,6 +186,7 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:drake_variant_pybind",
     ],
     cc_srcs = ["trajectory_optimization_py.cc"],
     package_info = PACKAGE_INFO,
@@ -244,8 +245,10 @@ drake_pybind_library(
 drake_py_unittest(
     name = "lcm_test",
     deps = [
+        ":analysis_py",
         ":lcm_py",
         ":primitives_py",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
     ],
 )
 
@@ -311,6 +314,7 @@ drake_py_unittest(
         ":analysis_py",
         ":framework_py",
         ":primitives_py",
+        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/examples:pendulum_py",
         "//bindings/pydrake/examples:rimless_wheel_py",
     ],

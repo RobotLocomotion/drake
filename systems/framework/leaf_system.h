@@ -180,10 +180,6 @@ class LeafSystem : public System<T> {
     // Allow derived LeafSystem to validate allocated Context.
     DoValidateAllocatedLeafContext(*context);
 
-    // TODO(sherm1) Remove this line and the corresponding one in
-    // Diagram to enable caching by default in Drake.
-    context->DisableCaching();
-
     return context;
   }
 
@@ -1353,6 +1349,47 @@ class LeafSystem : public System<T> {
   }
   //@}
 
+  /// Declares a function that is called whenever a user directly calls
+  /// CalcDiscreteVariableUpdates(const Context&, DiscreteValues<T>*). Multiple
+  /// calls to DeclareForcedDiscreteUpdateEvent() will register
+  /// multiple callbacks, which will be called with the same const Context in
+  /// arbitrary order. The handler should be a class member function (method)
+  /// with this signature:
+  /// @code
+  ///   EventStatus MySystem::MyDiscreteVariableUpdates(const Context<T>&,
+  ///   DiscreteValues<T>*);
+  /// @endcode
+  /// where `MySystem` is a class derived from `LeafSystem<T>` and the method
+  /// name is arbitrary.
+  ///
+  /// See @ref declare_forced_events "Declare forced events" for more
+  /// information.
+  /// @pre `this` must be dynamic_cast-able to MySystem.
+  /// @pre `update` must not be null.
+  template <class MySystem>
+  void DeclareForcedDiscreteUpdateEvent(EventStatus
+      (MySystem::*update)(const Context<T>&, DiscreteValues<T>*) const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    DRAKE_DEMAND(update != nullptr);
+
+    // Instantiate the event.
+    auto forced = std::make_unique<DiscreteUpdateEvent<T>>(
+        TriggerType::kForced,
+        [this_ptr, update](const Context<T>& context,
+                           const DiscreteUpdateEvent<T>&,
+                           DiscreteValues<T>* discrete_state) {
+          // TODO(sherm1) Forward the return status.
+          (this_ptr->*update)(
+              context, discrete_state);  // Ignore return status for now.
+        });
+
+    // Add the event to the collection of forced discrete update events.
+    this->get_mutable_forced_discrete_update_events().add_event(
+        std::move(forced));
+  }
 
   /// @name          Declare continuous state variables
   /// Continuous state consists of up to three kinds of variables: generalized
@@ -1932,8 +1969,8 @@ class LeafSystem : public System<T> {
   //@}
 
   // =========================================================================
-  /// @name                    Declare witness functions
-  /// Methods in this section are used by derived classes to declare any
+  /// @name                    Make witness functions
+  /// Methods in this section are used by derived classes to make any
   /// witness functions useful for ensuring that integration ends a step upon
   /// entering particular times or states.
   ///
@@ -1954,8 +1991,12 @@ class LeafSystem : public System<T> {
   ///       maximum values can be realized with a witness that triggers on a
   ///       sign change of the function's time derivative, ensuring that the
   ///       actual extreme value is present in the discretized trajectory.
+  ///
+  /// @note In order for the witness function to be used, you MUST
+  /// overload System::DoGetWitnessFunctions().
+  /// @exclude_from_pydrake_mkdoc{Only the std::function versions are bound.}
   template <class MySystem>
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+  std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const) const {
@@ -1966,7 +2007,10 @@ class LeafSystem : public System<T> {
   /// Constructs the witness function with the given description (used primarily
   /// for debugging and logging), direction type, and calculator function; and
   /// with no event object.
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+  ///
+  /// @note In order for the witness function to be used, you MUST
+  /// overload System::DoGetWitnessFunctions().
+  std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       std::function<T(const Context<T>&)> calc) const {
@@ -1977,8 +2021,12 @@ class LeafSystem : public System<T> {
   /// Constructs the witness function with the given description (used primarily
   /// for debugging and logging), direction type, calculator function, and
   /// publish event callback function for when this triggers.
+  ///
+  /// @note In order for the witness function to be used, you MUST
+  /// overload System::DoGetWitnessFunctions().
+  /// @exclude_from_pydrake_mkdoc{Only the std::function versions are bound.}
   template <class MySystem>
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+  std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const,
@@ -2001,8 +2049,12 @@ class LeafSystem : public System<T> {
   /// Constructs the witness function with the given description (used primarily
   /// for debugging and logging), direction type, calculator function, and
   /// discrete update event callback function for when this triggers.
+  ///
+  /// @note In order for the witness function to be used, you MUST
+  /// overload System::DoGetWitnessFunctions().
+  /// @exclude_from_pydrake_mkdoc{Only the std::function versions are bound.}
   template <class MySystem>
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+  std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const,
@@ -2025,8 +2077,12 @@ class LeafSystem : public System<T> {
   /// Constructs the witness function with the given description (used primarily
   /// for debugging and logging), direction type, calculator function, and
   /// unrestricted update event callback function for when this triggers.
+  ///
+  /// @note In order for the witness function to be used, you MUST
+  /// overload System::DoGetWitnessFunctions().
+  /// @exclude_from_pydrake_mkdoc{Only the std::function versions are bound.}
   template <class MySystem>
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+  std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const,
@@ -2053,8 +2109,12 @@ class LeafSystem : public System<T> {
   /// objects are publish, discrete variable update, unrestricted update events.
   /// A clone of the event will be owned by the newly constructed
   /// WitnessFunction.
+  ///
+  /// @note In order for the witness function to be used, you MUST
+  /// overload System::DoGetWitnessFunctions().
+  /// @exclude_from_pydrake_mkdoc{Only the std::function versions are bound.}
   template <class MySystem>
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+  std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const,
@@ -2072,13 +2132,88 @@ class LeafSystem : public System<T> {
   /// objects are publish, discrete variable update, unrestricted update events.
   /// A clone of the event will be owned by the newly constructed
   /// WitnessFunction.
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+  ///
+  /// @note In order for the witness function to be used, you MUST
+  /// overload System::DoGetWitnessFunctions().
+  std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       std::function<T(const Context<T>&)> calc,
       const Event<T>& e) const {
     return std::make_unique<WitnessFunction<T>>(
         this, description, direction_type, calc, e.Clone());
+  }
+
+  template <class MySystem>
+  DRAKE_DEPRECATED("2019-06-31", "Please use MakeWitnessFunction().")
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      T (MySystem::*calc)(const Context<T>&) const) const {
+    return MakeWitnessFunction(description, direction_type, calc);
+  }
+
+  DRAKE_DEPRECATED("2019-06-31", "Please use MakeWitnessFunction().")
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      std::function<T(const Context<T>&)> calc) const {
+    return MakeWitnessFunction(description, direction_type, calc);
+  }
+
+  template <class MySystem>
+  DRAKE_DEPRECATED("2019-06-31", "Please use MakeWitnessFunction().")
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      T (MySystem::*calc)(const Context<T>&) const,
+      void (MySystem::*publish_callback)(
+          const Context<T>&, const PublishEvent<T>&) const) const {
+    return MakeWitnessFunction(description, direction_type, calc,
+        publish_callback);
+  }
+
+  template <class MySystem>
+  DRAKE_DEPRECATED("2019-06-31", "Please use MakeWitnessFunction().")
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      T (MySystem::*calc)(const Context<T>&) const,
+      void (MySystem::*du_callback)(const Context<T>&,
+                                    const DiscreteUpdateEvent<T>&,
+                                    DiscreteValues<T>*) const) const {
+    return MakeWitnessFunction(description, direction_type, calc, du_callback);
+  }
+
+  template <class MySystem>
+  DRAKE_DEPRECATED("2019-06-31", "Please use MakeWitnessFunction().")
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      T (MySystem::*calc)(const Context<T>&) const,
+      void (MySystem::*uu_callback)(const Context<T>&,
+                                    const UnrestrictedUpdateEvent<T>&,
+                                    State<T>*) const) const {
+    return MakeWitnessFunction(description, direction_type, calc, uu_callback);
+  }
+
+  template <class MySystem>
+  DRAKE_DEPRECATED("2019-06-31", "Please use MakeWitnessFunction().")
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      T (MySystem::*calc)(const Context<T>&) const,
+      const Event<T>& e) const {
+    return MakeWitnessFunction(description, direction_type, calc, e);
+  }
+
+  DRAKE_DEPRECATED("2019-06-31", "Please use MakeWitnessFunction().")
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      std::function<T(const Context<T>&)> calc,
+      const Event<T>& e) const {
+    return MakeWitnessFunction(description, direction_type, calc, e);
   }
   //@}
 
@@ -2337,9 +2472,9 @@ class LeafSystem : public System<T> {
   }
 
   // Calls DoCalcDiscreteVariableUpdates.
-  // Assumes @param events is an instance of LeafEventCollection, throws
+  // Assumes @p events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
-  // Assumes @param events is not empty. Aborts otherwise.
+  // Assumes @p events is not empty. Aborts otherwise.
   void DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& events,
@@ -2347,19 +2482,33 @@ class LeafSystem : public System<T> {
     const LeafEventCollection<DiscreteUpdateEvent<T>>& leaf_events =
         dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<T>>&>(
             events);
-    // TODO(siyuan): should have a API level SetFrom for DiscreteValues.
-    discrete_state->SetFrom(context.get_discrete_state());
-    // Only call DoCalcDiscreteVariableUpdates if there are discrete update
-    // events.
     DRAKE_DEMAND(leaf_events.HasEvents());
+
+    // Must initialize the output argument with the current contents of the
+    // discrete state.
+    discrete_state->SetFrom(context.get_discrete_state());
     this->DoCalcDiscreteVariableUpdates(context, leaf_events.get_events(),
-        discrete_state);
+        discrete_state);  // in/out
+  }
+
+  // To get here:
+  // - The EventCollection must be a LeafEventCollection, and
+  // - There must be at least one Event belonging to this leaf subsystem.
+  void DoApplyDiscreteVariableUpdate(
+      const EventCollection<DiscreteUpdateEvent<T>>& events,
+      DiscreteValues<T>* discrete_state, Context<T>* context) const final {
+    DRAKE_ASSERT(
+        dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<T>>*>(
+            &events) != nullptr);
+    DRAKE_DEMAND(events.HasEvents());
+    // TODO(sherm1) Should swap rather than copy.
+    context->get_mutable_discrete_state().SetFrom(*discrete_state);
   }
 
   // Calls DoCalcUnrestrictedUpdate.
-  // Assumes @param events is an instance of LeafEventCollection, throws
+  // Assumes @p events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
-  // Assumes @param events is not empty. Aborts otherwise.
+  // Assumes @p events is not empty. Aborts otherwise.
   void DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
@@ -2367,10 +2516,27 @@ class LeafSystem : public System<T> {
     const LeafEventCollection<UnrestrictedUpdateEvent<T>>& leaf_events =
         dynamic_cast<const LeafEventCollection<UnrestrictedUpdateEvent<T>>&>(
             events);
-    // Only call DoCalcUnrestrictedUpdate if there are unrestricted update
-    // events.
     DRAKE_DEMAND(leaf_events.HasEvents());
-    this->DoCalcUnrestrictedUpdate(context, leaf_events.get_events(), state);
+
+    // Must initialize the output argument with the current contents of the
+    // state.
+    state->SetFrom(context.get_state());
+    this->DoCalcUnrestrictedUpdate(context, leaf_events.get_events(),
+        state);  // in/out
+  }
+
+  // To get here:
+  // - The EventCollection must be a LeafEventCollection, and
+  // - There must be at least one Event belonging to this leaf subsystem.
+  void DoApplyUnrestrictedUpdate(
+      const EventCollection<UnrestrictedUpdateEvent<T>>& events,
+      State<T>* state, Context<T>* context) const final {
+    DRAKE_ASSERT(
+        dynamic_cast<const LeafEventCollection<UnrestrictedUpdateEvent<T>>*>(
+            &events) != nullptr);
+    DRAKE_DEMAND(events.HasEvents());
+    // TODO(sherm1) Should swap rather than copy.
+    context->get_mutable_state().SetFrom(*state);
   }
 
   void DoGetPerStepEvents(

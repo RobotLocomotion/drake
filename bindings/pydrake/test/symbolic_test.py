@@ -316,7 +316,7 @@ class TestSymbolicExpression(SymbolicTestCase):
         install_numpy_warning_filters(force=True)
 
     def _check_scalar(self, actual, expected):
-        self.assertIsInstance(actual, sym.Expression)
+        self.assertIsInstance(actual, (sym.Expression, sym.Formula))
         # Chain conversion to ensure equivalent treatment.
         if isinstance(expected, float) or isinstance(expected, int):
             expected = sym.Expression(expected)
@@ -408,6 +408,18 @@ class TestSymbolicExpression(SymbolicTestCase):
         # Unary
         algebra.check_value((+e_xv), "x")
         algebra.check_value((-e_xv), "(-1 * x)")
+
+        # Comparison. For `VectorizedAlgebra`, uses `np.vectorize` workaround
+        # for #8315.
+        # TODO(eric.cousineau): `BaseAlgebra.check_logical` is designed for
+        # AutoDiffXd (float-convertible), not for symbolic (not always
+        # float-convertible).
+        algebra.check_value(algebra.lt(e_xv, e_yv), "(x < y)")
+        algebra.check_value(algebra.le(e_xv, e_yv), "(x <= y)")
+        algebra.check_value(algebra.eq(e_xv, e_yv), "(x == y)")
+        algebra.check_value(algebra.ne(e_xv, e_yv), "(x != y)")
+        algebra.check_value(algebra.ge(e_xv, e_yv), "(x >= y)")
+        algebra.check_value(algebra.gt(e_xv, e_yv), "(x > y)")
 
         # Math functions.
         algebra.check_value((algebra.abs(e_xv)), "abs(x)")
@@ -509,7 +521,8 @@ class TestSymbolicExpression(SymbolicTestCase):
         self.assertEqual(str(1 != e_y), "(y != 1)")
 
     def test_relational_operators_nonzero(self):
-        # For issues #8135 and #8491.
+        # For issues #8135 and #8491. See `pydrake.math` for operator overloads
+        # that work around this, which are tested in `_check_algebra`.
         # Ensure that we throw on `__nonzero__`.
         with self.assertRaises(RuntimeError) as cm:
             value = bool(e_x == e_x)
@@ -1002,6 +1015,21 @@ class TestSymbolicPolynomial(SymbolicTestCase):
         J = p.Jacobian([x, y])
         self.assertEqualStructure(J[0], p_dx)
         self.assertEqualStructure(J[1], p_dy)
+
+    def test_matrix_substitute_with_substitution(self):
+        m = np.array([[x + y, x * y]])
+        env = {x: x + 2, y:  y + 3}
+        substituted = sym.Substitute(m, env)
+        self.assertEqualStructure(substituted[0, 0], m[0, 0].Substitute(env))
+        self.assertEqualStructure(substituted[0, 1], m[0, 1].Substitute(env))
+
+    def test_matrix_substitute_with_variable_and_expression(self):
+        m = np.array([[x + y, x * y]])
+        substituted = sym.Substitute(m, x, 3.0)
+        self.assertEqualStructure(substituted[0, 0],
+                                  m[0, 0].Substitute(x, 3.0))
+        self.assertEqualStructure(substituted[0, 1],
+                                  m[0, 1].Substitute(x, 3.0))
 
     def test_matrix_evaluate_without_env(self):
         m = np.array([[3, 4]])

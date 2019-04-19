@@ -96,8 +96,8 @@ class SymbolicGainTest : public ::testing::Test {
 TEST_F(SymbolicGainTest, VectorThroughGainSystem) {
   // Checks that the number of input ports in the Gain system and the Context
   // are consistent.
-  EXPECT_EQ(1, gain_->get_num_input_ports());
-  EXPECT_EQ(1, context_->get_num_input_ports());
+  EXPECT_EQ(1, gain_->num_input_ports());
+  EXPECT_EQ(1, context_->num_input_ports());
   Eigen::Matrix<symbolic::Expression, 3, 1> input_vector(
       drake::symbolic::Expression{1.0}, drake::symbolic::Expression{3.14},
       drake::symbolic::Expression{2.18});
@@ -108,7 +108,7 @@ TEST_F(SymbolicGainTest, VectorThroughGainSystem) {
 
   // Checks that the number of output ports in the Gain system and the
   // SystemOutput are consistent.
-  EXPECT_EQ(1, gain_->get_num_output_ports());
+  EXPECT_EQ(1, gain_->num_output_ports());
   Eigen::Matrix<symbolic::Expression, 3, 1> expected{kGain_ * input_vector};
   EXPECT_EQ(expected, gain_->get_output_port(0).Eval(*context_));
   EXPECT_EQ(expected(0).Evaluate(), kGain_ * 1.0);

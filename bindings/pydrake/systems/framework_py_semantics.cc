@@ -115,7 +115,7 @@ void DefineFrameworkPySemantics(py::module m) {
             self->CopyFrom(other);
 #pragma GCC diagnostic pop
           },
-          doc.AbstractValues.CopyFrom.doc)
+          doc.AbstractValues.CopyFrom.doc_deprecated)
       .def("SetFrom", &AbstractValues::SetFrom, doc.AbstractValues.SetFrom.doc);
 
   {
@@ -132,6 +132,19 @@ void DefineFrameworkPySemantics(py::module m) {
         .value("kWitness", Class::kWitness, cls_doc.kWitness.doc);
   }
 
+  py::enum_<WitnessFunctionDirection>(
+      m, "WitnessFunctionDirection", doc.WitnessFunctionDirection.doc)
+      .value("kNone", WitnessFunctionDirection::kNone,
+          doc.WitnessFunctionDirection.kNone.doc)
+      .value("kPositiveThenNonPositive",
+          WitnessFunctionDirection::kPositiveThenNonPositive,
+          doc.WitnessFunctionDirection.kPositiveThenNonPositive.doc)
+      .value("kNegativeThenNonNegative",
+          WitnessFunctionDirection::kNegativeThenNonNegative,
+          doc.WitnessFunctionDirection.kNegativeThenNonNegative.doc)
+      .value("kCrossesZero", WitnessFunctionDirection::kCrossesZero,
+          doc.WitnessFunctionDirection.kCrossesZero.doc);
+
   // N.B. Capturing `&doc` should not be required; workaround per #9600.
   auto bind_common_scalar_types = [m, &doc](auto dummy) {
     using T = decltype(dummy);
@@ -140,8 +153,19 @@ void DefineFrameworkPySemantics(py::module m) {
         .def("__str__", &Context<T>::to_string, doc.Context.to_string.doc)
         .def("num_input_ports", &Context<T>::num_input_ports,
             doc.ContextBase.num_input_ports.doc)
-        .def("get_num_input_ports", &Context<T>::get_num_input_ports,
-            "Use num_input_ports() instead.")
+        .def("get_num_input_ports",
+            [](const Context<T>* self) {
+              WarnDeprecated(
+                  "Use num_input_ports() instead. Will be removed on or after "
+                  "2019-07-01.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->get_num_input_ports();
+#pragma GCC diagnostic pop
+            },
+            doc.ContextBase.get_num_input_ports.doc_deprecated)
+        .def("num_output_ports", &Context<T>::num_output_ports,
+            doc.ContextBase.num_output_ports.doc)
         .def("FixInputPort",
             py::overload_cast<int, const BasicVector<T>&>(
                 &Context<T>::FixInputPort),
@@ -159,12 +183,32 @@ void DefineFrameworkPySemantics(py::module m) {
             py::arg("index"), py::arg("data"), py_reference_internal,
             doc.Context.FixInputPort.doc_2args_index_data)
         .def("get_time", &Context<T>::get_time, doc.Context.get_time.doc)
-        .def("SetTime", &Context<T>::SetTime, doc.Context.SetTime.doc)
-        .def("set_time", &Context<T>::set_time, "Use SetTime() instead.")
-        .def("SetAccuracy", &Context<T>::SetAccuracy,
+        .def("SetTime", &Context<T>::SetTime, py::arg("time_sec"),
+            doc.Context.SetTime.doc)
+        .def("set_time",
+            [](Context<T>* self, const T& time) {
+              WarnDeprecated(
+                  "Use SetTime() instead. Will be removed on or after "
+                  "2019-07-01.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->set_time(time);
+#pragma GCC diagnostic pop
+            },
+            doc.Context.set_time.doc_deprecated)
+        .def("SetAccuracy", &Context<T>::SetAccuracy, py::arg("accuracy"),
             doc.Context.SetAccuracy.doc)
-        .def("set_accuracy", &Context<T>::set_accuracy,
-            "Use SetAccuracy() instead.")
+        .def("set_accuracy",
+            [](Context<T>* self, const optional<double>& accuracy) {
+              WarnDeprecated(
+                  "Use SetAccuracy() instead. Will be removed on or after "
+                  "2019-07-01.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->set_accuracy(accuracy);
+#pragma GCC diagnostic pop
+            },
+            doc.Context.set_accuracy.doc_deprecated)
         .def("get_accuracy", &Context<T>::get_accuracy,
             doc.Context.get_accuracy.doc)
         .def("Clone", &Context<T>::Clone, doc.Context.Clone.doc)
@@ -198,8 +242,16 @@ void DefineFrameworkPySemantics(py::module m) {
             &Context<T>::num_discrete_state_groups,
             doc.Context.num_discrete_state_groups.doc)
         .def("get_num_discrete_state_groups",
-            &Context<T>::get_num_discrete_state_groups,
-            "Use num_discrete_state_groups() instead.")
+            [](const Context<T>* self) {
+              WarnDeprecated(
+                  "Use num_discrete_state_groups() instead. Will be removed "
+                  "on or after 2019-07-01.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->get_num_discrete_state_groups();
+#pragma GCC diagnostic pop
+            },
+            doc.Context.get_num_discrete_state_groups.doc_deprecated)
         .def("get_discrete_state",
             overload_cast_explicit<const DiscreteValues<T>&>(
                 &Context<T>::get_discrete_state),
@@ -238,8 +290,17 @@ void DefineFrameworkPySemantics(py::module m) {
         // - Abstract.
         .def("num_abstract_states", &Context<T>::num_abstract_states,
             doc.Context.num_abstract_states.doc)
-        .def("get_num_abstract_states", &Context<T>::get_num_abstract_states,
-            "Use num_abstract_states() instead.")
+        .def("get_num_abstract_states",
+            [](const Context<T>* self) {
+              WarnDeprecated(
+                  "Use num_abstract_states() instead. Will be removed on or "
+                  "after 2019-07-01.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->get_num_abstract_states();
+#pragma GCC diagnostic pop
+            },
+            doc.Context.get_num_abstract_states.doc_deprecated)
         .def("get_abstract_state",
             static_cast<const AbstractValues& (Context<T>::*)() const>(
                 &Context<T>::get_abstract_state),
@@ -295,6 +356,11 @@ void DefineFrameworkPySemantics(py::module m) {
             doc.Event.get_trigger_type.doc);
     DefineTemplateClassWithDefault<PublishEvent<T>, Event<T>>(
         m, "PublishEvent", GetPyParam<T>(), doc.PublishEvent.doc)
+        .def(py::init(WrapCallbacks(
+                 [](const typename PublishEvent<T>::PublishCallback& callback) {
+                   return std::make_unique<PublishEvent<T>>(callback);
+                 })),
+            py::arg("callback"), doc.PublishEvent.ctor.doc_1args)
         .def(
             py::init(WrapCallbacks(
                 [](const TriggerType& trigger_type,
@@ -306,6 +372,16 @@ void DefineFrameworkPySemantics(py::module m) {
             "Users should not be calling these");
     DefineTemplateClassWithDefault<DiscreteUpdateEvent<T>, Event<T>>(
         m, "DiscreteUpdateEvent", GetPyParam<T>(), doc.DiscreteUpdateEvent.doc);
+    DefineTemplateClassWithDefault<UnrestrictedUpdateEvent<T>, Event<T>>(m,
+        "UnrestrictedUpdateEvent", GetPyParam<T>(),
+        doc.UnrestrictedUpdateEvent.doc)
+        .def(py::init(
+                 WrapCallbacks([](const typename UnrestrictedUpdateEvent<
+                                   T>::UnrestrictedUpdateCallback& callback) {
+                   return std::make_unique<UnrestrictedUpdateEvent<T>>(
+                       callback);
+                 })),
+            py::arg("callback"), doc.UnrestrictedUpdateEvent.ctor.doc_1args);
 
     // Glue mechanisms.
     DefineTemplateClassWithDefault<DiagramBuilder<T>>(
@@ -376,8 +452,17 @@ void DefineFrameworkPySemantics(py::module m) {
     system_output
         .def("num_ports", &SystemOutput<T>::num_ports,
             doc.SystemOutput.num_ports.doc)
-        .def("get_num_ports", &SystemOutput<T>::get_num_ports,
-            "Use num_ports() instead.")
+        .def("get_num_ports",
+            [](const SystemOutput<T>* self) {
+              WarnDeprecated(
+                  "Use num_ports() instead. Will be removed on or after "
+                  "2019-07-01.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->get_num_ports();
+#pragma GCC diagnostic pop
+            },
+            doc.SystemOutput.get_num_ports.doc_deprecated)
         .def("get_data", &SystemOutput<T>::get_data, py_reference_internal,
             doc.SystemOutput.get_data.doc)
         .def("get_vector_data", &SystemOutput<T>::get_vector_data,
@@ -445,6 +530,11 @@ void DefineFrameworkPySemantics(py::module m) {
             py::arg("context"), py::arg("value"), py_reference,
             // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), doc.InputPort.FixValue.doc);
+
+    // TODO(russt): Bind relevant WitnessFunction methods.  This is the
+    // minimal binding required to support DeclareWitnessFunction.
+    DefineTemplateClassWithDefault<WitnessFunction<T>>(
+        m, "WitnessFunction", GetPyParam<T>(), doc.WitnessFunction.doc);
 
     // Parameters.
     auto parameters = DefineTemplateClassWithDefault<Parameters<T>>(
@@ -564,7 +654,7 @@ void DefineFrameworkPySemantics(py::module m) {
             doc.DiscreteValues.get_mutable_vector.doc_1args);
   };
   type_visit(bind_common_scalar_types, pysystems::CommonScalarPack{});
-}
+}  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake
 }  // namespace drake

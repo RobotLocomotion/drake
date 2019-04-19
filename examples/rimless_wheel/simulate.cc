@@ -88,7 +88,7 @@ int DoMain() {
   state.set_thetadot(FLAGS_initial_angular_velocity);
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
-  simulator.get_mutable_context().set_accuracy(FLAGS_accuracy);
+  simulator.get_mutable_context().SetAccuracy(FLAGS_accuracy);
   simulator.AdvanceTo(10);
 
   // Check that the state is still inside the expected region (I did not miss

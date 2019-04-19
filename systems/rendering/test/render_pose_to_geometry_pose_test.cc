@@ -42,16 +42,16 @@ GTEST_TEST(RenderPoseToGeometryPoseTest, DirectFeedthrough) {
 GTEST_TEST(RenderPoseToGeometryPoseTest, ToAutoDiff) {
   const RenderPoseToGeometryPose<double> dut({}, {});
   EXPECT_TRUE(is_autodiffxd_convertible(dut, [&](const auto& converted) {
-    EXPECT_EQ(1, converted.get_num_input_ports());
-    EXPECT_EQ(1, converted.get_num_output_ports());
+    EXPECT_EQ(1, converted.num_input_ports());
+    EXPECT_EQ(1, converted.num_output_ports());
   }));
 }
 
 GTEST_TEST(RenderPoseToGeometryPoseTest, ToSymbolic) {
   const RenderPoseToGeometryPose<double> dut({}, {});
   EXPECT_TRUE(is_symbolic_convertible(dut, [&](const auto& converted) {
-    EXPECT_EQ(1, converted.get_num_input_ports());
-    EXPECT_EQ(1, converted.get_num_output_ports());
+    EXPECT_EQ(1, converted.num_input_ports());
+    EXPECT_EQ(1, converted.num_output_ports());
   }));
 }
 

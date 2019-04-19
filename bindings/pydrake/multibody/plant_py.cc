@@ -40,6 +40,11 @@ int GetVariableSize(const multibody::MultibodyPlant<T>& plant,
   DRAKE_UNREACHABLE();
 }
 
+constexpr char doc_iso3_deprecation[] = R"""(
+This API using Isometry3 is / will be deprecated soon with the resolution of
+#9865. We only offer it for backwards compatibility. DO NOT USE!.
+)""";
+
 PYBIND11_MODULE(plant, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
 
@@ -53,10 +58,6 @@ PYBIND11_MODULE(plant, m) {
   py::module::import("pydrake.multibody.math");
   py::module::import("pydrake.multibody.tree");
   py::module::import("pydrake.systems.framework");
-
-  const char* doc_iso3_deprecation =
-      "This API using Isometry3 will be deprecated soon with the resolution of "
-      "#9865. We only offer it for backwards compatibility. DO NOT USE!.";
 
   {
     using Class = MultibodyPlant<T>;
@@ -115,15 +116,33 @@ PYBIND11_MODULE(plant, m) {
             doc.MultibodyPlant.AddRigidBody.doc_2args)
         .def("WeldFrames",
             py::overload_cast<const Frame<T>&, const Frame<T>&,
-                const Isometry3<double>&>(&Class::WeldFrames),
-            py::arg("A"), py::arg("B"), py::arg("X_AB"), py_reference_internal,
-            doc_iso3_deprecation)
-        .def("WeldFrames",
-            py::overload_cast<const Frame<T>&, const Frame<T>&,
                 const RigidTransform<double>&>(&Class::WeldFrames),
             py::arg("A"), py::arg("B"),
             py::arg("X_AB") = RigidTransform<double>::Identity(),
             py_reference_internal, doc.MultibodyPlant.WeldFrames.doc)
+        .def("WeldFrames",
+            [](Class* self, const Frame<T>& A, const Frame<T>& B,
+                const Isometry3<double>& X_AB) -> const WeldJoint<T>& {
+              WarnDeprecated(doc_iso3_deprecation);
+              return self->WeldFrames(A, B, RigidTransform<double>(X_AB));
+            },
+            py::arg("A"), py::arg("B"), py::arg("X_AB"), py_reference_internal,
+            doc_iso3_deprecation)
+        // N.B. This overload of `AddForceElement` is required to precede
+        // the generic overload below so we can use our internal specialization
+        // to label this as our unique gravity field, mimicking the C++ API.
+        .def("AddForceElement",
+            [](Class * self,
+                std::unique_ptr<UniformGravityFieldElement<T>> force_element)
+                -> auto& {
+              // N.B. We need to make sure we call the correct specialization in
+              // MultibodyPlant for it to take note we are adding gravity to the
+              // model. This is ugly API needs to be updated, see #11080.
+              return self->AddForceElement<UniformGravityFieldElement>(
+                  force_element->gravity_vector());
+            },
+            py::arg("force_element"), py_reference_internal,
+            doc.MultibodyPlant.AddForceElement.doc)
         .def("AddForceElement",
             [](Class * self,
                 std::unique_ptr<ForceElement<T>> force_element) -> auto& {
@@ -162,14 +181,18 @@ PYBIND11_MODULE(plant, m) {
         // association that is less awkward than implicit BodyNodeIndex.
         .def("SetFreeBodyPose",
             overload_cast_explicit<void, Context<T>*, const Body<T>&,
-                const Isometry3<T>&>(&Class::SetFreeBodyPose),
-            py::arg("context"), py::arg("body"), py::arg("X_WB"),
-            doc_iso3_deprecation)
-        .def("SetFreeBodyPose",
-            overload_cast_explicit<void, Context<T>*, const Body<T>&,
                 const RigidTransform<T>&>(&Class::SetFreeBodyPose),
             py::arg("context"), py::arg("body"), py::arg("X_WB"),
             doc.MultibodyPlant.SetFreeBodyPose.doc_3args)
+        .def("SetFreeBodyPose",
+            [](const Class* self, Context<T>* context, const Body<T>& body,
+                const Isometry3<T>& X_WB) {
+              WarnDeprecated(doc_iso3_deprecation);
+              return self->SetFreeBodyPose(
+                  context, body, RigidTransform<T>(X_WB));
+            },
+            py::arg("context"), py::arg("body"), py::arg("X_WB"),
+            doc_iso3_deprecation)
         .def("SetActuationInArray",
             [](const Class* self, multibody::ModelInstanceIndex model_instance,
                 const Eigen::Ref<const VectorX<T>> u_instance,
@@ -423,14 +446,6 @@ PYBIND11_MODULE(plant, m) {
             &Class::RegisterAsSourceForSceneGraph, py::arg("scene_graph"),
             doc.MultibodyPlant.RegisterAsSourceForSceneGraph.doc)
         .def("RegisterVisualGeometry",
-            py::overload_cast<const Body<T>&, const Isometry3<double>&,
-                const geometry::Shape&, const std::string&,
-                const Vector4<double>&, geometry::SceneGraph<T>*>(
-                &Class::RegisterVisualGeometry),
-            py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
-            py::arg("diffuse_color"), py::arg("scene_graph") = nullptr,
-            doc_iso3_deprecation)
-        .def("RegisterVisualGeometry",
             py::overload_cast<const Body<T>&, const RigidTransform<double>&,
                 const geometry::Shape&, const std::string&,
                 const Vector4<double>&, geometry::SceneGraph<T>*>(
@@ -439,13 +454,18 @@ PYBIND11_MODULE(plant, m) {
             py::arg("diffuse_color"), py::arg("scene_graph") = nullptr,
             doc.MultibodyPlant.RegisterVisualGeometry
                 .doc_6args_body_X_BG_shape_name_diffuse_color_scene_graph)
-        .def("RegisterCollisionGeometry",
-            py::overload_cast<const Body<T>&, const Isometry3<double>&,
-                const geometry::Shape&, const std::string&,
-                const CoulombFriction<double>&, geometry::SceneGraph<T>*>(
-                &Class::RegisterCollisionGeometry),
+        .def("RegisterVisualGeometry",
+            [](Class* self, const Body<T>& body, const Isometry3<double>& X_BG,
+                const geometry::Shape& shape, const std::string& name,
+                const Vector4<double>& diffuse_color,
+                geometry::SceneGraph<T>* scene_graph) {
+              WarnDeprecated(doc_iso3_deprecation);
+              return self->RegisterVisualGeometry(body,
+                  RigidTransform<double>(X_BG), shape, name, diffuse_color,
+                  scene_graph);
+            },
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
-            py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
+            py::arg("diffuse_color"), py::arg("scene_graph") = nullptr,
             doc_iso3_deprecation)
         .def("RegisterCollisionGeometry",
             py::overload_cast<const Body<T>&, const RigidTransform<double>&,
@@ -455,6 +475,19 @@ PYBIND11_MODULE(plant, m) {
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
             py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
             doc.MultibodyPlant.RegisterCollisionGeometry.doc)
+        .def("RegisterCollisionGeometry",
+            [](Class* self, const Body<T>& body, const Isometry3<double>& X_BG,
+                const geometry::Shape& shape, const std::string& name,
+                const CoulombFriction<double>& coulomb_friction,
+                geometry::SceneGraph<T>* scene_graph) {
+              WarnDeprecated(doc_iso3_deprecation);
+              return self->RegisterCollisionGeometry(body,
+                  RigidTransform<double>(X_BG), shape, name, coulomb_friction,
+                  scene_graph);
+            },
+            py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
+            py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
+            doc_iso3_deprecation)
         .def("get_source_id", &Class::get_source_id,
             doc.MultibodyPlant.get_source_id.doc)
         .def("get_geometry_query_input_port",
@@ -499,7 +532,13 @@ PYBIND11_MODULE(plant, m) {
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_contact_results_output_port),
             py_reference_internal,
-            doc.MultibodyPlant.get_contact_results_output_port.doc);
+            doc.MultibodyPlant.get_contact_results_output_port.doc)
+        .def("get_generalized_contact_forces_output_port",
+            overload_cast_explicit<const systems::OutputPort<T>&,
+                multibody::ModelInstanceIndex>(
+                &Class::get_generalized_contact_forces_output_port),
+            py_reference_internal, py::arg("model_instance"),
+            doc.MultibodyPlant.get_generalized_contact_forces_output_port.doc);
     // Property accessors.
     cls  // BR
         .def("world_body", &Class::world_body, py_reference_internal,

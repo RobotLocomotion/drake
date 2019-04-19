@@ -5,13 +5,14 @@
 #include "drake/automotive/maliput/api/intersection.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/api/rules/direction_usage_rule.h"
+#include "drake/automotive/maliput/api/rules/phase_provider.h"
 #include "drake/automotive/maliput/api/rules/phase_ring.h"
+#include "drake/automotive/maliput/api/rules/phase_ring_book.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_book.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_provider.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_state_provider.h"
 #include "drake/automotive/maliput/api/rules/road_rulebook.h"
+#include "drake/automotive/maliput/api/rules/rule_state_provider.h"
+#include "drake/automotive/maliput/api/rules/traffic_light_book.h"
 
 namespace drake {
 namespace maliput {
@@ -48,14 +49,17 @@ std::unique_ptr<RoadGeometry> CreateRoadGeometry();
 /// Returns an arbitrary rules::RoadRulebook.
 std::unique_ptr<rules::RoadRulebook> CreateRoadRulebook();
 
-/// Returns an arbitrary rules::RightOfWayPhaseBook.
-std::unique_ptr<rules::RightOfWayPhaseBook> CreateRightOfWayPhaseBook();
+/// Returns an arbitrary rules::TrafficLightBook.
+std::unique_ptr<rules::TrafficLightBook> CreateTrafficLightBook();
 
-/// Returns an arbitrary rules::RightOfWayStateProvider.
-std::unique_ptr<rules::RightOfWayStateProvider> CreateRightOfWayStateProvider();
+/// Returns an arbitrary rules::PhaseRingBook.
+std::unique_ptr<rules::PhaseRingBook> CreatePhaseRingBook();
 
-/// Returns an arbitrary rules::RightOfWayPhaseProvider.
-std::unique_ptr<rules::RightOfWayPhaseProvider> CreateRightOfWayPhaseProvider();
+/// Returns an arbitrary rules::RuleStateProvider.
+std::unique_ptr<rules::RuleStateProvider> CreateRuleStateProvider();
+
+/// Returns an arbitrary rules::PhaseProvider.
+std::unique_ptr<rules::PhaseProvider> CreatePhaseProvider();
 
 /// Returns an arbitrary Intersection.
 std::unique_ptr<Intersection> CreateIntersection(

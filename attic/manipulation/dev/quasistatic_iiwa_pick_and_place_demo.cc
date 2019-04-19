@@ -242,7 +242,7 @@ int do_main() {
           gripper_traj, 0);
 
   // picks the qdot from iiwa_traj_src output using matrix gain
-  const int n_qa_dot = iiwa_traj_src->get_num_total_outputs() / 2;
+  const int n_qa_dot = iiwa_traj_src->num_total_outputs() / 2;
   MatrixXd D2(n_qa_dot, n_qa_dot * 2);
   D2.setZero();
   D2.block(0, n_qa_dot, n_qa_dot, n_qa_dot).setIdentity();
@@ -285,7 +285,7 @@ int do_main() {
   x0.SetAtIndex(15, 0.055);            // right gripper
 
   simulator.set_target_realtime_rate(0);
-  simulator.get_mutable_integrator()->set_maximum_step_size(h);
+  simulator.get_mutable_integrator().set_maximum_step_size(h);
   simulator.Initialize();
   simulator.AdvanceTo(kTimes.back());
 

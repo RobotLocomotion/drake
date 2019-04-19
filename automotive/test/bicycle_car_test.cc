@@ -67,7 +67,7 @@ class BicycleCarTest : public ::testing::Test {
 };
 
 TEST_F(BicycleCarTest, Topology) {
-  ASSERT_EQ(2, dut_->get_num_input_ports()); /* steering angle, force input */
+  ASSERT_EQ(2, dut_->num_input_ports()); /* steering angle, force input */
 
   const auto& steering_input_port = dut_->get_steering_input_port();
   EXPECT_EQ(systems::kVectorValued, steering_input_port.get_data_type());
@@ -77,7 +77,7 @@ TEST_F(BicycleCarTest, Topology) {
   EXPECT_EQ(systems::kVectorValued, force_input_port.get_data_type());
   EXPECT_EQ(kForceInputDimension, force_input_port.size());
 
-  ASSERT_EQ(1, dut_->get_num_output_ports()); /* state vector */
+  ASSERT_EQ(1, dut_->num_output_ports()); /* state vector */
 
   const auto& state_port = dut_->get_output_port(0);
   EXPECT_EQ(systems::kVectorValued, state_port.get_data_type());

@@ -258,3 +258,10 @@ Attempt to figure out what infrastructure collapsed. If it's under our control,
 alert Kitware by assigning a GitHub issue to both @BetsyMcPhail and
 @jamiesnape. If it's under a vendor's control, spread the news and simply wait
 it out.
+
+Drake External Examples
+***********************
+Details of failures in the `drake-external-examples <https://github.com/RobotLocomotion/drake-external-examples/>`_
+repository, which may be denoted by red "build failing" icons at the top of the build
+dashboard on Jenkins, should be posted to the `#buildcop <https://drakedevelopers.slack.com/messages/buildcop/details/>`_
+channel on Slack, ensuring that @jamiesnape is mentioned in the message.

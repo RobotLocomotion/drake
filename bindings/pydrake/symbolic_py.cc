@@ -347,7 +347,8 @@ PYBIND11_MODULE(symbolic, m) {
       .def("floor", &symbolic::floor, doc.floor.doc);
   DefCopyAndDeepCopy(&expr_cls);
 
-  // TODO(eric.cousineau): Consider deprecating these methods?
+  // TODO(eric.cousineau): Deprecate these methods if/when we support proper
+  // NumPy UFuncs.
   // TODO(m-chaturvedi) Add Pybind11 documentation.
   auto math = py::module::import("pydrake.math");
   MirrorDef<py::module, py::module>(&math, &m)
@@ -370,7 +371,11 @@ PYBIND11_MODULE(symbolic, m) {
       .def("min", &symbolic::min)
       .def("max", &symbolic::max)
       .def("ceil", &symbolic::ceil)
-      .def("floor", &symbolic::floor);
+      .def("floor", &symbolic::floor)
+      // Matrix overloads.
+      .def("inv", [](const MatrixX<Expression>& X) -> MatrixX<Expression> {
+        return X.inverse();
+      });
 
   m.def("if_then_else", &symbolic::if_then_else);
 
@@ -388,6 +393,17 @@ PYBIND11_MODULE(symbolic, m) {
       },
       py::arg("m"), py::arg("env") = Environment::map{},
       py::arg("generator") = nullptr, doc.Evaluate.doc);
+
+  m.def("Substitute",
+      [](const MatrixX<Expression>& M, const Substitution& subst) {
+        return Substitute(M, subst);
+      },
+      py::arg("m"), py::arg("subst"), doc.Substitute.doc_2args);
+
+  m.def("Substitute",
+      [](const MatrixX<Expression>& M, const Variable& var,
+          const Expression& e) { return Substitute(M, var, e); },
+      py::arg("m"), py::arg("var"), py::arg("e"), doc.Substitute.doc_3args);
 
   py::class_<Formula> formula_cls(m, "Formula", doc.Formula.doc);
   formula_cls

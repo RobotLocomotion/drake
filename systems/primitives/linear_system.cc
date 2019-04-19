@@ -95,7 +95,7 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
 
   const bool has_only_discrete_states_contained_in_one_group =
       context.has_only_discrete_state() &&
-      context.get_num_discrete_state_groups() == 1;
+      context.num_discrete_state_groups() == 1;
   DRAKE_DEMAND(context.is_stateless() || context.has_only_continuous_state() ||
                has_only_discrete_states_contained_in_one_group);
 
@@ -115,6 +115,7 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
   std::unique_ptr<Context<AutoDiffXd>> autodiff_context =
       autodiff_system->CreateDefaultContext();
   autodiff_context->SetTimeStateAndParametersFrom(context);
+  autodiff_system->FixInputPortsFrom(system, context, autodiff_context.get());
 
   const InputPort<AutoDiffXd>* input_port =
       autodiff_system->get_input_port_selection(input_port_index);
@@ -139,36 +140,6 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
                  ? context.get_continuous_state_vector().CopyToVector()
                  : context.get_discrete_state(0).get_value());
   const int num_states = x0.size();
-
-  // Fix autodiff'd versions of the inputs to the autodiff'd Context.
-  for (int i = 0; i < system.get_num_input_ports(); ++i) {
-    const InputPort<double>& input_port_i =
-        system.get_input_port(InputPortIndex(i));
-
-    // Look for abstract valued port.
-    if (input_port_i.get_data_type() == PortDataType::kAbstractValued) {
-      if (input_port_i.HasValue(context)) {
-        throw std::logic_error(fmt::format(
-            "Unable to linearize system with connected abstract port ({}) - "
-            "connected abstract ports not yet supported.",
-            input_port_i.get_name()));
-      }
-      continue;
-    }
-
-    // Must be a vector valued port. First look to see whether it's connected
-    // or zero-dimensional.
-    if (input_port_i.size() > 0) {
-      if (!input_port_i.HasValue(context)) {
-        throw std::logic_error(fmt::format(
-            "Vector-valued input port {} must be either fixed or connected to "
-            "the output of another system.", input_port_i.get_name()));
-      }
-
-      Eigen::VectorBlock<const VectorX<double>> u = input_port_i.Eval(context);
-      autodiff_context->FixInputPort(i, u.cast<AutoDiffXd>());
-    }
-  }
 
   Eigen::VectorXd u0 = Eigen::VectorXd::Zero(num_inputs);
   if (input_port) {

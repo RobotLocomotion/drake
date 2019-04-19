@@ -63,7 +63,7 @@ void TestAccelerometerFreeFall(const Eigen::Vector3d& xyz,
   Accelerometer dut(kSensorName, *sensor_frame, *tree);
 
   unique_ptr<Context<double>> dut_context = dut.CreateDefaultContext();
-  EXPECT_EQ(dut_context->get_num_input_ports(), 2);
+  EXPECT_EQ(dut_context->num_input_ports(), 2);
   EXPECT_EQ(dut_context->get_continuous_state_vector().size(), 0);
 
   const int num_positions = tree->get_num_positions();
@@ -86,7 +86,7 @@ void TestAccelerometerFreeFall(const Eigen::Vector3d& xyz,
       make_unique<BasicVector<double>>(VectorX<double>::Zero(num_states)));
 
   unique_ptr<SystemOutput<double>> output = dut.AllocateOutput();
-  ASSERT_EQ(output->get_num_ports(), 1);
+  ASSERT_EQ(output->num_ports(), 1);
   dut.CalcOutput(*dut_context, output.get());
 
   // The frame of the RigidBody to which the sensor is attached is coincident
@@ -148,7 +148,7 @@ GTEST_TEST(TestAccelerometer, TestSensorAttachedToSwingingPendulum) {
   Simulator<double> simulator(diagram, std::move(context));
   // Decrease the step size to get x_dot(0) to be closer to x(1).
   const double stepSize = 1e-4;
-  simulator.get_mutable_integrator()->set_maximum_step_size(stepSize);
+  simulator.get_mutable_integrator().set_maximum_step_size(stepSize);
   simulator.Initialize();
 
   const AccelerometerTestLogger& logger = diagram.get_logger();

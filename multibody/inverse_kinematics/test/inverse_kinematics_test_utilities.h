@@ -8,6 +8,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/systems/framework/diagram.h"
@@ -109,9 +110,9 @@ class TwoFreeSpheresTest : public ::testing::Test {
   FrameIndex sphere2_index_;
 
   // The pose of sphere 1's collision geometry in sphere 1's body frame.
-  Eigen::Isometry3d X_B1S1_;
+  math::RigidTransformd X_B1S1_;
   // The pose of sphere 2's collision geometry in sphere 2's body frame.
-  Eigen::Isometry3d X_B2S2_;
+  math::RigidTransformd X_B2S2_;
 
   std::unique_ptr<systems::Context<double>> diagram_context_double_;
   std::unique_ptr<systems::Context<AutoDiffXd>> diagram_context_autodiff_;

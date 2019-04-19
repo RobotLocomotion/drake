@@ -25,21 +25,21 @@
 namespace drake {
 namespace systems {
 
-/**
- A class for advancing the state of hybrid dynamic systems, represented by
- `System<T>` objects, forward in time. Starting with an initial Context for a
- given System, %Simulator advances time and produces a series of Context
- values that forms a trajectory satisfying the system's dynamic equations to
- a specified accuracy. Only the Context is modified by a %Simulator; the
- System is const.
+/** @ingroup simulation
+A class for advancing the state of hybrid dynamic systems, represented by
+`System<T>` objects, forward in time. Starting with an initial Context for a
+given System, %Simulator advances time and produces a series of Context
+values that forms a trajectory satisfying the system's dynamic equations to
+a specified accuracy. Only the Context is modified by a %Simulator; the
+System is const.
 
- A Drake System is a continuous/discrete/hybrid dynamic system where the
- continuous part is a DAE, that is, it is expected to consist of a set of
- differential equations and bilateral algebraic constraints. The set of
- active constraints may change as a result of particular events, such as
- contact.
+A Drake System is a continuous/discrete/hybrid dynamic system where the
+continuous part is a DAE, that is, it is expected to consist of a set of
+differential equations and bilateral algebraic constraints. The set of
+active constraints may change as a result of particular events, such as
+contact.
 
- Given a current Context, we expect a System to provide us with
+Given a current Context, we expect a System to provide us with
  - derivatives for the continuous differential equations that already satisfy
    the differentiated form of the constraints (typically, acceleration
    constraints),
@@ -464,13 +464,13 @@ class Simulator {
   int64_t get_num_unrestricted_updates() const {
     return num_unrestricted_updates_; }
 
-  /// Gets a pointer to the integrator used to advance the continuous aspects
+  /// Gets a reference to the integrator used to advance the continuous aspects
   /// of the system.
-  const IntegratorBase<T>* get_integrator() const { return integrator_.get(); }
+  const IntegratorBase<T>& get_integrator() const { return *integrator_.get(); }
 
-  /// Gets a pointer to the mutable integrator used to advance the continuous
-  /// aspects of the system.
-  IntegratorBase<T>* get_mutable_integrator() { return integrator_.get(); }
+  /// Gets a reference to the mutable integrator used to advance the continuous
+  /// state of the system.
+  IntegratorBase<T>& get_mutable_integrator() { return *integrator_.get(); }
 
   /// Resets the integrator with a new one. An example usage is:
   /// @code
@@ -480,8 +480,11 @@ class Simulator {
   /// ensure the integrator is properly initialized. You can do that explicitly
   /// with the Initialize() method or it will be done implicitly at the first
   /// time step.
+  /// @throws std::logic_error if `integrator` is nullptr.
   template <class U>
   U* reset_integrator(std::unique_ptr<U> integrator) {
+    if (!integrator)
+      throw std::logic_error("Integrator cannot be null.");
     initialization_done_ = false;
     integrator_ = std::move(integrator);
     return static_cast<U*>(integrator_.get());
@@ -842,10 +845,9 @@ void Simulator<T>::HandleUnrestrictedUpdate(
     // First, compute the unrestricted updates into a temporary buffer.
     system_.CalcUnrestrictedUpdate(*context_, events,
         unrestricted_updates_.get());
-    // TODO(edrumwri): simply swap the states for additional speed.
     // Now write the update back into the context.
-    State<T>& x = context_->get_mutable_state();
-    x.SetFrom(*unrestricted_updates_);
+    system_.ApplyUnrestrictedUpdate(events, unrestricted_updates_.get(),
+        context_.get());
     ++num_unrestricted_updates_;
 
     // Mark the witness function vector as needing to be redetermined.
@@ -862,8 +864,8 @@ void Simulator<T>::HandleDiscreteUpdate(
     system_.CalcDiscreteVariableUpdates(*context_, events,
         discrete_updates_.get());
     // Then, write them back into the context.
-    DiscreteValues<T>& xd = context_->get_mutable_discrete_state();
-    xd.SetFrom(*discrete_updates_);
+    system_.ApplyDiscreteVariableUpdate(events, discrete_updates_.get(),
+        context_.get());
     ++num_discrete_updates_;
   }
 }

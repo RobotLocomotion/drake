@@ -42,11 +42,11 @@ LinearModelPredictiveController<T>::LinearModelPredictiveController(
   // Check that the model is SISO and has discrete states belonging to a single
   // group.
   const auto model_context = model_->CreateDefaultContext();
-  DRAKE_DEMAND(model_context->get_num_discrete_state_groups() == 1);
-  DRAKE_DEMAND(model_context->get_continuous_state().size() == 0);
-  DRAKE_DEMAND(model_context->get_num_abstract_states() == 0);
-  DRAKE_DEMAND(model_->get_num_input_ports() == 1);
-  DRAKE_DEMAND(model_->get_num_output_ports() == 1);
+  DRAKE_DEMAND(model_context->num_discrete_state_groups() == 1);
+  DRAKE_DEMAND(model_context->num_continuous_states() == 0);
+  DRAKE_DEMAND(model_context->num_abstract_states() == 0);
+  DRAKE_DEMAND(model_->num_input_ports() == 1);
+  DRAKE_DEMAND(model_->num_output_ports() == 1);
 
   // Check that the provided  x0, u0, Q, R are consistent with the model.
   DRAKE_DEMAND(num_states_ > 0 && num_inputs_ > 0);

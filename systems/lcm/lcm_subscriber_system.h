@@ -75,6 +75,7 @@ class LcmSubscriberSystem : public LeafSystem<double> {
    * System must be no larger than this encoded size.
    */
   template <typename LcmMessage>
+  DRAKE_DEPRECATED("2019-05-01", "Use Make<LcmMessage>() instead.")
   static std::unique_ptr<LcmSubscriberSystem> MakeFixedSize(
       const LcmMessage& exemplar, const std::string& channel,
       drake::lcm::DrakeLcmInterface* lcm) {
@@ -129,7 +130,7 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   /// Returns the sole output port.
   const OutputPort<double>& get_output_port() const {
-    DRAKE_THROW_UNLESS(this->get_num_output_ports() == 1);
+    DRAKE_THROW_UNLESS(this->num_output_ports() == 1);
     return LeafSystem<double>::get_output_port(0);
   }
 
@@ -162,6 +163,8 @@ class LcmSubscriberSystem : public LeafSystem<double> {
    * into @p state.  If no messages have been received, only the message count
    * is updated.  This is primarily useful for unit testing.
    */
+  DRAKE_DEPRECATED("2019-06-01",
+      "This unit-test-only method is being made non-public.")
   void CopyLatestMessageInto(State<double>* state) const;
 
   /**
@@ -254,6 +257,13 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   // A message counter that's incremented every time the handler is called.
   int received_message_count_{0};
+
+  // When we are destroyed, our subscription will be automatically removed
+  // (if the DrakeLcmInterface supports removal).
+  std::shared_ptr<drake::lcm::DrakeSubscriptionInterface> subscription_;
+
+  // A little hint to help catch use-after-free.
+  int magic_number_{};
 };
 
 }  // namespace lcm
