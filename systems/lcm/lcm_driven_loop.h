@@ -4,6 +4,7 @@
 #include <memory>
 #include <utility>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
@@ -16,9 +17,16 @@ namespace lcm {
  * A generic translator interface that extracts time in seconds from an
  * abstract type.
  */
-class LcmMessageToTimeInterface {
+class DRAKE_DEPRECATED("2019-08-01",
+    "LcmDrivenLoop is deprecated with no direct replacement; "
+    "see https://github.com/RobotLocomotion/drake/pull/11281 for suggestions.")
+LcmMessageToTimeInterface {
  public:
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmMessageToTimeInterface)
+#pragma GCC diagnostic pop
+
   virtual ~LcmMessageToTimeInterface() {}
 
   virtual double GetTimeInSeconds(
@@ -33,9 +41,16 @@ class LcmMessageToTimeInterface {
  * is in micro seconds.
  */
 template <typename MessageType>
-class UtimeMessageToSeconds : public LcmMessageToTimeInterface {
+class DRAKE_DEPRECATED("2019-08-01",
+    "LcmDrivenLoop is deprecated with no direct replacement; "
+    "see https://github.com/RobotLocomotion/drake/pull/11281 for suggestions.")
+UtimeMessageToSeconds : public LcmMessageToTimeInterface {
  public:
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UtimeMessageToSeconds)
+#pragma GCC diagnostic pop
+
   UtimeMessageToSeconds() {}
   ~UtimeMessageToSeconds() {}
 
@@ -101,8 +116,13 @@ class UtimeMessageToSeconds : public LcmMessageToTimeInterface {
  * 3. The computation for the given system should be faster than the incoming
  *    message rate.
  */
-class LcmDrivenLoop {
+class DRAKE_DEPRECATED("2019-08-01",
+    "LcmDrivenLoop is deprecated with no direct replacement; "
+    "see https://github.com/RobotLocomotion/drake/pull/11281 for suggestions.")
+LcmDrivenLoop {
  public:
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmDrivenLoop)
 
   /**
@@ -122,11 +142,15 @@ class LcmDrivenLoop {
    * time stamp field that has consistent units. So extracting the time stamp
    * depends on the concrete message content.
    */
+  DRAKE_DEPRECATED("2019-08-01",
+    "LcmDrivenLoop is deprecated with no direct replacement; "
+    "see https://github.com/RobotLocomotion/drake/pull/11281 for suggestions.")
   LcmDrivenLoop(const System<double>& system,
                 const LcmSubscriberSystem& driving_subscriber,
                 std::unique_ptr<Context<double>> context,
                 drake::lcm::DrakeLcm* lcm,
                 std::unique_ptr<LcmMessageToTimeInterface> time_converter);
+#pragma GCC diagnostic pop
 
   /**
    * Blocks the caller until a driving Lcm message is received, then returns
@@ -165,12 +189,15 @@ class LcmDrivenLoop {
     return stepper_->get_mutable_context();
   }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /**
    * Returns a const reference to the message to seconds converter.
    */
   const LcmMessageToTimeInterface& get_message_to_time_converter() const {
     return *time_converter_;
   }
+#pragma GCC diagnostic pop
 
  private:
   // The handler system.
@@ -182,8 +209,11 @@ class LcmDrivenLoop {
   // The lcm interface for publishing and subscribing.
   drake::lcm::DrakeLcm* lcm_;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // Extracts time in seconds from received lcm messages.
   std::unique_ptr<LcmMessageToTimeInterface> time_converter_;
+#pragma GCC diagnostic pop
 
   // If true, explicitly calls system_.Publish() after every step in the loop.
   bool publish_on_every_received_message_{true};

@@ -4,6 +4,8 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 LcmDrivenLoop::LcmDrivenLoop(
     const System<double>& system, const LcmSubscriberSystem& driving_subscriber,
     std::unique_ptr<Context<double>> context, drake::lcm::DrakeLcm* lcm,
@@ -31,11 +33,9 @@ LcmDrivenLoop::LcmDrivenLoop(
   stepper_->Initialize();
 
   // Starts the subscribing thread.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   lcm_->StartReceiveThread();
-#pragma GCC diagnostic pop
 }
+#pragma GCC diagnostic push
 
 const AbstractValue& LcmDrivenLoop::WaitForMessage() {
   driving_sub_.WaitForMessage(driving_sub_.GetMessageCount(*sub_context_));
