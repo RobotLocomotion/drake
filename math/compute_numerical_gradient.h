@@ -14,26 +14,37 @@ enum class NumericalGradientMethod {
              ///< Δx > 0
 };
 
-struct NumericalGradientOption {
-  NumericalGradientOption(NumericalGradientMethod method_in,
-                          double function_accuracy = 1e-16)
-      : method{method_in} {
-    perturbation_size = method == NumericalGradientMethod::kCentral
-                            ? std::cbrt(function_accuracy)
-                            : std::sqrt(function_accuracy);
+class NumericalGradientOption {
+ public:
+  /**
+   * @param function_accuracy The accuracy of evaluating function f(x). For
+   * double-valued functions (with magnitude around 1), the accuracy is usually
+   * about 1E-15.
+   */
+  explicit NumericalGradientOption(NumericalGradientMethod method,
+                                   double function_accuracy = 1e-15)
+      : method_{method} {
+    perturbation_size_ = method == NumericalGradientMethod::kCentral
+                             ? std::cbrt(function_accuracy)
+                             : std::sqrt(function_accuracy);
   }
 
-  NumericalGradientMethod method{NumericalGradientMethod::kCentral};
+  NumericalGradientMethod method() const { return method_; }
+
+  double perturbation_size() const { return perturbation_size_; }
+
+ private:
+  NumericalGradientMethod method_{NumericalGradientMethod::kCentral};
 
   /** The step length Δx is max(|x(i)| * perturbation_size, perturbation_size)
-   * in each dimension. If function f is evaluated with accuracy 2 * 10⁻¹⁶, then
+   * in each dimension. If function f is evaluated with accuracy 10⁻¹⁵, then
    * a first-order method (forward or backward difference) should use a
-   * perturbation of √2 * 10⁻¹⁶y ≈ 10⁻⁸, a second-order method (central
-   * difference) should use ∛2 * 10⁻¹⁶≈ 6x10⁻⁶. The interesed reader could refer
+   * perturbation of √10⁻¹⁵ ≈ 10⁻⁷, a second-order method (central
+   * difference) should use ∛10⁻¹⁵≈ 10⁻⁵. The interested reader could refer
    * to section 8.6 of Practical Optimization by Philip E. Gill, Walter Murray
    * and Margaret H. Wright.
    */
-  double perturbation_size{1E-8};
+  double perturbation_size_{NAN};
 };
 
 /**
@@ -84,7 +95,7 @@ typename std::enable_if<is_eigen_vector_of<DerivedX, double>::value &&
 ComputeNumericalGradient(
     std::function<void(const DerivedCalcX&, DerivedY* y)> calc_fun,
     const DerivedX& x,
-    const NumericalGradientOption& option = {
+    const NumericalGradientOption& option = NumericalGradientOption{
         NumericalGradientMethod::kForward}) {
   // First evaluate f(x).
   Eigen::Matrix<double, DerivedY::RowsAtCompileTime, 1> y;
@@ -98,25 +109,19 @@ ComputeNumericalGradient(
                 DerivedX::RowsAtCompileTime>
       J(y.rows(), x.rows());
   for (int i = 0; i < x.rows(); ++i) {
-    if (option.method == NumericalGradientMethod::kForward ||
-        option.method == NumericalGradientMethod::kCentral) {
-      if (i > 0) {
-        x_plus(i - 1) = x(i - 1);
-      }
-      x_plus(i) += std::max(option.perturbation_size,
-                            std::abs(x(i)) * option.perturbation_size);
+    if (option.method() == NumericalGradientMethod::kForward ||
+        option.method() == NumericalGradientMethod::kCentral) {
+      x_plus(i) += std::max(option.perturbation_size(),
+                            std::abs(x(i)) * option.perturbation_size());
       calc_fun(x_plus, &y_plus);
     }
-    if (option.method == NumericalGradientMethod::kBackward ||
-        option.method == NumericalGradientMethod::kCentral) {
-      if (i > 0) {
-        x_minus(i - 1) = x(i - 1);
-      }
-      x_minus(i) -= std::max(option.perturbation_size,
-                             std::abs(x(i)) * option.perturbation_size);
+    if (option.method() == NumericalGradientMethod::kBackward ||
+        option.method() == NumericalGradientMethod::kCentral) {
+      x_minus(i) -= std::max(option.perturbation_size(),
+                             std::abs(x(i)) * option.perturbation_size());
       calc_fun(x_minus, &y_minus);
     }
-    switch (option.method) {
+    switch (option.method()) {
       case NumericalGradientMethod::kForward: {
         J.col(i) = (y_plus - y) / (x_plus(i) - x(i));
         break;
@@ -130,6 +135,8 @@ ComputeNumericalGradient(
         break;
       }
     }
+    // Restore perturbed values.
+    x_plus(i) = x_minus(i) = x(i);
   }
   return J;
 }

@@ -34,21 +34,24 @@ GTEST_TEST(ComputeNumericalGradientTest, TestAffineFunction) {
                Eigen::Matrix<double, 3, 1>* y) -> void { *y = A * x + b; };
 
   auto check_gradient = [&A, &calc_fun](const Eigen::Vector2d& x) {
-    NumericalGradientOption option(NumericalGradientMethod::kForward);
     // forward difference
-    auto J = ComputeNumericalGradient(calc_fun, x, option);
+    auto J = ComputeNumericalGradient(
+        calc_fun, x,
+        NumericalGradientOption{NumericalGradientMethod::kForward});
     // The big tolerance is caused by the cancellation error in computing
     // f(x +  Δx) - f(x)), coming from the numerical roundoff error.
     const double tol = 1.1E-7;
     EXPECT_TRUE(CompareMatrices(J, A, tol));
     // backward difference
-    option.method = NumericalGradientMethod::kBackward;
-    J = ComputeNumericalGradient(calc_fun, x, option);
+    J = ComputeNumericalGradient(
+        calc_fun, x,
+        NumericalGradientOption{NumericalGradientMethod::kBackward});
     EXPECT_TRUE(CompareMatrices(J, A, tol));
     // central difference
-    option.method = NumericalGradientMethod::kCentral;
     J = ComputeNumericalGradient<Eigen::Vector2d, Eigen::Vector3d,
-                                 Eigen::Vector2d>(calc_fun, x, option);
+                                 Eigen::Vector2d>(
+        calc_fun, x,
+        NumericalGradientOption{NumericalGradientMethod::kCentral});
     EXPECT_TRUE(CompareMatrices(J, A, tol));
   };
 
@@ -67,13 +70,14 @@ void ToyFunction(const Vector3<T>& x, Vector2<T>* y) {
 
 GTEST_TEST(ComputeNumericalGradientTest, TestToyFunction) {
   auto check_gradient = [](const Eigen::Vector3d& x) {
-    NumericalGradientOption option(NumericalGradientMethod::kForward);
     // I need to create a std::function, rather than passing ToyFunction<double>
     // to ComputeNumericalGradient directly, as template deduction doesn't work
     // in the implicit conversion from function object to std::function.
     std::function<void(const Eigen::Vector3d&, Eigen::Vector2d*)>
         ToyFunctionDouble = ToyFunction<double>;
-    auto J = ComputeNumericalGradient(ToyFunctionDouble, x, option);
+    auto J = ComputeNumericalGradient(
+        ToyFunctionDouble, x,
+        NumericalGradientOption{NumericalGradientMethod::kForward});
     auto x_autodiff = math::initializeAutoDiff<3>(x);
     Vector2<AutoDiffd<3>> y_autodiff;
     ToyFunction(x_autodiff, &y_autodiff);
@@ -81,18 +85,19 @@ GTEST_TEST(ComputeNumericalGradientTest, TestToyFunction) {
     EXPECT_TRUE(CompareMatrices(J, autoDiffToGradientMatrix(y_autodiff), tol));
 
     // backward difference
-    option.method = NumericalGradientMethod::kBackward;
-    J = ComputeNumericalGradient(ToyFunctionDouble, x, option);
+    J = ComputeNumericalGradient(
+        ToyFunctionDouble, x,
+        NumericalGradientOption{NumericalGradientMethod::kBackward});
     EXPECT_TRUE(CompareMatrices(J, autoDiffToGradientMatrix(y_autodiff), tol));
 
     // central difference
-    option.method = NumericalGradientMethod::kCentral;
     // We could use the function object ToyFunction<double> instead of the
     // std::function ToyFunctionDouble, but then we have to explicitly
     // instantiate the template parameters for ComputeNumericalGradient.
     J = ComputeNumericalGradient<Eigen::Vector3d, Eigen::Vector2d,
-                                 Eigen::Vector3d>(ToyFunction<double>, x,
-                                                  option);
+                                 Eigen::Vector3d>(
+        ToyFunction<double>, x,
+        NumericalGradientOption{NumericalGradientMethod::kCentral});
     EXPECT_TRUE(CompareMatrices(J, autoDiffToGradientMatrix(y_autodiff), tol));
   };
 
