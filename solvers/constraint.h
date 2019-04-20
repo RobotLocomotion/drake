@@ -297,6 +297,7 @@ class LorentzConeConstraint : public Constraint {
             2, A.cols(), Eigen::Vector2d::Constant(0.0),
             Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity())),
         A_(A.sparseView()),
+        A_dense_(A),
         b_(b) {
     DRAKE_DEMAND(A_.rows() >= 2);
     DRAKE_ASSERT(A_.rows() == b_.rows());
@@ -325,6 +326,9 @@ class LorentzConeConstraint : public Constraint {
               VectorX<symbolic::Expression>* y) const override;
 
   const Eigen::SparseMatrix<double> A_;
+  // We need to store a dense matrix of A_, so that we can compute the gradient
+  // using AutoDiffXd, and return the gradient as a dense matrix.
+  const Eigen::MatrixXd A_dense_;
   const Eigen::VectorXd b_;
 };
 
@@ -356,6 +360,7 @@ class RotatedLorentzConeConstraint : public Constraint {
             3, A.cols(), Eigen::Vector3d::Constant(0.0),
             Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity())),
         A_(A.sparseView()),
+        A_dense_(A),
         b_(b) {
     DRAKE_DEMAND(A_.rows() >= 3);
     DRAKE_ASSERT(A_.rows() == b_.rows());
@@ -384,6 +389,9 @@ class RotatedLorentzConeConstraint : public Constraint {
               VectorX<symbolic::Expression>* y) const override;
 
   const Eigen::SparseMatrix<double> A_;
+  // We need to store a dense matrix of A_, so that we can compute the gradient
+  // using AutoDiffXd, and return the gradient as a dense matrix.
+  const Eigen::MatrixXd A_dense_;
   const Eigen::VectorXd b_;
 };
 
