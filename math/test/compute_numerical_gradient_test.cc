@@ -34,13 +34,12 @@ GTEST_TEST(ComputeNumericalGradientTest, TestAffineFunction) {
                Eigen::Matrix<double, 3, 1>* y) -> void { *y = A * x + b; };
 
   auto check_gradient = [&A, &calc_fun](const Eigen::Vector2d& x) {
-    NumericalGradientOption option;
+    NumericalGradientOption option(NumericalGradientMethod::kForward);
     // forward difference
-    option.method = NumericalGradientMethod::kForward;
     auto J = ComputeNumericalGradient(calc_fun, x, option);
     // The big tolerance is caused by the cancellation error in computing
     // f(x +  Δx) - f(x)), coming from the numerical roundoff error.
-    const double tol = 1E-7;
+    const double tol = 1.1E-7;
     EXPECT_TRUE(CompareMatrices(J, A, tol));
     // backward difference
     option.method = NumericalGradientMethod::kBackward;
@@ -68,9 +67,7 @@ void ToyFunction(const Vector3<T>& x, Vector2<T>* y) {
 
 GTEST_TEST(ComputeNumericalGradientTest, TestToyFunction) {
   auto check_gradient = [](const Eigen::Vector3d& x) {
-    NumericalGradientOption option;
-    // forward difference.
-    option.method = NumericalGradientMethod::kForward;
+    NumericalGradientOption option(NumericalGradientMethod::kForward);
     // I need to create a std::function, rather than passing ToyFunction<double>
     // to ComputeNumericalGradient directly, as template deduction doesn't work
     // in the implicit conversion from function object to std::function.
