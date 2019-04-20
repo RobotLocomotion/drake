@@ -30,6 +30,7 @@ drake_cc_package_library(
         ":pass_through",
         ":piecewise_polynomial_affine_system",
         ":piecewise_polynomial_linear_system",
+        ":port_switch",
         ":random_source",
         ":saturation",
         ":signal_log",
@@ -232,6 +233,15 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "//common:extract_double",
+    ],
+)
+
+drake_cc_library(
+    name = "port_switch",
+    srcs = ["port_switch.cc"],
+    hdrs = ["port_switch.h"],
+    deps = [
+        "//systems/framework",
     ],
 )
 
@@ -550,6 +560,19 @@ drake_cc_googletest(
     deps = [
         ":piecewise_linear_affine_test",
         ":piecewise_polynomial_linear_system",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "port_switch_test",
+    srcs = [
+        "test/port_switch_test.cc",
+    ],
+    deps = [
+        ":port_switch",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/framework",
         "//systems/framework/test_utilities",
