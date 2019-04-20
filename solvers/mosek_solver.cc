@@ -512,8 +512,7 @@ MSKrescodee AddBoundingBoxConstraints(
 }
 
 /*
- * This is the helper function to add two types of second order cone
- * constraints:
+ * This is the helper function to add three types of conic constraints
  * 1. A Lorentz cone constraint:
  *    z = A*x+b
  *    z0 >= sqrt(z1^2 + .. zN^2)
@@ -521,11 +520,14 @@ MSKrescodee AddBoundingBoxConstraints(
  *    z = A*x+b
  *    z0*z1 >= z2^2 + .. + zN^2,
  *    z0 >= 0, z1 >=0
+ * 3. An exonential cone constraint:
+ *    z = A*x+b
+ *    z0 >= z1 * exp(z2 / z1)
  * Mosek does not allow two cones to share variables. To overcome this,
  * we will add a new set of variable (z0, ..., zN)
  */
 template <typename C>
-MSKrescodee AddSecondOrderConeConstraints(
+MSKrescodee AddConeConstraints(
     const MathematicalProgram& prog,
     const std::vector<Binding<C>>& second_order_cone_constraints,
     const std::unordered_map<int, MatrixVariableEntry>&
@@ -536,10 +538,12 @@ MSKrescodee AddSecondOrderConeConstraints(
         matrix_variable_entry_to_selection_matrix_id,
     MSKtask_t* task) {
   static_assert(std::is_same<C, LorentzConeConstraint>::value ||
-                    std::is_same<C, RotatedLorentzConeConstraint>::value,
-                "Should be either Lorentz cone constraint or rotated Lorentz "
-                "cone constraint");
-  bool is_rotated_cone = std::is_same<C, RotatedLorentzConeConstraint>::value;
+                    std::is_same<C, RotatedLorentzConeConstraint>::value ||
+                    std::is_same<C, ExponentialConeConstraint>::value,
+                "Should be either Lorentz cone constraint, rotated Lorentz "
+                "cone or exponential cone constraint");
+  const bool is_rotated_cone =
+      std::is_same<C, RotatedLorentzConeConstraint>::value;
   MSKrescodee rescode = MSK_RES_OK;
   for (auto const& binding : second_order_cone_constraints) {
     const auto& A = binding.evaluator()->A();
@@ -563,7 +567,16 @@ MSKrescodee AddSecondOrderConeConstraints(
         return rescode;
       }
     }
-    MSKconetypee cone_type = is_rotated_cone ? MSK_CT_RQUAD : MSK_CT_QUAD;
+    MSKconetypee cone_type;
+    if (std::is_same<C, LorentzConeConstraint>::value) {
+      cone_type = MSK_CT_QUAD;
+    } else if (std::is_same<C, RotatedLorentzConeConstraint>::value) {
+      cone_type = MSK_CT_RQUAD;
+    } else if (std::is_same<C, ExponentialConeConstraint>::value) {
+      cone_type = MSK_CT_PEXP;
+    } else {
+      throw std::runtime_error("MosekSolver: unsupported cone type.");
+    }
     rescode =
         MSK_appendcone(*task, cone_type, 0.0, num_z, new_var_indices.data());
     if (rescode != MSK_RES_OK) {
@@ -580,7 +593,7 @@ MSKrescodee AddSecondOrderConeConstraints(
     // So there is a factor of 2 for rotated Lorentz cone.
     // With this difference in rotated Lorentz cone, the first row of constraint
     // z = A * x + b needs special treatment.
-    // If using Lorentz cone,
+    // If using Lorentz cone or exponential cone,
     // Add the linear constraint
     //   z0 = a0^T * x + b0;
     // If using rotated Lorentz cone, add the linear constraint
@@ -1177,6 +1190,7 @@ MSKrescodee AddEqualityConstraintBetweenMatrixVariablesForSameDecisionVariable(
   }
   return rescode;
 }
+
 }  // anonymous namespace
 
 /*
@@ -1365,7 +1379,7 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
 
   // Add Lorentz cone constraints.
   if (rescode == MSK_RES_OK) {
-    rescode = AddSecondOrderConeConstraints(
+    rescode = AddConeConstraints(
         prog, prog.lorentz_cone_constraints(),
         decision_variable_index_to_mosek_matrix_variable,
         decision_variable_index_to_mosek_nonmatrix_variable,
@@ -1374,7 +1388,7 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
 
   // Add rotated Lorentz cone constraints.
   if (rescode == MSK_RES_OK) {
-    rescode = AddSecondOrderConeConstraints(
+    rescode = AddConeConstraints(
         prog, prog.rotated_lorentz_cone_constraints(),
         decision_variable_index_to_mosek_matrix_variable,
         decision_variable_index_to_mosek_nonmatrix_variable,
@@ -1388,6 +1402,17 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
         decision_variable_index_to_mosek_nonmatrix_variable,
         &matrix_variable_entry_to_selection_matrix_id, &task);
   }
+
+  // Add exponential cone constraints.
+  if (rescode == MSK_RES_OK) {
+    rescode = AddConeConstraints(
+        prog, prog.exponential_cone_constraints(),
+        decision_variable_index_to_mosek_matrix_variable,
+        decision_variable_index_to_mosek_nonmatrix_variable,
+        &matrix_variable_entry_to_selection_matrix_id, &task);
+  }
+
+  // log file.
   if (rescode == MSK_RES_OK && stream_logging_) {
     if (log_file_.empty()) {
       rescode =
@@ -1443,7 +1468,8 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
              prog.lorentz_cone_constraints().empty() &&
              prog.rotated_lorentz_cone_constraints().empty() &&
              prog.positive_semidefinite_constraints().empty() &&
-             prog.linear_matrix_inequality_constraints().empty()) {
+             prog.linear_matrix_inequality_constraints().empty() &&
+             prog.exponential_cone_constraints().empty()) {
     solution_type = MSK_SOL_BAS;
   } else {
     solution_type = MSK_SOL_ITR;

@@ -6,6 +6,7 @@
 #include "drake/common/temp_directory.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mixed_integer_optimization_util.h"
+#include "drake/solvers/test/exponential_cone_program_examples.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
 #include "drake/solvers/test/second_order_cone_program_examples.h"
@@ -175,6 +176,27 @@ GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithOverlappingVariables) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
     SolveSDPwithOverlappingVariables(mosek_solver, 1E-7);
+  }
+}
+
+GTEST_TEST(TestExponentialConeProgram, ExponentialConeTrivialExample) {
+  MosekSolver solver;
+  if (solver.available()) {
+    ExponentialConeTrivialExample(solver, 1E-5);
+  }
+}
+
+GTEST_TEST(TestExponentialConeProgram, MinimizeKLDivengence) {
+  MosekSolver solver;
+  if (solver.available()) {
+    MinimizeKLDivergence(solver, 2E-5);
+  }
+}
+
+GTEST_TEST(TestExponentialConeProgram, MinimalEllipsoidConveringPoints) {
+  MosekSolver solver;
+  if (solver.available()) {
+    MinimalEllipsoidCoveringPoints(solver, 1E-6);
   }
 }
 
