@@ -339,6 +339,8 @@ PYBIND11_MODULE(plant, m) {
         .def("CalcGravityGeneralizedForces",
             &Class::CalcGravityGeneralizedForces, py::arg("context"),
             cls_doc.CalcGravityGeneralizedForces.doc)
+        .def("MakeActuationMatrix", &Class::MakeActuationMatrix,
+            cls_doc.MakeActuationMatrix.doc)
         .def("MapVelocityToQDot",
             [](const Class* self, const Context<T>& context,
                 const Eigen::Ref<const VectorX<T>>& v) {
