@@ -68,7 +68,8 @@ void RigidBodyPlant<T>::initialize() {
   DRAKE_DEMAND(tree_ != nullptr);
   state_output_port_index_ =
       this->DeclareVectorOutputPort(BasicVector<T>(get_num_states()),
-                                    &RigidBodyPlant::CopyStateToOutput)
+                                    &RigidBodyPlant::CopyStateToOutput,
+                                    {this->all_state_ticket()})
           .get_index();
   if (is_state_discrete()) {
     // TODO(jwnimmer-tri) Add an implementation of the state derivative output
@@ -78,7 +79,8 @@ void RigidBodyPlant<T>::initialize() {
     state_derivative_output_port_index_ =
         this->DeclareVectorOutputPort(
             BasicVector<T>(get_num_states()),
-            &RigidBodyPlant::CalcStateDerivativeOutput)
+            &RigidBodyPlant::CalcStateDerivativeOutput,
+            {this->xcdot_ticket()})
         .get_index();
   }
   ExportModelInstanceCentricPorts();
@@ -86,7 +88,8 @@ void RigidBodyPlant<T>::initialize() {
   kinematics_output_port_index_ =
       this->DeclareAbstractOutputPort(
               KinematicsResults<T>(tree_.get()),
-              &RigidBodyPlant::CalcKinematicsResultsOutput)
+              &RigidBodyPlant::CalcKinematicsResultsOutput,
+              {this->kinematics_ticket()})
           .get_index();
 
   // Declares an abstract valued output port for contact information.
@@ -101,7 +104,8 @@ template <class T>
 OutputPortIndex RigidBodyPlant<T>::DeclareContactResultsOutputPort() {
   return this->DeclareAbstractOutputPort(
       ContactResults<T>(),
-      &RigidBodyPlant::CalcContactResultsOutput).get_index();
+      &RigidBodyPlant::CalcContactResultsOutput,
+      {this->kinematics_ticket()}).get_index();
 }
 
 template <class T>
@@ -151,14 +155,17 @@ void RigidBodyPlant<T>::ExportModelInstanceCentricPorts() {
       if (get_num_actuators(i) == 0) {
         continue;
       }
-      input_map_[i] =
-          this->DeclareInputPort(kVectorValued, actuator_map_[i].second)
-              .get_index();
-      torque_output_map_[i] =
-          this->DeclareVectorOutputPort(BasicVector<T>(get_num_actuators(i)),
-          [this, i](const Context<T>& context, BasicVector<T>* output) {
-            this->CopyInstanceTorqueOutput(i, context, output);
-          }).get_index();
+      const auto& input_port =
+          this->DeclareInputPort(kVectorValued, actuator_map_[i].second);
+      const auto& output_port =
+          this->DeclareVectorOutputPort(
+              BasicVector<T>(get_num_actuators(i)),
+              [this, i](const Context<T>& context, BasicVector<T>* output) {
+                this->CopyInstanceTorqueOutput(i, context, output);
+              },
+              {input_port.ticket()});
+      input_map_[i] = input_port.get_index();
+      torque_output_map_[i] = output_port.get_index();
     }
 
     // Now create the appropriate maps for the position and velocity
@@ -207,7 +214,8 @@ void RigidBodyPlant<T>::ExportModelInstanceCentricPorts() {
           this->DeclareVectorOutputPort(BasicVector<T>(get_num_states(i)),
           [this, i](const Context<T>& context, BasicVector<T>* output) {
             this->CalcInstanceOutput(i, context, output);
-          }).get_index();
+          },
+          {this->all_state_ticket()}).get_index();
     }
   }
 }
@@ -225,11 +233,6 @@ template <typename T>
 void RigidBodyPlant<T>::set_default_compliant_material(
     const CompliantMaterial& material) {
   compliant_contact_model_->set_default_material(material);
-}
-
-template <typename T>
-optional<bool> RigidBodyPlant<T>::DoHasDirectFeedthrough(int, int) const {
-  return false;
 }
 
 template <typename T>

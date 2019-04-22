@@ -427,8 +427,6 @@ class RigidBodyPlant : public LeafSystem<T> {
     DoCalcDiscreteVariableUpdatesImpl(context, events, updates);
   }
 
-  optional<bool> DoHasDirectFeedthrough(int, int) const override;
-
   // TODO(amcastro-tri): provide proper implementations for these methods to
   // track energy conservation.
   // TODO(amcastro-tri): provide a method to track applied actuator power.

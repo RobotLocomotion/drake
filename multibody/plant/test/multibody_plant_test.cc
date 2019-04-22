@@ -1143,6 +1143,10 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   // We are done defining the model.
   plant.Finalize();
 
+  // There is no direct feedthrough of any kind, even with the new ports
+  // related to SceneGraph interaction.
+  EXPECT_FALSE(plant.HasAnyDirectFeedthrough());
+
   EXPECT_EQ(plant.num_visual_geometries(), 0);
   EXPECT_EQ(plant.num_collision_geometries(), 3);
   EXPECT_TRUE(plant.geometry_source_is_registered());
@@ -1968,6 +1972,10 @@ class KukaArmTest : public ::testing::TestWithParam<double> {
         plant_->WeldFrames(plant_->world_frame(),
                            plant_->GetFrameByName("iiwa_link_0"));
     plant_->Finalize();
+
+    // There is no direct feedthrough of any kind, for either continuous or
+    // discrete plants.
+    EXPECT_FALSE(plant_->HasAnyDirectFeedthrough());
 
     EXPECT_EQ(plant_->num_positions(), 7);
     EXPECT_EQ(plant_->num_velocities(), 7);
