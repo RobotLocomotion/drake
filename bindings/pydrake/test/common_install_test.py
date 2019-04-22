@@ -1,6 +1,7 @@
 import os
-import install_test_helper
 import unittest
+
+import install_test_helper
 
 
 class TestCommonInstall(unittest.TestCase):

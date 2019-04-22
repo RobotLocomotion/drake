@@ -66,7 +66,7 @@ drake_py_binary(
     ],
 )
 
-PY_LIBRARIES = [
+PY_BINARIES = [
     ":cart_pole_passive_simulation",
     ":pendulum_lqr_monte_carlo_analysis",
 ]
@@ -76,12 +76,22 @@ PY_LIBRARIES = [
 drake_py_library(
     name = "multibody",
     imports = PACKAGE_INFO.py_imports,
-    deps = PY_LIBRARIES,
+    deps = PY_BINARIES,
+)
+
+# Do not directly install binaries, as this will include Bazel-generated
+# files. Instead, wrap the necessary srcs.
+drake_py_library(
+    name = "binary_srcs_as_python_lib",
+    srcs = [
+        "cart_pole_passive_simulation.py",
+        "pendulum_lqr_monte_carlo_analysis.py",
+    ],
 )
 
 install(
     name = "install",
-    targets = PY_LIBRARIES,
+    targets = [":binary_srcs_as_python_lib"],
     py_dest = PACKAGE_INFO.py_dest,
 )
 
