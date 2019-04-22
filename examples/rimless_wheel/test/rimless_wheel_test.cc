@@ -72,7 +72,7 @@ GTEST_TEST(RimlessWheelTest, StepTest) {
   // Should have taken one step forward.
   EXPECT_NEAR(toe, step_length, 1e-8);
   // Should still have the same energy (dissipation energy lost = potential
-  // energy gained). The tolerance here has to be relatively loose.
+  // energy gained). The error tolerance below seems to work well.
   EXPECT_NEAR(rw.CalcTotalEnergy(context), steady_state_energy, 1e-5);
 
   // Lose at least this much energy (chosen as an arbitrary small positive

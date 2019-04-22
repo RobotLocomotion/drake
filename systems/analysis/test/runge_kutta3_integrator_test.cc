@@ -94,9 +94,8 @@ class Quadratic : public LeafSystem<double> {
 };
 
 // Tests accuracy for integrating the cubic system (with the state at time t
-// corresponding to f(t) ≡ t³ + t² + 12t + C) over
-// t ∈ [0, 1]. RK3 is a third order integrator, meaning that it uses the Taylor
-// Series expansion:
+// corresponding to f(t) ≡ t³ + t² + 12t + C) over t ∈ [0, 1]. RK3 is a third
+// order integrator, meaning that it uses the Taylor Series expansion:
 // f(t+h) ≈ f(t) + hf'(t) + ½h²f''(t) + ⅙h³f'''(t) + O(h⁴)
 // The formula above indicates that the approximation error will be zero if
 // f''''(t) = 0, which is true for the cubic equation.
@@ -114,14 +113,20 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, CubicTest) {
   rk3.Initialize();
   rk3.IntegrateWithSingleFixedStepToTime(t_final);
 
+  // Check for near-exact 3rd-order results. The measure of accuracy is a
+  // tolerance that scales with expected answer at t_final.
   const double expected_answer = t_final * (t_final * (t_final + 1) + 12);
-  EXPECT_NEAR(
-      cubic_context->get_continuous_state_vector()[0], expected_answer,
-      10 * std::numeric_limits<double>::epsilon());
+  const double allowable_3rd_order_error = expected_answer *
+      std::numeric_limits<double>::epsilon();
+  const double actual_answer = cubic_context->get_continuous_state_vector()[0];
+  EXPECT_NEAR(actual_answer, expected_answer, allowable_3rd_order_error);
 
-  // Now verify that the error in the second-order error estimate shrinks by a
-  // factor of eight, as the Taylor Series formula would predict. Note that the
-  // true error is zero.
+  // This integrator calculates error by subtracting a 2nd-order integration
+  // result from a 3rd-order integration result. Since the 2nd-order integrator
+  // has a Taylor series that is accurate to O(h³), halving the step size is
+  // associated with an error that reduces by a factor of 2³ = 8.
+  // So we verify that the error associated with a half-step is nearly 1/8 the
+  // error associated with a full step.
 
   // First obtain the error estimate using a single step of h.
   const double err_est_h =
@@ -136,9 +141,14 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, CubicTest) {
   const double err_est_2h_2 =
       rk3.get_error_estimate()->get_vector().GetAtIndex(0);
 
-  // The second order estimate should be approximately 8 times smaller.
-  EXPECT_NEAR(err_est_2h_2 * 8, err_est_h,
-      250 * std::numeric_limits<double>::epsilon());
+  // Check that the 2nd-order error estimate for a full-step is less than
+  // K*8 times larger than then 2nd-order error estimate for 2 half-steps;
+  // K is a constant term that subsumes the asymptotic error and is dependent
+  // upon both the system being integrated and the particular integrator.
+  const double K = 64;
+  const double allowable_2nd_order_error = K *
+      std::numeric_limits<double>::epsilon();
+  EXPECT_NEAR(err_est_h, 8 * err_est_2h_2, allowable_2nd_order_error);
 }
 
 // Tests accuracy for integrating the quadratic system (with the state at time t
@@ -165,7 +175,10 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, QuadraticTest) {
 
   const double err_est =
       rk3.get_error_estimate()->get_vector().GetAtIndex(0);
-  EXPECT_NEAR(err_est, 0.0, std::numeric_limits<double>::epsilon());
+
+  // Note the very tight tolerance used, which will likely not hold for
+  // arbitrary values of C, t_final, or polynomial coefficients.
+  EXPECT_NEAR(err_est, 0.0, 2 * std::numeric_limits<double>::epsilon());
 }
 
 // Tests accuracy when generalized velocity is not the time derivative of

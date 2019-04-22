@@ -178,15 +178,20 @@ TEST_F(BouncingBallTest, Simulate) {
   simulator.get_mutable_integrator().request_initial_step_size_target(1e-3);
   simulator.get_mutable_integrator().set_target_accuracy(accuracy);
 
-  // Note: the witness function isolation for the bouncing ball does not require
-  // the ball to have a non-negative signed distance, the assumption being that
-  // the signed distance will be positive after the next integration step (after
-  // the impact event which reverses the velocity). But a second order
-  // integrator is able to simulate a parabolic trajectory without error, so
-  // the Simulator will actually see two negative signed distances on its next
-  // witness function evaluations! We limit the step size (constants taken
-  // from CalcClosedFormHeightAndVelocity()) to fix this. Step size limit only
-  // works when restitution is unity.
+  // Note: The bouncing ball's witness function is triggered when the ball's
+  // height is positive then non-positive. As shown below, the maximum step size
+  // is limited to avoid missing a subsequent bounce in the following situation:
+  // 1. Bounce detected (previous height positive, current height negative).
+  // 2. Impact reverses ball's downward velocity to an upward velocity.
+  // 3. Integrator advances time too far so that the next time the witness
+  // function is called, the ball's height is again negative.
+  // 4. Since the witness function sees two subsequent negative heights, the
+  // witness function is not triggered (so subsequent bounce is missed).
+  // This situation arises when:
+  // a. an integrator can simulate parabolic trajectory without error (e.g.,
+  // 2nd-order integrator) which means the time step can be large, or
+  // b. a semi-explicit 1st-order integrator has large error tolerances that
+  // allow for a large time step and two successive negative heights.
   ASSERT_EQ(dut_->get_restitution_coef(), 1.0);
   const double g = dut_->get_gravitational_acceleration();
   const double drop_time = CalcDropTime(g, q0);
