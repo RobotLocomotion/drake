@@ -142,3 +142,11 @@ def get_python_site_packages_dir(install_dir):
                 sys.version_info.major, sys.version_info.minor),
             "site-packages")
     )
+
+
+def get_python_env(install_dir):
+    """Returns copy of current environment with PYTHONPATH overrode to only use
+    the installed `pydrake` module."""
+    env = dict(os.environ)
+    env["PYTHONPATH"] = get_python_site_packages_dir(install_dir)
+    return env
