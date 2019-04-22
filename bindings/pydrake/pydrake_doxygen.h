@@ -233,9 +233,11 @@ the pydrake binding's signature is consistent with the docstring argument
 count.
 - If two or more docstrings are the same, only one new symbol is introduced.
 - To suppress a Doxygen comment from mkdoc, add the custom Doxygen command
-`@exclude_from_pydrake_mkdoc{Explanatory text.}` to the API comment text.
-(This is useful to help dismiss unbound overloads, so that mkdoc's choice of
-`_something` name suffix is simpler for the remaining overloads.)
+\c \@exclude_from_pydrake_mkdoc{Explanation} to the API comment text.
+This is useful to help dismiss unbound overloads, so that mkdoc's choice of
+`_something` name suffix is simpler for the remaining overloads, especially if
+you see the symbol `.doc_was_unable_to_choose_unambiguous_names` in the
+generated documentation.
 - The docstring for a method that is marked as deprecated in C++ Doxygen will
 be named `.doc_deprecated...` instead of just `.doc...`.
 
