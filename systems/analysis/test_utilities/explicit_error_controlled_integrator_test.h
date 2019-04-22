@@ -228,7 +228,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEstOrder) {
   // Verify that the error in the error estimate dropped in accordance with the
   // order of the error estimator. Theory indicates that asymptotic error in
   // the estimate is bound by K*h^order, where K is some constant and h is
-  // sufficiently small. We assume a constant of 4.0 below, and we check that
+  // sufficiently small. We assume a value for K of 4.0 below, and we check that
   // the improvement in the error estimate is not as good as K*h^(order+1).
   // The K and h might need to be redetermined for a different problem or
   // for untested error-controlled integrators.
