@@ -18,6 +18,7 @@ drake_cc_package_library(
         ":explicit_euler_integrator",
         ":hermitian_dense_output",
         ":implicit_euler_integrator",
+        ":implicit_integrator",
         ":initial_value_problem",
         ":integrator_base",
         ":lyapunov",
@@ -143,6 +144,18 @@ drake_cc_library(
     hdrs = [
         "implicit_euler_integrator.h",
         "implicit_euler_integrator-inl.h",
+    ],
+    deps = [
+        ":implicit_integrator",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_library(
+    name = "implicit_integrator",
+    srcs = ["implicit_integrator.cc"],
+    hdrs = [
+        "implicit_integrator.h",
     ],
     deps = [
         ":integrator_base",

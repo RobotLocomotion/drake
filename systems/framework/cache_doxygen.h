@@ -306,7 +306,7 @@ pa                   |    | any abstract parameter   | paᵢ ∀i ¹ ²
 all_parameters       | p  | any parameter p          | pn pa
 all_input_ports      | u  | any input port u         | uᵢ ∀i
 all_sources          |    | any change to %Context   | t, a, x, p, u
-configuration        |    | may affect pose or PE    | q, a, p, xd, xa ³
+configuration        |    | may affect pose or PE    | q, z, a, p, xd, xa ³
 kinematics           |    | may affect pose/motion   | configuration, v ³
 xcdot                |    | d/dt xc cached value     | all_sources ¹ ⁵
 pe                   |    | potential energy         | all_sources ¹ ⁵
@@ -329,7 +329,7 @@ _Notes_
 2. There are no Diagram-level trackers for individual discrete/abstract
    variables and numeric/abstract parameters.
 3. Until issue [#9171](https://github.com/RobotLocomotion/drake/issues/9171)
-   is resolved we don't know which non-continuous variables or which parameters
+   is resolved we don't know which non-`v` state variables or which parameters
    may affect kinematics, so we have to depend on all of them.
 4. Input ports are dependent on the source that provides their values. That
    may be the output port of a peer subsystem, the input port of the parent

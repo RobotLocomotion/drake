@@ -21,8 +21,7 @@ class TestCommonInstall(unittest.TestCase):
              ],
             env=tool_env,
             ).strip()
-        found_install_path = (data_folder in output_path)
-        self.assertTrue(found_install_path)
+        self.assertIn(data_folder, output_path)
 
 
 if __name__ == '__main__':

@@ -1,13 +1,11 @@
 #include <cmath>
-#include <memory>
 
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/find_resource.h"
+#include "drake/examples/pendulum/pendulum_geometry.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/geometry/geometry_visualization.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -70,16 +68,13 @@ int DoMain() {
   auto controller = builder.AddSystem<PendulumEnergyShapingController>(
       params);
   controller->set_name("controller");
-  builder.Connect(pendulum->get_state_output_port(), controller->get_input_port
-      (0));
+  builder.Connect(pendulum->get_state_output_port(),
+                  controller->get_input_port(0));
   builder.Connect(controller->get_output_port(0), pendulum->get_input_port());
-
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
-  pendulum->RegisterGeometry(params, scene_graph);
-  builder.Connect(pendulum->get_geometry_pose_output_port(),
-                  scene_graph->get_source_pose_port(pendulum->source_id()));
-
-  geometry::ConnectDrakeVisualizer(&builder, *scene_graph);
+  PendulumGeometry::AddToBuilder(
+      &builder, pendulum->get_state_output_port(), scene_graph);
+  ConnectDrakeVisualizer(&builder, *scene_graph);
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);

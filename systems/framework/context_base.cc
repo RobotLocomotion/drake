@@ -237,14 +237,15 @@ void ContextBase::CreateBuiltInTrackers() {
   // TODO(sherm1) Should track changes to configuration and velocity regardless
   // of how represented. See issue #9171. Until that is resolved, we must
   // assume that "configuration" results (like end effector location and PE)
-  // can be affected by anything *except* time, v, z, and u; and "kinematics"
+  // can be affected by anything *except* time, v, and u; and "kinematics"
   // results (like end effector velocity and KE) can be affected by anything
-  // except time, z, and u.
+  // except time and u.
   auto& configuration_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kConfigurationTicket), "configuration");
   // Compare with "all sources" above.
   configuration_tracker.SubscribeToPrerequisite(&accuracy_tracker);
-  configuration_tracker.SubscribeToPrerequisite(&q_tracker);  // Not v or z.
+  configuration_tracker.SubscribeToPrerequisite(&q_tracker);  // Not v.
+  configuration_tracker.SubscribeToPrerequisite(&z_tracker);
   configuration_tracker.SubscribeToPrerequisite(&xd_tracker);
   configuration_tracker.SubscribeToPrerequisite(&xa_tracker);
   configuration_tracker.SubscribeToPrerequisite(&p_tracker);

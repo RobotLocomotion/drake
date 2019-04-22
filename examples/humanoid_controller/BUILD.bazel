@@ -11,6 +11,16 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+# The deprecation message on every public target.
+_DEPRECATION_TEXT = "This example is will be removed on 2019-06-01."
+
+# The deprecation tags on every public target.
+_DEPRECATION_TAGS = [
+    # Exclude the target from `bazel build //...`, so that we don't get
+    # deprecation warnings from a normal build.
+    "manual",
+]
+
 exports_files(
     ["config/valkyrie.alias_groups"],
 )
@@ -31,6 +41,8 @@ drake_cc_library(
     name = "atlas_command_translator_system",
     srcs = ["atlas_command_translator_system.cc"],
     hdrs = ["atlas_command_translator_system.h"],
+    deprecation = _DEPRECATION_TEXT,
+    tags = _DEPRECATION_TAGS,
     deps = [
         "//attic/systems/controllers/qp_inverse_dynamics:qp_output_translator_system",  # noqa
     ],
@@ -40,6 +52,8 @@ drake_cc_library(
     name = "humanoid_status",
     srcs = ["humanoid_status.cc"],
     hdrs = ["humanoid_status.h"],
+    deprecation = _DEPRECATION_TEXT,
+    tags = _DEPRECATION_TAGS,
     deps = [
         "//attic/multibody:rigid_body_tree",
         "//attic/multibody:rigid_body_tree_alias_groups",
@@ -53,6 +67,8 @@ drake_cc_library(
     name = "humanoid_plan_eval_system",
     srcs = ["humanoid_plan_eval_system.cc"],
     hdrs = ["humanoid_plan_eval_system.h"],
+    deprecation = _DEPRECATION_TEXT,
+    tags = _DEPRECATION_TAGS,
     deps = [
         "//attic/systems/controllers/plan_eval:plan_eval_base_system",
         "//examples/humanoid_controller/dev:humanoid_manipulation_plan",
@@ -63,6 +79,8 @@ drake_cc_library(
     name = "humanoid_status_translator_system",
     srcs = ["humanoid_status_translator_system.cc"],
     hdrs = ["humanoid_status_translator_system.h"],
+    deprecation = _DEPRECATION_TEXT,
+    tags = _DEPRECATION_TAGS,
     deps = [
         ":humanoid_status",
         "//attic/manipulation/util:robot_state_msg_translator",
@@ -75,6 +93,8 @@ drake_cc_library(
 drake_cc_library(
     name = "humanoid_controller",
     hdrs = ["humanoid_controller.h"],
+    deprecation = _DEPRECATION_TEXT,
+    tags = _DEPRECATION_TAGS,
     deps = [
         ":atlas_command_translator_system",
         ":humanoid_plan_eval_system",
@@ -96,6 +116,8 @@ drake_cc_binary(
     data = [
         "//examples/valkyrie:models",
     ],
+    deprecation = _DEPRECATION_TEXT,
+    tags = _DEPRECATION_TAGS,
     deps = [
         "//attic/manipulation/util:robot_state_msg_translator",
         "//attic/multibody:rigid_body_tree",
@@ -113,18 +135,31 @@ drake_cc_binary(
     srcs = [
         "valkyrie_balancing_demo.cc",
     ],
+    copts = ["-Wno-deprecated-declarations"],
     data = [
         ":config/valkyrie.alias_groups",
         ":config/valkyrie.id_controller_config",
         "//examples/valkyrie:models",
     ],
-    tags = gurobi_test_tags(),
+    deprecation = _DEPRECATION_TEXT,
+    tags = gurobi_test_tags() + _DEPRECATION_TAGS,
     deps = [
         ":humanoid_controller",
         "//common:find_resource",
         "//examples/valkyrie:valkyrie_constants",
         "//systems/lcm:lcm_driven_loop",
     ],
+)
+
+# Add private filegroup (not tagged as deprecated nor manual) so that CI still
+# confirms that the binaries compile successfully.
+filegroup(
+    name = "compiled_binaries",
+    data = [
+        "send_manipulation_plan_demo",
+        "valkyrie_balancing_demo",
+    ],
+    visibility = ["//visibility:private"],
 )
 
 # === test/ ===

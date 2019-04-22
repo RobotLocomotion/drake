@@ -177,7 +177,8 @@ class TestSystemsLcm(unittest.TestCase):
     def test_utime_to_seconds(self):
         msg = header_t()
         msg.utime = int(1e6)
-        dut = mut.PyUtimeMessageToSeconds(header_t)
+        with catch_drake_warnings(expected_count=1):
+            dut = mut.PyUtimeMessageToSeconds(header_t)
         t_sec = dut.GetTimeInSeconds(AbstractValue.Make(msg))
         self.assertEqual(t_sec, 1)
 
@@ -216,7 +217,8 @@ class TestSystemsLcm(unittest.TestCase):
 
         # Construct diagram for LcmDrivenLoop.
         lcm = DrakeLcm(lcm_url)
-        utime = mut.PyUtimeMessageToSeconds(header_t)
+        with catch_drake_warnings(expected_count=1):
+            utime = mut.PyUtimeMessageToSeconds(header_t)
         sub = mut.LcmSubscriberSystem.Make("TEST_LOOP", header_t, lcm)
         builder = DiagramBuilder()
         builder.AddSystem(sub)
@@ -225,7 +227,8 @@ class TestSystemsLcm(unittest.TestCase):
         logger = LogOutput(dummy.get_output_port(0), builder)
         logger.set_forced_publish_only()
         diagram = builder.Build()
-        dut = mut.LcmDrivenLoop(diagram, sub, None, lcm, utime)
+        with catch_drake_warnings(expected_count=1):
+            dut = mut.LcmDrivenLoop(diagram, sub, None, lcm, utime)
         dut.set_publish_on_every_received_message(True)
 
         # N.B. Use `multiprocessing` instead of `threading` so that we may

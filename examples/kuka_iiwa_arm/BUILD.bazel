@@ -119,8 +119,8 @@ drake_cc_binary(
         ":iiwa_common",
         ":lcm_plan_interpolator",
         "//common:text_logging_gflags",
-        "//lcm",
-        "//systems/lcm:lcm_driven_loop",
+        "//lcm:drake_lcm",
+        "//systems/analysis:simulator",
     ],
 )
 

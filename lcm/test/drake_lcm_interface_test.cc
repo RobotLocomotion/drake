@@ -47,7 +47,7 @@ class DrakeLcmInterfaceTest : public ::testing::Test {
 };
 
 // Tests the Subscribe + Publish free functions under nominal conditions.
-TEST_F(DrakeLcmInterfaceTest, FreeFunctionTest) {
+TEST_F(DrakeLcmInterfaceTest, FreeFunctionPubSubTest) {
   // Subscribe using the helper free-function.
   Message received{};
   Subscribe<Message>(&lcm_, channel_, [&](const Message& message) {
@@ -144,6 +144,19 @@ TEST_F(DrakeLcmInterfaceTest, SubscriberTest) {
   }
 }
 
+// Tests the LcmHandleSubscriptionsUntil free function.
+TEST_F(DrakeLcmInterfaceTest, HandleUntilTest) {
+  Subscriber<Message> sub(&lcm_, channel_);
+  int num_invocations = 0;
+  int num_handled_messages = LcmHandleSubscriptionsUntil(&lcm_, [&]() {
+    ++num_invocations;
+    Publish(&lcm_, channel_, sample_);
+    return sub.count() > 0;
+  });
+  EXPECT_GE(num_invocations, 2);
+  EXPECT_GE(sub.count(), 1);
+  EXPECT_GE(num_handled_messages, 1);
+}
 }  // namespace
 }  // namespace lcm
 }  // namespace drake

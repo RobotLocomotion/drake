@@ -40,6 +40,7 @@ using math::RigidTransform;
 template <typename PyClass>
 void BindMultibodyTreeElementMixin(PyClass* pcls) {
   using Class = typename PyClass::type;
+  // TODO(eric.cousineau): Fix docstring generation for `MultibodyTreeElement`.
   auto& cls = *pcls;
   cls  // BR
       .def("index", &Class::index)
@@ -81,18 +82,20 @@ PYBIND11_MODULE(tree, m) {
   // Frames.
   {
     using Class = Frame<T>;
-    py::class_<Class> cls(m, "Frame", doc.Frame.doc);
+    constexpr auto& cls_doc = doc.Frame;
+    py::class_<Class> cls(m, "Frame", cls_doc.doc);
     BindMultibodyTreeElementMixin(&cls);
     cls  // BR
-        .def("name", &Class::name, doc.Frame.name.doc)
-        .def("body", &Class::body, py_reference_internal, doc.Frame.body.doc)
+        .def("name", &Class::name, cls_doc.name.doc)
+        .def("body", &Class::body, py_reference_internal, cls_doc.body.doc)
         .def("GetFixedPoseInBodyFrame", &Frame<double>::GetFixedPoseInBodyFrame,
-            doc.Frame.GetFixedPoseInBodyFrame.doc);
+            cls_doc.GetFixedPoseInBodyFrame.doc);
   }
 
   {
     using Class = BodyFrame<T>;
-    py::class_<Class, Frame<T>> cls(m, "BodyFrame", doc.BodyFrame.doc);
+    constexpr auto& cls_doc = doc.BodyFrame;
+    py::class_<Class, Frame<T>> cls(m, "BodyFrame", cls_doc.doc);
     // No need to re-bind element mixins from `Frame`.
   }
 
@@ -118,60 +121,69 @@ PYBIND11_MODULE(tree, m) {
   // Bodies.
   {
     using Class = Body<T>;
-    py::class_<Class> cls(m, "Body", doc.Body.doc);
+    constexpr auto& cls_doc = doc.Body;
+    py::class_<Class> cls(m, "Body", cls_doc.doc);
     BindMultibodyTreeElementMixin(&cls);
     cls  // BR
-        .def("name", &Class::name, doc.Body.name.doc)
+        .def("name", &Class::name, cls_doc.name.doc)
         .def("body_frame", &Class::body_frame, py_reference_internal,
-            doc.Body.body_frame.doc);
+            cls_doc.body_frame.doc)
+        .def("GetForceInWorld", &Class::GetForceInWorld, py::arg("context"),
+            py::arg("forces"), cls_doc.GetForceInWorld.doc)
+        .def("AddInForceInWorld", &Class::AddInForceInWorld, py::arg("context"),
+            py::arg("F_Bo_W"), py::arg("forces"), cls_doc.AddInForceInWorld.doc)
+        .def("AddInForce", &Class::AddInForce, py::arg("context"),
+            py::arg("p_BP_E"), py::arg("F_Bp_E"), py::arg("frame_E"),
+            py::arg("forces"), cls_doc.AddInForce.doc);
   }
 
   {
     using Class = RigidBody<T>;
-    py::class_<Class, Body<T>> cls(m, "RigidBody", doc.RigidBody.doc);
+    constexpr auto& cls_doc = doc.RigidBody;
+    py::class_<Class, Body<T>> cls(m, "RigidBody", cls_doc.doc);
   }
 
   // Joints.
   {
     using Class = Joint<T>;
-    py::class_<Class> cls(m, "Joint", doc.Joint.doc);
+    constexpr auto& cls_doc = doc.Joint;
+    py::class_<Class> cls(m, "Joint", cls_doc.doc);
     BindMultibodyTreeElementMixin(&cls);
     cls  // BR
-        .def("name", &Class::name, doc.Joint.name.doc)
+        .def("name", &Class::name, cls_doc.name.doc)
         .def("parent_body", &Class::parent_body, py_reference_internal,
-            doc.Joint.parent_body.doc)
+            cls_doc.parent_body.doc)
         .def("child_body", &Class::child_body, py_reference_internal,
-            doc.Joint.child_body.doc)
+            cls_doc.child_body.doc)
         .def("frame_on_parent", &Class::frame_on_parent, py_reference_internal,
-            doc.Joint.frame_on_parent.doc)
+            cls_doc.frame_on_parent.doc)
         .def("frame_on_child", &Class::frame_on_child, py_reference_internal,
-            doc.Joint.frame_on_child.doc)
+            cls_doc.frame_on_child.doc)
         .def("position_start", &Class::position_start,
-            doc.Joint.position_start.doc)
+            cls_doc.position_start.doc)
         .def("velocity_start", &Class::velocity_start,
-            doc.Joint.velocity_start.doc)
-        .def(
-            "num_positions", &Class::num_positions, doc.Joint.num_positions.doc)
+            cls_doc.velocity_start.doc)
+        .def("num_positions", &Class::num_positions, cls_doc.num_positions.doc)
         .def("num_velocities", &Class::num_velocities,
-            doc.Joint.num_velocities.doc)
+            cls_doc.num_velocities.doc)
         .def("position_lower_limits", &Class::position_lower_limits,
-            doc.Joint.position_lower_limits.doc)
+            cls_doc.position_lower_limits.doc)
         .def("position_upper_limits", &Class::position_upper_limits,
-            doc.Joint.position_upper_limits.doc)
+            cls_doc.position_upper_limits.doc)
         .def("velocity_lower_limits", &Class::velocity_lower_limits,
-            doc.Joint.velocity_lower_limits.doc)
+            cls_doc.velocity_lower_limits.doc)
         .def("velocity_upper_limits", &Class::velocity_upper_limits,
-            doc.Joint.velocity_upper_limits.doc)
+            cls_doc.velocity_upper_limits.doc)
         .def("acceleration_lower_limits", &Class::acceleration_lower_limits,
-            doc.Joint.acceleration_lower_limits.doc)
+            cls_doc.acceleration_lower_limits.doc)
         .def("acceleration_upper_limits", &Class::acceleration_upper_limits,
-            doc.Joint.acceleration_upper_limits.doc);
+            cls_doc.acceleration_upper_limits.doc);
   }
 
   {
     using Class = PrismaticJoint<T>;
-    py::class_<Class, Joint<T>> cls(
-        m, "PrismaticJoint", doc.PrismaticJoint.doc);
+    constexpr auto& cls_doc = doc.PrismaticJoint;
+    py::class_<Class, Joint<T>> cls(m, "PrismaticJoint", cls_doc.doc);
     cls  // BR
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  const Vector3<T>&, double, double, double>(),
@@ -181,41 +193,49 @@ PYBIND11_MODULE(tree, m) {
                 -std::numeric_limits<double>::infinity(),
             py::arg("pos_upper_limit") =
                 std::numeric_limits<double>::infinity(),
-            py::arg("damping") = 0, doc.RevoluteJoint.ctor.doc_7args)
+            py::arg("damping") = 0, cls_doc.ctor.doc)
         .def("get_translation", &Class::get_translation, py::arg("context"),
-            doc.PrismaticJoint.get_translation.doc)
+            cls_doc.get_translation.doc)
         .def("set_translation", &Class::set_translation, py::arg("context"),
-            py::arg("translation"), doc.PrismaticJoint.set_translation.doc)
+            py::arg("translation"), cls_doc.set_translation.doc)
         .def("get_translation_rate", &Class::get_translation_rate,
-            py::arg("context"), doc.PrismaticJoint.get_translation_rate.doc)
+            py::arg("context"), cls_doc.get_translation_rate.doc)
         .def("set_translation_rate", &Class::set_translation_rate,
             py::arg("context"), py::arg("translation_dot"),
-            doc.PrismaticJoint.set_translation_rate.doc);
+            cls_doc.set_translation_rate.doc)
+        .def("set_random_translation_distribution",
+            &Class::set_random_translation_distribution, py::arg("translation"),
+            cls_doc.set_random_translation_distribution.doc);
   }
 
   {
     using Class = RevoluteJoint<T>;
-    py::class_<Class, Joint<T>> cls(m, "RevoluteJoint", doc.RevoluteJoint.doc);
+    constexpr auto& cls_doc = doc.RevoluteJoint;
+    py::class_<Class, Joint<T>> cls(m, "RevoluteJoint", cls_doc.doc);
     cls  // BR
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  const Vector3<T>&, double>(),
             py::arg("name"), py::arg("frame_on_parent"),
             py::arg("frame_on_child"), py::arg("axis"), py::arg("damping") = 0,
-            doc.RevoluteJoint.ctor.doc_5args)
+            cls_doc.ctor.doc_5args)
         .def("get_angle", &Class::get_angle, py::arg("context"),
-            doc.RevoluteJoint.get_angle.doc)
+            cls_doc.get_angle.doc)
         .def("set_angle", &Class::set_angle, py::arg("context"),
-            py::arg("angle"), doc.RevoluteJoint.set_angle.doc);
+            py::arg("angle"), cls_doc.set_angle.doc)
+        .def("set_random_angle_distribution",
+            &Class::set_random_angle_distribution, py::arg("angle"),
+            cls_doc.set_random_angle_distribution.doc);
   }
 
   {
     using Class = WeldJoint<T>;
-    py::class_<Class, Joint<T>> cls(m, "WeldJoint", doc.WeldJoint.doc);
+    constexpr auto& cls_doc = doc.WeldJoint;
+    py::class_<Class, Joint<T>> cls(m, "WeldJoint", cls_doc.doc);
     cls  // BR
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  const RigidTransform<T>&>(),
             py::arg("name"), py::arg("parent_frame_P"),
-            py::arg("child_frame_C"), py::arg("X_PC"), doc.WeldJoint.ctor.doc)
+            py::arg("child_frame_C"), py::arg("X_PC"), cls_doc.ctor.doc)
         .def(py::init(
                  [](const std::string& name, const Frame<T>& parent_frame_P,
                      const Frame<T>& child_frame_C, const Isometry3<T>& X_PC) {
@@ -230,43 +250,56 @@ PYBIND11_MODULE(tree, m) {
   // Actuators.
   {
     using Class = JointActuator<T>;
-    py::class_<Class> cls(m, "JointActuator", doc.JointActuator.doc);
+    constexpr auto& cls_doc = doc.JointActuator;
+    py::class_<Class> cls(m, "JointActuator", cls_doc.doc);
     BindMultibodyTreeElementMixin(&cls);
     cls  // BR
-        .def("name", &Class::name, doc.JointActuator.name.doc)
-        .def("joint", &Class::joint, py_reference_internal,
-            doc.JointActuator.joint.doc);
+        .def("name", &Class::name, cls_doc.name.doc)
+        .def("joint", &Class::joint, py_reference_internal, cls_doc.joint.doc);
   }
 
   // Force Elements.
   {
     using Class = ForceElement<T>;
-    py::class_<Class> cls(m, "ForceElement", doc.ForceElement.doc);
+    constexpr auto& cls_doc = doc.ForceElement;
+    py::class_<Class> cls(m, "ForceElement", cls_doc.doc);
     BindMultibodyTreeElementMixin(&cls);
   }
 
   {
     using Class = UniformGravityFieldElement<T>;
+    constexpr auto& cls_doc = doc.UniformGravityFieldElement;
     py::class_<Class, ForceElement<T>>(
-        m, "UniformGravityFieldElement", doc.UniformGravityFieldElement.doc)
-        .def(py::init<>(), doc.UniformGravityFieldElement.ctor.doc_0args)
+        m, "UniformGravityFieldElement", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<Vector3<double>>(), py::arg("g_W"),
-            doc.UniformGravityFieldElement.ctor.doc_1args);
+            cls_doc.ctor.doc_1args);
   }
 
   // MultibodyForces
   {
     using Class = MultibodyForces<T>;
-    py::class_<Class> cls(m, "MultibodyForces", doc.MultibodyForces.doc);
+    constexpr auto& cls_doc = doc.MultibodyForces;
+    py::class_<Class> cls(m, "MultibodyForces", cls_doc.doc);
     // Custom constructor so that in Python we can take a MultibodyPlant
     // instead of a MultibodyTreeSystem.
     // N.B. This depends on `plant_py.cc`, but this codepath will only be
     // activated if this module is present, and thus should not create a runtime
     // error.
-    cls.def(py::init([](const MultibodyPlant<T>& plant) {
-      return std::make_unique<MultibodyForces<T>>(plant);
-    }),
-        py::arg("plant"), doc.MultibodyForces.ctor.doc_1args_plant);
+    cls  // BR
+        .def(py::init([](const MultibodyPlant<T>& plant) {
+          return std::make_unique<Class>(plant);
+        }),
+            py::arg("plant"), cls_doc.ctor.doc_1args_plant)
+        .def("SetZero", &Class::SetZero, cls_doc.SetZero.doc)
+        .def("generalized_forces", &Class::generalized_forces,
+            cls_doc.generalized_forces.doc)
+        .def("mutable_generalized_forces", &Class::mutable_generalized_forces,
+            py_reference_internal, cls_doc.mutable_generalized_forces.doc)
+        // WARNING: Do not bind `body_forces` or `mutable_body_forces` because
+        // they use `internal::BodyNodeIndex`. Instead, use force API in Body.
+        .def("AddInForces", &Class::AddInForces, py::arg("addend"),
+            cls_doc.AddInForces.doc);
   }
 
   {

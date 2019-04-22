@@ -81,20 +81,24 @@ MaliputRailcar<T>::MaliputRailcar(const LaneDirection& initial_lane_direction)
       this->DeclareInputPort(systems::kVectorValued, 1).get_index();
 
   state_output_port_index_ =
-      this->DeclareVectorOutputPort(&MaliputRailcar::CalcStateOutput)
+      this->DeclareVectorOutputPort(&MaliputRailcar::CalcStateOutput,
+                                    {this->all_state_ticket()})
           .get_index();
   lane_state_output_port_index_ =
       this->DeclareAbstractOutputPort(LaneDirection(initial_lane_direction),
-                                      &MaliputRailcar::CalcLaneOutput)
+                                      &MaliputRailcar::CalcLaneOutput,
+                                      {this->all_state_ticket()})
           .get_index();
   pose_output_port_index_ =
-      this->DeclareVectorOutputPort(&MaliputRailcar::CalcPose)
+      this->DeclareVectorOutputPort(&MaliputRailcar::CalcPose,
+                                    {this->configuration_ticket()})
           .get_index();
   velocity_output_port_index_ =
-      this->DeclareVectorOutputPort(&MaliputRailcar::CalcVelocity)
+      this->DeclareVectorOutputPort(&MaliputRailcar::CalcVelocity,
+                                    {this->kinematics_ticket()})
           .get_index();
 
-  this->DeclareContinuousState(MaliputRailcarState<T>());
+  this->DeclareContinuousState(MaliputRailcarState<T>(), 1, 1, 0);
   this->DeclareNumericParameter(MaliputRailcarParams<T>());
 }
 
@@ -294,11 +298,6 @@ MaliputRailcar<T>::AllocateAbstractState() const {
   abstract_values.push_back(std::unique_ptr<AbstractValue>(
       std::make_unique<Value<LaneDirection>>(lane_direction)));
   return std::make_unique<systems::AbstractValues>(std::move(abstract_values));
-}
-
-template <typename T>
-optional<bool> MaliputRailcar<T>::DoHasDirectFeedthrough(int, int) const {
-  return false;
 }
 
 template <typename T>

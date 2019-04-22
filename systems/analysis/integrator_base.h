@@ -560,6 +560,8 @@ class IntegratorBase {
    *                          of publish_time, update_time, or boundary_time is
    *                          in the past.
    * @return The reason for the integration step ending.
+   * @post The time in the context will be no greater than
+   *       `min(publish_time, update_time, boundary_time)`.
    * @warning Users should generally not call this function directly; within
    *          simulation circumstances, users will typically call
    *          `Simulator::AdvanceTo()`. In other circumstances, users will

@@ -284,8 +284,7 @@ class TestCustom(unittest.TestCase):
             def _on_periodic(self, context, event):
                 test.assertIsInstance(context, Context)
                 test.assertIsInstance(event, PublishEvent)
-                # TODO(edrumwri): Uncomment this pending resolution of #11185
-                # test.assertFalse(self.called_periodic)
+                test.assertFalse(self.called_periodic)
                 self.called_periodic = True
 
             def _witness(self, context):

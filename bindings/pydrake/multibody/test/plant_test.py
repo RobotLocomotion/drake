@@ -22,7 +22,7 @@ from pydrake.multibody.tree import (
     WeldJoint,
     world_index,
 )
-from pydrake.multibody.math import SpatialVelocity
+from pydrake.multibody.math import SpatialForce, SpatialVelocity
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
     ContactResults,
@@ -44,6 +44,7 @@ from pydrake.geometry import (
     GeometryId,
     PenetrationAsPointPair,
     SignedDistancePair,
+    SignedDistanceToPoint,
     SceneGraph,
 )
 from pydrake.systems.framework import AbstractValue, DiagramBuilder
@@ -737,11 +738,11 @@ class TestPlant(unittest.TestCase):
         # Set an arbitrary configuration away from the model's fixed point.
         plant.SetPositions(context, [0.1, 0.2])
 
-        H = plant.CalcMassMatrixViaInverseDynamics(context)
+        M = plant.CalcMassMatrixViaInverseDynamics(context)
         Cv = plant.CalcBiasTerm(context)
 
-        self.assertTrue(H.shape == (2, 2))
-        self.assert_sane(H)
+        self.assertTrue(M.shape == (2, 2))
+        self.assert_sane(M)
         self.assertTrue(Cv.shape == (2, ))
         self.assert_sane(Cv, nonzero=False)
         nv = plant.num_velocities()
@@ -758,8 +759,34 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(tau_g.shape, (nv,))
         self.assert_sane(tau_g, nonzero=True)
 
+        B = plant.MakeActuationMatrix()
+        np.testing.assert_equal(B, np.array([[0.], [1.]]))
+
         forces = MultibodyForces(plant=plant)
         plant.CalcForceElementsContribution(context=context, forces=forces)
+
+        # Test generalized forces.
+        forces.mutable_generalized_forces()[:] = 1
+        np.testing.assert_equal(forces.generalized_forces(), 1)
+        forces.SetZero()
+        np.testing.assert_equal(forces.generalized_forces(), 0)
+        # Test body force accessors and mutators.
+        link2 = plant.GetBodyByName("Link2")
+        self.assertIsInstance(
+            link2.GetForceInWorld(context, forces), SpatialForce)
+        forces.SetZero()
+        F_expected = np.array([1, 2, 3, 4, 5, 6])
+        link2.AddInForceInWorld(
+            context, F_Bo_W=SpatialForce(F=F_expected), forces=forces)
+        np.testing.assert_equal(
+            link2.GetForceInWorld(context, forces).get_coeffs(), F_expected)
+        link2.AddInForce(
+            context, p_BP_E=[0, 0, 0], F_Bp_E=SpatialForce(F=F_expected),
+            frame_E=plant.world_frame(), forces=forces)
+        # Also check accumulation.
+        np.testing.assert_equal(
+            link2.GetForceInWorld(context, forces).get_coeffs(),
+            2 * F_expected)
 
     def test_contact(self):
         # PenetrationAsContactPair
@@ -840,6 +867,13 @@ class TestPlant(unittest.TestCase):
         signed_distance_pair, = query_object.\
             ComputeSignedDistancePairwiseClosestPoints()
         self.assertIsInstance(signed_distance_pair, SignedDistancePair)
+        signed_distance_to_point = query_object.\
+            ComputeSignedDistanceToPoint(p_WQ=np.ones(3))
+        self.assertEqual(len(signed_distance_to_point), 2)
+        self.assertIsInstance(signed_distance_to_point[0],
+                              SignedDistanceToPoint)
+        self.assertIsInstance(signed_distance_to_point[1],
+                              SignedDistanceToPoint)
         inspector = query_object.inspector()
 
         def get_body_from_frame_id(frame_id):

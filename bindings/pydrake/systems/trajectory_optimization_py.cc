@@ -217,14 +217,11 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       .def(py::init<const systems::System<double>*,
                const systems::Context<double>&, int>(),
           py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
-          doc.DirectTranscription.ctor
-              .doc_3args_system_context_num_time_samples)
-      .def(py::init<const systems::LinearSystem<double>*,
-               const systems::Context<double>&, int>(),
-          py::arg("linear_system"), py::arg("context"),
-          py::arg("num_time_samples"),
-          doc.DirectTranscription.ctor
-              .doc_3args_linear_system_context_num_time_samples);
+          doc.DirectTranscription.ctor.doc_3args)
+      .def(py::init<const systems::System<double>*,
+               const systems::Context<double>&, int, double>(),
+          py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
+          py::arg("fixed_timestep"), doc.DirectTranscription.ctor.doc_4args);
 }
 
 }  // namespace pydrake

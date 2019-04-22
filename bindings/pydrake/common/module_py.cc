@@ -2,6 +2,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_assert.h"
@@ -70,15 +71,25 @@ PYBIND11_MODULE(_module_py, m) {
     }
   });
   // Convenient wrapper to add a resource search path.
-  m.def("AddResourceSearchPath", &AddResourceSearchPath,
-      "Adds a path in which to search for resource files. "
-      "The path refers to the relative path within the Drake repository, ",
-      py::arg("search_path"), doc.AddResourceSearchPath.doc);
+  m.def("AddResourceSearchPath",
+      [](const std::string& x) {
+        WarnDeprecated("See API docs for deprecation notice.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        AddResourceSearchPath(x);
+#pragma GCC diagnostic pop
+      },
+      py::arg("search_path"), doc.AddResourceSearchPath.doc_deprecated);
   // Convenient wrapper to get the list of resource search paths.
-  m.def("GetResourceSearchPaths", &GetResourceSearchPaths,
-      "Gets a copy of the list of paths set programmatically in which "
-      "resource files are searched.",
-      doc.GetResourceSearchPaths.doc);
+  m.def("GetResourceSearchPaths",
+      []() {
+        WarnDeprecated("See API docs for deprecation notice.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        return GetResourceSearchPaths();
+#pragma GCC diagnostic pop
+      },
+      doc.GetResourceSearchPaths.doc_deprecated);
   // Convenient wrapper for querying FindResource(resource_path).
   m.def("FindResourceOrThrow", &FindResourceOrThrow,
       "Attempts to locate a Drake resource named by the given path string. "

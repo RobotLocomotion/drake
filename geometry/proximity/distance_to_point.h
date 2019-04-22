@@ -109,7 +109,8 @@ template <typename T>
 void ComputeDistanceToPrimitive(const fcl::Sphered& sphere,
                                 const math::RigidTransform<T>& X_WG,
                                 const Vector3<T>& p_WQ, Vector3<T>* p_GN,
-                                T* distance, Vector3<T>* grad_W) {
+                                T* distance, Vector3<T>* grad_W,
+                                bool* is_grad_W_well_defined) {
   const double radius = sphere.radius;
   const Vector3<T> p_GQ_G = X_WG.inverse() * p_WQ;
   const T dist_GQ = p_GQ_G.norm();
@@ -125,17 +126,18 @@ void ComputeDistanceToPrimitive(const fcl::Sphered& sphere,
   const double tolerance = DistanceToPointRelativeTolerance(radius);
   // Unit vector in x-direction of G's frame.
   const Vector3<T> Gx = Vector3<T>::UnitX();
+  *is_grad_W_well_defined = (dist_GQ > tolerance);
   // Gradient vector expressed in G's frame.
-  const Vector3<T> grad_G = (dist_GQ > tolerance) ? p_GQ_G / dist_GQ : Gx;
+  const Vector3<T> grad_G = *is_grad_W_well_defined ? p_GQ_G / dist_GQ : Gx;
+
+  // p_GN is the position of a witness point N in the geometry frame G.
+  *p_GN = T(radius) * grad_G;
 
   // Do not compute distance as ∥p_GQ∥₂, because the gradient of ∥p_GQ∥₂ w.r.t.
   // p_GQ is p_GQᵀ/∥p_GQ∥₂ which is not well defined at p_GQ = 0. Instead,
-  // compute the distance as p_GQ.dot(grad_G).
-  *distance = p_GQ_G.dot(grad_G) - T(radius);
+  // compute the distance as p_NQ_G.dot(grad_G).
+  *distance = (p_GQ_G - *p_GN).dot(grad_G);
 
-  // Position vector of the nearest point N on G's surface from the query
-  // point Q, expressed in G's frame.
-  *p_GN = radius * grad_G;
   // Gradient vector expressed in World frame.
   *grad_W = X_WG.rotation() * grad_G;
 }
@@ -145,7 +147,8 @@ template <typename T>
 void ComputeDistanceToPrimitive(const fcl::Halfspaced& halfspace,
                                 const math::RigidTransform<T>& X_WG,
                                 const Vector3<T>& p_WQ, Vector3<T>* p_GN,
-                                T* distance, Vector3<T>* grad_W) {
+                                T* distance, Vector3<T>* grad_W,
+                                bool* is_grad_W_well_defined) {
   // FCL stores the halfspace as {x | nᵀ * x <= d}, with n being a unit length
   // normal vector. Both n and x are expressed in the halfspace frame.
   const Vector3<T> n_G = halfspace.n.cast<T>();
@@ -153,6 +156,7 @@ void ComputeDistanceToPrimitive(const fcl::Halfspaced& halfspace,
   *distance = n_G.dot(p_GQ) - T(halfspace.d);
   *p_GN = p_GQ - *distance * n_G;
   *grad_W = X_WG.rotation() * n_G;
+  *is_grad_W_well_defined = true;
 }
 
 // TODO(DamrongGuoy): Add overloads for all supported geometries.
@@ -183,10 +187,12 @@ class DistanceToPoint {
   SignedDistanceToPoint<T> operator()(const fcl::Sphered& sphere) {
     T distance{};
     Vector3<T> p_GN_G, grad_W;
+    bool is_grad_W_well_defined{};
     ComputeDistanceToPrimitive(sphere, X_WG_, p_WQ_, &p_GN_G, &distance,
-                               &grad_W);
+                               &grad_W, &is_grad_W_well_defined);
 
-    return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W};
+    return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W,
+                                    is_grad_W_well_defined};
   }
 
   /** Overload to compute distance to a box.  */
@@ -198,11 +204,15 @@ class DistanceToPoint {
     // i-th coordinate.
     const Eigen::Vector3d h = box.side / 2.0;
     Vector3<T> p_GN_G, grad_G;
-    std::tie(p_GN_G, grad_G) = ComputeDistanceToBox(h, p_GQ_G);
+    bool is_Q_on_edge_or_vertex{};
+    std::tie(p_GN_G, grad_G, is_Q_on_edge_or_vertex) =
+        ComputeDistanceToBox(h, p_GQ_G);
+    const bool is_grad_W_well_defined = !is_Q_on_edge_or_vertex;
     const Vector3<T> grad_W = X_WG_.rotation() * grad_G;
     const Vector3<T> p_WN = X_WG_ * p_GN_G;
     T distance = grad_W.dot(p_WQ_ - p_WN);
-    return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W};
+    return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W,
+                                    is_grad_W_well_defined};
   }
 
   /** Overload to compute distance to a cylinder.  */
@@ -281,7 +291,9 @@ class DistanceToPoint {
     Vector2<T> p_BN;
     // The gradient vector expressed in B's frame in coordinates (r,z).
     Vector2<T> grad_B;
-    std::tie(p_BN, grad_B) = ComputeDistanceToBox(h, p_BQ);
+    bool is_Q_on_edge_or_vertex{};
+    std::tie(p_BN, grad_B, is_Q_on_edge_or_vertex) =
+        ComputeDistanceToBox(h, p_BQ);
 
     // Transform coordinates from (r,z) in B's frame to (x,y,z) in G's frame.
     const Vector3<T> p_GN = rz_to_xyz(p_BN);
@@ -292,7 +304,11 @@ class DistanceToPoint {
     const Vector3<T> grad_W = R_WG * grad_G;
     const Vector3<T> p_WN = X_WG_ * p_GN;
     T distance = grad_W.dot(p_WQ_ - p_WN);
-    return SignedDistanceToPoint<T>{geometry_id_, p_GN, distance, grad_W};
+    // TODO(hongkai.dai): grad_W is not well defined when Q is on the top or
+    // bottom rims of the cylinder, or when it is inside the box and on the
+    // central axis, with the nearest feature being the barrel of the cylinder.
+    return SignedDistanceToPoint<T>{geometry_id_, p_GN, distance, grad_W,
+                                    true /* is_grad_W_well_defined */};
   }
 
   /** Reports the "sign" of x with a small modification; Sign(0) --> 1.
@@ -339,12 +355,13 @@ class DistanceToPoint {
                    [-h(0),h(0)]x[-h(1),h(1)] in 2D or
                    [-h(0),h(0)]x[-h(1),h(1)]x[-h(2),h(2)] in 3D.
    @param p_GQ_G   The position of the query point Q in G's frame.
-   @retval {p_GN_G, grad_G}   The tuple of the position of
-                   the nearest point N in G's frame and the gradient vector in
-                   the same frame G.
+   @retval {p_GN_G, grad_G, is_Q_on_edge_or_vertex}   The tuple of the position
+                   of the nearest point N in G's frame and the gradient vector
+                   in the same frame G, together with the type of the nearest
+                   feature.
    @tparam dim     The dimension, must be 2 or 3.  */
   template <int dim>
-  std::tuple<Vector<T, dim>, Vector<T, dim>> ComputeDistanceToBox(
+  std::tuple<Vector<T, dim>, Vector<T, dim>, bool> ComputeDistanceToBox(
       const Vector<double, dim>& h, const Vector<T, dim>& p_GQ_G) {
     using std::abs;
 
@@ -388,8 +405,13 @@ class DistanceToPoint {
     Vector<T, dim> p_GC_G;
     VectorLoc location;
     for (int i = 0; i < p_GC_G.size(); ++i) {
-      p_GC_G(i) = clamp(i, ExtractDoubleOrThrow(p_GQ_G(i)), &location(i));
+      p_GC_G(i) = clamp(i, p_GQ_G(i), &location(i));
     }
+    int num_dim_on_boundary = 0;
+    for (int i = 0; i < dim; ++i) {
+      num_dim_on_boundary += location(i) == Location::kBoundary ? 1 : 0;
+    }
+    const bool is_Q_on_edge_or_vertex = num_dim_on_boundary >= 2 ? true : false;
 
     // Initialize the position of the nearest point N on ∂B as that of C.
     // Note: if Q is outside or on the boundary of B, then C is N. In the
@@ -425,7 +447,7 @@ class DistanceToPoint {
       grad_G(axis) = sign;
     }
 
-    return std::make_tuple(p_GN_G, grad_G);
+    return std::make_tuple(p_GN_G, grad_G, is_Q_on_edge_or_vertex);
   }
 
  private:

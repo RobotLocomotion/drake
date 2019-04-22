@@ -16,6 +16,15 @@ namespace {
 using Eigen::Matrix2d;
 using Eigen::Vector2d;
 
+GTEST_TEST(DiscreteDerivativeTest, Topology) {
+  const int kNumInputs = 2;
+  const double time_step = 0.1;
+  const DiscreteDerivative<double> deriv(kNumInputs, time_step);
+  EXPECT_EQ(deriv.get_input_port().size(), kNumInputs);
+  EXPECT_EQ(deriv.get_output_port().size(), kNumInputs);
+  EXPECT_FALSE(deriv.HasAnyDirectFeedthrough());
+}
+
 GTEST_TEST(DiscreteDerivativeTest, FirstOrderHold) {
   DiagramBuilder<double> builder;
 
