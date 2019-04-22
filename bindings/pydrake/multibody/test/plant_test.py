@@ -44,6 +44,7 @@ from pydrake.geometry import (
     GeometryId,
     PenetrationAsPointPair,
     SignedDistancePair,
+    SignedDistanceToPoint,
     SceneGraph,
 )
 from pydrake.systems.framework import AbstractValue, DiagramBuilder
@@ -866,6 +867,13 @@ class TestPlant(unittest.TestCase):
         signed_distance_pair, = query_object.\
             ComputeSignedDistancePairwiseClosestPoints()
         self.assertIsInstance(signed_distance_pair, SignedDistancePair)
+        signed_distance_to_point = query_object.\
+            ComputeSignedDistanceToPoint(p_WQ=np.ones(3))
+        self.assertEqual(len(signed_distance_to_point), 2)
+        self.assertIsInstance(signed_distance_to_point[0],
+                              SignedDistanceToPoint)
+        self.assertIsInstance(signed_distance_to_point[1],
+                              SignedDistanceToPoint)
         inspector = query_object.inspector()
 
         def get_body_from_frame_id(frame_id):
