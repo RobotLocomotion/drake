@@ -110,6 +110,7 @@ GTEST_TEST(SymbolicVectorSystemTest, ScalarPassThrough) {
   EXPECT_TRUE(context->is_stateless());
   EXPECT_EQ(system.get_input_port().size(), 1);
   EXPECT_EQ(system.get_output_port().size(), 1);
+  EXPECT_TRUE(system.HasDirectFeedthrough(0, 0));
 
   context->FixInputPort(0, Vector1d{0.12});
   EXPECT_TRUE(CompareMatrices(system.get_output_port()
@@ -193,6 +194,19 @@ GTEST_TEST(SymbolicVectorSystemTest, DiscreteStateOnly) {
   system.CalcDiscreteVariableUpdates(*context, discrete_variables.get());
   EXPECT_TRUE(CompareMatrices(discrete_variables->get_vector().get_value(),
                               Vector1d{-xval + xval * xval * xval}));
+}
+
+GTEST_TEST(SymbolicVectorSystemTest, IntegratorNoFeedthrough) {
+  Variable x{"x"};
+  Variable u{"u"};
+  auto system = SymbolicVectorSystemBuilder()
+                    .state(Vector1<Variable>{x})
+                    .input(Vector1<Variable>{u})
+                    .dynamics(Vector1<Expression>{u})
+                    .output(Vector1<Expression>{x})
+                    .Build<Expression>();
+
+  EXPECT_FALSE(system->HasDirectFeedthrough(0, 0));
 }
 
 GTEST_TEST(SymbolicVectorSystemTest, ContinuousTimeSymbolic) {

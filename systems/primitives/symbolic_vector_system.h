@@ -99,10 +99,6 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
   }
 
  private:
-  // Override feedthrough detection to avoid the need for `DoToSymbolic()`.
-  optional<bool> DoHasDirectFeedthrough(int input_port,
-                                        int output_port) const final;
-
   template <typename Container>
   void PopulateFromContext(const Context<T>& context, Container* penv) const;
 
