@@ -53,6 +53,8 @@ GTEST_TEST(RigidBodyPlantTest, TestLoadUrdf) {
   EXPECT_EQ(plant.get_input_size(), 0);
   EXPECT_EQ(plant.get_output_size(), 0);
 
+  EXPECT_FALSE(plant.HasAnyDirectFeedthrough());
+
   // Obtains a const reference to the underlying RigidBodyTree within the
   // RigidBodyPlant.
   const RigidBodyTree<double>& tree = plant.get_rigid_body_tree();

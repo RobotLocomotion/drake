@@ -125,11 +125,6 @@ class RigidBodyPlantBridge : public systems::LeafSystem<T> {
   // geometry system.
   void RegisterTree(geometry::SceneGraph<T>* scene_graph);
 
-  // This is nothing _but_ direct-feedthrough.
-  optional<bool> DoHasDirectFeedthrough(int, int) const override {
-    return true;
-  }
-
   // Calculate the frame pose set output port value.
   void CalcFramePoseOutput(const MyContext& context,
                            geometry::FramePoseVector<T>* poses) const;

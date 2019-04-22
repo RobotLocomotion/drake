@@ -3193,12 +3193,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // TODO(SeanCurtis-TRI): Remove this when geometry roles are introduced.
   void ExcludeCollisionsWithVisualGeometry();
 
-  // No inputs implies no feedthrough; this makes it explicit.
-  // TODO(amcastro-tri): add input ports for actuators.
-  optional<bool> DoHasDirectFeedthrough(int, int) const override {
-    return false;
-  }
-
   // Helper method to declare state, cache entries, and ports after Finalize().
   void DeclareStateCacheAndPorts();
 
