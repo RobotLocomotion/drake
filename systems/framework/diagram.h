@@ -104,7 +104,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     std::multimap<int, int> pairs;
     for (InputPortIndex u(0); u < this->num_input_ports(); ++u) {
       for (OutputPortIndex v(0); v < this->num_output_ports(); ++v) {
-        if (DoHasDirectFeedthrough(u, v)) {
+        if (DiagramHasDirectFeedthrough(u, v)) {
           pairs.emplace(u, v);
         }
       }
@@ -1060,7 +1060,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   // Returns true if there might be direct feedthrough from the given
   // @p input_port of the Diagram to the given @p output_port of the Diagram.
-  bool DoHasDirectFeedthrough(int input_port, int output_port) const {
+  bool DiagramHasDirectFeedthrough(int input_port, int output_port) const {
     DRAKE_ASSERT(input_port >= 0);
     DRAKE_ASSERT(input_port < this->num_input_ports());
     DRAKE_ASSERT(output_port >= 0);

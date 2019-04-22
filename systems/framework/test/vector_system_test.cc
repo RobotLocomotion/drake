@@ -346,11 +346,9 @@ TEST_F(VectorSystemTest, DiscreteVariableUpdates) {
 
 class NoFeedthroughContinuousTimeSystem : public VectorSystem<double> {
  public:
-  NoFeedthroughContinuousTimeSystem() : VectorSystem<double>(1, 1) {
+  NoFeedthroughContinuousTimeSystem() : VectorSystem<double>(1, 1, false) {
     this->DeclareContinuousState(1);
   }
-
-  optional<bool> DoHasDirectFeedthrough(int, int) const final { return false; }
 
  private:
   void DoCalcVectorOutput(

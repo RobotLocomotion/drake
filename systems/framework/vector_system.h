@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -60,8 +61,10 @@ class VectorSystem : public LeafSystem<T> {
   /// enable AutoDiff support, use the SystemScalarConverter-based constructor.
   /// (For that, see @ref system_scalar_conversion at the example titled
   /// "Example using drake::systems::VectorSystem as the base class".)
-  VectorSystem(int input_size, int output_size)
-      : VectorSystem(SystemScalarConverter{}, input_size, output_size) {}
+  VectorSystem(int input_size, int output_size,
+               optional<bool> direct_feedthrough = nullopt)
+      : VectorSystem(SystemScalarConverter{}, input_size, output_size,
+                     direct_feedthrough) {}
 
   /// Creates a system with one input port and one output port of the given
   /// sizes, when the sizes are non-zero.  Either size can be zero, in which
@@ -75,14 +78,29 @@ class VectorSystem : public LeafSystem<T> {
   /// See @ref system_scalar_conversion for detailed background and examples
   /// related to scalar-type conversion support, especially the example titled
   /// "Example using drake::systems::VectorSystem as the base class".
-  VectorSystem(SystemScalarConverter converter, int input_size, int output_size)
+  VectorSystem(SystemScalarConverter converter, int input_size, int output_size,
+               optional<bool> direct_feedthrough = nullopt)
       : LeafSystem<T>(std::move(converter)) {
     if (input_size > 0) {
       this->DeclareInputPort(kVectorValued, input_size);
     }
     if (output_size > 0) {
-      this->DeclareVectorOutputPort(BasicVector<T>(output_size),
-                                    &VectorSystem::CalcVectorOutput);
+      std::set<DependencyTicket> prerequisites_of_calc;
+      if (direct_feedthrough.value_or(true)) {
+        // Depend on everything.
+        prerequisites_of_calc = {
+          this->all_sources_ticket()
+        };
+      } else {
+        // Depend on everything *except* for the inputs.
+        prerequisites_of_calc = {
+          this->kinematics_ticket(),
+          this->time_ticket()
+        };
+      }
+      this->DeclareVectorOutputPort(
+          BasicVector<T>(output_size), &VectorSystem::CalcVectorOutput,
+          std::move(prerequisites_of_calc));
     }
   }
 

@@ -246,7 +246,9 @@ struct Impl {
    public:
     using Base = VectorSystem<T>;
 
-    VectorSystemPublic(int inputs, int outputs) : Base(inputs, outputs) {}
+    VectorSystemPublic(
+        int input_size, int output_size, optional<bool> direct_feedthrough)
+        : Base(input_size, output_size, direct_feedthrough) {}
 
     using Base::EvalVectorInput;
     using Base::GetVectorState;
@@ -708,10 +710,14 @@ Note: The above is for the C++ documentation. For Python, use
     // we're already abusing Python and C++ enough.
     DefineTemplateClassWithDefault<VectorSystem<T>, PyVectorSystem,
         LeafSystem<T>>(m, "VectorSystem", GetPyParam<T>(), doc.VectorSystem.doc)
-        .def(py::init([](int inputs, int outputs) {
-          return new PyVectorSystem(inputs, outputs);
+        .def(py::init([](int input_size, int output_size,
+                          optional<bool> direct_feedthrough) {
+          return new PyVectorSystem(
+              input_size, output_size, direct_feedthrough);
         }),
-            doc.VectorSystem.ctor.doc_2args);
+            py::arg("input_size"), py::arg("output_size"),
+            py::arg("direct_feedthrough") = nullopt,
+            doc.VectorSystem.ctor.doc_3args);
     // TODO(eric.cousineau): Bind virtual methods once we provide a function
     // wrapper to convert `Map<Derived>*` arguments.
     // N.B. This could be mitigated by using `EigenPtr` in public interfaces in
