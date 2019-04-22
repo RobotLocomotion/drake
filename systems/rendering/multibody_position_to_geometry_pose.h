@@ -60,8 +60,6 @@ class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
   }
 
  private:
-  optional<bool> DoHasDirectFeedthrough(int, int) const final { return true; }
-
   void CalcGeometryPose(const Context<T>& context, AbstractValue* poses) const;
 
   const multibody::MultibodyPlant<T>& plant_;

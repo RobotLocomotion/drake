@@ -32,10 +32,7 @@ GTEST_TEST(RenderPoseToGeometryPoseTest, InputOutput) {
   EXPECT_TRUE(CompareMatrices(
       output.value(frame_id).matrix(),
       input.get_isometry().matrix()));
-}
 
-GTEST_TEST(RenderPoseToGeometryPoseTest, DirectFeedthrough) {
-  const RenderPoseToGeometryPose<double> dut({}, {});
   EXPECT_TRUE(dut.HasAnyDirectFeedthrough());
 }
 
