@@ -168,6 +168,11 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "lcm_driven_loop_test",
+    copts = [
+        # The entire class under test is deprecated; when the class is removed,
+        # remove this entire unit test as well.
+        "-Wno-deprecated-declarations",
+    ],
     # TODO(jamiesnape, siyuanfeng-tri): Remove flaky flag, see #5936.
     flaky = 1,
     tags = [

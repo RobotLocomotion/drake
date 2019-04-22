@@ -135,6 +135,7 @@ drake_cc_binary(
     srcs = [
         "valkyrie_balancing_demo.cc",
     ],
+    copts = ["-Wno-deprecated-declarations"],
     data = [
         ":config/valkyrie.alias_groups",
         ":config/valkyrie.id_controller_config",
