@@ -22,11 +22,20 @@ class TestInstall(unittest.TestCase):
         content = set(os.listdir(installation_folder))
         self.assertSetEqual(set(['bin', 'include', 'lib', 'share']), content)
 
+        # Our launched processes should be independent, not inherit their
+        # runfiles from the install_test.py runner.
+        cmd_env = dict(os.environ)
+        for key in ["RUNFILES_MANIFEST_FILE", "RUNFILES_DIR", "TEST_SRCDIR"]:
+            if key in cmd_env:
+                del cmd_env[key]
+
         # Execute the install actions.
         for cmd in lines:
             cmd = cmd.strip()
             print("+ {}".format(cmd))
-            install_test_helper.check_call([os.path.join(os.getcwd(), cmd)])
+            install_test_helper.check_call(
+                [os.path.join(os.getcwd(), cmd)],
+                env=cmd_env)
 
 
 if __name__ == '__main__':
