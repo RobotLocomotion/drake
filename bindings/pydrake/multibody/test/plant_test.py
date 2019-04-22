@@ -737,11 +737,11 @@ class TestPlant(unittest.TestCase):
         # Set an arbitrary configuration away from the model's fixed point.
         plant.SetPositions(context, [0.1, 0.2])
 
-        H = plant.CalcMassMatrixViaInverseDynamics(context)
+        M = plant.CalcMassMatrixViaInverseDynamics(context)
         Cv = plant.CalcBiasTerm(context)
 
-        self.assertTrue(H.shape == (2, 2))
-        self.assert_sane(H)
+        self.assertTrue(M.shape == (2, 2))
+        self.assert_sane(M)
         self.assertTrue(Cv.shape == (2, ))
         self.assert_sane(Cv, nonzero=False)
         nv = plant.num_velocities()
@@ -757,6 +757,9 @@ class TestPlant(unittest.TestCase):
         tau_g = plant.CalcGravityGeneralizedForces(context)
         self.assertEqual(tau_g.shape, (nv,))
         self.assert_sane(tau_g, nonzero=True)
+
+        B = plant.MakeActuationMatrix()
+        np.testing.assert_equal(B, np.array([[0.], [1.]]))
 
         forces = MultibodyForces(plant=plant)
         plant.CalcForceElementsContribution(context=context, forces=forces)
