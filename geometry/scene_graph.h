@@ -74,8 +74,8 @@ class QueryObject;
  FramePoseVector. For each registered frame, this "pose vector" maps the
  registered FrameId to a pose value. All registered frames must be accounted
  for and only frames registered by a source can be included in its output port.
- See the details in FrameKinematicsVector for details on how to allocate and
- calculate this port.
+ See the details in FrameKinematicsVector for details on how to provide values
+ for this port.
 
  @section geom_sys_outputs Outputs
 

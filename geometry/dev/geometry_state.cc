@@ -1025,12 +1025,13 @@ void GeometryState<T>::CollectIndices(
 }
 
 template <typename T>
-void GeometryState<T>::SetFramePoses(const FramePoseVector<T>& poses) {
+void GeometryState<T>::SetFramePoses(
+    const SourceId source_id, const FramePoseVector<T>& poses) {
   // TODO(SeanCurtis-TRI): Down the road, make this validation depend on
   // ASSERT_ARMED.
-  ValidateFrameIds(poses);
+  ValidateFrameIds(source_id, poses);
   const Isometry3<T> world_pose = Isometry3<T>::Identity();
-  for (auto frame_id : source_root_frame_map_[poses.source_id()]) {
+  for (auto frame_id : source_root_frame_map_[source_id]) {
     UpdatePosesRecursively(frames_[frame_id], world_pose, poses);
   }
 }
@@ -1038,8 +1039,8 @@ void GeometryState<T>::SetFramePoses(const FramePoseVector<T>& poses) {
 template <typename T>
 template <typename ValueType>
 void GeometryState<T>::ValidateFrameIds(
+    const SourceId source_id,
     const FrameKinematicsVector<ValueType>& kinematics_data) const {
-  SourceId source_id = kinematics_data.source_id();
   auto& frames = GetFramesForSource(source_id);
   const int ref_frame_count = static_cast<int>(frames.size());
   if (ref_frame_count != kinematics_data.size()) {

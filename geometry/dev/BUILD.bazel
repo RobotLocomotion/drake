@@ -208,6 +208,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "geometry_state_test",
+    # TODO(jwnimmer-tri) Remove this, prior to code review.
+    copts = ["-Wno-deprecated-declarations"],
     tags = ["no_asan"],  # It doesn't pass yet.
     deps = [
         ":geometry_state",
@@ -217,6 +219,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "scene_graph_test",
+    # TODO(jwnimmer-tri) Remove this, prior to code review.
+    copts = ["-Wno-deprecated-declarations"],
     tags = ["no_asan"],  # It doesn't pass yet.
     deps = [
         ":geometry_visualization",
