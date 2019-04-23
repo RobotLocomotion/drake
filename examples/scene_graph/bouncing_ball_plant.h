@@ -106,8 +106,6 @@ class BouncingBallPlant : public systems::LeafSystem<T> {
     return get_mutable_state(&context->get_mutable_continuous_state());
   }
 
-  // This plant's source id in SceneGraph.
-  geometry::SourceId source_id_;
   // The projected position of the ball onto the ground plane. I.e., it's
   // "where the ball bounces".
   const Vector2<double> p_WB_;

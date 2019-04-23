@@ -415,11 +415,7 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
     frame_ids_.push_back(f_id);
 
     // Set up output port now that the frame is registered.
-    std::vector<FrameId> all_ids{f_id};
-    all_ids.insert(all_ids.end(), extra_frame_ids_.begin(),
-                   extra_frame_ids_.end());
     this->DeclareAbstractOutputPort(
-        FramePoseVector<double>(source_id_, all_ids),
         &GeometrySourceSystem::CalcFramePoseOutput);
   }
   SourceId get_source_id() const { return source_id_; }
@@ -442,11 +438,6 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
   // Populate with the pose data.
   void CalcFramePoseOutput(const Context<double>& context,
                            FramePoseVector<double>* poses) const {
-    const int frame_count =
-        static_cast<int>(frame_ids_.size() + extra_frame_ids_.size());
-    DRAKE_DEMAND(poses->size() == frame_count);
-    DRAKE_DEMAND(poses->source_id() == source_id_);
-
     poses->clear();
 
     const int base_count = static_cast<int>(frame_ids_.size());
@@ -600,9 +591,9 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
     // bundle.
     EXPECT_EQ(0, poses.get_num_poses());
     auto context = scene_graph.AllocateContext();
-    FramePoseVector<double> pose_vector(s_id, {f_id});
-    context->FixInputPort(scene_graph.get_source_pose_port(s_id).get_index(),
-                          Value<FramePoseVector<double>>(pose_vector));
+    const FramePoseVector<double> pose_vector{{
+        f_id, Isometry3<double>::Identity()}};
+    scene_graph.get_source_pose_port(s_id).FixValue(context.get(), pose_vector);
     EXPECT_NO_THROW(
         SceneGraphTester::CalcPoseBundle(scene_graph, *context, &poses));
   }
