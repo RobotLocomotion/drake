@@ -147,22 +147,22 @@ class MultibodyGraph {
   bool HasJointNamed(const std::string& name,
                      ModelInstanceIndex model_instance) const;
 
-  /** This method partitions the %MultibodyGraph into islands such that (a)
-  every body is in one and only one island, and (b) two bodies are in the same
-  island iff there is a path between them which includes only weld joints (see
-  weld_type_name()). Each island of welded bodies is represented as a set of
-  body indices. By definition, these islands will be disconnected by any
-  non-weld joint between two bodies. The first island will have all of the
-  bodies welded to the world, including the world body itself; all subsequent
-  islands will be in no particular order. A few more notes:
+  /** This method partitions the %MultibodyGraph into sub-graphs such that (a)
+  every body is in one and only one sub-graph, and (b) two bodies are in the
+  same sub-graph iff there is a path between them which includes only weld
+  joints (see weld_type_name()). Each sub-graph of welded bodies is represented
+  as a set of body indices. By definition, these sub-graphs will be disconnected
+  by any non-weld joint between two bodies. The first sub-graph will have all of
+  the bodies welded to the world, including the world body itself; all
+  subsequent sub-graphs will be in no particular order. A few more notes:
     - Each body in the %MultibodyGraph is included in one set and one set only.
-    - The maximum number of returned islands equals the number of bodies in the
-      graph (num_bodies()). This corresponds to a graph with no weld joints.
+    - The maximum number of returned sub-graphs equals the number of bodies in
+      the graph (num_bodies()). This corresponds to a graph with no weld joints.
     - The world body is also included in a set of welded bodies, and this set is
       element zero in the returned vector.
-    - The minimum number of islands is one. This corresponds to a graph with
+    - The minimum number of sub-graphs is one. This corresponds to a graph with
       all bodies welded to the world. */
-  std::vector<std::set<BodyIndex>> FindIslandsOfWeldedBodies() const;
+  std::vector<std::set<BodyIndex>> FindSubgraphsOfWeldedBodies() const;
 
   /** Returns all bodies that are transitively welded, or rigidly affixed, to
   `body_index`, per these two definitions:
@@ -183,21 +183,21 @@ class MultibodyGraph {
 
   Body& get_mutable_body(BodyIndex body_index) { return bodies_[body_index]; }
 
-  // Recursive helper method for FindIslandsOfWeldedBodies().
+  // Recursive helper method for FindSubgraphsOfWeldedBodies().
   // The first thing this helper does is to mark `parent_body` as "visited" in
   // the output array `visited`.
   // Next, it scans the sibling bodies connected to `parent_index` by a joint.
   // If the sibling was already visited, it moves on to the next sibling, if
   // any. For a sibling visited for the first time there are two options:
-  //   1) if it is connected by a weld joint, it gets added to parent_island.
+  //   1) if it is connected by a weld joint, it gets added to parent_subgraph.
   //      Recursion continues starting with parent_index = sibling and the
-  //      parent island. Otherwise,
-  //   2) a new island is created for the sibling and gets added to the
-  //      list of all `islands`. Recursion continues starting with parent_index
-  //      = sibling and the new island for this sibling.
-  void FindIslandsOfWeldedBodiesRecurse(
-      const Body& parent_body, std::set<BodyIndex>* parent_island,
-      std::vector<std::set<BodyIndex>>* islands,
+  //      parent sub-graph. Otherwise,
+  //   2) a new sub-graph is created for the sibling and gets added to the
+  //      list of all `subgraphs`. Recursion continues starting with
+  //      parent_index = sibling and the new sub-graph for this sibling.
+  void FindSubgraphsOfWeldedBodiesRecurse(
+      const Body& parent_body, std::set<BodyIndex>* parent_subgraph,
+      std::vector<std::set<BodyIndex>>* subgraphs,
       std::vector<bool>* visited) const;
 
   // bodies_ includes the world body at world_index() with name

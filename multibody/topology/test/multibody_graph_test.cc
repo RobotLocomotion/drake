@@ -110,20 +110,20 @@ GTEST_TEST(MultibodyGraph, SerialChain) {
   EXPECT_FALSE(graph.HasJointNamed("invalid_joint_name", model_instance));
 }
 
-// We build a model containing a number of kinematic loops and islands of welded
-// bodies.
+// We build a model containing a number of kinematic loops and subgraphs of
+// welded bodies.
 //
-// Island A (forms closed loop):
+// subgraph A (forms closed loop):
 //  - WeldJoint(1, 13)
 //  - WeldJoint(1, 4)
 //  - WeldJoint(4, 13)
 //
-// Island B (forms closed loop):
+// subgraph B (forms closed loop):
 //  - WeldJoint(6, 10)
 //  - WeldJoint(6, 8)
 //  - WeldJoint(8, 10)
 //
-// Island C (the "world" island):
+// subgraph C (the "world" subgraph):
 //  - WeldJoint(5, 7)
 //  - WeldJoint(5, 12)
 //
@@ -133,13 +133,13 @@ GTEST_TEST(MultibodyGraph, SerialChain) {
 //  - RevoluteJoint(7, 11)
 //
 // Additionally we have the following non-weld joints:
-//  - RevoluteJoint(3, 13): connects body 3 to island A.
-//  - PrimaticJoint(1, 10): connects island A and B.
+//  - RevoluteJoint(3, 13): connects body 3 to subgraph A.
+//  - PrimaticJoint(1, 10): connects subgraph A and B.
 //
-// Therefore we expect the following islands, in no particular oder, but with
-// the "world" island first:
+// Therefore we expect the following subgraphs, in no particular oder, but with
+// the "world" subgraph first:
 //   {0, 5, 7, 12}, {1, 4, 13}, {6, 8, 10}, {3}, {9}, {2}, {11}.
-GTEST_TEST(MultibodyGraph, WeldedIslands) {
+GTEST_TEST(MultibodyGraph, Weldedsubgraphs) {
   MultibodyGraph graph;
   graph.RegisterJointType(kRevoluteType);
   graph.RegisterJointType(kPrismaticType);
@@ -159,7 +159,7 @@ GTEST_TEST(MultibodyGraph, WeldedIslands) {
   // Add joints.
   int j = 0;
 
-  // Island A: formed by bodies 1, 4, 13.
+  // subgraph A: formed by bodies 1, 4, 13.
   graph.AddJoint("joint" + std::to_string(j++), model_instance,
                  graph.weld_type_name(), BodyIndex(1), BodyIndex(13));
   graph.AddJoint("joint" + std::to_string(j++), model_instance,
@@ -167,11 +167,11 @@ GTEST_TEST(MultibodyGraph, WeldedIslands) {
   graph.AddJoint("joint" + std::to_string(j++), model_instance,
                  graph.weld_type_name(), BodyIndex(13), BodyIndex(4));
 
-  // Body 3 connects to island A via a revolute joint.
+  // Body 3 connects to subgraph A via a revolute joint.
   graph.AddJoint("joint" + std::to_string(j++), model_instance, kRevoluteType,
                  BodyIndex(3), BodyIndex(13));
 
-  // Island B: formed by bodies 8, 6, 10.
+  // subgraph B: formed by bodies 8, 6, 10.
   graph.AddJoint("joint" + std::to_string(j++), model_instance,
                  graph.weld_type_name(), BodyIndex(10), BodyIndex(6));
   graph.AddJoint("joint" + std::to_string(j++), model_instance,
@@ -179,8 +179,8 @@ GTEST_TEST(MultibodyGraph, WeldedIslands) {
   graph.AddJoint("joint" + std::to_string(j++), model_instance,
                  graph.weld_type_name(), BodyIndex(6), BodyIndex(8));
 
-  // Body 1 (in island A) and body 10 (in island B) connect through a prismatic
-  // joint.
+  // Body 1 (in subgraph A) and body 10 (in subgraph B) connect through a
+  // prismatic joint.
   graph.AddJoint("joint" + std::to_string(j++), model_instance, kPrismaticType,
                  BodyIndex(1), BodyIndex(10));
 
@@ -192,7 +192,7 @@ GTEST_TEST(MultibodyGraph, WeldedIslands) {
   graph.AddJoint("joint" + std::to_string(j++), model_instance, kRevoluteType,
                  BodyIndex(7), BodyIndex(11));
 
-  // Island C: formed by bodies 5, 7, 12.
+  // subgraph C: formed by bodies 5, 7, 12.
   graph.AddJoint("joint" + std::to_string(j++), model_instance,
                  graph.weld_type_name(), BodyIndex(5), BodyIndex(7));
   graph.AddJoint("joint" + std::to_string(j++), model_instance,
@@ -202,52 +202,52 @@ GTEST_TEST(MultibodyGraph, WeldedIslands) {
 
   EXPECT_EQ(graph.num_bodies(), 14);  // this includes the world body.
 
-  const std::vector<std::set<BodyIndex>> welded_islands =
-      graph.FindIslandsOfWeldedBodies();
+  const std::vector<std::set<BodyIndex>> welded_subgraphs =
+      graph.FindSubgraphsOfWeldedBodies();
 
-  // Verify number of expected islands.
-  EXPECT_EQ(welded_islands.size(), 7);
+  // Verify number of expected subgraphs.
+  EXPECT_EQ(welded_subgraphs.size(), 7);
 
-  // The first island must contain the world.
-  const std::set<BodyIndex> world_island = welded_islands[0];
-  EXPECT_EQ(world_island.count(world_index()), 1);
+  // The first subgraph must contain the world.
+  const std::set<BodyIndex> world_subgraph = welded_subgraphs[0];
+  EXPECT_EQ(world_subgraph.count(world_index()), 1);
 
-  // Build the expected set of islands.
-  std::set<std::set<BodyIndex>> expected_islands;
+  // Build the expected set of subgraphs.
+  std::set<std::set<BodyIndex>> expected_subgraphs;
   //   {0, 5, 7, 12}, {1, 4, 13}, {6, 8, 10}, {3}, {9}, {2}, {11}.
-  const std::set<BodyIndex>& expected_world_island =
-      *expected_islands
+  const std::set<BodyIndex>& expected_world_subgraph =
+      *expected_subgraphs
            .insert({BodyIndex(0), BodyIndex(5), BodyIndex(7), BodyIndex(12)})
            .first;
-  const std::set<BodyIndex>& expected_islandA =
-      *expected_islands.insert({BodyIndex(1), BodyIndex(4), BodyIndex(13)})
+  const std::set<BodyIndex>& expected_subgraphA =
+      *expected_subgraphs.insert({BodyIndex(1), BodyIndex(4), BodyIndex(13)})
            .first;
-  const std::set<BodyIndex>& expected_islandB =
-      *expected_islands.insert({BodyIndex(6), BodyIndex(8), BodyIndex(10)})
+  const std::set<BodyIndex>& expected_subgraphB =
+      *expected_subgraphs.insert({BodyIndex(6), BodyIndex(8), BodyIndex(10)})
            .first;
-  expected_islands.insert({BodyIndex(3)});
-  expected_islands.insert({BodyIndex(9)});
-  expected_islands.insert({BodyIndex(2)});
-  expected_islands.insert({BodyIndex(11)});
+  expected_subgraphs.insert({BodyIndex(3)});
+  expected_subgraphs.insert({BodyIndex(9)});
+  expected_subgraphs.insert({BodyIndex(2)});
+  expected_subgraphs.insert({BodyIndex(11)});
 
-  // We do expect the first island to correspond to the set of bodies welded to
-  // the world.
-  EXPECT_EQ(world_island, expected_world_island);
+  // We do expect the first subgraph to correspond to the set of bodies welded
+  // to the world.
+  EXPECT_EQ(world_subgraph, expected_world_subgraph);
 
   // In order to compare the computed list of welded bodies against the expected
   // list, irrespective of the ordering in the computed list, we first convert
-  // the computed islands to a set.
-  const std::set<std::set<BodyIndex>> welded_islands_set(welded_islands.begin(),
-                                                         welded_islands.end());
-  EXPECT_EQ(welded_islands_set, expected_islands);
+  // the computed subgraphs to a set.
+  const std::set<std::set<BodyIndex>> welded_subgraphs_set(
+      welded_subgraphs.begin(), welded_subgraphs.end());
+  EXPECT_EQ(welded_subgraphs_set, expected_subgraphs);
 
   // Verify we can query the list of bodies welded to a particular body.
   EXPECT_EQ(graph.FindBodiesWeldedTo(BodyIndex(9)).size(), 1);
   EXPECT_EQ(graph.FindBodiesWeldedTo(BodyIndex(11)).size(), 1);
-  EXPECT_EQ(graph.FindBodiesWeldedTo(BodyIndex(4)), expected_islandA);
-  EXPECT_EQ(graph.FindBodiesWeldedTo(BodyIndex(13)), expected_islandA);
-  EXPECT_EQ(graph.FindBodiesWeldedTo(BodyIndex(10)), expected_islandB);
-  EXPECT_EQ(graph.FindBodiesWeldedTo(BodyIndex(6)), expected_islandB);
+  EXPECT_EQ(graph.FindBodiesWeldedTo(BodyIndex(4)), expected_subgraphA);
+  EXPECT_EQ(graph.FindBodiesWeldedTo(BodyIndex(13)), expected_subgraphA);
+  EXPECT_EQ(graph.FindBodiesWeldedTo(BodyIndex(10)), expected_subgraphB);
+  EXPECT_EQ(graph.FindBodiesWeldedTo(BodyIndex(6)), expected_subgraphB);
 }
 
 }  // namespace internal

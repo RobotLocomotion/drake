@@ -167,40 +167,42 @@ JointTypeIndex MultibodyGraph::GetJointTypeIndex(
   return it == joint_type_name_to_index_.end() ? JointTypeIndex() : it->second;
 }
 
-std::vector<std::set<BodyIndex>> MultibodyGraph::FindIslandsOfWeldedBodies()
+std::vector<std::set<BodyIndex>> MultibodyGraph::FindSubgraphsOfWeldedBodies()
     const {
   std::vector<bool> visited(num_bodies(), false);
-  std::vector<std::set<BodyIndex>> islands;
+  std::vector<std::set<BodyIndex>> subgraphs;
 
-  // Reserve the maximum possible number of islands (that is, when each body
-  // forms its own island) in advance in order to avoid reallocation in the
-  // std::vector "islands" which would cause the invalidation of references as
+  // Reserve the maximum possible number of subgraphs (that is, when each body
+  // forms its own subgraph) in advance in order to avoid reallocation in the
+  // std::vector "subgraphs" which would cause the invalidation of references as
   // we recursively fill it in.
-  islands.reserve(num_bodies());
+  subgraphs.reserve(num_bodies());
 
   // The first body visited is the "world" (body_index = 0), and therefore
-  // islands[0] corresponds to the islands of all bodies welded to the world.
+  // subgraphs[0] corresponds to the subgraphs of all bodies welded to the
+  // world.
   for (const auto& body : bodies_) {
     if (!visited[body.index()]) {
-      // If `body` was not visited yet, we create an island for it.
-      islands.push_back(std::set<BodyIndex>{body.index()});
+      // If `body` was not visited yet, we create an subgraph for it.
+      subgraphs.push_back(std::set<BodyIndex>{body.index()});
 
-      // We build the island to which `body` belongs by recursively traversing
+      // We build the subgraph to which `body` belongs by recursively traversing
       // the sub-graph it belongs to.
-      std::set<BodyIndex>& body_island = islands.back();
+      std::set<BodyIndex>& body_subgraph = subgraphs.back();
 
-      // Thus far `body` forms its own island. Find if other bodies belong to
-      // this island by recursively traversing the sub-graph of welded joints
+      // Thus far `body` forms its own subgraph. Find if other bodies belong to
+      // this subgraph by recursively traversing the sub-graph of welded joints
       // connected to `body`.
-      FindIslandsOfWeldedBodiesRecurse(body, &body_island, &islands, &visited);
+      FindSubgraphsOfWeldedBodiesRecurse(body, &body_subgraph, &subgraphs,
+                                         &visited);
     }
   }
-  return islands;
+  return subgraphs;
 }
 
-void MultibodyGraph::FindIslandsOfWeldedBodiesRecurse(
-    const Body& parent_body, std::set<BodyIndex>* parent_island,
-    std::vector<std::set<BodyIndex>>* islands,
+void MultibodyGraph::FindSubgraphsOfWeldedBodiesRecurse(
+    const Body& parent_body, std::set<BodyIndex>* parent_subgraph,
+    std::vector<std::set<BodyIndex>>* subgraphs,
     std::vector<bool>* visited) const {
   // Mark parent_body as visited in order to detect loops.
   visited->at(parent_body.index()) = true;
@@ -217,18 +219,18 @@ void MultibodyGraph::FindIslandsOfWeldedBodiesRecurse(
 
     const Body& sibling = get_body(sibling_index);
     if (joint.type_index() == weld_type_index()) {
-      // Welded to parent_body, add it to parent_island.
-      parent_island->insert(sibling_index);
-      FindIslandsOfWeldedBodiesRecurse(sibling, parent_island, islands,
-                                       visited);
+      // Welded to parent_body, add it to parent_subgraph.
+      parent_subgraph->insert(sibling_index);
+      FindSubgraphsOfWeldedBodiesRecurse(sibling, parent_subgraph, subgraphs,
+                                         visited);
     } else {
-      // Disconnected (non-welded) from parent_island. Create its own new island
-      // and continue the recursion from "sibling" with its new island
-      // "sibling_island".
-      islands->push_back(std::set<BodyIndex>{sibling_index});
-      std::set<BodyIndex>& sibling_island = islands->back();
-      FindIslandsOfWeldedBodiesRecurse(sibling, &sibling_island, islands,
-                                       visited);
+      // Disconnected (non-welded) from parent_subgraph. Create its own new
+      // subgraph and continue the recursion from "sibling" with its new
+      // subgraph "sibling_subgraph".
+      subgraphs->push_back(std::set<BodyIndex>{sibling_index});
+      std::set<BodyIndex>& sibling_subgraph = subgraphs->back();
+      FindSubgraphsOfWeldedBodiesRecurse(sibling, &sibling_subgraph, subgraphs,
+                                         visited);
     }
   }
 }
@@ -237,24 +239,26 @@ std::set<BodyIndex> MultibodyGraph::FindBodiesWeldedTo(
     BodyIndex body_index) const {
   DRAKE_THROW_UNLESS(body_index.is_valid() && body_index < num_bodies());
 
-  // TODO(amcastro-tri): Notice that "islands" will get compute with every call
-  // to FindBodiesWeldedTo(). Consider storing this for subsequent calls if it
-  // becomes a performance bottleneck.
-  const std::vector<std::set<BodyIndex>> islands = FindIslandsOfWeldedBodies();
+  // TODO(amcastro-tri): Notice that "subgraphs" will get compute with every
+  // call to FindBodiesWeldedTo(). Consider storing this for subsequent calls if
+  // it becomes a performance bottleneck.
+  const std::vector<std::set<BodyIndex>> subgraphs =
+      FindSubgraphsOfWeldedBodies();
 
   // Find subgraph that contains this body_index.
-  // TODO(amcastro-tri): Consider storing within Body the island it belongs to
+  // TODO(amcastro-tri): Consider storing within Body the subgraph it belongs to
   // if performance becomes an issue.
-  auto predicate = [body_index](auto& island) {
-    return island.count(body_index) > 0;
+  auto predicate = [body_index](auto& subgraph) {
+    return subgraph.count(body_index) > 0;
   };
-  auto island_iter = std::find_if(islands.begin(), islands.end(), predicate);
+  auto subgraph_iter =
+      std::find_if(subgraphs.begin(), subgraphs.end(), predicate);
 
   // If body_index is a valid index to a body in this graph, then it MUST belong
-  // to one of the islands. We verify this explicitly.
-  DRAKE_DEMAND(island_iter != islands.end());
+  // to one of the subgraphs. We verify this explicitly.
+  DRAKE_DEMAND(subgraph_iter != subgraphs.end());
 
-  return *island_iter;
+  return *subgraph_iter;
 }
 
 }  // namespace internal
