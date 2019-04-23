@@ -107,9 +107,25 @@ bool StartsWith(const string& str, const string& prefix) {
   return str.compare(0, prefix.size(), prefix) == 0;
 }
 
+bool EndsWith(const string& str, const string& suffix) {
+  if (suffix.size() > str.size()) { return false; }
+  return str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
 // Returns true iff the path is relative (not absolute nor empty).
 bool IsRelativePath(const string& path) {
   return !path.empty() && (path[0] != '/');
+}
+
+// Add a commented-out macro, so that the deprecation grep will find it:
+// DRAKE_DEPRECATED("2019-08-01", "See below")
+void WarnDeprecatedDirectory(const string& resource_path) {
+  static const logging::Warn log_once(
+      "Using drake::FindResource to locate a directory (e.g., '{}') "
+      "is deprecated, and will become an error after 2019-08-01. "
+      "Always request a file within the directory instead, e.g., find "
+      "'drake/manipulation/models/iiwa_description/package.xml', not "
+      "'drake/manipulation/models/iiwa_description'.", resource_path);
 }
 
 // Taking `root` to be Drake's resource root, confirm that the sentinel file
@@ -118,6 +134,7 @@ bool IsRelativePath(const string& path) {
 Result CheckAndMakeResult(
     const string& root_description, const string& root,
     const string& resource_path) {
+  DRAKE_DEMAND(!root_description.empty());
   DRAKE_DEMAND(!root.empty());
   DRAKE_DEMAND(!resource_path.empty());
   DRAKE_DEMAND(internal::IsDir(root));
@@ -135,6 +152,11 @@ Result CheckAndMakeResult(
 
   // Check for the resource_path.
   const string abspath = root + '/' + resource_path;
+  if (internal::IsDir(abspath)) {
+    // As a compatibility shim, allow directory resources for now.
+    WarnDeprecatedDirectory(resource_path);
+    return Result::make_success(resource_path, abspath);
+  }
   if (!internal::IsFile(abspath)) {
     return Result::make_error(resource_path, fmt::format(
         "Could not find Drake resource_path '{}' because {} specified a "
@@ -241,6 +263,25 @@ Result FindResource(const string& resource_path) {
     if (rlocation_or_error.error.empty()) {
       return Result::make_success(
           resource_path, rlocation_or_error.abspath);
+    }
+    // As a compatibility shim, allow for directory resources for now.
+    {
+      const std::string sentinel_relpath =
+          "drake/.drake-find_resource-sentinel";
+      auto sentinel_rlocation_or_error =
+          internal::FindRunfile(sentinel_relpath);
+      DRAKE_THROW_UNLESS(sentinel_rlocation_or_error.error.empty());
+      const std::string sentinel_abspath =
+          sentinel_rlocation_or_error.abspath;
+      DRAKE_THROW_UNLESS(EndsWith(sentinel_abspath, sentinel_relpath));
+      const std::string resource_abspath =
+          sentinel_abspath.substr(
+              0, sentinel_abspath.size() - sentinel_relpath.size()) +
+          resource_path;
+      if (internal::IsDir(resource_abspath)) {
+        WarnDeprecatedDirectory(resource_path);
+        return Result::make_success(resource_path, resource_abspath);
+      }
     }
     // As a compatibility shim, for resource paths that have been moved into the
     // attic, we opportunistically try a fallback search path for them.  This
