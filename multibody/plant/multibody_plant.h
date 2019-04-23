@@ -3672,7 +3672,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::vector<systems::OutputPortIndex>
       instance_generalized_contact_forces_output_ports_;
 
-  // A graph storing the topological information of the model.
   // A graph representing the body/joint topology of the multibody plant (Not
   // to be confused with the spanning-tree model we will build for analysis.)
   internal::MultibodyGraph multibody_graph_;

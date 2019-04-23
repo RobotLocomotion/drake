@@ -21,7 +21,7 @@ during the lifetime of the graph, a user can ask graph specific questions such
 as how bodies are connected, by which joints or even perform more complex
 queries such as what set of bodies are welded together. */
 // TODO(amcastro-tri): consider moving outside internal:: and available to users
-// of MBP.
+// of MBP, towards #11307.
 class MultibodyGraph {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyGraph)
@@ -87,7 +87,7 @@ class MultibodyGraph {
 
   /** Returns the unique index that identifies the "weld" joint type (always
   zero).
-  @note SDF calls this type a "fixed" joint. */
+  @note The SDF format calls this type a "fixed" joint. */
   static JointTypeIndex weld_type_index() { return JointTypeIndex(0); }
 
   /** Returns the unique name reserved to identify weld joints (always "weld").
@@ -249,9 +249,6 @@ class MultibodyGraph::Body {
   std::string name_;
   ModelInstanceIndex model_instance_;
 
-  // How this body appears in joints (input and added).
-  std::vector<JointIndex> joints_as_child_;   // where this body is the child
-  std::vector<JointIndex> joints_as_parent_;  // where this body is the parent
   // All joints connecting this body. The union (in no particular order) of
   // joints_as_parent_ and joints_as_child_.
   std::vector<JointIndex> joints_;

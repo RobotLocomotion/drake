@@ -382,14 +382,21 @@ class AcrobotPlantTests : public ::testing::Test {
         "Pre-finalize calls to '.*' are not allowed; "
         "you must call Finalize\\(\\) first.");
 
+    link1_ = &plant_->GetBodyByName(parameters_.link1_name());
+    link2_ = &plant_->GetBodyByName(parameters_.link2_name());
+
+    // Test we can call these methods pre-finalize.
+    const FrameId link1_frame_id =
+        plant_->GetBodyFrameIdOrThrow(link1_->index());
+    EXPECT_EQ(link1_frame_id, *plant_->GetBodyFrameIdIfExists(link1_->index()));
+    EXPECT_EQ(plant_->GetBodyFromFrameId(link1_frame_id), link1_);
+
     // Finalize() the plant.
     plant_->Finalize();
 
     // And build the Diagram:
     diagram_ = builder.Build();
 
-    link1_ = &plant_->GetBodyByName(parameters_.link1_name());
-    link2_ = &plant_->GetBodyByName(parameters_.link2_name());
     shoulder_ = &plant_->GetMutableJointByName<RevoluteJoint>(
         parameters_.shoulder_joint_name());
     elbow_ = &plant_->GetMutableJointByName<RevoluteJoint>(

@@ -43,6 +43,8 @@ class RevoluteJoint final : public Joint<T> {
   template<typename Scalar>
   using Context = systems::Context<Scalar>;
 
+  static const char kTypeName[];
+
   /// Constructor to create a revolute joint between two bodies so that
   /// frame F attached to the parent body P and frame M attached to the child
   /// body B, rotate relatively to one another about a common axis. See this
@@ -128,7 +130,10 @@ class RevoluteJoint final : public Joint<T> {
     damping_ = damping;
   }
 
-  std::string type_name() const override { return "revolute"; }
+  const std::string& type_name() const override {
+    static const never_destroyed<std::string> name{kTypeName};
+    return name.access();
+  }
 
   /// Returns the axis of revolution of `this` joint as a unit vector.
   /// Since the measures of this axis in either frame F or M are the same (see
@@ -363,6 +368,8 @@ class RevoluteJoint final : public Joint<T> {
   // This joint's damping constant in N⋅m⋅s.
   double damping_{0};
 };
+
+template <typename T> const char RevoluteJoint<T>::kTypeName[] = "revolute";
 
 }  // namespace multibody
 }  // namespace drake
