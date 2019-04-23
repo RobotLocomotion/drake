@@ -58,6 +58,18 @@ class TestResourceTool(unittest.TestCase):
         with open(absolute_path, 'r') as data:
             self.assertEqual(data.read(), resource_data)
 
+        # Use the installed resource_tool to find a directory.
+        # (This feature is deprecated and will eventually be removed.)
+        absolute_path = install_test_helper.check_output(
+            [resource_tool,
+             "--print_resource_path",
+             "drake/common/test",
+             ],
+            env=tool_env,
+            ).strip()
+        with open(absolute_path + '/tmp_resource', 'r') as data:
+            self.assertEqual(data.read(), resource_data)
+
         # Use --add_resource_search_path instead of environment variable
         # to find resources.
         absolute_path = install_test_helper.check_output(

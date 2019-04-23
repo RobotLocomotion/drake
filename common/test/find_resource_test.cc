@@ -95,6 +95,30 @@ GTEST_TEST(FindResourceTest, FoundDeclaredData) {
   EXPECT_EQ(FindResourceOrThrow(relpath), absolute_path);
 }
 
+GTEST_TEST(FindResourceTest, DeprecatedFoundDirectory) {
+  const string relpath = "drake/common";
+  const auto& result = FindResource(relpath);
+
+  // We get a path back.
+  ASSERT_FALSE(result.get_error_message());
+  EXPECT_EQ(result.get_resource_path(), relpath);
+  string absolute_path;
+  EXPECT_NO_THROW(absolute_path = result.get_absolute_path_or_throw());
+
+  // The path is the correct answer.
+  ASSERT_FALSE(absolute_path.empty());
+  EXPECT_EQ(absolute_path[0], '/');
+  std::ifstream input(
+      absolute_path + "/test/find_resource_test_data.txt",
+      std::ios::binary);
+  ASSERT_TRUE(input);
+  std::stringstream buffer;
+  buffer << input.rdbuf();
+  EXPECT_EQ(
+      buffer.str(),
+      "Test data for drake/common/test/find_resource_test.cc.\n");
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Check that adding a relative resource path fails on purpose.
