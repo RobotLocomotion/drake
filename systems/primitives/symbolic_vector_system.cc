@@ -82,19 +82,6 @@ SymbolicVectorSystem<T>::SymbolicVectorSystem(
 }
 
 template <typename T>
-optional<bool> SymbolicVectorSystem<T>::DoHasDirectFeedthrough(
-    int input_port, int output_port) const {
-  DRAKE_DEMAND(input_port == 0);
-  DRAKE_DEMAND(output_port == 0);
-  for (int i = 0; i <= output_.size(); i++) {
-    for (int j = 0; j <= input_vars_.size(); j++) {
-      if (output_[i].GetVariables().include(input_vars_[j])) return true;
-    }
-  }
-  return false;
-}
-
-template <typename T>
 template <typename Container>
 void SymbolicVectorSystem<T>::PopulateFromContext(const Context<T>& context,
                                                   Container* penv) const {
