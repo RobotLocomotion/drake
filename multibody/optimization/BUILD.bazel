@@ -110,6 +110,7 @@ drake_cc_googletest(
         ":optimization_with_contact_utilities",
         ":static_equilibrium_constraint",
         "//common/test_utilities:eigen_matrix_compare",
+        "//math:compute_numerical_gradient",
         "//solvers:mathematical_program",
         "//solvers:solve",
     ],
