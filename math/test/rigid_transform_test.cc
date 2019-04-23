@@ -561,8 +561,14 @@ GTEST_TEST(RigidTransform, OperatorMultiplyByMatrix3X) {
 
   // Multiply a generic RigidTransform X_AB by n position vectors.  Verifies
   // operator* for 3 x n matrix, where n is not known before compilation.
-  const int number_of_position_vectors = 5;
+  constexpr int number_of_position_vectors = 5;
   Eigen::Matrix3Xd p_BoP_B(3, number_of_position_vectors);
+  p_BoP_B.col(0) = p_BoQ1_B;
+  p_BoP_B.col(1) = p_BoQ2_B;
+  p_BoP_B.col(2) = p_BoQ3_B;
+  p_BoP_B.col(3) = p_BoQ1_B;
+  p_BoP_B.col(4) = p_BoQ2_B;
+
   Eigen::Matrix3Xd p_AoP_A = X_AB * p_BoP_B;
   EXPECT_EQ(p_AoP_A.rows(), 3);
   EXPECT_EQ(p_AoP_A.cols(), number_of_position_vectors);
@@ -571,6 +577,17 @@ GTEST_TEST(RigidTransform, OperatorMultiplyByMatrix3X) {
     const Vector3d& p_AoPi_A = p_AoP_A.col(i);
     const Vector3d p_AoQi_A_expected = X_AB * p_BoPi_B;
     EXPECT_TRUE(p_AoPi_A.isApprox(p_AoQi_A_expected, kEpsilon));
+    if (i < 3) {
+      EXPECT_TRUE(p_AoPi_A.isApprox(p_AoQ_A.col(i), kEpsilon));
+    }
+  }
+
+  // Test that operator* disallows weirdly-sized matrix multiplication.
+  if (kDrakeAssertIsArmed) {
+    Eigen::MatrixXd m_7x8(7, 8);
+    m_7x8 = Eigen::MatrixXd::Identity(7, 8);
+    Eigen::MatrixXd bad_matrix_multiply;
+    EXPECT_THROW(bad_matrix_multiply = X_AB * m_7x8, std::logic_error);
   }
 }
 

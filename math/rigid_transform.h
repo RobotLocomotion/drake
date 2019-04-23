@@ -384,6 +384,10 @@ class RigidTransform {
   template <typename Derived>
   Eigen::Matrix<typename Derived::Scalar, 3, Derived::ColsAtCompileTime>
   operator*(const Eigen::MatrixBase<Derived>& p_BoQ_B) const {
+    if (p_BoQ_B.rows() != 3) {
+      throw std::logic_error(
+          "Error: Inner dimension for matrix multiplication is not 3.");
+    }
     const int number_of_position_vectors = p_BoQ_B.cols();
     Eigen::Matrix<typename Derived::Scalar, 3, Derived::ColsAtCompileTime>
         p_AoQ_A(3, number_of_position_vectors);
