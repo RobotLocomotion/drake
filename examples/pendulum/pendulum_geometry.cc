@@ -95,16 +95,13 @@ PendulumGeometry::PendulumGeometry(geometry::SceneGraph<double>* scene_graph) {
 void PendulumGeometry::OutputGeometryPose(
     const systems::Context<double>& context,
     geometry::FramePoseVector<double>* poses) const {
-  DRAKE_DEMAND(source_id_.is_valid());
   DRAKE_DEMAND(frame_id_.is_valid());
 
   const auto& input = get_input_port(0).Eval<PendulumState<double>>(context);
   const double theta = input.theta();
   const math::RigidTransformd pose(math::RotationMatrixd::MakeYRotation(theta));
 
-  *poses = geometry::FramePoseVector<double>(source_id_, {frame_id_});
-  poses->clear();
-  poses->set_value(frame_id_, pose.GetAsIsometry3());
+  *poses = {{frame_id_, pose.GetAsIsometry3()}};
 }
 
 }  // namespace pendulum
