@@ -137,7 +137,11 @@ RoadCurve::RoadCurve(double linear_tolerance, double scale_length,
       s_from_p_func_->get_mutable_integrator();
   s_from_p_integrator.request_initial_step_size_target(0.1);
   s_from_p_integrator.set_maximum_step_size(1.0);
-  s_from_p_integrator.set_target_accuracy(relative_tolerance_);
+  // Note: Setting this tolerance is necessary to satisfy the
+  // road geometry invariants (i.e., CheckInvariants()) in Builder::Build().
+  // Consider modifying this accuracy if other tolerances are modified
+  // elsewhere.
+  s_from_p_integrator.set_target_accuracy(relative_tolerance_ * 1e-2);
 
   // Sets `p_from_s`'s integration accuracy and step sizes. Said steps
   // should not be too large, because that could make accuracy control

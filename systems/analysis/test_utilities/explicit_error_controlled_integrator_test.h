@@ -160,11 +160,15 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, BulletProofSetup) {
 }
 
 // Tests the error estimation capabilities.
-TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEst) {
+TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEstOrder) {
   // Setup the initial position and initial velocity.
   const double initial_position = 0.1;
   const double initial_velocity = 0.01;
   const double omega = std::sqrt(this->kSpringK / this->kMass);
+
+  // Pick a step size that is much smaller than the period of vibration.
+  const double period_of_vibration = 2.0 * M_PI / omega;
+  const double h = period_of_vibration / 512.0;
 
   // Set initial conditions.
   this->spring_mass->set_position(this->integrator->get_mutable_context(),
@@ -177,40 +181,67 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEst) {
   const double c2 = initial_velocity / omega;
 
   // Set integrator parameters: do no error control.
-  this->integrator->set_maximum_step_size(this->kBigDt);
+  this->integrator->set_maximum_step_size(h);
   this->integrator->set_fixed_step_mode(true);
 
   // Initialize the integrator.
   this->integrator->Initialize();
 
-  // Take a single step of size this->kBigDt.
-  const double t_final = this->context->get_time() + this->kBigDt;
-  this->integrator->IntegrateNoFurtherThanTime(t_final, t_final, t_final);
+  // Take a single step of size h.
+  ASSERT_EQ(this->context->get_time(), 0.0);
+  const double t_final = this->context->get_time() + h;
+  this->integrator->IntegrateWithSingleFixedStepToTime(t_final);
 
-  // Verify that a step of this->kBigDt was taken.
-  EXPECT_NEAR(this->context->get_time(), this->kBigDt,
+  // Verify that a step of h was taken.
+  EXPECT_NEAR(this->context->get_time(), h,
               std::numeric_limits<double>::epsilon());
 
   // Get the true solution.
-  const double x_true = c1 * std::cos(omega * this->kBigDt) +
-      c2 * std::sin(omega * this->kBigDt);
+  const double x_true = c1 * std::cos(omega * h) + c2 * std::sin(omega * h);
 
   // Get the integrator's solution.
-  const double kXApprox = this->context->get_continuous_state_vector().
+  const double x_approx_h = this->context->get_continuous_state_vector().
       GetAtIndex(0);
 
-  // Get the error estimate.
-  const double err_est =
+  // Get the error estimate and the error in the error estimate.
+  const double err_est_h =
       this->integrator->get_error_estimate()->get_vector().GetAtIndex(0);
+  const double err_est_h_err = std::abs(err_est_h - (x_true - x_approx_h));
 
-  // Verify that difference between integration result and true result is
-  // captured by the error estimate. The 0.2 below indicates that the error
-  // estimate is quite conservative.
-  EXPECT_NEAR(kXApprox, x_true, err_est * 0.2);
+  // Compute the same solution using two half-steps.
+  this->context->SetTime(0);
+  this->spring_mass->set_position(this->integrator->get_mutable_context(),
+      initial_position);
+  this->spring_mass->set_velocity(this->integrator->get_mutable_context(),
+      initial_velocity);
+  this->integrator->Initialize();
+  this->integrator->IntegrateWithSingleFixedStepToTime(t_final / 2.0);
+  this->integrator->IntegrateWithSingleFixedStepToTime(t_final);
+  EXPECT_NEAR(this->context->get_time(), h,
+              std::numeric_limits<double>::epsilon());
+  const double x_approx_2h_h = this->context->get_continuous_state_vector().
+      GetAtIndex(0);
+  const double err_est_2h_h =
+      this->integrator->get_error_estimate()->get_vector().GetAtIndex(0);
+  const double err_est_2h_h_err = std::abs(err_est_2h_h -
+      (x_true - x_approx_2h_h));
+
+  // Verify that the error in the error estimate dropped in accordance with the
+  // order of the error estimator. Theory indicates that asymptotic error in
+  // the estimate is bound by K*h^order, where K is some constant and h is
+  // sufficiently small. We assume a value for K of 4.0 below, and we check that
+  // the improvement in the error estimate is not as good as K*h^(order+1).
+  // The K and h might need to be redetermined for a different problem or
+  // for untested error-controlled integrators.
+  const double K = 4.0;
+  const int err_est_order = this->integrator->get_error_estimate_order();
+  EXPECT_LE(err_est_2h_h_err, K * err_est_h_err / std::pow(2.0, err_est_order));
+  EXPECT_GE(K * err_est_2h_h_err,
+      err_est_h_err / std::pow(2.0, err_est_order + 1));
 }
 
 // Integrate a purely continuous system with no sampling using error control.
-// d^2x/dt^2 = -kx/m
+// d^2x/h^2 = -kx/m
 // solution to this ODE: x(t) = c1*cos(omega*t) + c2*sin(omega*t)
 // where omega = sqrt(k/m)
 // x'(t) = -c1*sin(omega*t)*omega + c2*cos(omega*t)*omega
@@ -443,7 +474,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, CheckStat) {
 
 REGISTER_TYPED_TEST_CASE_P(ExplicitErrorControlledIntegratorTest,
     ReqInitialStepTarget, ContextAccess, ErrorEstSupport, MagDisparity, Scaling,
-    BulletProofSetup, ErrEst, SpringMassStepEC, MaxStepSizeRespected,
+    BulletProofSetup, ErrEstOrder, SpringMassStepEC, MaxStepSizeRespected,
     IllegalFixedStep, CheckStat, StepToCurrentTimeNoOp);
 
 // T is the integrator type (e.g., RungeKutta3Integrator<double>).

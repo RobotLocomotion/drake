@@ -23,8 +23,9 @@ using systems::RungeKutta3Integrator;
 
 GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
   const double kEpsilon = std::numeric_limits<double>::epsilon();
-  const double kAccuracy = 1.0e-5;  // The integrator's desired accuracy.
-  // The numerical tolerance accepted for these tests.
+  // The integrator's desired local accuracy, chosen to pass the tests under
+  // the global error tolerance defined below.
+  const double kAccuracy = 1.0e-7;
   const double kTolerance = 1.0e-5;
   const double kMaxDt = 0.1;
   const double kEndTime = 5.0;
