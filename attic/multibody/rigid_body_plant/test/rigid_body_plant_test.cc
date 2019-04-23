@@ -53,6 +53,8 @@ GTEST_TEST(RigidBodyPlantTest, TestLoadUrdf) {
   EXPECT_EQ(plant.get_input_size(), 0);
   EXPECT_EQ(plant.get_output_size(), 0);
 
+  EXPECT_FALSE(plant.HasAnyDirectFeedthrough());
+
   // Obtains a const reference to the underlying RigidBodyTree within the
   // RigidBodyPlant.
   const RigidBodyTree<double>& tree = plant.get_rigid_body_tree();
@@ -116,6 +118,8 @@ GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
   EXPECT_EQ(plant.get_num_velocities(), kNumVelocities);
   EXPECT_EQ(plant.get_input_size(), 0);  // There are no actuators.
   EXPECT_EQ(plant.get_output_size(), kNumStates);
+
+  EXPECT_FALSE(plant.HasAnyDirectFeedthrough());
 
   const Vector3d v0(1, 2, 3);    // Linear velocity in body's frame.
   const Vector3d w0(-4, 5, -6);  // Angular velocity in body's frame.
@@ -532,6 +536,8 @@ GTEST_TEST(RigidBodyPlantTest, InstancePortTest) {
   EXPECT_EQ(plant.get_num_positions(1), 4);
   EXPECT_EQ(plant.get_num_velocities(1), 4);
   EXPECT_EQ(plant.get_num_states(1), 8);
+
+  EXPECT_TRUE(plant.HasAnyDirectFeedthrough());
 
   // TODO(liang.fok) The following has a bug, see #4697.
   const RigidBodyTree<double>& tree = plant.get_rigid_body_tree();
