@@ -1,5 +1,6 @@
 #include "drake/geometry/frame_kinematics_vector.h"
 
+#include <algorithm>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -72,6 +73,9 @@ GTEST_TEST(FrameKinematicsVector, InitializerListCtor) {
 
   const FramePoseVector<double> dut{{id_0, pose_0}, {id_1, pose_1}};
   ASSERT_EQ(dut.size(), 2);
+  EXPECT_TRUE(dut.has_id(id_0));
+  EXPECT_TRUE(dut.has_id(id_1));
+  EXPECT_FALSE(dut.has_id(FrameId::get_new_id()));
   EXPECT_TRUE(ExpectExactIdentity(dut.value(id_0)));
   EXPECT_TRUE(CompareMatrices(
       dut.value(id_1).matrix().block<3, 4>(0, 0),
@@ -86,9 +90,12 @@ GTEST_TEST(FrameKinematicsVector, InitializerListAssign) {
       math::RigidTransformd{Eigen::Translation3d(0.1, 0.2, 0.3)}.
           GetAsIsometry3();
 
-  FramePoseVector<double> dut;
+  FramePoseVector<double> dut{{id_1, Isometry3<double>::Identity()}};
   dut = {{id_0, pose_0}, {id_1, pose_1}};
   ASSERT_EQ(dut.size(), 2);
+  EXPECT_TRUE(dut.has_id(id_0));
+  EXPECT_TRUE(dut.has_id(id_1));
+  EXPECT_FALSE(dut.has_id(FrameId::get_new_id()));
   EXPECT_TRUE(ExpectExactIdentity(dut.value(id_0)));
   EXPECT_TRUE(CompareMatrices(
       dut.value(id_1).matrix().block<3, 4>(0, 0),
@@ -114,6 +121,22 @@ GTEST_TEST(FrameKinematicsVector, WorkingWithValues) {
 
   // Confirm that poses get recorded properly.
   for (int i = 0; i < kPoseCount; ++i) {
+    EXPECT_TRUE(poses.has_id(ids[i]));
+    const Isometry3<double>& pose = poses.value(ids[i]);
+    EXPECT_TRUE(CompareMatrices(pose.matrix(), recorded_poses[i].matrix()));
+  }
+
+  // Confirm that poses get cleared properly.
+  poses.clear();
+  EXPECT_FALSE(poses.has_id(ids[0]));
+
+  // Confirm that poses get re-established properly.
+  std::reverse(recorded_poses.begin(), recorded_poses.end());
+  for (int i = 0; i < kPoseCount; ++i) {
+    EXPECT_NO_THROW(poses.set_value(ids[i], recorded_poses[i]));
+  }
+  for (int i = 0; i < kPoseCount; ++i) {
+    EXPECT_TRUE(poses.has_id(ids[i]));
     const Isometry3<double>& pose = poses.value(ids[i]);
     EXPECT_TRUE(CompareMatrices(pose.matrix(), recorded_poses[i].matrix()));
   }
