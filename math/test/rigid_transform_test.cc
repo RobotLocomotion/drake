@@ -581,7 +581,7 @@ GTEST_TEST(RigidTransform, OperatorMultiplyByMatrix3X) {
   EXPECT_EQ(p_AoP_A.cols(), number_of_position_vectors);
   for (int i = 0; i < number_of_position_vectors; ++i) {
     const Vector3d p_AoPi_A = p_AoP_A.col(i);
-    const Vector3d p_AoPi_A_expected = p_AoP_A.col(i); // Previous calculation.
+    const Vector3d p_AoPi_A_expected = p_AoP_A.col(i);  // Previous result.
     EXPECT_TRUE(CompareMatrices(p_AoPi_A, p_AoPi_A_expected, kEpsilon));
   }
 
