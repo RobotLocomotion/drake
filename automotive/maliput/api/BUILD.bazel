@@ -35,6 +35,7 @@ drake_cc_library(
         "basic_id_index.h",
         "branch_point.h",
         "intersection.h",
+        "intersection_book.h",
         "junction.h",
         "lane.h",
         "lane_data.h",
