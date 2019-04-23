@@ -318,7 +318,7 @@ int AddSecondOrderConeConstraints(
     // z - A*x will be written as M * [x; z], where M = [-A I].
     // Gurobi expects M in compressed sparse row format, so we will first find
     // out the non-zero entries in each row of M.
-    // M_rows_col[i] stroes the column index of non-zero entries in M.row(i)
+    // M_rows_col[i] stores the column index of non-zero entries in M.row(i)
     std::vector<std::vector<int>> M_rows_col(num_z);
     // M_rows_val[i] stores the value of non-zero entries in M.row(i).
     std::vector<std::vector<double>> M_rows_val(num_z);
