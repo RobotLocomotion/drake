@@ -17,7 +17,7 @@ namespace controllers {
 /// as a function of x(k):
 ///
 ///   @f[ \min_{u(k),\ldots,u(k+N),x(k+1),\ldots,x(k+N)}
-///          \Sum_{i=k}^{k+N} ((x(i) - xd(i))ᵀQ(x(i) - xd(i)) +
+///          \sum_{i=k}^{k+N} ((x(i) - xd(i))ᵀQ(x(i) - xd(i)) +
 ///                            (u(i) - ud(i))ᵀR(u(i) - ud(i))) @f]
 ///   @f[ \mathrm{s.t. } x(k+1) = A(k)x(k) + B(k)u(k) @f]
 ///

@@ -384,7 +384,7 @@ GTEST_TEST(DirectTranscriptionTest, AddRunningCostTest) {
   const solvers::MathematicalProgramResult result = Solve(prog);
   EXPECT_TRUE(result.is_success());
 
-  // Compute the expected cost as c[N] + \Sum_{i = 0...N-1} h * c[i]
+  // Compute the expected cost as c[N] + \sum_{i = 0...N-1} h * c[i]
   //   where c[i] is the running cost and c[N] is the terminal cost.
   double expected_cost{0.};
   for (int i{0}; i < kNumSamples - 1; i++) {
