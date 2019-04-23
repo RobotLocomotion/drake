@@ -70,6 +70,9 @@ static T GetNextSampleTime(
   return next_t;
 }
 
+// Logs a deprecation warning, at most once per process.
+void MaybeWarnDoHasDirectFeedthroughDeprecated();
+
 }  // namespace leaf_system_detail
 /** @endcond */
 
@@ -276,8 +279,12 @@ class LeafSystem : public System<T> {
     // Add true pairs to the result map and nullopt pairs to the unknown map.
     for (InputPortIndex u{0}; u < this->num_input_ports(); ++u) {
       for (OutputPortIndex v{0}; v < this->num_output_ports(); ++v) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         const optional<bool> user_override = DoHasDirectFeedthrough(u, v);
+#pragma GCC diagnostic pop
         if (user_override) {
+          leaf_system_detail::MaybeWarnDoHasDirectFeedthroughDeprecated();
           if (user_override.value()) {
             result.emplace(u, v);
           }
@@ -589,7 +596,12 @@ class LeafSystem : public System<T> {
   /// This is a conservative assumption that ensures we detect and can prevent
   /// the formation of algebraic loops (implicit computations) in system
   /// Diagrams. Systems which do not have direct feedthrough may override that
-  /// assumption in two ways:
+  /// assumption in three ways:
+  ///
+  /// - When calling DeclareFooOutputPort, provide a non-default value to the
+  ///   prerequisites_of_calc argument.  When the prerequisites_of_calc implies
+  ///   no dependency on some inputs, the framework automatically infers that
+  ///   the output does is not direct-feedthrough for those inputs.
   ///
   /// - Override DoToSymbolic, allowing %LeafSystem to infer the sparsity
   ///   from the symbolic equations. This method is typically preferred for
@@ -599,13 +611,15 @@ class LeafSystem : public System<T> {
   ///   additional discussion, consult the documentation for
   ///   SystemSymbolicInspector.
   ///
-  /// - Override this function directly, reporting manual sparsity. This method
-  ///   is recommended when DoToSymbolic has not been implemented, or when
-  ///   creating the symbolic form is too computationally expensive, or when its
-  ///   output is not fully descriptive, as discussed above. Manually configured
+  /// - Override this function directly, reporting manual sparsity.  (This
+  ///   alternative is deprecated and is scheduled for removal.  Do not use
+  ///   it in new code.)  Manually configured
   ///   sparsity must be conservative: if there is any Context for which an
   ///   input port is direct-feedthrough to an output port, this function must
   ///   return either true or nullopt for those two ports.
+  DRAKE_DEPRECATED("2019-08-01",
+      "Instead of overriding this method, provide the prerequisites_of_calc "
+      "argument to the DeclareFooOutputPort call.")
   virtual optional<bool> DoHasDirectFeedthrough(
       int input_port, int output_port) const {
     unused(input_port, output_port);

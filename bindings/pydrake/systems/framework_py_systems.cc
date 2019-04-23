@@ -179,8 +179,11 @@ struct Impl {
         int input_port, int output_port) const override {
       PYDRAKE_TRY_PROTECTED_OVERLOAD(optional<bool>, LeafSystem<T>,
           "DoHasDirectFeedthrough", input_port, output_port);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
       // If the macro did not return, use default functionality.
       return Base::DoHasDirectFeedthrough(input_port, output_port);
+#pragma GCC diagnostic pop
     }
 
     void DoCalcTimeDerivatives(const Context<T>& context,
@@ -280,8 +283,11 @@ struct Impl {
         int input_port, int output_port) const override {
       PYDRAKE_TRY_PROTECTED_OVERLOAD(optional<bool>, VectorSystem<T>,
           "DoHasDirectFeedthrough", input_port, output_port);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
       // If the macro did not return, use default functionality.
       return Base::DoHasDirectFeedthrough(input_port, output_port);
+#pragma GCC diagnostic pop
     }
 
     void DoCalcVectorOutput(const Context<T>& context,
@@ -621,8 +627,11 @@ Note: The above is for the C++ documentation. For Python, use
             doc.LeafSystem.DoPublish.doc)
         // System attributes.
         .def("DoHasDirectFeedthrough",
-            &LeafSystemPublic::DoHasDirectFeedthrough,
-            doc.LeafSystem.DoHasDirectFeedthrough.doc)
+            [](PyLeafSystem* self, int input_port, int output_port) {
+              WarnDeprecated("See API docs for deprecation notice.");
+              return self->DoHasDirectFeedthrough(input_port, output_port);
+            },
+            doc.LeafSystem.DoHasDirectFeedthrough.doc_deprecated)
         // Continuous state.
         .def("DeclareContinuousState",
             py::overload_cast<int>(&LeafSystemPublic::DeclareContinuousState),
