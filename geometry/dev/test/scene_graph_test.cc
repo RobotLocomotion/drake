@@ -60,13 +60,6 @@ class SceneGraphTester {
   SceneGraphTester() = delete;
 
   template <typename T>
-  static bool HasDirectFeedthrough(const SceneGraph<T>& scene_graph,
-                                   int input_port, int output_port) {
-    return scene_graph.DoHasDirectFeedthrough(input_port, output_port)
-        .value_or(true);
-  }
-
-  template <typename T>
   static void FullPoseUpdate(const SceneGraph<T>& scene_graph,
                              const GeometryContext<T>& context) {
     scene_graph.FullPoseUpdate(context);
@@ -258,16 +251,10 @@ TEST_F(SceneGraphTest, TopologyAfterAllocation) {
 // Confirms that the direct feedthrough logic is correct -- there is total
 // direct feedthrough.
 TEST_F(SceneGraphTest, DirectFeedThrough) {
-  SourceId id = scene_graph_.RegisterSource();
-  std::vector<int> input_ports{
-      scene_graph_.get_source_pose_port(id).get_index()};
-  for (int input_port_id : input_ports) {
-    EXPECT_TRUE(SceneGraphTester::HasDirectFeedthrough(
-        scene_graph_, input_port_id,
-        scene_graph_.get_query_output_port().get_index()));
-  }
-  // TODO(SeanCurtis-TRI): Update when the pose bundle output is added; it has
-  // direct feedthrough as well.
+  scene_graph_.RegisterSource();
+  EXPECT_EQ(scene_graph_.GetDirectFeedthroughs().size(),
+            scene_graph_.num_input_ports() *
+                scene_graph_.num_output_ports());
 }
 
 // Test the functionality that accumulates the values from the input ports.

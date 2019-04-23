@@ -38,10 +38,6 @@ class RenderPoseToGeometryPose final : public LeafSystem<T> {
   // Allow different specializations to access each other's private data.
   template <typename> friend class RenderPoseToGeometryPose;
 
-  optional<bool> DoHasDirectFeedthrough(int, int) const final {
-    return true;
-  }
-
   const geometry::SourceId source_id_;
   const geometry::FrameId frame_id_;
 };
