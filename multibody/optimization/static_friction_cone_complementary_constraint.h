@@ -90,12 +90,12 @@ class StaticFrictionConeComplementaryNonlinearConstraint
  * friction force expressed in the world frame.
  *
  * Mathematically, we add the following constraints to the optimization program
- * f_Wᵀ * (I - n_W * n_Wᵀ) * f_W <= μ² * f_Wᵀ * n_W * n_Wᵀ * f_W   (1)
+ * f_Wᵀ * ((μ² + 1)* n_W * n_Wᵀ - I) * f_W >= 0                    (1)
  * n_Wᵀ * f_W = α                                                  (2)
  * α >= 0                                                          (3)
  * sdf = β                                                         (4)
  * β >= 0                                                          (5)
- * α * β <= ε                                                      (6)
+ * 0 <= α * β <= ε                                                 (6)
  * the slack variables α and β are added to the optimization program as well.
  *
  * @param contact_wrench_evaluators_and_lambda The evaluators to compute the

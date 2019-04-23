@@ -56,6 +56,7 @@ void StaticFrictionConeComplementaryNonlinearConstraint::DoEval(
 
 void StaticFrictionConeComplementaryNonlinearConstraint::DoEval(
     const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
+  y->resize(num_constraints());
   // Retrieve the variables.
   AutoDiffVecXd q, lambda;
   AutoDiffXd alpha, beta;

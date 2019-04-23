@@ -126,4 +126,13 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "static_friction_cone_complementary_constraint_test",
+    deps = [
+        ":optimization_with_contact_utilities",
+        ":static_friction_cone_complementary_constraint",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
 add_lint_tests()
