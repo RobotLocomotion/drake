@@ -144,6 +144,7 @@ class TestAutoDiffXd(unittest.TestCase):
         algebra.check_value(algebra.exp(a), AD(np.e, [np.e, 0]))
         algebra.check_value(algebra.sqrt(a), AD(1, [0.5, 0]))
         algebra.check_value(algebra.pow(a, 2), AD(1, [2., 0]))
+        algebra.check_value(algebra.pow(a, 0.5), AD(1, [0.5, 0]))
         algebra.check_value(algebra.sin(c), AD(0, [1, 0]))
         algebra.check_value(algebra.cos(c), AD(1, [0, 0]))
         algebra.check_value(algebra.tan(c), AD(0, [1, 0]))
