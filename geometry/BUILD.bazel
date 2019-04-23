@@ -257,7 +257,10 @@ drake_cc_library(
     name = "utilities",
     srcs = ["utilities.cc"],
     hdrs = ["utilities.h"],
-    deps = ["//common"],
+    deps = [
+        "//common",
+        "//math:geometric_transform",
+    ],
 )
 
 # -----------------------------------------------------
