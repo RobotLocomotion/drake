@@ -455,11 +455,6 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
   // Populate with the pose data.
   void CalcFramePoseOutput(const Context<double>& context,
                            FramePoseVector<double>* poses) const {
-    const int frame_count =
-        static_cast<int>(frame_ids_.size() + extra_frame_ids_.size());
-    DRAKE_DEMAND(poses->size() == frame_count);
-    DRAKE_DEMAND(poses->source_id() == source_id_);
-
     poses->clear();
 
     const int base_count = static_cast<int>(frame_ids_.size());
