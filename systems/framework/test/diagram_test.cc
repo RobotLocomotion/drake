@@ -1369,10 +1369,12 @@ TEST_F(DiagramTest, SubclassTransmogrificationTest) {
 class Reduce : public LeafSystem<double> {
  public:
   Reduce() {
-    feedthrough_input_ = this->DeclareInputPort(kVectorValued, 1).get_index();
+    const auto& input0 = this->DeclareInputPort(kVectorValued, 1);
+    feedthrough_input_ = input0.get_index();
     sink_input_ = this->DeclareInputPort(kVectorValued, 1).get_index();
     this->DeclareVectorOutputPort(BasicVector<double>(1),
-                                  &Reduce::CalcFeedthrough);
+                                  &Reduce::CalcFeedthrough,
+                                  {input0.ticket()});
   }
 
   const systems::InputPort<double>& get_sink_input() const {
@@ -1387,10 +1389,6 @@ class Reduce : public LeafSystem<double> {
                        BasicVector<double>* output) const {
     const auto& input = get_feedthrough_input().Eval(context);
     output->get_mutable_value() = input;
-  }
-
-  optional<bool> DoHasDirectFeedthrough(int input_port, int) const override {
-    return input_port == feedthrough_input_;
   }
 
  private:
