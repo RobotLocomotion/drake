@@ -367,12 +367,31 @@ class RigidTransform {
     return RigidTransform<T>(R_AB, p_AB_A);
   }
 
-  /// Calculates `this` %RigidTransform `X_AB` multiplied by the position vector
+  /// Multiplies `this` %RigidTransform `X_AB` by the position vector
   /// 'p_BoQ_B` which is from Bo (B's origin) to an arbitrary point Q.
   /// @param[in] p_BoQ_B position vector from Bo to Q, expressed in frame B.
   /// @retval p_AoQ_A position vector from Ao to Q, expressed in frame A.
   Vector3<T> operator*(const Vector3<T>& p_BoQ_B) const {
     return p_AoBo_A_ + R_AB_ * p_BoQ_B;
+  }
+
+  /// Multiplies `this` %RigidTransform `X_AB` by the n position vectors
+  /// 'p_BoQ1_B` ... `p_BoQn_B`, where `p_BoQi_B` is the iᵗʰ position vector
+  /// from Bo (frame B's origin) to an arbitrary point Qi, expressed in frame B.
+  /// @param[in] p_BoQ_B `3 x n` matrix with n position vectors `p_BoQi_B`.
+  /// @retval p_AoQ_A `3 x n` matrix with n position vectors `p_AoQi_A`, i.e., n
+  /// position vectors from Ao (frame A's origin) to Qi, expressed in frame A.
+  template <typename Derived>
+  Eigen::Matrix<typename Derived::Scalar, 3, Derived::ColsAtCompileTime>
+  operator*(const Eigen::MatrixBase<Derived>& p_BoQ_B) const {
+    const int number_of_position_vectors = p_BoQ_B.cols();
+    Eigen::Matrix<typename Derived::Scalar, 3, Derived::ColsAtCompileTime>
+        p_AoQ_A(3, number_of_position_vectors);
+    for (int i = 0;  i < number_of_position_vectors;  ++i) {
+      const Vector3<typename Derived::Scalar>& p_BoQi_B = p_BoQ_B.col(i);
+      p_AoQ_A.col(i) = *this * p_BoQi_B;
+    }
+    return p_AoQ_A;
   }
 
   /// Compares each element of `this` to the corresponding element of `other`

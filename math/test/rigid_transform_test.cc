@@ -497,7 +497,7 @@ GTEST_TEST(RigidTransform, ConstructRigidTransformFromTranslation3) {
 }
 
 // Test multiplying a RigidTransform by an Eigen::Translation3 and vice-versa.
-GTEST_TEST(RigidTransform, MultiplyByTranslation3AndViceVersa) {
+GTEST_TEST(RigidTransform, OperatorMultiplyByTranslation3AndViceVersa) {
   const Vector3d p_AoBo_A(1.0, 2.0, 3.0);
   const RotationMatrixd R_AB(RollPitchYawd(0.3, 0.2, 0.7));
   const RigidTransformd X_AB(R_AB, p_AoBo_A);
@@ -537,6 +537,41 @@ GTEST_TEST(RigidTransform, MultiplyByTranslation3AndViceVersa) {
 
   // Verify X_AC is the inverse of X_CA.
   EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_CA.inverse(), 32 * kEpsilon));
+}
+
+// Tests RigidTransform X_AB multiplied by a 3 x n matrix whose columns are
+// regarded as position vectors from Bo (frame B's origin) to an arbitrary point
+// Qi, expressed in B.  The result is tested to be a 3 x n matrix whose columns
+// are position vectors from Ao (frame A's origin) to Qi, expressed in A.
+GTEST_TEST(RigidTransform, OperatorMultiplyByMatrix3X) {
+  const RigidTransform<double> X_AB = GetRigidTransformA();
+
+  // Multiply a generic RigidTransform X_AB by 3 position vectors.  Verifies
+  // operator* for 3 x n matrix, where n = 3 is known before compilation.
+  Eigen::Matrix3d p_BoQ_B;
+  const Vector3d p_BoQ1_B(-12, -9, 7);   p_BoQ_B.col(0) = p_BoQ1_B;
+  const Vector3d p_BoQ2_B(-11, -8, 10);  p_BoQ_B.col(1) = p_BoQ2_B;
+  const Vector3d p_BoQ3_B(-10, -7, 12);  p_BoQ_B.col(2) = p_BoQ3_B;
+  const Eigen::Matrix3d p_AoQ_A = X_AB * p_BoQ_B;
+  EXPECT_EQ(p_AoQ_A.rows(), 3);
+  EXPECT_EQ(p_AoQ_A.cols(), 3);
+  EXPECT_TRUE(p_AoQ_A.col(0).isApprox(X_AB * p_BoQ1_B, kEpsilon));
+  EXPECT_TRUE(p_AoQ_A.col(1).isApprox(X_AB * p_BoQ2_B, kEpsilon));
+  EXPECT_TRUE(p_AoQ_A.col(2).isApprox(X_AB * p_BoQ3_B, kEpsilon));
+
+  // Multiply a generic RigidTransform X_AB by n position vectors.  Verifies
+  // operator* for 3 x n matrix, where n is not known before compilation.
+  const int number_of_position_vectors = 5;
+  Eigen::Matrix3Xd p_BoP_B(3, number_of_position_vectors);
+  Eigen::Matrix3Xd p_AoP_A = X_AB * p_BoP_B;
+  EXPECT_EQ(p_AoP_A.rows(), 3);
+  EXPECT_EQ(p_AoP_A.cols(), number_of_position_vectors);
+  for (int i = 0;  i < number_of_position_vectors;  ++i) {
+    const Vector3d& p_BoPi_B = p_BoP_B.col(i);
+    const Vector3d& p_AoPi_A = p_AoP_A.col(i);
+    const Vector3d p_AoQi_A_expected = X_AB * p_BoPi_B;
+    EXPECT_TRUE(p_AoPi_A.isApprox(p_AoQi_A_expected, kEpsilon));
+  }
 }
 
 }  // namespace
