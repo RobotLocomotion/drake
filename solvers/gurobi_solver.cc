@@ -305,7 +305,7 @@ int AddSecondOrderConeConstraints(
     int num_z = A.rows();
 
     // Add the constraint z - A*x = b
-    // Records the indices of [x;z]
+    // xz_indices records the indices of [x; z] in Gurobi.
     std::vector<int> xz_indices(num_x + num_z, 0);
 
     for (int i = 0; i < num_x; ++i) {
@@ -315,12 +315,12 @@ int AddSecondOrderConeConstraints(
       xz_indices[num_x + i] =
           second_order_cone_new_variable_indices[second_order_cone_count][i];
     }
-    // z - A*x will be written as M * xz, where M = [-A I].
-    // Gurobi expects M in Compressed sparse row format, so we will first find
+    // z - A*x will be written as M * [x; z], where M = [-A I].
+    // Gurobi expects M in compressed sparse row format, so we will first find
     // out the non-zero entries in each row of M.
-    // M_rows_val[i] stores the value of non-zero entries in M.row(i).
     // M_rows_col[i] stroes the column index of non-zero entries in M.row(i)
     std::vector<std::vector<int>> M_rows_col(num_z);
+    // M_rows_val[i] stores the value of non-zero entries in M.row(i).
     std::vector<std::vector<double>> M_rows_val(num_z);
     for (int i = 0; i < num_z; ++i) {
       M_rows_val[i].reserve(num_x + 1);
@@ -334,7 +334,7 @@ int AddSecondOrderConeConstraints(
       }
     }
     for (int i = 0; i < num_z; ++i) {
-      // The entries of identity matrix (multiplied with z).
+      // The entries of identity matrix.
       M_rows_col[i].push_back(xz_indices[num_x + i]);
       M_rows_val[i].push_back(1.0);
     }
