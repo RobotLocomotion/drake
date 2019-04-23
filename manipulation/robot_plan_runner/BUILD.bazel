@@ -1,0 +1,51 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+)
+load("@drake//tools/skylark:test_tags.bzl", "vtk_test_tags")
+load("//tools/install:install_data.bzl", "install_data")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
+
+drake_cc_library(
+    name = "robot_plans",
+    srcs = [
+        "robot_plans.cc",
+    ],
+    hdrs = [
+        "robot_plans.h",
+    ],
+    data = [
+        ":models",
+        "//manipulation/models/iiwa_description:models",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common:find_resource",
+        "//geometry:scene_graph",
+        "//geometry/dev:scene_graph",
+        "//geometry/dev/render:render_engine_vtk",
+        "//manipulation/schunk_wsg:schunk_wsg_constants",
+        "//manipulation/schunk_wsg:schunk_wsg_position_controller",
+        "//math:geometric_transform",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/controllers:inverse_dynamics_controller",
+        "//systems/framework",
+        "//systems/sensors/dev:rgbd_camera",
+    ],
+)
+
+install_data()
+
+add_lint_tests()
