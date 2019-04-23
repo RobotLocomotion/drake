@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
+#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/utilities.h"
@@ -92,10 +93,6 @@ class FrameKinematicsVector {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FrameKinematicsVector)
 
-  /** An object that represents the range of FrameId values in this class. It
-   is used in range-based for loops to iterate through registered frames.  */
-  using FrameIdRange = internal::MapKeyRange<FrameId, KinematicsValue>;
-
   /** Initializes the vector using an invalid SourceId with no frames .*/
   FrameKinematicsVector();
 
@@ -125,14 +122,14 @@ class FrameKinematicsVector {
   SourceId source_id() const { return source_id_; }
 
   /** Returns number of frame_ids(). */
-  int size() const { return static_cast<int>(values_.size()); }
+  int size() const { return size_; }
 
   /** Returns the value associated with the given `id`.
    @throws std::runtime_error if `id` is not in the specified set of ids.  */
   const KinematicsValue& value(FrameId id) const;
 
   /** Reports true if the given id is a member of this data. */
-  bool has_id(FrameId id) const { return values_.count(id) > 0; }
+  bool has_id(FrameId id) const;
 
   /** Provides a range object for all of the frame ids in the vector.
    This is intended to be used as:
@@ -144,7 +141,7 @@ class FrameKinematicsVector {
    }
    @endcode
    */
-  FrameIdRange frame_ids() const { return FrameIdRange(&values_); }
+  std::vector<FrameId> frame_ids() const;
 
  private:
   // TODO(jwnimmer-tri) This field is only here to support the deprecated
@@ -152,8 +149,11 @@ class FrameKinematicsVector {
   // removed also.
   SourceId source_id_;
 
+  // The count of non-nullopt items in values_.
+  int size_{0};
+
   // Mapping from frame id to its current pose.
-  std::unordered_map<FrameId, KinematicsValue> values_;
+  std::unordered_map<FrameId, optional<KinematicsValue>> values_;
 };
 
 /** Class for communicating _pose_ information to SceneGraph for registered
