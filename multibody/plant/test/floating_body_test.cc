@@ -229,13 +229,12 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   EXPECT_TRUE(std::abs(q_WB_vec4.dot(DtW_quat)) < 10 * kEpsilon);
 
   // The time derivative of the quaternion component can only be expected to be
-  // accurate within kTolerance due to the loss of normalization in
-  // the quaternion.
+  // accurate within kTolerance due to the loss of normalization in the
+  // quaternion.
   EXPECT_TRUE(CompareMatrices(DtW_quat, quatDt_WB_exact,
-                              kTolerance,
-                              MatrixCompareType::relative));
+      kTolerance, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(DtW_p_WBcm, v_WB, kEpsilon,
-                              MatrixCompareType::relative));
+      MatrixCompareType::relative));
 
   // Verify MultibodyTree::MapQDotToVelocity() does indeed map back to the
   // original generalized velocities.

@@ -188,6 +188,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEstOrder) {
   this->integrator->Initialize();
 
   // Take a single step of size h.
+  ASSERT_EQ(this->context->get_time(), 0.0);
   const double t_final = this->context->get_time() + h;
   this->integrator->IntegrateWithSingleFixedStepToTime(t_final);
 
@@ -199,31 +200,31 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEstOrder) {
   const double x_true = c1 * std::cos(omega * h) + c2 * std::sin(omega * h);
 
   // Get the integrator's solution.
-  const double kXApprox_h = this->context->get_continuous_state_vector().
+  const double x_approx_h = this->context->get_continuous_state_vector().
       GetAtIndex(0);
 
   // Get the error estimate and the error in the error estimate.
   const double err_est_h =
       this->integrator->get_error_estimate()->get_vector().GetAtIndex(0);
-  const double err_est_h_err = std::abs(err_est_h - (x_true - kXApprox_h));
+  const double err_est_h_err = std::abs(err_est_h - (x_true - x_approx_h));
 
   // Compute the same solution using two half-steps.
   this->context->SetTime(0);
   this->spring_mass->set_position(this->integrator->get_mutable_context(),
-                             initial_position);
+      initial_position);
   this->spring_mass->set_velocity(this->integrator->get_mutable_context(),
-                             initial_velocity);
+      initial_velocity);
   this->integrator->Initialize();
   this->integrator->IntegrateWithSingleFixedStepToTime(t_final / 2.0);
   this->integrator->IntegrateWithSingleFixedStepToTime(t_final);
   EXPECT_NEAR(this->context->get_time(), h,
               std::numeric_limits<double>::epsilon());
-  const double kXApprox_2h_h = this->context->get_continuous_state_vector().
+  const double x_approx_2h_h = this->context->get_continuous_state_vector().
       GetAtIndex(0);
   const double err_est_2h_h =
       this->integrator->get_error_estimate()->get_vector().GetAtIndex(0);
   const double err_est_2h_h_err = std::abs(err_est_2h_h -
-      (x_true - kXApprox_2h_h));
+      (x_true - x_approx_2h_h));
 
   // Verify that the error in the error estimate dropped in accordance with the
   // order of the error estimator. Theory indicates that asymptotic error in

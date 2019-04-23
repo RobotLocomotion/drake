@@ -115,7 +115,7 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, CubicTest) {
 
   // Check for near-exact 3rd-order results. The measure of accuracy is a
   // tolerance that scales with expected answer at t_final.
-  const double expected_answer = t_final * (t_final * (t_final + 1) + 12);
+  const double expected_answer = t_final * (t_final * (t_final + 1) + 12) + C;
   const double allowable_3rd_order_error = expected_answer *
       std::numeric_limits<double>::epsilon();
   const double actual_answer = cubic_context->get_continuous_state_vector()[0];

@@ -193,7 +193,7 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, QuadraticTest) {
   rk2.Initialize();
   rk2.IntegrateWithSingleFixedStepToTime(t_final);
 
-  const double expected_result = t_final * (4 * t_final + 4);
+  const double expected_result = t_final * (4 * t_final + 4) + C;
   EXPECT_NEAR(
       quadratic_context->get_continuous_state_vector()[0], expected_result,
       10 * std::numeric_limits<double>::epsilon());
