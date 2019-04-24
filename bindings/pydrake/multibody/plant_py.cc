@@ -513,17 +513,29 @@ PYBIND11_MODULE(plant, m) {
                 multibody::ModelInstanceIndex>(
                 &Class::get_actuation_input_port),
             py_reference_internal, cls_doc.get_actuation_input_port.doc_1args)
-        .def("get_continuous_state_output_port",
+        .def("get_state_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&>(
-                &Class::get_continuous_state_output_port),
-            py_reference_internal,
-            cls_doc.get_continuous_state_output_port.doc_0args)
+                &Class::get_state_output_port),
+            py_reference_internal, cls_doc.get_state_output_port.doc_0args)
         .def("get_continuous_state_output_port",
-            overload_cast_explicit<const systems::OutputPort<T>&,
-                multibody::ModelInstanceIndex>(
-                &Class::get_continuous_state_output_port),
+            [](Class* self) -> const systems::OutputPort<T>& {
+              WarnDeprecated("Use get_state_output_port() instead");
+              return self->get_state_output_port();
+            },
             py_reference_internal,
-            cls_doc.get_continuous_state_output_port.doc_1args)
+            cls_doc.get_continuous_state_output_port.doc_deprecated_0args)
+        .def("get_state_output_port",
+            overload_cast_explicit<const systems::OutputPort<T>&,
+                multibody::ModelInstanceIndex>(&Class::get_state_output_port),
+            py_reference_internal, cls_doc.get_state_output_port.doc_1args)
+        .def("get_continuous_state_output_port",
+            [](Class* self, multibody::ModelInstanceIndex model_instance)
+                -> const systems::OutputPort<T>& {
+              WarnDeprecated("Use get_state_output_port() instead");
+              return self->get_state_output_port(model_instance);
+            },
+            py_reference_internal,
+            cls_doc.get_continuous_state_output_port.doc_deprecated_1args)
         .def("get_contact_results_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_contact_results_output_port),
