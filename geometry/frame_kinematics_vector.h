@@ -5,8 +5,10 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
+#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/utilities.h"
@@ -92,10 +94,6 @@ class FrameKinematicsVector {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FrameKinematicsVector)
 
-  /** An object that represents the range of FrameId values in this class. It
-   is used in range-based for loops to iterate through registered frames.  */
-  using FrameIdRange = internal::MapKeyRange<FrameId, KinematicsValue>;
-
   /** Initializes the vector using an invalid SourceId with no frames .*/
   FrameKinematicsVector();
 
@@ -125,14 +123,17 @@ class FrameKinematicsVector {
   SourceId source_id() const { return source_id_; }
 
   /** Returns number of frame_ids(). */
-  int size() const { return static_cast<int>(values_.size()); }
+  int size() const {
+    DRAKE_ASSERT_VOID(CheckInvariants());
+    return size_;
+  }
 
   /** Returns the value associated with the given `id`.
    @throws std::runtime_error if `id` is not in the specified set of ids.  */
   const KinematicsValue& value(FrameId id) const;
 
   /** Reports true if the given id is a member of this data. */
-  bool has_id(FrameId id) const { return values_.count(id) > 0; }
+  bool has_id(FrameId id) const;
 
   /** Provides a range object for all of the frame ids in the vector.
    This is intended to be used as:
@@ -144,16 +145,29 @@ class FrameKinematicsVector {
    }
    @endcode
    */
-  FrameIdRange frame_ids() const { return FrameIdRange(&values_); }
+  std::vector<FrameId> frame_ids() const;
 
  private:
+  void CheckInvariants() const;
+
   // TODO(jwnimmer-tri) This field is only here to support the deprecated
   // source_id() method; when that method is removed, this field should be
   // removed also.
   SourceId source_id_;
 
-  // Mapping from frame id to its current pose.
-  std::unordered_map<FrameId, KinematicsValue> values_;
+  // Mapping from frame id to its current pose.  If the map's optional value is
+  // nullopt, we treat it as if the map key were absent instead.  We do this in
+  // order to avoid reallocating map nodes as we repeatedly clear() and then
+  // re-set_value() the same IDs over and over again.
+  // TODO(jwnimmer-tri) A better way to avoid map node allocations would be to
+  // replace this unordered_map with a flat_hash_map (where the entire storage
+  // is a single heap slab); in that case, the complicated implementation in
+  // the cc file would become simplified.
+  std::unordered_map<FrameId, optional<KinematicsValue>> values_;
+
+  // The count of non-nullopt items in values_.  We could recompute this from
+  // values_, but we store it separately so that size() is still constant-time.
+  int size_{0};
 };
 
 /** Class for communicating _pose_ information to SceneGraph for registered

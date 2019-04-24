@@ -10,6 +10,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -149,6 +150,35 @@ GTEST_TEST(FrameKinematicsVector, WorkingWithValues) {
   DRAKE_EXPECT_THROWS_MESSAGE(poses.value(FrameId::get_new_id()),
                               std::runtime_error,
                               "No such FrameId \\d+.");
+}
+
+GTEST_TEST(FrameKinematicsVector, SetWithoutAllocations) {
+  const int kPoseCount = 3;
+  const std::vector<FrameId> ids{
+    FrameId::get_new_id(),
+    FrameId::get_new_id(),
+    FrameId::get_new_id(),
+  };
+  const std::vector<Isometry3<double>> poses{
+    Isometry3<double>::Identity(),
+    Isometry3<double>::Identity(),
+    Isometry3<double>::Identity(),
+  };
+
+  // For the initial setting, we'd expect to see allocations.
+  FramePoseVector<double> dut;
+  for (int i = 0; i < kPoseCount; ++i) {
+    dut.set_value(ids[i], poses[i]);
+  }
+
+  // Subsequent clear + set should not touch the heap.
+  for (int j = 0; j < 5; ++j) {
+    drake::test::LimitMalloc guard;
+    dut.clear();
+    for (int i = 0; i < kPoseCount; ++i) {
+      dut.set_value(ids[i], poses[i]);
+    }
+  }
 }
 
 GTEST_TEST(FrameKinematicsVector, AutoDiffInstantiation) {
