@@ -686,11 +686,10 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   EXPECT_NO_THROW(poses_value->get_value<FramePoseVector<double>>());
   const FramePoseVector<double>& poses =
       poses_value->get_value<FramePoseVector<double>>();
-  EXPECT_EQ(poses.source_id(), plant_->get_source_id());
-  EXPECT_EQ(poses.size(), 2);  // Only two frames move.
 
   // Compute the poses for each geometry in the model.
   plant_->get_geometry_poses_output_port().Calc(*context, poses_value.get());
+  EXPECT_EQ(poses.size(), 2);  // Only two frames move.
 
   const FrameId world_frame_id =
       plant_->GetBodyFrameIdOrThrow(plant_->world_body().index());
@@ -1170,11 +1169,10 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   EXPECT_NO_THROW(poses_value->get_value<FramePoseVector<double>>());
   const FramePoseVector<double>& pose_data =
       poses_value->get_value<FramePoseVector<double>>();
-  EXPECT_EQ(pose_data.source_id(), plant.get_source_id());
-  EXPECT_EQ(pose_data.size(), 2);  // Only two frames move.
 
   // Compute the poses for each geometry in the model.
   plant.get_geometry_poses_output_port().Calc(*context, poses_value.get());
+  EXPECT_EQ(pose_data.size(), 2);  // Only two frames move.
 
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
   for (BodyIndex body_index(1);

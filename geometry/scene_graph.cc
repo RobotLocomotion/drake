@@ -384,7 +384,7 @@ void SceneGraph<T>::CalcPoseUpdate(const GeometryContext<T>& context,
         }
         const auto& poses =
             pose_port.template Eval<FramePoseVector<T>>(context);
-        mutable_state.SetFramePoses(poses);
+        mutable_state.SetFramePoses(source_id, poses);
       }
     }
   }
