@@ -46,6 +46,12 @@ drake_cc_library(
     ],
 )
 
+drake_cc_binary(
+    name = "robot_plans_test",
+    srcs = ["robot_plans_test.cc"],
+    deps = [":robot_plans",]
+)
+
 install_data()
 
 add_lint_tests()
