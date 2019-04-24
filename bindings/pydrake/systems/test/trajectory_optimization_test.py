@@ -15,6 +15,7 @@ from pydrake.systems.primitives import LinearSystem
 from pydrake.systems.trajectory_optimization import (
     AddDirectCollocationConstraint, DirectCollocation,
     DirectCollocationConstraint, DirectTranscription,
+    TimeStep,
 )
 
 
@@ -159,5 +160,5 @@ class TestTrajectoryOptimization(unittest.TestCase):
         plant = LinearSystem(A=[0.], B=[1.], C=[1.], D=[0.])
         context = plant.CreateDefaultContext()
         dirtran = DirectTranscription(plant, context, num_time_samples=3,
-                                      fixed_timestep=0.1)
+                                      fixed_timestep=TimeStep(0.1))
         self.assertEqual(len(dirtran.linear_equality_constraints()), 3)

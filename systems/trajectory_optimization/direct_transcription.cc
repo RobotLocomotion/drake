@@ -46,7 +46,7 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
                                Context<AutoDiffXd>* context,
                                FixedInputPortValue* input_port_value,
                                int num_states, int num_inputs,
-                               double evaluation_time, double fixed_timestep)
+                               double evaluation_time, TimeStep fixed_timestep)
       : Constraint(num_states, num_inputs + 2 * num_states,
                    Eigen::VectorXd::Zero(num_states),
                    Eigen::VectorXd::Zero(num_states)),
@@ -56,7 +56,7 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
         num_states_(num_states),
         num_inputs_(num_inputs),
         evaluation_time_(evaluation_time),
-        fixed_timestep_(fixed_timestep) {
+        fixed_timestep_(fixed_timestep.value) {
     DRAKE_DEMAND(evaluation_time >= 0.0);
     DRAKE_DEMAND(context_->has_only_discrete_state() ||
                  context_->has_only_continuous_state());
@@ -199,11 +199,11 @@ DirectTranscription::DirectTranscription(
 
 DirectTranscription::DirectTranscription(
     const System<double>* system, const Context<double>& context,
-    int num_time_samples, double fixed_timestep,
+    int num_time_samples, TimeStep fixed_timestep,
     variant<InputPortSelection, InputPortIndex> input_port_index)
     : MultipleShooting(get_input_port_size(system, input_port_index),
                        context.num_total_states(), num_time_samples,
-                       fixed_timestep),
+                       fixed_timestep.value),
       discrete_time_system_(false) {
   DRAKE_DEMAND(context.has_only_continuous_state());
   DRAKE_DEMAND(system->num_input_ports() <= 1);
@@ -377,8 +377,8 @@ void DirectTranscription::AddAutodiffDynamicConstraints(
     // Note that these constraints all share a context and inout_port_value,
     // so should not be evaluated in parallel.
     auto constraint = std::make_shared<DirectTranscriptionConstraint>(
-        *system_, context_.get(), input_port_value_,
-        num_states(), num_inputs(), i * fixed_timestep(), fixed_timestep());
+        *system_, context_.get(), input_port_value_, num_states(), num_inputs(),
+        i * fixed_timestep(), TimeStep{fixed_timestep()});
 
     AddConstraint(constraint, {input(i), state(i), state(i + 1)});
   }

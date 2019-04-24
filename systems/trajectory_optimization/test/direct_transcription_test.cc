@@ -153,7 +153,8 @@ GTEST_TEST(DirectTranscriptionTest, ContinuousTimeConstraintTest) {
 
   const auto context = system.CreateDefaultContext();
   int kNumSampleTimes = 3;
-  DirectTranscription prog(&system, *context, kNumSampleTimes, kTimeStep);
+  DirectTranscription prog(&system, *context, kNumSampleTimes,
+                           TimeStep{kTimeStep});
 
   EXPECT_EQ(prog.fixed_timestep(), kTimeStep);
 
@@ -228,7 +229,8 @@ GTEST_TEST(DirectTranscriptionTest, ContinuousTimeSymbolicConstraintTest) {
   const auto context = system->CreateDefaultContext();
   int kNumSampleTimes = 3;
   const double kTimeStep = 0.1;
-  DirectTranscription prog(system.get(), *context, kNumSampleTimes, kTimeStep);
+  DirectTranscription prog(system.get(), *context, kNumSampleTimes,
+                           TimeStep{kTimeStep});
 
   EXPECT_EQ(prog.fixed_timestep(), kTimeStep);
 

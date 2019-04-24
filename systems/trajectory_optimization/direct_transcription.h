@@ -14,6 +14,13 @@ namespace drake {
 namespace systems {
 namespace trajectory_optimization {
 
+// Helper struct holding a time-step value for continuous-time
+// DirectTranscription.
+struct TimeStep {
+  double value{-1};
+  explicit TimeStep(double step) : value(step) {}
+};
+
 /// DirectTranscription is perhaps the simplest implementation of a multiple
 /// shooting method, where we have decision variables representing the
 /// control and input at every sample time in the trajectory, and one-step
@@ -48,19 +55,6 @@ class DirectTranscription : public MultipleShooting {
       int num_time_samples,
       variant<InputPortSelection, InputPortIndex> input_port_index =
           InputPortSelection::kUseFirstInputIfItExists);
-
-#ifndef DRAKE_DOXYGEN_CXX
-  /// @exclude_from_pydrake_mkdoc{This constructor disambiguates the simple
-  /// discrete-time System constructor from the continuous-time System
-  /// constructor when an InputPortIndex type is passed in place of a
-  /// variant<InputPortSelection, InputPortIndex> type.}
-  DirectTranscription(const System<double>* system,
-                      const Context<double>& context, int num_time_samples,
-                      InputPortIndex input_port_index)
-      : DirectTranscription(
-            system, context, num_time_samples,
-            variant<InputPortSelection, InputPortIndex>(input_port_index)) {}
-#endif
 
   // TODO(russt): Generalize the symbolic short-cutting to handle this case,
   //  and remove the special-purpose constructor (unless we want it for
@@ -118,7 +112,7 @@ class DirectTranscription : public MultipleShooting {
   /// @default kUseFirstInputIfItExists.
   DirectTranscription(
       const System<double>* system, const Context<double>& context,
-      int num_time_samples, double fixed_timestep,
+      int num_time_samples, TimeStep fixed_timestep,
       variant<InputPortSelection, InputPortIndex> input_port_index =
           InputPortSelection::kUseFirstInputIfItExists);
 
