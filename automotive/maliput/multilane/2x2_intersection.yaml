@@ -641,3 +641,7 @@ PhaseRings:
       duration_until: 45
    EastWestPhase:
     - ID: NorthSouthPhase
+Intersections:
+- ID: 2x2Intersection
+  PhaseRing: 2x2Intersection
+  InitialPhase: NorthSouthPhase
