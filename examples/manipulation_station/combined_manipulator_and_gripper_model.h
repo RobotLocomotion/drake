@@ -28,8 +28,8 @@ namespace manipulation_station {
 template <typename T>
 class CombinedManipulatorAndGripperModel {
  public:
-  CombinedManipulatorAndGripperModel(multibody::MultibodyPlant<T>* plant) :
-      plant_(plant) {}
+  explicit CombinedManipulatorAndGripperModel(
+      multibody::MultibodyPlant<T>* plant) : plant_(plant) {}
   virtual ~CombinedManipulatorAndGripperModel() {}
 
   /// Gets the number of joints in the manipulator.
