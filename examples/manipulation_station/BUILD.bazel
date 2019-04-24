@@ -80,10 +80,10 @@ drake_cc_library(
     hdrs = [
         "combined_manipulator_and_gripper_model.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//multibody/tree",
     ],
-    visibility = ["//visibility:public"],
 )
 
 drake_cc_binary(
