@@ -38,14 +38,11 @@ class Intersection : public api::Intersection {
   virtual ~Intersection() = default;
 
   /// Returns the current phase.
-  const optional<api::rules::PhaseProvider::Result> Phase() const;
+  const optional<api::rules::PhaseProvider::Result> Phase() const override;
 
   /// Sets the current phase.
-  void SetPhase(const api::rules::Phase::Id& phase_id);
+  void SetPhase(const api::rules::Phase::Id& phase_id) override;
 
-  // TODO(liang.fok) Add method for obtaining the current bulb states
-
-  // TODO(liang.fok) Add method for obtaining the intersection's bounding box.
  private:
   ManualPhaseProvider* phase_provider_{};
 };
