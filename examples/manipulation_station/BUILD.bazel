@@ -79,7 +79,6 @@ drake_cc_library(
     name = "combined_manipulator_and_gripper_model",
     hdrs = [
         "combined_manipulator_and_gripper_model.h",
-        "manipulation_station_setup.h",
     ],
     deps = [
         "//multibody/tree",
