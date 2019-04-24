@@ -13,7 +13,7 @@ Intersection::Intersection(const Id& id,
   DRAKE_THROW_UNLESS(phase_provider_ != nullptr);
 }
 
-const optional<api::rules::PhaseProvider::Result> Intersection::Phase() const {
+optional<api::rules::PhaseProvider::Result> Intersection::Phase() const {
   return phase_provider_->GetPhase(ring_id());
 }
 

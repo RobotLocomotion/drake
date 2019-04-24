@@ -37,7 +37,7 @@ class PhaseProvider {
 
   /// Gets the phase within a specified PhaseRing. Returns nullopt if
   /// @p id is unrecognized.
-  const optional<Result> GetPhase(const PhaseRing::Id& id) const {
+  optional<Result> GetPhase(const PhaseRing::Id& id) const {
     return DoGetPhase(id);
   }
 

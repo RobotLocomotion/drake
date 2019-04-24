@@ -156,7 +156,7 @@ class MockIntersection final : public Intersection {
       : Intersection(id, {}, ring_id) {}
 
  private:
-  const optional<rules::PhaseProvider::Result> Phase() const override {
+  optional<rules::PhaseProvider::Result> Phase() const override {
     return nullopt;
   }
 

@@ -38,7 +38,7 @@ class Intersection : public api::Intersection {
   virtual ~Intersection() = default;
 
   /// Returns the current phase.
-  const optional<api::rules::PhaseProvider::Result> Phase() const override;
+  optional<api::rules::PhaseProvider::Result> Phase() const override;
 
   /// Sets the current phase.
   void SetPhase(const api::rules::Phase::Id& phase_id) override;
