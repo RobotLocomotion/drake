@@ -1,6 +1,6 @@
 #include "drake/geometry/frame_kinematics_vector.h"
 
-#include <utility>
+#include <stdexcept>
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
@@ -11,19 +11,28 @@
 namespace drake {
 namespace geometry {
 
-using std::make_pair;
-using std::move;
+namespace {
+template <typename T>
+void InitializeKinematicsValue(Isometry3<T>* value) {
+  value->setIdentity();
+}
+}  // namespace
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename KinematicsValue>
 FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector()
     : FrameKinematicsVector<KinematicsValue>({}, {}) {}
+#pragma GCC diagnostic pop
 
 template <typename KinematicsValue>
 FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector(
     SourceId source_id, const std::vector<FrameId>& ids)
     : source_id_(source_id), values_(0) {
+  KinematicsValue default_value;
+  InitializeKinematicsValue(&default_value);
   for (FrameId id : ids) {
-    bool is_unique = values_.insert(make_pair(id, FlaggedValue())).second;
+    bool is_unique = values_.emplace(id, default_value).second;
     if (!is_unique) {
       throw std::runtime_error(
           fmt::format("At least one frame id appears multiple times: {}", id));
@@ -32,38 +41,39 @@ FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector(
 }
 
 template <typename KinematicsValue>
+FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector(
+    std::initializer_list<std::pair<const FrameId, KinematicsValue>> init) {
+  values_ = init;
+}
+
+template <typename KinematicsValue>
+FrameKinematicsVector<KinematicsValue>&
+FrameKinematicsVector<KinematicsValue>::operator=(
+    std::initializer_list<std::pair<const FrameId, KinematicsValue>> init) {
+  values_ = init;
+  return *this;
+}
+
+template <typename KinematicsValue>
 void FrameKinematicsVector<KinematicsValue>::clear() {
-  ++version_;
+  values_.clear();
 }
 
 template <typename KinematicsValue>
 void FrameKinematicsVector<KinematicsValue>::set_value(
     FrameId id, const KinematicsValue& value) {
-  using std::to_string;
-
-  if (values_.count(id) != 1) {
-    throw std::runtime_error(
-        "Trying to set a kinematics value for a frame id that does not belong "
-            "to the kinematics vector: "  + to_string(id));
-  }
-  if (values_[id].version == version_) {
-    throw std::runtime_error(
-        "Trying to set kinematics value for the same id (" + to_string(id)
-        + ") multiple times. Did you forget to call clear()?");
-  }
-  values_[id].version = version_;
-  values_[id].value = value;
+  values_[id] = value;
 }
 
 template <typename KinematicsValue>
 const KinematicsValue& FrameKinematicsVector<KinematicsValue>::value(
     FrameId id) const {
   using std::to_string;
-  if (values_.count(id) != 1) {
-    throw std::runtime_error("Can't acquire value for id " + to_string(id) +
-                             ". It is not part of the kinematics data id set.");
+  auto iter = values_.find(id);
+  if (iter == values_.end()) {
+    throw std::runtime_error("No such FrameId " + to_string(id) + ".");
   }
-  return values_.at(id).value;
+  return iter->second;
 }
 
 // Explicitly instantiates on the most common scalar types.

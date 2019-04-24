@@ -282,6 +282,7 @@ drake_cc_googletest(
     deps = [
         ":frame_kinematics",
         "//common/test_utilities",
+        "//math:geometric_transform",
     ],
 )
 

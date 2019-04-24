@@ -4,6 +4,7 @@ import unittest
 import warnings
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.lcm import DrakeMockLcm
 from pydrake.systems.framework import DiagramBuilder, InputPort, OutputPort
 from pydrake.common.deprecation import DrakeDeprecationWarning
@@ -41,8 +42,9 @@ class TestGeometry(unittest.TestCase):
 
     def test_frame_pose_vector_api(self):
         mut.FramePoseVector()
-        mut.FramePoseVector(source_id=mut.SourceId.get_new_id(),
-                            ids=[mut.FrameId.get_new_id()])
+        with catch_drake_warnings(expected_count=1):
+            mut.FramePoseVector(source_id=mut.SourceId.get_new_id(),
+                                ids=[mut.FrameId.get_new_id()])
 
     def test_query_object_api(self):
         # TODO(eric.cousineau): Create self-contained unittests (#9899).
