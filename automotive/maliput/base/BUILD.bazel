@@ -14,6 +14,7 @@ drake_cc_package_library(
     name = "base",
     deps = [
         ":intersection",
+        ":intersection_book",
         ":manual_phase_provider",
         ":manual_phase_ring_book",
         ":manual_rule_state_provider",
@@ -38,6 +39,19 @@ drake_cc_library(
         ":manual_phase_provider",
         "//automotive/maliput/api",
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "intersection_book",
+    srcs = [
+        "intersection_book.cc",
+    ],
+    hdrs = [
+        "intersection_book.h",
+    ],
+    deps = [
+        ":intersection",
     ],
 )
 
@@ -182,6 +196,13 @@ drake_cc_googletest(
     name = "intersection_test",
     deps = [
         ":intersection",
+    ],
+)
+
+drake_cc_googletest(
+    name = "intersection_book_test",
+    deps = [
+        ":intersection_book",
     ],
 )
 
