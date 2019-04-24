@@ -31,9 +31,9 @@ template <typename T>
 BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
                                         SceneGraph<T>* scene_graph,
                                         const Vector2<double>& p_WB)
-    : source_id_(source_id), p_WB_(p_WB) {
+    : p_WB_(p_WB) {
   DRAKE_DEMAND(scene_graph != nullptr);
-  DRAKE_DEMAND(source_id_.is_valid());
+  DRAKE_DEMAND(source_id.is_valid());
 
   geometry_query_port_ = this->DeclareAbstractInputPort(
       systems::kUseDefaultName, Value<geometry::QueryObject<T>>{})
@@ -61,7 +61,6 @@ BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
 
   // Allocate the output port now that the frame has been registered.
   geometry_pose_port_ = this->DeclareAbstractOutputPort(
-          FramePoseVector<double>(source_id_, {ball_frame_id_}),
           &BouncingBallPlant::CalcFramePoseOutput,
           {this->configuration_ticket()})
       .get_index();
@@ -99,14 +98,10 @@ void BouncingBallPlant<T>::CopyStateToOutput(
 template <typename T>
 void BouncingBallPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
-  DRAKE_DEMAND(poses->source_id() == source_id_);
-  DRAKE_DEMAND(poses->size() == 1);
-
   Isometry3<T> pose = Isometry3<T>::Identity();
   const BouncingBallVector<T>& state = get_state(context);
   pose.translation() << p_WB_.x(), p_WB_.y(), state.z();
-  poses->clear();
-  poses->set_value(ball_frame_id_, pose);
+  *poses = {{ball_frame_id_, pose}};
 }
 
 // Compute the actual physics.

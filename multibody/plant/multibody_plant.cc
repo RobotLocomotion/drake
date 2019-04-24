@@ -1976,26 +1976,8 @@ template <typename T>
 void MultibodyPlant<T>::DeclareSceneGraphPorts() {
   geometry_query_port_ = this->DeclareAbstractInputPort(
       "geometry_query", Value<ModelQueryObject<T>>{}).get_index();
-  // Allocate pose port.
-  // TODO(eric.cousineau): Simplify this logic.
-  typename systems::LeafOutputPort<T>::AllocCallback pose_alloc = [this]() {
-    // This presupposes that the source id has been assigned and _all_ frames
-    // have been registered.
-    std::vector<FrameId> ids;
-    for (auto it : this->body_index_to_frame_id_) {
-      if (it.first == world_index()) continue;
-      ids.push_back(it.second);
-    }
-    return AbstractValue::Make(
-        FramePoseVector<T>(*this->source_id_, ids));
-  };
-  typename systems::LeafOutputPort<T>::CalcCallback pose_callback = [this](
-      const Context<T>& context, AbstractValue* value) {
-    this->CalcFramePoseOutput(
-        context, &value->get_mutable_value<FramePoseVector<T>>());
-  };
   geometry_pose_port_ = this->DeclareAbstractOutputPort(
-      "geometry_pose", pose_alloc, pose_callback,
+      "geometry_pose", &MultibodyPlant<T>::CalcFramePoseOutput,
       {this->configuration_ticket()}).get_index();
 }
 
@@ -2004,14 +1986,12 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_ASSERT(source_id_ != nullopt);
-  // NOTE: The body index to frame id map *always* includes the world body but
-  // the world body does *not* get reported in the frame poses; only dynamic
-  // frames do.
-  DRAKE_ASSERT(
-      poses->size() == static_cast<int>(body_index_to_frame_id_.size() - 1));
   const internal::PositionKinematicsCache<T>& pc =
       EvalPositionKinematics(context);
 
+  // NOTE: The body index to frame id map *always* includes the world body but
+  // the world body does *not* get reported in the frame poses; only dynamic
+  // frames do.
   // TODO(amcastro-tri): Make use of Body::EvalPoseInWorld(context) once caching
   // lands.
   poses->clear();
