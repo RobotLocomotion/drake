@@ -72,7 +72,7 @@ GTEST_TEST(SchunkWsgPositionControllerTest, SimTest) {
 
   const auto controller = builder.AddSystem<SchunkWsgPositionController>();
 
-  builder.Connect(wsg->get_continuous_state_output_port(wsg_model),
+  builder.Connect(wsg->get_state_output_port(wsg_model),
                   controller->get_state_input_port());
   builder.Connect(controller->get_generalized_force_output_port(),
                   wsg->get_actuation_input_port(wsg_model));

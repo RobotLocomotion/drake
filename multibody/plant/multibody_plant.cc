@@ -1923,15 +1923,19 @@ MultibodyPlant<T>::get_applied_spatial_force_input_port() const {
 }
 
 template <typename T>
-const systems::OutputPort<T>&
-MultibodyPlant<T>::get_continuous_state_output_port() const {
+const systems::OutputPort<T>& MultibodyPlant<T>::get_state_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   return this->get_output_port(continuous_state_output_port_);
 }
 
 template <typename T>
 const systems::OutputPort<T>&
-MultibodyPlant<T>::get_continuous_state_output_port(
+MultibodyPlant<T>::get_continuous_state_output_port() const {
+  return this->get_state_output_port();
+}
+
+template <typename T>
+const systems::OutputPort<T>& MultibodyPlant<T>::get_state_output_port(
     ModelInstanceIndex model_instance) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(model_instance.is_valid());
@@ -1939,6 +1943,13 @@ MultibodyPlant<T>::get_continuous_state_output_port(
   DRAKE_THROW_UNLESS(internal_tree().num_states(model_instance) > 0);
   return this->get_output_port(
       instance_continuous_state_output_ports_.at(model_instance));
+}
+
+template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_continuous_state_output_port(
+    ModelInstanceIndex model_instance) const {
+  return this->get_state_output_port(model_instance);
 }
 
 template <typename T>
