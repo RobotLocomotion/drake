@@ -324,13 +324,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "radau3_integrator_test",
+    # Note: if memcheck takes too long with Valgrind, disable
+    # memcheck (per Drake issue #9621).
     timeout = "moderate",
     shard_count = 2,
-    # Adding cache invalidation made this take too long with Valgrind.
-    # See Drake issue #9261.
-    tags = [
-        "no_memcheck",
-    ],
     deps = [
         ":implicit_euler_integrator",
         ":radau3_integrator",
