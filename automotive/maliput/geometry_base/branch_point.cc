@@ -63,7 +63,7 @@ void BranchPoint::SetDefault(const api::LaneEnd& lane_end,
 }
 
 
-const api::BranchPointId BranchPoint::do_id() const { return id_; }
+api::BranchPointId BranchPoint::do_id() const { return id_; }
 
 const api::RoadGeometry* BranchPoint::do_road_geometry() const {
   return road_geometry_;

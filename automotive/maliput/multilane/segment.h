@@ -82,7 +82,7 @@ class Segment : public api::Segment {
   ~Segment() override = default;
 
  private:
-  const api::SegmentId do_id() const override { return id_; }
+  api::SegmentId do_id() const override { return id_; }
 
   const api::Junction* do_junction() const override;
 
