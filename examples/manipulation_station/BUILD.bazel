@@ -75,6 +75,51 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "combined_iiwa_wsg",
+    srcs = [
+        "combined_iiwa_wsg.cc",
+    ],
+    hdrs = [
+        "combined_iiwa_wsg.h",
+    ],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":combined_manipulator_and_gripper_model",
+        "//common:find_resource",
+        "//examples/kuka_iiwa_arm:iiwa_lcm",
+        "//geometry/dev:scene_graph",
+        "//lcm",
+        "//manipulation/schunk_wsg:schunk_wsg_constants",
+        "//manipulation/schunk_wsg:schunk_wsg_lcm",
+        "//manipulation/schunk_wsg:schunk_wsg_position_controller",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/controllers:inverse_dynamics_controller",
+        "//systems/framework",
+        "//systems/lcm",
+        "//systems/primitives",
+        "//systems/sensors:lcm_image_array_to_images",
+        "//systems/sensors/dev:rgbd_camera",
+    ],
+)
+
+drake_cc_library(
+    name = "combined_manipulator_and_gripper_model",
+    hdrs = [
+        "combined_manipulator_and_gripper_model.h",
+        "manipulation_station_setup.h",
+    ],
+    deps = [
+        "//multibody/tree",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 drake_cc_binary(
     name = "mock_station_simulation",
     srcs = [
