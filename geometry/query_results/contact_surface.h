@@ -15,84 +15,119 @@ namespace drake {
 namespace geometry {
 
 
+// TODO(DamrongGuoy): Update the reference to the "pressure field model"
+//  paper when it is accepted to the conference.
+
 /** The %ContactSurface characterizes the intersection of two geometries M
-  and N as a contact surface with a scalar field and a vector field.
+  and N as a contact surface with a scalar field and a vector field, whose
+  purpose is to support the hydroelastic pressure field contact model as
+  described in:
 
-  <h3> Mathematical Definitions </h3>
+      R. Elandt, E. Drumwright, M. Sherman, and Andy Ruina. A pressure
+      field model for fast, robust approximation of net contact force
+      and moment between nominally rigid objects. Submitted to the
+      2019 IEEE/RSJ Intl. Conf. on Intelligent Robots and Systems.
 
-  We describe the _contact_ _surface_ Sₘₙ between two compliant bodies M and
-  N.  A contact surface is a surface of equilibrium eₘ = eₙ, where eₘ and
-  eₙ are the given scalar fields on the volumes of M and N.  For brevity,
-  here we write M and N for the volume of M and the volume of N respectively.
+  <h2> Mathematical Concepts </h2>
 
-               eₘ : M → ℝ, eₙ : N → ℝ,
+  In this section, we give motivation for the concept of contact surface from
+  the hydroelastic pressure field contact model. Here the mathematical
+  discussion is coordinate-free (treatment of the topic without reference to
+  any particular coordinate system); however, our implementation heavily
+  relies on coordinates frames. We borrow terminology from differential
+  geometry.
 
-               Sₘₙ = { Q ∈ M ∩ N : eₘ(r_MQ) = eₙ(r_NQ) },
+  In this section, the mathematical term _compact set_ (a subset of Euclidean
+  space that is closed and bounded) corresponds to the term _body_ (or the
+  space occupied by the body) in robotics.
 
-  where r_MQ is the displacement vector from the origin of M's body frame to a
-  point Q expressed in M's body frame, and r_NQ is the displacement vector
-  from the origin of N's body frame to Q expressed in N's body frame.
+  We describe the contact surface Sₘₙ between two intersecting compact subsets
+  M and N of ℝ³ endowed with the scalar field eₘ and eₙ on M ⊂ ℝ³ and N ⊂ ℝ³
+  respectively:
 
-  Conceptually we can define the function hₘₙ = eₘ - eₙ as a scalar field on
-  M ∩ N:
+                 eₘ : M → ℝ,
+                 eₙ : N → ℝ.
+
+  The _contact surface_ Sₘₙ is the surface of equilibrium eₘ = eₙ:
+
+               Sₘₙ = { q ∈ M ∩ N : eₘ(q) = eₙ(q) }.
+
+  Here we write the lower-case q for a point that is an element of a compact
+  subset of the Euclidean space ℝ³.  In our implementation, it corresponds to
+  a point Q, or r_MQ_M its displacement vector from the origin of the
+  coordinates frame of the body M expressed in M's frame.
+
+  We can define the scalar field eₘₙ on Sₘₙ as the common value of eₘ and eₙ:
+
+               eₘₙ : Sₘₙ → ℝ,
+               eₘₙ(q) = eₘ(q) = eₙ(q).
+
+  We can also define the scalar field hₘₙ on M ∩ N as the difference between
+  eₘ and eₙ:
 
                hₘₙ : M ∩ N → ℝ,
-               hₘₙ(Q) = eₘ(r_MQ) - eₙ(r_NQ).
+               hₘₙ(q) = eₘ(q) - eₙ(q).
 
-  The function hₘₙ measures the difference between the two scalar fields
-  eₘ and eₙ.
+  It follows that the gradient vector field ∇hₘₙ on M ∩ N equals the difference
+  between the the gradient vector fields ∇eₘ and ∇eₙ:
 
-  A point Q is on the contact surface Sₘₙ if and only if hₘₙ(Q) = 0.
+               ∇hₘₙ : M ∩ N → ℝ³,
+               ∇hₘₙ(q) = ∇eₘ(q) - ∇eₙ(q).
 
-  Our data structure for the contact surface does not store hₘₙ, but it stores
-  the vector field ∇hₘₙ on the contact surface Sₘₙ:
+  By construction, q ∈ Sₘₙ if and only if hₘₙ(q) = 0. In other words, Sₘₙ is
+  the zero level set of hₘₙ. It follows that, for q ∈ Sₘₙ, ∇hₘₙ(q) is
+  orthogonal to the surface Sₘₙ at q in the direction of increasing eₘ - eₙ.
 
-               ∇hₘₙ : Sₘₙ → ℝ³,
-               ∇hₘₙ(Q) = ∇eₘ(r_MQ) - ∇eₙ(r_NQ),
+  Notice that the domain of eₘₙ is the two-dimensional surface Sₘₙ, while the
+  domain of ∇hₘₙ is the three-dimensional compact set M ∩ N.
+  Even though eₘₙ and ∇hₘₙ are defined on different domains (Sₘₙ and M ∩ N),
+  our implementation only represents them on their common domain, i.e., Sₘₙ.
 
-  where ∇eₘ : M → ℝ³ is the gradient vector field of eₘ on M, and similarly
-  ∇eₙ : N → ℝ³ is the gradient vector field of eₙ on N.
+  <h2> Computational Representation </h2>
 
-  Mathematically the vector ∇hₘₙ(Q) of Q ∈ Sₘₙ is orthogonal to the contact
-  surface Sₘₙ at Q. The vector ∇hₘₙ(Q) points in the direction of increasing
-  eₘ and decreasing eₙ. It measures how fast eₘ and eₙ deviate from each other.
+  This section resumes our standard terminology of @ref
+  multibody_frames_and_bodies "Frames and Bodies". From now on, we will write
+  M and N for body M and body N endowed with M's coordinates frame and N's
+  coordinates frame respectively. We will write Sₘₙ, eₘₙ, and ∇hₘₙ for the
+  mathematical concepts in the previous section, and use the member variables
+  mesh_, e_MN_, and grad_h_MN_M_ for the representation or approximation of
+  the mathematical concepts.
 
-  <h3> Computational Representation </h3>
+  Our ContactSurface data structure represents the contact surface Sₘₙ as a
+  triangulated surface mesh using SurfaceMesh, and represents the scalar field
+  eₘₙ and the vector field ∇hₘₙ using MeshField.
 
-  Our data structure represents the contact surface Sₘₙ as a
-  triangulated _surface mesh_, which is the division of the contact surface
-  into triangular faces that share vertices. See SurfaceMesh for more details.
+  The member variable `mesh_` representing Sₘₙ is the surface mesh of a free
+  surface that does not necessarily bound a volume. The member variable
+  `e_MN_` represents the scalar field eₘₙ on `mesh_`. The member variable
+  `grad_h_MN_M_` represents the vector field ∇hₘₙ on `mesh_` and is expressed
+  in the coordinates frame of the body M.
 
-  We represent the scalar field e() and the vector field grad_h_MN_M() on the
-  surface mesh using the class SurfaceMeshField that can evaluate
-  the field value at any point on any triangle of the SurfaceMesh.
+  Mathematically ∇hₘₙ is defined on the common intersection of the space
+  occupied by the body M and the body N; however, the member variable
+  `grad_h_MN_M_` restricts the domain of ∇hₘₙ to the surface mesh only.
 
-  At each vertex v, we store the scalar value:
-
-               e(v) = eₘ(r_MV) = eₙ(r_NV)
-
-  and the vector value:
-
-               grad_h_MN_M(v) = ∇hₘₙ(r_MV) expressed in M's frame.
-
-  On each triangle, we provide evaluation of the scalar `e` and the vector
-  `grad_h_MN_M` at any point in the triangle.
-
-  Due to discretization, the vector `grad_h_MN_M` at a vertex v needs not be
-  strictly orthogonal to any triangle sharing v.  Orthogonality does improve
-  with finer discretization.
+  Due to discretization, the vector `grad_h_MN_M_` at a vertex need not be
+  strictly orthogonal to any triangle sharing the vertex. Orthogonality does
+  improve with finer discretization.
 
   <h3> Local Coordinates </h3>
 
-  We identify a point p in a triangle with vertices v₀, v₁, v₂ using
-  _barycentric_ _coordinates_ (b0, b1, b2) by:
+  For a point Q in the contact surface between body M and body N, r_MQ is the
+  displacement vector from the origin of M's frame to Q expressed in M's
+  frame. We can identify r_MQ to the _barycentric coordinates_
+  (b0, b1, b2) in a triangle of ContactSurface with vertices labeled as v₀,
+  v₁, v₂ by:
 
-               p = b0 * v₀ + b1 * v₁ + b2 * v₂,
-               b0 + b1 + b2 = 1, bᵢ ∈ [0,1].
+               r_MQ = b0 * r_MV₀ + b1 * r_MV₁ + b2 * r_MV₂,
+               b0 + b1 + b2 = 1, bᵢ ∈ [0,1],
+
+  where r_MVᵢ is the displacement vector of the vertex labeled as vᵢ from the
+  origin of M's frame, expressed in M's frame.
 
   @tparam T the underlying scalar type. Must be a valid Eigen scalar.
  */
-template <class T>
+template <typename T>
 class ContactSurface {
  public:
   /** @name Does not allow copy; implements MoveConstructible, MoveAssignable
@@ -104,15 +139,24 @@ class ContactSurface {
   ContactSurface& operator=(ContactSurface&&) = default;
   //@}
 
-  /** Constructs a ContactSurface from SurfaceMesh and SurfaceMeshField's. */
+  /** Constructs a ContactSurface from SurfaceMesh and MeshField's.
+   @param id_M         the id of the first body M.
+   @param id_N         the id of the second body N.
+   @param mesh         the surface mesh of the contact surface Sₘₙ between M
+                       and N.
+   @param e_MN         represents the common scalar field eₘₙ on the surface
+                       mesh.
+   @param grad_h_MN_M  represents the vector field ∇hₘₙ on the surface mesh,
+                       expressed in M's frame.
+   */
   ContactSurface(GeometryId id_M, GeometryId id_N,
                  std::unique_ptr<SurfaceMesh<T>> mesh,
-                 SurfaceMeshFieldLinear<T, T>&& e,
+                 SurfaceMeshFieldLinear<T, T>&& e_MN,
                  SurfaceMeshFieldLinear<Vector3<T>, T>&& grad_h_MN_M)
       : id_M_(id_M),
         id_N_(id_N),
         mesh_(std::move(mesh)),
-        e_(std::move(e)),
+        e_MN_(std::move(e_MN)),
         grad_h_MN_M_(std::move(grad_h_MN_M)) {}
 
   /** Returns the geometry id of the body M. */
@@ -121,21 +165,21 @@ class ContactSurface {
   /** Returns the geometry id of the body N. */
   GeometryId id_N() const { return id_N_; }
 
-  /** Evaluates the scalar field e() at a point P in a triangle.
-    The point P is specified by its barycentric coordinates.
+  /** Evaluates the scalar field eₘₙ at a point Q in a triangle.
+    The point Q is specified by its barycentric coordinates.
     @param face         The face index of the triangle.
-    @param barycentric  The barycentric coordinates of P on the triangle.
+    @param barycentric  The barycentric coordinates of Q on the triangle.
    */
-  T EvaluateE(SurfaceFaceIndex face,
-              const typename SurfaceMesh<T>::Barycentric& barycentric) {
-    return e_.Evaluate(face, barycentric);
+  T EvaluateE_MN(SurfaceFaceIndex face,
+                 const typename SurfaceMesh<T>::Barycentric& barycentric) {
+    return e_MN_.Evaluate(face, barycentric);
   }
 
-  /** Evaluates the vector field grad_h_MN_M() at a point P on a triangle.
-    The point P is specified by its barycentric coordinates.
+  /** Evaluates the vector field ∇hₘₙ at a point Q on a triangle.
+    The point Q is specified by its barycentric coordinates.
     @param face         The face index of the triangle.
-    @param barycentric  The barycentric coordinates of P on the triangle.
-    @retval  The vector ∇h is expressed in M's frame.
+    @param barycentric  The barycentric coordinates of Q on the triangle.
+    @retval  grad_h_MN_M is the vector expressed in M's frame.
    */
   Vector3<T> EvaluateGrad_h_MN_M(
       SurfaceFaceIndex face,
@@ -151,20 +195,26 @@ class ContactSurface {
    */
   int num_vertices() const { return mesh_->num_vertices(); }
 
- private:
-  /// The id of the first geometry in the contact.
-  GeometryId id_M_;
-  /// The id of the second geometry in the contact.
-  GeometryId id_N_;
+  /** Returns the reference to the surface mesh.
+   */
+  const SurfaceMesh<T>& mesh() {
+    DRAKE_DEMAND(mesh_.get() != nullptr);
+    return *mesh_;
+  }
 
+ private:
+  /** The id of the first body M */
+  GeometryId id_M_;
+  /** The id of the second body N. */
+  GeometryId id_N_;
+  /** The surface mesh of the contact surface Sₘₙ between M and N. */
   std::unique_ptr<SurfaceMesh<T>> mesh_;
-  // Scalar field `e`.
-  SurfaceMeshFieldLinear<T, T> e_;
-  // Vector field ∇hₘₙ, expressed in M's frame.
+  /** Represents the common scalar field eₘₙ on the surface mesh. */
+  SurfaceMeshFieldLinear<T, T> e_MN_;
+  /** Represents the vector field ∇hₘₙ on the surface mesh, expressed in M's
+      frame */
   SurfaceMeshFieldLinear<Vector3<T>, T> grad_h_MN_M_;
 };
-
-using ContactSurfaced = ContactSurface<double>;
 
 }  // namespace geometry
 }  // namespace drake
