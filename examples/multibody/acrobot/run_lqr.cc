@@ -142,7 +142,7 @@ int do_main() {
   auto controller = builder.AddSystem(
       MakeBalancingLQRController(relative_name));
   controller->set_name("controller");
-  builder.Connect(acrobot.get_continuous_state_output_port(),
+  builder.Connect(acrobot.get_state_output_port(),
                   controller->get_input_port());
   builder.Connect(controller->get_output_port(),
                   acrobot.get_actuation_input_port());

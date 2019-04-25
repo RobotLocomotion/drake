@@ -160,10 +160,10 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       default_model_instance()).size(), 1);
   EXPECT_EQ(plant->get_actuation_input_port(
       pendulum_model_instance).size(), 1);
-  EXPECT_EQ(plant->get_continuous_state_output_port().size(), 6);
-  EXPECT_EQ(plant->get_continuous_state_output_port(
+  EXPECT_EQ(plant->get_state_output_port().size(), 6);
+  EXPECT_EQ(plant->get_state_output_port(
       default_model_instance()).size(), 4);
-  EXPECT_EQ(plant->get_continuous_state_output_port(
+  EXPECT_EQ(plant->get_state_output_port(
       pendulum_model_instance).size(), 2);
 
   // Check that model-instance ports get named properly.
@@ -172,10 +172,10 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(
       plant->get_actuation_input_port(default_model_instance()).get_name(),
       "DefaultModelInstance_actuation");
-  EXPECT_EQ(plant->get_continuous_state_output_port(default_model_instance())
+  EXPECT_EQ(plant->get_state_output_port(default_model_instance())
                 .get_name(),
             "DefaultModelInstance_continuous_state");
-  EXPECT_EQ(plant->get_continuous_state_output_port(pendulum_model_instance)
+  EXPECT_EQ(plant->get_state_output_port(pendulum_model_instance)
                 .get_name(),
             "SplitPendulum_continuous_state");
 
@@ -386,7 +386,7 @@ class AcrobotPlantTests : public ::testing::Test {
     EXPECT_NO_THROW(plant_->get_geometry_poses_output_port());
 
     DRAKE_EXPECT_THROWS_MESSAGE(
-        plant_->get_continuous_state_output_port(),
+        plant_->get_state_output_port(),
         std::logic_error,
         /* Verify this method is throwing for the right reasons. */
         "Pre-finalize calls to '.*' are not allowed; "
@@ -1362,14 +1362,14 @@ TEST_F(AcrobotPlantTests, EvalContinuousStateOutputPort) {
   elbow_->set_angular_rate(context.get(), 2.5);
 
   unique_ptr<AbstractValue> state_value =
-      plant_->get_continuous_state_output_port().Allocate();
+      plant_->get_state_output_port().Allocate();
   EXPECT_NO_THROW(state_value->get_value<BasicVector<double>>());
   const BasicVector<double>& state_out =
       state_value->get_value<BasicVector<double>>();
   EXPECT_EQ(state_out.size(), plant_->num_multibody_states());
 
   // Compute the poses for each geometry in the model.
-  plant_->get_continuous_state_output_port().Calc(*context, state_value.get());
+  plant_->get_state_output_port().Calc(*context, state_value.get());
 
   // Get continuous state_out from context.
   const VectorBase<double>& state = context->get_continuous_state_vector();
