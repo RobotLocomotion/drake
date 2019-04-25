@@ -218,6 +218,10 @@ class ImplicitIntegrator : public IntegratorBase<T> {
  *    process stage of that NR algorithm is indicated by the `trial` parameter
  *    below. In this model, DoStep() returns failure if the NR iterations
  *    reach a fourth trial.
+ * 
+ * Note that the sophisticated logic above only applies when the Jacobian reuse
+ * is activated (default, see get_reuse()).
+ * 
  * @param t the time at which to compute the Jacobian.
  * @param xt the continuous state at which the Jacobian is computed.
  * @param h the integration step size (for computing iteration matrices).
@@ -226,7 +230,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
  * @param[out] iteration_matrix the updated and factored iteration matrix on
  *             return.
  * @param trial which trial (1-4) the Newton-Raphson process is in when calling
- *              this method.
+ *        this method.
  * @returns `false` if the calling stepping method should indicate failure;
  *          `true` otherwise.
  * @pre 1 <= `trial` <= 4.
@@ -234,9 +238,9 @@ class ImplicitIntegrator : public IntegratorBase<T> {
  *       if altered, it will be set to (t, xt).
  */
   bool CalcMatrices(const T& t, const VectorX<T>& xt, const T& h,
-      const std::function<void(const MatrixX<T>&, const T&,
+      const std::function<void(const MatrixX<T>& J, const T& h,
           typename ImplicitIntegrator<T>::IterationMatrix*)>&
-      recompute_iteration_matrix,
+      compute_iteration_matrix,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
       int trial);
 
@@ -275,9 +279,10 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   }
 
   /**
-   * Checks to see whether a Jacobian matrix has "become bad" and needs to be
-   * recomputed. A divergent Newton-Raphson iteration can cause the state to
-   * overflow, which is how the Jacobian can become "bad".
+   * Checks to see whether a Jacobian matrix has "become bad" (has any NaN or
+   * Inf values) and needs to be recomputed. A divergent Newton-Raphson
+   * iteration can cause the state to overflow, which is how the Jacobian can
+   * become "bad". This is an O(n²) operation, where n is the state dimension.
    */
   bool IsBadJacobian(const MatrixX<T>& J) const;
 
@@ -665,14 +670,14 @@ bool ImplicitIntegrator<T>::CalcMatrices(
     ++num_iter_factorizations_;
     compute_and_factor_iteration_matrix(J, h, iteration_matrix);
     return true;  // Indicate success.
-  } else {
-    // Reuse is activated, Jacobian is fully sized, and Jacobian is not "bad".
-    // Verify that the iteration matrix has been set and factored.
-    if (!iteration_matrix->matrix_factored()) {
-      ++num_iter_factorizations_;
-      compute_and_factor_iteration_matrix(J, h, iteration_matrix);
-      return true;  // Indicate success.
-    }
+  }
+
+  // Reuse is activated, Jacobian is fully sized, and Jacobian is not "bad".
+  // If the iteration matrix has not been set and factored, do only that.
+  if (!iteration_matrix->matrix_factored()) {
+    ++num_iter_factorizations_;
+    compute_and_factor_iteration_matrix(J, h, iteration_matrix);
+    return true;  // Indicate success.
   }
 
   switch (trial) {
@@ -691,20 +696,18 @@ bool ImplicitIntegrator<T>::CalcMatrices(
     }
 
     case 3: {
-      // For the third trial, either the Jacobian matrix is "fresh" (indicated
-      // by the last call failing), meaning that there is nothing more that can
-      // be tried (Jacobian and iteration matrix are both fresh) and we need to
-      // indicate failure *or* we can try refreshing the Jacobian matrix and
-      // then computing and factoring the iteration matrix. See the
-      // CalcMatrices() function documentation for additional info.
-      if (!this->last_newton_raphson_succeeded()) {
+      // For the third trial, the Jacobian matrix may already be "fresh"
+      // (indicated by the last Newton-Raphson process *failing* - see
+      // CalcMatrices() function documentation), meaning that there is nothing
+      // more that can be tried (Jacobian and iteration matrix are both fresh)
+      // and we need to indicate failure.
+      if (!this->last_newton_raphson_succeeded())
         return false;
-      } else {
-        // Reform the Jacobian matrix and refactor the iteration matrix.
-        J = CalcJacobian(t, xt);
-        ++num_iter_factorizations_;
-        compute_and_factor_iteration_matrix(J, h, iteration_matrix);
-      }
+
+      // Reform the Jacobian matrix and refactor the iteration matrix.
+      J = CalcJacobian(t, xt);
+      ++num_iter_factorizations_;
+      compute_and_factor_iteration_matrix(J, h, iteration_matrix);
       return true;
 
       case 4: {
