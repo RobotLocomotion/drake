@@ -538,10 +538,18 @@ class Simulator {
   const System<T>& get_system() const { return system_; }
 
  private:
+  enum TimeOrWitnessTriggered {
+    kNothingTriggered = 0b00,
+    kTimeTriggered = 0b01,
+    kWitnessTriggered = 0b10,
+    kBothTriggered = 0b11
+  };
+
   // All constructors delegate to here.
-  Simulator(const System<T>* system,
-            std::unique_ptr<const System<T>> owned_system,
-            std::unique_ptr<Context<T>> context);
+  Simulator(
+      const System<T>* system,
+      std::unique_ptr<const System<T>> owned_system,
+      std::unique_ptr<Context<T>> context);
 
   void HandleUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events);
@@ -551,17 +559,31 @@ class Simulator {
 
   void HandlePublish(const EventCollection<PublishEvent<T>>& events);
 
-  bool IntegrateContinuousState(const T& next_publish_dt,
-                                const T& next_update_dt,
-                                const T& time_of_next_timed_event,
-                                const T& boundary_dt,
-                                CompositeEventCollection<T>* events);
+  TimeOrWitnessTriggered IntegrateContinuousState(
+      const T& next_publish_dt,
+      const T& next_update_dt,
+      const T& time_of_next_timed_event,
+      const T& boundary_dt,
+      CompositeEventCollection<T>* events);
 
+  // Private methods related to witness functions.
   void IsolateWitnessTriggers(
       const std::vector<const WitnessFunction<T>*>& witnesses,
       const VectorX<T>& w0,
       const T& t0, const VectorX<T>& x0, const T& tf,
       std::vector<const WitnessFunction<T>*>* triggered_witnesses);
+  void PopulateEventDataForTriggeredWitness(
+      const T& t0, const T& tf, const WitnessFunction<T>* witness,
+      Event<T>* event, CompositeEventCollection<T>* events) const;
+  static bool DidWitnessTrigger(
+    const std::vector<const WitnessFunction<T>*>& witness_functions,
+    const VectorX<T>& w0,
+    const VectorX<T>& wf,
+    std::vector<const WitnessFunction<T>*>* triggered_witnesses);
+  VectorX<T> EvaluateWitnessFunctions(
+    const std::vector<const WitnessFunction<T>*>& witness_functions,
+    const Context<T>& context) const;
+  void RedetermineActiveWitnessFunctionsIfNecessary();
 
   // The steady_clock is immune to system clock changes so increases
   // monotonically. We'll work in fractional seconds.
@@ -647,7 +669,9 @@ class Simulator {
 
   // Indicates when a timed or witnessed event needs to be handled on the next
   // call to AdvanceTo().
-  bool timed_or_witnessed_event_triggered_{false};
+  TimeOrWitnessTriggered time_or_witness_triggered_{
+      TimeOrWitnessTriggered::kNothingTriggered
+  };
 
   // The time that the next timed event is to be handled. This value is set in
   // both Initialize() and AdvanceTo().
@@ -809,8 +833,11 @@ void Simulator<T>::Initialize() {
   context_->SetTime(current_time);
 
   // Indicate a timed event is to be handled, if appropriate.
-  timed_or_witnessed_event_triggered_ =
-      (next_timed_event_time_ == current_time);
+  if (next_timed_event_time_ == current_time) {
+    time_or_witness_triggered_ = kTimeTriggered;
+  } else {
+    time_or_witness_triggered_ = kNothingTriggered;
+  }
 
   // Allocate the witness function collection.
   witnessed_events_ = system_.AllocateCompositeEventCollection();
@@ -821,9 +848,8 @@ void Simulator<T>::Initialize() {
   // Note that per-step and timed discrete/unrestricted update events are *not*
   // processed here; just publish events.
   init_events->Merge(*per_step_events_);
-  if (timed_or_witnessed_event_triggered_) {
+  if (time_or_witness_triggered_ & kTimeTriggered)
     init_events->Merge(*timed_events_);
-  }
   HandlePublish(init_events->get_publish_events());
 
   // TODO(siyuan): transfer publish entirely to individual systems.
@@ -897,10 +923,10 @@ void Simulator<T>::AdvanceTo(const T &boundary_time) {
   merged_events->Merge(*per_step_events_);
 
   // Merge in timed and witnessed events, if necessary.
-  if (timed_or_witnessed_event_triggered_) {
+  if (time_or_witness_triggered_ & kTimeTriggered)
     merged_events->Merge(*timed_events_);
+  if (time_or_witness_triggered_ & kWitnessTriggered)
     merged_events->Merge(*witnessed_events_);
-  }
 
   while (true) {
     // Starting a new step on the trajectory.
@@ -938,7 +964,7 @@ void Simulator<T>::AdvanceTo(const T &boundary_time) {
     }
 
     // Integrate the continuous state forward in time.
-    timed_or_witnessed_event_triggered_ = IntegrateContinuousState(
+    time_or_witness_triggered_ = IntegrateContinuousState(
         next_publish_time,
         next_update_time,
         next_timed_event_time_,
@@ -957,10 +983,10 @@ void Simulator<T>::AdvanceTo(const T &boundary_time) {
     merged_events->Merge(*per_step_events_);
 
     // Only merge timed / witnessed events in if an event was triggered.
-    if (timed_or_witnessed_event_triggered_) {
+    if (time_or_witness_triggered_ & kTimeTriggered)
       merged_events->Merge(*timed_events_);
+    if (time_or_witness_triggered_ & kWitnessTriggered)
       merged_events->Merge(*witnessed_events_);
-    }
 
     // Handle any publish events at the end of the loop.
     HandlePublish(merged_events->get_publish_events());
@@ -1028,22 +1054,30 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
              iso_scale_factor * accuracy.value() * characteristic_time);
 }
 
-// Isolates the first time at one or more witness functions triggered (in the
-// interval [t0, tf]), to the requisite interval length.
-// @param[in,out] on entry, the set of witness functions that triggered over
-//                [t0, tf]; on exit, the set of witness functions that triggered
-//                over [t0, tw], where tw is the first time that any witness
-//                function triggered.
-// @pre The context and state are at tf and x(tf), respectively, and at least
+// Determines whether any witnesses trigger over the interval [t0, tw],
+// where tw - t0 < ε and ε is the "witness isolation length". If one or more
+// witnesses does trigger over this interval, the time (and corresponding state)
+// will be advanced to tw and those witnesses will be stored in
+// `triggered_witnesses` on return. On the other hand (i.e., if no witnesses)
+// trigger over [t0, t0 + ε], time (and corresponding state) will be advanced
+// to some tc in the open interval (t0, tf) such that no witnesses trigger
+// over [t0, tc]; in other words, we deem it "safe" to integrate to tc.
+// @param[in,out] triggered_witnesses on entry, the set of witness functions
+//                that triggered over [t0, tf]; on exit, the set of witness
+//                functions that triggered over [t0, tw], where tw is some time
+//                such that tw - t0 < ε. If no functions trigger over
+//                [t0, t0 + ε], `triggered_witnesses` will be empty on exit.
+// @pre The time and state are at tf and x(tf), respectively, and at least
 //      one witness function has triggered over [t0, tf].
-// @post The context will be isolated to the first witness function trigger(s),
-//       to within the requisite interval length. It is guaranteed that all
-//       triggered witness functions change sign over [t0, tw].
-// @note We assume that, if a witness function triggers over an interval
-//       [a, b], it also triggers over any larger interval [a, d], for d > b
-//       and d ≤ the maximum integrator step size (per WitnessFunction
-//       documentation, we assume that a witness function crosses zero at most
-//       once over an interval of size [t0, tf]).
+// @post If `triggered_witnesses` is empty, the time and state will be
+//       set to some tc and x(tc), respectively, such that no witnesses trigger
+//       over [t0, tc]. Otherwise, the time and state will be set to tw and
+//       x(tw), respectively.
+// @note The underlying assumption is that a witness function triggers over a
+//       interval [a, d] for d ≤ the maximum integrator step size if that
+//       witness also triggers over interval [a, b] for some b < d. Per
+//       WitnessFunction documentation, we assume that a witness function
+//       crosses zero at most once over an interval of size [t0, tf]).
 template <class T>
 void Simulator<T>::IsolateWitnessTriggers(
     const std::vector<const WitnessFunction<T>*>& witnesses,
@@ -1079,7 +1113,11 @@ void Simulator<T>::IsolateWitnessTriggers(
       integrator_->IntegrateNoFurtherThanTime(inf, inf, t_des);
   };
 
-  // Loop until the isolation window is sufficiently small.
+  // Starting from c = (t0 + tf)/2, look for a witness function triggering
+  // over the interval [t0, tc]. Assuming a witness does trigger, c will
+  // continue moving leftward as a witness function triggers until the length of
+  // the time interval is small. If a witness fails to trigger as c moves
+  // leftward, we return, indicating that no witnesses triggered over [t0, c].
   SPDLOG_DEBUG(drake::log(),
       "Isolating witness functions using isolation window of {} over [{}, {}]",
       witness_iso_len.value(), t0, tf);
@@ -1112,7 +1150,7 @@ void Simulator<T>::IsolateWitnessTriggers(
       // but the current logic appears easier to follow.
       SPDLOG_DEBUG(drake::log(), "No witness functions triggered up to {}", c);
       triggered_witnesses->clear();
-      return;
+      return;  // Time is c.
     } else {
       b = c;
     }
@@ -1126,6 +1164,78 @@ void Simulator<T>::IsolateWitnessTriggers(
   }
 }
 
+// Evaluates the given vector of witness functions.
+template <class T>
+VectorX<T> Simulator<T>::EvaluateWitnessFunctions(
+    const std::vector<const WitnessFunction<T>*>& witness_functions,
+    const Context<T>& context) const {
+  const System<T>& system = get_system();
+  VectorX<T> weval(witness_functions.size());
+  for (size_t i = 0; i < witness_functions.size(); ++i)
+    weval[i] = system.CalcWitnessValue(context, *witness_functions[i]);
+  return weval;
+}
+
+// Determines whether at least one of a collection of witness functions
+// triggered over a time interval [t0, tf] using the values of those functions
+// evaluated at the left and right hand sides of that interval.
+// @param witness_functions a vector of all witness functions active over
+//        [t0, tf].
+// @param w0 the values of the witnesses evaluated at t0.
+// @param wf the values of the witnesses evaluated at tf.
+// @param [out] triggered_witnesses Returns one of the witnesses that triggered,
+//              if any.
+// @returns `true` if a witness triggered or `false` otherwise.
+template <class T>
+bool Simulator<T>::DidWitnessTrigger(
+    const std::vector<const WitnessFunction<T>*>& witness_functions,
+    const VectorX<T>& w0,
+    const VectorX<T>& wf,
+    std::vector<const WitnessFunction<T>*>* triggered_witnesses) {
+  // See whether a witness function triggered.
+  triggered_witnesses->clear();
+  bool witness_triggered = false;
+  for (size_t i = 0; i < witness_functions.size() && !witness_triggered; ++i) {
+      if (witness_functions[i]->should_trigger(w0[i], wf[i])) {
+        witness_triggered = true;
+        triggered_witnesses->push_back(witness_functions[i]);
+      }
+  }
+
+  return witness_triggered;
+}
+
+// Populates event data for `event` triggered by a witness function (`witness`)
+// that was evaluated over the time interval [`t0`, `tf`] and adds it to the
+// given event collection (`events`).
+template <class T>
+void Simulator<T>::PopulateEventDataForTriggeredWitness(
+    const T& t0, const T& tf, const WitnessFunction<T>* witness,
+    Event<T>* event, CompositeEventCollection<T>* events) const {
+  // Populate the event data.
+  auto event_data = static_cast<WitnessTriggeredEventData<T>*>(
+      event->get_mutable_event_data());
+  event_data->set_triggered_witness(witness);
+  event_data->set_t0(t0);
+  event_data->set_tf(tf);
+  event_data->set_xc0(event_handler_xc_.get());
+  event_data->set_xcf(&context_->get_continuous_state());
+  get_system().AddTriggeredWitnessFunctionToCompositeEventCollection(
+      event, events);
+}
+
+// (Re)determines the set of witness functions active over this interval,
+// if necessary.
+template <class T>
+void Simulator<T>::RedetermineActiveWitnessFunctionsIfNecessary() {
+  const System<T>& system = get_system();
+  if (redetermine_active_witnesses_) {
+    witness_functions_->clear();
+    system.GetWitnessFunctions(get_context(), witness_functions_.get());
+    redetermine_active_witnesses_ = false;
+  }
+}
+
 // Integrates the continuous state forward in time while also locating
 // the first zero of any triggered witness functions.
 // @param next_publish_time the time at which the next publish event occurs.
@@ -1134,10 +1244,10 @@ void Simulator<T>::IsolateWitnessTriggers(
 // @param boundary_time the maximum time to advance to.
 // @param events a non-null collection of events, which the method will clear
 //        on entry.
-// @returns `true` if integration terminated on an event trigger, indicating
-//          that an event needs to be handled at the state on return.
+// @returns the event triggers that terminated integration.
 template <class T>
-bool Simulator<T>::IntegrateContinuousState(
+typename Simulator<T>::TimeOrWitnessTriggered
+Simulator<T>::IntegrateContinuousState(
     const T& next_publish_time, const T& next_update_time,
     const T&, const T& boundary_time,
     CompositeEventCollection<T>* events) {
@@ -1153,18 +1263,11 @@ bool Simulator<T>::IntegrateContinuousState(
   const VectorX<T> x0 = context.get_continuous_state().CopyToVector();
 
   // Get the set of witness functions active at the current state.
-  const System<T>& system = get_system();
-  if (redetermine_active_witnesses_) {
-    witness_functions_->clear();
-    system.GetWitnessFunctions(context, witness_functions_.get());
-    redetermine_active_witnesses_ = false;
-  }
+  RedetermineActiveWitnessFunctionsIfNecessary();
   const auto& witness_functions = *witness_functions_;
 
   // Evaluate the witness functions.
-  w0_.resize(witness_functions.size());
-  for (size_t i = 0; i < witness_functions.size(); ++i)
-      w0_[i] = system.CalcWitnessValue(context, *witness_functions[i]);
+  w0_ = EvaluateWitnessFunctions(witness_functions, context);
 
   // Attempt to integrate. Updates and boundary times are consciously
   // distinguished between. See internal documentation for
@@ -1175,22 +1278,10 @@ bool Simulator<T>::IntegrateContinuousState(
   const T tf = context.get_time();
 
   // Evaluate the witness functions again.
-  wf_.resize(witness_functions.size());
-  for (size_t i =0; i < witness_functions.size(); ++i)
-    wf_[i] = system.CalcWitnessValue(context, *witness_functions[i]);
-
-  // See whether a witness function triggered.
-  triggered_witnesses_.clear();
-  bool witness_triggered = false;
-  for (size_t i =0; i < witness_functions.size() && !witness_triggered; ++i) {
-      if (witness_functions[i]->should_trigger(w0_[i], wf_[i])) {
-        witness_triggered = true;
-        triggered_witnesses_.push_back(witness_functions[i]);
-      }
-  }
+  wf_ = EvaluateWitnessFunctions(witness_functions, context);
 
   // Triggering requires isolating the witness function time.
-  if (witness_triggered) {
+  if (DidWitnessTrigger(witness_functions, w0_, wf_, &triggered_witnesses_)) {
     // Isolate the time that the witness function triggered. If witness triggers
     // are detected in the interval [t0, tf], any additional time-triggered
     // events are only relevant iff at least one witness function is
@@ -1209,39 +1300,56 @@ bool Simulator<T>::IntegrateContinuousState(
       SPDLOG_DEBUG(drake::log(), "Witness function {} crossed zero at time {}",
                    fn->description(), context.get_time());
 
-      // Skip witness functions that have no associated event.
+      // Skip witness functions that have no associated event (i.e., skip
+      // witness functions whose sole purpose is to insert a break in the
+      // integration of continuous state).
       if (!fn->get_event())
         continue;
 
       // Get the event object that corresponds to this witness function. If
-      // there is none, create it.
+      // Simulator has yet to create this object, go ahead and create it.
       auto& event = witness_function_events_[fn];
       if (!event) {
         event = fn->get_event()->Clone();
         event->set_trigger_type(TriggerType::kWitness);
         event->set_event_data(std::make_unique<WitnessTriggeredEventData<T>>());
       }
-
-      // Populate the event data.
-      auto event_data = static_cast<WitnessTriggeredEventData<T>*>(
-          event->get_mutable_event_data());
-      event_data->set_triggered_witness(fn);
-      event_data->set_t0(t0);
-      event_data->set_tf(tf);
-      event_data->set_xc0(event_handler_xc_.get());
-      event_data->set_xcf(&context_->get_continuous_state());
-      system.AddTriggeredWitnessFunctionToCompositeEventCollection(
-          event.get(),
-          events);
+      PopulateEventDataForTriggeredWitness(t0, tf, fn, event.get(), events);
     }
 
-    // Indicate an event should be triggered if at least one witness function
-    // triggered (meaning that an event should be handled on the next simulation
-    // loop). If no witness functions triggered over a smaller interval (recall
-    // that we're in this if/then conditional block because a witness triggered
-    // over a larger interval), we know that time advanced and that no events
-    // triggered.
-    return !triggered_witnesses_.empty();
+    // When successful, the isolation process produces a vector of witnesses
+    // that trigger over every interval [t0, ti], ∀ti in (t0, tf]. If this
+    // vector (triggered_witnesses_) is empty, then time advanced to the first
+    // ti such that no witnesses triggered over [t0, ti].
+    const T& ti = context_->get_time();
+    if (!triggered_witnesses_.empty()) {
+      // We now know that integration terminated at a witness function crossing.
+      // Now we need to look for the unusual case in which a timed event should
+      // also trigger simultaneously.
+      // IntegratorBase::IntegrateNoFurtherThanTime(.) pledges to step no
+      // further than min(next_publish_time, next_update_time, boundary_time),
+      // so we'll verify that assertion.
+      DRAKE_DEMAND(ti <= next_update_time && tf <= next_publish_time);
+      if (ti == next_update_time || ti == next_publish_time) {
+        return kBothTriggered;
+      } else {
+        return kWitnessTriggered;
+      }
+    } else {
+      // Integration didn't succeed on the larger interval [t0, tf]; instead,
+      // the continuous state was integrated to the intermediate time ti, where
+      // t0 < ti < tf. Since any publishes/updates must occur at tf, there
+      // should be no triggers.
+      DRAKE_DEMAND(t0 < ti && ti < tf);
+
+      // The contract for IntegratorBase::IntegrateNoFurtherThanTime() specifies
+      // that tf must be less than or equal to next_update_time and
+      // next_publish_time. Since ti must be strictly less than tf, it follows
+      // that ti must be strictly less than next_update_time and
+      // next_publish_time.
+      DRAKE_DEMAND(next_update_time > ti && next_publish_time > ti);
+      return kNothingTriggered;
+    }
   }
 
   // No witness function triggered; handle integration as usual.
@@ -1251,18 +1359,17 @@ bool Simulator<T>::IntegrateContinuousState(
   switch (result) {
     case IntegratorBase<T>::kReachedUpdateTime:
     case IntegratorBase<T>::kReachedPublishTime:
-      return true;
+      return kTimeTriggered;
 
+    // We do nothing for these two cases.
     case IntegratorBase<T>::kTimeHasAdvanced:
     case IntegratorBase<T>::kReachedBoundaryTime:
-      return false;           // Did not hit a time for a timed event.
+      return kNothingTriggered;
 
     case IntegratorBase<T>::kReachedZeroCrossing:
     case IntegratorBase<T>::kReachedStepLimit:
       throw std::logic_error("Unexpected integrator result");
   }
-
-  // TODO(sherm1) Constraint projection goes here.
 
   DRAKE_UNREACHABLE();
 }

@@ -305,25 +305,60 @@ int AddSecondOrderConeConstraints(
     int num_z = A.rows();
 
     // Add the constraint z - A*x = b
-    std::vector<int> xz_indices(num_x + 1,
-                                0);  // Records the indices of [x;z(i)],
-                                     // Namely the variables in the i'th
-                                     // row of z - A*x = b
+    // xz_indices records the indices of [x; z] in Gurobi.
+    std::vector<int> xz_indices(num_x + num_z, 0);
+
     for (int i = 0; i < num_x; ++i) {
       xz_indices[i] = prog.FindDecisionVariableIndex(binding.variables()(i));
     }
-    Eigen::RowVectorXd coeff_i(num_x + 1);  // Records the coefficients of the
-                                            // i'th row in z - A*x = b
     for (int i = 0; i < num_z; ++i) {
-      coeff_i << -A.row(i), 1;
-      xz_indices[num_x] =
-          second_order_cone_new_variable_indices[second_order_cone_count]
-                                                [i];  // index of z(i)
-      int error = GRBaddconstr(model, num_x + 1, xz_indices.data(),
-                               coeff_i.data(), GRB_EQUAL, b(i), nullptr);
-      DRAKE_ASSERT(!error);
-      if (error) return error;
+      xz_indices[num_x + i] =
+          second_order_cone_new_variable_indices[second_order_cone_count][i];
     }
+    // z - A*x will be written as M * [x; z], where M = [-A I].
+    // Gurobi expects M in compressed sparse row format, so we will first find
+    // out the non-zero entries in each row of M.
+    // M_rows_col[i] stores the column index of non-zero entries in M.row(i)
+    std::vector<std::vector<int>> M_rows_col(num_z);
+    // M_rows_val[i] stores the value of non-zero entries in M.row(i).
+    std::vector<std::vector<double>> M_rows_val(num_z);
+    for (int i = 0; i < num_z; ++i) {
+      M_rows_val[i].reserve(num_x + 1);
+      M_rows_col[i].reserve(num_x + 1);
+    }
+    for (int i = 0; i < num_x; ++i) {
+      // The entries are from -A.
+      for (Eigen::SparseMatrix<double>::InnerIterator it(A, i); it; ++it) {
+        M_rows_col[it.row()].push_back(xz_indices[it.col()]);
+        M_rows_val[it.row()].push_back(-it.value());
+      }
+    }
+    for (int i = 0; i < num_z; ++i) {
+      // The entries of identity matrix.
+      M_rows_col[i].push_back(xz_indices[num_x + i]);
+      M_rows_val[i].push_back(1.0);
+    }
+    // M_val, M_beg, M_ind stores M in compressed sparse row format.
+    std::vector<double> M_val;
+    M_val.reserve(A.nonZeros() + num_z);
+    std::vector<int> M_beg(num_z + 1);
+    std::vector<int> M_ind;
+    M_ind.reserve(A.nonZeros() + num_z);
+    int M_nonzero_count = 0;
+    for (int i = 0; i < num_z; ++i) {
+      M_beg[i] = M_nonzero_count;
+      M_val.insert(M_val.end(), M_rows_val[i].begin(), M_rows_val[i].end());
+      M_ind.insert(M_ind.end(), M_rows_col[i].begin(), M_rows_col[i].end());
+      M_nonzero_count += static_cast<int>(M_rows_val[i].size());
+    }
+    M_beg[num_z] = M_nonzero_count;
+
+    std::vector<char> sense(num_z, GRB_EQUAL);
+
+    int error = GRBaddconstrs(model, num_z, M_nonzero_count, M_beg.data(),
+                              M_ind.data(), M_val.data(), sense.data(),
+                              const_cast<double*>(b.data()), nullptr);
+    DRAKE_ASSERT(!error);
 
     // Gurobi uses a matrix Q to differentiate Lorentz cone and rotated Lorentz
     // cone constraint.
@@ -376,7 +411,7 @@ int AddSecondOrderConeConstraints(
       qcol[num_z - 1] = z1_index;
       qval[num_z - 1] = 1;
     }
-    int error =
+    error =
         GRBaddqconstr(model, 0, nullptr, nullptr, num_Q_nonzero, qrow.data(),
                       qcol.data(), qval.data(), GRB_LESS_EQUAL, 0.0, NULL);
     if (error) {

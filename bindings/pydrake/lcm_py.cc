@@ -26,8 +26,8 @@ PYBIND11_MODULE(lcm, m) {
 
   {
     using Class = DrakeLcmInterface;
-
-    py::class_<Class>(m, "DrakeLcmInterface", doc.DrakeLcmInterface.doc)
+    constexpr auto& cls_doc = doc.DrakeLcmInterface;
+    py::class_<Class>(m, "DrakeLcmInterface", cls_doc.doc)
         // N.B. We do not bind `Subscribe` as multi-threading from C++ may
         // wreak havoc on the Python GIL with a callback.
         .def("Publish",
@@ -39,18 +39,18 @@ PYBIND11_MODULE(lcm, m) {
               self->Publish(channel, str.data(), str.size(), time_sec);
             },
             py::arg("channel"), py::arg("buffer"),
-            py::arg("time_sec") = py::none(), doc.DrakeLcmInterface.Publish.doc)
+            py::arg("time_sec") = py::none(), cls_doc.Publish.doc)
         .def("HandleSubscriptions", &DrakeLcmInterface::HandleSubscriptions,
-            py::arg("timeout_millis"),
-            doc.DrakeLcmInterface.HandleSubscriptions.doc);
+            py::arg("timeout_millis"), cls_doc.HandleSubscriptions.doc);
   }
 
   {
     using Class = DrakeLcm;
-    py::class_<Class, DrakeLcmInterface>(m, "DrakeLcm", doc.DrakeLcm.doc)
-        .def(py::init<>(), doc.DrakeLcm.ctor.doc_0args)
-        .def(py::init<std::string>(), py::arg("lcm_url"),
-            doc.DrakeLcm.ctor.doc_1args)
+    constexpr auto& cls_doc = doc.DrakeLcm;
+    py::class_<Class, DrakeLcmInterface>(m, "DrakeLcm", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
+        .def(
+            py::init<std::string>(), py::arg("lcm_url"), cls_doc.ctor.doc_1args)
         .def("StartReceiveThread",
             [](DrakeLcm* self) {
               WarnDeprecated(
@@ -60,7 +60,7 @@ PYBIND11_MODULE(lcm, m) {
               self->StartReceiveThread();
 #pragma GCC diagnostic pop
             },
-            doc.DrakeLcm.StartReceiveThread.doc_deprecated)
+            cls_doc.StartReceiveThread.doc_deprecated)
         .def("StopReceiveThread",
             [](DrakeLcm* self) {
               WarnDeprecated(
@@ -70,15 +70,15 @@ PYBIND11_MODULE(lcm, m) {
               self->StopReceiveThread();
 #pragma GCC diagnostic pop
             },
-            doc.DrakeLcm.StopReceiveThread.doc_deprecated);
+            cls_doc.StopReceiveThread.doc_deprecated);
     // TODO(eric.cousineau): Add remaining methods.
   }
 
   {
     using Class = DrakeMockLcm;
-    py::class_<Class, DrakeLcmInterface>(
-        m, "DrakeMockLcm", doc.DrakeMockLcm.doc)
-        .def(py::init<>(), doc.DrakeMockLcm.ctor.doc)
+    constexpr auto& cls_doc = doc.DrakeMockLcm;
+    py::class_<Class, DrakeLcmInterface>(m, "DrakeMockLcm", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc)
         .def("Subscribe",
             [](Class* self, const std::string& channel,
                 PyHandlerFunction handler) {
@@ -89,8 +89,7 @@ PYBIND11_MODULE(lcm, m) {
               // Unsubscribe is not supported by the mock.
               DRAKE_DEMAND(subscription == nullptr);
             },
-            py::arg("channel"), py::arg("handler"),
-            doc.DrakeMockLcm.Subscribe.doc)
+            py::arg("channel"), py::arg("handler"), cls_doc.Subscribe.doc)
         .def("InduceSubscriberCallback",
             [](Class* self, const std::string& channel, py::bytes buffer) {
               WarnDeprecated("Use Publish + HandleSubscriptions instead.");
@@ -101,7 +100,7 @@ PYBIND11_MODULE(lcm, m) {
 #pragma GCC diagnostic pop
             },
             py::arg("channel"), py::arg("buffer"),
-            doc.DrakeMockLcm.InduceSubscriberCallback.doc_deprecated)
+            cls_doc.InduceSubscriberCallback.doc_deprecated)
         .def("get_last_published_message",
             [](const Class* self, const std::string& channel) {
               WarnDeprecated("Use pydrake.lcm.Subscriber instead.");
@@ -114,7 +113,7 @@ PYBIND11_MODULE(lcm, m) {
 #pragma GCC diagnostic pop
             },
             py::arg("channel"),
-            doc.DrakeMockLcm.get_last_published_message.doc_deprecated);
+            cls_doc.get_last_published_message.doc_deprecated);
   }
 
   ExecuteExtraPythonCode(m);

@@ -829,6 +829,8 @@ def choose_doc_var_names(symbols):
                 result[i] = "doc_copyconvert"
             elif "\nDeprecated:" in symbols[i].comment:
                 result[i] = "doc_deprecated" + result[i][3:]
+                # Don't consolidate as if this were a "well known" name.
+                continue
             else:
                 # If no special cases matched, leave the name alone.
                 continue

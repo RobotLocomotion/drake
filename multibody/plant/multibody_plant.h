@@ -3193,12 +3193,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // TODO(SeanCurtis-TRI): Remove this when geometry roles are introduced.
   void ExcludeCollisionsWithVisualGeometry();
 
-  // No inputs implies no feedthrough; this makes it explicit.
-  // TODO(amcastro-tri): add input ports for actuators.
-  optional<bool> DoHasDirectFeedthrough(int, int) const override {
-    return false;
-  }
-
   // Helper method to declare state, cache entries, and ports after Finalize().
   void DeclareStateCacheAndPorts();
 
@@ -3330,8 +3324,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Calc method to output per model instance vector of generalized contact
   // forces.
   void CopyGeneralizedContactForcesOut(
-      ModelInstanceIndex model_instance, const systems::Context<T>& context,
-      systems::BasicVector<T>* tau_vector) const;
+      const internal::ImplicitStribeckSolverResults<T>&,
+      ModelInstanceIndex, systems::BasicVector<T>* tau_vector) const;
 
   // Helper method to declare output ports used by this plant to communicate
   // with a SceneGraph.

@@ -61,8 +61,8 @@ SolarSystem<T>::SolarSystem(SceneGraph<T>* scene_graph) {
 
   // Now that frames have been registered, allocate the output port.
   geometry_pose_port_ = this->DeclareAbstractOutputPort(
-          FramePoseVector<T>(source_id_, body_ids_),
-          &SolarSystem::CalcFramePoseOutput)
+          &SolarSystem::CalcFramePoseOutput,
+          {this->configuration_ticket()})
       .get_index();
 }
 
@@ -261,11 +261,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
 template <typename T>
 void SolarSystem<T>::CalcFramePoseOutput(const Context<T>& context,
                                          FramePoseVector<T>* poses) const {
-  DRAKE_DEMAND(poses->size() == kBodyCount);
-  DRAKE_DEMAND(poses->source_id() == source_id_);
-
   const BasicVector<T>& state = get_state(context);
-
   poses->clear();
   for (int i = 0; i < kBodyCount; ++i) {
     Isometry3<T> pose = body_offset_[i];

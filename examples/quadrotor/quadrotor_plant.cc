@@ -49,7 +49,8 @@ QuadrotorPlant<T>::QuadrotorPlant(double m_arg, double L_arg,
   this->DeclareContinuousState(12);
   state_port_ =
       this->DeclareVectorOutputPort("state", systems::BasicVector<T>(12),
-                                    &QuadrotorPlant::CopyStateOut)
+                                    &QuadrotorPlant::CopyStateOut,
+                                    {this->all_state_ticket()})
           .get_index();
 }
 
@@ -150,9 +151,7 @@ systems::OutputPortIndex QuadrotorPlant<T>::AllocateGeometryPoseOutputPort() {
   DRAKE_DEMAND(source_id_.is_valid() && frame_id_.is_valid());
   return this
       ->DeclareAbstractOutputPort(
-          "geometry_pose",
-          geometry::FramePoseVector<T>(source_id_, {frame_id_}),
-          &QuadrotorPlant<T>::CopyPoseOut)
+          "geometry_pose", &QuadrotorPlant<T>::CopyPoseOut)
       .get_index();
 }
 
@@ -183,16 +182,11 @@ void QuadrotorPlant<T>::RegisterGeometry(
 template <typename T>
 void QuadrotorPlant<T>::CopyPoseOut(const systems::Context<T>& context,
                                    geometry::FramePoseVector<T>* poses) const {
-  DRAKE_DEMAND(poses->size() == 1);
-  DRAKE_DEMAND(poses->source_id() == source_id_);
-
   VectorX<T> state = context.get_continuous_state_vector().CopyToVector();
-
-  poses->clear();
   math::RigidTransform<T> pose(
       math::RollPitchYaw<T>(state.template segment<3>(3)),
       state.template head<3>());
-  poses->set_value(frame_id_, pose.GetAsIsometry3());
+  *poses = {{frame_id_, pose.GetAsIsometry3()}};
 }
 
 std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(

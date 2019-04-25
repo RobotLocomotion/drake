@@ -54,7 +54,7 @@ class MockRoadGeometry final : public RoadGeometry {
   MockRoadGeometry() {}
 
  private:
-  const RoadGeometryId do_id() const override { return RoadGeometryId("mock"); }
+  RoadGeometryId do_id() const override { return RoadGeometryId("mock"); }
   int do_num_junctions() const override { return 1; }
   const Junction* do_junction(int) const override { return nullptr; };
   int do_num_branch_points() const override { return 1; }
@@ -156,9 +156,11 @@ class MockIntersection final : public Intersection {
       : Intersection(id, {}, ring_id) {}
 
  private:
-  const optional<rules::PhaseProvider::Result> Phase() const override {
+  optional<rules::PhaseProvider::Result> Phase() const override {
     return nullopt;
   }
+
+  void SetPhase(const api::rules::Phase::Id&) override {}
 };
 
 }  // namespace

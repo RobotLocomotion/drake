@@ -52,9 +52,14 @@ int main(int argc, char* argv[]) {
     return 0;
   }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   if (!FLAGS_add_resource_search_path.empty()) {
+    std::cerr << "resource_tool: WARNING: "
+              << "--add_resource_search_path is deprecated.\n";
     AddResourceSearchPath(FLAGS_add_resource_search_path);
   }
+#pragma GCC diagnostic pop
 
   const FindResourceResult& result = FindResource(FLAGS_print_resource_path);
   if (result.get_absolute_path()) {

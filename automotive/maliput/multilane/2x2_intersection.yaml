@@ -635,3 +635,13 @@ PhaseRings:
         EastFacingBulbs: {GreenBulb: On, YellowLeftArrowBulb: Blinking}
       WestFacing:
         WestFacingBulbs: {GreenBulb: On, YellowLeftArrowBulb: Blinking}
+  PhaseTransitionGraph:
+   NorthSouthPhase:
+    - ID: EastWestPhase
+      duration_until: 45
+   EastWestPhase:
+    - ID: NorthSouthPhase
+Intersections:
+- ID: 2x2Intersection
+  PhaseRing: 2x2Intersection
+  InitialPhase: NorthSouthPhase

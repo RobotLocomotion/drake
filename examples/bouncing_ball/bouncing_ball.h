@@ -99,9 +99,9 @@ class BouncingBall final : public systems::LeafSystem<T> {
   void SetDefaultState(const systems::Context<T>&,
                        systems::State<T>* state) const override {
     DRAKE_DEMAND(state != nullptr);
-    Vector2<T> x0;
-    x0 << 10.0, 0.0;  // initial state values.
-    state->get_mutable_continuous_state().SetFromVector(x0);
+    Vector2<T> xc0;
+    xc0 << 10.0, 0.0;  // initial state values.
+    state->get_mutable_continuous_state().SetFromVector(xc0);
   }
 
   // Updates the velocity discontinuously to reverse direction. This method

@@ -97,10 +97,6 @@ class ZeroOrderHold final : public LeafSystem<T> {
   ZeroOrderHold(double period_sec, int vector_size,
                 std::unique_ptr<const AbstractValue> model_value);
 
-  // Override feedthrough detection to avoid the need for `DoToSymbolic()`.
-  optional<bool> DoHasDirectFeedthrough(
-      int input_port, int output_port) const final;
-
   // Sets the output port value to the vector value that is currently
   // latched in the zero-order hold.
   void CopyLatchedVector(
@@ -143,7 +139,8 @@ ZeroOrderHold<T>::ZeroOrderHold(
     BasicVector<T> model_value(vector_size);
     this->DeclareVectorInputPort("u", model_value);
     this->DeclareVectorOutputPort("y",
-        model_value, &ZeroOrderHold::CopyLatchedVector);
+        model_value, &ZeroOrderHold::CopyLatchedVector,
+        {this->xd_ticket()});
     this->DeclareDiscreteState(vector_size);
     this->DeclarePeriodicDiscreteUpdateEvent(period_sec_, 0.,
         &ZeroOrderHold::LatchInputVectorToState);
@@ -163,7 +160,8 @@ ZeroOrderHold<T>::ZeroOrderHold(
         // Calculator function.
         [this](const Context<T>& context, AbstractValue* output) {
           this->CopyLatchedAbstractValue(context, &*output);
-        });
+        },
+        {this->xa_ticket()});
 
     this->DeclareAbstractState(abstract_model_value_->Clone());
     this->DeclarePeriodicUnrestrictedUpdateEvent(period_sec_, 0.,
@@ -215,16 +213,6 @@ void ZeroOrderHold<T>::LatchInputAbstractValueToState(
   AbstractValue& state_value =
       state->get_mutable_abstract_state().get_mutable_value(0);
   state_value.SetFrom(input);
-}
-
-template <typename T>
-optional<bool> ZeroOrderHold<T>::DoHasDirectFeedthrough(
-    int input_port, int output_port) const {
-  DRAKE_DEMAND(input_port == 0);
-  DRAKE_DEMAND(output_port == 0);
-  // By definition, a zero-order hold will not have direct feedthrough, as the
-  // output only depends on the state, not the input.
-  return false;
 }
 
 }  // namespace systems

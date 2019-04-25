@@ -1328,9 +1328,10 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   // If there are applied generalized forces, add them.
   const InputPort<T>& applied_generalized_force_input =
       this->get_input_port(applied_generalized_force_input_port_);
-  if (applied_generalized_force_input.HasValue(context))
+  if (applied_generalized_force_input.HasValue(context)) {
     forces.mutable_generalized_forces() +=
         applied_generalized_force_input.Eval(context);
+  }
 
   internal_tree().CalcMassMatrixViaInverseDynamics(context, &M);
 
@@ -1459,9 +1460,10 @@ void MultibodyPlant<T>::CalcImplicitStribeckResults(
   // If there are applied generalized forces, add them.
   const InputPort<T>& applied_generalized_force_input =
       this->get_input_port(applied_generalized_force_input_port_);
-  if (applied_generalized_force_input.HasValue(context0))
+  if (applied_generalized_force_input.HasValue(context0)) {
     forces0.mutable_generalized_forces() +=
         applied_generalized_force_input.Eval(context0);
+  }
 
   // Workspace for inverse dynamics:
   // Bodies' accelerations, ordered by BodyNodeIndex.
@@ -1673,7 +1675,8 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   continuous_state_output_port_ =
       this->DeclareVectorOutputPort("continuous_state",
                                     BasicVector<T>(num_multibody_states()),
-                                    &MultibodyPlant::CopyContinuousStateOut)
+                                    &MultibodyPlant::CopyContinuousStateOut,
+                                    {this->all_state_ticket()})
           .get_index();
 
   // Declare per model instance state output ports.
@@ -1694,7 +1697,8 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
         this->DeclareVectorOutputPort(
                 internal_tree().GetModelInstanceName(model_instance_index) +
                     "_continuous_state",
-                BasicVector<T>(instance_num_states), calc)
+                BasicVector<T>(instance_num_states), calc,
+                {this->all_state_ticket()})
             .get_index();
   }
 
@@ -1708,23 +1712,31 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     if (instance_num_velocities == 0) {
       continue;
     }
+    const auto& implicit_stribeck_solver_results_cache_entry =
+        this->get_cache_entry(cache_indexes_.implicit_stribeck_solver_results);
     auto calc = [this, model_instance_index](const systems::Context<T>& context,
                                              systems::BasicVector<T>* result) {
+      const internal::ImplicitStribeckSolverResults<T>& solver_results =
+          EvalImplicitStribeckResults(context);
       this->CopyGeneralizedContactForcesOut(
-          model_instance_index, context, result);
+          solver_results, model_instance_index, result);
     };
     instance_generalized_contact_forces_output_ports_[model_instance_index] =
         this->DeclareVectorOutputPort(
                 internal_tree().GetModelInstanceName(model_instance_index) +
                     "_generalized_contact_forces",
-                BasicVector<T>(instance_num_velocities), calc)
+                BasicVector<T>(instance_num_velocities), calc,
+                {implicit_stribeck_solver_results_cache_entry.ticket()})
             .get_index();
   }
 
   // Contact results output port.
+  const auto& contact_results_cache_entry =
+      this->get_cache_entry(cache_indexes_.contact_results);
   contact_results_port_ = this->DeclareAbstractOutputPort(
                                   "contact_results", ContactResults<T>(),
-                                  &MultibodyPlant<T>::CopyContactResultsOutput)
+                                  &MultibodyPlant<T>::CopyContactResultsOutput,
+                                  {contact_results_cache_entry.ticket()})
                               .get_index();
 }
 
@@ -1859,15 +1871,13 @@ void MultibodyPlant<T>::CopyContinuousStateOut(
 
 template <typename T>
 void MultibodyPlant<T>::CopyGeneralizedContactForcesOut(
-    ModelInstanceIndex model_instance, const Context<T>& context,
-    BasicVector<T>* tau_vector) const {
+    const internal::ImplicitStribeckSolverResults<T>& solver_results,
+    ModelInstanceIndex model_instance, BasicVector<T>* tau_vector) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(is_discrete());
 
   // Vector of generalized contact forces for the entire plant's multibody
   // system.
-  const internal::ImplicitStribeckSolverResults<T>& solver_results =
-      EvalImplicitStribeckResults(context);
   const VectorX<T>& tau_contact = solver_results.tau_contact;
 
   // Generalized velocities and generalized forces are ordered in the same way.
@@ -1966,26 +1976,9 @@ template <typename T>
 void MultibodyPlant<T>::DeclareSceneGraphPorts() {
   geometry_query_port_ = this->DeclareAbstractInputPort(
       "geometry_query", Value<ModelQueryObject<T>>{}).get_index();
-  // Allocate pose port.
-  // TODO(eric.cousineau): Simplify this logic.
-  typename systems::LeafOutputPort<T>::AllocCallback pose_alloc = [this]() {
-    // This presupposes that the source id has been assigned and _all_ frames
-    // have been registered.
-    std::vector<FrameId> ids;
-    for (auto it : this->body_index_to_frame_id_) {
-      if (it.first == world_index()) continue;
-      ids.push_back(it.second);
-    }
-    return AbstractValue::Make(
-        FramePoseVector<T>(*this->source_id_, ids));
-  };
-  typename systems::LeafOutputPort<T>::CalcCallback pose_callback = [this](
-      const Context<T>& context, AbstractValue* value) {
-    this->CalcFramePoseOutput(
-        context, &value->get_mutable_value<FramePoseVector<T>>());
-  };
   geometry_pose_port_ = this->DeclareAbstractOutputPort(
-      "geometry_pose", pose_alloc, pose_callback).get_index();
+      "geometry_pose", &MultibodyPlant<T>::CalcFramePoseOutput,
+      {this->configuration_ticket()}).get_index();
 }
 
 template <typename T>
@@ -1993,14 +1986,12 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_ASSERT(source_id_ != nullopt);
-  // NOTE: The body index to frame id map *always* includes the world body but
-  // the world body does *not* get reported in the frame poses; only dynamic
-  // frames do.
-  DRAKE_ASSERT(
-      poses->size() == static_cast<int>(body_index_to_frame_id_.size() - 1));
   const internal::PositionKinematicsCache<T>& pc =
       EvalPositionKinematics(context);
 
+  // NOTE: The body index to frame id map *always* includes the world body but
+  // the world body does *not* get reported in the frame poses; only dynamic
+  // frames do.
   // TODO(amcastro-tri): Make use of Body::EvalPoseInWorld(context) once caching
   // lands.
   poses->clear();

@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 #include <sdf/sdf.hh>
+#include <spruce.hh>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
@@ -43,12 +44,13 @@ GTEST_TEST(MultibodyPlantSdfParserTest, PackageMapSpecified) {
 
   const std::string full_sdf_filename = FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/sdfs/box.sdf");
-  const std::string package_path = FindResourceOrThrow(
-      "drake/multibody/parsing/test/box_package");
+  spruce::path package_path = full_sdf_filename;
+  package_path = package_path.root();
+  package_path = package_path.root();
 
   // Construct the PackageMap.
   PackageMap package_map;
-  package_map.PopulateFromFolder(package_path);
+  package_map.PopulateFromFolder(package_path.getStr());
 
   // Read in the SDF file.
   AddModelFromSdfFile(full_sdf_filename, "", package_map, &plant, &scene_graph);
@@ -220,9 +222,10 @@ GTEST_TEST(SdfParserThrowsWhen, JointDampingIsNegative) {
 }
 
 GTEST_TEST(SdfParser, IncludeTags) {
-  const std::string sdf_file_path =
-      "drake/multibody/parsing/test/sdf_parser_test";
-  sdf::addURIPath("model://", FindResourceOrThrow(sdf_file_path));
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "include_models.sdf");
+  sdf::addURIPath("model://", spruce::path(full_name).root());
   MultibodyPlant<double> plant;
 
   // We start with the world and default model instances.
@@ -231,8 +234,6 @@ GTEST_TEST(SdfParser, IncludeTags) {
   ASSERT_EQ(plant.num_joints(), 0);
 
   PackageMap package_map;
-  const std::string full_name = FindResourceOrThrow(
-      sdf_file_path + "/include_models.sdf");
   package_map.PopulateUpstreamToDrake(full_name);
   AddModelsFromSdfFile(full_name, package_map, &plant);
   plant.Finalize();

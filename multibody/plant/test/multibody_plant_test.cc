@@ -29,6 +29,7 @@
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
+#include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
@@ -262,6 +263,15 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       plant->GetJointByName<RevoluteJoint>("pin");
   EXPECT_EQ(pin.name(), "pin");
   EXPECT_THROW(plant->GetJointByName(kInvalidName), std::logic_error);
+
+  // Templatized version throws when the requested joint doesn't have the
+  // expected type.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant->GetJointByName<PrismaticJoint>(parameters.shoulder_joint_name(),
+                                            shoulder.model_instance()),
+      std::logic_error,
+      ".*not of type '.*PrismaticJoint<double>' but of type "
+      "'.*RevoluteJoint<double>'.");
 
   // MakeAcrobotPlant() has already called Finalize() on the acrobot model.
   // Therefore no more modeling elements can be added. Verify this.
@@ -676,11 +686,10 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   EXPECT_NO_THROW(poses_value->get_value<FramePoseVector<double>>());
   const FramePoseVector<double>& poses =
       poses_value->get_value<FramePoseVector<double>>();
-  EXPECT_EQ(poses.source_id(), plant_->get_source_id());
-  EXPECT_EQ(poses.size(), 2);  // Only two frames move.
 
   // Compute the poses for each geometry in the model.
   plant_->get_geometry_poses_output_port().Calc(*context, poses_value.get());
+  EXPECT_EQ(poses.size(), 2);  // Only two frames move.
 
   const FrameId world_frame_id =
       plant_->GetBodyFrameIdOrThrow(plant_->world_body().index());
@@ -1133,6 +1142,10 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   // We are done defining the model.
   plant.Finalize();
 
+  // There is no direct feedthrough of any kind, even with the new ports
+  // related to SceneGraph interaction.
+  EXPECT_FALSE(plant.HasAnyDirectFeedthrough());
+
   EXPECT_EQ(plant.num_visual_geometries(), 0);
   EXPECT_EQ(plant.num_collision_geometries(), 3);
   EXPECT_TRUE(plant.geometry_source_is_registered());
@@ -1156,11 +1169,10 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   EXPECT_NO_THROW(poses_value->get_value<FramePoseVector<double>>());
   const FramePoseVector<double>& pose_data =
       poses_value->get_value<FramePoseVector<double>>();
-  EXPECT_EQ(pose_data.source_id(), plant.get_source_id());
-  EXPECT_EQ(pose_data.size(), 2);  // Only two frames move.
 
   // Compute the poses for each geometry in the model.
   plant.get_geometry_poses_output_port().Calc(*context, poses_value.get());
+  EXPECT_EQ(pose_data.size(), 2);  // Only two frames move.
 
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
   for (BodyIndex body_index(1);
@@ -1958,6 +1970,10 @@ class KukaArmTest : public ::testing::TestWithParam<double> {
         plant_->WeldFrames(plant_->world_frame(),
                            plant_->GetFrameByName("iiwa_link_0"));
     plant_->Finalize();
+
+    // There is no direct feedthrough of any kind, for either continuous or
+    // discrete plants.
+    EXPECT_FALSE(plant_->HasAnyDirectFeedthrough());
 
     EXPECT_EQ(plant_->num_positions(), 7);
     EXPECT_EQ(plant_->num_velocities(), 7);

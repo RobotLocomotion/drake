@@ -39,7 +39,7 @@ class Lane {
   virtual ~Lane() = default;
 
   /// Returns the persistent identifier.
-  const LaneId id() const { return do_id(); }
+  LaneId id() const { return do_id(); }
 
   /// Returns the Segment to which this Lane belongs.
   const Segment* segment() const { return do_segment(); }
@@ -244,7 +244,7 @@ class Lane {
   /// These must satisfy the constraints/invariants of the
   /// corresponding public methods.
   ///@{
-  virtual const LaneId do_id() const = 0;
+  virtual LaneId do_id() const = 0;
 
   virtual const Segment* do_segment() const = 0;
 

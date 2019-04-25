@@ -97,9 +97,7 @@ RigidBodyPlantBridge<T>::RigidBodyPlantBridge(const RigidBodyTree<T>* tree,
   // second body id.
   std::vector<FrameId> dynamic_frames(body_ids_.begin() + 1, body_ids_.end());
   geometry_pose_port_ = this->DeclareAbstractOutputPort(
-          FramePoseVector<T>(source_id_, dynamic_frames),
-          &RigidBodyPlantBridge::CalcFramePoseOutput)
-      .get_index();
+          &RigidBodyPlantBridge::CalcFramePoseOutput).get_index();
 }
 
 template <typename T>
@@ -188,9 +186,6 @@ void RigidBodyPlantBridge<T>::RegisterTree(SceneGraph<T>* scene_graph) {
 template <typename T>
 void RigidBodyPlantBridge<T>::CalcFramePoseOutput(
     const MyContext& context, FramePoseVector<T>* poses) const {
-  DRAKE_DEMAND(source_id_.is_valid());
-  DRAKE_DEMAND(poses->size() == static_cast<int>(body_ids_.size() - 1));
-
   const BasicVector<T>& input_vector = *this->EvalVectorInput(context, 0);
   // Obtains the generalized positions from vector_base.
   const VectorX<T> q = input_vector.CopyToVector().head(

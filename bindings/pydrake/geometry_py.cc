@@ -74,6 +74,17 @@ PYBIND11_MODULE(geometry, m) {
               &SceneGraph<T>::RegisterSource),
           py::arg("name") = "", doc.SceneGraph.RegisterSource.doc);
 
+  py::class_<FramePoseVector<T>>(
+      m, "FramePoseVector", doc.FrameKinematicsVector.doc)
+      .def(py::init<>(), doc.FrameKinematicsVector.ctor.doc_0args)
+      .def(py::init([](SourceId source_id, const std::vector<FrameId>& ids) {
+        WarnDeprecated("See API docs for deprecation notice.");
+        return std::make_unique<FramePoseVector<T>>(source_id, ids);
+      }),
+          py::arg("source_id"), py::arg("ids"),
+          doc.FrameKinematicsVector.ctor.doc_deprecated_2args);
+  pysystems::AddValueInstantiation<FramePoseVector<T>>(m);
+
   py::class_<QueryObject<T>>(m, "QueryObject", doc.QueryObject.doc)
       .def("inspector", &QueryObject<T>::inspector, py_reference_internal,
           doc.QueryObject.inspector.doc)
@@ -82,7 +93,11 @@ PYBIND11_MODULE(geometry, m) {
           doc.QueryObject.ComputeSignedDistancePairwiseClosestPoints.doc)
       .def("ComputePointPairPenetration",
           &QueryObject<T>::ComputePointPairPenetration,
-          doc.QueryObject.ComputePointPairPenetration.doc);
+          doc.QueryObject.ComputePointPairPenetration.doc)
+      .def("ComputeSignedDistanceToPoint",
+          &QueryObject<T>::ComputeSignedDistanceToPoint, py::arg("p_WQ"),
+          py::arg("threshold") = std::numeric_limits<double>::infinity(),
+          doc.QueryObject.ComputeSignedDistanceToPoint.doc);
   pysystems::AddValueInstantiation<QueryObject<T>>(m);
 
   py::module::import("pydrake.systems.lcm");
@@ -123,6 +138,18 @@ PYBIND11_MODULE(geometry, m) {
           doc.SignedDistancePair.distance.doc)
       .def_readwrite("nhat_BA_W", &SignedDistancePair<T>::nhat_BA_W,
           doc.SignedDistancePair.nhat_BA_W.doc);
+
+  // SignedDistanceToPoint
+  py::class_<SignedDistanceToPoint<T>>(m, "SignedDistanceToPoint")
+      .def(py::init<>(), doc.SignedDistanceToPoint.ctor.doc)
+      .def_readwrite("id_G", &SignedDistanceToPoint<T>::id_G,
+          doc.SignedDistanceToPoint.id_G.doc)
+      .def_readwrite("p_GN", &SignedDistanceToPoint<T>::p_GN,
+          doc.SignedDistanceToPoint.p_GN.doc)
+      .def_readwrite("distance", &SignedDistanceToPoint<T>::distance,
+          doc.SignedDistanceToPoint.distance.doc)
+      .def_readwrite("grad_W", &SignedDistanceToPoint<T>::grad_W,
+          doc.SignedDistanceToPoint.grad_W.doc);
 
   // PenetrationAsPointPair
   py::class_<PenetrationAsPointPair<T>>(m, "PenetrationAsPointPair")

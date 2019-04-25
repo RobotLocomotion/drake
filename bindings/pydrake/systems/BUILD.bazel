@@ -114,6 +114,7 @@ drake_pybind_library(
     cc_deps = [
         ":systems_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:wrap_pybind",
     ],
     cc_srcs = ["analysis_py.cc"],
     package_info = PACKAGE_INFO,
@@ -460,6 +461,15 @@ drake_py_unittest(
         ":trajectory_optimization_py",
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/examples:pendulum_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "monte_carlo_test",
+    deps = [
+        ":analysis_py",
+        ":primitives_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 

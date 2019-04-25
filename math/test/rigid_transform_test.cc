@@ -485,6 +485,60 @@ GTEST_TEST(RigidTransform, SymbolicRigidTransformThrowsExceptions) {
   EXPECT_THROW(test_Bool.Evaluate(), std::runtime_error);
 }
 
+// Test constructing a RigidTransform constructor from an Eigen::Translation3.
+GTEST_TEST(RigidTransform, ConstructRigidTransformFromTranslation3) {
+  const Vector3d p_AoBo_A(1.0, 2.0, 3.0);
+  const Eigen::Translation3d translation3(p_AoBo_A);
+  const RigidTransformd X_AB(translation3);            // Explicit construction
+  const RigidTransformd X_AB_implicit = translation3;  // Implicit construction
+  EXPECT_EQ(X_AB.translation(), p_AoBo_A);
+  EXPECT_TRUE(X_AB.rotation().IsExactlyIdentity());
+  EXPECT_TRUE(X_AB.IsExactlyEqualTo(X_AB_implicit));
+}
+
+// Test multiplying a RigidTransform by an Eigen::Translation3 and vice-versa.
+GTEST_TEST(RigidTransform, MultiplyByTranslation3AndViceVersa) {
+  const Vector3d p_AoBo_A(1.0, 2.0, 3.0);
+  const RotationMatrixd R_AB(RollPitchYawd(0.3, 0.2, 0.7));
+  const RigidTransformd X_AB(R_AB, p_AoBo_A);
+
+  const Vector3d p_BoCo_B(4.0, 5.0, 9.0);
+  const Eigen::Translation3d X_BC(p_BoCo_B);
+
+  // Multiply a RigidTransform by a Translation3.
+  const RigidTransformd X_AC = X_AB * X_BC;
+
+  // Verify the rotation portion of the previous multiply.
+  const RotationMatrixd& R_AC = X_AC.rotation();
+  EXPECT_TRUE(R_AC.IsExactlyEqualTo(X_AB.rotation()));
+
+  // Verify the translation portion of the previous multiply.
+  const Vector3d p_BoCo_A = R_AB * p_BoCo_B;
+  const Vector3d p_AoCo_A = p_AoBo_A + p_BoCo_A;
+  EXPECT_TRUE(X_AC.translation().isApprox(p_AoCo_A, 32 * kEpsilon));
+
+  // Test multiplying a Translation3 by a RigidTransform.
+  const Eigen::Translation3d X_CB = X_BC.inverse();
+  const RigidTransformd X_BA = X_AB.inverse();
+  const RigidTransformd X_CA = X_CB * X_BA;
+
+  // Verify the rotation portion of the previous multiply.
+  const RotationMatrixd& R_CA = X_CA.rotation();
+  const RotationMatrixd& R_BA = X_BA.rotation();
+  EXPECT_TRUE(R_CA.IsExactlyEqualTo(R_BA));
+  const RotationMatrixd  R_CB = RotationMatrixd::Identity();
+
+  // Verify the translation portion of the previous multiply.
+  const Vector3d& p_CoBo_C = X_CB.translation();
+  const Vector3d& p_BoAo_B = X_BA.translation();
+  const Vector3d p_BoAo_C = R_CB * p_BoAo_B;
+  const Vector3d p_CoAo_C = p_CoBo_C + p_BoAo_C;
+  EXPECT_TRUE(X_CA.translation().isApprox(p_CoAo_C, 32 * kEpsilon));
+
+  // Verify X_AC is the inverse of X_CA.
+  EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_CA.inverse(), 32 * kEpsilon));
+}
+
 }  // namespace
 }  // namespace math
 }  // namespace drake

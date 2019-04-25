@@ -45,7 +45,8 @@ LuenbergerObserver<T>::LuenbergerObserver(
   // Note: Again, the derived type of the state vector is lost here, because xc
   // is only guaranteed to be a VectorBase, not a BasicVector.
   this->DeclareVectorOutputPort(BasicVector<T>(xc.size()),
-                                &LuenbergerObserver::CalcEstimatedState);
+                                &LuenbergerObserver::CalcEstimatedState,
+                                {this->xc_ticket()});
 
   // First input port is the output of the observed system.
   // Note: Throws bad_cast if the output is not vector-valued.

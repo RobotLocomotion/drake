@@ -179,8 +179,11 @@ struct Impl {
         int input_port, int output_port) const override {
       PYDRAKE_TRY_PROTECTED_OVERLOAD(optional<bool>, LeafSystem<T>,
           "DoHasDirectFeedthrough", input_port, output_port);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
       // If the macro did not return, use default functionality.
       return Base::DoHasDirectFeedthrough(input_port, output_port);
+#pragma GCC diagnostic pop
     }
 
     void DoCalcTimeDerivatives(const Context<T>& context,
@@ -246,7 +249,9 @@ struct Impl {
    public:
     using Base = VectorSystem<T>;
 
-    VectorSystemPublic(int inputs, int outputs) : Base(inputs, outputs) {}
+    VectorSystemPublic(
+        int input_size, int output_size, optional<bool> direct_feedthrough)
+        : Base(input_size, output_size, direct_feedthrough) {}
 
     using Base::EvalVectorInput;
     using Base::GetVectorState;
@@ -278,8 +283,11 @@ struct Impl {
         int input_port, int output_port) const override {
       PYDRAKE_TRY_PROTECTED_OVERLOAD(optional<bool>, VectorSystem<T>,
           "DoHasDirectFeedthrough", input_port, output_port);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
       // If the macro did not return, use default functionality.
       return Base::DoHasDirectFeedthrough(input_port, output_port);
+#pragma GCC diagnostic pop
     }
 
     void DoCalcVectorOutput(const Context<T>& context,
@@ -619,8 +627,11 @@ Note: The above is for the C++ documentation. For Python, use
             doc.LeafSystem.DoPublish.doc)
         // System attributes.
         .def("DoHasDirectFeedthrough",
-            &LeafSystemPublic::DoHasDirectFeedthrough,
-            doc.LeafSystem.DoHasDirectFeedthrough.doc)
+            [](PyLeafSystem* self, int input_port, int output_port) {
+              WarnDeprecated("See API docs for deprecation notice.");
+              return self->DoHasDirectFeedthrough(input_port, output_port);
+            },
+            doc.LeafSystem.DoHasDirectFeedthrough.doc_deprecated)
         // Continuous state.
         .def("DeclareContinuousState",
             py::overload_cast<int>(&LeafSystemPublic::DeclareContinuousState),
@@ -708,10 +719,14 @@ Note: The above is for the C++ documentation. For Python, use
     // we're already abusing Python and C++ enough.
     DefineTemplateClassWithDefault<VectorSystem<T>, PyVectorSystem,
         LeafSystem<T>>(m, "VectorSystem", GetPyParam<T>(), doc.VectorSystem.doc)
-        .def(py::init([](int inputs, int outputs) {
-          return new PyVectorSystem(inputs, outputs);
+        .def(py::init([](int input_size, int output_size,
+                          optional<bool> direct_feedthrough) {
+          return new PyVectorSystem(
+              input_size, output_size, direct_feedthrough);
         }),
-            doc.VectorSystem.ctor.doc_2args);
+            py::arg("input_size"), py::arg("output_size"),
+            py::arg("direct_feedthrough") = nullopt,
+            doc.VectorSystem.ctor.doc_3args);
     // TODO(eric.cousineau): Bind virtual methods once we provide a function
     // wrapper to convert `Map<Derived>*` arguments.
     // N.B. This could be mitigated by using `EigenPtr` in public interfaces in

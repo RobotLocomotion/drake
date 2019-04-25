@@ -70,6 +70,9 @@ static T GetNextSampleTime(
   return next_t;
 }
 
+// Logs a deprecation warning, at most once per process.
+void MaybeWarnDoHasDirectFeedthroughDeprecated();
+
 }  // namespace leaf_system_detail
 /** @endcond */
 
@@ -256,44 +259,91 @@ class LeafSystem : public System<T> {
   }
 
   std::multimap<int, int> GetDirectFeedthroughs() const final {
-    // A helper object that is latch-initialized the first time it is needed,
-    // but not before.  The optional<> wrapper represents whether or not the
-    // latch-init has been attempted; the unique_ptr's non-nullness represents
-    // whether or not symbolic form is supported.
-    optional<std::unique_ptr<SystemSymbolicInspector>> inspector;
+    // The input -> output feedthrough result we'll return to the user.
+    std::multimap<int, int> result;
 
-    // This predicate answers a feedthrough query using symbolic form, or
-    // returns "true" if symbolic form is unavailable.  It is lazy, in that it
-    // will not create the symbolic form until the first time it is invoked.
-    auto inspect_symbolic_feedthrough = [this, &inspector](int u, int v) {
-      // The very first time we are called, latch-initialize the inspector.
-      if (!inspector) { inspector = MakeSystemSymbolicInspector(); }
-
-      // If we have an inspector, delegate to it.  Otherwise, be conservative.
-      if (SystemSymbolicInspector* inspector_value = inspector.value().get()) {
-        return inspector_value->IsConnectedInputToOutput(u, v);
-      } else {
-        return true;
+    // The list of pairs where we don't know an answer yet.
+    std::multimap<InputPortIndex, OutputPortIndex> unknown;
+    auto remove_unknown = [&unknown](const auto& in_out_pair) {
+      for (auto iter = unknown.lower_bound(in_out_pair.first); ; ++iter) {
+        DRAKE_DEMAND(iter != unknown.end());
+        DRAKE_DEMAND(iter->first == in_out_pair.first);
+        if (*iter == in_out_pair) {
+          unknown.erase(iter);
+          break;
+        }
       }
     };
 
-    // Iterate all input-output pairs, populating the map with the "true" terms.
-    std::multimap<int, int> pairs;
-    for (int u = 0; u < this->num_input_ports(); ++u) {
-      for (int v = 0; v < this->num_output_ports(); ++v) {
-        // Ask our subclass whether it wants to directly express feedthrough.
-        const optional<bool> overridden_feedthrough =
-            DoHasDirectFeedthrough(u, v);
-        // If our subclass didn't provide an answer, use symbolic form instead.
-        const bool direct_feedthrough =
-            overridden_feedthrough ? overridden_feedthrough.value() :
-            inspect_symbolic_feedthrough(u, v);
-        if (direct_feedthrough) {
-          pairs.emplace(u, v);
+    // For all input-output pairs ask the subclass if the port has feedthrough.
+    // Add true pairs to the result map and nullopt pairs to the unknown map.
+    for (InputPortIndex u{0}; u < this->num_input_ports(); ++u) {
+      for (OutputPortIndex v{0}; v < this->num_output_ports(); ++v) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        const optional<bool> user_override = DoHasDirectFeedthrough(u, v);
+#pragma GCC diagnostic pop
+        if (user_override) {
+          leaf_system_detail::MaybeWarnDoHasDirectFeedthroughDeprecated();
+          if (user_override.value()) {
+            result.emplace(u, v);
+          }
+        } else {
+          unknown.emplace(u, v);
         }
       }
     }
-    return pairs;
+
+    // If unknown pairs remain, ask the dependency graph if we can exclude them.
+    if (!unknown.empty()) {
+      auto context = this->AllocateContext();
+      const auto orig_unknown = unknown;
+      for (const auto& input_output : orig_unknown) {
+        const auto& input = this->get_input_port(input_output.first);
+        const auto& input_tracker = context->get_tracker(input.ticket());
+        const auto& output = this->get_output_port(input_output.second);
+        DRAKE_ASSERT(typeid(output) == typeid(LeafOutputPort<T>));
+        const auto& leaf_output = static_cast<const LeafOutputPort<T>&>(output);
+        const auto& cache_entry = leaf_output.cache_entry();
+        auto& value = cache_entry.get_mutable_cache_entry_value(*context);
+        value.mark_up_to_date();
+        const int64_t change_event = context->start_new_change_event();
+        input_tracker.NoteValueChange(change_event);
+        if (!value.is_out_of_date()) {
+          // We've proved there is no dependency, so we don't need to add it to
+          // result and we can remove it from unknown.  (Or maybe the System's
+          // stated dependencies were inaccurate, but we can't really repair
+          // that here.)
+          remove_unknown(input_output);
+        }
+        // Undo the mark_up_to_date() we just did a few lines up.  It shouldn't
+        // matter at all on this throwaway context, but perhaps it's best not
+        // to leave garbage values marked valid for longer than required.
+        value.mark_out_of_date();
+      }
+    }
+
+    // If unknown pairs remain, ask symbolic inspector if we can exclude them.
+    if (!unknown.empty()) {
+      if (auto inspector = MakeSystemSymbolicInspector()) {
+        const auto orig_unknown = unknown;
+        for (const auto& input_output : orig_unknown) {
+          if (!inspector->IsConnectedInputToOutput(
+                  input_output.first, input_output.second)) {
+            // We've proved there is no dependency, so we don't need to add it
+            // to result and we can remove it from unknown.
+            remove_unknown(input_output);
+          }
+        }
+      }
+    }
+
+    // If unknown pairs remain, conservatively assume they are feedthrough.
+    for (const auto& input_output : unknown) {
+      result.emplace(input_output.first, input_output.second);
+    }
+
+    return result;
   };
 
  protected:
@@ -546,7 +596,12 @@ class LeafSystem : public System<T> {
   /// This is a conservative assumption that ensures we detect and can prevent
   /// the formation of algebraic loops (implicit computations) in system
   /// Diagrams. Systems which do not have direct feedthrough may override that
-  /// assumption in two ways:
+  /// assumption in three ways:
+  ///
+  /// - When calling DeclareFooOutputPort, provide a non-default value to the
+  ///   prerequisites_of_calc argument.  When the prerequisites_of_calc implies
+  ///   no dependency on some inputs, the framework automatically infers that
+  ///   the output does is not direct-feedthrough for those inputs.
   ///
   /// - Override DoToSymbolic, allowing %LeafSystem to infer the sparsity
   ///   from the symbolic equations. This method is typically preferred for
@@ -556,13 +611,15 @@ class LeafSystem : public System<T> {
   ///   additional discussion, consult the documentation for
   ///   SystemSymbolicInspector.
   ///
-  /// - Override this function directly, reporting manual sparsity. This method
-  ///   is recommended when DoToSymbolic has not been implemented, or when
-  ///   creating the symbolic form is too computationally expensive, or when its
-  ///   output is not fully descriptive, as discussed above. Manually configured
+  /// - Override this function directly, reporting manual sparsity.  (This
+  ///   alternative is deprecated and is scheduled for removal.  Do not use
+  ///   it in new code.)  Manually configured
   ///   sparsity must be conservative: if there is any Context for which an
   ///   input port is direct-feedthrough to an output port, this function must
   ///   return either true or nullopt for those two ports.
+  DRAKE_DEPRECATED("2019-08-01",
+      "Instead of overriding this method, provide the prerequisites_of_calc "
+      "argument to the DeclareFooOutputPort call.")
   virtual optional<bool> DoHasDirectFeedthrough(
       int input_port, int output_port) const {
     unused(input_port, output_port);

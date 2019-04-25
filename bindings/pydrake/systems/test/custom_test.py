@@ -246,8 +246,9 @@ class TestCustom(unittest.TestCase):
                 test.assertIn(input_port, [0, 1])
                 test.assertEqual(output_port, 0)
                 # Call base method to ensure we do not get recursion.
-                base_return = LeafSystem.DoHasDirectFeedthrough(
-                    self, input_port, output_port)
+                with catch_drake_warnings(expected_count=1):
+                    base_return = LeafSystem.DoHasDirectFeedthrough(
+                        self, input_port, output_port)
                 test.assertTrue(base_return is None)
                 # Return custom methods.
                 self.called_feedthrough = True
@@ -284,8 +285,7 @@ class TestCustom(unittest.TestCase):
             def _on_periodic(self, context, event):
                 test.assertIsInstance(context, Context)
                 test.assertIsInstance(event, PublishEvent)
-                # TODO(edrumwri): Uncomment this pending resolution of #11185
-                # test.assertFalse(self.called_periodic)
+                test.assertFalse(self.called_periodic)
                 self.called_periodic = True
 
             def _witness(self, context):

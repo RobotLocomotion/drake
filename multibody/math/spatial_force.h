@@ -60,11 +60,11 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
 
   /// SpatialForce constructor from an Eigen expression that represents a
   /// six-dimensional vector.
-  /// This constructor will assert the size of V is six (6) at compile-time
+  /// This constructor will assert the size of F is six (6) at compile-time
   /// for fixed sized Eigen expressions and at run-time for dynamic sized Eigen
   /// expressions.
   template <typename Derived>
-  explicit SpatialForce(const Eigen::MatrixBase<Derived>& V) : Base(V) {}
+  explicit SpatialForce(const Eigen::MatrixBase<Derived>& F) : Base(F) {}
 
   /// In-place shift of a %SpatialForce from one application point to another.
   /// `this` spatial force `F_Bp_E`, which applies its translational force

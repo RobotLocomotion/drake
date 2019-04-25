@@ -62,13 +62,22 @@ derived class, you should use
 
 # Conventions
 
-## API Names
+## API
 
 Any Python bindings of C++ code will maintain C++ naming conventions, as well
 as Python code that is directly related to C++ symbols (e.g. shims, wrappers,
 or extensions on existing bound classes).
 
 All other Python code be Pythonic and use PEP 8 naming conventions.
+
+For binding functions or methods, argument names should be provided that
+correspond exactly to the C++ signatures using `py::arg("arg_name")`. This
+permits the C++ documentation to be relevant to the Sphinx-generated
+@ref PydrakeDoc "documentation", and allows for the keyword-arguments to be
+used in Python.
+
+For binding functions, methods, properties, and classes, docstrings should be
+provided. These should be provided as described @ref PydrakeDoc "here".
 
 ## Target Conventions
 
@@ -132,8 +141,14 @@ Drake uses a modified version of `mkdoc.py` from `pybind11`, where `libclang`
 Python bindings are used to generate C++ docstrings accessible to the C++
 binding code.
 
-An example of incorporating docstrings:
+These docstrings are avaialable within `constexpr struct ... pydrake_doc`
+as `const char*` values . When these are not available or not suitable for
+Python documentation, provide custom strings. If this custom string is long,
+consider placing them in a heredoc string.
 
+An example of incorporating docstrings from `pydrake_doc`:
+
+~~~{.cc}
     #include "drake/bindings/pydrake/documentation_pybind.h"
 
     PYBIND11_MODULE(math, m) {
@@ -141,10 +156,10 @@ An example of incorporating docstrings:
       constexpr auto& doc = pydrake_doc.drake.math;
       using T = double;
       py::class_<RigidTransform<T>>(m, "RigidTransform", doc.RigidTransform.doc)
-          .def(py::init(), doc.ExampleClass.ctor.doc_0args)
+          .def(py::init(), doc.RigidTransform.ctor.doc_0args)
           ...
           .def(py::init<const RotationMatrix<T>&>(), py::arg("R"),
-              doc.RigidTransform.ctor.doc_1args)
+              doc.RigidTransform.ctor.doc_1args_R)
           .def(py::init<const Eigen::Quaternion<T>&, const Vector3<T>&>(),
               py::arg("quaternion"), py::arg("p"),
               doc.RigidTransform.ctor.doc_2args_quaternion_p)
@@ -153,6 +168,34 @@ An example of incorporating docstrings:
               doc.RigidTransform.set_rotation.doc)
       ...
     }
+~~~
+
+An example of supplying custom strings:
+
+~~~{.cc}
+    constexpr char another_helper_doc[] = R"""(
+    Another helper docstring. This is really long.
+    And has multiple lines.
+    )""";
+
+    PYBIND11_MODULE(example, m) {
+      m.def("helper", []() { return 42; }, "My helper method");
+      m.def("another_helper", []() { return 10; }, another_helper_doc);
+    }
+~~~
+
+@note Consider using scoped aliases to abbreviate both the usage of bound types
+and the docstring structures. Borrowing from above:
+
+~~~{.cc}
+    {
+      using Class = RigidTransform<T>;
+      constexpr auto& cls_doc = doc.RigidTransform;
+      py::class_<Class>(m, "RigidTransform", cls_doc.doc)
+          .def(py::init(), cls_doc.ctor.doc_0args)
+          ...
+    }
+~~~
 
 To view the documentation rendered in Sphinx:
 
@@ -190,9 +233,11 @@ the pydrake binding's signature is consistent with the docstring argument
 count.
 - If two or more docstrings are the same, only one new symbol is introduced.
 - To suppress a Doxygen comment from mkdoc, add the custom Doxygen command
-`@exclude_from_pydrake_mkdoc{Explanatory text.}` to the API comment text.
-(This is useful to help dismiss unbound overloads, so that mkdoc's choice of
-`_something` name suffix is simpler for the remaining overloads.)
+\c \@exclude_from_pydrake_mkdoc{Explanation} to the API comment text.
+This is useful to help dismiss unbound overloads, so that mkdoc's choice of
+`_something` name suffix is simpler for the remaining overloads, especially if
+you see the symbol `.doc_was_unable_to_choose_unambiguous_names` in the
+generated documentation.
 - The docstring for a method that is marked as deprecated in C++ Doxygen will
 be named `.doc_deprecated...` instead of just `.doc...`.
 

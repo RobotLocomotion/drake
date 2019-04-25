@@ -74,8 +74,8 @@ class QueryObject;
  FramePoseVector. For each registered frame, this "pose vector" maps the
  registered FrameId to a pose value. All registered frames must be accounted
  for and only frames registered by a source can be included in its output port.
- See the details in FrameKinematicsVector for details on how to allocate and
- calculate this port.
+ See the details in FrameKinematicsVector for details on how to provide values
+ for this port.
 
  @section geom_sys_outputs Outputs
 
@@ -598,14 +598,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // Give (at least temporarily) QueryObject access to the system API to
   // evaluate inputs on the context.
   friend class QueryObject<T>;
-
-  // The two output ports (bundle and query object) depend on all input
-  // kinematics (more or less). This makes those relationships concrete and
-  // official even if/when this class is made symbolic-compatible (or the
-  // default non-symbolic-compatible behavior were to change).
-  optional<bool> DoHasDirectFeedthrough(int, int) const override {
-    return true;
-  }
 
   // Helper class to register input ports for a source id.
   void MakeSourcePorts(SourceId source_id);

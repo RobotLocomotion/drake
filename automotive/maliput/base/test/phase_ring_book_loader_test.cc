@@ -223,13 +223,19 @@ class TestLoading2x2IntersectionPhasebook : public ::testing::Test {
                      {UniqueBulbId{TrafficLight::Id("SouthFacing"),
                                    BulbGroup::Id("SouthFacingBulbs"),
                                    Bulb::Id("YellowLeftArrowBulb")},
-                      BulbState::kOff}}})}) {}
+                      BulbState::kOff}}})}),
+        expected_next_phases_({{Phase::Id("NorthSouthPhase"),
+                                {{Phase::Id("EastWestPhase"), 45.0}}},
+                               {Phase::Id("EastWestPhase"),
+                                {{Phase::Id("NorthSouthPhase"), nullopt}}}}) {}
 
   const std::string filepath_;
   const std::unique_ptr<const RoadGeometry> road_geometry_;
   const std::unique_ptr<const RoadRulebook> rulebook_;
   const std::unique_ptr<const TrafficLightBook> traffic_light_book_;
   const std::vector<Phase> expected_phases_;
+  const std::unordered_map<Phase::Id, std::vector<PhaseRing::NextPhase>>
+      expected_next_phases_;
 };
 
 TEST_F(TestLoading2x2IntersectionPhasebook, LoadFromFile) {
@@ -247,6 +253,14 @@ TEST_F(TestLoading2x2IntersectionPhasebook, LoadFromFile) {
   for (const auto& expected_phase : expected_phases_) {
     EXPECT_TRUE(
         MALIPUT_IS_EQUAL(expected_phase, phases.at(expected_phase.id())));
+  }
+
+  const std::unordered_map<Phase::Id, std::vector<PhaseRing::NextPhase>>&
+      next_phases = ring->next_phases();
+  EXPECT_EQ(next_phases.size(), expected_next_phases_.size());
+  for (const auto& expected_next_phase : expected_next_phases_) {
+    EXPECT_TRUE(MALIPUT_IS_EQUAL(expected_next_phase.second,
+                                 next_phases.at(expected_next_phase.first)));
   }
 }
 

@@ -4,6 +4,7 @@ import unittest
 import warnings
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.lcm import DrakeMockLcm
 from pydrake.systems.framework import DiagramBuilder, InputPort, OutputPort
 from pydrake.common.deprecation import DrakeDeprecationWarning
@@ -38,6 +39,12 @@ class TestGeometry(unittest.TestCase):
                         scene_graph.get_pose_bundle_output_port()))
             mut.DispatchLoadMessage(
                 scene_graph=scene_graph, lcm=lcm)
+
+    def test_frame_pose_vector_api(self):
+        mut.FramePoseVector()
+        with catch_drake_warnings(expected_count=1):
+            mut.FramePoseVector(source_id=mut.SourceId.get_new_id(),
+                                ids=[mut.FrameId.get_new_id()])
 
     def test_query_object_api(self):
         # TODO(eric.cousineau): Create self-contained unittests (#9899).
@@ -78,6 +85,14 @@ class TestGeometry(unittest.TestCase):
         self.assertTupleEqual(obj.p_ACa.shape, (3,))
         self.assertTupleEqual(obj.p_BCb.shape, (3,))
         self.assertIsInstance(obj.distance, float)
+        self.assertTupleEqual(obj.nhat_BA_W.shape, (3,))
+
+    def test_signed_distance_to_point_api(self):
+        obj = mut.SignedDistanceToPoint()
+        self.assertIsInstance(obj.id_G, mut.GeometryId)
+        self.assertTupleEqual(obj.p_GN.shape, (3,))
+        self.assertIsInstance(obj.distance, float)
+        self.assertTupleEqual(obj.grad_W.shape, (3,))
 
     def test_shape_constructors(self):
         box_mesh_path = FindResourceOrThrow(

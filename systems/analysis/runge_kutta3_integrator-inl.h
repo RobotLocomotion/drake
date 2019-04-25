@@ -150,9 +150,7 @@ bool RungeKutta3Integrator<T>::DoStep(const T& h) {
   //              avoid the need for save_xc0_ and this copy altogether.
   err_est_vec_ = save_xc0_;  // ε ← xc₀
 
-  // TODO(sherm1) This is xcdot₀, not xcdot⁽ᵃ⁾! Should be xcdot_a; issue #10633.
-  xcdot0.ScaleAndAddToVector(h, &err_est_vec_);      // ε += h xcdot₀   (WRONG!)
-  // xcdot_a.ScaleAndAddToVector(h, &err_est_vec_);  // ε += h xcdot⁽ᵃ⁾ (RIGHT!)
+  xcdot_a.ScaleAndAddToVector(h, &err_est_vec_);     // ε += h xcdot⁽ᵃ⁾
   xc.ScaleAndAddToVector(-1.0, &err_est_vec_);       // ε -= xc₁
   err_est_vec_ = err_est_vec_.cwiseAbs();
   this->get_mutable_error_estimate()->SetFromVector(err_est_vec_);

@@ -12,6 +12,7 @@
 #include "drake/solvers/solve.h"
 #include "drake/systems/primitives/linear_system.h"
 #include "drake/systems/primitives/piecewise_polynomial_linear_system.h"
+#include "drake/systems/primitives/symbolic_vector_system.h"
 
 namespace drake {
 namespace systems {
@@ -101,7 +102,8 @@ std::unique_ptr<AffineSystem<double>> MakeAffineSystem(const double time_step) {
 
 }  // namespace
 
-// This example will NOT use the symbolic constraints.
+// This example will NOT use the symbolic constraints.  It tests
+// DirectTranscriptionConstraint with a discrete-time system.
 GTEST_TEST(DirectTranscriptionTest, DiscreteTimeConstraintTest) {
   const double kTimeStep = 1.0;
   CubicPolynomialSystem<double> system(kTimeStep);
@@ -110,8 +112,7 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeConstraintTest) {
   int kNumSampleTimes = 3;
   DirectTranscription prog(&system, *context, kNumSampleTimes);
 
-  // TODO(russt):  Uncomment this upon resolution of #6878.
-  // EXPECT_EQ(prog.fixed_timestep(),kTimeStep);
+  EXPECT_EQ(prog.fixed_timestep(), kTimeStep);
 
   // Sets all decision variables to trivial known values (1,2,3,...).
   prog.SetInitialGuessForAllVariables(
@@ -132,7 +133,49 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeConstraintTest) {
   }
 }
 
-// This example WILL use the symbolic constraints.
+// This example will not use the symbolic constraints (because it has nonlinear
+// dynamics).  It tests DirectTranscriptionConstraint with a continuous-time
+// system.
+GTEST_TEST(DirectTranscriptionTest, ContinuousTimeConstraintTest) {
+  const double kTimeStep = 0.25;
+
+  // xdot = sin(x)
+  using std::sin;
+  Variable x{"x"};
+  SymbolicVectorSystem<double> system(
+      {}, Vector1<Variable>{x}, Vector0<Variable>{},
+      Vector1<Expression>{sin(x)}, Vector0<Expression>{});
+
+  const auto context = system.CreateDefaultContext();
+  int kNumSampleTimes = 3;
+  DirectTranscription prog(&system, *context, kNumSampleTimes, kTimeStep);
+
+  EXPECT_EQ(prog.fixed_timestep(), kTimeStep);
+
+  // Sets all decision variables to trivial known values (1,2,3,...).
+  prog.SetInitialGuessForAllVariables(
+      Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
+
+  // Constructor should add dynamic constraints, and these are the
+  // only generic constraints that should be in the program so far.
+  const std::vector<solvers::Binding<solvers::Constraint>>&
+      dynamic_constraints = prog.generic_constraints();
+  EXPECT_EQ(dynamic_constraints.size(), kNumSampleTimes - 1);
+  // In fact, there are no other constraints (at least not yet):
+  EXPECT_EQ(dynamic_constraints.size(), prog.GetAllConstraints().size());
+
+  using std::pow;
+  for (int i = 0; i < (kNumSampleTimes - 1); i++) {
+    double state_i = prog.GetInitialGuess(prog.state(i))[0];
+    EXPECT_NEAR(
+        prog.EvalBindingAtInitialGuess(dynamic_constraints[i])[0],
+        prog.GetInitialGuess(prog.state(i + 1)[0]) - state_i -
+        kTimeStep*sin(state_i), 1e-14);
+  }
+}
+
+// This example WILL use the symbolic constraints; it tests an affine
+// discrete-time system.
 GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSymbolicConstraintTest) {
   const double kTimeStep = 0.1;
   std::unique_ptr<AffineSystem<double>> system = MakeAffineSystem(kTimeStep);
@@ -141,8 +184,7 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSymbolicConstraintTest) {
   int kNumSampleTimes = 3;
   DirectTranscription prog(system.get(), *context, kNumSampleTimes);
 
-  // TODO(russt):  Uncomment this upon resolution of #6878.
-  // EXPECT_EQ(prog.fixed_timestep(),kTimeStep);
+  EXPECT_EQ(prog.fixed_timestep(), kTimeStep);
 
   // Sets all decision variables to trivial known values (1,2,3,...).
   prog.SetInitialGuessForAllVariables(
@@ -173,7 +215,51 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSymbolicConstraintTest) {
   }
 }
 
-// This example tests the LinearSystem specialization of the constructor.
+// This example WILL use the symbolic constraints; it tests a continuous-time
+// system.
+GTEST_TEST(DirectTranscriptionTest, ContinuousTimeSymbolicConstraintTest) {
+  std::unique_ptr<AffineSystem<double>> system = MakeAffineSystem(0.0);
+
+  const auto context = system->CreateDefaultContext();
+  int kNumSampleTimes = 3;
+  const double kTimeStep = 0.1;
+  DirectTranscription prog(system.get(), *context, kNumSampleTimes, kTimeStep);
+
+  EXPECT_EQ(prog.fixed_timestep(), kTimeStep);
+
+  // Sets all decision variables to trivial known values (1,2,3,...).
+  prog.SetInitialGuessForAllVariables(
+      Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
+
+  // Constructor should add dynamic constraints, and these should have been
+  // added as linear equality constraints.  Since system has an input, there
+  // is also one additional constraint from
+  // ConstrainEqualInputAtFinalTwoTimesteps.
+  const std::vector<solvers::Binding<solvers::LinearEqualityConstraint>>&
+      dynamic_constraints = prog.linear_equality_constraints();
+  EXPECT_EQ(dynamic_constraints.size(), kNumSampleTimes);
+  // Check that there are no nonlinear constraints in the program.
+  EXPECT_EQ(prog.generic_constraints().size(), 0);
+
+  // All but the last constraint are DirectTranscriptionConstraints.
+  for (int i = 0; i < (kNumSampleTimes - 1); i++) {
+    const Vector1d dynamic_constraint_val =
+        prog.EvalBindingAtInitialGuess(dynamic_constraints[i]) -
+        dynamic_constraints[i].evaluator()->lower_bound();
+    const Vector1d dynamic_constraint_expected =
+        prog.GetInitialGuess(prog.state(i + 1)) -
+        prog.GetInitialGuess(prog.state(i)) -
+        kTimeStep * system->A() * prog.GetInitialGuess(prog.state(i)) -
+        kTimeStep * system->B() * prog.GetInitialGuess(prog.input(i)) -
+        kTimeStep * system->f0();
+
+    // Check that the system's state equation still holds with equality,
+    // regardless of the specific encoding MathematicalProgram chooses.
+    EXPECT_TRUE(CompareMatrices(dynamic_constraint_val,
+        dynamic_constraint_expected, 1e-14));
+  }
+}
+
 GTEST_TEST(DirectTranscriptionTest, DiscreteTimeLinearSystemTest) {
   Eigen::Matrix2d A, B;
   // clang-format off
@@ -197,7 +283,8 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeLinearSystemTest) {
       Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
 
   // Constructor should add dynamic constraints, and these should have been
-  // added as linear equality constraints.
+  // added as linear equality constraints.  There is also one additional
+  // constraints from ConstrainEqualInputAtFinalTwoTimesteps.
   const std::vector<solvers::Binding<solvers::LinearEqualityConstraint>>&
       dynamic_constraints = prog.linear_equality_constraints();
   EXPECT_EQ(dynamic_constraints.size(), kNumSampleTimes);
@@ -256,7 +343,8 @@ GTEST_TEST(DirectTranscriptionTest, TimeVaryingLinearSystemTest) {
       Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
 
   // Constructor should add dynamic constraints, and these should have been
-  // added as linear equality constraints.
+  // added as linear equality constraints.  There is also one additional
+  // constraint from ConstrainEqualInputAtFinalTwoTimesteps.
   const std::vector<solvers::Binding<solvers::LinearEqualityConstraint>>&
       dynamic_constraints = prog.linear_equality_constraints();
   EXPECT_EQ(dynamic_constraints.size(), kNumSampleTimes);
@@ -296,7 +384,7 @@ GTEST_TEST(DirectTranscriptionTest, AddRunningCostTest) {
   const solvers::MathematicalProgramResult result = Solve(prog);
   EXPECT_TRUE(result.is_success());
 
-  // Compute the expected cost as c[N] + \Sum_{i = 0...N-1} h * c[i]
+  // Compute the expected cost as c[N] + \sum_{i = 0...N-1} h * c[i]
   //   where c[i] is the running cost and c[N] is the terminal cost.
   double expected_cost{0.};
   for (int i{0}; i < kNumSamples - 1; i++) {

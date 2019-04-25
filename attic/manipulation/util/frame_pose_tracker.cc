@@ -100,7 +100,6 @@ void FramePoseTracker::Init() {
 
   pose_vector_output_port_index_ =
       this->DeclareAbstractOutputPort(
-          geometry::FramePoseVector<double>(source_id_, frame_ids),
           &FramePoseTracker::OutputStatus).get_index();
 }
 

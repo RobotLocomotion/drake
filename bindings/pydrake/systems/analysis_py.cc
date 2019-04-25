@@ -1,9 +1,11 @@
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/systems/analysis/integrator_base.h"
+#include "drake/systems/analysis/monte_carlo.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
@@ -108,6 +110,43 @@ PYBIND11_MODULE(analysis, m) {
             doc.Simulator.set_target_realtime_rate.doc);
   };
   type_visit(bind_scalar_types, pysystems::NonSymbolicScalarPack{});
+
+  // Monte Carlo Testing
+  {
+    constexpr auto& doc = pydrake_doc.drake.systems.analysis;
+
+    m.def("RandomSimulation",
+        WrapCallbacks(
+            [](const analysis::SimulatorFactory make_simulator,
+                const analysis::ScalarSystemFunction& output, double final_time,
+                RandomGenerator* generator) -> double {
+              return analysis::RandomSimulation(
+                  make_simulator, output, final_time, generator);
+            }),
+        py::arg("make_simulator"), py::arg("output"), py::arg("final_time"),
+        py::arg("generator"), doc.RandomSimulation.doc);
+
+    py::class_<analysis::RandomSimulationResult>(
+        m, "RandomSimulationResult", doc.RandomSimulationResult.doc)
+        .def_readwrite("output", &analysis::RandomSimulationResult::output,
+            doc.RandomSimulationResult.output.doc)
+        .def_readonly("generator_snapshot",
+            &analysis::RandomSimulationResult::generator_snapshot,
+            doc.RandomSimulationResult.generator_snapshot.doc);
+
+    m.def("MonteCarloSimulation",
+        WrapCallbacks(
+            [](const analysis::SimulatorFactory make_simulator,
+                const analysis::ScalarSystemFunction& output, double final_time,
+                int num_samples, RandomGenerator* generator)
+                -> std::vector<analysis::RandomSimulationResult> {
+              return analysis::MonteCarloSimulation(
+                  make_simulator, output, final_time, num_samples, generator);
+            }),
+        py::arg("make_simulator"), py::arg("output"), py::arg("final_time"),
+        py::arg("num_samples"), py::arg("generator"),
+        doc.MonteCarloSimulation.doc);
+  }
 }
 
 }  // namespace pydrake
