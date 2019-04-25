@@ -94,7 +94,7 @@ struct AssignCapture {
 
 template <typename T>
 struct DummyAssignCapture {
-  DummyAssignCapture(const std::initializer_list<T*>& mutables) {}
+  DummyAssignCapture(const std::initializer_list<T*>&) {}
   void operator=(bool) {}
 };
 

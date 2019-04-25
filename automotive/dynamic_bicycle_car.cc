@@ -113,7 +113,7 @@ T DynamicBicycleCar<T>::CalcLateralTireForce(const T& tire_slip_angle,
   using std::atan2;
 
   using namespace drake::symbolic::branching_literals;  // NOLINT
-  T result;
+  T result{};
   lazy_assign(&result) =
   lazy_if (abs(tire_slip_angle) < atan2(3 * mu * f_z, c_alpha)) ^[&]() {  // NOLINT
     result =
