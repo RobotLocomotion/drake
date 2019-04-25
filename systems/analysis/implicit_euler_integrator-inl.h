@@ -312,7 +312,7 @@ bool ImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0, const T& h,
   std::function<VectorX<T>()> g =
       [&xt0, h, context, this]() {
         return (context->get_continuous_state().CopyToVector() - xt0 -
-            h * this->EvalTimeDerivativesUsingContext()).eval();
+            h * this->EvalTimeDerivatives(*context).CopyToVector()).eval();
       };
 
   // Use the current state as the candidate value for the next state.
@@ -349,7 +349,7 @@ bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& t0, const T& h,
   std::function<VectorX<T>()> g =
       [&xt0, h, &dx0, context, this]() {
         return (context->get_continuous_state().CopyToVector() - xt0 - h/2 *
-            (dx0 + this->EvalTimeDerivativesUsingContext().eval())).eval();
+            (dx0 + this->EvalTimeDerivatives(*context).CopyToVector().eval())).eval();
       };
 
   // Store statistics before calling StepAbstract(). The difference between
@@ -403,7 +403,8 @@ bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
   // is calculated at this point (early on in the integration process) in order
   // to reuse the derivative evaluation, via the cache, from the last
   // integration step (if possible).
-  const VectorX<T> dx0 = this->EvalTimeDerivativesUsingContext();
+  const VectorX<T> dx0 = this->EvalTimeDerivatives(
+      this->get_context()).CopyToVector();
 
   // Do the Euler step.
   if (!StepImplicitEuler(t0, h, xt0, xtplus_ie)) {

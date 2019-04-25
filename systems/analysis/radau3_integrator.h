@@ -46,7 +46,7 @@ namespace systems {
  *                    Equations II (Stiff and Differential-Algebraic Problems).
  *                    Springer, 1996.
  * - [Lambert, 1991]  J. D. Lambert. Numerical Methods for Ordinary Differential
- *                    Equations. John Wiley & Sons, 1991. * 
+ *                    Equations. John Wiley & Sons, 1991. *
  */
 template <class T, int num_stages = 2>
 class Radau3Integrator final : public ImplicitIntegrator<T> {
@@ -162,6 +162,10 @@ Radau3Integrator<T, num_stages>::Radau3Integrator(const System<T>& system,
     Context<T>* context) : ImplicitIntegrator<T>(system, context) {
   A_.resize(num_stages, num_stages);
 
+  // TODO(edrumwri) Convert A_, c_, b_, and d_ to fixed-size when Drake supports
+  // "if constexpr" (C++17 feature). Lack of partial template function
+  // specialization makes turning those into fixed-sizes painful at the moment.
+
   if (num_stages == 2) {
     // Set the matrix coefficients (from [Hairer, 1996] Table 5.5).
     A_(0, 0) = 5.0/12;     A_(0, 1) = -1.0/12;
@@ -203,6 +207,8 @@ void Radau3Integrator<T, num_stages>::DoInitialize() {
       this->get_context().get_continuous_state_vector().size();
   A_tp_eye_ = CalcTensorProduct(A_, MatrixX<T>::Identity(state_dim, state_dim));
 
+  F_of_g_.resize(state_dim * num_stages);
+
   // Allocate storage for changes to state variables during Newton-Raphson.
   dx_state_ = this->get_system().AllocateTimeDerivatives();
 
@@ -226,14 +232,13 @@ const VectorX<T>& Radau3Integrator<T, num_stages>::ComputeFofg(
       const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& Z) {
   Context<T>* context = this->get_mutable_context();
   const int state_dim = xt0.size();
-  F_of_g_.resize(state_dim * num_stages);
 
   // Evaluate the derivative at each stage.
   for (int i = 0, j = 0; i < num_stages; ++i, j += state_dim) {
     const auto Z_i = Z.segment(j, state_dim);
     context->SetTimeAndContinuousState(t0 + c_[i] * h, xt0 + Z_i);
     auto F_i = F_of_g_.segment(j, state_dim);
-    F_i = this->EvalTimeDerivativesUsingContext();
+    F_i = this->EvalTimeDerivatives(*context).CopyToVector();
   }
 
   return F_of_g_;
@@ -273,12 +278,11 @@ bool Radau3Integrator<T, num_stages>::StepRadau3(const T& t0, const T& h,
   SPDLOG_DEBUG(drake::log(), "StepRadau3() entered for t={}, h={}, trial={}",
                t0, h, trial);
 
-  // Initialize the z iterate using (IV.8.5) in [Hairer, 1996], p. 120.
-  Z_.setZero(state_dim * num_stages);
-
   // TODO(edrumwri) Experiment with setting this as recommended in
   // [Hairer, 1996], p. 120.
-  // Initialize xt+.
+  // Initialize the z iterate using (IV.8.5) in [Hairer, 1996], p. 120 (and
+  // the corresponding xt+).
+  Z_.setZero(state_dim * num_stages);
   *xtplus = xt0;
 
   // Set the iteration matrix construction method.
@@ -350,7 +354,7 @@ bool Radau3Integrator<T, num_stages>::StepRadau3(const T& t0, const T& h,
 
     // The check below looks for convergence using machine epsilon. Without
     // this check, the convergence criteria can be applied when
-    // |dZ_norm| ~ 1e-22 (one example taken from practice), which does not
+    // |dx_norm| ~ 1e-22 (one example taken from practice), which does not
     // allow the norm to be reduced further. What happens: dx_norm will become
     // equivalent to last_dZ_norm, making theta = 1, and eta = infinity. Thus,
     // convergence would never be identified.
@@ -361,6 +365,10 @@ bool Radau3Integrator<T, num_stages>::StepRadau3(const T& t0, const T& h,
     // [Hairer, 1996] notes that this convergence strategy should only be
     // applied after *at least* two iterations (p. 121).
     if (!converged && iter >= 1) {
+      // TODO(edrumwri) Hairer's RADAU5 implementation (allegedly) uses
+      // theta = sqrt(dx[k] / dx[k-2]) while DASSL uses
+      // theta = pow(dx[k] / dx[0], 1/k), so investigate setting
+      // theta to these alternative values for minimizing convergence failures.
       const T theta = dx_norm / last_dx_norm;
       const T eta = theta / (1 - theta);
       SPDLOG_DEBUG(drake::log(), "Newton-Raphson loop {} theta: {}, eta: {}",
@@ -389,8 +397,10 @@ bool Radau3Integrator<T, num_stages>::StepRadau3(const T& t0, const T& h,
     if (converged) {
       // Set the solution using (IV.8.2b) in [Hairer, 1996].
       xtplus->setZero();
-      for (int i = 0, j = 0; i < num_stages; ++i, j += state_dim)
-        *xtplus += d_[i] * Z_.segment(j, state_dim);
+      for (int i = 0, j = 0; i < num_stages; ++i, j += state_dim) {
+        if (d_[i] != 0.0)
+          *xtplus += d_[i] * Z_.segment(j, state_dim);
+      }
       *xtplus += xt0;
 
       SPDLOG_DEBUG(drake::log(), "Final state: {}", xtplus->transpose());
@@ -424,6 +434,7 @@ bool Radau3Integrator<T, num_stages>::StepRadau3(const T& t0, const T& h,
 //        and factoring the iteration matrix.
 // @param[out] iteration_matrix the updated and factored iteration matrix on
 //             return.
+// @param trial which trial the StepAbstract is in when calling this method.
 // @returns `false` if the calling stepping method should indicate failure;
 //          `true` otherwise.
 // @post the state in the internal context may or may not be altered on return;
@@ -469,6 +480,7 @@ bool Radau3Integrator<T, num_stages>::CalcMatrices(
 
     case 2: {
       // For the second trial, re-construct and factor the iteration matrix.
+      ++num_iter_factorizations_;
       compute_and_factor_iteration_matrix(J, h, iteration_matrix);
       return true;
     }
@@ -481,10 +493,7 @@ bool Radau3Integrator<T, num_stages>::CalcMatrices(
       if (!this->last_call_succeeded()) {
         return false;
       } else {
-        // Reform the Jacobian matrix and refactor the negation of
-        // the iteration matrix. The idea of using the negation of this matrix
-        // is that an O(n^2) subtraction is not necessary as would
-        // be the case with MatrixX<T>::Identity(n, n) - J * (h / scale).
+        // Reform the Jacobian matrix and refactor the iteration matrix.
         J = this->CalcJacobian(t, xt);
         ++num_iter_factorizations_;
         compute_and_factor_iteration_matrix(J, h, iteration_matrix);
@@ -519,6 +528,7 @@ bool Radau3Integrator<T, num_stages>::AttemptStep(const T& t0, const T& h,
     const VectorX<T>& xt0, VectorX<T>* xtplus_radau3) {
   using std::abs;
   DRAKE_ASSERT(xtplus_radau3);
+  DRAKE_ASSERT(xtplus_radau3->size() == xt0.size());
 
   // Set the time and state in the context.
   this->get_mutable_context()->SetTimeAndContinuousState(t0, xt0);
@@ -527,7 +537,8 @@ bool Radau3Integrator<T, num_stages>::AttemptStep(const T& t0, const T& h,
   // point (early on in the integration process) in order to reuse the
   // derivative evaluation, via the cache, from the last integration step (if
   // possible).
-  const VectorX<T> dx0 = this->EvalTimeDerivativesUsingContext();
+  const VectorX<T> dx0 = this->EvalTimeDerivatives(
+      this->get_context()).CopyToVector();
 
   // Use the current state as the candidate value for the next state.
   // [Hairer 1996] validates this choice (p. 120).
@@ -561,11 +572,7 @@ bool Radau3Integrator<T, num_stages>::DoStep(const T& h) {
   VectorX<T> xtplus_radau3(xt0.size());
 
   // If the requested h is less than the minimum step size, we'll advance time
-  // using two explicit Euler steps of size h/2. For error estimation, we also
-  // take a single step of size h. We can estimate the error in the larger
-  // step that way, but note that we propagate the two half-steps on the
-  // assumption the result will be better despite not having an error estimate
-  // for them (that's called "local extrapolation").
+  // using an explicit Euler step.
   if (h < this->get_working_minimum_step_size()) {
     SPDLOG_DEBUG(drake::log(), "-- requested step too small, taking explicit "
         "step instead");
