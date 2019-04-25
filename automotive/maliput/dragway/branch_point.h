@@ -60,7 +60,7 @@ class BranchPoint final : public api::BranchPoint {
   ~BranchPoint() final = default;
 
  private:
-  const api::BranchPointId do_id() const override { return id_; }
+  api::BranchPointId do_id() const override { return id_; }
 
   const api::RoadGeometry* do_road_geometry() const override;
 
