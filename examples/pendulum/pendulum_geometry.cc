@@ -92,6 +92,8 @@ PendulumGeometry::PendulumGeometry(geometry::SceneGraph<double>* scene_graph) {
       source_id_, id, MakeDrakeVisualizerProperties(Vector4d(0, 0, 1, 1)));
 }
 
+PendulumGeometry::~PendulumGeometry() = default;
+
 void PendulumGeometry::OutputGeometryPose(
     const systems::Context<double>& context,
     geometry::FramePoseVector<double>* poses) const {

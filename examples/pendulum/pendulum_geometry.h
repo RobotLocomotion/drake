@@ -1,6 +1,5 @@
 #pragma once
 
-#include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -21,6 +20,7 @@ namespace pendulum {
 class PendulumGeometry final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PendulumGeometry);
+  ~PendulumGeometry() final;
 
   /// Creates, adds, and connects a PendulumGeometry system into the given
   /// `builder`.  Both the `pendulum_state.get_system()` and `scene_graph`
