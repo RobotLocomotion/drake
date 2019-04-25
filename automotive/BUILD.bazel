@@ -159,6 +159,7 @@ drake_cc_library(
     hdrs = ["dynamic_bicycle_car.h"],
     deps = [
         ":generated_vectors",
+        "//common:symbolic_cond_literals",
         "//systems/framework",
     ],
 )

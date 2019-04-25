@@ -3,8 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
-#include "drake/common/cond.h"
 #include "drake/common/default_scalars.h"
+#include "drake/common/symbolic_cond_literals.h"
 
 namespace drake {
 namespace automotive {
@@ -112,19 +112,20 @@ T DynamicBicycleCar<T>::CalcLateralTireForce(const T& tire_slip_angle,
   using std::abs;
   using std::atan2;
 
-  const T f_y_non_saturated_tire =
-      -c_alpha * tan(tire_slip_angle) +
-      ((c_alpha * c_alpha) / (3 * mu * f_z)) * abs(tan(tire_slip_angle)) *
-          tan(tire_slip_angle) -
-      (pow(c_alpha, 3) / (27 * (mu * mu) * (f_z * f_z))) *
-          pow(tan(tire_slip_angle), 3);
-  const T f_y_saturated_tire =
-      -mu * f_z * abs(tire_slip_angle) / tire_slip_angle;
-
-  // Note: the cond function is used as an if-else statement in order to make
-  // the conditional symbolic::Expression capable.
-  return cond(abs(tire_slip_angle) < atan2(3 * mu * f_z, c_alpha),
-              f_y_non_saturated_tire, f_y_saturated_tire);
+  using namespace drake::symbolic::branching_literals;  // NOLINT
+  T result;
+  lazy_assign(&result) =
+  lazy_if (abs(tire_slip_angle) < atan2(3 * mu * f_z, c_alpha)) ^[&]() {  // NOLINT
+    result =
+        -c_alpha * tan(tire_slip_angle) +
+        ((c_alpha * c_alpha) / (3 * mu * f_z)) * abs(tan(tire_slip_angle)) *
+            tan(tire_slip_angle) -
+        (pow(c_alpha, 3) / (27 * (mu * mu) * (f_z * f_z))) *
+            pow(tan(tire_slip_angle), 3);
+  } || lazy_else ^[&]() {  // NOLINT
+    result = -mu * f_z * abs(tire_slip_angle) / tire_slip_angle;
+  };
+  return result;
 }
 
 template <typename T>
