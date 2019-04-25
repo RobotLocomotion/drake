@@ -71,7 +71,9 @@ LIBDRAKE_COMPONENTS = [
     "//geometry/dev",
     "//geometry/dev/render",
     "//geometry/dev/render/shaders",
+    "//geometry/proximity",
     "//geometry/query_results",
+    "//geometry/render",
     "//geometry/test_utilities:geometry_set_tester",  # unpackaged
     "//lcm",
     "//manipulation/kuka_iiwa",
@@ -90,6 +92,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/hydroelastic_contact",
     "//multibody/inverse_kinematics",
     "//multibody/math",
+    "//multibody/optimization",
     "//multibody/parsing",
     "//multibody/plant",
     "//multibody/plant:contact_results_to_lcm",  # unpackaged
