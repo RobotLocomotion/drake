@@ -218,6 +218,23 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
     return SpatialAcceleration<T>(*this).ShiftInPlace(p_PoBo_E, w_WP_E);
   }
 
+  /// (Advanced) Given `this` spatial acceleration `A_WP` of a frame P in a
+  /// second frame W, this operation is only valid when the angular velocity
+  /// `w_WP` of P in W is zero.
+  /// Refer to Shift(const Vector3<T>&, const Vector3<T>&) for the full version
+  /// that includes velocity terms. This method can be used to avoid unnecessary
+  /// computation when shifting `this` spatial acceleration of a frame P into
+  /// the spatial acceleration of the shifted frame Pb. The shift position
+  /// vector is given by `p_PoBo_E`, expresssed in the same frame E as `this`
+  /// spatial` acceleration. Mathematically, this returns
+  /// `A_WPb = Φᵀ(p_PoBo)A_WP`, where `Φ(p_PoBo)` is the rigid shift operator,
+  /// see SpatialVelocity::Shift().
+  SpatialAcceleration<T> Shift(const Vector3<T>& p_PoBo_E) const {
+    const Vector3<T>& alpha_WP_E = this->rotational();
+    const Vector3<T>& a_WBo_E = this->translational();
+    return SpatialAcceleration<T>(alpha_WP_E,
+                                  a_WBo_E + alpha_WP_E.cross(p_PoBo_E));
+  }
 
   /// This method composes `this` spatial acceleration `A_WP` of a frame P
   /// measured in a frame W, with that of a third frame B moving in P with
@@ -239,9 +256,8 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   ///                               centrifugal         Coriolis
   /// </pre>
   /// The equation above shows that composing spatial accelerations cannot be
-  /// simply accomplished by adding `A_WP` with `A_PB` (this is the reason why
-  /// this class does not overload the `operator+()` and provides this method
-  /// instead). Moreover, we see that, unlike with angular velocities, angular
+  /// simply accomplished by adding `A_WP` with `A_PB`.
+  /// Moreover, we see that, unlike with angular velocities, angular
   /// accelerations cannot be added in order to compose them. That is
   /// `w_AC = w_AB + w_BC` but `alpha_AC ≠ alpha_AB + alpha_BC` due to the cross
   /// term `w_AC x w_BC`. See the derivation below for more details.
