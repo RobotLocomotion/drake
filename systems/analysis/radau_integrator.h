@@ -14,19 +14,27 @@
 namespace drake {
 namespace systems {
 
+namespace internal {
+__attribute__((noreturn))
+inline void EmitNoErrorEstimatorStatAndMessage() {
+  throw std::logic_error("No error estimator is currently implemented, so "
+      "query error estimator statistics is not yet supported.");
+}
+}  // namespace internal
+
 /**
  * A third-order, fully implicit integrator without error estimation.
  * @tparam T The vector element type, which must be a valid Eigen scalar.
- * @tparam num_stages the number of stages used in this integrator. Set this to 1
- *                   for the integrator to be implicit Euler and 2 for it to be
- *                   Radau3 (default). Other values are invalid.
+ * @tparam num_stages the number of stages used in this integrator. Set this to
+ *                    1 for the integrator to be implicit Euler and 2 for it to
+ *                    Radau3 (default). Other values are invalid.
  *
  * A two-stage Radau IIa (see [Hairer, 1996], Ch. 5) method is used for
  * propagating the state forward, by default. The integrator can also be
  * constructed using a single-stage method, in which case it is equivalent to
  * an implicit Euler method, by setting num_stages=1.
  *
- * The Radau3 method is known to be L-Stable, meaning both that
+ * The Radau method is known to be L-Stable, meaning both that
  * applying it at a fixed integration step to the  "test" equation `y(t) = eᵏᵗ`
  * yields zero (for `k < 0` and `t → ∞`) *and* that it is also A-Stable.
  * A-Stability, in turn, means that the method can integrate the linear constant
@@ -49,28 +57,22 @@ namespace systems {
  *                    Equations. John Wiley & Sons, 1991. *
  */
 template <class T, int num_stages = 2>
-class Radau3Integrator final : public ImplicitIntegrator<T> {
+class RadauIntegrator final : public ImplicitIntegrator<T> {
   static_assert(num_stages == 1 || num_stages == 2,
       "Only 1-stage and 2-stage Radau are supported.");
 
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Radau3Integrator)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RadauIntegrator)
 
-  explicit Radau3Integrator(const System<T>& system,
+  explicit RadauIntegrator(const System<T>& system,
       Context<T>* context = nullptr);
-  ~Radau3Integrator() final = default;
+  ~RadauIntegrator() final = default;
 
   bool supports_error_estimation() const final { return false; }
 
   int get_error_estimate_order() const final { return 0; }
 
  private:
-  int64_t EmitNoErrorEstimatorStatAndMessage() const {
-    throw std::logic_error("No error estimator is currently implemented, so "
-        "query error estimator statistics is not yet supported.");
-    return 0;
-  }
-
   int64_t do_get_num_newton_raphson_iterations() const final {
     return num_nr_iterations_;
   }
@@ -80,26 +82,26 @@ class Radau3Integrator final : public ImplicitIntegrator<T> {
   }
 
   int64_t do_get_num_error_estimator_derivative_evaluations() const final {
-    return EmitNoErrorEstimatorStatAndMessage();
+    internal::EmitNoErrorEstimatorStatAndMessage();
   }
 
   int64_t do_get_num_error_estimator_derivative_evaluations_for_jacobian()
       const final {
-    return EmitNoErrorEstimatorStatAndMessage();
+    internal::EmitNoErrorEstimatorStatAndMessage();
   }
 
   int64_t do_get_num_error_estimator_newton_raphson_iterations()
       const final {
-    return EmitNoErrorEstimatorStatAndMessage();
+    internal::EmitNoErrorEstimatorStatAndMessage();
   }
 
   int64_t do_get_num_error_estimator_jacobian_evaluations() const final {
-    return EmitNoErrorEstimatorStatAndMessage();
+    internal::EmitNoErrorEstimatorStatAndMessage();
   }
 
   int64_t do_get_num_error_estimator_iteration_matrix_factorizations()
       const final {
-    return EmitNoErrorEstimatorStatAndMessage();
+    internal::EmitNoErrorEstimatorStatAndMessage();
   }
 
   bool AttemptStep(const T& t0, const T& h,
@@ -109,10 +111,10 @@ class Radau3Integrator final : public ImplicitIntegrator<T> {
   void DoInitialize() final;
   void DoResetImplicitIntegratorStatistics() final;
   bool DoStep(const T& h) final;
-  bool StepRadau3(const T& t0, const T& h, const VectorX<T>& xt0,
+  bool StepRadau(const T& t0, const T& h, const VectorX<T>& xt0,
       VectorX<T>* xtplus, int trial = 1);
   static MatrixX<T> CalcTensorProduct(const MatrixX<T>& A, const MatrixX<T>& B);
-  static void ComputeRadau3IterationMatrix(const MatrixX<T>& J, const T& h,
+  static void ComputeRadauIterationMatrix(const MatrixX<T>& J, const T& h,
       const MatrixX<double>& A,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
   bool CalcMatrices(const T& t, const VectorX<T>& xt, const T& h,
@@ -128,7 +130,7 @@ class Radau3Integrator final : public ImplicitIntegrator<T> {
   // The stage-scaling coefficients standard with Runge-Kutta-type integrators.
   MatrixX<double> A_;
 
-  // The iteration matrix for the Radau3 method.
+  // The iteration matrix for the Radau method.
   typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_radau3_;
 
   // The tensor product between A_ and an identity matrix. This product is
@@ -158,7 +160,7 @@ class Radau3Integrator final : public ImplicitIntegrator<T> {
 };
 
 template <class T, int num_stages>
-Radau3Integrator<T, num_stages>::Radau3Integrator(const System<T>& system,
+RadauIntegrator<T, num_stages>::RadauIntegrator(const System<T>& system,
     Context<T>* context) : ImplicitIntegrator<T>(system, context) {
   A_.resize(num_stages, num_stages);
 
@@ -189,13 +191,13 @@ Radau3Integrator<T, num_stages>::Radau3Integrator(const System<T>& system,
 }
 
 template <class T, int num_stages>
-void Radau3Integrator<T, num_stages>::DoResetImplicitIntegratorStatistics() {
+void RadauIntegrator<T, num_stages>::DoResetImplicitIntegratorStatistics() {
   num_iter_factorizations_ = 0;
   num_nr_iterations_ = 0;
 }
 
 template <class T, int num_stages>
-void Radau3Integrator<T, num_stages>::DoInitialize() {
+void RadauIntegrator<T, num_stages>::DoInitialize() {
   using std::isnan;
 
   // Compute the tensor product of A with the identity matrix. A is a
@@ -205,6 +207,10 @@ void Radau3Integrator<T, num_stages>::DoInitialize() {
 
   const int state_dim =
       this->get_context().get_continuous_state_vector().size();
+
+  // Compute A ⊗ I.
+  // TODO(edrumwri) The resulting matrix only has s²n non-zeros out of s²n²
+  // elements (where s is the number of stages)- take advantage of this.
   A_tp_eye_ = CalcTensorProduct(A_, MatrixX<T>::Identity(state_dim, state_dim));
 
   F_of_g_.resize(state_dim * num_stages);
@@ -228,7 +234,7 @@ void Radau3Integrator<T, num_stages>::DoInitialize() {
 // @param Z the current iterate.
 // @post the state of the internal context will be set to (t0, xt0) on return.
 template <class T, int num_stages>
-const VectorX<T>& Radau3Integrator<T, num_stages>::ComputeFofg(
+const VectorX<T>& RadauIntegrator<T, num_stages>::ComputeFofg(
       const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& Z) {
   Context<T>* context = this->get_mutable_context();
   const int state_dim = xt0.size();
@@ -244,21 +250,21 @@ const VectorX<T>& Radau3Integrator<T, num_stages>::ComputeFofg(
   return F_of_g_;
 }
 
-// Computes the next continuous state (at t0 + h) using the Radau3 method,
+// Computes the next continuous state (at t0 + h) using the Radau method,
 // assuming that the method is able to converge at that step size.
 // @param t0 the initial time.
 // @param h the integration step size to attempt.
 // @param xt0 the continuous state at time t0.
 // @param [in,out] the starting guess for x(t+h); the value for x(t+h) on
 //        return (assuming that h > 0).
-// @param trial the attempt for this approach (1-4). StepRadau3() uses more
+// @param trial the attempt for this approach (1-4). StepRadau() uses more
 //        computationally expensive methods as the trial numbers increase.
 // @post the internal context will be in an indeterminate state on returning
 //       `false`.
 // @returns `true` if the method was successfully able to take an integration
 //           step of size `h`.
 template <class T, int num_stages>
-bool Radau3Integrator<T, num_stages>::StepRadau3(const T& t0, const T& h,
+bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
     const VectorX<T>& xt0, VectorX<T>* xtplus, int trial) {
   using std::max;
   using std::min;
@@ -275,7 +281,7 @@ bool Radau3Integrator<T, num_stages>::StepRadau3(const T& t0, const T& h,
   // Verify xtplus
   DRAKE_ASSERT(xtplus && xtplus->size() == state_dim);
 
-  SPDLOG_DEBUG(drake::log(), "StepRadau3() entered for t={}, h={}, trial={}",
+  SPDLOG_DEBUG(drake::log(), "StepRadau() entered for t={}, h={}, trial={}",
                t0, h, trial);
 
   // TODO(edrumwri) Experiment with setting this as recommended in
@@ -288,7 +294,7 @@ bool Radau3Integrator<T, num_stages>::StepRadau3(const T& t0, const T& h,
   // Set the iteration matrix construction method.
   auto construct_iteration_matrix = [this](const MatrixX<T>& J, const T& dt,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) {
-    ComputeRadau3IterationMatrix(J, dt, this->A_, iteration_matrix);
+    ComputeRadauIterationMatrix(J, dt, this->A_, iteration_matrix);
   };
 
   // Calculate Jacobian and iteration matrices (and factorizations), as needed.
@@ -319,7 +325,9 @@ bool Radau3Integrator<T, num_stages>::StepRadau3(const T& t0, const T& h,
     // Evaluate the derivatives using the current iterate.
     const VectorX<T>& F_of_g = ComputeFofg(t0, h, xt0, Z_);
 
-    // Compute the state update using (IV.8.4) in [Hairer, 1996], p. 119.
+    // Compute the state update using (IV.8.4) in [Hairer, 1996], p. 119, i.e.:
+    // Solve (I − hA⊗J) ΔZᵏ = h (A⊗I) F(Zᵏ) - Zᵏ for ΔZᵏ, where:
+    // A_tp_eye ≡ (A⊗I) and (I − hA⊗J) is the iteration matrix.
     SPDLOG_DEBUG(drake::log(), "residual: {}",
         (A_tp_eye_ * (h * F_of_g) - Z_).transpose());
     VectorX<T> dZ = iteration_matrix_radau3_.Solve(
@@ -412,7 +420,7 @@ bool Radau3Integrator<T, num_stages>::StepRadau3(const T& t0, const T& h,
     last_dx_norm = dx_norm;
   }
 
-  SPDLOG_DEBUG(drake::log(), "StepRadau3() convergence failed");
+  SPDLOG_DEBUG(drake::log(), "StepRadau() convergence failed");
 
   // If Jacobian and iteration matrix factorizations are not reused, there
   // is nothing else we can try.
@@ -421,9 +429,9 @@ bool Radau3Integrator<T, num_stages>::StepRadau3(const T& t0, const T& h,
     return false;
   }
 
-  // Try StepRadau3 again, freshening Jacobians and iteration matrix
+  // Try StepRadau again, freshening Jacobians and iteration matrix
   // factorizations as helpful.
-  return StepRadau3(t0, h, xt0, xtplus, trial+1);
+  return StepRadau(t0, h, xt0, xtplus, trial+1);
 }
 
 // Computes necessary matrices for the Newton-Raphson iteration.
@@ -440,7 +448,7 @@ bool Radau3Integrator<T, num_stages>::StepRadau3(const T& t0, const T& h,
 // @post the state in the internal context may or may not be altered on return;
 //       if altered, it will be set to (t, xt).
 template <class T, int num_stages>
-bool Radau3Integrator<T, num_stages>::CalcMatrices(
+bool RadauIntegrator<T, num_stages>::CalcMatrices(
     const T& t, const VectorX<T>& xt, const T& h,
     const std::function<void(const MatrixX<T>&, const T&,
         typename ImplicitIntegrator<T>::IterationMatrix*)>&
@@ -511,11 +519,11 @@ bool Radau3Integrator<T, num_stages>::CalcMatrices(
   }
 }
 
-// Steps Radau3 forward by h, if possible.
+// Steps Radau forward by h, if possible.
 // @param t0 the initial time.
 // @param h the integration step size to attempt.
 // @param xt0 the continuous state at time t0.
-// @param[out] xtplus_radau3 contains the Radau3 integrator solution on return.
+// @param[out] xtplus_radau3 contains the Radau integrator solution on return.
 // @returns `true` if the integration was successful at the requested step size.
 // @pre The time and state in the system's context (stored by the integrator)
 //      are set to (t0, xt0) on entry.
@@ -524,7 +532,7 @@ bool Radau3Integrator<T, num_stages>::CalcMatrices(
 //       by this function returning `true`) and will be indeterminate on
 //       unsuccessful exit (indicated by this function returning `false`).
 template <class T, int num_stages>
-bool Radau3Integrator<T, num_stages>::AttemptStep(const T& t0, const T& h,
+bool RadauIntegrator<T, num_stages>::AttemptStep(const T& t0, const T& h,
     const VectorX<T>& xt0, VectorX<T>* xtplus_radau3) {
   using std::abs;
   DRAKE_ASSERT(xtplus_radau3);
@@ -544,9 +552,9 @@ bool Radau3Integrator<T, num_stages>::AttemptStep(const T& t0, const T& h,
   // [Hairer 1996] validates this choice (p. 120).
   *xtplus_radau3 = xt0;
 
-  // Do the Radau3 step.
-  if (!StepRadau3(t0, h, xt0, xtplus_radau3)) {
-    SPDLOG_DEBUG(drake::log(), "Radau3 approach did not converge for "
+  // Do the Radau step.
+  if (!StepRadau(t0, h, xt0, xtplus_radau3)) {
+    SPDLOG_DEBUG(drake::log(), "Radau approach did not converge for "
         "step size {}", h);
     return false;
   }
@@ -560,12 +568,12 @@ bool Radau3Integrator<T, num_stages>::AttemptStep(const T& t0, const T& h,
 ///       returned (if `false` is returned, the time and state will be reset
 ///       to their values on entry).
 template <class T, int num_stages>
-bool Radau3Integrator<T, num_stages>::DoStep(const T& h) {
+bool RadauIntegrator<T, num_stages>::DoStep(const T& h) {
   Context<T>* context = this->get_mutable_context();
 
   // Save the current time and state.
   const T t0 = context->get_time();
-  SPDLOG_DEBUG(drake::log(), "Radau3 DoStep(h={}) t={}", h, t0);
+  SPDLOG_DEBUG(drake::log(), "Radau DoStep(h={}) t={}", h, t0);
 
   // TODO(sherm1) Heap allocation here; consider mutable temporaries instead.
   const VectorX<T> xt0 = context->get_continuous_state().CopyToVector();
@@ -596,16 +604,17 @@ bool Radau3Integrator<T, num_stages>::DoStep(const T& h) {
   return true;
 }
 
-// Function for computing the iteration matrix for the Radau3 method. This
+// Function for computing the iteration matrix for the Radau method. This
 // is the matrix in [Hairer, 1996] (IV.8.4) on p.119.
 template <class T, int num_stages>
-void Radau3Integrator<T, num_stages>::ComputeRadau3IterationMatrix(
+void RadauIntegrator<T, num_stages>::ComputeRadauIterationMatrix(
     const MatrixX<T>& J,
     const T& h,
     const MatrixX<double>& A,
     typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) {
   const int n = J.rows() * num_stages;
   // TODO(edrumwri) Investigate how to do the below operation with a move.
+  // Computes I - h A ⊗ J.
   iteration_matrix->SetAndFactorIterationMatrix(
       CalcTensorProduct(A * -h, J) + MatrixX<T>::Identity(n , n));
 }
@@ -614,12 +623,12 @@ void Radau3Integrator<T, num_stages>::ComputeRadau3IterationMatrix(
 // A = | a11 ... a1m |
 //     | ...     ... |
 //     | an1 ... anm |
-// and some matrix B, the tensor product is is:
-// A x B = | a11B ... a1mB |
+// and some matrix B, the tensor product is:
+// A ⊗ B = | a11B ... a1mB |
 //         | ...      ...  |
 //         | an1B ... anmB |
 template <class T, int num_stages>
-MatrixX<T> Radau3Integrator<T, num_stages>::CalcTensorProduct(
+MatrixX<T> RadauIntegrator<T, num_stages>::CalcTensorProduct(
     const MatrixX<T>& A, const MatrixX<T>& B) {
   const int rows_A = A.rows();
   const int cols_A = A.cols();
@@ -639,4 +648,4 @@ MatrixX<T> Radau3Integrator<T, num_stages>::CalcTensorProduct(
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::systems::Radau3Integrator)
+    class ::drake::systems::RadauIntegrator)

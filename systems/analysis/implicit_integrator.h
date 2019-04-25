@@ -465,7 +465,8 @@ void ImplicitIntegrator<T>::ComputeCentralDiffJacobian(
 
     // Compute f(x-dx).
     context->SetContinuousState(xt_prime);
-    VectorX<T> fprime_minus = this->EvalTimeDerivatives(*context).CopyToVector();
+    VectorX<T> fprime_minus = this->EvalTimeDerivatives(
+        *context).CopyToVector();
 
     // Set the Jacobian column.
     J->col(i) = (fprime_plus - fprime_minus) / (dxi_plus + dxi_minus);

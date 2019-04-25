@@ -1,4 +1,4 @@
-#include "drake/systems/analysis/radau3_integrator.h"
+#include "drake/systems/analysis/radau_integrator.h"
 
 #include <gtest/gtest.h>
 
@@ -16,7 +16,7 @@ namespace {
 
 // Tests the implicit integrator on a stationary system problem, which
 // stresses numerical differentiation (since the state does not change).
-GTEST_TEST(Radau3IntegratorTest, Stationary) {
+GTEST_TEST(RadauIntegratorTest, Stationary) {
   StationarySystem stationary;
   std::unique_ptr<Context<double>> context = stationary.CreateDefaultContext();
   context->EnableCaching();
@@ -28,7 +28,7 @@ GTEST_TEST(Radau3IntegratorTest, Stationary) {
   state.SetAtIndex(1, 0.0);
 
   // Create the integrator.
-  Radau3Integrator<double> integrator(stationary, context.get());
+  RadauIntegrator<double> integrator(stationary, context.get());
   integrator.set_maximum_step_size(0.1);
 
   // Integrate the system
@@ -47,14 +47,14 @@ GTEST_TEST(Radau3IntegratorTest, Stationary) {
 // f(t+h) ≈ f(t) + hf'(t) + ½h²f''(t) + ⅙h³f'''(t) + O(h⁴)
 // The formula above indicates that the approximation error will be zero if
 // f''''(t) = 0, which is true for the cubic equation. We also test that the
-// single-stage Radau3 integrator (i.e., implicit Euler integrator) fails to
+// single-stage Radau integrator (i.e., implicit Euler integrator) fails to
 // integrate this function using a single step.
-GTEST_TEST(Radau3IntegratorTest, CubicSystem) {
+GTEST_TEST(RadauIntegratorTest, CubicSystem) {
   CubicScalarSystem cubic;
   std::unique_ptr<Context<double>> context = cubic.CreateDefaultContext();
 
   // Create the integrator: assumes that the default number of stages is 2.
-  Radau3Integrator<double> radau3(cubic, context.get());
+  RadauIntegrator<double> radau3(cubic, context.get());
 
   const double dt = 1.0;
   radau3.set_maximum_step_size(dt);
@@ -74,7 +74,7 @@ GTEST_TEST(Radau3IntegratorTest, CubicSystem) {
 
   // Create an implicit Euler integrator using 1 stage.
   const int num_stages = 1;
-  Radau3Integrator<double, num_stages> euler(cubic, context.get());
+  RadauIntegrator<double, num_stages> euler(cubic, context.get());
 
   euler.set_maximum_step_size(dt);
 
@@ -90,18 +90,18 @@ GTEST_TEST(Radau3IntegratorTest, CubicSystem) {
 
 // Tests accuracy for integrating a scalar linear system (with the state at time
 // t corresponding to f(t) ≡ C₁t + C₀) over
-// t ∈ [0, 1] using the single-stage Radau3 integrator, meaning that it uses the
+// t ∈ [0, 1] using the single-stage Radau integrator, meaning that it uses the
 // Taylor Series expansion:
 // f(t+h) ≈ f(t) + hf'(t) + O(h²)
 // The formula above indicates that the approximation error will be zero if
 // f''(t) = 0, which is true for the linear equation.
-GTEST_TEST(Radau3IntegratorTest, LinearSystem) {
+GTEST_TEST(RadauIntegratorTest, LinearSystem) {
   LinearScalarSystem linear;
   std::unique_ptr<Context<double>> context = linear.CreateDefaultContext();
 
   // Create the integrator.
   const int num_stages = 1;
-  Radau3Integrator<double, num_stages> euler(linear, context.get());
+  RadauIntegrator<double, num_stages> euler(linear, context.get());
 
   const double dt = 1.0;
   euler.set_maximum_step_size(dt);

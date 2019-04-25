@@ -8,13 +8,13 @@ namespace drake {
 namespace systems {
 namespace analysis_test {
 
-// System where the state at (scalar) time t corresponds to the cubic equation
-// t³ + t² + 12t + 5.
+/// System where the state at (scalar) time t corresponds to the cubic equation
+/// t³ + t² + 12t + 5.
 class CubicScalarSystem : public LeafSystem<double> {
  public:
   CubicScalarSystem() { this->DeclareContinuousState(1); }
 
-  // Evaluates the system at time t.
+  /// Evaluates the system at time t.
   double Evaluate(double t) const {
     return 5 + t * (t * (t + 1) + 12);
   }

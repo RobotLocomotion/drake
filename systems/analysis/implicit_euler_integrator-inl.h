@@ -349,7 +349,8 @@ bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(const T& t0, const T& h,
   std::function<VectorX<T>()> g =
       [&xt0, h, &dx0, context, this]() {
         return (context->get_continuous_state().CopyToVector() - xt0 - h/2 *
-            (dx0 + this->EvalTimeDerivatives(*context).CopyToVector().eval())).eval();
+            (dx0 + this->EvalTimeDerivatives(
+                *context).CopyToVector().eval())).eval();
       };
 
   // Store statistics before calling StepAbstract(). The difference between
