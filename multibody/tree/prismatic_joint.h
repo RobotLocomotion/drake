@@ -42,6 +42,8 @@ class PrismaticJoint final : public Joint<T> {
   template<typename Scalar>
   using Context = systems::Context<Scalar>;
 
+  static const char kTypeName[];
+
   /// Constructor to create a prismatic joint between two bodies so that
   /// frame F attached to the parent body P and frame M attached to the child
   /// body B, translate relatively to one another along a common axis. See this
@@ -93,6 +95,11 @@ class PrismaticJoint final : public Joint<T> {
     DRAKE_THROW_UNLESS(damping >= 0);
     axis_ = axis.normalized();
     damping_ = damping;
+  }
+
+  const std::string& type_name() const override {
+    static const never_destroyed<std::string> name{kTypeName};
+    return name.access();
   }
 
   /// Returns the axis of translation for `this` joint as a unit vector.
@@ -332,6 +339,8 @@ class PrismaticJoint final : public Joint<T> {
   /// This joint's damping constant in N⋅s/m.
   double damping_{0};
 };
+
+template <typename T> const char PrismaticJoint<T>::kTypeName[] = "prismatic";
 
 }  // namespace multibody
 }  // namespace drake

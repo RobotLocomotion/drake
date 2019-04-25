@@ -392,14 +392,21 @@ class AcrobotPlantTests : public ::testing::Test {
         "Pre-finalize calls to '.*' are not allowed; "
         "you must call Finalize\\(\\) first.");
 
+    link1_ = &plant_->GetBodyByName(parameters_.link1_name());
+    link2_ = &plant_->GetBodyByName(parameters_.link2_name());
+
+    // Test we can call these methods pre-finalize.
+    const FrameId link1_frame_id =
+        plant_->GetBodyFrameIdOrThrow(link1_->index());
+    EXPECT_EQ(link1_frame_id, *plant_->GetBodyFrameIdIfExists(link1_->index()));
+    EXPECT_EQ(plant_->GetBodyFromFrameId(link1_frame_id), link1_);
+
     // Finalize() the plant.
     plant_->Finalize();
 
     // And build the Diagram:
     diagram_ = builder.Build();
 
-    link1_ = &plant_->GetBodyByName(parameters_.link1_name());
-    link2_ = &plant_->GetBodyByName(parameters_.link2_name());
     shoulder_ = &plant_->GetMutableJointByName<RevoluteJoint>(
         parameters_.shoulder_joint_name());
     elbow_ = &plant_->GetMutableJointByName<RevoluteJoint>(
@@ -1082,23 +1089,25 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
   using ::testing::UnorderedElementsAreArray;
   // This test expects that the following model has a world body and a pair of
   // welded-together bodies.
-  const std::string sdf_file = FindResourceOrThrow(
-      "drake/multibody/plant/test/split_pendulum.sdf");
+  const std::string sdf_file =
+      FindResourceOrThrow("drake/multibody/plant/test/split_pendulum.sdf");
   MultibodyPlant<double> plant;
   Parser(&plant).AddModelFromFile(sdf_file);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.GetBodiesWeldedTo(plant.world_body()), std::logic_error,
-      "Pre-finalize calls to 'GetBodiesWeldedTo\\(\\)' are not "
-      "allowed; you must call Finalize\\(\\) first.");
-  plant.Finalize();
   const Body<double>& upper = plant.GetBodyByName("upper_section");
   const Body<double>& lower = plant.GetBodyByName("lower_section");
-  EXPECT_THAT(
-      plant.GetBodiesWeldedTo(plant.world_body()),
-      UnorderedElementsAreArray({&plant.world_body()}));
-  EXPECT_THAT(
-      plant.GetBodiesWeldedTo(lower),
-      UnorderedElementsAreArray({&upper, &lower}));
+
+  // Verify we can call GetBodiesWeldedTo() pre-finalize.
+  EXPECT_THAT(plant.GetBodiesWeldedTo(plant.world_body()),
+              UnorderedElementsAreArray({&plant.world_body()}));
+  EXPECT_THAT(plant.GetBodiesWeldedTo(lower),
+              UnorderedElementsAreArray({&upper, &lower}));
+
+  // And post-finalize.
+  plant.Finalize();
+  EXPECT_THAT(plant.GetBodiesWeldedTo(plant.world_body()),
+              UnorderedElementsAreArray({&plant.world_body()}));
+  EXPECT_THAT(plant.GetBodiesWeldedTo(lower),
+              UnorderedElementsAreArray({&upper, &lower}));
 }
 
 // Verifies the process of collision geometry registration with a

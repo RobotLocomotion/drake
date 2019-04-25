@@ -35,6 +35,8 @@ class WeldJoint final : public Joint<T> {
   template<typename Scalar>
   using Context = systems::Context<Scalar>;
 
+  static const char kTypeName[];
+
   /// Constructor for a %WeldJoint between a `parent_frame_P` and a
   /// `child_frame_C` so that their relative pose `X_PC` is fixed as if they
   /// were "welded" together.
@@ -49,6 +51,11 @@ class WeldJoint final : public Joint<T> {
                  VectorX<double>() /* no acc lower limits */,
                  VectorX<double>() /* no acc upper limits */),
         X_PC_(X_PC) {}
+
+  const std::string& type_name() const override {
+    static const never_destroyed<std::string> name{kTypeName};
+    return name.access();
+  }
 
 #ifndef DRAKE_DOXYGEN_CXX
   DRAKE_DEPRECATED(
@@ -151,6 +158,8 @@ class WeldJoint final : public Joint<T> {
   // The pose of frame C in P.
   const math::RigidTransform<double> X_PC_;
 };
+
+template <typename T> const char WeldJoint<T>::kTypeName[] = "weld";
 
 }  // namespace multibody
 }  // namespace drake

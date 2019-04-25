@@ -164,6 +164,10 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     return frame_on_child_;
   }
 
+  /// Returns a string identifying the type of `this` joint, such as "revolute"
+  /// or "prismatic".
+  virtual const std::string& type_name() const = 0;
+
   /// Returns the index to the first generalized velocity for this joint
   /// within the vector v of generalized velocities for the full multibody
   /// system.

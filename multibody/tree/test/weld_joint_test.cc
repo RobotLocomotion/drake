@@ -56,6 +56,11 @@ class WeldJointTest : public ::testing::Test {
   const Translation3d X_FM_{0, 0.5, 0};
 };
 
+TEST_F(WeldJointTest, Type) {
+  const Joint<double>& base = *joint_;
+  EXPECT_EQ(base.type_name(), WeldJoint<double>::kTypeName);
+}
+
 // Verify the expected number of dofs.
 TEST_F(WeldJointTest, NumDOFs) {
   EXPECT_EQ(tree().num_positions(), 0);

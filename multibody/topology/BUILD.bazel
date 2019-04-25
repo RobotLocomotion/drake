@@ -1,0 +1,37 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+drake_cc_library(
+    name = "multibody_graph",
+    srcs = [
+        "multibody_graph.cc",
+    ],
+    hdrs = [
+        "multibody_graph.h",
+    ],
+    deps = [
+        "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_graph_test",
+    deps = [
+        ":multibody_graph",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+add_lint_tests()

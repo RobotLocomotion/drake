@@ -75,6 +75,11 @@ class RevoluteJointTest : public ::testing::Test {
   RevoluteJoint<double>* mutable_joint1_{nullptr};
 };
 
+TEST_F(RevoluteJointTest, Type) {
+  const Joint<double>& base = *joint1_;
+  EXPECT_EQ(base.type_name(), RevoluteJoint<double>::kTypeName);
+}
+
 // Verify the expected number of dofs.
 TEST_F(RevoluteJointTest, NumDOFs) {
   EXPECT_EQ(tree().num_positions(), 1);
