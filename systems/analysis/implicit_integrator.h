@@ -211,12 +211,12 @@ class ImplicitIntegrator : public IntegratorBase<T> {
  * 1. DoStep(h) is called;
  * 2. One or more NR iterations is performed until either (a) convergence is
  *    identified, (b) the iteration is found to diverge, or (c) too many
- *    iterations were taken. In the case of (a), DoStep(h) can return success.
+ *    iterations were taken. In the case of (a), DoStep(h) will return success.
  *    Otherwise, the Newton-Raphson process is attempted again with (i) a
  *    recomputed and refactored iteration matrix and (ii) a recomputed Jacobian
- *    and a recomputed and refactored iteration matrix, in that order. Where
- *    our NR algorithm is in that process is indicated by the `trial` parameter
- *    is below. In this model, DoStep() returns failure if the NR iterations
+ *    and a recomputed and refactored iteration matrix, in that order. The
+ *    process stage of that NR algorithm is indicated by the `trial` parameter
+ *    below. In this model, DoStep() returns failure if the NR iterations
  *    reach a fourth trial.
  * @param t the time at which to compute the Jacobian.
  * @param xt the continuous state at which the Jacobian is computed.
@@ -260,8 +260,9 @@ class ImplicitIntegrator : public IntegratorBase<T> {
    * be operating with a "fresh" Jacobian matrix. In fact, CalcMatrices() uses
    * this information to keep from computing a Jacobian matrix when it is
    * already fresh.
+   * @see CalcMatrices()
    */
-  bool last_newton_raphson_succeeded() const { 
+  bool last_newton_raphson_succeeded() const {
     return last_newton_raphson_succeeded_;
   }
 
@@ -269,8 +270,8 @@ class ImplicitIntegrator : public IntegratorBase<T> {
    * Derived classes must call this method whenever the Newton-Raphson method
    * converges or diverges, as appropriate.
    */
-  void set_last_newton_raphson_succeeded(bool success) { 
-    last_newton_raphson_succeeded_ = success; 
+  void set_last_newton_raphson_succeeded(bool success) {
+    last_newton_raphson_succeeded_ = success;
   }
 
   /**
@@ -690,12 +691,12 @@ bool ImplicitIntegrator<T>::CalcMatrices(
     }
 
     case 3: {
-      // TODO(edrumwri) To what?
       // For the third trial, either the Jacobian matrix is "fresh" (indicated
       // by the last call failing), meaning that there is nothing more that can
       // be tried (Jacobian and iteration matrix are both fresh) and we need to
       // indicate failure *or* we can try refreshing the Jacobian matrix and
-      // computing and factoring the iteration matrix.
+      // then computing and factoring the iteration matrix. See the
+      // CalcMatrices() function documentation for additional info.
       if (!this->last_newton_raphson_succeeded()) {
         return false;
       } else {
