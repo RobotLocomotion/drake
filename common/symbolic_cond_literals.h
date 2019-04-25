@@ -107,19 +107,19 @@ auto lazy_assign(T* arg, Args... args) {
   return ResultType{arg, args...};
 }
 
-ImmediateIf lazy_if(bool pred) {
+inline ImmediateIf lazy_if(bool pred) {
   return ImmediateIf{pred};
 }
 
-LazyIf lazy_if(const Formula& pred) {
+inline LazyIf lazy_if(const Formula& pred) {
   return LazyIf{pred};
 }
 
-ImmediateIf lazy_elif(bool pred) {
+inline ImmediateIf lazy_elif(bool pred) {
   return ImmediateIf{pred};
 }
 
-LazyIf lazy_elif(const Formula& pred) {
+inline LazyIf lazy_elif(const Formula& pred) {
   return LazyIf{pred};
 }
 

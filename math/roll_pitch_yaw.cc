@@ -5,6 +5,7 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#include "drake/common/symbolic_cond_literals.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -180,10 +181,19 @@ Vector3<T> CalcRollPitchYawFromQuaternionAndRotationMatrix(
   T q3 = zA + zB;  // Third angle in rotation sequence.
 
   // If necessary, modify angles q1 and/or q3 to be between -pi and pi.
-  if (q1 > M_PI) q1 = q1 - 2 * M_PI;
-  if (q1 < -M_PI) q1 = q1 + 2 * M_PI;
-  if (q3 > M_PI) q3 = q3 - 2 * M_PI;
-  if (q3 < -M_PI) q3 = q3 + 2 * M_PI;
+  using namespace drake::symbolic::branching_literals;  // NOLINT
+  lazy_assign(&q1) =
+  lazy_if (q1 > M_PI) ^[&]() {  // NOLINT
+    q1 = q1 - 2 * M_PI;
+  } || lazy_elif (q1 < -M_PI) ^[&]() {  // NOLINT
+    q1 = q1 + 2 * M_PI;
+  };
+  lazy_assign(&q3) =
+  lazy_if (q3 > M_PI) ^[&]() {  // NOLINT
+    q3 = q3 - 2 * M_PI;
+  } || lazy_elif (q3 < -M_PI) ^[&]() {  // NOLINT
+    q3 = q3 + 2 * M_PI;
+  };
 
   // Return in Drake/ROS conventional SpaceXYZ q1, q2, q3 (roll-pitch-yaw) order
   // (which is equivalent to BodyZYX q3, q2, q1 order).
