@@ -6,6 +6,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/examples/multibody/cart_pole/gen/cart_pole_params.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -127,6 +128,12 @@ TEST_F(CartPoleTest, MassMatrix) {
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(M, M_expected,
                   kTolerance, MatrixCompareType::relative));
+
+  {  // Repeat the computation to confirm the heap behavior.  We allow the
+     // method to heap-allocate 4 temporaries.
+    drake::test::LimitMalloc guard({.max_num_allocations = 4});
+    cart_pole_.CalcMassMatrixViaInverseDynamics(*context_, &M);
+  }
 }
 
 // Tests that the hand-derived dynamics matches that computed with a

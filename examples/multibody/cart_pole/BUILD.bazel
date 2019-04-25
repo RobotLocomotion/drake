@@ -49,6 +49,7 @@ drake_cc_googletest(
         ":cart_pole_params",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
         "//multibody/parsing",
         "//multibody/plant",
     ],
