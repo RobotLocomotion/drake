@@ -20,7 +20,7 @@
       <inertia ixx="0.01" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial>
   </link>
-  <link name="base_part2">
+  <link name="base">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 .015"/>
       <mass value="1"/>
@@ -36,7 +36,7 @@
   </link>
   <joint drake_ignore="true" name="base_weld" type="fixed">
     <parent link="world"/>
-    <child link="base_part2"/>
+    <child link="base"/>
     <origin xyz="0 0 1"/>
   </joint>
   <link name="arm">
@@ -60,7 +60,7 @@
     </collision>
   </link>
   <joint name="theta" type="continuous">
-    <parent link="base_part2"/>
+    <parent link="base"/>
     <child link="arm"/>
     <axis xyz="0 1 0"/>
     <dynamics damping="0.1"/>
@@ -94,7 +94,7 @@
     <joint name="theta"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
-  <gazebo reference="base_part2">
+  <gazebo reference="base">
     <material>Gazebo/Green</material>
   </gazebo>
   <gazebo reference="arm">
