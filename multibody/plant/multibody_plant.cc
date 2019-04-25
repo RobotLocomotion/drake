@@ -1355,7 +1355,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   }
 
   internal_tree().CalcInverseDynamics(
-      context, pc, vc, vdot,
+      context, vdot,
       F_BBo_W_array, tau_array,
       &A_WB_array,
       &F_BBo_W_array, /* Notice these arrays gets overwritten on output. */
@@ -1477,7 +1477,7 @@ void MultibodyPlant<T>::CalcImplicitStribeckResults(
   //   -tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
   VectorX<T>& minus_tau = forces0.mutable_generalized_forces();
   internal_tree().CalcInverseDynamics(
-      context0, pc0, vc0, vdot,
+      context0, vdot,
       F_BBo_W_array, minus_tau,
       &A_WB_array,
       &F_BBo_W_array, /* Note: these arrays get overwritten on output. */

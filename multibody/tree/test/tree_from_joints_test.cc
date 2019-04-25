@@ -340,7 +340,7 @@ class PendulumTests : public ::testing::Test {
     // With vdot = 0, this computes:
     //   rhs = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
     tree().CalcInverseDynamics(
-        *context_, pc, vc, vdot,
+        *context_, vdot,
         F_BBo_W_array, tau_array,
         &A_WB_array,
         &F_BMo_W, &tau  /* Output forces */);
