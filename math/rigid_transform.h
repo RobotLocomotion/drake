@@ -122,7 +122,7 @@ class RigidTransform {
   }
 
   /// Constructs a %RigidTransform with an identity RotationMatrix and a given
-  /// position vector 'p'.
+  /// position vector `p`.
   /// @param[in] p position vector from frame A's origin to frame B's origin,
   /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
   explicit RigidTransform(const Vector3<T>& p) { set_translation(p); }
@@ -368,7 +368,7 @@ class RigidTransform {
   }
 
   /// Multiplies `this` %RigidTransform `X_AB` by the position vector
-  /// 'p_BoQ_B` which is from Bo (B's origin) to an arbitrary point Q.
+  /// `p_BoQ_B` which is from Bo (B's origin) to an arbitrary point Q.
   /// @param[in] p_BoQ_B position vector from Bo to Q, expressed in frame B.
   /// @retval p_AoQ_A position vector from Ao to Q, expressed in frame A.
   Vector3<T> operator*(const Vector3<T>& p_BoQ_B) const {
@@ -376,7 +376,7 @@ class RigidTransform {
   }
 
   /// Multiplies `this` %RigidTransform `X_AB` by the n position vectors
-  /// 'p_BoQ1_B` ... `p_BoQn_B`, where `p_BoQi_B` is the iᵗʰ position vector
+  /// `p_BoQ1_B` ... `p_BoQn_B`, where `p_BoQi_B` is the iᵗʰ position vector
   /// from Bo (frame B's origin) to an arbitrary point Qi, expressed in frame B.
   /// @param[in] p_BoQ_B `3 x n` matrix with n position vectors `p_BoQi_B`.
   /// @retval p_AoQ_A `3 x n` matrix with n position vectors `p_AoQi_A`, i.e., n
