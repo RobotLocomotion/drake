@@ -74,6 +74,10 @@ class SignalLogger final : public LeafSystem<T> {
   /// @see LogOutput() helper function for a convenient way to add %logging.
   explicit SignalLogger(int input_size, int batch_allocation_size = 1000);
 
+  /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
+  template <typename U>
+  explicit SignalLogger(const SignalLogger<U>&);
+
   /// Sets the publishing period of this system to specify periodic sampling
   /// and disables the default per-step sampling. This method can only be called
   /// once and only if set_forced_publish_only() hasn't been called.
@@ -112,6 +116,8 @@ class SignalLogger final : public LeafSystem<T> {
   const InputPort<T>& get_input_port() const;
 
  private:
+  template <typename> friend class SignalLogger;
+
   enum LoggingMode { kPerStep, kPeriodic, kForced };
 
   // Logging is done in this event handler.
