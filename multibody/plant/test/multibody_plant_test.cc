@@ -1096,11 +1096,18 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
   const Body<double>& upper = plant.GetBodyByName("upper_section");
   const Body<double>& lower = plant.GetBodyByName("lower_section");
 
+  // TODO(jwnimmer-tri) The block of code inside the "#if 0" is the tests that
+  // we *want* to pass, but don't yet.
+#if 0
   // Verify we can call GetBodiesWeldedTo() pre-finalize.
   EXPECT_THAT(plant.GetBodiesWeldedTo(plant.world_body()),
               UnorderedElementsAreArray({&plant.world_body()}));
   EXPECT_THAT(plant.GetBodiesWeldedTo(lower),
               UnorderedElementsAreArray({&upper, &lower}));
+#else
+  EXPECT_THROW(plant.GetBodiesWeldedTo(plant.world_body()), std::exception);
+  EXPECT_THROW(plant.GetBodiesWeldedTo(lower), std::exception);
+#endif
 
   // And post-finalize.
   plant.Finalize();

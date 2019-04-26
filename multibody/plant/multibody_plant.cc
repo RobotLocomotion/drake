@@ -405,6 +405,10 @@ geometry::GeometrySet MultibodyPlant<T>::CollectRegisteredGeometries(
 template <typename T>
 std::vector<const Body<T>*> MultibodyPlant<T>::GetBodiesWeldedTo(
     const Body<T>& body) const {
+  // TODO(jwnimmer-tri) The block of code inside the "#if 0" is what we *want*
+  // to use for the weld query, but it seems to have bugs.  For now, we'll use
+  // the "#else" block (which was the prior implementation).
+#if 0
   const std::set<BodyIndex> island =
       multibody_graph_.FindBodiesWeldedTo(body.index());
   // Map body indices to pointers.
@@ -413,6 +417,26 @@ std::vector<const Body<T>*> MultibodyPlant<T>::GetBodiesWeldedTo(
     sub_graph_bodies.push_back(&internal_tree().get_body(body_index));
   }
   return sub_graph_bodies;
+#else
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  // TODO(eric.cousineau): This is much slower than it should be; this could be
+  // sped up by either (a) caching these results at finalization and store a
+  // mapping from body to a subgraph or (b) starting the search from the query
+  // body.
+  auto sub_graphs = internal_tree().get_topology().CreateListOfWeldedBodies();
+  // Find subgraph that contains this body.
+  auto predicate = [&body](auto& sub_graph) {
+    return sub_graph.count(body.index()) > 0;
+  };
+  auto sub_graph_iter = std::find_if(
+      sub_graphs.begin(), sub_graphs.end(), predicate);
+  DRAKE_THROW_UNLESS(sub_graph_iter != sub_graphs.end());
+  std::vector<const Body<T>*> sub_graph_bodies;
+  for (BodyIndex sub_graph_body_index : *sub_graph_iter) {
+    sub_graph_bodies.push_back(&internal_tree().get_body(sub_graph_body_index));
+  }
+  return sub_graph_bodies;
+#endif
 }
 
 template <typename T>

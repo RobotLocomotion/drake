@@ -2465,9 +2465,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// presence of a weld joint, not by other constructs that prevent mobility
   /// (e.g. constraints).
   ///
-  /// This method can be called at any time during the lifetime of `this` plant,
-  /// either pre- or post-finalize, see Finalize().
-  ///
   /// Meant to be used with `CollectRegisteredGeometries`.
   ///
   /// The following example demonstrates filtering collisions between all
@@ -2486,6 +2483,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @returns all bodies rigidly fixed to `body`. This does not return the
   /// bodies in any prescribed order.
+  /// @throws std::exception if called pre-finalize.
   /// @throws std::exception if `body` is not part of this plant.
   std::vector<const Body<T>*> GetBodiesWeldedTo(const Body<T>& body) const;
 
