@@ -49,11 +49,14 @@ StaticEquilibriumProblem::StaticEquilibriumProblem(
       u_vars_));
 
   const double complementary_tol = 1E-3;
+  static_friction_cone_complementary_nonlinear_constraints_.reserve(
+      contact_wrench_evaluators_and_lambda_.size());
   for (const auto& contact_wrench_evaluator_and_lambda :
        contact_wrench_evaluators_and_lambda_) {
-    AddStaticFrictionConeComplementaryConstraint(
-        contact_wrench_evaluator_and_lambda.first.get(), complementary_tol,
-        q_vars_, contact_wrench_evaluator_and_lambda.second, prog_);
+    static_friction_cone_complementary_nonlinear_constraints_.push_back(
+        AddStaticFrictionConeComplementaryConstraint(
+            contact_wrench_evaluator_and_lambda.first.get(), complementary_tol,
+            q_vars_, contact_wrench_evaluator_and_lambda.second, prog_));
   }
 }
 
@@ -126,5 +129,14 @@ std::vector<ContactWrench> StaticEquilibriumProblem::GetContactWrenchSolution(
   }
   return contact_wrench_sol;
 }
+
+void StaticEquilibriumProblem::UpdateComplementaryTolerance(double tol) {
+  DRAKE_DEMAND(tol >= 0);
+  for (const auto& binding :
+       static_friction_cone_complementary_nonlinear_constraints_) {
+    binding.evaluator()->UpdateComplementaryTolerance(tol);
+  }
+}
+
 }  // namespace multibody
 }  // namespace drake

@@ -2,11 +2,25 @@
 
 #include <utility>
 
+#include "drake/geometry/geometry_visualization.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
 
 namespace drake {
 namespace multibody {
 namespace test {
+
+template <typename T>
+void AddDrakeVisualizer(systems::DiagramBuilder<T>*,
+                        const geometry::SceneGraph<T>&) {}
+
+template <>
+void AddDrakeVisualizer<double>(
+    systems::DiagramBuilder<double>* builder,
+    const geometry::SceneGraph<double>& scene_graph) {
+  std::cout << "add drake visualizer.\n";
+  geometry::ConnectDrakeVisualizer(builder, scene_graph);
+}
+
 template <typename T>
 FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
     std::vector<SphereSpecification> spheres,
@@ -28,6 +42,11 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
         geometry::Sphere(spheres_[i].radius),
         "sphere" + std::to_string(i) + "_collision", spheres_[i].friction,
         scene_graph_));
+    plant_->RegisterVisualGeometry(
+        sphere, math::RigidTransformd::Identity(),
+        geometry::Sphere(spheres_[i].radius),
+        "sphere" + std::to_string(i) + "_visualization",
+        geometry::IllustrationProperties(), scene_graph_);
   }
   // Add boxes and register collision geometry.
   for (int i = 0; i < num_boxes; ++i) {
@@ -38,6 +57,15 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
         geometry::Box(boxes_[i].size(0), boxes_[i].size(1), boxes_[i].size(2)),
         "box" + std::to_string(i) + "_collision", boxes_[i].friction,
         scene_graph_));
+    plant_->RegisterVisualGeometry(
+        box, math::RigidTransformd::Identity(),
+        geometry::Box(boxes_[i].size(0), boxes_[i].size(1), boxes_[i].size(2)),
+        "box" + std::to_string(i) + "_visualization",
+        geometry::IllustrationProperties(), scene_graph_);
+    if (boxes_[i].X_WB.has_value()) {
+      plant_->WeldFrames(plant_->world_frame(), box.body_frame(),
+                         boxes_[i].X_WB.value());
+    }
   }
   // Add the ground, register collision geometry.
   // The mass and inertia of the ground don't matter. Set them to arbitrary
@@ -58,6 +86,9 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
   plant_->template AddForceElement<UniformGravityFieldElement>();
 
   plant_->Finalize();
+
+  AddDrakeVisualizer<T>(&builder, *scene_graph_);
+
   diagram_ = builder.Build();
 
   // Create context.

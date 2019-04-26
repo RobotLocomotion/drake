@@ -2,6 +2,7 @@
 
 #include "drake/multibody/optimization/contact_wrench.h"
 #include "drake/multibody/optimization/contact_wrench_evaluator.h"
+#include "drake/multibody/optimization/static_friction_cone_complementary_constraint.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -47,6 +48,12 @@ class StaticEquilibriumProblem {
   std::vector<ContactWrench> GetContactWrenchSolution(
       const solvers::MathematicalProgramResult& result);
 
+  /**
+   * Updates the tolerance on all the complemntary constraints.
+   * The complementary constraint is relaxed as 0 ≤ α * β ≤ tol.
+   */
+  void UpdateComplementaryTolerance(double tol);
+
  private:
   const MultibodyPlant<AutoDiffXd>* const plant_;
   systems::Context<AutoDiffXd>* context_;
@@ -58,6 +65,10 @@ class StaticEquilibriumProblem {
   std::vector<std::pair<std::shared_ptr<ContactWrenchEvaluator>,
                         VectorX<symbolic::Variable>>>
       contact_wrench_evaluators_and_lambda_;
+
+  std::vector<solvers::Binding<
+      internal::StaticFrictionConeComplementaryNonlinearConstraint>>
+      static_friction_cone_complementary_nonlinear_constraints_;
 };
 }  // namespace multibody
 }  // namespace drake
