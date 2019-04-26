@@ -293,7 +293,8 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
           "AnotherJoint", link1.body_frame(), link2.body_frame(),
           Vector3d::UnitZ())),
       std::logic_error,
-      ".*MultibodyTree.*finalized already.*");
+      "Post-finalize calls to '.*' are not allowed; "
+      "calls to this method must happen before Finalize\\(\\).");
   // TODO(amcastro-tri): add test to verify that requesting a joint of the wrong
   // type throws an exception. We need another joint type to do so.
 }
@@ -1086,7 +1087,7 @@ GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometries) {
 
 // Verifies the process of getting welded bodies.
 GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
-  using ::testing::UnorderedElementsAreArray;
+  using ::testing::UnorderedElementsAre;
   // This test expects that the following model has a world body and a pair of
   // welded-together bodies.
   const std::string sdf_file =
@@ -1096,18 +1097,24 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
   const Body<double>& upper = plant.GetBodyByName("upper_section");
   const Body<double>& lower = plant.GetBodyByName("lower_section");
 
+  // Add a new body, and weld it using `WeldFrames` (to ensure that topology is
+  // updated via this API).
+  const Body<double>& extra = plant.AddRigidBody(
+      "extra", default_model_instance(), SpatialInertia<double>());
+  plant.WeldFrames(plant.world_frame(), extra.body_frame());
+
   // Verify we can call GetBodiesWeldedTo() pre-finalize.
   EXPECT_THAT(plant.GetBodiesWeldedTo(plant.world_body()),
-              UnorderedElementsAreArray({&plant.world_body()}));
+              UnorderedElementsAre(&plant.world_body(), &extra));
   EXPECT_THAT(plant.GetBodiesWeldedTo(lower),
-              UnorderedElementsAreArray({&upper, &lower}));
+              UnorderedElementsAre(&upper, &lower));
 
   // And post-finalize.
   plant.Finalize();
   EXPECT_THAT(plant.GetBodiesWeldedTo(plant.world_body()),
-              UnorderedElementsAreArray({&plant.world_body()}));
+              UnorderedElementsAre(&plant.world_body(), &extra));
   EXPECT_THAT(plant.GetBodiesWeldedTo(lower),
-              UnorderedElementsAreArray({&upper, &lower}));
+              UnorderedElementsAre(&upper, &lower));
 }
 
 // Verifies the process of collision geometry registration with a
