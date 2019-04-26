@@ -8,6 +8,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
+#include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/velocity_kinematics_cache.h"
 #include "drake/systems/framework/cache_entry.h"
 #include "drake/systems/framework/context.h"
@@ -78,7 +79,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   given Context, recalculating it first if necessary. */
   const PositionKinematicsCache<T>& EvalPositionKinematics(
       const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.position_kinematics_cache)
+    return this->get_cache_entry(cache_indexes_.position_kinematics)
         .template Eval<PositionKinematicsCache<T>>(context);
   }
 
@@ -87,8 +88,28 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   PositionKinematicsCache will be recalculated as well. */
   const VelocityKinematicsCache<T>& EvalVelocityKinematics(
       const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.velocity_kinematics_cache)
+    return this->get_cache_entry(cache_indexes_.velocity_kinematics)
         .template Eval<VelocityKinematicsCache<T>>(context);
+  }
+
+  /** Returns a reference to the up to date cache of per-body spatial inertias
+  in the given Context, recalculating it first if necessary. */
+  const std::vector<SpatialInertia<T>>& EvalSpatialInertiaInWorldCache(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.spatial_inertia_in_world)
+        .template Eval<std::vector<SpatialInertia<T>>>(context);
+  }
+
+  /** Returns a reference to the up to date cache of per-body bias terms in
+  the given Context, recalculating it first if necessary.
+  For a body B, this is the bias term `b_Bo_W(q, v)` in the equation
+  `F_BBo_W = M_Bo_W * A_WB + b_Bo_W`, where `M_Bo_W` is the spatial inertia
+  about B's origina Bo, `A_WB` is the spatial acceleration of B in W and
+  `F_BBo_W` is the spatial force on B about Bo, expressed in W. */
+  const std::vector<SpatialForce<T>>& EvalDynamicBiasCache(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.dynamic_bias)
+        .template Eval<std::vector<SpatialForce<T>>>(context);
   }
 
   /** Returns a reference to the up to date cached value for the
@@ -106,8 +127,8 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   generalized velocities in the tree. */
   const std::vector<Vector6<T>>&
   EvalAcrossNodeGeometricJacobianExpressedInWorld(
-      const systems::Context<T> &context) const {
-    return this->get_cache_entry(H_PB_W_cache_index_)
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.across_node_jacobians)
         .template Eval<std::vector<Vector6<T>>>(context);
   }
 
@@ -170,11 +191,11 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   // This struct stores in one single place all indexes related to
   // MultibodyTreeSystem specific cache entries.
   struct CacheIndexes {
-    systems::CacheIndex dynamic_bias_cache;
-    systems::CacheIndex H_PB_W_cache;
-    systems::CacheIndex position_kinematics_cache;
-    systems::CacheIndex spatial_inertia_in_world_cache;
-    systems::CacheIndex velocity_kinematics_cache;
+    systems::CacheIndex dynamic_bias;
+    systems::CacheIndex across_node_jacobians;
+    systems::CacheIndex position_kinematics;
+    systems::CacheIndex spatial_inertia_in_world;
+    systems::CacheIndex velocity_kinematics;
   };
 
   // This is the one real constructor. From the public API, a null tree is
