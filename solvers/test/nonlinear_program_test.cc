@@ -449,6 +449,16 @@ GTEST_TEST(testNonlinearProgram, UnitLengthConstraint) {
                       &result);
 }
 
+GTEST_TEST(testNonlinearProgram, EckhardtProblem) {
+  // This test a nonlinear optimization problem with sparse constraint gradient.
+  EckhardtProblem prob;
+  const Eigen::VectorXd x_init = Eigen::Vector3d(2, 1.05, 2.9);
+  MathematicalProgramResult result;
+  RunNonlinearProgram(prob.prog(), x_init,
+                      [&prob, &result]() { prob.CheckSolution(result, 1E-7); },
+                      &result);
+}
+
 GTEST_TEST(testNonlinearProgram, CallbackTest) {
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<3>();

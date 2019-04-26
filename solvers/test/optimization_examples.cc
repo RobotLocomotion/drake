@@ -22,6 +22,9 @@ using drake::symbolic::Expression;
 namespace drake {
 namespace solvers {
 namespace test {
+
+const double kInf = std::numeric_limits<double>::infinity();
+
 std::set<CostForm> linear_cost_form() {
   return std::set<CostForm>{CostForm::kNonSymbolic, CostForm::kSymbolic};
 }
@@ -229,14 +232,13 @@ void NonConvexQPproblem1::CheckSolution(
 void NonConvexQPproblem1::AddConstraint() {
   Eigen::Matrix<double, 1, 5> a;
   a << 20, 12, 11, 7, 4;
-  prog_->AddLinearConstraint(a, -numeric_limits<double>::infinity(), 40, x_);
+  prog_->AddLinearConstraint(a, -kInf, 40, x_);
 }
 
 void NonConvexQPproblem1::AddSymbolicConstraint() {
   const auto constraint =
       20 * x_(0) + 12 * x_(1) + 11 * x_(2) + 7 * x_(3) + 4 * x_(4);
-  prog_->AddLinearConstraint(constraint, -numeric_limits<double>::infinity(),
-                             40);
+  prog_->AddLinearConstraint(constraint, -kInf, 40);
 }
 
 void NonConvexQPproblem1::AddQuadraticCost() {
@@ -254,7 +256,7 @@ NonConvexQPproblem2::NonConvexQPproblem2(CostForm cost_form,
   x_ = prog_->NewContinuousVariables<6>("x");
 
   prog_->AddBoundingBoxConstraint(0, 1, x_.head<5>());
-  prog_->AddBoundingBoxConstraint(0, numeric_limits<double>::infinity(), x_(5));
+  prog_->AddBoundingBoxConstraint(0, kInf, x_(5));
 
   switch (cost_form) {
     case CostForm::kGeneric: {
@@ -314,18 +316,16 @@ void NonConvexQPproblem2::AddNonSymbolicConstraint() {
   Eigen::Matrix<double, 1, 6> a2{};
   a1 << 6, 3, 3, 2, 1, 0;
   a2 << 10, 0, 10, 0, 0, 1;
-  prog_->AddLinearConstraint(a1, -numeric_limits<double>::infinity(), 6.5, x_);
-  prog_->AddLinearConstraint(a2, -numeric_limits<double>::infinity(), 20, x_);
+  prog_->AddLinearConstraint(a1, -kInf, 6.5, x_);
+  prog_->AddLinearConstraint(a2, -kInf, 20, x_);
 }
 
 void NonConvexQPproblem2::AddSymbolicConstraint() {
   const symbolic::Expression constraint1{6 * x_(0) + 3 * x_(1) + 3 * x_(2) +
                                          2 * x_(3) + x_(4)};
   const symbolic::Expression constraint2{10 * x_(0) + 10 * x_(2) + x_(5)};
-  prog_->AddLinearConstraint(constraint1, -numeric_limits<double>::infinity(),
-                             6.5);
-  prog_->AddLinearConstraint(constraint2, -numeric_limits<double>::infinity(),
-                             20);
+  prog_->AddLinearConstraint(constraint1, -kInf, 6.5);
+  prog_->AddLinearConstraint(constraint2, -kInf, 20);
 }
 
 LowerBoundedProblem::LowerBoundedProblem(ConstraintForm constraint_form)
@@ -335,8 +335,7 @@ LowerBoundedProblem::LowerBoundedProblem(ConstraintForm constraint_form)
   Eigen::Matrix<double, 6, 1> lb{};
   Eigen::Matrix<double, 6, 1> ub{};
   lb << 0, 0, 1, 0, 1, 0;
-  ub << numeric_limits<double>::infinity(), numeric_limits<double>::infinity(),
-      5, 6, 5, 10;
+  ub << kInf, kInf, 5, 6, 5, 10;
   prog_->AddBoundingBoxConstraint(lb, ub, x_);
 
   prog_->AddCost(LowerBoundTestCost(), x_);
@@ -384,21 +383,15 @@ Vector6<double> LowerBoundedProblem::initial_guess2() const {
 }
 
 void LowerBoundedProblem::AddSymbolicConstraint() {
-  prog_->AddLinearConstraint(x_(0) - 3 * x_(1),
-                             -numeric_limits<double>::infinity(), 2);
-  prog_->AddLinearConstraint(-x_(0) + x_(1),
-                             -numeric_limits<double>::infinity(), 2);
-  prog_->AddLinearConstraint(x_(0) + x_(1), -numeric_limits<double>::infinity(),
-                             6);
+  prog_->AddLinearConstraint(x_(0) - 3 * x_(1), -kInf, 2);
+  prog_->AddLinearConstraint(-x_(0) + x_(1), -kInf, 2);
+  prog_->AddLinearConstraint(x_(0) + x_(1), -kInf, 6);
 }
 
 void LowerBoundedProblem::AddNonSymbolicConstraint() {
-  prog_->AddLinearConstraint(
-      RowVector2d(1, -3), -numeric_limits<double>::infinity(), 2, x_.head<2>());
-  prog_->AddLinearConstraint(
-      RowVector2d(-1, 1), -numeric_limits<double>::infinity(), 2, x_.head<2>());
-  prog_->AddLinearConstraint(
-      RowVector2d(1, 1), -numeric_limits<double>::infinity(), 6, x_.head<2>());
+  prog_->AddLinearConstraint(RowVector2d(1, -3), -kInf, 2, x_.head<2>());
+  prog_->AddLinearConstraint(RowVector2d(-1, 1), -kInf, 2, x_.head<2>());
+  prog_->AddLinearConstraint(RowVector2d(1, 1), -kInf, 6, x_.head<2>());
 }
 
 GloptiPolyConstrainedMinimizationProblem::
@@ -711,6 +704,29 @@ DistanceToTetrahedronExample::DistanceToTetrahedronNonlinearConstraint::
   UpdateLowerBound(lower_bound);
   UpdateUpperBound(upper_bound);
 }
+
+EckhardtProblem::EckhardtProblem()
+    : prog_{new MathematicalProgram()}, x_{prog_->NewContinuousVariables<3>()} {
+  prog_->AddLinearCost(-x_(0));
+  auto constraint = std::make_shared<EckhardtConstraint>();
+  constraint->SetGradientSparsityPattern({{0, 0}, {0, 1}, {1, 1}, {1, 2}});
+  prog_->AddConstraint(constraint, x_);
+  prog_->AddBoundingBoxConstraint(Eigen::Vector3d::Zero(),
+                                  Eigen::Vector3d(100, 100, 10), x_);
+}
+
+void EckhardtProblem::CheckSolution(const MathematicalProgramResult& result,
+                                    double tol) const {
+  ASSERT_TRUE(result.is_success());
+  const auto x_val = result.GetSolution(x_);
+  Eigen::Vector3d x_expected(std::log(std::log(10)), std::log(10), 10.0);
+  EXPECT_TRUE(CompareMatrices(x_val, x_expected, tol));
+  EXPECT_NEAR(result.get_optimal_cost(), -x_expected(0), tol);
+}
+
+EckhardtProblem::EckhardtConstraint::EckhardtConstraint()
+    : Constraint(2, 3, Eigen::Vector2d::Zero(),
+                 Eigen::Vector2d::Constant(kInf)) {}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

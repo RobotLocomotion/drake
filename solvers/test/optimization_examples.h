@@ -712,6 +712,62 @@ class DistanceToTetrahedronExample : public MathematicalProgram {
   Eigen::Vector4d b_tetrahedron_;
 };
 
+/**
+ * This problem is taken from Pseufo-complementary algorithms for mathematical
+ * programming by U. Eckhardt in Numerical Methods for Nonlinear Optimization,
+ * 1972. This problem has a sparse gradient.
+ * max x0
+ * s.t x1 - exp(x0) >= 0
+ *     x2 - exp(x1) >= 0
+ *     0 <= x0 <= 100
+ *     0 <= x1 <= 100
+ *     0 <= x2 <= 10
+ */
+class EckhardtProblem {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EckhardtProblem)
+
+  EckhardtProblem();
+
+  void CheckSolution(const MathematicalProgramResult& result, double tol) const;
+
+  const MathematicalProgram& prog() const { return *prog_; }
+
+ private:
+  class EckhardtConstraint : public Constraint {
+   public:
+    EckhardtConstraint();
+
+   private:
+    template <typename T>
+    void DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x,
+                       VectorX<T>* y) const {
+      using std::exp;
+      y->resize(2);
+      (*y)(0) = x(1) - exp(x(0));
+      (*y)(1) = x(2) - exp(x(1));
+    }
+
+    void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                Eigen::VectorXd* y) const override {
+      DoEvalGeneric(x, y);
+    }
+
+    void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                AutoDiffVecXd* y) const override {
+      DoEvalGeneric(x, y);
+    }
+
+    void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+                VectorX<symbolic::Expression>* y) const override {
+      DoEvalGeneric<symbolic::Expression>(x.cast<symbolic::Expression>(), y);
+    }
+  };
+
+  std::unique_ptr<MathematicalProgram> prog_;
+  Vector3<symbolic::Variable> x_;
+};
+
 std::set<CostForm> linear_cost_form();
 
 std::set<CostForm> quadratic_cost_form();

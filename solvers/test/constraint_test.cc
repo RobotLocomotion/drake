@@ -530,6 +530,29 @@ GTEST_TEST(testConstraint, testExponentialConeConstraint) {
       math::autoDiffToGradientMatrix(y_autodiff_expected), tol));
 }
 
+GTEST_TEST(testConstraint, SetGradientSparsityPattern) {
+  const VectorXd lb = VectorXd::Constant(2, -1);
+  const VectorXd ub = VectorXd::Constant(2, 1);
+  EvaluatorConstraint<> constraint(std::make_shared<SimpleEvaluator>(), lb, ub);
+  // The gradient sparsity pattern should be unset at constraint construction.
+  EXPECT_FALSE(constraint.gradient_sparsity_pattern().has_value());
+  // Now set the gradient sparsity pattern.
+  constraint.SetGradientSparsityPattern(
+      {{0, 0}, {0, 1}, {0, 2}, {1, 0}, {1, 1}, {1, 2}});
+  const auto& gradient_sparsity_pattern =
+      constraint.gradient_sparsity_pattern();
+  int gradient_entry_count = 0;
+  for (int i = 0; i < 2; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      EXPECT_EQ(gradient_sparsity_pattern.value()[gradient_entry_count].first,
+                i);
+      EXPECT_EQ(gradient_sparsity_pattern.value()[gradient_entry_count].second,
+                j);
+      ++gradient_entry_count;
+    }
+  }
+}
+
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
