@@ -1098,9 +1098,10 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
 
   // Add a new body, and weld it using `WeldFrames` (to ensure that topology is
   // updated via this API).
-  const RigidBody<double>& extra =
-      plant.AddRigidBody("extra", SpatialInertia<double>());
-  plant.WeldFrames(extra.body_frame(), plant.world_frame());
+  const Body<double>& extra =
+      plant.AddRigidBody("extra", world_model_instance(),
+      SpatialInertia<double>());
+  plant.WeldFrames(plant.world_frame(), extra.body_frame());
 
   // Verify we can call GetBodiesWeldedTo() pre-finalize.
   EXPECT_THAT(plant.GetBodiesWeldedTo(plant.world_body()),
