@@ -780,6 +780,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// related `MultibodyTree::AddJoint<>` method.
   template <template<typename Scalar> class JointType>
   const JointType<T>& AddJoint(std::unique_ptr<JointType<T>> joint) {
+    DRAKE_MBP_THROW_IF_FINALIZED();
     static_assert(std::is_convertible<JointType<T>*, Joint<T>*>::value,
                   "JointType must be a sub-class of Joint<T>.");
     RegisterJointInGraph(*joint);
