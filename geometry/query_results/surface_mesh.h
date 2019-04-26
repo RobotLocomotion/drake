@@ -133,24 +133,27 @@ class SurfaceMesh {
 
   /**
     Type of barycentric coordinates on a triangular element.
+    Barycentric coordinates (b0, b1, b2) satisfies b0 + b1 + b2 = 1, so
+    technically we could calculate one of the bᵢ from the others; however,
+    there is no standard way to suppress one of the coordinates.
    */
   using Barycentric = Vector<T, kDim + 1>;
 
   /** Returns the triangular element identified by a given index.
     @param e   The index of the triangular element.
-    @pre e ∈ [0, faces_.size()).
+    @pre e = 0, 1, 2,..., num_faces()-1.
    */
   const SurfaceFace& element(ElementIndex e) const {
-    DRAKE_DEMAND(0 <= e && e < faces_.size());
+    DRAKE_DEMAND(0 <= e && e <= num_faces() - 1);
     return faces_[e];
   }
 
   /** Returns the vertex identified by a given index.
     @param v  The index of the vertex.
-    @pre v ∈ [0, vertices.size()).
+    @pre v = 0, 1, 2,...,num_vertices()-1.
    */
   const SurfaceVertex<T>& vertex(VertexIndex v) const {
-    DRAKE_DEMAND(0 <= v && v < vertices_.size());
+    DRAKE_DEMAND(0 <= v && v <= num_vertices() - 1);
     return vertices_[v];
   }
 

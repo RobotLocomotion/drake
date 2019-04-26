@@ -146,7 +146,7 @@ class QueryObject {
    that pair. Pairs of _anchored_ geometries are also not reported.
 
    @returns A vector populated with contact surfaces of all detected
-            penetrating pairs of geometries.
+            intersecting pairs of geometries.
    @note  This function is not implemented yet. */
   std::vector<ContactSurface<T>> ComputeContactSurfaces() const;
 

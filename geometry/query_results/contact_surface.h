@@ -42,7 +42,7 @@ namespace geometry {
   space occupied by the body) in robotics.
 
   We describe the contact surface Sₘₙ between two intersecting compact subsets
-  M and N of ℝ³ endowed with the scalar field eₘ and eₙ on M ⊂ ℝ³ and N ⊂ ℝ³
+  M and N of ℝ³ with the scalar fields eₘ and eₙ defined on M ⊂ ℝ³ and N ⊂ ℝ³
   respectively:
 
                  eₘ : M → ℝ,
@@ -87,43 +87,47 @@ namespace geometry {
 
   This section resumes our standard terminology of @ref
   multibody_frames_and_bodies "Frames and Bodies". From now on, we will write
-  M and N for body M and body N endowed with M's coordinates frame and N's
-  coordinates frame respectively. We will write Sₘₙ, eₘₙ, and ∇hₘₙ for the
-  mathematical concepts in the previous section, and use the member variables
-  mesh_, e_MN_, and grad_h_MN_M_ for the representation or approximation of
+  M and N for body M and body N, each of which is associated with a coordinate
+  frame. Quantities defined in those coordinate frames will be denoted using
+  either _M or _N, respectively. We will write Sₘₙ, eₘₙ, and ∇hₘₙ for the
+  mathematical concepts in the previous section, and use the terms
+  mesh, e_MN, and grad_h_MN_M for the representation or approximation of
   the mathematical concepts.
 
   Our ContactSurface data structure represents the contact surface Sₘₙ as a
   triangulated surface mesh using SurfaceMesh, and represents the scalar field
   eₘₙ and the vector field ∇hₘₙ using MeshField.
 
-  The member variable `mesh_` representing Sₘₙ is the surface mesh of a free
-  surface that does not necessarily bound a volume. The member variable
-  `e_MN_` represents the scalar field eₘₙ on `mesh_`. The member variable
-  `grad_h_MN_M_` represents the vector field ∇hₘₙ on `mesh_` and is expressed
-  in the coordinates frame of the body M.
+  The term `mesh` refers to the surface mesh of Sₘₙ, which is a free
+  surface that does not necessarily bound a volume. The term `e_MN`
+  represents the scalar field eₘₙ on the `mesh`. The term `grad_h_MN_M`
+  represents the vector field ∇hₘₙ on the `mesh` and is expressed
+  in the coordinate frame of Body M.
 
   Mathematically ∇hₘₙ is defined on the common intersection of the space
-  occupied by the body M and the body N; however, the member variable
-  `grad_h_MN_M_` restricts the domain of ∇hₘₙ to the surface mesh only.
+  occupied by Body M and Body N; however, the member variable
+  `grad_h_MN_M` restricts the domain of ∇hₘₙ to the surface mesh only.
 
-  Due to discretization, the vector `grad_h_MN_M_` at a vertex need not be
+  Due to discretization, the vector `grad_h_MN_M` at a vertex need not be
   strictly orthogonal to any triangle sharing the vertex. Orthogonality does
   improve with finer discretization.
 
-  <h3> Local Coordinates </h3>
+  <h3> Barycentric Coordinates </h3>
 
-  For a point Q in the contact surface between body M and body N, r_MQ is the
-  displacement vector from the origin of M's frame to Q expressed in M's
-  frame. We can identify r_MQ to the _barycentric coordinates_
-  (b0, b1, b2) in a triangle of ContactSurface with vertices labeled as v₀,
-  v₁, v₂ by:
+  For a point Q on the surface mesh of the contact surface between Body M and
+  Body N, r_MQ = (x,y,z) is the displacement vector from the origin of M's
+  frame to Q expressed in the coordinate frame of M. We also have the
+  _barycentric coordinates_ (b0, b1, b2) on a triangle of the surface mesh that
+  contains Q. With vertices of the triangle labeled as v₀, v₁, v₂, we can
+  map (b0, b1, b2) to r_MQ by:
 
                r_MQ = b0 * r_MV₀ + b1 * r_MV₁ + b2 * r_MV₂,
                b0 + b1 + b2 = 1, bᵢ ∈ [0,1],
 
   where r_MVᵢ is the displacement vector of the vertex labeled as vᵢ from the
   origin of M's frame, expressed in M's frame.
+
+  We use the barycentric coordinates to evaluate the field values.
 
   @tparam T the underlying scalar type. Must be a valid Eigen scalar.
  */
@@ -197,7 +201,7 @@ class ContactSurface {
 
   /** Returns the reference to the surface mesh.
    */
-  const SurfaceMesh<T>& mesh() {
+  const SurfaceMesh<T>& mesh() const {
     DRAKE_DEMAND(mesh_.get() != nullptr);
     return *mesh_;
   }

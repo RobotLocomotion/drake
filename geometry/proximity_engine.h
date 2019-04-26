@@ -256,7 +256,7 @@ class ProximityEngine {
 
    @param[in]   geometry_map  A map from geometry _index_ to the corresponding
                               global geometry identifier.
-   @returns A vector populated with all detected penetrations characterized as
+   @returns A vector populated with all detected intersections characterized as
             contact surfaces.  */
   std::vector<ContactSurface<T>> ComputeContactSurfaces(
       const std::vector<GeometryId>& /* geometry_map */) const;
