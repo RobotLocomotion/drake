@@ -1531,15 +1531,12 @@ class MultibodyTree {
   /// @pre The velocity kinematics `vc` must have been previously updated with a
   /// call to CalcVelocityKinematicsCache().
   void CalcInverseDynamics(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc,
-      const VectorX<T>& known_vdot,
+      const systems::Context<T>& context, const VectorX<T>& known_vdot,
       const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
-  const Eigen::Ref<const VectorX<T>>& tau_applied_array,
+      const Eigen::Ref<const VectorX<T>>& tau_applied_array,
       std::vector<SpatialAcceleration<T>>* A_WB_array,
-  std::vector<SpatialForce<T>>* F_BMo_W_array,
-  EigenPtr<VectorX<T>> tau_array) const;
+      std::vector<SpatialForce<T>>* F_BMo_W_array,
+      EigenPtr<VectorX<T>> tau_array) const;
 
   /// See MultibodyPlant method.
   void CalcForceElementsContribution(
@@ -2098,7 +2095,7 @@ class MultibodyTree {
   // spatial acceleration `A_WB` for each body as measured and expressed in the
   // world frame W.
   //
-  // iff `ignore_velocities = true` velocity values stored in `context` are
+  // Iff `ignore_velocities = true` velocity values stored in `context` are
   // ignored and are assumed to be zero. Therefore, Velocity kinematics and
   // velocity dependent terms that become zero (such as bias terms) are not
   // computed to avoid unnecessary work.
@@ -2199,20 +2196,6 @@ class MultibodyTree {
       const Eigen::Ref<const MatrixX<T>>& p_WQ_list,
       JacobianWrtVariable with_respect_to,
       EigenPtr<MatrixX<T>> Jr_WFq, EigenPtr<MatrixX<T>> Jt_WFq) const;
-
-  // Implementation of CalcBiasTerm().
-  // It assumes:
-  //  - The position kinematics cache object is already updated to be in sync
-  //    with `context`.
-  //  - The velocity kinematics cache object is already updated to be in sync
-  //    with `context`.
-  //  - Cv is not nullptr.
-  //  - Cv has storage for a vector of size num_velocities().
-  void DoCalcBiasTerm(
-      const systems::Context<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc,
-      EigenPtr<VectorX<T>> Cv) const;
 
   // Helper method to apply forces due to damping at the joints.
   // MultibodyTree treats damping forces separately from other ForceElement
