@@ -103,6 +103,9 @@ void Result::CheckInvariants() {
 
 namespace {
 
+// A valid resource root will always contain this file.
+const char* const kSentinelRelpath = "drake/.drake-find_resource-sentinel";
+
 bool StartsWith(const string& str, const string& prefix) {
   return str.compare(0, prefix.size(), prefix) == 0;
 }
@@ -141,13 +144,12 @@ Result CheckAndMakeResult(
   DRAKE_DEMAND(IsRelativePath(resource_path));
 
   // Check for the sentinel.
-  const char* const sentinel_relpath = "drake/.drake-find_resource-sentinel";
-  if (!internal::IsFile(root + "/" + sentinel_relpath)) {
+  if (!internal::IsFile(root + "/" + kSentinelRelpath)) {
     return Result::make_error(resource_path, fmt::format(
         "Could not find Drake resource_path '{}' because {} specified a "
         "resource root of '{}' but that root did not contain the expected "
         "sentinel file '{}'.",
-        resource_path, root_description, root, sentinel_relpath));
+        resource_path, root_description, root, kSentinelRelpath));
   }
 
   // Check for the resource_path.
@@ -196,8 +198,42 @@ optional<string> MaybeFindResourceInAttic(const string& resource_path) {
   return nullopt;
 }
 
+// If the DRAKE_RESOURCE_ROOT environment variable is usable as a resource
+// root, returns its value, else returns nullopt.
+optional<string> MaybeGetEnvironmentResourceRoot() {
+  const char* const env_name = kDrakeResourceRootEnvironmentVariableName;
+  const char* const env_value = getenv(env_name);
+  if (!env_value) {
+    log()->debug(
+        "FindResource ignoring {} because it is not set.",
+        env_name);
+    return nullopt;
+  }
+  const std::string root{env_value};
+  if (!internal::IsDir(root)) {
+    static const logging::Warn log_once(
+        "FindResource ignoring {}='{}' because it does not exist.",
+        env_name, env_value);
+    return nullopt;
+  }
+  if (!internal::IsDir(root + "/drake")) {
+    static const logging::Warn log_once(
+        "FindResource ignoring {}='{}' because it does not contain a 'drake' "
+        "subdirectory.", env_name, env_value);
+    return nullopt;
+  }
+  if (!internal::IsFile(root + "/" + kSentinelRelpath)) {
+    static const logging::Warn log_once(
+        "FindResource ignoring {}='{}' because it does not contain the "
+        "expected sentinel file '{}'.", env_name, env_value, kSentinelRelpath);
+    return nullopt;
+  }
+  return root;
+}
+
 // If we are linked against libdrake_marker.so, and the install-tree-relative
-// path resolves correctly, return it as the resource root, else return nullopt.
+// path resolves correctly, returns the install tree resource root, else
+// returns nullopt.
 optional<string> MaybeGetInstallResourceRoot() {
   // Ensure that we have the library loaded.
   DRAKE_DEMAND(drake::internal::drake_marker_lib_check() == 1234);
@@ -245,16 +281,11 @@ Result FindResource(const string& resource_path) {
   // resource_path.  We expect that all sources offer all files.
 
   // (1) Check the environment variable.
-  if (char* guess = getenv(kDrakeResourceRootEnvironmentVariableName)) {
-    const char* const env_name = kDrakeResourceRootEnvironmentVariableName;
-    if (internal::IsDir(guess)) {
-      return CheckAndMakeResult(
-          fmt::format("{} environment variable ", env_name),
-          guess, resource_path);
-    } else {
-      log()->debug("FindResource ignoring {}='{}' because it does not exist",
-                   env_name, guess);
-    }
+  if (auto guess = MaybeGetEnvironmentResourceRoot()) {
+    return CheckAndMakeResult(
+        fmt::format("{} environment variable",
+                    kDrakeResourceRootEnvironmentVariableName),
+        *guess, resource_path);
   }
 
   // (2) Check the Runfiles.
@@ -266,8 +297,7 @@ Result FindResource(const string& resource_path) {
     }
     // As a compatibility shim, allow for directory resources for now.
     {
-      const std::string sentinel_relpath =
-          "drake/.drake-find_resource-sentinel";
+      const std::string sentinel_relpath(kSentinelRelpath);
       auto sentinel_rlocation_or_error =
           internal::FindRunfile(sentinel_relpath);
       DRAKE_THROW_UNLESS(sentinel_rlocation_or_error.error.empty());
