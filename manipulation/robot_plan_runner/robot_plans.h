@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <Eigen/Dense>
 
 #include "drake/multibody/plant/multibody_plant.h"
@@ -8,6 +10,8 @@
 namespace drake {
 namespace manipulation {
 namespace robot_plan_runner {
+
+enum class PlanTypes { kJointSpaceController, kTaskSpaceController };
 
 class PlanBase {
  public:
@@ -23,7 +27,7 @@ class PlanBase {
 
 class JointSpacePlan : public PlanBase {
  public:
-  JointSpacePlan() : num_positions_(7){};
+  JointSpacePlan() : num_positions_(7) {};
 
   void UpdatePlan(
       std::unique_ptr<trajectories::PiecewisePolynomial<double>> q_traj_new);

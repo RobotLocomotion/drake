@@ -1,10 +1,10 @@
-#include <vector>
-
 #include "drake/manipulation/robot_plan_runner/robot_plans.h"
 
 namespace drake {
 namespace manipulation {
 namespace robot_plan_runner {
+
+
 
 void JointSpacePlan::UpdatePlan(
     std::unique_ptr<trajectories::PiecewisePolynomial<double>> q_traj_new) {
@@ -22,9 +22,7 @@ void JointSpacePlan::Step(const Eigen::Ref<const Eigen::VectorXd>& q,
     *q_cmd = q_traj_->value(t);
     *tau_cmd = Eigen::VectorXd::Zero(num_positions_);
   }
-}
-
-
+};
 
 }  // namespace robot_plan_runner
 }  // namespace manipulation
