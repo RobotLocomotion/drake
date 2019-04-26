@@ -225,12 +225,12 @@ class ImplicitIntegrator : public IntegratorBase<T> {
  * @param t the time at which to compute the Jacobian.
  * @param xt the continuous state at which the Jacobian is computed.
  * @param h the integration step size (for computing iteration matrices).
+ * @param trial which trial (1-4) the Newton-Raphson process is in when calling
+ *        this method.
  * @param compute_and_factor_iteration_matrix a function pointer for computing
  *        and factoring the iteration matrix.
  * @param[out] iteration_matrix the updated and factored iteration matrix on
  *             return.
- * @param trial which trial (1-4) the Newton-Raphson process is in when calling
- *        this method.
  * @returns `false` if the calling stepping method should indicate failure;
  *          `true` otherwise.
  * @pre 1 <= `trial` <= 4.
@@ -238,11 +238,11 @@ class ImplicitIntegrator : public IntegratorBase<T> {
  *       if altered, it will be set to (t, xt).
  */
   bool CalcMatrices(const T& t, const VectorX<T>& xt, const T& h,
+      int trial,
       const std::function<void(const MatrixX<T>& J, const T& h,
           typename ImplicitIntegrator<T>::IterationMatrix*)>&
-      compute_iteration_matrix,
-      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
-      int trial);
+      compute_and_factor_iteration_matrix,
+      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
 
   /**
    * Resets any statistics particular to a specific implicit integrator. The
@@ -656,12 +656,11 @@ const MatrixX<T>& ImplicitIntegrator<T>::CalcJacobian(const T& t,
 
 template <class T>
 bool ImplicitIntegrator<T>::CalcMatrices(
-    const T& t, const VectorX<T>& xt, const T& h,
+    const T& t, const VectorX<T>& xt, const T& h, int trial,
     const std::function<void(const MatrixX<T>&, const T&,
         typename ImplicitIntegrator<T>::IterationMatrix*)>&
         compute_and_factor_iteration_matrix,
-    typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
-    int trial) {
+    typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) {
   // Compute the initial Jacobian and iteration matrices and factor them, if
   // necessary.
   MatrixX<T>& J = get_mutable_jacobian();

@@ -112,6 +112,8 @@ ComputeAndFactorImplicitTrapezoidIterationMatrix(
 //           step of size h (or `false` otherwise).
 // @note The time and continuous state in the context are indeterminate upon
 //       exit.
+// TODO(edrumwri) Explicitly test this method's fallback logic (i.e., how it
+//                calls CalcMatrices()) in a unit test.
 template <class T>
 bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
     const VectorX<T>& xt0, const std::function<VectorX<T>()>& g,
@@ -146,8 +148,8 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
 
   // Calculate Jacobian and iteration matrices (and factorizations), as needed,
   // around (tf, xtplus).
-  if (!this->CalcMatrices(tf, *xtplus, h, compute_and_factor_iteration_matrix,
-      &iteration_matrix_, trial)) {
+  if (!this->CalcMatrices(tf, *xtplus, h, trial,
+      compute_and_factor_iteration_matrix, &iteration_matrix_)) {
     this->set_last_newton_raphson_succeeded(false);
     return false;
   }
