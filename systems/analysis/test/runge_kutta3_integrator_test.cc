@@ -111,7 +111,7 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, CubicTest) {
   rk3.set_maximum_step_size(t_final);
   rk3.set_fixed_step_mode(true);
   rk3.Initialize();
-  rk3.IntegrateWithSingleFixedStepToTime(t_final);
+  ASSERT_TRUE(rk3.IntegrateWithSingleFixedStepToTime(t_final));
 
   // Check for near-exact 3rd-order results. The measure of accuracy is a
   // tolerance that scales with expected answer at t_final.
@@ -136,8 +136,8 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, CubicTest) {
   cubic_context->SetTime(0.0);
   cubic_context->get_mutable_continuous_state_vector()[0] = C;
   rk3.Initialize();
-  rk3.IntegrateWithSingleFixedStepToTime(t_final/2);
-  rk3.IntegrateWithSingleFixedStepToTime(t_final);
+  ASSERT_TRUE(rk3.IntegrateWithSingleFixedStepToTime(t_final/2));
+  ASSERT_TRUE(rk3.IntegrateWithSingleFixedStepToTime(t_final));
   const double err_est_2h_2 =
       rk3.get_error_estimate()->get_vector().GetAtIndex(0);
 
@@ -171,7 +171,7 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, QuadraticTest) {
   rk3.set_maximum_step_size(t_final);
   rk3.set_fixed_step_mode(true);
   rk3.Initialize();
-  rk3.IntegrateWithSingleFixedStepToTime(t_final);
+  ASSERT_TRUE(rk3.IntegrateWithSingleFixedStepToTime(t_final));
 
   const double err_est =
       rk3.get_error_estimate()->get_vector().GetAtIndex(0);
@@ -194,7 +194,7 @@ TEST_F(RK3IntegratorTest, ComparisonWithRK2) {
   const double t_final = 1.0;
   const int n_steps = t_final / dt;
   for (int i = 1; i <= n_steps; ++i)
-    rk2.IntegrateWithSingleFixedStepToTime(i * dt);
+    ASSERT_TRUE(rk2.IntegrateWithSingleFixedStepToTime(i * dt));
 
   // Re-integrate with RK3.
   std::unique_ptr<Context<double>> rk3_context = MakePlantContext();
