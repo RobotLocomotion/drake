@@ -476,6 +476,7 @@ drake_cc_googletest(
     name = "rigid_transform_test",
     deps = [
         ":geometric_transform",
+        "//common/test_utilities",
     ],
 )
 
