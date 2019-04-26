@@ -121,7 +121,7 @@ TEST_F(CartPoleTest, MassMatrix) {
   Matrix2<double> M;
   pole_pin_->set_angle(context_.get(), theta);
   cart_pole_.CalcMassMatrixViaInverseDynamics(*context_, &M);
-  Matrix2<double> M_expected = CartPoleHandWritenMassMatrix(theta);
+  Matrix2<double> M_expected = CartPoleHandWrittenMassMatrix(theta);
 
   // Matrix verified to this tolerance.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();

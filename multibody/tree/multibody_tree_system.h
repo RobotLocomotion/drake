@@ -78,7 +78,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   given Context, recalculating it first if necessary. */
   const PositionKinematicsCache<T>& EvalPositionKinematics(
       const systems::Context<T>& context) const {
-    return this->get_cache_entry(position_kinematics_cache_index_)
+    return this->get_cache_entry(cache_indexes_.position_kinematics_cache)
         .template Eval<PositionKinematicsCache<T>>(context);
   }
 
@@ -87,7 +87,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   PositionKinematicsCache will be recalculated as well. */
   const VelocityKinematicsCache<T>& EvalVelocityKinematics(
       const systems::Context<T>& context) const {
-    return this->get_cache_entry(velocity_kinematics_cache_index_)
+    return this->get_cache_entry(cache_indexes_.velocity_kinematics_cache)
         .template Eval<VelocityKinematicsCache<T>>(context);
   }
 
@@ -167,6 +167,16 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   template <typename U>
   friend class MultibodyTreeSystem;
 
+  // This struct stores in one single place all indexes related to
+  // MultibodyTreeSystem specific cache entries.
+  struct CacheIndexes {
+    systems::CacheIndex dynamic_bias_cache;
+    systems::CacheIndex H_PB_W_cache;
+    systems::CacheIndex position_kinematics_cache;
+    systems::CacheIndex spatial_inertia_in_world_cache;
+    systems::CacheIndex velocity_kinematics_cache;
+  };
+
   // This is the one real constructor. From the public API, a null tree is
   // illegal and gets an error message. From the protected API, a null tree
   // means we allocate an empty one and leave it un-finalized. In either case,
@@ -181,9 +191,9 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   bool is_discrete_{false};
 
   std::unique_ptr<drake::multibody::internal::MultibodyTree<T>> tree_;
-  systems::CacheIndex position_kinematics_cache_index_;
-  systems::CacheIndex velocity_kinematics_cache_index_;
-  systems::CacheIndex H_PB_W_cache_index_;
+
+  // All MultibodyTreeSystem cache indexes are stored in cache_indexes_.
+  CacheIndexes cache_indexes_;
 
   // Used to enforce "finalize once" restriction for protected-API users.
   bool already_finalized_{false};
