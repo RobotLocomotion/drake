@@ -117,6 +117,11 @@ ContactSurface<T> TestInstantiateContactSurface() {
     const Vector3<T> expect_g = T(0.6) * g2 + T(0.3) * g3 + T(0.1) * g0;
     EXPECT_EQ(expect_g, contact_surface.EvaluateGrad_h_MN_M(f1, b));
   }
+  // Tests area() of triangular faces.
+  {
+    EXPECT_EQ(T(0.5), contact_surface.mesh().area(SurfaceFaceIndex(0)));
+    EXPECT_EQ(T(0.5), contact_surface.mesh().area(SurfaceFaceIndex(1)));
+  }
 
   return contact_surface;
 }

@@ -236,7 +236,7 @@ class ProximityEngine {
    of the penetration "depth" of the two objects), but _not_ the overlapping
    volume.
 
-   For two penetrating geometries g₁ and g₂, it is guaranteed that they will
+   For two penetrating geometries g_A and g_B, it is guaranteed that they will
    map to `id_A` and `id_B` in a fixed, repeatable manner.
 
    @param[in]   geometry_map  A map from geometry _index_ to the corresponding

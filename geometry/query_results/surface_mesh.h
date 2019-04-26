@@ -165,8 +165,11 @@ class SurfaceMesh {
    */
   SurfaceMesh(std::vector<SurfaceFace>&& faces,
               std::vector<SurfaceVertex<T>>&& vertices)
-  : faces_(std::move(faces)), vertices_(std::move(vertices))
-  {}
+      : faces_(std::move(faces)),
+        area_(faces_.size()),
+        vertices_(std::move(vertices)) {
+    init();
+  }
 
   /** Returns the number of triangular elements.
    */
@@ -176,13 +179,39 @@ class SurfaceMesh {
    */
   int num_vertices() const { return vertices_.size(); }
 
+  /** Returns area of a triangular element
+   */
+  T area(SurfaceFaceIndex f) const { return area_[f]; }
+
  private:
+  // Initialization.
+  void init();
+  // Evaluate area of a triangular face.
+  T EvaluateFaceArea(SurfaceFaceIndex f);
   // The triangles that comprise the surface.
   std::vector<SurfaceFace> faces_;
+  // Area of the triangles. Computed in initialization.
+  std::vector<T> area_;
   // The vertices that are shared between the triangles.
   std::vector<SurfaceVertex<T>> vertices_;
 };
 
+template <class T>
+void SurfaceMesh<T>::init() {
+  for (SurfaceFaceIndex f(0); f < faces_.size(); ++f)
+    area_[f] = EvaluateFaceArea(f);
+}
+
+template <class T>
+T SurfaceMesh<T>::EvaluateFaceArea(SurfaceFaceIndex f) {
+  const auto& r_MU = vertices_[faces_[f].vertex(0)].r_MV();
+  const auto& r_MV = vertices_[faces_[f].vertex(1)].r_MV();
+  const auto& r_MW = vertices_[faces_[f].vertex(2)].r_MV();
+  const auto r_UV_M = r_MV - r_MU;
+  const auto r_UW_M = r_MW - r_MU;
+  const auto cross = r_UV_M.cross(r_UW_M);
+  return T(0.5)*cross.norm();
+}
 
 }  // namespace geometry
 }  // namespace drake
