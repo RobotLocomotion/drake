@@ -131,7 +131,8 @@ GTEST_TEST(IntegratorTest, MagDisparity) {
   integrator.Initialize();
 
   // Take a fixed integration step.
-  integrator.IntegrateWithSingleFixedStepToTime(context->get_time() + dt);
+  ASSERT_TRUE(integrator.IntegrateWithSingleFixedStepToTime(
+      context->get_time() + dt));
 }
 
 // Try a purely continuous system with no sampling.
@@ -280,7 +281,7 @@ GTEST_TEST(IntegratorTest, StepSize) {
   {
     const double boundary_dt = 0.0009;
     const double boundary_time = context->get_time() + boundary_dt;
-    integrator.IntegrateWithSingleFixedStepToTime(boundary_time);
+    ASSERT_TRUE(integrator.IntegrateWithSingleFixedStepToTime(boundary_time));
     EXPECT_EQ(t + boundary_dt, context->get_time());
     t = context->get_time();
   }
