@@ -52,6 +52,25 @@ drake_cc_binary(
     deps = [":robot_plans",]
 )
 
+drake_cc_library(
+    name = "controller_systems",
+    srcs = [
+        "controller_systems.cc",
+    ],
+    hdrs = [
+        "controller_systems.h",
+    ],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":robot_plans",
+        "//common:find_resource",
+        "//systems/framework",
+    ],
+)
+
 install_data()
 
 add_lint_tests()
