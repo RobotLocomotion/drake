@@ -141,7 +141,7 @@ class QueryObject {
 
   /**
    Reports pair-wise intersections and characterizes each non-empty
-   intersection as a ContactSurface. The computations is subject to collision
+   intersection as a ContactSurface. The computation is subject to collision
    filtering. If two geometries are separated, there will be no result for
    that pair. Pairs of _anchored_ geometries are also not reported.
 

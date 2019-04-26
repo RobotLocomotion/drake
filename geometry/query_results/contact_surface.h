@@ -34,7 +34,7 @@ namespace geometry {
   the hydroelastic pressure field contact model. Here the mathematical
   discussion is coordinate-free (treatment of the topic without reference to
   any particular coordinate system); however, our implementation heavily
-  relies on coordinates frames. We borrow terminology from differential
+  relies on coordinate frames. We borrow terminology from differential
   geometry.
 
   In this section, the mathematical term _compact set_ (a subset of Euclidean
@@ -48,16 +48,18 @@ namespace geometry {
                  eₘ : M → ℝ,
                  eₙ : N → ℝ.
 
-  The _contact surface_ Sₘₙ is the surface of equilibrium eₘ = eₙ:
+  The _contact surface_ Sₘₙ is the surface of equilibrium eₘ = eₙ. It is the
+  locus of points q with eₘ(q) equals eₙ(q):
 
                Sₘₙ = { q ∈ M ∩ N : eₘ(q) = eₙ(q) }.
 
   Here we write the lower-case q for a point that is an element of a compact
-  subset of the Euclidean space ℝ³.  In our implementation, it corresponds to
-  a point Q, or r_MQ_M its displacement vector from the origin of the
-  coordinates frame of the body M expressed in M's frame.
+  subset of the Euclidean space ℝ³.  In our implementation, it corresponds
+  to Point Q, or r_MQ_M its displacement vector from the origin of the
+  coordinate frame of the body M expressed in M's frame.
 
-  We can define the scalar field eₘₙ on Sₘₙ as the common value of eₘ and eₙ:
+  We can define the scalar field eₘₙ on the surface Sₘₙ as a scalar function
+  that assigns q ∈ Sₘₙ the value of eₘ(q), which is the same as eₙ(q):
 
                eₘₙ : Sₘₙ → ℝ,
                eₘₙ(q) = eₘ(q) = eₙ(q).
@@ -91,12 +93,12 @@ namespace geometry {
   frame. Quantities defined in those coordinate frames will be denoted using
   either _M or _N, respectively. We will write Sₘₙ, eₘₙ, and ∇hₘₙ for the
   mathematical concepts in the previous section, and use the terms
-  mesh, e_MN, and grad_h_MN_M for the representation or approximation of
+  mesh, e_MN, and grad_h_MN_M to represent, in some cases approximately,
   the mathematical concepts.
 
   Our ContactSurface data structure represents the contact surface Sₘₙ as a
-  triangulated surface mesh using SurfaceMesh, and represents the scalar field
-  eₘₙ and the vector field ∇hₘₙ using MeshField.
+  triangulated SurfaceMesh, and represents the scalar field eₘₙ and the
+  vector field ∇hₘₙ using MeshField.
 
   The term `mesh` refers to the surface mesh of Sₘₙ, which is a free
   surface that does not necessarily bound a volume. The term `e_MN`
@@ -105,16 +107,16 @@ namespace geometry {
   in the coordinate frame of Body M.
 
   Mathematically ∇hₘₙ is defined on the common intersection of the space
-  occupied by Body M and Body N; however, the member variable
-  `grad_h_MN_M` restricts the domain of ∇hₘₙ to the surface mesh only.
+  occupied by Body M and Body N; however, we store `grad_h_MN_M` on the
+  surface mesh only.
 
   Due to discretization, the vector `grad_h_MN_M` at a vertex need not be
-  strictly orthogonal to any triangle sharing the vertex. Orthogonality does
-  improve with finer discretization.
+  strictly orthogonal to every triangle sharing the vertex. Orthogonality
+  generally does improve with finer discretization.
 
   <h3> Barycentric Coordinates </h3>
 
-  For a point Q on the surface mesh of the contact surface between Body M and
+  For Point Q on the surface mesh of the contact surface between Body M and
   Body N, r_MQ = (x,y,z) is the displacement vector from the origin of M's
   frame to Q expressed in the coordinate frame of M. We also have the
   _barycentric coordinates_ (b0, b1, b2) on a triangle of the surface mesh that
@@ -169,8 +171,8 @@ class ContactSurface {
   /** Returns the geometry id of the body N. */
   GeometryId id_N() const { return id_N_; }
 
-  /** Evaluates the scalar field eₘₙ at a point Q in a triangle.
-    The point Q is specified by its barycentric coordinates.
+  /** Evaluates the scalar field eₘₙ at Point Q in a triangle.
+    Point Q is specified by its barycentric coordinates.
     @param face         The face index of the triangle.
     @param barycentric  The barycentric coordinates of Q on the triangle.
    */
@@ -179,8 +181,8 @@ class ContactSurface {
     return e_MN_.Evaluate(face, barycentric);
   }
 
-  /** Evaluates the vector field ∇hₘₙ at a point Q on a triangle.
-    The point Q is specified by its barycentric coordinates.
+  /** Evaluates the vector field ∇hₘₙ at Point Q on a triangle.
+    Point Q is specified by its barycentric coordinates.
     @param face         The face index of the triangle.
     @param barycentric  The barycentric coordinates of Q on the triangle.
     @retval  grad_h_MN_M is the vector expressed in M's frame.
