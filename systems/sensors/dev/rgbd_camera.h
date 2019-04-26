@@ -34,28 +34,40 @@ namespace dev {
     @output_port{X_WB}
  }
 
- Let `W` be the world coordinate system. In addition to `W`, there are three
- more coordinate systems that are associated with an RgbdCamera2. They are
- defined as follows:
+ The following text uses terminology from CameraInfo; please review this
+ class's documentation. Most notably, "camera" in this context implies an array
+ of imagers.
 
-   * `B` - the camera's base coordinate system: X-forward, Y-left, and Z-up.
+ The following coordinate systems are defined for this class:
 
-   * `C` - the camera's color sensor's optical coordinate system: `X-right`,
-           `Y-down` and `Z-forward`.
+   - `B` - the physical camera's base coordinate system; see below for
+     the default interpretation of coordinate systems.
 
-   * `D` - the camera's depth sensor's optical coordinate system: `X-right`,
-           `Y-down` and `Z-forward`.
+   - `C` - the camera's color sensor's optical coordinate system: `X-right`,
+     `Y-down` and `Z-forward`,
 
- Frames `C` and `D` are coincident and aligned. The origins of `C` and `D`
- (`Co` and `Do`, respectively) have position
- `p_BoCo_B = p_BoDo_B = <0 m, 0.02 m, 0 m>` by default. In other words
- `X_CD = I`. This definition implies that the depth image is a "registered
- depth image" for the RGB image, and that no disparity between the RGB and
- depth images are modeled in this system by default. For more details about
- the poses of `C` and `D`, see the class documentation of CameraInfo. These
- poses can be overwritten after construction with the appropriate methods
- (though you'll often only want to change their origins while keeping both
- cameras facing in the same direction).
+   - `D` - the camera's depth sensor's optical coordinate system: `X-right`,
+     `Y-down` and `Z-forward`.
+
+ The default definitions of `X_BC` of `X_BD` imply:
+
+    - `C` and `D` are coincident and aligned,
+
+    - The coordinate system of `B` w.r.t. both optical coordinate systems is:
+      `X-forward`, `Y-left`, and `Z-up`,
+
+    - The origins of `C` (`Co`) and `D` (`Do`) have position
+      `p_BoCo_B = p_BoDo_B = <0 m, 0.02 m, 0 m>`.
+
+    - The depth image is a "registered depth image" for the RGB image, and that
+      no disparity between the RGB and depth images are modeled in this system
+      by default.
+
+ You may change `X_BC` or `X_BD`. If you do so, then some or all of the above
+ relationships may not apply. For example, if you set `X_BC = I` and
+ `X_BD = I`, then the coordinate system of `B` w.r.t. both optical coordinate
+ systems are the same as `C` and `D`: `X-right`, `Y-down` and `Z-forward`.
+
   <!-- TODO(gizatt): The setters for modifying the camera poses create a
   vulnerability that allows users to modify internal system state during
   simulation via a non-intended path. See PR#10491 for discussion;
@@ -63,6 +75,7 @@ namespace dev {
   or accepting these poses during construction.-->
 
  Output port image formats:
+
    - color_image: Four channels, each channel uint8_t, in the following order:
      red, green, blue, and alpha.
 
