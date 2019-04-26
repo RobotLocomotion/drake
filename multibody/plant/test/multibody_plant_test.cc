@@ -1096,9 +1096,15 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
   const Body<double>& upper = plant.GetBodyByName("upper_section");
   const Body<double>& lower = plant.GetBodyByName("lower_section");
 
+  // Add a new body, and weld it using `WeldFrames` (to ensure that topology is
+  // updated via this API).
+  const RigidBody<double>& extra =
+      plant.AddRigidBody("extra", SpatialInertia<double>());
+  plant.WeldFrames(extra.body_frame(), plant.world_frame());
+
   // Verify we can call GetBodiesWeldedTo() pre-finalize.
   EXPECT_THAT(plant.GetBodiesWeldedTo(plant.world_body()),
-              UnorderedElementsAreArray({&plant.world_body()}));
+              UnorderedElementsAreArray({&plant.world_body(), &extra}));
   EXPECT_THAT(plant.GetBodiesWeldedTo(lower),
               UnorderedElementsAreArray({&upper, &lower}));
 
