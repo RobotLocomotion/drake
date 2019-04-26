@@ -257,7 +257,10 @@ drake_cc_library(
     name = "utilities",
     srcs = ["utilities.cc"],
     hdrs = ["utilities.h"],
-    deps = ["//common"],
+    deps = [
+        "//common",
+        "//math:geometric_transform",
+    ],
 )
 
 # -----------------------------------------------------
@@ -282,6 +285,8 @@ drake_cc_googletest(
     deps = [
         ":frame_kinematics",
         "//common/test_utilities",
+        "//common/test_utilities:limit_malloc",
+        "//math:geometric_transform",
     ],
 )
 

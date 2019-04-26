@@ -81,7 +81,7 @@ class Junction : public api::Junction {
   // The non-template implementation of AddSegment<T>()
   void AddSegmentPrivate(std::unique_ptr<Segment> segment);
 
-  const api::JunctionId do_id() const override { return id_; }
+  api::JunctionId do_id() const override { return id_; }
 
   const api::RoadGeometry* do_road_geometry() const override;
 

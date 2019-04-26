@@ -535,14 +535,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // evaluate inputs on the context.
   friend class QueryObject<T>;
 
-  // The two output ports (bundle and query object) depend on all input
-  // kinematics (more or less). This makes those relationships concrete and
-  // official even if/when this class is made symbolic-compatible (or the
-  // default non-symbolic-compatible behavior were to change).
-  optional<bool> DoHasDirectFeedthrough(int, int) const override {
-    return true;
-  }
-
   // Helper class to register input ports for a source id.
   void MakeSourcePorts(SourceId source_id);
 

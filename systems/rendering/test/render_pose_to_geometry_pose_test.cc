@@ -26,16 +26,12 @@ GTEST_TEST(RenderPoseToGeometryPoseTest, InputOutput) {
   const auto& output =
       dut.get_output_port().Eval<geometry::FramePoseVector<double>>(
           *context);
-  EXPECT_EQ(output.source_id(), source_id);
   EXPECT_EQ(output.size(), 1);
   ASSERT_TRUE(output.has_id(frame_id));
   EXPECT_TRUE(CompareMatrices(
       output.value(frame_id).matrix(),
       input.get_isometry().matrix()));
-}
 
-GTEST_TEST(RenderPoseToGeometryPoseTest, DirectFeedthrough) {
-  const RenderPoseToGeometryPose<double> dut({}, {});
   EXPECT_TRUE(dut.HasAnyDirectFeedthrough());
 }
 

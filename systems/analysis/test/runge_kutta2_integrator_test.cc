@@ -191,7 +191,7 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, QuadraticTest) {
   rk2.set_maximum_step_size(t_final);
   rk2.set_fixed_step_mode(true);
   rk2.Initialize();
-  rk2.IntegrateWithSingleFixedStepToTime(t_final);
+  ASSERT_TRUE(rk2.IntegrateWithSingleFixedStepToTime(t_final));
 
   const double expected_result = t_final * (4 * t_final + 4) + C;
   EXPECT_NEAR(

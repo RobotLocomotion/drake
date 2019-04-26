@@ -376,6 +376,10 @@ DrakeDeprecatedClass {
     "Also, I like hats.")
   int f(int arg);
 
+  DRAKE_DEPRECATED("2038-01-19",
+    "f() now requires an int.")
+  int f();
+
   /// Ideally this overview would still appear, but it does not yet.
   DRAKE_DEPRECATED("2038-01-19", "a() is slow; use b() instead.")
   int a();

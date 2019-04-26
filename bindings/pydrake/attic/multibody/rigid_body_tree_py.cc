@@ -522,7 +522,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
           doc.RigidBodyFrame.get_transform_to_body.doc);
 
   const char* const doc_AddModelInstanceFromUrdfFile =
-      doc.drake.parsers.urdf.AddModelInstanceFromUrdfFile.doc;
+      doc.drake.parsers.urdf.AddModelInstanceFromUrdfFile.doc_deprecated_5args;
   m.def("AddModelInstanceFromUrdfFile",
       [](const std::string& urdf_filename,
           const FloatingBaseType floating_base_type,

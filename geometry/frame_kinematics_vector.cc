@@ -1,6 +1,6 @@
 #include "drake/geometry/frame_kinematics_vector.h"
 
-#include <utility>
+#include <stdexcept>
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
@@ -11,59 +11,119 @@
 namespace drake {
 namespace geometry {
 
-using std::make_pair;
-using std::move;
+namespace {
+template <typename T>
+void InitializeKinematicsValue(Isometry3<T>* value) {
+  value->setIdentity();
+}
+}  // namespace
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename KinematicsValue>
 FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector()
     : FrameKinematicsVector<KinematicsValue>({}, {}) {}
+#pragma GCC diagnostic pop
 
 template <typename KinematicsValue>
 FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector(
     SourceId source_id, const std::vector<FrameId>& ids)
     : source_id_(source_id), values_(0) {
+  optional<KinematicsValue> default_value{KinematicsValue{}};
+  InitializeKinematicsValue(&default_value.value());
   for (FrameId id : ids) {
-    bool is_unique = values_.insert(make_pair(id, FlaggedValue())).second;
+    bool is_unique = values_.emplace(id, default_value).second;
     if (!is_unique) {
       throw std::runtime_error(
           fmt::format("At least one frame id appears multiple times: {}", id));
     }
+    ++size_;
   }
+  DRAKE_ASSERT_VOID(CheckInvariants());
+}
+
+template <typename KinematicsValue>
+FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector(
+    std::initializer_list<std::pair<const FrameId, KinematicsValue>> init) {
+  values_.insert(init.begin(), init.end());
+  size_ = init.size();
+  DRAKE_ASSERT_VOID(CheckInvariants());
+}
+
+template <typename KinematicsValue>
+FrameKinematicsVector<KinematicsValue>&
+FrameKinematicsVector<KinematicsValue>::operator=(
+    std::initializer_list<std::pair<const FrameId, KinematicsValue>> init) {
+  // N.B. We can't use unordered_map::insert in our operator= implementation
+  // because it does not overwrite pre-existing keys.  (Our clear() doesn't
+  // remove the keys, it only nulls the values.)
+  clear();
+  for (const auto& item : init) {
+    set_value(item.first, item.second);
+  }
+  DRAKE_ASSERT_VOID(CheckInvariants());
+  return *this;
 }
 
 template <typename KinematicsValue>
 void FrameKinematicsVector<KinematicsValue>::clear() {
-  ++version_;
+  for (auto& item : values_) {
+    item.second = nullopt;
+  }
+  size_ = 0;
 }
 
 template <typename KinematicsValue>
 void FrameKinematicsVector<KinematicsValue>::set_value(
     FrameId id, const KinematicsValue& value) {
-  using std::to_string;
-
-  if (values_.count(id) != 1) {
-    throw std::runtime_error(
-        "Trying to set a kinematics value for a frame id that does not belong "
-            "to the kinematics vector: "  + to_string(id));
-  }
-  if (values_[id].version == version_) {
-    throw std::runtime_error(
-        "Trying to set kinematics value for the same id (" + to_string(id)
-        + ") multiple times. Did you forget to call clear()?");
-  }
-  values_[id].version = version_;
-  values_[id].value = value;
+  auto& map_value = values_[id];
+  if (!map_value.has_value()) { ++size_; }
+  map_value = value;
 }
 
 template <typename KinematicsValue>
 const KinematicsValue& FrameKinematicsVector<KinematicsValue>::value(
     FrameId id) const {
   using std::to_string;
-  if (values_.count(id) != 1) {
-    throw std::runtime_error("Can't acquire value for id " + to_string(id) +
-                             ". It is not part of the kinematics data id set.");
+  auto iter = values_.find(id);
+  if (iter != values_.end()) {
+    const optional<KinematicsValue>& map_value = iter->second;
+    if (map_value.has_value()) {
+      return *map_value;
+    }
   }
-  return values_.at(id).value;
+  throw std::runtime_error("No such FrameId " + to_string(id) + ".");
+}
+
+template <typename KinematicsValue>
+bool FrameKinematicsVector<KinematicsValue>::has_id(FrameId id) const {
+  auto iter = values_.find(id);
+  return (iter != values_.end()) && iter->second.has_value();
+}
+
+template <typename KinematicsValue>
+std::vector<FrameId>
+FrameKinematicsVector<KinematicsValue>::frame_ids() const {
+  std::vector<FrameId> result;
+  result.reserve(size_);
+  for (const auto& item : values_) {
+    if (item.second.has_value()) {
+      result.emplace_back(item.first);
+    }
+  }
+  DRAKE_ASSERT(static_cast<int>(result.size()) == size_);
+  return result;
+}
+
+template <typename KinematicsValue>
+void FrameKinematicsVector<KinematicsValue>::CheckInvariants() const {
+  int num_nonnull = 0;
+  for (const auto& item : values_) {
+    if (item.second.has_value()) {
+      ++num_nonnull;
+    }
+  }
+  DRAKE_DEMAND(num_nonnull == size_);
 }
 
 // Explicitly instantiates on the most common scalar types.

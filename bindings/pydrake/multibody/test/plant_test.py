@@ -163,7 +163,11 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(
             plant.get_actuation_input_port(), InputPort)
         self.assertIsInstance(
-            plant.get_continuous_state_output_port(), OutputPort)
+            plant.get_state_output_port(), OutputPort)
+        # Smoke test of deprecated methods.
+        with catch_drake_warnings(expected_count=2):
+            plant.get_continuous_state_output_port()
+            plant.get_continuous_state_output_port(model_instance)
         self.assertIsInstance(
             plant.get_contact_results_output_port(), OutputPort)
         self.assertIsInstance(plant.num_frames(), int)
@@ -394,7 +398,7 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(
             plant.get_actuation_input_port(iiwa_model), InputPort)
         self.assertIsInstance(
-            plant.get_continuous_state_output_port(gripper_model), OutputPort)
+            plant.get_state_output_port(gripper_model), OutputPort)
         self.assertIsInstance(
             plant.get_generalized_contact_forces_output_port(
                 model_instance=gripper_model),

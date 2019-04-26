@@ -160,10 +160,10 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       default_model_instance()).size(), 1);
   EXPECT_EQ(plant->get_actuation_input_port(
       pendulum_model_instance).size(), 1);
-  EXPECT_EQ(plant->get_continuous_state_output_port().size(), 6);
-  EXPECT_EQ(plant->get_continuous_state_output_port(
+  EXPECT_EQ(plant->get_state_output_port().size(), 6);
+  EXPECT_EQ(plant->get_state_output_port(
       default_model_instance()).size(), 4);
-  EXPECT_EQ(plant->get_continuous_state_output_port(
+  EXPECT_EQ(plant->get_state_output_port(
       pendulum_model_instance).size(), 2);
 
   // Check that model-instance ports get named properly.
@@ -172,10 +172,10 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(
       plant->get_actuation_input_port(default_model_instance()).get_name(),
       "DefaultModelInstance_actuation");
-  EXPECT_EQ(plant->get_continuous_state_output_port(default_model_instance())
+  EXPECT_EQ(plant->get_state_output_port(default_model_instance())
                 .get_name(),
             "DefaultModelInstance_continuous_state");
-  EXPECT_EQ(plant->get_continuous_state_output_port(pendulum_model_instance)
+  EXPECT_EQ(plant->get_state_output_port(pendulum_model_instance)
                 .get_name(),
             "SplitPendulum_continuous_state");
 
@@ -386,11 +386,20 @@ class AcrobotPlantTests : public ::testing::Test {
     EXPECT_NO_THROW(plant_->get_geometry_poses_output_port());
 
     DRAKE_EXPECT_THROWS_MESSAGE(
-        plant_->get_continuous_state_output_port(),
+        plant_->get_state_output_port(),
         std::logic_error,
         /* Verify this method is throwing for the right reasons. */
         "Pre-finalize calls to '.*' are not allowed; "
         "you must call Finalize\\(\\) first.");
+
+    link1_ = &plant_->GetBodyByName(parameters_.link1_name());
+    link2_ = &plant_->GetBodyByName(parameters_.link2_name());
+
+    // Test we can call these methods pre-finalize.
+    const FrameId link1_frame_id =
+        plant_->GetBodyFrameIdOrThrow(link1_->index());
+    EXPECT_EQ(link1_frame_id, *plant_->GetBodyFrameIdIfExists(link1_->index()));
+    EXPECT_EQ(plant_->GetBodyFromFrameId(link1_frame_id), link1_);
 
     // Finalize() the plant.
     plant_->Finalize();
@@ -398,8 +407,6 @@ class AcrobotPlantTests : public ::testing::Test {
     // And build the Diagram:
     diagram_ = builder.Build();
 
-    link1_ = &plant_->GetBodyByName(parameters_.link1_name());
-    link2_ = &plant_->GetBodyByName(parameters_.link2_name());
     shoulder_ = &plant_->GetMutableJointByName<RevoluteJoint>(
         parameters_.shoulder_joint_name());
     elbow_ = &plant_->GetMutableJointByName<RevoluteJoint>(
@@ -686,11 +693,10 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   EXPECT_NO_THROW(poses_value->get_value<FramePoseVector<double>>());
   const FramePoseVector<double>& poses =
       poses_value->get_value<FramePoseVector<double>>();
-  EXPECT_EQ(poses.source_id(), plant_->get_source_id());
-  EXPECT_EQ(poses.size(), 2);  // Only two frames move.
 
   // Compute the poses for each geometry in the model.
   plant_->get_geometry_poses_output_port().Calc(*context, poses_value.get());
+  EXPECT_EQ(poses.size(), 2);  // Only two frames move.
 
   const FrameId world_frame_id =
       plant_->GetBodyFrameIdOrThrow(plant_->world_body().index());
@@ -1083,23 +1089,25 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
   using ::testing::UnorderedElementsAreArray;
   // This test expects that the following model has a world body and a pair of
   // welded-together bodies.
-  const std::string sdf_file = FindResourceOrThrow(
-      "drake/multibody/plant/test/split_pendulum.sdf");
+  const std::string sdf_file =
+      FindResourceOrThrow("drake/multibody/plant/test/split_pendulum.sdf");
   MultibodyPlant<double> plant;
   Parser(&plant).AddModelFromFile(sdf_file);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.GetBodiesWeldedTo(plant.world_body()), std::logic_error,
-      "Pre-finalize calls to 'GetBodiesWeldedTo\\(\\)' are not "
-      "allowed; you must call Finalize\\(\\) first.");
-  plant.Finalize();
   const Body<double>& upper = plant.GetBodyByName("upper_section");
   const Body<double>& lower = plant.GetBodyByName("lower_section");
-  EXPECT_THAT(
-      plant.GetBodiesWeldedTo(plant.world_body()),
-      UnorderedElementsAreArray({&plant.world_body()}));
-  EXPECT_THAT(
-      plant.GetBodiesWeldedTo(lower),
-      UnorderedElementsAreArray({&upper, &lower}));
+
+  // Verify we can call GetBodiesWeldedTo() pre-finalize.
+  EXPECT_THAT(plant.GetBodiesWeldedTo(plant.world_body()),
+              UnorderedElementsAreArray({&plant.world_body()}));
+  EXPECT_THAT(plant.GetBodiesWeldedTo(lower),
+              UnorderedElementsAreArray({&upper, &lower}));
+
+  // And post-finalize.
+  plant.Finalize();
+  EXPECT_THAT(plant.GetBodiesWeldedTo(plant.world_body()),
+              UnorderedElementsAreArray({&plant.world_body()}));
+  EXPECT_THAT(plant.GetBodiesWeldedTo(lower),
+              UnorderedElementsAreArray({&upper, &lower}));
 }
 
 // Verifies the process of collision geometry registration with a
@@ -1170,11 +1178,10 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   EXPECT_NO_THROW(poses_value->get_value<FramePoseVector<double>>());
   const FramePoseVector<double>& pose_data =
       poses_value->get_value<FramePoseVector<double>>();
-  EXPECT_EQ(pose_data.source_id(), plant.get_source_id());
-  EXPECT_EQ(pose_data.size(), 2);  // Only two frames move.
 
   // Compute the poses for each geometry in the model.
   plant.get_geometry_poses_output_port().Calc(*context, poses_value.get());
+  EXPECT_EQ(pose_data.size(), 2);  // Only two frames move.
 
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
   for (BodyIndex body_index(1);
@@ -1364,14 +1371,14 @@ TEST_F(AcrobotPlantTests, EvalContinuousStateOutputPort) {
   elbow_->set_angular_rate(context.get(), 2.5);
 
   unique_ptr<AbstractValue> state_value =
-      plant_->get_continuous_state_output_port().Allocate();
+      plant_->get_state_output_port().Allocate();
   EXPECT_NO_THROW(state_value->get_value<BasicVector<double>>());
   const BasicVector<double>& state_out =
       state_value->get_value<BasicVector<double>>();
   EXPECT_EQ(state_out.size(), plant_->num_multibody_states());
 
   // Compute the poses for each geometry in the model.
-  plant_->get_continuous_state_output_port().Calc(*context, state_value.get());
+  plant_->get_state_output_port().Calc(*context, state_value.get());
 
   // Get continuous state_out from context.
   const VectorBase<double>& state = context->get_continuous_state_vector();

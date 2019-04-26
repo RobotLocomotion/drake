@@ -73,6 +73,11 @@ class PrismaticJointTest : public ::testing::Test {
   PrismaticJoint<double>* mutable_joint1_{nullptr};
 };
 
+TEST_F(PrismaticJointTest, Type) {
+  const Joint<double>& base = *joint1_;
+  EXPECT_EQ(base.type_name(), PrismaticJoint<double>::kTypeName);
+}
+
 // Verify the expected number of dofs.
 TEST_F(PrismaticJointTest, NumDOFs) {
   EXPECT_EQ(tree().num_positions(), 1);

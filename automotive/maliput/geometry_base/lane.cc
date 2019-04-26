@@ -42,7 +42,7 @@ void Lane::SetFinishBranchPoint(Passkey<BranchPoint>,
 }
 
 
-const api::LaneId Lane::do_id() const { return id_; }
+api::LaneId Lane::do_id() const { return id_; }
 
 const api::Segment* Lane::do_segment() const { return segment_; }
 

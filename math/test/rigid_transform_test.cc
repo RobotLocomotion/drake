@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
+
 namespace drake {
 namespace math {
 namespace {
@@ -497,7 +499,7 @@ GTEST_TEST(RigidTransform, ConstructRigidTransformFromTranslation3) {
 }
 
 // Test multiplying a RigidTransform by an Eigen::Translation3 and vice-versa.
-GTEST_TEST(RigidTransform, MultiplyByTranslation3AndViceVersa) {
+GTEST_TEST(RigidTransform, OperatorMultiplyByTranslation3AndViceVersa) {
   const Vector3d p_AoBo_A(1.0, 2.0, 3.0);
   const RotationMatrixd R_AB(RollPitchYawd(0.3, 0.2, 0.7));
   const RigidTransformd X_AB(R_AB, p_AoBo_A);
@@ -537,6 +539,77 @@ GTEST_TEST(RigidTransform, MultiplyByTranslation3AndViceVersa) {
 
   // Verify X_AC is the inverse of X_CA.
   EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_CA.inverse(), 32 * kEpsilon));
+}
+
+// Tests RigidTransform X_AB multiplied by a 3 x n matrix whose columns are
+// regarded as position vectors from Bo (frame B's origin) to an arbitrary point
+// Qi, expressed in B.  The result is tested to be a 3 x n matrix whose columns
+// are position vectors from Ao (frame A's origin) to Qi, expressed in A.
+GTEST_TEST(RigidTransform, OperatorMultiplyByMatrix3X) {
+  // Create a generic RigidTransform having a rotation matrix whose elements are
+  // all non-zero elements and a position vector having all non-zero elements.
+  const RigidTransform<double> X_AB = GetRigidTransformA();
+
+  // Multiply the RigidTransform X_AB by 3 position vectors to test operator*
+  // for a 3 x n matrix, where n = 3 is known before compilation.
+  Eigen::Matrix3d p_BoQ_B;
+  const Vector3d p_BoQ1_B(-12, -9, 7);   p_BoQ_B.col(0) = p_BoQ1_B;
+  const Vector3d p_BoQ2_B(-11, -8, 10);  p_BoQ_B.col(1) = p_BoQ2_B;
+  const Vector3d p_BoQ3_B(-10, -7, 12);  p_BoQ_B.col(2) = p_BoQ3_B;
+  const auto p_AoQ_A = X_AB * p_BoQ_B;
+
+  // Ensure the compiler's declared type for p_AoQ_A has the proper number of
+  // rows and columns before compilation.  Then verify the results.
+  EXPECT_EQ(decltype(p_AoQ_A)::RowsAtCompileTime, 3);
+  EXPECT_EQ(decltype(p_AoQ_A)::ColsAtCompileTime, 3);
+  EXPECT_TRUE(CompareMatrices(p_AoQ_A.col(0), X_AB * p_BoQ1_B, kEpsilon));
+  EXPECT_TRUE(CompareMatrices(p_AoQ_A.col(1), X_AB * p_BoQ2_B, kEpsilon));
+  EXPECT_TRUE(CompareMatrices(p_AoQ_A.col(2), X_AB * p_BoQ3_B, kEpsilon));
+
+  // Multiply the RigidTransform X_AB by n position vectors to test operator*
+  // for a 3 x n matrix, where n is not known before compilation.
+  const int number_of_position_vectors = 2;
+  Eigen::Matrix3Xd p_BoP_B(3, number_of_position_vectors);
+  p_BoP_B.col(0) = p_BoQ1_B;
+  p_BoP_B.col(1) = p_BoQ2_B;
+  const auto p_AoP_A = X_AB * p_BoP_B;
+
+  // Ensure the compiler's declared type for p_AoP_A has the proper number of
+  // rows before compilation (dictated by the return type of operator*) and
+  // has the proper number of columns at run time.
+  EXPECT_EQ(decltype(p_AoP_A)::RowsAtCompileTime, 3);
+  EXPECT_EQ(p_AoP_A.cols(), number_of_position_vectors);
+  for (int i = 0; i < number_of_position_vectors; ++i) {
+    const Vector3d p_AoPi_A = p_AoP_A.col(i);
+    const Vector3d p_AoPi_A_expected = p_AoP_A.col(i);  // Previous result.
+    EXPECT_TRUE(CompareMatrices(p_AoPi_A, p_AoPi_A_expected, kEpsilon));
+  }
+
+  // Test RigidTransform operator* can multiply an Eigen expression, namely the
+  // Eigen expression arising from a 3x1 matrix multiplied by a 1x4 matrix.
+  const Eigen::MatrixXd p_AoR_A = X_AB * (Eigen::Vector3d(1, 2, 3) *
+                                          Eigen::RowVector4d(1, 2, 3, 4));
+  EXPECT_EQ(p_AoR_A.rows(), 3);
+  EXPECT_EQ(p_AoR_A.cols(), 4);
+
+  // Test RigidTransform operator* can multiply a different looking Eigen
+  // expression that produces the same result.
+  const auto p_AoR_A_expected = X_AB *
+       (Eigen::MatrixXd(3, 4) << Eigen::Vector3d(1, 2, 3),
+                                 Eigen::Vector3d(2, 4, 6),
+                                 Eigen::Vector3d(3, 6, 9),
+                                 Eigen::Vector3d(4, 8, 12)).finished();
+  EXPECT_EQ(decltype(p_AoR_A_expected)::RowsAtCompileTime, 3);
+  EXPECT_EQ(p_AoR_A_expected.cols(), 4);
+  EXPECT_TRUE(CompareMatrices(p_AoR_A, p_AoR_A_expected, kEpsilon));
+
+  // Test that operator* disallows weirdly-sized matrix multiplication.
+  if (kDrakeAssertIsArmed) {
+    Eigen::MatrixXd m_7x8(7, 8);
+    m_7x8 = Eigen::MatrixXd::Identity(7, 8);
+    Eigen::MatrixXd bad_matrix_multiply;
+    EXPECT_THROW(bad_matrix_multiply = X_AB * m_7x8, std::logic_error);
+  }
 }
 
 }  // namespace

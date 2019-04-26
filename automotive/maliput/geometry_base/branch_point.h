@@ -73,7 +73,7 @@ class BranchPoint : public api::BranchPoint {
   // Common implementation for AddABranch() and AddBBranch().
   void AddBranch(Lane* lane, api::LaneEnd::Which end, LaneEndSet* side);
 
-  const api::BranchPointId do_id() const override;
+  api::BranchPointId do_id() const override;
 
   const api::RoadGeometry* do_road_geometry() const override;
 

@@ -148,6 +148,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
+        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/systems:framework_py",
         "//bindings/pydrake/systems:lcm_py",
     ],
@@ -251,7 +252,6 @@ PY_LIBRARIES_WITH_INSTALL = [
     "//bindings/pydrake/solvers",
     "//bindings/pydrake/systems",
     "//bindings/pydrake/third_party",
-    "//bindings/pydrake/util",
     "//bindings/pydrake/visualization",
 ]
 

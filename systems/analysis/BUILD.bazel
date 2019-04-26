@@ -317,6 +317,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":implicit_euler_integrator",
+        "//common/test_utilities:expect_throws_message",
         "//systems/analysis/test_utilities",
         "//systems/plants/spring_mass_system",
     ],

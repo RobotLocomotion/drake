@@ -116,7 +116,7 @@ void DoMain() {
   SetPositionControlledGains(&kp, &ki, &kd);
   auto& hand_controller = *builder.AddSystem<
       systems::controllers::PidController>(Sx, Sy, kp, ki, kd);
-  builder.Connect(plant.get_continuous_state_output_port(),
+  builder.Connect(plant.get_state_output_port(),
                   hand_controller.get_input_port_estimated_state());
   builder.Connect(hand_controller.get_output_port_control(),
                   plant.get_actuation_input_port());
@@ -126,7 +126,7 @@ void DoMain() {
   // the pre-defined order that is easy for understanding.
   const auto& hand_status_converter =
       *builder.AddSystem<systems::MatrixGain<double>>(Sx);
-  builder.Connect(plant.get_continuous_state_output_port(),
+  builder.Connect(plant.get_state_output_port(),
                   hand_status_converter.get_input_port());
   const auto& hand_output_torque_converter =
       *builder.AddSystem<systems::MatrixGain<double>>(Sy);
