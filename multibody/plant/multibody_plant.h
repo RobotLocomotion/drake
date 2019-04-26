@@ -860,16 +860,36 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// is defined.
   template <template <typename> class JointType, typename... Args>
   const JointType<T>& AddJoint(
-      const std::string& name, const Body<T>& parent,
-      const optional<math::RigidTransform<double>>& X_PF, const Body<T>& child,
-      const optional<math::RigidTransform<double>>& X_BM, Args&&... args) {
-    DRAKE_MBP_THROW_IF_FINALIZED();
-    const JointType<T>& joint =
-        this->mutable_tree().template AddJoint<JointType>(
-            name, parent, X_PF, child, X_BM, std::forward<Args>(args)...);
-    RegisterJointInGraph(joint);
+      const std::string& name,
+      const Body<T>& parent, const optional<math::RigidTransform<double>>& X_PF,
+      const Body<T>& child, const optional<math::RigidTransform<double>>& X_BM,
+      Args&&... args) {
+    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
+                  "JointType<T> must be a sub-class of Joint<T>.");
+
+    const Frame<T>* frame_on_parent;
+    if (X_PF) {
+      frame_on_parent = &this->AddFrame(
+          std::make_unique<FixedOffsetFrame<T>>(parent, *X_PF));
+    } else {
+      frame_on_parent = &parent.body_frame();
+    }
+
+    const Frame<T>* frame_on_child;
+    if (X_BM) {
+      frame_on_child = &this->AddFrame(
+          std::make_unique<FixedOffsetFrame<T>>(child, *X_BM));
+    } else {
+      frame_on_child = &child.body_frame();
+    }
+
+    const JointType<T>& joint = AddJoint(
+        std::make_unique<JointType<T>>(
+            name,
+            *frame_on_parent, *frame_on_child,
+            std::forward<Args>(args)...));
     return joint;
-  }
+}
 
   /// Adds a new force element model of type `ForceElementType` to `this`
   /// %MultibodyPlant.  The arguments to this method `args` are forwarded to
@@ -3003,7 +3023,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
     auto& joint = AddJoint<JointType>(
         name, parent, X_PF_rt, child, X_BM_rt, std::forward<Args>(args)...);
-    RegisterJointInGraph(joint);
     return joint;
   }
 
@@ -3026,7 +3045,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
     auto& joint = AddJoint<JointType>(
         name, parent, X_PF_rt, child, X_BM_rt, std::forward<Args>(args)...);
-    RegisterJointInGrpah(joint);
     return joint;
   }
 

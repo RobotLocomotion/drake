@@ -314,38 +314,6 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
 }
 
 template <typename T>
-template<template<typename> class JointType, typename... Args>
-const JointType<T>& MultibodyTree<T>::AddJoint(
-    const std::string& name,
-    const Body<T>& parent, const optional<math::RigidTransform<double>>& X_PF,
-    const Body<T>& child, const optional<math::RigidTransform<double>>& X_BM,
-    Args&&... args) {
-  static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
-                "JointType<T> must be a sub-class of Joint<T>.");
-
-  const Frame<T>* frame_on_parent;
-  if (X_PF) {
-    frame_on_parent = &this->AddFrame<FixedOffsetFrame>(parent, *X_PF);
-  } else {
-    frame_on_parent = &parent.body_frame();
-  }
-
-  const Frame<T>* frame_on_child;
-  if (X_BM) {
-    frame_on_child = &this->AddFrame<FixedOffsetFrame>(child, *X_BM);
-  } else {
-    frame_on_child = &child.body_frame();
-  }
-
-  const JointType<T>& joint = AddJoint(
-      std::make_unique<JointType<T>>(
-          name,
-          *frame_on_parent, *frame_on_child,
-          std::forward<Args>(args)...));
-  return joint;
-}
-
-template <typename T>
 const JointActuator<T>& MultibodyTree<T>::AddJointActuator(
     const std::string& name, const Joint<T>& joint) {
   if (HasJointActuatorNamed(name, joint.model_instance())) {

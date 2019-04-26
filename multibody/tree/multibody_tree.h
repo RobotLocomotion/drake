@@ -426,95 +426,10 @@ class MultibodyTree {
       UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
   AddForceElement(Args&&... args);
 
-  /// This method adds a Joint of type `JointType` between the frames specified
-  /// by the joint.
-  ///
-  /// @param[in] joint
-  ///   Joint to be added.
-  /// @tparam JointType
-  ///   The type of the new joint to add, which must be a subclass of Joint<T>.
-  /// @returns A const lvalue reference to the added joint.
-  ///
-  /// @see The Joint class's documentation for further details on how a Joint
-  /// is defined, or the semi-emplace `AddJoint<>` overload below.
+  /// See MultibodyPlant documentation.
   template <template<typename Scalar> class JointType>
   const JointType<T>& AddJoint(
       std::unique_ptr<JointType<T>> joint);
-
-  /// This method helps to create a Joint of type `JointType` between two
-  /// bodies.
-  /// The two bodies connected by this Joint object are referred to as the
-  /// _parent_ and _child_ bodies. Although the terms _parent_ and _child_ are
-  /// sometimes used synonymously to describe the relationship between inboard
-  /// and outboard bodies in multibody models, this usage is wholly unrelated
-  /// and implies nothing about the inboard-outboard relationship between the
-  /// bodies.
-  /// As explained in the Joint class's documentation, in Drake we define a
-  /// frame F attached to the parent body P with pose `X_PF` and a frame M
-  /// attached to the child body B with pose `X_BM`. This method helps create
-  /// a joint between two bodies with fixed poses `X_PF` and `X_BM`.
-  /// Refer to the Joint class's documentation for more details.
-  ///
-  /// The arguments to this method `args` are forwarded to `JointType`'s
-  /// constructor. The newly created `JointType` object will be specialized on
-  /// the scalar type T of this %MultibodyTree.
-  ///
-  /// @param[in] name
-  ///   The name of the joint.
-  /// @param[in] parent
-  ///   The parent body connected by the new joint.
-  /// @param[in] X_PF
-  ///   The fixed pose of frame F attached to the parent body, measured in
-  ///   the frame P of that body. `X_PF` is an optional parameter; empty curly
-  ///   braces `{}` imply that frame F **is** the same body frame P. If instead
-  ///   your intention is to make a frame F with pose `X_PF`, provide
-  ///   `RigidTransform<double>::Identity()` as your input.
-  /// @param[in] child
-  ///   The child body connected by the new joint.
-  /// @param[in] X_BM
-  ///   The fixed pose of frame M attached to the child body, measured in
-  ///   the frame B of that body. `X_BM` is an optional parameter; empty curly
-  ///   braces `{}` imply that frame M **is** the same body frame B. If instead
-  ///   your intention is to make a frame F with pose `X_PF`, provide
-  ///   `RigidTransform<double>::Identity()` as your input.
-  /// @tparam JointType
-  ///   The type of the new joint to add, which must be a subclass of Joint<T>.
-  /// @returns A constant reference to the new joint just added, of type
-  ///   `JointType<T>` specialized on the scalar type T of `this`
-  ///   %MultibodyTree. It will remain valid for the lifetime of `this`
-  ///   %MultibodyTree.
-  ///
-  /// Example of usage:
-  /// @code
-  ///   MultibodyTree<T> model;
-  ///   // ... Code to define a parent body P and a child body B.
-  ///   const Body<double>& parent_body =
-  ///     model.AddBody<RigidBody>(SpatialInertia<double>(...));
-  ///   const Body<double>& child_body =
-  ///     model.AddBody<RigidBody>(SpatialInertia<double>(...));
-  ///   // Define the pose X_BM of a frame M rigidly atached to child body B.
-  ///   const RevoluteJoint<double>& elbow =
-  ///     model.AddJoint<RevoluteJoint>(
-  ///       "Elbow",                /* joint name */
-  ///       model.world_body(),     /* parent body */
-  ///       {},                     /* frame F IS the parent body frame P */
-  ///       pendulum,               /* child body, the pendulum */
-  ///       X_BM,                   /* pose of frame M in the body frame B */
-  ///       Vector3d::UnitZ());     /* revolute axis in this case */
-  /// @endcode
-  ///
-  /// @throws std::exception if `this` model already contains a joint with the
-  /// given `name`.
-  /// See HasJointNamed(), Joint::name().
-  ///
-  /// @see The Joint class's documentation for further details on how a Joint
-  /// is defined.
-  template<template<typename> class JointType, typename... Args>
-  const JointType<T>& AddJoint(
-      const std::string& name,
-      const Body<T>& parent, const optional<math::RigidTransform<double>>& X_PF,
-      const Body<T>& child, const optional<math::RigidTransform<double>>& X_BM,
-      Args&&... args);
 
   /// Creates and adds a JointActuator model for an actuator acting on a given
   /// `joint`.
