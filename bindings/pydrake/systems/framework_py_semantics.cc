@@ -148,9 +148,9 @@ void DefineFrameworkPySemantics(py::module m) {
   // N.B. Capturing `&doc` should not be required; workaround per #9600.
   auto bind_common_scalar_types = [m, &doc](auto dummy) {
     using T = decltype(dummy);
-    DefineTemplateClassWithDefault<Context<T>>(
-        m, "Context", GetPyParam<T>(), doc.Context.doc)
-        .def("__str__", &Context<T>::to_string, doc.Context.to_string.doc)
+    auto contextT = DefineTemplateClassWithDefault<Context<T>>(
+        m, "Context", GetPyParam<T>(), doc.Context.doc);
+    contextT.def("__str__", &Context<T>::to_string, doc.Context.to_string.doc)
         .def("num_input_ports", &Context<T>::num_input_ports,
             doc.ContextBase.num_input_ports.doc)
         .def("get_num_input_ports",
@@ -345,6 +345,16 @@ void DefineFrameworkPySemantics(py::module m) {
         .def("get_abstract_parameter", &Context<T>::get_abstract_parameter,
             py::arg("index"), py_reference_internal,
             doc.Context.get_numeric_parameter.doc);
+
+    auto bind_two_scalar_methods = [m, &doc, &contextT](auto dummyU) {
+      using U = decltype(dummyU);
+      contextT.def("SetTimeStateAndParametersFrom",
+          [](Context<T>* self, const Context<U>& source) {
+            self->SetTimeStateAndParametersFrom(source);
+          },
+          py::arg("source"), doc.Context.SetTimeStateAndParametersFrom.doc);
+    };
+    type_visit(bind_two_scalar_methods, pysystems::CommonScalarPack{});
 
     DefineTemplateClassWithDefault<LeafContext<T>, Context<T>>(
         m, "LeafContext", GetPyParam<T>(), doc.LeafContext.doc);

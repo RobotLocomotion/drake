@@ -109,6 +109,22 @@ class TestGeneral(unittest.TestCase):
             context.get_mutable_continuous_state_vector(), VectorBase)
         # TODO(eric.cousineau): Consolidate main API tests for `Context` here.
 
+        # Test methods with two scalar types.
+        for T in [float, AutoDiffXd, Expression]:
+            systemT = Adder_[T](3, 10)
+            contextT = systemT.CreateDefaultContext()
+            for U in [float, AutoDiffXd, Expression]:
+                systemU = Adder_[U](3, 10)
+                contextU = systemU.CreateDefaultContext()
+                contextU.SetTime(0.5)
+                contextT.SetTimeStateAndParametersFrom(contextU)
+                if T == float:
+                    self.assertEqual(contextT.get_time(), 0.5)
+                elif T == AutoDiffXd:
+                    self.assertEqual(contextT.get_time().value(), 0.5)
+                else:
+                    self.assertEqual(contextT.get_time().Evaluate(), 0.5)
+
         pendulum = PendulumPlant()
         context = pendulum.CreateDefaultContext()
         self.assertEqual(context.num_numeric_parameter_groups(), 1)
