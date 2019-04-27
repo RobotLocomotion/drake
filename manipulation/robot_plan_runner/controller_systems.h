@@ -17,7 +17,7 @@ const char kIiwaUrdf[] =
 
 class RobotController : public systems::LeafSystem<double> {
  public:
-  RobotController(PlanTypes plan_type);
+  RobotController(PlanType plan_type);
 
  private:
   void CalcCommands(const systems::Context<double>&,
@@ -28,10 +28,11 @@ class RobotController : public systems::LeafSystem<double> {
   int input_port_idx_q_{-1};
   int input_port_idx_v_{-1};
   int input_port_idx_tau_ext_{-1};
-  int output_port_idx_cmd_{-1};
+  int input_port_idx_plan_data{-1};
 
   mutable Eigen::VectorXd q_cmd_;
   mutable Eigen::VectorXd tau_cmd_;
+  mutable int plan_index_current_;
 
 };
 

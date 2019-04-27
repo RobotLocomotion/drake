@@ -6,10 +6,9 @@ namespace robot_plan_runner {
 
 
 
-void JointSpacePlan::UpdatePlan(
-    std::unique_ptr<trajectories::PiecewisePolynomial<double>> q_traj_new) {
-  DRAKE_ASSERT(q_traj_new->rows() == num_positions_);
-  q_traj_ = std::move(q_traj_new);
+void JointSpacePlan::UpdatePlan(const PlanData& plan_data) {
+  DRAKE_ASSERT(plan_data.plan_type == PlanType::kJointSpaceController);
+  q_traj_.reset(&plan_data.joint_traj.value());
 };
 
 void JointSpacePlan::Step(const Eigen::Ref<const Eigen::VectorXd>& q,

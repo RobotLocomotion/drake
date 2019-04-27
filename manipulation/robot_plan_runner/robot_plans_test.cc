@@ -27,8 +27,11 @@ int do_main() {
   auto qtraj = PiecewisePolynomial<double>::Cubic(
       t, q_knots, Eigen::VectorXd::Zero(7), Eigen::VectorXd::Zero(7));
 
-  std::unique_ptr<PiecewisePolynomial<double>> qtraj_ptr(&qtraj);
-  plan.UpdatePlan(std::move(qtraj_ptr));
+  PlanData plan_data;
+  plan_data.plan_type = PlanType::kJointSpaceController;
+  plan_data.joint_traj = qtraj;
+
+  plan.UpdatePlan(plan_data);
 
   Eigen::VectorXd q(7);
   Eigen::VectorXd v(7);
