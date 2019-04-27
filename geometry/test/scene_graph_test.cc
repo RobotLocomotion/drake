@@ -58,13 +58,6 @@ class SceneGraphTester {
   SceneGraphTester() = delete;
 
   template <typename T>
-  static bool HasDirectFeedthrough(const SceneGraph<T>& scene_graph,
-                                   int input_port, int output_port) {
-    return scene_graph.DoHasDirectFeedthrough(input_port, output_port)
-        .value_or(true);
-  }
-
-  template <typename T>
   static void FullPoseUpdate(const SceneGraph<T>& scene_graph,
                              const GeometryContext<T>& context) {
     scene_graph.FullPoseUpdate(context);
@@ -267,16 +260,10 @@ TEST_F(SceneGraphTest, TopologyAfterAllocation) {
 // Confirms that the direct feedthrough logic is correct -- there is total
 // direct feedthrough.
 TEST_F(SceneGraphTest, DirectFeedThrough) {
-  SourceId id = scene_graph_.RegisterSource();
-  std::vector<int> input_ports{
-      scene_graph_.get_source_pose_port(id).get_index()};
-  for (int input_port_id : input_ports) {
-    EXPECT_TRUE(SceneGraphTester::HasDirectFeedthrough(
-        scene_graph_, input_port_id,
-        scene_graph_.get_query_output_port().get_index()));
-  }
-  // TODO(SeanCurtis-TRI): Update when the pose bundle output is added; it has
-  // direct feedthrough as well.
+  scene_graph_.RegisterSource();
+  EXPECT_EQ(scene_graph_.GetDirectFeedthroughs().size(),
+            scene_graph_.num_input_ports() *
+                scene_graph_.num_output_ports());
 }
 
 // Test the functionality that accumulates the values from the input ports.
@@ -426,11 +413,7 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
     frame_ids_.push_back(f_id);
 
     // Set up output port now that the frame is registered.
-    std::vector<FrameId> all_ids{f_id};
-    all_ids.insert(all_ids.end(), extra_frame_ids_.begin(),
-                   extra_frame_ids_.end());
     this->DeclareAbstractOutputPort(
-        FramePoseVector<double>(source_id_, all_ids),
         &GeometrySourceSystem::CalcFramePoseOutput);
   }
   SourceId get_source_id() const { return source_id_; }
@@ -453,11 +436,6 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
   // Populate with the pose data.
   void CalcFramePoseOutput(const Context<double>& context,
                            FramePoseVector<double>* poses) const {
-    const int frame_count =
-        static_cast<int>(frame_ids_.size() + extra_frame_ids_.size());
-    DRAKE_DEMAND(poses->size() == frame_count);
-    DRAKE_DEMAND(poses->source_id() == source_id_);
-
     poses->clear();
 
     const int base_count = static_cast<int>(frame_ids_.size());
@@ -610,9 +588,9 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
     // bundle.
     EXPECT_EQ(0, poses.get_num_poses());
     auto context = scene_graph.AllocateContext();
-    FramePoseVector<double> pose_vector(s_id, {f_id});
-    context->FixInputPort(scene_graph.get_source_pose_port(s_id).get_index(),
-                          Value<FramePoseVector<double>>(pose_vector));
+    const FramePoseVector<double> pose_vector{{
+        f_id, Isometry3<double>::Identity()}};
+    scene_graph.get_source_pose_port(s_id).FixValue(context.get(), pose_vector);
     EXPECT_NO_THROW(
         SceneGraphTester::CalcPoseBundle(scene_graph, *context, &poses));
   }
@@ -636,9 +614,9 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
     // frame to be included in the bundle.
     EXPECT_EQ(0, poses.get_num_poses());
     auto context = scene_graph.AllocateContext();
-    FramePoseVector<double> pose_vector(s_id, {f_id});
-    context->FixInputPort(scene_graph.get_source_pose_port(s_id).get_index(),
-                          Value<FramePoseVector<double>>(pose_vector));
+    const FramePoseVector<double> pose_vector{{
+        f_id, Isometry3<double>::Identity()}};
+    scene_graph.get_source_pose_port(s_id).FixValue(context.get(), pose_vector);
     EXPECT_NO_THROW(SceneGraphTester::CalcPoseBundle(scene_graph, *context,
                                                      &poses));
   }

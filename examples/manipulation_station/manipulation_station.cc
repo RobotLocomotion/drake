@@ -510,13 +510,13 @@ void ManipulationStation<T>::Finalize(
     auto demux = builder.template AddSystem<systems::Demultiplexer>(
         2 * num_iiwa_positions, num_iiwa_positions);
     builder.Connect(
-        plant_->get_continuous_state_output_port(iiwa_model_.model_instance),
+        plant_->get_state_output_port(iiwa_model_.model_instance),
         demux->get_input_port(0));
     builder.ExportOutput(demux->get_output_port(0), "iiwa_position_measured");
     builder.ExportOutput(demux->get_output_port(1), "iiwa_velocity_estimated");
 
     builder.ExportOutput(
-        plant_->get_continuous_state_output_port(iiwa_model_.model_instance),
+        plant_->get_state_output_port(iiwa_model_.model_instance),
         "iiwa_state_estimated");
   }
 
@@ -554,7 +554,7 @@ void ManipulationStation<T>::Finalize(
         *owned_controller_plant_, iiwa_kp_, iiwa_ki_, iiwa_kd_, false);
     iiwa_controller->set_name("iiwa_controller");
     builder.Connect(
-        plant_->get_continuous_state_output_port(iiwa_model_.model_instance),
+        plant_->get_state_output_port(iiwa_model_.model_instance),
         iiwa_controller->get_input_port_estimated_state());
 
     // Add in feedforward torque.
@@ -592,7 +592,7 @@ void ManipulationStation<T>::Finalize(
         wsg_controller->get_generalized_force_output_port(),
         plant_->get_actuation_input_port(wsg_model_.model_instance));
     builder.Connect(
-        plant_->get_continuous_state_output_port(wsg_model_.model_instance),
+        plant_->get_state_output_port(wsg_model_.model_instance),
         wsg_controller->get_state_input_port());
 
     builder.ExportInput(wsg_controller->get_desired_position_input_port(),
@@ -603,7 +603,7 @@ void ManipulationStation<T>::Finalize(
     auto wsg_mbp_state_to_wsg_state = builder.template AddSystem(
         manipulation::schunk_wsg::MakeMultibodyStateToWsgStateSystem<double>());
     builder.Connect(
-        plant_->get_continuous_state_output_port(wsg_model_.model_instance),
+        plant_->get_state_output_port(wsg_model_.model_instance),
         wsg_mbp_state_to_wsg_state->get_input_port());
 
     builder.ExportOutput(wsg_mbp_state_to_wsg_state->get_output_port(),
@@ -667,7 +667,7 @@ void ManipulationStation<T>::Finalize(
 
   builder.ExportOutput(plant_->get_contact_results_output_port(),
                        "contact_results");
-  builder.ExportOutput(plant_->get_continuous_state_output_port(),
+  builder.ExportOutput(plant_->get_state_output_port(),
                        "plant_continuous_state");
   builder.ExportOutput(plant_->get_geometry_poses_output_port(),
                        "geometry_poses");

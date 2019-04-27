@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <limits>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <vector>
 
@@ -253,6 +254,8 @@ MultibodyPlant<T>::MultibodyPlant(
   DRAKE_THROW_UNLESS(time_step >= 0);
   visual_geometries_.emplace_back();  // Entries for the "world" body.
   collision_geometries_.emplace_back();
+  // Add the world body to the graph.
+  multibody_graph_.AddBody(world_body().name(), world_body().model_instance());
 }
 
 template<typename T>
@@ -402,23 +405,12 @@ geometry::GeometrySet MultibodyPlant<T>::CollectRegisteredGeometries(
 template <typename T>
 std::vector<const Body<T>*> MultibodyPlant<T>::GetBodiesWeldedTo(
     const Body<T>& body) const {
-  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  // TODO(eric.cousineau): This is much slower than it should be; this could be
-  // sped up by either (a) caching these results at finalization and store a
-  // mapping from body to a subgraph or (b) starting the search from the query
-  // body.
-  auto sub_graphs = internal_tree().get_topology().CreateListOfWeldedBodies();
-  // Find subgraph that contains this body.
-  auto predicate = [&body](auto& sub_graph) {
-    return sub_graph.count(body.index()) > 0;
-  };
-  auto sub_graph_iter = std::find_if(
-      sub_graphs.begin(), sub_graphs.end(), predicate);
-  DRAKE_THROW_UNLESS(sub_graph_iter != sub_graphs.end());
+  const std::set<BodyIndex> island =
+      multibody_graph_.FindBodiesWeldedTo(body.index());
   // Map body indices to pointers.
   std::vector<const Body<T>*> sub_graph_bodies;
-  for (BodyIndex sub_graph_body_index : *sub_graph_iter) {
-    sub_graph_bodies.push_back(&internal_tree().get_body(sub_graph_body_index));
+  for (BodyIndex body_index : island) {
+    sub_graph_bodies.push_back(&internal_tree().get_body(body_index));
   }
   return sub_graph_bodies;
 }
@@ -1355,7 +1347,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   }
 
   internal_tree().CalcInverseDynamics(
-      context, pc, vc, vdot,
+      context, vdot,
       F_BBo_W_array, tau_array,
       &A_WB_array,
       &F_BBo_W_array, /* Notice these arrays gets overwritten on output. */
@@ -1477,7 +1469,7 @@ void MultibodyPlant<T>::CalcImplicitStribeckResults(
   //   -tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
   VectorX<T>& minus_tau = forces0.mutable_generalized_forces();
   internal_tree().CalcInverseDynamics(
-      context0, pc0, vc0, vdot,
+      context0, vdot,
       F_BBo_W_array, minus_tau,
       &A_WB_array,
       &F_BBo_W_array, /* Note: these arrays get overwritten on output. */
@@ -1923,15 +1915,19 @@ MultibodyPlant<T>::get_applied_spatial_force_input_port() const {
 }
 
 template <typename T>
-const systems::OutputPort<T>&
-MultibodyPlant<T>::get_continuous_state_output_port() const {
+const systems::OutputPort<T>& MultibodyPlant<T>::get_state_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   return this->get_output_port(continuous_state_output_port_);
 }
 
 template <typename T>
 const systems::OutputPort<T>&
-MultibodyPlant<T>::get_continuous_state_output_port(
+MultibodyPlant<T>::get_continuous_state_output_port() const {
+  return this->get_state_output_port();
+}
+
+template <typename T>
+const systems::OutputPort<T>& MultibodyPlant<T>::get_state_output_port(
     ModelInstanceIndex model_instance) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(model_instance.is_valid());
@@ -1939,6 +1935,13 @@ MultibodyPlant<T>::get_continuous_state_output_port(
   DRAKE_THROW_UNLESS(internal_tree().num_states(model_instance) > 0);
   return this->get_output_port(
       instance_continuous_state_output_ports_.at(model_instance));
+}
+
+template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_continuous_state_output_port(
+    ModelInstanceIndex model_instance) const {
+  return this->get_state_output_port(model_instance);
 }
 
 template <typename T>
@@ -1976,26 +1979,8 @@ template <typename T>
 void MultibodyPlant<T>::DeclareSceneGraphPorts() {
   geometry_query_port_ = this->DeclareAbstractInputPort(
       "geometry_query", Value<ModelQueryObject<T>>{}).get_index();
-  // Allocate pose port.
-  // TODO(eric.cousineau): Simplify this logic.
-  typename systems::LeafOutputPort<T>::AllocCallback pose_alloc = [this]() {
-    // This presupposes that the source id has been assigned and _all_ frames
-    // have been registered.
-    std::vector<FrameId> ids;
-    for (auto it : this->body_index_to_frame_id_) {
-      if (it.first == world_index()) continue;
-      ids.push_back(it.second);
-    }
-    return AbstractValue::Make(
-        FramePoseVector<T>(*this->source_id_, ids));
-  };
-  typename systems::LeafOutputPort<T>::CalcCallback pose_callback = [this](
-      const Context<T>& context, AbstractValue* value) {
-    this->CalcFramePoseOutput(
-        context, &value->get_mutable_value<FramePoseVector<T>>());
-  };
   geometry_pose_port_ = this->DeclareAbstractOutputPort(
-      "geometry_pose", pose_alloc, pose_callback,
+      "geometry_pose", &MultibodyPlant<T>::CalcFramePoseOutput,
       {this->configuration_ticket()}).get_index();
 }
 
@@ -2004,14 +1989,12 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_ASSERT(source_id_ != nullopt);
-  // NOTE: The body index to frame id map *always* includes the world body but
-  // the world body does *not* get reported in the frame poses; only dynamic
-  // frames do.
-  DRAKE_ASSERT(
-      poses->size() == static_cast<int>(body_index_to_frame_id_.size() - 1));
   const internal::PositionKinematicsCache<T>& pc =
       EvalPositionKinematics(context);
 
+  // NOTE: The body index to frame id map *always* includes the world body but
+  // the world body does *not* get reported in the frame poses; only dynamic
+  // frames do.
   // TODO(amcastro-tri): Make use of Body::EvalPoseInWorld(context) once caching
   // lands.
   poses->clear();

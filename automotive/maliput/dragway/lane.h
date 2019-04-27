@@ -121,7 +121,7 @@ class Lane final : public api::Lane {
   double y_offset() const { return y_offset_; }
 
  private:
-  const api::LaneId do_id() const final { return id_; }
+  api::LaneId do_id() const final { return id_; }
 
   const api::Segment* do_segment() const final;
 

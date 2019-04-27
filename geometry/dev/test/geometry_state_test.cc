@@ -85,8 +85,8 @@ class GeometryStateTester {
     return state_->X_PF_;
   }
 
-  void SetFramePoses(const FramePoseVector<T>& poses) {
-    state_->SetFramePoses(poses);
+  void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses) {
+    state_->SetFramePoses(source_id, poses);
   }
 
   // Returns the internal index for the geometry with the given index; if there
@@ -119,8 +119,9 @@ class GeometryStateTester {
   }
 
   template <typename ValueType>
-  void ValidateFrameIds(const FrameKinematicsVector<ValueType>& data) const {
-    state_->ValidateFrameIds(data);
+  void ValidateFrameIds(SourceId source_id,
+                        const FrameKinematicsVector<ValueType>& data) const {
+    state_->ValidateFrameIds(source_id, data);
   }
 
   int peek_next_clique() const {
@@ -627,12 +628,11 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
     }
 
     // Confirm posing positions the frames properly.
-    FramePoseVector<double> poses(source_id_, frames_);
-    poses.clear();
+    FramePoseVector<double> poses;
     for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
       poses.set_value(frames_[f], X_PF_[f]);
     }
-    gs_tester_.SetFramePoses(poses);
+    gs_tester_.SetFramePoses(source_id_, poses);
     gs_tester_.FinalizePoseUpdate();
 
     test_frame(0, gs_tester_.get_world_frame(), 0);
@@ -1122,33 +1122,30 @@ TEST_F(GeometryStateTest, GetFrameIdFromBadId) {
 // Tests the validation of the ids provided in a frame kinematics vector.
 TEST_F(GeometryStateTest, ValidateFrameIds) {
   SourceId s_id = SetUpSingleSourceTree();
-  FramePoseVector<double> frame_set(s_id, frames_);
-  frame_set.clear();
+  FramePoseVector<double> frame_set;
   for (auto frame_id : frames_) {
     frame_set.set_value(frame_id, Isometry3<double>::Identity());
   }
   // Case: frame ids are valid.
-  EXPECT_NO_THROW(gs_tester_.ValidateFrameIds(frame_set));
+  EXPECT_NO_THROW(gs_tester_.ValidateFrameIds(s_id, frame_set));
 
   // Case: Right number, wrong frames.
-  vector<FrameId> bad_frames;
+  FramePoseVector<double> frame_set_2;
   for (int i = 0; i < kFrameCount; ++i) {
-    bad_frames.push_back(FrameId::get_new_id());
+    frame_set_2.set_value(FrameId::get_new_id(), Isometry3d::Identity());
   }
-  FramePoseVector<double> frame_set_2(s_id, bad_frames);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      gs_tester_.ValidateFrameIds(frame_set_2), std::runtime_error,
+      gs_tester_.ValidateFrameIds(s_id, frame_set_2), std::runtime_error,
       "Registered frame id \\(\\d+\\) belonging to source \\d+ was not found "
           "in the provided kinematics data.");
 
   // Case: Too few frames.
-  vector<FrameId> missing_frames;
+  FramePoseVector<double> frame_set_3;
   for (int i = 0; i < kFrameCount - 1; ++i) {
-    missing_frames.push_back(frames_[i]);
+    frame_set.set_value(frames_[i], Isometry3<double>::Identity());
   }
-  FramePoseVector<double> frame_set_3(s_id, missing_frames);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      gs_tester_.ValidateFrameIds(frame_set_3), std::runtime_error,
+      gs_tester_.ValidateFrameIds(s_id, frame_set_3), std::runtime_error,
       "Disagreement in expected number of frames \\(\\d+\\)"
       " and the given number of frames \\(\\d+\\).");
 }
@@ -1169,10 +1166,9 @@ TEST_F(GeometryStateTest, SetFramePoses) {
   }
 
   auto make_pose_vector =
-      [&s_id, &frame_poses, this]() -> FramePoseVector<double> {
+      [&frame_poses, this]() -> FramePoseVector<double> {
     const int count = static_cast<int>(this->frames_.size());
-    FramePoseVector<double> poses(s_id, this->frames_);
-    poses.clear();
+    FramePoseVector<double> poses;
     for (int i = 0; i < count; ++i) {
       poses.set_value(this->frames_[i], frame_poses[i]);
     }
@@ -1185,7 +1181,7 @@ TEST_F(GeometryStateTest, SetFramePoses) {
   // Case 1: Set all frames to identity poses. The world pose of all the
   // geometry should be that of the geometry in its frame.
   FramePoseVector<double> poses1 = make_pose_vector();
-  gs_tester_.SetFramePoses(poses1);
+  gs_tester_.SetFramePoses(s_id, poses1);
   const auto& world_poses = gs_tester_.get_geometry_world_poses();
   for (int i = 0; i < kFrameCount * kGeometryCount; ++i) {
     EXPECT_TRUE(CompareMatrices(world_poses[i].matrix().block<3, 4>(0, 0),
@@ -1200,7 +1196,7 @@ TEST_F(GeometryStateTest, SetFramePoses) {
   frame_poses[0] = offset;
   frame_poses[1] = offset;
   FramePoseVector<double> poses2 = make_pose_vector();
-  gs_tester_.SetFramePoses(poses2);
+  gs_tester_.SetFramePoses(s_id, poses2);
   for (int i = 0; i < kFrameCount * kGeometryCount; ++i) {
     EXPECT_TRUE(
         CompareMatrices(world_poses[i].matrix().block<3, 4>(0, 0),
@@ -1211,7 +1207,7 @@ TEST_F(GeometryStateTest, SetFramePoses) {
   // 0, 1, 2, & 3 moved up 1, and geometries 4 & 5 moved up two.
   frame_poses[2] = offset;
   FramePoseVector<double> poses3 = make_pose_vector();
-  gs_tester_.SetFramePoses(poses3);
+  gs_tester_.SetFramePoses(s_id, poses3);
   for (int i = 0; i < (kFrameCount - 1) * kGeometryCount; ++i) {
     EXPECT_TRUE(
         CompareMatrices(world_poses[i].matrix().block<3, 4>(0, 0),
@@ -1245,10 +1241,9 @@ TEST_F(GeometryStateTest, QueryFrameProperties) {
       "No frame name available for invalid frame id: \\d+");
 
   // Set the frame poses to query geometry and frame poses.
-  FramePoseVector<double> poses(s_id, frames_);
-  poses.clear();
+  FramePoseVector<double> poses;
   for (int i = 0; i < kFrameCount; ++i) poses.set_value(frames_[i], X_PF_[i]);
-  gs_tester_.SetFramePoses(poses);
+  gs_tester_.SetFramePoses(s_id, poses);
 
   EXPECT_TRUE(
       CompareMatrices(geometry_state_.get_pose_in_world(frames_[0]).matrix(),
@@ -1286,12 +1281,11 @@ TEST_F(GeometryStateTest, ExcludeCollisionsWithin) {
   SetUpSingleSourceTree(true /* assign proximity roles */);
 
   // Pose all of the frames to the specified poses in their parent frame.
-  FramePoseVector<double> poses(source_id_, frames_);
-  poses.clear();
+  FramePoseVector<double> poses;
   for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
     poses.set_value(frames_[f], X_PF_[f]);
   }
-  gs_tester_.SetFramePoses(poses);
+  gs_tester_.SetFramePoses(source_id_, poses);
   gs_tester_.FinalizePoseUpdate();
 
   // This is *non* const; we'll decrement it as we filter more and more
@@ -1342,12 +1336,11 @@ TEST_F(GeometryStateTest, ExcludeCollisionsBetween) {
   SetUpSingleSourceTree(true  /* add proximity roles */);
 
   // Pose all of the frames to the specified poses in their parent frame.
-  FramePoseVector<double> poses(source_id_, frames_);
-  poses.clear();
+  FramePoseVector<double> poses;
   for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
     poses.set_value(frames_[f], X_PF_[f]);
   }
-  gs_tester_.SetFramePoses(poses);
+  gs_tester_.SetFramePoses(source_id_, poses);
   gs_tester_.FinalizePoseUpdate();
 
   // This is *non* const; we'll decrement it as we filter more and more
@@ -1383,12 +1376,11 @@ TEST_F(GeometryStateTest, NonProximityRoleInCollisionFilter) {
   SetUpSingleSourceTree(true  /* add proximity roles */);
 
   // Pose all of the frames to the specified poses in their parent frame.
-  FramePoseVector<double> poses(source_id_, frames_);
-  poses.clear();
+  FramePoseVector<double> poses;
   for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
     poses.set_value(frames_[f], X_PF_[f]);
   }
-  gs_tester_.SetFramePoses(poses);
+  gs_tester_.SetFramePoses(source_id_, poses);
   gs_tester_.FinalizePoseUpdate();
 
   // This is *non* const; we'll decrement it as we filter more and more

@@ -7,8 +7,13 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/solvers/choose_best_solver.h"
+#include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
 #include "drake/systems/primitives/linear_system.h"
 #include "drake/systems/primitives/piecewise_polynomial_linear_system.h"
@@ -148,7 +153,8 @@ GTEST_TEST(DirectTranscriptionTest, ContinuousTimeConstraintTest) {
 
   const auto context = system.CreateDefaultContext();
   int kNumSampleTimes = 3;
-  DirectTranscription prog(&system, *context, kNumSampleTimes, kTimeStep);
+  DirectTranscription prog(&system, *context, kNumSampleTimes,
+                           TimeStep{kTimeStep});
 
   EXPECT_EQ(prog.fixed_timestep(), kTimeStep);
 
@@ -223,7 +229,8 @@ GTEST_TEST(DirectTranscriptionTest, ContinuousTimeSymbolicConstraintTest) {
   const auto context = system->CreateDefaultContext();
   int kNumSampleTimes = 3;
   const double kTimeStep = 0.1;
-  DirectTranscription prog(system.get(), *context, kNumSampleTimes, kTimeStep);
+  DirectTranscription prog(system.get(), *context, kNumSampleTimes,
+                           TimeStep{kTimeStep});
 
   EXPECT_EQ(prog.fixed_timestep(), kTimeStep);
 
@@ -258,6 +265,76 @@ GTEST_TEST(DirectTranscriptionTest, ContinuousTimeSymbolicConstraintTest) {
     EXPECT_TRUE(CompareMatrices(dynamic_constraint_val,
         dynamic_constraint_expected, 1e-14));
   }
+}
+
+// This example tests the simple discrete-time System overload of the
+// constructor. The test sets up and solves the pendulum swing-up trajectory
+// optimization problem. It uses a discretized MultibodyPlant and constraints on
+// input torque, initial state, and final state.
+GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSystemTest) {
+  // Only solve under SNOPT (IPOPT is unreliable here).
+  solvers::SnoptSolver snopt_solver;
+  if (!snopt_solver.is_available()) {
+    return;
+  }
+
+  const char* const urdf_path =
+      "drake/examples/pendulum/Pendulum.urdf";
+
+  // The time step here is somewhat arbitrary. The value chosen here provides
+  // a reasonably fast solve.
+  const double kTimeStep = 0.1;
+  auto pendulum =
+      std::make_unique<multibody::MultibodyPlant<double>>(kTimeStep);
+  pendulum->AddForceElement<multibody::UniformGravityFieldElement>();
+  multibody::Parser parser(pendulum.get());
+  parser.AddModelFromFile(FindResourceOrThrow(urdf_path));
+  pendulum->WeldFrames(pendulum->world_frame(),
+                       pendulum->GetFrameByName("base"));
+  pendulum->Finalize();
+
+  // Create the DirectTranscription object, and specify which input port
+  // on the MultibodyPlant corresponds to the control input.
+  auto context = pendulum->CreateDefaultContext();
+  const InputPortIndex actuation_port_index =
+      pendulum->get_actuation_input_port().get_index();
+  const int kNumTimeSamples = 50;
+  DirectTranscription dirtran(pendulum.get(), *context, kNumTimeSamples,
+                              actuation_port_index);
+
+  // Adds a torque actuation limit.
+  const double kTorqueLimit = 3.0;  // N*m.
+  const solvers::VectorXDecisionVariable& u = dirtran.input();
+  dirtran.AddConstraintToAllKnotPoints(-kTorqueLimit <= u(0));
+  dirtran.AddConstraintToAllKnotPoints(u(0) <= kTorqueLimit);
+
+  BasicVector<double> initial_state(Eigen::VectorXd::Zero(2));
+  BasicVector<double> final_state(Eigen::VectorXd::Zero(2));
+
+  DRAKE_DEMAND(initial_state.size() == 2);
+  DRAKE_DEMAND(final_state.size() ==2);
+
+  // Set the initial and final state constraints.
+  const int kTheta_index = 0, kThetadot_index = 1;
+  initial_state.SetAtIndex(kTheta_index, 0.0);
+  initial_state.SetAtIndex(kThetadot_index, 0.0);
+  final_state.SetAtIndex(kTheta_index, M_PI);
+  final_state.SetAtIndex(kThetadot_index, 0.0);
+  dirtran.AddLinearConstraint(dirtran.initial_state() ==
+                              initial_state.get_value());
+  dirtran.AddLinearConstraint(dirtran.final_state() == final_state.get_value());
+
+  const double R = 10;  // Cost on input "effort".
+  dirtran.AddRunningCost((R * u) * u);
+
+  // Create an initial guess for the state trajectory.
+  const double timespan_init = 4;
+  auto traj_init_x = PiecewisePolynomial<double>::FirstOrderHold(
+      {0, timespan_init}, {initial_state.get_value(), final_state.get_value()});
+  dirtran.SetInitialTrajectory(PiecewisePolynomial<double>(), traj_init_x);
+
+  const auto result = snopt_solver.Solve(dirtran, {}, {});
+  DRAKE_DEMAND(result.is_success());
 }
 
 GTEST_TEST(DirectTranscriptionTest, DiscreteTimeLinearSystemTest) {
@@ -302,7 +379,7 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeLinearSystemTest) {
   }
 }
 
-// This example tests the TimeVaryingLinearSystem specialization of the
+// This example tests the TimeVaryingLinearSystem overload of the
 // constructor.
 GTEST_TEST(DirectTranscriptionTest, TimeVaryingLinearSystemTest) {
   const std::vector<double> times {0., 1.};
@@ -384,7 +461,7 @@ GTEST_TEST(DirectTranscriptionTest, AddRunningCostTest) {
   const solvers::MathematicalProgramResult result = Solve(prog);
   EXPECT_TRUE(result.is_success());
 
-  // Compute the expected cost as c[N] + \Sum_{i = 0...N-1} h * c[i]
+  // Compute the expected cost as c[N] + \sum_{i = 0...N-1} h * c[i]
   //   where c[i] is the running cost and c[N] is the terminal cost.
   double expected_cost{0.};
   for (int i{0}; i < kNumSamples - 1; i++) {

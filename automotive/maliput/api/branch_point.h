@@ -71,7 +71,7 @@ class BranchPoint {
   virtual ~BranchPoint() = default;
 
   /// Returns the persistent identifier.
-  const BranchPointId id() const { return do_id(); }
+  BranchPointId id() const { return do_id(); }
 
   /// Returns the RoadGeometry to which this BranchPoint belongs.
   const RoadGeometry* road_geometry() const { return do_road_geometry(); }
@@ -121,7 +121,7 @@ class BranchPoint {
   /// These must satisfy the constraint/invariants of the
   /// corresponding public methods.
   ///@{
-  virtual const BranchPointId do_id() const = 0;
+  virtual BranchPointId do_id() const = 0;
 
   virtual const RoadGeometry* do_road_geometry() const = 0;
 

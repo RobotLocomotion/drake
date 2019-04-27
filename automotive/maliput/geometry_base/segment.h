@@ -91,7 +91,7 @@ class Segment : public api::Segment {
   // The non-template implementation of AddLane<T>()
   void AddLanePrivate(std::unique_ptr<Lane> lane);
 
-  const api::SegmentId do_id() const override { return id_; }
+  api::SegmentId do_id() const override { return id_; }
 
   const api::Junction* do_junction() const override;
 

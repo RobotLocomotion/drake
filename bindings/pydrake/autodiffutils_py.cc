@@ -70,7 +70,7 @@ PYBIND11_MODULE(autodiffutils, m) {
       .def(py::self >= double())
       // Additional math
       .def("__pow__",
-          [](const AutoDiffXd& base, int exponent) {
+          [](const AutoDiffXd& base, double exponent) {
             return pow(base, exponent);
           },
           py::is_operator())
@@ -87,7 +87,7 @@ PYBIND11_MODULE(autodiffutils, m) {
       .def("abs", [](const AutoDiffXd& x) { return abs(x); })
       .def("exp", [](const AutoDiffXd& x) { return exp(x); })
       .def("sqrt", [](const AutoDiffXd& x) { return sqrt(x); })
-      .def("pow", [](const AutoDiffXd& x, int y) { return pow(x, y); })
+      .def("pow", [](const AutoDiffXd& x, double y) { return pow(x, y); })
       .def("sin", [](const AutoDiffXd& x) { return sin(x); })
       .def("cos", [](const AutoDiffXd& x) { return cos(x); })
       .def("tan", [](const AutoDiffXd& x) { return tan(x); })

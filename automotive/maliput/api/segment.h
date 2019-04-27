@@ -31,7 +31,7 @@ class Segment {
   virtual ~Segment() = default;
 
   /// Returns the persistent identifier.
-  const SegmentId id() const { return do_id(); }
+  SegmentId id() const { return do_id(); }
 
   /// Returns the Junction to which this Segment belongs.
   const Junction* junction() const { return do_junction(); }
@@ -58,7 +58,7 @@ class Segment {
   /// These must satisfy the constraint/invariants of the
   /// corresponding public methods.
   ///@{
-  virtual const SegmentId do_id() const = 0;
+  virtual SegmentId do_id() const = 0;
 
   virtual const Junction* do_junction() const = 0;
 

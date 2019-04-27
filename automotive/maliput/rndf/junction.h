@@ -36,7 +36,7 @@ class Junction : public api::Junction {
   ~Junction() override = default;
 
  private:
-  const api::JunctionId do_id() const override { return id_; }
+  api::JunctionId do_id() const override { return id_; }
 
   const api::RoadGeometry* do_road_geometry() const override {
     return road_geometry_;

@@ -103,9 +103,12 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "direct_transcription_test",
+    data = ["//examples/pendulum:prod_models"],
     deps = [
         ":direct_transcription",
         "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+        "//multibody/plant",
         "//solvers:solve",
         "//systems/primitives:piecewise_polynomial_linear_system",
         "//systems/primitives:symbolic_vector_system",

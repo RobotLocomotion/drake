@@ -36,7 +36,7 @@ class Junction final : public api::Junction {
   ~Junction() final = default;
 
  private:
-  const api::JunctionId do_id() const final { return id_; }
+  api::JunctionId do_id() const final { return id_; }
 
   const api::RoadGeometry* do_road_geometry() const final;
 
