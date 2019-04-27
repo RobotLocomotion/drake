@@ -143,21 +143,22 @@ void TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
 // @param[in] t_final value of time that signals the simulation to stop.
 // t_final is not required to be an exact multiple of dt_max as the
 // integration step is adjusted as necessary to land at exactly t_final.
-// @param[in] maximum_absolute_error_per_integration_step maximum allowable
-// absolute error (for any variable being integrated) for the numerical
-// integrator's internal time-step (which can shrink or grow).
+// @param[in] number_of_periods number of periods of the sinusoidal motion
+// being simulated.  Allowable error scales linearly with this value.
 void  IntegrateForwardWithVariableStepRungeKutta3(
           const FreeBody& torque_free_cylinder_exact,
           const AxiallySymmetricFreeBodyPlant<double>& axisymmetric_plant,
           drake::systems::Context<double>* context,
           drake::systems::ContinuousState<double>* stateDt_drake,
           const double dt_max, const double t_final,
-          const double maximum_absolute_error_per_integration_step) {
-  DRAKE_DEMAND(context != NULL  &&  stateDt_drake != NULL  &&  dt_max >= 0.0);
+          const int number_of_periods) {
+  DRAKE_DEMAND(context != NULL  &&  stateDt_drake != NULL  &&
+               dt_max > 0.0  &&  t_final > 0.0);
 
   // Integrate with variable-step Runge-Kutta3 integrator.
   systems::RungeKutta3Integrator<double> rk3(axisymmetric_plant, context);
   rk3.set_maximum_step_size(dt_max);  // Need before Initialize (or exception).
+  const double maximum_absolute_error_per_integration_step = 1.0E-3;
   rk3.set_target_accuracy(maximum_absolute_error_per_integration_step);
   rk3.Initialize();
 
@@ -171,10 +172,15 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
   const double t_final_minus_epsilon = t_final - epsilon_based_on_dt_max;
   while (true) {
     // At boundary of each numerical integration step, test Drake's simulation
-    // accuracy versus exact (closed-form) solution.
-    // TODO(Mitiguy) Improve this test so that such a large constant need not
-    // be used.
-    const double tolerance = 2048 * maximum_absolute_error_per_integration_step;
+    // accuracy versus exact (closed-form) solution.  Based on numerical
+    // integration experiments with MotionGenesis, the numerical integration
+    // seems to scale linearly with time, so scale the allowable error tolerance
+    // linearly with time as shown below.
+    const double t = context->get_time();
+    const double integrator_value = 256;  // Specific to each integrator.
+    const double scale = number_of_periods * integrator_value * t / t_final;
+    const double tolerance =
+        (1 + scale) * maximum_absolute_error_per_integration_step;
     TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
         torque_free_cylinder_exact,
         axisymmetric_plant,
@@ -182,7 +188,7 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
         stateDt_drake,
         tolerance);
 
-    const double t = context->get_time();
+    // Check if simulation is finished.
     if (t >= t_final_minus_epsilon) break;
 
     // Step forward by at most dt.
@@ -252,14 +258,23 @@ void  TestDrakeSolutionForSpecificInitialValue(
 
   // Maybe numerically integrate.
   if (should_numerically_integrate) {
-    const double dt_max = 0.2, t_final = 10.0;
-    const double maximum_absolute_error_per_integration_step = 1.0E-3;
+    // Calculate the two frequencies associated with this motion.  Use the
+    // maximum of the two frequencies to approximate the time period of one full
+    // cycle of motion.  Use this to determine the length of time to integrate.
+    // If the maximum frequency is too small, integrate for at most 10 seconds.
+    double s, p;
+    std::tie(s, p) = torque_free_cylinder_exact.CalculateFrequencies_s_p();
+    const double frequency = std::max(kEpsilon, std::max(std::abs(s), p));
+    const double period = 2 * M_PI / frequency;
+    const int number_of_periods = 4;
+    const double t_final = std::max(number_of_periods * period, 10.0);
+    const double dt_max = period / 16.0;
 
     // Integrate forward, testing Drake's results vs. exact solution frequently.
     IntegrateForwardWithVariableStepRungeKutta3(
         torque_free_cylinder_exact,
         axisymmetric_plant, context, stateDt_drake,
-        dt_max, t_final, maximum_absolute_error_per_integration_step);
+        dt_max, t_final, number_of_periods);
   }
 }
 

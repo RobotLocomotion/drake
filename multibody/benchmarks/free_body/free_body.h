@@ -160,6 +160,33 @@ class FreeBody {
   std::tuple<Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d>
   CalculateExactTranslationalSolution(const double t) const;
 
+  /// Returns the `s` and `p` frequencies associated with the angular velocity
+  /// and quaternion for torque-free motion of an axis-symmetric rigid body B in
+  /// a Newtonian frame (World) N.  For example, B's angular velocity in N is
+  /// wx*Bx + wy*By + wz*Bz, written in terms of initial values wx0, wy0, wz0 as
+  /// wx =  wx0 * cos(s * t) + wy0 * sin(s * t)
+  /// wy = -wx0 * sin(s * t) + wy0 * cos(s * t)
+  /// wz =  wz0
+  /// For more information, see [Kane, 1983] Pages 60-62 and 159-169.
+  /// @note the return value of `s` may be negative, zero, or positive, whereas
+  ///       the return value of `p` is nonnegative.
+  ///
+  /// - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York,
+  ///   1983. (with P. W. Likins and D. A. Levinson).  Available for free .pdf
+  ///   download: https:///ecommons.cornell.edu/handle/1813/637
+  std::tuple<double, double> CalculateFrequencies_s_p() const {
+    const double I = get_I();
+    const double J = get_J();
+    const Vector3<double>& initial_w_NB_B = get_initial_w_NB_B();
+    const double wx0 = initial_w_NB_B[0];
+    const double wy0 = initial_w_NB_B[1];
+    const double wz0 = initial_w_NB_B[2];
+    const double s = (I - J) / I * wz0;
+    const double z = wz0 * J / I;
+    const double p =  std::sqrt(wx0 * wx0 + wy0 * wy0 + z * z);
+    return std::make_tuple(s, p);
+  }
+
  private:
   // This "helper" method calculates quat_NB, w_NB_B, and alpha_NB_B at time t.
   // More precisely, this method calculates exact solutions for quaternion,
