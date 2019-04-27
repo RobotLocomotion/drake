@@ -157,8 +157,8 @@ class ContactSurface {
    */
   ContactSurface(GeometryId id_M, GeometryId id_N,
                  std::unique_ptr<SurfaceMesh<T>> mesh,
-                 SurfaceMeshFieldLinear<T, T>&& e_MN,
-                 SurfaceMeshFieldLinear<Vector3<T>, T>&& grad_h_MN_M)
+                 std::unique_ptr<SurfaceMeshField<T, T>>&& e_MN,
+                 std::unique_ptr<SurfaceMeshField<Vector3<T>, T>>&& grad_h_MN_M)
       : id_M_(id_M),
         id_N_(id_N),
         mesh_(std::move(mesh)),
@@ -178,7 +178,7 @@ class ContactSurface {
    */
   T EvaluateE_MN(SurfaceFaceIndex face,
                  const typename SurfaceMesh<T>::Barycentric& barycentric) {
-    return e_MN_.Evaluate(face, barycentric);
+    return e_MN_->Evaluate(face, barycentric);
   }
 
   /** Evaluates the vector field ∇hₘₙ at Point Q on a triangle.
@@ -190,14 +190,14 @@ class ContactSurface {
   Vector3<T> EvaluateGrad_h_MN_M(
       SurfaceFaceIndex face,
       const typename SurfaceMesh<T>::Barycentric& barycentric) {
-    return grad_h_MN_M_.Evaluate(face, barycentric);
+    return grad_h_MN_M_->Evaluate(face, barycentric);
   }
 
-  /** Returns the number of triangular faces.
+  /** Returns the number of triangular faces in the mesh.
    */
   int num_faces() const { return mesh_->num_faces(); }
 
-  /** Returns the number of vertices.
+  /** Returns the number of vertices in the mesh.
    */
   int num_vertices() const { return mesh_->num_vertices(); }
 
@@ -216,10 +216,10 @@ class ContactSurface {
   /** The surface mesh of the contact surface Sₘₙ between M and N. */
   std::unique_ptr<SurfaceMesh<T>> mesh_;
   /** Represents the common scalar field eₘₙ on the surface mesh. */
-  SurfaceMeshFieldLinear<T, T> e_MN_;
+  std::unique_ptr<SurfaceMeshField<T, T>> e_MN_;
   /** Represents the vector field ∇hₘₙ on the surface mesh, expressed in M's
       frame */
-  SurfaceMeshFieldLinear<Vector3<T>, T> grad_h_MN_M_;
+  std::unique_ptr<SurfaceMeshField<Vector3<T>, T>> grad_h_MN_M_;
 };
 
 }  // namespace geometry

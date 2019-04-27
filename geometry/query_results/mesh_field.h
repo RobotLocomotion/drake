@@ -16,16 +16,16 @@ namespace drake {
 namespace geometry {
 
 /** %MeshField is an abstract class that represents a field variable defined
-  on a mesh. It can evaluate the field value at any position on any element
+  on a mesh. It can evaluate the field value at any location on any element
   of the mesh.
 
   @tparam FieldType  a valid Eigen scalar or vector for the field value.
-  @tparam MeshType   the kind of the meshes: surface mesh or volume mesh.
+  @tparam MeshType   the type of the meshes: surface mesh or volume mesh.
 */
 template <class FieldType, class MeshType>
 class MeshField {
  public:
-  /** Evaluates the field value at a position on an element.
+  /** Evaluates the field value at a location on an element.
     @param e The index of the element.
     @param b The barycentric coordinates.
    */
@@ -70,12 +70,12 @@ class MeshField {
 
   On each finite element E, we have one _shape function_ Nᵢ for each
   node nᵢ of the element, where i is a local index of the node within the
-  element E.
+  element E:
 
-               Nᵢ : E → ℝ
+               Nᵢ : E → ℝ,
 
-  and use Nᵢ to define the _finite element approximation_ uᵉ of a field
-  variable u at a point p ∈ E as:
+  and use Nᵢ to define the _finite element approximation_ uᵉ of Field u
+  at a point p ∈ E as:
 
                uᵉ(p) = ∑ Nᵢ(p) * uᵢ
 
@@ -105,7 +105,7 @@ class MeshField {
   A _linear triangular element_ E with three vertices v₀, v₁, v₂ has its
   three nodes n₀, n₁, n₂ coincide with the vertices. For brevity, here we
   write vᵢ for both the label of the vertex and also the Cartesian coordinates
-  of its position in a certain coordinates frame.
+  of its location in a certain coordinates frame.
 
   For a triangular element, it is beneficial to use a map from the
   _parent coordinate system_ (L₀, L₁, L₂) (also known as
@@ -124,7 +124,7 @@ class MeshField {
 
                Nᵢ(p) = Lᵢ(p), i = 0,1,2,
 
-  and its finite element approximation uᵉ of a field variable u(p) is:
+  and its finite element approximation uᵉ of Field u at a point p ∈ E is:
 
                uᵉ(p) = N₀(p) * u₀ + N₁(p) * u₁ + N₂(p) * u₂,
 
@@ -132,11 +132,11 @@ class MeshField {
 
   Linear tetrahedral elements are similar.
 
- @tparam FieldType  a valid Eigen scalar or vector for the field value.
- @tparam MeshType   the kind of the meshes: surface mesh or volume mesh.
+ @tparam F  a valid Eigen scalar or vector for the field value.
+ @tparam MeshType   the type of the meshes: surface mesh or volume mesh.
  */
-template <class FieldType, class MeshType>
-class MeshFieldLinear final : public MeshField<FieldType, MeshType> {
+template <class F, class MeshType>
+class MeshFieldLinear final : public MeshField<F, MeshType> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshFieldLinear)
 
@@ -147,14 +147,14 @@ class MeshFieldLinear final : public MeshField<FieldType, MeshType> {
     @pre   The number of entries in values is the same as the number of
            vertices of the mesh.
    */
-  MeshFieldLinear(const std::string name, std::vector<FieldType>&& values,
+  MeshFieldLinear(const std::string name, std::vector<F>&& values,
                   MeshType* mesh)
       : name_(name), values_(std::move(values)), mesh_(mesh) {}
 
-  FieldType Evaluate(const typename MeshType::ElementIndex e,
+  F Evaluate(const typename MeshType::ElementIndex e,
                      const typename MeshType::Barycentric& b) const override {
     const auto& element = mesh_->element(e);
-    FieldType value = b[0] * values_[element.vertex(0)];
+    F value = b[0] * values_[element.vertex(0)];
     for (int i = 1; i < MeshType::kDim + 1; ++i) {
       value += b[i] * values_[element.vertex(i)];
     }
@@ -165,7 +165,7 @@ class MeshFieldLinear final : public MeshField<FieldType, MeshType> {
   std::string name_;
   // The field values are indexed in the same way as vertices, i.e.,
   // values_[i] is the field value for the mesh vertices_[i].
-  std::vector<FieldType> values_;
+  std::vector<F> values_;
   MeshType* mesh_;
 };
 
@@ -175,9 +175,12 @@ class MeshFieldLinear final : public MeshField<FieldType, MeshType> {
 //  using VolumeMeshFieldQuadratic =
 //      MeshFieldQuadratic<FieldValue, VolumeMesh<T>>;
 
-template <typename FieldType, typename T>
-using SurfaceMeshFieldLinear =
-    MeshFieldLinear<FieldType, SurfaceMesh<T>>;
+/**
+  @tparam F  a valid Eigen scalar or vector for field values.
+  @tparam T  a valid Eigen scalar for coordinates.
+ */
+template <typename F, typename T>
+using SurfaceMeshField = MeshFieldLinear<F, SurfaceMesh<T>>;
 
 /**@}*/
 
