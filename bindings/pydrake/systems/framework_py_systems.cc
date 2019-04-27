@@ -422,6 +422,8 @@ struct Impl {
             &System<T>::num_numeric_parameter_groups,
             doc.SystemBase.num_numeric_parameter_groups.doc)
         // Context.
+        .def("AllocateContext", &System<T>::AllocateContext,
+            doc.System.AllocateContext.doc)
         .def("CreateDefaultContext", &System<T>::CreateDefaultContext,
             doc.System.CreateDefaultContext.doc)
         .def("AllocateOutput",
@@ -479,6 +481,8 @@ struct Impl {
             doc.System.ToSymbolic.doc_0args)
         .def("ToSymbolicMaybe", &System<T>::ToSymbolicMaybe,
             doc.System.ToSymbolicMaybe.doc)
+        .def("FixInputPortsFrom", &System<T>::FixInputPortsFrom,
+            doc.System.FixInputPortsFrom.doc)
         .def("GetWitnessFunctions",
             [](const System<T>& self, const Context<T>& context) {
               std::vector<const WitnessFunction<T>*> witnesses;
