@@ -20,6 +20,21 @@ If the build fails for other various reasons you can rebuild:
 You can also view the `Jenkins UI <https://drake-jenkins.csail.mit.edu/>`_
 directly.
 
+Rebuilding via Reviewable
+=========================
+
+When posting a ``@drake-jenkins-bot ... please`` comment in Reviewable,
+never use the large green "Publish" button in the upper right corner.
+
+Instead, write the bot comment in the "Review discussion" box immediately below
+the "File Matrix" widget **and** use the "single message send" button to post
+it, in the lower-right corner of the "Review discussion" box.
+
+.. image:: images/jenkins_bot_reviewable_comment.png
+
+(For details, see
+`Reviewable#576 <https://github.com/Reviewable/Reviewable/issues/576>`_.)
+
 .. _run_specific_build:
 
 Running an On-Demand Build
