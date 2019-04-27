@@ -29,6 +29,7 @@ drake_py_binary(
     ]) + [
         "conf.py",
         "images/favicon.ico",
+        "images/jenkins_bot_reviewable_comment.png",
         "images/logo_w_text.jpg",
         "images/mathematical_program.svg",
         "images/systems.svg",
