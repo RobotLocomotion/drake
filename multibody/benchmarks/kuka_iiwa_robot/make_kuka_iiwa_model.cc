@@ -38,11 +38,12 @@ KukaIiwaModelBuilder<T>::AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
   const math::RotationMatrix<double> R_AAb(rpy);
   const math::RigidTransformd X_AAb(R_AAb, xyzA);
 
-  // Create transform from outboard body B to mobilizer outboard frame Ba.
-  const math::RigidTransformd X_BBa;  // Identity transform.
+  const auto& Ab = model->template AddFrame<FixedOffsetFrame>(
+      A.name() + "_inboard", A, X_AAb);
+  const auto& Ba = B.body_frame();  // X_BBa is the identity transform.
 
-  return model->template AddJoint<RevoluteJoint>(joint_name,
-                              A, X_AAb, B, X_BBa, revolute_unit_vector);
+  return model->AddJoint(std::make_unique<RevoluteJoint<T>>(
+      joint_name, Ab, Ba, revolute_unit_vector));
 }
 
 template <typename T>
