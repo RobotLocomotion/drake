@@ -16,8 +16,8 @@ using std::cout;
 int do_main() {
   JointSpacePlan plan;
 
-  Eigen::VectorXd t(3);
-  t << 0, 1, 2;
+  Eigen::VectorXd t_knots(3);
+  t_knots << 0, 1, 2;
 
   Eigen::MatrixXd q_knots(7, 3);
   q_knots.col(0) << 0, 0, 0, 0, 0, 0, 0;
@@ -25,13 +25,11 @@ int do_main() {
   q_knots.col(2) << 1, 1, 1, 1, 1, 1, 1;
 
   auto qtraj = PiecewisePolynomial<double>::Cubic(
-      t, q_knots, Eigen::VectorXd::Zero(7), Eigen::VectorXd::Zero(7));
+      t_knots, q_knots, Eigen::VectorXd::Zero(7), Eigen::VectorXd::Zero(7));
 
   PlanData plan_data;
-  plan_data.plan_type = PlanType::kJointSpaceController;
+  plan_data.plan_type = PlanType::kJointSpacePlan;
   plan_data.joint_traj = qtraj;
-
-  plan.UpdatePlan(plan_data);
 
   Eigen::VectorXd q(7);
   Eigen::VectorXd v(7);
@@ -41,9 +39,9 @@ int do_main() {
 
   std::vector<double> t_list = {0, 0.5, 1, 1.5, 2, 2.5};
 
-  for(auto time : t_list) {
-    plan.Step(q, v, tau_external, time, &q_cmd, &tau_cmd);
-    cout << time << endl << q_cmd << endl << tau_cmd << endl;
+  for(auto t : t_list) {
+    plan.Step(q, v, tau_external, t, plan_data, &q_cmd, &tau_cmd);
+    cout << t << endl << q_cmd << endl << tau_cmd << endl;
   }
 
   return 0;

@@ -12,11 +12,13 @@ namespace drake {
 namespace manipulation {
 namespace robot_plan_runner {
 
-enum class PlanType { kJointSpaceController, kTaskSpaceController };
+enum class PlanType { kJointSpacePlan, kTaskSpacePlan, kEmptyPlan };
 
 struct PlanData {
-  PlanType plan_type;
-  int plan_index;
+  PlanType plan_type{PlanType::kEmptyPlan};
+  // plan signature can be 1,2,3 (as in the case of running simulations)
+  // or timestamp (as in the case of receiving LCM messages).
+  long plan_signature{-1};
   optional<trajectories::PiecewisePolynomial<double>> joint_traj;
   struct EeData {
     trajectories::PiecewisePolynomial<double> ee_xyz_traj;
@@ -28,31 +30,31 @@ struct PlanData {
 class PlanBase {
  public:
   PlanBase() = default;
-  virtual ~PlanBase(){};
+  virtual ~PlanBase() = default;
 
   virtual void Step(const Eigen::Ref<const Eigen::VectorXd>& q,
                     const Eigen::Ref<const Eigen::VectorXd>& v,
                     const Eigen::Ref<const Eigen::VectorXd>& tau_external,
-                    double t, Eigen::VectorXd* const q_commanded,
+                    double t, const PlanData& plan_data,
+                    Eigen::VectorXd* const q_commanded,
                     Eigen::VectorXd* const tau_commanded) const = 0;
-  virtual void UpdatePlan(const PlanData& plan_data) = 0;
-
+  virtual PlanType get_plan_type() const = 0;
 };
 
 class JointSpacePlan : public PlanBase {
  public:
-  JointSpacePlan() : num_positions_(7){};
-
-  void UpdatePlan(const PlanData& plan_data) override;
+  JointSpacePlan() : num_positions_(7) {};
 
   void Step(const Eigen::Ref<const Eigen::VectorXd>& q,
             const Eigen::Ref<const Eigen::VectorXd>& v,
             const Eigen::Ref<const Eigen::VectorXd>& tau_external, double t,
-            Eigen::VectorXd* const q_cmd,
+            const PlanData& plan_data, Eigen::VectorXd* const q_cmd,
             Eigen::VectorXd* const tau_cmd) const override;
 
+  inline PlanType get_plan_type() const override {
+      return PlanType::kJointSpacePlan;};
+
  private:
-  std::unique_ptr<const trajectories::PiecewisePolynomial<double>> q_traj_;
   const int num_positions_;
 };
 

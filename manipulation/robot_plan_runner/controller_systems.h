@@ -22,18 +22,28 @@ class RobotController : public systems::LeafSystem<double> {
  private:
   void CalcCommands(const systems::Context<double>&,
                        systems::BasicVector<double>*) const;
-
-  const int num_positions_{};
   std::unique_ptr<PlanBase> plan_;
+  const int num_positions_{};
   int input_port_idx_q_{-1};
   int input_port_idx_v_{-1};
   int input_port_idx_tau_ext_{-1};
-  int input_port_idx_plan_data{-1};
+  int input_port_idx_plan_data_{-1};
 
   mutable Eigen::VectorXd q_cmd_;
   mutable Eigen::VectorXd tau_cmd_;
-  mutable int plan_index_current_;
+  mutable double t_start_current_{0};
+  mutable long plan_signature_current_{0};
+};
 
+class PlanSwitcher : public systems::LeafSystem<double> {
+ public:
+  PlanSwitcher();
+ private:
+  void CalcJointSpacePlan(const systems::Context<double>&,
+                          PlanData *) const;
+//  const int num_positions_;
+  int input_port_idx_plan_data_;
+//  mutable long plan_signature_current_{0};
 };
 
 }  // namespace robot_plan_runner
