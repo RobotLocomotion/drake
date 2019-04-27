@@ -19,17 +19,17 @@ namespace geometry {
   on a mesh. It can evaluate the field value at any location on any element
   of the mesh.
 
-  @tparam FieldType  a valid Eigen scalar or vector for the field value.
+  @tparam F  a valid Eigen scalar or vector for the field value.
   @tparam MeshType   the type of the meshes: surface mesh or volume mesh.
 */
-template <class FieldType, class MeshType>
+template <class F, class MeshType>
 class MeshField {
  public:
   /** Evaluates the field value at a location on an element.
     @param e The index of the element.
     @param b The barycentric coordinates.
    */
-  virtual FieldType Evaluate(const typename MeshType::ElementIndex e,
+  virtual F Evaluate(const typename MeshType::ElementIndex e,
                              const typename MeshType::Barycentric& b) const = 0;
 
  protected:
