@@ -167,7 +167,7 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(event.get_trigger_type(), TriggerType.kInitialization)
 
     def test_instantiations(self):
-        # Quick check of instantions for given types.
+        # Quick check of instantiations for given types.
         # N.B. These checks are ordered according to their binding definitions
         # in the corresponding source file.
         # `analysis_py.cc`
@@ -352,7 +352,6 @@ class TestGeneral(unittest.TestCase):
             xc = context_i.get_continuous_state_vector().CopyToVector()
             xc_expected = (float(i) / (n - 1) * (xc_final - xc_initial) +
                            xc_initial)
-            print("xc[t = {}] = {}".format(t, xc))
             self.assertTrue(np.allclose(xc, xc_expected))
 
     def test_simulator_integrator_manipulation(self):
