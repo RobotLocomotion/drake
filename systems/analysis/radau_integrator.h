@@ -106,7 +106,7 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
 
   bool AttemptStep(const T& t0, const T& h,
       const VectorX<T>& xt0, VectorX<T>* xtplus_radau3);
-  const VectorX<T>& ComputeFofg(
+  const VectorX<T>& ComputeFofZ(
       const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& Z);
   void DoInitialize() final;
   void DoResetImplicitIntegratorStatistics() final;
@@ -148,8 +148,8 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   // Newton-Raphson process.
   VectorX<T> Z_;
 
-  // The derivative evaluations at t0 and every stage.
-  VectorX<T> F_of_g_;
+  // The derivative evaluations for every stage.
+  VectorX<T> F_of_Z_;
 
   // The continuous state update vector used during Newton-Raphson.
   std::unique_ptr<ContinuousState<T>> dx_state_;
@@ -213,7 +213,7 @@ void RadauIntegrator<T, num_stages>::DoInitialize() {
   // elements (where s is the number of stages)- take advantage of this.
   A_tp_eye_ = CalcTensorProduct(A_, MatrixX<T>::Identity(state_dim, state_dim));
 
-  F_of_g_.resize(state_dim * num_stages);
+  F_of_Z_.resize(state_dim * num_stages);
 
   // Allocate storage for changes to state variables during Newton-Raphson.
   dx_state_ = this->get_system().AllocateTimeDerivatives();
@@ -231,10 +231,11 @@ void RadauIntegrator<T, num_stages>::DoInitialize() {
 // @param t0 the initial time.
 // @param h the integration step size to attempt.
 // @param xt0 the continuous state at time t0.
-// @param Z the current iterate.
+// @param Z the current iterate, of dimension state_dim * num_stages.
 // @post the state of the internal context will be set to (t0, xt0) on return.
+// @return a (state_dim * num_stages)-dimensional vector.
 template <class T, int num_stages>
-const VectorX<T>& RadauIntegrator<T, num_stages>::ComputeFofg(
+const VectorX<T>& RadauIntegrator<T, num_stages>::ComputeFofZ(
       const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& Z) {
   Context<T>* context = this->get_mutable_context();
   const int state_dim = xt0.size();
@@ -243,11 +244,11 @@ const VectorX<T>& RadauIntegrator<T, num_stages>::ComputeFofg(
   for (int i = 0, j = 0; i < num_stages; ++i, j += state_dim) {
     const auto Z_i = Z.segment(j, state_dim);
     context->SetTimeAndContinuousState(t0 + c_[i] * h, xt0 + Z_i);
-    auto F_i = F_of_g_.segment(j, state_dim);
+    auto F_i = F_of_Z_.segment(j, state_dim);
     F_i = this->EvalTimeDerivatives(*context).CopyToVector();
   }
 
-  return F_of_g_;
+  return F_of_Z_;
 }
 
 // Computes the next continuous state (at t0 + h) using the Radau method,
@@ -323,15 +324,15 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
     ++num_nr_iterations_;
 
     // Evaluate the derivatives using the current iterate.
-    const VectorX<T>& F_of_g = ComputeFofg(t0, h, xt0, Z_);
+    const VectorX<T>& F_of_Z = ComputeFofZ(t0, h, xt0, Z_);
 
     // Compute the state update using (IV.8.4) in [Hairer, 1996], p. 119, i.e.:
     // Solve (I − hA⊗J) ΔZᵏ = h (A⊗I) F(Zᵏ) - Zᵏ for ΔZᵏ, where:
     // A_tp_eye ≡ (A⊗I) and (I − hA⊗J) is the iteration matrix.
     SPDLOG_DEBUG(drake::log(), "residual: {}",
-        (A_tp_eye_ * (h * F_of_g) - Z_).transpose());
+        (A_tp_eye_ * (h * F_of_Z) - Z_).transpose());
     VectorX<T> dZ = iteration_matrix_radau3_.Solve(
-        A_tp_eye_ * (h * F_of_g) - Z_);
+        A_tp_eye_ * (h * F_of_Z) - Z_);
 
     // Update the iterate.
     Z_ += dZ;
