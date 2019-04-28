@@ -323,14 +323,14 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
   static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
                 "JointType<T> must be a sub-class of Joint<T>.");
 
-  const Frame<T>* frame_on_parent;
+  const Frame<T>* frame_on_parent{nullptr};
   if (X_PF) {
     frame_on_parent = &this->AddFrame<FixedOffsetFrame>(parent, *X_PF);
   } else {
     frame_on_parent = &parent.body_frame();
   }
 
-  const Frame<T>* frame_on_child;
+  const Frame<T>* frame_on_child{nullptr};
   if (X_BM) {
     frame_on_child = &this->AddFrame<FixedOffsetFrame>(child, *X_BM);
   } else {
