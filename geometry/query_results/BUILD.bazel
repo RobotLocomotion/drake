@@ -66,11 +66,13 @@ drake_cc_library(
     srcs = [
         "contact_surface.cc",
         "mesh_field.cc",
+        "mesh_field_linear.cc",
         "surface_mesh.cc",
     ],
     hdrs = [
         "contact_surface.h",
         "mesh_field.h",
+        "mesh_field_linear.h",
         "surface_mesh.h",
     ],
     deps = [

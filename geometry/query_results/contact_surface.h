@@ -8,7 +8,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/query_results/mesh_field.h"
+#include "drake/geometry/query_results/mesh_field_linear.h"
 #include "drake/geometry/query_results/surface_mesh.h"
 
 namespace drake {
