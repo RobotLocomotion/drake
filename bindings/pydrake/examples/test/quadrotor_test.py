@@ -4,7 +4,9 @@ import unittest
 import numpy as np
 
 from pydrake.geometry import SceneGraph
-from pydrake.examples.quadrotor import QuadrotorPlant, StabilizingLQRController
+from pydrake.examples.quadrotor import (
+    QuadrotorPlant, QuadrotorGeometry, StabilizingLQRController)
+from pydrake.systems.framework import DiagramBuilder
 
 
 class TestQuadrotor(unittest.TestCase):
@@ -18,10 +20,11 @@ class TestQuadrotor(unittest.TestCase):
         self.assertEqual(quadrotor.m(), 1)
         self.assertEqual(quadrotor.g(), 9.81)
 
-        scene_graph = SceneGraph()
-        quadrotor.RegisterGeometry(scene_graph)
-
-        self.assertTrue(quadrotor.source_id().is_valid())
-        quadrotor.get_geometry_pose_output_port()
-
         StabilizingLQRController(quadrotor, np.zeros(3))
+
+    def test_geometry(self):
+        builder = DiagramBuilder()
+        quadrotor = builder.AddSystem(QuadrotorPlant())
+        scene_graph = builder.AddSystem(SceneGraph())
+        state_port = quadrotor.get_output_port(0)
+        QuadrotorGeometry.AddToBuilder(builder, state_port, scene_graph)
