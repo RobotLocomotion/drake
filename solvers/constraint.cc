@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <limits>
+#include <set>
 #include <unordered_map>
 
 #include "drake/math/matrix_util.h"
@@ -33,6 +34,7 @@ symbolic::Formula MakeUpperBound(const symbolic::Expression& e,
   }
 }
 
+#ifdef DRAKE_ASSERT_IS_ARMED
 // Check if each entry of gradient_sparsity_pattern is within [0, rows) and [0,
 // cols), and if there are any repeated entries in gradient_sparsity_pattern.
 void CheckGradientSparsityPattern(
@@ -58,12 +60,15 @@ void CheckGradientSparsityPattern(
     nonzero_entries.insert(it, nonzero_entry);
   }
 }
+#endif
 }  // namespace
 
 void Constraint::SetGradientSparsityPattern(
     const std::vector<std::pair<int, int>>& gradient_sparsity_pattern) {
-  DRAKE_ASSERT_VOID(CheckGradientSparsityPattern(gradient_sparsity_pattern,
-                                                 num_outputs(), num_vars()));
+#ifdef DRAKE_ASSERT_IS_ARMED
+  CheckGradientSparsityPattern(gradient_sparsity_pattern, num_outputs(),
+                               num_vars());
+#endif
   gradient_sparsity_pattern_.emplace(gradient_sparsity_pattern);
 }
 

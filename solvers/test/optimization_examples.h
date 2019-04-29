@@ -768,6 +768,84 @@ class EckhardtProblem {
   Vector3<symbolic::Variable> x_;
 };
 
+/**
+ * This problem is 106 problem from  Test examples for Nonlinear Programming
+ * Codes by Will Hock and Klaus Schittkowski, Springer. The constraint of this
+ * problem has sparse gradient.
+ */
+class HeatExchangerDesignProblem {
+ public:
+  HeatExchangerDesignProblem();
+
+  void CheckSolution(const MathematicalProgramResult& result, double tol) const;
+
+  const MathematicalProgram& prog() const { return *prog_; }
+
+ private:
+  class HeatExchangerDesignConstraint1 : public solvers::Constraint {
+   public:
+    HeatExchangerDesignConstraint1();
+
+    ~HeatExchangerDesignConstraint1() override {}
+
+   private:
+    template <typename T>
+    void DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x,
+                       VectorX<T>* y) const {
+      y->resize(1);
+      (*y)(0) = x(0) * x(5) - 833.33252 * x(3) - 100 * x(0) + 83333.333;
+    }
+
+    void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                Eigen::VectorXd* y) const override {
+      DoEvalGeneric(x, y);
+    }
+
+    void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                AutoDiffVecXd* y) const override {
+      DoEvalGeneric(x, y);
+    }
+
+    void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+                VectorX<symbolic::Expression>* y) const override {
+      DoEvalGeneric<symbolic::Expression>(x.cast<symbolic::Expression>(), y);
+    }
+  };
+
+  class HeatExchangerDesignConstraint2 : public solvers::Constraint {
+   public:
+    HeatExchangerDesignConstraint2();
+
+    ~HeatExchangerDesignConstraint2() override {}
+
+   private:
+    template <typename T>
+    void DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x,
+                       VectorX<T>* y) const {
+      y->resize(2);
+      (*y)(0) = x(0) * x(5) - 1250 * x(3) - x(0) * x(2) + 1250 * x(2);
+      (*y)(1) = x(1) * x(6) - 1250000 - x(1) * x(3) + 2500 * x(3);
+    }
+
+    void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                Eigen::VectorXd* y) const override {
+      DoEvalGeneric(x, y);
+    }
+
+    void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                AutoDiffVecXd* y) const override {
+      DoEvalGeneric(x, y);
+    }
+
+    void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+                VectorX<symbolic::Expression>* y) const override {
+      DoEvalGeneric<symbolic::Expression>(x.cast<symbolic::Expression>(), y);
+    }
+  };
+  std::unique_ptr<MathematicalProgram> prog_;
+  Eigen::Matrix<symbolic::Variable, 8, 1> x_;
+};
+
 std::set<CostForm> linear_cost_form();
 
 std::set<CostForm> quadratic_cost_form();

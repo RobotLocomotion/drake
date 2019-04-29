@@ -450,12 +450,27 @@ GTEST_TEST(testNonlinearProgram, UnitLengthConstraint) {
 }
 
 GTEST_TEST(testNonlinearProgram, EckhardtProblem) {
-  // This test a nonlinear optimization problem with sparse constraint gradient.
+  // This tests a nonlinear optimization problem with sparse constraint
+  // gradient.
   EckhardtProblem prob;
   const Eigen::VectorXd x_init = Eigen::Vector3d(2, 1.05, 2.9);
   MathematicalProgramResult result;
   RunNonlinearProgram(prob.prog(), x_init,
                       [&prob, &result]() { prob.CheckSolution(result, 1E-7); },
+                      &result);
+}
+
+GTEST_TEST(testNonlinearProgram, HeatExchangerDesignProblem) {
+  // This tests a nonlinear optimization problem with sparse constraint
+  // gradient.
+  HeatExchangerDesignProblem prob;
+  Eigen::VectorXd x_init(8);
+  x_init << 5000, 5000, 5000, 200, 350, 150, 225, 425;
+  MathematicalProgramResult result;
+  // The optimal solution given in Hock's reference has low precision, and the
+  // magnitude of the solution is large, so we choose a large tolerance 4E-3.
+  RunNonlinearProgram(prob.prog(), x_init,
+                      [&prob, &result]() { prob.CheckSolution(result, 4E-3); },
                       &result);
 }
 
