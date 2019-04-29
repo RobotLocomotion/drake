@@ -228,7 +228,7 @@ class DrakeKukaIIwaRobot {
         forces.mutable_generalized_forces();
 
     // Calculate inverse dynamics on this robot.
-    tree().CalcInverseDynamics(*context_, pc, vc, qDDt,
+    tree().CalcInverseDynamics(*context_, qDDt,
                 Fapplied_Bo_W_array, generalized_force_applied,
                 &A_WB_array, &F_BMo_W_array, &generalized_force_output);
 

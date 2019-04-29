@@ -264,6 +264,7 @@ template <class T>
 void ImplicitIntegrator<T>::DoResetStatistics() {
   num_jacobian_function_evaluations_ = 0;
   num_jacobian_evaluations_ = 0;
+  DoResetImplicitIntegratorStatistics();
 }
 
 // We do not support computing the Jacobian matrix using automatic
