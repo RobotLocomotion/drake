@@ -98,6 +98,16 @@ class TestGeneral(unittest.TestCase):
 
     def test_context_api(self):
         system = Adder(3, 10)
+        context = system.AllocateContext()
+        self.assertIsInstance(
+            context.get_continuous_state(), ContinuousState)
+        self.assertIsInstance(
+            context.get_mutable_continuous_state(), ContinuousState)
+        self.assertIsInstance(
+            context.get_continuous_state_vector(), VectorBase)
+        self.assertIsInstance(
+            context.get_mutable_continuous_state_vector(), VectorBase)
+
         context = system.CreateDefaultContext()
         self.assertIsInstance(
             context.get_continuous_state(), ContinuousState)
@@ -167,7 +177,7 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(event.get_trigger_type(), TriggerType.kInitialization)
 
     def test_instantiations(self):
-        # Quick check of instantions for given types.
+        # Quick check of instantiations for given types.
         # N.B. These checks are ordered according to their binding definitions
         # in the corresponding source file.
         # `analysis_py.cc`
@@ -199,6 +209,9 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(Subvector_, Subvector)
 
     def test_scalar_type_conversion(self):
+        float_system = Adder(1, 1)
+        float_context = float_system.CreateDefaultContext()
+        float_context.FixInputPort(0, [1.])
         for T in [float, AutoDiffXd, Expression]:
             system = Adder_[T](1, 1)
             # N.B. Current scalar conversion does not permit conversion to and
@@ -215,6 +228,18 @@ class TestGeneral(unittest.TestCase):
                     system_sym = method(system)
                     self.assertIsInstance(system_sym, System_[Expression])
                     self._compare_system_instances(system, system_sym)
+            context = system.CreateDefaultContext()
+            system.FixInputPortsFrom(other_system=float_system,
+                                     other_context=float_context,
+                                     target_context=context)
+            u = system.get_input_port(0).Eval(context)
+            self.assertEqual(len(u), 1)
+            if T == float:
+                self.assertEqual(u[0], 1.)
+            elif T == AutoDiffXd:
+                self.assertEqual(u[0].value(), 1.)
+            else:
+                self.assertEqual(u[0].Evaluate(), 1.)
 
     def test_simulator_ctor(self):
         # Tests a simple simulation for supported scalar types.
@@ -352,7 +377,6 @@ class TestGeneral(unittest.TestCase):
             xc = context_i.get_continuous_state_vector().CopyToVector()
             xc_expected = (float(i) / (n - 1) * (xc_final - xc_initial) +
                            xc_initial)
-            print("xc[t = {}] = {}".format(t, xc))
             self.assertTrue(np.allclose(xc, xc_expected))
 
     def test_simulator_integrator_manipulation(self):
