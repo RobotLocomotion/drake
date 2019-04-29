@@ -4,6 +4,7 @@
 
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
+#include "drake/systems/analysis/simulator.h"
 
 namespace drake {
 namespace multibody {
@@ -17,8 +18,16 @@ template <>
 void AddDrakeVisualizer<double>(
     systems::DiagramBuilder<double>* builder,
     const geometry::SceneGraph<double>& scene_graph) {
-  std::cout << "add drake visualizer.\n";
   geometry::ConnectDrakeVisualizer(builder, scene_graph);
+}
+
+template <typename T>
+void InitializeDiagramSimulator(const systems::Diagram<T>&) {}
+
+template <>
+void InitializeDiagramSimulator<double>(
+    const systems::Diagram<double>& diagram) {
+  systems::Simulator<double>(diagram).Initialize();
 }
 
 template <typename T>
@@ -95,6 +104,10 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
   diagram_context_ = diagram_->CreateDefaultContext();
   plant_context_ =
       &(diagram_->GetMutableSubsystemContext(*plant_, diagram_context_.get()));
+
+  // Initialize a simulator for the diagram. This initialization step is
+  // necessary for visualizing the posture.
+  InitializeDiagramSimulator(*diagram_);
 }
 
 template class FreeSpheresAndBoxes<double>;

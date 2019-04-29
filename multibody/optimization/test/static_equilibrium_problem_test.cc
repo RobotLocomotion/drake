@@ -5,13 +5,12 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/optimization/test/optimization_with_contact_utilities.h"
 #include "drake/solvers/snopt_solver.h"
-#include "drake/systems/analysis/simulator.h"
 
 namespace drake {
 namespace multibody {
 GTEST_TEST(StaticEquilibriumProblemTest, SphereOnGroundTest) {
   // Find the equilibrium pose for a single sphere on the ground.
-  const CoulombFriction<double> ground_friction(1.5 /* static friction */,
+  const CoulombFriction<double> ground_friction(1. /* static friction */,
                                                 0.8 /* dynamic friction */);
 
   const double radius = 0.1;
@@ -126,7 +125,6 @@ GTEST_TEST(TestStaticEquilibriumProblem, TwoSpheresWithinBin) {
 
   // dut_double is for visualization.
   test::FreeSpheresAndBoxes<double> dut_double(spheres, walls, ground_friction);
-  systems::Simulator<double>(dut_double.diagram()).Initialize();
 
   StaticEquilibriumProblem problem(&(dut.plant()),
                                    dut.get_mutable_plant_context(), {});
@@ -160,7 +158,8 @@ GTEST_TEST(TestStaticEquilibriumProblem, TwoSpheresWithinBin) {
       problem.q_vars().segment<2>(11));
 
   auto check_static_equilibrium_problem_solve =
-      [&problem, &dut_double](const Eigen::VectorXd& x_init) {
+      [&problem, &dut_double, &radii, &bin_length,
+       &wall_size](const Eigen::VectorXd& x_init) {
         // Now solve the static equilibrium problem.
         solvers::SnoptSolver snopt_solver;
         if (snopt_solver.available()) {
@@ -177,14 +176,6 @@ GTEST_TEST(TestStaticEquilibriumProblem, TwoSpheresWithinBin) {
           std::cout << "q_sol: " << q_sol.transpose() << "\n";
           const std::vector<ContactWrench> contact_wrench_sol =
               problem.GetContactWrenchSolution(result);
-          for (const auto& contact_wrench : contact_wrench_sol) {
-            std::cout << "body A index: " << contact_wrench.bodyA_index << "\n";
-            std::cout << "body B index: " << contact_wrench.bodyB_index << "\n";
-            std::cout << "p_WCb_W: " << contact_wrench.p_WCb_W.transpose()
-                      << "\n";
-            std::cout << "F_Cb_W: " << contact_wrench.F_Cb_W.transpose()
-                      << "\n";
-          }
 
           dut_double.plant().SetPositions(
               dut_double.get_mutable_plant_context(), q_sol);
@@ -192,7 +183,24 @@ GTEST_TEST(TestStaticEquilibriumProblem, TwoSpheresWithinBin) {
               dut_double.diagram_context());
           const double tol = 2E-5;
           EXPECT_NEAR(q_sol.head<4>().squaredNorm(), 1, tol);
-          // EXPECT_NEAR(q_sol.segment<4>(7).squaredNorm(), 1, tol);
+          EXPECT_NEAR(q_sol.segment<4>(7).squaredNorm(), 1, tol);
+
+          // Now check if both spheres are above the ground and within the box.
+          EXPECT_GE(q_sol(6), radii[0] - tol);
+          EXPECT_GE(q_sol(13), radii[1] - tol);
+          EXPECT_LE(std::abs(q_sol(4)),
+                    bin_length - wall_size(1) / 2 - radii[0] + tol);
+          EXPECT_LE(std::abs(q_sol(5)),
+                    bin_length - wall_size(1) / 2 - radii[0] + tol);
+          EXPECT_LE(std::abs(q_sol(11)),
+                    bin_length - wall_size(1) / 2 - radii[1] + tol);
+          EXPECT_LE(std::abs(q_sol(12)),
+                    bin_length - wall_size(1) / 2 - radii[1] + tol);
+
+          // Now check if the two spheres are not penetrating each other.
+          EXPECT_GE((q_sol.segment<3>(4) - q_sol.segment<3>(11)).norm(),
+                    radii[0] + radii[1] - tol);
+
           //        // The sphere must be on the ground.
           //        EXPECT_NEAR(q_sol(6), radius, tol);
           //        // Evaluate the contact wrench.

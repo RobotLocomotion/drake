@@ -91,6 +91,7 @@ drake_cc_library(
     deps = [
         "//geometry:scene_graph",
         "//multibody/plant",
+        "//systems/analysis:simulator",
         "//systems/framework:diagram",
     ],
 )
@@ -123,7 +124,6 @@ drake_cc_googletest(
         ":static_equilibrium_problem",
         "//common/test_utilities:eigen_matrix_compare",
         "//solvers:solve",
-        "//systems/analysis:simulator",
     ],
 )
 
