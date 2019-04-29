@@ -157,8 +157,8 @@ class ContactSurface {
    */
   ContactSurface(GeometryId id_M, GeometryId id_N,
                  std::unique_ptr<SurfaceMesh<T>> mesh,
-                 std::unique_ptr<SurfaceMeshField<T, T>>&& e_MN,
-                 std::unique_ptr<SurfaceMeshField<Vector3<T>, T>>&& grad_h_MN_M)
+                 std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN,
+                 std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_MN_M)
       : id_M_(id_M),
         id_N_(id_N),
         mesh_(std::move(mesh)),
@@ -216,10 +216,10 @@ class ContactSurface {
   /** The surface mesh of the contact surface Sₘₙ between M and N. */
   std::unique_ptr<SurfaceMesh<T>> mesh_;
   /** Represents the common scalar field eₘₙ on the surface mesh. */
-  std::unique_ptr<SurfaceMeshField<T, T>> e_MN_;
+  std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN_;
   /** Represents the vector field ∇hₘₙ on the surface mesh, expressed in M's
       frame */
-  std::unique_ptr<SurfaceMeshField<Vector3<T>, T>> grad_h_MN_M_;
+  std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_MN_M_;
 };
 
 }  // namespace geometry

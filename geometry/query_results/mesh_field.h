@@ -180,7 +180,7 @@ class MeshFieldLinear final : public MeshField<F, MeshType> {
   @tparam T  a valid Eigen scalar for coordinates.
  */
 template <typename F, typename T>
-using SurfaceMeshField = MeshFieldLinear<F, SurfaceMesh<T>>;
+using SurfaceMeshFieldLinear = MeshFieldLinear<F, SurfaceMesh<T>>;
 
 /**@}*/
 

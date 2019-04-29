@@ -71,7 +71,7 @@ ContactSurface<T> TestInstantiateContactSurface() {
   const T e3{3.};
   std::vector<T> e_values = {e0, e1, e2, e3};
   auto e_field =
-      std::make_unique<SurfaceMeshField<T, T>>(
+      std::make_unique<SurfaceMeshFieldLinear<T, T>>(
           "e", std::move(e_values), surface_mesh.get());
 
   // Slightly different values of grad_h_MN_M at each vertex.
@@ -82,7 +82,7 @@ ContactSurface<T> TestInstantiateContactSurface() {
   const Vector3<T> g3(-0.1, 0.1, 1.);
   std::vector<Vector3<T>> grad_h_MN_M_values = {g0, g1, g2, g3};
   auto grad_h_MN_M_field =
-      std::make_unique<SurfaceMeshField<Vector3<T>, T>>(
+      std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
           "grad_h_MN_M", std::move(grad_h_MN_M_values), surface_mesh.get());
 
   ContactSurface<T> contact_surface(id_M, id_N, std::move(surface_mesh),
