@@ -155,10 +155,10 @@ class ContactSurface {
    @param grad_h_MN_M  represents the vector field ∇hₘₙ on the surface mesh,
                        expressed in M's frame.
    */
-  ContactSurface(GeometryId id_M, GeometryId id_N,
-                 std::unique_ptr<SurfaceMesh<T>> mesh,
-                 std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN,
-                 std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_MN_M)
+  ContactSurface(
+      GeometryId id_M, GeometryId id_N, std::unique_ptr<SurfaceMesh<T>> mesh,
+      std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN,
+      std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_MN_M)
       : id_M_(id_M),
         id_N_(id_N),
         mesh_(std::move(mesh)),
