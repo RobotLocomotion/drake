@@ -19,11 +19,6 @@ IiwaStatusSender::IiwaStatusSender(int num_joints)
       "torque_measured", systems::kVectorValued, num_joints_);
   this->DeclareInputPort(
       "torque_external", systems::kVectorValued, num_joints_);
-  // TODO(jwnimmer-tri) Remove these two state inputs on 2019-05-01.
-  this->DeclareInputPort(
-      "state_commanded", systems::kVectorValued, num_joints_ * 2);
-  this->DeclareInputPort(
-      "state_measured", systems::kVectorValued, num_joints_ * 2);
   this->DeclareAbstractOutputPort(
       "lcmt_iiwa_status", &IiwaStatusSender::CalcOutput);
 }
@@ -46,12 +41,6 @@ const InPort& IiwaStatusSender::get_torque_measured_input_port() const {
 }
 const InPort& IiwaStatusSender::get_torque_external_input_port() const {
   return LeafSystem<double>::get_input_port(5);
-}
-const InPort& IiwaStatusSender::get_command_input_port() const {
-  return LeafSystem<double>::get_input_port(6);
-}
-const InPort& IiwaStatusSender::get_state_input_port() const {
-  return LeafSystem<double>::get_input_port(7);
 }
 const systems::OutputPort<double>& IiwaStatusSender::get_output_port() const {
   return LeafSystem<double>::get_output_port(0);
@@ -99,20 +88,14 @@ Eigen::Ref<const Eigen::VectorXd> EvalFirstConnected(
 
 void IiwaStatusSender::CalcOutput(
     const systems::Context<double>& context, lcmt_iiwa_status* output) const {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  const auto& position_commanded = EvalFirstConnected(
-      context, 1, 1, zero_vector_,
-      get_position_commanded_input_port(),
-      get_command_input_port());
-  const auto& position_measured = EvalFirstConnected(
-      context, 1, 1, zero_vector_,
-      get_position_measured_input_port(),
-      get_state_input_port());
-  const auto& velocity_estimated = EvalFirstConnected(
-      context, 0, 1, zero_vector_,
-      get_velocity_estimated_input_port(),
-      get_state_input_port(), num_joints_);
+  const auto& position_commanded =
+      get_position_commanded_input_port().Eval(context);
+  const auto& position_measured =
+      get_position_measured_input_port().Eval(context);
+  const auto& velocity_estimated =
+      get_velocity_estimated_input_port().HasValue(context) ?
+      get_velocity_estimated_input_port().Eval(context) :
+      zero_vector_.head(num_joints_);
   const auto& torque_commanded =
       get_torque_commanded_input_port().Eval(context);
   const auto& torque_measured = EvalFirstConnected(
@@ -123,7 +106,6 @@ void IiwaStatusSender::CalcOutput(
       context, 0, 2, zero_vector_,
       get_torque_external_input_port(),
       get_torque_external_input_port());
-#pragma GCC diagnostic pop
 
   lcmt_iiwa_status& status = *output;
   status.utime = context.get_time() * 1e6;

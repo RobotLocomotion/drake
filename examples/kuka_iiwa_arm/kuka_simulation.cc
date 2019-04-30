@@ -33,6 +33,8 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/demultiplexer.h"
+#include "drake/systems/primitives/discrete_derivative.h"
 
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");
@@ -50,8 +52,10 @@ namespace {
 using manipulation::util::SimDiagramBuilder;
 using systems::ConstantVectorSource;
 using systems::Context;
+using systems::Demultiplexer;
 using systems::Diagram;
 using systems::DiagramBuilder;
+using systems::StateInterpolatorWithDiscreteDerivative;
 using systems::FrameVisualizer;
 using systems::RigidBodyPlant;
 using systems::Simulator;
@@ -121,6 +125,13 @@ int DoMain() {
   auto external_torque_converter =
       base_builder->AddSystem<IiwaContactResultsToExternalTorque>(
           tree, iiwa_instances);
+  auto plant_state_demux = base_builder->AddSystem<Demultiplexer>(
+      2 * num_joints, num_joints);
+  plant_state_demux->set_name("plant_state_demux");
+  auto desired_state_from_position = base_builder->AddSystem<
+      StateInterpolatorWithDiscreteDerivative>(
+          num_joints, kIiwaLcmStatusPeriod);
+  desired_state_from_position->set_name("desired_state_from_position");
   auto status_pub = base_builder->AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
           "IIWA_STATUS", lcm, kIiwaLcmStatusPeriod /* publish period */));
@@ -130,16 +141,16 @@ int DoMain() {
 
   base_builder->Connect(command_sub->get_output_port(),
                         command_receiver->get_input_port());
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // TODO(jwnimmer-tri) The IIWA LCM systems should not know about velocities,
-  // we should add velocity estimation into this simulation, not use state
-  // ports on the LCM systems (the KUKA doesn't use velocities).
-  base_builder->Connect(command_receiver->get_commanded_state_output_port(),
+  base_builder->Connect(command_receiver->get_commanded_position_output_port(),
+                        desired_state_from_position->get_input_port());
+  base_builder->Connect(desired_state_from_position->get_output_port(),
                         controller->get_input_port_desired_state());
   base_builder->Connect(plant->get_output_port(0),
-                        status_sender->get_state_input_port());
-#pragma GCC diagnostic pop
+                        plant_state_demux->get_input_port(0));
+  base_builder->Connect(plant_state_demux->get_output_port(0),
+                        status_sender->get_position_measured_input_port());
+  base_builder->Connect(plant_state_demux->get_output_port(0),
+                        status_sender->get_velocity_estimated_input_port());
   base_builder->Connect(command_receiver->get_commanded_position_output_port(),
                         status_sender->get_position_commanded_input_port());
   base_builder->Connect(controller->get_output_port_control(),
