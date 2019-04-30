@@ -206,6 +206,26 @@ class ImplicitIntegrator : public IntegratorBase<T> {
     Eigen::HouseholderQR<MatrixX<AutoDiffXd>> QR_;
   };
 
+  /// Checks whether a proposed update is effectively zero, indicating that the
+  /// Newton-Raphson process converged.
+  bool IsUpdateZero(const VectorX<T>& xc, const VectorX<T>& dxc) const {
+    using std::abs;
+
+    // Back off slightly from the tightest tolerance (machine epsilon).
+    const double eps = 10 * std::numeric_limits<double>::epsilon();
+    for (int i = 0; i < xc.size(); ++i) {
+      // Do a relative or absolute tolerance, as appropriate on the magnitude
+      // of xc[i].
+      const T tol = (abs(xc[i]) <= 1.0) ? eps : abs(xc[i]) * eps;
+      if (abs(dxc[i]) > tol) {
+        DRAKE_DEMAND(dxc.norm() > eps);
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   /**
    * Resets any statistics particular to a specific implicit integrator. The
    * default implementation of this function does nothing. If your integrator

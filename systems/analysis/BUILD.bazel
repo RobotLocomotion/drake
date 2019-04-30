@@ -312,6 +312,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "implicit_integrator_test",
+    deps = [
+        ":implicit_integrator",
+        "//systems/plants/spring_mass_system",
+    ],
+)
+
+drake_cc_googletest(
     name = "lyapunov_test",
     deps = [
         ":lyapunov",

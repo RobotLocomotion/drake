@@ -223,20 +223,18 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
     dx_state_->get_mutable_vector().SetFromVector(dx);
     T dx_norm = this->CalcStateChangeNorm(*dx_state_);
 
+    // The check below looks for convergence by identifying cases where the
+    // update to the state results in no change.
+    if (this->IsUpdateZero(*xtplus, dx)) {
+      this->set_last_call_succeeded(true);
+      *xtplus += dx;
+      context->SetTimeAndContinuousState(tf, *xtplus);
+      return true;
+    }
+
     // Update the state vector.
     *xtplus += dx;
     context->SetTimeAndContinuousState(tf, *xtplus);
-
-    // The check below looks for convergence using machine epsilon. Without
-    // this check, the convergence criteria can be applied when
-    // |dx_norm| ~ 1e-22 (one example taken from practice), which does not
-    // allow the norm to be reduced further. What happens: dx_norm will become
-    // equivalent to last_dx_norm, making theta = 1, and eta = infinity. Thus,
-    // convergence would never be identified.
-    if (dx_norm < 10 * std::numeric_limits<double>::epsilon()) {
-      this->set_last_call_succeeded(true);
-      return true;
-    }
 
     // Compute the convergence rate and check convergence.
     // [Hairer, 1996] notes that this convergence strategy should only be
