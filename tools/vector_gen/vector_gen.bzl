@@ -24,10 +24,10 @@ def _relative_dirname_basename(label):
     return dirname(label), basename(label)
 
 def _vector_gen_outs(srcs, kind):
-    """Return the list of output filenames.  The `kind` is one of "vector"
-    (foo.h, foo.cc), "translator" (foo_translator.h, foo_translator.cc),
-    or "lcm" (lcmt_foo_t.lcm).  For compatibility with past practice, C++
-    output will appear under a "gen" folder, but *.lcm output will not.
+    """Return the list of output filenames.  The `kind` is either "vector"
+    (foo.h, foo.cc) or "lcm" (lcmt_foo_t.lcm).  For compatibility with past
+    practice, C++ output will appear under a "gen" folder, but *.lcm output
+    will not.
     """
 
     # Find and remove the dirname and extension shared by all srcs.
@@ -51,16 +51,6 @@ def _vector_gen_outs(srcs, kind):
         ]
         srcs = [
             join_paths(subdir, "gen", name + ".cc")
-            for name in names
-        ]
-        return struct(hdrs = hdrs, srcs = srcs)
-    elif kind == "translator":
-        hdrs = [
-            join_paths(subdir, "gen", name + "_translator.h")
-            for name in names
-        ]
-        srcs = [
-            join_paths(subdir, "gen", name + "_translator.cc")
             for name in names
         ]
         return struct(hdrs = hdrs, srcs = srcs)
@@ -180,38 +170,6 @@ def drake_cc_vector_gen_library(
         srcs = generated.srcs,
         hdrs = generated.hdrs,
         deps = deps + generated.deps,
-        **kwargs
-    )
-
-def drake_cc_vector_gen_translator_library(
-        name,
-        srcs = [],
-        deps = [],
-        **kwargs):
-    """Given the *.named_vector files in `srcs`, declare a drake_cc_library
-    with the given `name`, containing the generated LcmAndVectorBaseTranslator
-    subclasses for those `srcs`.  The `deps` are passed through to the declared
-    library, and must already contain (as supplied by our caller) a matching
-    drake_cc_vector_gen_library(...) label whose `srcs` are a superset of ours,
-    as well as a C++ library of generated LCM bindings for the LCM message(s).
-    """
-    outs = _vector_gen_outs(srcs = srcs, kind = "translator")
-    _vector_gen(
-        name = name + "_codegen",
-        srcs = srcs,
-        outs = outs.srcs + outs.hdrs,
-        include_prefix = "drake",
-        visibility = [],
-        env = hermetic_python_env(),
-    )
-    drake_cc_library(
-        name = name,
-        srcs = outs.srcs,
-        hdrs = outs.hdrs,
-        deps = deps + [
-            "//common:essential",
-            "//systems/lcm:translator",
-        ],
         **kwargs
     )
 

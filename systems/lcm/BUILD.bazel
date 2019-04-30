@@ -23,7 +23,6 @@ drake_cc_package_library(
         ":lcmt_drake_signal_translator",
         ":serializer",
         ":translator",
-        ":translator_system",
     ],
 )
 
@@ -46,27 +45,13 @@ drake_cc_library(
     name = "translator",
     srcs = [
         "lcm_and_vector_base_translator.cc",
-        "lcm_translator_dictionary.cc",
     ],
     hdrs = [
         "lcm_and_vector_base_translator.h",
-        "lcm_translator_dictionary.h",
     ],
     deps = [
         "//common:essential",
         "//systems/framework:vector",
-    ],
-)
-
-drake_cc_library(
-    name = "translator_system",
-    hdrs = [
-        "translator_system.h",
-    ],
-    deps = [
-        "//common:essential",
-        "//lcm:translator_base",
-        "//systems/framework:leaf_system",
     ],
 )
 
@@ -225,6 +210,7 @@ drake_cc_googletest(
         "//lcm:lcmt_drake_signal_utils",
         "//lcm:mock",
         "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
     ],
 )
 
@@ -251,16 +237,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "lcm_translator_dictionary_test",
-    deps = [
-        ":lcmt_drake_signal_translator",
-        ":translator",
-        "//lcm:lcmt_drake_signal_utils",
-        "//lcm:mock",
-    ],
-)
-
-drake_cc_googletest(
     name = "serializer_test",
     deps = [
         ":lcmt_drake_signal_translator",
@@ -279,17 +255,6 @@ drake_cc_googletest(
         "//systems/framework:diagram",
         "//systems/framework:diagram_builder",
         "//systems/primitives:constant_vector_source",
-    ],
-)
-
-drake_cc_googletest(
-    name = "translator_test",
-    copts = [
-        "-Wno-deprecated-declarations",
-    ],
-    deps = [
-        ":translator_system",
-        "//lcm:lcmt_drake_signal_utils",
     ],
 )
 

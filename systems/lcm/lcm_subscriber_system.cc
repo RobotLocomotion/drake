@@ -96,21 +96,6 @@ LcmSubscriberSystem::LcmSubscriberSystem(
     DrakeLcmInterface* lcm)
     : LcmSubscriberSystem(channel, nullptr, std::move(serializer), lcm) {}
 
-LcmSubscriberSystem::LcmSubscriberSystem(
-    const std::string& channel, const LcmAndVectorBaseTranslator& translator,
-    DrakeLcmInterface* lcm)
-    : LcmSubscriberSystem(channel, &translator, nullptr, lcm) {}
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-LcmSubscriberSystem::LcmSubscriberSystem(
-    const std::string& channel,
-    const LcmTranslatorDictionary& translator_dictionary,
-    DrakeLcmInterface* lcm)
-    : LcmSubscriberSystem(channel, translator_dictionary.GetTranslator(channel),
-                          lcm) {}
-#pragma GCC diagnostic pop
-
 LcmSubscriberSystem::~LcmSubscriberSystem() {
   // Violate our class invariant, to help catch use-after-free.
   magic_number_ = 0;
@@ -342,11 +327,6 @@ int LcmSubscriberSystem::WaitForMessage(
 int LcmSubscriberSystem::GetInternalMessageCount() const {
   std::unique_lock<std::mutex> lock(received_message_mutex_);
   return received_message_count_;
-}
-
-const LcmAndVectorBaseTranslator& LcmSubscriberSystem::get_translator() const {
-  DRAKE_DEMAND(translator_ != nullptr);
-  return *translator_;
 }
 
 }  // namespace lcm
