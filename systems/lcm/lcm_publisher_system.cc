@@ -131,35 +131,6 @@ LcmPublisherSystem::LcmPublisherSystem(
     : LcmPublisherSystem(channel, nullptr, nullptr, std::move(serializer),
                          lcm, publish_triggers, publish_period) {}
 
-LcmPublisherSystem::LcmPublisherSystem(
-    const std::string& channel,
-    const LcmAndVectorBaseTranslator& translator,
-    drake::lcm::DrakeLcmInterface* lcm,
-    double publish_period)
-    : LcmPublisherSystem(channel, &translator, nullptr, nullptr,
-                         lcm, publish_period) {}
-
-LcmPublisherSystem::LcmPublisherSystem(
-    const std::string& channel,
-    std::unique_ptr<const LcmAndVectorBaseTranslator> translator,
-    drake::lcm::DrakeLcmInterface* lcm,
-    double publish_period)
-    : LcmPublisherSystem(channel, nullptr, std::move(translator), nullptr,
-                         lcm, publish_period) {}
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-LcmPublisherSystem::LcmPublisherSystem(
-    const std::string& channel,
-    const LcmTranslatorDictionary& translator_dictionary,
-    DrakeLcmInterface* lcm,
-    double publish_period)
-    : LcmPublisherSystem(
-          channel,
-          translator_dictionary.GetTranslator(channel),
-          lcm, publish_period) {}
-#pragma GCC diagnostic pop
-
 LcmPublisherSystem::~LcmPublisherSystem() {}
 
 void LcmPublisherSystem::AddInitializationMessage(
@@ -209,11 +180,6 @@ EventStatus LcmPublisherSystem::PublishInputAsLcmMessage(
                 context.get_time());
 
   return EventStatus::Succeeded();
-}
-
-const LcmAndVectorBaseTranslator& LcmPublisherSystem::get_translator() const {
-  DRAKE_DEMAND(translator_ != nullptr);
-  return *translator_;
 }
 
 }  // namespace lcm

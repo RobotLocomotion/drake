@@ -81,48 +81,6 @@ TEST_F(IiwaStatusSenderTest, AcceptanceTest) {
   EXPECT_EQ(output().joint_torque_external, as_vector(t0_external));
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// This test can be removed when the state input ports disappear.
-TEST_F(IiwaStatusSenderTest, DeprecatedInputTest) {
-  const VectorXd q0_commanded = VectorXd::LinSpaced(N, 0.1, 0.2);
-  const VectorXd q0_measured = VectorXd::LinSpaced(N, 0.11, 0.22);
-  const VectorXd v0_estimated = VectorXd::LinSpaced(N, 0.2, 0.3);
-  const VectorXd t0_commanded = VectorXd::LinSpaced(N, 0.4, 0.5);
-  const VectorXd t0_measured = VectorXd::LinSpaced(N, 0.44, 0.55);
-  const VectorXd t0_external = VectorXd::LinSpaced(N, 0.6, 0.7);
-
-  // Fix only the required inputs ...
-  VectorXd qv0_commanded = VectorXd::Zero(N * 2);
-  qv0_commanded.head(N) = q0_commanded;
-  VectorXd qv0_measured = VectorXd::Zero(N * 2);
-  qv0_measured.head(N) = q0_measured;
-  qv0_measured.tail(N) = v0_estimated;
-  Fix(dut_.get_command_input_port(), qv0_commanded);
-  Fix(dut_.get_state_input_port(), qv0_measured);
-  Fix(dut_.get_commanded_torque_input_port(), t0_commanded);
-  // ... so that some outputs have passthrough values ...
-  EXPECT_EQ(output().joint_position_commanded, as_vector(q0_commanded));
-  EXPECT_EQ(output().joint_position_measured, as_vector(q0_measured));
-  EXPECT_EQ(output().joint_velocity_estimated, as_vector(v0_estimated));
-  EXPECT_EQ(output().joint_torque_commanded, as_vector(t0_commanded));
-  // ... and some outputs have default values.
-  EXPECT_EQ(output().joint_torque_measured, as_vector(t0_commanded));
-  EXPECT_EQ(output().joint_torque_external, std::vector<double>(N, 0.0));
-
-  // Fix all of the inputs ...
-  Fix(dut_.get_measured_torque_input_port(), t0_measured);
-  Fix(dut_.get_external_torque_input_port(), t0_external);
-  // ... so all ouputs have values.
-  EXPECT_EQ(output().joint_position_commanded, as_vector(q0_commanded));
-  EXPECT_EQ(output().joint_position_measured, as_vector(q0_measured));
-  EXPECT_EQ(output().joint_velocity_estimated, as_vector(v0_estimated));
-  EXPECT_EQ(output().joint_torque_commanded, as_vector(t0_commanded));
-  EXPECT_EQ(output().joint_torque_measured, as_vector(t0_measured));
-  EXPECT_EQ(output().joint_torque_external, as_vector(t0_external));
-}
-#pragma GCC diagnostic pop
-
 }  // namespace
 }  // namespace kuka_iiwa
 }  // namespace manipulation

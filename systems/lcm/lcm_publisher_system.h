@@ -13,7 +13,6 @@
 #include "drake/systems/framework/event.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
-#include "drake/systems/lcm/lcm_translator_dictionary.h"
 #include "drake/systems/lcm/serializer.h"
 
 namespace drake {
@@ -180,30 +179,6 @@ class LcmPublisherSystem : public LeafSystem<double> {
       const TriggerTypeSet& publish_triggers,
       double publish_period = 0.0);
 
-  DRAKE_DEPRECATED("2019-05-01",
-      "The LcmAndVectorBaseTranslator and its related code "
-      "are scheduled to be removed, with no replacement.")
-  LcmPublisherSystem(
-      const std::string&, const LcmAndVectorBaseTranslator&,
-      drake::lcm::DrakeLcmInterface*, double publish_period = 0.0);
-
-  DRAKE_DEPRECATED("2019-05-01",
-      "The LcmAndVectorBaseTranslator and its related code "
-      "are scheduled to be removed, with no replacement.")
-  LcmPublisherSystem(
-      const std::string&, std::unique_ptr<const LcmAndVectorBaseTranslator>,
-      drake::lcm::DrakeLcmInterface*, double publish_period = 0.0);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  DRAKE_DEPRECATED("2019-05-01",
-      "The LcmAndVectorBaseTranslator and its related code "
-      "are scheduled to be removed, with no replacement.")
-  LcmPublisherSystem(
-      const std::string&, const LcmTranslatorDictionary&,
-      drake::lcm::DrakeLcmInterface*, double publish_period = 0.0);
-#pragma GCC diagnostic pop
-
   ~LcmPublisherSystem() override;
 
   /**
@@ -235,25 +210,6 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * Returns the default name for a system that publishes @p channel.
    */
   static std::string make_name(const std::string& channel);
-
-  DRAKE_DEPRECATED("2019-04-14",
-      "Pass publish period to constructor instead.")
-  void set_publish_period(double period) {
-    if (disable_internal_per_step_publish_events_) {
-      drake::log()->info("LcmPublisherSystem publish period set "
-          "multiple times. Multiple publish periods now registered "
-          "(did you mean to do this?)");
-    }
-    disable_internal_per_step_publish_events_ = true;
-    const double offset = 0.0;
-    this->DeclarePeriodicPublishEvent(period, offset,
-        &LcmPublisherSystem::PublishInputAsLcmMessage);
-  }
-
-  DRAKE_DEPRECATED("2019-05-01",
-      "The LcmAndVectorBaseTranslator and its related code "
-      "are scheduled to be removed, with no replacement.")
-  const LcmAndVectorBaseTranslator& get_translator() const;
 
   /**
    * Returns a mutable reference to the LCM object in use by this publisher.
