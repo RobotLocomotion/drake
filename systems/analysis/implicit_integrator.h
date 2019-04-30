@@ -206,8 +206,8 @@ class ImplicitIntegrator : public IntegratorBase<T> {
 
 /**
  * Computes necessary matrices (Jacobian and iteration matrix) for
- * Newton-Raphson (NR) iterations used in implicit integration. This method has
- * been designed for use in DoStep() processes that follow this model:
+ * Newton-Raphson (NR) iterations. This method has been designed for use in
+ * DoStep() processes that follow this model:
  * 1. DoStep(h) is called;
  * 2. One or more NR iterations is performed until either (a) convergence is
  *    identified, (b) the iteration is found to diverge, or (c) too many
@@ -218,10 +218,10 @@ class ImplicitIntegrator : public IntegratorBase<T> {
  *    process stage of that NR algorithm is indicated by the `trial` parameter
  *    below. In this model, DoStep() returns failure if the NR iterations
  *    reach a fourth trial.
- * 
+ *
  * Note that the sophisticated logic above only applies when the Jacobian reuse
  * is activated (default, see get_reuse()).
- * 
+ *
  * @param t the time at which to compute the Jacobian.
  * @param xt the continuous state at which the Jacobian is computed.
  * @param h the integration step size (for computing iteration matrices).
@@ -279,7 +279,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   }
 
   /**
-   * Checks to see whether a Jacobian matrix has "become bad" (has any NaN or
+   * Checks to see whether a Jacobian matrix is "bad" (has any NaN or
    * Inf values) and needs to be recomputed. A divergent Newton-Raphson
    * iteration can cause the state to overflow, which is how the Jacobian can
    * become "bad". This is an O(n²) operation, where n is the state dimension.

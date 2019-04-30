@@ -113,7 +113,7 @@ ComputeAndFactorImplicitTrapezoidIterationMatrix(
 // @note The time and continuous state in the context are indeterminate upon
 //       exit.
 // TODO(edrumwri) Explicitly test this method's fallback logic (i.e., how it
-//                calls CalcMatrices()) in a unit test.
+//                calls CalcMatrices()) in a unit test).
 template <class T>
 bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
     const VectorX<T>& xt0, const std::function<VectorX<T>()>& g,
