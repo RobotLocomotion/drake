@@ -113,7 +113,7 @@ ComputeAndFactorImplicitTrapezoidIterationMatrix(
 // @note The time and continuous state in the context are indeterminate upon
 //       exit.
 // TODO(edrumwri) Explicitly test this method's fallback logic (i.e., how it
-//                calls CalcMatrices()) in a unit test).
+//                calls MaybeFreshenMatrices()) in a unit test).
 template <class T>
 bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
     const VectorX<T>& xt0, const std::function<VectorX<T>()>& g,
@@ -148,9 +148,8 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
 
   // Calculate Jacobian and iteration matrices (and factorizations), as needed,
   // around (tf, xtplus).
-  if (!this->CalcMatrices(tf, *xtplus, h, trial,
+  if (!this->MaybeFreshenMatrices(tf, *xtplus, h, trial,
       compute_and_factor_iteration_matrix, &iteration_matrix_)) {
-    this->set_last_newton_raphson_succeeded(false);
     return false;
   }
 
@@ -187,10 +186,8 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
     // allow the norm to be reduced further. What happens: dx_norm will become
     // equivalent to last_dx_norm, making theta = 1, and eta = infinity. Thus,
     // convergence would never be identified.
-    if (dx_norm < 10 * std::numeric_limits<double>::epsilon()) {
-      this->set_last_newton_raphson_succeeded(true);
+    if (dx_norm < 10 * std::numeric_limits<double>::epsilon())
       return true;
-    }
 
     // Compute the convergence rate and check convergence.
     // [Hairer, 1996] notes that this convergence strategy should only be
@@ -217,7 +214,6 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
       if (eta * dx_norm < k_dot_tol) {
         SPDLOG_DEBUG(drake::log(), "Newton-Raphson converged; η = {}, h = {}",
                      eta, h);
-        this->set_last_newton_raphson_succeeded(true);
         return true;
       }
     }
@@ -233,10 +229,8 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
 
   // If Jacobian and iteration matrix factorizations are not reused, there
   // is nothing else we can try.
-  if (!this->get_reuse()) {
-    this->set_last_newton_raphson_succeeded(false);
+  if (!this->get_reuse())
     return false;
-  }
 
   // Try StepAbstract again, freshening Jacobians and iteration matrix
   // factorizations as helpful.
@@ -409,7 +403,7 @@ bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
 ///          t0 to t0 + h). On `false` return, the time and continuous state in
 ///          the context will be restored to its original value (at t0).
 template <class T>
-bool ImplicitEulerIntegrator<T>::DoStep(const T& h) {
+bool ImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
   // Save the current time and state.
   Context<T>* context = this->get_mutable_context();
   const T t0 = context->get_time();

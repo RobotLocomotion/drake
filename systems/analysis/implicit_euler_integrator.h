@@ -64,7 +64,7 @@ namespace systems {
  *                    Springer, 1996.
  * - [Lambert, 1991]  J. D. Lambert. Numerical Methods for Ordinary Differential
  *                    Equations. John Wiley & Sons, 1991.
- * 
+ *
  * @see ImplicitIntegrator class documentation for information about implicit
  *      integration methods in general.
  */
@@ -129,7 +129,7 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
           typename ImplicitIntegrator<T>::IterationMatrix*)>&
           compute_and_factor_iteration_matrix,
       VectorX<T>* xtplus, int trial = 1);
-  bool DoStep(const T& h) final;
+  bool DoImplicitIntegratorStep(const T& h) final;
   bool StepImplicitEuler(const T& t0, const T& h, const VectorX<T>& xt0,
       VectorX<T>* xtplus);
   bool StepImplicitTrapezoid(const T& t0, const T& h, const VectorX<T>& xt0,

@@ -206,18 +206,18 @@ class ImplicitIntegrator : public IntegratorBase<T> {
 
 /**
  * Computes necessary matrices (Jacobian and iteration matrix) for
- * Newton-Raphson (NR) iterations. This method has been designed for use in
- * DoStep() processes that follow this model:
- * 1. DoStep(h) is called;
+ * Newton-Raphson (NR) iterations, as necessary. This method has been designed
+ * for use in DoImplicitIntegratorStep() processes that follow this model:
+ * 1. DoImplicitIntegratorStep(h) is called;
  * 2. One or more NR iterations is performed until either (a) convergence is
  *    identified, (b) the iteration is found to diverge, or (c) too many
- *    iterations were taken. In the case of (a), DoStep(h) will return success.
- *    Otherwise, the Newton-Raphson process is attempted again with (i) a
+ *    iterations were taken. In the case of (a), DoImplicitIntegratorStep(h)
+ *    will return success. Otherwise, the Newton-Raphson process is attempted again with (i) a
  *    recomputed and refactored iteration matrix and (ii) a recomputed Jacobian
  *    and a recomputed and refactored iteration matrix, in that order. The
  *    process stage of that NR algorithm is indicated by the `trial` parameter
- *    below. In this model, DoStep() returns failure if the NR iterations
- *    reach a fourth trial.
+ *    below. In this model, DoImplicitIntegratorStep() returns failure if the NR
+ *    iterations reach a fourth trial.
  *
  * Note that the sophisticated logic above only applies when the Jacobian reuse
  * is activated (default, see get_reuse()).
@@ -237,7 +237,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
  * @post the state in the internal context may or may not be altered on return;
  *       if altered, it will be set to (t, xt).
  */
-  bool CalcMatrices(const T& t, const VectorX<T>& xt, const T& h,
+  bool MaybeFreshenMatrices(const T& t, const VectorX<T>& xt, const T& h,
       int trial,
       const std::function<void(const MatrixX<T>& J, const T& h,
           typename ImplicitIntegrator<T>::IterationMatrix*)>&
@@ -251,32 +251,6 @@ class ImplicitIntegrator : public IntegratorBase<T> {
    * reset them there.
    */
   virtual void DoResetImplicitIntegratorStatistics() {}
-
-  /**
-   * Gets whether the last Newton-Raphson (NR) process succeeded, thereby
-   * encoding some information about the current state of the integration
-   * process. Specifically, if the last NR process failed *and* the NR process
-   * used the trial-based CalcMatrices() process, we know that:
-   * (1) the call to DoStep(h), which performed the NR process, returned
-   * failure and (2) before reporting failure, the NR process "freshened" the
-   * Jacobian. This means that a subsequent call to DoStep(h*), where h* < h is
-   * (hopefully) now sufficiently small to get the NR process to converge, would
-   * be operating with a "fresh" Jacobian matrix. In fact, CalcMatrices() uses
-   * this information to keep from computing a Jacobian matrix when it is
-   * already fresh.
-   * @see CalcMatrices()
-   */
-  bool last_newton_raphson_succeeded() const {
-    return last_newton_raphson_succeeded_;
-  }
-
-  /**
-   * Derived classes must call this method whenever the Newton-Raphson method
-   * converges or diverges, as appropriate.
-   */
-  void set_last_newton_raphson_succeeded(bool success) {
-    last_newton_raphson_succeeded_ = success;
-  }
 
   /**
    * Checks to see whether a Jacobian matrix is "bad" (has any NaN or
@@ -308,7 +282,20 @@ class ImplicitIntegrator : public IntegratorBase<T> {
       const VectorX<T>& xc, const Context<T>& context, MatrixX<T>* J);
   VectorX<T> EvalTimeDerivativesUsingContext();
 
+  /// @copydoc IntegratorBase::DoStep()
+  virtual bool DoImplicitIntegratorStep(const T& h) = 0;
+
  private:
+  bool DoStep(const T& h) final {
+    bool result = DoImplicitIntegratorStep(h);
+
+    // If the Newton-Raphson process failed (indicated by result = false), we
+    // know that the Jacobian matrix is fresh (and vice versa).
+    jacobian_is_fresh_ = !result;
+
+    return result;
+  }
+
   // The scheme to be used for computing the Jacobian matrix during the
   // nonlinear system solve process.
   JacobianComputationScheme jacobian_scheme_{
@@ -317,8 +304,8 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   // The last computed Jacobian matrix.
   MatrixX<T> J_;
 
-  // Whether the last stepping call was successful.
-  bool last_newton_raphson_succeeded_{true};
+  // Whether the Jacobian matrix is fresh.
+  bool jacobian_is_fresh_{true};
 
   // If set to `false`, Jacobian matrices and iteration matrix factorizations
   // will not be reused.
@@ -655,7 +642,7 @@ const MatrixX<T>& ImplicitIntegrator<T>::CalcJacobian(const T& t,
 }
 
 template <class T>
-bool ImplicitIntegrator<T>::CalcMatrices(
+bool ImplicitIntegrator<T>::MaybeFreshenMatrices(
     const T& t, const VectorX<T>& xt, const T& h, int trial,
     const std::function<void(const MatrixX<T>&, const T&,
         typename ImplicitIntegrator<T>::IterationMatrix*)>&
@@ -695,12 +682,10 @@ bool ImplicitIntegrator<T>::CalcMatrices(
     }
 
     case 3: {
-      // For the third trial, the Jacobian matrix may already be "fresh"
-      // (indicated by the last Newton-Raphson process *failing* - see
-      // CalcMatrices() function documentation), meaning that there is nothing
-      // more that can be tried (Jacobian and iteration matrix are both fresh)
-      // and we need to indicate failure.
-      if (!this->last_newton_raphson_succeeded())
+      // For the third trial, the Jacobian matrix may already be "fresh",
+      // meaning that there is nothing more that can be tried (Jacobian and
+      // iteration matrix are both fresh) and we need to indicate failure.
+      if (jacobian_is_fresh_)
         return false;
 
       // Reform the Jacobian matrix and refactor the iteration matrix.
