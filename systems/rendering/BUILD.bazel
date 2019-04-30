@@ -18,7 +18,6 @@ drake_cc_package_library(
         ":pose_aggregator",
         ":pose_bundle",
         ":pose_bundle_to_draw_message",
-        ":pose_stamped_t_pose_vector_translator",
         ":pose_vector",
         ":render_pose_to_geometry_pose",
     ],
@@ -46,18 +45,6 @@ drake_cc_library(
         "//common:essential",
         "//lcmtypes:viewer",
         "//systems/framework:leaf_system",
-    ],
-)
-
-drake_cc_library(
-    name = "pose_stamped_t_pose_vector_translator",
-    srcs = ["pose_stamped_t_pose_vector_translator.cc"],
-    hdrs = ["pose_stamped_t_pose_vector_translator.h"],
-    deps = [
-        ":pose_vector",
-        "//common:essential",
-        "//systems/lcm:translator",
-        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -132,16 +119,6 @@ drake_cc_googletest(
         ":pose_vector",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "pose_stamped_t_pose_vector_translator_test",
-    copts = [
-        "-Wno-deprecated-declarations",
-    ],
-    deps = [
-        ":pose_stamped_t_pose_vector_translator",
     ],
 )
 

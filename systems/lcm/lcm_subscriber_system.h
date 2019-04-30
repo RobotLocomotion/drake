@@ -12,8 +12,6 @@
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/lcm/lcm_and_vector_base_translator.h"
-#include "drake/systems/lcm/lcm_translator_dictionary.h"
 #include "drake/systems/lcm/serializer.h"
 
 namespace drake {
@@ -63,29 +61,6 @@ class LcmSubscriberSystem : public LeafSystem<double> {
   }
 
   /**
-   * (Experimental.) Factory method like Make(channel, lcm), but the result
-   * only accepts bounded-size LCM messages.  The subscriber returned by this
-   * method may perform better than the subscriber returned by a plain Make.
-   * (To avoid issue #10149, this fixed-size subscriber will store the message
-   * as discrete-state bytes, instead of a deserialized abstract value.)  Once
-   * #10149 is resolved, this method might evaporate without a preceding
-   * deprecation period.
-   *
-   * @param exemplar A sample message value; all messages received by this
-   * System must be no larger than this encoded size.
-   */
-  template <typename LcmMessage>
-  DRAKE_DEPRECATED("2019-05-01", "Use Make<LcmMessage>() instead.")
-  static std::unique_ptr<LcmSubscriberSystem> MakeFixedSize(
-      const LcmMessage& exemplar, const std::string& channel,
-      drake::lcm::DrakeLcmInterface* lcm) {
-    // We can't use make_unique when calling a private constructor.
-    return std::unique_ptr<LcmSubscriberSystem>(new LcmSubscriberSystem(
-        channel, nullptr, std::make_unique<Serializer<LcmMessage>>(), lcm,
-        exemplar.getEncodedSize()));
-  }
-
-  /**
    * Constructor that returns a subscriber System that provides message objects
    * on its sole abstract-valued output port.  The type of the message object is
    * determined by the @p serializer.
@@ -101,32 +76,12 @@ class LcmSubscriberSystem : public LeafSystem<double> {
                       std::unique_ptr<SerializerInterface> serializer,
                       drake::lcm::DrakeLcmInterface* lcm);
 
-  DRAKE_DEPRECATED("2019-05-01",
-      "The LcmAndVectorBaseTranslator and its related code "
-      "are scheduled to be removed, with no replacement.")
-  LcmSubscriberSystem(const std::string&, const LcmAndVectorBaseTranslator&,
-                      drake::lcm::DrakeLcmInterface*);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  DRAKE_DEPRECATED("2019-05-01",
-      "The LcmAndVectorBaseTranslator and its related code "
-      "are scheduled to be removed, with no replacement.")
-  LcmSubscriberSystem(const std::string&, const LcmTranslatorDictionary&,
-                      drake::lcm::DrakeLcmInterface*);
-#pragma GCC diagnostic pop
-
   ~LcmSubscriberSystem() override;
 
   /// Returns the default name for a system that subscribes to @p channel.
   static std::string make_name(const std::string& channel);
 
   const std::string& get_channel_name() const;
-
-  DRAKE_DEPRECATED("2019-05-01",
-      "The LcmAndVectorBaseTranslator and its related code "
-      "are scheduled to be removed, with no replacement.")
-  const LcmAndVectorBaseTranslator& get_translator() const;
 
   /// Returns the sole output port.
   const OutputPort<double>& get_output_port() const {
@@ -190,61 +145,23 @@ class LcmSubscriberSystem : public LeafSystem<double> {
     ProcessMessageAndStoreToAbstractState(&state->get_mutable_abstract_state());
   }
 
-  void DoCalcDiscreteVariableUpdates(
-      const Context<double>&,
-      const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
-      DiscreteValues<double>* discrete_state) const override {
-    ProcessMessageAndStoreToDiscreteState(discrete_state);
-  }
-
  private:
-  // All constructors delegate to here.
-  LcmSubscriberSystem(const std::string& channel,
-                      const LcmAndVectorBaseTranslator* translator,
-                      std::unique_ptr<SerializerInterface> serializer,
-                      drake::lcm::DrakeLcmInterface* lcm,
-                      int fixed_encoded_size = -1);
-
-  void ProcessMessageAndStoreToDiscreteState(
-      DiscreteValues<double>* discrete_state) const;
-
   void ProcessMessageAndStoreToAbstractState(
       AbstractValues* abstract_state) const;
 
   // Callback entry point from LCM into this class.
   void HandleMessage(const void*, int);
 
-  // This pair of methods is used for the output port when we're using a
-  // translator.
-  std::unique_ptr<BasicVector<double>> AllocateTranslatorOutputValue() const;
-  void CalcTranslatorOutputValue(const Context<double>& context,
-                                 BasicVector<double>* output_vector) const;
-
-  // This pair of methods is used for the output port when we're using a
-  // serializer.
   std::unique_ptr<AbstractValue> AllocateSerializerOutputValue() const;
   void CalcSerializerOutputValue(const Context<double>& context,
                                  AbstractValue* output_value) const;
 
-  bool is_abstract_state() const {
-    return serializer_ && (fixed_encoded_size_ < 0);
-  }
-
-  bool is_discrete_state() const {
-    return !is_abstract_state();
-  }
-
   // The channel on which to receive LCM messages.
   const std::string channel_;
-
-  // Converts LCM message bytes to VectorBase objects.
-  // Will be non-null iff our output port is vector-valued.
-  const LcmAndVectorBaseTranslator* const translator_{};
 
   // Converts LCM message bytes to Value<LcmMessage> objects.
   // Will be non-null iff our output port is abstract-valued.
   const std::unique_ptr<SerializerInterface> serializer_;
-  const int fixed_encoded_size_;
 
   // The mutex that guards received_message_ and received_message_count_.
   mutable std::mutex received_message_mutex_;

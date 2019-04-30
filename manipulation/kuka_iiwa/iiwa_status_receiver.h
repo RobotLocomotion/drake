@@ -51,31 +51,10 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
   const systems::OutputPort<double>& get_torque_external_output_port() const;
   //@}
 
-#ifndef DRAKE_DOXYGEN_CXX
-  DRAKE_DEPRECATED("2019-05-01",
-      "The state port is deprecated. "
-      "Instead, use the position_measured and velocity_estimated ports.")
-  const systems::OutputPort<double>& get_state_output_port() const;
-  DRAKE_DEPRECATED("2019-05-01",
-      "Instead, use get_input_port() with no arguments.")
-  // TODO(jwnimmer-tri) Change this to `= delete;` after deprecation expires.
-  const systems::InputPort<double>& get_input_port(int index) const {
-    return LeafSystem<double>::get_input_port(index);
-  }
-  DRAKE_DEPRECATED("2019-05-01",
-      "Instead, use the named port accessors.")
-  // TODO(jwnimmer-tri) Change this to `= delete;` after deprecation expires.
-  const systems::OutputPort<double>& get_output_port(int index) const {
-    return LeafSystem<double>::get_output_port(index);
-  }
-#endif  //  DRAKE_DOXYGEN_CXX
-
  private:
   template <std::vector<double> drake::lcmt_iiwa_status::*>
   void CalcLcmOutput(const systems::Context<double>&,
                      systems::BasicVector<double>*) const;
-  void CalcStateOutput(const systems::Context<double>&,
-                    systems::BasicVector<double>*) const;
 
   const int num_joints_;
 };
