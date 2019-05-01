@@ -11,6 +11,7 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
+// TODO(jwnimmer-tri) We should deprecated and then remove this base class.
 /**
  * Defines an abstract parent class of all translators that convert between
  * LCM message bytes and `drake::systems::VectorBase` objects.

@@ -20,7 +20,6 @@ drake_cc_package_library(
         ":lcm_receive_thread",
         ":mock",
         ":real",
-        ":translator_base",
     ],
 )
 
@@ -91,15 +90,6 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//lcmtypes:drake_signal",
-    ],
-)
-
-drake_cc_library(
-    name = "translator_base",
-    hdrs = ["translator_base.h"],
-    deps = [
-        "//common:essential",
-        "//common:unused",
     ],
 )
 

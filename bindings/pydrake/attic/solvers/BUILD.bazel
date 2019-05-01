@@ -37,7 +37,7 @@ drake_pybind_library(
     cc_srcs = ["ik_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
-        "//bindings/pydrake/multibody:rigid_body_tree_py",
+        "//bindings/pydrake/attic/multibody:rigid_body_tree_py",
     ],
     py_srcs = ["_ik_extra.py"],
 )

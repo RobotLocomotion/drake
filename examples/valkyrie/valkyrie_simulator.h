@@ -27,7 +27,6 @@
 #include "drake/systems/lcm/lcm_interface_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/pass_through.h"
 

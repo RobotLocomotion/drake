@@ -77,10 +77,7 @@ drake_cc_library(
 drake_cc_library(
     name = "constant_value_source",
     srcs = ["constant_value_source.cc"],
-    hdrs = [
-        "constant_value_source.h",
-        "constant_value_source-inl.h",
-    ],
+    hdrs = ["constant_value_source.h"],
     deps = [
         "//systems/framework",
     ],
@@ -144,10 +141,7 @@ drake_cc_library(
 drake_cc_library(
     name = "gain",
     srcs = ["gain.cc"],
-    hdrs = [
-        "gain.h",
-        "gain-inl.h",
-    ],
+    hdrs = ["gain.h"],
     deps = [
         "//common:unused",
         "//systems/framework",
@@ -201,10 +195,7 @@ drake_cc_library(
 drake_cc_library(
     name = "pass_through",
     srcs = ["pass_through.cc"],
-    hdrs = [
-        "pass_through.h",
-        "pass_through-inl.h",
-    ],
+    hdrs = ["pass_through.h"],
     deps = [
         "//systems/framework",
     ],
@@ -332,10 +323,7 @@ drake_cc_library(
 drake_cc_library(
     name = "zero_order_hold",
     srcs = ["zero_order_hold.cc"],
-    hdrs = [
-        "zero_order_hold.h",
-        "zero_order_hold-inl.h",
-    ],
+    hdrs = ["zero_order_hold.h"],
     deps = [
         "//systems/framework",
     ],
@@ -344,10 +332,7 @@ drake_cc_library(
 drake_cc_library(
     name = "sine",
     srcs = ["sine.cc"],
-    hdrs = [
-        "sine.h",
-        "sine-inl.h",
-    ],
+    hdrs = ["sine.h"],
     deps = [
         "//systems/framework",
     ],

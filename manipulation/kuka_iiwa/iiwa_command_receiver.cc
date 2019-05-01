@@ -31,52 +31,32 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
   // Our input ports are mutually exclusive; exactly one connected input port
   // feeds our cache entry. The computation may be dependent on the above
   // parameter as well.
-  // TODO(jwnimmer-tri) Remove command_message port on 2019-05-01.
-  DeclareAbstractInputPort("command_message", *MakeCommandMessage());
   DeclareAbstractInputPort("lcmt_iiwa_command", *MakeCommandMessage());
   groomed_input_ = &DeclareCacheEntry(
       "groomed_input", &IiwaCommandReceiver::CalcInput,
       {all_input_ports_ticket(), numeric_parameter_ticket(param)});
 
-  // Our state is a ZOH of input.joint_position.
-  // TODO(jwnimmer-tri) This system should NOT have any state.  We should
-  // remove our discrete state + update when the state output port is removed.
-  DeclareDiscreteState(num_joints_);
-  DeclarePeriodicDiscreteUpdateEvent(
-      kIiwaLcmStatusPeriod, 0.0, &IiwaCommandReceiver::CalcStateUpdate);
-
-  // Our first output is deprecated (as marked in our header).
-  // (It needs to be first -- calling code assumes that it has index == zero.)
-  // TODO(jwnimmer-tri) Remove this port and discrete state on 2019-05-01.
-  DeclareVectorOutputPort(
-      "state", BasicVector<double>(num_joints * 2),
-      &IiwaCommandReceiver::CalcStateOutput);
-  // These are the non-deprecated outputs.
-  // (This needs to be second -- calling code assumes that it has index == 1.)
-  DeclareVectorOutputPort(
-      "torque", BasicVector<double>(num_joints),
-      [this](const Context<double>& context, BasicVector<double>* output) {
-        output->SetFromVector(this->input_torque(context));
-      });
   DeclareVectorOutputPort(
       "position", BasicVector<double>(num_joints),
       [this](const Context<double>& context, BasicVector<double>* output) {
         output->SetFromVector(this->input_position(context));
       });
+  DeclareVectorOutputPort(
+      "torque", BasicVector<double>(num_joints),
+      [this](const Context<double>& context, BasicVector<double>* output) {
+        output->SetFromVector(this->input_torque(context));
+      });
 }
 
 const systems::InputPort<double>& IiwaCommandReceiver::get_input_port() const {
-  return LeafSystem<double>::get_input_port(1);
+  return LeafSystem<double>::get_input_port(0);
 }
 using OutPort = systems::OutputPort<double>;
-const OutPort& IiwaCommandReceiver::get_commanded_state_output_port() const {
+const OutPort& IiwaCommandReceiver::get_commanded_position_output_port() const {
   return LeafSystem<double>::get_output_port(0);
 }
 const OutPort& IiwaCommandReceiver::get_commanded_torque_output_port() const {
   return LeafSystem<double>::get_output_port(1);
-}
-const OutPort& IiwaCommandReceiver::get_commanded_position_output_port() const {
-  return LeafSystem<double>::get_output_port(2);
 }
 
 void IiwaCommandReceiver::set_initial_position(
@@ -90,27 +70,12 @@ void IiwaCommandReceiver::set_initial_position(
 // user).  The result will always have have num_joints_ positions and torques.
 void IiwaCommandReceiver::CalcInput(
   const Context<double>& context, lcmt_iiwa_command* result) const {
-  const bool has0 = LeafSystem<double>::get_input_port(0).HasValue(context);
-  const bool has1 = LeafSystem<double>::get_input_port(1).HasValue(context);
-  const int count = (has0 ? 1 : 0) + (has1 ? 1 : 0);
-  if (count == 0) {
+  if (!get_input_port().HasValue(context)) {
     throw std::logic_error("IiwaCommandReceiver has no input connected");
-  }
-  if (count > 1) {
-    throw std::logic_error("IiwaCommandReceiver has >1 input connected");
   }
 
   // Copies the (sole) input value, converting from IiwaCommand if necessary.
-  if (has1) {
-    *result = get_input_port().Eval<lcmt_iiwa_command>(context);
-  } else {
-    DRAKE_DEMAND(has0);
-    static const logging::Warn log_once(
-        "The IiwaCommandReceiver \"command_message\" port is deprecated and "
-        "will be removed on 2019-05-01; use \"lcmt_iiwa_command\" instead.");
-    const auto& port = LeafSystem<double>::get_input_port(0);
-    *result = port.Eval<lcmt_iiwa_command>(context);
-  }
+  *result = get_input_port().Eval<lcmt_iiwa_command>(context);
 
   // If we haven't received a legit message yet, use the initial command.
   if (result->utime == 0.0) {
@@ -151,21 +116,6 @@ IiwaCommandReceiver::MapVectorXd IiwaCommandReceiver::input_torque(
   return Eigen::Map<const VectorXd>(
       message.joint_torque.data(),
       message.joint_torque.size());
-}
-
-void IiwaCommandReceiver::CalcStateUpdate(
-    const Context<double>& context,
-    DiscreteValues<double>* discrete_state) const {
-  discrete_state->get_mutable_vector(0).SetFromVector(input_position(context));
-}
-
-void IiwaCommandReceiver::CalcStateOutput(
-    const Context<double>& context, BasicVector<double>* output) const {
-  auto output_block = output->get_mutable_value();
-  const auto& current = input_position(context);
-  const auto& prior = context.get_discrete_state(0).CopyToVector();
-  output_block.head(num_joints_) = current;
-  output_block.tail(num_joints_) = (current - prior) / kIiwaLcmStatusPeriod;
 }
 
 std::unique_ptr<systems::lcm::LcmSubscriberSystem>
