@@ -112,7 +112,7 @@ class Constraint : public EvaluatorBase {
 
   /**
    * Set the sparsity pattern of the gradient matrix. gradient_sparsity_pattern
-   * contains *all* the pairs of (row_index, col_index) such that the
+   * contains *all* the pairs of (row_index, col_index) for which the
    * corresponding entries could have non-zero value in the gradient matrix.
    */
   void SetGradientSparsityPattern(
@@ -120,9 +120,10 @@ class Constraint : public EvaluatorBase {
 
   /**
    * Returns the vector of (row_index, col_index) that contains all the entries
-   * in the gradient of Eval function, whose value could be non-zero.
+   * in the gradient of Eval function whose value could be non-zero.
    * @retval gradient_sparsity_pattern If gradient_sparsity_pattern.has_value()
-   * == false, then we regard any entries in the gradient can be non-zero.
+   * == false, then we regard all entries of the gradient as potentially
+   * non-zero.
    */
   const optional<std::vector<std::pair<int, int>>>& gradient_sparsity_pattern()
       const {

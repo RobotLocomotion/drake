@@ -713,7 +713,7 @@ class DistanceToTetrahedronExample : public MathematicalProgram {
 };
 
 /**
- * This problem is taken from Pseufo-complementary algorithms for mathematical
+ * This problem is taken from Pseudo-complementary algorithms for mathematical
  * programming by U. Eckhardt in Numerical Methods for Nonlinear Optimization,
  * 1972. This problem has a sparse gradient.
  * max x0
@@ -769,7 +769,7 @@ class EckhardtProblem {
 };
 
 /**
- * This problem is 106 problem from  Test examples for Nonlinear Programming
+ * This is problem 106 from  Test examples for Nonlinear Programming
  * Codes by Will Hock and Klaus Schittkowski, Springer. The constraint of this
  * problem has sparse gradient.
  */

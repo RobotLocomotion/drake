@@ -399,8 +399,9 @@ void EvaluateNonlinearConstraints(
       F[(*constraint_index)++] = ty(i).value();
     }
 
-    const optional<std::vector<int, int>>& gradient_sparsity_pattern =
-        binding.evaluator()->gradient_sparsity_pattern();
+    const optional<std::vector<std::pair<int, int>>>&
+        gradient_sparsity_pattern =
+            binding.evaluator()->gradient_sparsity_pattern();
     if (gradient_sparsity_pattern.has_value()) {
       for (const auto& nonzero_entry : gradient_sparsity_pattern.value()) {
         G[(*grad_index)++] =
@@ -557,7 +558,12 @@ void UpdateNumNonlinearConstraintsAndGradients(
   for (auto const& binding : constraint_list) {
     auto const& c = binding.evaluator();
     int n = c->num_constraints();
-    *max_num_gradients += n * binding.GetNumElements();
+    if (binding.evaluator()->gradient_sparsity_pattern().has_value()) {
+      *max_num_gradients += static_cast<int>(
+          binding.evaluator()->gradient_sparsity_pattern().value().size());
+    } else {
+      *max_num_gradients += n * binding.GetNumElements();
+    }
     *num_nonlinear_constraints += n;
   }
 }
@@ -598,8 +604,9 @@ void UpdateConstraintBoundsAndGradients(
     const std::vector<int> bound_var_indices_in_prog =
         prog.FindDecisionVariableIndices(binding.variables());
 
-    const optional<std::vector<int, int>>& gradient_sparsity_pattern =
-        binding.evaluator()->gradient_sparsity_pattern();
+    const optional<std::vector<std::pair<int, int>>>&
+        gradient_sparsity_pattern =
+            binding.evaluator()->gradient_sparsity_pattern();
     if (gradient_sparsity_pattern.has_value()) {
       for (const auto& nonzero_entry : gradient_sparsity_pattern.value()) {
         // Fortran is 1-indexed.

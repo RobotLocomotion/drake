@@ -456,7 +456,7 @@ GTEST_TEST(testNonlinearProgram, EckhardtProblem) {
   const Eigen::VectorXd x_init = Eigen::Vector3d(2, 1.05, 2.9);
   MathematicalProgramResult result;
   RunNonlinearProgram(prob.prog(), x_init,
-                      [&prob, &result]() { prob.CheckSolution(result, 1E-7); },
+                      [&prob, &result]() { prob.CheckSolution(result, 3E-7); },
                       &result);
 }
 
@@ -468,9 +468,9 @@ GTEST_TEST(testNonlinearProgram, HeatExchangerDesignProblem) {
   x_init << 5000, 5000, 5000, 200, 350, 150, 225, 425;
   MathematicalProgramResult result;
   // The optimal solution given in Hock's reference has low precision, and the
-  // magnitude of the solution is large, so we choose a large tolerance 4E-3.
+  // magnitude of the solution is large, so we choose a large tolerance 0.2.
   RunNonlinearProgram(prob.prog(), x_init,
-                      [&prob, &result]() { prob.CheckSolution(result, 4E-3); },
+                      [&prob, &result]() { prob.CheckSolution(result, 0.2); },
                       &result);
 }
 

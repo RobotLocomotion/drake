@@ -761,10 +761,10 @@ void HeatExchangerDesignProblem::CheckSolution(
   ASSERT_TRUE(result.is_success());
   const auto x_val = result.GetSolution(x_);
   Eigen::Matrix<double, 8, 1> x_expected;
-  x_expected << 579.3067, 1359.97, 5109.97, 182.0174, 295.5985, 217.9799,
+  x_expected << 579.3167, 1359.943, 5110.071, 182.0174, 295.5985, 217.9799,
       286.4162, 395.5979;
   EXPECT_TRUE(CompareMatrices(x_val, x_expected, tol));
-  EXPECT_NEAR(result.get_optimal_cost(), 7049.25, tol);
+  EXPECT_NEAR(result.get_optimal_cost(), 7049.330923, tol);
 }
 }  // namespace test
 }  // namespace solvers
