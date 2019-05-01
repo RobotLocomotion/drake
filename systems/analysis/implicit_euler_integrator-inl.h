@@ -227,7 +227,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
     // update to the state results in no change.
     if (this->IsUpdateZero(*xtplus, dx)) {
       this->set_last_call_succeeded(true);
-      *xtplus += dx;
+//      *xtplus += dx;
       context->SetTimeAndContinuousState(tf, *xtplus);
       return true;
     }
