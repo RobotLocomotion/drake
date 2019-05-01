@@ -71,6 +71,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "proximity_utilities",
+    srcs = ["proximity_utilities.cc"],
     hdrs = ["proximity_utilities.h"],
     deps = [
         "//geometry:geometry_ids",
@@ -87,6 +88,16 @@ drake_cc_googletest(
         "//common/test_utilities",
         "//geometry:utilities",
         "//math",
+    ],
+)
+
+drake_cc_googletest(
+    name = "distance_sphere_to_shape_test",
+    deps = [
+        ":distance_to_shape",
+        "//common/test_utilities",
+        "//geometry:utilities",
+        "//math:gradient",
     ],
 )
 

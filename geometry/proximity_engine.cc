@@ -21,13 +21,11 @@ namespace geometry {
 namespace internal {
 
 using Eigen::Vector3d;
-using Eigen::Isometry3d;
 using std::make_shared;
 using std::make_unique;
 using std::move;
 using std::shared_ptr;
 using std::unique_ptr;
-using point_distance::DistanceToPoint;
 
 namespace {
 
@@ -72,7 +70,7 @@ bool SingleCollisionCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
   EncodedData encoding_B(fcl_object_B);
 
   const bool can_collide = collision_data.collision_filter.CanCollideWith(
-      encoding_A.encoded_data(), encoding_B.encoded_data());
+      encoding_A.encoding(), encoding_B.encoding());
 
   // NOTE: Here and below, false is returned regardless of whether collision
   // is detected or not because true tells the broadphase manager to terminate.
@@ -312,7 +310,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     encoding.write_to(fcl_object.get());
     dynamic_objects_.emplace_back(std::move(fcl_object));
 
-    collision_filter_.AddGeometry(encoding.encoded_data());
+    collision_filter_.AddGeometry(encoding.encoding());
 
     return proximity_index;
   }
@@ -333,7 +331,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     encoding.write_to(fcl_object.get());
     anchored_objects_.emplace_back(std::move(fcl_object));
 
-    collision_filter_.AddGeometry(encoding.encoded_data());
+    collision_filter_.AddGeometry(encoding.encoding());
 
     return proximity_index;
   }
@@ -551,23 +549,23 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // objects from the same file.
   }
 
-  std::vector<SignedDistancePair<double>>
-  ComputeSignedDistancePairwiseClosestPoints(
-      const std::vector<GeometryId>& geometry_map) const {
-    std::vector<SignedDistancePair<double>> witness_pairs;
-    shape_distance::CallbackData distance_data{&geometry_map,
-                                               &collision_filter_};
-    distance_data.nearest_pairs = &witness_pairs;
-    distance_data.request.enable_nearest_points = true;
-    distance_data.request.enable_signed_distance = true;
-    distance_data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
-    distance_data.request.distance_tolerance = distance_tolerance_;
+  std::vector<SignedDistancePair<T>> ComputeSignedDistancePairwiseClosestPoints(
+      const std::vector<GeometryId>& geometry_map,
+      const std::vector<Isometry3<T>>& X_WGs) const {
+    std::vector<SignedDistancePair<T>> witness_pairs;
+    // All these quantities are aliased in the callback data.
+    shape_distance::CallbackData<T> data{&geometry_map, &collision_filter_,
+                                         &X_WGs, &witness_pairs};
+    data.request.enable_nearest_points = true;
+    data.request.enable_signed_distance = true;
+    data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
+    data.request.distance_tolerance = distance_tolerance_;
 
-    dynamic_tree_.distance(&distance_data, shape_distance::Callback);
+    dynamic_tree_.distance(&data, shape_distance::Callback<T>);
     dynamic_tree_.distance(
         const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
             &anchored_tree_),
-        &distance_data, shape_distance::Callback);
+        &data, shape_distance::Callback<T>);
     return witness_pairs;
   }
 
@@ -649,11 +647,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       int clique = collision_filter_.next_clique_id();
       for (auto index : dynamic) {
         EncodedData encoding(index, true /* is dynamic */);
-        collision_filter_.AddToCollisionClique(encoding.encoded_data(), clique);
+        collision_filter_.AddToCollisionClique(encoding.encoding(), clique);
       }
       for (auto index : anchored) {
         EncodedData encoding(index, false /* is dynamic */);
-        collision_filter_.AddToCollisionClique(encoding.encoded_data(), clique);
+        collision_filter_.AddToCollisionClique(encoding.encoding(), clique);
       }
     }
   }
@@ -700,12 +698,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       for (auto encoding1 : group1) {
         for (auto encoding2 : group2) {
           if ((encoding1.is_dynamic() || encoding2.is_dynamic()) &&
-              collision_filter_.CanCollideWith(encoding1.encoded_data(),
-                                               encoding2.encoded_data())) {
+              collision_filter_.CanCollideWith(encoding1.encoding(),
+                                               encoding2.encoding())) {
             int clique = collision_filter_.next_clique_id();
-            collision_filter_.AddToCollisionClique(encoding2.encoded_data(),
+            collision_filter_.AddToCollisionClique(encoding2.encoding(),
                                                    clique);
-            collision_filter_.AddToCollisionClique(encoding1.encoded_data(),
+            collision_filter_.AddToCollisionClique(encoding1.encoding(),
                                                    clique);
           }
         }
@@ -719,15 +717,15 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     if (!is_dynamic_1 && !is_dynamic_2) return true;
     EncodedData encoding1(index1, is_dynamic_1);
     EncodedData encoding2(index2, is_dynamic_2);
-    return !collision_filter_.CanCollideWith(encoding1.encoded_data(),
-                                             encoding2.encoded_data());
+    return !collision_filter_.CanCollideWith(encoding1.encoding(),
+                                             encoding2.encoding());
   }
 
   int get_next_clique() { return collision_filter_.next_clique_id(); }
 
   void set_clique(GeometryIndex index, int clique) {
     EncodedData encoding(index, true /* is dynamic */);
-    collision_filter_.AddToCollisionClique(encoding.encoded_data(), clique);
+    collision_filter_.AddToCollisionClique(encoding.encoding(), clique);
   }
 
   // Testing utilities
@@ -977,10 +975,11 @@ void ProximityEngine<T>::UpdateWorldPoses(
 }
 
 template <typename T>
-std::vector<SignedDistancePair<double>>
+std::vector<SignedDistancePair<T>>
 ProximityEngine<T>::ComputeSignedDistancePairwiseClosestPoints(
-    const std::vector<GeometryId>& geometry_map) const {
-  return impl_->ComputeSignedDistancePairwiseClosestPoints(geometry_map);
+    const std::vector<GeometryId>& geometry_map,
+    const std::vector<Isometry3<T>>& X_WG) const {
+  return impl_->ComputeSignedDistancePairwiseClosestPoints(geometry_map, X_WG);
 }
 
 template <typename T>

@@ -435,10 +435,10 @@ class GeometryState {
    * anchored object. We DO NOT report the distance between two anchored
    * objects.
    */
-  std::vector<SignedDistancePair<double>>
+  std::vector<SignedDistancePair<T>>
   ComputeSignedDistancePairwiseClosestPoints() const {
     return geometry_engine_->ComputeSignedDistancePairwiseClosestPoints(
-        geometry_index_to_id_map_);
+        geometry_index_to_id_map_, X_WG_);
   }
 
   /** Performs work in support of QueryObject::ComputeSignedDistanceToPoint().
