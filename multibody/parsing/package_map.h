@@ -18,9 +18,9 @@ class PackageMap {
   /// A constructor that initializes an empty map.
   PackageMap();
 
-  /// Adds package @p package_name and its path, @p package_path. Aborts if
-  /// @p package_name is already present in this PackageMap, or if
-  /// @p package_path does not exist.
+  /// Adds package @p package_name and its path, @p package_path.
+  /// Throws if @p package_name is already present in this PackageMap, or
+  /// if @p package_path does not exist.
   void Add(const std::string& package_name, const std::string& package_path);
 
   /// Returns true if and only if this PackageMap contains @p package_name.
@@ -32,6 +32,11 @@ class PackageMap {
   /// Obtains the path associated with package @p package_name. Aborts if no
   /// package named @p package_name exists in this PackageMap.
   const std::string& GetPath(const std::string& package_name) const;
+
+  /// Adds an entry into this PackageMap for the given `package.xml` filename.
+  /// Throws if @p package_xml_filename does not exist or its embedded name
+  /// already exists in this map.
+  void AddPackageXml(const std::string& package_xml_filename);
 
   /// Crawls down the directory tree starting at @p path searching for
   /// directories containing the file `package.xml`. For each of these

@@ -31,7 +31,7 @@ using tinyxml2::XMLElement;
 PackageMap::PackageMap() {}
 
 void PackageMap::Add(const string& package_name, const string& package_path) {
-  DRAKE_DEMAND(map_.find(package_name) == map_.end());
+  DRAKE_THROW_UNLESS(map_.count(package_name) == 0);
   if (!spruce::path(package_path).exists()) {
     throw std::runtime_error(
         "Could not add package://" + package_name + " to the search path "
@@ -225,6 +225,12 @@ void PackageMap::CrawlForPackages(const string& path) {
     }
     tinydir_close(&dir);
   }
+}
+
+void PackageMap::AddPackageXml(const string& package_xml_filename) {
+  const string package_name = GetPackageName(package_xml_filename);
+  const string package_path = GetParentDirectory(package_xml_filename);
+  Add(package_name, package_path);
 }
 
 std::ostream& operator<<(std::ostream& out, const PackageMap& package_map) {
