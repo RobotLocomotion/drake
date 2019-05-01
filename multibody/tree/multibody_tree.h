@@ -1337,7 +1337,7 @@ class MultibodyTree {
       VelocityKinematicsCache<T>* vc) const;
 
   /// Computes the spatial inertia M_Bo_W(q) for each body B in the model about
-  /// their frame origin Bo and exprssed in the world frame W.
+  /// its frame origin Bo and expressed in the world frame W.
   /// @param[in] context
   ///   The context storing the state of the model.
   /// @param[out] M_B_W_cache

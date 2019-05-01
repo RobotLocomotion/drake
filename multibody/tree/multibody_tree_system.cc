@@ -180,6 +180,10 @@ void MultibodyTreeSystem<T>::Finalize() {
             cache_value->get_mutable_value<std::vector<SpatialForce<T>>>();
         tree->CalcDynamicBiasCache(context, &dynamic_bias_cache);
       },
+      // The computation of b_Bo_W(q, v) requires updated values of M_Bo_W(q)
+      // and V_WB(q, v). We make these prerequisites explicit.
+      // Another alternative would be to state the dependence on q and v.
+      // However this option is not optimal until #9171 gets resolved.
       {this->cache_entry_ticket(cache_indexes_.spatial_inertia_in_world),
        this->cache_entry_ticket(cache_indexes_.velocity_kinematics)});
   cache_indexes_.dynamic_bias = dynamic_bias_cache_entry.cache_index();

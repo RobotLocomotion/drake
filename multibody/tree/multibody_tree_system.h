@@ -103,8 +103,8 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   /** Returns a reference to the up to date cache of per-body bias terms in
   the given Context, recalculating it first if necessary.
   For a body B, this is the bias term `b_Bo_W(q, v)` in the equation
-  `F_BBo_W = M_Bo_W * A_WB + b_Bo_W`, where `M_Bo_W` is the spatial inertia
-  about B's origina Bo, `A_WB` is the spatial acceleration of B in W and
+  `F_Bo_W = M_Bo_W * A_WB + b_Bo_W`, where `M_Bo_W` is the spatial inertia
+  about B's origin Bo, `A_WB` is the spatial acceleration of B in W and
   `F_BBo_W` is the spatial force on B about Bo, expressed in W. */
   const std::vector<SpatialForce<T>>& EvalDynamicBiasCache(
       const systems::Context<T>& context) const {

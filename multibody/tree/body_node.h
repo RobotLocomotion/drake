@@ -1443,7 +1443,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
     // to Eq. 2.26 (p. 27) in A. Jain's book.
     Ftot_BBo_W = M_B_W * A_WB;
 
-    // If velocities are zero, thus b_Bo_W is zero and does not contribute.
+    // If velocities are zero, then b_Bo_W is zero and does not contribute.
     if (b_Bo_W_cache != nullptr) {
       // Dynamic bias for body B.
       const SpatialForce<T>& b_Bo_W = (*b_Bo_W_cache)[body_B.node_index()];
