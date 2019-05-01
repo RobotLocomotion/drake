@@ -21,8 +21,7 @@ using SurfaceVertexIndex = TypeSafeIndex<class SurfaceVertexTag>;
  */
 using SurfaceFaceIndex = TypeSafeIndex<class SurfaceFaceTag>;
 
-/** %SurfaceVertex represents a vertex in SurfaceMesh of a contact surface
- between bodies M and N.
+/** %SurfaceVertex represents a vertex in SurfaceMesh.
  @tparam T The underlying scalar type for coordinates, e.g., double
            or AutoDiffXd. Must be a valid Eigen scalar.
 */
@@ -49,31 +48,25 @@ class SurfaceVertex {
   Vector3<T> r_MV_;
 };
 
-/** %SurfaceFace represents a triangular face in a SurfaceMesh of a contact
- surface between bodies M and N.
+/** %SurfaceFace represents a triangular face in a SurfaceMesh.
  */
 class SurfaceFace {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SurfaceFace)
 
-  /** Constructs ContactSurfaceFace.
+  /** Constructs SurfaceFace.
    @param v0 Index of the first vertex in SurfaceMesh.
    @param v1 Index of the second vertex in SurfaceMesh.
    @param v2 Index of the last vertex in SurfaceMesh.
-   @note   The order of the three vertices gives the counterclockwise normal
-          direction towards increasing eₘ the scalar field on body M. See
-          ContactSurface.
    */
   SurfaceFace(SurfaceVertexIndex v0,
               SurfaceVertexIndex v1,
               SurfaceVertexIndex v2)
       : vertex_({v0, v1, v2}) {}
 
-  /** Constructs ContactSurfaceFace.
+  /** Constructs SurfaceFace.
    @param v  array of three integer indices of the vertices of the face in
              SurfaceMesh.
-   @note   The order of the three vertices gives the counterclockwise normal
-          direction towards increasing eₘ the scalar field on body M.
    */
   explicit SurfaceFace(const int v[3])
       : vertex_({SurfaceVertexIndex(v[0]),
@@ -85,8 +78,7 @@ class SurfaceFace {
    @pre 0 <= i < 3
    */
   SurfaceVertexIndex vertex(int i) const {
-    DRAKE_DEMAND(0 <= i && i < 3);
-    return vertex_[i];
+    return vertex_.at(i);
   }
 
  private:
@@ -94,8 +86,9 @@ class SurfaceFace {
   std::array<SurfaceVertexIndex, 3> vertex_;
 };
 
-/** %SurfaceMesh represents a triangulated surface of a contact surface.
-  A field variable can be defined on SurfaceMesh using SurfaceMeshField.
+// TODO(DamrongGuoy): mention interesting properties of the mesh, e.g., open
+//  meshes, meshes with holes, non-manifold surface.
+/** %SurfaceMesh represents a triangulated surface.
  @tparam T The underlying scalar type for coordinates, e.g., double
            or AutoDiffXd. Must be a valid Eigen scalar.
  */
@@ -105,15 +98,13 @@ class SurfaceMesh {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SurfaceMesh)
 
   /**
-   @name Interface to MeshField
+   @name Mesh type traits
 
-   The following definitions are needed by a MeshField defined on this
-   SurfaceMesh.
-
-   MeshField uses the term _elements_ (inspired by Finite Element Method)
-   for _faces_, i.e., triangles, in a triangulated surface mesh. (For a
-   tetrahedral volume mesh, the term elements would be for tetrahedrons.)
-  */
+   A collection of type traits to enable mesh consumers to be templated on mesh
+   type. The %SurfaceMesh atomic feature is a triangle. For higher
+   dimensions, it wouldn't be a triangle. These type traits are expressed
+   in terms of the more generic, dimension-agnostic "element".
+   */
   //@{
 
   /**
@@ -133,7 +124,7 @@ class SurfaceMesh {
 
   /**
     Type of barycentric coordinates on a triangular element.
-    Barycentric coordinates (b0, b1, b2) satisfy b0 + b1 + b2 = 1, bi >= 0, so
+    Barycentric coordinates (b₀, b₁, b₂) satisfy b₀ + b₁ + b₂ = 1, bᵢ >= 0, so
     technically we could calculate one of the bᵢ from the others; however,
     there is no standard way to omit one of the coordinates.
    */
@@ -204,11 +195,11 @@ void SurfaceMesh<T>::init() {
 
 template <class T>
 T SurfaceMesh<T>::EvaluateFaceArea(SurfaceFaceIndex f) {
-  const auto& r_MU = vertices_[faces_[f].vertex(0)].r_MV();
-  const auto& r_MV = vertices_[faces_[f].vertex(1)].r_MV();
-  const auto& r_MW = vertices_[faces_[f].vertex(2)].r_MV();
-  const auto r_UV_M = r_MV - r_MU;
-  const auto r_UW_M = r_MW - r_MU;
+  const auto& r_MA = vertices_[faces_[f].vertex(0)].r_MV();
+  const auto& r_MB = vertices_[faces_[f].vertex(1)].r_MV();
+  const auto& r_MC = vertices_[faces_[f].vertex(2)].r_MV();
+  const auto r_UV_M = r_MB - r_MA;
+  const auto r_UW_M = r_MC - r_MA;
   const auto cross = r_UV_M.cross(r_UW_M);
   return T(0.5)*cross.norm();
 }

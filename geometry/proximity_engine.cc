@@ -1381,7 +1381,6 @@ ProximityEngine<T>::ComputeContactSurfaces(
   throw std::runtime_error(
       "ComputeContactSurfaces() is not implemented yet.");
   // TODO(DamrongGuoy): Compute contact surfaces and remove the above throw.
-  return std::vector<ContactSurface<T>>();
 }
 
 template <typename T>
