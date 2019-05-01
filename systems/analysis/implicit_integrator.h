@@ -204,39 +204,37 @@ class ImplicitIntegrator : public IntegratorBase<T> {
     Eigen::HouseholderQR<MatrixX<AutoDiffXd>> QR_;
   };
 
-/**
- * Computes necessary matrices (Jacobian and iteration matrix) for
- * Newton-Raphson (NR) iterations, as necessary. This method has been designed
- * for use in DoImplicitIntegratorStep() processes that follow this model:
- * 1. DoImplicitIntegratorStep(h) is called;
- * 2. One or more NR iterations is performed until either (a) convergence is
- *    identified, (b) the iteration is found to diverge, or (c) too many
- *    iterations were taken. In the case of (a), DoImplicitIntegratorStep(h)
- *    will return success. Otherwise, the Newton-Raphson process is attempted again with (i) a
- *    recomputed and refactored iteration matrix and (ii) a recomputed Jacobian
- *    and a recomputed and refactored iteration matrix, in that order. The
- *    process stage of that NR algorithm is indicated by the `trial` parameter
- *    below. In this model, DoImplicitIntegratorStep() returns failure if the NR
- *    iterations reach a fourth trial.
- *
- * Note that the sophisticated logic above only applies when the Jacobian reuse
- * is activated (default, see get_reuse()).
- *
- * @param t the time at which to compute the Jacobian.
- * @param xt the continuous state at which the Jacobian is computed.
- * @param h the integration step size (for computing iteration matrices).
- * @param trial which trial (1-4) the Newton-Raphson process is in when calling
- *        this method.
- * @param compute_and_factor_iteration_matrix a function pointer for computing
- *        and factoring the iteration matrix.
- * @param[out] iteration_matrix the updated and factored iteration matrix on
- *             return.
- * @returns `false` if the calling stepping method should indicate failure;
- *          `true` otherwise.
- * @pre 1 <= `trial` <= 4.
- * @post the state in the internal context may or may not be altered on return;
- *       if altered, it will be set to (t, xt).
- */
+  /// Computes necessary matrices (Jacobian and iteration matrix) for
+  /// Newton-Raphson (NR) iterations, as necessary. his method has been designed
+  /// for use in DoImplicitIntegratorStep() processes that follow this model:
+  /// 1. DoImplicitIntegratorStep(h) is called;
+  /// 2. One or more NR iterations is performed until either (a) convergence is
+  ///    identified, (b) the iteration is found to diverge, or (c) too many
+  ///    iterations were taken. In the case of (a), DoImplicitIntegratorStep(h)
+  ///    will return success. Otherwise, the Newton-Raphson process is attempted
+  ///    again with (i) a recomputed and refactored iteration matrix and (ii) a
+  ///    recomputed Jacobian and a recomputed an refactored iteration matrix, in
+  ///    that order. The process stage of that NR algorithm is indicated by the
+  ///    `trial` parameter below. In this model, DoImplicitIntegratorStep()
+  ///    returns failure if the NR iterations reach a fourth trial.
+  ///
+  /// Note that the sophisticated logic above only applies when the Jacobian
+  /// reuse is activated (default, see get_reuse()).
+  ///
+  /// @param t the time at which to compute the Jacobian.
+  /// @param xt the continuous state at which the Jacobian is computed.
+  /// @param h the integration step size (for computing iteration matrices).
+  /// @param trial which trial (1-4) the Newton-Raphson process is in when
+  ///        calling this method.
+  /// @param compute_and_factor_iteration_matrix a function pointer for
+  ///        computing and factoring the iteration matrix.
+  /// @param[out] iteration_matrix the updated and factored iteration matrix on
+  ///             return.
+  /// @returns `false` if the calling stepping method should indicate failure;
+  ///          `true` otherwise.
+  /// @pre 1 <= `trial` <= 4.
+  /// @post the state in the internal context may or may not be altered on
+  ///       return; if altered, it will be set to (t, xt).
   bool MaybeFreshenMatrices(const T& t, const VectorX<T>& xt, const T& h,
       int trial,
       const std::function<void(const MatrixX<T>& J, const T& h,
@@ -244,20 +242,16 @@ class ImplicitIntegrator : public IntegratorBase<T> {
       compute_and_factor_iteration_matrix,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
 
-  /**
-   * Resets any statistics particular to a specific implicit integrator. The
-   * default implementation of this function does nothing. If your integrator
-   * collects its own statistics, you should re-implement this method and
-   * reset them there.
-   */
+  /// Resets any statistics particular to a specific implicit integrator. The
+  /// default implementation of this function does nothing. If your integrator
+  /// collects its own statistics, you should re-implement this method and
+  /// reset them there.
   virtual void DoResetImplicitIntegratorStatistics() {}
 
-  /**
-   * Checks to see whether a Jacobian matrix is "bad" (has any NaN or
-   * Inf values) and needs to be recomputed. A divergent Newton-Raphson
-   * iteration can cause the state to overflow, which is how the Jacobian can
-   * become "bad". This is an O(n²) operation, where n is the state dimension.
-   */
+  /// Checks to see whether a Jacobian matrix is "bad" (has any NaN or
+  /// Inf values) and needs to be recomputed. A divergent Newton-Raphson
+  /// iteration can cause the state to overflow, which is how the Jacobian can
+  /// become "bad". This is an O(n²) operation, where n is the state dimension.
   bool IsBadJacobian(const MatrixX<T>& J) const;
 
   // TODO(edrumwri) Document the functions below.
@@ -288,9 +282,10 @@ class ImplicitIntegrator : public IntegratorBase<T> {
  private:
   bool DoStep(const T& h) final {
     bool result = DoImplicitIntegratorStep(h);
-
-    // If the Newton-Raphson process failed (indicated by result = false), we
-    // know that the Jacobian matrix is fresh (and vice versa).
+    // If the implicit step is successful (result is true), we need a new
+    // Jacobian (fresh is false). Otherwise, a failed step (result is false)
+    // means we can keep the Jacobian (fresh is true). Therefore fresh =
+    // !result, always.
     jacobian_is_fresh_ = !result;
 
     return result;
