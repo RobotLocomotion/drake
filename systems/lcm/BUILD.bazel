@@ -36,8 +36,9 @@ drake_cc_library(
     ],
     deps = [
         ":lcm_publisher_system",
-        ":lcmt_drake_signal_translator",
+        "//lcmtypes:drake_signal",
         "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -48,6 +49,9 @@ drake_cc_library(
     ],
     hdrs = [
         "lcm_and_vector_base_translator.h",
+    ],
+    copts = [
+        "-Wno-deprecated-declarations",
     ],
     deps = [
         "//common:essential",
@@ -140,6 +144,9 @@ drake_cc_library(
     name = "lcmt_drake_signal_translator",
     srcs = ["lcmt_drake_signal_translator.cc"],
     hdrs = ["lcmt_drake_signal_translator.h"],
+    copts = [
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":translator",
         "//lcmtypes:drake_signal",

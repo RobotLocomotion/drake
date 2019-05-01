@@ -1,10 +1,7 @@
 #include "drake/systems/lcm/connect_lcm_scope.h"
 
-#include <vector>
-
 #include "drake/lcmt_drake_signal.hpp"
-#include "drake/systems/lcm/lcm_publisher_system.h"
-#include "drake/systems/lcm/lcmt_drake_signal_translator.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace systems {
@@ -16,7 +13,7 @@ class TranslatorSystem final : public LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TranslatorSystem)
 
   explicit TranslatorSystem(int size)
-      : helper_(size) {
+      : size_(size) {
     this->DeclareVectorInputPort("input", BasicVector<double>(size));
     this->DeclareAbstractOutputPort("output", &TranslatorSystem::CalcOutput);
   }
@@ -24,17 +21,18 @@ class TranslatorSystem final : public LeafSystem<double> {
  private:
   void CalcOutput(const Context<double>& context,
                   lcmt_drake_signal* output) const {
-    std::vector<uint8_t> lcm_message_bytes;
-    helper_.Serialize(
-        context.get_time(),
-        this->get_input_port(0).Eval<BasicVector<double>>(context),
-        &lcm_message_bytes);
-    const int status = output->decode(
-        lcm_message_bytes.data(), 0, lcm_message_bytes.size());
-    DRAKE_THROW_UNLESS(status >= 0);
+    const auto& input = this->get_input_port(0).Eval(context);
+    *output = {};
+    output->dim = size_;
+    output->val.resize(size_);
+    output->coord.resize(size_);
+    output->timestamp = static_cast<int64_t>(context.get_time() * 1000);
+    for (int i = 0; i < size_; ++i) {
+      output->val[i] = input[i];
+    }
   }
 
-  LcmtDrakeSignalTranslator helper_;
+  const int size_;
 };
 
 }  // namespace
