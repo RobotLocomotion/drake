@@ -2,7 +2,6 @@
 
 #include "drake/manipulation/robot_plan_runner/robot_plans.h"
 
-#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system.h"
