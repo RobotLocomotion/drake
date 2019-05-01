@@ -36,14 +36,7 @@ drake_cc_library(
         "//math:geometric_transform",
         "//multibody/parsing",
         "//multibody/plant",
-        "//systems/framework",
     ],
-)
-
-drake_cc_binary(
-    name = "robot_plans_test",
-    srcs = ["robot_plans_test.cc"],
-    deps = [":robot_plans",]
 )
 
 drake_cc_library(
@@ -54,15 +47,64 @@ drake_cc_library(
     hdrs = [
         "controller_systems.h",
     ],
-    data = [
-        "//manipulation/models/iiwa_description:models",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":robot_plans",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "robot_plan_runner",
+    srcs = [
+        "robot_plan_runner.cc",
+    ],
+    hdrs = [
+        "robot_plan_runner.h",
     ],
     visibility = ["//visibility:public"],
     deps = [
         ":robot_plans",
-        "//common:find_resource",
+        ":controller_systems",
+        "//systems/framework",
+        "//systems/primitives",
+    ],
+)
+
+drake_cc_library(
+    name = "plan_sender",
+    srcs = [
+        "plan_sender.cc",
+    ],
+    hdrs = [
+        "plan_sender.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":robot_plans",
         "//systems/framework",
     ],
+)
+
+drake_cc_binary(
+    name = "robot_plans_test",
+    srcs = ["robot_plans_test.cc"],
+    deps = [":robot_plans",
+            ":robot_plan_runner",
+            ":plan_sender",
+            "//systems/analysis:simulator",
+            "//systems/framework",]
+)
+
+drake_cc_binary(
+    name = "output_port_test",
+    srcs = ["output_port_test.cc"],
+    deps = [
+        "//systems/primitives",
+        "//systems/framework",
+        "//systems/analysis:simulator",
+        ":robot_plans",
+    ]
 )
 
 install_data()
