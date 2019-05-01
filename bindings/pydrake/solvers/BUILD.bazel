@@ -22,6 +22,10 @@ load(
     "drake_py_test",
     "drake_py_unittest",
 )
+load(
+    "@drake//tools/skylark:alias.bzl",
+    "drake_py_library_aliases",
+)
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
 package(default_visibility = [
@@ -123,6 +127,17 @@ drake_pybind_library(
     py_deps = [":mathematicalprogram_py"],
 )
 
+PY_LIBRARIES_ATTIC_ALIASES = [
+    ":ik_py",
+]
+
+drake_py_library_aliases(
+    actual_subdir = "bindings/pydrake/attic/solvers",
+    add_deprecation_warning = 1,
+    deprecation_removal_date = "2019-06-01",
+    relative_labels = PY_LIBRARIES_ATTIC_ALIASES,
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":gurobi_py",
     ":ipopt_py",
@@ -132,7 +147,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":snopt_py",
 ]
 
-PY_LIBRARIES = [
+PY_LIBRARIES = PY_LIBRARIES_ATTIC_ALIASES + [
     ":module_py",
 ]
 

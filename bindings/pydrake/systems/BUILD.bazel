@@ -141,6 +141,7 @@ drake_pybind_library(
         "//bindings/pydrake:symbolic_py",
         "//bindings/pydrake/multibody:multibody_tree_py",
     ],
+    py_srcs = ["_controllers_extra.py"],
 )
 
 drake_pybind_library(
@@ -177,6 +178,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:cpp_template_py",
         "//bindings/pydrake/common:eigen_geometry_py",
     ],
+    py_srcs = ["_sensors_extra.py"],
 )
 
 drake_pybind_library(

@@ -215,6 +215,8 @@ PYBIND11_MODULE(sensors, m) {
     };
     type_visit(def_image_input_port, PixelTypeList{});
   }
+
+  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake
