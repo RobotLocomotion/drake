@@ -87,11 +87,12 @@ GTEST_TEST(StaticEquilibriumProblemTest, SphereOnGroundTest) {
 
 GTEST_TEST(TestStaticEquilibriumProblem, TwoSpheresWithinBin) {
   // Find the equilibrium pose for two spheres within a bin.
-  const CoulombFriction<double> ground_friction(1.5 /* static friction */,
-                                                0.8 /* dynamic friction */);
+  const CoulombFriction<double> ground_friction(0.1 /* static friction */,
+                                                0.05 /* dynamic friction */);
 
   const std::array<double, 2> radii = {0.1, 0.2};
-  const CoulombFriction<double> sphere_friction = ground_friction;
+  const CoulombFriction<double> sphere_friction(0.4 /* static friction */,
+                                                0.3 /* dynamic friction */);
 
   const double sphere_density = 1E3;
 
@@ -101,7 +102,7 @@ GTEST_TEST(TestStaticEquilibriumProblem, TwoSpheresWithinBin) {
   const double bin_length = 0.5;
   const Eigen::Vector3d wall_size(bin_length, 0.01, 0.4);
   const double wall_density = 1E3;
-  const CoulombFriction<double> wall_friction = ground_friction;
+  const CoulombFriction<double> wall_friction = sphere_friction;
   std::vector<test::BoxSpecification> walls;
   math::RigidTransformd X_WWall1(
       Eigen::Vector3d(0, bin_length / 2, wall_size(2) / 2));
@@ -227,7 +228,7 @@ GTEST_TEST(TestStaticEquilibriumProblem, TwoSpheresWithinBin) {
   // The intial poses for both spheres are above the ground.
   Eigen::VectorXd q_init(14);
   q_init.head<4>() << 1, 0, 0, 0;
-  q_init.segment<3>(4) << 0.2, 0, radii[0] + 0.4;
+  q_init.segment<3>(4) << 0.2, 0, radii[0] + 0.5;
   q_init.segment<4>(7) << 1, 0, 0, 0;
   q_init.tail<3>() << -0.1, 0, radii[1] + 0.01;
   problem.prog().SetDecisionVariableValueInVector(problem.q_vars(), q_init,
