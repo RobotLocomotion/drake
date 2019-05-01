@@ -30,7 +30,7 @@ using std::make_unique;
 
 const PendulumGeometry* PendulumGeometry::AddToBuilder(
     systems::DiagramBuilder<double>* builder,
-    const systems::OutputPort<double>& pendulum_state,
+    const systems::OutputPort<double>& pendulum_state_port,
     geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(builder != nullptr);
   DRAKE_THROW_UNLESS(scene_graph != nullptr);
@@ -39,7 +39,7 @@ const PendulumGeometry* PendulumGeometry::AddToBuilder(
       std::unique_ptr<PendulumGeometry>(
           new PendulumGeometry(scene_graph)));
   builder->Connect(
-      pendulum_state,
+      pendulum_state_port,
       pendulum_geometry->get_input_port(0));
   builder->Connect(
       pendulum_geometry->get_output_port(0),
@@ -91,6 +91,8 @@ PendulumGeometry::PendulumGeometry(geometry::SceneGraph<double>* scene_graph) {
   scene_graph->AssignRole(
       source_id_, id, MakeDrakeVisualizerProperties(Vector4d(0, 0, 1, 1)));
 }
+
+PendulumGeometry::~PendulumGeometry() = default;
 
 void PendulumGeometry::OutputGeometryPose(
     const systems::Context<double>& context,
