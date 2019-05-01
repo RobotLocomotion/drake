@@ -66,7 +66,7 @@ class TwoFreeSpheresTest : public ::testing::Test {
     const auto& query_object =
         query_port.Eval<geometry::QueryObject<AutoDiffXd>>(
             spheres_->plant_context());
-    const std::vector<geometry::SignedDistancePair<double>>
+    const std::vector<geometry::SignedDistancePair<AutoDiffXd>>
         signed_distance_pairs =
             query_object.ComputeSignedDistancePairwiseClosestPoints();
     EXPECT_EQ(signed_distance_pairs.size(), 3);
@@ -85,14 +85,12 @@ class TwoFreeSpheresTest : public ::testing::Test {
       Eigen::Matrix<AutoDiffXd, 6, Eigen::Dynamic> Jv_V_WCb(6, 12);
       spheres_->plant().CalcJacobianSpatialVelocity(
           spheres_->plant_context(), JacobianWrtVariable::kV, frameA,
-          signed_distance_pair.p_ACa.cast<AutoDiffXd>(),
-          spheres_->plant().world_frame(), spheres_->plant().world_frame(),
-          &Jv_V_WCa);
+          signed_distance_pair.p_ACa, spheres_->plant().world_frame(),
+          spheres_->plant().world_frame(), &Jv_V_WCa);
       spheres_->plant().CalcJacobianSpatialVelocity(
           spheres_->plant_context(), JacobianWrtVariable::kV, frameB,
-          signed_distance_pair.p_BCb.cast<AutoDiffXd>(),
-          spheres_->plant().world_frame(), spheres_->plant().world_frame(),
-          &Jv_V_WCb);
+          signed_distance_pair.p_BCb, spheres_->plant().world_frame(),
+          spheres_->plant().world_frame(), &Jv_V_WCb);
 
       AutoDiffVecXd F_AB_W(6);
 
@@ -220,7 +218,9 @@ TEST_F(TwoFreeSpheresTest, Eval) {
       Eigen::Vector3d(std::sqrt(4 * spheres_->spheres()[0].radius *
                                 spheres_->spheres()[1].radius),
                       0, spheres_->spheres()[1].radius));
+  q_val.head<4>() << 1, 0, 0, 0;
   q_val.segment<3>(4) = X_WS0.translation();
+  q_val.segment<4>(7) << 1, 0, 0, 0;
   q_val.tail<3>() = X_WS1.translation();
 
   prog_.AddBoundingBoxConstraint(q_val, q_val, q_vars_);
