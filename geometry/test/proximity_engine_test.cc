@@ -3301,16 +3301,17 @@ GTEST_TEST(ProximityEngineTests, ComputePairwiseSignedDistanceAutoDiff) {
   Vector3<AutoDiffXd> p_WQ_ad = math::initializeAutoDiff(p_WQ);
 
   // Add a pair of dynamic spheres. We'll differentiate w.r.t. the pose of the
-  // second sphere.
-  GeometryIndex index1(0);
-  engine.AddDynamicGeometry(Sphere(radius), index1);
-  std::vector<GeometryId> geometry_map{GeometryId::get_new_id()};
-  const auto X_WS1_ad =
-      RigidTransformd(p_WS).cast<AutoDiffXd>().GetAsIsometry3();
-
-  GeometryIndex index2(1);
+  // first sphere.
+  GeometryIndex index2(0);
   engine.AddDynamicGeometry(Sphere(radius), index2);
-  const RigidTransform<AutoDiffXd> X_WS2_ad(p_WQ_ad);
+  const RigidTransform<AutoDiffXd> X_WS1_ad(p_WQ_ad);
+
+  GeometryIndex index1(1);
+  engine.AddDynamicGeometry(Sphere(radius), index1);
+  std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
+                                       GeometryId::get_new_id()};
+  const auto X_WS2_ad =
+      RigidTransformd(p_WS).cast<AutoDiffXd>().GetAsIsometry3();
 
   std::vector<Isometry3<AutoDiffXd>> X_WGs{X_WS1_ad, X_WS2_ad};
   engine.UpdateWorldPoses(X_WGs, {index1, index2});
