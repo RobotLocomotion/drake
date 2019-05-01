@@ -190,15 +190,6 @@ class ContactSurface {
     return grad_h_MN_M_->Evaluate(face, barycentric);
   }
 
-  /** Returns the number of triangular faces in the mesh.
-   */
-  int num_faces() const { return mesh_->num_faces(); }
-
-  /** Returns the number of vertices in the mesh.
-   */
-  int num_vertices() const { return mesh_->num_vertices(); }
-  // TODO(DamrongGuoy): Consider removing num_faces() and num_vertices().
-
   /** Returns the reference to the surface mesh.
    */
   const SurfaceMesh<T>& mesh() const {

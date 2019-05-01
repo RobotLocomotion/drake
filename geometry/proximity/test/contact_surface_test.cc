@@ -14,23 +14,29 @@
 namespace drake {
 namespace geometry {
 
-template <typename T> ContactSurface<T> TestInstantiateContactSurface();
+
+// TODO(DamrongGuoy): Consider splitting the test into several smaller tests
+//  including a separated mesh test
+// Tests instantiation of ContactSurface and inspecting its components (the
+// mesh and the mesh fields). We cannot access its mesh fields directly, so
+// we check them by evaluating the field values at certain positions.
+template <typename T> ContactSurface<T> TestContactSurface();
 
 // Tests instantiation of ContactSurface and evaluating its field variables
 // using `double` as the underlying scalar type.
-GTEST_TEST(ContactSurfaceTest, TestInstantiationDouble) {
-  auto contact_surface = TestInstantiateContactSurface<double>();
+GTEST_TEST(ContactSurfaceTest, TestInstantiateEvaluateDouble) {
+  auto contact_surface = TestContactSurface<double>();
 }
 
-// Smoke tests the instantiation of ContactSurface using `AutoDiffXd` as
-// the underlying scalar type. The purpose of this test is simply to check
-// that it compiles. There is no tests of differentiation.
-GTEST_TEST(ContactSurfaceTest, TestInstantiationAutoDiffXd) {
-  auto contact_surface = TestInstantiateContactSurface<AutoDiffXd>();
+// Smoke tests using `AutoDiffXd` as the underlying scalar type. The purpose
+// of this test is simply to check that it compiles. There is no tests of
+// differentiation.
+GTEST_TEST(ContactSurfaceTest, TestContactSurfaceAutoDiffXd) {
+  auto contact_surface = TestContactSurface<AutoDiffXd>();
 }
 
 template <typename T>
-ContactSurface<T> TestInstantiateContactSurface() {
+ContactSurface<T> TestContactSurface() {
   auto id_M = GeometryId::get_new_id();
   auto id_N = GeometryId::get_new_id();
 
@@ -58,8 +64,8 @@ ContactSurface<T> TestInstantiateContactSurface() {
       {0., 0., 0.}, {1., 0., 0.}, {1., 1., 0.}, {0., 1., 0.}};
   std::vector<SurfaceVertex<T>> vertices;
   for (int v = 0; v < 4; ++v) vertices.emplace_back(vertex_data[v]);
-  auto surface_mesh = std::make_unique<SurfaceMesh<T>>(
-      std::move(faces), std::move(vertices));
+  auto surface_mesh =
+      std::make_unique<SurfaceMesh<T>>(std::move(faces), std::move(vertices));
   // We record the reference for testing later.
   auto& surface_mesh_ref = *(surface_mesh.get());
 
@@ -70,9 +76,8 @@ ContactSurface<T> TestInstantiateContactSurface() {
   const T e2{2.};
   const T e3{3.};
   std::vector<T> e_values = {e0, e1, e2, e3};
-  auto e_field =
-      std::make_unique<SurfaceMeshFieldLinear<T, T>>(
-          "e", std::move(e_values), surface_mesh.get());
+  auto e_field = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
+      "e", std::move(e_values), surface_mesh.get());
 
   // Slightly different values of grad_h_MN_M at each vertex.
   // We give names to the values at vertices for testing later.
@@ -86,8 +91,8 @@ ContactSurface<T> TestInstantiateContactSurface() {
           "grad_h_MN_M", std::move(grad_h_MN_M_values), surface_mesh.get());
 
   ContactSurface<T> contact_surface(id_M, id_N, std::move(surface_mesh),
-                                         std::move(e_field),
-                                         std::move(grad_h_MN_M_field));
+                                    std::move(e_field),
+                                    std::move(grad_h_MN_M_field));
 
   // Start testing the ContactSurface<> data structure.
   EXPECT_EQ(id_M, contact_surface.id_M());
@@ -95,8 +100,8 @@ ContactSurface<T> TestInstantiateContactSurface() {
   // Check memory address of the mesh. We don't want to compare the mesh
   // objects themselves.
   EXPECT_EQ(&surface_mesh_ref, &contact_surface.mesh());
-  EXPECT_EQ(2, contact_surface.num_faces());
-  EXPECT_EQ(4, contact_surface.num_vertices());
+  EXPECT_EQ(2, contact_surface.mesh().num_faces());
+  EXPECT_EQ(4, contact_surface.mesh().num_vertices());
   // Tests evaluation of `e` on face f0 {0, 1, 2}.
   {
     const SurfaceFaceIndex f0(0);
