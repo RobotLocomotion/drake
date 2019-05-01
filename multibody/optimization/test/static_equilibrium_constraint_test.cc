@@ -231,11 +231,11 @@ TEST_F(TwoFreeSpheresTest, Eval) {
   prog_.SetDecisionVariableValueInVector(q_vars_, q_val, &x_init);
   prog_.SetDecisionVariableValueInVector(
       contact_wrench_evaluators_and_lambda_[1].second,
-      Eigen::Vector3d(0, 0, -spheres_->spheres()[0].inertia.get_mass() * 9.6),
+      Eigen::Vector3d(0, 0, -spheres_->spheres()[0].inertia.get_mass() * 9.81),
       &x_init);
   prog_.SetDecisionVariableValueInVector(
       contact_wrench_evaluators_and_lambda_[2].second,
-      Eigen::Vector3d(0, 0, -spheres_->spheres()[1].inertia.get_mass() * 9.6),
+      Eigen::Vector3d(0, 0, -spheres_->spheres()[1].inertia.get_mass() * 9.81),
       &x_init);
 
   auto result = solvers::Solve(prog_, x_init);
