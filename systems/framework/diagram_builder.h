@@ -370,7 +370,7 @@ class DiagramBuilderImpl {
   // input ports and output ports) and if an algebraic loop is detected throws
   // a std::logic_error.
   static void ThrowIfAlgebraicLoopsExist(
-      const std::unordered_set<const SystemBase*>& systems,
+      const std::vector<const SystemBase*>& systems,
       const std::map<
         std::pair<const SystemBase*, InputPortIndex>,
         std::pair<const SystemBase*, OutputPortIndex>>& connection_map);
@@ -382,9 +382,13 @@ class DiagramBuilderImpl {
 template <typename T>
 void DiagramBuilder<T>::ThrowIfAlgebraicLoopsExist() const {
   // Delegate to our Impl after upcasting the pointers to SystemBase.
+  std::vector<const SystemBase*> systems;
+  systems.reserve(registered_systems_.size());
+  for (const auto& item : registered_systems_) {
+    systems.push_back(item.get());
+  }
   internal::DiagramBuilderImpl::ThrowIfAlgebraicLoopsExist(
-      {systems_.begin(), systems_.end()},
-      {connection_map_.begin(), connection_map_.end()});
+      systems, {connection_map_.begin(), connection_map_.end()});
 }
 
 }  // namespace systems

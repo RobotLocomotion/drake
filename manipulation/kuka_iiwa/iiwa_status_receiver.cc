@@ -37,10 +37,6 @@ IiwaStatusReceiver::IiwaStatusReceiver(int num_joints)
       "torque_external", BasicVector<double>(num_joints_),
       &IiwaStatusReceiver::CalcLcmOutput<
         &lcmt_iiwa_status::joint_torque_external>);
-  // TODO(jwnimmer-tri) Remove this state output on 2019-05-01.
-  this->DeclareVectorOutputPort(
-      "state", BasicVector<double>(num_joints_ * 2),
-      &IiwaStatusReceiver::CalcStateOutput);
 }
 
 const systems::InputPort<double>& IiwaStatusReceiver::get_input_port() const {
@@ -65,9 +61,6 @@ const OutPort& IiwaStatusReceiver::get_torque_measured_output_port() const {
 const OutPort& IiwaStatusReceiver::get_torque_external_output_port() const {
   return LeafSystem<double>::get_output_port(5);
 }
-const OutPort& IiwaStatusReceiver::get_state_output_port() const {
-  return LeafSystem<double>::get_output_port(6);
-}
 
 template <std::vector<double> drake::lcmt_iiwa_status::* field_ptr>
 void IiwaStatusReceiver::CalcLcmOutput(
@@ -85,15 +78,6 @@ void IiwaStatusReceiver::CalcLcmOutput(
     output->get_mutable_value() = Eigen::Map<const Eigen::VectorXd>(
         status_field.data(), num_joints_);
   }
-}
-
-void IiwaStatusReceiver::CalcStateOutput(
-    const Context<double>& context, BasicVector<double>* output) const {
-  auto output_block = output->get_mutable_value();
-  output_block.head(num_joints_) =
-      get_position_measured_output_port().Eval(context);
-  output_block.tail(num_joints_) =
-      get_velocity_estimated_output_port().Eval(context);
 }
 
 }  // namespace kuka_iiwa

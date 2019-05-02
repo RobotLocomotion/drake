@@ -272,8 +272,7 @@ const WeldJoint<T>& MultibodyPlant<T>::WeldFrames(
     const Frame<T>& A, const Frame<T>& B,
     const math::RigidTransform<double>& X_AB) {
   const std::string joint_name = A.name() + "_welds_to_" + B.name();
-  return this->mutable_tree().AddJoint(
-      std::make_unique<WeldJoint<T>>(joint_name, A, B, X_AB));
+  return AddJoint(std::make_unique<WeldJoint<T>>(joint_name, A, B, X_AB));
 }
 
 template <typename T>

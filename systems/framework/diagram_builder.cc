@@ -1,5 +1,8 @@
 #include "drake/systems/framework/diagram_builder.h"
 
+#include <tuple>
+#include <unordered_map>
+
 #include "drake/common/drake_variant.h"
 
 namespace drake {
@@ -8,18 +11,26 @@ namespace internal {
 namespace {
 
 using EitherPortIndex = variant<InputPortIndex, OutputPortIndex>;
-using PortIdentifier = std::pair<const SystemBase*, EitherPortIndex>;
 
-bool is_input_port_index(const EitherPortIndex& either) {
+// The PortIdentifier must be appropriate to use in a sorted collection.  Thus,
+// we place its two integer indices first, because they form a unique key on
+// their own (the variant disambiguates input vs output indices, even though
+// their integer values overlap).  The SystemBase* field is supplementary (and
+// only used during error reporting).
+using PortIdentifier = std::tuple<
+    SubsystemIndex, EitherPortIndex, const SystemBase*>;
+
+bool is_input_port(const PortIdentifier& node) {
+  const EitherPortIndex& either = std::get<1>(node);
   return either.index() == 0;
 }
 
 std::string to_string(const PortIdentifier& port_id) {
-  const SystemBase& system = *port_id.first;
-  const EitherPortIndex& index = port_id.second;
-  return is_input_port_index(index) ?
-      system.get_input_port_base(drake::get<0>(index)).GetFullDescription() :
-      system.get_output_port_base(drake::get<1>(index)).GetFullDescription();
+  const SystemBase* const system = std::get<2>(port_id);
+  const EitherPortIndex& index = std::get<1>(port_id);
+  return is_input_port(port_id) ?
+      system->get_input_port_base(drake::get<0>(index)).GetFullDescription() :
+      system->get_output_port_base(drake::get<1>(index)).GetFullDescription();
 }
 
 // Helper to do the algebraic loop test. It recursively performs the
@@ -53,7 +64,7 @@ bool HasCycleRecurse(
 }  // namespace
 
 void DiagramBuilderImpl::ThrowIfAlgebraicLoopsExist(
-    const std::unordered_set<const SystemBase*>& systems,
+    const std::vector<const SystemBase*>& systems,
     const std::map<
         std::pair<const SystemBase*, InputPortIndex>,
         std::pair<const SystemBase*, OutputPortIndex>>& connection_map) {
@@ -69,11 +80,23 @@ void DiagramBuilderImpl::ThrowIfAlgebraicLoopsExist(
   // opposite of the "depends-on" relation.)
   std::map<PortIdentifier, std::set<PortIdentifier>> edges;
 
+  // Create a lookup table from system pointer to subsystem index.
+  std::unordered_map<const SystemBase*, SubsystemIndex> system_to_index;
+  for (SubsystemIndex i{0}; i < systems.size(); ++i) {
+    system_to_index.emplace(systems[i], i);
+  }
+
   // Add the diagram's internal connections to the digraph nodes *and* edges.
   // The output port influences the input port.
   for (const auto& item : connection_map) {
-    const PortIdentifier input{item.first};
-    const PortIdentifier output{item.second};
+    const SystemBase* const input_system = item.first.first;
+    const InputPortIndex input_index = item.first.second;
+    const SystemBase* const output_system = item.second.first;
+    const OutputPortIndex output_index = item.second.second;
+    const PortIdentifier input{
+        system_to_index.at(input_system), input_index, input_system};
+    const PortIdentifier output{
+        system_to_index.at(output_system), output_index, output_system};
     nodes.insert(input);
     nodes.insert(output);
     edges[output].insert(input);
@@ -84,10 +107,13 @@ void DiagramBuilderImpl::ThrowIfAlgebraicLoopsExist(
   // from that input to that output.  If a feedthrough edge refers to a port
   // not in `nodes`, we omit it because ports that are not connected inside the
   // diagram cannot participate in a cycle.
-  for (const auto& system : systems) {
+  for (const auto* system : systems) {
     for (const auto& item : system->GetDirectFeedthroughs()) {
-      const PortIdentifier input{system, InputPortIndex{item.first}};
-      const PortIdentifier output{system, OutputPortIndex{item.second}};
+      const SubsystemIndex subsystem_index = system_to_index.at(system);
+      const PortIdentifier input{
+          subsystem_index, InputPortIndex{item.first}, system};
+      const PortIdentifier output{
+          subsystem_index, OutputPortIndex{item.second}, system};
       if (nodes.count(input) > 0 && nodes.count(output) > 0) {
         edges[input].insert(output);
       }
@@ -113,7 +139,7 @@ void DiagramBuilderImpl::ThrowIfAlgebraicLoopsExist(
       message << "Reported algebraic loop detected in DiagramBuilder:\n";
       for (const auto& item : stack) {
         message << "  " << to_string(item);
-        if (is_input_port_index(item.second)) {
+        if (is_input_port(item)) {
           message << " is direct-feedthrough to\n";
         } else {
           message << " is connected to\n";

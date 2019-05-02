@@ -181,12 +181,7 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
   if (encoded_msg != plan.encoded_msg) {
     plan.encoded_msg.swap(encoded_msg);
     if (plan_input.num_states == 0) {
-      // The plan is empty.  Encode a plan for the current measured
-      // position.
-      const systems::BasicVector<double>* state_input =
-          this->EvalVectorInput(context, state_input_port_);
-      DRAKE_DEMAND(state_input);
-
+      // The plan is empty.  Encode a plan for the current planned position.
       const double current_plan_time = context.get_time() - plan.start_time;
       MakeFixedPlan(context.get_time(),
                     plan.pp.value(current_plan_time),

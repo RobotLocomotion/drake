@@ -25,6 +25,7 @@ enum class InterpolatorType {
 /// It has two input ports, one for robot_plan_t messages containing a
 /// plan to follow, and another vector-valued port which expects the
 /// current (q,v) state of the robot.
+/// (The q,v input port is vestigial and should be left disconnected.)
 ///
 /// The system has two output ports, one with the current desired
 /// state (q,v) of the robot and another for the accelerations.
@@ -42,6 +43,7 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
                         double update_interval = kDefaultPlanUpdateInterval);
   ~RobotPlanInterpolator() override;
 
+  /// N.B. This input port is useless and may be left disconnected.
   const systems::InputPort<double>& get_plan_input_port() const {
     return this->get_input_port(plan_input_port_);
   }

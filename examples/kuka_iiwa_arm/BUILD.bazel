@@ -58,7 +58,6 @@ drake_cc_library(
         "//manipulation/kuka_iiwa",
         "//systems/framework:leaf_system",
         "//systems/lcm:lcm_pubsub_system",
-        "//systems/lcm:translator",
     ],
 )
 
@@ -146,6 +145,9 @@ drake_cc_binary(
         "//lcm",
         "//manipulation/schunk_wsg",
         "//systems/analysis",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:demultiplexer",
+        "//systems/primitives:discrete_derivative",
     ],
 )
 
@@ -173,6 +175,9 @@ drake_cc_binary(
         "//lcm",
         "//systems/analysis",
         "//systems/controllers:state_feedback_controller_interface",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:demultiplexer",
+        "//systems/primitives:discrete_derivative",
     ],
 )
 

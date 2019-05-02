@@ -19,7 +19,6 @@ load(
 load(
     "@drake//tools/vector_gen:vector_gen.bzl",
     "drake_cc_vector_gen_library",
-    "drake_cc_vector_gen_translator_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -36,7 +35,6 @@ drake_cc_package_library(
         ":curve2",
         ":driving_command_mux",
         ":dynamic_bicycle_car",
-        ":generated_translators",
         ":generated_vectors",
         ":idm_controller",
         ":idm_planner",
@@ -82,17 +80,6 @@ drake_cc_vector_gen_library(
         "simple_car_params.named_vector",
         "trajectory_car_params.named_vector",
     ] + _LCM_ENABLED_NAMED_VECTORS,
-)
-
-drake_cc_vector_gen_translator_library(
-    name = "generated_translators",
-    srcs = _LCM_ENABLED_NAMED_VECTORS,
-    deprecation = "The LcmAndVectorBaseTranslator and its related code are deprecated, and will be removed on 2019-05-01.",  # noqa
-    tags = ["manual"],  # Avoid 'build //...' yelling at us.
-    deps = [
-        ":generated_vectors",
-        "//lcmtypes:automotive",
-    ],
 )
 
 drake_cc_library(
@@ -420,7 +407,6 @@ drake_cc_library(
         "//lcmtypes:lcmtypes_drake_cc",
         "//systems/analysis",
         "//systems/lcm:lcm_pubsub_system",
-        "//systems/lcm:lcmt_drake_signal_translator",
         "//systems/primitives:constant_value_source",
         "//systems/rendering:pose_aggregator",
         "//systems/rendering:pose_bundle_to_draw_message",
