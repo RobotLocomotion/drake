@@ -183,6 +183,14 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
     dx_state_->get_mutable_vector().SetFromVector(dx);
     T dx_norm = this->CalcStateChangeNorm(*dx_state_);
 
+    // The check below looks for convergence by identifying cases where the
+    // update to the state results in no change. We do this check only after
+    // at least one Newton-Raphson update has been applied to ensure that there
+    // is at least some change to the state, no matter how small, on a
+    // non-stationary system.
+    if (i > 0 && this->IsUpdateZero(*xtplus, dx))
+      return true;
+
     // Update the state vector.
     *xtplus += dx;
     context->SetTimeAndContinuousState(tf, *xtplus);
@@ -191,11 +199,6 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
     // [Hairer, 1996] notes that this convergence strategy should only be
     // applied after *at least* two iterations (p. 121).
     if (i >= 1) {
-      // The check below looks for convergence by identifying cases where the
-      // update to the state results in no change.
-      if (this->IsUpdateZero(*xtplus, dx))
-        return true;
-
       const T theta = dx_norm / last_dx_norm;
       const T eta = theta / (1 - theta);
       SPDLOG_DEBUG(drake::log(), "Newton-Raphson loop {} theta: {}, eta: {}",
