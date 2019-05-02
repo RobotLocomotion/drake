@@ -97,13 +97,15 @@ drake_cc_binary(
 )
 
 drake_cc_binary(
-    name = "output_port_test",
-    srcs = ["output_port_test.cc"],
+    name = "full_system_test",
+    srcs = ["full_system_test.cc"],
     deps = [
+        ":robot_plans",
+        ":plan_sender",
+        ":robot_plan_runner",
         "//systems/primitives",
         "//systems/framework",
         "//systems/analysis:simulator",
-        ":robot_plans",
     ]
 )
 

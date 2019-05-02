@@ -43,7 +43,7 @@ class PlanBase {
 
 class JointSpacePlan : public PlanBase {
  public:
-  JointSpacePlan() : num_positions_(7) {};
+  JointSpacePlan() : num_positions_(7){};
 
   void Step(const Eigen::Ref<const Eigen::VectorXd>& q,
             const Eigen::Ref<const Eigen::VectorXd>& v,
@@ -52,11 +52,13 @@ class JointSpacePlan : public PlanBase {
             Eigen::VectorXd* const tau_cmd) const override;
 
   inline PlanType get_plan_type() const override {
-      return PlanType::kJointSpacePlan;};
+    return PlanType::kJointSpacePlan;
+  };
 
  private:
   const int num_positions_;
 };
+
 
 }  // namespace robot_plan_runner
 }  // namespace manipulation
