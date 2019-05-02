@@ -1336,6 +1336,36 @@ class MultibodyTree {
       const PositionKinematicsCache<T>& pc,
       VelocityKinematicsCache<T>* vc) const;
 
+  /// Computes the spatial inertia M_Bo_W(q) for each body B in the model about
+  /// its frame origin Bo and expressed in the world frame W.
+  /// @param[in] context
+  ///   The context storing the state of the model.
+  /// @param[out] M_B_W_cache
+  ///   For each body in the model, entry Body::node_index() in M_B_W_cache
+  ///   contains the updated spatial inertia `M_B_W(q)` for that body. On input
+  ///   it must be a valid pointer to a vector of size num_bodies().
+  /// @throws std::exception if M_B_W_cache is nullptr or if its size is not
+  /// num_bodies().
+  void CalcSpatialInertiaInWorldCache(
+      const systems::Context<T>& context,
+      std::vector<SpatialInertia<T>>* M_B_W_cache) const;
+
+  /// Computes the bias term `b_Bo_W(q, v)` for each body in the model.
+  /// For a body B, this is the bias term `b_Bo_W` in the equation
+  /// `F_BBo_W = M_Bo_W * A_WB + b_Bo_W`, where `M_Bo_W` is the spatial inertia
+  /// about B's origin Bo, `A_WB` is the spatial acceleration of B in W and
+  /// `F_BBo_W` is the spatial force applied on B about Bo, expressed in W.
+  /// @param[in] context
+  ///   The context storing the state of the model.
+  /// @param[out] b_Bo_W_cache
+  ///   For each body in the model, entry Body::node_index() in b_Bo_W_cache
+  ///   contains the updated bias term `b_Bo_W(q, v)` for that body. On input it
+  ///   must be a valid pointer to a vector of size num_bodies().
+  /// @throws std::exception if b_Bo_W_cache is nullptr or if its size is not
+  /// num_bodies().
+  void CalcDynamicBiasCache(const systems::Context<T>& context,
+                            std::vector<SpatialForce<T>>* b_Bo_W_cache) const;
+
   /// Computes all the kinematic quantities that depend on the generalized
   /// accelerations that is, the generalized velocities' time derivatives, and
   /// stores them in the acceleration kinematics cache `ac`.
@@ -2033,6 +2063,22 @@ class MultibodyTree {
   // not be called pre-finalize. The invoking method should pass its name so
   // that the error message can include that detail.
   void ThrowIfNotFinalized(const char* source_method) const;
+
+  // Evaluates the cache entry stored in context with the spatial inertias
+  // M_Bo_W(q) for each body in the system. These will be updated as needed.
+  const std::vector<SpatialInertia<T>>& EvalSpatialInertiaInWorldCache(
+      const systems::Context<T>& context) const {
+    DRAKE_ASSERT(tree_system_ != nullptr);
+    return tree_system_->EvalSpatialInertiaInWorldCache(context);
+  }
+
+  // Evaluates the cache entry stored in context with the bias term b_Bo_W(q, v)
+  // for each body. These will be updated as needed.
+  const std::vector<SpatialForce<T>>& EvalDynamicBiasCache(
+      const systems::Context<T>& context) const {
+    DRAKE_ASSERT(tree_system_ != nullptr);
+    return tree_system_->EvalDynamicBiasCache(context);
+  }
 
   // Given the state of this model in `context` and a known vector
   // of generalized accelerations `known_vdot`, this method computes the
