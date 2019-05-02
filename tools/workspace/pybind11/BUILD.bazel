@@ -28,7 +28,7 @@ py_binary(
         "//third_party:com_github_pybind_pybind11/mkdoc.py",
     ],
     data = ["@python3"],
-    default_python_version = "PY2",
+    python_version = "PY2",
     deps = ["@clang_cindex_python3//:clang"],
 )
 
