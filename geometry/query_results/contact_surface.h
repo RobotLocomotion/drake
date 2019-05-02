@@ -88,7 +88,6 @@ namespace geometry {
    3. Explicitly add the assumptions on `e` that make this interpretatoin valid.
   -->
 
-
   Notice that the domain of eₘₙ is the two-dimensional surface 𝕊ₘₙ, while the
   domain of ∇hₘₙ is the three-dimensional compact set 𝕄 ∩ ℕ.
   Even though eₘₙ and ∇hₘₙ are defined on different domains (𝕊ₘₙ and 𝕄 ∩ ℕ),
@@ -98,23 +97,14 @@ namespace geometry {
 
   This section resumes our standard terminology of @ref
   multibody_frames_and_bodies "Frames and Bodies". From now on, we will write
-  M and N for body M and body N, each of which is associated with a coordinate
-  frame of the same name. Quantities defined in those coordinate frames will be
-  denoted using either _M or _N, respectively. We will write 𝕊ₘₙ, eₘₙ, and
-  ∇hₘₙ for the mathematical concepts in the previous section, and use the terms
-  mesh, e_MN, and grad_h_MN_M to represent, in some cases approximately,
-  the mathematical concepts.
-
-  The term `grad_h_MN_M` represents the vector field ∇hₘₙ on the `mesh` and
-  is expressed in the coordinate frame of Body M.  Due to discretization, the
-  vector `grad_h_MN_M` at a vertex need not be strictly orthogonal to every
-  triangle sharing the vertex. Orthogonality generally does improve with
-  finer discretization.
+  M and N for geometry M and geometry N, each of which is associated with a
+  coordinate frame of the same name. Quantities defined in those coordinate
+  frames will be denoted using either _M or _N, respectively.
 
   <h3> Barycentric Coordinates </h3>
 
-  For Point Q on the surface mesh of the contact surface between Body M and
-  Body N, r_MQ = (x,y,z) is the displacement vector from the origin of M's
+  For Point Q on the surface mesh of the contact surface between Geometry M and
+  Geometry N, r_MQ = (x,y,z) is the displacement vector from the origin of M's
   frame to Q expressed in the coordinate frame of M. We also have the
   _barycentric coordinates_ (b0, b1, b2) on a triangle of the surface mesh that
   contains Q. With vertices of the triangle labeled as v₀, v₁, v₂, we can
@@ -143,14 +133,18 @@ class ContactSurface {
   //@}
 
   /** Constructs a ContactSurface.
-   @param id_M         The id of the first body M.
-   @param id_N         The id of the second body N.
+   @param id_M         The id of the first geometry M.
+   @param id_N         The id of the second geometry N.
    @param mesh         The surface mesh of the contact surface 𝕊ₘₙ between M
                        and N.
    @param e_MN         Represents the common scalar field eₘₙ on the surface
                        mesh.
    @param grad_h_MN_M  Represents the vector field ∇hₘₙ on the surface mesh,
-                       expressed in M's frame.
+                       expressed in M's frame. Due to discretization,
+                       `grad_h_MN_M` at a vertex need not be strictly
+                       orthogonal to every triangle sharing the vertex.
+                       Orthogonality generally does improve with finer
+                       discretization.
    */
   ContactSurface(
       GeometryId id_M, GeometryId id_N, std::unique_ptr<SurfaceMesh<T>> mesh,
@@ -162,10 +156,10 @@ class ContactSurface {
         e_MN_(std::move(e_MN)),
         grad_h_MN_M_(std::move(grad_h_MN_M)) {}
 
-  /** Returns the geometry id of the body M. */
+  /** Returns the geometry id of Geometry M. */
   GeometryId id_M() const { return id_M_; }
 
-  /** Returns the geometry id of the body N. */
+  /** Returns the geometry id of Geometry N. */
   GeometryId id_N() const { return id_N_; }
 
   /** Evaluates the scalar field eₘₙ at Point Q in a triangle.
@@ -198,9 +192,9 @@ class ContactSurface {
   }
 
  private:
-  /** The id of the first body M */
+  /** The id of the first geometry M */
   GeometryId id_M_;
-  /** The id of the second body N. */
+  /** The id of the second geometry N. */
   GeometryId id_N_;
   /** The surface mesh of the contact surface 𝕊ₘₙ between M and N. */
   std::unique_ptr<SurfaceMesh<T>> mesh_;
