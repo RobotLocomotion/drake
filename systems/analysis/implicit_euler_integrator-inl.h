@@ -68,11 +68,6 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
   this->get_mutable_jacobian().resize(0, 0);
 }
 
-// Computes any necessary matrices (Jacobian, iteration matrix, or both)
-// for the Newton-Raphson iteration in StepAbstract() around time/state `(t,xt)`
-// and using the same `scale` parameter as in StepAbstract().
-// @returns `false` if the calling StepAbstract method should indicate failure;
-//          `true` otherwise.
 template <class T>
 void ImplicitEulerIntegrator<T>::ComputeAndFactorImplicitEulerIterationMatrix(
     const MatrixX<T>& J, const T& h,
@@ -109,8 +104,6 @@ ComputeAndFactorImplicitTrapezoidIterationMatrix(
 // @param h the integration step size (> 0) to attempt.
 // @param xt0 the continuous state at t0.
 // @param g the particular implicit function to compute the root of.
-// @param scale a scale factor- either 1 or 2- that allows this method to be
-//        used by both implicit Euler and implicit trapezoid methods.
 // @param [in, out] the starting guess for x(t0+h); the value for x(t0+h) on
 //        return.
 // @param trial the attempt for this approach (1-4). StepAbstract() uses more

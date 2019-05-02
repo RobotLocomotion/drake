@@ -464,8 +464,6 @@ GTEST_TEST(SimulatorTest, FixedStepIncreasingIsolationAccuracy) {
 // over an interval *where both witness functions change sign from the beginning
 // to the end of the interval.
 GTEST_TEST(SimulatorTest, MultipleWitnesses) {
-  drake::logging::set_log_level("debug");
-
   // Set up the trigger time.
   const double trigger_time = 1e-2;
 

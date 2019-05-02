@@ -250,7 +250,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
     // Back off slightly from the tightest tolerance (machine epsilon).
     const double eps = 10 * std::numeric_limits<double>::epsilon();
     for (int i = 0; i < xc.size(); ++i) {
-      // Do a relative or absolute tolerance, as appropriate on the magnitude
+      // Do a relative or absolute tolerance, as appropriate given the magnitude
       // of xc[i].
       const T tol = (abs(xc[i]) <= 1.0) ? eps : abs(xc[i]) * eps;
       if (abs(dxc[i]) > tol) {
@@ -262,7 +262,6 @@ class ImplicitIntegrator : public IntegratorBase<T> {
     return true;
   }
 
-  ///
   /// Resets any statistics particular to a specific implicit integrator. The
   /// default implementation of this function does nothing. If your integrator
   /// collects its own statistics, you should re-implement this method and
