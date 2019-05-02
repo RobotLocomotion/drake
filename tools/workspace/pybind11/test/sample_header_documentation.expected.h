@@ -276,7 +276,7 @@ Deprecated:
     after 2038-01-19.)""";
         // Symbol: drake::mkdoc_test::DrakeDeprecatedClass::a
         struct /* a */ {
-          // Source: drake/tools/workspace/pybind11/test/sample_header.h:381
+          // Source: drake/tools/workspace/pybind11/test/sample_header.h:385
           const char* doc_deprecated =
 R"""((Deprecated.)
 
@@ -287,17 +287,24 @@ Deprecated:
         // Symbol: drake::mkdoc_test::DrakeDeprecatedClass::f
         struct /* f */ {
           // Source: drake/tools/workspace/pybind11/test/sample_header.h:377
-          const char* doc_deprecated =
+          const char* doc_deprecated_1args =
 R"""((Deprecated.)
 
 Deprecated:
     f() is slow; use g() instead. Also, I like hats. This will be
     removed from Drake on or after 2038-01-19.)""";
+          // Source: drake/tools/workspace/pybind11/test/sample_header.h:381
+          const char* doc_deprecated_0args =
+R"""((Deprecated.)
+
+Deprecated:
+    f() now requires an int. This will be removed from Drake on or
+    after 2038-01-19.)""";
         } f;
       } DrakeDeprecatedClass;
       // Symbol: drake::mkdoc_test::DrakeDeprecatedTemplateClass
       struct /* DrakeDeprecatedTemplateClass */ {
-        // Source: drake/tools/workspace/pybind11/test/sample_header.h:387
+        // Source: drake/tools/workspace/pybind11/test/sample_header.h:391
         const char* doc_deprecated =
 R"""(I am symbolically old. (Deprecated.)
 

@@ -139,7 +139,7 @@ class Bulb final {
 
   /// Returns the arrow's orientation. Only applicable if type() returns
   /// BulbType::kArrow. See constructor's documentation for semantics.
-  const optional<double> arrow_orientation_rad() const {
+  optional<double> arrow_orientation_rad() const {
     return arrow_orientation_rad_;
   }
 

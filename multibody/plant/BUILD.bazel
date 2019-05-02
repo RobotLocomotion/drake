@@ -59,6 +59,7 @@ drake_cc_library(
         "//geometry:scene_graph",
         "//math:geometric_transform",
         "//math:orthonormal_basis",
+        "//multibody/topology:multibody_graph",
         "//multibody/tree",
         "//systems/framework:diagram_builder",
         "//systems/framework:leaf_system",

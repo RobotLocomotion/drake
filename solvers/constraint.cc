@@ -74,7 +74,7 @@ void QuadraticConstraint::DoEval(
 template <typename DerivedX, typename ScalarY>
 void LorentzConeConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                                           VectorX<ScalarY>* y) const {
-  const VectorX<ScalarY> z = A_ * x.template cast<ScalarY>() + b_;
+  const VectorX<ScalarY> z = A_dense_ * x.template cast<ScalarY>() + b_;
   y->resize(num_constraints());
   (*y)(0) = z(0);
   (*y)(1) = pow(z(0), 2) - z.tail(z.size() - 1).squaredNorm();
@@ -99,7 +99,7 @@ void LorentzConeConstraint::DoEval(
 template <typename DerivedX, typename ScalarY>
 void RotatedLorentzConeConstraint::DoEvalGeneric(
     const Eigen::MatrixBase<DerivedX>& x, VectorX<ScalarY>* y) const {
-  const VectorX<ScalarY> z = A_ * x.template cast<ScalarY>() + b_;
+  const VectorX<ScalarY> z = A_dense_ * x.template cast<ScalarY>() + b_;
   y->resize(num_constraints());
   (*y)(0) = z(0);
   (*y)(1) = z(1);

@@ -543,16 +543,19 @@ class GeometryState {
 
   // Sets the kinematic poses for the frames indicated by the given ids.
   // @param poses The frame id and pose values.
+  // @pre source_id is a registered source.
   // @throws std::logic_error  If the ids are invalid as defined by
   // ValidateFrameIds().
-  void SetFramePoses(const FramePoseVector<T>& poses);
+  void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses);
 
   // Confirms that the set of ids provided include _all_ of the frames
   // registered to the set's source id and that no extra frames are included.
   // @param values The kinematics values (ids and values) to validate.
+  // @pre source_id is a registered source.
   // @throws std::runtime_error if the set is inconsistent with known topology.
   template <typename ValueType>
-  void ValidateFrameIds(const FrameKinematicsVector<ValueType>& values) const;
+  void ValidateFrameIds(SourceId source_id,
+                        const FrameKinematicsVector<ValueType>& values) const;
 
   // Method that performs any final book-keeping/updating on the state after
   // _all_ of the state's frames have had their poses updated.

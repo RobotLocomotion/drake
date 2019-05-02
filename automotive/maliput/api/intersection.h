@@ -39,10 +39,12 @@ class Intersection {
   virtual ~Intersection() = default;
 
   /// Returns the persistent identifier.
-  const Id id() const { return id_; }
+  const Id& id() const { return id_; }
 
   /// Returns the current phase.
-  virtual const optional<rules::PhaseProvider::Result> Phase() const = 0;
+  virtual optional<rules::PhaseProvider::Result> Phase() const = 0;
+
+  virtual void SetPhase(const api::rules::Phase::Id& phase_id) = 0;
 
   /// Returns the region. See constructor parameter @p region for more details.
   const std::vector<rules::LaneSRange>& region() const { return region_; }
@@ -51,6 +53,9 @@ class Intersection {
   /// this intersection. See constructor parameter @p ring_id for more details.
   const rules::PhaseRing::Id& ring_id() const { return ring_id_; }
 
+  // TODO(liang.fok) Add method for obtaining the current bulb states
+
+  // TODO(liang.fok) Add method for obtaining the intersection's bounding box.
  private:
   const Id id_;
   const std::vector<rules::LaneSRange> region_;

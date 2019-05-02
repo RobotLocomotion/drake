@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/unused.h"
 #include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
 #include "drake/systems/analysis/test_utilities/pleides_system.h"
 
@@ -190,7 +191,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEstOrder) {
   // Take a single step of size h.
   ASSERT_EQ(this->context->get_time(), 0.0);
   const double t_final = this->context->get_time() + h;
-  this->integrator->IntegrateWithSingleFixedStepToTime(t_final);
+  ASSERT_TRUE(this->integrator->IntegrateWithSingleFixedStepToTime(t_final));
 
   // Verify that a step of h was taken.
   EXPECT_NEAR(this->context->get_time(), h,
@@ -215,8 +216,9 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEstOrder) {
   this->spring_mass->set_velocity(this->integrator->get_mutable_context(),
       initial_velocity);
   this->integrator->Initialize();
-  this->integrator->IntegrateWithSingleFixedStepToTime(t_final / 2.0);
-  this->integrator->IntegrateWithSingleFixedStepToTime(t_final);
+  ASSERT_TRUE(this->integrator->IntegrateWithSingleFixedStepToTime(
+      t_final / 2.0));
+  ASSERT_TRUE(this->integrator->IntegrateWithSingleFixedStepToTime(t_final));
   EXPECT_NEAR(this->context->get_time(), h,
               std::numeric_limits<double>::epsilon());
   const double x_approx_2h_h = this->context->get_continuous_state_vector().
@@ -375,7 +377,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, StepToCurrentTimeNoOp) {
 
   // Must do fixed stepping for the last test.
   this->integrator->set_fixed_step_mode(true);
-  this->integrator->IntegrateWithSingleFixedStepToTime(t_final);
+  ASSERT_TRUE(this->integrator->IntegrateWithSingleFixedStepToTime(t_final));
   EXPECT_EQ(this->context->get_time(), t_final);
   for (int i = 0; i < x_final.size(); ++i)
     EXPECT_EQ(x_final[i], this->context->get_continuous_state_vector()[i]);
@@ -435,8 +437,9 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, IllegalFixedStep) {
   this->integrator->Initialize();
 
   ASSERT_EQ(this->context->get_time(), 0.0);
-  EXPECT_THROW(this->integrator->IntegrateWithSingleFixedStepToTime(1e-8),
-               std::logic_error);
+  EXPECT_THROW(unused(
+      this->integrator->IntegrateWithSingleFixedStepToTime(1e-8)),
+          std::logic_error);
 }
 
 // Verifies statistics validity for error controlled integrator.

@@ -109,7 +109,7 @@ class RoadGeometry : public api::RoadGeometry {
   // The non-template implementation of AddBranchPoint<T>()
   void AddBranchPointPrivate(std::unique_ptr<BranchPoint> branch_point);
 
-  const api::RoadGeometryId do_id() const override { return id_; }
+  api::RoadGeometryId do_id() const override { return id_; }
 
   int do_num_junctions() const override { return junctions_.size(); }
 

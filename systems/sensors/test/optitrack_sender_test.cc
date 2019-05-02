@@ -18,7 +18,6 @@ using optitrack::optitrack_frame_t;
 // ensures that the TrackedBody input to the OptitrackLcmFrameSender system
 // matches the output `optitrack_frame_t` object.
 GTEST_TEST(OptitrackSenderTest, OptitrackLcmSenderTest) {
-  geometry::SourceId source_id = geometry::SourceId::get_new_id();
   geometry::FrameId frame_id = geometry::FrameId::get_new_id();
   std::vector<geometry::FrameId> frame_ids{frame_id};
   int optitrack_id = 11;
@@ -28,18 +27,16 @@ GTEST_TEST(OptitrackSenderTest, OptitrackLcmSenderTest) {
       "test_body", optitrack_id);
   OptitrackLcmFrameSender dut(frame_map);
 
-  geometry::FramePoseVector<double> pose_vector(source_id, frame_ids);
-  pose_vector.clear();
-
   constexpr double tx = 0.2;  // x-translation for the test object
   constexpr double ty = 0.4;  // y-translation for the test object
   constexpr double tz = 0.7;  // z-translation for the test object
 
   // Sets up a test body with an arbitrarily chosen pose.
   Eigen::Vector3d axis(1 / sqrt(3), 1 / sqrt(3), 1 / sqrt(3));
-  pose_vector.set_value(frame_id,
-                        Eigen::Isometry3d(Eigen::AngleAxis<double>(0.2, axis)).
-                        pretranslate(Eigen::Vector3d(tx, ty, tz)));
+  const geometry::FramePoseVector<double> pose_vector{{
+      frame_id,
+      Eigen::Isometry3d(Eigen::AngleAxis<double>(0.2, axis)).
+          pretranslate(Eigen::Vector3d(tx, ty, tz))}};
 
   EXPECT_EQ(pose_vector.value(frame_id).translation()[0], tx);
   EXPECT_EQ(pose_vector.value(frame_id).translation()[1], ty);

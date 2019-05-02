@@ -20,7 +20,6 @@
 #include "drake/manipulation/kuka_iiwa/iiwa_status_receiver.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_status_sender.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 
 namespace drake {

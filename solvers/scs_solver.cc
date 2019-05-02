@@ -297,7 +297,7 @@ void ParseSecondOrderConeConstraints(
     const VectorXDecisionVariable& x = lorentz_cone_constraint.variables();
     const std::vector<int> x_indices = prog.FindDecisionVariableIndices(x);
     const Eigen::SparseMatrix<double> Ai =
-        lorentz_cone_constraint.evaluator()->A().sparseView();
+        lorentz_cone_constraint.evaluator()->A();
     const std::vector<Eigen::Triplet<double>> Ai_triplets =
         math::SparseMatrixToTriplets(Ai);
     for (const auto& Ai_triplet : Ai_triplets) {
@@ -318,7 +318,7 @@ void ParseSecondOrderConeConstraints(
     const VectorXDecisionVariable& x = rotated_lorentz_cone.variables();
     const std::vector<int> x_indices = prog.FindDecisionVariableIndices(x);
     const Eigen::SparseMatrix<double> Ai =
-        rotated_lorentz_cone.evaluator()->A().sparseView();
+        rotated_lorentz_cone.evaluator()->A();
     const Eigen::VectorXd& bi = rotated_lorentz_cone.evaluator()->b();
     const std::vector<Eigen::Triplet<double>> Ai_triplets =
         math::SparseMatrixToTriplets(Ai);

@@ -81,7 +81,7 @@ class Segment final : public api::Segment {
   ~Segment() final = default;
 
  private:
-  const api::SegmentId do_id() const final { return id_; }
+  api::SegmentId do_id() const final { return id_; }
 
   const api::Junction* do_junction() const final;
 

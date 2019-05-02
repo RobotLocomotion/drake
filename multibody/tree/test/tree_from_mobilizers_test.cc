@@ -694,7 +694,7 @@ class PendulumKinematicTests : public PendulumTests {
     tau.setConstant(std::numeric_limits<double>::quiet_NaN());
     tau_applied.setZero();
     tree().CalcInverseDynamics(
-        *context_, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
+        *context_, vdot, Fapplied_Bo_W_array, tau_applied,
         &A_WB_array, &F_BMo_W_array, &tau);
     // The result from inverse dynamics must be tau = -tau_g(q).
     EXPECT_TRUE(tau.isApprox(-tau_g_expected, kTolerance));
@@ -703,7 +703,7 @@ class PendulumKinematicTests : public PendulumTests {
     // Fapplied_Bo_W_array will get overwritten through the output argument).
     tau_applied.setZero();  // This will now get overwritten.
     tree().CalcInverseDynamics(
-        *context_, pc, vc, vdot, Fapplied_Bo_W_array, tau_applied,
+        *context_, vdot, Fapplied_Bo_W_array, tau_applied,
         &A_WB_array, &Fapplied_Bo_W_array, &tau_applied);
     // The result from inverse dynamics must be tau = -tau_g(q).
     EXPECT_TRUE(tau.isApprox(-tau_g_expected, kTolerance));
@@ -801,7 +801,7 @@ class PendulumKinematicTests : public PendulumTests {
     VectorXd tau(tree().num_velocities());
     vector<SpatialAcceleration<double>> A_WB_array(tree().num_bodies());
     vector<SpatialForce<double>> F_BMo_W_array(tree().num_bodies());
-    tree().CalcInverseDynamics(*context_, pc, vc, vdot, {}, VectorXd(),
+    tree().CalcInverseDynamics(*context_, vdot, {}, VectorXd(),
                                 &A_WB_array, &F_BMo_W_array, &tau);
 
     // ======================================================================

@@ -585,7 +585,7 @@ MSKrescodee AddSecondOrderConeConstraints(
     //   z0 = a0^T * x + b0;
     // If using rotated Lorentz cone, add the linear constraint
     // 2*z0 = a0^T * x + b0
-    const Eigen::SparseMatrix<double> A_sparse = -A.sparseView();
+    const Eigen::SparseMatrix<double> A_sparse = -A;
     Eigen::SparseMatrix<double> B_sparse(num_z, num_z);
     B_sparse.setIdentity();
     B_sparse.coeffRef(0, 0) = is_rotated_cone ? 2.0 : 1.0;
