@@ -71,6 +71,7 @@ void RobotController::CalcCommands(const systems::Context<double>& context,
 
     plan_->Step(q, v, tau_ext, t, plan_data, &q_cmd_, &tau_cmd_);
     q_tau_vector << q_cmd_, tau_cmd_;
+//    std::cout << "t=" << t << std::endl << q_tau_vector << std::endl;
   }
 };
 

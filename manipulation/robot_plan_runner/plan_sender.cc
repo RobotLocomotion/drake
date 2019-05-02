@@ -76,10 +76,14 @@ systems::EventStatus PlanSender::Initialize(const Context<double>& context,
         this->get_input_port(input_port_idx_q_).Eval(context);
 
     PiecewisePolynomial<double> joint_traj =
-    ConnectTwoPositionsWithCubicPolynomial(q0, q_current, 3.0);
+    ConnectTwoPositionsWithCubicPolynomial(q_current, q0, 3.0);
     PlanData first_plan;
     first_plan.joint_traj = joint_traj;
+    first_plan.plan_type = PlanType::kJointSpacePlan;
     plan_data_list_.insert(plan_data_list_.begin(), first_plan);
+
+    cout << "q_current\n" << q_current << endl;
+    cout << "q0\n" << q0 << endl;
   }
 
 

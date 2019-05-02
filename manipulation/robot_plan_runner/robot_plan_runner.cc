@@ -55,15 +55,21 @@ RobotPlanRunner::RobotPlanRunner(double control_period_sec) {
                   joint_space_controller->GetInputPort("tau_external"));
 
   // output ZOH and demux.
-  auto output_zoh = builder.template AddSystem<systems::ZeroOrderHold>(
-      control_period_sec, num_positions * 2);
   auto demux = builder.template AddSystem<systems::Demultiplexer>(
       2 * num_positions, num_positions);
-  builder.Connect(joint_space_controller->GetOutputPort("q_tau_cmd"),
-                  output_zoh->get_input_port());
-  builder.Connect(output_zoh->get_output_port(), demux->get_input_port(0));
   builder.ExportOutput(demux->get_output_port(0), "iiwa_position_command");
   builder.ExportOutput(demux->get_output_port(1), "iiwa_torque_command");
+
+  if (control_period_sec) {
+    auto output_zoh = builder.template AddSystem<systems::ZeroOrderHold>(
+        control_period_sec, num_positions * 2);
+    builder.Connect(joint_space_controller->GetOutputPort("q_tau_cmd"),
+                    output_zoh->get_input_port());
+    builder.Connect(output_zoh->get_output_port(), demux->get_input_port(0));
+  } else {
+    builder.Connect(joint_space_controller->GetOutputPort("q_tau_cmd"),
+                    demux->get_input_port(0));
+  }
 
   builder.BuildInto(this);
 }
