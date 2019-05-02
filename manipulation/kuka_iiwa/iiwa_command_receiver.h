@@ -29,10 +29,6 @@ namespace kuka_iiwa {
 /// one for commanded additional feedforward joint torque.
 /// (As well as some deprecated output ports; see below.)
 ///
-/// It also has one additional, deprecated input port -- "command_message" as a
-/// synonym for "lcmt_iiwa_command".  The "command_message" port will be
-/// removed on 2019-05-01.  Exactly one of the two inputs must be connected.
-///
 /// It also has one additional, deprecated output port -- "state" for the
 /// commanded position AND an estimate of the commanded velocity for each
 /// joint.
@@ -62,34 +58,11 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   const systems::OutputPort<double>& get_commanded_torque_output_port() const;
   //@}
 
-#ifndef DRAKE_DOXYGEN_CXX
-  DRAKE_DEPRECATED("2019-05-01",
-      "The state port is deprecated. "
-      "Instead, use the \"position\" port.")
-  const systems::OutputPort<double>& get_commanded_state_output_port() const;
-  DRAKE_DEPRECATED("2019-05-01",
-      "Instead, use get_input_port() with no arguments.")
-  // TODO(jwnimmer-tri) Change this to `= delete;` after deprecation expires.
-  const systems::InputPort<double>& get_input_port(int index) const {
-    return LeafSystem<double>::get_input_port(index);
-  }
-  DRAKE_DEPRECATED("2019-05-01",
-      "Instead, use the named port accessors.")
-  // TODO(jwnimmer-tri) Change this to `= delete;` after deprecation expires.
-  const systems::OutputPort<double>& get_output_port(int index) const {
-    return LeafSystem<double>::get_output_port(index);
-  }
-#endif  //  DRAKE_DOXYGEN_CXX
-
  private:
   using MapVectorXd = Eigen::Map<const Eigen::VectorXd>;
   MapVectorXd input_position(const systems::Context<double>&) const;
   MapVectorXd input_torque(const systems::Context<double>&) const;
   void CalcInput(const systems::Context<double>&, lcmt_iiwa_command*) const;
-  void CalcStateUpdate(
-      const systems::Context<double>&, systems::DiscreteValues<double>*) const;
-  void CalcStateOutput(
-      const systems::Context<double>&, systems::BasicVector<double>*) const;
 
   const int num_joints_;
   const systems::CacheEntry* groomed_input_{};

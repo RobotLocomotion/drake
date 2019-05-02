@@ -52,7 +52,7 @@ drake_pybind_library(
     cc_srcs = ["sensors_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
-        "//bindings/pydrake/multibody:rigid_body_tree_py",
+        "//bindings/pydrake/attic/multibody:rigid_body_tree_py",
         "//bindings/pydrake/systems:sensors_py",
     ],
 )
@@ -93,7 +93,7 @@ drake_py_unittest(
     ],
     deps = [
         ":controllers_py",
-        "//bindings/pydrake/multibody:rigid_body_tree_py",
+        "//bindings/pydrake/attic/multibody:rigid_body_tree_py",
     ],
 )
 

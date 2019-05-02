@@ -37,6 +37,8 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/demultiplexer.h"
+#include "drake/systems/primitives/discrete_derivative.h"
 #include "drake/systems/primitives/matrix_gain.h"
 #include "drake/util/drakeGeometryUtil.h"
 
@@ -56,6 +58,7 @@ using manipulation::schunk_wsg::SchunkWsgController;
 using manipulation::util::WorldSimTreeBuilder;
 using manipulation::util::ModelInstanceInfo;
 using systems::Context;
+using systems::Demultiplexer;
 using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::DrakeVisualizer;
@@ -64,6 +67,7 @@ using systems::OutputPort;
 using systems::RigidBodyPlant;
 using systems::RungeKutta2Integrator;
 using systems::Simulator;
+using systems::StateInterpolatorWithDiscreteDerivative;
 
 const char* const kIiwaUrdf =
     "drake/manipulation/models/iiwa_description/urdf/"
@@ -166,6 +170,10 @@ int DoMain() {
   iiwa_command_sub->set_name("iiwa_command_subscriber");
   auto iiwa_command_receiver = builder.AddSystem<IiwaCommandReceiver>();
   iiwa_command_receiver->set_name("iwwa_command_receiver");
+  auto desired_state_from_position = builder.AddSystem<
+      StateInterpolatorWithDiscreteDerivative>(
+          kIiwaArmNumJoints, kIiwaLcmStatusPeriod);
+  desired_state_from_position->set_name("desired_state_from_position");
 
   auto iiwa_status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
@@ -173,6 +181,8 @@ int DoMain() {
   iiwa_status_pub->set_name("iiwa_status_publisher");
   auto iiwa_status_sender = builder.AddSystem<IiwaStatusSender>();
   iiwa_status_sender->set_name("iiwa_status_sender");
+  auto iiwa_state_demux = builder.AddSystem<Demultiplexer>(
+      2 * kIiwaArmNumJoints, kIiwaArmNumJoints);
 
   std::vector<int> instance_ids = {iiwa_instance.instance_id};
   auto external_torque_converter =
@@ -183,28 +193,23 @@ int DoMain() {
   // reference acceleration.
   auto iiwa_zero_acceleration_source =
       builder.template AddSystem<systems::ConstantVectorSource<double>>(
-          Eigen::VectorXd::Zero(7));
+          Eigen::VectorXd::Zero(kIiwaArmNumJoints));
   iiwa_zero_acceleration_source->set_name("zero_acceleration");
 
   builder.Connect(iiwa_command_sub->get_output_port(),
                   iiwa_command_receiver->get_input_port());
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // TODO(jwnimmer-tri) The IIWA LCM systems should not know about velocities,
-  // we should add commanded velocity estimation into the estimator, not use
-  // the state ports on the LCM systems (the KUKA doesn't use velocities).
-  builder.Connect(iiwa_command_receiver->get_commanded_state_output_port(),
+  builder.Connect(iiwa_command_receiver->get_commanded_position_output_port(),
+                  desired_state_from_position->get_input_port());
+  builder.Connect(desired_state_from_position->get_output_port(),
                   model->get_input_port_iiwa_state_command());
-#pragma GCC diagnostic pop
   builder.Connect(iiwa_zero_acceleration_source->get_output_port(),
                   model->get_input_port_iiwa_acceleration_command());
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // TODO(jwnimmer-tri) The state estimator should have a velocity port.
   builder.Connect(model->get_output_port_iiwa_state(),
-                  iiwa_status_sender->get_state_input_port());
-#pragma GCC diagnostic pop
+                  iiwa_state_demux->get_input_port(0));
+  builder.Connect(iiwa_state_demux->get_output_port(0),
+                  iiwa_status_sender->get_position_measured_input_port());
+  builder.Connect(iiwa_state_demux->get_output_port(1),
+                  iiwa_status_sender->get_velocity_estimated_input_port());
   builder.Connect(iiwa_command_receiver->get_commanded_position_output_port(),
                   iiwa_status_sender->get_position_commanded_input_port());
   builder.Connect(model->get_output_port_computed_torque(),
