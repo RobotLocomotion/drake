@@ -62,7 +62,6 @@ GTEST_TEST(RadauIntegratorTest, Robertson) {
   euler.ResetStatistics();
   times.pop_front();
   ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(times.front()));
-  EXPECT_EQ(euler.get_num_iteration_matrix_factorizations(), 0);
   EXPECT_EQ(euler.get_num_jacobian_evaluations(), 0);
 
   // Again try taking a large step, which we expect will be too large to

@@ -840,6 +840,7 @@ TEST_F(LeafSystemTest, DeclarePerStepEvents) {
   system_.DeclarePerStepEvent(PublishEvent<double>());
   system_.DeclarePerStepEvent(DiscreteUpdateEvent<double>());
   system_.DeclarePerStepEvent(UnrestrictedUpdateEvent<double>());
+  system_.DeclarePerStepEvent(RawContextUpdateEvent<double>());
 
   system_.GetPerStepEvents(*context, event_info_.get());
 
@@ -856,6 +857,12 @@ TEST_F(LeafSystemTest, DeclarePerStepEvents) {
   {
     const auto& events =
         leaf_info_->get_unrestricted_update_events().get_events();
+    EXPECT_EQ(events.size(), 1);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPerStep);
+  }
+  {
+    const auto& events =
+        leaf_info_->get_raw_context_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPerStep);
   }

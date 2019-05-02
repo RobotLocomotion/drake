@@ -299,7 +299,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   MatrixX<T> J_;
 
   // Whether the Jacobian matrix is fresh.
-  bool jacobian_is_fresh_{true};
+  bool jacobian_is_fresh_{false};
 
   // If set to `false`, Jacobian matrices and iteration matrix factorizations
   // will not be reused.
@@ -313,6 +313,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
 
 template <class T>
 void ImplicitIntegrator<T>::DoResetStatistics() {
+  num_iter_factorizations_ = 0;
   num_jacobian_function_evaluations_ = 0;
   num_jacobian_evaluations_ = 0;
   DoResetImplicitIntegratorStatistics();

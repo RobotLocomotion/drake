@@ -77,10 +77,6 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
     return num_nr_iterations_;
   }
 
-  int64_t do_get_num_iteration_matrix_factorizations() const final {
-    return num_iter_factorizations_;
-  }
-
   int64_t do_get_num_error_estimator_derivative_evaluations() const final {
     internal::EmitNoErrorEstimatorStatAndMessage();
   }
@@ -110,19 +106,13 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
       const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& Z);
   void DoInitialize() final;
   void DoResetImplicitIntegratorStatistics() final;
-  bool DoStep(const T& h) final;
+  bool DoImplicitIntegratorStep(const T& h) final;
   bool StepRadau(const T& t0, const T& h, const VectorX<T>& xt0,
       VectorX<T>* xtplus, int trial = 1);
   static MatrixX<T> CalcTensorProduct(const MatrixX<T>& A, const MatrixX<T>& B);
   static void ComputeRadauIterationMatrix(const MatrixX<T>& J, const T& h,
       const MatrixX<double>& A,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
-  bool CalcMatrices(const T& t, const VectorX<T>& xt, const T& h,
-      const std::function<void(const MatrixX<T>&, const T&,
-          typename ImplicitIntegrator<T>::IterationMatrix*)>&
-      recompute_iteration_matrix,
-      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
-      int trial);
 
   // The time-scaling coefficients standard with Runge-Kutta-type integrators.
   std::vector<double> c_;
@@ -156,7 +146,6 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
 
   // Statistics specific to this integrator.
   int64_t num_nr_iterations_{0};
-  int64_t num_iter_factorizations_{0};
 };
 
 template <class T, int num_stages>
@@ -192,7 +181,6 @@ RadauIntegrator<T, num_stages>::RadauIntegrator(const System<T>& system,
 
 template <class T, int num_stages>
 void RadauIntegrator<T, num_stages>::DoResetImplicitIntegratorStatistics() {
-  num_iter_factorizations_ = 0;
   num_nr_iterations_ = 0;
 }
 
@@ -299,9 +287,8 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
   };
 
   // Calculate Jacobian and iteration matrices (and factorizations), as needed.
-  if (!CalcMatrices(t0, xt0, h, construct_iteration_matrix,
-      &iteration_matrix_radau3_, trial)) {
-    this->set_last_call_succeeded(false);
+  if (!this->MaybeFreshenMatrices(t0, xt0, h, trial, construct_iteration_matrix,
+      &iteration_matrix_radau3_)) {
     return false;
   }
 
@@ -367,7 +354,9 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
     // allow the norm to be reduced further. What happens: dx_norm will become
     // equivalent to last_dZ_norm, making theta = 1, and eta = infinity. Thus,
     // convergence would never be identified.
-    bool converged = (dx_norm < 10 * std::numeric_limits<double>::epsilon());
+    // bool converged = (iter > 0 && this->IsUpdateZero(*xtplus, dx));
+    bool converged = (iter > 0 &&
+        dx_norm < 10 * std::numeric_limits<double>::epsilon());
     SPDLOG_DEBUG(drake::log(), "norm(dx) indicates convergence? {}", converged);
 
     // Compute the convergence rate and check convergence.
@@ -413,7 +402,6 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
       *xtplus += xt0;
 
       SPDLOG_DEBUG(drake::log(), "Final state: {}", xtplus->transpose());
-      this->set_last_call_succeeded(true);
       return true;
     }
 
@@ -425,99 +413,12 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
 
   // If Jacobian and iteration matrix factorizations are not reused, there
   // is nothing else we can try.
-  if (!this->get_reuse()) {
-    this->set_last_call_succeeded(false);
+  if (!this->get_reuse())
     return false;
-  }
 
   // Try StepRadau again, freshening Jacobians and iteration matrix
   // factorizations as helpful.
   return StepRadau(t0, h, xt0, xtplus, trial+1);
-}
-
-// Computes necessary matrices for the Newton-Raphson iteration.
-// @param t the time at which to compute the Jacobian.
-// @param xt the continuous state at which the Jacobian is computed.
-// @param h the integration step size (for computing iteration matrices).
-// @param compute_and_factor_iteration_matrix a function pointer for computing
-//        and factoring the iteration matrix.
-// @param[out] iteration_matrix the updated and factored iteration matrix on
-//             return.
-// @param trial which trial the StepAbstract is in when calling this method.
-// @returns `false` if the calling stepping method should indicate failure;
-//          `true` otherwise.
-// @post the state in the internal context may or may not be altered on return;
-//       if altered, it will be set to (t, xt).
-template <class T, int num_stages>
-bool RadauIntegrator<T, num_stages>::CalcMatrices(
-    const T& t, const VectorX<T>& xt, const T& h,
-    const std::function<void(const MatrixX<T>&, const T&,
-        typename ImplicitIntegrator<T>::IterationMatrix*)>&
-        compute_and_factor_iteration_matrix,
-    typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
-    int trial) {
-  // Compute the initial Jacobian and negated iteration matrices (see
-  // rationale for the negation below) and factor them, if necessary.
-  MatrixX<T>& J = this->get_mutable_jacobian();
-  if (!this->get_reuse() || J.rows() == 0 || this->IsBadJacobian(J)) {
-    // Note that the Jacobian can become bad through a divergent Newton-Raphson
-    // iteration, which causes the state to overflow, which then causes the
-    // Jacobian to overflow. If the state overflows, recomputing the Jacobian
-    // using this bad state will result in another bad Jacobian, eventually
-    // causing DoStep() to return indicating failure (but not before resetting
-    // the continuous state to its previous, good value). DoStep() will then
-    // be called again with a smaller step size and the good state; the
-    // bad Jacobian will then be corrected.
-    J = this->CalcJacobian(t, xt);
-    ++num_iter_factorizations_;
-    compute_and_factor_iteration_matrix(J, h, iteration_matrix);
-    return true;
-  } else {
-    // Reuse is activated, Jacobian is fully sized, and Jacobian is not "bad".
-    // Verify that the iteration matrix has been set and factored.
-    if (!iteration_matrix->matrix_factored()) {
-      ++num_iter_factorizations_;
-      compute_and_factor_iteration_matrix(J, h, iteration_matrix);
-      return true;
-    }
-  }
-
-  switch (trial) {
-    case 1:
-      // For the first trial, we do nothing special.
-      return true;
-
-    case 2: {
-      // For the second trial, re-construct and factor the iteration matrix.
-      ++num_iter_factorizations_;
-      compute_and_factor_iteration_matrix(J, h, iteration_matrix);
-      return true;
-    }
-
-    case 3: {
-      // If the last call to StepAbstract() ended in failure, we know that
-      // the Jacobian matrix is fresh and the iteration matrix has been newly
-      // formed and factored (on Trial #2), so there is nothing more to be
-      // done.
-      if (!this->last_call_succeeded()) {
-        return false;
-      } else {
-        // Reform the Jacobian matrix and refactor the iteration matrix.
-        J = this->CalcJacobian(t, xt);
-        ++num_iter_factorizations_;
-        compute_and_factor_iteration_matrix(J, h, iteration_matrix);
-      }
-      return true;
-
-      case 4: {
-        // Trial #4 indicates failure.
-        return false;
-      }
-
-      default:
-        throw std::domain_error("Unexpected trial number.");
-    }
-  }
 }
 
 // Steps Radau forward by h, if possible.
@@ -569,7 +470,7 @@ bool RadauIntegrator<T, num_stages>::AttemptStep(const T& t0, const T& h,
 ///       returned (if `false` is returned, the time and state will be reset
 ///       to their values on entry).
 template <class T, int num_stages>
-bool RadauIntegrator<T, num_stages>::DoStep(const T& h) {
+bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
   Context<T>* context = this->get_mutable_context();
 
   // Save the current time and state.
