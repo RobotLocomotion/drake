@@ -97,7 +97,7 @@ namespace geometry {
 
   This section resumes our standard terminology of @ref
   multibody_frames_and_bodies "Frames and Bodies". From now on, we will write
-  M and N for geometry M and geometry N, each of which is associated with a
+  M and N for Geometry M and Geometry N, each of which is associated with a
   coordinate frame of the same name. Quantities defined in those coordinate
   frames will be denoted using either _M or _N, respectively.
 
