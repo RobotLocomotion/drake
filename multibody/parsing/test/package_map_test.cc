@@ -54,6 +54,21 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
   VerifyMatch(package_map, expected_packages);
 }
 
+// Tests that PackageMap can be populated by a package.xml.
+GTEST_TEST(PackageMapTest, TestPopulateFromXml) {
+  const string xml_filename = FindResourceOrThrow(
+      "drake/multibody/parsing/test/"
+      "package_map_test_packages/package_map_test_package_a/package.xml");
+  const string xml_dirname = spruce::path(xml_filename).root();
+  PackageMap package_map;
+  package_map.AddPackageXml(xml_filename);
+
+  map<string, string> expected_packages = {
+    {"package_map_test_package_a", xml_dirname},
+  };
+  VerifyMatch(package_map, expected_packages);
+}
+
 // Tests that PackageMap can be populated by crawling down a directory tree.
 GTEST_TEST(PackageMapTest, TestPopulateMapFromFolder) {
   const string root_path = GetTestDataRoot();
