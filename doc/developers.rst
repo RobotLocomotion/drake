@@ -76,7 +76,7 @@ integration. All other configurations are provided on a best-effort basis.
 Drake requires a compiler running in C++14 mode or greater. MATLAB is only
 supported for CMake builds using the "Unix Makefiles" generator.
 
-+----------------------------------+---------------+---------------------+------------+-------------------+--------+
++----------------------------------+-------+-------+---------------------+------------+-------------------+--------+
 | Operating System                 | Bazel | CMake | C/C++ Compiler      | Java       | MATLAB (Optional) | Python |
 +==================================+=======+=======+=====================+============+===================+========+
 +----------------------------------+-------+-------+---------------------+------------+-------------------+--------+
