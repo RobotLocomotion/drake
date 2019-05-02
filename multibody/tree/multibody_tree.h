@@ -1353,7 +1353,7 @@ class MultibodyTree {
   /// Computes the bias term `b_Bo_W(q, v)` for each body in the model.
   /// For a body B, this is the bias term `b_Bo_W` in the equation
   /// `F_BBo_W = M_Bo_W * A_WB + b_Bo_W`, where `M_Bo_W` is the spatial inertia
-  /// about B's origina Bo, `A_WB` is the spatial acceleration of B in W and
+  /// about B's origin Bo, `A_WB` is the spatial acceleration of B in W and
   /// `F_BBo_W` is the spatial force applied on B about Bo, expressed in W.
   /// @param[in] context
   ///   The context storing the state of the model.

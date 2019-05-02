@@ -538,8 +538,8 @@ template <typename T>
 void MultibodyTree<T>::CalcSpatialInertiaInWorldCache(
     const systems::Context<T>& context,
     std::vector<SpatialInertia<T>>* M_B_W_cache) const {
-  DRAKE_DEMAND(M_B_W_cache != nullptr);
-  DRAKE_DEMAND(static_cast<int>(M_B_W_cache->size()) == num_bodies());
+  DRAKE_THROW_UNLESS(M_B_W_cache != nullptr);
+  DRAKE_THROW_UNLESS(static_cast<int>(M_B_W_cache->size()) == num_bodies());
 
   const PositionKinematicsCache<T>& pc = this->EvalPositionKinematics(context);
 
@@ -565,8 +565,8 @@ template <typename T>
 void MultibodyTree<T>::CalcDynamicBiasCache(
     const systems::Context<T>& context,
     std::vector<SpatialForce<T>>* b_Bo_W_cache) const {
-  DRAKE_DEMAND(b_Bo_W_cache != nullptr);
-  DRAKE_DEMAND(static_cast<int>(b_Bo_W_cache->size()) == num_bodies());
+  DRAKE_THROW_UNLESS(b_Bo_W_cache != nullptr);
+  DRAKE_THROW_UNLESS(static_cast<int>(b_Bo_W_cache->size()) == num_bodies());
 
   const std::vector<SpatialInertia<T>>& spatial_inertia_in_world_cache =
       EvalSpatialInertiaInWorldCache(context);
