@@ -223,7 +223,6 @@ TEST_F(TwoFreeSpheresTest, Eval) {
   q_val.segment<4>(7) << 1, 0, 0, 0;
   q_val.tail<3>() = X_WS1.translation();
 
-  prog_.AddBoundingBoxConstraint(q_val, q_val, q_vars_);
   prog_.AddConstraint(static_equilibrium_binding);
 
   Eigen::VectorXd x_init(prog_.num_vars());
