@@ -1,47 +1,44 @@
-#include <fstream>
 
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/manipulation/robot_plan_runner/robot_plans.h"
-#include "drake/manipulation/robot_plan_runner/robot_plan_runner.h"
-#include "drake/manipulation/robot_plan_runner/plan_sender.h"
-
-#include "drake/systems/analysis/simulator.h"
-#include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/discrete_values.h"
-#include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/primitives/zero_order_hold.h"
+#include "drake/manipulation/robot_plan_runner/plan_runner_hardware_interface.h"
 
 namespace drake {
 namespace {
 
 using manipulation::robot_plan_runner::PlanData;
-using manipulation::robot_plan_runner::PlanSender;
-using manipulation::robot_plan_runner::RobotPlanRunner;
+using manipulation::robot_plan_runner::PlanType;
 using std::cout;
 using std::endl;
 
 int do_main() {
-  systems::DiagramBuilder<double> builder;
+  // create plan
+  PlanData plan1;
 
-  PlanData foo;
-  std::vector<PlanData> plan_list{foo};
-  auto plan_sender = builder.AddSystem<PlanSender>(plan_list);
-  auto plan_runner = builder.AddSystem<RobotPlanRunner>();
+  Eigen::VectorXd t_knots(3);
+  t_knots << 0, 1, 2;
 
-  builder.Connect(plan_sender->GetOutputPort("plan_data"),
-                  plan_runner->GetInputPort("plan_data"));
+  Eigen::MatrixXd q_knots(7, 3);
+  q_knots.col(0) << 0, 0, 0, -1.75, 0, 1.0, 0;
+  q_knots.col(1) << 0.5, 0, 0, -1.75, 0, 1.0, 0;
+  q_knots.col(2) << 1, 0, 0, -1.75, 0, 1.0, 0;
 
-  auto diagram = builder.Build();
-  std::string a = diagram->GetGraphvizString();
+  auto qtraj = trajectories::PiecewisePolynomial<double>::Cubic(
+      t_knots, q_knots, Eigen::VectorXd::Zero(7), Eigen::VectorXd::Zero(7));
 
-  std::ofstream out("system_graphviz_string.txt");
-  out << a;
-  out.close();
+  plan1.plan_type = PlanType::kJointSpacePlan;
+  plan1.joint_traj = qtraj;
+  std::vector<PlanData> plan_list{plan1};
 
-//  systems::Simulator<double> simulator(*diagram);
-//
-//  simulator.set_publish_every_time_step(false);
-//  simulator.set_target_realtime_rate(1.0);
-//  simulator.AdvanceTo(3.0);
+  // Construct plan runner hardware interface.
+  auto plan_runner =
+      manipulation::robot_plan_runner::PlanRunnerHardwareInterface(plan_list);
+
+  // save diagram graphviz string.
+  plan_runner.SaveGraphvizStringToFile();
+
+  // Run simulation.
+  plan_runner.Run();
 
   return 0;
 };
