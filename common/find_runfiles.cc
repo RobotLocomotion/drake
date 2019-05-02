@@ -64,7 +64,7 @@ RunfilesSingleton Create() {
     if (error) {
       throw std::runtime_error("Error from _NSGetExecutablePath");
     }
-    argv0.resize(buf_size);
+    argv0 = argv0.c_str();  // Remove trailing nil bytes.
     drake::log()->debug("_NSGetExecutablePath = {}", argv0);
 #else
     const std::string& argv0 = Readlink("/proc/self/exe");
@@ -103,6 +103,7 @@ RunfilesSingleton Create() {
         nullable_to_string(std::getenv("TEST_SRCDIR")),
         nullable_to_string(std::getenv("RUNFILES_MANIFEST_FILE")),
         nullable_to_string(std::getenv("RUNFILES_DIR")));
+    drake::log()->debug("FindRunfile error: {}", result.error);
   }
 
   // Sanity check our return value.
