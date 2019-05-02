@@ -40,7 +40,6 @@ RobotController::RobotController(PlanType plan_type) : num_positions_(7) {
   this->DeclareVectorOutputPort("q_tau_cmd",
                                 BasicVector<double>(2 * num_positions_),
                                 &RobotController::CalcCommands);
-
   // resize data members
   q_cmd_.resize(num_positions_);
   tau_cmd_.resize(num_positions_);

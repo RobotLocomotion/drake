@@ -7,6 +7,7 @@
 
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 
@@ -76,7 +77,7 @@ int do_main() {
   }
 
   // build diagram system.
-  std::vector<PlanData> plan_list{plan1, plan1};
+  std::vector<PlanData> plan_list{plan1};
   systems::DiagramBuilder<double> builder;
   auto plan_sender_sys = builder.AddSystem<PlanSender>(plan_list);
   auto controller_sys = builder.AddSystem<SimpleController>();
@@ -88,13 +89,19 @@ int do_main() {
                   zoh_sys->get_input_port());
 
   auto diagram = builder.Build();
-  systems::Simulator<double> simulator(*diagram);
+  auto diagram_context = diagram->CreateDefaultContext();
+  systems::Context<double>& plan_sender_context =
+      diagram->GetMutableSubsystemContext(*plan_sender_sys,
+                                          diagram_context.get());
+  plan_sender_context.FixInputPort(
+      0, systems::BasicVector<double>(Eigen::VectorXd::Zero(7)));
+  systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(1.0);
 
   cout << "simulation starts from here." << endl;
-  simulator.AdvanceTo(3.0);
+  simulator.AdvanceTo(6.0);
 
   return 0;
 };
