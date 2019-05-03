@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
@@ -104,6 +106,13 @@ struct SignedDistancePair{
         p_BCb(p_BCb_in),
         distance(dist),
         nhat_BA_W(Vector3<T>::Zero()) {}
+
+  // Swaps the values for a and b.
+  void SwapAAndB() {
+    std::swap(id_A, id_B);
+    std::swap(p_ACa, p_BCb);
+    nhat_BA_W = -nhat_BA_W;
+  }
 
   /** The id of the first geometry in the pair. */
   GeometryId id_A;
