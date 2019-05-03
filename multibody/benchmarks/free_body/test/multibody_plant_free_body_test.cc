@@ -258,17 +258,22 @@ void  TestDrakeSolutionForSpecificInitialValue(
 
   // Maybe numerically integrate.
   if (should_numerically_integrate) {
-    // Calculate the two frequencies associated with this motion.  Use the
-    // maximum of the two frequencies to approximate the time period of one full
-    // cycle of motion.  Use this to determine the length of time to integrate.
-    // If the maximum frequency is too small, integrate for at most 10 seconds.
+    // Calculate the two "pseudo" frequencies associated with this motion.  Use
+    // the maximum of these two frequencies to approximate the time period of
+    // one full cycle of motion.  Use this to determine the length of time to
+    // integrate such that we capture four periods of motion, or if the maximum
+    // frequency is too small, ten seconds of time.
     double s, p;
-    std::tie(s, p) = torque_free_cylinder_exact.CalculateFrequencies_s_p();
+    std::tie(s, p) = torque_free_cylinder_exact.CalcPseudoFrequencies_s_p();
     const double frequency = std::max(kEpsilon, std::max(std::abs(s), p));
     const double period = 2 * M_PI / frequency;
     const int number_of_periods = 4;
     const double t_final = std::max(number_of_periods * period, 10.0);
-    const double dt_max = period / 16.0;
+
+    // To decide a maximum integration step, it seemed a reasonably "good" sine
+    // curve resulted from 17 data points (16 intervals).
+    const double reasonable_number_of_intervals_per_period = 16.0;
+    const double dt_max = period / reasonable_number_of_intervals_per_period;
 
     // Integrate forward, testing Drake's results vs. exact solution frequently.
     IntegrateForwardWithVariableStepRungeKutta3(
@@ -322,7 +327,6 @@ void  TestDrakeSolutionForVariousInitialValues(
   }
 }
 
-
 // This function tests Drake's simulation of the motion of an axis-symmetric
 // rigid body B (uniform cylinder) in a Newtonian frame (World) N.  Since the
 // only external forces on B are uniform gravitational forces, the moment of
@@ -336,7 +340,7 @@ void  TestDrakeSolutionForVariousInitialValues(
 // - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
 //  (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
 //   https://ecommons.cornell.edu/handle/1813/637
-GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
+GTEST_TEST(uniformSolidCylinderTorqueFree, testFrequencyAndIntegration) {
   // Store initial values in a class that can calculate an exact solution.
   // Store gravitational acceleration expressed in N (e.g. [0, 0, -9.81]).
   const Quaterniond quat_NB(1, 0, 0, 0);    // Initial value.
@@ -346,6 +350,8 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
   const Vector3d gravity(0, 0, -9.81);      // Per note below, in -Nz direction.
   FreeBody torque_free_cylinder_exact(quat_NB, w_NB_B, p_NoBcm_N, v_NBcm_B,
                                       gravity);
+
+  // For given values of
 
   // Instantiate the Drake model for the free body in space.
   // Note the Drake model requires gravity to be in the -Nz direction.

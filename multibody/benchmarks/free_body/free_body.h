@@ -64,7 +64,7 @@ class FreeBody {
   /// Returns the body's moment of inertia about an axis perpendicular to its
   /// axis of rotation and passing through its center of mass.
   /// For example, for a cylinder of radius r, length h and uniformly
-  /// distributed mass m with its rotational axis aligined along its body frame
+  /// distributed mass m with its rotational axis aligned along its body frame
   /// z-axis this would be: I = Ixx = Iyy = m / 12 (3 r² + h²)
   double get_I() const { return 0.04; }
 
@@ -169,12 +169,13 @@ class FreeBody {
   /// wz =  wz0
   /// For more information, see [Kane, 1983] Pages 60-62 and 159-169.
   /// @note the return value of `s` may be negative, zero, or positive, whereas
-  ///       the return value of `p` is nonnegative.
+  ///       the return value of `p` is nonnegative.  The values of `s` and `p`
+  ///       are returned in units of radian/second.
   ///
   /// - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York,
   ///   1983. (with P. W. Likins and D. A. Levinson).  Available for free .pdf
   ///   download: https:///ecommons.cornell.edu/handle/1813/637
-  std::tuple<double, double> CalculateFrequencies_s_p() const {
+  std::pair<double, double> CalcPseudoFrequencies_s_p() const {
     const double I = get_I();
     const double J = get_J();
     const Vector3<double>& initial_w_NB_B = get_initial_w_NB_B();
@@ -184,7 +185,7 @@ class FreeBody {
     const double s = (I - J) / I * wz0;
     const double z = wz0 * J / I;
     const double p =  std::sqrt(wx0 * wx0 + wy0 * wy0 + z * z);
-    return std::make_tuple(s, p);
+    return std::make_pair(s, p);
   }
 
  private:
