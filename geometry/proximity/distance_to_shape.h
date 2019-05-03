@@ -101,7 +101,9 @@ class DistancePairGeometry {
                        const math::RigidTransform<T>& X_WA,
                        const math::RigidTransform<T>& X_WB,
                        SignedDistancePair<T>* result)
-      : id_A_(id_A), id_B_(id_B), X_WA_(X_WA), X_WB_(X_WB), result_(result) {}
+      : id_A_(id_A), id_B_(id_B), X_WA_(X_WA), X_WB_(X_WB), result_(result) {
+    DRAKE_ASSERT(result);
+  }
 
   /** @name  Overloads in support of sphere-shape computation
 
