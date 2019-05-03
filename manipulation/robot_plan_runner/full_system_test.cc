@@ -16,7 +16,7 @@ int do_main() {
   PlanData plan1;
 
   Eigen::VectorXd t_knots(3);
-  t_knots << 0, 1, 2;
+  t_knots << 0, 2, 4;
 
   Eigen::MatrixXd q_knots(7, 3);
   q_knots.col(0) << 0, 0, 0, -1.75, 0, 1.0, 0;

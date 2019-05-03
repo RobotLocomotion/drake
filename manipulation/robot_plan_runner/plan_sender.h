@@ -20,6 +20,8 @@ class PlanSender : public systems::LeafSystem<double> {
                             systems::CompositeEventCollection<double>*,
                             double* time) const override;
 
+  double get_all_plans_duration() const;
+
  private:
   void CalcPlan(const drake::systems::Context<double>&, PlanData*) const;
   mutable std::vector<double> plan_start_times_{};
@@ -29,6 +31,8 @@ class PlanSender : public systems::LeafSystem<double> {
   systems::AbstractStateIndex abstract_state_index_{-1};
   int input_port_idx_q_{-1};
   const int num_positions_;
+  const double transition_time_sec_;
+  const double extra_time_;
 };
 
 }  // namespace robot_plan_runner

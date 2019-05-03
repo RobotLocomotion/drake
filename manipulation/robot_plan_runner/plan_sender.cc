@@ -1,7 +1,6 @@
 
 #include "drake/manipulation/robot_plan_runner/plan_sender.h"
 #include "drake/manipulation/robot_plan_runner/robot_plans.h"
-
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -41,7 +40,7 @@ ConnectTwoPositionsWithCubicPolynomial(
 
 
 PlanSender::PlanSender(const std::vector<PlanData>& plan_data_list)
-    : num_positions_(7) {
+    : num_positions_(7), transition_time_sec_(3.), extra_time_(1.) {
   this->set_name("PlanSender");
 
   // Declare a state that does not get changed. It exists so that an abstract
@@ -76,22 +75,19 @@ systems::EventStatus PlanSender::Initialize(const Context<double>& context,
         this->get_input_port(input_port_idx_q_).Eval(context);
 
     PiecewisePolynomial<double> joint_traj =
-    ConnectTwoPositionsWithCubicPolynomial(q_current, q0, 3.0);
+    ConnectTwoPositionsWithCubicPolynomial(q_current, q0, transition_time_sec_);
     PlanData first_plan;
     first_plan.joint_traj = joint_traj;
     first_plan.plan_type = PlanType::kJointSpacePlan;
     plan_data_list_.insert(plan_data_list_.begin(), first_plan);
-
-    cout << "q_current\n" << q_current << endl;
-    cout << "q0\n" << q0 << endl;
   }
-
 
   // initialize plan list
   int i = 0;
   plan_start_times_.push_back(0);
   for (auto& plan_data : plan_data_list_) {
     double t_next = plan_data.joint_traj.value().end_time();
+    t_next += extra_time_;
     t_next += plan_start_times_[i];
     plan_start_times_.push_back(t_next);
     plan_data.plan_signature = i;
@@ -133,6 +129,14 @@ void PlanSender::DoCalcNextUpdateTime(
       current_plan_idx_++;
     }
   }
+}
+
+double PlanSender::get_all_plans_duration() const {
+  double t_total = transition_time_sec_ + extra_time_;
+  for(const auto& plan_data : plan_data_list_) {
+    t_total += plan_data.joint_traj.value().end_time() + extra_time_;
+  }
+  return t_total;
 }
 
 void PlanSender::CalcPlan(const drake::systems::Context<double>& context,
