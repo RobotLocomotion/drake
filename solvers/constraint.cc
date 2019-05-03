@@ -44,16 +44,17 @@ void CheckGradientSparsityPattern(
   for (const auto& nonzero_entry : gradient_sparsity_pattern) {
     if (nonzero_entry.first < 0 || nonzero_entry.first >= rows) {
       throw std::invalid_argument(
-          "Constraint:SetSparsityPattern row index out of range.");
+          "Constraint::SetSparsityPattern(): row index out of range.");
     }
     if (nonzero_entry.second < 0 || nonzero_entry.second >= cols) {
       throw std::invalid_argument(
-          "Constraint:SetSparsityPattern column index out of range.");
+          "Constraint::SetSparsityPattern(): column index out of range.");
     }
     auto it = nonzero_entries.find(nonzero_entry);
     if (it != nonzero_entries.end()) {
       throw std::invalid_argument(
-          "Constraint:SetSparsityPatten takes entries with repeated values.");
+          "Constraint::SetSparsityPatten(): was given entries with repeated "
+          "values.");
     }
     nonzero_entries.insert(it, nonzero_entry);
   }

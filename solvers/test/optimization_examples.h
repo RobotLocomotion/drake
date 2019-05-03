@@ -727,7 +727,7 @@ class EckhardtProblem {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EckhardtProblem)
 
-  EckhardtProblem();
+  explicit EckhardtProblem(bool set_sparsity_pattern);
 
   void CheckSolution(const MathematicalProgramResult& result, double tol) const;
 
@@ -736,7 +736,7 @@ class EckhardtProblem {
  private:
   class EckhardtConstraint : public Constraint {
    public:
-    EckhardtConstraint();
+    explicit EckhardtConstraint(bool set_sparsity_pattern);
 
    private:
     template <typename T>

@@ -551,6 +551,18 @@ GTEST_TEST(testConstraint, SetGradientSparsityPattern) {
       ++gradient_entry_count;
     }
   }
+
+#ifdef DRAKE_ASSERT_IS_ARMED
+  // row index out of range.
+  EXPECT_THROW(constraint.SetGradientSparsityPattern({{-1, 0}}),
+               std::invalid_argument);
+  // column index out of range.
+  EXPECT_THROW(constraint.SetGradientSparsityPattern({{0, -1}}),
+               std::invalid_argument);
+  // repeated entries.
+  EXPECT_THROW(constraint.SetGradientSparsityPattern({{0, 0}, {0, 0}}),
+               std::invalid_argument);
+#endif
 }
 
 }  // namespace

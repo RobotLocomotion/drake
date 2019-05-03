@@ -702,10 +702,10 @@ DistanceToTetrahedronExample::DistanceToTetrahedronNonlinearConstraint::
   UpdateUpperBound(upper_bound);
 }
 
-EckhardtProblem::EckhardtProblem()
+EckhardtProblem::EckhardtProblem(bool set_sparsity_pattern)
     : prog_{new MathematicalProgram()}, x_{prog_->NewContinuousVariables<3>()} {
   prog_->AddLinearCost(-x_(0));
-  auto constraint = std::make_shared<EckhardtConstraint>();
+  auto constraint = std::make_shared<EckhardtConstraint>(set_sparsity_pattern);
   prog_->AddConstraint(constraint, x_);
   prog_->AddBoundingBoxConstraint(Eigen::Vector3d::Zero(),
                                   Eigen::Vector3d(100, 100, 10), x_);
@@ -720,10 +720,13 @@ void EckhardtProblem::CheckSolution(const MathematicalProgramResult& result,
   EXPECT_NEAR(result.get_optimal_cost(), -x_expected(0), tol);
 }
 
-EckhardtProblem::EckhardtConstraint::EckhardtConstraint()
+EckhardtProblem::EckhardtConstraint::EckhardtConstraint(
+    bool set_sparsity_pattern)
     : Constraint(2, 3, Eigen::Vector2d::Zero(),
                  Eigen::Vector2d::Constant(kInf)) {
-  SetGradientSparsityPattern({{0, 0}, {0, 1}, {1, 1}, {1, 2}});
+  if (set_sparsity_pattern) {
+    SetGradientSparsityPattern({{0, 0}, {0, 1}, {1, 1}, {1, 2}});
+  }
 }
 
 HeatExchangerDesignProblem::HeatExchangerDesignConstraint1::

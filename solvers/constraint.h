@@ -198,15 +198,14 @@ class Constraint : public EvaluatorBase {
 
   Eigen::VectorXd lower_bound_;
   Eigen::VectorXd upper_bound_;
-  /**
-   * gradient_sparsity_pattern_ records the pair (row_index, col_index) that
-   * contains the non-zero entries in the gradient of the constraint Eval
-   * function. Note that if the entry (row_index, col_index) *can* be non-zero
-   * for certain value of x, then it should be included in
-   * gradient_sparsity_patten_. When gradient_sparsity_pattern_.has_value() =
-   * false, the gradient matrix is regarded as non-sparse, i.e., every entry of
-   * the gradient matrix can be non-zero.
-   */
+
+  // gradient_sparsity_pattern_ records the pair (row_index, col_index) that
+  // contains the non-zero entries in the gradient of the constraint Eval
+  // function. Note that if the entry (row_index, col_index) *can* be non-zero
+  // for certain value of x, then it should be included in
+  // gradient_sparsity_patten_. When gradient_sparsity_pattern_.has_value() =
+  // false, the gradient matrix is regarded as non-sparse, i.e., every entry of
+  // the gradient matrix can be non-zero.
   optional<std::vector<std::pair<int, int>>> gradient_sparsity_pattern_;
 };
 

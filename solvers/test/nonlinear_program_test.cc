@@ -449,10 +449,21 @@ GTEST_TEST(testNonlinearProgram, UnitLengthConstraint) {
                       &result);
 }
 
-GTEST_TEST(testNonlinearProgram, EckhardtProblem) {
+GTEST_TEST(testNonlinearProgram, EckhardtProblemSparse) {
   // This tests a nonlinear optimization problem with sparse constraint
   // gradient.
-  EckhardtProblem prob;
+  EckhardtProblem prob(true /* set gradient sparsity pattern */);
+  const Eigen::VectorXd x_init = Eigen::Vector3d(2, 1.05, 2.9);
+  MathematicalProgramResult result;
+  RunNonlinearProgram(prob.prog(), x_init,
+                      [&prob, &result]() { prob.CheckSolution(result, 3E-7); },
+                      &result);
+}
+
+GTEST_TEST(testNonlinearProgram, EckhardtProblemNonSparse) {
+  // Test Eckhardt problem again without setting the sparsity pattern, to make
+  // sure that the solver gives the same result as setting the sparsity pattern.
+  EckhardtProblem prob(false /* not set gradient sparsity pattern */);
   const Eigen::VectorXd x_init = Eigen::Vector3d(2, 1.05, 2.9);
   MathematicalProgramResult result;
   RunNonlinearProgram(prob.prog(), x_init,

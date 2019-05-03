@@ -506,7 +506,8 @@ void UpdateConstraintBoundsAndGradients(
             binding.evaluator()->gradient_sparsity_pattern();
     if (gradient_sparsity_pattern.has_value()) {
       for (const auto& nonzero_entry : gradient_sparsity_pattern.value()) {
-        iGfun[*grad_index] = *constraint_index + nonzero_entry.first + 1;
+        // Fortran is 1-indexed.
+        iGfun[*grad_index] = 1 + *constraint_index + nonzero_entry.first;
         jGvar[*grad_index] =
             1 + bound_var_indices_in_prog[nonzero_entry.second];
         (*grad_index)++;
