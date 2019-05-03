@@ -101,9 +101,8 @@ class SurfaceMesh {
    @name Mesh type traits
 
    A collection of type traits to enable mesh consumers to be templated on mesh
-   type. The %SurfaceMesh atomic feature is a triangle. For higher
-   dimensions, it wouldn't be a triangle. These type traits are expressed
-   in terms of the more generic, dimension-agnostic "element".
+   type. Each mesh type provides specific definitions of _vertex_, _element_,
+   and _barycentric coordinates_. For %SurfaceMesh, an element is a triangle.
    */
   //@{
 
