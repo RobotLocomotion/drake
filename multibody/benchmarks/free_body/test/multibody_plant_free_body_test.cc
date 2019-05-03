@@ -350,9 +350,7 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testFrequencyAndIntegration) {
   const Vector3d gravity(0, 0, -9.81);      // Per note below, in -Nz direction.
   FreeBody torque_free_cylinder_exact(quat_NB, w_NB_B, p_NoBcm_N, v_NBcm_B,
                                       gravity);
-
-  // For given values of
-
+  
   // Instantiate the Drake model for the free body in space.
   // Note the Drake model requires gravity to be in the -Nz direction.
   const double mass = 1.0;  // Arbitrary value.
