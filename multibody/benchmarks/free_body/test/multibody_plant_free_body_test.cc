@@ -340,7 +340,7 @@ void  TestDrakeSolutionForVariousInitialValues(
 // - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
 //  (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
 //   https://ecommons.cornell.edu/handle/1813/637
-GTEST_TEST(uniformSolidCylinderTorqueFree, testFrequencyAndIntegration) {
+GTEST_TEST(uniformSolidCylinderTorqueFree, testNumericalIntegration) {
   // Store initial values in a class that can calculate an exact solution.
   // Store gravitational acceleration expressed in N (e.g. [0, 0, -9.81]).
   const Quaterniond quat_NB(1, 0, 0, 0);    // Initial value.
@@ -350,7 +350,7 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testFrequencyAndIntegration) {
   const Vector3d gravity(0, 0, -9.81);      // Per note below, in -Nz direction.
   FreeBody torque_free_cylinder_exact(quat_NB, w_NB_B, p_NoBcm_N, v_NBcm_B,
                                       gravity);
-  
+
   // Instantiate the Drake model for the free body in space.
   // Note the Drake model requires gravity to be in the -Nz direction.
   const double mass = 1.0;  // Arbitrary value.
