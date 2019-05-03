@@ -106,7 +106,7 @@ lcmt_iiwa_status PlanRunnerHardwareInterface::GetCurrentIiwaStatus() {
 
 void PlanRunnerHardwareInterface::WaitForNewMessage(
     drake::lcm::DrakeLcmInterface* const lcm_ptr,
-    systems::lcm::LcmSubscriberSystem* const lcm_sub) const {
+    systems::lcm::LcmSubscriberSystem* const lcm_sub_ptr) const {
   auto wait_for_new_message = [lcm_ptr](const auto& lcm_sub) {
     std::cout << "Waiting for " << lcm_sub.get_channel_name() << " message..."
               << std::flush;
@@ -118,7 +118,7 @@ void PlanRunnerHardwareInterface::WaitForNewMessage(
     std::cout << "Received!" << std::endl;
   };
 
-  wait_for_new_message(*lcm_sub);
+  wait_for_new_message(*lcm_sub_ptr);
 };
 
 void PlanRunnerHardwareInterface::Run(double realtime_rate) {

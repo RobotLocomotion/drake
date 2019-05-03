@@ -40,7 +40,7 @@ ConnectTwoPositionsWithCubicPolynomial(
 
 
 PlanSender::PlanSender(const std::vector<PlanData>& plan_data_list)
-    : num_positions_(7), transition_time_sec_(3.), extra_time_(1.) {
+    : num_positions_(7), transition_time_sec_(4.), extra_time_(1.) {
   this->set_name("PlanSender");
 
   // Declare a state that does not get changed. It exists so that an abstract
@@ -96,6 +96,10 @@ systems::EventStatus PlanSender::Initialize(const Context<double>& context,
   num_plans_ = plan_data_list_.size();
   cout << "start times ";
   PrintStlVector(plan_start_times_);
+
+  // use state to get rid of [-Werror=unused-parameter]
+  int& a = state->get_mutable_abstract_state<int>(0);
+  a = 1;
 
   return systems::EventStatus::Succeeded();
 };

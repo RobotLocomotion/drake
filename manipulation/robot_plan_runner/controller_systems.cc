@@ -51,8 +51,6 @@ void RobotController::CalcCommands(const systems::Context<double>& context,
       this->EvalAbstractInput(context, input_port_idx_plan_data_);
   const auto& plan_data = plan_data_ptr->get_value<PlanData>();
 
-  DRAKE_THROW_UNLESS(plan_data.plan_type == plan_->get_plan_type());
-
   // evaluate robot state input ports
   Eigen::VectorBlock<VectorX<double>> q_tau_vector =
       q_tau_cmd->get_mutable_value();
