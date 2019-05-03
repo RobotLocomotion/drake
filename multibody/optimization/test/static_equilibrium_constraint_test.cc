@@ -223,12 +223,19 @@ TEST_F(TwoFreeSpheresTest, Eval) {
   q_val.segment<4>(7) << 1, 0, 0, 0;
   q_val.tail<3>() = X_WS1.translation();
 
-  prog_.AddBoundingBoxConstraint(q_val, q_val, q_vars_);
   prog_.AddConstraint(static_equilibrium_binding);
 
   Eigen::VectorXd x_init(prog_.num_vars());
   x_init.setZero();
   prog_.SetDecisionVariableValueInVector(q_vars_, q_val, &x_init);
+  prog_.SetDecisionVariableValueInVector(
+      contact_wrench_evaluators_and_lambda_[1].second,
+      Eigen::Vector3d(0, 0, -spheres_->spheres()[0].inertia.get_mass() * 9.81),
+      &x_init);
+  prog_.SetDecisionVariableValueInVector(
+      contact_wrench_evaluators_and_lambda_[2].second,
+      Eigen::Vector3d(0, 0, -spheres_->spheres()[1].inertia.get_mass() * 9.81),
+      &x_init);
 
   auto result = solvers::Solve(prog_, x_init);
   EXPECT_TRUE(result.is_success());
