@@ -976,18 +976,22 @@ class MathematicalProgram {
    * Adds the cost to maximize the geometric mean of z = Ax+b, i.e. pow(∏ᵢz(i),
    * 1/n), where z ∈ ℝⁿ, z(i) >= 0. Mathematically, the cost we add is
    * -pow(∏ᵢz(i), 1/r), where r = pow(2, ceil(log₂n)), namely r is the smallest
-   * power of 2 that is no larger than the size of z. For example, if z ∈ ℝ²,
-   * then the added cost is pow(z(0)*z(1), 1/2) if z ∈ ℝ³, then the added cost
-   * is pow(z(0)*z(1)*z(2), 1/4). In order to add this cost, we need to
-   * introduce a set of second-order cone constraints. For example, to maximize
-   * power(z(0) * z(1), 1/ 2), we introduce the slack variable w(0),
-   * together with the second order cone constraint w(0)² ≤ z(0) * z(1), and
-   * we maximize w(0).
+   * power of 2 that is no smaller than the size of z. For example, if z ∈ ℝ²,
+   * then the added cost is -pow(z(0)*z(1), 1/2) if z ∈ ℝ³, then the added cost
+   * is -pow(z(0)*z(1)*z(2), 1/4).
+   *
+   * In order to add this cost, we need to introduce a set of second-order cone
+   * constraints. For example, to maximize power(z(0) * z(1), 1/ 2), we
+   * introduce the slack variable w(0), together with the second order cone
+   * constraint w(0)² ≤ z(0) * z(1), z(0) ≥ 0, z(1) ≥ 0, and we maximize w(0).
+   *
    * To maximize power(z(0) * z(1) * z(2), 1/ 4), we introduce the slack
    * variable w(0), w(1), w(2), together with the second order cone constraints
-   * w(0)² ≤ z(0) * z(1)
-   * w(1)² ≤ z(2)
-   * w(2)² ≤ w(0) * w(1)
+   * <pre>
+   * w(0)² ≤ z(0) * z(1), z(0) ≥ 0, z(1) ≥ 0
+   * w(1)² ≤ z(2), z(2) ≥ 0
+   * w(2)² ≤ w(0) * w(1), w(0) ≥ 0, w(1) ≥ 0
+   * </pre>
    * and we maximize w(2).
    */
   //@{
