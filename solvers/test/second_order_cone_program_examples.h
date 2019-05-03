@@ -144,6 +144,37 @@ class TestFindSpringEquilibrium
   VectorXDecisionVariable t_;
   symbolic::Variable z_;
 };
+
+/**
+ * Solve the following trivial problem
+ * max (2x+3)*(3x+2)
+ * s.t 2x+3 >= 0
+ *     3x+2 >= 0
+ *     x<= 10
+ * We formulate this problem as a convex second order cone constraint, by
+ * regarding the cost as the square of geometric mean between 2x+3 and 3x+2.
+ * The optimal is x* = 10.
+ */
+class MaximizeGeometricMeanTrivialProblem1 {
+ public:
+  MaximizeGeometricMeanTrivialProblem1();
+
+ private:
+  MathematicalProgram prog_;
+  symbolic::Variable x_;
+};
+
+/**
+ * Tests maximizing geometric mean through second order cone constraint.
+ * Given some points p1, p2, ..., pk ∈ ℝⁿ, find the largest box (with the origin
+ * inside box), such that the box doesn't contain any of these points in the box
+ * interior.
+ * This could be imposed as the following problem.
+ * max ∏ᵢ(a(i) - b(i))
+ * s.t a(i) >= 0, b(i) <= 0
+ */
+class LargestBoxProblem {};
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
