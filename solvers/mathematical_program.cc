@@ -445,9 +445,10 @@ void MathematicalProgram::AddMaximizeGeometricMeanCost(
   auto w = NewContinuousVariables((A.rows() + 1) / 2);
   VectorX<symbolic::Variable> xw(x.rows() + 1);
   xw.head(x.rows()) = x;
+  Eigen::Matrix3Xd C(3, x.rows() + 1);
   for (int i = 0; i < w.size(); ++i) {
-    Eigen::Matrix3Xd C(3, x.rows() + 1);
-    C.row(0) = A.row(2 * i);
+    C.setZero();
+    C.row(0) << A.row(2 * i), 0;
     Eigen::Vector3d d;
     d(0) = b(2 * i);
     if (2 * i + 1 == A.rows()) {
@@ -456,7 +457,7 @@ void MathematicalProgram::AddMaximizeGeometricMeanCost(
       d(1) = 1;
     } else {
       // The normal case, C.row(1) * x + d(1) = A.row(2i+1) * x + b(2i+1)
-      C.row(1) = A.row(2 * i + 1);
+      C.row(1) << A.row(2 * i + 1), 0;
       d(1) = b(2 * i + 1);
     }
     C.row(2).setZero();
@@ -475,6 +476,13 @@ void MathematicalProgram::AddMaximizeGeometricMeanCost(
 
 void MathematicalProgram::AddMaximizeGeometricMeanCost(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& x) {
+  // We maximize the geometric mean through a recursive procedure. If we assume
+  // that the size of x is 2ᵏ, then in each iteration, we introduce new slack
+  // variables w of size 2ᵏ⁻¹, with the constraint
+  // w(i)² ≤ x(2i) * x(2i+1)
+  // we then call AddMaximizeGeometricMeanCost(w). This recusion ends until
+  // w.size() == 2. We then add the constraint z(0)² ≤ w(0) * w(1), and maximize
+  // the cost z(0).
   if (x.rows() == 1) {
     throw std::invalid_argument(
         "MathematicalProgram::AddMaximizeGeometricMeanCost: x should have more "
