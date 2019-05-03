@@ -40,7 +40,8 @@ ConnectTwoPositionsWithCubicPolynomial(
 
 
 PlanSender::PlanSender(const std::vector<PlanData>& plan_data_list)
-    : num_positions_(7), transition_time_sec_(4.), extra_time_(1.) {
+    : num_positions_(7), transition_time_sec_(4.), zoh_time_sec_(2.0),
+    extra_time_(1.) {
   this->set_name("PlanSender");
 
   // Declare a state that does not get changed. It exists so that an abstract
@@ -65,14 +66,14 @@ PlanSender::PlanSender(const std::vector<PlanData>& plan_data_list)
 systems::EventStatus PlanSender::Initialize(const Context<double>& context,
                                             State<double>* state) const {
   cout << "initiliazation!" << endl;
+  Eigen::VectorXd q_current =
+    this->get_input_port(input_port_idx_q_).Eval(context);
   // Create a plan that connects the current position of the robot to the
   // position at the beginning of plan_data_list_. This requires the first
   // position in plan_data_list_ to have a non-empty joint_traj.
   const PlanData &plan0 = plan_data_list_[0];
   if(plan0.joint_traj.has_value()) {
     Eigen::VectorXd q0 = plan0.joint_traj.value().value(0);
-    Eigen::VectorXd q_current =
-        this->get_input_port(input_port_idx_q_).Eval(context);
 
     PiecewisePolynomial<double> joint_traj =
     ConnectTwoPositionsWithCubicPolynomial(q_current, q0, transition_time_sec_);
@@ -82,12 +83,29 @@ systems::EventStatus PlanSender::Initialize(const Context<double>& context,
     plan_data_list_.insert(plan_data_list_.begin(), first_plan);
   }
 
+  // Create a 1 second zero order hold at the beginning of all plans.
+  {
+    PlanData zoh_plan;
+    zoh_plan.plan_type = PlanType::kJointSpacePlan;
+    Eigen::VectorXd t_knots(2);
+    t_knots << 0, zoh_time_sec_;
+    Eigen::MatrixXd q_knots(num_positions_, 2);
+    q_knots.col(0) = q_current;
+    q_knots.col(1) = q_current;
+    zoh_plan.joint_traj = 
+      PiecewisePolynomial<double>::ZeroOrderHold(t_knots, q_knots);
+    plan_data_list_.insert(plan_data_list_.begin(), zoh_plan);
+  }
+
   // initialize plan list
   int i = 0;
   plan_start_times_.push_back(0);
   for (auto& plan_data : plan_data_list_) {
     double t_next = plan_data.joint_traj.value().end_time();
-    t_next += extra_time_;
+    if(i != 0) {
+      // not the zoh plan
+      t_next += extra_time_;
+    }
     t_next += plan_start_times_[i];
     plan_start_times_.push_back(t_next);
     plan_data.plan_signature = i;
@@ -136,7 +154,8 @@ void PlanSender::DoCalcNextUpdateTime(
 }
 
 double PlanSender::get_all_plans_duration() const {
-  double t_total = transition_time_sec_ + extra_time_;
+  // zoh + transition
+  double t_total = zoh_time_sec_ + transition_time_sec_ + extra_time_;
   for(const auto& plan_data : plan_data_list_) {
     t_total += plan_data.joint_traj.value().end_time() + extra_time_;
   }

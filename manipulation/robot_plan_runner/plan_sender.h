@@ -32,6 +32,7 @@ class PlanSender : public systems::LeafSystem<double> {
   int input_port_idx_q_{-1};
   const int num_positions_;
   const double transition_time_sec_;
+  const double zoh_time_sec_;
   const double extra_time_;
 };
 
