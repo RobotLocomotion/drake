@@ -5,6 +5,7 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/manipulation/robot_plan_runner/robot_plans.h"
+#include "drake/manipulation/robot_plan_runner/plan_sender.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 
@@ -17,7 +18,7 @@ class PlanRunnerHardwareInterface {
   explicit PlanRunnerHardwareInterface(const std::vector<PlanData>&);
   void SaveGraphvizStringToFile(
       const std::string& file_name = "system_graphviz_string.txt");
-  void Run();
+  void Run(double realtime_rate = 1.0);
   lcmt_iiwa_status GetCurrentIiwaStatus();
 
  private:
@@ -27,7 +28,7 @@ class PlanRunnerHardwareInterface {
   std::unique_ptr<systems::Diagram<double>> diagram_;
   std::unique_ptr<lcm::DrakeLcm> owned_lcm_;
   systems::lcm::LcmSubscriberSystem* iiwa_status_sub_;
-  Eigen::VectorXd q_current_;
+  robot_plan_runner::PlanSender* plan_sender_;
 };
 
 }  // namespace robot_plan_runner

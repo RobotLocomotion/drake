@@ -4,7 +4,6 @@
 #include "drake/manipulation/kuka_iiwa/iiwa_command_sender.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_status_receiver.h"
 #include "drake/manipulation/robot_plan_runner/plan_runner_hardware_interface.h"
-#include "drake/manipulation/robot_plan_runner/plan_sender.h"
 #include "drake/manipulation/robot_plan_runner/robot_plan_runner.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/lcm/lcm_interface_system.h"
@@ -46,13 +45,13 @@ PlanRunnerHardwareInterface::PlanRunnerHardwareInterface(
                   iiwa_command_pub->get_input_port());
 
   // Add PlanSender and PlanRunner.
-  auto plan_sender = builder.AddSystem<PlanSender>(plan_list);
+  plan_sender_ = builder.AddSystem<PlanSender>(plan_list);
   auto plan_runner = builder.AddSystem<RobotPlanRunner>(0.);
-  builder.Connect(plan_sender->GetOutputPort("plan_data"),
+  builder.Connect(plan_sender_->GetOutputPort("plan_data"),
                   plan_runner->GetInputPort("plan_data"));
 
   builder.Connect(iiwa_status_receiver->get_position_measured_output_port(),
-                  plan_sender->GetInputPort("q"));
+                  plan_sender_->GetInputPort("q"));
   builder.Connect(iiwa_status_receiver->get_position_measured_output_port(),
                   plan_runner->GetInputPort("iiwa_position_measured"));
   builder.Connect(iiwa_status_receiver->get_velocity_estimated_output_port(),
@@ -77,6 +76,10 @@ void PlanRunnerHardwareInterface::SaveGraphvizStringToFile(
   }
 }
 
+/*
+ * Get current iiwa status by creating a diagram with only a lcm subscriber
+ * and simulating it for 1e-6 seconds.
+ */
 lcmt_iiwa_status PlanRunnerHardwareInterface::GetCurrentIiwaStatus() {
   // create diagram system.
   systems::DiagramBuilder<double> builder;
@@ -118,10 +121,10 @@ void PlanRunnerHardwareInterface::WaitForNewMessage(
   wait_for_new_message(*lcm_sub);
 };
 
-void PlanRunnerHardwareInterface::Run() {
+void PlanRunnerHardwareInterface::Run(double realtime_rate) {
   systems::Simulator<double> simulator(*diagram_);
   simulator.set_publish_every_time_step(false);
-  simulator.set_target_realtime_rate(1.0);
+  simulator.set_target_realtime_rate(realtime_rate);
 
   // Update the abstract state of iiwa status lcm subscriber system, so that
   // actual robot state can be obtained when its output ports are evaluated at
@@ -131,7 +134,10 @@ void PlanRunnerHardwareInterface::Run() {
   auto& state = iiwa_status_sub_context
       .get_mutable_abstract_state<lcmt_iiwa_status>(0);
   state = this->GetCurrentIiwaStatus();
-  simulator.AdvanceTo(6.0);
+
+  double t_total = plan_sender_->get_all_plans_duration();
+  cout << "All plans duration " << t_total << endl;
+  simulator.AdvanceTo(t_total);
 }
 
 }  // namespace robot_plan_runner
