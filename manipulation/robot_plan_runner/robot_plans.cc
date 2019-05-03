@@ -10,7 +10,10 @@ void JointSpacePlan::Step(const Eigen::Ref<const Eigen::VectorXd>& q,
           const PlanData& plan_data,
           Eigen::VectorXd* const q_cmd,
           Eigen::VectorXd* const tau_cmd) const {
-  DRAKE_ASSERT(plan_data.plan_type == this->get_plan_type());
+  (void)q;
+  (void)v;
+  (void)tau_external;
+  DRAKE_THROW_UNLESS(plan_data.plan_type == this->get_plan_type());
   const auto& q_traj = plan_data.joint_traj.value();
   *q_cmd = q_traj.value(t);
   *tau_cmd = Eigen::VectorXd::Zero(num_positions_);
