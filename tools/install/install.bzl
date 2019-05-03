@@ -252,7 +252,7 @@ def _install_cc_actions(ctx, target):
     if ctx.attr.guess_hdrs != "NONE":
         hdrs = _guess_files(
             target,
-            target.cc.transitive_headers,
+            target[CcInfo].compilation_context.headers,
             ctx.attr.guess_hdrs,
             "guess_hdrs",
         )
@@ -446,11 +446,11 @@ def _install_impl(ctx):
 
     for t in ctx.attr.targets:
         # TODO(jwnimmer-tri): Raise an error if a target has testonly=1.
-        if hasattr(t, "cc"):
+        if CcInfo in t:
             actions += _install_cc_actions(ctx, t)
-        elif hasattr(t, "java"):
+        elif JavaInfo in t:
             actions += _install_java_actions(ctx, t)
-        elif hasattr(t, "py"):
+        elif PyInfo in t:
             actions += _install_py_actions(ctx, t)
         elif MainClassInfo in t:
             actions += _install_java_launcher_actions(
