@@ -51,28 +51,28 @@ void RobotController::CalcCommands(const systems::Context<double>& context,
       this->EvalAbstractInput(context, input_port_idx_plan_data_);
   const auto& plan_data = plan_data_ptr->get_value<PlanData>();
 
-  if (plan_data.plan_type == plan_->get_plan_type()) {
-    // evaluate robot state input ports
-    Eigen::VectorBlock<VectorX<double>> q_tau_vector =
-        q_tau_cmd->get_mutable_value();
-    const auto& q = this->get_input_port(input_port_idx_q_).Eval(context);
-    const auto& v = this->get_input_port(input_port_idx_v_).Eval(context);
-    const auto& tau_ext =
-        this->get_input_port(input_port_idx_tau_ext_).Eval(context);
+  DRAKE_THROW_UNLESS(plan_data.plan_type == plan_->get_plan_type());
 
-    // check if the plan from input port is new.
-    if (plan_data.plan_signature > -1 &&
-        plan_data.plan_signature != plan_signature_current_) {
-      plan_signature_current_ = plan_data.plan_signature;
-      t_start_current_ = context.get_time();
-    }
+  // evaluate robot state input ports
+  Eigen::VectorBlock<VectorX<double>> q_tau_vector =
+      q_tau_cmd->get_mutable_value();
+  const auto& q = this->get_input_port(input_port_idx_q_).Eval(context);
+  const auto& v = this->get_input_port(input_port_idx_v_).Eval(context);
+  const auto& tau_ext =
+      this->get_input_port(input_port_idx_tau_ext_).Eval(context);
 
-    double t = context.get_time() - t_start_current_;
-
-    plan_->Step(q, v, tau_ext, t, plan_data, &q_cmd_, &tau_cmd_);
-    q_tau_vector << q_cmd_, tau_cmd_;
-//    std::cout << "t=" << t << std::endl << q_tau_vector << std::endl;
+  // check if the plan from input port is new.
+  if (plan_data.plan_signature > -1 &&
+      plan_data.plan_signature != plan_signature_current_) {
+    plan_signature_current_ = plan_data.plan_signature;
+    t_start_current_ = context.get_time();
   }
+
+  double t = context.get_time() - t_start_current_;
+
+  plan_->Step(q, v, tau_ext, t, plan_data, &q_cmd_, &tau_cmd_);
+  q_tau_vector << q_cmd_, tau_cmd_;
+
 };
 
 PlanSwitcher::PlanSwitcher() {

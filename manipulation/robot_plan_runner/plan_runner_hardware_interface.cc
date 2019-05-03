@@ -1,7 +1,6 @@
 #include <fstream>
 
 #include "drake/lcmt_iiwa_command.hpp"
-#include "drake/lcmt_iiwa_status.hpp"
 #include "drake/manipulation/kuka_iiwa/iiwa_command_sender.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_status_receiver.h"
 #include "drake/manipulation/robot_plan_runner/plan_runner_hardware_interface.h"
@@ -15,6 +14,9 @@
 namespace drake {
 namespace manipulation {
 namespace robot_plan_runner {
+
+using std::cout;
+using std::endl;
 
 PlanRunnerHardwareInterface::PlanRunnerHardwareInterface(
     const std::vector<PlanData>& plan_list)
@@ -68,32 +70,67 @@ PlanRunnerHardwareInterface::PlanRunnerHardwareInterface(
 
 void PlanRunnerHardwareInterface::SaveGraphvizStringToFile(
     const std::string& file_name) {
-  if(diagram_) {
+  if (diagram_) {
     std::ofstream out(file_name);
     out << diagram_->GetGraphvizString();
     out.close();
   }
 }
 
+lcmt_iiwa_status PlanRunnerHardwareInterface::GetCurrentIiwaStatus() {
+  // create diagram system.
+  systems::DiagramBuilder<double> builder;
+  auto lcm =
+      builder.AddSystem<systems::lcm::LcmInterfaceSystem>(new lcm::DrakeLcm());
+
+  // Receive iiwa status.
+  auto iiwa_status_sub = builder.AddSystem(
+      systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_iiwa_status>(
+          "IIWA_STATUS", lcm));
+
+  auto diagram = builder.Build();
+  systems::Simulator<double> simulator(*diagram);
+
+  this->WaitForNewMessage(lcm, iiwa_status_sub);
+  simulator.AdvanceTo(1e-6);
+
+  const auto& iiwa_status_sub_context = diagram->GetMutableSubsystemContext(
+      *iiwa_status_sub, &simulator.get_mutable_context());
+
+  return iiwa_status_sub->get_output_port().Eval<lcmt_iiwa_status>(
+      iiwa_status_sub_context);
+}
+
+void PlanRunnerHardwareInterface::WaitForNewMessage(
+    drake::lcm::DrakeLcmInterface* const lcm_ptr,
+    systems::lcm::LcmSubscriberSystem* const lcm_sub) const {
+  auto wait_for_new_message = [lcm_ptr](const auto& lcm_sub) {
+    std::cout << "Waiting for " << lcm_sub.get_channel_name() << " message..."
+              << std::flush;
+    const int orig_count = lcm_sub.GetInternalMessageCount();
+    LcmHandleSubscriptionsUntil(
+        lcm_ptr,
+        [&]() { return lcm_sub.GetInternalMessageCount() > orig_count; },
+        10 /* timeout_millis */);
+    std::cout << "Received!" << std::endl;
+  };
+
+  wait_for_new_message(*lcm_sub);
+};
+
 void PlanRunnerHardwareInterface::Run() {
   systems::Simulator<double> simulator(*diagram_);
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(1.0);
 
-  // wait for lcm messages.
-  drake::lcm::DrakeLcmInterface* const lcm_ptr = owned_lcm_.get();
-  auto wait_for_new_message = [lcm_ptr](const auto& lcm_sub) {
-    std::cout << "Waiting for " << lcm_sub.get_channel_name()
-              << " message..." << std::flush;
-    const int orig_count = lcm_sub.GetInternalMessageCount();
-    LcmHandleSubscriptionsUntil(lcm_ptr, [&]() {
-      return lcm_sub.GetInternalMessageCount() > orig_count;
-    }, 10 /* timeout_millis */);
-    std::cout << "Received!" << std::endl;
-  };
-
-  wait_for_new_message(*iiwa_status_sub_);
-
+  // Update the abstract state of iiwa status lcm subscriber system, so that
+  // actual robot state can be obtained when its output ports are evaluated at
+  // initialization.
+  auto& iiwa_status_sub_context = diagram_->GetMutableSubsystemContext(
+      *iiwa_status_sub_, &simulator.get_mutable_context());
+  auto& state = iiwa_status_sub_context
+      .get_mutable_abstract_state<lcmt_iiwa_status>(0);
+  state = this->GetCurrentIiwaStatus();
   simulator.AdvanceTo(6.0);
 }
 
