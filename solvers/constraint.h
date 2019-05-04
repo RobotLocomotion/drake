@@ -110,6 +110,26 @@ class Constraint : public EvaluatorBase {
   /** Number of rows in the output constraint. */
   int num_constraints() const { return num_outputs(); }
 
+  /**
+   * Set the sparsity pattern of the gradient matrix. gradient_sparsity_pattern
+   * contains *all* the pairs of (row_index, col_index) for which the
+   * corresponding entries could have non-zero value in the gradient matrix.
+   */
+  void SetGradientSparsityPattern(
+      const std::vector<std::pair<int, int>>& gradient_sparsity_pattern);
+
+  /**
+   * Returns the vector of (row_index, col_index) that contains all the entries
+   * in the gradient of Eval function whose value could be non-zero.
+   * @retval gradient_sparsity_pattern If gradient_sparsity_pattern.has_value()
+   * == false, then we regard all entries of the gradient as potentially
+   * non-zero.
+   */
+  const optional<std::vector<std::pair<int, int>>>& gradient_sparsity_pattern()
+      const {
+    return gradient_sparsity_pattern_;
+  }
+
  protected:
   /** Updates the lower bound.
    * @note if the users want to expose this method in a sub-class, do
@@ -178,6 +198,15 @@ class Constraint : public EvaluatorBase {
 
   Eigen::VectorXd lower_bound_;
   Eigen::VectorXd upper_bound_;
+
+  // gradient_sparsity_pattern_ records the pair (row_index, col_index) that
+  // contains the non-zero entries in the gradient of the constraint Eval
+  // function. Note that if the entry (row_index, col_index) *can* be non-zero
+  // for certain value of x, then it should be included in
+  // gradient_sparsity_patten_. When gradient_sparsity_pattern_.has_value() =
+  // false, the gradient matrix is regarded as non-sparse, i.e., every entry of
+  // the gradient matrix can be non-zero.
+  optional<std::vector<std::pair<int, int>>> gradient_sparsity_pattern_;
 };
 
 /**
