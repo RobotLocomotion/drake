@@ -82,6 +82,7 @@ drake_cc_googletest(
         ":render_engine",
         "//common/test_utilities",
         "//geometry:geometry_ids",
+        "//geometry/test_utilities:dummy_render_engine",
     ],
 )
 

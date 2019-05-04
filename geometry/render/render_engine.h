@@ -49,11 +49,15 @@ namespace render {
      @see RenderLabel  */
 class RenderEngine : public ShapeReifier {
  public:
-  RenderEngine() = default;
+  /** Constructs a %RenderEngine with the given default render label. If none
+   is provided, the default RenderLabel will be RenderLabel::kUnspecified.
+   This still allows for one more change via set_default_render_label().  */
+  explicit RenderEngine(const RenderLabel& label = RenderLabel::kUnspecified)
+      : default_render_label_(label) {}
 
   virtual ~RenderEngine() = default;
 
-  /** Clones the render engine -- making the RenderEngine compatible with
+  /** Clones the render engine -- making the %RenderEngine compatible with
    copyable_unique_ptr.  */
   std::unique_ptr<RenderEngine> Clone() const;
 
@@ -63,6 +67,17 @@ class RenderEngine : public ShapeReifier {
    is allowed to examine the given `properties` and choose to _not_ register
    the geometry.
 
+   Successful registration depends on the successful validation of the
+   RenderLabel value associated with the given `shape`. It looks for a
+   RenderLabel in the (label, id) property; RenderLabel values in other
+   properties will _not_ be validated. If no label is found, it uses the
+   %RenderEngine's default value. As
+   @ref reserved_render_label "documented", assigning RenderLabel::kEmpty or
+   RenderLabel::kUnspecified is _not_ allowed and will cause an exception to be
+   thrown. Note, the RenderLabel can end up as unspecified through a variety of
+   means. For example, assigning a default-constructed RenderLabel or by
+   application of the derived %RenderEngine's documented default value.
+
    @param index          The geometry index of the shape to register.
    @param shape          The shape specification to add to the render engine.
    @param properties     The perception properties provided for this geometry.
@@ -71,7 +86,10 @@ class RenderEngine : public ShapeReifier {
                          UpdatePoses().
    @returns A unique index for the resultant render geometry (nullopt if not
             registered).
-   @throws std::runtime_error if the shape is an unsupported type.  */
+   @throws std::runtime_error if the shape is an unsupported type or if the
+                              shape's RenderLabel value is
+                              RenderLabel::kUnspecified or RenderLabel::kEmpty.
+  */
   optional<RenderIndex> RegisterVisual(
       GeometryIndex index,
       const Shape& shape, const PerceptionProperties& properties,
@@ -181,18 +199,55 @@ class RenderEngine : public ShapeReifier {
   /** The NVI-function for cloning this render engine.  */
   virtual std::unique_ptr<RenderEngine> DoClone() const = 0;
 
+  /** @name Protocol for handling undefined RenderLabels
+
+   @anchor setting_default_render_label
+   When a geometry is registered without a RenderLabel specified (i.e., no
+   (label, id) property is defined), these methods define the RenderLabel value
+   that _will_ be used. The resultant behavior depends on the default value.
+   For a geometry with no specified (label, id) property:
+
+     - RenderLabel::kUnspecified or RenderLabel::kEmpty: an exception is thrown
+       during RegisterVisual().
+     - RenderLabel::kDoNotRender: The geometry will be allowed for RGB or depth
+       images, but should _not_ be rendered in a label image.
+     - Any other value: the label will simply be assigned to the geometry.
+
+   Derived classes can set their own default RenderLabel value via the
+   %RenderEngine constructor. If the derived class wishes, these methods can
+   be promoted to be public to allow users the option to change their own
+   default render label (with the caveat provided in
+   set_default_render_label()).  */
+  //@{
+
+  /** Sets `this` render engine's default render label to `label`. See
+   @ref setting_default_render_label "this documentation" for the effect of
+   setting the default to various Renderlabel values. This method can be called
+   only once in the lifespan of the RenderEngine; that call _must_ come before
+   the first invocation of RegisterVisual().
+   @throws std::logic_error if this method or RegisterVisual() has already been
+                            called.  */
+  void set_default_render_label(const RenderLabel& label);
+
+  RenderLabel default_render_label() const { return default_render_label_; }
+
+  //@}
+
   /** @name   RenderLabel-Color Utilities
 
-   These methods provide the basic ability to convert RenderLabel values into
-   their corresponding rasterizable color and back again. Colors are either
-   _byte-valued_ in that they are encoded with unsigned bytes in the range
-   [0, 255] per channel or _double-valued_ such that each channel is encoded
-   with a double in the range [0, 1].
+   Some rasterization pipelines don't support channels of
+   RenderLabel::ValueType; typically, they operate in RGB color space. The
+   following utilities support those pipelines by providing conversions between
+   labels and colors. The mapping does _not_ produce colors that are useful
+   to humans -- two labels with "near by" values will produces colors that
+   most humans cannot distinguish, but the computer can. Do not use these
+   utilities to produce the prototypical "colored label" images.
 
-   These colors are not intended for human consumption. It is merely a unique
-   mapping from %RenderLabel values to computer-distinguishable color values for
-   use in rasterization operations that depend on colors.
-   */
+   The label-to-color conversion can produce one of two different color
+   encodings. Colors are either _byte-valued_ in that they are encoded with
+   unsigned bytes in the range [0, 255] per channel or _double-valued_ such that
+   each channel is encoded with a double in the range [0, 1]. Conversion to
+   RenderLabel is only supported from byte-valued color values.  */
   //@{
 
   /** Transforms the given byte-valued RGB color value into its corresponding
@@ -216,9 +271,25 @@ class RenderEngine : public ShapeReifier {
 
   //@}
 
-  friend class RenderEngineTester;
+  /** Helper enumeration for derived classes to track if a default value can
+   be configured.  */
+  enum class DefaultValueState {
+    /** The value is available for setting.  */
+    kUnset,
+    /** The value has been set and can't be set again.  */
+    kSet,
+    /** RegisterVisual() has been called, defaults can't change.  */
+    kGeometryRegistered
+  };
 
  private:
+  friend class RenderEngineTester;
+
+  // Validates the render label provided in the given `properties` (taking into
+  // account the engine's default value). Throws if invalid, otherwise, does
+  // nothing.
+  void RenderLabelIsValidOrThrow(const PerceptionProperties& properties) const;
+
   // The following two maps store all registered render index values to the
   // corresponding geometry's internal index. It should be the case that the
   // keys of the two maps are disjoint and span all of the valid render index
@@ -232,6 +303,14 @@ class RenderEngine : public ShapeReifier {
 
   // The mapping from render index to internal index of all other geometries.
   std::unordered_map<RenderIndex, GeometryIndex> anchored_indices_;
+
+  // The default render label to apply to geometries that don't otherwise
+  // provide one. Default constructor is RenderLabel::kUnspecified via the
+  // RenderLabel default constructor.
+  RenderLabel  default_render_label_{};
+
+  // Flag that guards against the default label being set multiple times.
+  DefaultValueState default_label_state_{};
 };
 
 }  // namespace render

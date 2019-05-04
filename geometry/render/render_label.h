@@ -34,8 +34,8 @@ namespace render {
  applications. They are:
 
  - `empty`: a pixel with the `empty` %RenderLabel value indicates that _no_
-   geometry rendered to that pixel. Assigning this label to geometry is _highly_
-   inadvisable and will typically lead to undesirable results.
+   geometry rendered to that pixel. There is no good reason to assign this
+   label to a geometry; attempting to do so is considered defective.
  - `do_not_render`: any geometry assigned the `do_not_render` tag will _not_ be
    rendered into a label image. This is a clear declaration that a geometry
    should be omitted. Useful for marking, e.g., glass windows so that the
@@ -44,11 +44,13 @@ namespace render {
    ground. This would be for geometry that _should_ render into the label image,
    but whose class is irrelevant (e.g., the walls of a room a robot is working
    in or the background terrain in driving simulation).
- - `unspecified`: in the absence of an explicitly assigned render label, a
-   geometry receives the `unspecified` label. RenderEngine implementations will
-   throw an exception if they are given a geometry with an `unspecified`
-   %RenderLabel, because it is considered to be a likely a defect for an
-   application not to explicitly assign a label to every rendered geometry.
+ - `unspecified`: a default-constructed %RenderLabel has an `unspecified` value.
+   Attempting to apply an unspecified label to a geometry is considered
+   defective.
+
+ Attempts to register a visual geometry with the `empty` or `unspecified` label
+ will cause an exception to be thrown (in support of the designation of that
+ action as "defective").
 
  <h2>Usage</h2>
 
@@ -129,9 +131,16 @@ class RenderLabel {
    @ref reserved_render_label "reserved labels" for details.  */
   //@{
 
+  /** See @ref reserved_render_label "Reserved labels"  */
   static const RenderLabel kEmpty;
+
+  /** See @ref reserved_render_label "Reserved labels"  */
   static const RenderLabel kDoNotRender;
+
+  /** See @ref reserved_render_label "Reserved labels"  */
   static const RenderLabel kDontCare;
+
+  /** See @ref reserved_render_label "Reserved labels"  */
   static const RenderLabel kUnspecified;
 
   /** The largest value that a %RenderLabel can be instantiated on. */

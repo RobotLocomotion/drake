@@ -8,6 +8,8 @@
 
 #include "drake/common/drake_optional.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/test_utilities/dummy_render_engine.h"
 
 namespace drake {
 namespace geometry {
@@ -33,98 +35,21 @@ class RenderEngineTester {
 
 namespace {
 
+using geometry::internal::DummyRenderEngine;
 using systems::sensors::ColorI;
 using systems::sensors::ColorD;
-
-// Dummy implementation of the RenderEngine interface to facilitate testing
-// the specific RenderEngine functionality.
-class DummyRenderEngine final : public RenderEngine {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DummyRenderEngine);
-  DummyRenderEngine() = default;
-  void UpdateViewpoint(const RigidTransformd&) const final {}
-  void RenderColorImage(const render::CameraProperties&, bool,
-                        systems::sensors::ImageRgba8U*) const final {}
-  void RenderDepthImage(const render::DepthCameraProperties&,
-                        systems::sensors::ImageDepth32F*) const final {}
-  void RenderLabelImage(const render::CameraProperties&, bool,
-                        systems::sensors::ImageLabel16I*) const final {}
-  void ImplementGeometry(const Sphere& sphere, void* user_data) final {}
-  void ImplementGeometry(const Cylinder& cylinder, void* user_data) final {}
-  void ImplementGeometry(const HalfSpace& half_space, void* user_data) final {}
-  void ImplementGeometry(const Box& box, void* user_data) final {}
-  void ImplementGeometry(const Mesh& mesh, void* user_data) final {}
-  void ImplementGeometry(const Convex& convex, void* user_data) final {}
-
-  // Test harness.
-
-  // Provide access to the group name that implies full registration.
-  const std::string& include_group_name() const { return include_group_name_; }
-
-  // Return the indices that have been updated via a call to UpdatePoses().
-  const std::map<RenderIndex, RigidTransformd>& updated_indices() const {
-    return updated_indices_;
-  }
-
-  // Utility to set what value DoRemoveGeometry() returns to facilitate testing.
-  void set_moved_index(optional<RenderIndex> index) {
-    moved_index_ = index;
-  }
-
-  // Promote these to be public to facilitate testing.
-  using RenderEngine::LabelFromColor;
-  using RenderEngine::GetColorDFromLabel;
-  using RenderEngine::GetColorIFromLabel;
-
- protected:
-  // Conditionally register the visual based on the properties having an
-  // "in_test" group.
-  optional<RenderIndex> DoRegisterVisual(const Shape&,
-                                         const PerceptionProperties& properties,
-                                         const RigidTransformd&) final {
-    if (properties.HasGroup(include_group_name_)) {
-      return RenderIndex(register_count_++);
-    }
-    return nullopt;
-  }
-
-  // Track all of the indices provided an update pose for.
-  void DoUpdateVisualPose(RenderIndex index,
-                          const RigidTransformd& X_WG) final {
-    updated_indices_[index] = X_WG;
-  }
-
-  optional<RenderIndex> DoRemoveGeometry(RenderIndex index) final {
-    return moved_index_;
-  }
-
-  std::unique_ptr<render::RenderEngine> DoClone() const final {
-    return std::make_unique<DummyRenderEngine>(*this);
-  }
-
- private:
-  int register_count_{};
-  // Track each index and what it has been updated to (allows us to confirm
-  // RenderIndex and GeometryIndex association.
-  std::map<RenderIndex, RigidTransformd> updated_indices_;
-  // The group name whose presence will lead to a shape being added to the
-  // engine.
-  std::string include_group_name_{"in_test"};
-  // The RenderIndex value to return on invocation of DoRemoveGeometry().
-  optional<RenderIndex> moved_index_;
-};
 
 // Tests the RenderEngine-specific functionality for managing registration of
 // geometry and its corresponding update behavior. The former should configure
 // each geometry correctly on whether it gets updated or not, and the latter
 // will confirm that the right geometries get updated.
 GTEST_TEST(RenderEngine, RegistrationAndUpdate) {
-  DummyRenderEngine engine;
+  // Change the default render label to something registerable.
+  DummyRenderEngine engine(RenderLabel(10));
 
   // Configure parameters for registering visuals.
-  PerceptionProperties skip_properties;
-  PerceptionProperties add_properties;
-  add_properties.AddProperty(engine.include_group_name(), "ignored", 0);
+  PerceptionProperties skip_properties = engine.rejecting_properties();
+  PerceptionProperties add_properties = engine.accepting_properties();
   Sphere sphere(1.0);
   RigidTransformd X_WG = RigidTransformd::Identity();
   // A collection of poses to provide to calls to UpdatePoses(). Configured
@@ -135,6 +60,33 @@ GTEST_TEST(RenderEngine, RegistrationAndUpdate) {
 
   // These test cases are accumulative; re-ordering them will require
   // refactoring.
+
+  // Tests that rely on the RenderEngine's default value are tested below in the
+  // DefaultRenderLabel test.
+
+  // Create properties with the given RenderLabel value.
+  auto make_properties = [](RenderLabel label) {
+    PerceptionProperties properties;
+    properties.AddProperty("label", "id", label);
+    return properties;
+  };
+
+  // Case: Explicitly providing the unspecified render label throws.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.RegisterVisual(GeometryIndex(0), sphere,
+                            make_properties(RenderLabel::kUnspecified), X_WG,
+                            false),
+      std::logic_error,
+      "Cannot register a geometry with the 'unspecified' or 'empty' render "
+      "labels.*");
+
+  // Case: Explicitly providing the empty render label throws.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.RegisterVisual(GeometryIndex(0), sphere,
+                            make_properties(RenderLabel::kEmpty), X_WG, false),
+      std::logic_error,
+      "Cannot register a geometry with the 'unspecified' or 'empty' render "
+      "labels.*");
 
   // Case: the shape is configured to be ignored by the render engine. Returns
   // nullopt (and other arguments do not matter).
@@ -193,10 +145,10 @@ GTEST_TEST(RenderEngine, RemoveGeometry) {
   // the state of the mappings as a perturbation from this initial condition.
   auto make_engine = [&render_index_to_geometry_index]() -> DummyRenderEngine {
     render_index_to_geometry_index.clear();
-    DummyRenderEngine engine;
+    // Change the default render label to something registerable.
+    DummyRenderEngine engine(RenderLabel(10));
     // A set of properties that will cause a shape to be properly registered.
-    PerceptionProperties add_properties;
-    add_properties.AddProperty(engine.include_group_name(), "ignored", 0);
+    PerceptionProperties add_properties = engine.accepting_properties();
     RigidTransformd X_WG = RigidTransformd::Identity();
     Sphere sphere(1.0);
 
@@ -382,6 +334,51 @@ GTEST_TEST(RenderEngine, ColorLabelConversion) {
   EXPECT_TRUE(same_colors(color1_d, color1_d_by_hand));
   EXPECT_TRUE(same_colors(color2_d, color2_d_by_hand));
   EXPECT_TRUE(same_colors(color3_d, color3_d_by_hand));
+}
+
+// Tests the documented behavior for configuring the default render label.
+GTEST_TEST(RenderEngine, DefaultRenderLabel) {
+  // Case: Confirm RenderEngine default is kUnspecified.
+  {
+    DummyRenderEngine engine;
+    EXPECT_EQ(engine.default_render_label(), RenderLabel::kUnspecified);
+  }
+  // Case: Confirm construction with alternate label is allowed and setting
+  // post-construction is still valid.
+  {
+    DummyRenderEngine engine(RenderLabel::kEmpty);
+    EXPECT_EQ(engine.default_render_label(), RenderLabel::kEmpty);
+    engine.set_default_render_label(RenderLabel::kDoNotRender);
+    EXPECT_EQ(engine.default_render_label(), RenderLabel::kDoNotRender);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        engine.set_default_render_label(RenderLabel(13)), std::logic_error,
+        ".*default render label can only be set once");
+  }
+
+  // Case: Confirm setting only valid *before* geometry registration.
+  {
+    DummyRenderEngine engine(RenderLabel(10));
+    engine.RegisterVisual(GeometryIndex(0), Sphere(0.5),
+                          engine.accepting_properties(),
+                          RigidTransformd::Identity(), true);
+    EXPECT_EQ(engine.num_registered(), 1);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        engine.set_default_render_label(RenderLabel(13)), std::logic_error,
+        ".*default render label cannot be set after registering geometry");
+  }
+
+  // Case: Confirm setting only valid *before* geometry registration, even if
+  // the derived renderer doesn't accept the geometry.
+  {
+    DummyRenderEngine engine(RenderLabel(10));
+    engine.RegisterVisual(GeometryIndex(0), Sphere(0.5),
+                          engine.rejecting_properties(),
+                          RigidTransformd::Identity(), true);
+    EXPECT_EQ(engine.num_registered(), 0);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        engine.set_default_render_label(RenderLabel(13)), std::logic_error,
+        ".*default render label cannot be set after registering geometry");
+  }
 }
 
 }  // namespace
