@@ -53,6 +53,22 @@ drake_py_library(
     deps = [":module_py"],
 )
 
+drake_pybind_library(
+    name = "robot_plan_runner_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:drake_optional_pybind",
+    ],
+    cc_srcs = ["robot_plan_runner_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/systems",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":planner_py",
 ]
@@ -99,8 +115,8 @@ drake_py_library(
 
 install(
     name = "install",
-    targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
+    targets = PY_LIBRARIES + [":all_py"],
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 

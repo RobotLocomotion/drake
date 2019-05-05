@@ -81,6 +81,11 @@ LIBDRAKE_COMPONENTS = [
     "//manipulation/kuka_iiwa",
     "//manipulation/perception",
     "//manipulation/planner",
+    "//manipulation/robot_plan_runner:controller_systems",  # unpackaged
+    "//manipulation/robot_plan_runner:plan_runner_hardware_interface",  # unpackaged  # noqa
+    "//manipulation/robot_plan_runner:plan_sender",  # unpackaged
+    "//manipulation/robot_plan_runner:robot_plan_runner",  # unpackaged
+    "//manipulation/robot_plan_runner:robot_plans",  # unpackaged
     "//manipulation/schunk_wsg",
     "//manipulation/util",
     "//math",
