@@ -106,6 +106,35 @@ def assert_not_equal(a, b):
         raise AssertionError("Unwanted equality: {}".format(errs))
 
 
+def assert_float_equal(a, bf):
+    """Checks equality of `a` (non-float) and `bf` (float) by converting `a` to
+    floats."""
+    assert np.asarray(bf).dtype == float, np.asarray(bf).dtype
+    af = to_float(a)
+    assert_equal(af, bf)
+
+
+def assert_float_not_equal(a, bf):
+    """Checks inequality of `a` (non-float) and `bf` (float) by converting `a`
+    to floats."""
+    assert np.asarray(bf).dtype == float, np.asarray(bf).dtype
+    af = to_float(a)
+    assert_not_equal(af, bf)
+
+
+def assert_float_allclose(a, bf, atol=1e-15, rtol=0):
+    """Checks nearness of `a` (non-float) to `bf` (float) by converting `a` to
+    floats.
+
+    Note:
+        This uses default tolerances that are different from
+        `np.testing.assert_allclose`.
+    """
+    assert np.asarray(bf).dtype == float
+    af = to_float(a)
+    np.testing.assert_allclose(af, bf, atol=atol, rtol=rtol)
+
+
 def _str_eq(a, b):
     # b is a string, a is to be converted.
     a = str(a)
