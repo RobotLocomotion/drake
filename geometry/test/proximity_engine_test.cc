@@ -1240,7 +1240,7 @@ class SimplePenetrationTest : public ::testing::Test {
   //    *   │  o*      o
   //       *│*    o o
 
-  // Updates a pose in X_WG_ to be colliding or non-colliding. Then udpates the
+  // Updates a pose in X_WGs_ to be colliding or non-colliding. Then udpates the
   // position of all dynamic geometries (as given by index).
   void MoveDynamicSphere(GeometryIndex index, bool is_colliding,
       const std::vector<GeometryIndex>& dynamic_indices,
@@ -1451,6 +1451,7 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndAnchored) {
 TEST_F(SimplePenetrationTest, PenetrationDynamicAndDynamicSingleSource) {
   std::vector<GeometryIndex> dynamic_indices;
   dynamic_indices.emplace_back(0);
+  // ProximityIndex --> pindex (in contrast with GeometryIndex --> index).
   ProximityIndex origin_pindex =
       engine_.AddDynamicGeometry(sphere_, dynamic_indices.back());
   GeometryId origin_id = GeometryId::get_new_id();

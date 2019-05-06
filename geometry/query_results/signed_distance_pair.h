@@ -107,8 +107,9 @@ struct SignedDistancePair{
         distance(dist),
         nhat_BA_W(Vector3<T>::Zero()) {}
 
-  // Swaps the values for a and b.
+  /** Swaps the interpretation of geometries A and B. */
   void SwapAAndB() {
+    // Leave distance alone; swapping A and B doesn't change the distance.
     std::swap(id_A, id_B);
     std::swap(p_ACa, p_BCb);
     nhat_BA_W = -nhat_BA_W;

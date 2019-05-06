@@ -167,7 +167,7 @@ class ProximityEngine {
 
    @param[in] geometry_map    A map from geometry _index_ to the corresponding
                               global geometry identifier.
-   @param[in] X_WG            The pose of all geometries in world, indexed by
+   @param[in] X_WGs           The pose of all geometries in world, indexed by
                               each geometry's GeometryIndex.
    @retval signed_distances   A vector populated with per-object-pair signed
                               distance values (and supporting data).
@@ -181,7 +181,7 @@ class ProximityEngine {
   std::vector<SignedDistancePair<T>>
   ComputeSignedDistancePairwiseClosestPoints(
       const std::vector<GeometryId>& geometry_map,
-      const std::vector<Isometry3<T>>& X_WG) const;
+      const std::vector<Isometry3<T>>& X_WGs) const;
 
   /** Performs work in support of GeometryState::ComputeSignedDistanceToPoint().
    @param[in] p_WQ            Position of a query point Q in world frame W.
