@@ -38,7 +38,11 @@ filegroup(
 genrule(
     name = "capture_cc",
     outs = ["capture_cc.env"],
-    cmd = "echo \"BAZEL_CC=$(CC)\" > '$@'",
+    cmd = "printf \"BAZEL_CC=$(CC)\nBAZEL_CC_FLAGS=$(CC_FLAGS)\n\" > '$@'",
+    toolchains = [
+        "@bazel_tools//tools/cpp:cc_flags",
+        "@bazel_tools//tools/cpp:current_cc_toolchain",
+    ],
     visibility = ["//common:__pkg__"],
 )
 
