@@ -25,14 +25,6 @@ GTEST_TEST(RadauIntegratorTest, Robertson) {
   std::unique_ptr<analysis::test::RobertsonSystem<double>> robertson =
     std::make_unique<analysis::test::RobertsonSystem<double>>();
   std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext();
-  context->EnableCaching();
-
-  // Set the initial conditions for Robertson's system.
-  VectorBase<double>& state = context->get_mutable_continuous_state().
-                                get_mutable_vector();
-  state.SetAtIndex(0, 1);
-  state.SetAtIndex(1, 0);
-  state.SetAtIndex(2, 0);
 
   // The times to try to integrate to.
   std::list<double> times = { 1e-2, 1e-6, 1e-2 };
@@ -80,7 +72,6 @@ GTEST_TEST(RadauIntegratorTest, Robertson) {
 GTEST_TEST(RadauIntegratorTest, Stationary) {
   StationarySystem stationary;
   std::unique_ptr<Context<double>> context = stationary.CreateDefaultContext();
-  context->EnableCaching();
 
   // Set the initial condition for the stationary system.
   VectorBase<double>& state = context->get_mutable_continuous_state().

@@ -348,12 +348,6 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
     // Get the norm of the update vector.
     T dx_norm = dx_state_->CopyToVector().norm();
 
-    // The check below looks for convergence using machine epsilon. Without
-    // this check, the convergence criteria can be applied when
-    // |dx_norm| ~ 1e-22 (one example taken from practice), which does not
-    // allow the norm to be reduced further. What happens: dx_norm will become
-    // equivalent to last_dZ_norm, making theta = 1, and eta = infinity. Thus,
-    // convergence would never be identified.
     bool converged = (iter > 0 && this->IsUpdateZero(*xtplus, dx));
     SPDLOG_DEBUG(drake::log(), "norm(dx) indicates convergence? {}", converged);
 
