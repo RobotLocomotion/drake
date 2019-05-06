@@ -128,7 +128,7 @@ procedure Step(tₛ, x⁻(tₛ), tₘₐₓ)
   // ----------------------------------
 
   // See how far it is safe to integrate without missing any events.
-  tₑᵥₑₙₜ ← CalcNextEventTime(tₛ, x⁺(tₛ))
+  tₑᵥₑₙₜ ← CalcNextUpdateTime(tₛ, x⁺(tₛ))
 
   // Integrate continuous variables forward in time. Integration may terminate
   // before reaching tₛₜₒₚ due to witnessed events.
@@ -162,14 +162,15 @@ procedure AdvanceTo(tₘₐₓ)
 // Perform just the start-of-step update to advance from x⁻(t) to x⁺(t).
 procedure AdvancePendingEvents()
   t ≜ current_time, x⁻(t) ≜ current_state
-  x⁺(t) ← DoAnyPendingUpdates(t, x⁻(t)) as in Step()
+  x⁺(t) ← AdvanceTo(t)
   x(t) ← x⁺(t)  // No continuous update needed.
 
 // Update time and state to {t₀, x⁻(t₀)}, which is the starting value of the
 // trajectory, and thus the value the Context should contain at the start of the
 // first simulation step.
 procedure Initialize(t₀, x₀)
-  x⁺(t₀) ← DoAnyInitializationUpdates as in Step()
+  {t₀, x⁺(t₀)} ← Step(t₀, x₀, t₀)  // But getting initialization events too
+
   x⁻(t₀) ← x⁺(t₀)  // No continuous update needed.
 
   // ----------------------------------
@@ -182,10 +183,36 @@ Initialize() can be viewed as a "0ᵗʰ step" that occurs before the first
 Step() call as described above. Like Step(), Initialize() first
 performs pending updates (in this case only initialization events can be
 "pending"). Time doesn't advance so there is no continuous update phase and
-witnesses cannot trigger. Finally, again like Step(), the initial trajectory
-point `{t₀, x⁻(t₀)}` is provided to the handlers for any triggered publish
-events. That includes initialization publish events, per-step publish events,
-and periodic or timed publish events that trigger at t₀.
+witnesses cannot trigger; however, CalcNextUpdateTime() is still invoked to
+determine timed initialization events. Finally, again like Step(), the initial
+trajectory point `{t₀, x⁻(t₀)}` is provided to the handlers for any triggered
+publish events. That includes initialization publish events, per-step publish
+events, and periodic or timed publish events that trigger at t₀.
+
+@anchor ComputingUpdateTimes
+<h3>Computing update times</h3>
+
+As mentioned above, event times are determind by CalcNextUpdateTime(),
+implemented in System::CalcNextUpdateTime(), and can be user-defined by
+overriding LeafSystem::DoCalcNextUpdateTime().
+
+This will be called by the simulator stepping in two places: Initialize() and
+AdvanceTo(). For initialization, the time passed to CalcNextUpdateTime() will
+be slightly less than the current time to avoid numerical issues (??? why ???).
+
+If you override event time computation, you will want to return a time that is
+strictly in the future. However, you may return the *same* time as
+`context.get_time()`. If any systems do this, then for the same event, you could
+have multiple updates / publishes (e.g. logging) at the same time with similar
+or different recorded values.
+
+@warning Please think carefully before setting the next update time to be the
+    same as `context.get_time()`. If you do so, then
+    AdvanceTo() could possibly loop interminably if no events meaningfully
+    modify the state to influence this update time.
+
+@note When overriding this method, be aware that the method could be passed a
+    time that is less than zero (if your initial time is zero).
 
 @tparam T The vector element type, which must be a valid Eigen scalar.
 

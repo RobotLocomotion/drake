@@ -809,7 +809,8 @@ class System : public SystemBase {
   }
 
   /// This method is called by a Simulator during its calculation of the size of
-  /// the next continuous step to attempt. The System returns the next time at
+  /// the next continuous step to attempt, as detailed in @ref
+  /// ComputingUpdateTimes. The System returns the next time at
   /// which some discrete action must be taken, and records what those actions
   /// ought to be in @p events. Upon reaching that time, the simulator will
   /// merge @p events with the other CompositeEventCollection instances
