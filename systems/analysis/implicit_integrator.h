@@ -307,7 +307,6 @@ class ImplicitIntegrator : public IntegratorBase<T> {
       const VectorX<T>& xc, Context<T>*, MatrixX<T>* J);
   void ComputeAutoDiffJacobian(const System<T>& system, const T& t,
       const VectorX<T>& xc, const Context<T>& context, MatrixX<T>* J);
-  VectorX<T> EvalTimeDerivativesUsingContext();
 
   /// @copydoc IntegratorBase::DoStep()
   virtual bool DoImplicitIntegratorStep(const T& h) = 0;
@@ -333,7 +332,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   MatrixX<T> J_;
 
   // Whether the Jacobian matrix is fresh.
-  bool jacobian_is_fresh_{true};
+  bool jacobian_is_fresh_{false};
 
   // If set to `false`, Jacobian matrices and iteration matrix factorizations
   // will not be reused.
@@ -347,8 +346,10 @@ class ImplicitIntegrator : public IntegratorBase<T> {
 
 template <class T>
 void ImplicitIntegrator<T>::DoResetStatistics() {
+  num_iter_factorizations_ = 0;
   num_jacobian_function_evaluations_ = 0;
   num_jacobian_evaluations_ = 0;
+  DoResetImplicitIntegratorStatistics();
 }
 
 // We do not support computing the Jacobian matrix using automatic
@@ -411,13 +412,6 @@ void ImplicitIntegrator<T>::ComputeAutoDiffJacobian(
   *J = math::autoDiffToGradientMatrix(result);
 }
 
-// Evaluates the ordinary differential equations at the time and state in
-// the system's context (stored by the integrator).
-template <class T>
-VectorX<T> ImplicitIntegrator<T>::EvalTimeDerivativesUsingContext() {
-    return this->EvalTimeDerivatives(this->get_context()).CopyToVector();
-}
-
 // Computes the Jacobian of the ordinary differential equations around time
 // and continuous state `(t, xt)` using a first-order forward difference (i.e.,
 // numerical differentiation).
@@ -449,7 +443,7 @@ void ImplicitIntegrator<T>::ComputeForwardDiffJacobian(
 
   // Evaluate f(t,xt).
   context->SetTimeAndContinuousState(t, xt);
-  const VectorX<T> f = EvalTimeDerivativesUsingContext();
+  const VectorX<T> f = this->EvalTimeDerivatives(*context).CopyToVector();
 
   // Compute the Jacobian.
   VectorX<T> xt_prime = xt;
@@ -480,7 +474,7 @@ void ImplicitIntegrator<T>::ComputeForwardDiffJacobian(
     //              partition, and ideally modify only the one changed element.
     // Compute f' and set the relevant column of the Jacobian matrix.
     context->SetTimeAndContinuousState(t, xt_prime);
-    J->col(i) = (EvalTimeDerivativesUsingContext() - f) / dxi;
+    J->col(i) = (this->EvalTimeDerivatives(*context).CopyToVector() - f) / dxi;
 
     // Reset xt' to xt.
     xt_prime(i) = xt(i);
@@ -518,7 +512,7 @@ void ImplicitIntegrator<T>::ComputeCentralDiffJacobian(
 
   // Evaluate f(t,xt).
   context->SetTimeAndContinuousState(t, xt);
-  const VectorX<T> f = EvalTimeDerivativesUsingContext();
+  const VectorX<T> f = this->EvalTimeDerivatives(*context).CopyToVector();
 
   // Compute the Jacobian.
   VectorX<T> xt_prime = xt;
@@ -549,7 +543,7 @@ void ImplicitIntegrator<T>::ComputeCentralDiffJacobian(
     //              partition, and ideally modify only the one changed element.
     // Compute f(x+dx).
     context->SetContinuousState(xt_prime);
-    VectorX<T> fprime_plus = EvalTimeDerivativesUsingContext();
+    VectorX<T> fprime_plus = this->EvalTimeDerivatives(*context).CopyToVector();
 
     // Update xt' again, minimizing the effect of roundoff error.
     xt_prime(i) = xt(i) - dxi;
@@ -557,7 +551,8 @@ void ImplicitIntegrator<T>::ComputeCentralDiffJacobian(
 
     // Compute f(x-dx).
     context->SetContinuousState(xt_prime);
-    VectorX<T> fprime_minus = EvalTimeDerivativesUsingContext();
+    VectorX<T> fprime_minus = this->EvalTimeDerivatives(
+        *context).CopyToVector();
 
     // Set the Jacobian column.
     J->col(i) = (fprime_plus - fprime_minus) / (dxi_plus + dxi_minus);

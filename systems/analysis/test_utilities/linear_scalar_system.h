@@ -7,8 +7,8 @@ namespace drake {
 namespace systems {
 namespace analysis_test {
 
-// System where the state at (scalar) time t corresponds to the linear equation
-// 4t + 3.
+/// System where the state at (scalar) time t corresponds to the linear equation
+/// 4t + 3.
 class LinearScalarSystem : public LeafSystem<double> {
  public:
   LinearScalarSystem() { this->DeclareContinuousState(1); }

@@ -8,13 +8,13 @@ namespace drake {
 namespace systems {
 namespace analysis_test {
 
-// System where the state at (scalar) time t corresponds to the quadratic
-//  equation 4t² + 4t + 3.
+/// System where the state at (scalar) time t corresponds to the quadratic
+///  equation 4t² + 4t + 3.
 class QuadraticScalarSystem : public LeafSystem<double> {
  public:
   QuadraticScalarSystem() { this->DeclareContinuousState(1); }
 
-  // Evaluates the system at time t.
+  /// Evaluates the system at time t.
   double Evaluate(double t) const {
     return 3 + 4 * t * (t + 1);
   }
