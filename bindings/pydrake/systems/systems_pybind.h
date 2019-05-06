@@ -1,5 +1,9 @@
 #pragma once
 
+#warning \
+    "DRAKE_DEPRECATED: Please use constituent headers. This will be " \
+         "removed on or around 2019-07-01."
+
 /// @file
 /// Helpers for defining Python types within the Systems framework.
 
