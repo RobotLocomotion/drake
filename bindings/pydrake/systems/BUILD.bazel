@@ -80,8 +80,10 @@ drake_pybind_library(
     py_deps = [
         ":module_py",
         "//bindings/pydrake:autodiffutils_py",
+        "//bindings/pydrake:math_py",
         "//bindings/pydrake:symbolic_py",
         "//bindings/pydrake/common:cpp_template_py",
+        "//bindings/pydrake/common:eigen_geometry_py",
     ],
 )
 
