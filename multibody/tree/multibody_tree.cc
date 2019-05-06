@@ -896,8 +896,8 @@ template <typename T>
 VectorX<T> MultibodyTree<T>::CalcGravityGeneralizedForces(
     const systems::Context<T>& context) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-  if (gravity_field_.has_value()) {
-    return gravity_field_.value()->CalcGravityGeneralizedForces(context);
+  if (gravity_field_) {
+    return gravity_field_->CalcGravityGeneralizedForces(context);
   }
   return VectorX<T>::Zero(num_velocities());
 }
