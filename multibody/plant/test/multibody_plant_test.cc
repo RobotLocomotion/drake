@@ -364,6 +364,19 @@ GTEST_TEST(ActuationPortsTest, CheckActuation) {
   EXPECT_NO_THROW(plant.CalcTimeDerivatives(*context, continuous_state.get()));
 }
 
+GTEST_TEST(MultibodyPlant, UniformGravityFieldElementTest) {
+  MultibodyPlant<double> plant;
+
+  // Expect adding a default UniformFieldElementTest to pass.
+  EXPECT_NO_THROW(plant.AddForceElement<UniformGravityFieldElement>());
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.AddForceElement<UniformGravityFieldElement>(
+          Vector3d(-1, 0, 0)),
+      std::runtime_error,
+      "This model already contains a gravity field element.*");
+}
+
 // Fixture to perform a number of computational tests on an acrobot model.
 class AcrobotPlantTests : public ::testing::Test {
  public:
