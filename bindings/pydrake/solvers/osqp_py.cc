@@ -1,8 +1,8 @@
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/solvers/osqp_solver.h"
 
 namespace drake {
@@ -39,7 +39,7 @@ PYBIND11_MODULE(osqp, m) {
           doc.OsqpSolverDetails.polish_time.doc)
       .def_readwrite("run_time", &OsqpSolverDetails::run_time,
           doc.OsqpSolverDetails.run_time.doc);
-  pysystems::AddValueInstantiation<OsqpSolverDetails>(m);
+  AddValueInstantiation<OsqpSolverDetails>(m);
 }
 
 }  // namespace pydrake

@@ -10,10 +10,10 @@
 #include "drake/automotive/pure_pursuit_controller.h"
 #include "drake/automotive/road_odometry.h"
 #include "drake/automotive/simple_car.h"
+#include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -89,7 +89,7 @@ PYBIND11_MODULE(automotive, m) {
           doc.LaneDirection.lane.doc)
       .def_readwrite(
           "with_s", &LaneDirection::with_s, doc.LaneDirection.with_s.doc);
-  pysystems::AddValueInstantiation<LaneDirection>(m);
+  AddValueInstantiation<LaneDirection>(m);
 
   // TODO(eric.cousineau) Bind this named vector automatically (see #8096).
   py::class_<DrivingCommand<T>, BasicVector<T>>(

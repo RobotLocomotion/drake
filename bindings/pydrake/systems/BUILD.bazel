@@ -55,13 +55,15 @@ drake_cc_library(
 drake_pybind_library(
     name = "framework_py",
     cc_deps = [
-        ":systems_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:cpp_template_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:drake_optional_pybind",
         "//bindings/pydrake/common:drake_variant_pybind",
         "//bindings/pydrake/common:eigen_pybind",
         "//bindings/pydrake/common:type_safe_index_pybind",
+        "//bindings/pydrake/common:value_pybind",
         "//bindings/pydrake/common:wrap_pybind",
     ],
     cc_srcs = [
@@ -77,8 +79,10 @@ drake_pybind_library(
     py_deps = [
         ":module_py",
         "//bindings/pydrake:autodiffutils_py",
+        "//bindings/pydrake:math_py",
         "//bindings/pydrake:symbolic_py",
         "//bindings/pydrake/common:cpp_template_py",
+        "//bindings/pydrake/common:eigen_geometry_py",
     ],
 )
 
@@ -93,8 +97,9 @@ drake_py_library(
 drake_pybind_library(
     name = "primitives_py",
     cc_deps = [
-        ":systems_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:cpp_template_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:drake_optional_pybind",
         "//bindings/pydrake/common:drake_variant_pybind",
     ],
@@ -109,8 +114,9 @@ drake_pybind_library(
 drake_pybind_library(
     name = "analysis_py",
     cc_deps = [
-        ":systems_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:cpp_template_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:wrap_pybind",
     ],
     cc_srcs = ["analysis_py.cc"],
@@ -144,9 +150,9 @@ drake_pybind_library(
 drake_pybind_library(
     name = "rendering_py",
     cc_deps = [
-        ":systems_pybind",
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:eigen_geometry_pybind",
+        "//bindings/pydrake/common:value_pybind",
     ],
     cc_srcs = ["rendering_py.cc"],
     package_info = PACKAGE_INFO,
@@ -165,7 +171,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:eigen_geometry_pybind",
         "//bindings/pydrake/common:eigen_pybind",
         "//bindings/pydrake/common:type_pack",
-        "//bindings/pydrake/systems:systems_pybind",
+        "//bindings/pydrake/common:value_pybind",
     ],
     cc_srcs = ["sensors_py.cc"],
     package_info = PACKAGE_INFO,
@@ -222,7 +228,6 @@ drake_pybind_library(
         ":lcm_pybind",
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
-        "//bindings/pydrake/systems:systems_pybind",
     ],
     cc_srcs = [
         "lcm_py.cc",
@@ -341,8 +346,8 @@ drake_pybind_library(
     testonly = 1,
     add_install = False,
     cc_deps = [
-        ":systems_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:value_pybind",
     ],
     cc_so_name = "test/test_util",
     cc_srcs = ["test/test_util_py.cc"],

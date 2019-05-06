@@ -4,6 +4,8 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/common/drake_variant_pybind.h"
@@ -12,7 +14,6 @@
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/event.h"
@@ -25,8 +26,6 @@ using std::vector;
 
 namespace drake {
 namespace pydrake {
-
-using pysystems::DefClone;
 
 namespace {
 // Given an InputPort or OutputPort as self, return self.Eval(context).  In
@@ -357,7 +356,7 @@ void DefineFrameworkPySemantics(py::module m) {
               py::arg("source"), doc.Context.SetTimeStateAndParametersFrom.doc);
         };
     type_visit(bind_context_methods_templated_on_a_secondary_scalar,
-        pysystems::CommonScalarPack{});
+        CommonScalarPack{});
 
     DefineTemplateClassWithDefault<LeafContext<T>, Context<T>>(
         m, "LeafContext", GetPyParam<T>(), doc.LeafContext.doc);
@@ -666,7 +665,7 @@ void DefineFrameworkPySemantics(py::module m) {
             py_reference_internal, py::arg("index") = 0,
             doc.DiscreteValues.get_mutable_vector.doc_1args);
   };
-  type_visit(bind_common_scalar_types, pysystems::CommonScalarPack{});
+  type_visit(bind_common_scalar_types, CommonScalarPack{});
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake

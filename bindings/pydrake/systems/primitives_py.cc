@@ -2,11 +2,11 @@
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/common/drake_variant_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/affine_system.h"
 #include "drake/systems/primitives/barycentric_system.h"
@@ -215,7 +215,7 @@ PYBIND11_MODULE(primitives, m) {
             py::arg("abstract_model_value"),
             doc.ZeroOrderHold.ctor.doc_2args_period_sec_abstract_model_value);
   };
-  type_visit(bind_common_scalar_types, pysystems::CommonScalarPack{});
+  type_visit(bind_common_scalar_types, CommonScalarPack{});
 
   py::class_<BarycentricMeshSystem<double>, LeafSystem<double>>(
       m, "BarycentricMeshSystem", doc.BarycentricMeshSystem.doc)

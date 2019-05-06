@@ -1,9 +1,9 @@
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 
@@ -107,7 +107,7 @@ PYBIND11_MODULE(rigid_body_plant, m) {
         .def("AddContact", &Class::AddContact, py_reference_internal,
             py::arg("element_a"), py::arg("element_b"), cls_doc.AddContact.doc)
         .def("Clear", &Class::Clear, cls_doc.Clear.doc);
-    pysystems::AddValueInstantiation<Class>(m);
+    AddValueInstantiation<Class>(m);
   }
 
   {

@@ -44,7 +44,7 @@ drake_pybind_library(
     name = "rigid_body_plant_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/systems:systems_pybind",
+        "//bindings/pydrake/common:value_pybind",
         "//lcmtypes:viewer",
     ],
     cc_srcs = ["rigid_body_plant_py.cc"],

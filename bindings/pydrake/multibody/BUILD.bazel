@@ -83,7 +83,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:drake_optional_pybind",
         "//bindings/pydrake/common:eigen_geometry_pybind",
         "//bindings/pydrake/common:type_safe_index_pybind",
-        "//bindings/pydrake/systems:systems_pybind",
+        "//bindings/pydrake/common:value_pybind",
     ],
     cc_srcs = ["plant_py.cc"],
     package_info = PACKAGE_INFO,

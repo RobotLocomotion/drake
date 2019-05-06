@@ -129,8 +129,8 @@ drake_pybind_library(
     name = "automotive_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:value_pybind",
         "//bindings/pydrake/common:wrap_pybind",
-        "//bindings/pydrake/systems:systems_pybind",
     ],
     cc_srcs = ["automotive_py.cc"],
     package_info = PACKAGE_INFO,
@@ -141,7 +141,7 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
-        "//bindings/pydrake/systems:systems_pybind",
+        "//bindings/pydrake/common:value_pybind",
         "//lcmtypes:viewer",
     ],
     cc_srcs = ["geometry_py.cc"],
@@ -188,7 +188,7 @@ drake_pybind_library(
     name = "perception_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/systems:systems_pybind",
+        "//bindings/pydrake/common:value_pybind",
     ],
     cc_srcs = ["perception_py.cc"],
     package_info = PACKAGE_INFO,
