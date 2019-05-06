@@ -208,12 +208,27 @@ class QueryObject {
    filter. We report the distance between dynamic objects, and between dynamic
    and anchored objects. We DO NOT report the distance between two anchored
    objects.
+
+   <h3>Scalar support</h3>
+   This function does not support halfspaces. If an unfiltered pair contains
+   a halfspace, an exception will be thrown for all scalar types. Otherwise,
+   this query supports all other pairs of Drake geometry types for `double`.
+   For `AutoDiffXd`, it only supports distance between sphere-box and
+   sphere-sphere. If there are any unfiltered geometry pairs that include other
+   geometries, the AutoDiff throws an exception.
+
+   <!-- TODO(SeanCurtis-TRI): Document expected precision of answer based on
+   members of shape pair. See
+   https://github.com/RobotLocomotion/drake/issues/10907 -->
+   <!-- TODO(SeanCurtis-TRI): Support queries of halfspace-A, where A is _not_ a
+   halfspace. See https://github.com/RobotLocomotion/drake/issues/10905 -->
+
    @retval near_pairs The signed distance for all unfiltered geometry pairs.
   */
   // TODO(hongkai.dai): add a distance bound as an optional input, such that the
   // function doesn't return the pairs whose signed distance is larger than the
   // distance bound.
-  std::vector<SignedDistancePair<double>>
+  std::vector<SignedDistancePair<T>>
   ComputeSignedDistancePairwiseClosestPoints() const;
 
   // TODO(DamrongGuoy): Improve and refactor documentation of

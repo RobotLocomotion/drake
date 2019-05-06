@@ -441,10 +441,10 @@ class GeometryState {
    * anchored object. We DO NOT report the distance between two anchored
    * objects.
    */
-  std::vector<SignedDistancePair<double>>
+  std::vector<SignedDistancePair<T>>
   ComputeSignedDistancePairwiseClosestPoints() const {
     return geometry_engine_->ComputeSignedDistancePairwiseClosestPoints(
-        geometry_index_to_id_map_);
+        geometry_index_to_id_map_, X_WG_);
   }
 
   /** Performs work in support of QueryObject::ComputeSignedDistanceToPoint().
@@ -721,6 +721,7 @@ class GeometryState {
   // frame Fₖ, and the world frame W is the parent of frame Fₙ.
   // In other words, it is the full evaluation of the kinematic chain from the
   // geometry to the world frame.
+  // TODO(SeanCurtis-TRI): Rename this to X_WGs_ to reflect multiplicity.
   std::vector<Isometry3<T>> X_WG_;
 
   // The pose of each frame relative to the _world_ frame.
