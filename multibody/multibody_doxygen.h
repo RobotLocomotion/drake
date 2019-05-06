@@ -504,15 +504,14 @@ matrix, and use the Eigen::Quaternion class to represent them. Conceptually,
 a quaternion `q_GF` has the same meaning and can be used in the same way as
 the equivalent rotation matrix `R_GF`.
 
-<h3>Transforms</h3>
+<h3>Rigid transforms</h3>
 
-A transform combines position and orientation so contains a pose as defined
-above. We use the quantity symbol @f$X@f$ for transforms, so they appear as
-@f$^AX^B@f$ when typeset and `X_AB` in code. Drake uses the `Isometry3` variant
-of the Eigen::Transform class to represent transforms. ("Isometry" indicates
-that the transform preserves lengths, that is, it does not scale or shear but
-only translates and rotates.) Conceptually, a transform is a 4×4 matrix
-structured as follows: <pre>
+A rigid transform combines position and orientation as defined above. We use the
+quantity symbol @f$X@f$ for rigid transforms, so they appear as @f$^AX^B@f$ when
+typeset and as `X_AB` in code using our monogram notation. We often say that
+`X_AB` is the "pose" of frame B in frame A. In Drake this concept is provided by
+the RigidTransform class. Conceptually, a transform is a 4×4 matrix structured
+as follows: <pre>
           --------- ----     ---- ---- ---- ----
          |         |    |   |    |    |    |    |
          |  R_GF   |p_GF|   |Fx_G|Fy_G|Fz_G|p_GF|
@@ -523,8 +522,8 @@ structured as follows: <pre>
 There is a rotation matrix in the upper left 3×3 block (see above), and a
 position vector in the first 3×1 elements of the rightmost column. Then the
 bottom row is `[0 0 0 1]`. The rightmost column can also be viewed as the
-homogenous form of the position vector, `[x y z 1]ᵀ`. See %Eigen's documentation
-for Eigen::Transform for a detailed discussion.
+homogenous form of the position vector, `[x y z 1]ᵀ`. See Drake's documentation
+for RigidTransform for a detailed discussion.
 
 A transform may be applied to position vectors to translate the measured-from
 point to a different frame origin, and to re-express the vector in that frame's
