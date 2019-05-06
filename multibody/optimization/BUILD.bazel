@@ -17,8 +17,11 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "optimization",
     deps = [
+        ":contact_wrench",
         ":contact_wrench_evaluator",
         ":static_equilibrium_constraint",
+        ":static_equilibrium_problem",
+        ":static_friction_cone_complementary_constraint",
     ],
 )
 
@@ -77,8 +80,8 @@ drake_cc_library(
     deps = [
         ":contact_wrench",
         ":contact_wrench_evaluator",
-        ":static_friction_cone_complementary_constraint",
         ":static_equilibrium_constraint",
+        ":static_friction_cone_complementary_constraint",
     ],
 )
 

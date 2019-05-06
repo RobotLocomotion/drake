@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <vector>
+
 #include "drake/multibody/optimization/contact_wrench_evaluator.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"

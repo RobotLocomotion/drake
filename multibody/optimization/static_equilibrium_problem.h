@@ -1,5 +1,10 @@
 #pragma once
 
+#include <memory>
+#include <set>
+#include <utility>
+#include <vector>
+
 #include "drake/multibody/optimization/contact_wrench.h"
 #include "drake/multibody/optimization/contact_wrench_evaluator.h"
 #include "drake/multibody/optimization/static_friction_cone_complementary_constraint.h"
