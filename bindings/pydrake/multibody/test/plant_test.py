@@ -247,11 +247,6 @@ class TestPlant(unittest.TestCase):
         plant.AddForceElement(UniformGravityFieldElement())
         plant.Finalize()
 
-    def test_multibody_gravity_vector(self):
-        plant = MultibodyPlant()
-        plant.AddForceElement(UniformGravityFieldElement([0.0, -9.81, 0.0]))
-        plant.Finalize()
-
     def test_multibody_tree_kinematics(self):
         file_name = FindResourceOrThrow(
             "drake/examples/double_pendulum/models/double_pendulum.sdf")
@@ -739,7 +734,7 @@ class TestPlant(unittest.TestCase):
         plant = MultibodyPlant()
         Parser(plant).AddModelFromFile(file_name)
         # Getting ready for when we set foot on Mars :-).
-        plant.AddForceElement(UniformGravityFieldElement([0.0, 0.0, -3.71]))
+        plant.mutable_gravity_field().set_gravity_vector([0.0, 0.0, -3.71])
         plant.Finalize()
         context = plant.CreateDefaultContext()
 

@@ -84,7 +84,8 @@ class MultibodyTree {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTree)
 
-  /// Creates a MultibodyTree containing only a **world** body.
+  /// Creates a MultibodyTree containing only a **world** body and a
+  /// UniformGravityFieldElement.
   MultibodyTree();
 
   /// @name Methods to add new MultibodyTree elements.
@@ -680,9 +681,14 @@ class MultibodyTree {
     return *owned_mobilizers_[mobilizer_index];
   }
 
-  /// An accessor to the current gravity field.  May be nullptr if no gravity
-  /// field is specified.
-  const UniformGravityFieldElement<T>* gravity_field() const {
+  /// An accessor to the current gravity field.
+  const UniformGravityFieldElement<T>& gravity_field() const {
+    DRAKE_ASSERT(gravity_field_);
+    return *gravity_field_;
+  }
+
+  /// A mutable accessor to the current gravity field.
+  UniformGravityFieldElement<T>* mutable_gravity_field() {
     return gravity_field_;
   }
 
@@ -1803,9 +1809,18 @@ class MultibodyTree {
       tree_clone->CloneMobilizerAndAdd(*mobilizer);
     }
 
+    // Throw away the default constructed gravity element.
+    tree_clone->owned_force_elements_.clear();
+    tree_clone->gravity_field_ = nullptr;
     for (const auto& force_element : owned_force_elements_) {
       tree_clone->CloneForceElementAndAdd(*force_element);
     }
+
+    DRAKE_DEMAND(tree_clone->num_force_elements() > 0);
+    tree_clone->gravity_field_ =
+        dynamic_cast<UniformGravityFieldElement<ToScalar>*>(
+            tree_clone->owned_force_elements_[0].get());
+    DRAKE_DEMAND(tree_clone->gravity_field_);
 
     // Since Joint<T> objects are implemented from basic element objects like
     // Body, Mobilizer, ForceElement and Constraint, they are cloned last so
@@ -2381,7 +2396,7 @@ class MultibodyTree {
   std::vector<const Frame<T>*> frames_;
 
   // The gravity field force element.
-  const UniformGravityFieldElement<T>* gravity_field_{nullptr};
+  UniformGravityFieldElement<T>* gravity_field_{nullptr};
 
   // TODO(amcastro-tri): Consider moving these maps into MultibodyTreeTopology
   // since they are not templated on <T>.

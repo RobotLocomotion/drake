@@ -11,7 +11,6 @@
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/revolute_joint.h"
-#include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -28,7 +27,6 @@ using multibody::MultibodyPlant;
 using multibody::Parser;
 using multibody::JointActuator;
 using multibody::RevoluteJoint;
-using multibody::UniformGravityFieldElement;
 using systems::Context;
 using Eigen::Vector2d;
 
@@ -61,8 +59,6 @@ std::unique_ptr<systems::AffineSystem<double>> MakeBalancingLQRController(
   MultibodyPlant<double> acrobot;
   Parser parser(&acrobot);
   parser.AddModelFromFile(full_name);
-  // Add gravity to the model.
-  acrobot.AddForceElement<UniformGravityFieldElement>();
   // We are done defining the model.
   acrobot.Finalize();
 
@@ -116,9 +112,6 @@ int do_main() {
 
   Parser parser(&acrobot, &scene_graph);
   parser.AddModelFromFile(full_name);
-
-  // Add gravity to the model.
-  acrobot.AddForceElement<UniformGravityFieldElement>();
 
   // We are done defining the model.
   acrobot.Finalize();

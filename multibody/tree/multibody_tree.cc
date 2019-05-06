@@ -16,6 +16,7 @@
 #include "drake/multibody/tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/spatial_inertia.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
 
 namespace drake {
 namespace multibody {
@@ -74,6 +75,11 @@ MultibodyTree<T>::MultibodyTree() {
   ModelInstanceIndex default_instance =
       AddModelInstance("DefaultModelInstance");
   DRAKE_DEMAND(default_instance == default_model_instance());
+
+  const ForceElement<T>& new_field =
+      AddForceElement<UniformGravityFieldElement>();
+  DRAKE_DEMAND(num_force_elements() == 1);
+  DRAKE_DEMAND(owned_force_elements_[0].get() == &new_field);
 }
 
 template <typename T>
