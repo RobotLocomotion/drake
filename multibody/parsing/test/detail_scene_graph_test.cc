@@ -20,7 +20,6 @@ namespace multibody {
 namespace detail {
 namespace {
 
-using Eigen::Isometry3d;
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using geometry::Box;
@@ -32,6 +31,7 @@ using geometry::Mesh;
 using geometry::SceneGraph;
 using geometry::Shape;
 using geometry::Sphere;
+using math::RigidTransformd;
 using math::RollPitchYaw;
 using math::RotationMatrix;
 using multibody::detail::MakeCoulombFrictionFromSdfCollisionOde;
@@ -243,7 +243,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(*sdf_visual);
 
-  const Isometry3d& X_LC = geometry_instance->pose();
+  const RigidTransformd X_LC(geometry_instance->pose());
 
   // These are the expected values as specified by the string above.
   const Vector3d expected_rpy(3.14, 6.28, 1.57);
@@ -399,7 +399,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeHalfSpaceGeometryInstanceFromSdfVisual) {
       HalfSpace::MakePose(normal_L_expected, Vector3d::Zero()).linear();
 
   // Retrieve the GeometryInstance pose as parsed from the sdf::Visual.
-  const Isometry3d& X_LC = geometry_instance->pose();
+  const RigidTransformd X_LC(geometry_instance->pose());
   const Matrix3d& R_LC = X_LC.linear();
   const Vector3d normal_L = R_LC.col(2);
 
@@ -684,7 +684,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeGeometryPoseFromSdfCollision) {
       "    <sphere/>"
       "  </geometry>"
       "</collision>");
-  const Isometry3d X_LG = MakeGeometryPoseFromSdfCollision(*sdf_collision);
+  const RigidTransformd X_LG = MakeGeometryPoseFromSdfCollision(*sdf_collision);
 
   // These are the expected values as specified by the string above.
   const Vector3d expected_rpy(3.14, 6.28, 1.57);
@@ -717,7 +717,7 @@ GTEST_TEST(SceneGraphParserDetail,
       "    </plane>"
       "  </geometry>"
       "</collision>");
-  const Isometry3d X_LG = MakeGeometryPoseFromSdfCollision(*sdf_collision);
+  const RigidTransformd X_LG = MakeGeometryPoseFromSdfCollision(*sdf_collision);
 
   // The expected coordinates of the normal vector in the link frame L.
   const Vector3d normal_L_expected = Vector3d(1.0, 2.0, 3.0).normalized();
