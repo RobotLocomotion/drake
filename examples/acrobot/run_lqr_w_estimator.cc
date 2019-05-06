@@ -66,8 +66,8 @@ int do_main() {
     x0.set_theta2(0.0);
     x0.set_theta1dot(0.0);
     x0.set_theta2dot(0.0);
-    observer_acrobot->GetInputPort("elbow_torque")
-        .FixValue(observer_context.get(), 0.0);
+    observer_acrobot->GetInputPort("elbow_torque").FixValue(
+        observer_context.get(), AcrobotInput<double>{}.with_tau(0.0));
   }
   // Make a linearization here for the exercise below.  Need to do it before I
   // std::move the pointers.

@@ -54,8 +54,8 @@ class AcrobotSpongController : public systems::LeafSystem<T> {
     std::unique_ptr<drake::systems::Context<double>> acrobot_context_double =
         acrobot_double.CreateDefaultContext();
     acrobot_context_double->SetTimeStateAndParametersFrom(*acrobot_context_);
-    acrobot_double.GetInputPort("elbow_torque")
-        .FixValue(acrobot_context_double.get(), 0.0);
+    acrobot_double.GetInputPort("elbow_torque").FixValue(
+        acrobot_context_double.get(), AcrobotInput<double>{}.with_tau(0.0));
     auto linear_system = Linearize(acrobot_double, *acrobot_context_double);
 
     Eigen::Matrix4d Q = Eigen::Matrix4d::Identity();

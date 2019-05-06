@@ -29,7 +29,8 @@ GTEST_TEST(UrdfDynamicsTest, AllTests) {
   auto context_p = p.CreateDefaultContext();
 
   auto& u_rbp = rbp.get_input_port(0).FixValue(context_rbp.get(), 0.0);
-  auto& u_p = p.get_input_port(0).FixValue(context_p.get(), 0.0);
+  auto& u_p = p.get_input_port(0).FixValue(
+      context_p.get(), AcrobotInput<double>().with_tau(0.0));
 
   Eigen::Vector4d x;
   Vector1d u;

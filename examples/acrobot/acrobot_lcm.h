@@ -6,6 +6,7 @@
 
 #include <memory>
 
+#include "drake/examples/acrobot/gen/acrobot_input.h"
 #include "drake/examples/acrobot/gen/acrobot_state.h"
 #include "drake/lcmt_acrobot_u.hpp"
 #include "drake/lcmt_acrobot_x.hpp"
@@ -54,7 +55,7 @@ class AcrobotCommandSender : public systems::LeafSystem<double> {
 
 /// Receives the output of an LcmSubscriberSystem that subscribes to the
 /// acrobot input channel with LCM type lcmt_acrobot_u, and outputs the
-/// acrobot input as a BasicVector.
+/// AcrobotInput.
 ///
 /// @system{ AcrobotCommandReceiver,
 ///   @input_port{lcmt_acrobot_u},
@@ -67,7 +68,7 @@ class AcrobotCommandReceiver : public systems::LeafSystem<double> {
 
  private:
   void OutputCommandAsVector(const systems::Context<double>& context,
-                             systems::BasicVector<double>* output) const;
+                             AcrobotInput<double>* output) const;
 };
 
 /// Receives the output of an acrobot_plant, and outputs it as an LCM

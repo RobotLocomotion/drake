@@ -57,17 +57,17 @@ void AcrobotCommandSender::OutputCommand(const Context<double>& context,
 AcrobotCommandReceiver::AcrobotCommandReceiver() {
   this->DeclareAbstractInputPort("lcmt_acrobot_u",
                                  Value<lcmt_acrobot_u>());
-  this->DeclareVectorOutputPort("elbow_torque", systems::BasicVector<double>(1),
+  this->DeclareVectorOutputPort("elbow_torque", AcrobotInput<double>(),
                                 &AcrobotCommandReceiver::OutputCommandAsVector);
 }
 
 void AcrobotCommandReceiver::OutputCommandAsVector(
     const Context<double>& context,
-    systems::BasicVector<double>* output) const {
+    AcrobotInput<double>* output) const {
   const AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& command = input->get_value<lcmt_acrobot_u>();
-  output->SetAtIndex(0, command.tau);
+  output->set_tau(command.tau);
 }
 
 /*--------------------------------------------------------------------------*/

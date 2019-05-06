@@ -44,6 +44,7 @@ drake_cc_library(
     srcs = ["acrobot_lcm.cc"],
     hdrs = ["acrobot_lcm.h"],
     deps = [
+        ":acrobot_input",
         ":acrobot_state",
         "//lcmtypes:acrobot",
         "//systems/framework:leaf_system",

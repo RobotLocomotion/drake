@@ -47,8 +47,8 @@ int do_main() {
       diagram->GetMutableSubsystemContext(*acrobot,
                                           &simulator.get_mutable_context());
 
-  const double tau = 0;
-  acrobot->GetInputPort("elbow_torque").FixValue(&acrobot_context, tau);
+  acrobot->GetInputPort("elbow_torque").FixValue(
+      &acrobot_context, AcrobotInput<double>{}.with_tau(0.0));
 
   // Set an initial condition that is sufficiently far from the downright fixed
   // point.
