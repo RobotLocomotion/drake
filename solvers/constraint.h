@@ -110,6 +110,26 @@ class Constraint : public EvaluatorBase {
   /** Number of rows in the output constraint. */
   int num_constraints() const { return num_outputs(); }
 
+  /**
+   * Set the sparsity pattern of the gradient matrix. gradient_sparsity_pattern
+   * contains *all* the pairs of (row_index, col_index) for which the
+   * corresponding entries could have non-zero value in the gradient matrix.
+   */
+  void SetGradientSparsityPattern(
+      const std::vector<std::pair<int, int>>& gradient_sparsity_pattern);
+
+  /**
+   * Returns the vector of (row_index, col_index) that contains all the entries
+   * in the gradient of Eval function whose value could be non-zero.
+   * @retval gradient_sparsity_pattern If gradient_sparsity_pattern.has_value()
+   * == false, then we regard all entries of the gradient as potentially
+   * non-zero.
+   */
+  const optional<std::vector<std::pair<int, int>>>& gradient_sparsity_pattern()
+      const {
+    return gradient_sparsity_pattern_;
+  }
+
  protected:
   /** Updates the lower bound.
    * @note if the users want to expose this method in a sub-class, do
@@ -178,6 +198,15 @@ class Constraint : public EvaluatorBase {
 
   Eigen::VectorXd lower_bound_;
   Eigen::VectorXd upper_bound_;
+
+  // gradient_sparsity_pattern_ records the pair (row_index, col_index) that
+  // contains the non-zero entries in the gradient of the constraint Eval
+  // function. Note that if the entry (row_index, col_index) *can* be non-zero
+  // for certain value of x, then it should be included in
+  // gradient_sparsity_patten_. When gradient_sparsity_pattern_.has_value() =
+  // false, the gradient matrix is regarded as non-sparse, i.e., every entry of
+  // the gradient matrix can be non-zero.
+  optional<std::vector<std::pair<int, int>>> gradient_sparsity_pattern_;
 };
 
 /**
@@ -296,7 +325,8 @@ class LorentzConeConstraint : public Constraint {
       : Constraint(
             2, A.cols(), Eigen::Vector2d::Constant(0.0),
             Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity())),
-        A_(A),
+        A_(A.sparseView()),
+        A_dense_(A),
         b_(b) {
     DRAKE_DEMAND(A_.rows() >= 2);
     DRAKE_ASSERT(A_.rows() == b_.rows());
@@ -305,7 +335,7 @@ class LorentzConeConstraint : public Constraint {
   ~LorentzConeConstraint() override {}
 
   /** Getter for A. */
-  const Eigen::MatrixXd& A() const { return A_; }
+  const Eigen::SparseMatrix<double>& A() const { return A_; }
 
   /** Getter for b. */
   const Eigen::VectorXd& b() const { return b_; }
@@ -324,7 +354,10 @@ class LorentzConeConstraint : public Constraint {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
-  const Eigen::MatrixXd A_;
+  const Eigen::SparseMatrix<double> A_;
+  // We need to store a dense matrix of A_, so that we can compute the gradient
+  // using AutoDiffXd, and return the gradient as a dense matrix.
+  const Eigen::MatrixXd A_dense_;
   const Eigen::VectorXd b_;
 };
 
@@ -355,14 +388,15 @@ class RotatedLorentzConeConstraint : public Constraint {
       : Constraint(
             3, A.cols(), Eigen::Vector3d::Constant(0.0),
             Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity())),
-        A_(A),
+        A_(A.sparseView()),
+        A_dense_(A),
         b_(b) {
     DRAKE_DEMAND(A_.rows() >= 3);
     DRAKE_ASSERT(A_.rows() == b_.rows());
   }
 
   /** Getter for A. */
-  const Eigen::MatrixXd& A() const { return A_; }
+  const Eigen::SparseMatrix<double>& A() const { return A_; }
 
   /** Getter for b. */
   const Eigen::VectorXd& b() const { return b_; }
@@ -383,7 +417,10 @@ class RotatedLorentzConeConstraint : public Constraint {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
-  const Eigen::MatrixXd A_;
+  const Eigen::SparseMatrix<double> A_;
+  // We need to store a dense matrix of A_, so that we can compute the gradient
+  // using AutoDiffXd, and return the gradient as a dense matrix.
+  const Eigen::MatrixXd A_dense_;
   const Eigen::VectorXd b_;
 };
 

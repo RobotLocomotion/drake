@@ -13,9 +13,29 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "render",
     deps = [
+        ":render_engine",
         ":render_label",
         ":render_label_class",
         ":render_label_manager",
+    ],
+)
+
+# A build target for code that wants to interact with the *idea* of a render
+# engine but doesn't want any build dependencies on the implementation details.
+drake_cc_library(
+    name = "render_engine",
+    srcs = ["render_engine.cc"],
+    hdrs = [
+        "camera_properties.h",
+        "render_engine.h",
+    ],
+    deps = [
+        "//geometry:geometry_index",
+        "//geometry:geometry_roles",
+        "//geometry:shape_specification",
+        "//geometry:utilities",
+        "//math:geometric_transform",
+        "//systems/sensors:image",
     ],
 )
 
@@ -53,6 +73,15 @@ drake_cc_library(
 )
 
 # === test/ ===
+
+drake_cc_googletest(
+    name = "render_engine_test",
+    deps = [
+        ":render_engine",
+        "//common/test_utilities",
+        "//geometry:geometry_ids",
+    ],
+)
 
 drake_cc_googletest(
     name = "render_label_test",

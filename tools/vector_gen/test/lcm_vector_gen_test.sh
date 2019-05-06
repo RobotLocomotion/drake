@@ -9,8 +9,7 @@ set -ex
 find .
 
 # These are the filenames under test.
-tool_outputs="lcmt_sample_t.lcm sample.cc sample.h sample_translator.cc
-  sample_translator.h"
+tool_outputs="lcmt_sample_t.lcm sample.cc sample.h"
 
 # Insist that the generated output matches the goal copy in git.
 mv tools/vector_gen/test/lcmt_sample_t.lcm tools/vector_gen/test/gen/

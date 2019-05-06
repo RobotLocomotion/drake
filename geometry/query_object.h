@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/geometry/geometry_context.h"
+#include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
@@ -101,21 +102,23 @@ class QueryObject {
    if they overlap each other and are not explicitly excluded through
    @ref collision_filter_concepts "collision filtering". These algorithms find
    those colliding cases, characterize them, and report the essential
-   characteristics of that collision.  */
+   characteristics of that collision.
+
+   For two colliding geometries g_A and g_B, it is guaranteed that they will
+   map to `id_A` and `id_B` in a fixed, repeatable manner, where `id_A` and
+   `id_B` are GeometryId's of geometries g_A and g_B respectively.
+
+   These methods are affected by collision filtering; element pairs that
+   have been filtered will not produce contacts, even if their collision
+   geometry is penetrating.     */
   //@{
 
   /** Computes the penetrations across all pairs of geometries in the world.
    Only reports results for _penetrating_ geometries; if two geometries are
    separated, there will be no result for that pair. Pairs of _anchored_
    geometry are also not reported. The penetration between two geometries is
-   characterized as a point pair (see PenetrationAsPointPair).
-
-   For two penetrating geometries g₁ and g₂, it is guaranteed that they will
-   map to `id_A` and `id_B` in a fixed, repeatable manner.
-
-   This method is affected by collision filtering; element pairs that
-   have been filtered will not produce contacts, even if their collision
-   geometry is penetrating.
+   characterized as a point pair (see PenetrationAsPointPair). This method is
+   affected by collision filtering.
 
    <h3>Scalar support</h3>
    This method only provides double-valued penetration results.
@@ -135,6 +138,16 @@ class QueryObject {
             point pairs. */
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
       const;
+
+  /**
+   Reports pair-wise intersections and characterizes each non-empty
+   intersection as a ContactSurface. The computation is subject to collision
+   filtering.
+
+   @returns A vector populated with contact surfaces of all detected
+            intersecting pairs of geometries.
+   @note  This function is not implemented yet. */
+  std::vector<ContactSurface<T>> ComputeContactSurfaces() const;
 
   //@}
 
@@ -195,12 +208,27 @@ class QueryObject {
    filter. We report the distance between dynamic objects, and between dynamic
    and anchored objects. We DO NOT report the distance between two anchored
    objects.
+
+   <h3>Scalar support</h3>
+   This function does not support halfspaces. If an unfiltered pair contains
+   a halfspace, an exception will be thrown for all scalar types. Otherwise,
+   this query supports all other pairs of Drake geometry types for `double`.
+   For `AutoDiffXd`, it only supports distance between sphere-box and
+   sphere-sphere. If there are any unfiltered geometry pairs that include other
+   geometries, the AutoDiff throws an exception.
+
+   <!-- TODO(SeanCurtis-TRI): Document expected precision of answer based on
+   members of shape pair. See
+   https://github.com/RobotLocomotion/drake/issues/10907 -->
+   <!-- TODO(SeanCurtis-TRI): Support queries of halfspace-A, where A is _not_ a
+   halfspace. See https://github.com/RobotLocomotion/drake/issues/10905 -->
+
    @retval near_pairs The signed distance for all unfiltered geometry pairs.
   */
   // TODO(hongkai.dai): add a distance bound as an optional input, such that the
   // function doesn't return the pairs whose signed distance is larger than the
   // distance bound.
-  std::vector<SignedDistancePair<double>>
+  std::vector<SignedDistancePair<T>>
   ComputeSignedDistancePairwiseClosestPoints() const;
 
   // TODO(DamrongGuoy): Improve and refactor documentation of

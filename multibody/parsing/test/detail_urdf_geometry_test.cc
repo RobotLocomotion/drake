@@ -20,6 +20,7 @@ namespace {
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
+using math::RigidTransformd;
 using geometry::GeometryInstance;
 
 class UrdfGeometryTests : public testing::Test {
@@ -118,7 +119,7 @@ TEST_F(UrdfGeometryTests, TestParseMaterial1) {
   EXPECT_EQ(visual.name().substr(0, name_base.size()), name_base);
 
   EXPECT_TRUE(CompareMatrices(
-      visual.pose().matrix(), Eigen::Isometry3d::Identity().matrix()));
+      visual.pose().matrix(), RigidTransformd().matrix()));
 
   const geometry::Box* box =
       dynamic_cast<const geometry::Box*>(&visual.shape());
@@ -146,8 +147,7 @@ TEST_F(UrdfGeometryTests, TestParseMaterial2) {
   ASSERT_EQ(visual_instances_.size(), 2);
   const auto& visual = visual_instances_.front();
 
-  Eigen::Isometry3d expected_pose = Eigen::Isometry3d::Identity();
-  expected_pose.translation() = Eigen::Vector3d(0, 0, 0.3);
+  const RigidTransformd expected_pose(Eigen::Vector3d(0, 0, 0.3));
   EXPECT_TRUE(CompareMatrices(
       visual.pose().matrix(), expected_pose.matrix()));
 

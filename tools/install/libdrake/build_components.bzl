@@ -61,8 +61,10 @@ LIBDRAKE_COMPONENTS = [
     "//examples/compass_gait:compass_gait_vector_types",  # unpackaged
     "//examples/manipulation_station:manipulation_station",  # unpackaged
     "//examples/manipulation_station:manipulation_station_hardware_interface",  # unpackaged  # noqa
+    "//examples/pendulum:pendulum_geometry",  # unpackaged
     "//examples/pendulum:pendulum_plant",  # unpackaged
     "//examples/pendulum:pendulum_vector_types",  # unpackaged
+    "//examples/quadrotor:quadrotor_geometry",  # unpackaged
     "//examples/quadrotor:quadrotor_plant",  # unpackaged
     "//examples/rimless_wheel:rimless_wheel",  # unpackaged
     "//examples/rimless_wheel:rimless_wheel_vector_types",  # unpackaged
@@ -71,7 +73,9 @@ LIBDRAKE_COMPONENTS = [
     "//geometry/dev",
     "//geometry/dev/render",
     "//geometry/dev/render/shaders",
+    "//geometry/proximity",
     "//geometry/query_results",
+    "//geometry/render",
     "//geometry/test_utilities:geometry_set_tester",  # unpackaged
     "//lcm",
     "//manipulation/kuka_iiwa",
@@ -90,6 +94,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/hydroelastic_contact",
     "//multibody/inverse_kinematics",
     "//multibody/math",
+    "//multibody/optimization",
     "//multibody/parsing",
     "//multibody/plant",
     "//multibody/plant:contact_results_to_lcm",  # unpackaged

@@ -7,13 +7,44 @@ namespace systems {
 
 template <typename T>
 SignalLogger<T>::SignalLogger(int input_size, int batch_allocation_size)
-    : log_(input_size, batch_allocation_size) {
+    : LeafSystem<T>(SystemTypeTag<systems::SignalLogger>{}),
+      log_(input_size, batch_allocation_size) {
   this->DeclareInputPort("data", kVectorValued, input_size);
 
   // Use a per-step event by default; disabled by set_publish_period() or
   // set_forced_publish_only().
   this->DeclarePerStepPublishEvent(&SignalLogger<T>::PerStepWriteToLog);
   logging_mode_ = kPerStep;
+}
+
+// The scalar-converting copy constructor should return a result whose logging
+// mode matches whatever set_publish_period / set_forced_publish_only calls the
+// user has made on `other`.
+template <typename T>
+template <typename U>
+SignalLogger<T>::SignalLogger(const SignalLogger<U>& other)
+    : SignalLogger<T>(other.get_input_port().size()) {
+  switch (static_cast<LoggingMode>(other.logging_mode_)) {
+    case kPeriodic: {
+      const auto& events = other.GetPeriodicEvents();
+      DRAKE_DEMAND(events.size() == 1);
+      const PeriodicEventData& timing = events.begin()->first;
+      DRAKE_DEMAND(timing.offset_sec() == 0.0);
+      this->set_publish_period(timing.period_sec());
+      DRAKE_DEMAND(logging_mode_ == kPeriodic);
+      return;
+    }
+    case kForced: {
+      this->set_forced_publish_only();
+      DRAKE_DEMAND(logging_mode_ == kForced);
+      return;
+    }
+    case kPerStep: {
+      DRAKE_DEMAND(logging_mode_ == kPerStep);
+      return;
+    }
+  }
+  DRAKE_UNREACHABLE();
 }
 
 template <typename T>

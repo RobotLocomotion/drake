@@ -132,7 +132,7 @@ class MathOverloadsBase(unittest.TestCase):
         should_be_fresh = [
             "pydrake.autodiffutils",
             "pydrake.math",
-            "pydrake.symoblic"
+            "pydrake.symbolic"
         ]
         for m in should_be_fresh:
             self.assertNotIn(m, sys.modules, m)

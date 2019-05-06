@@ -15,12 +15,12 @@ Introduction
 
 If you have improvements to Drake, send us your pull requests!
 
-Our standard workflow is to fork `Drake's official Github repository
+Our standard workflow is to fork `Drake's official GitHub repository
 <https://github.com/RobotLocomotion/drake/>`_ into your
-own Github account and then push your changes into a branch on your fork. Once
+own GitHub account and then push your changes into a branch on your fork. Once
 you believe your code is ready to be merged into Drake's primary repository,
 open a `pull request <https://help.github.com/articles/using-pull-requests/>`_
-via the Github website. Your code will then undergo an interactive review
+via the GitHub website. Your code will then undergo an interactive review
 process and :ref:`Continuous Integration (CI) <continuous_integration_notes>`
 tests before it is merged into
 `Drake's primary repository <https://github.com/RobotLocomotion/drake>`_.
@@ -76,28 +76,29 @@ integration. All other configurations are provided on a best-effort basis.
 Drake requires a compiler running in C++14 mode or greater. MATLAB is only
 supported for CMake builds using the "Unix Makefiles" generator.
 
-+----------------------------------+---------------+-----------------+------------+-------------------+--------+
-| Operating System                 | Bazel | CMake | C/C++ Compiler  | Java       | MATLAB (Optional) | Python |
-+==================================+=======+=======+=================+============+===================+========+
-+----------------------------------+-------+-------+-----------------+------------+-------------------+--------+
-| Ubuntu 16.04 LTS (Xenial Xerus)  | 0.24  | 3.5   | | Clang 6.0     | OpenJDK 8  | R2017a            | 2.7    |
-|                                  |       |       | | GCC 5.4       |            |                   |        |
-+----------------------------------+       +-------+-----------------+------------+-------------------+--------+
-| Ubuntu 18.04 LTS (Bionic Beaver) |       | 3.10  | | Clang 6.0     | OpenJDK 11 | R2018b            | 2.7    |
-|                                  |       |       | | GCC 7.3       |            |                   | 3.6    |
-+----------------------------------+       +-------+-----------------+------------+                   +--------+
-| macOS High Sierra (10.13)        |       |       | | Apple LLVM 10 | Oracle 11  |                   | 2.7    |
-+----------------------------------+       | 3.14  | | (Xcode 10.1)  |            |                   | 3.7    |
-| macOS Mojave (10.14)             |       |       |                 |            |                   |        |
-+----------------------------------+-------+-------+-----------------+------------+-------------------+--------+
++----------------------------------+-------+-------+---------------------+------------+-------------------+--------+
+| Operating System                 | Bazel | CMake | C/C++ Compiler      | Java       | MATLAB (Optional) | Python |
++==================================+=======+=======+=====================+============+===================+========+
++----------------------------------+-------+-------+---------------------+------------+-------------------+--------+
+| Ubuntu 16.04 LTS (Xenial Xerus)  | 0.24  | 3.5   | | Clang 6.0         | OpenJDK 8  | R2017a            | 2.7    |
+|                                  |       |       | | GCC 5.4           |            |                   |        |
++----------------------------------+       +-------+---------------------+------------+-------------------+--------+
+| Ubuntu 18.04 LTS (Bionic Beaver) |       | 3.10  | | Clang 6.0         | OpenJDK 11 | R2018b            | | 2.7  |
+|                                  |       |       | | GCC 7.3           |            |                   | | 3.6  |
++----------------------------------+       +-------+---------------------+------------+                   +--------+
+| macOS High Sierra (10.13)        |       | 3.14  | | Apple LLVM 10.0.0 | Oracle 12  |                   | | 2.7  |
+|                                  |       |       | | (Xcode 10.1)      |            |                   | | 3.7  |
++----------------------------------+       |       +---------------------+            |                   |        |
+| macOS Mojave (10.14)             |       |       | | Apple LLVM 10.0.1 |            |                   |        |
+|                                  |       |       | | (Xcode 10.2)      |            |                   |        |
++----------------------------------+-------+-------+---------------------+------------+-------------------+--------+
 
-CPython is the only Python implementation supported. On all platforms, Python 2
+CPython is the only Python implementation supported. On all platforms, Python 2.7
 is the default version. On Ubuntu, amd64 (i.e., x86_64) is the only supported
 architecture.
 
 The following configurations are presently untested in continuous integration:
 
--   macOS Mojave: C++, Python
 -   macOS, Ubuntu Bionic: MATLAB
 
 .. _configuration-management-non-determinism:
@@ -128,7 +129,7 @@ Binary Packages
 ---------------
 
 The binary releases of Drake are built with GCC 5.4 on Ubuntu Xenial, GCC 7.3
-on Ubuntu Bionic, and Apple LLVM 10.0 on macOS High Sierra.
+on Ubuntu Bionic, and Apple LLVM 10.0.1 on macOS Mojave.
 
 The links for these packages are listed in :ref:`binary-installation`.
 

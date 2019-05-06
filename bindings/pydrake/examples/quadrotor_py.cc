@@ -3,7 +3,9 @@
 
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/examples/quadrotor/quadrotor_geometry.h"
 #include "drake/examples/quadrotor/quadrotor_plant.h"
+#include "drake/systems/primitives/affine_system.h"
 
 namespace drake {
 namespace pydrake {
@@ -32,15 +34,14 @@ PYBIND11_MODULE(quadrotor, m) {
           py::arg("m_arg"), py::arg("L_arg"), py::arg("I_arg"),
           py::arg("kF_arg"), py::arg("kM_arg"), doc.QuadrotorPlant.ctor.doc)
       .def("m", &QuadrotorPlant<T>::m, doc.QuadrotorPlant.m.doc)
-      .def("g", &QuadrotorPlant<T>::g, doc.QuadrotorPlant.g.doc)
-      .def("RegisterGeometry", &QuadrotorPlant<T>::RegisterGeometry,
-          py::arg("scene_graph"), doc.QuadrotorPlant.RegisterGeometry.doc)
-      .def("get_geometry_pose_output_port",
-          &QuadrotorPlant<T>::get_geometry_pose_output_port,
-          py_reference_internal,
-          doc.QuadrotorPlant.get_geometry_pose_output_port.doc)
-      .def("source_id", &QuadrotorPlant<T>::source_id,
-          doc.QuadrotorPlant.source_id.doc);
+      .def("g", &QuadrotorPlant<T>::g, doc.QuadrotorPlant.g.doc);
+
+  py::class_<QuadrotorGeometry, LeafSystem<double>>(
+      m, "QuadrotorGeometry", doc.QuadrotorGeometry.doc)
+      .def_static("AddToBuilder", &QuadrotorGeometry::AddToBuilder,
+          py::arg("builder"), py::arg("quadrotor_state_port"),
+          py::arg("scene_graph"), py::return_value_policy::reference,
+          py::keep_alive<0, 1>(), doc.QuadrotorGeometry.AddToBuilder.doc);
 
   m.def("StabilizingLQRController", &StabilizingLQRController,
       py::arg("quadrotor_plant"), py::arg("nominal_position"),

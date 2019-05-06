@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 #include <fcl/fcl.h>
@@ -90,7 +91,7 @@ class EncodedData {
   }
 
   /** Reports the encoded data.  */
-  uintptr_t encoded_data() const { return data_; }
+  uintptr_t encoding() const { return data_; }
 
  private:
   // Note: This sets a mask to be 1000...0 based on the size of a pointer.
@@ -108,6 +109,10 @@ class EncodedData {
   //   - This unsigned integer doesn't bleed out into the API at all.
   uintptr_t data_{};
 };
+
+/** Returns the name of the geometry associated with the given collision
+ `object`.  */
+std::string GetGeometryName(const fcl::CollisionObjectd& object);
 
 }  // namespace internal
 }  // namespace geometry

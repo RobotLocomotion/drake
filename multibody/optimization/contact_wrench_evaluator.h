@@ -27,8 +27,8 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
   ComposeVariableValues(const systems::Context<T>& context,
                         const Derived& lambda_value) const {
     VectorX<T> x(num_vars());
-    x.template head(plant_->num_positions()) = plant_->GetPositions(context);
-    x.template tail(num_lambda_) = lambda_value;
+    x.head(plant_->num_positions()) = plant_->GetPositions(context);
+    x.tail(num_lambda_) = lambda_value;
     return x;
   }
 

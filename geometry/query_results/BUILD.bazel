@@ -13,6 +13,7 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "query_results",
     deps = [
+        ":contact_surface",
         ":penetration_as_point_pair",
         ":signed_distance_pair",
         ":signed_distance_to_point",
@@ -54,6 +55,26 @@ drake_cc_library(
     name = "signed_distance_to_point_with_gradient",
     srcs = [],
     hdrs = ["signed_distance_to_point_with_gradient.h"],
+    deps = [
+        "//common",
+        "//geometry:geometry_ids",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_surface",
+    srcs = [
+        "contact_surface.cc",
+        "mesh_field.cc",
+        "mesh_field_linear.cc",
+        "surface_mesh.cc",
+    ],
+    hdrs = [
+        "contact_surface.h",
+        "mesh_field.h",
+        "mesh_field_linear.h",
+        "surface_mesh.h",
+    ],
     deps = [
         "//common",
         "//geometry:geometry_ids",

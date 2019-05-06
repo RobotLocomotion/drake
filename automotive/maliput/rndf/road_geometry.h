@@ -51,7 +51,7 @@ class RoadGeometry : public api::RoadGeometry {
   ~RoadGeometry() override = default;
 
  private:
-  const api::RoadGeometryId do_id() const override { return id_; }
+  api::RoadGeometryId do_id() const override { return id_; }
 
   int do_num_junctions() const override { return junctions_.size(); }
 

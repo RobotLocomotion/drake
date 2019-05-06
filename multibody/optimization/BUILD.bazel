@@ -14,6 +14,14 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+drake_cc_package_library(
+    name = "optimization",
+    deps = [
+        ":contact_wrench_evaluator",
+        ":static_equilibrium_constraint",
+    ],
+)
+
 drake_cc_library(
     name = "contact_wrench_evaluator",
     srcs = ["contact_wrench_evaluator.cc"],

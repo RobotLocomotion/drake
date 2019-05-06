@@ -265,7 +265,7 @@ See https://docs.bazel.build/versions/master/user-manual.html#bazelrc.
 Drake offers two flavors of SNOPT bindings for the MathematicalProgram:
 
  - The ``--config snopt_f2c`` option selects the legacy bindings that use the
-   f2c compiler; these bindings will be removed on 2019-05-01.
+   f2c compiler; these bindings will be removed on 2019-06-01.
  - The ``--config snopt_fortran`` option selects the bindings that use the
    gfortran compiler; these bindings will be supported for the foreseeable
    future.

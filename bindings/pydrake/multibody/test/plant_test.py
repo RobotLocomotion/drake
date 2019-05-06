@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 
+import unittest
+
+from six import text_type as unicode
+import numpy as np
+
 from pydrake.multibody.tree import (
     Body,
     BodyIndex,
@@ -22,12 +27,15 @@ from pydrake.multibody.tree import (
     WeldJoint,
     world_index,
 )
-from pydrake.multibody.math import SpatialForce, SpatialVelocity
+from pydrake.multibody.math import (
+    SpatialForce,
+    SpatialVelocity,
+)
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
+    ConnectContactResultsToDrakeVisualizer,
     ContactResults,
     ContactResultsToLcmSystem,
-    ConnectContactResultsToDrakeVisualizer,
     CoulombFriction,
     MultibodyPlant,
     PointPairContactInfo,
@@ -38,30 +46,26 @@ from pydrake.multibody.benchmarks.acrobot import (
     MakeAcrobotPlant,
 )
 
-from pydrake.common.eigen_geometry import Isometry3
+from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.geometry import (
     Box,
     GeometryId,
     PenetrationAsPointPair,
+    SceneGraph,
     SignedDistancePair,
     SignedDistanceToPoint,
-    SceneGraph,
 )
-from pydrake.systems.framework import AbstractValue, DiagramBuilder
-
-import copy
-import math
-import unittest
-import warnings
-
-from six import text_type as unicode
-import numpy as np
-
-from pydrake.common import FindResourceOrThrow
-from pydrake.common.eigen_geometry import Isometry3
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-from pydrake.systems.framework import InputPort, OutputPort
-from pydrake.math import RigidTransform, RollPitchYaw
+from pydrake.math import (
+    RigidTransform,
+    RollPitchYaw,
+)
+from pydrake.systems.framework import (
+    AbstractValue,
+    DiagramBuilder,
+    InputPort,
+    OutputPort,
+)
 from pydrake.systems.lcm import LcmPublisherSystem
 
 
@@ -163,7 +167,11 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(
             plant.get_actuation_input_port(), InputPort)
         self.assertIsInstance(
-            plant.get_continuous_state_output_port(), OutputPort)
+            plant.get_state_output_port(), OutputPort)
+        # Smoke test of deprecated methods.
+        with catch_drake_warnings(expected_count=2):
+            plant.get_continuous_state_output_port()
+            plant.get_continuous_state_output_port(model_instance)
         self.assertIsInstance(
             plant.get_contact_results_output_port(), OutputPort)
         self.assertIsInstance(plant.num_frames(), int)
@@ -394,7 +402,7 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(
             plant.get_actuation_input_port(iiwa_model), InputPort)
         self.assertIsInstance(
-            plant.get_continuous_state_output_port(gripper_model), OutputPort)
+            plant.get_state_output_port(gripper_model), OutputPort)
         self.assertIsInstance(
             plant.get_generalized_contact_forces_output_port(
                 model_instance=gripper_model),

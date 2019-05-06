@@ -392,6 +392,12 @@ class GeometryState {
         geometry_index_to_id_map_);
   }
 
+  /** See QueryObject::ComputeContactSurfaces() for documentation.  */
+  std::vector<ContactSurface<T>> ComputeContactSurfaces() const {
+    return geometry_engine_->ComputeContactSurfaces(
+        geometry_index_to_id_map_);
+  }
+
   //@}
 
   /** @name               Proximity filters
@@ -435,10 +441,10 @@ class GeometryState {
    * anchored object. We DO NOT report the distance between two anchored
    * objects.
    */
-  std::vector<SignedDistancePair<double>>
+  std::vector<SignedDistancePair<T>>
   ComputeSignedDistancePairwiseClosestPoints() const {
     return geometry_engine_->ComputeSignedDistancePairwiseClosestPoints(
-        geometry_index_to_id_map_);
+        geometry_index_to_id_map_, X_WG_);
   }
 
   /** Performs work in support of QueryObject::ComputeSignedDistanceToPoint().
@@ -543,16 +549,19 @@ class GeometryState {
 
   // Sets the kinematic poses for the frames indicated by the given ids.
   // @param poses The frame id and pose values.
+  // @pre source_id is a registered source.
   // @throws std::logic_error  If the ids are invalid as defined by
   // ValidateFrameIds().
-  void SetFramePoses(const FramePoseVector<T>& poses);
+  void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses);
 
   // Confirms that the set of ids provided include _all_ of the frames
   // registered to the set's source id and that no extra frames are included.
   // @param values The kinematics values (ids and values) to validate.
+  // @pre source_id is a registered source.
   // @throws std::runtime_error if the set is inconsistent with known topology.
   template <typename ValueType>
-  void ValidateFrameIds(const FrameKinematicsVector<ValueType>& values) const;
+  void ValidateFrameIds(SourceId source_id,
+                        const FrameKinematicsVector<ValueType>& values) const;
 
   // Method that performs any final book-keeping/updating on the state after
   // _all_ of the state's frames have had their poses updated.
@@ -712,6 +721,7 @@ class GeometryState {
   // frame Fₖ, and the world frame W is the parent of frame Fₙ.
   // In other words, it is the full evaluation of the kinematic chain from the
   // geometry to the world frame.
+  // TODO(SeanCurtis-TRI): Rename this to X_WGs_ to reflect multiplicity.
   std::vector<Isometry3<T>> X_WG_;
 
   // The pose of each frame relative to the _world_ frame.

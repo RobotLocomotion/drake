@@ -20,12 +20,6 @@ To see example usages, please see `doc/python_bindings.rst`.
 """
 
 from __future__ import absolute_import
-import warnings
-
-# Deprecated symbols.
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore", DeprecationWarning)
-    from .util.all import *
 
 # Legacy symbols.
 from .attic.all import *

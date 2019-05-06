@@ -13,9 +13,21 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "proximity",
     deps = [
+        ":collision_filter_legacy",
         ":distance_to_point",
         ":distance_to_point_with_gradient",
+        ":distance_to_shape",
         ":proximity_utilities",
+    ],
+)
+
+drake_cc_library(
+    name = "collision_filter_legacy",
+    hdrs = ["collision_filter_legacy.h"],
+    deps = [
+        ":proximity_utilities",
+        "//common:essential",
+        "//common:sorted_vectors_have_intersection",
     ],
 )
 
@@ -47,7 +59,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "distance_to_shape",
+    hdrs = ["distance_to_shape.h"],
+    deps = [
+        ":collision_filter_legacy",
+        ":distance_to_point",
+        ":proximity_utilities",
+        "//geometry/query_results:signed_distance_pair",
+    ],
+)
+
+drake_cc_library(
     name = "proximity_utilities",
+    srcs = ["proximity_utilities.cc"],
     hdrs = ["proximity_utilities.h"],
     deps = [
         "//geometry:geometry_ids",
@@ -68,10 +92,28 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "distance_sphere_to_shape_test",
+    deps = [
+        ":distance_to_shape",
+        "//common/test_utilities",
+        "//geometry:utilities",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
     name = "distance_to_point_with_gradient_test",
     deps = [
         ":distance_to_point_with_gradient",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_surface_test",
+    deps = [
+        "//geometry:geometry_ids",
+        "//geometry/query_results:contact_surface",
     ],
 )
 

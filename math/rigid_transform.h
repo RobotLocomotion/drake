@@ -122,7 +122,7 @@ class RigidTransform {
   }
 
   /// Constructs a %RigidTransform with an identity RotationMatrix and a given
-  /// position vector 'p'.
+  /// position vector `p`.
   /// @param[in] p position vector from frame A's origin to frame B's origin,
   /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
   explicit RigidTransform(const Vector3<T>& p) { set_translation(p); }
@@ -367,12 +367,50 @@ class RigidTransform {
     return RigidTransform<T>(R_AB, p_AB_A);
   }
 
-  /// Calculates `this` %RigidTransform `X_AB` multiplied by the position vector
-  /// 'p_BoQ_B` which is from Bo (B's origin) to an arbitrary point Q.
+  /// Multiplies `this` %RigidTransform `X_AB` by the position vector
+  /// `p_BoQ_B` which is from Bo (B's origin) to an arbitrary point Q.
   /// @param[in] p_BoQ_B position vector from Bo to Q, expressed in frame B.
   /// @retval p_AoQ_A position vector from Ao to Q, expressed in frame A.
   Vector3<T> operator*(const Vector3<T>& p_BoQ_B) const {
     return p_AoBo_A_ + R_AB_ * p_BoQ_B;
+  }
+
+  /// Multiplies `this` %RigidTransform `X_AB` by the n position vectors
+  /// `p_BoQ1_B` ... `p_BoQn_B`, where `p_BoQi_B` is the iᵗʰ position vector
+  /// from Bo (frame B's origin) to an arbitrary point Qi, expressed in frame B.
+  /// @param[in] p_BoQ_B `3 x n` matrix with n position vectors `p_BoQi_B`.
+  /// @retval p_AoQ_A `3 x n` matrix with n position vectors `p_AoQi_A`, i.e., n
+  /// position vectors from Ao (frame A's origin) to Qi, expressed in frame A.
+  /// @code{.cc}
+  /// const RollPitchYaw<double> rpy(0.1, 0.2, 0.3);
+  /// const RigidTransform<double> X_AB(rpy, Vector3d(1, 2, 3));
+  /// Eigen::Matrix<double, 3, 2> p_BoQ_B;
+  /// p_BoQ_B.col(0) = Vector3d(4, 5, 6);
+  /// p_BoQ_B.col(1) = Vector3d(9, 8, 7);
+  /// const Eigen::Matrix<double, 3, 2> p_AoQ_A = X_AB * p_BoQ_B;
+  /// @endcode
+  template <typename Derived>
+  Eigen::Matrix<typename Derived::Scalar, 3, Derived::ColsAtCompileTime>
+  operator*(const Eigen::MatrixBase<Derived>& p_BoQ_B) const {
+    if (p_BoQ_B.rows() != 3) {
+      throw std::logic_error(
+          "Error: Inner dimension for matrix multiplication is not 3.");
+    }
+    // Express position vectors in terms of frame A as p_BoQ_A = R_AB * p_BoQ_B.
+    const RotationMatrix<typename Derived::Scalar> &R_AB = rotation();
+    const Eigen::Matrix<typename Derived::Scalar, 3, Derived::ColsAtCompileTime>
+        p_BoQ_A = R_AB.matrix() * p_BoQ_B;
+
+    // Reserve space (on stack on heap) to store the result.
+    const int number_of_position_vectors = p_BoQ_B.cols();
+    Eigen::Matrix<typename Derived::Scalar, 3, Derived::ColsAtCompileTime>
+        p_AoQ_A(3, number_of_position_vectors);
+
+    // Create each returned position vector as p_AoQi_A = p_AoBo_A + p_BoQi_A.
+    for (int i = 0;  i < number_of_position_vectors;  ++i)
+      p_AoQ_A.col(i) = translation() + p_BoQ_A.col(i);
+
+    return p_AoQ_A;
   }
 
   /// Compares each element of `this` to the corresponding element of `other`

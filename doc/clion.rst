@@ -2,10 +2,17 @@
 CLion IDE setup
 ***************
 
-This guide describes how to set up Drake in the JetBrains CLion IDE.
+.. note::
 
-**NOTE: EVERY SETUP STEP IN THIS DOCUMENT IS CRITICAL TO GET CLION WORKING
-PROPERLY.  Read carefully, and don't skip anything.**
+  EVERY SETUP STEP IN THIS DOCUMENT IS CRITICAL TO GET CLION WORKING
+  PROPERLY.  Read carefully, and do not skip anything.
+
+.. note::
+
+  The Bazel plugin for CLion does not support macOS, per
+  `bazelbuild/intellij#109 <https://github.com/bazelbuild/intellij/issues/109>`_.
+
+This guide describes how to set up Drake in the JetBrains CLion IDE on Ubuntu.
 
 Using CLion with Bazel
 ======================
@@ -40,8 +47,6 @@ At the time of this writing, CLion 2018.3.4 will pick Bazel plugin
 2019.03.05.0.1, which has a problem with ``Run > Debug...``
 (``Run > Run...`` is fine). We have to downgrade Bazel plugin to
 2019.01.14.0.5. See `Downgrading the Bazel Plugin`_.
-
-For developers on macOS, see the :ref:`macOS` details.
 
 Upgrading CLion
 ---------------
@@ -350,69 +355,3 @@ Change the following fields in the instructions given above:
 Building the drake addenda lint tool:
 
 ``bazel build //tools/lint:drakelint``
-
-.. _macos:
-
-macOS support
-=============
-
-Google's Bazel plugin for CLion does not officially support macOS, per
-`bazelbuild/intellij#109 <https://github.com/bazelbuild/intellij/issues/109>`_.
-However, on a best-effort basis, we will document here any tips that Drake
-developers have discovered to fix the compatibility problems.
-
-CPP toolchain
--------------
-
-CLion users on macOS **must** set this environment variable before starting
-CLion:
-
-``export BAZEL_USE_CPP_ONLY_TOOLCHAIN=1``
-
-CLion's editor needs to locate all C/C++ targets and parse their code (e.g.,
-resolve ``#include`` statements).  Without this variable, the compiler
-auto-detection works well enough to compile the code, but fails to report
-itself as a C/C++ compiler to the IDE.
-
-When this variable is set and the IDE is working correctly, the Bazel Console
-will report a line such as this:
-
-``953 unique C configurations (0 reused), 1104 C targets``
-
-When this variable is *not* set, the IDE will show pervasive "unknown symbol"
-red squiggles, and the Bazel Console will report a line such as this:
-
-``0 unique C configurations (0 reused), 0 C targets``
-
-Environment Variables
----------------------
-
-CLion forwards environment variables to the processes it launches, including
-the Bazel client and server. We have a number of Bazel repository rules that
-consult environment variables to locate external dependencies, e.g.,
-``SNOPT_PATH`` or ``GUROBI_PATH``. Therefore, some care is necessary to make
-sure CLion is launched with the environment you actually want!
-
-macOS users will get broken behavior by default.  When you run an macOS app
-graphically, the parent process is `launchd` (PID 1), which provides its own
-standard environment variables to the child process.  In particular, it provides
-a minimal ``PATH`` that does not include ``/usr/local/bin``, where most Homebrew
-executables are installed.  Consequently, the Bazel build may fail to find
-Homebrew dependencies like ``glib`` and ``pkg-config``.
-
-The simplest solution is not to launch CLion graphically. Instead, configure
-your shell environment properly in ``.bashrc``, and launch CLion from the
-command line::
-
-  /Applications/CLion.app/Contents/MacOS/clion
-
-If you strongly prefer clicking on buttons, you might be able to configure the
-``launchd`` environment using ``launchctl``, but this process is finicky. We
-have no reliable recipe for it yet.
-
-Formatting files
-----------------
-
-The instructions above related to ``clang-format-6.0`` are written for Ubuntu.
-On macOS, the program is named just ``clang-format``, without the ``-6.0``
-suffix.

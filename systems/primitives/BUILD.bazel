@@ -30,6 +30,7 @@ drake_cc_package_library(
         ":pass_through",
         ":piecewise_polynomial_affine_system",
         ":piecewise_polynomial_linear_system",
+        ":port_switch",
         ":random_source",
         ":saturation",
         ":signal_log",
@@ -76,10 +77,7 @@ drake_cc_library(
 drake_cc_library(
     name = "constant_value_source",
     srcs = ["constant_value_source.cc"],
-    hdrs = [
-        "constant_value_source.h",
-        "constant_value_source-inl.h",
-    ],
+    hdrs = ["constant_value_source.h"],
     deps = [
         "//systems/framework",
     ],
@@ -143,10 +141,7 @@ drake_cc_library(
 drake_cc_library(
     name = "gain",
     srcs = ["gain.cc"],
-    hdrs = [
-        "gain.h",
-        "gain-inl.h",
-    ],
+    hdrs = ["gain.h"],
     deps = [
         "//common:unused",
         "//systems/framework",
@@ -200,10 +195,7 @@ drake_cc_library(
 drake_cc_library(
     name = "pass_through",
     srcs = ["pass_through.cc"],
-    hdrs = [
-        "pass_through.h",
-        "pass_through-inl.h",
-    ],
+    hdrs = ["pass_through.h"],
     deps = [
         "//systems/framework",
     ],
@@ -232,6 +224,15 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "//common:extract_double",
+    ],
+)
+
+drake_cc_library(
+    name = "port_switch",
+    srcs = ["port_switch.cc"],
+    hdrs = ["port_switch.h"],
+    deps = [
+        "//systems/framework",
     ],
 )
 
@@ -322,10 +323,7 @@ drake_cc_library(
 drake_cc_library(
     name = "zero_order_hold",
     srcs = ["zero_order_hold.cc"],
-    hdrs = [
-        "zero_order_hold.h",
-        "zero_order_hold-inl.h",
-    ],
+    hdrs = ["zero_order_hold.h"],
     deps = [
         "//systems/framework",
     ],
@@ -334,10 +332,7 @@ drake_cc_library(
 drake_cc_library(
     name = "sine",
     srcs = ["sine.cc"],
-    hdrs = [
-        "sine.h",
-        "sine-inl.h",
-    ],
+    hdrs = ["sine.h"],
     deps = [
         "//systems/framework",
     ],
@@ -557,6 +552,19 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "port_switch_test",
+    srcs = [
+        "test/port_switch_test.cc",
+    ],
+    deps = [
+        ":port_switch",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "random_source_test",
     deps = [
         ":constant_vector_source",
@@ -585,6 +593,7 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//systems/analysis:simulator",
         "//systems/framework",
+        "//systems/framework/test_utilities:scalar_conversion",
     ],
 )
 

@@ -212,16 +212,28 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       py::arg("next_state"), py::arg("input"), py::arg("next_input"),
       py::arg("prog"), doc.AddDirectCollocationConstraint.doc);
 
+  // TimeStep
+  py::class_<TimeStep>(m, "TimeStep")
+      .def(py::init<double>())
+      .def_readwrite("value", &TimeStep::value);
+
   py::class_<DirectTranscription, MultipleShooting>(
       m, "DirectTranscription", doc.DirectTranscription.doc)
       .def(py::init<const systems::System<double>*,
-               const systems::Context<double>&, int>(),
+               const systems::Context<double>&, int,
+               variant<systems::InputPortSelection, systems::InputPortIndex>>(),
           py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
-          doc.DirectTranscription.ctor.doc_3args)
+          py::arg("input_port_index") =
+              systems::InputPortSelection::kUseFirstInputIfItExists,
+          doc.DirectTranscription.ctor.doc_4args)
       .def(py::init<const systems::System<double>*,
-               const systems::Context<double>&, int, double>(),
+               const systems::Context<double>&, int, TimeStep,
+               variant<systems::InputPortSelection, systems::InputPortIndex>>(),
           py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
-          py::arg("fixed_timestep"), doc.DirectTranscription.ctor.doc_4args);
+          py::arg("fixed_timestep"),
+          py::arg("input_port_index") =
+              systems::InputPortSelection::kUseFirstInputIfItExists,
+          doc.DirectTranscription.ctor.doc_5args);
 }
 
 }  // namespace pydrake
