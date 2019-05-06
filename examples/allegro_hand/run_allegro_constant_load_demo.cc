@@ -76,9 +76,10 @@ void DoMain() {
   plant.AddJoint<multibody::WeldJoint>("weld_hand", plant.world_body(), nullopt,
       joint_hand_root, nullopt, Isometry3<double>::Identity());
 
-  // Add gravity, if needed
-  if (FLAGS_add_gravity) {
-    plant.AddForceElement<multibody::UniformGravityFieldElement>();
+  // Remove gravity, if needed
+  if (!FLAGS_add_gravity) {
+    plant.mutable_gravity_field().set_gravity_vector(
+        Eigen::Vector3d::Zero());
   }
 
   // Now the model is complete.

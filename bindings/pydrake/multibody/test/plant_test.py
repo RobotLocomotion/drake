@@ -244,12 +244,9 @@ class TestPlant(unittest.TestCase):
 
     def test_multibody_gravity_default(self):
         plant = MultibodyPlant()
-        plant.AddForceElement(UniformGravityFieldElement())
-        plant.Finalize()
-
-    def test_multibody_gravity_vector(self):
-        plant = MultibodyPlant()
-        plant.AddForceElement(UniformGravityFieldElement([0.0, -9.81, 0.0]))
+        # Smoke test of deprecated methods.
+        with catch_drake_warnings(expected_count=1):
+            plant.AddForceElement(UniformGravityFieldElement())
         plant.Finalize()
 
     def test_multibody_tree_kinematics(self):
@@ -739,7 +736,10 @@ class TestPlant(unittest.TestCase):
         plant = MultibodyPlant()
         Parser(plant).AddModelFromFile(file_name)
         # Getting ready for when we set foot on Mars :-).
-        plant.AddForceElement(UniformGravityFieldElement([0.0, 0.0, -3.71]))
+        gravity_vector = np.array([0.0, 0.0, -3.71])
+        plant.mutable_gravity_field().set_gravity_vector(gravity_vector)
+        np.testing.assert_equal(plant.gravity_field().gravity_vector(),
+                                gravity_vector)
         plant.Finalize()
         context = plant.CreateDefaultContext()
 

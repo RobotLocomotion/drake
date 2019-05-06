@@ -3,7 +3,6 @@
 #include <utility>
 
 #include "drake/geometry/geometry_visualization.h"
-#include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/systems/analysis/simulator.h"
 
 namespace drake {
@@ -90,9 +89,6 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
       plant_->world_body(), X_WG,
       geometry::Box(ground_box_size(0), ground_box_size(1), ground_box_size(2)),
       "ground", ground_friction_, scene_graph_);
-
-  // Add gravity.
-  plant_->template AddForceElement<UniformGravityFieldElement>();
 
   plant_->Finalize();
 

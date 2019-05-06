@@ -17,7 +17,6 @@ using drake::multibody::RevoluteJoint;
 using drake::multibody::RigidBody;
 using drake::multibody::RotationalInertia;
 using drake::multibody::SpatialInertia;
-using drake::multibody::UniformGravityFieldElement;
 using drake::multibody::UnitInertia;
 
 using std::make_unique;
@@ -150,7 +149,7 @@ KukaIiwaModelBuilder<T>::Build() const {
   // Add force element for a constant gravity pointing downwards, that is, in
   // the negative z-axis direction.
   const Eigen::Vector3d gravity_vector = -gravity_ * Eigen::Vector3d::UnitZ();
-  model->template AddForceElement<UniformGravityFieldElement>(gravity_vector);
+  model->mutable_gravity_field().set_gravity_vector(gravity_vector);
 
   // Finalize() stage sets the topology (model is built).
   if (finalize_model_) model->Finalize();

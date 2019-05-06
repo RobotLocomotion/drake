@@ -13,7 +13,6 @@ using drake::symbolic::Expression;
 using drake::symbolic::Variable;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
-using drake::multibody::UniformGravityFieldElement;
 using drake::systems::System;
 
 namespace drake {
@@ -44,7 +43,6 @@ VectorX<Expression> MultibodyPlantDynamics() {
   // Load the Pendulum.urdf into a symbolic MultibodyPlant.
   const char* const urdf_path = "drake/examples/pendulum/Pendulum.urdf";
   MultibodyPlant<double> plant;
-  plant.AddForceElement<UniformGravityFieldElement>();
   Parser parser(&plant);
   parser.AddModelFromFile(FindResourceOrThrow(urdf_path));
   plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"));

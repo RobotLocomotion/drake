@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import ConnectDrakeVisualizer, SceneGraph
 from pydrake.lcm import DrakeLcm
-from pydrake.multibody.tree import UniformGravityFieldElement
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.systems.drawing import plot_system_graphviz
@@ -16,7 +15,6 @@ scene_graph = builder.AddSystem(SceneGraph())
 cart_pole = builder.AddSystem(MultibodyPlant())
 cart_pole.RegisterAsSourceForSceneGraph(scene_graph)
 Parser(plant=cart_pole).AddModelFromFile(file_name)
-cart_pole.AddForceElement(UniformGravityFieldElement())
 cart_pole.Finalize()
 assert cart_pole.geometry_source_is_registered()
 

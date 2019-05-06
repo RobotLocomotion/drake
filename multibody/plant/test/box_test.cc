@@ -68,7 +68,7 @@ GTEST_TEST(Box, UnderStiction) {
     Parser(&plant).AddModelFromFile(full_name);
 
     // Add gravity to the model.
-    plant.AddForceElement<UniformGravityFieldElement>(
+    plant.mutable_gravity_field().set_gravity_vector(
         -g * Vector3<double>::UnitZ());
 
     plant.Finalize();  // Done creating the model.
@@ -197,4 +197,3 @@ GTEST_TEST(Box, UnderStiction) {
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
-
