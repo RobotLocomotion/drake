@@ -855,11 +855,11 @@ void MultibodyPlant<T>::set_penetration_allowance(
     double penetration_allowance) {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   // Default to Earth's gravity for this estimation.
-  const UniformGravityFieldElement<T>* gravity_field =
+  const UniformGravityFieldElement<T>& gravity_field =
       internal_tree().gravity_field();
   const double g =
-      (gravity_field && !gravity_field->gravity_vector().isZero()) ?
-      gravity_field->gravity_vector().norm() :
+      (!gravity_field.gravity_vector().isZero()) ?
+      gravity_field.gravity_vector().norm() :
       UniformGravityFieldElement<double>::kDefaultStrength;
 
   // TODO(amcastro-tri): Improve this heuristics in future PR's for when there

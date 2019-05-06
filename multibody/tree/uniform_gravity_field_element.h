@@ -44,8 +44,14 @@ class UniformGravityFieldElement : public ForceElement<T> {
   explicit UniformGravityFieldElement(Vector3<double> g_W);
 
   /// Returns the acceleration of gravity vector, expressed in the world frame
-  /// W.
+  /// W in m/s².
   const Vector3<double>& gravity_vector() const { return g_W_; }
+
+  /// Sets the acceleration of gravity vector, expressed in the world frame
+  /// W in m/s².
+  void set_gravity_vector(const Vector3<double>& g_W) {
+    g_W_ = g_W;
+  }
 
   /// Computes the generalized forces `tau_g(q)` due to `this` gravity field
   /// element as a function of the generalized positions `q` stored in the input

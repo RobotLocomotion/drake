@@ -220,7 +220,7 @@ class PendulumTests : public ::testing::Test {
 
     // Add force element for a constant gravity pointing downwards, that is, in
     // the minus y-axis direction.
-    model_->AddForceElement<UniformGravityFieldElement>(
+    model_->mutable_gravity_field().set_gravity_vector(
         Vector3d(0.0, -acceleration_of_gravity_, 0.0));
   }
 

@@ -372,6 +372,10 @@ PYBIND11_MODULE(plant, m) {
             cls_doc.get_joint_actuator.doc)
         .def("get_frame", &Class::get_frame, py::arg("frame_index"),
             py_reference_internal, cls_doc.get_frame.doc)
+        .def("gravity_field", &Class::gravity_field, py_reference_internal,
+            cls_doc.gravity_field.doc)
+        .def("mutable_gravity_field", &Class::mutable_gravity_field,
+            py_reference_internal, cls_doc.mutable_gravity_field.doc)
         .def("GetModelInstanceName",
             overload_cast_explicit<const string&, ModelInstanceIndex>(
                 &Class::GetModelInstanceName),

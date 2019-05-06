@@ -286,7 +286,6 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSystemTest) {
   const double kTimeStep = 0.1;
   auto pendulum =
       std::make_unique<multibody::MultibodyPlant<double>>(kTimeStep);
-  pendulum->AddForceElement<multibody::UniformGravityFieldElement>();
   multibody::Parser parser(pendulum.get());
   parser.AddModelFromFile(FindResourceOrThrow(urdf_path));
   pendulum->WeldFrames(pendulum->world_frame(),

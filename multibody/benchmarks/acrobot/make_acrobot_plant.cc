@@ -91,7 +91,7 @@ MakeAcrobotPlant(const AcrobotParameters& params, bool finalize,
   plant->AddJointActuator(params.actuator_name(), elbow);
 
   // Gravity acting in the -z direction.
-  plant->AddForceElement<UniformGravityFieldElement>(
+  plant->mutable_gravity_field().set_gravity_vector(
       -params.g() * Vector3d::UnitZ());
 
   // We are done creating the plant.

@@ -18,7 +18,6 @@ from pydrake.common import (
 )
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import MultibodyPlant
-from pydrake.multibody.tree import UniformGravityFieldElement
 from pydrake.symbolic import (
     Expression,
     Variable
@@ -60,7 +59,6 @@ def main():
     file_name = FindResourceOrThrow(
         "drake/examples/pendulum/Pendulum.urdf")
     Parser(pendulum).AddModelFromFile(file_name)
-    pendulum.AddForceElement(UniformGravityFieldElement())
     pendulum.WeldFrames(pendulum.world_frame(),
                         pendulum.GetFrameByName("base"))
     pendulum.Finalize()

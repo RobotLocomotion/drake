@@ -43,7 +43,6 @@ class MultibodyPlantGeneralizedAppliedForceTest
                        plant_->GetFrameByName("iiwa_link_0", iiwa1));
     plant_->WeldFrames(plant_->world_frame(),
                        plant_->GetFrameByName("iiwa_link_0", iiwa2));
-    plant_->AddForceElement<UniformGravityFieldElement>();
     plant_->Finalize();
 
     // Set feedback gains to zero - we won't need feedback control.
