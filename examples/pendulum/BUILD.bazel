@@ -170,6 +170,7 @@ drake_cc_googletest(
     name = "pendulum_geometry_test",
     deps = [
         ":pendulum_geometry",
+        ":pendulum_plant",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
     ],
