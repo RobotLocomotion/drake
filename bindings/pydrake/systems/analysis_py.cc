@@ -1,9 +1,10 @@
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/monte_carlo.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
@@ -109,7 +110,7 @@ PYBIND11_MODULE(analysis, m) {
             &Simulator<T>::set_target_realtime_rate,
             doc.Simulator.set_target_realtime_rate.doc);
   };
-  type_visit(bind_scalar_types, pysystems::NonSymbolicScalarPack{});
+  type_visit(bind_scalar_types, NonSymbolicScalarPack{});
 
   // Monte Carlo Testing
   {

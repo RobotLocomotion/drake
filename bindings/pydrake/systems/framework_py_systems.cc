@@ -6,6 +6,8 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/common/drake_variant_pybind.h"
@@ -13,7 +15,6 @@
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system.h"
@@ -778,8 +779,7 @@ void DefineFrameworkPySystems(py::module m) {
   type_visit(converter_methods, ConversionPairs{});
   // Add mention of what scalars are supported via `SystemScalarConverter`
   // through Python.
-  converter.attr("SupportedScalars") =
-      GetPyParam(pysystems::CommonScalarPack{});
+  converter.attr("SupportedScalars") = GetPyParam(CommonScalarPack{});
   converter.attr("SupportedConversionPairs") =
       GetPyParamList(ConversionPairs{});
 
@@ -788,7 +788,7 @@ void DefineFrameworkPySystems(py::module m) {
     using T = decltype(dummy);
     Impl<T>::DoDefinitions(m);
   };
-  type_visit(bind_common_scalar_types, pysystems::CommonScalarPack{});
+  type_visit(bind_common_scalar_types, CommonScalarPack{});
 }
 
 }  // namespace pydrake

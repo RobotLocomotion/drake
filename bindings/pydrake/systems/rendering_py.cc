@@ -3,9 +3,9 @@
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
+#include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/multibody/math/spatial_velocity.h"
 #include "drake/systems/rendering/frame_velocity.h"
 #include "drake/systems/rendering/multibody_position_to_geometry_pose.h"
@@ -78,7 +78,7 @@ PYBIND11_MODULE(rendering, m) {
           doc.PoseBundle.get_model_instance_id.doc)
       .def("set_model_instance_id", &PoseBundle<T>::set_model_instance_id,
           doc.PoseBundle.set_model_instance_id.doc);
-  pysystems::AddValueInstantiation<PoseBundle<T>>(m);
+  AddValueInstantiation<PoseBundle<T>>(m);
 
   py::class_<PoseVelocityInputPorts<T>>(
       m, "PoseVelocityInputPorts", doc.PoseVelocityInputPorts.doc)
