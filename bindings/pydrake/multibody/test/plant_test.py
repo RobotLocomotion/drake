@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 
+import unittest
+
+from six import text_type as unicode
+import numpy as np
+
 from pydrake.multibody.tree import (
     Body,
     BodyIndex,
@@ -22,12 +27,15 @@ from pydrake.multibody.tree import (
     WeldJoint,
     world_index,
 )
-from pydrake.multibody.math import SpatialForce, SpatialVelocity
+from pydrake.multibody.math import (
+    SpatialForce,
+    SpatialVelocity,
+)
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
+    ConnectContactResultsToDrakeVisualizer,
     ContactResults,
     ContactResultsToLcmSystem,
-    ConnectContactResultsToDrakeVisualizer,
     CoulombFriction,
     MultibodyPlant,
     PointPairContactInfo,
@@ -38,30 +46,26 @@ from pydrake.multibody.benchmarks.acrobot import (
     MakeAcrobotPlant,
 )
 
-from pydrake.common.eigen_geometry import Isometry3
+from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.geometry import (
     Box,
     GeometryId,
     PenetrationAsPointPair,
+    SceneGraph,
     SignedDistancePair,
     SignedDistanceToPoint,
-    SceneGraph,
 )
-from pydrake.systems.framework import AbstractValue, DiagramBuilder
-
-import copy
-import math
-import unittest
-import warnings
-
-from six import text_type as unicode
-import numpy as np
-
-from pydrake.common import FindResourceOrThrow
-from pydrake.common.eigen_geometry import Isometry3
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-from pydrake.systems.framework import InputPort, OutputPort
-from pydrake.math import RigidTransform, RollPitchYaw
+from pydrake.math import (
+    RigidTransform,
+    RollPitchYaw,
+)
+from pydrake.systems.framework import (
+    AbstractValue,
+    DiagramBuilder,
+    InputPort,
+    OutputPort,
+)
 from pydrake.systems.lcm import LcmPublisherSystem
 
 
