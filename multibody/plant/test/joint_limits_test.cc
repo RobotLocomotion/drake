@@ -18,7 +18,6 @@ namespace drake {
 using systems::Context;
 using systems::Simulator;
 using multibody::Parser;
-using multibody::UniformGravityFieldElement;
 
 namespace multibody {
 namespace {
@@ -69,6 +68,8 @@ GTEST_TEST(JointLimitsTest, PrismaticJointConvergenceTest) {
 
   for (double time_step : {2.5e-4, 5.0e-4, 1.0e-3}) {
     MultibodyPlant<double> plant(time_step);
+    plant.mutable_gravity_field().set_gravity_vector(
+        Vector3<double>::Zero());
     const auto M_B = SpatialInertia<double>::MakeFromCentralInertia(
         mass, Vector3<double>::Zero(),
         mass * UnitInertia<double>::SolidBox(box_size, box_size, box_size));
@@ -230,6 +231,8 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
   Parser(&plant).AddModelFromFile(FindResourceOrThrow(kIiwaFilePath));
   plant.WeldFrames(plant.world_frame(),
                    plant.GetFrameByName("iiwa_link_0"));
+  plant.mutable_gravity_field().set_gravity_vector(
+      Vector3<double>::Zero());
   plant.Finalize();
 
   // Some sanity check on model sizes.

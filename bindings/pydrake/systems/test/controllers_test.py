@@ -116,6 +116,7 @@ class TestControllers(unittest.TestCase):
         Parser(plant).AddModelFromFile(sdf_path)
         plant.WeldFrames(plant.world_frame(),
                          plant.GetFrameByName("iiwa_link_0"))
+        plant.mutable_gravity_field().set_gravity_vector([0.0, 0.0, 0.0])
         plant.Finalize()
 
         # We verify the (known) size of the model.

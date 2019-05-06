@@ -277,16 +277,22 @@ typename std::enable_if<std::is_same<
     ForceElementType<T>,
     UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
 MultibodyTree<T>::AddForceElement(Args&&... args) {
-  if (gravity_field_.has_value()) {
+  auto new_field =
+      std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...);
+  if (gravity_field_) {
+    if (new_field->gravity_vector() == gravity_field_->gravity_vector()) {
+      return *gravity_field_;
+    }
+
     throw std::runtime_error(
         "This model already contains a gravity field element. "
         "Only one gravity field element is allowed per model.");
   }
   // We save the force element so that we can grant users access to it for
   // gravity field specific queries.
-  gravity_field_ = &AddForceElement(
-      std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...));
-  return *gravity_field_.value();
+  gravity_field_ = const_cast<ForceElementType<T>*>(
+      &AddForceElement(std::move(new_field)));
+  return *gravity_field_;
 }
 
 template <typename T>
@@ -645,4 +651,3 @@ Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::extract_qv_from_continuous(
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
-

@@ -373,6 +373,23 @@ GTEST_TEST(ActuationPortsTest, CheckActuation) {
   EXPECT_NO_THROW(plant.CalcTimeDerivatives(*context, continuous_state.get()));
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// TODO(sammy-tri) Remove this test when the deprecated overload is removed.
+GTEST_TEST(MultibodyPlant, UniformGravityFieldElementTest) {
+  MultibodyPlant<double> plant;
+
+  // Expect adding a default UniformFieldElementTest to pass.
+  EXPECT_NO_THROW(plant.AddForceElement<UniformGravityFieldElement>());
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.AddForceElement<UniformGravityFieldElement>(
+          Vector3d(-1, 0, 0)),
+      std::runtime_error,
+      "This model already contains a gravity field element.*");
+}
+#pragma GCC diagnostic pop
+
 // Fixture to perform a number of computational tests on an acrobot model.
 class AcrobotPlantTests : public ::testing::Test {
  public:
@@ -385,8 +402,6 @@ class AcrobotPlantTests : public ::testing::Test {
         "drake/multibody/benchmarks/acrobot/acrobot.sdf");
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder);
     Parser(plant_).AddModelFromFile(full_name);
-    // Add gravity to the model.
-    plant_->AddForceElement<UniformGravityFieldElement>();
     // Sanity check on the availability of the optional source id before using
     // it.
     DRAKE_DEMAND(plant_->get_source_id() != nullopt);
@@ -438,8 +453,6 @@ class AcrobotPlantTests : public ::testing::Test {
         "drake/multibody/benchmarks/acrobot/acrobot.sdf");
     discrete_plant_ = std::make_unique<MultibodyPlant<double>>(time_step);
     Parser(discrete_plant_.get()).AddModelFromFile(full_name);
-    // Add gravity to the model.
-    discrete_plant_->AddForceElement<UniformGravityFieldElement>();
     discrete_plant_->Finalize();
 
     discrete_context_ = discrete_plant_->CreateDefaultContext();

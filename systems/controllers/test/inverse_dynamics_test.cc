@@ -149,6 +149,8 @@ TEST_F(InverseDynamicsTest, GravityCompensationTest) {
   mbp->WeldFrames(mbp->world_frame(),
                   mbp->GetFrameByName("iiwa_link_0"));
 
+  mbp->mutable_gravity_field().set_gravity_vector(Vector3<double>::Zero());
+
   // Finalize the model and transfer ownership.
   mbp->Finalize();
   Init(std::move(mbp),
@@ -168,8 +170,8 @@ TEST_F(InverseDynamicsTest, GravityCompensationTest) {
                   mbp->GetFrameByName("iiwa_link_0"));
 
   // Add gravitational forces, finalize the model, and transfer ownership.
-  mbp->AddForceElement<multibody::UniformGravityFieldElement>(-9.8 *
-      Vector3<double>::UnitZ());
+  mbp->mutable_gravity_field().set_gravity_vector(
+      -9.8 * Vector3<double>::UnitZ());
   mbp->Finalize();
   Init(std::move(mbp),
        InverseDynamics<double>::InverseDynamicsMode::kGravityCompensation);
@@ -191,8 +193,8 @@ TEST_F(InverseDynamicsTest, InverseDynamicsTest) {
                   mbp->GetFrameByName("iiwa_link_0"));
 
   // Add gravitational forces, finalize the model, and transfer ownership.
-  mbp->AddForceElement<multibody::UniformGravityFieldElement>(-9.8 *
-      Vector3<double>::UnitZ());
+  mbp->mutable_gravity_field().set_gravity_vector(
+      -9.8 * Vector3<double>::UnitZ());
   mbp->Finalize();
   Init(std::move(mbp),
        InverseDynamics<double>::InverseDynamicsMode::kInverseDynamics);

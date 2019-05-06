@@ -15,7 +15,6 @@
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
-#include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/adder.h"
@@ -161,8 +160,6 @@ ManipulationStation<T>::ManipulationStation(double time_step)
   scene_graph_ = owned_scene_graph_.get();
   plant_->RegisterAsSourceForSceneGraph(scene_graph_);
   scene_graph_->set_name("scene_graph");
-
-  plant_->template AddForceElement<multibody::UniformGravityFieldElement>();
   plant_->set_name("plant");
 
   this->set_name("manipulation_station");
@@ -416,9 +413,6 @@ void ManipulationStation<T>::MakeIiwaControllerModel() {
       owned_controller_plant_->GetFrameByName(wsg_model_.parent_frame->name(),
                                               controller_iiwa_model),
       wsg_equivalent.body_frame(), wsg_model_.X_PC);
-
-  owned_controller_plant_
-      ->template AddForceElement<multibody::UniformGravityFieldElement>();
   owned_controller_plant_->set_name("controller_plant");
 }
 

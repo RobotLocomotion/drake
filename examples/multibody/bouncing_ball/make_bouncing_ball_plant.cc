@@ -11,7 +11,6 @@ using drake::multibody::CoulombFriction;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::RigidBody;
 using drake::multibody::SpatialInertia;
-using drake::multibody::UniformGravityFieldElement;
 using drake::multibody::UnitInertia;
 using math::RigidTransformd;
 using geometry::Sphere;
@@ -57,7 +56,7 @@ MakeBouncingBallPlant(double radius, double mass,
   }
 
   // Gravity acting in the -z direction.
-  plant->AddForceElement<UniformGravityFieldElement>(gravity_W);
+  plant->mutable_gravity_field().set_gravity_vector(gravity_W);
 
   // We are done creating the plant.
   plant->Finalize();
