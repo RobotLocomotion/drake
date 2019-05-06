@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <tuple>
+#include <utility>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
