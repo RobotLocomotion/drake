@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -144,6 +145,110 @@ class TestFindSpringEquilibrium
   VectorXDecisionVariable t_;
   symbolic::Variable z_;
 };
+
+/**
+ * Solve the following trivial problem
+ * max (2x+3)*(3x+2)
+ * s.t 2x+3 >= 0
+ *     3x+2 >= 0
+ *     x<= 10
+ * We formulate this problem as a convex second order cone constraint, by
+ * regarding the cost as the square of geometric mean between 2x+3 and 3x+2.
+ * The optimal is x* = 10.
+ */
+class MaximizeGeometricMeanTrivialProblem1 {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MaximizeGeometricMeanTrivialProblem1)
+
+  MaximizeGeometricMeanTrivialProblem1();
+
+  const MathematicalProgram& prog() const { return *prog_; }
+
+  void CheckSolution(const MathematicalProgramResult& result, double tol);
+
+ private:
+  std::unique_ptr<MathematicalProgram> prog_;
+  symbolic::Variable x_;
+};
+
+/**
+ * Solve the following trivial problem
+ * max (2x+3)*(3x+2)*(4x+5)
+ * s.t 2x+3 >= 0
+ *     3x+2 >= 0
+ *     4x+5 >= 0
+ *     x<= 10
+ * We formulate this problem as a convex second order cone constraint, by
+ * regarding the cost as the square of geometric mean between 2x+3, 3x+2 and
+ * 4x+5. The optimal is x* = 10.
+ */
+class MaximizeGeometricMeanTrivialProblem2 {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MaximizeGeometricMeanTrivialProblem2)
+
+  MaximizeGeometricMeanTrivialProblem2();
+
+  const MathematicalProgram& prog() const { return *prog_; }
+
+  void CheckSolution(const MathematicalProgramResult& result, double tol);
+
+ private:
+  std::unique_ptr<MathematicalProgram> prog_;
+  symbolic::Variable x_;
+};
+
+/**
+ * Tests maximizing geometric mean through second order cone constraint.
+ * Given some points p₁, p₂, ..., pₖ ∈ ℝⁿ, find the smallest ellipsoid (centered
+ * at the origin, and aligned with the axes) such that the ellipsoid contains
+ * all these points.
+ * This problem can be formulated as
+ * max a(0) * a(1) * ... * a(n-1)
+ * s.t pᵢᵀ diag(a) * pᵢ ≤ 1 for all i.
+ *     a(j) > 0
+ */
+class SmallestEllipsoidCoveringProblem {
+ public:
+  // p.col(i) is the point pᵢ.
+  explicit SmallestEllipsoidCoveringProblem(
+      const Eigen::Ref<const Eigen::MatrixXd>& p);
+
+  virtual ~SmallestEllipsoidCoveringProblem() {}
+
+  const MathematicalProgram& prog() const { return *prog_; }
+
+  void CheckSolution(const MathematicalProgramResult& result, double tol) const;
+
+ protected:
+  const VectorX<symbolic::Variable>& a() const { return a_; }
+
+ private:
+  // CheckSolution() already checks if the result is succesful, and if all the
+  // points are within the ellipsoid, with at least one point on the boundary
+  // of the ellipsoid. CheckSolutionExtra can do extra checks for each specific
+  // problem.
+  virtual void CheckSolutionExtra(const MathematicalProgramResult&,
+                                  double) const {}
+  std::unique_ptr<MathematicalProgram> prog_;
+  VectorX<symbolic::Variable> a_;
+  Eigen::MatrixXd p_;
+};
+
+class SmallestEllipsoidCoveringProblem1
+    : public SmallestEllipsoidCoveringProblem {
+ public:
+  SmallestEllipsoidCoveringProblem1();
+
+  ~SmallestEllipsoidCoveringProblem1() override {}
+
+ private:
+  void CheckSolutionExtra(const MathematicalProgramResult& result,
+                          double tol) const override;
+};
+
+void SolveAndCheckSmallestEllipsoidCoveringProblems(
+    const SolverInterface& solver, double tol);
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

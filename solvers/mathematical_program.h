@@ -47,11 +47,11 @@ class SolverInterface;
 template <int...>
 struct NewVariableNames {};
 /**
-   * The type of the names for the newly added variables.
-   * @tparam Size If Size is a fixed non-negative integer, then the type of the
-   * name is std::array<std::string, Size>. Otherwise the type is
-   * std::vector<std::string>.
-   */
+ * The type of the names for the newly added variables.
+ * @tparam Size If Size is a fixed non-negative integer, then the type of the
+ * name is std::array<std::string, Size>. Otherwise the type is
+ * std::vector<std::string>.
+ */
 template <int Size>
 struct NewVariableNames<Size> {
   typedef std::array<std::string, Size> type;
@@ -969,6 +969,53 @@ class MathematicalProgram {
    */
   void AddMaximizeLogDeterminantSymmetricMatrixCost(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
+
+  /**
+   * @anchor maximize_geometric_mean
+   * @name    Maximize geometric mean
+   * Adds the cost to maximize the geometric mean of z = Ax+b, i.e.
+   * power(∏ᵢz(i), 1/n), where z ∈ ℝⁿ, z(i) >= 0. Mathematically, the cost we
+   * add is -power(∏ᵢz(i), 1/r), where r = power(2, ceil(log₂n)), namely r is
+   * the smallest power of 2 that is no smaller than the size of z. For example,
+   * if z ∈ ℝ², then the added cost is -power(z(0)*z(1), 1/2) if z ∈ ℝ³, then
+   * the added cost is -power(z(0)*z(1)*z(2), 1/4).
+   *
+   * In order to add this cost, we need to introduce a set of second-order cone
+   * constraints. For example, to maximize power(z(0) * z(1), 1/2), we
+   * introduce the slack variable w(0), together with the second order cone
+   * constraint w(0)² ≤ z(0) * z(1), z(0) ≥ 0, z(1) ≥ 0, and we maximize w(0).
+   *
+   * To maximize power(z(0) * z(1) * z(2), 1/ 4), we introduce the slack
+   * variable w(0), w(1), w(2), together with the second order cone constraints
+   * <pre>
+   * w(0)² ≤ z(0) * z(1), z(0) ≥ 0, z(1) ≥ 0
+   * w(1)² ≤ z(2), z(2) ≥ 0
+   * w(2)² ≤ w(0) * w(1), w(0) ≥ 0, w(1) ≥ 0
+   * </pre>
+   * and we maximize w(2).
+   */
+  //@{
+  /**
+   * An overloaded version of @ref maximize_geometric_mean.
+   * @pre A.rows() == b.rows(), A.rows() >= 2.
+   */
+  void AddMaximizeGeometricMeanCost(
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b,
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& x);
+
+  /**
+   * An overloaded version of @ref maximize_geometric_mean.
+   * We add the cost to maximize the geometric mean of x, i.e., c*power(∏ᵢx(i),
+   * 1/n).
+   * @param c The positive coefficient of the geometric mean cost, @default
+   * is 1.
+   * @pre x.rows() >= 2.
+   * @pre c > 0.
+   */
+  void AddMaximizeGeometricMeanCost(
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& x, double c = 1.0);
+  //@}
 
   /**
    * Adds a generic constraint to the program.  This should
@@ -2303,13 +2350,15 @@ class MathematicalProgram {
    *
    * @return SolutionResult indicating if the solution was successful.
    */
-  DRAKE_DEPRECATED("2019-06-01",
+  DRAKE_DEPRECATED(
+      "2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
       "https://github.com/RobotLocomotion/drake/issues/9633.")
   SolutionResult Solve();
 
-  DRAKE_DEPRECATED("2019-06-01",
+  DRAKE_DEPRECATED(
+      "2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
       "https://github.com/RobotLocomotion/drake/issues/9633.")
@@ -2355,7 +2404,8 @@ class MathematicalProgram {
    * Returns the ID of the solver that was used to solve this program.
    * Returns empty if Solve() has not been called.
    */
-  DRAKE_DEPRECATED("2019-06-01",
+  DRAKE_DEPRECATED(
+      "2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
       "https://github.com/RobotLocomotion/drake/issues/9633.")
@@ -2371,7 +2421,8 @@ class MathematicalProgram {
    * return some finite value as the optimal cost.
    * Otherwise, the optimal cost is NaN.
    */
-  DRAKE_DEPRECATED("2019-06-01",
+  DRAKE_DEPRECATED(
+      "2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
       "https://github.com/RobotLocomotion/drake/issues/9633.")
@@ -2381,7 +2432,8 @@ class MathematicalProgram {
    * Getter for lower bound on optimal cost. Defaults to -Infinity
    * if a lower bound has not been found.
    */
-  DRAKE_DEPRECATED("2019-06-01",
+  DRAKE_DEPRECATED(
+      "2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
       "https://github.com/RobotLocomotion/drake/issues/9633.")
@@ -2565,7 +2617,8 @@ class MathematicalProgram {
    * @return The value of the decision variable after solving the problem.
    */
   template <typename Derived>
-  DRAKE_DEPRECATED("2019-06-01",
+  DRAKE_DEPRECATED(
+      "2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
       "https://github.com/RobotLocomotion/drake/issues/9633.")
@@ -2573,7 +2626,7 @@ class MathematicalProgram {
       std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
       Eigen::Matrix<double, Derived::RowsAtCompileTime,
                     Derived::ColsAtCompileTime>>::type
-  GetSolution(const Eigen::MatrixBase<Derived>& var) const {
+      GetSolution(const Eigen::MatrixBase<Derived>& var) const {
     Eigen::Matrix<double, Derived::RowsAtCompileTime,
                   Derived::ColsAtCompileTime>
         value(var.rows(), var.cols());
@@ -2591,7 +2644,8 @@ class MathematicalProgram {
   /**
    * Gets the value of a single decision variable.
    */
-  DRAKE_DEPRECATED("2019-06-01",
+  DRAKE_DEPRECATED(
+      "2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
       "https://github.com/RobotLocomotion/drake/issues/9633.")
@@ -2607,7 +2661,8 @@ class MathematicalProgram {
    * will be substituted by its solutions in double values, but not the
    * indeterminates.
    */
-  DRAKE_DEPRECATED("2019-06-01",
+  DRAKE_DEPRECATED(
+      "2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
       "https://github.com/RobotLocomotion/drake/issues/9633.")
@@ -2623,7 +2678,8 @@ class MathematicalProgram {
    * will be substituted by its solutions in double values, but not the
    * indeterminates.
    */
-  DRAKE_DEPRECATED("2019-06-01",
+  DRAKE_DEPRECATED(
+      "2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
       "https://github.com/RobotLocomotion/drake/issues/9633.")
@@ -2673,9 +2729,8 @@ class MathematicalProgram {
   template <typename C, typename DerivedX>
   typename std::enable_if<is_eigen_vector<DerivedX>::value,
                           VectorX<typename DerivedX::Scalar>>::type
-  EvalBindings(
-      const std::vector<Binding<C>>& bindings,
-      const Eigen::MatrixBase<DerivedX>& prog_var_vals) const {
+  EvalBindings(const std::vector<Binding<C>>& bindings,
+               const Eigen::MatrixBase<DerivedX>& prog_var_vals) const {
     // TODO(eric.cousineau): Minimize memory allocations when it becomes a
     // major performance bottleneck.
     using Scalar = typename DerivedX::Scalar;
@@ -2732,7 +2787,8 @@ class MathematicalProgram {
    * @return The value of @p binding at the solution value.
    */
   template <typename C>
-  DRAKE_DEPRECATED("2019-06-01",
+  DRAKE_DEPRECATED(
+      "2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
       "https://github.com/RobotLocomotion/drake/issues/9633.")
@@ -2777,7 +2833,8 @@ class MathematicalProgram {
   // This method should be called by the derived classes of SolverInterface,
   // which is not a friend class of MathematicalProgram, as we do not want to
   // leak any of the internal details of MathematicalProgram.
-  DRAKE_DEPRECATED("2019-06-01",
+  DRAKE_DEPRECATED(
+      "2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
       "https://github.com/RobotLocomotion/drake/issues/9633.")
@@ -2800,6 +2857,7 @@ class MathematicalProgram {
 
  private:
   static void AppendNanToEnd(int new_var_size, Eigen::VectorXd* vector);
+
   // maps the ID of a symbolic variable to the index of the variable stored in
   // the optimization program.
   std::unordered_map<symbolic::Variable::Id, int> decision_variable_index_{};
