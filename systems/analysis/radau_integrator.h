@@ -354,9 +354,7 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
     // allow the norm to be reduced further. What happens: dx_norm will become
     // equivalent to last_dZ_norm, making theta = 1, and eta = infinity. Thus,
     // convergence would never be identified.
-    // bool converged = (iter > 0 && this->IsUpdateZero(*xtplus, dx));
-    bool converged = (iter > 0 &&
-        dx_norm < 10 * std::numeric_limits<double>::epsilon());
+    bool converged = (iter > 0 && this->IsUpdateZero(*xtplus, dx));
     SPDLOG_DEBUG(drake::log(), "norm(dx) indicates convergence? {}", converged);
 
     // Compute the convergence rate and check convergence.
