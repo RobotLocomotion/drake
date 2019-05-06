@@ -32,6 +32,16 @@ drake_py_library(
     deps = [":module_py"],
 )
 
+drake_py_library(
+    name = "numpy_compare_py",
+    srcs = ["numpy_compare.py"],
+    deps = [
+        ":module_py",
+        "//bindings/pydrake:autodiffutils_py",
+        "//bindings/pydrake:symbolic_py",
+    ],
+)
+
 # Package roll-up (for Bazel dependencies).
 drake_py_library(
     name = "test_utilities",
