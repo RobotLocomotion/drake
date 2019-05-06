@@ -18,9 +18,9 @@ namespace drake {
 namespace multibody {
 namespace detail {
 
-using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
+using math::RigidTransformd;
 using tinyxml2::XMLElement;
 
 namespace {
@@ -263,7 +263,7 @@ geometry::GeometryInstance ParseVisual(
   // Obtains the reference frame of the visualization relative to the reference
   // frame of the rigid body that is being visualized. It defaults to identity
   // if no transform is specified.
-  Isometry3d T_element_to_link = Isometry3d::Identity();
+  RigidTransformd T_element_to_link;
   const XMLElement* origin = node->FirstChildElement("origin");
   if (origin) {
     T_element_to_link = OriginAttributesToTransform(origin);
@@ -386,7 +386,7 @@ geometry::GeometryInstance ParseCollision(
   // Obtains the reference frame of the visualization relative to the
   // reference frame of the rigid body that is being visualized. It defaults
   // to identity if no transform is specified.
-  Isometry3d T_element_to_link = Isometry3d::Identity();
+  RigidTransformd T_element_to_link;
   const XMLElement* origin = node->FirstChildElement("origin");
   if (origin) {
     T_element_to_link = OriginAttributesToTransform(origin);
