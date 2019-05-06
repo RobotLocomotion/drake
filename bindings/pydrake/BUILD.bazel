@@ -334,6 +334,7 @@ drake_py_unittest(
         ":algebra_test_util_py",
         ":autodiffutils_py",
         ":autodiffutils_test_util_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
 
@@ -441,6 +442,7 @@ drake_py_unittest(
         ":algebra_test_util_py",
         ":symbolic_py",
         "//bindings/pydrake/common:containers_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
 
