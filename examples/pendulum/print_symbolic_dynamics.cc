@@ -29,7 +29,8 @@ VectorX<Expression> PendulumPlantDynamics() {
   // Obtain the symbolic dynamics.
   auto context = symbolic_plant.CreateDefaultContext();
   context->FixInputPort(
-      0, Vector1<Expression>::Constant(Variable("tau")));
+      0, PendulumInput<symbolic::Expression>{}.
+             with_tau(symbolic::Variable("tau")));
   context->get_mutable_continuous_state_vector().SetAtIndex(
       0, Variable("theta"));
   context->get_mutable_continuous_state_vector().SetAtIndex(
