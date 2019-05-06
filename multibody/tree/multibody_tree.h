@@ -680,6 +680,12 @@ class MultibodyTree {
     return *owned_mobilizers_[mobilizer_index];
   }
 
+  /// An accessor to the current gravity field.  May be nullptr if no gravity
+  /// field is specified.
+  const UniformGravityFieldElement<T>* gravity_field() const {
+    return gravity_field_;
+  }
+
   /// See MultibodyPlant method.
   const std::string& GetModelInstanceName(
       ModelInstanceIndex model_instance) const {
@@ -2375,7 +2381,7 @@ class MultibodyTree {
   std::vector<const Frame<T>*> frames_;
 
   // The gravity field force element.
-  optional<const UniformGravityFieldElement<T>*> gravity_field_;
+  const UniformGravityFieldElement<T>* gravity_field_{nullptr};
 
   // TODO(amcastro-tri): Consider moving these maps into MultibodyTreeTopology
   // since they are not templated on <T>.
