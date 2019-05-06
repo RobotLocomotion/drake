@@ -141,17 +141,27 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
                  : context.get_discrete_state(0).get_value());
   const int num_states = x0.size();
 
-  Eigen::VectorXd u0 = Eigen::VectorXd::Zero(num_inputs);
-  if (input_port) {
-    u0 = system.get_input_port(input_port->get_index()).Eval(context);
-  }
+  const Eigen::VectorXd u0 =
+      input_port
+          ? system.get_input_port(input_port->get_index()).Eval(context)
+          : Eigen::VectorXd::Zero(0).segment(0, 0).eval();
 
-  auto autodiff_args = math::initializeAutoDiffTuple(x0, u0);
-  if (input_port) {
-    auto input_vector = std::make_unique<BasicVector<AutoDiffXd>>(num_inputs);
-    input_vector->SetFromVector(std::get<1>(autodiff_args));
-    autodiff_context->FixInputPort(input_port->get_index(),
-                                   std::move(input_vector));
+  const auto autodiff_x0u0 = math::initializeAutoDiffTuple(x0, u0);
+  const auto& autodiff_x0 = std::get<0>(autodiff_x0u0);
+  const auto& autodiff_u0 = std::get<1>(autodiff_x0u0);
+
+  // Fix all inputs to the autodiff_system.  For the input port that we're
+  // approximating, be sure to initialize the derivatives.
+  for (int i = 0; i < system.num_input_ports(); i++) {
+    auto fixed_value = autodiff_system->AllocateInputVector(
+        autodiff_system->get_input_port(i));
+    if (input_port && (i == input_port->get_index())) {
+      fixed_value->set_value(autodiff_u0);
+    } else {
+      Eigen::VectorXd u = system.EvalEigenVectorInput(context, i);
+      fixed_value->set_value(u.cast<AutoDiffXd>());
+    }
+    autodiff_context->FixInputPort(i, *fixed_value);
   }
 
   Eigen::MatrixXd A(num_states, num_states), B(num_states, num_inputs);
@@ -159,7 +169,7 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
   if (num_states > 0) {
     if (autodiff_context->has_only_continuous_state()) {
       autodiff_context->get_mutable_continuous_state_vector().SetFromVector(
-          std::get<0>(autodiff_args));
+          autodiff_x0);
       std::unique_ptr<ContinuousState<AutoDiffXd>> autodiff_xdot =
           autodiff_system->AllocateTimeDerivatives();
       autodiff_system->CalcTimeDerivatives(*autodiff_context,
@@ -186,9 +196,8 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
       f0 = xdot0 - A * x0 - B * u0;
     } else {
       DRAKE_ASSERT(has_only_discrete_states_contained_in_one_group);
-      auto& autodiff_x0 =
-          autodiff_context->get_mutable_discrete_state().get_mutable_vector();
-      autodiff_x0.SetFromVector(std::get<0>(autodiff_args));
+      autodiff_context->get_mutable_discrete_state_vector().SetFromVector(
+          autodiff_x0);
       std::unique_ptr<DiscreteValues<AutoDiffXd>> autodiff_x1 =
           autodiff_system->AllocateDiscreteVariables();
       autodiff_system->CalcDiscreteVariableUpdates(*autodiff_context,
