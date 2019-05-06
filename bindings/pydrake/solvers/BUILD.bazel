@@ -211,6 +211,7 @@ drake_py_unittest(
         ":gurobi_py",
         ":mathematicalprogram_py",
         ":snopt_py",
+        "//bindings/pydrake:math_py",
         "//bindings/pydrake/common/test_utilities",
     ],
 )
