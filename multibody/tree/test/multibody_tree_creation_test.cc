@@ -14,7 +14,6 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_mobilizer.h"
 #include "drake/multibody/tree/rigid_body.h"
-#include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/multibody/tree/weld_joint.h"
 
 namespace drake {
@@ -242,9 +241,6 @@ class TreeTopologyTests : public ::testing::Test {
     ConnectBodies(*bodies_[0], *bodies_[5]);  // mob. 4
     ConnectBodies(*bodies_[4], *bodies_[1]);  // mob. 5
     ConnectBodies(*bodies_[0], *bodies_[4], true);  // mob. 6
-
-    // Adds a force element for a uniform gravity field.
-    model_->AddForceElement<UniformGravityFieldElement>();
   }
 
   const RigidBody<double>* AddTestBody() {

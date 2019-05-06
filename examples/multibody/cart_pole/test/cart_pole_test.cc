@@ -40,7 +40,7 @@ class CartPoleTest : public ::testing::Test {
     Parser(&cart_pole_).AddModelFromFile(full_name);
 
     // Add gravity to the model.
-    cart_pole_.AddForceElement<UniformGravityFieldElement>(
+    cart_pole_.mutable_gravity_field().set_gravity_vector(
         -default_parameters_.gravity() * Vector3<double>::UnitZ());
 
     // Now the model is complete.

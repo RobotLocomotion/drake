@@ -51,9 +51,6 @@ int do_main() {
       FindResourceOrThrow("drake/examples/atlas/urdf/atlas_convex_hull.urdf");
   multibody::Parser(&plant).AddModelFromFile(full_name);
 
-  // Add gravity to the model.
-  plant.AddForceElement<multibody::UniformGravityFieldElement>();
-
   // Add model of the ground.
   const double static_friction = 1.0;
   const Vector4<double> green(0.5, 1.0, 0.5, 1.0);

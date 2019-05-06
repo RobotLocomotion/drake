@@ -22,7 +22,7 @@ AxiallySymmetricFreeBodyPlant<T>::AxiallySymmetricFreeBodyPlant(
       UnitInertia<double>::AxiallySymmetric(J_, I_, Vector3<double>::UnitZ());
   SpatialInertia<double> M_Bcm(mass_, Vector3<double>::Zero(), G_Bcm);
   body_ = &this->AddRigidBody("FreeBody", M_Bcm);
-  this->template AddForceElement<UniformGravityFieldElement>(
+  this->mutable_gravity_field().set_gravity_vector(
       -g_ * Vector3<double>::UnitZ());
   this->Finalize();
 
