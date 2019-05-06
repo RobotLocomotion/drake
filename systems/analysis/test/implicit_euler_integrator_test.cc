@@ -48,7 +48,6 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Stationary) {
   std::unique_ptr<StationarySystem<double>> stationary =
     std::make_unique<StationarySystem<double>>();
   std::unique_ptr<Context<double>> context = stationary->CreateDefaultContext();
-  context->EnableCaching();
 
   // Set the initial condition for the stationary system.
   VectorBase<double>& state = context->get_mutable_continuous_state().
@@ -79,7 +78,6 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
   std::unique_ptr<analysis::test::RobertsonSystem<double>> robertson =
     std::make_unique<analysis::test::RobertsonSystem<double>>();
   std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext();
-  context->EnableCaching();
 
   const double t_final = robertson->get_end_time();
   const double tol = 5e-5;
@@ -115,7 +113,6 @@ GTEST_TEST(ImplicitEulerIntegratorTest, Robertson) {
 GTEST_TEST(ImplicitEulerIntegratorTest, FixedStepThrowsOnMultiStep) {
   auto robertson = std::make_unique<analysis::test::RobertsonSystem<double>>();
   std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext();
-  context->EnableCaching();
 
   // Relatively large step size that we know fails to converge from the initial
   // state.
@@ -160,11 +157,9 @@ class ImplicitIntegratorTest : public ::testing::TestWithParam<bool> {
 
     // One context will be usable for three of the systems.
     context_ = spring_->CreateDefaultContext();
-    context_->EnableCaching();
 
     // Separate context necessary for the double spring mass system.
     dspring_context_ = stiff_double_system_->CreateDefaultContext();
-    dspring_context_->EnableCaching();
   }
 
   std::unique_ptr<Context<double>> context_;
@@ -215,7 +210,6 @@ TEST_F(ImplicitIntegratorTest, AutoDiff) {
   // Create the integrator for a System<AutoDiffXd>.
   auto system = spring_->ToAutoDiffXd();
   auto context = system->CreateDefaultContext();
-  context->EnableCaching();
   ImplicitEulerIntegrator<AutoDiffXd> integrator(*system, context.get());
 
   // Set reasonable integrator parameters.

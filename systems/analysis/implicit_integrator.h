@@ -248,7 +248,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// @param xc the continuous state.
   /// @param dxc the update to the continuous state.
   /// @param eps the tolerance that will be used to determine whether the
-  ///        difference between every dimension of the state is zero. `eps` will
+  ///        change in any dimension of the state is nonzero. `eps` will
   ///        be treated as an absolute tolerance when the magnitude of a
   ///        particular dimension of the state is no greater than unity and as
   ///        a relative tolerance otherwise. For non-positive `eps` (default),
