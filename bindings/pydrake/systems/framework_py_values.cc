@@ -7,10 +7,13 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/type_pack.h"
+#include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -23,8 +26,6 @@ namespace drake {
 namespace pydrake {
 
 namespace {
-
-using pysystems::AddValueInstantiation;
 
 // Add instantiations of primitive types on an as-needed basis; Please be
 // conservative.
@@ -49,9 +50,6 @@ void AddPrimitiveValueTemplateInstantiations(py::module m) {
 }
 
 }  // namespace
-
-using pysystems::AddValueInstantiation;
-using pysystems::DefClone;
 
 void DefineFrameworkPyValues(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -121,7 +119,7 @@ void DefineFrameworkPyValues(py::module m) {
     DefineTemplateClassWithDefault<Subvector<T>, VectorBase<T>>(
         m, "Subvector", GetPyParam<T>(), doc.Subvector.doc);
   };
-  type_visit(bind_common_scalar_types, pysystems::CommonScalarPack{});
+  type_visit(bind_common_scalar_types, CommonScalarPack{});
 
   // `AddValueInstantiation` will define methods specific to `T` for
   // `Value<T>`. Since Python is nominally dynamic, these methods are
@@ -174,7 +172,7 @@ void DefineFrameworkPyValues(py::module m) {
             },
             py::arg("value"));
   };
-  type_visit(bind_abstract_basic_vectors, pysystems::CommonScalarPack{});
+  type_visit(bind_abstract_basic_vectors, CommonScalarPack{});
 
   // Add `Value[object]` instantiation.
   // N.B. If any code explicitly uses `Value<py::object>` for whatever reason,

@@ -10,9 +10,9 @@
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
+#include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/sensors/camera_info.h"
@@ -147,7 +147,7 @@ PYBIND11_MODULE(sensors, m) {
       const std::string suffix = pixel_type_name.substr(1);
       m.attr(("Image" + suffix).c_str()) = image;
       // Add abstract values.
-      pysystems::AddValueInstantiation<ImageT>(m);
+      AddValueInstantiation<ImageT>(m);
     };
     type_visit(instantiation_visitor, PixelTypeList{});
   }

@@ -85,9 +85,6 @@ drake_cc_library(
     name = "pydrake_pybind",
     hdrs = ["pydrake_pybind.h"],
     declare_installed_headers = 0,
-    # NOTE: We must violate IWYU and not list any Drake libraries in "deps"
-    # here because we do not want these dependencies violating ODR (at both
-    # development and install time).
     visibility = ["//visibility:public"],
 )
 
@@ -104,6 +101,7 @@ drake_cc_library(
     hdrs = ["autodiff_types_pybind.h"],
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
+    deps = ["//:drake_shared_library"],
 )
 
 drake_pybind_library(
@@ -129,8 +127,8 @@ drake_pybind_library(
     name = "automotive_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:value_pybind",
         "//bindings/pydrake/common:wrap_pybind",
-        "//bindings/pydrake/systems:systems_pybind",
     ],
     cc_srcs = ["automotive_py.cc"],
     package_info = PACKAGE_INFO,
@@ -141,7 +139,7 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
-        "//bindings/pydrake/systems:systems_pybind",
+        "//bindings/pydrake/common:value_pybind",
         "//lcmtypes:viewer",
     ],
     cc_srcs = ["geometry_py.cc"],
@@ -188,7 +186,7 @@ drake_pybind_library(
     name = "perception_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/systems:systems_pybind",
+        "//bindings/pydrake/common:value_pybind",
     ],
     cc_srcs = ["perception_py.cc"],
     package_info = PACKAGE_INFO,
@@ -204,6 +202,7 @@ drake_cc_library(
     hdrs = ["symbolic_types_pybind.h"],
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
+    deps = ["//:drake_shared_library"],
 )
 
 drake_pybind_library(

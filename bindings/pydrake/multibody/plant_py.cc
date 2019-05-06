@@ -4,9 +4,9 @@
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
+#include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
@@ -699,7 +699,7 @@ PYBIND11_MODULE(plant, m) {
             py::arg("point_pair_info"), cls_doc.AddContactInfo.doc)
         .def("contact_info", &Class::contact_info, py::arg("i"),
             cls_doc.contact_info.doc);
-    pysystems::AddValueInstantiation<Class>(m);
+    AddValueInstantiation<Class>(m);
   }
 
   // ContactResultsToLcmSystem

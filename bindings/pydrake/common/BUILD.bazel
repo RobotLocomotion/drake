@@ -83,7 +83,10 @@ drake_cc_library(
     hdrs = ["wrap_pybind.h"],
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
-    deps = [":wrap_function"],
+    deps = [
+        ":wrap_function",
+        "//:drake_shared_library",
+    ],
 )
 
 drake_py_library(
@@ -100,6 +103,33 @@ drake_cc_library(
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
     deps = ["//bindings/pydrake:pydrake_pybind"],
+)
+
+drake_cc_library(
+    name = "default_scalars_pybind",
+    hdrs = ["default_scalars_pybind.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":type_pack",
+        "//:drake_shared_library",
+        "//bindings/pydrake:autodiff_types_pybind",
+        "//bindings/pydrake:pydrake_pybind",
+        "//bindings/pydrake:symbolic_types_pybind",
+    ],
+)
+
+# N.B. Any C++ libraries that include this must include `cpp_template_py` when
+# being used in Python.
+drake_cc_library(
+    name = "value_pybind",
+    hdrs = ["value_pybind.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//:drake_shared_library",
+        "//bindings/pydrake/common:cpp_template_pybind",
+    ],
 )
 
 drake_cc_library(
@@ -190,6 +220,7 @@ drake_cc_library(
     hdrs = ["drake_optional_pybind.h"],
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
+    deps = ["//:drake_shared_library"],
 )
 
 drake_cc_library(
@@ -197,6 +228,7 @@ drake_cc_library(
     hdrs = ["drake_variant_pybind.h"],
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
+    deps = ["//:drake_shared_library"],
 )
 
 drake_cc_library(
