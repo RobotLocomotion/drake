@@ -98,6 +98,14 @@ GTEST_TEST(SphereShapeDistance, FallbackSupport) {
       "scalar type .*AutoDiffXd");
 }
 
+// TODO(SeanCurtis-TRI): Create a more general test framework when we have
+//  shape-shape primitives that *aren't* covered by the point-shape tests.
+//  For arbitrary derivatives, use `ComputeNumericalGradient()` to test.
+
+// TODO(SeanCurtis-TRI): Assuming the sphere is A, onfirm that the derivatives
+//  w.r.t. R_WA are as expected (e.g., distance and nhat are untouched, but
+//  p_ACa are.
+
 // This relies on the knowledge that sphere-shape distance is a slight
 // modification of point-shape distance. Essentially, I should get the same
 // answers with the caveat that the distance is reduced by the sphere radius.
@@ -105,7 +113,9 @@ GTEST_TEST(SphereShapeDistance, FallbackSupport) {
 // tests for distance-to-point for general correctness of the underlying code.
 //
 // In the AutoDiff tests, it repeats the pattern in distance_to_point_test.
-// Looks at the derivatives w.r.t. the query sphere's position.
+// Looks at the derivatives w.r.t. the query sphere's position. We assume that
+// correct derivatives in this one case is representative of not messing up the
+// derivatives created by the point-shape distance query.
 class DistancePairGeometryTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -152,7 +162,6 @@ class DistancePairGeometryTest : public ::testing::Test {
     result = CompareMatrices(shape_result.p_BCb, point_result.p_GN);
     if (!result) return result;
 
-    // TODO(SeanCurtis-TRI): Make this work with autodiff.
     // Distance to point provides no explicit value to compare with p_ACa.
     // However, it is simply the point that is radius units away from the
     // sphere's origin in the direction of the gradient. In this case, we put
@@ -173,7 +182,7 @@ class DistancePairGeometryTest : public ::testing::Test {
     }
 
     if (!shape_result.id_B.is_valid()) {
-      return ::testing::AssertionFailure() << "id_A is not valid";
+      return ::testing::AssertionFailure() << "id_B is not valid";
     }
 
     if (shape_result.id_B != point_result.id_G) {
@@ -203,9 +212,12 @@ class DistancePairGeometryTest : public ::testing::Test {
   ::testing::AssertionResult TestDerivatives(
       const SignedDistancePair<AutoDiffXd>& shape_result,
       const SignedDistanceToPoint<AutoDiffXd>& point_result) {
+    // TODO(SeanCurtis-TRI): Add a test that *doesn't* assume the basis of the
+    // differentiation.
+
     // These tests assume a very specific basis of differentiation: p_WAₒ. For
     // notational convenience we'll use Aₒ to mean p_WAₒ. So, for every quantity
-    // Q, we're going to determine that δ(Q)/δAₒ is as expected. In most cases,
+    // Q, we're going to determine that ∂(Q)/∂Aₒ is as expected. In most cases,
     // we can match the derivatives in one result directly to the other. The
     // exception is p_ACa (see below).
 
@@ -222,7 +234,8 @@ class DistancePairGeometryTest : public ::testing::Test {
              << ">";
     }
 
-    // Derivatives of gradient.
+    // Derivatives of nhat_BA_W; point distance grad_W member is the same
+    // quantity with a different name.
     const auto dgrad_dAo_shape =
         math::autoDiffToGradientMatrix(shape_result.nhat_BA_W);
     const auto dgrad_dAo_point =
@@ -248,34 +261,34 @@ class DistancePairGeometryTest : public ::testing::Test {
 
     // Derivatives of p_ACa.
     // We have no pre-computed value to compare against. Given the assumptions
-    // of this problem, we _can_ express δ(p_ACa)/δAₒ in terms of givens.
+    // of this problem, we _can_ express ∂(p_ACa)/∂Aₒ in terms of givens.
     //
     // p_ACa = X_AW⋅p_WCa
     //       = R_AW⋅p_WCa + p_WAₒ
-    // δ(p_ACa)/δAₒ = δ(R_AW⋅p_WCa - p_WAₒ)/δAₒ
-    //              = δ(R_AW)/δAₒ⋅p_WCa + R_AW⋅δ(p_WCa)/δAₒ + (p_WAₒ)/δAₒ
-    //              =         0         + R_AW⋅δ(p_WCa)/δAₒ -     I
+    // ∂(p_ACa)/∂Aₒ = ∂(R_AW⋅p_WCa - p_WAₒ)/∂Aₒ
+    //              = ∂(R_AW)/∂Aₒ⋅p_WCa + R_AW⋅∂(p_WCa)/∂Aₒ + (p_WAₒ)/∂Aₒ
+    //              =         0         + R_AW⋅∂(p_WCa)/∂Aₒ -     I
     //
-    // δ(p_ACa)/δAₒ = R_AW⋅δ(p_WCa)/δAₒ - I   (Eq 1)
+    // ∂(p_ACa)/∂Aₒ = R_AW⋅∂(p_WCa)/∂Aₒ - I   (Eq 1)
     //
-    // We have R_AW, and need δ(p_WCa)/δAₒ.
+    // We have R_AW, and need ∂(p_WCa)/∂Aₒ.
     // p_WCa = p_WCb + d⋅∇φ_B_W
     // p_WCa = X_WB⋅p_BCb + d⋅∇φ_B_W
-    // δ(p_WCa)/δAₒ = δ(X_WB⋅p_BCb + d⋅∇φ_B_W)/δAₒ
-    // δ(p_WCa)/δAₒ = δ(R_WB⋅p_BCb + p_WB + d⋅∇φ_B_W)/δAₒ
-    // δ(p_WCa)/δAₒ = δ(R_WB)/δAₒ⋅p_BCb + R_WB⋅δ(p_BCb)/δAₒ + δ(p_WB)/δAₒ
-    //                ∇φ_B_W⋅δ(d)/δAₒᵀ + d⋅δ(∇φ_B_W)/δAₒ
-    //              =           0       + R_WB⋅δ(p_BCb)/δAₒ +     0
-    //                ∇φ_B_W⋅δ(d)/δAₒᵀ + d⋅δ(∇φ_B_W)/δAₒ
+    // ∂(p_WCa)/∂Aₒ = ∂(X_WB⋅p_BCb + d⋅∇φ_B_W)/∂Aₒ
+    // ∂(p_WCa)/∂Aₒ = ∂(R_WB⋅p_BCb + p_WB + d⋅∇φ_B_W)/∂Aₒ
+    // ∂(p_WCa)/∂Aₒ = ∂(R_WB)/∂Aₒ⋅p_BCb + R_WB⋅∂(p_BCb)/∂Aₒ + ∂(p_WB)/∂Aₒ
+    //                ∇φ_B_W⋅∂(d)/∂Aₒᵀ + d⋅∂(∇φ_B_W)/∂Aₒ
+    //              =           0       + R_WB⋅∂(p_BCb)/∂Aₒ +     0
+    //                ∇φ_B_W⋅∂(d)/∂Aₒᵀ + d⋅∂(∇φ_B_W)/∂Aₒ
     //
-    // δ(p_WCa)/δAₒ = R_WB⋅δ(p_BCb)/δAₒ + ∇φ_B_W⋅δ(d)/δAₒᵀ + d⋅δ(∇φ_B_W)/δAₒ
+    // ∂(p_WCa)/∂Aₒ = R_WB⋅∂(p_BCb)/∂Aₒ + ∇φ_B_W⋅∂(d)/∂Aₒᵀ + d⋅∂(∇φ_B_W)/∂Aₒ
     //                                                                    (Eq 2)
     //
     // We have all of the quantities on the right-hand side. So, we can rewrite
     // Eq 1 by substituting Eq 2 into it:
     //
-    // δ(p_ACa)/δAₒ =
-    //   R_AW⋅[R_WB⋅δ(p_BCb)/δAₒ + δ(d)/δAₒ⋅∇φ_B_W + d⋅δ(∇φ_B_W)/δAₒ] - I (Eq 3)
+    // ∂(p_ACa)/∂Aₒ =
+    //   R_AW⋅[R_WB⋅∂(p_BCb)/∂Aₒ + ∂(d)/∂Aₒ⋅∇φ_B_W + d⋅∂(∇φ_B_W)/∂Aₒ] - I (Eq 3)
     const double kEps = std::numeric_limits<double>::epsilon();
     const Matrix3<double> R_AW = R_WSphere_.matrix().transpose();
     const Matrix3<double> R_WB = X_WShape_.rotation().matrix();
@@ -474,7 +487,8 @@ GTEST_TEST(ComputeNarrowPhaseDistance, OrderInvariance) {
                                        GeometryId::get_new_id()};
   fcl::DistanceRequestd request{};
   const Isometry3<double> X_WS(Translation3d{2, 2, 2});
-  const Isometry3<double> X_WB = Isometry3<double>::Identity();
+  const Isometry3<double> X_WB(
+      AngleAxis<double>(M_PI / 5, Vector3d{2, 4, 7}.normalized()));
   SignedDistancePair<double> result_BS;
   SignedDistancePair<double> result_SB;
 
@@ -486,6 +500,8 @@ GTEST_TEST(ComputeNarrowPhaseDistance, OrderInvariance) {
 
   EXPECT_EQ(result_SB.id_A, result_BS.id_B);
   EXPECT_EQ(result_SB.id_B, result_BS.id_A);
+  // These values are bit identical because, regardless of parameter ordering,
+  // because the sphere is always transformed into the box's frame.
   EXPECT_EQ(result_SB.distance, result_BS.distance);
   EXPECT_TRUE(CompareMatrices(result_SB.p_BCb, result_BS.p_ACa));
   EXPECT_TRUE(CompareMatrices(result_SB.p_ACa, result_BS.p_BCb));

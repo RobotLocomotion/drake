@@ -32,21 +32,21 @@ namespace shape_distance {
     - The T-valued poses of _all_ geometries in the corresponding SceneGraph,
       each indexed by its corresponding geometry's GeometryIndex.
     - A vector of distance results -- one instance of SignedDistancePair for
-      every supported geometry which lies with the threshold.
+      every supported geometry which lies within the threshold.
 
  @tparam T The computation scalar.  */
 template <typename T>
 struct CallbackData {
   /** Constructs the mostly-specified callback data. The fcl distance request is
    left in its default constructed state for subsequent configuration. The
-   values are as described above. _Some_ of the parameters are aliased in the
-   data and require the aliased parameters to remain valid at least as long as
-   the CallbackData instance.
+   values are as described in the class documentation. The parameters are all
+   aliased in the data and require the aliased parameters to remain valid at
+   least as long as the CallbackData instance.
 
-   @param geometry_map_in         The index -> id map. Aliased.
-   @param collision_filter_in     The collision filter system. Aliased.
-   @param X_WGs_in                The T-valued poses. Aliased.
-   @param nearest_pairs_in[out]   The output results. Aliased.
+   @param geometry_map_in         The index -> id map.
+   @param collision_filter_in     The collision filter system.
+   @param X_WGs_in                The T-valued poses.
+   @param nearest_pairs_in[out]   The output results.
    */
   CallbackData(const std::vector<GeometryId>* geometry_map_in,
                const CollisionFilterLegacy* collision_filter_in,
@@ -62,7 +62,7 @@ struct CallbackData {
     DRAKE_DEMAND(nearest_pairs_in);
   }
 
-  /** That map from GeometryIndex to GeometryId.  */
+  /** The map from GeometryIndex to GeometryId.  */
   const std::vector<GeometryId>& geometry_map;
 
   /** The collision filter system.  */
@@ -92,10 +92,8 @@ class DistancePairGeometry {
 
    @param id_A         Identifier of the first geometry passed to operator().
    @param id_B         Identifier of the second geometry passed to operator().
-   @param X_WA         Pose of geometry A in world space, stored in the query
-                       scalar T.
-   @param X_WB         Pose of geometry B in world space, stored in the query
-                       scalar T.
+   @param X_WA         Pose of geometry A in the world frame.
+   @param X_WB         Pose of geometry B in the world frame
    @param[out] result  The signed distance values are stored here.  */
   DistancePairGeometry(const GeometryId& id_A, const GeometryId& id_B,
                        const math::RigidTransform<T>& X_WA,
@@ -155,12 +153,12 @@ class DistancePairGeometry {
     result_->id_A = id_A_;
     result_->id_B = id_B_;
     result_->distance = shape_B_to_point_Ao.distance - sphere_A.radius;
-    // Nb is the witness point on ∂B.
+    // p_BCb is the witness point on ∂B measured and expressed in B.
     result_->p_BCb = shape_B_to_point_Ao.p_GN;
     result_->nhat_BA_W = shape_B_to_point_Ao.grad_W;
-    // Na is the witness point on ∂A.
-    result_->p_ACa = -sphere_A.radius * (X_WA_.rotation().transpose() *
-        shape_B_to_point_Ao.grad_W);
+    // p_ACa is the witness point on ∂A measured and expressed in A.
+    const math::RotationMatrix<T> R_AW = X_WA_.rotation().transpose();
+    result_->p_ACa = -sphere_A.radius * (R_AW * shape_B_to_point_Ao.grad_W);
   }
 
   GeometryId id_A_;
@@ -236,16 +234,14 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
 
 //@}
 
-/** Dispatches the narrowphase shape-shape query for the object pair (`a, `b`)
+/** Dispatches the narrowphase shape-shape query for the object pair (`a`, `b`)
  to the appropriate primitive-primitive function (optionally defaulting to the
  type- and shape-dependent fallback function).
 
  @param a               The first object in the pair.
- @param X_WA            The pose of object `a` expressed in the world frame
-                        stored in the computation scalar type.
+ @param X_WA            The pose of object `a` expressed in the world frame.
  @param b               The second object in the pair.
- @param X_WB            The pose of object `b` expressed in the world frame
-                        stored in the computation scalar type.
+ @param X_WB            The pose of object `b` expressed in the world frame.
  @param geometry_map    A map from GeometryIndex to GeometryId.
  @param request         The distance request parameters.
  @param result          The structure to capture the computation results in.
@@ -346,7 +342,7 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
 //@{
 
 void throw_if_halfspace(fcl::NODE_TYPE node1, fcl::NODE_TYPE node2) {
-  // Stupid, historical special case where halfspace-halfspace throws.
+  // Stupid, historical special case where halfspace-* throws.
   if (node1 == fcl::GEOM_HALFSPACE || node2 == fcl::GEOM_HALFSPACE) {
     throw std::logic_error(
         "Signed distance queries on halfspaces are not currently supported. "
@@ -385,8 +381,7 @@ struct ScalarSupport<Eigen::AutoDiffScalar<DerType>> {
     // future with something that is less obfuscated.
     return (node1 == fcl::GEOM_SPHERE &&
         (node2 == fcl::GEOM_SPHERE || node2 == fcl::GEOM_BOX)) ||
-        (node2 == fcl::GEOM_SPHERE &&
-            (node1 == fcl::GEOM_SPHERE || node1 == fcl::GEOM_BOX));
+        (node2 == fcl::GEOM_SPHERE && node1 == fcl::GEOM_BOX);
   }
 };
 
@@ -403,7 +398,7 @@ struct ScalarSupport<Eigen::AutoDiffScalar<DerType>> {
  it does not set it.
 
  @tparam T  The scalar type for the query.
-  @param object_A_ptr   Pointer to the first object in the pair (the order has
+ @param object_A_ptr    Pointer to the first object in the pair (the order has
                         no significance).
  @param object_B_ptr    Pointer to the second object in the pair (the order has
                         no significance).

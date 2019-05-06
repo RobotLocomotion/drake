@@ -110,7 +110,7 @@ class EncodedData {
   uintptr_t data_{};
 };
 
-/** Prints the name of the geometry associated with the given collision
+/** Returns the name of the geometry associated with the given collision
  `object`.  */
 std::string GetGeometryName(const fcl::CollisionObjectd& object);
 

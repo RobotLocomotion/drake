@@ -978,8 +978,8 @@ template <typename T>
 std::vector<SignedDistancePair<T>>
 ProximityEngine<T>::ComputeSignedDistancePairwiseClosestPoints(
     const std::vector<GeometryId>& geometry_map,
-    const std::vector<Isometry3<T>>& X_WG) const {
-  return impl_->ComputeSignedDistancePairwiseClosestPoints(geometry_map, X_WG);
+    const std::vector<Isometry3<T>>& X_WGs) const {
+  return impl_->ComputeSignedDistancePairwiseClosestPoints(geometry_map, X_WGs);
 }
 
 template <typename T>
