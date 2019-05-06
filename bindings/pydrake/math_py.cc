@@ -5,9 +5,11 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/math/barycentric.h"
 #include "drake/math/continuous_algebraic_riccati_equation.h"
 #include "drake/math/continuous_lyapunov_equation.h"
@@ -311,6 +313,10 @@ PYBIND11_MODULE(math, m) {
     mtest.def(
         "TakeRigidTransform", [](const RigidTransform<T>&) { return true; });
   }
+
+  // See TODO in corresponding header file - these should be removed soon!
+  pydrake::internal::BindAutoDiffOverloads(&m);
+  pydrake::internal::BindSymbolicOverloads(&m);
 
   ExecuteExtraPythonCode(m);
 }
