@@ -973,15 +973,15 @@ class MathematicalProgram {
   /**
    * @anchor maximize_geometric_mean
    * @name    Maximize geometric mean
-   * Adds the cost to maximize the geometric mean of z = Ax+b, i.e. pow(∏ᵢz(i),
-   * 1/n), where z ∈ ℝⁿ, z(i) >= 0. Mathematically, the cost we add is
-   * -pow(∏ᵢz(i), 1/r), where r = pow(2, ceil(log₂n)), namely r is the smallest
-   * power of 2 that is no smaller than the size of z. For example, if z ∈ ℝ²,
-   * then the added cost is -pow(z(0)*z(1), 1/2) if z ∈ ℝ³, then the added cost
-   * is -pow(z(0)*z(1)*z(2), 1/4).
+   * Adds the cost to maximize the geometric mean of z = Ax+b, i.e.
+   * power(∏ᵢz(i), 1/n), where z ∈ ℝⁿ, z(i) >= 0. Mathematically, the cost we
+   * add is -power(∏ᵢz(i), 1/r), where r = power(2, ceil(log₂n)), namely r is
+   * the smallest power of 2 that is no smaller than the size of z. For example,
+   * if z ∈ ℝ², then the added cost is -power(z(0)*z(1), 1/2) if z ∈ ℝ³, then
+   * the added cost is -power(z(0)*z(1)*z(2), 1/4).
    *
    * In order to add this cost, we need to introduce a set of second-order cone
-   * constraints. For example, to maximize power(z(0) * z(1), 1/ 2), we
+   * constraints. For example, to maximize power(z(0) * z(1), 1/2), we
    * introduce the slack variable w(0), together with the second order cone
    * constraint w(0)² ≤ z(0) * z(1), z(0) ≥ 0, z(1) ≥ 0, and we maximize w(0).
    *
@@ -1006,12 +1006,15 @@ class MathematicalProgram {
 
   /**
    * An overloaded version of @ref maximize_geometric_mean.
-   * We add the cost to maximize the geometric mean of x, i.e., pow(∏ᵢx(i),
+   * We add the cost to maximize the geometric mean of x, i.e., c*power(∏ᵢx(i),
    * 1/n).
+   * @param c The positive coefficient of the geometric mean cost, @default
+   * is 1.
    * @pre x.rows() >= 2.
+   * @pre c > 0.
    */
   void AddMaximizeGeometricMeanCost(
-      const Eigen::Ref<const VectorX<symbolic::Variable>>& x);
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& x, double c = 1.0);
   //@}
 
   /**

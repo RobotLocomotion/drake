@@ -425,12 +425,12 @@ void MathematicalProgram::AddMaximizeGeometricMeanCost(
         "MathematicalProgram::AddMaximizeGeometricMeanCost: the argument A, b "
         "and x don't have consistent size.");
   }
-  if (A.rows() == 1) {
+  if (A.rows() <= 1) {
     throw std::runtime_error(
         "MathematicalProgram::AddMaximizeGeometricMeanCost: the size of A*x+b "
         "should be at least 2.");
   }
-  // we will impose the constraint w(i)² ≤ (A.row(2i) * x + b(2i)) *
+  // We will impose the constraint w(i)² ≤ (A.row(2i) * x + b(2i)) *
   // (A.row(2i+1) * x + b(2i+1)). This could be reformulated as the vector
   // C * [x;w(i)] + d is in the rotated Lorentz cone, where
   // C = [A.row(2i)   0]
@@ -443,6 +443,8 @@ void MathematicalProgram::AddMaximizeGeometricMeanCost(
   // entry of w, we will impose (w((A.rows() - 1)/2)² ≤ A.row(A.rows() - 1) * x
   // + b(b.rows() - 1)
   auto w = NewContinuousVariables((A.rows() + 1) / 2);
+  DRAKE_ASSERT(w.rows() >= 1);
+
   VectorX<symbolic::Variable> xw(x.rows() + 1);
   xw.head(x.rows()) = x;
   Eigen::Matrix3Xd C(3, x.rows() + 1);
@@ -470,12 +472,16 @@ void MathematicalProgram::AddMaximizeGeometricMeanCost(
     AddLinearCost(-w(0));
     return;
   }
-  AddMaximizeGeometricMeanCost(w);
-  return;
+  AddMaximizeGeometricMeanCost(w, 1);
 }
 
 void MathematicalProgram::AddMaximizeGeometricMeanCost(
-    const Eigen::Ref<const VectorX<symbolic::Variable>>& x) {
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& x, double c) {
+  if (c <= 0) {
+    throw std::invalid_argument(
+        "MathematicalProgram::AddMaximizeGeometricMeanCost(): c should be "
+        "positive.");
+  }
   // We maximize the geometric mean through a recursive procedure. If we assume
   // that the size of x is 2ᵏ, then in each iteration, we introduce new slack
   // variables w of size 2ᵏ⁻¹, with the constraint
@@ -483,10 +489,10 @@ void MathematicalProgram::AddMaximizeGeometricMeanCost(
   // we then call AddMaximizeGeometricMeanCost(w). This recusion ends until
   // w.size() == 2. We then add the constraint z(0)² ≤ w(0) * w(1), and maximize
   // the cost z(0).
-  if (x.rows() == 1) {
+  if (x.rows() <= 1) {
     throw std::invalid_argument(
-        "MathematicalProgram::AddMaximizeGeometricMeanCost: x should have more "
-        "than one entry.");
+        "MathematicalProgram::AddMaximizeGeometricMeanCost(): x should have "
+        "more than one entry.");
   }
   // We will impose the constraint w(i)² ≤ x(2i) * x(2i+1). Namely the vector
   // [x(2i); x(2i+1); w(i)] is in the rotated Lorentz cone.
@@ -494,6 +500,7 @@ void MathematicalProgram::AddMaximizeGeometricMeanCost(
   // entry of w, we impose the constraint w(n)² ≤ x(2n), namely the vector
   // [x(2n); 1; w(n)] is in the rotated Lorentz cone.
   auto w = NewContinuousVariables((x.rows() + 1) / 2);
+  DRAKE_ASSERT(w.rows() >= 1);
   for (int i = 0; i < w.rows() - 1; ++i) {
     AddRotatedLorentzConeConstraint(
         Vector3<symbolic::Variable>(x(2 * i), x(2 * i + 1), w(i)));
@@ -512,7 +519,7 @@ void MathematicalProgram::AddMaximizeGeometricMeanCost(
         C, d, Vector2<symbolic::Variable>(x(x.rows() - 1), w(w.rows() - 1)));
   }
   if (x.rows() == 2) {
-    AddLinearCost(-w(0));
+    AddLinearCost(-c * w(0));
     return;
   }
   AddMaximizeGeometricMeanCost(w);

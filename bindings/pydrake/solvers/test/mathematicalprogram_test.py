@@ -431,6 +431,34 @@ class TestMathematicalProgram(unittest.TestCase):
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
 
+    def test_maximize_geometric_mean(self):
+        # Find the smallest axis-algined ellipsoid that covers some given
+        # points.
+        prog = mp.MathematicalProgram()
+        a = prog.NewContinuousVariables(2)
+        pts = np.array([[1, 1], [1, -1], [-1, 1]])
+        for i in range(3):
+            pt = pts[i, :]
+            prog.AddLinearConstraint(pt.dot(a * pt) <= 1)
+        prog.AddMaximizeGeometricMeanCost(a, 1)
+        result = mp.Solve(prog)
+        self.assertTrue(result.is_success())
+
+    def test_max_geometric_mean_trivial(self):
+        # Solve the trivial problem.
+        # max (2x+3)*(3x+2)
+        # s.t 2x+3 >= 0
+        #     3x+2 >= 0
+        #     x <= 10
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(1)
+        prog.AddLinearConstraint(x[0] <= 10)
+        A = np.array([2, 3])
+        b = np.array([3, 2])
+        prog.AddMaximizeGeometricMeanCost(A, b, x)
+        result = mp.Solve(prog)
+        self.assertTrue(result.is_success())
+
     def test_lcp(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, 'x')

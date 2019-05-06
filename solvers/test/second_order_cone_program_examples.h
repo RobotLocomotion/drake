@@ -235,7 +235,7 @@ class SmallestEllipsoidCoveringProblem1
  public:
   SmallestEllipsoidCoveringProblem1();
 
-  ~SmallestEllipsoidCoveringProblem1() override{};
+  ~SmallestEllipsoidCoveringProblem1() override {}
 
  private:
   void DoCheckSolution(const MathematicalProgramResult& result,
