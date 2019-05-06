@@ -310,6 +310,9 @@ drake_py_library(
         "test/algebra_test_util.py",
     ],
     visibility = ["//visibility:private"],
+    deps = [
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
 )
 
 # Test ODR (One Definition Rule).
@@ -334,6 +337,7 @@ drake_py_unittest(
         ":algebra_test_util_py",
         ":autodiffutils_py",
         ":autodiffutils_test_util_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
 
@@ -441,6 +445,7 @@ drake_py_unittest(
         ":algebra_test_util_py",
         ":symbolic_py",
         "//bindings/pydrake/common:containers_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
 
