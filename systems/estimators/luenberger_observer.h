@@ -41,15 +41,15 @@ class LuenbergerObserver : public systems::LeafSystem<T> {
   /// observed_system_context.
   /// @throws std::bad_cast if the observed_system output is not vector-valued.
   LuenbergerObserver(
-      std::unique_ptr<systems::System<T>> observed_system,
+      std::unique_ptr<const systems::System<T>> observed_system,
       std::unique_ptr<systems::Context<T>> observed_system_context,
       const Eigen::Ref<const Eigen::MatrixXd>& observer_gain);
 
   /// Provides access to the observer gain.
-  const Eigen::MatrixXd& observer_gain() { return observer_gain_; }
+  const Eigen::MatrixXd& observer_gain() { return L_; }
 
   /// Provides access via the short-hand name, L, too.
-  const Eigen::MatrixXd& L() { return observer_gain_; }
+  const Eigen::MatrixXd& L() { return L_; }
 
  private:
   // Advance the state estimate using forward dynamics and the observer gains.
@@ -61,17 +61,20 @@ class LuenbergerObserver : public systems::LeafSystem<T> {
   void CalcEstimatedState(const systems::Context<T>& context,
                           systems::BasicVector<T>* output) const;
 
-  const std::unique_ptr<systems::System<T>> observed_system_;
-  const Eigen::MatrixXd observer_gain_;  // Gain matrix (often called "L").
+  const std::unique_ptr<const systems::System<T>> observed_system_;
+
+  // An alias inside observed_system_; never null.
+  const OutputPort<T>* observed_output_port_{};
+
+  // Observer gain matrix.
+  const Eigen::MatrixXd L_;
 
   // A (mutable) context is needed to efficiently call the observed system's
-  // dynamics and output methods.  Does not add any undeclared state.  This
-  // simply avoids the need to allocate a new context on every function
-  // evaluation.
-  const std::unique_ptr<systems::Context<T>> observed_system_context_;
-  const std::unique_ptr<systems::SystemOutput<T>> observed_system_output_;
-  const std::unique_ptr<systems::ContinuousState<T>>
-  observed_system_derivatives_;
+  // dynamics and output methods.  Does not add any undeclared state.
+  const std::unique_ptr<systems::Context<T>> observed_context_;
+
+  // An alias inside observed_context_ (or nullptr for no input).
+  FixedInputPortValue* observed_fixed_input_{};
 };
 
 }  // namespace estimators
