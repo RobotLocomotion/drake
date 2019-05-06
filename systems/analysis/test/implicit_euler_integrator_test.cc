@@ -132,11 +132,10 @@ GTEST_TEST(ImplicitEulerIntegratorTest, FixedStepThrowsOnMultiStep) {
 
   // Values we have used successfully in other Robertson system tests.
   integrator.set_target_accuracy(5e-5);
-  integrator.request_initial_step_size_target(1e-4);
 
-  // Integrate to the desired step time. We expect this to throw because the
-  // integrator is generally unlikely to converge for such a relatively large
-  // step.
+  // Integrate to the desired step time. We expect this to return false because
+  // the integrator is generally unlikely to converge for such a relatively
+  // large step.
   integrator.Initialize();
   EXPECT_FALSE(integrator.IntegrateWithSingleFixedStepToTime(
       context->get_time() + dt));

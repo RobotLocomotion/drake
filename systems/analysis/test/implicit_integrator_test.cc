@@ -19,8 +19,9 @@ class DummyImplicitIntegrator final : public ImplicitIntegrator<double> {
       ImplicitIntegrator(system, context) {}
   bool supports_error_estimation() const override { return false; }
   int get_error_estimate_order() const override { return 0; }
-  bool CallIsUpdateZero(const VectorXd& xc, const VectorXd& dxc) const {
-    return this->IsUpdateZero(xc, dxc);
+  bool CallIsUpdateZero(const VectorXd& xc, const VectorXd& dxc, double eps)
+      const {
+    return this->IsUpdateZero(xc, dxc, eps);
   }
 
  private:
@@ -57,29 +58,30 @@ GTEST_TEST(ImplicitIntegratortest, IsUpdateZero) {
       dummy_system.CreateDefaultContext();
   DummyImplicitIntegrator dummy_integrator(dummy_system, context.get());
 
+  // Machine epsilon is used in the tests below. The tolerance used to check
+  // whether a dimension of the update is zero in CallIsUpdateZero() will be
+  // 10 * eps. eps will also be used to construct the test below.
   const double eps = std::numeric_limits<double>::epsilon();
 
   // Test the case where the value of interest is unity and the update is near
   // machine epsilon. The other state and update are set to zero so that these
-  // would *not* cause the update to be treated as *non*-zero. Note that this
-  // test may need to be modified if the tolerance used in
-  // ImplicitIntegrator::IsUpdateZero() is modified.
+  // would *not* cause the update to be treated as *non*-zero.
   VectorXd xc(2), dxc(2);
   xc << 1.0, 0.0;
   dxc << eps * 5, 0.0;
-  EXPECT_TRUE(dummy_integrator.CallIsUpdateZero(xc, dxc));
+  EXPECT_TRUE(dummy_integrator.CallIsUpdateZero(xc, dxc, eps * 10));
 
   // Test the case where the value of interest is large and the update is still
   // large, but not large enough relative to the value of interest.
   xc << 1e10, 0.0;
   dxc << eps * 1e6, 0.0;
-  EXPECT_TRUE(dummy_integrator.CallIsUpdateZero(xc, dxc));
+  EXPECT_TRUE(dummy_integrator.CallIsUpdateZero(xc, dxc, eps * 10));
 
   // Test the case where we have two values of interest, one large and the
   // other small with both updates "significant".
   xc << 1e10, 1.0;
   dxc << 1e0, eps * 1e6;
-  EXPECT_FALSE(dummy_integrator.CallIsUpdateZero(xc, dxc));
+  EXPECT_FALSE(dummy_integrator.CallIsUpdateZero(xc, dxc, eps * 10));
 }
 
 }  // namespace

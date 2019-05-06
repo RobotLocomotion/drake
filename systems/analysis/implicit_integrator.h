@@ -244,19 +244,30 @@ class ImplicitIntegrator : public IntegratorBase<T> {
 
   /// Checks whether a proposed update is effectively zero, indicating that the
   /// Newton-Raphson process converged.
-  bool IsUpdateZero(const VectorX<T>& xc, const VectorX<T>& dxc) const {
+  /// @param xc the continuous state.
+  /// @param dxc the update to the continuous state.
+  /// @param eps the tolerance that will be used to determine whether the
+  ///        difference between every dimension of the state is zero. `eps` will
+  ///        be treated as an absolute tolerance when the magnitude of a
+  ///        particular dimension of the state is no greater than unity and as
+  ///        a relative tolerance otherwise. For non-positive `eps` (default),
+  ///        an appropriate tolerance will be computed.
+  /// @return `true` if the update is effectively zero.
+  bool IsUpdateZero(
+      const VectorX<T>& xc, const VectorX<T>& dxc, double eps = -1.0) const {
     using std::abs;
 
-    // Back off slightly from the tightest tolerance (machine epsilon).
-    const double eps = 10 * std::numeric_limits<double>::epsilon();
+    // Reset the tolerance, if necessary, by backing off slightly from the
+    // tightest tolerance (machine epsilon).
+    if (eps <= 0)
+      eps = 10 * std::numeric_limits<double>::epsilon();
+
     for (int i = 0; i < xc.size(); ++i) {
       // Do a relative or absolute tolerance, as appropriate given the magnitude
       // of xc[i].
       const T tol = (abs(xc[i]) <= 1.0) ? eps : abs(xc[i]) * eps;
-      if (abs(dxc[i]) > tol) {
-        DRAKE_DEMAND(dxc.norm() > eps);
+      if (abs(dxc[i]) > tol)
         return false;
-      }
     }
 
     return true;
