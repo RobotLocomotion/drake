@@ -71,6 +71,7 @@ drake_pybind_library(
 
 PY_LIBRARIES_WITH_INSTALL = [
     ":planner_py",
+    ":robot_plan_runner_py",
 ]
 
 PY_LIBRARIES = [
@@ -86,6 +87,13 @@ drake_py_unittest(
     deps = [
         ":planner_py",
         "//bindings/pydrake/multibody",
+    ],
+)
+
+drake_py_unittest(
+    name = "robot_plan_runner_test",
+    deps = [
+        ":robot_plan_runner_py",
     ],
 )
 
