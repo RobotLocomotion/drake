@@ -796,7 +796,8 @@ class SystemIOTest : public ::testing::Test {
     test_sys_.get_input_port(0).FixValue(context_.get(), "input");
 
     // make vector input
-    test_sys_.get_input_port(1).FixValue(context_.get(), 2.0);
+    const auto input = TestTypedVector<double>::Make(2.0);
+    test_sys_.get_input_port(1).FixValue(context_.get(), *input);
   }
 
   ValueIOTestSystem<double> test_sys_;
@@ -823,19 +824,13 @@ TEST_F(SystemIOTest, SystemValueIOTest) {
   EXPECT_EQ(test_sys_.EvalVectorInput(*context_, 2), nullptr);
   EXPECT_THROW(test_sys_.EvalEigenVectorInput(*context_, 2), std::exception);
 
-  // Test AllocateInput*
-  // Second input is not (yet) a TestTypedVector, since I haven't called the
-  // Allocate methods directly yet.
-  EXPECT_EQ(dynamic_cast<const TestTypedVector<double> *>(
-                test_sys_.EvalVectorInput(*context_, 1)),
-            nullptr);
-  // Now allocate.
+  // Fix all inputs to a default values (i.e., non-null).
   test_sys_.AllocateFixedInputs(context_.get());
   // First input should have been re-allocated to the empty string.
   EXPECT_EQ(test_sys_.EvalAbstractInput(*context_, 0)->get_value<std::string>(),
             "");
-  // Second input should now be of type TestTypedVector.
-  EXPECT_NE(dynamic_cast<const TestTypedVector<double> *>(
+  // Second input should be of type TestTypedVector (we don't care what value).
+  EXPECT_NE(dynamic_cast<const TestTypedVector<double>*>(
                 test_sys_.EvalVectorInput(*context_, 1)),
             nullptr);
 }

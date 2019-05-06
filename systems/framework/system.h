@@ -2289,27 +2289,45 @@ class System : public SystemBase {
         };
       }
       case kVectorValued: {
-        // For vector inputs, check that the size is the same.
-        // TODO(jwnimmer-tri) We should type-check the vector, eventually.
+        // For vector inputs, we check that the BasicVector<T> subclass is
+        // identical between XXX.  Since EvalVectorInput embeds the downcast and
+        // type checking, our ahead-of-time checking here should match.  (Our
+        // check is more restrictive -- we insist that the types are exactly
+        // the same, whereas EvalVectorInput allows for multi-level subtyping
+        // of BasicVector.  There's no use for that, so we disallow it here.)
         const std::unique_ptr<BasicVector<T>> model_vector =
             this->AllocateInputVector(port);
         const int expected_size = model_vector->size();
-        return [expected_size, port_index, path_name, port_name](
+        const std::type_info& expected_type = typeid(*model_vector);
+       return [expected_size, &expected_type, port_index, path_name, port_name](
             const AbstractValue& actual) {
           const BasicVector<T>* const actual_vector =
               actual.maybe_get_value<BasicVector<T>>();
+          // Check that the actual value is a vector.
           if (actual_vector == nullptr) {
             SystemBase::ThrowInputPortHasWrongType(
                 "FixInputPortTypeCheck", path_name, port_index, port_name,
                 NiceTypeName::Get<Value<BasicVector<T>>>(),
                 NiceTypeName::Get(actual));
           }
-          // Check that vector sizes match.
+          // If we expected a vector subtype, then check the type of the actual
+          // vector.  (If we expected a plain BasicVector, then we'll still
+          // allow for subtypes to be provided as actual values.)
+          if ((expected_type != typeid(BasicVector<T>)) &&
+              (typeid(*actual_vector) != expected_type)) {
+            ThrowInputPortHasWrongType(
+                "FixInputPortTypeCheck", path_name, port_index, port_name,
+                NiceTypeName::Get(expected_type),
+                NiceTypeName::Get(*actual_vector));
+          }
+          // Check that vector sizes match.  (BasicVector is dynamically sized,
+          // so two instances might differ in size even though their types were
+          // already checked above.)
           if (actual_vector->size() != expected_size) {
             SystemBase::ThrowInputPortHasWrongType(
                 "FixInputPortTypeCheck", path_name, port_index, port_name,
                 fmt::format("{} with size={}",
-                            NiceTypeName::Get<BasicVector<T>>(),
+                            NiceTypeName::Get(expected_type),
                             expected_size),
                 fmt::format("{} with size={}",
                             NiceTypeName::Get(*actual_vector),

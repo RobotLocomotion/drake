@@ -1052,8 +1052,12 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
   auto context = dut->CreateDefaultContext();
   dut.reset();
 
-  // The first port should only accept a 1d vector.
-  context->FixInputPort(0, Eigen::VectorXd::Constant(1, 0.0));
+  // The first port should only accept 1d vectors (but any subtype is okay,
+  // since it was declared to accept a BasicVector).
+  EXPECT_NO_THROW(
+      context->FixInputPort(0, Eigen::VectorXd::Constant(1, 0.0)));
+  EXPECT_NO_THROW(
+      context->FixInputPort(0, MyVector1d{}));
   DRAKE_EXPECT_THROWS_MESSAGE(
       context->FixInputPort(0, Eigen::VectorXd::Constant(2, 0.0)),
       std::exception,
@@ -1071,8 +1075,22 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
       "drake::Value<std::string>. "
       "\\(System ::dut\\)");
 
-  // The second port should only accept ints.
-  context->FixInputPort(2, Value<int>(11));
+  // The second port should accept only MyVector2d, since that was the provided
+  // model_vector subtype.
+  EXPECT_NO_THROW(
+      context->FixInputPort(1, MyVector2d{}));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      context->FixInputPort(1, Eigen::VectorXd::Constant(2, 0.0)),
+      std::exception,
+      "System::FixInputPortTypeCheck\\(\\): expected value of type "
+      "drake::systems::MyVector<2,double> "
+      "for input port\\[1\\] but the actual type was "
+      "drake::systems::BasicVector<double>. "
+      "\\(System ::dut\\)");
+
+  // The third port should only accept ints.
+  EXPECT_NO_THROW(
+      context->FixInputPort(2, Value<int>(11)));
   DRAKE_EXPECT_THROWS_MESSAGE(
       context->FixInputPort(2, Value<std::string>{}),
       std::exception,

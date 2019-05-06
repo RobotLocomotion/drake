@@ -7,6 +7,7 @@ namespace systems {
 namespace {
 
 using Eigen::MatrixXd;
+using examples::pendulum::PendulumInput;
 using examples::pendulum::PendulumPlant;
 using examples::pendulum::PendulumState;
 using examples::pendulum::PendulumStateIndices;
@@ -18,7 +19,7 @@ GTEST_TEST(SystemScalarConversionDoxygen, PendulumPlantAutodiff) {
   //   tau = 0, theta = 0.1, thetadot = 0.2.
   auto plant = std::make_unique<PendulumPlant<double>>();
   auto context = plant->CreateDefaultContext();
-  context->FixInputPort(0, {0.0});  // tau
+  context->FixInputPort(0, PendulumInput<double>{}.with_tau(0.0));
   auto* state = dynamic_cast<PendulumState<double>*>(
       &context->get_mutable_continuous_state_vector());
   state->set_theta(0.1);
