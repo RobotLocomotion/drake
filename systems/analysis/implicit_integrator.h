@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <limits>
 #include <memory>
 #include <utility>
@@ -256,6 +257,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   bool IsUpdateZero(
       const VectorX<T>& xc, const VectorX<T>& dxc, double eps = -1.0) const {
     using std::abs;
+    using std::max;
 
     // Reset the tolerance, if necessary, by backing off slightly from the
     // tightest tolerance (machine epsilon).
@@ -263,9 +265,9 @@ class ImplicitIntegrator : public IntegratorBase<T> {
       eps = 10 * std::numeric_limits<double>::epsilon();
 
     for (int i = 0; i < xc.size(); ++i) {
-      // Do a relative or absolute tolerance, as appropriate given the magnitude
-      // of xc[i].
-      const T tol = (abs(xc[i]) <= 1.0) ? eps : abs(xc[i]) * eps;
+      // Use a relative or absolute tolerance, as appropriate given the
+      // magnitude of xc[i].
+      const T tol = max(T(1), abs(xc[i])) * eps;
       if (abs(dxc[i]) > tol)
         return false;
     }
