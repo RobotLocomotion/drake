@@ -21,7 +21,6 @@ import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import SceneGraph
-from pydrake.multibody.tree import UniformGravityFieldElement
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph)
 from pydrake.multibody.parsing import Parser
@@ -53,7 +52,6 @@ class TestMeshcat(unittest.TestCase):
         builder = DiagramBuilder()
         cart_pole, scene_graph = AddMultibodyPlantSceneGraph(builder)
         Parser(plant=cart_pole).AddModelFromFile(file_name)
-        cart_pole.AddForceElement(UniformGravityFieldElement())
         cart_pole.Finalize()
         assert cart_pole.geometry_source_is_registered()
 
@@ -89,7 +87,6 @@ class TestMeshcat(unittest.TestCase):
         builder = DiagramBuilder()
         kuka, scene_graph = AddMultibodyPlantSceneGraph(builder)
         Parser(plant=kuka).AddModelFromFile(file_name)
-        kuka.AddForceElement(UniformGravityFieldElement())
         kuka.Finalize()
 
         visualizer = builder.AddSystem(MeshcatVisualizer(scene_graph,
@@ -134,7 +131,6 @@ class TestMeshcat(unittest.TestCase):
             A=plant.world_frame(),
             B=plant.GetFrameByName("link", table_model))
 
-        plant.AddForceElement(UniformGravityFieldElement())
         plant.Finalize()
 
         # Add meshcat visualizer.

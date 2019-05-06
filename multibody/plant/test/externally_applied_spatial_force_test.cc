@@ -112,7 +112,6 @@ GTEST_TEST(MultibodyPlantTest, CheckExternalAppliedInput) {
   systems::DiagramBuilder<double> builder;
   auto plant = builder.AddSystem<MultibodyPlant<double>>();
   Parser(plant).AddModelFromFile(full_name);
-  plant->AddForceElement<UniformGravityFieldElement>();
   plant->Finalize();
 
   // Add the system that applies inverse gravitational forces to the link
