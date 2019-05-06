@@ -223,8 +223,12 @@ class SmallestEllipsoidCoveringProblem {
   const VectorX<symbolic::Variable>& a() const { return a_; }
 
  private:
-  virtual void DoCheckSolution(const MathematicalProgramResult&, double) const {
-  }
+  // CheckSolution() already checks if the result is succesful, and if all the
+  // points are within the ellipsoid, with at least one point on the boundary
+  // of the ellipsoid. CheckSolutionExtra can do extra checks for each specific
+  // problem.
+  virtual void CheckSolutionExtra(const MathematicalProgramResult&,
+                                  double) const {}
   std::unique_ptr<MathematicalProgram> prog_;
   VectorX<symbolic::Variable> a_;
   Eigen::MatrixXd p_;
@@ -238,8 +242,8 @@ class SmallestEllipsoidCoveringProblem1
   ~SmallestEllipsoidCoveringProblem1() override {}
 
  private:
-  void DoCheckSolution(const MathematicalProgramResult& result,
-                       double tol) const override;
+  void CheckSolutionExtra(const MathematicalProgramResult& result,
+                          double tol) const override;
 };
 
 void SolveAndCheckSmallestEllipsoidCoveringProblems(

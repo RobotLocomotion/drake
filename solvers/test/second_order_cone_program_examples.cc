@@ -415,7 +415,7 @@ void SmallestEllipsoidCoveringProblem::CheckSolution(
       a_sol.prod(), 1.0 / std::pow(2, (std::ceil(std::log2(a_sol.rows())))));
   EXPECT_NEAR(result.get_optimal_cost(), cost_expected, tol);
 
-  DoCheckSolution(result, tol);
+  CheckSolutionExtra(result, tol);
 }
 
 // Cover the 4 points (1, 1), (1, -1), (-1, 1) and (-1, -1).
@@ -424,7 +424,7 @@ SmallestEllipsoidCoveringProblem1::SmallestEllipsoidCoveringProblem1()
           (Eigen::Matrix<double, 2, 4>() << 1, 1, -1, -1, 1, -1, 1, -1)
               .finished()) {}
 
-void SmallestEllipsoidCoveringProblem1::DoCheckSolution(
+void SmallestEllipsoidCoveringProblem1::CheckSolutionExtra(
     const MathematicalProgramResult& result, double tol) const {
   ASSERT_TRUE(result.is_success());
   // The smallest ellipsoid is a = (0.5, 0.5);
