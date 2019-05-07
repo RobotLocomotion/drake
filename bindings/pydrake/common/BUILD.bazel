@@ -156,11 +156,19 @@ drake_cc_library(
 
 drake_pybind_library(
     name = "eigen_geometry_py",
-    cc_deps = [":eigen_geometry_pybind"],
+    cc_deps = [
+        ":cpp_template_pybind",
+        ":default_scalars_pybind",
+        ":eigen_geometry_pybind",
+        ":type_pack",
+    ],
     cc_srcs = ["eigen_geometry_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
+        ":cpp_template_py",
+        "//bindings/pydrake:autodiffutils_py",
+        "//bindings/pydrake:symbolic_py",
     ],
 )
 
@@ -433,6 +441,7 @@ drake_py_unittest(
     deps = [
         ":eigen_geometry_py",
         ":eigen_geometry_test_util_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
 
