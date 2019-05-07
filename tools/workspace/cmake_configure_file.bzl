@@ -24,7 +24,7 @@ def _cmake_configure_file_impl(ctx):
         env = ctx.attr.env,
         executable = ctx.executable.cmake_configure_file_py,
     )
-    return struct()
+    return []
 
 # Defines the rule to cmake_configure_file.
 _cmake_configure_file_gen = rule(
