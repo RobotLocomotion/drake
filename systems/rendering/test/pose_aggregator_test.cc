@@ -208,9 +208,10 @@ TEST_F(PoseAggregatorTest, AddSinglePoseAndVelocityPorts) {
 // Tests that PoseBundle supports Symbolic form.
 GTEST_TEST(PoseBundleTest, Symbolic) {
   PoseBundle<symbolic::Expression> dut{1};
-
+  multibody::SpatialVelocity<symbolic::Expression> msv =
+    dut.get_velocity(0).get_velocity();
   // Just sanity check that some element got zero-initialized.
-  const symbolic::Expression& x = dut.get_velocity(0).get_velocity()[0];
+  const symbolic::Expression& x = msv[0];
   EXPECT_TRUE(x.EqualTo(0.0));
 }
 
