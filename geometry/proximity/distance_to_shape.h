@@ -191,7 +191,8 @@ class DistancePairGeometry {
 template <typename T>
 void CalcDistanceFallback(const fcl::CollisionObjectd& a,
                           const fcl::CollisionObjectd& b,
-                          const fcl::DistanceRequestd& /* request */,
+                          const fcl::DistanceRequestd&,
+                          const std::vector<GeometryId>&,
                           SignedDistancePair<T>* /* pair_data */) {
   // By default, there is no fallback. For every scalar type for which one
   // actually exists, it should be specialized below.
@@ -207,9 +208,13 @@ template <>
 void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
                                   const fcl::CollisionObjectd& b,
                                   const fcl::DistanceRequestd& request,
+                                  const std::vector<GeometryId>& geometry_map,
                                   SignedDistancePair<double>* pair_data) {
   fcl::DistanceResultd result;
   fcl::distance(&a, &b, request, result);
+
+  pair_data->id_A = EncodedData(a).id(geometry_map);
+  pair_data->id_B = EncodedData(b).id(geometry_map);
 
   pair_data->distance = result.min_distance;
 
@@ -254,6 +259,7 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
                                 const std::vector<GeometryId>& geometry_map,
                                 const fcl::DistanceRequestd& request,
                                 SignedDistancePair<T>* result) {
+  DRAKE_DEMAND(result != nullptr);
   const fcl::CollisionGeometryd* a_geometry = a.collisionGeometry().get();
   const fcl::CollisionGeometryd* b_geometry = b.collisionGeometry().get();
 
@@ -281,7 +287,7 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
   const bool b_is_sphere = b_geometry->getNodeType() == fcl::GEOM_SPHERE;
   const bool no_sphere = !(a_is_sphere || b_is_sphere);
   if (no_sphere) {
-    CalcDistanceFallback<T>(a, b, request, result);
+    CalcDistanceFallback<T>(a, b, request, geometry_map, result);
     return;
   }
   DRAKE_ASSERT(a_is_sphere || b_is_sphere);
@@ -320,7 +326,7 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
     default: {
       // We don't have a closed form solution for the other geometry, so we
       // call FCL GJK/EPA.
-      CalcDistanceFallback<T>(a, b, request, result);
+      CalcDistanceFallback<T>(a, b, request,  geometry_map, result);
       break;
     }
   }
@@ -411,17 +417,18 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
               // NOLINTNEXTLINE
               void* callback_data, double& /* dist */) {
   auto& data = *static_cast<CallbackData<T>*>(callback_data);
-  // Throw if the geometry-pair isn't supported.
-  if (ScalarSupport<T>::is_supported(
-          object_A_ptr->collisionGeometry()->getNodeType(),
-          object_B_ptr->collisionGeometry()->getNodeType())) {
-    const EncodedData encoding_a(*object_A_ptr);
-    const EncodedData encoding_b(*object_B_ptr);
 
-    const bool can_collide = data.collision_filter.CanCollideWith(
-        encoding_a.encoding(), encoding_b.encoding());
+  const EncodedData encoding_a(*object_A_ptr);
+  const EncodedData encoding_b(*object_B_ptr);
 
-    if (can_collide) {
+  const bool can_collide = data.collision_filter.CanCollideWith(
+      encoding_a.encoding(), encoding_b.encoding());
+
+  if (can_collide) {
+    // Throw if the geometry-pair isn't supported.
+    if (ScalarSupport<T>::is_supported(
+            object_A_ptr->collisionGeometry()->getNodeType(),
+            object_B_ptr->collisionGeometry()->getNodeType())) {
       const std::vector<GeometryId>& geometry_map = data.geometry_map;
       // We want to pass object_A and object_B to the narrowphase distance in a
       // specific order. This way the broadphase distance is free to give us
@@ -450,13 +457,13 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
                                  fcl_object_B, data.X_WGs[index_B],
                                  geometry_map, data.request, &signed_pair);
       data.nearest_pairs.emplace_back(std::move(signed_pair));
+    } else {
+      throw std::logic_error(
+          fmt::format("Signed distance queries between shapes '{}' and '{}' "
+                      "are not supported for scalar type {}",
+                      GetGeometryName(*object_A_ptr),
+                      GetGeometryName(*object_B_ptr), NiceTypeName::Get<T>()));
     }
-  } else {
-    throw std::logic_error(fmt::format(
-        "Signed distance queries between shapes '{}' and '{}' "
-        "are not supported for scalar type {}",
-        GetGeometryName(*object_A_ptr), GetGeometryName(*object_B_ptr),
-        NiceTypeName::Get<T>()));
   }
   // Returning true would tell the broadphase manager to terminate early. Since
   // we want to find all the signed distance present in the model's current

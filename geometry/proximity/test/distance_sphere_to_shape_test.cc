@@ -35,6 +35,7 @@ template <>
 void CalcDistanceFallback<float>(const fcl::CollisionObjectd&,
                                  const fcl::CollisionObjectd&,
                                  const fcl::DistanceRequestd&,
+                                 const std::vector<GeometryId>&,
                                  SignedDistancePair<float>*) {
   throw std::logic_error("Float fallback called!");
 }
@@ -84,14 +85,22 @@ GTEST_TEST(SphereShapeDistance, FallbackSupport) {
   CollisionObjectd obj_a(sphere);
   CollisionObjectd obj_b(sphere);
   fcl::DistanceRequestd request{};
+  std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
+                                       GeometryId::get_new_id()};
+  EncodedData(GeometryIndex{0}, true).write_to(&obj_a);
+  EncodedData(GeometryIndex{1}, true).write_to(&obj_b);
 
   SignedDistancePair<double> distance_pair_d{};
-  EXPECT_NO_THROW(
-      CalcDistanceFallback<double>(obj_a, obj_b, request, &distance_pair_d));
+  EXPECT_NO_THROW(CalcDistanceFallback<double>(obj_a, obj_b, request,
+                                               geometry_map, &distance_pair_d));
+  EXPECT_TRUE(distance_pair_d.id_A.is_valid());
+  EXPECT_EQ(distance_pair_d.id_A, geometry_map[0]);
+  EXPECT_TRUE(distance_pair_d.id_B.is_valid());
+  EXPECT_EQ(distance_pair_d.id_B, geometry_map[1]);
 
   SignedDistancePair<AutoDiffXd> distance_pair_ad{};
   DRAKE_EXPECT_THROWS_MESSAGE(
-      CalcDistanceFallback<AutoDiffXd>(obj_a, obj_b, request,
+      CalcDistanceFallback<AutoDiffXd>(obj_a, obj_b, request, geometry_map,
                                        &distance_pair_ad),
       std::logic_error,
       "Signed distance queries between shapes .+ and .+ are not supported for "
@@ -102,7 +111,7 @@ GTEST_TEST(SphereShapeDistance, FallbackSupport) {
 //  shape-shape primitives that *aren't* covered by the point-shape tests.
 //  For arbitrary derivatives, use `ComputeNumericalGradient()` to test.
 
-// TODO(SeanCurtis-TRI): Assuming the sphere is A, onfirm that the derivatives
+// TODO(SeanCurtis-TRI): Assuming the sphere is A, confirm that the derivatives
 //  w.r.t. R_WA are as expected (e.g., distance and nhat are untouched, but
 //  p_ACa are.
 
@@ -512,7 +521,10 @@ template <typename T>
 class CallbackScalarSupport : public ::testing::Test {
  public:
   CallbackScalarSupport()
-      : geometry_map_(), collision_filter_(), X_WGs_(), results_(),
+      : geometry_map_(),
+        collision_filter_(),
+        X_WGs_(),
+        results_(),
         data_(&geometry_map_, &collision_filter_, &X_WGs_, &results_),
         spheres_() {}
 
@@ -598,8 +610,7 @@ CallbackScalarSupport<double>::unsupported_pairs() {
 template <>
 std::vector<std::pair<CollisionObjectd&, CollisionObjectd&>>
 CallbackScalarSupport<AutoDiffXd>::supported_pairs() {
-  return {{spheres_[0], spheres_[1]},
-          {spheres_[0], boxes_[1]}};
+  return {{spheres_[0], spheres_[1]}, {spheres_[0], boxes_[1]}};
 }
 
 template <>
@@ -636,6 +647,36 @@ TYPED_TEST(CallbackScalarSupport, SupportedPairClassification) {
     EXPECT_THROW(run_callback(pair.first, pair.second), std::logic_error);
     EXPECT_THROW(run_callback(pair.second, pair.first), std::logic_error);
   }
+}
+
+// Tests that an unsupported pair that is nevertheless *filtered* is not
+// affected by scalar support.
+GTEST_TEST(Callback, ScalarSupportWithFilters) {
+  using T = AutoDiffXd;
+  std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
+                                       GeometryId::get_new_id()};
+  CollisionFilterLegacy collision_filter;
+
+  EncodedData data_A(GeometryIndex{0}, true);
+  EncodedData data_B(GeometryIndex{1}, true);
+  collision_filter.AddGeometry(data_A.encoding());
+  collision_filter.AddGeometry(data_B.encoding());
+  // Filter the pair (A, B) by adding them to the same clique.
+  collision_filter.AddToCollisionClique(data_A.encoding(), 1);
+  collision_filter.AddToCollisionClique(data_B.encoding(), 1);
+  std::vector<Isometry3<T>> X_WGs{Isometry3<T>::Identity(),
+                                  Isometry3<T>::Identity()};
+
+  CollisionObjectd box_A(make_shared<fcl::Boxd>(0.25, 0.3, 0.4));
+  data_A.write_to(&box_A);
+  CollisionObjectd box_B(make_shared<fcl::Boxd>(0.4, 0.3, 0.2));
+  data_B.write_to(&box_B);
+
+  std::vector<SignedDistancePair<T>> results;
+  CallbackData<T> data(&geometry_map, &collision_filter, &X_WGs, &results);
+  double threshold = std::numeric_limits<double>::infinity();
+  EXPECT_NO_THROW(Callback<T>(&box_A, &box_B, &data, threshold));
+  EXPECT_EQ(results.size(), 0u);
 }
 
 GTEST_TEST(Callback, RespectCollisionFiltering) {
