@@ -45,7 +45,7 @@ using systems::sensors::ColorD;
 // will confirm that the right geometries get updated.
 GTEST_TEST(RenderEngine, RegistrationAndUpdate) {
   // Change the default render label to something registerable.
-  DummyRenderEngine engine(RenderLabel(10));
+  DummyRenderEngine engine({RenderLabel::kDontCare});
 
   // Configure parameters for registering visuals.
   PerceptionProperties skip_properties = engine.rejecting_properties();
@@ -146,7 +146,7 @@ GTEST_TEST(RenderEngine, RemoveGeometry) {
   auto make_engine = [&render_index_to_geometry_index]() -> DummyRenderEngine {
     render_index_to_geometry_index.clear();
     // Change the default render label to something registerable.
-    DummyRenderEngine engine(RenderLabel(10));
+    DummyRenderEngine engine({RenderLabel::kDontCare});
     // A set of properties that will cause a shape to be properly registered.
     PerceptionProperties add_properties = engine.accepting_properties();
     RigidTransformd X_WG = RigidTransformd::Identity();
@@ -340,44 +340,24 @@ GTEST_TEST(RenderEngine, ColorLabelConversion) {
 GTEST_TEST(RenderEngine, DefaultRenderLabel) {
   // Case: Confirm RenderEngine default is kUnspecified.
   {
-    DummyRenderEngine engine;
+    DummyRenderEngine engine(RenderEngineParams{});
     EXPECT_EQ(engine.default_render_label(), RenderLabel::kUnspecified);
   }
-  // Case: Confirm construction with alternate label is allowed and setting
-  // post-construction is still valid.
+
+  // Case: Confirm kDontCare is valid.
   {
-    DummyRenderEngine engine(RenderLabel::kEmpty);
-    EXPECT_EQ(engine.default_render_label(), RenderLabel::kEmpty);
-    engine.set_default_render_label(RenderLabel::kDoNotRender);
-    EXPECT_EQ(engine.default_render_label(), RenderLabel::kDoNotRender);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        engine.set_default_render_label(RenderLabel(13)), std::logic_error,
-        ".*default render label can only be set once");
+    DummyRenderEngine engine(RenderEngineParams{RenderLabel::kDontCare});
+    EXPECT_EQ(engine.default_render_label(), RenderLabel::kDontCare);
   }
 
-  // Case: Confirm setting only valid *before* geometry registration.
+  // Case: Confirm construction with alternate label is forbidden.
   {
-    DummyRenderEngine engine(RenderLabel(10));
-    engine.RegisterVisual(GeometryIndex(0), Sphere(0.5),
-                          engine.accepting_properties(),
-                          RigidTransformd::Identity(), true);
-    EXPECT_EQ(engine.num_registered(), 1);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        engine.set_default_render_label(RenderLabel(13)), std::logic_error,
-        ".*default render label cannot be set after registering geometry");
-  }
-
-  // Case: Confirm setting only valid *before* geometry registration, even if
-  // the derived renderer doesn't accept the geometry.
-  {
-    DummyRenderEngine engine(RenderLabel(10));
-    engine.RegisterVisual(GeometryIndex(0), Sphere(0.5),
-                          engine.rejecting_properties(),
-                          RigidTransformd::Identity(), true);
-    EXPECT_EQ(engine.num_registered(), 0);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        engine.set_default_render_label(RenderLabel(13)), std::logic_error,
-        ".*default render label cannot be set after registering geometry");
+    for (auto label :
+         {RenderLabel::kDoNotRender, RenderLabel::kEmpty, RenderLabel{10}}) {
+      DRAKE_EXPECT_THROWS_MESSAGE(DummyRenderEngine({label}), std::logic_error,
+                                  ".* default render label must be either "
+                                  "'unspecified' or 'don't care'");
+    }
   }
 }
 

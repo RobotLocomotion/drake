@@ -14,8 +14,6 @@ optional<RenderIndex> RenderEngine::RegisterVisual(
     GeometryIndex index, const drake::geometry::Shape& shape,
     const PerceptionProperties& properties,
     const RigidTransformd& X_WG, bool needs_updates) {
-  default_label_state_ = DefaultValueState::kGeometryRegistered;
-
   RenderLabelIsValidOrThrow(properties);
 
   optional<RenderIndex> render_index =
@@ -86,21 +84,6 @@ optional<GeometryIndex> RenderEngine::RemoveGeometry(RenderIndex index) {
     (*map_B)[index] = moved_internal_index;
   }
   return moved_internal_index;
-}
-
-void RenderEngine::set_default_render_label(const RenderLabel& label) {
-  if (default_label_state_ != DefaultValueState::kUnset) {
-    if (default_label_state_ == DefaultValueState::kSet) {
-      throw std::logic_error(
-          "The RenderEngine's default render label can only be set once");
-    } else {
-      throw std::logic_error(
-          "The RenderEngine's default render label cannot be set after "
-          "registering geometry");
-    }
-  }
-  default_label_state_ = DefaultValueState::kSet;
-  default_render_label_ = label;
 }
 
 void RenderEngine::RenderLabelIsValidOrThrow(
