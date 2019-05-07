@@ -216,6 +216,7 @@ GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
   ScsSolver solver;
   if (solver.available()) {
     const auto result = solver.Solve(prob.prog(), {}, {});
+    // On Mac the accuracy is about 2.1E-6. On Linux it is about 2E-6.
     prob.CheckSolution(result, 2.1E-6);
   }
 }
