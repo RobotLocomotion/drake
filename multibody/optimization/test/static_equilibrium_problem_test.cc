@@ -165,16 +165,12 @@ GTEST_TEST(TestStaticEquilibriumProblem, TwoSpheresWithinBin) {
         solvers::SnoptSolver snopt_solver;
         if (snopt_solver.available()) {
           solvers::SolverOptions solver_options;
-          solver_options.SetOption(snopt_solver.id(), "Print file",
-                                   "sphere_in_bin.out");
-          solver_options.SetOption(snopt_solver.id(), "Major print level", 1);
           const auto result =
               snopt_solver.Solve(problem.prog(), x_init, solver_options);
           EXPECT_TRUE(result.is_success());
 
           // Check the solution.
           const auto q_sol = result.GetSolution(problem.q_vars());
-          std::cout << "q_sol: " << q_sol.transpose() << "\n";
           const std::vector<ContactWrench> contact_wrench_sol =
               problem.GetContactWrenchSolution(result);
 
@@ -201,23 +197,6 @@ GTEST_TEST(TestStaticEquilibriumProblem, TwoSpheresWithinBin) {
           // Now check if the two spheres are not penetrating each other.
           EXPECT_GE((q_sol.segment<3>(4) - q_sol.segment<3>(11)).norm(),
                     radii[0] + radii[1] - tol);
-
-          //        // The sphere must be on the ground.
-          //        EXPECT_NEAR(q_sol(6), radius, tol);
-          //        // Evaluate the contact wrench.
-          //        const std::vector<ContactWrench> contact_wrench_sol =
-          //            problem.GetContactWrenchSolution(result);
-          //        EXPECT_EQ(contact_wrench_sol.size(), 1);
-          //        EXPECT_TRUE(CompareMatrices(contact_wrench_sol[0].p_WCb_W,
-          //                                    Eigen::Vector3d(q_sol(4),
-          //                                    q_sol(5), 0), tol));
-          //        dut.plant().SetPositions(dut.get_mutable_plant_context(),
-          //                                 q_sol.cast<AutoDiffXd>());
-          //        const Vector6<double> F_Cb_W_expected =
-          //        math::autoDiffToValueMatrix(
-          //            dut.plant().CalcGravityGeneralizedForces(dut.plant_context()));
-          //        EXPECT_TRUE(CompareMatrices(contact_wrench_sol[0].F_Cb_W,
-          //                                    F_Cb_W_expected, tol));
         }
       };
 
@@ -228,7 +207,7 @@ GTEST_TEST(TestStaticEquilibriumProblem, TwoSpheresWithinBin) {
   // The intial poses for both spheres are above the ground.
   Eigen::VectorXd q_init(14);
   q_init.head<4>() << 1, 0, 0, 0;
-  q_init.segment<3>(4) << 0.2, 0, radii[0] + 0.5;
+  q_init.segment<3>(4) << 0.2, 0, radii[0] + 0.6;
   q_init.segment<4>(7) << 1, 0, 0, 0;
   q_init.tail<3>() << -0.1, 0, radii[1] + 0.01;
   problem.prog().SetDecisionVariableValueInVector(problem.q_vars(), q_init,
