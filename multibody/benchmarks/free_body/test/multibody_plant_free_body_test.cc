@@ -394,13 +394,13 @@ void TestKaneExactSolution(
   const Vector3d w_expected = thetaDt * lambda;
   const Vector3d wDt_expected(0, 0, 0);
 
-  // As defined by [Kane, pg. 12 1983], theta-lambda defines this quaternion as
+  // theta-lambda defines this quaternion [Kane, pg. 12 1983] by
   const double q0 = std::cos(theta/2);
   const double q1 = lambda(0) * std::sin(theta/2);
   const double q2 = lambda(1) * std::sin(theta/2);
   const double q3 = lambda(2) * std::sin(theta/2);
 
-  // Time-differentiate the previous expressions for q0, q1, q2, q3 to form
+  // Time-differentiating the previous expressions for q0, q1, q2, q3 gives
   // q0Dt, q1Dt, q2Dt, q3Dt.  Note: Since this test employs simple 2D spin,
   // lambda(i) (i = 0, 1, 2) are constant.  In general 3D rotational motion,
   // lambda(i) (i = 0, 1, 2) are not constant.
@@ -413,7 +413,7 @@ void TestKaneExactSolution(
   const Quaterniond quat_expected(q0, q1, q2, q3);
   const Vector4d quatDt_expected(q0Dt, q1Dt, q2Dt, q3Dt);
 
-  // Ensure Kane's general 3D solution matches this 2D specialized solution.
+  // Get Kane's general 3D solution for B's given initial angular velocity.
   torque_free_cylinder_kane->set_initial_w_NB_B(w_expected);
   Quaterniond quat_kane;
   Vector4d quatDt_kane;
@@ -421,15 +421,19 @@ void TestKaneExactSolution(
   std::tie(quat_kane, quatDt_kane, w_kane, wDt_kane) =
   torque_free_cylinder_kane->CalculateExactRotationalSolutionNB(t);
 
+  // Ensure Kane's general 3D solution matches this 2D specialized solution.
+  // To that end, compare Kane's angular velocity/acceleration and Kane's
+  // quaternion and its time-derivative to their expected results.
+
+  // Ensure Kane's angular velocity/accelerations match the expected ones.
+  EXPECT_TRUE(CompareMatrices(w_kane,     w_expected,  4 * kEpsilon));
+  EXPECT_TRUE(CompareMatrices(wDt_kane, wDt_expected,  4 * kEpsilon));
+
   // Since more than one quaternion is associated with the same orientation,
   // compare Kane's quaternion with the expected quaternion.
   const bool is_ok_quat = math::AreQuaternionsEqualForOrientation(
       quat_kane, quat_expected, 8 * kEpsilon);
   EXPECT_TRUE(is_ok_quat);
-
-  // Ensure Kane's angular velocity/accelerations match the expected ones.
-  EXPECT_TRUE(CompareMatrices(w_kane,     w_expected,  4 * kEpsilon));
-  EXPECT_TRUE(CompareMatrices(wDt_kane, wDt_expected,  4 * kEpsilon));
 
   // Ensure Kane's quaternion time-derivative matches expected angular velocity.
   EXPECT_TRUE(math::IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
