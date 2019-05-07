@@ -156,6 +156,8 @@ class DistancePairGeometry {
     // p_BCb is the witness point on ∂B measured and expressed in B.
     result_->p_BCb = shape_B_to_point_Ao.p_GN;
     result_->nhat_BA_W = shape_B_to_point_Ao.grad_W;
+    result_->is_nhat_BA_W_well_defined =
+        shape_B_to_point_Ao.is_grad_W_well_defined;
     // p_ACa is the witness point on ∂A measured and expressed in A.
     const math::RotationMatrix<T> R_AW = X_WA_.rotation().transpose();
     result_->p_ACa = -sphere_A.radius * (R_AW * shape_B_to_point_Ao.grad_W);
@@ -228,13 +230,14 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
   const double kEps = std::numeric_limits<double>::epsilon();
   const double kNan = std::numeric_limits<double>::quiet_NaN();
 
-  // TODO(DamrongGuoy): For sphere-{sphere,box,cylinder} we will start
-  //  working on the right nhat when min_distance is 0 or almost 0 after
-  //  PR #10813 lands to avoid conflicts with this PR #10823. For now,
-  //  we simply return NaN in nhat when min_distance is 0 or almost 0.
-  pair_data->nhat_BA_W = std::abs(result.min_distance) < kEps
-                         ? Eigen::Vector3d(kNan, kNan, kNan)
-                         : (p_WCa - p_WCb) / result.min_distance;
+  // Returns NaN in nhat when min_distance is 0 or almost 0.
+  if (std::abs(result.min_distance) < kEps) {
+    pair_data->nhat_BA_W = Eigen::Vector3d(kNan, kNan, kNan);
+    pair_data->is_nhat_BA_W_well_defined = false;
+  } else {
+    pair_data->nhat_BA_W = (p_WCa - p_WCb) / result.min_distance;
+    pair_data->is_nhat_BA_W_well_defined = true;
+  }
 }
 
 //@}
