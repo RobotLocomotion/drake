@@ -147,7 +147,7 @@ def GeneratePlans(station):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--render", type=float, default=0.1,
+        "--render", action='store_true', default=False,
         help="Whether to render a system diagram with GraphViz.")
 
     MeshcatVisualizer.add_argparse_argument(parser)
