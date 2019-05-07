@@ -40,8 +40,6 @@ std::string GetGeometryName(const fcl::CollisionObjectd& object) {
       return "Octtree";
     case fcl::NODE_COUNT:
       return "Unsupported";
-    default:
-      throw std::runtime_error("Should not reach here");
   }
   DRAKE_UNREACHABLE();
 }
