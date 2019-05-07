@@ -18,10 +18,10 @@ class TestRobotPlanRunner(unittest.TestCase):
         # Check the PlanData structure can be initialized with optional
         # trajectory arguments
         no_args = PlanData()
-        empty_plan = PlanData(PlanType.kEmptyPlan, 1)
-        joint_space_plan_blank = PlanData(PlanType.kJointSpacePlan, 2)
+        empty_plan = PlanData(PlanType.kEmptyPlan)
+        joint_space_plan_blank = PlanData(PlanType.kJointSpacePlan)
         joint_space_plan_pp = PlanData(
-            PlanType.kJointSpacePlan, 3,
+            PlanType.kJointSpacePlan,
             PiecewisePolynomial(np.array([[1.], [4.]])))
 
     def test_plan_sender(self):
@@ -38,8 +38,8 @@ class TestRobotPlanRunner(unittest.TestCase):
         ]).T
         traj = PiecewisePolynomial.Cubic(
             t_knots, q_knots, np.zeros(7), np.zeros((7)))
-        plan_1 = PlanData(PlanType.kJointSpacePlan, 1, traj)
-        plan_2 = PlanData(PlanType.kJointSpacePlan, 2)
+        plan_1 = PlanData(PlanType.kJointSpacePlan, traj)
+        plan_2 = PlanData(PlanType.kJointSpacePlan)
 
         plan_sender = PlanSender([plan_1, plan_2])
         self.assertEqual(plan_sender.get_all_plans_duration(), 10.0)
