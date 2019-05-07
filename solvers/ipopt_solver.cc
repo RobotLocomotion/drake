@@ -123,8 +123,14 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
   size_t grad_idx = 0;
 
   for (int i = 0; i < c.num_constraints(); i++) {
-    for (int j = 0; j < variables.rows(); j++) {
-      grad[grad_idx++] = ty(i).derivatives()(j);
+    if (ty(i).derivatives().size() > 0) {
+      for (int j = 0; j < variables.rows(); j++) {
+        grad[grad_idx++] = ty(i).derivatives()(j);
+      }
+    } else {
+      for (int j = 0; j < variables.rows(); j++) {
+        grad[grad_idx++] = 0;
+      }
     }
   }
 
@@ -466,10 +472,12 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 
       cost_cache_->result[0] += ty(0).value();
 
-      for (int j = 0; j < num_v_variables; ++j) {
-        const size_t vj_index =
-            problem_->FindDecisionVariableIndex(binding.variables()(j));
-        cost_cache_->grad[vj_index] += ty(0).derivatives()(j);
+      if (ty(0).derivatives().size() > 0) {
+        for (int j = 0; j < num_v_variables; ++j) {
+          const size_t vj_index =
+              problem_->FindDecisionVariableIndex(binding.variables()(j));
+          cost_cache_->grad[vj_index] += ty(0).derivatives()(j);
+        }
       }
     }
   }

@@ -485,6 +485,15 @@ GTEST_TEST(testNonlinearProgram, HeatExchangerDesignProblem) {
                       &result);
 }
 
+GTEST_TEST(testNonlinearProgram, EmptyGradientProblem) {
+  EmptyGradientProblem prob;
+  MathematicalProgramResult result;
+  Eigen::VectorXd x_init = Eigen::Vector2d(0, 0);
+  RunNonlinearProgram(prob.prog(), x_init,
+                      [&prob, &result]() { prob.CheckSolution(result); },
+                      &result);
+}
+
 GTEST_TEST(testNonlinearProgram, CallbackTest) {
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<3>();

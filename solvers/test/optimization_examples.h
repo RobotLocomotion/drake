@@ -846,6 +846,85 @@ class HeatExchangerDesignProblem {
   Eigen::Matrix<symbolic::Variable, 8, 1> x_;
 };
 
+/**
+ * In Eigen's autodiff, when the derivative has empty size, it is interpreted
+ * as 0 gradient (i.e., the gradient has value 0, with the size of the gradient
+ * matrix being arbitrary). Many solvers interpret empty size gradient in a
+ * different way, that the variable to be taken derivative with has 0 size. This
+ * test guarantees that when Eigen autodiff returns an empty size gradient, we
+ * can manually set the gradient size to be the right size.
+ * A trivial problem
+ * min 1
+ * s.t 0 <= 0
+ */
+class EmptyGradientProblem {
+ public:
+  EmptyGradientProblem();
+
+  const MathematicalProgram& prog() const { return *prog_; }
+
+  void CheckSolution(const MathematicalProgramResult& result) const;
+
+ private:
+  class EmptyGradientCost : public Cost {
+   public:
+    EmptyGradientCost() : Cost(2) {}
+
+   private:
+    template <typename T>
+    void DoEvalGeneric(const Eigen::Ref<const VectorX<T>>&,
+                       VectorX<T>* y) const {
+      y->resize(1);
+      (*y)(0) = T(1);
+    }
+
+    void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                VectorX<double>* y) const override {
+      DoEvalGeneric(x, y);
+    }
+
+    void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                AutoDiffVecXd* y) const override {
+      DoEvalGeneric(x, y);
+    }
+
+    void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+                VectorX<symbolic::Expression>* y) const override {
+      DoEvalGeneric<symbolic::Expression>(x.cast<symbolic::Expression>(), y);
+    }
+  };
+
+  class EmptyGradientConstraint : public Constraint {
+   public:
+    EmptyGradientConstraint();
+
+   private:
+    template <typename T>
+    void DoEvalGeneric(const Eigen::Ref<const VectorX<T>>&,
+                       VectorX<T>* y) const {
+      y->resize(1);
+      (*y)(0) = T(0);
+    }
+
+    void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                VectorX<double>* y) const override {
+      DoEvalGeneric(x, y);
+    }
+
+    void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                AutoDiffVecXd* y) const override {
+      DoEvalGeneric(x, y);
+    }
+
+    void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+                VectorX<symbolic::Expression>* y) const override {
+      DoEvalGeneric<symbolic::Expression>(x.cast<symbolic::Expression>(), y);
+    }
+  };
+  std::unique_ptr<MathematicalProgram> prog_;
+  Vector2<symbolic::Variable> x_;
+};
+
 std::set<CostForm> linear_cost_form();
 
 std::set<CostForm> quadratic_cost_form();
