@@ -4,7 +4,7 @@ MainClassInfo = provider()
 
 # Generate a launcher file to run installed java binaries
 def _drake_java_binary_install_launcher_impl(ctx):
-    classpath = ctx.attr.target.java.compilation_info.runtime_classpath
+    classpath = ctx.attr.target[JavaInfo].compilation_info.runtime_classpath
     return [
         MainClassInfo(
             main_class = ctx.attr.main_class,
