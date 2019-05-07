@@ -327,6 +327,7 @@ void  TestDrakeSolutionForVariousInitialValues(
   }
 }
 
+
 // This function tests Drake's simulation of the motion of an axis-symmetric
 // rigid body B (uniform cylinder) in a Newtonian frame (World) N.  Since the
 // only external forces on B are uniform gravitational forces, the moment of
@@ -363,6 +364,109 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testNumericalIntegration) {
                                            axisymmetric_plant);
 }
 
+// This helper function checks Kane's exact solution against an expected simple
+// solution for torque-free motion of an axisymmetric rigid body B.  The
+// expected simple solution is associated with simple spin about Bz (B's inertia
+// symmetry axis) or simple spin about some combination of Bx and By.  With
+// these restrictions, the equation Torque = I*theta'' is applicable where
+// Torque = 0 and theta'' is the 2ⁿᵈ time derivative of the angle theta.
+// @param[in] torque_free_cylinder_kane class that stores initial values,
+//            gravity, and methods to calculate Kane's solution at time t.
+// @param[in] thetaDt body B's initial angular spin rate (radians/second).
+// @param[in] lambda unit vector in the initial direction of B's angular
+//   velocity in N, which must be either Bz, -Bz, or a combination of Bx and By.
+void TestKaneExactSolution(
+    FreeBody* torque_free_cylinder_kane,
+    const double thetaDt, const Vector3d& lambda) {
+  DRAKE_ASSERT(torque_free_cylinder_kane != nullptr);
+  DRAKE_ASSERT(thetaDt != 0);  // Ensure B's angular velocity is non-zero.
+
+  // Ensure lambda is a unit vector and its Bz component is 1, -1, or 0.
+  DRAKE_ASSERT(std::abs(1 - lambda.norm()) <= 4 * kEpsilon);
+  const bool is_simple_Bz_spin = std::abs(1 - std::abs(lambda(2))) < 4*kEpsilon;
+  DRAKE_ASSERT(is_simple_Bz_spin || lambda(2) == 0);
+
+  // As described above, the governing ODE for this test is theta'' = 0.
+  // Knowing the initial value of theta is theta(t = 0) = 0, this ODE's solution
+  // is theta' = constant and theta(t) = theta' * t.
+  const double t = 1.23;             // Arbitrary value of time.
+  const double theta = thetaDt * t;  // Solution to ODE.
+  const Vector3d w_expected = thetaDt * lambda;
+  const Vector3d wDt_expected(0, 0, 0);
+
+  // As defined by [Kane, pg. 12 1983], theta-lambda defines this quaternion as
+  const double q0 = std::cos(theta/2);
+  const double q1 = lambda(0) * std::sin(theta/2);
+  const double q2 = lambda(1) * std::sin(theta/2);
+  const double q3 = lambda(2) * std::sin(theta/2);
+
+  // Time-differentiate the previous expressions for q0, q1, q2, q3 to form
+  // q0Dt, q1Dt, q2Dt, q3Dt.  Note: Since this test employs simple 2D spin,
+  // lambda(i) (i = 0, 1, 2) are constant.  In general 3D rotational motion,
+  // lambda(i) (i = 0, 1, 2) are not constant.
+  const double q0Dt = -std::sin(theta/2) * thetaDt;
+  const double q1Dt = lambda(0) * std::cos(theta/2) * thetaDt;
+  const double q2Dt = lambda(1) * std::cos(theta/2) * thetaDt;
+  const double q3Dt = lambda(2) * std::cos(theta/2) * thetaDt;
+
+  // Package the previous expected results for subsequent comparison with Kane.
+  const Quaterniond quat_expected(q0, q1, q2, q3);
+  const Vector4d quatDt_expected(q0Dt, q1Dt, q2Dt, q3Dt);
+
+  // Ensure Kane's general 3D solution matches this 2D specialized solution.
+  torque_free_cylinder_kane->set_initial_w_NB_B(w_expected);
+  Quaterniond quat_kane;
+  Vector4d quatDt_kane;
+  Vector3d w_kane, wDt_kane;
+  std::tie(quat_kane, quatDt_kane, w_kane, wDt_kane) =
+  torque_free_cylinder_kane->CalculateExactRotationalSolutionNB(t);
+
+  // Since more than one quaternion is associated with the same orientation,
+  // compare Kane's quaternion with the expected quaternion.
+  const bool is_ok_quat = math::AreQuaternionsEqualForOrientation(
+      quat_kane, quat_expected, 8 * kEpsilon);
+  EXPECT_TRUE(is_ok_quat);
+
+  // Ensure Kane's angular velocity/accelerations match the expected ones.
+  EXPECT_TRUE(CompareMatrices(w_kane,     w_expected,  4 * kEpsilon));
+  EXPECT_TRUE(CompareMatrices(wDt_kane, wDt_expected,  4 * kEpsilon));
+
+  // Ensure Kane's quaternion time-derivative matches expected angular velocity.
+  EXPECT_TRUE(math::IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
+    quat_kane, quatDt_kane, w_expected, 8 * kEpsilon));
+}
+
+
+// This test helps verify the analytical solution proposed by [Kane, 1983] for
+// the torque-free 3D rotational motion of an axisymmetric rigid body B (e.g., a
+// uniform cylinder) in a Newtonian frame (World) N.  The initial values used in
+// this test make it easy to compute an associated 2D solution for simple spin.
+// Kane's analytical 3D solution depends on intermediate calculations in the
+// FreeBody method CalcPseudoFrequencies_s_p().  Hence, this test also helps
+// verify the underlying FreeBody method CalcPseudoFrequencies_s_p().
+GTEST_TEST(uniformSolidCylinderTorqueFree, testKaneExactSolution) {
+  const Quaterniond quat_NB(1, 0, 0, 0);  // Initial value -- aligned axes.
+  const Vector3d w_NB_B(0, 0, 0);         // Initial value -- overwritten.
+  const Vector3d p_NoBcm_N(0, 0, 0);      // Initial value.
+  const Vector3d v_NBcm_B(0, 0, 0);       // Initial value.
+  const Vector3d gravity(0, 0, 0);        // No gravity.
+  FreeBody torque_free_cylinder_kane(quat_NB, w_NB_B, p_NoBcm_N, v_NBcm_B,
+                                     gravity);
+
+  double thetaDt = 4.56;         // Spin rate.
+  Vector3d lambda(1, 0, 0);      // Test spin about Bx.
+  TestKaneExactSolution(&torque_free_cylinder_kane, thetaDt, lambda);
+
+  lambda = Vector3d(0, 1, 0);    // Test spin about By.
+  TestKaneExactSolution(&torque_free_cylinder_kane, thetaDt, lambda);
+
+  lambda = Vector3d(0, 0, 1);    // Test spin about Bz.
+  TestKaneExactSolution(&torque_free_cylinder_kane, thetaDt, lambda);
+
+  const double xy = 1.0/std::sqrt(2);
+  lambda = Vector3d(xy, xy, 0);  // Test spin about (Bx + By) / sqrt(2).
+  TestKaneExactSolution(&torque_free_cylinder_kane, thetaDt, lambda);
+}
 
 }  // namespace
 }  // namespace free_body

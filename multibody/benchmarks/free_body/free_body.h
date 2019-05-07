@@ -62,16 +62,17 @@ class FreeBody {
 
   ~FreeBody() = default;
 
-  /// Returns the body's moment of inertia about an axis perpendicular to its
-  /// axis of rotation and passing through its center of mass.
+  /// Returns body B's moment of inertia about any axis that passes through Bcm
+  /// (B's center of mass) and is perpendicular to B's inertia symmetry axis.
   /// For example, for a cylinder of radius r, length h and uniformly
-  /// distributed mass m with its rotational axis aligned along its body frame
+  /// distributed mass m with its cylindrical axis aligned along its body frame
   /// z-axis this would be: I = Ixx = Iyy = m / 12 (3 r² + h²)
   double get_I() const { return 0.04; }
 
-  /// Returns body's moment of inertia about its axis of rotation.
+  /// Returns body's moment of inertia about the axis that passes through Bcm
+  /// (B's center of mass) and is parallel to B's inertia symmetry axis.
   /// For example, for a cylinder of radius r, length h and uniformly
-  /// distributed mass  m with its rotational axis aligined along its body frame
+  /// distributed mass  m with its cylindrical axis aligned along its body frame
   /// z-axis this would be: J = Izz = m r² / 2
   double get_J() const { return 0.02; }
 
@@ -161,10 +162,11 @@ class FreeBody {
   std::tuple<Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d>
   CalculateExactTranslationalSolution(const double t) const;
 
-  /// Returns the `s` and `p` frequencies associated with the angular velocity
-  /// and quaternion for torque-free motion of an axis-symmetric rigid body B in
-  /// a Newtonian frame (World) N.  For example, B's angular velocity in N is
-  /// wx*Bx + wy*By + wz*Bz, written in terms of initial values wx0, wy0, wz0 as
+  /// Returns the spin `s` and precession `p` frequencies associated with the
+  /// rotational motion (angular velocity and quaternion) for torque-free motion
+  /// of an axis-symmetric rigid body B in a Newtonian frame (World) N.  For
+  /// example, B's angular velocity in N is `wx*Bx + wy*By + wz*Bz`, written in
+  /// terms of initial values wx0, wy0, wz0 as
   /// wx =  wx0 * cos(s * t) + wy0 * sin(s * t)
   /// wy = -wx0 * sin(s * t) + wy0 * cos(s * t)
   /// wz =  wz0
