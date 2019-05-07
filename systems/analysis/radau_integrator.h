@@ -15,26 +15,28 @@ namespace drake {
 namespace systems {
 
 namespace internal {
+#ifndef DRAKE_DOXYGEN_CXX
 __attribute__((noreturn))
 inline void EmitNoErrorEstimatorStatAndMessage() {
   throw std::logic_error("No error estimator is currently implemented, so "
       "query error estimator statistics is not yet supported.");
 }
+#endif
 }  // namespace internal
 
 /**
  * A third-order, fully implicit integrator without error estimation.
  * @tparam T The vector element type, which must be a valid Eigen scalar.
  * @tparam num_stages the number of stages used in this integrator. Set this to
- *                    1 for the integrator to be implicit Euler and 2 for it to
- *                    Radau3 (default). Other values are invalid.
+ *         1 for the integrator to be implicit Euler and 2 for it to
+ *         Radau3 (default). Other values are invalid.
  *
  * A two-stage Radau IIa (see [Hairer, 1996], Ch. 5) method is used for
  * propagating the state forward, by default. The integrator can also be
  * constructed using a single-stage method, in which case it is equivalent to
  * an implicit Euler method, by setting num_stages=1.
  *
- * The Radau method is known to be L-Stable, meaning both that
+ * Radau IIa methods are known to be L-Stable, meaning both that
  * applying it at a fixed integration step to the  "test" equation `y(t) = eᵏᵗ`
  * yields zero (for `k < 0` and `t → ∞`) *and* that it is also A-Stable.
  * A-Stability, in turn, means that the method can integrate the linear constant
@@ -48,13 +50,17 @@ inline void EmitNoErrorEstimatorStatAndMessage() {
  * This implementation uses Newton-Raphson (NR). General implementation
  * details were taken from [Hairer, 1996] Ch. 8.
  *
- * See ImplicitIntegrator class documentation for further details.
- *
  * - [Hairer, 1996]   E. Hairer and G. Wanner. Solving Ordinary Differential
  *                    Equations II (Stiff and Differential-Algebraic Problems).
  *                    Springer, 1996.
  * - [Lambert, 1991]  J. D. Lambert. Numerical Methods for Ordinary Differential
- *                    Equations. John Wiley & Sons, 1991. *
+ *                    Equations. John Wiley & Sons, 1991.
+ *
+ * @see ImplicitIntegrator class documentation for information about implicit
+ *      integration methods in general.
+ * @note This integrator uses the integrator accuracy setting, even when run
+ *       in fixed-step mode, to limit the error in the underlying Newton-Raphson
+ *       process. See IntegratorBase::set_target_accuracy() for more info.
  */
 template <class T, int num_stages = 2>
 class RadauIntegrator final : public ImplicitIntegrator<T> {

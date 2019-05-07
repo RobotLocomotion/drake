@@ -17,24 +17,20 @@ namespace drake {
 namespace systems {
 namespace {
 
-// Tests the implicit integrator on Robertson's stiff chemical reaction
-// problem, which has been used to benchmark various implicit integrators.
-// This problem is particularly good at testing large step sizes (since the
-// solution quickly converges) and long simulation times.
-GTEST_TEST(RadauIntegratorTest, Robertson) {
+// Tests the Jacobian and iteration matrix reuse strategies using a test
+// problem and integrator for which we have knowledge of the convergence
+// behavior from the initial state.
+GTEST_TEST(RadauIntegratorTest, Reuse) {
   std::unique_ptr<analysis::test::RobertsonSystem<double>> robertson =
     std::make_unique<analysis::test::RobertsonSystem<double>>();
   std::unique_ptr<Context<double>> context = robertson->CreateDefaultContext();
 
-  // The times to try to integrate to.
-  std::list<double> times = { 1e-2, 1e-6, 1e-2 };
-
   // Create the Euler integrator.
   RadauIntegrator<double, 1> euler(*robertson, context.get());
 
-  euler.set_maximum_step_size(times.front());
+  euler.set_maximum_step_size(1e-2);  // Maximum step that will be attempted.
   euler.set_throw_on_minimum_step_size_violation(false);
-  euler.set_reuse(true);    // The whole point of this
+  euler.set_reuse(true);    // The whole point of this.
 
   // Attempt to integrate the system. Our past experience indicates that this
   // system fails to converge from the initial state for this large step size.
@@ -43,7 +39,7 @@ GTEST_TEST(RadauIntegratorTest, Robertson) {
   // at trial 3. There should be three iteration matrix factorizations: once
   // at trial 1, another at trial 2, and the third at trial 3.
   euler.Initialize();
-  ASSERT_FALSE(euler.IntegrateWithSingleFixedStepToTime(times.front()));
+  ASSERT_FALSE(euler.IntegrateWithSingleFixedStepToTime(1e-2));
   EXPECT_EQ(euler.get_num_iteration_matrix_factorizations(), 3);
   EXPECT_EQ(euler.get_num_jacobian_evaluations(), 2);
 
@@ -52,17 +48,15 @@ GTEST_TEST(RadauIntegratorTest, Robertson) {
   // converge. The Jacobian matrix will be "fresh"; we assume no knowledge
   // of the number of iteration matrix factorizations.
   euler.ResetStatistics();
-  times.pop_front();
-  ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(times.front()));
+  ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(1e-6));
   EXPECT_EQ(euler.get_num_jacobian_evaluations(), 0);
 
   // Again try taking a large step, which we expect will be too large to
-  // converge. There should be one Jacobian matrix evaluations- once at trial 3.
+  // converge. There should be one Jacobian matrix evaluation- once at trial 3.
   // There should be two iteration matrix factorizations: one at trial 2 and
   // another at trial 3.
   euler.ResetStatistics();
-  times.pop_front();
-  ASSERT_FALSE(euler.IntegrateWithSingleFixedStepToTime(times.front()));
+  ASSERT_FALSE(euler.IntegrateWithSingleFixedStepToTime(1e-2));
   EXPECT_EQ(euler.get_num_iteration_matrix_factorizations(), 2);
   EXPECT_EQ(euler.get_num_jacobian_evaluations(), 1);
 }
