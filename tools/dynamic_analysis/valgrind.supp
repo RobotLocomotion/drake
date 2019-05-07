@@ -410,6 +410,26 @@
    fun:MSK_linkfiletotaskstream
 }
 
+# Started happening when maximizing the geometric mean through second order cone
+# constraints (#11381)
+{
+   <mosek-23>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:mm_account_ptr_by_tid..0
+   fun:mkl_serv_allocate
+   fun:mkl_blas_avx2_dgemm_get_bufs
+   fun:mkl_blas_avx2_xdsyrk_fullacopybcopy
+   fun:mkl_blas_avx2_xdsyrk
+   fun:DSYRK
+   fun:cblas_dsyrk
+   fun:MSK_GENERIC_CPU_mathenv_syrk_
+   fun:MSK_GENERIC_CPU_mathenv_partialsyrk
+   fun:spchol_sparsepullupdate
+   fun:ipfac_hatschurspaatsparsepullupdate
+}
+
 # Started happening when Gurobi got updated to 7.0.2. PR 6332.
 {
     <gurobi-1>
