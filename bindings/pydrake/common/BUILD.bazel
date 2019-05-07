@@ -159,7 +159,9 @@ drake_pybind_library(
     cc_deps = [":eigen_geometry_pybind"],
     cc_srcs = ["eigen_geometry_py.cc"],
     package_info = PACKAGE_INFO,
-    py_deps = [":module_py"],
+    py_deps = [
+        ":module_py",
+    ],
 )
 
 # ODR does not matter, because the singleton will be stored in Python.

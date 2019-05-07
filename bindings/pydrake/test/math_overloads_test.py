@@ -1,19 +1,10 @@
 """
-Provides utilities to test overload algebra.
-
-The actual tests are separated into different processes which test different
-loading orders, which guarantees the same behavior regardless of when a module
-is imported.
-
-Generally, we would try to unload the modules; however, this does not work well
-with pybind11 modules that rely on NumPy.
+Test math overloads.
 """
 
 from __future__ import print_function
 
 import math
-import subprocess
-import sys
 import unittest
 
 import numpy as np
@@ -123,19 +114,13 @@ class SymbolicOverloads(Overloads):
         return self.T(y_float)
 
 
-class MathOverloadsBase(unittest.TestCase):
-    """Tests overloads of math functions, specifically ensuring that we will be
-    robust against import order."""
+class MathOverloadsTest(unittest.TestCase):
+    """Tests overloads of math functions."""
 
-    def setUp(self):
-        # Explicitly ensure we're loading the modules anew.
-        should_be_fresh = [
-            "pydrake.autodiffutils",
-            "pydrake.math",
-            "pydrake.symbolic"
-        ]
-        for m in should_be_fresh:
-            self.assertNotIn(m, sys.modules, m)
+    def test_overloads(self):
+        self.check_overload(FloatOverloads())
+        self.check_overload(SymbolicOverloads())
+        self.check_overload(AutoDiffOverloads())
 
     def check_overload(self, overload):
         # TODO(eric.cousineau): Consider comparing against `numpy` ufunc

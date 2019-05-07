@@ -8,7 +8,6 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
-#include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -325,7 +324,7 @@ PYBIND11_MODULE(symbolic, m) {
       .def("Differentiate", &Expression::Differentiate,
           doc.Expression.Differentiate.doc)
       .def("Jacobian", &Expression::Jacobian, doc.Expression.Jacobian.doc)
-      // TODO(eric.cousineau): Figure out how to consolidate with the below
+      // TODO(eric.cousineau): Figure out how to consolidate with the `math`
       // methods.
       .def("log", &symbolic::log, doc.log.doc)
       .def("__abs__", &symbolic::abs)
@@ -347,35 +346,10 @@ PYBIND11_MODULE(symbolic, m) {
       .def("floor", &symbolic::floor, doc.floor.doc);
   DefCopyAndDeepCopy(&expr_cls);
 
-  // TODO(eric.cousineau): Deprecate these methods if/when we support proper
-  // NumPy UFuncs.
-  // TODO(m-chaturvedi) Add Pybind11 documentation.
-  auto math = py::module::import("pydrake.math");
-  MirrorDef<py::module, py::module>(&math, &m)
-      .def("log", &symbolic::log)
-      .def("abs", &symbolic::abs)
-      .def("exp", &symbolic::exp)
-      .def("sqrt", &symbolic::sqrt)
-      .def("pow", py::overload_cast<const Expression&, const Expression&>(
-                      &symbolic::pow))
-      .def("sin", &symbolic::sin)
-      .def("cos", &symbolic::cos)
-      .def("tan", &symbolic::tan)
-      .def("asin", &symbolic::asin)
-      .def("acos", &symbolic::acos)
-      .def("atan", &symbolic::atan)
-      .def("atan2", &symbolic::atan2)
-      .def("sinh", &symbolic::sinh)
-      .def("cosh", &symbolic::cosh)
-      .def("tanh", &symbolic::tanh)
-      .def("min", &symbolic::min)
-      .def("max", &symbolic::max)
-      .def("ceil", &symbolic::ceil)
-      .def("floor", &symbolic::floor)
-      // Matrix overloads.
-      .def("inv", [](const MatrixX<Expression>& X) -> MatrixX<Expression> {
-        return X.inverse();
-      });
+  // TODO(eric.cousineau): These should actually exist on the class, and should
+  // be should be consolidated with the above repeated definitions. This would
+  // yield the same parity with AutoDiff.
+  pydrake::internal::BindSymbolicMathOverloads(&m);
 
   m.def("if_then_else", &symbolic::if_then_else);
 

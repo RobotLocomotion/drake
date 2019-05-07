@@ -5,9 +5,11 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/math/barycentric.h"
 #include "drake/math/continuous_algebraic_riccati_equation.h"
 #include "drake/math/continuous_lyapunov_equation.h"
@@ -23,6 +25,8 @@
 namespace drake {
 namespace pydrake {
 
+using symbolic::Expression;
+
 PYBIND11_MODULE(math, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
@@ -30,7 +34,9 @@ PYBIND11_MODULE(math, m) {
   m.doc() = "Bindings for //math.";
   constexpr auto& doc = pydrake_doc.drake.math;
 
+  py::module::import("pydrake.autodiffutils");
   auto eigen_geometry_py = py::module::import("pydrake.common.eigen_geometry");
+  py::module::import("pydrake.symbolic");
 
   const char* doc_iso3_deprecation =
       "DO NOT USE!. We only offer this API for backwards compatibility with "
@@ -269,11 +275,6 @@ PYBIND11_MODULE(math, m) {
   // those respective modules.
   // TODO(eric.cousineau): If possible, delegate these to NumPy UFuncs,
   // either using __array_ufunc__ or user dtypes.
-  // N.B. The ordering in which the overloads are resolved will change based on
-  // when modules are loaded. However, there should not be ambiguous implicit
-  // conversions between autodiff and symbolic, and double overloads should
-  // always occur first, so it shouldn't be a problem.
-  // See`math_overloads_test`, which tests this specifically.
   // TODO(m-chaturvedi) Add Pybind11 documentation.
   m  // BR
       .def("log", [](double x) { return log(x); })
@@ -311,6 +312,10 @@ PYBIND11_MODULE(math, m) {
     mtest.def(
         "TakeRigidTransform", [](const RigidTransform<T>&) { return true; });
   }
+
+  // See TODO in corresponding header file - these should be removed soon!
+  pydrake::internal::BindAutoDiffMathOverloads(&m);
+  pydrake::internal::BindSymbolicMathOverloads(&m);
 
   ExecuteExtraPythonCode(m);
 }
