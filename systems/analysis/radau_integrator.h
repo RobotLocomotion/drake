@@ -120,31 +120,34 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
       const MatrixX<double>& A,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
 
-  // The time-scaling coefficients standard with Runge-Kutta-type integrators.
+  // The num_stages-dimensional (constant) vector of time-scaling coefficients
+  // common to Runge-Kutta-type integrators.
   std::vector<double> c_;
 
-  // The stage-scaling coefficients standard with Runge-Kutta-type integrators.
+  // The num_stages x num_stages-dimensional (constant) matrix of stage-scaling
+  // coefficients that are standard with Runge-Kutta-type integrators.
   MatrixX<double> A_;
 
   // The iteration matrix for the Radau method.
   typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_radau3_;
 
-  // The tensor product between A_ and an identity matrix. This product is
-  // computed on initialization and then stored.
+  // The (constant) tensor product between A_ and an identity matrix. This
+  // product is computed only at initialization.
   MatrixX<T> A_tp_eye_;
 
-  // The solution propagation coefficients (that also scales the stages),
-  // standard with Runge-Kutta-type integrators.
+  // The num_stages-dimensional (constant) solution propagation coefficients
+  // (that also scales the stages) common to Runge-Kutta-type integrators.
   std::vector<double> b_;
 
-  // The scaling coefficients for Z (IV.8.2b) in [Hairer, 1996].
+  // The num_stages-dimensional (constant) scaling coefficients for Z (IV.8.2b)
+  // in [Hairer, 1996].
   std::vector<double> d_;
 
   // A num_stages * |xc|-dimensional vector of the current iterate for the
   // Newton-Raphson process.
   VectorX<T> Z_;
 
-  // The derivative evaluations for every stage.
+  // The num_stages dimensional vector of derivative evaluations at every stage.
   VectorX<T> F_of_Z_;
 
   // The continuous state update vector used during Newton-Raphson.
@@ -250,7 +253,7 @@ const VectorX<T>& RadauIntegrator<T, num_stages>::ComputeFofZ(
 // @param t0 the initial time.
 // @param h the integration step size to attempt.
 // @param xt0 the continuous state at time t0.
-// @param [in,out] the starting guess for x(t+h); the value for x(t+h) on
+// @param[in,out] xtplus the starting guess for x(t+h); the value for x(t+h) on
 //        return (assuming that h > 0).
 // @param trial the attempt for this approach (1-4). StepRadau() uses more
 //        computationally expensive methods as the trial numbers increase.
