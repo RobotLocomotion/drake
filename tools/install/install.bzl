@@ -637,7 +637,7 @@ Note:
     MainClassInfo(
             main_class = Name of main class to run ("name.class.main")
             classpath = List contained in
-                ctx.attr.target.java.compilation_info.runtime_classpath
+                ctx.attr.target[JavaInfo].compilation_info.runtime_classpath
             filename = Java launcher file name
         )
 
