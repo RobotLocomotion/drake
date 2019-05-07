@@ -3,7 +3,20 @@
 
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#ifndef __clang__
+// N.B. Without this, GCC 7.4.0 on Ubuntu complains about
+// `AutoDiffScalar(const AutoDiffScalar& other)` having uninitialized values.
+// TODO(eric.cousineau): Figure out why?
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#pragma GCC diagnostic pop
+#else
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#endif  // __clang__
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
+#include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_assertion_error.h"
 #include "drake/common/drake_throw.h"
@@ -31,6 +44,8 @@ namespace {
 // C++.
 const double kCheckTolerance = 1e-5;
 
+using symbolic::Expression;
+
 template <typename T>
 void CheckRotMat(const Matrix3<T>& R) {
   // See `ExpectRotMat`.
@@ -39,7 +54,7 @@ void CheckRotMat(const Matrix3<T>& R) {
   if (identity_error >= kCheckTolerance) {
     throw std::logic_error("Rotation matrix is not orthonormal");
   }
-  const T det_error = fabs(R.determinant() - 1);
+  const T det_error = abs(R.determinant() - 1);
   if (det_error >= kCheckTolerance) {
     throw std::logic_error("Rotation matrix violates right-hand rule");
   }
@@ -59,7 +74,7 @@ void CheckSe3(const Isometry3<T>& X) {
 
 template <typename T>
 void CheckQuaternion(const Eigen::Quaternion<T>& q) {
-  const T norm_error = fabs(q.coeffs().norm() - 1);
+  const T norm_error = abs(q.coeffs().norm() - 1);
   if (norm_error >= kCheckTolerance) {
     throw std::logic_error("Quaternion is not normalized");
   }
@@ -67,27 +82,38 @@ void CheckQuaternion(const Eigen::Quaternion<T>& q) {
 
 template <typename T>
 void CheckAngleAxis(const Eigen::AngleAxis<T>& value) {
-  const T norm_error = fabs(value.axis().norm() - 1);
+  const T norm_error = abs(value.axis().norm() - 1);
   if (norm_error >= kCheckTolerance) {
     throw std::logic_error("Axis is not normalized");
   }
 }
 
+// N.B. The following overloads are meant to disable symbolic checks, which are
+// not easily achievable for non-numeric values. These can be removed once the
+// checks are removed in their entirety.
+
+void CheckRotMat(const Matrix3<Expression>&) {}
+
+void CheckSe3(const Isometry3<Expression>&) {}
+
+void CheckQuaternion(const Eigen::Quaternion<Expression>&) {}
+
+void CheckAngleAxis(const Eigen::AngleAxis<Expression>&) {}
+
 }  // namespace
 
-PYBIND11_MODULE(eigen_geometry, m) {
-  m.doc() = "Bindings for Eigen geometric types.";
-
-  using T = double;
-
+template <typename T>
+void DoDefinitions(py::module m, T) {
   // Do not return references to matrices (e.g. `Eigen::Ref<>`) so that we have
   // tighter control over validation.
+
+  py::tuple param = GetPyParam<T>();
 
   // Isometry3d.
   // @note `linear` implies rotation, and `affine` implies translation.
   {
     using Class = Isometry3<T>;
-    py::class_<Class> cls(m, "Isometry3",
+    auto cls = DefineTemplateClassWithDefault<Class>(m, "Isometry3", param,
         "Provides bindings of Eigen::Isometry3<> that only admit SE(3) "
         "(no reflections).");
     cls  // BR
@@ -174,7 +200,7 @@ PYBIND11_MODULE(eigen_geometry, m) {
   // TODO(eric.cousineau): Should this not be restricted to a unit quaternion?
   {
     using Class = Eigen::Quaternion<T>;
-    py::class_<Class> cls(m, "Quaternion",
+    auto cls = DefineTemplateClassWithDefault<Class>(m, "Quaternion", param,
         "Provides a unit quaternion binding of Eigen::Quaternion<>.");
     py::object py_class_obj = cls;
     cls  // BR
@@ -207,7 +233,7 @@ PYBIND11_MODULE(eigen_geometry, m) {
         .def("x", [](const Class* self) { return self->x(); })
         .def("y", [](const Class* self) { return self->y(); })
         .def("z", [](const Class* self) { return self->z(); })
-        .def("xyz", [](const Class* self) { return self->vec(); })
+        .def("xyz", [](const Class* self) { return Vector3<T>(self->vec()); })
         .def("wxyz",
             [](Class* self) {
               Vector4<T> wxyz;
@@ -260,7 +286,8 @@ PYBIND11_MODULE(eigen_geometry, m) {
   // Angle-axis.
   {
     using Class = Eigen::AngleAxis<T>;
-    py::class_<Class> cls(m, "AngleAxis", "Bindings for Eigen::AngleAxis<>.");
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "AngleAxis", param, "Bindings for Eigen::AngleAxis<>.");
     py::object py_class_obj = cls;
     cls  // BR
         .def(py::init([]() { return Class::Identity(); }))
@@ -333,6 +360,14 @@ PYBIND11_MODULE(eigen_geometry, m) {
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
   }
+}
+
+PYBIND11_MODULE(eigen_geometry, m) {
+  m.doc() = "Bindings for Eigen geometric types.";
+
+  py::module::import("pydrake.autodiffutils");
+  py::module::import("pydrake.symbolic");
+  type_visit([m](auto dummy) { DoDefinitions(m, dummy); }, CommonScalarPack{});
 }
 
 }  // namespace pydrake
