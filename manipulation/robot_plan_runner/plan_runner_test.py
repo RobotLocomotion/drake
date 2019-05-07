@@ -16,12 +16,23 @@ from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 from pydrake.trajectories import PiecewisePolynomial
 
 
+def RenderSystemWithGraphviz(system, output_file="system_view.gz"):
+    """ Renders the Drake system (presumably a diagram,
+    otherwise this graph will be fairly trivial) using
+    graphviz to a specified file. """
+    from graphviz import Source
+    string = system.GetGraphvizString()
+    src = Source(string)
+    src.render(output_file, view=False)
+
+
 def GetEndEffectorWorldAlignedFrame():
     X_EEa = RigidTransform.Identity()
     X_EEa.set_rotation(RotationMatrix(np.array([[0., 1., 0,],
                                  [0, 0, 1],
                                  [1, 0, 0]])))
     return X_EEa
+
 
 def GetKukaQKnots(plant, iiwa_model, q_knots):
     if len(q_knots.shape) == 1:
@@ -33,6 +44,7 @@ def GetKukaQKnots(plant, iiwa_model, q_knots):
 
     return q_knots_kuka
 
+
 def GoFromPointToPoint(plant,
                        iiwa_model,
                        world_frame,
@@ -42,11 +54,6 @@ def GoFromPointToPoint(plant,
                        duration,
                        num_knot_points,
                        q_initial_guess):
-    # The first knot point is the zero posture.
-    # The second knot is the pre-pre-grasp posture q_val_0
-    # The rest are solved for in the for loop below.
-    # The hope is that using more knot points makes the trajectory
-    # smoother.
     q_knots = np.zeros((num_knot_points+1, plant.num_positions()))
     q_knots[0] = q_initial_guess
 
@@ -57,8 +64,10 @@ def GoFromPointToPoint(plant,
         q_variables = ik.q()
 
         ik.AddOrientationConstraint(
-            frameAbar=world_frame, R_AbarA=RollPitchYaw(0, np.pi*3/4, 0).ToRotationMatrix(),
-            frameBbar=gripper_frame, R_BbarB=RotationMatrix(X_EEa.rotation()),
+            frameAbar=world_frame,
+            R_AbarA=RollPitchYaw(0, np.pi*3/4, 0).ToRotationMatrix(),
+            frameBbar=gripper_frame,
+            R_BbarB=RotationMatrix(X_EEa.rotation()),
             theta_bound=0.01 * np.pi)
 
         p_WQ = (p_WQ_end - p_WQ_start)/num_knot_points*(i+1) + p_WQ_start
@@ -85,8 +94,20 @@ def GoFromPointToPoint(plant,
 
     return qtraj, q_knots
 
+
+def ConnectPointsWithCubicPolynomial(x_start, x_end, duration):
+    t_knots = [0, duration / 2, duration]
+    n = len(x_start)
+    assert n == len(x_end)
+    x_knots = np.zeros((3, n))
+    x_knots[0] = x_start
+    x_knots[2] = x_end
+    x_knots[1] = (x_knots[0] + x_knots[2]) / 2
+    return  PiecewisePolynomial.Cubic(
+        t_knots, x_knots.T, np.zeros(n), np.zeros(n))
+
+
 def GeneratePlans(station):
-    # get first pre-pre-grasp pose
     plant = station.get_mutable_multibody_plant()
     iiwa_model = plant.GetModelInstanceByName("iiwa")
     gripper_model = plant.GetModelInstanceByName("gripper")
@@ -94,17 +115,9 @@ def GeneratePlans(station):
     world_frame = plant.world_frame()
     gripper_frame = plant.GetFrameByName("body", gripper_model)
 
-    theta_bound = 0.01 * np.pi
-    X_EEa = GetEndEffectorWorldAlignedFrame()
-    R_WEa = RollPitchYaw(0, np.pi*3/4, 0).ToRotationMatrix()
-    R_EEa = RotationMatrix(X_EEa.rotation())
-
-    ik_scene = inverse_kinematics.InverseKinematics(plant)
-    prog = ik_scene.prog()
-    prog.SetInitialGuess(ik_scene.q(), np.zeros(plant.num_positions()))
-    result = prog.Solve()
-    print result
-    q_val_0 = prog.GetSolution(ik_scene.q())
+    # initial guess
+    q_val_0 = np.zeros(plant.num_positions())
+    q_val_0[9:9+7] = [0, 0, 0, -1.75, 0, 1.0, 0]
 
     p_WQ_start = np.array([0.5, 0, 0.41])
     p_WQ_end = np.array([0.6, 0.1, 0.41])
@@ -115,28 +128,27 @@ def GeneratePlans(station):
                                        gripper_frame,
                                        p_WQ_start,
                                        p_WQ_end,
-                                       5.,
+                                       2.,
                                        num_knot_points,
                                        q_val_0)
 
-    plan_go_home = PlanData(PlanType.kJointSpacePlan, 1, qtraj)
+    plan_go_home = PlanData(PlanType.kJointSpacePlan, qtraj)
 
-    return [plan_go_home]
+    q1_kuka = GetKukaQKnots(plant, iiwa_model, qknots)[-1]
+    q2_kuka = q1_kuka.copy()
+    q2_kuka[0] += 1
 
-def RenderSystemWithGraphviz(system, output_file="system_view.gz"):
-    """ Renders the Drake system (presumably a diagram,
-    otherwise this graph will be fairly trivial) using
-    graphviz to a specified file. """
-    from graphviz import Source
-    string = system.GetGraphvizString()
-    src = Source(string)
-    src.render(output_file, view=False)
+    qtraj = ConnectPointsWithCubicPolynomial(q1_kuka, q2_kuka, 4)
+    plan_rotate = PlanData(PlanType.kJointSpacePlan, qtraj)
+
+    return [plan_go_home, plan_rotate]
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--duration", type=float, default=0.1,
-        help="Desired duration of the simulation in seconds.")
+        "--render", type=float, default=0.1,
+        help="Whether to render a system diagram with GraphViz.")
 
     MeshcatVisualizer.add_argparse_argument(parser)
     args = parser.parse_args()
@@ -149,8 +161,8 @@ if __name__ == "__main__":
     station.Finalize()
 
     # Create the PlanSender
-    plans = GeneratePlans(station)
-    plan_sender = builder.AddSystem(PlanSender(plans))
+    plan_list = GeneratePlans(station)
+    plan_sender = builder.AddSystem(PlanSender(plan_list))
 
     # Create the RobotPlanRunner
     plan_runner = builder.AddSystem(RobotPlanRunner())
@@ -194,13 +206,14 @@ if __name__ == "__main__":
     station_context.FixInputPort(
         station.GetInputPort("wsg_force_limit").get_index(), [50])
 
-    RenderSystemWithGraphviz(diagram)
+    if args.render:
+        RenderSystemWithGraphviz(diagram)
 
-    q0 = np.array([[0, 0, 0, -1.75, 0, 1.0, 0]]).T
+    q0 = np.array([0, 0, 0, -1.75, 0, 1.0, 0])
     station.SetIiwaPosition(station_context, q0)
 
     simulator.set_publish_every_time_step(False)
-    simulator.set_target_realtime_rate(1.0) # go as fast as possible
+    simulator.set_target_realtime_rate(1.0)
 
     simulator.Initialize()
     simulator.AdvanceTo(plan_sender.get_all_plans_duration())

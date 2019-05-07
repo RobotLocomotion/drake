@@ -35,18 +35,15 @@ PYBIND11_MODULE(robot_plan_runner, m) {
 
   py::class_<PlanData> plan_data(m, "PlanData");
   plan_data
-      .def(py::init([](PlanType plan_type, long plan_signature,
+      .def(py::init([](PlanType plan_type,
                         optional<trajectories::PiecewisePolynomial<double>>
                             joint_traj) {
-        return PlanData{plan_type, plan_signature, joint_traj};
+        return PlanData{plan_type, long{-1}, joint_traj};
       }),
           py::arg("plan_type") = PlanType::kEmptyPlan,
-          py::arg("plan_signature") = long{-1},
           py::arg("joint_traj") = nullopt)
       .def_readwrite(
           "plan_type", &PlanData::plan_type, doc.PlanData.plan_type.doc)
-      .def_readwrite("plan_signature", &PlanData::plan_signature,
-          doc.PlanData.plan_signature.doc)
       .def_readwrite(
           "joint_traj", &PlanData::joint_traj, doc.PlanData.joint_traj.doc);
 
