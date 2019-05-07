@@ -35,7 +35,8 @@ namespace render {
 
  - `empty`: a pixel with the `empty` %RenderLabel value indicates that _no_
    geometry rendered to that pixel. There is no good reason to assign this
-   label to a geometry; attempting to do so is considered defective.
+   label to a geometry; attempting to do will produce an error during
+   registration.
  - `do_not_render`: any geometry assigned the `do_not_render` tag will _not_ be
    rendered into a label image. This is a clear declaration that a geometry
    should be omitted. Useful for marking, e.g., glass windows so that the
@@ -45,12 +46,8 @@ namespace render {
    but whose class is irrelevant (e.g., the walls of a room a robot is working
    in or the background terrain in driving simulation).
  - `unspecified`: a default-constructed %RenderLabel has an `unspecified` value.
-   Attempting to apply an unspecified label to a geometry is considered
-   defective.
-
- Attempts to register a visual geometry with the `empty` or `unspecified` label
- will cause an exception to be thrown (in support of the designation of that
- action as "defective").
+   Attempting to apply an unspecified label to a geometry produce an error
+   during registration.
 
  <h2>Usage</h2>
 

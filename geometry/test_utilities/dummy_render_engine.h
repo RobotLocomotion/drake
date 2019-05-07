@@ -33,12 +33,10 @@ namespace internal {
 class DummyRenderEngine final : public render::RenderEngine {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DummyRenderEngine);
-  /** Constructor that exercises the RenderEngine's default constructor.  */
-  DummyRenderEngine() = default;
 
-  /** Constructor that allows configuring RenderLabel upon construction.  */
-  explicit DummyRenderEngine(const render::RenderLabel& label)
-      : render::RenderEngine(label) {}
+  /** Constructor for configuring the underlying RenderEngine.  */
+  explicit DummyRenderEngine(const render::RenderEngineParams& parameters)
+      : render::RenderEngine(parameters) {}
 
   /** @group No-op implementation of RenderEngine interface.  */
   //@{
@@ -56,10 +54,6 @@ class DummyRenderEngine final : public render::RenderEngine {
   void ImplementGeometry(const Mesh& mesh, void* user_data) final {}
   void ImplementGeometry(const Convex& convex, void* user_data) final {}
   //@}
-
-  // Make the default render label publicly available for testing.
-  using render::RenderEngine::set_default_render_label;
-  using render::RenderEngine::default_render_label;
 
   /** @name  Functions for supporting tests.  */
   //@{
