@@ -362,6 +362,13 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "numpy_compare_test",
+    deps = [
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
+)
+
+drake_py_unittest(
     name = "cpp_const_test",
     deps = [
         ":cpp_const_py",

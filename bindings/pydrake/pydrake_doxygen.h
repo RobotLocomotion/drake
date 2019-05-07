@@ -79,6 +79,15 @@ used in Python.
 For binding functions, methods, properties, and classes, docstrings should be
 provided. These should be provided as described @ref PydrakeDoc "here".
 
+## Testing
+
+In general, since the Python bindings wrap tested C++ code, you do not (and
+should not) repeat intricate testing logic done in C++. Instead, ensure you
+exercise the Pythonic portion of the API, using kwargs when appropriate.
+
+When testing the values of NumPy matrices, please review the documentation in
+`pydrake.common.test_utilities.numpy_compare` for guidance.
+
 ## Target Conventions
 
 ### Names
