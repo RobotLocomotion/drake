@@ -14,7 +14,6 @@ drake_cc_package_library(
     name = "geometry",
     deps = [
         ":frame_kinematics",
-        ":geometry_context",
         ":geometry_frame",
         ":geometry_ids",
         ":geometry_index",
@@ -72,16 +71,6 @@ drake_cc_library(
         "//common:autodiff",
         "//common:essential",
         "//common:symbolic",
-    ],
-)
-
-drake_cc_library(
-    name = "geometry_context",
-    srcs = ["geometry_context.cc"],
-    hdrs = ["geometry_context.h"],
-    deps = [
-        ":geometry_state",
-        "//systems/framework:leaf_context",
     ],
 )
 
@@ -179,7 +168,6 @@ drake_cc_library(
         "scene_graph.h",
     ],
     deps = [
-        ":geometry_context",
         ":geometry_state",
         ":scene_graph_inspector",
         "//common:essential",
