@@ -30,6 +30,7 @@ drake_cc_library(
     hdrs = ["spatial_vector.h"],
     deps = [
         "//common:essential",
+        "//math:geometric_transform",
     ],
 )
 

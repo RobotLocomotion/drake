@@ -151,7 +151,7 @@ class DrakeKukaIIwaRobot {
 
     // Retrieve end-effector pose from position kinematics cache.
     tree().CalcPositionKinematicsCache(*context_, &pc);
-    const Isometry3<T>& X_NG = pc.get_X_WB(linkG_->node_index());
+    const math::RigidTransform<T>& X_NG = pc.get_X_WB(linkG_->node_index());
 
     // Retrieve end-effector spatial velocity from velocity kinematics cache.
     tree().CalcVelocityKinematicsCache(*context_, pc, &vc);

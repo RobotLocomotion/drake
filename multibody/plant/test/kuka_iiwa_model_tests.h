@@ -48,7 +48,7 @@ class KukaIiwaModelTests : public ::testing::Test {
     // Add a frame H with a fixed pose X_EH in the end effector frame E.
     end_effector_link_ = &plant_->GetBodyByName("iiwa_link_7");
     frame_H_ = &plant_->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-        "H", *end_effector_link_, X_EH_.GetAsIsometry3()));
+        "H", *end_effector_link_, X_EH_));
     plant_->Finalize();
 
     context_ = plant_->CreateDefaultContext();
