@@ -375,10 +375,9 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testNumericalIntegration) {
 // @param[in] thetaDt body B's initial angular spin rate (radians/second).
 // @param[in] lambda unit vector in the initial direction of B's angular
 //   velocity in N, which must be either Bz, -Bz, or a combination of Bx and By.
-void TestKaneExactSolution(
-    FreeBody* torque_free_cylinder_kane,
-    const double thetaDt, const Vector3d& lambda) {
-  DRAKE_ASSERT(torque_free_cylinder_kane != nullptr);
+void TestKaneExactSolution(FreeBody torque_free_cylinder_kane,
+                           const double thetaDt, const Vector3d& lambda) {
+  // DRAKE_ASSERT(torque_free_cylinder_kane != nullptr);
   DRAKE_ASSERT(thetaDt != 0);  // Ensure B's angular velocity is non-zero.
 
   // Ensure lambda is a unit vector and its Bz component is 1, -1, or 0.
@@ -404,22 +403,22 @@ void TestKaneExactSolution(
   // q0Dt, q1Dt, q2Dt, q3Dt.  Note: Since this test employs simple 2D spin,
   // lambda(i) (i = 0, 1, 2) are constant.  In general 3D rotational motion,
   // lambda(i) (i = 0, 1, 2) are not constant.
-  const double q0Dt = -std::sin(theta/2) * thetaDt;
-  const double q1Dt = lambda(0) * std::cos(theta/2) * thetaDt;
-  const double q2Dt = lambda(1) * std::cos(theta/2) * thetaDt;
-  const double q3Dt = lambda(2) * std::cos(theta/2) * thetaDt;
+  const double q0Dt = -0.5 * std::sin(theta/2) * thetaDt;
+  const double q1Dt = 0.5 * lambda(0) * std::cos(theta/2) * thetaDt;
+  const double q2Dt = 0.5 * lambda(1) * std::cos(theta/2) * thetaDt;
+  const double q3Dt = 0.5 * lambda(2) * std::cos(theta/2) * thetaDt;
 
   // Package the previous expected results for subsequent comparison with Kane.
   const Quaterniond quat_expected(q0, q1, q2, q3);
   const Vector4d quatDt_expected(q0Dt, q1Dt, q2Dt, q3Dt);
 
   // Get Kane's general 3D solution for B's given initial angular velocity.
-  torque_free_cylinder_kane->set_initial_w_NB_B(w_expected);
+  torque_free_cylinder_kane.set_initial_w_NB_B(w_expected);
   Quaterniond quat_kane;
   Vector4d quatDt_kane;
   Vector3d w_kane, wDt_kane;
   std::tie(quat_kane, quatDt_kane, w_kane, wDt_kane) =
-  torque_free_cylinder_kane->CalculateExactRotationalSolutionNB(t);
+  torque_free_cylinder_kane.CalculateExactRotationalSolutionNB(t);
 
   // Ensure Kane's general 3D solution matches this 2D specialized solution.
   // To that end, compare Kane's angular velocity/acceleration and Kane's
@@ -438,6 +437,10 @@ void TestKaneExactSolution(
   // Ensure Kane's quaternion time-derivative matches expected angular velocity.
   EXPECT_TRUE(math::IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
     quat_kane, quatDt_kane, w_expected, 8 * kEpsilon));
+
+  // Ensure expected quaternion time-derivative matches Kane's angular velocity.
+  EXPECT_TRUE(math::IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
+      quat_expected, quatDt_expected, w_kane, 8 * kEpsilon));
 }
 
 
@@ -459,17 +462,17 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testKaneExactSolution) {
 
   double thetaDt = 4.56;         // Spin rate.
   Vector3d lambda(1, 0, 0);      // Test spin about Bx.
-  TestKaneExactSolution(&torque_free_cylinder_kane, thetaDt, lambda);
+  TestKaneExactSolution(torque_free_cylinder_kane, thetaDt, lambda);
 
   lambda = Vector3d(0, 1, 0);    // Test spin about By.
-  TestKaneExactSolution(&torque_free_cylinder_kane, thetaDt, lambda);
+  TestKaneExactSolution(torque_free_cylinder_kane, thetaDt, lambda);
 
   lambda = Vector3d(0, 0, 1);    // Test spin about Bz.
-  TestKaneExactSolution(&torque_free_cylinder_kane, thetaDt, lambda);
+  TestKaneExactSolution(torque_free_cylinder_kane, thetaDt, lambda);
 
   const double xy = 1.0/std::sqrt(2);
   lambda = Vector3d(xy, xy, 0);  // Test spin about (Bx + By) / sqrt(2).
-  TestKaneExactSolution(&torque_free_cylinder_kane, thetaDt, lambda);
+  TestKaneExactSolution(torque_free_cylinder_kane, thetaDt, lambda);
 }
 
 }  // namespace
