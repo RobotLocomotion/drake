@@ -6,7 +6,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/geometry/geometry_context.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_set.h"
@@ -47,7 +46,7 @@ class QueryObjectTester {
   template <typename T>
   static void set_query_object(QueryObject<T>* q_object,
                                const SceneGraph<T>* scene_graph,
-                               const GeometryContext<T>* context) {
+                               const Context<T>* context) {
     q_object->set(context, scene_graph);
   }
 };
@@ -59,7 +58,7 @@ class SceneGraphTester {
 
   template <typename T>
   static void FullPoseUpdate(const SceneGraph<T>& scene_graph,
-                             const GeometryContext<T>& context) {
+                             const Context<T>& context) {
     scene_graph.FullPoseUpdate(context);
   }
 
@@ -107,16 +106,14 @@ class SceneGraphTest : public ::testing::Test {
     // TODO(SeanCurtis-TRI): This will probably have to be moved into an
     // explicit call so it can be run *after* topology has been set.
     context_ = scene_graph_.AllocateContext();
-    geom_context_ = dynamic_cast<GeometryContext<double>*>(context_.get());
-    ASSERT_NE(geom_context_, nullptr);
     QueryObjectTester::set_query_object(&query_object_, &scene_graph_,
-                                        geom_context_);
+                                        context_.get());
   }
 
   const QueryObject<double>& query_object() const {
     // The `AllocateContext()` method must have been called *prior* to this
     // method.
-    if (!geom_context_)
+    if (!context_)
       throw std::runtime_error("Must call AllocateContext() first.");
     return query_object_;
   }
@@ -124,8 +121,6 @@ class SceneGraphTest : public ::testing::Test {
   SceneGraph<double> scene_graph_;
   // Ownership of context.
   unique_ptr<Context<double>> context_;
-  // Direct access to a pre-cast, geometry-context-typed version of context_.
-  GeometryContext<double>* geom_context_{nullptr};
 
  private:
   // Keep this private so tests must access it through the getter so we can
@@ -273,7 +268,7 @@ TEST_F(SceneGraphTest, DirectFeedThrough) {
 TEST_F(SceneGraphTest, FullPoseUpdateEmpty) {
   AllocateContext();
   EXPECT_NO_THROW(
-      SceneGraphTester::FullPoseUpdate(scene_graph_, *geom_context_));
+      SceneGraphTester::FullPoseUpdate(scene_graph_, *context_));
 }
 
 // Test case where there are only anchored geometries -- same as the empty case;
@@ -283,7 +278,7 @@ TEST_F(SceneGraphTest, FullPoseUpdateAnchoredOnly) {
   scene_graph_.RegisterAnchoredGeometry(s_id, make_sphere_instance());
   AllocateContext();
   EXPECT_NO_THROW(
-      SceneGraphTester::FullPoseUpdate(scene_graph_, *geom_context_));
+      SceneGraphTester::FullPoseUpdate(scene_graph_, *context_));
 }
 
 // Tests operations on a transmogrified SceneGraph. Whether a context has been
@@ -336,15 +331,15 @@ TEST_F(SceneGraphTest, TransmogrifyContext) {
       *dynamic_cast<SceneGraph<AutoDiffXd>*>(system_ad.get());
   std::unique_ptr<Context<AutoDiffXd>> context_ad =
       scene_graph_ad.AllocateContext();
-  context_ad->SetTimeStateAndParametersFrom(*geom_context_);
-  GeometryContext<AutoDiffXd>* geo_context_ad =
-      dynamic_cast<GeometryContext<AutoDiffXd>*>(context_ad.get());
-  ASSERT_NE(geo_context_ad, nullptr);
+  context_ad->SetTimeStateAndParametersFrom(*context_);
+  // Pull out GeometryState from context by exploiting knowledge that it is
+  // zero-indexed.
+  const GeometryState<AutoDiffXd>& geo_state_ad =
+      context_ad->get_state().get_abstract_state<GeometryState<AutoDiffXd>>(0);
   // If the anchored geometry were not ported over, this would throw an
   // exception.
-  EXPECT_TRUE(geo_context_ad->get_geometry_state().BelongsToSource(g_id, s_id));
-  EXPECT_THROW(geo_context_ad->get_geometry_state().BelongsToSource(
-                   GeometryId::get_new_id(), s_id),
+  EXPECT_TRUE(geo_state_ad.BelongsToSource(g_id, s_id));
+  EXPECT_THROW(geo_state_ad.BelongsToSource(GeometryId::get_new_id(), s_id),
                std::logic_error);
 }
 
@@ -471,10 +466,10 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateConnected) {
 
   auto diagram_context = diagram->AllocateContext();
   diagram->SetDefaultContext(diagram_context.get());
-  auto& geometry_context = dynamic_cast<GeometryContext<double>&>(
-      diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get()));
+  const auto& sg_context =
+      diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get());
   EXPECT_NO_THROW(
-      SceneGraphTester::FullPoseUpdate(*scene_graph, geometry_context));
+      SceneGraphTester::FullPoseUpdate(*scene_graph, sg_context));
 }
 
 // Adversarial test case: Missing pose port connection.
@@ -488,10 +483,10 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateDisconnected) {
   auto diagram = builder.Build();
   auto diagram_context = diagram->AllocateContext();
   diagram->SetDefaultContext(diagram_context.get());
-  auto& geometry_context = dynamic_cast<GeometryContext<double>&>(
-      diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get()));
+  const auto& sg_context =
+      diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get());
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SceneGraphTester::FullPoseUpdate(*scene_graph, geometry_context),
+      SceneGraphTester::FullPoseUpdate(*scene_graph, sg_context),
       std::logic_error,
       "Source \\d+ has registered frames but does not provide pose values on "
       "the input port.");
@@ -508,10 +503,10 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateNoConnections) {
   auto diagram = builder.Build();
   auto diagram_context = diagram->AllocateContext();
   diagram->SetDefaultContext(diagram_context.get());
-  auto& geometry_context = dynamic_cast<GeometryContext<double>&>(
-      diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get()));
+  const auto& sg_context =
+      diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get());
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SceneGraphTester::FullPoseUpdate(*scene_graph, geometry_context),
+      SceneGraphTester::FullPoseUpdate(*scene_graph, sg_context),
       std::logic_error,
       "Source \\d+ has registered frames but does not provide pose values on "
       "the input port.");
@@ -522,10 +517,6 @@ GTEST_TEST(SceneGraphAutoDiffTest, InstantiateAutoDiff) {
   SceneGraph<AutoDiffXd> scene_graph;
   scene_graph.RegisterSource("dummy_source");
   auto context = scene_graph.AllocateContext();
-  GeometryContext<AutoDiffXd>* geometry_context =
-      dynamic_cast<GeometryContext<AutoDiffXd>*>(context.get());
-
-  ASSERT_NE(geometry_context, nullptr);
 
   QueryObject<AutoDiffXd> handle =
       QueryObjectTester::MakeNullQueryObject<AutoDiffXd>();

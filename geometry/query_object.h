@@ -5,12 +5,12 @@
 #include <string>
 #include <vector>
 
-#include "drake/geometry/geometry_context.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
 #include "drake/geometry/scene_graph_inspector.h"
+#include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace geometry {
@@ -47,7 +47,7 @@ class SceneGraph;
 
  A %QueryObject _cannot_ be converted to a different scalar type. A %QueryObject
  of scalar type T can only be acquired from the output port of a SceneGraph
- of type T evaluated on a corresponding GeometryContext, also of type T.
+ of type T evaluated on a corresponding Context, also of type T.
 
  %QueryObject's support for arbitrary scalar type is incomplete. Not all queries
  support all scalar types to the same degree. In some cases the level of support
@@ -321,8 +321,10 @@ class QueryObject {
 
   const GeometryState<T>& geometry_state() const;
 
-  void set(const GeometryContext<T>* context,
+  void set(const systems::Context<T>* context,
            const SceneGraph<T>* scene_graph) {
+    DRAKE_DEMAND(context);
+    DRAKE_DEMAND(scene_graph);
     context_ = context;
     scene_graph_ = scene_graph;
     inspector_.set(&geometry_state());
@@ -345,7 +347,7 @@ class QueryObject {
   // diagram. The context shares the same index in the parent diagram context.
   // Then the LeafSystem desiring to perform a query would pass itself and its
   // own context in (along with the query parameters). The QueryObject would
-  // use those and the index to get the SceneGraph and GeometryContext.
+  // use those and the index to get the SceneGraph and Context.
   //
   // Several issues:
   //  1. Leads to a clunky API (passing self and context into *every* query).
@@ -359,7 +361,7 @@ class QueryObject {
   // on the current context (fully-dependent on context). These pointers must
   // be null for "baked" contexts (e.g., the result of copying a "live"
   // context).
-  const GeometryContext<T>* context_{nullptr};
+  const systems::Context<T>* context_{nullptr};
   const SceneGraph<T>* scene_graph_{nullptr};
   SceneGraphInspector<T> inspector_;
 };
