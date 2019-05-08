@@ -1312,7 +1312,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   // the forces to zero and adds in contributions due to force elements.
   internal_tree().CalcForceElementsContribution(context, pc, vc, &forces);
 
-  // If there is any input actuation, add it to the multibody forces.
+  // Externally applied forces.
   AddJointActuationForces(context, &forces);
   AddAppliedExternalSpatialForces(context, &forces);
 

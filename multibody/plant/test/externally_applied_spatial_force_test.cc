@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/rigid_body.h"
@@ -15,6 +16,7 @@
 
 namespace drake {
 
+using Eigen::VectorXd;
 using multibody::Parser;
 using systems::ConstantVectorSource;
 using systems::Context;
@@ -105,53 +107,82 @@ class AcrobotGravityCompensator : public systems::LeafSystem<double> {
   const MultibodyPlant<double>* plant_{nullptr};
 };
 
-GTEST_TEST(MultibodyPlantTest, CheckExternalAppliedInput) {
-  // Load the acrobot model.
-  const std::string full_name = FindResourceOrThrow(
-        "drake/multibody/benchmarks/acrobot/acrobot.sdf");
-  systems::DiagramBuilder<double> builder;
-  auto plant = builder.AddSystem<MultibodyPlant<double>>();
-  Parser(plant).AddModelFromFile(full_name);
-  plant->AddForceElement<UniformGravityFieldElement>();
-  plant->Finalize();
+// Fixture for tests that should be performed on multibody plants either in
+// continuous or discrete mode.
+class ExternallyAppliedForcesTest : public ::testing::Test {
+ protected:
+  void MakePlantWithGravityCompensator(double time_step) {
+    // Load the acrobot model.
+    const std::string full_name =
+        FindResourceOrThrow("drake/multibody/benchmarks/acrobot/acrobot.sdf");
+    systems::DiagramBuilder<double> builder;
+    plant_ = builder.AddSystem<MultibodyPlant<double>>(time_step);
+    Parser(plant_).AddModelFromFile(full_name);
+    plant_->AddForceElement<UniformGravityFieldElement>();
+    plant_->Finalize();
 
-  // Add the system that applies inverse gravitational forces to the link
-  // endpoints.
-  auto acrobot_gravity_compensator =
-      builder.AddSystem<AcrobotGravityCompensator>(plant);
+    // Add the system that applies inverse gravitational forces to the link
+    // endpoints.
+    auto acrobot_gravity_compensator =
+        builder.AddSystem<AcrobotGravityCompensator>(plant_);
 
-  // Connect the system to the MBP.
-  builder.Connect(
-      acrobot_gravity_compensator->get_output_port(0),
-      plant->get_applied_spatial_force_input_port());
-  auto zero_source =
-      builder.AddSystem<ConstantVectorSource<double>>(Vector1<double>(0));
-  builder.Connect(zero_source->get_output_port(),
-                  plant->get_actuation_input_port());
-  auto diagram = builder.Build();
+    // Connect the system to the MBP.
+    builder.Connect(acrobot_gravity_compensator->get_output_port(0),
+                    plant_->get_applied_spatial_force_input_port());
+    auto zero_source =
+        builder.AddSystem<ConstantVectorSource<double>>(Vector1<double>(0));
+    builder.Connect(zero_source->get_output_port(),
+                    plant_->get_actuation_input_port());
+    diagram_ = builder.Build();
 
-  // Create a context.
-  auto context = diagram->CreateDefaultContext();
-  auto& acrobot_context = diagram->GetMutableSubsystemContext(
-      *plant, context.get());
+    // Create a context.
+    context_ = diagram_->CreateDefaultContext();
+    auto& acrobot_context =
+        diagram_->GetMutableSubsystemContext(*plant_, context_.get());
 
-  // Put the acrobot into a configuration where it has nonzero potential
-  // energy.
-  VectorBase<double>& acrobot_state =
-    acrobot_context.get_mutable_continuous_state_vector();
-  acrobot_state[0] = M_PI_4;
-  acrobot_state[1] = M_PI_4;
+    // Put the acrobot into a configuration where it has nonzero potential
+    // energy.
+    const VectorXd q = M_PI_4 * VectorXd::Ones(2);
+    plant_->SetPositions(&acrobot_context, q);
+  }
+  MultibodyPlant<double>* plant_{nullptr};
+  std::unique_ptr<systems::Diagram<double>> diagram_;
+  std::unique_ptr<systems::Context<double>> context_;
+};
+
+TEST_F(ExternallyAppliedForcesTest, ContinuousPlant) {
+  MakePlantWithGravityCompensator(0.0);
 
   // Compute time derivatives and ensure that they're sufficiently near zero.
-  auto derivatives = context->get_continuous_state().Clone();
+  auto derivatives = context_->get_continuous_state().Clone();
   ASSERT_EQ(derivatives->size(), 4);
-  diagram->CalcTimeDerivatives(*context, derivatives.get());
+  diagram_->CalcTimeDerivatives(*context_, derivatives.get());
 
   // Ensure that the acceleration is zero.
-  const VectorBase<double>& derivatives_vector = derivatives->get_vector();
+  const VectorXd derivatives_vector = derivatives->get_vector().CopyToVector();
   const double eps = 100 * std::numeric_limits<double>::epsilon();
-  EXPECT_NEAR(derivatives_vector[2], 0.0, eps);
-  EXPECT_NEAR(derivatives_vector[3], 0.0, eps);
+  EXPECT_TRUE(CompareMatrices(derivatives_vector, VectorXd::Zero(4), eps,
+                              MatrixCompareType::absolute));
+}
+
+TEST_F(ExternallyAppliedForcesTest, DiscretePlant) {
+  MakePlantWithGravityCompensator(1.0e-3);
+
+  auto updates = diagram_->AllocateDiscreteVariables();
+  diagram_->CalcDiscreteVariableUpdates(*context_, updates.get());
+
+  // Copies to plain Eigen vectors to verify the math.
+  auto& acrobot_context =
+      diagram_->GetMutableSubsystemContext(*plant_, context_.get());
+  const VectorXd x0 = plant_->GetPositionsAndVelocities(acrobot_context);
+  ASSERT_EQ(updates->get_vector().size(), 4);
+  const VectorXd xnext = updates->get_vector().CopyToVector();
+  const VectorXd delta_x = xnext - x0;
+
+  // Ensure the discrete change in the state is zero.
+  const double eps = 100 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(delta_x, VectorXd::Zero(4), eps,
+                              MatrixCompareType::absolute));
 }
 
 }  // namespace
