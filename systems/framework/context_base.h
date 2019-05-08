@@ -465,7 +465,14 @@ class ContextBase : public internal::ContextMessageInterface {
   // protected function on its children.
   static std::unique_ptr<ContextBase> CloneWithoutPointers(
       const ContextBase& source) {
-    return source.DoCloneWithoutPointers();
+    std::unique_ptr<ContextBase> result = source.DoCloneWithoutPointers();
+
+    // Verify that the most-derived Context didn't forget to override
+    // DoCloneWithoutPointers().
+    ContextBase& clone = *result;
+    DRAKE_THROW_UNLESS(typeid(source) == typeid(clone));
+
+    return result;
   }
 
   /** (Internal use only) Given a new context `clone` containing an
@@ -541,7 +548,7 @@ class ContextBase : public internal::ContextMessageInterface {
   up base class pointers. To do that, implement a protected copy constructor
   that inherits from the base class copy constructor (which doesn't repair the
   pointers), then implement DoCloneWithoutPointers() as
-  `return unique_ptr<ContextBase>(new DerivedType(*this));`. */
+  `return std::unique_ptr<ContextBase>(new DerivedType(*this));`. */
   virtual std::unique_ptr<ContextBase> DoCloneWithoutPointers() const = 0;
 
   /** DiagramContext must implement this to invoke BuildTrackerPointerMap() on
