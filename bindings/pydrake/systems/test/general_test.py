@@ -170,8 +170,6 @@ class TestGeneral(unittest.TestCase):
                              expected_value)
             self.assertEqual(context.get_abstract_state().get_value(
                 index=0).get_value(), expected_value)
-            self.assertEqual(context.get_state().get_abstract_state(
-                index=0).get_value(), expected_value)
             self.assertEqual(context.get_state().get_abstract_state()
                              .get_value(index=0).get_value(), expected_value)
 
@@ -179,13 +177,10 @@ class TestGeneral(unittest.TestCase):
         check_abstract_value_zero(context, True)
         context.SetAbstractState(index=0, value=False)
         check_abstract_value_zero(context, False)
-        value = context.get_mutable_state().get_mutable_abstract_state(index=0)
-        value.set_value(True)
-        check_abstract_value_zero(context, True)
         value = context.get_mutable_state().get_mutable_abstract_state()\
             .get_mutable_value(index=0)
-        value.set_value(False)
-        check_abstract_value_zero(context, False)
+        value.set_value(True)
+        check_abstract_value_zero(context, True)
 
     def test_event_api(self):
         # TriggerType - existence check.
