@@ -80,15 +80,13 @@ class MockRoadRulebook final : public rules::RoadRulebook {
                            double) const override {
     return {{}, {}};
   }
-  RightOfWayRule DoGetRule(
-      const RightOfWayRule::Id&) const override {
+  RightOfWayRule DoGetRule(const RightOfWayRule::Id&) const override {
     return Rule();
   }
   SpeedLimitRule DoGetRule(const SpeedLimitRule::Id&) const override {
     return SpeedLimitRule(rules::SpeedLimitRule::Id("some_id"),
                           CreateLaneSRange(),
-                          rules::SpeedLimitRule::Severity::kStrict, 33.,
-                          77.);
+                          rules::SpeedLimitRule::Severity::kStrict, 33., 77.);
   }
 
   DirectionUsageRule DoGetRule(const DirectionUsageRule::Id&) const override {
@@ -102,8 +100,8 @@ class MockTrafficLightBook final : public rules::TrafficLightBook {
   MockTrafficLightBook() {}
 
  private:
-  optional<TrafficLight> DoGetTrafficLight(const TrafficLight::Id&) const
-      override {
+  optional<TrafficLight> DoGetTrafficLight(
+      const TrafficLight::Id&) const override {
     return nullopt;
   }
 };
@@ -114,13 +112,13 @@ class MockPhaseRingBook final : public rules::PhaseRingBook {
   MockPhaseRingBook() {}
 
  private:
-  optional<rules::PhaseRing> DoGetPhaseRing(const rules::PhaseRing::Id&) const
-      override {
+  optional<rules::PhaseRing> DoGetPhaseRing(
+      const rules::PhaseRing::Id&) const override {
     return nullopt;
   }
 
-  optional<rules::PhaseRing> DoFindPhaseRing(const rules::RightOfWayRule::Id&)
-      const override {
+  optional<rules::PhaseRing> DoFindPhaseRing(
+      const rules::RightOfWayRule::Id&) const override {
     return nullopt;
   }
 };
@@ -131,8 +129,8 @@ class MockRuleStateProvider final : public rules::RuleStateProvider {
   MockRuleStateProvider() {}
 
  private:
-  drake::optional<RightOfWayResult> DoGetState(const RightOfWayRule::Id&) const
-      override {
+  drake::optional<RightOfWayResult> DoGetState(
+      const RightOfWayRule::Id&) const override {
     return nullopt;
   }
 };
@@ -148,27 +146,22 @@ class MockPhaseProvider final : public rules::PhaseProvider {
   }
 };
 
-class MockIntersection final : public Intersection {
+class MockIntersectionBook final : public IntersectionBook {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MockIntersection)
-  explicit MockIntersection(const Intersection::Id& id,
-                            const rules::PhaseRing::Id& ring_id)
-      : Intersection(id, {}, ring_id) {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MockIntersectionBook);
+  MockIntersectionBook() {}
 
  private:
-  optional<rules::PhaseProvider::Result> Phase() const override {
-    return nullopt;
+  api::Intersection* DoGetIntersection(const api::Intersection::Id&) {
+    return nullptr;
   }
-
-  void SetPhase(const api::rules::Phase::Id&) override {}
 };
 
 }  // namespace
 
 rules::LaneSRoute CreateLaneSRoute() {
-  return rules::LaneSRoute(
-      {rules::LaneSRange(LaneId("a"), {0., 9.}),
-       rules::LaneSRange(LaneId("b"), {17., 12.})});
+  return rules::LaneSRoute({rules::LaneSRange(LaneId("a"), {0., 9.}),
+                            rules::LaneSRange(LaneId("b"), {17., 12.})});
 }
 
 rules::LaneSRange CreateLaneSRange() {
@@ -198,9 +191,9 @@ RightOfWayRule Rule() {
 
 DirectionUsageRule::State CreateDirectionUsageRuleState() {
   return DirectionUsageRule::State(
-    DirectionUsageRule::State::Id("dur_state"),
-    DirectionUsageRule::State::Type::kWithS,
-    DirectionUsageRule::State::Severity::kStrict);
+      DirectionUsageRule::State::Id("dur_state"),
+      DirectionUsageRule::State::Type::kWithS,
+      DirectionUsageRule::State::Severity::kStrict);
 }
 
 DirectionUsageRule CreateDirectionUsageRule() {
@@ -233,9 +226,8 @@ std::unique_ptr<rules::PhaseProvider> CreatePhaseProvider() {
   return std::make_unique<MockPhaseProvider>();
 }
 
-std::unique_ptr<Intersection> CreateIntersection(
-    const Intersection::Id& id, const rules::PhaseRing::Id& ring_id) {
-  return std::make_unique<MockIntersection>(id, ring_id);
+std::unique_ptr<IntersectionBook> CreateIntersectionBook() {
+  return std::make_unique<MockIntersectionBook>();
 }
 
 }  // namespace test
