@@ -76,9 +76,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "combined_manipulator_and_gripper_model",
+    name = "combined_arm_and_gripper_model",
     hdrs = [
-        "combined_manipulator_and_gripper_model.h",
+        "combined_arm_and_gripper_model.h",
     ],
     visibility = ["//visibility:public"],
     deps = [

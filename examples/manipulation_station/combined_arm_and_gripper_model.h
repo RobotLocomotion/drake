@@ -21,25 +21,25 @@ namespace examples {
 namespace manipulation_station {
 
 /**
- * An abstract class for adding a combined manipulator/gripper model and its
+ * An abstract class for adding a combined arm/gripper model and its
  * controller to a Diagram and querying aspects of the model (e.g., the number
- * of manipulator generalized positions).
+ * of arm generalized positions).
  */
 template <typename T>
-class CombinedManipulatorAndGripperModel {
+class CombinedArmAndGripperModel {
  public:
-  explicit CombinedManipulatorAndGripperModel(
+  explicit CombinedArmAndGripperModel(
       multibody::MultibodyPlant<T>* plant) : plant_(plant) {}
-  virtual ~CombinedManipulatorAndGripperModel() {}
+  virtual ~CombinedArmAndGripperModel() {}
 
-  /// Gets the number of joints in the manipulator.
-  virtual int num_manipulator_joints() const = 0;
+  /// Gets the number of joints in the arm.
+  virtual int num_arm_joints() const = 0;
 
   /// Gets the number of joints in the gripper.
   virtual int num_gripper_joints() const = 0;
 
-  /// Gets the manipulator generalized positions.
-  virtual VectorX<T> GetManipulatorPositions(
+  /// Gets the arm generalized positions.
+  virtual VectorX<T> GetArmPositions(
       const systems::Context<T>& diagram_context,
       const systems::Diagram<T>& diagram) const = 0;
 
@@ -48,8 +48,8 @@ class CombinedManipulatorAndGripperModel {
       const systems::Context<T>& diagram_context,
       const systems::Diagram<T>& diagram) const = 0;
 
-  /// Sets the manipulator generalized positions.
-  virtual void SetManipulatorPositions(
+  /// Sets the arm generalized positions.
+  virtual void SetArmPositions(
     const systems::Context<T>& diagram_context,
     const Eigen::Ref<const VectorX<T>>& q,
     const systems::Diagram<T>& diagram,
@@ -68,8 +68,8 @@ class CombinedManipulatorAndGripperModel {
     const systems::Diagram<T>& diagram,
     systems::State<T>* diagram_state) const = 0;
 
-  /// Gets the manipulator generalized velocities.
-  virtual VectorX<T> GetManipulatorVelocities(
+  /// Gets the arm generalized velocities.
+  virtual VectorX<T> GetArmVelocities(
       const systems::Context<T>& diagram_context,
       const systems::Diagram<T>& diagram) const = 0;
 
@@ -78,8 +78,8 @@ class CombinedManipulatorAndGripperModel {
       const systems::Context<T>& diagram_context,
       const systems::Diagram<T>& diagram) const = 0;
 
-  /// Sets the manipulator generalized velocities.
-  virtual void SetManipulatorVelocities(
+  /// Sets the arm generalized velocities.
+  virtual void SetArmVelocities(
     const systems::Context<T>& diagram_context,
     const Eigen::Ref<const VectorX<T>>& v,
     const systems::Diagram<T>& diagram,
@@ -92,18 +92,18 @@ class CombinedManipulatorAndGripperModel {
     const systems::Diagram<T>& diagram,
     systems::State<T>* diagram_state) const = 0;
 
-  /// This method adds the manipulator and gripper models to the internal plant.
+  /// This method adds the arm and gripper models to the internal plant.
   virtual void AddRobotModelToMultibodyPlant() = 0;
 
-  /// This method builds the control diagram for the manipulator and gripper
+  /// This method builds the control diagram for the arm and gripper
   /// and adds it to the given builder for a Diagram.
   virtual void BuildControlDiagram(systems::DiagramBuilder<T>* builder) = 0;
 
   /// Gets a reference to the plant used for control.
   virtual const multibody::MultibodyPlant<T>& get_controller_plant() const = 0;
 
-  /// Gets the model instance for the manipulator in the internal plant.
-  virtual multibody::ModelInstanceIndex manipulator_model_instance() const = 0;
+  /// Gets the model instance for the arm in the internal plant.
+  virtual multibody::ModelInstanceIndex arm_model_instance() const = 0;
 
   /// Gets the model instance for the gripper in the internal plant.
   virtual multibody::ModelInstanceIndex gripper_model_instance() const = 0;
