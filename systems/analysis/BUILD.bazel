@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":integrator_base",
         ":lyapunov",
         ":monte_carlo",
+        ":radau_integrator",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
         ":scalar_dense_output",
@@ -160,6 +161,17 @@ drake_cc_library(
     deps = [
         ":integrator_base",
         "//math:gradient",
+    ],
+)
+
+drake_cc_library(
+    name = "radau_integrator",
+    srcs = ["radau_integrator.cc"],
+    hdrs = [
+        "radau_integrator.h",
+    ],
+    deps = [
+        ":implicit_integrator",
     ],
 )
 
@@ -315,6 +327,20 @@ drake_cc_googletest(
     name = "implicit_integrator_test",
     deps = [
         ":implicit_integrator",
+        "//systems/plants/spring_mass_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "radau_integrator_test",
+    # Note: if memcheck takes too long with Valgrind, disable
+    # memcheck (per Drake issue #9621).
+    timeout = "moderate",
+    shard_count = 2,
+    deps = [
+        ":implicit_euler_integrator",
+        ":radau_integrator",
+        "//systems/analysis/test_utilities",
         "//systems/plants/spring_mass_system",
     ],
 )

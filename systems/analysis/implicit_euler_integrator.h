@@ -65,6 +65,9 @@ namespace systems {
  * - [Lambert, 1991]  J. D. Lambert. Numerical Methods for Ordinary Differential
  *                    Equations. John Wiley & Sons, 1991.
  *
+ * @note This integrator uses the integrator accuracy setting, even when run
+ *       in fixed-step mode, to limit the error in the underlying Newton-Raphson
+ *       process. See IntegratorBase::set_target_accuracy() for more info.
  * @see ImplicitIntegrator class documentation for information about implicit
  *      integration methods in general.
  */
