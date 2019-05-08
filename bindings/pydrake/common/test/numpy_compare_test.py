@@ -49,6 +49,28 @@ class TestNumpyCompareSimple(unittest.TestCase):
         self.assertEqual(npc.to_float(a), 1.)
         A = np.array([a, b])
         np.testing.assert_equal(npc.to_float(A), [1., 2.])
+        # - Convenience float comparators.
+        npc.assert_float_equal(a, 1.)
+        with self.assertRaises(AssertionError):
+            npc.assert_float_equal(a, 2.)
+        npc.assert_float_not_equal(a, 2.)
+        with self.assertRaises(AssertionError):
+            npc.assert_float_not_equal(a, 1.)
+        npc.assert_float_equal(A, [1., 2.])
+        # Check nearness.
+        Af_delta = npc.to_float(A) + 5e-16
+        npc.assert_float_not_equal(A, Af_delta)
+        npc.assert_float_allclose(A, Af_delta)
+
+    def test_resolve_type(self):
+        Af = np.array([1., 2.])
+        self.assertEqual(npc.resolve_type(Af), float)
+        Ac = np.array([Custom("a"), Custom("b")])
+        self.assertEqual(npc.resolve_type(Ac), Custom)
+        with self.assertRaises(AssertionError):
+            npc.resolve_type([])
+        with self.assertRaises(AssertionError):
+            npc.resolve_type(["a", 1., None])
 
     def test_asserts_builtin(self):
         a = 1.

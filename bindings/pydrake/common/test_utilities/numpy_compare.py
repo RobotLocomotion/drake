@@ -43,9 +43,7 @@ class _Registry(object):
 
     def get_comparator_from_arrays(self, a, b):
         # Ensure all types are homogeneous.
-        a_type, = {type(np.asarray(x).item()) for x in a.flat}
-        b_type, = {type(np.asarray(x).item()) for x in b.flat}
-        key = (a_type, b_type)
+        key = (resolve_type(a), resolve_type(b))
         return self._comparators[key]
 
     def register_to_float(self, cls, func):
@@ -104,6 +102,49 @@ def assert_not_equal(a, b):
     all_equal = len(errs) == br.size
     if all_equal:
         raise AssertionError("Unwanted equality: {}".format(errs))
+
+
+def assert_float_equal(a, bf):
+    """Checks equality of `a` (non-float) and `bf` (float) by converting `a` to
+    floats."""
+    assert np.asarray(bf).dtype == float, np.asarray(bf).dtype
+    af = to_float(a)
+    assert_equal(af, bf)
+
+
+def assert_float_not_equal(a, bf):
+    """Checks inequality of `a` (non-float) and `bf` (float) by converting `a`
+    to floats."""
+    assert np.asarray(bf).dtype == float, np.asarray(bf).dtype
+    af = to_float(a)
+    assert_not_equal(af, bf)
+
+
+def assert_float_allclose(a, bf, atol=1e-15, rtol=0):
+    """Checks nearness of `a` (non-float) to `bf` (float) by converting `a` to
+    floats.
+
+    Note:
+        This uses default tolerances that are different from
+        `np.testing.assert_allclose`.
+    """
+    assert np.asarray(bf).dtype == float
+    af = to_float(a)
+    np.testing.assert_allclose(af, bf, atol=atol, rtol=rtol)
+
+
+def resolve_type(a):
+    """Resolves the type of an array `a`; useful for dtype=object. This will
+    ensure the entire array has homogeneous type, and will return the class of
+    the first item. `a` cannot be empty.
+    """
+    a = np.asarray(a)
+    assert a.size != 0, "Cannot be empty."
+    cls_set = {type(np.asarray(x).item()) for x in a.flat}
+    assert len(cls_set) == 1, (
+        "Types must be homogeneous; got: {}".format(cls_set))
+    cls, = cls_set
+    return cls
 
 
 def _str_eq(a, b):
