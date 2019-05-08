@@ -166,7 +166,7 @@ class FreeBody {
   /// rotational motion (angular velocity and quaternion) for torque-free motion
   /// of an axis-symmetric rigid body B in a Newtonian frame (World) N.  For
   /// example, B's angular velocity in N is `wx*Bx + wy*By + wz*Bz`, written in
-  /// terms of initial values wx0, wy0, wz0, Kane's solution for wx, wy, wz is
+  /// terms of initial values wx0, wy0, wz0. Kane's solution for wx, wy, wz is
   /// wx =  wx0 * cos(s * t) + wy0 * sin(s * t)
   /// wy = -wx0 * sin(s * t) + wy0 * cos(s * t)
   /// wz =  wz0
