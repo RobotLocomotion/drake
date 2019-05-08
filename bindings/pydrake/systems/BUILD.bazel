@@ -375,6 +375,7 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "custom_test",
+    tags = ["exclusive"],
     deps = [
         ":analysis_py",
         ":framework_py",
