@@ -59,6 +59,7 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:drake_optional_pybind",
+        "//bindings/pydrake/systems:systems_pybind",
     ],
     cc_srcs = ["robot_plan_runner_py.cc"],
     package_info = PACKAGE_INFO,

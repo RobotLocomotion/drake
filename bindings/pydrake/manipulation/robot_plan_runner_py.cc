@@ -6,6 +6,7 @@
 #include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/manipulation/robot_plan_runner/plan_sender.h"
 #include "drake/manipulation/robot_plan_runner/robot_plan_runner.h"
 #include "drake/manipulation/robot_plan_runner/robot_plans.h"
@@ -46,6 +47,8 @@ PYBIND11_MODULE(robot_plan_runner, m) {
           "plan_type", &PlanData::plan_type, doc.PlanData.plan_type.doc)
       .def_readwrite(
           "joint_traj", &PlanData::joint_traj, doc.PlanData.joint_traj.doc);
+
+  pysystems::AddValueInstantiation<PlanData>(m);
 
   py::class_<PlanSender, LeafSystem<double>>(m, "PlanSender")
       .def(py::init<const std::vector<PlanData>>(),
