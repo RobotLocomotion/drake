@@ -10,12 +10,8 @@ namespace systems {
 
 std::unique_ptr<ContextBase> ContextBase::Clone() const {
   std::unique_ptr<ContextBase> clone_ptr(CloneWithoutPointers(*this));
-
-  // Verify that the most-derived Context didn't forget to override
-  // DoCloneWithoutPointers().
   const ContextBase& source = *this;  // Deref here to avoid typeid warning.
   ContextBase& clone = *clone_ptr;
-  DRAKE_DEMAND(typeid(source) == typeid(clone));
 
   // Create a complete mapping of tracker pointers.
   DependencyTracker::PointerMap tracker_map;

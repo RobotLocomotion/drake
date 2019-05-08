@@ -554,6 +554,19 @@ TEST_F(LeafContextTest, Clone) {
   EXPECT_EQ(1.0, context_.get_numeric_parameter(0)[0]);
 }
 
+// Violates the Context `DoCloneWithoutPointers` law.
+class InvalidContext : public LeafContext<double> {
+ public:
+  InvalidContext() : LeafContext<double>() {}
+};
+
+TEST_F(LeafContextTest, BadClone) {
+  InvalidContext bad_context;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      bad_context.Clone(), std::runtime_error,
+      ".*typeid.source. == typeid.clone.*");
+}
+
 // Tests that a LeafContext can provide a clone of its State.
 TEST_F(LeafContextTest, CloneState) {
   std::unique_ptr<State<double>> clone = context_.CloneState();
