@@ -14,7 +14,6 @@ fi
 
 /usr/local/bin/brew update
 /usr/local/bin/brew bundle --file="${BASH_SOURCE%/*}/Brewfile"
-/usr/local/bin/brew tap-pin bazelbuild/tap
 
 /usr/local/bin/pip2 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements.txt"
 /usr/local/bin/pip3 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements.txt"
