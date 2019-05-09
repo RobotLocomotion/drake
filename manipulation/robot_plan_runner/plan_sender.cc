@@ -27,21 +27,22 @@ ConnectTwoPositionsWithCubicPolynomial(
     const Eigen::Ref<const Eigen::VectorXd>& q_end, double duration) {
   DRAKE_THROW_UNLESS(q_start.size() == q_end.size());
   Eigen::VectorXd t_knots(3);
-  t_knots << 0, duration/2, duration;
+  t_knots << 0, duration / 2, duration;
   const int num_positions = q_start.size();
   Eigen::MatrixXd q_knots(num_positions, 3);
   q_knots.col(0) << q_start;
-  q_knots.col(1) << (q_start + q_end)/2;
+  q_knots.col(1) << (q_start + q_end) / 2;
   q_knots.col(2) << q_end;
 
   return trajectories::PiecewisePolynomial<double>::Cubic(
       t_knots, q_knots, Eigen::VectorXd::Zero(7), Eigen::VectorXd::Zero(7));
 }
 
-
 PlanSender::PlanSender(const std::vector<PlanData>& plan_data_list)
-    : num_positions_(7), transition_time_sec_(4.), zoh_time_sec_(2.0),
-    extra_time_(1.) {
+    : num_positions_(7),
+      transition_time_sec_(4.),
+      zoh_time_sec_(2.0),
+      extra_time_(1.) {
   this->set_name("PlanSender");
 
   // Declare a state that does not get changed. It exists so that an abstract
@@ -67,16 +68,17 @@ systems::EventStatus PlanSender::Initialize(const Context<double>& context,
                                             State<double>* state) const {
   cout << "initiliazation!" << endl;
   Eigen::VectorXd q_current =
-    this->get_input_port(input_port_idx_q_).Eval(context);
+      this->get_input_port(input_port_idx_q_).Eval(context);
   // Create a plan that connects the current position of the robot to the
   // position at the beginning of plan_data_list_. This requires the first
   // position in plan_data_list_ to have a non-empty joint_traj.
-  const PlanData &plan0 = plan_data_list_[0];
-  if(plan0.joint_traj.has_value()) {
+  const PlanData& plan0 = plan_data_list_[0];
+  if (plan0.joint_traj.has_value()) {
     Eigen::VectorXd q0 = plan0.joint_traj.value().value(0);
 
     PiecewisePolynomial<double> joint_traj =
-    ConnectTwoPositionsWithCubicPolynomial(q_current, q0, transition_time_sec_);
+        ConnectTwoPositionsWithCubicPolynomial(q_current, q0,
+                                               transition_time_sec_);
     PlanData first_plan;
     first_plan.joint_traj = joint_traj;
     first_plan.plan_type = PlanType::kJointSpacePlan;
@@ -92,8 +94,8 @@ systems::EventStatus PlanSender::Initialize(const Context<double>& context,
     Eigen::MatrixXd q_knots(num_positions_, 2);
     q_knots.col(0) = q_current;
     q_knots.col(1) = q_current;
-    zoh_plan.joint_traj = 
-      PiecewisePolynomial<double>::ZeroOrderHold(t_knots, q_knots);
+    zoh_plan.joint_traj =
+        PiecewisePolynomial<double>::ZeroOrderHold(t_knots, q_knots);
     plan_data_list_.insert(plan_data_list_.begin(), zoh_plan);
   }
 
@@ -102,7 +104,7 @@ systems::EventStatus PlanSender::Initialize(const Context<double>& context,
   plan_start_times_.push_back(0);
   for (auto& plan_data : plan_data_list_) {
     double t_next = plan_data.joint_traj.value().end_time();
-    if(i != 0) {
+    if (i != 0) {
       // not the zoh plan
       t_next += extra_time_;
     }
@@ -115,9 +117,8 @@ systems::EventStatus PlanSender::Initialize(const Context<double>& context,
   cout << "start times ";
   PrintStlVector(plan_start_times_);
 
-  // use state to get rid of [-Werror=unused-parameter]
-  int& a = state->get_mutable_abstract_state<int>(0);
-  a = 1;
+  // set AbstractState (plan_index) to -1
+  state->get_mutable_abstract_state().get_mutable_value(0).set_value<int>(-1);
 
   return systems::EventStatus::Succeeded();
 };
@@ -132,7 +133,7 @@ void PlanSender::DoCalcNextUpdateTime(
   DRAKE_THROW_UNLESS(std::isinf(*time));
 
   double t = context.get_time();
-//  cout << t << " DoCalcNextUpdateTime called" << endl;
+  //  cout << t << " DoCalcNextUpdateTime called" << endl;
   if (current_plan_idx_ < num_plans_ - 1) {
     /*
      * DoCalcNextUpdateTime is called at t = -eps. That's when the first plan
@@ -140,12 +141,17 @@ void PlanSender::DoCalcNextUpdateTime(
      */
     if (t < 0 || t >= plan_start_times_[current_plan_idx_ + 1]) {
       cout << "Adds event at time " << t << endl;
-      *time = t;
+      *time = t < 0 ? 0 : t;
       systems::EventCollection<systems::UnrestrictedUpdateEvent<double>>&
           uu_events = events->get_mutable_unrestricted_update_events();
       uu_events.add_event(
           std::make_unique<systems::UnrestrictedUpdateEvent<double>>(
-              systems::TriggerType::kTimed));
+              systems::TriggerType::kTimed,
+              [this](const Context<double>& context,
+                     const systems::UnrestrictedUpdateEvent<double>&,
+                     State<double>* x) {
+                this->UpdatePlanIndex(context, &*x);
+              }));
 
       // update "unregistered" states
       current_plan_idx_++;
@@ -156,7 +162,7 @@ void PlanSender::DoCalcNextUpdateTime(
 double PlanSender::get_all_plans_duration() const {
   // zoh + transition
   double t_total = zoh_time_sec_ + transition_time_sec_ + extra_time_;
-  for(const auto& plan_data : plan_data_list_) {
+  for (const auto& plan_data : plan_data_list_) {
     // TODO: extend this for ee_traj as well
     if (plan_data.joint_traj.has_value()) {
       t_total += plan_data.joint_traj.value().end_time() + extra_time_;
@@ -170,6 +176,16 @@ void PlanSender::CalcPlan(const drake::systems::Context<double>& context,
   cout << "Plan " << current_plan_idx_
        << " has started at t=" << context.get_time() << endl;
   *output_plan_data = plan_data_list_[current_plan_idx_];
+};
+
+void PlanSender::UpdatePlanIndex(const systems::Context<double>& context,
+                                 systems::State<double>* state) const {
+  int& state_value = state->get_mutable_abstract_state()
+                         .get_mutable_value(0)
+                         .get_mutable_value<int>();
+  state_value++;
+  cout << "current_plan_idx " << current_plan_idx_ << endl;
+  cout << "abstract state " << state_value << endl;
 };
 
 }  // namespace robot_plan_runner

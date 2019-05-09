@@ -24,6 +24,8 @@ class PlanSender : public systems::LeafSystem<double> {
 
  private:
   void CalcPlan(const drake::systems::Context<double>&, PlanData*) const;
+  void UpdatePlanIndex(const systems::Context<double>& context,
+                       systems::State<double>* state) const;
   mutable std::vector<double> plan_start_times_{};
   mutable std::vector<PlanData> plan_data_list_{};
   mutable int current_plan_idx_{-1};
