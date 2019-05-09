@@ -25,10 +25,11 @@ namespace render {
 
 /** Parameters for constructing RenderEngine.  */
 struct RenderEngineParams {
-  /** The render label to @ref render_engine_default_label
-   "apply to geometries that have not specified a (label, id) property". The
-   value _must_ be either RenderLabel::kUnspecified or RenderLabel::kDontCare.
-   Defaults to RenderLabel::kUnspecified.  */
+  /** The render label to apply to geometries that have not otherwise specified
+   a (label, id) property. The value _must_ be either RenderLabel::kUnspecified
+   or RenderLabel::kDontCare. (See
+   @ref render_engine_default_label "this section" for more details.) Defaults
+   to RenderLabel::kUnspecified.  */
   RenderLabel default_render_label{RenderLabel::kUnspecified};
 };
 
@@ -57,18 +58,36 @@ struct RenderEngineParams {
      RenderLabel for more details).
 
  @anchor render_engine_default_label
- <h3>Default RenderLabel</h3>
+ <h3>RenderLabels, registering geometry, and derived classes</h3>
 
- If the PerceptionProperties instance passed to RegisterVisual() is missing an
- explicit definition of the `(label, id)` property, %RenderEngine applies a
- default RenderLabel value. This default value can be one of two values:
+ By convention, when registering a geometry, the provided properties should
+ contain no more than one RenderLabel instance, and that should be the
+ `(label, id)` property. %RenderEngine provides the notion of a
+ _default render label_ that will be applied where no `(label, id)` RenderLabel
+ property is found.  This default value can be one of two values:
  RenderLabel::kDontCare or RenderLabel::kUnspecified. The choice of default
  RenderLabel can be made at construction and it affects registration behavior
  when the `(label, id)` property is absent:
 
    - RenderLabel::kUnspecified: throws an exception.
    - RenderLabel::kDontCare: the geometry will be included in label images as
-     the generic, non-distinguishing label.  */
+     the generic, non-distinguishing label.
+
+ Choosing RenderLabel::kUnspecified is best in a system that wants explicit
+ feedback and strict enforcement on a policy of strict label enforcement --
+ everything should receive a meaningful label. The choice of
+ RenderLabel::kDontCare is best for a less strict system in which only some
+ subset of geometry need be explicitly specified.
+
+ Derived classes configure their _de facto_ default RenderLabel value, or
+ a user-configured default value, at construction, subject to the requirements
+ outlined above.
+
+ Derived classes should not access the `(label, id)` property directly.
+ %RenderEngine provides a method to safely extract a RenderLabel value from
+ the PerceptionProperties, taking into account the configured default value and
+ the documented @ref reserved_render_label "RenderLabel semantics"; see
+ GetRenderLabelOrThrow().  */
 class RenderEngine : public ShapeReifier {
  public:
   /** Constructs a %RenderEngine with the given `parameters`.
@@ -79,8 +98,8 @@ class RenderEngine : public ShapeReifier {
     if (default_render_label_ != RenderLabel::kUnspecified &&
         default_render_label_ != RenderLabel::kDontCare) {
       throw std::logic_error(
-          "RenderEngine's default render label must be either 'unspecified' or "
-          "'don't care'");
+          "RenderEngine's default render label must be either 'kUnspecified' "
+          "or 'kDontCare'");
     }
   }
 
@@ -96,15 +115,11 @@ class RenderEngine : public ShapeReifier {
    is allowed to examine the given `properties` and choose to _not_ register
    the geometry.
 
-   Successful registration depends on the successful validation of the
-   RenderLabel value associated with the given `shape`. It looks for a
-   RenderLabel in the (label, id) property; RenderLabel values in other
-   properties will _not_ be validated. If no label is found, it uses the
-   %RenderEngine's @ref render_engine_default_label
-   "default render label value". As
-   @ref reserved_render_label "documented", assigning RenderLabel::kEmpty or
-   RenderLabel::kUnspecified is _not_ allowed and will cause an exception to be
-   thrown.
+   Typically, derived classes will attempt to validate the RenderLabel value
+   stored in the `(label, id)` property (or its configured default value if
+   no such property exists). In that case, attempting to assign
+   RenderLabel::kEmpty or RenderLabel::kUnspecified will cause an exception to
+   be thrown (as @ref reserved_render_label "documented").
 
    @param index          The geometry index of the shape to register.
    @param shape          The shape specification to add to the render engine.
@@ -179,15 +194,14 @@ class RenderEngine : public ShapeReifier {
 
    @param camera                The intrinsic properties of the camera.
    @param show_window           If true, the render window will be displayed.
-   @param[out] label_image_out  The rendered label image.
-  */
+   @param[out] label_image_out  The rendered label image.  */
   virtual void RenderLabelImage(
       const CameraProperties& camera,
       bool show_window,
       systems::sensors::ImageLabel16I* label_image_out) const = 0;
 
   /** Reports the render label value this render engine has been configured to
-   used.  */
+   use.  */
   RenderLabel default_render_label() const { return default_render_label_; }
 
  protected:
@@ -206,7 +220,10 @@ class RenderEngine : public ShapeReifier {
    geometries would have PerceptionProperties, but, based on the provided
    property groups and values, one would be accepted and registered with one
    render engine implementation and the other geometry with another render
-   engine.  */
+   engine.
+
+   In accessing the RenderLabel property in `properties` derived class should
+   _exclusively_ use GetRenderLabelOrThrow().  */
   virtual optional<RenderIndex> DoRegisterVisual(
       const Shape& shape, const PerceptionProperties& properties,
       const math::RigidTransformd& X_WG) = 0;
@@ -231,6 +248,14 @@ class RenderEngine : public ShapeReifier {
   /** The NVI-function for cloning this render engine.  */
   virtual std::unique_ptr<RenderEngine> DoClone() const = 0;
 
+  /** Extracts the `(label, id)` RenderLabel property from the given
+   `properties` and validates it (or the configured default if no such
+   property is defined).
+   @throws std::logic_error If the tested render label value is deemed invalid.
+   */
+  RenderLabel GetRenderLabelOrThrow(
+      const PerceptionProperties& properties) const;
+
   /** @name   RenderLabel-Color Utilities
 
    Some rasterization pipelines don't support channels of
@@ -243,8 +268,9 @@ class RenderEngine : public ShapeReifier {
 
    The label-to-color conversion can produce one of two different color
    encodings. These encodings are not exhaustive but they are typical of the
-   encodings that have proven useful. Colors are either _byte-valued_ in that
-   they are encoded with unsigned bytes in the range [0, 255] per channel or
+   encodings that have proven useful. The supported color encodings consist of
+   three RGB channels where each channel is either _byte-valued_ in that they
+   are encoded with unsigned bytes in the range [0, 255] per channel or
    _double-valued_ such that each channel is encoded with a double in the range
    [0, 1]. Conversion to RenderLabel is only supported from byte-valued color
    values.  */
@@ -274,15 +300,10 @@ class RenderEngine : public ShapeReifier {
  private:
   friend class RenderEngineTester;
 
-  // Validates the render label provided in the given `properties` (taking into
-  // account the engine's default value). Throws if invalid, otherwise, does
-  // nothing.
-  void RenderLabelIsValidOrThrow(const PerceptionProperties& properties) const;
-
   // The following two maps store all registered render index values to the
   // corresponding geometry's internal index. It should be the case that the
   // keys of the two maps are disjoint and span all of the valid render index
-  // values (i.e., [0, number of actors - 1]).
+  // values (i.e., [0, number of geometries - 1]).
   // The mapping is generally necessary to facilitate updates and geometry
   // removal.
 

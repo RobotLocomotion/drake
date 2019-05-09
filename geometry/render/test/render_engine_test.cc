@@ -350,7 +350,7 @@ GTEST_TEST(RenderEngine, DefaultRenderLabel) {
          {RenderLabel::kDoNotRender, RenderLabel::kEmpty, RenderLabel{10}}) {
       DRAKE_EXPECT_THROWS_MESSAGE(DummyRenderEngine({label}), std::logic_error,
                                   ".* default render label must be either "
-                                  "'unspecified' or 'don't care'");
+                                  "'kUnspecified' or 'kDontCare'");
     }
   }
 }
