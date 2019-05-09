@@ -16,22 +16,22 @@ GTEST_TEST(StaticEquilibriumProblemTest, SphereOnGroundTest) {
   const double radius = 0.1;
   const CoulombFriction<double> sphere_friction = ground_friction;
 
-  test::FreeSpheresAndBoxes<AutoDiffXd> dut(
+  test::FreeSpheresAndBoxes<AutoDiffXd> free_spheres(
       {test::SphereSpecification(radius, 1E3 /* density of the sphere */,
                                  sphere_friction)},
       {} /* no box. */, ground_friction);
 
-  StaticEquilibriumProblem problem(&(dut.plant()),
-                                   dut.get_mutable_plant_context(), {});
+  StaticEquilibriumProblem dut(&(free_spheres.plant()),
+                               free_spheres.get_mutable_plant_context(), {});
 
   // Add the constraint that quaternion should have unit length.
-  problem.get_mutable_prog()->AddConstraint(
+  dut.get_mutable_prog()->AddConstraint(
       solvers::internal::ParseQuadraticConstraint(
-          problem.q_vars().head<4>().cast<symbolic::Expression>().squaredNorm(),
-          1, 1));
+          dut.q_vars().head<4>().cast<symbolic::Expression>().squaredNorm(), 1,
+          1));
 
   auto check_static_equilibrium_problem_solve =
-      [&problem, &dut, radius](const Eigen::VectorXd& x_init) {
+      [&dut, &free_spheres, radius](const Eigen::VectorXd& x_init) {
         // Now solve the static equilibrium problem.
         // Our formulation of the complementary constraint is suitable for
         // elastic SQP solver, such as Snopt. For more details, please refer to
@@ -40,48 +40,50 @@ GTEST_TEST(StaticEquilibriumProblemTest, SphereOnGroundTest) {
         // Tedrake.
         solvers::SnoptSolver snopt_solver;
         if (snopt_solver.available()) {
-          const auto result = snopt_solver.Solve(problem.prog(), x_init, {});
+          const auto result = snopt_solver.Solve(dut.prog(), x_init, {});
           ASSERT_TRUE(result.is_success());
 
           // Check the solution.
-          const auto q_sol = result.GetSolution(problem.q_vars());
+          const auto q_sol = result.GetSolution(dut.q_vars());
           const double tol = 2E-5;
           EXPECT_NEAR(q_sol.head<4>().squaredNorm(), 1, tol);
           // The sphere must be on the ground.
           EXPECT_NEAR(q_sol(6), radius, tol);
           // Evaluate the contact wrench.
           const std::vector<ContactWrench> contact_wrench_sol =
-              problem.GetContactWrenchSolution(result);
+              dut.GetContactWrenchSolution(result);
           EXPECT_EQ(contact_wrench_sol.size(), 1);
           EXPECT_TRUE(CompareMatrices(contact_wrench_sol[0].p_WCb_W,
                                       Eigen::Vector3d(q_sol(4), q_sol(5), 0),
                                       tol));
-          dut.plant().SetPositions(dut.get_mutable_plant_context(),
-                                   q_sol.cast<AutoDiffXd>());
+          free_spheres.plant().SetPositions(
+              free_spheres.get_mutable_plant_context(),
+              q_sol.cast<AutoDiffXd>());
           const Vector6<double> F_Cb_W_expected = math::autoDiffToValueMatrix(
-              dut.plant().CalcGravityGeneralizedForces(dut.plant_context()));
-          EXPECT_TRUE(CompareMatrices(contact_wrench_sol[0].F_Cb_W,
+              free_spheres.plant().CalcGravityGeneralizedForces(
+                  free_spheres.plant_context()));
+          EXPECT_TRUE(CompareMatrices(contact_wrench_sol[0].F_Cb_W.get_coeffs(),
                                       F_Cb_W_expected, tol));
         }
       };
 
   // Set the initial guess.
-  Eigen::VectorXd x_init(problem.prog().num_vars());
+  Eigen::VectorXd x_init(dut.prog().num_vars());
   x_init.setZero();
 
   // The sphere is in penetration with the ground in the intial pose.
-  problem.prog().SetDecisionVariableValueInVector(
-      problem.q_vars().head<4>(), Eigen::Vector4d(1, 0, 0, 0), &x_init);
+  dut.prog().SetDecisionVariableValueInVector(
+      dut.q_vars().head<4>(), Eigen::Vector4d(1, 0, 0, 0), &x_init);
   check_static_equilibrium_problem_solve(x_init);
 
   // The sphere is above the ground in the initial pose.
-  problem.prog().SetDecisionVariableValueInVector(problem.q_vars()(6),
-                                                  radius + 1, &x_init);
+  dut.prog().SetDecisionVariableValueInVector(dut.q_vars()(6), radius + 1,
+                                              &x_init);
   check_static_equilibrium_problem_solve(x_init);
 
   // The quaternion in the initial pose is not normalized.
-  problem.prog().SetDecisionVariableValueInVector(
-      problem.q_vars().head<4>(), Eigen::Vector4d(1, 0.2, 0.3, 0.4), &x_init);
+  dut.prog().SetDecisionVariableValueInVector(
+      dut.q_vars().head<4>(), Eigen::Vector4d(1, 0.2, 0.3, 0.4), &x_init);
   check_static_equilibrium_problem_solve(x_init);
 }
 
@@ -122,67 +124,65 @@ GTEST_TEST(TestStaticEquilibriumProblem, TwoSpheresWithinBin) {
   std::vector<test::SphereSpecification> spheres;
   spheres.emplace_back(radii[0], sphere_density, sphere_friction);
   spheres.emplace_back(radii[1], sphere_density, sphere_friction);
-  test::FreeSpheresAndBoxes<AutoDiffXd> dut(spheres, walls, ground_friction);
+  test::FreeSpheresAndBoxes<AutoDiffXd> free_spheres(spheres, walls,
+                                                     ground_friction);
 
-  // dut_double is for visualization.
-  test::FreeSpheresAndBoxes<double> dut_double(spheres, walls, ground_friction);
+  // free_spheres_double is for visualization.
+  test::FreeSpheresAndBoxes<double> free_spheres_double(spheres, walls,
+                                                        ground_friction);
 
-  StaticEquilibriumProblem problem(&(dut.plant()),
-                                   dut.get_mutable_plant_context(), {});
+  StaticEquilibriumProblem dut(&(free_spheres.plant()),
+                               free_spheres.get_mutable_plant_context(), {});
 
   // The decision variables are q (dim = 14), and the decision variables for
   // 11 pairs of contact, each pair introduce lambda (dim = 3), alpha (dim = 1)
   // and beta (dim = 1).
-  EXPECT_EQ(problem.prog().num_vars(), 14 + (3 + 2) * (5 + 5 + 1));
+  EXPECT_EQ(dut.prog().num_vars(), 14 + (3 + 2) * (5 + 5 + 1));
 
   // Add the constraint that quaternion should have unit length.
-  problem.get_mutable_prog()->AddConstraint(
+  dut.get_mutable_prog()->AddConstraint(
       solvers::internal::ParseQuadraticConstraint(
-          problem.q_vars().head<4>().cast<symbolic::Expression>().squaredNorm(),
-          1, 1));
-  problem.get_mutable_prog()->AddConstraint(
+          dut.q_vars().head<4>().cast<symbolic::Expression>().squaredNorm(), 1,
+          1));
+  dut.get_mutable_prog()->AddConstraint(
       solvers::internal::ParseQuadraticConstraint(
-          problem.q_vars()
-              .segment<4>(7)
-              .cast<symbolic::Expression>()
-              .squaredNorm(),
+          dut.q_vars().segment<4>(7).cast<symbolic::Expression>().squaredNorm(),
           1, 1));
 
   // Add the constraint that the spheres should be within the bin.
-  problem.get_mutable_prog()->AddBoundingBoxConstraint(
+  dut.get_mutable_prog()->AddBoundingBoxConstraint(
       Eigen::Vector2d::Constant(-bin_length / 2),
-      Eigen::Vector2d::Constant(bin_length / 2),
-      problem.q_vars().segment<2>(4));
-  problem.get_mutable_prog()->AddBoundingBoxConstraint(
+      Eigen::Vector2d::Constant(bin_length / 2), dut.q_vars().segment<2>(4));
+  dut.get_mutable_prog()->AddBoundingBoxConstraint(
       Eigen::Vector2d::Constant(-bin_length / 2),
-      Eigen::Vector2d::Constant(bin_length / 2),
-      problem.q_vars().segment<2>(11));
+      Eigen::Vector2d::Constant(bin_length / 2), dut.q_vars().segment<2>(11));
 
   auto check_static_equilibrium_problem_solve =
-      [&problem, &dut_double, &radii, &bin_length,
+      [&dut, &free_spheres_double, &radii, &bin_length,
        &wall_size](const Eigen::VectorXd& x_init) {
         // Now solve the static equilibrium problem.
         solvers::SnoptSolver snopt_solver;
         if (snopt_solver.available()) {
           solvers::SolverOptions solver_options;
           const auto result =
-              snopt_solver.Solve(problem.prog(), x_init, solver_options);
+              snopt_solver.Solve(dut.prog(), x_init, solver_options);
           EXPECT_TRUE(result.is_success());
 
           // Check the solution.
-          const auto q_sol = result.GetSolution(problem.q_vars());
+          const auto q_sol = result.GetSolution(dut.q_vars());
           const std::vector<ContactWrench> contact_wrench_sol =
-              problem.GetContactWrenchSolution(result);
+              dut.GetContactWrenchSolution(result);
 
-          dut_double.plant().SetPositions(
-              dut_double.get_mutable_plant_context(), q_sol);
-          dut_double.get_mutable_diagram()->Publish(
-              dut_double.diagram_context());
+          free_spheres_double.plant().SetPositions(
+              free_spheres_double.get_mutable_plant_context(), q_sol);
+          free_spheres_double.get_mutable_diagram()->Publish(
+              free_spheres_double.diagram_context());
           const double tol = 2E-5;
           EXPECT_NEAR(q_sol.head<4>().squaredNorm(), 1, tol);
           EXPECT_NEAR(q_sol.segment<4>(7).squaredNorm(), 1, tol);
 
-          // Now check if both spheres are above the ground and within the box.
+          // Now check that both spheres are above the ground and within the
+          // box.
           EXPECT_GE(q_sol(6), radii[0] - tol);
           EXPECT_GE(q_sol(13), radii[1] - tol);
           EXPECT_LE(std::abs(q_sol(4)),
@@ -194,14 +194,14 @@ GTEST_TEST(TestStaticEquilibriumProblem, TwoSpheresWithinBin) {
           EXPECT_LE(std::abs(q_sol(12)),
                     bin_length - wall_size(1) / 2 - radii[1] + tol);
 
-          // Now check if the two spheres are not penetrating each other.
+          // Now check that the two spheres are not penetrating each other.
           EXPECT_GE((q_sol.segment<3>(4) - q_sol.segment<3>(11)).norm(),
                     radii[0] + radii[1] - tol);
         }
       };
 
   // Set the initial guess.
-  Eigen::VectorXd x_init(problem.prog().num_vars());
+  Eigen::VectorXd x_init(dut.prog().num_vars());
   x_init.setZero();
 
   // The intial poses for both spheres are above the ground.
@@ -210,8 +210,7 @@ GTEST_TEST(TestStaticEquilibriumProblem, TwoSpheresWithinBin) {
   q_init.segment<3>(4) << 0.2, 0, radii[0] + 0.6;
   q_init.segment<4>(7) << 1, 0, 0, 0;
   q_init.tail<3>() << -0.1, 0, radii[1] + 0.01;
-  problem.prog().SetDecisionVariableValueInVector(problem.q_vars(), q_init,
-                                                  &x_init);
+  dut.prog().SetDecisionVariableValueInVector(dut.q_vars(), q_init, &x_init);
   check_static_equilibrium_problem_solve(x_init);
 }  // namespace multibody
 }  // namespace multibody

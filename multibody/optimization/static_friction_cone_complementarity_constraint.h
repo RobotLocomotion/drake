@@ -14,9 +14,9 @@ namespace internal {
 /**
  * The nonlinear constraints to be imposed for static friction force. See
  * AddStaticFrictionConeComplementaryConstraint() for more details. The
- * nonlinear constraints are (1), (2), (4) and (6) in
+ * nonlinear constraints are (1) - (4) in
  * AddStaticFrictionConeComplementaryConstraint()
- * The bound variables for this constraint is x = [q; λ; α; β]
+ * The bound variable vector for this constraint is x = [q; λ; α; β]
  */
 class StaticFrictionConeComplementaryNonlinearConstraint
     : public solvers::Constraint {
@@ -25,23 +25,23 @@ class StaticFrictionConeComplementaryNonlinearConstraint
       StaticFrictionConeComplementaryNonlinearConstraint)
 
   /**
-   * See AddStaticFrictionConeComplementaryConstraint for details.
+   * See AddStaticFrictionConeComplementaryConstraint() for details.
    */
   StaticFrictionConeComplementaryNonlinearConstraint(
       const ContactWrenchEvaluator* contact_wrench_evaluator,
-      double complementary_tolerance);
+      double complementarity_tolerance);
 
   ~StaticFrictionConeComplementaryNonlinearConstraint() override {}
 
-  /** The slack variable for n_Wᵀ * f_W, see
+  /** The slack variable for n_Wᵀ * f_W. See
    * AddStaticFrictionConeComplementaryConstraint().*/
   const symbolic::Variable& alpha_var() const { return alpha_var_; }
 
-  /** The slack variable for sdf.see
+  /** The slack variable for sdf. See
    * AddStaticFrictionConeComplementaryConstraint(). */
   const symbolic::Variable& beta_var() const { return beta_var_; }
 
-  void UpdateComplementaryTolerance(double complementary_tolerance);
+  void UpdateComplementaryTolerance(double complementarity_tolerance);
 
   const ContactWrenchEvaluator& contact_wrench_evaluator() const {
     return *contact_wrench_evaluator_;
@@ -58,13 +58,13 @@ class StaticFrictionConeComplementaryNonlinearConstraint
 
   /**
    * Create a binding of the constraint, together with the bound variables
-   * x = [q; λ; α; β]. See StaticFrictionConeComplementaryNonlinearConstraint()
-   * constructor for more details.
+   * q, λ, α and β. See AddStaticFrictionConeComplementaryConstraint()
+   * for more details.
    */
   static solvers::Binding<
       internal::StaticFrictionConeComplementaryNonlinearConstraint>
   MakeBinding(const ContactWrenchEvaluator* contact_wrench_evaluator,
-              double complementary_tolerance,
+              double complementarity_tolerance,
               const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
               const Eigen::Ref<const VectorX<symbolic::Variable>>& lambda_vars);
 
@@ -84,10 +84,10 @@ class StaticFrictionConeComplementaryNonlinearConstraint
 };
 };  // namespace internal
 
-/** Adds the complementary constraint on the static friction force
+/** Adds the complementarity constraint on the static friction force
  * between a pair of contacts
  * |ft_W| <= μ * n_Wᵀ * f_W  (static friction force in the friction cone).
- * fn_W * sdf = 0 (complementary condition)
+ * fn_W * sdf = 0 (complementarity condition)
  * sdf >= 0 (no penetration)
  * where sdf stands for signed distance function, ft_W stands for the tangential
  * friction force expressed in the world frame.
@@ -95,29 +95,27 @@ class StaticFrictionConeComplementaryNonlinearConstraint
  * Mathematically, we add the following constraints to the optimization program
  * f_Wᵀ * ((μ² + 1)* n_W * n_Wᵀ - I) * f_W >= 0                    (1)
  * n_Wᵀ * f_W = α                                                  (2)
- * α >= 0                                                          (3)
- * sdf = β                                                         (4)
- * β >= 0                                                          (5)
- * 0 <= α * β <= ε                                                 (6)
+ * sdf(q) = β                                                         (3)
+ * 0 <= α * β <= ε                                                 (4)
+ * α >= 0                                                          (5)
+ * β >= 0                                                          (6)
  * the slack variables α and β are added to the optimization program as well.
  *
- * @param contact_wrench_evaluators_and_lambda The evaluators to compute the
- * contact wrench expressed in the world frame, together with λ used to
- * parameterize the contact wrench.
+ * @param contact_wrench_evaluator The evaluator to compute the
+ * contact wrench expressed in the world frame.
+ * @param complementarity_tolerance ε in the documentation above.
  * @param q_vars The decision variable for the generalized configuration q.
  * @param lambda_vars The decision variable to parameterize the contact wrench.
  * @param[in/out] prog The optimization program to which the constraint is
  * added.
- * @param complementary_tolerance ε in the documentation above.
- * @return binding The binding containing the nonlinear constraints
- * (1)(2)(4)(6).
+ * @return binding The binding containing the nonlinear constraints (1)-(4).
  * @pre Both `q_vars` and `lambda_vars` have been added to `prog` before calling
  * this function.
  */
 solvers::Binding<internal::StaticFrictionConeComplementaryNonlinearConstraint>
 AddStaticFrictionConeComplementaryConstraint(
     const ContactWrenchEvaluator* contact_wrench_evaluator,
-    double complementary_tolerance,
+    double complementarity_tolerance,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& lambda_vars,
     solvers::MathematicalProgram* prog);

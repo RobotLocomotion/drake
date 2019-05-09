@@ -1,4 +1,4 @@
-#include "drake/multibody/optimization/static_friction_cone_complementary_constraint.h"
+#include "drake/multibody/optimization/static_friction_cone_complementarity_constraint.h"
 
 #include <limits>
 
@@ -29,9 +29,9 @@ GTEST_TEST(StaticFrictionConeComplementaryNonlinearConstraint, TestEval) {
       &(dut.plant()), dut.get_mutable_plant_context(),
       std::make_pair(dut.sphere_geometry_ids()[0], dut.ground_geometry_id()));
 
-  double complementary_tolerance{1E-3};
+  double complementarity_tolerance{1E-3};
   internal::StaticFrictionConeComplementaryNonlinearConstraint constraint(
-      &contact_wrench_evaluator, complementary_tolerance);
+      &contact_wrench_evaluator, complementarity_tolerance);
 
   // Check the size of the constraint.
   EXPECT_EQ(constraint.num_outputs(), 4);
@@ -43,18 +43,18 @@ GTEST_TEST(StaticFrictionConeComplementaryNonlinearConstraint, TestEval) {
       CompareMatrices(constraint.lower_bound(), Eigen::Vector4d::Zero()));
   EXPECT_TRUE(
       CompareMatrices(constraint.upper_bound(),
-                      Eigen::Vector4d(kInf, 0, 0, complementary_tolerance)));
+                      Eigen::Vector4d(kInf, 0, 0, complementarity_tolerance)));
 
-  // Test update complementary tolerance.
-  complementary_tolerance = 1E-4;
-  constraint.UpdateComplementaryTolerance(complementary_tolerance);
+  // Test update complementarity tolerance.
+  complementarity_tolerance = 1E-4;
+  constraint.UpdateComplementaryTolerance(complementarity_tolerance);
 
-  // Check constraint bounds again after updating the complementary tolerance.
+  // Check constraint bounds again after updating the complementarity tolerance.
   EXPECT_TRUE(
       CompareMatrices(constraint.lower_bound(), Eigen::Vector4d::Zero()));
   EXPECT_TRUE(
       CompareMatrices(constraint.upper_bound(),
-                      Eigen::Vector4d(kInf, 0, 0, complementary_tolerance)));
+                      Eigen::Vector4d(kInf, 0, 0, complementarity_tolerance)));
 
   // Evaluates the constraint for some arbitrary x.
   Eigen::VectorXd x_val(constraint.num_vars());

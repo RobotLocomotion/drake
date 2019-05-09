@@ -6,6 +6,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/math/spatial_force.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
@@ -23,7 +24,7 @@ struct ContactWrench {
    * to Body B, measured in the world frame.
    */
   ContactWrench(BodyIndex bodyA_index_in, BodyIndex bodyB_index_in,
-                Eigen::Vector3d p_WCb_W_in, Vector6<double> F_Cb_W_in)
+                Eigen::Vector3d p_WCb_W_in, SpatialForce<double> F_Cb_W_in)
       : bodyA_index(bodyA_index_in),
         bodyB_index(bodyB_index_in),
         p_WCb_W(std::move(p_WCb_W_in)),
@@ -31,7 +32,7 @@ struct ContactWrench {
   BodyIndex bodyA_index;
   BodyIndex bodyB_index;
   Eigen::Vector3d p_WCb_W;
-  Vector6<double> F_Cb_W;
+  SpatialForce<double> F_Cb_W;
 };
 }  // namespace multibody
 }  // namespace drake

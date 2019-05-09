@@ -7,24 +7,40 @@
 
 #include "drake/multibody/optimization/contact_wrench.h"
 #include "drake/multibody/optimization/contact_wrench_evaluator.h"
-#include "drake/multibody/optimization/static_friction_cone_complementary_constraint.h"
+#include "drake/multibody/optimization/static_friction_cone_complementarity_constraint.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace multibody {
+/**
+ * Finds the static equilibrium pose of a robot through optimization.
+ * The constraints are
+ * 1. 0 = g(q) + Bu + ∑ᵢ JᵢᵀFᵢ_AB_W(λᵢ) (generalized force equals to 0).
+ * 2. Fᵢ_AB_W(λᵢ) is within the addmisible contact wrench (for example, contact
+ *    force is in the friction cone).
+ * 3. sdf(q) >= 0 (signed distance function is no smaller than 0, hence no
+ *    penetration.)
+ * 4. complementarity condition between the contact force and the signed
+ * distance.
+ * 5. q within the joint limit.
+ * TODO(hongkai.dai): add the bounds on the input u, and other position
+ * constraint (such as unit length constraint on quaternion).
+ */
 class StaticEquilibriumProblem {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StaticEquilibriumProblem)
 
   /**
    * @param plant The plant for which the static equilibrium posture is
-   * computed.
-   * @param context The context for `plant`.
+   * computed. @p plant should remain alive as long as this
+   * StaticEquilibriumProblem exists.
+   * @param context The context for `plant`. @p context should remain alive as
+   * long as this StaticEquilibriumProblem exists.
    * @param ignored_collision_pairs The contact between the pair of geometry in
    * `ignored_collision_pairs` will be ignored. We will not impose
    * non-penetration constraint between these pairs, and no contact wrench will
-   * be implied between these pairs.
+   * be applied between these pairs.
    */
   StaticEquilibriumProblem(
       const MultibodyPlant<AutoDiffXd>* plant,
@@ -55,7 +71,7 @@ class StaticEquilibriumProblem {
 
   /**
    * Updates the tolerance on all the complemntary constraints.
-   * The complementary constraint is relaxed as 0 ≤ α * β ≤ tol.
+   * The complementarity constraint is relaxed as 0 ≤ α * β ≤ tol.
    */
   void UpdateComplementaryTolerance(double tol);
 
@@ -73,7 +89,7 @@ class StaticEquilibriumProblem {
 
   std::vector<solvers::Binding<
       internal::StaticFrictionConeComplementaryNonlinearConstraint>>
-      static_friction_cone_complementary_nonlinear_constraints_;
+      static_friction_cone_complementarity_nonlinear_constraints_;
 };
 }  // namespace multibody
 }  // namespace drake

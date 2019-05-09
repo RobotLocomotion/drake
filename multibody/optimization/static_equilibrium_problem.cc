@@ -1,7 +1,7 @@
 #include "drake/multibody/optimization/static_equilibrium_problem.h"
 
 #include "drake/multibody/optimization/static_equilibrium_constraint.h"
-#include "drake/multibody/optimization/static_friction_cone_complementary_constraint.h"
+#include "drake/multibody/optimization/static_friction_cone_complementarity_constraint.h"
 
 namespace drake {
 namespace multibody {
@@ -16,6 +16,8 @@ StaticEquilibriumProblem::StaticEquilibriumProblem(
       prog_{owned_prog_.get()},
       q_vars_{prog_->NewContinuousVariables(plant->num_positions())},
       u_vars_{prog_->NewContinuousVariables(plant->num_actuated_dofs())} {
+  prog_->AddBoundingBoxConstraint(plant_->GetPositionLowerLimits(),
+                                  plant_->GetPositionUpperLimits(), q_vars_);
   // declare the contact force as decision variables, and pair each contact
   // force decision variable with the evaluator to compute the contact wrench.
   const auto& query_port = plant_->get_geometry_query_input_port();
@@ -48,15 +50,16 @@ StaticEquilibriumProblem::StaticEquilibriumProblem(
       plant_, context_, contact_wrench_evaluators_and_lambda_, q_vars_,
       u_vars_));
 
-  const double complementary_tol = 1E-3;
-  static_friction_cone_complementary_nonlinear_constraints_.reserve(
+  const double complementarity_tol = 1E-3;
+  static_friction_cone_complementarity_nonlinear_constraints_.reserve(
       contact_wrench_evaluators_and_lambda_.size());
   for (const auto& contact_wrench_evaluator_and_lambda :
        contact_wrench_evaluators_and_lambda_) {
-    static_friction_cone_complementary_nonlinear_constraints_.push_back(
+    static_friction_cone_complementarity_nonlinear_constraints_.push_back(
         AddStaticFrictionConeComplementaryConstraint(
-            contact_wrench_evaluator_and_lambda.first.get(), complementary_tol,
-            q_vars_, contact_wrench_evaluator_and_lambda.second, prog_));
+            contact_wrench_evaluator_and_lambda.first.get(),
+            complementarity_tol, q_vars_,
+            contact_wrench_evaluator_and_lambda.second, prog_));
   }
 }
 
@@ -99,33 +102,33 @@ std::vector<ContactWrench> StaticEquilibriumProblem::GetContactWrenchSolution(
     // contact, rather than all pairs of contact.
     Vector3<AutoDiffXd> p_WCb;
     const auto& contact_pair = contact_wrench_evaluator->geometry_id_pair();
-    BodyIndex bodyA_index, bodyB_index;
+    BodyIndex body_A_index, body_B_index;
     for (const auto& signed_distance_pair : signed_distance_pairs) {
       if (signed_distance_pair.id_A == contact_pair.first &&
           signed_distance_pair.id_B == contact_pair.second) {
-        const geometry::FrameId frame_A_id =
+        const geometry::FrameId frame_Fa_id =
             inspector.GetFrameId(signed_distance_pair.id_A);
-        const geometry::FrameId frame_B_id =
+        const geometry::FrameId frame_Fb_id =
             inspector.GetFrameId(signed_distance_pair.id_B);
-        const Frame<AutoDiffXd>& frameA =
-            plant_->GetBodyFromFrameId(frame_A_id)->body_frame();
-        const Frame<AutoDiffXd>& frameB =
-            plant_->GetBodyFromFrameId(frame_B_id)->body_frame();
-        bodyA_index = frameA.body().index();
-        bodyB_index = frameB.body().index();
-        // Define Body B's frame as B, the geometry attached to body B has frame
-        // Gb, and the witness point on geometry Ga is Cb.
-        const auto& X_BGb = inspector.X_FG(signed_distance_pair.id_B);
+        const Frame<AutoDiffXd>& frame_Fa =
+            plant_->GetBodyFromFrameId(frame_Fa_id)->body_frame();
+        const Frame<AutoDiffXd>& frame_Fb =
+            plant_->GetBodyFromFrameId(frame_Fb_id)->body_frame();
+        body_A_index = frame_Fa.body().index();
+        body_B_index = frame_Fb.body().index();
+        // Define Body B's frame as Fb, the geometry attached to body B has
+        // frame Gb, and the witness point on geometry Gb is Cb.
+        const auto& X_FbGb = inspector.X_FG(signed_distance_pair.id_B);
         const auto& p_GbCb = signed_distance_pair.p_BCb;
-        const Vector3<AutoDiffXd> p_BCb = X_BGb * p_GbCb;
-        plant_->CalcPointsPositions(*context_, frameB, p_BCb,
+        const Vector3<AutoDiffXd> p_FbCb = X_FbGb * p_GbCb;
+        plant_->CalcPointsPositions(*context_, frame_Fb, p_FbCb,
                                     plant_->world_frame(), &p_WCb);
         break;
       }
     }
-    contact_wrench_sol.emplace_back(bodyA_index, bodyB_index,
-                                    math::autoDiffToValueMatrix(p_WCb),
-                                    Vector6<double>(F_Cb_W));
+    contact_wrench_sol.emplace_back(
+        body_A_index, body_B_index, math::autoDiffToValueMatrix(p_WCb),
+        SpatialForce<double>(Vector6<double>(F_Cb_W)));
   }
   return contact_wrench_sol;
 }
@@ -133,7 +136,7 @@ std::vector<ContactWrench> StaticEquilibriumProblem::GetContactWrenchSolution(
 void StaticEquilibriumProblem::UpdateComplementaryTolerance(double tol) {
   DRAKE_DEMAND(tol >= 0);
   for (const auto& binding :
-       static_friction_cone_complementary_nonlinear_constraints_) {
+       static_friction_cone_complementarity_nonlinear_constraints_) {
     binding.evaluator()->UpdateComplementaryTolerance(tol);
   }
 }

@@ -1,4 +1,4 @@
-#include "drake/multibody/optimization/static_friction_cone_complementary_constraint.h"
+#include "drake/multibody/optimization/static_friction_cone_complementarity_constraint.h"
 
 #include <limits>
 
@@ -14,32 +14,33 @@ namespace internal {
 StaticFrictionConeComplementaryNonlinearConstraint::
     StaticFrictionConeComplementaryNonlinearConstraint(
         const ContactWrenchEvaluator* contact_wrench_evaluator,
-        double complementary_tolerance)
-    : solvers::Constraint(4,
-                          contact_wrench_evaluator->plant().num_positions() +
-                              contact_wrench_evaluator->num_lambda() + 2,
-                          Eigen::Vector4d::Zero(),
-                          Eigen::Vector4d(kInf, 0, 0, complementary_tolerance)),
+        double complementarity_tolerance)
+    : solvers::Constraint(
+          4,
+          contact_wrench_evaluator->plant().num_positions() +
+              contact_wrench_evaluator->num_lambda() + 2,
+          Eigen::Vector4d::Zero(),
+          Eigen::Vector4d(kInf, 0, 0, complementarity_tolerance)),
       contact_wrench_evaluator_{contact_wrench_evaluator},
       alpha_var_{"alpha"},
       beta_var_{"beta"} {}
 
 void StaticFrictionConeComplementaryNonlinearConstraint::
-    UpdateComplementaryTolerance(double complementary_tolerance) {
+    UpdateComplementaryTolerance(double complementarity_tolerance) {
   Eigen::Vector4d upper_bound = this->upper_bound();
-  upper_bound(3) = complementary_tolerance;
+  upper_bound(3) = complementarity_tolerance;
   UpdateUpperBound(upper_bound);
 }
 
 solvers::Binding<internal::StaticFrictionConeComplementaryNonlinearConstraint>
 StaticFrictionConeComplementaryNonlinearConstraint::MakeBinding(
     const ContactWrenchEvaluator* contact_wrench_evaluator,
-    double complementary_tolerance,
+    double complementarity_tolerance,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& lambda_vars) {
   auto constraint =
       std::make_shared<StaticFrictionConeComplementaryNonlinearConstraint>(
-          contact_wrench_evaluator, complementary_tolerance);
+          contact_wrench_evaluator, complementarity_tolerance);
   VectorX<symbolic::Variable> bound_vars(constraint->num_vars());
   bound_vars << q_vars, lambda_vars, constraint->alpha_var(),
       constraint->beta_var();
@@ -91,8 +92,6 @@ void StaticFrictionConeComplementaryNonlinearConstraint::DoEval(
   const std::vector<geometry::SignedDistancePair<AutoDiffXd>>
       signed_distance_pairs =
           query_object.ComputeSignedDistancePairwiseClosestPoints();
-  // const geometry::SceneGraphInspector<AutoDiffXd>& inspector =
-  //    query_object.inspector();
   bool found_geometry_pair = false;
   for (const auto& signed_distance_pair : signed_distance_pairs) {
     if (signed_distance_pair.id_A ==
@@ -149,14 +148,14 @@ void StaticFrictionConeComplementaryNonlinearConstraint::DoEval(
 solvers::Binding<internal::StaticFrictionConeComplementaryNonlinearConstraint>
 AddStaticFrictionConeComplementaryConstraint(
     const ContactWrenchEvaluator* contact_wrench_evaluator,
-    double complementary_tolerance,
+    double complementarity_tolerance,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& lambda_vars,
     solvers::MathematicalProgram* prog) {
   // Create the nonlinear binding.
   auto nonlinear_binding =
       internal::StaticFrictionConeComplementaryNonlinearConstraint::MakeBinding(
-          contact_wrench_evaluator, complementary_tolerance, q_vars,
+          contact_wrench_evaluator, complementarity_tolerance, q_vars,
           lambda_vars);
   // Add the variable α,β to the program.
   const Vector2<symbolic::Variable> alpha_beta_var(
