@@ -28,7 +28,6 @@ class PlanSender : public systems::LeafSystem<double> {
                        systems::State<double>* state) const;
   mutable std::vector<double> plan_start_times_{};
   mutable std::vector<PlanData> plan_data_list_{};
-  mutable int current_plan_idx_{-1};
   mutable int num_plans_{0};
   systems::AbstractStateIndex abstract_state_index_{-1};
   int input_port_idx_q_{-1};

@@ -118,7 +118,7 @@ systems::EventStatus PlanSender::Initialize(const Context<double>& context,
   PrintStlVector(plan_start_times_);
 
   // set AbstractState (plan_index) to -1
-  state->get_mutable_abstract_state().get_mutable_value(0).set_value<int>(-1);
+  state->get_mutable_abstract_state().get_mutable_value(0).set_value<int>(0);
 
   return systems::EventStatus::Succeeded();
 };
@@ -133,15 +133,12 @@ void PlanSender::DoCalcNextUpdateTime(
   DRAKE_THROW_UNLESS(std::isinf(*time));
 
   double t = context.get_time();
+  const int& current_plan_idx = context.get_abstract_state<int>(0);
   //  cout << t << " DoCalcNextUpdateTime called" << endl;
-  if (current_plan_idx_ < num_plans_ - 1) {
-    /*
-     * DoCalcNextUpdateTime is called at t = -eps. That's when the first plan
-     * should be scheduled.
-     */
-    if (t < 0 || t >= plan_start_times_[current_plan_idx_ + 1]) {
+  if (current_plan_idx < num_plans_ - 1) {
+    if (t >= plan_start_times_[current_plan_idx + 1]) {
       cout << "Adds event at time " << t << endl;
-      *time = t < 0 ? 0 : t;
+      *time = t;
       systems::EventCollection<systems::UnrestrictedUpdateEvent<double>>&
           uu_events = events->get_mutable_unrestricted_update_events();
       uu_events.add_event(
@@ -150,11 +147,8 @@ void PlanSender::DoCalcNextUpdateTime(
               [this](const Context<double>& context,
                      const systems::UnrestrictedUpdateEvent<double>&,
                      State<double>* x) {
-                this->UpdatePlanIndex(context, &*x);
+                this->UpdatePlanIndex(context, x);
               }));
-
-      // update "unregistered" states
-      current_plan_idx_++;
     }
   }
 }
@@ -173,9 +167,11 @@ double PlanSender::get_all_plans_duration() const {
 
 void PlanSender::CalcPlan(const drake::systems::Context<double>& context,
                           PlanData* output_plan_data) const {
-  cout << "Plan " << current_plan_idx_
+  const int& current_plan_idx = context.get_abstract_state<int>(0);
+
+  cout << "Plan " << current_plan_idx
        << " has started at t=" << context.get_time() << endl;
-  *output_plan_data = plan_data_list_[current_plan_idx_];
+  *output_plan_data = plan_data_list_[current_plan_idx];
 };
 
 void PlanSender::UpdatePlanIndex(const systems::Context<double>& context,
@@ -184,8 +180,6 @@ void PlanSender::UpdatePlanIndex(const systems::Context<double>& context,
                          .get_mutable_value(0)
                          .get_mutable_value<int>();
   state_value++;
-  cout << "current_plan_idx " << current_plan_idx_ << endl;
-  cout << "abstract state " << state_value << endl;
 };
 
 }  // namespace robot_plan_runner
