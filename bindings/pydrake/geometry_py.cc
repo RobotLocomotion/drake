@@ -90,6 +90,7 @@ PYBIND11_MODULE(geometry, m) {
           doc.QueryObject.inspector.doc)
       .def("ComputeSignedDistancePairwiseClosestPoints",
           &QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints,
+          py::arg("max_distance") = std::numeric_limits<double>::infinity(),
           doc.QueryObject.ComputeSignedDistancePairwiseClosestPoints.doc)
       .def("ComputePointPairPenetration",
           &QueryObject<T>::ComputePointPairPenetration,

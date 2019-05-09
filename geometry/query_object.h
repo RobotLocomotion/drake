@@ -223,13 +223,13 @@ class QueryObject {
    <!-- TODO(SeanCurtis-TRI): Support queries of halfspace-A, where A is _not_ a
    halfspace. See https://github.com/RobotLocomotion/drake/issues/10905 -->
 
-   @retval near_pairs The signed distance for all unfiltered geometry pairs.
-  */
-  // TODO(hongkai.dai): add a distance bound as an optional input, such that the
-  // function doesn't return the pairs whose signed distance is larger than the
-  // distance bound.
-  std::vector<SignedDistancePair<T>>
-  ComputeSignedDistancePairwiseClosestPoints() const;
+   @param max_distance  The maximum distance at which distance data is reported.
+
+   @returns The signed distance for all unfiltered geometry pairs whose distance
+            is less than or equal to `max_distance`.  */
+  std::vector<SignedDistancePair<T>> ComputeSignedDistancePairwiseClosestPoints(
+      const double max_distance =
+          std::numeric_limits<double>::infinity()) const;
 
   // TODO(DamrongGuoy): Improve and refactor documentation of
   // ComputeSignedDistanceToPoint(). Move the common sections into Signed

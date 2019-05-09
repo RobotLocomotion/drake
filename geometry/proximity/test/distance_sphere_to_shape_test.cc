@@ -72,6 +72,8 @@ using math::RotationMatrix;
 using math::RotationMatrixd;
 using std::make_shared;
 
+constexpr double kInf = std::numeric_limits<double>::infinity();
+
 // TODO(SeanCurtis-TRI): Troll through proximity_engine_test and pull/remove all
 // tests there that more rightly belong here.
 
@@ -525,7 +527,7 @@ class CallbackScalarSupport : public ::testing::Test {
         collision_filter_(),
         X_WGs_(),
         results_(),
-        data_(&geometry_map_, &collision_filter_, &X_WGs_, &results_),
+        data_(&geometry_map_, &collision_filter_, &X_WGs_, kInf, &results_),
         spheres_() {}
 
  protected:
@@ -673,8 +675,9 @@ GTEST_TEST(Callback, ScalarSupportWithFilters) {
   data_B.write_to(&box_B);
 
   std::vector<SignedDistancePair<T>> results;
-  CallbackData<T> data(&geometry_map, &collision_filter, &X_WGs, &results);
-  double threshold = std::numeric_limits<double>::infinity();
+  CallbackData<T> data(&geometry_map, &collision_filter, &X_WGs, kInf,
+                       &results);
+  double threshold = kInf;
   EXPECT_NO_THROW(Callback<T>(&box_A, &box_B, &data, threshold));
   EXPECT_EQ(results.size(), 0u);
 }
@@ -695,7 +698,8 @@ GTEST_TEST(Callback, RespectCollisionFiltering) {
   collision_filter.AddGeometry(data_A.encoding());
   collision_filter.AddGeometry(data_B.encoding());
 
-  CallbackData<double> data{&geometry_map, &collision_filter, &X_WGs, &results};
+  CallbackData<double> data{&geometry_map, &collision_filter, &X_WGs, kInf,
+                            &results};
 
   // Case: No collision filters added should produce a single result.
   double threshold = std::numeric_limits<double>::max();
@@ -731,7 +735,7 @@ GTEST_TEST(Callback, ABOrdering) {
 
   // Pass in the two geometries in order (A, B).
   std::vector<SignedDistancePair<double>> results1;
-  CallbackData<double> data1{&geometry_map, &collision_filter, &X_WGs,
+  CallbackData<double> data1{&geometry_map, &collision_filter, &X_WGs, kInf,
                              &results1};
   Callback<double>(&sphere_A, &sphere_B, &data1, threshold);
   ASSERT_EQ(results1.size(), 1u);
@@ -739,7 +743,7 @@ GTEST_TEST(Callback, ABOrdering) {
 
   // Pass in the two geometries in order (B, A).
   std::vector<SignedDistancePair<double>> results2;
-  CallbackData<double> data2{&geometry_map, &collision_filter, &X_WGs,
+  CallbackData<double> data2{&geometry_map, &collision_filter, &X_WGs, kInf,
                              &results2};
   Callback<double>(&sphere_B, &sphere_A, &data2, threshold);
   ASSERT_EQ(results2.size(), 1u);
@@ -751,6 +755,76 @@ GTEST_TEST(Callback, ABOrdering) {
   EXPECT_TRUE(CompareMatrices(results1[0].p_ACa, results2[0].p_ACa));
   EXPECT_TRUE(CompareMatrices(results1[0].nhat_BA_W, results2[0].nhat_BA_W));
 }
+
+// Tests that the max distance parameter affects the results returned. Because
+// the max_distance parameter doesn't depend on shape type (it's applied
+// strictly to the result of shape-shape computations -- it depends *only* on
+// the distance value), it is sufficient to test with a representative shape
+// pair (i.e., sphere-sphere). (Also confirms that the callback max_distance is
+// set.)
+template <typename T>
+class CallbackMaxDistanceTest : public ::testing::Test {};
+TYPED_TEST_CASE(CallbackMaxDistanceTest, ScalarTypes);
+
+TYPED_TEST(CallbackMaxDistanceTest, MaxDistanceThreshold) {
+  using T = TypeParam;
+
+  std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
+                                       GeometryId::get_new_id()};
+  CollisionFilterLegacy collision_filter;
+
+  EncodedData data_A(GeometryIndex{0}, true);
+  EncodedData data_B(GeometryIndex{1}, true);
+  collision_filter.AddGeometry(data_A.encoding());
+  collision_filter.AddGeometry(data_B.encoding());
+
+  // Two spheres with arbitrary radii. One is at the origin and the other is
+  // placed at two distances: one just inside the max distance and one just
+  // outside.
+  const double kMaxDistance = 1.0;
+  const double radius_A = 0.5;
+  const double radius_B = 0.4;
+  const double kEps = 2 * std::numeric_limits<double>::epsilon();
+  CollisionObjectd sphere_A(make_shared<fcl::Sphered>(radius_A));
+  data_A.write_to(&sphere_A);
+  CollisionObjectd sphere_B(make_shared<fcl::Sphered>(radius_B));
+  data_B.write_to(&sphere_B);
+  const Vector3<T> p_WB = Vector3<T>(2, 3, 4).normalized() *
+      (kMaxDistance + radius_A + radius_B - kEps);
+  std::vector<Isometry3<T>> X_WGs{Isometry3<T>::Identity(),
+                                  Isometry3<T>{Translation3<T>{p_WB}}};
+
+  // Case: just inside the max distance.
+  {
+    std::vector<SignedDistancePair<T>> results;
+    CallbackData<T> data(&geometry_map, &collision_filter, &X_WGs, kMaxDistance,
+                         &results);
+    // NOTE: When done, this should match kMaxDistance.
+    double threshold = kInf;
+    EXPECT_NO_THROW(Callback<T>(&sphere_A, &sphere_B, &data, threshold));
+    EXPECT_EQ(results.size(), 1u);
+    EXPECT_EQ(threshold, kMaxDistance);
+  }
+
+  // Case: just outside the max distance.
+  {
+    X_WGs[1] = Translation3<T>{Vector3<T>(2, 3, 4).normalized() *
+                        (kMaxDistance + radius_A + radius_B + kEps)};
+    std::vector<SignedDistancePair<T>> results;
+    CallbackData<T> data(&geometry_map, &collision_filter, &X_WGs, kMaxDistance,
+                         &results);
+    // NOTE: When done, this should match kMaxDistance.
+    double threshold = kInf;
+    EXPECT_NO_THROW(Callback<T>(&sphere_A, &sphere_B, &data, threshold));
+    EXPECT_EQ(results.size(), 0u);
+    EXPECT_EQ(threshold, kMaxDistance);
+  }
+}
+
+// TODO(SeanCurtis-TRI): Ostensibly, setting the threshold in the callback to
+// kMaxDistance should reduce the number of pairs that are passed into the
+// callback from the broadphase pass; produce a test that confirms this
+// optimization.
 
 }  // namespace
 }  // namespace shape_distance
