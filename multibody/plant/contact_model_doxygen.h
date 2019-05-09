@@ -67,54 +67,6 @@
  mathematical underpinnings of the implemented model. The practical guide should
  be sufficient for most users.
 
- Next topic: @ref contact_engineering
- Next topic: @ref contact_spec
-*/
-
-/** 
- @defgroup contact_spec Definition of contact
- @ingroup drake_contacts
-
- Before getting into the details of how contacts are detected and responses are
- modeled, it is worthwhile to define what a contact means to Drake.
-
- First, contact _conceptually_ occurs between two _surfaces_, one on each of
- two independently moving _bodies_. The contact produces _forces_ on those two
- surfaces, which can then affect the motion of the bodies.
-
- This document discusses a _compliant_ contact model. In compliant models, the
- bodies are considered rigid with a thin, deformable shell. The
- collision geometry represents an object in its undeformed state. As two objects
- collide, the contact forces cause them to deform. Compliant models compute
- the forces that would cause the deformation. The deformed geometry is _not_
- modeled explicitly. Instead, the contact forces are computed based on the
- degree of penetration of the non-deforming collision geometry; greater
- penetration implies larger contact forces.
- One can think of largely rigid objects which have slightly deformable surfaces.
- For this model to be useful in practice, the deformations should be small
- relative to the whole body, so that we can (a) use simple models for the
- relationship between deformation and forces, and (b) neglect the change in mass
- properties induced by the deformation. As such, all discussion of collision
- geometry/elements refers to this _undeformed_ geometry.
-
- Contacts are defined in terms of these collision Element instances and _not_
- RigidBody instances. For Drake's purposes, a "contact":
-
- - describes a relationship between two drake::multibody::collision::Element
-   instances, denoted elements `A` and `B`,
- - only exists if the Element instances overlap,
- - quantifies the degree that the two Element instances are overlapping,
- - is characterized by a single contact point and a normal direction that are
-   used to define a _contact frame_ `C`, and
- - leads to the generation of two equal-but-opposite forces acting on the
-   RigidBody instances to which the corresponding Elements belong.
-
- Handling physical contact is decomposed into (1) the detection and
- quantification of overlap (penetration) through the use of geometric techniques
- applied to collision geometry, and (2) the generation of the resultant
- forces based on models of material and surface properties resulting in
- deformation and frictional forces.
-
  Next topic: @ref contact_geometry
 */
 
@@ -129,16 +81,19 @@
  noting that some of these properties are considered _problems_ yet to be
  resolved and should not necessarily be considered desirable.
 
- -# Between any two collision Elements, only a _single_ contact will be
- reported.
- -# Contacts are reported as contact at a _point_. (This is a very reasonable
- assumption for smooth convex shapes such as spheres and ellipsoids where
- relative motion must inevitably lead to initial contact at a single point.)
+ -# Between any two collision geometries, only a _single_ contact will be
+ reported. This pair will contain points `Ac` and `Bc` as defined in @ref
+ point_contact.
+ -# Contacts are reported as a point pair. A PenetrationAsPointPair in Drake.
  -# Surface-to-surface contacts (such as a block sitting on a plane) are
  unfortunately still limited to a single contact point, typically located at
  the point of deepest penetration. (That point will necessarily change from step
  to step in an essentially non-physical manner that is likely to cause
- difficulties.)
+ difficulties.) Our contact solver has shown to be stable even under these
+ conditions. However it is recommended to emulate multi-point contact by adding
+ a collection of spheres covering the contact surfaces of interest. Refer to
+ the example in `drake/examples/inclined_plane_with_body.cc` for a demonstration
+ of this strategy.
  -# A contact _normal_ is determined that approximates the mutual normal of
  the contacting surfaces at the contact point.
 
