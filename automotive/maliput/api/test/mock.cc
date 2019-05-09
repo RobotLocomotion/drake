@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/automotive/maliput/api/branch_point.h"
+#include "drake/automotive/maliput/api/intersection.h"
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/rules/phase_ring.h"
@@ -146,15 +147,36 @@ class MockPhaseProvider final : public rules::PhaseProvider {
   }
 };
 
+class MockIntersection final : public Intersection {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MockIntersection)
+  explicit MockIntersection(const Intersection::Id& id,
+                            const rules::PhaseRing::Id& ring_id)
+      : Intersection(id, {}, ring_id) {}
+
+ private:
+  optional<rules::PhaseProvider::Result> Phase() const override {
+    return nullopt;
+  }
+
+  void SetPhase(const api::rules::Phase::Id&) override {}
+};
+
 class MockIntersectionBook final : public IntersectionBook {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MockIntersectionBook);
-  MockIntersectionBook() {}
+  MockIntersectionBook()
+      : intersection_(Intersection::Id("Mock"),
+                      rules::PhaseRing::Id("MockRing")) {}
 
  private:
-  api::Intersection* DoGetIntersection(const api::Intersection::Id&) {
+  api::Intersection* DoGetIntersection(const api::Intersection::Id& id) {
+    if (id == intersection_.id()) {
+      return &intersection_;
+    }
     return nullptr;
   }
+  MockIntersection intersection_;
 };
 
 }  // namespace

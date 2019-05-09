@@ -30,7 +30,7 @@ class RoadNetwork {
   RoadNetwork(std::unique_ptr<const RoadGeometry> road_geometry,
               std::unique_ptr<const rules::RoadRulebook> rulebook,
               std::unique_ptr<const rules::TrafficLightBook> traffic_light_book,
-              std::unique_ptr<const IntersectionBook> intersection_book,
+              std::unique_ptr<IntersectionBook> intersection_book,
               std::unique_ptr<rules::PhaseRingBook> phase_ring_book,
               std::unique_ptr<rules::RuleStateProvider> rule_state_provider,
               std::unique_ptr<rules::PhaseProvider> phase_provider);
@@ -45,7 +45,7 @@ class RoadNetwork {
     return traffic_light_book_.get();
   }
 
-  const IntersectionBook* intersection_book() const {
+  IntersectionBook* intersection_book() const {
     return intersection_book_.get();
   }
 
@@ -65,7 +65,7 @@ class RoadNetwork {
   std::unique_ptr<const RoadGeometry> road_geometry_;
   std::unique_ptr<const rules::RoadRulebook> rulebook_;
   std::unique_ptr<const rules::TrafficLightBook> traffic_light_book_;
-  std::unique_ptr<const IntersectionBook> intersection_book_;
+  std::unique_ptr<IntersectionBook> intersection_book_;
   std::unique_ptr<rules::PhaseRingBook> phase_ring_book_;
   std::unique_ptr<rules::RuleStateProvider> rule_state_provider_;
   std::unique_ptr<rules::PhaseProvider> phase_provider_;
