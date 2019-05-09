@@ -91,7 +91,12 @@ class TestGeneral(unittest.TestCase):
         system = Adder(3, 10)
         self.assertEqual(system.num_input_ports(), 3)
         self.assertEqual(system.num_output_ports(), 1)
-        self.assertEqual(system.GetInputPort("u1").get_index(), 1)
+        u1 = system.GetInputPort("u1")
+        self.assertEqual(u1.get_name(), "u1")
+        self.assertIn("u1", u1.GetFullDescription())
+        self.assertEqual(u1.get_index(), 1)
+        self.assertEqual(u1.size(), 10)
+        self.assertIsNotNone(u1.ticket())
         self.assertEqual(system.GetOutputPort("sum").get_index(), 0)
         # TODO(eric.cousineau): Consolidate the main API tests for `System`
         # to this test point.

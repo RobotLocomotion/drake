@@ -684,7 +684,68 @@ Note: The above is for the C++ documentation. For Python, use
         // Abstract state.
         .def("DeclareAbstractState", &LeafSystemPublic::DeclareAbstractState,
             // Keep alive, ownership: `AbstractValue` keeps `self` alive.
-            py::keep_alive<2, 1>(), doc.LeafSystem.DeclareAbstractState.doc);
+            py::keep_alive<2, 1>(), doc.LeafSystem.DeclareAbstractState.doc)
+        // Dependency tickets that do not have an index argument.
+        .def_static("accuracy_ticket", &SystemBase::accuracy_ticket,
+            doc.SystemBase.accuracy_ticket.doc)
+        .def_static("all_input_ports_ticket",
+            &SystemBase::all_input_ports_ticket,
+            doc.SystemBase.all_input_ports_ticket.doc)
+        .def_static("all_parameters_ticket", &SystemBase::all_parameters_ticket,
+            doc.SystemBase.all_parameters_ticket.doc)
+        .def_static("all_sources_ticket", &SystemBase::all_sources_ticket,
+            doc.SystemBase.all_sources_ticket.doc)
+        .def_static("all_state_ticket", &SystemBase::all_state_ticket,
+            doc.SystemBase.all_state_ticket.doc)
+        .def_static("configuration_ticket", &SystemBase::configuration_ticket,
+            doc.SystemBase.configuration_ticket.doc)
+        .def_static(
+            "ke_ticket", &SystemBase::ke_ticket, doc.SystemBase.ke_ticket.doc)
+        .def_static("kinematics_ticket", &SystemBase::kinematics_ticket,
+            doc.SystemBase.kinematics_ticket.doc)
+        .def_static("nothing_ticket", &SystemBase::nothing_ticket,
+            doc.SystemBase.nothing_ticket.doc)
+        .def_static(
+            "pa_ticket", &SystemBase::pa_ticket, doc.SystemBase.pa_ticket.doc)
+        .def_static(
+            "pc_ticket", &SystemBase::pc_ticket, doc.SystemBase.pc_ticket.doc)
+        .def_static(
+            "pe_ticket", &SystemBase::pe_ticket, doc.SystemBase.pe_ticket.doc)
+        .def_static(
+            "pn_ticket", &SystemBase::pn_ticket, doc.SystemBase.pn_ticket.doc)
+        .def_static("pnc_ticket", &SystemBase::pnc_ticket,
+            doc.SystemBase.pnc_ticket.doc)
+        .def_static(
+            "q_ticket", &SystemBase::q_ticket, doc.SystemBase.q_ticket.doc)
+        .def_static("time_ticket", &SystemBase::time_ticket,
+            doc.SystemBase.time_ticket.doc)
+        .def_static(
+            "v_ticket", &SystemBase::v_ticket, doc.SystemBase.v_ticket.doc)
+        .def_static(
+            "xa_ticket", &SystemBase::xa_ticket, doc.SystemBase.xa_ticket.doc)
+        .def_static(
+            "xc_ticket", &SystemBase::xc_ticket, doc.SystemBase.xc_ticket.doc)
+        .def_static("xcdot_ticket", &SystemBase::xcdot_ticket,
+            doc.SystemBase.xcdot_ticket.doc)
+        .def_static(
+            "xd_ticket", &SystemBase::xd_ticket, doc.SystemBase.xd_ticket.doc)
+        .def_static(
+            "z_ticket", &SystemBase::z_ticket, doc.SystemBase.z_ticket.doc)
+        // Dependency tickets that do have an index argument.
+        // (We do not bind output_port_ticket because it's marked "internal".)
+        .def("abstract_parameter_ticket",
+            &SystemBase::abstract_parameter_ticket, py::arg("index"),
+            doc.SystemBase.abstract_parameter_ticket.doc)
+        .def("abstract_state_ticket", &SystemBase::abstract_state_ticket,
+            py::arg("index"), doc.SystemBase.abstract_state_ticket.doc)
+        .def("cache_entry_ticket", &SystemBase::cache_entry_ticket,
+            py::arg("index"), doc.SystemBase.cache_entry_ticket.doc)
+        .def("discrete_state_ticket", &SystemBase::discrete_state_ticket,
+            py::arg("index"), doc.SystemBase.discrete_state_ticket.doc)
+        .def("input_port_ticket", &SystemBase::input_port_ticket,
+            py::arg("index"), doc.SystemBase.input_port_ticket.doc)
+        .def("numeric_parameter_ticket", &SystemBase::numeric_parameter_ticket,
+            py::arg("index"), doc.SystemBase.numeric_parameter_ticket.doc);
     AddDeprecatedProtectedAliases(&leaf_system_cls,
         {"DeclareAbstractInputPort", "DeclareAbstractParameter",
             "DeclareNumericParameter", "DeclareAbstractOutputPort",
