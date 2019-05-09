@@ -169,12 +169,23 @@ class TestGeneral(unittest.TestCase):
         np.testing.assert_equal(
             context.get_discrete_state_vector().CopyToVector(), 3 * x)
 
+        def check_abstract_value_zero(context, expected_value):
+            # Check through Context, State, and AbstractValues APIs.
+            self.assertEqual(context.get_abstract_state(index=0).get_value(),
+                             expected_value)
+            self.assertEqual(context.get_abstract_state().get_value(
+                index=0).get_value(), expected_value)
+            self.assertEqual(context.get_state().get_abstract_state()
+                             .get_value(index=0).get_value(), expected_value)
+
         context.SetAbstractState(index=0, value=True)
-        value = context.get_abstract_state(0)
-        self.assertTrue(value.get_value())
+        check_abstract_value_zero(context, True)
         context.SetAbstractState(index=0, value=False)
-        value = context.get_abstract_state(0)
-        self.assertFalse(value.get_value())
+        check_abstract_value_zero(context, False)
+        value = context.get_mutable_state().get_mutable_abstract_state()\
+            .get_mutable_value(index=0)
+        value.set_value(True)
+        check_abstract_value_zero(context, True)
 
     def test_event_api(self):
         # TriggerType - existence check.
