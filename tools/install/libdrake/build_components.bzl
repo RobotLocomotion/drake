@@ -61,6 +61,7 @@ LIBDRAKE_COMPONENTS = [
     "//examples/compass_gait:compass_gait_vector_types",  # unpackaged
     "//examples/manipulation_station:manipulation_station",  # unpackaged
     "//examples/manipulation_station:manipulation_station_hardware_interface",  # unpackaged  # noqa
+    "//examples/pendulum:pendulum_geometry",  # unpackaged
     "//examples/pendulum:pendulum_plant",  # unpackaged
     "//examples/pendulum:pendulum_vector_types",  # unpackaged
     "//examples/quadrotor:quadrotor_plant",  # unpackaged
@@ -79,6 +80,11 @@ LIBDRAKE_COMPONENTS = [
     "//manipulation/kuka_iiwa",
     "//manipulation/perception",
     "//manipulation/planner",
+    "//manipulation/robot_plan_runner:controller_systems",  # unpackaged
+    "//manipulation/robot_plan_runner:plan_runner_hardware_interface",  # unpackaged  # noqa
+    "//manipulation/robot_plan_runner:plan_sender",  # unpackaged
+    "//manipulation/robot_plan_runner:robot_plan_runner",  # unpackaged
+    "//manipulation/robot_plan_runner:robot_plans",  # unpackaged
     "//manipulation/schunk_wsg",
     "//manipulation/util",
     "//math",
@@ -96,6 +102,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/parsing",
     "//multibody/plant",
     "//multibody/plant:contact_results_to_lcm",  # unpackaged
+    "//multibody/topology:multibody_graph",  # unpackaged
     "//multibody/tree",
     "//perception",
     "//solvers",
