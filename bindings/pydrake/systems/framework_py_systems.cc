@@ -540,12 +540,17 @@ Note: The above is for the C++ documentation. For Python, use
             py::arg("model_vector"), doc.LeafSystem.DeclareNumericParameter.doc)
         .def("DeclareAbstractOutputPort",
             WrapCallbacks([](PyLeafSystem* self, const std::string& name,
-                              AllocCallback arg1,
-                              CalcCallback arg2) -> const OutputPort<T>& {
-              return self->DeclareAbstractOutputPort(name, arg1, arg2);
+                              AllocCallback arg1, CalcCallback arg2,
+                              const std::set<DependencyTicket>& arg3)
+                              -> const OutputPort<T>& {
+              return self->DeclareAbstractOutputPort(name, arg1, arg2, arg3);
             }),
             py_reference_internal, py::arg("name"), py::arg("alloc"),
-            py::arg("calc"))
+            py::arg("calc"),
+            py::arg("prerequisites_of_calc") =
+                std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
+            doc.LeafSystem.DeclareAbstractOutputPort
+                .doc_4args_name_alloc_function_calc_function_prerequisites_of_calc)
         .def("DeclareAbstractOutputPort",
             WrapCallbacks([](PyLeafSystem* self, AllocCallback arg1,
                               CalcCallback arg2) -> const OutputPort<T>& {
@@ -566,13 +571,19 @@ Note: The above is for the C++ documentation. For Python, use
             py::arg("random_type") = nullopt,
             doc.LeafSystem.DeclareVectorInputPort.doc_3args)
         .def("DeclareVectorOutputPort",
-            WrapCallbacks([](PyLeafSystem* self, const std::string& name,
-                              const BasicVector<T>& arg1,
-                              CalcVectorCallback arg2) -> const OutputPort<T>& {
-              return self->DeclareVectorOutputPort(name, arg1, arg2);
-            }),
+            WrapCallbacks(
+                [](PyLeafSystem* self, const std::string& name,
+                    const BasicVector<T>& arg1, CalcVectorCallback arg2,
+                    const std::set<DependencyTicket>& arg3)
+                    -> const OutputPort<T>& {
+                  return self->DeclareVectorOutputPort(name, arg1, arg2, arg3);
+                }),
             py_reference_internal, py::arg("name"), py::arg("model_value"),
-            py::arg("calc"))
+            py::arg("calc"),
+            py::arg("prerequisites_of_calc") =
+                std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
+            doc.LeafSystem.DeclareVectorOutputPort
+                .doc_4args_name_model_vector_vector_calc_function_prerequisites_of_calc)
         .def("DeclareVectorOutputPort",
             WrapCallbacks([](PyLeafSystem* self, const BasicVector<T>& arg1,
                               CalcVectorCallback arg2) -> const OutputPort<T>& {

@@ -16,9 +16,9 @@ PYBIND11_MODULE(framework, m) {
   py::module::import("pydrake.symbolic");
 
   // Incorporate definitions as pieces (to speed up compilation).
-  DefineFrameworkPySystems(m);
-  DefineFrameworkPySemantics(m);
   DefineFrameworkPyValues(m);
+  DefineFrameworkPySemantics(m);
+  DefineFrameworkPySystems(m);
 }
 
 }  // namespace pydrake
