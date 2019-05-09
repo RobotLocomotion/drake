@@ -7,12 +7,14 @@ import matplotlib.patches as patches
 x = np.linspace(0, 4, 101)
 
 def step5(x):
-   '''Python version of RigidBodyPlant::step5 method'''
+   '''Python version of MultibodyPlant::StribeckModel::step5 method'''
    x3 = x * x * x
    return x3 * (10 + x * (6 * x - 15))
 
 def stribeck(us, uk, v):
-   '''Python version of RigidBodyPlant::ComputeFrictionCOefficient'''
+   '''
+   Python version of MultibodyPlant::StribeckModel::ComputeFrictionCoefficient
+   '''
    u = np.zeros_like(v) + uk
    u[v < 1] = us * step5(v[v < 1])
    mask = (v >= 1) & (v < 3)
