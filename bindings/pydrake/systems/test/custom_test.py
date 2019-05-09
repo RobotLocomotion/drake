@@ -272,7 +272,9 @@ class TestCustom(unittest.TestCase):
                 self.DeclareVectorInputPort(
                     name="test_input", model_vector=BasicVector(1),
                     random_type=None)
-                self.DeclareVectorOutputPort(BasicVector(1), noop)
+                self.DeclareVectorOutputPort(
+                    "noop", BasicVector(1), noop,
+                    prerequisites_of_calc=set([self.nothing_ticket()]))
                 self.witness = self.MakeWitnessFunction(
                     "witness", WitnessFunctionDirection.kCrossesZero,
                     self._witness)
@@ -642,7 +644,9 @@ class TestCustom(unittest.TestCase):
                     self.output_port = self.DeclareAbstractOutputPort(
                         "out",
                         lambda: AbstractValue.Make(default_value),
-                        self.DoCalcAbstractOutput)
+                        self.DoCalcAbstractOutput,
+                        prerequisites_of_calc=set([
+                            self.input_port.ticket()]))
 
                 def DoCalcAbstractOutput(self, context, y_data):
                     input_value = self.EvalAbstractInput(
