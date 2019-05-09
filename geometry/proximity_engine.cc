@@ -551,11 +551,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   std::vector<SignedDistancePair<T>> ComputeSignedDistancePairwiseClosestPoints(
       const std::vector<GeometryId>& geometry_map,
-      const std::vector<Isometry3<T>>& X_WGs) const {
+      const std::vector<Isometry3<T>>& X_WGs, const double max_distance) const {
     std::vector<SignedDistancePair<T>> witness_pairs;
     // All these quantities are aliased in the callback data.
     shape_distance::CallbackData<T> data{&geometry_map, &collision_filter_,
-                                         &X_WGs, &witness_pairs};
+                                         &X_WGs, max_distance, &witness_pairs};
     data.request.enable_nearest_points = true;
     data.request.enable_signed_distance = true;
     data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
@@ -978,8 +978,10 @@ template <typename T>
 std::vector<SignedDistancePair<T>>
 ProximityEngine<T>::ComputeSignedDistancePairwiseClosestPoints(
     const std::vector<GeometryId>& geometry_map,
-    const std::vector<Isometry3<T>>& X_WGs) const {
-  return impl_->ComputeSignedDistancePairwiseClosestPoints(geometry_map, X_WGs);
+    const std::vector<Isometry3<T>>& X_WGs,
+    const double max_distance) const {
+  return impl_->ComputeSignedDistancePairwiseClosestPoints(geometry_map, X_WGs,
+                                                           max_distance);
 }
 
 template <typename T>

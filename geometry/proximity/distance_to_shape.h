@@ -39,22 +39,25 @@ template <typename T>
 struct CallbackData {
   /** Constructs the mostly-specified callback data. The fcl distance request is
    left in its default constructed state for subsequent configuration. The
-   values are as described in the class documentation. The parameters are all
-   aliased in the data and require the aliased parameters to remain valid at
+   values are as described in the class documentation. The parameters are almost
+   all aliased in the data and require the aliased parameters to remain valid at
    least as long as the CallbackData instance.
 
-   @param geometry_map_in         The index -> id map.
-   @param collision_filter_in     The collision filter system.
-   @param X_WGs_in                The T-valued poses.
-   @param nearest_pairs_in[out]   The output results.
-   */
+   @param geometry_map_in         The index -> id map. Aliased.
+   @param collision_filter_in     The collision filter system. Aliased.
+   @param X_WGs_in                The T-valued poses. Aliased.
+   @param max_distance_in         The maximum distance at which a pair is
+                                  reported.
+   @param nearest_pairs_in[out]   The output results. Aliased.  */
   CallbackData(const std::vector<GeometryId>* geometry_map_in,
                const CollisionFilterLegacy* collision_filter_in,
                const std::vector<Isometry3<T>>* X_WGs_in,
+               const double max_distance_in,
                std::vector<SignedDistancePair<T>>* nearest_pairs_in)
       : geometry_map(*geometry_map_in),
         collision_filter(*collision_filter_in),
         X_WGs(*X_WGs_in),
+        max_distance(max_distance_in),
         nearest_pairs(*nearest_pairs_in) {
     DRAKE_DEMAND(geometry_map_in);
     DRAKE_DEMAND(collision_filter_in);
@@ -70,6 +73,9 @@ struct CallbackData {
 
   /** The T-valued poses of all geometries.  */
   const std::vector<Isometry3<T>>& X_WGs;
+
+  /** The maximum distance at which a pair's distance will be reported.  */
+  const double max_distance;
 
   /** The distance query parameters.  */
   fcl::DistanceRequestd request;
@@ -410,13 +416,21 @@ struct ScalarSupport<Eigen::AutoDiffScalar<DerType>> {
                         no significance).
  @param callback_data   Supporting data to compute distance. This includes the
                         results of this narrowphase computation.
+ @param max_distance    The maximum distance the broadphase should consider
+                        for candidate pairs.
  @returns False; the broadphase should *not* terminate its process.  */
 template <typename T>
 bool Callback(fcl::CollisionObjectd* object_A_ptr,
               fcl::CollisionObjectd* object_B_ptr,
               // NOLINTNEXTLINE
-              void* callback_data, double& /* dist */) {
+              void* callback_data, double& max_distance) {
   auto& data = *static_cast<CallbackData<T>*>(callback_data);
+
+  // We intentionally pass the same number back to FCL in every callback.
+  // It instructs FCL to skip any objects proven to be beyond this maximum
+  // distance (for example, by checking bounding boxes). There's no harm in
+  // setting this redundantly.
+  max_distance = data.max_distance;
 
   const EncodedData encoding_a(*object_A_ptr);
   const EncodedData encoding_b(*object_B_ptr);
@@ -456,7 +470,9 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
       ComputeNarrowPhaseDistance(fcl_object_A, data.X_WGs[index_A],
                                  fcl_object_B, data.X_WGs[index_B],
                                  geometry_map, data.request, &signed_pair);
-      data.nearest_pairs.emplace_back(std::move(signed_pair));
+      if (ExtractDoubleOrThrow(signed_pair.distance) <= max_distance) {
+        data.nearest_pairs.emplace_back(std::move(signed_pair));
+      }
     } else {
       throw std::logic_error(
           fmt::format("Signed distance queries between shapes '{}' and '{}' "

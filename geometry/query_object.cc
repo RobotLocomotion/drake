@@ -42,13 +42,14 @@ QueryObject<T>::ComputePointPairPenetration() const {
 
 template <typename T>
 std::vector<SignedDistancePair<T>>
-QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints() const {
+QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints(
+    const double max_distance) const {
   ThrowIfDefault();
 
   // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
   scene_graph_->FullPoseUpdate(*context_);
   const GeometryState<T>& state = geometry_state();
-  return state.ComputeSignedDistancePairwiseClosestPoints();
+  return state.ComputeSignedDistancePairwiseClosestPoints(max_distance);
 }
 
 template <typename T>
