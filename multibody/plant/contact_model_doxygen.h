@@ -21,25 +21,25 @@
  - @ref drake_per_object_material "per-object contact materials".
 
  @anchor point_contact
- <h2>Point contact in Drake</h2>
+ <h2>Point Contact in Drake</h2>
 
- As of Q2 of 2019, MultibodyPlant implements a point contact model. In a
- point contact model two bodies A and B are considered to be in contact if the
- geometrical intersection of their original rigid geometries is non-empty. That
- is, there exists a non-empty overlap volume. In a point contact model, this
- overlap region is simply characterized by a pair of points `Ac` and `Bc` on
- bodies A and B, respectively, such that `Ac` is a point on the surface of A
- that lies the farthest from the surface of B. Similarly for point `Bc`.
- In the limit to rigid, bodies do never interpenetrate, the intersection
- volume shrinks to zero and in this limit points `Ac` and `Bc` coincide with
- each other. In Drake we enforce such a rigid constraint using a penalty
- force. This penalty force introduces a "numerical" compliance such that,
- within this approximation, rigid bodies are allowed to overlap with a
- non-empty intersection. The strength of the penalty can be adjusted so that, in
- the limit to a very stiff penalty force we recover rigid contact.
- In this limit, for which `Ac ≡ Bc`, a contact point C is
- defined as `C ≜ Ac (≡ Bc)`. In practice, with a finite numerical stiffness of
- the penalty force, we define `C = 1/2⋅(Ac + Bc)`.
+ As of Q2 of 2019, @ref drake::multibody::MultibodyPlant "MultibodyPlant"
+ implements a point contact model. In a point contact model two bodies A and B
+ are considered to be in contact if the geometrical intersection of their
+ original rigid geometries is non-empty. That is, there exists a non-empty
+ overlap volume. In a point contact model, this overlap region is simply
+ characterized by a pair of points `Ac` and `Bc` on bodies A and B,
+ respectively, such that `Ac` is a point on the surface of A that lies the
+ farthest from the surface of B. Similarly for point `Bc`. In the limit to
+ rigid, bodies do never interpenetrate, the intersection volume shrinks to zero
+ and in this limit points `Ac` and `Bc` coincide with each other. In Drake we
+ enforce such a rigid constraint using a penalty force. This penalty force
+ introduces a "numerical" compliance such that, within this approximation, rigid
+ bodies are allowed to overlap with a non-empty intersection. The strength of
+ the penalty can be adjusted so that, in the limit to a very stiff penalty force
+ we recover rigid contact. In this limit, for which `Ac ≡ Bc`, a contact point C
+ is defined as `C ≜ Ac (≡ Bc)`. In practice, with a finite numerical stiffness
+ of the penalty force, we define `C = 1/2⋅(Ac + Bc)`.
 
  At point C we define a contact frame; we'll just refer to that frame as `C`
  when it is clear we mean the frame rather than the point.
@@ -50,7 +50,8 @@
  y-axes). Because the two forces are equal and opposite, we limit our discussion
  to the force `f` acting on `A` at `Ac` (such that `-f` acts on `B` at `Bc`).
 
- @image html multibody/plant/images/simple_contact.png "Figure 1: Illustration of contact between two spheres."
+ @image html multibody/plant/images/simple_contact.png "Figure 1: Illustration
+ of contact between two spheres."
 
  The computation of the contact force is most naturally discussed in the
  contact frame `C` (shown in Figure 1).
@@ -83,7 +84,7 @@
 
  -# Between any two collision geometries, only a _single_ contact will be
  reported. This pair will contain points `Ac` and `Bc` as defined in @ref
- point_contact.
+ point_contact "Point Contact In Drake".
  -# Contacts are reported as a point pair. A PenetrationAsPointPair in Drake.
  -# Surface-to-surface contacts (such as a block sitting on a plane) are
  unfortunately still limited to a single contact point, typically located at
@@ -92,7 +93,7 @@
  difficulties.) Our contact solver has shown to be stable even under these
  conditions. However it is recommended to emulate multi-point contact by adding
  a collection of spheres covering the contact surfaces of interest. Refer to
- the example in `drake/examples/inclined_plane_with_body.cc` for a demonstration
+ the example in inclined_plane_with_body.cc for a demonstration
  of this strategy.
  -# A contact _normal_ is determined that approximates the mutual normal of
  the contacting surfaces at the contact point.
@@ -121,18 +122,19 @@
       modeling the interaction between two surfaces with different coefficients
       of friction.
    2. Global parameters controlling the stiffness of normal penalty forces.
-      MultibodyPlant offers a single global parameter, the "penetration
-      allowance", described in detail in section @ref mbp_penalty_method.
+      @ref drake::multibody::MultibodyPlant "MultibodyPlant" offers a single
+      global parameter, the "penetration allowance", described in detail in
+      section @ref mbp_penalty_method "Contact by penalty method".
    3. Global parameter controlling the Stribeck approximation of Coulomb
       friction, refer to section @ref stribeck_approximation for details.
-      MultibodyPlant::set_stiction_tolerance() provides additional information
-      and guidelines on how to select this parameter.
+      drake::multibody::MultibodyPlant::set_stiction_tolerance() provides
+      additional information and guidelines on how to select this parameter.
 
  @anchor time_advancement_strategy
  <h2>Choice of Time Advancement Strategy</h2>
 
- MultibodyPlant offers two different modalities to model mechanical sytems in
- time. These are:
+ @ref drake::multibody::MultibodyPlant "MultibodyPlant" offers two different
+ modalities to model mechanical sytems in time. These are:
    1. As a discrete system with periodic updates (the prefered method for
       robustness and speed).
    2. As a continuous system.
@@ -147,20 +149,20 @@
  In this modality the system is modeled as a system with periodic updates of
  length `time_step`. This can essentially be seen as a time stepping strategy
  with a fixed `time_step`. The value of `time_step` is provided at construction
- of the MultibodyPlant.
+ of the @ref drake::multibody::MultibodyPlant "MultibodyPlant".
  In Drake we use a custom semi-implicit Euler scheme for multibody systems
  using the Stribeck approximation of Coulomb friction. Details for this solver
  are provided in the documentation for ImplicitStribeckSolver.
 
  <h3>Continuous MultibodyPlant</h3>
  If `time_step` defined above is specified to be exactly zero at the time of
- instantiating a MultibodyPlant, the system is modeled as continuous. What that
- means is that the system is modeld to follow a continuous dynamics of the form
- `ẋ = f(t, x, u)`, where `x` is the state of the plant, t is time and u are
- externally applied inputs (either actuation or external body forces).
- In this mode, Drake allows chose from a variety of integrators to advance the
- continuos system forward in time. Integrators can, in a broad sense, be
- classified according to:
+ instantiating a @ref drake::multibody::MultibodyPlant "MultibodyPlant", the
+ system is modeled as continuous. What that means is that the system is modeld to
+ follow a continuous dynamics of the form `ẋ = f(t, x, u)`, where `x` is the
+ state of the plant, t is time and u are externally applied inputs (either
+ actuation or external body forces). In this mode, Drake allows chose from a
+ variety of integrators to advance the continuos system forward in time.
+ Integrators can, in a broad sense, be classified according to:
    1. Implicit/Explicit integrators.
    2. Fixed time step/error controlled integrators.
 
@@ -168,7 +170,7 @@
  miss slip/stick transitions when the stiction tolerance `vₛ` of the Stribeck
  approximation is small (say smaller than 1e-3 m/s). In addition, they might
  suffer of stability problems when the penalty forces are made stiff (see
- MultibodyPlant::set_penetration_allowance()).
+ drake::multibody::MultibodyPlant::set_penetration_allowance()).
 
  Error controlled integrators such as @ref drake::systems::RungeKutta3Integrator
  "RungeKutta3Integrator" offer a stable integration scheme by adapting the time

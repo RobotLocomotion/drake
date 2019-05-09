@@ -2919,7 +2919,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// integration of ODE's, it often leads to stiff dynamics that require
   /// an explicit integrator to take very small time steps. It is therefore
   /// recommended to use error controlled integrators when using this model.
-  /// See @ref tangent_force for a detailed discussion of the Stribeck model.
+  /// See @ref stribeck_approximation for a detailed discussion of the Stribeck
+  /// model.
   /// @{
 
   /// Sets the stiction tolerance `v_stiction` for the Stribeck model, where
@@ -2927,12 +2928,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// `v_stiction` defaults to a value of 1 millimeter per second.
   /// In selecting a value for `v_stiction`, you must ask yourself the question,
   /// "When two objects are ostensibly in stiction, how much slip am I willing
-  /// to allow?" There are two opposing design issues in picking a value for vₛ.
-  /// On the one hand, small values of vₛ make the problem numerically stiff
-  /// during stiction, potentially increasing the integration cost. On the other
-  /// hand, it should be picked to be appropriate for the scale of the problem.
-  /// For example, a car simulation could allow a "large" value for vₛ of 1
-  /// cm/s (1×10⁻² m/s), but reasonable stiction for grasping a 10 cm box
+  /// to allow?" There are two opposing design issues in picking a value for
+  /// vₛ. On the one hand, small values of vₛ make the problem numerically
+  /// stiff during stiction, potentially increasing the integration cost. On the
+  /// other hand, it should be picked to be appropriate for the scale of the
+  /// problem. For example, a car simulation could allow a "large" value for vₛ
+  /// of 1 cm/s (1×10⁻² m/s), but reasonable stiction for grasping a 10 cm box
   /// might require limiting residual slip to 1×10⁻³ m/s or less. Ultimately,
   /// picking the largest viable value will allow your simulation to run
   /// faster and more robustly.
