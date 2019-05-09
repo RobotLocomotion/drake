@@ -229,154 +229,11 @@ to estimate error bounds used to determine step size.
    reliable points of contact. However, for arbitrary configurations contact
    with the box will provide more general contact.
 
- Next topic: @ref contact_model_background
+ Next topic: @ref stribeck_approximation
  */
 
-/** @defgroup contact_model_background The Details of Computing Contact Forces
+/** @defgroup stribeck_approximation Stribeck Approximation of Coulomb Friction
  @ingroup drake_contacts
-
- Drake includes a compliant contact model. Compliant models determine contact
- forces by assuming that all bodies are, to some extent, pliable. As two bodies
- collide, they deform and that deformation produces the contact normal force.
- In practice, this is achieved by allowing _undeformed_ geometry to penetrate
- and then infer the deformation which would eliminate the penetration and
- compute the force from that inferred deformation.
- More particularly, Drake's compliant model is adapted from Simbody's
- Hertz/Hunt & Crossley/Stribeck model described in [Sherman 2011] with further
- details drawn directly from [Hunt 1975].
-
- - [Sherman 2011] M. Sherman, et al. Procedia IUTAM 2:241-261 (2011), Section 5.
-   http://dx.doi.org/10.1016/j.piutam.2011.04.023
- - [Hunt 1975] K. H. Hunt and F. R. E. Crossley, "Coefficient of Restitution
-   Interpreted as Damping in Vibroimpact," ASME Journal of Applied Mechanics,
-   pp. 440-445, June 1975. http://dx.doi.org/10.1115/1.3423596
-
- The model naturally decomposes into the normal and tangential components of the
- contact force and the discussion follows this decomposition:
- @ref contact_normal_force "normal force"
- @ref tangent_force "tangent force".
-
- @anchor contact_normal_force
- <h2>Computing the Normal Component of the Contact Force</h2>
-
- @anchor compliant_normal_force_overview
- <h3>Overview of Compliant Normal Force</h3>
-
- Generally, the component of the contact force due to pressure (i.e., _not_
- frictional forces) is simply the pressure on the contact surface integrated
- over that surface's area. If we assume the contact surface is _planar_ then
- we have a well defined normal direction, and the force due to pressure is
- parallel with that normal and can be defined precisely as:
-
-   `fₙ = p(q, v)·A(q)`
-
- where `A(q)` is the contact patch area, and
- `p(q, v)` is the average contact pressure on that patch, the details of which
- depend on how the contact is characterized (e.g., penetration depth and
- approaching speed), and the geometry and material parameters of the contacting
- bodies. Notice there is no approximation in this equation; it is always true
- since this equation _is_ the definition of the average contact pressure
- `p(q, v)`. Thus, determining the contact normal force consists of determining
- the geometry of the contact patch, and the average pressure on that patch.
-
- @anchor hunt_crossley
- <h3>Hunt-Crossley Model</h3>
-
- Drake uses the Hunt-Crossley model [Hunt 1975] for computing a normal force
- `fₙ` that accounts for both elasticity and dissipation effects. This is a
- continuous model based on Hertz elastic contact theory. We'll examine the
- underlying Hertz contact model and then show its extension.
-
- __Hertz Contact Model__
-
- The Hertz contact model applies to scenarios where the contacting surfaces can
- be _locally_ represented by two principal axes of curvature (e.g., spheres,
- ellipsoids, cylinders, planes, etc.) For the sake of simplicity, this
- discussion focuses on spheres where a _single_ radius of curvature (per
- surface) is sufficient to describe the contacting geometry. The primary
- advantage of this model is that the magnitude of the normal force can be
- expressed in closed form.
-
- Consider two spheres made of the same material and of the same size (with
- Young's modulus E and radius R). If the amount that the two spheres are
- penetrating is x, then the resultant normal force (according to the Hertz
- contact model) would be:
-
-   `fₙ = ⁴/₃⋅E⋅√R⋅√x³`.
-
- The two spheres compress such that they are touching along a disk with radius
- `√(R⋅x)`.  Based on this, we can equate it to the earlier function:
-
-   - `fₙ = p(q, v)·A(q) = ⁴/₃⋅E⋅√R⋅√x³`
-   - `p(q, v) = 4/(3π)·E·√(x/R)`
-   - `A(q) = π⋅R⋅x`
-
- This can be generalized to spheres of different sizes and different materials
- by creating _effective_ radii of curvature and Young's modulus. Assuming body i
- has radius Rᵢ and Young's modulus Eᵢ, we can define an effective radius of
- curvature and Young's modules as functions of the contacting geometries:
- `R(R₁, R₂)` and `E(E₁, E₂)`, respectively. Generally, the details of those
- functions depend on the geometry and scenario. See the
- @ref drake_contact_model_impl "implementation details" below for more details.
-
- This pattern can be extended to contact between other shapes with
- characteristic radii of curvature:
-
- - Sphere and plane: same as sphere and sphere with the plane treated as a
-   sphere with infinite radius of curvature.
- - Two perpendicularly crossed cylinders of _equal_ radius R: same as sphere and
-   sphere of radius R.
- - Vertical cylinder of radius R and a plane: `fₙ = 2⋅E⋅R⋅x`.
- <!--
- TODO(amcastro-tri): This math doesn't seem to work out. Given the equation
- `kxᵐ`, and values `m = 1` and `k = 2⋅E⋅R⋅x`, the previous documentation
- suggested the resultant equation was as shown below. However, the L term in the
- k factor becomes R²/L in the final expression. Things don't cancel out right.
- This math needs to be confirmed so that this example can be included again.
-
- - Two cylinders of radii R₁ and R₂, length L and with parallel axes:
-   `fₙ = π/4⋅E⋅R²⋅(R/L)⋅(x/R)`.
-   -->
-
- __Hunt-Crossley Extension__
-
- The Hunt-Crossley model extends the Hertz contact by adding a dissipation
- factor which depends on the rate of change of penetration. The resultant force
- is:
-
- `fₙ = H(x)(1 + ³/₂⋅d⋅ẋ)`,
-
- where `H(x)` is the Hertz factor appropriate for the contact
- geometry, `x` is the penetration depth, `ẋ` is penetration rate (positive for
- increasing penetration and negative during rebound), and `d` is a dissipation
- term that captures the empirically observed velocity dependence of the
- coefficient of restitution, `e = (1 - d⋅v)`, for (small) impact velocity `v`.
- `d` has units of 1/velocity and, in theory at least,  can be measured right off
- the coefficient of restitution-vs.-impact velocity curves; it is the negated
- slope at low impact velocities.
-
- Please note, `d` is not a _damping_ coefficient (which would have units of
- force/velocity), but is a _dissipation_ factor, with units of 1/velocity,
- modeling power loss as a rate-dependent fraction of the conservative
- deformation-dependent force. For steel, bronze or ivory, [Hunt 1975] reports
- values of d between 0.08-0.32 sec/m.
-
- By definition `fₙ` should always be positive, so that the contact force is
- a repulsive force. Mathematically, for arbitrary x and ẋ, it is possible for
- `fₙ` to become negative, creating an attractive or "sucking" force. This case
- will be achieved if `ẋ < -1/d`. To prevent sucking forces, the normal
- component is clamped to zero. In this regime, it is still possible for there to
- be a repulsive force for bodies that are drawing apart (`ẋ < 0`), as long as
- the relative velocities are small. This approximately models recovery of energy
- in the deformed material with observed hysteresis effects as described in
- [Hunt 1975]. However, a surface can't return to its undeformed state
- arbitrarily quickly. If the bodies are pulled apart *faster* than the surface
- can recover, the bodies will separate before the potential energy of
- deformation can be converted to kinetic energy, resulting in energy loss (to
- heat, vibration, or other unmodeled effects).
-
- @anchor tangent_force
- <h2>Stribeck Friction Tangential Force</h2>
 
  Static friction (or stiction) arises due to surface characteristics at the
  microscopic level (e.g., mechanical interference of surface imperfections,
@@ -481,6 +338,4 @@ to estimate error bounds used to determine step size.
  Coulomb friction. Its primary drawback is that the model is numerically
  very stiff in the stiction region, which requires either small step sizes
  with an explicit integrator, or use of a more-stable implicit integrator.
-
- Next topic: @ref drake_contact_implementation
 */
