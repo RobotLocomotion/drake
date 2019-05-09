@@ -309,7 +309,7 @@ set(BAZEL_CONFIGS)
 option(WITH_GUROBI "Build with support for Gurobi" OFF)
 
 if(WITH_GUROBI)
-  find_package(Gurobi 8.0.0 MODULE REQUIRED)
+  find_package(Gurobi 8.0.1 EXACT MODULE REQUIRED)
 
   list(APPEND BAZEL_CONFIGS --config=gurobi)
 

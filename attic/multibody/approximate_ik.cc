@@ -75,7 +75,7 @@ void approximateIK(RigidBodyTree<double>* model,
   }
 
   // set solver params
-  // (https://www.gurobi.com/documentation/7.5/refman/parameters.html)
+  // (https://www.gurobi.com/documentation/8.0/refman/parameters.html)
   error = GRBsetintparam(grb_env, "outputflag", 0);
   if (error) {
     printf("Set Gurobi outputflag error %s\n", GRBgeterrormsg(grb_env));
