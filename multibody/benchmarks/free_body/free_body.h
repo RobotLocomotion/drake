@@ -162,11 +162,11 @@ class FreeBody {
   std::tuple<Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d>
   CalculateExactTranslationalSolution(const double t) const;
 
-  /// Returns the spin `s` and precession `p` frequencies associated with the
-  /// rotational motion (angular velocity and quaternion) for torque-free motion
-  /// of an axis-symmetric rigid body B in a Newtonian frame (World) N.  For
-  /// example, B's angular velocity in N is `wx*Bx + wy*By + wz*Bz`, written in
-  /// terms of initial values wx0, wy0, wz0. Kane's solution for wx, wy, wz is
+  /// Returns angular rates associated with spin `s` and precession `p` from the
+  /// analytical solution [Kane, 1983] for rotational motion (angular velocity
+  /// and quaternion) for torque-free motion of an axis-symmetric rigid body B
+  /// in a Newtonian frame (World).  Kane's solution for B's angular velocity
+  /// `wx*Bx + wy*By + wz*Bz` is in terms of initial values wx0, wy0, wz0 as
   /// wx =  wx0 * cos(s * t) + wy0 * sin(s * t)
   /// wy = -wx0 * sin(s * t) + wy0 * cos(s * t)
   /// wz =  wz0
@@ -178,7 +178,7 @@ class FreeBody {
   /// - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York,
   ///   1983. (with P. W. Likins and D. A. Levinson).  Available for free .pdf
   ///   download: https:///ecommons.cornell.edu/handle/1813/637
-  std::pair<double, double> CalcPseudoFrequencies_s_p() const {
+  std::pair<double, double> CalcAngularRates_s_p() const {
     const double I = get_I();
     const double J = get_J();
     const Vector3<double>& initial_w_NB_B = get_initial_w_NB_B();

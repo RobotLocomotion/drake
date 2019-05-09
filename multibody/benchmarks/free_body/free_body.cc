@@ -30,7 +30,7 @@ FreeBody::CalculateExactRotationalSolutionABInitiallyAligned(
 
   // Intermediate calculations for quaternion solution.
   double s, p;
-  std::tie(s, p) = CalcPseudoFrequencies_s_p();
+  std::tie(s, p) = CalcAngularRates_s_p();
   const double coef = wz0 * (J / (I * p));
   const double spt2 = std::sin(p * t / 2);
   const double cpt2 = std::cos(p * t / 2);

@@ -171,11 +171,17 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
   const double epsilon_based_on_dt_max = 1.0E-11 * dt_max;
   const double t_final_minus_epsilon = t_final - epsilon_based_on_dt_max;
   while (true) {
-    // At boundary of each numerical integration step, test Drake's simulation
-    // accuracy versus exact (closed-form) solution.  Based on numerical
-    // integration experiments with MotionGenesis, the numerical integration
-    // seems to scale linearly with time, so scale the allowable error tolerance
-    // linearly with time as shown below.
+    // At the boundary of each numerical integration step, test Drake's results
+    // versus exact (closed-form) solution.  Based on numerical integration
+    // experiments, the numerical integration seems to scale linearly with time,
+    // so the allowable error tolerance below is scaled linearly with time.
+    // Note: The numerical integration experiments were done by modifying the
+    // MotionGenesis script (see webpage below) so that its inertia parameters
+    // and initial values matched this problems parameters/initial values.
+    // The numerical integrator used by MotionGenesis is Runga-Kutta-Merson,
+    // described at L. Fox, Numerical Solutions of Ordinary and Partial
+    // Differential Equations, Palo Alto: Addison-Wesley, 1962, pp. 24-25
+    // http://www.motiongenesis.com/MGWebSite/MGGetStarted/MGExampleSpinStability3DRigidBody/MGExampleSpinStability3DRigidBody.html
     const double t = context->get_time();
     const double integrator_value = 256;  // Specific to each integrator.
     const double scale = number_of_periods * integrator_value * t / t_final;
@@ -264,7 +270,7 @@ void  TestDrakeSolutionForSpecificInitialValue(
     // integrate such that we capture four periods of motion, or if the maximum
     // frequency is too small, ten seconds of time.
     double s, p;
-    std::tie(s, p) = torque_free_cylinder_exact.CalcPseudoFrequencies_s_p();
+    std::tie(s, p) = torque_free_cylinder_exact.CalcAngularRates_s_p();
     const double frequency = std::max(kEpsilon, std::max(std::abs(s), p));
     const double period = 2 * M_PI / frequency;
     const int number_of_periods = 4;
@@ -448,8 +454,8 @@ void TestKaneExactSolution(FreeBody torque_free_cylinder_kane,
 // uniform cylinder) in a Newtonian frame (World) N.  The initial values used in
 // this test make it easy to compute an associated 2D solution for simple spin.
 // Kane's analytical 3D solution depends on intermediate calculations from the
-// FreeBody method CalcPseudoFrequencies_s_p().  Hence, this test also helps
-// verify the underlying FreeBody method CalcPseudoFrequencies_s_p().
+// FreeBody method CalcAngularRates_s_p().  Hence, this test also helps
+// verify the underlying FreeBody method CalcAngularRates_s_p().
 GTEST_TEST(uniformSolidCylinderTorqueFree, testKaneExactSolution) {
   const Quaterniond quat_NB(1, 0, 0, 0);  // Initial value -- aligned axes.
   const Vector3d w_NB_B(0, 0, 0);         // Initial value -- overwritten.
