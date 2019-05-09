@@ -66,7 +66,8 @@ struct SignedDistancePair{
   //  implementation of computing nhat_BA_W in
   //  ComputeSignedDistancePairwiseClosestPoints.  Right now many unit tests
   //  need it.  The downside is that Python binder calls the doc for the
-  //  above constructor ctor.doc_6args and this one ctor.doc_5args.
+  //  above constructor ctor.doc_7args and this one ctor.doc_5args (see
+  //  bindings/pydrake/geometry_py.cc).
   /** Constructor.
    We keep this constructor temporarily for backward compatibility.
    @param a         The id of the first geometry (A).
