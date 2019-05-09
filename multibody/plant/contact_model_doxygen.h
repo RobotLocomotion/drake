@@ -97,7 +97,7 @@
  -# A contact _normal_ is determined that approximates the mutual normal of
  the contacting surfaces at the contact point.
 
- Next topic: @ref contact_model
+ Next topic: @ref contact_engineering
  */
 
 /** @defgroup contact_engineering Working with Contacts in Drake
@@ -105,8 +105,8 @@
 
  The behavior of a simulation with contact will depend on three factors:
 
- - the choice of integrator,
  - contact parameters,
+ - the time advancement strategy,
  - nature of collision geometry.
 
  The three factors are interdependent; specific choices for one factor may
@@ -115,124 +115,75 @@
  @anchor contact_parameters
  <h2>Contact Parameters</h2>
 
- @anchor contact_parameter_lists
- <h3>Parameters</h3>
+ Contact modeling in Drake is controlled by a small set of parameters:
+   1. Per-geometry coefficients of friction. Refer to the documentation for
+      CoulombFriction for details, which also includes a description for
+      modeling the interaction between two surfaces with different coefficients
+      of friction.
+   2. Global parameters controlling the stiffness of normal penalty forces.
+      MultibodyPlant offers a single global parameter, the "penetration
+      allowance", described in detail in section @ref mbp_penalty_method.
+   3. Global parameter controlling the Stribeck approximation of Coulomb
+      friction, refer to section @ref stribeck_approximation for details.
+      MultibodyPlant::set_stiction_tolerance() provides additional information
+      and guidelines on how to select this parameter.
 
- The determination of contact forces is a combination of per-object contact
- _material_ parameters and global model parameters. See
- @ref contact_model_background for elaboration on the parameters.
+ @anchor time_advancement_strategy
+ <h2>Choice of Time Advancement Strategy</h2>
 
- __Per-object Contact Material Parameters__
+ MultibodyPlant offers two different modalities to model mechanical sytems in
+ time. These are:
+   1. As a discrete system with periodic updates (the prefered method for
+      robustness and speed).
+   2. As a continuous system.
 
- - Young's modulus, `E`, (with units of pascals, i.e., N/m²) is the tensile
-   elasticity of the material. It may also be referred to generally as
-   "elasticity" or colloquially as "stiffness".
-    - Generally, these values can be looked up in a table. Typical values are
-      quite large ranging from soft rubber at 1×10⁷ N/m² to diamond at
-      1.2×10¹² N/m².
-    - The default value is that of medium rubber: 1×10⁸ N/m².
- - dissipation, `d`, (with units of 1/velocity) is a material property that
-   correctly reproduces the empirically observed velocity dependence of the
-   coefficient of restitution, where `e = (1-d⋅v)` for small impact velocity
-   `v`.
-     - In theory, at least, `d` can be measured right off the coefficient of
-       restitution-vs.-impact velocity curves; it is the negated slope at low
-       impact velocities. In practice, the curve is difficult to produce and
-       very little data exists to provide physical values.
-     - [Hunt 1975] reports values of `d` between 0.08-0.32 sec/m for steel,
-       bronze or ivory. From this, we advocate relatively small values.
-     - The default value is 0.32 sec/m.
- - coefficient of static friction, `μ_s`, (unitless) is the standard Coulomb
-   coefficient of friction for a body with zero relative motion.
-     - The coefficient of static friction must be greater than or equal to the
-       coefficient of dynamic friction.
-     - The default value 0.9.
- - coefficient of dynamic friction, `μ_d`, (unitless) is the standard Coulomb
-   coefficient of friction for a body with non-zero relative motion.
-     - The coefficient of dynamic friction must be less than or equal to the
-       coefficient of static friction.
-     - The default value is 0.5.
+ In this section we'll only provide a very limited distinction between a
+ continuous and a discrete system. A complete discussion of the subject,
+ including the modeling of hybrid systems is beyond the scope of this section
+ and thus the interested is referred to the documentation for Simulator.
 
- __Global Model Parameters__
+ <h3>Discrete MultibodyPlant</h3>
+ Currently, this is method the prefered method given its speed and robustness.
+ In this modality the system is modeled as a system with periodic updates of
+ length `time_step`. This can essentially be seen as a time stepping strategy
+ with a fixed `time_step`. The value of `time_step` is provided at construction
+ of the MultibodyPlant.
+ In Drake we use a custom semi-implicit Euler scheme for multibody systems
+ using the Stribeck approximation of Coulomb friction. Details for this solver
+ are provided in the documentation for ImplicitStribeckSolver.
 
- - slip velocity, `vₛ`, (with units of m/s) determines the behavior of contact
-   bodies during _stiction_. Essentially, stiction is approximated. When bodies
-   should be in stiction, the model allows the contacting points a relative
-   slip velocity _up to_ this value. See @ref tangent_force for details.
-     - The default value is 0.01 m/s.
- - characteristic radius, `R`, (with units of m) defines a characteristic
-   contact patch scale. See @ref drake_contact_implementation for details. This
-   defines a circular contact patch with area `πR²`.
-     - The default value is 0.2 mm (e.g., 2×10⁻⁴ m).
+ <h3>Continuous MultibodyPlant</h3>
+ If `time_step` defined above is specified to be exactly zero at the time of
+ instantiating a MultibodyPlant, the system is modeled as continuous. What that
+ means is that the system is modeld to follow a continuous dynamics of the form
+ `ẋ = f(t, x, u)`, where `x` is the state of the plant, t is time and u are
+ externally applied inputs (either actuation or external body forces).
+ In this mode, Drake allows chose from a variety of integrators to advance the
+ continuos system forward in time. Integrators can, in a broad sense, be
+ classified according to:
+   1. Implicit/Explicit integrators.
+   2. Fixed time step/error controlled integrators.
 
- @anchor contact_parameter_choices
- <h3>Issues with Parameter Values</h3>
+ Fixed time step integratos often provide faster simulations however they often
+ miss slip/stick transitions when the stiction tolerance `vₛ` of the Stribeck
+ approximation is small (say smaller than 1e-3 m/s). In addition, they might
+ suffer of stability problems when the penalty forces are made stiff (see
+ MultibodyPlant::set_penetration_allowance()).
 
-  - **Contact Material Parameters**
+ Error controlled integrators such as @ref drake::systems::RungeKutta3Integrator
+ "RungeKutta3Integrator" offer a stable integration scheme by adapting the time
+ step to satisfy a pre-specified accuracy tolerance. However, this stability
+comes with the price of slower simulations given that often these integrators
+need to take very small time steps in order to resolve the stiff contact
+dynamics. In addition, these integrators usually perform additional computations
+to estimate error bounds used to determine step size.
 
-    With the exception of the dissipation parameter, the values for material
-    parameters should be predicated on realistic values. The majority of these
-    values can and should be looked up in tables. The goal is for these
-    physical quantities to remain meaningful and constant while the underlying
-    contact model implementation improves and makes better use of them.
-
-    As for the dissipation parameter, we generally recommend leaving it at the
-    default value unless there's particular insight and principle in changing
-    it.
-
-  - **Picking a good value for `vₛ`**
-
-    In selecting a value for `vₛ`, you must ask yourself the question, "When
-    two objects are ostensibly in stiction, how much slip am I willing to
-    allow?" There are two opposing design issues in picking a value for `vₛ`.
-    On the  one hand, small values of `vₛ` make the problem numerically stiff
-    during stiction, potentially increasing the integration cost.
-    On the other hand, it should be picked to be appropriate for the scale of
-    the problem. For example, a car simulation could allow a "large" value for
-    `vₛ` of 1 cm/s (1×10⁻² m/s), but reasonable stiction for grasping a 10 cm
-    box might require limiting residual slip to 1×10⁻³ m/s or less. Ultimately,
-    picking the largest viable value will allow your simulation to run faster.
-
-  - **Picking a good value for `R`**
-
-    One of the quirks of the implemented contact model, is that is largely
-    unaware of the size of the contact surface between bodies. However, the
-    contact force _depends_ on that area. This _global_ setting allows you to
-    hint to the model the size of the contact patches; larger contact patches
-    produce larger contact forces. For example, a small toy tire on a table has
-    a much smaller contact patch than full-size tires on a road. Even if we
-    assume the same rubber, the full-size tires would experience a larger
-    contact force (all other factors being equal).
-    Rather than increasing the Young's modulus for the car's tires (as compared
-    to the rubber ball), we recommend increasing the characteristic radius in
-    the contact model.
-    As a word of warning, don't think of this characteristic radius as
-    corresponding to a literal measure of the real world. The
-    default size corresponds closely with a point contact (where the contact is
-    roughly the area of the head of a pin). This small contact area is
-    sufficient for manipulation even though it does not reasonably represent
-    the physical world. If the forces seem weak, increase the characteristic
-    size, but only increase it to the smallest value that gives sufficient
-    forces; making it larger will make the forces stiffer which will lead to a
-    more computationally expensive simulation.
-
- @anchor integrator_choice
- <h2>Choice of Integrator</h2>
-
-   Empirical evidence suggests that any integrator _except_
-   @ref drake::systems::ExplicitEulerIntegrator "ExplicitEulerIntegrator" can
-   work with this contact model. Generally, the
-   @ref drake::systems::RungeKutta2Integrator "RungeKutta2Integrator" and
-   @ref drake::systems::SemiExplicitEulerIntegrator "SemiExplicitEulerIntegrator"
-   require similar time steps to produce equivalent behavior. Generally, for a
-   `vₛ` value of 1e-2 m/s, a timestep on the order of 1e-4 is required for both
-   of these. The error-controlled
-   @ref drake::systems::RungeKutta3Integrator "RungeKutta3Integrator" will
-   choose very small steps and accuracy must be set tight enough to ensure
-   stability.
-   There is also a first-order, fully-implicit integrator:
-   @ref drake::systems::ImplicitEulerIntegrator "ImplicitEulerIntegrator" that
-   can be considered for handling stiff systems.
+ Implicit integrators have the potential to integrate stiff continuous systems
+ forward in time using larger time steps and therefore reduce computational
+ cost. Thus far, with our @ref drake::systems::ImplicitEulerIntegrator
+ "ImplicitEulerIntegrator" we observed that the additional cost of performing a
+ Newton-Raphson iteration at each time step is cost prohibitive for multibody
+ systems using the Stribeck approximation.
 
  @anchor crafting_collision_geometry
  <h2>Choosing the Right Collision Geometry</h2>
@@ -533,200 +484,3 @@
 
  Next topic: @ref drake_contact_implementation
 */
-
-/** @defgroup drake_contact_implementation Drake Contact Implementation
- @ingroup drake_contacts
-
- Drake's compliant point contact model is a coarse approximation of the
- previous discussion. This section outlines the simplifications. With time, the
- contact model will grow more and offer more sophisticated and _accurate_
- models.
-
- @anchor drake_collision_detection
- <h2>Collision Detection and Characterization</h2>
-
- When the collision geometry of two bodies penetrate, the penetration is
- characterized by:
-
-   - a pair of points: the points on each geometry that lies most deeply in the
-     other geometry,
-   - a vector: the contact normal direction, and
-   - the penetration depth.
-
- The volume and domain of the penetration is conspicuously absent. As such, it
- is impossible for a contact model to calculate a contact force based on the
- specific details of that unreported volume.
-
- Future versions of Drake will support additional characterizations of geometry
- penetration in support of volume-based contact force calculation.
-
- @anchor drake_contact_model_impl
- <h2>Contact Force Computation</h2>
-
- Given the characterization of penetration outlined above (i.e., a single
- point), a full implementation
- of the contact normal force would be impossible. Instead, Drake employs a
- corruption of the Hertz model. The best analogy would be to think of
- the contact as between a vertical cylinder and a plane: `fₙ = 2⋅E⋅R⋅x`. In
- other words, it assumes that the contact area is independent of the depth and
- that pressure is proportional to the penetration depth. The radius R is a
- tunable "global" parameter of the
- @ref drake::systems::CompliantContactModel "CompliantContactModel".
- (See @ref contact_engineering on how to work with this property.)
-
- Based on this Hertzian value, the full Hunt-Crossley normal force is computed
- as defined above. Furthermore, the tangential component of the contact force
- is also computed as outlined above.
-
- @anchor drake_per_object_material
- <h2>Per-object Contact Material</h2>
-
- Drake supports defining compliant contact materials on a per-collision geometry
- basis. It has several mechanisms in place to facilitate working with
- per-collision object contact materials:
-
- - Universal default values (all objects default to the universal values if none
-   have been explicitly specified).
- - Parsing per-collision element material parameters from URDF and SDF files
-   using extended tags (formatted identically for both source files types).
- - Runtime query which admits the ability to provide a custom default value.
-
- @anchor mat_parameters_and_contact
- <h3>Material parameters and evaluating contact</h3>
-
- The per-object material parameters consist of:
-
- - Elastic modulus (aka stiffness) (E) with units of pascals,
- - dissipation (d) with units of 1/velocity, and
- - static and dynamic friction (unitless μ_s and μ_d, respectively).
-
- The parameters outlined in @ref contact_model_background are derived from the
- material values for the two colliding bodies. Consider two colliding bodies M
- and N. The contact values E, d, μ_s, and μ_d used to compute the contact force
- are defined in the following way:
-
- - sₘ ∈ [0, 1] is the "squish" factor of body M. It represents the amount of
-   total deformation experienced by body M. Consider contact between a steel
-   body and foam ball; the foam ball would experience the entire deformation and
-   the squish factors for the foam ball and steel plate would be 1 and 0,
-   respectively. The squish value is defined as sₘ = kₙ / (kₘ + kₙ), with
-   sₙ = 1 - sₘ.
- - E = sₘEₘ = sₙEₙ. The effective Young's modulus of the _contact_ will
-   generally not be the Young's modulus of either constituent material (unless
-   one were infinite). If Eₘ = Eₙ, then E would be Eₘ/2.
- - d = sₘdₘ + sₙdₙ. Again, the dissipation of the contact is simply a linear
-   interpolation of the two bodies' dissipation values.
- - μ_s (and μ_d) are defined as 2μₘμₙ / (μₘ + μₙ).
-
- Finally, the contact point is also defined with respect to the "squish"
- factors. For penetrating bodies M and N, there is a point on the surface of M
- that _most_ deeply penetrates into N (and vice versa). We will call those
- points `Mc` and `Nc`, respectively. The contact point, is
- `C = Mc * sₙ + Nc * sₘ`.
- We draw _particular_ attention to the fact that the point on M's surface is
- weighted by N's squish factor and vice versa. That is because, if body M
- experiences all of the deformation, it will be deformed all the way to the
- point of deepest penetration _in_ M, which was the definition of `Nc`.
-
- @anchor material_defaults
- <h3>Contact material default values</h3>
-
- Every collision element has a compliant material. If the values of that
- material have not been explicitly set (i.e., via calls to the API or specified
- in a URDF/SDF file), the the value is configured to use a "default" value.
- What the actual default value is depends on how the material property is
- accessed (see the documentation for
- @ref drake::systems::CompliantMaterial "CompliantMaterial" for further
- elaboration).
-
- Consider a box used as collision geometry with all of its compliant material
- parameters set to default. Consider querying for the box's dissipation. The
- value returned could be different values based on invocation:
-
- 1. Querying directly (e.g., `box.compliant_material().dissipation()`) will
-    return the hard-coded, Drake-wide default value.
- 2. Alternatively, when the
-    @ref drake::systems::CompliantContactModel "CompliantContactModel"
-    used by a @ref drake::systems::RigidBodyPlant "RigidBodyPlant"
-    evaluates it, the default value will be the
-    @ref drake::systems::CompliantContactModel "CompliantContactModel's" default
-    material dissipation value. Which _may_ be different from the hard-coded
-    globals or from any other instance of
-    @ref drake::systems::CompliantContactModel "CompliantContactModel".
- 3. Alternatively, user-code could provide a preferred default which will be
-    returned iff the property is default configured
-    (e.g., `box.compliant_material().dissipation(0.125)`)
-
- The point that needs to be emphasized is that configuring a material property
- to be default is not a one-time operation. It defines a relationship that
- can be determined at evaluation time.
-
- __A word of warning__
-
- It might be tempting to write code akin to this pseudo-code:
-
- ```c
- CompliantMaterial mat;
- RigidBodyPlant plant;
- mat.set_dissipation(0.1);
- plant.set_default_contact_material(mat);
- ParseUrdf(plant, "my_robot.urdf");
- mat.set_(5e6);
- mat.set_dissipation(0.2);
- plant.set_default_contact_material(mat);
- ParseUrdf(plant, "other_robot.urdf");
- ```
-
- At first glance, one might be inclined to believe that the any collision
- elements without specified contact materials in the file `my_robot.urdf` would
- have dissipation value of 0.1, whereas those in the file `other_robot.urdf`
- would have dissipation of 0.2. This is _not_ the case. The collision elements
- of both robots are configured to use the default value. And they will report a
- dissipation of 5e6 if the `plant` evaluates it, or some other value in other
- contexts.
-
- @anchor material_urdf_sdf
- <h3>Specifying contact parameter values in URDF/SDF.</h3>
-
- We are exploiting the fact that URDF and SDF are XML files and choose to
- naively extend the specification to include a custom tag. Although there are
- numerous differences between the two formats, there is fortunate similarity
- in declaring collision geometries. For simplicity's sake, we expect identically
- formatted contact material format in both formats that look something like
- this:
-
- ```xml
- ...
- <collision ...>
-   <geometry ...>
-   </geometry>
-
-   <drake_compliance>
-     <youngs_modulus>##</youngs_modulus>
-     <dissipation>##</dissipation>
-     <static_friction>##</static_friction>
-     <dynamic_friction>##</dynamic_friction>
-   </drake_compliance>
-
- </collision>
- ...
- ```
-
- Differences between URDF and SDF are dismissed with ellipses. What is
- significant is that the `<drake_compliance>` tag should be introduced as a
- child of the `<collision>` tag (common to both formats) and should be
- formatted as shown.
-
- The following rules are applied for parsing:
-
- - If no `<drake_compliance>` tag is found, the element uses the global default
-   parameters.
- - Not all parameters are required; explicitly specified parameters will be
-   applied to the corresponding element and omitted parameters will map to the
-   default values.
- - Friction values must be defined as a pair, or not at all. When defined as a
-   pair, the `static_friction` value must be greater than or equal to the
-   `dynamic_friction` value. Failure to meet these requirements will cause a
-   runtime exception.
-
- */
