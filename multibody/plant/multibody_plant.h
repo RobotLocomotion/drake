@@ -2941,6 +2941,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// edge of the friction cone. For cases when the friction force is well
   /// within the friction cone the slip velocity will always be smaller than
   /// this value.
+  /// See also @ref stribeck_approximation.
   /// @throws std::exception if `v_stiction` is non-positive.
   void set_stiction_tolerance(double v_stiction = 0.001) {
     stribeck_model_.set_stiction_tolerance(v_stiction);

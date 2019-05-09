@@ -6,8 +6,9 @@
  Drake approximates real-world physical contact phenomena with a combination
  of geometric techniques and response models. Here we discuss the
  parameterization and idiosyncracies of a particular contact response model,
- based on point contact with compliance and dissipation, and a Stribeck friction
- model approximating Coulomb stiction and sliding friction effects.
+ based on point contact, non-penetration imposed with a penalty force, and a
+ Stribeck friction model approximating Coulomb stiction and sliding friction
+ effects.
 
  This document gives an overview of the state of the implementation of compliant
  contact in Drake (as of Q2 2019) with particular emphasis on how to account for
@@ -16,12 +17,12 @@
  encompass:
 
  - @ref contact_geometry "properties of the geometric contact techniques",
- - @ref contact_engineering "techniques for teasing out desirable behavior",
- - @ref contact_model "details of the contact response model", and
- - @ref drake_per_object_material "per-object contact materials".
+ - @ref contact_engineering "choosing appropriate modeling parameters",
+ - @ref contact_engineering "choosing a time advancement strategy", and
+ - @ref stribeck_approximation "details of the friction model".
 
  @anchor point_contact
- <h2>Point Contact in Drake</h2>
+ <h2>%Point Contact in Drake</h2>
 
  As of Q2 of 2019, @ref drake::multibody::MultibodyPlant "MultibodyPlant"
  implements a point contact model. In a point contact model two bodies A and B
@@ -39,7 +40,8 @@
  the penalty can be adjusted so that, in the limit to a very stiff penalty force
  we recover rigid contact. In this limit, for which `Ac ≡ Bc`, a contact point C
  is defined as `C ≜ Ac (≡ Bc)`. In practice, with a finite numerical stiffness
- of the penalty force, we define `C = 1/2⋅(Ac + Bc)`.
+ of the penalty force, we define `C = 1/2⋅(Ac + Bc)`. Notice that the 1/2
+ factor is arbitrary and it's chosen for symmetry.
 
  At point C we define a contact frame; we'll just refer to that frame as `C`
  when it is clear we mean the frame rather than the point.
@@ -50,8 +52,7 @@
  y-axes). Because the two forces are equal and opposite, we limit our discussion
  to the force `f` acting on `A` at `Ac` (such that `-f` acts on `B` at `Bc`).
 
- @image html multibody/plant/images/simple_contact.png "Figure 1: Illustration
- of contact between two spheres."
+ @image html multibody/plant/images/simple_contact.png "Figure 1: Illustration of contact between two spheres."
 
  The computation of the contact force is most naturally discussed in the
  contact frame `C` (shown in Figure 1).
@@ -59,7 +60,7 @@
  The contact force, `f`,  can be decomposed into two components: normal, `fₙ`,
  and tangential, `fₜ` such that `f=fₙ+fₜ`. The normal force lies in the
  direction of the contact frame's z-axis.  The tangential
- component lies parallel to the contact frame's x-y plane.  In Drake's compliant
+ component lies parallel to the contact frame's x-y plane.  In Drake's
  contact model, the tangential force is a function of the normal force.
 
  The detailed discussion of the contact force computation is decomposed into
@@ -82,19 +83,18 @@
  noting that some of these properties are considered _problems_ yet to be
  resolved and should not necessarily be considered desirable.
 
- -# Between any two collision geometries, only a _single_ contact will be
- reported. This pair will contain points `Ac` and `Bc` as defined in @ref
- point_contact "Point Contact In Drake".
+ -# Between any two collision geometries, only a _single_ pair of contact points
+ will be reported. This pair will contain points `Ac` and `Bc` as defined in
+ @ref point_contact "Point Contact In Drake".
  -# Contacts are reported as a point pair. A PenetrationAsPointPair in Drake.
  -# Surface-to-surface contacts (such as a block sitting on a plane) are
  unfortunately still limited to a single contact point, typically located at
- the point of deepest penetration. (That point will necessarily change from step
- to step in an essentially non-physical manner that is likely to cause
- difficulties.) Our contact solver has shown to be stable even under these
- conditions. However it is recommended to emulate multi-point contact by adding
- a collection of spheres covering the contact surfaces of interest. Refer to
- the example in inclined_plane_with_body.cc for a demonstration
- of this strategy.
+ the point of deepest penetration. That point will necessarily change from step
+ to step in an essentially non-physical manner. Our contact solver has generally
+ exhibited stable behavior, even under these adversarial conditions. However, we
+ recommend emulating multi-point contact by adding a collection of spheres
+ covering the contact surfaces of interest. Refer to the example in
+ inclined_plane_with_body.cc for a demonstration of this strategy.
  -# A contact _normal_ is determined that approximates the mutual normal of
  the contacting surfaces at the contact point.
 
@@ -127,8 +127,9 @@
       section @ref mbp_penalty_method "Contact by penalty method".
    3. Global parameter controlling the Stribeck approximation of Coulomb
       friction, refer to section @ref stribeck_approximation for details.
-      drake::multibody::MultibodyPlant::set_stiction_tolerance() provides
-      additional information and guidelines on how to select this parameter.
+      @ref drake::multibody::MultibodyPlant::set_stiction_tolerance()
+      "set_stiction_tolerance()" provides additional information and guidelines
+      on how to set this parameter.
 
  @anchor time_advancement_strategy
  <h2>Choice of Time Advancement Strategy</h2>
@@ -142,49 +143,53 @@
  In this section we'll only provide a very limited distinction between a
  continuous and a discrete system. A complete discussion of the subject,
  including the modeling of hybrid systems is beyond the scope of this section
- and thus the interested is referred to the documentation for Simulator.
+ and thus the interested is referred to the documentation for
+ @ref drake::systems::Simulator Simulator.
 
  <h3>Discrete MultibodyPlant</h3>
- Currently, this is method the prefered method given its speed and robustness.
- In this modality the system is modeled as a system with periodic updates of
- length `time_step`. This can essentially be seen as a time stepping strategy
- with a fixed `time_step`. The value of `time_step` is provided at construction
- of the @ref drake::multibody::MultibodyPlant "MultibodyPlant".
- In Drake we use a custom semi-implicit Euler scheme for multibody systems
- using the Stribeck approximation of Coulomb friction. Details for this solver
- are provided in the documentation for ImplicitStribeckSolver.
+ Currently, this is the preferred modality given its speed and robustness.
+ In this modality, the system is updated through periodic updates of length
+ `time_step`. This can essentially be seen as a time-stepping strategy with a
+ fixed `time_step`. The value of `time_step` is provided at construction of the
+ @ref drake::multibody::MultibodyPlant "MultibodyPlant". In Drake we use a
+ custom semi-implicit Euler scheme for multibody systems using the Stribeck
+ approximation of Coulomb friction. Details for this solver are provided in the
+ documentation for @ref drake::multibody::ImplicitStribeckSolver
+ "ImplicitStribeckSolver".
 
  <h3>Continuous MultibodyPlant</h3>
- If `time_step` defined above is specified to be exactly zero at the time of
- instantiating a @ref drake::multibody::MultibodyPlant "MultibodyPlant", the
- system is modeled as continuous. What that means is that the system is modeld to
- follow a continuous dynamics of the form `ẋ = f(t, x, u)`, where `x` is the
- state of the plant, t is time and u are externally applied inputs (either
- actuation or external body forces). In this mode, Drake allows chose from a
- variety of integrators to advance the continuos system forward in time.
- Integrators can, in a broad sense, be classified according to:
+ If the `time_step` defined above is specified to be exactly zero at
+ @ref drake::multibody::MultibodyPlant "MultibodyPlant" construction, the
+ system is modeled as continuous. What that means is that the system is modeled
+ to follow continuous dynamics of the form `ẋ = f(t, x, u)`, where `x` is the
+ state of the plant, t is time, and u are externally applied inputs (either
+ actuation or external body forces). In this mode, any of Drake's integrators
+ can be used to advanced the system forward in time. The following text outlines
+ the implications of using particular integrators.
+
+ Integrators can be broadly categorized as one of:
    1. Implicit/Explicit integrators.
    2. Fixed time step/error controlled integrators.
 
- Fixed time step integratos often provide faster simulations however they often
+ While fixed time step integrators often provide faster simulations, they can
  miss slip/stick transitions when the stiction tolerance `vₛ` of the Stribeck
- approximation is small (say smaller than 1e-3 m/s). In addition, they might
- suffer of stability problems when the penalty forces are made stiff (see
- drake::multibody::MultibodyPlant::set_penetration_allowance()).
+ approximation is small (say, smaller than 1e-3 m/s). In addition, they might
+ suffer from stability problems when the penalty forces are made stiff (see
+ @ref drake::multibody::MultibodyPlant::set_penetration_allowance()
+ "set_penetration_allowance()").
 
  Error controlled integrators such as @ref drake::systems::RungeKutta3Integrator
  "RungeKutta3Integrator" offer a stable integration scheme by adapting the time
  step to satisfy a pre-specified accuracy tolerance. However, this stability
-comes with the price of slower simulations given that often these integrators
-need to take very small time steps in order to resolve the stiff contact
-dynamics. In addition, these integrators usually perform additional computations
-to estimate error bounds used to determine step size.
+ comes with the price of slower simulations given that often these integrators
+ need to take very small time steps in order to resolve stiff contact dynamics.
+ In addition, these integrators usually perform additional computations to
+ estimate error bounds used to determine step size.
 
  Implicit integrators have the potential to integrate stiff continuous systems
  forward in time using larger time steps and therefore reduce computational
  cost. Thus far, with our @ref drake::systems::ImplicitEulerIntegrator
- "ImplicitEulerIntegrator" we observed that the additional cost of performing a
- Newton-Raphson iteration at each time step is cost prohibitive for multibody
+ "ImplicitEulerIntegrator" we have not observed this advantage for multibody
  systems using the Stribeck approximation.
 
  @anchor crafting_collision_geometry
@@ -194,21 +199,6 @@ to estimate error bounds used to determine step size.
  More particularly, the contact is characterized by a single point. The point is
  associated with a characteristic area in the model (see above). This has two
  implications:
-
- - **Sampled contact area**
-
-   Increasing the area associated with the point will increase the magnitude of
-   the contact force. An alternative solution is to increase the number of
-   collision geometries associated with a body such that each point corresponds
-   to a smaller portion of the body's surface area. This essentially changes the
-   interpretation of the point to be closer in line with a smaller
-   characteristic area.
-
-   This would have particular value if your simulation scenario has contacts of
-   disparate scales. A single, global characteristic radius may be insufficient.
-   By increasing the samples on large contact patches, those contact points will
-   be compatible with the smaller characteristic area which works for the small
-   contact patches.
 
  - **Surface-on-surface contacts**
 
@@ -287,10 +277,10 @@ to estimate error bounds used to determine step size.
 
       |
       |
-   μs |     **
+   μₛ |     **
       |    *  *
       |    *   *
-   μd |   *      **********
+   μₖ |   *      **********
       |   *
       |   *
       |   *
@@ -301,17 +291,13 @@ to estimate error bounds used to determine step size.
 
    Figure 3: Stribeck function for stiction.
  -->
- @image html multibody/plant/images/stribeck.png "Figure 3: Stribeck function for stiction"
-
- <!-- TODO(SeanCurtis-TRI,sherm1) Consider using "static" and "kinetic"
- coefficients of friction so we can write μₛ and μₖ in Unicode ("d" isn't
- available as a subscript). This isn't simply a change in this file; the
- code should also reflect this nomenclature change. -->
+ @image html multibody/plant/images/stribeck.png "Figure 3: Stribeck function
+ for stiction"
 
  The Stribeck model is a variation of Coulomb friction, where the frictional
  (aka _tangential_) force is proportional to the normal force as:
 
- `fₜ = μ⋅fₙ`
+ `fₜ = μ⋅fₙ`,
 
  In the Stribeck model, the coefficient of friction, μ, is replaced with a
  slip speed-dependent function:
@@ -335,7 +321,9 @@ to estimate error bounds used to determine step size.
     - `s ∈ [3, ∞)`: Coefficient of friction is held constant at μd.
 
  Other than the residual "creep" velocity limited by `vₛ`, which can be
- arbitrarily small (in theory; see next section for practical considerations),
+ arbitrarily small (in theory; see @ref
+ drake::multibody::MultibodyPlant::set_stiction_tolerance()
+ "set_stiction_tolerance()" for practical considerations),
  this model produces a reasonably good approximation of
  Coulomb friction. Its primary drawback is that the model is numerically
  very stiff in the stiction region, which requires either small step sizes

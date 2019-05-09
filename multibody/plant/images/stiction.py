@@ -11,17 +11,17 @@ def step5(x):
    x3 = x * x * x
    return x3 * (10 + x * (6 * x - 15))
 
-def stribeck(us, ud, v):
+def stribeck(us, uk, v):
    '''Python version of RigidBodyPlant::ComputeFrictionCOefficient'''
-   u = np.zeros_like(v) + ud
+   u = np.zeros_like(v) + uk
    u[v < 1] = us * step5(v[v < 1])
    mask = (v >= 1) & (v < 3)
-   u[mask] = us - (us - ud) * step5((v[mask] - 1) / 2)
+   u[mask] = us - (us - uk) * step5((v[mask] - 1) / 2)
    return u
 
 us = 0.9
-ud = 0.5
-y = stribeck(us, ud, x)
+uk = 0.5
+y = stribeck(us, uk, x)
 
 f = plt.figure()
 ax = f.add_subplot(111)
@@ -36,13 +36,13 @@ plt.plot((1, 1), (0, 1), 'k', alpha=0.25)
 plt.plot((3, 3), (0, 1), 'k', alpha=0.25)
 # horizontal lines
 plt.plot((0, 4), (us, us), 'k', alpha=0.25)
-plt.plot((0, 4), (ud, ud), 'k', alpha=0.25)
+plt.plot((0, 4), (uk, uk), 'k', alpha=0.25)
 
 plt.plot(x, y)
 plt.title('Speed-dependent Coefficient of Friction')
 plt.xlabel('multiples of $v_s$')
 plt.xticks((0, 1, 3))
-plt.yticks((0, ud, us), ('0', '$\mu_d$', '$\mu_s$') )
+plt.yticks((0, uk, us), ('0', '$\mu_k$', '$\mu_s$') )
 plt.xlim((0, 4))
 plt.ylim((0, 1))
 plt.ylabel(r'$\mu$')
