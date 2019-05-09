@@ -332,7 +332,7 @@ void EvaluateNonlinearConstraints(
           }
         } else {
           for (int j = 0; j < num_v_variables; ++j) {
-            G[(*grad_index)++] = static_cast<snopt::doublereal>(0.0);
+            G[(*grad_index)++] = snopt::doublereal(0.0);
           }
         }
       }

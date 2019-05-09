@@ -122,7 +122,8 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
   // gradient array.
   size_t grad_idx = 0;
 
-  for (int i = 0; i < c.num_constraints(); i++) {
+  DRAKE_ASSERT(ty.rows() == c.num_constraints());
+  for (int i = 0; i < ty.rows(); i++) {
     if (ty(i).derivatives().size() > 0) {
       for (int j = 0; j < variables.rows(); j++) {
         grad[grad_idx++] = ty(i).derivatives()(j);
@@ -479,6 +480,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
           cost_cache_->grad[vj_index] += ty(0).derivatives()(j);
         }
       }
+      // We do not need to add code for ty(0).derivatives().size() == 0, since
+      // cost_cache_->grad would be unchanged if the derivative has zero size.
     }
   }
 
