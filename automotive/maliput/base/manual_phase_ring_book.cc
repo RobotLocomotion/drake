@@ -51,6 +51,14 @@ class ManualPhaseRingBook::Impl {
     }
   }
 
+  std::vector<PhaseRing::Id> DoGetPhaseRings() const {
+    std::vector<PhaseRing::Id> result;
+    for (const auto& element : ring_book_) {
+      result.push_back(element.first);
+    }
+    return result;
+  }
+
   optional<PhaseRing> DoGetPhaseRing(const PhaseRing::Id& ring_id) const {
     auto it = ring_book_.find(ring_id);
     if (it == ring_book_.end()) {
@@ -83,6 +91,10 @@ void ManualPhaseRingBook::AddPhaseRing(const PhaseRing& ring) {
 
 void ManualPhaseRingBook::RemovePhaseRing(const PhaseRing::Id& ring_id) {
   impl_->RemovePhaseRing(ring_id);
+}
+
+std::vector<PhaseRing::Id> ManualPhaseRingBook::DoGetPhaseRings() const {
+  return impl_->DoGetPhaseRings();
 }
 
 optional<PhaseRing> ManualPhaseRingBook::DoGetPhaseRing(
