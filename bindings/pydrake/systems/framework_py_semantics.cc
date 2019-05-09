@@ -641,16 +641,6 @@ void DefineFrameworkPySemantics(py::module m) {
             overload_cast_explicit<DiscreteValues<T>&>(
                 &State<T>::get_mutable_discrete_state),
             py_reference_internal, doc.State.get_mutable_discrete_state.doc)
-        .def("get_discrete_state",
-            overload_cast_explicit<const BasicVector<T>&, int>(
-                &State<T>::get_discrete_state),
-            py::arg("index"), py_reference_internal,
-            doc.State.get_discrete_state.doc)
-        .def("get_mutable_discrete_state",
-            overload_cast_explicit<BasicVector<T>&, int>(
-                &State<T>::get_mutable_discrete_state),
-            py::arg("index"), py_reference_internal,
-            doc.State.get_mutable_discrete_state.doc)
         .def("get_abstract_state",
             static_cast<const AbstractValues& (State<T>::*)() const>(
                 &State<T>::get_abstract_state),
@@ -659,20 +649,7 @@ void DefineFrameworkPySemantics(py::module m) {
             [](State<T>* self) -> AbstractValues& {
               return self->get_mutable_abstract_state();
             },
-            py_reference_internal, doc.State.get_mutable_abstract_state.doc)
-        .def("get_abstract_state",
-            [](const State<T>* self, int index) -> auto& {
-              return self->get_abstract_state().get_value(index);
-            },
-            py::arg("index"), py_reference_internal,
-            doc.State.get_abstract_state.doc)
-        .def("get_mutable_abstract_state",
-            [](State<T>* self, int index) -> AbstractValue& {
-              return self->get_mutable_abstract_state().get_mutable_value(
-                  index);
-            },
-            py::arg("index"), py_reference_internal,
-            doc.State.get_mutable_abstract_state.doc);
+            py_reference_internal, doc.State.get_mutable_abstract_state.doc);
 
     // - Constituents.
     DefineTemplateClassWithDefault<ContinuousState<T>>(
