@@ -27,11 +27,13 @@ drake_cc_library(
     name = "everything",
     srcs = [
         "generate_obj.cc",
+        "generate_string.cc",
         "generate_urdf.cc",
         "segment_analysis.cc",
     ],
     hdrs = [
         "generate_obj.h",
+        "generate_string.h",
         "generate_urdf.h",
         "segment_analysis.h",
     ],
@@ -112,6 +114,18 @@ drake_cc_googletest(
         "//automotive/maliput/multilane",
         "//common",
         "@spruce",
+    ],
+)
+
+drake_cc_googletest(
+    name = "generate_string_test",
+    data = [
+        "//automotive/maliput/multilane:yamls",
+    ],
+    deps = [
+        ":utility",
+        "//automotive/maliput/multilane",
+        "//common:find_resource",
     ],
 )
 
