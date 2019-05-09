@@ -1,5 +1,5 @@
-/** @defgroup drake_contacts   Compliant Contact in Drake
-    @ingroup collision_concepts
+/** @defgroup drake_contacts   Contact in Drake
+    @ingroup multibody
 
  Drake is concerned with the simulation of _physical_ phenomena, including
  contact between simulated objects.
@@ -9,9 +9,8 @@
  based on point contact with compliance and dissipation, and a Stribeck friction
  model approximating Coulomb stiction and sliding friction effects.
 
- <!-- TODO(SeanCurtis-TRI): Update this as contact models update. -->
  This document gives an overview of the state of the implementation of compliant
- contact in Drake (as of Q4 2017) with particular emphasis on how to account for
+ contact in Drake (as of Q2 2019) with particular emphasis on how to account for
  its particular quirks in a well-principled manner. What works in one simulation
  scenario, may not work equally well in another scenario. This discussion will
  encompass:
@@ -21,18 +20,67 @@
  - @ref contact_model "details of the contact response model", and
  - @ref drake_per_object_material "per-object contact materials".
 
- @anchor contact_spec
- <h2>Definition of contact</h2>
+ @anchor point_contact
+ <h2>Point contact in Drake</h2>
+
+ As of Q2 of 2019, MultibodyPlant implements a point contact model. In a
+ point contact model two bodies A and B are considered to be in contact if the
+ geometrical intersection of their original rigid geometries is non-empty. That
+ is, there exists a non-empty overlap volume. In a point contact model, this
+ overlap region is simply characterized by a pair of points `Ac` and `Bc` on
+ bodies A and B, respectively, such that `Ac` is a point on the surface of A
+ that lies the farthest from the surface of B. Similarly for point `Bc`.
+ In the limit to rigid, bodies do never interpenetrate, the intersection
+ volume shrinks to zero and in this limit points `Ac` and `Bc` coincide with
+ each other. In Drake we enforce such a rigid constraint using a penalty
+ force. This penalty force introduces a "numerical" compliance such that,
+ within this approximation, rigid bodies are allowed to overlap with a
+ non-empty intersection. The strength of the penalty can be adjusted so that, in
+ the limit to a very stiff penalty force we recover rigid contact.
+ In this limit, for which `Ac ≡ Bc`, a contact point C is
+ defined as `C ≜ Ac (≡ Bc)`. In practice, with a finite numerical stiffness of
+ the penalty force, we define `C = 1/2⋅(Ac + Bc)`.
+
+ At point C we define a contact frame; we'll just refer to that frame as `C`
+ when it is clear we mean the frame rather than the point.
+ We define the normal `n̂` as pointing outward from the surface of
+ `B` towards the interior of `A`. That is, if we denote with `d` the
+ (positive) penetration depth, we have that `Bc = d⋅n̂ + Ac`.
+ The `C` frame's z-axis is aligned along this normal (with arbitrary x- and
+ y-axes). Because the two forces are equal and opposite, we limit our discussion
+ to the force `f` acting on `A` at `Ac` (such that `-f` acts on `B` at `Bc`).
+
+ @image html multibody/plant/images/simple_contact.png "Figure 1: Illustration of contact between two spheres."
+
+ The computation of the contact force is most naturally discussed in the
+ contact frame `C` (shown in Figure 1).
+
+ The contact force, `f`,  can be decomposed into two components: normal, `fₙ`,
+ and tangential, `fₜ` such that `f=fₙ+fₜ`. The normal force lies in the
+ direction of the contact frame's z-axis.  The tangential
+ component lies parallel to the contact frame's x-y plane.  In Drake's compliant
+ contact model, the tangential force is a function of the normal force.
+
+ The detailed discussion of the contact force computation is decomposed into
+ two parts: a high-level engineering discussion addressed to end users who care
+ most about working with the model and a further detailed discussion of the
+ mathematical underpinnings of the implemented model. The practical guide should
+ be sufficient for most users.
+
+ Next topic: @ref contact_engineering
+ Next topic: @ref contact_spec
+*/
+
+/** 
+ @defgroup contact_spec Definition of contact
+ @ingroup drake_contacts
 
  Before getting into the details of how contacts are detected and responses are
  modeled, it is worthwhile to define what a contact means to Drake.
 
  First, contact _conceptually_ occurs between two _surfaces_, one on each of
  two independently moving _bodies_. The contact produces _forces_ on those two
- surfaces, which can then affect the motion of the bodies. In practice, surfaces
- are represented by one or more drake::multibody::collision::Element objects --
- geometric shapes rigidly affixed to a body, whose surfaces can engage in
- contact.
+ surfaces, which can then affect the motion of the bodies.
 
  This document discusses a _compliant_ contact model. In compliant models, the
  bodies are considered rigid with a thin, deformable shell. The
@@ -96,41 +144,6 @@
 
  Next topic: @ref contact_model
  */
-
-/** @defgroup contact_model Computing Contact Forces
- @ingroup drake_contacts
-
- Consider @ref contact_spec "the definition of a contact" with
- interpenetrating collision elements `A` and `B`. The single, computed contact
- point serves as the origin of a contact frame `C`, so is designated `Co`; we'll
- shorten that to just `C` when it is clear we mean the point rather than the
- frame. We define the normal as pointing outward from the deformed surface of
- `B` towards the deformed interior of `A`. The `C` frame's z-axis is aligned
- along this normal (with arbitrary x- and y-axes). We are also interested in the
- points of bodies `A` and `B` that are coincident with `Co`, which we call
- `Ac` and `Bc`, respectively. Because the two
- forces are equal and opposite, we limit our discussion to the force `f` acting
- on `A` at `Ac` (such that `-f` acts on `B` at `Bc`).
-
- @image html multibody/rigid_body_plant/images/simple_contact.png "Figure 1: Illustration of contact between two spheres."
-
- The computation of the contact force is most naturally discussed in the
- contact frame `C` (shown in Figure 1).
-
- The contact force, `f`,  can be decomposed into two components: normal, `fₙ`,
- and tangential, `fₜ` such that `f=fₙ+fₜ`. The normal force lies in the
- direction of the contact frame's z-axis.  The tangential
- component lies parallel to the contact frame's x-y plane.  In Drake's compliant
- contact model, the tangential force is a function of the normal force.
-
- The detailed discussion of the contact force computation is decomposed into
- two parts: a high-level engineering discussion addressed to end users who care
- most about working with the model and a further detailed discussion of the
- mathematical underpinnings of the implemented model. The practical guide should
- be sufficient for most users.
-
- Next topic: @ref contact_engineering
-*/
 
 /** @defgroup contact_engineering Working with Contacts in Drake
  @ingroup drake_contacts
@@ -487,7 +500,7 @@
                       fₚ
       Figure 2: Idealized Stiction/Sliding Friction Model
  -->
- @image html multibody/rigid_body_plant/images/ideal_stiction.png "Figure 2: Idealized Stiction/Sliding Friction Model"
+ @image html multibody/plant/images/ideal_stiction.png "Figure 2: Idealized Stiction/Sliding Friction Model"
 
  In _idealized_ stiction, tangent force `fₜ` is equal and opposite
  to the pushing force `fₚ` up to the point where that force is sufficient to
@@ -523,7 +536,7 @@
 
    Figure 3: Stribeck function for stiction.
  -->
- @image html multibody/rigid_body_plant/images/stribeck.png "Figure 3: Stribeck function for stiction"
+ @image html multibody/plant/images/stribeck.png "Figure 3: Stribeck function for stiction"
 
  <!-- TODO(SeanCurtis-TRI,sherm1) Consider using "static" and "kinetic"
  coefficients of friction so we can write μₛ and μₖ in Unicode ("d" isn't
