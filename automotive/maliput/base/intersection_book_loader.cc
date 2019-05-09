@@ -51,6 +51,7 @@ std::unique_ptr<api::Intersection> BuildIntersection(
   optional<PhaseRing> ring = phase_ring_book.GetPhaseRing(ring_id);
   DRAKE_THROW_UNLESS(ring.has_value());
   DRAKE_THROW_UNLESS(ring->phases().size() > 0);
+  DRAKE_THROW_UNLESS(ring->phases().find(phase_id) != ring->phases().end());
   optional<api::rules::Phase::Id> next_phase_id = nullopt;
   optional<double> duration_until = nullopt;
   std::vector<PhaseRing::NextPhase> next_phases =
