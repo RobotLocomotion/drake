@@ -479,6 +479,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
           cost_cache_->grad[vj_index] += ty(0).derivatives()(j);
         }
       }
+      // We do not need to add code for ty(0).derivatives().size() == 0, since
+      // cost_cache_->grad would be unchanged if the derivative has zero size.
     }
   }
 
