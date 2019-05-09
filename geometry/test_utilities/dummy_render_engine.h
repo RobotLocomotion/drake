@@ -101,6 +101,7 @@ class DummyRenderEngine final : public render::RenderEngine {
   optional<RenderIndex> DoRegisterVisual(const Shape&,
                                          const PerceptionProperties& properties,
                                          const math::RigidTransformd&) final {
+    GetRenderLabelOrThrow(properties);
     if (properties.HasGroup(include_group_name_)) {
       return RenderIndex(register_count_++);
     }
