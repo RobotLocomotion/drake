@@ -113,6 +113,10 @@ class MockPhaseRingBook final : public rules::PhaseRingBook {
   MockPhaseRingBook() {}
 
  private:
+  std::vector<rules::PhaseRing::Id> DoGetPhaseRings() const override {
+    return std::vector<rules::PhaseRing::Id>();
+  }
+
   optional<rules::PhaseRing> DoGetPhaseRing(
       const rules::PhaseRing::Id&) const override {
     return nullopt;
