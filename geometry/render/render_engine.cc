@@ -14,8 +14,6 @@ optional<RenderIndex> RenderEngine::RegisterVisual(
     GeometryIndex index, const drake::geometry::Shape& shape,
     const PerceptionProperties& properties,
     const RigidTransformd& X_WG, bool needs_updates) {
-  RenderLabelIsValidOrThrow(properties);
-
   optional<RenderIndex> render_index =
       DoRegisterVisual(shape, properties, X_WG);
   if (render_index) {
@@ -86,7 +84,7 @@ optional<GeometryIndex> RenderEngine::RemoveGeometry(RenderIndex index) {
   return moved_internal_index;
 }
 
-void RenderEngine::RenderLabelIsValidOrThrow(
+RenderLabel RenderEngine::GetRenderLabelOrThrow(
     const PerceptionProperties& properties) const {
   RenderLabel label =
       properties.GetPropertyOrDefault("label", "id", default_render_label_);
@@ -97,6 +95,7 @@ void RenderEngine::RenderLabelIsValidOrThrow(
         "RenderLabel or the RenderEngine may have provided it as a default for "
         "missing render labels in the properties.");
   }
+  return label;
 }
 
 }  // namespace render
