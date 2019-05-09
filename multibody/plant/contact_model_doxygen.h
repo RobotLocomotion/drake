@@ -1,4 +1,4 @@
-/** @defgroup drake_contacts   Contact in Drake
+/** @defgroup drake_contacts   Contact Modeling in Drake
     @ingroup multibody
 
  Drake is concerned with the simulation of _physical_ phenomena, including
@@ -118,9 +118,9 @@
 
  Contact modeling in Drake is controlled by a small set of parameters:
    1. Per-geometry coefficients of friction. Refer to the documentation for
-      CoulombFriction for details, which also includes a description for
-      modeling the interaction between two surfaces with different coefficients
-      of friction.
+      @ref drake::multibody::CoulombFriction "CoulombFriction" for details,
+      which also includes a description for modeling the interaction between two
+      surfaces with different coefficients of friction.
    2. Global parameters controlling the stiffness of normal penalty forces.
       @ref drake::multibody::MultibodyPlant "MultibodyPlant" offers a single
       global parameter, the "penetration allowance", described in detail in

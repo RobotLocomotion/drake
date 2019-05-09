@@ -161,6 +161,12 @@ namespace multibody {
 /// Refer to the documentation provided in each of the methods above for further
 /// details.
 ///
+/// @section mbp_modeling_contact Modeling contact
+///
+/// Please refer to @ref drake_contacts "Contact Modeling in Drake" for details
+/// on the available approximations, setup and considerations for a multibody
+/// simulation with frictional contact.
+///
 /// @section finalize_stage Finalize() stage
 ///
 /// Once the user is done adding modeling elements and registering geometry, a
