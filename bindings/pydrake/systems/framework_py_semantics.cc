@@ -482,11 +482,15 @@ void DefineFrameworkPySemantics(py::module m) {
 
     DefineTemplateClassWithDefault<InputPort<T>>(
         m, "InputPort", GetPyParam<T>(), doc.InputPort.doc)
-        .def("size", &InputPort<T>::size, doc.PortBase.size.doc)
-        .def("get_data_type", &InputPort<T>::get_data_type,
-            doc.PortBase.get_data_type.doc)
+        .def("get_name", &InputPort<T>::get_name, doc.PortBase.get_name.doc)
+        .def("GetFullDescription", &InputPort<T>::GetFullDescription,
+            doc.PortBase.GetFullDescription.doc)
         .def("get_index", &InputPort<T>::get_index,
             doc.InputPortBase.get_index.doc)
+        .def("get_data_type", &InputPort<T>::get_data_type,
+            doc.PortBase.get_data_type.doc)
+        .def("size", &InputPort<T>::size, doc.PortBase.size.doc)
+        .def("ticket", &InputPort<T>::ticket, doc.PortBase.ticket.doc)
         .def("Eval",
             [](const InputPort<T>* self, const Context<T>& context) {
               return DoEval(self, context);

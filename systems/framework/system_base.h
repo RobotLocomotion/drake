@@ -633,7 +633,7 @@ class SystemBase : public internal::SystemMessageInterface {
   /** Returns a ticket indicating dependence on input port uᵢ indicated
   by `index`.
   @pre `index` selects an existing input port of this System. */
-  DependencyTicket input_port_ticket(InputPortIndex index) {
+  DependencyTicket input_port_ticket(InputPortIndex index) const {
     DRAKE_DEMAND(0 <= index && index < num_input_ports());
     return input_ports_[index]->ticket();
   }
@@ -658,7 +658,7 @@ class SystemBase : public internal::SystemMessageInterface {
   by `index`. Note that cache entries are _not_ included in the `all_sources`
   ticket so must be listed separately.
   @pre `index` selects an existing cache entry in this System. */
-  DependencyTicket cache_entry_ticket(CacheIndex index) {
+  DependencyTicket cache_entry_ticket(CacheIndex index) const {
     DRAKE_DEMAND(0 <= index && index < num_cache_entries());
     return cache_entries_[index]->ticket();
   }
@@ -738,7 +738,7 @@ class SystemBase : public internal::SystemMessageInterface {
   port indicated by `index`. No user-definable quantities in a system can
   meaningfully depend on that system's own output ports.
   @pre `index` selects an existing output port of this System. */
-  DependencyTicket output_port_ticket(OutputPortIndex index) {
+  DependencyTicket output_port_ticket(OutputPortIndex index) const {
     DRAKE_DEMAND(0 <= index && index < num_output_ports());
     return output_ports_[index]->ticket();
   }
