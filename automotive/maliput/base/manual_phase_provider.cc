@@ -45,6 +45,7 @@ class ManualPhaseProvider::Impl {
       throw std::logic_error(
           "Duration-until specified when next phase is unspecified.");
     }
+    DRAKE_THROW_UNLESS(phases_.find(id) != phases_.end());
     phases_.at(id) =
         PhaseProvider::Result{phase, ComputeNext(next_phase, duration_until)};
   }
