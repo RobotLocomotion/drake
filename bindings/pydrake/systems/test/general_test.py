@@ -283,7 +283,7 @@ class TestGeneral(unittest.TestCase):
                 # Check number of output ports and value for a given context.
                 output = system.AllocateOutput()
                 self.assertEqual(output.num_ports(), 1)
-                system.CalcOutput(context, output)
+                system.CalcOutput(context=context, outputs=output)
                 if T == float:
                     value = output.get_vector_data(0).get_value()
                     self.assertTrue(np.allclose([1], value))
