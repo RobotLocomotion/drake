@@ -227,7 +227,10 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
   pair_data->p_BCb = b.getTransform().inverse() * p_WCb;
 
   // Setting the normal.
-  const double kEps = std::numeric_limits<double>::epsilon();
+  // TODO(DamrongGuoy): We should set the tolerance through SceneGraph for
+  //  determining whether the two geometries are touching or not. For now, we
+  //  use this number.
+  const double kEps = 1e-14;
   const double kNan = std::numeric_limits<double>::quiet_NaN();
 
   // Returns NaN in nhat when min_distance is 0 or almost 0.
