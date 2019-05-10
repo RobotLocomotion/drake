@@ -1,105 +1,172 @@
 /** @defgroup drake_contacts   Contact Modeling in Drake
     @ingroup multibody
 
- Drake is concerned with the simulation of _physical_ phenomena, including
- contact between simulated objects.
- Drake approximates real-world physical contact phenomena with a combination
- of geometric techniques and response models. Here we discuss the
- parameterization and idiosyncracies of a particular contact response model,
- based on point contact, non-penetration imposed with a penalty force, and a
- Stribeck friction model approximating Coulomb stiction and sliding friction
- effects.
+Drake is concerned with the simulation of _physical_ phenomena, including
+contact between simulated objects.
+Drake approximates real-world physical contact phenomena with a combination
+of geometric techniques and response models. Here we discuss the
+parameterization and idiosyncracies of a particular contact response model,
+based on point contact, non-penetration imposed with a penalty force, and a
+Stribeck friction model approximating Coulomb stiction and sliding friction
+effects.
+This document gives an overview of the state of the implementation of
+contact in Drake (as of Q2 2019) with particular emphasis on how to account for
+its particular quirks in a well-principled manner. What works in one simulation
+scenario, may not work equally well in another scenario. This discussion will
+encompass:
+- @ref contact_geometry "properties of the geometric contact techniques",
+- @ref contact_engineering "choosing appropriate modeling parameters",
+- @ref contact_engineering "choosing a time advancement strategy", and
+- @ref stribeck_approximation "details of the friction model".
 
- This document gives an overview of the state of the implementation of compliant
- contact in Drake (as of Q2 2019) with particular emphasis on how to account for
- its particular quirks in a well-principled manner. What works in one simulation
- scenario, may not work equally well in another scenario. This discussion will
- encompass:
+<h2>Mechanics of Solids</h2>
+All objects in real life are compliant and deform under the action of external
+loads. Deformations, as well as motion, of real life solids are well described
+by the theory of _continuum mechanics_, which provides a complete description
+of the full threedimensional state of stress and deformation given a set of
+external loads and boundary conditions.
+Broadly, how compliant a solid is depends on the material (or materials) it is
+made of. Factors such as microstructure, imperfections, anisotropy, etc. affect
+the behavior of a material. Ultimately, in continuum mechanics, the behavior of
+a particular material can be boiled down to its stress-strain curve,
+or constitutive law describing the stress/strain relationship at each point
+within a solid composed of that material. The simplest constitutive law is that
+of Hooke's law, describing the behaviour of materials which exhibit a
+linear-elastic region in the stress-strain curve. Materials such as steel and
+aluminum can be modeled as Hookean, as long as strain is within the elastic
+range (< 1% strain for steel for example). Other materials such as rubber are
+hyperelastic and are best described by a Neo-Hookean law.
+The _stiffness_ of a material essentially refers to how steep this
+stress-strain curve is. The steepest the slope of the stress-strain curve, the
+stiffer a material is. For Hookean materials, this translates to a larger
+Young modulus (the slope of the stress-strain curve in the linear regime).
 
- - @ref contact_geometry "properties of the geometric contact techniques",
- - @ref contact_engineering "choosing appropriate modeling parameters",
- - @ref contact_engineering "choosing a time advancement strategy", and
- - @ref stribeck_approximation "details of the friction model".
+<h2>Contact Mechanics</h2>
+Contact mechanics refers to the study of the deformations that solids undergo as
+the result of contact loads. The study of contact mechanics dates back to the
+pioneering work of Heinrich Hertz in 1882. The Hertzian theory of contact
+describes the loads and deformations when strains are small, the contacting
+surfaces are much smaller than the overall dimensions of the contacting bodies
+and the materials are linear (i.e. are described by the Hookean law).
 
- @anchor point_contact
- <h2>%Point Contact in Drake</h2>
+In general, when two solids come into contact, they inevitably must undergo
+deformation in order to avoid the physical impossibility of interpenetration
+into each other. This constraint is described by the Signorini boundary
+condition, which at each point in the contact surface imposes a complementarity
+constraint between normal stress and penetration (described by a gap function).
+Stresses on the contact surface are the result of these deformations.
 
- As of Q2 of 2019, @ref drake::multibody::MultibodyPlant "MultibodyPlant"
- implements a point contact model. In a point contact model two bodies A and B
- are considered to be in contact if the geometrical intersection of their
- original rigid geometries is non-empty. That is, there exists a non-empty
- overlap volume. In a point contact model, this overlap region is simply
- characterized by a pair of points `Ac` and `Bc` on bodies A and B,
- respectively, such that `Ac` is a point on the surface of A that lies the
- farthest from the surface of B. Similarly for point `Bc`. In the limit to
- rigid, bodies do never interpenetrate, the intersection volume shrinks to zero
- and in this limit points `Ac` and `Bc` coincide with each other. In Drake we
- enforce such a rigid constraint using a penalty force. This penalty force
- introduces a "numerical" compliance such that, within this approximation, rigid
- bodies are allowed to overlap with a non-empty intersection. The strength of
- the penalty can be adjusted so that, in the limit to a very stiff penalty force
- we recover rigid contact. In this limit, for which `Ac ≡ Bc`, a contact point C
- is defined as `C ≜ Ac (≡ Bc)`. In practice, with a finite numerical stiffness
- of the penalty force, we define `C = 1/2⋅(Ac + Bc)`. Notice that the 1/2
- factor is arbitrary and it's chosen for symmetry.
+Ultimately, contact forces are the result of integrating these contact
+stresses on the contact surface between the solids.
 
- At point C we define a contact frame; we'll just refer to that frame as `C`
- when it is clear we mean the frame rather than the point.
- We define the normal `n̂` as pointing outward from the surface of
- `B` towards the interior of `A`. That is, if we denote with `d` the
- (positive) penetration depth, we have that `Bc = d⋅n̂ + Ac`.
- The `C` frame's z-axis is aligned along this normal (with arbitrary x- and
- y-axes). Because the two forces are equal and opposite, we limit our discussion
- to the force `f` acting on `A` at `Ac` (such that `-f` acts on `B` at `Bc`).
+<h2>Rigid Approximation to Contact</h2>
+A rigid body is an _approximation_ to the general mechanics of solids in the
+mathematical limit to infinite stiffness.
+This mathematical approximation has been used extensively in the past for the
+simulation of multibody systems with contact. As an approximation to the real
+physical system, it leads to known problems such as indeterminate systems.
+Consider for instance a rigid beam supported by its two end points and by a
+third point of support right in the middle, through its center of gravity. Under
+the action of its own weight, infinite solutions to the static problem exist.
 
- @image html multibody/plant/images/simple_contact.png "Figure 1: Illustration of contact between two spheres."
+Rigid contact with Coulomb friction is a common approximation used in
+simulation as well. It has its own limitations, most notably the non-probable
+existence of solutions. As an example of this is the well known Painlevé
+paradox, a one degree of freedom system with contact that, depending on the
+state, has an infinite number of solutions or even no solution exists.
 
- The computation of the contact force is most naturally discussed in the
- contact frame `C` (shown in Figure 1).
+It should be noted that these artifacts are a consequence of the mathematical
+approximations adopted and not a flaw of the original continuum mechanics theory
+and even much less, a flaw in the physics itself.
 
- The contact force, `f`,  can be decomposed into two components: normal, `fₙ`,
- and tangential, `fₜ` such that `f=fₙ+fₜ`. The normal force lies in the
- direction of the contact frame's z-axis.  The tangential
- component lies parallel to the contact frame's x-y plane.  In Drake's
- contact model, the tangential force is a function of the normal force.
 
- The detailed discussion of the contact force computation is decomposed into
- two parts: a high-level engineering discussion addressed to end users who care
- most about working with the model and a further detailed discussion of the
- mathematical underpinnings of the implemented model. The practical guide should
- be sufficient for most users.
+<h3>%Point Contact</h3>
+In the limit to rigid contact, often the region of contact, or contact surface,
+shrinks to a single point. Notable exceptions are planar boundaries coming into
+contact (box on a plane for instance) and rigid bodies with conforming
+boundaries.
 
- Next topic: @ref contact_geometry
+@anchor point_contact_approximation
+<h3>Numerical Approximation of %Point Contact</h3>
+Contact determination in the limit to rigid is not feasible with floating point
+arithmetic given that rigid bodies either lie exactly on top of each other or
+are not in contact. In order for a practical implementation to detect contact
+the bodies must be in an overlapping configuration, even if by a negligible
+small amount, see Figure 1.
+
+In a point contact model two bodies A and B
+are considered to be in contact if the geometrical intersection of their
+original rigid geometries is non-empty. That is, there exists a non-empty
+overlap volume. In a point contact model, this overlap region is simply
+characterized by a pair of points `Ac` and `Bc` on bodies A and B,
+respectively, such that `Ac` is a point on the surface of A that lies the
+farthest from the surface of B. Similarly for point `Bc`. In the limit to
+rigid, bodies do never interpenetrate, the intersection volume shrinks to zero
+and in this limit points `Ac` and `Bc` coincide with each other. 
+
+<h3>Enforcing Non-Penetration with Penalty Forces</h3>
+In Drake we enforce the non-penetration constraint for rigid contact using a
+penalty force. This penalty force
+introduces a "numerical" compliance such that, within this approximation, rigid
+bodies are allowed to overlap with a non-empty intersection. The strength of
+the penalty can be adjusted so that, in the limit to a very stiff penalty force
+we recover rigid contact. In this limit, for which `Ac ≡ Bc`, a contact point C
+is defined as `C ≜ Ac (≡ Bc)`. In practice, with a finite numerical stiffness
+of the penalty force, we define `C = 1/2⋅(Ac + Bc)`. Notice that the 1/2
+factor is arbitrary and it's chosen for symmetry.
+At point C we define a contact frame; we'll just refer to that frame as `C`
+when it is clear we mean the frame rather than the point.
+We define the normal `n̂` as pointing outward from the surface of
+`B` towards the interior of `A`. That is, if we denote with `d` the
+(positive) penetration depth, we have that `Bc = d⋅n̂ + Ac`.
+The `C` frame's z-axis is aligned along this normal (with arbitrary x- and
+y-axes). Because the two forces are equal and opposite, we limit our discussion
+to the force `f` acting on `A` at `Ac` (such that `-f` acts on `B` at `Bc`).
+
+@image html multibody/plant/images/simple_contact.png "Figure 1: Illustration of contact between two spheres."
+
+The computation of the contact force is most naturally discussed in the
+contact frame `C` (shown in Figure 1).
+The contact force, `f`,  can be decomposed into two components: normal, `fₙ`,
+and tangential, `fₜ` such that `f=fₙ+fₜ`. The normal force lies in the
+direction of the contact frame's z-axis.  The tangential
+component lies parallel to the contact frame's x-y plane.  In Drake's
+contact model, the tangential force is a function of the normal force.
+The detailed discussion of the contact force computation is decomposed into
+two parts: a high-level engineering discussion addressed to end users who care
+most about working with the model and a further detailed discussion of the
+mathematical underpinnings of the implemented model. The practical guide should
+be sufficient for most users.
+
+Next topic: @ref contact_geometry
 */
 
 /** @defgroup contact_geometry Detecting Contact
- @ingroup drake_contacts
+    @ingroup drake_contacts
 
- Given two posed geometric shapes in a common frame, the collision detection
- system is responsible for determining if those shapes are penetrating and
- characterizing that penetration. We won't go into the details of the how and
- why these techniques work the way they do, but, instead, focus on _what_ the
- properties of the results of the _current implementation_ are.  It is worth
- noting that some of these properties are considered _problems_ yet to be
- resolved and should not necessarily be considered desirable.
-
- -# Between any two collision geometries, only a _single_ pair of contact points
- will be reported. This pair will contain points `Ac` and `Bc` as defined in
- @ref point_contact "Point Contact In Drake".
- -# Contacts are reported as a point pair. A PenetrationAsPointPair in Drake.
- -# Surface-to-surface contacts (such as a block sitting on a plane) are
- unfortunately still limited to a single contact point, typically located at
- the point of deepest penetration. That point will necessarily change from step
- to step in an essentially non-physical manner. Our contact solver has generally
- exhibited stable behavior, even under these adversarial conditions. However, we
- recommend emulating multi-point contact by adding a collection of spheres
- covering the contact surfaces of interest. Refer to the example in
- inclined_plane_with_body.cc for a demonstration of this strategy.
- -# A contact _normal_ is determined that approximates the mutual normal of
- the contacting surfaces at the contact point.
-
- Next topic: @ref contact_engineering
- */
+Given two posed geometric shapes in a common frame, the collision detection
+system is responsible for determining if those shapes are penetrating and
+characterizing that penetration. We won't go into the details of the how and
+why these techniques work the way they do, but, instead, focus on _what_ the
+properties of the results of the _current implementation_ are.  It is worth
+noting that some of these properties are considered _problems_ yet to be
+resolved and should not necessarily be considered desirable.
+-# Between any two collision geometries, only a _single_ pair of contact points
+will be reported. This pair will contain points `Ac` and `Bc` as defined in
+@ref point_contact_approximation "Numerical Approximation of Point Contact".
+-# Contacts are reported as a point pair. A PenetrationAsPointPair in Drake.
+-# Surface-to-surface contacts (such as a block sitting on a plane) are
+unfortunately still limited to a single contact point, typically located at
+the point of deepest penetration. That point will necessarily change from step
+to step in an essentially non-physical manner. Our contact solver has generally
+exhibited stable behavior, even under these adversarial conditions. However, we
+recommend emulating multi-point contact by adding a collection of spheres
+covering the contact surfaces of interest. Refer to the example in
+inclined_plane_with_body.cc for a demonstration of this strategy.
+-# A contact _normal_ is determined that approximates the mutual normal of
+the contacting surfaces at the contact point.
+Next topic: @ref contact_engineering
+*/
 
 /** @defgroup contact_engineering Working with Contacts in Drake
  @ingroup drake_contacts
@@ -291,8 +358,7 @@
 
    Figure 3: Stribeck function for stiction.
  -->
- @image html multibody/plant/images/stribeck.png "Figure 3: Stribeck function
- for stiction"
+ @image html multibody/plant/images/stribeck.png "Figure 3: Stribeck function for stiction"
 
  The Stribeck model is a variation of Coulomb friction, where the frictional
  (aka _tangential_) force is proportional to the normal force as:
@@ -329,3 +395,11 @@
  very stiff in the stiction region, which requires either small step sizes
  with an explicit integrator, or use of a more-stable implicit integrator.
 */
+
+#if 0
+<h3>Mathematical Description of Rigid Contact</h3>
+Consider rigid bodies B₁ and B₂ defined by their volumes Ω₁ and Ω₂ and with
+boundary surfaces ∂Ω₁ and ∂Ω₂, respectively. We denote with φᵢ(x): ℝ³ → ℝ,
+(i=1, 2) the signed distance function to body Bᵢ.
+The non-penetration condition for rigid 
+#endif
