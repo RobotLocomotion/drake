@@ -46,7 +46,7 @@ struct SignedDistancePair{
   SignedDistancePair(GeometryId a, GeometryId b, const Vector3<T>& p_ACa_in,
                      const Vector3<T>& p_BCb_in, const T& dist,
                      const Vector3<T>& nhat_BA_W_in,
-                     const bool is_nhat_BA_W_unique_in)
+                     bool is_nhat_BA_W_unique_in)
       : id_A(a),
         id_B(b),
         p_ACa(p_ACa_in),
