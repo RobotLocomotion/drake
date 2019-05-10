@@ -145,7 +145,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   const SpatialVelocity<double>& V_WB =
       plant.EvalBodySpatialVelocityInWorld(plant_context, ball);
   const SpatialInertia<double> M_BBo_B = ball.default_spatial_inertia();
-  const RigidTransform<double> X_WB(
+  const RigidTransform<double>& X_WB(
       plant.EvalBodyPoseInWorld(plant_context, ball));
   const RotationMatrix<double>& R_WB = X_WB.rotation();
   const SpatialInertia<double> M_BBo_W = M_BBo_B.ReExpress(R_WB);

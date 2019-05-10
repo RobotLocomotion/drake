@@ -274,8 +274,8 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
     DRAKE_THROW_UNLESS(
         forces->CheckHasRightSizeForModel(this->get_parent_tree()));
     const math::RigidTransform<T> X_WE = frame_E.CalcPoseInWorld(context);
-    const Matrix3<T>& R_WE = X_WE.linear();
-    const Vector3<T> p_PB_W = -R_WE * p_BP_E;
+    const math::RotationMatrix<T>& R_WE = X_WE.rotation();
+    const Vector3<T> p_PB_W = -(R_WE * p_BP_E);
     const SpatialForce<T> F_Bo_W = (R_WE * F_Bp_E).Shift(p_PB_W);
     AddInForceInWorld(context, F_Bo_W, forces);
   }

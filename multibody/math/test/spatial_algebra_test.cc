@@ -328,10 +328,10 @@ TYPED_TEST(SpatialQuantityTest, ReExpressInAnotherFrame) {
   const SpatialQuantity& V_AB_F = this->V_;
 
   // Some arbitrary rotation between frames E and F.
-  const Matrix3<T> R_EF =
-      (AngleAxis<T>(M_PI / 6, Vector3<T>::UnitX()) *
+  const drake::math::RotationMatrix<T> R_EF(
+       AngleAxis<T>(M_PI / 6, Vector3<T>::UnitX()) *
        AngleAxis<T>(M_PI / 6, Vector3<T>::UnitY()) *
-       AngleAxis<T>(M_PI / 6, Vector3<T>::UnitZ())).matrix();
+       AngleAxis<T>(M_PI / 6, Vector3<T>::UnitZ()));
 
   SpatialQuantity V_AB_E = R_EF * V_AB_F;
 
