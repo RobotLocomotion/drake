@@ -405,12 +405,20 @@ void EvaluateNonlinearConstraints(
     if (gradient_sparsity_pattern.has_value()) {
       for (const auto& nonzero_entry : gradient_sparsity_pattern.value()) {
         G[(*grad_index)++] =
-            ty(nonzero_entry.first).derivatives()(nonzero_entry.second);
+            ty(nonzero_entry.first).derivatives().size() > 0
+                ? ty(nonzero_entry.first).derivatives()(nonzero_entry.second)
+                : 0.0;
       }
     } else {
       for (int i = 0; i < num_constraints; i++) {
-        for (int j = 0; j < num_variables; ++j) {
-          G[(*grad_index)++] = ty(i).derivatives()(j);
+        if (ty(i).derivatives().size() > 0) {
+          for (int j = 0; j < num_variables; ++j) {
+            G[(*grad_index)++] = ty(i).derivatives()(j);
+          }
+        } else {
+          for (int j = 0; j < num_variables; ++j) {
+            G[(*grad_index)++] = 0.0;
+          }
         }
       }
     }
@@ -474,9 +482,11 @@ void EvaluateAndAddNonlinearCosts(
     obj->Eval(math::initializeAutoDiff(this_x), &ty);
 
     *total_cost += ty(0).value();
-    for (int i = 0; i < num_variables; ++i) {
-      (*nonlinear_cost_gradients)[binding_var_indices[i]] +=
-          ty(0).derivatives()(i);
+    if (ty(0).derivatives().size() > 0) {
+      for (int i = 0; i < num_variables; ++i) {
+        (*nonlinear_cost_gradients)[binding_var_indices[i]] +=
+            ty(0).derivatives()(i);
+      }
     }
   }
 }

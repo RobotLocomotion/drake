@@ -318,14 +318,22 @@ void EvaluateNonlinearConstraints(
     if (gradient_sparsity_pattern.has_value()) {
       for (const auto& nonzero_entry : gradient_sparsity_pattern.value()) {
         G[(*grad_index)++] = static_cast<snopt::doublereal>(
-            ty(nonzero_entry.first).derivatives()(nonzero_entry.second));
+            ty(nonzero_entry.first).derivatives().size() > 0
+                ? ty(nonzero_entry.first).derivatives()(nonzero_entry.second)
+                : 0.0);
       }
     } else {
       for (snopt::integer i = 0;
            i < static_cast<snopt::integer>(num_constraints); i++) {
-        for (int j = 0; j < num_v_variables; ++j) {
-          G[(*grad_index)++] =
-              static_cast<snopt::doublereal>(ty(i).derivatives()(j));
+        if (ty(i).derivatives().size() > 0) {
+          for (int j = 0; j < num_v_variables; ++j) {
+            G[(*grad_index)++] =
+                static_cast<snopt::doublereal>(ty(i).derivatives()(j));
+          }
+        } else {
+          for (int j = 0; j < num_v_variables; ++j) {
+            G[(*grad_index)++] = snopt::doublereal(0.0);
+          }
         }
       }
     }
@@ -371,10 +379,13 @@ void EvaluateAllCosts(const MathematicalProgram& prog,
 
     F[0] += static_cast<snopt::doublereal>(ty(0).value());
 
-    for (int j = 0; j < num_v_variables; ++j) {
-      size_t vj_index = prog.FindDecisionVariableIndex(binding.variables()(j));
-      cost_gradient[vj_index] +=
-          static_cast<snopt::doublereal>(ty(0).derivatives()(j));
+    if (ty(0).derivatives().size() > 0) {
+      for (int j = 0; j < num_v_variables; ++j) {
+        size_t vj_index =
+            prog.FindDecisionVariableIndex(binding.variables()(j));
+        cost_gradient[vj_index] +=
+            static_cast<snopt::doublereal>(ty(0).derivatives()(j));
+      }
     }
   }
   for (const auto cost_gradient_index : cost_gradient_indices) {

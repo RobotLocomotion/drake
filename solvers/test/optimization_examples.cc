@@ -769,6 +769,22 @@ void HeatExchangerDesignProblem::CheckSolution(
   EXPECT_TRUE(CompareMatrices(x_val, x_expected, tol));
   EXPECT_NEAR(result.get_optimal_cost(), 7049.330923, tol);
 }
+
+EmptyGradientProblem::EmptyGradientProblem()
+    : prog_{new MathematicalProgram()}, x_{prog_->NewContinuousVariables<2>()} {
+  prog_->AddCost(std::make_shared<EmptyGradientProblem::EmptyGradientCost>(),
+                 x_);
+  prog_->AddConstraint(
+      std::make_shared<EmptyGradientProblem::EmptyGradientConstraint>(), x_);
+}
+
+void EmptyGradientProblem::CheckSolution(
+    const MathematicalProgramResult& result) const {
+  EXPECT_TRUE(result.is_success());
+}
+
+EmptyGradientProblem::EmptyGradientConstraint::EmptyGradientConstraint()
+    : Constraint(1, 2, Vector1d(-kInf), Vector1d(0)) {}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
