@@ -22,7 +22,7 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
   SetArbitraryConfiguration();
 
-  const RigidTransform<double> X_WE =
+  const RigidTransform<double>& X_WE =
       end_effector_link_->EvalPoseInWorld(*context_);
   const RigidTransform<double> X_WH = frame_H_->CalcPoseInWorld(*context_);
   const RigidTransform<double> X_WH_expected = X_WE * X_EH_;
