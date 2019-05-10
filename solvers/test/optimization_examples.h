@@ -846,17 +846,20 @@ class HeatExchangerDesignProblem {
   Eigen::Matrix<symbolic::Variable, 8, 1> x_;
 };
 
-/// In Eigen's autodiff, when the derivatives() has empty size, it is
+/// In Eigen's autodiff, when the derivatives() vector has empty size, it is
 /// interpreted as 0 gradient (i.e., the gradient has value 0, with the size of
 /// the gradient matrix being arbitrary). On the other hand, many solvers
 /// interpret empty size gradient in a different way, that the variable to be
 /// taken derivative with has 0 size. This test guarantees that when Eigen
 /// autodiff returns an empty size gradient, we can manually set the gradient
-/// size to be the right size. A trivial problem
+/// size to be the right size. This class represents the following trivial
+/// problem
+/// <pre>
 /// min f(x)
 /// s.t g(x) <= 0
+/// </pre>
 /// where f(x) = 1 and g(x) = 0. x.rows() == 2.
-/// When evaluating f(x) and g(x), autodiff returns empty gradient. But the
+/// When evaluating f(x) and g(x), autodiff returns an empty gradient. But the
 /// solvers expect to see gradient ∂f/∂x = [0 0] and ∂g/∂x = [0 0], namely
 /// matrices of size 1 x 2, not empty size matrix. This test shows that we can
 /// automatically set the gradient to the right size, although Eigen's autodiff
