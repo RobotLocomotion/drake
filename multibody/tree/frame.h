@@ -154,7 +154,8 @@ class Frame : public FrameBase<T> {
     if (frame_E.index() == FrameIndex(0)) return V_MF_W;
     // If expressed-in frame_E is not the world, perform additional
     // transformation.
-    const Matrix3<T> R_WE = frame_E.CalcPoseInWorld(context).linear();
+    const math::RotationMatrix<T> R_WE =
+        frame_E.CalcPoseInWorld(context).rotation();
     return R_WE.transpose() * V_MF_W;
   }
 

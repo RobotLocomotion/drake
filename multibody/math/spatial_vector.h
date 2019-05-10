@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
 
@@ -222,7 +223,7 @@ class SpatialVector {
   ///   V_F.translational() = R_FE * V_E.translational()
   /// </pre>
   /// @returns V_F The same spatial vector re-expressed in frame F.
-  // TODO(Mitiguy) Deprecate this operator in favor of RotationMatrix version.
+  DRAKE_DEPRECATED("2019-08-01", "Use RotationMatrix * SpatialQuantity.")
   friend SpatialQuantity operator*(
       const Matrix3<T>& R_FE, const SpatialQuantity& V_E) {
     return SpatialQuantity(R_FE * V_E.rotational(), R_FE * V_E.translational());
