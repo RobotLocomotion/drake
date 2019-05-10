@@ -18,20 +18,34 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactWrenchEvaluator)
 
   /**
+   * @anchor ComposeVariableValues
+   * @name compose variable values.
    * Composes the value of the variable `x` in Eval(x, &y) function, based on
    * the context and value of lambda, x = [q, λ].
+   * @pre q has size plant.num_positions() x 1
+   * @pre lambda has size num_lambda_ x 1.
+   */
+  //@{
+  /**
+   * Overloads @ref ComposeVariableValues
    */
   template <typename T, typename Derived>
   typename std::enable_if<std::is_same<T, typename Derived::Scalar>::value,
                           VectorX<T>>::type
   ComposeVariableValues(const systems::Context<T>& context,
                         const Derived& lambda_value) const {
+    DRAKE_ASSERT(lambda_value.rows() == num_lambda_ &&
+                 lambda_value.cols() == 1);
     VectorX<T> x(num_vars());
     x.head(plant_->num_positions()) = plant_->GetPositions(context);
     x.tail(num_lambda_) = lambda_value;
     return x;
   }
 
+  /**
+   * Overloads @ref ComposeVariableValues with q, λ as the input instead of
+   * context, λ.
+   */
   template <typename DerivedQ, typename DerivedLambda>
   typename std::enable_if<std::is_same<typename DerivedQ::Scalar,
                                        typename DerivedLambda::Scalar>::value,
@@ -39,11 +53,16 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
   ComposeVariableValues(
       const Eigen::MatrixBase<DerivedQ>& q_value,
       const Eigen::MatrixBase<DerivedLambda>& lambda_value) const {
+    DRAKE_ASSERT(q_value.rows() == plant_->num_positions() &&
+                 q_value.cols() == 1);
+    DRAKE_ASSERT(lambda_value.rows() == num_lambda_ &&
+                 lambda_value.cols() == 1);
     VectorX<typename DerivedQ::Scalar> x(num_vars());
     x.template head(plant_->num_positions()) = q_value;
     x.template tail(num_lambda_) = lambda_value;
     return x;
   }
+  //@}
 
   /**
    * Returns the size of lambda.
@@ -60,8 +79,11 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
 
   const MultibodyPlant<AutoDiffXd>& plant() const { return *plant_; }
 
+  /** Getter for immutable context */
+  const systems::Context<AutoDiffXd>& context() const { return *context_; }
+
   /** Getter for the mutable context */
-  systems::Context<AutoDiffXd>* get_mutable_context() const { return context_; }
+  systems::Context<AutoDiffXd>& get_mutable_context() { return *context_; }
 
  protected:
   /**
@@ -108,9 +130,10 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
     return x.tail(num_lambda_);
   }
 
-
  private:
   const MultibodyPlant<AutoDiffXd>* plant_;
+  // The derived class might need to modify the position value stored inside
+  // this context, so we don't keep context_ as a const pointer.
   systems::Context<AutoDiffXd>* context_;
   const std::pair<geometry::GeometryId, geometry::GeometryId> geometry_id_pair_;
   int num_lambda_;

@@ -47,6 +47,8 @@ void StaticEquilibriumConstraint::DoEval(
   const auto& u =
       x.segment(plant_->num_positions(), plant_->num_actuated_dofs());
   *y = B_actuation_ * u;
+  // TODO(hongkai.dai): Use UpdateContextConfiguration when it supports
+  // MultibodyPlant<AutoDiffXd> and Context<AutoDiffXd>
   if (!internal::AreAutoDiffVecXdEqual(q, plant_->GetPositions(*context_))) {
     plant_->SetPositions(context_, q);
   }

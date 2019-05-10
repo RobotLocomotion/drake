@@ -12,7 +12,9 @@ namespace test {
 
 template <typename T>
 void AddDrakeVisualizer(systems::DiagramBuilder<T>*,
-                        const geometry::SceneGraph<T>&) {}
+                        const geometry::SceneGraph<T>&) {
+  // Disabling visualization for non-double scalar type T.
+}
 
 template <>
 void AddDrakeVisualizer<double>(
@@ -48,13 +50,11 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
         plant_->AddRigidBody("sphere" + std::to_string(i), spheres_[i].inertia);
     sphere_geometry_ids_.push_back(plant_->RegisterCollisionGeometry(
         sphere, math::RigidTransformd::Identity(),
-        geometry::Sphere(spheres_[i].radius),
-        "sphere" + std::to_string(i) + "_collision", spheres_[i].friction,
-        scene_graph_));
+        geometry::Sphere(spheres_[i].radius), "sphere" + std::to_string(i),
+        spheres_[i].friction, scene_graph_));
     plant_->RegisterVisualGeometry(
         sphere, math::RigidTransformd::Identity(),
-        geometry::Sphere(spheres_[i].radius),
-        "sphere" + std::to_string(i) + "_visualization",
+        geometry::Sphere(spheres_[i].radius), "sphere" + std::to_string(i),
         geometry::IllustrationProperties(), scene_graph_);
   }
   // Add boxes and register collision geometry.
@@ -73,13 +73,12 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
     box_geometry_ids_.push_back(plant_->RegisterCollisionGeometry(
         *box_body, X_BBox,
         geometry::Box(boxes_[i].size(0), boxes_[i].size(1), boxes_[i].size(2)),
-        "box" + std::to_string(i) + "_collision", boxes_[i].friction,
-        scene_graph_));
+        "box" + std::to_string(i), boxes_[i].friction, scene_graph_));
     plant_->RegisterVisualGeometry(
         *box_body, X_BBox,
         geometry::Box(boxes_[i].size(0), boxes_[i].size(1), boxes_[i].size(2)),
-        "box" + std::to_string(i) + "_visualization",
-        geometry::IllustrationProperties(), scene_graph_);
+        "box" + std::to_string(i), geometry::IllustrationProperties(),
+        scene_graph_);
   }
   // Add the ground, register collision geometry.
   // The mass and inertia of the ground don't matter. Set them to arbitrary

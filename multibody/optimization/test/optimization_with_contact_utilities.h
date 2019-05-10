@@ -35,9 +35,9 @@ struct BoxSpecification {
         X_WB(std::move(X_WB_in)) {
     const double mass = size(0) * size(1) * size(2) * density;
     const UnitInertia<double> I(
-        1.0 / 12 * mass * (size(1) * size(1) + size(2) * size(2)),
-        1.0 / 12 * mass * (size(0) * size(0) + size(2) * size(2)),
-        1.0 / 12 * mass * (size(0) * size(0) + size(1) * size(1)));
+        1.0 / 12 * (size(1) * size(1) + size(2) * size(2)),
+        1.0 / 12 * (size(0) * size(0) + size(2) * size(2)),
+        1.0 / 12 * (size(0) * size(0) + size(1) * size(1)));
     inertia = SpatialInertia<double>(mass, Eigen::Vector3d::Zero(), I);
   }
   // Full dimensions of a box (not the half dimensions).

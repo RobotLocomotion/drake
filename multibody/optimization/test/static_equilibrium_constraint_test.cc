@@ -123,6 +123,8 @@ class TwoFreeSpheresTest : public ::testing::Test {
         math::autoDiffToGradientMatrix(y_autodiff),
         math::autoDiffToGradientMatrix(y_autodiff_expected), 100 * kEps));
 
+    // Use a std::function instead of auto eval_fun as a lambda. This is
+    // explained in ComputeNumericalGradient.
     std::function<void(const Eigen::Ref<const Eigen::VectorXd>&,
                        Eigen::VectorXd*)>
         eval_fun = [&static_equilibrium_binding](

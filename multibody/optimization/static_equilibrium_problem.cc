@@ -10,17 +10,17 @@ StaticEquilibriumProblem::StaticEquilibriumProblem(
     systems::Context<AutoDiffXd>* context,
     const std::set<std::pair<geometry::GeometryId, geometry::GeometryId>>&
         ignored_collision_pairs)
-    : plant_(plant),
-      context_(context),
+    : plant_{*plant},
+      context_{context},
       owned_prog_{new solvers::MathematicalProgram()},
       prog_{owned_prog_.get()},
       q_vars_{prog_->NewContinuousVariables(plant->num_positions())},
       u_vars_{prog_->NewContinuousVariables(plant->num_actuated_dofs())} {
-  prog_->AddBoundingBoxConstraint(plant_->GetPositionLowerLimits(),
-                                  plant_->GetPositionUpperLimits(), q_vars_);
-  // declare the contact force as decision variables, and pair each contact
+  prog_->AddBoundingBoxConstraint(plant_.GetPositionLowerLimits(),
+                                  plant_.GetPositionUpperLimits(), q_vars_);
+  // Declares the contact forces as decision variables, and pair each contact
   // force decision variable with the evaluator to compute the contact wrench.
-  const auto& query_port = plant_->get_geometry_query_input_port();
+  const auto& query_port = plant_.get_geometry_query_input_port();
   if (!query_port.HasValue(*context_)) {
     throw std::invalid_argument(
         "StaticEquilibriumConstraint: Cannot get a valid "
@@ -39,7 +39,7 @@ StaticEquilibriumProblem::StaticEquilibriumProblem(
     if (ignored_collision_pairs.count(collision_candidate_pair) == 0) {
       auto contact_wrench_evaluator =
           std::make_shared<ContactWrenchFromForceInWorldFrameEvaluator>(
-              plant_, context_, collision_candidate_pair);
+              &plant_, context_, collision_candidate_pair);
       auto lambda_var = prog_->NewContinuousVariables<3>();
       contact_wrench_evaluators_and_lambda_.emplace_back(
           contact_wrench_evaluator, lambda_var);
@@ -47,7 +47,7 @@ StaticEquilibriumProblem::StaticEquilibriumProblem(
   }
 
   prog_->AddConstraint(StaticEquilibriumConstraint::MakeBinding(
-      plant_, context_, contact_wrench_evaluators_and_lambda_, q_vars_,
+      &plant_, context_, contact_wrench_evaluators_and_lambda_, q_vars_,
       u_vars_));
 
   const double complementarity_tol = 1E-3;
@@ -56,7 +56,7 @@ StaticEquilibriumProblem::StaticEquilibriumProblem(
   for (const auto& contact_wrench_evaluator_and_lambda :
        contact_wrench_evaluators_and_lambda_) {
     static_friction_cone_complementarity_nonlinear_constraints_.push_back(
-        AddStaticFrictionConeComplementaryConstraint(
+        AddStaticFrictionConeComplementarityConstraint(
             contact_wrench_evaluator_and_lambda.first.get(),
             complementarity_tol, q_vars_,
             contact_wrench_evaluator_and_lambda.second, prog_));
@@ -69,8 +69,8 @@ std::vector<ContactWrench> StaticEquilibriumProblem::GetContactWrenchSolution(
   // contact wrench evaluator and lambda.
   const auto q_sol = result.GetSolution(q_vars_);
   const auto u_sol = result.GetSolution(u_vars_);
-  plant_->SetPositions(context_, q_sol.cast<AutoDiffXd>());
-  const auto& query_port = plant_->get_geometry_query_input_port();
+  plant_.SetPositions(context_, q_sol.cast<AutoDiffXd>());
+  const auto& query_port = plant_.get_geometry_query_input_port();
   if (!query_port.HasValue(*context_)) {
     throw std::invalid_argument(
         "StaticEquilibriumConstraint: Cannot get a valid "
@@ -79,6 +79,8 @@ std::vector<ContactWrench> StaticEquilibriumProblem::GetContactWrenchSolution(
   }
   const auto& query_object =
       query_port.Eval<geometry::QueryObject<AutoDiffXd>>(*context_);
+  // TODO(hongkai.dai) compute the signed distance between a specific pair of
+  // contact, rather than all pairs of contact.
   const std::vector<geometry::SignedDistancePair<AutoDiffXd>>
       signed_distance_pairs =
           query_object.ComputeSignedDistancePairwiseClosestPoints();
@@ -88,7 +90,7 @@ std::vector<ContactWrench> StaticEquilibriumProblem::GetContactWrenchSolution(
   contact_wrench_sol.reserve(contact_wrench_evaluators_and_lambda_.size());
   for (const auto& contact_wrench_evaluator_and_lambda :
        contact_wrench_evaluators_and_lambda_) {
-    const auto& contact_wrench_evaluator =
+    const std::shared_ptr<ContactWrenchEvaluator>& contact_wrench_evaluator =
         contact_wrench_evaluator_and_lambda.first;
     // Compute the contact wrench
     const auto lambda_sol =
@@ -98,10 +100,9 @@ std::vector<ContactWrench> StaticEquilibriumProblem::GetContactWrenchSolution(
         contact_wrench_evaluator->ComposeVariableValues(q_sol, lambda_sol),
         &F_Cb_W);
     // Compute p_WCb, where the contact wrench is applied.
-    // TODO(hongkai.dai) compute the signed distance between THIS pair of
-    // contact, rather than all pairs of contact.
     Vector3<AutoDiffXd> p_WCb;
-    const auto& contact_pair = contact_wrench_evaluator->geometry_id_pair();
+    const std::pair<geometry::GeometryId, geometry::GeometryId>& contact_pair =
+        contact_wrench_evaluator->geometry_id_pair();
     BodyIndex body_A_index, body_B_index;
     for (const auto& signed_distance_pair : signed_distance_pairs) {
       if (signed_distance_pair.id_A == contact_pair.first &&
@@ -111,9 +112,9 @@ std::vector<ContactWrench> StaticEquilibriumProblem::GetContactWrenchSolution(
         const geometry::FrameId frame_Fb_id =
             inspector.GetFrameId(signed_distance_pair.id_B);
         const Frame<AutoDiffXd>& frame_Fa =
-            plant_->GetBodyFromFrameId(frame_Fa_id)->body_frame();
+            plant_.GetBodyFromFrameId(frame_Fa_id)->body_frame();
         const Frame<AutoDiffXd>& frame_Fb =
-            plant_->GetBodyFromFrameId(frame_Fb_id)->body_frame();
+            plant_.GetBodyFromFrameId(frame_Fb_id)->body_frame();
         body_A_index = frame_Fa.body().index();
         body_B_index = frame_Fb.body().index();
         // Define Body B's frame as Fb, the geometry attached to body B has
@@ -121,8 +122,8 @@ std::vector<ContactWrench> StaticEquilibriumProblem::GetContactWrenchSolution(
         const auto& X_FbGb = inspector.X_FG(signed_distance_pair.id_B);
         const auto& p_GbCb = signed_distance_pair.p_BCb;
         const Vector3<AutoDiffXd> p_FbCb = X_FbGb * p_GbCb;
-        plant_->CalcPointsPositions(*context_, frame_Fb, p_FbCb,
-                                    plant_->world_frame(), &p_WCb);
+        plant_.CalcPointsPositions(*context_, frame_Fb, p_FbCb,
+                                   plant_.world_frame(), &p_WCb);
         break;
       }
     }
@@ -133,11 +134,11 @@ std::vector<ContactWrench> StaticEquilibriumProblem::GetContactWrenchSolution(
   return contact_wrench_sol;
 }
 
-void StaticEquilibriumProblem::UpdateComplementaryTolerance(double tol) {
+void StaticEquilibriumProblem::UpdateComplementarityTolerance(double tol) {
   DRAKE_DEMAND(tol >= 0);
   for (const auto& binding :
        static_friction_cone_complementarity_nonlinear_constraints_) {
-    binding.evaluator()->UpdateComplementaryTolerance(tol);
+    binding.evaluator()->UpdateComplementarityTolerance(tol);
   }
 }
 

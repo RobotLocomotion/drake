@@ -11,8 +11,8 @@ const double kInf = std::numeric_limits<double>::infinity();
 
 namespace internal {
 
-StaticFrictionConeComplementaryNonlinearConstraint::
-    StaticFrictionConeComplementaryNonlinearConstraint(
+StaticFrictionConeComplementarityNonlinearConstraint::
+    StaticFrictionConeComplementarityNonlinearConstraint(
         const ContactWrenchEvaluator* contact_wrench_evaluator,
         double complementarity_tolerance)
     : solvers::Constraint(
@@ -25,37 +25,37 @@ StaticFrictionConeComplementaryNonlinearConstraint::
       alpha_var_{"alpha"},
       beta_var_{"beta"} {}
 
-void StaticFrictionConeComplementaryNonlinearConstraint::
-    UpdateComplementaryTolerance(double complementarity_tolerance) {
+void StaticFrictionConeComplementarityNonlinearConstraint::
+    UpdateComplementarityTolerance(double complementarity_tolerance) {
   Eigen::Vector4d upper_bound = this->upper_bound();
   upper_bound(3) = complementarity_tolerance;
   UpdateUpperBound(upper_bound);
 }
 
-solvers::Binding<internal::StaticFrictionConeComplementaryNonlinearConstraint>
-StaticFrictionConeComplementaryNonlinearConstraint::MakeBinding(
+solvers::Binding<internal::StaticFrictionConeComplementarityNonlinearConstraint>
+StaticFrictionConeComplementarityNonlinearConstraint::MakeBinding(
     const ContactWrenchEvaluator* contact_wrench_evaluator,
     double complementarity_tolerance,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& lambda_vars) {
   auto constraint =
-      std::make_shared<StaticFrictionConeComplementaryNonlinearConstraint>(
+      std::make_shared<StaticFrictionConeComplementarityNonlinearConstraint>(
           contact_wrench_evaluator, complementarity_tolerance);
   VectorX<symbolic::Variable> bound_vars(constraint->num_vars());
   bound_vars << q_vars, lambda_vars, constraint->alpha_var(),
       constraint->beta_var();
-  return solvers::Binding<StaticFrictionConeComplementaryNonlinearConstraint>(
+  return solvers::Binding<StaticFrictionConeComplementarityNonlinearConstraint>(
       constraint, bound_vars);
 }
 
-void StaticFrictionConeComplementaryNonlinearConstraint::DoEval(
+void StaticFrictionConeComplementarityNonlinearConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
   AutoDiffVecXd y_autodiff(num_constraints());
   DoEval(x.cast<AutoDiffXd>(), &y_autodiff);
   *y = math::autoDiffToValueMatrix(y_autodiff);
 }
 
-void StaticFrictionConeComplementaryNonlinearConstraint::DoEval(
+void StaticFrictionConeComplementarityNonlinearConstraint::DoEval(
     const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
   y->resize(num_constraints());
   // Retrieve the variables.
@@ -64,16 +64,22 @@ void StaticFrictionConeComplementaryNonlinearConstraint::DoEval(
   DecomposeX(x, &q, &lambda, &alpha, &beta);
   // Update context with q.
   const auto& plant = contact_wrench_evaluator_->plant();
-  systems::Context<AutoDiffXd>* context =
-      contact_wrench_evaluator_->get_mutable_context();
-  if (!internal::AreAutoDiffVecXdEqual(q, plant.GetPositions(*context))) {
-    plant.SetPositions(context, q);
+  systems::Context<AutoDiffXd>& context =
+      // We use context to cache the kinematic results, so if q is different
+      // from the position stored inside context, we will need to modify
+      // context. But DoEval is a const method, hence it can only return the
+      // const context. We use const_cast to remove the constness of the
+      // context.
+      const_cast<systems::Context<AutoDiffXd>&>(
+          contact_wrench_evaluator_->context());
+  if (!internal::AreAutoDiffVecXdEqual(q, plant.GetPositions(context))) {
+    plant.SetPositions(&context, q);
   }
 
   // Compute the contact wrench F_AB_W
   AutoDiffVecXd F_AB_W;
   contact_wrench_evaluator_->Eval(
-      contact_wrench_evaluator_->ComposeVariableValues(*context, lambda),
+      contact_wrench_evaluator_->ComposeVariableValues(context, lambda),
       &F_AB_W);
   Vector3<AutoDiffXd> f_AB_W = F_AB_W.tail<3>();
   // First get the signed distance result for the pair of geometries.
@@ -81,14 +87,14 @@ void StaticFrictionConeComplementaryNonlinearConstraint::DoEval(
   // pair of geometries, instead just compute the pair in the
   // contact_wrench_evaluator_
   const auto& query_port = plant.get_geometry_query_input_port();
-  if (!query_port.HasValue(*context)) {
+  if (!query_port.HasValue(context)) {
     throw std::invalid_argument(
         "StaticEquilibriumConstraint: Cannot get a valid "
         "geometry::QueryObject. Please refer to AddMultibodyPlantSceneGraph "
         "on connecting MultibodyPlant to SceneGraph.");
   }
   const auto& query_object =
-      query_port.Eval<geometry::QueryObject<AutoDiffXd>>(*context);
+      query_port.Eval<geometry::QueryObject<AutoDiffXd>>(context);
   const std::vector<geometry::SignedDistancePair<AutoDiffXd>>
       signed_distance_pairs =
           query_object.ComputeSignedDistancePairwiseClosestPoints();
@@ -130,13 +136,13 @@ void StaticFrictionConeComplementaryNonlinearConstraint::DoEval(
   }
   if (!found_geometry_pair) {
     throw std::runtime_error(
-        "StaticFrictionConeComplementaryNonlinearConstraint: the input "
+        "StaticFrictionConeComplementarityNonlinearConstraint: the input "
         "contact_wrench_evaluator contains a pair of geometry, that has not "
         "been registered to the SceneGraph for distance computation.");
   }
 }
 
-void StaticFrictionConeComplementaryNonlinearConstraint::DoEval(
+void StaticFrictionConeComplementarityNonlinearConstraint::DoEval(
     const Eigen::Ref<const VectorX<symbolic::Variable>>&,
     VectorX<symbolic::Expression>*) const {
   throw std::runtime_error(
@@ -145,8 +151,8 @@ void StaticFrictionConeComplementaryNonlinearConstraint::DoEval(
 }
 }  // namespace internal
 
-solvers::Binding<internal::StaticFrictionConeComplementaryNonlinearConstraint>
-AddStaticFrictionConeComplementaryConstraint(
+solvers::Binding<internal::StaticFrictionConeComplementarityNonlinearConstraint>
+AddStaticFrictionConeComplementarityConstraint(
     const ContactWrenchEvaluator* contact_wrench_evaluator,
     double complementarity_tolerance,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
@@ -154,9 +160,9 @@ AddStaticFrictionConeComplementaryConstraint(
     solvers::MathematicalProgram* prog) {
   // Create the nonlinear binding.
   auto nonlinear_binding =
-      internal::StaticFrictionConeComplementaryNonlinearConstraint::MakeBinding(
-          contact_wrench_evaluator, complementarity_tolerance, q_vars,
-          lambda_vars);
+      internal::StaticFrictionConeComplementarityNonlinearConstraint::
+          MakeBinding(contact_wrench_evaluator, complementarity_tolerance,
+                      q_vars, lambda_vars);
   // Add the variable α,β to the program.
   const Vector2<symbolic::Variable> alpha_beta_var(
       nonlinear_binding.evaluator()->alpha_var(),

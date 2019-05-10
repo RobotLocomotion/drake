@@ -14,7 +14,7 @@ namespace multibody {
 
 const double kInf = std::numeric_limits<double>::infinity();
 
-GTEST_TEST(StaticFrictionConeComplementaryNonlinearConstraint, TestEval) {
+GTEST_TEST(StaticFrictionConeComplementarityNonlinearConstraint, TestEval) {
   const CoulombFriction<double> ground_friction(1.5 /* static friction */,
                                                 0.8 /* dynamic friction */);
 
@@ -30,7 +30,7 @@ GTEST_TEST(StaticFrictionConeComplementaryNonlinearConstraint, TestEval) {
       std::make_pair(dut.sphere_geometry_ids()[0], dut.ground_geometry_id()));
 
   double complementarity_tolerance{1E-3};
-  internal::StaticFrictionConeComplementaryNonlinearConstraint constraint(
+  internal::StaticFrictionConeComplementarityNonlinearConstraint constraint(
       &contact_wrench_evaluator, complementarity_tolerance);
 
   // Check the size of the constraint.
@@ -47,7 +47,7 @@ GTEST_TEST(StaticFrictionConeComplementaryNonlinearConstraint, TestEval) {
 
   // Test update complementarity tolerance.
   complementarity_tolerance = 1E-4;
-  constraint.UpdateComplementaryTolerance(complementarity_tolerance);
+  constraint.UpdateComplementarityTolerance(complementarity_tolerance);
 
   // Check constraint bounds again after updating the complementarity tolerance.
   EXPECT_TRUE(

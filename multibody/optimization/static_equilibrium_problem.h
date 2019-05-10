@@ -14,15 +14,15 @@
 namespace drake {
 namespace multibody {
 /**
- * Finds the static equilibrium pose of a robot through optimization.
+ * Finds the static equilibrium pose of a multibody system through optimization.
  * The constraints are
  * 1. 0 = g(q) + Bu + ∑ᵢ JᵢᵀFᵢ_AB_W(λᵢ) (generalized force equals to 0).
- * 2. Fᵢ_AB_W(λᵢ) is within the addmisible contact wrench (for example, contact
+ * 2. Fᵢ_AB_W(λᵢ) is within the admissible contact wrench (for example, contact
  *    force is in the friction cone).
  * 3. sdf(q) >= 0 (signed distance function is no smaller than 0, hence no
- *    penetration.)
+ *    penetration).
  * 4. complementarity condition between the contact force and the signed
- * distance.
+ *    distance.
  * 5. q within the joint limit.
  * TODO(hongkai.dai): add the bounds on the input u, and other position
  * constraint (such as unit length constraint on quaternion).
@@ -50,7 +50,6 @@ class StaticEquilibriumProblem {
 
   ~StaticEquilibriumProblem() {}
 
-  /** Getter for the mutable optimization program. */
   solvers::MathematicalProgram* get_mutable_prog() const { return prog_; }
 
   /** Getter for the immutable optimization program. */
@@ -70,13 +69,15 @@ class StaticEquilibriumProblem {
       const solvers::MathematicalProgramResult& result);
 
   /**
-   * Updates the tolerance on all the complemntary constraints.
+   * Updates the tolerance on all the complementarity constraints α * β = 0.
    * The complementarity constraint is relaxed as 0 ≤ α * β ≤ tol.
+   * You could refer to AddStaticFrictionConeComplementarityConstraint() for
+   * more details.
    */
-  void UpdateComplementaryTolerance(double tol);
+  void UpdateComplementarityTolerance(double tol);
 
  private:
-  const MultibodyPlant<AutoDiffXd>* const plant_;
+  const MultibodyPlant<AutoDiffXd>& plant_;
   systems::Context<AutoDiffXd>* context_;
   std::unique_ptr<solvers::MathematicalProgram> owned_prog_;
   solvers::MathematicalProgram* prog_;
@@ -88,7 +89,7 @@ class StaticEquilibriumProblem {
       contact_wrench_evaluators_and_lambda_;
 
   std::vector<solvers::Binding<
-      internal::StaticFrictionConeComplementaryNonlinearConstraint>>
+      internal::StaticFrictionConeComplementarityNonlinearConstraint>>
       static_friction_cone_complementarity_nonlinear_constraints_;
 };
 }  // namespace multibody

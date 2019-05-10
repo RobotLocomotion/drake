@@ -1,9 +1,6 @@
 #pragma once
 
-#include <memory>
 #include <utility>
-
-#include <Eigen/Core>
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/math/spatial_force.h"
@@ -12,7 +9,8 @@
 namespace drake {
 namespace multibody {
 /**
- * Stores the contact wrench (spatial force) from Body A to Body B.
+ * Stores the contact wrench (spatial force) from Body A to Body B applied at
+ * point Cb.
  */
 struct ContactWrench {
   /**

@@ -13,35 +13,35 @@ namespace multibody {
 namespace internal {
 /**
  * The nonlinear constraints to be imposed for static friction force. See
- * AddStaticFrictionConeComplementaryConstraint() for more details. The
+ * AddStaticFrictionConeComplementarityConstraint() for more details. The
  * nonlinear constraints are (1) - (4) in
- * AddStaticFrictionConeComplementaryConstraint()
+ * AddStaticFrictionConeComplementarityConstraint()
  * The bound variable vector for this constraint is x = [q; λ; α; β]
  */
-class StaticFrictionConeComplementaryNonlinearConstraint
+class StaticFrictionConeComplementarityNonlinearConstraint
     : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(
-      StaticFrictionConeComplementaryNonlinearConstraint)
+      StaticFrictionConeComplementarityNonlinearConstraint)
 
   /**
-   * See AddStaticFrictionConeComplementaryConstraint() for details.
+   * See AddStaticFrictionConeComplementarityConstraint() for details.
    */
-  StaticFrictionConeComplementaryNonlinearConstraint(
+  StaticFrictionConeComplementarityNonlinearConstraint(
       const ContactWrenchEvaluator* contact_wrench_evaluator,
       double complementarity_tolerance);
 
-  ~StaticFrictionConeComplementaryNonlinearConstraint() override {}
+  ~StaticFrictionConeComplementarityNonlinearConstraint() override {}
 
   /** The slack variable for n_Wᵀ * f_W. See
-   * AddStaticFrictionConeComplementaryConstraint().*/
+   * AddStaticFrictionConeComplementarityConstraint().*/
   const symbolic::Variable& alpha_var() const { return alpha_var_; }
 
   /** The slack variable for sdf. See
-   * AddStaticFrictionConeComplementaryConstraint(). */
+   * AddStaticFrictionConeComplementarityConstraint(). */
   const symbolic::Variable& beta_var() const { return beta_var_; }
 
-  void UpdateComplementaryTolerance(double complementarity_tolerance);
+  void UpdateComplementarityTolerance(double complementarity_tolerance);
 
   const ContactWrenchEvaluator& contact_wrench_evaluator() const {
     return *contact_wrench_evaluator_;
@@ -58,11 +58,11 @@ class StaticFrictionConeComplementaryNonlinearConstraint
 
   /**
    * Create a binding of the constraint, together with the bound variables
-   * q, λ, α and β. See AddStaticFrictionConeComplementaryConstraint()
+   * q, λ, α and β. See AddStaticFrictionConeComplementarityConstraint()
    * for more details.
    */
   static solvers::Binding<
-      internal::StaticFrictionConeComplementaryNonlinearConstraint>
+      internal::StaticFrictionConeComplementarityNonlinearConstraint>
   MakeBinding(const ContactWrenchEvaluator* contact_wrench_evaluator,
               double complementarity_tolerance,
               const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
@@ -84,7 +84,8 @@ class StaticFrictionConeComplementaryNonlinearConstraint
 };
 };  // namespace internal
 
-/** Adds the complementarity constraint on the static friction force
+/**
+ * Adds the complementarity constraint on the static friction force
  * between a pair of contacts
  * |ft_W| <= μ * n_Wᵀ * f_W  (static friction force in the friction cone).
  * fn_W * sdf = 0 (complementarity condition)
@@ -95,7 +96,7 @@ class StaticFrictionConeComplementaryNonlinearConstraint
  * Mathematically, we add the following constraints to the optimization program
  * f_Wᵀ * ((μ² + 1)* n_W * n_Wᵀ - I) * f_W >= 0                    (1)
  * n_Wᵀ * f_W = α                                                  (2)
- * sdf(q) = β                                                         (3)
+ * sdf(q) = β                                                      (3)
  * 0 <= α * β <= ε                                                 (4)
  * α >= 0                                                          (5)
  * β >= 0                                                          (6)
@@ -112,8 +113,8 @@ class StaticFrictionConeComplementaryNonlinearConstraint
  * @pre Both `q_vars` and `lambda_vars` have been added to `prog` before calling
  * this function.
  */
-solvers::Binding<internal::StaticFrictionConeComplementaryNonlinearConstraint>
-AddStaticFrictionConeComplementaryConstraint(
+solvers::Binding<internal::StaticFrictionConeComplementarityNonlinearConstraint>
+AddStaticFrictionConeComplementarityConstraint(
     const ContactWrenchEvaluator* contact_wrench_evaluator,
     double complementarity_tolerance,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
