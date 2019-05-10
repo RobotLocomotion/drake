@@ -170,19 +170,20 @@ class ProximityEngine {
                               global geometry identifier.
    @param[in] X_WGs           The pose of all geometries in world, indexed by
                               each geometry's GeometryIndex.
-   @retval signed_distances   A vector populated with per-object-pair signed
-                              distance values (and supporting data).
-                              Note: For a geometry pair (A, B), the supporting
-                              data will always be reported in a fixed order
-                              (e.g., always (A, B) and never (B, A)). The
-                              _basis_ for the ordering is arbitrary (and
-                              therefore undocumented), but guaranteed to be
-                              fixed and repeatable.
+   @param[in] max_distance    The maximum distance between objects such that
+                              they will be included in the results.
+   @returns  A vector populated with per-object-pair signed distance values (and
+             supporting data). All reported pairs will have a distance <=
+             `max_distance`. Note: For a geometry pair (A, B), the supporting
+             data will always be reported in a fixed order (e.g., always (A, B)
+             and never (B, A)). The _basis_ for the ordering is arbitrary (and
+             therefore undocumented), but guaranteed to be fixed and repeatable.
    */
   std::vector<SignedDistancePair<T>>
   ComputeSignedDistancePairwiseClosestPoints(
       const std::vector<GeometryId>& geometry_map,
-      const std::vector<Isometry3<T>>& X_WGs) const;
+      const std::vector<Isometry3<T>>& X_WGs,
+      const double max_distance) const;
 
   /** Performs work in support of GeometryState::ComputeSignedDistanceToPoint().
    @param[in] p_WQ            Position of a query point Q in world frame W.

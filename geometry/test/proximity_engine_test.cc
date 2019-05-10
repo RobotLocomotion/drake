@@ -64,6 +64,8 @@ class ProximityEngineTester {
 
 namespace {
 
+constexpr double kInf = std::numeric_limits<double>::infinity();
+
 using math::RigidTransform;
 using math::RigidTransformd;
 using math::RollPitchYawd;
@@ -292,7 +294,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsOnEmptyScene) {
   std::vector<Isometry3d> X_WGs;
 
   const auto results =
-      engine.ComputeSignedDistancePairwiseClosestPoints(empty_map, X_WGs);
+      engine.ComputeSignedDistancePairwiseClosestPoints(empty_map, X_WGs, kInf);
   EXPECT_EQ(results.size(), 0);
 }
 
@@ -310,7 +312,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsSingleAnchored) {
   geometry_map.push_back(GeometryId::get_new_id());
   EXPECT_EQ(index, 0);
   const auto results = engine.ComputeSignedDistancePairwiseClosestPoints(
-      geometry_map, X_WGs);
+      geometry_map, X_WGs, kInf);
   EXPECT_EQ(results.size(), 0);
 }
 
@@ -335,8 +337,50 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsMultipleAnchored) {
   geometry_map.push_back(GeometryId::get_new_id());
   EXPECT_EQ(index2, 1);
   const auto results = engine.ComputeSignedDistancePairwiseClosestPoints(
-      geometry_map, X_WGs);
+      geometry_map, X_WGs, kInf);
   EXPECT_EQ(results.size(), 0);
+}
+
+// Tests that the maximum distance value is respected. Confirms that two shapes
+// are included/excluded based on a distance just inside and outside that
+// maximum distance, respectively.
+GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsMaxDistance) {
+  ProximityEngine<double> engine;
+  std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
+                                       GeometryId::get_new_id()};
+  std::vector<Isometry3d> X_WGs{Isometry3d::Identity(), Isometry3d::Identity()};
+
+  const double radius = 0.5;
+  Sphere sphere{radius};
+  std::vector<GeometryIndex> indices{GeometryIndex(0), GeometryIndex(1)};
+  engine.AddDynamicGeometry(sphere, indices[0]);
+  engine.AddDynamicGeometry(sphere, indices[1]);
+
+  const double kMaxDistance = 1.0;
+  const double kEps = 2 * std::numeric_limits<double>::epsilon();
+  const double kCenterDistance = kMaxDistance + radius + radius;
+
+  // Case: Just inside the maximum distance.
+  {
+    const Vector3d p_WB =
+        Vector3d(2, 3, 4).normalized() * (kCenterDistance - kEps);
+    X_WGs[1].translation() = p_WB;
+    engine.UpdateWorldPoses(X_WGs, indices);
+    const auto results = engine.ComputeSignedDistancePairwiseClosestPoints(
+        geometry_map, X_WGs, kMaxDistance);
+    EXPECT_EQ(results.size(), 1);
+  }
+
+  // Case: Just outside the maximum distance.
+  {
+    const Vector3d p_WB =
+        Vector3d(2, 3, 4).normalized() * (kCenterDistance + kEps);
+    X_WGs[1].translation() = p_WB;
+    engine.UpdateWorldPoses(X_WGs, indices);
+    const auto results = engine.ComputeSignedDistancePairwiseClosestPoints(
+        geometry_map, X_WGs, kMaxDistance);
+    EXPECT_EQ(results.size(), 0);
+  }
 }
 
 // ComputeSignedDistanceToPoint tests
@@ -1279,8 +1323,8 @@ class SimplePenetrationTest : public ::testing::Test {
     const PenetrationAsPointPair<double>& penetration = penetration_results[0];
 
     std::vector<SignedDistancePair<T>> distance_results =
-        engine->ComputeSignedDistancePairwiseClosestPoints(geometry_map_,
-                                                           GetTypedPoses<T>());
+        engine->ComputeSignedDistancePairwiseClosestPoints(
+            geometry_map_, GetTypedPoses<T>(), kInf);
     ASSERT_EQ(distance_results.size(), 1);
     const SignedDistancePair<T>& distance = distance_results[0];
 
@@ -1352,8 +1396,8 @@ class SimplePenetrationTest : public ::testing::Test {
     EXPECT_EQ(penetration_results.size(), 0);
 
     std::vector<SignedDistancePair<T>> distance_results =
-        engine->ComputeSignedDistancePairwiseClosestPoints(geometry_map_,
-                                                           GetTypedPoses<T>());
+        engine->ComputeSignedDistancePairwiseClosestPoints(
+            geometry_map_, GetTypedPoses<T>(), kInf);
     ASSERT_EQ(distance_results.size(), 0);
   }
 
@@ -1368,7 +1412,7 @@ class SimplePenetrationTest : public ::testing::Test {
 
     std::vector<SignedDistancePair<double>> distance_results =
         engine->ComputeSignedDistancePairwiseClosestPoints(geometry_map_,
-                                                           X_WGs_);
+                                                           X_WGs_, kInf);
     ASSERT_EQ(distance_results.size(), 1);
     SignedDistancePair<double> distance = distance_results[0];
 
@@ -2300,8 +2344,8 @@ class SignedDistancePairTest
 
 TEST_P(SignedDistancePairTest, SinglePair) {
   const auto& data = GetParam();
-  const auto results =
-      engine_.ComputeSignedDistancePairwiseClosestPoints(geometry_map_, X_WGs_);
+  const auto results = engine_.ComputeSignedDistancePairwiseClosestPoints(
+      geometry_map_, X_WGs_, kInf);
   ASSERT_EQ(results.size(), 1);
   const auto& result = results[0];
 
@@ -2394,7 +2438,8 @@ GTEST_TEST(SignedDistancePairError, HalfspaceException) {
   geometry_map.push_back(GeometryId::get_new_id());
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.ComputeSignedDistancePairwiseClosestPoints(geometry_map, X_WGs),
+      engine.ComputeSignedDistancePairwiseClosestPoints(geometry_map, X_WGs,
+                                                        kInf),
       std::logic_error,
       "Signed distance .* halfspaces .* not .* supported.* Try .* box .*");
 }
@@ -2407,8 +2452,8 @@ class SignedDistancePairConcentricTest : public SignedDistancePairTest {};
 
 TEST_P(SignedDistancePairConcentricTest, DistanceInvariance) {
   const auto& data = GetParam();
-  const auto results =
-      engine_.ComputeSignedDistancePairwiseClosestPoints(geometry_map_, X_WGs_);
+  const auto results = engine_.ComputeSignedDistancePairwiseClosestPoints(
+      geometry_map_, X_WGs_, kInf);
   ASSERT_EQ(results.size(), 1);
   const auto& result = results[0];
 
@@ -3318,7 +3363,8 @@ GTEST_TEST(ProximityEngineTests, ComputePairwiseSignedDistanceAutoDiff) {
   engine.UpdateWorldPoses(X_WGs, {index1, index2});
 
   std::vector<SignedDistancePair<AutoDiffXd>> results =
-      engine.ComputeSignedDistancePairwiseClosestPoints(geometry_map, X_WGs);
+      engine.ComputeSignedDistancePairwiseClosestPoints(geometry_map, X_WGs,
+                                                        kInf);
   ASSERT_EQ(results.size(), 1);
 
   const SignedDistancePair<AutoDiffXd>& distance_data = results[0];
@@ -3347,7 +3393,8 @@ GTEST_TEST(ProximityEngineTests,
   std::vector<Isometry3<AutoDiffXd>> X_WGs{Isometry3<AutoDiffXd>::Identity(),
                                            Isometry3<AutoDiffXd>::Identity()};
   DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.ComputeSignedDistancePairwiseClosestPoints(geometry_map, X_WGs),
+      engine.ComputeSignedDistancePairwiseClosestPoints(geometry_map, X_WGs,
+                                                        kInf),
       std::logic_error,
       "Signed distance queries between shapes 'Box' and 'Box' are not "
       "supported for scalar type drake::AutoDiffXd");
