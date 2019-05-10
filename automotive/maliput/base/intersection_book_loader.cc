@@ -63,7 +63,12 @@ std::unique_ptr<api::Intersection> BuildIntersection(
     next_phase_id = n.id;
     duration_until = n.duration_until;
   }
-  phase_provider->SetPhase(ring_id, phase_id, next_phase_id, duration_until);
+  if (!phase_provider->GetPhase(ring_id).has_value()) {
+    phase_provider->AddPhaseRing(ring_id, phase_id, next_phase_id,
+                                 duration_until);
+  } else {
+    phase_provider->SetPhase(ring_id, phase_id, next_phase_id, duration_until);
+  }
   // The following arbitrarily uses the first phase within the PhaseRing. This
   // is acceptable since a PhaseRing guarantees that all Phases within it share
   // the same domain.
