@@ -38,6 +38,7 @@ def fortran_library(
         srcs = objs,
         outs = [libname],
         cmd = "$(AR) q $@ $(SRCS)",
+        toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
         visibility = ["//visibility:private"],
     )
 
