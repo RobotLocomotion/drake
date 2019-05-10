@@ -66,7 +66,7 @@ class PointShapeAutoDiffSignedDistanceTester {
   ::testing::AssertionResult Test(const Vector3d& p_GN_G,
                                   const Vector3d& p_NQ_G,
                                   bool is_inside = false,
-                                  bool is_grad_W_well_defined = true) {
+                                  bool is_grad_W_unique = true) {
     const double sign = is_inside ? -1 : 1;
     const double expected_distance = sign * p_NQ_G.norm();
     const Vector3d p_GQ = p_GN_G + p_NQ_G;
@@ -83,7 +83,7 @@ class PointShapeAutoDiffSignedDistanceTester {
         GeometryId::get_new_id(), X_WG_.cast<AutoDiffXd>(), p_WQ_ad);
 
     SignedDistanceToPoint<AutoDiffXd> result = distance_to_point(shape_);
-    EXPECT_EQ(result.is_grad_W_well_defined, is_grad_W_well_defined);
+    EXPECT_EQ(result.is_grad_W_unique, is_grad_W_unique);
     if (std::abs(result.distance.value() - expected_distance) > tolerance_) {
       error = true;
       failure << "The difference between expected distance and tested distance "
@@ -147,7 +147,7 @@ class PointShapeAutoDiffSignedDistanceTester {
               << p_WQ_val_compare.message();
     }
 
-    if (result.is_grad_W_well_defined) {
+    if (result.is_grad_W_unique) {
       auto p_WQ_derivative_compare = CompareMatrices(
           math::autoDiffToGradientMatrix(p_WQ_ad),
           math::autoDiffToGradientMatrix(p_WQ_ad_expected), tolerance_);

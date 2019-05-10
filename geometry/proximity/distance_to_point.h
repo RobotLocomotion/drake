@@ -187,12 +187,12 @@ class DistanceToPoint {
   SignedDistanceToPoint<T> operator()(const fcl::Sphered& sphere) {
     T distance{};
     Vector3<T> p_GN_G, grad_W;
-    bool is_grad_W_well_defined{};
+    bool is_grad_W_unique{};
     ComputeDistanceToPrimitive(sphere, X_WG_, p_WQ_, &p_GN_G, &distance,
-                               &grad_W, &is_grad_W_well_defined);
+                               &grad_W, &is_grad_W_unique);
 
     return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W,
-                                    is_grad_W_well_defined};
+                                    is_grad_W_unique};
   }
 
   /** Overload to compute distance to a box.  */
@@ -207,12 +207,12 @@ class DistanceToPoint {
     bool is_Q_on_edge_or_vertex{};
     std::tie(p_GN_G, grad_G, is_Q_on_edge_or_vertex) =
         ComputeDistanceToBox(h, p_GQ_G);
-    const bool is_grad_W_well_defined = !is_Q_on_edge_or_vertex;
+    const bool is_grad_W_unique = !is_Q_on_edge_or_vertex;
     const Vector3<T> grad_W = X_WG_.rotation() * grad_G;
     const Vector3<T> p_WN = X_WG_ * p_GN_G;
     T distance = grad_W.dot(p_WQ_ - p_WN);
     return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W,
-                                    is_grad_W_well_defined};
+                                    is_grad_W_unique};
   }
 
   /** Overload to compute distance to a cylinder.  */
@@ -308,7 +308,7 @@ class DistanceToPoint {
     // bottom rims of the cylinder, or when it is inside the box and on the
     // central axis, with the nearest feature being the barrel of the cylinder.
     return SignedDistanceToPoint<T>{geometry_id_, p_GN, distance, grad_W,
-                                    true /* is_grad_W_well_defined */};
+                                    true /* is_grad_W_unique */};
   }
 
   /** Reports the "sign" of x with a small modification; Sign(0) --> 1.

@@ -19,8 +19,7 @@ namespace geometry {
  - When A and B are touching or penetrating, distance <= 0.
  - By definition, nhat_AB_W must be in the opposite direction of nhat_BA_W.
  - (p_WCa - p_Wcb) = distance · nhat_BA_W.
- - In some cases, nhat_BA_W is not unique, and is_nhat_BA_W_well_defined is
-   set to false.
+ - In some cases, nhat_BA_W is not unique, and is_nhat_BA_W_unique is false.
  @warning For two geometries that are just touching, the underlying code can
           guarantee a correct value for nhat_BA_W only when one geometry is a
           sphere, and the other geometry is a sphere, a box, or a cylinder.
@@ -42,20 +41,19 @@ struct SignedDistancePair{
    @param p_BCb_in      The witness point on geometry B's surface, in B's frame.
    @param dist          The signed distance between p_A and p_B.
    @param nhat_BA_W_in  A direction of fastest increasing distance.
-   @param is_nhat_BA_W_well_defined_in  True if nhat_BA_W is well defined, false
-                                        otherwise.
+   @param is_nhat_BA_W_unique_in  True if nhat_BA_W is unique, false otherwise.
    @pre nhat_BA_W_in is unit-length. */
   SignedDistancePair(GeometryId a, GeometryId b, const Vector3<T>& p_ACa_in,
                      const Vector3<T>& p_BCb_in, const T& dist,
                      const Vector3<T>& nhat_BA_W_in,
-                     const bool is_nhat_BA_W_well_defined_in)
+                     const bool is_nhat_BA_W_unique_in)
       : id_A(a),
         id_B(b),
         p_ACa(p_ACa_in),
         p_BCb(p_BCb_in),
         distance(dist),
         nhat_BA_W(nhat_BA_W_in),
-        is_nhat_BA_W_well_defined(is_nhat_BA_W_well_defined_in)
+        is_nhat_BA_W_unique(is_nhat_BA_W_unique_in)
   // TODO(DamrongGuoy): When we have a full implementation of computing
   //  nhat_BA_W in ComputeSignedDistancePairwiseClosestPoints, check a
   //  condition like this (within epsilon):
@@ -83,11 +81,11 @@ struct SignedDistancePair{
         p_BCb(p_BCb_in),
         distance(dist),
         nhat_BA_W(Vector3<T>::Zero()),
-        is_nhat_BA_W_well_defined(false) {}
+        is_nhat_BA_W_unique(false) {}
 
   /** Swaps the interpretation of geometries A and B. */
   void SwapAAndB() {
-    // Leave distance and is_nhat_BA_W_well_defined alone; swapping A and B
+    // Leave distance and is_nhat_BA_W_unique alone; swapping A and B
     // doesn't change them.
     std::swap(id_A, id_B);
     std::swap(p_ACa, p_BCb);
@@ -114,7 +112,7 @@ struct SignedDistancePair{
   T distance{};
   /** A direction of fastest increasing distance. */
   Vector3<T> nhat_BA_W;
-  bool is_nhat_BA_W_well_defined;
+  bool is_nhat_BA_W_unique;
 };
 
 }  // namespace geometry

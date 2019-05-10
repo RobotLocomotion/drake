@@ -138,9 +138,9 @@ PYBIND11_MODULE(geometry, m) {
           doc.SignedDistancePair.distance.doc)
       .def_readwrite("nhat_BA_W", &SignedDistancePair<T>::nhat_BA_W,
           doc.SignedDistancePair.nhat_BA_W.doc)
-      .def_readwrite("is_nhat_BA_W_well_defined",
-          &SignedDistancePair<T>::is_nhat_BA_W_well_defined,
-          doc.SignedDistancePair.is_nhat_BA_W_well_defined.doc);
+      .def_readwrite("is_nhat_BA_W_unique",
+          &SignedDistancePair<T>::is_nhat_BA_W_unique,
+          doc.SignedDistancePair.is_nhat_BA_W_unique.doc);
 
   // SignedDistanceToPoint
   py::class_<SignedDistanceToPoint<T>>(m, "SignedDistanceToPoint")
