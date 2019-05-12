@@ -69,7 +69,8 @@ void StaticFrictionConeComplementarityNonlinearConstraint::DoEval(
       // from the position stored inside context, we will need to modify
       // context. But DoEval is a const method, hence it can only return the
       // const context. We use const_cast to remove the constness of the
-      // context.
+      // context. If it could be guaranteed that the `q` was already set in the
+      // context, this const_cast wouldn't be necessary.
       const_cast<systems::Context<AutoDiffXd>&>(
           contact_wrench_evaluator_->context());
   if (!internal::AreAutoDiffVecXdEqual(q, plant.GetPositions(context))) {

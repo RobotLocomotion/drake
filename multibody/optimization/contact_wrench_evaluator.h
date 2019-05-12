@@ -79,7 +79,7 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
 
   const MultibodyPlant<AutoDiffXd>& plant() const { return *plant_; }
 
-  /** Getter for immutable context */
+  /** Getter for const context */
   const systems::Context<AutoDiffXd>& context() const { return *context_; }
 
   /** Getter for the mutable context */
@@ -133,7 +133,7 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
  private:
   const MultibodyPlant<AutoDiffXd>* plant_;
   // The derived class might need to modify the position value stored inside
-  // this context, so we don't keep context_ as a const pointer.
+  // this context, so we don't keep context_ as a pointer to const.
   systems::Context<AutoDiffXd>* context_;
   const std::pair<geometry::GeometryId, geometry::GeometryId> geometry_id_pair_;
   int num_lambda_;

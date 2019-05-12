@@ -71,8 +71,7 @@ class StaticEquilibriumProblem {
   /**
    * Updates the tolerance on all the complementarity constraints α * β = 0.
    * The complementarity constraint is relaxed as 0 ≤ α * β ≤ tol.
-   * You could refer to AddStaticFrictionConeComplementarityConstraint() for
-   * more details.
+   * See AddStaticFrictionConeComplementarityConstraint() for more details.
    */
   void UpdateComplementarityTolerance(double tol);
 
