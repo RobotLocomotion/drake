@@ -632,6 +632,7 @@ class TestCustom(unittest.TestCase):
                 context = system.CreateDefaultContext()
                 self.assertEqual(
                     context.get_discrete_state(0).size(), 3)
+                self.assertEqual(system.AllocateDiscreteVariables().size(), 3)
 
     def test_abstract_io_port(self):
         test = self
