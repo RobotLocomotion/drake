@@ -4,8 +4,10 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/compute_numerical_gradient.h"
 #include "drake/multibody/optimization/test/optimization_with_contact_utilities.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -120,6 +122,21 @@ class TwoFreeSpheresTest : public ::testing::Test {
     EXPECT_TRUE(CompareMatrices(
         math::autoDiffToGradientMatrix(y_autodiff),
         math::autoDiffToGradientMatrix(y_autodiff_expected), 100 * kEps));
+
+    // Use a std::function instead of auto eval_fun as a lambda. This is
+    // explained in ComputeNumericalGradient.
+    std::function<void(const Eigen::Ref<const Eigen::VectorXd>&,
+                       Eigen::VectorXd*)>
+        eval_fun = [&static_equilibrium_binding](
+                       const Eigen::Ref<const Eigen::VectorXd>& x,
+                       Eigen::VectorXd* y) {
+          static_equilibrium_binding.evaluator()->Eval(x, y);
+        };
+
+    const auto J = math::ComputeNumericalGradient(
+        eval_fun, math::autoDiffToValueMatrix(x_autodiff));
+    EXPECT_TRUE(
+        CompareMatrices(math::autoDiffToGradientMatrix(y_autodiff), J, 1e-5));
   }
 
  protected:

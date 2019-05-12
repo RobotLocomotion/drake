@@ -17,8 +17,20 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "optimization",
     deps = [
+        ":contact_wrench",
         ":contact_wrench_evaluator",
         ":static_equilibrium_constraint",
+        ":static_equilibrium_problem",
+        ":static_friction_cone_complementarity_constraint",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_wrench",
+    srcs = [],
+    hdrs = ["contact_wrench.h"],
+    deps = [
+        "//multibody/tree:multibody_tree_indexes",
     ],
 )
 
@@ -48,6 +60,32 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "static_friction_cone_complementarity_constraint",
+    srcs = ["static_friction_cone_complementarity_constraint.cc"],
+    hdrs = ["static_friction_cone_complementarity_constraint.h"],
+    deps = [
+        ":contact_wrench_evaluator",
+        "//geometry:scene_graph",
+        "//multibody/plant",
+        "//solvers:binding",
+        "//solvers:constraint",
+        "//solvers:mathematical_program",
+    ],
+)
+
+drake_cc_library(
+    name = "static_equilibrium_problem",
+    srcs = ["static_equilibrium_problem.cc"],
+    hdrs = ["static_equilibrium_problem.h"],
+    deps = [
+        ":contact_wrench",
+        ":contact_wrench_evaluator",
+        ":static_equilibrium_constraint",
+        ":static_friction_cone_complementarity_constraint",
+    ],
+)
+
+drake_cc_library(
     name = "optimization_with_contact_utilities",
     testonly = 1,
     srcs = ["test/optimization_with_contact_utilities.cc"],
@@ -56,6 +94,7 @@ drake_cc_library(
     deps = [
         "//geometry:scene_graph",
         "//multibody/plant",
+        "//systems/analysis:simulator",
         "//systems/framework:diagram",
     ],
 )
@@ -75,8 +114,28 @@ drake_cc_googletest(
         ":optimization_with_contact_utilities",
         ":static_equilibrium_constraint",
         "//common/test_utilities:eigen_matrix_compare",
+        "//math:compute_numerical_gradient",
         "//solvers:mathematical_program",
         "//solvers:solve",
+    ],
+)
+
+drake_cc_googletest(
+    name = "static_equilibrium_problem_test",
+    deps = [
+        ":optimization_with_contact_utilities",
+        ":static_equilibrium_problem",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//solvers:solve",
+    ],
+)
+
+drake_cc_googletest(
+    name = "static_friction_cone_complementarity_constraint_test",
+    deps = [
+        ":optimization_with_contact_utilities",
+        ":static_friction_cone_complementarity_constraint",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
