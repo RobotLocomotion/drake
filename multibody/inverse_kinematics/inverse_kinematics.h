@@ -195,7 +195,7 @@ class InverseKinematics {
    * with a SceneGraph.
    */
   solvers::Binding<solvers::Constraint> AddMinimumDistanceConstraint(
-      double minimal_distance);
+      double minimum_distance, double threshold_distance = 1);
 
   /** Getter for q. q is the decision variable for the generalized positions of
    * the robot. */

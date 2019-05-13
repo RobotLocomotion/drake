@@ -8,13 +8,12 @@
 
 namespace drake {
 namespace multibody {
-/** Computes the penalty function γ(x) and its derivatives dγ(x)/dx, where x is
-the scaled (and shifted) signed distance (x = distance / distance_threshold
-- 1). This function is used by MinimumDistanceConstraint, in which we impose
-the constraint that the pairwise distance are all no smaller than a distance
-threshold. We do this with the constraint
-∑ᵢ γ(dᵢ / distance_threshold - 1) = 0
-where dᵢ is the signed distance between the i'th pair of geometries. */
+/** Computes the penalty function γ(x) and its derivatives dγ(x)/dx. Valid
+penalty functions must meet the following criteria:
+
+1.     γ(x) ≥ 0 ∀ x ∈ ℝ.
+2. dγ(x)/dx ≤ 0 ∀ x ∈ ℝ.
+3.     γ(x) = 0 ∀ x ≥ 0. */
 using MinimumDistancePenaltyFunction =
     std::function<void(double x, double* penalty, double* dpenalty_dx)>;
 
@@ -47,15 +46,19 @@ multidisciplinary workshop on Advances in preference handling. */
 void QuadraticallySmoothedHingeLoss(double x, double* penalty,
                                     double* dpenalty_dx);
 
-/** Constrain that the pairwise distance between objects should be no smaller
-than a positive threshold. We consider the distance between pairs of
-1. Anchored (static) object and a dynamic object.
-2. A dynamic object and another dynamic object, if one is not the parent link of
-the other.
+/** Constrain the signed distance between all candidate pairs of geometries
+(according to the logic of SceneGraph::GetCollisionCandidates()) to be no
+smaller than a specified minimum distance.
+
 The formulation of the constraint is
-∑ γ(φᵢ/dₘᵢₙ - 1) = 0
-where φᵢ is the signed distance of the i'th pair, dₘᵢₙ is the minimum allowable
-distance, and γ is a penalty function. */
+
+0 ≤ SmoothMax( γ((dᵢ - dₜₕᵣₑₛₕ)/(dₜₕᵣₑₛₕ - dₘᵢₙ)) / γ(-1) ) ≤ 1
+
+where dᵢ is the signed distance of the i-th pair, dₘᵢₙ is the minimum allowable
+distance, dₜₕᵣₑₛₕ is the distance beyond which pairs of geometries are ignored,
+γ is a MinimumDistancePenaltyFunction, and SmoothMax(d) is smooth approximation
+of max(d). We require that 0 ≤ dₘᵢₙ < dₜₕᵣₑₛₕ.
+*/
 class MinimumDistanceConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinimumDistanceConstraint)
@@ -68,6 +71,7 @@ class MinimumDistanceConstraint : public solvers::Constraint {
   @param minimum_distance The minimum value of the signed distance between
   any admissible pairs of objects.
   @param penalty_type The penalty function formulation.
+  @param threshold_distance The penalty function formulation.
   @pre The MultibodyPlant passed in the constructor of InverseKinematics has
   registered its geometry with a SceneGraph object already.
   @pre minimum_distance > 0.
@@ -76,12 +80,16 @@ class MinimumDistanceConstraint : public solvers::Constraint {
       const multibody::MultibodyPlant<double>* const plant,
       double minimum_distance, systems::Context<double>* plant_context,
       MinimumDistancePenaltyFunction penalty_function =
-          QuadraticallySmoothedHingeLoss);
+          QuadraticallySmoothedHingeLoss,
+      double threshold_distance = 1);
 
   ~MinimumDistanceConstraint() override {}
 
   /** Getter for the minimum distance. */
   double minimum_distance() const { return minimum_distance_; }
+
+  /** Getter for the threshold distance. */
+  double threshold_distance() const { return threshold_distance_; }
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -103,6 +111,9 @@ class MinimumDistanceConstraint : public solvers::Constraint {
 
   const multibody::MultibodyPlant<double>& plant_;
   const double minimum_distance_;
+  const double threshold_distance_;
+  const double penalty_output_scaling_;
+  int num_collision_candidates_{};
   systems::Context<double>* const plant_context_;
   MinimumDistancePenaltyFunction penalty_function_;
 };

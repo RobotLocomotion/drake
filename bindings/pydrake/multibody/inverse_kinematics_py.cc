@@ -53,7 +53,8 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::arg("angle_lower"), py::arg("angle_upper"),
             cls_doc.AddAngleBetweenVectorsConstraint.doc)
         .def("AddMinimumDistanceConstraint",
-            &Class::AddMinimumDistanceConstraint, py::arg("minimal_distance"),
+            &Class::AddMinimumDistanceConstraint, py::arg("minimum_distance"),
+            py::arg("threshold_distance") = 1.0,
             cls_doc.AddMinimumDistanceConstraint.doc)
         .def("q", &Class::q, cls_doc.q.doc)
         .def("prog", &Class::prog, py_reference_internal, cls_doc.prog.doc)
