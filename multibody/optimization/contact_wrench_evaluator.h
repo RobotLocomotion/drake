@@ -58,8 +58,8 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
     DRAKE_ASSERT(lambda_value.rows() == num_lambda_ &&
                  lambda_value.cols() == 1);
     VectorX<typename DerivedQ::Scalar> x(num_vars());
-    x.template head(plant_->num_positions()) = q_value;
-    x.template tail(num_lambda_) = lambda_value;
+    x.head(plant_->num_positions()) = q_value;
+    x.tail(num_lambda_) = lambda_value;
     return x;
   }
   //@}
