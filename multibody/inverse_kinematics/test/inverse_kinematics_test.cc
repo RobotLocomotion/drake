@@ -210,7 +210,7 @@ TEST_F(TwoFreeBodiesTest, AngleBetweenVectorsConstraint) {
   EXPECT_NEAR(angle, angle_lower, 1E-6);
 }
 
-TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraintTest) {
+TEST_F(TwoFreeSpheresTest, MinimumDistanceConstraintTest) {
   const double min_distance = 0.1;
 
   InverseKinematics ik(*plant_double_, plant_context_double_);
@@ -244,7 +244,7 @@ TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraintTest) {
     const Eigen::Vector3d p_WS2 =
         p_WB2 + quat_WB2.toRotationMatrix() * X_B2S2_.translation();
     // This large error is due to the derivative of the penalty function(i.e.,
-    // the gradient ∂penalty/∂distance) being small near minimal_distance. Hence
+    // the gradient ∂penalty/∂distance) being small near minimum_distance. Hence
     // a small violation on the penalty leads to a large violation on the
     // minimum_distance.
     const double tol = 2e-4;

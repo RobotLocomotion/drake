@@ -240,7 +240,7 @@ class TestInverseKinematics(unittest.TestCase):
         radius1 = 0.1
         radius2 = 0.2
 
-        ik.AddMinimumDistanceConstraint(minimal_distance=min_distance)
+        ik.AddMinimumDistanceConstraint(minimum_distance=min_distance)
         context = self.plant.CreateDefaultContext()
         self.plant.SetFreeBodyPose(
             context, B1.body(), RigidTransform([0, 0, 0.01]))
