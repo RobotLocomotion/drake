@@ -33,10 +33,12 @@ namespace internal {
 class DummyRenderEngine final : public render::RenderEngine {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DummyRenderEngine);
+  /** Constructor to exercise the default constructor of RenderEngine.  */
+  DummyRenderEngine() = default;
 
   /** Constructor for configuring the underlying RenderEngine.  */
-  explicit DummyRenderEngine(const render::RenderEngineParams& parameters)
-      : render::RenderEngine(parameters) {}
+  explicit DummyRenderEngine(const render::RenderLabel& label)
+      : render::RenderEngine(label) {}
 
   /** @group No-op implementation of RenderEngine interface.  */
   //@{

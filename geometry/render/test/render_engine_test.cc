@@ -334,13 +334,13 @@ GTEST_TEST(RenderEngine, ColorLabelConversion) {
 GTEST_TEST(RenderEngine, DefaultRenderLabel) {
   // Case: Confirm RenderEngine default is kUnspecified.
   {
-    DummyRenderEngine engine(RenderEngineParams{});
+    DummyRenderEngine engine;
     EXPECT_EQ(engine.default_render_label(), RenderLabel::kUnspecified);
   }
 
   // Case: Confirm kDontCare is valid.
   {
-    DummyRenderEngine engine(RenderEngineParams{RenderLabel::kDontCare});
+    DummyRenderEngine engine(RenderLabel::kDontCare);
     EXPECT_EQ(engine.default_render_label(), RenderLabel::kDontCare);
   }
 
@@ -348,7 +348,7 @@ GTEST_TEST(RenderEngine, DefaultRenderLabel) {
   {
     for (auto label :
          {RenderLabel::kDoNotRender, RenderLabel::kEmpty, RenderLabel{10}}) {
-      DRAKE_EXPECT_THROWS_MESSAGE(DummyRenderEngine({label}), std::logic_error,
+      DRAKE_EXPECT_THROWS_MESSAGE(DummyRenderEngine{label}, std::logic_error,
                                   ".* default render label must be either "
                                   "'kUnspecified' or 'kDontCare'");
     }

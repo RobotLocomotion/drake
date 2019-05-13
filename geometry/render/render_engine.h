@@ -23,16 +23,6 @@ namespace drake {
 namespace geometry {
 namespace render {
 
-/** Parameters for constructing RenderEngine.  */
-struct RenderEngineParams {
-  /** The render label to apply to geometries that have not otherwise specified
-   a (label, id) property. The value _must_ be either RenderLabel::kUnspecified
-   or RenderLabel::kDontCare. (See
-   @ref render_engine_default_label "this section" for more details.) Defaults
-   to RenderLabel::kUnspecified.  */
-  RenderLabel default_render_label{RenderLabel::kUnspecified};
-};
-
 /** The engine for performing rasterization operations on geometry. This
  includes rgb images and depth images. The coordinate system of
  %RenderEngine's viewpoint `R` is `X-right`, `Y-down` and `Z-forward`
@@ -90,11 +80,17 @@ struct RenderEngineParams {
  GetRenderLabelOrThrow().  */
 class RenderEngine : public ShapeReifier {
  public:
-  /** Constructs a %RenderEngine with the given `parameters`.
+  /** Constructs a %RenderEngine with the given default render label. The
+   default render label is applied to geometries that have not otherwise
+   specified a (label, id) property. The value _must_ be either
+   RenderLabel::kUnspecified or RenderLabel::kDontCare. (See
+   @ref render_engine_default_label "this section" for more details.)
+
    @throws std::logic_error if the default render label is not one of the two
                             allowed labels.  */
-  explicit RenderEngine(const RenderEngineParams& parameters)
-      : default_render_label_(parameters.default_render_label) {
+  explicit RenderEngine(
+      const RenderLabel& default_label = RenderLabel::kUnspecified)
+      : default_render_label_(default_label) {
     if (default_render_label_ != RenderLabel::kUnspecified &&
         default_render_label_ != RenderLabel::kDontCare) {
       throw std::logic_error(
@@ -317,7 +313,7 @@ class RenderEngine : public ShapeReifier {
   // The default render label to apply to geometries that don't otherwise
   // provide one. Default constructor is RenderLabel::kUnspecified via the
   // RenderLabel default constructor.
-  RenderLabel  default_render_label_{};
+  RenderLabel default_render_label_{};
 };
 
 }  // namespace render
