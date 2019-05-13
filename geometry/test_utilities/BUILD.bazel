@@ -5,10 +5,19 @@ load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "test_utilities",
+    deps = [
+        ":dummy_render_engine",
+        ":geometry_set_tester",
+    ],
+)
 
 drake_cc_library(
     name = "geometry_set_tester",
@@ -17,6 +26,15 @@ drake_cc_library(
     srcs = [],
     hdrs = ["geometry_set_tester.h"],
     deps = ["//geometry:geometry_set"],
+)
+
+drake_cc_library(
+    name = "dummy_render_engine",
+    # TODO(SeanCurtis-TRI): Make this `testonly = 1` once dev/GeometryState is
+    # removed; then all of these become testonly (as does the package).
+    srcs = [],
+    hdrs = ["dummy_render_engine.h"],
+    deps = ["//geometry/render:render_engine"],
 )
 
 add_lint_tests()

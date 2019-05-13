@@ -11,7 +11,6 @@
 namespace drake {
 namespace geometry {
 namespace render {
-
 namespace  {
 
 class RenderLabelTests : public ::testing::Test {
@@ -92,6 +91,11 @@ TEST_F(RenderLabelTests, AssignmentAndComparison) {
   EXPECT_TRUE(labels_[0] < RenderLabel::kEmpty);
   EXPECT_TRUE(labels_[0] < RenderLabel::kDoNotRender);
   EXPECT_TRUE(labels_[0] < RenderLabel::kUnspecified);
+
+  // Comparison of RenderLabel with values of underlying type.
+  for (RenderLabel::ValueType i(0); i < kLabelCount; ++i) {
+    EXPECT_TRUE(labels_[i] == i);
+  }
 }
 
 // Confirms that RenderLabels can be used as hashable entries in STL containers
