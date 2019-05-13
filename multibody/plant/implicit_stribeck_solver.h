@@ -496,7 +496,7 @@ term exactly as needed in Eq. (16).
 @tparam T Must be one of drake's default scalar types.
 
 @authors Alejandro Castro (2018) Original author.
-@authors Michael Sherm, Evan Drumwright (2018) Original PR #8925 reviewers.
+@authors Michael Sherman, Evan Drumwright (2018) Original PR #8925 reviewers.
 @authors Drake team (see https://drake.mit.edu/credits).
 */
 template <typename T>

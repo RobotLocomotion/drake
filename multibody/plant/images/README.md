@@ -21,6 +21,8 @@ The following steps will re-create the png:
 
 ## Python files
 
+TODO(amcastro-tri) update to Python 3.
+
 These python scripts use Python 2.X, matplotlib, and numpy to generate the
  correspondingly named .png files.
 

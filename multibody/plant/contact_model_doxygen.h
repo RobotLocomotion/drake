@@ -15,15 +15,15 @@ its particular quirks in a well-principled manner. What works in one simulation
 scenario, may not work equally well in another scenario. This discussion will
 encompass:
 - @ref contact_geometry "properties of the geometric contact techniques",
-- @ref contact_engineering "choosing appropriate modeling parameters",
-- @ref contact_engineering "choosing a time advancement strategy", and
+- @ref contact_parameters "choosing appropriate modeling parameters",
+- @ref time_advancement_strategy "choosing a time advancement strategy", and
 - @ref stribeck_approximation "details of the friction model".
 
 <h2>Mechanics of Solids</h2>
 All objects in real life are compliant and deform under the action of external
 loads. Deformations, as well as motion, of real life solids are well described
 by the theory of _continuum mechanics_, which provides a complete description
-of the full threedimensional state of stress and deformation given a set of
+of the full three-dimensional state of stress and deformation given a set of
 external loads and boundary conditions.
 Broadly, how compliant a solid is depends on the material (or materials) it is
 made of. Factors such as microstructure, imperfections, anisotropy, etc. affect
@@ -37,9 +37,9 @@ aluminum can be modeled as Hookean, as long as strain is within the elastic
 range (< 1% strain for steel for example). Other materials such as rubber are
 hyperelastic and are best described by a Neo-Hookean law.
 The _stiffness_ of a material essentially refers to how steep this
-stress-strain curve is. The steepest the slope of the stress-strain curve, the
+stress-strain curve is. The steeper the slope of the stress-strain curve, the
 stiffer a material is. For Hookean materials, this translates to a larger
-Young modulus (the slope of the stress-strain curve in the linear regime).
+Young's modulus (the slope of the stress-strain curve in the linear regime).
 
 <h2>Contact Mechanics</h2>
 Contact mechanics refers to the study of the deformations that solids undergo as
@@ -50,10 +50,10 @@ surfaces are much smaller than the overall dimensions of the contacting bodies
 and the materials are linear (i.e. are described by the Hookean law).
 
 In general, when two solids come into contact, they inevitably must undergo
-deformation in order to avoid the physical impossibility of interpenetration
-into each other. This constraint is described by the Signorini boundary
-condition, which at each point in the contact surface imposes a complementarity
-constraint between normal stress and penetration (described by a gap function).
+deformation in order to avoid the physical impossibility of interpenetration.
+This constraint is described by the Signorini boundary condition, which at each
+point in the contact surface imposes a complementarit constraint between normal
+stress and penetration (described by a gap function).
 Stresses on the contact surface are the result of these deformations.
 
 Ultimately, contact forces are the result of integrating these contact
@@ -70,10 +70,10 @@ third point of support right in the middle, through its center of gravity. Under
 the action of its own weight, infinite solutions to the static problem exist.
 
 Rigid contact with Coulomb friction is a common approximation used in
-simulation as well. It has its own limitations, most notably the non-probable
-existence of solutions. As an example of this is the well known Painlevé
+simulation as well. It has its own limitations, most notable the possible
+non-existence of a solution. An example of this is the well known Painlevé
 paradox, a one degree of freedom system with contact that, depending on the
-state, has an infinite number of solutions or even no solution exists.
+state, has an infinite number of solutions or even no solution.
 
 It should be noted that these artifacts are a consequence of the mathematical
 approximations adopted and not a flaw of the original continuum mechanics theory
@@ -84,7 +84,9 @@ and even much less, a flaw in the physics itself.
 In the limit to rigid contact, often the region of contact, or contact surface,
 shrinks to a single point. Notable exceptions are planar boundaries coming into
 contact (box on a plane for instance) and rigid bodies with conforming
-boundaries.
+boundaries. Even in those cases it is common to model the surface contact by
+selecting a few points on the surface and generating contact forces only at
+those points.
 
 @anchor point_contact_approximation
 <h3>Numerical Approximation of %Point Contact</h3>
@@ -94,15 +96,14 @@ are not in contact. In order for a practical implementation to detect contact
 the bodies must be in an overlapping configuration, even if by a negligible
 small amount, see Figure 1.
 
-In a point contact model two bodies A and B
-are considered to be in contact if the geometrical intersection of their
-original rigid geometries is non-empty. That is, there exists a non-empty
-overlap volume. In a point contact model, this overlap region is simply
-characterized by a pair of points `Ac` and `Bc` on bodies A and B,
-respectively, such that `Ac` is a point on the surface of A that lies the
-farthest from the surface of B. Similarly for point `Bc`. In the limit to
-rigid, bodies do never interpenetrate, the intersection volume shrinks to zero
-and in this limit points `Ac` and `Bc` coincide with each other. 
+In a point contact model two bodies A and B are considered to be in contact if
+the geometrical intersection of their original rigid geometries is non-empty.
+That is, there exists a non-empty overlap volume. In a point contact model, this
+overlap region is simply characterized by a pair of witness points `Aw` and `Bw`
+on bodies A and B, respectively, such that `Aw` is a point on the surface of A
+that lies the farthest from the surface of B. Similarly for point `Bw`. In the
+limit to rigid, bodies do not interpenetrate, the intersection volume shrinks to
+zero and in this limit witness points `Aw` and `Bw` coincide with each other.
 
 <h3>Enforcing Non-Penetration with Penalty Forces</h3>
 In Drake we enforce the non-penetration constraint for rigid contact using a
@@ -110,18 +111,17 @@ penalty force. This penalty force
 introduces a "numerical" compliance such that, within this approximation, rigid
 bodies are allowed to overlap with a non-empty intersection. The strength of
 the penalty can be adjusted so that, in the limit to a very stiff penalty force
-we recover rigid contact. In this limit, for which `Ac ≡ Bc`, a contact point C
-is defined as `C ≜ Ac (≡ Bc)`. In practice, with a finite numerical stiffness
-of the penalty force, we define `C = 1/2⋅(Ac + Bc)`. Notice that the 1/2
-factor is arbitrary and it's chosen for symmetry.
-At point C we define a contact frame; we'll just refer to that frame as `C`
-when it is clear we mean the frame rather than the point.
+we recover rigid contact. In this limit, for which `Aw ≡ Bw`, a contact point
+`Co` is defined as `Co ≜ Aw (≡ Bw)`. In practice, with a finite numerical
+stiffness of the penalty force, we define `Co = 1/2⋅(Aw + Bw)`. Notice that the
+1/2 factor is arbitrary and it's chosen for symmetry.
 We define the normal `n̂` as pointing outward from the surface of
 `B` towards the interior of `A`. That is, if we denote with `d` the
-(positive) penetration depth, we have that `Bc = d⋅n̂ + Ac`.
-The `C` frame's z-axis is aligned along this normal (with arbitrary x- and
-y-axes). Because the two forces are equal and opposite, we limit our discussion
-to the force `f` acting on `A` at `Ac` (such that `-f` acts on `B` at `Bc`).
+(positive) penetration depth, we have that `Bw = d⋅n̂ + Aw`. We define a contact
+frame C with origin at `Co`. The C frame's z-axis is aligned along the normal n̂
+(with arbitrary x- and y-axes). Because the two forces are equal and opposite,
+we limit our discussion to the force `f` acting on `A` at `Co` (such that `-f`
+acts on `B` at `Co`).
 
 @image html multibody/plant/images/simple_contact.png "Figure 1: Illustration of contact between two spheres."
 
@@ -151,10 +151,12 @@ why these techniques work the way they do, but, instead, focus on _what_ the
 properties of the results of the _current implementation_ are.  It is worth
 noting that some of these properties are considered _problems_ yet to be
 resolved and should not necessarily be considered desirable.
--# Between any two collision geometries, only a _single_ pair of contact points
-will be reported. This pair will contain points `Ac` and `Bc` as defined in
-@ref point_contact_approximation "Numerical Approximation of Point Contact".
--# Contacts are reported as a point pair. A PenetrationAsPointPair in Drake.
+-# Between any two collision geometries, only a _single_ pair of witness contact
+points will be reported. This pair will contain witness points `Aw` and `Bw` as
+defined in @ref point_contact_approximation
+"Numerical Approximation of Point Contact".
+-# Contacts are reported as a point pair. A @ref
+drake::geometry::PenetrationAsPointPair "PenetrationAsPointPair" in Drake.
 -# Surface-to-surface contacts (such as a block sitting on a plane) are
 unfortunately still limited to a single contact point, typically located at
 the point of deepest penetration. That point will necessarily change from step
@@ -162,7 +164,8 @@ to step in an essentially non-physical manner. Our contact solver has generally
 exhibited stable behavior, even under these adversarial conditions. However, we
 recommend emulating multi-point contact by adding a collection of spheres
 covering the contact surfaces of interest. Refer to the example in
-inclined_plane_with_body.cc for a demonstration of this strategy.
+%drake/examples/multibody/inclined_plane_with_body/inclined_plane_with_body.cc
+for a demonstration of this strategy.
 -# A contact _normal_ is determined that approximates the mutual normal of
 the contacting surfaces at the contact point.
 Next topic: @ref contact_engineering
@@ -198,6 +201,11 @@ Next topic: @ref contact_engineering
       "set_stiction_tolerance()" provides additional information and guidelines
       on how to set this parameter.
 
+ <b><u>Note:</u></b> When modeling the multibody system as discrete (refer to
+ the @ref time_advancement_strategy "Choice of Time Advancement Strategy"
+ section), only the static coefficient of friction is used while the kinetic
+ coefficient of friction is ignored.
+
  @anchor time_advancement_strategy
  <h2>Choice of Time Advancement Strategy</h2>
 
@@ -211,7 +219,7 @@ Next topic: @ref contact_engineering
  continuous and a discrete system. A complete discussion of the subject,
  including the modeling of hybrid systems is beyond the scope of this section
  and thus the interested is referred to the documentation for
- @ref drake::systems::Simulator Simulator.
+ @ref drake::systems::Simulator "Simulator".
 
  <h3>Discrete MultibodyPlant</h3>
  Currently, this is the preferred modality given its speed and robustness.
@@ -224,15 +232,19 @@ Next topic: @ref contact_engineering
  documentation for @ref drake::multibody::ImplicitStribeckSolver
  "ImplicitStribeckSolver".
 
+ <b><u>Note:</u></b> For better numerical stability, the discrete model assumes
+ both static and kinetic coefficients of friction to be equal, the kinetic
+ coefficient of friction is ignored.
+
  <h3>Continuous MultibodyPlant</h3>
  If the `time_step` defined above is specified to be exactly zero at
  @ref drake::multibody::MultibodyPlant "MultibodyPlant" construction, the
  system is modeled as continuous. What that means is that the system is modeled
  to follow continuous dynamics of the form `ẋ = f(t, x, u)`, where `x` is the
- state of the plant, t is time, and u are externally applied inputs (either
- actuation or external body forces). In this mode, any of Drake's integrators
- can be used to advanced the system forward in time. The following text outlines
- the implications of using particular integrators.
+ state of the plant, t is time, and u is the set of externally applied inputs
+ (either actuation or external body forces). In this mode, any of Drake's
+ integrators can be used to advance the system forward in time. The following
+ text outlines the implications of using particular integrators.
 
  Integrators can be broadly categorized as one of:
    1. Implicit/Explicit integrators.
@@ -298,7 +310,7 @@ Next topic: @ref contact_engineering
  microscopic level (e.g., mechanical interference of surface imperfections,
  electrostatic, and/or Van der Waals forces). Two objects in static contact
  need to have a force `fₚ` applied parallel to the surface of contact sufficient
- to _break_ stiction. Once the objects are moving, dynamic (kinetic) friction
+ to _break_ stiction. Once the objects are moving, kinetic (dynamic) friction
  takes over. It is possible to accelerate one body sliding
  across another body with a force that would have been too small to break
  stiction. In essence, stiction will create a contrary force canceling out
@@ -311,7 +323,7 @@ Next topic: @ref contact_engineering
 
       |     stiction
    Fₛ |   |
-      |   |      dynamic friction
+      |   |      kinetic friction
       |   |______________________
   fₜ  |   |
       |   |
@@ -327,14 +339,14 @@ Next topic: @ref contact_engineering
  In _idealized_ stiction, tangent force `fₜ` is equal and opposite
  to the pushing force `fₚ` up to the point where that force is sufficient to
  break stiction (the red dot in Figure 2). At that point, the tangent force
- immediately becomes a constant force based on the _dynamic_ coefficient of
+ immediately becomes a constant force based on the _kinetic_ coefficient of
  friction. There are obvious discontinuities in this function which do not occur
  in reality, but this can be a useful approximation and can be implemented in
  this form using constraints that can be enabled and disabled discontinuously.
  However, here we are looking for a continuous model that can produce reasonable
  behavior using only unconstrained differential equations. With this model we
  can also capture the empirically-observed Stribeck effect where the friction
- force declines with increasing slip velocity until it reaches the dynamic
+ force declines with increasing slip velocity until it reaches the kinetic
  friction level.
 
  <!-- This is illustrated much better in the formatted doxygen image, but in
@@ -373,9 +385,9 @@ Next topic: @ref contact_engineering
  where `s` is a unitless multiple of a _new_ parameter: _slip tolerance_ (`vₛ`).
  Rather than modeling _perfect_ stiction, it makes use of an _allowable_ amount
  of relative motion to approximate stiction.  When we refer to
- "relative motion", we refer specifically to the relative motion of the two
- points `Ac` and `Bc` on the corresponding bodies that are coincident in space
- with the contact point `C`.
+ "relative motion", we refer specifically to the relative translational speed of
+ two points `Ac` and `Bc` defined to instantly be located at contact point 
+ `Co` and moving with bodies A and B, respectively.
 
  The function, as illustrated in Figure 3, is a function of the unitless
  _multiple_ of `vₛ`. The domain is divided into three intervals:
@@ -383,7 +395,7 @@ Next topic: @ref contact_engineering
     - `s ∈ [0, 1)`: the coefficient of friction rises smoothly from zero to the
     static coefficient of friction, μs.
     - `s ∈ [1, 3)`: The coefficient of friction falls smoothly from
-    μs to the dynamic (kinetic) coefficient of friction, μd.
+    μs to the kinetic (dynamic) coefficient of friction, μd.
     - `s ∈ [3, ∞)`: Coefficient of friction is held constant at μd.
 
  Other than the residual "creep" velocity limited by `vₛ`, which can be
@@ -394,12 +406,10 @@ Next topic: @ref contact_engineering
  Coulomb friction. Its primary drawback is that the model is numerically
  very stiff in the stiction region, which requires either small step sizes
  with an explicit integrator, or use of a more-stable implicit integrator.
-*/
 
-#if 0
-<h3>Mathematical Description of Rigid Contact</h3>
-Consider rigid bodies B₁ and B₂ defined by their volumes Ω₁ and Ω₂ and with
-boundary surfaces ∂Ω₁ and ∂Ω₂, respectively. We denote with φᵢ(x): ℝ³ → ℝ,
-(i=1, 2) the signed distance function to body Bᵢ.
-The non-penetration condition for rigid 
-#endif
+ <b><u>Note:</u></b> When modeling the multibody system as discrete (refer to
+ the @ref time_advancement_strategy "Choice of Time Advancement Strategy"
+ section), only the static coefficient of friction is used while the kinetic
+ coefficient of friction is ignored. For better numerical stability, the
+ discrete model uses `μₖ = μₛ`.
+*/

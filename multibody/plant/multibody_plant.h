@@ -164,7 +164,7 @@ namespace multibody {
 /// @section mbp_modeling_contact Modeling contact
 ///
 /// Please refer to @ref drake_contacts "Contact Modeling in Drake" for details
-/// on the available approximations, setup and considerations for a multibody
+/// on the available approximations, setup, and considerations for a multibody
 /// simulation with frictional contact.
 ///
 /// @section finalize_stage Finalize() stage
@@ -2881,6 +2881,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// integration or to set the time step for fixed time step integration.
   /// As a guidance, typical fixed time step integrators will become unstable
   /// for time steps larger than about a tenth of this time scale.
+  ///
+  /// For further details on contact modeling in Drake, please refer to the
+  /// section @ref drake_contacts "Contact Modeling in Drake" of our
+  /// documentation.
   /// @{
 
   /// Sets the penetration allowance used to estimate the coefficients in the
@@ -2924,7 +2928,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// simpler model immediately tractable with standard numerical methods for
   /// integration of ODE's, it often leads to stiff dynamics that require
   /// an explicit integrator to take very small time steps. It is therefore
-  /// recommended to use error controlled integrators when using this model.
+  /// recommended to use error controlled integrators when using this model or
+  /// the discrete time stepping (see @ref time_advancement_strategy
+  /// "Choice of Time Advancement Strategy").
   /// See @ref stribeck_approximation for a detailed discussion of the Stribeck
   /// model.
   /// @{
