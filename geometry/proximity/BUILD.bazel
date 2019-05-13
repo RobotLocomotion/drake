@@ -18,6 +18,7 @@ drake_cc_package_library(
         ":distance_to_point_with_gradient",
         ":distance_to_shape",
         ":proximity_utilities",
+        ":volume_mesh",
     ],
 )
 
@@ -81,6 +82,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "volume_mesh",
+    srcs = ["volume_mesh.cc"],
+    hdrs = ["volume_mesh.h"],
+    deps = [
+        "//common",
+        "//geometry:geometry_ids",
+    ],
+)
+
 drake_cc_googletest(
     name = "distance_to_point_test",
     deps = [
@@ -114,6 +125,13 @@ drake_cc_googletest(
     deps = [
         "//geometry:geometry_ids",
         "//geometry/query_results:contact_surface",
+    ],
+)
+
+drake_cc_googletest(
+    name = "volume_mesh_test",
+    deps = [
+        "//geometry/proximity:volume_mesh",
     ],
 )
 
