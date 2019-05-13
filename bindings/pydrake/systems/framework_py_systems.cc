@@ -435,6 +435,10 @@ struct Impl {
             overload_cast_explicit<unique_ptr<ContinuousState<T>>>(
                 &System<T>::AllocateTimeDerivatives),
             doc.System.AllocateTimeDerivatives.doc)
+        .def("AllocateDiscreteVariables",
+            overload_cast_explicit<unique_ptr<DiscreteValues<T>>>(
+                &System<T>::AllocateDiscreteVariables),
+            doc.System.AllocateDiscreteVariables.doc)
         .def("EvalVectorInput",
             [](const System<T>* self, const Context<T>& arg1, int arg2) {
               return self->EvalVectorInput(arg1, arg2);

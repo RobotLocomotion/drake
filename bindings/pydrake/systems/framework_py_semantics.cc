@@ -667,6 +667,7 @@ void DefineFrameworkPySemantics(py::module m) {
     discrete_values
         .def("num_groups", &DiscreteValues<T>::num_groups,
             doc.DiscreteValues.num_groups.doc)
+        .def("size", &DiscreteValues<T>::size, doc.DiscreteValues.size.doc)
         .def("get_data", &DiscreteValues<T>::get_data, py_reference_internal,
             doc.DiscreteValues.get_data.doc)
         .def("get_vector",
