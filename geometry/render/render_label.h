@@ -35,11 +35,11 @@ namespace render {
 
  - `empty`: a pixel with the `empty` %RenderLabel value indicates that _no_
    geometry rendered to that pixel.
- - `do_not_render`: any geometry assigned the `do_not_render` tag will _not_ be
+ - `do not render`: any geometry assigned the `do not render` tag will _not_ be
    rendered into a label image. This is a clear declaration that a geometry
    should be omitted. Useful for marking, e.g., glass windows so that the
    visible geometry behind the glass is what is included in the label image.
- - `dont_care`: the `dont_care` label is intended as a convenient dumping
+ - `don't care`: the `don't care` label is intended as a convenient dumping
    ground. This would be for geometry that _should_ render into the label image,
    but whose class is irrelevant (e.g., the walls of a room a robot is working
    in or the background terrain in driving simulation).
