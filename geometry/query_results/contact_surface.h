@@ -166,8 +166,9 @@ class ContactSurface {
     @param face         The face index of the triangle.
     @param barycentric  The barycentric coordinates of Q on the triangle.
    */
-  T EvaluateE_MN(SurfaceFaceIndex face,
-                 const typename SurfaceMesh<T>::Barycentric& barycentric) {
+  T EvaluateE_MN(
+      SurfaceFaceIndex face,
+      const typename SurfaceMesh<T>::Barycentric& barycentric) const {
     return e_MN_->Evaluate(face, barycentric);
   }
 
@@ -179,7 +180,7 @@ class ContactSurface {
    */
   Vector3<T> EvaluateGrad_h_MN_M(
       SurfaceFaceIndex face,
-      const typename SurfaceMesh<T>::Barycentric& barycentric) {
+      const typename SurfaceMesh<T>::Barycentric& barycentric) const {
     return grad_h_MN_M_->Evaluate(face, barycentric);
   }
 

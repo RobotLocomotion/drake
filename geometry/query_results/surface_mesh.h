@@ -172,7 +172,7 @@ class SurfaceMesh {
 
   /** Returns area of a triangular element.
    */
-  T area(SurfaceFaceIndex f) const { return area_[f]; }
+  const T& area(SurfaceFaceIndex f) const { return area_[f]; }
 
  private:
   // Initialization.
