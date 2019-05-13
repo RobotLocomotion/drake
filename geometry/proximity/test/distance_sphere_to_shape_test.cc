@@ -1,3 +1,4 @@
+#include <cmath>
 #include <limits>
 #include <regex>
 #include <utility>
@@ -517,6 +518,78 @@ GTEST_TEST(ComputeNarrowPhaseDistance, OrderInvariance) {
   EXPECT_TRUE(CompareMatrices(result_SB.p_BCb, result_BS.p_ACa));
   EXPECT_TRUE(CompareMatrices(result_SB.p_ACa, result_BS.p_BCb));
   EXPECT_TRUE(CompareMatrices(result_SB.nhat_BA_W, -result_BS.nhat_BA_W));
+}
+
+// When a sphere is just touching a shape, confirms that the two witness
+// points are at the same locations and nhat_BA_W is not NaN.  Other unit
+// tests already checked the same code path as this test. Here we add this
+// test to emphasize this special case.  We use Sphere-Box as a
+// representative sample.
+GTEST_TEST(ComputeNarrowPhaseDistance, sphere_touches_shape) {
+  // Sphere
+  const double radius = 1;
+  CollisionObjectd sphere(make_shared<Sphered>(radius));
+  EncodedData(GeometryIndex(0), true).write_to(&sphere);
+
+  // Box [-1,1]x[-1,1]x[-1,1].
+  const double side = 2;
+  CollisionObjectd box(make_shared<Boxd>(side, side, side));
+  EncodedData(GeometryIndex(1), true).write_to(&box);
+  const Isometry3<double> X_WB(Isometry3<double>::Identity());
+
+  const std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
+                                             GeometryId::get_new_id()};
+  const fcl::DistanceRequestd request{};
+
+  // The sphere touches the box in the middle of a face of the box.
+  const Isometry3<double> X_WS(Translation3d{radius + side / 2., 0, 0});
+  SignedDistancePair<double> result;
+  ComputeNarrowPhaseDistance<double>(sphere, X_WS, box, X_WB, geometry_map,
+                                     request, &result);
+  const auto p_WCs = X_WS * result.p_ACa;
+  const auto p_WCb = X_WB * result.p_BCb;
+  EXPECT_EQ(p_WCs, p_WCb);
+  EXPECT_FALSE((isnan(result.nhat_BA_W.array())).any());
+  // The sphere A touches the box B on the right face (+x) of the box.
+  EXPECT_EQ(Vector3d(1, 0, 0), result.nhat_BA_W);
+}
+
+// Confirms that `is_nhat_BA_W_unique` is passed from point_distance to
+// shape_distance correctly. It is a pass through from DistanceToPoint() to
+// SphereShapeDistance(). We use Sphere-Box as a representative sample and
+// test two cases when `is_nhat_BA_W_unique` is true and is false.
+GTEST_TEST(ComputeNarrowPhaseDistance, is_nhat_BA_W_well_defined) {
+  // Sphere
+  CollisionObjectd sphere(make_shared<Sphered>(1));
+  EncodedData(GeometryIndex(0), true).write_to(&sphere);
+
+  // Box [-1,1]x[-1,1]x[-1,1].
+  CollisionObjectd box(make_shared<Boxd>(2, 2, 2));
+  EncodedData(GeometryIndex(1), true).write_to(&box);
+  const Isometry3<double> X_WB(Isometry3<double>::Identity());
+
+  const std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
+                                             GeometryId::get_new_id()};
+  const fcl::DistanceRequestd request{};
+
+  // Tests when `is_nhat_BA_W_unique` is true.
+  {
+    // The center of the sphere is outside the box.
+    const Isometry3<double> X_WS(Translation3d{3, 3, 3});
+    SignedDistancePair<double> result;
+    ComputeNarrowPhaseDistance<double>(sphere, X_WS, box, X_WB, geometry_map,
+                                       request, &result);
+    EXPECT_EQ(true, result.is_nhat_BA_W_unique);
+  }
+  // Tests when `is_nhat_BA_W_unique` is false.
+  {
+    // The center of the sphere is at a corner of the box.
+    const Isometry3<double> X_WS(Translation3d{1, 1, 1});
+    SignedDistancePair<double> result;
+    ComputeNarrowPhaseDistance<double>(sphere, X_WS, box, X_WB, geometry_map,
+                                       request, &result);
+    EXPECT_EQ(false, result.is_nhat_BA_W_unique);
+  }
 }
 
 template <typename T>

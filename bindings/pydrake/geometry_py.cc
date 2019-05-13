@@ -126,7 +126,7 @@ PYBIND11_MODULE(geometry, m) {
 
   // SignedDistancePair
   py::class_<SignedDistancePair<T>>(m, "SignedDistancePair")
-      .def(py::init<>(), doc.SignedDistancePair.ctor.doc_6args)
+      .def(py::init<>(), doc.SignedDistancePair.ctor.doc_7args)
       .def_readwrite(
           "id_A", &SignedDistancePair<T>::id_A, doc.SignedDistancePair.id_A.doc)
       .def_readwrite(
@@ -138,7 +138,10 @@ PYBIND11_MODULE(geometry, m) {
       .def_readwrite("distance", &SignedDistancePair<T>::distance,
           doc.SignedDistancePair.distance.doc)
       .def_readwrite("nhat_BA_W", &SignedDistancePair<T>::nhat_BA_W,
-          doc.SignedDistancePair.nhat_BA_W.doc);
+          doc.SignedDistancePair.nhat_BA_W.doc)
+      .def_readwrite("is_nhat_BA_W_unique",
+          &SignedDistancePair<T>::is_nhat_BA_W_unique,
+          doc.SignedDistancePair.is_nhat_BA_W_unique.doc);
 
   // SignedDistanceToPoint
   py::class_<SignedDistanceToPoint<T>>(m, "SignedDistanceToPoint")
