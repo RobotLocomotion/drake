@@ -7,6 +7,8 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
+#include "drake/geometry/proximity/volume_mesh_field.h"
+#include "drake/geometry/query_results/mesh_field_linear.h"
 
 namespace drake {
 namespace geometry {
@@ -66,6 +68,48 @@ std::unique_ptr<VolumeMesh<T>> TestVolumeMesh() {
       EXPECT_EQ(element_data[e][v],
                 volume_mesh->element(VolumeElementIndex(e)).vertex(v));
   return volume_mesh;
+}
+
+
+// Tests instantiation of VolumeMeshField and evaluating a scalar field value.
+template <typename T>
+std::unique_ptr<VolumeMeshFieldLinear<T, T>> TestVolumeMeshField();
+
+// Test instantiation of VolumeMeshField using `double` as the underlying
+// scalar type.
+GTEST_TEST(VolumeMeshFieldTest, TestVolumeMeshFieldDouble) {
+  auto volume_mesh_field = TestVolumeMeshField<double>();
+}
+
+// Smoke tests using `AutoDiffXd` as the underlying scalar type. The purpose
+// of this test is simply to check that it compiles. There are no tests of
+// differentiation.
+GTEST_TEST(VolumeMeshFieldTest, TestVolumeMeshFieldAutoDiffXd) {
+  auto volume_mesh_field = TestVolumeMeshField<AutoDiffXd>();
+}
+
+template <typename T>
+std::unique_ptr<VolumeMeshFieldLinear<T, T>> TestVolumeMeshField() {
+  auto volume_mesh = TestVolumeMesh<T>();
+
+  // We give names to the values at vertices for testing later.
+  const T p0{1.};
+  const T p1{2.};
+  const T p2{3.};
+  const T p3{4.};
+  const T p4{5.};
+  std::vector<T> p_values = {p0, p1, p2, p3, p4};
+
+  auto volume_mesh_field = std::make_unique<VolumeMeshFieldLinear<T, T>>(
+      "pressure", std::move(p_values), volume_mesh.get());
+
+  // Tests evaluation of the field on the element e0 {v0, v1, v2, v3}.
+  const VolumeElementIndex e0(0);
+  const typename VolumeMesh<T>::Barycentric b{0.4, 0.3, 0.2, 0.1};
+  const T expect_p = b(0) * p0 + b(1) * p1 + b(2) * p2 + b(3) * p3;
+  EXPECT_EQ(expect_p, volume_mesh_field->Evaluate(e0, b));
+
+  return volume_mesh_field;
 }
 
 }  // namespace geometry

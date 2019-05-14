@@ -84,11 +84,18 @@ drake_cc_library(
 
 drake_cc_library(
     name = "volume_mesh",
-    srcs = ["volume_mesh.cc"],
-    hdrs = ["volume_mesh.h"],
+    srcs = [
+        "volume_mesh.cc",
+        "volume_mesh_field.cc",
+    ],
+    hdrs = [
+        "volume_mesh.h",
+        "volume_mesh_field.h",
+    ],
     deps = [
         "//common",
         "//geometry:geometry_ids",
+        "//geometry/query_results:mesh_field",
     ],
 )
 
