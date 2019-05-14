@@ -28,6 +28,7 @@ GTEST_TEST(CompassGaitTest, TestEnergyConservedInSwing) {
   CompassGait<Expression> cg;
 
   auto context = cg.CreateDefaultContext();
+  cg.get_input_port(0).FixValue(context.get(), Vector1<Expression>(0.0));
   CompassGaitContinuousState<Expression>& state =
       cg.get_mutable_continuous_state(context.get());
 
@@ -53,6 +54,38 @@ GTEST_TEST(CompassGaitTest, TestEnergyConservedInSwing) {
 
     EXPECT_NEAR(energy_dot.Evaluate(e), 0.0, 2e-13);
   }
+}
+
+GTEST_TEST(CompassGaitTest, TestHipTorque) {
+  // Position the compass gait with the swing leg horizontal (straight
+  // forward), and the center of mass over the foot.  This should be a fixed
+  // point with the torque balancing the swing leg:
+  //  hip_torque = mass_leg * gravity * center_of_mass_leg.
+  // x position of the center of mass = 0 =>
+  //  sin(stance) * (mass_leg * center_of_mass_leg
+  //    + (mass_leg + mass_hip) * length_leg) = mass_leg * center_of_mass_leg
+
+  CompassGait<double> cg;
+
+  auto context = cg.CreateDefaultContext();
+  const CompassGaitParams<double>& params = cg.get_parameters(*context);
+  cg.get_input_port(0).FixValue(
+      context.get(), Vector1<double>(params.mass_leg() * params.gravity() *
+                                     params.center_of_mass_leg()));
+  CompassGaitContinuousState<double>& state =
+      cg.get_mutable_continuous_state(context.get());
+  state.set_stance(std::asin(
+      params.mass_leg() * params.center_of_mass_leg() /
+      (params.mass_leg() * params.center_of_mass_leg() +
+       (params.mass_leg() + params.mass_hip()) * params.length_leg())));
+  state.set_swing(M_PI_2);
+  state.set_stancedot(0.0);
+  state.set_swingdot(0.0);
+
+  const VectorX<double> derivatives =
+      cg.EvalTimeDerivatives(*context).CopyToVector();
+
+  EXPECT_TRUE(CompareMatrices(derivatives, Eigen::Vector4d::Zero(), 1e-15));
 }
 
 GTEST_TEST(CompassGaitTest, TestCollisionGuard) {
