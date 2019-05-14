@@ -375,39 +375,6 @@ template <typename T>
 class ComputeNarrowHalfspaceTest : public ::testing::Test {};
 TYPED_TEST_CASE(ComputeNarrowHalfspaceTest, ScalarTypes);
 
-TYPED_TEST(ComputeNarrowHalfspaceTest, HalfspaceThrows) {
-  // Values that are always double, regardless of T.
-  auto half_space_geo = make_shared<Halfspaced>(Vector3d{0, 0, 1}, 0);
-  auto sphere_geo = make_shared<Sphered>(0.25);
-  CollisionObjectd half_space(half_space_geo);
-  CollisionObjectd sphere(sphere_geo);
-  std::vector<GeometryId> geometry_map;
-  fcl::DistanceRequestd request{};
-
-  // T-valued parameters.
-  const Isometry3<TypeParam> X_WA = Isometry3<TypeParam>::Identity();
-  const Isometry3<TypeParam> X_WB = Isometry3<TypeParam>::Identity();
-  SignedDistancePair<TypeParam> result;
-
-  const char* message =
-      "Signed distance queries on halfspaces are not currently supported.*";
-
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ComputeNarrowPhaseDistance<TypeParam>(half_space, X_WA, sphere, X_WB,
-                                            geometry_map, request, &result),
-      std::logic_error, message);
-
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ComputeNarrowPhaseDistance<TypeParam>(sphere, X_WA, half_space, X_WB,
-                                            geometry_map, request, &result),
-      std::logic_error, message);
-
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ComputeNarrowPhaseDistance<TypeParam>(half_space, X_WA, half_space, X_WB,
-                                            geometry_map, request, &result),
-      std::logic_error, message);
-}
-
 // Confirms that the distance fallback is *not* invoked for (sphere-X) pairs
 // where X is in {Sphere, Box, Cylinder}. Note the use of the `float` scalar.
 // This is a specialization of the fallback function only available to this
@@ -632,8 +599,10 @@ class CallbackScalarSupport : public ::testing::Test {
     cylinders_.emplace_back(make_shared<Cylinderd>(0.3, 0.2));
     apply_data(cylinders_);
 
-    halfspaces_.emplace_back(make_shared<Halfspaced>(Vector3d{0, 0, 1}, 0.3));
-    halfspaces_.emplace_back(make_shared<Halfspaced>(Vector3d{1, 0, 0}, -0.3));
+    // NOTE: The mapping from drake::geometry::HalfSpace to fcl::Halfspaced
+    // always encodes the normal as UnitZ() and the offset as zero.
+    halfspaces_.emplace_back(make_shared<Halfspaced>(Vector3d{0, 0, 1}, 0));
+    halfspaces_.emplace_back(make_shared<Halfspaced>(Vector3d{0, 0, 1}, 0));
     apply_data(halfspaces_);
   }
 
@@ -666,16 +635,16 @@ std::vector<std::pair<CollisionObjectd&, CollisionObjectd&>>
 CallbackScalarSupport<double>::supported_pairs() {
   // Given the shared indices, it is important that the indices in each pair
   // include 0 and 1.
-  return {{spheres_[0], spheres_[1]},   {spheres_[0], boxes_[1]},
-          {spheres_[0], cylinders_[1]}, {boxes_[0], boxes_[1]},
-          {boxes_[0], cylinders_[1]},   {cylinders_[0], cylinders_[1]}};
+  return {{spheres_[0], spheres_[1]},    {spheres_[0], boxes_[1]},
+          {spheres_[0], cylinders_[1]},  {spheres_[0], halfspaces_[1]},
+          {boxes_[0], boxes_[1]},        {boxes_[0], cylinders_[1]},
+          {cylinders_[0], cylinders_[1]}};
 }
 
 template <>
 std::vector<std::pair<CollisionObjectd&, CollisionObjectd&>>
 CallbackScalarSupport<double>::unsupported_pairs() {
   return {
-      {spheres_[0], halfspaces_[1]},
       {boxes_[0], halfspaces_[1]},
       {cylinders_[0], halfspaces_[1]},
       {halfspaces_[0], halfspaces_[1]},
@@ -685,17 +654,19 @@ CallbackScalarSupport<double>::unsupported_pairs() {
 template <>
 std::vector<std::pair<CollisionObjectd&, CollisionObjectd&>>
 CallbackScalarSupport<AutoDiffXd>::supported_pairs() {
-  return {{spheres_[0], spheres_[1]}, {spheres_[0], boxes_[1]}};
+  return {{spheres_[0], spheres_[1]},
+          {spheres_[0], boxes_[1]},
+          {spheres_[0], halfspaces_[1]}};
 }
 
 template <>
 std::vector<std::pair<CollisionObjectd&, CollisionObjectd&>>
 CallbackScalarSupport<AutoDiffXd>::unsupported_pairs() {
   return {
-      {spheres_[0], cylinders_[1]},    {spheres_[0], halfspaces_[1]},
-      {boxes_[0], boxes_[1]},          {boxes_[0], cylinders_[1]},
-      {boxes_[0], halfspaces_[1]},     {cylinders_[0], cylinders_[1]},
-      {cylinders_[0], halfspaces_[1]}, {halfspaces_[0], halfspaces_[1]},
+      {spheres_[0], cylinders_[1]},     {boxes_[0], boxes_[1]},
+      {boxes_[0], cylinders_[1]},       {boxes_[0], halfspaces_[1]},
+      {cylinders_[0], cylinders_[1]},   {cylinders_[0], halfspaces_[1]},
+      {halfspaces_[0], halfspaces_[1]},
   };
 }
 
