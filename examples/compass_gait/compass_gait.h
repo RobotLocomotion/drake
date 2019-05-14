@@ -33,15 +33,13 @@ namespace compass_gait {
 /// collision witness function that avoids falls detections on the "foot
 /// scuffing" collision.
 ///
-/// Inputs: None.<br/>
+/// @system{CompassGait,
+///    @input_port{hip_torque},
+///    @output_port{minimal_state, float_base_state}
+/// }
 /// Continuous States: stance, swing, stancedot, swingdot.<br/>
 /// Discrete State: stance toe position.<br/>
 /// Abstract State: left support indicator.<br/>
-/// Outputs:
-///   <ol start=0>
-///   <li>continuous (minimal coordinates) state output</li>
-///   <li>floating-base state output</li>
-///   </ol>
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
