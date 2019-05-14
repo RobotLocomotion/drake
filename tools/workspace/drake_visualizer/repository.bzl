@@ -56,8 +56,8 @@ def _impl(repository_ctx):
         fail(os_result.error)
 
     if os_result.is_macos:
-        archive = "dv-0.1.0-337-g70c49254-python-2.7.16-qt-5.12.2-vtk-8.2.0-mac-x86_64.tar.gz"  # noqa
-        sha256 = "3402f8de5f782235100519da3960544fdced23f72394010f15c294d9462bfc11"  # noqa
+        archive = "dv-0.1.0-337-g70c49254-python-2.7.16-qt-5.12.3-vtk-8.2.0-mac-x86_64.tar.gz"  # noqa
+        sha256 = "54b6bc535691518139ec4902ba7de3af756bd8cbf7a004bf8422b5e2cb6652ef"  # noqa
     elif os_result.ubuntu_release == "16.04":
         archive = "dv-0.1.0-337-g70c49254-python-2.7.12-qt-5.5.1-vtk-8.2.0-xenial-x86_64.tar.gz"  # noqa
         sha256 = "683209fa47326fb29dda0fe7d13affc36d64fa1cddc9494699ed25b0dffb41a7"  # noqa
