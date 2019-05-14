@@ -149,11 +149,14 @@ void ComputeDistanceToPrimitive(const fcl::Halfspaced& halfspace,
                                 const Vector3<T>& p_WQ, Vector3<T>* p_GN,
                                 T* distance, Vector3<T>* grad_W,
                                 bool* is_grad_W_well_defined) {
-  // FCL stores the halfspace as {x | nᵀ * x <= d}, with n being a unit length
+  // FCL stores the halfspace as {x | nᵀ * x > d}, with n being a unit length
   // normal vector. Both n and x are expressed in the halfspace frame.
+  // In Drake, the halfspace is *always* defined as n_G = (0, 0, 1), d = 0.
+
   const Vector3<T> n_G = halfspace.n.cast<T>();
   const Vector3<T> p_GQ = X_WG.inverse() * p_WQ;
-  *distance = n_G.dot(p_GQ) - T(halfspace.d);
+  DRAKE_DEMAND(halfspace.d == 0);
+  *distance = n_G.dot(p_GQ);
   *p_GN = p_GQ - *distance * n_G;
   *grad_W = X_WG.rotation() * n_G;
   *is_grad_W_well_defined = true;
@@ -189,6 +192,18 @@ class DistanceToPoint {
     Vector3<T> p_GN_G, grad_W;
     bool is_grad_W_unique{};
     ComputeDistanceToPrimitive(sphere, X_WG_, p_WQ_, &p_GN_G, &distance,
+                               &grad_W, &is_grad_W_unique);
+
+    return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W,
+                                    is_grad_W_unique};
+  }
+
+  /** Overload to compute distance to a halfspace.  */
+  SignedDistanceToPoint<T> operator()(const fcl::Halfspaced& halfspace) {
+    T distance{};
+    Vector3<T> p_GN_G, grad_W;
+    bool is_grad_W_unique{};
+    ComputeDistanceToPrimitive(halfspace, X_WG_, p_WQ_, &p_GN_G, &distance,
                                &grad_W, &is_grad_W_unique);
 
     return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W,
@@ -483,6 +498,7 @@ struct ScalarSupport<double> {
       case fcl::GEOM_SPHERE:
       case fcl::GEOM_BOX:
       case fcl::GEOM_CYLINDER:
+      case fcl::GEOM_HALFSPACE:
         return true;
       default:
         return false;
@@ -497,6 +513,7 @@ struct ScalarSupport<Eigen::AutoDiffScalar<DerType>> {
     switch (node_type) {
       case fcl::GEOM_SPHERE:
       case fcl::GEOM_BOX:
+      case fcl::GEOM_HALFSPACE:
         return true;
       default:
         return false;
@@ -552,6 +569,10 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
       case fcl::GEOM_CYLINDER:
         distance = distance_to_point(
             *static_cast<const fcl::Cylinderd*>(collision_geometry));
+        break;
+      case fcl::GEOM_HALFSPACE:
+        distance = distance_to_point(
+            *static_cast<const fcl::Halfspaced*>(collision_geometry));
         break;
       default:
         // Returning false tells fcl to continue to other objects.
