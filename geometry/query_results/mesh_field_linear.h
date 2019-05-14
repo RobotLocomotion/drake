@@ -137,12 +137,6 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
   MeshType* mesh_;
 };
 
-// TODO(DamrongGuoy): Define VolumeMeshFieldLinear and/or
-//  VolumeMeshFieldQuadratic when we have VolumeMesh like this:
-//  template <typename FieldValue, typename T>
-//  using VolumeMeshFieldQuadratic =
-//      MeshFieldQuadratic<FieldValue, VolumeMesh<T>>;
-
 /**
  @tparam FieldValue  a valid Eigen scalar or vector of valid Eigen scalars for
                      the field value.

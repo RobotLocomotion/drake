@@ -14,6 +14,7 @@ drake_cc_package_library(
     name = "query_results",
     deps = [
         ":contact_surface",
+        ":mesh_field",
         ":penetration_as_point_pair",
         ":signed_distance_pair",
         ":signed_distance_to_point",
@@ -65,19 +66,31 @@ drake_cc_library(
     name = "contact_surface",
     srcs = [
         "contact_surface.cc",
+    ],
+    hdrs = [
+        "contact_surface.h",
+    ],
+    deps = [
+        "//common",
+        "//geometry:geometry_ids",
+        "//geometry/query_results:mesh_field",
+    ],
+)
+
+drake_cc_library(
+    name = "mesh_field",
+    srcs = [
         "mesh_field.cc",
         "mesh_field_linear.cc",
         "surface_mesh.cc",
     ],
     hdrs = [
-        "contact_surface.h",
         "mesh_field.h",
         "mesh_field_linear.h",
         "surface_mesh.h",
     ],
     deps = [
         "//common",
-        "//geometry:geometry_ids",
     ],
 )
 
