@@ -206,7 +206,7 @@ __attribute__((unused)) bool HasCorrectNumberOfVariables(
  * A*x == lb, false otherwise.
  * @return error as an integer. The full set of error values are
  * described here :
- * https://www.gurobi.com/documentation/7.5/refman/error_codes.html
+ * https://www.gurobi.com/documentation/8.0/refman/error_codes.html
  *
  * TODO(hongkai.dai): Use a sparse matrix A.
  */
@@ -362,7 +362,7 @@ int AddSecondOrderConeConstraints(
 
     // Gurobi uses a matrix Q to differentiate Lorentz cone and rotated Lorentz
     // cone constraint.
-    // https://www.gurobi.com/documentation/7.5/refman/c_grbaddqconstr.html
+    // https://www.gurobi.com/documentation/8.0/refman/c_grbaddqconstr.html
     // For Lorentz cone constraint,
     // Q = [-1 0 0 ... 0]
     //     [ 0 1 0 ... 0]

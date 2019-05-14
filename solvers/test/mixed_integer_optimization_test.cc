@@ -19,7 +19,7 @@ void GetMixedIntegerLinearProgramSolvers(
 }  // namespace
 
 // Take the example from Gurobi manual
-// https://www.gurobi.com/documentation/7.5/examples/mip1_c_c.html
+// https://www.gurobi.com/documentation/8.0/examples/mip1_c_c.html
 // min -x(0) - x(1) - 2*x(2)
 // s.t  -inf <= x(0) + 2x(1) + 3*x(2) <= 4
 //         1 <= x(0) + x(1)           <= inf

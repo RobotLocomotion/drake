@@ -29,8 +29,10 @@ called_from_lib:libmosek64.so.8.1
 # data race (libglib-2.0.*) in g_static_rec_mutex_lock
 race:g_static_rec_mutex_lock
 
-# data race in libgurobi80.so.  Gurobi has not been instrumented with TSan.
+# data race (libgurobi80.*) in bio_asn1.c.  Gurobi has not been instrumented
+# with TSan.
 called_from_lib:libgurobi.so
+called_from_lib:libgurobi80.dylib
 called_from_lib:libgurobi80.so
 
 # data race in libtbb.so.  libtbb has not been instrumented with TSan.
