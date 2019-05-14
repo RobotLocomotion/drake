@@ -92,6 +92,14 @@ std::string GenerateString(const api::RoadGeometry& road_geometry,
                    << lane->ToGeoPosition(
                           api::LanePosition(lane->length(), 0, 0))
                    << "\n";
+            const api::Lane* left = lane->to_left();
+            const api::Lane* right = lane->to_right();
+            result << lane_prefix
+                   << "  to left: " << (left ? left->id().string() : "")
+                   << "\n";
+            result << lane_prefix
+                   << "  to right: " << (right ? right->id().string() : "")
+                   << "\n";
           }
         }
       }

@@ -34,6 +34,10 @@ class GenerateStringTest : public ::testing::Test {
                 options_.include_lane_ids);
     EXPECT_TRUE((s.find("geo position") != std::string::npos) ==
                 options_.include_lane_details);
+    EXPECT_TRUE((s.find("to left") != std::string::npos) ==
+                options_.include_lane_details);
+    EXPECT_TRUE((s.find("to right") != std::string::npos) ==
+                options_.include_lane_details);
     if (options_.include_road_geometry_id || options_.include_junction_ids ||
         options_.include_segment_ids || options_.include_lane_ids) {
       const bool has_type_label = (s.find("geometry: ") != std::string::npos ||
