@@ -212,6 +212,22 @@ After you identify one, create a rollback by clicking "Revert" in the
 GitHub UI. Use the :ref:`template message <revert_template>` to communicate
 with the author, and proceed as specified in that message.
 
+Restarting Mac Nightly Builds
+******************************
+Occasionally there will be flaky tests or timeouts in the Mac nightly builds.
+While it is tempting to restart these builds to clear the errors, Mac resources
+are limited and restarting the long-running nightly builds may tie up resources
+needed for continuous builds. In addition, too many simultaneous Mac builds
+will increase the chances of timeouts and other flakes. Build cops should use
+their best judgement, keeping in mind the following guidelines:
+
+* If the nightly job is mirrored by a continuous job, don't re-run.
+* If the test passed last build, don't re-run.
+* If it is a linter only timeout, don't re-run.
+* If there are many timeouts, you may consider re-running.
+* If the timed-out test failed last build (not just timed out), you may consider re-running.
+
+
 Broken CI Script
 ****************
 Sometimes people merge changes to the Drake CI scripts that result in spurious
