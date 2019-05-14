@@ -334,6 +334,15 @@ GTEST_TEST(ActuationPortsTest, CheckActuation) {
   EXPECT_EQ(plant.num_actuated_dofs(acrobot_instance), 1);
   EXPECT_EQ(plant.num_actuated_dofs(cylinder_instance), 0);
 
+  // Verify which bodies are free and modeled with quaternions.
+  EXPECT_FALSE(plant.GetBodyByName("Link1").is_floating());
+  EXPECT_FALSE(plant.GetBodyByName("Link1").has_quaternion_dofs());
+  EXPECT_FALSE(plant.GetBodyByName("Link2").is_floating());
+  EXPECT_FALSE(plant.GetBodyByName("Link2").has_quaternion_dofs());
+  EXPECT_TRUE(plant.GetBodyByName("uniformSolidCylinder").is_floating());
+  EXPECT_TRUE(
+      plant.GetBodyByName("uniformSolidCylinder").has_quaternion_dofs());
+
   // Verify that we can get the actuation input ports.
   EXPECT_NO_THROW(plant.get_actuation_input_port());
   EXPECT_NO_THROW(plant.get_actuation_input_port(acrobot_instance));
@@ -2219,6 +2228,11 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
   plant.WeldFrames(end_effector.body_frame(), gripper_body.body_frame());
   plant.Finalize();
 
+  // Assert the base of the robot is free and modeled with a quaternion before
+  // moving on with this assumption.
+  ASSERT_TRUE(plant.GetBodyByName("iiwa_link_0").is_floating());
+  ASSERT_TRUE(plant.GetBodyByName("iiwa_link_0").has_quaternion_dofs());
+
   // Sanity check basic invariants.
   const int num_floating_positions = 7;
   const int num_floating_velocities = 6;
@@ -2463,6 +2477,21 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   const Body<double>& mug = plant.GetBodyByName("main_body", mug_model);
 
   plant.Finalize();
+
+  // Assert that the mug is a free body before moving on with this assumption.
+  ASSERT_TRUE(mug.is_floating());
+  ASSERT_TRUE(mug.has_quaternion_dofs());
+
+  // The "world" is not considered as a free body.
+  EXPECT_FALSE(plant.world_body().is_floating());
+
+  // Sanity check that bodies welded to the world are not free.
+  EXPECT_FALSE(plant.GetBodyByName("iiwa_link_0").is_floating());
+  EXPECT_FALSE(plant.GetBodyByName("link", objects_table_model).is_floating());
+
+  std::unordered_set<BodyIndex> expected_floating_bodies({mug.index()});
+  auto floating_bodies = plant.GetFloatingBaseBodies();
+  EXPECT_EQ(expected_floating_bodies, floating_bodies);
 
   // Check link 0 is anchored, and link 1 is not.
   EXPECT_TRUE(plant.IsAnchored(plant.GetBodyByName("iiwa_link_0", arm_model)));

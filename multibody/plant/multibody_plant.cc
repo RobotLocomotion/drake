@@ -415,6 +415,17 @@ std::vector<const Body<T>*> MultibodyPlant<T>::GetBodiesWeldedTo(
 }
 
 template <typename T>
+std::unordered_set<BodyIndex> MultibodyPlant<T>::GetFloatingBaseBodies() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  std::unordered_set<BodyIndex> floating_bodies;
+  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    if (body.is_floating()) floating_bodies.insert(body.index());
+  }
+  return floating_bodies;
+}
+
+template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
     const Body<T>& body, const math::RigidTransform<double>& X_BG,
     const geometry::Shape& shape,
