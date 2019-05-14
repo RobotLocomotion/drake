@@ -318,6 +318,34 @@ TYPED_TEST(SpatialQuantityTest, UnaryMinusOperator) {
   EXPECT_EQ(V.translational(), -Vminus.translational());
 }
 
+
+// Re-express in another frame. Given a spatial vector V_F expressed in a frame
+// F, re-express this same spatial vector in another frame E as:
+//   V_E = R_EF * V_F
+// where R_EF is the rotation matrix from frame F into frame E.
+// TODO(Mitiguy) Delete this test when deprecated method
+// friend SpatialQuantity operator*(Matrix3, SpatialQuantity) is deleted.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+TYPED_TEST(SpatialQuantityTest, ReExpressInAnotherFrameToDeprecate) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+  const SpatialQuantity& V_AB_F = this->V_;
+
+  // Some arbitrary rotation between frames E and F.
+  const Matrix3<T> R_EF =
+      (AngleAxis<T>(M_PI / 6, Vector3<T>::UnitX()) *
+          AngleAxis<T>(M_PI / 6, Vector3<T>::UnitY()) *
+          AngleAxis<T>(M_PI / 6, Vector3<T>::UnitZ())).matrix();
+
+  SpatialQuantity V_AB_E = R_EF * V_AB_F;
+
+  // Verify the result using Eigen operations.
+  EXPECT_EQ(V_AB_E.rotational(), R_EF * V_AB_F.rotational());
+  EXPECT_EQ(V_AB_E.translational(), R_EF * V_AB_F.translational());
+}
+#pragma GCC diagnostic pop
+
 // Re-express in another frame. Given a spatial vector V_F expressed in a frame
 // F, re-express this same spatial vector in another frame E as:
 //   V_E = R_EF * V_F
@@ -328,10 +356,10 @@ TYPED_TEST(SpatialQuantityTest, ReExpressInAnotherFrame) {
   const SpatialQuantity& V_AB_F = this->V_;
 
   // Some arbitrary rotation between frames E and F.
-  const Matrix3<T> R_EF =
-      (AngleAxis<T>(M_PI / 6, Vector3<T>::UnitX()) *
+  const drake::math::RotationMatrix<T> R_EF(
+       AngleAxis<T>(M_PI / 6, Vector3<T>::UnitX()) *
        AngleAxis<T>(M_PI / 6, Vector3<T>::UnitY()) *
-       AngleAxis<T>(M_PI / 6, Vector3<T>::UnitZ())).matrix();
+       AngleAxis<T>(M_PI / 6, Vector3<T>::UnitZ()));
 
   SpatialQuantity V_AB_E = R_EF * V_AB_F;
 

@@ -714,10 +714,12 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
     ASSERT_TRUE(optional_id.has_value());
     EXPECT_EQ(frame_id, *optional_id);
     EXPECT_EQ(body_index, plant_->GetBodyFromFrameId(frame_id)->index());
-    const Isometry3<double>& X_WB = poses.value(frame_id);
-    const Isometry3<double> X_WB_expected =
+    const Isometry3<double>& X_WB_isometry = poses.value(frame_id);
+    const RigidTransform<double> X_WB(X_WB_isometry);
+    const RigidTransform<double>& X_WB_expected =
         plant_->EvalBodyPoseInWorld(*context, plant_->get_body(body_index));
-    EXPECT_TRUE(CompareMatrices(X_WB.matrix(), X_WB_expected.matrix(),
+    EXPECT_TRUE(CompareMatrices(X_WB.GetAsMatrix34(),
+                                X_WB_expected.GetAsMatrix34(),
                                 kTolerance, MatrixCompareType::relative));
   }
 
@@ -1194,10 +1196,12 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   for (BodyIndex body_index(1);
        body_index < plant.num_bodies(); ++body_index) {
     const FrameId frame_id = plant.GetBodyFrameIdOrThrow(body_index);
-    const Isometry3<double>& X_WB = pose_data.value(frame_id);
-    const Isometry3<double> X_WB_expected =
+    const Isometry3<double>& X_WB_isometry = pose_data.value(frame_id);
+    const RigidTransform<double> X_WB(X_WB_isometry);
+    const RigidTransform<double>& X_WB_expected =
         plant.EvalBodyPoseInWorld(*context, plant.get_body(body_index));
-    EXPECT_TRUE(CompareMatrices(X_WB.matrix(), X_WB_expected.matrix(),
+    EXPECT_TRUE(CompareMatrices(X_WB.GetAsMatrix34(),
+                                X_WB_expected.GetAsMatrix34(),
                                 kTolerance, MatrixCompareType::relative));
   }
 
@@ -1656,9 +1660,9 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     const Body<double>& small_box = plant_.GetBodyByName("SmallBox");
 
     // Pose of the boxes in the world frame.
-    const Isometry3<double>& X_WLb =
+    const RigidTransform<double>& X_WLb =
         plant_.EvalBodyPoseInWorld(context, large_box);
-    const Isometry3<double>& X_WSb =
+    const RigidTransform<double>& X_WSb =
         plant_.EvalBodyPoseInWorld(context, small_box);
 
     // Normal pointing outwards from the top surface of the large box.
@@ -1728,7 +1732,7 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
 
       BodyIndex bodyA_index = MultibodyPlantTester::geometry_id_to_body_index(
           plant_on_T, pair.id_A);
-      const Isometry3<T> X_WA = plant_on_T.EvalBodyPoseInWorld(
+      const RigidTransform<T>& X_WA = plant_on_T.EvalBodyPoseInWorld(
           context_on_T, plant_on_T.get_body(bodyA_index));
       const SpatialVelocity<T> V_WA =
           plant_on_T.EvalBodySpatialVelocityInWorld(
@@ -1736,7 +1740,7 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
 
       BodyIndex bodyB_index = MultibodyPlantTester::geometry_id_to_body_index(
           plant_on_T, pair.id_B);
-      const Isometry3<T> X_WB = plant_on_T.EvalBodyPoseInWorld(
+      const RigidTransform<T>& X_WB = plant_on_T.EvalBodyPoseInWorld(
           context_on_T, plant_on_T.get_body(bodyB_index));
       const SpatialVelocity<T> V_WB =
           plant_on_T.EvalBodySpatialVelocityInWorld(
@@ -1780,7 +1784,7 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
 
       BodyIndex bodyA_index = MultibodyPlantTester::geometry_id_to_body_index(
           plant_on_T, pair.id_A);
-      const Isometry3<T> X_WA = plant_on_T.EvalBodyPoseInWorld(
+      const RigidTransform<T>& X_WA = plant_on_T.EvalBodyPoseInWorld(
           context_on_T, plant_on_T.get_body(bodyA_index));
       const SpatialVelocity<T> V_WA =
           plant_on_T.EvalBodySpatialVelocityInWorld(
@@ -1788,7 +1792,7 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
 
       BodyIndex bodyB_index = MultibodyPlantTester::geometry_id_to_body_index(
           plant_on_T, pair.id_B);
-      const Isometry3<T> X_WB = plant_on_T.EvalBodyPoseInWorld(
+      const RigidTransform<T>& X_WB = plant_on_T.EvalBodyPoseInWorld(
           context_on_T, plant_on_T.get_body(bodyB_index));
       const SpatialVelocity<T> V_WB =
           plant_on_T.EvalBodySpatialVelocityInWorld(
@@ -2451,7 +2455,7 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   const auto& objects_frame_O =
       plant.AddFrame(std::make_unique<FixedOffsetFrame<double>>(
           "objects_frame", plant.GetFrameByName("link", objects_table_model),
-          X_TO.GetAsIsometry3()));
+          X_TO));
 
   // Add a floating mug.
   const ModelInstanceIndex mug_model =
@@ -2474,7 +2478,7 @@ GTEST_TEST(StateSelection, FloatingBodies) {
       context.get(), objects_frame_O, mug, X_OM);
 
   // Retrieve the pose of the mug in the world.
-  const RigidTransformd X_WM = plant.EvalBodyPoseInWorld(*context, mug);
+  const RigidTransformd& X_WM = plant.EvalBodyPoseInWorld(*context, mug);
 
   const RigidTransformd X_WM_expected = X_WT * X_TO * X_OM;
 

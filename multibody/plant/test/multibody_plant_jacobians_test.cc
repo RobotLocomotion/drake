@@ -208,7 +208,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
   // Compute V_WEp.
   const Body<AutoDiffXd>& end_effector_link_autodiff =
       plant_autodiff_->get_body(end_effector_link_->index());
-  const Isometry3<AutoDiffXd> X_WE_autodiff =
+  const RigidTransform<AutoDiffXd>& X_WE_autodiff =
       plant_autodiff_->EvalBodyPoseInWorld(*context_autodiff_,
                                            end_effector_link_autodiff);
   const Vector3<AutoDiffXd> p_EoEp_W =

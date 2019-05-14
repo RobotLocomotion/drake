@@ -804,7 +804,7 @@ TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
       tree().EvalBodySpatialVelocityInWorld(*context_, *end_effector_link_);
 
   // Pose of the end effector in the world frame.
-  const math::RigidTransform<double> X_WE(
+  const math::RigidTransform<double>& X_WE(
       tree().EvalBodyPoseInWorld(*context_, *end_effector_link_));
 
   // Independent benchmark solution.
@@ -856,7 +856,7 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
       tree().EvalBodySpatialVelocityInWorld(*context_, *end_effector_link_);
 
   // Pose of the end effector.
-  const math::RigidTransformd X_WE(
+  const math::RigidTransformd& X_WE(
       tree().EvalBodyPoseInWorld(*context_, *end_effector_link_));
 
   // Position of a frame F measured and expressed in frame E.
@@ -1067,17 +1067,17 @@ TEST_F(KukaIiwaModelTests, CalcRelativeFrameGeometricJacobian) {
   // Link 3 kinematics.
   const math::RigidTransform<double>& X_WL3 =
       tree().EvalBodyPoseInWorld(*context_, link3);
-  const Matrix3<double>& R_WL3 = X_WL3.linear();
+  const math::RotationMatrix<double>& R_WL3 = X_WL3.rotation();
 
   // link 5 kinematics.
   const math::RigidTransform<double>& X_WL5 =
       tree().EvalBodyPoseInWorld(*context_, link5);
-  const Matrix3<double>& R_WL5 = X_WL5.linear();
+  const math::RotationMatrix<double>& R_WL5 = X_WL5.rotation();
 
   // link 7 kinematics.
   const math::RigidTransform<double>& X_WL7 =
       tree().EvalBodyPoseInWorld(*context_, link7);
-  const Matrix3<double>& R_WL7 = X_WL7.linear();
+  const math::RotationMatrix<double>& R_WL7 = X_WL7.rotation();
 
   // Position of Q in L3, expressed in world.
   // Spatial velocity of frame L3 shifted to Q.

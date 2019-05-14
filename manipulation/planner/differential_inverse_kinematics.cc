@@ -257,11 +257,11 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Isometry3<double>& X_WE_desired,
     const multibody::Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters) {
-  const Isometry3<double> X_WE =
+  const math::RigidTransform<double> X_WE =
       plant.EvalBodyPoseInWorld(context, frame_E.body()) *
       frame_E.CalcPoseInBodyFrame(context);
   const Vector6<double> V_WE_desired =
-      ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) /
+      ComputePoseDiffInCommonFrame(X_WE.GetAsIsometry3(), X_WE_desired) /
       parameters.get_timestep();
   return DoDifferentialInverseKinematics(plant, context, V_WE_desired, frame_E,
                                          parameters);
