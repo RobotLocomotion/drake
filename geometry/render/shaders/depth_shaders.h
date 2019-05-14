@@ -1,42 +1,68 @@
 #pragma once
 
 namespace drake {
-namespace systems {
-namespace sensors {
+namespace geometry {
+namespace render {
 namespace shaders {
 
-/// A vertex shader program for rendering depth images, which computes vertices
-/// and normals for the fragment shader program coming after.
+// NOTE: The _original_ vertex shader computed the camera-space normal and
+// propagated the texture coordinate to the fragment shader. These quantities
+// are *not* used and represented wasted computation. However, in the future,
+// these *could* be used to handle more complex depth computations based on how
+// much of a structured IR pattern is fed back to the camera. For example,
+// a surface with a normal perpendicular to the view direction wouldn't reflect
+// anything back and a surface with varying reflectance properties would be
+// captured as a texture. There are certain conventions in using shaders in
+// VTK. To simplify the inclusion of this data when we're ready, the requisite
+// shader code has been _commented out_ below for future reference.
+// TODO(SeanCurtis-TRI): Re-enable providing normals and texture coordinates
+//  to the fragment shader when these quantities are used.
+
+// NOTE: For the VTK infrastructure, the shader should always start with the
+// line:
+//   //VTK::System::Dec
+/** A vertex shader program for rendering depth images, which computes vertices
+ and normals for the fragment shader program coming after. */
 constexpr char kDepthVS[] = R"__(
     //VTK::System::Dec
     attribute vec4 vertexMC;
-    attribute vec3 normalMC;
-    uniform mat3 normalMatrix;
+    // attribute vec3 normalMC;
+    // uniform mat3 normalMatrix;
     uniform mat4 MCDCMatrix;
     uniform mat4 MCVCMatrix;
-    varying vec3 normalVCVSOutput;
+    // varying vec3 normalVCVSOutput;
     varying vec4 vertexVCVSOutput;
-    attribute vec2 tcoordMC;
-    varying vec2 tcoordVCVSOutput;
+    // attribute vec2 tcoordMC;
+    // varying vec2 tcoordVCVSOutput;
     void main () {
-      normalVCVSOutput = normalMatrix * normalMC;
-      tcoordVCVSOutput = tcoordMC;
+      // normalVCVSOutput = normalMatrix * normalMC;
+      // tcoordVCVSOutput = tcoordMC;
       vertexVCVSOutput = MCVCMatrix * vertexMC;
       gl_Position = MCDCMatrix * vertexMC;
     }
 )__";
 
-/// A fragment shader program for rendering depth images, which computes depth
-/// values for each pixel in depth images, converts them to be in range [0, 1]
-/// and packs those values to three color channels. In other words, we encode
-/// a depth image into a color image and output the color image. For the detail
-/// of packing algorithm, please refer to:
-/// https://aras-p.info/blog/2009/07/30/encoding-floats-to-rgba-the-final/
-/// Note that we are only using three channels instead of four channels to
-/// express a float value. This differs from the example code in the link above.
-/// The reason is that we need to set one to alpha channel so that the rendered
-/// "image" will be opaque. Otherwise, we will have different colors from what
-/// we output here, thus expect, in the end.
+// TODO(SeanCurtis-TRI): Investigate rendering directly to a one-channel,
+//  32-bit float image so that the encoding isn't necessary.
+
+// TODO(SeanCurtis-TRI): This is a 24-bit depth value. We're losing precision.
+//  Determine if that loss of precision is significant.
+
+// NOTE: For the VTK infrastructure, the shader should always start with the
+// lines:
+//   //VTK::System::Dec
+//   //VTK::Output::Dec
+/** A fragment shader program for rendering depth images, which computes depth
+ values for each pixel in depth images, converts them to be in range [0, 1]
+ and packs those values to three color channels. In other words, we encode
+ a depth image into a color image and output the color image. For the detail
+ of packing algorithm, please refer to:
+ https://aras-p.info/blog/2009/07/30/encoding-floats-to-rgba-the-final/
+ Note that we are only using three channels instead of four channels to
+ express a float value. This differs from the example code in the link above.
+ The reason is that we need to set one to alpha channel so that the rendered
+ "image" will be opaque. Otherwise, we will have different colors from what
+ we output here, thus expect, in the end.  */
 constexpr char kDepthFS[] = R"__(
     //VTK::System::Dec
     //VTK::Output::Dec
@@ -108,6 +134,6 @@ constexpr char kDepthFS[] = R"__(
 )__";
 
 }  // namespace shaders
-}  // namespace sensors
-}  // namespace systems
+}  // namespace render
+}  // namespace geometry
 }  // namespace drake
