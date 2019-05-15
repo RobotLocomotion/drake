@@ -54,7 +54,7 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
   EXPECT_FALSE(free_body_plant.body().has_quaternion_dofs());
 
   // For this simple example with a single floating body we can verify indexes
-  // into the sate. In addition, the test above verifies we are not using a
+  // into the state. In addition, the test above verifies we are not using a
   // quaternions, but a SpaceXYZMobilizer (3-dofs).
   // In the state vector x for the model, positions q go first followed by
   // velocities v. Similarly, angular components go first, followed by

@@ -195,7 +195,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   }
 
   /// (Advanced) Returns `true` if `this` body is granted 6-dofs by a Mobilizer.
-  /// @note A floating body is not necessarily is modeled with a quaternion
+  /// @note A floating body is not necessarily modeled with a quaternion
   /// mobilizer, see has_quaternion_dofs(). Alternative options include a space
   /// XYZ parametrization of rotations, see SpaceXYZMobilizer.
   /// @throws std::exception if called pre-finalize, see
