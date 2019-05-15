@@ -205,6 +205,13 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
   // all. Consider also removing MultibodyTreeElement altogether.
   mobilizer->set_parent_tree(this, mobilizer_index);
 
+  // Mark free bodies as needed.
+  const BodyIndex outboard_body_index = mobilizer->outboard_body().index();
+  topology_.get_mutable_body(outboard_body_index).is_floating =
+      mobilizer->is_floating();
+  topology_.get_mutable_body(outboard_body_index).has_quaternion_dofs =
+      mobilizer->has_quaternion_dofs();
+
   MobilizerType<T>* raw_mobilizer_ptr = mobilizer.get();
   owned_mobilizers_.push_back(std::move(mobilizer));
   return *raw_mobilizer_ptr;

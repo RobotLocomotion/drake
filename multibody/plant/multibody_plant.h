@@ -6,6 +6,7 @@
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -361,6 +362,33 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetMutablePositionsAndVelocities(context);
   }
 
+  /// @name Working with free bodies
+  ///
+  /// A %MultibodyPlant user adds sets of Body and Joint objects to `this` plant
+  /// to build a physical representation of a mechanical model.
+  /// At Finalize(), %MultibodyPlant builds a mathematical representation of
+  /// such system, consisting of a tree representation. In this
+  /// representation each body is assigned a Mobilizer, which grants a certain
+  /// number of degrees of freedom in accordance to the physical specification.
+  /// In this regard, the modeling representation can be seen as a forest of
+  /// tree structures each of which contains a single body at the root of the
+  /// tree. This root body, if connected to the world with a floating mobilizer
+  /// (that is, a mobilizer which grants 6-dofs), is labeled as a "floating
+  /// body".
+  /// A user can request the set of floating bodies with a call to
+  /// GetFloatingBaseBodies(). Alternatively, a user can query whether a Body is
+  /// floating or not with Body::is_floating().
+  /// For many applications, a user might need to work with indexes in the
+  /// multibody state vector. For such applications,
+  /// Body::floating_positions_start() and Body::floating_velocities_start()
+  /// offer the additional level of introspection needed.
+  /// @{
+
+  /// Returns the set of body indexes corresponding to the "floating bodies" in
+  /// the model, in no particular order.
+  /// @throws std::exception if called pre-finalize, see Finalize().
+  std::unordered_set<BodyIndex> GetFloatingBaseBodies() const;
+
   /// Gets the pose of a given `body` in the world frame W.
   /// @note In general getting the pose of a body in the model would involve
   /// solving the kinematics. This method allows us to simplify this process
@@ -458,6 +486,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
   void SetFreeBodyRandomRotationDistributionToUniform(const Body<T>& body);
+
+  /// @}
 
   /// Sets all generalized positions and velocities from the given vector
   /// [q; v].

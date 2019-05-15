@@ -75,6 +75,8 @@ class FreeRotatingBodyPlant final : public internal::MultibodyTreeSystem<T> {
   /// SetDefaultState(). Currently a non-zero value.
   Vector3<double> get_default_initial_angular_velocity() const;
 
+  const RigidBody<T>& body() const { return *body_; }
+
  private:
   const internal::MultibodyTree<T>& tree() const {
     return internal::GetInternalTree(*this);
