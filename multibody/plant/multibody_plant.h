@@ -14,6 +14,8 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/common/random.h"
 #include "drake/geometry/geometry_set.h"
+#include "drake/geometry/query_results/contact_surface.h"
+#include "drake/geometry/query_results/surface_mesh.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/contact_jacobians.h"
@@ -3158,6 +3160,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex point_pairs;
   };
 
+  // Functions for the hydroelastic contact model.
+  VectorX<T> CalcGeneralizedTractionAtPoint(
+    const systems::Context<T>& context,
+    geometry::GeometryId geometryM_id, geometry::GeometryId geometryN_id,
+    const geometry::ContactSurface<T>& surface,
+    geometry::SurfaceFaceIndex face_index,
+    const typename geometry::SurfaceMesh<T>::Barycentric& r_barycentric) const;
+  MatrixX<T> CalcContactPointJacobianForHydrostaticModel(
+      const systems::Context<T>& multibody_plant_context,
+      const Vector3<T>& point_W,
+      const Body<T>& body_A,
+      const Body<T>& body_B) const;
+
   // Constructor to bridge testing from MultibodyTree to MultibodyPlant.
   // WARNING: This may *not* result in a plant with a valid state. Use
   // sparingly to test forwarding methods when the overhead is high to
@@ -3467,6 +3482,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs_set,
       MatrixX<T>* Jn, MatrixX<T>* Jt,
       std::vector<math::RotationMatrix<T>>* R_WC_set = nullptr) const;
+
+  void CalcContactJacobian(
+      const systems::Context<T>& context,
+      geometry::GeometryId geometryA_id, geometry::GeometryId geometryB_id,
+      const Vector3<T>& p_WC, const Vector3<T>& nhat_BA_W,
+      MatrixX<T>* J_WC,
+      math::RotationMatrix<T>* R_WC) const;
 
   // Evaluates the contact Jacobians for the given state of the plant stored in
   // `context`.
