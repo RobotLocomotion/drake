@@ -131,20 +131,21 @@ GTEST_TEST(DistanceToPointTest, TestHalfspace) {
       0.2 * M_PI, Eigen::Vector3d(0.1, 0.5, -0.3).normalized())});
   X_WG.set_translation(Eigen::Vector3d(0.5, -0.5, 0.3));
 
-  fcl::Halfspaced halfspace(Eigen::Vector3d(0.2, 1, 0.5).normalized(), 0.3);
+  // Drake initializes *all* halfspaces to n = (0, 0, 1) and d = 0.
+  fcl::Halfspaced halfspace(Eigen::Vector3d::UnitZ(), 0.0);
 
   // Check Q outside of the halfspace
-  Eigen::Vector3d p_GQ = halfspace.d * 1.5 * halfspace.n;
+  Eigen::Vector3d p_GQ = 1.5 * halfspace.n;
   CheckDistanceToHalfspace(halfspace, X_WG, p_GQ);
-  p_GQ += Eigen::Vector3d::UnitZ().cross(halfspace.n);
+  p_GQ += X_WG.rotation().col(1);
   CheckDistanceToHalfspace(halfspace, X_WG, p_GQ);
   // Check Q on the boundary of the halfspace.
-  p_GQ = halfspace.d * halfspace.n;
+  p_GQ = Eigen::Vector3d::Zero();
   CheckDistanceToHalfspace(halfspace, X_WG, p_GQ);
-  p_GQ += Eigen::Vector3d(0.1, 0.2, 0.3).cross(halfspace.n);
+  p_GQ += X_WG.rotation().col(1);
   CheckDistanceToHalfspace(halfspace, X_WG, p_GQ);
   // Check Q inside the halfspace.
-  p_GQ = 0.5 * halfspace.d * halfspace.n;
+  p_GQ = -0.1 * halfspace.n;
   CheckDistanceToHalfspace(halfspace, X_WG, p_GQ);
 }
 }  // namespace internal
