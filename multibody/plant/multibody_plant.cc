@@ -267,7 +267,7 @@ void MultibodyPlant<T>::SetFreeBodyRandomRotationDistributionToUniform(
   SetFreeBodyRandomRotationDistribution(body, q_FM);
 }
 
-template <typename T>
+template<typename T>
 const WeldJoint<T>& MultibodyPlant<T>::WeldFrames(
     const Frame<T>& A, const Frame<T>& B,
     const math::RigidTransform<double>& X_AB) {

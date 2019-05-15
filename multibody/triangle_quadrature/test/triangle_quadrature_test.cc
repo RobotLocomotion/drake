@@ -1,4 +1,4 @@
-#include "drake/multibody/hydroelastic_contact/triangle_quadrature.h"
+#include "drake/multibody/triangle_quadrature/triangle_quadrature.h"
 
 #include <algorithm>
 #include <numeric>
@@ -6,13 +6,12 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/multibody/hydroelastic_contact/gaussian_triangle_quadrature_rule.h"
+#include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
 
 using Vector2d = drake::Vector2<double>;
 
 namespace drake {
 namespace multibody {
-namespace hydroelastic_contact {
 namespace {
 
 GTEST_TEST(TriangleQuadrature, GaussianQuadratureRuleThrowsAboveMaxOrder) {
@@ -177,6 +176,5 @@ TEST_F(UnityQuadratureTest, FifthOrder2) {
 }
 
 }  // namespace
-}  // namespace hydroelastic_contact
 }  // namespace multibody
 }  // namespace drake
