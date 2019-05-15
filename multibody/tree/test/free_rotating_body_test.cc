@@ -55,12 +55,12 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
 
   // For this simple example with a single floating body we can verify indexes
   // into the sate. In addition, the test above verifies we are not using a
-  // quaternions, but a SpaceXYZMobilizer (6 positions).
+  // quaternions, but a SpaceXYZMobilizer (3-dofs).
   // In the state vector x for the model, positions q go first followed by
   // velocities v. Similarly, angular components go first, followed by
   // translational components.
   EXPECT_EQ(free_body_plant.body().floating_positions_start(), 0);
-  EXPECT_EQ(free_body_plant.body().floating_velocities_start(), 6);
+  EXPECT_EQ(free_body_plant.body().floating_velocities_start(), 3);
 
   // Simulator will create a Context by calling this system's
   // CreateDefaultContext(). This in turn will initialize its state by making a

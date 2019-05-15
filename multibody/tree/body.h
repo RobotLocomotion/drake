@@ -211,7 +211,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   /// @see floating_positions_start(), floating_velocities_start().
   /// @throws std::exception if called pre-finalize, see
   /// MultibodyPlant::Finalize().
-  bool has_quaternion_dofs() const { 
+  bool has_quaternion_dofs() const {
     DRAKE_BODY_THROW_IF_NOT_FINALIZED();
     return topology_.has_quaternion_dofs;
   }

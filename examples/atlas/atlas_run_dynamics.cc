@@ -90,7 +90,7 @@ int do_main() {
   // Similarly for velocities. The velocities for this floating pelvis are the
   // first set of velocities after all model positions, since the state vector
   // is stacked as x = [q; v].
-  DRAKE_DEMAND(pelvis.floating_velocities_start() == plant.num_positions());  
+  DRAKE_DEMAND(pelvis.floating_velocities_start() == plant.num_positions());
 
   // Publish contact results for visualization.
   ConnectContactResultsToDrakeVisualizer(&builder, plant);
