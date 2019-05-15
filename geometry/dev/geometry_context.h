@@ -1,7 +1,10 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/dev/geometry_state.h"
+#include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/leaf_context.h"
 
 namespace drake {
@@ -22,16 +25,22 @@ namespace dev {
 template <typename T>
 class GeometryContext final : public systems::LeafContext<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GeometryContext)
-
   /** Constructs the context with the given index for the geometry state. */
   explicit GeometryContext(int geometry_state_index);
+
+  std::unique_ptr<systems::ContextBase>
+  DoCloneWithoutPointers() const final {
+    return std::unique_ptr<systems::ContextBase>(new GeometryContext<T>(*this));
+  }
 
   /** Returns a mutable reference of the underlying geometry state. */
   GeometryState<T>& get_mutable_geometry_state();
 
   /** Returns a const reference of the underlying geometry state. */
   const GeometryState<T>& get_geometry_state() const;
+
+ protected:
+  GeometryContext(const GeometryContext<T>& other) = default;
 
  private:
   // The index of the geometry state abstract state.
