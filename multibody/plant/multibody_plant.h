@@ -161,6 +161,12 @@ namespace multibody {
 /// Refer to the documentation provided in each of the methods above for further
 /// details.
 ///
+/// @section mbp_modeling_contact Modeling contact
+///
+/// Please refer to @ref drake_contacts "Contact Modeling in Drake" for details
+/// on the available approximations, setup, and considerations for a multibody
+/// simulation with frictional contact.
+///
 /// @section finalize_stage Finalize() stage
 ///
 /// Once the user is done adding modeling elements and registering geometry, a
@@ -2875,6 +2881,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// integration or to set the time step for fixed time step integration.
   /// As a guidance, typical fixed time step integrators will become unstable
   /// for time steps larger than about a tenth of this time scale.
+  ///
+  /// For further details on contact modeling in Drake, please refer to the
+  /// section @ref drake_contacts "Contact Modeling in Drake" of our
+  /// documentation.
   /// @{
 
   /// Sets the penetration allowance used to estimate the coefficients in the
@@ -2918,13 +2928,32 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// simpler model immediately tractable with standard numerical methods for
   /// integration of ODE's, it often leads to stiff dynamics that require
   /// an explicit integrator to take very small time steps. It is therefore
-  /// recommended to use error controlled integrators when using this model.
-  /// See @ref tangent_force for a detailed discussion of the Stribeck model.
+  /// recommended to use error controlled integrators when using this model or
+  /// the discrete time stepping (see @ref time_advancement_strategy
+  /// "Choice of Time Advancement Strategy").
+  /// See @ref stribeck_approximation for a detailed discussion of the Stribeck
+  /// model.
   /// @{
 
   /// Sets the stiction tolerance `v_stiction` for the Stribeck model, where
   /// `v_stiction` must be specified in m/s (meters per second.)
   /// `v_stiction` defaults to a value of 1 millimeter per second.
+  /// In selecting a value for `v_stiction`, you must ask yourself the question,
+  /// "When two objects are ostensibly in stiction, how much slip am I willing
+  /// to allow?" There are two opposing design issues in picking a value for
+  /// vₛ. On the one hand, small values of vₛ make the problem numerically
+  /// stiff during stiction, potentially increasing the integration cost. On the
+  /// other hand, it should be picked to be appropriate for the scale of the
+  /// problem. For example, a car simulation could allow a "large" value for vₛ
+  /// of 1 cm/s (1×10⁻² m/s), but reasonable stiction for grasping a 10 cm box
+  /// might require limiting residual slip to 1×10⁻³ m/s or less. Ultimately,
+  /// picking the largest viable value will allow your simulation to run
+  /// faster and more robustly.
+  /// Note that `v_stiction` is the slip velocity that we'd have when we are at
+  /// edge of the friction cone. For cases when the friction force is well
+  /// within the friction cone the slip velocity will always be smaller than
+  /// this value.
+  /// See also @ref stribeck_approximation.
   /// @throws std::exception if `v_stiction` is non-positive.
   void set_stiction_tolerance(double v_stiction = 0.001) {
     stribeck_model_.set_stiction_tolerance(v_stiction);
