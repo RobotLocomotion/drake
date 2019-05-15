@@ -123,14 +123,33 @@ namespace geometry {
 template <typename T>
 class ContactSurface {
  public:
-  /** @name Does not allow copy; implements MoveConstructible, MoveAssignable
-   */
-  //@{
-  ContactSurface(const ContactSurface&) = delete;
-  ContactSurface& operator=(const ContactSurface&) = delete;
+  ContactSurface(const ContactSurface& surface) {
+    *this = surface;
+  }
+
+  ContactSurface& operator=(const ContactSurface& surface) {
+    if (&surface == this)
+      return *this;
+
+    id_M_ = surface.id_M_;
+    id_N_ = surface.id_N_;
+
+    // We can't simply copy the mesh fields; the copies must contain pointers
+    // to a unique mesh. So, we reconstruct new fields on the newly created
+    // mesh.
+    mesh_ = std::make_unique<SurfaceMesh<T>>(*surface.mesh_.get());
+    std::vector<T> e_MN_values = surface.e_MN_->values();
+    e_MN_ = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
+        surface.e_MN_->name(), std::move(e_MN_values), mesh_.get());
+    std::vector<Vector3<T>> grad_h_MN_M_values = surface.grad_h_MN_M_->values();
+    grad_h_MN_M_ = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
+        surface.grad_h_MN_M_->name(), std::move(grad_h_MN_M_values),
+        mesh_.get());
+    return *this;
+  }
+
   ContactSurface(ContactSurface&&) = default;
   ContactSurface& operator=(ContactSurface&&) = default;
-  //@}
 
   /** Constructs a ContactSurface.
    @param id_M         The id of the first geometry M.
@@ -204,9 +223,8 @@ class ContactSurface {
   /** Represents the vector field ∇hₘₙ on the surface mesh, expressed in M's
       frame */
   std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_MN_M_;
+  friend class ContactSurfaceTester;
 };
 
 }  // namespace geometry
 }  // namespace drake
-
-
