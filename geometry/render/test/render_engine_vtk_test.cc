@@ -1,9 +1,17 @@
 #include "drake/geometry/render/render_engine_vtk.h"
 
+#include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
+
 namespace drake {
 namespace geometry {
 namespace render {
 namespace {
+
+using Eigen::AngleAxisd;
+using Eigen::Vector3d;
+using math::RigidTransformd;
+using math::RotationMatrixd;
 
 // Holds `(x, y)` indices of the screen coordinate system where the ranges of
 // `x` and `y` are [0, kWidth) and [0, kHeight) respectively.
@@ -28,12 +36,14 @@ void CompareColor(const uint8_t* pixel,
 template <class Renderer>
 class RenderEngineVtkTest : public ::testing::Test {
  public:
-  RenderEngineVtkTest() :
-      color_(kWidth, kHeight), depth_(kWidth, kHeight), label_(kWidth, kHeight),
-      // Looking strait down from 3m above the ground.
-      X_WC_(Eigen::Translation3d(0, 0, kDefaultDistance) *
-          Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()) *
-          Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitZ())) {}
+  RenderEngineVtkTest()
+      : color_(kWidth, kHeight),
+        depth_(kWidth, kHeight),
+        label_(kWidth, kHeight),
+        // Looking strait down from 3m above the ground.
+        X_WC_(RotationMatrixd{AngleAxisd(M_PI, Vector3d::UnitY()) *
+                              AngleAxisd(-M_PI_2, Vector3d::UnitZ())},
+              {0, 0, kDefaultDistance}) {}
 
  protected:
   void Render() {
@@ -82,7 +92,7 @@ class RenderEngineVtkTest : public ::testing::Test {
   }
 
   // All tests on this class must invoke this first.
-  void Init(const Eigen::Isometry3d& X_WC, bool add_terrain = false) {
+  void Init(const RigidTransformd& X_WC, bool add_terrain = false) {
     renderer_ = std::make_unique<Renderer>(
         RenderingConfig{kWidth, kHeight, kFovY, kZNear, kZFar, kShowWindow},
         X_WC);
@@ -115,15 +125,13 @@ class RenderEngineVtkTest : public ::testing::Test {
   ImageRgba8U color_;
   ImageDepth32F depth_;
   ImageLabel16I label_;
-  Eigen::Isometry3d X_WC_;
+  RigidTransformd X_WC_;
 
   std::unique_ptr<RgbdRenderer> renderer_;
 };
 
-using Eigen::Isometry3d;
-
 TEST_F(RenderEngineVtkTest, InstantiationTest) {
-  Init(Isometry3d::Identity());
+  Init(RigidTransformd::Identity());
 
   EXPECT_EQ(renderer_->config().width, kWidth);
   EXPECT_EQ(renderer_->config().height, kHeight);
@@ -131,7 +139,7 @@ TEST_F(RenderEngineVtkTest, InstantiationTest) {
 }
 
 TEST_F(RenderEngineVtkTest, NoBodyTest) {
-  Init(Isometry3d::Identity());
+  Init(RigidTransformd::Identity());
   Render();
 
   VerifyUniformColor(renderer_->color_palette().get_sky_color(), 0u);
@@ -185,10 +193,8 @@ TEST_F(RenderEngineVtkTest, TerrainTest) {
 
 TEST_F(RenderEngineVtkTest, HorizonTest) {
   // Camera at the origin, pointing in a direction parallel to the ground.
-  Isometry3d X_WC =
-      Eigen::Translation3d(0, 0, 0) *
-      Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
-      Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY());
+  RigidTransformd X_WC{RotationMatrixd{AngleAxisd(-M_PI_2, Vector3d::UnitX()) *
+                                       AngleAxisd(M_PI_2, Vector3d::UnitY())}};
   Init(X_WC, true);
 
   // Returns y in [0, kHeight / 2], index of horizon location in image
@@ -228,7 +234,7 @@ TEST_F(RenderEngineVtkTest, BoxTest) {
   Init(X_WC_, true);
 
   // Sets up a box.
-  Isometry3d X_WV = Isometry3d::Identity();
+  RigidTransformd X_WV = RigidTransformd::Identity();
   X_WV.translation().z() = 0.5;
   DrakeShapes::VisualElement visual(X_WV);
   Eigen::Vector3d box_size(1, 1, 1);
@@ -257,7 +263,7 @@ TEST_F(RenderEngineVtkTest, SphereTest) {
   Init(X_WC_, true);
 
   // Sets up a sphere.
-  Isometry3d X_WV = Isometry3d::Identity();
+  RigidTransformd X_WV = RigidTransformd::Identity();
   X_WV.translation().z() = 0.5;
   DrakeShapes::VisualElement visual(X_WV);
   visual.setGeometry(DrakeShapes::Sphere(0.5));
@@ -285,7 +291,7 @@ TEST_F(RenderEngineVtkTest, CylinderTest) {
   Init(X_WC_, true);
 
   // Sets up a sphere.
-  Isometry3d X_WV = Isometry3d::Identity();
+  RigidTransformd X_WV = RigidTransformd::Identity();
   X_WV.translation().z() = 0.6;
   DrakeShapes::VisualElement visual(X_WV);
   visual.setGeometry(DrakeShapes::Cylinder(0.2, 1.2));  // Radius and length.
@@ -312,7 +318,7 @@ TEST_F(RenderEngineVtkTest, CylinderTest) {
 TEST_F(RenderEngineVtkTest, MeshTest) {
   Init(X_WC_, true);
 
-  Isometry3d X_WV = Isometry3d::Identity();
+  RigidTransformd X_WV = RigidTransformd::Identity();
   DrakeShapes::VisualElement visual(X_WV);
   auto filename =
       FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.obj");
