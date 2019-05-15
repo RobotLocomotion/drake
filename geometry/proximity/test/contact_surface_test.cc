@@ -140,6 +140,10 @@ GTEST_TEST(ContactSurfaceTest, TestCopy) {
   // Copy constructor.
   ContactSurface<double> copy(original);
 
+  // Confirm that it was a deep copy, i.e., the `original` mesh and the `copy`
+  // mesh are different objects.
+  EXPECT_NE(&original.mesh(), &copy.mesh());
+
   EXPECT_EQ(original.id_M(), copy.id_M());
   EXPECT_EQ(original.id_N(), copy.id_N());
   // We use `num_faces()` as a representative of the mesh. We do not check
