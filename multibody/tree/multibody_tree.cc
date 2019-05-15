@@ -1131,16 +1131,6 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcRelativeFrameGeometricJacobian(
-    const systems::Context<T>& context,
-    const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
-    const Frame<T>& frame_A, const Frame<T>& frame_E,
-    EigenPtr<MatrixX<T>> Jv_ABp_E) const {
-  CalcJacobianSpatialVelocity(context, JacobianWrtVariable::kV, frame_B, p_BP,
-                              frame_A, frame_E, Jv_ABp_E);
-}
-
-template <typename T>
 void MultibodyTree<T>::CalcJacobianSpatialVelocity(
     const systems::Context<T>& context,
     const JacobianWrtVariable with_respect_to,

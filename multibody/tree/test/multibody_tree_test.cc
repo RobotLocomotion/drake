@@ -1027,7 +1027,7 @@ TEST_F(KukaIiwaModelTests, FrameGeometricJacobianForTheWorldFrame) {
   EXPECT_EQ(Jv_WP, MatrixX<double>::Zero(6, nv));
 }
 
-TEST_F(KukaIiwaModelTests, CalcRelativeFrameGeometricJacobian) {
+TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = tree().num_positions();
   const int kNumStates = tree().num_states();
@@ -1103,8 +1103,8 @@ TEST_F(KukaIiwaModelTests, CalcRelativeFrameGeometricJacobian) {
   MatrixX<double> Jv_L3L7q_L5(6, tree().num_velocities());
   // Compute the Jacobian Jv_WF for that relate the generalized velocities with
   // the spatial velocity of frame F.
-  tree().CalcRelativeFrameGeometricJacobian(
-      *context_, link7.body_frame(), p_L7Q,
+  tree().CalcJacobianSpatialVelocity(
+      *context_, JacobianWrtVariable::kV, link7.body_frame(), p_L7Q,
       link3.body_frame(), link5.body_frame(), &Jv_L3L7q_L5);
 
   // Verify that V_L3L7q = Jv_L3L7q * v:
@@ -1112,30 +1112,30 @@ TEST_F(KukaIiwaModelTests, CalcRelativeFrameGeometricJacobian) {
 
   EXPECT_TRUE(Jv_L3L7q_L5_times_v.IsApprox(V_L3L7q_L5, kTolerance));
 
-  // Unit test that CalcRelativeFrameGeometricJacobian throws an exception when
+  // Unit test that CalcJacobianSpatialVelocity throws an exception when
   // the input Jacobian is nullptr.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      tree().CalcRelativeFrameGeometricJacobian(
-          *context_, link7.body_frame(), p_L7Q,
+      tree().CalcJacobianSpatialVelocity(
+          *context_, JacobianWrtVariable::kV, link7.body_frame(), p_L7Q,
           link3.body_frame(), link5.body_frame(), nullptr),
       std::exception, ".*'Jw_V_ABp_E != nullptr'.*");
 
-  // Unit test that CalcRelativeFrameGeometricJacobian throws an exception when
+  // Unit test that CalcJacobianSpatialVelocity throws an exception when
   // the input Jacobian has the wrong number of rows.
   MatrixX<double> Jv_wrong_size;
   Jv_wrong_size.resize(9, tree().num_velocities());
   DRAKE_EXPECT_THROWS_MESSAGE(
-      tree().CalcRelativeFrameGeometricJacobian(
-          *context_, link7.body_frame(), p_L7Q,
+      tree().CalcJacobianSpatialVelocity(
+          *context_, JacobianWrtVariable::kV, link7.body_frame(), p_L7Q,
           link3.body_frame(), link5.body_frame(), &Jv_wrong_size),
       std::exception, ".*'Jw_V_ABp_E->rows\\(\\) == 6'.*");
 
-  // Unit test that CalcRelativeFrameGeometricJacobian throws an exception when
+  // Unit test that CalcJacobianSpatialVelocity throws an exception when
   // the input Jacobian has the wrong number of columns.
   Jv_wrong_size.resize(6, 23);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      tree().CalcRelativeFrameGeometricJacobian(
-          *context_, link7.body_frame(), p_L7Q,
+      tree().CalcJacobianSpatialVelocity(
+          *context_, JacobianWrtVariable::kV, link7.body_frame(), p_L7Q,
           link3.body_frame(), link5.body_frame(), &Jv_wrong_size),
       std::exception, ".*'Jw_V_ABp_E->cols\\(\\) == num_columns'.*");
 }
