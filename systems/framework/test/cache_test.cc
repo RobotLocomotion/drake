@@ -517,7 +517,23 @@ TEST_F(CacheTest, Clone) {
     EXPECT_EQ(clone_value_tracker.ticket(), value.ticket());
   }
 
-  // The clone_cache should have the same values.
+  // The original has all entries up to date; the copy should contain the
+  // same values but they should be marked out of date.
+  EXPECT_TRUE(cache_value(index0_, &clone_cache).is_out_of_date());
+  EXPECT_TRUE(cache_value(index1_, &clone_cache).is_out_of_date());
+  EXPECT_TRUE(cache_value(index2_, &clone_cache).is_out_of_date());
+  EXPECT_TRUE(cache_value(string_index_, &clone_cache).is_out_of_date());
+  EXPECT_TRUE(cache_value(vector_index_, &clone_cache).is_out_of_date());
+  EXPECT_TRUE(cache_value(last_index, &clone_cache).is_out_of_date());
+
+  // Mark the clone up to date for the remaining tests.
+  cache_value(index0_, &clone_cache).mark_up_to_date();
+  cache_value(index1_, &clone_cache).mark_up_to_date();
+  cache_value(index2_, &clone_cache).mark_up_to_date();
+  cache_value(string_index_, &clone_cache).mark_up_to_date();
+  cache_value(vector_index_, &clone_cache).mark_up_to_date();
+  cache_value(last_index, &clone_cache).mark_up_to_date();
+
   EXPECT_EQ(cache_value(index0_, &clone_cache).GetValueOrThrow<int>(),
             cache_value(index0_).GetValueOrThrow<int>());
   EXPECT_EQ(cache_value(index1_, &clone_cache).GetValueOrThrow<int>(),

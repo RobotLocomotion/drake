@@ -677,7 +677,29 @@ TEST_F(CacheEntryTest, Copy) {
   MyContextBase& clone_context =
       dynamic_cast<MyContextBase&>(*clone_context_ptr);
 
-  // The copy should have the same values.
+  // Although every cache entry in the original was up to date (see
+  // CacheEntryTest::Setup()), all cache entries in the copy should be
+  // out of date.
+  EXPECT_TRUE(entry0().is_out_of_date(clone_context));
+  EXPECT_TRUE(entry1().is_out_of_date(clone_context));
+  EXPECT_TRUE(entry2().is_out_of_date(clone_context));
+  EXPECT_TRUE(entry3().is_out_of_date(clone_context));
+  EXPECT_TRUE(entry4().is_out_of_date(clone_context));
+  EXPECT_TRUE(entry5().is_out_of_date(clone_context));
+  EXPECT_TRUE(string_entry().is_out_of_date(clone_context));
+  EXPECT_TRUE(vector_entry().is_out_of_date(clone_context));
+
+  // But the copies should still have the same values if we mark them
+  // up to date (don't try this at home, kids).
+  entry0().get_mutable_cache_entry_value(clone_context).mark_up_to_date();
+  entry1().get_mutable_cache_entry_value(clone_context).mark_up_to_date();
+  entry2().get_mutable_cache_entry_value(clone_context).mark_up_to_date();
+  entry3().get_mutable_cache_entry_value(clone_context).mark_up_to_date();
+  entry4().get_mutable_cache_entry_value(clone_context).mark_up_to_date();
+  entry5().get_mutable_cache_entry_value(clone_context).mark_up_to_date();
+  string_entry().get_mutable_cache_entry_value(clone_context).mark_up_to_date();
+  vector_entry().get_mutable_cache_entry_value(clone_context).mark_up_to_date();
+
   EXPECT_EQ(entry0().GetKnownUpToDate<int>(context_),
             entry0().GetKnownUpToDate<int>(clone_context));
   EXPECT_EQ(entry1().GetKnownUpToDate<int>(context_),

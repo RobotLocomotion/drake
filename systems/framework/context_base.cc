@@ -12,6 +12,11 @@ std::unique_ptr<ContextBase> ContextBase::Clone() const {
   std::unique_ptr<ContextBase> clone_ptr(CloneWithoutPointers(*this));
   ContextBase& clone = *clone_ptr;
 
+  // We don't trust that every user-written copy constructor will make
+  // a faithful copy of cached results. This way we'll be sure to recompute
+  // in the new Context.
+  clone.cache_.SetAllEntriesOutOfDate();
+
   // Create a complete mapping of tracker pointers.
   DependencyTracker::PointerMap tracker_map;
   BuildTrackerPointerMap(*this, clone, &tracker_map);
