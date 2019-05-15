@@ -151,12 +151,13 @@ why these techniques work the way they do, but, instead, focus on _what_ the
 properties of the results of the _current implementation_ are.  It is worth
 noting that some of these properties are considered _problems_ yet to be
 resolved and should not necessarily be considered desirable.
--# Between any two collision geometries, only a _single_ pair of witness contact
-points will be reported. This pair will contain witness points `Aw` and `Bw` as
-defined in @ref point_contact_approximation
-"Numerical Approximation of Point Contact".
--# Contacts are reported as a point pair. A @ref
-drake::geometry::PenetrationAsPointPair "PenetrationAsPointPair" in Drake.
+-# Between any two collision geometries, there is a single contact point
+`Co`. This point is characterized by two _witness points_ `Aw` and `Bw` on the
+geometry surfaces at the points of deepest penetration, see
+@ref point_contact_approximation "Numerical Approximation of Point Contact".
+-# Contacts are reported as the pair of deepest-penetration witness points
+`Aw` and `Bw`, a @ref drake::geometry::PenetrationAsPointPair
+"PenetrationAsPointPair" in Drake.
 -# Surface-to-surface contacts (such as a block sitting on a plane) are
 unfortunately still limited to a single contact point, typically located at
 the point of deepest penetration. That point will necessarily change from step
@@ -201,7 +202,7 @@ Next topic: @ref contact_engineering
       "set_stiction_tolerance()" provides additional information and guidelines
       on how to set this parameter.
 
- <b><u>Note:</u></b> When modeling the multibody system as discrete (refer to
+ @note When modeling the multibody system as discrete (refer to
  the @ref time_advancement_strategy "Choice of Time Advancement Strategy"
  section), only the static coefficient of friction is used while the kinetic
  coefficient of friction is ignored.
@@ -232,7 +233,7 @@ Next topic: @ref contact_engineering
  documentation for @ref drake::multibody::ImplicitStribeckSolver
  "ImplicitStribeckSolver".
 
- <b><u>Note:</u></b> For better numerical stability, the discrete model assumes
+ @note For better numerical stability, the discrete model assumes
  both static and kinetic coefficients of friction to be equal, the kinetic
  coefficient of friction is ignored.
 
@@ -407,7 +408,7 @@ Next topic: @ref contact_engineering
  very stiff in the stiction region, which requires either small step sizes
  with an explicit integrator, or use of a more-stable implicit integrator.
 
- <b><u>Note:</u></b> When modeling the multibody system as discrete (refer to
+ @note When modeling the multibody system as discrete (refer to
  the @ref time_advancement_strategy "Choice of Time Advancement Strategy"
  section), only the static coefficient of friction is used while the kinetic
  coefficient of friction is ignored. For better numerical stability, the
