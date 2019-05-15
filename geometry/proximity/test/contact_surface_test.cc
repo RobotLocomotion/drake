@@ -14,13 +14,29 @@
 namespace drake {
 namespace geometry {
 
+class ContactSurfaceTester {
+ public:
+  template <typename T>
+  static const SurfaceMeshFieldLinear<T, T>& e_MN(
+      const ContactSurface<T>& surface) {
+    return *surface.e_MN_;
+  }
+
+  template <typename T>
+  static const SurfaceMeshFieldLinear<Vector3<T>, T>& grad_h_MN_M(
+      const ContactSurface<T>& surface) {
+    return *surface.grad_h_MN_M_;
+  }
+};
+
+namespace {
 
 // TODO(DamrongGuoy): Consider splitting the test into several smaller tests
 //  including a separated mesh test.
 // Tests instantiation of ContactSurface and inspecting its components (the
 // mesh and the mesh fields). We cannot access its mesh fields directly, so
 // we check them by evaluating the field values at certain positions.
-template <typename T> ContactSurface<T> TestContactSurface();
+template<typename T> ContactSurface<T> TestContactSurface();
 
 // Tests instantiation of ContactSurface using `double` as the underlying
 // scalar type.
@@ -35,7 +51,7 @@ GTEST_TEST(ContactSurfaceTest, TestContactSurfaceAutoDiffXd) {
   auto contact_surface = TestContactSurface<AutoDiffXd>();
 }
 
-template <typename T>
+template<typename T>
 ContactSurface<T> TestContactSurface() {
   auto id_M = GeometryId::get_new_id();
   auto id_N = GeometryId::get_new_id();
@@ -133,6 +149,41 @@ ContactSurface<T> TestContactSurface() {
   return contact_surface;
 }
 
+// Tests copy constructor of ContactSurface. We use `double` as a
+// representative scalar type.
+GTEST_TEST(ContactSurfaceTest, TestCopy) {
+  ContactSurface<double> original = TestContactSurface<double>();
+  // Copy constructor.
+  ContactSurface<double> copy(original);
+
+  // Confirm that it was a deep copy, i.e., the `original` mesh and the `copy`
+  // mesh are different objects.
+  EXPECT_NE(&original.mesh(), &copy.mesh());
+
+  // Confirm the mesh fields of the `original` and the `copy` use different
+  // mesh pointers.
+  using CST = ContactSurfaceTester;
+  EXPECT_NE(&CST::e_MN(original).mesh(), &CST::e_MN(copy).mesh());
+  EXPECT_NE(&CST::grad_h_MN_M(original).mesh(), &CST::grad_h_MN_M(copy).mesh());
+
+  // Confirm the `copy` and its mesh fields use the same mesh objects.
+  EXPECT_EQ(&CST::e_MN(copy).mesh(), &CST::grad_h_MN_M(copy).mesh());
+  EXPECT_EQ(&copy.mesh(), &CST::grad_h_MN_M(copy).mesh());
+
+  EXPECT_EQ(original.id_M(), copy.id_M());
+  EXPECT_EQ(original.id_N(), copy.id_N());
+  // We use `num_faces()` as a representative of the mesh. We do not check
+  // everything in the mesh.
+  EXPECT_EQ(original.mesh().num_faces(), copy.mesh().num_faces());
+
+  // We check evaluation of field values only at one position.
+  const SurfaceFaceIndex f(0);
+  const typename SurfaceMesh<double>::Barycentric b{0.2, 0.3, 0.5};
+  EXPECT_EQ(original.EvaluateE_MN(f, b), copy.EvaluateE_MN(f, b));
+  EXPECT_EQ(original.EvaluateGrad_h_MN_M(f, b), copy.EvaluateGrad_h_MN_M(f, b));
+}
+
+}  // namespace
 }  // namespace geometry
 }  // namespace drake
 

@@ -112,12 +112,15 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
    @param name    The name of the field variable.
    @param values  The field value at each vertex of the mesh.
    @param mesh    The mesh to which this MeshField refers.
-   @pre   The number of entries in values is the same as the number of
-          vertices of the mesh.
+   @pre   The `mesh` is non-null, and the number of entries in `values` is the
+          same as the number of vertices of the mesh.
    */
   MeshFieldLinear(std::string name, std::vector<FieldValue>&& values,
                   MeshType* mesh)
-      : name_(std::move(name)), values_(std::move(values)), mesh_(mesh) {}
+      : name_(std::move(name)), values_(std::move(values)), mesh_(mesh) {
+    DRAKE_DEMAND(mesh_ != nullptr);
+    DRAKE_DEMAND(static_cast<int>(values_.size()) == mesh_->num_vertices());
+  }
 
   FieldValue Evaluate(const typename MeshType::ElementIndex e,
                      const typename MeshType::Barycentric& b) const override {
@@ -128,6 +131,10 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
     }
     return value;
   }
+
+  const std::string& name() const { return name_; }
+  const std::vector<FieldValue>& values() const { return values_; }
+  const MeshType& mesh() const { return *mesh_; }
 
  private:
   std::string name_;
