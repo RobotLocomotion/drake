@@ -255,6 +255,8 @@ MultibodyPlant<T>::MultibodyPlant(
   DRAKE_THROW_UNLESS(time_step >= 0);
   visual_geometries_.emplace_back();  // Entries for the "world" body.
   collision_geometries_.emplace_back();
+  // Add the world body to the graph.
+  multibody_graph_.AddBody(world_body().name(), world_body().model_instance());
 }
 
 template<typename T>
