@@ -133,6 +133,26 @@ ContactSurface<T> TestContactSurface() {
   return contact_surface;
 }
 
+// Tests copy constructor of ContactSurface. We use `double` as a
+// representative scalar type.
+GTEST_TEST(ContactSurfaceTest, TestCopy) {
+  ContactSurface<double> original = TestContactSurface<double>();
+  // Copy constructor.
+  ContactSurface<double> copy(original);
+
+  EXPECT_EQ(original.id_M(), copy.id_M());
+  EXPECT_EQ(original.id_N(), copy.id_N());
+  // We use `num_faces()` as a representative of the mesh. We do not check
+  // everything in the mesh.
+  EXPECT_EQ(original.mesh().num_faces(), copy.mesh().num_faces());
+
+  // We check evaluation of field values only at one position.
+  const SurfaceFaceIndex f(0);
+  const typename SurfaceMesh<double>::Barycentric b{0.2, 0.3, 0.5};
+  EXPECT_EQ(original.EvaluateE_MN(f, b), copy.EvaluateE_MN(f, b));
+  EXPECT_EQ(original.EvaluateGrad_h_MN_M(f, b), copy.EvaluateGrad_h_MN_M(f, b));
+}
+
 }  // namespace geometry
 }  // namespace drake
 

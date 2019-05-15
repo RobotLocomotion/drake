@@ -123,14 +123,36 @@ namespace geometry {
 template <typename T>
 class ContactSurface {
  public:
-  /** @name Does not allow copy; implements MoveConstructible, MoveAssignable
-   */
-  //@{
-  ContactSurface(const ContactSurface&) = delete;
-  ContactSurface& operator=(const ContactSurface&) = delete;
+  ContactSurface(const ContactSurface& surface) {
+    *this = surface;
+  }
+
+  // Assignment operator creates a new mesh, and copies of eₘₙ and ∇hₘₙ that
+  // refer to the new mesh. It is a deep copy.
+  ContactSurface& operator=(const ContactSurface& surface) {
+    if (&surface == this)
+      return *this;
+
+    id_M_ = surface.id_M_;
+    id_N_ = surface.id_N_;
+    // Create a new mesh.
+    mesh_ = std::make_unique<SurfaceMesh<T>>(*surface.mesh_.get());
+    // Create a copy of field values of e_MN.
+    std::vector<T> e_MN_values = surface.e_MN_->values();
+    // Create e_MN_ using the new mesh.
+    e_MN_ = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
+        surface.e_MN_->name(), std::move(e_MN_values), mesh_.get());
+    // Create a copy of field values of grad_h_MN_M.
+    std::vector<Vector3<T>> grad_h_MN_M_values = surface.grad_h_MN_M_->values();
+    // Create grad_h_MN_M_ using the new mesh.
+    grad_h_MN_M_ = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
+        surface.grad_h_MN_M_->name(), std::move(grad_h_MN_M_values),
+        mesh_.get());
+    return *this;
+  }
+
   ContactSurface(ContactSurface&&) = default;
   ContactSurface& operator=(ContactSurface&&) = default;
-  //@}
 
   /** Constructs a ContactSurface.
    @param id_M         The id of the first geometry M.
