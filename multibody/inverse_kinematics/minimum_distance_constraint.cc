@@ -29,6 +29,8 @@ T LogSumExp(const std::vector<T>& x) {
 /** Computes a smooth approximation of max(x). */
 template <typename T>
 T SmoothMax(const std::vector<T>& x) {
+  // This scaling factor was chosen to give a qualitatively good fit for
+  // 0 ≤ xᵢ ≤ 1.
   double alpha{100};
   std::vector<T> x_scaled{x};
   for (T& xi_scaled : x_scaled) {
@@ -93,6 +95,9 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
       plant_{RefFromPtrOrThrow(plant)},
       minimum_distance_{minimum_distance},
       threshold_distance_{threshold_distance},
+      // Since penalty_function uses output parameters rather than a return
+      // value, we construct a lambda and then call it immediately to compute
+      // the output scaling factor.
       penalty_output_scaling_{
           1.0 /
           [&penalty_function](double x) {
@@ -155,8 +160,8 @@ void Penalty(const MultibodyPlant<double>&, const systems::Context<double>&,
              double distance, double minimum_distance,
              double threshold_distance,
              MinimumDistancePenaltyFunction penalty_function,
-             const Eigen::Vector3d&, const Eigen::Vector3d&,
-             const Eigen::Ref<const Eigen::VectorXd>&, double* y) {
+             const Eigen::Vector3d&, const Eigen::Ref<const Eigen::VectorXd>&,
+             double* y) {
   double penalty;
   const double x =
       ScaleDistance(distance, minimum_distance, threshold_distance);
@@ -170,19 +175,22 @@ void Penalty(const MultibodyPlant<double>& plant,
              const Eigen::Vector3d& p_ACa, double distance,
              double minimum_distance, double threshold_distance,
              MinimumDistancePenaltyFunction penalty_function,
-             const Eigen::Vector3d& p_WCa, const Eigen::Vector3d& p_WCb,
+             const Eigen::Vector3d& nhat_BA_W,
              const Eigen::Ref<const AutoDiffVecXd>& q, AutoDiffXd* y) {
   // The distance is d = sign * |p_CbCa_B|, where the
   // closest points are Ca on object A, and Cb on object B.
-  // So the gradient ∂d/∂q = p_CbCa_W * ∂p_BCa_B/∂q / d
-  // where p_CbCa_W = p_WCa - p_WCb = p_WA + R_WA * p_ACa - (p_WB + R_WB *
-  // p_BCb)
-  Eigen::Matrix<double, 6, Eigen::Dynamic> Jq_V_BCa_W(6, plant.num_positions());
-  plant.CalcJacobianSpatialVelocity(context, JacobianWrtVariable::kQDot, frameA,
-                                    p_ACa, frameB, plant.world_frame(),
-                                    &Jq_V_BCa_W);
-  const Eigen::RowVectorXd ddistance_dq =
-      (p_WCa - p_WCb).transpose() * Jq_V_BCa_W.bottomRows<3>() / distance;
+  // So the gradient ∂d/∂q = p_CbCa_W * ∂p_BCa_B/∂q / d (Note that
+  // ∂p_BCa_B/∂q = ∂p_CbCa_B/∂q).
+  //
+  // Since dividing by d is undefined when d = 0, and p_CbCa_W / d =
+  // nhat_BA_W whenever d ≠ 0, we use ∂d/∂q = nhat_BA_W′ * ∂p_BCa_B/∂q. This
+  // allows us to compute a gradient at d = 0 in certain cases (See
+  // geometry::SignedDistancePair for details).
+  Eigen::Matrix<double, 3, Eigen::Dynamic> Jq_v_BCa_W(6, plant.num_positions());
+  plant.CalcJacobianTranslationalVelocity(context, JacobianWrtVariable::kQDot,
+                                          frameA, p_ACa, frameB,
+                                          plant.world_frame(), &Jq_v_BCa_W);
+  const Eigen::RowVectorXd ddistance_dq = nhat_BA_W.transpose() * Jq_v_BCa_W;
   AutoDiffXd distance_autodiff{
       distance, ddistance_dq * math::autoDiffToGradientMatrix(q)};
   const AutoDiffXd scaled_distance_autodiff =
@@ -232,7 +240,6 @@ void MinimumDistanceConstraint::DoEvalGeneric(
   for (const auto& signed_distance_pair : signed_distance_pairs) {
     const double distance = signed_distance_pair.distance;
     if (distance < threshold_distance_) {
-      Vector3<double> p_WCa, p_WCb;
       const geometry::SceneGraphInspector<double>& inspector =
           query_object.inspector();
       const geometry::FrameId frame_A_id =
@@ -243,20 +250,13 @@ void MinimumDistanceConstraint::DoEvalGeneric(
           plant_.GetBodyFromFrameId(frame_A_id)->body_frame();
       const Frame<double>& frameB =
           plant_.GetBodyFromFrameId(frame_B_id)->body_frame();
-      plant_.CalcPointsPositions(*plant_context_, frameA,
-                                 inspector.X_FG(signed_distance_pair.id_A) *
-                                     signed_distance_pair.p_ACa,
-                                 plant_.world_frame(), &p_WCa);
-      plant_.CalcPointsPositions(*plant_context_, frameB,
-                                 inspector.X_FG(signed_distance_pair.id_B) *
-                                     signed_distance_pair.p_BCb,
-                                 plant_.world_frame(), &p_WCb);
       penalties.emplace_back();
       Penalty(plant_, *plant_context_, frameA, frameB,
               inspector.X_FG(signed_distance_pair.id_A) *
                   signed_distance_pair.p_ACa,
               distance, minimum_distance_, threshold_distance_,
-              penalty_function_, p_WCa, p_WCb, x, &penalties.back());
+              penalty_function_, signed_distance_pair.nhat_BA_W, x,
+              &penalties.back());
       penalties.back() *= penalty_output_scaling_;
     }
   }

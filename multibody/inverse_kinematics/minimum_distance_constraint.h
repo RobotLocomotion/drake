@@ -13,7 +13,8 @@ penalty functions must meet the following criteria:
 
 1.     γ(x) ≥ 0 ∀ x ∈ ℝ.
 2. dγ(x)/dx ≤ 0 ∀ x ∈ ℝ.
-3.     γ(x) = 0 ∀ x ≥ 0. */
+3.     γ(x) = 0 ∀ x ≥ 0.
+4. dγ(x)/dx < 0 ∀ x < 0. */
 using MinimumDistancePenaltyFunction =
     std::function<void(double x, double* penalty, double* dpenalty_dx)>;
 
@@ -57,7 +58,10 @@ The formulation of the constraint is
 where dᵢ is the signed distance of the i-th pair, dₘᵢₙ is the minimum allowable
 distance, dₜₕᵣₑₛₕ is the distance beyond which pairs of geometries are ignored,
 γ is a MinimumDistancePenaltyFunction, and SmoothMax(d) is smooth approximation
-of max(d). We require that 0 ≤ dₘᵢₙ < dₜₕᵣₑₛₕ.
+of max(d). We require that dₘᵢₙ < dₜₕᵣₑₛₕ. The input scaling
+(dᵢ - dₜₕᵣₑₛₕ)/(dₜₕᵣₑₛₕ - dₘᵢₙ) ensures that at the boundary of the feasible set
+(when dᵢ == dₘᵢₙ), we evaluate the penalty function at -1, where it is required
+to have a non-zero gradient.
 */
 class MinimumDistanceConstraint : public solvers::Constraint {
  public:
@@ -112,6 +116,9 @@ class MinimumDistanceConstraint : public solvers::Constraint {
   const multibody::MultibodyPlant<double>& plant_;
   const double minimum_distance_;
   const double threshold_distance_;
+  /** Stores the value of 1 / γ((dₘᵢₙ - dₜₕᵣₑₛₕ)/(dₜₕᵣₑₛₕ - dₘᵢₙ)) = 1 / γ(-1).
+  This is used to scale the output of the penalty function to be 1 when
+  d == dₘᵢₙ. */
   const double penalty_output_scaling_;
   int num_collision_candidates_{};
   systems::Context<double>* const plant_context_;
