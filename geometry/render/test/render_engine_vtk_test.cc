@@ -100,6 +100,28 @@ class RenderEngineVtkTest : public ::testing::Test {
     if (add_terrain) renderer_->AddFlatTerrain();
   }
 
+  // Performs the work to test the rendering with a sphere centered in the
+  // image. To pass, the renderer will have to have been populated with a
+  // compliant sphere and camera configuration (e.g., PopulateSphereTest()).
+  // If force_hidden is true, then the render windows will be suppressed
+  // regardless of any other settings.
+  void PerformCenterShapeTest() {
+    Render();
+
+    VerifyOutliers();
+
+    // Verifies inside the box.
+    const int x = kInlier.x;
+    const int y = kInlier.y;
+    // Color
+    CompareColor(color_.at(x, y), kDefaultVisualColor, 255u,
+                 kColorPixelTolerance);
+    // Depth
+    ASSERT_NEAR(depth_.at(x, y)[0], 2.f, kDepthTolerance);
+    // Label -- note: in this commit, kBodyID is *not* defined.
+    ASSERT_EQ(label_.at(x, y)[0], kBodyID);
+  }
+
   const int kWidth = 640;
   const int kHeight = 480;
   const double kZNear = 0.5;
@@ -243,20 +265,8 @@ TEST_F(RenderEngineVtkTest, BoxTest) {
   const RgbdRenderer::VisualIndex kVisualID(0);
   renderer_->RegisterVisual(visual, kBodyID);
   renderer_->UpdateVisualPose(X_WV, kBodyID, kVisualID);
-  Render();
 
-  VerifyOutliers();
-
-  // Verifies inside the box.
-  const int x = kInlier.x;
-  const int y = kInlier.y;
-  // Color
-  CompareColor(color_.at(x, y), kDefaultVisualColor, 255u,
-               kColorPixelTolerance);
-  // Depth
-  ASSERT_NEAR(depth_.at(x, y)[0], 2.f, kDepthTolerance);
-  // Label
-  ASSERT_EQ(label_.at(x, y)[0], kBodyID);
+  PerformCenterShapeTest();
 }
 
 TEST_F(RenderEngineVtkTest, SphereTest) {
@@ -271,20 +281,8 @@ TEST_F(RenderEngineVtkTest, SphereTest) {
   const RgbdRenderer::VisualIndex kVisualID(0);
   renderer_->RegisterVisual(visual, kBodyID);
   renderer_->UpdateVisualPose(X_WV, kBodyID, kVisualID);
-  Render();
 
-  VerifyOutliers();
-
-  // Verifies inside the sphere.
-  const int x = kInlier.x;
-  const int y = kInlier.y;
-  // Color
-  CompareColor(color_.at(x, y), kDefaultVisualColor, 255u,
-               kColorPixelTolerance);
-  // Depth
-  ASSERT_NEAR(depth_.at(x, y)[0], 2.f, kDepthTolerance);
-  // Label
-  ASSERT_EQ(label_.at(x, y)[0], kBodyID);
+  PerformCenterShapeTest();
 }
 
 TEST_F(RenderEngineVtkTest, CylinderTest) {
@@ -299,20 +297,8 @@ TEST_F(RenderEngineVtkTest, CylinderTest) {
   const RgbdRenderer::VisualIndex kVisualID(0);
   renderer_->RegisterVisual(visual, kBodyID);
   renderer_->UpdateVisualPose(X_WV, kBodyID, kVisualID);
-  Render();
 
-  VerifyOutliers();
-
-  // Verifies inside the cylinder.
-  const int x = kInlier.x;
-  const int y = kInlier.y;
-  // Color
-  CompareColor(color_.at(x, y), kDefaultVisualColor, 255u,
-               kColorPixelTolerance);
-  // Depth
-  ASSERT_NEAR(depth_.at(x, y)[0], 1.8f, kDepthTolerance);
-  // Label
-  ASSERT_EQ(label_.at(x, y)[0], kBodyID);
+  PerformCenterShapeTest();
 }
 
 TEST_F(RenderEngineVtkTest, MeshTest) {
@@ -327,20 +313,8 @@ TEST_F(RenderEngineVtkTest, MeshTest) {
   const RgbdRenderer::VisualIndex kVisualID(0);
   renderer_->RegisterVisual(visual, kBodyID);
   renderer_->UpdateVisualPose(X_WV, kBodyID, kVisualID);
-  Render();
 
-  VerifyOutliers();
-
-  // Verifies inside the cylinder.
-  const int x = kInlier.x;
-  const int y = kInlier.y;
-  // Color
-  CompareColor(color_.at(x, y), ColorI({6u, 255u, 46u}), 255u,
-               kColorPixelTolerance);
-  // Depth
-  ASSERT_NEAR(depth_.at(x, y)[0], 2., kDepthTolerance);
-  // Label
-  ASSERT_EQ(label_.at(x, y)[0], kBodyID);
+  PerformCenterShapeTest();
 }
 
 // TODO(kunimatsu-tri) Move DepthImageToPointCloudConversionTest here from
