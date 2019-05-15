@@ -1,11 +1,9 @@
-#include "drake/systems/sensors/rgbd_renderer_vtk.h"
-
-#include "drake/systems/sensors/test/rgbd_renderer_test_util.h"
+#include "drake/geometry/render/render_engine_vtk.h"
 
 namespace drake {
-namespace systems {
-namespace sensors {
-namespace test {
+namespace geometry {
+namespace render {
+namespace {
 
 // Holds `(x, y)` indices of the screen coordinate system where the ranges of
 // `x` and `y` are [0, kWidth) and [0, kHeight) respectively.
@@ -28,9 +26,9 @@ void CompareColor(const uint8_t* pixel,
 
 // This suite tests RgbdRenderer.
 template <class Renderer>
-class RgbdRendererTest : public ::testing::Test {
+class RenderEngineVtkTest : public ::testing::Test {
  public:
-  RgbdRendererTest() :
+  RenderEngineVtkTest() :
       color_(kWidth, kHeight), depth_(kWidth, kHeight), label_(kWidth, kHeight),
       // Looking strait down from 3m above the ground.
       X_WC_(Eigen::Translation3d(0, 0, kDefaultDistance) *
@@ -122,10 +120,9 @@ class RgbdRendererTest : public ::testing::Test {
   std::unique_ptr<RgbdRenderer> renderer_;
 };
 
-using RgbdRendererVTKTest = RgbdRendererTest<RgbdRendererVTK>;
 using Eigen::Isometry3d;
 
-TEST_F(RgbdRendererVTKTest, InstantiationTest) {
+TEST_F(RenderEngineVtkTest, InstantiationTest) {
   Init(Isometry3d::Identity());
 
   EXPECT_EQ(renderer_->config().width, kWidth);
@@ -133,7 +130,7 @@ TEST_F(RgbdRendererVTKTest, InstantiationTest) {
   EXPECT_EQ(renderer_->config().fov_y, kFovY);
 }
 
-TEST_F(RgbdRendererVTKTest, NoBodyTest) {
+TEST_F(RenderEngineVtkTest, NoBodyTest) {
   Init(Isometry3d::Identity());
   Render();
 
@@ -150,7 +147,7 @@ TEST_F(RgbdRendererVTKTest, NoBodyTest) {
   }
 }
 
-TEST_F(RgbdRendererVTKTest, TerrainTest) {
+TEST_F(RenderEngineVtkTest, TerrainTest) {
   Init(X_WC_, true);
 
   const auto& kTerrain = renderer_->color_palette().get_terrain_color();
@@ -186,7 +183,7 @@ TEST_F(RgbdRendererVTKTest, TerrainTest) {
   }
 }
 
-TEST_F(RgbdRendererVTKTest, HorizonTest) {
+TEST_F(RenderEngineVtkTest, HorizonTest) {
   // Camera at the origin, pointing in a direction parallel to the ground.
   Isometry3d X_WC =
       Eigen::Translation3d(0, 0, 0) *
@@ -227,7 +224,7 @@ TEST_F(RgbdRendererVTKTest, HorizonTest) {
   }
 }
 
-TEST_F(RgbdRendererVTKTest, BoxTest) {
+TEST_F(RenderEngineVtkTest, BoxTest) {
   Init(X_WC_, true);
 
   // Sets up a box.
@@ -256,7 +253,7 @@ TEST_F(RgbdRendererVTKTest, BoxTest) {
   ASSERT_EQ(label_.at(x, y)[0], kBodyID);
 }
 
-TEST_F(RgbdRendererVTKTest, SphereTest) {
+TEST_F(RenderEngineVtkTest, SphereTest) {
   Init(X_WC_, true);
 
   // Sets up a sphere.
@@ -284,7 +281,7 @@ TEST_F(RgbdRendererVTKTest, SphereTest) {
   ASSERT_EQ(label_.at(x, y)[0], kBodyID);
 }
 
-TEST_F(RgbdRendererVTKTest, CylinderTest) {
+TEST_F(RenderEngineVtkTest, CylinderTest) {
   Init(X_WC_, true);
 
   // Sets up a sphere.
@@ -312,7 +309,7 @@ TEST_F(RgbdRendererVTKTest, CylinderTest) {
   ASSERT_EQ(label_.at(x, y)[0], kBodyID);
 }
 
-TEST_F(RgbdRendererVTKTest, MeshTest) {
+TEST_F(RenderEngineVtkTest, MeshTest) {
   Init(X_WC_, true);
 
   Isometry3d X_WV = Isometry3d::Identity();
@@ -343,7 +340,7 @@ TEST_F(RgbdRendererVTKTest, MeshTest) {
 // TODO(kunimatsu-tri) Move DepthImageToPointCloudConversionTest here from
 // rgbd_camera_test.
 
-}  // namespace test
-}  // namespace sensors
-}  // namespace systems
+}  // namespace
+}  // namespace render
+}  // namespace geometry
 }  // namespace drake
