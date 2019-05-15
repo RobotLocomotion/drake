@@ -195,7 +195,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   }
 
   /// (Advanced) Returns `true` if `this` body is granted 6-dofs by a Mobilizer.
-  /// @note A floating body does not necessarily is modeled with a quaternion
+  /// @note A floating body is not necessarily is modeled with a quaternion
   /// mobilizer, see has_quaternion_dofs(). Alternative options include a space
   /// XYZ parametrization of rotations, see SpaceXYZMobilizer.
   /// @throws std::exception if called pre-finalize, see
@@ -205,7 +205,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
     return topology_.is_floating;
   }
 
-  /// (Advanced) If `true`, this body is a floating body modeld with a
+  /// (Advanced) If `true`, this body is a floating body modeled with a
   /// quaternion floating mobilizer. By implication, is_floating() is also
   /// `true`.
   /// @see floating_positions_start(), floating_velocities_start().
@@ -382,7 +382,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   friend class internal::BodyAttorney<T>;
 
   // Helper method for throwing an exception within public methods that should
-  // not be called pre-finalize. The invoking method should pass it's name so
+  // not be called pre-finalize. The invoking method should pass its name so
   // that the error message can include that detail.
   void ThrowIfNotFinalized(const char* source_method) const {
     if (!this->get_parent_tree().topology_is_valid()) {

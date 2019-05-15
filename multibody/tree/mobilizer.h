@@ -308,7 +308,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// Returns `true` if `this` mobilizer grants 6-dofs to the outboard frame.
   virtual bool is_floating() const { return false; }
 
-  /// Returns `true` if `this` uses a quaternion parametrization of rations.
+  /// Returns `true` if `this` uses a quaternion parametrization of rotations.
   virtual bool has_quaternion_dofs() const { return false; }
 
   /// Returns the topology information for this mobilizer. Users should not

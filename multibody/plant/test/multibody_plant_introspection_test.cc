@@ -20,8 +20,8 @@ using multibody::Parser;
 namespace multibody {
 namespace {
 
-// This test verify we can introspect MultibodyPlant information regarding
-// flaoting bodies:
+// This test verifies we can introspect MultibodyPlant information regarding
+// floating bodies:
 //   1. What bodies in the plant are modeled with a free quaternion mobilizer.
 //   2. Where in the state the dofs for a particular body are.
 // We make an interesting world (from a multibody topological perspective)
@@ -75,7 +75,7 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
   plant.Finalize();
 
   // Assert that the mug and the two Atlas robot pelvises are floating and
-  // modeld with quaternions.
+  // modeled with quaternions.
   ASSERT_TRUE(mug.is_floating());
   ASSERT_TRUE(mug.has_quaternion_dofs());
   ASSERT_TRUE(pelvis1.is_floating());
@@ -89,7 +89,7 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
   // The table has been anchored to the world.
   EXPECT_FALSE(plant.GetBodyByName("link", robot_table_model).is_floating());
 
-  // Retrive floating bodies.
+  // Retrieve floating bodies.
   std::unordered_set<BodyIndex> expected_floating_bodies(
       {pelvis1.index(), pelvis2.index(), mug.index()});
   auto floating_bodies = plant.GetFloatingBaseBodies();
