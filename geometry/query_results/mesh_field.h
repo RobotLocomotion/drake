@@ -1,6 +1,9 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_nodiscard.h"
 
 namespace drake {
 namespace geometry {
@@ -18,6 +21,7 @@ template <class FieldValue, class MeshType>
 //  a scalar type explicit here for some additional error checking.
 class MeshField {
  public:
+  virtual ~MeshField() = default;
   /** Evaluates the field value at a location on an element.
     @param e The index of the element.
     @param b The barycentric coordinates.
@@ -26,10 +30,19 @@ class MeshField {
       const typename MeshType::ElementIndex e,
       const typename MeshType::Barycentric& b) const = 0;
 
+  DRAKE_NODISCARD
+  std::unique_ptr<MeshField<FieldValue, MeshType>> Clone() const {
+    return DoClone();
+  }
+
  protected:
+  /** Derived classes must implement this method to clone themselves.
+   */
+  DRAKE_NODISCARD
+  virtual std::unique_ptr<MeshField<FieldValue, MeshType>> DoClone() const = 0;
+
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshField)
   MeshField() = default;
-  virtual ~MeshField() = default;
 };
 
 

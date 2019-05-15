@@ -51,28 +51,25 @@ GTEST_TEST(ContactSurfaceTest, TestContactSurfaceAutoDiffXd) {
   auto contact_surface = TestContactSurface<AutoDiffXd>();
 }
 
-template<typename T>
-ContactSurface<T> TestContactSurface() {
-  auto id_M = GeometryId::get_new_id();
-  auto id_N = GeometryId::get_new_id();
-
-  // Simple handmade data for a contact surface. It consists of two right
-  // triangles that make a square.
-  //
-  //   y
-  //   |
-  //   |
-  //   |
-  //   v3(0,1,0)  v2(1,1,0)
-  //   +-----------+
-  //   |         . |
-  //   |  f1  . .  |
-  //   |    . .    |
-  //   | . .   f0  |
-  //   |.          |
-  //   +-----------+---------- x
-  //   v0(0,0,0)  v1(1,0,0)
-  //
+template <typename T>
+std::unique_ptr<SurfaceMesh<T>> GenerateMesh() {
+// A simple mesh for a contact surface. It consists of two right
+// triangles that make a square.
+//
+//   y
+//   |
+//   |
+//   |
+//   v3(0,1,0)  v2(1,1,0)
+//   +-----------+
+//   |         . |
+//   |  f1  . .  |
+//   |    . .    |
+//   | . .   f0  |
+//   |.          |
+//   +-----------+---------- x
+//   v0(0,0,0)  v1(1,0,0)
+//
   const int face_data[2][3] = {{0, 1, 2}, {2, 3, 0}};
   std::vector<SurfaceFace> faces;
   for (int f = 0; f < 2; ++f) faces.emplace_back(face_data[f]);
@@ -81,7 +78,16 @@ ContactSurface<T> TestContactSurface() {
   std::vector<SurfaceVertex<T>> vertices;
   for (int v = 0; v < 4; ++v) vertices.emplace_back(vertex_data[v]);
   auto surface_mesh =
-      std::make_unique<SurfaceMesh<T>>(std::move(faces), std::move(vertices));
+      std::make_unique<SurfaceMesh<T>>(move(faces), std::move(vertices));
+  return surface_mesh;
+}
+
+template <typename T>
+ContactSurface<T> TestContactSurface() {
+  auto id_M = GeometryId::get_new_id();
+  auto id_N = GeometryId::get_new_id();
+  auto surface_mesh = GenerateMesh<T>();
+
   // We record the reference for testing later.
   auto& surface_mesh_ref = *(surface_mesh.get());
 
@@ -181,6 +187,81 @@ GTEST_TEST(ContactSurfaceTest, TestCopy) {
   const typename SurfaceMesh<double>::Barycentric b{0.2, 0.3, 0.5};
   EXPECT_EQ(original.EvaluateE_MN(f, b), copy.EvaluateE_MN(f, b));
   EXPECT_EQ(original.EvaluateGrad_h_MN_M(f, b), copy.EvaluateGrad_h_MN_M(f, b));
+}
+
+// Tests that the base class MeshField::Clone() calls DoClone() of its
+// subclass. We use `double` and SurfaceMesh<double> to represent the type
+// parameters FieldValue and MeshType respectively.
+GTEST_TEST(MeshFieldTest, TestClone) {
+  using FieldValue = double;
+  using MeshType = SurfaceMesh<double>;
+  using MeshFieldBase = MeshField<FieldValue, MeshType>;
+
+  class MeshFieldSubclass : public MeshFieldBase {
+   public:
+    FieldValue Evaluate(const MeshType::ElementIndex,
+                        const MeshType::Barycentric&) const override {
+      return FieldValue(0);
+    }
+   private:
+    DRAKE_NODISCARD std::unique_ptr<MeshFieldBase> DoClone() const override {
+      return std::unique_ptr<MeshFieldBase>(new MeshFieldSubclass());
+    }
+  };
+  MeshFieldSubclass original;
+  std::unique_ptr<MeshFieldBase> clone = original.Clone();
+  EXPECT_NE(nullptr, dynamic_cast<MeshFieldSubclass*>(clone.get()));
+}
+
+// Tests the subclass MeshFieldLinear::DoClone() through the base class
+// MeshField::Clone(). We use `double` and SurfaceMesh<double> as
+// representative arguments for type parameters.
+GTEST_TEST(MeshFieldLinear, TestDoClone) {
+  using FieldValue = double;
+  using MeshType = SurfaceMesh<double>;
+  using MeshFieldBase = MeshField<FieldValue, MeshType>;
+  using MeshFieldLineard = MeshFieldLinear<FieldValue, MeshType>;
+
+  auto surface_mesh = GenerateMesh<double>();
+  std::vector<FieldValue> e_values = {0., 1., 2., 3.};
+  auto original = std::make_unique<MeshFieldLineard>("e", std::move(e_values),
+                                                     surface_mesh.get());
+
+  std::unique_ptr<MeshFieldBase> clone_base = original->Clone();
+  auto clone = dynamic_cast<MeshFieldLineard*>(clone_base.get());
+
+  // Check uniqueness.
+  EXPECT_NE(nullptr, clone);
+  EXPECT_NE(original.get(), clone);
+
+  // Check equivalence.
+  EXPECT_EQ(original->name(), clone->name());
+  EXPECT_EQ(original->values(), clone->values());
+  EXPECT_EQ(&original->mesh(), &clone->mesh());
+}
+
+// Tests MeshFieldLinear's own Clone(). We use `double` and
+// SurfaceMesh<double> as representative arguments for type parameters.
+GTEST_TEST(MeshFieldLinear, TestClone) {
+  using FieldValue = double;
+  using MeshType = SurfaceMesh<double>;
+  using MeshFieldLineard = MeshFieldLinear<FieldValue, MeshType>;
+
+  auto surface_mesh = GenerateMesh<double>();
+  std::vector<FieldValue> e_values = {0., 1., 2., 3.};
+  auto original = std::make_unique<MeshFieldLineard>("e", std::move(e_values),
+                                                     surface_mesh.get());
+
+  std::unique_ptr<MeshFieldLineard> clone = original->Clone();
+
+  // Check uniqueness.
+  EXPECT_NE(nullptr, clone.get());
+  EXPECT_NE(original.get(), clone.get());
+
+  // Check equivalence.
+  EXPECT_EQ(original->name(), clone->name());
+  EXPECT_EQ(original->values(), clone->values());
+  EXPECT_EQ(&original->mesh(), &clone->mesh());
 }
 
 }  // namespace

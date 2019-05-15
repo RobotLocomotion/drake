@@ -8,6 +8,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_nodiscard.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/query_results/mesh_field.h"
@@ -123,7 +124,7 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
   }
 
   FieldValue Evaluate(const typename MeshType::ElementIndex e,
-                     const typename MeshType::Barycentric& b) const override {
+                     const typename MeshType::Barycentric& b) const final {
     const auto& element = mesh_->element(e);
     FieldValue value = b[0] * values_[element.vertex(0)];
     for (int i = 1; i < MeshType::kDim + 1; ++i) {
@@ -136,7 +137,21 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
   const std::vector<FieldValue>& values() const { return values_; }
   const MeshType& mesh() const { return *mesh_; }
 
+  DRAKE_NODISCARD
+  std::unique_ptr<MeshFieldLinear<FieldValue, MeshType>> Clone() const {
+    return std::unique_ptr<MeshFieldDerive>(
+        static_cast<MeshFieldDerive*>(DoClone().release()));
+  }
+
  private:
+  // Clones MeshFieldLinear-specific data.
+  using MeshFieldBase = MeshField<FieldValue, MeshType>;
+  using MeshFieldDerive = MeshFieldLinear<FieldValue, MeshType>;
+  DRAKE_NODISCARD std::unique_ptr<MeshFieldBase> DoClone() const final {
+    std::vector<FieldValue> values = values_;
+    return std::unique_ptr<MeshFieldBase>(
+        new MeshFieldDerive(name_, std::move(values), mesh_));
+  }
   std::string name_;
   // The field values are indexed in the same way as vertices, i.e.,
   // values_[i] is the field value for the mesh vertices_[i].
