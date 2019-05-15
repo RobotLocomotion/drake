@@ -117,7 +117,10 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
    */
   MeshFieldLinear(std::string name, std::vector<FieldValue>&& values,
                   MeshType* mesh)
-      : name_(std::move(name)), values_(std::move(values)), mesh_(mesh) {}
+      : name_(std::move(name)), values_(std::move(values)), mesh_(mesh) {
+    DRAKE_DEMAND(mesh_ != nullptr);
+    DRAKE_DEMAND(static_cast<int>(values_.size()) == mesh_->num_vertices());
+  }
 
   FieldValue Evaluate(const typename MeshType::ElementIndex e,
                      const typename MeshType::Barycentric& b) const override {
@@ -128,6 +131,9 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
     }
     return value;
   }
+
+  const std::string& name() { return name_; }
+  const std::vector<FieldValue>& values() { return values_; }
 
  private:
   std::string name_;
