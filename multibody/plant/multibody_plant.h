@@ -3161,7 +3161,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   };
 
   // Functions for the hydroelastic contact model.
-  VectorX<T> CalcGeneralizedTractionAtPoint(
+  VectorX<T> CalcGeneralizedForceFromTractionAtPoint(
     const systems::Context<T>& context,
     geometry::GeometryId geometryM_id, geometry::GeometryId geometryN_id,
     const geometry::ContactSurface<T>& surface,

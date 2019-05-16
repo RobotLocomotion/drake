@@ -34,7 +34,7 @@ class MultibodyPlantTester {
  public:
   MultibodyPlantTester() = delete;
 
-  static VectorX<double> CalcGeneralizedTractionAtPoint(
+  static VectorX<double> CalcGeneralizedForceFromTractionAtPoint(
     const MultibodyPlant<double>& plant,
     const Context<double>& context,
     GeometryId geometryM_id, GeometryId geometryN_id,
@@ -42,7 +42,7 @@ class MultibodyPlantTester {
     SurfaceFaceIndex face_index,
     const SurfaceMesh<double>::Barycentric& r_barycentric,
     double dissipation, double mu_coulomb) {
-        return plant.CalcGeneralizedTractionAtPoint(
+        return plant.CalcGeneralizedForceFromTractionAtPoint(
             context, geometryM_id, geometryN_id, surface, face_index,
             r_barycentric, dissipation, mu_coulomb);
     }
@@ -73,7 +73,7 @@ class MultibodyPlantTester {
 class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
  public:
   const MultibodyPlant<double>& plant() const { return *plant_; }
-  const Context<double>& plant_context() const { return *plant_context_; }
+  Context<double>& plant_context() { return *plant_context_; }
   const ContactSurface<double>& contact_surface() const {
       return *contact_surface_;
   }
@@ -98,9 +98,6 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
 
     plant.Finalize();
 
-    DRAKE_DEMAND(plant.num_velocities() == 6);
-    DRAKE_DEMAND(plant.num_positions() == 7);
-
     // Connect MBP and SceneGraph.
     DRAKE_DEMAND(!!plant.get_source_id());
     builder.Connect(scene_graph.get_query_output_port(),
@@ -119,8 +116,12 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
     contact_surface_ = CreateContactSurface();
 
     // Set the pose for the box.
+    ASSERT_TRUE(plant.num_velocities() == 6);
+    DRAKE_DEMAND(plant.num_positions() == 7);
+    VectorX<double> state(plant.num_positions() + plant.num_velocities());
+    state << 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
     auto& state_vector = plant_context_->get_mutable_continuous_state_vector();
-    state_vector[6] = 1.0;
+    state_vector.SetFromVector(state);
   }
 
   std::unique_ptr<ContactSurface<double>> CreateContactSurface() const {
@@ -150,51 +151,24 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
   }
 
   // Creates a surface mesh that covers the "wetted surface", i.e., the part of
-  // the box that would be wet if the halfspace were a fluid. This yields an
-  // open box with five faces comprising ten triangles.
+  // the box that would be wet if the halfspace were a fluid. This *would* yield
+  // an open box with five faces comprising ten triangles except that, for
+  // simplicity, we'll only use the bottom face (two triangles).
   std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() const {
     std::vector<SurfaceVertex<double>> vertices;
     std::vector<SurfaceFace> faces;
 
     // Create the vertices.
-    vertices.emplace_back(Vector3<double>(0.5, 0.5, 0));
-    vertices.emplace_back(Vector3<double>(-0.5, 0.5, 0));
-    vertices.emplace_back(Vector3<double>(-0.5, -0.5, 0));
-    vertices.emplace_back(Vector3<double>(0.5, -0.5, 0));
     vertices.emplace_back(Vector3<double>(0.5, 0.5, -0.5));
     vertices.emplace_back(Vector3<double>(-0.5, 0.5, -0.5));
     vertices.emplace_back(Vector3<double>(-0.5, -0.5, -0.5));
     vertices.emplace_back(Vector3<double>(0.5, -0.5, -0.5));
 
-    // Create the -z face.
+    // Create the face.
     faces.emplace_back(
-        SurfaceVertexIndex(4), SurfaceVertexIndex(5), SurfaceVertexIndex(6));
+        SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2));
     faces.emplace_back(
-        SurfaceVertexIndex(6), SurfaceVertexIndex(7), SurfaceVertexIndex(4));
-
-    // Create the +x face.
-    faces.emplace_back(
-        SurfaceVertexIndex(0), SurfaceVertexIndex(3), SurfaceVertexIndex(7));
-    faces.emplace_back(
-        SurfaceVertexIndex(7), SurfaceVertexIndex(4), SurfaceVertexIndex(0));
-
-    // Create the -x face.
-    faces.emplace_back(
-        SurfaceVertexIndex(1), SurfaceVertexIndex(2), SurfaceVertexIndex(6));
-    faces.emplace_back(
-        SurfaceVertexIndex(6), SurfaceVertexIndex(5), SurfaceVertexIndex(1));
-
-    // Create the +y face.
-    faces.emplace_back(
-        SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(5));
-    faces.emplace_back(
-        SurfaceVertexIndex(5), SurfaceVertexIndex(4), SurfaceVertexIndex(0));
-
-    // Create the -y face.
-    faces.emplace_back(
-        SurfaceVertexIndex(2), SurfaceVertexIndex(3), SurfaceVertexIndex(7));
-    faces.emplace_back(
-        SurfaceVertexIndex(7), SurfaceVertexIndex(6), SurfaceVertexIndex(2));
+        SurfaceVertexIndex(2), SurfaceVertexIndex(3), SurfaceVertexIndex(0));
 
     return std::make_unique<SurfaceMesh<double>>(
         std::move(faces), std::move(vertices));
@@ -213,29 +187,136 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, VanillaTraction) {
   const double mu_coulomb = 0.0;
 
   // Compute traction vectors at two opposing corners of the box.
-  VectorX<double> t1 = MultibodyPlantTester::CalcGeneralizedTractionAtPoint(
-      plant(), plant_context(),
-      MultibodyPlantTester::FindGroundGeometry(plant()),
-      MultibodyPlantTester::FindBoxGeometry(plant()),
-      contact_surface(), SurfaceFaceIndex(0),
-      SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
-      dissipation, mu_coulomb);
-  VectorX<double> t2 = MultibodyPlantTester::CalcGeneralizedTractionAtPoint(
-      plant(), plant_context(),
-      MultibodyPlantTester::FindGroundGeometry(plant()),
-      MultibodyPlantTester::FindBoxGeometry(plant()),
-      contact_surface(), SurfaceFaceIndex(1),
-      SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
-      dissipation, mu_coulomb);
+  // Point in the world frame: .5, .5, -.5
+  VectorX<double> t1 =
+      MultibodyPlantTester::CalcGeneralizedForceFromTractionAtPoint(
+          plant(), plant_context(),
+          MultibodyPlantTester::FindGroundGeometry(plant()),
+          MultibodyPlantTester::FindBoxGeometry(plant()),
+          contact_surface(), SurfaceFaceIndex(0),
+          SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
+          dissipation, mu_coulomb);
+  // Point in the world frame: -.5, -.5, -.5
+  VectorX<double> t2 =
+      MultibodyPlantTester::CalcGeneralizedForceFromTractionAtPoint(
+          plant(), plant_context(),
+          MultibodyPlantTester::FindGroundGeometry(plant()),
+          MultibodyPlantTester::FindBoxGeometry(plant()),
+          contact_surface(), SurfaceFaceIndex(1),
+          SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
+          dissipation, mu_coulomb);
 
   // Sum the tractions together. We know that the field has a value of 0.5 at
-  // the two corners, so the total upward force is zero. Since these values are
-  // equal, we expect there to be no moment.
+  // the two corners, so the total normal traction has unit magnitude.
+  // Since the field values are equal and there are no tangential tractions
+  // (or forces), we expect there to be no moment.
   const double eps = 10 * std::numeric_limits<double>::epsilon();
   VectorX<double> traction = t1 + t2;
-  std::cout << traction << std::endl;
   EXPECT_NEAR(traction.segment(0, 5).norm(), 0.0, eps);
   EXPECT_NEAR(traction[5], 1.0, eps);
+}
+
+// Tests the traction calculation with friction but without dissipation forces.
+TEST_F(MultibodyPlantHydroelasticTractionTests, TractionWithFraction) {
+  const double dissipation = 0.0;
+  const double mu_coulomb = 1.0;
+
+  // Give the box an initial (horizontal) velocity along the +x axis.
+  const int num_velocities = plant().num_velocities();
+  ASSERT_EQ(num_velocities, 6);
+  VectorX<double> box_velocity(num_velocities);
+  box_velocity << 0, 0, 0, 1, 0, 0;
+  plant().SetVelocities(&plant_context(), box_velocity);
+
+  // Compute traction vectors at two opposing corners of the box.
+  // Point in the world frame: .5, .5, -.5
+  VectorX<double> t1 =
+      MultibodyPlantTester::CalcGeneralizedForceFromTractionAtPoint(
+          plant(), plant_context(),
+          MultibodyPlantTester::FindGroundGeometry(plant()),
+          MultibodyPlantTester::FindBoxGeometry(plant()),
+          contact_surface(), SurfaceFaceIndex(0),
+          SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
+          dissipation, mu_coulomb);
+  // Point in the world frame: -.5, -.5, -.5
+  VectorX<double> t2 =
+      MultibodyPlantTester::CalcGeneralizedForceFromTractionAtPoint(
+          plant(), plant_context(),
+          MultibodyPlantTester::FindGroundGeometry(plant()),
+          MultibodyPlantTester::FindBoxGeometry(plant()),
+          contact_surface(), SurfaceFaceIndex(1),
+          SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
+          dissipation, mu_coulomb);
+
+  // Sum the tractions together. We know that the field has a value of 0.5 at
+  // the two corners, so the total normal traction has unit magnitude. The
+  // coefficient of friction is unity, so the total frictional traction will
+  // have unit magnitude as well.
+  const double eps = 10 * std::numeric_limits<double>::epsilon();
+  VectorX<double> traction = t1 + t2;
+  EXPECT_NEAR(traction[3], -1.0, eps);
+  EXPECT_NEAR(traction[4], 0.0, eps);
+  EXPECT_NEAR(traction[5], 1.0, eps);
+
+  // A moment on the box will be generated due to the frictional tractions. The
+  // center-of-mass of the box will be located at (0,0,0) in the world frame.
+  // The moment arm at the first point will be (.5,.5,-.5). Crossing this vector
+  // with the traction at that point (-.5,0,.5) yields the following.
+  EXPECT_NEAR(t1[0], 0.25, eps);
+  EXPECT_NEAR(t1[1], 0.0, eps);
+  EXPECT_NEAR(t1[2], 0.25, eps);
+
+  // The moment arm at the first point will be (-.5,-.5,-.5). Crossing this
+  // vector with the traction at that point (-.5,0,.5) yields the following.
+  EXPECT_NEAR(t2[0], -0.25, eps);
+  EXPECT_NEAR(t2[1], 0.5, eps);
+  EXPECT_NEAR(t2[2], -0.25, eps);
+}
+
+// Tests the traction calculation with dissipation forces but without friction.
+TEST_F(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
+  const double dissipation = 1.0;
+  const double mu_coulomb = 0.0;
+
+  // Give the box an initial vertical velocity along the -z axis.
+  const int num_velocities = plant().num_velocities();
+  ASSERT_EQ(num_velocities, 6);
+  VectorX<double> box_velocity(num_velocities);
+  const double separating_velocity = -1.0;
+  box_velocity << 0, 0, 0, 0, 0, separating_velocity;
+  plant().SetVelocities(&plant_context(), box_velocity);
+
+  // Compute traction vectors at two opposing corners of the box.
+  VectorX<double> t1 =
+      MultibodyPlantTester::CalcGeneralizedForceFromTractionAtPoint(
+          plant(), plant_context(),
+          MultibodyPlantTester::FindGroundGeometry(plant()),
+          MultibodyPlantTester::FindBoxGeometry(plant()),
+          contact_surface(), SurfaceFaceIndex(0),
+          SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
+          dissipation, mu_coulomb);
+  VectorX<double> t2 =
+      MultibodyPlantTester::CalcGeneralizedForceFromTractionAtPoint(
+          plant(), plant_context(),
+          MultibodyPlantTester::FindGroundGeometry(plant()),
+          MultibodyPlantTester::FindBoxGeometry(plant()),
+          contact_surface(), SurfaceFaceIndex(1),
+          SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
+          dissipation, mu_coulomb);
+
+  // The damping constant at each point will be 1.5 * field value * dissipation
+  // coefficient.
+  const double field_value = 0.5;
+  const double c = 1.5 * field_value * dissipation;
+  const double damping_traction_per_point = c * -separating_velocity;
+  const double normal_traction_per_point = field_value +
+      damping_traction_per_point;
+
+  const double eps = 10 * std::numeric_limits<double>::epsilon();
+  VectorX<double> traction = t1 + t2;
+  EXPECT_NEAR(traction.segment(0, 5).norm(), 0.0, eps);
+  const int num_points = 2;
+  EXPECT_NEAR(traction[5], normal_traction_per_point * num_points, eps);
 }
 
 }  // namespace multibody

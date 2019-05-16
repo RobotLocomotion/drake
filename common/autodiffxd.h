@@ -372,6 +372,11 @@ DRAKE_EIGEN_AUTODIFFXD_DECLARE_GLOBAL_UNARY(
         x.derivatives() * (Scalar(-1) / sqrt(1 - numext::abs2(x.value()))));)
 
 DRAKE_EIGEN_AUTODIFFXD_DECLARE_GLOBAL_UNARY(
+    atan, using std::atan; return Eigen::MakeAutoDiffScalar(
+        atan(x.value()),
+        x.derivatives() * (Scalar(1) / (1 + x.value() * x.value())));)
+
+DRAKE_EIGEN_AUTODIFFXD_DECLARE_GLOBAL_UNARY(
     tanh, using std::cosh; using std::tanh; return Eigen::MakeAutoDiffScalar(
         tanh(x.value()),
         x.derivatives() * (Scalar(1) / numext::abs2(cosh(x.value()))));)

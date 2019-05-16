@@ -1280,19 +1280,15 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
 }
 
 template <typename T>
-VectorX<T> MultibodyPlant<T>::CalcGeneralizedTractionAtPoint(
+VectorX<T> MultibodyPlant<T>::CalcGeneralizedForceFromTractionAtPoint(
     const systems::Context<T>& context, GeometryId geometryM_id,
     GeometryId geometryN_id, const ContactSurface<T>& surface,
     geometry::SurfaceFaceIndex face_index,
     const typename geometry::SurfaceMesh<T>::Barycentric&
         r_barycentric_M, double dissipation, double mu_coulomb) const {
-  const VectorX<T>& v = GetVelocities(context);
-
-  // Get the body corresponding to geometryM_id.
+  // Get the transform for the body that geometryM is attached to.
   BodyIndex bodyM_index = geometry_id_to_body_index_.at(geometryM_id);
   const Body<T>& bodyM = internal_tree().get_body(bodyM_index);
-
-  // Get the transform for bodyM.
   const RigidTransform<T>& X_WM = EvalBodyPoseInWorld(context, bodyM);
 
   // Convert the barycentric coordinate to 3D.
@@ -1327,12 +1323,14 @@ VectorX<T> MultibodyPlant<T>::CalcGeneralizedTractionAtPoint(
 
   // Get the relative velocity at the given point between the bodies that M and
   // N are attached to.
+  const VectorX<T>& v = GetVelocities(context);
   const Vector3<T> rdot_MN_C = J_WC * v;
 
   // Get the velocity along the normal to the contact surface. Note that a
   // positive value indicates that bodies are separating at r while a negative
   // value indicates that bodies are approaching at r.
-  const T rdot_nhat_MN = rdot_MN_C(0);
+  enum FrameIndices { kTan1 = 0, kTan2 = 1, kNormal = 2 };
+  const T rdot_nhat_MN = rdot_MN_C(kNormal);
 
   // Get the damping value (c) from the compliant model dissipation (α).
   // Equation (16) from [Hunt 1975] yields c = 3/2 * α * E_MN.
@@ -1344,9 +1342,10 @@ VectorX<T> MultibodyPlant<T>::CalcGeneralizedTractionAtPoint(
 
   // Get the slip velocity at the point by subtracting the normal contribution
   // to velocity.
-  const Vector2<T> rdot_MN_tan(rdot_MN_C(1), rdot_MN_C(2));
+  const Vector2<T> rdot_MN_tan(rdot_MN_C(kTan1), rdot_MN_C(kTan2));
 
   // Determine the traction.
+  // TODO(edrumwri): Make the slip tolerance a user-settable parameter.
   const double vslip_tol = 1e-8;
   const double squared_vslip_tol = vslip_tol * vslip_tol;
   const T squared_rdot_tan = rdot_MN_tan.squaredNorm();
@@ -1360,10 +1359,10 @@ VectorX<T> MultibodyPlant<T>::CalcGeneralizedTractionAtPoint(
     // Get the direction of slip.
     const Vector2<T> rdot_hat_tan_MN = rdot_MN_tan / norm_rdot_tan;
 
-    // Compute the frictional traction.
+    // Compute the frictional traction using a regularized friction model.
     return Jn.transpose() * normal_pressure + Jst.transpose() * (
         -rdot_hat_tan_MN * mu_coulomb * normal_pressure * 2.0 / M_PI *
-            atan(squared_vslip_tol / squared_vslip_tol));
+            atan(squared_rdot_tan / T(squared_vslip_tol)));
   } else {
     // Only normal traction (no frictional traction).
     return Jn.transpose() * normal_pressure;
