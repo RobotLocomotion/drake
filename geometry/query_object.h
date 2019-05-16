@@ -38,10 +38,12 @@ class SceneGraph;
  LeafSystem, each should re-evaluate the input port. The underlying caching
  mechanism should make the cost of this negligible.
 
- In addition to not persisting the reference from the output port, the
- %QueryObject shouldn't be copied. Strictly speaking, it is an allowed
- operation, but the result is not live, and any geometry query performed on the
- copy will throw an exception.
+ The %QueryObject _can_ be copied. The copied instance is no longer "live"; it
+ is now "baked". Essentially, it freezes the state of the live scene graph in
+ its current configuration and disconnects it from the system and context. This
+ means, even if the original context changes values, the copied/baked instance
+ will always reproduce the same query results. This baking process is not cheap
+ and should not be done without consideration.
 
  <h2>Queries and scalar type</h2>
 
@@ -72,22 +74,25 @@ class QueryObject {
   /** Constructs a default QueryObject (all pointers are null). */
   QueryObject() = default;
 
-#ifndef DRAKE_DOXYGEN_CXX
-  // NOTE: The copy semantics are provided to be compatible with AbstractValue.
-  // The result will always be a "default" QueryObject (i.e., all pointers are
-  // null). The SceneGraph is responsible for guaranteeing the returned
-  // QueryObject is "live" (via CalcQueryObject()).
+  /** @name Implements CopyConstructible, CopyAssignable, MoveConstructible, MoveAssignable
+
+   Calling the copy constructor or assignment will turn a _live_ %QueryObject
+   into a _baked_ %QueryObject (an expensive operation). Copying baked
+   QueryObjects is cheap.  */
+  //@{
+
   QueryObject(const QueryObject& other);
   QueryObject& operator=(const QueryObject&);
-  // NOTE: The move semantics are implicitly deleted by the copy semantics.
-  // There is no sense in "moving" a query object.
-#endif  // DRAKE_DOXYGEN_CXX
+  QueryObject(QueryObject&&) = default;
+  QueryObject& operator=(QueryObject&&) = default;
+
+  //@}
 
   // Note to developers on adding queries:
-  //  All queries should call ThrowIfDefault() before taking any action.
+  //  All queries should call ThrowIfNotCallable() before taking any action.
   //  Furthermore, an invocation of that query method should be included in
   //  query_object_test.cc in the DefaultQueryThrows test to confirm that the
-  //  query *is* calling ThrowIfDefault().
+  //  query *is* calling ThrowIfNotCallable().
 
   /** Provides an inspector for the topological structure of the underlying
    scene graph data (see SceneGraphInspector for details).  */
@@ -319,22 +324,52 @@ class QueryObject {
   // Convenience class for testing.
   friend class QueryObjectTester;
 
+  // Access the GeometryState associated with this QueryObject.
+  // @pre ThrowIfNotCallable() has been invoked prior to this.
   const GeometryState<T>& geometry_state() const;
 
+  // Sets the query object to be *live*. That means the `context` and
+  // `scene_graph` cannot be null.
   void set(const systems::Context<T>* context,
            const SceneGraph<T>* scene_graph) {
     DRAKE_DEMAND(context);
     DRAKE_DEMAND(scene_graph);
+    state_.reset();
     context_ = context;
     scene_graph_ = scene_graph;
     inspector_.set(&geometry_state());
   }
 
-  void ThrowIfDefault() const {
-    if (!(context_ && scene_graph_)) {
+  // Update all poses. This method does no work if this is a "baked" query
+  // object (see class docs for discussion).
+  void FullPoseUpdate() const {
+    if (scene_graph_) scene_graph_->FullPoseUpdate(*context_);
+  }
+
+  // Reports true if this object is configured so that it can support a query.
+  bool is_callable() const {
+    const bool live_condition = context_ != nullptr && scene_graph_ != nullptr;
+    const bool baked_condition = state_ != nullptr;
+    // I.e., only one of the two conditions can be satisfied.
+    return live_condition != baked_condition;
+  }
+
+  // Reports true if this object is in default configuration (not callable).
+  bool is_default() const {
+    return context_ == nullptr && scene_graph_ == nullptr && state_ == nullptr;
+  }
+
+  // Reports if the object can be copied; it must either be callable or default.
+  bool is_copyable() const {
+    return is_callable() || is_default();
+  }
+
+  // Throws an exception if the QueryObject is neither "live" nor "baked" (see
+  // class docs for discussion).
+  void ThrowIfNotCallable() const {
+    if (!is_callable()) {
       throw std::runtime_error(
-          "Attempting to perform query on invalid QueryObject. "
-          "Did you copy the QueryObject?");
+          "Attempting to perform query on invalid QueryObject.");
     }
   }
 
@@ -359,11 +394,16 @@ class QueryObject {
   // The contents of the "live" query object. It has pointers to the system and
   // context from which it spawned. It uses these to compute geometry queries
   // on the current context (fully-dependent on context). These pointers must
-  // be null for "baked" contexts (e.g., the result of copying a "live"
-  // context).
+  // _both_ be non-null for a live QueryObject and both be null for a baked
+  // QueryObject.
   const systems::Context<T>* context_{nullptr};
   const SceneGraph<T>* scene_graph_{nullptr};
+
   SceneGraphInspector<T> inspector_;
+
+  // When a QueryObject is copied to a "baked" version, it contains a fully
+  // updated GeometryState. Copies of bakes all share the same version.
+  std::shared_ptr<const GeometryState<T>> state_{};
 };
 
 }  // namespace geometry
