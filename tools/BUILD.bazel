@@ -76,6 +76,16 @@ config_setting(
     values = {"define": "WITH_SNOPT_F2C=ON"},
 )
 
+# CSDP is an open-source solver, and is included in the Drake build by default.
+# The CSDP solver is irrelevant to some users of MathematicalProgram, so we
+# provide a hidden switch to shut it off for developers who don't actually need
+# it. This is not a supported configuration. Use at your own risk:
+# --define=NO_CSDP=ON
+config_setting(
+    name = "no_csdp",
+    values = {"define": "NO_CSDP=ON"},
+)
+
 # IPOPT is an open-source solver, and is included in the Drake build by
 # default. The IPOPT solver is irrelevant to some users of MathematicalProgram,
 # so we provide a hidden switch to shut it off for developers who don't

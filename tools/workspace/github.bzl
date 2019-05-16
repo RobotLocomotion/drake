@@ -244,7 +244,7 @@ def _strip_prefix(repository, commit):
     else:
         strip_commit = commit
 
-    return project + "-" + strip_commit
+    return project + "-" + strip_commit.replace("/", "-")
 
 def _urls(repository, commit, mirrors):
     """Compute the urls from which an archive of the provided GitHub
