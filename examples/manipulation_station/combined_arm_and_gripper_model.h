@@ -32,28 +32,13 @@ class CombinedArmAndGripperModel {
       multibody::MultibodyPlant<T>* plant) : plant_(plant) {}
   virtual ~CombinedArmAndGripperModel() {}
 
-  /// Gets the number of joints in the arm.
-  virtual int num_arm_joints() const = 0;
-
   /// Gets the number of joints in the gripper.
   virtual int num_gripper_joints() const = 0;
-
-  /// Gets the arm generalized positions.
-  virtual VectorX<T> GetArmPositions(
-      const systems::Context<T>& diagram_context,
-      const systems::Diagram<T>& diagram) const = 0;
 
   /// Gets the gripper generalized positions.
   virtual VectorX<T> GetGripperPositions(
       const systems::Context<T>& diagram_context,
       const systems::Diagram<T>& diagram) const = 0;
-
-  /// Sets the arm generalized positions.
-  virtual void SetArmPositions(
-    const systems::Context<T>& diagram_context,
-    const Eigen::Ref<const VectorX<T>>& q,
-    const systems::Diagram<T>& diagram,
-    systems::State<T>* diagram_state) const = 0;
 
   /// Sets the gripper generalized positions to the default "open" position.
   virtual void SetGripperPositionsToDefaultOpen(
@@ -68,22 +53,10 @@ class CombinedArmAndGripperModel {
     const systems::Diagram<T>& diagram,
     systems::State<T>* diagram_state) const = 0;
 
-  /// Gets the arm generalized velocities.
-  virtual VectorX<T> GetArmVelocities(
-      const systems::Context<T>& diagram_context,
-      const systems::Diagram<T>& diagram) const = 0;
-
   /// Gets the gripper generalized velocities.
   virtual VectorX<T> GetGripperVelocities(
       const systems::Context<T>& diagram_context,
       const systems::Diagram<T>& diagram) const = 0;
-
-  /// Sets the arm generalized velocities.
-  virtual void SetArmVelocities(
-    const systems::Context<T>& diagram_context,
-    const Eigen::Ref<const VectorX<T>>& v,
-    const systems::Diagram<T>& diagram,
-    systems::State<T>* diagram_state) const = 0;
 
   /// Sets the gripper generalized velocities.
   virtual void SetGripperVelocities(
@@ -93,7 +66,7 @@ class CombinedArmAndGripperModel {
     systems::State<T>* diagram_state) const = 0;
 
   /// This method adds the arm and gripper models to the internal plant.
-  virtual void AddRobotModelToMultibodyPlant() = 0;
+  virtual AddRobotModelToMultibodyPlant() = 0;
 
   /// This method builds the control diagram for the arm and gripper
   /// and adds it to the given builder for a Diagram.
