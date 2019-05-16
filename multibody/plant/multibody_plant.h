@@ -1769,7 +1769,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `J_ABp` is nullptr or if it is not of size
   ///   `6 x nv`.
   // TODO(amcastro-tri): Rework this method as per issue #10155.
-  DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianSpatialVelocity.")
+  DRAKE_DEPRECATED("2019-08-15", "Use CalcJacobianSpatialVelocity().")
   void CalcRelativeFrameGeometricJacobian(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
