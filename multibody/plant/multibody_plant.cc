@@ -826,7 +826,7 @@ void MultibodyPlant<T>::CalcContactJacobian(
   const Body<T>& bodyB = internal_tree().get_body(bodyB_index);
 
   // Geometric Jacobian for the velocity of the contact point C as moving with
-  // body A, s.t.: v_WC = Jv_WC+A * v
+  // body A, s.t.: v_WC = Jv_WC_A * v
   // where v is the vector of generalized velocities.
   MatrixX<T> Jv_WC_A(3, this->num_velocities());
   internal_tree().CalcPointsGeometricJacobianExpressedInWorld(

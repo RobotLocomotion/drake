@@ -1,18 +1,12 @@
 <?xml version='1.0'?>
 <sdf version='1.6'>
-  <!-- Note: This is the accompaning SDF file for the unit test box_test.cc
-       and therefore these two files must be kept in sync.
+  <!-- Note: This is the accompaning SDF file for the unit test
+       hydrostatic_traction_test.cc and therefore these two files must be kept
+       in sync.
 
-       This file defines the model for a box on a flat plane. The unit test
-       applies a horizontal force in order to verify the value of the friction
-       force. To apply this horizontal force, this file defines the model for
-       a box with two degrees of freedom (DOFs): a) one DOF for the horizontal
-       motion along the x axis and b) one DOF for the vertical motion along the
-       z axis. To this end, this model defines a small "ghost body" between
-       the box and the world so that we can attach two prismatic joints for
-       these two DOFs. The ghost body has negligible mass.
+       This file defines the model for a box on a flat plane.
   -->
-  <model name='box_with_pusher'>
+  <model name='block_on_halfspace'>
     <!-- A link to model the ground. Inertia values are not particularly
          important since the ground does not move. -->
     <link name='ground'>
@@ -42,20 +36,10 @@
           </plane>
         </geometry>
 
-        <surface>
-          <friction>
-            <ode>
-              <!-- MultibodyPlant's time stepping only uses the static
-                   coefficient of friction, <mu>. -->
-              <mu>1.0</mu>
-              <mu2>1.0</mu2>
-            </ode>
-          </friction>
-        </surface>
       </collision>
     </link>
 
-    <!-- The model for a solid box of uniform density. -->
+    <!-- The model for a solid, unit cube of uniform density. -->
     <link name='box'>
       <pose>0 0 0.5 0 0 0</pose>
       <inertial>
@@ -84,16 +68,6 @@
           </box>
         </geometry>
 
-        <surface>
-          <friction>
-            <ode>
-              <!-- MultibodyPlant's time stepping only uses the static
-                   coefficient of friction, <mu>. -->
-              <mu>1.0</mu>
-              <mu2>1.0</mu2>
-            </ode>
-          </friction>
-        </surface>
       </collision>
     </link>
 

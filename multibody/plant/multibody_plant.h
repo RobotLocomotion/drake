@@ -3160,7 +3160,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex point_pairs;
   };
 
-  // Functions for the hydroelastic contact model.
+  // Computes the generalized force (i.e., the force in terms of velocity
+  // variables) given the two bodies to which geometryM_id and geometryN_id
+  // are attached, a contact surface, a shared point on that contact surface
+  // (defined in barycentric coordinates), and dissipation and friction
+  // coefficients.
   VectorX<T> CalcGeneralizedForceFromTractionAtPoint(
     const systems::Context<T>& context,
     geometry::GeometryId geometryM_id, geometry::GeometryId geometryN_id,

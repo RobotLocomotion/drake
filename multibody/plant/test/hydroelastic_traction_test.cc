@@ -78,6 +78,18 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
       return *contact_surface_;
   }
 
+  VectorX<double> CalcGeneralizedForceFromTractionAtPoint(
+      SurfaceFaceIndex face_index,
+      const SurfaceMesh<double>::Barycentric& r_barycentric,
+      double dissipation, double mu_coulomb) {
+    return MultibodyPlantTester::CalcGeneralizedForceFromTractionAtPoint(
+          plant(), plant_context(),
+          MultibodyPlantTester::FindGroundGeometry(plant()),
+          MultibodyPlantTester::FindBoxGeometry(plant()),
+          contact_surface(), face_index, r_barycentric,
+          dissipation, mu_coulomb);
+  }
+
  private:
   void SetUp() override {
     // Read the two bodies into the plant.
@@ -115,7 +127,7 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
 
     contact_surface_ = CreateContactSurface();
 
-    // Set the pose for the box.
+    // Set the pose and velocity for the box.
     ASSERT_TRUE(plant.num_velocities() == 6);
     DRAKE_DEMAND(plant.num_positions() == 7);
     VectorX<double> state(plant.num_positions() + plant.num_velocities());
@@ -150,9 +162,10 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
           "h_MN_M", std::move(h_MN_M), mesh.get()));
   }
 
-  // Creates a surface mesh that covers the "wetted surface", i.e., the part of
-  // the box that would be wet if the halfspace were a fluid. This *would* yield
-  // an open box with five faces comprising ten triangles except that, for
+  // Creates a surface mesh that covers the bottom of the "wetted surface",
+  // where the wetted surface is the part of the box that would be wet if the
+  // halfspace were a fluid. The entire wetted surface *would* yield
+  // an open box with five faces comprising ten triangles but, for
   // simplicity, we'll only use the bottom face (two triangles).
   std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() const {
     std::vector<SurfaceVertex<double>> vertices;
@@ -164,7 +177,7 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
     vertices.emplace_back(Vector3<double>(-0.5, -0.5, -0.5));
     vertices.emplace_back(Vector3<double>(0.5, -0.5, -0.5));
 
-    // Create the face.
+    // Create the face comprising two triangles.
     faces.emplace_back(
         SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2));
     faces.emplace_back(
@@ -188,21 +201,13 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, VanillaTraction) {
 
   // Compute traction vectors at two opposing corners of the box.
   // Point in the world frame: .5, .5, -.5
-  VectorX<double> t1 =
-      MultibodyPlantTester::CalcGeneralizedForceFromTractionAtPoint(
-          plant(), plant_context(),
-          MultibodyPlantTester::FindGroundGeometry(plant()),
-          MultibodyPlantTester::FindBoxGeometry(plant()),
-          contact_surface(), SurfaceFaceIndex(0),
+  VectorX<double> t1 = CalcGeneralizedForceFromTractionAtPoint(
+      SurfaceFaceIndex(0),
           SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
           dissipation, mu_coulomb);
   // Point in the world frame: -.5, -.5, -.5
-  VectorX<double> t2 =
-      MultibodyPlantTester::CalcGeneralizedForceFromTractionAtPoint(
-          plant(), plant_context(),
-          MultibodyPlantTester::FindGroundGeometry(plant()),
-          MultibodyPlantTester::FindBoxGeometry(plant()),
-          contact_surface(), SurfaceFaceIndex(1),
+  VectorX<double> t2 = CalcGeneralizedForceFromTractionAtPoint(
+      SurfaceFaceIndex(1),
           SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
           dissipation, mu_coulomb);
 
@@ -230,21 +235,13 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, TractionWithFraction) {
 
   // Compute traction vectors at two opposing corners of the box.
   // Point in the world frame: .5, .5, -.5
-  VectorX<double> t1 =
-      MultibodyPlantTester::CalcGeneralizedForceFromTractionAtPoint(
-          plant(), plant_context(),
-          MultibodyPlantTester::FindGroundGeometry(plant()),
-          MultibodyPlantTester::FindBoxGeometry(plant()),
-          contact_surface(), SurfaceFaceIndex(0),
+  VectorX<double> t1 = CalcGeneralizedForceFromTractionAtPoint(
+      SurfaceFaceIndex(0),
           SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
           dissipation, mu_coulomb);
   // Point in the world frame: -.5, -.5, -.5
-  VectorX<double> t2 =
-      MultibodyPlantTester::CalcGeneralizedForceFromTractionAtPoint(
-          plant(), plant_context(),
-          MultibodyPlantTester::FindGroundGeometry(plant()),
-          MultibodyPlantTester::FindBoxGeometry(plant()),
-          contact_surface(), SurfaceFaceIndex(1),
+  VectorX<double> t2 = CalcGeneralizedForceFromTractionAtPoint(
+      SurfaceFaceIndex(1),
           SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
           dissipation, mu_coulomb);
 
@@ -287,20 +284,14 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
   plant().SetVelocities(&plant_context(), box_velocity);
 
   // Compute traction vectors at two opposing corners of the box.
-  VectorX<double> t1 =
-      MultibodyPlantTester::CalcGeneralizedForceFromTractionAtPoint(
-          plant(), plant_context(),
-          MultibodyPlantTester::FindGroundGeometry(plant()),
-          MultibodyPlantTester::FindBoxGeometry(plant()),
-          contact_surface(), SurfaceFaceIndex(0),
+  // Point in the world frame: .5, .5, -.5
+  VectorX<double> t1 = CalcGeneralizedForceFromTractionAtPoint(
+      SurfaceFaceIndex(0),
           SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
           dissipation, mu_coulomb);
-  VectorX<double> t2 =
-      MultibodyPlantTester::CalcGeneralizedForceFromTractionAtPoint(
-          plant(), plant_context(),
-          MultibodyPlantTester::FindGroundGeometry(plant()),
-          MultibodyPlantTester::FindBoxGeometry(plant()),
-          contact_surface(), SurfaceFaceIndex(1),
+  // Point in the world frame: -.5, -.5, -.5
+  VectorX<double> t2 = CalcGeneralizedForceFromTractionAtPoint(
+      SurfaceFaceIndex(1),
           SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
           dissipation, mu_coulomb);
 
