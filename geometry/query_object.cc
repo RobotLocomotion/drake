@@ -8,13 +8,29 @@ namespace drake {
 namespace geometry {
 
 template <typename T>
-QueryObject<T>::QueryObject(const QueryObject&)
-    : context_{nullptr}, scene_graph_{nullptr} {}
+QueryObject<T>::QueryObject(const QueryObject& query_object) {
+  *this = query_object;
+}
 
 template <typename T>
-QueryObject<T>& QueryObject<T>::operator=(const QueryObject<T>&) {
+QueryObject<T>& QueryObject<T>::operator=(const QueryObject<T>& query_object) {
+  if (this == &query_object) return *this;
+
   context_ = nullptr;
   scene_graph_ = nullptr;
+  state_.reset();
+
+  if (query_object.state_) {
+    // Share the underlying baked state.
+    state_ = query_object.state_;
+  } else if (query_object.context_ && query_object.scene_graph_) {
+    // Create a new baked state; make sure the source is fully updated.
+    query_object.FullPoseUpdate();
+    state_ = std::make_shared<GeometryState<T>>(query_object.geometry_state());
+  }
+  inspector_.set(state_.get());
+  // If `query_object` is invalid, then this will likewise be invalid.
+
   return *this;
 }
 
@@ -24,7 +40,7 @@ QueryObject<T>::ComputeContactSurfaces() const {
   ThrowIfDefault();
 
   // TODO(DamrongGuoy): Modify this when the cache system is in place.
-  scene_graph_->FullPoseUpdate(*context_);
+  FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.ComputeContactSurfaces();
 }
@@ -35,7 +51,7 @@ QueryObject<T>::ComputePointPairPenetration() const {
   ThrowIfDefault();
 
   // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
-  scene_graph_->FullPoseUpdate(*context_);
+  FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.ComputePointPairPenetration();
 }
@@ -47,7 +63,7 @@ QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints(
   ThrowIfDefault();
 
   // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
-  scene_graph_->FullPoseUpdate(*context_);
+  FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.ComputeSignedDistancePairwiseClosestPoints(max_distance);
 }
@@ -59,17 +75,20 @@ QueryObject<T>::ComputeSignedDistanceToPoint(
     const double threshold) const {
   ThrowIfDefault();
 
-  scene_graph_->FullPoseUpdate(*context_);
+  FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.ComputeSignedDistanceToPoint(p_WQ, threshold);
 }
 
 template <typename T>
 const GeometryState<T>& QueryObject<T>::geometry_state() const {
-  // TODO(SeanCurtis-TRI): Handle the "baked" query object case.
-  DRAKE_DEMAND(scene_graph_ != nullptr);
-  DRAKE_DEMAND(context_ != nullptr);
-  return scene_graph_->geometry_state(*context_);
+  // Some extra insurance in case some query *hadn't* called this.
+  DRAKE_ASSERT_VOID(ThrowIfDefault());
+  if (context_) {
+    return scene_graph_->geometry_state(*context_);
+  } else {
+    return *state_;
+  }
 }
 
 }  // namespace geometry
