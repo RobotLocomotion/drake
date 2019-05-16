@@ -12,8 +12,6 @@ namespace drake {
 namespace solvers {
 namespace internal {
 
-const double kInf = std::numeric_limits<double>::infinity();
-
 void CompareXentries(const Xentry& entry1, const Xentry& entry2) {
   EXPECT_EQ(entry1.block_index, entry2.block_index);
   EXPECT_EQ(entry1.row_index_in_block, entry2.row_index_in_block);
