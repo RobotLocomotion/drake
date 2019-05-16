@@ -212,7 +212,7 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, VanillaTraction) {
   const double dissipation = 0.0;
   const double mu_coulomb = 0.0;
 
-  // Compute traction vectors at the two corners of the box.
+  // Compute traction vectors at two opposing corners of the box.
   VectorX<double> t1 = MultibodyPlantTester::CalcGeneralizedTractionAtPoint(
       plant(), plant_context(),
       MultibodyPlantTester::FindGroundGeometry(plant()),
@@ -228,7 +228,9 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, VanillaTraction) {
       SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
       dissipation, mu_coulomb);
 
-  // Sum the tractions together.
+  // Sum the tractions together. We know that the field has a value of 0.5 at
+  // the two corners, so the total upward force is zero. Since these values are
+  // equal, we expect there to be no moment.
   const double eps = 10 * std::numeric_limits<double>::epsilon();
   VectorX<double> traction = t1 + t2;
   std::cout << traction << std::endl;
