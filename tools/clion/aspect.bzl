@@ -48,6 +48,7 @@ def _extra_ide_info(target, ctx, ide_info, ide_info_file, output_groups):
 # Define the relevant semantics (see intellij_info_bundled.bzl).
 semantics = struct(
     extra_ide_info = _extra_ide_info,
+    flag_hack_label = "@intellij_aspect//:flag_hack",
     tool_label = tool_label,
 )
 
