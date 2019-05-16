@@ -203,7 +203,7 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetName(GeometryId) const.  */
   const std::string& get_name(GeometryId geometry_id) const;
 
-  /** Implementation of SceneGraphInspector::GetShape().  */
+  /** Support for SceneGraphInspector::Reify().  */
   const Shape& GetShape(GeometryId id) const;
 
   /** Implementation of SceneGraphInspector::X_FG().  */
@@ -230,24 +230,13 @@ class GeometryState {
    registered frames.  */
   //@{
 
-  /** Reports the pose of the frame with the given id.
-   @param frame_id  The identifier of the queried frame.
-   @returns The pose in the world (X_WF) of the identified frame.
-   @throws std::logic_error if the frame id is not valid.  */
+  /** Implementation of QueryObject::X_WF().  */
   const Isometry3<T>& get_pose_in_world(FrameId frame_id) const;
 
-  /** Reports the pose of the geometry with the given id.
-   @param geometry_id  The identifier of the queried geometry.
-   @returns The pose in the world (X_WG) of the identified geometry.
-   @throws std::logic_error if the geometry id is not valid.  */
+  /** Implementation of QueryObject::X_WG().  */
   const Isometry3<T>& get_pose_in_world(GeometryId geometry_id) const;
 
-  /** Reports the pose of the frame with the given id relative to its parent
-   frame. If the frame's parent is the world, the value should be the same as
-   a call to get_pose_in_world().
-   @param frame_id  The identifier of the queried frame.
-   @returns The pose in the _parent_ frame (X_PF) of the identified frame.
-   @throws std::logic_error if the frame id is not valid.  */
+  /** Implementation of QueryObject::X_PF().  */
   const Isometry3<T>& get_pose_in_parent(FrameId frame_id) const;
 
   //@}
