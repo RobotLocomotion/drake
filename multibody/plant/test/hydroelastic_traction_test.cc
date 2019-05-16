@@ -1,13 +1,12 @@
-#include "drake/multibody/plant/multibody_plant.h"
-
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/geometry/scene_graph.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/surface_mesh.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -128,8 +127,8 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
     contact_surface_ = CreateContactSurface();
 
     // Set the pose and velocity for the box.
-    ASSERT_TRUE(plant.num_velocities() == 6);
-    DRAKE_DEMAND(plant.num_positions() == 7);
+    ASSERT_EQ(plant.num_velocities(), 6);
+    ASSERT_EQ(plant.num_positions(), 7);
     VectorX<double> state(plant.num_positions() + plant.num_velocities());
     state << 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
     auto& state_vector = plant_context_->get_mutable_continuous_state_vector();
