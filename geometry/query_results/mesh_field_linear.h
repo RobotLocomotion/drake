@@ -112,7 +112,7 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
    @param name    The name of the field variable.
    @param values  The field value at each vertex of the mesh.
    @param mesh    The mesh to which this MeshField refers.
-   @pre   The `mesh` is non-null, and the number of entries in values is the
+   @pre   The `mesh` is non-null, and the number of entries in `values` is the
           same as the number of vertices of the mesh.
    */
   MeshFieldLinear(std::string name, std::vector<FieldValue>&& values,
