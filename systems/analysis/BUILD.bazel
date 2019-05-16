@@ -298,6 +298,19 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "bogacki_shampine3_integrator_test",
+    # If necessary, increase test timeout to 'moderate' when run with Valgrind
+    # and/or disable in debug mode. 
+    deps = [
+        ":bogacki_shampine3_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//systems/analysis/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "explicit_euler_integrator_test",
     timeout = "moderate",
     deps = [
