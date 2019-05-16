@@ -224,7 +224,7 @@ bool BogackiShampine3Integrator<T>::DoStep(const T& h) {
   // be sized correctly. Verify that the error estimate is the correct size.
   DRAKE_DEMAND(this->get_error_estimate()->size() == xc.size());
 
-  // Set the final O(h^3) state at t₁.
+  // Set the final state (the propagated solution) at t₁.
   xc.SetFromVector(xc_t1);
   this->get_mutable_error_estimate()->SetFromVector(err_est_vec_);
 
