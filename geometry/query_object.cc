@@ -7,6 +7,8 @@
 namespace drake {
 namespace geometry {
 
+using math::RigidTransform;
+
 template <typename T>
 QueryObject<T>::QueryObject(const QueryObject& query_object) {
   *this = query_object;
@@ -34,6 +36,33 @@ QueryObject<T>& QueryObject<T>::operator=(const QueryObject<T>& query_object) {
   // If `query_object` is default, then this will likewise be default.
 
   return *this;
+}
+
+template <typename T>
+RigidTransform<T> QueryObject<T>::X_WF(FrameId id) const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return RigidTransform<T>(state.get_pose_in_world(id));
+}
+
+template <typename T>
+RigidTransform<T> QueryObject<T>::X_PF(FrameId id) const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return RigidTransform<T>(state.get_pose_in_parent(id));
+}
+
+template <typename T>
+RigidTransform<T> QueryObject<T>::X_WG(GeometryId id) const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return RigidTransform<T>(state.get_pose_in_world(id));
 }
 
 template <typename T>
