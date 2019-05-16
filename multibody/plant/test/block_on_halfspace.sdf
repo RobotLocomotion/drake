@@ -1,0 +1,101 @@
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <!-- Note: This is the accompaning SDF file for the unit test box_test.cc
+       and therefore these two files must be kept in sync.
+
+       This file defines the model for a box on a flat plane. The unit test
+       applies a horizontal force in order to verify the value of the friction
+       force. To apply this horizontal force, this file defines the model for
+       a box with two degrees of freedom (DOFs): a) one DOF for the horizontal
+       motion along the x axis and b) one DOF for the vertical motion along the
+       z axis. To this end, this model defines a small "ghost body" between
+       the box and the world so that we can attach two prismatic joints for
+       these two DOFs. The ghost body has negligible mass.
+  -->
+  <model name='box_with_pusher'>
+    <!-- A link to model the ground. Inertia values are not particularly
+         important since the ground does not move. -->
+    <link name='ground'>
+      <inertial>
+        <mass>1.0</mass>
+        <inertia>
+          <ixx>1.0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>1.0</iyy>
+          <iyz>0</iyz>
+          <izz>1.0</izz>
+        </inertia>
+      </inertial>
+      <visual name='visual'>
+        <geometry>
+          <plane>
+            <normal>0.0 0.0 1.0</normal>
+          </plane>
+        </geometry>
+      </visual>
+
+      <collision name='ground-collision'>
+        <geometry>
+          <plane>
+            <normal>0.0 0.0 1.0</normal>
+          </plane>
+        </geometry>
+
+        <surface>
+          <friction>
+            <ode>
+              <!-- MultibodyPlant's time stepping only uses the static
+                   coefficient of friction, <mu>. -->
+              <mu>1.0</mu>
+              <mu2>1.0</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+    </link>
+
+    <!-- The model for a solid box of uniform density. -->
+    <link name='box'>
+      <pose>0 0 0.5 0 0 0</pose>
+      <inertial>
+        <mass>1.0</mass>
+        <inertia>
+          <ixx>0.166666666666667</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.166666666666667</iyy>
+          <iyz>0</iyz>
+          <izz>0.166666666666667</izz>
+        </inertia>
+      </inertial>
+      <visual name='visual'>
+        <geometry>
+          <box>
+            <size>1.0 1.0 1.0</size>
+          </box>
+        </geometry>
+      </visual>
+
+      <collision name='box-collision'>
+        <geometry>
+          <box>
+            <size>1.0 1.0 1.0</size>
+          </box>
+        </geometry>
+
+        <surface>
+          <friction>
+            <ode>
+              <!-- MultibodyPlant's time stepping only uses the static
+                   coefficient of friction, <mu>. -->
+              <mu>1.0</mu>
+              <mu2>1.0</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+    </link>
+
+  </model>
+</sdf>

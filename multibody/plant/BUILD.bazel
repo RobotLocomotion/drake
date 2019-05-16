@@ -218,6 +218,18 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "hydroelastic_traction_test",
+    data = [
+        "test/block_on_halfspace.sdf",
+    ],
+    deps = [
+        ":plant",
+        "//common:find_resource",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
     name = "multibody_plant_test",
     data = [
         "test/split_pendulum.sdf",

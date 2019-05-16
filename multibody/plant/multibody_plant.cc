@@ -802,9 +802,12 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
     if (R_WC_set != nullptr)
       R_WC_set->push_back(R_WC);
 
-    Jn.row(icontact)         = Jv_WC.row(0);
-    Jt.row(2 * icontact)     = Jv_WC.row(1);
-    Jt.row(2 * icontact + 1) = Jv_WC.row(2);
+    // TODO(amcastro-tri) Fix the definition of Jt so that it is consistent
+    // with the tangent directions in the contact frame (simply changing these
+    // to be consistent causes various unit tests to break).
+    Jn.row(icontact)         = Jv_WC.row(2);
+    Jt.row(2 * icontact)     = -Jv_WC.row(0);
+    Jt.row(2 * icontact + 1) = -Jv_WC.row(1);
   }
 }
 
@@ -812,8 +815,7 @@ template<typename T>
 void MultibodyPlant<T>::CalcContactJacobian(
     const systems::Context<T>& context,
     GeometryId geometryA_id, GeometryId geometryB_id,
-    const Vector3<T>& p_WC, const Vector3<T>& nhat_BA_W,
-    MatrixX<T>* J_WC,
+    const Vector3<T>& p_WC, const Vector3<T>& nhat_BA_W, MatrixX<T>* J_WC,
     RotationMatrix<T>* R_WC) const {
   DRAKE_DEMAND(R_WC);
   DRAKE_DEMAND(J_WC);
@@ -824,37 +826,26 @@ void MultibodyPlant<T>::CalcContactJacobian(
   const Body<T>& bodyB = internal_tree().get_body(bodyB_index);
 
   // Geometric Jacobian for the velocity of the contact point C as moving with
-  // body A, s.t.: v_WAc = Jv_WAc * v
+  // body A, s.t.: v_WC = Jv_WC+A * v
   // where v is the vector of generalized velocities.
-  MatrixX<T> Jv_WAc(3, this->num_velocities());
+  MatrixX<T> Jv_WC_A(3, this->num_velocities());
   internal_tree().CalcPointsGeometricJacobianExpressedInWorld(
-      context, bodyA.body_frame(), p_WC, &Jv_WAc);
+      context, bodyA.body_frame(), p_WC, &Jv_WC_A);
 
   // Geometric Jacobian for the velocity of the contact point C as moving with
-  // body B, s.t.: v_WBc = Jv_WBc * v.
-  MatrixX<T> Jv_WBc(3, this->num_velocities());
+  // body B, s.t.: v_WC = Jv_WC_B * v.
+  MatrixX<T> Jv_WC_B(3, this->num_velocities());
   internal_tree().CalcPointsGeometricJacobianExpressedInWorld(
-      context, bodyB.body_frame(), p_WC, &Jv_WBc);
+      context, bodyB.body_frame(), p_WC, &Jv_WC_B);
 
-  // Computation of the normal separation velocities Jacobian Jn:
-  //
-  // The velocity of Bc relative to Ac is
-  //   v_AcBc_W = v_WBc - v_WAc.
-  // From where the separation velocity is computed as
-  //   vn = -v_AcBc_W.dot(nhat_BA_W) = -nhat_BA_Wᵀ⋅v_AcBc_W
-  // where the negative sign stems from the sign convention for vn and xdot.
-  // This can be written in terms of the Jacobians as
-  //   vn = -nhat_BA_Wᵀ⋅(Jv_WBc - Jv_WAc)⋅v
-
-  // Computation of the tangential velocities Jacobian Jt:
-  //
   // Compute the orientation of a contact frame C at the contact point such
   // that the z-axis Cz equals to nhat_BA_W. The tangent vectors are
   // arbitrary, with the only requirement being that they form a valid right
   // handed basis with nhat_BA.
-  *R_WC = RotationMatrix<T>(math::ComputeBasisFromAxis(0, nhat_BA_W));
+  *R_WC = RotationMatrix<T>(math::ComputeBasisFromAxis(2, nhat_BA_W));
 
-  *J_WC = R_WC->transpose().matrix() * (Jv_WAc - Jv_WBc);
+  // Compute the velocity of Body A relative to Body B at the contact point.
+  *J_WC = R_WC->matrix().transpose() * (Jv_WC_A - Jv_WC_B);
 }
 
 template<typename T>
@@ -1294,7 +1285,7 @@ VectorX<T> MultibodyPlant<T>::CalcGeneralizedTractionAtPoint(
     GeometryId geometryN_id, const ContactSurface<T>& surface,
     geometry::SurfaceFaceIndex face_index,
     const typename geometry::SurfaceMesh<T>::Barycentric&
-        r_barycentric_M) const {
+        r_barycentric_M, double dissipation, double mu_coulomb) const {
   const VectorX<T>& v = GetVelocities(context);
 
   // Get the body corresponding to geometryM_id.
@@ -1331,8 +1322,8 @@ VectorX<T> MultibodyPlant<T>::CalcGeneralizedTractionAtPoint(
 
   // Get the normal and tangential components of the Jacobian matrix.
   DRAKE_ASSERT(J_WC.rows() == 3);
-  const Eigen::Ref<const MatrixX<T>> Jn = J_WC.topRows(1);
-  const Eigen::Ref<const MatrixX<T>> Jst = J_WC.bottomRows(2);
+  const Eigen::Ref<const MatrixX<T>> Jn = J_WC.bottomRows(1);
+  const Eigen::Ref<const MatrixX<T>> Jst = J_WC.topRows(2);
 
   // Get the relative velocity at the given point between the bodies that M and
   // N are attached to.
@@ -1342,10 +1333,10 @@ VectorX<T> MultibodyPlant<T>::CalcGeneralizedTractionAtPoint(
   // positive value indicates that bodies are separating at r while a negative
   // value indicates that bodies are approaching at r.
   const T rdot_nhat_MN = rdot_MN_C(0);
-  const double c = 1.0;
 
-  // TODO(edrumwri): Use Hunt/Crossley model instead.
-  // Determine the contribution from dissipation.
+  // Get the damping value (c) from the compliant model dissipation (α).
+  // Equation (16) from [Hunt 1975] yields c = 3/2 * α * E_MN.
+  const T c = dissipation * 1.5 * E_MN;
 
   // Determine the normal pressure at the point.
   using std::max;
@@ -1366,15 +1357,12 @@ VectorX<T> MultibodyPlant<T>::CalcGeneralizedTractionAtPoint(
     // Get the slip speed.
     const T norm_rdot_tan = sqrt(squared_rdot_tan);
 
-    // TODO(edrumwri) Obtain mu from material properties.
-    const double mu = 0.1;
-
     // Get the direction of slip.
     const Vector2<T> rdot_hat_tan_MN = rdot_MN_tan / norm_rdot_tan;
 
     // Compute the frictional traction.
     return Jn.transpose() * normal_pressure + Jst.transpose() * (
-        -rdot_hat_tan_MN * mu * normal_pressure * 2.0/M_PI *
+        -rdot_hat_tan_MN * mu_coulomb * normal_pressure * 2.0 / M_PI *
             atan(squared_vslip_tol / squared_vslip_tol));
   } else {
     // Only normal traction (no frictional traction).

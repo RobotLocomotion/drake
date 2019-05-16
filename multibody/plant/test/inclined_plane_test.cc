@@ -45,7 +45,7 @@ class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
     // penetration allowance and the stiction tolerance go to zero.
     // Since the discrete system uses an implicit scheme, we can use much
     // tighter contact parameters than those used with a continuous plant model.
-    penetration_allowance_ = time_stepping_ ? 1.0e-6 : 1.0e-3;  // (meters)
+    penetration_allowance_ = time_stepping_ ? 1.0e-9 : 1.0e-3;  // (meters)
     stiction_tolerance_ = time_stepping_ ? 1.0e-5 : 1.0e-3;     // (m/s)
 
     // Relative tolerance (unitless) used to verify the numerically computed

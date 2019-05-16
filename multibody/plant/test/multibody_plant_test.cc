@@ -1747,20 +1747,21 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
               context_on_T, plant_on_T.get_body(bodyB_index));
 
       const Vector3<T> p_WCa = pair.p_WCa.cast<T>();
+      const Vector3<T> p_WCb = pair.p_WCb.cast<T>();
+      const Vector3<T> p_WC = (p_WCa + p_WCb) * 0.5;
 
       const Vector3<T> p_WAo = X_WA.translation();
-      const Vector3<T> p_AoCa_W = p_WCa - p_WAo;
-      const Vector3<T> v_WCa = V_WA.Shift(p_AoCa_W).translational();
+      const Vector3<T> p_AoC_W = p_WC - p_WAo;
+      const Vector3<T> v_WC_A = V_WA.Shift(p_AoC_W).translational();
 
-      const Vector3<T> p_WCb = pair.p_WCb.cast<T>();
       const Vector3<T> p_WBo = X_WB.translation();
-      const Vector3<T> p_BoCb_W = p_WCb - p_WBo;
-      const Vector3<T> v_WCb = V_WB.Shift(p_BoCb_W).translational();
+      const Vector3<T> p_BoC_W = p_WC - p_WBo;
+      const Vector3<T> v_WC_B = V_WB.Shift(p_BoC_W).translational();
 
       // From the relative velocity of B in A, compute the normal separation
       // velocity vn (vn > 0 if bodies are moving apart)
       const Vector3<T> nhat_BA_W = pair.nhat_BA_W.cast<T>();
-      vn(icontact++) = -nhat_BA_W.dot(v_WCb - v_WCa);
+      vn(icontact++) = -nhat_BA_W.dot(v_WC_B - v_WC_A);
     }
     return vn;
   }
@@ -1799,14 +1800,16 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
               context_on_T, plant_on_T.get_body(bodyB_index));
 
       const Vector3<T> p_WCa = pair.p_WCa.cast<T>();
-      const Vector3<T> p_WAo = X_WA.translation();
-      const Vector3<T> p_AoCa_W = p_WCa - p_WAo;
-      const Vector3<T> v_WCa = V_WA.Shift(p_AoCa_W).translational();
-
       const Vector3<T> p_WCb = pair.p_WCb.cast<T>();
+      const Vector3<T> p_WC = (p_WCa + p_WCb) * 0.5;
+
+      const Vector3<T> p_WAo = X_WA.translation();
+      const Vector3<T> p_AoC_W = p_WC - p_WAo;
+      const Vector3<T> v_WC_A = V_WA.Shift(p_AoC_W).translational();
+
       const Vector3<T> p_WBo = X_WB.translation();
-      const Vector3<T> p_BoCb_W = p_WCb - p_WBo;
-      const Vector3<T> v_WCb = V_WB.Shift(p_BoCb_W).translational();
+      const Vector3<T> p_BoC_W = p_WC - p_WBo;
+      const Vector3<T> v_WC_B = V_WB.Shift(p_BoC_W).translational();
 
       // The columns of R_WC (the orientation of contact frame C in the world),
       // contains the versors of C's basis, expressed in the world frame.
@@ -1818,8 +1821,8 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
       // Compute the relative velocity of B in A and obtain its components
       // in the contact frame C. The tangential velocities correspond to the
       // x and y components in this frame.
-      vt(2 * icontact)     = that1_W.dot(v_WCb - v_WCa);
-      vt(2 * icontact + 1) = that2_W.dot(v_WCb - v_WCa);
+      vt(2 * icontact)     = that1_W.dot(v_WC_B - v_WC_A);
+      vt(2 * icontact + 1) = that2_W.dot(v_WC_B - v_WC_A);
 
       icontact++;
     }
