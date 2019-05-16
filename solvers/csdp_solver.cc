@@ -696,6 +696,26 @@ SolutionResult ConvertCsdpReturnToSolutionResult(int csdp_ret) {
   }
 }
 
+void SetProgramSolutionFromX(const SdpaFreeFormat& sdpa_free_format,
+                             const csdp::blockmatrix& X,
+                             Eigen::VectorXd* prog_sol) {
+  for (const auto& item : sdpa_free_format.map_prog_var_index_to_Xentry()) {
+    const int var_index = item.first;
+    const Xentry& X_entry = item.second;
+    if (X.blocks[X_entry.block_index + 1].blockcategory == csdp::MATRIX) {
+      (*prog_sol)(var_index) = X.blocks[X_entry.block_index + 1].data.mat[ijtok(
+          X_entry.row_index_in_block + 1, X_entry.column_index_in_block + 1,
+          X.blocks[X_entry.block_index + 1].blocksize)];
+    } else if (X.blocks[X_entry.block_index + 1].blockcategory == csdp::DIAG) {
+      (*prog_sol)(var_index) = X.blocks[X_entry.block_index + 1]
+                                   .data.vec[X_entry.row_index_in_block + 1];
+    } else {
+      throw std::runtime_error(
+          "SolveProgramWithNoFreeVariables(): unsupported block type.");
+    }
+  }
+}
+
 void SolveProgramWithNoFreeVariables(const MathematicalProgram& prog,
                                      const SdpaFreeFormat& sdpa_free_format,
                                      MathematicalProgramResult* result) {
@@ -728,22 +748,8 @@ void SolveProgramWithNoFreeVariables(const MathematicalProgram& prog,
   result->set_optimal_cost(-pobj);
   result->set_solution_result(ConvertCsdpReturnToSolutionResult(ret));
   Eigen::VectorXd prog_sol(prog.num_vars());
-  for (int i = 0; i < prog.num_vars(); ++i) {
-    const Xentry& X_entry =
-        sdpa_free_format.map_prog_var_index_to_Xentry().at(i);
-    if (X.blocks[X_entry.block_index + 1].blockcategory == csdp::MATRIX) {
-      prog_sol(i) = X.blocks[X_entry.block_index + 1].data.mat[ijtok(
-          X_entry.row_index_in_block + 1, X_entry.column_index_in_block + 1,
-          X.blocks[X_entry.block_index + 1].blocksize)];
-    } else if (X.blocks[X_entry.block_index + 1].blockcategory == csdp::DIAG) {
-      prog_sol(i) = X.blocks[X_entry.block_index + 1]
-                        .data.vec[X_entry.row_index_in_block + 1];
-    } else {
-      throw std::runtime_error(
-          "SolveProgramWithNoFreeVariables(): unsupported block type.");
-    }
-    result->set_x_val(prog_sol);
-  }
+  SetProgramSolutionFromX(sdpa_free_format, X, &prog_sol);
+  result->set_x_val(prog_sol);
 
   csdp::free_prob(sdpa_free_format.num_X_rows(), sdpa_free_format.g().rows(), C,
                   rhs, constraints, X, y, Z);
