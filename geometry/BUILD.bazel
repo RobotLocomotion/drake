@@ -349,7 +349,7 @@ drake_cc_googletest(
         ":geometry_frame",
         ":geometry_instance",
         ":scene_graph",
-        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities",
     ],
 )
 
