@@ -22,12 +22,17 @@ CompassGait<T>::CompassGait()
   bool left_stance = true;
   this->DeclareAbstractState(AbstractValue::Make(left_stance));
 
+  // Hip torque input.
+  this->DeclareVectorInputPort("hip_torque", systems::BasicVector<T>(1));
+
   // The minimal state of the system.
-  this->DeclareVectorOutputPort(CompassGaitContinuousState<T>(),
+  this->DeclareVectorOutputPort("minimal_state",
+                                CompassGaitContinuousState<T>(),
                                 &CompassGait::MinimalStateOut);
 
   // The floating-base (RPY) state of the system (useful for visualization).
-  this->DeclareVectorOutputPort(systems::BasicVector<T>(14),
+  this->DeclareVectorOutputPort("floating_base_state",
+                                systems::BasicVector<T>(14),
                                 &CompassGait::FloatingBaseStateOut);
 
   this->DeclareNumericParameter(CompassGaitParams<T>());
@@ -290,11 +295,17 @@ void CompassGait<T>::DoCalcTimeDerivatives(
     systems::ContinuousState<T>* derivatives) const {
   const CompassGaitContinuousState<T>& cg_state = get_continuous_state(context);
 
-  Matrix2<T> M = MassMatrix(context);
-  Vector2<T> bias = DynamicsBiasTerm(context);
+  const Matrix2<T> M = MassMatrix(context);
+  const Vector2<T> bias = DynamicsBiasTerm(context);
+  const Vector2<T> B(-1, 1);
+  const Vector1<T> u = this->get_input_port(0).Eval(context);
 
   Vector4<T> xdot;
-  xdot << cg_state.stancedot(), cg_state.swingdot(), -M.inverse() * bias;
+  // clang-format off
+  xdot << cg_state.stancedot(),
+          cg_state.swingdot(),
+          M.inverse() * (B*u - bias);
+  // clang-format on
   derivatives->SetFromVector(xdot);
 }
 
