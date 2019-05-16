@@ -1,4 +1,4 @@
-#include "drake/systems/analysis/runge_kutta3_integrator.h"
+#include "drake/systems/analysis/bogacki_shampine3_integrator.h"
 
 #include <cmath>
 
@@ -18,13 +18,13 @@ namespace drake {
 namespace systems {
 namespace analysis_test {
 
-typedef ::testing::Types<RungeKutta3Integrator<double>> Types;
+typedef ::testing::Types<BogackiShampine3Integrator<double>> Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, ExplicitErrorControlledIntegratorTest, Types);
 INSTANTIATE_TYPED_TEST_CASE_P(My, PleidesTest, Types);
 
-// A testing fixture for RK3 integrators, providing a simple
+// A testing fixture for BS3 integrators, providing a simple
 // free body plant with closed form solutions to test against.
-class RK3IntegratorTest : public ::testing::Test {
+class BS3IntegratorTest : public ::testing::Test {
  protected:
   void SetUp() {
     plant_ = std::make_unique<multibody::MultibodyPlant<double>>();
@@ -66,24 +66,24 @@ class RK3IntegratorTest : public ::testing::Test {
 };
 
 // Tests accuracy for integrating the cubic system (with the state at time t
-// corresponding to f(t) ≡ t³ + t² + 12t + C) over t ∈ [0, 1]. RK3 is a third
+// corresponding to f(t) ≡ t³ + t² + 12t + C) over t ∈ [0, 1]. BS3 is a third
 // order integrator, meaning that it uses the Taylor Series expansion:
 // f(t+h) ≈ f(t) + hf'(t) + ½h²f''(t) + ⅙h³f'''(t) + O(h⁴)
 // The formula above indicates that the approximation error will be zero if
 // f''''(t) = 0, which is true for the cubic equation.
-GTEST_TEST(RK3IntegratorErrorEstimatorTest, CubicTest) {
+GTEST_TEST(BS3IntegratorErrorEstimatorTest, CubicTest) {
   CubicScalarSystem cubic;
   auto cubic_context = cubic.CreateDefaultContext();
   const double C = cubic.Evaluate(0);
   cubic_context->SetTime(0.0);
   cubic_context->get_mutable_continuous_state_vector()[0] = C;
 
-  RungeKutta3Integrator<double> rk3(cubic, cubic_context.get());
+  BogackiShampine3Integrator<double> bs3(cubic, cubic_context.get());
   const double t_final = 1.0;
-  rk3.set_maximum_step_size(t_final);
-  rk3.set_fixed_step_mode(true);
-  rk3.Initialize();
-  ASSERT_TRUE(rk3.IntegrateWithSingleFixedStepToTime(t_final));
+  bs3.set_maximum_step_size(t_final);
+  bs3.set_fixed_step_mode(true);
+  bs3.Initialize();
+  ASSERT_TRUE(bs3.IntegrateWithSingleFixedStepToTime(t_final));
 
   // Check for near-exact 3rd-order results. The measure of accuracy is a
   // tolerance that scales with expected answer at t_final.
@@ -102,16 +102,16 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, CubicTest) {
 
   // First obtain the error estimate using a single step of h.
   const double err_est_h =
-      rk3.get_error_estimate()->get_vector().GetAtIndex(0);
+      bs3.get_error_estimate()->get_vector().GetAtIndex(0);
 
   // Now obtain the error estimate using two half steps of h/2.
   cubic_context->SetTime(0.0);
   cubic_context->get_mutable_continuous_state_vector()[0] = C;
-  rk3.Initialize();
-  ASSERT_TRUE(rk3.IntegrateWithSingleFixedStepToTime(t_final/2));
-  ASSERT_TRUE(rk3.IntegrateWithSingleFixedStepToTime(t_final));
+  bs3.Initialize();
+  ASSERT_TRUE(bs3.IntegrateWithSingleFixedStepToTime(t_final/2));
+  ASSERT_TRUE(bs3.IntegrateWithSingleFixedStepToTime(t_final));
   const double err_est_2h_2 =
-      rk3.get_error_estimate()->get_vector().GetAtIndex(0);
+      bs3.get_error_estimate()->get_vector().GetAtIndex(0);
 
   // Check that the 2nd-order error estimate for a full-step is less than
   // K*8 times larger than then 2nd-order error estimate for 2 half-steps;
@@ -125,28 +125,28 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, CubicTest) {
 
 // Tests accuracy for integrating the quadratic system (with the state at time t
 // corresponding to f(t) ≡ 4t² + 4t + C, where C is the initial state) over
-// t ∈ [0, 1]. The error estimator from RK3 is
+// t ∈ [0, 1]. The error estimator from BS3 is
 // second order, meaning that it uses the Taylor Series expansion:
 // f(t+h) ≈ f(t) + hf'(t) + ½h²f''(t) + O(h³)
 // This formula indicates that the approximation error will be zero if
 // f'''(t) = 0, which is true for the quadratic equation. We check that the
 // error estimator gives a perfect error estimate for this function.
-GTEST_TEST(RK3IntegratorErrorEstimatorTest, QuadraticTest) {
+GTEST_TEST(BS3IntegratorErrorEstimatorTest, QuadraticTest) {
   QuadraticScalarSystem quadratic;
   auto quadratic_context = quadratic.CreateDefaultContext();
   const double C = quadratic.Evaluate(0);
   quadratic_context->SetTime(0.0);
   quadratic_context->get_mutable_continuous_state_vector()[0] = C;
 
-  RungeKutta3Integrator<double> rk3(quadratic, quadratic_context.get());
+  BogackiShampine3Integrator<double> bs3(quadratic, quadratic_context.get());
   const double t_final = 1.0;
-  rk3.set_maximum_step_size(t_final);
-  rk3.set_fixed_step_mode(true);
-  rk3.Initialize();
-  ASSERT_TRUE(rk3.IntegrateWithSingleFixedStepToTime(t_final));
+  bs3.set_maximum_step_size(t_final);
+  bs3.set_fixed_step_mode(true);
+  bs3.Initialize();
+  ASSERT_TRUE(bs3.IntegrateWithSingleFixedStepToTime(t_final));
 
   const double err_est =
-      rk3.get_error_estimate()->get_vector().GetAtIndex(0);
+      bs3.get_error_estimate()->get_vector().GetAtIndex(0);
 
   // Note the very tight tolerance used, which will likely not hold for
   // arbitrary values of C, t_final, or polynomial coefficients.
@@ -155,7 +155,7 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, QuadraticTest) {
 
 // Tests accuracy when generalized velocity is not the time derivative of
 // generalized configuration against an RK2 integrator.
-TEST_F(RK3IntegratorTest, ComparisonWithRK2) {
+TEST_F(BS3IntegratorTest, ComparisonWithRK2) {
   // Integrate for ten thousand steps using a RK2 integrator with
   // small step size.
   const double dt = 5e-5;
@@ -168,42 +168,44 @@ TEST_F(RK3IntegratorTest, ComparisonWithRK2) {
   for (int i = 1; i <= n_steps; ++i)
     ASSERT_TRUE(rk2.IntegrateWithSingleFixedStepToTime(i * dt));
 
-  // Re-integrate with RK3.
-  std::unique_ptr<Context<double>> rk3_context = MakePlantContext();
-  RungeKutta3Integrator<double> rk3(*plant_, rk3_context.get());
-  rk3.set_maximum_step_size(0.1);
-  rk3.set_target_accuracy(1e-6);
-  rk3.Initialize();
+  // Re-integrate with BS3.
+  std::unique_ptr<Context<double>> bs3_context = MakePlantContext();
+  BogackiShampine3Integrator<double> bs3(*plant_, bs3_context.get());
+  bs3.set_maximum_step_size(0.1);
+  bs3.set_target_accuracy(1e-6);
+  bs3.Initialize();
 
   // Verify that IntegrateWithMultipleSteps works.
   const double tol = std::numeric_limits<double>::epsilon();
-  rk3.IntegrateWithMultipleStepsToTime(t_final);
-  EXPECT_NEAR(rk3_context->get_time(), t_final, tol);
+  bs3.IntegrateWithMultipleStepsToTime(t_final);
+  EXPECT_NEAR(bs3_context->get_time(), t_final, tol);
 
   // Verify that the final states are "close".
   const VectorBase<double>& x_final_rk2 =
       rk2_context->get_continuous_state_vector();
 
-  const VectorBase<double>& x_final_rk3 =
-      rk3_context->get_continuous_state_vector();
+  const VectorBase<double>& x_final_bs3 =
+      bs3_context->get_continuous_state_vector();
 
-  const double close_tol = 2e-6;
+  // Note that this tolerance is 3x coarser than that used for the same
+  // test in runge_kutta3_integrator_test.cc.
+  const double close_tol = 8e-6;
   for (int i = 0; i < x_final_rk2.size(); ++i)
-    EXPECT_NEAR(x_final_rk2[i], x_final_rk3[i], close_tol);
+    EXPECT_NEAR(x_final_rk2[i], x_final_bs3[i], close_tol);
 }
 
 // Tests accuracy of integrator's dense output.
-TEST_F(RK3IntegratorTest, DenseOutputAccuracy) {
+TEST_F(BS3IntegratorTest, DenseOutputAccuracy) {
   std::unique_ptr<Context<double>> context = MakePlantContext();
 
-  RungeKutta3Integrator<double> rk3(*plant_, context.get());
-  rk3.set_maximum_step_size(0.1);
-  rk3.set_target_accuracy(1e-6);
-  rk3.Initialize();
+  BogackiShampine3Integrator<double> bs3(*plant_, context.get());
+  bs3.set_maximum_step_size(0.1);
+  bs3.set_target_accuracy(1e-6);
+  bs3.Initialize();
 
   // Start a dense integration i.e. one that generates a dense
   // output for the state function.
-  rk3.StartDenseIntegration();
+  bs3.StartDenseIntegration();
 
   const double t_final = 1.0;
   // Arbitrary step, valid as long as it doesn't match the same
@@ -213,26 +215,26 @@ TEST_F(RK3IntegratorTest, DenseOutputAccuracy) {
   const int n_steps = t_final / dt;
   for (int i = 1; i < n_steps; ++i) {
     // Integrate the whole step.
-    rk3.IntegrateWithMultipleStepsToTime(i * dt);
+    bs3.IntegrateWithMultipleStepsToTime(i * dt);
 
     // Check solution.
     EXPECT_TRUE(CompareMatrices(
-        rk3.get_dense_output()->Evaluate(context->get_time()),
+        bs3.get_dense_output()->Evaluate(context->get_time()),
         plant_->GetPositionsAndVelocities(*context),
-        rk3.get_accuracy_in_use(),
+        bs3.get_accuracy_in_use(),
         MatrixCompareType::relative));
   }
 
   // Stop undergoing dense integration.
-  std::unique_ptr<DenseOutput<double>> rk3_dense_output =
-      rk3.StopDenseIntegration();
-  EXPECT_FALSE(rk3.get_dense_output());
+  std::unique_ptr<DenseOutput<double>> bs3_dense_output =
+      bs3.StopDenseIntegration();
+  EXPECT_FALSE(bs3.get_dense_output());
 
   // Integrate one more step.
-  rk3.IntegrateWithMultipleStepsToTime(t_final);
+  bs3.IntegrateWithMultipleStepsToTime(t_final);
 
   // Verify that the dense output was not updated.
-  EXPECT_LT(rk3_dense_output->end_time(), context->get_time());
+  EXPECT_LT(bs3_dense_output->end_time(), context->get_time());
 }
 
 }  // namespace analysis_test
