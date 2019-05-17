@@ -65,6 +65,10 @@ cc_library(
         "include/index.h",
         "include/parameters.h",
     ],
+    copts = [
+        "-Wno-unknown-pragmas",
+        "-Wno-unused-variable",
+    ],
     includes = ["include"],
     linkstatic = 1,
     linkopts = select({
