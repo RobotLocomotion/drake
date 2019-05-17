@@ -503,6 +503,8 @@ TEST_F(SDPwithOverlappingVariables,
   CheckSparseblock(*blockptr, block_entries, 1, 2, 4);
   EXPECT_EQ(blockptr->next, nullptr);
   EXPECT_EQ(rhs_csdp[4], 1);
+
+  FreeCsdpProblemData(4, C_csdp, rhs_csdp, constraints);
 }
 
 TEST_F(CsdpDocExample, GenerateCsdpProblemDataWithoutFreeVariables) {
@@ -549,6 +551,8 @@ TEST_F(CsdpDocExample, GenerateCsdpProblemDataWithoutFreeVariables) {
   EXPECT_EQ(blockptr->next, nullptr);
   block_entries.emplace_back(1, 1, 1);
   EXPECT_EQ(rhs_csdp[2], 2);
+
+  FreeCsdpProblemData(2, C_csdp, rhs_csdp, constraints);
 }
 
 TEST_F(TrivialSDP1, GenerateCsdpProblemDataWithoutFreeVariables) {
@@ -593,6 +597,8 @@ TEST_F(TrivialSDP1, GenerateCsdpProblemDataWithoutFreeVariables) {
   CheckSparseblock(*blockptr, block_entries, 2, 1, 2);
   EXPECT_EQ(blockptr->next, nullptr);
   EXPECT_EQ(rhs_csdp[2], 0);
+
+  FreeCsdpProblemData(2, C_csdp, rhs_csdp, constraints);
 }
 
 TEST_F(SDPwithOverlappingVariables, Solve) {

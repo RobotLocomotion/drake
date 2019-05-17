@@ -754,6 +754,30 @@ void SolveProgramWithNoFreeVariables(const MathematicalProgram& prog,
   csdp::free_prob(sdpa_free_format.num_X_rows(), sdpa_free_format.g().rows(), C,
                   rhs, constraints, X, y, Z);
 }
+
+void FreeCsdpProblemData(int num_constraints, csdp::blockmatrix C_csdp,
+                         double* rhs_csdp,
+                         csdp::constraintmatrix* constraints) {
+  // This function is copied from the source code in csdp/lib/freeprob.c
+  free(rhs_csdp);
+  csdp::free_mat(C_csdp);
+  csdp::sparseblock* ptr;
+  csdp::sparseblock* oldptr;
+  if (constraints != nullptr) {
+    for (int i = 1; i <= num_constraints; ++i) {
+      ptr = constraints[i].blocks;
+      while (ptr != nullptr) {
+        free(ptr->entries);
+        free(ptr->iindices);
+        free(ptr->jindices);
+        oldptr = ptr;
+        ptr = ptr->next;
+        free(oldptr);
+      }
+    }
+    free(constraints);
+  }
+}
 }  // namespace internal
 
 void CsdpSolver::DoSolve(const MathematicalProgram& prog,

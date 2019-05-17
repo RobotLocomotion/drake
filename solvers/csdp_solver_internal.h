@@ -215,6 +215,9 @@ void ConvertSparseMatrixFormattToCsdpProblemData(
 void ConvertCsdpBlockMatrixtoEigen(const csdp::blockmatrix& X_csdp,
                                    Eigen::SparseMatrix<double>* X);
 
+void FreeCsdpProblemData(int num_constraints, csdp::blockmatrix C_csdp,
+                         double* rhs_csdp, csdp::constraintmatrix* constraints);
+
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake
