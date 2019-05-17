@@ -1,0 +1,58 @@
+# -*- yaml -*-
+---
+# distances are meters; angles are degrees.
+maliput_multilane_builder:
+  id: "branch_and_merge"
+  computation_policy: "prefer-accuracy"
+  scale_length: 1
+  lane_width: 6
+  left_shoulder: 5
+  right_shoulder: 5
+  elevation_bounds: [0, 5]
+  linear_tolerance: .01
+  angular_tolerance: 0.5
+  points:
+    start:
+      xypoint: [0, 0, 0]  # x,y, heading
+      zpoint: [0, 0, 0, 0]  # z, z_dot, theta (superelevation), theta_dot
+  connections:
+    0:
+      lanes: [2, 0, 0]  # num_lanes, ref_lane, r_ref
+      start: ["ref", "points.start.forward"]
+      length: 100
+      z_end: ["ref", [0, 0, 0]]
+    1.1:
+      lanes: [1, 0, 0]
+      start: ["lane.0", "connections.0.end.1.forward"]
+      arc: [50, 90]  # radius, d_theta
+      z_end: ["lane.0", [0, 0, 0]]
+    1.2:
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.1.1.end.ref.forward"]
+      arc: [50, -180]
+      z_end: ["ref", [0, 0, 0]]
+    1.3:
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.1.2.end.ref.forward"]
+      arc: [50, 90]
+      z_end: ["ref", [0, 0, 0]]
+    2.1:
+      lanes: [1, 0, 0]
+      start: ["lane.0", "connections.0.end.0.forward"]
+      arc: [50, -90]
+      z_end: ["lane.0", [0, 0, 0]]
+    2.2:
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.2.1.end.ref.forward"]
+      arc: [50, 180]
+      z_end: ["ref", [0, 0, 0]]
+    2.3:
+      lanes: [1, 0, 0]
+      start: ["ref", "connections.2.2.end.ref.forward"]
+      arc: [50, -90]
+      z_end: ["ref", [0, 0, 0]]
+    3:
+      lanes: [2, 0, 0]
+      start: ["lane.0", "connections.2.3.end.0.forward"]
+      length: 100
+      z_end: ["lane.0", [0, 0, 0]]
