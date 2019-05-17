@@ -188,7 +188,7 @@ void Penalty(const MultibodyPlant<double>& plant,
   // nhat_BA_W whenever d ≠ 0, we use ∂d/∂q = nhat_BA_W′ * ∂p_BCa_B/∂q. This
   // allows us to compute a gradient at d = 0 in certain cases (See
   // geometry::SignedDistancePair for details).
-  Eigen::Matrix<double, 3, Eigen::Dynamic> Jq_v_BCa_W(6, plant.num_positions());
+  Eigen::Matrix<double, 3, Eigen::Dynamic> Jq_v_BCa_W(3, plant.num_positions());
   plant.CalcJacobianTranslationalVelocity(context, JacobianWrtVariable::kQDot,
                                           frameA, p_ACa, frameB,
                                           plant.world_frame(), &Jq_v_BCa_W);
