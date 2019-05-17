@@ -57,7 +57,7 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
   void CheckConstraintEvalLargerThanThresholdDistance(
       const MinimumDistanceConstraint& constraint, const Eigen::Vector3d& p_WB1,
       const Eigen::Vector3d p_WB2) const {
-    // distance larger than minimum_distance;
+    // Distance larger than threshold_distance;
     // The penalty should be 0, so is the gradient.
     const Eigen::Quaterniond sphere1_quaternion(1, 0, 0, 0);
     const Eigen::Quaterniond sphere2_quaternion(1, 0, 0, 0);

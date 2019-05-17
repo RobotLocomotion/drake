@@ -184,15 +184,20 @@ class InverseKinematics {
   // TODO(hongkai.dai): remove this documentation.
   /**
    * Adds the constraint that the pairwise distance between objects should be no
-   * smaller than a positive threshold. We consider the distance between pairs
+   * smaller than `minimum_distance`. We consider the distance between pairs
    * of
    * 1. Anchored (static) object and a dynamic object.
    * 2. A dynamic object and another dynamic object, if one is not the parent
    * link of the other.
+   * @param minimum_distance Minimum allowable distance between any candidate
+   * pair of collision geometries.
+   * @param threshold_distance The distance below which a collision pair is
+   * assigned a non-zero penalty value.
    * @see MinimumDistanceConstraint for more details on the constraint
    * formulation.
    * @throws invalid_argument if the plant does not register its geometry
    * with a SceneGraph.
+   * @throws invalid_argument if threshold_distance ≤ minimum_distance.
    */
   solvers::Binding<solvers::Constraint> AddMinimumDistanceConstraint(
       double minimum_distance, double threshold_distance = 1);

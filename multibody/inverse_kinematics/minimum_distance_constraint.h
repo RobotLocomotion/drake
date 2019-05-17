@@ -75,7 +75,8 @@ class MinimumDistanceConstraint : public solvers::Constraint {
   @param minimum_distance The minimum value of the signed distance between
   any admissible pairs of objects.
   @param penalty_type The penalty function formulation.
-  @param threshold_distance The penalty function formulation.
+  @param threshold_distance The distance below which a collision pair is
+  assigned a non-zero penalty value.
   @pre The MultibodyPlant passed in the constructor of InverseKinematics has
   registered its geometry with a SceneGraph object already.
   @pre minimum_distance > 0.
