@@ -167,10 +167,18 @@ TEST_F(LinearProgram1, TestSdpaFreeFormatConstructor) {
   CompareEntryInX(dut.map_prog_var_index_to_entry_in_X().at(5),
                   EntryInX(0, 7, 7, 0));
   EXPECT_EQ(dut.map_prog_var_index_to_s_index().size(), 4);
-  EXPECT_EQ(dut.map_prog_var_index_to_s_index().at(2), 0);
-  EXPECT_EQ(dut.map_prog_var_index_to_s_index().at(3), 1);
-  EXPECT_EQ(dut.map_prog_var_index_to_s_index().at(4), 2);
-  EXPECT_EQ(dut.map_prog_var_index_to_s_index().at(6), 3);
+  EXPECT_EQ(dut.map_prog_var_index_to_s_index().at(
+                SdpaFreeFormat::DecisionVariableIndex(2)),
+            0);
+  EXPECT_EQ(dut.map_prog_var_index_to_s_index().at(
+                SdpaFreeFormat::DecisionVariableIndex(3)),
+            1);
+  EXPECT_EQ(dut.map_prog_var_index_to_s_index().at(
+                SdpaFreeFormat::DecisionVariableIndex(4)),
+            2);
+  EXPECT_EQ(dut.map_prog_var_index_to_s_index().at(
+                SdpaFreeFormat::DecisionVariableIndex(6)),
+            3);
 
   // Check the linear constraint.
   EXPECT_EQ(dut.A_triplets().size(), 7);
@@ -188,32 +196,44 @@ TEST_F(LinearProgram1, TestSdpaFreeFormatConstructor) {
   A1_triplets_expected.emplace_back(3, 3, -1.0);
   CompareTriplets(dut.A_triplets()[1], A1_triplets_expected, dut.num_X_rows(),
                   dut.num_X_rows());
-  B_triplets_expected.emplace_back(1, dut.map_prog_var_index_to_s_index().at(2),
-                                   1.0);
+  B_triplets_expected.emplace_back(
+      1,
+      dut.map_prog_var_index_to_s_index().at(
+          SdpaFreeFormat::DecisionVariableIndex(2)),
+      1.0);
   g_expected(1) = -1;
   // The third constrait is for x(3) <= 10
   std::vector<Eigen::Triplet<double>> A2_triplets_expected;
   A2_triplets_expected.emplace_back(4, 4, 1.0);
   CompareTriplets(dut.A_triplets()[2], A2_triplets_expected, dut.num_X_rows(),
                   dut.num_X_rows());
-  B_triplets_expected.emplace_back(2, dut.map_prog_var_index_to_s_index().at(3),
-                                   1.0);
+  B_triplets_expected.emplace_back(
+      2,
+      dut.map_prog_var_index_to_s_index().at(
+          SdpaFreeFormat::DecisionVariableIndex(3)),
+      1.0);
   g_expected(2) = 10;
   // The forth constraint is for x(4) >= -2
   std::vector<Eigen::Triplet<double>> A3_triplets_expected;
   A3_triplets_expected.emplace_back(5, 5, -1.0);
   CompareTriplets(dut.A_triplets()[3], A3_triplets_expected, dut.num_X_rows(),
                   dut.num_X_rows());
-  B_triplets_expected.emplace_back(3, dut.map_prog_var_index_to_s_index().at(4),
-                                   1.0);
+  B_triplets_expected.emplace_back(
+      3,
+      dut.map_prog_var_index_to_s_index().at(
+          SdpaFreeFormat::DecisionVariableIndex(4)),
+      1.0);
   g_expected(3) = -2;
   // The fifth constraint is for x(4) <= 5.
   std::vector<Eigen::Triplet<double>> A4_triplets_expected;
   A4_triplets_expected.emplace_back(6, 6, 1.0);
   CompareTriplets(dut.A_triplets()[4], A4_triplets_expected, dut.num_X_rows(),
                   dut.num_X_rows());
-  B_triplets_expected.emplace_back(4, dut.map_prog_var_index_to_s_index().at(4),
-                                   1.0);
+  B_triplets_expected.emplace_back(
+      4,
+      dut.map_prog_var_index_to_s_index().at(
+          SdpaFreeFormat::DecisionVariableIndex(4)),
+      1.0);
   g_expected(4) = 5;
   // The sixth constraint is for x(5) == 0.
   std::vector<Eigen::Triplet<double>> A5_triplets_expected;
@@ -223,8 +243,11 @@ TEST_F(LinearProgram1, TestSdpaFreeFormatConstructor) {
   g_expected(5) = 0;
   // The seventh constraint is for x(6) == 1.
   EXPECT_EQ(dut.A_triplets()[6].size(), 0);
-  B_triplets_expected.emplace_back(6, dut.map_prog_var_index_to_s_index().at(6),
-                                   1.0);
+  B_triplets_expected.emplace_back(
+      6,
+      dut.map_prog_var_index_to_s_index().at(
+          SdpaFreeFormat::DecisionVariableIndex(6)),
+      1.0);
   g_expected(6) = 1.0;
   // Compare B_triplets and g.
   CompareTriplets(dut.B_triplets(), B_triplets_expected, 7,
@@ -238,12 +261,18 @@ TEST_F(LinearProgram1, TestSdpaFreeFormatConstructor) {
   CompareTriplets(dut.C_triplets(), C_triplets_expected, dut.num_X_rows(),
                   dut.num_X_rows());
   std::vector<Eigen::Triplet<double>> d_triplets_expected;
-  d_triplets_expected.emplace_back(dut.map_prog_var_index_to_s_index().at(2), 0,
-                                   -2);
-  d_triplets_expected.emplace_back(dut.map_prog_var_index_to_s_index().at(3), 0,
-                                   3);
-  d_triplets_expected.emplace_back(dut.map_prog_var_index_to_s_index().at(4), 0,
-                                   1);
+  d_triplets_expected.emplace_back(
+      dut.map_prog_var_index_to_s_index().at(
+          SdpaFreeFormat::DecisionVariableIndex(2)),
+      0, -2);
+  d_triplets_expected.emplace_back(
+      dut.map_prog_var_index_to_s_index().at(
+          SdpaFreeFormat::DecisionVariableIndex(3)),
+      0, 3);
+  d_triplets_expected.emplace_back(
+      dut.map_prog_var_index_to_s_index().at(
+          SdpaFreeFormat::DecisionVariableIndex(4)),
+      0, 1);
   CompareTriplets(dut.d_triplets(), d_triplets_expected,
                   dut.num_free_variables(), 1);
   EXPECT_EQ(dut.constant_min_cost_term(), -1);
@@ -259,9 +288,15 @@ TEST_F(LinearProgram2, TestSdpaFreeFormatConstructor) {
   CompareBlockInX(dut.X_blocks()[0], BlockInX(csdp::DIAG, 4));
   EXPECT_EQ(dut.map_prog_var_index_to_entry_in_X().size(), 0);
   EXPECT_EQ(dut.map_prog_var_index_to_s_index().size(), 3);
-  EXPECT_EQ(dut.map_prog_var_index_to_s_index().at(0), 0);
-  EXPECT_EQ(dut.map_prog_var_index_to_s_index().at(1), 1);
-  EXPECT_EQ(dut.map_prog_var_index_to_s_index().at(2), 2);
+  EXPECT_EQ(dut.map_prog_var_index_to_s_index().at(
+                SdpaFreeFormat::DecisionVariableIndex(0)),
+            0);
+  EXPECT_EQ(dut.map_prog_var_index_to_s_index().at(
+                SdpaFreeFormat::DecisionVariableIndex(1)),
+            1);
+  EXPECT_EQ(dut.map_prog_var_index_to_s_index().at(
+                SdpaFreeFormat::DecisionVariableIndex(2)),
+            2);
 
   // Check the linear constraints.
   EXPECT_EQ(dut.A_triplets().size(), 6);
@@ -402,7 +437,8 @@ TEST_F(TrivialSDP2, TestSdpaFreeFormatConstructor) {
                       prog_->FindDecisionVariableIndex(X1_(1, 1))),
                   EntryInX(0, 1, 1, 0));
   EXPECT_EQ(dut.map_prog_var_index_to_s_index().at(
-                prog_->FindDecisionVariableIndex(y_)),
+                SdpaFreeFormat::DecisionVariableIndex(
+                    prog_->FindDecisionVariableIndex(y_))),
             0);
 
   // Check linear constraint

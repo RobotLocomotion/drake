@@ -14,13 +14,12 @@ namespace solvers {
 struct CsdpSolverDetails {
   /** Refer to the Return Codes section of CSDP 6.2.0 User's Guide for
    * explanation on the return code. Some of the common return codes are
-   * <pre>
-   * 0 Problem is solved to optimality.
-   * 1 Problem is primal infeasible.
-   * 2 Problem is dual infeasible.
-   * 3 Problem solved to near optimality.
-   * 4 Maximum iterations reached.
-   * </pre>
+   *
+   *     0 Problem is solved to optimality.
+   *     1 Problem is primal infeasible.
+   *     2 Problem is dual infeasible.
+   *     3 Problem solved to near optimality.
+   *     4 Maximum iterations reached.
    */
   int return_code;
   /** The primal objective value. */
@@ -29,17 +28,17 @@ struct CsdpSolverDetails {
   double dual_objective;
   /**
    * CSDP solves a primal problem of the form
-   * <pre>
-   * max tr(C*X)
-   * s.t tr(Aᵢ*X) = aᵢ
-   *     X ≽ 0
-   * </pre>
+   *
+   *     max tr(C*X)
+   *     s.t tr(Aᵢ*X) = aᵢ
+   *         X ≽ 0
+   *
    * The dual form is
-   * <pre>
-   * min aᵀy
-   * s.t ∑ᵢ yᵢAᵢ - C = Z
-   *     Z ≽ 0
-   * </pre>
+   *
+   *     min aᵀy
+   *     s.t ∑ᵢ yᵢAᵢ - C = Z
+   *         Z ≽ 0
+   *
    * y, Z are the variables for the dual problem.
    * y_val, Z_val are the solutions to the dual problem.
    */

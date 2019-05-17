@@ -15,7 +15,7 @@ extern "C" {
 #include <Eigen/Sparse>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/unused.h"
+#include "drake/common/type_safe_index.h"
 #include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -73,7 +73,11 @@ class SdpaFreeFormat {
     return map_prog_var_index_to_entry_in_X_;
   }
 
-  const std::unordered_map<int, int>& map_prog_var_index_to_s_index() const {
+  using DecisionVariableIndex = TypeSafeIndex<class MathematicalProgramTag>;
+  using FreeVariableIndex = TypeSafeIndex<class FreeVariableTag>;
+
+  const std::unordered_map<DecisionVariableIndex, FreeVariableIndex>&
+  map_prog_var_index_to_s_index() const {
     return map_prog_var_index_to_s_index_;
   }
 
@@ -123,7 +127,7 @@ class SdpaFreeFormat {
   // each PositiveSemidefiniteConstraint. It is possible for two
   // PositiveSemidefiniteConstraint bindings to have overlapping decision
   // variables, or for a single PositiveSemidefiniteConstraint to have duplicate
-  // decision variables. We need to impose equality constraint on these entries
+  // decision variables. We need to impose equality constraints on these entries
   // in X. We use entries_in_X_for_same_decision_variable to record these
   // entries in X, so that we can impose the equality constraints later.
   void DeclareXforPositiveSemidefiniteConstraints(
@@ -174,7 +178,7 @@ class SdpaFreeFormat {
   Eigen::VectorXd g_;
   // A_triplets_[i] is the nonzero entries in Aᵢ
   std::vector<std::vector<Eigen::Triplet<double>>> A_triplets_;
-  // bᵢ is the i'th column of B. B_triplets records the nonzero entries in B.
+  // bᵢ is the i-th column of B. B_triplets records the nonzero entries in B.
   std::vector<Eigen::Triplet<double>> B_triplets_;
   // Some of the decision variables in MathematicalProgram will be in X.
   // map_prog_var_index_to_X_entry_ maps the index of a variable in
@@ -184,7 +188,8 @@ class SdpaFreeFormat {
   // Some of the decision variables in MathematicalProgram will be in s.
   // map_prog_var_index_to_s_index_ maps the index of a variable in
   // MathematicalProgram to its index in s.
-  std::unordered_map<int, int> map_prog_var_index_to_s_index_;
+  std::unordered_map<DecisionVariableIndex, FreeVariableIndex>
+      map_prog_var_index_to_s_index_;
 
   int num_X_rows_{0};
   int num_free_variables_{0};

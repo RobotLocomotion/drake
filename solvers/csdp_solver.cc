@@ -25,8 +25,8 @@ void SdpaFreeFormat::DeclareXforPositiveSemidefiniteConstraints(
         entries_in_X_for_same_decision_variable) {
   int num_blocks = 0;
   for (const auto& binding : prog.positive_semidefinite_constraints()) {
-    // The bound variables for binding are the column-stacked vector of the psd
-    // matrix. We only record the upper-diagonal entries in the psd matrix.
+    // The bound variables are the column-stacked vector of the psd matrix. We
+    // only record the upper-diagonal entries in the psd matrix.
     int psd_matrix_variable_index = 0;
     const int matrix_rows = binding.evaluator()->matrix_rows();
     X_blocks_.emplace_back(csdp::MATRIX, matrix_rows);
@@ -75,10 +75,8 @@ void SdpaFreeFormat::AddLinearEqualityConstraint(
     const std::vector<double>& a, const std::vector<EntryInX>& X_entries,
     const std::vector<double>& b, const std::vector<int>& s_indices,
     double rhs) {
-  DRAKE_ASSERT(static_cast<int>(a.size()) ==
-               static_cast<int>(X_entries.size()));
-  DRAKE_ASSERT(static_cast<int>(b.size()) ==
-               static_cast<int>(s_indices.size()));
+  DRAKE_ASSERT(a.size() == X_entries.size());
+  DRAKE_ASSERT(b.size() == s_indices.size());
   const int constraint_index = static_cast<int>(A_triplets_.size());
   std::vector<Eigen::Triplet<double>> Ai_triplets;
   // If the entries are off-diagonal entries of X, then it needs two
@@ -155,7 +153,7 @@ void SdpaFreeFormat::RegisterMathematicalProgramDecisionVariable(
     }
   }
 
-  // Now go through each of the decision variable in prog.
+  // Now go through each of the decision variables in prog.
 
   const int block_index = static_cast<int>(X_blocks_.size());
   int new_X_var_count = 0;
@@ -176,7 +174,8 @@ void SdpaFreeFormat::RegisterMathematicalProgramDecisionVariable(
     if (!is_x_in_X) {
       const int x_index_in_s = num_free_variables_;
       num_free_variables_++;
-      map_prog_var_index_to_s_index_.emplace(i, x_index_in_s);
+      map_prog_var_index_to_s_index_.emplace(DecisionVariableIndex(i),
+                                             FreeVariableIndex(x_index_in_s));
       if (lower_bound(i) != upper_bound(i)) {
         if (!std::isinf(lower_bound(i))) {
           // lower bound is neither 0 nor -inf. Add the linear equality x - y =
@@ -270,8 +269,9 @@ void SdpaFreeFormat::AddLinearCosts(const MathematicalProgram& prog) {
         } else {
           // The decision variable is not an entry in X. Then it should be an
           // entry in s.
-          const auto it_s = map_prog_var_index_to_s_index_.find(var_index);
-          DRAKE_ASSERT(it_s != map_prog_var_index_to_s_index_.end());
+          const auto it_s = map_prog_var_index_to_s_index_.find(
+              DecisionVariableIndex(var_index));
+          DRAKE_THROW_UNLESS(it_s != map_prog_var_index_to_s_index_.end());
           d_triplets_.emplace_back(it_s->second, 0, coeff);
         }
       }
@@ -292,19 +292,21 @@ void SdpaFreeFormat::AddLinearConstraintsHelper(
   std::vector<decltype(map_prog_var_index_to_s_index_)::const_iterator>
       var_it_in_s(var_indices.size());
   for (int i = 0; i < static_cast<int>(var_indices.size()); ++i) {
-    var_it_in_X[i] = map_prog_var_index_to_entry_in_X_.find(var_indices[i]);
+    var_it_in_X[i] = map_prog_var_index_to_entry_in_X_.find(
+        DecisionVariableIndex(var_indices[i]));
     var_it_in_s[i] = var_it_in_X[i] == map_prog_var_index_to_entry_in_X_.end()
-                         ? map_prog_var_index_to_s_index_.find(var_indices[i])
+                         ? map_prog_var_index_to_s_index_.find(
+                               DecisionVariableIndex(var_indices[i]))
                          : map_prog_var_index_to_s_index_.end();
   }
   // Go through each row of the constraint.
   for (int i = 0; i < linear_constraint.evaluator()->num_constraints(); ++i) {
-    const bool is_lower_equals_upper_in_this_row =
+    const bool does_lower_equal_upper_in_this_row =
         is_equality_constraint ||
         linear_constraint.evaluator()->lower_bound()(i) ==
             linear_constraint.evaluator()->upper_bound()(i);
     std::vector<double> a, b;
-    // If this rows' lower and upper bound are the same, then we only need to
+    // If this row's lower and upper bound are the same, then we only need to
     // append one row to SDPA format, namely tr(Ai * X) + bi' * s = rhs,
     // Otherwise, we need to append two rows to SDPA format
     // tr(Ai_lower * X_lower) + bi' * s = lower_bound
@@ -328,7 +330,12 @@ void SdpaFreeFormat::AddLinearConstraintsHelper(
         }
       }
     }
-    if (!is_lower_equals_upper_in_this_row) {
+    if (does_lower_equal_upper_in_this_row) {
+      // Add the equality constraint.
+      AddLinearEqualityConstraint(
+          a, X_entries, b, s_indices,
+          linear_constraint.evaluator()->lower_bound()(i));
+    } else {
       // First add the constraint and slack variable for the lower bound.
       if (!std::isinf(linear_constraint.evaluator()->lower_bound()(i))) {
         a.push_back(-1);
@@ -355,11 +362,6 @@ void SdpaFreeFormat::AddLinearConstraintsHelper(
             a, X_entries, b, s_indices,
             linear_constraint.evaluator()->upper_bound()(i));
       }
-    } else {
-      // Add the equality constraint.
-      AddLinearEqualityConstraint(
-          a, X_entries, b, s_indices,
-          linear_constraint.evaluator()->lower_bound()(i));
     }
   }
 }
@@ -396,7 +398,8 @@ void SdpaFreeFormat::AddLinearMatrixInequalityConstraints(
     for (int i = 0; i < lmi_constraint.variables().rows(); ++i) {
       it_var_in_X[i] = map_prog_var_index_to_entry_in_X_.find(var_indices[i]);
       it_var_in_s[i] = it_var_in_X[i] == map_prog_var_index_to_entry_in_X_.end()
-                           ? map_prog_var_index_to_s_index_.find(var_indices[i])
+                           ? map_prog_var_index_to_s_index_.find(
+                                 DecisionVariableIndex(var_indices[i]))
                            : map_prog_var_index_to_s_index_.end();
     }
     const std::vector<Eigen::MatrixXd>& F = lmi_constraint.evaluator()->F();
