@@ -12,14 +12,14 @@ namespace drake {
 namespace solvers {
 namespace internal {
 
-void CompareXentries(const Xentry& entry1, const Xentry& entry2) {
+void CompareEntryInX(const EntryInX& entry1, const EntryInX& entry2) {
   EXPECT_EQ(entry1.block_index, entry2.block_index);
   EXPECT_EQ(entry1.row_index_in_block, entry2.row_index_in_block);
   EXPECT_EQ(entry1.column_index_in_block, entry2.column_index_in_block);
   EXPECT_EQ(entry1.X_start_row, entry2.X_start_row);
 }
 
-void CompareXblocks(const Xblock& block1, const Xblock& block2) {
+void CompareBlockInX(const BlockInX& block1, const BlockInX& block2) {
   EXPECT_EQ(block1.blockcategory, block2.blockcategory);
   EXPECT_EQ(block1.num_rows, block2.num_rows);
 }
@@ -74,20 +74,20 @@ void CheckSparseblock(const csdp::sparseblock& block,
 TEST_F(SDPwithOverlappingVariables, TestSdpaFreeFormatConstructor) {
   const SdpaFreeFormat dut(*prog_);
   EXPECT_EQ(dut.num_X_rows(), 4);
-  EXPECT_EQ(dut.s_size(), 0);
+  EXPECT_EQ(dut.num_free_variables(), 0);
   EXPECT_EQ(dut.X_blocks().size(), 2);
-  CompareXblocks(dut.X_blocks()[0], Xblock(csdp::MATRIX, 2));
-  CompareXblocks(dut.X_blocks()[1], Xblock(csdp::MATRIX, 2));
-  EXPECT_EQ(dut.map_prog_var_index_to_Xentry().size(), 3);
-  CompareXentries(dut.map_prog_var_index_to_Xentry().at(
+  CompareBlockInX(dut.X_blocks()[0], BlockInX(csdp::MATRIX, 2));
+  CompareBlockInX(dut.X_blocks()[1], BlockInX(csdp::MATRIX, 2));
+  EXPECT_EQ(dut.map_prog_var_index_to_entry_in_X().size(), 3);
+  CompareEntryInX(dut.map_prog_var_index_to_entry_in_X().at(
                       prog_->FindDecisionVariableIndex(x_(0))),
-                  Xentry(0, 0, 0, 0));
-  CompareXentries(dut.map_prog_var_index_to_Xentry().at(
+                  EntryInX(0, 0, 0, 0));
+  CompareEntryInX(dut.map_prog_var_index_to_entry_in_X().at(
                       prog_->FindDecisionVariableIndex(x_(1))),
-                  Xentry(0, 0, 1, 0));
-  CompareXentries(dut.map_prog_var_index_to_Xentry().at(
+                  EntryInX(0, 0, 1, 0));
+  CompareEntryInX(dut.map_prog_var_index_to_entry_in_X().at(
                       prog_->FindDecisionVariableIndex(x_(2))),
-                  Xentry(1, 0, 1, 2));
+                  EntryInX(1, 0, 1, 2));
   EXPECT_EQ(dut.map_prog_var_index_to_s_index().size(), 0);
 
   // Check A_triplets.
@@ -130,7 +130,7 @@ TEST_F(SDPwithOverlappingVariables, TestSdpaFreeFormatConstructor) {
 TEST_F(CsdpDocExample, TestSdpaFreeFormatConstructor) {
   SdpaFreeFormat dut(*prog_);
   EXPECT_EQ(dut.num_X_rows(), 7);
-  EXPECT_EQ(dut.s_size(), 0);
+  EXPECT_EQ(dut.num_free_variables(), 0);
   EXPECT_EQ(dut.X_blocks().size(), 3);
 
   // Check the cost.
@@ -155,14 +155,17 @@ TEST_F(LinearProgram1, TestSdpaFreeFormatConstructor) {
   // constraints.
   SdpaFreeFormat dut(*prog_);
   EXPECT_EQ(dut.num_X_rows(), 8);
-  EXPECT_EQ(dut.s_size(), 4);
+  EXPECT_EQ(dut.num_free_variables(), 4);
 
   EXPECT_EQ(dut.X_blocks().size(), 1);
-  CompareXblocks(dut.X_blocks()[0], Xblock(csdp::DIAG, 8));
-  EXPECT_EQ(dut.map_prog_var_index_to_Xentry().size(), 3);
-  CompareXentries(dut.map_prog_var_index_to_Xentry().at(0), Xentry(0, 0, 0, 0));
-  CompareXentries(dut.map_prog_var_index_to_Xentry().at(1), Xentry(0, 1, 1, 0));
-  CompareXentries(dut.map_prog_var_index_to_Xentry().at(5), Xentry(0, 7, 7, 0));
+  CompareBlockInX(dut.X_blocks()[0], BlockInX(csdp::DIAG, 8));
+  EXPECT_EQ(dut.map_prog_var_index_to_entry_in_X().size(), 3);
+  CompareEntryInX(dut.map_prog_var_index_to_entry_in_X().at(0),
+                  EntryInX(0, 0, 0, 0));
+  CompareEntryInX(dut.map_prog_var_index_to_entry_in_X().at(1),
+                  EntryInX(0, 1, 1, 0));
+  CompareEntryInX(dut.map_prog_var_index_to_entry_in_X().at(5),
+                  EntryInX(0, 7, 7, 0));
   EXPECT_EQ(dut.map_prog_var_index_to_s_index().size(), 4);
   EXPECT_EQ(dut.map_prog_var_index_to_s_index().at(2), 0);
   EXPECT_EQ(dut.map_prog_var_index_to_s_index().at(3), 1);
@@ -224,7 +227,8 @@ TEST_F(LinearProgram1, TestSdpaFreeFormatConstructor) {
                                    1.0);
   g_expected(6) = 1.0;
   // Compare B_triplets and g.
-  CompareTriplets(dut.B_triplets(), B_triplets_expected, 7, dut.s_size());
+  CompareTriplets(dut.B_triplets(), B_triplets_expected, 7,
+                  dut.num_free_variables());
   EXPECT_TRUE(CompareMatrices(dut.g(), g_expected));
 
   // Check for the cost max -x(0) + x(1) - 2 *x(2) + 3 * x(3) + x(4)
@@ -240,7 +244,8 @@ TEST_F(LinearProgram1, TestSdpaFreeFormatConstructor) {
                                    3);
   d_triplets_expected.emplace_back(dut.map_prog_var_index_to_s_index().at(4), 0,
                                    1);
-  CompareTriplets(dut.d_triplets(), d_triplets_expected, dut.s_size(), 1);
+  CompareTriplets(dut.d_triplets(), d_triplets_expected,
+                  dut.num_free_variables(), 1);
   EXPECT_EQ(dut.constant_min_cost_term(), -1);
 }
 
@@ -248,11 +253,11 @@ TEST_F(LinearProgram2, TestSdpaFreeFormatConstructor) {
   // This tests adding linear constraint.
   const SdpaFreeFormat dut(*prog_);
   EXPECT_EQ(dut.num_X_rows(), 4);
-  EXPECT_EQ(dut.s_size(), 3);
+  EXPECT_EQ(dut.num_free_variables(), 3);
 
   EXPECT_EQ(dut.X_blocks().size(), 1);
-  CompareXblocks(dut.X_blocks()[0], Xblock(csdp::DIAG, 4));
-  EXPECT_EQ(dut.map_prog_var_index_to_Xentry().size(), 0);
+  CompareBlockInX(dut.X_blocks()[0], BlockInX(csdp::DIAG, 4));
+  EXPECT_EQ(dut.map_prog_var_index_to_entry_in_X().size(), 0);
   EXPECT_EQ(dut.map_prog_var_index_to_s_index().size(), 3);
   EXPECT_EQ(dut.map_prog_var_index_to_s_index().at(0), 0);
   EXPECT_EQ(dut.map_prog_var_index_to_s_index().at(1), 1);
@@ -306,7 +311,8 @@ TEST_F(LinearProgram2, TestSdpaFreeFormatConstructor) {
   B_triplets_expected.emplace_back(5, 2, 4);
   g_expected(5) = 3;
 
-  CompareTriplets(dut.B_triplets(), B_triplets_expected, 6, dut.s_size());
+  CompareTriplets(dut.B_triplets(), B_triplets_expected, 6,
+                  dut.num_free_variables());
   EXPECT_TRUE(CompareMatrices(dut.g(), g_expected));
 
   // Check the cost min x(0) + 2 * x(1) +  3 * x(2)
@@ -323,17 +329,23 @@ TEST_F(TrivialSDP1, TestSdpaFreeFormatConstructor) {
   // constraint.
   const SdpaFreeFormat dut(*prog_);
   EXPECT_EQ(dut.num_X_rows(), 4);
-  EXPECT_EQ(dut.s_size(), 0);
+  EXPECT_EQ(dut.num_free_variables(), 0);
 
   EXPECT_EQ(dut.X_blocks().size(), 2);
-  CompareXblocks(dut.X_blocks()[0], Xblock(csdp::MATRIX, 3));
-  CompareXblocks(dut.X_blocks()[1], Xblock(csdp::DIAG, 1));
-  CompareXentries(dut.map_prog_var_index_to_Xentry().at(0), Xentry(0, 0, 0, 0));
-  CompareXentries(dut.map_prog_var_index_to_Xentry().at(1), Xentry(0, 0, 1, 0));
-  CompareXentries(dut.map_prog_var_index_to_Xentry().at(2), Xentry(0, 0, 2, 0));
-  CompareXentries(dut.map_prog_var_index_to_Xentry().at(3), Xentry(0, 1, 1, 0));
-  CompareXentries(dut.map_prog_var_index_to_Xentry().at(4), Xentry(0, 1, 2, 0));
-  CompareXentries(dut.map_prog_var_index_to_Xentry().at(5), Xentry(0, 2, 2, 0));
+  CompareBlockInX(dut.X_blocks()[0], BlockInX(csdp::MATRIX, 3));
+  CompareBlockInX(dut.X_blocks()[1], BlockInX(csdp::DIAG, 1));
+  CompareEntryInX(dut.map_prog_var_index_to_entry_in_X().at(0),
+                  EntryInX(0, 0, 0, 0));
+  CompareEntryInX(dut.map_prog_var_index_to_entry_in_X().at(1),
+                  EntryInX(0, 0, 1, 0));
+  CompareEntryInX(dut.map_prog_var_index_to_entry_in_X().at(2),
+                  EntryInX(0, 0, 2, 0));
+  CompareEntryInX(dut.map_prog_var_index_to_entry_in_X().at(3),
+                  EntryInX(0, 1, 1, 0));
+  CompareEntryInX(dut.map_prog_var_index_to_entry_in_X().at(4),
+                  EntryInX(0, 1, 2, 0));
+  CompareEntryInX(dut.map_prog_var_index_to_entry_in_X().at(5),
+                  EntryInX(0, 2, 2, 0));
   EXPECT_EQ(dut.map_prog_var_index_to_s_index().size(), 0);
 
   EXPECT_EQ(dut.A_triplets().size(), 2);
@@ -375,20 +387,20 @@ TEST_F(TrivialSDP2, TestSdpaFreeFormatConstructor) {
   // Test constructor with linear matrix inequality constraint.
   const SdpaFreeFormat dut(*prog_);
   EXPECT_EQ(dut.num_X_rows(), 4);
-  EXPECT_EQ(dut.s_size(), 1);
+  EXPECT_EQ(dut.num_free_variables(), 1);
 
   EXPECT_EQ(dut.X_blocks().size(), 2);
-  CompareXblocks(dut.X_blocks()[0], Xblock(csdp::MATRIX, 2));
-  CompareXblocks(dut.X_blocks()[1], Xblock(csdp::MATRIX, 2));
-  CompareXentries(dut.map_prog_var_index_to_Xentry().at(
+  CompareBlockInX(dut.X_blocks()[0], BlockInX(csdp::MATRIX, 2));
+  CompareBlockInX(dut.X_blocks()[1], BlockInX(csdp::MATRIX, 2));
+  CompareEntryInX(dut.map_prog_var_index_to_entry_in_X().at(
                       prog_->FindDecisionVariableIndex(X1_(0, 0))),
-                  Xentry(0, 0, 0, 0));
-  CompareXentries(dut.map_prog_var_index_to_Xentry().at(
+                  EntryInX(0, 0, 0, 0));
+  CompareEntryInX(dut.map_prog_var_index_to_entry_in_X().at(
                       prog_->FindDecisionVariableIndex(X1_(0, 1))),
-                  Xentry(0, 0, 1, 0));
-  CompareXentries(dut.map_prog_var_index_to_Xentry().at(
+                  EntryInX(0, 0, 1, 0));
+  CompareEntryInX(dut.map_prog_var_index_to_entry_in_X().at(
                       prog_->FindDecisionVariableIndex(X1_(1, 1))),
-                  Xentry(0, 1, 1, 0));
+                  EntryInX(0, 1, 1, 0));
   EXPECT_EQ(dut.map_prog_var_index_to_s_index().at(
                 prog_->FindDecisionVariableIndex(y_)),
             0);

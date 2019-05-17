@@ -2,7 +2,7 @@
 
 load("@drake//tools/install:install.bzl", "install")
 
-licenses(["notice"])  # EPL 2.0
+licenses(["notice"])  # EPL-2.0
 
 package(default_visibility = ["//visibility:public"])
 

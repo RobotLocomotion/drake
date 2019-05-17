@@ -1,7 +1,7 @@
 #pragma once
 
-// For external users, please do not include this header file. It is only used
-// for csdp_solver_internal_test.cc
+// For external users, please do not include this header file. It only exists so
+// that we can expose the internals to csdp_solver_internal_test.cc
 
 #include <vector>
 
@@ -23,12 +23,12 @@ namespace drake {
 namespace solvers {
 namespace internal {
 /**
- * X is a block diagonal matrix in CSDP. Xentry stores the information of one
+ * X is a block diagonal matrix in CSDP. EntryInX stores the information of one
  * entry in this block-diagonal matrix X.
  */
-struct Xentry {
-  Xentry(int block_index_in, int row_index_in_block_in,
-         int column_index_in_block_in, int X_start_row_in)
+struct EntryInX {
+  EntryInX(int block_index_in, int row_index_in_block_in,
+           int column_index_in_block_in, int X_start_row_in)
       : block_index{block_index_in},
         row_index_in_block(row_index_in_block_in),
         column_index_in_block(column_index_in_block_in),
@@ -44,8 +44,8 @@ struct Xentry {
   const int X_start_row;
 };
 
-struct Xblock {
-  Xblock(csdp::blockcat blockcategory_in, int num_rows_in)
+struct BlockInX {
+  BlockInX(csdp::blockcat blockcategory_in, int num_rows_in)
       : blockcategory{blockcategory_in}, num_rows{num_rows_in} {}
   csdp::blockcat blockcategory;
   int num_rows;
@@ -66,10 +66,11 @@ class SdpaFreeFormat {
 
   ~SdpaFreeFormat();
 
-  const std::vector<Xblock>& X_blocks() const { return X_blocks_; }
+  const std::vector<BlockInX>& X_blocks() const { return X_blocks_; }
 
-  const std::unordered_map<int, Xentry>& map_prog_var_index_to_Xentry() const {
-    return map_prog_var_index_to_Xentry_;
+  const std::unordered_map<int, EntryInX>& map_prog_var_index_to_entry_in_X()
+      const {
+    return map_prog_var_index_to_entry_in_X_;
   }
 
   const std::unordered_map<int, int>& map_prog_var_index_to_s_index() const {
@@ -88,7 +89,7 @@ class SdpaFreeFormat {
 
   int num_X_rows() const { return num_X_rows_; }
 
-  int s_size() const { return s_size_; }
+  int num_free_variables() const { return num_free_variables_; }
 
   const std::vector<Eigen::Triplet<double>>& C_triplets() const {
     return C_triplets_;
@@ -109,8 +110,8 @@ class SdpaFreeFormat {
   double constant_min_cost_term() const { return constant_min_cost_term_; }
 
   /**
-   * If SdpaFreeFormat.s_size() == 0 (i.e., it doesn't have free variable s),
-   * then convert the problem to CSDP problem data format.
+   * If SdpaFreeFormat.num_free_variables() == 0 (i.e., it doesn't have free
+   * variable s), then convert the problem to CSDP problem data format.
    */
   void GenerateCsdpProblemDataWithoutFreeVariables(
       csdp::blockmatrix* C, double** b,
@@ -118,27 +119,26 @@ class SdpaFreeFormat {
 
  private:
   // Go through all the positive semidefinite constraint in @p prog, and
-  // registerthe corresponding blocks in matrix X for the bound variables of
-  // each PositiveSemidefiniteConstraint. It is possible to have two
-  // PositiveSemidefiniteConstraint, with overlapping decision variables between
-  // these two PositiveSemidefiniteConstraint bindings, or the same
-  // PositiveSemidefiniteConstraint have duplicate variables. We need to impose
-  // equality constraint for these entries in X. We use
-  // Xentries_for_same_decision_variable to record these entries in X, so that
-  // we can impose the equality constraint later.
+  // register the corresponding blocks in matrix X for the bound variables of
+  // each PositiveSemidefiniteConstraint. It is possible for two
+  // PositiveSemidefiniteConstraint bindings to have overlapping decision
+  // variables, or for a single PositiveSemidefiniteConstraint to have duplicate
+  // decision variables. We need to impose equality constraint on these entries
+  // in X. We use entries_in_X_for_same_decision_variable to record these
+  // entries in X, so that we can impose the equality constraints later.
   void DeclareXforPositiveSemidefiniteConstraints(
       const MathematicalProgram& prog,
-      std::unordered_map<symbolic::Variable::Id, std::vector<Xentry>>*
-          Xentries_for_same_decision_variable);
+      std::unordered_map<symbolic::Variable::Id, std::vector<EntryInX>>*
+          entries_in_X_for_same_decision_variable);
 
   // Some entries in X correspond to the same decision variables. We need to add
   // the equality constraint on these entries.
   void AddEqualityConstraintOnXentriesForSameDecisionVariable(
-      const std::unordered_map<symbolic::Variable::Id, std::vector<Xentry>>&
-          Xentries_for_same_decision_variable);
+      const std::unordered_map<symbolic::Variable::Id, std::vector<EntryInX>>&
+          entries_in_X_for_same_decision_variable);
 
   void AddLinearEqualityConstraint(const std::vector<double>& a,
-                                   const std::vector<Xentry>& X_entries,
+                                   const std::vector<EntryInX>& X_entries,
                                    const std::vector<double>& b,
                                    const std::vector<int>& s_indices,
                                    double rhs);
@@ -155,10 +155,10 @@ class SdpaFreeFormat {
   void AddLinearConstraints(const MathematicalProgram& prog);
 
   template <typename Constraint>
-  void AddLinearConstraintsHelper(const MathematicalProgram& prog,
-                                  const Binding<Constraint>& linear_constraint,
-                                  bool is_equality_constraint,
-                                  int* linear_constraint_slack_Xentry_count);
+  void AddLinearConstraintsHelper(
+      const MathematicalProgram& prog,
+      const Binding<Constraint>& linear_constraint, bool is_equality_constraint,
+      int* linear_constraint_slack_entry_in_X_count);
 
   void AddLinearMatrixInequalityConstraints(const MathematicalProgram& prog);
 
@@ -166,11 +166,11 @@ class SdpaFreeFormat {
 
   // X_blocks_ just stores the size and category of each block in the
   // block-diagonal matrix X.
-  std::vector<Xblock> X_blocks_;
+  std::vector<BlockInX> X_blocks_;
 
   std::vector<Eigen::Triplet<double>> C_triplets_;
   std::vector<Eigen::Triplet<double>> d_triplets_;
-  // gᵢ is the i'th entry of g.
+  // gᵢ is the i-th entry of g.
   Eigen::VectorXd g_;
   // A_triplets_[i] is the nonzero entries in Aᵢ
   std::vector<std::vector<Eigen::Triplet<double>>> A_triplets_;
@@ -179,7 +179,7 @@ class SdpaFreeFormat {
   // Some of the decision variables in MathematicalProgram will be in X.
   // map_prog_var_index_to_X_entry_ maps the index of a variable in
   // MathematicalProgram to its index in X.
-  std::unordered_map<int, Xentry> map_prog_var_index_to_Xentry_;
+  std::unordered_map<int, EntryInX> map_prog_var_index_to_entry_in_X_;
 
   // Some of the decision variables in MathematicalProgram will be in s.
   // map_prog_var_index_to_s_index_ maps the index of a variable in
@@ -187,7 +187,7 @@ class SdpaFreeFormat {
   std::unordered_map<int, int> map_prog_var_index_to_s_index_;
 
   int num_X_rows_{0};
-  int s_size_{0};
+  int num_free_variables_{0};
   // The SDPA format doesn't include the constant term in the cost, but
   // MathematicalProgram does. We store the constant cost term here.
   double constant_min_cost_term_{0.0};
@@ -207,7 +207,7 @@ class SdpaFreeFormat {
  * to CSDP format.
  */
 void ConvertSparseMatrixFormattToCsdpProblemData(
-    const std::vector<Xblock>& X_blocks, const Eigen::SparseMatrix<double>& C,
+    const std::vector<BlockInX>& X_blocks, const Eigen::SparseMatrix<double>& C,
     const std::vector<Eigen::SparseMatrix<double>> A,
     const Eigen::VectorXd& rhs, csdp::blockmatrix* C_csdp, double** rhs_csdp,
     csdp::constraintmatrix** constraints);

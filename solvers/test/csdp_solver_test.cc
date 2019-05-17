@@ -35,8 +35,8 @@ TEST_F(CsdpDocExample, Solve) {
     const CsdpSolverDetails& solver_details =
         result.get_solver_details<CsdpSolver>();
     EXPECT_EQ(solver_details.return_code, 0);
-    EXPECT_NEAR(solver_details.pobj, 2.75, tol);
-    EXPECT_NEAR(solver_details.dobj, 2.75, tol);
+    EXPECT_NEAR(solver_details.primal_objective, 2.75, tol);
+    EXPECT_NEAR(solver_details.dual_objective, 2.75, tol);
     EXPECT_TRUE(
         CompareMatrices(solver_details.y_val, Eigen::Vector2d(0.75, 1), tol));
     Eigen::Matrix<double, 7, 7> Z_expected;

@@ -21,11 +21,11 @@ SdpaFreeFormat::~SdpaFreeFormat() {}
 
 void SdpaFreeFormat::DeclareXforPositiveSemidefiniteConstraints(
     const MathematicalProgram& prog,
-    std::unordered_map<symbolic::Variable::Id, std::vector<Xentry>>*
-        Xentries_for_same_decision_variable) {
+    std::unordered_map<symbolic::Variable::Id, std::vector<EntryInX>>*
+        entries_in_X_for_same_decision_variable) {
   int num_blocks = 0;
   for (const auto& binding : prog.positive_semidefinite_constraints()) {
-    // The bound variables for binding is the column-stacked vector of the psd
+    // The bound variables for binding are the column-stacked vector of the psd
     // matrix. We only record the upper-diagonal entries in the psd matrix.
     int psd_matrix_variable_index = 0;
     const int matrix_rows = binding.evaluator()->matrix_rows();
@@ -35,13 +35,14 @@ void SdpaFreeFormat::DeclareXforPositiveSemidefiniteConstraints(
         const symbolic::Variable& psd_ij_var =
             binding.variables()(psd_matrix_variable_index++);
         const int psd_ij_var_index = prog.FindDecisionVariableIndex(psd_ij_var);
-        const auto it1 = map_prog_var_index_to_Xentry_.find(psd_ij_var_index);
-        const Xentry psd_ij_Xentry(num_blocks, i, j, num_X_rows_);
-        if (it1 == map_prog_var_index_to_Xentry_.end()) {
+        const auto it1 =
+            map_prog_var_index_to_entry_in_X_.find(psd_ij_var_index);
+        const EntryInX psd_ij_entry_in_X(num_blocks, i, j, num_X_rows_);
+        if (it1 == map_prog_var_index_to_entry_in_X_.end()) {
           // This variable has not been registered into X. Now register this
-          // variable, by adding it to map_prog_var_index_to_Xentry_.
-          map_prog_var_index_to_Xentry_.emplace_hint(it1, psd_ij_var_index,
-                                                     psd_ij_Xentry);
+          // variable, by adding it to map_prog_var_index_to_entry_in_X_.
+          map_prog_var_index_to_entry_in_X_.emplace_hint(it1, psd_ij_var_index,
+                                                         psd_ij_entry_in_X);
         } else {
           // This variable has been registered into X. We need to add the
           // equality constraint between all X entries corresponding to this
@@ -49,17 +50,17 @@ void SdpaFreeFormat::DeclareXforPositiveSemidefiniteConstraints(
 
           // First find if there exists equality constraint on this variable
           // already.
-          const auto it2 =
-              Xentries_for_same_decision_variable->find(psd_ij_var.get_id());
-          if (it2 == Xentries_for_same_decision_variable->end()) {
+          const auto it2 = entries_in_X_for_same_decision_variable->find(
+              psd_ij_var.get_id());
+          if (it2 == entries_in_X_for_same_decision_variable->end()) {
             // There does not exist equality constraint on this variable yet.
-            Xentries_for_same_decision_variable->emplace_hint(
+            entries_in_X_for_same_decision_variable->emplace_hint(
                 it2, psd_ij_var.get_id(),
-                std::vector<Xentry>({it1->second, psd_ij_Xentry}));
+                std::vector<EntryInX>({it1->second, psd_ij_entry_in_X}));
           } else {
             // We found equality constraint on this variable, append the vector
             // containing all X entries that correspond to this variable.
-            it2->second.push_back(psd_ij_Xentry);
+            it2->second.push_back(psd_ij_entry_in_X);
           }
         }
       }
@@ -71,7 +72,7 @@ void SdpaFreeFormat::DeclareXforPositiveSemidefiniteConstraints(
 }
 
 void SdpaFreeFormat::AddLinearEqualityConstraint(
-    const std::vector<double>& a, const std::vector<Xentry>& X_entries,
+    const std::vector<double>& a, const std::vector<EntryInX>& X_entries,
     const std::vector<double>& b, const std::vector<int>& s_indices,
     double rhs) {
   DRAKE_ASSERT(static_cast<int>(a.size()) ==
@@ -111,9 +112,9 @@ void SdpaFreeFormat::AddLinearEqualityConstraint(
 }
 
 void SdpaFreeFormat::AddEqualityConstraintOnXentriesForSameDecisionVariable(
-    const std::unordered_map<symbolic::Variable::Id, std::vector<Xentry>>&
-        Xentries_for_same_decision_variable) {
-  for (const auto& item : Xentries_for_same_decision_variable) {
+    const std::unordered_map<symbolic::Variable::Id, std::vector<EntryInX>>&
+        entries_in_X_for_same_decision_variable) {
+  for (const auto& item : entries_in_X_for_same_decision_variable) {
     const auto& Xentries = item.second;
     DRAKE_ASSERT(Xentries.size() >= 2);
     const std::vector<double> a{{1, -1}};
@@ -159,42 +160,42 @@ void SdpaFreeFormat::RegisterMathematicalProgramDecisionVariable(
   const int block_index = static_cast<int>(X_blocks_.size());
   int new_X_var_count = 0;
   for (int i = 0; i < prog.num_vars(); ++i) {
-    auto it_x = map_prog_var_index_to_Xentry_.find(i);
-    bool is_x_in_X = it_x != map_prog_var_index_to_Xentry_.end();
+    auto it_x = map_prog_var_index_to_entry_in_X_.find(i);
+    bool is_x_in_X = it_x != map_prog_var_index_to_entry_in_X_.end();
     if (!is_x_in_X) {
       if (lower_bound(i) == 0) {
         // Register this variable to X.
-        const Xentry x_Xentry(block_index, new_X_var_count, new_X_var_count,
-                              num_X_rows_);
+        const EntryInX x_entry_in_X(block_index, new_X_var_count,
+                                    new_X_var_count, num_X_rows_);
         new_X_var_count++;
-        map_prog_var_index_to_Xentry_.emplace_hint(it_x, i, x_Xentry);
-        it_x = map_prog_var_index_to_Xentry_.find(i);
+        map_prog_var_index_to_entry_in_X_.emplace_hint(it_x, i, x_entry_in_X);
+        it_x = map_prog_var_index_to_entry_in_X_.find(i);
         is_x_in_X = true;
       }
     }
     if (!is_x_in_X) {
-      const int x_index_in_s = s_size_;
-      s_size_++;
+      const int x_index_in_s = num_free_variables_;
+      num_free_variables_++;
       map_prog_var_index_to_s_index_.emplace(i, x_index_in_s);
       if (lower_bound(i) != upper_bound(i)) {
         if (!std::isinf(lower_bound(i))) {
           // lower bound is neither 0 nor -inf. Add the linear equality x - y =
           // lower_bound, add x to free variable s, and y to X.
-          const Xentry y_Xentry(block_index, new_X_var_count, new_X_var_count,
-                                num_X_rows_);
+          const EntryInX y_entry_in_X(block_index, new_X_var_count,
+                                      new_X_var_count, num_X_rows_);
           new_X_var_count++;
-          AddLinearEqualityConstraint({-1.0}, {y_Xentry}, {1.0}, {x_index_in_s},
-                                      lower_bound(i));
+          AddLinearEqualityConstraint({-1.0}, {y_entry_in_X}, {1.0},
+                                      {x_index_in_s}, lower_bound(i));
         }
 
         if (!std::isinf(upper_bound(i))) {
           // If this variable x has a finite upper bound, then introduce a
           // slack variable y, y >= 0, with the constraint x + y = upper_bound.
-          const Xentry y_Xentry(block_index, new_X_var_count, new_X_var_count,
-                                num_X_rows_);
+          const EntryInX y_entry_in_X(block_index, new_X_var_count,
+                                      new_X_var_count, num_X_rows_);
           new_X_var_count++;
-          AddLinearEqualityConstraint({1.0}, {y_Xentry}, {1.0}, {x_index_in_s},
-                                      upper_bound(i));
+          AddLinearEqualityConstraint({1.0}, {y_entry_in_X}, {1.0},
+                                      {x_index_in_s}, upper_bound(i));
         }
       } else {
         // lower_bound(i) == upper_bound(i). We will add a single linear
@@ -207,20 +208,20 @@ void SdpaFreeFormat::RegisterMathematicalProgramDecisionVariable(
         if (!std::isinf(lower_bound(i)) && lower_bound(i) != 0) {
           // lower bound is neither 0 nor -inf. Add the linear equality x - y =
           // lower_bound, add x to free variable s, and y to X.
-          const Xentry y_Xentry(block_index, new_X_var_count, new_X_var_count,
-                                num_X_rows_);
+          const EntryInX y_entry_in_X(block_index, new_X_var_count,
+                                      new_X_var_count, num_X_rows_);
           new_X_var_count++;
-          AddLinearEqualityConstraint({1.0, -1.0}, {it_x->second, y_Xentry}, {},
-                                      {}, lower_bound(i));
+          AddLinearEqualityConstraint({1.0, -1.0}, {it_x->second, y_entry_in_X},
+                                      {}, {}, lower_bound(i));
         }
         if (!std::isinf(upper_bound(i))) {
           // If this variable x has a finite upper bound, then introduce a
           // slack variable y, y >= 0, with the constraint x + y = upper_bound.
-          const Xentry y_Xentry(block_index, new_X_var_count, new_X_var_count,
-                                num_X_rows_);
+          const EntryInX y_entry_in_X(block_index, new_X_var_count,
+                                      new_X_var_count, num_X_rows_);
           new_X_var_count++;
-          AddLinearEqualityConstraint({1.0, 1.0}, {it_x->second, y_Xentry}, {},
-                                      {}, upper_bound(i));
+          AddLinearEqualityConstraint({1.0, 1.0}, {it_x->second, y_entry_in_X},
+                                      {}, {}, upper_bound(i));
         }
       } else {
         // lower_bound(i) == upper_bound(i). We will add a single linear
@@ -247,8 +248,8 @@ void SdpaFreeFormat::AddLinearCosts(const MathematicalProgram& prog) {
         // Only adds the cost if the cost coefficient is non-zero.
         const int var_index =
             prog.FindDecisionVariableIndex(linear_cost.variables()(i));
-        const auto it_X = map_prog_var_index_to_Xentry_.find(var_index);
-        if (it_X != map_prog_var_index_to_Xentry_.end()) {
+        const auto it_X = map_prog_var_index_to_entry_in_X_.find(var_index);
+        if (it_X != map_prog_var_index_to_entry_in_X_.end()) {
           if (it_X->second.row_index_in_block ==
               it_X->second.column_index_in_block) {
             // This is a diagonal entry in X.
@@ -283,16 +284,16 @@ template <typename Constraint>
 void SdpaFreeFormat::AddLinearConstraintsHelper(
     const MathematicalProgram& prog,
     const Binding<Constraint>& linear_constraint, bool is_equality_constraint,
-    int* linear_constraint_slack_Xentry_count) {
+    int* linear_constraint_slack_entry_in_X_count) {
   const std::vector<int> var_indices =
       prog.FindDecisionVariableIndices(linear_constraint.variables());
-  std::vector<decltype(map_prog_var_index_to_Xentry_)::const_iterator>
+  std::vector<decltype(map_prog_var_index_to_entry_in_X_)::const_iterator>
       var_it_in_X(var_indices.size());
   std::vector<decltype(map_prog_var_index_to_s_index_)::const_iterator>
       var_it_in_s(var_indices.size());
   for (int i = 0; i < static_cast<int>(var_indices.size()); ++i) {
-    var_it_in_X[i] = map_prog_var_index_to_Xentry_.find(var_indices[i]);
-    var_it_in_s[i] = var_it_in_X[i] == map_prog_var_index_to_Xentry_.end()
+    var_it_in_X[i] = map_prog_var_index_to_entry_in_X_.find(var_indices[i]);
+    var_it_in_s[i] = var_it_in_X[i] == map_prog_var_index_to_entry_in_X_.end()
                          ? map_prog_var_index_to_s_index_.find(var_indices[i])
                          : map_prog_var_index_to_s_index_.end();
   }
@@ -312,13 +313,13 @@ void SdpaFreeFormat::AddLinearConstraintsHelper(
     b.reserve(var_indices.size());
     // add 1 because we might need a slack variable for inequality constraint.
     a.reserve(var_indices.size() + 1);
-    std::vector<Xentry> X_entries;
+    std::vector<EntryInX> X_entries;
     X_entries.reserve(var_indices.size() + 1);
     std::vector<int> s_indices;
     s_indices.reserve(var_indices.size());
     for (int j = 0; j < linear_constraint.variables().rows(); ++j) {
       if (linear_constraint.evaluator()->A()(i, j) != 0) {
-        if (var_it_in_X[j] != map_prog_var_index_to_Xentry_.end()) {
+        if (var_it_in_X[j] != map_prog_var_index_to_entry_in_X_.end()) {
           a.push_back(linear_constraint.evaluator()->A()(i, j));
           X_entries.push_back(var_it_in_X[j]->second);
         } else {
@@ -332,10 +333,10 @@ void SdpaFreeFormat::AddLinearConstraintsHelper(
       if (!std::isinf(linear_constraint.evaluator()->lower_bound()(i))) {
         a.push_back(-1);
         X_entries.emplace_back(static_cast<int>(X_blocks_.size()),
-                               *linear_constraint_slack_Xentry_count,
-                               *linear_constraint_slack_Xentry_count,
+                               *linear_constraint_slack_entry_in_X_count,
+                               *linear_constraint_slack_entry_in_X_count,
                                num_X_rows_);
-        (*linear_constraint_slack_Xentry_count)++;
+        (*linear_constraint_slack_entry_in_X_count)++;
         AddLinearEqualityConstraint(
             a, X_entries, b, s_indices,
             linear_constraint.evaluator()->lower_bound()(i));
@@ -346,10 +347,10 @@ void SdpaFreeFormat::AddLinearConstraintsHelper(
       if (!std::isinf(linear_constraint.evaluator()->upper_bound()(i))) {
         a.push_back(1);
         X_entries.emplace_back(static_cast<int>(X_blocks_.size()),
-                               *linear_constraint_slack_Xentry_count,
-                               *linear_constraint_slack_Xentry_count,
+                               *linear_constraint_slack_entry_in_X_count,
+                               *linear_constraint_slack_entry_in_X_count,
                                num_X_rows_);
-        (*linear_constraint_slack_Xentry_count)++;
+        (*linear_constraint_slack_entry_in_X_count)++;
         AddLinearEqualityConstraint(
             a, X_entries, b, s_indices,
             linear_constraint.evaluator()->upper_bound()(i));
@@ -364,18 +365,19 @@ void SdpaFreeFormat::AddLinearConstraintsHelper(
 }
 
 void SdpaFreeFormat::AddLinearConstraints(const MathematicalProgram& prog) {
-  int linear_constraint_slack_Xentry_count = 0;
+  int linear_constraint_slack_entry_in_X_count = 0;
   for (const auto& linear_eq_constraint : prog.linear_equality_constraints()) {
     AddLinearConstraintsHelper(prog, linear_eq_constraint, true,
-                               &linear_constraint_slack_Xentry_count);
+                               &linear_constraint_slack_entry_in_X_count);
   }
   for (const auto& linear_constraint : prog.linear_constraints()) {
     AddLinearConstraintsHelper(prog, linear_constraint, false,
-                               &linear_constraint_slack_Xentry_count);
+                               &linear_constraint_slack_entry_in_X_count);
   }
-  if (linear_constraint_slack_Xentry_count > 0) {
-    num_X_rows_ += linear_constraint_slack_Xentry_count;
-    X_blocks_.emplace_back(csdp::DIAG, linear_constraint_slack_Xentry_count);
+  if (linear_constraint_slack_entry_in_X_count > 0) {
+    num_X_rows_ += linear_constraint_slack_entry_in_X_count;
+    X_blocks_.emplace_back(csdp::DIAG,
+                           linear_constraint_slack_entry_in_X_count);
   }
 }
 
@@ -387,13 +389,13 @@ void SdpaFreeFormat::AddLinearMatrixInequalityConstraints(
     // X_slack is psd.
     const std::vector<int> var_indices =
         prog.FindDecisionVariableIndices(lmi_constraint.variables());
-    std::vector<decltype(map_prog_var_index_to_Xentry_)::const_iterator>
+    std::vector<decltype(map_prog_var_index_to_entry_in_X_)::const_iterator>
         it_var_in_X(var_indices.size());
     std::vector<decltype(map_prog_var_index_to_s_index_)::const_iterator>
         it_var_in_s(var_indices.size());
     for (int i = 0; i < lmi_constraint.variables().rows(); ++i) {
-      it_var_in_X[i] = map_prog_var_index_to_Xentry_.find(var_indices[i]);
-      it_var_in_s[i] = it_var_in_X[i] == map_prog_var_index_to_Xentry_.end()
+      it_var_in_X[i] = map_prog_var_index_to_entry_in_X_.find(var_indices[i]);
+      it_var_in_s[i] = it_var_in_X[i] == map_prog_var_index_to_entry_in_X_.end()
                            ? map_prog_var_index_to_s_index_.find(var_indices[i])
                            : map_prog_var_index_to_s_index_.end();
     }
@@ -401,7 +403,7 @@ void SdpaFreeFormat::AddLinearMatrixInequalityConstraints(
     for (int j = 0; j < lmi_constraint.evaluator()->matrix_rows(); ++j) {
       for (int i = 0; i <= j; ++i) {
         std::vector<double> a, b;
-        std::vector<Xentry> X_entries;
+        std::vector<EntryInX> X_entries;
         std::vector<int> s_indices;
         a.reserve(F.size());
         b.reserve(F.size());
@@ -409,7 +411,7 @@ void SdpaFreeFormat::AddLinearMatrixInequalityConstraints(
         s_indices.reserve(F.size());
         for (int k = 1; k < static_cast<int>(F.size()); ++k) {
           if (F[k](i, j) != 0) {
-            if (it_var_in_X[k - 1] != map_prog_var_index_to_Xentry_.end()) {
+            if (it_var_in_X[k - 1] != map_prog_var_index_to_entry_in_X_.end()) {
               a.push_back(F[k](i, j));
               X_entries.push_back(it_var_in_X[k - 1]->second);
             } else {
@@ -437,22 +439,22 @@ void SdpaFreeFormat::Finalize() {
     A_.emplace_back(num_X_rows_, num_X_rows_);
     A_.back().setFromTriplets(A_triplets_[i].begin(), A_triplets_[i].end());
   }
-  B_.resize(static_cast<int>(A_triplets_.size()), s_size_);
+  B_.resize(static_cast<int>(A_triplets_.size()), num_free_variables_);
   B_.setFromTriplets(B_triplets_.begin(), B_triplets_.end());
   C_.resize(num_X_rows_, num_X_rows_);
   C_.setFromTriplets(C_triplets_.begin(), C_triplets_.end());
-  d_.resize(s_size_, 1);
+  d_.resize(num_free_variables_, 1);
   d_.setFromTriplets(d_triplets_.begin(), d_triplets_.end());
 }
 
 SdpaFreeFormat::SdpaFreeFormat(const MathematicalProgram& prog) {
-  std::unordered_map<symbolic::Variable::Id, std::vector<Xentry>>
-      Xentries_for_same_decision_variable;
+  std::unordered_map<symbolic::Variable::Id, std::vector<EntryInX>>
+      entries_in_X_for_same_decision_variable;
   DeclareXforPositiveSemidefiniteConstraints(
-      prog, &Xentries_for_same_decision_variable);
+      prog, &entries_in_X_for_same_decision_variable);
 
   AddEqualityConstraintOnXentriesForSameDecisionVariable(
-      Xentries_for_same_decision_variable);
+      entries_in_X_for_same_decision_variable);
 
   RegisterMathematicalProgramDecisionVariable(prog);
 
@@ -466,7 +468,7 @@ SdpaFreeFormat::SdpaFreeFormat(const MathematicalProgram& prog) {
 }
 
 void ConvertSparseMatrixFormattToCsdpProblemData(
-    const std::vector<Xblock>& X_blocks, const Eigen::SparseMatrix<double>& C,
+    const std::vector<BlockInX>& X_blocks, const Eigen::SparseMatrix<double>& C,
     const std::vector<Eigen::SparseMatrix<double>> A,
     const Eigen::VectorXd& rhs, csdp::blockmatrix* C_csdp, double** rhs_csdp,
     csdp::constraintmatrix** constraints) {
@@ -609,7 +611,7 @@ void ConvertSparseMatrixFormattToCsdpProblemData(
 void SdpaFreeFormat::GenerateCsdpProblemDataWithoutFreeVariables(
     csdp::blockmatrix* C_csdp, double** rhs_csdp,
     csdp::constraintmatrix** constraints) const {
-  if (s_size_ == 0) {
+  if (num_free_variables_ == 0) {
     Eigen::SparseMatrix<double> C(num_X_rows_, num_X_rows_);
     C.setFromTriplets(C_triplets_.begin(), C_triplets_.end());
     std::vector<Eigen::SparseMatrix<double>> A;
@@ -671,8 +673,8 @@ void SetCsdpSolverDetails(int csdp_ret, double pobj, double dobj, int y_size,
                           double* y, const csdp::blockmatrix& Z,
                           CsdpSolverDetails* solver_details) {
   solver_details->return_code = csdp_ret;
-  solver_details->pobj = pobj;
-  solver_details->dobj = dobj;
+  solver_details->primal_objective = pobj;
+  solver_details->dual_objective = dobj;
   solver_details->y_val.resize(y_size);
   for (int i = 0; i < y_size; ++i) {
     solver_details->y_val(i) = y[i + 1];
@@ -699,9 +701,9 @@ SolutionResult ConvertCsdpReturnToSolutionResult(int csdp_ret) {
 void SetProgramSolutionFromX(const SdpaFreeFormat& sdpa_free_format,
                              const csdp::blockmatrix& X,
                              Eigen::VectorXd* prog_sol) {
-  for (const auto& item : sdpa_free_format.map_prog_var_index_to_Xentry()) {
+  for (const auto& item : sdpa_free_format.map_prog_var_index_to_entry_in_X()) {
     const int var_index = item.first;
-    const Xentry& X_entry = item.second;
+    const EntryInX& X_entry = item.second;
     if (X.blocks[X_entry.block_index + 1].blockcategory == csdp::MATRIX) {
       (*prog_sol)(var_index) = X.blocks[X_entry.block_index + 1].data.mat[ijtok(
           X_entry.row_index_in_block + 1, X_entry.column_index_in_block + 1,
@@ -719,7 +721,7 @@ void SetProgramSolutionFromX(const SdpaFreeFormat& sdpa_free_format,
 void SolveProgramWithNoFreeVariables(const MathematicalProgram& prog,
                                      const SdpaFreeFormat& sdpa_free_format,
                                      MathematicalProgramResult* result) {
-  DRAKE_ASSERT(sdpa_free_format.s_size() == 0);
+  DRAKE_ASSERT(sdpa_free_format.num_free_variables() == 0);
 
   csdp::blockmatrix C;
   double* rhs;
@@ -785,7 +787,7 @@ void CsdpSolver::DoSolve(const MathematicalProgram& prog,
                          MathematicalProgramResult* result) const {
   result->set_solver_id(CsdpSolver::id());
   const internal::SdpaFreeFormat sdpa_free_format(prog);
-  if (sdpa_free_format.s_size() == 0) {
+  if (sdpa_free_format.num_free_variables() == 0) {
     internal::SolveProgramWithNoFreeVariables(prog, sdpa_free_format, result);
   }
 }

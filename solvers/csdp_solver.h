@@ -24,9 +24,9 @@ struct CsdpSolverDetails {
    */
   int return_code;
   /** The primal objective value. */
-  double pobj;
+  double primal_objective;
   /** The dual objective value. */
-  double dobj;
+  double dual_objective;
   /**
    * CSDP solves a primal problem of the form
    * <pre>

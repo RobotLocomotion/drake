@@ -938,6 +938,7 @@ drake_cc_library(
             "csdp_solver.h",
         ],
     }),
+    install_hdrs_exclude = ["csdp_solver_internal.h"],
     deps = select({
         "//conditions:default": [
             ":mathematical_program_lite",
