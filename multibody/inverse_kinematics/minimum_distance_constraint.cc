@@ -30,7 +30,7 @@ T LogSumExp(const std::vector<T>& x) {
 template <typename T>
 T SmoothMax(const std::vector<T>& x) {
   // We compute the soft-max of x as softmax(x) = log(∑ᵢ exp(αxᵢ)) / α.
-  // This soft-max aproaches max(x) as α increases. We choose α = 100, as that
+  // This soft-max approaches max(x) as α increases. We choose α = 100, as that
   // gives a qualitatively good fit for xᵢ ∈ [0, 1], which is the range of
   // potential penalty values when the MinimumDistanceConstraint is feasible.
   double alpha{100};
