@@ -1025,20 +1025,31 @@ void MultibodyTree<T>::CalcPointsAnalyticalJacobianExpressedInWorld(
 }
 
 template <typename T>
-VectorX<T> MultibodyTree<T>::CalcBiasForPointsGeometricJacobianExpressedInWorld(
+VectorX<T> MultibodyTree<T>::CalcBiasForJacobianTranslationalVelocity(
     const systems::Context<T>& context,
+    JacobianWrtVariable with_respect_to,
     const Frame<T>& frame_F,
-    const Eigen::Ref<const MatrixX<T>>& p_FP_list) const {
+    const Eigen::Ref<const MatrixX<T>>& p_FP_list,
+    const Frame<T>& frame_A,
+    const Frame<T>& frame_E) const {
   DRAKE_THROW_UNLESS(p_FP_list.rows() == 3);
+
+  // For now, this method requires with_respect_to to be kV.
+  DRAKE_THROW_UNLESS(with_respect_to == JacobianWrtVariable::kV);
+
+  // For now, this method requires frame_A and frame_E to be the world frame.
+  DRAKE_THROW_UNLESS(&frame_A == &world_frame());
+  DRAKE_THROW_UNLESS(&frame_E == &world_frame());
 
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
 
   // For a frame F instantaneously moving with a body frame B, the spatial
-  // acceleration of the frame F shifted to frame Fp with origin at point P
-  // fixed in frame F, can be computed as:
+  // acceleration in world W of the frame F shifted to frame Fp with origin at
+  // point P fixed in frame F, can be computed as:
   //   A_WFp = Jv_WFp⋅v̇ + Ab_WFp,
-  // where Jv_WFp is the geometric Jacobian of frame Fp and Ab_WFp is the bias
+  // where Jv_WFp is the Jacobian with respect to generalized velocities v of
+  // the spatial velocity of frame Fp in world W and Ab_WFp is the bias
   // term for that Jacobian, defined as Ab_WFp = J̇v_WFp⋅v. The bias terms
   // contains the Coriolis and centrifugal contributions to the total spatial
   // acceleration due to non-zero velocities. Therefore, the bias term for
@@ -1072,15 +1083,15 @@ VectorX<T> MultibodyTree<T>::CalcBiasForPointsGeometricJacobianExpressedInWorld(
   VectorX<T> Ab_WB_array(3 * num_points);
 
   for (int ipoint = 0; ipoint < num_points; ++ipoint) {
-    const Vector3<T> p_FPi = p_FP_list.col(ipoint);
+    const Vector3<T> p_FPi_F = p_FP_list.col(ipoint);
 
-    // Body B's orientation.
-    const Matrix3<T>& R_WB = pc.get_X_WB(body_B.node_index()).linear();
+    // Body B's orientation in world W.
+    const RotationMatrix<T>& R_WB = pc.get_X_WB(body_B.node_index()).rotation();
 
-    // We need to compute p_BPi_W, the position of Pi in B, expressed in W.
+    // We need to compute p_BPi_W, the position from Bo to Pi, expressed in W.
     const RigidTransform<T> X_BF = frame_F.GetFixedPoseInBodyFrame();
-    const Vector3<T> p_BPi = X_BF * p_FPi;
-    const Vector3<T> p_BPi_W = R_WB * p_BPi;
+    const Vector3<T> p_BPi_B = X_BF * p_FPi_F;
+    const Vector3<T> p_BPi_W = R_WB * p_BPi_B;
 
     // Body B's velocity in the world frame W.
     const Vector3<T>& w_WB = vc.get_V_WB(body_B.node_index()).rotational();
