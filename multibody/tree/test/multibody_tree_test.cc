@@ -687,7 +687,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
   const VectorX<double> Ab_WHp =
       tree().CalcBiasForJacobianTranslationalVelocity(
       *context_, JacobianWrtVariable::kV, *frame_H_, p_HPi,
-      world_frame, world_frame );
+      world_frame, world_frame);
 
   // Ab_WHp is of size 3⋅kNumPoints x num_velocities. CompareMatrices() below
   // verifies this, in addition to the numerical values of each element.
