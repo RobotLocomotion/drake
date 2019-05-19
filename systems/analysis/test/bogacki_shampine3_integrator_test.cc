@@ -22,7 +22,7 @@ typedef ::testing::Types<BogackiShampine3Integrator<double>> Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, ExplicitErrorControlledIntegratorTest, Types);
 INSTANTIATE_TYPED_TEST_CASE_P(My, PleidesTest, Types);
 
-// A testing fixture for BS3 integrators, providing a simple
+// A testing fixture for the BS3 integrator, providing a simple
 // free body plant with closed form solutions to test against.
 class BS3IntegratorTest : public ::testing::Test {
  protected:
@@ -42,7 +42,6 @@ class BS3IntegratorTest : public ::testing::Test {
   std::unique_ptr<Context<double>> MakePlantContext() const {
     std::unique_ptr<Context<double>> context =
         plant_->CreateDefaultContext();
-    context->EnableCaching();
 
     // Set body linear and angular velocity.
     Vector3<double> v0(1., 2., 3.);    // Linear velocity in body's frame.
@@ -87,7 +86,7 @@ GTEST_TEST(BS3IntegratorErrorEstimatorTest, CubicTest) {
 
   // Check for near-exact 3rd-order results. The measure of accuracy is a
   // tolerance that scales with expected answer at t_final.
-  const double expected_answer = t_final * (t_final * (t_final + 1) + 12) + C;
+  const double expected_answer = cubic.Evaluate(t_final);
   const double allowable_3rd_order_error = expected_answer *
       std::numeric_limits<double>::epsilon();
   const double actual_answer = cubic_context->get_continuous_state_vector()[0];
@@ -101,8 +100,7 @@ GTEST_TEST(BS3IntegratorErrorEstimatorTest, CubicTest) {
   // error associated with a full step.
 
   // First obtain the error estimate using a single step of h.
-  const double err_est_h =
-      bs3.get_error_estimate()->get_vector().GetAtIndex(0);
+  const double err_est_h = bs3.get_error_estimate()->get_vector()[0];
 
   // Now obtain the error estimate using two half steps of h/2.
   cubic_context->SetTime(0.0);
@@ -110,8 +108,7 @@ GTEST_TEST(BS3IntegratorErrorEstimatorTest, CubicTest) {
   bs3.Initialize();
   ASSERT_TRUE(bs3.IntegrateWithSingleFixedStepToTime(t_final/2));
   ASSERT_TRUE(bs3.IntegrateWithSingleFixedStepToTime(t_final));
-  const double err_est_2h_2 =
-      bs3.get_error_estimate()->get_vector().GetAtIndex(0);
+  const double err_est_2h_2 = bs3.get_error_estimate()->get_vector()[0];
 
   // Check that the 2nd-order error estimate for a full-step is less than
   // K*8 times larger than then 2nd-order error estimate for 2 half-steps;
@@ -192,49 +189,6 @@ TEST_F(BS3IntegratorTest, ComparisonWithRK2) {
   const double close_tol = 8e-6;
   for (int i = 0; i < x_final_rk2.size(); ++i)
     EXPECT_NEAR(x_final_rk2[i], x_final_bs3[i], close_tol);
-}
-
-// Tests accuracy of integrator's dense output.
-TEST_F(BS3IntegratorTest, DenseOutputAccuracy) {
-  std::unique_ptr<Context<double>> context = MakePlantContext();
-
-  BogackiShampine3Integrator<double> bs3(*plant_, context.get());
-  bs3.set_maximum_step_size(0.1);
-  bs3.set_target_accuracy(1e-6);
-  bs3.Initialize();
-
-  // Start a dense integration i.e. one that generates a dense
-  // output for the state function.
-  bs3.StartDenseIntegration();
-
-  const double t_final = 1.0;
-  // Arbitrary step, valid as long as it doesn't match the same
-  // steps taken by the integrator. Otherwise, dense output accuracy
-  // would not be checked.
-  const double dt = 0.01;
-  const int n_steps = t_final / dt;
-  for (int i = 1; i < n_steps; ++i) {
-    // Integrate the whole step.
-    bs3.IntegrateWithMultipleStepsToTime(i * dt);
-
-    // Check solution.
-    EXPECT_TRUE(CompareMatrices(
-        bs3.get_dense_output()->Evaluate(context->get_time()),
-        plant_->GetPositionsAndVelocities(*context),
-        bs3.get_accuracy_in_use(),
-        MatrixCompareType::relative));
-  }
-
-  // Stop undergoing dense integration.
-  std::unique_ptr<DenseOutput<double>> bs3_dense_output =
-      bs3.StopDenseIntegration();
-  EXPECT_FALSE(bs3.get_dense_output());
-
-  // Integrate one more step.
-  bs3.IntegrateWithMultipleStepsToTime(t_final);
-
-  // Verify that the dense output was not updated.
-  EXPECT_LT(bs3_dense_output->end_time(), context->get_time());
 }
 
 }  // namespace analysis_test

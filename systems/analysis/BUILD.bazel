@@ -42,7 +42,6 @@ drake_cc_library(
     hdrs = ["bogacki_shampine3_integrator.h"],
     deps = [
         ":integrator_base",
-        ":runge_kutta2_integrator",
     ],
 )
 
@@ -314,6 +313,7 @@ drake_cc_googletest(
     # and/or disable in debug mode.
     deps = [
         ":bogacki_shampine3_integrator",
+        ":runge_kutta2_integrator",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
         "//multibody/plant",

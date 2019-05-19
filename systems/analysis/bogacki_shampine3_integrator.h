@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/unused.h"
 #include "drake/systems/analysis/integrator_base.h"
 
 namespace drake {
@@ -32,9 +33,9 @@ namespace systems {
           7/24        1/4      1/3     1/8
 
  * </pre>
- * where the second to last row is the 3th-order (propagated) solution and
- * the last row gives a 2th-order accurate solution which, when subtracted
- * from the propagated solution, yields the 2th-order error estimate of the
+ * where the second to last row is the 3rd-order (propagated) solution and
+ * the last row gives a 2nd-order accurate solution which, when subtracted
+ * from the propagated solution, yields the 2nd-order error estimate of the
  * error.
  *
  * - [Bogacki, 1989] P. Bogacki and L. Shampine. "A 3(2) pair of Runge–Kutta
@@ -48,8 +49,7 @@ class BogackiShampine3Integrator final : public IntegratorBase<T> {
   ~BogackiShampine3Integrator() override = default;
 
   explicit BogackiShampine3Integrator(const System<T>& system,
-                                 Context<T>* context = nullptr)
-      : IntegratorBase<T>(system, context) {
+      Context<T>* context = nullptr) : IntegratorBase<T>(system, context) {
     derivs1_ = system.AllocateTimeDerivatives();
     derivs2_ = system.AllocateTimeDerivatives();
     derivs3_ = system.AllocateTimeDerivatives();
@@ -154,12 +154,12 @@ bool BogackiShampine3Integrator<T>::DoStep(const T& h) {
   // to subsequent evaluations.
 
   // Compute the first intermediate state and derivative (i.e., Stage 2).
-  const double c2 = 1.0 / 2;
-  const double a21 = 1.0 / 2;
   // This call marks t- and xc-dependent cache entries out of date, including
   // the derivative cache entry. Note that xc is a live reference into the
   // context -- subsequent changes through that reference are unobservable so
   // will require manual out-of-date notifications.
+  const double c2 = 1.0 / 2;
+  const double a21 = 1.0 / 2;
   VectorBase<T>& xc = context.SetTimeAndGetMutableContinuousStateVector(
       t0 + c2 * h);
   xc.PlusEqScaled(a21 * h, k1);
@@ -183,8 +183,10 @@ bool BogackiShampine3Integrator<T>::DoStep(const T& h) {
 
   // Evaluate the derivative (denoted k3) at t₀ + c3 * h,
   //   xc₀ + a31 * h * k1 + a32 * h * k2.
+  // Note that a31 is zero, so we leave that term out.
+  unused(a31);
   xc.SetFromVector(save_xc0_);  // Restore xc ← xc₀.
-  xc.PlusEqScaled({{a31 * h, k1}, {a32 * h, k2}});
+  xc.PlusEqScaled({{a32 * h, k2}});
   derivs3_->get_mutable_vector().SetFrom(
       this->EvalTimeDerivatives(context).get_vector());
   const VectorBase<T>& k3 =  derivs3_->get_vector();
