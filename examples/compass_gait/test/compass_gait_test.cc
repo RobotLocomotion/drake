@@ -229,6 +229,8 @@ GTEST_TEST(CompassGaitTest, TestMinimalStateOutput) {
   cg.get_minimal_state_output_port().Calc(*context, output.get());
   EXPECT_TRUE(CompareMatrices(minimal_state.CopyToVector(),
                               state.CopyToVector(), 1e-14));
+  EXPECT_FALSE(
+      cg.HasDirectFeedthrough(cg.get_minimal_state_output_port().get_index()));
 }
 
 GTEST_TEST(CompassGaitTest, TestFloatBaseOutput) {
@@ -279,6 +281,8 @@ GTEST_TEST(CompassGaitTest, TestFloatBaseOutput) {
   cg.get_floating_base_state_output_port().Calc(*context, output.get());
   EXPECT_TRUE(
       CompareMatrices(floating_base_state.CopyToVector(), expected, 1e-14));
+  EXPECT_FALSE(cg.HasDirectFeedthrough(
+      cg.get_floating_base_state_output_port().get_index()));
 }
 
 }  // namespace
