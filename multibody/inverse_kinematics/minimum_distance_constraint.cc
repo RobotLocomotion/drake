@@ -118,9 +118,9 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
         "AddMultibodyPlantSceneGraph on how to connect MultibodyPlant to "
         "SceneGraph.");
   }
-  if (minimum_distance_ < 0) {
+  if (std::isinf(threshold_distance_)) {
     throw std::invalid_argument(
-        "MinimumDistanceConstraint: minimum_distance should be non-negative.");
+        "MinimumDistanceConstraint: threshold_distance must be finite.");
   }
   if (threshold_distance_ <= minimum_distance) {
     throw std::invalid_argument(

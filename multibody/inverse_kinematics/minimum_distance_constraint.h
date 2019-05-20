@@ -75,12 +75,19 @@ class MinimumDistanceConstraint : public solvers::Constraint {
   @param minimum_distance The minimum value of the signed distance between
   any admissible pairs of objects.
   @param penalty_type The penalty function formulation.
-  @param threshold_distance The distance below which a collision pair is
-  assigned a non-zero penalty value.
+  @param threshold_distance The  signed distance beyond which a pair of
+  geometries is ignored. Must be greater than minimum_distance. NOTE: This
+  parameter is also used in scaling the signed distances between bodies and
+  therefore MUST be finite. This is in contrast to the similarly named arguments
+  to geometry::QueryObject methods, which are purely performance optimizations.
+  @default 1
   @pre The MultibodyPlant passed in the constructor of InverseKinematics has
   registered its geometry with a SceneGraph object already.
-  @pre minimum_distance > 0.
-  @throw invalid_argument if the geometry hasn't been registered. */
+  @pre minimum_distance < threshold_distance
+  @throws std::invalid_argument if the geometry hasn't been registered.
+  @throws std::invalid_argument if threshold_distance = ∞.
+  @throws std::invalid_argument if threshold_distance <= minimum_distance.
+  */
   MinimumDistanceConstraint(
       const multibody::MultibodyPlant<double>* const plant,
       double minimum_distance, systems::Context<double>* plant_context,
