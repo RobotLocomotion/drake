@@ -21,6 +21,7 @@ using geometry::SurfaceFace;
 using geometry::SurfaceMesh;
 using geometry::SurfaceVertex;
 using geometry::SurfaceVertexIndex;
+using multibody::AddMultibodyPlantSceneGraph;
 using multibody::Parser;
 using systems::Context;
 using systems::Diagram;
@@ -46,26 +47,13 @@ class MultibodyPlantTester {
             r_barycentric, dissipation, mu_coulomb);
     }
 
-  static GeometryId FindBoxGeometry(const MultibodyPlant<double>& plant) {
-    for (BodyIndex i(0); i < plant.num_bodies(); ++i) {
-      if (plant.get_body(i).name() == "box") {
-        DRAKE_DEMAND(plant.collision_geometries_[i].size() == 1);
-        return plant.collision_geometries_[i].front();
-      }
-    }
 
-    throw std::runtime_error("Box geometry unexpectedly not found.");
-  }
-
-  static GeometryId FindGroundGeometry(const MultibodyPlant<double>& plant) {
-    for (BodyIndex i(0); i < plant.num_bodies(); ++i) {
-      if (plant.get_body(i).name() == "ground") {
-        DRAKE_DEMAND(plant.collision_geometries_[i].size() == 1);
-        return plant.collision_geometries_[i].front();
-      }
-    }
-
-    throw std::runtime_error("Ground geometry unexpectedly not found.");
+  static GeometryId FindGeometry(
+      const MultibodyPlant<double>& plant, const std::string body_name) {
+    const auto& geometries = plant.GetCollisionGeometriesForBody(
+        plant.GetBodyByName(body_name));
+    DRAKE_DEMAND(geometries.size() == 1);
+    return geometries[0];
   }
 };
 
@@ -83,8 +71,8 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
       double dissipation, double mu_coulomb) {
     return MultibodyPlantTester::CalcGeneralizedForceFromTractionAtPoint(
           plant(), plant_context(),
-          MultibodyPlantTester::FindGroundGeometry(plant()),
-          MultibodyPlantTester::FindBoxGeometry(plant()),
+          MultibodyPlantTester::FindGeometry(plant(), "ground"),
+          MultibodyPlantTester::FindGeometry(plant(), "box"),
           contact_surface(), face_index, r_barycentric,
           dissipation, mu_coulomb);
   }
@@ -93,30 +81,17 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
   void SetUp() override {
     // Read the two bodies into the plant.
     DiagramBuilder<double> builder;
-    SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
-    scene_graph.set_name("scene_graph");
+    SceneGraph<double>* scene_graph;
+    std::tie(plant_, scene_graph) = AddMultibodyPlantSceneGraph(&builder);
+    MultibodyPlant<double>& plant = *plant_;
     const std::string full_name = FindResourceOrThrow(
         "drake/multibody/plant/test/block_on_halfspace.sdf");
-    plant_ = builder.AddSystem<MultibodyPlant>();
-    MultibodyPlant<double>& plant = *plant_;
-    Parser(&plant, &scene_graph).AddModelFromFile(full_name);
-
-    // Weld the ground frame.
-    plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("ground"));
+    Parser(&plant, scene_graph).AddModelFromFile(full_name);
 
     // Add gravity to the model.
     plant.AddForceElement<UniformGravityFieldElement>();
 
     plant.Finalize();
-
-    // Connect MBP and SceneGraph.
-    DRAKE_DEMAND(!!plant.get_source_id());
-    builder.Connect(scene_graph.get_query_output_port(),
-                    plant.get_geometry_query_input_port());
-    builder.Connect(
-        plant.get_geometry_poses_output_port(),
-        scene_graph.get_source_pose_port(plant.get_source_id().value()));
-
     diagram_ = builder.Build();
 
     // Create a context for this system.
@@ -137,8 +112,9 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
 
   std::unique_ptr<ContactSurface<double>> CreateContactSurface() const {
     // Get the geometry IDs for the ground halfspace and the block.
-    GeometryId ground_geom = MultibodyPlantTester::FindGroundGeometry(*plant_);
-    GeometryId block_geom = MultibodyPlantTester::FindBoxGeometry(*plant_);
+    GeometryId ground_geom = MultibodyPlantTester::FindGeometry(
+        *plant_, "ground");
+    GeometryId block_geom = MultibodyPlantTester::FindGeometry(*plant_, "box");
 
     // Create the surface mesh first.
     auto mesh = CreateSurfaceMesh();
@@ -170,7 +146,8 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
     std::vector<SurfaceVertex<double>> vertices;
     std::vector<SurfaceFace> faces;
 
-    // Create the vertices.
+    // Create the vertices, all of which are offset vectors defined in the
+    // ground body frame.
     vertices.emplace_back(Vector3<double>(0.5, 0.5, -0.5));
     vertices.emplace_back(Vector3<double>(-0.5, 0.5, -0.5));
     vertices.emplace_back(Vector3<double>(-0.5, -0.5, -0.5));
