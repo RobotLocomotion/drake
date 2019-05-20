@@ -48,6 +48,7 @@ drake_cc_library(
         "//math:gradient",
         "//multibody/plant",
         "//solvers:constraint",
+        "//solvers:minimum_value_constraint",
     ],
 )
 
