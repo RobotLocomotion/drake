@@ -81,11 +81,12 @@ InverseKinematics::AddAngleBetweenVectorsConstraint(
 }
 
 solvers::Binding<solvers::Constraint>
-InverseKinematics::AddMinimumDistanceConstraint(double minimum_distance,
-                                                double threshold_distance) {
-  auto constraint = std::make_shared<MinimumDistanceConstraint>(
-      &plant_, minimum_distance, get_mutable_context(),
-      &QuadraticallySmoothedHingeLoss, threshold_distance);
+InverseKinematics::AddMinimumDistanceConstraint(
+    double minimum_distance, double influence_distance_offset) {
+  auto constraint =
+      std::shared_ptr<MinimumDistanceConstraint>(new MinimumDistanceConstraint(
+          &plant_, minimum_distance, get_mutable_context(), {},
+          influence_distance_offset));
   return prog_->AddConstraint(constraint, q_);
 }
 }  // namespace multibody
