@@ -231,7 +231,8 @@ PYBIND11_MODULE(lcm, m) {
 
   m.def("ConnectLcmScope", &ConnectLcmScope, py::arg("src"), py::arg("channel"),
       py::arg("builder"), py::arg("lcm") = nullptr, py::keep_alive<0, 2>(),
-      // TODO(eric.cousineau): Figure out why this is necessary (#9398).
+      // `py_reference` is needed because `automatic` resolves to
+      // `take_ownership`, not `reference`.
       py_reference, doc.ConnectLcmScope.doc);
 
   // Bind C++ serializers.
