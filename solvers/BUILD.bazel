@@ -943,7 +943,6 @@ drake_cc_library(
         "//conditions:default": [
             ":mathematical_program_lite",
             ":solver_base",
-            "//common:essential",
             "//common:type_safe_index",
             "//math:eigen_sparse_triplet",
             "@csdp",
@@ -1604,6 +1603,7 @@ add_lint_tests(cpplint_extra_srcs = [
     "csdp_solver.h",
     "csdp_solver.cc",
     "csdp_solver_common.cc",
+    "csdp_solver_internal.h",
     "fast_qp.h",
     "gurobi_qp.h",
     "gurobi_solver.cc",

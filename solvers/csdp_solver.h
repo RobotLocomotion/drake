@@ -1,7 +1,6 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/solver_base.h"
 
 namespace drake {
@@ -21,11 +20,11 @@ struct CsdpSolverDetails {
    *     3 Problem solved to near optimality.
    *     4 Maximum iterations reached.
    */
-  int return_code;
+  int return_code{};
   /** The primal objective value. */
-  double primal_objective;
+  double primal_objective{};
   /** The dual objective value. */
-  double dual_objective;
+  double dual_objective{};
   /**
    * CSDP solves a primal problem of the form
    *
@@ -49,7 +48,6 @@ struct CsdpSolverDetails {
 class CsdpSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CsdpSolver)
-
 
   CsdpSolver();
 
