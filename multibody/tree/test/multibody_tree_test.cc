@@ -714,14 +714,14 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
   // Verify CalcBiasForJacobianTranslationalVelocity() throws an exception if
   // measured-in-frame is not world frame W.
   EXPECT_THROW(tree().CalcBiasForJacobianTranslationalVelocity(
-                   *context_, JacobianWrtVariable::kQDot, *frame_H_, p_HPi,
+                   *context_, JacobianWrtVariable::kV, *frame_H_, p_HPi,
                    *frame_H_, world_frame),
                std::exception);
 
   // Verify CalcBiasForJacobianTranslationalVelocity() throws an exception if
   // expressed-in-frame is not world frame W.
   EXPECT_THROW(tree().CalcBiasForJacobianTranslationalVelocity(
-                   *context_, JacobianWrtVariable::kQDot, *frame_H_, p_HPi,
+                   *context_, JacobianWrtVariable::kV, *frame_H_, p_HPi,
                    world_frame, *frame_H_),
                std::exception);
 }
