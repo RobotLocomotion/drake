@@ -703,6 +703,27 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
           world_frame, world_frame),
       std::exception,
       ".* condition '.*.rows\\(\\) == 3' failed.");
+
+  // Verify CalcBiasForJacobianTranslationalVelocity() throws an exception if
+  // JacobianWrtVariable is KQDot (not kV).
+  EXPECT_THROW(tree().CalcBiasForJacobianTranslationalVelocity(
+                   *context_, JacobianWrtVariable::kQDot, *frame_H_, p_HPi,
+                   world_frame, world_frame),
+               std::exception);
+
+  // Verify CalcBiasForJacobianTranslationalVelocity() throws an exception if
+  // measured-in-frame is not world frame W.
+  EXPECT_THROW(tree().CalcBiasForJacobianTranslationalVelocity(
+                   *context_, JacobianWrtVariable::kQDot, *frame_H_, p_HPi,
+                   *frame_H_, world_frame),
+               std::exception);
+
+  // Verify CalcBiasForJacobianTranslationalVelocity() throws an exception if
+  // expressed-in-frame is not world frame W.
+  EXPECT_THROW(tree().CalcBiasForJacobianTranslationalVelocity(
+                   *context_, JacobianWrtVariable::kQDot, *frame_H_, p_HPi,
+                   world_frame, *frame_H_),
+               std::exception);
 }
 
 // Given a set of points Pi attached to the end effector frame G, this test

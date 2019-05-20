@@ -1589,8 +1589,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] p_FP_list `3 x n` matrix of position vectors `p_FoFp_F` from
   /// Fo (frame F's origin) to each such point Fp, expressed in frame F.
   /// @param[in] frame_A The frame that measures `v_AFp` (Fp's velocity in A).
+  /// Currently, an exception is thrown if frame_A is not the World frame.
   /// @param[in] frame_E The frame in which `v_AFp` is expressed on input and
   /// the frame in which the bias term `b_AFp` is expressed on output.
+  /// Currently, an exception is thrown if frame_E is not the World frame.
   /// @returns b_AFp `3 x n` matrix of bias terms for each of the associated n
   /// points Fp, expressed in frame_E.  These bias terms are functions of the
   /// generalized positions q and the generalized velocities v and depend on
@@ -1598,8 +1600,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `p_FP_list` does not have 3 rows.
   /// @throws std::exception if `with_respect_to` is not JacobianWrtVariable::kV
   /// @throws std::exception if frame_A or frame_E are not the world frame.
-  /// TODO(Mitiguy) Allow `with_respect_to` to be JacobianWrtVariable::kQDot
-  /// and/or allow frame_A and frame_E to be non-world frames.
+  // TODO(Mitiguy) Allow `with_respect_to` to be JacobianWrtVariable::kQDot
+  // and/or allow frame_A and frame_E to be non-world frames.
   VectorX<T> CalcBiasForJacobianTranslationalVelocity(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
