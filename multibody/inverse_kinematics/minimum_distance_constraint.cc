@@ -43,9 +43,9 @@ T SmoothMax(const std::vector<T>& x) {
 
 template <typename T>
 T ScaleDistance(T distance, double minimum_distance,
-                double threshold_distance) {
-  return (distance - threshold_distance) /
-         (threshold_distance - minimum_distance);
+                double influence_distance) {
+  return (distance - influence_distance) /
+         (influence_distance - minimum_distance);
 }
 
 }  // namespace
@@ -91,12 +91,13 @@ void QuadraticallySmoothedHingeLoss(double x, double* penalty,
 MinimumDistanceConstraint::MinimumDistanceConstraint(
     const multibody::MultibodyPlant<double>* const plant,
     double minimum_distance, systems::Context<double>* plant_context,
-    MinimumDistancePenaltyFunction penalty_function, double threshold_distance)
+    MinimumDistancePenaltyFunction penalty_function,
+    double influence_distance_offset)
     : solvers::Constraint(1, RefFromPtrOrThrow(plant).num_positions(),
                           Vector1d(0), Vector1d(1)),
       plant_{RefFromPtrOrThrow(plant)},
       minimum_distance_{minimum_distance},
-      threshold_distance_{threshold_distance},
+      influence_distance_{minimum_distance + influence_distance_offset},
       // Since penalty_function uses output parameters rather than a return
       // value, we construct a lambda and then call it immediately to compute
       // the output scaling factor.
@@ -108,7 +109,7 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
             penalty_function(x, &upper_bound, &dummy);
             return upper_bound;
           }(ScaleDistance(minimum_distance, minimum_distance,
-                          threshold_distance))},
+                          minimum_distance + influence_distance_offset))},
       plant_context_{plant_context},
       penalty_function_{penalty_function} {
   if (!plant_.geometry_source_is_registered()) {
@@ -118,14 +119,14 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
         "AddMultibodyPlantSceneGraph on how to connect MultibodyPlant to "
         "SceneGraph.");
   }
-  if (std::isinf(threshold_distance_)) {
+  if (!std::isfinite(influence_distance_offset)) {
     throw std::invalid_argument(
-        "MinimumDistanceConstraint: threshold_distance must be finite.");
+        "MinimumDistanceConstraint: influence_distance_offset must be finite.");
   }
-  if (threshold_distance_ <= minimum_distance) {
+  if (influence_distance_offset <= 0) {
     throw std::invalid_argument(
-        "MinimumDistanceConstraint: threshold_distance should be greater than "
-        "minimum_distance.");
+        "MinimumDistanceConstraint: influence_distance_offset must be "
+        "positive.");
   }
   const auto& query_port = plant_.get_geometry_query_input_port();
   if (!query_port.HasValue(*plant_context_)) {
@@ -160,13 +161,13 @@ void InitializeY(const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y,
 void Penalty(const MultibodyPlant<double>&, const systems::Context<double>&,
              const Frame<double>&, const Frame<double>&, const Eigen::Vector3d&,
              double distance, double minimum_distance,
-             double threshold_distance,
+             double influence_distance,
              MinimumDistancePenaltyFunction penalty_function,
              const Eigen::Vector3d&, const Eigen::Ref<const Eigen::VectorXd>&,
              double* y) {
   double penalty;
   const double x =
-      ScaleDistance(distance, minimum_distance, threshold_distance);
+      ScaleDistance(distance, minimum_distance, influence_distance);
   penalty_function(x, &penalty, nullptr);
   *y = penalty;
 }
@@ -175,7 +176,7 @@ void Penalty(const MultibodyPlant<double>& plant,
              const systems::Context<double>& context,
              const Frame<double>& frameA, const Frame<double>& frameB,
              const Eigen::Vector3d& p_ACa, double distance,
-             double minimum_distance, double threshold_distance,
+             double minimum_distance, double influence_distance,
              MinimumDistancePenaltyFunction penalty_function,
              const Eigen::Vector3d& nhat_BA_W,
              const Eigen::Ref<const AutoDiffVecXd>& q, AutoDiffXd* y) {
@@ -196,7 +197,7 @@ void Penalty(const MultibodyPlant<double>& plant,
   AutoDiffXd distance_autodiff{
       distance, ddistance_dq * math::autoDiffToGradientMatrix(q)};
   const AutoDiffXd scaled_distance_autodiff =
-      ScaleDistance(distance_autodiff, minimum_distance, threshold_distance);
+      ScaleDistance(distance_autodiff, minimum_distance, influence_distance);
   double penalty, dpenalty_dscaled_distance;
   penalty_function(scaled_distance_autodiff.value(), &penalty,
                    &dpenalty_dscaled_distance);
@@ -232,7 +233,7 @@ void MinimumDistanceConstraint::DoEvalGeneric(
   const std::vector<geometry::SignedDistancePair<double>>
       signed_distance_pairs =
           query_object.ComputeSignedDistancePairwiseClosestPoints(
-              threshold_distance_);
+              influence_distance_);
 
   // Initialize y to SmoothMax([0, 0, ..., 0]).
   InitializeY(x, y,
@@ -241,7 +242,7 @@ void MinimumDistanceConstraint::DoEvalGeneric(
   std::vector<T> penalties;
   for (const auto& signed_distance_pair : signed_distance_pairs) {
     const double distance = signed_distance_pair.distance;
-    if (distance < threshold_distance_) {
+    if (distance < influence_distance_) {
       const geometry::SceneGraphInspector<double>& inspector =
           query_object.inspector();
       const geometry::FrameId frame_A_id =
@@ -256,7 +257,7 @@ void MinimumDistanceConstraint::DoEvalGeneric(
       Penalty(plant_, *plant_context_, frameA, frameB,
               inspector.X_FG(signed_distance_pair.id_A) *
                   signed_distance_pair.p_ACa,
-              distance, minimum_distance_, threshold_distance_,
+              distance, minimum_distance_, influence_distance_,
               penalty_function_, signed_distance_pair.nhat_BA_W, x,
               &penalties.back());
       penalties.back() *= penalty_output_scaling_;

@@ -48,60 +48,57 @@ void QuadraticallySmoothedHingeLoss(double x, double* penalty,
                                     double* dpenalty_dx);
 
 /** Constrain the signed distance between all candidate pairs of geometries
-(according to the logic of SceneGraph::GetCollisionCandidates()) to be no
-smaller than a specified minimum distance.
+(according to the logic of SceneGraphInspector::GetCollisionCandidates()) to be
+no smaller than a specified minimum distance.
 
 The formulation of the constraint is
 
-0 ≤ SmoothMax( γ((dᵢ - dₜₕᵣₑₛₕ)/(dₜₕᵣₑₛₕ - dₘᵢₙ)) / γ(-1) ) ≤ 1
+0 ≤ SmoothMax( γ((dᵢ - d*)/(d* - dₘᵢₙ)) / γ(-1) ) ≤ 1
 
 where dᵢ is the signed distance of the i-th pair, dₘᵢₙ is the minimum allowable
-distance, dₜₕᵣₑₛₕ is the distance beyond which pairs of geometries are ignored,
-γ is a MinimumDistancePenaltyFunction, and SmoothMax(d) is smooth approximation
-of max(d). We require that dₘᵢₙ < dₜₕᵣₑₛₕ. The input scaling
-(dᵢ - dₜₕᵣₑₛₕ)/(dₜₕᵣₑₛₕ - dₘᵢₙ) ensures that at the boundary of the feasible set
-(when dᵢ == dₘᵢₙ), we evaluate the penalty function at -1, where it is required
-to have a non-zero gradient.
+distance, d* is the "influence distance" (the distance below which a pair of
+geometries influences the constraint), γ is a
+multibody::MinimumDistancePenaltyFunction, and SmoothMax(d) is smooth
+approximation of max(d). We require that dₘᵢₙ < d*. The input scaling
+(dᵢ - d*)/(d* - dₘᵢₙ) ensures that at the boundary of the feasible set (when
+dᵢ == dₘᵢₙ), we evaluate the penalty function at -1, where it is required to
+have a non-zero gradient.
 */
 class MinimumDistanceConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinimumDistanceConstraint)
 
   /** Constructs a MinimumDistanceConstraint.
-  @param plant The robot on which the inverse kinematics problem will be
-  solved. This plant has to have registered its geometry with a SceneGraph
-  object. @throws invalid_argument if the plant has not registered its
-  geometry.
-  @param minimum_distance The minimum value of the signed distance between
-  any admissible pairs of objects.
-  @param penalty_type The penalty function formulation.
-  @param threshold_distance The  signed distance beyond which a pair of
-  geometries is ignored. Must be greater than minimum_distance. NOTE: This
-  parameter is also used in scaling the signed distances between bodies and
-  therefore MUST be finite. This is in contrast to the similarly named arguments
-  to geometry::QueryObject methods, which are purely performance optimizations.
-  @default 1
-  @pre The MultibodyPlant passed in the constructor of InverseKinematics has
-  registered its geometry with a SceneGraph object already.
-  @pre minimum_distance < threshold_distance
-  @throws std::invalid_argument if the geometry hasn't been registered.
-  @throws std::invalid_argument if threshold_distance = ∞.
-  @throws std::invalid_argument if threshold_distance <= minimum_distance.
+  @param plant The multibody system on which the constraint will be evaluated.
+  @param minimum_distance The minimum allowed value, dₘᵢₙ, of the signed
+  distance between any candidate pair of geometries.
+  @param penalty_function The penalty function formulation.
+  @default QuadraticallySmoothedHinge
+  @param influence_distance_offset The difference (in meters) between the
+  influence distance, d*, and the minimum distance, dₘᵢₙ (see class
+  documentation). This value must be finite and strictly positive, as it is used
+  to scale the signed distances between pairs of geometries. Smaller values may
+  improve performance, as fewer pairs of geometries need to be considered in
+  each constraint evaluation. @default 1
+  @throws std::invalid_argument if `plant` has not registered its geometry with
+  a SceneGraph object.
+  @throws std::invalid_argument if influence_distance_offset == ∞.
+  @throws std::invalid_argument if influence_distance_offset <= 0.
   */
   MinimumDistanceConstraint(
       const multibody::MultibodyPlant<double>* const plant,
       double minimum_distance, systems::Context<double>* plant_context,
       MinimumDistancePenaltyFunction penalty_function =
           QuadraticallySmoothedHingeLoss,
-      double threshold_distance = 1);
+      double influence_distance_offset = 1);
 
   ~MinimumDistanceConstraint() override {}
 
   /** Getter for the minimum distance. */
   double minimum_distance() const { return minimum_distance_; }
 
-  /** Getter for the threshold distance. */
-  double threshold_distance() const { return threshold_distance_; }
+  /** Getter for the influence distance. */
+  double influence_distance() const { return influence_distance_; }
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -123,8 +120,8 @@ class MinimumDistanceConstraint : public solvers::Constraint {
 
   const multibody::MultibodyPlant<double>& plant_;
   const double minimum_distance_;
-  const double threshold_distance_;
-  /** Stores the value of 1 / γ((dₘᵢₙ - dₜₕᵣₑₛₕ)/(dₜₕᵣₑₛₕ - dₘᵢₙ)) = 1 / γ(-1).
+  const double influence_distance_;
+  /** Stores the value of 1 / γ((dₘᵢₙ - d*)/(d* - dₘᵢₙ)) = 1 / γ(-1).
   This is used to scale the output of the penalty function to be 1 when
   d == dₘᵢₙ. */
   const double penalty_output_scaling_;

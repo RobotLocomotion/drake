@@ -54,10 +54,10 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
     EXPECT_TRUE(CompareMatrices(constraint.upper_bound(), Vector1d(1)));
   }
 
-  void CheckConstraintEvalLargerThanThresholdDistance(
+  void CheckConstraintEvalLargerThanInfluenceDistance(
       const MinimumDistanceConstraint& constraint, const Eigen::Vector3d& p_WB1,
       const Eigen::Vector3d p_WB2) const {
-    // Distance larger than threshold_distance;
+    // Distance larger than influence_distance;
     // The penalty should be 0, so is the gradient.
     const Eigen::Quaterniond sphere1_quaternion(1, 0, 0, 0);
     const Eigen::Quaterniond sphere2_quaternion(1, 0, 0, 0);
@@ -79,7 +79,7 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
                                        plant_context_autodiff_, 1E-12);
   }
 
-  void CheckConstraintEvalBetweenMinimumAndThresholdDistance(
+  void CheckConstraintEvalBetweenMinimumAndInfluenceDistance(
       const MinimumDistanceConstraint& constraint, const Eigen::Vector3d& p_WB1,
       const Eigen::Vector3d p_WB2) const {
     const Eigen::Quaterniond sphere1_quaternion(1, 0, 0, 0);
@@ -124,19 +124,19 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
   }
 
   void CheckConstraintEval(const MinimumDistanceConstraint& constraint) {
-    // Distance between the spheres is larger than threshold_distance
+    // Distance between the spheres is larger than influence_distance
     Eigen::Vector3d p_WB1(0.2, 1.2, 0.3);
     Eigen::Vector3d p_WB2(1.2, -0.4, 2.3);
-    CheckConstraintEvalLargerThanThresholdDistance(constraint, p_WB1, p_WB2);
+    CheckConstraintEvalLargerThanInfluenceDistance(constraint, p_WB1, p_WB2);
 
     // Distance between the spheres is larger than minimum_distance but less
-    // than threshold_distance
+    // than influence_distance
     p_WB1 << 0.1, 0.2, 0.3;
     p_WB2 = p_WB1 + Eigen::Vector3d(1.0 / 3, 2.0 / 3, 2.0 / 3) *
                         (radius1_ + radius2_ +
-                         0.5 * (constraint.threshold_distance() +
+                         0.5 * (constraint.influence_distance() +
                                 constraint.minimum_distance()));
-    CheckConstraintEvalBetweenMinimumAndThresholdDistance(constraint, p_WB1,
+    CheckConstraintEvalBetweenMinimumAndInfluenceDistance(constraint, p_WB1,
                                                           p_WB2);
 
     // Two spheres are colliding.
@@ -189,28 +189,32 @@ GTEST_TEST(MinimumDistanceConstraintTest,
       "SceneGraph.");
 }
 
-TEST_F(TwoFreeSpheresTest, NegativeMinimumDistance) {
-  EXPECT_NO_THROW(
-      MinimumDistanceConstraint(plant_double_, 0, plant_context_double_));
+TEST_F(TwoFreeSpheresTest, NonpositiveInfluenceDistanceOffset) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MinimumDistanceConstraint(plant_double_, -0.1, plant_context_double_),
+      MinimumDistanceConstraint(plant_double_, 0.1, plant_context_double_,
+                                QuadraticallySmoothedHingeLoss, 0.0),
       std::invalid_argument,
-      "MinimumDistanceConstraint: minimum_distance should be non-negative.");
+      "MinimumDistanceConstraint: influence_distance_offset must be positive.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MinimumDistanceConstraint(plant_double_, 0.1, plant_context_double_,
+                                QuadraticallySmoothedHingeLoss, -0.1),
+      std::invalid_argument,
+      "MinimumDistanceConstraint: influence_distance_offset must be positive.");
 }
 
-TEST_F(TwoFreeSpheresTest, ThresholdDistanceNotGreaterThanMinimumDistance) {
+TEST_F(TwoFreeSpheresTest, NonfiniteInfluenceDistanceOffset) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       MinimumDistanceConstraint(plant_double_, 0.1, plant_context_double_,
-                                QuadraticallySmoothedHingeLoss, 0.1),
+                                QuadraticallySmoothedHingeLoss,
+                                std::numeric_limits<double>::infinity()),
       std::invalid_argument,
-      "MinimumDistanceConstraint: threshold_distance should be greater than "
-      "minimum_distance.");
+      "MinimumDistanceConstraint: influence_distance_offset must be finite.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       MinimumDistanceConstraint(plant_double_, 0.1, plant_context_double_,
-                                QuadraticallySmoothedHingeLoss, 0.05),
+                                QuadraticallySmoothedHingeLoss,
+                                std::numeric_limits<double>::quiet_NaN()),
       std::invalid_argument,
-      "MinimumDistanceConstraint: threshold_distance should be greater than "
-      "minimum_distance.");
+      "MinimumDistanceConstraint: influence_distance_offset must be finite.");
 }
 
 template <typename T>
