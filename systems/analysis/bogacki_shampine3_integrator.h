@@ -11,35 +11,35 @@ namespace drake {
 namespace systems {
 
 /**
- * A third-order, four-stage, first-same-as-last (FSAL) Runge Kutta integrator
- * with a second order error estimate.
- * @tparam T A double or autodiff type.
- *
- * Instantiated templates for the following kinds of T's are provided:
- *
- * - double
- * - AutoDiffXd
- *
- * For a discussion of this Runge-Kutta method, see [Hairer, 1993].
- *
- * The Butcher tableaux for this integrator follows:
- * <pre>
- * 0    |
- * 1/2  | 1/2
- * 3/4  | 0           3/4
- * 1    | 2/9         1/3      4/9
- * -----------------------------------------------------------------------------
-          2/9         1/3      4/9     0
-          7/24        1/4      1/3     1/8
+ A third-order, four-stage, first-same-as-last (FSAL) Runge Kutta integrator
+ with a second order error estimate.
+ @tparam T A double or autodiff type.
+ 
+ Instantiated templates for the following kinds of T's are provided:
+ 
+ - double
+ - AutoDiffXd
+ 
+ For a discussion of this Runge-Kutta method, see [Hairer, 1993].
+ 
+ The Butcher tableaux for this integrator follows:
+ <pre>
+ 0    |
+ 1/2  | 1/2
+ 3/4  | 0           3/4
+ 1    | 2/9         1/3      4/9
+ -----------------------------------------------------------------------------
+        2/9         1/3      4/9     0
+        7/24        1/4      1/3     1/8
 
- * </pre>
- * where the second to last row is the 3rd-order (propagated) solution and
- * the last row gives a 2nd-order accurate solution which, when subtracted
- * from the propagated solution, yields the 2nd-order error estimate of the
- * error.
- *
- * - [Bogacki, 1989] P. Bogacki and L. Shampine. "A 3(2) pair of Runge–Kutta
- *   formulas", Appl. Math. Letters, 2 (4): 321–325, 1989.
+ </pre>
+ where the second to last row is the 3rd-order (propagated) solution and
+ the last row gives a 2nd-order accurate solution which, when subtracted
+ from the propagated solution, yields the 2nd-order error estimate of the
+ error.
+ 
+ - [Bogacki, 1989] P. Bogacki and L. Shampine. "A 3(2) pair of Runge–Kutta
+   formulas", Appl. Math. Letters, 2 (4): 321–325, 1989.
  */
 template <class T>
 class BogackiShampine3Integrator final : public IntegratorBase<T> {
@@ -140,7 +140,14 @@ bool BogackiShampine3Integrator<T>::DoStep(const T& h) {
   // x and inputs u (which may depend on t and x).
   // Define x⁽ᵃ⁾ ≜ {xc⁽ᵃ⁾, xd₀, xa₀} and u⁽ᵃ⁾ ≜ u(t⁽ᵃ⁾, x⁽ᵃ⁾).
 
-  // Notation: we use Butcher tableaux notation
+  // We use Butcher tableaux notation with labels for each coefficient:
+  // 0   (c1)  | 
+  // 1/2 (c2)  |  1/2  (a21)
+  // 3/4 (c3)  |  0    (a31)      3/4 (a32)
+  // 1   (c4)  |  2/9  (a41)      1/3 (a42)    4/9 (a43)
+  // ---------------------------------------------------------------------------
+  //              2/9  (d1)       1/3 (d2)     4/9 (d3)     0   (d4)
+  //              7/24 (b1)       1/4 (b2)     1/3 (b3)     1/8 (b4)
 
   // Save the continuous state at t₀.
   context.get_continuous_state_vector().CopyToPreSizedVector(&save_xc0_);
