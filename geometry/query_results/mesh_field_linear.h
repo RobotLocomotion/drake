@@ -137,12 +137,6 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
   const std::vector<FieldValue>& values() const { return values_; }
   const MeshType& mesh() const { return *mesh_; }
 
-  DRAKE_NODISCARD
-  std::unique_ptr<MeshFieldLinear<FieldValue, MeshType>> Clone() const {
-    return std::unique_ptr<MeshFieldDerive>(
-        static_cast<MeshFieldDerive*>(DoClone().release()));
-  }
-
  private:
   // Clones MeshFieldLinear-specific data.
   using MeshFieldBase = MeshField<FieldValue, MeshType>;
