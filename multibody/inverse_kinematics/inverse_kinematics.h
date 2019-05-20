@@ -184,18 +184,27 @@ class InverseKinematics {
   // TODO(hongkai.dai): remove this documentation.
   /**
    * Adds the constraint that the pairwise distance between objects should be no
-   * smaller than a positive threshold. We consider the distance between pairs
+   * smaller than `minimum_distance`. We consider the distance between pairs
    * of
    * 1. Anchored (static) object and a dynamic object.
    * 2. A dynamic object and another dynamic object, if one is not the parent
    * link of the other.
-   * @see MinimumDistanceConstraint for more details on the constraint
+   * @param minimum_distance The minimum allowed value, dₘᵢₙ, of the signed
+   * distance between any candidate pair of geometries.
+   * @param influence_distance_offset The difference (in meters) between the
+   * influence distance, d_influence, and the minimum distance, dₘᵢₙ. This value
+   * must be finite and strictly positive, as it is used to scale the signed
+   * distances between pairs of geometries. Smaller values may improve
+   * performance, as fewer pairs of geometries need to be considered in each
+   * constraint evaluation. @default 1 meter
+   * @see MinimumDistanceConstraint for more details on the %constraint
    * formulation.
-   * @throws invalid_argument if the plant does not register its geometry
-   * with a SceneGraph.
+   * @pre The MultibodyPlant passed to the constructor of `this` has registered
+   * its geometry with a SceneGraph.
+   * @pre 0 < `influence_distance_offset` < ∞
    */
   solvers::Binding<solvers::Constraint> AddMinimumDistanceConstraint(
-      double minimal_distance);
+      double minimum_distance, double threshold_distance = 1);
 
   /** Getter for q. q is the decision variable for the generalized positions of
    * the robot. */
