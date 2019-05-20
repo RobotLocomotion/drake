@@ -44,6 +44,7 @@ T SmoothMax(const std::vector<T>& x) {
 template <typename T>
 T ScaleDistance(T distance, double minimum_distance,
                 double influence_distance) {
+  DRAKE_ASSERT(influence_distance > minimum_distance);
   return (distance - influence_distance) /
          (influence_distance - minimum_distance);
 }

@@ -53,16 +53,16 @@ no smaller than a specified minimum distance.
 
 The formulation of the constraint is
 
-0 ≤ SmoothMax( γ((dᵢ - d*)/(d* - dₘᵢₙ)) / γ(-1) ) ≤ 1
+0 ≤ SmoothMax( γ((dᵢ - d_influence)/(d_influence - dₘᵢₙ)) / γ(-1) ) ≤ 1
 
 where dᵢ is the signed distance of the i-th pair, dₘᵢₙ is the minimum allowable
-distance, d* is the "influence distance" (the distance below which a pair of
-geometries influences the constraint), γ is a
+distance, d_influence is the "influence distance" (the distance below which a
+pair of geometries influences the constraint), γ is a
 multibody::MinimumDistancePenaltyFunction, and SmoothMax(d) is smooth
-approximation of max(d). We require that dₘᵢₙ < d*. The input scaling
-(dᵢ - d*)/(d* - dₘᵢₙ) ensures that at the boundary of the feasible set (when
-dᵢ == dₘᵢₙ), we evaluate the penalty function at -1, where it is required to
-have a non-zero gradient.
+approximation of max(d). We require that dₘᵢₙ < d_influence. The input scaling
+(dᵢ - d_influence)/(d_influence - dₘᵢₙ) ensures that at the boundary of the
+feasible set (when dᵢ == dₘᵢₙ), we evaluate the penalty function at -1, where it
+is required to have a non-zero gradient.
 */
 class MinimumDistanceConstraint : public solvers::Constraint {
  public:
@@ -75,15 +75,15 @@ class MinimumDistanceConstraint : public solvers::Constraint {
   @param penalty_function The penalty function formulation.
   @default QuadraticallySmoothedHinge
   @param influence_distance_offset The difference (in meters) between the
-  influence distance, d*, and the minimum distance, dₘᵢₙ (see class
+  influence distance, d_influence, and the minimum distance, dₘᵢₙ (see class
   documentation). This value must be finite and strictly positive, as it is used
   to scale the signed distances between pairs of geometries. Smaller values may
   improve performance, as fewer pairs of geometries need to be considered in
-  each constraint evaluation. @default 1
+  each constraint evaluation. @default 1 meter
   @throws std::invalid_argument if `plant` has not registered its geometry with
   a SceneGraph object.
-  @throws std::invalid_argument if influence_distance_offset == ∞.
-  @throws std::invalid_argument if influence_distance_offset <= 0.
+  @throws std::invalid_argument if influence_distance_offset = ∞.
+  @throws std::invalid_argument if influence_distance_offset ≤ 0.
   */
   MinimumDistanceConstraint(
       const multibody::MultibodyPlant<double>* const plant,
@@ -121,9 +121,9 @@ class MinimumDistanceConstraint : public solvers::Constraint {
   const multibody::MultibodyPlant<double>& plant_;
   const double minimum_distance_;
   const double influence_distance_;
-  /** Stores the value of 1 / γ((dₘᵢₙ - d*)/(d* - dₘᵢₙ)) = 1 / γ(-1).
-  This is used to scale the output of the penalty function to be 1 when
-  d == dₘᵢₙ. */
+  /** Stores the value of
+  1 / γ((dₘᵢₙ - d_influence)/(d_influence - dₘᵢₙ)) = 1 / γ(-1). This is used to
+  scale the output of the penalty function to be 1 when d == dₘᵢₙ. */
   const double penalty_output_scaling_;
   int num_collision_candidates_{};
   systems::Context<double>* const plant_context_;
