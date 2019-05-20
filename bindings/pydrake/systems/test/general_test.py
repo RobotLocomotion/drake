@@ -122,6 +122,10 @@ class TestGeneral(unittest.TestCase):
             context.get_continuous_state_vector(), VectorBase)
         self.assertIsInstance(
             context.get_mutable_continuous_state_vector(), VectorBase)
+        self.assertTrue(context.is_stateless())
+        self.assertFalse(context.has_only_continuous_state())
+        self.assertFalse(context.has_only_discrete_state())
+        self.assertEqual(context.num_total_states(), 0)
         # TODO(eric.cousineau): Consolidate main API tests for `Context` here.
 
         # Test methods with two scalar types.
