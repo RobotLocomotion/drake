@@ -3,6 +3,7 @@
 // Exclude internal classes from doxygen.
 #if !defined(DRAKE_DOXYGEN_CXX)
 
+#include <algorithm>
 #include <limits>
 #include <tuple>
 #include <vector>
@@ -544,10 +545,21 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
               void* callback_data, double& threshold) {
   auto& data = *static_cast<CallbackData<T>*>(callback_data);
 
-  // We intentionally pass the same number back to FCL in every callback.
-  // It instructs FCL to skip any objects proven to be beyond this threshold
-  // distance (for example, by checking bounding boxes).
-  threshold = data.threshold;
+  // Three things:
+  //   1. We repeatedly set max_distance in each call to the callback because we
+  //   can't initialize it. The cost is negligible but maximizes any culling
+  //   benefit.
+  //   2. Due to how FCL is implemented, passing a value <= 0 will cause results
+  //   to be omitted because the bounding box test only considers *separating*
+  //   distance and doesn't do any work if the distance between bounding boxes
+  //   is zero.
+  //   3. We pass in a number smaller than the typical epsilon because typically
+  //   computation tolerances are greater than or equal to epsilon() and we
+  //   don't want this value to trip those tolerances. This is safe because the
+  //   bounding box test in which this is used doesn't produce a code via
+  //   calculation; it is a perfect, hard-coded zero.
+  const double kEps = std::numeric_limits<double>::epsilon() / 10;
+  threshold = std::max(data.threshold, kEps);
 
   // We use `const` to prevent modification of the collision objects.
   const fcl::CollisionObjectd* geometry_object =
