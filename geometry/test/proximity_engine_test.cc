@@ -390,6 +390,49 @@ using std::shared_ptr;
 
 // Test the broad-phase part of ComputeSignedDistanceToPoint.
 
+// Confirms that non-positve thresholds produce the right value. Creates two
+// penetrating spheres: A & B. The query point is *inside* the intersection of
+// A and B.  We confirm that query tolerance of 0, returns two results and that
+// a tolerance of penetration depth + epsilon likewise returns two results, and
+// depth - epsilon omits everything.
+GTEST_TEST(ProximityEngineTests, SignedDistanceToPointNonPositiveThreshold) {
+  ProximityEngine<double> engine;
+  const double kRadius = 0.5;
+  const double kPenetration = kRadius * 0.1;
+
+  std::vector<Isometry3d> X_WGs{
+      Isometry3d{Translation3d{-kRadius + 0.5 * kPenetration, 0, 0}},
+      Isometry3d{Translation3d{kRadius - 0.5 * kPenetration, 0, 0}}};
+  std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
+                                       GeometryId::get_new_id()};
+  Sphere sphere{kRadius};
+  std::vector<GeometryIndex> indices{GeometryIndex{0}, GeometryIndex{1}};
+  engine.AddDynamicGeometry(sphere, indices[0]);
+  engine.AddDynamicGeometry(sphere, indices[1]);
+  engine.UpdateWorldPoses(X_WGs, indices);
+
+  const Vector3d p_WQ{0, 0, 0};
+  std::vector<SignedDistanceToPoint<double>> results_all =
+      engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, X_WGs, kInf);
+  EXPECT_EQ(results_all.size(), 2u);
+
+  std::vector<SignedDistanceToPoint<double>> results_zero =
+      engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, X_WGs, 0);
+  EXPECT_EQ(results_zero.size(), 2u);
+
+  const double kEps = std::numeric_limits<double>::epsilon();
+
+  std::vector<SignedDistanceToPoint<double>> results_barely_in =
+      engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, X_WGs,
+                                          -kPenetration * 0.5 + kEps);
+  EXPECT_EQ(results_barely_in.size(), 2u);
+
+  std::vector<SignedDistanceToPoint<double>> results_barely_out =
+      engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, X_WGs,
+                                          -kPenetration * 0.5 - kEps);
+  EXPECT_EQ(results_barely_out.size(), 0u);
+}
+
 // We put two small spheres with radius 0.1 centered at (1,1,1) and
 // (-1,-1,-1). The query point Q will be at (3,3,3), so we can test that our
 // code does call computeAABB() of the query point (by default, its AABB is
@@ -1775,6 +1818,51 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsBetween) {
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToAutoDiffXd();
   ExpectIgnoredPenetration(origin_id, collide_id, ad_engine.get());
+}
+
+// Confirms that non-positve thresholds produce the right value. Creates three
+// spheres: A, B, & C. A is separated from B & C and B & C are penetrating.
+// We confirm that query tolerance of 0, returns B & C and that a tolerance
+// of penetration depth + epsilon returns B & C, and depth - epsilon omits
+// everything.
+GTEST_TEST(ProximityEngineTests, PairwiseSignedDistanceNonPositiveThreshold) {
+  ProximityEngine<double> engine;
+  const double kRadius = 0.5;
+  std::vector<Isometry3d> X_WGs{Isometry3d{Translation3d{0, 2 * kRadius, 0}},
+                                Isometry3d{Translation3d{-kRadius * 0.9, 0, 0}},
+                                Isometry3d{Translation3d{kRadius * 0.9, 0, 0}}};
+  std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
+                                       GeometryId::get_new_id(),
+                                       GeometryId::get_new_id()};
+  Sphere sphere{kRadius};
+  std::vector<GeometryIndex> indices{GeometryIndex{0}, GeometryIndex{1},
+                                     GeometryIndex{2}};
+  engine.AddDynamicGeometry(sphere, indices[0]);
+  engine.AddDynamicGeometry(sphere, indices[1]);
+  engine.AddDynamicGeometry(sphere, indices[2]);
+  engine.UpdateWorldPoses(X_WGs, indices);
+  std::vector<SignedDistancePair<double>> results_all =
+      engine.ComputeSignedDistancePairwiseClosestPoints(geometry_map, X_WGs,
+                                                        kInf);
+  EXPECT_EQ(results_all.size(), 3u);
+
+  std::vector<SignedDistancePair<double>> results_zero =
+      engine.ComputeSignedDistancePairwiseClosestPoints(geometry_map, X_WGs,
+                                                        0);
+  EXPECT_EQ(results_zero.size(), 1u);
+
+  const double penetration = -kRadius * 0.2;
+  const double kEps = std::numeric_limits<double>::epsilon();
+
+  std::vector<SignedDistancePair<double>> results_barely_in =
+      engine.ComputeSignedDistancePairwiseClosestPoints(geometry_map, X_WGs,
+                                                        penetration + kEps);
+  EXPECT_EQ(results_barely_in.size(), 1u);
+
+  std::vector<SignedDistancePair<double>> results_barely_out =
+      engine.ComputeSignedDistancePairwiseClosestPoints(geometry_map, X_WGs,
+                                                        penetration - kEps);
+  EXPECT_EQ(results_barely_out.size(), 0u);
 }
 
 // Test ComputeSignedDistancePairwiseClosestPoints with sphere-sphere,
