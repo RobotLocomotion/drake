@@ -6,6 +6,8 @@
 #include <vtkSmartPointer.h>
 #include <vtkTransform.h>
 
+#include "drake/math/rotation_matrix.h"
+
 namespace drake {
 namespace systems {
 namespace sensors {
@@ -32,6 +34,28 @@ vtkSmartPointer<vtkTransform> ConvertToVtkTransform(
       vtk_mat->SetElement(i, j, transform.matrix()(i, j));
     }
   }
+
+  vtkSmartPointer<vtkTransform> vtk_transform =
+      vtkSmartPointer<vtkTransform>::New();
+  vtk_transform->SetMatrix(vtk_mat.GetPointer());
+
+  return vtk_transform;
+}
+
+vtkSmartPointer<vtkTransform> ConvertToVtkTransform(
+    const math::RigidTransformd& transform) {
+  vtkNew<vtkMatrix4x4> vtk_mat;
+  for (int i = 0; i < 3; ++i) {
+    const auto& row = transform.rotation().row(i);
+    for (int j = 0; j < 3; ++j) {
+      vtk_mat->SetElement(i, j, row(j));
+    }
+    vtk_mat->SetElement(i, 3, transform.translation()(i));
+  }
+  for (int j = 0; j < 3; ++j) {
+    vtk_mat->SetElement(3, j, 0.0);
+  }
+  vtk_mat->SetElement(3, 3, 1.0);
 
   vtkSmartPointer<vtkTransform> vtk_transform =
       vtkSmartPointer<vtkTransform>::New();
