@@ -41,7 +41,8 @@ SpatialKinematicsPVA<T> MGKukaIIwaRobot<T>::CalcEndEffectorKinematics(
   // After an Eigen matrix is constructed from the C++ matrix (interpreting the
   // C++ matrix in row-order), column-major R_NG is populated via operator=.
   const double* matrix33 = MG_kuka_auto_generated_.R_NG[0];
-  const Matrix3d R_NG = Matrix<double, 3, 3, Eigen::RowMajor>(matrix33);
+  const Matrix3d R_NG33 = Matrix<double, 3, 3, Eigen::RowMajor>(matrix33);
+  const math::RotationMatrixd R_NG(R_NG33);
 
   const Vector3d p_NoGo_N(MG_kuka_auto_generated_.p_NoGo_N);
   const Vector3d w_NG_N(MG_kuka_auto_generated_.w_NG_N);
