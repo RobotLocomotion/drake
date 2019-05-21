@@ -292,9 +292,7 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
 
 IllustrationProperties MakeDrakeVisualizerProperties(
     const Vector4<double>& diffuse) {
-  IllustrationProperties props;
-  props.AddProperty("phong", "diffuse", diffuse);
-  return props;
+  return MakePhongIllustrationProperties(diffuse);
 }
 
 }  // namespace geometry

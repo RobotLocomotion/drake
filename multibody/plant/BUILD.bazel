@@ -55,7 +55,7 @@ drake_cc_library(
         ":implicit_stribeck_solver_results",
         "//common:default_scalars",
         "//geometry:geometry_ids",
-        "//geometry:geometry_visualization",
+        "//geometry:geometry_roles",
         "//geometry:scene_graph",
         "//math:geometric_transform",
         "//math:orthonormal_basis",
