@@ -12,9 +12,9 @@ namespace shaders {
 // much of a structured IR pattern is fed back to the camera. For example,
 // a surface with a normal perpendicular to the view direction wouldn't reflect
 // anything back and a surface with varying reflectance properties would be
-// captured as a texture. There are certain conventions in using shaders in
-// VTK. To simplify the inclusion of this data when we're ready, the requisite
-// shader code has been _commented out_ below for future reference.
+// captured as a texture. To simplify the inclusion of this data when we're
+// ready, the requisite shader code has been _commented out_ below for future
+// reference.
 // TODO(SeanCurtis-TRI): Re-enable providing normals and texture coordinates
 //  to the fragment shader when these quantities are used.
 
