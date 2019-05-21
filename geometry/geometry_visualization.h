@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm_interface.h"
@@ -53,7 +54,8 @@ class GeometryVisualizationImpl {
  | Group name | Required | Property Name |  Property Type  | Property Description |
  | :--------: | :------: | :-----------: | :-------------: | :------------------- |
  |    phong   | no       | diffuse       | Eigen::Vector4d | The rgba value of the object surface |
- See MakeDrakeVisualizerProperties() to facilitate making a compliant set of
+
+ See MakePhongIllustrationProperties() to facilitate making a compliant set of
  illustration properties.
 
  You can then connect source output ports for visualization like this:
@@ -108,6 +110,8 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
 
 /** Constructs an IllustrationProperties instance compatible with the
  ConnectDrakeVisualizer incorporating the given diffuse color.  */
+DRAKE_DEPRECATED("2019-09-01",
+    "Please use MakePhongIllustrationProperties() instead")
 IllustrationProperties MakeDrakeVisualizerProperties(
     const Vector4<double>& diffuse);
 

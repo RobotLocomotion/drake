@@ -285,14 +285,6 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
   return publisher;
 }
 
-IllustrationProperties MakeDrakeVisualizerProperties(
-    const Vector4<double>& diffuse) {
-  IllustrationProperties props;
-  props.AddGroup("phong");
-  props.AddProperty("phong", "diffuse", diffuse);
-  return props;
-}
-
 }  // namespace dev
 }  // namespace geometry
 }  // namespace drake
