@@ -82,7 +82,19 @@ PYBIND11_MODULE(geometry, m) {
         return std::make_unique<FramePoseVector<T>>(source_id, ids);
       }),
           py::arg("source_id"), py::arg("ids"),
-          doc.FrameKinematicsVector.ctor.doc_deprecated_2args);
+          doc.FrameKinematicsVector.ctor.doc_deprecated_2args)
+      .def("clear", &FramePoseVector<T>::clear,
+          doc.FrameKinematicsVector.clear.doc)
+      .def("set_value", &FramePoseVector<T>::set_value, py::arg("id"),
+          py::arg("value"), doc.FrameKinematicsVector.set_value.doc)
+      .def(
+          "size", &FramePoseVector<T>::size, doc.FrameKinematicsVector.size.doc)
+      .def("value", &FramePoseVector<T>::value, py::arg("id"),
+          doc.FrameKinematicsVector.value.doc)
+      .def("has_id", &FramePoseVector<T>::has_id, py::arg("id"),
+          doc.FrameKinematicsVector.has_id.doc)
+      .def("frame_ids", &FramePoseVector<T>::frame_ids,
+          doc.FrameKinematicsVector.frame_ids.doc);
   AddValueInstantiation<FramePoseVector<T>>(m);
 
   py::class_<QueryObject<T>>(m, "QueryObject", doc.QueryObject.doc)
