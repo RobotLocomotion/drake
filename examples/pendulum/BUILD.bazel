@@ -44,7 +44,7 @@ drake_cc_library(
     deps = [
         ":pendulum_plant",
         ":pendulum_vector_types",
-        "//geometry:geometry_visualization",
+        "//geometry:geometry_roles",
         "//geometry:scene_graph",
         "//math:geometric_transform",
         "//systems/framework:diagram_builder",

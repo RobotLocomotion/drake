@@ -48,7 +48,7 @@ GTEST_TEST(GeometryVisualization, SimpleScene) {
                                     make_unique<Sphere>(radius), "sphere"));
   Vector4<double> color{r, g, b, a};
   scene_graph.AssignRole(source_id, sphere_id,
-                         MakeDrakeVisualizerProperties(color));
+                         MakePhongIllustrationProperties(color));
 
   // Add a second frame and geometry that only has proximity properties. It
   // should not impact the result.
