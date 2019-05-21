@@ -3,7 +3,12 @@ from __future__ import print_function
 # behavior.
 
 import pydrake.autodiffutils as mut
-from pydrake.autodiffutils import AutoDiffXd
+from pydrake.autodiffutils import (
+    autoDiffToGradientMatrix,
+    autoDiffToValueMatrix,
+    AutoDiffXd,
+    initializeAutoDiff,
+)
 
 import copy
 import unittest
@@ -207,3 +212,9 @@ class TestAutoDiffXd(unittest.TestCase):
         Xinv_float = np.linalg.inv(X_float)
         Xinv = drake_math.inv(X)
         np.testing.assert_equal(npc.to_float(Xinv), Xinv_float)
+
+    def test_math_utils(self):
+        a = initializeAutoDiff([1, 2, 3])
+        np.testing.assert_array_equal(autoDiffToValueMatrix(a),
+                                      np.array([[1, 2, 3]]).T)
+        np.testing.assert_array_equal(autoDiffToGradientMatrix(a), np.eye(3))
