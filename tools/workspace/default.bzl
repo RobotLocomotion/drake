@@ -12,6 +12,7 @@ load("@drake//tools/workspace/clang_cindex_python3:repository.bzl", "clang_cinde
 load("@drake//tools/workspace/com_google_protobuf:repository.bzl", "com_google_protobuf_repository")  # noqa
 load("@drake//tools/workspace/com_jidesoft_jide_oss:repository.bzl", "com_jidesoft_jide_oss_repository")  # noqa
 load("@drake//tools/workspace/commons_io:repository.bzl", "commons_io_repository")  # noqa
+load("@drake//tools/workspace/csdp:repository.bzl", "csdp_repository")
 load("@drake//tools/workspace/doxygen:repository.bzl", "doxygen_repository")
 load("@drake//tools/workspace/drake_visualizer:repository.bzl", "drake_visualizer_repository")  # noqa
 load("@drake//tools/workspace/dreal:repository.bzl", "dreal_repository")
@@ -112,6 +113,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         com_jidesoft_jide_oss_repository(name = "com_jidesoft_jide_oss", mirrors = mirrors)  # noqa
     if "commons_io" not in excludes:
         commons_io_repository(name = "commons_io", mirrors = mirrors)
+    if "csdp" not in excludes:
+        csdp_repository(name = "csdp", mirrors = mirrors)
     if "doxygen" not in excludes:
         doxygen_repository(name = "doxygen", mirrors = mirrors)
     if "drake_visualizer" not in excludes:
