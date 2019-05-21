@@ -121,6 +121,34 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "render_engine_vtk_test",
+    data = [
+        "//systems/sensors:test_models",
+    ],
+    # Mitigates driver-related issues when running under `bazel test`. For more
+    # information, see #7004.
+    local = 1,
+    tags = [
+        # Disable under LeakSanitizer and Valgrind Memcheck due to
+        # driver-related leaks. For more information, see #7520.
+        "no_lsan",
+        "no_memcheck",
+        # Mitigates driver-related issues when running under `bazel test`. For
+        # more information, see #7004.
+        "no-sandbox",
+    ],
+    deps = [
+        ":render_engine_vtk",
+        ":render_label_manager",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry/test_utilities:dummy_render_engine",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
     name = "render_label_test",
     deps = [
         ":render_label",
