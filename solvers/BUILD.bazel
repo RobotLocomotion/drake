@@ -172,6 +172,7 @@ drake_cc_library(
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
+        "//math:matrix_util",
     ],
 )
 

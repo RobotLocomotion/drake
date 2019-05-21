@@ -341,8 +341,7 @@ class FormulaPositiveSemidefinite : public FormulaCell {
    *
    * @throws std::runtime_error if @p m is not symmetric.
    *
-   * @note This constructor checks if @p m is symmetric by calling
-   * `math::IsSymmetric` function which can be costly.
+   * @note This constructor checks if @p m is symmetric, which can be costly.
    */
   explicit FormulaPositiveSemidefinite(
       const Eigen::Ref<const MatrixX<Expression>>& m);

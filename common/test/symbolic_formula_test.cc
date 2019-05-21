@@ -804,6 +804,9 @@ TEST_F(SymbolicFormulaTest, Forall2) {
 }
 
 TEST_F(SymbolicFormulaTest, PSD_Exception) {
+  auto non_square = Eigen::Matrix<Expression, 2, 3>::Zero().eval();
+  EXPECT_THROW(positive_semidefinite(non_square), runtime_error);
+
   Eigen::Matrix<Expression, 3, 3> m;
   // clang-format off
   m << 1.0, 2.0, 3.0,
