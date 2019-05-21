@@ -117,6 +117,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:deprecation_py",
     ],
     py_srcs = [
+        "_autodiffutils_extra.py",
         "forwarddiff.py",
     ],
 )
