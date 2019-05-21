@@ -14,6 +14,7 @@
 #include "drake/geometry/proximity/distance_to_point.h"
 #include "drake/geometry/proximity/distance_to_point_with_gradient.h"
 #include "drake/geometry/proximity/distance_to_shape.h"
+#include "drake/geometry/proximity/hydroelastic_callback.h"
 #include "drake/geometry/utilities.h"
 
 namespace drake {
@@ -626,6 +627,22 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return contacts;
   }
 
+  std::vector<ContactSurface<T>> ComputeContactSurfaces(
+      const std::vector<GeometryId>& geometry_map,
+      const std::vector<Isometry3<T>>& X_WGs) const {
+    std::vector<ContactSurface<T>> surfaces;
+    // All these quantities are aliased in the callback data.
+    hydroelastic::CallbackData<T> data{&geometry_map, &collision_filter_,
+                                       &X_WGs, &surfaces};
+
+    dynamic_tree_.collide(&data, hydroelastic::Callback<T>);
+    dynamic_tree_.collide(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &anchored_tree_),
+        &data, hydroelastic::Callback<T>);
+    return surfaces;
+  }
+
   // TODO(SeanCurtis-TRI): Update this with the new collision filter method.
   void ExcludeCollisionsWithin(
       const std::unordered_set<GeometryIndex>& dynamic,
@@ -1004,12 +1021,12 @@ ProximityEngine<T>::ComputePointPairPenetration(
 }
 
 template <typename T>
-std::vector<ContactSurface<T>>
-ProximityEngine<T>::ComputeContactSurfaces(
-    const std::vector<GeometryId>& /* geometry_map */) const {
-  throw std::runtime_error(
-      "ComputeContactSurfaces() is not implemented yet.");
-  // TODO(DamrongGuoy): Compute contact surfaces and remove the above throw.
+std::vector<ContactSurface<T>> ProximityEngine<T>::ComputeContactSurfaces(
+    const std::vector<GeometryId>&, const std::vector<Isometry3<T>>&) const {
+  throw std::runtime_error("ComputeContactSurfaces() is not implemented yet.");
+  // TODO(amcastro-tri): Remove throw once the implementation is ready and
+  // replace with:
+  // return impl_->ComputeContactSurfaces(geometry_map, X_WGs);
 }
 
 template <typename T>

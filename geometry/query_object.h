@@ -178,6 +178,10 @@ class QueryObject {
    intersection as a ContactSurface. The computation is subject to collision
    filtering.
 
+   Currently, only contact between spheres and halfspaces is supported. Any
+   _unfiltered_ geometry pair comprised of other types will cause an exception
+   to be thrown.
+
    @returns A vector populated with contact surfaces of all detected
             intersecting pairs of geometries.
    @note  This function is not implemented yet. */
