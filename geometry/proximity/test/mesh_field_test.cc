@@ -10,9 +10,9 @@ namespace drake {
 namespace geometry {
 namespace {
 
-// Tests that the base class MeshField::Clone() calls DoClone() of its
-// subclass. We use `double` and SurfaceMesh<double> to represent the type
-// parameters FieldValue and MeshType respectively.
+// Tests that the base class MeshField::CloneWithMesh() calls
+// DoCloneWithMesh() of its subclass. We use `double` and SurfaceMesh<double>
+// to represent the type parameters FieldValue and MeshType respectively.
 GTEST_TEST(MeshFieldTest, TestClone) {
   using FieldValue = double;
   using MeshType = SurfaceMesh<double>;
@@ -21,16 +21,17 @@ GTEST_TEST(MeshFieldTest, TestClone) {
   class MeshFieldSubclass : public MeshFieldBase {
    public:
     FieldValue Evaluate(const MeshType::ElementIndex,
-                        const MeshType::Barycentric&) const override {
+                        const MeshType::Barycentric&) const final {
       return FieldValue(0);
     }
    private:
-    DRAKE_NODISCARD std::unique_ptr<MeshFieldBase> DoClone() const override {
+    DRAKE_NODISCARD std::unique_ptr<MeshFieldBase> DoCloneWithMesh(
+        MeshType* new_mesh) const final {
       return std::unique_ptr<MeshFieldBase>(new MeshFieldSubclass());
     }
   };
   MeshFieldSubclass original;
-  std::unique_ptr<MeshFieldBase> clone = original.Clone();
+  std::unique_ptr<MeshFieldBase> clone = original.CloneWithMesh(nullptr);
   EXPECT_NE(nullptr, dynamic_cast<MeshFieldSubclass*>(clone.get()));
 }
 

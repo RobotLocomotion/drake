@@ -4,6 +4,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_nodiscard.h"
+#include "drake/geometry/query_results/surface_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -30,21 +31,34 @@ class MeshField {
       const typename MeshType::ElementIndex e,
       const typename MeshType::Barycentric& b) const = 0;
 
-  DRAKE_NODISCARD
-  std::unique_ptr<MeshField<FieldValue, MeshType>> Clone() const {
-    return DoClone();
+  /** Copy to a new %MeshField and set the new %MeshField to use a new
+    compatible mesh. %MeshField needs a mesh to operate; however, %MeshField
+    does not own the mesh. In fact, several %MeshField can use the same mesh.
+   */
+  DRAKE_NODISCARD std::unique_ptr<MeshField> CloneWithMesh(
+      MeshType* new_mesh) const {
+    return DoCloneWithMesh(new_mesh);
   }
 
  protected:
-  /** Derived classes must implement this method to clone themselves.
+  /** Derived classes must implement this method to clone themselves and set
+    to the new mesh. It should check that the new mesh is compatible with the
+    new field.
    */
-  DRAKE_NODISCARD
-  virtual std::unique_ptr<MeshField<FieldValue, MeshType>> DoClone() const = 0;
+  DRAKE_NODISCARD virtual std::unique_ptr<MeshField> DoCloneWithMesh(
+      MeshType* new_mesh) const = 0;
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshField)
   MeshField() = default;
 };
 
+/**
+ @tparam FieldValue  a valid Eigen scalar or vector of valid Eigen scalars for
+                     the field value.
+ @tparam T  a valid Eigen scalar for coordinates.
+ */
+template <typename FieldValue, typename T>
+using SurfaceMeshField = MeshField<FieldValue, SurfaceMesh<T>>;
 
 }  // namespace geometry
 }  // namespace drake

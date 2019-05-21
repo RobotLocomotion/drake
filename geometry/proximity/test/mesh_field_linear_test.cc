@@ -41,31 +41,33 @@ std::unique_ptr<SurfaceMesh<T>> GenerateMesh() {
   return surface_mesh;
 }
 
-// Tests the subclass MeshFieldLinear::DoClone() through the base class
-// MeshField::Clone(). We use `double` and SurfaceMesh<double> as
+// Tests the subclass MeshFieldLinear::DoCloneWithMesh() through the base class
+// MeshField::CloneWithMesh(). We use `double` and SurfaceMesh<double> as
 // representative arguments for type parameters.
-GTEST_TEST(MeshFieldLinearTest, TestDoClone) {
+GTEST_TEST(MeshFieldLinearTest, TestDoCloneWithMesh) {
   using FieldValue = double;
   using MeshType = SurfaceMesh<double>;
-  using MeshFieldBase = MeshField<FieldValue, MeshType>;
   using MeshFieldLineard = MeshFieldLinear<FieldValue, MeshType>;
 
-  auto surface_mesh = GenerateMesh<double>();
+  auto mesh1 = GenerateMesh<double>();
   std::vector<FieldValue> e_values = {0., 1., 2., 3.};
-  auto original = std::make_unique<MeshFieldLineard>("e", std::move(e_values),
-                                                     surface_mesh.get());
+  auto original =
+      std::make_unique<MeshFieldLineard>("e", std::move(e_values), mesh1.get());
 
-  std::unique_ptr<MeshFieldBase> clone_base = original->Clone();
+  auto mesh2 = GenerateMesh<double>();
+  auto clone_base = original->CloneWithMesh(mesh2.get());
   auto clone = dynamic_cast<MeshFieldLineard*>(clone_base.get());
 
+  ASSERT_NE(nullptr, clone);
+  EXPECT_EQ(mesh2.get(), &clone->mesh());
+
   // Check uniqueness.
-  EXPECT_NE(nullptr, clone);
   EXPECT_NE(original.get(), clone);
+  EXPECT_NE(&original->mesh(), &clone->mesh());
 
   // Check equivalence.
   EXPECT_EQ(original->name(), clone->name());
   EXPECT_EQ(original->values(), clone->values());
-  EXPECT_EQ(&original->mesh(), &clone->mesh());
 }
 
 }  // namespace

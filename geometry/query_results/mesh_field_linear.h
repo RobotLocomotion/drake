@@ -139,12 +139,13 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
 
  private:
   // Clones MeshFieldLinear-specific data.
-  using MeshFieldBase = MeshField<FieldValue, MeshType>;
-  using MeshFieldDerive = MeshFieldLinear<FieldValue, MeshType>;
-  DRAKE_NODISCARD std::unique_ptr<MeshFieldBase> DoClone() const final {
-    std::vector<FieldValue> values = values_;
-    return std::unique_ptr<MeshFieldBase>(
-        new MeshFieldDerive(name_, std::move(values), mesh_));
+  DRAKE_NODISCARD std::unique_ptr<MeshField<FieldValue, MeshType>>
+  DoCloneWithMesh(MeshType* new_mesh) const final {
+    DRAKE_DEMAND(new_mesh != nullptr);
+    DRAKE_DEMAND(static_cast<int>(values_.size()) == new_mesh->num_vertices());
+    auto clone = std::make_unique<MeshFieldLinear>(*this);
+    clone->mesh_ = new_mesh;
+    return clone;
   }
   std::string name_;
   // The field values are indexed in the same way as vertices, i.e.,

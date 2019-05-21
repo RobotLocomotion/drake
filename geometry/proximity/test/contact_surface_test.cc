@@ -13,22 +13,6 @@
 
 namespace drake {
 namespace geometry {
-
-class ContactSurfaceTester {
- public:
-  template <typename T>
-  static const SurfaceMeshFieldLinear<T, T>& e_MN(
-      const ContactSurface<T>& surface) {
-    return *surface.e_MN_;
-  }
-
-  template <typename T>
-  static const SurfaceMeshFieldLinear<Vector3<T>, T>& grad_h_MN_M(
-      const ContactSurface<T>& surface) {
-    return *surface.grad_h_MN_M_;
-  }
-};
-
 namespace {
 
 // TODO(DamrongGuoy): Consider splitting the test into several smaller tests
@@ -165,16 +149,6 @@ GTEST_TEST(ContactSurfaceTest, TestCopy) {
   // Confirm that it was a deep copy, i.e., the `original` mesh and the `copy`
   // mesh are different objects.
   EXPECT_NE(&original.mesh(), &copy.mesh());
-
-  // Confirm the mesh fields of the `original` and the `copy` use different
-  // mesh pointers.
-  using CST = ContactSurfaceTester;
-  EXPECT_NE(&CST::e_MN(original).mesh(), &CST::e_MN(copy).mesh());
-  EXPECT_NE(&CST::grad_h_MN_M(original).mesh(), &CST::grad_h_MN_M(copy).mesh());
-
-  // Confirm the `copy` and its mesh fields use the same mesh objects.
-  EXPECT_EQ(&CST::e_MN(copy).mesh(), &CST::grad_h_MN_M(copy).mesh());
-  EXPECT_EQ(&copy.mesh(), &CST::grad_h_MN_M(copy).mesh());
 
   EXPECT_EQ(original.id_M(), copy.id_M());
   EXPECT_EQ(original.id_N(), copy.id_N());
