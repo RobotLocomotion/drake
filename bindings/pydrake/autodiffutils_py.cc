@@ -112,6 +112,8 @@ PYBIND11_MODULE(autodiffutils, m) {
         return autoDiffToGradientMatrix(autodiff_matrix);
       },
       py::arg("autodiff_matrix"), doc.autoDiffToGradientMatrix.doc);
+
+  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake
