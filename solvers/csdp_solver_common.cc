@@ -22,7 +22,10 @@ SolverId CsdpSolver::id() {
 }
 bool CsdpSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
   static const never_destroyed<ProgramAttributes> solver_capabilities(
-      std::initializer_list<ProgramAttribute>{});
+      std::initializer_list<ProgramAttribute>{
+          ProgramAttribute::kLinearCost, ProgramAttribute::kLinearConstraint,
+          ProgramAttribute::kLinearEqualityConstraint,
+          ProgramAttribute::kPositiveSemidefiniteConstraint});
   return AreRequiredAttributesSupported(prog.required_capabilities(),
                                         solver_capabilities.access());
 }

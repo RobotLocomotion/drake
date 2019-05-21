@@ -1085,6 +1085,36 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "csdp_test_examples",
+    testonly = 1,
+    srcs = ["test/csdp_test_examples.cc"],
+    hdrs = ["test/csdp_test_examples.h"],
+    deps = [
+        ":mathematical_program",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_googletest(
+    name = "csdp_solver_internal_test",
+    deps = [
+        ":csdp_solver",
+        ":csdp_test_examples",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "csdp_solver_test",
+    deps = [
+        ":csdp_solver",
+        ":csdp_test_examples",
+        ":semidefinite_program_examples",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
 drake_cc_googletest(
     name = "decision_variable_test",
     deps = [
