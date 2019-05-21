@@ -260,7 +260,9 @@ void DefineFrameworkPySemantics(py::module m) {
             doc.Context.SetTime.doc)
         .def("SetContinuousState", &Context<T>::SetContinuousState,
             doc.Context.SetContinuousState.doc)
-        // TODO(russt): Add SetTimeAndContinuousState here.
+        .def("SetTimeAndContinuousState",
+            &Context<T>::SetTimeAndContinuousState,
+            doc.Context.SetTimeAndContinuousState.doc)
         .def("SetDiscreteState",
             overload_cast_explicit<void, const Eigen::Ref<const VectorX<T>>&>(
                 &Context<T>::SetDiscreteState),
@@ -280,7 +282,8 @@ void DefineFrameworkPySemantics(py::module m) {
             },
             py::arg("index"), py::arg("value"),
             doc.Context.SetAbstractState.doc)
-        // TODO(russt): Add SetTimeStateAndParametersFrom here.
+        // NOTE: SetTimeStateAndParametersFrom is bound below in
+        // bind_context_methods_templated_on_a_secondary_scalar
         .def("FixInputPort",
             py::overload_cast<int, const BasicVector<T>&>(
                 &Context<T>::FixInputPort),
@@ -360,9 +363,16 @@ void DefineFrameworkPySemantics(py::module m) {
             },
             py::arg("index"), py_reference_internal,
             doc.Context.get_mutable_abstract_state.doc_1args)
-        // TODO(russt): Add get_mutable_parameters here.
-        // TODO(russt): Add get_mutable_numeric_parameter here.
-        // TODO(russt): Add get_mutable_abstract_parameter here.
+        .def("get_mutable_parameters", &Context<T>::get_mutable_parameters,
+            py_reference_internal, doc.Context.get_mutable_parameters.doc)
+        .def("get_mutable_numeric_parameter",
+            &Context<T>::get_mutable_numeric_parameter, py::arg("index"),
+            py_reference_internal,
+            doc.Context.get_mutable_numeric_parameter.doc)
+        .def("get_mutable_abstract_parameter",
+            &Context<T>::get_mutable_abstract_parameter, py::arg("index"),
+            py_reference_internal,
+            doc.Context.get_mutable_abstract_parameter.doc)
         // Note: No bindings yet for "Advanced methods for changing
         //   locally-stored values"
         //

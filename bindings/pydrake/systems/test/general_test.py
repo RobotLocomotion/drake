@@ -151,15 +151,23 @@ class TestGeneral(unittest.TestCase):
         self.assertTrue(
             context.get_parameters().get_numeric_parameter(0) is
             context.get_numeric_parameter(index=0))
+        self.assertTrue(
+            context.get_mutable_parameters().get_mutable_numeric_parameter(
+                0) is context.get_mutable_numeric_parameter(index=0))
         self.assertEqual(context.num_abstract_parameters(), 0)
         self.assertEqual(pendulum.num_numeric_parameter_groups(), 1)
         # TODO(russt): Bind _Declare*Parameter or find an example with an
         # abstract parameter to actually call this method.
         self.assertTrue(hasattr(context, "get_abstract_parameter"))
+        self.assertTrue(hasattr(context, "get_mutable_abstract_parameter"))
         x = np.array([0.1, 0.2])
         context.SetContinuousState(x)
         np.testing.assert_equal(
             context.get_continuous_state_vector().CopyToVector(), x)
+        context.SetTimeAndContinuousState(0.3, 2*x)
+        np.testing.assert_equal(context.get_time(), 0.3)
+        np.testing.assert_equal(
+            context.get_continuous_state_vector().CopyToVector(), 2*x)
 
         # RimlessWheel has a single discrete variable and a bool abstract
         # variable.
