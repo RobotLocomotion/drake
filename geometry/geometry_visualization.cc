@@ -290,12 +290,5 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
                                 scene_graph.get_pose_bundle_output_port(), lcm);
 }
 
-IllustrationProperties MakeDrakeVisualizerProperties(
-    const Vector4<double>& diffuse) {
-  IllustrationProperties props;
-  props.AddProperty("phong", "diffuse", diffuse);
-  return props;
-}
-
 }  // namespace geometry
 }  // namespace drake
