@@ -4,6 +4,7 @@ import unittest
 import warnings
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.eigen_geometry import Isometry3
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.lcm import DrakeMockLcm
 from pydrake.systems.framework import DiagramBuilder, InputPort, OutputPort
@@ -41,7 +42,16 @@ class TestGeometry(unittest.TestCase):
                 scene_graph=scene_graph, lcm=lcm)
 
     def test_frame_pose_vector_api(self):
-        mut.FramePoseVector()
+        obj = mut.FramePoseVector()
+        frame_id = mut.FrameId.get_new_id()
+        obj.set_value(id=frame_id, value=Isometry3.Identity())
+        self.assertEqual(obj.size(), 1)
+        self.assertIsInstance(obj.value(id=frame_id), Isometry3)
+        self.assertTrue(obj.has_id(id=frame_id))
+        self.assertIsInstance(obj.frame_ids(), list)
+        self.assertIsInstance(obj.frame_ids()[0], mut.FrameId)
+        obj.clear()
+        self.assertEqual(obj.size(), 0)
         with catch_drake_warnings(expected_count=1):
             mut.FramePoseVector(source_id=mut.SourceId.get_new_id(),
                                 ids=[mut.FrameId.get_new_id()])
