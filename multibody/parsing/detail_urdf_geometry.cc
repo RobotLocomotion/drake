@@ -9,7 +9,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_roles.h"
-#include "drake/geometry/geometry_visualization.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_tinyxml.h"
@@ -335,7 +334,7 @@ geometry::GeometryInstance ParseVisual(
     // node, use that color. It takes precedence over any material saved in
     // the material map.
     if (color_specified) {
-      properties = geometry::MakeDrakeVisualizerProperties(rgba);
+      properties = geometry::MakePhongIllustrationProperties(rgba);
     } else if (name_specified) {
       // No color specified. Checks if the material is already in the
       // materials map.
@@ -345,7 +344,7 @@ geometry::GeometryInstance ParseVisual(
         // The material is in the map. Sets the material of the visual
         // element based on the value in the map.
         properties =
-            geometry::MakeDrakeVisualizerProperties(material_iter->second);
+            geometry::MakePhongIllustrationProperties(material_iter->second);
       }
     }
   }
