@@ -35,6 +35,7 @@ from pydrake.systems.framework import (
     LeafSystem, LeafSystem_,
     OutputPort, OutputPort_,
     Parameters, Parameters_,
+    PeriodicEventData,
     PublishEvent, PublishEvent_,
     State, State_,
     Subvector, Subvector_,
@@ -211,6 +212,19 @@ class TestGeneral(unittest.TestCase):
             trigger_type=TriggerType.kInitialization, callback=callback)
         self.assertIsInstance(event, Event)
         self.assertEqual(event.get_trigger_type(), TriggerType.kInitialization)
+
+        # Simple discrete-time system.
+        system1 = LinearSystem(A=[1], B=[1], C=[1], D=[1], time_period=0.1)
+        periodic_data = system1.GetUniquePeriodicDiscreteUpdateAttribute()
+        self.assertIsInstance(periodic_data, PeriodicEventData)
+        self.assertIsInstance(periodic_data.Clone(), PeriodicEventData)
+        periodic_data.period_sec()
+        periodic_data.offset_sec()
+
+        # Simple continuous-time system.
+        system2 = LinearSystem(A=[1], B=[1], C=[1], D=[1], time_period=0.0)
+        periodic_data = system2.GetUniquePeriodicDiscreteUpdateAttribute()
+        self.assertIsNone(periodic_data)
 
     def test_instantiations(self):
         # Quick check of instantiations for given types.

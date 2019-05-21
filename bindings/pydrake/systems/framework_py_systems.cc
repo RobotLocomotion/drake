@@ -479,6 +479,9 @@ struct Impl {
             overload_cast_explicit<void, const Context<T>&>(
                 &System<T>::Publish),
             doc.System.Publish.doc_1args)
+        .def("GetUniquePeriodicDiscreteUpdateAttribute",
+            &System<T>::GetUniquePeriodicDiscreteUpdateAttribute,
+            doc.System.GetUniquePeriodicDiscreteUpdateAttribute.doc)
         // Cached evaluations.
         .def("EvalTimeDerivatives", &System<T>::EvalTimeDerivatives,
             py_reference_internal, doc.System.EvalTimeDerivatives.doc)
