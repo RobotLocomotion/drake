@@ -97,8 +97,10 @@ cc_library(
         "lin_sys/direct/qdldl/amd/include",
     ],
     copts = [
+        "-fvisibility=hidden",
         "-w",
     ],
+    linkstatic = 1,
     deps = [
         "@qdldl",
     ],
