@@ -33,19 +33,21 @@ class MeshField {
 
   /** Copy to a new %MeshField and set the new %MeshField to use a new
     compatible mesh. %MeshField needs a mesh to operate; however, %MeshField
-    does not own the mesh. In fact, several %MeshField can use the same mesh.
+    does not own the mesh. In fact, several %MeshField objects can use the same
+    mesh.
    */
-  DRAKE_NODISCARD std::unique_ptr<MeshField> CloneWithMesh(
+  DRAKE_NODISCARD std::unique_ptr<MeshField> CloneAndSetMesh(
       MeshType* new_mesh) const {
-    return DoCloneWithMesh(new_mesh);
+    return DoCloneAndSetMesh(new_mesh);
   }
 
  protected:
   /** Derived classes must implement this method to clone themselves and set
-    to the new mesh. It should check that the new mesh is compatible with the
-    new field.
+    to the new mesh pointer. It should check that the new mesh is compatible
+    with the new field. For example, the new mesh should be equivalent to the
+    old mesh.
    */
-  DRAKE_NODISCARD virtual std::unique_ptr<MeshField> DoCloneWithMesh(
+  DRAKE_NODISCARD virtual std::unique_ptr<MeshField> DoCloneAndSetMesh(
       MeshType* new_mesh) const = 0;
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshField)

@@ -136,9 +136,9 @@ class ContactSurface {
     mesh_ = std::make_unique<SurfaceMesh<T>>(*surface.mesh_.get());
 
     // We can't simply copy the mesh fields; the copies must contain pointers
-    // to the new mesh. So, we use CloneWithMesh() instead.
-    e_MN_ = surface.e_MN_->CloneWithMesh(mesh_.get());
-    grad_h_MN_M_ = surface.grad_h_MN_M_->CloneWithMesh(mesh_.get());
+    // to the new mesh. So, we use CloneAndSetMesh() instead.
+    e_MN_ = surface.e_MN_->CloneAndSetMesh(mesh_.get());
+    grad_h_MN_M_ = surface.grad_h_MN_M_->CloneAndSetMesh(mesh_.get());
 
     return *this;
   }

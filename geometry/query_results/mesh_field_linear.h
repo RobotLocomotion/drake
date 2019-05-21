@@ -140,7 +140,7 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
  private:
   // Clones MeshFieldLinear-specific data.
   DRAKE_NODISCARD std::unique_ptr<MeshField<FieldValue, MeshType>>
-  DoCloneWithMesh(MeshType* new_mesh) const final {
+  DoCloneAndSetMesh(MeshType* new_mesh) const final {
     DRAKE_DEMAND(new_mesh != nullptr);
     DRAKE_DEMAND(static_cast<int>(values_.size()) == new_mesh->num_vertices());
     auto clone = std::make_unique<MeshFieldLinear>(*this);
