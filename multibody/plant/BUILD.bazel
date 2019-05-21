@@ -181,6 +181,22 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "multibody_search",
+    srcs = [
+        "multibody_search.cc",
+    ],
+    hdrs = [
+        "multibody_search.h",
+    ],
+    deps = [
+        ":multibody_plant_core",
+        "//geometry:geometry_ids",
+        "//geometry:scene_graph",
+        "//multibody/tree",
+    ],
+)
+
 drake_cc_googletest(
     name = "implicit_stribeck_solver_test",
     deps = [
@@ -254,6 +270,7 @@ drake_cc_googletest(
         "//examples/simple_gripper:simple_gripper_models",
     ],
     deps = [
+        ":multibody_search",
         ":plant",
         "//common:find_resource",
         "//common/test_utilities:expect_throws_message",
