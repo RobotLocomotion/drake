@@ -145,6 +145,15 @@ void DefineFrameworkPySemantics(py::module m) {
       .value("kCrossesZero", WitnessFunctionDirection::kCrossesZero,
           doc.WitnessFunctionDirection.kCrossesZero.doc);
 
+  auto event_data = py::class_<EventData>(m, "EventData", doc.EventData.doc);
+  DefClone(&event_data);
+  py::class_<PeriodicEventData, EventData>(
+      m, "PeriodicEventData", doc.PeriodicEventData.doc)
+      .def("period_sec", &PeriodicEventData::period_sec,
+          doc.PeriodicEventData.period_sec.doc)
+      .def("offset_sec", &PeriodicEventData::offset_sec,
+          doc.PeriodicEventData.offset_sec.doc);
+
   // N.B. Capturing `&doc` should not be required; workaround per #9600.
   auto bind_common_scalar_types = [m, &doc](auto dummy) {
     using T = decltype(dummy);
