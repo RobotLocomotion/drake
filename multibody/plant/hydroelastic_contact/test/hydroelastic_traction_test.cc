@@ -57,7 +57,11 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
 
  private:
   void SetUp() override {
-    // Read the two bodies into the plant.
+    // Read the two bodies into the plant. The SDF file refers to a block
+    // penetrating a halfspace while the geometry that we use in the tests will
+    // assume a tetrahedron penetrating a halfspace. Since we don't use any
+    // inertial or geometric properties from the SDF file, that is not a
+    // problem.
     DiagramBuilder<double> builder;
     SceneGraph<double>* scene_graph;
     std::tie(plant_, scene_graph) = AddMultibodyPlantSceneGraph(&builder);
@@ -66,9 +70,6 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
         "drake/multibody/plant/hydroelastic_contact/test/"
         "block_on_halfspace.sdf");
     Parser(&plant, scene_graph).AddModelFromFile(full_name);
-
-    // Add gravity to the model.
-    plant.AddForceElement<UniformGravityFieldElement>();
 
     plant.Finalize();
     diagram_ = builder.Build();
@@ -95,13 +96,14 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
 
   std::unique_ptr<ContactSurface<double>> CreateContactSurface() const {
     // Get the geometry IDs for the ground halfspace and the block.
-    GeometryId ground_geom = internal::FindGeometry(*plant_, "ground");
+    GeometryId halfspace_geom = internal::FindGeometry(*plant_, "ground");
     GeometryId block_geom = internal::FindGeometry(*plant_, "box");
 
     // Create the surface mesh first.
     auto mesh = CreateSurfaceMesh();
 
-    // Create the "e" field values using negated "z" values.
+    // Create the "e" field values (i.e., "hydroelastic pressure") using
+    // negated "z" values.
     std::vector<double> e_MN(mesh->num_vertices());
     for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
       e_MN[i] = -mesh->vertex(i).r_MV()[2];
@@ -112,7 +114,7 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
         Vector3<double>(0, 0, -1));
 
     return std::make_unique<ContactSurface<double>>(
-      ground_geom, block_geom, std::move(mesh),
+      halfspace_geom, block_geom, std::move(mesh),
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
           "e_MN", std::move(e_MN), mesh.get()),
       std::make_unique<MeshFieldLinear<Vector3<double>, SurfaceMesh<double>>>(
@@ -122,14 +124,14 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
   // Creates a surface mesh that covers the bottom of the "wetted surface",
   // where the wetted surface is the part of the tet that would be wet if the
   // halfspace were a fluid. The entire wetted surface *would* yield
-  // an open, lopped off prism with five faces but, for simplicity, we'll only
+  // an open, lopped-off prism with five faces but, for simplicity, we'll only
   // use the bottom face (a single triangle).
   std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() const {
     std::vector<SurfaceVertex<double>> vertices;
     std::vector<SurfaceFace> faces;
 
     // Create the vertices, all of which are offset vectors defined in the
-    // ground body frame.
+    // halfspace body frame.
     vertices.emplace_back(Vector3<double>(0.5, 0.5, -0.5));
     vertices.emplace_back(Vector3<double>(-0.5, 0.5, -0.5));
     vertices.emplace_back(Vector3<double>(-0.5, -0.5, -0.5));
@@ -155,24 +157,27 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, VanillaTraction) {
   const double dissipation = 0.0;
   const double mu_coulomb = 0.0;
 
-  // Set a point of contact.
-  const Vector3<double> p_W(0.5, 0.5, -0.5);
-
-    // First compute the traction.
+  // First compute the traction.
+  Vector3<double> p_W;
   const Vector3<double> traction = traction_calculator().CalcTractionAtPoint(
       plant_context(), contact_surface(), SurfaceFaceIndex(0),
       SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
-      p_W, dissipation, mu_coulomb);
+      dissipation, mu_coulomb, &p_W);
+
+  // Verify the point of contact.
+  const double eps = 10 * std::numeric_limits<double>::epsilon();
+  ASSERT_NEAR(p_W[0], 0.5, eps);
+  ASSERT_NEAR(p_W[1], 0.5, eps);
+  ASSERT_NEAR(p_W[2], -0.5, eps);
 
   // Now compute the spatial forces at the origins of the body frames.
   multibody::SpatialForce<double> f_Mo_W, f_No_W;
-  traction_calculator().ShiftTractionToSpatialForcesAtBodyOrigins(
+  traction_calculator().ComputeSpatialForcesAtBodyOriginsFromTraction(
       plant_context(), contact_surface(), p_W, traction, &f_Mo_W, &f_No_W);
 
-  // Check the spatial force at p. We know that geometry M is the ground,
+  // Check the spatial force at p. We know that geometry M is the halfspace,
   // so we'll check the spatial force for geometry N instead. Note that the
   // tangential components are zero.
-  const double eps = 10 * std::numeric_limits<double>::epsilon();
   EXPECT_NEAR(f_No_W.translational()[0], 0.0, eps);
   EXPECT_NEAR(f_No_W.translational()[1], 0.0, eps);
   EXPECT_NEAR(f_No_W.translational()[2], 0.5, eps);
@@ -203,25 +208,28 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, TractionWithFraction) {
   tet_velocity << 0, 0, 0, 1, 0, 0;
   plant().SetVelocities(&plant_context(), tet_velocity);
 
-  // Set a point of contact.
-  const Vector3<double> p_W(0.5, 0.5, -0.5);
-
     // First compute the traction.
+  Vector3<double> p_W;
   const Vector3<double> traction = traction_calculator().CalcTractionAtPoint(
       plant_context(), contact_surface(), SurfaceFaceIndex(0),
-      SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
-      p_W, dissipation, mu_coulomb);
+      SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0), dissipation,
+      mu_coulomb, &p_W);
+
+  // Verify the point of contact.
+  const double eps = 10 * std::numeric_limits<double>::epsilon();
+  ASSERT_NEAR(p_W[0], 0.5, eps);
+  ASSERT_NEAR(p_W[1], 0.5, eps);
+  ASSERT_NEAR(p_W[2], -0.5, eps);
 
   // Now compute the spatial forces at the origins of the body frames.
   multibody::SpatialForce<double> f_Mo_W, f_No_W;
-  traction_calculator().ShiftTractionToSpatialForcesAtBodyOrigins(
+  traction_calculator().ComputeSpatialForcesAtBodyOriginsFromTraction(
       plant_context(), contact_surface(), p_W, traction, &f_Mo_W, &f_No_W);
 
-  // Check the spatial force at p. We know that geometry M is the ground,
+  // Check the spatial force at p. We know that geometry M is the halfspace,
   // so we'll check the spatial force for geometry N instead. The coefficient
   // of friction is unity, so the total frictional traction will have the same
   // magnitude as the normal traction.
-  const double eps = 10 * std::numeric_limits<double>::epsilon();
   EXPECT_NEAR(f_No_W.translational()[0], -0.5, eps);
   EXPECT_NEAR(f_No_W.translational()[1], 0.0, eps);
   EXPECT_NEAR(f_No_W.translational()[2], 0.5, eps);
@@ -261,25 +269,28 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
   const double normal_traction_magnitude = field_value +
       damping_traction_magnitude;
 
-  // Set a point of contact.
-  const Vector3<double> p_W(0.5, 0.5, -0.5);
-
-    // First compute the traction.
+  // First compute the traction.
+  Vector3<double> p_W;
   const Vector3<double> traction = traction_calculator().CalcTractionAtPoint(
       plant_context(), contact_surface(), SurfaceFaceIndex(0),
       SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
-      p_W, dissipation, mu_coulomb);
+      dissipation, mu_coulomb, &p_W);
+
+  // Verify the point of contact.
+  const double eps = 10 * std::numeric_limits<double>::epsilon();
+  ASSERT_NEAR(p_W[0], 0.5, eps);
+  ASSERT_NEAR(p_W[1], 0.5, eps);
+  ASSERT_NEAR(p_W[2], -0.5, eps);
 
   // Now compute the spatial forces at the origins of the body frames.
   multibody::SpatialForce<double> f_Mo_W, f_No_W;
-  traction_calculator().ShiftTractionToSpatialForcesAtBodyOrigins(
+  traction_calculator().ComputeSpatialForcesAtBodyOriginsFromTraction(
       plant_context(), contact_surface(), p_W, traction, &f_Mo_W, &f_No_W);
 
-  // Check the spatial force at p. We know that geometry M is the ground,
+  // Check the spatial force at p. We know that geometry M is the halfspace,
   // so we'll check the spatial force for geometry N instead. The coefficient
   // of friction is unity, so the total frictional traction will have the same
   // magnitude as the normal traction.
-  const double eps = 10 * std::numeric_limits<double>::epsilon();
   EXPECT_NEAR(f_No_W.translational()[0], 0.0, eps);
   EXPECT_NEAR(f_No_W.translational()[1], 0.0, eps);
   EXPECT_NEAR(f_No_W.translational()[2], normal_traction_magnitude, eps);

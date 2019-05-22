@@ -27,10 +27,8 @@ const RigidTransform<T>& HydroelasticTraction<T>::GetTransformFromGeometry(
   return plant_->EvalBodyPoseInWorld(context, body);
 }
 
-// Computes the spatial forces on the two bodies due to the traction at the
-// given contact point.
 template <class T>
-void HydroelasticTraction<T>::ShiftTractionToSpatialForcesAtBodyOrigins(
+void HydroelasticTraction<T>::ComputeSpatialForcesAtBodyOriginsFromTraction(
     const Context<T>& context,
     const ContactSurface<T>& surface,
     const Vector3<T>& r_W,
@@ -42,11 +40,12 @@ void HydroelasticTraction<T>::ShiftTractionToSpatialForcesAtBodyOrigins(
   const RigidTransform<T>& X_WN = GetTransformFromGeometry(context,
       surface.id_N());
 
-  // Set the two vectors from the contact point to the two body frames.
+  // Set the two vectors from the contact point to the two body frames, all
+  // expressed in the world frame.
   const Vector3<T> p_rMo_W = X_WM.translation() - r_W;
   const Vector3<T> p_rNo_W = X_WN.translation() - r_W;
 
-  // Transform the traction into a momentless-spatial force (i.e., without
+  // Convert the traction to a momentless-spatial force (i.e., without
   // changing the point of application). This force will be applied to one
   // body and the (negated) reaction force will be applied to the other.
   SpatialForce<T> f_r_W(Vector3<T>(0, 0, 0), traction_W);
@@ -55,9 +54,8 @@ void HydroelasticTraction<T>::ShiftTractionToSpatialForcesAtBodyOrigins(
 }
 
 // Determines the point of contact corresponding to the given barycentric
-// coordinates.
-// @return r_W an offset vector from the world frame to the point of contact,
-//         expressed in the world frame.
+// coordinates. Returns an offset vector from the world frame to the point of
+// contact, expressed in the world frame.
 template <class T>
 Vector3<T> HydroelasticTraction<T>::CalcContactPoint(
     const Context<T>& context,
@@ -84,8 +82,11 @@ Vector3<T> HydroelasticTraction<T>::CalcTractionAtPoint(
     const Context<T>& context, const ContactSurface<T>& surface,
     geometry::SurfaceFaceIndex face_index,
     const typename geometry::SurfaceMesh<T>::Barycentric&
-        r_barycentric_M, const Vector3<T>& r_W, double dissipation,
-    double mu_coulomb) const {
+        r_barycentric_M, double dissipation, double mu_coulomb,
+    Vector3<T>* r_W) const {
+  // Compute the point of contact in the world frame.
+  *r_W = CalcContactPoint(context, surface, face_index, r_barycentric_M);
+
   // Get the bodies that the two geometries are attached to.
   BodyIndex bodyM_index = plant_->GetBodyIndexFromRegisteredGeometryId(
       surface.id_M());
@@ -120,13 +121,13 @@ Vector3<T> HydroelasticTraction<T>::CalcTractionAtPoint(
   // First compute the spatial velocity of Body M at Mr.
   const SpatialVelocity<T>& v_Mo_W = plant_->EvalBodySpatialVelocityInWorld(
     context, bodyM);
-  const Vector3<T> p_MoMr_W = r_W - X_WM.translation();
+  const Vector3<T> p_MoMr_W = *r_W - X_WM.translation();
   const SpatialVelocity<T> v_Mr_W = v_Mo_W.Shift(p_MoMr_W);
 
   // Next compute the spatial velocity of Body N at Nr.
   const SpatialVelocity<T>& v_No_W = plant_->EvalBodySpatialVelocityInWorld(
     context, bodyN);
-  const Vector3<T> p_NoNr_W = r_W - X_WN.translation();
+  const Vector3<T> p_NoNr_W = *r_W - X_WN.translation();
   const SpatialVelocity<T> v_Nr_W = v_No_W.Shift(p_NoNr_W);
 
   // Finally compute the relative velocity at r, expressed in the world frame,
