@@ -952,8 +952,13 @@ MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
     auto results = query_object.ComputePointPairPenetration();
     if (results.size() > 0) {
       throw std::logic_error(
-          "CalcPointPairPenetration() with AutoDiffXd requires scenarios with "
-          "no collisions.");
+          "CalcPointPairPenetration(): Some of the bodies in the model are in "
+          "contact for the state stored in the given context. Currently a "
+          "MultibodyPlant model cannot be auto-differentiated if contacts "
+          "are detected. Notice however that auto-differentiation is allowed "
+          "if there are no contacts for the given state. That is, you can "
+          "query computations on a MultibodyPlant<AutoDiffXd> with contact "
+          "geometry for as long as it is not on a state leading to contact.");
     }
   }
   return {};
