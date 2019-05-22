@@ -63,7 +63,7 @@ void AddInclinedPlaneAndGravityToPlant(
 
   // Earth's local gravity acts in the world's -z direction.
   const Vector3<double> gravity_vector_W(0, 0, -gravity);
-  plant->AddForceElement<UniformGravityFieldElement>(gravity_vector_W);
+  plant->mutable_gravity_field().set_gravity_vector(gravity_vector_W);
 }
 
 void AddInclinedPlaneWithBlockToPlant(

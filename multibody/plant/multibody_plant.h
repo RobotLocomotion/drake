@@ -27,7 +27,6 @@
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/rigid_body.h"
-#include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/multibody/tree/weld_joint.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -934,10 +933,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] args
   ///   Zero or more parameters provided to the constructor of the new force
   ///   element. It must be the case that
-  ///   `JointType<T>(args)` is a valid constructor.
-  /// @tparam ForceElementType The type of the ForceElement to add.
-  /// This method can only be called once for elements of type
-  /// UniformGravityFieldElement. That is, gravity can only be specified once.
+  ///   `ForceElementType<T>(args)` is a valid constructor.
+  /// @tparam ForceElementType The type of the ForceElement to add.  As there
+  /// is always a UniformGravityFieldElement present (accessible through
+  /// gravity_field()), an exception will be thrown if this function is called
+  /// to add another UniformGravityFieldElement.  As there was not always a
+  /// default gravity field element, for compatibility purposes calling this
+  /// function to add a UniformGravityFieldElement which has the same value as
+  /// gravity_field() is not an error.
   /// @returns A constant reference to the new ForceElement just added, of type
   ///   `ForceElementType<T>` specialized on the scalar type T of `this`
   ///   %MultibodyPlant. It will remain valid for the lifetime of `this`
@@ -959,25 +962,28 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
 #ifndef DRAKE_DOXYGEN_CXX
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // SFINAE overload for ForceElementType = UniformGravityFieldElement.
   // This allow us to keep track of the gravity field parameters.
   // TODO(amcastro-tri): This specialization pattern leads to difficult to
   // mantain indirection layers between MBP/MBT and can cause difficult to find
   // bugs, see #11051. It is bad practice and should removed, see #11080.
   template <template <typename Scalar> class ForceElementType, typename... Args>
+  // TODO(sammy-tri): When removing this SFINAE overload along with its
+  // deprecation message, remove the "backwards compatibility" notes from
+  // MultibodyPlant::AddForceElement().
+  DRAKE_DEPRECATED("2019-09-01",
+                   "Use mutable_gravity_field.set_gravity_vector() instead.")
   typename std::enable_if<
       std::is_same<ForceElementType<T>, UniformGravityFieldElement<T>>::value,
       const ForceElementType<T>&>::type
   AddForceElement(Args&&... args) {
     DRAKE_MBP_THROW_IF_FINALIZED();
-    DRAKE_DEMAND(!gravity_field_.has_value());
-    // We save the force element so that we can grant users access to it for
-    // gravity field specific queries.
-    gravity_field_ = &this->mutable_tree()
-                          .template AddForceElement<UniformGravityFieldElement>(
-                              std::forward<Args>(args)...);
-    return *gravity_field_.value();
+    return this->mutable_tree().template AddForceElement<ForceElementType>(
+        std::forward<Args>(args)...);
   }
+#pragma GCC diagnostic pop
 #endif
 
   /// Creates and adds a JointActuator model for an actuator acting on a given
@@ -2833,6 +2839,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().get_frame(frame_index);
   }
 
+  /// An accessor to the current gravity field.
+  const UniformGravityFieldElement<T>& gravity_field() const {
+    return internal_tree().gravity_field();
+  }
+
+  /// A mutable accessor to the current gravity field.
+  UniformGravityFieldElement<T>& mutable_gravity_field() {
+    return this->mutable_tree().mutable_gravity_field();
+  }
+
   /// Returns the name of a `model_instance`.
   /// @throws std::logic_error when `model_instance` does not correspond to a
   /// model in this model.
@@ -3630,9 +3646,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                               joint.parent_body().index(),
                               joint.child_body().index());
   }
-
-  // The gravity field force element.
-  optional<const UniformGravityFieldElement<T>*> gravity_field_;
 
   // Geometry source identifier for this system to interact with geometry
   // system. It is made optional for plants that do not register geometry

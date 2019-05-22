@@ -272,8 +272,12 @@ PYBIND11_MODULE(tree, m) {
     py::class_<Class, ForceElement<T>>(
         m, "UniformGravityFieldElement", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc_0args)
-        .def(py::init<Vector3<double>>(), py::arg("g_W"),
-            cls_doc.ctor.doc_1args);
+        .def(
+            py::init<Vector3<double>>(), py::arg("g_W"), cls_doc.ctor.doc_1args)
+        .def("gravity_vector", &Class::gravity_vector,
+            cls_doc.gravity_vector.doc)
+        .def("set_gravity_vector", &Class::set_gravity_vector,
+            cls_doc.set_gravity_vector.doc);
   }
 
   // MultibodyForces

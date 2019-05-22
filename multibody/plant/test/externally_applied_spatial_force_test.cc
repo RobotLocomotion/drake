@@ -118,7 +118,6 @@ class ExternallyAppliedForcesTest : public ::testing::Test {
     systems::DiagramBuilder<double> builder;
     plant_ = builder.AddSystem<MultibodyPlant<double>>(time_step);
     Parser(plant_).AddModelFromFile(full_name);
-    plant_->AddForceElement<UniformGravityFieldElement>();
     plant_->Finalize();
 
     // Add the system that applies inverse gravitational forces to the link

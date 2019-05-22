@@ -16,6 +16,7 @@
 #include "drake/multibody/tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/spatial_inertia.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
 
 namespace drake {
 namespace multibody {
@@ -74,6 +75,16 @@ MultibodyTree<T>::MultibodyTree() {
   ModelInstanceIndex default_instance =
       AddModelInstance("DefaultModelInstance");
   DRAKE_DEMAND(default_instance == default_model_instance());
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // TODO(sammy-tri) Move the custom handling logic for adding a
+  // UniformGravityFieldElement here once we remove the deprecated overload.
+  const ForceElement<T>& new_field =
+      AddForceElement<UniformGravityFieldElement>();
+#pragma GCC diagnostic pop
+  DRAKE_DEMAND(num_force_elements() == 1);
+  DRAKE_DEMAND(owned_force_elements_[0].get() == &new_field);
 }
 
 template <typename T>
@@ -896,8 +907,8 @@ template <typename T>
 VectorX<T> MultibodyTree<T>::CalcGravityGeneralizedForces(
     const systems::Context<T>& context) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-  if (gravity_field_.has_value()) {
-    return gravity_field_.value()->CalcGravityGeneralizedForces(context);
+  if (gravity_field_) {
+    return gravity_field_->CalcGravityGeneralizedForces(context);
   }
   return VectorX<T>::Zero(num_velocities());
 }

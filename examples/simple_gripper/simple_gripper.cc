@@ -17,7 +17,6 @@
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
-#include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -43,7 +42,6 @@ using multibody::ConnectContactResultsToDrakeVisualizer;
 using multibody::MultibodyPlant;
 using multibody::Parser;
 using multibody::PrismaticJoint;
-using multibody::UniformGravityFieldElement;
 using systems::ImplicitEulerIntegrator;
 using systems::RungeKutta2Integrator;
 using systems::RungeKutta3Integrator;
@@ -193,10 +191,9 @@ int do_main() {
   const Vector3d axis = translate_joint.translation_axis();
   if (axis.isApprox(Vector3d::UnitZ())) {
     fmt::print("Gripper motions forced in the vertical direction.\n");
+    plant.mutable_gravity_field().set_gravity_vector(Vector3d::Zero());
   } else if (axis.isApprox(Vector3d::UnitX())) {
     fmt::print("Gripper motions forced in the horizontal direction.\n");
-    // Add gravity to the model.
-    plant.AddForceElement<UniformGravityFieldElement>();
   } else {
     throw std::runtime_error(
         "Only horizontal or vertical motions of the gripper are supported for "
