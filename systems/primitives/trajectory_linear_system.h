@@ -8,14 +8,14 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
+#include "drake/common/trajectories/trajectory.h"
 #include "drake/systems/primitives/linear_system.h"
-#include "drake/systems/primitives/time_varying_data.h"
 
 namespace drake {
 namespace systems {
 
-/// A continuous- or discrete-time Linear Time-Varying system described by a
-/// piecewise polynomial trajectory of system matrices.
+/// A continuous- or discrete-time Linear Time-Varying system with system
+/// matrices described by trajectories.
 ///
 /// @tparam T The scalar element type, which must be a valid Eigen scalar.
 ///
@@ -30,63 +30,71 @@ namespace systems {
 /// @ingroup primitive_systems
 ///
 template <typename T>
-class PiecewisePolynomialLinearSystem final
-    : public TimeVaryingLinearSystem<T> {
+class TrajectoryLinearSystem final : public TimeVaryingLinearSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PiecewisePolynomialLinearSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryLinearSystem)
 
   /// Constructs a PiecewisePolynomialLinearSystem from a LinearTimeVaryingData
   /// structure.
   ///
   /// @param time_period Defines the period of the discrete time system; use
   ///  time_period=0.0 to denote a continuous time system.  @default 0.0
-  PiecewisePolynomialLinearSystem(const LinearTimeVaryingData& data,
-                                  double time_period = 0.)
+  TrajectoryLinearSystem(const trajectories::Trajectory<double>& A,
+                         const trajectories::Trajectory<double>& B,
+                         const trajectories::Trajectory<double>& C,
+                         const trajectories::Trajectory<double>& D,
+                         double time_period = 0.)
       : TimeVaryingLinearSystem<T>(
-            SystemTypeTag<systems::PiecewisePolynomialLinearSystem>{},
-            data.A.rows(), data.B.cols(), data.C.rows(), time_period),
-        data_(data) {}
+            SystemTypeTag<systems::TrajectoryLinearSystem>{}, A.rows(),
+            B.cols(), C.rows(), time_period),
+        A_(A.Clone()),
+        B_(B.Clone()),
+        C_(C.Clone()),
+        D_(D.Clone()) {}
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
-  explicit PiecewisePolynomialLinearSystem(
-      const PiecewisePolynomialLinearSystem<U>& other)
-      : PiecewisePolynomialLinearSystem<T>(other.data_, other.time_period()) {}
+  explicit TrajectoryLinearSystem(const TrajectoryLinearSystem<U>& other)
+      : TrajectoryLinearSystem<T>(*other.A_, *other.B_, *other.C_, *other.D_,
+                                  other.time_period()) {}
 
   /// @name Implementations of PiecewisePolynomialLinearSystem<T>'s pure virtual
   /// methods.
   /// @{
   MatrixX<T> A(const T& t) const final {
-    return data_.A.value(ExtractDoubleOrThrow(t));
+    return A_->value(ExtractDoubleOrThrow(t));
   }
   MatrixX<T> B(const T& t) const final {
-    return data_.B.value(ExtractDoubleOrThrow(t));
+    return B_->value(ExtractDoubleOrThrow(t));
   }
   MatrixX<T> C(const T& t) const final {
-    return data_.C.value(ExtractDoubleOrThrow(t));
+    return C_->value(ExtractDoubleOrThrow(t));
   }
   MatrixX<T> D(const T& t) const final {
-    return data_.D.value(ExtractDoubleOrThrow(t));
+    return D_->value(ExtractDoubleOrThrow(t));
   }
   /// @}
 
  private:
   // Allow different specializations to access each other's private data.
   template <typename>
-  friend class PiecewisePolynomialLinearSystem;
+  friend class TrajectoryLinearSystem;
 
-  const LinearTimeVaryingData data_;
+  const std::unique_ptr<trajectories::Trajectory<double>> A_;
+  const std::unique_ptr<trajectories::Trajectory<double>> B_;
+  const std::unique_ptr<trajectories::Trajectory<double>> C_;
+  const std::unique_ptr<trajectories::Trajectory<double>> D_;
 };
 
 // Exclude symbolic::Expression from the scalartype conversion of
-// PiecewisePolynomialLinearSystem.
+// TrajectoryLinearSystem.
 namespace scalar_conversion {
 template <>
-struct Traits<PiecewisePolynomialLinearSystem> : public NonSymbolicTraits {};
+struct Traits<TrajectoryLinearSystem> : public NonSymbolicTraits {};
 }  // namespace scalar_conversion
 
 }  // namespace systems
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::systems::PiecewisePolynomialLinearSystem)
+    class ::drake::systems::TrajectoryLinearSystem)

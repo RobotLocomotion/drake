@@ -4,10 +4,10 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/primitives/linear_system.h"
-#include "drake/systems/primitives/piecewise_polynomial_linear_system.h"
 #include "drake/systems/trajectory_optimization/multiple_shooting.h"
 
 namespace drake {
