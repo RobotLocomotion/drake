@@ -28,8 +28,6 @@ drake_cc_package_library(
         ":matrix_gain",
         ":multiplexer",
         ":pass_through",
-        ":piecewise_polynomial_affine_system",
-        ":piecewise_polynomial_linear_system",
         ":port_switch",
         ":random_source",
         ":saturation",
@@ -37,7 +35,8 @@ drake_cc_package_library(
         ":signal_logger",
         ":sine",
         ":symbolic_vector_system",
-        ":time_varying_data",
+        ":trajectory_affine_system",
+        ":trajectory_linear_system",
         ":trajectory_source",
         ":wrap_to_system",
         ":zero_order_hold",
@@ -202,28 +201,28 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "piecewise_polynomial_affine_system",
-    srcs = ["piecewise_polynomial_affine_system.cc"],
-    hdrs = ["piecewise_polynomial_affine_system.h"],
+    name = "trajectory_affine_system",
+    srcs = ["trajectory_affine_system.cc"],
+    hdrs = ["trajectory_affine_system.h"],
     deps = [
         ":affine_system",
-        ":time_varying_data",
         "//common:default_scalars",
         "//common:essential",
         "//common:extract_double",
+        "//common/trajectories",
     ],
 )
 
 drake_cc_library(
-    name = "piecewise_polynomial_linear_system",
-    srcs = ["piecewise_polynomial_linear_system.cc"],
-    hdrs = ["piecewise_polynomial_linear_system.h"],
+    name = "trajectory_linear_system",
+    srcs = ["trajectory_linear_system.cc"],
+    hdrs = ["trajectory_linear_system.h"],
     deps = [
         ":linear_system",
-        ":time_varying_data",
         "//common:default_scalars",
         "//common:essential",
         "//common:extract_double",
+        "//common/trajectories",
     ],
 )
 
@@ -287,16 +286,6 @@ drake_cc_library(
         "//common:symbolic",
         "//math:gradient",
         "//systems/framework",
-    ],
-)
-
-drake_cc_library(
-    name = "time_varying_data",
-    srcs = ["time_varying_data.cc"],
-    hdrs = ["time_varying_data.h"],
-    deps = [
-        "//common:essential",
-        "//common/trajectories:piecewise_polynomial",
     ],
 )
 
@@ -523,17 +512,20 @@ drake_cc_googletest(
 )
 
 drake_cc_library(
-    name = "piecewise_linear_affine_test",
+    name = "trajectory_linear_affine_test",
     testonly = 1,
-    hdrs = ["test/piecewise_linear_affine_test.h"],
+    hdrs = ["test/trajectory_linear_affine_test.h"],
     visibility = ["//visibility:private"],
+    deps = [
+        "//common/trajectories:piecewise_polynomial",
+    ],
 )
 
 drake_cc_googletest(
-    name = "piecewise_polynomial_affine_system_test",
+    name = "trajectory_affine_system_test",
     deps = [
-        ":piecewise_linear_affine_test",
-        ":piecewise_polynomial_affine_system",
+        ":trajectory_affine_system",
+        ":trajectory_linear_affine_test",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/framework",
         "//systems/framework/test_utilities",
@@ -541,10 +533,10 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "piecewise_polynomial_linear_system_test",
+    name = "trajectory_linear_system_test",
     deps = [
-        ":piecewise_linear_affine_test",
-        ":piecewise_polynomial_linear_system",
+        ":trajectory_linear_affine_test",
+        ":trajectory_linear_system",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/framework",
         "//systems/framework/test_utilities",
@@ -617,15 +609,6 @@ drake_cc_googletest(
         ":symbolic_vector_system",
         "//common/test_utilities:eigen_geometry_compare",
         "//systems/framework/test_utilities:scalar_conversion",
-    ],
-)
-
-drake_cc_googletest(
-    name = "time_varying_data_test",
-    deps = [
-        ":piecewise_linear_affine_test",
-        ":time_varying_data",
-        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
