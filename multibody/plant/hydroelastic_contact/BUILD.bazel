@@ -16,7 +16,7 @@ package(
 drake_cc_package_library(
     name = "hydroelastic_contact",
     deps = [
-	":hydroelastic_traction",
+        ":hydroelastic_traction",
         ":triangle_quadrature",
         ":triangle_quadrature_rules",
     ],
@@ -31,7 +31,7 @@ drake_cc_library(
         "hydroelastic_traction.h",
     ],
     deps = [
-	"//multibody/plant",
+        "//multibody/plant",
     ],
 )
 

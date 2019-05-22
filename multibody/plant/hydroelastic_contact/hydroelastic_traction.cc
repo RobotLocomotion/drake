@@ -1,5 +1,7 @@
 #include "drake/multibody/plant/hydroelastic_contact/hydroelastic_traction.h"
 
+#include <algorithm>
+
 #include "drake/math/orthonormal_basis.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/plant/multibody_plant.h"

@@ -17,7 +17,7 @@ namespace hydroelastic_contact {
 template <class T>
 class HydroelasticTraction {
  public:
-  HydroelasticTraction(MultibodyPlant<T>* plant) : plant_(plant) {}
+  explicit HydroelasticTraction(MultibodyPlant<T>* plant) : plant_(plant) {}
 
   Vector3<T> CalcTractionAtPoint(
       const systems::Context<T>& context,

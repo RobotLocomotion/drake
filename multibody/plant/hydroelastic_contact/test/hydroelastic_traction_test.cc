@@ -1,3 +1,5 @@
+#include "drake/multibody/plant/hydroelastic_contact/hydroelastic_traction.h"
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -6,7 +8,6 @@
 #include "drake/geometry/query_results/surface_mesh.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/parser.h"
-#include "drake/multibody/plant/hydroelastic_contact/hydroelastic_traction.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -62,7 +63,8 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
     std::tie(plant_, scene_graph) = AddMultibodyPlantSceneGraph(&builder);
     MultibodyPlant<double>& plant = *plant_;
     const std::string full_name = FindResourceOrThrow(
-        "drake/multibody/plant/hydroelastic_contact/test/block_on_halfspace.sdf");
+        "drake/multibody/plant/hydroelastic_contact/test/"
+        "block_on_halfspace.sdf");
     Parser(&plant, scene_graph).AddModelFromFile(full_name);
 
     // Add gravity to the model.
@@ -229,7 +231,7 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, TractionWithFraction) {
   // The moment arm at the point will be (.5, .5, -.5). Crossing this vector
   // with the traction at that point (-.5, 0, 0.5) yields the following.
   EXPECT_NEAR(f_No_W.rotational()[0], 0.25, eps);
-  EXPECT_NEAR(f_No_W.rotational()[1], 0.5, eps);
+  EXPECT_NEAR(f_No_W.rotational()[1], 0.0, eps);
   EXPECT_NEAR(f_No_W.rotational()[2], 0.25, eps);
 
   // The translational components of the two wrenches should be equal and
@@ -289,6 +291,7 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
   // the following.
   EXPECT_NEAR(f_No_W.rotational()[0], 0.5 * normal_traction_magnitude, eps);
   EXPECT_NEAR(f_No_W.rotational()[1], -0.5 * normal_traction_magnitude, eps);
+  EXPECT_NEAR(f_No_W.rotational()[2], 0.0, eps);
 
   // The translational components of the two wrenches should be equal and
   // opposite.

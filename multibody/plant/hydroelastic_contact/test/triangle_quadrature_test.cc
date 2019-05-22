@@ -1,4 +1,4 @@
-#include "drake/multibody/hydroelastic_contact/triangle_quadrature.h"
+#include "drake/multibody/plant/hydroelastic_contact/triangle_quadrature.h"
 
 #include <algorithm>
 #include <numeric>
@@ -6,7 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/multibody/hydroelastic_contact/gaussian_triangle_quadrature_rule.h"
+#include "drake/multibody/plant/hydroelastic_contact/gaussian_triangle_quadrature_rule.h"
 
 using Vector2d = drake::Vector2<double>;
 
