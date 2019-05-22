@@ -4,6 +4,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_nodiscard.h"
+#include "drake/common/reset_on_copy.h"
 #include "drake/geometry/query_results/surface_mesh.h"
 
 namespace drake {
@@ -24,34 +25,47 @@ class MeshField {
  public:
   virtual ~MeshField() = default;
   /** Evaluates the field value at a location on an element.
-    @param e The index of the element.
-    @param b The barycentric coordinates.
+   @param e The index of the element.
+   @param b The barycentric coordinates.
    */
   virtual FieldValue Evaluate(
       const typename MeshType::ElementIndex e,
       const typename MeshType::Barycentric& b) const = 0;
 
   /** Copy to a new %MeshField and set the new %MeshField to use a new
-    compatible mesh. %MeshField needs a mesh to operate; however, %MeshField
-    does not own the mesh. In fact, several %MeshField objects can use the same
-    mesh.
+   compatible mesh. %MeshField needs a mesh to operate; however, %MeshField
+   does not own the mesh. In fact, several %MeshField objects can use the same
+   mesh.
    */
   DRAKE_NODISCARD std::unique_ptr<MeshField> CloneAndSetMesh(
       MeshType* new_mesh) const {
-    return DoCloneAndSetMesh(new_mesh);
+    DRAKE_DEMAND(new_mesh != nullptr);
+    DRAKE_DEMAND(new_mesh->num_vertices() == mesh_->num_vertices());
+    // TODO(DamrongGuoy): Check that the `new_mesh` is equivalent to the
+    //  current `mesh_`.
+    std::unique_ptr<MeshField> new_mesh_field = CloneWithNullMesh();
+    new_mesh_field->mesh_ = new_mesh;
+    return new_mesh_field;
   }
 
+  const MeshType& mesh() const { return *mesh_; }
+
  protected:
-  /** Derived classes must implement this method to clone themselves and set
-    to the new mesh pointer. It should check that the new mesh is compatible
-    with the new field. For example, the new mesh should be equivalent to the
-    old mesh.
-   */
-  DRAKE_NODISCARD virtual std::unique_ptr<MeshField> DoCloneAndSetMesh(
-      MeshType* new_mesh) const = 0;
+  DRAKE_NODISCARD std::unique_ptr<MeshField> CloneWithNullMesh() const {
+    return DoCloneWithNullMesh();
+  }
+  /** Derived classes must implement this method to clone themselves */
+  DRAKE_NODISCARD virtual std::unique_ptr<MeshField> DoCloneWithNullMesh()
+      const = 0;
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshField)
-  MeshField() = default;
+  explicit MeshField(MeshType* mesh): mesh_(mesh) {
+    DRAKE_DEMAND(mesh_ != nullptr);
+  }
+  /** We use `reset_on_copy` to allow DoCloneWithNullMesh() to use the
+    default copy constructor.
+   */
+  reset_on_copy<MeshType*> mesh_;
 };
 
 /**

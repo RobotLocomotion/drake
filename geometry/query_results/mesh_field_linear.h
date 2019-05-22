@@ -118,14 +118,15 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
    */
   MeshFieldLinear(std::string name, std::vector<FieldValue>&& values,
                   MeshType* mesh)
-      : name_(std::move(name)), values_(std::move(values)), mesh_(mesh) {
-    DRAKE_DEMAND(mesh_ != nullptr);
-    DRAKE_DEMAND(static_cast<int>(values_.size()) == mesh_->num_vertices());
+      : MeshField<FieldValue, MeshType>(mesh),
+        name_(std::move(name)), values_(std::move(values)) {
+    DRAKE_DEMAND(static_cast<int>(values_.size()) ==
+                 this->mesh_->num_vertices());
   }
 
   FieldValue Evaluate(const typename MeshType::ElementIndex e,
                      const typename MeshType::Barycentric& b) const final {
-    const auto& element = mesh_->element(e);
+    const auto& element = this->mesh_->element(e);
     FieldValue value = b[0] * values_[element.vertex(0)];
     for (int i = 1; i < MeshType::kDim + 1; ++i) {
       value += b[i] * values_[element.vertex(i)];
@@ -135,23 +136,19 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
 
   const std::string& name() const { return name_; }
   const std::vector<FieldValue>& values() const { return values_; }
-  const MeshType& mesh() const { return *mesh_; }
 
  private:
-  // Clones MeshFieldLinear-specific data.
+  // Clones MeshFieldLinear-specific data and set the `mesh_` to nullptr.
+  // The base class MeshField uses reset_on_copy<> for the `mesh_`, so the
+  // default copy constructor will reset it to nullptr.
   DRAKE_NODISCARD std::unique_ptr<MeshField<FieldValue, MeshType>>
-  DoCloneAndSetMesh(MeshType* new_mesh) const final {
-    DRAKE_DEMAND(new_mesh != nullptr);
-    DRAKE_DEMAND(static_cast<int>(values_.size()) == new_mesh->num_vertices());
-    auto clone = std::make_unique<MeshFieldLinear>(*this);
-    clone->mesh_ = new_mesh;
-    return clone;
+  DoCloneWithNullMesh() const final {
+    return std::make_unique<MeshFieldLinear>(*this);
   }
   std::string name_;
   // The field values are indexed in the same way as vertices, i.e.,
   // values_[i] is the field value for the mesh vertices_[i].
   std::vector<FieldValue> values_;
-  MeshType* mesh_;
 };
 
 /**
