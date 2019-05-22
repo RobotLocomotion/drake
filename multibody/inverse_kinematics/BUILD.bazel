@@ -129,6 +129,7 @@ drake_cc_googletest(
         ":inverse_kinematics_test_utilities",
         ":kinematic_constraint",
         "//common/test_utilities:expect_throws_message",
+        "//solvers/test_utilities",
     ],
 )
 

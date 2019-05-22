@@ -6,36 +6,12 @@
 #include "drake/math/compute_numerical_gradient.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
+#include "drake/solvers/test_utilities/check_constraint_eval_nonsymbolic.h"
 
 namespace drake {
 namespace multibody {
 
-// Compare the result between Eval<double> and Eval<AutoDiffXd>. Also compare
-// the gradient in Eval<AutoDiffXd> with a numerical approximation.
-void CheckMinimumDistanceConstraintEval(
-    const MinimumDistanceConstraint& constraint,
-    const Eigen::Ref<const AutoDiffVecXd>& x_autodiff,
-    const MultibodyPlant<AutoDiffXd>& plant_autodiff,
-    systems::Context<AutoDiffXd>* context_autodiff, double tol) {
-  const Eigen::VectorXd x_double{math::autoDiffToValueMatrix(x_autodiff)};
-  Eigen::VectorXd y_double;
-  constraint.Eval(x_double, &y_double);
-  AutoDiffVecXd y_autodiff;
-  constraint.Eval(x_autodiff, &y_autodiff);
-  EXPECT_TRUE(
-      CompareMatrices(y_double, math::autoDiffToValueMatrix(y_autodiff), tol));
-  std::function<void(const Eigen::Ref<const Eigen::VectorXd>&,
-                     Eigen::VectorXd*)>
-      constraint_eval =
-          [&constraint](const Eigen::Ref<const Eigen::VectorXd>& x,
-                        Eigen::VectorXd* y) { return constraint.Eval(x, y); };
-  const auto J = math::ComputeNumericalGradient(
-      constraint_eval, x_double,
-      math::NumericalGradientOption{math::NumericalGradientMethod::kCentral});
-  EXPECT_TRUE(CompareMatrices(J * math::autoDiffToGradientMatrix(x_autodiff),
-                              math::autoDiffToGradientMatrix(y_autodiff),
-                              std::sqrt(tol)));
-}
+using solvers::test::CheckConstraintEvalNonsymbolic;
 
 template <typename T>
 Vector3<T> ComputeCollisionSphereCenterPosition(
@@ -75,8 +51,7 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
     EXPECT_EQ(y_double(0), 0);
     EXPECT_TRUE(CompareMatrices(y_autodiff(0).derivatives(),
                                 Eigen::Matrix<double, 14, 1>::Zero()));
-    CheckMinimumDistanceConstraintEval(constraint, q_autodiff, *plant_autodiff_,
-                                       plant_context_autodiff_, 1E-12);
+    CheckConstraintEvalNonsymbolic(constraint, q_autodiff, 1E-12);
   }
 
   void CheckConstraintEvalBetweenMinimumAndInfluenceDistance(
@@ -97,8 +72,7 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
     EXPECT_TRUE(constraint.CheckSatisfied(q_autodiff));
     // Check that the value is strictly greater than 0.
     EXPECT_GT(y_double(0), 0);
-    CheckMinimumDistanceConstraintEval(constraint, q_autodiff, *plant_autodiff_,
-                                       plant_context_autodiff_, 1E-12);
+    CheckConstraintEvalNonsymbolic(constraint, q_autodiff, 1E-12);
   }
 
   void CheckConstraintEvalSmallerThanMinimumDistance(
@@ -119,8 +93,7 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
     EXPECT_FALSE(constraint.CheckSatisfied(q_autodiff));
     // Check that the value is strictly greater than 1.
     EXPECT_GT(y_double(0), 1);
-    CheckMinimumDistanceConstraintEval(constraint, q_autodiff, *plant_autodiff_,
-                                       plant_context_autodiff_, 1E-12);
+    CheckConstraintEvalNonsymbolic(constraint, q_autodiff, 1E-12);
   }
 
   void CheckConstraintEval(const MinimumDistanceConstraint& constraint) {
@@ -244,9 +217,7 @@ TEST_F(BoxSphereTest, Test) {
           AutoDiffVecXd x_autodiff =
               math::initializeAutoDiffGivenGradientMatrix(q_val, q_gradient);
 
-          CheckMinimumDistanceConstraintEval(constraint, x_autodiff,
-                                             *plant_autodiff_,
-                                             plant_context_autodiff_, tol);
+          CheckConstraintEvalNonsymbolic(constraint, x_autodiff, tol);
         };
 
     Eigen::VectorXd q(14);
