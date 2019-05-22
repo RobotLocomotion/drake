@@ -201,6 +201,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPlant)
 
+  // TODO(edrumwri) Remove me before updating PR.
+  void CalcContactJacobian(
+      const systems::Context<T>& context,
+      geometry::GeometryId geometryA_id, geometry::GeometryId geometryB_id,
+      const Vector3<T>& p_WC,
+      const Vector3<T>& nhat_BA_W, MatrixX<T>* J_WC,
+      math::RotationMatrix<T>* R_WC) const;
+
   /// Default constructor creates a plant with a single "world" body.
   /// Therefore, right after creation, num_bodies() returns one.
   /// @param[in] time_step
@@ -3140,6 +3148,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   using internal::MultibodyTreeSystem<T>::EvalPositionKinematics;
   using internal::MultibodyTreeSystem<T>::EvalVelocityKinematics;
 
+  BodyIndex GetBodyIndexFromRegisteredGeometryId(
+      geometry::GeometryId geometry_id) const {
+    return geometry_id_to_body_index_.at(geometry_id);
+  }
+
  private:
   using internal::MultibodyTreeSystem<T>::internal_tree;
 
@@ -3487,12 +3500,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // normal to the surface at p_WC and pointing from B to A. With this
   // definition, the first two columns of R_WC correspond to orthogonal versors
   // Cx and Cy that span the tangent plane to nhat_BA_W.
+/*
   void CalcContactJacobian(
       const systems::Context<T>& context,
       geometry::GeometryId geometryA_id, geometry::GeometryId geometryB_id,
       const Vector3<T>& p_WC,
       const Vector3<T>& nhat_BA_W, MatrixX<T>* J_WC,
       math::RotationMatrix<T>* R_WC) const;
+*/
 
   // Evaluates the contact Jacobians for the given state of the plant stored in
   // `context`.

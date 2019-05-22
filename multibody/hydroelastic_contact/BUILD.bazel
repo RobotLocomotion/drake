@@ -22,6 +22,19 @@ drake_cc_package_library(
 )
 
 drake_cc_library(
+    name = "hydroelastic_traction",
+    srcs = [
+        "hydroelastic_traction.cc",
+    ],
+    hdrs = [
+        "hydroelastic_traction.h",
+    ],
+    deps = [
+	"//multibody/plant",
+    ],
+)
+
+drake_cc_library(
     name = "triangle_quadrature_rules",
     hdrs = [
         "gaussian_triangle_quadrature_rule.h",
@@ -40,6 +53,18 @@ drake_cc_library(
     deps = [
         ":triangle_quadrature_rules",
         "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "hydroelastic_traction_test",
+    data = [
+        "test/block_on_halfspace.sdf",
+    ],
+    deps = [
+        ":hyroelastic_traction",
+        "//common:find_resource",
+        "//multibody/parsing",
     ],
 )
 
