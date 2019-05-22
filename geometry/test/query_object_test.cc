@@ -171,6 +171,12 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
       default_object->ComputeSignedDistanceToPoint(Vector3<double>::Zero()));
   EXPECT_DEFAULT_ERROR(
       default_object->ComputeContactSurfaces());
+  EXPECT_DEFAULT_ERROR(
+      default_object->X_WF(FrameId::get_new_id()));
+  EXPECT_DEFAULT_ERROR(
+      default_object->X_PF(FrameId::get_new_id()));
+  EXPECT_DEFAULT_ERROR(
+      default_object->X_WG(GeometryId::get_new_id()));
 #undef EXPECT_DEFAULT_ERROR
 }
 
