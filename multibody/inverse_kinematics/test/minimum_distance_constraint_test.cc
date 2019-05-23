@@ -189,6 +189,30 @@ GTEST_TEST(MinimumDistanceConstraintTest,
       "SceneGraph.");
 }
 
+GTEST_TEST(MinimumDistanceConstraintTest,
+           MultibodyPlantWithoutCollisionPairs) {
+  // Make sure MinimumDistanceConstraint evaluation works when
+  // no collisions are possible in an MBP with no collision geometry.
+
+  systems::DiagramBuilder<double> builder{};
+  MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(&builder);
+  AddTwoFreeBodiesToPlant(&plant);
+  plant.Finalize();
+  auto diagram = builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  auto plant_context = &diagram->GetMutableSubsystemContext(
+    plant, diagram_context.get());
+
+  const double minimum_distance(0.1);
+  const MinimumDistanceConstraint constraint(&plant, minimum_distance,
+                                             plant_context);
+
+  Eigen::Matrix<AutoDiffXd, 14, 1> q_autodiff = math::initializeAutoDiff(
+    Eigen::VectorXd::Zero(14));
+  AutoDiffVecXd y_autodiff(1);
+  constraint.Eval(q_autodiff, &y_autodiff);
+}
+
 TEST_F(TwoFreeSpheresTest, NonpositiveInfluenceDistanceOffset) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       MinimumDistanceConstraint(plant_double_, 0.1, plant_context_double_,

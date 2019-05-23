@@ -23,6 +23,12 @@ template <typename T>
 std::unique_ptr<MultibodyPlant<T>> ConstructTwoFreeBodiesPlant();
 
 /**
+ * Constructs a MultibodyPlant consisting of two free bodies.
+ */
+template <typename T>
+void AddTwoFreeBodiesToPlant(MultibodyPlant<T>* model);
+
+/**
  * Constructs a MultibodyPlant consisting of an Iiwa robot.
  */
 std::unique_ptr<MultibodyPlant<double>> ConstructIiwaPlant(
