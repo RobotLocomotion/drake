@@ -56,8 +56,9 @@ The formulation of the constraint is
 
 where vᵢ is the i-th value returned by the user-provided function, vₘᵢₙ is the
 minimum allowable value, v_influence is the "influence value" (the value below
-which an element constraint), φ is a solvers::MinimumValuePenaltyFunction, and
-SmoothMax(v) is smooth approximation of max(v). We require that vₘᵢₙ <
+which an element influences the constraint or conversely the value above which
+an element is ignored), φ is a solvers::MinimumValuePenaltyFunction, and
+SmoothMax(v) is a smooth approximation of max(v). We require that vₘᵢₙ <
 v_influence. The input scaling (vᵢ - v_influence)/(v_influence - vₘᵢₙ) ensures
 that at the boundary of the feasible set (when vᵢ == vₘᵢₙ), we evaluate the
 penalty function at -1, where it is required to have a non-zero gradient. The
@@ -74,9 +75,10 @@ class MinimumValueConstraint final : public solvers::Constraint {
   influence value, v_influence, and the minimum value, vₘᵢₙ (see class
   documentation). This value must be finite and strictly positive, as it is used
   to scale the values returned by `value_function`. Smaller values may
-  improve performance if `value_function` is able to quickly determine that some
-  elements will be larger than the influence value and can therefore be
-  ignored. @default 1
+  decrease the amount of computation required for each constraint evaluation if
+  `value_function` can quickly determine that some elements will be
+  larger than the influence value and skip the computation associated with those
+  elements. @default 1
   @param value_function User-provided function that takes a `num_vars`-element
   vector and the influence distance as inputs and returns a vector with up to
   `max_num_values` elements. The function can omit from the return vector any

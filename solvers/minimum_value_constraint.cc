@@ -53,7 +53,7 @@ void InitializeY(const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y,
       Vector1d(y_value), Eigen::RowVectorXd::Zero(x(0).derivatives().size()));
 }
 
-void Penalty(double value, double minimum_value, double influence_value,
+void Penalty(const double& value, double minimum_value, double influence_value,
              MinimumValuePenaltyFunction penalty_function, double* y) {
   double penalty;
   const double x = ScaleValue(value, minimum_value, influence_value);
@@ -61,7 +61,7 @@ void Penalty(double value, double minimum_value, double influence_value,
   *y = penalty;
 }
 
-void Penalty(AutoDiffXd value, double minimum_value, double influence_value,
+void Penalty(const AutoDiffXd& value, double minimum_value, double influence_value,
              MinimumValuePenaltyFunction penalty_function, AutoDiffXd* y) {
   const AutoDiffXd scaled_value_autodiff =
       ScaleValue(value, minimum_value, influence_value);
@@ -126,7 +126,9 @@ MinimumValueConstraint::MinimumValueConstraint(
     std::function<VectorX<double>(const Eigen::Ref<const VectorX<double>>&,
                                   double)>
         value_function_double)
-    : solvers::Constraint(1, num_vars, Vector1d(0), Vector1d(1)),
+    : solvers::Constraint(1, num_vars,
+                          Vector1d(-std::numeric_limits<double>::infinity()),
+                          Vector1d(1)),
       value_function_{value_function},
       value_function_double_{value_function_double},
       minimum_value_{minimum_value},
