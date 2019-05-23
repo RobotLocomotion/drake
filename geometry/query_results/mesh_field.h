@@ -54,7 +54,9 @@ class MeshField {
   DRAKE_NODISCARD std::unique_ptr<MeshField> CloneWithNullMesh() const {
     return DoCloneWithNullMesh();
   }
-  /** Derived classes must implement this method to clone themselves */
+  /** Derived classes must implement this method to clone themselves given
+   that the pointer to the mesh is null.
+   */
   DRAKE_NODISCARD virtual std::unique_ptr<MeshField> DoCloneWithNullMesh()
       const = 0;
 
@@ -62,9 +64,10 @@ class MeshField {
   explicit MeshField(MeshType* mesh): mesh_(mesh) {
     DRAKE_DEMAND(mesh_ != nullptr);
   }
-  /** We use `reset_on_copy` to allow DoCloneWithNullMesh() to use the
-    default copy constructor.
-   */
+
+ private:
+  // We use `reset_on_copy`, so that the default copy constructor resets
+  // the pointer to null when a MeshField is copied.
   reset_on_copy<MeshType*> mesh_;
 };
 

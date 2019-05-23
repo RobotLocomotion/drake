@@ -121,12 +121,12 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
       : MeshField<FieldValue, MeshType>(mesh),
         name_(std::move(name)), values_(std::move(values)) {
     DRAKE_DEMAND(static_cast<int>(values_.size()) ==
-                 this->mesh_->num_vertices());
+                 this->mesh().num_vertices());
   }
 
   FieldValue Evaluate(const typename MeshType::ElementIndex e,
                      const typename MeshType::Barycentric& b) const final {
-    const auto& element = this->mesh_->element(e);
+    const auto& element = this->mesh().element(e);
     FieldValue value = b[0] * values_[element.vertex(0)];
     for (int i = 1; i < MeshType::kDim + 1; ++i) {
       value += b[i] * values_[element.vertex(i)];
@@ -138,9 +138,8 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
   const std::vector<FieldValue>& values() const { return values_; }
 
  private:
-  // Clones MeshFieldLinear-specific data and set the `mesh_` to nullptr.
-  // The base class MeshField uses reset_on_copy<> for the `mesh_`, so the
-  // default copy constructor will reset it to nullptr.
+  // Clones MeshFieldLinear-specific data under the assumption that the mesh
+  // pointer is null.
   DRAKE_NODISCARD std::unique_ptr<MeshField<FieldValue, MeshType>>
   DoCloneWithNullMesh() const final {
     return std::make_unique<MeshFieldLinear>(*this);
