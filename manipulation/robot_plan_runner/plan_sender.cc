@@ -144,10 +144,10 @@ void PlanSender::DoCalcNextUpdateTime(
       uu_events.add_event(
           std::make_unique<systems::UnrestrictedUpdateEvent<double>>(
               systems::TriggerType::kTimed,
-              [this](const Context<double>& context,
+              [this](const Context<double>& context_lambda,
                      const systems::UnrestrictedUpdateEvent<double>&,
                      State<double>* x) {
-                this->UpdatePlanIndex(context, x);
+                this->UpdatePlanIndex(context_lambda, x);
               }));
     }
   }
@@ -174,7 +174,7 @@ void PlanSender::CalcPlan(const drake::systems::Context<double>& context,
   *output_plan_data = plan_data_list_[current_plan_idx];
 };
 
-void PlanSender::UpdatePlanIndex(const systems::Context<double>& context,
+void PlanSender::UpdatePlanIndex(const systems::Context<double>&,
                                  systems::State<double>* state) const {
   int& state_value = state->get_mutable_abstract_state()
                          .get_mutable_value(0)
