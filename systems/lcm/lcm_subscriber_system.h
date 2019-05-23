@@ -114,15 +114,6 @@ class LcmSubscriberSystem : public LeafSystem<double> {
                      double timeout = -1.) const;
 
   /**
-   * (Advanced.) Writes the most recently received message (and message count)
-   * into @p state.  If no messages have been received, only the message count
-   * is updated.  This is primarily useful for unit testing.
-   */
-  DRAKE_DEPRECATED("2019-06-01",
-      "This unit-test-only method is being made non-public.")
-  void CopyLatestMessageInto(State<double>* state) const;
-
-  /**
    * Returns the internal message counter. Meant to be used with
    * `WaitForMessage`.
    */
@@ -141,14 +132,9 @@ class LcmSubscriberSystem : public LeafSystem<double> {
   void DoCalcUnrestrictedUpdate(
       const Context<double>&,
       const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
-      State<double>* state) const override {
-    ProcessMessageAndStoreToAbstractState(&state->get_mutable_abstract_state());
-  }
+      State<double>* state) const override;
 
  private:
-  void ProcessMessageAndStoreToAbstractState(
-      AbstractValues* abstract_state) const;
-
   // Callback entry point from LCM into this class.
   void HandleMessage(const void*, int);
 

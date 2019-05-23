@@ -173,16 +173,6 @@ PYBIND11_MODULE(lcm, m) {
             py::keep_alive<1, 3>(),
             // Keep alive: `self` keeps `DrakeLcmInterface` alive.
             py::keep_alive<1, 4>(), doc.LcmSubscriberSystem.ctor.doc)
-        .def("CopyLatestMessageInto",
-            [](Class* self, State<double>* state) {
-              WarnDeprecated(
-                  "This unit-test-only method is being made non-public.");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-              self->CopyLatestMessageInto(state);
-#pragma GCC diagnostic pop
-            },
-            py::arg("state"), cls_doc.CopyLatestMessageInto.doc_deprecated)
         .def("WaitForMessage", &Class::WaitForMessage,
             py::arg("old_message_count"), py::arg("message") = nullptr,
             py::arg("timeout") = -1, cls_doc.WaitForMessage.doc);

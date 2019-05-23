@@ -63,19 +63,18 @@ LcmSubscriberSystem::~LcmSubscriberSystem() {
   magic_number_ = 0;
 }
 
-void LcmSubscriberSystem::CopyLatestMessageInto(State<double>* state) const {
-  ProcessMessageAndStoreToAbstractState(&state->get_mutable_abstract_state());
-}
-
-void LcmSubscriberSystem::ProcessMessageAndStoreToAbstractState(
-    AbstractValues* abstract_state) const {
+void LcmSubscriberSystem::DoCalcUnrestrictedUpdate(
+    const Context<double>&,
+    const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
+    State<double>* state) const {
+  AbstractValues& abstract_state = state->get_mutable_abstract_state();
   std::lock_guard<std::mutex> lock(received_message_mutex_);
   if (!received_message_.empty()) {
     serializer_->Deserialize(
         received_message_.data(), received_message_.size(),
-        &abstract_state->get_mutable_value(kStateIndexMessage));
+        &abstract_state.get_mutable_value(kStateIndexMessage));
   }
-  abstract_state->get_mutable_value(kStateIndexMessageCount)
+  abstract_state.get_mutable_value(kStateIndexMessageCount)
       .get_mutable_value<int>() = received_message_count_;
 }
 

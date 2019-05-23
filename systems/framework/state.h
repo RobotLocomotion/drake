@@ -109,11 +109,6 @@ class State {
     return xa.get_mutable_value(index).get_mutable_value<U>();
   }
 
-  DRAKE_DEPRECATED("2019-06-01", "Use SetFrom instead of CopyFrom.")
-  void CopyFrom(const State<T>& other) {
-    SetFrom(other);
-  }
-
   /// Initializes this state from a State<U>.
   template <typename U>
   void SetFrom(const State<U>& other) {

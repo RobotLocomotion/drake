@@ -104,12 +104,15 @@ PYBIND11_MODULE(_module_py, m) {
       "is replaced by a character from the portable filename character set. "
       "Any trailing / will be stripped from the output.",
       doc.temp_directory.doc);
-// Returns the fully-qualified path to the root of the `drake` source tree.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  m.def("GetDrakePath", &GetDrakePath, "Get Drake path",
-      doc.GetDrakePath.doc_deprecated);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+  m.def("GetDrakePath",
+      []() {
+        py::object result;
+        if (auto optional_result = MaybeGetDrakePath()) {
+          result = py::str(*optional_result);
+        }
+        return result;
+      },
+      doc.MaybeGetDrakePath.doc);
   // These are meant to be called internally by pydrake; not by users.
   m.def("set_assertion_failure_to_throw_exception",
       &drake_set_assertion_failure_to_throw_exception,

@@ -105,17 +105,6 @@ void DefineFrameworkPySemantics(py::module m) {
       .def("get_mutable_value", &AbstractValues::get_mutable_value,
           py::arg("index"), py_reference_internal,
           doc.AbstractValues.get_mutable_value.doc)
-      .def("CopyFrom",
-          [](AbstractValues* self, const AbstractValues& other) {
-            WarnDeprecated(
-                "Use SetFrom instead of CopyFrom. "
-                "This method will be removed on 2019-06-01.");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            self->CopyFrom(other);
-#pragma GCC diagnostic pop
-          },
-          doc.AbstractValues.CopyFrom.doc_deprecated)
       .def("SetFrom", &AbstractValues::SetFrom, doc.AbstractValues.SetFrom.doc);
 
   {

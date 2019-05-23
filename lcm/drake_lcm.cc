@@ -93,11 +93,6 @@ bool DrakeLcm::IsReceiveThreadRunning() const {
   return impl_->receive_thread_ != nullptr;
 }
 
-// TODO(jwnimmer-tri) To be deprecated.
-std::string DrakeLcm::get_requested_lcm_url() const {
-  return impl_->requested_lcm_url_;
-}
-
 std::string DrakeLcm::get_lcm_url() const {
   return impl_->lcm_url_;
 }
