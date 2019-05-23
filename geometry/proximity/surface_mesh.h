@@ -66,12 +66,29 @@ class SurfaceFace {
       : vertex_({v0, v1, v2}) {}
 
   /** Constructs SurfaceFace.
+   @param v0 Index of the first vertex in SurfaceMesh.
+   @param v1 Index of the second vertex in SurfaceMesh.
+   @param v2 Index of the last vertex in SurfaceMesh.
+   */
+  SurfaceFace(int v0, int v1, int v2)
+      : vertex_({SurfaceVertexIndex(v0), SurfaceVertexIndex(v1),
+                 SurfaceVertexIndex(v2)}) {}
+
+  /** Constructs SurfaceFace.
    @param v  array of three integer indices of the vertices of the face in
              SurfaceMesh.
    */
   explicit SurfaceFace(const int v[3])
       : vertex_({SurfaceVertexIndex(v[0]),
                  SurfaceVertexIndex(v[1]),
+                 SurfaceVertexIndex(v[2])}) {}
+
+  /** Constructs SurfaceFace.
+   @param v  vector of three integer indices of the vertices of the face in
+             SurfaceMesh.
+   */
+  explicit SurfaceFace(const Vector3<int>& v)
+      : vertex_({SurfaceVertexIndex(v[0]), SurfaceVertexIndex(v[1]),
                  SurfaceVertexIndex(v[2])}) {}
 
   /** Returns the vertex index in SurfaceMesh of the i-th vertex of this face.
@@ -81,6 +98,12 @@ class SurfaceFace {
   SurfaceVertexIndex vertex(int i) const {
     return vertex_.at(i);
   }
+
+  /** Returns the vertex index in SurfaceMesh of the i-th vertex of this face.
+   @param i  The local index of the vertex in this face.
+   @pre 0 <= i < 3
+   */
+  SurfaceVertexIndex operator[](int i) const { return vertex(i); }
 
  private:
   // The vertices of this face.
@@ -173,6 +196,10 @@ class SurfaceMesh {
   /** Returns area of a triangular element.
    */
   const T& area(SurfaceFaceIndex f) const { return area_[f]; }
+
+  const std::vector<SurfaceVertex<T>>& vertices() const { return vertices_; }
+
+  const std::vector<SurfaceFace>& faces() const { return faces_; }
 
  private:
   // Initialization.
