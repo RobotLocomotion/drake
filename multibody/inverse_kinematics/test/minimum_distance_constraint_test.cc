@@ -209,7 +209,7 @@ TEST_F(BoxSphereTest, Test) {
                                          penalty_function);
 
     auto check_eval_autodiff =
-        [&constraint, this](const Eigen::VectorXd& q_val,
+        [&constraint](const Eigen::VectorXd& q_val,
                             const Eigen::MatrixXd& q_gradient, double tol,
                             const Eigen::Vector3d& box_size, double radius) {
           AutoDiffVecXd x_autodiff =
