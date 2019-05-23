@@ -1,5 +1,6 @@
 #include "drake/solvers/minimum_value_constraint.h"
 
+#include <limits>
 #include <vector>
 
 #include "drake/math/autodiff_gradient.h"
