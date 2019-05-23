@@ -17,7 +17,7 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
     MinimumDistancePenaltyFunction penalty_function,
     double influence_distance_offset)
     : solvers::Constraint(1, RefFromPtrOrThrow(plant).num_positions(),
-                          Vector1d(0), Vector1d(1)),
+                          Vector1d(0), Vector1d(0)),
       plant_{RefFromPtrOrThrow(plant)},
       plant_context_{plant_context} {
   if (!plant_.geometry_source_is_registered()) {
@@ -59,6 +59,8 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
                 std::placeholders::_1, std::placeholders::_2),
       std::bind(&MinimumDistanceConstraint::Distances<double>, this,
                 std::placeholders::_1, std::placeholders::_2));
+  this->set_bounds(minimum_value_constraint_->lower_bound(),
+                   minimum_value_constraint_->upper_bound());
   if (penalty_function) {
     minimum_value_constraint_->set_penalty_function(penalty_function);
   }
