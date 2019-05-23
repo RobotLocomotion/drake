@@ -59,7 +59,7 @@ class WeldJoint final : public Joint<T> {
 
 #ifndef DRAKE_DOXYGEN_CXX
   DRAKE_DEPRECATED(
-      "2019-06-15",
+      "2019-07-01",
       "This Isometry3 overload will be removed pending the resolution of "
       "#9865. Use the RigidTransform overload instead.")
   WeldJoint(const std::string& name, const Frame<T>& parent_frame_P,
