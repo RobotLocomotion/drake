@@ -61,7 +61,8 @@ void Penalty(const double& value, double minimum_value, double influence_value,
   *y = penalty;
 }
 
-void Penalty(const AutoDiffXd& value, double minimum_value, double influence_value,
+void Penalty(const AutoDiffXd& value, double minimum_value,
+             double influence_value,
              MinimumValuePenaltyFunction penalty_function, AutoDiffXd* y) {
   const AutoDiffXd scaled_value_autodiff =
       ScaleValue(value, minimum_value, influence_value);

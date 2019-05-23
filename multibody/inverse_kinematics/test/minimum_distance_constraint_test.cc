@@ -177,14 +177,12 @@ TEST_F(TwoFreeSpheresTest, NonpositiveInfluenceDistanceOffset) {
 
 TEST_F(TwoFreeSpheresTest, NonfiniteInfluenceDistanceOffset) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MinimumDistanceConstraint(plant_double_, 0.1, plant_context_double_,
-                                {},
+      MinimumDistanceConstraint(plant_double_, 0.1, plant_context_double_, {},
                                 std::numeric_limits<double>::infinity()),
       std::invalid_argument,
       "MinimumDistanceConstraint: influence_distance_offset must be finite.");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MinimumDistanceConstraint(plant_double_, 0.1, plant_context_double_,
-                                {},
+      MinimumDistanceConstraint(plant_double_, 0.1, plant_context_double_, {},
                                 std::numeric_limits<double>::quiet_NaN()),
       std::invalid_argument,
       "MinimumDistanceConstraint: influence_distance_offset must be finite.");

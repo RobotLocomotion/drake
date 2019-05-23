@@ -10,9 +10,9 @@ namespace solvers {
 namespace test {
 /** Compare the result between Eval<double> and Eval<AutoDiffXd>. Also compare
 the gradient in Eval<AutoDiffXd> with a numerical approximation. */
-void CheckConstraintEvalNonsymbolic(const Constraint& constraint,
-                         const Eigen::Ref<const AutoDiffVecXd>& x_autodiff,
-                         double tol);
+void CheckConstraintEvalNonsymbolic(
+    const Constraint& constraint,
+    const Eigen::Ref<const AutoDiffVecXd>& x_autodiff, double tol);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
