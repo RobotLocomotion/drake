@@ -14,6 +14,7 @@ drake_cc_package_library(
     name = "proximity",
     deps = [
         ":collision_filter_legacy",
+        ":contact_surface_calculator",
         ":distance_to_point",
         ":distance_to_point_with_gradient",
         ":distance_to_shape",
@@ -117,6 +118,23 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "contact_surface_calculator",
+    srcs = [
+        "contact_surface_calculator.cc",
+    ],
+    hdrs = [
+        "contact_surface_calculator.h",
+    ],
+    deps = [
+        "//common:autodiff",
+        "//common:essential",
+        "//geometry/proximity:volume_mesh",
+        "//geometry/query_results:contact_surface",
+        "//math:geometric_transform",
+    ],
+)
+
 drake_cc_googletest(
     name = "distance_to_point_test",
     deps = [
@@ -171,6 +189,15 @@ drake_cc_googletest(
     name = "mesh_field_linear_test",
     deps = [
         "//geometry/proximity:mesh_field",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_surface_calculator_test",
+    deps = [
+        ":contact_surface_calculator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math",
     ],
 )
 
