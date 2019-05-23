@@ -1,11 +1,11 @@
-#include "drake/geometry/query_results/mesh_field_linear.h"
+#include "drake/geometry/proximity/mesh_field_linear.h"
 
 #include <memory>
 #include <utility>
 
 #include <gtest/gtest.h>
 
-#include "drake/geometry/query_results/surface_mesh.h"
+#include "drake/geometry/proximity/surface_mesh.h"
 
 namespace drake {
 namespace geometry {

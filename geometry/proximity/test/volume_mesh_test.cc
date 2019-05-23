@@ -7,8 +7,8 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
+#include "drake/geometry/proximity/mesh_field_linear.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
-#include "drake/geometry/query_results/mesh_field_linear.h"
 
 namespace drake {
 namespace geometry {
