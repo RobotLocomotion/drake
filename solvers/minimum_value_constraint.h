@@ -52,19 +52,20 @@ to be no smaller than a specified minimum value.
 
 The formulation of the constraint is
 
-0 ≤ SmoothMax( φ((vᵢ - v_influence)/(v_influence - vₘᵢₙ)) / φ(-1) ) ≤ 1
+SmoothMax( φ((vᵢ - v_influence)/(v_influence - vₘᵢₙ)) / φ(-1) ) ≤ 1
 
 where vᵢ is the i-th value returned by the user-provided function, vₘᵢₙ is the
 minimum allowable value, v_influence is the "influence value" (the value below
 which an element influences the constraint or, conversely, the value above which
 an element is ignored), φ is a solvers::MinimumValuePenaltyFunction, and
-SmoothMax(v) is a smooth approximation of max(v). We require that vₘᵢₙ <
-v_influence. The input scaling (vᵢ - v_influence)/(v_influence - vₘᵢₙ) ensures
-that at the boundary of the feasible set (when vᵢ == vₘᵢₙ), we evaluate the
-penalty function at -1, where it is required to have a non-zero gradient. The
-user-provided function may return a vector with up to `max_num_values` elements.
-If it returns a vector with fewer than `max_num_values` elements, the remaining
-elements are assumed to be greater than the "influence value". */
+SmoothMax(v) is a smooth, conservative approximation of max(v) (i.e.
+SmoothMax(v) >= max(v), for all v). We require that vₘᵢₙ < v_influence. The
+input scaling (vᵢ - v_influence)/(v_influence - vₘᵢₙ) ensures that at the
+boundary of the feasible set (when vᵢ == vₘᵢₙ), we evaluate the penalty function
+at -1, where it is required to have a non-zero gradient. The user-provided
+function may return a vector with up to `max_num_values` elements. If it returns
+a vector with fewer than `max_num_values` elements, the remaining elements are
+assumed to be greater than the "influence value". */
 class MinimumValueConstraint final : public solvers::Constraint {
  public:
   /** Constructs a MinimumValueConstraint.
