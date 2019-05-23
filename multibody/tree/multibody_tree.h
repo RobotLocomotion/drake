@@ -424,7 +424,7 @@ class MultibodyTree {
   // bugs, see #11051. It is bad practice and should removed, see #11080.
   template<template<typename Scalar> class ForceElementType, typename... Args>
   DRAKE_DEPRECATED("2019-09-01",
-                   "Use mutable_gravity_field.set_gravity_vector() instead.")
+                   "Use mutable_gravity_field().set_gravity_vector() instead.")
   typename std::enable_if<std::is_same<
       ForceElementType<T>,
       UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type

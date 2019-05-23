@@ -131,7 +131,7 @@ PYBIND11_MODULE(plant, m) {
                 std::unique_ptr<UniformGravityFieldElement<T>> force_element)
                 -> auto& {
               WarnDeprecated(
-                  "Use mutable_gravity_field.set_gravity_vector() instead.");
+                  "Use mutable_gravity_field().set_gravity_vector() instead.");
       // N.B. We need to make sure we call the correct specialization in
       // MultibodyPlant for it to take note we are adding gravity to the
       // model. This is ugly API needs to be updated, see #11080.
