@@ -1054,6 +1054,14 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "minimum_value_constraint_test",
+    deps = [
+        ":minimum_value_constraint",
+        "//solvers/test_utilities",
+    ]
+)
+
 # TODO(eric.cousineau): Remove dependence on create_cost
 drake_cc_googletest(
     name = "cost_test",
