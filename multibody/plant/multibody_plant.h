@@ -1556,7 +1556,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if `p_FP_list` does not have 3 rows.
   // TODO(amcastro-tri): Rework this method as per issue #10155.
-  DRAKE_DEPRECATED("2019-08-17",
+  DRAKE_DEPRECATED("2019-09-01",
                    "Use CalcBiasForJacobianTranslationalVelocity().")
   VectorX<T> CalcBiasForPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
@@ -1830,7 +1830,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `J_ABp` is nullptr or if it is not of size
   ///   `6 x nv`.
   // TODO(amcastro-tri): Rework this method as per issue #10155.
-  DRAKE_DEPRECATED("2019-08-15", "Use CalcJacobianSpatialVelocity().")
+  DRAKE_DEPRECATED("2019-09-01", "Use CalcJacobianSpatialVelocity().")
   void CalcRelativeFrameGeometricJacobian(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
@@ -3117,7 +3117,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // #9865. Right now we offer them for backwards compatibility.
 
   DRAKE_DEPRECATED(
-      "2019-06-15",
+      "2019-07-01",
       "This Isometry3 overload will be removed pending the resolution of "
       "#9865. Use the RigidTransform overload instead.")
   void SetFreeBodyPose(systems::Context<T>* context, const Body<T>& body,
@@ -3126,7 +3126,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   DRAKE_DEPRECATED(
-      "2019-06-15",
+      "2019-07-01",
       "This Isometry3 overload will be removed pending the resolution of "
       "#9865. Use the RigidTransform overload instead.")
   void SetFreeBodyPose(const systems::Context<T>& context,
@@ -3138,7 +3138,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Allows having a non-empty X_PF isometry and a nullopt X_BM.
   template <template <typename> class JointType, typename... Args>
   DRAKE_DEPRECATED(
-      "2019-06-15",
+      "2019-07-01",
       "This Isometry3 overload will be removed pending the resolution of "
       "#9865. Use the RigidTransform overload instead.")
   const JointType<T>& AddJoint(const std::string& name, const Body<T>& parent,
@@ -3161,7 +3161,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Allows having a nullopt X_PF and a non-empty X_BM isometry.
   template <template <typename> class JointType, typename... Args>
   DRAKE_DEPRECATED(
-      "2019-06-15",
+      "2019-07-01",
       "This Isometry3 overload will be removed pending the resolution of "
       "#9865. Use the RigidTransform overload instead.")
   const JointType<T>& AddJoint(const std::string& name, const Body<T>& parent,
@@ -3213,7 +3213,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   DRAKE_DEPRECATED(
-      "2019-06-15",
+      "2019-07-01",
       "This Isometry3 overload will be removed pending the resolution of "
       "#9865. Use the RigidTransform overload instead.")
   geometry::GeometryId RegisterVisualGeometry(
@@ -3226,7 +3226,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   DRAKE_DEPRECATED(
-      "2019-06-15",
+      "2019-07-01",
       "This Isometry3 overload will be removed pending the resolution of "
       "#9865. Use the RigidTransform overload instead.")
   geometry::GeometryId RegisterVisualGeometry(
@@ -3239,7 +3239,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   DRAKE_DEPRECATED(
-      "2019-06-15",
+      "2019-07-01",
       "This Isometry3 overload will be removed pending the resolution of "
       "#9865. Use the RigidTransform overload instead.")
   geometry::GeometryId RegisterVisualGeometry(
@@ -3251,7 +3251,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   DRAKE_DEPRECATED(
-      "2019-06-15",
+      "2019-07-01",
       "This Isometry3 overload will be removed pending the resolution of "
       "#9865. Use the RigidTransform overload instead.")
   geometry::GeometryId RegisterCollisionGeometry(

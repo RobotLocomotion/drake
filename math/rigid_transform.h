@@ -308,7 +308,7 @@ class RigidTransform {
 #ifndef DRAKE_DOXYGEN_CXX
   /// Until #9865 is resolved, this operator temporarily allows users mixing the
   /// use of %RigidTransform with Isometry3.
-  DRAKE_DEPRECATED("2019-06-26",
+  DRAKE_DEPRECATED("2019-07-01",
                    "Do not mix RigidTransform with Isometry3. Only use "
                    "RigidTransform per #9865.")
   RigidTransform<T> operator*(const Isometry3<T>& isometry3) const {

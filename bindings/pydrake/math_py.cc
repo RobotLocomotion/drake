@@ -41,7 +41,7 @@ PYBIND11_MODULE(math, m) {
   const char* doc_iso3_deprecation =
       "DO NOT USE!. We only offer this API for backwards compatibility with "
       "Isometry3 and it will be deprecated soon with the resolution of "
-      "#9865. This will be removed on or around 2019-06-26.";
+      "#9865. This will be removed on or around 2019-07-01.";
 
   // TODO(eric.cousineau): At present, we only bind doubles.
   // In the future, we will bind more scalar types, and enable scalar
