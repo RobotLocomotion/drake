@@ -148,6 +148,10 @@ class SurfaceMesh {
     return vertices_[v];
   }
 
+  /** Returns the number of vertices in the mesh.
+   */
+  int num_vertices() const { return vertices_.size(); }
+
   //@}
 
   /** Constructs a SurfaceMesh from faces and vertices.
@@ -165,10 +169,6 @@ class SurfaceMesh {
   /** Returns the number of triangular elements in the mesh.
    */
   int num_faces() const { return faces_.size(); }
-
-  /** Returns the number of vertices in the mesh.
-   */
-  int num_vertices() const { return vertices_.size(); }
 
   /** Returns area of a triangular element.
    */

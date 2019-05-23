@@ -142,4 +142,18 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "mesh_field_test",
+    deps = [
+        "//geometry/query_results:mesh_field",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mesh_field_linear_test",
+    deps = [
+        "//geometry/query_results:mesh_field",
+    ],
+)
+
 add_lint_tests()
