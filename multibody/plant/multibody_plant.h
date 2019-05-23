@@ -974,7 +974,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // deprecation message, remove the "backwards compatibility" notes from
   // MultibodyPlant::AddForceElement().
   DRAKE_DEPRECATED("2019-09-01",
-                   "Use mutable_gravity_field.set_gravity_vector() instead.")
+                   "Use mutable_gravity_field().set_gravity_vector() instead.")
   typename std::enable_if<
       std::is_same<ForceElementType<T>, UniformGravityFieldElement<T>>::value,
       const ForceElementType<T>&>::type
