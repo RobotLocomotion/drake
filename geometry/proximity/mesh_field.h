@@ -5,7 +5,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_nodiscard.h"
 #include "drake/common/reset_on_copy.h"
-#include "drake/geometry/query_results/surface_mesh.h"
+#include "drake/geometry/proximity/surface_mesh.h"
 
 namespace drake {
 namespace geometry {

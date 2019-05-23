@@ -11,8 +11,8 @@
 #include "drake/common/drake_nodiscard.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_pair.h"
-#include "drake/geometry/query_results/mesh_field.h"
-#include "drake/geometry/query_results/surface_mesh.h"
+#include "drake/geometry/proximity/mesh_field.h"
+#include "drake/geometry/proximity/surface_mesh.h"
 
 namespace drake {
 namespace geometry {

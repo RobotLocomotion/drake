@@ -1,7 +1,7 @@
 #pragma once
 
+#include "drake/geometry/proximity/mesh_field_linear.h"
 #include "drake/geometry/proximity/volume_mesh.h"
-#include "drake/geometry/query_results/mesh_field_linear.h"
 
 namespace drake {
 namespace geometry {

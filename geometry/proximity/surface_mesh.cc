@@ -1,4 +1,4 @@
-#include "drake/geometry/query_results/mesh_field.h"
+#include "drake/geometry/proximity/surface_mesh.h"
 
 namespace drake {
 namespace geometry {
