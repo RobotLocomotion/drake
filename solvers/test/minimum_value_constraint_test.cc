@@ -42,6 +42,13 @@ VectorX<T> SquareAndReturnLessThanInfluenceValue(
   return values;
 }
 
+// Returns a zero-element vector.
+template <typename T>
+VectorX<T> ReturnNoValues(const Eigen::Ref<const VectorX<T>>& x,
+                          double influence_value) {
+  return VectorX<T>(0);
+}
+
 // Verify that the constructor works as expected.
 GTEST_TEST(MinimumValueConstraintTests, ConstructorTest) {
   int expected_num_vars{5};
@@ -67,7 +74,7 @@ GTEST_TEST(MinimumValueConstraintTests, EvalNonsymbolicTest) {
   double influence_value{0.2};
   MinimumValueConstraint dut_return_all(
       num_vars, minimum_value, influence_value - minimum_value, max_num_values,
-      &SquareAndReturnAll<AutoDiffXd>);
+      &SquareAndReturnAll<AutoDiffXd>, &SquareAndReturnAll<double>);
   MinimumValueConstraint dut_return_less_than_influence_value(
       num_vars, minimum_value, influence_value - minimum_value, max_num_values,
       &SquareAndReturnLessThanInfluenceValue<AutoDiffXd>);
@@ -104,6 +111,18 @@ GTEST_TEST(MinimumValueConstraintTests, EvalNonsymbolicTest) {
                     false);
   // Check with inputs that should satisfy the constraints.
   check_constraints({x_sqrt_min_value_to_twice_sqrt_influence_value}, true);
+}
+
+GTEST_TEST(MinimumValueConstraintTests, EvalNoValuesTest) {
+  int num_vars{5};
+  int max_num_values{0};
+  double minimum_value{0.1};
+  double influence_value{0.2};
+  MinimumValueConstraint dut_no_values(
+      num_vars, minimum_value, influence_value - minimum_value, max_num_values,
+      &ReturnNoValues<AutoDiffXd>);
+  test::CheckConstraintEvalNonsymbolic(dut_no_values,
+                                       AutoDiffVecXd::Zero(num_vars), kEps);
 }
 
 // Verify that Eval() throws for symbolic inputs.

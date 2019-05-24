@@ -13,6 +13,7 @@ namespace {
 avoid overflow. */
 template <typename T>
 T LogSumExp(const std::vector<T>& x) {
+  DRAKE_ASSERT(x.size() > 0);
   using std::exp;
   using std::log;
   const T x_max = *std::max_element(x.begin(), x.end());
@@ -30,6 +31,7 @@ T SmoothMax(const std::vector<T>& x) {
   // This smooth max approaches max(x) as α increases. We choose α = 100, as
   // that gives a qualitatively good fit for xᵢ ∈ [0, 1], which is the range of
   // potential penalty values when the MinimumValueConstraint is feasible.
+  DRAKE_ASSERT(x.size() > 0);
   const double alpha{100};
   std::vector<T> x_scaled{x};
   for (T& xi_scaled : x_scaled) {
@@ -168,6 +170,13 @@ template <typename T>
 void MinimumValueConstraint::DoEvalGeneric(
     const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* y) const {
   y->resize(1);
+
+  // If we know that Values() will return at most zero values, then this
+  // is a non-constraint. Return zero in that case.
+  if (max_num_values_ == 0) {
+    InitializeY(x, y, 0.0);
+    return;
+  }
 
   // Initialize y to SmoothMax([0, 0, ..., 0]).
   InitializeY(x, y, SmoothMax(std::vector<double>(max_num_values_, 0.0)));
