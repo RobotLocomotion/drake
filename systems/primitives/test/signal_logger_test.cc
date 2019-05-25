@@ -10,6 +10,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/linear_system.h"
 
@@ -137,7 +138,33 @@ GTEST_TEST(TestSignalLogger, SetForcedPublishOnly) {
       ".*cannot be called if set_forced_publish_only.*");
 }
 
-}  // namespace
+GTEST_TEST(TestSignalLogger, ScalarConversion) {
+  SignalLogger<double> dut_per_step_publish(2);
+  SignalLogger<double> dut_forced_publish(2);
+  dut_forced_publish.set_forced_publish_only();
+  SignalLogger<double> dut_periodic_publish(2);
+  dut_periodic_publish.set_publish_period(0.25);
+  for (const auto* dut : {
+      &dut_per_step_publish, &dut_forced_publish, &dut_periodic_publish}) {
+    EXPECT_TRUE(is_autodiffxd_convertible(*dut, [&](const auto& converted) {
+      ASSERT_EQ(converted.num_input_ports(), 1);
+      EXPECT_EQ(converted.get_input_port().size(), 2);
+    }));
+    EXPECT_TRUE(is_symbolic_convertible(*dut, [&](const auto& converted) {
+      ASSERT_EQ(converted.num_input_ports(), 1);
+      EXPECT_EQ(converted.get_input_port().size(), 2);
+    }));
+  }
+}
 
+GTEST_TEST(TestSignalLogger, DiagramToAutoDiff) {
+  DiagramBuilder<double> builder;
+  auto system = builder.AddSystem<ConstantVectorSource<double>>(2.0);
+  LogOutput(system->get_output_port(), &builder);
+  auto diagram = builder.Build();
+  EXPECT_TRUE(is_autodiffxd_convertible(*diagram));
+}
+
+}  // namespace
 }  // namespace systems
 }  // namespace drake

@@ -588,6 +588,19 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           py::arg("X"),
           doc.MathematicalProgram.AddMaximizeLogDeterminantSymmetricMatrixCost
               .doc)
+      .def("AddMaximizeGeometricMeanCost",
+          overload_cast_explicit<void, const Eigen::Ref<const Eigen::MatrixXd>&,
+              const Eigen::Ref<const Eigen::VectorXd>&,
+              const Eigen::Ref<const VectorX<symbolic::Variable>>&>(
+              &MathematicalProgram::AddMaximizeGeometricMeanCost),
+          py::arg("A"), py::arg("b"), py::arg("x"),
+          doc.MathematicalProgram.AddMaximizeGeometricMeanCost.doc_3args)
+      .def("AddMaximizeGeometricMeanCost",
+          overload_cast_explicit<void,
+              const Eigen::Ref<const VectorX<symbolic::Variable>>&, double>(
+              &MathematicalProgram::AddMaximizeGeometricMeanCost),
+          py::arg("x"), py::arg("c"),
+          doc.MathematicalProgram.AddMaximizeGeometricMeanCost.doc_2args)
       .def("AddSosConstraint",
           static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               const Polynomial&, const Eigen::Ref<const VectorX<Monomial>>&)>(

@@ -19,7 +19,6 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -32,7 +31,6 @@ using drake::lcm::DrakeLcm;
 using drake::multibody::Body;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
-using drake::multibody::UniformGravityFieldElement;
 
 namespace drake {
 namespace examples {
@@ -58,7 +56,6 @@ int DoMain() {
                         kuka_plant.GetFrameByName("base"));
 
   // Add gravity to the model.
-  kuka_plant.AddForceElement<UniformGravityFieldElement>();
 
   // Now the model is complete.
   kuka_plant.Finalize();

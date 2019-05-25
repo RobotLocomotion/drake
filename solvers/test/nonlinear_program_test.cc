@@ -449,6 +449,51 @@ GTEST_TEST(testNonlinearProgram, UnitLengthConstraint) {
                       &result);
 }
 
+GTEST_TEST(testNonlinearProgram, EckhardtProblemSparse) {
+  // This tests a nonlinear optimization problem with sparse constraint
+  // gradient.
+  EckhardtProblem prob(true /* set gradient sparsity pattern */);
+  const Eigen::VectorXd x_init = Eigen::Vector3d(2, 1.05, 2.9);
+  MathematicalProgramResult result;
+  RunNonlinearProgram(prob.prog(), x_init,
+                      [&prob, &result]() { prob.CheckSolution(result, 3E-7); },
+                      &result);
+}
+
+GTEST_TEST(testNonlinearProgram, EckhardtProblemNonSparse) {
+  // Test Eckhardt problem again without setting the sparsity pattern, to make
+  // sure that the solver gives the same result as setting the sparsity pattern.
+  EckhardtProblem prob(false /* not set gradient sparsity pattern */);
+  const Eigen::VectorXd x_init = Eigen::Vector3d(2, 1.05, 2.9);
+  MathematicalProgramResult result;
+  RunNonlinearProgram(prob.prog(), x_init,
+                      [&prob, &result]() { prob.CheckSolution(result, 3E-7); },
+                      &result);
+}
+
+GTEST_TEST(testNonlinearProgram, HeatExchangerDesignProblem) {
+  // This tests a nonlinear optimization problem with sparse constraint
+  // gradient.
+  HeatExchangerDesignProblem prob;
+  Eigen::VectorXd x_init(8);
+  x_init << 5000, 5000, 5000, 200, 350, 150, 225, 425;
+  MathematicalProgramResult result;
+  // The optimal solution given in Hock's reference has low precision, and the
+  // magnitude of the solution is large, so we choose a large tolerance 0.2.
+  RunNonlinearProgram(prob.prog(), x_init,
+                      [&prob, &result]() { prob.CheckSolution(result, 0.2); },
+                      &result);
+}
+
+GTEST_TEST(testNonlinearProgram, EmptyGradientProblem) {
+  EmptyGradientProblem prob;
+  MathematicalProgramResult result;
+  Eigen::VectorXd x_init = Eigen::Vector2d(0, 0);
+  RunNonlinearProgram(prob.prog(), x_init,
+                      [&prob, &result]() { prob.CheckSolution(result); },
+                      &result);
+}
+
 GTEST_TEST(testNonlinearProgram, CallbackTest) {
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<3>();

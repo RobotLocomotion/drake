@@ -16,6 +16,7 @@
 #include "drake/multibody/tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/spatial_inertia.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
 
 namespace drake {
 namespace multibody {
@@ -23,6 +24,8 @@ namespace internal {
 
 using internal::BodyNode;
 using internal::BodyNodeWelded;
+using math::RigidTransform;
+using math::RotationMatrix;
 
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
@@ -72,6 +75,16 @@ MultibodyTree<T>::MultibodyTree() {
   ModelInstanceIndex default_instance =
       AddModelInstance("DefaultModelInstance");
   DRAKE_DEMAND(default_instance == default_model_instance());
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // TODO(sammy-tri) Move the custom handling logic for adding a
+  // UniformGravityFieldElement here once we remove the deprecated overload.
+  const ForceElement<T>& new_field =
+      AddForceElement<UniformGravityFieldElement>();
+#pragma GCC diagnostic pop
+  DRAKE_DEMAND(num_force_elements() == 1);
+  DRAKE_DEMAND(owned_force_elements_[0].get() == &new_field);
 }
 
 template <typename T>
@@ -368,18 +381,18 @@ void MultibodyTree<T>::SetPositionsAndVelocities(
 }
 
 template <typename T>
-math::RigidTransform<T> MultibodyTree<T>::GetFreeBodyPoseOrThrow(
+RigidTransform<T> MultibodyTree<T>::GetFreeBodyPoseOrThrow(
     const systems::Context<T>& context, const Body<T>& body) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   const QuaternionFloatingMobilizer<T>& mobilizer =
       GetFreeBodyMobilizerOrThrow(body);
-  return math::RigidTransform<T>(mobilizer.get_quaternion(context),
+  return RigidTransform<T>(mobilizer.get_quaternion(context),
                                  mobilizer.get_position(context));
 }
 
 template <typename T>
 void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
-    const Body<T>& body, const math::RigidTransform<T>& X_WB,
+    const Body<T>& body, const RigidTransform<T>& X_WB,
     systems::Context<T>* context) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   SetFreeBodyPoseOrThrow(body, X_WB, *context, &context->get_mutable_state());
@@ -396,7 +409,7 @@ void MultibodyTree<T>::SetFreeBodySpatialVelocityOrThrow(
 
 template <typename T>
 void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
-    const Body<T>& body, const math::RigidTransform<T>& X_WB,
+    const Body<T>& body, const RigidTransform<T>& X_WB,
     const systems::Context<T>& context, systems::State<T>* state) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   const QuaternionFloatingMobilizer<T>& mobilizer =
@@ -438,10 +451,10 @@ void MultibodyTree<T>::SetFreeBodyRandomRotationDistributionOrThrow(
 template <typename T>
 void MultibodyTree<T>::CalcAllBodyPosesInWorld(
     const systems::Context<T>& context,
-    std::vector<math::RigidTransform<T>>* X_WB) const {
+    std::vector<RigidTransform<T>>* X_WB) const {
   DRAKE_THROW_UNLESS(X_WB != nullptr);
   if (static_cast<int>(X_WB->size()) != num_bodies()) {
-    X_WB->resize(num_bodies(), math::RigidTransform<T>::Identity());
+    X_WB->resize(num_bodies(), RigidTransform<T>::Identity());
   }
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
@@ -529,6 +542,68 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
       // Update per-node kinematics.
       node.CalcVelocityKinematicsCache_BaseToTip(context, pc, H_PB_W, vc);
     }
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcSpatialInertiaInWorldCache(
+    const systems::Context<T>& context,
+    std::vector<SpatialInertia<T>>* M_B_W_cache) const {
+  DRAKE_THROW_UNLESS(M_B_W_cache != nullptr);
+  DRAKE_THROW_UNLESS(static_cast<int>(M_B_W_cache->size()) == num_bodies());
+
+  const PositionKinematicsCache<T>& pc = this->EvalPositionKinematics(context);
+
+  // Skip the world.
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    const RigidTransform<T>& X_WB = pc.get_X_WB(body.node_index());
+
+    // Orientation of B in W.
+    const RotationMatrix<T>& R_WB = X_WB.rotation();
+
+    // Spatial inertia of body B about Bo and expressed in the body frame B.
+    // This call has zero cost for rigid bodies.
+    const SpatialInertia<T> M_B = body.CalcSpatialInertiaInBodyFrame(context);
+
+    // Re-express body B's spatial inertia in the world frame W.
+    SpatialInertia<T>& M_B_W = (*M_B_W_cache)[body.node_index()];
+    M_B_W = M_B.ReExpress(R_WB);
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcDynamicBiasCache(
+    const systems::Context<T>& context,
+    std::vector<SpatialForce<T>>* b_Bo_W_cache) const {
+  DRAKE_THROW_UNLESS(b_Bo_W_cache != nullptr);
+  DRAKE_THROW_UNLESS(static_cast<int>(b_Bo_W_cache->size()) == num_bodies());
+
+  const std::vector<SpatialInertia<T>>& spatial_inertia_in_world_cache =
+      EvalSpatialInertiaInWorldCache(context);
+
+  const VelocityKinematicsCache<T>& vc = this->EvalVelocityKinematics(context);
+
+  // Skip the world.
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+
+    const SpatialInertia<T>& M_B_W =
+        spatial_inertia_in_world_cache[body.node_index()];
+
+    const T& mass = M_B_W.get_mass();
+    // B's center of mass measured in B and expressed in W.
+    const Vector3<T>& p_BoBcm_W = M_B_W.get_com();
+    // B's unit rotational inertia about Bo, expressed in W.
+    const UnitInertia<T>& G_B_W = M_B_W.get_unit_inertia();
+
+    // Gyroscopic spatial force b_Bo_W(q, v) on body B about Bo, expressed in W.
+    const SpatialVelocity<T>& V_WB = vc.get_V_WB(body.node_index());
+    const Vector3<T>& w_WB = V_WB.rotational();
+    SpatialForce<T>& b_Bo_W = (*b_Bo_W_cache)[body.node_index()];
+    b_Bo_W = mass * SpatialForce<T>(
+                        w_WB.cross(G_B_W * w_WB), /* rotational */
+                        w_WB.cross(w_WB.cross(p_BoBcm_W)) /* translational */);
   }
 }
 
@@ -668,9 +743,14 @@ void MultibodyTree<T>::CalcInverseDynamics(
   SpatialForce<T> Fapplied_Bo_W = SpatialForce<T>::Zero();
 
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  // Do not compute velocity kinematics if velocities are to be ignored.
-  const VelocityKinematicsCache<T>* vc =
-      ignore_velocities ? nullptr : &EvalVelocityKinematics(context);
+
+  // Eval M_Bo_W(q).
+  const std::vector<SpatialInertia<T>>& spatial_inertia_in_world_cache =
+      EvalSpatialInertiaInWorldCache(context);
+
+  // Eval b_Bo_W(q, v). b_Bo_W = 0 if v = 0.
+  const std::vector<SpatialForce<T>>* dynamic_bias_cache =
+      ignore_velocities ? nullptr : &EvalDynamicBiasCache(context);
 
   // Performs a tip-to-base recursion computing the total spatial force F_BMo_W
   // acting on body B, about point Mo, expressed in the world frame W.
@@ -703,9 +783,9 @@ void MultibodyTree<T>::CalcInverseDynamics(
       // Compute F_BMo_W for the body associated with this node and project it
       // onto the space of generalized forces for the associated mobilizer.
       node.CalcInverseDynamics_TipToBase(
-          context, pc, vc, *A_WB_array,
-          Fapplied_Bo_W, tau_applied_mobilizer,
-          F_BMo_W_array, tau_array);
+          context, pc, spatial_inertia_in_world_cache, dynamic_bias_cache,
+          *A_WB_array, Fapplied_Bo_W, tau_applied_mobilizer, F_BMo_W_array,
+          tau_array);
     }
   }
 }
@@ -827,21 +907,21 @@ template <typename T>
 VectorX<T> MultibodyTree<T>::CalcGravityGeneralizedForces(
     const systems::Context<T>& context) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-  if (gravity_field_.has_value()) {
-    return gravity_field_.value()->CalcGravityGeneralizedForces(context);
+  if (gravity_field_) {
+    return gravity_field_->CalcGravityGeneralizedForces(context);
   }
   return VectorX<T>::Zero(num_velocities());
 }
 
 template <typename T>
-math::RigidTransform<T> MultibodyTree<T>::CalcRelativeTransform(
+RigidTransform<T> MultibodyTree<T>::CalcRelativeTransform(
     const systems::Context<T>& context,
     const Frame<T>& frame_A, const Frame<T>& frame_B) const {
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  const math::RigidTransform<T>& X_WA =
+  const RigidTransform<T>& X_WA =
       pc.get_X_WB(frame_A.body().node_index()) *
       frame_A.CalcPoseInBodyFrame(context);
-  const math::RigidTransform<T>& X_WB =
+  const RigidTransform<T>& X_WB =
       pc.get_X_WB(frame_B.body().node_index()) *
       frame_B.CalcPoseInBodyFrame(context);
   return X_WA.inverse() * X_WB;
@@ -858,7 +938,7 @@ void MultibodyTree<T>::CalcPointsPositions(
   DRAKE_THROW_UNLESS(p_AQi != nullptr);
   DRAKE_THROW_UNLESS(p_AQi->rows() == 3);
   DRAKE_THROW_UNLESS(p_AQi->cols() == p_BQi.cols());
-  const math::RigidTransform<T> X_AB =
+  const RigidTransform<T> X_AB =
       CalcRelativeTransform(context, frame_A, frame_B);
   // We demanded above that these matrices have three rows. Therefore we tell
   // Eigen so. We also convert to Isometry3 to take advantage of the operator*()
@@ -868,7 +948,7 @@ void MultibodyTree<T>::CalcPointsPositions(
 }
 
 template <typename T>
-const math::RigidTransform<T>& MultibodyTree<T>::EvalBodyPoseInWorld(
+const RigidTransform<T>& MultibodyTree<T>::EvalBodyPoseInWorld(
     const systems::Context<T>& context,
     const Body<T>& body_B) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
@@ -956,20 +1036,31 @@ void MultibodyTree<T>::CalcPointsAnalyticalJacobianExpressedInWorld(
 }
 
 template <typename T>
-VectorX<T> MultibodyTree<T>::CalcBiasForPointsGeometricJacobianExpressedInWorld(
+VectorX<T> MultibodyTree<T>::CalcBiasForJacobianTranslationalVelocity(
     const systems::Context<T>& context,
+    JacobianWrtVariable with_respect_to,
     const Frame<T>& frame_F,
-    const Eigen::Ref<const MatrixX<T>>& p_FP_list) const {
+    const Eigen::Ref<const MatrixX<T>>& p_FP_list,
+    const Frame<T>& frame_A,
+    const Frame<T>& frame_E) const {
   DRAKE_THROW_UNLESS(p_FP_list.rows() == 3);
+
+  // For now, this method requires with_respect_to to be kV.
+  DRAKE_THROW_UNLESS(with_respect_to == JacobianWrtVariable::kV);
+
+  // For now, this method requires frame_A and frame_E to be the world frame.
+  DRAKE_THROW_UNLESS(&frame_A == &world_frame());
+  DRAKE_THROW_UNLESS(&frame_E == &world_frame());
 
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
 
   // For a frame F instantaneously moving with a body frame B, the spatial
-  // acceleration of the frame F shifted to frame Fp with origin at point P
-  // fixed in frame F, can be computed as:
+  // acceleration in world W of the frame F shifted to frame Fp with origin at
+  // point P fixed in frame F, can be computed as:
   //   A_WFp = Jv_WFp⋅v̇ + Ab_WFp,
-  // where Jv_WFp is the geometric Jacobian of frame Fp and Ab_WFp is the bias
+  // where Jv_WFp is the Jacobian with respect to generalized velocities v of
+  // the spatial velocity of frame Fp in world W and Ab_WFp is the bias
   // term for that Jacobian, defined as Ab_WFp = J̇v_WFp⋅v. The bias terms
   // contains the Coriolis and centrifugal contributions to the total spatial
   // acceleration due to non-zero velocities. Therefore, the bias term for
@@ -1003,15 +1094,15 @@ VectorX<T> MultibodyTree<T>::CalcBiasForPointsGeometricJacobianExpressedInWorld(
   VectorX<T> Ab_WB_array(3 * num_points);
 
   for (int ipoint = 0; ipoint < num_points; ++ipoint) {
-    const Vector3<T> p_FPi = p_FP_list.col(ipoint);
+    const Vector3<T> p_FPi_F = p_FP_list.col(ipoint);
 
-    // Body B's orientation.
-    const Matrix3<T>& R_WB = pc.get_X_WB(body_B.node_index()).linear();
+    // Body B's orientation in world W.
+    const RotationMatrix<T>& R_WB = pc.get_X_WB(body_B.node_index()).rotation();
 
-    // We need to compute p_BPi_W, the position of Pi in B, expressed in W.
-    const math::RigidTransform<T> X_BF = frame_F.GetFixedPoseInBodyFrame();
-    const Vector3<T> p_BPi = X_BF * p_FPi;
-    const Vector3<T> p_BPi_W = R_WB * p_BPi;
+    // We need to compute p_BPi_W, the position from Bo to Pi, expressed in W.
+    const RigidTransform<T> X_BF = frame_F.GetFixedPoseInBodyFrame();
+    const Vector3<T> p_BPi_B = X_BF * p_FPi_F;
+    const Vector3<T> p_BPi_W = R_WB * p_BPi_B;
 
     // Body B's velocity in the world frame W.
     const Vector3<T>& w_WB = vc.get_V_WB(body_B.node_index()).rotational();
@@ -1059,16 +1150,6 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
 
   CalcFrameJacobianExpressedInWorld(context, frame_F, p_WoP_W,
       JacobianWrtVariable::kV, &Jv_WFp_angular, &Jv_WFp_translational);
-}
-
-template <typename T>
-void MultibodyTree<T>::CalcRelativeFrameGeometricJacobian(
-    const systems::Context<T>& context,
-    const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
-    const Frame<T>& frame_A, const Frame<T>& frame_E,
-    EigenPtr<MatrixX<T>> Jv_ABp_E) const {
-  CalcJacobianSpatialVelocity(context, JacobianWrtVariable::kV, frame_B, p_BP,
-                              frame_A, frame_E, Jv_ABp_E);
 }
 
 template <typename T>
@@ -1125,7 +1206,7 @@ void MultibodyTree<T>::CalcJacobianSpatialVelocity(
   // If the expressed-in frame E is not the world frame, we need to perform
   // an additional operation.
   if (frame_E.index() != world_frame().index()) {
-    const math::RigidTransform<T> X_EW =
+    const RigidTransform<T> X_EW =
         CalcRelativeTransform(context, frame_E, world_frame());
     const Matrix3<T>& R_EW = X_EW.linear();
     Jw_V_ABp_E->template topRows<3>() =
@@ -1182,7 +1263,7 @@ void MultibodyTree<T>::CalcJacobianAngularVelocity(
     // When frame E is not the world frame:
     // 1. Calculate B's angular velocity Jacobian in A, expressed in W.
     // 2. Re-express that Jacobian in frame_E (rather than frame_W).
-    const math::RotationMatrix<T> R_EW(
+    const RotationMatrix<T> R_EW(
         CalcRelativeTransform(context, frame_E, frame_W).linear());
     *Js_w_AB_E = R_EW.matrix() * (Js_w_WB_W - Js_w_WA_W);
   }
@@ -1233,7 +1314,7 @@ void MultibodyTree<T>::CalcJacobianTranslationalVelocity(
     // When frame E is not the world frame:
     // 1. Calculate Bp's translational velocity Jacobian in A, expressed in W.
     // 2. Re-express that Jacobian in frame_E (rather than frame_W).
-    const math::RotationMatrix<T> R_EW(
+    const RotationMatrix<T> R_EW(
         CalcRelativeTransform(context, frame_E, frame_W).linear());
     *Js_v_ABp_E = R_EW.matrix() * (Js_v_WBp_W - Js_v_WAp_W);
   }
@@ -1283,7 +1364,7 @@ Vector6<T> MultibodyTree<T>::CalcBiasForFrameGeometricJacobianExpressedInWorld(
 
   // We need to compute p_BoP_W, the position of P from B's origin Bo,
   // expressed in W.
-  const math::RigidTransform<T> X_BF = frame_F.GetFixedPoseInBodyFrame();
+  const RigidTransform<T> X_BF = frame_F.GetFixedPoseInBodyFrame();
   const Vector3<T> p_BP = X_BF * p_FP;
   const Vector3<T> p_BP_W = R_WB * p_BP;
 

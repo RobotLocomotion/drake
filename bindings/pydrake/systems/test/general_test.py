@@ -35,6 +35,7 @@ from pydrake.systems.framework import (
     LeafSystem, LeafSystem_,
     OutputPort, OutputPort_,
     Parameters, Parameters_,
+    PeriodicEventData,
     PublishEvent, PublishEvent_,
     State, State_,
     Subvector, Subvector_,
@@ -91,7 +92,12 @@ class TestGeneral(unittest.TestCase):
         system = Adder(3, 10)
         self.assertEqual(system.num_input_ports(), 3)
         self.assertEqual(system.num_output_ports(), 1)
-        self.assertEqual(system.GetInputPort("u1").get_index(), 1)
+        u1 = system.GetInputPort("u1")
+        self.assertEqual(u1.get_name(), "u1")
+        self.assertIn("u1", u1.GetFullDescription())
+        self.assertEqual(u1.get_index(), 1)
+        self.assertEqual(u1.size(), 10)
+        self.assertIsNotNone(u1.ticket())
         self.assertEqual(system.GetOutputPort("sum").get_index(), 0)
         # TODO(eric.cousineau): Consolidate the main API tests for `System`
         # to this test point.
@@ -117,6 +123,10 @@ class TestGeneral(unittest.TestCase):
             context.get_continuous_state_vector(), VectorBase)
         self.assertIsInstance(
             context.get_mutable_continuous_state_vector(), VectorBase)
+        self.assertTrue(context.is_stateless())
+        self.assertFalse(context.has_only_continuous_state())
+        self.assertFalse(context.has_only_discrete_state())
+        self.assertEqual(context.num_total_states(), 0)
         # TODO(eric.cousineau): Consolidate main API tests for `Context` here.
 
         # Test methods with two scalar types.
@@ -142,15 +152,23 @@ class TestGeneral(unittest.TestCase):
         self.assertTrue(
             context.get_parameters().get_numeric_parameter(0) is
             context.get_numeric_parameter(index=0))
+        self.assertTrue(
+            context.get_mutable_parameters().get_mutable_numeric_parameter(
+                0) is context.get_mutable_numeric_parameter(index=0))
         self.assertEqual(context.num_abstract_parameters(), 0)
         self.assertEqual(pendulum.num_numeric_parameter_groups(), 1)
         # TODO(russt): Bind _Declare*Parameter or find an example with an
         # abstract parameter to actually call this method.
         self.assertTrue(hasattr(context, "get_abstract_parameter"))
+        self.assertTrue(hasattr(context, "get_mutable_abstract_parameter"))
         x = np.array([0.1, 0.2])
         context.SetContinuousState(x)
         np.testing.assert_equal(
             context.get_continuous_state_vector().CopyToVector(), x)
+        context.SetTimeAndContinuousState(0.3, 2*x)
+        np.testing.assert_equal(context.get_time(), 0.3)
+        np.testing.assert_equal(
+            context.get_continuous_state_vector().CopyToVector(), 2*x)
 
         # RimlessWheel has a single discrete variable and a bool abstract
         # variable.
@@ -164,12 +182,23 @@ class TestGeneral(unittest.TestCase):
         np.testing.assert_equal(
             context.get_discrete_state_vector().CopyToVector(), 3 * x)
 
+        def check_abstract_value_zero(context, expected_value):
+            # Check through Context, State, and AbstractValues APIs.
+            self.assertEqual(context.get_abstract_state(index=0).get_value(),
+                             expected_value)
+            self.assertEqual(context.get_abstract_state().get_value(
+                index=0).get_value(), expected_value)
+            self.assertEqual(context.get_state().get_abstract_state()
+                             .get_value(index=0).get_value(), expected_value)
+
         context.SetAbstractState(index=0, value=True)
-        value = context.get_abstract_state(0)
-        self.assertTrue(value.get_value())
+        check_abstract_value_zero(context, True)
         context.SetAbstractState(index=0, value=False)
-        value = context.get_abstract_state(0)
-        self.assertFalse(value.get_value())
+        check_abstract_value_zero(context, False)
+        value = context.get_mutable_state().get_mutable_abstract_state()\
+            .get_mutable_value(index=0)
+        value.set_value(True)
+        check_abstract_value_zero(context, True)
 
     def test_event_api(self):
         # TriggerType - existence check.
@@ -191,6 +220,19 @@ class TestGeneral(unittest.TestCase):
             trigger_type=TriggerType.kInitialization, callback=callback)
         self.assertIsInstance(event, Event)
         self.assertEqual(event.get_trigger_type(), TriggerType.kInitialization)
+
+        # Simple discrete-time system.
+        system1 = LinearSystem(A=[1], B=[1], C=[1], D=[1], time_period=0.1)
+        periodic_data = system1.GetUniquePeriodicDiscreteUpdateAttribute()
+        self.assertIsInstance(periodic_data, PeriodicEventData)
+        self.assertIsInstance(periodic_data.Clone(), PeriodicEventData)
+        periodic_data.period_sec()
+        periodic_data.offset_sec()
+
+        # Simple continuous-time system.
+        system2 = LinearSystem(A=[1], B=[1], C=[1], D=[1], time_period=0.0)
+        periodic_data = system2.GetUniquePeriodicDiscreteUpdateAttribute()
+        self.assertIsNone(periodic_data)
 
     def test_instantiations(self):
         # Quick check of instantiations for given types.
@@ -267,7 +309,7 @@ class TestGeneral(unittest.TestCase):
                 # Check number of output ports and value for a given context.
                 output = system.AllocateOutput()
                 self.assertEqual(output.num_ports(), 1)
-                system.CalcOutput(context, output)
+                system.CalcOutput(context=context, outputs=output)
                 if T == float:
                     value = output.get_vector_data(0).get_value()
                     self.assertTrue(np.allclose([1], value))

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <limits>
 #include <memory>
 #include <utility>
@@ -15,10 +16,8 @@ namespace drake {
 namespace systems {
 
 /**
- * A class providing methods shared by implicit integrators.
+ * An abstract class providing methods shared by implicit integrators.
  * @tparam T The vector element type, which must be a valid Eigen scalar.
- *
- * @tparam T The scalar type. Must be a valid Eigen scalar.
  */
 template <class T>
 class ImplicitIntegrator : public IntegratorBase<T> {
@@ -132,7 +131,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// call to ResetStatistics(). This count includes those refactorizations
   /// necessary during error estimation processes.
   int64_t get_num_iteration_matrix_factorizations() const {
-    return do_get_num_iteration_matrix_factorizations();
+    return num_iter_factorizations_;
   }
 
   /// Gets the number of ODE function evaluations
@@ -206,17 +205,90 @@ class ImplicitIntegrator : public IntegratorBase<T> {
     Eigen::HouseholderQR<MatrixX<AutoDiffXd>> QR_;
   };
 
-  /**
-   * Resets any statistics particular to a specific implicit integrator. The
-   * default implementation of this function does nothing. If your integrator
-   * collects its own statistics, you should re-implement this method and
-   * reset them there.
-   */
+  /// Computes necessary matrices (Jacobian and iteration matrix) for
+  /// Newton-Raphson (NR) iterations, as necessary. his method has been designed
+  /// for use in DoImplicitIntegratorStep() processes that follow this model:
+  /// 1. DoImplicitIntegratorStep(h) is called;
+  /// 2. One or more NR iterations is performed until either (a) convergence is
+  ///    identified, (b) the iteration is found to diverge, or (c) too many
+  ///    iterations were taken. In the case of (a), DoImplicitIntegratorStep(h)
+  ///    will return success. Otherwise, the Newton-Raphson process is attempted
+  ///    again with (i) a recomputed and refactored iteration matrix and (ii) a
+  ///    recomputed Jacobian and a recomputed an refactored iteration matrix, in
+  ///    that order. The process stage of that NR algorithm is indicated by the
+  ///    `trial` parameter below. In this model, DoImplicitIntegratorStep()
+  ///    returns failure if the NR iterations reach a fourth trial.
+  ///
+  /// Note that the sophisticated logic above only applies when the Jacobian
+  /// reuse is activated (default, see get_reuse()).
+  ///
+  /// @param t the time at which to compute the Jacobian.
+  /// @param xt the continuous state at which the Jacobian is computed.
+  /// @param h the integration step size (for computing iteration matrices).
+  /// @param trial which trial (1-4) the Newton-Raphson process is in when
+  ///        calling this method.
+  /// @param compute_and_factor_iteration_matrix a function pointer for
+  ///        computing and factoring the iteration matrix.
+  /// @param[out] iteration_matrix the updated and factored iteration matrix on
+  ///             return.
+  /// @returns `false` if the calling stepping method should indicate failure;
+  ///          `true` otherwise.
+  /// @pre 1 <= `trial` <= 4.
+  /// @post the state in the internal context may or may not be altered on
+  ///       return; if altered, it will be set to (t, xt).
+  bool MaybeFreshenMatrices(const T& t, const VectorX<T>& xt, const T& h,
+      int trial,
+      const std::function<void(const MatrixX<T>& J, const T& h,
+          typename ImplicitIntegrator<T>::IterationMatrix*)>&
+      compute_and_factor_iteration_matrix,
+      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
+
+  /// Checks whether a proposed update is effectively zero, indicating that the
+  /// Newton-Raphson process converged.
+  /// @param xc the continuous state.
+  /// @param dxc the update to the continuous state.
+  /// @param eps the tolerance that will be used to determine whether the
+  ///        change in any dimension of the state is nonzero. `eps` will
+  ///        be treated as an absolute tolerance when the magnitude of a
+  ///        particular dimension of the state is no greater than unity and as
+  ///        a relative tolerance otherwise. For non-positive `eps` (default),
+  ///        an appropriate tolerance will be computed.
+  /// @return `true` if the update is effectively zero.
+  bool IsUpdateZero(
+      const VectorX<T>& xc, const VectorX<T>& dxc, double eps = -1.0) const {
+    using std::abs;
+    using std::max;
+
+    // Reset the tolerance, if necessary, by backing off slightly from the
+    // tightest tolerance (machine epsilon).
+    if (eps <= 0)
+      eps = 10 * std::numeric_limits<double>::epsilon();
+
+    for (int i = 0; i < xc.size(); ++i) {
+      // Use a relative or absolute tolerance, as appropriate given the
+      // magnitude of xc[i].
+      const T tol = max(T(1), abs(xc[i])) * eps;
+      if (abs(dxc[i]) > tol)
+        return false;
+    }
+
+    return true;
+  }
+
+  /// Resets any statistics particular to a specific implicit integrator. The
+  /// default implementation of this function does nothing. If your integrator
+  /// collects its own statistics, you should re-implement this method and
+  /// reset them there.
   virtual void DoResetImplicitIntegratorStatistics() {}
+
+  /// Checks to see whether a Jacobian matrix is "bad" (has any NaN or
+  /// Inf values) and needs to be recomputed. A divergent Newton-Raphson
+  /// iteration can cause the state to overflow, which is how the Jacobian can
+  /// become "bad". This is an O(n²) operation, where n is the state dimension.
+  bool IsBadJacobian(const MatrixX<T>& J) const;
 
   // TODO(edrumwri) Document the functions below.
   virtual int64_t do_get_num_newton_raphson_iterations() const = 0;
-  virtual int64_t do_get_num_iteration_matrix_factorizations() const = 0;
   virtual int64_t do_get_num_error_estimator_derivative_evaluations() const = 0;
   virtual int64_t
       do_get_num_error_estimator_derivative_evaluations_for_jacobian()
@@ -227,9 +299,6 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   virtual int64_t do_get_num_error_estimator_iteration_matrix_factorizations()
       const = 0;
   MatrixX<T>& get_mutable_jacobian() { return J_; }
-  void set_last_call_succeeded(bool success) { last_call_succeeded_ = success; }
-  bool last_call_succeeded() const { return last_call_succeeded_; }
-  bool IsBadJacobian(const MatrixX<T>& J) const;
   void DoResetStatistics() override;
   const MatrixX<T>& CalcJacobian(const T& tf, const VectorX<T>& xtplus);
   void ComputeForwardDiffJacobian(const System<T>&, const T& t,
@@ -238,9 +307,22 @@ class ImplicitIntegrator : public IntegratorBase<T> {
       const VectorX<T>& xc, Context<T>*, MatrixX<T>* J);
   void ComputeAutoDiffJacobian(const System<T>& system, const T& t,
       const VectorX<T>& xc, const Context<T>& context, MatrixX<T>* J);
-  VectorX<T> EvalTimeDerivativesUsingContext();
+
+  /// @copydoc IntegratorBase::DoStep()
+  virtual bool DoImplicitIntegratorStep(const T& h) = 0;
 
  private:
+  bool DoStep(const T& h) final {
+    bool result = DoImplicitIntegratorStep(h);
+    // If the implicit step is successful (result is true), we need a new
+    // Jacobian (fresh is false). Otherwise, a failed step (result is false)
+    // means we can keep the Jacobian (fresh is true). Therefore fresh =
+    // !result, always.
+    jacobian_is_fresh_ = !result;
+
+    return result;
+  }
+
   // The scheme to be used for computing the Jacobian matrix during the
   // nonlinear system solve process.
   JacobianComputationScheme jacobian_scheme_{
@@ -249,22 +331,25 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   // The last computed Jacobian matrix.
   MatrixX<T> J_;
 
-  // Whether the last stepping call was successful.
-  bool last_call_succeeded_{true};
+  // Whether the Jacobian matrix is fresh.
+  bool jacobian_is_fresh_{false};
 
   // If set to `false`, Jacobian matrices and iteration matrix factorizations
   // will not be reused.
   bool reuse_{true};
 
   // Various combined statistics.
+  int64_t num_iter_factorizations_{0};
   int64_t num_jacobian_evaluations_{0};
   int64_t num_jacobian_function_evaluations_{0};
 };
 
 template <class T>
 void ImplicitIntegrator<T>::DoResetStatistics() {
+  num_iter_factorizations_ = 0;
   num_jacobian_function_evaluations_ = 0;
   num_jacobian_evaluations_ = 0;
+  DoResetImplicitIntegratorStatistics();
 }
 
 // We do not support computing the Jacobian matrix using automatic
@@ -327,13 +412,6 @@ void ImplicitIntegrator<T>::ComputeAutoDiffJacobian(
   *J = math::autoDiffToGradientMatrix(result);
 }
 
-// Evaluates the ordinary differential equations at the time and state in
-// the system's context (stored by the integrator).
-template <class T>
-VectorX<T> ImplicitIntegrator<T>::EvalTimeDerivativesUsingContext() {
-    return this->EvalTimeDerivatives(this->get_context()).CopyToVector();
-}
-
 // Computes the Jacobian of the ordinary differential equations around time
 // and continuous state `(t, xt)` using a first-order forward difference (i.e.,
 // numerical differentiation).
@@ -365,7 +443,7 @@ void ImplicitIntegrator<T>::ComputeForwardDiffJacobian(
 
   // Evaluate f(t,xt).
   context->SetTimeAndContinuousState(t, xt);
-  const VectorX<T> f = EvalTimeDerivativesUsingContext();
+  const VectorX<T> f = this->EvalTimeDerivatives(*context).CopyToVector();
 
   // Compute the Jacobian.
   VectorX<T> xt_prime = xt;
@@ -396,7 +474,7 @@ void ImplicitIntegrator<T>::ComputeForwardDiffJacobian(
     //              partition, and ideally modify only the one changed element.
     // Compute f' and set the relevant column of the Jacobian matrix.
     context->SetTimeAndContinuousState(t, xt_prime);
-    J->col(i) = (EvalTimeDerivativesUsingContext() - f) / dxi;
+    J->col(i) = (this->EvalTimeDerivatives(*context).CopyToVector() - f) / dxi;
 
     // Reset xt' to xt.
     xt_prime(i) = xt(i);
@@ -434,7 +512,7 @@ void ImplicitIntegrator<T>::ComputeCentralDiffJacobian(
 
   // Evaluate f(t,xt).
   context->SetTimeAndContinuousState(t, xt);
-  const VectorX<T> f = EvalTimeDerivativesUsingContext();
+  const VectorX<T> f = this->EvalTimeDerivatives(*context).CopyToVector();
 
   // Compute the Jacobian.
   VectorX<T> xt_prime = xt;
@@ -465,7 +543,7 @@ void ImplicitIntegrator<T>::ComputeCentralDiffJacobian(
     //              partition, and ideally modify only the one changed element.
     // Compute f(x+dx).
     context->SetContinuousState(xt_prime);
-    VectorX<T> fprime_plus = EvalTimeDerivativesUsingContext();
+    VectorX<T> fprime_plus = this->EvalTimeDerivatives(*context).CopyToVector();
 
     // Update xt' again, minimizing the effect of roundoff error.
     xt_prime(i) = xt(i) - dxi;
@@ -473,7 +551,8 @@ void ImplicitIntegrator<T>::ComputeCentralDiffJacobian(
 
     // Compute f(x-dx).
     context->SetContinuousState(xt_prime);
-    VectorX<T> fprime_minus = EvalTimeDerivativesUsingContext();
+    VectorX<T> fprime_minus = this->EvalTimeDerivatives(
+        *context).CopyToVector();
 
     // Set the Jacobian column.
     J->col(i) = (fprime_plus - fprime_minus) / (dxi_plus + dxi_minus);
@@ -527,8 +606,6 @@ ImplicitIntegrator<AutoDiffXd>::IterationMatrix::Solve(
   return QR_.solve(b);
 }
 
-// Checks to see whether a Jacobian matrix has "become bad" and needs to be
-// recomputed.
 template <class T>
 bool ImplicitIntegrator<T>::IsBadJacobian(const MatrixX<T>& J) const {
   return !J.allFinite();
@@ -585,6 +662,70 @@ const MatrixX<T>& ImplicitIntegrator<T>::CalcJacobian(const T& t,
   context->SetTimeAndContinuousState(t_current, x_current);
 
   return J_;
+}
+
+template <class T>
+bool ImplicitIntegrator<T>::MaybeFreshenMatrices(
+    const T& t, const VectorX<T>& xt, const T& h, int trial,
+    const std::function<void(const MatrixX<T>&, const T&,
+        typename ImplicitIntegrator<T>::IterationMatrix*)>&
+        compute_and_factor_iteration_matrix,
+    typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) {
+  // Compute the initial Jacobian and iteration matrices and factor them, if
+  // necessary.
+  MatrixX<T>& J = get_mutable_jacobian();
+  if (!get_reuse() || J.rows() == 0 || IsBadJacobian(J)) {
+    J = CalcJacobian(t, xt);
+    ++num_iter_factorizations_;
+    compute_and_factor_iteration_matrix(J, h, iteration_matrix);
+    return true;  // Indicate success.
+  }
+
+  // Reuse is activated, Jacobian is fully sized, and Jacobian is not "bad".
+  // If the iteration matrix has not been set and factored, do only that.
+  if (!iteration_matrix->matrix_factored()) {
+    ++num_iter_factorizations_;
+    compute_and_factor_iteration_matrix(J, h, iteration_matrix);
+    return true;  // Indicate success.
+  }
+
+  switch (trial) {
+    case 1:
+      // For the first trial, we do nothing: this will cause the Newton-Raphson
+      // process to use the last computed (and already factored) iteration
+      // matrix.
+      return true;  // Indicate success.
+
+    case 2: {
+      // For the second trial, we perform the (likely) next least expensive
+      // operation, re-constructing and factoring the iteration matrix.
+      ++num_iter_factorizations_;
+      compute_and_factor_iteration_matrix(J, h, iteration_matrix);
+      return true;
+    }
+
+    case 3: {
+      // For the third trial, the Jacobian matrix may already be "fresh",
+      // meaning that there is nothing more that can be tried (Jacobian and
+      // iteration matrix are both fresh) and we need to indicate failure.
+      if (jacobian_is_fresh_)
+        return false;
+
+      // Reform the Jacobian matrix and refactor the iteration matrix.
+      J = CalcJacobian(t, xt);
+      ++num_iter_factorizations_;
+      compute_and_factor_iteration_matrix(J, h, iteration_matrix);
+      return true;
+
+      case 4: {
+        // Trial #4 indicates failure.
+        return false;
+      }
+
+      default:
+        throw std::domain_error("Unexpected trial number.");
+    }
+  }
 }
 
 }  // namespace systems

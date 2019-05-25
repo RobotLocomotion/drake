@@ -202,6 +202,30 @@ INSTANTIATE_TEST_CASE_P(
     SCSTest, TestFindSpringEquilibrium,
     ::testing::ValuesIn(GetFindSpringEquilibriumProblems()));
 
+GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem1) {
+  MaximizeGeometricMeanTrivialProblem1 prob;
+  ScsSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(prob.prog(), {}, {});
+    prob.CheckSolution(result, 4E-6);
+  }
+}
+
+GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
+  MaximizeGeometricMeanTrivialProblem2 prob;
+  ScsSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(prob.prog(), {}, {});
+    // On Mac the accuracy is about 2.1E-6. On Linux it is about 2E-6.
+    prob.CheckSolution(result, 2.1E-6);
+  }
+}
+
+GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
+  ScsSolver solver;
+  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, 4E-6);
+}
+
 TEST_P(QuadraticProgramTest, TestQP) {
   ScsSolver solver;
   if (solver.available()) {

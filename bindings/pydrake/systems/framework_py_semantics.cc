@@ -4,6 +4,8 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/common/drake_variant_pybind.h"
@@ -12,7 +14,6 @@
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/event.h"
@@ -25,8 +26,6 @@ using std::vector;
 
 namespace drake {
 namespace pydrake {
-
-using pysystems::DefClone;
 
 namespace {
 // Given an InputPort or OutputPort as self, return self.Eval(context).  In
@@ -101,10 +100,11 @@ void DefineFrameworkPySemantics(py::module m) {
       .def(py::init<>(), doc.AbstractValues.ctor.doc_0args)
       .def(py::init<AbstractValuePtrList>(), doc.AbstractValues.ctor.doc_1args)
       .def("size", &AbstractValues::size, doc.AbstractValues.size.doc)
-      .def("get_value", &AbstractValues::get_value, py_reference_internal,
-          doc.AbstractValues.get_value.doc)
+      .def("get_value", &AbstractValues::get_value, py::arg("index"),
+          py_reference_internal, doc.AbstractValues.get_value.doc)
       .def("get_mutable_value", &AbstractValues::get_mutable_value,
-          py_reference_internal, doc.AbstractValues.get_mutable_value.doc)
+          py::arg("index"), py_reference_internal,
+          doc.AbstractValues.get_mutable_value.doc)
       .def("CopyFrom",
           [](AbstractValues* self, const AbstractValues& other) {
             WarnDeprecated(
@@ -145,13 +145,22 @@ void DefineFrameworkPySemantics(py::module m) {
       .value("kCrossesZero", WitnessFunctionDirection::kCrossesZero,
           doc.WitnessFunctionDirection.kCrossesZero.doc);
 
+  auto event_data = py::class_<EventData>(m, "EventData", doc.EventData.doc);
+  DefClone(&event_data);
+  py::class_<PeriodicEventData, EventData>(
+      m, "PeriodicEventData", doc.PeriodicEventData.doc)
+      .def("period_sec", &PeriodicEventData::period_sec,
+          doc.PeriodicEventData.period_sec.doc)
+      .def("offset_sec", &PeriodicEventData::offset_sec,
+          doc.PeriodicEventData.offset_sec.doc);
+
   // N.B. Capturing `&doc` should not be required; workaround per #9600.
   auto bind_common_scalar_types = [m, &doc](auto dummy) {
     using T = decltype(dummy);
     auto context_cls = DefineTemplateClassWithDefault<Context<T>>(
         m, "Context", GetPyParam<T>(), doc.Context.doc);
     context_cls
-        .def("__str__", &Context<T>::to_string, doc.Context.to_string.doc)
+        // Bindings for Context methods inherited from ContextBase.
         .def("num_input_ports", &Context<T>::num_input_ports,
             doc.ContextBase.num_input_ports.doc)
         .def("get_num_input_ports",
@@ -167,6 +176,123 @@ void DefineFrameworkPySemantics(py::module m) {
             doc.ContextBase.get_num_input_ports.doc_deprecated)
         .def("num_output_ports", &Context<T>::num_output_ports,
             doc.ContextBase.num_output_ports.doc)
+        // TODO(russt): Add remaining methods from ContextBase here.
+        // Bindings for the Context methods in the Doxygen group titled
+        // "Accessors for locally-stored values", placed in the same order
+        // as the header file.
+        .def("get_time", &Context<T>::get_time, doc.Context.get_time.doc)
+        .def("get_state", &Context<T>::get_state, py_reference_internal,
+            doc.Context.get_state.doc)
+        .def("is_stateless", &Context<T>::is_stateless,
+            doc.Context.is_stateless.doc)
+        .def("has_only_continuous_state",
+            &Context<T>::has_only_continuous_state,
+            doc.Context.has_only_continuous_state.doc)
+        .def("has_only_discrete_state", &Context<T>::has_only_discrete_state,
+            doc.Context.has_only_discrete_state.doc)
+        .def("num_total_states", &Context<T>::num_total_states,
+            doc.Context.num_total_states.doc)
+        .def("num_continuous_states", &Context<T>::num_continuous_states,
+            doc.Context.num_continuous_states.doc)
+        .def("get_continuous_state", &Context<T>::get_continuous_state,
+            py_reference_internal, doc.Context.get_continuous_state.doc)
+        .def("get_continuous_state_vector",
+            &Context<T>::get_continuous_state_vector, py_reference_internal,
+            doc.Context.get_continuous_state_vector.doc)
+        .def("num_discrete_state_groups",
+            &Context<T>::num_discrete_state_groups,
+            doc.Context.num_discrete_state_groups.doc)
+        .def("get_discrete_state",
+            overload_cast_explicit<const DiscreteValues<T>&>(
+                &Context<T>::get_discrete_state),
+            py_reference_internal, doc.Context.get_discrete_state.doc_0args)
+        .def("get_discrete_state_vector",
+            &Context<T>::get_discrete_state_vector, py_reference_internal,
+            doc.Context.get_discrete_state_vector.doc)
+        .def("get_discrete_state",
+            overload_cast_explicit<const BasicVector<T>&, int>(
+                &Context<T>::get_discrete_state),
+            py_reference_internal, doc.Context.get_discrete_state.doc_1args)
+        .def("num_abstract_states", &Context<T>::num_abstract_states,
+            doc.Context.num_abstract_states.doc)
+        .def("get_abstract_state",
+            static_cast<const AbstractValues& (Context<T>::*)() const>(
+                &Context<T>::get_abstract_state),
+            py_reference_internal, doc.Context.get_abstract_state.doc_0args)
+        .def("get_abstract_state",
+            [](const Context<T>* self, int index) -> auto& {
+              return self->get_abstract_state().get_value(index);
+            },
+            py::arg("index"), py_reference_internal,
+            doc.Context.get_abstract_state.doc_1args)
+        .def("get_accuracy", &Context<T>::get_accuracy,
+            doc.Context.get_accuracy.doc)
+        .def("get_parameters", &Context<T>::get_parameters,
+            py_reference_internal, doc.Context.get_parameters.doc)
+        .def("num_numeric_parameter_groups",
+            &Context<T>::num_numeric_parameter_groups,
+            doc.Context.num_numeric_parameter_groups.doc)
+        .def("get_numeric_parameter", &Context<T>::get_numeric_parameter,
+            py::arg("index"), py_reference_internal,
+            doc.Context.get_numeric_parameter.doc)
+        .def("num_abstract_parameters", &Context<T>::num_abstract_parameters,
+            doc.Context.num_abstract_parameters.doc)
+        .def("get_abstract_parameter", &Context<T>::get_abstract_parameter,
+            py::arg("index"), py_reference_internal,
+            doc.Context.get_numeric_parameter.doc)
+        .def("get_num_discrete_state_groups",
+            [](const Context<T>* self) {
+              WarnDeprecated(
+                  "Use num_discrete_state_groups() instead. Will be removed "
+                  "on or after 2019-07-01.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->get_num_discrete_state_groups();
+#pragma GCC diagnostic pop
+            },
+            doc.Context.get_num_discrete_state_groups.doc_deprecated)
+        .def("get_num_abstract_states",
+            [](const Context<T>* self) {
+              WarnDeprecated(
+                  "Use num_abstract_states() instead. Will be removed on or "
+                  "after 2019-07-01.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->get_num_abstract_states();
+#pragma GCC diagnostic pop
+            },
+            doc.Context.get_num_abstract_states.doc_deprecated)
+        // Bindings for the Context methods in the Doxygen group titled
+        // "Methods for changing locally-stored values", placed in the same
+        // order as the header file.
+        .def("SetTime", &Context<T>::SetTime, py::arg("time_sec"),
+            doc.Context.SetTime.doc)
+        .def("SetContinuousState", &Context<T>::SetContinuousState,
+            doc.Context.SetContinuousState.doc)
+        .def("SetTimeAndContinuousState",
+            &Context<T>::SetTimeAndContinuousState,
+            doc.Context.SetTimeAndContinuousState.doc)
+        .def("SetDiscreteState",
+            overload_cast_explicit<void, const Eigen::Ref<const VectorX<T>>&>(
+                &Context<T>::SetDiscreteState),
+            py::arg("xd"), doc.Context.SetDiscreteState.doc_1args)
+        .def("SetDiscreteState",
+            overload_cast_explicit<void, int,
+                const Eigen::Ref<const VectorX<T>>&>(
+                &Context<T>::SetDiscreteState),
+            py::arg("group_index"), py::arg("xd"),
+            doc.Context.SetDiscreteState.doc_2args)
+        .def("SetAbstractState",
+            [](py::object self, int index, py::object value) {
+              // Use type erasure from Python bindings of Value[T].set_value.
+              py::object abstract_value =
+                  self.attr("get_mutable_abstract_state")(index);
+              abstract_value.attr("set_value")(value);
+            },
+            py::arg("index"), py::arg("value"),
+            doc.Context.SetAbstractState.doc)
+        // NOTE: SetTimeStateAndParametersFrom is bound below in
+        // bind_context_methods_templated_on_a_secondary_scalar
         .def("FixInputPort",
             py::overload_cast<int, const BasicVector<T>&>(
                 &Context<T>::FixInputPort),
@@ -183,9 +309,8 @@ void DefineFrameworkPySemantics(py::module m) {
                 &Context<T>::FixInputPort),
             py::arg("index"), py::arg("data"), py_reference_internal,
             doc.Context.FixInputPort.doc_2args_index_data)
-        .def("get_time", &Context<T>::get_time, doc.Context.get_time.doc)
-        .def("SetTime", &Context<T>::SetTime, py::arg("time_sec"),
-            doc.Context.SetTime.doc)
+        .def("SetAccuracy", &Context<T>::SetAccuracy, py::arg("accuracy"),
+            doc.Context.SetAccuracy.doc)
         .def("set_time",
             [](Context<T>* self, const T& time) {
               WarnDeprecated(
@@ -197,8 +322,6 @@ void DefineFrameworkPySemantics(py::module m) {
 #pragma GCC diagnostic pop
             },
             doc.Context.set_time.doc_deprecated)
-        .def("SetAccuracy", &Context<T>::SetAccuracy, py::arg("accuracy"),
-            doc.Context.SetAccuracy.doc)
         .def("set_accuracy",
             [](Context<T>* self, const optional<double>& accuracy) {
               WarnDeprecated(
@@ -210,107 +333,32 @@ void DefineFrameworkPySemantics(py::module m) {
 #pragma GCC diagnostic pop
             },
             doc.Context.set_accuracy.doc_deprecated)
-        .def("get_accuracy", &Context<T>::get_accuracy,
-            doc.Context.get_accuracy.doc)
-        .def("Clone", &Context<T>::Clone, doc.Context.Clone.doc)
-        .def("__copy__", &Context<T>::Clone)
-        .def("__deepcopy__", [](const Context<T>* self,
-                                 py::dict /* memo */) { return self->Clone(); })
-        .def("get_state", &Context<T>::get_state, py_reference_internal,
-            doc.Context.get_state.doc)
+        // Bindings for the Context methods in the Doxygen group titled
+        // "Dangerous methods for changing locally-stored values", placed in the
+        // same order as the header file.
         .def("get_mutable_state", &Context<T>::get_mutable_state,
             py_reference_internal, doc.Context.get_mutable_state.doc)
-        // Sugar methods
-        // - Continuous.
-        .def("num_continuous_states", &Context<T>::num_continuous_states,
-            doc.Context.num_continuous_states.doc)
-        .def("get_continuous_state", &Context<T>::get_continuous_state,
-            py_reference_internal, doc.Context.get_continuous_state.doc)
         .def("get_mutable_continuous_state",
             &Context<T>::get_mutable_continuous_state, py_reference_internal,
             doc.Context.get_mutable_continuous_state.doc)
-        .def("get_continuous_state_vector",
-            &Context<T>::get_continuous_state_vector, py_reference_internal,
-            doc.Context.get_continuous_state_vector.doc)
-        .def("SetContinuousState", &Context<T>::SetContinuousState,
-            doc.Context.SetContinuousState.doc)
         .def("get_mutable_continuous_state_vector",
             &Context<T>::get_mutable_continuous_state_vector,
             py_reference_internal,
             doc.Context.get_mutable_continuous_state_vector.doc)
-        // - Discrete.
-        .def("num_discrete_state_groups",
-            &Context<T>::num_discrete_state_groups,
-            doc.Context.num_discrete_state_groups.doc)
-        .def("get_num_discrete_state_groups",
-            [](const Context<T>* self) {
-              WarnDeprecated(
-                  "Use num_discrete_state_groups() instead. Will be removed "
-                  "on or after 2019-07-01.");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-              self->get_num_discrete_state_groups();
-#pragma GCC diagnostic pop
-            },
-            doc.Context.get_num_discrete_state_groups.doc_deprecated)
-        .def("get_discrete_state",
-            overload_cast_explicit<const DiscreteValues<T>&>(
-                &Context<T>::get_discrete_state),
-            py_reference_internal, doc.Context.get_discrete_state.doc_0args)
-        .def("SetDiscreteState",
-            overload_cast_explicit<void, const Eigen::Ref<const VectorX<T>>&>(
-                &Context<T>::SetDiscreteState),
-            py::arg("xd"), doc.Context.SetDiscreteState.doc_1args)
-        .def("SetDiscreteState",
-            overload_cast_explicit<void, int,
-                const Eigen::Ref<const VectorX<T>>&>(
-                &Context<T>::SetDiscreteState),
-            py::arg("group_index"), py::arg("xd"),
-            doc.Context.SetDiscreteState.doc_2args)
         .def("get_mutable_discrete_state",
             overload_cast_explicit<DiscreteValues<T>&>(
                 &Context<T>::get_mutable_discrete_state),
             py_reference_internal,
             doc.Context.get_mutable_discrete_state.doc_0args)
-        .def("get_discrete_state_vector",
-            &Context<T>::get_discrete_state_vector, py_reference_internal,
-            doc.Context.get_discrete_state_vector.doc)
         .def("get_mutable_discrete_state_vector",
             &Context<T>::get_mutable_discrete_state_vector,
             py_reference_internal,
             doc.Context.get_mutable_discrete_state_vector.doc)
-        .def("get_discrete_state",
-            overload_cast_explicit<const BasicVector<T>&, int>(
-                &Context<T>::get_discrete_state),
-            py_reference_internal, doc.Context.get_discrete_state.doc_1args)
         .def("get_mutable_discrete_state",
             overload_cast_explicit<BasicVector<T>&, int>(
                 &Context<T>::get_mutable_discrete_state),
             py_reference_internal,
             doc.Context.get_mutable_discrete_state.doc_1args)
-        // - Abstract.
-        .def("num_abstract_states", &Context<T>::num_abstract_states,
-            doc.Context.num_abstract_states.doc)
-        .def("get_num_abstract_states",
-            [](const Context<T>* self) {
-              WarnDeprecated(
-                  "Use num_abstract_states() instead. Will be removed on or "
-                  "after 2019-07-01.");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-              self->get_num_abstract_states();
-#pragma GCC diagnostic pop
-            },
-            doc.Context.get_num_abstract_states.doc_deprecated)
-        .def("get_abstract_state",
-            static_cast<const AbstractValues& (Context<T>::*)() const>(
-                &Context<T>::get_abstract_state),
-            py_reference_internal, doc.Context.get_abstract_state.doc_0args)
-        .def("get_abstract_state",
-            [](const Context<T>* self, int index) -> auto& {
-              return self->get_abstract_state().get_value(index);
-            },
-            py_reference_internal, doc.Context.get_abstract_state.doc_1args)
         .def("get_mutable_abstract_state",
             [](Context<T>* self) -> AbstractValues& {
               return self->get_mutable_abstract_state();
@@ -322,30 +370,30 @@ void DefineFrameworkPySemantics(py::module m) {
               return self->get_mutable_abstract_state().get_mutable_value(
                   index);
             },
-            py_reference_internal,
+            py::arg("index"), py_reference_internal,
             doc.Context.get_mutable_abstract_state.doc_1args)
-        .def("SetAbstractState",
-            [](py::object self, int index, py::object value) {
-              // Use type erasure from Python bindings of Value[T].set_value.
-              py::object abstract_value =
-                  self.attr("get_mutable_abstract_state")(index);
-              abstract_value.attr("set_value")(value);
-            },
-            py::arg("index"), py::arg("value"),
-            doc.Context.SetAbstractState.doc)
-        .def("get_parameters", &Context<T>::get_parameters,
-            py_reference_internal, doc.Context.get_parameters.doc)
-        .def("num_numeric_parameter_groups",
-            &Context<T>::num_numeric_parameter_groups,
-            doc.Context.num_numeric_parameter_groups.doc)
-        .def("get_numeric_parameter", &Context<T>::get_numeric_parameter,
-            py::arg("index"), py_reference_internal,
-            doc.Context.get_numeric_parameter.doc)
-        .def("num_abstract_parameters", &Context<T>::num_abstract_parameters,
-            doc.Context.num_abstract_parameters.doc)
-        .def("get_abstract_parameter", &Context<T>::get_abstract_parameter,
-            py::arg("index"), py_reference_internal,
-            doc.Context.get_numeric_parameter.doc);
+        .def("get_mutable_parameters", &Context<T>::get_mutable_parameters,
+            py_reference_internal, doc.Context.get_mutable_parameters.doc)
+        .def("get_mutable_numeric_parameter",
+            &Context<T>::get_mutable_numeric_parameter, py::arg("index"),
+            py_reference_internal,
+            doc.Context.get_mutable_numeric_parameter.doc)
+        .def("get_mutable_abstract_parameter",
+            &Context<T>::get_mutable_abstract_parameter, py::arg("index"),
+            py_reference_internal,
+            doc.Context.get_mutable_abstract_parameter.doc)
+        // Note: No bindings yet for "Advanced methods for changing
+        //   locally-stored values"
+        //
+        // Bindings for the Context methods in the Doxygen group titled
+        // "Miscellaneous public methods", placed in the same order as the
+        // header file.
+        // TODO(EricCousineau-TRI): Replace these with DefClone.
+        .def("Clone", &Context<T>::Clone, doc.Context.Clone.doc)
+        .def("__copy__", &Context<T>::Clone)
+        .def("__deepcopy__", [](const Context<T>* self,
+                                 py::dict /* memo */) { return self->Clone(); })
+        .def("__str__", &Context<T>::to_string, doc.Context.to_string.doc);
 
     auto bind_context_methods_templated_on_a_secondary_scalar =
         [m, &doc, &context_cls](auto dummy_u) {
@@ -357,7 +405,7 @@ void DefineFrameworkPySemantics(py::module m) {
               py::arg("source"), doc.Context.SetTimeStateAndParametersFrom.doc);
         };
     type_visit(bind_context_methods_templated_on_a_secondary_scalar,
-        pysystems::CommonScalarPack{});
+        CommonScalarPack{});
 
     DefineTemplateClassWithDefault<LeafContext<T>, Context<T>>(
         m, "LeafContext", GetPyParam<T>(), doc.LeafContext.doc);
@@ -483,11 +531,15 @@ void DefineFrameworkPySemantics(py::module m) {
 
     DefineTemplateClassWithDefault<InputPort<T>>(
         m, "InputPort", GetPyParam<T>(), doc.InputPort.doc)
-        .def("size", &InputPort<T>::size, doc.PortBase.size.doc)
-        .def("get_data_type", &InputPort<T>::get_data_type,
-            doc.PortBase.get_data_type.doc)
+        .def("get_name", &InputPort<T>::get_name, doc.PortBase.get_name.doc)
+        .def("GetFullDescription", &InputPort<T>::GetFullDescription,
+            doc.PortBase.GetFullDescription.doc)
         .def("get_index", &InputPort<T>::get_index,
             doc.InputPortBase.get_index.doc)
+        .def("get_data_type", &InputPort<T>::get_data_type,
+            doc.PortBase.get_data_type.doc)
+        .def("size", &InputPort<T>::size, doc.PortBase.size.doc)
+        .def("ticket", &InputPort<T>::ticket, doc.PortBase.ticket.doc)
         .def("Eval",
             [](const InputPort<T>* self, const Context<T>& context) {
               return DoEval(self, context);
@@ -635,7 +687,16 @@ void DefineFrameworkPySemantics(py::module m) {
         .def("get_mutable_discrete_state",
             overload_cast_explicit<DiscreteValues<T>&>(
                 &State<T>::get_mutable_discrete_state),
-            py_reference_internal, doc.State.get_mutable_discrete_state.doc);
+            py_reference_internal, doc.State.get_mutable_discrete_state.doc)
+        .def("get_abstract_state",
+            static_cast<const AbstractValues& (State<T>::*)() const>(
+                &State<T>::get_abstract_state),
+            py_reference_internal, doc.State.get_abstract_state.doc)
+        .def("get_mutable_abstract_state",
+            [](State<T>* self) -> AbstractValues& {
+              return self->get_mutable_abstract_state();
+            },
+            py_reference_internal, doc.State.get_mutable_abstract_state.doc);
 
     // - Constituents.
     DefineTemplateClassWithDefault<ContinuousState<T>>(
@@ -653,6 +714,7 @@ void DefineFrameworkPySemantics(py::module m) {
     discrete_values
         .def("num_groups", &DiscreteValues<T>::num_groups,
             doc.DiscreteValues.num_groups.doc)
+        .def("size", &DiscreteValues<T>::size, doc.DiscreteValues.size.doc)
         .def("get_data", &DiscreteValues<T>::get_data, py_reference_internal,
             doc.DiscreteValues.get_data.doc)
         .def("get_vector",
@@ -666,7 +728,7 @@ void DefineFrameworkPySemantics(py::module m) {
             py_reference_internal, py::arg("index") = 0,
             doc.DiscreteValues.get_mutable_vector.doc_1args);
   };
-  type_visit(bind_common_scalar_types, pysystems::CommonScalarPack{});
+  type_visit(bind_common_scalar_types, CommonScalarPack{});
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake

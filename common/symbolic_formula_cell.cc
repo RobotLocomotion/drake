@@ -12,7 +12,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic.h"
-#include "drake/math/matrix_util.h"
 
 namespace drake {
 namespace symbolic {
@@ -534,10 +533,27 @@ ostream& FormulaIsnan::Display(ostream& os) const {
   return os << "isnan(" << e_ << ")";
 }
 
+namespace {
+bool IsSymmetric(const Eigen::Ref<const MatrixX<Expression>>& m) {
+  const int dim = m.rows();
+  if (m.cols() != dim) {
+    return false;
+  }
+  for (int i = 0; i < dim; ++i) {
+    for (int j = i + 1; j < dim; ++j) {
+      if (!m(i, j).EqualTo(m(j, i))) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+}  // namespace
+
 FormulaPositiveSemidefinite::FormulaPositiveSemidefinite(
     const Eigen::Ref<const MatrixX<Expression>>& m)
     : FormulaCell{FormulaKind::PositiveSemidefinite}, m_{m} {
-  if (!math::IsSymmetric(m)) {
+  if (!IsSymmetric(m)) {
     ostringstream oss;
     oss << "The following matrix is not symmetric and cannot be used to "
            "construct drake::symbolic::FormulaPositiveSemidefinite:\n"

@@ -2202,7 +2202,7 @@ class LeafSystem : public System<T> {
   }
 
   template <class MySystem>
-  DRAKE_DEPRECATED("2019-06-31", "Please use MakeWitnessFunction().")
+  DRAKE_DEPRECATED("2019-07-01", "Please use MakeWitnessFunction().")
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
@@ -2210,7 +2210,7 @@ class LeafSystem : public System<T> {
     return MakeWitnessFunction(description, direction_type, calc);
   }
 
-  DRAKE_DEPRECATED("2019-06-31", "Please use MakeWitnessFunction().")
+  DRAKE_DEPRECATED("2019-07-01", "Please use MakeWitnessFunction().")
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
@@ -2219,7 +2219,7 @@ class LeafSystem : public System<T> {
   }
 
   template <class MySystem>
-  DRAKE_DEPRECATED("2019-06-31", "Please use MakeWitnessFunction().")
+  DRAKE_DEPRECATED("2019-07-01", "Please use MakeWitnessFunction().")
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
@@ -2231,7 +2231,7 @@ class LeafSystem : public System<T> {
   }
 
   template <class MySystem>
-  DRAKE_DEPRECATED("2019-06-31", "Please use MakeWitnessFunction().")
+  DRAKE_DEPRECATED("2019-07-01", "Please use MakeWitnessFunction().")
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
@@ -2243,7 +2243,7 @@ class LeafSystem : public System<T> {
   }
 
   template <class MySystem>
-  DRAKE_DEPRECATED("2019-06-31", "Please use MakeWitnessFunction().")
+  DRAKE_DEPRECATED("2019-07-01", "Please use MakeWitnessFunction().")
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
@@ -2255,7 +2255,7 @@ class LeafSystem : public System<T> {
   }
 
   template <class MySystem>
-  DRAKE_DEPRECATED("2019-06-31", "Please use MakeWitnessFunction().")
+  DRAKE_DEPRECATED("2019-07-01", "Please use MakeWitnessFunction().")
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
@@ -2264,7 +2264,7 @@ class LeafSystem : public System<T> {
     return MakeWitnessFunction(description, direction_type, calc, e);
   }
 
-  DRAKE_DEPRECATED("2019-06-31", "Please use MakeWitnessFunction().")
+  DRAKE_DEPRECATED("2019-07-01", "Please use MakeWitnessFunction().")
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,

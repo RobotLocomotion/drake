@@ -3,12 +3,16 @@
 def fortran_library(
         name,
         srcs = [],
+        linkopts = [],
+        deps = [],
         **kwargs):
     """Compiles a Fortran library.  This library's symbols will have hidden
     visibility, becaused Drake binary release artifacts should never provide
     them as part of the public API.
 
     srcs: fortran source files (e.g., `*.f`).
+    linkopts: are passed through to the bazel cc_library result.
+    deps: are passed through to the bazel cc_library result.
     kwargs: are passed through to the bazel cc_library result.
     """
 
@@ -38,6 +42,7 @@ def fortran_library(
         srcs = objs,
         outs = [libname],
         cmd = "$(AR) q $@ $(SRCS)",
+        toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
         visibility = ["//visibility:private"],
     )
 
@@ -46,7 +51,7 @@ def fortran_library(
     native.cc_library(
         name = name,
         srcs = [libname],
-        linkopts = ["-Wl,--exclude-libs=" + libname],
-        deps = ["@gfortran//:runtime"],
+        linkopts = linkopts + ["-Wl,--exclude-libs=" + libname],
+        deps = deps + ["@gfortran//:runtime"],
         **kwargs
     )

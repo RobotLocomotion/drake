@@ -84,6 +84,20 @@ optional<GeometryIndex> RenderEngine::RemoveGeometry(RenderIndex index) {
   return moved_internal_index;
 }
 
+RenderLabel RenderEngine::GetRenderLabelOrThrow(
+    const PerceptionProperties& properties) const {
+  RenderLabel label =
+      properties.GetPropertyOrDefault("label", "id", default_render_label_);
+  if (label == RenderLabel::kUnspecified || label == RenderLabel::kEmpty) {
+    throw std::logic_error(
+        "Cannot register a geometry with the 'unspecified' or 'empty' render "
+        "labels. The bad label may have come from a default-constructed "
+        "RenderLabel or the RenderEngine may have provided it as a default for "
+        "missing render labels in the properties.");
+  }
+  return label;
+}
+
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake

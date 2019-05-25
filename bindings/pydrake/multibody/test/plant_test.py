@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 
+import unittest
+
+from six import text_type as unicode
+import numpy as np
+
 from pydrake.multibody.tree import (
     Body,
     BodyIndex,
@@ -22,12 +27,15 @@ from pydrake.multibody.tree import (
     WeldJoint,
     world_index,
 )
-from pydrake.multibody.math import SpatialForce, SpatialVelocity
+from pydrake.multibody.math import (
+    SpatialForce,
+    SpatialVelocity,
+)
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
+    ConnectContactResultsToDrakeVisualizer,
     ContactResults,
     ContactResultsToLcmSystem,
-    ConnectContactResultsToDrakeVisualizer,
     CoulombFriction,
     MultibodyPlant,
     PointPairContactInfo,
@@ -38,30 +46,26 @@ from pydrake.multibody.benchmarks.acrobot import (
     MakeAcrobotPlant,
 )
 
-from pydrake.common.eigen_geometry import Isometry3
+from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.geometry import (
     Box,
     GeometryId,
     PenetrationAsPointPair,
+    SceneGraph,
     SignedDistancePair,
     SignedDistanceToPoint,
-    SceneGraph,
 )
-from pydrake.systems.framework import AbstractValue, DiagramBuilder
-
-import copy
-import math
-import unittest
-import warnings
-
-from six import text_type as unicode
-import numpy as np
-
-from pydrake.common import FindResourceOrThrow
-from pydrake.common.eigen_geometry import Isometry3
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-from pydrake.systems.framework import InputPort, OutputPort
-from pydrake.math import RigidTransform, RollPitchYaw
+from pydrake.math import (
+    RigidTransform,
+    RollPitchYaw,
+)
+from pydrake.systems.framework import (
+    AbstractValue,
+    DiagramBuilder,
+    InputPort,
+    OutputPort,
+)
 from pydrake.systems.lcm import LcmPublisherSystem
 
 
@@ -240,12 +244,9 @@ class TestPlant(unittest.TestCase):
 
     def test_multibody_gravity_default(self):
         plant = MultibodyPlant()
-        plant.AddForceElement(UniformGravityFieldElement())
-        plant.Finalize()
-
-    def test_multibody_gravity_vector(self):
-        plant = MultibodyPlant()
-        plant.AddForceElement(UniformGravityFieldElement([0.0, -9.81, 0.0]))
+        # Smoke test of deprecated methods.
+        with catch_drake_warnings(expected_count=1):
+            plant.AddForceElement(UniformGravityFieldElement())
         plant.Finalize()
 
     def test_multibody_tree_kinematics(self):
@@ -735,7 +736,10 @@ class TestPlant(unittest.TestCase):
         plant = MultibodyPlant()
         Parser(plant).AddModelFromFile(file_name)
         # Getting ready for when we set foot on Mars :-).
-        plant.AddForceElement(UniformGravityFieldElement([0.0, 0.0, -3.71]))
+        gravity_vector = np.array([0.0, 0.0, -3.71])
+        plant.mutable_gravity_field().set_gravity_vector(gravity_vector)
+        np.testing.assert_equal(plant.gravity_field().gravity_vector(),
+                                gravity_vector)
         plant.Finalize()
         context = plant.CreateDefaultContext()
 

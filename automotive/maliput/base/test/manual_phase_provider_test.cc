@@ -35,7 +35,7 @@ struct ManualPhaseProviderTest : public ::testing::Test {
 
 TEST_F(ManualPhaseProviderTest, EmptyProvider) {
   EXPECT_EQ(dut.GetPhase(phase_ring_id), nullopt);
-  EXPECT_THROW(dut.SetPhase(phase_ring_id, phase_id_1), std::out_of_range);
+  EXPECT_THROW(dut.SetPhase(phase_ring_id, phase_id_1), std::exception);
 }
 
 // Tests that an exception is thrown if duration-until is specified but the next

@@ -51,7 +51,7 @@ class GeometryFrame {
    @param frame_group_id    The optional frame group identifier. If unspecified,
                             defaults to the common, 0 group. Must be
                             non-negative.  */
-  DRAKE_DEPRECATED("2019-06-26",
+  DRAKE_DEPRECATED("2019-07-01",
                    "GeometryFrame no longer requires a pose X_PF; prefer the "
                    "constructor without pose.")
   GeometryFrame(const std::string& frame_name, const Isometry3<double>&,

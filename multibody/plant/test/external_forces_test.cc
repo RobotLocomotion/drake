@@ -61,10 +61,10 @@ TEST_F(KukaIiwaModelTests, ExternalBodyForces) {
 
   // Compute the expected value of inverse dynamics when external forcing is
   // considered.
-  const Matrix3<double> R_WE =
-      end_effector_link_->EvalPoseInWorld(*context_).linear();
+  const math::RotationMatrix<double>& R_WE =
+      end_effector_link_->EvalPoseInWorld(*context_).rotation();
   const SpatialForce<double> F_Ep_W = R_WE * F_Ep_E;
-  VectorX<double> tau_id_expected =
+  const VectorX<double> tau_id_expected =
       M * vdot + C - Jv_WEp.transpose() * F_Ep_W.get_coeffs();
 
   // Numerical tolerance used to verify numerical results.

@@ -112,7 +112,7 @@ def _lcmgen_impl(ctx):
         ],
         executable = ctx.executable.lcmgen,
     )
-    return struct()
+    return []
 
 # Create rule to invoke lcm-gen on some lcm_srcs.
 # https://www.bazel.io/versions/master/docs/skylark/rules.html

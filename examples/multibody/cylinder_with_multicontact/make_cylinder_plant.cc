@@ -11,7 +11,6 @@ using drake::multibody::CoulombFriction;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::RigidBody;
 using drake::multibody::SpatialInertia;
-using drake::multibody::UniformGravityFieldElement;
 using drake::multibody::UnitInertia;
 using Eigen::Vector3d;
 using geometry::Cylinder;
@@ -99,7 +98,7 @@ MakeCylinderPlant(double radius, double length, double mass,
   plant->RegisterVisualGeometry(
       plant->world_body(), X_WG, HalfSpace(), "visual");
 
-  plant->AddForceElement<UniformGravityFieldElement>(gravity_W);
+  plant->mutable_gravity_field().set_gravity_vector(gravity_W);
 
   // We are done creating the plant.
   plant->Finalize();

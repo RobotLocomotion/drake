@@ -226,7 +226,6 @@ drake_cc_library(
         ":hash",
         ":polynomial",
         ":random",
-        "//math:matrix_util",
     ],
 )
 

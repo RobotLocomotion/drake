@@ -13,13 +13,19 @@ from pydrake.systems.analysis import (
     Simulator,
     )
 from pydrake.systems.framework import (
+    AbstractParameterIndex,
+    AbstractStateIndex,
     AbstractValue,
     BasicVector, BasicVector_,
+    CacheIndex,
     Context,
+    DependencyTicket,
     Diagram,
     DiagramBuilder,
-    kUseDefaultName,
+    DiscreteStateIndex,
+    InputPortIndex,
     LeafSystem, LeafSystem_,
+    NumericParameterIndex,
     PortDataType,
     PublishEvent,
     State,
@@ -27,6 +33,7 @@ from pydrake.systems.framework import (
     UnrestrictedUpdateEvent,
     VectorSystem,
     WitnessFunctionDirection,
+    kUseDefaultName,
     )
 from pydrake.systems.primitives import (
     Adder,
@@ -177,6 +184,49 @@ class TestCustom(unittest.TestCase):
                  .get_discrete_state_vector().get_value())
         self.assertTrue(np.allclose([5, 7, 9], value))
 
+    def test_leaf_system_well_known_tickets(self):
+        for func in [
+                LeafSystem.accuracy_ticket,
+                LeafSystem.all_input_ports_ticket,
+                LeafSystem.all_parameters_ticket,
+                LeafSystem.all_sources_ticket,
+                LeafSystem.all_state_ticket,
+                LeafSystem.configuration_ticket,
+                LeafSystem.ke_ticket,
+                LeafSystem.kinematics_ticket,
+                LeafSystem.nothing_ticket,
+                LeafSystem.pa_ticket,
+                LeafSystem.pc_ticket,
+                LeafSystem.pe_ticket,
+                LeafSystem.pn_ticket,
+                LeafSystem.pnc_ticket,
+                LeafSystem.q_ticket,
+                LeafSystem.time_ticket,
+                LeafSystem.v_ticket,
+                LeafSystem.xa_ticket,
+                LeafSystem.xc_ticket,
+                LeafSystem.xcdot_ticket,
+                LeafSystem.xd_ticket,
+                LeafSystem.z_ticket]:
+            self.assertIsInstance(func(), DependencyTicket, func)
+
+    def test_leaf_system_per_item_tickets(self):
+        dut = LeafSystem()
+        dut.DeclareAbstractParameter(AbstractValue.Make(1))
+        dut.DeclareAbstractState(AbstractValue.Make(1))
+        dut.DeclareDiscreteState(1)
+        dut.DeclareVectorInputPort("u0", BasicVector(1))
+        dut.DeclareNumericParameter(BasicVector(1))
+        for func, arg in [
+                (dut.abstract_parameter_ticket, AbstractParameterIndex(0)),
+                (dut.abstract_state_ticket, AbstractStateIndex(0)),
+                (dut.cache_entry_ticket, CacheIndex(0)),
+                (dut.discrete_state_ticket, DiscreteStateIndex(0)),
+                (dut.input_port_ticket, InputPortIndex(0)),
+                (dut.numeric_parameter_ticket, NumericParameterIndex(0)),
+                ]:
+            self.assertIsInstance(func(arg), DependencyTicket, func)
+
     def test_leaf_system_overrides(self):
         test = self
 
@@ -222,7 +272,9 @@ class TestCustom(unittest.TestCase):
                 self.DeclareVectorInputPort(
                     name="test_input", model_vector=BasicVector(1),
                     random_type=None)
-                self.DeclareVectorOutputPort(BasicVector(1), noop)
+                self.DeclareVectorOutputPort(
+                    "noop", BasicVector(1), noop,
+                    prerequisites_of_calc=set([self.nothing_ticket()]))
                 self.witness = self.MakeWitnessFunction(
                     "witness", WitnessFunctionDirection.kCrossesZero,
                     self._witness)
@@ -331,10 +383,15 @@ class TestCustom(unittest.TestCase):
         self.assertTrue(system.called_publish)
         context_update = context.Clone()
         system.CalcTimeDerivatives(
-            context, context_update.get_mutable_continuous_state())
+            context=context,
+            derivatives=context_update.get_mutable_continuous_state())
         self.assertTrue(system.called_continuous)
         witnesses = system.GetWitnessFunctions(context)
         self.assertEqual(len(witnesses), 2)
+        system.CalcDiscreteVariableUpdates(
+            context=context,
+            discrete_state=context_update.get_mutable_discrete_state())
+        self.assertTrue(system.called_discrete)
 
         # Test per-step, periodic, and witness call backs
         system = TrivialSystem()
@@ -575,6 +632,7 @@ class TestCustom(unittest.TestCase):
                 context = system.CreateDefaultContext()
                 self.assertEqual(
                     context.get_discrete_state(0).size(), 3)
+                self.assertEqual(system.AllocateDiscreteVariables().size(), 3)
 
     def test_abstract_io_port(self):
         test = self
@@ -592,7 +650,9 @@ class TestCustom(unittest.TestCase):
                     self.output_port = self.DeclareAbstractOutputPort(
                         "out",
                         lambda: AbstractValue.Make(default_value),
-                        self.DoCalcAbstractOutput)
+                        self.DoCalcAbstractOutput,
+                        prerequisites_of_calc=set([
+                            self.input_port.ticket()]))
 
                 def DoCalcAbstractOutput(self, context, y_data):
                     input_value = self.EvalAbstractInput(

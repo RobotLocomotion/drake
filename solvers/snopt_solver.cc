@@ -399,9 +399,27 @@ void EvaluateNonlinearConstraints(
       F[(*constraint_index)++] = ty(i).value();
     }
 
-    for (int i = 0; i < num_constraints; i++) {
-      for (int j = 0; j < num_variables; ++j) {
-        G[(*grad_index)++] = ty(i).derivatives()(j);
+    const optional<std::vector<std::pair<int, int>>>&
+        gradient_sparsity_pattern =
+            binding.evaluator()->gradient_sparsity_pattern();
+    if (gradient_sparsity_pattern.has_value()) {
+      for (const auto& nonzero_entry : gradient_sparsity_pattern.value()) {
+        G[(*grad_index)++] =
+            ty(nonzero_entry.first).derivatives().size() > 0
+                ? ty(nonzero_entry.first).derivatives()(nonzero_entry.second)
+                : 0.0;
+      }
+    } else {
+      for (int i = 0; i < num_constraints; i++) {
+        if (ty(i).derivatives().size() > 0) {
+          for (int j = 0; j < num_variables; ++j) {
+            G[(*grad_index)++] = ty(i).derivatives()(j);
+          }
+        } else {
+          for (int j = 0; j < num_variables; ++j) {
+            G[(*grad_index)++] = 0.0;
+          }
+        }
       }
     }
   }
@@ -464,9 +482,11 @@ void EvaluateAndAddNonlinearCosts(
     obj->Eval(math::initializeAutoDiff(this_x), &ty);
 
     *total_cost += ty(0).value();
-    for (int i = 0; i < num_variables; ++i) {
-      (*nonlinear_cost_gradients)[binding_var_indices[i]] +=
-          ty(0).derivatives()(i);
+    if (ty(0).derivatives().size() > 0) {
+      for (int i = 0; i < num_variables; ++i) {
+        (*nonlinear_cost_gradients)[binding_var_indices[i]] +=
+            ty(0).derivatives()(i);
+      }
     }
   }
 }
@@ -548,7 +568,12 @@ void UpdateNumNonlinearConstraintsAndGradients(
   for (auto const& binding : constraint_list) {
     auto const& c = binding.evaluator();
     int n = c->num_constraints();
-    *max_num_gradients += n * binding.GetNumElements();
+    if (binding.evaluator()->gradient_sparsity_pattern().has_value()) {
+      *max_num_gradients += static_cast<int>(
+          binding.evaluator()->gradient_sparsity_pattern().value().size());
+    } else {
+      *max_num_gradients += n * binding.GetNumElements();
+    }
     *num_nonlinear_constraints += n;
   }
 }
@@ -586,13 +611,28 @@ void UpdateConstraintBoundsAndGradients(
       (*Fupp)[constraint_index_i] = ub(i);
     }
 
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < static_cast<int>(binding.GetNumElements()); ++j) {
+    const std::vector<int> bound_var_indices_in_prog =
+        prog.FindDecisionVariableIndices(binding.variables());
+
+    const optional<std::vector<std::pair<int, int>>>&
+        gradient_sparsity_pattern =
+            binding.evaluator()->gradient_sparsity_pattern();
+    if (gradient_sparsity_pattern.has_value()) {
+      for (const auto& nonzero_entry : gradient_sparsity_pattern.value()) {
         // Fortran is 1-indexed.
-        (*iGfun)[*grad_index] = 1 + *constraint_index + i;  // row order
+        (*iGfun)[*grad_index] = 1 + *constraint_index + nonzero_entry.first;
         (*jGvar)[*grad_index] =
-            1 + prog.FindDecisionVariableIndex(binding.variables()(j));
+            1 + bound_var_indices_in_prog[nonzero_entry.second];
         (*grad_index)++;
+      }
+    } else {
+      for (int i = 0; i < n; i++) {
+        for (int j = 0; j < static_cast<int>(binding.GetNumElements()); ++j) {
+          // Fortran is 1-indexed.
+          (*iGfun)[*grad_index] = 1 + *constraint_index + i;  // row order
+          (*jGvar)[*grad_index] = 1 + bound_var_indices_in_prog[j];
+          (*grad_index)++;
+        }
       }
     }
 

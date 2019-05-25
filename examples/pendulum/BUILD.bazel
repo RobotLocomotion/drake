@@ -44,7 +44,7 @@ drake_cc_library(
     deps = [
         ":pendulum_plant",
         ":pendulum_vector_types",
-        "//geometry:geometry_visualization",
+        "//geometry:geometry_roles",
         "//geometry:scene_graph",
         "//math:geometric_transform",
         "//systems/framework:diagram_builder",
@@ -170,6 +170,7 @@ drake_cc_googletest(
     name = "pendulum_geometry_test",
     deps = [
         ":pendulum_geometry",
+        ":pendulum_plant",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
     ],

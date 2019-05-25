@@ -37,6 +37,8 @@ struct ManualPhaseRingBookTest : public ::testing::Test {
 TEST_F(ManualPhaseRingBookTest, BasicTest) {
   ManualPhaseRingBook dut;
   EXPECT_NO_THROW(dut.AddPhaseRing(ring));
+  EXPECT_EQ(dut.GetPhaseRings().size(), 1);
+  EXPECT_EQ(dut.GetPhaseRings()[0], ring.id());
   optional<PhaseRing> result = dut.GetPhaseRing(ring_id);
   EXPECT_TRUE(result.has_value());
   EXPECT_EQ(result->id(), ring_id);

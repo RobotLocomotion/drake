@@ -66,7 +66,7 @@ class PointShapeAutoDiffSignedDistanceTester {
   ::testing::AssertionResult Test(const Vector3d& p_GN_G,
                                   const Vector3d& p_NQ_G,
                                   bool is_inside = false,
-                                  bool is_grad_W_well_defined = true) {
+                                  bool is_grad_W_unique = true) {
     const double sign = is_inside ? -1 : 1;
     const double expected_distance = sign * p_NQ_G.norm();
     const Vector3d p_GQ = p_GN_G + p_NQ_G;
@@ -83,7 +83,7 @@ class PointShapeAutoDiffSignedDistanceTester {
         GeometryId::get_new_id(), X_WG_.cast<AutoDiffXd>(), p_WQ_ad);
 
     SignedDistanceToPoint<AutoDiffXd> result = distance_to_point(shape_);
-    EXPECT_EQ(result.is_grad_W_well_defined, is_grad_W_well_defined);
+    EXPECT_EQ(result.is_grad_W_unique, is_grad_W_unique);
     if (std::abs(result.distance.value() - expected_distance) > tolerance_) {
       error = true;
       failure << "The difference between expected distance and tested distance "
@@ -147,7 +147,7 @@ class PointShapeAutoDiffSignedDistanceTester {
               << p_WQ_val_compare.message();
     }
 
-    if (result.is_grad_W_well_defined) {
+    if (result.is_grad_W_unique) {
       auto p_WQ_derivative_compare = CompareMatrices(
           math::autoDiffToGradientMatrix(p_WQ_ad),
           math::autoDiffToGradientMatrix(p_WQ_ad_expected), tolerance_);
@@ -290,6 +290,41 @@ GTEST_TEST(DistanceToPoint, Box) {
       }
     }
   }
+}
+
+// Simple smoke test for signed distance to Halfspace. It does the following:
+//   Perform test of three different points w.r.t. a halfspace: outside, on
+//     surface, and inside.
+//   Do it with AutoDiff relative to the query point's position.
+//   Confirm the *values* of the reported quantity.
+//   Confirm that the derivative of distance (extracted from AutoDiff) matches
+//     the derivative computed by hand (grad_W).
+GTEST_TEST(DistanceToPoint, Halfspace) {
+  const double kEps = 4 * std::numeric_limits<double>::epsilon();
+
+  // Provide some arbitrary pose of the halfspace in the world.
+  const RotationMatrix<double> R_WG(
+      AngleAxis<double>(M_PI / 5, Vector3d{1, 2, 3}.normalized()));
+  const Vector3d p_WG{0.5, 1.25, -2};
+  const RigidTransformd X_WG(R_WG, p_WG);
+  const fcl::Halfspaced hs(Vector3d::UnitZ(), 0);
+  PointShapeAutoDiffSignedDistanceTester<fcl::Halfspaced> tester(&hs, X_WG,
+                                                                 kEps);
+
+  // An arbitrary direction away from the origin that *isn't* aligned with the
+  // frame basis.
+  const Vector3d phat_NQ_G = Vector3d::UnitZ();
+  const Vector3d p_NQ_G = 1.5 * phat_NQ_G;
+  const Vector3d p_GN_G = Vector3d(0.25, 0.5, 0);
+
+  // Case: point lies *outside* the halfspace.
+  EXPECT_TRUE(tester.Test(p_GN_G, p_NQ_G));
+
+  // Case: point lies *on* the halfspace.
+  EXPECT_TRUE(tester.Test(p_GN_G, Vector3d::Zero()));
+
+  // Case: point lies *in* the halfspace.
+  EXPECT_TRUE(tester.Test(p_GN_G, -0.1 * phat_NQ_G, true /* is inside */));
 }
 
 // TODO(SeanCurtis-TRI): Point-to-cylinder with AutoDiff has been "disabled".
@@ -450,8 +485,8 @@ GTEST_TEST(DistanceToPoint, ScalarShapeSupportDouble) {
 
   // HalfSpace
   {
-    run_callback(make_shared<fcl::Halfspaced>(0, 0, 1, 0));
-    EXPECT_EQ(distances.size(), 0);  // Query not supported.
+    run_callback(make_shared<fcl::Halfspaced>(Vector3d::UnitZ(), 0));
+    EXPECT_EQ(distances.size(), 1);
   }
 
   // Box
@@ -511,8 +546,8 @@ std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
 
   // HalfSpace
   {
-    run_callback(make_shared<fcl::Halfspaced>(0, 0, 1, 0));
-    EXPECT_EQ(distances.size(), 0);  // Query not supported.
+    run_callback(make_shared<fcl::Halfspaced>(Vector3d::UnitZ(), 0));
+    EXPECT_EQ(distances.size(), 1);
   }
 
   // Box

@@ -3,9 +3,9 @@
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
@@ -83,13 +83,14 @@ PYBIND11_MODULE(geometry, m) {
       }),
           py::arg("source_id"), py::arg("ids"),
           doc.FrameKinematicsVector.ctor.doc_deprecated_2args);
-  pysystems::AddValueInstantiation<FramePoseVector<T>>(m);
+  AddValueInstantiation<FramePoseVector<T>>(m);
 
   py::class_<QueryObject<T>>(m, "QueryObject", doc.QueryObject.doc)
       .def("inspector", &QueryObject<T>::inspector, py_reference_internal,
           doc.QueryObject.inspector.doc)
       .def("ComputeSignedDistancePairwiseClosestPoints",
           &QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints,
+          py::arg("max_distance") = std::numeric_limits<double>::infinity(),
           doc.QueryObject.ComputeSignedDistancePairwiseClosestPoints.doc)
       .def("ComputePointPairPenetration",
           &QueryObject<T>::ComputePointPairPenetration,
@@ -98,7 +99,7 @@ PYBIND11_MODULE(geometry, m) {
           &QueryObject<T>::ComputeSignedDistanceToPoint, py::arg("p_WQ"),
           py::arg("threshold") = std::numeric_limits<double>::infinity(),
           doc.QueryObject.ComputeSignedDistanceToPoint.doc);
-  pysystems::AddValueInstantiation<QueryObject<T>>(m);
+  AddValueInstantiation<QueryObject<T>>(m);
 
   py::module::import("pydrake.systems.lcm");
   m.def("ConnectDrakeVisualizer",
@@ -125,7 +126,7 @@ PYBIND11_MODULE(geometry, m) {
 
   // SignedDistancePair
   py::class_<SignedDistancePair<T>>(m, "SignedDistancePair")
-      .def(py::init<>(), doc.SignedDistancePair.ctor.doc_6args)
+      .def(py::init<>(), doc.SignedDistancePair.ctor.doc_7args)
       .def_readwrite(
           "id_A", &SignedDistancePair<T>::id_A, doc.SignedDistancePair.id_A.doc)
       .def_readwrite(
@@ -137,7 +138,10 @@ PYBIND11_MODULE(geometry, m) {
       .def_readwrite("distance", &SignedDistancePair<T>::distance,
           doc.SignedDistancePair.distance.doc)
       .def_readwrite("nhat_BA_W", &SignedDistancePair<T>::nhat_BA_W,
-          doc.SignedDistancePair.nhat_BA_W.doc);
+          doc.SignedDistancePair.nhat_BA_W.doc)
+      .def_readwrite("is_nhat_BA_W_unique",
+          &SignedDistancePair<T>::is_nhat_BA_W_unique,
+          doc.SignedDistancePair.is_nhat_BA_W_unique.doc);
 
   // SignedDistanceToPoint
   py::class_<SignedDistanceToPoint<T>>(m, "SignedDistanceToPoint")

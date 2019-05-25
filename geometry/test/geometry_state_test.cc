@@ -1470,6 +1470,59 @@ TEST_F(GeometryStateTest, RemoveAnchoredGeometry) {
   EXPECT_EQ(gs_tester_.get_geometries().at(anchored_id_1).proximity_index(), 0);
 }
 
+// Tests removal of geometry when collision filters are present. As geometries
+// move around, their filter semantics should follow.
+TEST_F(GeometryStateTest, RemoveGeometryWithCollisionFilters) {
+  SourceId s_id = SetUpSingleSourceTree(true);
+  auto is_filtered = [this](int index0, int index1) {
+    return geometry_state_.CollisionFiltered(geometries_[index0],
+                                             geometries_[index1]);
+  };
+
+  // Collision filters applied to siblings.
+  EXPECT_TRUE(is_filtered(0, 1));
+  EXPECT_TRUE(is_filtered(2, 3));
+  EXPECT_TRUE(is_filtered(4, 5));
+  // All other pairs are unfiltered.
+  EXPECT_FALSE(is_filtered(0, 2));
+  EXPECT_FALSE(is_filtered(0, 3));
+  EXPECT_FALSE(is_filtered(0, 4));
+  EXPECT_FALSE(is_filtered(0, 5));
+  EXPECT_FALSE(is_filtered(1, 2));
+  EXPECT_FALSE(is_filtered(1, 3));
+  EXPECT_FALSE(is_filtered(1, 4));
+  EXPECT_FALSE(is_filtered(1, 5));
+  EXPECT_FALSE(is_filtered(2, 4));
+  EXPECT_FALSE(is_filtered(2, 5));
+  EXPECT_FALSE(is_filtered(3, 4));
+  EXPECT_FALSE(is_filtered(3, 5));
+
+  // Note: removing anchored geometry because it was the last registered; it
+  // will be moved but has no filtered relationships with anyone. So, pop it
+  // and move on.
+  geometry_state_.RemoveGeometry(s_id, anchored_geometry_);
+  // Now geometries_[5] is the last; it will be moved into GeometryIndex(1). The
+  // failure we're testing for is that it doesn't inherit geometries_[1]'s
+  // collision filter semantics, but maintains its own.
+  geometry_state_.RemoveGeometry(s_id, geometries_[1]);
+
+  // Repeat the test above, but exclude all pairs including the removed
+  // geometry.
+
+  // Collision filters applied to siblings.
+  EXPECT_TRUE(is_filtered(2, 3));
+  EXPECT_TRUE(is_filtered(4, 5));
+  // All other pairs are unfiltered.
+  EXPECT_FALSE(is_filtered(0, 2));
+  EXPECT_FALSE(is_filtered(0, 3));
+  EXPECT_FALSE(is_filtered(0, 4));
+  EXPECT_FALSE(is_filtered(0, 5));
+  EXPECT_FALSE(is_filtered(2, 4));
+  EXPECT_FALSE(is_filtered(2, 5));
+  EXPECT_FALSE(is_filtered(3, 4));
+  EXPECT_FALSE(is_filtered(3, 5));
+}
+
 // Confirms the behavior for requesting geometry poses with a bad geometry
 // identifier. The basic behavior is tested implicitly in other tests because
 // they rely on them to validate state.

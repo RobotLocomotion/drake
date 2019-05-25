@@ -1,0 +1,58 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "routing",
+    deps = [
+        ":everything",
+    ],
+)
+
+drake_cc_library(
+    name = "everything",
+    srcs = [
+        "derive_lane_s_routes.cc",
+        "find_lane_sequences.cc",
+    ],
+    hdrs = [
+        "derive_lane_s_routes.h",
+        "find_lane_sequences.h",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//automotive/maliput/api",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "derive_lane_s_routes_test",
+    deps = [
+        ":routing",
+        "//automotive/maliput/dragway/test_utilities:fixtures",
+        "//automotive/maliput/multilane/test_utilities:fixtures",
+        "//common",
+    ],
+)
+
+drake_cc_googletest(
+    name = "find_lane_sequences_test",
+    deps = [
+        ":routing",
+        "//automotive/maliput/dragway/test_utilities:fixtures",
+        "//automotive/maliput/multilane/test_utilities:fixtures",
+        "//common",
+    ],
+)
+
+add_lint_tests()

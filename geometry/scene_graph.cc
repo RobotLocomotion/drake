@@ -5,7 +5,6 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
-#include "drake/geometry/geometry_context.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/systems/framework/context.h"
@@ -164,8 +163,7 @@ template <typename T>
 GeometryId SceneGraph<T>::RegisterGeometry(
     Context<T>* context, SourceId source_id, FrameId frame_id,
     std::unique_ptr<GeometryInstance> geometry) const {
-  auto* g_context = static_cast<GeometryContext<T>*>(context);
-  auto& g_state = g_context->get_mutable_geometry_state();
+  auto& g_state = mutable_geometry_state(context);
   return g_state.RegisterGeometry(source_id, frame_id, std::move(geometry));
 }
 
@@ -181,8 +179,7 @@ template <typename T>
 GeometryId SceneGraph<T>::RegisterGeometry(
     Context<T>* context, SourceId source_id, GeometryId geometry_id,
     std::unique_ptr<GeometryInstance> geometry) const {
-  auto* g_context = static_cast<GeometryContext<T>*>(context);
-  auto& g_state = g_context->get_mutable_geometry_state();
+  auto& g_state = mutable_geometry_state(context);
   return g_state.RegisterGeometryWithParent(source_id, geometry_id,
                                             std::move(geometry));
 }
@@ -202,8 +199,7 @@ void SceneGraph<T>::RemoveGeometry(SourceId source_id, GeometryId geometry_id) {
 template <typename T>
 void SceneGraph<T>::RemoveGeometry(Context<T>* context, SourceId source_id,
                                    GeometryId geometry_id) const {
-  auto* g_context = static_cast<GeometryContext<T>*>(context);
-  auto& g_state = g_context->get_mutable_geometry_state();
+  auto& g_state = mutable_geometry_state(context);
   g_state.RemoveGeometry(source_id, geometry_id);
 }
 
@@ -234,8 +230,7 @@ void SceneGraph<T>::ExcludeCollisionsWithin(const GeometrySet& geometry_set) {
 template <typename T>
 void SceneGraph<T>::ExcludeCollisionsWithin(
     Context<T>* context, const GeometrySet& geometry_set) const {
-  auto* g_context = static_cast<GeometryContext<T>*>(context);
-  auto& g_state = g_context->get_mutable_geometry_state();
+  auto& g_state = mutable_geometry_state(context);
   g_state.ExcludeCollisionsWithin(geometry_set);
 }
 
@@ -249,8 +244,7 @@ template <typename T>
 void SceneGraph<T>::ExcludeCollisionsBetween(Context<T>* context,
                                              const GeometrySet& setA,
                                              const GeometrySet& setB) const {
-  auto* g_context = static_cast<GeometryContext<T>*>(context);
-  auto& g_state = g_context->get_mutable_geometry_state();
+  auto& g_state = mutable_geometry_state(context);
   g_state.ExcludeCollisionsBetween(setA, setB);
 }
 
@@ -280,10 +274,7 @@ void SceneGraph<T>::CalcQueryObject(const Context<T>& context,
   //      *not* be persisted (and copying it clears this persisted copy).
   //
   // See the todo in the header for an alternate formulation.
-  const GeometryContext<T>* geom_context =
-      dynamic_cast<const GeometryContext<T>*>(&context);
-  DRAKE_DEMAND(geom_context);
-  output->set(geom_context, this);
+  output->set(&context, this);
 }
 
 template <typename T>
@@ -326,9 +317,8 @@ void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
   // responsible for updating the bundle in the output port.
   int i = 0;
 
-  const auto& g_context = static_cast<const GeometryContext<T>&>(context);
-  FullPoseUpdate(g_context);
-  const auto& g_state = g_context.get_geometry_state();
+  FullPoseUpdate(context);
+  const auto& g_state = geometry_state(context);
 
   // Collect only those frames that have illustration geometry -- based on the
   // *model*.
@@ -349,7 +339,7 @@ void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
 }
 
 template <typename T>
-void SceneGraph<T>::CalcPoseUpdate(const GeometryContext<T>& context,
+void SceneGraph<T>::CalcPoseUpdate(const Context<T>& context,
                                    int*) const {
   // TODO(SeanCurtis-TRI): Update this when the cache is available.
   // This method is const and the context is const. Ultimately, this will pull
@@ -358,7 +348,7 @@ void SceneGraph<T>::CalcPoseUpdate(const GeometryContext<T>& context,
 
   using std::to_string;
 
-  const GeometryState<T>& state = context.get_geometry_state();
+  const GeometryState<T>& state = geometry_state(context);
   GeometryState<T>& mutable_state = const_cast<GeometryState<T>&>(state);
 
   auto throw_error = [](SourceId source_id, const std::string& origin) {
@@ -394,18 +384,27 @@ void SceneGraph<T>::CalcPoseUpdate(const GeometryContext<T>& context,
 }
 
 template <typename T>
-std::unique_ptr<LeafContext<T>> SceneGraph<T>::DoMakeLeafContext() const {
-  DRAKE_ASSERT(geometry_state_index_ >= 0);
-  return make_unique<GeometryContext<T>>(geometry_state_index_);
-}
-
-template <typename T>
 void SceneGraph<T>::ThrowUnlessRegistered(SourceId source_id,
                                           const char* message) const {
   using std::to_string;
   if (input_source_ids_.find(source_id) == input_source_ids_.end()) {
     throw std::logic_error(message + to_string(source_id) + ".");
   }
+}
+
+template <typename T>
+GeometryState<T>& SceneGraph<T>::mutable_geometry_state(
+    Context<T>* context) const {
+  return context->get_mutable_state()
+      .template get_mutable_abstract_state<GeometryState<T>>(
+          geometry_state_index_);
+}
+
+template <typename T>
+const GeometryState<T>& SceneGraph<T>::geometry_state(
+    const Context<T>& context) const {
+  return context.get_state().template get_abstract_state<GeometryState<T>>(
+      geometry_state_index_);
 }
 
 // Explicitly instantiates on the most common scalar types.

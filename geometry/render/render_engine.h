@@ -12,9 +12,11 @@
 #include "drake/geometry/geometry_index.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/camera_properties.h"
+#include "drake/geometry/render/render_label.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/geometry/utilities.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/systems/sensors/color_palette.h"
 #include "drake/systems/sensors/image.h"
 
 namespace drake {
@@ -26,7 +28,8 @@ namespace render {
  %RenderEngine's viewpoint `R` is `X-right`, `Y-down` and `Z-forward`
  with respect to the rendered images.
 
- Output image format:
+ <h3>Output image format</h3>
+
    - RGB (ImageRgba8U) : the RGB image has four channels in the following
      order: red, green, blue, and alpha. Each channel is represented by
      a uint8_t.
@@ -37,14 +40,68 @@ namespace render {
      Note that this is different from the range data used by laser
      range finders (like that provided by DepthSensor) in which the depth
      value represents the distance from the sensor origin to the object's
-     surface.  */
+     surface.
+
+   - Label (ImageLabel16I) : the label image has single channel represented
+     by an int16_t. The value stored in the channel holds a RenderLabel value
+     which corresponds to an object class in the scene or an "empty" pixel (see
+     RenderLabel for more details).
+
+ @anchor render_engine_default_label
+ <h3>RenderLabels, registering geometry, and derived classes</h3>
+
+ By convention, when registering a geometry, the provided properties should
+ contain no more than one RenderLabel instance, and that should be the
+ `(label, id)` property. %RenderEngine provides the notion of a
+ _default render label_ that will be applied where no `(label, id)` RenderLabel
+ property is found.  This default value can be one of two values:
+ RenderLabel::kDontCare or RenderLabel::kUnspecified. The choice of default
+ RenderLabel can be made at construction and it affects registration behavior
+ when the `(label, id)` property is absent:
+
+   - RenderLabel::kUnspecified: throws an exception.
+   - RenderLabel::kDontCare: the geometry will be included in label images as
+     the generic, non-distinguishing label.
+
+ Choosing RenderLabel::kUnspecified is best in a system that wants explicit
+ feedback and strict enforcement on a policy of strict label enforcement --
+ everything should receive a meaningful label. The choice of
+ RenderLabel::kDontCare is best for a less strict system in which only some
+ subset of geometry need be explicitly specified.
+
+ Derived classes configure their _de facto_ default RenderLabel value, or
+ a user-configured default value, at construction, subject to the requirements
+ outlined above.
+
+ Derived classes should not access the `(label, id)` property directly.
+ %RenderEngine provides a method to safely extract a RenderLabel value from
+ the PerceptionProperties, taking into account the configured default value and
+ the documented @ref reserved_render_label "RenderLabel semantics"; see
+ GetRenderLabelOrThrow().  */
 class RenderEngine : public ShapeReifier {
  public:
-  RenderEngine() = default;
+  /** Constructs a %RenderEngine with the given default render label. The
+   default render label is applied to geometries that have not otherwise
+   specified a (label, id) property. The value _must_ be either
+   RenderLabel::kUnspecified or RenderLabel::kDontCare. (See
+   @ref render_engine_default_label "this section" for more details.)
+
+   @throws std::logic_error if the default render label is not one of the two
+                            allowed labels.  */
+  explicit RenderEngine(
+      const RenderLabel& default_label = RenderLabel::kUnspecified)
+      : default_render_label_(default_label) {
+    if (default_render_label_ != RenderLabel::kUnspecified &&
+        default_render_label_ != RenderLabel::kDontCare) {
+      throw std::logic_error(
+          "RenderEngine's default render label must be either 'kUnspecified' "
+          "or 'kDontCare'");
+    }
+  }
 
   virtual ~RenderEngine() = default;
 
-  /** Clones the render engine -- making the RenderEngine compatible with
+  /** Clones the render engine -- making the %RenderEngine compatible with
    copyable_unique_ptr.  */
   std::unique_ptr<RenderEngine> Clone() const;
 
@@ -54,6 +111,12 @@ class RenderEngine : public ShapeReifier {
    is allowed to examine the given `properties` and choose to _not_ register
    the geometry.
 
+   Typically, derived classes will attempt to validate the RenderLabel value
+   stored in the `(label, id)` property (or its configured default value if
+   no such property exists). In that case, attempting to assign
+   RenderLabel::kEmpty or RenderLabel::kUnspecified will cause an exception to
+   be thrown (as @ref reserved_render_label "documented").
+
    @param index          The geometry index of the shape to register.
    @param shape          The shape specification to add to the render engine.
    @param properties     The perception properties provided for this geometry.
@@ -62,7 +125,10 @@ class RenderEngine : public ShapeReifier {
                          UpdatePoses().
    @returns A unique index for the resultant render geometry (nullopt if not
             registered).
-   @throws std::runtime_error if the shape is an unsupported type.  */
+   @throws std::runtime_error if the shape is an unsupported type or if the
+                              shape's RenderLabel value is
+                              RenderLabel::kUnspecified or RenderLabel::kEmpty.
+  */
   optional<RenderIndex> RegisterVisual(
       GeometryIndex index,
       const Shape& shape, const PerceptionProperties& properties,
@@ -120,6 +186,20 @@ class RenderEngine : public ShapeReifier {
       const DepthCameraProperties& camera,
       systems::sensors::ImageDepth32F* depth_image_out) const = 0;
 
+  /** Renders the registered geometry into the given label image.
+
+   @param camera                The intrinsic properties of the camera.
+   @param show_window           If true, the render window will be displayed.
+   @param[out] label_image_out  The rendered label image.  */
+  virtual void RenderLabelImage(
+      const CameraProperties& camera,
+      bool show_window,
+      systems::sensors::ImageLabel16I* label_image_out) const = 0;
+
+  /** Reports the render label value this render engine has been configured to
+   use.  */
+  RenderLabel default_render_label() const { return default_render_label_; }
+
  protected:
   // Allow derived classes to implement Cloning via copy-construction.
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RenderEngine)
@@ -136,7 +216,10 @@ class RenderEngine : public ShapeReifier {
    geometries would have PerceptionProperties, but, based on the provided
    property groups and values, one would be accepted and registered with one
    render engine implementation and the other geometry with another render
-   engine.  */
+   engine.
+
+   In accessing the RenderLabel property in `properties` derived class should
+   _exclusively_ use GetRenderLabelOrThrow().  */
   virtual optional<RenderIndex> DoRegisterVisual(
       const Shape& shape, const PerceptionProperties& properties,
       const math::RigidTransformd& X_WG) = 0;
@@ -161,13 +244,62 @@ class RenderEngine : public ShapeReifier {
   /** The NVI-function for cloning this render engine.  */
   virtual std::unique_ptr<RenderEngine> DoClone() const = 0;
 
-  friend class RenderEngineTester;
+  /** Extracts the `(label, id)` RenderLabel property from the given
+   `properties` and validates it (or the configured default if no such
+   property is defined).
+   @throws std::logic_error If the tested render label value is deemed invalid.
+   */
+  RenderLabel GetRenderLabelOrThrow(
+      const PerceptionProperties& properties) const;
+
+  /** @name   RenderLabel-Color Utilities
+
+   Some rasterization pipelines don't support channels of
+   RenderLabel::ValueType; typically, they operate in RGB color space. The
+   following utilities support those pipelines by providing conversions between
+   labels and colors. The mapping does _not_ produce colors that are useful
+   to humans -- two labels with "near by" values will produces colors that
+   most humans cannot distinguish, but the computer can. Do not use these
+   utilities to produce the prototypical "colored label" images.
+
+   The label-to-color conversion can produce one of two different color
+   encodings. These encodings are not exhaustive but they are typical of the
+   encodings that have proven useful. The supported color encodings consist of
+   three RGB channels where each channel is either _byte-valued_ in that they
+   are encoded with unsigned bytes in the range [0, 255] per channel or
+   _double-valued_ such that each channel is encoded with a double in the range
+   [0, 1]. Conversion to RenderLabel is only supported from byte-valued color
+   values.  */
+  //@{
+
+  /** Transforms the given byte-valued RGB color value into its corresponding
+   RenderLabel.  */
+  static RenderLabel LabelFromColor(const systems::sensors::ColorI& color) {
+    return RenderLabel(color.r | (color.g << 8), false);
+  }
+
+  /** Transforms `this` render label into a byte-valued RGB color.  */
+  static systems::sensors::ColorI GetColorIFromLabel(const RenderLabel& label) {
+    return systems::sensors::ColorI{label.value_ & 0xFF,
+                                    (label.value_ >> 8) & 0xFF, 0};
+  }
+
+  /** Transforms `this` render label into a double-valued RGB color.  */
+  static systems::sensors::ColorD GetColorDFromLabel(const RenderLabel& label) {
+    systems::sensors::ColorI i_color = GetColorIFromLabel(label);
+    return systems::sensors::ColorD{i_color.r / 255., i_color.g / 255.,
+                                    i_color.b / 255.};
+  }
+
+  //@}
 
  private:
+  friend class RenderEngineTester;
+
   // The following two maps store all registered render index values to the
   // corresponding geometry's internal index. It should be the case that the
   // keys of the two maps are disjoint and span all of the valid render index
-  // values (i.e., [0, number of actors - 1]).
+  // values (i.e., [0, number of geometries - 1]).
   // The mapping is generally necessary to facilitate updates and geometry
   // removal.
 
@@ -177,6 +309,11 @@ class RenderEngine : public ShapeReifier {
 
   // The mapping from render index to internal index of all other geometries.
   std::unordered_map<RenderIndex, GeometryIndex> anchored_indices_;
+
+  // The default render label to apply to geometries that don't otherwise
+  // provide one. Default constructor is RenderLabel::kUnspecified via the
+  // RenderLabel default constructor.
+  RenderLabel default_render_label_{};
 };
 
 }  // namespace render

@@ -125,8 +125,27 @@ void MultibodyTreeSystem<T>::Finalize() {
         tree->CalcPositionKinematicsCache(context, &position_cache);
       },
       {this->configuration_ticket()});
-  position_kinematics_cache_index_ =
+  cache_indexes_.position_kinematics =
       position_kinematics_cache_entry.cache_index();
+
+  // Allocate cache entry to store M_B_W(q) for each body.
+  auto& spatial_inertia_in_world_cache_entry = this->DeclareCacheEntry(
+      std::string("spatial inertia in world (M_B_W)"),
+      [tree = tree_.get()]() {
+        return AbstractValue::Make(
+            std::vector<SpatialInertia<T>>(tree->num_bodies()));
+      },
+      [tree = tree_.get()](const systems::ContextBase& context_base,
+                           AbstractValue* cache_value) {
+        auto& context = dynamic_cast<const Context<T>&>(context_base);
+        auto& spatial_inertia_in_world_cache =
+            cache_value->get_mutable_value<std::vector<SpatialInertia<T>>>();
+        tree->CalcSpatialInertiaInWorldCache(context,
+                                             &spatial_inertia_in_world_cache);
+      },
+      {this->cache_entry_ticket(cache_indexes_.position_kinematics)});
+  cache_indexes_.spatial_inertia_in_world =
+      spatial_inertia_in_world_cache_entry.cache_index();
 
   // Allocate velocity cache.
   auto& velocity_kinematics_cache_entry = this->DeclareCacheEntry(
@@ -144,8 +163,30 @@ void MultibodyTreeSystem<T>::Finalize() {
             context, tree->EvalPositionKinematics(context), &velocity_cache);
       },
       {this->kinematics_ticket()});
-  velocity_kinematics_cache_index_ =
+  cache_indexes_.velocity_kinematics =
       velocity_kinematics_cache_entry.cache_index();
+
+  // Allocate cache entry to store b_Bo_W(q, v) for each body.
+  auto& dynamic_bias_cache_entry = this->DeclareCacheEntry(
+      std::string("dynamic bias (b_Bo_W)"),
+      [tree = tree_.get()]() {
+        return AbstractValue::Make(
+            std::vector<SpatialForce<T>>(tree->num_bodies()));
+      },
+      [tree = tree_.get()](const systems::ContextBase& context_base,
+                           AbstractValue* cache_value) {
+        auto& context = dynamic_cast<const Context<T>&>(context_base);
+        auto& dynamic_bias_cache =
+            cache_value->get_mutable_value<std::vector<SpatialForce<T>>>();
+        tree->CalcDynamicBiasCache(context, &dynamic_bias_cache);
+      },
+      // The computation of b_Bo_W(q, v) requires updated values of M_Bo_W(q)
+      // and V_WB(q, v). We make these prerequisites explicit.
+      // Another alternative would be to state the dependence on q and v.
+      // However this option is not optimal until #9171 gets resolved.
+      {this->cache_entry_ticket(cache_indexes_.spatial_inertia_in_world),
+       this->cache_entry_ticket(cache_indexes_.velocity_kinematics)});
+  cache_indexes_.dynamic_bias = dynamic_bias_cache_entry.cache_index();
 
   // Declare cache entry for H_PB_W(q).
   // The type of this cache value is std::vector<Vector6<T>>.
@@ -163,8 +204,8 @@ void MultibodyTreeSystem<T>::Finalize() {
         tree->CalcAcrossNodeGeometricJacobianExpressedInWorld(
             context, tree->EvalPositionKinematics(context), &H_PB_W_cache);
       },
-      {this->cache_entry_ticket(position_kinematics_cache_index_)});
-  H_PB_W_cache_index_ = H_PB_W_cache_entry.cache_index();
+      {this->cache_entry_ticket(cache_indexes_.position_kinematics)});
+  cache_indexes_.across_node_jacobians = H_PB_W_cache_entry.cache_index();
 
   // TODO(sherm1) Allocate articulated body inertia cache.
 

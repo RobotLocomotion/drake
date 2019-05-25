@@ -47,6 +47,8 @@ void StaticEquilibriumConstraint::DoEval(
   const auto& u =
       x.segment(plant_->num_positions(), plant_->num_actuated_dofs());
   *y = B_actuation_ * u;
+  // TODO(hongkai.dai): Use UpdateContextConfiguration when it supports
+  // MultibodyPlant<AutoDiffXd> and Context<AutoDiffXd>
   if (!internal::AreAutoDiffVecXdEqual(q, plant_->GetPositions(*context_))) {
     plant_->SetPositions(context_, q);
   }
@@ -60,7 +62,7 @@ void StaticEquilibriumConstraint::DoEval(
   }
   const auto& query_object =
       query_port.Eval<geometry::QueryObject<AutoDiffXd>>(*context_);
-  const std::vector<geometry::SignedDistancePair<double>>
+  const std::vector<geometry::SignedDistancePair<AutoDiffXd>>
       signed_distance_pairs =
           query_object.ComputeSignedDistancePairwiseClosestPoints();
   const geometry::SceneGraphInspector<AutoDiffXd>& inspector =
@@ -82,22 +84,22 @@ void StaticEquilibriumConstraint::DoEval(
     // and the witness point on geometry Ga is Ca.
     const auto& X_AGa = inspector.X_FG(signed_distance_pair.id_A);
     const auto& p_GaCa = signed_distance_pair.p_ACa;
-    const Vector3<double> p_ACa = X_AGa * p_GaCa;
+    const Vector3<AutoDiffXd> p_ACa = X_AGa.cast<AutoDiffXd>() * p_GaCa;
     // Define Body B's frame as B, the geometry attached to body B has frame Gb,
     // and the witness point on geometry Ga is Cb.
     const auto& X_BGb = inspector.X_FG(signed_distance_pair.id_B);
     const auto& p_GbCb = signed_distance_pair.p_BCb;
-    const Vector3<double> p_BCb = X_BGb * p_GbCb;
+    const Vector3<AutoDiffXd> p_BCb = X_BGb.cast<AutoDiffXd>() * p_GbCb;
     Eigen::Matrix<AutoDiffXd, 6, Eigen::Dynamic> Jv_V_WCa(
         6, plant_->num_velocities());
     Eigen::Matrix<AutoDiffXd, 6, Eigen::Dynamic> Jv_V_WCb(
         6, plant_->num_velocities());
-    plant_->CalcJacobianSpatialVelocity(
-        *context_, JacobianWrtVariable::kV, frameA, p_ACa.cast<AutoDiffXd>(),
-        plant_->world_frame(), plant_->world_frame(), &Jv_V_WCa);
-    plant_->CalcJacobianSpatialVelocity(
-        *context_, JacobianWrtVariable::kV, frameB, p_BCb.cast<AutoDiffXd>(),
-        plant_->world_frame(), plant_->world_frame(), &Jv_V_WCb);
+    plant_->CalcJacobianSpatialVelocity(*context_, JacobianWrtVariable::kV,
+                                        frameA, p_ACa, plant_->world_frame(),
+                                        plant_->world_frame(), &Jv_V_WCa);
+    plant_->CalcJacobianSpatialVelocity(*context_, JacobianWrtVariable::kV,
+                                        frameB, p_BCb, plant_->world_frame(),
+                                        plant_->world_frame(), &Jv_V_WCb);
 
     // Find the lambda corresponding to the geometry pair (id_A, id_B).
     const auto it = contact_pair_to_wrench_evaluator_.find(

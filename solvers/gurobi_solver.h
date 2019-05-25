@@ -66,7 +66,7 @@ class GurobiSolver final : public SolverBase {
   /// Users can supply a callback to be called when the Gurobi solver
   /// finds an intermediate solution node, which may not be feasible.
   /// See Gurobi reference manual for more detail on callbacks:
-  /// https://www.gurobi.com/documentation/7.5/refman/callback_codes.html.
+  /// https://www.gurobi.com/documentation/8.0/refman/callback_codes.html.
   /// The user may supply a partial solution in the VectorXd and
   /// VectorXDecisionVariable arguments that will be passed to Gurobi
   /// as a candidate feasible solution.
@@ -101,7 +101,7 @@ class GurobiSolver final : public SolverBase {
   /// Users can supply a callback to be called when the Gurobi solver
   /// finds a feasible solution.
   /// See Gurobi reference manual for more detail on callbacks:
-  /// https://www.gurobi.com/documentation/7.5/refman/callback_codes.html.
+  /// https://www.gurobi.com/documentation/8.0/refman/callback_codes.html.
   /// See gurobi_solver_test.cc for an example of using std::bind
   /// to create a callback of this signature, while allowing
   /// additional data to be passed through.

@@ -4,7 +4,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/geometry/geometry_context.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_instance.h"
@@ -49,7 +48,7 @@ GTEST_TEST(GeometryVisualization, SimpleScene) {
                                     make_unique<Sphere>(radius), "sphere"));
   Vector4<double> color{r, g, b, a};
   scene_graph.AssignRole(source_id, sphere_id,
-                         MakeDrakeVisualizerProperties(color));
+                         MakePhongIllustrationProperties(color));
 
   // Add a second frame and geometry that only has proximity properties. It
   // should not impact the result.
@@ -62,11 +61,13 @@ GTEST_TEST(GeometryVisualization, SimpleScene) {
   scene_graph.AssignRole(source_id, collision_id, ProximityProperties());
 
   unique_ptr<Context<double>> context = scene_graph.AllocateContext();
-  const GeometryContext<double>& geo_context =
-      dynamic_cast<GeometryContext<double>&>(*context.get());
 
+  // This exploits the knowledge that the GeometryState is the zero-indexed
+  // abstract state in the scene graph-allocated context.
+  const GeometryState<double>& geometry_state =
+      context->get_state().get_abstract_state<GeometryState<double>>(0);
   lcmt_viewer_load_robot message = GeometryVisualizationImpl::BuildLoadMessage(
-      geo_context.get_geometry_state());
+      geometry_state);
 
   ASSERT_EQ(message.num_links, 1);
   const lcmt_viewer_link_data& link = message.link[0];

@@ -1,9 +1,38 @@
 # -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
 
-load("//tools/install:install_data.bzl", "install_data")
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/install:install_data.bzl", "install_data")
 
 package(default_visibility = ["//visibility:public"])
+
+drake_cc_binary(
+    name = "atlas_run_dynamics",
+    srcs = [
+        "atlas_run_dynamics.cc",
+    ],
+    add_test_rule = 1,
+    data = [":models"],
+    # Smoke test.
+    test_rule_args = [
+        "--simulation_time=0.01",
+        "--target_realtime_rate=0.0",
+    ],
+    deps = [
+        "//common:find_resource",
+        "//common:text_logging_gflags",
+        "//geometry:geometry_visualization",
+        "//multibody/parsing",
+        "//multibody/plant:contact_results_to_lcm",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "@gflags",
+    ],
+)
 
 install_data()
 

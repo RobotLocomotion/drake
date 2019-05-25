@@ -3,6 +3,7 @@
 // Exclude internal classes from doxygen.
 #if !defined(DRAKE_DOXYGEN_CXX)
 
+#include <algorithm>
 #include <limits>
 #include <tuple>
 #include <vector>
@@ -91,17 +92,22 @@ struct CallbackData {
  This family of functions compute the distance from a point Q to a primitive
  shape.  Refer to QueryObject::ComputeSignedDistanceToPoint() for more details.
 
- @param X_WG            The pose of the primitive geometry G in the world frame.
- @param p_WQ            The position of the point Q in the world frame.
- @param p_GN[out]       The position of the witness point N on the primitive,
-                        expressed in the primitive geometry frame G.
- @param distance[out]   The signed distance from the point Q to the primitive.
- @param grad_W[out]     The gradient of the distance function w.r.t p_GQ (the
-                        position of the point Q in the primitive's frame). This
-                        gradient vector has unit-length and is expressed in the
-                        world frame. Where grad_W is not well-defined, then
-                        an arbitrary value is assigned (as documented in
-                        QueryObject::ComputeSignedDistanceToPoint().  */
+ @param X_WG                  The pose of the primitive geometry G in the world
+                              frame.
+ @param p_WQ                  The position of the point Q in the world frame.
+ @param p_GN[out]             The position of the witness point N on the
+                              primitive, expressed in the primitive geometry
+                              frame G.
+ @param distance[out]         The signed distance from the point Q to the
+                              primitive.
+ @param grad_W[out]           The gradient of the distance function w.r.t p_GQ
+                              (the position of the point Q in the primitive's
+                              frame). This gradient vector has unit-length and
+                              is expressed in the world frame. Where grad_W is
+                              not unique, then an arbitrary value is
+                              assigned (as documented in
+                              QueryObject::ComputeSignedDistanceToPoint().
+ @param is_grad_w_unique[out] True if the value in `grad_W` is unique.  */
 //@{
 
 /** Overload of ComputeDistanceToPrimitive() for sphere primitive. */
@@ -110,7 +116,7 @@ void ComputeDistanceToPrimitive(const fcl::Sphered& sphere,
                                 const math::RigidTransform<T>& X_WG,
                                 const Vector3<T>& p_WQ, Vector3<T>* p_GN,
                                 T* distance, Vector3<T>* grad_W,
-                                bool* is_grad_W_well_defined) {
+                                bool* is_grad_W_unique) {
   const double radius = sphere.radius;
   const Vector3<T> p_GQ_G = X_WG.inverse() * p_WQ;
   const T dist_GQ = p_GQ_G.norm();
@@ -126,9 +132,9 @@ void ComputeDistanceToPrimitive(const fcl::Sphered& sphere,
   const double tolerance = DistanceToPointRelativeTolerance(radius);
   // Unit vector in x-direction of G's frame.
   const Vector3<T> Gx = Vector3<T>::UnitX();
-  *is_grad_W_well_defined = (dist_GQ > tolerance);
+  *is_grad_W_unique = (dist_GQ > tolerance);
   // Gradient vector expressed in G's frame.
-  const Vector3<T> grad_G = *is_grad_W_well_defined ? p_GQ_G / dist_GQ : Gx;
+  const Vector3<T> grad_G = *is_grad_W_unique ? p_GQ_G / dist_GQ : Gx;
 
   // p_GN is the position of a witness point N in the geometry frame G.
   *p_GN = T(radius) * grad_G;
@@ -148,15 +154,20 @@ void ComputeDistanceToPrimitive(const fcl::Halfspaced& halfspace,
                                 const math::RigidTransform<T>& X_WG,
                                 const Vector3<T>& p_WQ, Vector3<T>* p_GN,
                                 T* distance, Vector3<T>* grad_W,
-                                bool* is_grad_W_well_defined) {
-  // FCL stores the halfspace as {x | nᵀ * x <= d}, with n being a unit length
+                                bool* is_grad_W_unique) {
+  // FCL stores the halfspace as {x | nᵀ * x > d}, with n being a unit length
   // normal vector. Both n and x are expressed in the halfspace frame.
+  // In Drake, the halfspace is *always* defined as n_G = (0, 0, 1), d = 0.
+  // That means the distance to the plane is merely the z-component of p_GQ and
+  // the nearest point on the surface is (p_GQ(0), pGQ(1), 0).
   const Vector3<T> n_G = halfspace.n.cast<T>();
   const Vector3<T> p_GQ = X_WG.inverse() * p_WQ;
-  *distance = n_G.dot(p_GQ) - T(halfspace.d);
-  *p_GN = p_GQ - *distance * n_G;
+  DRAKE_ASSERT(n_G(0) == 0 && n_G(1) == 0 && n_G(2) == 1);
+  DRAKE_DEMAND(halfspace.d == 0);
+  *distance = p_GQ(2);
+  *p_GN << p_GQ(0), p_GQ(1), 0;
   *grad_W = X_WG.rotation() * n_G;
-  *is_grad_W_well_defined = true;
+  *is_grad_W_unique = true;
 }
 
 // TODO(DamrongGuoy): Add overloads for all supported geometries.
@@ -187,12 +198,24 @@ class DistanceToPoint {
   SignedDistanceToPoint<T> operator()(const fcl::Sphered& sphere) {
     T distance{};
     Vector3<T> p_GN_G, grad_W;
-    bool is_grad_W_well_defined{};
+    bool is_grad_W_unique{};
     ComputeDistanceToPrimitive(sphere, X_WG_, p_WQ_, &p_GN_G, &distance,
-                               &grad_W, &is_grad_W_well_defined);
+                               &grad_W, &is_grad_W_unique);
 
     return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W,
-                                    is_grad_W_well_defined};
+                                    is_grad_W_unique};
+  }
+
+  /** Overload to compute distance to a halfspace.  */
+  SignedDistanceToPoint<T> operator()(const fcl::Halfspaced& halfspace) {
+    T distance{};
+    Vector3<T> p_GN_G, grad_W;
+    bool is_grad_W_unique{};
+    ComputeDistanceToPrimitive(halfspace, X_WG_, p_WQ_, &p_GN_G, &distance,
+                               &grad_W, &is_grad_W_unique);
+
+    return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W,
+                                    is_grad_W_unique};
   }
 
   /** Overload to compute distance to a box.  */
@@ -207,12 +230,12 @@ class DistanceToPoint {
     bool is_Q_on_edge_or_vertex{};
     std::tie(p_GN_G, grad_G, is_Q_on_edge_or_vertex) =
         ComputeDistanceToBox(h, p_GQ_G);
-    const bool is_grad_W_well_defined = !is_Q_on_edge_or_vertex;
+    const bool is_grad_W_unique = !is_Q_on_edge_or_vertex;
     const Vector3<T> grad_W = X_WG_.rotation() * grad_G;
     const Vector3<T> p_WN = X_WG_ * p_GN_G;
     T distance = grad_W.dot(p_WQ_ - p_WN);
     return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W,
-                                    is_grad_W_well_defined};
+                                    is_grad_W_unique};
   }
 
   /** Overload to compute distance to a cylinder.  */
@@ -304,11 +327,11 @@ class DistanceToPoint {
     const Vector3<T> grad_W = R_WG * grad_G;
     const Vector3<T> p_WN = X_WG_ * p_GN;
     T distance = grad_W.dot(p_WQ_ - p_WN);
-    // TODO(hongkai.dai): grad_W is not well defined when Q is on the top or
+    // TODO(hongkai.dai): grad_W is not unique when Q is on the top or
     // bottom rims of the cylinder, or when it is inside the box and on the
     // central axis, with the nearest feature being the barrel of the cylinder.
     return SignedDistanceToPoint<T>{geometry_id_, p_GN, distance, grad_W,
-                                    true /* is_grad_W_well_defined */};
+                                    true /* is_grad_W_unique */};
   }
 
   /** Reports the "sign" of x with a small modification; Sign(0) --> 1.
@@ -483,6 +506,7 @@ struct ScalarSupport<double> {
       case fcl::GEOM_SPHERE:
       case fcl::GEOM_BOX:
       case fcl::GEOM_CYLINDER:
+      case fcl::GEOM_HALFSPACE:
         return true;
       default:
         return false;
@@ -497,6 +521,7 @@ struct ScalarSupport<Eigen::AutoDiffScalar<DerType>> {
     switch (node_type) {
       case fcl::GEOM_SPHERE:
       case fcl::GEOM_BOX:
+      case fcl::GEOM_HALFSPACE:
         return true;
       default:
         return false;
@@ -520,10 +545,21 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
               void* callback_data, double& threshold) {
   auto& data = *static_cast<CallbackData<T>*>(callback_data);
 
-  // We intentionally pass the same number back to FCL in every callback.
-  // It instructs FCL to skip any objects proven to be beyond this threshold
-  // distance (for example, by checking bounding boxes).
-  threshold = data.threshold;
+  // Three things:
+  //   1. We repeatedly set max_distance in each call to the callback because we
+  //   can't initialize it. The cost is negligible but maximizes any culling
+  //   benefit.
+  //   2. Due to how FCL is implemented, passing a value <= 0 will cause results
+  //   to be omitted because the bounding box test only considers *separating*
+  //   distance and doesn't do any work if the distance between bounding boxes
+  //   is zero.
+  //   3. We pass in a number smaller than the typical epsilon because typically
+  //   computation tolerances are greater than or equal to epsilon() and we
+  //   don't want this value to trip those tolerances. This is safe because the
+  //   bounding box test in which this is used doesn't produce a code via
+  //   calculation; it is a perfect, hard-coded zero.
+  const double kEps = std::numeric_limits<double>::epsilon() / 10;
+  threshold = std::max(data.threshold, kEps);
 
   // We use `const` to prevent modification of the collision objects.
   const fcl::CollisionObjectd* geometry_object =
@@ -552,6 +588,10 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
       case fcl::GEOM_CYLINDER:
         distance = distance_to_point(
             *static_cast<const fcl::Cylinderd*>(collision_geometry));
+        break;
+      case fcl::GEOM_HALFSPACE:
+        distance = distance_to_point(
+            *static_cast<const fcl::Halfspaced*>(collision_geometry));
         break;
       default:
         // Returning false tells fcl to continue to other objects.

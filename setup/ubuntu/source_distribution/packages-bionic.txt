@@ -41,6 +41,7 @@ libxt-dev
 libyaml-cpp-dev
 lldb
 locales
+openssh-client
 patchelf
 patchutils
 pkg-config

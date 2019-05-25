@@ -4,9 +4,9 @@
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
+#include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
@@ -130,11 +130,16 @@ PYBIND11_MODULE(plant, m) {
             [](Class * self,
                 std::unique_ptr<UniformGravityFieldElement<T>> force_element)
                 -> auto& {
-              // N.B. We need to make sure we call the correct specialization in
-              // MultibodyPlant for it to take note we are adding gravity to the
-              // model. This is ugly API needs to be updated, see #11080.
+              WarnDeprecated(
+                  "Use mutable_gravity_field().set_gravity_vector() instead.");
+      // N.B. We need to make sure we call the correct specialization in
+      // MultibodyPlant for it to take note we are adding gravity to the
+      // model. This is ugly API needs to be updated, see #11080.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
               return self->AddForceElement<UniformGravityFieldElement>(
                   force_element->gravity_vector());
+#pragma GCC diagnostic pop
             },
             py::arg("force_element"), py_reference_internal,
             cls_doc.AddForceElement.doc)
@@ -372,6 +377,10 @@ PYBIND11_MODULE(plant, m) {
             cls_doc.get_joint_actuator.doc)
         .def("get_frame", &Class::get_frame, py::arg("frame_index"),
             py_reference_internal, cls_doc.get_frame.doc)
+        .def("gravity_field", &Class::gravity_field, py_reference_internal,
+            cls_doc.gravity_field.doc)
+        .def("mutable_gravity_field", &Class::mutable_gravity_field,
+            py_reference_internal, cls_doc.mutable_gravity_field.doc)
         .def("GetModelInstanceName",
             overload_cast_explicit<const string&, ModelInstanceIndex>(
                 &Class::GetModelInstanceName),
@@ -699,7 +708,7 @@ PYBIND11_MODULE(plant, m) {
             py::arg("point_pair_info"), cls_doc.AddContactInfo.doc)
         .def("contact_info", &Class::contact_info, py::arg("i"),
             cls_doc.contact_info.doc);
-    pysystems::AddValueInstantiation<Class>(m);
+    AddValueInstantiation<Class>(m);
   }
 
   // ContactResultsToLcmSystem

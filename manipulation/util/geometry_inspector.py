@@ -1,25 +1,39 @@
 r"""
 Simple tool that parses an SDF or URDF file from the command line and runs a
 simple system which takes joint positions from a JointSlider gui and publishes
-the resulting geometry poses to drake_visualizer.
+the resulting geometry poses to all available visualizers.
 
 If you wish to simply load a model and show it in multiple visualizers, see
 `show_model`.
 
-Example usages, all executed from the Drake root directory after geometry
-inspector has been built (using, e.g.,`bazel build :geometry_inspector`):
-./bazel-bin/manipulation/util/geometry_inspector \
-  ./manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
+Example usage (drake visualizer):
 
-bazel-bin/manipulation/util/geometry_inspector \
-  ./multibody/benchmarks/acrobot/acrobot.sdf --position 0.1 0.2
+    cd drake
+    bazel build //tools:drake_visualizer //manipulation/util:geometry_inspector
 
-rosrun xacro xacro.py \
-    /path/to/ros/pr2_description/robots/pr2.urdf.xacro >
-    /path/to/ros/pr2_description/robots/pr2.urdf
-./bazel-bin/manipulation/util/geometry_inspector \
-  --package_path=/path/to/ros/pr2_description \
-  /path/to/ros/pr2_description/robots/pr2.urdf
+    # Terminal 1
+    ./bazel-bin/tools/drake_visualizer
+    # Terminal 2
+    ./bazel-bin/manipulation/util/geometry_inspector \
+        ./manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
+
+Example usage (meshcat):
+    cd drake
+    bazel build \
+        @meshcat_python//:meshcat-server //manipulation/util:geometry_inspector
+
+    # Terminal 1
+    ./bazel-bin/external/meshcat_python/meshcat-server
+    # Terminal 2
+    ./bazel-bin/manipulation/util/geometry_inspector --meshcat default \
+        ./manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
+
+Optional argument examples:
+    bazel-bin/manipulation/util/geometry_inspector \
+    ./multibody/benchmarks/acrobot/acrobot.sdf --position 0.1 0.2
+
+NOTE: If `--meshcat` is not specified, no meshcat visualization will take
+place.
 """
 
 import argparse
@@ -34,6 +48,7 @@ from pydrake.multibody.parsing import PackageMap, Parser
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
+from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 from pydrake.systems.rendering import MultibodyPositionToGeometryPose
 
 
@@ -68,6 +83,7 @@ def main():
         help="Disable opening the gui window for testing.")
     # TODO(russt): Add option to weld the base to the world pending the
     # availability of GetUniqueBaseBody requested in #9747.
+    MeshcatVisualizer.add_argparse_argument(args_parser)
     args = args_parser.parse_args()
     filename = args.filename
     if not os.path.isfile(filename):
@@ -108,6 +124,14 @@ def main():
 
     # Connect this to drake_visualizer.
     ConnectDrakeVisualizer(builder=builder, scene_graph=scene_graph)
+
+    # Connect to Meshcat.
+    if args.meshcat is not None:
+        meshcat_viz = builder.AddSystem(
+            MeshcatVisualizer(scene_graph, zmq_url=args.meshcat))
+        builder.Connect(
+            scene_graph.get_pose_bundle_output_port(),
+            meshcat_viz.get_input_port(0))
 
     if len(args.position):
         sliders.set_position(args.position)

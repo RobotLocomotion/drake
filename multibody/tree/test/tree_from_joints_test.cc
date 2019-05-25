@@ -166,9 +166,9 @@ class DoublePendulumModel {
 
     // Add force element for a constant gravity pointing downwards, that is, in
     // the minus y-axis direction.
-    gravity_element_ =
-        &model->template AddForceElement<UniformGravityFieldElement>(
-            Vector3d(0.0, -acceleration_of_gravity_, 0.0));
+    gravity_element_ = &model->mutable_gravity_field();
+    gravity_element_->set_gravity_vector(
+        Vector3d(0.0, -acceleration_of_gravity_, 0.0));
 
     // We are done adding modeling elements.
     system_ = std::make_unique<internal::MultibodyTreeSystem<double>>(
@@ -214,7 +214,7 @@ class DoublePendulumModel {
   const RevoluteJoint<T>* elbow_{nullptr};
 
   // Force elements:
-  const UniformGravityFieldElement<T>* gravity_element_{nullptr};
+  UniformGravityFieldElement<T>* gravity_element_{nullptr};
 
   // Pendulum parameters:
   const double length1_ = 1.0;

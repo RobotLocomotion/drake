@@ -64,7 +64,10 @@ namespace systems {
  *                    Springer, 1996.
  * - [Lambert, 1991]  J. D. Lambert. Numerical Methods for Ordinary Differential
  *                    Equations. John Wiley & Sons, 1991.
- * 
+ *
+ * @note This integrator uses the integrator accuracy setting, even when run
+ *       in fixed-step mode, to limit the error in the underlying Newton-Raphson
+ *       process. See IntegratorBase::set_target_accuracy() for more info.
  * @see ImplicitIntegrator class documentation for information about implicit
  *      integration methods in general.
  */
@@ -88,10 +91,6 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
  private:
   int64_t do_get_num_newton_raphson_iterations() const final {
     return num_nr_iterations_;
-  }
-
-  int64_t do_get_num_iteration_matrix_factorizations() const final {
-    return num_iter_factorizations_;
   }
 
   int64_t do_get_num_error_estimator_derivative_evaluations() const final {
@@ -118,17 +117,22 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   }
 
   void DoResetImplicitIntegratorStatistics() final;
-  void ComputeAndFactorIterationMatrix(
-      const MatrixX<T>& J, const T& dt, int scale);
+  static void ComputeAndFactorImplicitEulerIterationMatrix(
+      const MatrixX<T>& J, const T& h,
+      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
+  static void ComputeAndFactorImplicitTrapezoidIterationMatrix(
+      const MatrixX<T>& J, const T& h,
+      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
   void DoInitialize() final;
   bool AttemptStepPaired(const T& t0, const T& h, const VectorX<T>& xt0,
       VectorX<T>* xtplus_euler, VectorX<T>* xtplus_trap);
   bool StepAbstract(const T& t0, const T& h, const VectorX<T>& xt0,
-      const std::function<VectorX<T>()>& g, int scale,
+      const std::function<VectorX<T>()>& g,
+      const std::function<void(const MatrixX<T>&, const T&,
+          typename ImplicitIntegrator<T>::IterationMatrix*)>&
+          compute_and_factor_iteration_matrix,
       VectorX<T>* xtplus, int trial = 1);
-  bool CalcMatrices(const T& t, const T& h, const VectorX<T>& xt, int scale,
-      int trial);
-  bool DoStep(const T& h) final;
+  bool DoImplicitIntegratorStep(const T& h) final;
   bool StepImplicitEuler(const T& t0, const T& h, const VectorX<T>& xt0,
       VectorX<T>* xtplus);
   bool StepImplicitTrapezoid(const T& t0, const T& h, const VectorX<T>& xt0,
@@ -150,7 +154,6 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 
   // Various statistics.
   int64_t num_nr_iterations_{0};
-  int64_t num_iter_factorizations_{0};
 
   // Implicit trapezoid specific statistics.
   int64_t num_err_est_jacobian_reforms_{0};

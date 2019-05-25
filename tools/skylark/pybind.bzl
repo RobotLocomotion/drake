@@ -293,21 +293,30 @@ def _generate_pybind_documentation_header_impl(ctx):
     transitive_headers_depsets = []
     package_headers_depsets = []
     for target in ctx.attr.targets:
-        if hasattr(target, "cc"):
-            # Note that target.cc.compile_flags does not include copts added
-            # to the target or on the command line (including via rc file).
-            compile_flags += [
-                compile_flag.replace(" ", "")
-                for compile_flag in target.cc.compile_flags
-            ]
-            transitive_headers_depsets.append(target.cc.transitive_headers)
+        if CcInfo in target:
+            compilation_context = target[CcInfo].compilation_context
+
+            for define in compilation_context.defines.to_list():
+                compile_flags.append("-D{}".format(define))
+            for system_include in compilation_context.system_includes.to_list():  # noqa
+                system_include = system_include or "."
+                compile_flags.append("-isystem{}".format(system_include))
+            for include in compilation_context.includes.to_list():
+                include = include or "."
+                compile_flags.append("-I{}".format(include))
+            for quote_include in compilation_context.quote_includes.to_list():
+                quote_include = quote_include or "."
+                compile_flags.append("-iquote{}".format(quote_include))
+
+            transitive_headers_depset = compilation_context.headers
+            transitive_headers_depsets.append(transitive_headers_depset)
 
             # Find all headers provided by the drake_cc_package_library,
             # i.e., the set of transitively-available headers that exist in
             # the same Bazel package as the target.
             package_headers_depsets.append(depset(direct = [
                 transitive_header
-                for transitive_header in target.cc.transitive_headers.to_list()
+                for transitive_header in transitive_headers_depset.to_list()
                 if (target.label.package == transitive_header.owner.package and
                     target.label.workspace_root == transitive_header.owner.workspace_root)  # noqa
             ]))
@@ -324,9 +333,7 @@ def _generate_pybind_documentation_header_impl(ctx):
     args.add("-root-name=" + ctx.attr.root_name)
     for p in ctx.attr.exclude_hdr_patterns:
         args.add("-exclude-hdr-patterns=" + p)
-
-    # Replace with ctx.fragments.cpp.cxxopts in Bazel 0.17+.
-    args.add("-std=c++14")
+    args.add_all(ctx.fragments.cpp.cxxopts, uniquify = True)
     args.add("-w")
     args.add_all(package_headers)
 

@@ -26,9 +26,6 @@ namespace geometry {
 class GeometryInstance;
 
 template <typename T>
-class GeometryContext;
-
-template <typename T>
 class QueryObject;
 
 /** SceneGraph serves as the nexus for all geometry (and geometry-based
@@ -623,24 +620,27 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   // Refreshes the pose of the various engines which exploits the caching
   // infrastructure.
-  void FullPoseUpdate(const GeometryContext<T>& context) const {
+  void FullPoseUpdate(const systems::Context<T>& context) const {
     this->get_cache_entry(pose_update_index_).template Eval<int>(context);
   }
 
   // Updates the state of geometry world from *all* the inputs. This is the calc
   // method for the corresponding cache entry. The entry *value* (the int) is
   // strictly a dummy -- the value is unimportant; only the side effect matters.
-  void CalcPoseUpdate(const GeometryContext<T>& context, int*) const;
-
-  // Override of construction to account for
-  //    - instantiating a GeometryContext instance (as opposed to LeafContext),
-  //    - to detect allocation in support of the topology semantics described
-  //      above.
-  std::unique_ptr<systems::LeafContext<T>> DoMakeLeafContext() const override;
+  void CalcPoseUpdate(const systems::Context<T>& context, int*) const;
 
   // Asserts the given source_id is registered, throwing an exception whose
   // message is the given message with the source_id appended if not.
   void ThrowUnlessRegistered(SourceId source_id, const char* message) const;
+
+  // Extracts a mutable reference to the underlying abstract geometry state from
+  // the given context.
+  GeometryState<T>& mutable_geometry_state(systems::Context<T>* context) const;
+
+  // Extracts a reference to the underlying abstract geometry state from the
+  // given context.
+  const GeometryState<T>& geometry_state(
+      const systems::Context<T>& context) const;
 
   // A struct that stores the port indices for a given source.
   // TODO(SeanCurtis-TRI): Consider making these TypeSafeIndex values.

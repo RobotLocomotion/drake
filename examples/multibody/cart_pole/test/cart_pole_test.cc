@@ -40,7 +40,7 @@ class CartPoleTest : public ::testing::Test {
     Parser(&cart_pole_).AddModelFromFile(full_name);
 
     // Add gravity to the model.
-    cart_pole_.AddForceElement<UniformGravityFieldElement>(
+    cart_pole_.mutable_gravity_field().set_gravity_vector(
         -default_parameters_.gravity() * Vector3<double>::UnitZ());
 
     // Now the model is complete.
@@ -67,7 +67,7 @@ class CartPoleTest : public ::testing::Test {
 
   // Makes the mass matrix for the cart-pole system.
   // See http://underactuated.csail.mit.edu/underactuated.html?chapter=acrobot.
-  Matrix2<double> CartPoleHandWritenMassMatrix(double theta) {
+  Matrix2<double> CartPoleHandWrittenMassMatrix(double theta) {
     const double mc = default_parameters_.mc();  // mass of the cart in kg.
     const double mp = default_parameters_.mp();  // Pole's point mass in kg.
     const double l = default_parameters_.l();    // length of the pole in m
@@ -78,7 +78,7 @@ class CartPoleTest : public ::testing::Test {
     return M;
   }
 
-  Vector4<double> CartPoleHandWritenDynamics(
+  Vector4<double> CartPoleHandWrittenDynamics(
       const Vector2<double>& q, const Vector2<double>& v) {
     const double mp = default_parameters_.mp();  // Pole's point mass in kg.
     const double l = default_parameters_.l();    // length of the pole in m
@@ -86,7 +86,7 @@ class CartPoleTest : public ::testing::Test {
 
     // Mass matrix.
     const double theta = q(1);
-    const Matrix2<double> M = CartPoleHandWritenMassMatrix(theta);
+    const Matrix2<double> M = CartPoleHandWrittenMassMatrix(theta);
 
     // Coriolis and gyroscopic terms.
     const double theta_dot = v(1);
@@ -122,7 +122,7 @@ TEST_F(CartPoleTest, MassMatrix) {
   Matrix2<double> M;
   pole_pin_->set_angle(context_.get(), theta);
   cart_pole_.CalcMassMatrixViaInverseDynamics(*context_, &M);
-  Matrix2<double> M_expected = CartPoleHandWritenMassMatrix(theta);
+  Matrix2<double> M_expected = CartPoleHandWrittenMassMatrix(theta);
 
   // Matrix verified to this tolerance.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
@@ -152,7 +152,7 @@ TEST_F(CartPoleTest, SystemDynamics) {
       cart_pole_.AllocateTimeDerivatives();
   cart_pole_.CalcTimeDerivatives(*context_, xc_dot.get());
 
-  const Vector4<double> xc_dot_expected = CartPoleHandWritenDynamics(q, v);
+  const Vector4<double> xc_dot_expected = CartPoleHandWrittenDynamics(q, v);
 
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(xc_dot->CopyToVector(),

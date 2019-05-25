@@ -79,10 +79,12 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
 
     cost += ty(0).value();
     if (!grad.empty()) {
-      for (int j = 0; j < num_vars; ++j) {
-        size_t vj_index =
-            prog->FindDecisionVariableIndex(binding.variables()(j));
-        grad[vj_index] += ty(0).derivatives()(vj_index);
+      if (ty(0).derivatives().size() > 0) {
+        for (int j = 0; j < num_vars; ++j) {
+          const size_t vj_index =
+              prog->FindDecisionVariableIndex(binding.variables()(j));
+          grad[vj_index] += ty(0).derivatives()(vj_index);
+        }
       }
     }
   }
@@ -224,9 +226,11 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
         grad_sign = -1;
       }
       DRAKE_ASSERT(wrapped->vars->cols() == 1);
-      for (int j = 0; j < wrapped->vars->rows(); ++j) {
-        grad[(result_idx * n) + v_index[j]] =
-            ty(i).derivatives()(v_index[j]) * grad_sign;
+      if (ty(i).derivatives().size() > 0) {
+        for (int j = 0; j < wrapped->vars->rows(); ++j) {
+          grad[(result_idx * n) + v_index[j]] =
+              ty(i).derivatives()(v_index[j]) * grad_sign;
+        }
       }
       result_idx++;
       DRAKE_ASSERT(result_idx <= m);

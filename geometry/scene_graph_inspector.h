@@ -8,6 +8,7 @@
 
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_state.h"
+#include "drake/geometry/shape_specification.h"
 
 namespace drake {
 namespace geometry {
@@ -354,6 +355,16 @@ class SceneGraphInspector {
   bool CollisionFiltered(GeometryId id1, GeometryId id2) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->CollisionFiltered(id1, id2);
+  }
+
+  /** Introspects the geometry indicated by the given `id`. The geometry will
+   be passed into the provided `reifier`. This is the mechanism by which
+   external code can discover and respond to the different types of geometries
+   stored in SceneGraph. See ShapeToString as an example.
+   @throws std::logic_error if the `id` does not refer to a valid geometry.  */
+  void Reify(GeometryId id, ShapeReifier* reifier) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    state_->GetShape(id).Reify(reifier);
   }
 
   //@}

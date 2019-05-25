@@ -14,7 +14,6 @@ drake_cc_package_library(
     name = "geometry",
     deps = [
         ":frame_kinematics",
-        ":geometry_context",
         ":geometry_frame",
         ":geometry_ids",
         ":geometry_index",
@@ -31,6 +30,7 @@ drake_cc_package_library(
         ":scene_graph",
         ":scene_graph_inspector",
         ":shape_specification",
+        ":shape_to_string",
         ":utilities",
     ],
 )
@@ -72,16 +72,6 @@ drake_cc_library(
         "//common:autodiff",
         "//common:essential",
         "//common:symbolic",
-    ],
-)
-
-drake_cc_library(
-    name = "geometry_context",
-    srcs = ["geometry_context.cc"],
-    hdrs = ["geometry_context.h"],
-    deps = [
-        ":geometry_state",
-        "//systems/framework:leaf_context",
     ],
 )
 
@@ -179,10 +169,10 @@ drake_cc_library(
         "scene_graph.h",
     ],
     deps = [
-        ":geometry_context",
         ":geometry_state",
         ":scene_graph_inspector",
         "//common:essential",
+        "//geometry/query_results:contact_surface",
         "//geometry/query_results:penetration_as_point_pair",
         "//geometry/query_results:signed_distance_pair",
         "//geometry/query_results:signed_distance_to_point",
@@ -251,6 +241,16 @@ drake_cc_library(
     srcs = ["shape_specification.cc"],
     hdrs = ["shape_specification.h"],
     deps = ["//common:essential"],
+)
+
+drake_cc_library(
+    name = "shape_to_string",
+    srcs = ["shape_to_string.cc"],
+    hdrs = ["shape_to_string.h"],
+    deps = [
+        ":shape_specification",
+        "@fmt",
+    ],
 )
 
 drake_cc_library(
@@ -360,7 +360,7 @@ drake_cc_googletest(
         ":geometry_frame",
         ":geometry_instance",
         ":scene_graph",
-        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities",
     ],
 )
 
@@ -377,6 +377,13 @@ drake_cc_googletest(
     deps = [
         ":shape_specification",
         "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "shape_to_string_test",
+    deps = [
+        ":shape_to_string",
     ],
 )
 

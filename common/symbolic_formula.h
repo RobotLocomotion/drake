@@ -337,8 +337,8 @@ Formula isfinite(const Expression& e);
  *
  * @throws std::runtime_error if @p m is not symmetric.
  *
- * @note This method checks if @p m is symmetric by calling `math::IsSymmetric`
- * function which can be costly. If you want to avoid it, please consider using
+ * @note This method checks if @p m is symmetric, which can be costly. If you
+ * want to avoid it, please consider using
  * `positive_semidefinite(m.triangularView<Eigen::Lower>())` or
  * `positive_semidefinite(m.triangularView<Eigen::Upper>())` instead of
  * `positive_semidefinite(m)`.

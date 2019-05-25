@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "drake/automotive/maliput/api/rules/phase_ring.h"
 #include "drake/automotive/maliput/api/rules/phase_ring_book.h"
@@ -37,6 +38,8 @@ class ManualPhaseRingBook : public api::rules::PhaseRingBook {
   void RemovePhaseRing(const api::rules::PhaseRing::Id& ring_id);
 
  private:
+  std::vector<api::rules::PhaseRing::Id> DoGetPhaseRings() const override;
+
   optional<api::rules::PhaseRing> DoGetPhaseRing(
       const api::rules::PhaseRing::Id& ring_id) const override;
 

@@ -312,11 +312,29 @@ void EvaluateNonlinearConstraints(
       F[(*constraint_index)++] = static_cast<snopt::doublereal>(ty(i).value());
     }
 
-    for (snopt::integer i = 0; i < static_cast<snopt::integer>(num_constraints);
-         i++) {
-      for (int j = 0; j < num_v_variables; ++j) {
-        G[(*grad_index)++] =
-            static_cast<snopt::doublereal>(ty(i).derivatives()(j));
+    const optional<std::vector<std::pair<int, int>>>&
+        gradient_sparsity_pattern =
+            binding.evaluator()->gradient_sparsity_pattern();
+    if (gradient_sparsity_pattern.has_value()) {
+      for (const auto& nonzero_entry : gradient_sparsity_pattern.value()) {
+        G[(*grad_index)++] = static_cast<snopt::doublereal>(
+            ty(nonzero_entry.first).derivatives().size() > 0
+                ? ty(nonzero_entry.first).derivatives()(nonzero_entry.second)
+                : 0.0);
+      }
+    } else {
+      for (snopt::integer i = 0;
+           i < static_cast<snopt::integer>(num_constraints); i++) {
+        if (ty(i).derivatives().size() > 0) {
+          for (int j = 0; j < num_v_variables; ++j) {
+            G[(*grad_index)++] =
+                static_cast<snopt::doublereal>(ty(i).derivatives()(j));
+          }
+        } else {
+          for (int j = 0; j < num_v_variables; ++j) {
+            G[(*grad_index)++] = snopt::doublereal(0.0);
+          }
+        }
       }
     }
   }
@@ -361,10 +379,13 @@ void EvaluateAllCosts(const MathematicalProgram& prog,
 
     F[0] += static_cast<snopt::doublereal>(ty(0).value());
 
-    for (int j = 0; j < num_v_variables; ++j) {
-      size_t vj_index = prog.FindDecisionVariableIndex(binding.variables()(j));
-      cost_gradient[vj_index] +=
-          static_cast<snopt::doublereal>(ty(0).derivatives()(j));
+    if (ty(0).derivatives().size() > 0) {
+      for (int j = 0; j < num_v_variables; ++j) {
+        size_t vj_index =
+            prog.FindDecisionVariableIndex(binding.variables()(j));
+        cost_gradient[vj_index] +=
+            static_cast<snopt::doublereal>(ty(0).derivatives()(j));
+      }
     }
   }
   for (const auto cost_gradient_index : cost_gradient_indices) {
@@ -445,8 +466,13 @@ void UpdateNumNonlinearConstraintsAndGradients(
     int* num_nonlinear_constraints, int* max_num_gradients) {
   for (auto const& binding : constraint_list) {
     auto const& c = binding.evaluator();
-    int n = c->num_constraints();
-    *max_num_gradients += n * binding.GetNumElements();
+    const int n = c->num_constraints();
+    if (binding.evaluator()->gradient_sparsity_pattern().has_value()) {
+      *max_num_gradients += static_cast<int>(
+          binding.evaluator()->gradient_sparsity_pattern().value().size());
+    } else {
+      *max_num_gradients += n * binding.GetNumElements();
+    }
     *num_nonlinear_constraints += n;
   }
 }
@@ -483,12 +509,27 @@ void UpdateConstraintBoundsAndGradients(
       Fupp[*constraint_index + i] = static_cast<snopt::doublereal>(ub(i));
     }
 
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < static_cast<int>(binding.GetNumElements()); ++j) {
-        iGfun[*grad_index] = *constraint_index + i + 1;  // row order
+    const std::vector<int> bound_var_indices_in_prog =
+        prog.FindDecisionVariableIndices(binding.variables());
+
+    const optional<std::vector<std::pair<int, int>>>&
+        gradient_sparsity_pattern =
+            binding.evaluator()->gradient_sparsity_pattern();
+    if (gradient_sparsity_pattern.has_value()) {
+      for (const auto& nonzero_entry : gradient_sparsity_pattern.value()) {
+        // Fortran is 1-indexed.
+        iGfun[*grad_index] = 1 + *constraint_index + nonzero_entry.first;
         jGvar[*grad_index] =
-            prog.FindDecisionVariableIndex(binding.variables()(j)) + 1;
+            1 + bound_var_indices_in_prog[nonzero_entry.second];
         (*grad_index)++;
+      }
+    } else {
+      for (int i = 0; i < n; i++) {
+        for (int j = 0; j < static_cast<int>(binding.GetNumElements()); ++j) {
+          iGfun[*grad_index] = *constraint_index + i + 1;  // row order
+          jGvar[*grad_index] = bound_var_indices_in_prog[j] + 1;
+          (*grad_index)++;
+        }
       }
     }
 

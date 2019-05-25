@@ -39,9 +39,13 @@ cc_library(
     srcs = [
         "src/qdldl.c",
     ],
+    copts = [
+        "-fvisibility=hidden",
+    ],
     includes = [
         "include",
     ],
+    linkstatic = 1,
 )
 
 install(

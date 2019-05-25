@@ -143,21 +143,22 @@ void TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
 // @param[in] t_final value of time that signals the simulation to stop.
 // t_final is not required to be an exact multiple of dt_max as the
 // integration step is adjusted as necessary to land at exactly t_final.
-// @param[in] maximum_absolute_error_per_integration_step maximum allowable
-// absolute error (for any variable being integrated) for the numerical
-// integrator's internal time-step (which can shrink or grow).
+// @param[in] number_of_periods number of periods of the sinusoidal motion
+// being simulated.  Allowable error scales linearly with this value.
 void  IntegrateForwardWithVariableStepRungeKutta3(
           const FreeBody& torque_free_cylinder_exact,
           const AxiallySymmetricFreeBodyPlant<double>& axisymmetric_plant,
           drake::systems::Context<double>* context,
           drake::systems::ContinuousState<double>* stateDt_drake,
           const double dt_max, const double t_final,
-          const double maximum_absolute_error_per_integration_step) {
-  DRAKE_DEMAND(context != NULL  &&  stateDt_drake != NULL  &&  dt_max >= 0.0);
+          const int number_of_periods) {
+  DRAKE_DEMAND(context != NULL  &&  stateDt_drake != NULL  &&
+               dt_max > 0.0  &&  t_final > 0.0);
 
   // Integrate with variable-step Runge-Kutta3 integrator.
   systems::RungeKutta3Integrator<double> rk3(axisymmetric_plant, context);
   rk3.set_maximum_step_size(dt_max);  // Need before Initialize (or exception).
+  const double maximum_absolute_error_per_integration_step = 1.0E-3;
   rk3.set_target_accuracy(maximum_absolute_error_per_integration_step);
   rk3.Initialize();
 
@@ -170,11 +171,22 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
   const double epsilon_based_on_dt_max = 1.0E-11 * dt_max;
   const double t_final_minus_epsilon = t_final - epsilon_based_on_dt_max;
   while (true) {
-    // At boundary of each numerical integration step, test Drake's simulation
-    // accuracy versus exact (closed-form) solution.
-    // TODO(Mitiguy) Improve this test so that such a large constant need not
-    // be used.
-    const double tolerance = 2048 * maximum_absolute_error_per_integration_step;
+    // At the boundary of each numerical integration step, test Drake's results
+    // versus exact (closed-form) solution.  Based on numerical integration
+    // experiments, the numerical integration seems to scale linearly with time,
+    // so the allowable error tolerance below is scaled linearly with time.
+    // Note: The numerical integration experiments were done by modifying the
+    // MotionGenesis script (see webpage below) so that its inertia parameters
+    // and initial values matched this problems parameters/initial values.
+    // The numerical integrator used by MotionGenesis is Runga-Kutta-Merson,
+    // described at L. Fox, Numerical Solutions of Ordinary and Partial
+    // Differential Equations, Palo Alto: Addison-Wesley, 1962, pp. 24-25
+    // http://www.motiongenesis.com/MGWebSite/MGGetStarted/MGExampleSpinStability3DRigidBody/MGExampleSpinStability3DRigidBody.html
+    const double t = context->get_time();
+    const double integrator_value = 256;  // Specific to each integrator.
+    const double scale = number_of_periods * integrator_value * t / t_final;
+    const double tolerance =
+        (1 + scale) * maximum_absolute_error_per_integration_step;
     TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
         torque_free_cylinder_exact,
         axisymmetric_plant,
@@ -182,7 +194,7 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
         stateDt_drake,
         tolerance);
 
-    const double t = context->get_time();
+    // Check if simulation is finished.
     if (t >= t_final_minus_epsilon) break;
 
     // Step forward by at most dt.
@@ -252,14 +264,28 @@ void  TestDrakeSolutionForSpecificInitialValue(
 
   // Maybe numerically integrate.
   if (should_numerically_integrate) {
-    const double dt_max = 0.2, t_final = 10.0;
-    const double maximum_absolute_error_per_integration_step = 1.0E-3;
+    // Calculate the two "pseudo" frequencies associated with this motion.  Use
+    // the maximum of these two frequencies to approximate the time period of
+    // one full cycle of motion.  Use this to determine the length of time to
+    // integrate such that we capture four periods of motion, or if the maximum
+    // frequency is too small, ten seconds of time.
+    double s, p;
+    std::tie(s, p) = torque_free_cylinder_exact.CalcAngularRates_s_p();
+    const double frequency = std::max(kEpsilon, std::max(std::abs(s), p));
+    const double period = 2 * M_PI / frequency;
+    const int number_of_periods = 4;
+    const double t_final = std::max(number_of_periods * period, 10.0);
+
+    // To decide a maximum integration step, it seemed a reasonably "good" sine
+    // curve resulted from 17 data points (16 intervals).
+    const double reasonable_number_of_intervals_per_period = 16.0;
+    const double dt_max = period / reasonable_number_of_intervals_per_period;
 
     // Integrate forward, testing Drake's results vs. exact solution frequently.
     IntegrateForwardWithVariableStepRungeKutta3(
         torque_free_cylinder_exact,
         axisymmetric_plant, context, stateDt_drake,
-        dt_max, t_final, maximum_absolute_error_per_integration_step);
+        dt_max, t_final, number_of_periods);
   }
 }
 
@@ -321,7 +347,7 @@ void  TestDrakeSolutionForVariousInitialValues(
 // - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
 //  (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
 //   https://ecommons.cornell.edu/handle/1813/637
-GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
+GTEST_TEST(uniformSolidCylinderTorqueFree, testNumericalIntegration) {
   // Store initial values in a class that can calculate an exact solution.
   // Store gravitational acceleration expressed in N (e.g. [0, 0, -9.81]).
   const Quaterniond quat_NB(1, 0, 0, 0);    // Initial value.
@@ -344,6 +370,115 @@ GTEST_TEST(uniformSolidCylinderTorqueFree, testA) {
                                            axisymmetric_plant);
 }
 
+// This helper function checks Kane's exact solution against an expected simple
+// solution for torque-free motion of an axisymmetric rigid body B.  The
+// expected simple solution is associated with simple spin about Bz (B's inertia
+// symmetry axis) or simple spin about some combination of Bx and By.  With
+// these restrictions, the equation Torque = I*theta'' is applicable where
+// Torque = 0 and theta'' is the second time derivative of the angle theta.
+// @param[in] torque_free_cylinder_kane class that stores initial values,
+//            gravity, and methods to calculate Kane's solution at time t.
+// @param[in] thetaDt body B's initial angular spin rate (radians/second).
+// @param[in] lambda unit vector in B's initial angular velocity direction,
+//            which must be either Bz, -Bz, or a combination of Bx and By.
+void TestKaneExactSolution(FreeBody torque_free_cylinder_kane,
+                           const double thetaDt, const Vector3d& lambda) {
+  ASSERT_NE(thetaDt, 0);  // Ensure B's angular velocity is non-zero.
+
+  // Ensure lambda is a unit vector and its Bz component is 1, -1, or 0.
+  ASSERT_TRUE(std::abs(1 - lambda.norm()) <= 4 * kEpsilon);
+  const bool is_simple_Bz_spin = std::abs(1 - std::abs(lambda(2))) < 4*kEpsilon;
+  ASSERT_TRUE(is_simple_Bz_spin || lambda(2) == 0);
+
+  // As described above, the governing ODE for this test is theta'' = 0.
+  // Knowing the initial value of theta is theta(t = 0) = 0, this ODE's solution
+  // is theta' = constant and theta(t) = theta' * t.
+  const double t = 1.23;             // Arbitrary value of time.
+  const double theta = thetaDt * t;  // Solution to ODE.
+  const Vector3d w_expected = thetaDt * lambda;
+  const Vector3d wDt_expected(0, 0, 0);
+
+  // theta-lambda defines this quaternion [Kane, pg. 12 1983] by
+  const double q0 = std::cos(theta/2);
+  const double q1 = lambda(0) * std::sin(theta/2);
+  const double q2 = lambda(1) * std::sin(theta/2);
+  const double q3 = lambda(2) * std::sin(theta/2);
+
+  // Time-differentiating the previous expressions for q0, q1, q2, q3 gives
+  // q0Dt, q1Dt, q2Dt, q3Dt.  Note: Since this test employs simple 2D spin,
+  // lambda(i) (i = 0, 1, 2) are constant.  In general 3D rotational motion,
+  // lambda(i) (i = 0, 1, 2) are not constant.
+  const double q0Dt = -0.5 * std::sin(theta/2) * thetaDt;
+  const double q1Dt = 0.5 * lambda(0) * std::cos(theta/2) * thetaDt;
+  const double q2Dt = 0.5 * lambda(1) * std::cos(theta/2) * thetaDt;
+  const double q3Dt = 0.5 * lambda(2) * std::cos(theta/2) * thetaDt;
+
+  // Package the previous expected results for subsequent comparison with Kane.
+  const Quaterniond quat_expected(q0, q1, q2, q3);
+  const Vector4d quatDt_expected(q0Dt, q1Dt, q2Dt, q3Dt);
+
+  // Get Kane's general 3D solution for B's given initial angular velocity.
+  torque_free_cylinder_kane.set_initial_w_NB_B(w_expected);
+  Quaterniond quat_kane;
+  Vector4d quatDt_kane;
+  Vector3d w_kane, wDt_kane;
+  std::tie(quat_kane, quatDt_kane, w_kane, wDt_kane) =
+      torque_free_cylinder_kane.CalculateExactRotationalSolutionNB(t);
+
+  // Ensure Kane's general 3D solution matches this 2D specialized solution.
+  // To that end, compare Kane's angular velocity/acceleration and Kane's
+  // quaternion and its time-derivative to their expected results.
+
+  // Ensure Kane's angular velocity/accelerations match the expected ones.
+  EXPECT_TRUE(CompareMatrices(w_kane,     w_expected,  4 * kEpsilon));
+  EXPECT_TRUE(CompareMatrices(wDt_kane, wDt_expected,  4 * kEpsilon));
+
+  // Since more than one quaternion is associated with the same orientation,
+  // compare Kane's quaternion with the expected quaternion.
+  const bool is_ok_quat = math::AreQuaternionsEqualForOrientation(
+      quat_kane, quat_expected, 8 * kEpsilon);
+  EXPECT_TRUE(is_ok_quat);
+
+  // Ensure Kane's quaternion time-derivative matches expected angular velocity.
+  EXPECT_TRUE(math::IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
+    quat_kane, quatDt_kane, w_expected, 8 * kEpsilon));
+
+  // Ensure expected quaternion time-derivative matches Kane's angular velocity.
+  EXPECT_TRUE(math::IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
+      quat_expected, quatDt_expected, w_kane, 8 * kEpsilon));
+}
+
+
+// This test helps verify the analytical solution proposed by [Kane, 1983] for
+// the torque-free 3D rotational motion of an axisymmetric rigid body B (e.g., a
+// uniform cylinder) in a Newtonian frame (World) N.  The initial values used in
+// this test make it easy to compute an associated 2D solution for simple spin.
+// Kane's analytical 3D solution depends on intermediate calculations from the
+// FreeBody method CalcAngularRates_s_p().  Hence, this test also helps
+// verify the underlying FreeBody method CalcAngularRates_s_p().
+GTEST_TEST(uniformSolidCylinderTorqueFree, testKaneExactSolution) {
+  const Quaterniond quat_NB(1, 0, 0, 0);  // Initial value -- aligned axes.
+  const Vector3d w_NB_B(0, 0, 0);         // Initial value -- overwritten.
+  const Vector3d p_NoBcm_N(0, 0, 0);      // Initial value.
+  const Vector3d v_NBcm_B(0, 0, 0);       // Initial value.
+  const Vector3d gravity(0, 0, 0);        // No gravity.
+  FreeBody torque_free_cylinder_kane(quat_NB, w_NB_B, p_NoBcm_N, v_NBcm_B,
+                                     gravity);
+
+  double thetaDt = 4.56;         // Spin rate.
+  Vector3d lambda(1, 0, 0);      // Test spin about Bx.
+  TestKaneExactSolution(torque_free_cylinder_kane, thetaDt, lambda);
+
+  lambda = Vector3d(0, 1, 0);    // Test spin about By.
+  TestKaneExactSolution(torque_free_cylinder_kane, thetaDt, lambda);
+
+  lambda = Vector3d(0, 0, 1);    // Test spin about Bz.
+  TestKaneExactSolution(torque_free_cylinder_kane, thetaDt, lambda);
+
+  const double xy = 1.0/std::sqrt(2);
+  lambda = Vector3d(xy, xy, 0);  // Test spin about (Bx + By) / sqrt(2).
+  TestKaneExactSolution(torque_free_cylinder_kane, thetaDt, lambda);
+}
 
 }  // namespace
 }  // namespace free_body

@@ -8,7 +8,7 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_instance.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/geometry_roles.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 
@@ -24,13 +24,13 @@ using geometry::Cylinder;
 using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
-using geometry::MakeDrakeVisualizerProperties;
+using geometry::MakePhongIllustrationProperties;
 using geometry::Sphere;
 using std::make_unique;
 
 const PendulumGeometry* PendulumGeometry::AddToBuilder(
     systems::DiagramBuilder<double>* builder,
-    const systems::OutputPort<double>& pendulum_state,
+    const systems::OutputPort<double>& pendulum_state_port,
     geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(builder != nullptr);
   DRAKE_THROW_UNLESS(scene_graph != nullptr);
@@ -39,7 +39,7 @@ const PendulumGeometry* PendulumGeometry::AddToBuilder(
       std::unique_ptr<PendulumGeometry>(
           new PendulumGeometry(scene_graph)));
   builder->Connect(
-      pendulum_state,
+      pendulum_state_port,
       pendulum_geometry->get_input_port(0));
   builder->Connect(
       pendulum_geometry->get_output_port(0),
@@ -71,7 +71,7 @@ PendulumGeometry::PendulumGeometry(geometry::SceneGraph<double>* scene_graph) {
       make_unique<GeometryInstance>(Isometry3d(Translation3d(0., 0., .025)),
                                     make_unique<Box>(.05, 0.05, 0.05), "base"));
   scene_graph->AssignRole(
-      source_id_, id, MakeDrakeVisualizerProperties(Vector4d(.3, .6, .4, 1)));
+      source_id_, id, MakePhongIllustrationProperties(Vector4d(.3, .6, .4, 1)));
 
   // The arm.
   id = scene_graph->RegisterGeometry(
@@ -80,7 +80,7 @@ PendulumGeometry::PendulumGeometry(geometry::SceneGraph<double>* scene_graph) {
           Isometry3d(Translation3d(0, 0, -length / 2.)),
           make_unique<Cylinder>(0.01, length), "arm"));
   scene_graph->AssignRole(
-      source_id_, id, MakeDrakeVisualizerProperties(Vector4d(.9, .1, 0, 1)));
+      source_id_, id, MakePhongIllustrationProperties(Vector4d(.9, .1, 0, 1)));
 
   // The mass at the end of the arm.
   id = scene_graph->RegisterGeometry(
@@ -89,8 +89,10 @@ PendulumGeometry::PendulumGeometry(geometry::SceneGraph<double>* scene_graph) {
           Isometry3d(Translation3d(0, 0, -length)),
           make_unique<Sphere>(mass / 40.), "arm point mass"));
   scene_graph->AssignRole(
-      source_id_, id, MakeDrakeVisualizerProperties(Vector4d(0, 0, 1, 1)));
+      source_id_, id, MakePhongIllustrationProperties(Vector4d(0, 0, 1, 1)));
 }
+
+PendulumGeometry::~PendulumGeometry() = default;
 
 void PendulumGeometry::OutputGeometryPose(
     const systems::Context<double>& context,

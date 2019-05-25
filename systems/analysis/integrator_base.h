@@ -215,7 +215,8 @@ class IntegratorBase {
     return (!supports_error_estimation() || fixed_step_mode_);
   }
 
-  /** Request that the integrator attempt to achieve a particular accuracy for
+  /**
+   * Request that the integrator attempt to achieve a particular accuracy for
    * the continuous portions of the simulation. Otherwise a default accuracy is
    * chosen for you. This may be ignored for fixed-step integration since
    * accuracy control requires variable step sizes. You should call
@@ -233,6 +234,14 @@ class IntegratorBase {
    * results. By convention it is supplied as `10^-digits`, meaning that an
    * accuracy of 1e-3 provides about three significant digits. For more
    * information, see [Sherman 2011].
+   *
+   * Implicit integrators additionally use the accuracy setting for determining
+   * when the underlying Newton-Raphson root finding process has converged. For
+   * those integrators, the accuracy setting also limits the allowable iteration
+   * error in the Newton-Raphson process. Looser accuracy in that process
+   * certainly implies greater error in the ODE solution and might impact the
+   * stability of the solution negatively as well.
+   *
    * - M. Sherman, et al. Procedia IUTAM 2:241-261 (2011), Section 3.3.
    *   http://dx.doi.org/10.1016/j.piutam.2011.04.023
    * @throws std::logic_error if integrator does not support error
@@ -1713,7 +1722,8 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
     T next_step_size;
     std::tie(step_succeeded, next_step_size) = CalcAdjustedStepSize(
         err_norm, step_size_to_attempt, &at_minimum_step_size);
-    SPDLOG_DEBUG(drake::log(), "Next step size: {}", next_step_size);
+    SPDLOG_DEBUG(drake::log(), "Succeeded? {}, Next step size: {}",
+        step_succeeded, next_step_size);
 
     if (step_succeeded) {
       // Only update the next step size (retain the previous one) if the

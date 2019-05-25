@@ -64,6 +64,8 @@ struct BodyTopology {
     if (body_frame != other.body_frame) return false;
     if (level != other.level) return false;
     if (body_node != other.body_node) return false;
+    if (is_floating != other.is_floating) return false;
+    if (has_quaternion_dofs != other.has_quaternion_dofs) return false;
     return true;
   }
 
@@ -97,6 +99,16 @@ struct BodyTopology {
 
   /// Index to the tree body node in the MultibodyTree.
   BodyNodeIndex body_node;
+
+  /// `true` if this topology corresponds to a floating body in space.
+  bool is_floating{false};
+
+  /// `true` if this topology corresponds to a floating body with rotations
+  /// parametrized by a quaternion.
+  bool has_quaternion_dofs{false};
+
+  int floating_positions_start{-1};
+  int floating_velocities_start{-1};
 };
 
 /// Data structure to store the topological information associated with a
@@ -498,6 +510,12 @@ class MultibodyTreeTopology {
     return bodies_[index];
   }
 
+  /// Mutable version of get_body().
+  BodyTopology& get_mutable_body(BodyIndex index) {
+    DRAKE_ASSERT(index < num_bodies());
+    return bodies_[index];
+  }
+
   /// Returns a constant reference to the corresponding BodyTopology given a
   /// BodyIndex.
   const MobilizerTopology& get_mobilizer(MobilizerIndex index) const {
@@ -842,6 +860,18 @@ class MultibodyTreeTopology {
     }
     DRAKE_DEMAND(position_index == num_positions_);
     DRAKE_DEMAND(velocity_index == num_states_);
+
+    // Update position/velocity indexes for free bodies so that they are easily
+    // accessible.
+    for (BodyTopology& body : bodies_) {
+      if (body.is_floating) {
+        DRAKE_DEMAND(body.inboard_mobilizer.is_valid());
+        const MobilizerTopology& mobilizer =
+            get_mobilizer(body.inboard_mobilizer);
+        body.floating_positions_start = mobilizer.positions_start;
+        body.floating_velocities_start = mobilizer.velocities_start;
+      }
+    }
 
     // We are done with a successful Finalize() and we mark it as so.
     // Do not add any more code after this!

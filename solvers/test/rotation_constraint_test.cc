@@ -8,7 +8,6 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/solve.h"
@@ -43,8 +42,16 @@ void AddObjective(MathematicalProgram* prog,
 // evaluates a mesh of points within those limits.  This test confirms that
 // of the rotation matrices generated from rotations with those limits are
 // still feasible after the RPY limits constraints have been applied.
-GTEST_TEST(RotationTest, TestRPYLimits) {
-  for (int limits = (1 << 1); limits < (1 << 7); limits += 2) {
+class TestRpyLimitsFixture : public ::testing::TestWithParam<int> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestRpyLimitsFixture)
+  TestRpyLimitsFixture() = default;
+};
+
+TEST_P(TestRpyLimitsFixture, TestRpyLimits) {
+  const int limits = GetParam();
+  // Add brace scope to avoid reflowing all of this code.
+  {
     MathematicalProgram prog;
     auto Rvar = NewRotationMatrixVars(&prog);
     AddBoundingBoxConstraintsImpliedByRollPitchYawLimits(
@@ -88,6 +95,10 @@ GTEST_TEST(RotationTest, TestRPYLimits) {
     }
   }
 }
+
+INSTANTIATE_TEST_CASE_P(
+    RotationTest, TestRpyLimitsFixture,
+    ::testing::Range(1 << 1, 1 << 7, 2));
 
 // Sets up and solves an optimization:
 // <pre>

@@ -27,10 +27,24 @@ struct SphereSpecification {
 };
 
 struct BoxSpecification {
+  BoxSpecification(Eigen::Vector3d size_in, double density,
+                   CoulombFriction<double> friction_in,
+                   optional<math::RigidTransformd> X_WB_in)
+      : size(std::move(size_in)),
+        friction{std::move(friction_in)},
+        X_WB(std::move(X_WB_in)) {
+    const double mass = size(0) * size(1) * size(2) * density;
+    const UnitInertia<double> I(
+        1.0 / 12 * (size(1) * size(1) + size(2) * size(2)),
+        1.0 / 12 * (size(0) * size(0) + size(2) * size(2)),
+        1.0 / 12 * (size(0) * size(0) + size(1) * size(1)));
+    inertia = SpatialInertia<double>(mass, Eigen::Vector3d::Zero(), I);
+  }
   // Full dimensions of a box (not the half dimensions).
   Eigen::Vector3d size;
   SpatialInertia<double> inertia;
   CoulombFriction<double> friction;
+  optional<math::RigidTransform<double>> X_WB;
 };
 
 template <typename T>
@@ -43,6 +57,8 @@ class FreeSpheresAndBoxes {
                       CoulombFriction<double> ground_friction);
 
   const systems::Diagram<T>& diagram() const { return *diagram_; }
+
+  systems::Diagram<T>* get_mutable_diagram() { return diagram_.get(); }
 
   const MultibodyPlant<T>& plant() const { return *plant_; }
 

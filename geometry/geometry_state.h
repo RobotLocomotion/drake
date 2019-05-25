@@ -203,7 +203,7 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetName(GeometryId) const.  */
   const std::string& get_name(GeometryId geometry_id) const;
 
-  /** Implementation of SceneGraphInspector::GetShape().  */
+  /** Support for SceneGraphInspector::Reify().  */
   const Shape& GetShape(GeometryId id) const;
 
   /** Implementation of SceneGraphInspector::X_FG().  */
@@ -230,24 +230,13 @@ class GeometryState {
    registered frames.  */
   //@{
 
-  /** Reports the pose of the frame with the given id.
-   @param frame_id  The identifier of the queried frame.
-   @returns The pose in the world (X_WF) of the identified frame.
-   @throws std::logic_error if the frame id is not valid.  */
+  /** Implementation of QueryObject::X_WF().  */
   const Isometry3<T>& get_pose_in_world(FrameId frame_id) const;
 
-  /** Reports the pose of the geometry with the given id.
-   @param geometry_id  The identifier of the queried geometry.
-   @returns The pose in the world (X_WG) of the identified geometry.
-   @throws std::logic_error if the geometry id is not valid.  */
+  /** Implementation of QueryObject::X_WG().  */
   const Isometry3<T>& get_pose_in_world(GeometryId geometry_id) const;
 
-  /** Reports the pose of the frame with the given id relative to its parent
-   frame. If the frame's parent is the world, the value should be the same as
-   a call to get_pose_in_world().
-   @param frame_id  The identifier of the queried frame.
-   @returns The pose in the _parent_ frame (X_PF) of the identified frame.
-   @throws std::logic_error if the frame id is not valid.  */
+  /** Implementation of QueryObject::X_PF().  */
   const Isometry3<T>& get_pose_in_parent(FrameId frame_id) const;
 
   //@}
@@ -392,6 +381,12 @@ class GeometryState {
         geometry_index_to_id_map_);
   }
 
+  /** See QueryObject::ComputeContactSurfaces() for documentation.  */
+  std::vector<ContactSurface<T>> ComputeContactSurfaces() const {
+    return geometry_engine_->ComputeContactSurfaces(
+        geometry_index_to_id_map_);
+  }
+
   //@}
 
   /** @name               Proximity filters
@@ -419,30 +414,20 @@ class GeometryState {
   //---------------------------------------------------------------------------
   /** @name                Signed Distance Queries
 
-  Refer to @ref signed_distance_query "Signed Distance Queries" for more details.
-  */
+   Refer to @ref signed_distance_query "Signed Distance Queries" for more
+   details.  */
 
   //@{
 
-  /**
-   * Computes the signed distance together with the witness points across all
-   * pairs of geometries in the world. Reports both the separating geometries
-   * and penetrating geometries.
-   * @retval witness_pairs A vector of reporting the signed distance
-   * characterized as witness point pairs. Notice that this is an O(N²)
-   * operation, where N is the number of geometries in the world. We report the
-   * distance between dynamic objects, or between a dynamic object and an
-   * anchored object. We DO NOT report the distance between two anchored
-   * objects.
-   */
-  std::vector<SignedDistancePair<double>>
-  ComputeSignedDistancePairwiseClosestPoints() const {
+  /** Supporting function for
+   QueryObject::ComputeSignedDistancePairwiseClosestPoints().  */
+  std::vector<SignedDistancePair<T>>
+  ComputeSignedDistancePairwiseClosestPoints(const double max_distance) const {
     return geometry_engine_->ComputeSignedDistancePairwiseClosestPoints(
-        geometry_index_to_id_map_);
+        geometry_index_to_id_map_, X_WG_, max_distance);
   }
 
-  /** Performs work in support of QueryObject::ComputeSignedDistanceToPoint().
-   */
+  /** Supporting function for QueryObject::ComputeSignedDistanceToPoint().  */
   std::vector<SignedDistanceToPoint<T>>
   ComputeSignedDistanceToPoint(
       const Vector3<T> &p_WQ,
@@ -715,6 +700,7 @@ class GeometryState {
   // frame Fₖ, and the world frame W is the parent of frame Fₙ.
   // In other words, it is the full evaluation of the kinematic chain from the
   // geometry to the world frame.
+  // TODO(SeanCurtis-TRI): Rename this to X_WGs_ to reflect multiplicity.
   std::vector<Isometry3<T>> X_WG_;
 
   // The pose of each frame relative to the _world_ frame.

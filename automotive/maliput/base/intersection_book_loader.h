@@ -17,8 +17,8 @@ namespace maliput {
 /// @param input The YAML Intersections document.
 /// @param road_rulebook The book containing the road rules.
 /// @param phase_ring_book The book containing the phase rings.
-/// @param phase_provider The phase provider. Needed to set the initial phase
-/// of the intersections being loaded.
+/// @param phase_provider The phase provider. Adds PhaseRings and sets their
+/// initial states.
 ///
 /// @return The newly created api::IntersectionBook instance.
 std::unique_ptr<api::IntersectionBook> LoadIntersectionBook(
@@ -32,8 +32,8 @@ std::unique_ptr<api::IntersectionBook> LoadIntersectionBook(
 /// @param filename The YAML file that contains a Intersections document.
 /// @param road_rulebook The book containing the road rules.
 /// @param phase_ring_book The book containing the phase rings.
-/// @param phase_provider The phase provider. Needed to set the initial phase
-/// of the intersections being loaded.
+/// @param phase_provider The phase provider. Adds PhaseRings and sets their
+/// initial states.
 ///
 /// @return The newly created api::IntersectionBook instance.
 std::unique_ptr<api::IntersectionBook> LoadIntersectionBookFromFile(

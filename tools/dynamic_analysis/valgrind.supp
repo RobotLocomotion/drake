@@ -232,29 +232,6 @@
 
 # Started happening when Mosek got updated to 8.1.0.51. PR 8673
 {
-   <mosek-15>
-   Memcheck:Leak
-   match-leak-kinds: possible
-   fun:malloc
-   fun:mm_account_ptr_by_tid..0
-   fun:mkl_serv_allocate
-   fun:mkl_blas_avx2_dgemm_get_bufs
-   fun:mkl_blas_avx2_xdsyrk_fullacopybcopy
-   fun:mkl_blas_avx2_xdsyrk
-   fun:DSYRK
-   fun:cblas_dsyrk
-   fun:MSK_GENERIC_CPU_mathenv_syrk_
-   fun:ipfac_computehatschurpushpartial
-   fun:ipfac_computehatschur
-   fun:ipfac_factor
-   fun:hom_start
-   fun:MSK_hom_optlp
-   fun:MSK_hs_optlp
-   fun:MSK_opt_ipmslv
-}
-
-# Started happening when Mosek got updated to 8.1.0.51. PR 8673
-{
    <mosek-16>
    Memcheck:Leak
    match-leak-kinds: possible
@@ -301,25 +278,14 @@
 
 # Started happening when Mosek got updated to 8.1.0.51. PR 8673
 {
-   <mosek-18>
+   <MSK_GENERIC_CPU_mathenv_syrk>
    Memcheck:Leak
    match-leak-kinds: possible
    fun:malloc
-   fun:mm_account_ptr_by_tid..0
+   ...
    fun:mkl_serv_allocate
-   fun:mkl_blas_avx2_dgemm_get_bufs
-   fun:mkl_blas_avx2_xdsyrk_fullacopybcopy
-   fun:mkl_blas_avx2_xdsyrk
-   fun:DSYRK
-   fun:cblas_dsyrk
+   ...
    fun:MSK_GENERIC_CPU_mathenv_syrk_
-   fun:MSK_GENERIC_CPU_mathenv_psyrk
-   fun:MSK_GENERIC_CPU_mathenv_ppartialsyrk
-   fun:spchol_sparsepullupdate
-   fun:ipfac_hatschurspaatsparsepullupdate
-   fun:spaat_mapsparsepullnew
-   fun:cotton_for32
-   fun:spaat_computeaat
 }
 
 # Started happening when Mosek got updated to 8.1.0.51. PR 8673

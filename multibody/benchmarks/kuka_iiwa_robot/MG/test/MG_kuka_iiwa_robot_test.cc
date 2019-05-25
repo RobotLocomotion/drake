@@ -42,7 +42,8 @@ void CompareEndEffectorPositionVelocityVsExpectedSolution(
 
   // Compare actual results with expected results.
   constexpr double kEpsilon = 10 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(kinematics.rotation_matrix().isApprox(R_NG_expected, kEpsilon));
+  EXPECT_TRUE(
+      kinematics.rotation_matrix().matrix().isApprox(R_NG_expected, kEpsilon));
   EXPECT_TRUE(kinematics.position_vector().isApprox(p_No_Go_N_expected,
       kEpsilon));
   EXPECT_TRUE(kinematics.angular_velocity().isApprox(w_NG_N_expected,

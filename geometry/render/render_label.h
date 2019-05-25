@@ -34,21 +34,23 @@ namespace render {
  applications. They are:
 
  - `empty`: a pixel with the `empty` %RenderLabel value indicates that _no_
-   geometry rendered to that pixel. Assigning this label to geometry is _highly_
-   inadvisable and will typically lead to undesirable results.
- - `do_not_render`: any geometry assigned the `do_not_render` tag will _not_ be
+   geometry rendered to that pixel. Implemented as RenderLabel::kEmpty.
+ - `do not render`: any geometry assigned the `do not render` tag will _not_ be
    rendered into a label image. This is a clear declaration that a geometry
    should be omitted. Useful for marking, e.g., glass windows so that the
    visible geometry behind the glass is what is included in the label image.
- - `dont_care`: the `dont_care` label is intended as a convenient dumping
+   Implemented as RenderLabel::kDoNotRender.
+ - `don't care`: the `don't care` label is intended as a convenient dumping
    ground. This would be for geometry that _should_ render into the label image,
    but whose class is irrelevant (e.g., the walls of a room a robot is working
-   in or the background terrain in driving simulation).
- - `unspecified`: in the absence of an explicitly assigned render label, a
-   geometry receives the `unspecified` label. RenderEngine implementations will
-   throw an exception if they are given a geometry with an `unspecified`
-   %RenderLabel, because it is considered to be a likely a defect for an
-   application not to explicitly assign a label to every rendered geometry.
+   in or the background terrain in driving simulation). Implemented as
+   RenderLabel::kDontCare.
+ - `unspecified`: a default-constructed %RenderLabel has an `unspecified` value.
+   Implemented as RenderLabel::kUnspecified.
+
+ Generally, there is no good reason to assign `empty` or `unspecified` labels
+ to a geometry. A RenderEngine implementation is entitled to throw an exception
+ if you attempt to do so.
 
  <h2>Usage</h2>
 
@@ -129,9 +131,16 @@ class RenderLabel {
    @ref reserved_render_label "reserved labels" for details.  */
   //@{
 
+  /** See @ref reserved_render_label "Reserved labels"  */
   static const RenderLabel kEmpty;
+
+  /** See @ref reserved_render_label "Reserved labels"  */
   static const RenderLabel kDoNotRender;
+
+  /** See @ref reserved_render_label "Reserved labels"  */
   static const RenderLabel kDontCare;
+
+  /** See @ref reserved_render_label "Reserved labels"  */
   static const RenderLabel kUnspecified;
 
   /** The largest value that a %RenderLabel can be instantiated on. */
@@ -152,6 +161,10 @@ class RenderLabel {
   friend std::string to_string(const RenderLabel& label);
 
  private:
+  // RenderEngine needs access to encode labels as raster colors and to convert
+  // rasterized colors back into labels.
+  friend class RenderEngine;
+
   // Private constructor precludes general construction except by the approved
   // factories (see above).
   RenderLabel(int value, bool needs_testing)

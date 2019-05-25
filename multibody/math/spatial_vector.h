@@ -5,7 +5,9 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace multibody {
@@ -221,8 +223,23 @@ class SpatialVector {
   ///   V_F.translational() = R_FE * V_E.translational()
   /// </pre>
   /// @returns V_F The same spatial vector re-expressed in frame F.
+  DRAKE_DEPRECATED("2019-08-01", "Use RotationMatrix * SpatialQuantity.")
   friend SpatialQuantity operator*(
       const Matrix3<T>& R_FE, const SpatialQuantity& V_E) {
+    return SpatialQuantity(R_FE * V_E.rotational(), R_FE * V_E.translational());
+  }
+
+  /// This operation re-expresses the spatial vector `V_E` originally expressed
+  /// in frame E, into `V_F`, the same spatial vector expresed in another frame
+  /// F. The transformation requires the rotation matrix `R_FE` representing the
+  /// orientation of the original frame E with respect to frame F.
+  /// The operation performed is: <pre>
+  ///   V_F.rotational()    = R_FE * V_E.rotational(),
+  ///   V_F.translational() = R_FE * V_E.translational()
+  /// </pre>
+  /// @returns V_F The same spatial vector re-expressed in frame F.
+  friend SpatialQuantity operator*(
+      const math::RotationMatrix<T>& R_FE, const SpatialQuantity& V_E) {
     return SpatialQuantity(R_FE * V_E.rotational(), R_FE * V_E.translational());
   }
 

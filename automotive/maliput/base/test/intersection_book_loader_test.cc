@@ -59,9 +59,6 @@ TEST_F(TestLoading2x2IntersectionIntersectionBook, LoadFromFile) {
   EXPECT_TRUE(ring.has_value());
 
   ManualPhaseProvider phase_provider;
-  phase_provider.AddPhaseRing(ring->id(),
-                              api::rules::Phase::Id("NorthSouthPhase"));
-
   std::unique_ptr<IntersectionBook> book = LoadIntersectionBookFromFile(
       filepath_, *rulebook_, *ring_book_, &phase_provider);
   EXPECT_NE(book, nullptr);
