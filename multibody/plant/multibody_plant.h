@@ -1562,61 +1562,61 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_FP_list) const {
-    return internal_tree().CalcBiasForJacobianTranslationalVelocity(
+    return CalcBiasForJacobianTranslationalVelocity(
         context, JacobianWrtVariable::kV, frame_F, p_FP_list,
         world_frame(), world_frame());
   }
 
   /// For a point Fp that is regarded as a point of (fixed/welded to) a frame F,
-  /// computes the bias term `b_AFp` associated with `a_AFp` (Fp's translational
-  /// acceleration in a frame A) with respect to "speeds" 𝑠, where 𝑠 is either
+  /// computes bias term `abias_DFp` associated with `a_DFp` (Fp's translational
+  /// acceleration in a frame D) with respect to "speeds" 𝑠, where 𝑠 is either
   /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of generalized positions) or
   /// v ≜ [v₁ ... vₖ]ᵀ (generalized velocities).
-  /// That is, the translational acceleration of point `Fp` can be computed as:
+  /// That is, point Fp's translational acceleration in frame D can be written
   /// <pre>
-  ///   a_AFp = Js_v_AFp(q)⋅ṡ + b_AFp(q, v)
+  ///   a_DFp = Js_v_DFp(q)⋅ṡ + abias_DFp(q, v)
   /// </pre>
-  /// where `b_AFp = J̇s_v_AFp(q, s)⋅s`.
+  /// where `abias_DFp = J̇s_v_DFp(q, s)⋅s`.
   ///
-  /// This method computes `b_AFp` for each such point Fp in the `p_FP_list`.
+  /// This method computes `abias_DFp` for each point Fp in the `p_FP_list`.
   /// The `p_FP_list` is a list of position vectors from Fo (Frame F's origin)
-  /// to Fp, expressed in frame F.
+  /// to each such point Fp, expressed in frame F.
   ///
-  /// @see CalcJacobianTranslationalVelocity() to compute `Js_v_AFp`, the
-  /// Jacobian with respect to s of Fp's velocity in A.
+  /// @see CalcJacobianTranslationalVelocity() to compute `Js_v_DFp`, point Fp's
+  /// translational velocity Jacobian in frame D with respect to s.
   ///
   /// @param[in] context The state of the multibody system, which includes the
   /// generalized positions q and generalized velocities v.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the Jacobian `Js_v_ABp` is
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `Js_v_DFp` is
   /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
   /// positions) or with respect to 𝑠 = v (generalized velocities).
   /// @param[in] frame_F The frame on which point Fp is fixed/welded.
   /// @param[in] p_FP_list `3 x n` matrix of position vectors `p_FoFp_F` from
   /// Fo (frame F's origin) to each such point Fp, expressed in frame F.
-  /// @param[in] frame_A The frame that measures `v_AFp` (Fp's velocity in A).
-  /// Currently, an exception is thrown if frame_A is not the World frame.
-  /// @param[in] frame_E The frame in which `v_AFp` is expressed on input and
-  /// the frame in which the bias term `b_AFp` is expressed on output.
+  /// @param[in] frame_D The frame that measures `abias_DFp`.
+  /// Currently, an exception is thrown if frame_D is not the World frame.
+  /// @param[in] frame_E The frame in which `abias_DFp` is expressed on output.
   /// Currently, an exception is thrown if frame_E is not the World frame.
-  /// @returns b_AFp `3 x n` matrix of bias terms for each of the associated n
-  /// points Fp, expressed in frame_E.  These bias terms are functions of the
-  /// generalized positions q and the generalized velocities v and depend on
-  /// whether `with_respect_to` is kQDot or kV.
+  /// @returns abias_DFp `3 x n` matrix of translational acceleration bias terms
+  /// in frame D and expressed in frame E for each of the `n` points associated
+  /// with p_FP_list.  These bias terms are functions of the generalized
+  /// positions q and the generalized velocities v and depend on whether
+  /// `with_respect_to` is kQDot or kV.
   /// @throws std::exception if `p_FP_list` does not have 3 rows.
   /// @throws std::exception if `with_respect_to` is not JacobianWrtVariable::kV
-  /// @throws std::exception if frame_A or frame_E are not the world frame.
+  /// @throws std::exception if frame_D or frame_E are not the world frame.
   // TODO(Mitiguy) Allow `with_respect_to` to be JacobianWrtVariable::kQDot
-  // and/or allow frame_A and frame_E to be non-world frames.
+  // and/or allow frame_D and frame_E to be non-world frames.
   VectorX<T> CalcBiasForJacobianTranslationalVelocity(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_FP_list,
-      const Frame<T>& frame_A,
+      const Frame<T>& frame_D,
       const Frame<T>& frame_E) const {
     return internal_tree().CalcBiasForJacobianTranslationalVelocity(
-        context, with_respect_to, frame_F, p_FP_list, frame_A, frame_E);
+        context, with_respect_to, frame_F, p_FP_list, frame_D, frame_E);
   }
 
   // TODO(eric.cousineau): Reduce duplicate text between overloads.
@@ -1870,11 +1870,62 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   related to the bias in translational acceleration.
   /// @note SpatialAcceleration(Ab_WFp) defines a valid SpatialAcceleration.
   // TODO(amcastro-tri): Rework this method as per issue #10155.
+  DRAKE_DEPRECATED("2019-09-01",
+                   "Use CalcBiasForJacobianSpatialVelocity().")
   Vector6<T> CalcBiasForFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FP) const {
-    return internal_tree().CalcBiasForFrameGeometricJacobianExpressedInWorld(
-        context, frame_F, p_FP);
+    return CalcBiasForJacobianSpatialVelocity(context, JacobianWrtVariable::kV,
+        frame_F, p_FP, world_frame(), world_frame());
+  }
+
+  /// For a point Fp that is regarded as a point of (fixed/welded to) a frame F,
+  /// computes the bias term `Abias_DFp` associated with `A_DFp` (Fp's spatial
+  /// acceleration in a frame D) with respect to "speeds" 𝑠, where 𝑠 is either
+  /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of generalized positions) or
+  /// v ≜ [v₁ ... vₖ]ᵀ (generalized velocities).
+  /// That is, point Fp's spatial acceleration in frame D can be written
+  /// <pre>
+  ///   A_DFp = Js_V_DFp(q)⋅ṡ + Abias_DFp(q, v)
+  /// </pre>
+  /// where `Abias_DFp = J̇s_V_DFp(q, s)⋅s`.
+  ///
+  /// @see CalcJacobianSpatialVelocity() to compute `Js_V_DFp`, point Fp's
+  /// spatial velocity Jacobian in frame D with respect to s.
+  ///
+  /// @param[in] context The state of the multibody system, which includes the
+  /// generalized positions q and generalized velocities v.
+  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `Js_v_DFp` is
+  /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
+  /// positions) or with respect to 𝑠 = v (generalized velocities).
+  /// @param[in] frame_F The frame on which point Fp is fixed/welded.
+  /// @param[in] p_FoFp_F position vector from Fo (frame F's origin) to
+  /// point Fp, expressed in frame F.
+  /// @param[in] frame_D The frame that measures `Abias_DFp`.
+  /// Currently, an exception is thrown if frame_D is not the World frame.
+  /// @param[in] frame_E The frame in which `Abias_DFp` is expressed on output.
+  /// Currently, an exception is thrown if frame_E is not the World frame.
+  /// @returns Abias_DFp Fp's spatial acceleration bias in frame D is returned
+  /// in a `6 x 1` matrix whose first three elements are frame F's angular
+  /// acceleration bias in frame D (expressed in frame E) and whose last three
+  /// elements are point Fp's translational acceleration bias in frame D
+  /// (expressed in frame E).  These bias terms are functions of the generalized
+  /// positions q and the generalized velocities v and depend on whether
+  /// `with_respect_to` is kQDot or kV.
+  /// @throws std::exception if `with_respect_to` is not JacobianWrtVariable::kV
+  /// @throws std::exception if frame_D or frame_E are not the world frame.
+  // TODO(Mitiguy) Allow `with_respect_to` to be JacobianWrtVariable::kQDot
+  // and/or allow frame_D and frame_E to be non-world frames.
+  Vector6<T> CalcBiasForJacobianSpatialVelocity(
+      const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_F,
+      const Eigen::Ref<const Vector3<T>>& p_FoFp_F,
+      const Frame<T>& frame_D,
+      const Frame<T>& frame_E) const {
+    return internal_tree().CalcBiasForJacobianSpatialVelocity(
+        context, with_respect_to, frame_F, p_FoFp_F, frame_D, frame_E);
   }
 
   /// Computes the Jacobian of spatial velocity for a frame instantaneously

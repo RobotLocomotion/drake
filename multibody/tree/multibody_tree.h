@@ -1259,7 +1259,7 @@ class MultibodyTree {
       JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_FP_list,
-      const Frame<T>& frame_A,
+      const Frame<T>& frame_D,
       const Frame<T>& frame_E) const;
 
   /// See MultibodyPlant method.
@@ -1275,9 +1275,13 @@ class MultibodyTree {
       EigenPtr<MatrixX<T>> Jv_WFp) const;
 
   /// See MultibodyPlant method.
-  Vector6<T> CalcBiasForFrameGeometricJacobianExpressedInWorld(
+  Vector6<T> CalcBiasForJacobianSpatialVelocity(
       const systems::Context<T>& context,
-      const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FP) const;
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_F,
+      const Eigen::Ref<const Vector3<T>>& p_FoFp_F,
+      const Frame<T>& frame_D,
+      const Frame<T>& frame_E) const;
 
   /// See MultibodyPlant method.
   void CalcJacobianSpatialVelocity(
@@ -2057,6 +2061,17 @@ class MultibodyTree {
   // The world body is special in that it is the only body in the model with no
   // mobilizer, even after Finalize().
   void AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
+
+  // Helper method for CalcBiasForJacobianTranslationalVelocity() and
+  // CalcBiasForJacobianSpatialVelocity().
+  SpatialAcceleration<T> CalcSpatialAccelerationBiasHelper(
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_F,
+      const math::RigidTransform<T>& X_BF,
+      const Vector3<T>& p_FoFp_F,
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>& vc,
+      const SpatialAcceleration<T>& Abias_WBo) const;
 
   // Helper method to access the mobilizer of a free body.
   // If `body` is a free body in the model, this method will return the
