@@ -42,9 +42,9 @@ PYBIND11_MODULE(manipulation_station, m) {
   py::class_<ManipulationStation<T>, Diagram<T>>(m, "ManipulationStation")
       .def(py::init<double>(), py::arg("time_step") = 0.002,
           doc.ManipulationStation.ctor.doc)
-      .def("SetupDefaultStation", &ManipulationStation<T>::SetupDefaultStation,
+      .def("SetupMITClassStation", &ManipulationStation<T>::SetupMITClassStation,
           py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
-          doc.ManipulationStation.SetupDefaultStation.doc)
+          doc.ManipulationStation.SetupMITClassStation.doc)
       .def("SetupClutterClearingStation",
           &ManipulationStation<T>::SetupClutterClearingStation,
           py::arg("X_WCameraBody") = nullopt,
