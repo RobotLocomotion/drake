@@ -55,7 +55,8 @@ int do_main(int argc, char* argv[]) {
                                Eigen::Vector3d(0.6, 0, 0)));
   } else {
     throw std::domain_error(
-        "Unrecognized setup option. Options are {mit_class, clutter_clearing}.");
+        "Unrecognized setup option. Options are "
+        "{mit_class, clutter_clearing}.");
   }
   station->Finalize();
 

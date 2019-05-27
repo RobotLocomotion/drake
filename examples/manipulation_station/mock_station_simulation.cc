@@ -65,7 +65,8 @@ int do_main(int argc, char* argv[]) {
                                      Eigen::Vector3d(-0.3, -0.55, 0.36)));
   } else {
     throw std::domain_error(
-        "Unrecognized station type. Options are {mit_class, clutter_clearing}.");
+        "Unrecognized station type. Options are "
+        "{mit_class, clutter_clearing}.");
   }
   // TODO(russt): Load sdf objects specified at the command line.  Requires
   // #9747.
