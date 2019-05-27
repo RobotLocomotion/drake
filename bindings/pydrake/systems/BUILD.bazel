@@ -276,6 +276,18 @@ drake_py_library(
     ],
 )
 
+drake_py_library(
+    name = "point_cloud_synthesis_py",
+    srcs = ["point_cloud_synthesis.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        ":framework_py",
+        ":module_py",
+        "//bindings/pydrake:math_py",
+        "//bindings/pydrake:perception_py",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":analysis_py",
     ":controllers_py",
@@ -292,6 +304,7 @@ PY_LIBRARIES = [
     ":meshcat_visualizer_py",
     ":scalar_conversion_py",
     ":module_py",
+    ":point_cloud_synthesis_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -309,8 +322,8 @@ drake_py_library(
 
 install(
     name = "install",
-    targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
+    targets = PY_LIBRARIES + [":all_py"],
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
@@ -421,6 +434,17 @@ drake_py_unittest(
         "//bindings/pydrake:geometry_py",
         "//bindings/pydrake:perception_py",
         "//bindings/pydrake/multibody",
+    ],
+)
+
+drake_py_unittest(
+    name = "point_cloud_synthesis_test",
+    deps = [
+        ":analysis_py",
+        ":framework_py",
+        ":point_cloud_synthesis_py",
+        "//bindings/pydrake:math_py",
+        "//bindings/pydrake:perception_py",
     ],
 )
 
