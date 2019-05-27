@@ -4,7 +4,8 @@ import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.examples.manipulation_station import (
-    CreateDefaultYcbObjectList,
+    CreateClutterClearingYcbObjectList,
+    CreateManipulationClassYcbObjectList,
     IiwaCollisionModel,
     ManipulationStation,
     ManipulationStationHardwareInterface
@@ -100,7 +101,7 @@ class TestManipulationStation(unittest.TestCase):
         num_station_bodies = (
             station.get_multibody_plant().num_model_instances())
 
-        ycb_objects = CreateDefaultYcbObjectList()
+        ycb_objects = CreateClutterClearingYcbObjectList()
         for model_file, X_WObject in ycb_objects:
             station.AddManipulandFromFile(model_file, X_WObject)
 
@@ -138,5 +139,8 @@ class TestManipulationStation(unittest.TestCase):
         self.assertEqual(len(station.get_camera_names()), 2)
 
     def test_ycb_object_creation(self):
-        ycb_objects = CreateDefaultYcbObjectList()
+        ycb_objects = CreateClutterClearingYcbObjectList()
         self.assertEqual(len(ycb_objects), 6)
+
+        ycb_objects = CreateManipulationClassYcbObjectList()
+        self.assertEqual(len(ycb_objects), 5)
