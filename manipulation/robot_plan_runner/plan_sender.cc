@@ -1,6 +1,8 @@
 
 #include "drake/manipulation/robot_plan_runner/plan_sender.h"
-#include "drake/manipulation/robot_plan_runner/robot_plans.h"
+#include "drake/manipulation/robot_plan_runner/robot_plans/plan_base.h"
+#include "drake/manipulation/robot_plan_runner/robot_plans/joint_space_plan.h"
+#include "drake/manipulation/robot_plan_runner/robot_plans/task_space_plan.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -12,6 +14,10 @@ using std::endl;
 using systems::Context;
 using systems::State;
 using trajectories::PiecewisePolynomial;
+using robot_plans::PlanType;
+using robot_plans::PlanData;
+using robot_plans::JointSpacePlan;
+using robot_plans::TaskSpacePlan;
 
 template <class T>
 void PrintStlVector(std::vector<T> v) {
@@ -21,6 +27,9 @@ void PrintStlVector(std::vector<T> v) {
   cout << endl;
 };
 
+/*
+ * Connects q_start and q_end with a cubic PiecewisePolynomial.
+ */
 trajectories::PiecewisePolynomial<double>
 ConnectTwoPositionsWithCubicPolynomial(
     const Eigen::Ref<const Eigen::VectorXd>& q_start,
@@ -157,7 +166,7 @@ double PlanSender::get_all_plans_duration() const {
   // zoh + transition
   double t_total = zoh_time_sec_ + transition_time_sec_ + extra_time_;
   for (const auto& plan_data : plan_data_list_) {
-    // TODO: extend this for ee_traj as well
+    // TODO: extend this for ee_data as well
     if (plan_data.joint_traj.has_value()) {
       t_total += plan_data.joint_traj.value().end_time() + extra_time_;
     }

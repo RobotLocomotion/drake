@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/manipulation/robot_plan_runner/robot_plans.h"
+#include "drake/manipulation/robot_plan_runner/robot_plans/plan_base.h"
 
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -10,19 +10,21 @@ namespace drake {
 namespace manipulation {
 namespace robot_plan_runner {
 
-const char kIiwaUrdf[] =
-    "drake/manipulation/models/iiwa_description/urdf/"
-    "iiwa14_polytope_collision.urdf";
-
+/*
+ * A Drake System wrapper for robot_plans, which calls Plan::Step when the
+ * output port of this system is evaluated.
+ */
 class RobotController : public systems::LeafSystem<double> {
  public:
-  RobotController(PlanType plan_type);
+  RobotController(
+      robot_plans::PlanType plan_type, double control_period);
 
  private:
   void CalcCommands(const systems::Context<double>&,
                        systems::BasicVector<double>*) const;
-  std::unique_ptr<PlanBase> plan_;
+  std::unique_ptr<robot_plans::PlanBase> plan_;
   const int num_positions_{};
+  const double control_period_{};
   int input_port_idx_q_{-1};
   int input_port_idx_v_{-1};
   int input_port_idx_tau_ext_{-1};
@@ -32,17 +34,6 @@ class RobotController : public systems::LeafSystem<double> {
   mutable Eigen::VectorXd tau_cmd_;
   mutable double t_start_current_{0};
   mutable long plan_signature_current_{0};
-};
-
-class PlanSwitcher : public systems::LeafSystem<double> {
- public:
-  PlanSwitcher();
- private:
-  void CalcJointSpacePlan(const systems::Context<double>&,
-                          PlanData *) const;
-//  const int num_positions_;
-  int input_port_idx_plan_data_;
-//  mutable long plan_signature_current_{0};
 };
 
 }  // namespace robot_plan_runner

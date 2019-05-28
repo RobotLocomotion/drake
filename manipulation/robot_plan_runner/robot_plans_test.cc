@@ -3,7 +3,7 @@
 
 #include "drake/manipulation/robot_plan_runner/plan_sender.h"
 #include "drake/manipulation/robot_plan_runner/robot_plan_runner.h"
-#include "drake/manipulation/robot_plan_runner/robot_plans.h"
+#include "drake/manipulation/robot_plan_runner/robot_plans/plan_base.h"
 
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/systems/analysis/simulator.h"

@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "drake/manipulation/robot_plan_runner/robot_plans.h"
+#include "drake/manipulation/robot_plan_runner/robot_plans/plan_base.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -11,7 +11,7 @@ namespace robot_plan_runner {
 
 class PlanSender : public systems::LeafSystem<double> {
  public:
-  explicit PlanSender(const std::vector<PlanData>&);
+  explicit PlanSender(const std::vector<robot_plans::PlanData>&);
 
   systems::EventStatus Initialize(const systems::Context<double>& context,
                                   systems::State<double>* state) const;
@@ -23,11 +23,12 @@ class PlanSender : public systems::LeafSystem<double> {
   double get_all_plans_duration() const;
 
  private:
-  void CalcPlan(const drake::systems::Context<double>&, PlanData*) const;
+  void CalcPlan(
+      const drake::systems::Context<double>&, robot_plans::PlanData*) const;
   void UpdatePlanIndex(const systems::Context<double>& context,
                        systems::State<double>* state) const;
   mutable std::vector<double> plan_start_times_{};
-  mutable std::vector<PlanData> plan_data_list_{};
+  mutable std::vector<robot_plans::PlanData> plan_data_list_{};
   mutable int num_plans_{0};
   systems::AbstractStateIndex abstract_state_index_{-1};
   int input_port_idx_q_{-1};

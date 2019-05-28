@@ -1,13 +1,13 @@
 
 #include "drake/common/trajectories/piecewise_polynomial.h"
-#include "drake/manipulation/robot_plan_runner/robot_plans.h"
+#include "drake/manipulation/robot_plan_runner/robot_plans/plan_base.h"
 #include "drake/manipulation/robot_plan_runner/plan_runner_hardware_interface.h"
 
 namespace drake {
 namespace {
 
-using manipulation::robot_plan_runner::PlanData;
-using manipulation::robot_plan_runner::PlanType;
+using manipulation::robot_plan_runner::robot_plans::PlanData;
+using manipulation::robot_plan_runner::robot_plans::PlanType;
 using std::cout;
 using std::endl;
 

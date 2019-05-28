@@ -16,6 +16,7 @@ namespace robot_plan_runner {
 
 using std::cout;
 using std::endl;
+using robot_plans::PlanData;
 
 PlanRunnerHardwareInterface::PlanRunnerHardwareInterface(
     const std::vector<PlanData>& plan_list)
