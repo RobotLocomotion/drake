@@ -277,8 +277,8 @@ drake_py_library(
 )
 
 drake_py_library(
-    name = "point_cloud_synthesis_py",
-    srcs = ["point_cloud_synthesis.py"],
+    name = "perception_py",
+    srcs = ["perception.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [
         ":framework_py",
@@ -304,7 +304,7 @@ PY_LIBRARIES = [
     ":meshcat_visualizer_py",
     ":scalar_conversion_py",
     ":module_py",
-    ":point_cloud_synthesis_py",
+    ":perception_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -438,11 +438,11 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
-    name = "point_cloud_synthesis_test",
+    name = "perception_test",
     deps = [
         ":analysis_py",
         ":framework_py",
-        ":point_cloud_synthesis_py",
+        ":perception_py",
         "//bindings/pydrake:math_py",
         "//bindings/pydrake:perception_py",
     ],

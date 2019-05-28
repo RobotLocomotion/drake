@@ -5,7 +5,30 @@ from pydrake.systems.framework import AbstractValue, DiagramBuilder, LeafSystem
 import pydrake.perception as mut
 
 
-class PointCloudSynthesis(LeafSystem):
+def _ConcatenatePointClouds(points_dict, colors_dict):
+    scene_points = None
+    scene_colors = None
+
+    for id in points_dict:
+        if scene_points is None:
+            scene_points = points_dict[id]
+        else:
+            scene_points = np.hstack((points_dict[id], scene_points))
+
+        if scene_colors is None:
+            scene_colors = colors_dict[id]
+        else:
+            scene_colors = np.hstack((colors_dict[id], scene_colors))
+
+    valid_indices = np.logical_not(np.isnan(scene_points))
+
+    scene_points = scene_points[:, valid_indices[0, :]]
+    scene_colors = scene_colors[:, valid_indices[0, :]]
+
+    return scene_points, scene_colors
+
+
+class PointCloudConcatenation(LeafSystem):
 
     def __init__(self, id_list, default_rgb=[255., 255., 255.]):
         """
@@ -81,27 +104,7 @@ class PointCloudSynthesis(LeafSystem):
                 colors[id] = np.tile(np.array([self._default_rgb]).T,
                                      (1, points[id].shape[1]))
 
-        # Combine all the points and colors into two arrays.
-        scene_points = None
-        scene_colors = None
-
-        for id in points:
-            if scene_points is None:
-                scene_points = points[id]
-            else:
-                scene_points = np.hstack((points[id], scene_points))
-
-            if scene_colors is None:
-                scene_colors = colors[id]
-            else:
-                scene_colors = np.hstack((colors[id], scene_colors))
-
-        valid_indices = np.logical_not(np.isnan(scene_points))
-
-        scene_points = scene_points[:, valid_indices[0, :]]
-        scene_colors = scene_colors[:, valid_indices[0, :]]
-
-        return scene_points, scene_colors
+        return _ConcatenatePointClouds(points, colors)
 
     def DoCalcOutput(self, context, output):
         scene_points, scene_colors = self._AlignPointClouds(context)
