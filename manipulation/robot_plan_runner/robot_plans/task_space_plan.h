@@ -14,21 +14,19 @@ class TaskSpacePlan : public PlanBase {
  public:
   TaskSpacePlan();
 
-  void Step(const Eigen::Ref<const Eigen::VectorXd> &q,
-            const Eigen::Ref<const Eigen::VectorXd> &v,
-            const Eigen::Ref<const Eigen::VectorXd> &tau_external,
-            double control_period,
-            double t,
-            const PlanData &plan_data,
+  void Step(const Eigen::Ref<const Eigen::VectorXd>& q,
+            const Eigen::Ref<const Eigen::VectorXd>& v,
+            const Eigen::Ref<const Eigen::VectorXd>& tau_external,
+            double control_period, double t, const PlanData& plan_data,
             EigenPtr<Eigen::VectorXd> q_cmd,
             EigenPtr<Eigen::VectorXd> tau_cmd) const override;
 
  private:
   void UpdatePositionError(
-      double t, const PlanData &plan_data,
-      const Eigen::Ref<const Eigen::Vector3d> &p_WoQ_W) const;
-  void UpdateOrientationError(double t, const PlanData &plan_data,
-                              const Eigen::Quaterniond &Q_WT) const;
+      double t, const PlanData& plan_data,
+      const Eigen::Ref<const Eigen::Vector3d>& p_WoQ_W) const;
+  void UpdateOrientationError(double t, const PlanData& plan_data,
+                              const Eigen::Quaterniond& Q_WT) const;
 
   std::unique_ptr<multibody::MultibodyPlant<double>> plant_;
   multibody::FrameIndex task_frame_idx_;
@@ -44,7 +42,7 @@ class TaskSpacePlan : public PlanBase {
   const Eigen::Array3d kp_rotation;
 };
 
-}  // robot_plans
+}  // namespace robot_plans
 }  // namespace robot_plan_runner
 }  // namespace manipulation
 }  // namespace drake

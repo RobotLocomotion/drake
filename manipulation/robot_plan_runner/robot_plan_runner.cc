@@ -13,8 +13,8 @@ namespace drake {
 namespace manipulation {
 namespace robot_plan_runner {
 
-using robot_plans::PlanType;
 using robot_plans::PlanData;
+using robot_plans::PlanType;
 
 RobotPlanRunner::RobotPlanRunner(double control_period_sec) {
   this->set_name("RobotPlanRunner");
@@ -46,9 +46,8 @@ RobotPlanRunner::RobotPlanRunner(double control_period_sec) {
   passthough_tau_external->set_name("PassThrough_tau_external");
 
   // controller systems.
-  auto joint_space_controller =
-      builder.template AddSystem<RobotController>(
-          PlanType::kJointSpacePlan, control_period_sec);
+  auto joint_space_controller = builder.template AddSystem<RobotController>(
+      PlanType::kTaskSpacePlan, control_period_sec);
 
   builder.Connect(passthrough_plan_data->get_output_port(),
                   joint_space_controller->GetInputPort("plan_data"));
