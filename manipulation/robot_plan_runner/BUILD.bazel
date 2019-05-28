@@ -94,6 +94,7 @@ drake_cc_binary(
     srcs = ["full_system_test.cc"],
     deps = [
         ":plan_runner_hardware_interface",
+        "//math"
     ],
 )
 

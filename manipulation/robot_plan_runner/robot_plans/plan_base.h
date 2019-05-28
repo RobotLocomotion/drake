@@ -33,6 +33,17 @@ struct PlanData {
     trajectories::PiecewiseQuaternionSlerp<double> ee_quat_traj;
   };
   optional<EeData> ee_data;
+
+  double get_duration() {
+    if(joint_traj.has_value()) {
+      return joint_traj.value().end_time();
+    } else if (ee_data.has_value()) {
+      //TODO: throw if durations of ee_xyz_traj and ee_quat_traj are different.
+      return ee_data.value().ee_xyz_traj.end_time();
+    } else {
+      throw "invalid PlanData.";
+    }
+  };
 };
 
 class PlanBase {

@@ -112,7 +112,7 @@ systems::EventStatus PlanSender::Initialize(const Context<double>& context,
   int i = 0;
   plan_start_times_.push_back(0);
   for (auto& plan_data : plan_data_list_) {
-    double t_next = plan_data.joint_traj.value().end_time();
+    double t_next = plan_data.get_duration();
     if (i != 0) {
       // not the zoh plan
       t_next += extra_time_;
