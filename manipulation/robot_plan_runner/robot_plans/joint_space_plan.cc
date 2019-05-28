@@ -8,9 +8,9 @@ namespace robot_plans {
 
 using Eigen::VectorXd;
 
-void JointSpacePlan::Step(const Eigen::Ref<const Eigen::VectorXd> &q,
-                          const Eigen::Ref<const Eigen::VectorXd> &v,
-                          const Eigen::Ref<const Eigen::VectorXd> &tau_external,
+void JointSpacePlan::Step(const Eigen::Ref<const Eigen::VectorXd> &,
+                          const Eigen::Ref<const Eigen::VectorXd> &,
+                          const Eigen::Ref<const Eigen::VectorXd> &,
                           double,
                           double t,
                           const PlanData &plan_data,
