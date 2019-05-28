@@ -44,6 +44,7 @@ drake_cc_package_library(
         ":mathematical_program",
         ":mathematical_program_lite",
         ":mathematical_program_result",
+        ":minimum_value_constraint",
         ":mixed_integer_optimization_util",
         ":mixed_integer_rotation_constraint",
         ":moby_lcp_solver",
@@ -146,6 +147,16 @@ drake_cc_library(
         "//common:polynomial",
         "//common:symbolic",
         "//math:matrix_util",
+    ],
+)
+
+drake_cc_library(
+    name = "minimum_value_constraint",
+    srcs = ["minimum_value_constraint.cc"],
+    hdrs = ["minimum_value_constraint.h"],
+    deps = [
+        ":constraint",
+        "//math:gradient",
     ],
 )
 
@@ -1040,6 +1051,14 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:symbolic_test_util",
         "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "minimum_value_constraint_test",
+    deps = [
+        ":minimum_value_constraint",
+        "//solvers/test_utilities",
     ],
 )
 

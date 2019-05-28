@@ -1,0 +1,35 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+# This should encompass every cc_library in this package, except for items that
+# should only ever be linked into main() programs.
+drake_cc_package_library(
+    name = "test_utilities",
+    testonly = 1,
+    deps = [
+        ":check_constraint_eval_nonsymbolic",
+    ],
+)
+
+drake_cc_library(
+    name = "check_constraint_eval_nonsymbolic",
+    testonly = 1,
+    srcs = ["check_constraint_eval_nonsymbolic.cc"],
+    hdrs = ["check_constraint_eval_nonsymbolic.h"],
+    deps = [
+        "//common/test_utilities",
+        "//math:compute_numerical_gradient",
+        "//math:gradient",
+        "//solvers:constraint",
+    ],
+)
+
+add_lint_tests()
