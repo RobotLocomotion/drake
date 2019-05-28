@@ -1,0 +1,63 @@
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/install:install_data.bzl", "install_data")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "robot_plans",
+    deps = [
+        ":plan_base",
+        ":joint_space_plan",
+        ":task_sapce_plan",
+    ]
+)
+
+drake_cc_library(
+    name = "plan_base",
+    srcs = ["plan_base.cc"],
+    hdrs = ["plan_base.h"],
+    visibility = ["//visibility:public"],
+    deps =  [
+        "//common:essential",
+        "//common/trajectories",
+    ]
+)
+
+drake_cc_library(
+    name = "joint_space_plan",
+    srcs = ["joint_space_plan.cc"],
+    hdrs = ["joint_space_plan.h"],
+    visibility = ["//visibility:public"],
+    deps =  [
+        ":plan_base",
+    ]
+)
+
+drake_cc_library(
+    name = "task_sapce_plan",
+    srcs = ["task_sapce_plan.cc"],
+    hdrs = ["task_space_plan.h"],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":plan_base",
+        "//common:find_resource",
+        "//math:geometric_transform",
+        "//multibody/parsing",
+        "//multibody/plant",
+    ],
+)
+
+
+install_data()
+
+add_lint_tests()

@@ -4,7 +4,7 @@
 
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_status.hpp"
-#include "drake/manipulation/robot_plan_runner/robot_plans.h"
+#include "drake/manipulation/robot_plan_runner/robot_plans/plan_base.h"
 #include "drake/manipulation/robot_plan_runner/plan_sender.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
@@ -15,7 +15,8 @@ namespace robot_plan_runner {
 
 class PlanRunnerHardwareInterface {
  public:
-  explicit PlanRunnerHardwareInterface(const std::vector<PlanData>&);
+  explicit PlanRunnerHardwareInterface(
+      const std::vector<robot_plans::PlanData>&);
   void SaveGraphvizStringToFile(
       const std::string& file_name = "system_graphviz_string.txt");
   void Run(double realtime_rate = 1.0);

@@ -1,7 +1,10 @@
 
 #include <unordered_map>
 
-#include "drake/manipulation/robot_plan_runner/controller_systems.h"
+#include "drake/manipulation/robot_plan_runner/controller_system.h"
+
+#include "drake/manipulation/robot_plan_runner/robot_plans/joint_space_plan.h"
+#include "drake/manipulation/robot_plan_runner/robot_plans/task_space_plan.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -10,8 +13,13 @@ namespace robot_plan_runner {
 
 using systems::BasicVector;
 using systems::kVectorValued;
+using robot_plans::PlanType;
+using robot_plans::PlanData;
+using robot_plans::JointSpacePlan;
+using robot_plans::TaskSpacePlan;
 
-RobotController::RobotController(PlanType plan_type) : num_positions_(7) {
+RobotController::RobotController(PlanType plan_type, double control_period) :
+  num_positions_(7), control_period_(control_period) {
   switch (plan_type) {
     case PlanType::kJointSpacePlan:
       this->set_name("JointSpaceController");
@@ -68,33 +76,8 @@ void RobotController::CalcCommands(const systems::Context<double>& context,
 
   double t = context.get_time() - t_start_current_;
 
-  plan_->Step(q, v, tau_ext, t, plan_data, &q_cmd_, &tau_cmd_);
+  plan_->Step(q, v, tau_ext, control_period_, t, plan_data, &q_cmd_, &tau_cmd_);
   q_tau_vector << q_cmd_, tau_cmd_;
-
-};
-
-PlanSwitcher::PlanSwitcher() {
-  this->set_name("PlanSwitcher");
-
-  input_port_idx_plan_data_ =
-      this->DeclareAbstractInputPort("plan_data", Value<PlanData>())
-          .get_index();
-  // TODO: PlanData does not need to pass through this system. This system
-  //  should only be responsible for the switching.
-  this->DeclareAbstractOutputPort("joint_space_plan",
-                                  &PlanSwitcher::CalcJointSpacePlan);
-}
-
-void PlanSwitcher::CalcJointSpacePlan(
-    const systems::Context<double>& context,
-    PlanData* output_plan_data) const {
-  const AbstractValue* input =
-      this->EvalAbstractInput(context, input_port_idx_plan_data_);
-  const auto& input_plan_data = input->get_value<PlanData>();
-
-  if (input_plan_data.plan_type == PlanType::kJointSpacePlan) {
-    *output_plan_data = input_plan_data;
-  }
 };
 
 }  // namespace robot_plan_runner

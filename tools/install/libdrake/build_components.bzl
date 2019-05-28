@@ -85,7 +85,7 @@ LIBDRAKE_COMPONENTS = [
     "//manipulation/robot_plan_runner:plan_runner_hardware_interface",  # unpackaged  # noqa
     "//manipulation/robot_plan_runner:plan_sender",  # unpackaged
     "//manipulation/robot_plan_runner:robot_plan_runner",  # unpackaged
-    "//manipulation/robot_plan_runner:robot_plans",  # unpackaged
+    "//manipulation/robot_plan_runner/robot_plans",  # unpackaged
     "//manipulation/schunk_wsg",
     "//manipulation/util",
     "//math",

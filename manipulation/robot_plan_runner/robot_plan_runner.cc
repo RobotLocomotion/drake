@@ -1,6 +1,7 @@
 #include "drake/manipulation/robot_plan_runner/robot_plan_runner.h"
-#include "drake/manipulation/robot_plan_runner/controller_systems.h"
-#include "drake/manipulation/robot_plan_runner/robot_plans.h"
+#include "drake/manipulation/robot_plan_runner/controller_system.h"
+#include "drake/manipulation/robot_plan_runner/plan_switcher.h"
+#include "drake/manipulation/robot_plan_runner/robot_plans/plan_base.h"
 
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -11,6 +12,9 @@
 namespace drake {
 namespace manipulation {
 namespace robot_plan_runner {
+
+using robot_plans::PlanType;
+using robot_plans::PlanData;
 
 RobotPlanRunner::RobotPlanRunner(double control_period_sec) {
   this->set_name("RobotPlanRunner");
@@ -43,7 +47,8 @@ RobotPlanRunner::RobotPlanRunner(double control_period_sec) {
 
   // controller systems.
   auto joint_space_controller =
-      builder.template AddSystem<RobotController>(PlanType::kJointSpacePlan);
+      builder.template AddSystem<RobotController>(
+          PlanType::kJointSpacePlan, control_period_sec);
 
   builder.Connect(passthrough_plan_data->get_output_port(),
                   joint_space_controller->GetInputPort("plan_data"));
