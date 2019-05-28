@@ -585,6 +585,36 @@ TEST_F(RenderEngineVtkTest, TextureMeshTest) {
   // changes, the expected color would likewise have to change.
   expected_color_ = RgbaColor(ColorI{4, 241, 33}, 255);
   PerformCenterShapeTest(renderer_.get(), "Textured mesh test");
+
+  // Now confirm that the texture survives cloning.
+  unique_ptr<RenderEngine> clone = renderer_->Clone();
+  EXPECT_NE(dynamic_cast<RenderEngineVtk*>(clone.get()), nullptr);
+  PerformCenterShapeTest(dynamic_cast<RenderEngineVtk*>(clone.get()),
+                         "Cloned mesh test");
+}
+
+// Repeat the texture test but with an *implied* texture map. In other words,
+// registering a mesh "foo.obj" will look for a "foo.png" in the same folder as
+// a fall back and use it if found. But *only* as a back up. This is a
+// SHORT TERM hack to get textures in.
+TEST_F(RenderEngineVtkTest, ImpliedTextureMeshTest) {
+  Init(X_WC_, true);
+
+  auto filename =
+      FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.obj");
+  Mesh mesh(filename);
+  expected_label_ = RenderLabel(4);
+  PerceptionProperties material = simple_material();
+  renderer_->RegisterVisual(GeometryIndex(0), mesh, material,
+                            RigidTransformd::Identity(),
+                            true /* needs update */);
+  renderer_->UpdatePoses(
+      std::vector<RigidTransformd>{RigidTransformd::Identity()});
+
+  // box.png contains a single pixel with the color (4, 241, 33). If the image
+  // changes, the expected color would likewise have to change.
+  expected_color_ = RgbaColor(ColorI{4, 241, 33}, 255);
+  PerformCenterShapeTest(renderer_.get(), "Implied textured mesh test");
 }
 
 // This confirms that geometries are correctly removed from the render engine.
