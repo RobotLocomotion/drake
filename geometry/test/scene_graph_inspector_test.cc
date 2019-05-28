@@ -87,6 +87,7 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   inspector.X_FG(geometry_id);
   inspector.GetProximityProperties(geometry_id);
   inspector.GetIllustrationProperties(geometry_id);
+  inspector.GetPerceptionProperties(geometry_id);
   // Register an *additional* geometry and assign proximity properties to both
   // to prevent an exception being thrown.
   const GeometryId geometry_id2 =

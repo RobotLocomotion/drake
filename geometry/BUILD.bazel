@@ -155,6 +155,7 @@ drake_cc_library(
         ":internal_geometry",
         ":proximity_engine",
         ":utilities",
+        "//geometry/render:render_engine",
     ],
 )
 
@@ -329,6 +330,14 @@ drake_cc_googletest(
     deps = [
         ":geometry_state",
         "//common/test_utilities",
+        "//geometry/test_utilities:dummy_render_engine",
+    ],
+)
+
+drake_cc_googletest(
+    name = "internal_geometry_test",
+    deps = [
+        ":internal_geometry",
     ],
 )
 

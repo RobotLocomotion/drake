@@ -347,6 +347,18 @@ class SceneGraphInspector {
     return state_->get_illustration_properties(id);
   }
 
+  /** Returns a pointer to the const perception properties of the geometry
+   with the given `id`.
+   @param id   The identifier for the queried geometry.
+   @return A pointer to the properties (or nullptr if there are no such
+           properties).
+   @throws std::logic_error if `id` does not map to a registered geometry.  */
+  const PerceptionProperties* GetPerceptionProperties(
+      GeometryId id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->get_perception_properties(id);
+  }
+
   /** Reports true if the two geometries with given ids `id1` and `id2`, define
    a collision pair that has been filtered out.
    @throws std::logic_error if either id does not map to a registered
