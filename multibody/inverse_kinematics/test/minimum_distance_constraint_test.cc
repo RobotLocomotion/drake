@@ -13,6 +13,8 @@ namespace multibody {
 
 using solvers::test::CheckConstraintEvalNonsymbolic;
 
+constexpr int kNumPositionsForTwoFreeBodies{14};
+
 template <typename T>
 Vector3<T> ComputeCollisionSphereCenterPosition(
     const Vector3<T>& p_WB, const Quaternion<T>& quat_WB,
@@ -39,20 +41,22 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
     // The penalty should be 0, so is the gradient.
     const Eigen::Quaterniond sphere1_quaternion(1, 0, 0, 0);
     const Eigen::Quaterniond sphere2_quaternion(1, 0, 0, 0);
-    Eigen::Matrix<double, 14, 1> q;
+    Eigen::Matrix<double, kNumPositionsForTwoFreeBodies, 1> q;
     q << QuaternionToVectorWxyz(sphere1_quaternion), p_WB1,
         QuaternionToVectorWxyz(sphere2_quaternion), p_WB2;
     Eigen::VectorXd y_double(1);
     constraint.Eval(q, &y_double);
-    Eigen::Matrix<AutoDiffXd, 14, 1> q_autodiff = math::initializeAutoDiff(q);
+    Eigen::Matrix<AutoDiffXd, kNumPositionsForTwoFreeBodies, 1> q_autodiff =
+        math::initializeAutoDiff(q);
     AutoDiffVecXd y_autodiff(1);
     constraint.Eval(q_autodiff, &y_autodiff);
 
     EXPECT_TRUE(constraint.CheckSatisfied(q));
     EXPECT_TRUE(constraint.CheckSatisfied(q_autodiff));
     EXPECT_EQ(y_double(0), 0);
-    EXPECT_TRUE(CompareMatrices(y_autodiff(0).derivatives(),
-                                Eigen::Matrix<double, 14, 1>::Zero()));
+    EXPECT_TRUE(CompareMatrices(
+        y_autodiff(0).derivatives(),
+        Eigen::Matrix<double, kNumPositionsForTwoFreeBodies, 1>::Zero()));
     CheckConstraintEvalNonsymbolic(constraint, q_autodiff, 1E-12);
   }
 
@@ -61,12 +65,13 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
       const Eigen::Vector3d p_WB2) const {
     const Eigen::Quaterniond sphere1_quaternion(1, 0, 0, 0);
     const Eigen::Quaterniond sphere2_quaternion(1, 0, 0, 0);
-    Eigen::Matrix<double, 14, 1> q;
+    Eigen::Matrix<double, kNumPositionsForTwoFreeBodies, 1> q;
     q << QuaternionToVectorWxyz(sphere1_quaternion), p_WB1,
         QuaternionToVectorWxyz(sphere2_quaternion), p_WB2;
     Eigen::VectorXd y_double(1);
     constraint.Eval(q, &y_double);
-    Eigen::Matrix<AutoDiffXd, 14, 1> q_autodiff = math::initializeAutoDiff(q);
+    Eigen::Matrix<AutoDiffXd, kNumPositionsForTwoFreeBodies, 1> q_autodiff =
+        math::initializeAutoDiff(q);
     AutoDiffVecXd y_autodiff(1);
     constraint.Eval(q_autodiff, &y_autodiff);
 
@@ -82,12 +87,13 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
       const Eigen::Vector3d p_WB2) const {
     const Eigen::Quaterniond sphere1_quaternion(1, 0, 0, 0);
     const Eigen::Quaterniond sphere2_quaternion(1, 0, 0, 0);
-    Eigen::Matrix<double, 14, 1> q;
+    Eigen::Matrix<double, kNumPositionsForTwoFreeBodies, 1> q;
     q << QuaternionToVectorWxyz(sphere1_quaternion), p_WB1,
         QuaternionToVectorWxyz(sphere2_quaternion), p_WB2;
     Eigen::VectorXd y_double(1);
     constraint.Eval(q, &y_double);
-    Eigen::Matrix<AutoDiffXd, 14, 1> q_autodiff = math::initializeAutoDiff(q);
+    Eigen::Matrix<AutoDiffXd, kNumPositionsForTwoFreeBodies, 1> q_autodiff =
+        math::initializeAutoDiff(q);
     AutoDiffVecXd y_autodiff(1);
     constraint.Eval(q_autodiff, &y_autodiff);
 
@@ -181,8 +187,9 @@ GTEST_TEST(MinimumDistanceConstraintTest, MultibodyPlantWithoutCollisionPairs) {
   const MinimumDistanceConstraint constraint(&plant, minimum_distance,
                                              plant_context);
 
-  Eigen::Matrix<AutoDiffXd, 14, 1> q_autodiff =
-      math::initializeAutoDiff(Eigen::VectorXd::Zero(14));
+  Eigen::Matrix<AutoDiffXd, kNumPositionsForTwoFreeBodies, 1> q_autodiff =
+      math::initializeAutoDiff(
+          Eigen::VectorXd::Zero(kNumPositionsForTwoFreeBodies));
   AutoDiffVecXd y_autodiff(1);
   constraint.Eval(q_autodiff, &y_autodiff);
 }
@@ -235,42 +242,57 @@ TEST_F(BoxSphereTest, Test) {
 
     auto check_eval_autodiff =
         [&constraint](const Eigen::VectorXd& q_val,
-                            const Eigen::MatrixXd& q_gradient, double tol,
-                            const Eigen::Vector3d& box_size, double radius) {
+                      const Eigen::MatrixXd& q_gradient, double tol,
+                      const Eigen::Vector3d& box_size, double radius) {
           AutoDiffVecXd x_autodiff =
               math::initializeAutoDiffGivenGradientMatrix(q_val, q_gradient);
 
           CheckConstraintEvalNonsymbolic(constraint, x_autodiff, tol);
         };
 
-    Eigen::VectorXd q(14);
+    Eigen::VectorXd q(kNumPositionsForTwoFreeBodies);
     // First check q with normalized quaternion.
     q.head<4>() = Eigen::Vector4d(1, 0, 0, 0);
     q.segment<3>(4) = Eigen::Vector3d(0, 0, -5);
     q.segment<4>(7) = Eigen::Vector4d(0.1, 0.7, 0.8, 0.9).normalized();
     q.tail<3>() << 0, 0, 0;
-    check_eval_autodiff(q, Eigen::MatrixXd::Identity(14, 14), 1E-13, box_size_,
-                        radius_);
+    check_eval_autodiff(
+        q,
+        Eigen::MatrixXd::Identity(kNumPositionsForTwoFreeBodies,
+                                  kNumPositionsForTwoFreeBodies),
+        1E-13, box_size_, radius_);
 
     q.tail<3>() << 0, 0, 1.1;
-    check_eval_autodiff(q, Eigen::MatrixXd::Identity(14, 14), 1E-13, box_size_,
-                        radius_);
+    check_eval_autodiff(
+        q,
+        Eigen::MatrixXd::Identity(kNumPositionsForTwoFreeBodies,
+                                  kNumPositionsForTwoFreeBodies),
+        1E-13, box_size_, radius_);
 
     // box and sphere are separated, but the separation distance is smaller than
     // minimum_distance.
     q.tail<3>() << 0, 0, 1.005;
-    check_eval_autodiff(q, Eigen::MatrixXd::Identity(14, 14), 1E-11, box_size_,
-                        radius_);
+    check_eval_autodiff(
+        q,
+        Eigen::MatrixXd::Identity(kNumPositionsForTwoFreeBodies,
+                                  kNumPositionsForTwoFreeBodies),
+        1E-11, box_size_, radius_);
 
     q.tail<3>() << 0, 0, -1;
-    check_eval_autodiff(q, Eigen::MatrixXd::Identity(14, 14), 1E-13, box_size_,
-                        radius_);
+    check_eval_autodiff(
+        q,
+        Eigen::MatrixXd::Identity(kNumPositionsForTwoFreeBodies,
+                                  kNumPositionsForTwoFreeBodies),
+        1E-13, box_size_, radius_);
 
     // Test a q with unnormalized quaternion.
     q.head<4>() << 0.1, 1.7, 0.5, 0.3;
     q.segment<4>(7) << 1, 0.1, 0.3, 2;
-    check_eval_autodiff(q, Eigen::MatrixXd::Identity(14, 14), 1E-12, box_size_,
-                        radius_);
+    check_eval_autodiff(
+        q,
+        Eigen::MatrixXd::Identity(kNumPositionsForTwoFreeBodies,
+                                  kNumPositionsForTwoFreeBodies),
+        1E-12, box_size_, radius_);
   }
 }
 }  // namespace multibody

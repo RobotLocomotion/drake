@@ -92,3 +92,10 @@ div.toc h3 {
 #powerTip div {
   font-family: 'DejaVu Sans', sans-serif;
 }
+
+/* Custom CSS */
+
+pre.unicode-art {
+  font-family: 'DejaVu Sans Mono', monospace;
+  line-height: 1em;
+}

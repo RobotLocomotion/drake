@@ -22,10 +22,10 @@ using MinimumValuePenaltyFunction =
 function is differentiable everywhere. The fomulation is described in
 section II.C of [2].
 The penalty is
-<pre>
+<pre class="unicode-art">
        ⎧ 0            if x ≥ 0
 φ(x) = ⎨
-       ⎩  -x exp(1/x) if x < 0.
+       ⎩ -x exp(1/x)  if x < 0.
 </pre>
 [2] "Whole-body Motion Planning with Centroidal Dynamics and Full
 Kinematics" by Hongkai Dai, Andres Valenzuela and Russ Tedrake, IEEE-RAS
@@ -36,7 +36,7 @@ void ExponentiallySmoothedHingeLoss(double x, double* penalty,
 /** A linear hinge loss, smoothed with a quadratic loss near the origin. The
 formulation is in equation (6) of [1].
 The penalty is
-<pre>
+<pre class="unicode-art">
        ⎧  0        if x ≥ 0
 φ(x) = ⎨  x²/2     if -1 < x < 0
        ⎩  -0.5 - x if x ≤ -1.
@@ -80,6 +80,8 @@ class MinimumValueConstraint final : public solvers::Constraint {
   `value_function` can quickly determine that some elements will be
   larger than the influence value and skip the computation associated with those
   elements. @default 1
+  @param max_num_values The maximum number of elements in the vector returned by
+  `value_function`.
   @param value_function User-provided function that takes a `num_vars`-element
   vector and the influence distance as inputs and returns a vector with up to
   `max_num_values` elements. The function can omit from the return vector any
@@ -90,6 +92,7 @@ class MinimumValueConstraint final : public solvers::Constraint {
   this constraint is evaluated for doubles.
   @pre `value_function_double(math::autoDiffToValueMatrix(x), v_influence) ==
   math::autoDiffToValueMatrix(value_function(x, v_influence))` for all x.
+  @pre `value_function(x).size() <= max_num_values` for all x.
   @throws std::invalid_argument if influence_value_offset = ∞.
   @throws std::invalid_argument if influence_value_offset ≤ 0.
   */

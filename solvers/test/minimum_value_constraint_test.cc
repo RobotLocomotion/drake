@@ -14,14 +14,8 @@ double kEps{std::numeric_limits<double>::epsilon()};
 
 // Returns the element-wise square of it's input.
 template <typename T>
-VectorX<T> SquareAndReturnAll(const Eigen::Ref<const VectorX<T>>& x,
-                              double influence_value) {
-  int max_num_values = static_cast<int>(x.size());
-  VectorX<T> values(max_num_values);
-  for (int i = 0; i < max_num_values; ++i) {
-    values(i) = x(i) * x(i);
-  }
-  return values;
+VectorX<T> SquareAndReturnAll(const Eigen::Ref<const VectorX<T>>& x, double) {
+  return x.array().square();
 }
 
 // Returns the elements of the element-wise square of its input
@@ -44,8 +38,7 @@ VectorX<T> SquareAndReturnLessThanInfluenceValue(
 
 // Returns a zero-element vector.
 template <typename T>
-VectorX<T> ReturnNoValues(const Eigen::Ref<const VectorX<T>>& x,
-                          double influence_value) {
+VectorX<T> ReturnNoValues(const Eigen::Ref<const VectorX<T>>&, double) {
   return VectorX<T>(0);
 }
 
