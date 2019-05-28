@@ -55,10 +55,12 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
   minimum_value_constraint_ = std::make_unique<solvers::MinimumValueConstraint>(
       this->num_vars(), minimum_distance, influence_distance_offset,
       num_collision_candidates,
-      std::bind(&MinimumDistanceConstraint::Distances<AutoDiffXd>, this,
-                std::placeholders::_1, std::placeholders::_2),
-      std::bind(&MinimumDistanceConstraint::Distances<double>, this,
-                std::placeholders::_1, std::placeholders::_2));
+      [this](const auto& x, double influence_distance) {
+        return this->Distances<AutoDiffXd>(x, influence_distance);
+      },
+      [this](const auto& x, double influence_distance) {
+        return this->Distances<double>(x, influence_distance);
+      });
   this->set_bounds(minimum_value_constraint_->lower_bound(),
                    minimum_value_constraint_->upper_bound());
   if (penalty_function) {

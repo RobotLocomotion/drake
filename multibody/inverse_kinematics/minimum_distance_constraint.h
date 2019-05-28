@@ -17,9 +17,7 @@ penalty functions must meet the following criteria:
 1.     φ(x) ≥ 0 ∀ x ∈ ℝ.
 2. dφ(x)/dx ≤ 0 ∀ x ∈ ℝ.
 3.     φ(x) = 0 ∀ x ≥ 0.
-4. dφ(x)/dx < 0 ∀ x < 0.
-
-If `dpenalty_dx` is nullptr, the function should only compute φ(x). */
+4. dφ(x)/dx < 0 ∀ x < 0. */
 using MinimumDistancePenaltyFunction = solvers::MinimumValuePenaltyFunction;
 
 /** A hinge loss function smoothed by exponential function. This loss
