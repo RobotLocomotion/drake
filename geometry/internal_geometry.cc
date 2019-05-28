@@ -1,10 +1,14 @@
 #include "drake/geometry/internal_geometry.h"
 
+#include <memory>
+
 #include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
+
+using std::move;
 
 InternalGeometry::InternalGeometry(
     SourceId source_id, std::unique_ptr<Shape> shape, FrameId frame_id,
@@ -27,11 +31,27 @@ bool InternalGeometry::has_role(Role role) const {
     case Role::kIllustration:
       return has_illustration_role();
     case Role::kPerception:
-      throw std::logic_error("Unsupported internal geometry role: perception");
+      return has_perception_role();
     case Role::kUnassigned:
-      return !(has_proximity_role() || has_illustration_role());
+      return !(has_proximity_role() || has_perception_role() ||
+          has_illustration_role());
   }
   DRAKE_UNREACHABLE();
+}
+
+optional<RenderIndex> InternalGeometry::render_index(
+    const std::string& renderer_name) const {
+  auto iter = render_indices_.find(renderer_name);
+  if (iter != render_indices_.end()) return iter->second;
+  return {};
+}
+
+void InternalGeometry::set_render_index(std::string renderer_name,
+                                        RenderIndex index) {
+  auto result = render_indices_.emplace(move(renderer_name), index);
+  // As an internal class, setting a duplicate render index is a programming
+  // error in SceneGraph's internals.
+  DRAKE_ASSERT(result.second);
 }
 
 }  // namespace internal

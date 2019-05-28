@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 
@@ -190,6 +191,15 @@ class InternalGeometry {
     illustration_props_ = std::move(properties);
   }
 
+  /** Assigns a perception role to this geometry. Throws if the geometry has
+   already had perception properties assigned.  */
+  void SetRole(PerceptionProperties properties) {
+    if (perception_props_) {
+      throw std::logic_error("Geometry already has perception role assigned");
+    }
+    perception_props_ = std::move(properties);
+  }
+
   /** Reports if the geometry has the indicated `role`.  */
   bool has_role(Role role) const;
 
@@ -198,6 +208,9 @@ class InternalGeometry {
 
   /** Reports if the geometry has a illustration role.  */
   bool has_illustration_role() const { return illustration_props_ != nullopt; }
+
+  /** Reports if the geometry has a perception role. */
+  bool has_perception_role() const { return perception_props_ != nullopt; }
 
   /** Returns a pointer to the geometry's proximity properties (if they are
    defined. Nullptr otherwise.  */
@@ -212,6 +225,24 @@ class InternalGeometry {
     if (illustration_props_) return &*illustration_props_;
     return nullptr;
   }
+
+  /** Returns a pointer to the geometry's perception properties, or nullptr if
+   not defined.  */
+  const PerceptionProperties* perception_properties() const {
+    if (perception_props_) return &*perception_props_;
+    return nullptr;
+  }
+
+  /** If this geometry has a perception role, this provides access to the
+   per-renderer render index. Note, the geometry may not be included in every
+   renderer.  */
+  optional<RenderIndex> render_index(const std::string& renderer_name) const;
+
+  /** Sets this geometry's render `index` associated with the render engine
+   indicated by `renderer_name`.
+   @pre This geometry doesn't already have an index for the render engine.
+   @pre The `renderer_name` is a name for a valid renderer.  */
+  void set_render_index(std::string renderer_name, RenderIndex index);
 
   /** If this geometry has a proximity role, this that geometry's index in the
    proximity engine. It will be undefined it it does not have the proximity
@@ -251,7 +282,7 @@ class InternalGeometry {
   Isometry3<double> X_FG_;
 
   // The identifier for this frame's parent frame.
-  optional<GeometryId> parent_geometry_id_{nullopt};
+  optional<GeometryId> parent_geometry_id_{};
 
   // The identifiers for the geometry hung on this frame.
   std::unordered_set<GeometryId> child_geometry_ids_;
@@ -260,8 +291,13 @@ class InternalGeometry {
   // defined at the frame level, and all child geometries inherit.
 
   // The optional property sets tied to the roles that the geometry plays.
-  optional<ProximityProperties> proximity_props_{nullopt};
-  optional<IllustrationProperties> illustration_props_{nullopt};
+  optional<ProximityProperties> proximity_props_{};
+  optional<IllustrationProperties> illustration_props_{};
+  optional<PerceptionProperties> perception_props_{};
+
+  // The render index of this geometry in *each* renderer it is registered in
+  // (keyed by the unique renderer name).
+  std::unordered_map<std::string, RenderIndex> render_indices_;
 
   // The index of the geometry in the engine. Note: is currently unused but will
   // gain importance when the API for *removing* geometry is added. It is the

@@ -6,6 +6,8 @@
 #include <string>
 #include <utility>
 
+#include <fmt/format.h>
+
 #include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/text_logging.h"
@@ -13,6 +15,7 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/proximity_engine.h"
+#include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/utilities.h"
 
 namespace drake {
@@ -22,6 +25,8 @@ using internal::GeometryStateCollisionFilterAttorney;
 using internal::InternalFrame;
 using internal::InternalGeometry;
 using internal::ProximityEngine;
+using math::RigidTransform;
+using math::RigidTransformd;
 using std::make_pair;
 using std::make_unique;
 using std::move;
@@ -317,7 +322,7 @@ FrameId GeometryState<T>::GetFrameId(GeometryId geometry_id) const {
 }
 
 template <typename T>
-const std::string& GeometryState<T>::get_name(GeometryId geometry_id) const {
+const std::string& GeometryState<T>::GetName(GeometryId geometry_id) const {
   const InternalGeometry* geometry = GetGeometry(geometry_id);
   if (geometry != nullptr) return geometry->name();
 
@@ -349,19 +354,30 @@ const Isometry3<double>& GeometryState<T>::GetPoseInParent(
 }
 
 template <typename T>
-const ProximityProperties* GeometryState<T>::get_proximity_properties(
+const ProximityProperties* GeometryState<T>::GetProximityProperties(
     GeometryId id) const {
   const InternalGeometry* geometry = GetGeometry(id);
-  if (geometry != nullptr) return geometry->proximity_properties();
-  return nullptr;
+  if (geometry) return geometry->proximity_properties();
+  throw std::logic_error(
+      fmt::format("Referenced geometry {} has not been registered", id));
 }
 
 template <typename T>
-const IllustrationProperties* GeometryState<T>::get_illustration_properties(
+const IllustrationProperties* GeometryState<T>::GetIllustrationProperties(
     GeometryId id) const {
   const InternalGeometry* geometry = GetGeometry(id);
-  if (geometry != nullptr) return geometry->illustration_properties();
-  return nullptr;
+  if (geometry) return geometry->illustration_properties();
+  throw std::logic_error(
+      fmt::format("Referenced geometry {} has not been registered", id));
+}
+
+template <typename T>
+const PerceptionProperties* GeometryState<T>::GetPerceptionProperties(
+    GeometryId id) const {
+  const InternalGeometry* geometry = GetGeometry(id);
+  if (geometry) return geometry->perception_properties();
+  throw std::logic_error(
+      fmt::format("Referenced geometry {} has not been registered", id));
 }
 
 template <typename T>
@@ -749,6 +765,31 @@ void GeometryState<T>::AssignRole(SourceId source_id,
 template <typename T>
 void GeometryState<T>::AssignRole(SourceId source_id,
                                   GeometryId geometry_id,
+                                  PerceptionProperties properties) {
+  AssignRoleInternal(source_id, geometry_id, std::move(properties),
+                     Role::kPerception);
+
+  InternalGeometry* geometry = GetMutableGeometry(geometry_id);
+  // This *must* be non-null, otherwise the role assignment would have failed.
+  DRAKE_DEMAND(geometry != nullptr);
+
+  for (auto& pair : render_engines_) {
+    const std::string& renderer_name = pair.first;
+    auto& engine = pair.second;
+    optional<RenderIndex> index =
+        engine->RegisterVisual(geometry->index(), geometry->shape(),
+                               *geometry->perception_properties(),
+                               RigidTransformd(geometry->X_FG()),
+                               geometry->is_dynamic());
+    // If index is nullopt, then engine has chosen to *not* register the
+    // geometry (See docs on RenderEngine::RegisterVisual()).
+    if (index) geometry->set_render_index(renderer_name, *index);
+  }
+}
+
+template <typename T>
+void GeometryState<T>::AssignRole(SourceId source_id,
+                                  GeometryId geometry_id,
                                   IllustrationProperties properties) {
   AssignRoleInternal(source_id, geometry_id, std::move(properties),
                      Role::kIllustration);
@@ -784,6 +825,22 @@ void GeometryState<T>::ExcludeCollisionsBetween(const GeometrySet& setA,
   CollectIndices(setB, &dynamic2, &anchored2);
   geometry_engine_->ExcludeCollisionsBetween(dynamic1, anchored1, dynamic2,
                                              anchored2);
+}
+
+template <typename T>
+void GeometryState<T>::AddRenderer(
+    std::string name, std::unique_ptr<render::RenderEngine> renderer) {
+  if (geometries_.size() > 0) {
+    throw std::logic_error(
+        fmt::format("AddRenderer(): Error adding renderer '{}'; geometries "
+                    "have already been registered",
+                    name));
+  }
+  if (render_engines_.count(name) > 0) {
+    throw std::logic_error(fmt::format(
+        "AddRenderer(): A renderer with the name '{}' already exists", name));
+  }
+  render_engines_[move(name)] = move(renderer);
 }
 
 template <typename T>
@@ -870,6 +927,16 @@ template <typename T>
 void GeometryState<T>::FinalizePoseUpdate() {
   geometry_engine_->UpdateWorldPoses(X_WG_,
                                      dynamic_proximity_index_to_internal_map_);
+  // TODO(SeanCurtis-TRI): Kill this horrible copy once Isometry3 is removed
+  // and X_WG_ is RigidTransform typed.
+  std::vector<RigidTransform<T>> Xrt_WG;
+  std::transform(X_WG_.begin(), X_WG_.end(), std::back_inserter(Xrt_WG),
+                 [](const Isometry3<T>& pose_in) {
+                   return RigidTransform<T>(pose_in);
+                 });
+  for (auto& pair : render_engines_) {
+    pair.second->UpdatePoses(Xrt_WG);
+  }
 }
 
 template <typename T>
@@ -1079,6 +1146,18 @@ void GeometryState<T>::AssignRoleInternal(SourceId source_id,
     ThrowIfNameExistsInRole(geometry->frame_id(), role, geometry->name());
   }
   geometry->SetRole(std::move(properties));
+}
+
+template <typename T>
+const render::RenderEngine& GeometryState<T>::GetRenderEngineOrThrow(
+    const std::string& renderer_name) const {
+  auto iter = render_engines_.find(renderer_name);
+  if (iter != render_engines_.end()) {
+    return *iter->second;
+  }
+
+  throw std::logic_error(
+      fmt::format("No renderer exists with name: '{}'", renderer_name));
 }
 
 }  // namespace geometry
