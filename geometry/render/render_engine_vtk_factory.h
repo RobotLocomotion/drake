@@ -33,7 +33,7 @@ struct RenderEngineVtkParams  {
  | Group name | Property Name | Required |  Property Type  | Property Description |
  | :--------: | :-----------: | :------: | :-------------: | :------------------- |
  |    phong   | diffuse       | no¹      | Eigen::Vector4d | The rgba² value of the object surface. |
- |    phong   | diffuse_map   | no³      | std::string     | The path to a texture to apply to the geometry. |
+ |    phong   | diffuse_map   | no³      | std::string     | The path to a texture to apply to the geometry.⁴ |
 
  ¹ If no diffuse value is given, a default rgba value will be applied. The
    default color is a bright orange. This default value can be changed to a
@@ -41,6 +41,12 @@ struct RenderEngineVtkParams  {
  ² WARNING: The alpha channel is currently ignored. <br>
  ³ If no path is specified, or the file cannot be read, the diffuse rgba value
    is used (or its default).
+ ⁴ %RenderEngineVtk implements a legacy feature for associating textures with
+   _meshes_. If _no_ `(phong, diffuse_map)` property is provided (or it refers
+   to a file that doesn't exist), for a mesh named `/path/to/mesh.obj`,
+   %RenderEngineVtk will search for a file `/path/to/mesh.png` (replacing "obj"
+   with "png"). If that image exists, it will be used as a texture on the mesh
+   object.
 
  <h3>Depth images</h3>
 
@@ -50,9 +56,9 @@ struct RenderEngineVtkParams  {
 
  | Group name | Property Name |   Required    |  Property Type  | Property Description |
  | :--------: | :-----------: | :-----------: | :-------------: | :------------------- |
- |   label    | id            | configurable⁴ |  RenderLabel    | The label to render into the image. |
+ |   label    | id            | configurable⁵ |  RenderLabel    | The label to render into the image. |
 
- ⁴ %RenderEngineVtk has a default render label value that is applied to any
+ ⁵ %RenderEngineVtk has a default render label value that is applied to any
  geometry that doesn't have a (label, id) property at registration. If a value
  is not explicitly specified, %RenderEngineVtk uses RenderLabel::kUnspecified
  as this default value. It can be explicitly set upon construction. The possible
