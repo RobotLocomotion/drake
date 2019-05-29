@@ -75,12 +75,10 @@ bool SolverBase::AreProgramAttributesSatisfied(
 
 // NOLINTNEXTLINE(runtime/references)
 SolutionResult SolverBase::Solve(MathematicalProgram& prog) const {
+  // N.B. This (deprecated) method is not very useful because discards all
+  // solution information except for the result code.
   MathematicalProgramResult result;
   Solve(prog, {}, {}, &result);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  prog.SetSolverResult(result.ConvertToSolverResult());
-#pragma GCC diagnostic pop
   return result.get_solution_result();
 }
 

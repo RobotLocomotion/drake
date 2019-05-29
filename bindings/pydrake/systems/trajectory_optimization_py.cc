@@ -14,14 +14,6 @@
 namespace drake {
 namespace pydrake {
 
-namespace {
-constexpr const char* const kSolveDeprecationString =
-    "MathematicalProgram methods that assume the solution is stored inside "
-    "the program are deprecated; for details and porting advice, see "
-    "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-    "will be removed on 2019-06-01.";
-}  // namespace
-
 PYBIND11_MODULE(trajectory_optimization, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::trajectory_optimization;
@@ -111,70 +103,25 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       .def("SetInitialTrajectory", &MultipleShooting::SetInitialTrajectory,
           doc.MultipleShooting.SetInitialTrajectory.doc)
       .def("GetSampleTimes",
-          [](const MultipleShooting& prog) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return prog.GetSampleTimes();
-#pragma GCC diagnostic pop
-          },
-          doc.MultipleShooting.GetSampleTimes.doc_deprecated)
-      .def("GetSampleTimes",
           overload_cast_explicit<Eigen::VectorXd,
               const solvers::MathematicalProgramResult&>(
               &MultipleShooting::GetSampleTimes),
-          doc.MultipleShooting.GetSampleTimes.doc)
-      .def("GetInputSamples",
-          [](const MultipleShooting& prog) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return prog.GetInputSamples();
-#pragma GCC diagnostic pop
-          },
-          doc.MultipleShooting.GetInputSamples.doc_deprecated)
+          doc.MultipleShooting.GetSampleTimes.doc_1args_h_var_values)
       .def("GetInputSamples",
           overload_cast_explicit<Eigen::MatrixXd,
               const solvers::MathematicalProgramResult&>(
               &MultipleShooting::GetInputSamples),
           doc.MultipleShooting.GetInputSamples.doc)
       .def("GetStateSamples",
-          [](const MultipleShooting& prog) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return prog.GetStateSamples();
-#pragma GCC diagnostic pop
-          },
-          doc.MultipleShooting.GetStateSamples.doc_deprecated)
-      .def("GetStateSamples",
           overload_cast_explicit<Eigen::MatrixXd,
               const solvers::MathematicalProgramResult&>(
               &MultipleShooting::GetStateSamples),
           doc.MultipleShooting.GetStateSamples.doc)
       .def("ReconstructInputTrajectory",
-          [](const MultipleShooting& prog) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return prog.ReconstructInputTrajectory();
-#pragma GCC diagnostic pop
-          },
-          doc.MultipleShooting.ReconstructInputTrajectory.doc_deprecated)
-      .def("ReconstructInputTrajectory",
           overload_cast_explicit<trajectories::PiecewisePolynomial<double>,
               const solvers::MathematicalProgramResult&>(
               &MultipleShooting::ReconstructInputTrajectory),
           doc.MultipleShooting.ReconstructInputTrajectory.doc)
-      .def("ReconstructStateTrajectory",
-          [](const MultipleShooting& prog) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return prog.ReconstructStateTrajectory();
-#pragma GCC diagnostic pop
-          },
-          doc.MultipleShooting.ReconstructStateTrajectory.doc_deprecated)
       .def("ReconstructStateTrajectory",
           overload_cast_explicit<trajectories::PiecewisePolynomial<double>,
               const solvers::MathematicalProgramResult&>(

@@ -6,7 +6,6 @@ import warnings
 
 import numpy as np
 
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.examples.pendulum import PendulumPlant
 from pydrake.trajectories import PiecewisePolynomial
 from pydrake.solvers import mathematicalprogram as mp
@@ -20,7 +19,7 @@ from pydrake.systems.trajectory_optimization import (
 
 
 class TestTrajectoryOptimization(unittest.TestCase):
-    def _do_test_direct_collocation(self, use_deprecated_solve):
+    def test_direct_collocation(self):
         plant = PendulumPlant()
         context = plant.CreateDefaultContext()
 
@@ -70,28 +69,15 @@ class TestTrajectoryOptimization(unittest.TestCase):
         dircol.AddInputTrajectoryCallback(input_callback)
         dircol.AddStateTrajectoryCallback(state_callback)
 
-        if use_deprecated_solve:
-            with catch_drake_warnings(expected_count=1):
-                dircol.Solve()
-                result = None
-        else:
-            result = mp.Solve(dircol)
+        result = mp.Solve(dircol)
         self.assertTrue(input_was_called)
         self.assertTrue(state_was_called)
 
-        if use_deprecated_solve:
-            with catch_drake_warnings(expected_count=5):
-                times = dircol.GetSampleTimes()
-                inputs = dircol.GetInputSamples()
-                states = dircol.GetStateSamples()
-                input_traj = dircol.ReconstructInputTrajectory()
-                state_traj = dircol.ReconstructStateTrajectory()
-        else:
-            times = dircol.GetSampleTimes(result)
-            inputs = dircol.GetInputSamples(result)
-            states = dircol.GetStateSamples(result)
-            input_traj = dircol.ReconstructInputTrajectory(result)
-            state_traj = dircol.ReconstructStateTrajectory(result)
+        times = dircol.GetSampleTimes(result)
+        inputs = dircol.GetInputSamples(result)
+        states = dircol.GetStateSamples(result)
+        input_traj = dircol.ReconstructInputTrajectory(result)
+        state_traj = dircol.ReconstructStateTrajectory(result)
 
         constraint = DirectCollocationConstraint(plant, context)
         AddDirectCollocationConstraint(constraint, dircol.timestep(0),
@@ -99,13 +85,7 @@ class TestTrajectoryOptimization(unittest.TestCase):
                                        dircol.input(0), dircol.input(1),
                                        dircol)
 
-    def test_direct_collocation(self):
-        self._do_test_direct_collocation(use_deprecated_solve=False)
-
-    def test_direct_collocation_deprecated(self):
-        self._do_test_direct_collocation(use_deprecated_solve=True)
-
-    def _do_test_direct_transcription(self, use_deprecated_solve):
+    def test_direct_transcription(self):
         # Integrator.
         plant = LinearSystem(A=[0.], B=[1.], C=[1.], D=[0.], time_period=0.1)
         context = plant.CreateDefaultContext()
@@ -133,27 +113,12 @@ class TestTrajectoryOptimization(unittest.TestCase):
         initial_x = PiecewisePolynomial()
         dirtran.SetInitialTrajectory(initial_u, initial_x)
 
-        if use_deprecated_solve:
-            with catch_drake_warnings(expected_count=6):
-                dirtran.Solve()
-                times = dirtran.GetSampleTimes()
-                inputs = dirtran.GetInputSamples()
-                states = dirtran.GetStateSamples()
-                input_traj = dirtran.ReconstructInputTrajectory()
-                state_traj = dirtran.ReconstructStateTrajectory()
-        else:
-            result = mp.Solve(dirtran)
-            times = dirtran.GetSampleTimes(result)
-            inputs = dirtran.GetInputSamples(result)
-            states = dirtran.GetStateSamples(result)
-            input_traj = dirtran.ReconstructInputTrajectory(result)
-            state_traj = dirtran.ReconstructStateTrajectory(result)
-
-    def test_direct_transcription(self):
-        self._do_test_direct_transcription(use_deprecated_solve=False)
-
-    def test_direct_transcription_deprecated(self):
-        self._do_test_direct_transcription(use_deprecated_solve=True)
+        result = mp.Solve(dirtran)
+        times = dirtran.GetSampleTimes(result)
+        inputs = dirtran.GetInputSamples(result)
+        states = dirtran.GetStateSamples(result)
+        input_traj = dirtran.ReconstructInputTrajectory(result)
+        state_traj = dirtran.ReconstructStateTrajectory(result)
 
     def test_direct_transcription_continuous_time(self):
         # Test that the continuous-time constructor is also spelled correctly.

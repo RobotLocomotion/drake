@@ -4,6 +4,7 @@
 
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solver_id.h"
+#include "drake/solvers/solver_interface.h"
 
 namespace drake {
 namespace solvers {

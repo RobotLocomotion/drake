@@ -134,22 +134,6 @@ GTEST_TEST(SolverBaseTest, SolveAndReturn) {
   // solve-as-output-argument method.
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(SolverBaseTest, SolveMutable) {
-  const StubSolverBase dut;
-  MathematicalProgram prog;
-  auto vars = prog.NewContinuousVariables(1);
-  prog.SetInitialGuess(vars[0], 22.0);
-  const SolutionResult result = dut.Solve(prog);
-  EXPECT_EQ(result, kSolutionFound);
-  ASSERT_TRUE(prog.GetSolverId().has_value());
-  EXPECT_EQ(*prog.GetSolverId(), StubSolverBase::id());
-  EXPECT_EQ(prog.GetSolution(vars[0]), 22.0);
-  EXPECT_EQ(prog.GetOptimalCost(), 1.0);
-}
-#pragma GCC diagnostic pop
-
 }  // namespace
 }  // namespace test
 }  // namespace solvers

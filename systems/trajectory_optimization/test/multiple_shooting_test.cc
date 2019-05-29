@@ -36,14 +36,6 @@ class MyDirectTrajOpt : public MultipleShooting {
       : MultipleShooting(num_inputs, num_states, num_time_samples, min_timestep,
                          max_timestep) {}
 
-  PiecewisePolynomial<double> ReconstructInputTrajectory() const override {
-    return PiecewisePolynomial<double>();
-  };
-
-  PiecewisePolynomial<double> ReconstructStateTrajectory() const override {
-    return PiecewisePolynomial<double>();
-  };
-
   PiecewisePolynomial<double> ReconstructInputTrajectory(
       const solvers::MathematicalProgramResult&) const override {
     return PiecewisePolynomial<double>();

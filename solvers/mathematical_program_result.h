@@ -10,7 +10,7 @@
 #include "drake/common/value.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/solution_result.h"
-#include "drake/solvers/solver_result.h"
+#include "drake/solvers/solver_id.h"
 
 namespace drake {
 namespace solvers {
@@ -149,19 +149,6 @@ class MathematicalProgramResult final {
     }
     return solver_details_->get_mutable_value<T>();
   }
-
-  /**
-   * Convert MathematicalProgramResult to SolverResult.
-   * @note This function doesn't set optimal_cost_lower_bound. If
-   * SolverResult.optimal_cost_lower_bound needs to be set (like in
-   * GurobiSolver), then the user will have to set it after calling
-   * ConvertToSolverResult.
-   */
-  DRAKE_DEPRECATED("2019-06-01",
-      "MathematicalProgram methods that assume the solution is stored inside "
-      "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.")
-  internal::SolverResult ConvertToSolverResult() const;
 
   /**
    * Gets the solution of all decision variables.
