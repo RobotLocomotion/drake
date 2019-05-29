@@ -39,6 +39,12 @@ class VolumeVertex {
   explicit VolumeVertex(const Vector3<T>& r_MV)
       : r_MV_(r_MV) {}
 
+  /** Constructs VolumeVertex from the xyz components of a point V in a frame
+   M.
+   */
+  VolumeVertex(const T& Vx_M, const T& Vy_M, const T& Vz_M)
+      : r_MV_(Vx_M, Vy_M, Vz_M) {}
+
   /** Returns the displacement vector from the origin of M's frame to this
     vertex, expressed in M's frame.
    */
@@ -69,6 +75,16 @@ class VolumeElement {
       : vertex_({v0, v1, v2, v3}) {}
 
   /** Constructs VolumeElement.
+   @param v0 Index of the first vertex in VolumeMesh.
+   @param v1 Index of the second vertex in VolumeMesh.
+   @param v2 Index of the third vertex in VolumeMesh.
+   @param v3 Index of the last vertex in VolumeMesh.
+   */
+  VolumeElement(int v0, int v1, int v2, int v3)
+      : vertex_({VolumeVertexIndex(v0), VolumeVertexIndex(v1),
+                 VolumeVertexIndex(v2), VolumeVertexIndex(v3)}) {}
+
+  /** Constructs VolumeElement.
    @param v  Array of four integer indices of the vertices of the element in
              VolumeMesh.
    */
@@ -85,6 +101,13 @@ class VolumeElement {
     return vertex_.at(i);
   }
 
+  /** Returns the vertex index in VolumeMesh of the i-th vertex of this
+   element.
+   @param i  The local index of the vertex in this element.
+   @pre 0 <= i < 4
+   */
+  VolumeVertexIndex operator[](int i) const { return vertex(i); }
+
  private:
   // The vertices of this element.
   std::array<VolumeVertexIndex, 4> vertex_;
@@ -97,7 +120,7 @@ class VolumeElement {
 template <class T>
 class VolumeMesh {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VolumeMesh)
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(VolumeMesh)
 
   /**
    @name Mesh type traits
@@ -126,6 +149,12 @@ class VolumeMesh {
   */
   using Barycentric = Vector<T, kDim + 1>;
 
+  //@}
+
+  VolumeMesh(std::vector<VolumeElement>&& elements,
+             std::vector<VolumeVertex<T>>&& vertices)
+      : elements_(std::move(elements)), vertices_(std::move(vertices)) {}
+
   const VolumeElement& element(ElementIndex e) const {
     DRAKE_DEMAND(0 <= e && num_elements());
     return elements_[e];
@@ -140,11 +169,9 @@ class VolumeMesh {
     return vertices_[v];
   }
 
-  //@}
+  const std::vector<VolumeVertex<T>>& vertices() const { return vertices_; }
 
-  VolumeMesh(std::vector<VolumeElement>&& elements,
-             std::vector<VolumeVertex<T>>&& vertices)
-      : elements_(std::move(elements)), vertices_(std::move(vertices)) {}
+  const std::vector<VolumeElement>& tetrahedra() const { return elements_; }
 
   /** Returns the number of tetrahedral elements in the mesh.
    */
@@ -160,9 +187,9 @@ class VolumeMesh {
   // The vertices that are shared between the tetrahedral elements.
   std::vector<VolumeVertex<T>> vertices_;
 };
+DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(VolumeMesh)
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class VolumeMesh)
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(class VolumeMesh)
 
 }  // namespace geometry
 }  // namespace drake

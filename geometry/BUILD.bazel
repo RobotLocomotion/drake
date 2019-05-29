@@ -31,6 +31,7 @@ drake_cc_package_library(
         ":scene_graph_inspector",
         ":shape_specification",
         ":shape_to_string",
+        ":sphere_mesh_generator",
         ":utilities",
     ],
 )
@@ -254,6 +255,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "sphere_mesh_generator",
+    srcs = ["sphere_mesh_generator.cc"],
+    hdrs = ["sphere_mesh_generator.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+        "//geometry/proximity:volume_mesh",
+    ],
+)
+
+drake_cc_library(
     name = "utilities",
     srcs = ["utilities.cc"],
     hdrs = ["utilities.h"],
@@ -392,6 +404,13 @@ drake_cc_googletest(
     deps = [
         "utilities",
         "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sphere_mesh_generator_test",
+    deps = [
+        ":sphere_mesh_generator",
     ],
 )
 
