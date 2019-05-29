@@ -195,25 +195,25 @@ class TestCustom(unittest.TestCase):
                 self.called_guard = False
                 self.called_reset = False
                 # Ensure we have desired overloads.
-                self.DeclarePeriodicPublish(1.0)
-                self.DeclarePeriodicPublish(1.0, 0)
-                self.DeclarePeriodicPublish(period_sec=1.0, offset_sec=0.)
-                self.DeclarePeriodicDiscreteUpdate(
-                    period_sec=1.0, offset_sec=0.)
-                self.DeclareInitializationEvent(
-                    event=PublishEvent(
-                        trigger_type=TriggerType.kInitialization,
-                        callback=self._on_initialize))
-                self.DeclarePerStepEvent(
-                    event=PublishEvent(
-                        trigger_type=TriggerType.kPerStep,
-                        callback=self._on_per_step))
-                self.DeclarePeriodicEvent(
-                    period_sec=1.0,
-                    offset_sec=0.0,
-                    event=PublishEvent(
-                        trigger_type=TriggerType.kPeriodic,
-                        callback=self._on_periodic))
+                #self.DeclarePeriodicPublish(1.0)
+                #self.DeclarePeriodicPublish(1.0, 0)
+                #self.DeclarePeriodicPublish(period_sec=1.0, offset_sec=0.)
+                #self.DeclarePeriodicDiscreteUpdate(
+                #    period_sec=1.0, offset_sec=0.)
+                #self.DeclareInitializationEvent(
+                #    event=PublishEvent(
+                #        trigger_type=TriggerType.kInitialization,
+                #        callback=self._on_initialize))
+                #self.DeclarePerStepEvent(
+                #    event=PublishEvent(
+                #        trigger_type=TriggerType.kPerStep,
+                #        callback=self._on_per_step))
+                #self.DeclarePeriodicEvent(
+                #    period_sec=1.0,
+                #    offset_sec=0.0,
+                #    event=PublishEvent(
+                #        trigger_type=TriggerType.kPeriodic,
+                #        callback=self._on_periodic))
                 self.DeclareContinuousState(2)
                 self.DeclareDiscreteState(1)
                 # Ensure that we have inputs / outputs to call direct
@@ -312,7 +312,7 @@ class TestCustom(unittest.TestCase):
         self.assertFalse(system.called_discrete)
         self.assertFalse(system.called_initialize)
         results = call_leaf_system_overrides(system)
-        #self.assertTrue(system.called_publish)
+        # self.assertTrue(system.called_publish)
         self.assertTrue(system.called_feedthrough)
         self.assertFalse(results["has_direct_feedthrough"])
         self.assertTrue(system.called_continuous)
@@ -329,7 +329,7 @@ class TestCustom(unittest.TestCase):
         system = TrivialSystem()
         context = system.CreateDefaultContext()
         system.Publish(context)
-        #self.assertTrue(system.called_publish)
+        # self.assertTrue(system.called_publish)
         context_update = context.Clone()
         system.CalcTimeDerivatives(
             context, context_update.get_mutable_continuous_state())
