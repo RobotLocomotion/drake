@@ -27,6 +27,7 @@ RobotController::RobotController(PlanType plan_type, double control_period) :
       break;
     case PlanType::kTaskSpacePlan:
       this->set_name("TaskSpaceController");
+      plan_ = std::make_unique<TaskSpacePlan>();
       break;
     case PlanType::kEmptyPlan:
       break;
