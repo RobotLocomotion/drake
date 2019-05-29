@@ -25,14 +25,15 @@ PlanRunnerHardwareInterface::PlanRunnerHardwareInterface(
   systems::DiagramBuilder<double> builder;
 
   auto lcm =
-      builder.AddSystem<systems::lcm::LcmInterfaceSystem>(owned_lcm_.get());
+      builder.template AddSystem<systems::lcm::LcmInterfaceSystem>(
+          owned_lcm_.get());
 
   // Receive iiwa status.
   iiwa_status_sub_ = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_iiwa_status>(
           "IIWA_STATUS", lcm));
   auto iiwa_status_receiver =
-      builder.AddSystem<manipulation::kuka_iiwa::IiwaStatusReceiver>();
+      builder.template AddSystem<manipulation::kuka_iiwa::IiwaStatusReceiver>();
   builder.Connect(iiwa_status_sub_->get_output_port(),
                   iiwa_status_receiver->get_input_port());
 
@@ -41,13 +42,13 @@ PlanRunnerHardwareInterface::PlanRunnerHardwareInterface(
       systems::lcm::LcmPublisherSystem::Make<drake::lcmt_iiwa_command>(
           "IIWA_COMMAND", lcm, 0.005));
   auto iiwa_command_sender =
-      builder.AddSystem<manipulation::kuka_iiwa::IiwaCommandSender>();
+      builder.template AddSystem<manipulation::kuka_iiwa::IiwaCommandSender>();
   builder.Connect(iiwa_command_sender->get_output_port(),
                   iiwa_command_pub->get_input_port());
 
   // Add PlanSender and PlanRunner.
-  plan_sender_ = builder.AddSystem<PlanSender>(plan_list);
-  auto plan_runner = builder.AddSystem<RobotPlanRunner>(0.);
+  auto plan_runner = builder.template AddSystem<RobotPlanRunner>(0.);
+  plan_sender_ = builder.template AddSystem<PlanSender>(plan_list);
   builder.Connect(plan_sender_->GetOutputPort("plan_data"),
                   plan_runner->GetInputPort("plan_data"));
 
@@ -85,10 +86,11 @@ lcmt_iiwa_status PlanRunnerHardwareInterface::GetCurrentIiwaStatus() {
   // create diagram system.
   systems::DiagramBuilder<double> builder;
   auto lcm =
-      builder.AddSystem<systems::lcm::LcmInterfaceSystem>(new lcm::DrakeLcm());
+      builder.template AddSystem<systems::lcm::LcmInterfaceSystem>(new
+      lcm::DrakeLcm());
 
   // Receive iiwa status.
-  auto iiwa_status_sub = builder.AddSystem(
+  auto iiwa_status_sub = builder.template AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_iiwa_status>(
           "IIWA_STATUS", lcm));
 

@@ -30,7 +30,7 @@ class PlanSender : public systems::LeafSystem<double> {
   mutable std::vector<double> plan_start_times_{};
   mutable std::vector<robot_plans::PlanData> plan_data_list_{};
   mutable int num_plans_{0};
-  systems::AbstractStateIndex abstract_state_index_{-1};
+  systems::AbstractStateIndex abstract_state_index_;
   int input_port_idx_q_{-1};
   const int num_positions_;
   const double transition_time_sec_;

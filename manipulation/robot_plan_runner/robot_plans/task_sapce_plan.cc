@@ -1,5 +1,6 @@
 #include "drake/manipulation/robot_plan_runner/robot_plans/task_space_plan.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/common/find_resource.h"
 
 namespace drake {
 namespace manipulation {
@@ -20,7 +21,8 @@ TaskSpacePlan::TaskSpacePlan()
   // Constructs MultibodyPlant of iiwa7, which is used for Jacobian
   // calculations.
   multibody::Parser parser(plant_.get());
-  robot_model_ = parser.AddModelFromFile(kIiwaSdf, "iiwa");
+  std::string iiwa_sdf_path = FindResourceOrThrow(kIiwaSdf);
+  robot_model_ = parser.AddModelFromFile(iiwa_sdf_path, "iiwa");
 
   plant_->WeldFrames(plant_->world_frame(),
                      plant_->GetFrameByName("iiwa_link_0"));
@@ -49,7 +51,7 @@ void TaskSpacePlan::UpdateOrientationError(
 
 void TaskSpacePlan::Step(const Eigen::Ref<const Eigen::VectorXd> &q,
                          const Eigen::Ref<const Eigen::VectorXd> &v,
-                         const Eigen::Ref<const Eigen::VectorXd> &tau_external,
+                         const Eigen::Ref<const Eigen::VectorXd> &,
                          double control_period,
                          double t,
                          const PlanData &plan_data,

@@ -39,7 +39,7 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
       camera_names_(std::move(camera_names)) {
   systems::DiagramBuilder<double> builder;
 
-  auto lcm = builder.AddSystem<systems::lcm::LcmInterfaceSystem>(
+  auto lcm = builder.template AddSystem<systems::lcm::LcmInterfaceSystem>(
       owned_lcm_.get());
 
   // Publish IIWA command.
