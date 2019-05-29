@@ -185,17 +185,6 @@ class OutputPort : public OutputPortBase {
   using PortBase::size;
   using PortBase::ticket;
 
-  DRAKE_DEPRECATED("2019-06-01", "Use Eval() instead.")
-  const AbstractValue& EvalAbstract(const Context<T>& context) const {
-    return this->template Eval<AbstractValue>(context);
-  }
-
-  DRAKE_DEPRECATED("2019-06-01", "Use Eval() instead.")
-  Eigen::VectorBlock<const VectorX<T>> EvalEigenVector(
-      const Context<T>& context) const {
-    return this->Eval(context);
-  }
-
  protected:
   /** Provides derived classes the ability to set the base class members at
   construction. See OutputPortBase::OutputPortBase() for the meaning of these

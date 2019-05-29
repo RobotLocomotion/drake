@@ -208,11 +208,6 @@ class ContinuousState {
     return *misc_continuous_state_.get();
   }
 
-  DRAKE_DEPRECATED("2019-06-01", "Use SetFrom instead of CopyFrom.")
-  void CopyFrom(const ContinuousState<T>& other) {
-    SetFrom(other);
-  }
-
   /// Copies the values from `other` into `this`, converting the scalar type as
   /// necessary.
   template <typename U>

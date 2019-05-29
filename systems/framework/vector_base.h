@@ -146,11 +146,6 @@ class VectorBase {
     }
   }
 
-  DRAKE_DEPRECATED("2019-06-01", "Use the EigenPtr overload instead.")
-  void ScaleAndAddToVector(const T& scale, Eigen::Ref<VectorX<T>> vec) const {
-    ScaleAndAddToVector(scale, &vec);
-  }
-
   /// Add in scaled vector @p rhs to this vector. Both vectors must
   /// be the same size.
   VectorBase& PlusEqScaled(const T& scale, const VectorBase<T>& rhs) {
@@ -179,20 +174,6 @@ class VectorBase {
   /// Subtract in vector @p rhs to this vector.
   VectorBase& operator-=(const VectorBase<T>& rhs) {
     return PlusEqScaled(T(-1), rhs);
-  }
-
-  DRAKE_DEPRECATED("2019-06-01", "Use CopyToVector + Eigen lpNorm.")
-  virtual T NormInf() const {
-    using std::abs;
-    using std::max;
-    T norm(0);
-    const int count = size();
-    for (int i = 0; i < count; ++i) {
-      T val = abs((*this)[i]);
-      norm = max(norm, val);
-    }
-
-    return norm;
   }
 
   /// Get the bounds for the elements.

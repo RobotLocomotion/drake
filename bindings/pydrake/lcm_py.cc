@@ -89,31 +89,7 @@ PYBIND11_MODULE(lcm, m) {
               // Unsubscribe is not supported by the mock.
               DRAKE_DEMAND(subscription == nullptr);
             },
-            py::arg("channel"), py::arg("handler"), cls_doc.Subscribe.doc)
-        .def("InduceSubscriberCallback",
-            [](Class* self, const std::string& channel, py::bytes buffer) {
-              WarnDeprecated("Use Publish + HandleSubscriptions instead.");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-              std::string str = buffer;
-              self->InduceSubscriberCallback(channel, str.data(), str.size());
-#pragma GCC diagnostic pop
-            },
-            py::arg("channel"), py::arg("buffer"),
-            cls_doc.InduceSubscriberCallback.doc_deprecated)
-        .def("get_last_published_message",
-            [](const Class* self, const std::string& channel) {
-              WarnDeprecated("Use pydrake.lcm.Subscriber instead.");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-              const std::vector<uint8_t>& bytes =
-                  self->get_last_published_message(channel);
-              return py::bytes(
-                  reinterpret_cast<const char*>(bytes.data()), bytes.size());
-#pragma GCC diagnostic pop
-            },
-            py::arg("channel"),
-            cls_doc.get_last_published_message.doc_deprecated);
+            py::arg("channel"), py::arg("handler"), cls_doc.Subscribe.doc);
   }
 
   ExecuteExtraPythonCode(m);
