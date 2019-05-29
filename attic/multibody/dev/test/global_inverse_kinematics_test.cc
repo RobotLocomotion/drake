@@ -40,14 +40,15 @@ TEST_F(KukaTest, UnreachableTest) {
                                            0.0 * M_PI);
 
   solvers::GurobiSolver gurobi_solver;
-
   if (gurobi_solver.available()) {
     global_ik_.SetSolverOption(solvers::GurobiSolver::id(), "OutputFlag", 1);
 
-    SolutionResult sol_result = gurobi_solver.Solve(global_ik_);
-
-    EXPECT_TRUE(sol_result == SolutionResult::kInfeasible_Or_Unbounded ||
-                sol_result == SolutionResult::kInfeasibleConstraints);
+    const solvers::MathematicalProgramResult result =
+        gurobi_solver.Solve(global_ik_, {}, {});
+    EXPECT_TRUE(result.get_solution_result() ==
+                    SolutionResult::kInfeasible_Or_Unbounded ||
+                result.get_solution_result() ==
+                    SolutionResult::kInfeasibleConstraints);
   }
   Eigen::Matrix<double, 7, 1> q_nom;
   Eigen::Matrix<double, 7, 1> q_guess;
@@ -92,12 +93,13 @@ TEST_F(KukaTest, ReachableWithCost) {
   if (gurobi_solver.available()) {
     // First solve the IK problem without the cost.
     global_ik_.SetSolverOption(solvers::GurobiSolver::id(), "OutputFlag", 1);
-    SolutionResult sol_result = gurobi_solver.Solve(global_ik_);
 
-    EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
+    solvers::MathematicalProgramResult result =
+        gurobi_solver.Solve(global_ik_, {}, {});
+    EXPECT_TRUE(result.is_success());
 
     const Eigen::VectorXd q_no_cost =
-        global_ik_.ReconstructGeneralizedPositionSolution();
+        global_ik_.ReconstructGeneralizedPositionSolution(result);
 
     DRAKE_DEMAND(rigid_body_tree_->get_num_bodies() == 12);
     // Now add the cost on the posture error.
@@ -106,18 +108,17 @@ TEST_F(KukaTest, ReachableWithCost) {
     global_ik_.AddPostureCost(q, Eigen::VectorXd::Constant(12, 1),
                               Eigen::VectorXd::Constant(12, 1));
 
-    sol_result = gurobi_solver.Solve(global_ik_);
-
-    EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
+    result = gurobi_solver.Solve(global_ik_, {}, {});
+    EXPECT_TRUE(result.is_success());
 
     // The position tolerance and the orientation tolerance is chosen
     // according to the Gurobi solver tolerance.
     double position_error = 1E-5;
     double orientation_error = 2E-5;
-    CheckGlobalIKSolution(position_error, orientation_error);
+    CheckGlobalIKSolution(result, position_error, orientation_error);
 
     const Eigen::VectorXd q_w_cost =
-        global_ik_.ReconstructGeneralizedPositionSolution();
+        global_ik_.ReconstructGeneralizedPositionSolution(result);
     // There is extra error introduced from gurobi optimality condition and SVD,
     // so the tolerance is loose.
     EXPECT_TRUE(

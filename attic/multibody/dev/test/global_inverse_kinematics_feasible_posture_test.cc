@@ -1,5 +1,6 @@
 #include "drake/multibody/dev/test/global_inverse_kinematics_test_util.h"
 #include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace multibody {
@@ -92,9 +93,9 @@ TEST_F(KukaTest, FeasiblePostureTest) {
           rotmat_ub_flat);
     }
     solvers::GurobiSolver gurobi_solver;
-    const solvers::SolutionResult
-        sol_result = gurobi_solver.Solve(global_ik_);
-    EXPECT_EQ(sol_result, solvers::SolutionResult::kSolutionFound);
+    const solvers::MathematicalProgramResult result =
+        gurobi_solver.Solve(global_ik_, {}, {});
+    EXPECT_TRUE(result.is_success());
   }
 }
 }  // namespace multibody
