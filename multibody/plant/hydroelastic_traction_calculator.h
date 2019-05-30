@@ -1,7 +1,7 @@
 #pragma once
 
+#include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
-#include "drake/geometry/query_results/surface_mesh.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/math/spatial_force.h"
 #include "drake/systems/framework/context.h"
