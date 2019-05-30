@@ -8,8 +8,6 @@ namespace manipulation {
 namespace robot_plan_runner {
 namespace robot_plans {
 
-using Eigen::VectorXd;
-
 class TaskSpacePlan : public PlanBase {
  public:
   TaskSpacePlan();

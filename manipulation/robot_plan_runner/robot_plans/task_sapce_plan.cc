@@ -7,6 +7,9 @@ namespace manipulation {
 namespace robot_plan_runner {
 namespace robot_plans {
 
+using std::cout;
+using std::endl;
+
 using Eigen::VectorXd;
 
 const char kIiwaSdf[] =
@@ -16,8 +19,8 @@ const char kIiwaSdf[] =
 TaskSpacePlan::TaskSpacePlan()
     : PlanBase(PlanType::kTaskSpacePlan, 7),
       plant_(std::make_unique<multibody::MultibodyPlant<double>>()),
-      kp_translation(Eigen::Array3d(50, 50, 50)),
-      kp_rotation(Eigen::Array3d(20, 20, 20)) {
+      kp_translation(Eigen::Array3d(20, 20, 20)),
+      kp_rotation(Eigen::Array3d(10, 10, 10)) {
   // Constructs MultibodyPlant of iiwa7, which is used for Jacobian
   // calculations.
   multibody::Parser parser(plant_.get());
@@ -40,7 +43,7 @@ void TaskSpacePlan::UpdatePositionError(
   }
   const auto p_WoQ_W_ref =
       plan_data.ee_data.value().ee_xyz_traj.value(t) + *p_WoQ_W_t0_;
-  err_xyz_ = p_WoQ_W - p_WoQ_W_ref;
+  err_xyz_ =  p_WoQ_W_ref - p_WoQ_W;
 };
 
 void TaskSpacePlan::UpdateOrientationError(
@@ -80,7 +83,8 @@ void TaskSpacePlan::Step(const Eigen::Ref<const Eigen::VectorXd>& q,
   Eigen::Matrix<double, 6, 1> v_desired;
   v_desired.tail(3) = kp_translation * err_xyz_.array();
   v_desired.head(3) = Q_WT * (kp_rotation * Q_TTr_.vec().array()).matrix();
-  const auto q_dot_cmd =
+
+  const Eigen::VectorXd q_dot_cmd =
       Jv_WTq_.bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV)
           .solve(v_desired);
   *q_cmd = q + q_dot_cmd * control_period;
