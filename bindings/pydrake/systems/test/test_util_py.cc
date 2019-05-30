@@ -119,6 +119,7 @@ PYBIND11_MODULE(test_util, m) {
   m.def("call_leaf_system_overrides", [clone_vector](
                                           const LeafSystem<T>& system) {
     py::dict results;
+    results["do_publish"] = 0;
     auto context = system.AllocateContext();
     {
       // Leverage simulator to call initialization events.
@@ -131,9 +132,12 @@ PYBIND11_MODULE(test_util, m) {
     }
     {
       // Call `Publish` to test `DoPublish`.
+      results["do_publish"] = 1;
       auto events =
           LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
+      results["do_publish"] = 2;
       system.Publish(*context, *events);
+      results["do_publish"] = 3;
     }
     {
       // Call `HasDirectFeedthrough` to test `DoHasDirectFeedthrough`.
