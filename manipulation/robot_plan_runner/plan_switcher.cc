@@ -17,8 +17,6 @@ PlanSwitcher::PlanSwitcher() {
   input_port_idx_plan_data_ =
       this->DeclareAbstractInputPort("plan_data", Value<PlanData>())
           .get_index();
-  // TODO: PlanData does not need to pass through this system. This system
-  //  should only be responsible for the switching.
   this->DeclareAbstractOutputPort("port_switch_index",
                                   &PlanSwitcher::CalcSwitchIndex);
 }

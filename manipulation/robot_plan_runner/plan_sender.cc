@@ -75,7 +75,7 @@ PlanSender::PlanSender(const std::vector<PlanData>& plan_data_list)
 
 systems::EventStatus PlanSender::Initialize(const Context<double>& context,
                                             State<double>* state) const {
-  cout << "initiliazation!" << endl;
+  cout << "Initialization!" << endl;
   Eigen::VectorXd q_current =
       this->get_input_port(input_port_idx_q_).Eval(context);
   // Create a plan that connects the current position of the robot to the
@@ -143,7 +143,6 @@ void PlanSender::DoCalcNextUpdateTime(
 
   double t = context.get_time();
   const int& current_plan_idx = context.get_abstract_state<int>(0);
-  //  cout << t << " DoCalcNextUpdateTime called" << endl;
   if (current_plan_idx < num_plans_ - 1) {
     if (t >= plan_start_times_[current_plan_idx + 1]) {
       cout << "Adds event at time " << t << endl;
@@ -169,7 +168,6 @@ double PlanSender::get_all_plans_duration() const {
     t_total += transition_time_sec_ + extra_time_;
   }
   for (const auto& plan_data : plan_data_list_) {
-    // TODO: extend this for ee_data as well
     t_total += plan_data.get_duration() + extra_time_;
   }
   return t_total;

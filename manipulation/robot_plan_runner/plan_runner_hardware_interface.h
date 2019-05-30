@@ -31,6 +31,11 @@ class PlanRunnerHardwareInterface {
    * class is constructed.
    */
   void Run(double realtime_rate = 1.0);
+
+  /*
+ * Get current iiwa status by creating a diagram with only a lcm subscriber
+ * and simulating it for 1e-6 seconds.
+ */
   lcmt_iiwa_status GetCurrentIiwaStatus();
 
  private:

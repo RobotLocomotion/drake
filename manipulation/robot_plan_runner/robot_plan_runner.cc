@@ -19,16 +19,6 @@ namespace robot_plan_runner {
 using robot_plans::PlanData;
 using robot_plans::PlanType;
 
-/*
- * if control_period_sec is non-zero, a ZeroOrderHold with the same period is
- * added before the output of this system, which makes the entire system
- * discrete-time.
- *
- * Note that TaskSpacePlan always needs a non-zero control_period, because it
- * calculates the joint angle reference at the next time step as
- *  q_next = q_current + control_period * v_desired.
- * Therefore, if control_period is 0, task_space_controller
- */
 RobotPlanRunner::RobotPlanRunner(bool is_discrete, double control_period_sec) {
   this->set_name("RobotPlanRunner");
   systems::DiagramBuilder<double> builder;

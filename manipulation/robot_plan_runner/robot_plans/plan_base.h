@@ -44,7 +44,8 @@ struct PlanData {
     if (joint_traj.has_value()) {
       return joint_traj.value().end_time();
     } else if (ee_data.has_value()) {
-      // TODO: throw if durations of ee_xyz_traj and ee_quat_traj are different.
+      // TODO(pangtao22): throw if durations of ee_xyz_traj and ee_quat_traj
+      //  are different.
       return ee_data.value().ee_xyz_traj.end_time();
     } else {
       throw "invalid PlanData.";
@@ -61,6 +62,12 @@ class PlanBase {
       : num_positions_(num_positions), plan_type_(plan_type){};
   virtual ~PlanBase() = default;
 
+  /*
+   * This function is called in controller subsystems of RobotPlanRunner. It
+   * takes current robot state (q, v, tau_external), current time (t) and
+   * current plan to be executed (plan_data). It writes q and tau_external
+   * commands to the pointers provided.
+   */
   virtual void Step(const Eigen::Ref<const Eigen::VectorXd>& q,
                     const Eigen::Ref<const Eigen::VectorXd>& v,
                     const Eigen::Ref<const Eigen::VectorXd>& tau_external,

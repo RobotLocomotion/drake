@@ -37,7 +37,10 @@ class PlanSender : public systems::LeafSystem<double> {
                             systems::CompositeEventCollection<double>*,
                             double* time) const override;
   /*
-   * Returns the duration of all plans in the
+   * Returns the duration of all plans in the list given to the constructor,
+   * plus the zero-order-hold and transition added in the initialization
+   * callback. This is called before simulator.AdvanceTo() is called to
+   * determine the duration of simulation.
    */
   double get_all_plans_duration() const;
 
