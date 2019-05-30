@@ -21,10 +21,6 @@ namespace robot_plans {
  */
 enum class PlanType { kEmptyPlan, kJointSpacePlan, kTaskSpacePlan };
 
-
-/*
- *
- */
 struct PlanData {
   PlanType plan_type{PlanType::kEmptyPlan};
   // plan signature can be 1,2,3 (as in the case of running simulations)
@@ -44,7 +40,7 @@ struct PlanData {
   };
   optional<EeData> ee_data;
 
-  double get_duration() {
+  double get_duration() const {
     if (joint_traj.has_value()) {
       return joint_traj.value().end_time();
     } else if (ee_data.has_value()) {

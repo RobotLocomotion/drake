@@ -9,7 +9,6 @@ namespace robot_plans {
 
 using std::cout;
 using std::endl;
-
 using Eigen::VectorXd;
 
 const char kIiwaSdf[] =
