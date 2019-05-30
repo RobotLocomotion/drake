@@ -54,6 +54,10 @@ RobotController::RobotController(PlanType plan_type, double control_period) :
   tau_cmd_.resize(num_positions_);
 };
 
+robot_plans::PlanType RobotController::get_plan_type() {
+  return plan_->get_plan_type();
+};
+
 void RobotController::CalcCommands(const systems::Context<double>& context,
                                    BasicVector<double>* q_tau_cmd) const {
   const AbstractValue* plan_data_ptr =

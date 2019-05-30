@@ -47,7 +47,7 @@ PlanRunnerHardwareInterface::PlanRunnerHardwareInterface(
                   iiwa_command_pub->get_input_port());
 
   // Add PlanSender and PlanRunner.
-  auto plan_runner = builder.template AddSystem<RobotPlanRunner>(0.);
+  auto plan_runner = builder.template AddSystem<RobotPlanRunner>(false, 0.005);
   plan_sender_ = builder.template AddSystem<PlanSender>(plan_list);
   builder.Connect(plan_sender_->GetOutputPort("plan_data"),
                   plan_runner->GetInputPort("plan_data"));

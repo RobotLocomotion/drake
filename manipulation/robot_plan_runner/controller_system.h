@@ -13,12 +13,16 @@ namespace robot_plan_runner {
 /*
  * A Drake System wrapper for robot_plans, which calls Plan::Step when the
  * output port of this system is evaluated.
+ *
+ * control_period is ignored by JoinstSpacePlan.
+ * control_period is used to in TaskSpacePlan to calculate joint angle updates
+ * from desired joint velocities.
  */
 class RobotController : public systems::LeafSystem<double> {
  public:
-  RobotController(
-      robot_plans::PlanType plan_type, double control_period);
-
+  explicit RobotController(
+      robot_plans::PlanType plan_type, double control_period=0.);
+  robot_plans::PlanType get_plan_type();
  private:
   void CalcCommands(const systems::Context<double>&,
                        systems::BasicVector<double>*) const;
