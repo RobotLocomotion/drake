@@ -231,7 +231,7 @@ class TestCustom(unittest.TestCase):
                     self._guard, UnrestrictedUpdateEvent(self._reset))
 
             def DoPublish(self, context, events):
-                test.assertTrue(False)
+                # test.assertTrue(False)
                 # Call base method to ensure we do not get recursion.
                 LeafSystem.DoPublish(self, context, events)
                 # N.B. We do not test for a singular call to `DoPublish`
@@ -313,7 +313,7 @@ class TestCustom(unittest.TestCase):
         # self.assertFalse(system.called_initialize)
         results = call_leaf_system_overrides(system)
         self.assertEqual(results["do_publish"], 3)
-        # self.assertTrue(system.called_publish)
+        self.assertTrue(system.called_publish)
         # self.assertTrue(system.called_feedthrough)
         # self.assertFalse(results["has_direct_feedthrough"])
         # self.assertTrue(system.called_continuous)

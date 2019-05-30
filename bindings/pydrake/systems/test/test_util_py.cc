@@ -136,7 +136,7 @@ PYBIND11_MODULE(test_util, m) {
       auto events =
           LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
       results["do_publish"] = 2;
-      system.Publish(*context, *events);
+      // system.Publish(*context, *events);
       results["do_publish"] = 3;
     }
     {
