@@ -204,7 +204,7 @@ class InverseKinematics {
    * @pre 0 < `influence_distance_offset` < ∞
    */
   solvers::Binding<solvers::Constraint> AddMinimumDistanceConstraint(
-      double minimum_distance, double threshold_distance = 1);
+      double minimum_distance, double influence_distance_offset = 1);
 
   /** Getter for q. q is the decision variable for the generalized positions of
    * the robot. */

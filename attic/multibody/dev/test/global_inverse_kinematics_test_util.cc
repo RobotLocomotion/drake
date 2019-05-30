@@ -52,9 +52,11 @@ KukaTest::KukaTest()
     // half axis.
       ee_idx_(rigid_body_tree_->FindBodyIndex("iiwa_link_ee")) {}
 
-void KukaTest::CheckGlobalIKSolution(double pos_tol, double orient_tol) const {
+void KukaTest::CheckGlobalIKSolution(
+    const solvers::MathematicalProgramResult& result, double pos_tol,
+    double orient_tol) const {
   Eigen::VectorXd q_global_ik =
-      global_ik_.ReconstructGeneralizedPositionSolution();
+      global_ik_.ReconstructGeneralizedPositionSolution(result);
 
   std::cout << "Reconstructed robot posture:\n" << q_global_ik << std::endl;
   KinematicsCache<double> cache = rigid_body_tree_->doKinematics(q_global_ik);
@@ -68,7 +70,7 @@ void KukaTest::CheckGlobalIKSolution(double pos_tol, double orient_tol) const {
         cache, rigid_body_tree_->get_body(i), Isometry3d::Identity());
 
     const Eigen::Matrix3d body_Ri =
-        global_ik_.GetSolution(global_ik_.body_rotation_matrix(i));
+        result.GetSolution(global_ik_.body_rotation_matrix(i));
     // Tolerance from Gurobi is about 1E-6.
     const double tol = 1e-6;
     EXPECT_TRUE((body_Ri.array().abs() <= 1 + tol).all());
@@ -83,7 +85,7 @@ void KukaTest::CheckGlobalIKSolution(double pos_tol, double orient_tol) const {
     std::cout << "R * R':\n" << body_Ri * body_Ri.transpose() << std::endl;
     std::cout << "det(R) = " << body_Ri.determinant() << std::endl;
     Vector3d body_pos_global_ik =
-        global_ik_.GetSolution(global_ik_.body_position(i));
+        result.GetSolution(global_ik_.body_position(i));
     std::cout << "position:\n global_ik\n" << body_pos_global_ik << std::endl;
     std::cout << "forward kinematics\n"
               << body_pose_fk.translation() << std::endl;

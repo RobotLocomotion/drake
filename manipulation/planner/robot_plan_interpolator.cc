@@ -2,6 +2,7 @@
 
 #include <map>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -11,8 +12,7 @@
 
 #include "drake/common/text_logging.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
-#include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/parsing/parser.h"
 
 using robotlocomotion::robot_plan_t;
 
@@ -20,6 +20,8 @@ namespace drake {
 namespace manipulation {
 namespace planner {
 
+using multibody::BodyIndex;
+using multibody::JointIndex;
 using trajectories::PiecewisePolynomial;
 
 namespace {
@@ -34,7 +36,7 @@ constexpr int kAbsStateIdxInitFlag = 1;
 
 constexpr double RobotPlanInterpolator::kDefaultPlanUpdateInterval;
 
-// TODO(sam.creasey) If we had version of Trajectory which supported
+// TODO(sammy-tri) If we had version of Trajectory which supported
 // outputting the derivatives in value(), we could avoid keeping track
 // of multiple polynomials below.
 struct RobotPlanInterpolator::PlanData {
@@ -54,17 +56,44 @@ RobotPlanInterpolator::RobotPlanInterpolator(
           systems::kUseDefaultName,
           Value<robot_plan_t>()).get_index()),
       interp_type_(interp_type) {
-  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      model_path, multibody::joints::kFixed, &tree_);
-  // TODO(sam.creasey) This implementation doesn't know how to
+  multibody::Parser(&plant_).AddModelFromFile(model_path);
+
+  // Search for any bodies with no parent.  We'll weld those to the world.
+  std::set<BodyIndex> parent_bodies;
+  std::set<BodyIndex> child_bodies;
+  for (JointIndex i(0); i < plant_.num_joints(); ++i) {
+    const multibody::Joint<double>& joint = plant_.get_joint(i);
+    if (joint.parent_body().index() == plant_.world_body().index()) {
+      // Nothing to weld, we're connected to the world.
+      parent_bodies.clear();
+      break;
+    }
+    parent_bodies.insert(joint.parent_body().index());
+    child_bodies.insert(joint.child_body().index());
+  }
+
+  if (!parent_bodies.empty()) {
+    for (const BodyIndex child : child_bodies) {
+      if (parent_bodies.count(child)) {
+        parent_bodies.erase(child);
+      }
+    }
+
+    // Weld all remaining parents to the world.  This probably isn't going to
+    // work for all model types.
+    for (const BodyIndex index : parent_bodies) {
+      plant_.WeldFrames(plant_.world_frame(),
+                        plant_.get_body(index).body_frame());
+    }
+  }
+  plant_.Finalize();
+
+  // TODO(sammy-tri) This implementation doesn't know how to
   // calculate velocities/accelerations for differing numbers of
   // positions and velocities.
-  DRAKE_DEMAND(tree_.get_num_positions() == tree_.get_num_velocities());
-  const int num_pv = tree_.get_num_positions() + tree_.get_num_velocities();
+  DRAKE_DEMAND(plant_.num_positions() == plant_.num_velocities());
+  const int num_pv = plant_.num_positions() + plant_.num_velocities();
 
-  state_input_port_ =
-      this->DeclareVectorInputPort(systems::BasicVector<double>(num_pv))
-          .get_index();
   state_output_port_ =
       this->DeclareVectorOutputPort(
               systems::BasicVector<double>(num_pv),
@@ -72,7 +101,7 @@ RobotPlanInterpolator::RobotPlanInterpolator(
           .get_index();
   acceleration_output_port_ =
       this->DeclareVectorOutputPort(
-              systems::BasicVector<double>(tree_.get_num_velocities()),
+              systems::BasicVector<double>(plant_.num_velocities()),
               &RobotPlanInterpolator::OutputAccel)
           .get_index();
 
@@ -114,9 +143,9 @@ void RobotPlanInterpolator::OutputState(const systems::Context<double>& context,
       output->get_mutable_value();
 
   const double current_plan_time = context.get_time() - plan.start_time;
-  output_vec.head(tree_.get_num_positions()) =
+  output_vec.head(plant_.num_positions()) =
       plan.pp.value(current_plan_time);
-  output_vec.tail(tree_.get_num_velocities()) =
+  output_vec.tail(plant_.num_velocities()) =
       plan.pp_deriv.value(current_plan_time);
 }
 
@@ -143,7 +172,7 @@ void RobotPlanInterpolator::MakeFixedPlan(
     double plan_start_time, const VectorX<double>& q0,
     systems::State<double>* state) const {
   DRAKE_DEMAND(state != nullptr);
-  DRAKE_DEMAND(q0.size() == tree_.get_num_positions());
+  DRAKE_DEMAND(q0.size() == plant_.num_positions());
   PlanData& plan =
       state->get_mutable_abstract_state<PlanData>(kAbsStateIdxPlan);
 
@@ -173,7 +202,7 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
   const robot_plan_t& plan_input =
       get_plan_input_port().Eval<robot_plan_t>(context);
 
-  // I (sam.creasey) wish I could think of a more effective way to
+  // I (sammy-tri) wish I could think of a more effective way to
   // determine that a new message has arrived, but unfortunately
   // this is the best I've got.
   std::vector<char> encoded_msg(plan_input.getEncodedSize());
@@ -192,17 +221,16 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
       plan.start_time = context.get_time();
       std::vector<Eigen::MatrixXd> knots(
           plan_input.num_states,
-          Eigen::MatrixXd::Zero(tree_.get_num_positions(), 1));
-      std::map<std::string, int> name_to_idx =
-          tree_.computePositionNameToIndexMap();
+          Eigen::MatrixXd::Zero(plant_.num_positions(), 1));
       for (int i = 0; i < plan_input.num_states; ++i) {
         const auto& plan_state = plan_input.plan[i];
         for (int j = 0; j < plan_state.num_joints; ++j) {
-          if (name_to_idx.count(plan_state.joint_name[j]) == 0) {
+          if (!plant_.HasJointNamed(plan_state.joint_name[j])) {
             continue;
           }
-          knots[i](name_to_idx[plan_state.joint_name[j]], 0) =
-              plan_state.joint_position[j];
+          const auto joint_index = plant_.GetJointByName(
+              plan_state.joint_name[j]).index();
+          knots[i](joint_index, 0) = plan_state.joint_position[j];
         }
       }
 
@@ -212,7 +240,7 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
       }
 
       const Eigen::MatrixXd knot_dot =
-          Eigen::MatrixXd::Zero(tree_.get_num_velocities(), 1);
+          Eigen::MatrixXd::Zero(plant_.num_velocities(), 1);
       switch (interp_type_) {
         case InterpolatorType::ZeroOrderHold :
           plan.pp = PiecewisePolynomial<double>::ZeroOrderHold(

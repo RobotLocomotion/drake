@@ -1,6 +1,7 @@
 #include "drake/geometry/render/render_engine_vtk.h"
 
 #include <limits>
+#include <stdexcept>
 #include <utility>
 
 #include <vtkCamera.h>
@@ -98,7 +99,17 @@ enum ImageType {
 struct RegistrationData {
   const PerceptionProperties& properties;
   const RigidTransformd& X_FG;
+  // The file name if the shape being registered is a mesh.
+  optional<std::string> mesh_filename;
 };
+
+std::string RemoveFileExtension(const std::string& filepath) {
+  const size_t last_dot = filepath.find_last_of(".");
+  if (last_dot == std::string::npos) {
+    throw std::logic_error("File has no extension.");
+  }
+  return filepath.substr(0, last_dot);
+}
 
 }  // namespace
 
@@ -321,28 +332,25 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
       vtkActor& source = *source_actors[i];
       vtkActor& clone = *clone_actors[i];
 
-      // Label actors only conditionally get tied into the pipeline (i.e., they
-      // can be tagged with the kDoNotRender label). This condition can be
-      // detected because the source actor has no mapper. Therefore, no
-      // configuration actions are required and it should _not_ be added to
-      // the pipeline's renderer.
-      if (source.GetMapper()) {
+      if (source.GetTexture() == nullptr) {
         clone.GetProperty()->SetColor(source.GetProperty()->GetColor());
-
-        // NOTE: The clone renderer and original renderer *share* polygon data.
-        // If the meshes were *deformable* this would be invalid. Furthermore,
-        // even if dynamic adding/removing of geometry were valid, VTK's
-        // reference counting preserves the underlying geometry in the
-        // copy that still references it.
-        clone.SetMapper(source.GetMapper());
-        clone.SetUserTransform(source.GetUserTransform());
-        // This is necessary because *terrain* has its lighting turned off. To
-        // blindly handle arbitrary actors being flagged as terrain, we need to
-        // treat all actors this way.
-        clone.GetProperty()->SetLighting(source.GetProperty()->GetLighting());
-
-        pipelines_.at(i)->renderer.Get()->AddActor(&clone);
+      } else {
+        clone.SetTexture(source.GetTexture());
       }
+
+      // NOTE: The clone renderer and original renderer *share* polygon
+      // data. If the meshes were *deformable* this would be invalid.
+      // Furthermore, even if dynamic adding/removing of geometry were
+      // valid, VTK's reference counting preserves the underlying geometry
+      // in the copy that still references it.
+      clone.SetMapper(source.GetMapper());
+      clone.SetUserTransform(source.GetUserTransform());
+      // This is necessary because *terrain* has its lighting turned off. To
+      // blindly handle arbitrary actors being flagged as terrain, we need
+      // to treat all actors this way.
+      clone.GetProperty()->SetLighting(source.GetProperty()->GetLighting());
+
+      pipelines_.at(i)->renderer.Get()->AddActor(&clone);
     }
   };
 
@@ -356,8 +364,7 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
 
   // Copy camera properties
   auto copy_cameras = [](auto src_renderer, auto dst_renderer) {
-    dst_renderer->GetActiveCamera()->DeepCopy(
-        src_renderer->GetActiveCamera());
+    dst_renderer->GetActiveCamera()->DeepCopy(src_renderer->GetActiveCamera());
   };
   for (int p = 0; p < kNumPipelines; ++p) {
     copy_cameras(other.pipelines_.at(p)->renderer.Get(),
@@ -416,6 +423,7 @@ void RenderEngineVtk::InitializePipelines() {
 
 void RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
                                    void* user_data) {
+  static_cast<RegistrationData*>(user_data)->mesh_filename = file_name;
   vtkNew<vtkOBJReader> mesh_reader;
   mesh_reader->SetFileName(file_name.c_str());
   mesh_reader->Update();
@@ -489,15 +497,29 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
   const std::string& diffuse_map_name =
       data.properties.GetPropertyOrDefault<std::string>("phong", "diffuse_map",
                                                         "");
+  // Legacy support for *implied* texture maps. If we have mesh.obj, we look for
+  // mesh.png (unless one has been specifically called out in the properties).
+  // TODO(SeanCurtis-TRI): Remove this legacy texture when objects and materials
+  // are coherently specified by SDF/URDF/obj/mtl, etc.
+  std::string texture_name;
   std::ifstream file_exist(diffuse_map_name);
   if (file_exist) {
+    texture_name = diffuse_map_name;
+  } else if (diffuse_map_name.empty() && data.mesh_filename) {
+    // This is the hack to search for mesh.png as a possible texture.
+    const std::string
+        alt_texture_name(RemoveFileExtension(*data.mesh_filename) +
+        ".png");
+    std::ifstream alt_file_exist(alt_texture_name);
+    if (alt_file_exist) texture_name = alt_texture_name;
+  }
+  if (!texture_name.empty()) {
     vtkNew<vtkPNGReader> texture_reader;
-    texture_reader->SetFileName(diffuse_map_name.c_str());
+    texture_reader->SetFileName(texture_name.c_str());
     texture_reader->Update();
     vtkNew<vtkOpenGLTexture> texture;
     texture->SetInputConnection(texture_reader->GetOutputPort());
     texture->InterpolateOn();
-
     color_actor->SetTexture(texture.Get());
   } else {
     const Vector4d& diffuse =

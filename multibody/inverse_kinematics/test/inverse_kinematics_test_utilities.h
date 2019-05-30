@@ -17,6 +17,12 @@ namespace drake {
 namespace multibody {
 
 /**
+ * Adds two free bodies to a MultibodyPlant.
+ */
+template <typename T>
+void AddTwoFreeBodiesToPlant(MultibodyPlant<T>* model);
+
+/**
  * Constructs a MultibodyPlant consisting of two free bodies.
  */
 template <typename T>
