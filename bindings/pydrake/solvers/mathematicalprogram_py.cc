@@ -7,7 +7,6 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -90,11 +89,6 @@ auto RegisterBinding(py::handle* scope, const string& name) {
     // TODO(eric.cousineau): See if there is a more elegant mechanism for this.
     py::implicitly_convertible<B, Binding<EvaluatorBase>>();
   }
-  // Add deprecated `constraint`.
-  binding_cls.def(
-      "constraint", &B::evaluator, cls_doc.constraint.doc_deprecated);
-  DeprecateAttribute(binding_cls, "constraint",
-      "`constraint` is deprecated; please use `evaluator` instead.");
   return binding_cls;
 }
 
@@ -168,12 +162,6 @@ class PyFunctionConstraint : public Constraint {
   const AutoDiffFunc autodiff_func_;
 };
 
-constexpr const char* const kSolveDeprecationString =
-    "MathematicalProgram methods that assume the solution is stored inside "
-    "the program are deprecated; for details and porting advice, see "
-    "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-    "will be removed on 2019-06-01.";
-
 }  // namespace
 
 PYBIND11_MODULE(mathematicalprogram, m) {
@@ -201,7 +189,7 @@ PYBIND11_MODULE(mathematicalprogram, m) {
               const optional<Eigen::VectorXd>&, const optional<SolverOptions>&,
               MathematicalProgramResult*>(&SolverInterface::Solve),
           py::arg("prog"), py::arg("initial_guess"), py::arg("solver_options"),
-          py::arg("result"), doc.SolverInterface.Solve.doc_4args)
+          py::arg("result"), doc.SolverInterface.Solve.doc)
       .def("Solve",
           // This method really lives on SolverBase, but we manually write it
           // out here to avoid all of the overloading / inheritance hassles.
@@ -214,15 +202,6 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           },
           py::arg("prog"), py::arg("initial_guess"), py::arg("solver_options"),
           doc.SolverBase.Solve.doc)
-      .def("Solve",
-          [](const SolverInterface& self, MathematicalProgram& prog) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return self.Solve(prog);
-#pragma GCC diagnostic pop
-          },
-          py::arg("prog"), kSolveDeprecationString)
       // TODO(m-chaturvedi) Add Pybind11 documentation.
       .def("solver_type",
           [](const SolverInterface& self) {
@@ -629,24 +608,6 @@ PYBIND11_MODULE(mathematicalprogram, m) {
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddVisualizationCallback),
           doc.MathematicalProgram.AddVisualizationCallback.doc)
-      .def("Solve",
-          [](MathematicalProgram* self) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return self->Solve();
-#pragma GCC diagnostic pop
-          },
-          kSolveDeprecationString)
-      .def("GetSolverId",
-          [](MathematicalProgram* self) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return self->GetSolverId();
-#pragma GCC diagnostic pop
-          },
-          kSolveDeprecationString)
       .def("linear_constraints", &MathematicalProgram::linear_constraints,
           doc.MathematicalProgram.linear_constraints.doc)
       .def("linear_equality_constraints",
@@ -676,53 +637,6 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           doc.MathematicalProgram.num_vars.doc)
       .def("decision_variables", &MathematicalProgram::decision_variables,
           doc.MathematicalProgram.decision_variables.doc)
-      .def("GetSolution",
-          [](const MathematicalProgram& prog, const Variable& var) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return prog.GetSolution(var);
-#pragma GCC diagnostic pop
-          },
-          kSolveDeprecationString)
-      .def("GetSolution",
-          [](const MathematicalProgram& prog,
-              const VectorXDecisionVariable& var) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return prog.GetSolution(var);
-#pragma GCC diagnostic pop
-          },
-          kSolveDeprecationString)
-      .def("GetSolution",
-          [](const MathematicalProgram& prog,
-              const MatrixXDecisionVariable& var) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return prog.GetSolution(var);
-#pragma GCC diagnostic pop
-          },
-          kSolveDeprecationString)
-      .def("SubstituteSolution",
-          [](const MathematicalProgram& prog, const symbolic::Expression& e) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return prog.SubstituteSolution(e);
-#pragma GCC diagnostic pop
-          },
-          kSolveDeprecationString)
-      .def("SubstituteSolution",
-          [](const MathematicalProgram& prog, const symbolic::Polynomial& p) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return prog.SubstituteSolution(p);
-#pragma GCC diagnostic pop
-          },
-          kSolveDeprecationString)
       .def("EvalBinding",
           [](const MathematicalProgram& prog,
               const Binding<EvaluatorBase>& binding,
@@ -755,16 +669,6 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           },
           py::arg("bindings"), py::arg("prog_var_vals"),
           doc.MathematicalProgram.EvalBindings.doc)
-      .def("EvalBindingAtSolution",
-          [](const MathematicalProgram& prog,
-              const Binding<EvaluatorBase>& binding) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return prog.EvalBindingAtSolution(binding);
-#pragma GCC diagnostic pop
-          },
-          py::arg("binding"), kSolveDeprecationString)
       .def("GetInitialGuess",
           [](MathematicalProgram& prog,
               const symbolic::Variable& decision_variable) {

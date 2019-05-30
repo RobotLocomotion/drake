@@ -23,7 +23,8 @@ GTEST_TEST(GrbLicenseFileTest, GrbLicenseFileSet) {
   const auto x = program.NewContinuousVariables<1>();
   GurobiSolver solver;
 
-  EXPECT_NO_THROW(solver.Solve(program));
+  MathematicalProgramResult result;
+  EXPECT_NO_THROW(solver.Solve(program, {}, {}, &result));
 }
 
 GTEST_TEST(GrbLicenseFileTest, GrbLicenseFileUnset) {
@@ -40,7 +41,8 @@ GTEST_TEST(GrbLicenseFileTest, GrbLicenseFileUnset) {
   GurobiSolver solver;
 
   try {
-    solver.Solve(program);
+    MathematicalProgramResult result;
+    solver.Solve(program, {}, {}, &result);
     ADD_FAILURE() << "Expected exception of type std::runtime_error.";
   } catch (const std::runtime_error& err) {
     EXPECT_EQ(err.what(), std::string("Could not locate Gurobi license key "

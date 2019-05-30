@@ -48,9 +48,10 @@ TEST_F(UnboundedLinearProgramTest0, Test) {
 TEST_F(UnboundedLinearProgramTest1, Test) {
   MosekSolver solver;
   if (solver.available()) {
-    const SolutionResult result = solver.Solve(*prog_);
+    MathematicalProgramResult result;
+    solver.Solve(*prog_, {}, {}, &result);
     // Mosek can only detect dual infeasibility, not primal unboundedness.
-    EXPECT_EQ(result, SolutionResult::kDualInfeasible);
+    EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
   }
 }
 
@@ -186,16 +187,17 @@ GTEST_TEST(MosekTest, TestLogFile) {
   const std::string log_file = temp_directory() + "/mosek.log";
   EXPECT_FALSE(spruce::path(log_file).exists());
   MosekSolver solver;
-  solver.Solve(prog);
+  MathematicalProgramResult result;
+  solver.Solve(prog, {}, {}, &result);
   // By default, no logging file.
   EXPECT_FALSE(spruce::path(log_file).exists());
   // Output the logging to the console
   solver.set_stream_logging(true, "");
-  solver.Solve(prog);
+  solver.Solve(prog, {}, {}, &result);
   EXPECT_FALSE(spruce::path(log_file).exists());
   // Output the logging to the file.
   solver.set_stream_logging(true, log_file);
-  solver.Solve(prog);
+  solver.Solve(prog, {}, {}, &result);
   EXPECT_TRUE(spruce::path(log_file).exists());
 }
 

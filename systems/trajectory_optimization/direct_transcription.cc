@@ -229,41 +229,6 @@ void DirectTranscription::DoAddRunningCost(const symbolic::Expression& g) {
   }
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-PiecewisePolynomial<double>
-DirectTranscription::ReconstructInputTrajectory()
-    const {
-  Eigen::VectorXd times = GetSampleTimes();
-  std::vector<double> times_vec(N());
-  std::vector<Eigen::MatrixXd> inputs(N());
-
-  for (int i = 0; i < N(); i++) {
-    times_vec[i] = times(i);
-    inputs[i] = GetSolution(input(i));
-  }
-  // TODO(russt): Implement DTTrajectories and return one of those instead.
-  return PiecewisePolynomial<double>::ZeroOrderHold(times_vec, inputs);
-}
-#pragma GCC diagnostic pop
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-PiecewisePolynomial<double> DirectTranscription::ReconstructStateTrajectory()
-    const {
-  Eigen::VectorXd times = GetSampleTimes();
-  std::vector<double> times_vec(N());
-  std::vector<Eigen::MatrixXd> states(N());
-
-  for (int i = 0; i < N(); i++) {
-    times_vec[i] = times(i);
-    states[i] = GetSolution(state(i));
-  }
-  // TODO(russt): Implement DTTrajectories and return one of those instead.
-  return PiecewisePolynomial<double>::ZeroOrderHold(times_vec, states);
-}
-#pragma GCC diagnostic pop
-
 PiecewisePolynomial<double> DirectTranscription::ReconstructInputTrajectory(
     const solvers::MathematicalProgramResult& result) const {
   Eigen::VectorXd times = GetSampleTimes(result);
