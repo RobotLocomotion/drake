@@ -66,9 +66,9 @@ int DoMain() {
 
   const int num_joints = FLAGS_num_joints;
   const int num_fingers = FLAGS_num_fingers;
-  DRAKE_DEMAND(plan_source->tree().get_num_positions() ==
+  DRAKE_DEMAND(plan_source->plant().num_positions() ==
                num_joints + num_fingers);
-  DRAKE_DEMAND(plan_source->tree().get_num_velocities() ==
+  DRAKE_DEMAND(plan_source->plant().num_velocities() ==
                num_joints + num_fingers);
 
   auto status_sub = builder.AddSystem(
@@ -79,8 +79,6 @@ int DoMain() {
 
   builder.Connect(status_sub->get_output_port(),
                   status_receiver->get_input_port(0));
-  builder.Connect(status_receiver->get_output_port(0),
-                  plan_source->get_state_input_port());
 
   // The driver is operating in joint velocity mode, so that's the
   // meaningful part of the command message we'll eventually

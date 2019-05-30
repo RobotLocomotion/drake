@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -31,7 +31,7 @@ enum class InterpolatorType {
 /// state (q,v) of the robot and another for the accelerations.
 ///
 /// If a plan is received with no knot points, the system will create
-/// a plan which commands the arm to hold at the measured position.
+/// a plan which commands the robot to hold at the measured position.
 ///
 /// @ingroup manipulation_systems
 class RobotPlanInterpolator : public systems::LeafSystem<double> {
@@ -46,10 +46,6 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
   /// N.B. This input port is useless and may be left disconnected.
   const systems::InputPort<double>& get_plan_input_port() const {
     return this->get_input_port(plan_input_port_);
-  }
-
-  const systems::InputPort<double>& get_state_input_port() const {
-    return this->get_input_port(state_input_port_);
   }
 
   const systems::OutputPort<double>&
@@ -70,7 +66,7 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
   void Initialize(double plan_start_time, const VectorX<double>& q0,
                   systems::State<double>* state) const;
 
-  const RigidBodyTree<double>& tree() { return tree_; }
+  const multibody::MultibodyPlant<double>& plant() { return plant_; }
 
  protected:
   void SetDefaultState(const systems::Context<double>& context,
@@ -95,14 +91,13 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
                    systems::BasicVector<double>* output) const;
 
   void MakeFixedPlan(double plan_start_time, const VectorX<double>& q0,
-                  systems::State<double>* state) const;
+                     systems::State<double>* state) const;
 
   static constexpr double kDefaultPlanUpdateInterval = 0.1;
   const int plan_input_port_{};
-  int state_input_port_{-1};
   int state_output_port_{-1};
   int acceleration_output_port_{-1};
-  RigidBodyTree<double> tree_;
+  multibody::MultibodyPlant<double> plant_;
   const InterpolatorType interp_type_;
 };
 

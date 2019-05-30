@@ -24,8 +24,6 @@ GTEST_TEST(RobotPlanInterpolatorTest, InstanceTest) {
   RobotPlanInterpolator dut(FindResourceOrThrow(kIiwaUrdf));
   EXPECT_EQ(dut.get_plan_input_port().get_data_type(),
             systems::kAbstractValued);
-  EXPECT_EQ(dut.get_state_input_port().get_data_type(), systems::kVectorValued);
-  EXPECT_EQ(dut.get_state_input_port().size(), kNumJoints * 2);
   EXPECT_EQ(dut.get_state_output_port().get_data_type(),
             systems::kVectorValued);
   EXPECT_EQ(dut.get_state_output_port().size(), kNumJoints * 2);
@@ -38,13 +36,11 @@ GTEST_TEST(RobotPlanInterpolatorTest, DualInstanceTest) {
   // Check that the port sizes come out appropriately for a dual armed
   // model.
   RobotPlanInterpolator dut(FindResourceOrThrow(kDualIiwaUrdf));
-  EXPECT_EQ(dut.tree().get_num_positions(), kNumJoints * 2);
-  EXPECT_EQ(dut.tree().get_num_velocities(), kNumJoints * 2);
+  EXPECT_EQ(dut.plant().num_positions(), kNumJoints * 2);
+  EXPECT_EQ(dut.plant().num_velocities(), kNumJoints * 2);
 
   EXPECT_EQ(dut.get_plan_input_port().get_data_type(),
             systems::kAbstractValued);
-  EXPECT_EQ(dut.get_state_input_port().get_data_type(), systems::kVectorValued);
-  EXPECT_EQ(dut.get_state_input_port().size(), kNumJoints * 4);
   EXPECT_EQ(dut.get_state_output_port().get_data_type(),
             systems::kVectorValued);
   EXPECT_EQ(dut.get_state_output_port().size(), kNumJoints * 4);
@@ -93,7 +89,8 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
     step.utime = t[i] * 1e6;
     step.num_joints = q.rows();
     for (int j = 0; j < step.num_joints; j++) {
-      step.joint_name.push_back(dut.tree().get_position_name(j));
+      step.joint_name.push_back(dut.plant().get_joint(
+          multibody::JointIndex(j)).name());
       step.joint_position.push_back(q(j, i));
       step.joint_velocity.push_back(0);
       step.joint_effort.push_back(0);
@@ -104,9 +101,6 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
       dut.CreateDefaultContext();
   std::unique_ptr<systems::SystemOutput<double>> output =
       dut.AllocateOutput();
-  context->FixInputPort(
-      dut.get_state_input_port().get_index(),
-      Eigen::VectorXd::Zero(kNumJoints * 2));
   context->FixInputPort(dut.get_plan_input_port().get_index(),
                         AbstractValue::Make(plan));
   dut.Initialize(0, Eigen::VectorXd::Zero(kNumJoints),
