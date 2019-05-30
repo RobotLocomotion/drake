@@ -4,16 +4,22 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_optional.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_quaternion.h"
-#include "drake/common/drake_optional.h"
 
 namespace drake {
 namespace manipulation {
 namespace robot_plan_runner {
 namespace robot_plans {
 
-enum class PlanType { kJointSpacePlan, kTaskSpacePlan, kEmptyPlan };
+/*
+ * KEmptyPlan has to be the first in the enumeration. This is because in
+ * robot_plan_runner, integer values of the enums are used to index input
+ * ports of the port_switch. As port 0 is reserved for the port_selector
+ * input port, indices of user-defined ports start with 1.
+ */
+enum class PlanType { kEmptyPlan, kJointSpacePlan, kTaskSpacePlan };
 
 struct PlanData {
   PlanType plan_type{PlanType::kEmptyPlan};
@@ -35,10 +41,10 @@ struct PlanData {
   optional<EeData> ee_data;
 
   double get_duration() {
-    if(joint_traj.has_value()) {
+    if (joint_traj.has_value()) {
       return joint_traj.value().end_time();
     } else if (ee_data.has_value()) {
-      //TODO: throw if durations of ee_xyz_traj and ee_quat_traj are different.
+      // TODO: throw if durations of ee_xyz_traj and ee_quat_traj are different.
       return ee_data.value().ee_xyz_traj.end_time();
     } else {
       throw "invalid PlanData.";
@@ -46,18 +52,19 @@ struct PlanData {
   };
 };
 
+/*
+ * Abstract base class for all other concrete plans.
+ */
 class PlanBase {
  public:
   PlanBase(PlanType plan_type, int num_positions)
-      : num_positions_(num_positions), plan_type_(plan_type) {};
+      : num_positions_(num_positions), plan_type_(plan_type){};
   virtual ~PlanBase() = default;
 
-  virtual void Step(const Eigen::Ref<const Eigen::VectorXd> &q,
-                    const Eigen::Ref<const Eigen::VectorXd> &v,
-                    const Eigen::Ref<const Eigen::VectorXd> &tau_external,
-                    double control_period,
-                    double t,
-                    const PlanData &plan_data,
+  virtual void Step(const Eigen::Ref<const Eigen::VectorXd>& q,
+                    const Eigen::Ref<const Eigen::VectorXd>& v,
+                    const Eigen::Ref<const Eigen::VectorXd>& tau_external,
+                    double control_period, double t, const PlanData& plan_data,
                     EigenPtr<Eigen::VectorXd> q_commanded,
                     EigenPtr<Eigen::VectorXd> tau_commanded) const = 0;
   PlanType get_plan_type() const { return plan_type_; };

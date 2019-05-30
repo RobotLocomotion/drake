@@ -7,9 +7,9 @@ namespace drake {
 namespace manipulation {
 namespace robot_plan_runner {
 
-using systems::kVectorValued;
 using robot_plans::PlanData;
 using robot_plans::PlanType;
+using systems::kVectorValued;
 
 PlanSwitcher::PlanSwitcher() {
   this->set_name("PlanSwitcher");
@@ -19,19 +19,17 @@ PlanSwitcher::PlanSwitcher() {
           .get_index();
   // TODO: PlanData does not need to pass through this system. This system
   //  should only be responsible for the switching.
-  this->DeclareAbstractOutputPort("joint_space_plan",
-                                  &PlanSwitcher::CalcJointSpacePlan);
+  this->DeclareAbstractOutputPort("port_switch_index",
+                                  &PlanSwitcher::CalcSwitchIndex);
 }
 
-void PlanSwitcher::CalcJointSpacePlan(const systems::Context<double>& context,
-                                      PlanData* output_plan_data) const {
+void PlanSwitcher::CalcSwitchIndex(
+    const systems::Context<double>& context,
+    systems::InputPortIndex* plan_switch_index) const {
   const AbstractValue* input =
       this->EvalAbstractInput(context, input_port_idx_plan_data_);
-  const auto& input_plan_data = input->get_value<PlanData>();
-
-  if (input_plan_data.plan_type == PlanType::kJointSpacePlan) {
-    *output_plan_data = input_plan_data;
-  }
+  *plan_switch_index = systems::InputPortIndex(
+      static_cast<int>(input->template get_value<PlanData>().plan_type));
 };
 
 }  // namespace robot_plan_runner
