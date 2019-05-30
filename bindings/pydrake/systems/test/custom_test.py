@@ -305,7 +305,7 @@ class TestCustom(unittest.TestCase):
                 test.assertIsInstance(state, State)
                 self.called_reset = True
 
-        # system = TrivialSystem()
+        system = TrivialSystem()
         # self.assertFalse(system.called_publish)
         # self.assertFalse(system.called_feedthrough)
         # self.assertFalse(system.called_continuous)
@@ -317,7 +317,7 @@ class TestCustom(unittest.TestCase):
         # self.assertFalse(results["has_direct_feedthrough"])
         # self.assertTrue(system.called_continuous)
         # self.assertTrue(system.called_discrete)
-        #self.assertTrue(system.called_initialize)
+        # self.assertTrue(system.called_initialize)
         # self.assertEqual(results["discrete_next_t"], 1.0)
 
         # self.assertFalse(system.HasAnyDirectFeedthrough())
