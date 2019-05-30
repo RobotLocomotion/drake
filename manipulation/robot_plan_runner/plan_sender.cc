@@ -164,12 +164,13 @@ void PlanSender::DoCalcNextUpdateTime(
 
 double PlanSender::get_all_plans_duration() const {
   // zoh + transition
-  double t_total = zoh_time_sec_ + transition_time_sec_ + extra_time_;
+  double t_total = zoh_time_sec_;
+  if(plan_data_list_[0].plan_type == PlanType::kJointSpacePlan) {
+    t_total += transition_time_sec_ + extra_time_;
+  }
   for (const auto& plan_data : plan_data_list_) {
     // TODO: extend this for ee_data as well
-    if (plan_data.joint_traj.has_value()) {
-      t_total += plan_data.joint_traj.value().end_time() + extra_time_;
-    }
+    t_total += plan_data.get_duration() + extra_time_;
   }
   return t_total;
 }
