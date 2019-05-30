@@ -78,10 +78,6 @@ void PlanRunnerHardwareInterface::SaveGraphvizStringToFile(
   }
 }
 
-/*
- * Get current iiwa status by creating a diagram with only a lcm subscriber
- * and simulating it for 1e-6 seconds.
- */
 lcmt_iiwa_status PlanRunnerHardwareInterface::GetCurrentIiwaStatus() {
   // create diagram system.
   systems::DiagramBuilder<double> builder;
