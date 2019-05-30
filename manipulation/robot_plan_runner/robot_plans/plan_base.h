@@ -21,6 +21,10 @@ namespace robot_plans {
  */
 enum class PlanType { kEmptyPlan, kJointSpacePlan, kTaskSpacePlan };
 
+
+/*
+ *
+ */
 struct PlanData {
   PlanType plan_type{PlanType::kEmptyPlan};
   // plan signature can be 1,2,3 (as in the case of running simulations)
@@ -53,7 +57,7 @@ struct PlanData {
 };
 
 /*
- * Abstract base class for all other concrete plans.
+ * Abstract base class for all concrete plans.
  */
 class PlanBase {
  public:

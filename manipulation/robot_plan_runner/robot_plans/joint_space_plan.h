@@ -7,6 +7,9 @@ namespace manipulation {
 namespace robot_plan_runner {
 namespace robot_plans {
 
+/*
+ * Tracks joint angle references.
+ */
 class JointSpacePlan : public PlanBase {
  public:
   JointSpacePlan() : PlanBase(PlanType::kJointSpacePlan, 7) {};

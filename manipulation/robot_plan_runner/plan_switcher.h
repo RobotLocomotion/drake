@@ -10,6 +10,11 @@ namespace drake {
 namespace manipulation {
 namespace robot_plan_runner {
 
+/*
+ * This system takes in PlanData and converts the input's PlanType to an
+ * InputPortIndex, which is then passed to a PortSwitch that decides which
+ * controller system to use.
+ */
 class PlanSwitcher : public systems::LeafSystem<double> {
  public:
   PlanSwitcher();

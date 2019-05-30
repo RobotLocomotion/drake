@@ -12,17 +12,31 @@
 namespace drake {
 namespace manipulation {
 namespace robot_plan_runner {
-
+/*
+ * Connects RobotPlanRunner with PlanSender, iiwa lcm receiver and sender.
+ * Runs Plans on the robot as well as mock_station_simulation.
+ */
 class PlanRunnerHardwareInterface {
  public:
   explicit PlanRunnerHardwareInterface(
       const std::vector<robot_plans::PlanData>&);
+  /*
+   * Saves the graphviz string which describes this system to a file.
+   */
   void SaveGraphvizStringToFile(
       const std::string& file_name = "system_graphviz_string.txt");
+
+  /*
+   * Starts sending commands based on the list of PlanData with which this
+   * class is constructed.
+   */
   void Run(double realtime_rate = 1.0);
   lcmt_iiwa_status GetCurrentIiwaStatus();
 
  private:
+  /*
+   * Blocks until a iiwa_status lcm message is received.
+   */
   void WaitForNewMessage(
       drake::lcm::DrakeLcmInterface* const lcm_ptr,
       systems::lcm::LcmSubscriberSystem* const lcm_sub) const;

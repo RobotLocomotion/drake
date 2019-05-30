@@ -1,4 +1,6 @@
-
+/*
+ * Pieces to be converted into unit tests.
+ */
 #include <vector>
 
 #include "drake/manipulation/robot_plan_runner/plan_sender.h"
@@ -18,6 +20,8 @@ namespace robot_plan_runner {
 using std::cout;
 using std::endl;
 using trajectories::PiecewisePolynomial;
+using robot_plans::PlanData;
+using robot_plans::PlanType;
 
 class SimpleController : public systems::LeafSystem<double> {
  public:
@@ -46,7 +50,7 @@ class SimpleController : public systems::LeafSystem<double> {
 };
 
 int do_main() {
-  JointSpacePlan plan;
+  robot_plans::JointSpacePlan plan;
 
   Eigen::VectorXd t_knots(3);
   t_knots << 0, 1, 2;
