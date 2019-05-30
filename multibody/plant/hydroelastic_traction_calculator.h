@@ -13,8 +13,8 @@ template <class T>
 class MultibodyPlant;
 
 /**
- * A class for computing the spatial forces on rigid bodies in a MultibodyPlant
- * as a function of the hydroelastic contact model.
+ A class for computing the spatial forces on rigid bodies in a MultibodyPlant
+ as a function of the hydroelastic contact model.
  */
 template <class T>
 class HydroelasticTractionCalculator {
@@ -48,14 +48,13 @@ class HydroelasticTractionCalculator {
       geometry::SurfaceFaceIndex face_index,
       const typename geometry::SurfaceMesh<T>::Barycentric&
           Q_barycentric_M, double dissipation, double mu_coulomb,
+      const math::RigidTransform<T>& X_WM,
+      const math::RigidTransform<T>& X_WN,
       Vector3<T>* p_WQ) const;
 
   /**
    Computes the spatial forces on the two bodies due to the traction at the
    given contact point.
-   @param context the context of the MultibodyPlant.
-   @param surface the contact surface computed by the hydroelastic contact
-          model.
    @param p_WQ the offset vector from the origin of the world frame to the
           contact point, expressed in the world frame.
    @param traction_Q_W the traction vector at Point Q, expressed in the world
@@ -66,28 +65,44 @@ class HydroelasticTractionCalculator {
                acts on the body attached to `surface.N_id()`.
    */
   void ComputeSpatialForcesAtBodyOriginsFromTraction(
-      const systems::Context<T>& context,
-      const geometry::ContactSurface<T>& surface,
       const Vector3<T>& p_WQ,
       const Vector3<T>& traction_Q_W,
+      const math::RigidTransform<T>& X_WM,
+      const math::RigidTransform<T>& X_WN,
       multibody::SpatialForce<T>* F_Mo_W,
       multibody::SpatialForce<T>* F_No_W) const;
 
-  /// Gets the regularization parameter used for friction (in m/s). The closer
-  /// that this parameter is to zero, the closer that the regularized friction
-  /// model will approximate Coulomb friction.
-  double regularization_scalar() const { return vslip_regularizer_; }
+  void ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+       const systems::Context<T>& context,
+       const geometry::ContactSurface<T>& surface,
+       double dissipation, double mu_coulomb,
+       multibody::SpatialForce<T>* F_Mo_W,
+       multibody::SpatialForce<T>* F_No_W) const;
 
- private:
+  /**
+   Gets the pose for the geometry relative to the world frame.
+   @param context the context of the MultibodyPlant.
+   @param geometry_id the id of the requisite geometry.
+   @pre geometry_id has been registered with the MultibodyPlant `this` was
+        constructed with.
+   */
   const math::RigidTransform<T> GetTransformFromGeometry(
       const systems::Context<T>& context,
       geometry::GeometryId geometry_id) const;
+
+  /**
+   Gets the regularization parameter used for friction (in m/s). The closer
+   that this parameter is to zero, the closer that the regularized friction
+   model will approximate Coulomb friction.
+   */
+  double regularization_scalar() const { return vslip_regularizer_; }
+
+ private:
   Vector3<T> CalcContactPoint(
-      const systems::Context<T>& context,
       const geometry::ContactSurface<T>& surface,
       geometry::SurfaceFaceIndex face_index,
-      const typename geometry::SurfaceMesh<T>::Barycentric& r_barycentric_M)
-      const;
+      const typename geometry::SurfaceMesh<T>::Barycentric& r_barycentric_M,
+      const math::RigidTransform<T>& X_WM) const;
 
   MultibodyPlant<T>* plant_{nullptr};
 

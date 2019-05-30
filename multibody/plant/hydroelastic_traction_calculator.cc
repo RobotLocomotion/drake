@@ -5,6 +5,8 @@
 #include "drake/math/orthonormal_basis.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
+#include "drake/multibody/triangle_quadrature/triangle_quadrature.h"
 
 using drake::geometry::ContactSurface;
 using drake::math::ComputeBasisFromAxis;
@@ -15,6 +17,29 @@ using drake::systems::Context;
 
 namespace drake {
 namespace multibody {
+
+template <typename T>
+using SpatialForcePair = std::pair<SpatialForce<T>, SpatialForce<T>>;
+
+template <typename T>
+SpatialForcePair<T> operator+(
+    const SpatialForcePair<T>& p1, const SpatialForcePair<T>& p2) {
+  return SpatialForcePair<T>(p1.first + p2.first, p1.second + p2.second);
+}
+
+template <typename T>
+SpatialForcePair<T> operator+=(
+    SpatialForcePair<T>& p1, const SpatialForcePair<T>& p2) {
+  p1.first += p2.first;
+  p1.second += p2.second;
+  return p1;
+}
+
+template <typename T, typename Scalar>
+SpatialForcePair<T> operator*(
+    const SpatialForcePair<T>& p, const Scalar& scalar) {
+  return SpatialForcePair<T>(p.first * scalar, p.second * scalar);
+}
 
 // Gets the pose for the geometry.
 template <class T>
@@ -40,18 +65,59 @@ HydroelasticTractionCalculator<T>::GetTransformFromGeometry(
 
 template <class T>
 void HydroelasticTractionCalculator<T>::
-ComputeSpatialForcesAtBodyOriginsFromTraction(
+ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
     const Context<T>& context,
     const ContactSurface<T>& surface,
-    const Vector3<T>& p_WQ,
-    const Vector3<T>& traction_Q_W,
+    double dissipation, double mu_coulomb,
     SpatialForce<T>* F_Mo_W, SpatialForce<T>* F_No_W) const {
-  // Get the poses for the bodies that the two geometries are attached to.
+  // Get the poses for the two geometries relative to the world frame.
   const RigidTransform<T> X_WM = GetTransformFromGeometry(context,
       surface.id_M());
   const RigidTransform<T> X_WN = GetTransformFromGeometry(context,
       surface.id_N());
 
+  // Zero the spatial forces.
+  F_Mo_W->SetZero();
+  F_No_W->SetZero();
+
+  // Use a second-order Gaussian quadrature rule.
+  GaussianTriangleQuadratureRule gaussian(2 /* order */);
+
+  // Integrate the tractions over all triangles in the contact surface.
+  for (geometry::SurfaceFaceIndex i(0); i < surface.mesh().num_faces(); ++i) {
+    Vector3<T> p_WQ;
+
+    // Construct the function to be integrated.
+    std::function<SpatialForcePair<T>(const Vector3<T>&)> f = [this,
+         &context, &surface, &X_WM, &X_WN, &p_WQ, i, dissipation, mu_coulomb](
+            const Vector3<T>& Q_barycentric_M) {
+      const Vector3<T> traction_Q_W = CalcTractionAtPoint(context, surface, i,
+          Q_barycentric_M, dissipation, mu_coulomb, X_WM, X_WN, &p_WQ);
+      SpatialForcePair<T> F_W_pair;
+      ComputeSpatialForcesAtBodyOriginsFromTraction(
+          p_WQ, traction_Q_W, X_WM, X_WN, &F_W_pair.first, &F_W_pair.second);
+
+      return F_W_pair;
+    };
+
+    // Compute the integral over the triangle.
+    const SpatialForcePair<T> force_pair =
+        TriangleQuadrature<SpatialForcePair<T>, T>::Integrate(
+            f, gaussian, surface.mesh().area(i));
+
+    // Update the spatial forces.
+    (*F_Mo_W) += force_pair.first;
+    (*F_No_W) += force_pair.second;
+  }
+}
+
+template <class T>
+void HydroelasticTractionCalculator<T>::
+ComputeSpatialForcesAtBodyOriginsFromTraction(
+    const Vector3<T>& p_WQ,
+    const Vector3<T>& traction_Q_W,
+    const RigidTransform<T>& X_WM, const RigidTransform<T>& X_WN,
+    SpatialForce<T>* F_Mo_W, SpatialForce<T>* F_No_W) const {
   // Set the two vectors from the contact point to the two body frames, all
   // expressed in the world frame.
   const Vector3<T> p_QMo_W = X_WM.translation() - p_WQ;
@@ -70,15 +136,11 @@ ComputeSpatialForcesAtBodyOriginsFromTraction(
 // contact, expressed in the world frame.
 template <class T>
 Vector3<T> HydroelasticTractionCalculator<T>::CalcContactPoint(
-    const Context<T>& context,
     const ContactSurface<T>& surface,
     geometry::SurfaceFaceIndex face_index,
     const typename geometry::SurfaceMesh<T>::Barycentric&
-        Q_barycentric_M) const {
-  // Get the pose for the body that the geometry "M" is attached to.
-  const RigidTransform<T> X_WM = GetTransformFromGeometry(
-      context, surface.id_M());
-
+        Q_barycentric_M,
+    const RigidTransform<T>& X_WM) const {
   // Convert the barycentric coordinate to 3D.
   const auto& mesh = surface.mesh();
   const auto& va = mesh.vertex(mesh.element(face_index).vertex(0));
@@ -95,9 +157,10 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
     geometry::SurfaceFaceIndex face_index,
     const typename geometry::SurfaceMesh<T>::Barycentric&
         Q_barycentric_M, double dissipation, double mu_coulomb,
+    const RigidTransform<T>& X_WM, const RigidTransform<T>& X_WN,
     Vector3<T>* p_WQ) const {
   // Compute the point of contact in the world frame.
-  *p_WQ = CalcContactPoint(context, surface, face_index, Q_barycentric_M);
+  *p_WQ = CalcContactPoint(surface, face_index, Q_barycentric_M, X_WM);
 
   // Get the bodies that the two geometries are attached to.
   BodyIndex bodyM_index = plant_->GetBodyIndexFromRegisteredGeometryId(
@@ -106,12 +169,6 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
       surface.id_N());
   const Body<T>& bodyM = plant_->get_body(bodyM_index);
   const Body<T>& bodyN = plant_->get_body(bodyN_index);
-
-  // Get the poses for the bodies that the two geometries are attached to.
-  const RigidTransform<T> X_WM = GetTransformFromGeometry(
-      context, surface.id_M());
-  const RigidTransform<T> X_WN = GetTransformFromGeometry(
-      context, surface.id_N());
 
   // Get the "hydroelastic pressure" at the point (in Newtons).
   const T e_mn = surface.EvaluateE_MN(face_index, Q_barycentric_M);

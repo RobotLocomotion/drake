@@ -53,6 +53,10 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
   const HydroelasticTractionCalculator<double>& traction_calculator() const {
     return *traction_calculator_;
   }
+  math::RigidTransform<double> GetTransformFromGeometry(GeometryId g) const {
+    return traction_calculator_->GetTransformFromGeometry(*plant_context_, g);
+  }
+
 
  private:
   void SetUp() override {
@@ -155,12 +159,16 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, VanillaTraction) {
   const double dissipation = 0.0;
   const double mu_coulomb = 0.0;
 
+  // Get the two transforms.
+  const auto X_WM = GetTransformFromGeometry(contact_surface().id_M());
+  const auto X_WN = GetTransformFromGeometry(contact_surface().id_N());
+
   // First compute the traction.
   Vector3<double> p_W;
   const Vector3<double> traction = traction_calculator().CalcTractionAtPoint(
       plant_context(), contact_surface(), SurfaceFaceIndex(0),
       SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
-      dissipation, mu_coulomb, &p_W);
+      dissipation, mu_coulomb, X_WM, X_WN, &p_W);
 
   // Verify the point of contact.
   const double eps = 10 * std::numeric_limits<double>::epsilon();
@@ -171,7 +179,7 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, VanillaTraction) {
   // Now compute the spatial forces at the origins of the body frames.
   multibody::SpatialForce<double> F_Mo_W, F_No_W;
   traction_calculator().ComputeSpatialForcesAtBodyOriginsFromTraction(
-      plant_context(), contact_surface(), p_W, traction, &F_Mo_W, &F_No_W);
+      p_W, traction, X_WM, X_WN, &F_Mo_W, &F_No_W);
 
   // Check the spatial force at p. We know that geometry M is the halfspace,
   // so we'll check the spatial force for geometry N instead. Note that the
@@ -199,6 +207,10 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, TractionWithFraction) {
   const double dissipation = 0.0;
   const double mu_coulomb = 1.0;
 
+  // Get the two transforms.
+  const auto X_WM = GetTransformFromGeometry(contact_surface().id_M());
+  const auto X_WN = GetTransformFromGeometry(contact_surface().id_N());
+
   // Give the tet an initial (horizontal) velocity along the +x axis.
   const int num_velocities = plant().num_velocities();
   ASSERT_EQ(num_velocities, 6);
@@ -211,7 +223,7 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, TractionWithFraction) {
   const Vector3<double> traction = traction_calculator().CalcTractionAtPoint(
       plant_context(), contact_surface(), SurfaceFaceIndex(0),
       SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0), dissipation,
-      mu_coulomb, &p_W);
+      mu_coulomb, X_WM, X_WN, &p_W);
 
   // Verify the point of contact.
   const double eps = 10 * std::numeric_limits<double>::epsilon();
@@ -222,7 +234,7 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, TractionWithFraction) {
   // Now compute the spatial forces at the origins of the body frames.
   multibody::SpatialForce<double> F_Mo_W, F_No_W;
   traction_calculator().ComputeSpatialForcesAtBodyOriginsFromTraction(
-      plant_context(), contact_surface(), p_W, traction, &F_Mo_W, &F_No_W);
+      p_W, traction, X_WM, X_WN, &F_Mo_W, &F_No_W);
 
   // Check the spatial force at p. We know that geometry M is the halfspace,
   // so we'll check the spatial force for geometry N instead. The coefficient
@@ -253,6 +265,10 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
   const double dissipation = 1.0;
   const double mu_coulomb = 0.0;
 
+  // Get the two transforms.
+  const auto X_WM = GetTransformFromGeometry(contact_surface().id_M());
+  const auto X_WN = GetTransformFromGeometry(contact_surface().id_N());
+
   // Give the tet an initial (vertical) velocity along the -z axis.
   const int num_velocities = plant().num_velocities();
   ASSERT_EQ(num_velocities, 6);
@@ -274,7 +290,7 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
   const Vector3<double> traction = traction_calculator().CalcTractionAtPoint(
       plant_context(), contact_surface(), SurfaceFaceIndex(0),
       SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
-      dissipation, mu_coulomb, &p_W);
+      dissipation, mu_coulomb, X_WM, X_WN, &p_W);
 
   // Verify the point of contact.
   const double eps = 10 * std::numeric_limits<double>::epsilon();
@@ -285,7 +301,7 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
   // Now compute the spatial forces at the origins of the body frames.
   multibody::SpatialForce<double> F_Mo_W, F_No_W;
   traction_calculator().ComputeSpatialForcesAtBodyOriginsFromTraction(
-      plant_context(), contact_surface(), p_W, traction, &F_Mo_W, &F_No_W);
+      p_W, traction, X_WM, X_WN, &F_Mo_W, &F_No_W);
 
   // Check the spatial force at p. We know that geometry M is the halfspace,
   // so we'll check the spatial force for geometry N instead. The coefficient
