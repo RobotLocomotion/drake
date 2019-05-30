@@ -4,13 +4,13 @@
 
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/drake_optional_pybind.h"
+#include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/manipulation/robot_plan_runner/plan_sender.h"
 #include "drake/manipulation/robot_plan_runner/robot_plan_runner.h"
-#include "drake/manipulation/robot_plan_runner/robot_plans/plan_base.h"
 #include "drake/manipulation/robot_plan_runner/robot_plans/joint_space_plan.h"
+#include "drake/manipulation/robot_plan_runner/robot_plans/plan_base.h"
 
 namespace drake {
 namespace pydrake {
@@ -22,6 +22,8 @@ PYBIND11_MODULE(robot_plan_runner, m) {
   m.doc() = "Bindings for the robot plan runner.";
   constexpr auto& doc = pydrake_doc.drake.manipulation.robot_plan_runner;
 
+  using robot_plans::PlanData;
+  using robot_plans::PlanType;
   using systems::Diagram;
   using systems::LeafSystem;
 
@@ -29,10 +31,11 @@ PYBIND11_MODULE(robot_plan_runner, m) {
 
   py::enum_<PlanType>(m, "PlanType")
       .value("kJointSpacePlan", PlanType::kJointSpacePlan,
-          doc.PlanType.kJointSpacePlan.doc)
+          doc.robot_plans.PlanType.kJointSpacePlan.doc)
       .value("kTaskSpacePlan", PlanType::kTaskSpacePlan,
-          doc.PlanType.kTaskSpacePlan.doc)
-      .value("kEmptyPlan", PlanType::kEmptyPlan, doc.PlanType.kEmptyPlan.doc)
+          doc.robot_plans.PlanType.kTaskSpacePlan.doc)
+      .value("kEmptyPlan", PlanType::kEmptyPlan,
+          doc.robot_plans.PlanType.kEmptyPlan.doc)
       .export_values();
 
   py::class_<PlanData> plan_data(m, "PlanData");
@@ -44,12 +47,12 @@ PYBIND11_MODULE(robot_plan_runner, m) {
       }),
           py::arg("plan_type") = PlanType::kEmptyPlan,
           py::arg("joint_traj") = nullopt)
-      .def_readwrite(
-          "plan_type", &PlanData::plan_type, doc.PlanData.plan_type.doc)
-      .def_readwrite(
-          "joint_traj", &PlanData::joint_traj, doc.PlanData.joint_traj.doc);
+      .def_readwrite("plan_type", &PlanData::plan_type,
+          doc.robot_plans.PlanData.plan_type.doc)
+      .def_readwrite("joint_traj", &PlanData::joint_traj,
+          doc.robot_plans.PlanData.joint_traj.doc);
 
-  pysystems::AddValueInstantiation<PlanData>(m);
+  AddValueInstantiation<PlanData>(m);
 
   py::class_<PlanSender, LeafSystem<double>>(m, "PlanSender")
       .def(py::init<const std::vector<PlanData>>(),
@@ -59,8 +62,8 @@ PYBIND11_MODULE(robot_plan_runner, m) {
           doc.PlanSender.get_all_plans_duration.doc);
 
   py::class_<RobotPlanRunner, Diagram<double>>(m, "RobotPlanRunner")
-      .def(py::init<double>(), py::arg("control_period_sec") = 0.005,
-          doc.RobotPlanRunner.ctor.doc);
+      .def(py::init<bool, double>(), py::arg("is_discrete"),
+          py::arg("control_period_sec") = 0.005, doc.RobotPlanRunner.ctor.doc);
 }
 
 }  // namespace pydrake
