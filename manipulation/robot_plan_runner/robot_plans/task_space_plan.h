@@ -8,6 +8,9 @@ namespace manipulation {
 namespace robot_plan_runner {
 namespace robot_plans {
 
+/*
+ * Tracks end effector position and pose references in world frame.
+ */
 class TaskSpacePlan : public PlanBase {
  public:
   TaskSpacePlan();

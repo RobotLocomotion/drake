@@ -11,7 +11,7 @@ namespace manipulation {
 namespace robot_plan_runner {
 
 /*
- * A Drake System wrapper for robot_plans, which calls Plan::Step when the
+ * A Drake System wrapper for robot_plans, which calls Plan::Step() when the
  * output port of this system is evaluated.
  *
  * control_period is ignored by JoinstSpacePlan.
