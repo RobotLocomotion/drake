@@ -305,7 +305,7 @@ class TestCustom(unittest.TestCase):
                 test.assertIsInstance(state, State)
                 self.called_reset = True
 
-        # system = TrivialSystem()
+        system = TrivialSystem()
         # self.assertFalse(system.called_publish)
         # self.assertFalse(system.called_feedthrough)
         # self.assertFalse(system.called_continuous)
