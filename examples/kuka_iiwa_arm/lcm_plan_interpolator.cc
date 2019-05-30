@@ -19,7 +19,7 @@ LcmPlanInterpolator::LcmPlanInterpolator(const std::string& model_path,
   // Add plan interpolation block.
   robot_plan_interpolator_ =
       builder.AddSystem<RobotPlanInterpolator>(model_path, interpolator_type);
-  num_joints_ = robot_plan_interpolator_->tree().get_num_positions();
+  num_joints_ = robot_plan_interpolator_->plant().num_positions();
 
   // Add block to export a received iiwa status.
   auto status_receiver = builder.AddSystem<IiwaStatusReceiver>(num_joints_);
