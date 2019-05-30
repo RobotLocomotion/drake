@@ -108,9 +108,6 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   const Vector3<T> nhat_MN_M = h_MN_M.normalized();
   const Vector3<T> nhat_MN_W = X_WM.rotation().transpose() * nhat_MN_M;
 
-  // Compute an orthonormal basis (the contact frame, C) using the normal.
-  Matrix3<T> R_WC = ComputeBasisFromAxis(0, nhat_MN_W);
-
   // Get the relative spatial velocity at the point Q between the
   // two bodies, by subtracting the spatial velocity of a point (Nq)
   // coincident with p_WQ on Body N from the spatial velocity of a point (Mq)
@@ -149,9 +146,7 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   const T normal_pressure = max(e_mn - Qdot_nhat_NM * c, T(0));
 
   // Get the slip velocity at the point.
-  const Vector3<T> tan1 = R_WC.col(1);
-  const Vector3<T> tan2 = R_WC.col(2);
-  const Vector2<T> Qdot_NM_tan(Qdot_NM_W.dot(tan1), Qdot_NM_W.dot(tan2));
+  const Vector3<T> Qdot_NM_tan = Qdot_NM_W - nhat_MN_W * Qdot_nhat_NM;
 
   // Determine the traction using a soft-norm.
   const T squared_Qdot_tan = Qdot_NM_tan.squaredNorm();
@@ -162,14 +157,12 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
       vslip_regularizer_ * vslip_regularizer_);
 
   // Get the regularized direction of slip.
-  const Vector2<T> Qdot_hat_tan_NM = Qdot_NM_tan / soft_norm_Qdot_tan;
+  const Vector3<T> Qdot_hat_tan_NM = Qdot_NM_tan / soft_norm_Qdot_tan;
 
   // Compute the traction.
   const T frictional_scalar = mu_coulomb * normal_pressure *
       2.0 / M_PI * atan(norm_Qdot_tan / T(vslip_regularizer_));
-  return R_WC * Vector3<T>(normal_pressure,
-      -Qdot_hat_tan_NM(0) * frictional_scalar,
-      -Qdot_hat_tan_NM(1) * frictional_scalar);
+  return nhat_MN_W * normal_pressure - Qdot_hat_tan_NM * frictional_scalar;
 }
 
 }  // namespace multibody
