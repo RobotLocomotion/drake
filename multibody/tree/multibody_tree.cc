@@ -1061,7 +1061,7 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationBiasShift(
   SpatialAcceleration<T> Abias_WFp = Abias_WBo.Shift(p_BoFp_W, w_WB_W);
 
   // Express the resulting vectors in frame_E (rather than the world frame).
-  if (&frame_E != &world_frame() ) {
+  if (&frame_E != &world_frame()) {
     const RigidTransform<T> X_WE = frame_E.CalcPoseInWorld(context);
     const RotationMatrix<T> R_EW = X_WE.rotation().inverse();
 
