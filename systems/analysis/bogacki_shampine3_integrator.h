@@ -13,7 +13,6 @@ namespace systems {
 /**
  A third-order, four-stage, first-same-as-last (FSAL) Runge Kutta integrator
  with a second order error estimate.
-
  @tparam T A double or autodiff type.
 
  Instantiated templates for the following kinds of T's are provided:
@@ -35,8 +34,9 @@ namespace systems {
  the last row gives a 2nd-order accurate solution which, when subtracted
  from the propagated solution, yields the 2nd-order error estimate of the
  error.
-  - [Bogacki, 1989] P. Bogacki and L. Shampine. "A 3(2) pair of Runge–Kutta
-    formulas", Appl. Math. Letters, 2 (4): 321–325, 1989.
+
+ - [Bogacki, 1989] P. Bogacki and L. Shampine. "A 3(2) pair of Runge–Kutta
+   formulas", Appl. Math. Letters, 2 (4): 321–325, 1989.
  */
 template <class T>
 class BogackiShampine3Integrator final : public IntegratorBase<T> {
@@ -50,8 +50,7 @@ class BogackiShampine3Integrator final : public IntegratorBase<T> {
     derivs1_ = system.AllocateTimeDerivatives();
     derivs2_ = system.AllocateTimeDerivatives();
     derivs3_ = system.AllocateTimeDerivatives();
-    derivs4_ = system.AllocateTimeDerivatives();
-    err_est_vec_.resize(derivs1_->size());
+    err_est_vec_ = std::make_unique<BasicVector<T>>(derivs1_->size());
     save_xc0_.resize(derivs1_->size());
   }
 
@@ -60,15 +59,15 @@ class BogackiShampine3Integrator final : public IntegratorBase<T> {
    */
   bool supports_error_estimation() const override { return true; }
 
-  /// This integrator provides second order error estimates.
-  int get_error_estimate_order() const override { return 2; }
+  /// The error in the error estimate shrinks cubically with the step size.
+  int get_error_estimate_order() const override { return 3; }
 
  private:
   void DoInitialize() override;
   bool DoStep(const T& h) override;
 
   // Vector used in error estimate calculations.
-  VectorX<T> err_est_vec_;
+  std::unique_ptr<BasicVector<T>> err_est_vec_;
 
   // Vector used to save initial value of xc.
   VectorX<T> save_xc0_;
@@ -76,7 +75,7 @@ class BogackiShampine3Integrator final : public IntegratorBase<T> {
   // These are pre-allocated temporaries for use by integration. They store
   // the derivatives computed at various points within the integration
   // interval.
-  std::unique_ptr<ContinuousState<T>> derivs1_, derivs2_, derivs3_, derivs4_;
+  std::unique_ptr<ContinuousState<T>> derivs1_, derivs2_, derivs3_;
 };
 
 /**
@@ -127,17 +126,14 @@ bool BogackiShampine3Integrator<T>::DoStep(const T& h) {
   // cache invalidation. Be careful not to insert calls to methods that could
   // invalidate any of these references before they are used.
 
-  // TODO(sherm1) Consider moving this notation description to IntegratorBase
-  //              when it is more widely adopted.
-  // Notation: we're using numeric subscripts for times t₀ and t₁, and
-  // lower-case letter superscripts like t⁽ᵃ⁾ and t⁽ᵇ⁾ to indicate values
-  // for intermediate stages of which there are two here, a and b.
-  // State x₀ = {xc₀, xd₀, xa₀}. We modify only t and xc here, but
-  // derivative calculations depend on everything in the context, including t,
-  // x and inputs u (which may depend on t and x).
-  // Define x⁽ᵃ⁾ ≜ {xc⁽ᵃ⁾, xd₀, xa₀} and u⁽ᵃ⁾ ≜ u(t⁽ᵃ⁾, x⁽ᵃ⁾).
-
-  // Notation: we use Butcher tableaux notation
+  // We use Butcher tableaux notation with labels for each coefficient:
+  // 0   (c1)  |
+  // 1/2 (c2)  |  1/2  (a21)
+  // 3/4 (c3)  |  0    (a31)      3/4 (a32)
+  // 1   (c4)  |  2/9  (a41)      1/3 (a42)    4/9 (a43)
+  // ---------------------------------------------------------------------------
+  //              2/9  (b1)       1/3 (b2)     4/9 (b3)     0   (b4)
+  //              7/24 (d1)       1/4 (d2)     1/3 (d3)     1/8 (d4)
 
   // Save the continuous state at t₀.
   context.get_continuous_state_vector().CopyToPreSizedVector(&save_xc0_);
@@ -188,7 +184,8 @@ bool BogackiShampine3Integrator<T>::DoStep(const T& h) {
       this->EvalTimeDerivatives(context).get_vector());
   const VectorBase<T>& k3 =  derivs3_->get_vector();
 
-  // Compute the propagated solution.
+  // Compute the propagated solution (we're able to do this because b1 = a41,
+  // b2 = a42, b3 = a43, and b4 = 0).
   const double c4 = 1.0;
   const double a41 = 2.0 / 9;
   const double a42 = 1.0 / 3;
@@ -198,34 +195,43 @@ bool BogackiShampine3Integrator<T>::DoStep(const T& h) {
   // issue the out-of-date notification here since we're about to change it.)
   context.SetTimeAndNoteContinuousStateChange(t0 + c4 * h);
 
-  // Evaluate the derivative (denoted k4) at t₀ + c4 * h,
-  //   xc₀ + a41 * h * k1 + a42 * h * k2 + a43 * h * k3.
+  // Evaluate the derivative (denoted k4) at t₀ + c4 * h, xc₀ + a41 * h * k1 +
+  // a42 * h * k2 + a43 * h * k3. This will be used to compute the second
+  // order solution.
   xc.SetFromVector(save_xc0_);  // Restore xc ← xc₀.
   xc.PlusEqScaled({{a41 * h, k1}, {a42 * h, k2}, {a43 * h, k3}});
-  const VectorX<T> xc_t1 = xc.CopyToVector();
-  derivs4_->get_mutable_vector().SetFrom(
-      this->EvalTimeDerivatives(context).get_vector());
-  const VectorBase<T>& k4 =  derivs4_->get_vector();
+  const ContinuousState<T>& derivs4 = this->EvalTimeDerivatives(context);
+  const VectorBase<T>& k4 = derivs4.get_vector();
 
-  // Calculate the 2nd-order solution that will be used for the error estimate.
+  // WARNING: k4 is a live reference into the cache. Be careful of adding
+  // code below that modifies the context until after k4 is used below. In fact,
+  // it is best not to modify the context from here on out, as modifying the
+  // context will effectively destroy the FSAL benefit that this integrator
+  // provides.
+
+  // Compute the second order solution used for the error estimate and then
+  // the error estimate itself. The first part of this formula (the part that
+  // uses the d coefficients) computes the second error solution. The last part
+  // subtracts the third order propagated solution from that second order
+  // solution, thereby yielding the error estimate.
   const double d1 = 7.0 / 24;
   const double d2 = 1.0 / 4;
   const double d3 = 1.0 / 3;
   const double d4 = 1.0 / 8;
-  xc.SetFromVector(save_xc0_);
-  xc.PlusEqScaled({{d1 * h, k1}, {d2 * h, k2}, {d3 * h, k3} , {d4 * h, k4}});
-
-  // Compute the error estimate.
-  err_est_vec_ = xc_t1 - xc.CopyToVector();
-  err_est_vec_ = err_est_vec_.cwiseAbs();
+/*
+  err_est_vec_->SetFromVector(save_xc0_);
+  err_est_vec_->PlusEqScaled({{d1 * h, k1}, {d2 * h, k2}, {d3 * h, k3},
+      {d4 * h, k4}, {-1.0, xc} });
+*/
+  err_est_vec_->SetZero();
+  err_est_vec_->PlusEqScaled({{(a41 - d1) * h, k1}, {(a42 - d2) * h, k2},
+      {(a43 - d3) * h, k3}, {(-d4) * h, k4} });
 
   // If the size of the system has changed, the error estimate will no longer
   // be sized correctly. Verify that the error estimate is the correct size.
   DRAKE_DEMAND(this->get_error_estimate()->size() == xc.size());
-
-  // Set the final state (the propagated solution) at t₁.
-  xc.SetFromVector(xc_t1);
-  this->get_mutable_error_estimate()->SetFromVector(err_est_vec_);
+  this->get_mutable_error_estimate()->SetFromVector(err_est_vec_->
+      CopyToVector().cwiseAbs());
 
   // Bogacki-Shampine always succeeds in taking its desired step.
   return true;

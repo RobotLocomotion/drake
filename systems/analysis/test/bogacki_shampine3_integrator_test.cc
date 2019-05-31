@@ -91,43 +91,14 @@ GTEST_TEST(BS3IntegratorErrorEstimatorTest, CubicTest) {
       std::numeric_limits<double>::epsilon();
   const double actual_answer = cubic_context->get_continuous_state_vector()[0];
   EXPECT_NEAR(actual_answer, expected_answer, allowable_3rd_order_error);
-
-  // This integrator calculates error by subtracting a 2nd-order integration
-  // result from a 3rd-order integration result. Since the 2nd-order integrator
-  // has a Taylor series that is accurate to O(h³), halving the step size is
-  // associated with an error that reduces by a factor of 2³ = 8.
-  // So we verify that the error associated with a half-step is nearly 1/8 the
-  // error associated with a full step.
-
-  // First obtain the error estimate using a single step of h.
-  const double err_est_h = bs3.get_error_estimate()->get_vector()[0];
-
-  // Now obtain the error estimate using two half steps of h/2.
-  cubic_context->SetTime(0.0);
-  cubic_context->get_mutable_continuous_state_vector()[0] = C;
-  bs3.Initialize();
-  ASSERT_TRUE(bs3.IntegrateWithSingleFixedStepToTime(t_final/2));
-  ASSERT_TRUE(bs3.IntegrateWithSingleFixedStepToTime(t_final));
-  const double err_est_2h_2 = bs3.get_error_estimate()->get_vector()[0];
-
-  // Check that the 2nd-order error estimate for a full-step is less than
-  // K*8 times larger than then 2nd-order error estimate for 2 half-steps;
-  // K is a constant term that subsumes the asymptotic error and is dependent
-  // upon both the system being integrated and the particular integrator.
-  const double K = 256;
-  const double allowable_2nd_order_error = K *
-      std::numeric_limits<double>::epsilon();
-  EXPECT_NEAR(err_est_h, 8 * err_est_2h_2, allowable_2nd_order_error);
 }
 
 // Tests accuracy for integrating the quadratic system (with the state at time t
 // corresponding to f(t) ≡ 4t² + 4t + C, where C is the initial state) over
-// t ∈ [0, 1]. The error estimator from BS3 is
-// second order, meaning that it uses the Taylor Series expansion:
-// f(t+h) ≈ f(t) + hf'(t) + ½h²f''(t) + O(h³)
-// This formula indicates that the approximation error will be zero if
-// f'''(t) = 0, which is true for the quadratic equation. We check that the
-// error estimator gives a perfect error estimate for this function.
+// t ∈ [0, 1]. The error estimate from BS3 is second order accurate, meaning
+// that the approximation error will be zero if f'''(t) = 0, which is true for
+// the quadratic equation. We check that the error estimate is perfect for this
+// function.
 GTEST_TEST(BS3IntegratorErrorEstimatorTest, QuadraticTest) {
   QuadraticScalarSystem quadratic;
   auto quadratic_context = quadratic.CreateDefaultContext();
@@ -142,53 +113,16 @@ GTEST_TEST(BS3IntegratorErrorEstimatorTest, QuadraticTest) {
   bs3.Initialize();
   ASSERT_TRUE(bs3.IntegrateWithSingleFixedStepToTime(t_final));
 
+  // Verify that the error in the error estimate is cubic (equivalent to saying
+  // that the accuracy of the error estimate is quadratic).
+  ASSERT_EQ(bs3.get_error_estimate_order(), 3);
+
   const double err_est =
       bs3.get_error_estimate()->get_vector().GetAtIndex(0);
 
   // Note the very tight tolerance used, which will likely not hold for
   // arbitrary values of C, t_final, or polynomial coefficients.
   EXPECT_NEAR(err_est, 0.0, 2 * std::numeric_limits<double>::epsilon());
-}
-
-// Tests accuracy when generalized velocity is not the time derivative of
-// generalized configuration against an RK2 integrator.
-TEST_F(BS3IntegratorTest, ComparisonWithRK2) {
-  // Integrate for ten thousand steps using a RK2 integrator with
-  // small step size.
-  const double dt = 5e-5;
-  std::unique_ptr<Context<double>> rk2_context = MakePlantContext();
-  RungeKutta2Integrator<double> rk2(*plant_, dt, rk2_context.get());
-
-  rk2.Initialize();
-  const double t_final = 1.0;
-  const int n_steps = t_final / dt;
-  for (int i = 1; i <= n_steps; ++i)
-    ASSERT_TRUE(rk2.IntegrateWithSingleFixedStepToTime(i * dt));
-
-  // Re-integrate with BS3.
-  std::unique_ptr<Context<double>> bs3_context = MakePlantContext();
-  BogackiShampine3Integrator<double> bs3(*plant_, bs3_context.get());
-  bs3.set_maximum_step_size(0.1);
-  bs3.set_target_accuracy(1e-6);
-  bs3.Initialize();
-
-  // Verify that IntegrateWithMultipleSteps works.
-  const double tol = std::numeric_limits<double>::epsilon();
-  bs3.IntegrateWithMultipleStepsToTime(t_final);
-  EXPECT_NEAR(bs3_context->get_time(), t_final, tol);
-
-  // Verify that the final states are "close".
-  const VectorBase<double>& x_final_rk2 =
-      rk2_context->get_continuous_state_vector();
-
-  const VectorBase<double>& x_final_bs3 =
-      bs3_context->get_continuous_state_vector();
-
-  // Note that this tolerance is 3x coarser than that used for the same
-  // test in runge_kutta3_integrator_test.cc.
-  const double close_tol = 8e-6;
-  for (int i = 0; i < x_final_rk2.size(); ++i)
-    EXPECT_NEAR(x_final_rk2[i], x_final_bs3[i], close_tol);
 }
 
 }  // namespace analysis_test
