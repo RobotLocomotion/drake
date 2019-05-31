@@ -2064,14 +2064,13 @@ class MultibodyTree {
 
   // Helper method for CalcBiasForJacobianTranslationalVelocity() and
   // CalcBiasForJacobianSpatialVelocity().
-  SpatialAcceleration<T> CalcSpatialAccelerationBiasHelper(
-      JacobianWrtVariable with_respect_to,
+  SpatialAcceleration<T> CalcSpatialAccelerationBiasShift(
+      const systems::Context<T>& context,
       const Frame<T>& frame_F,
       const math::RigidTransform<T>& X_BF,
       const Vector3<T>& p_FoFp_F,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc,
-      const SpatialAcceleration<T>& Abias_WBo) const;
+      const SpatialAcceleration<T>& Abias_WBo,
+      const Frame<T>& frame_E) const;
 
   // Helper method to access the mobilizer of a free body.
   // If `body` is a free body in the model, this method will return the
