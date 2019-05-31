@@ -121,18 +121,18 @@ class TestPointCloudConcatenation(unittest.TestCase):
             self.pc_concat, simulator.get_mutable_context())
 
         self.context.FixInputPort(
-            self.pc_concat.GetInputPort("X_FC0").get_index(),
+            self.pc_concat.GetInputPort("X_FCi_0").get_index(),
             AbstractValue.Make(X_WP_0))
         self.context.FixInputPort(
-            self.pc_concat.GetInputPort("X_FC1").get_index(),
+            self.pc_concat.GetInputPort("X_FCi_1").get_index(),
             AbstractValue.Make(X_WP_1))
 
     def test_no_rgb(self):
         self.context.FixInputPort(
-            self.pc_concat.GetInputPort("point_cloud_C0S0").get_index(),
+            self.pc_concat.GetInputPort("point_cloud_CiSi_0").get_index(),
             AbstractValue.Make(self.pc_no_rgbs))
         self.context.FixInputPort(
-            self.pc_concat.GetInputPort("point_cloud_C1S1").get_index(),
+            self.pc_concat.GetInputPort("point_cloud_CiSi_1").get_index(),
             AbstractValue.Make(self.pc_no_rgbs))
 
         fused_pc = self.pc_concat.GetOutputPort("point_cloud_FS").Eval(
@@ -155,10 +155,10 @@ class TestPointCloudConcatenation(unittest.TestCase):
 
     def test_rgb(self):
         self.context.FixInputPort(
-            self.pc_concat.GetInputPort("point_cloud_C0S0").get_index(),
+            self.pc_concat.GetInputPort("point_cloud_CiSi_0").get_index(),
             AbstractValue.Make(self.pc))
         self.context.FixInputPort(
-            self.pc_concat.GetInputPort("point_cloud_C1S1").get_index(),
+            self.pc_concat.GetInputPort("point_cloud_CiSi_1").get_index(),
             AbstractValue.Make(self.pc))
 
         fused_pc = self.pc_concat.GetOutputPort("point_cloud_FS").Eval(
@@ -179,10 +179,10 @@ class TestPointCloudConcatenation(unittest.TestCase):
 
     def test_mix_rgb(self):
         self.context.FixInputPort(
-            self.pc_concat.GetInputPort("point_cloud_C0S0").get_index(),
+            self.pc_concat.GetInputPort("point_cloud_CiSi_0").get_index(),
             AbstractValue.Make(self.pc))
         self.context.FixInputPort(
-            self.pc_concat.GetInputPort("point_cloud_C1S1").get_index(),
+            self.pc_concat.GetInputPort("point_cloud_CiSi_1").get_index(),
             AbstractValue.Make(self.pc_no_rgbs))
 
         fused_pc = self.pc_concat.GetOutputPort("point_cloud_FS").Eval(

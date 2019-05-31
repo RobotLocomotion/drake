@@ -45,27 +45,28 @@ class PointCloudConcatenation(LeafSystem):
 
     def __init__(self, id_list, default_rgb=[255., 255., 255.]):
         """
-        A system that takes in N point clouds and N RigidTransforms that
-        put each point cloud in a common frame F. The system returns one point
-        cloud combining all of the transformed point clouds. Each point cloud
-        must have XYZs. RGBs are optional. If absent, those points will be the
-        provided default color.
+        A system that takes in N point clouds of points Si in frame Ci, and N
+        RigidTransforms from frame Ci to F, to put each point cloud in a common
+        frame F. The system returns one point cloud combining all of the
+        transformed point clouds. Each point cloud must have XYZs. RGBs are
+        optional. If absent, those points will be the provided default color.
 
-        @param id_list A list containing the IDs of all of the point clouds.
-            This is often the serial number of the camera they came from.
+        @param id_list A list containing the string IDs of all of the point
+            clouds. This is often the serial number of the camera they came
+            from, such as "1" for a simulated camera or "805212060373" for a
+            real camera.
         @param default_rgb A list of length 3 containing the RGB values to use
             in the absence of PointCloud.rgbs. Values should be between 0 and
             255. The default is white.
 
-        TODO(kmuhlrad): figure out frames and id_list stuff
         @system{
-          @input_port{point_cloud_C0S0}
-          @input_port{X_FC0}
+          @input_port{point_cloud_CiSi_id0}
+          @input_port{X_FCi_id0}
           .
           .
           .
-          @input_port{point_cloud_CNSN}
-          @input_port{X_FCN}
+          @input_port{point_cloud_CiSi_idN}
+          @input_port{X_FCi_idN}
           @output_port{point_cloud_FS}
         }
         """
@@ -80,14 +81,13 @@ class PointCloudConcatenation(LeafSystem):
 
         output_fields = mut.Fields(mut.BaseField.kXYZs | mut.BaseField.kRGBs)
 
-        # TODO(kmuhlrad): figure out frames and id_list stuff
         for id in self.id_list:
             self.point_cloud_ports[id] = self.DeclareAbstractInputPort(
-                "point_cloud_C{}S{}".format(id, id),
+                "point_cloud_CiSi_{}".format(id),
                 AbstractValue.Make(mut.PointCloud(fields=output_fields)))
 
             self.transform_ports[id] = self.DeclareAbstractInputPort(
-                "X_FC{}".format(id),
+                "X_FCi_{}".format(id),
                 AbstractValue.Make(RigidTransform.Identity()))
 
         self.DeclareAbstractOutputPort("point_cloud_FS",
