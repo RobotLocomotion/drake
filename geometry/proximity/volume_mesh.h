@@ -4,6 +4,8 @@
 #include <utility>
 #include <vector>
 
+#include <Eigen/Dense>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -132,6 +134,11 @@ class VolumeMesh {
   */
   using Barycentric = Vector<T, kDim + 1>;
 
+  /** Type of cartesian coordinates. Mesh consumers can use it in conversion
+   from Cartesian coordinates to barycentric coordinates.
+   */
+  using Cartesian = Vector<T, 3>;
+
   //@}
 
   VolumeMesh(std::vector<VolumeElement>&& elements,
@@ -163,6 +170,27 @@ class VolumeMesh {
   /** Returns the number of vertices in the mesh.
    */
   int num_vertices() const { return vertices_.size(); }
+
+  /** Calculate barycentric coordinates of a position `p_M` with respect to the
+   element `e`.
+   @param p_M  A position expressed in the frame M of the mesh.
+   @param e    The index of a tetrahedral element.
+   @note  If p_M is outside the tetrahedral element, the barycentric
+          coordinates (b₀, b₁, b₂, b₃) still satisfy b₀ + b₁ + b₂ + b₃ = 1;
+          however, some bᵢ will be negative.
+   */
+  Barycentric CalcBarycentric(const Cartesian& p_M, ElementIndex e) const {
+    Matrix4<T> A;
+    for (int i = 0; i < 4; ++i) {
+      A.col(i) << T(1.0), vertex(element(e).vertex(i)).r_MV();
+    }
+    Vector4<T> b;
+    b << T(1.0), p_M;
+    Barycentric barycentric = A.partialPivLu().solve(b);
+    // TODO(DamrongGuoy): Save the partialPivLu() of all elements instead of
+    //  calculating it on the fly.
+    return barycentric;
+  }
 
  private:
   // The tetrahedral elements that comprise the volume.

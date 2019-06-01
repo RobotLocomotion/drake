@@ -70,6 +70,29 @@ std::unique_ptr<VolumeMesh<T>> TestVolumeMesh() {
   return volume_mesh;
 }
 
+template <typename T>
+void TestCalcBarycentric();
+
+GTEST_TEST(VolumeMeshTest, TestCalcBarycentricDouble) {
+  TestCalcBarycentric<double>();
+}
+
+GTEST_TEST(VolumeMeshTest, TestCalcBarycentricAutoffXd) {
+  TestCalcBarycentric<AutoDiffXd>();
+}
+
+template <typename T>
+void TestCalcBarycentric() {
+  auto volume_mesh = TestVolumeMesh<T>();
+  const T kTolerance(std::numeric_limits<double>::epsilon());
+
+  Vector3<T> p_M(0.25, 0.25, 0.25);
+  const VolumeElementIndex e(0);
+  auto barycentric = volume_mesh->CalcBarycentric(p_M, e);
+  typename VolumeMesh<T>::Barycentric expect_barycentric(0.25, 0.25, 0.25,
+                                                         0.25);
+  EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
+}
 
 // Tests instantiation of VolumeMeshField and evaluating a scalar field value.
 template <typename T>

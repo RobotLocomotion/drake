@@ -20,6 +20,7 @@ drake_cc_package_library(
         ":distance_to_shape",
         ":make_unit_sphere_mesh",
         ":mesh_field",
+        ":mesh_intersection",
         ":proximity_utilities",
         ":volume_mesh",
     ],
@@ -108,6 +109,20 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//geometry/proximity:volume_mesh",
+    ],
+)
+
+drake_cc_library(
+    name = "mesh_intersection",
+    srcs = ["mesh_intersection.cc"],
+    hdrs = ["mesh_intersection.h"],
+    deps = [
+        "//common",
+        "//geometry/proximity:mesh_field",
+        "//geometry/proximity:volume_mesh",
+        "//geometry/query_results:contact_surface",
+        "//math:geometric_transform",
+        "@fcl",
     ],
 )
 
@@ -214,6 +229,13 @@ drake_cc_googletest(
     name = "make_unit_sphere_mesh_test",
     deps = [
         ":make_unit_sphere_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mesh_intersection_test",
+    deps = [
+        "//geometry/proximity:mesh_intersection",
     ],
 )
 

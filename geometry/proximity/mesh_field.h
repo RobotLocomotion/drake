@@ -32,6 +32,14 @@ class MeshField {
       const typename MeshType::ElementIndex e,
       const typename MeshType::Barycentric& b) const = 0;
 
+  /** Evaluates the field value at a location on an element.
+   @param e The index of the element.
+   @param b The Cartesian coordinates.
+   */
+  virtual FieldValue EvaluateC(
+      const typename MeshType::ElementIndex e,
+      const typename MeshType::Cartesian& b) const = 0;
+
   /** Copy to a new %MeshField and set the new %MeshField to use a new
    compatible mesh. %MeshField needs a mesh to operate; however, %MeshField
    does not own the mesh. In fact, several %MeshField objects can use the same
@@ -61,14 +69,14 @@ class MeshField {
       const = 0;
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshField)
-  explicit MeshField(MeshType* mesh): mesh_(mesh) {
+  explicit MeshField(const MeshType* mesh): mesh_(mesh) {
     DRAKE_DEMAND(mesh_ != nullptr);
   }
 
  private:
   // We use `reset_on_copy` so that the default copy constructor resets
   // the pointer to null when a MeshField is copied.
-  reset_on_copy<MeshType*> mesh_;
+  reset_on_copy<const MeshType*> mesh_;
 };
 
 /**
@@ -78,6 +86,33 @@ class MeshField {
  */
 template <typename FieldValue, typename T>
 using SurfaceMeshField = MeshField<FieldValue, SurfaceMesh<T>>;
+
+// TODO(DamrongGuoy): Repackage the classes in the MeshField family to this
+//  structure:
+//   mesh_field.h
+//     MeshField (abstract)
+//   mesh_field_linear.h
+//     MeshFieldLinear (concrete)
+//   surface_mesh_field.h (new file)
+//     SurfaceMeshField = MeshField<_,SurfaceMesh> (abstract)
+//     SurfaceMeshFieldLinear = MeshFieldLinear<_,SurfaceMesh> (concrete)
+//   volume_mesh_field.h
+//     VolumeMeshField = MeshField<_, VolumeMesh<_>> (abstract)
+//     VolumeMeshFieldLinear = MeshFieldLinear<_,VolumeMesh> (concrete)
+//   surface_mesh.h
+//     SurfaceMesh<T>
+//   volume_mesh.h
+//     VolumeMesh<T>
+//   drake_cc_library("mesh_field")
+//     mesh_field.h
+//     mesh_field_linear.h
+//   drake_cc_library("surface_mesh_field")
+//     surface_mesh.h
+//     surface_mesh_field.h
+//   drake_cc_library("volume_mesh_field")
+//     volume_mesh.h
+//     volume_mesh_field.h
+// The current structure is slightly different from above.
 
 }  // namespace geometry
 }  // namespace drake

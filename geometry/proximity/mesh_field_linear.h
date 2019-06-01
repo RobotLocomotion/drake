@@ -117,7 +117,7 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
           same as the number of vertices of the mesh.
    */
   MeshFieldLinear(std::string name, std::vector<FieldValue>&& values,
-                  MeshType* mesh)
+                  const MeshType* mesh)
       : MeshField<FieldValue, MeshType>(mesh),
         name_(std::move(name)), values_(std::move(values)) {
     DRAKE_DEMAND(static_cast<int>(values_.size()) ==
@@ -125,13 +125,18 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
   }
 
   FieldValue Evaluate(const typename MeshType::ElementIndex e,
-                     const typename MeshType::Barycentric& b) const final {
+                      const typename MeshType::Barycentric& b) const final {
     const auto& element = this->mesh().element(e);
     FieldValue value = b[0] * values_[element.vertex(0)];
     for (int i = 1; i < MeshType::kDim + 1; ++i) {
       value += b[i] * values_[element.vertex(i)];
     }
     return value;
+  }
+
+  FieldValue EvaluateC(const typename MeshType::ElementIndex e,
+                       const typename MeshType::Cartesian& c) const final {
+    return Evaluate(e, this->mesh().CalcBarycentric(c, e));
   }
 
   const std::string& name() const { return name_; }
