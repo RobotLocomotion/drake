@@ -680,18 +680,36 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
 
   // Compute the expected value of the bias terms using the time derivatives
   // computed with AutoDiffXd.
-  const VectorX<double> Ab_WHp_expected = Jv_WHp_derivs * v;
+  const VectorX<double> abias_WHp_W_expected = Jv_WHp_derivs * v;
 
   // Compute bias for Jacobian translational velocity.
   const Frame<double>& world_frame = tree().world_frame();
-  const VectorX<double> Ab_WHp =
+  const VectorX<double> abias_WHp_W =
       tree().CalcBiasForJacobianTranslationalVelocity(
       *context_, JacobianWrtVariable::kV, *frame_H_, p_HPi,
       world_frame, world_frame);
 
-  // Ab_WHp is of size 3⋅kNumPoints x num_velocities. CompareMatrices() below
+  // abias_WHp is of size 3⋅kNumPoints x num_velocities. CompareMatrices() below
   // verifies this, in addition to the numerical values of each element.
-  EXPECT_TRUE(CompareMatrices(Ab_WHp, Ab_WHp_expected,
+  EXPECT_TRUE(CompareMatrices(abias_WHp_W, abias_WHp_W_expected,
+                              kTolerance, MatrixCompareType::relative));
+
+  // Express the expected bias acceleration result in frame_H_.
+  const math::RigidTransform<double> X_WH =
+      frame_H_->CalcPoseInWorld(*context_);
+  const math::RotationMatrix<double>& R_HW = X_WH.rotation().inverse();
+  Vector6<double> abias_WHp_H_expected;
+  abias_WHp_H_expected.head(3) = R_HW * abias_WHp_W_expected.head(3);
+  abias_WHp_H_expected.tail(3) = R_HW * abias_WHp_W_expected.tail(3);
+
+  // Directly calculate Abias_WHp_H.
+  const VectorX<double> abias_WHp_H =
+      tree().CalcBiasForJacobianTranslationalVelocity(
+          *context_, JacobianWrtVariable::kV, *frame_H_, p_HPi,
+          world_frame, *frame_H_);
+
+  // Ensure Abias_WHp_H is nearly identical to Abias_WHp_H_expected.
+  EXPECT_TRUE(CompareMatrices(abias_WHp_H, abias_WHp_H_expected,
                               kTolerance, MatrixCompareType::relative));
 
   // Verify CalcBiasForJacobianTranslationalVelocity() throws an exception if
