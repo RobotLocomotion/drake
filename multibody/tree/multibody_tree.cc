@@ -1041,7 +1041,7 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationBiasShift(
     const Frame<T>& frame_F,
     const math::RigidTransform<T>& X_BF,
     const Vector3<T>& p_FoFp_F,
-    const SpatialAcceleration<T>& Abias_WBo,
+    const SpatialAcceleration<T>& Abias_WBo_W,
     const Frame<T>& frame_E) const {
 
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
@@ -1058,7 +1058,7 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationBiasShift(
 
   // Shift spatial acceleration bias term from point Bo to point Fp.
   // See SpatialAcceleration::Shift() for details.
-  SpatialAcceleration<T> Abias_WFp = Abias_WBo.Shift(p_BoFp_W, w_WB_W);
+  SpatialAcceleration<T> Abias_WFp = Abias_WBo_W.Shift(p_BoFp_W, w_WB_W);
 
   // Express the resulting vectors in frame_E (rather than the world frame).
   if (&frame_E != &world_frame()) {

@@ -1597,7 +1597,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] frame_A The frame that measures `abias_AFp`.
   /// Currently, an exception is thrown if frame_A is not the World frame.
   /// @param[in] frame_E The frame in which `abias_AFp` is expressed on output.
-  /// @returns abias_AFp_E 3 x n matrix of translational acceleration bias terms
+  /// @returns abias_AFp_E matrix of translational acceleration bias terms
   /// in frame_A and expressed in frame_E for each of the `n` points associated
   /// with p_FP_list.  These bias terms are functions of the generalized
   /// positions q and the generalized velocities v and depend on whether
@@ -1910,7 +1910,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// elements are point Fp's translational acceleration bias in frame_A
   /// (expressed in frame_E).  These bias terms are functions of the generalized
   /// positions q and the generalized velocities v and depend on whether
-  /// `with_respect_to` is kQDot or kV.
+  /// `with_respect_to` is kQDot or kV.  Note: Although the return quantity is a
+  /// Vector6, it is actually a SpatialAcceleration (having units of that type).
   /// @throws std::exception if `with_respect_to` is not JacobianWrtVariable::kV
   /// @throws std::exception if frame_A is not the world frame.
   Vector6<T> CalcBiasForJacobianSpatialVelocity(
