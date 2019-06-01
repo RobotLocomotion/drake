@@ -66,7 +66,7 @@ class JointSliders(VectorSystem):
             """
             self.canvas.configure(scrollregion=self.canvas.bbox("all"),
                                   width=200,
-                                  height=min(robot.num_joints()*60,400))
+                                  height=min(robot.num_joints()*60, 400))
 
         lower_limit = _reshape(lower_limit, robot.num_positions())
         upper_limit = _reshape(upper_limit, robot.num_positions())
@@ -108,7 +108,7 @@ class JointSliders(VectorSystem):
         # Put scrollbar and slider_frame into canvas.
         self.scrollbar.pack(side="right", fill="y")
         self.canvas.pack(side="left")
-        self.canvas.create_window((0,0),
+        self.canvas.create_window((0, 0),
                                   window=self.slider_frame,
                                   anchor='nw')
         # Call _frame_config to configure canvas size.
