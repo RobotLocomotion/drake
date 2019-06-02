@@ -106,9 +106,11 @@ void Intersection(const ExponentList& A, ExponentList* B) {
  * Automatic Control, 2009." After execution, all exponents of inconsistent
  * monomials are removed from exponents_of_basis.
 */
-void RemoveDiagonallyInconsistentExponents(const ExponentList& exponents_of_p,
+int RemoveDiagonallyInconsistentExponents(const ExponentList& exponents_of_p,
                                            ExponentList* exponents_of_basis) {
+  int iterations = 0;
   while (1) {
+    iterations++;
     int num_exponents = exponents_of_basis->rows();
 
     ExponentList valid_squares =
@@ -119,9 +121,10 @@ void RemoveDiagonallyInconsistentExponents(const ExponentList& exponents_of_p,
     (*exponents_of_basis) = (*exponents_of_basis) / 2;
 
     if (exponents_of_basis->rows() == num_exponents) {
-      return;
+      break;
     }
   }
+  return iterations;
 }
 
 struct Hyperplanes {
@@ -168,13 +171,27 @@ Hyperplanes RandomSupportingHyperplanes(const ExponentList& exponents_of_p) {
   return H;
 }
 
-ExponentList ConstructMonomialBasis(const ExponentList& exponents_of_p) {
+
+//  Generates the supporting hyperplanes of the Newton polytope that
+//  are induced by the total degree ordering.
+Hyperplanes DegreeInducedHyperplanes(const ExponentList& exponents_of_p) {
+  Hyperplanes H;
+
+  // The hyperplane for total degree.
+  H.normal_vectors.resize(1, exponents_of_p.cols());
+  H.normal_vectors.setConstant(1);
+
+  Eigen::MatrixXi dot_products = H.normal_vectors * exponents_of_p.transpose();
+  H.max_dot_product = dot_products.rowwise().maxCoeff() / 2;
+  H.min_dot_product = dot_products.rowwise().minCoeff() / 2;
+
+  return H;
+}
+
+ExponentList EnumerateInitialSet(const ExponentList& exponents_of_p) {
   Eigen::VectorXi lower_bounds = exponents_of_p.colwise().minCoeff() / 2;
   Eigen::VectorXi upper_bounds = exponents_of_p.colwise().maxCoeff() / 2;
-
-  // Note: RandomSupportingHyperplanes is actually deterministic due to
-  // its internal initialization of the random number seed.
-  Hyperplanes hyperplanes = RandomSupportingHyperplanes(exponents_of_p);
+  Hyperplanes hyperplanes = DegreeInducedHyperplanes(exponents_of_p);
 
   // We check the inequalities in two batches to allow for internal
   // infeasibility propagation inside of EnumerateIntegerSolutions,
@@ -190,6 +207,64 @@ ExponentList ConstructMonomialBasis(const ExponentList& exponents_of_p) {
       upper_bounds);
 
   Intersection(basis_exponents_1, &basis_exponents);
+  return basis_exponents;
+}
+
+//  This function removes an element alpha from "basis" if a randomly generated
+//  hyperplane separates 2*alpha from the Newton polytope of the polynomial p.
+//  Note that this function is actually deterministic, since the random number
+//  generator is reinitialized inside of RandomSupportingHyperplanes().
+int RemoveWithRandomSeparatingHyperplanes(const ExponentList& exponents_of_p,
+                                                   ExponentList* basis) {
+  // Declare this outside the main loop to avoid repeated dynamic memory
+  // allocation.
+  Eigen::MatrixXi dot_products;
+  int iterations = 0;
+
+  while (1) {
+    iterations++;
+
+    int next_basis_size = 0;
+    int current_basis_size = basis->rows();
+
+    // This call is actually deterministic because the internal
+    // random number generator is reset.
+    auto H = RandomSupportingHyperplanes(exponents_of_p);
+
+    // Remove monomials that the hyperplanes seperate from the
+    // Newton polytope.
+    dot_products = (*basis) * H.normal_vectors.transpose();
+    for (int i = 0; i < current_basis_size; i++) {
+        bool keep_monomial = true;
+        for (int j = 0; j < dot_products.cols(); j++) {
+            if (dot_products(i, j) > H.max_dot_product(j) ||
+                dot_products(i, j) < H.min_dot_product(j) ) {
+               keep_monomial  = false;
+               break;
+            }
+        }
+
+        if (keep_monomial) {
+            basis->row(next_basis_size++) = basis->row(i);
+        }
+    }
+
+    basis->conservativeResize(next_basis_size, basis->cols());
+
+    // Quit if the basis is now empty or if its size wasn't reduced
+    // enough.
+    constexpr double kMinimumPercentReduction = .1;
+    if (next_basis_size > current_basis_size * (1.0-kMinimumPercentReduction) ||
+        next_basis_size == 0) {
+      break;
+    }
+  }
+  return iterations;
+}
+
+ExponentList ConstructMonomialBasis(const ExponentList& exponents_of_p) {
+  auto basis_exponents = EnumerateInitialSet(exponents_of_p);
+  RemoveWithRandomSeparatingHyperplanes(exponents_of_p, &basis_exponents);
   RemoveDiagonallyInconsistentExponents(exponents_of_p, &basis_exponents);
   return basis_exponents;
 }
@@ -203,8 +278,11 @@ MonomialVector ConstructMonomialBasis(const drake::symbolic::Polynomial& p) {
   for (auto& var : p.indeterminates()) {
     vars(cnt++) = var;
   }
-  return ExponentsToMonomials(ConstructMonomialBasis(GetPolynomialExponents(p)),
-                              vars);
+
+  auto polynomial_exponents = GetPolynomialExponents(p);
+  auto basis_exponents = ConstructMonomialBasis(polynomial_exponents);
+  auto monomial_basis = ExponentsToMonomials(basis_exponents, vars);
+  return monomial_basis;
 }
 }  // namespace solvers
 }  // namespace drake
