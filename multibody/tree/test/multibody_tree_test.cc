@@ -680,18 +680,36 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
 
   // Compute the expected value of the bias terms using the time derivatives
   // computed with AutoDiffXd.
-  const VectorX<double> Ab_WHp_expected = Jv_WHp_derivs * v;
+  const VectorX<double> abias_WHp_W_expected = Jv_WHp_derivs * v;
 
   // Compute bias for Jacobian translational velocity.
   const Frame<double>& world_frame = tree().world_frame();
-  const VectorX<double> Ab_WHp =
+  const VectorX<double> abias_WHp_W =
       tree().CalcBiasForJacobianTranslationalVelocity(
       *context_, JacobianWrtVariable::kV, *frame_H_, p_HPi,
       world_frame, world_frame);
 
-  // Ab_WHp is of size 3⋅kNumPoints x num_velocities. CompareMatrices() below
+  // abias_WHp is of size 3⋅kNumPoints x num_velocities. CompareMatrices() below
   // verifies this, in addition to the numerical values of each element.
-  EXPECT_TRUE(CompareMatrices(Ab_WHp, Ab_WHp_expected,
+  EXPECT_TRUE(CompareMatrices(abias_WHp_W, abias_WHp_W_expected,
+                              kTolerance, MatrixCompareType::relative));
+
+  // Express the expected bias acceleration result in frame_H_.
+  const math::RigidTransform<double> X_WH =
+      frame_H_->CalcPoseInWorld(*context_);
+  const math::RotationMatrix<double>& R_HW = X_WH.rotation().inverse();
+  Vector6<double> abias_WHp_H_expected;
+  abias_WHp_H_expected.head(3) = R_HW * abias_WHp_W_expected.head(3);
+  abias_WHp_H_expected.tail(3) = R_HW * abias_WHp_W_expected.tail(3);
+
+  // Directly calculate abias_WHp_H.
+  const VectorX<double> abias_WHp_H =
+      tree().CalcBiasForJacobianTranslationalVelocity(
+          *context_, JacobianWrtVariable::kV, *frame_H_, p_HPi,
+          world_frame, *frame_H_);
+
+  // Ensure abias_WHp_H is nearly identical to abias_WHp_H_expected.
+  EXPECT_TRUE(CompareMatrices(abias_WHp_H, abias_WHp_H_expected,
                               kTolerance, MatrixCompareType::relative));
 
   // Verify CalcBiasForJacobianTranslationalVelocity() throws an exception if
@@ -716,13 +734,6 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
   EXPECT_THROW(tree().CalcBiasForJacobianTranslationalVelocity(
                    *context_, JacobianWrtVariable::kV, *frame_H_, p_HPi,
                    *frame_H_, world_frame),
-               std::exception);
-
-  // Verify CalcBiasForJacobianTranslationalVelocity() throws an exception if
-  // expressed-in-frame is not world frame W.
-  EXPECT_THROW(tree().CalcBiasForJacobianTranslationalVelocity(
-                   *context_, JacobianWrtVariable::kV, *frame_H_, p_HPi,
-                   world_frame, *frame_H_),
                std::exception);
 }
 
@@ -906,10 +917,9 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
   EXPECT_TRUE(Jv_WF_times_v.IsApprox(V_WEf, kTolerance));
 }
 
-// Unit tests MBT::CalcBiasForFrameGeometricJacobianExpressedInWorld() using
-// AutoDiffXd to compute time derivatives of the geometric Jacobian to obtain a
-// reference solution.
-TEST_F(KukaIiwaModelTests, CalcBiasForFrameGeometricJacobianExpressedInWorld) {
+// Unit tests MBT::CalcBiasForJacobianSpatialVelocity() use AutoDiffXd to time-
+// differentiate the spatial velocity Jacobian to form a reference solution.
+TEST_F(KukaIiwaModelTests, CalcBiasForJacobianSpatialVelocity) {
   // The number of generalized velocities in the Kuka iiwa robot arm model.
   const int kNumVelocities = tree().num_velocities();
 
@@ -976,16 +986,18 @@ TEST_F(KukaIiwaModelTests, CalcBiasForFrameGeometricJacobianExpressedInWorld) {
 
   // Compute the expected value of the bias terms using the time derivatives
   // computed with AutoDiffXd.
-  const VectorX<double> Ab_WHp_expected = Jv_WHp_derivs * v;
+  const VectorX<double> Abias_WHp_expected = Jv_WHp_derivs * v;
 
-  // Compute frame Hp geometric Jacobian bias.
-  const VectorX<double> Ab_WHp =
-      tree().CalcBiasForFrameGeometricJacobianExpressedInWorld(
-          *context_, *frame_H_, p_HPo);
+  // Compute point Hp's spatial velocity Jacobian bias in world W.
+  const Frame<double>& world_frame = tree().world_frame();
+  const VectorX<double> Abias_WHp =
+      tree().CalcBiasForJacobianSpatialVelocity(
+          *context_, JacobianWrtVariable::kV, *frame_H_, p_HPo,
+          world_frame, world_frame);
 
-  // Ab_WHp is of size 6 x num_velocities. CompareMatrices() below
+  // Abias_WHp is of size 6 x num_velocities. CompareMatrices() below
   // verifies this, in addition to the numerical values of each element.
-  EXPECT_TRUE(CompareMatrices(Ab_WHp, Ab_WHp_expected,
+  EXPECT_TRUE(CompareMatrices(Abias_WHp, Abias_WHp_expected,
                               kTolerance, MatrixCompareType::relative));
 }
 
