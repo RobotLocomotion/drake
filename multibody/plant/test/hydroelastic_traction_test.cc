@@ -113,10 +113,8 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
     // Set the pose and velocity for the box.
     ASSERT_EQ(plant.num_velocities(), 6);
     ASSERT_EQ(plant.num_positions(), 7);
-    VectorX<double> state(plant.num_positions() + plant.num_velocities());
-    state << 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
-    auto& state_vector = plant_context_->get_mutable_continuous_state_vector();
-    state_vector.SetFromVector(state);
+    plant.SetFreeBodyPose(plant_context_,
+        plant.GetBodyByName("box"), math::RigidTransform<double>());
 
     // Instantiate the traction calculator.
     traction_calculator_ =
