@@ -1,14 +1,14 @@
 import numpy as np
 
 from pydrake.math import RigidTransform
+from pydrake.perception import BaseField, Fields, PointCloud
 from pydrake.systems.framework import AbstractValue, DiagramBuilder, LeafSystem
-import pydrake.perception as mut
 
 
 def _TransformPoints(points_Ci, X_CiSi):
-    # Make homogenous copy of points
+    # Make homogenous copy of points.
     points_h_Ci = np.vstack((points_Ci,
-                            np.ones((1, points_Ci.shape[1]))))
+                             np.ones((1, points_Ci.shape[1]))))
 
     return X_CiSi.dot(points_h_Ci)[:3, :]
 
@@ -79,12 +79,12 @@ class PointCloudConcatenation(LeafSystem):
 
         self._default_rgb = np.array(default_rgb)
 
-        output_fields = mut.Fields(mut.BaseField.kXYZs | mut.BaseField.kRGBs)
+        output_fields = Fields(BaseField.kXYZs | BaseField.kRGBs)
 
         for id in self.id_list:
             self.point_cloud_ports[id] = self.DeclareAbstractInputPort(
                 "point_cloud_CiSi_{}".format(id),
-                AbstractValue.Make(mut.PointCloud(fields=output_fields)))
+                AbstractValue.Make(PointCloud(fields=output_fields)))
 
             self.transform_ports[id] = self.DeclareAbstractInputPort(
                 "X_FCi_{}".format(id),
@@ -92,8 +92,7 @@ class PointCloudConcatenation(LeafSystem):
 
         self.DeclareAbstractOutputPort("point_cloud_FS",
                                        lambda: AbstractValue.Make(
-                                           mut.PointCloud(
-                                               fields=output_fields)),
+                                           PointCloud(fields=output_fields)),
                                        self.DoCalcOutput)
 
     def _AlignPointClouds(self, context):

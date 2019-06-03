@@ -4,13 +4,12 @@ import unittest
 import numpy as np
 
 from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
+from pydrake.perception import BaseField, Fields, PointCloud
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import AbstractValue, DiagramBuilder
 from pydrake.systems.perception import (
     PointCloudConcatenation, _ConcatenatePointClouds, _TileColors,
     _TransformPoints)
-
-import pydrake.perception as mut
 
 
 class TestConcatenatePointClouds(unittest.TestCase):
@@ -103,14 +102,14 @@ class TestPointCloudConcatenation(unittest.TestCase):
         # color.
         rgbs = np.random.uniform(0., 254.0, (3, self.num_points))
 
-        self.pc = mut.PointCloud(
+        self.pc = PointCloud(
             self.num_points,
-            mut.Fields(mut.BaseField.kXYZs | mut.BaseField.kRGBs))
+            Fields(BaseField.kXYZs | BaseField.kRGBs))
         self.pc.mutable_xyzs()[:] = xyzs
         self.pc.mutable_rgbs()[:] = rgbs
 
-        self.pc_no_rgbs = mut.PointCloud(
-            self.num_points, mut.Fields(mut.BaseField.kXYZs))
+        self.pc_no_rgbs = PointCloud(
+            self.num_points, Fields(BaseField.kXYZs))
         self.pc_no_rgbs.mutable_xyzs()[:] = xyzs
 
         diagram = builder.Build()
@@ -197,7 +196,7 @@ class TestPointCloudConcatenation(unittest.TestCase):
 
         self.assertTrue(fused_pc.has_rgbs())
 
-        # We don't know what order the two point clouds will be combined.
+        # We don't know in what order the two point clouds will be combined.
         rgb_first = np.all(fused_pc.rgbs()[:, 0] != np.array([255, 255, 255]))
         rgb_last = np.all(fused_pc.rgbs()[:, -1] != np.array([255, 255, 255]))
         no_rgb_first = np.all(
