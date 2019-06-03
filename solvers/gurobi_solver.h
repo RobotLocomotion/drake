@@ -156,8 +156,6 @@ class GurobiSolver final : public SolverBase {
 
   // A using-declaration adds these methods into our class's Doxygen.
   using SolverBase::Solve;
-  // NOLINTNEXTLINE(runtime/references)
-  SolutionResult Solve(MathematicalProgram&) const final;
 
  private:
   void DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,

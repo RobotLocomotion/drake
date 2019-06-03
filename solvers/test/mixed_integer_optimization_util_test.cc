@@ -360,8 +360,9 @@ class BilinearProductMcCormickEnvelopeTest {
 
       GurobiSolver solver;
       if (solver.available()) {
-        const auto result = solver.Solve(*prog);
-        EXPECT_EQ(result,
+        MathematicalProgramResult result;
+        solver.Solve(*prog, {}, {}, &result);
+        EXPECT_EQ(result.get_solution_result(),
                   is_feasible ? SolutionResult::kSolutionFound
                               : SolutionResult::kInfeasibleConstraints);
       }

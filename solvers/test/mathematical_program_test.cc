@@ -191,10 +191,6 @@ GTEST_TEST(TestMathematicalProgram, TestConstructor) {
   MathematicalProgram prog;
   EXPECT_EQ(prog.initial_guess().rows(), 0);
   EXPECT_EQ(prog.num_vars(), 0);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(prog.GetSolution(prog.decision_variables()).rows(), 0);
-#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(TestAddVariable, TestAddContinuousVariables1) {
@@ -397,17 +393,6 @@ GTEST_TEST(TestAddDecisionVariables, AddDecisionVariables1) {
   EXPECT_EQ(prog.FindDecisionVariableIndex(x2), 2);
   EXPECT_EQ(prog.initial_guess().rows(), 3);
   EXPECT_EQ(prog.decision_variables().rows(), 3);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  const VectorDecisionVariable<3> vars_expected(x0, x1, x2);
-  SolverResult solver_result(SolverId("dummy"));
-  solver_result.set_decision_variable_values(Vector3<double>(1, 2, 3));
-  prog.SetSolverResult(solver_result);
-  for (int i = 0; i < 3; ++i) {
-    EXPECT_EQ(prog.GetSolution(vars_expected(i)), i + 1);
-    EXPECT_TRUE(prog.decision_variables()(i).equal_to(vars_expected(i)));
-  }
-#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(TestAddDecisionVariables, AddVariable2) {
@@ -423,18 +408,6 @@ GTEST_TEST(TestAddDecisionVariables, AddVariable2) {
   EXPECT_EQ(prog.FindDecisionVariableIndex(x1), 4);
   EXPECT_EQ(prog.FindDecisionVariableIndex(x2), 5);
   EXPECT_EQ(prog.initial_guess().rows(), 6);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  SolverResult solver_result(SolverId("dummy"));
-  solver_result.set_decision_variable_values(Vector6<double>::Zero());
-  prog.SetSolverResult(solver_result);
-  VectorDecisionVariable<6> vars_expected;
-  vars_expected << y, x0, x1, x2;
-  for (int i = 0; i < 6; ++i) {
-    EXPECT_EQ(prog.GetSolution(vars_expected(i)), 0);
-    EXPECT_TRUE(prog.decision_variables()(i).equal_to(vars_expected(i)));
-  }
-#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(TestAddDecisionVariables, AddVariable3) {
@@ -507,30 +480,6 @@ GTEST_TEST(TestAddIndeterminates, TestAddIndeterminates4) {
   CheckAddedIndeterminates(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n");
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-template <typename Derived1, typename Derived2>
-typename enable_if<is_same<typename Derived1::Scalar, Variable>::value &&
-                   is_same<typename Derived2::Scalar, double>::value>::type
-CheckGetSolution(const MathematicalProgram& prog,
-                 const Eigen::MatrixBase<Derived1>& vars,
-                 const Eigen::MatrixBase<Derived2>& val_expected) {
-  auto val = prog.GetSolution(vars);
-  static_assert(
-      is_same<decltype(val), Eigen::Matrix<double, Derived1::RowsAtCompileTime,
-                                           Derived1::ColsAtCompileTime>>::value,
-      "GetSolution does not return the right type of matrix");
-  EXPECT_TRUE(CompareMatrices(val, val_expected));
-
-  // Checks getting solution for a single variable.
-  for (int i = 0; i < vars.rows(); ++i) {
-    for (int j = 0; j < vars.cols(); ++j) {
-      EXPECT_NEAR(prog.GetSolution(vars(i, j)), val(i, j), 1E-14);
-    }
-  }
-}
-#pragma GCC diagnostic pop
-
 GTEST_TEST(TestAddIndeterminates, AddIndeterminates1) {
   // Call AddIndeterminates on an empty program.
   MathematicalProgram prog;
@@ -586,106 +535,6 @@ GTEST_TEST(TestAddIndeterminates, AddIndeterminates3) {
   EXPECT_THROW(prog.AddIndeterminates(VectorIndeterminate<2>(x0, dummy)),
                std::runtime_error);
 }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(TestGetSolution, TestGetSolution1) {
-  // Tests setting and getting solution for
-  // 1. A static-sized  matrix of decision variables.
-  // 2. A dynamic-sized matrix of decision variables.
-  // 3. A static-sized  vector of decision variables.
-  // 4. A dynamic-sized vector of decision variables.
-  MathematicalProgram prog;
-  auto X1 = prog.NewContinuousVariables<2, 3>("X");
-  auto X2 = prog.NewContinuousVariables(2, 3, "X");
-  auto x3 = prog.NewContinuousVariables<4>("x");
-  auto x4 = prog.NewContinuousVariables(4, "x");
-
-  Eigen::Matrix<double, 2, 3> X1_value{};
-  X1_value << 0, 1, 2, 3, 4, 5;
-  Eigen::Matrix<double, 2, 3> X2_value{};
-  X2_value = -X1_value;
-  Eigen::Vector4d x3_value(3, 4, 5, 6);
-  Eigen::Vector4d x4_value = -x3_value;
-
-  Eigen::VectorXd x_val(prog.num_vars());
-  auto SetDecisionVariableValue = [&prog, &x_val](
-      const Eigen::Ref<const MatrixXDecisionVariable>& variable,
-      const Eigen::Ref<const Eigen::MatrixXd>& val) {
-    for (int i = 0; i < variable.rows(); ++i) {
-      for (int j = 0; j < variable.cols(); ++j) {
-        const int variable_index =
-            prog.FindDecisionVariableIndex(variable(i, j));
-        x_val(variable_index) = val(i, j);
-      }
-    }
-  };
-  SetDecisionVariableValue(X1, X1_value);
-  SetDecisionVariableValue(X2, X2_value);
-  SetDecisionVariableValue(x3, x3_value);
-  SetDecisionVariableValue(x4, x4_value);
-
-  SolverResult solver_result(SolverId("dummy"));
-  solver_result.set_decision_variable_values(x_val);
-  prog.SetSolverResult(solver_result);
-
-  CheckGetSolution(prog, X1, X1_value);
-  CheckGetSolution(prog, X2, X2_value);
-  CheckGetSolution(prog, x3, x3_value);
-  CheckGetSolution(prog, x4, x4_value);
-
-  // Check a variable that is not a decision variable of the mathematical
-  // program.
-  Variable z1("z1");
-  Variable z2("z2");
-  EXPECT_THROW(prog.GetSolution(z1), runtime_error);
-  EXPECT_THROW(prog.GetSolution(VectorDecisionVariable<2>(z1, z2)),
-               runtime_error);
-  EXPECT_THROW(prog.GetSolution(VectorDecisionVariable<2>(z1, X1(0, 0))),
-               runtime_error);
-}
-#pragma GCC diagnostic pop
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(TestGetSolution, TestGetSolution2) {
-  // GetSolution of a symbolic expression/polynomial
-  MathematicalProgram prog;
-  const auto x = prog.NewIndeterminates<2>();
-  const auto a = prog.NewContinuousVariables<2>();
-
-  const Eigen::Vector2d a_val(1, 2);
-  SolverResult solver_result(SolverId("dummy"));
-  solver_result.set_decision_variable_values(a_val);
-  prog.SetSolverResult(solver_result);
-
-  symbolic::Variable b("b");
-
-  EXPECT_EQ(prog.SubstituteSolution(a(0) + a(1)), 3);
-
-  const symbolic::Expression e = a.cast<symbolic::Expression>().dot(x);
-  // `e` contains indeterminates
-  const auto e1 = prog.SubstituteSolution(e);
-  // All decision variables in the expression are also decision
-  // variables in the optimization program.
-  EXPECT_EQ(e1, a_val.dot(x));
-  const symbolic::Polynomial p = symbolic::Polynomial(
-      e, symbolic::Variables(x));
-  const auto p1 = prog.SubstituteSolution(p);
-
-  // All decision variables in the polynomial are also decision
-  // variables in the optimization program.
-  EXPECT_EQ(p1, symbolic::Polynomial(a_val.dot(x), symbolic::Variables(x)));
-
-  // Not all decision variables in the expression/polynomial are decision
-  // variables in the optimizatin program. b is a decision variable in the
-  // expression/polynomial, but not one in the optimization program.
-  EXPECT_THROW(prog.SubstituteSolution(e + b), std::runtime_error);
-  EXPECT_THROW(prog.SubstituteSolution(
-                   p + symbolic::Polynomial(b, symbolic::Variables())),
-               std::runtime_error);
-}
-#pragma GCC diagnostic pop
 
 namespace {
 
@@ -2733,12 +2582,6 @@ GTEST_TEST(TestMathematicalProgram, TestClone) {
         prog.decision_variable(i).equal_to(new_prog->decision_variable(i)));
     EXPECT_EQ(prog.FindDecisionVariableIndex(prog.decision_variable(i)),
               new_prog->FindDecisionVariableIndex(prog.decision_variable(i)));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // Cloned program has all variable values set to NaN.
-    EXPECT_TRUE(
-        std::isnan(new_prog->GetSolution(new_prog->decision_variable(i))));
-#pragma GCC diagnostic pop
   }
   for (int i = 0; i < prog.num_indeterminates(); ++i) {
     EXPECT_TRUE(prog.indeterminate(i).equal_to(new_prog->indeterminate(i)));
@@ -2784,10 +2627,6 @@ GTEST_TEST(TestMathematicalProgram, TestClone) {
                              new_prog->linear_complementarity_constraints()));
 
   EXPECT_TRUE(CompareMatrices(new_prog->initial_guess(), prog.initial_guess()));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(new_prog->GetSolverId(), prog.GetSolverId());
-#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(TestMathematicalProgram, TestEvalBinding) {
@@ -2894,51 +2733,6 @@ GTEST_TEST(TestMathematicalProgram, TestNonlinearExpressionConstraints) {
                               Vector2d::Constant(-std::sqrt(2.) / 2.), 1e-6));
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(TestMathematicalProgram, TestSetSolverResult) {
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<2>();
-
-  // Pretend the problem has been solved.
-  const SolverId dummy_solver_id("dummy");
-
-  // Only set the solver ID in solver_result.
-  SolverResult solver_result(dummy_solver_id);
-
-  prog.SetSolverResult(solver_result);
-  EXPECT_EQ(prog.GetSolverId(), dummy_solver_id);
-  // The decision variables, optimal cost, and lower bound should all be NaN.
-  EXPECT_TRUE(CompareMatrices(
-      prog.GetSolution(x), Eigen::Vector2d::Constant(kNaN)));
-  EXPECT_TRUE(std::isnan(prog.GetOptimalCost()));
-  EXPECT_TRUE(std::isnan(prog.GetLowerBoundCost()));
-
-  // Sets the variable values, the optimal cost, and lower bound cost.
-  const Eigen::Vector2d x_val(1, 2);
-  const double cost{1.0};
-  const double lower_bound_cost{1.0};
-  solver_result.set_decision_variable_values(x_val);
-  solver_result.set_optimal_cost(cost);
-  solver_result.set_optimal_cost_lower_bound(lower_bound_cost);
-  prog.SetSolverResult(solver_result);
-  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x), x_val));
-  EXPECT_EQ(prog.GetOptimalCost(), cost);
-  EXPECT_EQ(prog.GetLowerBoundCost(), lower_bound_cost);
-
-  // Now create a new solver_result.
-  const SolverId dummy_solver_id2("dummy2");
-  SolverResult solver_result2(dummy_solver_id2);
-  prog.SetSolverResult(solver_result2);
-  EXPECT_EQ(prog.GetSolverId(), dummy_solver_id2);
-  // The decision variables, optimal cost, and lower bound should all be NaN.
-  EXPECT_TRUE(CompareMatrices(
-      prog.GetSolution(x), Eigen::Vector2d::Constant(kNaN)));
-  EXPECT_TRUE(std::isnan(prog.GetOptimalCost()));
-  EXPECT_TRUE(std::isnan(prog.GetLowerBoundCost()));
-}
-#pragma GCC diagnostic pop
-
 GTEST_TEST(TestMathematicalProgram, TestAddVisualizationCallback) {
   MathematicalProgram prog;
 
@@ -2999,38 +2793,6 @@ GTEST_TEST(TestMathematicalProgram, TestSolverOptions) {
   EXPECT_EQ(prog.GetSolverOptionsStr(solver_id).at("string_name"), "3");
   EXPECT_EQ(prog.GetSolverOptionsStr(wrong_solver_id).size(), 0);
 }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(TestMathematicalProgram, TestGetSolution) {
-  // Test GetSolution(var, result)
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<2>();
-
-  MathematicalProgramResult result;
-  result.set_decision_variable_index(prog.decision_variable_index());
-  result.set_x_val(Eigen::Vector2d(1, 2));
-
-  // result.GetSolution(var) retrieves solution from `result`, GetSolution(var)
-  // retrieves the solution stored in prog. They should not be equal.
-  // TODO(hongkai.dai): remove these two lines when MathematicalProgram do not
-  // store the result.
-  EXPECT_NE(result.GetSolution(x(0)), prog.GetSolution(x(0)));
-  EXPECT_NE(result.GetSolution(x(1)), prog.GetSolution(x(1)));
-
-  EXPECT_EQ(result.GetSolution(x(0)), 1);
-  EXPECT_EQ(result.GetSolution(x(1)), 2);
-  EXPECT_TRUE(CompareMatrices(
-      result.GetSolution(Vector3<symbolic::Variable>(x(0), x(1), x(1))),
-      Eigen::Vector3d(1, 2, 2)));
-
-  // If result.get_x_val has wrong dimension, expect to throw an error.
-  DRAKE_EXPECT_THROWS_MESSAGE(result.set_x_val(Eigen::Vector3d::Zero()),
-                              std::invalid_argument,
-                              "MathematicalProgramResult::set_x_val, the "
-                              "dimension of x_val is 3, expected 2");
-}
-#pragma GCC diagnostic pop
 
 void CheckNewNonnegativePolynomial(
     MathematicalProgram::NonnegativePolynomial type) {

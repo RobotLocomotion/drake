@@ -5,6 +5,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/solvers/solver_id.h"
@@ -35,8 +36,14 @@ class SolverBase : public SolverInterface {
   bool available() const override;
   SolverId solver_id() const override;
   bool AreProgramAttributesSatisfied(const MathematicalProgram&) const override;
-  // NOLINTNEXTLINE(runtime/references)
-  SolutionResult Solve(MathematicalProgram&) const override;
+  DRAKE_DEPRECATED(
+      "2019-07-01",
+      "MathematicalProgram methods that assume the solution is stored inside "
+      "the program are deprecated; for details and porting advice, see "
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
+  SolutionResult Solve(
+      // NOLINTNEXTLINE(runtime/references)
+      MathematicalProgram&) const override;
 
  protected:
   /// Constructs a SolverBase with the given default implementations of the
