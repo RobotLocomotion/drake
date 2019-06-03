@@ -56,6 +56,7 @@ drake_cc_package_library(
         ":program_attribute",
         ":rotation_constraint",
         ":scs_solver",
+        ":sdpa_free_format",
         ":snopt_solver",
         ":solution_result",
         ":solve",
@@ -106,6 +107,7 @@ drake_cc_library(
     srcs = ["choose_best_solver.cc"],
     hdrs = ["choose_best_solver.h"],
     deps = [
+        ":csdp_solver",
         ":equality_constrained_qp_solver",
         ":gurobi_solver",
         ":ipopt_solver",
@@ -277,6 +279,7 @@ drake_cc_library(
     srcs = ["solver_type_converter.cc"],
     hdrs = ["solver_type_converter.h"],
     deps = [
+        ":csdp_solver",
         ":dreal_solver",
         ":equality_constrained_qp_solver",
         ":gurobi_solver",
@@ -974,6 +977,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "sdpa_free_format",
+    srcs = ["sdpa_free_format.cc"],
+    hdrs = ["sdpa_free_format.h"],
+    deps = [
+        ":mathematical_program_lite",
+        "//common:type_safe_index",
+    ],
+)
+
+drake_cc_library(
     name = "csdp_solver",
     srcs = select({
         "//conditions:default": [
@@ -999,8 +1012,7 @@ drake_cc_library(
         "//conditions:default": [
             ":mathematical_program_private",
             ":solver_base",
-            "//common:type_safe_index",
-            "//math:eigen_sparse_triplet",
+            ":sdpa_free_format",
             "@csdp",
         ],
         "//tools:no_csdp": [
@@ -1145,6 +1157,28 @@ drake_cc_googletest(
         ":create_constraint",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_library(
+    name = "csdp_test_examples",
+    testonly = 1,
+    srcs = ["test/csdp_test_examples.cc"],
+    hdrs = ["test/csdp_test_examples.h"],
+    deps = [
+        ":mathematical_program",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sdpa_free_format_test",
+    deps = [
+        ":csdp_test_examples",
+        ":sdpa_free_format",
+        "//common:temp_directory",
+        "//common/test_utilities:eigen_matrix_compare",
+        "@spruce",
     ],
 )
 
