@@ -33,8 +33,9 @@ class HydroelasticTractionCalculator {
    @param Q_barycentric_M the barycentric coordinates giving the location of the
           point of contact (Q), using the triangle of `contact_surface`
           specified by `face_index`.
-   @param dissipation the non-negative dissipation coefficient that determines
-          how rapidly energy is dissipated through the normal direction.
+   @param dissipation the non-negative dissipation coefficient (in seconds
+          per m) that determines how rapidly energy is dissipated through the
+          normal direction.
    @param mu_coulomb the non-negative Coulomb friction coefficient.
    @param X_WM the pose of `surface.id_M()` in the world.
    @param X_WN the pose of `surface.id_N()` in the world.
@@ -104,12 +105,14 @@ class HydroelasticTractionCalculator {
 
   MultibodyPlant<T>* plant_{nullptr};
 
-  // The parameter for regularizing the Coulomb friction model.
-  double vslip_regularizer_{1e-8};
+  // The parameter (in m/s) for regularizing the Coulomb friction model.
+  double vslip_regularizer_{1e-6};
 };
 
 }  // namespace multibody
 }  // namespace drake
 
+// TODO(edrumwri) instantiate on SymbolicExpression when it no longer causes a
+// linker error complaining about an unresolved symbol in SceneGraph.
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class drake::multibody::HydroelasticTractionCalculator)

@@ -32,11 +32,11 @@
       <collision name='ground-collision'>
         <geometry>
           <!-- Note: the unit test that uses this file breaks if the collision
-							 geometry is a plane because the parser alters the pose. Rather
+               geometry is a plane because the parser alters the pose. Rather
                than attempt to correct for this adjustment, we just use a
-							 defective geometry instead.
+               defective geometry instead.
           -->
-        	<box>
+          <box>
             <size>10.0 10.0 0</size>
           </box>
         </geometry>
@@ -77,8 +77,8 @@
     </link>
 
     <joint name="ground_weld" type="fixed">
-	    <parent>world</parent>
-	    <child>ground</child>
+      <parent>world</parent>
+      <child>ground</child>
     </joint>
   </model>
 </sdf>

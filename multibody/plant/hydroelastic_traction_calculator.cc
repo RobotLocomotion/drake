@@ -61,7 +61,7 @@ ComputeSpatialForcesAtBodyOriginsFromTraction(
 
 // Determines the point of contact corresponding to the given barycentric
 // coordinates. Returns an offset vector from the world frame to the point of
-// contact, expressed in the world frame.
+// contact (Q), expressed in the world frame.
 template <class T>
 Vector3<T> HydroelasticTractionCalculator<T>::CalcContactPoint(
     const ContactSurface<T>& surface,
@@ -74,7 +74,7 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcContactPoint(
   const auto& va = mesh.vertex(mesh.element(face_index).vertex(0));
   const auto& vb = mesh.vertex(mesh.element(face_index).vertex(1));
   const auto& vc = mesh.vertex(mesh.element(face_index).vertex(2));
-  const Vector3<T> r_M = va.r_MV() * Q_barycentric_M[0] +
+  const Vector3<T> r_MQ = va.r_MV() * Q_barycentric_M[0] +
       vb.r_MV() * Q_barycentric_M[1] + vc.r_MV() * Q_barycentric_M[2];
   return X_WM.inverse() * r_M;
 }
@@ -149,10 +149,10 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   const Vector3<T> Qdot_NM_tan = Qdot_NM_W - nhat_MN_W * Qdot_nhat_NM;
 
   // Determine the traction using a soft-norm.
-  const T squared_Qdot_tan = Qdot_NM_tan.squaredNorm();
-  const T norm_Qdot_tan = sqrt(squared_Qdot_tan);
   using std::atan;
   using std::sqrt;
+  const T squared_Qdot_tan = Qdot_NM_tan.squaredNorm();
+  const T norm_Qdot_tan = sqrt(squared_Qdot_tan);
   const T soft_norm_Qdot_tan = sqrt(squared_Qdot_tan +
       vslip_regularizer_ * vslip_regularizer_);
 
@@ -168,5 +168,7 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
 }  // namespace multibody
 }  // namespace drake
 
+// TODO(edrumwri) instantiate on SymbolicExpression when it no longer causes a
+// linker error complaining about an unresolved symbol in SceneGraph.
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class drake::multibody::HydroelasticTractionCalculator)

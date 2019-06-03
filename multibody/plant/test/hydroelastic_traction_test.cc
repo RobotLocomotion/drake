@@ -57,7 +57,6 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
     return traction_calculator_->GetTransformFromGeometry(*plant_context_, g);
   }
 
-
  private:
   void SetUp() override {
     // Read the two bodies into the plant. The SDF file refers to a block
@@ -164,22 +163,22 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, VanillaTraction) {
   const auto X_WN = GetTransformFromGeometry(contact_surface().id_N());
 
   // First compute the traction.
-  Vector3<double> p_W;
-  const Vector3<double> traction = traction_calculator().CalcTractionAtPoint(
+  Vector3<double> p_WQ;
+  const Vector3<double> traction_Q_W = traction_calculator().CalcTractionAtPoint(
       plant_context(), contact_surface(), SurfaceFaceIndex(0),
       SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
-      dissipation, mu_coulomb, X_WM, X_WN, &p_W);
+      dissipation, mu_coulomb, X_WM, X_WN, &p_WQ);
 
   // Verify the point of contact.
   const double eps = 10 * std::numeric_limits<double>::epsilon();
-  ASSERT_NEAR(p_W[0], 0.5, eps);
-  ASSERT_NEAR(p_W[1], 0.5, eps);
-  ASSERT_NEAR(p_W[2], -0.5, eps);
+  ASSERT_NEAR(p_WQ[0], 0.5, eps);
+  ASSERT_NEAR(p_WQ[1], 0.5, eps);
+  ASSERT_NEAR(p_WQ[2], -0.5, eps);
 
   // Now compute the spatial forces at the origins of the body frames.
   multibody::SpatialForce<double> F_Mo_W, F_No_W;
   traction_calculator().ComputeSpatialForcesAtBodyOriginsFromTraction(
-      p_W, traction, X_WM, X_WN, &F_Mo_W, &F_No_W);
+      p_WQ, traction_Q_W, X_WM, X_WN, &F_Mo_W, &F_No_W);
 
   // Check the spatial force at p. We know that geometry M is the halfspace,
   // so we'll check the spatial force for geometry N instead. Note that the
@@ -219,22 +218,22 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, TractionWithFraction) {
   plant().SetVelocities(&plant_context(), tet_velocity);
 
     // First compute the traction.
-  Vector3<double> p_W;
-  const Vector3<double> traction = traction_calculator().CalcTractionAtPoint(
+  Vector3<double> p_WQ;
+  const Vector3<double> traction_Q_W = traction_calculator().CalcTractionAtPoint(
       plant_context(), contact_surface(), SurfaceFaceIndex(0),
       SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0), dissipation,
-      mu_coulomb, X_WM, X_WN, &p_W);
+      mu_coulomb, X_WM, X_WN, &p_WQ);
 
   // Verify the point of contact.
   const double eps = 10 * std::numeric_limits<double>::epsilon();
-  ASSERT_NEAR(p_W[0], 0.5, eps);
-  ASSERT_NEAR(p_W[1], 0.5, eps);
-  ASSERT_NEAR(p_W[2], -0.5, eps);
+  ASSERT_NEAR(p_WQ[0], 0.5, eps);
+  ASSERT_NEAR(p_WQ[1], 0.5, eps);
+  ASSERT_NEAR(p_WQ[2], -0.5, eps);
 
   // Now compute the spatial forces at the origins of the body frames.
   multibody::SpatialForce<double> F_Mo_W, F_No_W;
   traction_calculator().ComputeSpatialForcesAtBodyOriginsFromTraction(
-      p_W, traction, X_WM, X_WN, &F_Mo_W, &F_No_W);
+      p_WQ, traction_Q_W, X_WM, X_WN, &F_Mo_W, &F_No_W);
 
   // Check the spatial force at p. We know that geometry M is the halfspace,
   // so we'll check the spatial force for geometry N instead. The coefficient
@@ -286,22 +285,22 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
       damping_traction_magnitude;
 
   // First compute the traction.
-  Vector3<double> p_W;
-  const Vector3<double> traction = traction_calculator().CalcTractionAtPoint(
+  Vector3<double> p_WQ;
+  const Vector3<double> traction_Q_W = traction_calculator().CalcTractionAtPoint(
       plant_context(), contact_surface(), SurfaceFaceIndex(0),
       SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
-      dissipation, mu_coulomb, X_WM, X_WN, &p_W);
+      dissipation, mu_coulomb, X_WM, X_WN, &p_WQ);
 
   // Verify the point of contact.
   const double eps = 10 * std::numeric_limits<double>::epsilon();
-  ASSERT_NEAR(p_W[0], 0.5, eps);
-  ASSERT_NEAR(p_W[1], 0.5, eps);
-  ASSERT_NEAR(p_W[2], -0.5, eps);
+  ASSERT_NEAR(p_WQ[0], 0.5, eps);
+  ASSERT_NEAR(p_WQ[1], 0.5, eps);
+  ASSERT_NEAR(p_WQ[2], -0.5, eps);
 
   // Now compute the spatial forces at the origins of the body frames.
   multibody::SpatialForce<double> F_Mo_W, F_No_W;
   traction_calculator().ComputeSpatialForcesAtBodyOriginsFromTraction(
-      p_W, traction, X_WM, X_WN, &F_Mo_W, &F_No_W);
+      p_WQ, traction_Q_W, X_WM, X_WN, &F_Mo_W, &F_No_W);
 
   // Check the spatial force at p. We know that geometry M is the halfspace,
   // so we'll check the spatial force for geometry N instead. The coefficient
