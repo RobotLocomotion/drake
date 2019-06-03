@@ -49,12 +49,12 @@ class TestTileColors(unittest.TestCase):
         self.red = [255, 0, 0]
         self.blue = [0, 0, 255]
 
-    def testOneDim(self):
+    def test_one_dim(self):
         tiled = _TileColors(self.red, 1)
         expected_tiled = np.array([[255], [0], [0]])
         self.assertTrue(np.allclose(tiled, expected_tiled))
 
-    def testThreeDims(self):
+    def test_three_dims(self):
         tiled = _TileColors(self.blue, 1)
         expected_tiled = np.array([[0, 0, 0], [0, 0, 0], [255, 255, 255]])
         self.assertTrue(np.allclose(tiled, expected_tiled))

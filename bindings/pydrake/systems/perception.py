@@ -2,7 +2,7 @@ import numpy as np
 
 from pydrake.math import RigidTransform
 from pydrake.perception import BaseField, Fields, PointCloud
-from pydrake.systems.framework import AbstractValue, DiagramBuilder, LeafSystem
+from pydrake.systems.framework import AbstractValue, LeafSystem
 
 
 def _TransformPoints(points_Ci, X_CiSi):
@@ -72,21 +72,21 @@ class PointCloudConcatenation(LeafSystem):
         """
         LeafSystem.__init__(self)
 
-        self.point_cloud_ports = {}
-        self.transform_ports = {}
+        self._point_cloud_ports = {}
+        self._transform_ports = {}
 
-        self.id_list = id_list
+        self._id_list = id_list
 
         self._default_rgb = np.array(default_rgb)
 
         output_fields = Fields(BaseField.kXYZs | BaseField.kRGBs)
 
-        for id in self.id_list:
-            self.point_cloud_ports[id] = self.DeclareAbstractInputPort(
+        for id in self._id_list:
+            self._point_cloud_ports[id] = self.DeclareAbstractInputPort(
                 "point_cloud_CiSi_{}".format(id),
                 AbstractValue.Make(PointCloud(fields=output_fields)))
 
-            self.transform_ports[id] = self.DeclareAbstractInputPort(
+            self._transform_ports[id] = self.DeclareAbstractInputPort(
                 "X_FCi_{}".format(id),
                 AbstractValue.Make(RigidTransform.Identity()))
 
@@ -99,11 +99,11 @@ class PointCloudConcatenation(LeafSystem):
         points = {}
         colors = {}
 
-        for id in self.id_list:
+        for id in self._id_list:
             point_cloud = self.EvalAbstractInput(
-                context, self.point_cloud_ports[id].get_index()).get_value()
+                context, self._point_cloud_ports[id].get_index()).get_value()
             X_CiSi = self.EvalAbstractInput(
-                context, self.transform_ports[id].get_index()).get_value()
+                context, self._transform_ports[id].get_index()).get_value()
 
             points[id] = _TransformPoints(point_cloud.xyzs(), X_CiSi.matrix())
 
