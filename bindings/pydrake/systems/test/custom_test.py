@@ -195,15 +195,15 @@ class TestCustom(unittest.TestCase):
                 self.called_guard = False
                 self.called_reset = False
                 # Ensure we have desired overloads.
-                # self.DeclarePeriodicPublish(1.0)
-                # self.DeclarePeriodicPublish(1.0, 0)
-                # self.DeclarePeriodicPublish(period_sec=1.0, offset_sec=0.)
-                # self.DeclarePeriodicDiscreteUpdate(
-                #    period_sec=1.0, offset_sec=0.)
-                # self.DeclareInitializationEvent(
-                #    event=PublishEvent(
-                #        trigger_type=TriggerType.kInitialization,
-                #        callback=self._on_initialize))
+                self.DeclarePeriodicPublish(1.0)
+                self.DeclarePeriodicPublish(1.0, 0)
+                self.DeclarePeriodicPublish(period_sec=1.0, offset_sec=0.)
+                self.DeclarePeriodicDiscreteUpdate(
+                    period_sec=1.0, offset_sec=0.)
+                self.DeclareInitializationEvent(
+                    event=PublishEvent(
+                        trigger_type=TriggerType.kInitialization,
+                        callback=self._on_initialize))
                 self.DeclarePerStepEvent(
                     event=PublishEvent(
                         trigger_type=TriggerType.kPerStep,
@@ -231,7 +231,6 @@ class TestCustom(unittest.TestCase):
                     self._guard, UnrestrictedUpdateEvent(self._reset))
 
             def DoPublish(self, context, events):
-                # test.assertTrue(False)
                 # Call base method to ensure we do not get recursion.
                 LeafSystem.DoPublish(self, context, events)
                 # N.B. We do not test for a singular call to `DoPublish`
@@ -306,31 +305,31 @@ class TestCustom(unittest.TestCase):
                 self.called_reset = True
 
         system = TrivialSystem()
-        # self.assertFalse(system.called_publish)
-        # self.assertFalse(system.called_feedthrough)
-        # self.assertFalse(system.called_continuous)
-        # self.assertFalse(system.called_discrete)
-        # self.assertFalse(system.called_initialize)
+        self.assertFalse(system.called_publish)
+        self.assertFalse(system.called_feedthrough)
+        self.assertFalse(system.called_continuous)
+        self.assertFalse(system.called_discrete)
+        self.assertFalse(system.called_initialize)
         results = call_leaf_system_overrides(system)
         self.assertEqual(results["do_publish"], 3)
         self.assertTrue(system.called_publish)
-        # self.assertTrue(system.called_feedthrough)
-        # self.assertFalse(results["has_direct_feedthrough"])
-        # self.assertTrue(system.called_continuous)
-        # self.assertTrue(system.called_discrete)
-        # self.assertTrue(system.called_initialize)
-        # self.assertEqual(results["discrete_next_t"], 1.0)
+        self.assertTrue(system.called_feedthrough)
+        self.assertFalse(results["has_direct_feedthrough"])
+        self.assertTrue(system.called_continuous)
+        self.assertTrue(system.called_discrete)
+        self.assertTrue(system.called_initialize)
+        self.assertEqual(results["discrete_next_t"], 1.0)
 
-        # self.assertFalse(system.HasAnyDirectFeedthrough())
-        # self.assertFalse(system.HasDirectFeedthrough(output_port=0))
-        # self.assertFalse(
-        #      system.HasDirectFeedthrough(input_port=0, output_port=0))
+        self.assertFalse(system.HasAnyDirectFeedthrough())
+        self.assertFalse(system.HasDirectFeedthrough(output_port=0))
+        self.assertFalse(
+              system.HasDirectFeedthrough(input_port=0, output_port=0))
 
         # Test explicit calls.
         system = TrivialSystem()
         context = system.CreateDefaultContext()
         system.Publish(context)
-        # self.assertTrue(system.called_publish)
+        self.assertTrue(system.called_publish)
         context_update = context.Clone()
         system.CalcTimeDerivatives(
             context, context_update.get_mutable_continuous_state())
