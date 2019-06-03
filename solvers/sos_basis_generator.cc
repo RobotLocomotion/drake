@@ -135,7 +135,8 @@ struct Hyperplanes {
 
 // Finding random supporting hyperplanes of 1/2 P, where P is the Newton
 // polytope of the polynomial p (i.e., the convex hull of its exponents).
-Hyperplanes RandomSupportingHyperplanes(const ExponentList& exponents_of_p, unsigned int seed) {
+Hyperplanes RandomSupportingHyperplanes(const ExponentList& exponents_of_p,
+                                        unsigned int seed) {
   Hyperplanes H;
 
   // get_random() samples uniformly between normal_vector_component_min/max.
@@ -152,7 +153,8 @@ Hyperplanes RandomSupportingHyperplanes(const ExponentList& exponents_of_p, unsi
 
   H.normal_vectors = Eigen::MatrixXi(num_hyperplanes, exponents_of_p.cols());
   for (int i = 0; i < H.normal_vectors.cols(); i++) {
-    H.normal_vectors.col(i) << Eigen::VectorXi::NullaryExpr(num_hyperplanes, get_random);
+    H.normal_vectors.col(i) << Eigen::VectorXi::NullaryExpr(num_hyperplanes,
+                                                            get_random);
   }
 
   Eigen::MatrixXi dot_products = H.normal_vectors * exponents_of_p.transpose();
