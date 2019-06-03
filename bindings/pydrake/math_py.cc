@@ -7,7 +7,7 @@
 #ifndef __clang__
 // N.B. Without this, GCC 7.4.0 on Ubuntu complains about
 // `AutoDiffScalar(const AutoDiffScalar& other)` having uninitialized values.
-// TODO(eric.cousineau): Figure out why?
+// TODO(eric.cousineau):  #11566 Figure out why?
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
@@ -39,6 +39,7 @@ namespace pydrake {
 
 using symbolic::Expression;
 
+namespace {
 template <typename T>
 void DoDefinitions(py::module m, T) {
   py::tuple param = GetPyParam<T>();
@@ -197,7 +198,20 @@ void DoDefinitions(py::module m, T) {
             cls_doc.CalcRpyDDtFromAngularAccelInChild.doc);
     DefCopyAndDeepCopy(&cls);
   }
+
+  auto eigen_geometry_py = py::module::import("pydrake.common.eigen_geometry");
+  // Install constructor to Isometry3 to permit `implicitly_convertible` to
+  // work.
+  // TODO(eric.cousineau): Add deprecation message.
+  // TODO(eric.cousineau): Consider more elegant implicit conversion process.
+  // See pybind/pybind11#1735
+  py::class_<Isometry3<T>>(eigen_geometry_py.attr("Isometry3"))
+      .def(py::init(
+          [](const RigidTransform<T>& X) { return X.GetAsIsometry3(); }));
+  py::implicitly_convertible<RigidTransform<T>, Isometry3<T>>();
 }
+
+} // namespace
 
 PYBIND11_MODULE(math, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -207,7 +221,6 @@ PYBIND11_MODULE(math, m) {
   constexpr auto& doc = pydrake_doc.drake.math;
 
   py::module::import("pydrake.autodiffutils");
-  auto eigen_geometry_py = py::module::import("pydrake.common.eigen_geometry");
   py::module::import("pydrake.symbolic");
 
   // TODO(eric.cousineau): At present, we only bind doubles.
@@ -257,16 +270,6 @@ PYBIND11_MODULE(math, m) {
           doc.BarycentricMesh.Eval.doc_2args)
       .def("MeshValuesFrom", &BarycentricMesh<T>::MeshValuesFrom,
           doc.BarycentricMesh.MeshValuesFrom.doc);
-
-  // Install constructor to Isometry3 to permit `implicitly_convertible` to
-  // work.
-  // TODO(eric.cousineau): Add deprecation message.
-  // TODO(eric.cousineau): Consider more elegant implicit conversion process.
-  // See pybind/pybind11#1735
-  py::class_<Isometry3<T>>(eigen_geometry_py.attr("Isometry3"))
-      .def(py::init(
-          [](const RigidTransform<T>& X) { return X.GetAsIsometry3(); }));
-  py::implicitly_convertible<RigidTransform<T>, Isometry3<T>>();
 
   // Quadratic Form.
   m  // BR

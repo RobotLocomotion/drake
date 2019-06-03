@@ -3,8 +3,7 @@ from __future__ import absolute_import, division, print_function
 import pydrake.math as mut
 import pydrake.math._test as mtest
 from pydrake.math import (BarycentricMesh, wrap_to)
-from pydrake.common.eigen_geometry import Isometry3, Quaternion, AngleAxis
-import pydrake.common.eigen_geometry as mut1
+from pydrake.common.eigen_geometry import Isometry3_, Quaternion_, AngleAxis_
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
 import pydrake.common.test_utilities.numpy_compare as npc
@@ -109,9 +108,9 @@ class TestMath(unittest.TestCase):
         RigidTransform = mut.RigidTransform_[T]
         RotationMatrix = mut.RotationMatrix_[T]
         RollPitchYaw = mut.RollPitchYaw_[T]
-        Isometry3_1 = mut1.Isometry3_[T]
-        Quaternion_1 = mut1.Quaternion_[T]
-        AngleAxis_1 = mut1.AngleAxis_[T]
+        Isometry3 = Isometry3_[T]
+        Quaternion = Quaternion_[T]
+        AngleAxis = AngleAxis_[T]
 
         def check_equality(X_actual, X_expected_matrix):
             # TODO(eric.cousineau): Use `IsNearlyEqualTo`.
@@ -127,14 +126,12 @@ class TestMath(unittest.TestCase):
         R_I = RotationMatrix()
         p_I = np.zeros(3)
         rpy_I = RollPitchYaw(0, 0, 0)
-        quaternion_I = Quaternion_1.Identity()
+        quaternion_I = Quaternion.Identity()
         angle = np.pi * 0
         axis = [0, 0, 1]
-        angle_axis = AngleAxis_1(angle=angle, axis=axis)
+        angle_axis = AngleAxis(angle=angle, axis=axis)
         check_equality(RigidTransform(R=R_I, p=p_I), X_I)
-        if T == float:
-            check_equality(RigidTransform(rpy=rpy_I, p=p_I), X_I)
-
+        check_equality(RigidTransform(rpy=rpy_I, p=p_I), X_I)
         check_equality(RigidTransform(quaternion=quaternion_I, p=p_I), X_I)
         check_equality(RigidTransform(theta_lambda=angle_axis, p=p_I), X_I)
         check_equality(RigidTransform(R=R_I), X_I)
@@ -142,7 +139,7 @@ class TestMath(unittest.TestCase):
         # - Accessors, mutators, and general methods.
         X = RigidTransform()
         X.set(R=R_I, p=p_I)
-        X.SetFromIsometry3(pose=Isometry3_1.Identity())
+        X.SetFromIsometry3(pose=Isometry3.Identity())
         check_equality(RigidTransform.Identity(), X_I)
         self.assertIsInstance(X.rotation(), RotationMatrix)
         X.set_rotation(R=R_I)
@@ -151,7 +148,7 @@ class TestMath(unittest.TestCase):
         X.set_translation(p=np.zeros(3))
         npc.assert_float_equal(X.GetAsMatrix4(), X_I)
         npc.assert_float_equal(X.GetAsMatrix34(), X_I[:3])
-        self.assertIsInstance(X.GetAsIsometry3(), Isometry3_1)
+        self.assertIsInstance(X.GetAsIsometry3(), Isometry3)
         check_equality(X.inverse(), X_I)
         self.assertIsInstance(
             X.multiply(other=RigidTransform()), RigidTransform)
@@ -161,7 +158,12 @@ class TestMath(unittest.TestCase):
                 eval("X @ RigidTransform()"), RigidTransform)
             self.assertIsInstance(eval("X @ [0, 0, 0]"), np.ndarray)
 
+
     def test_isometry_implicit(self):
+        self.check_types(self.check_isometry_implicit)
+
+    def check_isometry_implicit(self, T):
+        Isometry3 = Isometry3_[T]
         # Explicitly disabled, to mirror C++ API.
         with self.assertRaises(TypeError):
             self.assertTrue(mtest.TakeRigidTransform(Isometry3()))
@@ -173,7 +175,7 @@ class TestMath(unittest.TestCase):
     def check_rotation_matrix(self, T):
         # - Constructors.
         RotationMatrix = mut.RotationMatrix_[T]
-        Quaternion_1 = mut1.Quaternion_[T]
+        Quaternion = Quaternion_[T]
         RollPitchYaw = mut.RollPitchYaw_[T]
 
         R = RotationMatrix()
@@ -183,13 +185,13 @@ class TestMath(unittest.TestCase):
         npc.assert_float_equal(RotationMatrix.Identity().matrix(), np.eye(3))
         R = RotationMatrix(R=np.eye(3))
         npc.assert_float_equal(R.matrix(), np.eye(3))
-        R = RotationMatrix(quaternion=Quaternion_1.Identity())
+        R = RotationMatrix(quaternion=Quaternion.Identity())
         npc.assert_float_equal(R.matrix(), np.eye(3))
         R = RotationMatrix(rpy=RollPitchYaw(rpy=[0, 0, 0]))
         if T == float:
             self.assertTrue(np.allclose(R.matrix(), np.eye(3)))
         # - Nontrivial quaternion.
-        q = Quaternion_1(wxyz=[0.5, 0.5, 0.5, 0.5])
+        q = Quaternion(wxyz=[0.5, 0.5, 0.5, 0.5])
         R = RotationMatrix(quaternion=q)
         q_R = R.ToQuaternion()
         if T == float:
@@ -208,7 +210,7 @@ class TestMath(unittest.TestCase):
         # - Constructors.
         RollPitchYaw = mut.RollPitchYaw_[T]
         RotationMatrix = mut.RotationMatrix_[T]
-        Quaternion_1 = mut1.Quaternion_[T]
+        Quaternion = Quaternion_[T]
 
         rpy = RollPitchYaw(rpy=[0, 0, 0])
         npc.assert_float_equal(RollPitchYaw(other=rpy).vector(), [0., 0., 0.])
@@ -221,7 +223,7 @@ class TestMath(unittest.TestCase):
         npc.assert_float_equal(rpy.vector(), [0., 0., 0.])
         rpy = RollPitchYaw(matrix=np.eye(3))
         npc.assert_float_equal(rpy.vector(), [0., 0., 0.])
-        q_I = Quaternion_1()
+        q_I = Quaternion()
         rpy_q_I = RollPitchYaw(quaternion=q_I)
         npc.assert_float_equal(rpy_q_I.vector(), [0., 0., 0.])
         # - Additional properties.
