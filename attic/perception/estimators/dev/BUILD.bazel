@@ -95,7 +95,7 @@ drake_cc_googletest(
         "//common:find_resource",
         "//lcmtypes:viewer",
         "//math:geometric_transform",
-        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_lite",
         "//solvers:solve",
     ],
 )

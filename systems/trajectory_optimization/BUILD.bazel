@@ -40,7 +40,8 @@ drake_cc_library(
         ":sequential_expression_manager",
         "//common:essential",
         "//common/trajectories:piecewise_polynomial",
-        "//solvers:mathematical_program",
+        "//solvers:ipopt_solver",
+        "//solvers:mathematical_program_lite",
     ],
 )
 

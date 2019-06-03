@@ -76,7 +76,7 @@ drake_cc_library(
         "//common:essential",
         "//math:orthonormal_basis",
         "//multibody/constraint:constraint_solver",
-        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_lite",
         "//systems/framework",
     ],
 )
