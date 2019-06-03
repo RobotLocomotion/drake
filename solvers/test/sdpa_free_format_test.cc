@@ -13,7 +13,6 @@
 
 namespace drake {
 namespace solvers {
-const double kInf = std::numeric_limits<double>::infinity();
 namespace internal {
 
 void CompareProgVarInSdpa(const SdpaFreeFormat& sdpa_free_format,
@@ -48,7 +47,7 @@ void CompareProgVarInSdpa(const SdpaFreeFormat& sdpa_free_format,
 }
 
 void CompareBlockInX(const BlockInX& block1, const BlockInX& block2) {
-  EXPECT_EQ(block1.blocktype, block2.blocktype);
+  EXPECT_EQ(block1.block_type, block2.block_type);
   EXPECT_EQ(block1.num_rows, block2.num_rows);
 }
 
