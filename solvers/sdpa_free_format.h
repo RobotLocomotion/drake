@@ -42,9 +42,9 @@ enum class BlockType {
 };
 
 struct BlockInX {
-  BlockInX(BlockType blocktype_in, int num_rows_in)
-      : blocktype{blocktype_in}, num_rows{num_rows_in} {}
-  BlockType blocktype;
+  BlockInX(BlockType block_type_in, int num_rows_in)
+      : block_type{block_type_in}, num_rows{num_rows_in} {}
+  BlockType block_type;
   int num_rows;
 };
 
@@ -80,7 +80,7 @@ enum class Sign {
 };
 
 /**
- * Refer to @ref map_decision_variable_to_sdpa
+ * Refer to @ref map_decision_variable_to_sdpa.
  * A MathematicalProgram decision variable can be replaced by coeff_sign * y +
  * offset, where y is a diagonal entry in SDPA X matrix. (See case 2, 3, 4 in
  * @ref map_decision_variable_to_sdpa).
@@ -180,20 +180,18 @@ class SdpaFreeFormat {
       const std::unordered_map<symbolic::Variable::Id, std::vector<EntryInX>>&
           entries_in_X_for_same_decision_variable);
 
-  /**
-   * Adds a linear equality constraint
-   * @param a The coefficients for program decision variables that appear in X.
-   * @param prog_vars_indices  The vectors of the MathematicalProgram decision
-   * variables indices in X that show up in this constraint.
-   * @param b The coefficients for X entries.
-   * @param X_entries The entries in X that show up in the linear equality
-   * constraint, X_entries and prog_vars_inindices should not overlap.
-   * @param c The coefficients of free variables.
-   * @param s_indices The indices of the free variables show up in this
-   * constraint, these free variables are not the decision variables in the
-   * MathematicalProgram.
-   * @param rhs The right-hand side of the linear equality constraint.
-   */
+  // Adds a linear equality constraint.
+  // @param a The coefficients for program decision variables that appear in X.
+  // @param prog_vars_indices  The vectors of the MathematicalProgram decision
+  // variables indices in X that show up in this constraint.
+  // @param b The coefficients for @p X_entries.
+  // @param X_entries The entries in X that show up in the linear equality
+  // constraint, X_entries and prog_vars_indices should not overlap.
+  // @param c The coefficients of free variables.
+  // @param s_indices The indices of the free variables show up in this
+  // constraint, these free variables are not the decision variables in the
+  // MathematicalProgram.
+  // @param rhs The right-hand side of the linear equality constraint.
   void AddLinearEqualityConstraint(
       const std::vector<double>& a, const std::vector<int>& prog_vars_indices,
       const std::vector<double>& b, const std::vector<EntryInX>& X_entries,
@@ -203,13 +201,12 @@ class SdpaFreeFormat {
   void RegisterMathematicalProgramDecisionVariable(
       const MathematicalProgram& prog);
 
-  /** Sum up all the linear costs in prog, store the result in SDPA free format.
-   */
-  void AddLinearCosts(const MathematicalProgram& prog);
+  // Sum up all the linear costs in prog, store the result in SDPA free format.
+  void AddLinearCostsFromProgram(const MathematicalProgram& prog);
 
-  /** Add both the linear constraints lower <= a'x <= upper and the linear
-   * equality constraints a'x = rhs to SDPA free format. */
-  void AddLinearConstraints(const MathematicalProgram& prog);
+  // Add both the linear constraints lower <= a'x <= upper and the linear
+  // equality constraints a'x = rhs to SDPA free format. */
+  void AddLinearConstraintsFromProgram(const MathematicalProgram& prog);
 
   template <typename Constraint>
   void AddLinearConstraintsHelper(
@@ -219,6 +216,7 @@ class SdpaFreeFormat {
 
   void AddLinearMatrixInequalityConstraints(const MathematicalProgram& prog);
 
+  // Called at the end of the constructor.
   void Finalize();
 
   // X_blocks_ just stores the size and category of each block in the
@@ -229,7 +227,7 @@ class SdpaFreeFormat {
   std::vector<Eigen::Triplet<double>> d_triplets_;
   // gᵢ is the i-th entry of g.
   Eigen::VectorXd g_;
-  // A_triplets_[i] is the nonzero entries in Aᵢ
+  // A_triplets_[i] describes the nonzero entries in Aᵢ
   std::vector<std::vector<Eigen::Triplet<double>>> A_triplets_;
   // bᵢ is the i-th column of B. B_triplets records the nonzero entries in B.
   std::vector<Eigen::Triplet<double>> B_triplets_;

@@ -41,7 +41,7 @@ void SdpaFreeFormat::DeclareXforPositiveSemidefiniteConstraints(
         const EntryInX psd_ij_entry_in_X(num_blocks, i, j, num_X_rows_);
         if (!has_var_registered) {
           // This variable has not been registered into X. Now register this
-          // variable, by adding it to map_prog_var_index_to_entry_in_X_.
+          // variable, by adding it to prog_var_in_sdpa_
           prog_var_in_sdpa_[psd_ij_var_index].emplace<DecisionVariableInSdpaX>(
               Sign::kPositive, 0, psd_ij_entry_in_X);
         } else {
@@ -165,7 +165,7 @@ void SdpaFreeFormat::RegisterMathematicalProgramDecisionVariable(
     const MathematicalProgram& prog) {
   // Go through all the decision variables in @p prog. If the decision variable
   // has not been registered in SDPA, then register it now. Refer to @ref
-  // map_decision_variable_to_sdpa for different types.
+  // prog_var_in_sdpa_ for different types.
   Eigen::VectorXd lower_bound =
       Eigen::VectorXd::Constant(prog.num_vars(), -kInf);
   Eigen::VectorXd upper_bound =
@@ -287,7 +287,8 @@ void SdpaFreeFormat::RegisterMathematicalProgramDecisionVariable(
   }
 }
 
-void SdpaFreeFormat::AddLinearCosts(const MathematicalProgram& prog) {
+void SdpaFreeFormat::AddLinearCostsFromProgram(
+    const MathematicalProgram& prog) {
   for (const auto& linear_cost : prog.linear_costs()) {
     for (int i = 0; i < linear_cost.variables().rows(); ++i) {
       // The negation sign is because in CSDP format, the objective is to
@@ -317,7 +318,7 @@ void SdpaFreeFormat::AddLinearCosts(const MathematicalProgram& prog) {
           d_triplets_.emplace_back(s_index, 0, coeff);
         } else {
           throw std::runtime_error(
-              "SdpaFreeFormat::AddLinearCost() only supports "
+              "SdpaFreeFormat::AddLinearCostFromProgram() only supports "
               "DecisionVariableInSdpaX, double or FreeVariableIndex.");
         }
       }
@@ -389,7 +390,8 @@ void SdpaFreeFormat::AddLinearConstraintsHelper(
   }
 }
 
-void SdpaFreeFormat::AddLinearConstraints(const MathematicalProgram& prog) {
+void SdpaFreeFormat::AddLinearConstraintsFromProgram(
+    const MathematicalProgram& prog) {
   int linear_constraint_slack_entry_in_X_count = 0;
   for (const auto& linear_eq_constraint : prog.linear_equality_constraints()) {
     AddLinearConstraintsHelper(prog, linear_eq_constraint, true,
@@ -464,9 +466,9 @@ SdpaFreeFormat::SdpaFreeFormat(const MathematicalProgram& prog) {
 
   RegisterMathematicalProgramDecisionVariable(prog);
 
-  AddLinearCosts(prog);
+  AddLinearCostsFromProgram(prog);
 
-  AddLinearConstraints(prog);
+  AddLinearConstraintsFromProgram(prog);
 
   AddLinearMatrixInequalityConstraints(prog);
 
