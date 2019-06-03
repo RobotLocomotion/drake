@@ -702,13 +702,13 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
   abias_WHp_H_expected.head(3) = R_HW * abias_WHp_W_expected.head(3);
   abias_WHp_H_expected.tail(3) = R_HW * abias_WHp_W_expected.tail(3);
 
-  // Directly calculate Abias_WHp_H.
+  // Directly calculate abias_WHp_H.
   const VectorX<double> abias_WHp_H =
       tree().CalcBiasForJacobianTranslationalVelocity(
           *context_, JacobianWrtVariable::kV, *frame_H_, p_HPi,
           world_frame, *frame_H_);
 
-  // Ensure Abias_WHp_H is nearly identical to Abias_WHp_H_expected.
+  // Ensure abias_WHp_H is nearly identical to abias_WHp_H_expected.
   EXPECT_TRUE(CompareMatrices(abias_WHp_H, abias_WHp_H_expected,
                               kTolerance, MatrixCompareType::relative));
 
