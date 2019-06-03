@@ -32,7 +32,7 @@ config_setting(
 
 PROJECT_MAJOR = 6
 
-PROJECT_MINOR = 1
+PROJECT_MINOR = 2
 
 PROJECT_PATCH = 0
 
