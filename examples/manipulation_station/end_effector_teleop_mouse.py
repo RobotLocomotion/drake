@@ -263,9 +263,9 @@ def main():
              "Note: The pre-defined velocity limits are specified by "
              "iiwa14_velocity_limits, found in this python file.")
     parser.add_argument(
-        '--setup', type=str, default='mit_class',
+        '--setup', type=str, default='manipulation_class',
         help="The manipulation station setup to simulate. ",
-        choices=['mit_class', 'clutter_clearing'])
+        choices=['manipulation_class', 'clutter_clearing'])
     MeshcatVisualizer.add_argparse_argument(parser)
     args = parser.parse_args()
 
@@ -286,8 +286,8 @@ def main():
         station = builder.AddSystem(ManipulationStation())
 
         # Initializes the chosen station type.
-        if args.setup == 'mit_class':
-            station.SetupMITClassStation()
+        if args.setup == 'manipulation_class':
+            station.SetupManipulationClassStation()
             station.AddManipulandFromFile(
                 ("drake/examples/manipulation_station/models/"
                  "061_foam_brick.sdf"),

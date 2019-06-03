@@ -47,8 +47,8 @@ int do_main(int argc, char* argv[]) {
         "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf",
         RigidTransform<double>(RollPitchYaw<double>(-1.57, 0, 3),
                                Eigen::Vector3d(-0.3, -0.55, 0.36)));
-  } else if (FLAGS_setup == "mit_class") {
-    station->SetupMITClassStation();
+  } else if (FLAGS_setup == "manipulation_class") {
+    station->SetupManipulationClassStation();
     station->AddManipulandFromFile(
         "drake/examples/manipulation_station/models/061_foam_brick.sdf",
         RigidTransform<double>(RotationMatrix<double>::Identity(),
@@ -56,7 +56,7 @@ int do_main(int argc, char* argv[]) {
   } else {
     throw std::domain_error(
         "Unrecognized setup option. Options are "
-        "{mit_class, clutter_clearing}.");
+        "{manipulation_class, clutter_clearing}.");
   }
   station->Finalize();
 

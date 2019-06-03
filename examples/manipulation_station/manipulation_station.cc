@@ -234,10 +234,10 @@ void ManipulationStation<T>::SetupClutterClearingStation(
 }
 
 template <typename T>
-void ManipulationStation<T>::SetupMITClassStation(
+void ManipulationStation<T>::SetupManipulationClassStation(
     IiwaCollisionModel collision_model) {
   DRAKE_DEMAND(setup_ == Setup::kNone);
-  setup_ = Setup::kMITClass;
+  setup_ = Setup::kManipulationClass;
 
   // Add the table and 80/20 workcell frame.
   {
@@ -425,7 +425,7 @@ void ManipulationStation<T>::Finalize(
 
   switch (setup_) {
     case Setup::kNone:
-    case Setup::kMITClass: {
+    case Setup::kManipulationClass: {
       // Set the initial positions of the IIWA to a comfortable configuration
       // inside the workspace of the station.
       q0_iiwa << 0, 0.6, 0, -1.75, 0, 1.0, 0;

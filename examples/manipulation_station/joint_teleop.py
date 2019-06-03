@@ -49,7 +49,7 @@ if args.hardware:
     station.Connect(wait_for_cameras=False)
 else:
     station = builder.AddSystem(ManipulationStation())
-    station.SetupMITClassStation()
+    station.SetupManipulationClassStation()
     station.AddManipulandFromFile(
         "drake/examples/manipulation_station/models/061_foam_brick.sdf",
         RigidTransform(RotationMatrix.Identity(), [0.6, 0, 0]))
