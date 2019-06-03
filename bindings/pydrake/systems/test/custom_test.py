@@ -548,8 +548,6 @@ class TestCustom(unittest.TestCase):
         self.assertEqual(
             values.get_mutable_value(0).get_value(), model_value.get_value())
         values.SetFrom(values.Clone())
-        with catch_drake_warnings(expected_count=1):
-            values.CopyFrom(values.Clone())
 
         # Check parameter accessors.
         self.assertEqual(system.num_abstract_parameters(), 1)

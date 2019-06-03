@@ -146,10 +146,6 @@ class DiscreteValues {
     return *data_[index];
   }
 
-  DRAKE_DEPRECATED("2019-06-01",
-      "Use SetFrom instead of CopyFrom.")
-  void CopyFrom(const DiscreteValues<T>& other) { SetFrom(other); }
-
   /// Resets the values in this DiscreteValues from the values in @p other,
   /// possibly writing through to unowned data. Asserts if the dimensions don't
   /// match.
