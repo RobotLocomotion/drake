@@ -76,7 +76,7 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcContactPoint(
   const auto& vc = mesh.vertex(mesh.element(face_index).vertex(2));
   const Vector3<T> r_MQ = va.r_MV() * Q_barycentric_M[0] +
       vb.r_MV() * Q_barycentric_M[1] + vc.r_MV() * Q_barycentric_M[2];
-  return X_WM.inverse() * r_M;
+  return X_WM.inverse() * r_MQ;
 }
 
 template <class T>
