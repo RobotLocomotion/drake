@@ -10,6 +10,7 @@
 #include "drake/multibody/optimization/static_friction_cone_complementarity_constraint.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/mathematical_program_result.h"
 
 namespace drake {
 namespace multibody {

@@ -301,7 +301,7 @@ drake_cc_library(
 # solver(s) should be used for their class of program.  In the future, the
 # mathematical_program library will also drop those dependencies, at which
 # point this library will become a deprecated alias for mathematical_program.
-# TODO(jwnimmer-tri) Rename the library targets on 2019-06-01.
+# TODO(jwnimmer-tri) Rename the library targets on or about 2019-07-01.
 drake_cc_library(
     name = "mathematical_program_lite",
     srcs = [
@@ -336,10 +336,6 @@ drake_cc_library(
 
 drake_cc_library(
     name = "mathematical_program",
-    srcs = [
-        "mathematical_program_deprecated.cc",
-    ],
-    hdrs = [],
     deps = [
         ":choose_best_solver",
         ":mathematical_program_lite",
@@ -353,6 +349,7 @@ drake_cc_library(
     deps = [
         ":binding",
         ":solution_result",
+        ":solver_id",
         ":solver_result",
         "//common:symbolic",
         "//common:value",
@@ -599,10 +596,12 @@ drake_cc_library(
 
 drake_cc_library(
     name = "solver_result",
-    srcs = ["solver_result.cc"],
     hdrs = ["solver_result.h"],
+    deprecation = "This label is deprecated and will be removed from Drake on 2019-09-01.",  # noqa
+    # Exclude the target from `bazel build //...`, so that we don't get
+    # deprecation warnings from a normal build.
+    tags = ["manual"],
     deps = [
-        ":solver_id",
         "//common:essential",
     ],
 )
