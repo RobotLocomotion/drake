@@ -149,52 +149,6 @@ GTEST_TEST(BasicVectorTest, ReinitializeInvalid) {
   EXPECT_THROW(vec.set_value(next_value), std::out_of_range);
 }
 
-// Tests the infinity norm computation
-GTEST_TEST(BasicVectorTest, NormInf) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  BasicVector<double> vec(2);
-  vec.get_mutable_value() << 3, -4;
-  EXPECT_EQ(vec.NormInf(), 4);
-#pragma GCC diagnostic pop
-}
-
-// Tests the infinity norm for an autodiff type.
-GTEST_TEST(BasicVectorTest, NormInfAutodiff) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // Set up the device under test ("dut").
-  // The DUT is a vector with two values [-11.5, 22.5].
-  // The ∂/∂t of DUT is [1.5, 3.5] (where t is some arbitrary variable).
-  AutoDiffXd element0;
-  element0.value() = -11.5;
-  element0.derivatives() = Vector1d(1.5);
-  AutoDiffXd element1;
-  element1.value() = 22.5;
-  element1.derivatives() = Vector1d(3.5);
-  BasicVector<AutoDiffXd> dut{element0, element1};
-
-  // The norminf(DUT) is 22.5 and the ∂/∂t of norminf(DUT) is 3.5.
-  // The element1 has the max absolute value of the AutoDiffScalar's scalar.
-  // It is positive, so the sign of its derivatives remains unchanged.
-  AutoDiffXd expected_norminf;
-  expected_norminf.value() = 22.5;
-  expected_norminf.derivatives() = Vector1d(3.5);
-  EXPECT_EQ(dut.NormInf().value(), expected_norminf.value());
-  EXPECT_EQ(dut.NormInf().derivatives(), expected_norminf.derivatives());
-
-  // We change the DUT to two values [-11.5, -33.5] with ∂/∂t of [1.5, 3.5].
-  // The norminf(DUT) is now 33.5 and the ∂/∂t of norminf(DUT) is -3.5.
-  // The element0 has the max absolute value of the AutoDiffScalar's scalar.
-  // It is negative, so the sign of its derivatives gets flipped.
-  dut[0].value() = -33.5;
-  expected_norminf.value() = 33.5;
-  expected_norminf.derivatives() = Vector1d(-1.5);
-  EXPECT_EQ(dut.NormInf().value(), expected_norminf.value());
-  EXPECT_EQ(dut.NormInf().derivatives(), expected_norminf.derivatives());
-#pragma GCC diagnostic pop
-}
-
 // Tests all += * operations for BasicVector.
 GTEST_TEST(BasicVectorTest, PlusEqScaled) {
   BasicVector<double> ogvec(2), vec1(2), vec2(2), vec3(2), vec4(2), vec5(2);

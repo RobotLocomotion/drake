@@ -56,6 +56,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestInitializationEvent) {
   DrakeMockLcm mock_lcm;
   auto dut1 = LcmPublisherSystem::Make<lcmt_drake_signal>(
       channel_name, &mock_lcm);
+  Subscriber sub(&mock_lcm, channel_name);
 
   bool init_was_called{false};
   dut1->AddInitializationMessage([&dut1, &init_was_called](
@@ -79,10 +80,8 @@ GTEST_TEST(LcmPublisherSystemTest, TestInitializationEvent) {
   EXPECT_TRUE(init_was_called);
 
   // Nothing should have been published to this channel.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_FALSE(mock_lcm.get_last_publication_time(channel_name));
-#pragma GCC diagnostic pop
+  mock_lcm.HandleSubscriptions(0);
+  EXPECT_EQ(sub.count(), 0);
 }
 
 // Tests LcmPublisherSystem using a Serializer.
