@@ -276,6 +276,18 @@ drake_py_library(
     ],
 )
 
+drake_py_library(
+    name = "perception_py",
+    srcs = ["perception.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        ":framework_py",
+        ":module_py",
+        "//bindings/pydrake:math_py",
+        "//bindings/pydrake:perception_py",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":analysis_py",
     ":controllers_py",
@@ -292,6 +304,7 @@ PY_LIBRARIES = [
     ":meshcat_visualizer_py",
     ":scalar_conversion_py",
     ":module_py",
+    ":perception_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -421,6 +434,17 @@ drake_py_unittest(
         "//bindings/pydrake:geometry_py",
         "//bindings/pydrake:perception_py",
         "//bindings/pydrake/multibody",
+    ],
+)
+
+drake_py_unittest(
+    name = "perception_test",
+    deps = [
+        ":analysis_py",
+        ":framework_py",
+        ":perception_py",
+        "//bindings/pydrake:math_py",
+        "//bindings/pydrake:perception_py",
     ],
 )
 
