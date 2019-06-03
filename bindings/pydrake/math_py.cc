@@ -211,7 +211,7 @@ void DoDefinitions(py::module m, T) {
   py::implicitly_convertible<RigidTransform<T>, Isometry3<T>>();
 }
 
-} // namespace
+}  // namespace
 
 PYBIND11_MODULE(math, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.

@@ -158,7 +158,6 @@ class TestMath(unittest.TestCase):
                 eval("X @ RigidTransform()"), RigidTransform)
             self.assertIsInstance(eval("X @ [0, 0, 0]"), np.ndarray)
 
-
     def test_isometry_implicit(self):
         self.check_types(self.check_isometry_implicit)
 
@@ -188,20 +187,17 @@ class TestMath(unittest.TestCase):
         R = RotationMatrix(quaternion=Quaternion.Identity())
         npc.assert_float_equal(R.matrix(), np.eye(3))
         R = RotationMatrix(rpy=RollPitchYaw(rpy=[0, 0, 0]))
-        if T == float:
-            self.assertTrue(np.allclose(R.matrix(), np.eye(3)))
+        npc.assert_float_equal(R.matrix(), np.eye(3))
         # - Nontrivial quaternion.
         q = Quaternion(wxyz=[0.5, 0.5, 0.5, 0.5])
         R = RotationMatrix(quaternion=q)
         q_R = R.ToQuaternion()
-        if T == float:
-            npc.assert_float_equal(q.wxyz(), q_R.wxyz())
+        npc.assert_float_equal(q.wxyz(), npc.to_float(q_R.wxyz()))
         # - Inverse.
         R_I = R.inverse().multiply(R)
         npc.assert_float_equal(R_I.matrix(), np.eye(3))
-        if six.PY3 and T == float:
-            self.assertTrue(np.allclose(
-                eval("R.inverse() @ R").matrix(), np.eye(3)))
+        if six.PY3:
+            npc.assert_float_equal(eval("R.inverse() @ R").matrix(), np.eye(3))
 
     def test_roll_pitch_yaw(self):
         self.check_types(self.check_roll_pitch_yaw)
@@ -227,8 +223,8 @@ class TestMath(unittest.TestCase):
         rpy_q_I = RollPitchYaw(quaternion=q_I)
         npc.assert_float_equal(rpy_q_I.vector(), [0., 0., 0.])
         # - Additional properties.
-        if T == float:
-            npc.assert_float_equal(rpy.ToQuaternion().wxyz(), q_I.wxyz())
+        npc.assert_float_equal(
+                rpy.ToQuaternion().wxyz(), npc.to_float(q_I.wxyz()))
         R = rpy.ToRotationMatrix().matrix()
         npc.assert_float_equal(R, np.eye(3))
         # - Converting changes in orientation
