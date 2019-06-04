@@ -330,22 +330,44 @@ class GeometryState {
                            const std::string& candidate_name) const;
 
   /** Implementation of
-   @ref SceneGraph::AssignRole(SourceId,GeometryId, ProximityProperties)
+   @ref SceneGraph::AssignRole(SourceId, GeometryId, ProximityProperties)
    "SceneGraph::AssignRole()".  */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
                   ProximityProperties properties);
 
   /** Implementation of
-   @ref SceneGraph::AssignRole(SourceId,GeometryId, PerceptionProperties)
+   @ref SceneGraph::AssignRole(SourceId, GeometryId, PerceptionProperties)
    "SceneGraph::AssignRole()".  */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
                   PerceptionProperties properties);
 
   /** Implementation of
-   @ref SceneGraph::AssignRole(SourceId,GeometryId, IllustrationProperties)
+   @ref SceneGraph::AssignRole(SourceId, GeometryId, IllustrationProperties)
    "SceneGraph::AssignRole()".  */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
                   IllustrationProperties properties);
+
+  /** Implementation of
+   @ref SceneGraph::RemoveRole(SourceId, FrameId, Role)
+   "SceneGraph::RemoveRole()".  */
+  int RemoveRole(SourceId source_id, FrameId frame_id, Role role);
+
+  /** Implementation of
+   @ref SceneGraph::RemoveRole(SourceId, GeometryId, Role)
+   "SceneGraph::RemoveRole()".  */
+  int RemoveRole(SourceId source_id, GeometryId geometry_id, Role role);
+
+  /** Implementation of
+   @ref SceneGraph::RemoveFromRenderer(const std::string&, SourceId, FrameId)
+   "SceneGraph::RemoveFromRenderer()".  */
+  int RemoveFromRenderer(const std::string& renderer_name, SourceId source_id,
+                         FrameId frame_id);
+
+  /** Implementation of
+   @ref SceneGraph::RemoveFromRenderer(const std::string&, SourceId, GeometryId)
+   "SceneGraph::RemoveFromRenderer()".  */
+  int RemoveFromRenderer(const std::string& renderer_name, SourceId source_id,
+                         GeometryId geometry_id);
 
   //@}
 
@@ -597,6 +619,40 @@ class GeometryState {
   template <typename PropertyType>
   void AssignRoleInternal(SourceId source_id, GeometryId geometry_id,
                           PropertyType properties, Role role);
+
+  // Removes the indicated `role` from the indicated geometry. Returns 1 if the
+  // geometry formerly had that role, and 0 if not. This does no checking on
+  // ownership.
+  // @pre geometry_id maps to a registered geometry.
+  int RemoveRoleUnchecked(GeometryId geometry_id, Role role);
+
+  // Removes the geometry with the given `id` from the named renderer. Returns 1
+  // if the geometry formerly had been included in the renderer, 0 if not. This
+  // does no checking on ownership.
+  // @pre geometry_id maps to a registered geometry.
+  int RemoveFromRendererUnchecked(const std::string& renderer_name,
+                                  GeometryId id);
+
+  int RemoveProximityRole(GeometryId geometry_id);
+  int RemoveIllustrationRole(GeometryId geometry_id);
+  int RemovePerceptionRole(GeometryId geometry_id);
+
+  // When performing an operation on a frame, the caller provides its source id
+  // and the id of the frame it owns as the operand. Generally, the validation
+  // of the operation depends on two things:
+  //  1. The source id must be valid.
+  //  2. The source id must own the frame indicated.
+  // However, there is an exception. Callers can operate on the *world frame*
+  // (which merely affects the *geometries* that source owns that have been
+  // attached to the world frame). But external geometry sources *can't* own the
+  // world frame; it is owned by GeometryState/SceneGraph. Therefore, the
+  // *requesting* source id may not be the same as the *owning* source id in
+  // this one case.
+  // This function handles the special case. It confirms all proper ownership
+  // and, assuming the ids and relationships are valid, returns the frame
+  // requested.
+  const internal::InternalFrame& ValidateAndGetFrame(SourceId source_id,
+      FrameId frame_id) const;
 
   // Retrieves the requested renderer (if supported), throwing otherwise.
   const render::RenderEngine& GetRenderEngineOrThrow(
