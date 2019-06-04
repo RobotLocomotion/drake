@@ -139,20 +139,20 @@ Hyperplanes RandomSupportingHyperplanes(const ExponentList& exponents_of_p,
 
   // get_random() samples uniformly between normal_vector_component_min/max.
   // Current values of min and max set heuristically.
-  const int normal_vector_component_min  = -10;
-  const int normal_vector_component_max  = 10;
+  const int normal_vector_component_min = -10;
+  const int normal_vector_component_max = 10;
   std::default_random_engine generator(seed);
   std::uniform_int_distribution<int> distribution(normal_vector_component_min,
                                                   normal_vector_component_max);
   auto get_random = [&]() { return distribution(generator); };
 
   // Number of hyperplanes currently picked heuristically.
-  int num_hyperplanes = 10*exponents_of_p.cols();
+  int num_hyperplanes = 10 * exponents_of_p.cols();
 
   H.normal_vectors = Eigen::MatrixXi(num_hyperplanes, exponents_of_p.cols());
   for (int i = 0; i < H.normal_vectors.cols(); i++) {
-    H.normal_vectors.col(i) << Eigen::VectorXi::NullaryExpr(num_hyperplanes,
-                                                            get_random);
+    H.normal_vectors.col(i)
+        << Eigen::VectorXi::NullaryExpr(num_hyperplanes, get_random);
   }
 
   Eigen::MatrixXi dot_products = H.normal_vectors * exponents_of_p.transpose();
@@ -161,7 +161,6 @@ Hyperplanes RandomSupportingHyperplanes(const ExponentList& exponents_of_p,
 
   return H;
 }
-
 
 //  Generates the supporting hyperplanes of the Newton polytope that
 //  are induced by the total degree ordering.
@@ -206,7 +205,7 @@ ExponentList EnumerateInitialSet(const ExponentList& exponents_of_p) {
 //  Note that this function is actually deterministic since the seed for
 //  the random number generator is set to predetermined constants.
 void RemoveWithRandomSeparatingHyperplanes(const ExponentList& exponents_of_p,
-                                                   ExponentList* basis) {
+                                           ExponentList* basis) {
   // Declare this outside the main loop to avoid repeated dynamic memory
   // allocation.
   Eigen::MatrixXi dot_products;
@@ -222,18 +221,18 @@ void RemoveWithRandomSeparatingHyperplanes(const ExponentList& exponents_of_p,
     // Newton polytope.
     dot_products = (*basis) * H.normal_vectors.transpose();
     for (int i = 0; i < current_basis_size; i++) {
-        bool keep_monomial = true;
-        for (int j = 0; j < dot_products.cols(); j++) {
-            if (dot_products(i, j) > H.max_dot_product(j) ||
-                dot_products(i, j) < H.min_dot_product(j) ) {
-               keep_monomial  = false;
-               break;
-            }
+      bool keep_monomial = true;
+      for (int j = 0; j < dot_products.cols(); j++) {
+        if (dot_products(i, j) > H.max_dot_product(j) ||
+            dot_products(i, j) < H.min_dot_product(j)) {
+          keep_monomial = false;
+          break;
         }
+      }
 
-        if (keep_monomial) {
-            basis->row(next_basis_size++) = basis->row(i);
-        }
+      if (keep_monomial) {
+        basis->row(next_basis_size++) = basis->row(i);
+      }
     }
 
     basis->conservativeResize(next_basis_size, basis->cols());
@@ -241,7 +240,8 @@ void RemoveWithRandomSeparatingHyperplanes(const ExponentList& exponents_of_p,
     // Quit if the basis is now empty or if its size wasn't reduced
     // enough.
     constexpr double kMinimumPercentReduction = .1;
-    if (next_basis_size > current_basis_size * (1.0-kMinimumPercentReduction) ||
+    if (next_basis_size >
+            current_basis_size * (1.0 - kMinimumPercentReduction) ||
         next_basis_size == 0) {
       break;
     }
@@ -257,7 +257,6 @@ ExponentList ConstructMonomialBasis(const ExponentList& exponents_of_p) {
 }
 
 }  // namespace
-
 
 MonomialVector ConstructMonomialBasis(const drake::symbolic::Polynomial& p) {
   drake::VectorX<Variable> vars(p.indeterminates().size());
