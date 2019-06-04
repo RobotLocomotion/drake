@@ -39,7 +39,10 @@ StaticEquilibriumProblem::StaticEquilibriumProblem(
     if (ignored_collision_pairs.count(collision_candidate_pair) == 0) {
       auto contact_wrench_evaluator =
           std::make_shared<ContactWrenchFromForceInWorldFrameEvaluator>(
-              &plant_, context_, collision_candidate_pair);
+              &plant_, context_,
+              SortedPair<geometry::GeometryId>(
+                  collision_candidate_pair.first,
+                  collision_candidate_pair.second));
       auto lambda_var = prog_->NewContinuousVariables<3>();
       contact_wrench_evaluators_and_lambda_.emplace_back(
           contact_wrench_evaluator, lambda_var);
@@ -101,12 +104,12 @@ std::vector<ContactWrench> StaticEquilibriumProblem::GetContactWrenchSolution(
         &F_Cb_W);
     // Compute p_WCb, where the contact wrench is applied.
     Vector3<AutoDiffXd> p_WCb;
-    const std::pair<geometry::GeometryId, geometry::GeometryId>& contact_pair =
+    const SortedPair<geometry::GeometryId>& contact_pair =
         contact_wrench_evaluator->geometry_id_pair();
     BodyIndex body_A_index, body_B_index;
     for (const auto& signed_distance_pair : signed_distance_pairs) {
-      if (signed_distance_pair.id_A == contact_pair.first &&
-          signed_distance_pair.id_B == contact_pair.second) {
+      if (signed_distance_pair.id_A == contact_pair.first() &&
+          signed_distance_pair.id_B == contact_pair.second()) {
         const geometry::FrameId frame_Fa_id =
             inspector.GetFrameId(signed_distance_pair.id_A);
         const geometry::FrameId frame_Fb_id =

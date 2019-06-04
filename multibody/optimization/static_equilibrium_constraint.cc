@@ -8,7 +8,7 @@ namespace drake {
 namespace multibody {
 namespace {
 int GetLambdaSize(
-    const std::map<std::pair<geometry::GeometryId, geometry::GeometryId>,
+    const std::map<SortedPair<geometry::GeometryId>,
                    internal::GeometryPairContactWrenchEvaluatorBinding>&
         contact_pair_to_wrench_evaluator) {
   int num_lambda = 0;
@@ -21,7 +21,7 @@ int GetLambdaSize(
 StaticEquilibriumConstraint::StaticEquilibriumConstraint(
     const MultibodyPlant<AutoDiffXd>* plant,
     systems::Context<AutoDiffXd>* context,
-    const std::map<std::pair<geometry::GeometryId, geometry::GeometryId>,
+    const std::map<SortedPair<geometry::GeometryId>,
                    internal::GeometryPairContactWrenchEvaluatorBinding>&
         contact_pair_to_wrench_evaluator)
     : solvers::Constraint(plant->num_velocities(),
@@ -102,8 +102,9 @@ void StaticEquilibriumConstraint::DoEval(
                                         plant_->world_frame(), &Jv_V_WCb);
 
     // Find the lambda corresponding to the geometry pair (id_A, id_B).
-    const auto it = contact_pair_to_wrench_evaluator_.find(
-        std::make_pair(signed_distance_pair.id_A, signed_distance_pair.id_B));
+    const auto it =
+        contact_pair_to_wrench_evaluator_.find(SortedPair<geometry::GeometryId>(
+            signed_distance_pair.id_A, signed_distance_pair.id_B));
     if (it == contact_pair_to_wrench_evaluator_.end()) {
       throw std::runtime_error(
           "The input argument contact_pair_to_wrench_evaluator in the "
@@ -150,7 +151,7 @@ StaticEquilibriumConstraint::MakeBinding(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& u_vars) {
   // contact_pair_to_wrench_evaluator will be used in the constructor of
   // StaticEquilibriumConstraint.
-  std::map<std::pair<geometry::GeometryId, geometry::GeometryId>,
+  std::map<SortedPair<geometry::GeometryId>,
            internal::GeometryPairContactWrenchEvaluatorBinding>
       contact_pair_to_wrench_evaluator;
   // Get the total size of lambda used in this StaticEquilibriumConstraint. We

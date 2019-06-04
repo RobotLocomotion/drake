@@ -36,8 +36,9 @@ TEST_F(ContactWrenchEvaluatorTest,
       free_spheres_->get_mutable_plant_context();
   ContactWrenchFromForceInWorldFrameEvaluator evaluator(
       &(free_spheres_->plant()), plant_context,
-      std::make_pair(free_spheres_->sphere_geometry_ids()[0],
-                     free_spheres_->sphere_geometry_ids()[1]));
+      SortedPair<geometry::GeometryId>(
+          free_spheres_->sphere_geometry_ids()[0],
+          free_spheres_->sphere_geometry_ids()[1]));
 
   EXPECT_EQ(evaluator.num_lambda(), 3);
   EXPECT_EQ(evaluator.num_vars(), free_spheres_->plant().num_positions() + 3);
