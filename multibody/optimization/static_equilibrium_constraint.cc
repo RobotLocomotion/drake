@@ -101,10 +101,14 @@ void StaticEquilibriumConstraint::DoEval(
                                         frameB, p_BCb, plant_->world_frame(),
                                         plant_->world_frame(), &Jv_V_WCb);
 
+    const SortedPair<geometry::GeometryId> contact_pair(
+        signed_distance_pair.id_A, signed_distance_pair.id_B);
+    // TODO(hongkai.dai): remove the following two lines of DRAKE_DEMAND when
+    // SceneGraph guarantees that signed_distance_pair sorts id_A and id_B.
+    DRAKE_DEMAND(contact_pair.first() == signed_distance_pair.id_A);
+    DRAKE_DEMAND(contact_pair.second() == signed_distance_pair.id_B);
     // Find the lambda corresponding to the geometry pair (id_A, id_B).
-    const auto it =
-        contact_pair_to_wrench_evaluator_.find(SortedPair<geometry::GeometryId>(
-            signed_distance_pair.id_A, signed_distance_pair.id_B));
+    const auto it = contact_pair_to_wrench_evaluator_.find(contact_pair);
     if (it == contact_pair_to_wrench_evaluator_.end()) {
       throw std::runtime_error(
           "The input argument contact_pair_to_wrench_evaluator in the "
