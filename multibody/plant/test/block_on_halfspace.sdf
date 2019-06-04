@@ -75,10 +75,5 @@
 
       </collision>
     </link>
-
-    <joint name="ground_weld" type="fixed">
-      <parent>world</parent>
-      <child>ground</child>
-    </joint>
   </model>
 </sdf>
