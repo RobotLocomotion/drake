@@ -27,7 +27,8 @@ GTEST_TEST(StaticFrictionConeComplementarityNonlinearConstraint, TestEval) {
 
   ContactWrenchFromForceInWorldFrameEvaluator contact_wrench_evaluator(
       &(dut.plant()), dut.get_mutable_plant_context(),
-      std::make_pair(dut.sphere_geometry_ids()[0], dut.ground_geometry_id()));
+      SortedPair<geometry::GeometryId>(dut.sphere_geometry_ids()[0],
+                                       dut.ground_geometry_id()));
 
   double complementarity_tolerance{1E-3};
   internal::StaticFrictionConeComplementarityNonlinearConstraint constraint(

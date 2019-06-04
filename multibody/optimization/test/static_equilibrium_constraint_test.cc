@@ -38,7 +38,9 @@ class TwoFreeSpheresTest : public ::testing::Test {
     for (const auto& geometry_pair : collision_candidate_pairs) {
       auto wrench_evaluator =
           std::make_shared<ContactWrenchFromForceInWorldFrameEvaluator>(
-              &plant, spheres_->get_mutable_plant_context(), geometry_pair);
+              &plant, spheres_->get_mutable_plant_context(),
+              SortedPair<geometry::GeometryId>(geometry_pair.first,
+                                               geometry_pair.second));
       auto lambda_i = prog_.NewContinuousVariables(
           wrench_evaluator->num_lambda(),
           "lambda" + std::to_string(geometry_pair_count));
@@ -99,8 +101,8 @@ class TwoFreeSpheresTest : public ::testing::Test {
       auto lambda_indices_in_all_lambda =
           static_equilibrium_binding.evaluator()
               ->contact_pair_to_wrench_evaluator()
-              .at(std::make_pair(signed_distance_pair.id_A,
-                                 signed_distance_pair.id_B))
+              .at(SortedPair<geometry::GeometryId>(signed_distance_pair.id_A,
+                                                   signed_distance_pair.id_B))
               .lambda_indices_in_all_lambda;
       for (int i = 0; i < 3; ++i) {
         F_AB_W(i) = 0 * lambda_autodiff(lambda_indices_in_all_lambda[0]);
@@ -280,8 +282,8 @@ TEST_F(TwoFreeSpheresTest, Eval) {
     const Eigen::Vector3d lambda_sol =
         result.GetSolution(contact_wrench_evaluator_and_lambda.second);
     if (contact_wrench_evaluator_and_lambda.first->geometry_id_pair() ==
-        std::make_pair(spheres_->sphere_geometry_ids()[0],
-                       spheres_->sphere_geometry_ids()[1])) {
+        SortedPair<geometry::GeometryId>(spheres_->sphere_geometry_ids()[0],
+                                         spheres_->sphere_geometry_ids()[1])) {
       // contact between two spheres.
       // Compute the witness points on sphere 0 and sphere 1.
       const Eigen::Vector3d p_WC0 =
@@ -297,8 +299,9 @@ TEST_F(TwoFreeSpheresTest, Eval) {
       sphere0_total_wrench.tail<3>() += -lambda_sol;
       sphere1_total_wrench.tail<3>() += lambda_sol;
     } else if (contact_wrench_evaluator_and_lambda.first->geometry_id_pair() ==
-               std::make_pair(spheres_->sphere_geometry_ids()[0],
-                              spheres_->ground_geometry_id())) {
+               SortedPair<geometry::GeometryId>(
+                   spheres_->sphere_geometry_ids()[0],
+                   spheres_->ground_geometry_id())) {
       // contact between the ground and the sphere 0.
       // Compute the witness point on sphere 0
       const Eigen::Vector3d p_WC0 =
@@ -307,8 +310,9 @@ TEST_F(TwoFreeSpheresTest, Eval) {
       sphere0_total_wrench.head<3>() += p_WC0.cross(-lambda_sol);
       sphere0_total_wrench.tail<3>() += -lambda_sol;
     } else if (contact_wrench_evaluator_and_lambda.first->geometry_id_pair() ==
-               std::make_pair(spheres_->sphere_geometry_ids()[1],
-                              spheres_->ground_geometry_id())) {
+               SortedPair<geometry::GeometryId>(
+                   spheres_->sphere_geometry_ids()[1],
+                   spheres_->ground_geometry_id())) {
       // contact between the ground and the sphere 1.
       // Compute the witness point on sphere 1
       const Eigen::Vector3d p_WC1 =
