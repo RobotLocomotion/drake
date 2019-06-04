@@ -43,7 +43,8 @@ GeometryId FindGeometry(
 
 }  // namespace internal
 
-class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
+class MultibodyPlantHydroelasticTractionTests :
+public ::testing::TestWithParam<math::RigidTransform<double>> {
  public:
   const MultibodyPlant<double>& plant() const { return *plant_; }
   Context<double>& plant_context() { return *plant_context_; }
@@ -53,18 +54,63 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
   const HydroelasticTractionCalculator<double>& traction_calculator() const {
     return *traction_calculator_;
   }
-  math::RigidTransform<double> GetTransformFromGeometry(GeometryId g) const {
-    return traction_calculator_->GetTransformFromGeometry(*plant_context_, g);
+  const HydroelasticTractionCalculatorData<double>& traction_calculator_data()
+      const {
+    return *traction_calculator_data_;
+  }
+  math::RigidTransform<double> GetGeometryTransformationToWorld(
+      GeometryId g) const {
+    return traction_calculator_data_->GetGeometryTransformationToWorld(
+        *plant_context_, g);
   }
 
+  // Returns the default numerical tolerance.
+  double eps() const { return eps_; }
+
+  // Computes the spatial forces due to the hydroelastic model.
+  void ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+      double dissipation, double mu_coulomb,
+      SpatialForce<double>* F_Mo_W, SpatialForce<double>* F_No_W) {
+    // Instantiate the traction calculator data.
+    traction_calculator_data_ =
+        std::make_unique<HydroelasticTractionCalculatorData<double>>(
+            *plant_context_, *contact_surface_, plant());
+
+    // First compute the traction, expressed in the world frame.
+    Vector3<double> p_WQ;
+    const Vector3<double> traction_Q_W = traction_calculator().
+        CalcTractionAtPoint(
+            traction_calculator_data(), SurfaceFaceIndex(0),
+            SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
+            dissipation, mu_coulomb, &p_WQ);
+
+    // Compute the expected point of contact in the world frame. Recall that
+    // the parameter to this test transforms both bodies to a pose Y in the
+    // world.
+    const Vector3<double> p_WQ_expected = GetParam() *
+        Vector3<double>(0.5, 0.5, -0.5);
+
+    // Verify the point of contact.
+    for (int i = 0; i < 3; ++i)
+      ASSERT_NEAR(p_WQ[i], p_WQ_expected[i], eps());
+
+    traction_calculator().ComputeSpatialForcesAtBodyOriginsFromTraction(
+        traction_calculator_data(), p_WQ, traction_Q_W, F_Mo_W, F_No_W);
+  }
+
+  void SetBoxTranslationalVelocity(const Vector3<double>& v) {
+    plant_->SetFreeBodySpatialVelocity(plant_context_,
+        plant_->GetBodyByName("box"),
+        SpatialVelocity<double>(Vector3<double>::Zero(), v));
+  }
 
  private:
   void SetUp() override {
-    // Read the two bodies into the plant. The SDF file refers to a block
-    // penetrating a halfspace while the geometry that we use in the tests will
-    // assume a tetrahedron penetrating a halfspace. Since we don't use any
-    // inertial or geometric properties from the SDF file, that is not a
-    // problem.
+    // Read the two bodies into the plant. The SDF file refers to a rigid block
+    // penetrating a compliant halfspace while the geometry that we use in the
+    // tests will assume a tetrahedron penetrating a halfspace. Since we don't
+    // use any inertial or geometric properties from the SDF file, that is not
+    // a problem.
     DiagramBuilder<double> builder;
     SceneGraph<double>* scene_graph;
     std::tie(plant_, scene_graph) = AddMultibodyPlantSceneGraph(&builder);
@@ -76,6 +122,9 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
     plant.Finalize();
     diagram_ = builder.Build();
 
+    ASSERT_EQ(plant.num_velocities(), 12);
+    ASSERT_EQ(plant.num_positions(), 14);
+
     // Create a context for this system.
     context_ = diagram_->CreateDefaultContext();
     plant_context_ =
@@ -83,13 +132,11 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
 
     contact_surface_ = CreateContactSurface();
 
-    // Set the pose and velocity for the box.
-    ASSERT_EQ(plant.num_velocities(), 6);
-    ASSERT_EQ(plant.num_positions(), 7);
-    VectorX<double> state(plant.num_positions() + plant.num_velocities());
-    state << 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
-    auto& state_vector = plant_context_->get_mutable_continuous_state_vector();
-    state_vector.SetFromVector(state);
+    // Set the poses for the two bodies.
+    plant.SetFreeBodyPose(plant_context_,
+        plant.GetBodyByName("box"), GetParam());
+    plant.SetFreeBodyPose(plant_context_,
+        plant.GetBodyByName("ground"), GetParam());
 
     // Instantiate the traction calculator.
     traction_calculator_ =
@@ -146,136 +193,112 @@ class MultibodyPlantHydroelasticTractionTests : public ::testing::Test {
         std::move(faces), std::move(vertices));
   }
 
+  const double eps_{10 * std::numeric_limits<double>::epsilon()};
   MultibodyPlant<double>* plant_;
   std::unique_ptr<Diagram<double>> diagram_;
   std::unique_ptr<Context<double>> context_;
   systems::Context<double>* plant_context_;
   std::unique_ptr<ContactSurface<double>> contact_surface_;
   std::unique_ptr<HydroelasticTractionCalculator<double>> traction_calculator_;
+  std::unique_ptr<HydroelasticTractionCalculatorData<double>>
+      traction_calculator_data_;
 };
 
 // Tests the traction calculation without any frictional or dissipation forces.
-TEST_F(MultibodyPlantHydroelasticTractionTests, VanillaTraction) {
+TEST_P(MultibodyPlantHydroelasticTractionTests, VanillaTraction) {
   const double dissipation = 0.0;
   const double mu_coulomb = 0.0;
 
-  // Get the two transforms.
-  const auto X_WM = GetTransformFromGeometry(contact_surface().id_M());
-  const auto X_WN = GetTransformFromGeometry(contact_surface().id_N());
-
-  // First compute the traction.
-  Vector3<double> p_W;
-  const Vector3<double> traction = traction_calculator().CalcTractionAtPoint(
-      plant_context(), contact_surface(), SurfaceFaceIndex(0),
-      SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
-      dissipation, mu_coulomb, X_WM, X_WN, &p_W);
-
-  // Verify the point of contact.
-  const double eps = 10 * std::numeric_limits<double>::epsilon();
-  ASSERT_NEAR(p_W[0], 0.5, eps);
-  ASSERT_NEAR(p_W[1], 0.5, eps);
-  ASSERT_NEAR(p_W[2], -0.5, eps);
-
-  // Now compute the spatial forces at the origins of the body frames.
+  // Compute the spatial forces at the origins of the body frames.
   multibody::SpatialForce<double> F_Mo_W, F_No_W;
-  traction_calculator().ComputeSpatialForcesAtBodyOriginsFromTraction(
-      p_W, traction, X_WM, X_WN, &F_Mo_W, &F_No_W);
+  ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+      dissipation, mu_coulomb, &F_Mo_W, &F_No_W);
+
+  // Re-express the spatial forces in Y's frame for easy interpretability.
+  const math::RotationMatrix<double>& R_WY = GetParam().rotation();
+  const Vector3<double> f_No_Y = R_WY.transpose() * F_No_W.translational();
+  const Vector3<double> tau_No_Y = R_WY.transpose() * F_No_W.rotational();
 
   // Check the spatial force at p. We know that geometry M is the halfspace,
   // so we'll check the spatial force for geometry N instead. Note that the
   // tangential components are zero.
-  EXPECT_NEAR(F_No_W.translational()[0], 0.0, eps);
-  EXPECT_NEAR(F_No_W.translational()[1], 0.0, eps);
-  EXPECT_NEAR(F_No_W.translational()[2], 0.5, eps);
+  EXPECT_NEAR(f_No_Y[0], 0.0, eps());
+  EXPECT_NEAR(f_No_Y[1], 0.0, eps());
+  EXPECT_NEAR(f_No_Y[2], 0.5, eps());
 
   // A moment on the tet will be generated due to the normal traction. The
-  // origin of the tet frame is located at (0,0,0) in the world frame.
-  // The moment arm at the point will be (.5, .5, -.5). Crossing this vector
-  // with the traction at that point (0, 0, 0.5) yields the following.
-  EXPECT_NEAR(F_No_W.rotational()[0], 0.25, eps);
-  EXPECT_NEAR(F_No_W.rotational()[1], -0.25, eps);
-  EXPECT_NEAR(F_No_W.rotational()[2], 0, eps);
+  // origin of the tet frame is located at (0,0,0) in the Y frame.
+  // The moment arm at the point will be (.5, .5, -.5), again in the Y frame.
+  // Crossing this vector with the traction at that point (0, 0, 0.5) yields the
+  // following.
+  EXPECT_NEAR(tau_No_Y[0], 0.25, eps());
+  EXPECT_NEAR(tau_No_Y[1], -0.25, eps());
+  EXPECT_NEAR(tau_No_Y[2], 0, eps());
 
   // The translational components of the two wrenches should be equal and
   // opposite.
   EXPECT_NEAR((F_No_W.translational() + F_Mo_W.translational()).norm(),
-      0, eps);
+      0, eps());
 }
 
 // Tests the traction calculation with friction but without dissipation forces.
-TEST_F(MultibodyPlantHydroelasticTractionTests, TractionWithFraction) {
+TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithFraction) {
   const double dissipation = 0.0;
   const double mu_coulomb = 1.0;
 
-  // Get the two transforms.
-  const auto X_WM = GetTransformFromGeometry(contact_surface().id_M());
-  const auto X_WN = GetTransformFromGeometry(contact_surface().id_N());
+  // Give the tet an initial (vertical) velocity along the +x axis in the Y
+  // frame.
+  const math::RotationMatrix<double>& R_WY = GetParam().rotation();
+  SetBoxTranslationalVelocity(R_WY * Vector3<double>(1, 0, 0));
 
-  // Give the tet an initial (horizontal) velocity along the +x axis.
-  const int num_velocities = plant().num_velocities();
-  ASSERT_EQ(num_velocities, 6);
-  VectorX<double> tet_velocity(num_velocities);
-  tet_velocity << 0, 0, 0, 1, 0, 0;
-  plant().SetVelocities(&plant_context(), tet_velocity);
-
-    // First compute the traction.
-  Vector3<double> p_W;
-  const Vector3<double> traction = traction_calculator().CalcTractionAtPoint(
-      plant_context(), contact_surface(), SurfaceFaceIndex(0),
-      SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0), dissipation,
-      mu_coulomb, X_WM, X_WN, &p_W);
-
-  // Verify the point of contact.
-  const double eps = 10 * std::numeric_limits<double>::epsilon();
-  ASSERT_NEAR(p_W[0], 0.5, eps);
-  ASSERT_NEAR(p_W[1], 0.5, eps);
-  ASSERT_NEAR(p_W[2], -0.5, eps);
-
-  // Now compute the spatial forces at the origins of the body frames.
+  // Compute the spatial forces at the origins of the body frames.
   multibody::SpatialForce<double> F_Mo_W, F_No_W;
-  traction_calculator().ComputeSpatialForcesAtBodyOriginsFromTraction(
-      p_W, traction, X_WM, X_WN, &F_Mo_W, &F_No_W);
+  ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+      dissipation, mu_coulomb, &F_Mo_W, &F_No_W);
+
+  // Re-express the spatial forces in Y's frame for easy interpretability.
+  const Vector3<double> f_No_Y = R_WY.transpose() * F_No_W.translational();
+  const Vector3<double> tau_No_Y = R_WY.transpose() * F_No_W.rotational();
 
   // Check the spatial force at p. We know that geometry M is the halfspace,
   // so we'll check the spatial force for geometry N instead. The coefficient
   // of friction is unity, so the total frictional traction will have
-  // approximately the same magnitude as the normal traction.
+  // approximately the same magnitude as the normal traction. Note that the
+  // regularized Coulomb friction model requires backing off of the tolerance
+  // for comparing frictional force components (against the Coulomb model); the
+  // units are dissimilar (m/s vs. N and Nm) but using this as the tolerance
+  // has proven useful.
   const double regularization_scalar =
       traction_calculator().regularization_scalar();
-  EXPECT_NEAR(F_No_W.translational()[0], -0.5, regularization_scalar);
-  EXPECT_NEAR(F_No_W.translational()[1], 0.0, eps);
-  EXPECT_NEAR(F_No_W.translational()[2], 0.5, eps);
+  EXPECT_NEAR(f_No_Y[0], -0.5, regularization_scalar);
+  EXPECT_NEAR(f_No_Y[1], 0.0, eps());
+  EXPECT_NEAR(f_No_Y[2], 0.5, eps());
 
   // A moment on the tet will be generated due to the traction. The
-  // origin of the tet frame is located at (0,0,0) in the world frame.
+  // origin of the tet frame is located at (0,0,0) in the Y frame.
   // The moment arm at the point will be (.5, .5, -.5). Crossing this vector
   // with the traction at that point (-.5, 0, 0.5) yields the following.
-  EXPECT_NEAR(F_No_W.rotational()[0], 0.25, eps);
-  EXPECT_NEAR(F_No_W.rotational()[1], 0.0, regularization_scalar);
-  EXPECT_NEAR(F_No_W.rotational()[2], 0.25, regularization_scalar);
+  EXPECT_NEAR(tau_No_Y[0], 0.25, eps());
+  EXPECT_NEAR(tau_No_Y[1], 0.0, regularization_scalar);
+  EXPECT_NEAR(tau_No_Y[2], 0.25, regularization_scalar);
 
   // The translational components of the two wrenches should be equal and
   // opposite.
   EXPECT_NEAR((F_No_W.translational() + F_Mo_W.translational()).norm(),
-      0, eps);
+      0, eps());
 }
 
 // Tests the traction calculation with dissipation forces but without friction.
-TEST_F(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
+TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
   const double dissipation = 1.0;
   const double mu_coulomb = 0.0;
 
-  // Get the two transforms.
-  const auto X_WM = GetTransformFromGeometry(contact_surface().id_M());
-  const auto X_WN = GetTransformFromGeometry(contact_surface().id_N());
-
-  // Give the tet an initial (vertical) velocity along the -z axis.
-  const int num_velocities = plant().num_velocities();
-  ASSERT_EQ(num_velocities, 6);
-  VectorX<double> tet_velocity(num_velocities);
+  // Give the tet an initial (vertical) velocity along the -z axis in the Y
+  // frame.
+  const math::RotationMatrix<double>& R_WY = GetParam().rotation();
   const double separating_velocity = -1.0;
-  tet_velocity << 0, 0, 0, 0, 0, separating_velocity;
-  plant().SetVelocities(&plant_context(), tet_velocity);
+  SetBoxTranslationalVelocity(R_WY *
+      Vector3<double>(0, 0, separating_velocity));
 
   // Compute the magnitude of the normal traction. Note that the damping
   // constant at each point will be field value * dissipation coefficient.
@@ -285,46 +308,49 @@ TEST_F(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
   const double normal_traction_magnitude = field_value +
       damping_traction_magnitude;
 
-  // First compute the traction.
-  Vector3<double> p_W;
-  const Vector3<double> traction = traction_calculator().CalcTractionAtPoint(
-      plant_context(), contact_surface(), SurfaceFaceIndex(0),
-      SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
-      dissipation, mu_coulomb, X_WM, X_WN, &p_W);
-
-  // Verify the point of contact.
-  const double eps = 10 * std::numeric_limits<double>::epsilon();
-  ASSERT_NEAR(p_W[0], 0.5, eps);
-  ASSERT_NEAR(p_W[1], 0.5, eps);
-  ASSERT_NEAR(p_W[2], -0.5, eps);
-
-  // Now compute the spatial forces at the origins of the body frames.
+  // Compute the spatial forces at the origins of the body frames.
   multibody::SpatialForce<double> F_Mo_W, F_No_W;
-  traction_calculator().ComputeSpatialForcesAtBodyOriginsFromTraction(
-      p_W, traction, X_WM, X_WN, &F_Mo_W, &F_No_W);
+  ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+      dissipation, mu_coulomb, &F_Mo_W, &F_No_W);
+
+  // Re-express the spatial forces in Y's frame for easy interpretability.
+  const Vector3<double> f_No_Y = R_WY.transpose() * F_No_W.translational();
+  const Vector3<double> tau_No_Y = R_WY.transpose() * F_No_W.rotational();
 
   // Check the spatial force at p. We know that geometry M is the halfspace,
   // so we'll check the spatial force for geometry N instead. The coefficient
   // of friction is unity, so the total frictional traction will have the same
   // magnitude as the normal traction.
-  EXPECT_NEAR(F_No_W.translational()[0], 0.0, eps);
-  EXPECT_NEAR(F_No_W.translational()[1], 0.0, eps);
-  EXPECT_NEAR(F_No_W.translational()[2], normal_traction_magnitude, eps);
+  EXPECT_NEAR(f_No_Y[0], 0.0, eps());
+  EXPECT_NEAR(f_No_Y[1], 0.0, eps());
+  EXPECT_NEAR(f_No_Y[2], normal_traction_magnitude, eps());
 
   // A moment on the tet will be generated due to the traction. The
   // origin of the tet frame is located at (0,0,0) in the world frame.
   // The moment arm at the point will be (.5, .5, -.5). Crossing this vector
   // with the traction at that point (0, 0, normal_traction_magnitude) yields
   // the following.
-  EXPECT_NEAR(F_No_W.rotational()[0], 0.5 * normal_traction_magnitude, eps);
-  EXPECT_NEAR(F_No_W.rotational()[1], -0.5 * normal_traction_magnitude, eps);
-  EXPECT_NEAR(F_No_W.rotational()[2], 0.0, eps);
+  EXPECT_NEAR(tau_No_Y[0], 0.5 * normal_traction_magnitude, eps());
+  EXPECT_NEAR(tau_No_Y[1], -0.5 * normal_traction_magnitude, eps());
+  EXPECT_NEAR(tau_No_Y[2], 0.0, eps());
 
   // The translational components of the two wrenches should be equal and
   // opposite.
   EXPECT_NEAR((F_No_W.translational() + F_Mo_W.translational()).norm(),
-      0, eps);
+      0, eps());
 }
+
+const math::RigidTransform<double> poses[] = {
+    math::RigidTransform<double>::Identity(),
+    math::RigidTransform<double>(
+        math::RotationMatrix<double>::MakeYRotation(M_PI_4),
+        drake::Vector3<double>(1, 2, 3))
+};
+
+INSTANTIATE_TEST_CASE_P(PoseInstantiations,
+                        MultibodyPlantHydroelasticTractionTests,
+                        ::testing::ValuesIn(poses));
 
 }  // namespace multibody
 }  // namespace drake
+
