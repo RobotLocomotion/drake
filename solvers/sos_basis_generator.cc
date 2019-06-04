@@ -205,13 +205,8 @@ ExponentList EnumerateInitialSet(const ExponentList& exponents_of_p) {
 //  hyperplane separates 2*alpha from the Newton polytope of the polynomial p.
 //  Note that this function is actually deterministic since the seed for
 //  the random number generator is set to predetermined constants.
-//  It terminates once progress is stopped, as measured by the condition:
-//
-//     next_basis_size > current_basis_size * termination_threshold.
 void RemoveWithRandomSeparatingHyperplanes(const ExponentList& exponents_of_p,
-                                           const double termination_threshold,
-                                           ExponentList* basis) {
-  DRAKE_ASSERT(termination_threshold < 1 && termination_threshold > 0);
+                                                   ExponentList* basis) {
   // Declare this outside the main loop to avoid repeated dynamic memory
   // allocation.
   Eigen::MatrixXi dot_products;
@@ -228,10 +223,14 @@ void RemoveWithRandomSeparatingHyperplanes(const ExponentList& exponents_of_p,
     dot_products = (*basis) * H.normal_vectors.transpose();
     for (int i = 0; i < current_basis_size; i++) {
         bool keep_monomial = true;
-        if ((dot_products.row(i).array() > H.max_dot_product.array()).any() ||
-            (dot_products.row(i).array() < H.min_dot_product.array()).any()) {
-          keep_monomial = false;
+        for (int j = 0; j < dot_products.cols(); j++) {
+            if (dot_products(i, j) > H.max_dot_product(j) ||
+                dot_products(i, j) < H.min_dot_product(j) ) {
+               keep_monomial  = false;
+               break;
+            }
         }
+
         if (keep_monomial) {
             basis->row(next_basis_size++) = basis->row(i);
         }
@@ -241,7 +240,8 @@ void RemoveWithRandomSeparatingHyperplanes(const ExponentList& exponents_of_p,
 
     // Quit if the basis is now empty or if its size wasn't reduced
     // enough.
-    if (next_basis_size > current_basis_size * termination_threshold  ||
+    constexpr double kMinimumPercentReduction = .1;
+    if (next_basis_size > current_basis_size * (1.0-kMinimumPercentReduction) ||
         next_basis_size == 0) {
       break;
     }
@@ -251,12 +251,7 @@ void RemoveWithRandomSeparatingHyperplanes(const ExponentList& exponents_of_p,
 
 ExponentList ConstructMonomialBasis(const ExponentList& exponents_of_p) {
   auto basis_exponents = EnumerateInitialSet(exponents_of_p);
-
-  // This tolerance picked heuristically.
-  constexpr double termination_threshold = .9;
-  RemoveWithRandomSeparatingHyperplanes(exponents_of_p, termination_threshold,
-                                        &basis_exponents);
-
+  RemoveWithRandomSeparatingHyperplanes(exponents_of_p, &basis_exponents);
   RemoveDiagonallyInconsistentExponents(exponents_of_p, &basis_exponents);
   return basis_exponents;
 }
