@@ -177,47 +177,6 @@ GTEST_TEST(RenderLabelManagerTest, GetRenderLabel) {
       "All \\d+ render labels have been allocated");
 }
 
-GTEST_TEST(RenderLabelManagerTest, GetRenderLabelClasses) {
-  SourceId manager_id = SourceId::get_new_id();
-  SourceId source1 = SourceId::get_new_id();
-  SourceId source2 = SourceId::get_new_id();
-
-  RenderLabelManager manager(manager_id);
-  std::vector<RenderLabelClass> expected_classes;
-  auto add_label = [&expected_classes, &manager](const std::string& name,
-                                                 SourceId source_id) {
-    expected_classes.emplace_back(name, source_id,
-                                  manager.GetRenderLabel(source_id, name));
-  };
-  // Reserved labels.
-  expected_classes.emplace_back("empty", manager_id, RenderLabel::kEmpty);
-  expected_classes.emplace_back("unspecified", manager_id,
-                                RenderLabel::kUnspecified);
-  expected_classes.emplace_back("dont_care", manager_id,
-                                RenderLabel::kDontCare);
-  expected_classes.emplace_back("do_not_render", manager_id,
-                                RenderLabel::kDoNotRender);
-  add_label("common", source1);
-  add_label("common", source2);
-  add_label("unique1", source1);
-  add_label("unique2", source2);
-
-  std::vector<RenderLabelClass> classes = manager.GetRenderLabelClasses();
-  EXPECT_EQ(classes.size(), expected_classes.size());
-
-  for (const auto& label_class : classes) {
-    bool found = false;
-    for (const auto& expected_class : expected_classes) {
-      if (label_class == expected_class) {
-        found = true;
-        break;
-      }
-    }
-    EXPECT_TRUE(found) << "Reported label class not found in expected classes: "
-                       << label_class;
-  }
-}
-
 }  // namespace
 }  // namespace internal
 }  // namespace render
