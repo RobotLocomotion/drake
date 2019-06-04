@@ -4,9 +4,21 @@
 #include "pybind11/functional.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
-
+#ifndef __clang__
+// N.B. Without this, GCC 7.4.0 on Ubuntu complains about
+// `AutoDiffScalar(const AutoDiffScalar& other)` having uninitialized values.
+// TODO(eric.cousineau):  #11566 Figure out why?
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#pragma GCC diagnostic pop
+#else
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#endif  // __clang__
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
+#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -27,73 +39,24 @@ namespace pydrake {
 
 using symbolic::Expression;
 
-PYBIND11_MODULE(math, m) {
+namespace {
+template <typename T>
+void DoDefinitions(py::module m, T) {
+  py::tuple param = GetPyParam<T>();
+
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-
-  m.doc() = "Bindings for //math.";
-  constexpr auto& doc = pydrake_doc.drake.math;
-
-  py::module::import("pydrake.autodiffutils");
-  auto eigen_geometry_py = py::module::import("pydrake.common.eigen_geometry");
-  py::module::import("pydrake.symbolic");
-
   const char* doc_iso3_deprecation =
       "DO NOT USE!. We only offer this API for backwards compatibility with "
       "Isometry3 and it will be deprecated soon with the resolution of "
       "#9865. This will be removed on or around 2019-07-01.";
 
-  // TODO(eric.cousineau): At present, we only bind doubles.
-  // In the future, we will bind more scalar types, and enable scalar
-  // conversion.
-  using T = double;
-
-  m.def("wrap_to", &wrap_to<T, T>, py::arg("value"), py::arg("low"),
-      py::arg("high"), doc.wrap_to.doc);
-  m.def("ComputeBasisFromAxis",
-      [](int axis_index, const Vector3<T>& axis) {
-        return ComputeBasisFromAxis(axis_index, axis);
-      },
-      py::arg("axis_index"), py::arg("axis_W"), doc.ComputeBasisFromAxis.doc);
-  py::class_<BarycentricMesh<T>>(m, "BarycentricMesh", doc.BarycentricMesh.doc)
-      .def(py::init<BarycentricMesh<T>::MeshGrid>(),
-          doc.BarycentricMesh.ctor.doc)
-      .def("get_input_grid", &BarycentricMesh<T>::get_input_grid,
-          doc.BarycentricMesh.get_input_grid.doc)
-      .def("get_input_size", &BarycentricMesh<T>::get_input_size,
-          doc.BarycentricMesh.get_input_size.doc)
-      .def("get_num_mesh_points", &BarycentricMesh<T>::get_num_mesh_points,
-          doc.BarycentricMesh.get_num_mesh_points.doc)
-      .def("get_num_interpolants", &BarycentricMesh<T>::get_num_interpolants,
-          doc.BarycentricMesh.get_num_interpolants.doc)
-      .def("get_mesh_point",
-          overload_cast_explicit<VectorX<T>, int>(
-              &BarycentricMesh<T>::get_mesh_point),
-          doc.BarycentricMesh.get_mesh_point.doc_1args)
-      .def("get_all_mesh_points", &BarycentricMesh<T>::get_all_mesh_points,
-          doc.BarycentricMesh.get_all_mesh_points.doc)
-      .def("EvalBarycentricWeights",
-          [](const BarycentricMesh<T>* self,
-              const Eigen::Ref<const VectorX<T>>& input) {
-            const int n = self->get_num_interpolants();
-            Eigen::VectorXi indices(n);
-            VectorX<T> weights(n);
-            self->EvalBarycentricWeights(input, &indices, &weights);
-            return std::make_pair(indices, weights);
-          },
-          doc.BarycentricMesh.EvalBarycentricWeights.doc)
-      .def("Eval",
-          overload_cast_explicit<VectorX<T>,
-              const Eigen::Ref<const MatrixX<T>>&,
-              const Eigen::Ref<const VectorX<T>>&>(&BarycentricMesh<T>::Eval),
-          doc.BarycentricMesh.Eval.doc_2args)
-      .def("MeshValuesFrom", &BarycentricMesh<T>::MeshValuesFrom,
-          doc.BarycentricMesh.MeshValuesFrom.doc);
-
+  constexpr auto& doc = pydrake_doc.drake.math;
   {
     using Class = RigidTransform<T>;
     constexpr auto& cls_doc = doc.RigidTransform;
-    py::class_<Class> cls(m, "RigidTransform", cls_doc.doc);
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "RigidTransform", param, cls_doc.doc);
     cls  // BR
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const Class&>(), py::arg("other"))
@@ -157,20 +120,39 @@ PYBIND11_MODULE(math, m) {
     // .def("IsExactlyEqualTo", ...)
   }
 
-  // Install constructor to Isometry3 to permit `implicitly_convertible` to
-  // work.
-  // TODO(eric.cousineau): Add deprecation message.
-  // TODO(eric.cousineau): Consider more elegant implicit conversion process.
-  // See pybind/pybind11#1735
-  py::class_<Isometry3<T>>(eigen_geometry_py.attr("Isometry3"))
-      .def(py::init(
-          [](const RigidTransform<T>& X) { return X.GetAsIsometry3(); }));
-  py::implicitly_convertible<RigidTransform<T>, Isometry3<T>>();
+  {
+    using Class = RotationMatrix<T>;
+    constexpr auto& cls_doc = doc.RotationMatrix;
+
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "RotationMatrix", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init(), cls_doc.ctor.doc_0args)
+        .def(py::init<const Class&>(), py::arg("other"))
+        .def(py::init<const Matrix3<T>&>(), py::arg("R"),
+            cls_doc.ctor.doc_1args_R)
+        .def(py::init<Eigen::Quaternion<T>>(), py::arg("quaternion"),
+            cls_doc.ctor.doc_1args_quaternion)
+        .def(py::init<const RollPitchYaw<T>&>(), py::arg("rpy"),
+            cls_doc.ctor.doc_1args_rpy)
+        .def("matrix", &Class::matrix, cls_doc.matrix.doc)
+        .def("multiply",
+            [](const Class& self, const Class& other) { return self * other; },
+            cls_doc.operator_mul.doc_1args_other)
+        .def("inverse", &Class::inverse, cls_doc.inverse.doc)
+        .def("ToQuaternion",
+            overload_cast_explicit<Eigen::Quaternion<T>>(&Class::ToQuaternion),
+            cls_doc.ToQuaternion.doc_0args)
+        .def_static("Identity", &Class::Identity, cls_doc.Identity.doc);
+    cls.attr("__matmul__") = cls.attr("multiply");
+    DefCopyAndDeepCopy(&cls);
+  }
 
   {
     using Class = RollPitchYaw<T>;
     constexpr auto& cls_doc = doc.RollPitchYaw;
-    py::class_<Class> cls(m, "RollPitchYaw", cls_doc.doc);
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "RollPitchYaw", param, cls_doc.doc);
     cls  // BR
         .def(py::init<const Class&>(), py::arg("other"))
         .def(py::init<const Vector3<T>>(), py::arg("rpy"),
@@ -217,31 +199,76 @@ PYBIND11_MODULE(math, m) {
     DefCopyAndDeepCopy(&cls);
   }
 
-  {
-    using Class = RotationMatrix<T>;
-    constexpr auto& cls_doc = doc.RotationMatrix;
-    py::class_<Class> cls(m, "RotationMatrix", cls_doc.doc);
-    cls  // BR
-        .def(py::init(), cls_doc.ctor.doc_0args)
-        .def(py::init<const Class&>(), py::arg("other"))
-        .def(py::init<const Matrix3<T>&>(), py::arg("R"),
-            cls_doc.ctor.doc_1args_R)
-        .def(py::init<Eigen::Quaternion<T>>(), py::arg("quaternion"),
-            cls_doc.ctor.doc_1args_quaternion)
-        .def(py::init<const RollPitchYaw<T>&>(), py::arg("rpy"),
-            cls_doc.ctor.doc_1args_rpy)
-        .def("matrix", &Class::matrix, cls_doc.matrix.doc)
-        .def("multiply",
-            [](const Class& self, const Class& other) { return self * other; },
-            cls_doc.operator_mul.doc_1args_other)
-        .def("inverse", &Class::inverse, cls_doc.inverse.doc)
-        .def("ToQuaternion",
-            overload_cast_explicit<Eigen::Quaternion<T>>(&Class::ToQuaternion),
-            cls_doc.ToQuaternion.doc_0args)
-        .def_static("Identity", &Class::Identity, cls_doc.Identity.doc);
-    cls.attr("__matmul__") = cls.attr("multiply");
-    DefCopyAndDeepCopy(&cls);
-  }
+  auto eigen_geometry_py = py::module::import("pydrake.common.eigen_geometry");
+  // Install constructor to Isometry3 to permit `implicitly_convertible` to
+  // work.
+  // TODO(eric.cousineau): Add deprecation message.
+  // TODO(eric.cousineau): Consider more elegant implicit conversion process.
+  // See pybind/pybind11#1735
+  py::class_<Isometry3<T>>(eigen_geometry_py.attr("Isometry3"))
+      .def(py::init(
+          [](const RigidTransform<T>& X) { return X.GetAsIsometry3(); }));
+  py::implicitly_convertible<RigidTransform<T>, Isometry3<T>>();
+}
+
+}  // namespace
+
+PYBIND11_MODULE(math, m) {
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::math;
+
+  m.doc() = "Bindings for //math.";
+  constexpr auto& doc = pydrake_doc.drake.math;
+
+  py::module::import("pydrake.autodiffutils");
+  py::module::import("pydrake.symbolic");
+
+  // TODO(eric.cousineau): Bind remaining classes for all available scalar
+  // types.
+
+  type_visit([m](auto dummy) { DoDefinitions(m, dummy); }, CommonScalarPack{});
+  using T = double;
+  m.def("wrap_to", &wrap_to<T, T>, py::arg("value"), py::arg("low"),
+      py::arg("high"), doc.wrap_to.doc);
+  m.def("ComputeBasisFromAxis",
+      [](int axis_index, const Vector3<T>& axis) {
+        return ComputeBasisFromAxis(axis_index, axis);
+      },
+      py::arg("axis_index"), py::arg("axis_W"), doc.ComputeBasisFromAxis.doc);
+  py::class_<BarycentricMesh<T>>(m, "BarycentricMesh", doc.BarycentricMesh.doc)
+      .def(py::init<BarycentricMesh<T>::MeshGrid>(),
+          doc.BarycentricMesh.ctor.doc)
+      .def("get_input_grid", &BarycentricMesh<T>::get_input_grid,
+          doc.BarycentricMesh.get_input_grid.doc)
+      .def("get_input_size", &BarycentricMesh<T>::get_input_size,
+          doc.BarycentricMesh.get_input_size.doc)
+      .def("get_num_mesh_points", &BarycentricMesh<T>::get_num_mesh_points,
+          doc.BarycentricMesh.get_num_mesh_points.doc)
+      .def("get_num_interpolants", &BarycentricMesh<T>::get_num_interpolants,
+          doc.BarycentricMesh.get_num_interpolants.doc)
+      .def("get_mesh_point",
+          overload_cast_explicit<VectorX<T>, int>(
+              &BarycentricMesh<T>::get_mesh_point),
+          doc.BarycentricMesh.get_mesh_point.doc_1args)
+      .def("get_all_mesh_points", &BarycentricMesh<T>::get_all_mesh_points,
+          doc.BarycentricMesh.get_all_mesh_points.doc)
+      .def("EvalBarycentricWeights",
+          [](const BarycentricMesh<T>* self,
+              const Eigen::Ref<const VectorX<T>>& input) {
+            const int n = self->get_num_interpolants();
+            Eigen::VectorXi indices(n);
+            VectorX<T> weights(n);
+            self->EvalBarycentricWeights(input, &indices, &weights);
+            return std::make_pair(indices, weights);
+          },
+          doc.BarycentricMesh.EvalBarycentricWeights.doc)
+      .def("Eval",
+          overload_cast_explicit<VectorX<T>,
+              const Eigen::Ref<const MatrixX<T>>&,
+              const Eigen::Ref<const VectorX<T>>&>(&BarycentricMesh<T>::Eval),
+          doc.BarycentricMesh.Eval.doc_2args)
+      .def("MeshValuesFrom", &BarycentricMesh<T>::MeshValuesFrom,
+          doc.BarycentricMesh.MeshValuesFrom.doc);
 
   // Quadratic Form.
   m  // BR
