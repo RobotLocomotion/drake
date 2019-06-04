@@ -59,6 +59,15 @@ struct VectorStruct {
   std::vector<double> value;
 };
 
+struct MapStruct {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(value));
+  }
+
+  std::map<std::string, double> value;
+};
+
 struct OptionalStruct {
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -241,6 +250,17 @@ TEST_F(YamlReadArchiveTest, StdVector) {
   };
 
   test("[1.0, 2.0, 3.0]", {1.0, 2.0, 3.0});
+}
+
+TEST_F(YamlReadArchiveTest, StdMap) {
+  const auto test = [](const std::string& doc,
+                       const std::map<std::string, double>& expected) {
+    const auto& x = AcceptNoThrow<MapStruct>(Load(doc));
+    EXPECT_EQ(x.value, expected) << doc;
+  };
+
+  test("doc:\n  value:\n    foo: 0.0\n    bar: 1.0\n",
+       {{"foo", 0.0}, {"bar", 1.0}});
 }
 
 TEST_F(YamlReadArchiveTest, Optional) {
