@@ -797,6 +797,107 @@ void GeometryState<T>::AssignRole(SourceId source_id,
 }
 
 template <typename T>
+int GeometryState<T>::RemoveRole(SourceId source_id, FrameId frame_id,
+                                 Role role) {
+  int count = 0;
+  SourceId frame_source_id = source_id;
+  if (frame_id == InternalFrame::world_frame_id()) {
+    // Explicitly validate the source id because it won't happen in acquiring
+    // the world frame.
+    FindOrThrow(source_id, source_frame_id_map_, [source_id]() {
+      return get_missing_id_message(source_id);
+    });
+    frame_source_id = self_source_;
+  }
+  const FrameIdSet& set = GetMutableValueOrThrow(frame_source_id,
+                                                 &source_frame_id_map_);
+  FindOrThrow(frame_id, set, [frame_id, frame_source_id]() {
+    return "Referenced frame " + to_string(frame_id) + " for source " +
+        to_string(frame_source_id) +
+        ", but the frame doesn't belong to the source.";
+  });
+
+  // One can't "remove" the unassigned role.
+  if (role == Role::kUnassigned) return 0;
+
+  const InternalFrame& frame = frames_[frame_id];
+  for (GeometryId geometry_id : frame.child_geometries()) {
+    // If the frame is the world frame, then the specific geometry needs to be
+    // tested to see if it belongs to the source. Otherwise, by definition, the
+    // geometry must belong to the same source as the parent frame.
+    if (frame_id != InternalFrame::world_frame_id() ||
+        BelongsToSource(geometry_id, source_id)) {
+      count += RemoveRoleUnchecked(geometry_id, role);
+    }
+  }
+  return count;
+}
+
+template <typename T>
+int GeometryState<T>::RemoveRole(SourceId source_id, GeometryId geometry_id,
+                                 Role role) {
+  if (!BelongsToSource(geometry_id, source_id)) {
+    throw std::logic_error(
+        "Trying to remove the role " + to_string(role) + " from the geometry " +
+            to_string(geometry_id) + " from source " + to_string(source_id) +
+            ", but the geometry doesn't belong to that source.");
+  }
+
+  // One can't "remove" the unassigned role state.
+  if (role == Role::kUnassigned) return 0;
+
+  return RemoveRoleUnchecked(geometry_id, role);
+}
+
+template <typename T>
+int GeometryState<T>::RemoveFromRenderer(const std::string& renderer_name,
+                                         SourceId source_id, FrameId frame_id) {
+  int count = 0;
+  SourceId frame_source_id = source_id;
+  if (frame_id == InternalFrame::world_frame_id()) {
+    // Explicitly validate the source id because it won't happen in acquiring
+    // the world frame.
+    FindOrThrow(source_id, source_frame_id_map_, [source_id]() {
+      return get_missing_id_message(source_id);
+    });
+    frame_source_id = self_source_;
+  }
+  const FrameIdSet& set = GetMutableValueOrThrow(frame_source_id,
+                                                 &source_frame_id_map_);
+  FindOrThrow(frame_id, set, [frame_id, frame_source_id]() {
+    return "Referenced frame " + to_string(frame_id) + " for source " +
+        to_string(frame_source_id) +
+        ", but the frame doesn't belong to the source.";
+  });
+
+  const InternalFrame& frame = frames_[frame_id];
+  for (GeometryId geometry_id : frame.child_geometries()) {
+    // If the frame is the world frame, then the specific geometry needs to be
+    // tested to see if it belongs to the source. Otherwise, by definition, the
+    // geometry must belong to the same source as the parent frame.
+    if (frame_id != InternalFrame::world_frame_id() ||
+        BelongsToSource(geometry_id, source_id)) {
+      count += RemoveFromRendererUnchecked(renderer_name, geometry_id);
+    }
+  }
+  return count;
+}
+
+template <typename T>
+int GeometryState<T>::RemoveFromRenderer(const std::string& renderer_name,
+                                         SourceId source_id,
+                                         GeometryId geometry_id) {
+  if (!BelongsToSource(geometry_id, source_id)) {
+    throw std::logic_error(
+        "Trying to remove geometry " + to_string(geometry_id) + " from the "
+        "renderer '" + renderer_name + "', but the geometry doesn't belong to "
+        "given source " + to_string(source_id) + ".");
+  }
+
+  return RemoveFromRendererUnchecked(renderer_name, geometry_id);
+}
+
+template <typename T>
 void GeometryState<T>::ExcludeCollisionsWithin(const GeometrySet& set) {
   // There is no work to be done if:
   //   1. the set contains a single frame and no geometries -- geometries *on*
@@ -974,30 +1075,10 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
     frame.remove_child(geometry_id);
   }
 
-  if (geometry.has_proximity_role()) {
-    ProximityIndex proximity_index = geometry.proximity_index();
-    optional<GeometryIndex> moved_index = geometry_engine_->RemoveGeometry(
-        proximity_index, geometry.is_dynamic());
-    if (moved_index) {
-      // The geometry engine moved a geometry into the removed
-      // `proximity_index`. Update the state's knowledge of this.
-      GeometryId moved_id = geometry_index_to_id_map_[*moved_index];
-      if (geometry.is_dynamic()) {
-        const ProximityIndex moved_proximity_index =
-            geometries_[moved_id].proximity_index();
-        swap(X_WG_[proximity_index], X_WG_[moved_proximity_index]);
-        swap(dynamic_proximity_index_to_internal_map_[proximity_index],
-             dynamic_proximity_index_to_internal_map_[moved_proximity_index]);
-      }
-      geometries_[moved_id].set_proximity_index(proximity_index);
-    }
-    if (geometry.is_dynamic()) {
-      // We've removed a dynamic geometry -- it was either the last or it has
-      // been moved to be last -- so, we pop the map to reflect the removed
-      // state.
-      dynamic_proximity_index_to_internal_map_.pop_back();
-    }
-  }
+  RemoveProximityRole(geometry_id);
+  RemovePerceptionRole(geometry_id);
+  // NOTE: Removing illustration role is not necessary -- its only footprint
+  // is stored _in_ the InternalGeometry which is going to be deleted.
 
   if (caller == RemoveGeometryOrigin::kGeometry) {
     // Only the geometry that this function is *directly* invoked on needs to
@@ -1146,6 +1227,109 @@ void GeometryState<T>::AssignRoleInternal(SourceId source_id,
     ThrowIfNameExistsInRole(geometry->frame_id(), role, geometry->name());
   }
   geometry->SetRole(std::move(properties));
+}
+
+template <typename T>
+int GeometryState<T>::RemoveRoleUnchecked(GeometryId geometry_id, Role role) {
+  switch (role) {
+    case Role::kUnassigned:
+      // Can't remove unassigned; it's a no op.
+      return 0;
+    case Role::kProximity:
+      return RemoveProximityRole(geometry_id);
+    case Role::kIllustration:
+      return RemoveIllustrationRole(geometry_id);
+    case Role::kPerception:
+      return RemovePerceptionRole(geometry_id);
+  }
+  return 0;
+}
+
+template <typename T>
+int GeometryState<T>::RemoveFromRendererUnchecked(
+    const std::string& renderer_name, GeometryId id) {
+  internal::InternalGeometry* geometry = GetMutableGeometry(id);
+  optional<RenderIndex> render_index = geometry->render_index(renderer_name);
+  if (render_index) {
+    render::RenderEngine* engine = render_engines_[renderer_name].get_mutable();
+    geometry->ClearRenderIndex(renderer_name);
+    optional<GeometryIndex> moved_geometry_index =
+        engine->RemoveGeometry(*render_index);
+    if (moved_geometry_index) {
+      GeometryId moved_id =
+          geometry_index_to_id_map_[*moved_geometry_index];
+      InternalGeometry& moved_geometry = geometries_.at(moved_id);
+      optional<RenderIndex> old_render_index =
+          moved_geometry.render_index(renderer_name);
+      // This must be the case, or else the renderer would _not_ have been
+      // able to move this geometry.
+      DRAKE_DEMAND(old_render_index.has_value());
+      moved_geometry.ClearRenderIndex(renderer_name);
+      moved_geometry.set_render_index(renderer_name, *render_index);
+    }
+    return 1;
+  }
+  return 0;
+}
+
+template <typename T>
+int GeometryState<T>::RemoveProximityRole(GeometryId geometry_id) {
+  internal::InternalGeometry* geometry = GetMutableGeometry(geometry_id);
+  DRAKE_DEMAND(geometry != nullptr);
+  if (geometry->has_proximity_role()) {
+    ProximityIndex proximity_index = geometry->proximity_index();
+    optional<GeometryIndex> moved_index = geometry_engine_->RemoveGeometry(
+        proximity_index, geometry->is_dynamic());
+    if (moved_index) {
+      // The geometry engine moved a geometry into the removed
+      // `proximity_index`. Update the state's knowledge of this.
+      GeometryId moved_id = geometry_index_to_id_map_[*moved_index];
+      if (geometry->is_dynamic()) {
+        const ProximityIndex moved_proximity_index =
+            geometries_[moved_id].proximity_index();
+        swap(X_WG_[proximity_index], X_WG_[moved_proximity_index]);
+        swap(dynamic_proximity_index_to_internal_map_[proximity_index],
+             dynamic_proximity_index_to_internal_map_[moved_proximity_index]);
+      }
+      geometries_[moved_id].set_proximity_index(proximity_index);
+    }
+    if (geometry->is_dynamic()) {
+      // We've removed a dynamic geometry -- it was either the last or it has
+      // been moved to be last -- so, we pop the map to reflect the removed
+      // state.
+      dynamic_proximity_index_to_internal_map_.pop_back();
+    }
+    geometry->RemoveProximityRole();
+    return 1;
+  }
+  return 0;
+}
+
+template <typename T>
+int GeometryState<T>::RemoveIllustrationRole(GeometryId geometry_id) {
+  internal::InternalGeometry* geometry = GetMutableGeometry(geometry_id);
+  DRAKE_DEMAND(geometry != nullptr);
+  if (geometry->has_illustration_role()) {
+    geometry->RemoveIllustrationRole();
+    return 1;
+  }
+  return 0;
+}
+
+template <typename T>
+int GeometryState<T>::RemovePerceptionRole(GeometryId geometry_id) {
+  internal::InternalGeometry* geometry = GetMutableGeometry(geometry_id);
+  DRAKE_DEMAND(geometry != nullptr);
+  if (geometry->has_perception_role()) {
+    int count = 0;
+    for (auto& pair : render_engines_) {
+      const std::string& engine_name = pair.first;
+      count = RemoveFromRendererUnchecked(engine_name, geometry_id);
+    }
+    geometry->RemovePerceptionRole();
+    return count;
+  }
+  return 0;
 }
 
 template <typename T>
