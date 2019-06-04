@@ -144,12 +144,12 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   // expressed in the world frame, and then the translational component of this
   // velocity.
   const SpatialVelocity<T> V_BqAq_W = V_WAq - V_WBq;
-  const Vector3<T>& Qdot_NM_W = V_BqAq_W.translational();
+  const Vector3<T>& v_NM_W = V_BqAq_W.translational();
 
   // Get the velocity along the normal to the contact surface. Note that a
   // positive value indicates that bodies are separating at Q while a negative
   // value indicates that bodies are approaching at Q.
-  const T Qdot_nhat_NM = Qdot_NM_W.dot(nhat_MN_W);
+  const T vn_NM_W = v_NM_W.dot(nhat_MN_W);
 
   // Get the damping value (c) from the compliant model dissipation (α).
   // Equation (16) from [Hunt 1975], but neglecting the 3/2 term used for
@@ -158,26 +158,26 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
 
   // Determine the normal pressure at the point.
   using std::max;
-  const T normal_pressure = max(e_mn - Qdot_nhat_NM * c, T(0));
+  const T normal_pressure = max(e_mn - vn_NM_W * c, T(0));
 
   // Get the slip velocity at the point.
-  const Vector3<T> Qdot_NM_tan = Qdot_NM_W - nhat_MN_W * Qdot_nhat_NM;
+  const Vector3<T> vt_NM_W = v_NM_W - nhat_MN_W * vn_NM_W;
 
   // Determine the traction using a soft-norm.
   using std::atan;
   using std::sqrt;
-  const T squared_Qdot_tan = Qdot_NM_tan.squaredNorm();
-  const T norm_Qdot_tan = sqrt(squared_Qdot_tan);
-  const T soft_norm_Qdot_tan = sqrt(squared_Qdot_tan +
+  const T squared_vt = vt_NM_W.squaredNorm();
+  const T norm_vt = sqrt(squared_vt);
+  const T soft_norm_vt = sqrt(squared_vt +
       vslip_regularizer_ * vslip_regularizer_);
 
   // Get the regularized direction of slip.
-  const Vector3<T> Qdot_hat_tan_NM = Qdot_NM_tan / soft_norm_Qdot_tan;
+  const Vector3<T> vt_hat_NM_W = vt_NM_W / soft_norm_vt;
 
   // Compute the traction.
   const T frictional_scalar = mu_coulomb * normal_pressure *
-      2.0 / M_PI * atan(norm_Qdot_tan / T(vslip_regularizer_));
-  return nhat_MN_W * normal_pressure - Qdot_hat_tan_NM * frictional_scalar;
+      2.0 / M_PI * atan(norm_vt / T(vslip_regularizer_));
+  return nhat_MN_W * normal_pressure - vt_hat_NM_W * frictional_scalar;
 }
 
 }  // namespace multibody
