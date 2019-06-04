@@ -51,8 +51,9 @@ PYBIND11_MODULE(manipulation_station, m) {
               IiwaCollisionModel collision_model =
                   IiwaCollisionModel::kNoCollision) {
             WarnDeprecated(
-                "SetupDefaultStation is deprecated.  Please use "
-                "SetupManipulationClassStation instead.");
+                "SetupDefaultStation is deprecated and will be removed on or"
+                "around 2019-09-01.  Please use SetupManipulationClassStation "
+                "instead.");
             self->SetupManipulationClassStation(collision_model);
           })
       .def("SetupClutterClearingStation",
