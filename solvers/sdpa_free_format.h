@@ -70,9 +70,9 @@ struct BlockInX {
 //@{
 /**
  * Refer to @ref map_decision_variable_to_sdpa
- * When the decision variable either (or both) finite lower or upper bound (with
- * the two bounds not equal), we need to record the sign of the coefficient
- * before y.
+ * When the decision variable has either (or both) finite lower or upper bound
+ * (with the two bounds not equal), we need to record the sign of the
+ * coefficient before y.
  */
 enum class Sign {
   kPositive,
@@ -105,10 +105,14 @@ struct DecisionVariableInSdpaX {
 
 /**
  * SDPA format with free variables.
- * max tr(C * X) + dᵀs
- * s.t tr(Aᵢ*X) + bᵢᵀs = gᵢ
- *     X ≽ 0
- *     s is free.
+ *
+ *     max tr(C * X) + dᵀs
+ *     s.t tr(Aᵢ*X) + bᵢᵀs = gᵢ
+ *         X ≽ 0
+ *         s is free.
+ * The SDPA format (without free variables) is defined in
+ * http://plato.asu.edu/ftp/sdpa_format.txt. It formulates the standard SDP in
+ * both primal and dual forms.
  */
 class SdpaFreeFormat {
  public:
@@ -122,6 +126,13 @@ class SdpaFreeFormat {
 
   using FreeVariableIndex = TypeSafeIndex<class FreeVariableTag>;
 
+  /**
+   * Depending on the bounds and whether the variable appears in a PSD cone, a
+   * MathematicalProgram decision variable can be either an entry in X, a free
+   * variable, or a double constant in SDPA free format.
+   * We use std::nullptr_t to indicate that this variable hasn't been registered
+   * into SDPA free format yet.
+   */
   const std::vector<variant<DecisionVariableInSdpaX, FreeVariableIndex, double,
                             std::nullptr_t>>&
   prog_var_in_sdpa() const {
@@ -136,6 +147,7 @@ class SdpaFreeFormat {
     return B_triplets_;
   }
 
+  /** The right-hand side of the linear equality constraint. */
   const Eigen::VectorXd& g() const { return g_; }
 
   int num_X_rows() const { return num_X_rows_; }
@@ -158,6 +170,11 @@ class SdpaFreeFormat {
 
   const Eigen::SparseMatrix<double>& d() const { return d_; }
 
+  /** The SDPA format doesn't include the constant term in the cost, but
+   * MathematicalProgram does. We store the constant cost term here.
+   * Notice that in MathematicalProgram, the objective is to minimize the cost,
+   * while in SDPA free format, the objective is to maximize the reward.
+   */
   double constant_min_cost_term() const { return constant_min_cost_term_; }
 
  private:
@@ -268,21 +285,12 @@ class SdpaFreeFormat {
   // bᵢ is the i-th column of B. B_triplets records the nonzero entries in B.
   std::vector<Eigen::Triplet<double>> B_triplets_;
 
-  /**
-   * Depending on the bounds and whether the variable appears in a PSD cone, a
-   * MathematicalProgram decision variable can be either an entry in X, a free
-   * variable, or a double constant in SDPA free format.
-   * We use std::nullptr_t to indicate that this variable hasn't been registered
-   * into SDPA free format yet.
-   */
   std::vector<variant<DecisionVariableInSdpaX, FreeVariableIndex, double,
                       std::nullptr_t>>
       prog_var_in_sdpa_;
 
   int num_X_rows_{0};
   int num_free_variables_{0};
-  // The SDPA format doesn't include the constant term in the cost, but
-  // MathematicalProgram does. We store the constant cost term here.
   double constant_min_cost_term_{0.0};
 
   std::vector<Eigen::SparseMatrix<double>> A_;
