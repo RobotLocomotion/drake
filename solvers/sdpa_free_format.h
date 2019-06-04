@@ -176,22 +176,22 @@ class SdpaFreeFormat {
 
   // Some entries in X correspond to the same decision variables. We need to add
   // the equality constraint on these entries.
-  void AddEqualityConstraintOnXentriesForSameDecisionVariable(
+  void AddEqualityConstraintOnXEntriesForSameDecisionVariable(
       const std::unordered_map<symbolic::Variable::Id, std::vector<EntryInX>>&
           entries_in_X_for_same_decision_variable);
 
   // Adds a linear equality constraint
   // coeff_prog_vars' * prog_vars + coeff_X_entries' * X_entries +
-  // coeff_free_vars' * s = rhs.
+  // coeff_free_vars' * free_vars = rhs.
   // @param coeff_prog_vars The coefficients for program decision variables that
   // appear in X.
-  // @param prog_vars_indices  The vectors of the MathematicalProgram decision
-  // variables indices in X that show up in this constraint.
+  // @param prog_vars_indices  The indices of the MathematicalProgram decision
+  // variables in X that appear in this constraint.
   // @param coeff_X_entries The coefficients for @p X_entries.
   // @param X_entries The entries in X that show up in the linear equality
   // constraint, X_entries and prog_vars_indices should not overlap.
   // @param coeff_free_vars The coefficients of free variables.
-  // @param s_indices The indices of the free variables show up in this
+  // @param free_vars_indices The indices of the free variables show up in this
   // constraint, these free variables are not the decision variables in the
   // MathematicalProgram.
   // @param rhs The right-hand side of the linear equality constraint.
@@ -201,13 +201,13 @@ class SdpaFreeFormat {
       const std::vector<double>& coeff_X_entries,
       const std::vector<EntryInX>& X_entries,
       const std::vector<double>& coeff_free_vars,
-      const std::vector<FreeVariableIndex>& s_indices, double rhs);
+      const std::vector<FreeVariableIndex>& free_vars_indices, double rhs);
 
   void RegisterMathematicalProgramDecisionVariables(
       const MathematicalProgram& prog);
 
   // Registers the program decision variable with index `variable_index` into
-  // SDPA. The lower and upper bounds of the variable is also given.
+  // SDPA and adds lower and upper bounds on that variable.
   // This function should only be called within
   // RegisterMathematicalProgramDecisionVariables().
   // We might need to add more slack variables into the block diagonal matrix X,
