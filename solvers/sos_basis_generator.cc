@@ -106,11 +106,9 @@ void Intersection(const ExponentList& A, ExponentList* B) {
  * Automatic Control, 2009." After execution, all exponents of inconsistent
  * monomials are removed from exponents_of_basis.
 */
-int RemoveDiagonallyInconsistentExponents(const ExponentList& exponents_of_p,
+void RemoveDiagonallyInconsistentExponents(const ExponentList& exponents_of_p,
                                            ExponentList* exponents_of_basis) {
-  int iterations = 0;
   while (1) {
-    iterations++;
     int num_exponents = exponents_of_basis->rows();
 
     ExponentList valid_squares =
@@ -124,7 +122,7 @@ int RemoveDiagonallyInconsistentExponents(const ExponentList& exponents_of_p,
       break;
     }
   }
-  return iterations;
+  return;
 }
 
 struct Hyperplanes {
@@ -207,17 +205,19 @@ ExponentList EnumerateInitialSet(const ExponentList& exponents_of_p) {
 //  hyperplane separates 2*alpha from the Newton polytope of the polynomial p.
 //  Note that this function is actually deterministic since the seed for
 //  the random number generator is set to predetermined constants.
-int RemoveWithRandomSeparatingHyperplanes(const ExponentList& exponents_of_p,
-                                                   ExponentList* basis) {
+//  It terminates once progress is stopped, as measured by the condition:
+//
+//     next_basis_size > current_basis_size * termination_threshold.
+void RemoveWithRandomSeparatingHyperplanes(const ExponentList& exponents_of_p,
+                                           const double termination_threshold,
+                                           ExponentList* basis) {
+  DRAKE_ASSERT(termination_threshold < 1 && termination_threshold > 0);
   // Declare this outside the main loop to avoid repeated dynamic memory
   // allocation.
   Eigen::MatrixXi dot_products;
-  int iterations = 0;
   int random_seed = 0;
 
   while (1) {
-    iterations++;
-
     int next_basis_size = 0;
     int current_basis_size = basis->rows();
 
@@ -228,14 +228,10 @@ int RemoveWithRandomSeparatingHyperplanes(const ExponentList& exponents_of_p,
     dot_products = (*basis) * H.normal_vectors.transpose();
     for (int i = 0; i < current_basis_size; i++) {
         bool keep_monomial = true;
-        for (int j = 0; j < dot_products.cols(); j++) {
-            if (dot_products(i, j) > H.max_dot_product(j) ||
-                dot_products(i, j) < H.min_dot_product(j) ) {
-               keep_monomial  = false;
-               break;
-            }
+        if ((dot_products.row(i).array() > H.max_dot_product.array()).any() ||
+            (dot_products.row(i).array() < H.min_dot_product.array()).any()) {
+          keep_monomial = false;
         }
-
         if (keep_monomial) {
             basis->row(next_basis_size++) = basis->row(i);
         }
@@ -245,18 +241,22 @@ int RemoveWithRandomSeparatingHyperplanes(const ExponentList& exponents_of_p,
 
     // Quit if the basis is now empty or if its size wasn't reduced
     // enough.
-    constexpr double kMinimumPercentReduction = .1;
-    if (next_basis_size > current_basis_size * (1.0-kMinimumPercentReduction) ||
+    if (next_basis_size > current_basis_size * termination_threshold  ||
         next_basis_size == 0) {
       break;
     }
   }
-  return iterations;
+  return;
 }
 
 ExponentList ConstructMonomialBasis(const ExponentList& exponents_of_p) {
   auto basis_exponents = EnumerateInitialSet(exponents_of_p);
-  RemoveWithRandomSeparatingHyperplanes(exponents_of_p, &basis_exponents);
+
+  // This tolerance picked heuristically.
+  constexpr double termination_threshold = .9;
+  RemoveWithRandomSeparatingHyperplanes(exponents_of_p, termination_threshold,
+                                        &basis_exponents);
+
   RemoveDiagonallyInconsistentExponents(exponents_of_p, &basis_exponents);
   return basis_exponents;
 }
