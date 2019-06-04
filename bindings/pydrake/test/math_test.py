@@ -6,7 +6,7 @@ from pydrake.math import (BarycentricMesh, wrap_to)
 from pydrake.common.eigen_geometry import Isometry3_, Quaternion_, AngleAxis_
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
-import pydrake.common.test_utilities.numpy_compare as npc
+import pydrake.common.test_utilities.numpy_compare as numpy_compare
 
 import copy
 import math
@@ -113,10 +113,10 @@ class TestMath(unittest.TestCase):
         AngleAxis = AngleAxis_[T]
 
         def check_equality(X_actual, X_expected_matrix):
-            # TODO(eric.cousineau): Use `IsNearlyEqualTo`.
             if T == float:
                 self.assertIsInstance(X_actual, RigidTransform)
-            npc.assert_float_equal(X_actual.GetAsMatrix4(), X_expected_matrix)
+            numpy_compare.assert_float_equal(
+                    X_actual.GetAsMatrix4(), X_expected_matrix)
 
         # - Constructors.
         X_I = np.eye(4)
@@ -146,8 +146,8 @@ class TestMath(unittest.TestCase):
         if T == float:
             self.assertIsInstance(X.translation(), np.ndarray)
         X.set_translation(p=np.zeros(3))
-        npc.assert_float_equal(X.GetAsMatrix4(), X_I)
-        npc.assert_float_equal(X.GetAsMatrix34(), X_I[:3])
+        numpy_compare.assert_float_equal(X.GetAsMatrix4(), X_I)
+        numpy_compare.assert_float_equal(X.GetAsMatrix34(), X_I[:3])
         self.assertIsInstance(X.GetAsIsometry3(), Isometry3)
         check_equality(X.inverse(), X_I)
         self.assertIsInstance(
@@ -178,26 +178,30 @@ class TestMath(unittest.TestCase):
         RollPitchYaw = mut.RollPitchYaw_[T]
 
         R = RotationMatrix()
-        npc.assert_float_equal(RotationMatrix(other=R).matrix(), np.eye(3))
-        npc.assert_float_equal(R.matrix(), np.eye(3))
-        npc.assert_float_equal(copy.copy(R).matrix(), np.eye(3))
-        npc.assert_float_equal(RotationMatrix.Identity().matrix(), np.eye(3))
+        numpy_compare.assert_float_equal(
+                RotationMatrix(other=R).matrix(), np.eye(3))
+        numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
+        numpy_compare.assert_float_equal(copy.copy(R).matrix(), np.eye(3))
+        numpy_compare.assert_float_equal(
+                RotationMatrix.Identity().matrix(), np.eye(3))
         R = RotationMatrix(R=np.eye(3))
-        npc.assert_float_equal(R.matrix(), np.eye(3))
+        numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
         R = RotationMatrix(quaternion=Quaternion.Identity())
-        npc.assert_float_equal(R.matrix(), np.eye(3))
+        numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
         R = RotationMatrix(rpy=RollPitchYaw(rpy=[0, 0, 0]))
-        npc.assert_float_equal(R.matrix(), np.eye(3))
+        numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
         # - Nontrivial quaternion.
         q = Quaternion(wxyz=[0.5, 0.5, 0.5, 0.5])
         R = RotationMatrix(quaternion=q)
         q_R = R.ToQuaternion()
-        npc.assert_float_equal(q.wxyz(), npc.to_float(q_R.wxyz()))
+        numpy_compare.assert_float_equal(
+                q.wxyz(), numpy_compare.to_float(q_R.wxyz()))
         # - Inverse.
         R_I = R.inverse().multiply(R)
-        npc.assert_float_equal(R_I.matrix(), np.eye(3))
+        numpy_compare.assert_float_equal(R_I.matrix(), np.eye(3))
         if six.PY3:
-            npc.assert_float_equal(eval("R.inverse() @ R").matrix(), np.eye(3))
+            numpy_compare.assert_float_equal(
+                    eval("R.inverse() @ R").matrix(), np.eye(3))
 
     def test_roll_pitch_yaw(self):
         self.check_types(self.check_roll_pitch_yaw)
@@ -209,40 +213,41 @@ class TestMath(unittest.TestCase):
         Quaternion = Quaternion_[T]
 
         rpy = RollPitchYaw(rpy=[0, 0, 0])
-        npc.assert_float_equal(RollPitchYaw(other=rpy).vector(), [0., 0., 0.])
-        npc.assert_float_equal(rpy.vector(), [0., 0., 0.])
+        numpy_compare.assert_float_equal(
+                RollPitchYaw(other=rpy).vector(), [0., 0., 0.])
+        numpy_compare.assert_float_equal(rpy.vector(), [0., 0., 0.])
         rpy = RollPitchYaw(roll=0, pitch=0, yaw=0)
-        npc.assert_float_equal([
+        numpy_compare.assert_float_equal([
             rpy.roll_angle(), rpy.pitch_angle(), rpy.yaw_angle()],
             [0., 0., 0.])
         rpy = RollPitchYaw(R=RotationMatrix())
-        npc.assert_float_equal(rpy.vector(), [0., 0., 0.])
+        numpy_compare.assert_float_equal(rpy.vector(), [0., 0., 0.])
         rpy = RollPitchYaw(matrix=np.eye(3))
-        npc.assert_float_equal(rpy.vector(), [0., 0., 0.])
+        numpy_compare.assert_float_equal(rpy.vector(), [0., 0., 0.])
         q_I = Quaternion()
         rpy_q_I = RollPitchYaw(quaternion=q_I)
-        npc.assert_float_equal(rpy_q_I.vector(), [0., 0., 0.])
+        numpy_compare.assert_float_equal(rpy_q_I.vector(), [0., 0., 0.])
         # - Additional properties.
-        npc.assert_float_equal(
-                rpy.ToQuaternion().wxyz(), npc.to_float(q_I.wxyz()))
+        numpy_compare.assert_float_equal(
+                rpy.ToQuaternion().wxyz(), numpy_compare.to_float(q_I.wxyz()))
         R = rpy.ToRotationMatrix().matrix()
-        npc.assert_float_equal(R, np.eye(3))
+        numpy_compare.assert_float_equal(R, np.eye(3))
         # - Converting changes in orientation
-        npc.assert_float_equal(rpy.CalcRotationMatrixDt(
+        numpy_compare.assert_float_equal(rpy.CalcRotationMatrixDt(
             rpyDt=[0, 0, 0]), np.zeros((3, 3)))
-        npc.assert_float_equal(
+        numpy_compare.assert_float_equal(
             rpy.CalcAngularVelocityInParentFromRpyDt(rpyDt=[0, 0, 0]),
             [0., 0., 0.])
-        npc.assert_float_equal(
+        numpy_compare.assert_float_equal(
             rpy.CalcAngularVelocityInChildFromRpyDt(rpyDt=[0, 0, 0]),
             [0., 0., 0.])
-        npc.assert_float_equal(
+        numpy_compare.assert_float_equal(
             rpy.CalcRpyDtFromAngularVelocityInParent(w_AD_A=[0, 0, 0]),
             [0., 0., 0.])
-        npc.assert_float_equal(
+        numpy_compare.assert_float_equal(
             rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(
                 rpyDt=[0, 0, 0], alpha_AD_A=[0, 0, 0]), [0., 0., 0.])
-        npc.assert_float_equal(rpy.CalcRpyDDtFromAngularAccelInChild(
+        numpy_compare.assert_float_equal(rpy.CalcRpyDDtFromAngularAccelInChild(
             rpyDt=[0, 0, 0], alpha_AD_D=[0, 0, 0]), [0., 0., 0.])
 
     def test_orthonormal_basis(self):

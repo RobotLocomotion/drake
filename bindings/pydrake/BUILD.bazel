@@ -145,7 +145,6 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
-        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/systems:framework_py",
         "//bindings/pydrake/systems:lcm_py",
     ],
@@ -183,9 +182,7 @@ drake_pybind_library(
         ":module_py",
         "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake:symbolic_py",
-        "//bindings/pydrake/common:cpp_template_py",
         "//bindings/pydrake/common:eigen_geometry_py",
-        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
     py_srcs = ["_math_extra.py"],
 )
@@ -397,6 +394,7 @@ drake_py_unittest(
     name = "math_test",
     deps = [
         ":math_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
 
