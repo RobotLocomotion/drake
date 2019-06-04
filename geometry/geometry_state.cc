@@ -576,6 +576,11 @@ GeometryId GeometryState<T>::RegisterGeometry(
                std::move(*geometry->mutable_proximity_properties()));
   }
 
+  if (geometry->perception_properties()) {
+    AssignRole(source_id, geometry_id,
+               std::move(*geometry->mutable_perception_properties()));
+  }
+
   return geometry_id;
 }
 
@@ -814,7 +819,7 @@ int GeometryState<T>::RemoveRole(SourceId source_id, FrameId frame_id,
     // geometry must belong to the same source as the parent frame.
     if (frame_id != InternalFrame::world_frame_id() ||
         BelongsToSource(geometry_id, source_id)) {
-      count += RemoveRoleUnchecked(geometry_id, role);
+      if (RemoveRoleUnchecked(geometry_id, role)) ++count;
     }
   }
   return count;
@@ -833,7 +838,7 @@ int GeometryState<T>::RemoveRole(SourceId source_id, GeometryId geometry_id,
   // One can't "remove" the unassigned role state.
   if (role == Role::kUnassigned) return 0;
 
-  return RemoveRoleUnchecked(geometry_id, role);
+  return RemoveRoleUnchecked(geometry_id, role) ? 1 : 0;
 }
 
 template <typename T>
@@ -849,7 +854,7 @@ int GeometryState<T>::RemoveFromRenderer(const std::string& renderer_name,
     // geometry must belong to the same source as the parent frame.
     if (frame_id != InternalFrame::world_frame_id() ||
         BelongsToSource(geometry_id, source_id)) {
-      count += RemoveFromRendererUnchecked(renderer_name, geometry_id);
+      if (RemoveFromRendererUnchecked(renderer_name, geometry_id)) ++count;
     }
   }
   return count;
@@ -866,7 +871,7 @@ int GeometryState<T>::RemoveFromRenderer(const std::string& renderer_name,
         "given source " + to_string(source_id) + ".");
   }
 
-  return RemoveFromRendererUnchecked(renderer_name, geometry_id);
+  return RemoveFromRendererUnchecked(renderer_name, geometry_id) ? 1 : 0;
 }
 
 template <typename T>
@@ -1201,11 +1206,11 @@ void GeometryState<T>::AssignRoleInternal(SourceId source_id,
 }
 
 template <typename T>
-int GeometryState<T>::RemoveRoleUnchecked(GeometryId geometry_id, Role role) {
+bool GeometryState<T>::RemoveRoleUnchecked(GeometryId geometry_id, Role role) {
   switch (role) {
     case Role::kUnassigned:
       // Can't remove unassigned; it's a no op.
-      return 0;
+      return false;
     case Role::kProximity:
       return RemoveProximityRole(geometry_id);
     case Role::kIllustration:
@@ -1213,17 +1218,17 @@ int GeometryState<T>::RemoveRoleUnchecked(GeometryId geometry_id, Role role) {
     case Role::kPerception:
       return RemovePerceptionRole(geometry_id);
   }
-  return 0;
+  return false;
 }
 
 template <typename T>
-int GeometryState<T>::RemoveFromRendererUnchecked(
+bool GeometryState<T>::RemoveFromRendererUnchecked(
     const std::string& renderer_name, GeometryId id) {
   internal::InternalGeometry* geometry = GetMutableGeometry(id);
   optional<RenderIndex> render_index = geometry->render_index(renderer_name);
 
   // This geometry is not registered with the named render engine.
-  if (!render_index) return 0;
+  if (!render_index) return false;
 
   // It is registered with the render engine; do the work to remove it.
   render::RenderEngine* engine = render_engines_[renderer_name].get_mutable();
@@ -1249,16 +1254,16 @@ int GeometryState<T>::RemoveFromRendererUnchecked(
     moved_geometry.ClearRenderIndex(renderer_name);
     moved_geometry.set_render_index(renderer_name, *render_index);
   }
-  return 1;
+  return true;
 }
 
 template <typename T>
-int GeometryState<T>::RemoveProximityRole(GeometryId geometry_id) {
+bool GeometryState<T>::RemoveProximityRole(GeometryId geometry_id) {
   internal::InternalGeometry* geometry = GetMutableGeometry(geometry_id);
   DRAKE_DEMAND(geometry != nullptr);
 
   // Geometry is not registered with the proximity engine.
-  if (!geometry->has_proximity_role()) return 0;
+  if (!geometry->has_proximity_role()) return false;
 
   // Geometry *is* registered; do the work to remove it.
   ProximityIndex proximity_index = geometry->proximity_index();
@@ -1292,38 +1297,37 @@ int GeometryState<T>::RemoveProximityRole(GeometryId geometry_id) {
     dynamic_proximity_index_to_internal_map_.pop_back();
   }
   geometry->RemoveProximityRole();
-  return 1;
+  return true;
 }
 
 template <typename T>
-int GeometryState<T>::RemoveIllustrationRole(GeometryId geometry_id) {
+bool GeometryState<T>::RemoveIllustrationRole(GeometryId geometry_id) {
   internal::InternalGeometry* geometry = GetMutableGeometry(geometry_id);
   DRAKE_DEMAND(geometry != nullptr);
 
   // Geometry has no illustration role.
-  if (!geometry->has_illustration_role()) return 0;
+  if (!geometry->has_illustration_role()) return false;
 
   geometry->RemoveIllustrationRole();
-  return 1;
+  return true;
 }
 
 template <typename T>
-int GeometryState<T>::RemovePerceptionRole(GeometryId geometry_id) {
+bool GeometryState<T>::RemovePerceptionRole(GeometryId geometry_id) {
   internal::InternalGeometry* geometry = GetMutableGeometry(geometry_id);
   DRAKE_DEMAND(geometry != nullptr);
 
   // Geometry has no perception role.
-  if (!geometry->has_perception_role()) return 0;
+  if (!geometry->has_perception_role()) return false;
 
   // Geometry has a perception role; do the work to remove it from whichever
   // render engines it happens to present in.
-  int count = 0;
   for (auto& name_engine_pair : render_engines_) {
     const std::string& engine_name = name_engine_pair.first;
-    count = RemoveFromRendererUnchecked(engine_name, geometry_id);
+    RemoveFromRendererUnchecked(engine_name, geometry_id);
   }
   geometry->RemovePerceptionRole();
-  return count;
+  return true;
 }
 
 template <typename T>

@@ -48,15 +48,6 @@ RenderLabel RenderLabelManager::GetRenderLabel(SourceId source_id,
   }
 }
 
-vector<RenderLabelClass> RenderLabelManager::GetRenderLabelClasses() const {
-  vector<RenderLabelClass> classes;
-  for (auto it = name_label_map_.begin(); it != name_label_map_.end(); ++it) {
-    const RenderLabelClass& label_class = it->second;
-    classes.push_back(label_class);
-  }
-  return classes;
-}
-
 }  // namespace internal
 }  // namespace render
 }  // namespace geometry
