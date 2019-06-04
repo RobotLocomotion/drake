@@ -134,6 +134,11 @@ class GeometryStateTester {
     return state_->GetRenderEngineOrThrow(name);
   }
 
+  const unordered_map<string, copyable_unique_ptr<render::RenderEngine>>&
+  render_engines() const {
+    return state_->render_engines_;
+  }
+
  private:
   GeometryState<T>* state_;
 };
@@ -329,15 +334,17 @@ class GeometryStateTestBase {
 
   // The initialization to be done prior to each test; the derived test class
   // should invoke this in its SetUp() method.
-  void TestInit() {
+  void TestInit(bool add_renderer = true) {
     frame_ = make_unique<GeometryFrame>("ref_frame");
     instance_pose_.translation() << 10, 20, 30;
     instance_ = make_unique<GeometryInstance>(
         instance_pose_, make_unique<Sphere>(1.0), "instance");
     gs_tester_.set_state(&geometry_state_);
-    auto render_engine = make_unique<DummyRenderEngine>();
-    render_engine_ = render_engine.get();
-    geometry_state_.AddRenderer(kDummyRenderName, move(render_engine));
+    if (add_renderer) {
+      auto render_engine = make_unique<DummyRenderEngine>();
+      render_engine_ = render_engine.get();
+      geometry_state_.AddRenderer(kDummyRenderName, move(render_engine));
+    }
   }
 
   // Utility method for adding a source to the state.
@@ -559,7 +566,11 @@ class GeometryStateTestBase {
   // in the single source tree.
   void AssignPerceptionToSingleSourceTree() {
     ASSERT_TRUE(source_id_.is_valid());
-    PerceptionProperties properties = render_engine_->accepting_properties();
+    // If no render engine has been added, we need to get the accepting
+    // properties from a temporary.
+    PerceptionProperties properties =
+        render_engine_ ? render_engine_->accepting_properties()
+                       : DummyRenderEngine().accepting_properties();
     properties.AddProperty("phong", "diffuse",
                            Vector4<double>{0.8, 0.8, 0.8, 1.0});
     properties.AddProperty("label", "id", RenderLabel::kDontCare);
@@ -576,6 +587,9 @@ class GeometryStateTestBase {
   }
 };
 
+// Class for performing most tests on GeometryState. It does *not* populate the
+// GeometryState at all, but relies on each test to do so as appropriate
+// (via the SetUpSingleSourceTree() method).
 class GeometryStateTest : public GeometryStateTestBase, public ::testing::Test {
  protected:
   void SetUp() override {
@@ -2530,6 +2544,10 @@ TEST_F(GeometryStateTest, InstanceRoleAssignment) {
         instance_pose_, make_unique<Sphere>(1.0), name);
   };
 
+  PerceptionProperties perception_props =
+      render_engine_->accepting_properties();
+  perception_props.AddProperty("label", "id", RenderLabel(10));
+
   // Case: no properties assigned leaves geometry with no roles.
   {
     const GeometryId g_id = geometry_state_.RegisterGeometry(
@@ -2537,6 +2555,7 @@ TEST_F(GeometryStateTest, InstanceRoleAssignment) {
     const InternalGeometry* geometry = gs_tester_.GetGeometry(g_id);
     EXPECT_FALSE(geometry->has_proximity_role());
     EXPECT_FALSE(geometry->has_illustration_role());
+    EXPECT_FALSE(geometry->has_perception_role());
   }
 
   // Case: Only proximity properties provided.
@@ -2549,6 +2568,7 @@ TEST_F(GeometryStateTest, InstanceRoleAssignment) {
     const InternalGeometry* geometry = gs_tester_.GetGeometry(g_id);
     EXPECT_TRUE(geometry->has_proximity_role());
     EXPECT_FALSE(geometry->has_illustration_role());
+    EXPECT_FALSE(geometry->has_perception_role());
   }
 
   // Case: Only illustration properties provided.
@@ -2561,19 +2581,35 @@ TEST_F(GeometryStateTest, InstanceRoleAssignment) {
     const InternalGeometry* geometry = gs_tester_.GetGeometry(g_id);
     EXPECT_FALSE(geometry->has_proximity_role());
     EXPECT_TRUE(geometry->has_illustration_role());
+    EXPECT_FALSE(geometry->has_perception_role());
+  }
+
+  // Case: Only perception properties provided.
+  {
+    auto instance = make_instance("instance4");
+    instance->set_perception_properties(perception_props);
+    const GeometryId g_id =
+        geometry_state_.RegisterGeometry(s_id, f_id, move(instance));
+
+    const InternalGeometry* geometry = gs_tester_.GetGeometry(g_id);
+    EXPECT_FALSE(geometry->has_proximity_role());
+    EXPECT_FALSE(geometry->has_illustration_role());
+    EXPECT_TRUE(geometry->has_perception_role());
   }
 
   // Case: All properties provided.
   {
-    auto instance = make_instance("instance4");
+    auto instance = make_instance("instance5");
     instance->set_proximity_properties(ProximityProperties());
     instance->set_illustration_properties(IllustrationProperties());
+    instance->set_perception_properties(perception_props);
     const GeometryId g_id =
         geometry_state_.RegisterGeometry(s_id, f_id, move(instance));
 
     const InternalGeometry* geometry = gs_tester_.GetGeometry(g_id);
     EXPECT_TRUE(geometry->has_proximity_role());
     EXPECT_TRUE(geometry->has_illustration_role());
+    EXPECT_TRUE(geometry->has_perception_role());
   }
 }
 
@@ -3164,6 +3200,10 @@ class RemoveRoleTests : public GeometryStateTestBase,
  protected:
   void SetUp() {
     TestInit();
+    // Add an *additional* renderer just to confirm that removing the perception
+    // role from a geometry/frame still counts geometries removed and not
+    // (geometry, renderer) pairs.
+    geometry_state_.AddRenderer("other", make_unique<DummyRenderEngine>());
     SetUpSingleSourceTree(Assign::kPerception | Assign::kProximity |
                           Assign::kIllustration);
   }
@@ -3323,6 +3363,32 @@ TEST_F(RemoveRoleTests, RemoveRoleExceptions) {
       geometry_state_.RemoveRole(source_id_2, geometries_[0],
                                  Role::kUnassigned),
       std::logic_error, ".*the geometry doesn't belong to that source.");
+}
+
+// Special version of the class that does *not* default to having a renderer.
+class GeometryStateNoRendererTest : public GeometryStateTestBase,
+                                    public ::testing::Test {
+ protected:
+  void SetUp() override {
+    TestInit(false /* no renderer */);
+    SetUpSingleSourceTree(Assign::kPerception);
+  }
+};
+
+// Tests the special case of assigning/removing perception roles even when there
+// is no renderer.
+TEST_F(GeometryStateNoRendererTest, PerceptionRoleWithoutRenderer) {
+  const InternalGeometry& geometry = *gs_tester_.GetGeometry(geometries_[0]);
+  ASSERT_EQ(gs_tester_.render_engines().size(), 0u);
+  EXPECT_TRUE(geometry.has_perception_role());
+
+  EXPECT_EQ(
+      geometry_state_.RemoveRole(source_id_, geometries_[0], Role::kPerception),
+      1);
+  EXPECT_FALSE(geometry.has_perception_role());
+  EXPECT_EQ(
+      geometry_state_.RemoveRole(source_id_, geometries_[0], Role::kPerception),
+      0);
 }
 
 }  // namespace

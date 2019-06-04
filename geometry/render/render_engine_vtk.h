@@ -103,7 +103,7 @@ class RenderEngineVtk final : public RenderEngine,
       const RenderEngineVtkParams& parameters = RenderEngineVtkParams());
 
   /** @see RenderEngine::UpdateViewpoint().  */
-  void UpdateViewpoint(const math::RigidTransformd& X_WR) const final;
+  void UpdateViewpoint(const math::RigidTransformd& X_WR) final;
 
   /** @see RenderEngine::RenderColorImage().  */
   void RenderColorImage(

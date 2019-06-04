@@ -576,6 +576,11 @@ GeometryId GeometryState<T>::RegisterGeometry(
                std::move(*geometry->mutable_proximity_properties()));
   }
 
+  if (geometry->perception_properties()) {
+    AssignRole(source_id, geometry_id,
+               std::move(*geometry->mutable_perception_properties()));
+  }
+
   return geometry_id;
 }
 
@@ -1317,13 +1322,12 @@ int GeometryState<T>::RemovePerceptionRole(GeometryId geometry_id) {
 
   // Geometry has a perception role; do the work to remove it from whichever
   // render engines it happens to present in.
-  int count = 0;
   for (auto& name_engine_pair : render_engines_) {
     const std::string& engine_name = name_engine_pair.first;
-    count = RemoveFromRendererUnchecked(engine_name, geometry_id);
+    RemoveFromRendererUnchecked(engine_name, geometry_id);
   }
   geometry->RemovePerceptionRole();
-  return count;
+  return 1;
 }
 
 template <typename T>

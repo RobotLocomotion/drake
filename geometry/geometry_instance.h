@@ -118,7 +118,12 @@ class GeometryInstance {
 
   /** Sets the illustration properties for the given instance.  */
   void set_illustration_properties(IllustrationProperties properties) {
-    illustration_props_ = std::move(properties);
+    illustration_properties_ = std::move(properties);
+  }
+
+  /** Sets the perception properties for the given instance.  */
+  void set_perception_properties(PerceptionProperties properties) {
+    perception_properties_ = std::move(properties);
   }
 
   /** Returns a pointer to the geometry's mutable proximity properties (if they
@@ -138,14 +143,28 @@ class GeometryInstance {
   /** Returns a pointer to the geometry's mutable illustration properties (if
    they are defined). Nullptr otherwise.  */
   IllustrationProperties* mutable_illustration_properties() {
-    if (illustration_props_) return &*illustration_props_;
+    if (illustration_properties_) return &*illustration_properties_;
     return nullptr;
   }
 
   /** Returns a pointer to the geometry's const illustration properties (if
    they are defined). Nullptr otherwise.  */
   const IllustrationProperties* illustration_properties() const {
-    if (illustration_props_) return &*illustration_props_;
+    if (illustration_properties_) return &*illustration_properties_;
+    return nullptr;
+  }
+
+  /** Returns a pointer to the geometry's mutable perception properties (if
+   they are defined). Nullptr otherwise.  */
+  PerceptionProperties* mutable_perception_properties() {
+    if (perception_properties_) return &*perception_properties_;
+    return nullptr;
+  }
+
+  /** Returns a pointer to the geometry's const perception properties (if
+   they are defined). Nullptr otherwise.  */
+  const PerceptionProperties* perception_properties() const {
+    if (perception_properties_) return &*perception_properties_;
     return nullptr;
   }
 
@@ -165,8 +184,9 @@ class GeometryInstance {
   std::string name_;
 
   // Optional properties.
-  optional<ProximityProperties> proximity_properties_{nullopt};
-  optional<IllustrationProperties> illustration_props_{nullopt};
+  optional<ProximityProperties> proximity_properties_{};
+  optional<IllustrationProperties> illustration_properties_{};
+  optional<PerceptionProperties> perception_properties_{};
 };
 
 }  // namespace geometry

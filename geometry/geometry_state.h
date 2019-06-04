@@ -727,6 +727,9 @@ class GeometryState {
   // the proximity engine.
   // NOTE: There is no equivalent for anchored geometries because anchored
   // geometries do not need updating.
+  // TODO(SeanCurtis-TRI): Move this into the proximity engine. Its presence
+  // here is an anachronism. Better yet, this will die when we make GeometryId
+  // the only identifier that moves between GeometryState and the engines.
   std::vector<GeometryIndex> dynamic_proximity_index_to_internal_map_;
 
   // ---------------------------------------------------------------------
