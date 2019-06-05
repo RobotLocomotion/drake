@@ -147,8 +147,8 @@ void StaticFrictionConeComplementarityNonlinearConstraint::DoEval(
     const Eigen::Ref<const VectorX<symbolic::Variable>>&,
     VectorX<symbolic::Expression>*) const {
   throw std::runtime_error(
-      "StaticEquilibriumConstraint: does not support Eval with symbolic "
-      "variable and expressions.");
+      "StaticFrictionConeComplementarityNonlinearConstraint: does not support "
+      "Eval with symbolic variable and expressions.");
 }
 }  // namespace internal
 

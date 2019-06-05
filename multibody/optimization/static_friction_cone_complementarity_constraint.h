@@ -94,12 +94,13 @@ class StaticFrictionConeComplementarityNonlinearConstraint
  * friction force expressed in the world frame.
  *
  * Mathematically, we add the following constraints to the optimization program
- * f_Wᵀ * ((μ² + 1)* n_W * n_Wᵀ - I) * f_W >= 0                    (1)
- * n_Wᵀ * f_W = α                                                  (2)
- * sdf(q) = β                                                      (3)
- * 0 <= α * β <= ε                                                 (4)
- * α >= 0                                                          (5)
- * β >= 0                                                          (6)
+ *
+ *     f_Wᵀ * ((μ² + 1)* n_W * n_Wᵀ - I) * f_W ≥ 0                    (1)
+ *     n_Wᵀ * f_W = α                                                 (2)
+ *     sdf(q) = β                                                     (3)
+ *     0 ≤ α * β ≤ ε                                                  (4)
+ *     α ≥ 0                                                          (5)
+ *     β ≥ 0                                                          (6)
  * the slack variables α and β are added to the optimization program as well.
  *
  * @param contact_wrench_evaluator The evaluator to compute the
@@ -107,7 +108,7 @@ class StaticFrictionConeComplementarityNonlinearConstraint
  * @param complementarity_tolerance ε in the documentation above.
  * @param q_vars The decision variable for the generalized configuration q.
  * @param lambda_vars The decision variable to parameterize the contact wrench.
- * @param[in/out] prog The optimization program to which the constraint is
+ * @param[in,out] prog The optimization program to which the constraint is
  * added.
  * @return binding The binding containing the nonlinear constraints (1)-(4).
  * @pre Both `q_vars` and `lambda_vars` have been added to `prog` before calling
