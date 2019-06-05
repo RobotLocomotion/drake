@@ -226,7 +226,6 @@ drake_cc_library(
         ":hash",
         ":polynomial",
         ":random",
-        "//math:matrix_util",
     ],
 )
 
@@ -569,6 +568,7 @@ drake_cc_googletest(
         "test/autodiffxd_addition_test.cc",
         "test/autodiffxd_asin_test.cc",
         "test/autodiffxd_atan2_test.cc",
+        "test/autodiffxd_atan_test.cc",
         "test/autodiffxd_cos_test.cc",
         "test/autodiffxd_cosh_test.cc",
         "test/autodiffxd_division_test.cc",

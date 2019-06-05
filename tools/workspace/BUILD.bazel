@@ -16,6 +16,18 @@ py_library(
 )
 
 drake_py_binary(
+    name = "mirror_to_s3",
+    srcs = [
+        "metadata.py",
+        "mirror_to_s3.py",
+    ],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    visibility = ["//visibility:private"],
+    deps = [":module_py"],
+)
+
+drake_py_binary(
     name = "new_release",
     srcs = [
         "metadata.py",
@@ -37,6 +49,7 @@ drake_py_binary(
 _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "bullet",
     "ccd",
+    "csdp",
     "drake_visualizer",
     "eigen",
     "fcl",

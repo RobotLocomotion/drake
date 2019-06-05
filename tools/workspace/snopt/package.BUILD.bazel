@@ -4,6 +4,18 @@ load(":fortran.bzl", "fortran_library")
 
 licenses(["by_exception_only"])  # SNOPT
 
+config_setting(
+    name = "darwin",
+    values = {"cpu": "darwin"},
+    visibility = ["//visibility:private"],
+)
+
+config_setting(
+    name = "linux",
+    values = {"cpu": "k8"},
+    visibility = ["//visibility:private"],
+)
+
 # In some versions of SNOPT, this header provides the function declarations to
 # control SNOPT's logging.  In other versions, those declarations instead
 # appear directly in cexamples/snopt.h and this file is absent.  We'll sense
@@ -20,7 +32,11 @@ cc_library(
     name = "snopt_c",
     srcs = glob(
         ["csrc/*.c"],
-        exclude = ["csrc/dummy.c"],
+        exclude = [
+            "csrc/dummy.c",
+            # Use a system build of BLAS.
+            "csrc/snblas.c",
+        ],
     ),
     hdrs = [
         "cexamples/snopt.h",
@@ -34,13 +50,17 @@ cc_library(
         "SNOPT_HAS_SNFILEWRAPPER",
     ] if _MAYBE_SNFILEWRAPPER else [],
     includes = ["."],
-    linkopts = [
-        "-lm",
-    ],
+    linkopts = select({
+        ":darwin": ["-framework Accelerate"],
+        "@//conditions:default": [],
+    }),
     # Link statically per note (1) above.
     linkstatic = 1,
     visibility = ["//visibility:public"],
-    deps = [":libf2c"],
+    deps = [":libf2c"] + select({
+        ":linux": ["@blas"],
+        "@//conditions:default": [],
+    }),
     # Always link the entirety of SNOPT.
     alwayslink = 1,
 )
@@ -177,12 +197,20 @@ fortran_library(
             # Not listed in snopt/src/Submakefile.
             "src/sn27lu77.f",
             "src/sn27lu90.f",
-            # TODO(jwnimmer-tri) Possibly we should exclude snblas.f here as
-            # well, in order to use a more custom (system) build of BLAS.
+            # Use a system build of BLAS.
+            "src/snblas.f",
         ],
     ),
+    linkopts = select({
+        ":darwin": ["-framework Accelerate"],
+        "@//conditions:default": [],
+    }),
     # Link statically per note (1) above.
     linkstatic = 1,
+    deps = select({
+        ":linux": ["@blas"],
+        "@//conditions:default": [],
+    }),
     # Always link the entirety of SNOPT.
     alwayslink = 1,
 )

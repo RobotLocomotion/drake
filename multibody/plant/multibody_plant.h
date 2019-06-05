@@ -6,6 +6,7 @@
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -28,7 +29,6 @@
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/rigid_body.h"
-#include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/multibody/tree/weld_joint.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -162,6 +162,12 @@ namespace multibody {
 ///
 /// Refer to the documentation provided in each of the methods above for further
 /// details.
+///
+/// @section mbp_modeling_contact Modeling contact
+///
+/// Please refer to @ref drake_contacts "Contact Modeling in Drake" for details
+/// on the available approximations, setup, and considerations for a multibody
+/// simulation with frictional contact.
 ///
 /// @section finalize_stage Finalize() stage
 ///
@@ -357,6 +363,33 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetMutablePositionsAndVelocities(context);
   }
 
+  /// @name Working with free bodies
+  ///
+  /// A %MultibodyPlant user adds sets of Body and Joint objects to `this` plant
+  /// to build a physical representation of a mechanical model.
+  /// At Finalize(), %MultibodyPlant builds a mathematical representation of
+  /// such system, consisting of a tree representation. In this
+  /// representation each body is assigned a Mobilizer, which grants a certain
+  /// number of degrees of freedom in accordance to the physical specification.
+  /// In this regard, the modeling representation can be seen as a forest of
+  /// tree structures each of which contains a single body at the root of the
+  /// tree. This root body, if connected to the world with a floating mobilizer
+  /// (that is, a mobilizer which grants 6-dofs), is labeled as a "floating
+  /// body".
+  /// A user can request the set of floating bodies with a call to
+  /// GetFloatingBaseBodies(). Alternatively, a user can query whether a Body is
+  /// floating or not with Body::is_floating().
+  /// For many applications, a user might need to work with indexes in the
+  /// multibody state vector. For such applications,
+  /// Body::floating_positions_start() and Body::floating_velocities_start()
+  /// offer the additional level of introspection needed.
+  /// @{
+
+  /// Returns the set of body indexes corresponding to the "floating bodies" in
+  /// the model, in no particular order.
+  /// @throws std::exception if called pre-finalize, see Finalize().
+  std::unordered_set<BodyIndex> GetFloatingBaseBodies() const;
+
   /// Gets the pose of a given `body` in the world frame W.
   /// @note In general getting the pose of a body in the model would involve
   /// solving the kinematics. This method allows us to simplify this process
@@ -454,6 +487,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
   void SetFreeBodyRandomRotationDistributionToUniform(const Body<T>& body);
+
+  /// @}
 
   /// Sets all generalized positions and velocities from the given vector
   /// [q; v].
@@ -900,10 +935,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] args
   ///   Zero or more parameters provided to the constructor of the new force
   ///   element. It must be the case that
-  ///   `JointType<T>(args)` is a valid constructor.
-  /// @tparam ForceElementType The type of the ForceElement to add.
-  /// This method can only be called once for elements of type
-  /// UniformGravityFieldElement. That is, gravity can only be specified once.
+  ///   `ForceElementType<T>(args)` is a valid constructor.
+  /// @tparam ForceElementType The type of the ForceElement to add.  As there
+  /// is always a UniformGravityFieldElement present (accessible through
+  /// gravity_field()), an exception will be thrown if this function is called
+  /// to add another UniformGravityFieldElement.  As there was not always a
+  /// default gravity field element, for compatibility purposes calling this
+  /// function to add a UniformGravityFieldElement which has the same value as
+  /// gravity_field() is not an error.
   /// @returns A constant reference to the new ForceElement just added, of type
   ///   `ForceElementType<T>` specialized on the scalar type T of `this`
   ///   %MultibodyPlant. It will remain valid for the lifetime of `this`
@@ -925,25 +964,28 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
 #ifndef DRAKE_DOXYGEN_CXX
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // SFINAE overload for ForceElementType = UniformGravityFieldElement.
   // This allow us to keep track of the gravity field parameters.
   // TODO(amcastro-tri): This specialization pattern leads to difficult to
   // mantain indirection layers between MBP/MBT and can cause difficult to find
   // bugs, see #11051. It is bad practice and should removed, see #11080.
   template <template <typename Scalar> class ForceElementType, typename... Args>
+  // TODO(sammy-tri): When removing this SFINAE overload along with its
+  // deprecation message, remove the "backwards compatibility" notes from
+  // MultibodyPlant::AddForceElement().
+  DRAKE_DEPRECATED("2019-09-01",
+                   "Use mutable_gravity_field().set_gravity_vector() instead.")
   typename std::enable_if<
       std::is_same<ForceElementType<T>, UniformGravityFieldElement<T>>::value,
       const ForceElementType<T>&>::type
   AddForceElement(Args&&... args) {
     DRAKE_MBP_THROW_IF_FINALIZED();
-    DRAKE_DEMAND(!gravity_field_.has_value());
-    // We save the force element so that we can grant users access to it for
-    // gravity field specific queries.
-    gravity_field_ = &this->mutable_tree()
-                          .template AddForceElement<UniformGravityFieldElement>(
-                              std::forward<Args>(args)...);
-    return *gravity_field_.value();
+    return this->mutable_tree().template AddForceElement<ForceElementType>(
+        std::forward<Args>(args)...);
   }
+#pragma GCC diagnostic pop
 #endif
 
   /// Creates and adds a JointActuator model for an actuator acting on a given
@@ -1516,12 +1558,67 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if `p_FP_list` does not have 3 rows.
   // TODO(amcastro-tri): Rework this method as per issue #10155.
+  DRAKE_DEPRECATED("2019-09-01",
+                   "Use CalcBiasForJacobianTranslationalVelocity().")
   VectorX<T> CalcBiasForPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_FP_list) const {
-    return internal_tree().CalcBiasForPointsGeometricJacobianExpressedInWorld(
-        context, frame_F, p_FP_list);
+    return internal_tree().CalcBiasForJacobianTranslationalVelocity(
+        context, JacobianWrtVariable::kV, frame_F, p_FP_list,
+        world_frame(), world_frame());
+  }
+
+  /// For a point Fp that is regarded as a point of (fixed/welded to) a frame F,
+  /// computes the bias term `b_AFp` associated with `a_AFp` (Fp's translational
+  /// acceleration in a frame A) with respect to "speeds" 𝑠, where 𝑠 is either
+  /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of generalized positions) or
+  /// v ≜ [v₁ ... vₖ]ᵀ (generalized velocities).
+  /// That is, the translational acceleration of point `Fp` can be computed as:
+  /// <pre>
+  ///   a_AFp = Js_v_AFp(q)⋅ṡ + b_AFp(q, v)
+  /// </pre>
+  /// where `b_AFp = J̇s_v_AFp(q, s)⋅s`.
+  ///
+  /// This method computes `b_AFp` for each such point Fp in the `p_FP_list`.
+  /// The `p_FP_list` is a list of position vectors from Fo (Frame F's origin)
+  /// to Fp, expressed in frame F.
+  ///
+  /// @see CalcJacobianTranslationalVelocity() to compute `Js_v_AFp`, the
+  /// Jacobian with respect to s of Fp's velocity in A.
+  ///
+  /// @param[in] context The state of the multibody system, which includes the
+  /// generalized positions q and generalized velocities v.
+  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `Js_v_ABp` is
+  /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
+  /// positions) or with respect to 𝑠 = v (generalized velocities).
+  /// @param[in] frame_F The frame on which point Fp is fixed/welded.
+  /// @param[in] p_FP_list `3 x n` matrix of position vectors `p_FoFp_F` from
+  /// Fo (frame F's origin) to each such point Fp, expressed in frame F.
+  /// @param[in] frame_A The frame that measures `v_AFp` (Fp's velocity in A).
+  /// Currently, an exception is thrown if frame_A is not the World frame.
+  /// @param[in] frame_E The frame in which `v_AFp` is expressed on input and
+  /// the frame in which the bias term `b_AFp` is expressed on output.
+  /// Currently, an exception is thrown if frame_E is not the World frame.
+  /// @returns b_AFp `3 x n` matrix of bias terms for each of the associated n
+  /// points Fp, expressed in frame_E.  These bias terms are functions of the
+  /// generalized positions q and the generalized velocities v and depend on
+  /// whether `with_respect_to` is kQDot or kV.
+  /// @throws std::exception if `p_FP_list` does not have 3 rows.
+  /// @throws std::exception if `with_respect_to` is not JacobianWrtVariable::kV
+  /// @throws std::exception if frame_A or frame_E are not the world frame.
+  // TODO(Mitiguy) Allow `with_respect_to` to be JacobianWrtVariable::kQDot
+  // and/or allow frame_A and frame_E to be non-world frames.
+  VectorX<T> CalcBiasForJacobianTranslationalVelocity(
+      const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_F,
+      const Eigen::Ref<const MatrixX<T>>& p_FP_list,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E) const {
+    return internal_tree().CalcBiasForJacobianTranslationalVelocity(
+        context, with_respect_to, frame_F, p_FP_list, frame_A, frame_E);
   }
 
   // TODO(eric.cousineau): Reduce duplicate text between overloads.
@@ -1735,13 +1832,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `J_ABp` is nullptr or if it is not of size
   ///   `6 x nv`.
   // TODO(amcastro-tri): Rework this method as per issue #10155.
+  DRAKE_DEPRECATED("2019-09-01", "Use CalcJacobianSpatialVelocity().")
   void CalcRelativeFrameGeometricJacobian(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
       const Frame<T>& frame_A, const Frame<T>& frame_E,
       EigenPtr<MatrixX<T>> Jv_ABp_E) const {
-    return internal_tree().CalcRelativeFrameGeometricJacobian(
-        context, frame_B, p_BP, frame_A, frame_E, Jv_ABp_E);
+    return CalcJacobianSpatialVelocity(context, JacobianWrtVariable::kV,
+        frame_B, p_BP, frame_A, frame_E, Jv_ABp_E);
   }
 
   /// Given a frame `Fp` defined by shifting a frame F from its origin `Fo` to
@@ -2743,6 +2841,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().get_frame(frame_index);
   }
 
+  /// An accessor to the current gravity field.
+  const UniformGravityFieldElement<T>& gravity_field() const {
+    return internal_tree().gravity_field();
+  }
+
+  /// A mutable accessor to the current gravity field.
+  UniformGravityFieldElement<T>& mutable_gravity_field() {
+    return this->mutable_tree().mutable_gravity_field();
+  }
+
   /// Returns the name of a `model_instance`.
   /// @throws std::logic_error when `model_instance` does not correspond to a
   /// model in this model.
@@ -2877,6 +2985,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// integration or to set the time step for fixed time step integration.
   /// As a guidance, typical fixed time step integrators will become unstable
   /// for time steps larger than about a tenth of this time scale.
+  ///
+  /// For further details on contact modeling in Drake, please refer to the
+  /// section @ref drake_contacts "Contact Modeling in Drake" of our
+  /// documentation.
   /// @{
 
   /// Sets the penetration allowance used to estimate the coefficients in the
@@ -2920,13 +3032,32 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// simpler model immediately tractable with standard numerical methods for
   /// integration of ODE's, it often leads to stiff dynamics that require
   /// an explicit integrator to take very small time steps. It is therefore
-  /// recommended to use error controlled integrators when using this model.
-  /// See @ref tangent_force for a detailed discussion of the Stribeck model.
+  /// recommended to use error controlled integrators when using this model or
+  /// the discrete time stepping (see @ref time_advancement_strategy
+  /// "Choice of Time Advancement Strategy").
+  /// See @ref stribeck_approximation for a detailed discussion of the Stribeck
+  /// model.
   /// @{
 
   /// Sets the stiction tolerance `v_stiction` for the Stribeck model, where
   /// `v_stiction` must be specified in m/s (meters per second.)
   /// `v_stiction` defaults to a value of 1 millimeter per second.
+  /// In selecting a value for `v_stiction`, you must ask yourself the question,
+  /// "When two objects are ostensibly in stiction, how much slip am I willing
+  /// to allow?" There are two opposing design issues in picking a value for
+  /// vₛ. On the one hand, small values of vₛ make the problem numerically
+  /// stiff during stiction, potentially increasing the integration cost. On the
+  /// other hand, it should be picked to be appropriate for the scale of the
+  /// problem. For example, a car simulation could allow a "large" value for vₛ
+  /// of 1 cm/s (1×10⁻² m/s), but reasonable stiction for grasping a 10 cm box
+  /// might require limiting residual slip to 1×10⁻³ m/s or less. Ultimately,
+  /// picking the largest viable value will allow your simulation to run
+  /// faster and more robustly.
+  /// Note that `v_stiction` is the slip velocity that we'd have when we are at
+  /// edge of the friction cone. For cases when the friction force is well
+  /// within the friction cone the slip velocity will always be smaller than
+  /// this value.
+  /// See also @ref stribeck_approximation.
   /// @throws std::exception if `v_stiction` is non-positive.
   void set_stiction_tolerance(double v_stiction = 0.001) {
     stribeck_model_.set_stiction_tolerance(v_stiction);
@@ -2988,7 +3119,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // #9865. Right now we offer them for backwards compatibility.
 
   DRAKE_DEPRECATED(
-      "2019-06-15",
+      "2019-07-01",
       "This Isometry3 overload will be removed pending the resolution of "
       "#9865. Use the RigidTransform overload instead.")
   void SetFreeBodyPose(systems::Context<T>* context, const Body<T>& body,
@@ -2997,7 +3128,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   DRAKE_DEPRECATED(
-      "2019-06-15",
+      "2019-07-01",
       "This Isometry3 overload will be removed pending the resolution of "
       "#9865. Use the RigidTransform overload instead.")
   void SetFreeBodyPose(const systems::Context<T>& context,
@@ -3009,7 +3140,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Allows having a non-empty X_PF isometry and a nullopt X_BM.
   template <template <typename> class JointType, typename... Args>
   DRAKE_DEPRECATED(
-      "2019-06-15",
+      "2019-07-01",
       "This Isometry3 overload will be removed pending the resolution of "
       "#9865. Use the RigidTransform overload instead.")
   const JointType<T>& AddJoint(const std::string& name, const Body<T>& parent,
@@ -3032,7 +3163,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Allows having a nullopt X_PF and a non-empty X_BM isometry.
   template <template <typename> class JointType, typename... Args>
   DRAKE_DEPRECATED(
-      "2019-06-15",
+      "2019-07-01",
       "This Isometry3 overload will be removed pending the resolution of "
       "#9865. Use the RigidTransform overload instead.")
   const JointType<T>& AddJoint(const std::string& name, const Body<T>& parent,
@@ -3084,7 +3215,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   DRAKE_DEPRECATED(
-      "2019-06-15",
+      "2019-07-01",
       "This Isometry3 overload will be removed pending the resolution of "
       "#9865. Use the RigidTransform overload instead.")
   geometry::GeometryId RegisterVisualGeometry(
@@ -3097,7 +3228,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   DRAKE_DEPRECATED(
-      "2019-06-15",
+      "2019-07-01",
       "This Isometry3 overload will be removed pending the resolution of "
       "#9865. Use the RigidTransform overload instead.")
   geometry::GeometryId RegisterVisualGeometry(
@@ -3110,7 +3241,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   DRAKE_DEPRECATED(
-      "2019-06-15",
+      "2019-07-01",
       "This Isometry3 overload will be removed pending the resolution of "
       "#9865. Use the RigidTransform overload instead.")
   geometry::GeometryId RegisterVisualGeometry(
@@ -3122,7 +3253,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   DRAKE_DEPRECATED(
-      "2019-06-15",
+      "2019-07-01",
       "This Isometry3 overload will be removed pending the resolution of "
       "#9865. Use the RigidTransform overload instead.")
   geometry::GeometryId RegisterCollisionGeometry(
@@ -3139,6 +3270,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   using internal::MultibodyTreeSystem<T>::is_discrete;
   using internal::MultibodyTreeSystem<T>::EvalPositionKinematics;
   using internal::MultibodyTreeSystem<T>::EvalVelocityKinematics;
+
+  BodyIndex GetBodyIndexFromRegisteredGeometryId(
+      geometry::GeometryId geometry_id) const {
+    return geometry_id_to_body_index_.at(geometry_id);
+  }
 
  private:
   using internal::MultibodyTreeSystem<T>::internal_tree;
@@ -3461,22 +3597,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // The tangential velocities Jacobian Jt(q) is defined such that:
   //   vt = Jt(q) v
   // where v ∈ ℝⁿᵛ is the vector of generalized velocities, Jt(q) is a matrix
-  // of size 2⋅nc×nv and vt is a vector of size 2⋅nc.
-  // This method defines a contact frame C with orientation R_WC in the world
-  // frame W such that Cz_W = nhat_BA_W, the normal direction in the point
-  // pair (PenetrationAsPointPair::nhat_BA_W).
-  // With this definition, the first two columns of R_WC correspond to
-  // orthogonal versors Cx = that1 and Cy = that2 which span the tangent plane
-  // to nhat_BA_W.
-  // vt is defined such that its i-th and (i+1)-th entries correspond to
-  // relative velocity of the i-th point pair in these two orthogonal
-  // directions. That is:
+  // of size 2⋅nc×nv and vt is a vector of size 2⋅nc. vt is defined such that
+  // its i-th and (i+1)-th entries correspond to the relative velocity of the
+  // i-th point pair in two orthogonal directions Cx and Cy that span the plane
+  // defined by the i-th contact normal. That is:
   //   vt(2 * i)     = vx_AB_C = Cx ⋅ v_AB
   //   vt(2 * i + 1) = vy_AB_C = Cy ⋅ v_AB
   //
-  // If the optional output argument R_WC_set is provided with a valid non
-  // nullptr vector, on output the i-th entry of R_WC_set will contain the
-  // orientation R_WC of the i-th point pair in the set.
+  // If the optional argument R_WC_set is non-null, on output the i-th entry of
+  // R_WC_set will contain the orientation R_WC (with columns Cx, Cy, Cz) in the
+  // world using the mean of the pair of witnesses for point_pairs_set[i] as the
+  // contact point.
   void CalcNormalAndTangentContactJacobians(
       const systems::Context<T>& context,
       const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs_set,
@@ -3537,9 +3668,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                               joint.parent_body().index(),
                               joint.child_body().index());
   }
-
-  // The gravity field force element.
-  optional<const UniformGravityFieldElement<T>*> gravity_field_;
 
   // Geometry source identifier for this system to interact with geometry
   // system. It is made optional for plants that do not register geometry

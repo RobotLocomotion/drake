@@ -28,6 +28,7 @@ drake_cc_package_library(
         ":cost",
         ":create_constraint",
         ":create_cost",
+        ":csdp_solver",
         ":decision_variable",
         ":dreal_solver",
         ":equality_constrained_qp_solver",
@@ -43,6 +44,7 @@ drake_cc_package_library(
         ":mathematical_program",
         ":mathematical_program_lite",
         ":mathematical_program_result",
+        ":minimum_value_constraint",
         ":mixed_integer_optimization_util",
         ":mixed_integer_rotation_constraint",
         ":moby_lcp_solver",
@@ -149,6 +151,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "minimum_value_constraint",
+    srcs = ["minimum_value_constraint.cc"],
+    hdrs = ["minimum_value_constraint.h"],
+    deps = [
+        ":constraint",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_library(
     name = "cost",
     srcs = ["cost.cc"],
     hdrs = ["cost.h"],
@@ -171,6 +183,7 @@ drake_cc_library(
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
+        "//math:matrix_util",
     ],
 )
 
@@ -916,6 +929,43 @@ drake_cc_library(
     }),
 )
 
+drake_cc_library(
+    name = "csdp_solver",
+    srcs = select({
+        "//conditions:default": [
+            "csdp_solver.cc",
+            "csdp_solver_common.cc",
+        ],
+        "//tools:no_csdp": [
+            "no_csdp.cc",
+            "csdp_solver_common.cc",
+        ],
+    }),
+    hdrs = select({
+        "//conditions:default": [
+            "csdp_solver.h",
+            "csdp_solver_internal.h",
+        ],
+        "//tools:no_csdp": [
+            "csdp_solver.h",
+        ],
+    }),
+    install_hdrs_exclude = ["csdp_solver_internal.h"],
+    deps = select({
+        "//conditions:default": [
+            ":mathematical_program_lite",
+            ":solver_base",
+            "//common:type_safe_index",
+            "//math:eigen_sparse_triplet",
+            "@csdp",
+        ],
+        "//tools:no_csdp": [
+            ":mathematical_program_lite",
+            ":solver_base",
+        ],
+    }),
+)
+
 # This library is empty unless Gurobi is available.
 drake_cc_library(
     name = "gurobi_qp",
@@ -1001,6 +1051,14 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:symbolic_test_util",
         "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "minimum_value_constraint_test",
+    deps = [
+        ":minimum_value_constraint",
+        "//solvers/test_utilities",
     ],
 )
 
@@ -1562,6 +1620,10 @@ drake_cc_googletest(
 # The extra_srcs are required here because add_lint_tests() doesn't understand
 # how to extract labels from select() functions yet.
 add_lint_tests(cpplint_extra_srcs = [
+    "csdp_solver.h",
+    "csdp_solver.cc",
+    "csdp_solver_common.cc",
+    "csdp_solver_internal.h",
     "fast_qp.h",
     "gurobi_qp.h",
     "gurobi_solver.cc",
@@ -1576,6 +1638,7 @@ add_lint_tests(cpplint_extra_srcs = [
     "nlopt_solver.cc",
     "nlopt_solver.h",
     "nlopt_solver_common.cc",
+    "no_csdp.cc",
     "no_gurobi.cc",
     "no_ipopt.cc",
     "no_mosek.cc",

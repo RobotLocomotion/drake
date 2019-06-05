@@ -205,7 +205,7 @@ void AutomotiveSimulator<T>::ConnectCarOutputsAndPriusVis(
   scene_graph_->AssignRole(source_id, geometry_id,
                            geometry::IllustrationProperties());
   const geometry::IllustrationProperties grey =
-      geometry::MakeDrakeVisualizerProperties(
+      geometry::MakePhongIllustrationProperties(
           Eigen::Vector4d(0.2, 0.2, 0.2, 1.0));
   geometry_id = scene_graph_->RegisterGeometry(
       source_id, frame_id,

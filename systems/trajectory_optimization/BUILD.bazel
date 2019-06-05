@@ -70,11 +70,11 @@ drake_cc_library(
     ],
     deps = [
         ":multiple_shooting",
+        "//common/trajectories:piecewise_polynomial",
         "//math:autodiff",
         "//math:gradient",
         "//systems/framework",
         "//systems/primitives:linear_system",
-        "//systems/primitives:piecewise_polynomial_linear_system",
     ],
 )
 
@@ -110,8 +110,8 @@ drake_cc_googletest(
         "//multibody/parsing",
         "//multibody/plant",
         "//solvers:solve",
-        "//systems/primitives:piecewise_polynomial_linear_system",
         "//systems/primitives:symbolic_vector_system",
+        "//systems/primitives:trajectory_linear_system",
     ],
 )
 

@@ -34,13 +34,13 @@ namespace {
 
 // TODO(eric.cousineau): Remove `*DeprecatedProtectedAlias*` cruft and
 // replace `PYDRAKE_TRY_PROTECTED_OVERLOAD` with `PYBIND11_OVERLOAD` once
-// deprecated methods are removed (on or around 2019-06-15).
+// deprecated methods are removed (on or around 2019-07-01).
 
 // Generates deprecation message pursuant to #9651.
 std::string DeprecatedProtectedAliasMessage(
     std::string name, std::string verb) {
   return fmt::format(
-      "'_{0}' is deprecated and will be removed on or around 2019-06-15. "
+      "'_{0}' is deprecated and will be removed on or around 2019-07-01. "
       "Please {1} '{0}' instead.",
       name, verb);
 }
@@ -479,6 +479,9 @@ struct Impl {
             overload_cast_explicit<void, const Context<T>&>(
                 &System<T>::Publish),
             doc.System.Publish.doc_1args)
+        .def("GetUniquePeriodicDiscreteUpdateAttribute",
+            &System<T>::GetUniquePeriodicDiscreteUpdateAttribute,
+            doc.System.GetUniquePeriodicDiscreteUpdateAttribute.doc)
         // Cached evaluations.
         .def("EvalTimeDerivatives", &System<T>::EvalTimeDerivatives,
             py_reference_internal, doc.System.EvalTimeDerivatives.doc)

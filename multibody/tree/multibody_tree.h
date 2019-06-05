@@ -12,6 +12,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/random.h"
@@ -84,7 +85,8 @@ class MultibodyTree {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTree)
 
-  /// Creates a MultibodyTree containing only a **world** body.
+  /// Creates a MultibodyTree containing only a **world** body and a
+  /// UniformGravityFieldElement.
   MultibodyTree();
 
   /// @name Methods to add new MultibodyTree elements.
@@ -421,6 +423,8 @@ class MultibodyTree {
   // mantain indirection layers between MBP/MBT and can cause difficult to find
   // bugs, see #11051. It is bad practice and should removed, see #11080.
   template<template<typename Scalar> class ForceElementType, typename... Args>
+  DRAKE_DEPRECATED("2019-09-01",
+                   "Use mutable_gravity_field().set_gravity_vector() instead.")
   typename std::enable_if<std::is_same<
       ForceElementType<T>,
       UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
@@ -678,6 +682,18 @@ class MultibodyTree {
   const Mobilizer<T>& get_mobilizer(MobilizerIndex mobilizer_index) const {
     DRAKE_THROW_UNLESS(mobilizer_index < num_mobilizers());
     return *owned_mobilizers_[mobilizer_index];
+  }
+
+  /// An accessor to the current gravity field.
+  const UniformGravityFieldElement<T>& gravity_field() const {
+    DRAKE_ASSERT(gravity_field_);
+    return *gravity_field_;
+  }
+
+  /// A mutable accessor to the current gravity field.
+  UniformGravityFieldElement<T>& mutable_gravity_field() {
+    DRAKE_ASSERT(gravity_field_);
+    return *gravity_field_;
   }
 
   /// See MultibodyPlant method.
@@ -1238,10 +1254,13 @@ class MultibodyTree {
       EigenPtr<MatrixX<T>> Jv_WFp) const;
 
   /// See MultibodyPlant method.
-  VectorX<T> CalcBiasForPointsGeometricJacobianExpressedInWorld(
+  VectorX<T> CalcBiasForJacobianTranslationalVelocity(
       const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_F,
-      const Eigen::Ref<const MatrixX<T>>& p_FP_list) const;
+      const Eigen::Ref<const MatrixX<T>>& p_FP_list,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E) const;
 
   /// See MultibodyPlant method.
   void CalcPointsAnalyticalJacobianExpressedInWorld(
@@ -1254,13 +1273,6 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FP,
       EigenPtr<MatrixX<T>> Jv_WFp) const;
-
-  /// See MultibodyPlant method.
-  void CalcRelativeFrameGeometricJacobian(
-      const systems::Context<T>& context,
-      const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
-      const Frame<T>& frame_A, const Frame<T>& frame_E,
-      EigenPtr<MatrixX<T>> Jv_ABp_E) const;
 
   /// See MultibodyPlant method.
   Vector6<T> CalcBiasForFrameGeometricJacobianExpressedInWorld(
@@ -1797,9 +1809,18 @@ class MultibodyTree {
       tree_clone->CloneMobilizerAndAdd(*mobilizer);
     }
 
+    // Throw away the default constructed gravity element.
+    tree_clone->owned_force_elements_.clear();
+    tree_clone->gravity_field_ = nullptr;
     for (const auto& force_element : owned_force_elements_) {
       tree_clone->CloneForceElementAndAdd(*force_element);
     }
+
+    DRAKE_DEMAND(tree_clone->num_force_elements() > 0);
+    tree_clone->gravity_field_ =
+        dynamic_cast<UniformGravityFieldElement<ToScalar>*>(
+            tree_clone->owned_force_elements_[0].get());
+    DRAKE_DEMAND(tree_clone->gravity_field_);
 
     // Since Joint<T> objects are implemented from basic element objects like
     // Body, Mobilizer, ForceElement and Constraint, they are cloned last so
@@ -2375,7 +2396,7 @@ class MultibodyTree {
   std::vector<const Frame<T>*> frames_;
 
   // The gravity field force element.
-  optional<const UniformGravityFieldElement<T>*> gravity_field_;
+  UniformGravityFieldElement<T>* gravity_field_{nullptr};
 
   // TODO(amcastro-tri): Consider moving these maps into MultibodyTreeTopology
   // since they are not templated on <T>.

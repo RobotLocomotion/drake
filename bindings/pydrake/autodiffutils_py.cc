@@ -4,7 +4,10 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
+#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/math/autodiff.h"
+#include "drake/math/autodiff_gradient.h"
 
 using Eigen::AutoDiffScalar;
 using std::cos;
@@ -15,6 +18,10 @@ namespace pydrake {
 
 PYBIND11_MODULE(autodiffutils, m) {
   m.doc() = "Bindings for Eigen AutoDiff Scalars";
+
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::math;
+  constexpr auto& doc = pydrake_doc.drake.math;
 
   // Install NumPy warning filtres.
   // N.B. This may interfere with other code, but until that is a confirmed
@@ -85,6 +92,28 @@ PYBIND11_MODULE(autodiffutils, m) {
   autodiff.attr("arcsin") = autodiff.attr("asin");
   autodiff.attr("arccos") = autodiff.attr("acos");
   autodiff.attr("arctan2") = autodiff.attr("atan2");
+
+  m.def("initializeAutoDiff",
+      [](const Eigen::MatrixXd& mat, Eigen::DenseIndex num_derivatives,
+          Eigen::DenseIndex deriv_num_start) {
+        return initializeAutoDiff(mat, num_derivatives, deriv_num_start);
+      },
+      py::arg("mat"), py::arg("num_derivatives") = -1,
+      py::arg("deriv_num_start") = 0, doc.initializeAutoDiff.doc_3args);
+
+  m.def("autoDiffToValueMatrix",
+      [](const MatrixX<AutoDiffXd>& autodiff_matrix) {
+        return autoDiffToValueMatrix(autodiff_matrix);
+      },
+      py::arg("autodiff_matrix"), doc.autoDiffToValueMatrix.doc);
+
+  m.def("autoDiffToGradientMatrix",
+      [](const MatrixX<AutoDiffXd>& autodiff_matrix) {
+        return autoDiffToGradientMatrix(autodiff_matrix);
+      },
+      py::arg("autodiff_matrix"), doc.autoDiffToGradientMatrix.doc);
+
+  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake

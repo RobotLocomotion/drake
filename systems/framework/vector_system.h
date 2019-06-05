@@ -60,6 +60,7 @@ class VectorSystem : public LeafSystem<T> {
   /// The `direct_feedthrough` specifies whether the input port direct feeds
   /// through to the output port.  (See SystemBase::GetDirectFeedthroughs().)
   /// When not provided, assumes true (the output is direct feedthrough).
+  /// When false, the DoCalcVectorOutput `input` will be empty (zero-sized).
   ///
   /// Does *not* declare scalar-type conversion support (AutoDiff, etc.).  To
   /// enable AutoDiff support, use the SystemScalarConverter-based constructor.
@@ -79,6 +80,7 @@ class VectorSystem : public LeafSystem<T> {
   /// through to the output port.  (See SystemBase::GetDirectFeedthroughs().)
   /// When not provided, infers feedthrough from the symbolic form if
   /// available, or else assumes true (the output is direct feedthrough).
+  /// When false, the DoCalcVectorOutput `input` will be empty (zero-sized).
   ///
   /// The scalar-type conversion support will use @p converter.
   /// To enable scalar-type conversion support, pass a `SystemTypeTag<S>{}`

@@ -907,30 +907,6 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
     frame.remove_child(geometry_id);
   }
 
-  // We want to maintain a contiguous block of valid GeometryIndex values (such
-  // that geometries_ doesn't have gaps). If we remove geometries from the
-  // middle, we want to fill the middle. We move the last to the hole
-  // (minimizing moves).
-  GeometryIndex last_index(geometry_index_to_id_map_.size() - 1);
-  GeometryIndex removed_index = geometry.index();
-  if (removed_index != last_index) {
-    // Move things around in geometry
-    geometries_[geometry_index_to_id_map_.back()].set_index(removed_index);
-    geometry_index_to_id_map_[removed_index] =
-        geometry_index_to_id_map_[last_index];
-
-    // Any engine that relies on a GeometryIndex to access GeometryId needs to
-    // be informed that a geometry has moved -- from last_index to
-    // removed_index.
-    InternalGeometry& moved_geometry =
-        geometries_[geometry_index_to_id_map_[removed_index]];
-    if (moved_geometry.has_proximity_role()) {
-      geometry_engine_->UpdateGeometryIndex(moved_geometry.proximity_index(),
-                                            moved_geometry.is_dynamic(),
-                                            removed_index);
-    }
-  }
-
   if (geometry.has_proximity_role()) {
     ProximityIndex proximity_index = geometry.proximity_index();
     optional<GeometryIndex> moved_index = geometry_engine_->RemoveGeometry(
@@ -965,6 +941,30 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
       auto& parent_geometry =
           GetMutableValueOrThrow(*parent_id, &geometries_);
       parent_geometry.remove_child(geometry_id);
+    }
+  }
+
+  // We want to maintain a contiguous block of valid GeometryIndex values (such
+  // that geometries_ doesn't have gaps). If we remove geometries from the
+  // middle, we want to fill the middle. We move the last to the hole
+  // (minimizing moves).
+  GeometryIndex last_index(geometry_index_to_id_map_.size() - 1);
+  GeometryIndex removed_index = geometry.index();
+  if (removed_index != last_index) {
+    // Move things around in geometry.
+    geometries_[geometry_index_to_id_map_.back()].set_index(removed_index);
+    geometry_index_to_id_map_[removed_index] =
+        geometry_index_to_id_map_[last_index];
+
+    // Any engine that relies on a GeometryIndex to access GeometryId needs to
+    // be informed that a geometry has moved -- from last_index to
+    // removed_index.
+    InternalGeometry& moved_geometry =
+        geometries_[geometry_index_to_id_map_[removed_index]];
+    if (moved_geometry.has_proximity_role()) {
+      geometry_engine_->UpdateGeometryIndex(moved_geometry.proximity_index(),
+                                            moved_geometry.is_dynamic(),
+                                            removed_index);
     }
   }
 

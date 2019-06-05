@@ -11,7 +11,7 @@
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
-#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/geometry_roles.h"
 #include "drake/math/orthonormal_basis.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rotation_matrix.h"
@@ -310,7 +310,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
     SceneGraph<T>* scene_graph) {
   return RegisterVisualGeometry(
       body, X_BG, shape, name,
-      geometry::MakeDrakeVisualizerProperties(diffuse_color), scene_graph);
+      geometry::MakePhongIllustrationProperties(diffuse_color), scene_graph);
 }
 
 template <typename T>
@@ -413,6 +413,17 @@ std::vector<const Body<T>*> MultibodyPlant<T>::GetBodiesWeldedTo(
     sub_graph_bodies.push_back(&internal_tree().get_body(body_index));
   }
   return sub_graph_bodies;
+}
+
+template <typename T>
+std::unordered_set<BodyIndex> MultibodyPlant<T>::GetFloatingBaseBodies() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  std::unordered_set<BodyIndex> floating_bodies;
+  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    if (body.is_floating()) floating_bodies.insert(body.index());
+  }
+  return floating_bodies;
 }
 
 template <typename T>
@@ -862,9 +873,12 @@ void MultibodyPlant<T>::set_penetration_allowance(
     double penetration_allowance) {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   // Default to Earth's gravity for this estimation.
-  const double g = gravity_field_.has_value() ?
-                   gravity_field_.value()->gravity_vector().norm() :
-                   UniformGravityFieldElement<double>::kDefaultStrength;
+  const UniformGravityFieldElement<T>& gravity_field =
+      internal_tree().gravity_field();
+  const double g =
+      (!gravity_field.gravity_vector().isZero()) ?
+      gravity_field.gravity_vector().norm() :
+      UniformGravityFieldElement<double>::kDefaultStrength;
 
   // TODO(amcastro-tri): Improve this heuristics in future PR's for when there
   // are several flying objects and fixed base robots (E.g.: manipulation
@@ -937,7 +951,7 @@ MultibodyPlant<double>::CalcPointPairPenetrations(
 
 // Specialize this function so that AutoDiffXd is (partially) supported. This
 // AutoDiffXd specialization will throw if there are any collisions.
-// TODO(SeanCurtis-TRI): Move this logic into SceneGraph.
+// TODO(SeanCurtis-TRI): Move this logic into SceneGraph per #11454.
 template <>
 std::vector<PenetrationAsPointPair<AutoDiffXd>>
 MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
@@ -948,8 +962,14 @@ MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
     auto results = query_object.ComputePointPairPenetration();
     if (results.size() > 0) {
       throw std::logic_error(
-          "CalcPointPairPenetration() with AutoDiffXd requires scenarios with "
-          "no collisions.");
+          "CalcPointPairPenetration(): Some of the bodies in the model are in "
+          "contact for the state stored in the given context. Currently a "
+          "MultibodyPlant model cannot be auto-differentiated if contacts "
+          "are detected. Notice however that auto-differentiation is allowed "
+          "if there are no contacts for the given state. That is, you can "
+          "invoke penetration queries on a MultibodyPlant<AutoDiffXd> as long "
+          "as there are no unfiltered geometries in contact. "
+          "Refer to Github issues #11454 and #11455 for details.");
     }
   }
   return {};
@@ -1413,7 +1433,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   // the forces to zero and adds in contributions due to force elements.
   internal_tree().CalcForceElementsContribution(context, pc, vc, &forces);
 
-  // If there is any input actuation, add it to the multibody forces.
+  // Externally applied forces.
   AddJointActuationForces(context, &forces);
   AddAppliedExternalSpatialForces(context, &forces);
 
@@ -1544,8 +1564,9 @@ void MultibodyPlant<T>::CalcImplicitStribeckResults(
   // Compute forces applied through force elements.
   internal_tree().CalcForceElementsContribution(context0, pc0, vc0, &forces0);
 
-  // If there is any input actuation, add it to the multibody forces.
+  // Externally applied forces.
   AddJointActuationForces(context0, &forces0);
+  AddAppliedExternalSpatialForces(context0, &forces0);
 
   AddJointLimitsPenaltyForces(context0, &forces0);
 

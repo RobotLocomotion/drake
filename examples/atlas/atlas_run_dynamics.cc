@@ -51,9 +51,6 @@ int do_main() {
       FindResourceOrThrow("drake/examples/atlas/urdf/atlas_convex_hull.urdf");
   multibody::Parser(&plant).AddModelFromFile(full_name);
 
-  // Add gravity to the model.
-  plant.AddForceElement<multibody::UniformGravityFieldElement>();
-
   // Add model of the ground.
   const double static_friction = 1.0;
   const Vector4<double> green(0.5, 1.0, 0.5, 1.0);
@@ -79,6 +76,19 @@ int do_main() {
   DRAKE_DEMAND(plant.num_velocities() == 36);
   DRAKE_DEMAND(plant.num_positions() == 37);
 
+  // Verify the "pelvis" body is free and modeled with quaternions dofs before
+  // moving on with that assumption.
+  const drake::multibody::Body<double>& pelvis = plant.GetBodyByName("pelvis");
+  DRAKE_DEMAND(pelvis.is_floating());
+  DRAKE_DEMAND(pelvis.has_quaternion_dofs());
+  // Since there is a single floating body, we know that the postions for it
+  // lie first in the state vector.
+  DRAKE_DEMAND(pelvis.floating_positions_start() == 0);
+  // Similarly for velocities. The velocities for this floating pelvis are the
+  // first set of velocities after all model positions, since the state vector
+  // is stacked as x = [q; v].
+  DRAKE_DEMAND(pelvis.floating_velocities_start() == plant.num_positions());
+
   // Publish contact results for visualization.
   ConnectContactResultsToDrakeVisualizer(&builder, plant);
 
@@ -95,7 +105,6 @@ int do_main() {
   plant.get_actuation_input_port().FixValue(&plant_context, tau);
 
   // Set the pelvis frame P initial pose.
-  const drake::multibody::Body<double>& pelvis = plant.GetBodyByName("pelvis");
   const Translation3d X_WP(0.0, 0.0, 0.95);
   plant.SetFreeBodyPoseInWorldFrame(&plant_context, pelvis, X_WP);
 

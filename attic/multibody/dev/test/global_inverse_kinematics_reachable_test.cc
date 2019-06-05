@@ -27,18 +27,19 @@ TEST_F(KukaTest, ReachableTest) {
   if (gurobi_solver.available()) {
     global_ik_.SetSolverOption(solvers::GurobiSolver::id(), "OutputFlag", 1);
 
-    SolutionResult sol_result = gurobi_solver.Solve(global_ik_);
+    solvers::MathematicalProgramResult result =
+        gurobi_solver.Solve(global_ik_, {}, {});
 
-    EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
+    EXPECT_TRUE(result.is_success());
 
     double pos_tol = 0.061;
     double orient_tol = 0.24;
-    CheckGlobalIKSolution(pos_tol, orient_tol);
+    CheckGlobalIKSolution(result, pos_tol, orient_tol);
     // Now call nonlinear IK with the solution from global IK as the initial
     // seed. If the global IK provides a good initial seed, then the nonlinear
     // IK should be able to find a solution.
     Eigen::Matrix<double, 7, 1> q_global_ik =
-        global_ik_.ReconstructGeneralizedPositionSolution();
+        global_ik_.ReconstructGeneralizedPositionSolution(result);
     CheckNonlinearIK(ee_pos_lb_W, ee_pos_ub_W,
                      ee_desired_orient, angle_tol, q_global_ik, q_global_ik, 1);
 
@@ -52,28 +53,28 @@ TEST_F(KukaTest, ReachableTest) {
     // The orientation constraint is 2 * cos(angle_tol) + 1 <= trace(Rᵀ * R_des)
     ee_orient_cnstr.evaluator()->UpdateLowerBound(
         Vector1d(2 * cos(angle_tol) + 1));
-    sol_result = gurobi_solver.Solve(global_ik_);
-    EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
+    result = gurobi_solver.Solve(global_ik_, {}, {});
+    EXPECT_TRUE(result.is_success());
     const auto& ee_pos_sol =
-        global_ik_.GetSolution(global_ik_.body_position(ee_idx_));
+        result.GetSolution(global_ik_.body_position(ee_idx_));
     EXPECT_TRUE((ee_pos_sol.array() >= ee_pos_lb_W.array() - 1E-6).all());
     EXPECT_TRUE((ee_pos_sol.array() <= ee_pos_ub_W.array() + 1E-6).all());
     const auto& ee_rotmat_sol =
-        global_ik_.GetSolution(global_ik_.body_rotation_matrix(ee_idx_));
+        result.GetSolution(global_ik_.body_rotation_matrix(ee_idx_));
     Eigen::AngleAxisd ee_orient_err(ee_rotmat_sol.transpose() *
                                     ee_desired_orient.toRotationMatrix());
     EXPECT_LE(ee_orient_err.angle(), angle_tol + 1E-4);
 
-    q_global_ik = global_ik_.ReconstructGeneralizedPositionSolution();
+    q_global_ik = global_ik_.ReconstructGeneralizedPositionSolution(result);
     CheckNonlinearIK(ee_pos_lb_W, ee_pos_ub_W,
                      ee_desired_orient, angle_tol, q_global_ik, q_global_ik, 1);
 
     // Now tighten the joint limits, the problem should be feasible.
     global_ik_.AddJointLimitConstraint(3, 0.5, 0.5);
     global_ik_.AddJointLimitConstraint(4, -0.5, -0.4);
-    sol_result = gurobi_solver.Solve(global_ik_);
-    EXPECT_EQ(sol_result, solvers::SolutionResult::kSolutionFound);
-    q_global_ik = global_ik_.ReconstructGeneralizedPositionSolution();
+    result = gurobi_solver.Solve(global_ik_, {}, {});
+    EXPECT_TRUE(result.is_success());
+    q_global_ik = global_ik_.ReconstructGeneralizedPositionSolution(result);
     // The reconstructed posture should be within the user specified bound.
     EXPECT_NEAR(q_global_ik(0), 0.5, 1e-3);
     EXPECT_GE(q_global_ik(1), -0.5);
@@ -81,9 +82,10 @@ TEST_F(KukaTest, ReachableTest) {
 
     // Now further tighten the joint limits, the problem should be infeasible
     global_ik_.AddJointLimitConstraint(5, 0.5, 0.55);
-    sol_result = gurobi_solver.Solve(global_ik_);
-    EXPECT_TRUE(sol_result == solvers::SolutionResult::kInfeasibleConstraints ||
-                sol_result ==
+    result = gurobi_solver.Solve(global_ik_, {}, {});
+    EXPECT_TRUE(result.get_solution_result() ==
+                    solvers::SolutionResult::kInfeasibleConstraints ||
+                result.get_solution_result() ==
                     solvers::SolutionResult::kInfeasible_Or_Unbounded);
   }
 }

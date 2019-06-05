@@ -35,6 +35,7 @@ from pydrake.systems.framework import (
     LeafSystem, LeafSystem_,
     OutputPort, OutputPort_,
     Parameters, Parameters_,
+    PeriodicEventData,
     PublishEvent, PublishEvent_,
     State, State_,
     Subvector, Subvector_,
@@ -122,6 +123,10 @@ class TestGeneral(unittest.TestCase):
             context.get_continuous_state_vector(), VectorBase)
         self.assertIsInstance(
             context.get_mutable_continuous_state_vector(), VectorBase)
+        self.assertTrue(context.is_stateless())
+        self.assertFalse(context.has_only_continuous_state())
+        self.assertFalse(context.has_only_discrete_state())
+        self.assertEqual(context.num_total_states(), 0)
         # TODO(eric.cousineau): Consolidate main API tests for `Context` here.
 
         # Test methods with two scalar types.
@@ -147,15 +152,23 @@ class TestGeneral(unittest.TestCase):
         self.assertTrue(
             context.get_parameters().get_numeric_parameter(0) is
             context.get_numeric_parameter(index=0))
+        self.assertTrue(
+            context.get_mutable_parameters().get_mutable_numeric_parameter(
+                0) is context.get_mutable_numeric_parameter(index=0))
         self.assertEqual(context.num_abstract_parameters(), 0)
         self.assertEqual(pendulum.num_numeric_parameter_groups(), 1)
         # TODO(russt): Bind _Declare*Parameter or find an example with an
         # abstract parameter to actually call this method.
         self.assertTrue(hasattr(context, "get_abstract_parameter"))
+        self.assertTrue(hasattr(context, "get_mutable_abstract_parameter"))
         x = np.array([0.1, 0.2])
         context.SetContinuousState(x)
         np.testing.assert_equal(
             context.get_continuous_state_vector().CopyToVector(), x)
+        context.SetTimeAndContinuousState(0.3, 2*x)
+        np.testing.assert_equal(context.get_time(), 0.3)
+        np.testing.assert_equal(
+            context.get_continuous_state_vector().CopyToVector(), 2*x)
 
         # RimlessWheel has a single discrete variable and a bool abstract
         # variable.
@@ -207,6 +220,19 @@ class TestGeneral(unittest.TestCase):
             trigger_type=TriggerType.kInitialization, callback=callback)
         self.assertIsInstance(event, Event)
         self.assertEqual(event.get_trigger_type(), TriggerType.kInitialization)
+
+        # Simple discrete-time system.
+        system1 = LinearSystem(A=[1], B=[1], C=[1], D=[1], time_period=0.1)
+        periodic_data = system1.GetUniquePeriodicDiscreteUpdateAttribute()
+        self.assertIsInstance(periodic_data, PeriodicEventData)
+        self.assertIsInstance(periodic_data.Clone(), PeriodicEventData)
+        periodic_data.period_sec()
+        periodic_data.offset_sec()
+
+        # Simple continuous-time system.
+        system2 = LinearSystem(A=[1], B=[1], C=[1], D=[1], time_period=0.0)
+        periodic_data = system2.GetUniquePeriodicDiscreteUpdateAttribute()
+        self.assertIsNone(periodic_data)
 
     def test_instantiations(self):
         # Quick check of instantiations for given types.

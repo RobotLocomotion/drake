@@ -88,7 +88,7 @@ drake_cc_library(
     deps = [
         "//attic/multibody:rigid_body_tree",
         "//geometry:geometry_ids",
-        "//geometry:geometry_visualization",
+        "//geometry:geometry_roles",
         "//geometry:scene_graph",
     ],
 )

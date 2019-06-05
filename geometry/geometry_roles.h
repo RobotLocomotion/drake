@@ -4,6 +4,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_properties.h"
 
 namespace drake {
@@ -199,6 +200,18 @@ enum class Role {
 std::string to_string(const Role& role);
 
 std::ostream& operator<<(std::ostream& out, const Role& role);
+
+//@}
+
+/** @name  Convenience functions
+
+ A collection of functions to help facilitate working with properties.  */
+//@{
+
+/** Constructs an IllustrationProperties instance compatible with a simple
+ "phong" material using only the given `diffuse` color.  */
+IllustrationProperties MakePhongIllustrationProperties(
+    const Vector4<double>& diffuse);
 
 //@}
 

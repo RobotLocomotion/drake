@@ -16,8 +16,8 @@
 #include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
 #include "drake/systems/primitives/linear_system.h"
-#include "drake/systems/primitives/piecewise_polynomial_linear_system.h"
 #include "drake/systems/primitives/symbolic_vector_system.h"
+#include "drake/systems/primitives/trajectory_linear_system.h"
 
 namespace drake {
 namespace systems {
@@ -26,6 +26,7 @@ namespace {
 
 using symbolic::Variable;
 using symbolic::Expression;
+using trajectories::PiecewisePolynomial;
 
 namespace {
 
@@ -286,7 +287,6 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSystemTest) {
   const double kTimeStep = 0.1;
   auto pendulum =
       std::make_unique<multibody::MultibodyPlant<double>>(kTimeStep);
-  pendulum->AddForceElement<multibody::UniformGravityFieldElement>();
   multibody::Parser parser(pendulum.get());
   parser.AddModelFromFile(FindResourceOrThrow(urdf_path));
   pendulum->WeldFrames(pendulum->world_frame(),
@@ -407,7 +407,7 @@ GTEST_TEST(DirectTranscriptionTest, TimeVaryingLinearSystemTest) {
   const auto D = PiecewisePolynomial<double>::FirstOrderHold(times, Dvec);
 
   const double kTimeStep = .1;
-  PiecewisePolynomialLinearSystem<double> system({A, B, C, D}, kTimeStep);
+  TrajectoryLinearSystem<double> system(A, B, C, D, kTimeStep);
 
   const auto context = system.CreateDefaultContext();
   int kNumSampleTimes = 3;

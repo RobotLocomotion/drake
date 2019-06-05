@@ -30,6 +30,7 @@ drake_cc_package_library(
         ":scene_graph",
         ":scene_graph_inspector",
         ":shape_specification",
+        ":shape_to_string",
         ":utilities",
     ],
 )
@@ -243,6 +244,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "shape_to_string",
+    srcs = ["shape_to_string.cc"],
+    hdrs = ["shape_to_string.h"],
+    deps = [
+        ":shape_specification",
+        "@fmt",
+    ],
+)
+
+drake_cc_library(
     name = "utilities",
     srcs = ["utilities.cc"],
     hdrs = ["utilities.h"],
@@ -349,7 +360,7 @@ drake_cc_googletest(
         ":geometry_frame",
         ":geometry_instance",
         ":scene_graph",
-        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities",
     ],
 )
 
@@ -366,6 +377,13 @@ drake_cc_googletest(
     deps = [
         ":shape_specification",
         "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "shape_to_string_test",
+    deps = [
+        ":shape_to_string",
     ],
 )
 

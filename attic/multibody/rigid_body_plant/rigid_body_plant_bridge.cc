@@ -9,7 +9,6 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
-#include "drake/geometry/geometry_visualization.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/framework_common.h"
 
@@ -24,7 +23,7 @@ using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
-using geometry::MakeDrakeVisualizerProperties;
+using geometry::MakePhongIllustrationProperties;
 using geometry::Mesh;
 using geometry::ProximityProperties;
 using geometry::SceneGraph;
@@ -160,7 +159,7 @@ void RigidBodyPlantBridge<T>::RegisterTree(SceneGraph<T>* scene_graph) {
         // Illustration properties -- simply pass the diffuse along.
         const Vector4<double>& diffuse = visual_element.getMaterial();
         scene_graph->AssignRole(source_id_, id,
-                                MakeDrakeVisualizerProperties(diffuse));
+                                MakePhongIllustrationProperties(diffuse));
       }
     }
     int collision_count = 0;

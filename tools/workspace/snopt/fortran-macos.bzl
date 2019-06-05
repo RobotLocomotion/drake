@@ -3,12 +3,14 @@
 def fortran_library(
         name,
         srcs = [],
+        deps = [],
         **kwargs):
     """Compiles a Fortran library.  This library's symbols will have hidden
     visibility, becaused Drake binary release artifacts should never provide
     them as part of the public API.
 
     srcs: fortran source files (e.g., `*.f`).
+    deps: are passed through to the bazel cc_library result
     kwargs: are passed through to the bazel cc_library result.
     """
 
@@ -40,6 +42,6 @@ def fortran_library(
     native.cc_library(
         name = name,
         srcs = private_objs,
-        deps = ["@gfortran//:runtime"],
+        deps = deps + ["@gfortran//:runtime"],
         **kwargs
     )

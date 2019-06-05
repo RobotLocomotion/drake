@@ -66,7 +66,7 @@ MakePendulumPlant(const PendulumParameters& params,
   plant->AddJointActuator(params.actuator_name(), pin);
 
   // Gravity acting in the -z direction.
-  plant->AddForceElement<UniformGravityFieldElement>(
+  plant->mutable_gravity_field().set_gravity_vector(
       -params.g() * Vector3d::UnitZ());
 
   plant->Finalize();

@@ -205,6 +205,13 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
   // all. Consider also removing MultibodyTreeElement altogether.
   mobilizer->set_parent_tree(this, mobilizer_index);
 
+  // Mark free bodies as needed.
+  const BodyIndex outboard_body_index = mobilizer->outboard_body().index();
+  topology_.get_mutable_body(outboard_body_index).is_floating =
+      mobilizer->is_floating();
+  topology_.get_mutable_body(outboard_body_index).has_quaternion_dofs =
+      mobilizer->has_quaternion_dofs();
+
   MobilizerType<T>* raw_mobilizer_ptr = mobilizer.get();
   owned_mobilizers_.push_back(std::move(mobilizer));
   return *raw_mobilizer_ptr;
@@ -270,16 +277,32 @@ typename std::enable_if<std::is_same<
     ForceElementType<T>,
     UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
 MultibodyTree<T>::AddForceElement(Args&&... args) {
-  if (gravity_field_.has_value()) {
+  // TODO(sam.creasey) Once this method is removed at the end of the
+  // deprecation period, the initialization of gravity_field_ should probably
+  // move to the MultibodyTree constructor (which currently calls this
+  // implementation).  My current thought on what the post-deprecation code
+  // should look like is that all of the SFINAE goes away and we do a run-time
+  // type check in the overload of AddForceElement that takes a unique_ptr
+  // which throws if (1) the actual ForceElementType is
+  // UniformGravityFieldElement and (2) gravity_field_ is not yet set.
+  // Alternately we could find a way to produce an error at compile time
+  // instead of throwing.
+  auto new_field =
+      std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...);
+  if (gravity_field_) {
+    if (new_field->gravity_vector() == gravity_field_->gravity_vector()) {
+      return *gravity_field_;
+    }
+
     throw std::runtime_error(
         "This model already contains a gravity field element. "
         "Only one gravity field element is allowed per model.");
   }
   // We save the force element so that we can grant users access to it for
   // gravity field specific queries.
-  gravity_field_ = &AddForceElement(
-      std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...));
-  return *gravity_field_.value();
+  gravity_field_ = const_cast<ForceElementType<T>*>(
+      &AddForceElement(std::move(new_field)));
+  return *gravity_field_;
 }
 
 template <typename T>
@@ -638,4 +661,3 @@ Eigen::VectorBlock<VectorX<T>> MultibodyTree<T>::extract_qv_from_continuous(
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
-

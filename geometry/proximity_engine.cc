@@ -338,13 +338,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   void UpdateGeometryIndex(ProximityIndex proximity_index, bool is_dynamic,
                            GeometryIndex geometry_index) {
-    if (is_dynamic) {
-      EncodedData::encode_dynamic(geometry_index)
-          .write_to(dynamic_objects_[proximity_index].get());
-    } else {
-      EncodedData::encode_anchored(geometry_index)
-          .write_to(anchored_objects_[proximity_index].get());
-    }
+    fcl::CollisionObject<double>& object = is_dynamic ?
+        *dynamic_objects_[proximity_index] :
+        *anchored_objects_[proximity_index];
+    EncodedData old_data(object);
+
+    EncodedData new_data(geometry_index, is_dynamic);
+    new_data.write_to(&object);
+    collision_filter_.UpdateEncoding(old_data.encoding(), new_data.encoding());
   }
 
   optional<GeometryIndex> RemoveGeometry(ProximityIndex index,
@@ -810,6 +811,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     fcl::CollisionObjectd* fcl_object = typed_geometries[index].get();
     const size_t old_size = tree->size();
     tree->unregisterObject(fcl_object);
+    EncodedData filter_key(*fcl_object);
+    collision_filter_.RemoveGeometry(filter_key.encoding());
     // NOTE: The FCL API provides no other mechanism for confirming the
     // unregistration was successful.
     DRAKE_DEMAND(old_size == tree->size() + 1);

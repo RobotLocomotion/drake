@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <limits>
 #include <utility>
 #include <vector>
@@ -144,6 +145,11 @@ class DistancePairGeometry {
     SphereShapeDistance(sphere_A, cylinder_B);
   }
 
+  void operator()(const fcl::Sphered& sphere_A,
+                  const fcl::Halfspaced& halfspace_B) {
+    SphereShapeDistance(sphere_A, halfspace_B);
+  }
+
   //@}
 
  private:
@@ -265,7 +271,8 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
  @param geometry_map    A map from GeometryIndex to GeometryId.
  @param request         The distance request parameters.
  @param result          The structure to capture the computation results in.
- @tparam T Computation scalar type.  */
+ @tparam T Computation scalar type.
+ @pre The pair should *not* be (Halfspace, X), unless X is Sphere.  */
 template <typename T>
 void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
                                 const Isometry3<T>& X_WA,
@@ -277,26 +284,6 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
   DRAKE_DEMAND(result != nullptr);
   const fcl::CollisionGeometryd* a_geometry = a.collisionGeometry().get();
   const fcl::CollisionGeometryd* b_geometry = b.collisionGeometry().get();
-
-  // We use FCL's GJK/EPA fallback in those geometries we haven't explicitly
-  // supported. However, FCL doesn't support: half spaces, planes, triangles, or
-  // octtrees in that workflow. We need to give intelligent feedback rather than
-  // the segfault otherwise produced.
-  // NOTE: Currently this only tests for halfspace (because it is an otherwise
-  // supported geometry type in SceneGraph. When meshes, planes, and/or octrees
-  // are supported, this error would have to be modified.
-  // TODO(SeanCurtis-TRI): Remove this test when FCL/Drake supports signed
-  // distance queries for halfspaces (see issue #10905). Also see FCL issue
-  // https://github.com/flexible-collision-library/fcl/issues/383.
-  // TODO(SeanCurtis-TRI): Convert this to a drakeassert/drake demand. It should
-  // be the case that this isn't called *except* by the Callback, and the
-  // Callback should already have handled the question of unsupported geometry.
-  if (a_geometry->getNodeType() == fcl::GEOM_HALFSPACE ||
-      b_geometry->getNodeType() == fcl::GEOM_HALFSPACE) {
-    throw std::logic_error(
-        "Signed distance queries on halfspaces are not currently supported. "
-        "Try using a large box instead.");
-  }
 
   const bool a_is_sphere = a_geometry->getNodeType() == fcl::GEOM_SPHERE;
   const bool b_is_sphere = b_geometry->getNodeType() == fcl::GEOM_SPHERE;
@@ -338,6 +325,12 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
       distance_pair(sphere_S, cylinder_O);
       break;
     }
+    case fcl::GEOM_HALFSPACE: {
+      const auto& halfspace_O =
+          *static_cast<const fcl::Halfspaced*>(o_geometry);
+      distance_pair(sphere_S, halfspace_O);
+      break;
+    }
     default: {
       // We don't have a closed form solution for the other geometry, so we
       // call FCL GJK/EPA.
@@ -362,15 +355,6 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
  @tparam T      The computational scalar type.  */
 //@{
 
-void throw_if_halfspace(fcl::NODE_TYPE node1, fcl::NODE_TYPE node2) {
-  // Stupid, historical special case where halfspace-* throws.
-  if (node1 == fcl::GEOM_HALFSPACE || node2 == fcl::GEOM_HALFSPACE) {
-    throw std::logic_error(
-        "Signed distance queries on halfspaces are not currently supported. "
-        "Try using a large box instead.");
-  }
-}
-
 template <typename T>
 struct ScalarSupport {
   static bool is_supported(fcl::NODE_TYPE node1, fcl::NODE_TYPE node2) {
@@ -382,12 +366,20 @@ struct ScalarSupport {
 template <>
 struct ScalarSupport<double> {
   static bool is_supported(fcl::NODE_TYPE node1, fcl::NODE_TYPE node2) {
-    throw_if_halfspace(node1, node2);
-
-    // For doubles, we can produce values for all pairs *except* if it includes
-    // a halfspace (caught above). This will change to only *pairs* of half
-    // spaces in the future.
-    return true;
+    // Doubles (via its fallback) can support anything *except*
+    // halfspace-X (where X is not sphere).
+    // We use FCL's GJK/EPA fallback in those geometries we haven't explicitly
+    // supported. However, FCL doesn't support: half spaces, planes, triangles,
+    // or octtrees in that workflow. We need to give intelligent feedback rather
+    // than the segfault otherwise produced.
+    // NOTE: Currently this only tests for halfspace (because it is an otherwise
+    // supported geometry type in SceneGraph. When meshes, planes, and/or
+    // octrees are supported, this error would have to be modified.
+    // TODO(SeanCurtis-TRI): Remove this test when FCL/Drake supports signed
+    // distance queries for halfspaces (see issue #10905). Also see FCL issue
+    // https://github.com/flexible-collision-library/fcl/issues/383.
+    return (node1 != fcl::GEOM_HALFSPACE || node2 == fcl::GEOM_SPHERE) &&
+        (node2 != fcl::GEOM_HALFSPACE || node1 == fcl::GEOM_SPHERE);
   }
 };
 
@@ -395,14 +387,16 @@ struct ScalarSupport<double> {
 template <typename DerType>
 struct ScalarSupport<Eigen::AutoDiffScalar<DerType>> {
   static bool is_supported(fcl::NODE_TYPE node1, fcl::NODE_TYPE node2) {
-    throw_if_halfspace(node1, node2);
-
-    // This is a clunky way of saying: one of these is a sphere and the other is
-    // either a box or sphere. This will be replaced in the near
-    // future with something that is less obfuscated.
+    // Explicitly whitelist the  following pair types (with ordering
+    // permutations):
+    //  (sphere, sphere)
+    //  (sphere, box)
+    //  (sphere, halfspace)
     return (node1 == fcl::GEOM_SPHERE &&
-        (node2 == fcl::GEOM_SPHERE || node2 == fcl::GEOM_BOX)) ||
-        (node2 == fcl::GEOM_SPHERE && node1 == fcl::GEOM_BOX);
+            (node2 == fcl::GEOM_SPHERE || node2 == fcl::GEOM_BOX ||
+             node2 == fcl::GEOM_HALFSPACE)) ||
+           (node2 == fcl::GEOM_SPHERE &&
+            (node1 == fcl::GEOM_BOX || node1 == fcl::GEOM_HALFSPACE));
   }
 };
 
@@ -435,11 +429,21 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
               void* callback_data, double& max_distance) {
   auto& data = *static_cast<CallbackData<T>*>(callback_data);
 
-  // We intentionally pass the same number back to FCL in every callback.
-  // It instructs FCL to skip any objects proven to be beyond this maximum
-  // distance (for example, by checking bounding boxes). There's no harm in
-  // setting this redundantly.
-  max_distance = data.max_distance;
+  // Three things:
+  //   1. We repeatedly set max_distance in each call to the callback because we
+  //   can't initialize it. The cost is negligible but maximizes any culling
+  //   benefit.
+  //   2. Due to how FCL is implemented, passing a value <= 0 will cause results
+  //   to be omitted because the bounding box test only considers *separating*
+  //   distance and doesn't do any work if the distance between bounding boxes
+  //   is zero.
+  //   3. We pass in a number smaller than the typical epsilon because typically
+  //   computation tolerances are greater than or equal to epsilon() and we
+  //   don't want this value to trip those tolerances. This is safe because the
+  //   bounding box test in which this is used doesn't produce a code via
+  //   calculation; it is a perfect, hard-coded zero.
+  const double kEps = std::numeric_limits<double>::epsilon() / 10;
+  max_distance = std::max(data.max_distance, kEps);
 
   const EncodedData encoding_a(*object_A_ptr);
   const EncodedData encoding_b(*object_B_ptr);
@@ -479,7 +483,7 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
       ComputeNarrowPhaseDistance(fcl_object_A, data.X_WGs[index_A],
                                  fcl_object_B, data.X_WGs[index_B],
                                  geometry_map, data.request, &signed_pair);
-      if (ExtractDoubleOrThrow(signed_pair.distance) <= max_distance) {
+      if (ExtractDoubleOrThrow(signed_pair.distance) <= data.max_distance) {
         data.nearest_pairs.emplace_back(std::move(signed_pair));
       }
     } else {
