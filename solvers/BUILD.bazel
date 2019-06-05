@@ -107,7 +107,6 @@ drake_cc_library(
     srcs = ["choose_best_solver.cc"],
     hdrs = ["choose_best_solver.h"],
     deps = [
-        ":csdp_solver",
         ":equality_constrained_qp_solver",
         ":gurobi_solver",
         ":ipopt_solver",
@@ -1176,9 +1175,7 @@ drake_cc_googletest(
     deps = [
         ":csdp_test_examples",
         ":sdpa_free_format",
-        "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
-        "@spruce",
     ],
 )
 

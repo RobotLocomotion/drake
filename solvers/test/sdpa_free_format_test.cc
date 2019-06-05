@@ -1,13 +1,10 @@
 #include "drake/solvers/sdpa_free_format.h"
 
-#include <fstream>
 #include <limits>
 #include <utility>
 
 #include <gtest/gtest.h>
-#include <spruce.hh>
 
-#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/test/csdp_test_examples.h"
 

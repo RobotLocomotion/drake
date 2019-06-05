@@ -1,8 +1,6 @@
 #include "drake/solvers/sdpa_free_format.h"
 
 #include <algorithm>
-#include <fstream>
-#include <iomanip>
 #include <limits>
 #include <stdexcept>
 #include <unordered_map>
