@@ -30,6 +30,7 @@ SpatialForcePair<T> operator+(
 
 template <typename T>
 SpatialForcePair<T> operator+=(
+// NOLINTNEXTLINE(runtime/references)
     SpatialForcePair<T>& p1, const SpatialForcePair<T>& p2) {
   p1.first += p2.first;
   p1.second += p2.second;
@@ -156,6 +157,26 @@ ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
     (*F_Mo_W) += force_pair.first;
     (*F_No_W) += force_pair.second;
   }
+}
+
+template <typename T>
+void HydroelasticTractionCalculator<T>::
+ComputeSpatialForcesAtBodyOriginsFromTraction(
+    const HydroelasticTractionCalculatorData<T>& data,
+    const Vector3<T>& p_WQ,
+    const Vector3<T>& traction_Q_W,
+    SpatialForce<T>* F_Mo_W, SpatialForce<T>* F_No_W) const {
+  // Set the two vectors from the contact point to the two body frames, all
+  // expressed in the world frame.
+  const Vector3<T> p_QAo_W = data.X_WA().translation() - p_WQ;
+  const Vector3<T> p_QBo_W = data.X_WB().translation() - p_WQ;
+
+  // Convert the traction to a momentless-spatial force (i.e., without
+  // changing the point of application). This force will be applied to one
+  // body and the (negated) reaction force will be applied to the other.
+  SpatialForce<T> F_Q_W(Vector3<T>(0, 0, 0), traction_Q_W);
+  *F_Mo_W = F_Q_W.Shift(p_QAo_W);
+  *F_No_W = (-F_Q_W).Shift(p_QBo_W);
 }
 
 // Determines the point of contact corresponding to the given barycentric

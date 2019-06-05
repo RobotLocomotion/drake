@@ -68,7 +68,7 @@ public ::testing::TestWithParam<math::RigidTransform<double>> {
   double eps() const { return eps_; }
 
   // Computes the spatial forces due to the hydroelastic model.
-  void ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+  void ComputeSpatialForcesAtBodyOriginsFromTractionAtPoint(
       double dissipation, double mu_coulomb,
       SpatialForce<double>* F_Mo_W, SpatialForce<double>* F_No_W) {
     // Instantiate the traction calculator data.
@@ -106,11 +106,7 @@ public ::testing::TestWithParam<math::RigidTransform<double>> {
 
  private:
   void SetUp() override {
-    // Read the two bodies into the plant. The SDF file refers to a rigid block
-    // penetrating a compliant halfspace while the geometry that we use in the
-    // tests will assume a tetrahedron penetrating a halfspace. Since we don't
-    // use any inertial or geometric properties from the SDF file, that is not
-    // a problem.
+    // Read the two bodies into the plant.
     DiagramBuilder<double> builder;
     SceneGraph<double>* scene_graph;
     std::tie(plant_, scene_graph) = AddMultibodyPlantSceneGraph(&builder);
@@ -171,7 +167,7 @@ public ::testing::TestWithParam<math::RigidTransform<double>> {
   }
 
   // Creates a surface mesh that covers the bottom of the "wetted surface",
-  // where the wetted surface is the part of the tet that would be wet if the
+  // where the wetted surface is the part of the box that would be wet if the
   // halfspace were a fluid. The entire wetted surface *would* yield
   // an open, lopped-off prism with five faces but, for simplicity, we'll only
   // use the bottom face (a single triangle).
@@ -184,10 +180,13 @@ public ::testing::TestWithParam<math::RigidTransform<double>> {
     vertices.emplace_back(Vector3<double>(0.5, 0.5, -0.5));
     vertices.emplace_back(Vector3<double>(-0.5, 0.5, -0.5));
     vertices.emplace_back(Vector3<double>(-0.5, -0.5, -0.5));
+    vertices.emplace_back(Vector3<double>(0.5, -0.5, -0.5));
 
-    // Create the face comprising a single triangle.
+    // Create the face comprising two triangles.
     faces.emplace_back(
         SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2));
+    faces.emplace_back(
+        SurfaceVertexIndex(2), SurfaceVertexIndex(3), SurfaceVertexIndex(0));
 
     return std::make_unique<SurfaceMesh<double>>(
         std::move(faces), std::move(vertices));
@@ -211,7 +210,7 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, VanillaTraction) {
 
   // Compute the spatial forces at the origins of the body frames.
   multibody::SpatialForce<double> F_Mo_W, F_No_W;
-  ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+  ComputeSpatialForcesAtBodyOriginsFromTractionAtPoint(
       dissipation, mu_coulomb, &F_Mo_W, &F_No_W);
 
   // Re-express the spatial forces in Y's frame for easy interpretability.
@@ -226,8 +225,8 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, VanillaTraction) {
   EXPECT_NEAR(f_No_Y[1], 0.0, eps());
   EXPECT_NEAR(f_No_Y[2], 0.5, eps());
 
-  // A moment on the tet will be generated due to the normal traction. The
-  // origin of the tet frame is located at (0,0,0) in the Y frame.
+  // A moment on the box will be generated due to the normal traction. The
+  // origin of the box frame is located at (0,0,0) in the Y frame.
   // The moment arm at the point will be (.5, .5, -.5), again in the Y frame.
   // Crossing this vector with the traction at that point (0, 0, 0.5) yields the
   // following.
@@ -246,14 +245,14 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithFraction) {
   const double dissipation = 0.0;
   const double mu_coulomb = 1.0;
 
-  // Give the tet an initial (vertical) velocity along the +x axis in the Y
+  // Give the box an initial (vertical) velocity along the +x axis in the Y
   // frame.
   const math::RotationMatrix<double>& R_WY = GetParam().rotation();
   SetBoxTranslationalVelocity(R_WY * Vector3<double>(1, 0, 0));
 
   // Compute the spatial forces at the origins of the body frames.
   multibody::SpatialForce<double> F_Mo_W, F_No_W;
-  ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+  ComputeSpatialForcesAtBodyOriginsFromTractionAtPoint(
       dissipation, mu_coulomb, &F_Mo_W, &F_No_W);
 
   // Re-express the spatial forces in Y's frame for easy interpretability.
@@ -274,8 +273,8 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithFraction) {
   EXPECT_NEAR(f_No_Y[1], 0.0, eps());
   EXPECT_NEAR(f_No_Y[2], 0.5, eps());
 
-  // A moment on the tet will be generated due to the traction. The
-  // origin of the tet frame is located at (0,0,0) in the Y frame.
+  // A moment on the box will be generated due to the traction. The
+  // origin of the box frame is located at (0,0,0) in the Y frame.
   // The moment arm at the point will be (.5, .5, -.5). Crossing this vector
   // with the traction at that point (-.5, 0, 0.5) yields the following.
   EXPECT_NEAR(tau_No_Y[0], 0.25, eps());
@@ -293,7 +292,7 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
   const double dissipation = 1.0;
   const double mu_coulomb = 0.0;
 
-  // Give the tet an initial (vertical) velocity along the -z axis in the Y
+  // Give the box an initial (vertical) velocity along the -z axis in the Y
   // frame.
   const math::RotationMatrix<double>& R_WY = GetParam().rotation();
   const double separating_velocity = -1.0;
@@ -310,7 +309,7 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
 
   // Compute the spatial forces at the origins of the body frames.
   multibody::SpatialForce<double> F_Mo_W, F_No_W;
-  ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+  ComputeSpatialForcesAtBodyOriginsFromTractionAtPoint(
       dissipation, mu_coulomb, &F_Mo_W, &F_No_W);
 
   // Re-express the spatial forces in Y's frame for easy interpretability.
@@ -325,8 +324,8 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
   EXPECT_NEAR(f_No_Y[1], 0.0, eps());
   EXPECT_NEAR(f_No_Y[2], normal_traction_magnitude, eps());
 
-  // A moment on the tet will be generated due to the traction. The
-  // origin of the tet frame is located at (0,0,0) in the world frame.
+  // A moment on the box will be generated due to the traction. The
+  // origin of the box frame is located at (0,0,0) in the world frame.
   // The moment arm at the point will be (.5, .5, -.5). Crossing this vector
   // with the traction at that point (0, 0, normal_traction_magnitude) yields
   // the following.
@@ -338,6 +337,33 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
   // opposite.
   EXPECT_NEAR((F_No_W.translational() + F_Mo_W.translational()).norm(),
       0, eps());
+}
+
+// Tests the traction calculation over an entire contact patch.
+TEST_P(MultibodyPlantHydroelasticTractionTests, TractionOverPatch) {
+  const double dissipation = 0.0;
+  const double mu_coulomb = 0.0;
+
+  // Only run this test for Y = identity.
+  if (!GetParam().IsExactlyIdentity())
+    return;
+
+  // Compute the spatial forces at the origins of the body frames.
+  multibody::SpatialForce<double> F_Mo_W, F_No_W;
+  traction_calculator().ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+      plant_context(), contact_surface(), dissipation, mu_coulomb,
+      &F_Mo_W, &F_No_W);
+
+  // Check the spatial force. We know that geometry M is the halfspace,
+  // so we'll check the spatial force for geometry N instead.
+  EXPECT_NEAR(F_No_W.translational()[0], 0.0, eps());
+  EXPECT_NEAR(F_No_W.translational()[1], 0.0, eps());
+  EXPECT_NEAR(F_No_W.translational()[2], 0.5, eps());
+
+  // We expect no moment on the box.
+  EXPECT_NEAR(F_No_W.rotational()[0], 0.0, eps());
+  EXPECT_NEAR(F_No_W.rotational()[1], 0.0, eps());
+  EXPECT_NEAR(F_No_W.rotational()[2], 0.0, eps());
 }
 
 const math::RigidTransform<double> poses[] = {
