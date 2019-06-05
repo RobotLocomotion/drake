@@ -18,41 +18,45 @@ using drake::systems::Context;
 namespace drake {
 namespace multibody {
 
+namespace internal {
+
 template <typename T>
 HydroelasticTractionCalculatorData<T>::HydroelasticTractionCalculatorData(
-    const systems::Context<T>& context,
-    const geometry::ContactSurface<T>& surface,
-    const MultibodyPlant<T>& plant) :
+    const systems::Context<T>* context,
+    const geometry::ContactSurface<T>* surface,
+    const MultibodyPlant<T>* plant) :
     context_(context), surface_(surface), plant_(plant) {
   // Get the transformation of the geometry for M to the world frame.
-  X_WM_ = GetGeometryTransformationToWorld(context_, surface.id_M());
+  X_WM_ = GetGeometryTransformationToWorld(surface->id_M());
 
-  // Get the bodies that the two geometries are attached to. We'll call these
+  // Get the bodies that the two geometries are affixed to. We'll call these
   // A and B.
-  BodyIndex bodyA_index = plant.GetBodyIndexFromRegisteredGeometryId(
-      surface.id_M());
-  BodyIndex bodyB_index = plant.GetBodyIndexFromRegisteredGeometryId(
-      surface.id_N());
-  const Body<T>& bodyA = plant.get_body(bodyA_index);
-  const Body<T>& bodyB = plant.get_body(bodyB_index);
+  BodyIndex bodyA_index = plant->GetBodyIndexFromRegisteredGeometryId(
+      surface->id_M());
+  BodyIndex bodyB_index = plant->GetBodyIndexFromRegisteredGeometryId(
+      surface->id_N());
+  const Body<T>& bodyA = plant->get_body(bodyA_index);
+  const Body<T>& bodyB = plant->get_body(bodyB_index);
 
   // Get the transformation of the two bodies to the world frame.
-  X_WA_ = plant.EvalBodyPoseInWorld(context, bodyA);
-  X_WB_ = plant.EvalBodyPoseInWorld(context, bodyB);
+  X_WA_ = plant->EvalBodyPoseInWorld(*context, bodyA);
+  X_WB_ = plant->EvalBodyPoseInWorld(*context, bodyB);
 
   // Get the spatial velocities for the two bodies (at the body frames).
-  V_WA_ = plant.EvalBodySpatialVelocityInWorld(context, bodyA);
-  V_WB_ = plant.EvalBodySpatialVelocityInWorld(context, bodyB);
+  V_WA_ = plant->EvalBodySpatialVelocityInWorld(*context, bodyA);
+  V_WB_ = plant->EvalBodySpatialVelocityInWorld(*context, bodyB);
 }
 
 template <typename T>
 const RigidTransform<T>
 HydroelasticTractionCalculatorData<T>::GetGeometryTransformationToWorld(
-    const Context<T>& context, geometry::GeometryId geometry_id) const {
+    geometry::GeometryId geometry_id) const {
+  DRAKE_DEMAND(plant_);
+
   // Need the SceneGraphInspector to query the pose relating the geometry's pose
-  // to the pose of the frame it is attached to.
-  const auto& query_object = plant_.get_geometry_query_input_port().
-      template Eval<geometry::QueryObject<T>>(context);
+  // to the pose of the frame it is affixed to.
+  const auto& query_object = plant_->get_geometry_query_input_port().
+      template Eval<geometry::QueryObject<T>>(context());
   const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
   // TODO(edrumwri): Replace this to use a RigidTransform reference when
   // SceneGraphInspector::X_PG() no longer returns an Isometry3.
@@ -60,19 +64,34 @@ HydroelasticTractionCalculatorData<T>::GetGeometryTransformationToWorld(
       RigidTransform<double>(inspector.X_PG(geometry_id)).template cast<T>();
 
   // Compute the pose relating the geometry's pose to the world frame.
-  BodyIndex body_index = plant_.GetBodyIndexFromRegisteredGeometryId(
+  BodyIndex body_index = plant_->GetBodyIndexFromRegisteredGeometryId(
       geometry_id);
-  const Body<T>& body = plant_.get_body(body_index);
-  return plant_.EvalBodyPoseInWorld(context, body) * X_PG;
+  const Body<T>& body = plant_->get_body(body_index);
+  return plant_->EvalBodyPoseInWorld(context(), body) * X_PG;
 }
 
+}  // namespace internal
+
+// Computes the spatial forces on the two bodies due to the traction at the
+// given contact point.
+// @param data computed once for each pair of geometries.
+// @param p_WQ the offset vector from the origin of the world frame to the
+//        contact point, expressed in the world frame.
+// @param traction_Q_W the traction vector at Point Q, expressed in the world
+//        frame, that points toward `surface.M_id()`.
+// @param[out] F_Ao_W on return, the spatial force (due to the traction) that
+//             acts at the origin of the frame of Body A (i.e., that affixed to
+//             `surface.M_id()`).
+// @param[out] F_Bo_W on return, the spatial force (due to the traction) that
+//             acts at the origin of the frame of Body B (i.e., that affixed
+//             to `surface.N_id()`).
 template <typename T>
 void HydroelasticTractionCalculator<T>::
 ComputeSpatialForcesAtBodyOriginsFromTraction(
-    const HydroelasticTractionCalculatorData<T>& data,
+    const internal::HydroelasticTractionCalculatorData<T>& data,
     const Vector3<T>& p_WQ,
     const Vector3<T>& traction_Q_W,
-    SpatialForce<T>* F_Mo_W, SpatialForce<T>* F_No_W) const {
+    SpatialForce<T>* F_Ao_W, SpatialForce<T>* F_Bo_W) const {
   // Set the two vectors from the contact point to the two body frames, all
   // expressed in the world frame.
   const Vector3<T> p_QAo_W = data.X_WA().translation() - p_WQ;
@@ -82,8 +101,8 @@ ComputeSpatialForcesAtBodyOriginsFromTraction(
   // changing the point of application). This force will be applied to one
   // body and the (negated) reaction force will be applied to the other.
   SpatialForce<T> F_Q_W(Vector3<T>(0, 0, 0), traction_Q_W);
-  *F_Mo_W = F_Q_W.Shift(p_QAo_W);
-  *F_No_W = (-F_Q_W).Shift(p_QBo_W);
+  *F_Ao_W = F_Q_W.Shift(p_QAo_W);
+  *F_Bo_W = (-F_Q_W).Shift(p_QBo_W);
 }
 
 // Determines the point of contact corresponding to the given barycentric
@@ -108,7 +127,7 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcContactPoint(
 
 template <typename T>
 Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
-    const HydroelasticTractionCalculatorData<T>& data,
+    const internal::HydroelasticTractionCalculatorData<T>& data,
     geometry::SurfaceFaceIndex face_index,
     const typename geometry::SurfaceMesh<T>::Barycentric&
         Q_barycentric_M, double dissipation, double mu_coulomb,
@@ -186,6 +205,6 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
 // TODO(edrumwri) instantiate these on SymbolicExpression when they no longer
 // causes a linker error complaining about an unresolved symbol in SceneGraph.
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::multibody::HydroelasticTractionCalculatorData)
+    class drake::multibody::internal::HydroelasticTractionCalculatorData)
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class drake::multibody::HydroelasticTractionCalculator)

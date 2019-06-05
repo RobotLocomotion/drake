@@ -60,7 +60,6 @@ drake_cc_library(
         "//geometry:scene_graph",
         "//math:geometric_transform",
         "//math:orthonormal_basis",
-        "//multibody/hydroelastic_contact",
         "//multibody/topology:multibody_graph",
         "//multibody/tree",
         "//systems/framework:diagram_builder",

@@ -22,9 +22,7 @@ using geometry::SurfaceFace;
 using geometry::SurfaceMesh;
 using geometry::SurfaceVertex;
 using geometry::SurfaceVertexIndex;
-using multibody::AddMultibodyPlantSceneGraph;
-using multibody::Parser;
-using multibody::HydroelasticTractionCalculator;
+using multibody::internal::HydroelasticTractionCalculatorData;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
@@ -54,33 +52,29 @@ public ::testing::TestWithParam<math::RigidTransform<double>> {
   const HydroelasticTractionCalculator<double>& traction_calculator() const {
     return *traction_calculator_;
   }
-  const HydroelasticTractionCalculatorData<double>& traction_calculator_data()
-      const {
-    return *traction_calculator_data_;
-  }
   math::RigidTransform<double> GetGeometryTransformationToWorld(
       GeometryId g) const {
-    return traction_calculator_data_->GetGeometryTransformationToWorld(
-        *plant_context_, g);
+    return traction_calculator_data_.GetGeometryTransformationToWorld(g);
   }
 
   // Returns the default numerical tolerance.
   double eps() const { return eps_; }
 
-  // Computes the spatial forces due to the hydroelastic model.
-  void ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+  // Computes the spatial tractions due to the hydroelastic model. This computes
+  // the spatial traction (in units of Pa) at Vertex 0 of Triangle 0.
+  void ComputeSpatialTractionsAtBodyOriginsFromHydroelasticModel(
       double dissipation, double mu_coulomb,
       SpatialForce<double>* F_Mo_W, SpatialForce<double>* F_No_W) {
     // Instantiate the traction calculator data.
     traction_calculator_data_ =
-        std::make_unique<HydroelasticTractionCalculatorData<double>>(
-            *plant_context_, *contact_surface_, plant());
+        HydroelasticTractionCalculatorData<double>(
+            plant_context_, contact_surface_.get(), &plant());
 
     // First compute the traction, expressed in the world frame.
     Vector3<double> p_WQ;
     const Vector3<double> traction_Q_W = traction_calculator().
         CalcTractionAtPoint(
-            traction_calculator_data(), SurfaceFaceIndex(0),
+            traction_calculator_data_, SurfaceFaceIndex(0),
             SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
             dissipation, mu_coulomb, &p_WQ);
 
@@ -95,7 +89,7 @@ public ::testing::TestWithParam<math::RigidTransform<double>> {
       ASSERT_NEAR(p_WQ[i], p_WQ_expected[i], eps());
 
     traction_calculator().ComputeSpatialForcesAtBodyOriginsFromTraction(
-        traction_calculator_data(), p_WQ, traction_Q_W, F_Mo_W, F_No_W);
+        traction_calculator_data_, p_WQ, traction_Q_W, F_Mo_W, F_No_W);
   }
 
   void SetBoxTranslationalVelocity(const Vector3<double>& v) {
@@ -200,27 +194,27 @@ public ::testing::TestWithParam<math::RigidTransform<double>> {
   systems::Context<double>* plant_context_;
   std::unique_ptr<ContactSurface<double>> contact_surface_;
   std::unique_ptr<HydroelasticTractionCalculator<double>> traction_calculator_;
-  std::unique_ptr<HydroelasticTractionCalculatorData<double>>
-      traction_calculator_data_;
+  HydroelasticTractionCalculatorData<double> traction_calculator_data_;
 };
 
-// Tests the traction calculation without any frictional or dissipation forces.
+// Tests the traction calculation without any frictional or dissipation
+// tractions.
 TEST_P(MultibodyPlantHydroelasticTractionTests, VanillaTraction) {
-  const double dissipation = 0.0;
+  const double dissipation = 0.0;  // Units: s/m.
   const double mu_coulomb = 0.0;
 
-  // Compute the spatial forces at the origins of the body frames.
+  // Compute the spatial tractions at the origins of the body frames.
   multibody::SpatialForce<double> F_Mo_W, F_No_W;
-  ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+  ComputeSpatialTractionsAtBodyOriginsFromHydroelasticModel(
       dissipation, mu_coulomb, &F_Mo_W, &F_No_W);
 
-  // Re-express the spatial forces in Y's frame for easy interpretability.
+  // Re-express the spatial tractions in Y's frame for easy interpretability.
   const math::RotationMatrix<double>& R_WY = GetParam().rotation();
   const Vector3<double> f_No_Y = R_WY.transpose() * F_No_W.translational();
   const Vector3<double> tau_No_Y = R_WY.transpose() * F_No_W.rotational();
 
-  // Check the spatial force at p. We know that geometry M is the halfspace,
-  // so we'll check the spatial force for geometry N instead. Note that the
+  // Check the spatial traction at p. We know that geometry M is the halfspace,
+  // so we'll check the spatial traction for geometry N instead. Note that the
   // tangential components are zero.
   EXPECT_NEAR(f_No_Y[0], 0.0, eps());
   EXPECT_NEAR(f_No_Y[1], 0.0, eps());
@@ -241,9 +235,10 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, VanillaTraction) {
       0, eps());
 }
 
-// Tests the traction calculation with friction but without dissipation forces.
-TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithFraction) {
-  const double dissipation = 0.0;
+// Tests the traction calculation with friction but without dissipation
+// tractions.
+TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithFriction) {
+  const double dissipation = 0.0;  // Units: s/m.
   const double mu_coulomb = 1.0;
 
   // Give the tet an initial (vertical) velocity along the +x axis in the Y
@@ -251,22 +246,22 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithFraction) {
   const math::RotationMatrix<double>& R_WY = GetParam().rotation();
   SetBoxTranslationalVelocity(R_WY * Vector3<double>(1, 0, 0));
 
-  // Compute the spatial forces at the origins of the body frames.
+  // Compute the spatial tractions at the origins of the body frames.
   multibody::SpatialForce<double> F_Mo_W, F_No_W;
-  ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+  ComputeSpatialTractionsAtBodyOriginsFromHydroelasticModel(
       dissipation, mu_coulomb, &F_Mo_W, &F_No_W);
 
-  // Re-express the spatial forces in Y's frame for easy interpretability.
+  // Re-express the spatial tractions in Y's frame for easy interpretability.
   const Vector3<double> f_No_Y = R_WY.transpose() * F_No_W.translational();
   const Vector3<double> tau_No_Y = R_WY.transpose() * F_No_W.rotational();
 
-  // Check the spatial force at p. We know that geometry M is the halfspace,
-  // so we'll check the spatial force for geometry N instead. The coefficient
+  // Check the spatial traction at p. We know that geometry M is the halfspace,
+  // so we'll check the spatial traction for geometry N instead. The coefficient
   // of friction is unity, so the total frictional traction will have
   // approximately the same magnitude as the normal traction. Note that the
   // regularized Coulomb friction model requires backing off of the tolerance
-  // for comparing frictional force components (against the Coulomb model); the
-  // units are dissimilar (m/s vs. N and Nm) but using this as the tolerance
+  // for comparing frictional traction components (against the Coulomb model);
+  // the units are dissimilar (m/s vs. N and Nm) but using this as the tolerance
   // has proven useful.
   const double regularization_scalar =
       traction_calculator().regularization_scalar();
@@ -288,9 +283,10 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithFraction) {
       0, eps());
 }
 
-// Tests the traction calculation with dissipation forces but without friction.
+// Tests the traction calculation with dissipation tractions but without
+// friction.
 TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
-  const double dissipation = 1.0;
+  const double dissipation = 1.0;  // Units: s/m.
   const double mu_coulomb = 0.0;
 
   // Give the tet an initial (vertical) velocity along the -z axis in the Y
@@ -308,17 +304,17 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
   const double normal_traction_magnitude = field_value +
       damping_traction_magnitude;
 
-  // Compute the spatial forces at the origins of the body frames.
+  // Compute the spatial tractions at the origins of the body frames.
   multibody::SpatialForce<double> F_Mo_W, F_No_W;
-  ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+  ComputeSpatialTractionsAtBodyOriginsFromHydroelasticModel(
       dissipation, mu_coulomb, &F_Mo_W, &F_No_W);
 
-  // Re-express the spatial forces in Y's frame for easy interpretability.
+  // Re-express the spatial tractions in Y's frame for easy interpretability.
   const Vector3<double> f_No_Y = R_WY.transpose() * F_No_W.translational();
   const Vector3<double> tau_No_Y = R_WY.transpose() * F_No_W.rotational();
 
-  // Check the spatial force at p. We know that geometry M is the halfspace,
-  // so we'll check the spatial force for geometry N instead. The coefficient
+  // Check the spatial traction at p. We know that geometry M is the halfspace,
+  // so we'll check the spatial traction for geometry N instead. The coefficient
   // of friction is unity, so the total frictional traction will have the same
   // magnitude as the normal traction.
   EXPECT_NEAR(f_No_Y[0], 0.0, eps());
