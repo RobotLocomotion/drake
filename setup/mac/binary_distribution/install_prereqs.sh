@@ -22,6 +22,8 @@ fi
 # TODO(jamiesnape): Remove line uninstalling embree, ospray, and vtk@8.1
 # formulae on or after 2019-07-01.
 /usr/local/bin/brew uninstall --force embree ospray vtk@8.1
+# TODO(jamiesnape): Remove line uninstalling ipopt on or after 2019-08-01.
+/usr/local/bin/brew uninstall --force ipopt
 /usr/local/bin/brew bundle --file="${BASH_SOURCE%/*}/Brewfile"
 
 /usr/local/bin/pip2 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements.txt"
