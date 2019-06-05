@@ -34,7 +34,7 @@ CsdpDocExample::CsdpDocExample()
       3 * X2_(0, 0) + 4 * X2_(1, 1) + 2 * X2_(0, 2) + 5 * X2_(2, 2) + y_(1), 2);
 }
 
-LinearProgram1::LinearProgram1()
+LinearProgramBoundingBox1::LinearProgramBoundingBox1()
     : prog_{new MathematicalProgram()}, x_{prog_->NewContinuousVariables<8>()} {
   Eigen::Matrix<double, 8, 1> lower, upper;
   lower << 0, 0, -1, -kInf, -2, 0, 1, -kInf;
@@ -43,7 +43,7 @@ LinearProgram1::LinearProgram1()
   prog_->AddLinearCost(-(-x_(0) + x_(1) - 2 * x_(2) + 3 * x_(3) + x_(4) + 1));
 }
 
-LinearProgram2::LinearProgram2()
+CsdpLinearProgram2::CsdpLinearProgram2()
     : prog_{new MathematicalProgram()}, x_{prog_->NewContinuousVariables<3>()} {
   prog_->AddLinearEqualityConstraint(2 * x_(0) + 3 * x_(1) + x_(2), 1);
   Eigen::Matrix<double, 4, 3> A;
@@ -59,7 +59,7 @@ LinearProgram2::LinearProgram2()
   prog_->AddLinearCost(x_(0) + 2 * x_(1) + 3 * x_(2));
 }
 
-LinearProgram3::LinearProgram3()
+CsdpLinearProgram3::CsdpLinearProgram3()
     : prog_{new MathematicalProgram()}, x_{prog_->NewContinuousVariables<3>()} {
   prog_->AddBoundingBoxConstraint(Eigen::Vector2d(-1, -kInf),
                                   Eigen::Vector2d(10, 8), x_.head<2>());

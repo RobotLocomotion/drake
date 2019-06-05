@@ -49,9 +49,22 @@ struct BlockInX {
 };
 
 /**
- * @anchor map_decision_variable_to_sdpa
- * Each of the variable x in MathematicalProgram might be mapped to a variable
- * in the SDPA free format, depending on the following conditions.
+ * Refer to @ref map_decision_variable_to_sdpa
+ * When the decision variable either (or both) finite lower or upper bound (with
+ * the two bounds not equal), we need to record the sign of the coefficient
+ * before y.
+ */
+enum class Sign {
+  kPositive,
+  kNegative,
+};
+
+/**
+ * @anchor map_decision_variable_to_sdpa Map decision variable to SDPA
+ * When MathematicalProgram formulates a semidefinite program (SDP), we can
+ * convert MathematicalProgram to a standard format for SDP, namely the SDPA
+ * format. Each of the variable x in MathematicalProgram might be mapped to a
+ * variable in the SDPA free format, depending on the following conditions.
  * 1. If the variable x has no lower nor upper bound, it is mapped to a free
  *    variable in SDPA free format.
  * 2. If the variable x only has a finite lower bound, and an infinite upper
@@ -66,24 +79,8 @@ struct BlockInX {
  *    entries in X in SDPA free format.
  * 5. If the variable x has equal lower and upper bound, then we replace x with
  *    the double value of lower bound.
- */
-//@{
-/**
- * Refer to @ref map_decision_variable_to_sdpa
- * When the decision variable either (or both) finite lower or upper bound (with
- * the two bounds not equal), we need to record the sign of the coefficient
- * before y.
- */
-enum class Sign {
-  kPositive,
-  kNegative,
-};
-
-/**
- * Refer to @ref map_decision_variable_to_sdpa.
  * A MathematicalProgram decision variable can be replaced by coeff_sign * y +
- * offset, where y is a diagonal entry in SDPA X matrix. (See case 2, 3, 4 in
- * @ref map_decision_variable_to_sdpa).
+ * offset, where y is a diagonal entry in SDPA X matrix.
  */
 struct DecisionVariableInSdpaX {
   DecisionVariableInSdpaX(Sign coeff_sign_m, double offset_m,
@@ -101,14 +98,14 @@ struct DecisionVariableInSdpaX {
   double offset;
   EntryInX entry_in_X;
 };
-//@}
 
 /**
  * SDPA format with free variables.
- * max tr(C * X) + dᵀs
- * s.t tr(Aᵢ*X) + bᵢᵀs = gᵢ
- *     X ≽ 0
- *     s is free.
+ *
+ *     max tr(C * X) + dᵀs
+ *     s.t tr(Aᵢ*X) + bᵢᵀs = gᵢ
+ *         X ≽ 0
+ *         s is free.
  */
 class SdpaFreeFormat {
  public:
@@ -136,6 +133,7 @@ class SdpaFreeFormat {
     return B_triplets_;
   }
 
+  /** The right-hand side of the linear equality constraints. */
   const Eigen::VectorXd& g() const { return g_; }
 
   int num_X_rows() const { return num_X_rows_; }
@@ -158,6 +156,9 @@ class SdpaFreeFormat {
 
   const Eigen::SparseMatrix<double>& d() const { return d_; }
 
+  /** The SDPA format doesn't include the constant term in the cost, but
+   * MathematicalProgram does. We store the constant cost term here.
+   */
   double constant_min_cost_term() const { return constant_min_cost_term_; }
 
  private:
@@ -245,8 +246,6 @@ class SdpaFreeFormat {
 
   int num_X_rows_{0};
   int num_free_variables_{0};
-  // The SDPA format doesn't include the constant term in the cost, but
-  // MathematicalProgram does. We store the constant cost term here.
   double constant_min_cost_term_{0.0};
 
   std::vector<Eigen::SparseMatrix<double>> A_;

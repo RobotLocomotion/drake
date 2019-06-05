@@ -62,12 +62,12 @@ void CompareTriplets(const std::vector<Eigen::Triplet<double>>& triplets1,
 
 TEST_F(SDPwithOverlappingVariables, TestSdpaFreeFormatConstructor) {
   const SdpaFreeFormat dut(*prog_);
-  EXPECT_EQ(dut.num_X_rows(), 4);
-  EXPECT_EQ(dut.num_free_variables(), 0);
-  EXPECT_EQ(dut.X_blocks().size(), 2);
+  ASSERT_EQ(dut.num_X_rows(), 4);
+  ASSERT_EQ(dut.num_free_variables(), 0);
+  ASSERT_EQ(dut.X_blocks().size(), 2);
   CompareBlockInX(dut.X_blocks()[0], BlockInX(BlockType::kMatrix, 2));
   CompareBlockInX(dut.X_blocks()[1], BlockInX(BlockType::kMatrix, 2));
-  EXPECT_EQ(dut.prog_var_in_sdpa().size(), 3);
+  ASSERT_EQ(dut.prog_var_in_sdpa().size(), 3);
   CompareProgVarInSdpa(dut, prog_->FindDecisionVariableIndex(x_(0)),
                        DecisionVariableInSdpaX(Sign::kPositive, 0, 0, 0, 0, 0));
   CompareProgVarInSdpa(dut, prog_->FindDecisionVariableIndex(x_(1)),
@@ -76,7 +76,7 @@ TEST_F(SDPwithOverlappingVariables, TestSdpaFreeFormatConstructor) {
                        DecisionVariableInSdpaX(Sign::kPositive, 0, 1, 0, 1, 2));
 
   // Check A_triplets.
-  EXPECT_EQ(dut.A_triplets().size(), 4);
+  ASSERT_EQ(dut.A_triplets().size(), 4);
   CompareTriplets(
       dut.A_triplets()[0],
       {Eigen::Triplet<double>(0, 0, 1.0), Eigen::Triplet<double>(1, 1, -1.0)},
@@ -166,7 +166,7 @@ TEST_F(CsdpDocExample, TestSdpaFreeFormatConstructor) {
   EXPECT_TRUE(CompareMatrices(dut.g(), Eigen::Vector2d(1, 2)));
 }
 
-TEST_F(LinearProgram1, TestSdpaFreeFormatConstructor) {
+TEST_F(LinearProgramBoundingBox1, TestSdpaFreeFormatConstructor) {
   // Test if we can correctly register decision variables with bounding box
   // constraints.
   SdpaFreeFormat dut(*prog_);
@@ -216,7 +216,7 @@ TEST_F(LinearProgram1, TestSdpaFreeFormatConstructor) {
   EXPECT_EQ(dut.constant_min_cost_term(), -31);
 }
 
-TEST_F(LinearProgram2, TestSdpaFreeFormatConstructor) {
+TEST_F(CsdpLinearProgram2, TestSdpaFreeFormatConstructor) {
   // This tests adding linear constraint.
   const SdpaFreeFormat dut(*prog_);
   EXPECT_EQ(dut.num_X_rows(), 4);
@@ -290,7 +290,7 @@ TEST_F(LinearProgram2, TestSdpaFreeFormatConstructor) {
   CompareTriplets(dut.d_triplets(), d_triplets_expected, 3, 1);
 }
 
-TEST_F(LinearProgram3, TestSdpaFreeFormatConstructor) {
+TEST_F(CsdpLinearProgram3, TestSdpaFreeFormatConstructor) {
   const SdpaFreeFormat dut(*prog_);
   EXPECT_EQ(dut.num_X_rows(), 7);
   EXPECT_EQ(dut.num_free_variables(), 1);

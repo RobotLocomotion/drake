@@ -68,9 +68,9 @@ class CsdpDocExample : public ::testing::Test {
  *  1 <= x(6) <= 1
  * -inf<=x(7) <= inf
  */
-class LinearProgram1 : public ::testing::Test {
+class LinearProgramBoundingBox1 : public ::testing::Test {
  public:
-  LinearProgram1();
+  LinearProgramBoundingBox1();
 
  protected:
   std::unique_ptr<MathematicalProgram> prog_;
@@ -88,9 +88,9 @@ class LinearProgram1 : public ::testing::Test {
  * The optimal solution is x = (5 / 13, -2 / 13, 9 / 13). The optimal cost is
  * (28 / 13).
  */
-class LinearProgram2 : public ::testing::Test {
+class CsdpLinearProgram2 : public ::testing::Test {
  public:
-  LinearProgram2();
+  CsdpLinearProgram2();
 
  protected:
   std::unique_ptr<MathematicalProgram> prog_;
@@ -109,9 +109,9 @@ class LinearProgram2 : public ::testing::Test {
  *     x(1) <= 8
  * The optimal solution is (10, -2/3, -17/9), the optimal cost is 121 / 9
  */
-class LinearProgram3 : public ::testing::Test {
+class CsdpLinearProgram3 : public ::testing::Test {
  public:
-  LinearProgram3();
+  CsdpLinearProgram3();
 
  protected:
   std::unique_ptr<MathematicalProgram> prog_;
