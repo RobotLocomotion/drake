@@ -30,7 +30,6 @@ namespace multibody {
 // pre-finalize.
 #define DRAKE_MBP_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
 
-using geometry::ContactSurface;
 using geometry::FrameId;
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;

@@ -20,33 +20,21 @@ namespace internal {
 template <typename T>
 class HydroelasticTractionCalculatorData {
  public:
-  HydroelasticTractionCalculatorData() {}
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HydroelasticTractionCalculatorData)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HydroelasticTractionCalculatorData)
 
-  // @param context a pointer to the MultibodyPlant context that will maintained
-  //        for the life of this object.
+  // @param context the MultibodyPlant context.
+  // @param plant the plant used to compute the data for the
+  //        traction calculations.
   // @param surface a pointer to the contact surface computed by the
   //        hydroelastic contact model that will be maintained for the life of
   //        this object.
-  // @param plant a pointer to the the plant used to compute the data for the
-  //        traction calculations that will be maintained for the life of this
-  //        object.
   HydroelasticTractionCalculatorData(
-      const systems::Context<T>* context,
-      const geometry::ContactSurface<T>* surface,
-      const MultibodyPlant<T>* plant);
-
-  // Gets the context for the MultibodyPlant.
-  const systems::Context<T>& context() const {
-    DRAKE_DEMAND(context_);
-    return *context_;
-  }
+      const systems::Context<T>& context,
+      const MultibodyPlant<T>& plant,
+      const geometry::ContactSurface<T>* surface);
 
   // Gets the ContactSurface passed to the data structure on construction.
-  const geometry::ContactSurface<T>& surface() const {
-    DRAKE_DEMAND(surface_);
-    return *surface_;
-  }
+  const geometry::ContactSurface<T>& surface() const { return surface_; }
 
   // Gets the pose from Body A (the body that Geometry M in the contact surface
   // is affixed to) relative to the world frame.
@@ -56,7 +44,7 @@ class HydroelasticTractionCalculatorData {
   // is affixed to) relative to the world frame.
   const math::RigidTransform<T>& X_WB() const { return X_WB_; }
 
-  // Gets the pose from Geometry N in the contact surface to the world frame.
+  // Gets the pose from Geometry M in the contact surface to the world frame.
   const math::RigidTransform<T>& X_WM() const { return X_WM_; }
 
   // Gets the spatial velocity of Body A (the body that Geometry M in the
@@ -69,38 +57,26 @@ class HydroelasticTractionCalculatorData {
   // in the world frame and expressed in the world frame.
   const SpatialVelocity<T>& V_WB() const { return V_WB_; }
 
-  /**
-   Convenience function for getting the pose of a geometry relative to the world
-   frame.
-   @param geometry_id the id of the requisite geometry.
-   @pre geometry_id has been registered with the MultibodyPlant `this` was
-        constructed with.
-   */
-  const math::RigidTransform<T> GetGeometryTransformationToWorld(
-      geometry::GeometryId geometry_id) const;
-
  private:
-  const systems::Context<T>* context_{nullptr};
-  const geometry::ContactSurface<T>* surface_{nullptr};
-  const MultibodyPlant<T>* plant_{nullptr};
+  const geometry::ContactSurface<T>& surface_;
   math::RigidTransform<T> X_WM_;
   math::RigidTransform<T> X_WA_;
   math::RigidTransform<T> X_WB_;
   SpatialVelocity<T> V_WA_;
   SpatialVelocity<T> V_WB_;
 };
+
 }  // namespace internal
 
 /**
  A class for computing the spatial forces on rigid bodies in a MultibodyPlant
- as a function of the hydroelastic contact model.
+ using the hydroelastic contact model.
  */
 template <typename T>
 class HydroelasticTractionCalculator {
  public:
+  HydroelasticTractionCalculator() {}
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HydroelasticTractionCalculator)
-  explicit HydroelasticTractionCalculator(
-      MultibodyPlant<T>* plant) : plant_(plant) {}
 
   /**
    Gets the regularization parameter used for friction (in m/s). The closer
@@ -117,23 +93,15 @@ class HydroelasticTractionCalculator {
       const internal::HydroelasticTractionCalculatorData<T>& data,
       geometry::SurfaceFaceIndex face_index,
       const typename geometry::SurfaceMesh<T>::Barycentric&
-          Q_barycentric_M, double dissipation, double mu_coulomb,
+          Q_barycentric, double dissipation, double mu_coulomb,
       Vector3<T>* p_WQ) const;
 
   void ComputeSpatialForcesAtBodyOriginsFromTraction(
       const internal::HydroelasticTractionCalculatorData<T>& data,
       const Vector3<T>& p_WQ,
       const Vector3<T>& traction_Q_W,
-      multibody::SpatialForce<T>* F_Mo_W,
-      multibody::SpatialForce<T>* F_No_W) const;
-
-  Vector3<T> CalcContactPoint(
-      const geometry::ContactSurface<T>& surface,
-      geometry::SurfaceFaceIndex face_index,
-      const typename geometry::SurfaceMesh<T>::Barycentric& r_barycentric_M,
-      const math::RigidTransform<T>& X_WM) const;
-
-  MultibodyPlant<T>* plant_{nullptr};
+      multibody::SpatialForce<T>* F_Ao_W,
+      multibody::SpatialForce<T>* F_Bo_W) const;
 
   // The parameter (in m/s) for regularizing the Coulomb friction model.
   double vslip_regularizer_{1e-6};

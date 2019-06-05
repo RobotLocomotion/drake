@@ -9,10 +9,9 @@
 #include "drake/multibody/triangle_quadrature/triangle_quadrature.h"
 
 using drake::geometry::ContactSurface;
-using drake::math::ComputeBasisFromAxis;
+using drake::geometry::SurfaceFaceIndex;
+using drake::geometry::SurfaceMesh;
 using drake::math::RigidTransform;
-using drake::math::RotationMatrix;
-using drake::multibody::SpatialForce;
 using drake::systems::Context;
 
 namespace drake {
@@ -22,52 +21,33 @@ namespace internal {
 
 template <typename T>
 HydroelasticTractionCalculatorData<T>::HydroelasticTractionCalculatorData(
-    const systems::Context<T>* context,
-    const geometry::ContactSurface<T>* surface,
-    const MultibodyPlant<T>* plant) :
-    context_(context), surface_(surface), plant_(plant) {
+    const Context<T>& context,
+    const MultibodyPlant<T>& plant,
+    const ContactSurface<T>* surface) :
+    surface_(*surface) {
+  DRAKE_DEMAND(surface);
+
   // Get the transformation of the geometry for M to the world frame.
-  X_WM_ = GetGeometryTransformationToWorld(surface->id_M());
+  const auto& query_object = plant.get_geometry_query_input_port().
+      template Eval<geometry::QueryObject<T>>(context);
+  X_WM_ = query_object.X_WG(surface->id_M());
 
   // Get the bodies that the two geometries are affixed to. We'll call these
   // A and B.
-  BodyIndex bodyA_index = plant->GetBodyIndexFromRegisteredGeometryId(
+  BodyIndex bodyA_index = plant.GetBodyIndexFromRegisteredGeometryId(
       surface->id_M());
-  BodyIndex bodyB_index = plant->GetBodyIndexFromRegisteredGeometryId(
+  BodyIndex bodyB_index = plant.GetBodyIndexFromRegisteredGeometryId(
       surface->id_N());
-  const Body<T>& bodyA = plant->get_body(bodyA_index);
-  const Body<T>& bodyB = plant->get_body(bodyB_index);
+  const Body<T>& bodyA = plant.get_body(bodyA_index);
+  const Body<T>& bodyB = plant.get_body(bodyB_index);
 
   // Get the transformation of the two bodies to the world frame.
-  X_WA_ = plant->EvalBodyPoseInWorld(*context, bodyA);
-  X_WB_ = plant->EvalBodyPoseInWorld(*context, bodyB);
+  X_WA_ = plant.EvalBodyPoseInWorld(context, bodyA);
+  X_WB_ = plant.EvalBodyPoseInWorld(context, bodyB);
 
   // Get the spatial velocities for the two bodies (at the body frames).
-  V_WA_ = plant->EvalBodySpatialVelocityInWorld(*context, bodyA);
-  V_WB_ = plant->EvalBodySpatialVelocityInWorld(*context, bodyB);
-}
-
-template <typename T>
-const RigidTransform<T>
-HydroelasticTractionCalculatorData<T>::GetGeometryTransformationToWorld(
-    geometry::GeometryId geometry_id) const {
-  DRAKE_DEMAND(plant_);
-
-  // Need the SceneGraphInspector to query the pose relating the geometry's pose
-  // to the pose of the frame it is affixed to.
-  const auto& query_object = plant_->get_geometry_query_input_port().
-      template Eval<geometry::QueryObject<T>>(context());
-  const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
-  // TODO(edrumwri): Replace this to use a RigidTransform reference when
-  // SceneGraphInspector::X_PG() no longer returns an Isometry3.
-  const RigidTransform<T> X_PG =
-      RigidTransform<double>(inspector.X_PG(geometry_id)).template cast<T>();
-
-  // Compute the pose relating the geometry's pose to the world frame.
-  BodyIndex body_index = plant_->GetBodyIndexFromRegisteredGeometryId(
-      geometry_id);
-  const Body<T>& body = plant_->get_body(body_index);
-  return plant_->EvalBodyPoseInWorld(context(), body) * X_PG;
+  V_WA_ = plant.EvalBodySpatialVelocityInWorld(context, bodyA);
+  V_WB_ = plant.EvalBodySpatialVelocityInWorld(context, bodyB);
 }
 
 }  // namespace internal
@@ -77,8 +57,8 @@ HydroelasticTractionCalculatorData<T>::GetGeometryTransformationToWorld(
 // @param data computed once for each pair of geometries.
 // @param p_WQ the offset vector from the origin of the world frame to the
 //        contact point, expressed in the world frame.
-// @param traction_Q_W the traction vector at Point Q, expressed in the world
-//        frame, that points toward `surface.M_id()`.
+// @param traction_Q_W the traction vector applied to Body A at Point Q,
+//        expressed in the world frame.
 // @param[out] F_Ao_W on return, the spatial force (due to the traction) that
 //             acts at the origin of the frame of Body A (i.e., that affixed to
 //             `surface.M_id()`).
@@ -105,44 +85,24 @@ ComputeSpatialForcesAtBodyOriginsFromTraction(
   *F_Bo_W = (-F_Q_W).Shift(p_QBo_W);
 }
 
-// Determines the point of contact corresponding to the given barycentric
-// coordinates. Returns an offset vector from the world frame to the point of
-// contact (Q), expressed in the world frame.
-template <typename T>
-Vector3<T> HydroelasticTractionCalculator<T>::CalcContactPoint(
-    const ContactSurface<T>& surface,
-    geometry::SurfaceFaceIndex face_index,
-    const typename geometry::SurfaceMesh<T>::Barycentric&
-        Q_barycentric_M,
-    const RigidTransform<T>& X_WM) const {
-  // Convert the barycentric coordinate to 3D.
-  const auto& mesh = surface.mesh();
-  const auto& va = mesh.vertex(mesh.element(face_index).vertex(0));
-  const auto& vb = mesh.vertex(mesh.element(face_index).vertex(1));
-  const auto& vc = mesh.vertex(mesh.element(face_index).vertex(2));
-  const Vector3<T> r_MQ = va.r_MV() * Q_barycentric_M[0] +
-      vb.r_MV() * Q_barycentric_M[1] + vc.r_MV() * Q_barycentric_M[2];
-  return X_WM * r_MQ;
-}
-
 template <typename T>
 Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
     const internal::HydroelasticTractionCalculatorData<T>& data,
-    geometry::SurfaceFaceIndex face_index,
-    const typename geometry::SurfaceMesh<T>::Barycentric&
-        Q_barycentric_M, double dissipation, double mu_coulomb,
+    SurfaceFaceIndex face_index,
+    const typename SurfaceMesh<T>::Barycentric&
+        Q_barycentric, double dissipation, double mu_coulomb,
     Vector3<T>* p_WQ) const {
   // Compute the point of contact in the world frame.
-  *p_WQ = CalcContactPoint(
-      data.surface(), face_index, Q_barycentric_M, data.X_WM());
+  *p_WQ = data.X_WM() * data.surface().mesh().CalcCartesianFromBarycentric(
+      face_index, Q_barycentric);
 
   // Get the "hydroelastic pressure" at the point (in Newtons).
-  const T e_mn = data.surface().EvaluateE_MN(face_index, Q_barycentric_M);
+  const T e_mn = data.surface().EvaluateE_MN(face_index, Q_barycentric);
 
-  // Get the normal from M to N, expressed in the global frame, to the contact
+  // Get the normal from M to N, expressed in the world frame, to the contact
   // surface at Q.
   const Vector3<T> h_MN_M = data.surface().EvaluateGrad_h_MN_M(
-      face_index, Q_barycentric_M);
+      face_index, Q_barycentric);
   const Vector3<T> nhat_MN_M = h_MN_M.normalized();
   const Vector3<T> nhat_MN_W = data.X_WM().rotation() * nhat_MN_M;
 
