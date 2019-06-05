@@ -9,14 +9,13 @@
 namespace drake {
 namespace solvers {
 /**
- * min 2 * x0 + x2
- * s.t [x0 x1] is psd
- *     [x1 x0]
-
- *     [x0 x2] is psd
- *     [x2 x0]
- *     x1 == 1
- * the optimal solution is x = (1, 1, -1).
+ * min 2x0 + x2
+ * s.t ⎡x0 x1⎤ is psd,
+ *     ⎣x1 x0⎦
+ *     ⎡x0 x2⎤ is psd, and
+ *     ⎣x2 x0⎦
+ *     x1 == 1.
+ * The optimal solution is x = (1, 1, -1).
  */
 class SDPwithOverlappingVariables : public ::testing::Test {
  public:
@@ -33,17 +32,17 @@ class SDPwithOverlappingVariables : public ::testing::Test {
  * s.t tr(A1 * X1) + y(0) = 1
  *     tr(A2 * X2) + y(1) = 2
  *     X1, X2 are psd.
- *     y(0), y(1) >= 0
- * where C1 = [2 1]
- *            [1 2]
- *       C2 = [3 0 1]
- *            [0 2 0]
- *            [1 0 3]
- *       A1 = [3 1]
- *            [1 3]
- *       A2 = [3 0 1]
- *            [0 4 0]
- *            [1 0 5]
+ *     y(0), y(1) ≥ 0
+ * where C1 = ⎡2 1⎤
+ *            ⎣1 2⎦
+ *       C2 = ⎡3 0 1⎤
+ *            ⎢0 2 0⎥
+ *            ⎣1 0 3⎦
+ *       A1 = ⎡3 1⎤
+ *            ⎣1 3⎦
+ *       A2 = ⎡3 0 1⎤
+ *            ⎢0 4 0⎥
+ *            ⎣1 0 5⎦
  */
 class CsdpDocExample : public ::testing::Test {
  public:
@@ -59,14 +58,14 @@ class CsdpDocExample : public ::testing::Test {
 /**
  * A simple linear program withou only bounding box constraint.
  * max -x(0) + x(1) - 2 *x(2) + 3 * x(3) + x(4) + 1
- * 0 <= x(0)
- * 0 <= x(1) <= 5;
- * -1 <= x(2)
- *       x(3) <= 10
- * -2 <= x(4) <= 5
- *  0 <= x(5) <= 0
- *  1 <= x(6) <= 1
- * -inf<=x(7) <= inf
+ * 0 ≤ x(0)
+ * 0 ≤ x(1) ≤ 5;
+ * -1 ≤ x(2)
+ *       x(3) ≤ 10
+ * -2 ≤ x(4) ≤ 5
+ *  0 ≤ x(5) ≤ 0
+ *  1 ≤ x(6) ≤ 1
+ * -inf≤x(7) ≤ inf
  */
 class LinearProgramBoundingBox1 : public ::testing::Test {
  public:
@@ -79,12 +78,12 @@ class LinearProgramBoundingBox1 : public ::testing::Test {
 
 /**
  * A simple linear program.
- * min x(0) + 2 * x(1) +  3 * x(2)
- * s.t 2 * x(0) + 3 * x(1) + x(2) = 1
- *     -2 * x(2) + x(0) <= -1
- *     2 * x(1) + x(0) >= -2
- *     -2 <= -x(0) + 3 * x(2) <= 3
- *     x(0) + x(1) + 4 * x(2) = 3
+ * min x(0) + 2x(1) +  3x(2)
+ * s.t 2x(0) + 3x(1) + x(2) = 1
+ *     -2x(2) + x(0) ≤ -1
+ *     2x(1) + x(0) ≥ -2
+ *     -2 ≤ -x(0) + 3x(2) ≤ 3
+ *     x(0) + x(1) + 4x(2) = 3
  * The optimal solution is x = (5 / 13, -2 / 13, 9 / 13). The optimal cost is
  * (28 / 13).
  */
@@ -102,11 +101,11 @@ class CsdpLinearProgram2 : public ::testing::Test {
  * constraint.
  * max 2x(0) + 3x(1) + 4x(2) + 3
  * s.t x(0) + 2x(1) + 3x(2) = 3
- *     2x(0) - x(2) >= -1
- *     x(1) - 3x(2) <= 5
- *     -4 <= x(0) + x(2) <= 9
- *     -1 <= x(0) <= 10
- *     x(1) <= 8
+ *     2x(0) - x(2) ≥ -1
+ *     x(1) - 3x(2) ≤ 5
+ *     -4 ≤ x(0) + x(2) ≤ 9
+ *     -1 ≤ x(0) ≤ 10
+ *     x(1) ≤ 8
  * The optimal solution is (10, -2/3, -17/9), the optimal cost is 121 / 9
  */
 class CsdpLinearProgram3 : public ::testing::Test {
@@ -123,7 +122,7 @@ class CsdpLinearProgram3 : public ::testing::Test {
  * max X1(0, 1) + X1(1, 2)
  * s.t X1 ∈ ℝ³ˣ³ is psd
  *     X1(0, 0) + X1(1, 1) + X1(2, 2) = 1
- *     X1(0, 1) + X1(1, 2) - 2 * X1(0, 2) <= 0
+ *     X1(0, 1) + X1(1, 2) - 2 * X1(0, 2) ≤ 0
  */
 class TrivialSDP1 : public ::testing::Test {
  public:

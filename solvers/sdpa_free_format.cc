@@ -90,41 +90,47 @@ void AddTermToTriplets(const EntryInX& entry_in_X, double coeff,
 }
 
 void SdpaFreeFormat::AddLinearEqualityConstraint(
-    const std::vector<double>& a, const std::vector<int>& prog_vars_indices,
-    const std::vector<double>& b, const std::vector<EntryInX>& X_entries,
-    const std::vector<double>& c,
-    const std::vector<FreeVariableIndex>& s_indices, double rhs) {
-  DRAKE_ASSERT(a.size() == prog_vars_indices.size());
-  DRAKE_ASSERT(b.size() == X_entries.size());
-  DRAKE_ASSERT(c.size() == s_indices.size());
+    const std::vector<double>& coeff_prog_vars,
+    const std::vector<int>& prog_vars_indices,
+    const std::vector<double>& coeff_X_entries,
+    const std::vector<EntryInX>& X_entries,
+    const std::vector<double>& coeff_free_vars,
+    const std::vector<FreeVariableIndex>& free_vars_indices, double rhs) {
+  DRAKE_ASSERT(coeff_prog_vars.size() == prog_vars_indices.size());
+  DRAKE_ASSERT(coeff_X_entries.size() == X_entries.size());
+  DRAKE_ASSERT(coeff_free_vars.size() == free_vars_indices.size());
   const int constraint_index = static_cast<int>(A_triplets_.size());
   std::vector<Eigen::Triplet<double>> Ai_triplets;
   // If the entries are off-diagonal entries of X, then it needs two
   // coefficients in Ai, for both the upper and lower diagonal part.
-  Ai_triplets.reserve(static_cast<int>(a.size() + b.size()) * 2);
+  Ai_triplets.reserve(
+      static_cast<int>(coeff_prog_vars.size() + coeff_X_entries.size()) * 2);
   g_.conservativeResize(g_.rows() + 1);
   g_(constraint_index) = rhs;
-  for (int i = 0; i < static_cast<int>(a.size()); ++i) {
-    if (a[i] != 0) {
+  for (int i = 0; i < static_cast<int>(coeff_prog_vars.size()); ++i) {
+    if (coeff_prog_vars[i] != 0) {
       const int prog_var_index = prog_vars_indices[i];
       if (holds_alternative<DecisionVariableInSdpaX>(
               prog_var_in_sdpa_[prog_var_index])) {
         // This variable is an entry in X.
         const auto& decision_var_in_X =
             get<DecisionVariableInSdpaX>(prog_var_in_sdpa_[prog_var_index]);
-        g_(constraint_index) -= a[i] * decision_var_in_X.offset;
-        const double coeff =
-            decision_var_in_X.coeff_sign == Sign::kPositive ? a[i] : -a[i];
+        g_(constraint_index) -= coeff_prog_vars[i] * decision_var_in_X.offset;
+        const double coeff = decision_var_in_X.coeff_sign == Sign::kPositive
+                                 ? coeff_prog_vars[i]
+                                 : -coeff_prog_vars[i];
         AddTermToTriplets(decision_var_in_X.entry_in_X, coeff, &Ai_triplets);
       } else if (holds_alternative<double>(prog_var_in_sdpa_[prog_var_index])) {
         // This variable has a constant value.
         const double var_value = get<double>(prog_var_in_sdpa_[prog_var_index]);
-        g_(constraint_index) -= a[i] * var_value;
+        g_(constraint_index) -= coeff_prog_vars[i] * var_value;
       } else if (holds_alternative<FreeVariableIndex>(
                      prog_var_in_sdpa_[prog_var_index])) {
+        // This variable is a free variable (no lower nor upper bound).
         B_triplets_.emplace_back(
             constraint_index,
-            get<FreeVariableIndex>(prog_var_in_sdpa_[prog_var_index]), a[i]);
+            get<FreeVariableIndex>(prog_var_in_sdpa_[prog_var_index]),
+            coeff_prog_vars[i]);
       } else {
         throw std::runtime_error(
             "SdpaFreeFormat::AddLinearEqualityConstraint() : this decision "
@@ -132,20 +138,23 @@ void SdpaFreeFormat::AddLinearEqualityConstraint(
       }
     }
   }
-  for (int i = 0; i < static_cast<int>(b.size()); ++i) {
-    if (b[i] != 0) {
-      AddTermToTriplets(X_entries[i], b[i], &Ai_triplets);
+  // Adds coeff_X_entries * X_entries.
+  for (int i = 0; i < static_cast<int>(coeff_X_entries.size()); ++i) {
+    if (coeff_X_entries[i] != 0) {
+      AddTermToTriplets(X_entries[i], coeff_X_entries[i], &Ai_triplets);
     }
   }
   A_triplets_.push_back(Ai_triplets);
-  if (!b.empty()) {
-    for (int i = 0; i < static_cast<int>(c.size()); ++i) {
-      B_triplets_.emplace_back(constraint_index, s_indices[i], c[i]);
+  // Adds coeff_free_vars * free_vars.
+  if (!coeff_X_entries.empty()) {
+    for (int i = 0; i < static_cast<int>(coeff_free_vars.size()); ++i) {
+      B_triplets_.emplace_back(constraint_index, free_vars_indices[i],
+                               coeff_free_vars[i]);
     }
   }
 }
 
-void SdpaFreeFormat::AddEqualityConstraintOnXentriesForSameDecisionVariable(
+void SdpaFreeFormat::AddEqualityConstraintOnXEntriesForSameDecisionVariable(
     const std::unordered_map<symbolic::Variable::Id, std::vector<EntryInX>>&
         entries_in_X_for_same_decision_variable) {
   for (const auto& item : entries_in_X_for_same_decision_variable) {
@@ -153,13 +162,110 @@ void SdpaFreeFormat::AddEqualityConstraintOnXentriesForSameDecisionVariable(
     DRAKE_ASSERT(Xentries.size() >= 2);
     const std::vector<double> a{{1, -1}};
     for (int i = 1; i < static_cast<int>(Xentries.size()); ++i) {
-      AddLinearEqualityConstraint({}, {}, a, {Xentries[0], Xentries[i]}, {}, {},
-                                  0.0);
+      AddLinearEqualityConstraint({} /* coefficients for prog_vars */,
+                                  {} /* empty prog_vars */, a,
+                                  {Xentries[0], Xentries[i]}, {}, {}, 0.0);
     }
   }
 }
 
-void SdpaFreeFormat::RegisterMathematicalProgramDecisionVariable(
+void SdpaFreeFormat::RegisterSingleMathematicalProgramDecisionVariable(
+    double lower_bound, double upper_bound, int variable_index, int block_index,
+    int* new_X_var_count) {
+  // First check if this variable has either finite lower or upper bound. If
+  // not, then the variable is a free variable in SDPA.
+  if (std::isinf(lower_bound) && std::isinf(upper_bound)) {
+    // This is a free variable.
+    prog_var_in_sdpa_[variable_index].emplace<FreeVariableIndex>(
+        num_free_variables_);
+    num_free_variables_++;
+  } else {
+    if (!std::isinf(lower_bound) && std::isinf(upper_bound)) {
+      // lower <= x.
+      prog_var_in_sdpa_[variable_index].emplace<DecisionVariableInSdpaX>(
+          Sign::kPositive, lower_bound, block_index, *new_X_var_count,
+          *new_X_var_count, num_X_rows_);
+      (*new_X_var_count)++;
+    } else if (std::isinf(lower_bound) && !std::isinf(upper_bound)) {
+      // x <= upper.
+      prog_var_in_sdpa_[variable_index].emplace<DecisionVariableInSdpaX>(
+          Sign::kNegative, upper_bound, block_index, *new_X_var_count,
+          *new_X_var_count, num_X_rows_);
+      (*new_X_var_count)++;
+    } else if (lower_bound == upper_bound) {
+      // x == bound.
+      prog_var_in_sdpa_[variable_index].emplace<double>(lower_bound);
+    } else {
+      // lower <= x <= upper.
+      // x will be replaced with y + lower, where y is an entry in X.
+      prog_var_in_sdpa_[variable_index].emplace<DecisionVariableInSdpaX>(
+          Sign::kPositive, lower_bound, block_index, *new_X_var_count,
+          *new_X_var_count, num_X_rows_);
+      // Add another slack variables z, with the constraint x + z = upper.
+      AddLinearEqualityConstraint({1}, {variable_index}, {1.0},
+                                  {EntryInX(block_index, *new_X_var_count + 1,
+                                            *new_X_var_count + 1, num_X_rows_)},
+                                  {}, {}, upper_bound);
+      (*new_X_var_count) += 2;
+    }
+  }
+}
+
+void SdpaFreeFormat::AddBoundsOnRegisteredDecisionVariable(
+    double lower_bound, double upper_bound, int variable_index, int block_index,
+    int* new_X_var_count) {
+  // This variable has been registered as a variable in SDPA. It should have
+  // been registered as an entry in X.
+  if (holds_alternative<DecisionVariableInSdpaX>(
+          prog_var_in_sdpa_[variable_index])) {
+    if (std::isinf(lower_bound) && std::isinf(upper_bound)) {
+      // no finite bounds.
+      return;
+    } else if (!std::isinf(lower_bound) && std::isinf(upper_bound)) {
+      // lower <= x.
+      // Adds a slack variable y as a diagonal entry in X, with the
+      // constraint x - y = lower.
+      AddLinearEqualityConstraint({1}, {variable_index}, {-1.0},
+                                  {EntryInX(block_index, *new_X_var_count,
+                                            *new_X_var_count, num_X_rows_)},
+                                  {}, {}, lower_bound);
+      (*new_X_var_count)++;
+    } else if (std::isinf(lower_bound) && !std::isinf(upper_bound)) {
+      // x <= upper.
+      // Adds a slack variable y as a diagonal entry in X, with the
+      // constraint x + y = upper.
+      AddLinearEqualityConstraint({1.0}, {variable_index}, {1.0},
+                                  {EntryInX(block_index, *new_X_var_count,
+                                            *new_X_var_count, num_X_rows_)},
+                                  {}, {}, upper_bound);
+      (*new_X_var_count)++;
+    } else if (lower_bound == upper_bound) {
+      // Add the constraint x == bound.
+      AddLinearEqualityConstraint({1.0}, {variable_index}, {}, {}, {}, {},
+                                  lower_bound);
+    } else {
+      // lower <= x <= upper.
+      // Adds two slack variables y1, y2 in X, with the linear equality
+      // constraint x - y1 = lower and x + y2 <= upper.
+      AddLinearEqualityConstraint({1.0}, {variable_index}, {-1.0},
+                                  {EntryInX(block_index, *new_X_var_count,
+                                            *new_X_var_count, num_X_rows_)},
+                                  {}, {}, lower_bound);
+      AddLinearEqualityConstraint(
+          {1.0}, {variable_index}, {1.0},
+          {EntryInX(block_index, (*new_X_var_count) + 1, (*new_X_var_count) + 1,
+                    num_X_rows_)},
+          {}, {}, upper_bound);
+      (*new_X_var_count) += 2;
+    }
+  } else {
+    throw std::runtime_error(
+        "SdpaFreeFormat::AddBoundsOnRegisteredDecisionVariable(): "
+        "the registed variable should be an entry in X.");
+  }
+}
+
+void SdpaFreeFormat::RegisterMathematicalProgramDecisionVariables(
     const MathematicalProgram& prog) {
   // Go through all the decision variables in @p prog. If the decision variable
   // has not been registered in SDPA, then register it now. Refer to @ref
@@ -193,90 +299,13 @@ void SdpaFreeFormat::RegisterMathematicalProgramDecisionVariable(
     // First check if this variable has either finite lower or upper bound. If
     // not, then the variable is a free variable in SDPA.
     if (!has_var_registered) {
-      if (std::isinf(lower_bound(i)) && std::isinf(upper_bound(i))) {
-        // This is a free variable.
-        prog_var_in_sdpa_[i].emplace<FreeVariableIndex>(num_free_variables_);
-        num_free_variables_++;
-      } else {
-        if (!std::isinf(lower_bound(i)) && std::isinf(upper_bound(i))) {
-          // lower <= x.
-          prog_var_in_sdpa_[i].emplace<DecisionVariableInSdpaX>(
-              Sign::kPositive, lower_bound(i), block_index, new_X_var_count,
-              new_X_var_count, num_X_rows_);
-          new_X_var_count++;
-        } else if (std::isinf(lower_bound(i)) && !std::isinf(upper_bound(i))) {
-          // x <= upper.
-          prog_var_in_sdpa_[i].emplace<DecisionVariableInSdpaX>(
-              Sign::kNegative, upper_bound(i), block_index, new_X_var_count,
-              new_X_var_count, num_X_rows_);
-          new_X_var_count++;
-        } else if (lower_bound(i) == upper_bound(i)) {
-          // x == bound
-          prog_var_in_sdpa_[i].emplace<double>(lower_bound(i));
-        } else {
-          // lower <= x <= upper
-          // x will be replaced as y + lower, where y is an entry in X.
-          prog_var_in_sdpa_[i].emplace<DecisionVariableInSdpaX>(
-              Sign::kPositive, lower_bound(i), block_index, new_X_var_count,
-              new_X_var_count, num_X_rows_);
-          // Add another slack variables z, with the constraint x + z = upper
-          AddLinearEqualityConstraint(
-              {1}, {i}, {1.0},
-              {EntryInX(block_index, new_X_var_count + 1, new_X_var_count + 1,
-                        num_X_rows_)},
-              {}, {}, upper_bound(i));
-          new_X_var_count += 2;
-        }
-      }
+      RegisterSingleMathematicalProgramDecisionVariable(
+
+
+          lower_bound(i), upper_bound(i), i, block_index, &new_X_var_count);
     } else {
-      // This variable has been registered as a variable in SDPA. It should have
-      // been registered as an entry in X.
-      if (holds_alternative<DecisionVariableInSdpaX>(prog_var_in_sdpa_[i])) {
-        if (std::isinf(lower_bound(i)) && std::isinf(upper_bound(i))) {
-          // no finite bounds.
-          continue;
-        } else if (!std::isinf(lower_bound(i)) && std::isinf(upper_bound(i))) {
-          // lower <= x
-          // Adds a slack variable y as a diagonal entry in X, with the
-          // constraint x - y = lower
-          AddLinearEqualityConstraint({1}, {i}, {-1.0},
-                                      {EntryInX(block_index, new_X_var_count,
-                                                new_X_var_count, num_X_rows_)},
-                                      {}, {}, lower_bound(i));
-          new_X_var_count++;
-        } else if (std::isinf(lower_bound(i)) && !std::isinf(upper_bound(i))) {
-          // x <= upper
-          // Adds a slack variable y as a diagonal entry in X, with the
-          // constraint x + y = upper
-          AddLinearEqualityConstraint({1.0}, {i}, {1.0},
-                                      {EntryInX(block_index, new_X_var_count,
-                                                new_X_var_count, num_X_rows_)},
-                                      {}, {}, upper_bound(i));
-          new_X_var_count++;
-        } else if (lower_bound(i) == upper_bound(i)) {
-          // Add the constraint x == bound.
-          AddLinearEqualityConstraint({1.0}, {i}, {}, {}, {}, {},
-                                      lower_bound(i));
-        } else {
-          // lower <= x <= upper
-          // Adds two slack variables y1, y2 in X, with the linear equality
-          // constraint x - y1 = lower and x + y2 <= upper
-          AddLinearEqualityConstraint({1.0}, {i}, {-1.0},
-                                      {EntryInX(block_index, new_X_var_count,
-                                                new_X_var_count, num_X_rows_)},
-                                      {}, {}, lower_bound(i));
-          AddLinearEqualityConstraint(
-              {1.0}, {i}, {1.0},
-              {EntryInX(block_index, new_X_var_count + 1, new_X_var_count + 1,
-                        num_X_rows_)},
-              {}, {}, upper_bound(i));
-          new_X_var_count += 2;
-        }
-      } else {
-        throw std::runtime_error(
-            "SdpaFreeFormat::RegisterMathematicalProgramDecisionVariable(): "
-            "the registed variable should be an entry in X");
-      }
+      AddBoundsOnRegisteredDecisionVariable(lower_bound(i), upper_bound(i), i,
+                                            block_index, &new_X_var_count);
     }
   }
   if (new_X_var_count > 0) {
@@ -289,7 +318,7 @@ void SdpaFreeFormat::AddLinearCostsFromProgram(
     const MathematicalProgram& prog) {
   for (const auto& linear_cost : prog.linear_costs()) {
     for (int i = 0; i < linear_cost.variables().rows(); ++i) {
-      // The negation sign is because in CSDP format, the objective is to
+      // The negation sign is because in SDPA format, the objective is to
       // maximize the cost, while in MathematicalProgram, the objective is to
       // minimize the cost.
       double coeff = -linear_cost.evaluator()->a()(i);
@@ -459,10 +488,10 @@ SdpaFreeFormat::SdpaFreeFormat(const MathematicalProgram& prog) {
   DeclareXforPositiveSemidefiniteConstraints(
       prog, &entries_in_X_for_same_decision_variable);
 
-  AddEqualityConstraintOnXentriesForSameDecisionVariable(
+  AddEqualityConstraintOnXEntriesForSameDecisionVariable(
       entries_in_X_for_same_decision_variable);
 
-  RegisterMathematicalProgramDecisionVariable(prog);
+  RegisterMathematicalProgramDecisionVariables(prog);
 
   AddLinearCostsFromProgram(prog);
 
