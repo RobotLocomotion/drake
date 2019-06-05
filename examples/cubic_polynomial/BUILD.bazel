@@ -10,7 +10,7 @@ drake_cc_binary(
     add_test_rule = 1,
     tags = mosek_test_tags(),
     deps = [
-        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_lite",
         "//solvers:solve",
         "//systems/framework:vector_system",
     ],
@@ -23,7 +23,7 @@ drake_cc_binary(
     tags = mosek_test_tags(),
     deps = [
         "//common/proto:call_python",
-        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_lite",
         "//solvers:mosek_solver",
         "//solvers:solve",
         "//systems/framework:vector_system",

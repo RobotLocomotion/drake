@@ -41,7 +41,7 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//math:wrap_to",
-        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_lite",
         "//solvers:solve",
         "//systems/analysis:simulator",
         "//systems/framework",

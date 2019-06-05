@@ -27,7 +27,7 @@ drake_cc_test(
         "//attic/multibody/parsers",
         "//common:essential",
         "//common:find_resource",
-        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_lite",
         "//solvers:solve",
         "@lcm",
         "@lcmtypes_bot2_core",
