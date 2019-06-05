@@ -31,12 +31,13 @@ MonomialVector ExponentsToMonomials(const ExponentList& exponents,
 // Returns a list of all exponents that appear in a polynomial p.
 // E.g., given p = 1 + 2x₀² + 3x₀*x₁², returns [0, 0; 2, 0; 1, 2];
 ExponentList GetPolynomialExponents(const drake::symbolic::Polynomial& p) {
+  const Variables indeterminates{p.indeterminates()};
   ExponentList exponents(p.monomial_to_coefficient_map().size(),
-                         p.indeterminates().size());
+                         indeterminates.size());
   int row = 0;
   for (const auto& m : p.monomial_to_coefficient_map()) {
     int col = 0;
-    for (const auto& var : p.indeterminates()) {
+    for (const auto& var : indeterminates) {
       exponents(row, col++) = m.first.degree(var);
     }
     row++;
@@ -198,9 +199,10 @@ ExponentList ConstructMonomialBasis(const ExponentList& exponents_of_p) {
 
 
 MonomialVector ConstructMonomialBasis(const drake::symbolic::Polynomial& p) {
-  drake::VectorX<Variable> vars(p.indeterminates().size());
+  const Variables indeterminates{p.indeterminates()};
+  drake::VectorX<Variable> vars(indeterminates.size());
   int cnt = 0;
-  for (auto& var : p.indeterminates()) {
+  for (auto& var : indeterminates) {
     vars(cnt++) = var;
   }
   return ExponentsToMonomials(ConstructMonomialBasis(GetPolynomialExponents(p)),
