@@ -50,17 +50,13 @@ cc_library(
         "SNOPT_HAS_SNFILEWRAPPER",
     ] if _MAYBE_SNFILEWRAPPER else [],
     includes = ["."],
-    linkopts = select({
-        ":darwin": ["-framework Accelerate"],
-        "@//conditions:default": [],
-    }),
     # Link statically per note (1) above.
     linkstatic = 1,
     visibility = ["//visibility:public"],
-    deps = [":libf2c"] + select({
-        ":linux": ["@blas"],
-        "@//conditions:default": [],
-    }),
+    deps = [
+        ":libf2c",
+        "@blas",
+    ],
     # Always link the entirety of SNOPT.
     alwayslink = 1,
 )
@@ -201,16 +197,11 @@ fortran_library(
             "src/snblas.f",
         ],
     ),
-    linkopts = select({
-        ":darwin": ["-framework Accelerate"],
-        "@//conditions:default": [],
-    }),
     # Link statically per note (1) above.
     linkstatic = 1,
-    deps = select({
-        ":linux": ["@blas"],
-        "@//conditions:default": [],
-    }),
+    deps = [
+        "@blas",
+    ],
     # Always link the entirety of SNOPT.
     alwayslink = 1,
 )

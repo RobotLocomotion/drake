@@ -42,7 +42,6 @@ cc_binary(
         "linsys",
     ],
     linkopts = select({
-        ":darwin": ["-framework Accelerate"],
         ":linux": [
             "-lrt",
             "-Wl,-soname,libdrake_scsdir.so",
@@ -51,13 +50,10 @@ cc_binary(
     }),
     linkshared = 1,
     visibility = ["//visibility:private"],
-    deps = select({
-        ":linux": [
-            "@blas",
-            "@lapack",
-        ],
-        "@//conditions:default": [],
-    }),
+    deps = [
+        "@blas",
+        "@lapack",
+    ],
 )
 
 cc_library(

@@ -38,7 +38,9 @@ load("@drake//tools/workspace/lapack:repository.bzl", "lapack_repository")
 load("@drake//tools/workspace/lcm:repository.bzl", "lcm_repository")
 load("@drake//tools/workspace/lcmtypes_bot2_core:repository.bzl", "lcmtypes_bot2_core_repository")  # noqa
 load("@drake//tools/workspace/lcmtypes_robotlocomotion:repository.bzl", "lcmtypes_robotlocomotion_repository")  # noqa
+load("@drake//tools/workspace/libblas:repository.bzl", "libblas_repository")
 load("@drake//tools/workspace/libjpeg:repository.bzl", "libjpeg_repository")
+load("@drake//tools/workspace/liblapack:repository.bzl", "liblapack_repository")  # noqa
 load("@drake//tools/workspace/liblz4:repository.bzl", "liblz4_repository")
 load("@drake//tools/workspace/libpng:repository.bzl", "libpng_repository")
 load("@drake//tools/workspace/libprotobuf:repository.bzl", "libprotobuf_repository")  # noqa
@@ -51,6 +53,7 @@ load("@drake//tools/workspace/net_sf_jchart2d:repository.bzl", "net_sf_jchart2d_
 load("@drake//tools/workspace/nlopt:repository.bzl", "nlopt_repository")
 load("@drake//tools/workspace/numpy:repository.bzl", "numpy_repository")
 load("@drake//tools/workspace/octomap:repository.bzl", "octomap_repository")
+load("@drake//tools/workspace/openblas:repository.bzl", "openblas_repository")
 load("@drake//tools/workspace/optitrack_driver:repository.bzl", "optitrack_driver_repository")  # noqa
 load("@drake//tools/workspace/org_apache_xmlgraphics_commons:repository.bzl", "org_apache_xmlgraphics_commons_repository")  # noqa
 load("@drake//tools/workspace/osqp:repository.bzl", "osqp_repository")
@@ -165,8 +168,12 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         lcmtypes_bot2_core_repository(name = "lcmtypes_bot2_core", mirrors = mirrors)  # noqa
     if "lcmtypes_robotlocomotion" not in excludes:
         lcmtypes_robotlocomotion_repository(name = "lcmtypes_robotlocomotion", mirrors = mirrors)  # noqa
+    if "libblas" not in excludes:
+        libblas_repository(name = "libblas")
     if "libjpeg" not in excludes:
         libjpeg_repository(name = "libjpeg")
+    if "liblapack" not in excludes:
+        liblapack_repository(name = "liblapack")
     if "liblz4" not in excludes:
         liblz4_repository(name = "liblz4")
     if "libpng" not in excludes:
@@ -191,6 +198,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         numpy_repository(name = "numpy")
     if "octomap" not in excludes:
         octomap_repository(name = "octomap", mirrors = mirrors)
+    if "openblas" not in excludes:
+        openblas_repository(name = "openblas")
     if "optitrack_driver" not in excludes:
         optitrack_driver_repository(name = "optitrack_driver", mirrors = mirrors)  # noqa
     if "org_apache_xmlgraphics_commons" not in excludes:

@@ -2,8 +2,8 @@
 
 package(default_visibility = ["//visibility:public"])
 
-# On macOS, no targets should depend on @lapack.
+# On macOS, no targets should depend on @libblas.
 cc_library(
-    name = "lapack",
+    name = "blas",
     srcs = ["missing-macos.cc"],
 )
