@@ -113,7 +113,6 @@ GTEST_TEST(BS3IntegratorErrorEstimatorTest, QuadraticTest) {
   bs3.Initialize();
   ASSERT_TRUE(bs3.IntegrateWithSingleFixedStepToTime(t_final));
 
-  // Verify that the accuracy of the error estimate is quadratic.
   // Per the description in IntegratorBase::get_error_estimate_order(), this
   // should return "3", in accordance with the order of the polynomial in the
   // Big-Oh term.

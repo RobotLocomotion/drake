@@ -932,8 +932,6 @@ class IntegratorBase {
    * ŷ = y* + O(h²)   [embedded first-order method]
    * e = (y̅ - ŷ) = O(h²)
    * @endverbatim
-   * As can be seen above, the truncation error in the error estimate (e)
-   * decreases quadratically in the step size.
    *
    * If the integrator does not provide an error estimate, the derived class
    * implementation should return 0.
