@@ -214,6 +214,7 @@ drake_py_unittest(
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//multibody/benchmarks/acrobot:models",
+        "//multibody/benchmarks/free_body:models",
     ],
     deps = [
         ":benchmarks_py",
@@ -221,6 +222,7 @@ drake_py_unittest(
         ":plant_py",
         ":tree_py",
         "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/systems:analysis_py",
     ],
 )
 
