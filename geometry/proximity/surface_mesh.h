@@ -175,8 +175,8 @@ class SurfaceMesh {
   const T& area(SurfaceFaceIndex f) const { return area_[f]; }
 
   /** 
-   Computes the offset vector r_MQ_M (i.e., a vector from the origin of
-   Frame M to Point Q, expressed in Frame M) using barycentric coordinates.
+   Maps the barycentric coordinates `Q_barycentric` of a point Q in
+   `element_index` to its position vector p_MQ.
   */
   Vector3<T> CalcCartesianFromBarycentric(
       ElementIndex element_index, const Vector3<T>& Q_barycentric) const {
@@ -186,12 +186,12 @@ class SurfaceMesh {
 
     // This is just a linear transformation between the two coordinates,
     // Cartesian (C) and Barycentric (B). Form the transformation matrix:
-    Matrix3<T> X_CB;
-    X_CB.col(0) = va.r_MV();
-    X_CB.col(1) = vb.r_MV();
-    X_CB.col(2) = vc.r_MV();
+    Matrix3<T> T_CB;
+    T_CB.col(0) = va.r_MV();
+    T_CB.col(1) = vb.r_MV();
+    T_CB.col(2) = vc.r_MV();
 
-    return X_CB * Q_barycentric;
+    return T_CB * Q_barycentric;
   }
 
  private:
