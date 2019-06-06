@@ -217,8 +217,10 @@ bool BogackiShampine3Integrator<T>::DoStep(const T& h) {
   const double d3 = 1.0 / 3;
   const double d4 = 1.0 / 8;
   err_est_vec_->SetZero();
-  err_est_vec_->PlusEqScaled({{(a41 - d1) * h, k1}, {(a42 - d2) * h, k2},
-      {(a43 - d3) * h, k3}, {(-d4) * h, k4} });
+  err_est_vec_->PlusEqScaled({{(a41 - d1) * h, k1},
+                              {(a42 - d2) * h, k2},
+                              {(a43 - d3) * h, k3},
+                              {(-d4) * h, k4}});
 
   // If the size of the system has changed, the error estimate will no longer
   // be sized correctly. Verify that the error estimate is the correct size.
