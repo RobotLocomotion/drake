@@ -71,17 +71,10 @@ cc_library(
     ],
     includes = ["include"],
     linkstatic = 1,
-    linkopts = select({
-        ":darwin": ["-framework Accelerate"],
-        "@//conditions:default": [],
-    }),
-    deps = select({
-        ":linux": [
-            "@blas",
-            "@lapack",
-        ],
-        "@//conditions:default": [],
-    }),
+    deps = [
+        "@blas",
+        "@lapack",
+    ],
 )
 
 # We do not install the header file (its a private dependency), but we still

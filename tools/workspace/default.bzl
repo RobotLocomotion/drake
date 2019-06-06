@@ -3,6 +3,7 @@
 load("@drake//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
 load("@drake//tools/workspace/bazel_skylib:repository.bzl", "bazel_skylib_repository")  # noqa
 load("@drake//tools/workspace/blas:repository.bzl", "blas_repository")
+load("@drake//tools/workspace/blas_netlib:repository.bzl", "blas_netlib_repository")  # noqa
 load("@drake//tools/workspace/boost:repository.bzl", "boost_repository")
 load("@drake//tools/workspace/buildifier:repository.bzl", "buildifier_repository")  # noqa
 load("@drake//tools/workspace/bullet:repository.bzl", "bullet_repository")
@@ -35,6 +36,7 @@ load("@drake//tools/workspace/ipopt:repository.bzl", "ipopt_repository")
 load("@drake//tools/workspace/json:repository.bzl", "json_repository")
 load("@drake//tools/workspace/jsoncpp:repository.bzl", "jsoncpp_repository")
 load("@drake//tools/workspace/lapack:repository.bzl", "lapack_repository")
+load("@drake//tools/workspace/lapack_netlib:repository.bzl", "lapack_netlib_repository")  # noqa
 load("@drake//tools/workspace/lcm:repository.bzl", "lcm_repository")
 load("@drake//tools/workspace/lcmtypes_bot2_core:repository.bzl", "lcmtypes_bot2_core_repository")  # noqa
 load("@drake//tools/workspace/lcmtypes_robotlocomotion:repository.bzl", "lcmtypes_robotlocomotion_repository")  # noqa
@@ -51,6 +53,7 @@ load("@drake//tools/workspace/net_sf_jchart2d:repository.bzl", "net_sf_jchart2d_
 load("@drake//tools/workspace/nlopt:repository.bzl", "nlopt_repository")
 load("@drake//tools/workspace/numpy:repository.bzl", "numpy_repository")
 load("@drake//tools/workspace/octomap:repository.bzl", "octomap_repository")
+load("@drake//tools/workspace/openblas:repository.bzl", "openblas_repository")
 load("@drake//tools/workspace/optitrack_driver:repository.bzl", "optitrack_driver_repository")  # noqa
 load("@drake//tools/workspace/org_apache_xmlgraphics_commons:repository.bzl", "org_apache_xmlgraphics_commons_repository")  # noqa
 load("@drake//tools/workspace/osqp:repository.bzl", "osqp_repository")
@@ -95,6 +98,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         bazel_skylib_repository(name = "bazel_skylib", mirrors = mirrors)
     if "blas" not in excludes:
         blas_repository(name = "blas")
+    if "blas_netlib" not in excludes:
+        blas_netlib_repository(name = "blas_netlib")
     if "boost" not in excludes:
         boost_repository(name = "boost")
     if "buildifier" not in excludes:
@@ -159,6 +164,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         jsoncpp_repository(name = "jsoncpp")
     if "lapack" not in excludes:
         lapack_repository(name = "lapack")
+    if "lapack_netlib" not in excludes:
+        lapack_netlib_repository(name = "lapack_netlib")
     if "lcm" not in excludes:
         lcm_repository(name = "lcm", mirrors = mirrors)
     if "lcmtypes_bot2_core" not in excludes:
@@ -191,6 +198,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         numpy_repository(name = "numpy")
     if "octomap" not in excludes:
         octomap_repository(name = "octomap", mirrors = mirrors)
+    if "openblas" not in excludes:
+        openblas_repository(name = "openblas")
     if "optitrack_driver" not in excludes:
         optitrack_driver_repository(name = "optitrack_driver", mirrors = mirrors)  # noqa
     if "org_apache_xmlgraphics_commons" not in excludes:
