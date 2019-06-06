@@ -44,7 +44,7 @@ class HydroelasticTractionCalculator {
   // Data structure for storing quantities used repeatedly in the hydroelastic
   // traction calculations.
   class HydroelasticTractionCalculatorData {
-    public:
+   public:
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HydroelasticTractionCalculatorData)
 
     // @param context the MultibodyPlant context.
@@ -61,12 +61,12 @@ class HydroelasticTractionCalculator {
     // Gets the ContactSurface passed to the data structure on construction.
     const geometry::ContactSurface<T>& surface() const { return surface_; }
 
-    // Gets the pose from Body A (the body that Geometry M in the contact surface
-    // is affixed to) relative to the world frame.
+    // Gets the pose from Body A (the body that Geometry M in the contact
+    // surface is affixed to) relative to the world frame.
     const math::RigidTransform<T>& X_WA() const { return X_WA_; }
 
-    // Gets the pose from Body B (the body that Geometry N in the contact surface
-    // is affixed to) relative to the world frame.
+    // Gets the pose from Body B (the body that Geometry N in the contact
+    // surface is affixed to) relative to the world frame.
     const math::RigidTransform<T>& X_WB() const { return X_WB_; }
 
     // Gets the pose from Geometry M in the contact surface to the world frame.
@@ -82,7 +82,7 @@ class HydroelasticTractionCalculator {
     // in the world frame and expressed in the world frame.
     const SpatialVelocity<T>& V_WB() const { return V_WB_; }
 
-    private:
+   private:
     const geometry::ContactSurface<T>& surface_;
     math::RigidTransform<T> X_WM_;
     math::RigidTransform<T> X_WA_;
@@ -113,9 +113,7 @@ class HydroelasticTractionCalculator {
 }  // namespace multibody
 }  // namespace drake
 
-// TODO(edrumwri) instantiate these on SymbolicExpression when they no longer
+// TODO(edrumwri) instantiate on SymbolicExpression when it no longer
 // causes a linker error complaining about an unresolved symbol in SceneGraph.
-//DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-//    class drake::multibody::internal::HydroelasticTractionCalculatorData)
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class drake::multibody::internal::HydroelasticTractionCalculator)

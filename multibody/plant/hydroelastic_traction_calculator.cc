@@ -163,9 +163,7 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
 }  // namespace multibody
 }  // namespace drake
 
-// TODO(edrumwri) instantiate these on SymbolicExpression when they no longer
+// TODO(edrumwri) instantiate on SymbolicExpression when it no longer
 // causes a linker error complaining about an unresolved symbol in SceneGraph.
-//DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-//    class drake::multibody::internal::HydroelasticTractionCalculatorData)
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class drake::multibody::internal::HydroelasticTractionCalculator)
