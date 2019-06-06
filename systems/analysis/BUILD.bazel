@@ -14,6 +14,7 @@ drake_cc_package_library(
     name = "analysis",
     deps = [
         ":antiderivative_function",
+        ":bogacki_shampine3_integrator",
         ":dense_output",
         ":explicit_euler_integrator",
         ":hermitian_dense_output",
@@ -32,6 +33,15 @@ drake_cc_package_library(
         ":semi_explicit_euler_integrator",
         ":simulator",
         ":stepwise_dense_output",
+    ],
+)
+
+drake_cc_library(
+    name = "bogacki_shampine3_integrator",
+    srcs = ["bogacki_shampine3_integrator.cc"],
+    hdrs = ["bogacki_shampine3_integrator.h"],
+    deps = [
+        ":integrator_base",
     ],
 )
 
@@ -294,6 +304,20 @@ drake_cc_googletest(
     tags = ["no_memcheck"],
     deps = [
         ":simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "bogacki_shampine3_integrator_test",
+    # If necessary, increase test timeout to 'moderate' when run with Valgrind
+    # and/or disable in debug mode.
+    deps = [
+        ":bogacki_shampine3_integrator",
+        ":runge_kutta2_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//systems/analysis/test_utilities",
     ],
 )
 

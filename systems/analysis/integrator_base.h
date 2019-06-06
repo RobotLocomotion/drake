@@ -910,22 +910,28 @@ class IntegratorBase {
   bool is_initialized() const { return initialization_done_; }
 
   /**
-   * Derived classes must override this function to return the order of
-   * the integrator's error estimate. The error estimator approximates the true
-   * error e(.) between the actual state (obtained via a perhaps hypothetical
-   * closed form solution to the initial value problem) and the state computed
-   * by the integrator. e(.) is approximated by a Taylor Series expansion in the
+   * Derived classes must override this function to return the order of the
+   * asymptotic term in the integrator's error estimate. An error estimator
+   * approximates the truncation error in an integrator's solution. That
+   * truncation error e(.) is approximated by a Taylor Series expansion in the
    * neighborhood around t:
    * @verbatim
    * e(t+h) ≈ e(t) + he(t) + he'(t) + ½h²e''(t) + ...
    *        ≈ e(t) + he(t) + he'(t) + ½h²e''(t) + O(h³)
    * @endverbatim
    * where we have replaced the "..." with the asymptotic error of all terms
-   * truncated from the series. An error estimator that exhibits O(h³)
-   * truncation error, as above, is known as a third order error estimator.
-   * Asymptotic analysis implies that a third order error estimator increases
-   * the accuracy of its estimate by a factor of eight when h is scaled by
-   * one half, for h sufficiently small.
+   * truncated from the series.
+   *
+   * Implementions should return the order of the asymptotic term in the Taylor
+   * Series expansion around the expression for the error. For an integrator
+   * that propagates a second-order solution and provides an estimate of the
+   * error using an embedded first-order method, this method should return "2",
+   * as can be seen in the derivation below, using y* as the true solution:
+   * @verbatim
+   * y̅ = y* + O(h³)   [second order solution]
+   * ŷ = y* + O(h²)   [embedded first-order method]
+   * e = (y̅ - ŷ) = O(h²)
+   * @endverbatim
    *
    * If the integrator does not provide an error estimate, the derived class
    * implementation should return 0.
