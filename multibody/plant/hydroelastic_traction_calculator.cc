@@ -57,8 +57,9 @@ HydroelasticTractionCalculatorData<T>::HydroelasticTractionCalculatorData(
 // @param data computed once for each pair of geometries.
 // @param p_WQ the offset vector from the origin of the world frame to the
 //        contact point, expressed in the world frame.
-// @param traction_Q_W the traction vector applied to Body A at Point Q,
-//        expressed in the world frame.
+// @param traction_Aq_W the traction vector applied to Body A at Point Q,
+//        expressed in the world frame, where Body A is the body that
+//        `surface.M_id()` is attached to.
 // @param[out] F_Ao_W on return, the spatial force (due to the traction) that
 //             acts at the origin of the frame of Body A (i.e., that affixed to
 //             `surface.M_id()`).
@@ -70,7 +71,7 @@ void HydroelasticTractionCalculator<T>::
 ComputeSpatialForcesAtBodyOriginsFromTraction(
     const internal::HydroelasticTractionCalculatorData<T>& data,
     const Vector3<T>& p_WQ,
-    const Vector3<T>& traction_Q_W,
+    const Vector3<T>& traction_Aq_W,
     SpatialForce<T>* F_Ao_W, SpatialForce<T>* F_Bo_W) const {
   // Set the two vectors from the contact point to the two body frames, all
   // expressed in the world frame.
@@ -80,7 +81,7 @@ ComputeSpatialForcesAtBodyOriginsFromTraction(
   // Convert the traction to a momentless-spatial force (i.e., without
   // changing the point of application). This force will be applied to one
   // body and the (negated) reaction force will be applied to the other.
-  SpatialForce<T> F_Q_W(Vector3<T>(0, 0, 0), traction_Q_W);
+  SpatialForce<T> F_Q_W(Vector3<T>(0, 0, 0), traction_Aq_W);
   *F_Ao_W = F_Q_W.Shift(p_QAo_W);
   *F_Bo_W = (-F_Q_W).Shift(p_QBo_W);
 }
@@ -96,9 +97,8 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   *p_WQ = data.X_WM() * data.surface().mesh().CalcCartesianFromBarycentric(
       face_index, Q_barycentric);
 
-  // Get the "potential pressure" (in N) at the point as defined in
-  // [Elandt 2019]. Real pressure is in Pa (or another measure of
-  // force divided by area).
+  // Get the "potential pressure" (in N/m²) at the point as defined in
+  // [Elandt 2019].
   const T e_mn = data.surface().EvaluateE_MN(face_index, Q_barycentric);
 
   // Get the normal from Geometry M to Geometry N, expressed in the world frame,
@@ -135,7 +135,7 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
 
   // Get the damping value (c) from the compliant model dissipation (α).
   // Equation (16) from [Hunt 1975], but neglecting the 3/2 term used for
-  // Hertzian contact, yields c = α * e_mn with units of N⋅s/m.
+  // Hertzian contact, yields c = α * e_mn with units of N⋅s/m³.
   const T c = dissipation * e_mn;
 
   // Determine the normal traction at the point.

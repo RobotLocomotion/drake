@@ -104,7 +104,7 @@ class HydroelasticTractionCalculator {
   void ComputeSpatialForcesAtBodyOriginsFromTraction(
       const internal::HydroelasticTractionCalculatorData<T>& data,
       const Vector3<T>& p_WQ,
-      const Vector3<T>& traction_Q_W,
+      const Vector3<T>& traction_Aq_W,
       multibody::SpatialForce<T>* F_Ao_W,
       multibody::SpatialForce<T>* F_Bo_W) const;
 

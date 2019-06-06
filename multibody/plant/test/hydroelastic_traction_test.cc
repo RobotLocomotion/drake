@@ -68,10 +68,10 @@ public ::testing::TestWithParam<math::RigidTransform<double>> {
     HydroelasticTractionCalculatorData<double> calculator_data(
         *plant_context_, plant(), contact_surface_.get());
 
-    // First compute the traction applied to Body A, expressed in the world
-    // frame.
+    // First compute the traction applied to Body A at point Q, expressed in the
+    // world frame.
     Vector3<double> p_WQ;
-    const Vector3<double> traction_Q_W = traction_calculator().
+    const Vector3<double> traction_Aq_W = traction_calculator().
         CalcTractionAtPoint(
             calculator_data, SurfaceFaceIndex(0),
             SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
@@ -89,7 +89,7 @@ public ::testing::TestWithParam<math::RigidTransform<double>> {
       ASSERT_NEAR(p_WQ[i], p_WQ_expected[i], eps());
 
     traction_calculator().ComputeSpatialForcesAtBodyOriginsFromTraction(
-        calculator_data, p_WQ, traction_Q_W, F_Ao_W, F_Bo_W);
+        calculator_data, p_WQ, traction_Aq_W, F_Ao_W, F_Bo_W);
   }
 
   void SetBoxTranslationalVelocity(const Vector3<double>& v) {
@@ -295,9 +295,9 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
 
   // Compute the magnitude of the normal traction. Note that the damping
   // constant at each point will be field value * dissipation coefficient.
-  const double field_value = 0.5;  // in N.
-  const double c = field_value * dissipation;  // N * s/m = Ns/m.
-  const double damping_traction_magnitude = c * -separating_velocity;  // = N.
+  const double field_value = 0.5;  // in N/m².
+  const double c = field_value * dissipation;  // N/m² * s/m = Ns/m³.
+  const double damping_traction_magnitude = c * -separating_velocity;  // N/m².
   const double normal_traction_magnitude = field_value +
       damping_traction_magnitude;
 

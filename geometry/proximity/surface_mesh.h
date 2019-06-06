@@ -183,8 +183,15 @@ class SurfaceMesh {
     const SurfaceVertex<T> va = vertex(element(element_index).vertex(0));
     const SurfaceVertex<T> vb = vertex(element(element_index).vertex(1));
     const SurfaceVertex<T> vc = vertex(element(element_index).vertex(2));
-    return va.r_MV() * Q_barycentric[0] +
-        vb.r_MV() * Q_barycentric[1] + vc.r_MV() * Q_barycentric[2];
+
+    // This is just a linear transformation between the two coordinates,
+    // Cartesian (C) and Barycentric (B). Form the transformation matrix:
+    Matrix3<T> X_CB;
+    X_CB.col(0) = va.r_MV();
+    X_CB.col(1) = vb.r_MV();
+    X_CB.col(2) = vc.r_MV();
+
+    return X_CB * Q_barycentric;
   }
 
  private:
