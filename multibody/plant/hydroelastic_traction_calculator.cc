@@ -89,27 +89,30 @@ template <typename T>
 Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
     const internal::HydroelasticTractionCalculatorData<T>& data,
     SurfaceFaceIndex face_index,
-    const typename SurfaceMesh<T>::Barycentric&
-        Q_barycentric, double dissipation, double mu_coulomb,
+    const typename SurfaceMesh<T>::Barycentric& Q_barycentric,
+    double dissipation, double mu_coulomb,
     Vector3<T>* p_WQ) const {
   // Compute the point of contact in the world frame.
   *p_WQ = data.X_WM() * data.surface().mesh().CalcCartesianFromBarycentric(
       face_index, Q_barycentric);
 
-  // Get the "hydroelastic pressure" at the point (in Newtons).
+  // Get the "potential pressure" (in N) at the point as defined in
+  // [Elandt 2019]. Real pressure is in Pa (or another measure of
+  // force divided by area).
   const T e_mn = data.surface().EvaluateE_MN(face_index, Q_barycentric);
 
-  // Get the normal from M to N, expressed in the world frame, to the contact
-  // surface at Q.
+  // Get the normal from Geometry M to Geometry N, expressed in the world frame,
+  // to the contact surface at Point Q.
   const Vector3<T> h_MN_M = data.surface().EvaluateGrad_h_MN_M(
       face_index, Q_barycentric);
   const Vector3<T> nhat_MN_M = h_MN_M.normalized();
   const Vector3<T> nhat_MN_W = data.X_WM().rotation() * nhat_MN_M;
 
   // Get the relative spatial velocity at the point Q between the
-  // two bodies, by subtracting the spatial velocity of a point (Bq)
-  // coincident with p_WQ on Body B from the spatial velocity of a point (Aq)
-  // coincident with p_WQ on Body A.
+  // two bodies A and B (to which M and N are affixed, respectively) by
+  // subtracting the spatial velocity of a point (Bq) coincident with p_WQ on
+  // Body B from the spatial velocity of a point (Aq) coincident with p_WQ on
+  // Body A.
 
   // First compute the spatial velocity of Body A at Aq.
   const Vector3<T> p_AoAq_W = *p_WQ - data.X_WA().translation();
@@ -135,9 +138,9 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   // Hertzian contact, yields c = α * e_mn with units of N⋅s/m.
   const T c = dissipation * e_mn;
 
-  // Determine the normal pressure at the point.
+  // Determine the normal traction at the point.
   using std::max;
-  const T normal_pressure = max(e_mn - vn_NM_W * c, T(0));
+  const T normal_traction = max(e_mn - vn_NM_W * c, T(0));
 
   // Get the slip velocity at the point.
   const Vector3<T> vt_NM_W = v_NM_W - nhat_MN_W * vn_NM_W;
@@ -154,9 +157,9 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   const Vector3<T> vt_hat_NM_W = vt_NM_W / soft_norm_vt;
 
   // Compute the traction.
-  const T frictional_scalar = mu_coulomb * normal_pressure *
+  const T frictional_scalar = mu_coulomb * normal_traction *
       2.0 / M_PI * atan(norm_vt / T(vslip_regularizer_));
-  return nhat_MN_W * normal_pressure - vt_hat_NM_W * frictional_scalar;
+  return nhat_MN_W * normal_traction - vt_hat_NM_W * frictional_scalar;
 }
 
 }  // namespace multibody

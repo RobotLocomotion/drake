@@ -70,7 +70,12 @@ class HydroelasticTractionCalculatorData {
 
 /**
  A class for computing the spatial forces on rigid bodies in a MultibodyPlant
- using the hydroelastic contact model.
+ using the hydroelastic contact model, as described in:
+
+ [Elandt, 2019]  R. Elandt, E. Drumwright, M. Sherman, and A. Ruina.
+ A pressure field model for fast, robust approximation of net contact force and
+ moment between nominally rigid objects. Proc. IEEE/RSJ Intl. Conf. on
+ Intelligent Robots and Systems (IROS), 2019.
  */
 template <typename T>
 class HydroelasticTractionCalculator {

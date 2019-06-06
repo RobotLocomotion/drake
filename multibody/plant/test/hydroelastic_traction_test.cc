@@ -295,9 +295,9 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
 
   // Compute the magnitude of the normal traction. Note that the damping
   // constant at each point will be field value * dissipation coefficient.
-  const double field_value = 0.5;
-  const double c = field_value * dissipation;
-  const double damping_traction_magnitude = c * -separating_velocity;
+  const double field_value = 0.5;  // in N.
+  const double c = field_value * dissipation;  // N * s/m = Ns/m.
+  const double damping_traction_magnitude = c * -separating_velocity;  // = N.
   const double normal_traction_magnitude = field_value +
       damping_traction_magnitude;
 
