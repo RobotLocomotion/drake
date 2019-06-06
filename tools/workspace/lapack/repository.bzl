@@ -1,37 +1,23 @@
 # -*- mode: python -*-
 
-load(
-    "@drake//tools/workspace:os.bzl",
-    "determine_os",
-)
-load(
-    "@drake//tools/workspace:pkg_config.bzl",
-    "setup_pkg_config_repository",
-)
+load("@drake//tools/workspace:os.bzl", "os_specific_alias_repository")
 
-def _impl(repo_ctx):
-    # On Ubuntu, we'll use use pkg-config to find liblapack.
-    # On macOS, no targets should depend on @lapack.
-    os_result = determine_os(repo_ctx)
-    if os_result.error != None:
-        fail(os_result.error)
-    if os_result.is_ubuntu:
-        error = setup_pkg_config_repository(repo_ctx).error
-        if error != None:
-            fail(error)
-    else:
-        repo_ctx.symlink(
-            Label("@drake//tools/workspace/lapack:package-macos.BUILD.bazel"),
-            "BUILD.bazel",
-        )
-
-lapack_repository = repository_rule(
-    # TODO(jamiesnape): Pass down licenses to setup_pkg_config_repository.
-    # The license for this package should be:
-    #    licenses(["notice"])  # BSD-3-Clause
-    attrs = {
-        "modname": attr.string(default = "lapack"),
-    },
-    local = True,
-    implementation = _impl,
-)
+# TLDR: Use this repository (@lapack) instead of @liblapack or @openblas in the
+# deps of your target.
+#
+# Since we use different pkg-config modules offering LAPACK implementations
+# from (potentially) different vendors depending on the operating system, this
+# alias exists to select the correct operating-system-specific LAPACK
+# implementation. On macOS, the @lapack and @openblas targets will always refer
+# to OpenBLAS. On Ubuntu, the @lapack and @liblapack targets will depend on a
+# LAPACK implementation typically chosen by the Ubuntu alternatives system,
+# such as the reference implementation from Netlib, Automatically Tuned Linear
+# Algebra Software (ATLAS), and OpenBLAS.
+def lapack_repository(name):
+    os_specific_alias_repository(
+        name = name,
+        mapping = {
+            "macOS default": ["lapack=@openblas"],
+            "Ubuntu default": ["lapack=@liblapack"],
+        },
+    )
