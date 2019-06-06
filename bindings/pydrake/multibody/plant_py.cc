@@ -763,9 +763,10 @@ PYBIND11_MODULE(plant, m) {
     AddValueInstantiation<Class>(m);
   }
 
+  // Opaquely bind std::vector<ExternallyAppliedSpatialForce> to enable
+  // Python systems to construct AbstractValues of this type with the type
+  // being legible for port connections.
   {
-    // Additionally bind vectors of this type, for input into
-    // the corresponding port of the MBP.
     using Class = multibody::ExternallyAppliedSpatialForce<double>;
     py::bind_vector<std::vector<Class>>(
         m, "VectorExternallyAppliedSpatialForced");
