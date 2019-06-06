@@ -911,10 +911,10 @@ class IntegratorBase {
 
   /**
    * Derived classes must override this function to return the order of the
-   * error in the integrator's error estimate. An error estimator approximates
-   * the truncation error in an integrator's solution. That truncation error
-   * e(.) is approximated by a Taylor Series expansion in the neighborhood
-   * around t:
+   * asymptotic term in the integrator's error estimate. An error estimator
+   * approximates the truncation error in an integrator's solution. That
+   * truncation error e(.) is approximated by a Taylor Series expansion in the
+   * neighborhood around t:
    * @verbatim
    * e(t+h) ≈ e(t) + he(t) + he'(t) + ½h²e''(t) + ...
    *        ≈ e(t) + he(t) + he'(t) + ½h²e''(t) + O(h³)
@@ -926,11 +926,11 @@ class IntegratorBase {
    * Series expansion around the expression for the error. For an integrator
    * that propagates a second-order solution and provides an estimate of the
    * error using an embedded first-order method, this method should return "2",
-   * as can be seen in the derivation below:
+   * as can be seen in the derivation below, using y* as the true solution:
    * @verbatim
-   * y₁ = y₀ + hy₀ + hy₀' + ½h²y₀''(t) + O(h³)   [second order solution]
-   * ŷ₁ = y₀ + hy₀ + hy₀' + O(h²)                [embedded first-order method]
-   *  e = (y₁ - ŷ₁) = O(h²)
+   * y̅ = y* + O(h³)   [second order solution]
+   * ŷ = y* + O(h²)   [embedded first-order method]
+   * e = (y̅ - ŷ) = O(h²)
    * @endverbatim
    * As can be seen above, the truncation error in the error estimate (e)
    * decreases quadratically in the step size.
