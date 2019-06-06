@@ -22,13 +22,11 @@ using geometry::SurfaceFace;
 using geometry::SurfaceMesh;
 using geometry::SurfaceVertex;
 using geometry::SurfaceVertexIndex;
-using multibody::internal::HydroelasticTractionCalculatorData;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
 
 namespace multibody {
-
 namespace internal {
 
 GeometryId FindGeometry(
@@ -38,8 +36,6 @@ GeometryId FindGeometry(
   DRAKE_DEMAND(geometries.size() == 1);
   return geometries[0];
 }
-
-}  // namespace internal
 
 // Note: this parameterized gtest uses a transformation to test various absolute
 // poses of two parsed bodies (without changing their relative poses). See
@@ -65,8 +61,8 @@ public ::testing::TestWithParam<math::RigidTransform<double>> {
       double dissipation, double mu_coulomb,
       SpatialForce<double>* F_Ao_W, SpatialForce<double>* F_Bo_W) {
     // Instantiate the traction calculator data.
-    HydroelasticTractionCalculatorData<double> calculator_data(
-        *plant_context_, plant(), contact_surface_.get());
+    HydroelasticTractionCalculator<double>::HydroelasticTractionCalculatorData
+        calculator_data(*plant_context_, plant(), contact_surface_.get());
 
     // First compute the traction applied to Body A at point Q, expressed in the
     // world frame.
@@ -346,6 +342,7 @@ INSTANTIATE_TEST_CASE_P(PoseInstantiations,
                         MultibodyPlantHydroelasticTractionTests,
                         ::testing::ValuesIn(poses));
 
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 

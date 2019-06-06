@@ -16,15 +16,14 @@ using drake::systems::Context;
 
 namespace drake {
 namespace multibody {
-
 namespace internal {
 
 template <typename T>
-HydroelasticTractionCalculatorData<T>::HydroelasticTractionCalculatorData(
-    const Context<T>& context,
-    const MultibodyPlant<T>& plant,
-    const ContactSurface<T>* surface) :
-    surface_(*surface) {
+HydroelasticTractionCalculator<T>::HydroelasticTractionCalculatorData::
+    HydroelasticTractionCalculatorData(const Context<T>& context,
+                                       const MultibodyPlant<T>& plant,
+                                       const ContactSurface<T>* surface)
+    : surface_(*surface) {
   DRAKE_DEMAND(surface);
 
   // Get the transformation of the geometry for M to the world frame.
@@ -50,8 +49,6 @@ HydroelasticTractionCalculatorData<T>::HydroelasticTractionCalculatorData(
   V_WB_ = plant.EvalBodySpatialVelocityInWorld(context, bodyB);
 }
 
-}  // namespace internal
-
 // Computes the spatial forces on the two bodies due to the traction at the
 // given contact point.
 // @param data computed once for each pair of geometries.
@@ -68,11 +65,11 @@ HydroelasticTractionCalculatorData<T>::HydroelasticTractionCalculatorData(
 //             to `surface.N_id()`).
 template <typename T>
 void HydroelasticTractionCalculator<T>::
-ComputeSpatialForcesAtBodyOriginsFromTraction(
-    const internal::HydroelasticTractionCalculatorData<T>& data,
-    const Vector3<T>& p_WQ,
-    const Vector3<T>& traction_Aq_W,
-    SpatialForce<T>* F_Ao_W, SpatialForce<T>* F_Bo_W) const {
+    ComputeSpatialForcesAtBodyOriginsFromTraction(
+        const HydroelasticTractionCalculator<
+            T>::HydroelasticTractionCalculatorData& data,
+        const Vector3<T>& p_WQ, const Vector3<T>& traction_Aq_W,
+        SpatialForce<T>* F_Ao_W, SpatialForce<T>* F_Bo_W) const {
   // Set the two vectors from the contact point to the two body frames, all
   // expressed in the world frame.
   const Vector3<T> p_QAo_W = data.X_WA().translation() - p_WQ;
@@ -88,11 +85,11 @@ ComputeSpatialForcesAtBodyOriginsFromTraction(
 
 template <typename T>
 Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
-    const internal::HydroelasticTractionCalculatorData<T>& data,
+    const HydroelasticTractionCalculator<T>::HydroelasticTractionCalculatorData&
+        data,
     SurfaceFaceIndex face_index,
     const typename SurfaceMesh<T>::Barycentric& Q_barycentric,
-    double dissipation, double mu_coulomb,
-    Vector3<T>* p_WQ) const {
+    double dissipation, double mu_coulomb, Vector3<T>* p_WQ) const {
   // Compute the point of contact in the world frame.
   *p_WQ = data.X_WM() * data.surface().mesh().CalcCartesianFromBarycentric(
       face_index, Q_barycentric);
@@ -162,12 +159,13 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   return nhat_MN_W * normal_traction - vt_hat_NM_W * frictional_scalar;
 }
 
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
 // TODO(edrumwri) instantiate these on SymbolicExpression when they no longer
 // causes a linker error complaining about an unresolved symbol in SceneGraph.
+//DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+//    class drake::multibody::internal::HydroelasticTractionCalculatorData)
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::multibody::internal::HydroelasticTractionCalculatorData)
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::multibody::HydroelasticTractionCalculator)
+    class drake::multibody::internal::HydroelasticTractionCalculator)
