@@ -11,7 +11,7 @@ namespace drake {
 namespace systems {
 
 /**
- A third-order, four-stage, first-same-as-last (FSAL) Runge Kutta integrator
+ A third-order, four-stage, first-same-as-last (FSAL) Runge-Kutta integrator
  with a second order error estimate.
  @tparam T A double or autodiff type.
 
@@ -31,9 +31,7 @@ namespace systems {
         7/24        1/4      1/3     1/8
 </pre>
  where the second to last row is the 3rd-order (propagated) solution and
- the last row gives a 2nd-order accurate solution which, when subtracted
- from the propagated solution, yields the 2nd-order error estimate of the
- error.
+ the last row gives a 2nd-order accurate solution used for error control.
 
  - [Bogacki, 1989] P. Bogacki and L. Shampine. "A 3(2) pair of Runge–Kutta
    formulas", Appl. Math. Letters, 2 (4): 321–325, 1989.
@@ -59,7 +57,7 @@ class BogackiShampine3Integrator final : public IntegratorBase<T> {
    */
   bool supports_error_estimation() const override { return true; }
 
-  /// The error in the error estimate shrinks cubically with the step size.
+  /// The order of the asymptotic term in the error estimate.
   int get_error_estimate_order() const override { return 3; }
 
  private:
