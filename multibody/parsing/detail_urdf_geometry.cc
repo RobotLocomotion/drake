@@ -196,7 +196,12 @@ std::unique_ptr<geometry::Shape> ParseMesh(
     }
     scale = scale_vector(0);
   }
-  return std::make_unique<geometry::Mesh>(resolved_filename, scale);
+
+  if (shape_node->FirstChildElement("drake:declare_convex")) {
+    return std::make_unique<geometry::Convex>(resolved_filename, scale);
+  } else {
+    return std::make_unique<geometry::Mesh>(resolved_filename, scale);
+  }
 }
 
 std::unique_ptr<geometry::Shape> ParseGeometry(

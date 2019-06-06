@@ -1,0 +1,25 @@
+<?xml version="1.0" ?>
+
+<!--
+This URDF contains a single link with, in order:
+1) A convex-declared mesh, which should parse into geometry::Convex.
+2) A mesh that is not declared to be either, which should parse into
+  geometry::Mesh.
+-->
+<robot name="non_conflicting_materials_2" xmlns:drake="drake.mit.edu">
+  <link name="base_link">
+   <collision>
+      <geometry>
+        <mesh filename="../tri_cube.obj">
+          <drake:declare_convex/>
+        </mesh>
+      </geometry>
+    </collision>
+
+   <collision>
+      <geometry>
+        <mesh filename="../tri_cube.obj"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>

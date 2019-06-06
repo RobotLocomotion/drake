@@ -152,8 +152,13 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
         }
         scale = scale_vector.X();
       }
+
       // TODO(amcastro-tri): Fix the given path to be an absolute path.
-      return make_unique<geometry::Mesh>(file_name, scale);
+      if (mesh_element->HasElement("drake:declare_convex")) {
+        return make_unique<geometry::Convex>(file_name, scale);
+      } else {
+        return make_unique<geometry::Mesh>(file_name, scale);
+      }
     }
   }
 

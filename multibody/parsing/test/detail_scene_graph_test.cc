@@ -23,6 +23,7 @@ namespace {
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using geometry::Box;
+using geometry::Convex;
 using geometry::Cylinder;
 using geometry::GeometryInstance;
 using geometry::HalfSpace;
@@ -223,6 +224,22 @@ GTEST_TEST(SceneGraphParserDetail, MakeMeshFromSdfGeometry) {
   ASSERT_NE(mesh, nullptr);
   EXPECT_EQ(mesh->filename(), absolute_file_path);
   EXPECT_EQ(mesh->scale(), 3);
+}
+
+// Verify MakeShapeFromSdfGeometry can make a convex mesh from an sdf::Geometry.
+GTEST_TEST(SceneGraphParserDetail, MakeConvexFromSdfGeometry) {
+  const std::string absolute_file_path = "path/to/some/mesh.obj";
+  unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
+      "<mesh xmlns:drake='drake.mit.edu'>"
+      "  <drake:declare_convex/>"
+      "  <uri>" + absolute_file_path + "</uri>"
+      "  <scale> 3 3 3 </scale>"
+      "</mesh>");
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Convex* convex = dynamic_cast<const Convex*>(shape.get());
+  ASSERT_NE(convex, nullptr);
+  EXPECT_EQ(convex->filename(), absolute_file_path);
+  EXPECT_EQ(convex->scale(), 3);
 }
 
 // Verify MakeGeometryInstanceFromSdfVisual can make a GeometryInstance from an
