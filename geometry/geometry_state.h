@@ -445,9 +445,64 @@ class GeometryState {
 
   //@}
 
+  //---------------------------------------------------------------------------
+  /** @name                Render Queries  */
+  //@{
+
   /** Implementation support for SceneGraph::AddRenderer().  */
   void AddRenderer(std::string name,
                    std::unique_ptr<render::RenderEngine> renderer);
+
+  /** Implementation support for SceneGraph::HasRenderer().  */
+  bool HasRenderer(const std::string& name) const {
+    return render_engines_.count(name) > 0;
+  }
+
+  /** Implementation support for SceneGraph::RendererCount().  */
+  int RendererCount() const { return static_cast<int>(render_engines_.size()); }
+
+  /** Implementation support for SceneGraph::RegisteredRendererNames().  */
+  std::vector<std::string> RegisteredRendererNames() const;
+
+  /** Implementation support for QueryObject::RenderColorImage().  */
+  void RenderColorImage(const render::CameraProperties& camera,
+                        const math::RigidTransformd& X_WC,
+                        systems::sensors::ImageRgba8U* color_image_out,
+                        bool show_window) const;
+
+  /** Implementation support for QueryObject::RenderColorImage() overload.  */
+  void RenderColorImage(const render::CameraProperties& camera,
+                        FrameId parent_frame,
+                        const math::RigidTransformd& X_PC,
+                        systems::sensors::ImageRgba8U* color_image_out,
+                        bool show_window) const;
+
+  /** Implementation support for QueryObject::RenderDepthImage().  */
+  void RenderDepthImage(
+      const render::DepthCameraProperties& camera,
+      const math::RigidTransformd& X_WC,
+      systems::sensors::ImageDepth32F* depth_image_out) const;
+
+  /** Implementation support for QueryObject::RenderDepthImage() overload.  */
+  void RenderDepthImage(const render::DepthCameraProperties& camera,
+                        FrameId parent_frame,
+                        const math::RigidTransformd& X_PC,
+                        systems::sensors::ImageDepth32F* depth_image_out) const;
+
+  /** Implementation support for QueryObject::RenderLabelImage().  */
+  void RenderLabelImage(const render::CameraProperties& camera,
+                        const math::RigidTransformd& X_WC,
+                        systems::sensors::ImageLabel16I* label_image_out,
+                        bool show_window) const;
+
+  /** Implementation support for QueryObject::RenderLabelImage() overload.  */
+  void RenderLabelImage(const render::CameraProperties& camera,
+                        FrameId parent_frame,
+                        const math::RigidTransformd& X_PC,
+                        systems::sensors::ImageLabel16I* label_image_out,
+                        bool show_window) const;
+
+  //@}
 
   /** @name Scalar conversion */
   //@{
@@ -657,6 +712,10 @@ class GeometryState {
   // Retrieves the requested renderer (if supported), throwing otherwise.
   const render::RenderEngine& GetRenderEngineOrThrow(
       const std::string& renderer_name) const;
+
+  // Utility function to facilitate getting a double-valued pose for a frame,
+  // regardless of the value of T.
+  math::RigidTransformd GetDoubleWorldPose(FrameId frame_id) const;
 
   // NOTE: If adding a member it is important that it be _explicitly_ copied
   // in the converting copy constructor and likewise tested in the unit test
