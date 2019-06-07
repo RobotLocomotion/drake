@@ -38,14 +38,14 @@ void StaticFrictionConeConstraint::DoEval(
   if (!internal::AreAutoDiffVecXdEqual(q, plant.GetPositions(context))) {
     plant.SetPositions(&context, q);
   }
-  // Compute the contact wrench F_AB_W = [τ; f] where we only enforce
+  // Compute the contact wrench F_Cb_W = [τ; f] where we only enforce
   // constraints on f
-  AutoDiffVecXd F_AB_W;
+  AutoDiffVecXd F_Cb_W;
   contact_wrench_evaluator_->Eval(
       contact_wrench_evaluator_->ComposeVariableValues(context, lambda),
-      &F_AB_W);
-  // Only the contact force f_AB_W is constrained.
-  Vector3<AutoDiffXd> f_AB_W = F_AB_W.tail<3>();
+      &F_Cb_W);
+  // Only the contact force f_Cb_W is constrained.
+  Vector3<AutoDiffXd> f_Cb_W = F_Cb_W.tail<3>();
 
   // First get the signed distance result for the pair of geometries.
   // TODO(hongkai.dai): do not compute the signed distance results for every
@@ -65,6 +65,9 @@ void StaticFrictionConeConstraint::DoEval(
           query_object.ComputeSignedDistancePairwiseClosestPoints();
   bool found_geometry_pair = false;
   for (const auto& signed_distance_pair : signed_distance_pairs) {
+    // In SceneGraph::ComputeSignedDistancePairwiseClosestPoints(), the geometry
+    // IDs in each signed_distance_pair is guaranteed to be sorted, in the same
+    // order as the SortedPair returned by geometry_id_pair().
     if (signed_distance_pair.id_A ==
             contact_wrench_evaluator_->geometry_id_pair().first() &&
         signed_distance_pair.id_B ==
@@ -80,15 +83,15 @@ void StaticFrictionConeConstraint::DoEval(
                                                    geometryB_friction);
 
       const auto& nhat_BA_W = signed_distance_pair.nhat_BA_W;
-      // The constraint n̂_AB_W.dot(f_AB_W) >= 0
-      (*y)(0) = -nhat_BA_W.dot(f_AB_W);
+      // The constraint n̂_AB_W.dot(f_Cb_W) >= 0
+      (*y)(0) = -nhat_BA_W.dot(f_Cb_W);
 
-      // The constraint f_AB_Wᵀ * ((μ² + 1)* n̂_AB_W * n̂_AB_Wᵀ - I) * f_AB_W >= 0
+      // The constraint f_Cb_Wᵀ * ((μ² + 1)* n̂_AB_W * n̂_AB_Wᵀ - I) * f_Cb_W >= 0
       (*y)(1) =
-          f_AB_W.dot(((std::pow(combined_friction.static_friction(), 2) + 1) *
+          f_Cb_W.dot(((std::pow(combined_friction.static_friction(), 2) + 1) *
                           nhat_BA_W * nhat_BA_W.transpose() -
                       Eigen::Matrix3d::Identity()) *
-                     f_AB_W);
+                     f_Cb_W);
       break;
     }
   }

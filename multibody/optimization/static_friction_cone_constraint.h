@@ -33,8 +33,9 @@ class StaticFrictionConeConstraint : public solvers::Constraint {
    * position q, and a parameterization of the contact wrench λ, and evaluates
    * the contact wrench from body A to body B applied at the witness point of
    * geometry B expressed in the world frame, i.e., computes the contact wrench
-   * F_AB_W at the witness point p_WCb_W (see SignedDistancePair for the
-   * definition of witness point).
+   * F_Cb_W at the witness point p_WCb_W (see SignedDistancePair for the
+   * definition of witness point), and F_Ca_W = -F_Cb_W (assuming Ca and Cb are
+   * at the same spatial location).
    * @note although contact_wrench_evaluator computes both the contact force
    * and torque in the wrench, we only constrain the contact force to be
    * within the friction cone, and leave the torque unconstrained.

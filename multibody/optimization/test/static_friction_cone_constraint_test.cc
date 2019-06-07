@@ -42,7 +42,7 @@ GTEST_TEST(StaticFrictionConeConstraint, TestEval) {
   EXPECT_TRUE(
       CompareMatrices(constraint.upper_bound(), Eigen::Vector2d(kInf, kInf)));
 
-  // Evaluate the constraint
+  // Evaluate the constraint.
   Eigen::VectorXd x_val_satisfied(constraint.num_vars());
   // The first 7 entries are the generalized positions q, which is arbitrary.
   // The last 3 entries are the contact force from the ball to the ground,
