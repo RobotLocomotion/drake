@@ -16,7 +16,6 @@ import numpy as np
 
 import pydrake
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.forwarddiff import jacobian
 from pydrake.math import ge
 import pydrake.symbolic as sym
@@ -236,10 +235,6 @@ class TestMathematicalProgram(unittest.TestCase):
         x_expected = np.array([1, 1])
         self.assertTrue(np.allclose(result.GetSolution(x), x_expected))
 
-        # Test deprecated method.
-        with catch_drake_warnings(expected_count=1):
-            c = binding.constraint()
-
     def test_constraint_api(self):
         prog = mp.MathematicalProgram()
         x0, = prog.NewContinuousVariables(1, "x")
@@ -307,43 +302,29 @@ class TestMathematicalProgram(unittest.TestCase):
         constraints = qp.constraints
         constraint_values_expected = [1., 1., 2., 3.]
 
-        with catch_drake_warnings(action='ignore'):
-            prog.Solve()
-            self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
+        result = mp.Solve(prog)
+        self.assertTrue(np.allclose(result.GetSolution(x), x_expected))
 
-            enum = zip(constraints, constraint_values_expected)
-            for (constraint, value_expected) in enum:
-                value = prog.EvalBindingAtSolution(constraint)
-                self.assertTrue(np.allclose(value, value_expected))
+        enum = zip(constraints, constraint_values_expected)
+        for (constraint, value_expected) in enum:
+            value = result.EvalBinding(constraint)
+            self.assertTrue(np.allclose(value, value_expected))
 
-            enum = zip(costs, cost_values_expected)
-            for (cost, value_expected) in enum:
-                value = prog.EvalBindingAtSolution(cost)
-                self.assertTrue(np.allclose(value, value_expected))
+        enum = zip(costs, cost_values_expected)
+        for (cost, value_expected) in enum:
+            value = result.EvalBinding(cost)
+            self.assertTrue(np.allclose(value, value_expected))
 
-            # Existence check for non-autodiff versions.
-            self.assertIsInstance(
-                prog.EvalBinding(costs[0], x_expected), np.ndarray)
-            self.assertIsInstance(
-                prog.EvalBindings(prog.GetAllConstraints(), x_expected),
-                np.ndarray)
+        self.assertIsInstance(
+            result.EvalBinding(costs[0]), np.ndarray)
 
-            # Existence check for autodiff versions.
-            self.assertIsInstance(
-                jacobian(partial(prog.EvalBinding, costs[0]), x_expected),
-                np.ndarray)
-            self.assertIsInstance(
-                jacobian(partial(prog.EvalBindings, prog.GetAllConstraints()),
-                         x_expected),
-                np.ndarray)
-
-            # Bindings for `Eval`.
-            x_list = (float(1.), AutoDiffXd(1.), sym.Variable("x"))
-            T_y_list = (float, AutoDiffXd, sym.Expression)
-            evaluator = costs[0].evaluator()
-            for x_i, T_y_i in zip(x_list, T_y_list):
-                y_i = evaluator.Eval(x=[x_i, x_i])
-                self.assertIsInstance(y_i[0], T_y_i)
+        # Bindings for `Eval`.
+        x_list = (float(1.), AutoDiffXd(1.), sym.Variable("x"))
+        T_y_list = (float, AutoDiffXd, sym.Expression)
+        evaluator = costs[0].evaluator()
+        for x_i, T_y_i in zip(x_list, T_y_list):
+            y_i = evaluator.Eval(x=[x_i, x_i])
+            self.assertIsInstance(y_i[0], T_y_i)
 
     def test_matrix_variables(self):
         prog = mp.MathematicalProgram()
@@ -395,29 +376,6 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddSosConstraint(d[1]*x.dot(x), [sym.Monomial(x[0])])
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
-
-        # Test SubstituteSolution(sym.Expression)
-        with catch_drake_warnings(action='ignore'):
-            prog.Solve()
-            # TODO(eric.cousineau): Expose `SymbolicTestCase` so that other
-            # tests can use the assertion utilities.
-            self.assertEqual(
-                prog.SubstituteSolution(d[0] + d[1]).Evaluate(),
-                prog.GetSolution(d[0]) + prog.GetSolution(d[1]))
-            # Test SubstituteSolution(sym.Polynomial)
-            poly = d[0]*x.dot(x)
-            poly_sub_actual = prog.SubstituteSolution(
-                sym.Polynomial(poly, sym.Variables(x)))
-            poly_sub_expected = sym.Polynomial(
-                prog.SubstituteSolution(d[0])*x.dot(x), sym.Variables(x))
-            # TODO(soonho): At present, these must be converted to `Expression`
-            # to compare, because as `Polynomial`s the comparison fails with
-            # `0*x(0)^2` != `0`, which indicates that simplification is not
-            # happening somewhere.
-            self.assertTrue(
-                poly_sub_actual.ToExpression().EqualTo(
-                    poly_sub_expected.ToExpression()),
-                "{} != {}".format(poly_sub_actual, poly_sub_expected))
 
     def test_log_determinant(self):
         # Find the minimal ellipsoid that covers some given points.

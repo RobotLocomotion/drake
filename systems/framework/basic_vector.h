@@ -110,11 +110,6 @@ class BasicVector : public VectorBase<T> {
 
   void SetZero() final { values_.setZero(); }
 
-  DRAKE_DEPRECATED("2019-06-01", "Use get_value() + Eigen lpNorm.")
-  T NormInf() const final {
-    return values_.template lpNorm<Eigen::Infinity>();
-  }
-
   /// Copies the entire vector to a new BasicVector, with the same concrete
   /// implementation type.
   ///

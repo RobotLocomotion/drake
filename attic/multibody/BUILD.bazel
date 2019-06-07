@@ -57,7 +57,7 @@ drake_cc_library(
     ],
     deps = [
         ":rigid_body_tree",
-        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_lite",
         "//solvers:mixed_integer_rotation_constraint",
         "//solvers:rotation_constraint",
     ],
@@ -127,7 +127,7 @@ drake_cc_library(
         ":rigid_body_tree",
         "//common:unused",
         "//math:gradient",
-        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_lite",
         "//solvers:solve",
     ],
 )

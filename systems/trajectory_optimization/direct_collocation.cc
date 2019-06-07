@@ -205,47 +205,6 @@ void DirectCollocation::DoAddRunningCost(const symbolic::Expression& g) {
   AddCost(SubstitutePlaceholderVariables(g * h_vars()(N() - 2) / 2, N() - 1));
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-PiecewisePolynomial<double> DirectCollocation::ReconstructInputTrajectory()
-    const {
-  DRAKE_DEMAND(input_port_);
-  Eigen::VectorXd times = GetSampleTimes();
-  std::vector<double> times_vec(N());
-  std::vector<Eigen::MatrixXd> inputs(N());
-
-  for (int i = 0; i < N(); i++) {
-    times_vec[i] = times(i);
-    inputs[i] = GetSolution(input(i));
-  }
-  return PiecewisePolynomial<double>::FirstOrderHold(times_vec, inputs);
-}
-#pragma GCC diagnostic pop
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-PiecewisePolynomial<double> DirectCollocation::ReconstructStateTrajectory()
-    const {
-  Eigen::VectorXd times = GetSampleTimes();
-  std::vector<double> times_vec(N());
-  std::vector<Eigen::MatrixXd> states(N());
-  std::vector<Eigen::MatrixXd> derivatives(N());
-
-  for (int i = 0; i < N(); i++) {
-    times_vec[i] = times(i);
-    states[i] = GetSolution(state(i));
-    if (input_port_) {
-      input_port_value_->GetMutableVectorData<double>()->SetFromVector(
-          GetSolution(input(i)));
-    }
-    context_->get_mutable_continuous_state().SetFromVector(states[i]);
-    system_->CalcTimeDerivatives(*context_, continuous_state_.get());
-    derivatives[i] = continuous_state_->CopyToVector();
-  }
-  return PiecewisePolynomial<double>::Cubic(times_vec, states, derivatives);
-}
-#pragma GCC diagnostic pop
-
 PiecewisePolynomial<double> DirectCollocation::ReconstructInputTrajectory(
     const solvers::MathematicalProgramResult& result) const {
   DRAKE_DEMAND(input_port_);

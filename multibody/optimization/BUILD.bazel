@@ -39,6 +39,7 @@ drake_cc_library(
     srcs = ["contact_wrench_evaluator.cc"],
     hdrs = ["contact_wrench_evaluator.h"],
     deps = [
+        "//common:sorted_pair",
         "//multibody/inverse_kinematics:kinematic_constraint",
         "//multibody/plant",
         "//solvers:evaluator_base",
@@ -69,7 +70,7 @@ drake_cc_library(
         "//multibody/plant",
         "//solvers:binding",
         "//solvers:constraint",
-        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_lite",
     ],
 )
 
@@ -116,7 +117,7 @@ drake_cc_googletest(
         ":static_equilibrium_constraint",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:compute_numerical_gradient",
-        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_lite",
         "//solvers:solve",
     ],
 )

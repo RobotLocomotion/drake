@@ -19,6 +19,7 @@
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/internal_geometry.h"
 #include "drake/geometry/proximity_engine.h"
+#include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/utilities.h"
 
 namespace drake {
@@ -68,7 +69,6 @@ class GeometryState {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryState)
 
- public:
   /** An object that represents the range of FrameId values in the state. It
    is used in range-based for loops to iterate through registered frames.  */
   using FrameIdRange = internal::MapKeyRange<FrameId, internal::InternalFrame>;
@@ -196,12 +196,11 @@ class GeometryState {
    SceneGraphInspector::GetOwningSourceName(GeometryId) const.  */
   const std::string& GetOwningSourceName(GeometryId id) const;
 
-
   /** Implementation of SceneGraphInspector::GetFrameId().  */
   FrameId GetFrameId(GeometryId geometry_id) const;
 
   /** Implementation of SceneGraphInspector::GetName(GeometryId) const.  */
-  const std::string& get_name(GeometryId geometry_id) const;
+  const std::string& GetName(GeometryId geometry_id) const;
 
   /** Support for SceneGraphInspector::Reify().  */
   const Shape& GetShape(GeometryId id) const;
@@ -213,11 +212,13 @@ class GeometryState {
   const Isometry3<double>& GetPoseInParent(GeometryId geometry_id) const;
 
   /** Implementation of SceneGraphInspector::GetProximityProperties().  */
-  const ProximityProperties* get_proximity_properties(GeometryId id) const;
+  const ProximityProperties* GetProximityProperties(GeometryId id) const;
 
   /** Implementation of SceneGraphInspector::GetIllustrationProperties().  */
-  const IllustrationProperties* get_illustration_properties(
-      GeometryId id) const;
+  const IllustrationProperties* GetIllustrationProperties(GeometryId id) const;
+
+  /** Implementation of SceneGraphInspector::GetPerceptionProperties().  */
+  const PerceptionProperties* GetPerceptionProperties(GeometryId id) const;
 
   /** Implementation of SceneGraphInspector::CollisionFiltered().  */
   bool CollisionFiltered(GeometryId id1, GeometryId id2) const;
@@ -328,39 +329,45 @@ class GeometryState {
   bool IsValidGeometryName(FrameId frame_id, Role role,
                            const std::string& candidate_name) const;
 
-  /** Assigns the given geometry id the proximity role by assigning it the given
-   set of proximity properties. At this time, the geometry's name is tested for
-   uniqueness in among geometries with the proximity role.
-
-   @param source_id     The id of the geometry source that owns the geometry.
-   @param geometry_id   The geometry to assign a role.
-   @param properties    The proximity properties for this geometry.
-   @throws std::logic_error if 1. source id is invalid,
-                               2. geometry id is invalid,
-                               3. geometry id is not owned by the source id,
-                               4. geometry has already had a proximity role
-                                  assigned,
-                               5. the geometry's name is *not* unique in this
-                                  role.  */
+  /** Implementation of
+   @ref SceneGraph::AssignRole(SourceId, GeometryId, ProximityProperties)
+   "SceneGraph::AssignRole()".  */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
                   ProximityProperties properties);
 
-  /** Assigns the given geometry id the illustration role by assigning it the
-   given set of proximity properties. At this time, the geometry's name is
-   tested for uniqueness in among geometries with the illustration role.
+  /** Implementation of
+   @ref SceneGraph::AssignRole(SourceId, GeometryId, PerceptionProperties)
+   "SceneGraph::AssignRole()".  */
+  void AssignRole(SourceId source_id, GeometryId geometry_id,
+                  PerceptionProperties properties);
 
-   @param source_id     The id of the geometry source that owns the geometry.
-   @param geometry_id   The geometry to assign a role.
-   @param properties    The illustration properties for this geometry.
-   @throws std::logic_error if 1. source id is invalid,
-                               2. geometry id is invalid,
-                               3. geometry id is not owned by the source id,
-                               4. geometry has already had a illustration role
-                                  assigned,
-                               5. the geometry's name is *not* unique in this
-                                  role.    */
+  /** Implementation of
+   @ref SceneGraph::AssignRole(SourceId, GeometryId, IllustrationProperties)
+   "SceneGraph::AssignRole()".  */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
                   IllustrationProperties properties);
+
+  /** Implementation of
+   @ref SceneGraph::RemoveRole(SourceId, FrameId, Role)
+   "SceneGraph::RemoveRole()".  */
+  int RemoveRole(SourceId source_id, FrameId frame_id, Role role);
+
+  /** Implementation of
+   @ref SceneGraph::RemoveRole(SourceId, GeometryId, Role)
+   "SceneGraph::RemoveRole()".  */
+  int RemoveRole(SourceId source_id, GeometryId geometry_id, Role role);
+
+  /** Implementation of
+   @ref SceneGraph::RemoveFromRenderer(const std::string&, SourceId, FrameId)
+   "SceneGraph::RemoveFromRenderer()".  */
+  int RemoveFromRenderer(const std::string& renderer_name, SourceId source_id,
+                         FrameId frame_id);
+
+  /** Implementation of
+   @ref SceneGraph::RemoveFromRenderer(const std::string&, SourceId, GeometryId)
+   "SceneGraph::RemoveFromRenderer()".  */
+  int RemoveFromRenderer(const std::string& renderer_name, SourceId source_id,
+                         GeometryId geometry_id);
 
   //@}
 
@@ -438,7 +445,11 @@ class GeometryState {
 
   //@}
 
-  /** @name Scalar conversion  */
+  /** Implementation support for SceneGraph::AddRenderer().  */
+  void AddRenderer(std::string name,
+                   std::unique_ptr<render::RenderEngine> renderer);
+
+  /** @name Scalar conversion */
   //@{
 
   /** Returns a deep copy of this state using the AutoDiffXd scalar with all
@@ -472,7 +483,8 @@ class GeometryState {
         frame_index_to_id_map_(source.frame_index_to_id_map_),
         dynamic_proximity_index_to_internal_map_(
             source.dynamic_proximity_index_to_internal_map_),
-        geometry_engine_(std::move(source.geometry_engine_->ToAutoDiffXd())) {
+        geometry_engine_(std::move(source.geometry_engine_->ToAutoDiffXd())),
+        render_engines_(source.render_engines_) {
     // NOTE: Can't assign Isometry3<double> to Isometry3<AutoDiff>. But we _can_
     // assign Matrix<double> to Matrix<AutoDiff>, so that's what we're doing.
     auto convert = [](const std::vector<Isometry3<U>>& s,
@@ -608,6 +620,44 @@ class GeometryState {
   void AssignRoleInternal(SourceId source_id, GeometryId geometry_id,
                           PropertyType properties, Role role);
 
+  // Removes the indicated `role` from the indicated geometry. Returns 1 if the
+  // geometry formerly had that role, and 0 if not. This does no checking on
+  // ownership.
+  // @pre geometry_id maps to a registered geometry.
+  int RemoveRoleUnchecked(GeometryId geometry_id, Role role);
+
+  // Removes the geometry with the given `id` from the named renderer. Returns 1
+  // if the geometry formerly had been included in the renderer, 0 if not. This
+  // does no checking on ownership.
+  // @pre geometry_id maps to a registered geometry.
+  int RemoveFromRendererUnchecked(const std::string& renderer_name,
+                                  GeometryId id);
+
+  int RemoveProximityRole(GeometryId geometry_id);
+  int RemoveIllustrationRole(GeometryId geometry_id);
+  int RemovePerceptionRole(GeometryId geometry_id);
+
+  // When performing an operation on a frame, the caller provides its source id
+  // and the id of the frame it owns as the operand. Generally, the validation
+  // of the operation depends on two things:
+  //  1. The source id must be valid.
+  //  2. The source id must own the frame indicated.
+  // However, there is an exception. Callers can operate on the *world frame*
+  // (which merely affects the *geometries* that source owns that have been
+  // attached to the world frame). But external geometry sources *can't* own the
+  // world frame; it is owned by GeometryState/SceneGraph. Therefore, the
+  // *requesting* source id may not be the same as the *owning* source id in
+  // this one case.
+  // This function handles the special case. It confirms all proper ownership
+  // and, assuming the ids and relationships are valid, returns the frame
+  // requested.
+  const internal::InternalFrame& ValidateAndGetFrame(SourceId source_id,
+      FrameId frame_id) const;
+
+  // Retrieves the requested renderer (if supported), throwing otherwise.
+  const render::RenderEngine& GetRenderEngineOrThrow(
+      const std::string& renderer_name) const;
+
   // NOTE: If adding a member it is important that it be _explicitly_ copied
   // in the converting copy constructor and likewise tested in the unit test
   // for that constructor.
@@ -721,6 +771,10 @@ class GeometryState {
   // rely on temporal coherency to speed up the calculations. Thus we persist
   // and copy it.
   copyable_unique_ptr<internal::ProximityEngine<T>> geometry_engine_;
+
+  // The collection of all registered renderers.
+  std::unordered_map<std::string, copyable_unique_ptr<render::RenderEngine>>
+      render_engines_;
 };
 }  // namespace geometry
 }  // namespace drake

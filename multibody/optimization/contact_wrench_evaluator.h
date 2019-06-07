@@ -3,6 +3,7 @@
 #include <string>
 #include <utility>
 
+#include "drake/common/sorted_pair.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/evaluator_base.h"
 
@@ -72,8 +73,7 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
   /**
    * Returns the pair of geometry IDs.
    */
-  const std::pair<geometry::GeometryId, geometry::GeometryId>&
-  geometry_id_pair() const {
+  const SortedPair<geometry::GeometryId>& geometry_id_pair() const {
     return geometry_id_pair_;
   }
 
@@ -100,8 +100,7 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
   ContactWrenchEvaluator(
       const MultibodyPlant<AutoDiffXd>* plant,
       systems::Context<AutoDiffXd>* context, int num_lambda,
-      const std::pair<geometry::GeometryId, geometry::GeometryId>&
-          geometry_id_pair,
+      const SortedPair<geometry::GeometryId>& geometry_id_pair,
       const std::string& description)
       : solvers::EvaluatorBase(6, plant->num_positions() + num_lambda,
                                description),
@@ -135,7 +134,7 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
   // The derived class might need to modify the position value stored inside
   // this context, so we don't keep context_ as a pointer to const.
   systems::Context<AutoDiffXd>* context_;
-  const std::pair<geometry::GeometryId, geometry::GeometryId> geometry_id_pair_;
+  const SortedPair<geometry::GeometryId> geometry_id_pair_;
   int num_lambda_;
 };
 
@@ -162,8 +161,7 @@ class ContactWrenchFromForceInWorldFrameEvaluator final
   ContactWrenchFromForceInWorldFrameEvaluator(
       const MultibodyPlant<AutoDiffXd>* plant,
       systems::Context<AutoDiffXd>* context,
-      const std::pair<geometry::GeometryId, geometry::GeometryId>&
-          geometry_id_pair)
+      const SortedPair<geometry::GeometryId>& geometry_id_pair)
       : ContactWrenchEvaluator(
             plant, context, 3, geometry_id_pair,
             "contact_wrench_from_pure_force_in_world_frame") {}

@@ -293,7 +293,7 @@ class SceneGraphInspector {
    @throws std::logic_error if `id` does not map to a registered geometry.  */
   const std::string& GetName(GeometryId id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->get_name(id);
+    return state_->GetName(id);
   }
 
   /** Returns the shape specified for the geometry with the given `id`. In order
@@ -332,7 +332,7 @@ class SceneGraphInspector {
   const ProximityProperties* GetProximityProperties(
       GeometryId id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->get_proximity_properties(id);
+    return state_->GetProximityProperties(id);
   }
 
   /** Returns a pointer to the const illustration properties of the geometry
@@ -344,7 +344,19 @@ class SceneGraphInspector {
   const IllustrationProperties* GetIllustrationProperties(
       GeometryId id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->get_illustration_properties(id);
+    return state_->GetIllustrationProperties(id);
+  }
+
+  /** Returns a pointer to the const perception properties of the geometry
+   with the given `id`.
+   @param id   The identifier for the queried geometry.
+   @return A pointer to the properties (or nullptr if there are no such
+           properties).
+   @throws std::logic_error if `id` does not map to a registered geometry.  */
+  const PerceptionProperties* GetPerceptionProperties(
+      GeometryId id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetPerceptionProperties(id);
   }
 
   /** Reports true if the two geometries with given ids `id1` and `id2`, define

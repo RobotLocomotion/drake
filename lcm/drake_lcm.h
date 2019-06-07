@@ -95,12 +95,6 @@ class DrakeLcm : public DrakeLcmInterface {
   ::lcm::LCM* get_lcm_instance();
 
   /**
-   * Returns the LCM URL passed into the constructor; this can be empty.
-   */
-  DRAKE_DEPRECATED("2019-06-01", "Call get_lcm_url instead.")
-  std::string get_requested_lcm_url() const;
-
-  /**
    * Returns the LCM URL.
    */
   std::string get_lcm_url() const;

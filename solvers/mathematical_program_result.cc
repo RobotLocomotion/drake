@@ -31,19 +31,6 @@ bool MathematicalProgramResult::is_success() const {
   return solution_result_ == SolutionResult::kSolutionFound;
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-internal::SolverResult MathematicalProgramResult::ConvertToSolverResult()
-    const {
-  internal::SolverResult solver_result(solver_id_);
-  if (x_val_.size() != 0) {
-    solver_result.set_decision_variable_values(x_val_);
-  }
-  solver_result.set_optimal_cost(optimal_cost_);
-  return solver_result;
-}
-#pragma GCC diagnostic pop
-
 void MathematicalProgramResult::set_x_val(const Eigen::VectorXd& x_val) {
   DRAKE_DEMAND(decision_variable_index_.has_value());
   if (x_val.size() != static_cast<int>(decision_variable_index_->size())) {

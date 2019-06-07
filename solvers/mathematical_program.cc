@@ -1158,40 +1158,10 @@ void MathematicalProgram::SetDecisionVariableValueInVector(
   }
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-void MathematicalProgram::SetSolverResult(
-    const internal::SolverResult& solver_result) {
-  this->solver_id_ = solver_result.solver_id();
-  if (solver_result.decision_variable_values()) {
-    DRAKE_DEMAND(solver_result.decision_variable_values()->rows() ==
-                 num_vars());
-    x_values_ = *(solver_result.decision_variable_values());
-  } else {
-    x_values_ = Eigen::VectorXd::Constant(
-        num_vars(), std::numeric_limits<double>::quiet_NaN());
-  }
-  if (solver_result.optimal_cost()) {
-    optimal_cost_ = *(solver_result.optimal_cost());
-  } else {
-    optimal_cost_ = std::numeric_limits<double>::quiet_NaN();
-  }
-  if (solver_result.optimal_cost_lower_bound()) {
-    lower_bound_cost_ = *(solver_result.optimal_cost_lower_bound());
-  } else {
-    lower_bound_cost_ = optimal_cost_;
-  }
-}
-#pragma GCC diagnostic pop
-
 void MathematicalProgram::AppendNanToEnd(int new_var_size, Eigen::VectorXd* v) {
   v->conservativeResize(v->rows() + new_var_size);
   v->tail(new_var_size).fill(std::numeric_limits<double>::quiet_NaN());
 }
-
-// Note that in order to break the dependency cycle between Programs and
-// Solvers, the MathematicalProgram::Solve(MathematicalProgram&) method is
-// implemented in mathematical_program_deprecated.cc instead of this file,
 
 }  // namespace solvers
 }  // namespace drake

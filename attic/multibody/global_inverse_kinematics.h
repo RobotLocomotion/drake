@@ -4,6 +4,7 @@
 
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/mixed_integer_rotation_constraint.h"
 
 namespace drake {

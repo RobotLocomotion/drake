@@ -10,7 +10,6 @@ from numpy.linalg import norm
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.eigen_geometry import Quaternion
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.plant import (
     MultibodyPlant, AddMultibodyPlantSceneGraph)
@@ -102,11 +101,9 @@ class TestInverseKinematics(unittest.TestCase):
         self.assertTrue(np.less(p_AQ, p_AQ_upper +
                                 1E-6 * np.ones((3, 1))).all())
 
-        with catch_drake_warnings(expected_count=2):
-            self.assertEqual(
-                self.prog.Solve(), mp.SolutionResult.kSolutionFound)
-            self.assertTrue(np.allclose(
-                self.prog.GetSolution(self.q), q_val))
+        result = mp.Solve(self.prog)
+        self.assertTrue(result.is_success())
+        self.assertTrue(np.allclose(result.GetSolution(self.q), q_val))
 
     def test_AddOrientationConstraint(self):
         theta_bound = 0.2 * math.pi
@@ -131,20 +128,19 @@ class TestInverseKinematics(unittest.TestCase):
             R_AbarBbar.dot(R_BbarB.matrix()))
         self.assertGreater(R_AB.trace(), 1 + 2 * math.cos(theta_bound) - 1E-6)
 
-        with catch_drake_warnings(expected_count=2):
-            self.assertEqual(
-                self.prog.Solve(), mp.SolutionResult.kSolutionFound)
-            q_val = self.prog.GetSolution(self.q)
+        result = mp.Solve(self.prog)
+        self.assertTrue(result.is_success())
+        q_val = result.GetSolution(self.q)
 
-            body1_quat = self._body1_quat(q_val)
-            body2_quat = self._body2_quat(q_val)
-            body1_rotmat = Quaternion(body1_quat).rotation()
-            body2_rotmat = Quaternion(body2_quat).rotation()
-            R_AbarBbar = body1_rotmat.transpose().dot(body2_rotmat)
-            R_AB = R_AbarA.matrix().transpose().dot(
-                R_AbarBbar.dot(R_BbarB.matrix()))
-            self.assertGreater(R_AB.trace(),
-                               1 + 2 * math.cos(theta_bound) - 1E-6)
+        body1_quat = self._body1_quat(q_val)
+        body2_quat = self._body2_quat(q_val)
+        body1_rotmat = Quaternion(body1_quat).rotation()
+        body2_rotmat = Quaternion(body2_quat).rotation()
+        R_AbarBbar = body1_rotmat.transpose().dot(body2_rotmat)
+        R_AB = R_AbarA.matrix().transpose().dot(
+            R_AbarBbar.dot(R_BbarB.matrix()))
+        self.assertGreater(R_AB.trace(),
+                           1 + 2 * math.cos(theta_bound) - 1E-6)
 
     def test_AddGazeTargetConstraint(self):
         p_AS = np.array([0.1, 0.2, 0.3])
@@ -175,25 +171,24 @@ class TestInverseKinematics(unittest.TestCase):
         self.assertGreater(p_ST_W.dot(n_W), np.linalg.norm(
             p_ST_W) * np.linalg.norm(n_W) * math.cos(cone_half_angle) - 1E-6)
 
-        with catch_drake_warnings(expected_count=2):
-            self.assertEqual(
-                self.prog.Solve(), mp.SolutionResult.kSolutionFound)
-            q_val = self.prog.GetSolution(self.q)
+        result = mp.Solve(self.prog)
+        self.assertTrue(result.is_success())
+        q_val = result.GetSolution(self.q)
 
-            body1_quat = self._body1_quat(q_val)
-            body1_pos = self._body1_xyz(q_val)
-            body2_quat = self._body2_quat(q_val)
-            body2_pos = self._body2_xyz(q_val)
-            body1_rotmat = Quaternion(body1_quat).rotation()
-            body2_rotmat = Quaternion(body2_quat).rotation()
+        body1_quat = self._body1_quat(q_val)
+        body1_pos = self._body1_xyz(q_val)
+        body2_quat = self._body2_quat(q_val)
+        body2_pos = self._body2_xyz(q_val)
+        body1_rotmat = Quaternion(body1_quat).rotation()
+        body2_rotmat = Quaternion(body2_quat).rotation()
 
-            p_WS = body1_pos + body1_rotmat.dot(p_AS)
-            p_WT = body2_pos + body2_rotmat.dot(p_BT)
-            p_ST_W = p_WT - p_WS
-            n_W = body1_rotmat.dot(n_A)
-            self.assertGreater(p_ST_W.dot(n_W), np.linalg.norm(
-                p_ST_W) * np.linalg.norm(n_W) *
-                math.cos(cone_half_angle) - 1E-6)
+        p_WS = body1_pos + body1_rotmat.dot(p_AS)
+        p_WT = body2_pos + body2_rotmat.dot(p_BT)
+        p_ST_W = p_WT - p_WS
+        n_W = body1_rotmat.dot(n_A)
+        self.assertGreater(p_ST_W.dot(n_W), np.linalg.norm(
+            p_ST_W) * np.linalg.norm(n_W) *
+            math.cos(cone_half_angle) - 1E-6)
 
     def test_AddAngleBetweenVectorsConstraint(self):
         na_A = np.array([0.2, -0.4, 0.9])
@@ -223,11 +218,9 @@ class TestInverseKinematics(unittest.TestCase):
 
         self.assertLess(math.fabs(angle - angle_lower), 1E-6)
 
-        with catch_drake_warnings(expected_count=2):
-            self.assertEqual(
-                self.prog.Solve(), mp.SolutionResult.kSolutionFound)
-            self.assertTrue(np.allclose(
-                self.prog.GetSolution(self.q), q_val))
+        result = mp.Solve(self.prog)
+        self.assertTrue(result.is_success())
+        self.assertTrue(np.allclose(result.GetSolution(self.q), q_val))
 
     def test_AddMinimumDistanceConstraint(self):
         ik = self.ik_two_bodies
@@ -260,8 +253,6 @@ class TestInverseKinematics(unittest.TestCase):
         self.plant.SetPositions(context, q_val)
         self.assertGreater(get_min_distance_actual(), min_distance - tol)
 
-        with catch_drake_warnings(expected_count=2):
-            self.assertEqual(
-                self.prog.Solve(), mp.SolutionResult.kSolutionFound)
-            self.assertTrue(np.allclose(
-                self.prog.GetSolution(ik.q()), q_val))
+        result = mp.Solve(self.prog)
+        self.assertTrue(result.is_success())
+        self.assertTrue(np.allclose(result.GetSolution(ik.q()), q_val))

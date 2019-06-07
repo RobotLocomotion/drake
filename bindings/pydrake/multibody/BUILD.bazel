@@ -50,10 +50,16 @@ drake_pybind_library(
     name = "math_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:cpp_template_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:type_pack",
     ],
     cc_srcs = ["math_py.cc"],
     package_info = PACKAGE_INFO,
-    py_deps = [":module_py"],
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/common:cpp_template_py",
+    ],
 )
 
 drake_pybind_library(
@@ -226,7 +232,10 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "math_test",
-    deps = [":math_py"],
+    deps = [
+        ":math_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
 )
 
 drake_py_unittest(

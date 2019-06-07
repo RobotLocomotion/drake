@@ -16,6 +16,7 @@ drake_cc_package_library(
     name = "planner",
     deps = [
         ":differential_inverse_kinematics",
+        ":robot_plan_interpolator",
     ],
 )
 
@@ -25,7 +26,21 @@ drake_cc_library(
     hdrs = ["differential_inverse_kinematics.h"],
     deps = [
         "//multibody/plant",
-        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_lite",
+        "//solvers:osqp_solver",
+    ],
+)
+
+drake_cc_library(
+    name = "robot_plan_interpolator",
+    srcs = ["robot_plan_interpolator.cc"],
+    hdrs = ["robot_plan_interpolator.h"],
+    deps = [
+        "//common/trajectories:piecewise_polynomial",
+        "//multibody/parsing",
+        "//systems/framework:leaf_system",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -41,6 +56,21 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//examples/kuka_iiwa_arm:iiwa_common",
         "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
+    name = "robot_plan_interpolator_test",
+    data = [
+        "//examples/kuka_iiwa_arm:models",
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":robot_plan_interpolator",
+        "//common:find_resource",
+        "//systems/framework",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 

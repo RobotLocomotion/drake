@@ -153,45 +153,6 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, QuadraticTest) {
   EXPECT_NEAR(err_est, 0.0, 2 * std::numeric_limits<double>::epsilon());
 }
 
-// Tests accuracy when generalized velocity is not the time derivative of
-// generalized configuration against an RK2 integrator.
-TEST_F(RK3IntegratorTest, ComparisonWithRK2) {
-  // Integrate for ten thousand steps using a RK2 integrator with
-  // small step size.
-  const double dt = 5e-5;
-  std::unique_ptr<Context<double>> rk2_context = MakePlantContext();
-  RungeKutta2Integrator<double> rk2(*plant_, dt, rk2_context.get());
-
-  rk2.Initialize();
-  const double t_final = 1.0;
-  const int n_steps = t_final / dt;
-  for (int i = 1; i <= n_steps; ++i)
-    ASSERT_TRUE(rk2.IntegrateWithSingleFixedStepToTime(i * dt));
-
-  // Re-integrate with RK3.
-  std::unique_ptr<Context<double>> rk3_context = MakePlantContext();
-  RungeKutta3Integrator<double> rk3(*plant_, rk3_context.get());
-  rk3.set_maximum_step_size(0.1);
-  rk3.set_target_accuracy(1e-6);
-  rk3.Initialize();
-
-  // Verify that IntegrateWithMultipleSteps works.
-  const double tol = std::numeric_limits<double>::epsilon();
-  rk3.IntegrateWithMultipleStepsToTime(t_final);
-  EXPECT_NEAR(rk3_context->get_time(), t_final, tol);
-
-  // Verify that the final states are "close".
-  const VectorBase<double>& x_final_rk2 =
-      rk2_context->get_continuous_state_vector();
-
-  const VectorBase<double>& x_final_rk3 =
-      rk3_context->get_continuous_state_vector();
-
-  const double close_tol = 2e-6;
-  for (int i = 0; i < x_final_rk2.size(); ++i)
-    EXPECT_NEAR(x_final_rk2[i], x_final_rk3[i], close_tol);
-}
-
 // Tests accuracy of integrator's dense output.
 TEST_F(RK3IntegratorTest, DenseOutputAccuracy) {
   std::unique_ptr<Context<double>> context = MakePlantContext();

@@ -163,13 +163,13 @@ class YamlReadArchive final {
   // For std::map.
   template <typename NVP, typename K, typename V, typename C>
   void DoVisit(const NVP& nvp, const std::map<K, V, C>&, int32_t) {
-    this->VisitMap(nvp);
+    this->VisitMap<K, V>(nvp);
   }
 
   // For std::unordered_map.
   template <typename NVP, typename K, typename V, typename H, typename E>
   void DoVisit(const NVP& nvp, const std::unordered_map<K, V, H, E>&, int32_t) {
-    this->VisitMap(nvp);
+    this->VisitMap<K, V>(nvp);
   }
 
   // For drake::optional (which is std::optional iff we have new enough C++).
@@ -392,10 +392,24 @@ class YamlReadArchive final {
     }
   }
 
-  template <typename NVP>
+  template <typename Key, typename Value, typename NVP>
   void VisitMap(const NVP& nvp) {
-    // TODO(jwnimmer-tri) Implement me.
-    throw std::logic_error("Map-like values are not yet supported");
+    static_assert(std::is_same<Key, std::string>::value,
+                  "std::map keys must be strings");
+    const auto& sub_node = GetSubNode(nvp.name(), YAML::NodeType::Map);
+    if (!sub_node) { return; }
+    auto& result = *nvp.value();
+    result.clear();
+    for (const auto& yaml_key_value : sub_node) {
+      const std::string& key = yaml_key_value.first.Scalar();
+      auto newiter_inserted = result.emplace(key, Value{});
+      auto& newiter = newiter_inserted.first;
+      const bool inserted = newiter_inserted.second;
+      DRAKE_DEMAND(inserted == true);
+      Value& newvalue = newiter->second;
+      YamlReadArchive item_archive(sub_node, this);
+      item_archive.Visit(drake::MakeNameValue(key.c_str(), &newvalue));
+    }
   }
 
   // --------------------------------------------------------------------------
