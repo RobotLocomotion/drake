@@ -52,6 +52,7 @@ namespace render {
  to a geometry. A RenderEngine implementation is entitled to throw an exception
  if you attempt to do so.
 
+ @anchor allocate_render_label
  <h2>Usage</h2>
 
  For a label image to be _meaningful_, every pixel value should admit an
@@ -72,8 +73,8 @@ namespace render {
 
  The application associates a %RenderLabel with its semantic class by
  invoking SceneGraph::GetRenderLabel(). SceneGraph maintains a mapping between
- %RenderLabel and all registered semantic classes. They can be queried via
- SceneGraphInspector::GetSemanticClassNameFromLabel().
+ %RenderLabel and all registered semantic classes. The set of all registered
+ semantic classes can be acquired from SceneGraph::GetRenderClasses().
 
  <h3>Manual %RenderLabel allocation</h3>
 

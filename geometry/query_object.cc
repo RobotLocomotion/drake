@@ -8,6 +8,12 @@ namespace drake {
 namespace geometry {
 
 using math::RigidTransform;
+using math::RigidTransformd;
+using render::CameraProperties;
+using render::DepthCameraProperties;
+using systems::sensors::ImageDepth32F;
+using systems::sensors::ImageLabel16I;
+using systems::sensors::ImageRgba8U;
 
 template <typename T>
 QueryObject<T>::QueryObject(const QueryObject& query_object) {
@@ -66,25 +72,23 @@ RigidTransform<T> QueryObject<T>::X_WG(GeometryId id) const {
 }
 
 template <typename T>
-std::vector<ContactSurface<T>>
-QueryObject<T>::ComputeContactSurfaces() const {
-  ThrowIfNotCallable();
-
-  // TODO(DamrongGuoy): Modify this when the cache system is in place.
-  FullPoseUpdate();
-  const GeometryState<T>& state = geometry_state();
-  return state.ComputeContactSurfaces();
-}
-
-template <typename T>
 std::vector<PenetrationAsPointPair<double>>
 QueryObject<T>::ComputePointPairPenetration() const {
   ThrowIfNotCallable();
 
-  // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.ComputePointPairPenetration();
+}
+
+template <typename T>
+std::vector<ContactSurface<T>>
+QueryObject<T>::ComputeContactSurfaces() const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.ComputeContactSurfaces();
 }
 
 template <typename T>
@@ -93,7 +97,6 @@ QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints(
     const double max_distance) const {
   ThrowIfNotCallable();
 
-  // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.ComputeSignedDistancePairwiseClosestPoints(max_distance);
@@ -109,6 +112,46 @@ QueryObject<T>::ComputeSignedDistanceToPoint(
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.ComputeSignedDistanceToPoint(p_WQ, threshold);
+}
+
+template <typename T>
+void QueryObject<T>::RenderColorImage(const CameraProperties& camera,
+                                      FrameId parent_frame,
+                                      const RigidTransformd& X_PC,
+                                      ImageRgba8U* color_image_out,
+                                      bool show_window) const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.RenderColorImage(camera, parent_frame, X_PC, color_image_out,
+                                show_window);
+}
+
+template <typename T>
+void QueryObject<T>::RenderDepthImage(const DepthCameraProperties& camera,
+                                      FrameId parent_frame,
+                                      const RigidTransformd& X_PC,
+                                      ImageDepth32F* depth_image_out) const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.RenderDepthImage(camera, parent_frame, X_PC, depth_image_out);
+}
+
+template <typename T>
+void QueryObject<T>::RenderLabelImage(const CameraProperties& camera,
+                                      FrameId parent_frame,
+                                      const RigidTransformd& X_PC,
+                                      ImageLabel16I* label_image_out,
+                                      bool show_window) const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.RenderLabelImage(camera, parent_frame, X_PC, label_image_out,
+                                show_window);
 }
 
 template <typename T>
