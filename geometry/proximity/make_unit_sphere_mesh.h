@@ -117,33 +117,45 @@ std::pair<VolumeMesh<T>, std::vector<bool>> MakeSphereMeshLevel0() {
   std::vector<VolumeVertex<T>> vertices;
 
   // Level "0" consists of the octahedron with vertices on the surface of the
-  // a sphere of unit radius.
-  vertices.emplace_back(0.0, 0.0, 0.0);
-  vertices.emplace_back(1.0, 0.0, 0.0);
-  vertices.emplace_back(0.0, 1.0, 0.0);
-  vertices.emplace_back(-1.0, 0.0, 0.0);
-  vertices.emplace_back(0.0, -1.0, 0.0);
-  vertices.emplace_back(0.0, 0.0, 1.0);
-  vertices.emplace_back(0.0, 0.0, -1.0);
+  // a sphere of unit radius, according to the diagram below:
+  //                +Z   -X
+  //                 |   /
+  //                 v5 v3
+  //                 | /
+  //                 |/
+  //  -Y---v4------v0+------v2---+Y
+  //                /|
+  //               / |
+  //             v1  v6
+  //             /   |
+  //           +X    |
+  //                -Z
+  vertices.emplace_back(0.0, 0.0, 0.0);   // v0
+  vertices.emplace_back(1.0, 0.0, 0.0);   // v1
+  vertices.emplace_back(0.0, 1.0, 0.0);   // v2
+  vertices.emplace_back(-1.0, 0.0, 0.0);  // v3
+  vertices.emplace_back(0.0, -1.0, 0.0);  // v4
+  vertices.emplace_back(0.0, 0.0, 1.0);   // v5
+  vertices.emplace_back(0.0, 0.0, -1.0);  // v6
 
   // Create tetrahedra. The convention is that the first three vertices define
   // the "base" of the tetrahedron with its right-handed normal vector
-  // pointing towards the outside. The fourth vertex is on the "negative" side
+  // pointing towards the inside. The fourth vertex is on the "positive" side
   // of the plane defined by this normal.
 
   using V = VolumeVertexIndex;
 
   // Top tetrahedra.
-  tetrahedra.emplace_back(V(0), V(2), V(1), V(5));
-  tetrahedra.emplace_back(V(0), V(3), V(2), V(5));
-  tetrahedra.emplace_back(V(0), V(4), V(3), V(5));
-  tetrahedra.emplace_back(V(0), V(1), V(4), V(5));
+  tetrahedra.emplace_back(V(2), V(0), V(1), V(5));
+  tetrahedra.emplace_back(V(3), V(0), V(2), V(5));
+  tetrahedra.emplace_back(V(4), V(0), V(3), V(5));
+  tetrahedra.emplace_back(V(1), V(0), V(4), V(5));
 
   // Bottom tetrahedra.
-  tetrahedra.emplace_back(V(0), V(1), V(2), V(6));
-  tetrahedra.emplace_back(V(0), V(2), V(3), V(6));
-  tetrahedra.emplace_back(V(0), V(3), V(4), V(6));
-  tetrahedra.emplace_back(V(0), V(4), V(1), V(6));
+  tetrahedra.emplace_back(V(1), V(0), V(2), V(6));
+  tetrahedra.emplace_back(V(2), V(0), V(3), V(6));
+  tetrahedra.emplace_back(V(3), V(0), V(4), V(6));
+  tetrahedra.emplace_back(V(4), V(0), V(1), V(6));
 
   // Indicate what vertices are on the surface of the sphere.
   // All vertices are boundaries but the first one at (0, 0, 0).
