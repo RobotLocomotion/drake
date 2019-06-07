@@ -11,7 +11,9 @@
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/query_object.h"
+#include "drake/geometry/render/render_label.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/geometry/test_utilities/dummy_render_engine.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -27,11 +29,15 @@ namespace drake {
 namespace geometry {
 
 using Eigen::Isometry3d;
+using internal::DummyRenderEngine;
+using math::RigidTransformd;
+using render::RenderLabel;
 using systems::Context;
 using systems::rendering::PoseBundle;
 using systems::System;
 using std::make_unique;
 using std::unique_ptr;
+using std::unordered_map;
 
 // Friend class for working with QueryObjects in a test context.
 class QueryObjectTester {
@@ -396,6 +402,98 @@ TEST_F(SceneGraphTest, ModelInspector) {
             anchored_id);
 }
 
+// SceneGraph provides a thin wrapper on the GeometryState renderer
+// configuration/introspection code. These tests are just smoke tests that the
+// functions work. It relies on GeometryState to properly unit test the
+// full behavior.
+TEST_F(SceneGraphTest, RendererSmokeTest) {
+  const std::string kRendererName = "bob";
+
+  EXPECT_EQ(scene_graph_.RendererCount(), 0);
+  EXPECT_EQ(scene_graph_.RegisteredRendererNames().size(), 0u);
+  EXPECT_FALSE(scene_graph_.HasRenderer(kRendererName));
+
+  EXPECT_NO_THROW(scene_graph_.AddRenderer(kRendererName,
+                                           make_unique<DummyRenderEngine>()));
+
+  EXPECT_EQ(scene_graph_.RendererCount(), 1);
+  EXPECT_EQ(scene_graph_.RegisteredRendererNames()[0], kRendererName);
+  EXPECT_TRUE(scene_graph_.HasRenderer(kRendererName));
+}
+
+// SceneGraph provides a thin wrapper on the GeometryState role manipulation
+// code. These tests are just smoke tests that the functions work. It relies on
+// GeometryState to properly unit test the full behavior.
+TEST_F(SceneGraphTest, RoleManagementSmokeTest) {
+  SourceId s_id = scene_graph_.RegisterSource("test");
+  FrameId f_id = scene_graph_.RegisterFrame(s_id, GeometryFrame("frame"));
+  auto instance = make_unique<GeometryInstance>(
+      Isometry3<double>::Identity(), make_unique<Sphere>(1.0), "sphere");
+  instance->set_illustration_properties(IllustrationProperties());
+  instance->set_proximity_properties(ProximityProperties());
+  instance->set_perception_properties(PerceptionProperties());
+
+  GeometryId g_id = scene_graph_.RegisterGeometry(s_id, f_id, move(instance));
+
+  const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
+  EXPECT_NE(inspector.GetProximityProperties(g_id), nullptr);
+  EXPECT_NE(inspector.GetIllustrationProperties(g_id), nullptr);
+  EXPECT_NE(inspector.GetPerceptionProperties(g_id), nullptr);
+
+  EXPECT_EQ(scene_graph_.RemoveRole(s_id, g_id, Role::kPerception), 1);
+  EXPECT_EQ(scene_graph_.RemoveRole(s_id, g_id, Role::kProximity), 1);
+  EXPECT_EQ(scene_graph_.RemoveRole(s_id, g_id, Role::kIllustration), 1);
+}
+
+// Tests the RenderLabel management methods of the SceneGraph instance.
+TEST_F(SceneGraphTest, RenderLabelManagement) {
+  // NOTE: SceneGraph::GetRenderLabel() is not explicitly tested because
+  // the method is a *thin* wrapper of the RenderLabelManager method that has
+  // already been tested.
+  //
+  // Instead, this test assumes that GetRenderLabel() works and focuses  on the
+  // unique code for SceneGraph::GetRenderClasses().
+
+  // Two sources. Each request two render labels. They both use the *same* name
+  // for one render label and a unique name for the other.
+
+  // SceneGraph already has *some* render classes -- the reserved render labels.
+  const int count_builtin_labels =
+      static_cast<int>(scene_graph_.GetRenderClasses().size());
+
+  SourceId s1_id = scene_graph_.RegisterSource("source1");
+  SourceId s2_id = scene_graph_.RegisterSource("source2");
+  RenderLabel label1_1 = scene_graph_.GetRenderLabel(s1_id, "1");
+  RenderLabel label1_2 = scene_graph_.GetRenderLabel(s1_id, "2");
+  RenderLabel label2_1 = scene_graph_.GetRenderLabel(s2_id, "1");
+  RenderLabel label2_3 = scene_graph_.GetRenderLabel(s2_id, "3");
+
+  // Asking for the same render label produces the same render label value.
+  RenderLabel label1_1_dupe = scene_graph_.GetRenderLabel(s1_id, "1");
+  ASSERT_EQ(label1_1, label1_1_dupe);
+
+  unordered_map<RenderLabel, std::string> render_classes =
+      scene_graph_.GetRenderClasses();
+
+  // Four unique calls to GetRenderLabel produce four unique classes (plus the
+  // builtins).
+  ASSERT_EQ(render_classes.size(), 4 + count_builtin_labels);
+  EXPECT_EQ(render_classes.count(label1_1), 1);
+  EXPECT_EQ(render_classes.count(label1_2), 1);
+  EXPECT_EQ(render_classes.count(label2_1), 1);
+  EXPECT_EQ(render_classes.count(label2_3), 1);
+
+  // Render label class names which are *not* duplicated across sources are
+  // simply the original name.
+  EXPECT_EQ(render_classes[label1_2], "2");
+  EXPECT_EQ(render_classes[label2_3], "3");
+
+  // Render label class names which are used by multiple sources get source
+  // ids appended.
+  EXPECT_EQ(render_classes[label1_1], "1 (source1)");
+  EXPECT_EQ(render_classes[label2_1], "1 (source2)");
+}
+
 // Dummy system to serve as geometry source.
 class GeometrySourceSystem : public systems::LeafSystem<double> {
  public:
@@ -713,6 +811,33 @@ GTEST_TEST(SceneGraphContextModifier, CollisionFilters) {
 
   // TODO(SeanCurtis-TRI): When post-allocation model modification is allowed,
   // confirm that the model didn't change.
+}
+
+// A limited test -- the majority of this functionality is encoded in and tested
+// via GeometryState. This is just a regression test to make sure SceneGraph's
+// invocation of that function doesn't become corrupt.
+GTEST_TEST(SceneGraphRenderTest, AddRenderer) {
+  SceneGraph<double> scene_graph;
+
+  EXPECT_NO_THROW(scene_graph.AddRenderer("unique",
+                                          make_unique<DummyRenderEngine>()));
+
+  // Non-unique renderer name.
+  // NOTE: The error message is tested in geometry_state_test.cc.
+  EXPECT_THROW(
+      scene_graph.AddRenderer("unique", make_unique<DummyRenderEngine>()),
+      std::logic_error);
+
+  // Adding a renderer _after_ geometry registration.
+  SourceId s_id = scene_graph.RegisterSource("dummy");
+  scene_graph.RegisterGeometry(
+      s_id, scene_graph.world_frame_id(),
+      make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+                                    make_unique<Sphere>(1.0), "sphere"));
+
+  EXPECT_THROW(
+      scene_graph.AddRenderer("different", make_unique<DummyRenderEngine>()),
+      std::logic_error);
 }
 
 }  // namespace

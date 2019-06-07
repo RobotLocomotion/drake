@@ -48,12 +48,17 @@ using FrameIdSet = std::unordered_set<FrameId>;
 
 //@}
 
+// TODO(SeanCurtis-TRI): Move GeometryState into `internal` namespace (and then
+//  I can kill the `@note` in the class documentation).
+
 /**
  The context-dependent state of SceneGraph. This serves as an AbstractValue
  in the context. SceneGraph's time-dependent state includes more than just
  values; objects can be added to or removed from the world over time. Therefore,
  SceneGraph's context-dependent state includes values (the poses) and
  structure (the topology of the world).
+
+ @note This is intended as an internal class only.
 
  @tparam T The scalar type. Must be a valid Eigen scalar.
 
@@ -357,15 +362,34 @@ class GeometryState {
    "SceneGraph::RemoveRole()".  */
   int RemoveRole(SourceId source_id, GeometryId geometry_id, Role role);
 
-  /** Implementation of
-   @ref SceneGraph::RemoveFromRenderer(const std::string&, SourceId, FrameId)
-   "SceneGraph::RemoveFromRenderer()".  */
+  // TODO(SeanCurtis-TRI): These two "RemoveFromRenderer()" methods are not
+  // currently exposed in the SceneGraph API. They've been left here so that
+  // they (and their unit tests) don't have to be recreated. I need to
+  // determine definitively if these methods *should* exist (in which case I
+  // put them in the SceneGraph API or not, in which case I can remove them
+  // entirely).
+
+  /** For every geometry directly registered to the frame with the given
+   `frame_id`, if it has been added to the renderer with the given
+   `renderer_name` it is removed from that renderer.
+   @return The number of geometries affected by the removal.
+   @throws std::logic_error if 1) `source_id` does not map to a registered
+                            source, 2) `frame_id` does not map to a registered
+                            frame, 3) `frame_id` does not belong to
+                            `source_id` (unless `frame_id` is the world frame
+                            id), or 4) the context has already been
+                            allocated.  */
   int RemoveFromRenderer(const std::string& renderer_name, SourceId source_id,
                          FrameId frame_id);
 
-  /** Implementation of
-   @ref SceneGraph::RemoveFromRenderer(const std::string&, SourceId, GeometryId)
-   "SceneGraph::RemoveFromRenderer()".  */
+  /** Removes the geometry with the given `geometry_id` from the renderer with
+   the given `renderer_name`, _if_ it has previously been added.
+   @return The number of geometries affected by the removal (0 or 1).
+   @throws std::logic_error if 1) `source_id` does not map to a registered
+                            source, 2) `geometry_id` does not map to a
+                            registered geometry, 3) `geometry_id` does not
+                            belong to `source_id`, or 4) the context has already
+                            been allocated.  */
   int RemoveFromRenderer(const std::string& renderer_name, SourceId source_id,
                          GeometryId geometry_id);
 
@@ -445,9 +469,49 @@ class GeometryState {
 
   //@}
 
+  //---------------------------------------------------------------------------
+  /** @name                Render Queries  */
+  //@{
+
   /** Implementation support for SceneGraph::AddRenderer().  */
   void AddRenderer(std::string name,
                    std::unique_ptr<render::RenderEngine> renderer);
+
+  /** Implementation support for SceneGraph::HasRenderer().  */
+  bool HasRenderer(const std::string& name) const {
+    return render_engines_.count(name) > 0;
+  }
+
+  /** Implementation support for SceneGraph::RendererCount().  */
+  int RendererCount() const { return static_cast<int>(render_engines_.size()); }
+
+  /** Implementation support for SceneGraph::RegisteredRendererNames().  */
+  std::vector<std::string> RegisteredRendererNames() const;
+
+  /** Implementation support for QueryObject::RenderColorImage().
+   @pre All poses have already been updated.  */
+  void RenderColorImage(const render::CameraProperties& camera,
+                        FrameId parent_frame,
+                        const math::RigidTransformd& X_PC,
+                        systems::sensors::ImageRgba8U* color_image_out,
+                        bool show_window) const;
+
+  /** Implementation support for QueryObject::RenderDepthImage().
+   @pre All poses have already been updated.  */
+  void RenderDepthImage(const render::DepthCameraProperties& camera,
+                        FrameId parent_frame,
+                        const math::RigidTransformd& X_PC,
+                        systems::sensors::ImageDepth32F* depth_image_out) const;
+
+  /** Implementation support for QueryObject::RenderLabelImage().
+   @pre All poses have already been updated.  */
+  void RenderLabelImage(const render::CameraProperties& camera,
+                        FrameId parent_frame,
+                        const math::RigidTransformd& X_PC,
+                        systems::sensors::ImageLabel16I* label_image_out,
+                        bool show_window) const;
+
+  //@}
 
   /** @name Scalar conversion */
   //@{
@@ -657,6 +721,10 @@ class GeometryState {
   // Retrieves the requested renderer (if supported), throwing otherwise.
   const render::RenderEngine& GetRenderEngineOrThrow(
       const std::string& renderer_name) const;
+
+  // Utility function to facilitate getting a double-valued pose for a frame,
+  // regardless of T's actual type.
+  math::RigidTransformd GetDoubleWorldPose(FrameId frame_id) const;
 
   // NOTE: If adding a member it is important that it be _explicitly_ copied
   // in the converting copy constructor and likewise tested in the unit test
