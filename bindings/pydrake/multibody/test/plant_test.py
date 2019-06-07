@@ -37,8 +37,10 @@ from pydrake.multibody.plant import (
     ContactResults,
     ContactResultsToLcmSystem,
     CoulombFriction,
+    ExternallyAppliedSpatialForce,
     MultibodyPlant,
     PointPairContactInfo,
+    VectorExternallyAppliedSpatialForced
 )
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.benchmarks.acrobot import (
@@ -60,9 +62,12 @@ from pydrake.math import (
     RigidTransform,
     RollPitchYaw,
 )
+from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
     AbstractValue,
+    BasicVector,
     DiagramBuilder,
+    LeafSystem,
     InputPort,
     OutputPort,
 )
@@ -404,6 +409,66 @@ class TestPlant(unittest.TestCase):
             plant.get_generalized_contact_forces_output_port(
                 model_instance=gripper_model),
             OutputPort)
+
+    def test_applied_force_input_ports(self):
+        # Create a MultibodyPlant, and ensure that a secondary system can
+        # be connected to feed it vectors of ExternallyAppliedSpatialForce
+        # and applied generalized force vectors.
+
+        builder = DiagramBuilder()
+        plant = builder.AddSystem(MultibodyPlant())
+        file_name = FindResourceOrThrow(
+            "drake/multibody/benchmarks/free_body/uniform_solid_cylinder.urdf")
+        Parser(plant).AddModelFromFile(file_name)
+        plant.Finalize()
+
+        # Test that we can get those ports.
+        self.assertIsInstance(
+            plant.get_applied_generalized_force_input_port(), InputPort)
+        self.assertIsInstance(
+            plant.get_applied_spatial_force_input_port(), InputPort)
+
+        class TestSystem(LeafSystem):
+            def __init__(self, plant):
+                LeafSystem.__init__(self)
+                self.nv = plant.num_velocities()
+                self.target_body_index = plant.GetBodyByName(
+                    "uniformSolidCylinder").index()
+                self.DeclareAbstractOutputPort(
+                    "spatial_forces_vector",
+                    lambda: AbstractValue.Make(
+                        VectorExternallyAppliedSpatialForced()),
+                    self.DoCalcAbstractOutput)
+                self.DeclareVectorOutputPort(
+                    "generalized_forces",
+                    BasicVector(self.nv),
+                    self.DoCalcVectorOutput)
+
+            def DoCalcAbstractOutput(self, context, y_data):
+                test_force = ExternallyAppliedSpatialForce()
+                test_force.body_index = self.target_body_index
+                test_force.p_BoBq_B = np.zeros(3)
+                test_force.F_Bq_W = SpatialForce(tau=[0., 0., 0.],
+                                                 f=[0., 0., 1.])
+                y_data.set_value(VectorExternallyAppliedSpatialForced([
+                    test_force]))
+
+            def DoCalcVectorOutput(self, context, y_data):
+                y_data.SetFromVector(np.zeros(self.nv))
+
+        # These connections will fail if the port output types
+        # are not legible.
+        test_system = builder.AddSystem(TestSystem(plant))
+        builder.Connect(test_system.get_output_port(0),
+                        plant.get_applied_spatial_force_input_port())
+        builder.Connect(test_system.get_output_port(1),
+                        plant.get_applied_generalized_force_input_port())
+        diagram = builder.Build()
+
+        # Ensure we can tick this system. If so, all type conversions
+        # are working properly.
+        simulator = Simulator(diagram)
+        simulator.StepTo(0.01)
 
     def test_model_instance_state_access(self):
         # Create a MultibodyPlant with a kuka arm and a schunk gripper.

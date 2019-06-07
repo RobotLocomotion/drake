@@ -1,5 +1,6 @@
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
+#include "pybind11/stl_bind.h"
 
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/drake_optional_pybind.h"
@@ -13,8 +14,12 @@
 #include "drake/multibody/plant/contact_info.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
+#include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/spatial_inertia.h"
+
+PYBIND11_MAKE_OPAQUE(
+    std::vector<drake::multibody::ExternallyAppliedSpatialForce<double>>);
 
 namespace drake {
 namespace pydrake {
@@ -522,6 +527,16 @@ PYBIND11_MODULE(plant, m) {
                 multibody::ModelInstanceIndex>(
                 &Class::get_actuation_input_port),
             py_reference_internal, cls_doc.get_actuation_input_port.doc_1args)
+        .def("get_applied_generalized_force_input_port",
+            overload_cast_explicit<const systems::InputPort<T>&>(
+                &Class::get_applied_generalized_force_input_port),
+            py_reference_internal,
+            cls_doc.get_applied_generalized_force_input_port.doc)
+        .def("get_applied_spatial_force_input_port",
+            overload_cast_explicit<const systems::InputPort<T>&>(
+                &Class::get_applied_spatial_force_input_port),
+            py_reference_internal,
+            cls_doc.get_applied_spatial_force_input_port.doc)
         .def("get_state_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_state_output_port),
@@ -734,6 +749,28 @@ PYBIND11_MODULE(plant, m) {
     py::class_<Class>(m, "CoulombFriction", cls_doc.doc)
         .def(py::init<const T&, const T&>(), py::arg("static_friction"),
             py::arg("dynamic_friction"), cls_doc.ctor.doc_2args);
+  }
+
+  // ExternallyAppliedSpatialForce
+  {
+    using Class = multibody::ExternallyAppliedSpatialForce<T>;
+    constexpr auto& cls_doc = doc.ExternallyAppliedSpatialForce;
+    py::class_<Class>(m, "ExternallyAppliedSpatialForce", cls_doc.doc)
+        .def(py::init<>())
+        .def_readwrite("body_index", &Class::body_index, cls_doc.body_index.doc)
+        .def_readwrite("p_BoBq_B", &Class::p_BoBq_B, cls_doc.p_BoBq_B.doc)
+        .def_readwrite("F_Bq_W", &Class::F_Bq_W, cls_doc.F_Bq_W.doc);
+    AddValueInstantiation<Class>(m);
+  }
+
+  // Opaquely bind std::vector<ExternallyAppliedSpatialForce> to enable
+  // Python systems to construct AbstractValues of this type with the type
+  // being legible for port connections.
+  {
+    using Class = multibody::ExternallyAppliedSpatialForce<double>;
+    py::bind_vector<std::vector<Class>>(
+        m, "VectorExternallyAppliedSpatialForced");
+    AddValueInstantiation<std::vector<Class>>(m);
   }
 
   m.def("AddMultibodyPlantSceneGraph",
