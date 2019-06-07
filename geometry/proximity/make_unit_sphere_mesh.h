@@ -117,14 +117,26 @@ std::pair<VolumeMesh<T>, std::vector<bool>> MakeSphereMeshLevel0() {
   std::vector<VolumeVertex<T>> vertices;
 
   // Level "0" consists of the octahedron with vertices on the surface of the
-  // a sphere of unit radius.
-  vertices.emplace_back(0.0, 0.0, 0.0);
-  vertices.emplace_back(1.0, 0.0, 0.0);
-  vertices.emplace_back(0.0, 1.0, 0.0);
-  vertices.emplace_back(-1.0, 0.0, 0.0);
-  vertices.emplace_back(0.0, -1.0, 0.0);
-  vertices.emplace_back(0.0, 0.0, 1.0);
-  vertices.emplace_back(0.0, 0.0, -1.0);
+  // a sphere of unit radius, according to the diagram below:
+  //                +Z   -X
+  //                 |   /
+  //                 v5 v3
+  //                 | /
+  //                 |/
+  //  -Y---v4------v0+------v2---+Y
+  //                /|
+  //               / |
+  //             v1  v6
+  //             /   |
+  //           +X    |
+  //                -Z
+  vertices.emplace_back(0.0, 0.0, 0.0);   // v0
+  vertices.emplace_back(1.0, 0.0, 0.0);   // v1
+  vertices.emplace_back(0.0, 1.0, 0.0);   // v2
+  vertices.emplace_back(-1.0, 0.0, 0.0);  // v3
+  vertices.emplace_back(0.0, -1.0, 0.0);  // v4
+  vertices.emplace_back(0.0, 0.0, 1.0);   // v5
+  vertices.emplace_back(0.0, 0.0, -1.0);  // v6
 
   // Create tetrahedra. The convention is that the first three vertices define
   // the "base" of the tetrahedron with its right-handed normal vector

@@ -359,7 +359,7 @@ TEST_F(BoxPlaneIntersectionTest, NoIntersection) {
 // properly interpolated to lie on the plane within a circle of the expected
 // radius and, normals point towards the positive side of the plane.
 GTEST_TEST(SpherePlaneIntersectionTest, VerticesProperlyInterpolated) {
-  const double kTolerance = 200.0 * std::numeric_limits<double>::epsilon();
+  const double kTolerance = 5.0 * std::numeric_limits<double>::epsilon();
 
   // A tessellation of a unit sphere. Vertices are in the mesh frame M.
   // This creates a volume mesh with over 32K tetrahedra.
@@ -404,7 +404,12 @@ GTEST_TEST(SpherePlaneIntersectionTest, VerticesProperlyInterpolated) {
     const Vector3<double> normal_W = CalcTriangleNormal(vertices_W);
     // We expect the normals to point towards the positive side of the level set
     // according to the convention used by CalcZeroLevelSetInMeshDomain().
-    EXPECT_TRUE(CompareMatrices(normal_W, Vector3d::UnitZ(), kTolerance));
+    // Additional precission is lost during the computation of the surface. Most
+    // likely due to:
+    //   1) precission loss in the frame transformation between the sphere and
+    //      the plane.
+    //   2) Interpolation within the tetrahedra.
+    EXPECT_TRUE(CompareMatrices(normal_W, Vector3d::UnitZ(), 40 * kTolerance));
   }
 }
 
