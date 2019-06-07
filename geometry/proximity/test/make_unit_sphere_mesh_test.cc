@@ -28,14 +28,14 @@ namespace {
 
 // Computes the volume of a tetrahedron given the four vertices that define it.
 // The convention is that the first three vertices a, b, c define a triangle
-// with its right-handed normal pointing towards the outside of the tetrahedra.
-// The fourth vertex, d, is on the negative side of the plane defined by a, b,
+// with its right-handed normal pointing towards the inside of the tetrahedra.
+// The fourth vertex, d, is on the positive side of the plane defined by a, b,
 // c. With this convention, the computed volume will be positive, otherwise
 // negative.
 double CalcTetrahedronVolume(const Vector3<double>& a, const Vector3<double>& b,
                              const Vector3<double>& c,
                              const Vector3<double>& d) {
-  return (a - d).dot((b - d).cross(c - d)) / 6.0;
+  return (d - a).dot((b - a).cross(c - a)) / 6.0;
 }
 
 // Computes the total volume of a VolumeMesh by summing up the contribution

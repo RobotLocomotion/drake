@@ -134,16 +134,16 @@ std::pair<VolumeMesh<T>, std::vector<bool>> MakeSphereMeshLevel0() {
   using V = VolumeVertexIndex;
 
   // Top tetrahedra.
-  tetrahedra.emplace_back(V(0), V(2), V(1), V(5));
-  tetrahedra.emplace_back(V(0), V(3), V(2), V(5));
-  tetrahedra.emplace_back(V(0), V(4), V(3), V(5));
-  tetrahedra.emplace_back(V(0), V(1), V(4), V(5));
+  tetrahedra.emplace_back(V(2), V(0), V(1), V(5));
+  tetrahedra.emplace_back(V(3), V(0), V(2), V(5));
+  tetrahedra.emplace_back(V(4), V(0), V(3), V(5));
+  tetrahedra.emplace_back(V(1), V(0), V(4), V(5));
 
   // Bottom tetrahedra.
-  tetrahedra.emplace_back(V(0), V(1), V(2), V(6));
-  tetrahedra.emplace_back(V(0), V(2), V(3), V(6));
-  tetrahedra.emplace_back(V(0), V(3), V(4), V(6));
-  tetrahedra.emplace_back(V(0), V(4), V(1), V(6));
+  tetrahedra.emplace_back(V(1), V(0), V(2), V(6));
+  tetrahedra.emplace_back(V(2), V(0), V(3), V(6));
+  tetrahedra.emplace_back(V(3), V(0), V(4), V(6));
+  tetrahedra.emplace_back(V(4), V(0), V(1), V(6));
 
   // Indicate what vertices are on the surface of the sphere.
   // All vertices are boundaries but the first one at (0, 0, 0).
