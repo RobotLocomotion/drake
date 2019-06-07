@@ -488,6 +488,211 @@ TEST_F(TrivialSDP2, TestSdpaFreeFormatConstructor) {
   d_triplets_expected.emplace_back(0, 0, 1);
   CompareTriplets(dut.d_triplets(), d_triplets_expected, 1, 1);
 }
+
+TEST_F(TrivialSOCP1, TestSdpaFreeFormatConstructor) {
+  const SdpaFreeFormat dut(*prog_);
+  EXPECT_EQ(dut.num_X_rows(), 5);
+  EXPECT_EQ(dut.num_free_variables(), 1);
+
+  EXPECT_EQ(dut.X_blocks().size(), 2);
+  CompareBlockInX(dut.X_blocks()[0], BlockInX(BlockType::kDiagonal, 2));
+  CompareBlockInX(dut.X_blocks()[1], BlockInX(BlockType::kMatrix, 3));
+
+  CompareProgVarInSdpa(dut, 0, SdpaFreeFormat::FreeVariableIndex(0));
+  for (int i = 0; i < 2; ++i) {
+    CompareProgVarInSdpa(
+        dut, i + 1, DecisionVariableInSdpaX(Sign::kPositive, 0, 0, i, i, 0));
+  }
+
+  // Check the cost max x(0)
+  EXPECT_EQ(dut.C_triplets().size(), 0);
+  EXPECT_TRUE(CompareMatrices(Eigen::VectorXd(dut.d()), Vector1d(1)));
+
+  EXPECT_EQ(dut.A_triplets().size(), 7);
+  std::vector<Eigen::Triplet<double>> B_triplets_expected;
+  Eigen::Matrix<double, 7, 1> g_expected;
+  // Check the first constraint x(0) + x(1) + x(2) = 10
+  std::vector<Eigen::Triplet<double>> A0_triplets_expected;
+  A0_triplets_expected.emplace_back(0, 0, 1);
+  A0_triplets_expected.emplace_back(1, 1, 1);
+  CompareTriplets(dut.A_triplets()[0], A0_triplets_expected, dut.num_X_rows(),
+                  dut.num_X_rows());
+  B_triplets_expected.emplace_back(0, 0, 1);
+  g_expected(0) = 10;
+
+  // The equality constraints arising from the Lorentz cone. 2x(0) + 1 ==
+  // X_blocks()[1](i, i) for i = 0, 1, 2.
+  std::vector<Eigen::Triplet<double>> A_diagonal_triplets_expected;
+  for (int i = 0; i < 3; ++i) {
+    if (!A_diagonal_triplets_expected.empty()) {
+      A_diagonal_triplets_expected.pop_back();
+    }
+    A_diagonal_triplets_expected.emplace_back(2 + i, 2 + i, -1);
+    CompareTriplets(dut.A_triplets()[1 + i], A_diagonal_triplets_expected,
+                    dut.num_X_rows(), dut.num_X_rows());
+    B_triplets_expected.emplace_back(1 + i, 0, 2);
+    g_expected(1 + i) = -1;
+  }
+
+  // The equality constraint arising from the Lorentz cone. 3x(1) + 2 =
+  // X_blocks()[1](0, 1)
+  std::vector<Eigen::Triplet<double>> A4_triplets_expected;
+  A4_triplets_expected.emplace_back(0, 0, 3);
+  A4_triplets_expected.emplace_back(2, 3, -0.5);
+  A4_triplets_expected.emplace_back(3, 2, -0.5);
+  CompareTriplets(dut.A_triplets()[4], A4_triplets_expected, dut.num_X_rows(),
+                  dut.num_X_rows());
+  g_expected(4) = -2;
+
+  // The equality constraint arising from the Lorentz cone. x(0) + x(2) + 3 =
+  // X_blocks()[1](0, 2)
+  std::vector<Eigen::Triplet<double>> A5_triplets_expected;
+  A5_triplets_expected.emplace_back(1, 1, 1);
+  A5_triplets_expected.emplace_back(2, 4, -0.5);
+  A5_triplets_expected.emplace_back(4, 2, -0.5);
+  CompareTriplets(dut.A_triplets()[5], A5_triplets_expected, dut.num_X_rows(),
+                  dut.num_X_rows());
+  B_triplets_expected.emplace_back(5, 0, 1);
+  g_expected(5) = -3;
+
+  // The equality constraint arising from the Lorentz cone X_blocks()[1](1, 2) =
+  // 0
+  std::vector<Eigen::Triplet<double>> A6_triplets_expected;
+  A6_triplets_expected.emplace_back(3, 4, 0.5);
+  A6_triplets_expected.emplace_back(4, 3, 0.5);
+  CompareTriplets(dut.A_triplets()[6], A6_triplets_expected, dut.num_X_rows(),
+                  dut.num_X_rows());
+  g_expected(6) = 0;
+
+  CompareTriplets(dut.B_triplets(), B_triplets_expected, dut.g().rows(),
+                  dut.num_free_variables());
+  EXPECT_TRUE(CompareMatrices(dut.g(), g_expected));
+}
+
+TEST_F(TrivialSOCP2, TestSdpaFreeFormatConstructor) {
+  const SdpaFreeFormat dut(*prog_);
+  EXPECT_EQ(dut.num_X_rows(), 3);
+  EXPECT_EQ(dut.num_free_variables(), 2);
+
+  EXPECT_EQ(dut.X_blocks().size(), 1);
+  CompareBlockInX(dut.X_blocks()[0], BlockInX(BlockType::kMatrix, 3));
+  for (int i = 0; i < 2; ++i) {
+    CompareProgVarInSdpa(dut, i, SdpaFreeFormat::FreeVariableIndex(i));
+  }
+
+  // Check the cost.
+  EXPECT_EQ(dut.C_triplets().size(), 0);
+  CompareTriplets(dut.d_triplets(), {Eigen::Triplet<double>(1, 0, 1)}, 2, 1);
+
+  EXPECT_EQ(dut.A_triplets().size(), 6);
+  std::vector<Eigen::Triplet<double>> B_triplets_expected;
+  Vector6<double> g_expected;
+  // Check the linear equality constraint arising from Lorentz cone. X(i, i) =
+  // x(0) + 2 for i = 0, 1, 2
+  for (int i = 0; i < 3; ++i) {
+    CompareTriplets(dut.A_triplets()[i], {Eigen::Triplet<double>(i, i, -1)},
+                    dut.num_X_rows(), dut.num_X_rows());
+    B_triplets_expected.emplace_back(i, 0, 1);
+    g_expected(i) = -2;
+  }
+  // Check the linear equality constraint arising from Lorentz cone, X(0, 1) =
+  // x(0) + x(1) + 1
+  CompareTriplets(
+      dut.A_triplets()[3],
+      {Eigen::Triplet<double>(0, 1, -0.5), Eigen::Triplet<double>(1, 0, -0.5)},
+      dut.num_X_rows(), dut.num_X_rows());
+  B_triplets_expected.emplace_back(3, 0, 1);
+  B_triplets_expected.emplace_back(3, 1, 1);
+  g_expected(3) = -1;
+  // Check the linear equality constraint arising from Lorentz cone, X(0, 2) =
+  // x(0) - x(1) + 1
+  CompareTriplets(
+      dut.A_triplets()[4],
+      {Eigen::Triplet<double>(0, 2, -0.5), Eigen::Triplet<double>(2, 0, -0.5)},
+      dut.num_X_rows(), dut.num_X_rows());
+  B_triplets_expected.emplace_back(4, 0, 1);
+  B_triplets_expected.emplace_back(4, 1, -1);
+  g_expected(4) = -1;
+  // Check the linear equality constraint arising from Lorentz cone, X(1, 2) =
+  // 0
+  CompareTriplets(
+      dut.A_triplets()[5],
+      {Eigen::Triplet<double>(1, 2, 0.5), Eigen::Triplet<double>(2, 1, 0.5)},
+      dut.num_X_rows(), dut.num_X_rows());
+  g_expected(5) = 0;
+
+  CompareTriplets(dut.B_triplets(), B_triplets_expected, dut.g().rows(),
+                  dut.num_free_variables());
+  EXPECT_TRUE(CompareMatrices(dut.g(), g_expected));
+}
+
+TEST_F(TrivialSOCP3, TestSdpaFreeFormatConstructor) {
+  const SdpaFreeFormat dut(*prog_);
+  EXPECT_EQ(dut.num_X_rows(), 3);
+  EXPECT_EQ(dut.num_free_variables(), 2);
+
+  EXPECT_EQ(dut.X_blocks().size(), 1);
+  CompareBlockInX(dut.X_blocks()[0], BlockInX(BlockType::kMatrix, 3));
+
+  for (int i = 0; i < 2; ++i) {
+    CompareProgVarInSdpa(dut, i, SdpaFreeFormat::FreeVariableIndex(i));
+  }
+
+  // Check the cost max -x(1)
+  EXPECT_EQ(dut.C_triplets().size(), 0);
+  CompareTriplets(dut.d_triplets(), {Eigen::Triplet<double>(1, 0, -1)}, 2, 1);
+
+  EXPECT_EQ(dut.A_triplets().size(), 6);
+  std::vector<Eigen::Triplet<double>> B_triplets_expected;
+  Vector6<double> g_expected;
+  // Check the equality constraint arising from rotated Lorentz cone
+  // 2x(0) + 2 = X(0, 0)
+  CompareTriplets(dut.A_triplets()[0], {Eigen::Triplet<double>(0, 0, -1)},
+                  dut.num_X_rows(), dut.num_X_rows());
+  B_triplets_expected.emplace_back(0, 0, 2);
+  g_expected(0) = -2;
+
+  // Check the equality constraint arising from rotated Lorentz cone
+  // x(0) + 2 = X(0, 1)
+  CompareTriplets(
+      dut.A_triplets()[1],
+      {Eigen::Triplet<double>(0, 1, -0.5), Eigen::Triplet<double>(1, 0, -0.5)},
+      dut.num_X_rows(), dut.num_X_rows());
+  B_triplets_expected.emplace_back(1, 0, 1);
+  g_expected(1) = -2;
+
+  // Check the equality constraint arising from rotated Lorentz cone
+  // 3x(0) + x(1) + 1 = X(0, 2)
+  CompareTriplets(
+      dut.A_triplets()[2],
+      {Eigen::Triplet<double>(0, 2, -0.5), Eigen::Triplet<double>(2, 0, -0.5)},
+      dut.num_X_rows(), dut.num_X_rows());
+  B_triplets_expected.emplace_back(2, 0, 3);
+  B_triplets_expected.emplace_back(2, 1, 1);
+  g_expected(2) = -1;
+
+  // Check the equality constraint arising from rotated Lorentz cone
+  // 3x(1) + 4 = X(1, 1) and 3x(1) + 4 = X(2, 2)
+  for (int i = 0; i < 2; ++i) {
+    CompareTriplets(dut.A_triplets()[3 + i],
+                    {Eigen::Triplet<double>(i + 1, i + 1, -1)},
+                    dut.num_X_rows(), dut.num_X_rows());
+    B_triplets_expected.emplace_back(3 + i, 1, 3);
+    g_expected(3 + i) = -4;
+  }
+
+  // Check the equality constraint arising from rotated Lorentz cone
+  // X(1, 2) = 0
+  CompareTriplets(
+      dut.A_triplets()[5],
+      {Eigen::Triplet<double>(1, 2, 0.5), Eigen::Triplet<double>(2, 1, 0.5)},
+      dut.num_X_rows(), dut.num_X_rows());
+  g_expected(5) = 0;
+  CompareTriplets(dut.B_triplets(), B_triplets_expected, dut.g().rows(),
+                  dut.num_X_rows());
+  EXPECT_TRUE(CompareMatrices(dut.g(), g_expected));
+}
+
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake

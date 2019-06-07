@@ -150,5 +150,53 @@ class TrivialSDP2 : public ::testing::Test {
   Matrix2<symbolic::Variable> X1_;
   symbolic::Variable y_;
 };
+
+/**
+ * Test a problem with LorentzConeConstraint
+ * max x(0)
+ * s.t 2x(0) + 1 >= sqrt((3x(1)+2)² + (x(2)+x(0)+3)²)
+ *     x(0) + x(1) + x(2) = 10
+ *     x(1) >= 0
+ *     x(2) >= 0
+ * The optimal solution is (10, 0, 0).
+ */
+class TrivialSOCP1 : public ::testing::Test {
+ public:
+  TrivialSOCP1();
+
+ protected:
+  std::unique_ptr<MathematicalProgram> prog_;
+  Vector3<symbolic::Variable> x_;
+};
+
+/**
+ * max x(1)
+ * s.t x(0) + 2 >= sqrt((x(0) + x(1) + 1)² + (x(0) - x(1) + 1)²)
+ * The optimal solution is (0, 1)
+ */
+class TrivialSOCP2 : public ::testing::Test {
+ public:
+  TrivialSOCP2();
+
+ protected:
+  std::unique_ptr<MathematicalProgram> prog_;
+  Vector2<symbolic::Variable> x_;
+};
+
+/**
+ * max -x(1)
+ * s.t (2x(0) + 2)(3x(1) + 4) >= sqrt((x(0) + 2)² + (3x(0) + x(1) + 1)²)
+ *      2x(0) + 2 >= 0
+ *      3x(1) + 4 >= 0
+ * The optimal solution is at (-0.1, 2 - sqrt(7.1))
+ */
+class TrivialSOCP3 : public ::testing::Test {
+ public:
+  TrivialSOCP3();
+
+ protected:
+  std::unique_ptr<MathematicalProgram> prog_;
+  Vector2<symbolic::Variable> x_;
+};
 }  // namespace solvers
 }  // namespace drake

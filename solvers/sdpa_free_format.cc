@@ -464,6 +464,151 @@ void SdpaFreeFormat::AddLinearMatrixInequalityConstraints(
   }
 }
 
+// A lorentz cone constraint z₀ ≥ sqrt(z₁² + ... + zₙ²) can be rewritten as a
+// positive semidefinite constraint
+// ⌈ z₀ z₁ ... zₙ ⌉
+// | z₁ z₀  0  0  |  is positive semidefinite.
+// |    ....      |
+// ⌊ zₙ 0   0  z₀ ⌋
+void SdpaFreeFormat::AddLorentzConeConstraints(
+    const MathematicalProgram& prog) {
+  for (const auto& lorentz_cone_constraint : prog.lorentz_cone_constraints()) {
+    const int num_block_rows = lorentz_cone_constraint.evaluator()->A().rows();
+    const int num_decision_vars = lorentz_cone_constraint.variables().rows();
+    const std::vector<int> prog_vars_indices =
+        prog.FindDecisionVariableIndices(lorentz_cone_constraint.variables());
+
+    // Add the linear constraint that all the diagonal terms of the new block
+    // matrix equals to z0.
+    std::vector<double> a;
+    // The last entry in X_entries would be the diagonal term in the new block
+    a.reserve(num_decision_vars);
+    // We need to impose the linear equality constraint
+    // lorentz_cone_constraint.evaluator()->A().row(0) *
+    // lorentz_cone_constraint.variables() - new_block(i, i) =
+    // -lorentz_cone_constraint.evaluator()->b()(0).
+    // So we first fill in a, b, X_entries and s_indices with the term from
+    // lorentz_cone_constraint.evaluator()->A().row(0) *
+    // lorentz_cone_constraint.variables()
+    for (int i = 0; i < num_decision_vars; ++i) {
+      const double coeff = lorentz_cone_constraint.evaluator()->A_dense()(0, i);
+      a.push_back(coeff);
+    }
+
+    // For each diagonal entry in the new block matrix, we need to add
+    // -new_block(i, i) to the left-hand side of the equality constraint.
+    for (int i = 0; i < num_block_rows; ++i) {
+      AddLinearEqualityConstraint(
+          a, prog_vars_indices, {-1.0},
+          {EntryInX(static_cast<int>(X_blocks_.size()), i, i, num_X_rows_)}, {},
+          {}, -lorentz_cone_constraint.evaluator()->b()(0));
+    }
+
+    // Now we add the linear equality constraint arising from the first row of
+    // the new block lorentz_cone_constraint.evaluator()->A().row(i) *
+    // lorentz_cone_constraint.variables() +
+    // lorentz_cone_constraint.evaluator()->b()(i) = new_block(0, i) for i
+    for (int i = 1; i < num_block_rows; ++i) {
+      a.clear();
+      a.reserve(num_decision_vars);
+      for (int j = 0; j < num_decision_vars; ++j) {
+        const double coeff =
+            lorentz_cone_constraint.evaluator()->A_dense()(i, j);
+        a.push_back(coeff);
+      }
+      // Add the term -new_block(0, i)
+      AddLinearEqualityConstraint(
+          a, prog_vars_indices, {-1},
+          {EntryInX(static_cast<int>(X_blocks_.size()), 0, i, num_X_rows_)}, {},
+          {}, -lorentz_cone_constraint.evaluator()->b()(i));
+    }
+
+    // Now add the constraint that many entries in this new block is 0.
+    for (int i = 1; i < num_block_rows; ++i) {
+      for (int j = 1; j < i; ++j) {
+        AddLinearEqualityConstraint(
+            {}, {}, {1.0},
+            {EntryInX(static_cast<int>(X_blocks_.size()), i, j, num_X_rows_)},
+            {}, {}, 0);
+      }
+    }
+
+    X_blocks_.emplace_back(BlockType::kMatrix, num_block_rows);
+    num_X_rows_ += num_block_rows;
+  }
+}
+
+// A vector z in rotated Lorentz cone (i.e.,z₀≥0, z₁≥0, z₀z₁≥ sqrt(z₂² + ...
+// zₙ²) ) is equivalent to the following positive semidefinite constraint
+// ⌈ z₀ z₂ z₃ ... zₙ ⌉
+// | z₂ z₁ 0  ...  0 |
+// | z₃ 0 z₁ 0 ... 0 | is positive semidefinite.
+// | z₄ 0 0 z₁ 0   0 |
+// |      ...        |
+// | zₙ₋₁ ...   z₁ 0 |
+// ⌊ zₙ 0 ... 0    z₁⌋
+void SdpaFreeFormat::AddRotatedLorentzConeConstraints(
+    const MathematicalProgram& prog) {
+  for (const auto& rotated_lorentz_constraint :
+       prog.rotated_lorentz_cone_constraints()) {
+    const int z_size = rotated_lorentz_constraint.evaluator()->A().rows();
+    // The number of rows in the new block matrix
+    const int num_block_rows = z_size - 1;
+    const int num_decision_vars = rotated_lorentz_constraint.variables().rows();
+    const std::vector<int> prog_vars_indices = prog.FindDecisionVariableIndices(
+        rotated_lorentz_constraint.variables());
+    // First add the equality constraint arising from the first row of the PSD
+    // constraint. rotated_lorentz_constraint.evaluator()->A().row(j) *
+    // rotated_lorentz_constraint.variables() +
+    // rotated_lorentz_constraint.evaluator()->b()(j) = new_X(0, i);
+    // where j = 0 if i = 0, and j = i + 1 otherwise;
+    std::vector<double> a;
+    for (int i = 0; i < num_block_rows; ++i) {
+      a.clear();
+      a.reserve(num_decision_vars);
+      const int j = i == 0 ? 0 : i + 1;
+      for (int k = 0; k < num_decision_vars; ++k) {
+        a.push_back(rotated_lorentz_constraint.evaluator()->A_dense()(j, k));
+      }
+      // Add the term -new_X(0, i)
+      AddLinearEqualityConstraint(
+          a, prog_vars_indices, {-1},
+          {EntryInX(static_cast<int>(X_blocks_.size()), 0, i, num_X_rows_)}, {},
+          {}, -rotated_lorentz_constraint.evaluator()->b()(j));
+    }
+
+    // Add the linear constraint
+    // rotated_lorentz_constraint.evaluator()->A().row(1) *
+    // rotated_lorentz_constraint.variables() +
+    // rotated_lorentz_constraint.evaluator()->b()(1) = new_X(i, i) for i >= 1
+    a.clear();
+    a.reserve(num_decision_vars);
+    for (int i = 0; i < num_decision_vars; ++i) {
+      a.push_back(rotated_lorentz_constraint.evaluator()->A_dense()(1, i));
+    }
+    for (int i = 1; i < num_block_rows; ++i) {
+      // add the term -new_block(i, i)
+      AddLinearEqualityConstraint(
+          a, prog_vars_indices, {-1},
+          {EntryInX(static_cast<int>(X_blocks_.size()), i, i, num_X_rows_)}, {},
+          {}, -rotated_lorentz_constraint.evaluator()->b()(1));
+    }
+
+    // Now add the constraint that new_X(i, j) = 0 for j >= 2 and 1 <= i < j
+    for (int j = 2; j < num_block_rows; ++j) {
+      for (int i = 1; i < j; ++i) {
+        AddLinearEqualityConstraint(
+            {}, {}, {1},
+            {EntryInX(static_cast<int>(X_blocks_.size()), i, j, num_X_rows_)},
+            {}, {}, 0);
+      }
+    }
+
+    X_blocks_.emplace_back(BlockType::kMatrix, num_block_rows);
+    num_X_rows_ += num_block_rows;
+  }
+}
+
 void SdpaFreeFormat::Finalize() {
   A_.reserve(A_triplets_.size());
   for (int i = 0; i < static_cast<int>(A_triplets_.size()); ++i) {
@@ -498,6 +643,10 @@ SdpaFreeFormat::SdpaFreeFormat(const MathematicalProgram& prog) {
   AddLinearConstraintsFromProgram(prog);
 
   AddLinearMatrixInequalityConstraints(prog);
+
+  AddLorentzConeConstraints(prog);
+
+  AddRotatedLorentzConeConstraints(prog);
 
   Finalize();
 }
