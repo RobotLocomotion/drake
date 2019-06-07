@@ -22,6 +22,7 @@ using geometry::SurfaceFace;
 using geometry::SurfaceMesh;
 using geometry::SurfaceVertex;
 using geometry::SurfaceVertexIndex;
+using math::RigidTransform;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
@@ -37,17 +38,19 @@ GeometryId FindGeometry(
   return geometries[0];
 }
 
-// Note: this parameterized gtest uses a transformation to test various absolute
-// poses of two parsed bodies (without changing their relative poses). See
-// SetUp for more details.
+// This fixture defines a contacting configuration between a tet and a
+// half-space in a local frame, Y. In Frame Y, half-space Frame H is
+// positioned such that it passes through the origin and its normal Hz is
+// aligned with Yz. In other words, the pose X_YH is the identity pose.
+// The box pose X_YB is also set to be the identity pose and therefore the
+// geometric center of the tet is at the origin Yo, with the bottom (in frame Y)
+// half of the tet overlapping the half-space. The fixture unit-tests
+// an arbitrary set of poses X_WY of frame Y in the world frame W to assess the
+// frame invariance of the computed results, which only depend (modulo the
+// "expressed-in" frame) on the relative pose of the bodies.
 class MultibodyPlantHydroelasticTractionTests :
-public ::testing::TestWithParam<math::RigidTransform<double>> {
+public ::testing::TestWithParam<RigidTransform<double>> {
  public:
-  const MultibodyPlant<double>& plant() const { return *plant_; }
-  Context<double>& plant_context() { return *plant_context_; }
-  const ContactSurface<double>& contact_surface() const {
-      return *contact_surface_;
-  }
   const HydroelasticTractionCalculator<double>& traction_calculator() const {
     return traction_calculator_;
   }
@@ -76,7 +79,7 @@ public ::testing::TestWithParam<math::RigidTransform<double>> {
     // Compute the expected point of contact in the world frame. The class
     // definition and SetUp() note that the parameter to this test transforms
     // both bodies from their definition in Frame Y to the world frame.
-    const math::RigidTransform<double>& X_WY = GetParam();
+    const RigidTransform<double>& X_WY = GetParam();
     const Vector3<double> p_YQ(0.5, 0.5, -0.5);
     const Vector3<double> p_WQ_expected = X_WY * p_YQ;
 
@@ -122,14 +125,14 @@ public ::testing::TestWithParam<math::RigidTransform<double>> {
 
     contact_surface_ = CreateContactSurface();
 
-    // Set the poses for the two bodies in the world frame. We assume that the
-    // two bodies have been parsed (in an already intersecting configuration)
-    // into Frame Y, which is defined by the transformation X_WY (obtained by
-    // GetParam()).
-    plant.SetFreeBodyPose(plant_context_,
-        plant.GetBodyByName("box"), GetParam());
-    plant.SetFreeBodyPose(plant_context_,
-        plant.GetBodyByName("ground"), GetParam());
+    // See class documentation for description of Frames Y, B, and H.
+    const RigidTransform<double>& X_WY = GetParam();
+    const auto& X_YH = RigidTransform<double>::Identity();
+    const auto& X_YB = RigidTransform<double>::Identity();
+    const RigidTransform<double> X_WH = X_WY * X_YH;
+    const RigidTransform<double> X_WB = X_WY * X_YB;
+    plant.SetFreeBodyPose(plant_context_, plant.GetBodyByName("ground"), X_WH);
+    plant.SetFreeBodyPose(plant_context_, plant.GetBodyByName("box"), X_WB);
   }
 
   std::unique_ptr<ContactSurface<double>> CreateContactSurface() const {
@@ -151,7 +154,7 @@ public ::testing::TestWithParam<math::RigidTransform<double>> {
     std::vector<Vector3<double>> h_MN_M(mesh->num_vertices(),
         Vector3<double>(0, 0, -1));
 
-    auto* mesh_pointer = mesh.get();
+    SurfaceMesh<double>* mesh_pointer = mesh.get();
     return std::make_unique<ContactSurface<double>>(
       halfspace_id, block_id, std::move(mesh),
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
@@ -333,9 +336,9 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
 
 // These transformations, denoted X_WY, are passed as parameters to the tests
 // to allow changing the absolute (but not relative) poses of the two bodies.
-const math::RigidTransform<double> poses[] = {
-    math::RigidTransform<double>::Identity(),
-    math::RigidTransform<double>(
+const RigidTransform<double> poses[] = {
+    RigidTransform<double>::Identity(),
+    RigidTransform<double>(
         math::RotationMatrix<double>::MakeYRotation(M_PI_4),
         drake::Vector3<double>(1, 2, 3))
 };

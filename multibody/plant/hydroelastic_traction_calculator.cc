@@ -38,10 +38,8 @@ HydroelasticTractionCalculator<T>::HydroelasticTractionCalculatorData::
       surface->id_M());
   const geometry::FrameId frameN_id = query_object.inspector().GetFrameId(
       surface->id_N());
-  BodyIndex bodyA_index = plant.GetBodyFromFrameId(frameM_id)->index();
-  BodyIndex bodyB_index = plant.GetBodyFromFrameId(frameN_id)->index();
-  const Body<T>& bodyA = plant.get_body(bodyA_index);
-  const Body<T>& bodyB = plant.get_body(bodyB_index);
+  const Body<T>& bodyA = *plant.GetBodyFromFrameId(frameM_id);
+  const Body<T>& bodyB = *plant.GetBodyFromFrameId(frameN_id);
 
   // Get the transformation of the two bodies to the world frame.
   X_WA_ = plant.EvalBodyPoseInWorld(context, bodyA);
@@ -127,12 +125,12 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   // expressed in the world frame, and then the translational component of this
   // velocity.
   const SpatialVelocity<T> V_BqAq_W = V_WAq - V_WBq;
-  const Vector3<T>& v_BA_W = V_BqAq_W.translational();
+  const Vector3<T>& v_BAq_W = V_BqAq_W.translational();
 
   // Get the velocity along the normal to the contact surface. Note that a
   // positive value indicates that bodies are separating at Q while a negative
   // value indicates that bodies are approaching at Q.
-  const T vn_BA_W = v_BA_W.dot(nhat_W);
+  const T vn_BAq_W = v_BAq_W.dot(nhat_W);
 
   // Get the damping value (c) from the compliant model dissipation (α).
   // Equation (16) from [Hunt 1975], but neglecting the 3/2 term used for
@@ -141,26 +139,26 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
 
   // Determine the normal traction at the point.
   using std::max;
-  const T normal_traction = max(E - vn_BA_W * c, T(0));
+  const T normal_traction = max(E - vn_BAq_W * c, T(0));
 
   // Get the slip velocity at the point.
-  const Vector3<T> vt_BA_W = v_BA_W - nhat_W * vn_BA_W;
+  const Vector3<T> vt_BAq_W = v_BAq_W - nhat_W * vn_BAq_W;
 
   // Determine the traction using a soft-norm.
   using std::atan;
   using std::sqrt;
-  const T squared_vt = vt_BA_W.squaredNorm();
+  const T squared_vt = vt_BAq_W.squaredNorm();
   const T norm_vt = sqrt(squared_vt);
   const T soft_norm_vt = sqrt(squared_vt +
       vslip_regularizer_ * vslip_regularizer_);
 
   // Get the regularized direction of slip.
-  const Vector3<T> vt_hat_BA_W = vt_BA_W / soft_norm_vt;
+  const Vector3<T> vt_hat_BAq_W = vt_BAq_W / soft_norm_vt;
 
   // Compute the traction.
   const T frictional_scalar = mu_coulomb * normal_traction *
       2.0 / M_PI * atan(norm_vt / T(vslip_regularizer_));
-  return nhat_W * normal_traction - vt_hat_BA_W * frictional_scalar;
+  return nhat_W * normal_traction - vt_hat_BAq_W * frictional_scalar;
 }
 
 }  // namespace internal
