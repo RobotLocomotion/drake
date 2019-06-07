@@ -258,7 +258,7 @@ MultibodyPlant<T>::MultibodyPlant(
   multibody_graph_.AddBody(world_body().name(), world_body().model_instance());
 }
 
-template<typename T>
+template <typename T>
 void MultibodyPlant<T>::SetFreeBodyRandomRotationDistributionToUniform(
     const Body<T>& body) {
   RandomGenerator generator;

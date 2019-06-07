@@ -4,11 +4,10 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/hydroelastic_contact/triangle_quadrature_rule.h"
+#include "drake/multibody/triangle_quadrature/triangle_quadrature_rule.h"
 
 namespace drake {
 namespace multibody {
-namespace hydroelastic_contact {
 
 /// A class for integrating a function using numerical quadrature over
 /// triangular domains.
@@ -65,6 +64,5 @@ NumericReturnType TriangleQuadrature<NumericReturnType, T>::Integrate(
   return integral * area;
 }
 
-}  // namespace hydroelastic_contact
 }  // namespace multibody
 }  // namespace drake

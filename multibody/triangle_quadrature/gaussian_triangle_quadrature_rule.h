@@ -3,11 +3,10 @@
 #include <stdexcept>
 #include <vector>
 
-#include "drake/multibody/hydroelastic_contact/triangle_quadrature_rule.h"
+#include "drake/multibody/triangle_quadrature/triangle_quadrature_rule.h"
 
 namespace drake {
 namespace multibody {
-namespace hydroelastic_contact {
 
 class GaussianTriangleQuadratureRule final : public TriangleQuadratureRule {
  public:
@@ -113,7 +112,6 @@ class GaussianTriangleQuadratureRule final : public TriangleQuadratureRule {
   std::vector<Vector2<double>> quadrature_points_;
 };
 
-}  // namespace hydroelastic_contact
 }  // namespace multibody
 }  // namespace drake
 
