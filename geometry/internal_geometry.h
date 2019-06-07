@@ -170,7 +170,13 @@ class InternalGeometry {
 
   //@}
 
-  /** @name   Role management  */
+  /** @name   Role management
+
+   These methods determine what the internal geometry *knows* about its role.
+   Updating a geometry's knowledge is not the same as actually applying that
+   role. It is the job of GeometryState to make sure that an individual
+   geometry's understanding of its role is kept in sync with the corresponding
+   engine's understanding as well.  */
   //@{
 
   /** Assigns a proximity role to this geometry. Fails if it has already been
@@ -233,6 +239,13 @@ class InternalGeometry {
     return nullptr;
   }
 
+  // TODO(SeanCurtis-TRI): Currently, InternalGeometry contains indices into
+  // the various engines in which it appears. This leads to convoluted and
+  // painful code responsible for maintaining the indices in sync with the
+  // engines. We need to kill these indices and make each geometry's globally-
+  // unique identifier the definitive identifier that passes between SceneGraph
+  // and the various engines.
+
   /** If this geometry has a perception role, this provides access to the
    per-renderer render index. Note, the geometry may not be included in every
    renderer.  */
@@ -244,11 +257,41 @@ class InternalGeometry {
    @pre The `renderer_name` is a name for a valid renderer.  */
   void set_render_index(std::string renderer_name, RenderIndex index);
 
+  /** Clears this geometry's render index associated with the named
+   renderer. If the geometry doesn't have an index for the named renderer,
+   nothing happens.
+   @note This leaves the properties intact; it makes no effort to divine which
+   properties caused this geometry to be accepted by that renderer or its
+   uniqueness (both would be required for removing those properties).  */
+  void ClearRenderIndex(const std::string& renderer_name) {
+    render_indices_.erase(renderer_name);
+  }
+
   /** If this geometry has a proximity role, this that geometry's index in the
    proximity engine. It will be undefined it it does not have the proximity
    role.  */
   ProximityIndex proximity_index() const { return proximity_index_; }
   void set_proximity_index(ProximityIndex index) { proximity_index_ = index; }
+
+  /** Removes the proximity role assigned to this geometry -- if there was
+   no proximity role previously, this has no effect.  */
+  void RemoveProximityRole() {
+    proximity_props_ = nullopt;
+    proximity_index_ = ProximityIndex();
+  }
+
+  /** Removes the illustration role assigned to this geometry -- if there was
+   no illustration role previously, this has no effect.  */
+  void RemoveIllustrationRole() {
+    illustration_props_ = nullopt;
+  }
+
+  /** Removes the perception role assigned to this geometry -- if there was
+   no perception role previously, this has no effect.  */
+  void RemovePerceptionRole() {
+    perception_props_ = nullopt;
+    render_indices_.clear();
+  }
 
   //@}
 
