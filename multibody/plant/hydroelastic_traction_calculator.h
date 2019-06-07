@@ -41,7 +41,7 @@ class HydroelasticTractionCalculator {
    Applies the hydroelastic model to two geometries defined in `surface`,
    resulting in a pair of spatial forces at the origins of two body frames.
    The body frames, A and B, are those to which `surface.M_id()` and
-   `surface.N_id()` are affixed.
+   `surface.N_id()` are affixed, respectively.
    */
   void ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
        const systems::Context<T>& context,
