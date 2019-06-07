@@ -37,12 +37,19 @@ class HydroelasticTractionCalculator {
    */
   double regularization_scalar() const { return vslip_regularizer_; }
 
+  /**
+   Applies the hydroelastic model to two geometries defined in `surface`,
+   resulting in a pair of spatial forces at the origins of two body frames.
+   The body frames, A and B, are those to which `surface.M_id()` and
+   `surface.N_id()` are affixed.
+   */
   void ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
        const systems::Context<T>& context,
+       const MultibodyPlant<T>& plant,
        const geometry::ContactSurface<T>& surface,
        double dissipation, double mu_coulomb,
-       multibody::SpatialForce<T>* F_Mo_W,
-       multibody::SpatialForce<T>* F_No_W) const;
+       multibody::SpatialForce<T>* F_Ao_W,
+       multibody::SpatialForce<T>* F_Bo_W) const;
 
  private:
   // To allow GTEST to test private functions.

@@ -43,7 +43,7 @@ GeometryId FindGeometry(
 // positioned such that it passes through the origin and its normal Hz is
 // aligned with Yz. In other words, the pose X_YH is the identity pose.
 // The box pose X_YB is also set to be the identity pose and therefore the
-// geometric center of the tet is at the origin Yo, with the bottom (in frame Y)
+// geometric center of the box is at the origin Yo, with the bottom (in frame Y)
 // half of the box overlapping the half-space. The fixture unit-tests
 // an arbitrary set of poses X_WY of frame Y in the world frame W to assess the
 // frame invariance of the computed results, which only depend (modulo the
@@ -54,12 +54,20 @@ public ::testing::TestWithParam<RigidTransform<double>> {
   const HydroelasticTractionCalculator<double>& traction_calculator() const {
     return traction_calculator_;
   }
+  const MultibodyPlant<double>& plant() const { return *plant_; }
+  const ContactSurface<double>& contact_surface() const {
+      return *contact_surface_;
+  }
+  const Context<double>& plant_context() const { return *plant_context_; }
 
   // Returns the default numerical tolerance.
   double eps() const { return eps_; }
 
-  // Computes the spatial forces due to the hydroelastic model.
-  void ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+  // Computes the spatial tractions due to the hydroelastic model. This computes
+  // the spatial traction (in units of N) at Vertex 0 of Triangle 0 by assuming
+  // that the area of the triangle is 1m (assumption is only necessary to make
+  // units consistent).
+  void ComputeSpatialTractionsAtBodyOriginsFromHydroelasticModel(
       double dissipation, double mu_coulomb,
       SpatialForce<double>* F_Ao_W, SpatialForce<double>* F_Bo_W) {
     // Instantiate the traction calculator data.
@@ -98,6 +106,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
 
  private:
   void SetUp() override {
+    // Read the two bodies into the plant.
     DiagramBuilder<double> builder;
     SceneGraph<double>* scene_graph;
     std::tie(plant_, scene_graph) = AddMultibodyPlantSceneGraph(&builder);
@@ -160,8 +169,8 @@ public ::testing::TestWithParam<RigidTransform<double>> {
   // Creates a surface mesh that covers the bottom of the "wetted surface",
   // where the wetted surface is the part of the box that would be wet if the
   // halfspace were a fluid. The entire wetted surface *would* yield
-  // an open, lopped-off prism with five faces but, for simplicity, we'll only
-  // use the bottom face (a single triangle).
+  // an open box with five faces but, for simplicity, we'll only
+  // use the bottom face (two triangles).
   std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() const {
     std::vector<SurfaceVertex<double>> vertices;
     std::vector<SurfaceFace> faces;
@@ -198,10 +207,10 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, VanillaTraction) {
   const double dissipation = 0.0;  // Units: s/m.
   const double mu_coulomb = 0.0;
 
-  // Compute the spatial forces at the origins of the body frames.
-  multibody::SpatialForce<double> F_Mo_W, F_No_W;
-  ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-      dissipation, mu_coulomb, &F_Mo_W, &F_No_W);
+  // Compute the spatial tractions at the origins of the body frames.
+  multibody::SpatialForce<double> F_Ao_W, F_Bo_W;
+  ComputeSpatialTractionsAtBodyOriginsFromHydroelasticModel(
+      dissipation, mu_coulomb, &F_Ao_W, &F_Bo_W);
 
   // Re-express the spatial tractions in Y's frame for easy interpretability.
   const math::RotationMatrix<double>& R_WY = GetParam().rotation();
@@ -241,10 +250,10 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithFriction) {
   const math::RotationMatrix<double>& R_WY = GetParam().rotation();
   SetBoxTranslationalVelocity(R_WY * Vector3<double>(1, 0, 0));
 
-  // Compute the spatial forces at the origins of the body frames.
-  multibody::SpatialForce<double> F_Mo_W, F_No_W;
-  ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-      dissipation, mu_coulomb, &F_Mo_W, &F_No_W);
+  // Compute the spatial tractions at the origins of the body frames.
+  multibody::SpatialForce<double> F_Ao_W, F_Bo_W;
+  ComputeSpatialTractionsAtBodyOriginsFromHydroelasticModel(
+      dissipation, mu_coulomb, &F_Ao_W, &F_Bo_W);
 
   // Re-express the spatial tractions in Y's frame for easy interpretability.
   const Vector3<double> f_Bo_Y = R_WY.transpose() * F_Bo_W.translational();
@@ -299,10 +308,10 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
   const double normal_traction_magnitude = field_value +
       damping_traction_magnitude;
 
-  // Compute the spatial forces at the origins of the body frames.
-  multibody::SpatialForce<double> F_Mo_W, F_No_W;
-  ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-      dissipation, mu_coulomb, &F_Mo_W, &F_No_W);
+  // Compute the spatial tractions at the origins of the body frames.
+  multibody::SpatialForce<double> F_Ao_W, F_Bo_W;
+  ComputeSpatialTractionsAtBodyOriginsFromHydroelasticModel(
+      dissipation, mu_coulomb, &F_Ao_W, &F_Bo_W);
 
   // Re-express the spatial tractions in Y's frame for easy interpretability.
   const Vector3<double> f_Bo_Y = R_WY.transpose() * F_Bo_W.translational();
@@ -343,7 +352,7 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionOverPatch) {
   // Compute the spatial forces at the origins of the body frames.
   multibody::SpatialForce<double> F_Mo_W, F_No_W;
   traction_calculator().ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-      plant_context(), contact_surface(), dissipation, mu_coulomb,
+      plant_context(), plant(), contact_surface(), dissipation, mu_coulomb,
       &F_Mo_W, &F_No_W);
 
   // Check the spatial force. We know that geometry M is the halfspace,

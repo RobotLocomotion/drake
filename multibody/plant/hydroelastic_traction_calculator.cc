@@ -20,23 +20,39 @@ using systems::Context;
 namespace multibody {
 namespace internal {
 
-template <typename T>
-using SpatialForcePair = std::pair<SpatialForce<T>, SpatialForce<T>>;
 
+// A container that holds a SpatialForce pair that will be applied to two
+// bodies and supports operator overloads necessary for quadrature.
 template <typename T>
-SpatialForcePair<T> operator+(
-    const SpatialForcePair<T>& p1, const SpatialForcePair<T>& p2) {
-  return SpatialForcePair<T>(p1.first + p2.first, p1.second + p2.second);
-}
+class SpatialForcePair {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialForcePair)
 
-template <typename T>
-SpatialForcePair<T> operator+=(
-  // NOLINTNEXTLINE(runtime/references)
-  SpatialForcePair<T>& p1, const SpatialForcePair<T>& p2) {
-  p1.first += p2.first;
-  p1.second += p2.second;
-  return p1;
-}
+  SpatialForcePair() {
+    first.SetZero();
+    second.SetZero();
+  }
+
+  SpatialForcePair(const SpatialForce<T>& f1, const SpatialForce<T>& f2)
+      : first(f1), second(f2) {}
+
+  SpatialForcePair& operator+=(const SpatialForcePair& f) {
+    first += f.first;
+    second += f.second;
+    return *this;
+  }
+
+  template <typename Scalar>
+  SpatialForcePair operator*(const Scalar& s) const {
+    return SpatialForcePair(first * s, second * s);
+  }
+
+  SpatialForcePair operator+(const SpatialForcePair& f) const {
+    return SpatialForcePair(first + f.first, second + f.second);
+  }
+
+  SpatialForce<T> first, second;
+};
 
 template <typename T>
 HydroelasticTractionCalculator<T>::HydroelasticTractionCalculatorData::
@@ -73,15 +89,16 @@ template <class T>
 void HydroelasticTractionCalculator<T>::
 ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
     const Context<T>& context,
+    const MultibodyPlant<T>& plant,
     const ContactSurface<T>& surface,
     double dissipation, double mu_coulomb,
-    SpatialForce<T>* F_Mo_W, SpatialForce<T>* F_No_W) const {
+    SpatialForce<T>* F_Ao_W, SpatialForce<T>* F_Bo_W) const {
   // Construct the HydroelasticTractionCalculatorData.
-  HydroelasticTractionCalculatorData<T> data(context, surface, *plant_);
+  HydroelasticTractionCalculatorData data(context, plant, &surface);
 
   // Zero the spatial forces.
-  F_Mo_W->SetZero();
-  F_No_W->SetZero();
+  F_Ao_W->SetZero();
+  F_Bo_W->SetZero();
 
   // Use a second-order Gaussian quadrature rule.
   GaussianTriangleQuadratureRule gaussian(2 /* order */);
@@ -93,12 +110,12 @@ ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
     // Construct the function to be integrated.
     std::function<SpatialForcePair<T>(const Vector3<T>&)> f = [this,
          &data, &p_WQ, i, dissipation, mu_coulomb](
-            const Vector3<T>& Q_barycentric_M) {
-      const Vector3<T> traction_Q_W = CalcTractionAtPoint(data, i,
-          Q_barycentric_M, dissipation, mu_coulomb, &p_WQ);
+            const Vector3<T>& Q_barycentric) {
+      const Vector3<T> traction_Aq_W = CalcTractionAtPoint(data, i,
+          Q_barycentric, dissipation, mu_coulomb, &p_WQ);
       SpatialForcePair<T> F_W_pair;
       ComputeSpatialForcesAtBodyOriginsFromTraction(
-          data, p_WQ, traction_Q_W, &F_W_pair.first, &F_W_pair.second);
+          data, p_WQ, traction_Aq_W, &F_W_pair.first, &F_W_pair.second);
 
       return F_W_pair;
     };
@@ -109,8 +126,8 @@ ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
             f, gaussian, surface.mesh().area(i));
 
     // Update the spatial forces.
-    (*F_Mo_W) += force_pair.first;
-    (*F_No_W) += force_pair.second;
+    (*F_Ao_W) += force_pair.first;
+    (*F_Bo_W) += force_pair.second;
   }
 }
 
@@ -165,7 +182,8 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   const T E = data.surface().EvaluateE_MN(face_index, Q_barycentric);
 
   // Get the normal from Geometry M to Geometry N, expressed in the world frame,
-  // to the contact surface at Point Q.
+  // to the contact surface at Point Q. By extension, this means that the normal
+  // points from Body A to Body B.
   const Vector3<T> h_M = data.surface().EvaluateGrad_h_MN_M(
       face_index, Q_barycentric);
   const Vector3<T> nhat_M = h_M.normalized();
@@ -189,12 +207,12 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   // expressed in the world frame, and then the translational component of this
   // velocity.
   const SpatialVelocity<T> V_BqAq_W = V_WAq - V_WBq;
-  const Vector3<T>& v_BAq_W = V_BqAq_W.translational();
+  const Vector3<T>& v_BqAq_W = V_BqAq_W.translational();
 
   // Get the velocity along the normal to the contact surface. Note that a
   // positive value indicates that bodies are separating at Q while a negative
   // value indicates that bodies are approaching at Q.
-  const T vn_BAq_W = v_BAq_W.dot(nhat_W);
+  const T vn_BqAq_W = v_BqAq_W.dot(nhat_W);
 
   // Get the damping value (c) from the compliant model dissipation (α).
   // Equation (16) from [Hunt 1975], but neglecting the 3/2 term used for
@@ -203,26 +221,26 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
 
   // Determine the normal traction at the point.
   using std::max;
-  const T normal_traction = max(E - vn_BAq_W * c, T(0));
+  const T normal_traction = max(E - vn_BqAq_W * c, T(0));
 
   // Get the slip velocity at the point.
-  const Vector3<T> vt_BAq_W = v_BAq_W - nhat_W * vn_BAq_W;
+  const Vector3<T> vt_BqAq_W = v_BqAq_W - nhat_W * vn_BqAq_W;
 
   // Determine the traction using a soft-norm.
   using std::atan;
   using std::sqrt;
-  const T squared_vt = vt_BAq_W.squaredNorm();
+  const T squared_vt = vt_BqAq_W.squaredNorm();
   const T norm_vt = sqrt(squared_vt);
   const T soft_norm_vt = sqrt(squared_vt +
       vslip_regularizer_ * vslip_regularizer_);
 
   // Get the regularized direction of slip.
-  const Vector3<T> vt_hat_BAq_W = vt_BAq_W / soft_norm_vt;
+  const Vector3<T> vt_hat_BqAq_W = vt_BqAq_W / soft_norm_vt;
 
   // Compute the traction.
   const T frictional_scalar = mu_coulomb * normal_traction *
       2.0 / M_PI * atan(norm_vt / T(vslip_regularizer_));
-  return nhat_W * normal_traction - vt_hat_BAq_W * frictional_scalar;
+  return nhat_W * normal_traction - vt_hat_BqAq_W * frictional_scalar;
 }
 
 }  // namespace internal
