@@ -61,25 +61,26 @@ class HydroelasticTractionCalculator {
     // Gets the ContactSurface passed to the data structure on construction.
     const geometry::ContactSurface<T>& surface() const { return surface_; }
 
-    // Gets the pose from Body A (the body that Geometry M in the contact
-    // surface is affixed to) relative to the world frame.
+    // Gets the pose from Body A (the body that Geometry `surface.M_id()` in the
+    // contact surface is affixed to) relative to the world frame.
     const math::RigidTransform<T>& X_WA() const { return X_WA_; }
 
-    // Gets the pose from Body B (the body that Geometry N in the contact
-    // surface is affixed to) relative to the world frame.
+    // Gets the pose from Body B (the body that Geometry `surface.N_id()` in the
+    // contact surface is affixed to) relative to the world frame.
     const math::RigidTransform<T>& X_WB() const { return X_WB_; }
 
-    // Gets the pose from Geometry M in the contact surface to the world frame.
+    // Gets the pose from Geometry `surface.M_id()` in the contact surface to
+    // the world frame.
     const math::RigidTransform<T>& X_WM() const { return X_WM_; }
 
-    // Gets the spatial velocity of Body A (the body that Geometry M in the
-    // contact surface is affixed to) at the origin of A's frame, measured
-    // in the world frame and expressed in the world frame.
+    // Gets the spatial velocity of Body A (the body that Geometry
+    // `surface.M_id()` in the contact surface is affixed to) at the origin of
+    // A's frame, measured in the world frame and expressed in the world frame.
     const SpatialVelocity<T>& V_WA() const { return V_WA_; }
 
-    // Gets the spatial velocity of Body B (the body that Geometry N in the
-    // contact surface is affixed to) at the origin of B's frame, measured
-    // in the world frame and expressed in the world frame.
+    // Gets the spatial velocity of Body B (the body that Geometry
+    // `surface.N_id()` in the contact surface is affixed to) at the origin of
+    // B's frame, measured in the world frame and expressed in the world frame.
     const SpatialVelocity<T>& V_WB() const { return V_WB_; }
 
    private:

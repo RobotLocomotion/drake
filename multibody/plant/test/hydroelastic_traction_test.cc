@@ -62,7 +62,7 @@ public ::testing::TestWithParam<math::RigidTransform<double>> {
       SpatialForce<double>* F_Ao_W, SpatialForce<double>* F_Bo_W) {
     // Instantiate the traction calculator data.
     HydroelasticTractionCalculator<double>::HydroelasticTractionCalculatorData
-        calculator_data(*plant_context_, plant(), contact_surface_.get());
+        calculator_data(*plant_context_, *plant_, contact_surface_.get());
 
     // First compute the traction applied to Body A at point Q, expressed in the
     // world frame.
@@ -123,8 +123,9 @@ public ::testing::TestWithParam<math::RigidTransform<double>> {
     contact_surface_ = CreateContactSurface();
 
     // Set the poses for the two bodies in the world frame. We assume that the
-    // two bodies have been parsed into Frame Y, which is defined by the
-    // transformation X_WY (obtained by GetParam()).
+    // two bodies have been parsed (in an already intersecting configuration)
+    // into Frame Y, which is defined by the transformation X_WY (obtained by
+    // GetParam()).
     plant.SetFreeBodyPose(plant_context_,
         plant.GetBodyByName("box"), GetParam());
     plant.SetFreeBodyPose(plant_context_,
@@ -133,8 +134,8 @@ public ::testing::TestWithParam<math::RigidTransform<double>> {
 
   std::unique_ptr<ContactSurface<double>> CreateContactSurface() const {
     // Get the geometry IDs for the ground halfspace and the block.
-    GeometryId halfspace_geom = internal::FindGeometry(*plant_, "ground");
-    GeometryId block_geom = internal::FindGeometry(*plant_, "box");
+    GeometryId halfspace_id = internal::FindGeometry(*plant_, "ground");
+    GeometryId block_id = internal::FindGeometry(*plant_, "box");
 
     // Create the surface mesh first.
     auto mesh = CreateSurfaceMesh();
@@ -150,12 +151,13 @@ public ::testing::TestWithParam<math::RigidTransform<double>> {
     std::vector<Vector3<double>> h_MN_M(mesh->num_vertices(),
         Vector3<double>(0, 0, -1));
 
+    auto* mesh_pointer = mesh.get();
     return std::make_unique<ContactSurface<double>>(
-      halfspace_geom, block_geom, std::move(mesh),
+      halfspace_id, block_id, std::move(mesh),
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-          "e_MN", std::move(e_MN), mesh.get()),
+          "e_MN", std::move(e_MN), mesh_pointer),
       std::make_unique<MeshFieldLinear<Vector3<double>, SurfaceMesh<double>>>(
-          "h_MN_M", std::move(h_MN_M), mesh.get()));
+          "h_MN_M", std::move(h_MN_M), mesh_pointer));
   }
 
   // Creates a surface mesh that covers the bottom of the "wetted surface",

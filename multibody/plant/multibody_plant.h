@@ -2689,11 +2689,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return it->second;
   }
 
-  BodyIndex GetBodyIndexFromRegisteredGeometryId(
-      geometry::GeometryId geometry_id) const {
-    return geometry_id_to_body_index_.at(geometry_id);
-  }
-
   /// @name Actuation input
   ///
   /// The input vector of actuation values can be provided either as a single
