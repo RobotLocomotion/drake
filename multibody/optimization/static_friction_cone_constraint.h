@@ -8,14 +8,21 @@
 namespace drake {
 namespace multibody {
 /**
- * Formulates the nonlinear friction cone constraint |fₜ| ≤ μ*fₙ.
+ * Formulates the nonlinear friction cone constraint |fₜ| ≤ μ*fₙ, where fₜ is
+ * the tangential contact force, fₙ is the normal contact force, and μ is the
+ * friction coefficient.
+ *
  * The mathematical formulation of this constraint is
  *
  *     0 ≤ μ*fᵀn
  *     fᵀ((1+μ²)nnᵀ - I)f ≥ 0
  * where n is the unit length normal vector.
- * The bound variables for this constraint is [q;λ], where q is the generalized
- * position, and λ is the parameterization of the contact wrench.
+ * This formulation is equivalent to |fₜ| ≤ μ*fₙ, but the constraint is
+ * differentiable everywhere (while |fₜ| ≤ μ*fₙ is not differentiable at fₜ =
+ * 0.)
+ *
+ * The bound variables for this constraint is x = [q;λ], where q is the
+ * generalized position, and λ is the parameterization of the contact wrench.
  */
 class StaticFrictionConeConstraint : public solvers::Constraint {
  public:
@@ -24,8 +31,14 @@ class StaticFrictionConeConstraint : public solvers::Constraint {
   /**
    * @param contact_wrench_evaluator. The evaluator takes in the generalized
    * position q, and a parameterization of the contact wrench λ, and evaluates
-   * the contact wrench from geometry A to geometry B applied at the witness
-   * point of geometry B from geometry A, expressed in the world frame.
+   * the contact wrench from body A to body B applied at the witness point of
+   * geometry B expressed in the world frame, i.e., computes the contact wrench
+   * F_AB_W at the witness point p_WCb_W (see SignedDistancePair for the
+   * definition of witness point).
+   * @note although contact_wrench_evaluator computes both the contact force
+   * and torque in the wrench, we only constraint that the contact force is
+   * within the friction cone, and leave the torque unconstrained in this
+   * constraint.
    */
   StaticFrictionConeConstraint(
       const ContactWrenchEvaluator* contact_wrench_evaluator);

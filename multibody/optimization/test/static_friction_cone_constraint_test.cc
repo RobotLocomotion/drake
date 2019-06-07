@@ -44,6 +44,10 @@ GTEST_TEST(StaticFrictionConeConstraint, TestEval) {
 
   // Evaluate the constraint
   Eigen::VectorXd x_val_satisfied(constraint.num_vars());
+  // The first 7 entries are the generalized positions q, which is arbitrary.
+  // The last 3 entries are the contact force from the ball to the ground,
+  // expressed in the world frame.
+  // First test a contact force within the friction cone.
   x_val_satisfied << 1.2, 2.4, 0.5, 3.2, 1.5, 0.1, 0.4, 0.1, 0.2, -1;
   EXPECT_TRUE(constraint.CheckSatisfied(x_val_satisfied));
   // friction force outside of friction cone.

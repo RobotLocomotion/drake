@@ -11,7 +11,7 @@ const double kInf = std::numeric_limits<double>::infinity();
 
 StaticFrictionConeConstraint::StaticFrictionConeConstraint(
     const ContactWrenchEvaluator* contact_wrench_evaluator)
-    : solvers::Constraint(2,
+    : solvers::Constraint(2 /* number of constraints */,
                           contact_wrench_evaluator->plant().num_positions() +
                               contact_wrench_evaluator->num_lambda(),
                           Eigen::Vector2d::Zero(),
@@ -38,11 +38,13 @@ void StaticFrictionConeConstraint::DoEval(
   if (!internal::AreAutoDiffVecXdEqual(q, plant.GetPositions(context))) {
     plant.SetPositions(&context, q);
   }
-  // Compute the contact wrench F_AB_W
+  // Compute the contact wrench F_AB_W = [τ; f] where we only enforce
+  // constraints on f
   AutoDiffVecXd F_AB_W;
   contact_wrench_evaluator_->Eval(
       contact_wrench_evaluator_->ComposeVariableValues(context, lambda),
       &F_AB_W);
+  // Only the contact force f_AB_W is constrained.
   Vector3<AutoDiffXd> f_AB_W = F_AB_W.tail<3>();
 
   // First get the signed distance result for the pair of geometries.
@@ -78,10 +80,10 @@ void StaticFrictionConeConstraint::DoEval(
                                                    geometryB_friction);
 
       const auto& nhat_BA_W = signed_distance_pair.nhat_BA_W;
-      // The constraint n̂_AB_W.dot(f_AB_W) - α = 0
+      // The constraint n̂_AB_W.dot(f_AB_W) >= 0
       (*y)(0) = -nhat_BA_W.dot(f_AB_W);
 
-      // The constraint f_Wᵀ * ((μ² + 1)* n_W * n_Wᵀ - I) * f_W >= 0
+      // The constraint f_AB_Wᵀ * ((μ² + 1)* n̂_AB_W * n̂_AB_Wᵀ - I) * f_AB_W >= 0
       (*y)(1) =
           f_AB_W.dot(((std::pow(combined_friction.static_friction(), 2) + 1) *
                           nhat_BA_W * nhat_BA_W.transpose() -
@@ -93,7 +95,7 @@ void StaticFrictionConeConstraint::DoEval(
   if (!found_geometry_pair) {
     throw std::runtime_error(
         "StaticFrictionConeConstraint: the input contact_wrench_evaluator "
-        "contains a pair of geometry, that has not been registered to the "
+        "contains a pair of geometries that have not been registered to the "
         "SceneGraph for distance computation.");
   }
 }
@@ -103,7 +105,7 @@ void StaticFrictionConeConstraint::DoEval(
     VectorX<symbolic::Expression>*) const {
   throw std::runtime_error(
       "StaticFrictionConeConstraint: does not support Eval with symbolic "
-      "variable and expressions.");
+      "variables and expressions.");
 }
 
 }  // namespace multibody
