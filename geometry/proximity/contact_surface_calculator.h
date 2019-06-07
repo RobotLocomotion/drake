@@ -199,7 +199,10 @@ int IntersectTetWithLevelSet(const std::array<Vector3<T>, 4>& tet_vertices_N,
 /// described in [Bloomenthal, 1994].
 ///
 /// @returns A triangulation of the zero level set of `φ(V)` in the volume
-/// defined by the `mesh_M`.  The triangulation is expressed in frame N.
+/// defined by the `mesh_M`.  The triangulation is expressed in frame N. The
+/// right handed normal of each triangle points towards the positive side of the
+/// level set function `φ(V)` or in other words, the normal is aligned with the
+/// gradient of `φ(V)`.
 ///
 /// @note  The SurfaceMesh may have duplicated vertices.
 ///

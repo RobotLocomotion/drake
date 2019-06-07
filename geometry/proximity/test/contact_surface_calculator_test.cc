@@ -18,8 +18,15 @@ using Eigen::Vector3d;
 namespace drake {
 namespace geometry {
 namespace internal {
-
 namespace {
+
+// This method computes the right handed normal defined by the three vertices
+// of a triangle in the input argument v.
+Vector3<double> CalcTriangleNormal(
+    const std::vector<SurfaceVertex<double>>& v) {
+  return ((v[1].r_MV() - v[0].r_MV()).cross(v[2].r_MV() - v[0].r_MV()))
+      .normalized();
+}
 
 // Fixture to test the internals of ContactSurfaceCalculator.
 // We will test the intersection of a level set with a single regular
@@ -38,14 +45,6 @@ class TetrahedronIntersectionTest : public ::testing::Test {
     vertices[2] = {-1. / 3. * face_height, 0.5, 0.0};
     vertices[3] = {0.0, 0.0, tet_height};
     return vertices;
-  }
-
-  // This method computes the right handed normal defined by the three vertices
-  // of a triangle in the input argument v.
-  static Vector3<double> CalcTriangleNormal(
-      const std::vector<SurfaceVertex<double>>& v) {
-    return ((v[1].r_MV() - v[0].r_MV()).cross(v[2].r_MV() - v[0].r_MV()))
-        .normalized();
   }
 
   std::array<Vector3<double>, 4> unit_tet_;
@@ -358,9 +357,9 @@ TEST_F(BoxPlaneIntersectionTest, NoIntersection) {
 // tessellated sphere and a half-space represented by a level set function.
 // In particular, we verify that the vertices on the contact surface are
 // properly interpolated to lie on the plane within a circle of the expected
-// radius.
+// radius and, normals point towards the positive side of the plane.
 GTEST_TEST(SpherePlaneIntersectionTest, VerticesProperlyInterpolated) {
-  const double kTolerance = 5.0 * std::numeric_limits<double>::epsilon();
+  const double kTolerance = 200.0 * std::numeric_limits<double>::epsilon();
 
   // A tessellation of a unit sphere. Vertices are in the mesh frame M.
   // This creates a volume mesh with over 32K tetrahedra.
@@ -393,6 +392,19 @@ GTEST_TEST(SpherePlaneIntersectionTest, VerticesProperlyInterpolated) {
     const double surface_radius = std::sqrt(1.0 - height * height);
     const double radius = p_WV.norm();  // since z component is zero.
     EXPECT_LE(radius, surface_radius);
+  }
+
+  // Verify all normals point towards the positive side of the plane.
+  for (SurfaceFaceIndex f(0); f < contact_surface_W.num_faces(); ++f) {
+    const SurfaceFace& face = contact_surface_W.element(f);
+    std::vector<SurfaceVertex<double>> vertices_W = {
+        contact_surface_W.vertex(face.vertex(0)),
+        contact_surface_W.vertex(face.vertex(1)),
+        contact_surface_W.vertex(face.vertex(2))};
+    const Vector3<double> normal_W = CalcTriangleNormal(vertices_W);
+    // We expect the normals to point towards the positive side of the level set
+    // according to the convention used by CalcZeroLevelSetInMeshDomain().
+    EXPECT_TRUE(CompareMatrices(normal_W, Vector3d::UnitZ(), kTolerance));
   }
 }
 
