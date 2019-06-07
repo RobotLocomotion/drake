@@ -52,6 +52,7 @@ namespace render {
  to a geometry. A RenderEngine implementation is entitled to throw an exception
  if you attempt to do so.
 
+ @anchor allocate_render_label
  <h2>Usage</h2>
 
  For a label image to be _meaningful_, every pixel value should admit an
