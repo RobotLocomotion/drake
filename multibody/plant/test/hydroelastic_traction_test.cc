@@ -38,13 +38,13 @@ GeometryId FindGeometry(
   return geometries[0];
 }
 
-// This fixture defines a contacting configuration between a tet and a
+// This fixture defines a contacting configuration between a box and a
 // half-space in a local frame, Y. In Frame Y, half-space Frame H is
 // positioned such that it passes through the origin and its normal Hz is
 // aligned with Yz. In other words, the pose X_YH is the identity pose.
 // The box pose X_YB is also set to be the identity pose and therefore the
-// geometric center of the tet is at the origin Yo, with the bottom (in frame Y)
-// half of the tet overlapping the half-space. The fixture unit-tests
+// geometric center of the box is at the origin Yo, with the bottom (in frame Y)
+// half of the box overlapping the half-space. The fixture unit-tests
 // an arbitrary set of poses X_WY of frame Y in the world frame W to assess the
 // frame invariance of the computed results, which only depend (modulo the
 // "expressed-in" frame) on the relative pose of the bodies.
@@ -59,7 +59,9 @@ public ::testing::TestWithParam<RigidTransform<double>> {
   double eps() const { return eps_; }
 
   // Computes the spatial tractions due to the hydroelastic model. This computes
-  // the spatial traction (in units of Pa) at Vertex 0 of Triangle 0.
+  // the spatial traction (in units of N) at Vertex 0 of Triangle 0 by assuming
+  // that the area of the triangle is 1m (assumption is only necessary to make
+  // units consistent).
   void ComputeSpatialTractionsAtBodyOriginsFromHydroelasticModel(
       double dissipation, double mu_coulomb,
       SpatialForce<double>* F_Ao_W, SpatialForce<double>* F_Bo_W) {
@@ -99,11 +101,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
 
  private:
   void SetUp() override {
-    // Read the two bodies into the plant. The SDF file refers to a rigid block
-    // penetrating a compliant halfspace while the geometry that we use in the
-    // tests will assume a tetrahedron penetrating a halfspace. Since we don't
-    // use any inertial or geometric properties from the SDF file, that is not
-    // a problem.
+    // Read the two bodies into the plant.
     DiagramBuilder<double> builder;
     SceneGraph<double>* scene_graph;
     std::tie(plant_, scene_graph) = AddMultibodyPlantSceneGraph(&builder);
@@ -164,10 +162,10 @@ public ::testing::TestWithParam<RigidTransform<double>> {
   }
 
   // Creates a surface mesh that covers the bottom of the "wetted surface",
-  // where the wetted surface is the part of the tet that would be wet if the
+  // where the wetted surface is the part of the box that would be wet if the
   // halfspace were a fluid. The entire wetted surface *would* yield
-  // an open, lopped-off prism with five faces but, for simplicity, we'll only
-  // use the bottom face (a single triangle).
+  // an open, lopped-off box with five faces but, for simplicity, we'll only
+  // use the bottom face (two triangles).
   std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() const {
     std::vector<SurfaceVertex<double>> vertices;
     std::vector<SurfaceFace> faces;
@@ -181,6 +179,8 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     // Create the face comprising a single triangle.
     faces.emplace_back(
         SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2));
+    // TODO(edrumwri) Create the second face as soon as we introduce
+    // quadrature (and can use it).
 
     return std::make_unique<SurfaceMesh<double>>(
         std::move(faces), std::move(vertices));
@@ -218,8 +218,8 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, VanillaTraction) {
   EXPECT_NEAR(f_Bo_Y[1], 0.0, eps());
   EXPECT_NEAR(f_Bo_Y[2], 0.5, eps());
 
-  // A moment on the tet will be generated due to the normal traction. The
-  // origin of the tet frame is located at (0,0,0) in the Y frame.
+  // A moment on the box will be generated due to the normal traction. The
+  // origin of the box frame is located at (0,0,0) in the Y frame.
   // The moment arm at the point will be (.5, .5, -.5), again in the Y frame.
   // Crossing this vector with the traction at that point (0, 0, 0.5) yields the
   // following.
@@ -239,7 +239,7 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithFriction) {
   const double dissipation = 0.0;  // Units: s/m.
   const double mu_coulomb = 1.0;
 
-  // Give the tet an initial (vertical) velocity along the +x axis in the Y
+  // Give the box an initial (vertical) velocity along the +x axis in the Y
   // frame.
   const math::RotationMatrix<double>& R_WY = GetParam().rotation();
   SetBoxTranslationalVelocity(R_WY * Vector3<double>(1, 0, 0));
@@ -267,8 +267,8 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithFriction) {
   EXPECT_NEAR(f_Bo_Y[1], 0.0, eps());
   EXPECT_NEAR(f_Bo_Y[2], 0.5, eps());
 
-  // A moment on the tet will be generated due to the traction. The
-  // origin of the tet frame is located at (0,0,0) in the Y frame.
+  // A moment on the box will be generated due to the traction. The
+  // origin of the box frame is located at (0,0,0) in the Y frame.
   // The moment arm at the point will be (.5, .5, -.5). Crossing this vector
   // with the traction at that point (-.5, 0, 0.5) yields the following.
   EXPECT_NEAR(tau_Bo_Y[0], 0.25, eps());
@@ -287,7 +287,7 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
   const double dissipation = 1.0;  // Units: s/m.
   const double mu_coulomb = 0.0;
 
-  // Give the tet an initial (vertical) velocity along the -z axis in the Y
+  // Give the box an initial (vertical) velocity along the -z axis in the Y
   // frame.
   const math::RotationMatrix<double>& R_WY = GetParam().rotation();
   const double separating_velocity = -1.0;
@@ -319,8 +319,8 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
   EXPECT_NEAR(f_Bo_Y[1], 0.0, eps());
   EXPECT_NEAR(f_Bo_Y[2], normal_traction_magnitude, eps());
 
-  // A moment on the tet will be generated due to the traction. The
-  // origin of the tet frame is located at (0,0,0) in the world frame.
+  // A moment on the box will be generated due to the traction. The
+  // origin of the box frame is located at (0,0,0) in the world frame.
   // The moment arm at the point will be (.5, .5, -.5). Crossing this vector
   // with the traction at that point (0, 0, normal_traction_magnitude) yields
   // the following.
