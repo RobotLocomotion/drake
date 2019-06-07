@@ -14,7 +14,6 @@
 #include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/random.h"
-#include "drake/geometry/geometry_set.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/contact_jacobians.h"
@@ -3269,11 +3268,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   using internal::MultibodyTreeSystem<T>::EvalPositionKinematics;
   using internal::MultibodyTreeSystem<T>::EvalVelocityKinematics;
 
-  BodyIndex GetBodyIndexFromRegisteredGeometryId(
-      geometry::GeometryId geometry_id) const {
-    return geometry_id_to_body_index_.at(geometry_id);
-  }
-
  private:
   using internal::MultibodyTreeSystem<T>::internal_tree;
 
@@ -3583,9 +3577,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   //   vt = Jt(q) v
   // where v ∈ ℝⁿᵛ is the vector of generalized velocities, Jt(q) is a matrix
   // of size 2⋅nc×nv and vt is a vector of size 2⋅nc. vt is defined such that
-  // its i-th and (i+1)-th entries correspond to the relative velocity of the
-  // i-th point pair in two orthogonal directions Cx and Cy that span the plane
-  // defined by the i-th contact normal. That is:
+  // its 2⋅i-th and (2⋅i+1)-th entries correspond to relative velocity of the
+  // i-th point pair in these two orthogonal directions. That is:
   //   vt(2 * i)     = vx_AB_C = Cx ⋅ v_AB
   //   vt(2 * i + 1) = vy_AB_C = Cy ⋅ v_AB
   //
