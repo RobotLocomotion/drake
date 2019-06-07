@@ -36,9 +36,8 @@ class StaticFrictionConeConstraint : public solvers::Constraint {
    * F_AB_W at the witness point p_WCb_W (see SignedDistancePair for the
    * definition of witness point).
    * @note although contact_wrench_evaluator computes both the contact force
-   * and torque in the wrench, we only constraint that the contact force is
-   * within the friction cone, and leave the torque unconstrained in this
-   * constraint.
+   * and torque in the wrench, we only constrain the contact force to be
+   * within the friction cone, and leave the torque unconstrained.
    */
   StaticFrictionConeConstraint(
       const ContactWrenchEvaluator* contact_wrench_evaluator);
