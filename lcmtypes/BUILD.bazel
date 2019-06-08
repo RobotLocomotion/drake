@@ -226,35 +226,6 @@ drake_lcm_cc_library(
     ],
 )
 
-# Keep this list in sync with the list of _LCM_ENABLED_NAMED_VECTORS within
-# ../automotive/BUILD.bazel. TODO(jwnimmer-tri) De-duplicate the two lists,
-# likely by moving the automotive lcmtypes into their own package.
-_AUTOMOTIVE_LCM_SRCS = [
-    "lcmt_bicycle_car_state_t.lcm",
-    "lcmt_driving_command_t.lcm",
-    "lcmt_maliput_railcar_state_t.lcm",
-    "lcmt_simple_car_state_t.lcm",
-    "lcmt_trajectory_car_state_t.lcm",
-]
-
-# Generate *.lcm sources from *.named_vector files.
-drake_vector_gen_lcm_sources(
-    name = "automotive_sources",
-    srcs = [
-        "//automotive:{}.named_vector".format(
-            x[len("lcmt_"):-len("_t.lcm")],
-        )
-        for x in _AUTOMOTIVE_LCM_SRCS
-    ],
-)
-
-# Generate C++ sources and a library from *.lcm sources.
-drake_lcm_cc_library(
-    name = "automotive",
-    lcm_package = "drake",
-    lcm_srcs = _AUTOMOTIVE_LCM_SRCS,
-)
-
 drake_lcm_cc_library(
     name = "allegro",
     lcm_package = "drake",
@@ -306,7 +277,7 @@ drake_lcm_py_library(
     add_current_package_to_imports = False,  # Use //:module_py instead.
     extra_srcs = ["__init__.py"],
     lcm_package = "drake",
-    lcm_srcs = glob(["*.lcm"]) + _AUTOMOTIVE_LCM_SRCS,
+    lcm_srcs = glob(["*.lcm"]),
     deps = [
         "//:module_py",
         "@lcmtypes_bot2_core//:lcmtypes_bot2_core_py",
@@ -316,14 +287,13 @@ drake_lcm_py_library(
 drake_lcm_java_library(
     name = "lcmtypes_drake_java",
     lcm_package = "drake",
-    lcm_srcs = glob(["*.lcm"]) + _AUTOMOTIVE_LCM_SRCS,
+    lcm_srcs = glob(["*.lcm"]),
     deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_java"],
 )
 
 # This should list every LCM type that is known to Drake.
 LCMTYPES_CC = [
     ":acrobot",
-    ":automotive",
     ":body_acceleration",
     ":body_motion_data",
     ":body_wrench_data",

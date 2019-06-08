@@ -27,7 +27,6 @@ from .attic.all import *
 # Normal symbols.
 from . import getDrakePath
 from .autodiffutils import *
-from .automotive import *
 from .forwarddiff import *
 from .geometry import *
 from .lcm import *
@@ -39,7 +38,6 @@ from .trajectories import *
 # Submodules.
 from .common.all import *
 # - `examples` does not offer public Drake library symbols.
-from .maliput.all import *
 from .manipulation.all import *
 from .multibody.all import *
 from .solvers.all import *

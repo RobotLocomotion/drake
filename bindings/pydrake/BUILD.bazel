@@ -123,17 +123,6 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
-    name = "automotive_py",
-    cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:value_pybind",
-        "//bindings/pydrake/common:wrap_pybind",
-    ],
-    cc_srcs = ["automotive_py.cc"],
-    package_info = PACKAGE_INFO,
-)
-
-drake_pybind_library(
     name = "geometry_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
@@ -238,7 +227,6 @@ drake_pybind_library(
 
 PY_LIBRARIES_WITH_INSTALL = [
     ":autodiffutils_py",
-    ":automotive_py",
     ":geometry_py",
     ":lcm_py",
     ":math_py",
@@ -248,7 +236,6 @@ PY_LIBRARIES_WITH_INSTALL = [
     "//bindings/pydrake/attic",
     "//bindings/pydrake/common",
     "//bindings/pydrake/examples",
-    "//bindings/pydrake/maliput",
     "//bindings/pydrake/manipulation",
     "//bindings/pydrake/multibody",
     "//bindings/pydrake/solvers",
@@ -428,17 +415,6 @@ drake_py_unittest(
 drake_py_unittest(
     name = "trajectories_test",
     deps = [":trajectories_py"],
-)
-
-drake_py_unittest(
-    name = "automotive_test",
-    deps = [
-        ":automotive_py",
-        "//bindings/pydrake/maliput:api_py",
-        "//bindings/pydrake/maliput:dragway_py",
-        "//bindings/pydrake/multibody:multibody_tree_py",
-        "//bindings/pydrake/systems",
-    ],
 )
 
 drake_py_binary(

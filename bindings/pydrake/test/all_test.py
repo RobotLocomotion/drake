@@ -85,8 +85,6 @@ class TestAll(unittest.TestCase):
             "RgbdCamera",
             # autodiffutils
             "AutoDiffXd",
-            # automotive
-            "SimpleCar",
             # common
             # - __init__
             "AddResourceSearchPath",
@@ -108,11 +106,6 @@ class TestAll(unittest.TestCase):
             # symbolic
             "Variable",
             "Expression",
-            # maliput
-            # - api
-            "RoadGeometry",
-            # - dragway
-            "create_dragway",
             # manipulation
             # - planner
             "DoDifferentialInverseKinematics",
