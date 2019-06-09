@@ -10,6 +10,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solver_interface.h"
 #include "drake/solvers/solver_type.h"
 
 namespace drake {

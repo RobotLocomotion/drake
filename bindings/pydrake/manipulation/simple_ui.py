@@ -59,6 +59,15 @@ class JointSliders(VectorSystem):
             assert len(x.shape) <= 1
             return np.array(x) * np.ones(num)
 
+        def _frame_config(event):
+            """
+            Execute once to configure the canvas size,
+            canvas contains scrollbar and slider_frame.
+            """
+            self.canvas.configure(scrollregion=self.canvas.bbox("all"),
+                                  width=200,
+                                  height=min(robot.num_joints()*60, 400))
+
         lower_limit = _reshape(lower_limit, robot.num_positions())
         upper_limit = _reshape(upper_limit, robot.num_positions())
         resolution = _reshape(resolution, robot.num_positions())
@@ -78,6 +87,33 @@ class JointSliders(VectorSystem):
         # Schedule window updates in either case (new or existing window):
         self.DeclarePeriodicPublish(update_period_sec, 0.0)
 
+        self.window.geometry("220x410")
+        # Allow only y dimension resizable.
+        self.window.resizable(0, 1)
+
+        # Once window is created, create window_frame
+        # and canvas that host slider_frame and scrollbar.
+        self.window_frame = tk.Frame(self.window, relief=tk.GROOVE, bd=1)
+        self.window_frame.place(x=0, y=0)
+        self.canvas = tk.Canvas(self.window_frame)
+
+        # Init slider_frame that actually contain the sliders
+        # and scrollbar.
+        self.slider_frame = tk.Frame(self.canvas)
+        self.scrollbar = tk.Scrollbar(self.window_frame,
+                                      orient="vertical",
+                                      command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+
+        # Put scrollbar and slider_frame into canvas.
+        self.scrollbar.pack(side="right", fill="y")
+        self.canvas.pack(side="left")
+        self.canvas.create_window((0, 0),
+                                  window=self.slider_frame,
+                                  anchor='nw')
+        # Call _frame_config to configure canvas size.
+        self.slider_frame.bind("<Configure>", _frame_config)
+
         self._slider = []
         self._slider_position_start = []
         context = robot.CreateDefaultContext()
@@ -91,7 +127,7 @@ class JointSliders(VectorSystem):
             upp = joint.position_upper_limits()
             for j in range(0, joint.num_positions()):
                 self._slider_position_start.append(joint.position_start() + j)
-                self._slider.append(tk.Scale(self.window,
+                self._slider.append(tk.Scale(self.slider_frame,
                                              from_=max(low[j],
                                                        lower_limit[k]),
                                              to=min(upp[j], upper_limit[k]),

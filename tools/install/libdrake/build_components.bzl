@@ -76,7 +76,7 @@ LIBDRAKE_COMPONENTS = [
     "//geometry/proximity",
     "//geometry/query_results",
     "//geometry/render",
-    "//geometry/test_utilities:geometry_set_tester",  # unpackaged
+    "//geometry/test_utilities",
     "//lcm",
     "//manipulation/kuka_iiwa",
     "//manipulation/perception",
@@ -96,7 +96,6 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/benchmarks/mass_damper_spring",
     "//multibody/benchmarks/pendulum",
     "//multibody/constraint",
-    "//multibody/hydroelastic_contact",
     "//multibody/inverse_kinematics",
     "//multibody/math",
     "//multibody/optimization",
@@ -105,6 +104,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/plant:contact_results_to_lcm",  # unpackaged
     "//multibody/topology:multibody_graph",  # unpackaged
     "//multibody/tree",
+    "//multibody/triangle_quadrature",
     "//perception",
     "//solvers",
     "//systems/analysis",

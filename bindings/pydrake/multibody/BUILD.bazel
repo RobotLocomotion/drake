@@ -50,10 +50,16 @@ drake_pybind_library(
     name = "math_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:cpp_template_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:type_pack",
     ],
     cc_srcs = ["math_py.cc"],
     package_info = PACKAGE_INFO,
-    py_deps = [":module_py"],
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/common:cpp_template_py",
+    ],
 )
 
 drake_pybind_library(
@@ -214,6 +220,7 @@ drake_py_unittest(
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//multibody/benchmarks/acrobot:models",
+        "//multibody/benchmarks/free_body:models",
     ],
     deps = [
         ":benchmarks_py",
@@ -221,12 +228,16 @@ drake_py_unittest(
         ":plant_py",
         ":tree_py",
         "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/systems:analysis_py",
     ],
 )
 
 drake_py_unittest(
     name = "math_test",
-    deps = [":math_py"],
+    deps = [
+        ":math_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
 )
 
 drake_py_unittest(

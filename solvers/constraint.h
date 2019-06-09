@@ -337,6 +337,9 @@ class LorentzConeConstraint : public Constraint {
   /** Getter for A. */
   const Eigen::SparseMatrix<double>& A() const { return A_; }
 
+  /** Getter for dense version of A. */
+  const Eigen::MatrixXd& A_dense() const { return A_dense_; }
+
   /** Getter for b. */
   const Eigen::VectorXd& b() const { return b_; }
 
@@ -397,6 +400,9 @@ class RotatedLorentzConeConstraint : public Constraint {
 
   /** Getter for A. */
   const Eigen::SparseMatrix<double>& A() const { return A_; }
+
+  /** Getter for dense version of A. */
+  const Eigen::MatrixXd& A_dense() const { return A_dense_; }
 
   /** Getter for b. */
   const Eigen::VectorXd& b() const { return b_; }

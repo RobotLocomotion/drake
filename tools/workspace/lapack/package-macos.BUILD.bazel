@@ -1,9 +1,0 @@
-# -*- python -*-
-
-package(default_visibility = ["//visibility:public"])
-
-# On macOS, no targets should depend on @lapack.
-cc_library(
-    name = "lapack",
-    srcs = ["missing-macos.cc"],
-)

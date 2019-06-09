@@ -51,7 +51,7 @@ drake_cc_library(
         ":rod2d_state_vector",
         "//common:essential",
         "//multibody/constraint",
-        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_lite",
         "//systems/framework:leaf_system",
         "//systems/rendering:pose_vector",
     ],

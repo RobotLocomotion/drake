@@ -1036,6 +1036,43 @@ void MultibodyTree<T>::CalcPointsAnalyticalJacobianExpressedInWorld(
 }
 
 template <typename T>
+SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationBiasShift(
+    const systems::Context<T>& context,
+    const Frame<T>& frame_F,
+    const math::RigidTransform<T>& X_BF,
+    const Vector3<T>& p_FoFp_F,
+    const SpatialAcceleration<T>& Abias_WBo_W,
+    const Frame<T>& frame_E) const {
+
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+
+  // Get body B's rotation matrix in world W and angular velocity in world W.
+  const Body<T>& body_B = frame_F.body();
+  const RotationMatrix<T>& R_WB = pc.get_X_WB(body_B.node_index()).rotation();
+  const Vector3<T>& w_WB_W = vc.get_V_WB(body_B.node_index()).rotational();
+
+  // We need to compute p_BoFp_W, the position from Bo to Fp, expressed in W.
+  const Vector3<T> p_BoFp_B = X_BF * p_FoFp_F;
+  const Vector3<T> p_BoFp_W = R_WB * p_BoFp_B;
+
+  // Shift spatial acceleration bias term from point Bo to point Fp.
+  // See SpatialAcceleration::Shift() for details.
+  SpatialAcceleration<T> Abias_WFp = Abias_WBo_W.Shift(p_BoFp_W, w_WB_W);
+
+  // Express the resulting vectors in frame_E (rather than the world frame).
+  if (&frame_E != &world_frame()) {
+    const RigidTransform<T> X_WE = frame_E.CalcPoseInWorld(context);
+    const RotationMatrix<T> R_EW = X_WE.rotation().inverse();
+
+    // Abias_WFp_E = R_EW * Abias_WFp_W.
+    Abias_WFp = R_EW * Abias_WFp;
+  }
+
+  return Abias_WFp;
+}
+
+template <typename T>
 VectorX<T> MultibodyTree<T>::CalcBiasForJacobianTranslationalVelocity(
     const systems::Context<T>& context,
     JacobianWrtVariable with_respect_to,
@@ -1045,76 +1082,44 @@ VectorX<T> MultibodyTree<T>::CalcBiasForJacobianTranslationalVelocity(
     const Frame<T>& frame_E) const {
   DRAKE_THROW_UNLESS(p_FP_list.rows() == 3);
 
-  // For now, this method requires with_respect_to to be kV.
+  // TODO(mitiguy) Allow with_respect_to be JacobianWrtVariable::kQDot.
   DRAKE_THROW_UNLESS(with_respect_to == JacobianWrtVariable::kV);
 
-  // For now, this method requires frame_A and frame_E to be the world frame.
+  // TODO(mitiguy) Allow frame_A to be something other than world frame W.
   DRAKE_THROW_UNLESS(&frame_A == &world_frame());
-  DRAKE_THROW_UNLESS(&frame_E == &world_frame());
 
+  // This algorithm is explained in CalcBiasForJacobianSpatialVelocity().
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
 
-  // For a frame F instantaneously moving with a body frame B, the spatial
-  // acceleration in world W of the frame F shifted to frame Fp with origin at
-  // point P fixed in frame F, can be computed as:
-  //   A_WFp = Jv_WFp⋅v̇ + Ab_WFp,
-  // where Jv_WFp is the Jacobian with respect to generalized velocities v of
-  // the spatial velocity of frame Fp in world W and Ab_WFp is the bias
-  // term for that Jacobian, defined as Ab_WFp = J̇v_WFp⋅v. The bias terms
-  // contains the Coriolis and centrifugal contributions to the total spatial
-  // acceleration due to non-zero velocities. Therefore, the bias term for
-  // Jv_WFp is the spatial acceleration of Fp when v̇ = 0, that is:
-  //   Ab_WFp = A_WFp(q, v, v̇ = 0)
-  // Given the position p_BP_W of point P on body frame B, we can compute the
-  // spatial acceleration Ab_WFp from the body spatial acceleration A_WB by
-  // simply performing a shift operation:
-  //   Ab_WFp = A_WB.Shift(p_BP_W, w_WB)
-  // where the shift operation also includes the angular velocity w_WB of B in
-  // W since rigid shifts on acceleration will usually include additional
-  // centrifugal and Coriolis terms, see SpatialAcceleration::Shift() for a
-  // detailed derivation of these terms.
-
-  // TODO(amcastro-tri): Consider caching Ab_WB(q, v), the bias term for each
-  // body, and compute the bias as Ab_WBp = Ab_WB.Shift(p_BP_W, w_WB).
-  // Where the body bias terms is defined s.t. A_WB = J_WB⋅v̇ + Ab_WB or,
-  // Ab_WB = J̇_WB⋅v
-
-  std::vector<SpatialAcceleration<T>> A_WB_array(num_bodies());
+  // Set ṡ = 0 and calculate point Bo's spatial acceleration bias in world W.
+  std::vector<SpatialAcceleration<T>> Abias_WB_array(num_bodies());
   const VectorX<T> vdot = VectorX<T>::Zero(num_velocities());
-  CalcSpatialAccelerationsFromVdot(context, pc, vc, vdot, &A_WB_array);
+  CalcSpatialAccelerationsFromVdot(context, pc, vc, vdot, &Abias_WB_array);
 
+  // Extract point Bo's spatial acceleration bias from the large array.
   const Body<T>& body_B = frame_F.body();
-  // Bias for body B spatial acceleration.
-  const SpatialAcceleration<T>& Ab_WB = A_WB_array[body_B.node_index()];
+  const SpatialAcceleration<T>& Abias_WBo = Abias_WB_array[body_B.node_index()];
 
+  // Get transform from body B to frame F.
+  const RigidTransform<T> X_BF = frame_F.GetFixedPoseInBodyFrame();
+
+  // Allocate the output vector.
   const int num_points = p_FP_list.cols();
-
-  // Allocate output vector.
-  VectorX<T> Ab_WB_array(3 * num_points);
+  VectorX<T> Abias_WFp_array(3 * num_points);
 
   for (int ipoint = 0; ipoint < num_points; ++ipoint) {
-    const Vector3<T> p_FPi_F = p_FP_list.col(ipoint);
+    const Vector3<T> p_FoPi_F = p_FP_list.col(ipoint);
 
-    // Body B's orientation in world W.
-    const RotationMatrix<T>& R_WB = pc.get_X_WB(body_B.node_index()).rotation();
-
-    // We need to compute p_BPi_W, the position from Bo to Pi, expressed in W.
-    const RigidTransform<T> X_BF = frame_F.GetFixedPoseInBodyFrame();
-    const Vector3<T> p_BPi_B = X_BF * p_FPi_F;
-    const Vector3<T> p_BPi_W = R_WB * p_BPi_B;
-
-    // Body B's velocity in the world frame W.
-    const Vector3<T>& w_WB = vc.get_V_WB(body_B.node_index()).rotational();
-
-    // Shift body B's bias term to point Pi.
-    const SpatialAcceleration<T> Ab_WBp = Ab_WB.Shift(p_BPi_W, w_WB);
+    // Shift spatial acceleration bias term from point Bo to point Fp.
+    const SpatialAcceleration<T> Abias_WFp = CalcSpatialAccelerationBiasShift(
+        context, frame_F, X_BF, p_FoPi_F, Abias_WBo, frame_E);
 
     // Output translational component only.
-    Ab_WB_array.template segment<3>(3 * ipoint) = Ab_WBp.translational();
+    Abias_WFp_array.template segment<3>(3 * ipoint) = Abias_WFp.translational();
   }
 
-  return Ab_WB_array;
+  return Abias_WFp_array;
 }
 
 template <typename T>
@@ -1321,60 +1326,61 @@ void MultibodyTree<T>::CalcJacobianTranslationalVelocity(
 }
 
 template <typename T>
-Vector6<T> MultibodyTree<T>::CalcBiasForFrameGeometricJacobianExpressedInWorld(
+Vector6<T> MultibodyTree<T>::CalcBiasForJacobianSpatialVelocity(
     const systems::Context<T>& context,
-    const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FP) const {
+    JacobianWrtVariable with_respect_to,
+    const Frame<T>& frame_F,
+    const Eigen::Ref<const Vector3<T>>& p_FoFp_F,
+    const Frame<T>& frame_A,
+    const Frame<T>& frame_E) const {
+  // TODO(mitiguy) Allow with_respect_to be JacobianWrtVariable::kQDot.
+  DRAKE_THROW_UNLESS(with_respect_to == JacobianWrtVariable::kV);
+
+  // TODO(mitiguy) Allow frame_A to be something other than world frame W.
+  DRAKE_THROW_UNLESS(&frame_A == &world_frame());
+
+  // Consider a point Fp of (fixed/welded to) a frame F, where frame F is
+  // regarded as fixed/welded to a body frame B.  Fp's spatial acceleration in
+  // an arbitrary frame A can be written as:
+  //   A_AFp = Js_V_AFp ⋅ ṡ + Abias_AFp,
+  // where Js_V_AFp is Fp's spatial velocity Jacobian in frame A with respect to
+  // "speeds" 𝑠, where 𝑠 is either
+  // q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of generalized positions) or
+  // v ≜ [v₁ ... vₖ]ᵀ (generalized velocities), and
+  // Abias_AFp is the associated spatial acceleration bias term, equal to
+  //   Abias_AFp = J̇s_V_AFp ⋅ s
+  // Evident in this formula is Abias_AFp can contribute to A_AFp when s != 0
+  // (e.g., there are centripetal, Coriolis, or gyroscopic terms).
+  // One way to calculate this bias term is to observe that it is equal to the
+  // spatial acceleration when ṡ = 0, that is:
+  //   Abias_AFp = A_AFp(q, s, ṡ = 0)
+  // After setting ṡ = 0, Fp's spatial acceleration bias can be calculated from
+  // Bo's spatial acceleration bias with a shift operation as
+  //   Abias_AFp = Abias_ABo.Shift(p_BoFp_A, w_AB_A)
+  // where p_BoBp_A is the position from Bo (body frame B's origin) to point Fp
+  // and w_AB_A is frame B's angular velocity in frame A, expressed in frame A.
+  // See SpatialAcceleration::Shift() for details.
+  // TODO(amcastro-tri): Consider caching each body's bias term Abias_ABo(q, s).
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
 
-  // For a frame F moving instantaneously with its body frame B, the spatial
-  // acceleration of the frame F shifted to frame Fp with origin at point P
-  // fixed in frame F, can be computed as:
-  //   A_WFp = Jv_WFp⋅v̇ + Ab_WFp,
-  // where Jv_WFp is the frame geometric Jacobian for frame Fp and Ab_WFp is the
-  // bias term for that Jacobian, defined as Ab_WFp = J̇v_WFp⋅v. The bias term
-  // contains the Coriolis and centrifugal contributions to the total spatial
-  // acceleration due to non-zero velocities. Therefore, the bias term for
-  // Jv_WFp is the spatial acceleration of Fp when v̇ = 0, that is:
-  //   Ab_WFp = A_WFp(q, v, v̇ = 0)
-  // Given the position p_BP_W of point P in body frame B, we can compute the
-  // spatial acceleration Ab_WFp from the body spatial acceleration A_WB by
-  // simply performing a shift operation:
-  //   Ab_WFp = A_WB.Shift(p_BP_W, w_WB)
-  // where the shift operation also includes the angular velocity w_WB of B in
-  // W since rigid shifts on acceleration will usually include additional
-  // centrifugal and Coriolis terms, see SpatialAcceleration::Shift() for a
-  // detailed derivation of these terms.
-
-  // TODO(amcastro-tri): Consider caching Ab_WB(q, v), the bias term for each
-  // body, and compute the bias as Ab_WBp = Ab_WB.Shift(p_BP_W, w_WB).
-  // Where the body bias terms is defined s.t. A_WB = J_WB⋅v̇ + Ab_WB or,
-  // Ab_WB = J̇_WB⋅v
-
-  std::vector<SpatialAcceleration<T>> A_WB_array(num_bodies());
+  // Set ṡ = 0 and calculate point Bo's spatial acceleration bias in world W.
+  std::vector<SpatialAcceleration<T>> Abias_WB_array(num_bodies());
   const VectorX<T> vdot = VectorX<T>::Zero(num_velocities());
-  CalcSpatialAccelerationsFromVdot(context, pc, vc, vdot, &A_WB_array);
+  CalcSpatialAccelerationsFromVdot(context, pc, vc, vdot, &Abias_WB_array);
 
+  // Extract point Bo's spatial acceleration bias from the large array.
   const Body<T>& body_B = frame_F.body();
-  // Bias for body B spatial acceleration.
-  const SpatialAcceleration<T>& Ab_WB = A_WB_array[body_B.node_index()];
+  const SpatialAcceleration<T>& Abias_WBo = Abias_WB_array[body_B.node_index()];
 
-  // Body B's orientation.
-  const Matrix3<T>& R_WB = pc.get_X_WB(body_B.node_index()).linear();
-
-  // We need to compute p_BoP_W, the position of P from B's origin Bo,
-  // expressed in W.
+  // Get transform from body B to frame F.
   const RigidTransform<T> X_BF = frame_F.GetFixedPoseInBodyFrame();
-  const Vector3<T> p_BP = X_BF * p_FP;
-  const Vector3<T> p_BP_W = R_WB * p_BP;
 
-  // Body B's velocity in the world frame W.
-  const Vector3<T>& w_WB = vc.get_V_WB(body_B.node_index()).rotational();
+  // Shift spatial acceleration bias term from point Bo to point Fp.
+  const SpatialAcceleration<T> Abias_WFp = CalcSpatialAccelerationBiasShift(
+  context, frame_F, X_BF, p_FoFp_F, Abias_WBo, frame_E);
 
-  // Shift body B's bias term to frame P.
-  const SpatialAcceleration<T> Ab_WP = Ab_WB.Shift(p_BP_W, w_WB);
-
-  return Ab_WP.get_coeffs();
+  return Abias_WFp.get_coeffs();
 }
 
 template <typename T>

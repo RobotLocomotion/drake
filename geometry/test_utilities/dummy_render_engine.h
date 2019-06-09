@@ -74,6 +74,13 @@ class DummyRenderEngine final : public render::RenderEngine {
     return PerceptionProperties();
   }
 
+  /** Resets all state to the initially constructed state.  */
+  void reset() {
+    updated_indices_.clear();
+    moved_index_ = nullopt;
+    register_count_ = 0;
+  }
+
   /** Reports the number of geometries that have been _accepted_ in
    registration.  */
   int num_registered() const { return register_count_; }

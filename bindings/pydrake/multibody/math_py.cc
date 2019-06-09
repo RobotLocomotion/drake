@@ -1,6 +1,20 @@
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
 
+#ifndef __clang__
+// N.B. Without this, GCC 7.4.0 on Ubuntu complains about
+// `AutoDiffScalar(const AutoDiffScalar& other)` having uninitialized values.
+// TODO(eric.cousineau):  #11566 Figure out why?
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#pragma GCC diagnostic pop
+#else
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#endif  // __clang__
+
+#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/math/spatial_acceleration.h"
@@ -10,26 +24,22 @@
 namespace drake {
 namespace pydrake {
 
-// TODO(eric.cousineau): Expose available scalar types.
-using T = double;
-
 // Binds any child classes of the `SpatialVector` mixin.
-template <typename PyClass>
+template <typename T, typename PyClass>
 void BindSpatialVectorMixin(PyClass* pcls) {
   constexpr auto& doc = pydrake_doc.drake.multibody;
   using Class = typename PyClass::type;
   auto& cls = *pcls;
   cls  // BR
       .def("rotational",
-          [](const Class* self) -> const Vector3<T>& {
+          [](const Class* self) -> const Vector3<T> {
             return self->rotational();
           },
-          py_reference_internal, doc.SpatialVector.rotational.doc_0args_const)
+          doc.SpatialVector.rotational.doc_0args_const)
       .def("translational",
-          [](const Class* self) -> const Vector3<T>& {
+          [](const Class* self) -> const Vector3<T> {
             return self->translational();
           },
-          py_reference_internal,
           doc.SpatialVector.translational.doc_0args_const)
       .def("SetZero", &Class::SetZero, doc.SpatialVector.SetZero.doc)
       .def("get_coeffs", [](const Class& self) { return self.get_coeffs(); },
@@ -37,7 +47,10 @@ void BindSpatialVectorMixin(PyClass* pcls) {
       .def_static("Zero", &Class::Zero, doc.SpatialVector.Zero.doc);
 }
 
-PYBIND11_MODULE(math, m) {
+namespace {
+template <typename T>
+void DoDefinitions(py::module m, T) {
+  py::tuple param = GetPyParam<T>();
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody;
@@ -47,8 +60,9 @@ PYBIND11_MODULE(math, m) {
   {
     using Class = SpatialVelocity<T>;
     constexpr auto& cls_doc = doc.SpatialVelocity;
-    py::class_<Class> cls(m, "SpatialVelocity", cls_doc.doc);
-    BindSpatialVectorMixin(&cls);
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "SpatialVelocity", param, cls_doc.doc);
+    BindSpatialVectorMixin<T>(&cls);
     cls  // BR
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Vector3<T>>&,
@@ -60,8 +74,9 @@ PYBIND11_MODULE(math, m) {
   {
     using Class = SpatialAcceleration<T>;
     constexpr auto& cls_doc = doc.SpatialAcceleration;
-    py::class_<Class> cls(m, "SpatialAcceleration", cls_doc.doc);
-    BindSpatialVectorMixin(&cls);
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "SpatialAcceleration", param, cls_doc.doc);
+    BindSpatialVectorMixin<T>(&cls);
     cls  // BR
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Vector3<T>>&,
@@ -73,8 +88,9 @@ PYBIND11_MODULE(math, m) {
   {
     using Class = multibody::SpatialForce<T>;
     constexpr auto& cls_doc = doc.SpatialForce;
-    py::class_<Class> cls(m, "SpatialForce", cls_doc.doc);
-    BindSpatialVectorMixin(&cls);
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "SpatialForce", param, cls_doc.doc);
+    BindSpatialVectorMixin<T>(&cls);
     cls  // BR
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Vector3<T>>&,
@@ -83,6 +99,14 @@ PYBIND11_MODULE(math, m) {
         .def(py::init<const Vector6<T>&>(), py::arg("F"),
             cls_doc.ctor.doc_1args);
   }
+}
+}  // namespace
+
+PYBIND11_MODULE(math, m) {
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::multibody;
+  m.doc() = "Bindings for multibody math.";
+  type_visit([m](auto dummy) { DoDefinitions(m, dummy); }, CommonScalarPack{});
 }
 
 }  // namespace pydrake

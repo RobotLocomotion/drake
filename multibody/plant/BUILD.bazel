@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":contact_results",
         ":coulomb_friction",
         ":externally_applied_spatial_force",
+        ":hydroelastic_traction",
         ":implicit_stribeck_solver",
         ":implicit_stribeck_solver_results",
         ":multibody_plant_core",
@@ -161,6 +162,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "hydroelastic_traction",
+    srcs = [
+        "hydroelastic_traction_calculator.cc",
+    ],
+    hdrs = [
+        "hydroelastic_traction_calculator.h",
+    ],
+    deps = [
+        ":multibody_plant_core",
+        "//geometry/proximity:mesh_field",
+        "//geometry/query_results:contact_surface",
+        "//multibody/triangle_quadrature",
+    ],
+)
+
+drake_cc_library(
     name = "implicit_stribeck_solver_test_util",
     testonly = 1,
     hdrs = ["test/implicit_stribeck_solver_test_util.h"],
@@ -178,6 +195,18 @@ drake_cc_library(
         "//common:default_scalars",
         "//multibody/math:spatial_force",
         "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_googletest(
+    name = "hydroelastic_traction_test",
+    data = [
+        "test/block_on_halfspace.sdf",
+    ],
+    deps = [
+        ":hydroelastic_traction",
+        "//common:find_resource",
+        "//multibody/parsing",
     ],
 )
 

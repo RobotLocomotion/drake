@@ -102,9 +102,9 @@ void StaticFrictionConeComplementarityNonlinearConstraint::DoEval(
   bool found_geometry_pair = false;
   for (const auto& signed_distance_pair : signed_distance_pairs) {
     if (signed_distance_pair.id_A ==
-            contact_wrench_evaluator_->geometry_id_pair().first &&
+            contact_wrench_evaluator_->geometry_id_pair().first() &&
         signed_distance_pair.id_B ==
-            contact_wrench_evaluator_->geometry_id_pair().second) {
+            contact_wrench_evaluator_->geometry_id_pair().second()) {
       found_geometry_pair = true;
       // Compute the friction.
       const CoulombFriction<double>& geometryA_friction =
@@ -147,8 +147,8 @@ void StaticFrictionConeComplementarityNonlinearConstraint::DoEval(
     const Eigen::Ref<const VectorX<symbolic::Variable>>&,
     VectorX<symbolic::Expression>*) const {
   throw std::runtime_error(
-      "StaticEquilibriumConstraint: does not support Eval with symbolic "
-      "variable and expressions.");
+      "StaticFrictionConeComplementarityNonlinearConstraint: does not support "
+      "Eval with symbolic variable and expressions.");
 }
 }  // namespace internal
 
