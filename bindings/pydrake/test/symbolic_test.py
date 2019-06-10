@@ -12,7 +12,7 @@ import pydrake.common
 from pydrake.test.algebra_test_util import ScalarAlgebra, VectorizedAlgebra
 from pydrake.common.containers import EqualToDict
 from pydrake.common.deprecation import install_numpy_warning_filters
-import pydrake.common.test_utilities.numpy_compare as npc
+from pydrake.common.test_utilities import numpy_compare
 
 # TODO(eric.cousineau): Replace usages of `sym` math functions with the
 # overloads from `pydrake.math`.
@@ -31,53 +31,53 @@ e_y = sym.Expression(y)
 
 class TestSymbolicVariable(unittest.TestCase):
     def test_addition(self):
-        npc.assert_equal(x + y, "(x + y)")
-        npc.assert_equal(x + 1, "(1 + x)")
-        npc.assert_equal(1 + x, "(1 + x)")
+        numpy_compare.assert_equal(x + y, "(x + y)")
+        numpy_compare.assert_equal(x + 1, "(1 + x)")
+        numpy_compare.assert_equal(1 + x, "(1 + x)")
 
     def test_subtraction(self):
-        npc.assert_equal(x - y, "(x - y)")
-        npc.assert_equal(x - 1, "(-1 + x)")
-        npc.assert_equal(1 - x, "(1 - x)")
+        numpy_compare.assert_equal(x - y, "(x - y)")
+        numpy_compare.assert_equal(x - 1, "(-1 + x)")
+        numpy_compare.assert_equal(1 - x, "(1 - x)")
 
     def test_multiplication(self):
-        npc.assert_equal(x * y, "(x * y)")
-        npc.assert_equal(x * 1, "x")
-        npc.assert_equal(1 * x, "x")
+        numpy_compare.assert_equal(x * y, "(x * y)")
+        numpy_compare.assert_equal(x * 1, "x")
+        numpy_compare.assert_equal(1 * x, "x")
 
     def test_division(self):
-        npc.assert_equal(x / y, "(x / y)")
-        npc.assert_equal(x / 1, "x")
-        npc.assert_equal(1 / x, "(1 / x)")
+        numpy_compare.assert_equal(x / y, "(x / y)")
+        numpy_compare.assert_equal(x / 1, "x")
+        numpy_compare.assert_equal(1 / x, "(1 / x)")
 
     def test_unary_operators(self):
-        npc.assert_equal(+x, "x")
-        npc.assert_equal(-x, "(-1 * x)")
+        numpy_compare.assert_equal(+x, "x")
+        numpy_compare.assert_equal(-x, "(-1 * x)")
 
     def test_relational_operators(self):
         # Variable rop float
-        npc.assert_equal(x >= 1, "(x >= 1)")
-        npc.assert_equal(x > 1, "(x > 1)")
-        npc.assert_equal(x <= 1, "(x <= 1)")
-        npc.assert_equal(x < 1, "(x < 1)")
-        npc.assert_equal(x == 1, "(x == 1)")
-        npc.assert_equal(x != 1, "(x != 1)")
+        numpy_compare.assert_equal(x >= 1, "(x >= 1)")
+        numpy_compare.assert_equal(x > 1, "(x > 1)")
+        numpy_compare.assert_equal(x <= 1, "(x <= 1)")
+        numpy_compare.assert_equal(x < 1, "(x < 1)")
+        numpy_compare.assert_equal(x == 1, "(x == 1)")
+        numpy_compare.assert_equal(x != 1, "(x != 1)")
 
         # float rop Variable
-        npc.assert_equal(1 < y, "(y > 1)")
-        npc.assert_equal(1 <= y, "(y >= 1)")
-        npc.assert_equal(1 > y, "(y < 1)")
-        npc.assert_equal(1 >= y, "(y <= 1)")
-        npc.assert_equal(1 == y, "(y == 1)")
-        npc.assert_equal(1 != y, "(y != 1)")
+        numpy_compare.assert_equal(1 < y, "(y > 1)")
+        numpy_compare.assert_equal(1 <= y, "(y >= 1)")
+        numpy_compare.assert_equal(1 > y, "(y < 1)")
+        numpy_compare.assert_equal(1 >= y, "(y <= 1)")
+        numpy_compare.assert_equal(1 == y, "(y == 1)")
+        numpy_compare.assert_equal(1 != y, "(y != 1)")
 
         # Variable rop Variable
-        npc.assert_equal(x < y, "(x < y)")
-        npc.assert_equal(x <= y, "(x <= y)")
-        npc.assert_equal(x > y, "(x > y)")
-        npc.assert_equal(x >= y, "(x >= y)")
-        npc.assert_equal(x == y, "(x == y)")
-        npc.assert_equal(x != y, "(x != y)")
+        numpy_compare.assert_equal(x < y, "(x < y)")
+        numpy_compare.assert_equal(x <= y, "(x <= y)")
+        numpy_compare.assert_equal(x > y, "(x > y)")
+        numpy_compare.assert_equal(x >= y, "(x >= y)")
+        numpy_compare.assert_equal(x == y, "(x == y)")
+        numpy_compare.assert_equal(x != y, "(x != y)")
 
     def test_get_type(self):
         i = sym.Variable('i', sym.Variable.Type.INTEGER)
@@ -89,67 +89,69 @@ class TestSymbolicVariable(unittest.TestCase):
         self.assertEqual(repr(x), "Variable('x', Continuous)")
 
     def test_simplify(self):
-        npc.assert_equal(0 * (x + y), "0")
-        npc.assert_equal(x + y - x - y, "0")
-        npc.assert_equal(x / x - 1, "0")
-        npc.assert_equal(x / x, "1")
+        numpy_compare.assert_equal(0 * (x + y), "0")
+        numpy_compare.assert_equal(x + y - x - y, "0")
+        numpy_compare.assert_equal(x / x - 1, "0")
+        numpy_compare.assert_equal(x / x, "1")
 
     def test_expand(self):
         ex = 2 * (x + y)
-        npc.assert_equal(ex, "(2 * (x + y))")
-        npc.assert_equal(ex.Expand(), "(2 * x + 2 * y)")
+        numpy_compare.assert_equal(ex, "(2 * (x + y))")
+        numpy_compare.assert_equal(ex.Expand(), "(2 * x + 2 * y)")
 
     def test_pow(self):
-        npc.assert_equal(x**2, "pow(x, 2)")
-        npc.assert_equal(x**y, "pow(x, y)")
-        npc.assert_equal((x + 1)**(y - 1), "pow((1 + x), (-1 + y))")
+        numpy_compare.assert_equal(x**2, "pow(x, 2)")
+        numpy_compare.assert_equal(x**y, "pow(x, y)")
+        numpy_compare.assert_equal((x + 1)**(y - 1), "pow((1 + x), (-1 + y))")
 
     def test_neg(self):
-        npc.assert_equal(-(x + 1), "(-1 - x)")
+        numpy_compare.assert_equal(-(x + 1), "(-1 - x)")
 
     def test_equalto(self):
         self.assertTrue(x.EqualTo(x))
         self.assertFalse(x.EqualTo(y))
 
     def test_logical(self):
-        npc.assert_equal(sym.logical_not(x == 0),
-                         "!((x == 0))")
+        numpy_compare.assert_equal(
+            sym.logical_not(x == 0), "!((x == 0))")
 
         # Test single-operand logical statements
-        npc.assert_equal(sym.logical_and(x >= 1), "(x >= 1)")
-        npc.assert_equal(sym.logical_or(x >= 1), "(x >= 1)")
+        numpy_compare.assert_equal(sym.logical_and(x >= 1), "(x >= 1)")
+        numpy_compare.assert_equal(sym.logical_or(x >= 1), "(x >= 1)")
         # Test binary operand logical statements
-        npc.assert_equal(sym.logical_and(x >= 1, x <= 2),
-                         "((x >= 1) and (x <= 2))")
-        npc.assert_equal(sym.logical_or(x <= 1, x >= 2),
-                         "((x >= 2) or (x <= 1))")
+        numpy_compare.assert_equal(
+            sym.logical_and(x >= 1, x <= 2), "((x >= 1) and (x <= 2))")
+        numpy_compare.assert_equal(
+            sym.logical_or(x <= 1, x >= 2), "((x >= 2) or (x <= 1))")
         # Test multiple operand logical statements
-        npc.assert_equal(sym.logical_and(x >= 1, x <= 2, y == 2),
-                         "((y == 2) and (x >= 1) and (x <= 2))")
-        npc.assert_equal(sym.logical_or(x >= 1, x <= 2, y == 2),
-                         "((y == 2) or (x >= 1) or (x <= 2))")
+        numpy_compare.assert_equal(
+            sym.logical_and(x >= 1, x <= 2, y == 2),
+            "((y == 2) and (x >= 1) and (x <= 2))")
+        numpy_compare.assert_equal(
+            sym.logical_or(x >= 1, x <= 2, y == 2),
+            "((y == 2) or (x >= 1) or (x <= 2))")
 
     def test_functions_with_variable(self):
-        npc.assert_equal(sym.abs(x), "abs(x)")
-        npc.assert_equal(sym.exp(x), "exp(x)")
-        npc.assert_equal(sym.sqrt(x), "sqrt(x)")
-        npc.assert_equal(sym.pow(x, y), "pow(x, y)")
-        npc.assert_equal(sym.sin(x), "sin(x)")
-        npc.assert_equal(sym.cos(x), "cos(x)")
-        npc.assert_equal(sym.tan(x), "tan(x)")
-        npc.assert_equal(sym.asin(x), "asin(x)")
-        npc.assert_equal(sym.acos(x), "acos(x)")
-        npc.assert_equal(sym.atan(x), "atan(x)")
-        npc.assert_equal(sym.atan2(x, y), "atan2(x, y)")
-        npc.assert_equal(sym.sinh(x), "sinh(x)")
-        npc.assert_equal(sym.cosh(x), "cosh(x)")
-        npc.assert_equal(sym.tanh(x), "tanh(x)")
-        npc.assert_equal(sym.min(x, y), "min(x, y)")
-        npc.assert_equal(sym.max(x, y), "max(x, y)")
-        npc.assert_equal(sym.ceil(x), "ceil(x)")
-        npc.assert_equal(sym.floor(x), "floor(x)")
-        npc.assert_equal(sym.if_then_else(x > y, x, y),
-                         "(if (x > y) then x else y)")
+        numpy_compare.assert_equal(sym.abs(x), "abs(x)")
+        numpy_compare.assert_equal(sym.exp(x), "exp(x)")
+        numpy_compare.assert_equal(sym.sqrt(x), "sqrt(x)")
+        numpy_compare.assert_equal(sym.pow(x, y), "pow(x, y)")
+        numpy_compare.assert_equal(sym.sin(x), "sin(x)")
+        numpy_compare.assert_equal(sym.cos(x), "cos(x)")
+        numpy_compare.assert_equal(sym.tan(x), "tan(x)")
+        numpy_compare.assert_equal(sym.asin(x), "asin(x)")
+        numpy_compare.assert_equal(sym.acos(x), "acos(x)")
+        numpy_compare.assert_equal(sym.atan(x), "atan(x)")
+        numpy_compare.assert_equal(sym.atan2(x, y), "atan2(x, y)")
+        numpy_compare.assert_equal(sym.sinh(x), "sinh(x)")
+        numpy_compare.assert_equal(sym.cosh(x), "cosh(x)")
+        numpy_compare.assert_equal(sym.tanh(x), "tanh(x)")
+        numpy_compare.assert_equal(sym.min(x, y), "min(x, y)")
+        numpy_compare.assert_equal(sym.max(x, y), "max(x, y)")
+        numpy_compare.assert_equal(sym.ceil(x), "ceil(x)")
+        numpy_compare.assert_equal(sym.floor(x), "floor(x)")
+        numpy_compare.assert_equal(
+            sym.if_then_else(x > y, x, y), "(if (x > y) then x else y)")
 
     def test_array_str(self):
         # Addresses #8729.
@@ -305,112 +307,113 @@ class TestSymbolicExpression(unittest.TestCase):
         e_yv = algebra.to_algebra(e_y)
 
         # Addition.
-        npc.assert_equal(e_xv + e_yv, "(x + y)")
-        npc.assert_equal(e_xv + yv, "(x + y)")
-        npc.assert_equal(e_xv + 1, "(1 + x)")
-        npc.assert_equal(xv + e_yv, "(x + y)")
-        npc.assert_equal(1 + e_xv, "(1 + x)")
+        numpy_compare.assert_equal(e_xv + e_yv, "(x + y)")
+        numpy_compare.assert_equal(e_xv + yv, "(x + y)")
+        numpy_compare.assert_equal(e_xv + 1, "(1 + x)")
+        numpy_compare.assert_equal(xv + e_yv, "(x + y)")
+        numpy_compare.assert_equal(1 + e_xv, "(1 + x)")
 
         # - In place.
         e = copy.copy(xv)
         e += e_yv
-        npc.assert_equal(e, "(x + y)")
+        numpy_compare.assert_equal(e, "(x + y)")
         e += zv
-        npc.assert_equal(e, "(x + y + z)")
+        numpy_compare.assert_equal(e, "(x + y + z)")
         e += 1
-        npc.assert_equal(e, "(1 + x + y + z)")
+        numpy_compare.assert_equal(e, "(1 + x + y + z)")
 
         # Subtraction.
-        npc.assert_equal(e_xv - e_yv, "(x - y)")
-        npc.assert_equal(e_xv - yv, "(x - y)")
-        npc.assert_equal(e_xv - 1, "(-1 + x)")
-        npc.assert_equal(xv - e_yv, "(x - y)")
-        npc.assert_equal(1 - e_xv, "(1 - x)")
+        numpy_compare.assert_equal(e_xv - e_yv, "(x - y)")
+        numpy_compare.assert_equal(e_xv - yv, "(x - y)")
+        numpy_compare.assert_equal(e_xv - 1, "(-1 + x)")
+        numpy_compare.assert_equal(xv - e_yv, "(x - y)")
+        numpy_compare.assert_equal(1 - e_xv, "(1 - x)")
 
         # - In place.
         e = copy.copy(xv)
         e -= e_yv
-        npc.assert_equal(e, (x - y))
+        numpy_compare.assert_equal(e, (x - y))
         e -= zv
-        npc.assert_equal(e, (x - y - z))
+        numpy_compare.assert_equal(e, (x - y - z))
         e -= 1
-        npc.assert_equal(e, (x - y - z - 1))
+        numpy_compare.assert_equal(e, (x - y - z - 1))
 
         # Multiplication.
-        npc.assert_equal(e_xv * e_yv, "(x * y)")
-        npc.assert_equal(e_xv * yv, "(x * y)")
-        npc.assert_equal(e_xv * 1, "x")
-        npc.assert_equal(xv * e_yv, "(x * y)")
-        npc.assert_equal(1 * e_xv, "x")
+        numpy_compare.assert_equal(e_xv * e_yv, "(x * y)")
+        numpy_compare.assert_equal(e_xv * yv, "(x * y)")
+        numpy_compare.assert_equal(e_xv * 1, "x")
+        numpy_compare.assert_equal(xv * e_yv, "(x * y)")
+        numpy_compare.assert_equal(1 * e_xv, "x")
 
         # - In place.
         e = copy.copy(xv)
         e *= e_yv
-        npc.assert_equal(e, "(x * y)")
+        numpy_compare.assert_equal(e, "(x * y)")
         e *= zv
-        npc.assert_equal(e, "(x * y * z)")
+        numpy_compare.assert_equal(e, "(x * y * z)")
         e *= 1
-        npc.assert_equal(e, "(x * y * z)")
+        numpy_compare.assert_equal(e, "(x * y * z)")
 
         # Division
-        npc.assert_equal(e_xv / e_yv, (x / y))
-        npc.assert_equal(e_xv / yv, (x / y))
-        npc.assert_equal(e_xv / 1, "x")
-        npc.assert_equal(xv / e_yv, (x / y))
-        npc.assert_equal(1 / e_xv, (1 / x))
+        numpy_compare.assert_equal(e_xv / e_yv, (x / y))
+        numpy_compare.assert_equal(e_xv / yv, (x / y))
+        numpy_compare.assert_equal(e_xv / 1, "x")
+        numpy_compare.assert_equal(xv / e_yv, (x / y))
+        numpy_compare.assert_equal(1 / e_xv, (1 / x))
 
         # - In place.
         e = copy.copy(xv)
         e /= e_yv
-        npc.assert_equal(e, (x / y))
+        numpy_compare.assert_equal(e, (x / y))
         e /= zv
-        npc.assert_equal(e, (x / y / z))
+        numpy_compare.assert_equal(e, (x / y / z))
         e /= 1
-        npc.assert_equal(e, ((x / y) / z))
+        numpy_compare.assert_equal(e, ((x / y) / z))
 
         # Unary
-        npc.assert_equal(+e_xv, "x")
-        npc.assert_equal(-e_xv, "(-1 * x)")
+        numpy_compare.assert_equal(+e_xv, "x")
+        numpy_compare.assert_equal(-e_xv, "(-1 * x)")
 
         # Comparison. For `VectorizedAlgebra`, uses `np.vectorize` workaround
         # for #8315.
         # TODO(eric.cousineau): `BaseAlgebra.check_logical` is designed for
         # AutoDiffXd (float-convertible), not for symbolic (not always
         # float-convertible).
-        npc.assert_equal(algebra.lt(e_xv, e_yv), "(x < y)")
-        npc.assert_equal(algebra.le(e_xv, e_yv), "(x <= y)")
-        npc.assert_equal(algebra.eq(e_xv, e_yv), "(x == y)")
-        npc.assert_equal(algebra.ne(e_xv, e_yv), "(x != y)")
-        npc.assert_equal(algebra.ge(e_xv, e_yv), "(x >= y)")
-        npc.assert_equal(algebra.gt(e_xv, e_yv), "(x > y)")
+        numpy_compare.assert_equal(algebra.lt(e_xv, e_yv), "(x < y)")
+        numpy_compare.assert_equal(algebra.le(e_xv, e_yv), "(x <= y)")
+        numpy_compare.assert_equal(algebra.eq(e_xv, e_yv), "(x == y)")
+        numpy_compare.assert_equal(algebra.ne(e_xv, e_yv), "(x != y)")
+        numpy_compare.assert_equal(algebra.ge(e_xv, e_yv), "(x >= y)")
+        numpy_compare.assert_equal(algebra.gt(e_xv, e_yv), "(x > y)")
 
         # Math functions.
-        npc.assert_equal(algebra.abs(e_xv), "abs(x)")
-        npc.assert_equal(algebra.exp(e_xv), "exp(x)")
-        npc.assert_equal(algebra.sqrt(e_xv), "sqrt(x)")
-        npc.assert_equal(algebra.pow(e_xv, e_yv), "pow(x, y)")
-        npc.assert_equal(algebra.sin(e_xv), "sin(x)")
-        npc.assert_equal(algebra.cos(e_xv), "cos(x)")
-        npc.assert_equal(algebra.tan(e_xv), "tan(x)")
-        npc.assert_equal(algebra.arcsin(e_xv), "asin(x)")
-        npc.assert_equal(algebra.arccos(e_xv), "acos(x)")
-        npc.assert_equal(algebra.arctan2(e_xv, e_yv), "atan2(x, y)")
-        npc.assert_equal(algebra.sinh(e_xv), "sinh(x)")
-        npc.assert_equal(algebra.cosh(e_xv), "cosh(x)")
-        npc.assert_equal(algebra.tanh(e_xv), "tanh(x)")
-        npc.assert_equal(algebra.ceil(e_xv), "ceil(x)")
-        npc.assert_equal(algebra.floor(e_xv), "floor(x)")
+        numpy_compare.assert_equal(algebra.abs(e_xv), "abs(x)")
+        numpy_compare.assert_equal(algebra.exp(e_xv), "exp(x)")
+        numpy_compare.assert_equal(algebra.sqrt(e_xv), "sqrt(x)")
+        numpy_compare.assert_equal(algebra.pow(e_xv, e_yv), "pow(x, y)")
+        numpy_compare.assert_equal(algebra.sin(e_xv), "sin(x)")
+        numpy_compare.assert_equal(algebra.cos(e_xv), "cos(x)")
+        numpy_compare.assert_equal(algebra.tan(e_xv), "tan(x)")
+        numpy_compare.assert_equal(algebra.arcsin(e_xv), "asin(x)")
+        numpy_compare.assert_equal(algebra.arccos(e_xv), "acos(x)")
+        numpy_compare.assert_equal(algebra.arctan2(e_xv, e_yv), "atan2(x, y)")
+        numpy_compare.assert_equal(algebra.sinh(e_xv), "sinh(x)")
+        numpy_compare.assert_equal(algebra.cosh(e_xv), "cosh(x)")
+        numpy_compare.assert_equal(algebra.tanh(e_xv), "tanh(x)")
+        numpy_compare.assert_equal(algebra.ceil(e_xv), "ceil(x)")
+        numpy_compare.assert_equal(algebra.floor(e_xv), "floor(x)")
 
         if isinstance(algebra, ScalarAlgebra):
             # TODO(eric.cousineau): Uncomment these lines if we can teach numpy
             # that reduction is not just selection.
-            npc.assert_equal(algebra.min(e_xv, e_yv), "min(x, y)")
-            npc.assert_equal(algebra.max(e_xv, e_yv), "max(x, y)")
+            numpy_compare.assert_equal(algebra.min(e_xv, e_yv), "min(x, y)")
+            numpy_compare.assert_equal(algebra.max(e_xv, e_yv), "max(x, y)")
             # TODO(eric.cousineau): Add broadcasting functions for these
             # operations.
-            npc.assert_equal(sym.atan(e_xv), "atan(x)")
-            npc.assert_equal(sym.if_then_else(e_xv > e_yv, e_xv, e_yv),
-                             "(if (x > y) then x else y)")
+            numpy_compare.assert_equal(sym.atan(e_xv), "atan(x)")
+            numpy_compare.assert_equal(
+                sym.if_then_else(e_xv > e_yv, e_xv, e_yv),
+                "(if (x > y) then x else y)")
 
         return xv, e_xv
 
@@ -439,44 +442,44 @@ class TestSymbolicExpression(unittest.TestCase):
         # TODO(eric.cousineau): Use `VectorizedAlgebra` overloads once #8315 is
         # resolved.
         # Expression rop Expression
-        npc.assert_equal(e_x < e_y, "(x < y)")
-        npc.assert_equal(e_x <= e_y, "(x <= y)")
-        npc.assert_equal(e_x > e_y, "(x > y)")
-        npc.assert_equal(e_x >= e_y, "(x >= y)")
-        npc.assert_equal(e_x == e_y, "(x == y)")
-        npc.assert_equal(e_x != e_y, "(x != y)")
+        numpy_compare.assert_equal(e_x < e_y, "(x < y)")
+        numpy_compare.assert_equal(e_x <= e_y, "(x <= y)")
+        numpy_compare.assert_equal(e_x > e_y, "(x > y)")
+        numpy_compare.assert_equal(e_x >= e_y, "(x >= y)")
+        numpy_compare.assert_equal(e_x == e_y, "(x == y)")
+        numpy_compare.assert_equal(e_x != e_y, "(x != y)")
 
         # Expression rop Variable
-        npc.assert_equal(e_x < y, "(x < y)")
-        npc.assert_equal(e_x <= y, "(x <= y)")
-        npc.assert_equal(e_x > y, "(x > y)")
-        npc.assert_equal(e_x >= y, "(x >= y)")
-        npc.assert_equal(e_x == y, "(x == y)")
-        npc.assert_equal(e_x != y, "(x != y)")
+        numpy_compare.assert_equal(e_x < y, "(x < y)")
+        numpy_compare.assert_equal(e_x <= y, "(x <= y)")
+        numpy_compare.assert_equal(e_x > y, "(x > y)")
+        numpy_compare.assert_equal(e_x >= y, "(x >= y)")
+        numpy_compare.assert_equal(e_x == y, "(x == y)")
+        numpy_compare.assert_equal(e_x != y, "(x != y)")
 
         # Variable rop Expression
-        npc.assert_equal(x < e_y, "(x < y)")
-        npc.assert_equal(x <= e_y, "(x <= y)")
-        npc.assert_equal(x > e_y, "(x > y)")
-        npc.assert_equal(x >= e_y, "(x >= y)")
-        npc.assert_equal(x == e_y, "(x == y)")
-        npc.assert_equal(x != e_y, "(x != y)")
+        numpy_compare.assert_equal(x < e_y, "(x < y)")
+        numpy_compare.assert_equal(x <= e_y, "(x <= y)")
+        numpy_compare.assert_equal(x > e_y, "(x > y)")
+        numpy_compare.assert_equal(x >= e_y, "(x >= y)")
+        numpy_compare.assert_equal(x == e_y, "(x == y)")
+        numpy_compare.assert_equal(x != e_y, "(x != y)")
 
         # Expression rop float
-        npc.assert_equal(e_x < 1, "(x < 1)")
-        npc.assert_equal(e_x <= 1, "(x <= 1)")
-        npc.assert_equal(e_x > 1, "(x > 1)")
-        npc.assert_equal(e_x >= 1, "(x >= 1)")
-        npc.assert_equal(e_x == 1, "(x == 1)")
-        npc.assert_equal(e_x != 1, "(x != 1)")
+        numpy_compare.assert_equal(e_x < 1, "(x < 1)")
+        numpy_compare.assert_equal(e_x <= 1, "(x <= 1)")
+        numpy_compare.assert_equal(e_x > 1, "(x > 1)")
+        numpy_compare.assert_equal(e_x >= 1, "(x >= 1)")
+        numpy_compare.assert_equal(e_x == 1, "(x == 1)")
+        numpy_compare.assert_equal(e_x != 1, "(x != 1)")
 
         # float rop Expression
-        npc.assert_equal(1 < e_y, "(y > 1)")
-        npc.assert_equal(1 <= e_y, "(y >= 1)")
-        npc.assert_equal(1 > e_y, "(y < 1)")
-        npc.assert_equal(1 >= e_y, "(y <= 1)")
-        npc.assert_equal(1 == e_y, "(y == 1)")
-        npc.assert_equal(1 != e_y, "(y != 1)")
+        numpy_compare.assert_equal(1 < e_y, "(y > 1)")
+        numpy_compare.assert_equal(1 <= e_y, "(y >= 1)")
+        numpy_compare.assert_equal(1 > e_y, "(y < 1)")
+        numpy_compare.assert_equal(1 >= e_y, "(y <= 1)")
+        numpy_compare.assert_equal(1 == e_y, "(y == 1)")
+        numpy_compare.assert_equal(1 != e_y, "(y != 1)")
 
     def test_relational_operators_nonzero(self):
         # For issues #8135 and #8491. See `pydrake.math` for operator overloads
@@ -512,28 +515,28 @@ class TestSymbolicExpression(unittest.TestCase):
         # supported.
         v_x = 1.0
         v_y = 1.0
-        npc.assert_equal(sym.abs(v_x), np.abs(v_x))
-        npc.assert_not_equal(sym.abs(v_x), 0.5*np.abs(v_x))
-        npc.assert_equal(sym.abs(v_x), np.abs(v_x))
-        npc.assert_equal(sym.abs(v_x), np.abs(v_x))
-        npc.assert_equal(sym.exp(v_x), np.exp(v_x))
-        npc.assert_equal(sym.sqrt(v_x), np.sqrt(v_x))
-        npc.assert_equal(sym.pow(v_x, v_y), v_x ** v_y)
-        npc.assert_equal(sym.sin(v_x), np.sin(v_x))
-        npc.assert_equal(sym.cos(v_x), np.cos(v_x))
-        npc.assert_equal(sym.tan(v_x), np.tan(v_x))
-        npc.assert_equal(sym.asin(v_x), np.arcsin(v_x))
-        npc.assert_equal(sym.acos(v_x), np.arccos(v_x))
-        npc.assert_equal(sym.atan(v_x), np.arctan(v_x))
-        npc.assert_equal(sym.atan2(v_x, v_y), np.arctan2(v_x, v_y))
-        npc.assert_equal(sym.sinh(v_x), np.sinh(v_x))
-        npc.assert_equal(sym.cosh(v_x), np.cosh(v_x))
-        npc.assert_equal(sym.tanh(v_x), np.tanh(v_x))
-        npc.assert_equal(sym.min(v_x, v_y), min(v_x, v_y))
-        npc.assert_equal(sym.max(v_x, v_y), max(v_x, v_y))
-        npc.assert_equal(sym.ceil(v_x), np.ceil(v_x))
-        npc.assert_equal(sym.floor(v_x), np.floor(v_x))
-        npc.assert_equal(
+        numpy_compare.assert_equal(sym.abs(v_x), np.abs(v_x))
+        numpy_compare.assert_not_equal(sym.abs(v_x), 0.5*np.abs(v_x))
+        numpy_compare.assert_equal(sym.abs(v_x), np.abs(v_x))
+        numpy_compare.assert_equal(sym.abs(v_x), np.abs(v_x))
+        numpy_compare.assert_equal(sym.exp(v_x), np.exp(v_x))
+        numpy_compare.assert_equal(sym.sqrt(v_x), np.sqrt(v_x))
+        numpy_compare.assert_equal(sym.pow(v_x, v_y), v_x ** v_y)
+        numpy_compare.assert_equal(sym.sin(v_x), np.sin(v_x))
+        numpy_compare.assert_equal(sym.cos(v_x), np.cos(v_x))
+        numpy_compare.assert_equal(sym.tan(v_x), np.tan(v_x))
+        numpy_compare.assert_equal(sym.asin(v_x), np.arcsin(v_x))
+        numpy_compare.assert_equal(sym.acos(v_x), np.arccos(v_x))
+        numpy_compare.assert_equal(sym.atan(v_x), np.arctan(v_x))
+        numpy_compare.assert_equal(sym.atan2(v_x, v_y), np.arctan2(v_x, v_y))
+        numpy_compare.assert_equal(sym.sinh(v_x), np.sinh(v_x))
+        numpy_compare.assert_equal(sym.cosh(v_x), np.cosh(v_x))
+        numpy_compare.assert_equal(sym.tanh(v_x), np.tanh(v_x))
+        numpy_compare.assert_equal(sym.min(v_x, v_y), min(v_x, v_y))
+        numpy_compare.assert_equal(sym.max(v_x, v_y), max(v_x, v_y))
+        numpy_compare.assert_equal(sym.ceil(v_x), np.ceil(v_x))
+        numpy_compare.assert_equal(sym.floor(v_x), np.floor(v_x))
+        numpy_compare.assert_equal(
             sym.if_then_else(
                 sym.Expression(v_x) > sym.Expression(v_y),
                 v_x, v_y),
@@ -547,22 +550,22 @@ class TestSymbolicExpression(unittest.TestCase):
         #    |sin(y)    x * cos(y)|
         #    | 2 * x             0|
         J = sym.Jacobian([x * sym.cos(y), x * sym.sin(y), x ** 2], [x, y])
-        npc.assert_equal(J[0, 0], sym.cos(y))
-        npc.assert_equal(J[1, 0], sym.sin(y))
-        npc.assert_equal(J[2, 0], 2 * x)
-        npc.assert_equal(J[0, 1], - x * sym.sin(y))
-        npc.assert_equal(J[1, 1], x * sym.cos(y))
-        npc.assert_equal(J[2, 1], sym.Expression(0))
+        numpy_compare.assert_equal(J[0, 0], sym.cos(y))
+        numpy_compare.assert_equal(J[1, 0], sym.sin(y))
+        numpy_compare.assert_equal(J[2, 0], 2 * x)
+        numpy_compare.assert_equal(J[0, 1], - x * sym.sin(y))
+        numpy_compare.assert_equal(J[1, 1], x * sym.cos(y))
+        numpy_compare.assert_equal(J[2, 1], sym.Expression(0))
 
     def test_method_jacobian(self):
         # (x * cos(y)).Jacobian([x, y]) returns [cos(y), -x * sin(y)].
         J = (x * sym.cos(y)).Jacobian([x, y])
-        npc.assert_equal(J[0], sym.cos(y))
-        npc.assert_equal(J[1], -x * sym.sin(y))
+        numpy_compare.assert_equal(J[0], sym.cos(y))
+        numpy_compare.assert_equal(J[1], -x * sym.sin(y))
 
     def test_differentiate(self):
         e = x * x
-        npc.assert_equal(e.Differentiate(x), 2 * x)
+        numpy_compare.assert_equal(e.Differentiate(x), 2 * x)
 
     def test_repr(self):
         self.assertEqual(repr(e_x), '<Expression "x">')
@@ -609,18 +612,18 @@ class TestSymbolicExpression(unittest.TestCase):
 
     def test_substitute_with_pair(self):
         e = x + y
-        npc.assert_equal(e.Substitute(x, x + 5), x + y + 5)
-        npc.assert_equal(e.Substitute(y, z), x + z)
-        npc.assert_equal(e.Substitute(y, 3), x + 3)
+        numpy_compare.assert_equal(e.Substitute(x, x + 5), x + y + 5)
+        numpy_compare.assert_equal(e.Substitute(y, z), x + z)
+        numpy_compare.assert_equal(e.Substitute(y, 3), x + 3)
 
     def test_substitute_with_dict(self):
         e = x + y
         env = {x: x + 2, y:  y + 3}
-        npc.assert_equal(e.Substitute(env), x + y + 5)
+        numpy_compare.assert_equal(e.Substitute(env), x + y + 5)
 
     def test_copy(self):
-        npc.assert_equal(copy.copy(e_x), e_x)
-        npc.assert_equal(copy.deepcopy(e_x), e_x)
+        numpy_compare.assert_equal(copy.copy(e_x), e_x)
+        numpy_compare.assert_equal(copy.deepcopy(e_x), e_x)
 
     # See `math_overloads_test` for more comprehensive checks on math
     # functions.
@@ -740,9 +743,9 @@ class TestSymbolicMonomial(unittest.TestCase):
 
     def test_str(self):
         m1 = sym.Monomial(x, 2)
-        npc.assert_equal(m1, "x^2")
+        numpy_compare.assert_equal(m1, "x^2")
         m2 = m1 * sym.Monomial(y)
-        npc.assert_equal(m2, "x^2 * y")
+        numpy_compare.assert_equal(m2, "x^2 * y")
 
     def test_repr(self):
         m = sym.Monomial(x, 2)
@@ -798,7 +801,7 @@ class TestSymbolicMonomial(unittest.TestCase):
     def test_to_expression(self):
         m = sym.Monomial(x, 3) * sym.Monomial(y)  # m = x³y
         e = m.ToExpression()
-        npc.assert_equal(e, "(pow(x, 3) * y)")
+        numpy_compare.assert_equal(e, "(pow(x, 3) * y)")
 
     def test_get_variables(self):
         m = sym.Monomial(x, 3) * sym.Monomial(y)  # m = x³y
@@ -835,19 +838,19 @@ class TestSymbolicMonomial(unittest.TestCase):
 class TestSymbolicPolynomial(unittest.TestCase):
     def test_default_constructor(self):
         p = sym.Polynomial()
-        npc.assert_equal(p.ToExpression(), sym.Expression())
+        numpy_compare.assert_equal(p.ToExpression(), sym.Expression())
 
     def test_constructor_maptype(self):
         m = {sym.Monomial(x): sym.Expression(3),
              sym.Monomial(y): sym.Expression(2)}  # 3x + 2y
         p = sym.Polynomial(m)
         expected = 3 * x + 2 * y
-        npc.assert_equal(p.ToExpression(), expected)
+        numpy_compare.assert_equal(p.ToExpression(), expected)
 
     def test_constructor_expression(self):
         e = 2 * x + 3 * y
         p = sym.Polynomial(e)
-        npc.assert_equal(p.ToExpression(), e)
+        numpy_compare.assert_equal(p.ToExpression(), e)
 
     def test_constructor_expression_indeterminates(self):
         e = a * x + b * y + c * z
@@ -868,34 +871,34 @@ class TestSymbolicPolynomial(unittest.TestCase):
         e = a * (x ** 2)
         p = sym.Polynomial(e, [x])
         the_map = p.monomial_to_coefficient_map()
-        npc.assert_equal(the_map[m], a)
+        numpy_compare.assert_equal(the_map[m], a)
 
     def test_differentiate(self):
         e = a * (x ** 2)
         p = sym.Polynomial(e, [x])  # p = ax²
         result = p.Differentiate(x)  # = 2ax
-        npc.assert_equal(result.ToExpression(), 2 * a * x)
+        numpy_compare.assert_equal(result.ToExpression(), 2 * a * x)
 
     def test_add_product(self):
         p = sym.Polynomial()
         m = sym.Monomial(x)
         p.AddProduct(sym.Expression(3), m)  # p += 3 * x
-        npc.assert_equal(p.ToExpression(), 3 * x)
+        numpy_compare.assert_equal(p.ToExpression(), 3 * x)
 
     def test_remove_terms_with_small_coefficients(self):
         e = 3 * x + 1e-12 * y
         p = sym.Polynomial(e, [x, y])
         q = p.RemoveTermsWithSmallCoefficients(1e-6)
-        npc.assert_equal(q.ToExpression(), 3 * x)
+        numpy_compare.assert_equal(q.ToExpression(), 3 * x)
 
     def test_comparison(self):
         p = sym.Polynomial()
-        npc.assert_equal(p, p)
+        numpy_compare.assert_equal(p, p)
         self.assertIsInstance(p == p, sym.Formula)
         self.assertEqual(p == p, sym.Formula.True_())
         self.assertTrue(p.EqualTo(p))
         q = sym.Polynomial(sym.Expression(10))
-        npc.assert_not_equal(p, q)
+        numpy_compare.assert_not_equal(p, q)
         self.assertIsInstance(p != q, sym.Formula)
         self.assertEqual(p != q, sym.Formula.True_())
         self.assertFalse(p.EqualTo(q))
@@ -906,63 +909,63 @@ class TestSymbolicPolynomial(unittest.TestCase):
 
     def test_addition(self):
         p = sym.Polynomial()
-        npc.assert_equal(p + p, p)
+        numpy_compare.assert_equal(p + p, p)
         m = sym.Monomial(x)
-        npc.assert_equal(m + p, sym.Polynomial(1 * x))
-        npc.assert_equal(p + m, sym.Polynomial(1 * x))
-        npc.assert_equal(p + 0, p)
-        npc.assert_equal(0 + p, p)
+        numpy_compare.assert_equal(m + p, sym.Polynomial(1 * x))
+        numpy_compare.assert_equal(p + m, sym.Polynomial(1 * x))
+        numpy_compare.assert_equal(p + 0, p)
+        numpy_compare.assert_equal(0 + p, p)
 
     def test_subtraction(self):
         p = sym.Polynomial()
-        npc.assert_equal(p - p, p)
+        numpy_compare.assert_equal(p - p, p)
         m = sym.Monomial(x)
-        npc.assert_equal(m - p, sym.Polynomial(1 * x))
-        npc.assert_equal(p - m, sym.Polynomial(-1 * x))
-        npc.assert_equal(p - 0, p)
-        npc.assert_equal(0 - p, -p)
+        numpy_compare.assert_equal(m - p, sym.Polynomial(1 * x))
+        numpy_compare.assert_equal(p - m, sym.Polynomial(-1 * x))
+        numpy_compare.assert_equal(p - 0, p)
+        numpy_compare.assert_equal(0 - p, -p)
 
     def test_multiplication(self):
         p = sym.Polynomial()
-        npc.assert_equal(p * p, p)
+        numpy_compare.assert_equal(p * p, p)
         m = sym.Monomial(x)
-        npc.assert_equal(m * p, p)
-        npc.assert_equal(p * m, p)
-        npc.assert_equal(p * 0, p)
-        npc.assert_equal(0 * p, p)
+        numpy_compare.assert_equal(m * p, p)
+        numpy_compare.assert_equal(p * m, p)
+        numpy_compare.assert_equal(p * 0, p)
+        numpy_compare.assert_equal(0 * p, p)
 
     def test_addition_assignment(self):
         p = sym.Polynomial()
         p += p
-        npc.assert_equal(p, sym.Polynomial())
+        numpy_compare.assert_equal(p, sym.Polynomial())
         p += sym.Monomial(x)
-        npc.assert_equal(p, sym.Polynomial(1 * x))
+        numpy_compare.assert_equal(p, sym.Polynomial(1 * x))
         p += 3
-        npc.assert_equal(p, sym.Polynomial(3 + 1 * x))
+        numpy_compare.assert_equal(p, sym.Polynomial(3 + 1 * x))
 
     def test_subtraction_assignment(self):
         p = sym.Polynomial()
         p -= p
-        npc.assert_equal(p, sym.Polynomial())
+        numpy_compare.assert_equal(p, sym.Polynomial())
         p -= sym.Monomial(x)
-        npc.assert_equal(p, sym.Polynomial(-1 * x))
+        numpy_compare.assert_equal(p, sym.Polynomial(-1 * x))
         p -= 3
-        npc.assert_equal(p, sym.Polynomial(-1 * x - 3))
+        numpy_compare.assert_equal(p, sym.Polynomial(-1 * x - 3))
 
     def test_multiplication_assignment(self):
         p = sym.Polynomial()
         p *= p
-        npc.assert_equal(p, sym.Polynomial())
+        numpy_compare.assert_equal(p, sym.Polynomial())
         p *= sym.Monomial(x)
-        npc.assert_equal(p, sym.Polynomial())
+        numpy_compare.assert_equal(p, sym.Polynomial())
         p *= 3
-        npc.assert_equal(p, sym.Polynomial())
+        numpy_compare.assert_equal(p, sym.Polynomial())
 
     def test_pow(self):
         e = a * (x ** 2)
         p = sym.Polynomial(e, [x])  # p = ax²
         p = pow(p, 2)  # p = a²x⁴
-        npc.assert_equal(p.ToExpression(), (a ** 2) * (x ** 4))
+        numpy_compare.assert_equal(p.ToExpression(), (a ** 2) * (x ** 4))
 
     def test_jacobian(self):
         e = 5 * x ** 2 + 4 * y ** 2 + 8 * x * y
@@ -971,21 +974,23 @@ class TestSymbolicPolynomial(unittest.TestCase):
         p_dy = sym.Polynomial(8 * y + 8 * x, [x, y])   # ∂p/∂y =  8y + 8x
 
         J = p.Jacobian([x, y])
-        npc.assert_equal(J[0], p_dx)
-        npc.assert_equal(J[1], p_dy)
+        numpy_compare.assert_equal(J[0], p_dx)
+        numpy_compare.assert_equal(J[1], p_dy)
 
     def test_matrix_substitute_with_substitution(self):
         m = np.array([[x + y, x * y]])
         env = {x: x + 2, y:  y + 3}
         substituted = sym.Substitute(m, env)
-        npc.assert_equal(substituted[0, 0], m[0, 0].Substitute(env))
-        npc.assert_equal(substituted[0, 1], m[0, 1].Substitute(env))
+        numpy_compare.assert_equal(substituted[0, 0], m[0, 0].Substitute(env))
+        numpy_compare.assert_equal(substituted[0, 1], m[0, 1].Substitute(env))
 
     def test_matrix_substitute_with_variable_and_expression(self):
         m = np.array([[x + y, x * y]])
         substituted = sym.Substitute(m, x, 3.0)
-        npc.assert_equal(substituted[0, 0], m[0, 0].Substitute(x, 3.0))
-        npc.assert_equal(substituted[0, 1], m[0, 1].Substitute(x, 3.0))
+        numpy_compare.assert_equal(
+            substituted[0, 0], m[0, 0].Substitute(x, 3.0))
+        numpy_compare.assert_equal(
+            substituted[0, 1], m[0, 1].Substitute(x, 3.0))
 
     def test_matrix_evaluate_without_env(self):
         m = np.array([[3, 4]])
@@ -1018,10 +1023,10 @@ class TestSymbolicPolynomial(unittest.TestCase):
     def test_hash(self):
         p1 = sym.Polynomial(x * x, [x])
         p2 = sym.Polynomial(x * x, [x])
-        npc.assert_equal(p1, p2)
+        numpy_compare.assert_equal(p1, p2)
         self.assertEqual(hash(p1), hash(p2))
         p1 += 1
-        npc.assert_not_equal(p1, p2)
+        numpy_compare.assert_not_equal(p1, p2)
         self.assertNotEqual(hash(p1), hash(p2))
 
     def test_polynomial_evaluate(self):
@@ -1050,9 +1055,9 @@ class TestSymbolicPolynomial(unittest.TestCase):
         env = {a: 2.0,
                b: 3.0,
                c: 5.0}
-        npc.assert_equal(p.EvaluatePartial(env),
-                         sym.Polynomial(env[a] * x * x + env[b] * x + env[c],
-                         [x]))
-
-        npc.assert_equal(p.EvaluatePartial(a, 2),
-                         sym.Polynomial(2 * x * x + b * x + c, [x]))
+        numpy_compare.assert_equal(
+            p.EvaluatePartial(env),
+            sym.Polynomial(env[a] * x * x + env[b] * x + env[c], [x]))
+        numpy_compare.assert_equal(
+            p.EvaluatePartial(a, 2),
+            sym.Polynomial(2 * x * x + b * x + c, [x]))
