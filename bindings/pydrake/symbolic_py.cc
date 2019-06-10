@@ -571,6 +571,18 @@ PYBIND11_MODULE(symbolic, m) {
             return self.Evaluate(Environment{env});
           },
           doc.Polynomial.Evaluate.doc)
+      // TODO(Eric.Cousineau): add python binding for symbolic::Environment.
+      .def("EvaluatePartial",
+          [](const Polynomial& self, const Environment::map& env) {
+            return self.EvaluatePartial(Environment{env});
+          },
+          py::arg("env"), doc.Polynomial.EvaluatePartial.doc_1args)
+      .def("EvaluatePartial",
+          [](const Polynomial& self, const Variable& var, double c) {
+            return self.EvaluatePartial(var, c);
+          },
+          py::arg("var"), py::arg("c"),
+          doc.Polynomial.EvaluatePartial.doc_2args)
       .def("Jacobian",
           [](const Polynomial& p,
               const Eigen::Ref<const VectorX<Variable>>& vars) {
