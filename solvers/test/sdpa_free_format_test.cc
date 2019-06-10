@@ -504,7 +504,7 @@ TEST_F(TrivialSOCP1, TestSdpaFreeFormatConstructor) {
         dut, i + 1, DecisionVariableInSdpaX(Sign::kPositive, 0, 0, i, i, 0));
   }
 
-  // Check the cost max x(0)
+  // Check the cost max x(0).
   EXPECT_EQ(dut.C_triplets().size(), 0);
   EXPECT_TRUE(CompareMatrices(Eigen::VectorXd(dut.d()), Vector1d(1)));
 
@@ -535,7 +535,7 @@ TEST_F(TrivialSOCP1, TestSdpaFreeFormatConstructor) {
   }
 
   // The equality constraint arising from the Lorentz cone. 3x(1) + 2 =
-  // X_blocks()[1](0, 1)
+  // X_blocks()[1](0, 1).
   std::vector<Eigen::Triplet<double>> A4_triplets_expected;
   A4_triplets_expected.emplace_back(0, 0, 3);
   A4_triplets_expected.emplace_back(2, 3, -0.5);
@@ -545,7 +545,7 @@ TEST_F(TrivialSOCP1, TestSdpaFreeFormatConstructor) {
   g_expected(4) = -2;
 
   // The equality constraint arising from the Lorentz cone. x(0) + x(2) + 3 =
-  // X_blocks()[1](0, 2)
+  // X_blocks()[1](0, 2).
   std::vector<Eigen::Triplet<double>> A5_triplets_expected;
   A5_triplets_expected.emplace_back(1, 1, 1);
   A5_triplets_expected.emplace_back(2, 4, -0.5);
@@ -556,7 +556,7 @@ TEST_F(TrivialSOCP1, TestSdpaFreeFormatConstructor) {
   g_expected(5) = -3;
 
   // The equality constraint arising from the Lorentz cone X_blocks()[1](1, 2) =
-  // 0
+  // 0.
   std::vector<Eigen::Triplet<double>> A6_triplets_expected;
   A6_triplets_expected.emplace_back(3, 4, 0.5);
   A6_triplets_expected.emplace_back(4, 3, 0.5);
@@ -588,7 +588,7 @@ TEST_F(TrivialSOCP2, TestSdpaFreeFormatConstructor) {
   std::vector<Eigen::Triplet<double>> B_triplets_expected;
   Vector6<double> g_expected;
   // Check the linear equality constraint arising from Lorentz cone. X(i, i) =
-  // x(0) + 2 for i = 0, 1, 2
+  // x(0) + 2 for i = 0, 1, 2.
   for (int i = 0; i < 3; ++i) {
     CompareTriplets(dut.A_triplets()[i], {Eigen::Triplet<double>(i, i, -1)},
                     dut.num_X_rows(), dut.num_X_rows());
@@ -596,7 +596,7 @@ TEST_F(TrivialSOCP2, TestSdpaFreeFormatConstructor) {
     g_expected(i) = -2;
   }
   // Check the linear equality constraint arising from Lorentz cone, X(0, 1) =
-  // x(0) + x(1) + 1
+  // x(0) + x(1) + 1.
   CompareTriplets(
       dut.A_triplets()[3],
       {Eigen::Triplet<double>(0, 1, -0.5), Eigen::Triplet<double>(1, 0, -0.5)},
@@ -605,7 +605,7 @@ TEST_F(TrivialSOCP2, TestSdpaFreeFormatConstructor) {
   B_triplets_expected.emplace_back(3, 1, 1);
   g_expected(3) = -1;
   // Check the linear equality constraint arising from Lorentz cone, X(0, 2) =
-  // x(0) - x(1) + 1
+  // x(0) - x(1) + 1.
   CompareTriplets(
       dut.A_triplets()[4],
       {Eigen::Triplet<double>(0, 2, -0.5), Eigen::Triplet<double>(2, 0, -0.5)},
@@ -614,7 +614,7 @@ TEST_F(TrivialSOCP2, TestSdpaFreeFormatConstructor) {
   B_triplets_expected.emplace_back(4, 1, -1);
   g_expected(4) = -1;
   // Check the linear equality constraint arising from Lorentz cone, X(1, 2) =
-  // 0
+  // 0.
   CompareTriplets(
       dut.A_triplets()[5],
       {Eigen::Triplet<double>(1, 2, 0.5), Eigen::Triplet<double>(2, 1, 0.5)},
@@ -638,7 +638,7 @@ TEST_F(TrivialSOCP3, TestSdpaFreeFormatConstructor) {
     CompareProgVarInSdpa(dut, i, SdpaFreeFormat::FreeVariableIndex(i));
   }
 
-  // Check the cost max -x(1)
+  // Check the cost max -x(1).
   EXPECT_EQ(dut.C_triplets().size(), 0);
   CompareTriplets(dut.d_triplets(), {Eigen::Triplet<double>(1, 0, -1)}, 2, 1);
 
@@ -646,14 +646,14 @@ TEST_F(TrivialSOCP3, TestSdpaFreeFormatConstructor) {
   std::vector<Eigen::Triplet<double>> B_triplets_expected;
   Vector6<double> g_expected;
   // Check the equality constraint arising from rotated Lorentz cone
-  // 2x(0) + 2 = X(0, 0)
+  // 2x(0) + 2 = X(0, 0).
   CompareTriplets(dut.A_triplets()[0], {Eigen::Triplet<double>(0, 0, -1)},
                   dut.num_X_rows(), dut.num_X_rows());
   B_triplets_expected.emplace_back(0, 0, 2);
   g_expected(0) = -2;
 
   // Check the equality constraint arising from rotated Lorentz cone
-  // x(0) + 2 = X(0, 1)
+  // x(0) + 2 = X(0, 1).
   CompareTriplets(
       dut.A_triplets()[1],
       {Eigen::Triplet<double>(0, 1, -0.5), Eigen::Triplet<double>(1, 0, -0.5)},
@@ -662,7 +662,7 @@ TEST_F(TrivialSOCP3, TestSdpaFreeFormatConstructor) {
   g_expected(1) = -2;
 
   // Check the equality constraint arising from rotated Lorentz cone
-  // 3x(0) + x(1) + 1 = X(0, 2)
+  // 3x(0) + x(1) + 1 = X(0, 2).
   CompareTriplets(
       dut.A_triplets()[2],
       {Eigen::Triplet<double>(0, 2, -0.5), Eigen::Triplet<double>(2, 0, -0.5)},
@@ -672,7 +672,7 @@ TEST_F(TrivialSOCP3, TestSdpaFreeFormatConstructor) {
   g_expected(2) = -1;
 
   // Check the equality constraint arising from rotated Lorentz cone
-  // 3x(1) + 4 = X(1, 1) and 3x(1) + 4 = X(2, 2)
+  // 3x(1) + 4 = X(1, 1) and 3x(1) + 4 = X(2, 2).
   for (int i = 0; i < 2; ++i) {
     CompareTriplets(dut.A_triplets()[3 + i],
                     {Eigen::Triplet<double>(i + 1, i + 1, -1)},
@@ -682,7 +682,7 @@ TEST_F(TrivialSOCP3, TestSdpaFreeFormatConstructor) {
   }
 
   // Check the equality constraint arising from rotated Lorentz cone
-  // X(1, 2) = 0
+  // X(1, 2) = 0.
   CompareTriplets(
       dut.A_triplets()[5],
       {Eigen::Triplet<double>(1, 2, 0.5), Eigen::Triplet<double>(2, 1, 0.5)},
