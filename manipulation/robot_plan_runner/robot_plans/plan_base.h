@@ -19,7 +19,8 @@ namespace robot_plans {
  * ports of the port_switch. As port 0 is reserved for the port_selector
  * input port, indices of user-defined ports start with 1.
  */
-enum class PlanType { kEmptyPlan, kJointSpacePlan, kTaskSpacePlan };
+enum class PlanType { kEmptyPlan, kTaskSpacePlan, kJointSpacePlan,
+    kLastElement };
 
 struct PlanData {
   PlanType plan_type{PlanType::kEmptyPlan};

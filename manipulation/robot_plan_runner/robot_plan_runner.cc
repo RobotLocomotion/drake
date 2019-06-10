@@ -48,12 +48,15 @@ RobotPlanRunner::RobotPlanRunner(bool is_discrete, double control_period_sec) {
                       "iiwa_torque_external");
   passthough_tau_external->set_name("PassThrough_tau_external");
 
-  // controller systems.
+  // Add controller systems in the order they appear in PlanType.
   std::vector<RobotController*> controllers;
-  controllers.push_back(builder.template AddSystem<RobotController>(
-      PlanType::kJointSpacePlan, control_period_sec));
-  controllers.push_back(builder.template AddSystem<RobotController>(
-      PlanType::kTaskSpacePlan, control_period_sec));
+  for(int i = 1; i < static_cast<int>(PlanType::kLastElement); i++) {
+    auto controller = builder.template AddSystem<RobotController>(
+        static_cast<PlanType>(i), control_period_sec);
+    controllers.push_back(controller);
+  }
+
+  // PortSwitch system.
   auto port_switch = builder.template AddSystem<systems::PortSwitch<double>>(
       controllers[0]->GetOutputPort("q_tau_cmd").size());
   port_switch->set_name("port_switch");

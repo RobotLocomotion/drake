@@ -31,6 +31,8 @@ RobotController::RobotController(PlanType plan_type, double control_period) :
       break;
     case PlanType::kEmptyPlan:
       break;
+    case PlanType::kLastElement:
+      break;
   }
 
   // input ports
