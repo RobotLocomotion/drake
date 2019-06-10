@@ -108,7 +108,8 @@ systems::EventStatus PlanSender::Initialize(const Context<double>& context,
     plan_data_list_.insert(plan_data_list_.begin(), zoh_plan);
   }
 
-  // initialize plan list
+  // Initialize plan_start_times_ and update each plan's plan_signature to a
+  // positive integer.
   int i = 0;
   plan_start_times_.push_back(0);
   for (auto& plan_data : plan_data_list_) {
