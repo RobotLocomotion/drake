@@ -4,7 +4,9 @@
 
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/common/trajectories/piecewise_quaternion.h"
 #include "drake/common/trajectories/trajectory.h"
 
 namespace drake {
@@ -102,6 +104,38 @@ PYBIND11_MODULE(trajectories, m) {
           doc.PiecewisePolynomial.slice.doc)
       .def("shiftRight", &PiecewisePolynomial<T>::shiftRight, py::arg("offset"),
           doc.PiecewisePolynomial.shiftRight.doc);
+
+  py::class_<PiecewiseQuaternionSlerp<T>, PiecewiseTrajectory<T>>(
+      m, "PiecewiseQuaternionSlerp", doc.PiecewiseQuaternionSlerp.doc)
+      .def(py::init<>(), doc.PiecewiseQuaternionSlerp.ctor.doc_0args)
+      .def(py::init<const std::vector<double>&,
+                    const std::vector<Quaternion<T>>&>(),
+          py::arg("breaks"), py::arg("quaternions"),
+          doc.PiecewiseQuaternionSlerp.ctor.doc_2args_breaks_quaternions)
+      .def(py::init<const std::vector<double>&,
+                    const std::vector<Matrix3<T>>&>(),
+          py::arg("breaks"), py::arg("rot_matrices"),
+          doc.PiecewiseQuaternionSlerp.ctor.doc_2args_breaks_rot_matrices)
+      .def(py::init<const std::vector<double>&,
+                    const std::vector<AngleAxis<T>>&>(),
+          py::arg("breaks"), py::arg("ang_axes"),
+          doc.PiecewiseQuaternionSlerp.ctor.doc_2args_breaks_ang_axes)
+      .def("rows", &PiecewiseQuaternionSlerp<T>::rows,
+          doc.PiecewiseQuaternionSlerp.rows.doc)
+      .def("cols", &PiecewiseQuaternionSlerp<T>::cols,
+          doc.PiecewiseQuaternionSlerp.cols.doc)
+      .def("orientation", &PiecewiseQuaternionSlerp<T>::orientation,
+          py::arg("t"), doc.PiecewiseQuaternionSlerp.orientation.doc)
+      .def("value", &PiecewiseQuaternionSlerp<T>::value,
+          py::arg("t"), doc.PiecewiseQuaternionSlerp.value.doc)
+      .def("angular_velocity", &PiecewiseQuaternionSlerp<T>::angular_velocity,
+          py::arg("t"), doc.PiecewiseQuaternionSlerp.angular_velocity.doc)
+      .def("angular_acceleration", &PiecewiseQuaternionSlerp<T>::angular_acceleration,
+          py::arg("t"), doc.PiecewiseQuaternionSlerp.angular_acceleration.doc)
+      .def("get_quaternion_knots", &PiecewiseQuaternionSlerp<T>::get_quaternion_knots,
+          doc.PiecewiseQuaternionSlerp.get_quaternion_knots.doc)
+      .def("is_approx", &PiecewiseQuaternionSlerp<T>::is_approx,
+          py::arg("other"), py::arg("tol"), doc.PiecewiseQuaternionSlerp.is_approx.doc);
 }
 
 }  // namespace pydrake
