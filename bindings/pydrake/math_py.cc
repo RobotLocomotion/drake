@@ -134,7 +134,7 @@ void DoDefinitions(py::module m, T) {
         .def(py::init<Eigen::Quaternion<T>>(), py::arg("quaternion"),
             cls_doc.ctor.doc_1args_quaternion)
         .def(py::init<const Eigen::AngleAxis<T>&>(), py::arg("theta_lambda"),
-            cls_doc.ctor.doc_1args_rpy)  // This is wrong doc string
+            cls_doc.ctor.doc_1args_theta_lambda)
         .def(py::init<const RollPitchYaw<T>&>(), py::arg("rpy"),
             cls_doc.ctor.doc_1args_rpy)
         .def_static("MakeXRotation", &Class::MakeXRotation, py::arg("theta"),
