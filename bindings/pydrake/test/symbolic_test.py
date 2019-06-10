@@ -1044,3 +1044,15 @@ class TestSymbolicPolynomial(unittest.TestCase):
         env = {x: float('nan')}
         with self.assertRaises(RuntimeError):
             p.Evaluate(env)
+
+    def test_polynomial_evaluate_partial(self):
+        p = sym.Polynomial(a * x * x + b * x + c, [x])
+        env = {a: 2.0,
+               b: 3.0,
+               c: 5.0}
+        npc.assert_equal(p.EvaluatePartial(env),
+                         sym.Polynomial(env[a] * x * x + env[b] * x + env[c],
+                         [x]))
+
+        npc.assert_equal(p.EvaluatePartial(a, 2),
+                         sym.Polynomial(2 * x * x + b * x + c, [x]))
