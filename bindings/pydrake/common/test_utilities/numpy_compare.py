@@ -187,8 +187,26 @@ def _register_symbolic():
     def sym_struct_ne(a, b):
         assert not a.EqualTo(b), (a, b)
 
+    def from_bool(x):
+        assert isinstance(x, (bool, np.bool_)), type(x)
+        if x:
+            return Formula.True_()
+        else:
+            return Formula.False_()
+
+    def formula_bool_eq(a, b):
+        return sym_struct_eq(a, from_bool(b))
+
+    def formula_bool_ne(a, b):
+        return sym_struct_ne(a, from_bool(b))
+
     _registry.register_to_float(Expression, Expression.Evaluate)
     _registry.register_comparator(Formula, str, _str_eq, _str_ne)
+    # Ensure that we can do simple boolean comparison, e.g. in lieu of
+    # `unittest.TestCase.assertTrue`, use
+    # `numpy_compare.assert_equal(f, True)`.
+    _registry.register_comparator(
+        Formula, bool, formula_bool_eq, formula_bool_ne)
     lhs_types = [Variable, Expression, Polynomial, Monomial]
     rhs_types = lhs_types + [float]
     for lhs_type in lhs_types:
