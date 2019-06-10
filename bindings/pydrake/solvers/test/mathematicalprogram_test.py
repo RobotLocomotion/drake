@@ -377,6 +377,17 @@ class TestMathematicalProgram(unittest.TestCase):
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
 
+    def test_equality_between_polynomials(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewIndeterminates(1, "x")
+        a = prog.NewContinuousVariables(2, "a")
+        prog.AddEqualityConstraintBetweenPolynomials(sym.Polynomial(
+            2 * a[0] * x[0] + a[1] + 2, x), sym.Polynomial(2 * x[0] + 4, x))
+        result = mp.Solve(prog)
+        a_val = result.GetSolution(a)
+        self.assertAlmostEqual(a_val[0], 1)
+        self.assertAlmostEqual(a_val[1], 2)
+
     def test_log_determinant(self):
         # Find the minimal ellipsoid that covers some given points.
         prog = mp.MathematicalProgram()
