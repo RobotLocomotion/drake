@@ -42,9 +42,13 @@ class RenderLabelManager {
   /** Implementation of SceneGraph::GetRenderLabel().  */
   RenderLabel GetRenderLabel(SourceId source_id, std::string class_name);
 
-  /** Provides a report of all the allocated RenderLabel values and their
-   semantic classes (in no particular order).  */
-  std::vector<RenderLabelClass> GetRenderLabelClasses() const;
+  /** Returns the record of all allocated render labels and their semantic
+   classes. It is represented as a map from the _semantic name_ to the semantic
+   class's data. For semantic names that have been used by more than one source,
+   the semantic name will map to multiple semantic classes, distinguished by
+   their source id and RenderLabel value.  */
+  const std::unordered_multimap<std::string, RenderLabelClass>&
+  render_label_classes() const { return name_label_map_; }
 
  private:
   friend class RenderLabelManagerTester;

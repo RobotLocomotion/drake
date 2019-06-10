@@ -42,7 +42,7 @@ class DummyRenderEngine final : public render::RenderEngine {
 
   /** @group No-op implementation of RenderEngine interface.  */
   //@{
-  void UpdateViewpoint(const math::RigidTransformd&) const final {}
+  void UpdateViewpoint(const math::RigidTransformd&) final {}
   void RenderColorImage(const render::CameraProperties&, bool,
                         systems::sensors::ImageRgba8U*) const final {}
   void RenderDepthImage(const render::DepthCameraProperties&,

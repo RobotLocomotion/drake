@@ -620,22 +620,22 @@ class GeometryState {
   void AssignRoleInternal(SourceId source_id, GeometryId geometry_id,
                           PropertyType properties, Role role);
 
-  // Removes the indicated `role` from the indicated geometry. Returns 1 if the
-  // geometry formerly had that role, and 0 if not. This does no checking on
-  // ownership.
+  // Attempts to remove the indicated `role` from the indicated geometry.
+  // Returns true if removed (false doesn't imply "failure", just nothing to
+  // remove). This does no checking on ownership.
   // @pre geometry_id maps to a registered geometry.
-  int RemoveRoleUnchecked(GeometryId geometry_id, Role role);
+  bool RemoveRoleUnchecked(GeometryId geometry_id, Role role);
 
-  // Removes the geometry with the given `id` from the named renderer. Returns 1
-  // if the geometry formerly had been included in the renderer, 0 if not. This
-  // does no checking on ownership.
+  // Attempts to remove the geometry with the given `id` from the named
+  // renderer. Returns true if removed (false doesn't imply "failure", just
+  // nothing to remove). This does no checking on ownership.
   // @pre geometry_id maps to a registered geometry.
-  int RemoveFromRendererUnchecked(const std::string& renderer_name,
+  bool RemoveFromRendererUnchecked(const std::string& renderer_name,
                                   GeometryId id);
 
-  int RemoveProximityRole(GeometryId geometry_id);
-  int RemoveIllustrationRole(GeometryId geometry_id);
-  int RemovePerceptionRole(GeometryId geometry_id);
+  bool RemoveProximityRole(GeometryId geometry_id);
+  bool RemoveIllustrationRole(GeometryId geometry_id);
+  bool RemovePerceptionRole(GeometryId geometry_id);
 
   // When performing an operation on a frame, the caller provides its source id
   // and the id of the frame it owns as the operand. Generally, the validation
@@ -727,6 +727,9 @@ class GeometryState {
   // the proximity engine.
   // NOTE: There is no equivalent for anchored geometries because anchored
   // geometries do not need updating.
+  // TODO(SeanCurtis-TRI): Move this into the proximity engine. Its presence
+  // here is an anachronism. Better yet, this will die when we make GeometryId
+  // the only identifier that moves between GeometryState and the engines.
   std::vector<GeometryIndex> dynamic_proximity_index_to_internal_map_;
 
   // ---------------------------------------------------------------------

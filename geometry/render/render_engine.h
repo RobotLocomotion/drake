@@ -164,7 +164,7 @@ class RenderEngine : public ShapeReifier {
 
    @param X_WR  The pose of renderer's viewpoint in the world coordinate
                 system.  */
-  virtual void UpdateViewpoint(const math::RigidTransformd& X_WR) const = 0;
+  virtual void UpdateViewpoint(const math::RigidTransformd& X_WR) = 0;
 
   /** Renders the registered geometry into the given color (rgb) image.
 
