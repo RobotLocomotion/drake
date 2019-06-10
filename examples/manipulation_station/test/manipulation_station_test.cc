@@ -23,7 +23,7 @@ using systems::BasicVector;
 
 GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   ManipulationStation<double> station(0.001);
-  station.SetupDefaultStation();
+  station.SetupManipulationClassStation();
   multibody::Parser parser(&station.get_mutable_multibody_plant(),
                            &station.get_mutable_scene_graph());
   parser.AddModelFromFile(
@@ -123,7 +123,7 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
 GTEST_TEST(ManipulationStationTest, CheckDynamics) {
   const double kTimeStep = 0.002;
   ManipulationStation<double> station(kTimeStep);
-  station.SetupDefaultStation();
+  station.SetupManipulationClassStation();
   station.Finalize();
 
   auto context = station.CreateDefaultContext();
@@ -192,7 +192,7 @@ GTEST_TEST(ManipulationStationTest, CheckDynamics) {
 
 GTEST_TEST(ManipulationStationTest, CheckWsg) {
   ManipulationStation<double> station(0.001);
-  station.SetupDefaultStation();
+  station.SetupManipulationClassStation();
   station.Finalize();
 
   auto context = station.CreateDefaultContext();
@@ -216,7 +216,7 @@ GTEST_TEST(ManipulationStationTest, CheckWsg) {
 
 GTEST_TEST(ManipulationStationTest, CheckRGBDOutputs) {
   ManipulationStation<double> station(0.001);
-  station.SetupDefaultStation();
+  station.SetupManipulationClassStation();
   station.Finalize();
 
   auto context = station.CreateDefaultContext();
@@ -240,7 +240,7 @@ GTEST_TEST(ManipulationStationTest, CheckRGBDOutputs) {
 
 GTEST_TEST(ManipulationStationTest, CheckCollisionVariants) {
   ManipulationStation<double> station1(0.002);
-  station1.SetupDefaultStation(IiwaCollisionModel::kNoCollision);
+  station1.SetupManipulationClassStation(IiwaCollisionModel::kNoCollision);
 
   // In this variant, there are collision geometries from the world and the
   // gripper, but not from the iiwa.
@@ -248,7 +248,7 @@ GTEST_TEST(ManipulationStationTest, CheckCollisionVariants) {
       station1.get_multibody_plant().num_collision_geometries();
 
   ManipulationStation<double> station2(0.002);
-  station2.SetupDefaultStation(IiwaCollisionModel::kBoxCollision);
+  station2.SetupManipulationClassStation(IiwaCollisionModel::kBoxCollision);
   // Check for additional collision elements (one for each link, which includes
   // the base).
   EXPECT_EQ(station2.get_multibody_plant().num_collision_geometries(),
@@ -299,7 +299,7 @@ GTEST_TEST(ManipulationStationTest, SetupClutterClearingStation) {
 GTEST_TEST(ManipulationStationTest, MultipleInstanceTest) {
   for (int i = 0; i < 20; ++i) {
     ManipulationStation<double> station;
-    station.SetupDefaultStation();
+    station.SetupManipulationClassStation();
     station.Finalize();
   }
 }
@@ -327,7 +327,7 @@ GTEST_TEST(ManipulationStationTest, RegisterRgbdCameraTest) {
     };
 
     ManipulationStation<double> dut;
-    dut.SetupDefaultStation();
+    dut.SetupManipulationClassStation();
 
     std::map<std::string, math::RigidTransform<double>> camera_poses =
         dut.GetStaticCameraPosesInWorld();
@@ -438,7 +438,7 @@ GTEST_TEST(ManipulationStationTest, ConfigureRenderer) {
   // Case: no user render engines specified; has renderer with default name.
   {
     ManipulationStation<double> dut;
-    dut.SetupDefaultStation();
+    dut.SetupManipulationClassStation();
     dut.Finalize();
     const auto& scene_graph = dut.get_render_scene_graph();
     EXPECT_EQ(1, scene_graph.RendererCount());
@@ -448,7 +448,7 @@ GTEST_TEST(ManipulationStationTest, ConfigureRenderer) {
   // Case: multiple user-specified render engines provided.
   {
     ManipulationStation<double> dut;
-    dut.SetupDefaultStation();
+    dut.SetupManipulationClassStation();
     std::map<std::string, std::unique_ptr<geometry::dev::render::RenderEngine>>
         engines;
     const std::string name1 = "engine1";

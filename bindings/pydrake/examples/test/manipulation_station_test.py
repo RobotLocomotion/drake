@@ -19,7 +19,7 @@ class TestManipulationStation(unittest.TestCase):
     def test_manipulation_station(self):
         # Just check the spelling.
         station = ManipulationStation(time_step=0.001)
-        station.SetupDefaultStation()
+        station.SetupManipulationClassStation()
         station.SetWsgGains(0.1, 0.1)
         station.SetIiwaPositionGains(np.ones(7))
         station.SetIiwaVelocityGains(np.ones(7))

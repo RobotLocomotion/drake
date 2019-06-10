@@ -42,9 +42,20 @@ PYBIND11_MODULE(manipulation_station, m) {
   py::class_<ManipulationStation<T>, Diagram<T>>(m, "ManipulationStation")
       .def(py::init<double>(), py::arg("time_step") = 0.002,
           doc.ManipulationStation.ctor.doc)
-      .def("SetupDefaultStation", &ManipulationStation<T>::SetupDefaultStation,
+      .def("SetupManipulationClassStation",
+          &ManipulationStation<T>::SetupManipulationClassStation,
           py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
-          doc.ManipulationStation.SetupDefaultStation.doc)
+          doc.ManipulationStation.SetupManipulationClassStation.doc)
+      .def("SetupDefaultStation",
+          [](ManipulationStation<T>* self,
+              IiwaCollisionModel collision_model =
+                  IiwaCollisionModel::kNoCollision) {
+            WarnDeprecated(
+                "SetupDefaultStation is deprecated and will be removed on or"
+                "around 2019-09-01.  Please use SetupManipulationClassStation "
+                "instead.");
+            self->SetupManipulationClassStation(collision_model);
+          })
       .def("SetupClutterClearingStation",
           &ManipulationStation<T>::SetupClutterClearingStation,
           py::arg("X_WCameraBody") = nullopt,

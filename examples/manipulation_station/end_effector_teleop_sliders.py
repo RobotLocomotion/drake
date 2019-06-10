@@ -16,7 +16,7 @@ from pydrake.manipulation.simple_ui import SchunkWsgButtons
 from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters)
 from pydrake.multibody.parsing import Parser
-from pydrake.math import RigidTransform, RollPitchYaw
+from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (BasicVector, DiagramBuilder,
                                        LeafSystem)
@@ -174,9 +174,9 @@ parser.add_argument(
          "Note: The pre-defined velocity limits are specified by "
          "iiwa14_velocity_limits, found in this python file.")
 parser.add_argument(
-    '--setup', type=str, default='default',
+    '--setup', type=str, default='manipulation_class',
     help="The manipulation station setup to simulate. ",
-    choices=['default', 'clutter_clearing'])
+    choices=['manipulation_class', 'clutter_clearing'])
 
 MeshcatVisualizer.add_argparse_argument(parser)
 args = parser.parse_args()
@@ -190,8 +190,11 @@ else:
     station = builder.AddSystem(ManipulationStation())
 
     # Initializes the chosen station type.
-    if args.setup == 'default':
-        station.SetupDefaultStation()
+    if args.setup == 'manipulation_class':
+        station.SetupManipulationClassStation()
+        station.AddManipulandFromFile(
+            "drake/examples/manipulation_station/models/061_foam_brick.sdf",
+            RigidTransform(RotationMatrix.Identity(), [0.6, 0, 0]))
     elif args.setup == 'clutter_clearing':
         station.SetupClutterClearingStation()
         ycb_objects = CreateDefaultYcbObjectList()

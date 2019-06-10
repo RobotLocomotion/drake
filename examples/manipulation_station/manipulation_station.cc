@@ -234,10 +234,10 @@ void ManipulationStation<T>::SetupClutterClearingStation(
 }
 
 template <typename T>
-void ManipulationStation<T>::SetupDefaultStation(
-    const IiwaCollisionModel collision_model) {
+void ManipulationStation<T>::SetupManipulationClassStation(
+    IiwaCollisionModel collision_model) {
   DRAKE_DEMAND(setup_ == Setup::kNone);
-  setup_ = Setup::kDefault;
+  setup_ = Setup::kManipulationClass;
 
   // Add the table and 80/20 workcell frame.
   {
@@ -272,21 +272,6 @@ void ManipulationStation<T>::SetupDefaultStation(
                     dz_table_top_robot_base));
     internal::AddAndWeldModelFrom(sdf_path, "cupboard", plant_->world_frame(),
                                   "cupboard_body", X_WC, plant_);
-  }
-
-  // Add the object.
-  {
-    multibody::Parser parser(plant_);
-    const auto model_index = parser.AddModelFromFile(FindResourceOrThrow(
-        "drake/examples/manipulation_station/models/061_foam_brick.sdf"));
-    const auto indices = plant_->GetBodyIndices(model_index);
-    DRAKE_DEMAND(indices.size() == 1);
-    object_ids_.push_back(indices[0]);
-
-    RigidTransform<T> X_WObject;
-    X_WObject.set_translation(Eigen::Vector3d(0.6, 0, 0));
-    X_WObject.set_rotation(RotationMatrix<T>::Identity());
-    object_poses_.push_back(X_WObject);
   }
 
   // Add the default iiwa/wsg models.
@@ -440,13 +425,22 @@ void ManipulationStation<T>::Finalize(
 
   switch (setup_) {
     case Setup::kNone:
-    case Setup::kDefault:
+    case Setup::kManipulationClass: {
       // Set the initial positions of the IIWA to a comfortable configuration
       // inside the workspace of the station.
       q0_iiwa << 0, 0.6, 0, -1.75, 0, 1.0, 0;
 
+      std::uniform_real_distribution<symbolic::Expression> x(0.4, 0.65),
+          y(-0.35, 0.35), z(0, 0.05);
+      const Vector3<symbolic::Expression> xyz{x(), y(), z()};
+      for (const auto body_index : object_ids_) {
+        const multibody::Body<T> &body = plant_->get_body(body_index);
+        plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
+        plant_->SetFreeBodyRandomRotationDistributionToUniform(body);
+      }
       break;
-    case Setup::kClutterClearing:
+    }
+    case Setup::kClutterClearing: {
       // Set the initial positions of the IIWA to a configuration right above
       // the picking bin.
       q0_iiwa << -1.57, 0.1, 0, -1.2, 0, 1.6, 0;
@@ -455,11 +449,12 @@ void ManipulationStation<T>::Finalize(
           y(-0.8, -.55), z(0.3, 0.35);
       const Vector3<symbolic::Expression> xyz{x(), y(), z()};
       for (const auto body_index : object_ids_) {
-        const multibody::Body<T>& body = plant_->get_body(body_index);
+        const multibody::Body<T> &body = plant_->get_body(body_index);
         plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
         plant_->SetFreeBodyRandomRotationDistributionToUniform(body);
       }
       break;
+    }
   }
 
   // Set the iiwa default configuration.

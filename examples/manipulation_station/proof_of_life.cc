@@ -47,11 +47,16 @@ int do_main(int argc, char* argv[]) {
         "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf",
         RigidTransform<double>(RollPitchYaw<double>(-1.57, 0, 3),
                                Eigen::Vector3d(-0.3, -0.55, 0.36)));
-  } else if (FLAGS_setup == "default") {
-    station->SetupDefaultStation();
+  } else if (FLAGS_setup == "manipulation_class") {
+    station->SetupManipulationClassStation();
+    station->AddManipulandFromFile(
+        "drake/examples/manipulation_station/models/061_foam_brick.sdf",
+        RigidTransform<double>(RotationMatrix<double>::Identity(),
+                               Eigen::Vector3d(0.6, 0, 0)));
   } else {
     throw std::domain_error(
-        "Unrecognized setup option. Options are {default, clutter_clearing}.");
+        "Unrecognized setup option. Options are "
+        "{manipulation_class, clutter_clearing}.");
   }
   station->Finalize();
 

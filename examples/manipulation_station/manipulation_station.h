@@ -23,7 +23,7 @@ namespace manipulation_station {
 enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
 
 /// Determines which manipulation station is simulated.
-enum class Setup { kNone, kDefault, kClutterClearing };
+enum class Setup { kNone, kManipulationClass, kClutterClearing };
 
 /// @defgroup manipulation_station_systems Manipulation Station
 /// @{
@@ -152,15 +152,20 @@ class ManipulationStation : public systems::Diagram<T> {
       const optional<const math::RigidTransformd>& X_WCameraBody = {},
       IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
 
-  // TODO(kmuhlrad): Rename SetupMITClassStation.
-  /// Adds a default iiwa, wsg, cupboard, and 8020 frame for the MIT
+  DRAKE_DEPRECATED("2019-09-01", "Prefer SetupManipulationClassStation.")
+  void SetupDefaultStation(
+      IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision) {
+    SetupManipulationClassStation(collision_model);
+  }
+
+  /// Adds a default iiwa, wsg, cupboard, and 80/20 frame for the MIT
   /// Intelligent Robot Manipulation class, then calls
   /// RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
   /// the appropriate arguments.
   /// @note Must be called before Finalize().
   /// @note Only one of the `Setup___()` methods should be called.
   /// @param collision_model Determines which sdf is loaded for the IIWA.
-  void SetupDefaultStation(
+  void SetupManipulationClassStation(
       IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
 
   /// Sets the default State for the chosen setup.
@@ -513,8 +518,9 @@ class ManipulationStation : public systems::Diagram<T> {
   double wsg_kd_{5};
 
   // Represents the manipulation station to simulate. This gets set in the
-  // corresponding station setup function (e.g., SetupDefaultStation()), and
-  // informs how SetDefaultState() initializes the sim.
+  // corresponding station setup function (e.g.,
+  // SetupManipulationClassStation()), and informs how SetDefaultState()
+  // initializes the sim.
   Setup setup_{Setup::kNone};
 };
 

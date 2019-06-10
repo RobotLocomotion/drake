@@ -13,6 +13,8 @@
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
@@ -39,8 +41,9 @@ DEFINE_double(target_realtime_rate, 1.0,
               "Simulator::set_target_realtime_rate() for details.");
 DEFINE_double(duration, std::numeric_limits<double>::infinity(),
               "Simulation duration.");
-DEFINE_string(setup, "default", "Manipulation station type to simulate. "
-                               "Can be {default, clutter_clearing}");
+DEFINE_string(setup, "manipulation_class",
+              "Manipulation station type to simulate. "
+              "Can be {manipulation_class, clutter_clearing}");
 
 int do_main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -49,17 +52,22 @@ int do_main(int argc, char* argv[]) {
 
   // Create the "manipulation station".
   auto station = builder.AddSystem<ManipulationStation>();
-  if (FLAGS_setup == "default") {
-    station->SetupDefaultStation();
+  if (FLAGS_setup == "manipulation_class") {
+    station->SetupManipulationClassStation();
+    station->AddManipulandFromFile(
+        "drake/examples/manipulation_station/models/061_foam_brick.sdf",
+        math::RigidTransform<double>(math::RotationMatrix<double>::Identity(),
+                                     Eigen::Vector3d(0.6, 0, 0)));
   } else if (FLAGS_setup == "clutter_clearing") {
     station->SetupClutterClearingStation();
     station->AddManipulandFromFile(
         "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf",
         math::RigidTransform<double>(math::RollPitchYaw<double>(-1.57, 0, 3),
-                               Eigen::Vector3d(-0.3, -0.55, 0.36)));
+                                     Eigen::Vector3d(-0.3, -0.55, 0.36)));
   } else {
     throw std::domain_error(
-        "Unrecognized station type. Options are {default, clutter_clearing}.");
+        "Unrecognized station type. Options are "
+        "{manipulation_class, clutter_clearing}.");
   }
   // TODO(russt): Load sdf objects specified at the command line.  Requires
   // #9747.

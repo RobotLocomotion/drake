@@ -12,6 +12,7 @@ from pydrake.examples.manipulation_station import \
     (ManipulationStation, ManipulationStationHardwareInterface)
 from pydrake.geometry import ConnectDrakeVisualizer
 from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
+from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.parsing import Parser
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.analysis import Simulator
@@ -48,7 +49,10 @@ if args.hardware:
     station.Connect(wait_for_cameras=False)
 else:
     station = builder.AddSystem(ManipulationStation())
-    station.SetupDefaultStation()
+    station.SetupManipulationClassStation()
+    station.AddManipulandFromFile(
+        "drake/examples/manipulation_station/models/061_foam_brick.sdf",
+        RigidTransform(RotationMatrix.Identity(), [0.6, 0, 0]))
     station.Finalize()
 
     ConnectDrakeVisualizer(builder, station.get_scene_graph(),
