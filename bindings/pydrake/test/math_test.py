@@ -211,7 +211,7 @@ class TestMath(unittest.TestCase):
         R = RotationMatrix(quaternion=q)
         q_R = R.ToQuaternion()
         numpy_compare.assert_float_equal(
-                q.wxyz(), numpy_compare.to_float(q_R.wxyz()))
+            q.wxyz(), numpy_compare.to_float(q_R.wxyz()))
         # - Inverse, transpose, projection
         R_I = R.inverse().multiply(R)
         numpy_compare.assert_float_equal(R_I.matrix(), np.eye(3))
@@ -220,11 +220,10 @@ class TestMath(unittest.TestCase):
         R_P = RotationMatrix.ProjectToRotationMatrix(M=2*np.eye(3))
         numpy_compare.assert_float_equal(R_P.matrix(), np.eye(3))
         # Matrix checks
-        if T == float or T == AutoDiffXd:
-            self.assertTrue(R.IsValid())
-            R = RotationMatrix()
-            self.assertTrue(R.IsExactlyIdentity())
-            self.assertTrue(R.IsIdentityToInternalTolerance())
+        numpy_compare.assert_equal(R.IsValid(), True)
+        R = RotationMatrix()
+        numpy_compare.assert_equal(R.IsExactlyIdentity(), True)
+        numpy_compare.assert_equal(R.IsIdentityToInternalTolerance(), True)
         if six.PY3:
             numpy_compare.assert_float_equal(
                     eval("R.inverse() @ R").matrix(), np.eye(3))
