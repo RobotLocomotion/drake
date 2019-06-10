@@ -23,8 +23,9 @@ enum class PlanType { kEmptyPlan, kJointSpacePlan, kTaskSpacePlan };
 
 struct PlanData {
   PlanType plan_type{PlanType::kEmptyPlan};
-  // plan signature can be 1,2,3 (as in the case of running simulations)
-  // or timestamp (as in the case of receiving LCM messages).
+  // Plan signature should be different for every unique plan. It can be
+  //  1,2,3, ..., as in the case of running simulations, or
+  //  the integer timestamp of the robot_plan_t message received.
   long plan_signature{-1};
   optional<trajectories::PiecewisePolynomial<double>> joint_traj;
   struct EeData {

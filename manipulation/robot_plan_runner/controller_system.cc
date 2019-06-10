@@ -60,13 +60,12 @@ robot_plans::PlanType RobotController::get_plan_type() {
 
 void RobotController::CalcCommands(const systems::Context<double>& context,
                                    BasicVector<double>* q_tau_cmd) const {
+  // Evaluate current PlanData from input port.
   const AbstractValue* plan_data_ptr =
       this->EvalAbstractInput(context, input_port_idx_plan_data_);
   const auto& plan_data = plan_data_ptr->get_value<PlanData>();
 
-  // evaluate robot state input ports
-  Eigen::VectorBlock<VectorX<double>> q_tau_vector =
-      q_tau_cmd->get_mutable_value();
+  // Evaluate robot state input ports.
   const auto& q = this->get_input_port(input_port_idx_q_).Eval(context);
   const auto& v = this->get_input_port(input_port_idx_v_).Eval(context);
   const auto& tau_ext =
@@ -80,8 +79,11 @@ void RobotController::CalcCommands(const systems::Context<double>& context,
   }
 
   double t = context.get_time() - t_start_current_;
-
   plan_->Step(q, v, tau_ext, control_period_, t, plan_data, &q_cmd_, &tau_cmd_);
+
+  // Write output to its pointer.
+  Eigen::VectorBlock<VectorX<double>> q_tau_vector =
+      q_tau_cmd->get_mutable_value();
   q_tau_vector << q_cmd_, tau_cmd_;
 };
 

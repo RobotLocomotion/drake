@@ -10,8 +10,9 @@ namespace manipulation {
 namespace robot_plan_runner {
 
 /*
- * Constructed with a list of PlanData, this system puts PlanData one by
- * one on its output port for the duration of each PlanData.
+ * Constructed with a vector of trajectories (described by PlanData), this
+ * system outputs one trajectory at a time, leaving each trajectory on the
+ * output port for its duration.
  */
 class PlanSender : public systems::LeafSystem<double> {
  public:
@@ -45,8 +46,8 @@ class PlanSender : public systems::LeafSystem<double> {
   double get_all_plans_duration() const;
 
  private:
-  void CalcPlan(
-      const drake::systems::Context<double>&, robot_plans::PlanData*) const;
+  void CalcPlan(const drake::systems::Context<double>&,
+                robot_plans::PlanData*) const;
   void UpdatePlanIndex(const systems::Context<double>& context,
                        systems::State<double>* state) const;
   mutable std::vector<double> plan_start_times_{};

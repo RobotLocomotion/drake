@@ -15,7 +15,7 @@ drake_cc_package_library(
     deps = [
         ":plan_base",
         ":joint_space_plan",
-        ":task_sapce_plan",
+        ":task_space_plan",
     ]
 )
 
@@ -41,8 +41,8 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "task_sapce_plan",
-    srcs = ["task_sapce_plan.cc"],
+    name = "task_space_plan",
+    srcs = ["task_space_plan.cc"],
     hdrs = ["task_space_plan.h"],
     data = [
         "//manipulation/models/iiwa_description:models",

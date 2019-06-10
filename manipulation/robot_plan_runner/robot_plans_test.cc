@@ -5,6 +5,7 @@
 
 #include "drake/manipulation/robot_plan_runner/plan_sender.h"
 #include "drake/manipulation/robot_plan_runner/robot_plan_runner.h"
+#include "drake/manipulation/robot_plan_runner/robot_plans/joint_space_plan.h"
 #include "drake/manipulation/robot_plan_runner/robot_plans/plan_base.h"
 
 #include "drake/common/trajectories/piecewise_polynomial.h"
@@ -75,8 +76,9 @@ int do_main() {
 
   std::vector<double> t_list = {0, 0.5, 1, 1.5, 2, 2.5};
 
+  const double control_period = 0.005;
   for (auto t : t_list) {
-    plan.Step(q, v, tau_external, t, plan1, &q_cmd, &tau_cmd);
+    plan.Step(q, v, tau_external, control_period, t, plan1, &q_cmd, &tau_cmd);
     cout << t << endl << q_cmd << endl << tau_cmd << endl;
   }
 

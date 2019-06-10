@@ -7,9 +7,9 @@ namespace manipulation {
 namespace robot_plan_runner {
 namespace robot_plans {
 
+using Eigen::VectorXd;
 using std::cout;
 using std::endl;
-using Eigen::VectorXd;
 
 const char kIiwaSdf[] =
     "drake/manipulation/models/iiwa_description/iiwa7/"
@@ -42,7 +42,7 @@ void TaskSpacePlan::UpdatePositionError(
   }
   const auto p_WoQ_W_ref =
       plan_data.ee_data.value().ee_xyz_traj.value(t) + *p_WoQ_W_t0_;
-  err_xyz_ =  p_WoQ_W_ref - p_WoQ_W;
+  err_xyz_ = p_WoQ_W_ref - p_WoQ_W;
 };
 
 void TaskSpacePlan::UpdateOrientationError(
