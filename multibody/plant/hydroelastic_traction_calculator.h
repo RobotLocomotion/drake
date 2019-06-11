@@ -27,8 +27,9 @@ namespace internal {
 template <typename T>
 class HydroelasticTractionCalculator {
  public:
-  HydroelasticTractionCalculator() {}
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HydroelasticTractionCalculator)
+
+  HydroelasticTractionCalculator() {}
 
   /**
    Gets the regularization parameter used for friction (in m/s). The closer
@@ -36,6 +37,20 @@ class HydroelasticTractionCalculator {
    model will approximate Coulomb friction.
    */
   double regularization_scalar() const { return vslip_regularizer_; }
+
+  /**
+   Applies the hydroelastic model to two geometries defined in `surface`,
+   resulting in a pair of spatial forces at the origins of two body frames.
+   The body frames, A and B, are those to which `surface.M_id()` and
+   `surface.N_id()` are affixed, respectively.
+   */
+  void ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+       const systems::Context<T>& context,
+       const MultibodyPlant<T>& plant,
+       const geometry::ContactSurface<T>& surface,
+       double dissipation, double mu_coulomb,
+       multibody::SpatialForce<T>* F_Ao_W,
+       multibody::SpatialForce<T>* F_Bo_W) const;
 
  private:
   // To allow GTEST to test private functions.

@@ -54,6 +54,11 @@ public ::testing::TestWithParam<RigidTransform<double>> {
   const HydroelasticTractionCalculator<double>& traction_calculator() const {
     return traction_calculator_;
   }
+  const MultibodyPlant<double>& plant() const { return *plant_; }
+  const ContactSurface<double>& contact_surface() const {
+      return *contact_surface_;
+  }
+  const Context<double>& plant_context() const { return *plant_context_; }
 
   // Returns the default numerical tolerance.
   double eps() const { return eps_; }
@@ -164,7 +169,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
   // Creates a surface mesh that covers the bottom of the "wetted surface",
   // where the wetted surface is the part of the box that would be wet if the
   // halfspace were a fluid. The entire wetted surface *would* yield
-  // an open, lopped-off box with five faces but, for simplicity, we'll only
+  // an open box with five faces but, for simplicity, we'll only
   // use the bottom face (two triangles).
   std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() const {
     std::vector<SurfaceVertex<double>> vertices;
@@ -175,12 +180,13 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     vertices.emplace_back(Vector3<double>(0.5, 0.5, -0.5));
     vertices.emplace_back(Vector3<double>(-0.5, 0.5, -0.5));
     vertices.emplace_back(Vector3<double>(-0.5, -0.5, -0.5));
+    vertices.emplace_back(Vector3<double>(0.5, -0.5, -0.5));
 
-    // Create the face comprising a single triangle.
+    // Create the face comprising two triangles.
     faces.emplace_back(
         SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2));
-    // TODO(edrumwri) Create the second face as soon as we introduce
-    // quadrature (and can use it).
+    faces.emplace_back(
+        SurfaceVertexIndex(2), SurfaceVertexIndex(3), SurfaceVertexIndex(0));
 
     return std::make_unique<SurfaceMesh<double>>(
         std::move(faces), std::move(vertices));
@@ -332,6 +338,33 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
   // opposite.
   EXPECT_NEAR((F_Bo_W.translational() + F_Ao_W.translational()).norm(),
       0, eps());
+}
+
+// Tests the traction calculation over an entire contact patch.
+TEST_P(MultibodyPlantHydroelasticTractionTests, TractionOverPatch) {
+  const double dissipation = 0.0;
+  const double mu_coulomb = 0.0;
+
+  // Only run this test for Y = identity.
+  if (!GetParam().IsExactlyIdentity())
+    return;
+
+  // Compute the spatial forces at the origins of the body frames.
+  multibody::SpatialForce<double> F_Mo_W, F_No_W;
+  traction_calculator().ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+      plant_context(), plant(), contact_surface(), dissipation, mu_coulomb,
+      &F_Mo_W, &F_No_W);
+
+  // Check the spatial force. We know that geometry M is the halfspace,
+  // so we'll check the spatial force for geometry N instead.
+  EXPECT_NEAR(F_No_W.translational()[0], 0.0, eps());
+  EXPECT_NEAR(F_No_W.translational()[1], 0.0, eps());
+  EXPECT_NEAR(F_No_W.translational()[2], 0.5, eps());
+
+  // We expect no moment on the box.
+  EXPECT_NEAR(F_No_W.rotational()[0], 0.0, eps());
+  EXPECT_NEAR(F_No_W.rotational()[1], 0.0, eps());
+  EXPECT_NEAR(F_No_W.rotational()[2], 0.0, eps());
 }
 
 // These transformations, denoted X_WY, are passed as parameters to the tests
