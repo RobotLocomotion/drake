@@ -10,8 +10,10 @@
 namespace drake {
 namespace math {
 
+#if  __cplusplus < 201703L
 template <class T>
 constexpr double RollPitchYaw<T>::kGimbalLockToleranceCosPitchAngle;
+#endif
 
 template <typename T>
 RotationMatrix<T> RollPitchYaw<T>::ToRotationMatrix() const {

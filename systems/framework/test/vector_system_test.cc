@@ -136,7 +136,9 @@ class TestVectorSystem : public VectorSystem<double> {
   mutable int time_derivatives_count_{0};
   mutable int discrete_variable_updates_count_{0};
 };
+#if  __cplusplus < 201703L
 constexpr int TestVectorSystem::kSize;
+#endif
 
 class VectorSystemTest : public ::testing::Test {
   // Not yet needed, but placeholder for future common code.

@@ -4,6 +4,7 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
+#if  __cplusplus < 201703L
 constexpr int ImageTraits<PixelType::kRgb8U>::kNumChannels;
 constexpr PixelFormat ImageTraits<PixelType::kRgb8U>::kPixelFormat;
 
@@ -34,6 +35,7 @@ constexpr PixelFormat ImageTraits<PixelType::kGrey8U>::kPixelFormat;
 
 constexpr int ImageTraits<PixelType::kExpr>::kNumChannels;
 constexpr PixelFormat ImageTraits<PixelType::kExpr>::kPixelFormat;
+#endif  // __cplusplus
 
 }  // namespace sensors
 }  // namespace systems

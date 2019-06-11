@@ -11,10 +11,12 @@
 // system how to omit it, specially since alias_groups.pb.h is not installed.
 #include "drake/attic/multibody/alias_groups.pb.h"
 
+#if  __cplusplus < 201703L
 template <typename T>
 constexpr char RigidBodyTreeAliasGroups<T>::kBodyGroupsKeyword[];
 template <typename T>
 constexpr char RigidBodyTreeAliasGroups<T>::kJointGroupsKeyword[];
+#endif
 
 namespace {
 // Inserts @p vec into @p mapping if @p key does not exist, or appends @p vec
