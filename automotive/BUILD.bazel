@@ -33,6 +33,7 @@ drake_cc_package_library(
         ":calc_smooth_acceleration",
         ":create_trajectory_params",
         ":curve2",
+        ":deprecated",
         ":driving_command_mux",
         ":dynamic_bicycle_car",
         ":generated_vectors",
@@ -80,6 +81,14 @@ drake_cc_vector_gen_library(
         "simple_car_params.named_vector",
         "trajectory_car_params.named_vector",
     ] + _LCM_ENABLED_NAMED_VECTORS,
+)
+
+drake_cc_library(
+    name = "deprecated",
+    hdrs = ["deprecated.h"],
+    deps = [
+        "//common:essential",
+    ],
 )
 
 drake_cc_library(
