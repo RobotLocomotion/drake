@@ -16,8 +16,11 @@ namespace robot_plans {
 /*
  * KEmptyPlan has to be the first in the enumeration. This is because in
  * robot_plan_runner, integer values of the enums are used to index input
- * ports of the port_switch. As port 0 is reserved for the port_selector
- * input port, indices of user-defined ports start with 1.
+ * ports of the PortSwitch system. As port 0 is reserved for the port_selector
+ * input port, indices of user-defined ports should start with 1.
+ *
+ * kLastElement is used to detect the end of this enum when it is looped
+ * through.
  */
 enum class PlanType { kEmptyPlan, kTaskSpacePlan, kJointSpacePlan,
     kLastElement };
