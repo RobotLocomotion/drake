@@ -1,8 +1,21 @@
 #include "pybind11/eigen.h"
 #include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
+#ifndef __clang__
+// N.B. Without this, GCC 7.4.0 on Ubuntu complains about
+// `AutoDiffScalar(const AutoDiffScalar& other)` having uninitialized values.
+// TODO(eric.cousineau):  #11566 Figure out why?
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#pragma GCC diagnostic pop
+#else
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#endif  // __clang__
 
+#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -15,11 +28,7 @@
 namespace drake {
 namespace pydrake {
 namespace {
-
 using systems::LeafSystem;
-
-// TODO(eric.cousineau): Bind additional scalar types.
-using T = double;
 
 template <typename Class>
 void BindIdentifier(py::module m, const std::string& name) {
@@ -44,76 +53,98 @@ void BindIdentifier(py::module m, const std::string& name) {
       .def_static("get_new_id", &Class::get_new_id, cls_doc.get_new_id.doc);
 }
 
-PYBIND11_MODULE(geometry, m) {
+template <typename T>
+void DoDefinitions(py::module m, T) {
+  py::tuple param = GetPyParam<T>();
+  constexpr auto& doc = pydrake_doc.drake.geometry;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
-  constexpr auto& doc = pydrake_doc.drake.geometry;
-
-  // TODO(m-chaturvedi) Add Pybind11 documentation to aliases (#9599).
-  BindIdentifier<SourceId>(m, "SourceId");
-  BindIdentifier<FrameId>(m, "FrameId");
-  BindIdentifier<GeometryId>(m, "GeometryId");
-
   py::module::import("pydrake.systems.framework");
-  py::class_<SceneGraphInspector<T>>(
-      m, "SceneGraphInspector", doc.SceneGraphInspector.doc)
-      .def("GetFrameId", &SceneGraphInspector<T>::GetFrameId,
-          py::arg("geometry_id"), doc.SceneGraphInspector.GetFrameId.doc);
 
-  py::class_<SceneGraph<T>, LeafSystem<T>>(m, "SceneGraph", doc.SceneGraph.doc)
-      .def(py::init<>(), doc.SceneGraph.ctor.doc)
-      .def("get_source_pose_port", &SceneGraph<T>::get_source_pose_port,
-          py_reference_internal, doc.SceneGraph.get_source_pose_port.doc)
-      .def("get_pose_bundle_output_port",
-          &SceneGraph<T>::get_pose_bundle_output_port, py_reference_internal,
-          doc.SceneGraph.get_pose_bundle_output_port.doc)
-      .def("get_query_output_port", &SceneGraph<T>::get_query_output_port,
-          py_reference_internal, doc.SceneGraph.get_query_output_port.doc)
-      .def("RegisterSource",
-          py::overload_cast<const std::string&>(  // BR
-              &SceneGraph<T>::RegisterSource),
-          py::arg("name") = "", doc.SceneGraph.RegisterSource.doc);
+  // TODO(eric.cousineau): #8116 Simplify this.
+  py::return_value_policy rvp_for_type =
+      (std::is_same<T, double>::value ? py::return_value_policy::automatic
+                                      : py::return_value_policy::copy);
 
-  py::class_<FramePoseVector<T>>(
-      m, "FramePoseVector", doc.FrameKinematicsVector.doc)
-      .def(py::init<>(), doc.FrameKinematicsVector.ctor.doc_0args)
-      .def(py::init([](SourceId source_id, const std::vector<FrameId>& ids) {
-        WarnDeprecated("See API docs for deprecation notice.");
-        return std::make_unique<FramePoseVector<T>>(source_id, ids);
-      }),
-          py::arg("source_id"), py::arg("ids"),
-          doc.FrameKinematicsVector.ctor.doc_deprecated_2args)
-      .def("clear", &FramePoseVector<T>::clear,
-          doc.FrameKinematicsVector.clear.doc)
-      .def("set_value", &FramePoseVector<T>::set_value, py::arg("id"),
-          py::arg("value"), doc.FrameKinematicsVector.set_value.doc)
-      .def(
-          "size", &FramePoseVector<T>::size, doc.FrameKinematicsVector.size.doc)
-      // This intentionally copies the value to avoid segfaults from accessing
-      // the result after clear() is called. (see #11583)
-      .def("value", &FramePoseVector<T>::value, py::arg("id"),
-          doc.FrameKinematicsVector.value.doc)
-      .def("has_id", &FramePoseVector<T>::has_id, py::arg("id"),
-          doc.FrameKinematicsVector.has_id.doc)
-      .def("frame_ids", &FramePoseVector<T>::frame_ids,
-          doc.FrameKinematicsVector.frame_ids.doc);
-  AddValueInstantiation<FramePoseVector<T>>(m);
+  {
+    using Class = SceneGraphInspector<T>;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "SceneGraphInspector", param, doc.SceneGraphInspector.doc);
+    cls  // BR
+        .def("GetFrameId", &SceneGraphInspector<T>::GetFrameId,
+            py::arg("geometry_id"), doc.SceneGraphInspector.GetFrameId.doc);
+  }
 
-  py::class_<QueryObject<T>>(m, "QueryObject", doc.QueryObject.doc)
-      .def("inspector", &QueryObject<T>::inspector, py_reference_internal,
-          doc.QueryObject.inspector.doc)
-      .def("ComputeSignedDistancePairwiseClosestPoints",
-          &QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints,
-          py::arg("max_distance") = std::numeric_limits<double>::infinity(),
-          doc.QueryObject.ComputeSignedDistancePairwiseClosestPoints.doc)
-      .def("ComputePointPairPenetration",
-          &QueryObject<T>::ComputePointPairPenetration,
-          doc.QueryObject.ComputePointPairPenetration.doc)
-      .def("ComputeSignedDistanceToPoint",
-          &QueryObject<T>::ComputeSignedDistanceToPoint, py::arg("p_WQ"),
-          py::arg("threshold") = std::numeric_limits<double>::infinity(),
-          doc.QueryObject.ComputeSignedDistanceToPoint.doc);
-  AddValueInstantiation<QueryObject<T>>(m);
+  {
+    auto cls = DefineTemplateClassWithDefault<SceneGraph<T>, LeafSystem<T>>(
+        m, "SceneGraph", param, doc.SceneGraph.doc);
+    cls  // BR
+        .def(py::init<>(), doc.SceneGraph.ctor.doc)
+        .def("get_source_pose_port", &SceneGraph<T>::get_source_pose_port,
+            py_reference_internal, doc.SceneGraph.get_source_pose_port.doc)
+        .def("get_pose_bundle_output_port",
+            [](SceneGraph<T>* self) -> const systems::OutputPort<T>& {
+              return self->get_pose_bundle_output_port();
+            },
+            py_reference_internal,
+            doc.SceneGraph.get_pose_bundle_output_port.doc)
+        .def("get_query_output_port", &SceneGraph<T>::get_query_output_port,
+            py_reference_internal, doc.SceneGraph.get_query_output_port.doc)
+        .def("RegisterSource",
+            py::overload_cast<const std::string&>(  // BR
+                &SceneGraph<T>::RegisterSource),
+            py::arg("name") = "", doc.SceneGraph.RegisterSource.doc);
+  }
+
+  {
+    using Class = FramePoseVector<T>;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "FramePoseVector", param, doc.FrameKinematicsVector.doc);
+    cls  // BR
+        .def(py::init<>(), doc.FrameKinematicsVector.ctor.doc_0args)
+        .def(py::init([](SourceId source_id, const std::vector<FrameId>& ids) {
+          WarnDeprecated("See API docs for deprecation notice.");
+          return std::make_unique<FramePoseVector<T>>(source_id, ids);
+        }),
+            py::arg("source_id"), py::arg("ids"),
+            doc.FrameKinematicsVector.ctor.doc_deprecated_2args)
+        .def("clear", &FramePoseVector<T>::clear,
+            doc.FrameKinematicsVector.clear.doc)
+        .def("set_value", &FramePoseVector<T>::set_value, py::arg("id"),
+            py::arg("value"), doc.FrameKinematicsVector.set_value.doc)
+        .def("size", &FramePoseVector<T>::size,
+            doc.FrameKinematicsVector.size.doc)
+        // This intentionally copies the value to avoid segfaults from accessing
+        // the result after clear() is called. (see #11583)
+        .def("value", &FramePoseVector<T>::value, py::arg("id"),
+            doc.FrameKinematicsVector.value.doc)
+        .def("has_id", &FramePoseVector<T>::has_id, py::arg("id"),
+            doc.FrameKinematicsVector.has_id.doc)
+        .def("frame_ids", &FramePoseVector<T>::frame_ids,
+            doc.FrameKinematicsVector.frame_ids.doc);
+    AddValueInstantiation<FramePoseVector<T>>(m);
+  }
+
+  {
+    using Class = QueryObject<T>;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "QueryObject", param, doc.QueryObject.doc);
+    cls  // BR
+        .def("inspector", &QueryObject<T>::inspector, py_reference_internal,
+            doc.QueryObject.inspector.doc)
+        .def("ComputeSignedDistancePairwiseClosestPoints",
+            &QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints,
+            py::arg("max_distance") = std::numeric_limits<double>::infinity(),
+            doc.QueryObject.ComputeSignedDistancePairwiseClosestPoints.doc)
+        .def("ComputePointPairPenetration",
+            &QueryObject<T>::ComputePointPairPenetration,
+            doc.QueryObject.ComputePointPairPenetration.doc)
+        .def("ComputeSignedDistanceToPoint",
+            &QueryObject<T>::ComputeSignedDistanceToPoint, py::arg("p_WQ"),
+            py::arg("threshold") = std::numeric_limits<double>::infinity(),
+            doc.QueryObject.ComputeSignedDistanceToPoint.doc);
+    AddValueInstantiation<QueryObject<T>>(m);
+  }
 
   py::module::import("pydrake.systems.lcm");
   m.def("ConnectDrakeVisualizer",
@@ -139,52 +170,80 @@ PYBIND11_MODULE(geometry, m) {
       py::arg("lcm"), doc.DispatchLoadMessage.doc);
 
   // SignedDistancePair
-  py::class_<SignedDistancePair<T>>(m, "SignedDistancePair")
-      .def(py::init<>(), doc.SignedDistancePair.ctor.doc_7args)
-      .def_readwrite(
-          "id_A", &SignedDistancePair<T>::id_A, doc.SignedDistancePair.id_A.doc)
-      .def_readwrite(
-          "id_B", &SignedDistancePair<T>::id_B, doc.SignedDistancePair.id_B.doc)
-      .def_readwrite("p_ACa", &SignedDistancePair<T>::p_ACa,
-          doc.SignedDistancePair.p_ACa.doc)
-      .def_readwrite("p_BCb", &SignedDistancePair<T>::p_BCb,
-          doc.SignedDistancePair.p_BCb.doc)
-      .def_readwrite("distance", &SignedDistancePair<T>::distance,
-          doc.SignedDistancePair.distance.doc)
-      .def_readwrite("nhat_BA_W", &SignedDistancePair<T>::nhat_BA_W,
-          doc.SignedDistancePair.nhat_BA_W.doc)
-      .def_readwrite("is_nhat_BA_W_unique",
-          &SignedDistancePair<T>::is_nhat_BA_W_unique,
-          doc.SignedDistancePair.is_nhat_BA_W_unique.doc);
+  {
+    using Class = SignedDistancePair<T>;
+    auto cls =
+        DefineTemplateClassWithDefault<Class>(m, "SignedDistancePair", param);
+    cls  // BR
+        .def(py::init<>(), doc.SignedDistancePair.ctor.doc_7args)
+        .def_readwrite("id_A", &SignedDistancePair<T>::id_A,
+            doc.SignedDistancePair.id_A.doc)
+        .def_readwrite("id_B", &SignedDistancePair<T>::id_B,
+            doc.SignedDistancePair.id_B.doc)
+        .def_readwrite("p_ACa", &SignedDistancePair<T>::p_ACa, rvp_for_type,
+            doc.SignedDistancePair.p_ACa.doc)
+        .def_readwrite("p_BCb", &SignedDistancePair<T>::p_BCb, rvp_for_type,
+            doc.SignedDistancePair.p_BCb.doc)
+        .def_readwrite("distance", &SignedDistancePair<T>::distance,
+            doc.SignedDistancePair.distance.doc)
+        .def_readwrite("nhat_BA_W", &SignedDistancePair<T>::nhat_BA_W,
+            rvp_for_type, doc.SignedDistancePair.nhat_BA_W.doc)
+        .def_readwrite("is_nhat_BA_W_unique",
+            &SignedDistancePair<T>::is_nhat_BA_W_unique,
+            doc.SignedDistancePair.is_nhat_BA_W_unique.doc);
+  }
 
   // SignedDistanceToPoint
-  py::class_<SignedDistanceToPoint<T>>(m, "SignedDistanceToPoint")
-      .def(py::init<>(), doc.SignedDistanceToPoint.ctor.doc)
-      .def_readwrite("id_G", &SignedDistanceToPoint<T>::id_G,
-          doc.SignedDistanceToPoint.id_G.doc)
-      .def_readwrite("p_GN", &SignedDistanceToPoint<T>::p_GN,
-          doc.SignedDistanceToPoint.p_GN.doc)
-      .def_readwrite("distance", &SignedDistanceToPoint<T>::distance,
-          doc.SignedDistanceToPoint.distance.doc)
-      .def_readwrite("grad_W", &SignedDistanceToPoint<T>::grad_W,
-          doc.SignedDistanceToPoint.grad_W.doc);
+  {
+    using Class = SignedDistanceToPoint<T>;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "SignedDistanceToPoint", param);
+    cls  // BR
+        .def(py::init<>(), doc.SignedDistanceToPoint.ctor.doc)
+        .def_readwrite("id_G", &SignedDistanceToPoint<T>::id_G,
+            doc.SignedDistanceToPoint.id_G.doc)
+        .def_readwrite("p_GN", &SignedDistanceToPoint<T>::p_GN, rvp_for_type,
+            doc.SignedDistanceToPoint.p_GN.doc)
+        .def_readwrite("distance", &SignedDistanceToPoint<T>::distance,
+            doc.SignedDistanceToPoint.distance.doc)
+        .def_readwrite("grad_W", &SignedDistanceToPoint<T>::grad_W,
+            rvp_for_type, doc.SignedDistanceToPoint.grad_W.doc);
+  }
 
   // PenetrationAsPointPair
-  py::class_<PenetrationAsPointPair<T>>(m, "PenetrationAsPointPair")
-      .def(py::init<>(), doc.PenetrationAsPointPair.ctor.doc)
-      .def_readwrite("id_A", &PenetrationAsPointPair<T>::id_A,
-          doc.PenetrationAsPointPair.id_A.doc)
-      .def_readwrite("id_B", &PenetrationAsPointPair<T>::id_B,
-          doc.PenetrationAsPointPair.id_B.doc)
-      .def_readwrite("p_WCa", &PenetrationAsPointPair<T>::p_WCa,
-          doc.PenetrationAsPointPair.p_WCa.doc)
-      .def_readwrite("p_WCb", &PenetrationAsPointPair<T>::p_WCb,
-          doc.PenetrationAsPointPair.p_WCb.doc)
-      .def_readwrite("nhat_BA_W", &PenetrationAsPointPair<T>::nhat_BA_W,
-          doc.PenetrationAsPointPair.nhat_BA_W.doc)
-      .def_readwrite("depth", &PenetrationAsPointPair<T>::depth,
-          doc.PenetrationAsPointPair.depth.doc);
+  {
+    using Class = PenetrationAsPointPair<T>;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "PenetrationAsPointPair", param);
+    cls  // BR
+        .def(py::init<>(), doc.PenetrationAsPointPair.ctor.doc)
+        .def_readwrite("id_A", &PenetrationAsPointPair<T>::id_A,
+            doc.PenetrationAsPointPair.id_A.doc)
+        .def_readwrite("id_B", &PenetrationAsPointPair<T>::id_B,
+            doc.PenetrationAsPointPair.id_B.doc)
+        .def_readwrite("p_WCa", &PenetrationAsPointPair<T>::p_WCa,
+            py::return_value_policy::copy, doc.PenetrationAsPointPair.p_WCa.doc)
+        .def_readwrite("p_WCb", &PenetrationAsPointPair<T>::p_WCb,
+            py::return_value_policy::copy, doc.PenetrationAsPointPair.p_WCb.doc)
+        .def_readwrite("nhat_BA_W", &PenetrationAsPointPair<T>::nhat_BA_W,
+            doc.PenetrationAsPointPair.nhat_BA_W.doc)
+        .def_readwrite("depth", &PenetrationAsPointPair<T>::depth,
+            doc.PenetrationAsPointPair.depth.doc);
+  }
+}
 
+PYBIND11_MODULE(geometry, m) {
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::geometry;
+  // TODO(m-chaturvedi) Add Pybind11 documentation to aliases (#9599).
+  BindIdentifier<SourceId>(m, "SourceId");
+  BindIdentifier<FrameId>(m, "FrameId");
+  BindIdentifier<GeometryId>(m, "GeometryId");
+
+  type_visit(
+      [m](auto dummy) { DoDefinitions(m, dummy); }, NonSymbolicScalarPack{});
+
+  constexpr auto& doc = pydrake_doc.drake.geometry;
   // Shape constructors
   {
     py::class_<Shape>(m, "Shape", doc.Shape.doc);
