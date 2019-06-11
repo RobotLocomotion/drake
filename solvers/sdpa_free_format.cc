@@ -1,6 +1,8 @@
 #include "drake/solvers/sdpa_free_format.h"
 
 #include <algorithm>
+#include <fstream>
+#include <iomanip>
 #include <limits>
 #include <stdexcept>
 #include <unordered_map>
@@ -651,5 +653,117 @@ SdpaFreeFormat::SdpaFreeFormat(const MathematicalProgram& prog) {
   Finalize();
 }
 }  // namespace internal
+
+bool GenerateSDPA(const MathematicalProgram& prog,
+                  const std::string& file_name) {
+  ProgramAttributes solver_capabilities(std::initializer_list<ProgramAttribute>{
+      ProgramAttribute::kLinearCost, ProgramAttribute::kLinearConstraint,
+      ProgramAttribute::kLinearEqualityConstraint,
+      ProgramAttribute::kLorentzConeConstraint,
+      ProgramAttribute::kRotatedLorentzConeConstraint,
+      ProgramAttribute::kPositiveSemidefiniteConstraint});
+  if (!AreRequiredAttributesSupported(prog.required_capabilities(),
+                                      solver_capabilities)) {
+    std::cout << "GenerateSDPA(): the program cannot be formulated as an SDP "
+                 "in the standard form.\n";
+    return false;
+  }
+  const internal::SdpaFreeFormat sdpa_free_format(prog);
+  if (sdpa_free_format.num_free_variables() != 0) {
+    std::cout << "GenerateSDPA(): the program contains variables that are "
+                 "unbounded (no upper bound or lower bound). The program "
+                 "cannot be formulated as an SDP in the standard form.\n";
+    return false;
+  }
+  std::ofstream sdpa_file;
+  sdpa_file.open(file_name + ".dat-s", std::ios::out | std::ios::trunc);
+  if (sdpa_file.is_open()) {
+    // First line, number of constraints.
+    sdpa_file << sdpa_free_format.g().rows() << "\n";
+    // Second line, number of blocks in X.
+    sdpa_file << sdpa_free_format.X_blocks().size() << "\n";
+    // Third line, size of each block.
+    for (const auto& X_block : sdpa_free_format.X_blocks()) {
+      switch (X_block.block_type) {
+        case internal::BlockType::kMatrix: {
+          sdpa_file << X_block.num_rows;
+          break;
+        }
+        case internal::BlockType::kDiagonal: {
+          sdpa_file << -X_block.num_rows;
+          break;
+        }
+      }
+      sdpa_file << " ";
+    }
+    sdpa_file << "\n";
+    // Forth line, the right-hand side of the constraint g.
+    std::stringstream g_stream;
+    g_stream << std::setprecision(20);
+    g_stream << sdpa_free_format.g().transpose() << "\n";
+    sdpa_file << g_stream.str();
+    // block_start_rows[i] records the starting row index of the i'th block in
+    // X. row_to_block_indices[i] records the index of the block that X(i, i)
+    // belongs to.
+    std::vector<int> block_start_rows(sdpa_free_format.A().size());
+    std::vector<int> row_to_block_indices(sdpa_free_format.num_X_rows());
+    int X_row_count = 0;
+    for (int i = 0; i < static_cast<int>(sdpa_free_format.X_blocks().size());
+         ++i) {
+      block_start_rows[i] = X_row_count;
+      for (int j = X_row_count;
+           j < X_row_count + sdpa_free_format.X_blocks()[i].num_rows; ++j) {
+        row_to_block_indices[j] = i;
+      }
+      X_row_count += sdpa_free_format.X_blocks()[i].num_rows;
+    }
+    // The non-zero entries in C
+    for (int i = 0; i < sdpa_free_format.num_X_rows(); ++i) {
+      for (Eigen::SparseMatrix<double>::InnerIterator it(sdpa_free_format.C(),
+                                                         i);
+           it; ++it) {
+        if (it.row() <= it.col()) {
+          const int block_start_row = block_start_rows[row_to_block_indices[i]];
+          sdpa_file << 0 /* 0 for cost matrix C */ << " "
+                    << row_to_block_indices[i] +
+                           1 /* block number, starts from 1 */
+                    << " "
+                    << it.row() - block_start_row +
+                           1 /* block row index, starts from 1*/
+                    << " "
+                    << i - block_start_row +
+                           1 /* block column index, starts from 1*/
+                    << " " << std::setprecision(20) << it.value() << "\n";
+        }
+      }
+    }
+    // The remaining lines are for A
+    for (int i = 0; i < static_cast<int>(sdpa_free_format.A().size()); ++i) {
+      for (int j = 0; j < sdpa_free_format.num_X_rows(); ++j) {
+        for (Eigen::SparseMatrix<double>::InnerIterator it(
+                 sdpa_free_format.A()[i], j);
+             it; ++it) {
+          if (it.row() <= it.col()) {
+            const int block_start_row =
+                block_start_rows[row_to_block_indices[j]];
+            sdpa_file << i + 1 /* constraint number, starts from 1 */ << " "
+                      << row_to_block_indices[j] +
+                             1 /* block number, starts from 1 */
+                      << " " << it.row() - block_start_row + 1 << " "
+                      << j - block_start_row + 1 << std::setprecision(20) << " "
+                      << it.value() << "\n";
+          }
+        }
+      }
+    }
+
+  } else {
+    std::cout << "GenerateSDPA(): Cannot open the file " << file_name
+              << ".dat-s\n";
+    return false;
+  }
+  sdpa_file.close();
+  return true;
+}
 }  // namespace solvers
 }  // namespace drake

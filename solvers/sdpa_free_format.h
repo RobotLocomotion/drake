@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -294,5 +295,29 @@ class SdpaFreeFormat {
   Eigen::SparseMatrix<double> d_;
 };
 }  // namespace internal
+
+/**
+ * SDPA is a format to record an SDP problem
+ * max tr(C*X)
+ * s.t tr(Aᵢ*X) = gᵢ
+ *     X ≽ 0
+ * or the dual of the problem
+ * min gᵀy
+ * s.t ∑ᵢ yᵢAᵢ - C ≽ 0
+ * where X is a symmetric block diagonal matrix.
+ * The format is described in http://plato.asu.edu/ftp/sdpa_format.txt. Many
+ * solvers, such as CSDP, DSDP, SDPA, sedumi and SDPT3, accept an SDPA format
+ * file as the input.
+ * This function reads a MathematicalProgram that can be formulated as above,
+ * and write an SDPA file.
+ * @param prog a program that contains an optimization program.
+ * @param file_name The name of the file, note that the user don't add the file
+ * extension.
+ * @retval is_success. Returns true if we can generate the SDPA file. The
+ * failure could be @prog cannot be captured by the formulation above, cannot
+ * create a file with the given name, etc.
+ */
+bool GenerateSDPA(const MathematicalProgram& prog,
+                  const std::string& file_name);
 }  // namespace solvers
 }  // namespace drake
