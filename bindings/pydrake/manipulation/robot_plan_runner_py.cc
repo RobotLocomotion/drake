@@ -31,35 +31,50 @@ PYBIND11_MODULE(robot_plan_runner, m) {
 
   py::enum_<PlanType>(m, "PlanType")
       .value("kJointSpacePlan", PlanType::kJointSpacePlan,
-          doc.robot_plans.PlanType.kJointSpacePlan.doc)
+             doc.robot_plans.PlanType.kJointSpacePlan.doc)
       .value("kTaskSpacePlan", PlanType::kTaskSpacePlan,
-          doc.robot_plans.PlanType.kTaskSpacePlan.doc)
+             doc.robot_plans.PlanType.kTaskSpacePlan.doc)
       .value("kEmptyPlan", PlanType::kEmptyPlan,
-          doc.robot_plans.PlanType.kEmptyPlan.doc)
+             doc.robot_plans.PlanType.kEmptyPlan.doc)
       .export_values();
 
   py::class_<PlanData> plan_data(m, "PlanData");
+  // EeData is a struct defined within the scope of PlanData.
+  py::class_<PlanData::EeData> ee_data_(plan_data, "EeData");
+  ee_data_
+      .def(py::init<Eigen::Vector3d, trajectories::PiecewisePolynomial<double>,
+                    trajectories::PiecewiseQuaternionSlerp<double>>(),
+           py::arg("p_ToQ_T"), py::arg("ee_xyz_traj"), py::arg("ee_quat_traj"))
+      .def_readwrite("p_ToQ_T", &PlanData::EeData::p_ToQ_T,
+                     doc.robot_plans.PlanData.EeData.p_ToQ_T.doc)
+      .def_readwrite("ee_xyz_traj", &PlanData::EeData::ee_xyz_traj,
+                     doc.robot_plans.PlanData.EeData.ee_xyz_traj.doc)
+      .def_readwrite("ee_quat_traj", &PlanData::EeData::ee_quat_traj,
+                     doc.robot_plans.PlanData.EeData.ee_quat_traj.doc);
   plan_data
-      .def(py::init([](PlanType plan_type,
-                        optional<trajectories::PiecewisePolynomial<double>>
-                            joint_traj) {
-        return PlanData{plan_type, long{-1}, joint_traj};
-      }),
-          py::arg("plan_type") = PlanType::kEmptyPlan,
-          py::arg("joint_traj") = nullopt)
+      .def(py::init([](
+               PlanType plan_type,
+               optional<trajectories::PiecewisePolynomial<double>> joint_traj,
+               optional<PlanData::EeData> ee_data) {
+             return PlanData{plan_type, long{-1}, joint_traj, ee_data};
+           }),
+           py::arg("plan_type") = PlanType::kEmptyPlan,
+           py::arg("joint_traj") = nullopt, py::arg("ee_data") = nullopt)
       .def_readwrite("plan_type", &PlanData::plan_type,
-          doc.robot_plans.PlanData.plan_type.doc)
+                     doc.robot_plans.PlanData.plan_type.doc)
       .def_readwrite("joint_traj", &PlanData::joint_traj,
-          doc.robot_plans.PlanData.joint_traj.doc);
+                     doc.robot_plans.PlanData.joint_traj.doc)
+      .def_readwrite("ee_data", &PlanData::ee_data,
+                     doc.robot_plans.PlanData.ee_data.doc);
 
   AddValueInstantiation<PlanData>(m);
 
   py::class_<PlanSender, LeafSystem<double>>(m, "PlanSender")
       .def(py::init<const std::vector<PlanData>>(),
-          py::arg("plan_data_list") = std::vector<PlanData>{},
-          doc.PlanSender.ctor.doc)
+           py::arg("plan_data_list") = std::vector<PlanData>{},
+           doc.PlanSender.ctor.doc)
       .def("get_all_plans_duration", &PlanSender::get_all_plans_duration,
-          doc.PlanSender.get_all_plans_duration.doc);
+           doc.PlanSender.get_all_plans_duration.doc);
 
   py::class_<RobotPlanRunner, Diagram<double>>(m, "RobotPlanRunner")
       .def(py::init<bool, double>(), py::arg("is_discrete"),
