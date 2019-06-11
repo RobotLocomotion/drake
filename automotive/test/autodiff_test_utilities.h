@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/automotive/deprecated.h"
 #include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 

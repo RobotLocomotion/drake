@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/rules/direction_usage_rule.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
@@ -15,7 +16,8 @@ namespace maliput {
 
 /// ManualRulebook is a simple concrete implementation of the
 /// api::rules::RoadRulebook abstract interface.
-class ManualRulebook : public api::rules::RoadRulebook {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    ManualRulebook : public api::rules::RoadRulebook {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManualRulebook);
 

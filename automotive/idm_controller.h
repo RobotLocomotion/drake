@@ -6,6 +6,7 @@
 #include <Eigen/Geometry>
 
 #include "drake/automotive/calc_ongoing_road_position.h"
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/gen/idm_planner_parameters.h"
 #include "drake/automotive/idm_planner.h"
 #include "drake/automotive/maliput/api/lane_data.h"
@@ -46,7 +47,8 @@ namespace automotive {
 ///
 /// @ingroup automotive_controllers
 template <typename T>
-class IdmController : public systems::LeafSystem<T> {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    IdmController : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IdmController)
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/gen/driving_command.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -30,7 +31,8 @@ namespace automotive {
 ///
 /// @ingroup automotive_systems
 template <typename T>
-class DrivingCommandMux : public systems::LeafSystem<T> {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    DrivingCommandMux : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrivingCommandMux)
 

@@ -8,6 +8,7 @@
 #include <tuple>
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/multilane/connection.h"
 #include "drake/automotive/maliput/multilane/junction.h"
@@ -24,7 +25,8 @@ class RoadGeometry;
 enum class Direction { kForward, kReverse };
 
 /// Provides methods to build an StartReference::Spec.
-class StartReference {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    StartReference {
  public:
   /// Defines how a Connection's reference curve starts.
   ///
@@ -80,7 +82,8 @@ std::ostream& operator<<(std::ostream& out,
                          const StartReference::Spec& start_spec);
 
 /// Provides methods to build an StartLane::Spec.
-class StartLane {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    StartLane {
  public:
   /// Defines how a Connection's lane curve starts.
   ///
@@ -161,7 +164,8 @@ class StartLane {
 std::ostream& operator<<(std::ostream& out, const StartLane::Spec& start_spec);
 
 /// Provides methods to build an EndReference::Spec.
-class EndReference {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    EndReference {
  public:
   /// Defines how a Connection's reference curve ends.
   ///
@@ -217,7 +221,8 @@ class EndReference {
 std::ostream& operator<<(std::ostream& out, const EndReference::Spec& end_spec);
 
 /// Provides methods to build an EndLane::Spec.
-class EndLane {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    EndLane {
  public:
   /// Defines how a Connection's lane curve ends.
   ///
@@ -298,7 +303,8 @@ class EndLane {
 std::ostream& operator<<(std::ostream& out, const EndLane::Spec& end_spec);
 
 /// Wraps all the lane-related specifications in a Connection.
-class LaneLayout {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    LaneLayout {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LaneLayout)
 
@@ -357,7 +363,8 @@ std::ostream& operator<<(std::ostream& out, const LaneLayout& lane_layout);
 
 /// Defines a builder interface for multilane. It is used for testing purposes
 /// only, and derived code should instantiate Builder objects.
-class BuilderBase {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    BuilderBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BuilderBase)
 
@@ -481,7 +488,8 @@ class BuilderBase {
 ///
 /// Defined for testing purposes, and production code must use BuilderFactory
 /// objects.
-class BuilderFactoryBase {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    BuilderFactoryBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BuilderFactoryBase)
 
@@ -547,7 +555,8 @@ class BuilderFactoryBase {
 ///
 /// @note 'lane_index' is the index in the Segment, and 'branch_point_index' is
 /// is the index in the RoadGeometry.
-class Builder : public BuilderBase {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Builder : public BuilderBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Builder)
 
@@ -728,7 +737,8 @@ class Builder : public BuilderBase {
 };
 
 /// Implements a BuilderFactoryBase to construct Builder objects.
-class BuilderFactory : public BuilderFactoryBase {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    BuilderFactory : public BuilderFactoryBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BuilderFactory)
 

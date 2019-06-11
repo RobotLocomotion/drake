@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/geometry_base/branch_point.h"
 #include "drake/automotive/maliput/geometry_base/junction.h"
 #include "drake/automotive/maliput/geometry_base/lane.h"
@@ -30,7 +31,8 @@ namespace test {
 /// Test implementors may re-implement methods as they see fit.
 
 /// Mock api::RoadGeometry implementation; see mock_geometry.h.
-class MockRoadGeometry : public geometry_base::RoadGeometry {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    MockRoadGeometry : public geometry_base::RoadGeometry {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MockRoadGeometry);
 
@@ -58,7 +60,8 @@ class MockRoadGeometry : public geometry_base::RoadGeometry {
 
 
 /// Mock api::BranchPoint implementation; see mock_geometry.h.
-class MockBranchPoint : public geometry_base::BranchPoint {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    MockBranchPoint : public geometry_base::BranchPoint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MockBranchPoint);
 
@@ -73,7 +76,8 @@ class MockBranchPoint : public geometry_base::BranchPoint {
 
 
 /// Mock api::Junction implementation; see mock_geometry.h.
-class MockJunction : public geometry_base::Junction {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    MockJunction : public geometry_base::Junction {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MockJunction);
 
@@ -88,7 +92,8 @@ class MockJunction : public geometry_base::Junction {
 
 
 /// Mock api::Segment implementation; see mock_geometry.h.
-class MockSegment : public geometry_base::Segment {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    MockSegment : public geometry_base::Segment {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MockSegment);
 
@@ -103,7 +108,8 @@ class MockSegment : public geometry_base::Segment {
 
 
 /// Mock api::Lane implementation; see mock_geometry.h.
-class MockLane : public geometry_base::Lane {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    MockLane : public geometry_base::Lane {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MockLane);
 

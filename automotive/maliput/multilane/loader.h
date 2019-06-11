@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/multilane/builder.h"
 
 namespace drake {

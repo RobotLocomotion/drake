@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/drake_copyable.h"
@@ -20,7 +21,8 @@ using BranchPointId = TypeSpecificIdentifier<class BranchPoint>;
 
 
 /// A set of LaneEnds.
-class LaneEndSet {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    LaneEndSet {
   // NB: This is abstract (versus being a std::set or what not) to allow the
   // implementation to decide on how best to handle storage/indexing/etc.
   // E.g., it could very well be a view into a database or tiled storage or
@@ -64,7 +66,8 @@ class LaneEndSet {
 /// arbitrarily named "A-side" and "B-side".  LaneEnds on the same "side"
 /// have coincident into-the-lane tangent vectors, which are anti-parallel
 /// to those of LaneEnds on the other side.
-class BranchPoint {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    BranchPoint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BranchPoint)
 

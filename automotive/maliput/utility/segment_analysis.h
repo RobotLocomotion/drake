@@ -3,6 +3,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/api/segment.h"
 

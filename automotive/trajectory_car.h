@@ -10,6 +10,7 @@
 
 #include "drake/automotive/calc_smooth_acceleration.h"
 #include "drake/automotive/curve2.h"
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/gen/simple_car_state.h"
 #include "drake/automotive/gen/trajectory_car_params.h"
 #include "drake/automotive/gen/trajectory_car_state.h"
@@ -64,7 +65,8 @@ namespace automotive {
 ///
 /// @ingroup automotive_plants
 template <typename T>
-class TrajectoryCar final : public systems::LeafSystem<T> {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    TrajectoryCar final : public systems::LeafSystem<T> {
  public:
   typedef typename Curve2<T>::Point2T Point2;
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/gen/pure_pursuit_params.h"
 #include "drake/automotive/gen/simple_car_params.h"
 #include "drake/automotive/lane_direction.h"
@@ -31,7 +32,8 @@ namespace automotive {
 ///     Algorithm. Carnegie Mellon University, Pittsburgh, Pennsylvania, Jan
 ///     1990.
 template <typename T>
-class PurePursuit {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    PurePursuit {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PurePursuit)
   PurePursuit() = delete;

@@ -4,6 +4,7 @@
 #include <ostream>
 #include <string>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -21,7 +22,8 @@ namespace api {
 class Lane;
 
 /// A specific endpoint of a specific Lane.
-struct LaneEnd {
+struct DRAKE_DEPRECATED_AUTOMOTIVE
+    LaneEnd {
   /// Labels for the endpoints of a Lane.
   /// kStart is the "s == 0" end, and kFinish is the other end.
   enum Which { kStart, kFinish, };
@@ -52,7 +54,8 @@ struct LaneEnd {
 std::ostream& operator<<(std::ostream& out, const LaneEnd::Which& which_end);
 
 /// A 3-dimensional rotation.
-class Rotation {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Rotation {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Rotation)
 
@@ -134,7 +137,8 @@ std::ostream& operator<<(std::ostream& out, const Rotation& rotation);
 ///
 /// They are already available to link against in the containing library.
 template <typename T>
-class GeoPositionT {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    GeoPositionT {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeoPositionT)
 
@@ -257,7 +261,8 @@ GeoPositionT<T> operator*(const GeoPositionT<T>& lhs,
 ///
 /// They are already available to link against in the containing library.
 template <typename T>
-class LanePositionT {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    LanePositionT {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LanePositionT)
 
@@ -323,7 +328,8 @@ std::ostream& operator<<(std::ostream& out, const LanePosition& lane_position);
 /// form an isometric system with a Cartesian distance metric.  Hence,
 /// IsoLaneVelocity represents a "real" physical velocity vector (albeit
 /// with an orientation relative to the road surface).
-struct IsoLaneVelocity {
+struct DRAKE_DEPRECATED_AUTOMOTIVE
+    IsoLaneVelocity {
   /// Default constructor.
   IsoLaneVelocity() = default;
 
@@ -339,7 +345,8 @@ struct IsoLaneVelocity {
 
 /// A position in the road network, consisting of a pointer to a specific
 /// Lane and a `Lane`-frame position in that Lane.
-struct RoadPosition {
+struct DRAKE_DEPRECATED_AUTOMOTIVE
+    RoadPosition {
   /// Default constructor.
   RoadPosition() = default;
 
@@ -355,7 +362,8 @@ struct RoadPosition {
 /// Bounds in the lateral dimension (r component) of a `Lane`-frame, consisting
 /// of a pair of minimum and maximum r value.  The bounds must straddle r = 0,
 /// i.e., the minimum must be <= 0 and the maximum must be >= 0.
-class RBounds {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    RBounds {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RBounds)
 
@@ -400,7 +408,8 @@ class RBounds {
 /// consisting of a pair of minimum and maximum `h` value.  The bounds
 /// must straddle `h = 0`, i.e., the minimum must be `<= 0` and the
 /// maximum must be `>= 0`.
-class HBounds {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    HBounds {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HBounds)
 

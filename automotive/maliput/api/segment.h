@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/drake_copyable.h"
 
@@ -24,7 +25,8 @@ using SegmentId = TypeSpecificIdentifier<class Segment>;
 /// map to the same GeoPoint in 3-space.
 ///
 /// Segments are grouped by Junction.
-class Segment {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Segment {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Segment)
 

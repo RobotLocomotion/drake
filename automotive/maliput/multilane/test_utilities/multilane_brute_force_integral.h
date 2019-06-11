@@ -2,6 +2,7 @@
 
 #include <tuple>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/multilane/road_curve.h"
 
 namespace drake {

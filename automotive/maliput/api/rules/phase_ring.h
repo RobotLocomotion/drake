@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/rules/phase.h"
 #include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/drake_copyable.h"
@@ -15,7 +16,8 @@ namespace rules {
 
 /// A set of mutually exclusive phases, e.g., that comprise the signaling
 /// cycle for an intersection.
-class PhaseRing final {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    PhaseRing final {
  public:
   /// Holds a "next phase" specification. This is one of the phases that could
   /// be next after the current phase ends.

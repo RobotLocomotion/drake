@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/rules/phase.h"
 #include "drake/automotive/maliput/api/rules/phase_ring.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
@@ -31,7 +32,8 @@ namespace test {
 /// of AssertionResultCollector.  At the end of the subroutine, an
 /// AssertionResult, representing the `and` of all the collected results,
 /// can be extracted from the collector.
-class AssertionResultCollector {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    AssertionResultCollector {
  public:
   /// Constructs an empty AssertionResultCollector.
   AssertionResultCollector() = default;

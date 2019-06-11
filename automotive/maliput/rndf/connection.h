@@ -6,6 +6,7 @@
 #include "ignition/math/Vector3.hh"
 #include "ignition/rndf/UniqueId.hh"
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/rndf/directed_waypoint.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
@@ -33,7 +34,8 @@ namespace rndf {
 /// group will be flagged as the reference, and an interpolated spline is
 /// computed from the the DirectedWaypoints within the reference Connection to
 /// obtain the tangent information.
-class Connection {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Connection {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Connection)
   /// Constructs a Connection.

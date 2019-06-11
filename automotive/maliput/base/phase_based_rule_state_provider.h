@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/rules/phase_provider.h"
 #include "drake/automotive/maliput/api/rules/phase_ring_book.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
@@ -24,7 +25,8 @@ namespace maliput {
 ///
 /// The rules above will ensure vehicles traveling on Street A do not collide
 /// with vehicles traveling on Street B and vice versa.
-class PhaseBasedRuleStateProvider final : public api::rules::RuleStateProvider {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    PhaseBasedRuleStateProvider final : public api::rules::RuleStateProvider {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PhaseBasedRuleStateProvider)
 

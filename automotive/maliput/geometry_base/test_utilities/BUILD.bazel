@@ -22,7 +22,12 @@ drake_cc_library(
     testonly = 1,
     srcs = ["mock_geometry.cc"],
     hdrs = ["mock_geometry.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
+        "//automotive:deprecated",
         "//automotive/maliput/geometry_base",
     ],
 )

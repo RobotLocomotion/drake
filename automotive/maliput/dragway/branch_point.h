@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/branch_point.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
@@ -19,7 +20,8 @@ class Lane;
 
 /// Dragway's implementation of api::LaneEndSet. Since a dragway::Lane connects
 /// to itself, this LaneEndSet only contains one api::LaneEnd.
-class LaneEndSet final : public api::LaneEndSet {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    LaneEndSet final : public api::LaneEndSet {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LaneEndSet)
 
@@ -38,7 +40,8 @@ class LaneEndSet final : public api::LaneEndSet {
 
 
 /// Dragway's implementation of api::BranchPoint.
-class BranchPoint final : public api::BranchPoint {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    BranchPoint final : public api::BranchPoint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BranchPoint)
 

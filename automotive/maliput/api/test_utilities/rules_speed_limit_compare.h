@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/rules/speed_limit_rule.h"
 #include "drake/automotive/maliput/api/test_utilities/rules_test_utilities.h"
 

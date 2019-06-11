@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/basic_id_index.h"
 #include "drake/automotive/maliput/api/branch_point.h"
 #include "drake/automotive/maliput/api/junction.h"
@@ -18,7 +19,8 @@ namespace multilane {
 /// A simple api::RoadGeometry implementation that only supports a single
 /// lane per segment.  Use the Builder interface to actually assemble
 /// a sensible road network.
-class RoadGeometry : public api::RoadGeometry {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    RoadGeometry : public api::RoadGeometry {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RoadGeometry)
 

@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 
 namespace drake {
@@ -11,7 +12,8 @@ namespace maliput {
 namespace multilane {
 
 /// A fixture for tests that use a road that branches and merges.
-class BranchAndMergeBasedTest : public ::testing::Test {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    BranchAndMergeBasedTest : public ::testing::Test {
  protected:
   BranchAndMergeBasedTest();
 
@@ -21,7 +23,8 @@ class BranchAndMergeBasedTest : public ::testing::Test {
 };
 
 /// A fixture for tests that use a road with multiple loops.
-class LoopBasedTest : public ::testing::Test {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    LoopBasedTest : public ::testing::Test {
  protected:
   LoopBasedTest();
 
@@ -31,7 +34,8 @@ class LoopBasedTest : public ::testing::Test {
 
 /// A fixture for tests that use a road that branches from one lane into
 /// multiple lanes.
-class MultiBranchBasedTest : public ::testing::Test {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    MultiBranchBasedTest : public ::testing::Test {
  protected:
   MultiBranchBasedTest();
 

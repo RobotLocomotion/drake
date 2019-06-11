@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/rules/phase_ring.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
 #include "drake/common/drake_copyable.h"
@@ -14,7 +15,8 @@ namespace rules {
 
 /// Abstract interface for providing the mapping from RightOfWayRule::Id to
 /// PhaseRing.
-class PhaseRingBook {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    PhaseRingBook {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PhaseRingBook);
 

@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
 #include "drake/automotive/maliput/api/rules/traffic_lights.h"
 #include "drake/automotive/maliput/api/type_specific_identifier.h"
@@ -25,7 +26,8 @@ using BulbStates = std::unordered_map<UniqueBulbId, BulbState>;
 /// A group of RightOfWayRule instances and their states. It models coupling
 /// between these rules due to, for example, spatial co-location at
 /// intersections.
-class Phase final {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Phase final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Phase);
 

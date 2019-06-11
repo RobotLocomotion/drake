@@ -6,6 +6,7 @@
 
 #include <Eigen/Geometry>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/lane_direction.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/lane_data.h"
@@ -22,7 +23,8 @@ namespace automotive {
 /// with its distance measure relative to the ego vehicle.  Its intended use is
 /// as the return argument for PoseSelector member functions.
 template <typename T>
-struct ClosestPose {
+struct DRAKE_DEPRECATED_AUTOMOTIVE
+    ClosestPose {
  public:
   /// Default constructor.
   ClosestPose() = default;
@@ -62,7 +64,8 @@ enum class RoadPositionStrategy { kCache, kExhaustiveSearch };
 ///
 /// They are already available to link against in the containing library.
 template <typename T>
-class PoseSelector {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    PoseSelector {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseSelector)
 

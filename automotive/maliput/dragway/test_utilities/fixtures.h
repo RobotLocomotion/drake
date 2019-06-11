@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 
@@ -10,7 +11,8 @@ namespace maliput {
 namespace dragway {
 
 /// A fixture for tests that use a dragway.
-class DragwayBasedTest : public ::testing::Test {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    DragwayBasedTest : public ::testing::Test {
  protected:
   DragwayBasedTest();
   void SetUp() override;

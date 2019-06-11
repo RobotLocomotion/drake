@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/lane.h"
 
 namespace drake {
