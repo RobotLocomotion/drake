@@ -253,6 +253,10 @@ class SdpaFreeFormat {
 
   void AddLinearMatrixInequalityConstraints(const MathematicalProgram& prog);
 
+  void AddLorentzConeConstraints(const MathematicalProgram& prog);
+
+  void AddRotatedLorentzConeConstraints(const MathematicalProgram& prog);
+
   // Called at the end of the constructor.
   void Finalize();
 

@@ -101,5 +101,49 @@ TrivialSDP2::TrivialSDP2()
   prog_->AddLinearEqualityConstraint(X1_(0, 0) + 2 * X1_(1, 1) + 3 * y_, 1);
   prog_->AddLinearCost(-y_);
 }
+
+TrivialSOCP1::TrivialSOCP1()
+    : prog_{new MathematicalProgram()}, x_{prog_->NewContinuousVariables<3>()} {
+  prog_->AddBoundingBoxConstraint(Eigen::Vector2d::Zero(),
+                                  Eigen::Vector2d(kInf, kInf), x_.tail<2>());
+  prog_->AddLinearEqualityConstraint(x_(0) + x_(1) + x_(2), 10);
+  Eigen::Matrix3d A;
+  // clang-format off
+  A << 2, 0, 0,
+       0, 3, 0,
+       1, 0, 1;
+  // clang-format on
+  Eigen::Vector3d b(1, 2, 3);
+  prog_->AddLorentzConeConstraint(A, b, x_);
+
+  prog_->AddLinearCost(-x_(0));
+}
+
+TrivialSOCP2::TrivialSOCP2()
+    : prog_{new MathematicalProgram()}, x_{prog_->NewContinuousVariables<2>()} {
+  prog_->AddLinearCost(-x_(1));
+  Eigen::Matrix<double, 3, 2> A;
+  // clang-format off
+  A << 1, 0,
+       1, 1,
+       1, -1;
+  // clang-format on
+  Eigen::Vector3d b(2, 1, 1);
+  prog_->AddLorentzConeConstraint(A, b, x_);
+}
+
+TrivialSOCP3::TrivialSOCP3()
+    : prog_{new MathematicalProgram()}, x_{prog_->NewContinuousVariables<2>()} {
+  prog_->AddLinearCost(x_(1));
+  Eigen::Matrix<double, 4, 2> A;
+  // clang-format off
+  A << 2, 0,
+       0, 3,
+       1, 0,
+       3, 1;
+  // clang-format on
+  Eigen::Vector4d b(2, 4, 2, 1);
+  prog_->AddRotatedLorentzConeConstraint(A, b, x_);
+}
 }  // namespace solvers
 }  // namespace drake
