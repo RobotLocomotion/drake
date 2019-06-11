@@ -22,6 +22,10 @@ using std::cout;
 using std::endl;
 using std::vector;
 
+/*
+ * This example connects a ManipulationStation to a RobotPlanRunner and a
+ * PlanSender, and then runs a JointSpacePlan.
+ */
 int test_joint_space_plan() {
   // create plan
   PlanData plan1;
