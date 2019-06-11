@@ -538,6 +538,11 @@ drake_py_binary(
 )
 
 install(
+    name = "install_drake_marker",
+    targets = [":libdrake_marker.so"],
+)
+
+install(
     name = "install",
     install_tests = [":test/resource_tool_installed_test.py"],
     targets = [
@@ -551,6 +556,9 @@ install(
     data_dest = "share/drake",
     guess_data = "WORKSPACE",
     allowed_externals = [DRAKE_RESOURCE_SENTINEL],
+    deps = [
+        ":install_drake_marker",
+    ],
 )
 
 # === test/ ===
