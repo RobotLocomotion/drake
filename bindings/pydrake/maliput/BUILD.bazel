@@ -38,6 +38,10 @@ drake_py_library(
 
 drake_pybind_library(
     name = "api_py",
+    cc_copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:wrap_pybind",
@@ -51,6 +55,10 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "dragway_py",
+    cc_copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     cc_deps = ["//bindings/pydrake:documentation_pybind"],
     cc_srcs = ["dragway_py.cc"],
     package_info = PACKAGE_INFO,
