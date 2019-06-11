@@ -90,11 +90,25 @@ drake_cc_binary(
 )
 
 drake_cc_binary(
-    name = "full_system_test",
-    srcs = ["full_system_test.cc"],
+    name = "plan_runner_hardware_interface_test",
+    srcs = ["plan_runner_hardware_interface_test.cc"],
     deps = [
         ":plan_runner_hardware_interface",
         "//math"
+    ],
+)
+
+drake_cc_binary(
+    name = "manipulation_station_test",
+    srcs = ["manipulation_station_test.cc"],
+    deps = [
+        ":robot_plan_runner",
+        ":plan_sender",
+        "//manipulation/robot_plan_runner/robot_plans",
+        "//systems/analysis:simulator",
+        "//systems/framework",
+        "//geometry:geometry_visualization",
+        "//examples/manipulation_station:manipulation_station",
     ],
 )
 

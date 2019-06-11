@@ -16,38 +16,6 @@ using std::cout;
 using std::endl;
 using std::vector;
 
-//int test_joint_space_plan() {
-//  // create plan
-//  PlanData plan1;
-//
-//  Eigen::VectorXd t_knots(3);
-//  t_knots << 0, 2, 4;
-//
-//  Eigen::MatrixXd q_knots(7, 3);
-//  q_knots.col(0) << 0, 0, 0, -1.75, 0, 1.0, 0;
-//  q_knots.col(1) << 0.5, 0, 0, -1.75, 0, 1.0, 0;
-//  q_knots.col(2) << 1, 0, 0, -1.75, 0, 1.0, 0;
-//
-//  auto qtraj = trajectories::PiecewisePolynomial<double>::Cubic(
-//      t_knots, q_knots, Eigen::VectorXd::Zero(7), Eigen::VectorXd::Zero(7));
-//
-//  plan1.plan_type = PlanType::kJointSpacePlan;
-//  plan1.joint_traj = qtraj;
-//  std::vector<PlanData> plan_list{plan1};
-//
-//  // Construct plan runner hardware interface.
-//  auto plan_runner =
-//      manipulation::robot_plan_runner::PlanRunnerHardwareInterface(plan_list);
-//
-//  // save diagram graphviz string.
-//  plan_runner.SaveGraphvizStringToFile();
-//
-//  // Run simulation.
-//  plan_runner.Run();
-//
-//  return 0;
-//};
-
 /*
  * This is not as much a test as it is an example of using
  * PlanRunnerHardwareInterface. To see what it does to robots, it should be run
