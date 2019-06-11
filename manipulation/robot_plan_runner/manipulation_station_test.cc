@@ -48,15 +48,14 @@ int test_joint_space_plan() {
   systems::DiagramBuilder<double> builder;
 
   // Set up ManipulationStation.
-  const double time_step = 0.002;
   auto station =
-      builder.template AddSystem<ManipulationStation<double>>(time_step);
+      builder.template AddSystem<ManipulationStation<double>>();
   station->SetupDefaultStation();
   station->Finalize();
 
   // Set up PlanRunner.
   auto plan_runner =
-      builder.template AddSystem<RobotPlanRunner>(true, time_step);
+      builder.template AddSystem<RobotPlanRunner>(true, 0.005);
 
   builder.Connect(station->GetOutputPort("iiwa_position_measured"),
                   plan_runner->GetInputPort("iiwa_position_measured"));
