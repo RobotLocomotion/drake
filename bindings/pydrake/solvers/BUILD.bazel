@@ -143,10 +143,18 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "snopt_py",
-    cc_deps = ["//bindings/pydrake:documentation_pybind"],
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:value_pybind",
+    ],
     cc_srcs = ["snopt_py.cc"],
     package_info = PACKAGE_INFO,
-    py_deps = [":mathematicalprogram_py"],
+    py_deps = [
+        ":mathematicalprogram_py",
+        # TODO(jwnimmer-tri) Only for AbstractValue; we should switch this to
+        # depend on on pydrake/common once the Value bindings have moved there.
+        "//bindings/pydrake/systems:framework_py",
+    ],
 )
 
 PY_LIBRARIES_ATTIC_ALIASES = [
@@ -237,6 +245,12 @@ drake_py_unittest(
         ":scs_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
+)
+
+drake_py_unittest(
+    name = "snopt_solver_test",
+    tags = ["snopt"],
+    deps = [":snopt_py"],
 )
 
 drake_py_unittest(
