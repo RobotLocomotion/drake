@@ -599,8 +599,10 @@ struct TypeHash {
   // (Such failures are expected to be rare.)
   static constexpr size_t value = calc();
 };
+#if  __cplusplus < 201703L
 template <typename T>
 constexpr size_t TypeHash<T>::value;
+#endif
 
 // This is called once per process per T whose type_hash is 0.  It logs a
 // TypeHash failure message to Drake's text log.
