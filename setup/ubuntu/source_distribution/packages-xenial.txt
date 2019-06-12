@@ -42,6 +42,7 @@ libyaml-cpp-dev
 lldb-6.0
 locales
 openssh-client
+patch
 patchelf
 patchutils
 pkg-config

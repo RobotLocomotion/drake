@@ -12,4 +12,7 @@ def octomap_repository(
         sha256 = "5f81c9a8cbc9526b2e725251cd3a829e5222a28201b394314002146d8b9214dd",  # noqa
         build_file = "@drake//tools/workspace/octomap:package.BUILD.bazel",
         mirrors = mirrors,
+        patches = [
+            "@drake//tools/workspace/octomap:do_not_use_random_shuffle.patch",
+        ],
     )
