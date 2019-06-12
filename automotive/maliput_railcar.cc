@@ -68,11 +68,12 @@ const LaneDirection& get_lane_direction(
 
 }  // namespace
 
-
+#if  __cplusplus < 201703L
 template <typename T> constexpr T MaliputRailcar<T>::kDefaultInitialS;
 template <typename T> constexpr T MaliputRailcar<T>::kDefaultInitialSpeed;
 template <typename T> constexpr double MaliputRailcar<T>::kLaneEndEpsilon;
 template <typename T> constexpr double MaliputRailcar<T>::kTimeEpsilon;
+#endif
 
 template <typename T>
 MaliputRailcar<T>::MaliputRailcar(const LaneDirection& initial_lane_direction)

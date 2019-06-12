@@ -52,8 +52,10 @@ using internal::CreateBinding;
 using internal::DecomposeLinearExpression;
 using internal::SymbolicError;
 
+#if  __cplusplus < 201703L
 constexpr double MathematicalProgram::kGlobalInfeasibleCost;
 constexpr double MathematicalProgram::kUnboundedCost;
+#endif
 
 MathematicalProgram::MathematicalProgram()
     : x_initial_guess_(0),

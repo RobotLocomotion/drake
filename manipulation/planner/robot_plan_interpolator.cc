@@ -34,7 +34,9 @@ constexpr int kAbsStateIdxInitFlag = 1;
 
 }  // namespace
 
+#if  __cplusplus < 201703L
 constexpr double RobotPlanInterpolator::kDefaultPlanUpdateInterval;
+#endif
 
 // TODO(sammy-tri) If we had version of Trajectory which supported
 // outputting the derivatives in value(), we could avoid keeping track

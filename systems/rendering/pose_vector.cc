@@ -6,8 +6,9 @@ namespace drake {
 namespace systems {
 namespace rendering {
 
-// Linkage for kSize.
+#if  __cplusplus < 201703L
 template <typename T> constexpr int PoseVector<T>::kSize;
+#endif
 
 template <typename T>
 PoseVector<T>::PoseVector()
