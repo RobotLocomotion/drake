@@ -3,11 +3,13 @@ import pydrake.geometry as mut
 import unittest
 import warnings
 
+from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.eigen_geometry import Isometry3
+from pydrake.common.eigen_geometry import Isometry3_
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.lcm import DrakeMockLcm
-from pydrake.systems.framework import DiagramBuilder, InputPort, OutputPort
+from pydrake.symbolic import Expression
+from pydrake.systems.framework import DiagramBuilder_, InputPort_, OutputPort_
 from pydrake.common.deprecation import DrakeDeprecationWarning
 
 
@@ -15,8 +17,19 @@ class TestGeometry(unittest.TestCase):
     def setUp(self):
         warnings.simplefilter('error', DrakeDeprecationWarning)
 
+    def check_types(self, check_func):
+        check_func(float)
+        check_func(AutoDiffXd)
+
     def test_scene_graph_api(self):
-        scene_graph = mut.SceneGraph()
+        self.check_types(self.check_scene_graph_api)
+
+    def check_scene_graph_api(self, T):
+        SceneGraph = mut.SceneGraph_[T]
+        InputPort = InputPort_[T]
+        OutputPort = OutputPort_[T]
+
+        scene_graph = SceneGraph()
         global_source = scene_graph.RegisterSource("anchored")
         self.assertIsInstance(
             scene_graph.get_source_pose_port(global_source), InputPort)
@@ -24,12 +37,19 @@ class TestGeometry(unittest.TestCase):
             scene_graph.get_pose_bundle_output_port(), OutputPort)
         self.assertIsInstance(
             scene_graph.get_query_output_port(), OutputPort)
+
+    def test_connect_drake_visualizer(self):
         # Test visualization API.
-        # Use a mockable so that we can make a smoke test without side effects.
+        # Use a mockable so that we can make a smoke test without side
+        # effects.
+        T = float
+        SceneGraph = mut.SceneGraph_[T]
+        DiagramBuilder = DiagramBuilder_[T]
         lcm = DrakeMockLcm()
+
         for i in range(2):
             builder = DiagramBuilder()
-            scene_graph = builder.AddSystem(mut.SceneGraph())
+            scene_graph = builder.AddSystem(SceneGraph())
             if i == 1:
                 mut.ConnectDrakeVisualizer(
                     builder=builder, scene_graph=scene_graph)
@@ -42,8 +62,14 @@ class TestGeometry(unittest.TestCase):
                 scene_graph=scene_graph, lcm=lcm)
 
     def test_frame_pose_vector_api(self):
-        obj = mut.FramePoseVector()
+        self.check_types(self.check_frame_pose_vector_api)
+
+    def check_frame_pose_vector_api(self, T):
+        FramePoseVector = mut.FramePoseVector_[T]
+        Isometry3 = Isometry3_[T]
+        obj = FramePoseVector()
         frame_id = mut.FrameId.get_new_id()
+
         obj.set_value(id=frame_id, value=Isometry3.Identity())
         self.assertEqual(obj.size(), 1)
         self.assertIsInstance(obj.value(id=frame_id), Isometry3)
@@ -68,6 +94,7 @@ class TestGeometry(unittest.TestCase):
             mut.FrameId,
             mut.GeometryId,
         ]
+
         for cls in cls_list:
             with self.assertRaises(DrakeDeprecationWarning) as exc:
                 cls()
@@ -81,7 +108,10 @@ class TestGeometry(unittest.TestCase):
             self.assertTrue(a < b or b > a)
 
     def test_penetration_as_point_pair_api(self):
-        obj = mut.PenetrationAsPointPair()
+        self.check_types(self.check_penetration_as_point_pair_api)
+
+    def check_penetration_as_point_pair_api(self, T):
+        obj = mut.PenetrationAsPointPair_[T]()
         self.assertIsInstance(obj.id_A, mut.GeometryId)
         self.assertIsInstance(obj.id_B, mut.GeometryId)
         self.assertTupleEqual(obj.p_WCa.shape, (3,))
@@ -89,19 +119,25 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(obj.depth, -1.)
 
     def test_signed_distance_api(self):
-        obj = mut.SignedDistancePair()
+        self.check_types(self.check_signed_distance_api)
+
+    def check_signed_distance_api(self, T):
+        obj = mut.SignedDistancePair_[T]()
         self.assertIsInstance(obj.id_A, mut.GeometryId)
         self.assertIsInstance(obj.id_B, mut.GeometryId)
         self.assertTupleEqual(obj.p_ACa.shape, (3,))
         self.assertTupleEqual(obj.p_BCb.shape, (3,))
-        self.assertIsInstance(obj.distance, float)
+        self.assertIsInstance(obj.distance, T)
         self.assertTupleEqual(obj.nhat_BA_W.shape, (3,))
 
     def test_signed_distance_to_point_api(self):
-        obj = mut.SignedDistanceToPoint()
+        self.check_types(self.check_signed_distance_to_point_api)
+
+    def check_signed_distance_to_point_api(self, T):
+        obj = mut.SignedDistanceToPoint_[T]()
         self.assertIsInstance(obj.id_G, mut.GeometryId)
         self.assertTupleEqual(obj.p_GN.shape, (3,))
-        self.assertIsInstance(obj.distance, float)
+        self.assertIsInstance(obj.distance, T)
         self.assertTupleEqual(obj.grad_W.shape, (3,))
 
     def test_shape_constructors(self):
