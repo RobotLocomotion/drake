@@ -9,7 +9,6 @@ namespace drake {
 namespace symbolic {
 namespace {
 
-using std::ptr_fun;
 using test::FormulaEqual;
 
 class SymbolicExpressionArrayTest : public ::testing::Test {
@@ -523,9 +522,10 @@ TEST_F(SymbolicExpressionArrayTest, ArrayExprEqArrayExpr) {
   const Eigen::Array<Formula, 3, 2> a1{A_.array() == A_.array()};
   const Eigen::Array<Formula, 2, 3> a2{B_.array() == B_.array()};
   const Eigen::Array<Formula, 3, 2> a3{C_.array() == C_.array()};
-  EXPECT_TRUE(a1.unaryExpr(ptr_fun(is_true)).all());
-  EXPECT_TRUE(a2.unaryExpr(ptr_fun(is_true)).all());
-  EXPECT_TRUE(a3.unaryExpr(ptr_fun(is_true)).all());
+  auto is_true_lambda = [](const Formula& f) {return is_true(f);};
+  EXPECT_TRUE(a1.unaryExpr(is_true_lambda).all());
+  EXPECT_TRUE(a2.unaryExpr(is_true_lambda).all());
+  EXPECT_TRUE(a3.unaryExpr(is_true_lambda).all());
 }
 
 // Checks relational operators (==, !=, <=, <, >=, >) between Array<Expression>
