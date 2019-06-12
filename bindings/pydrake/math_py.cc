@@ -160,8 +160,6 @@ void DoDefinitions(py::module m, T) {
         .def("IsIdentityToInternalTolerance",
             &Class::IsIdentityToInternalTolerance,
             cls_doc.IsIdentityToInternalTolerance.doc)
-        // .def("IsNearlyEqualTo", ...)
-        // .def("IsExactlyEqualTo", ...)
         // Does not return the quality_factor
         .def_static("ProjectToRotationMatrix",
             [](const Matrix3<T>& M) {

@@ -65,9 +65,6 @@ class RotationMatrix {
   /// @throws std::logic_error in debug builds if R fails IsValid(R).
   explicit RotationMatrix(const Matrix3<T>& R) { set(R); }
 
-  // TODO(mitiguy) Although this method is fairly efficient, consider adding an
-  // optional second argument if `quaternion` is known to be normalized apriori
-  // or for some reason the calling site does not want `quaternion` normalized.
   /// Constructs a %RotationMatrix from an Eigen::Quaternion.
   /// @param[in] quaternion a non-zero, finite quaternion which may or may not
   /// have unit length [i.e., `quaternion.norm()` does not have to be 1].
@@ -77,6 +74,10 @@ class RotationMatrix {
   /// @note This method has the effect of normalizing its `quaternion` argument,
   /// without the inefficiency of the square-root associated with normalization.
   explicit RotationMatrix(const Eigen::Quaternion<T>& quaternion) {
+    // TODO(mitiguy) Although this method is fairly efficient, consider adding
+    // an optional second argument if `quaternion` is known to be normalized
+    // apriori or for some reason the calling site does not want `quaternion`
+    // normalized.
     // Cost for various way to create a rotation matrix from a quaternion.
     // Eigen quaternion.toRotationMatrix() = 12 multiplies, 12 adds.
     // Drake  QuaternionToRotationMatrix() = 12 multiplies, 12 adds.
@@ -90,8 +91,6 @@ class RotationMatrix {
   // `lambda` to this method is different than the %RotationMatrix produced by
   // converting `lambda` to an un-normalized quaternion and calling the
   // %RotationMatrix constructor (above) with that un-normalized quaternion.
-  // TODO(mitiguy) Consider adding an optional second argument if `lambda` is
-  // known to be normalized apriori or calling site does not want normalization.
   /// Constructs a %RotationMatrix from an Eigen::AngleAxis.
   /// @param[in] theta_lambda an Eigen::AngleAxis whose associated axis (vector
   /// direction herein called `lambda`) is non-zero and finite, but which may or
@@ -100,13 +99,15 @@ class RotationMatrix {
   /// R that is built from `theta_lambda` fails IsValid(R).  For example, an
   /// exception is thrown if `lambda` is zero or contains a NaN or infinity.
   explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda) {
+    // TODO(mitiguy) Consider adding an optional second argument if `lambda` is
+    // known to be normalized apriori or calling site does not want
+    // normalization.
     const Vector3<T>& lambda = theta_lambda.axis();
     const T norm = lambda.norm();
     const T& theta = theta_lambda.angle();
     set(Eigen::AngleAxis<T>(theta, lambda / norm).toRotationMatrix());
   }
 
-  // TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
   /// Constructs a %RotationMatrix from an %RollPitchYaw.  In other words,
   /// makes the %RotationMatrix for a Space-fixed (extrinsic) X-Y-Z rotation by
   /// "roll-pitch-yaw" angles `[r, p, y]`, which is equivalent to a Body-fixed
@@ -137,6 +138,7 @@ class RotationMatrix {
   /// rotate relative to frame A by a roll angle `y` about `Bz = Az`.
   /// Note: B and A are no longer aligned.
   explicit RotationMatrix(const RollPitchYaw<T>& rpy) {
+    // TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
     const T& r = rpy.roll_angle();
     const T& p = rpy.pitch_angle();
     const T& y = rpy.yaw_angle();
