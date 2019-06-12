@@ -133,7 +133,6 @@ GTEST_TEST(EndReferenceSpecTest, Connection) {
 
   const EndReference::Spec forward_start_dut =
       EndReference().z_at(conn, Which::kStart, Direction::kForward);
-  const EndpointZ expected_forward_start_endpoint{kFlatZWithoutThetaDot};
   EXPECT_TRUE(test::IsEndpointZClose(forward_start_dut.endpoint_z(),
                                      kFlatZWithoutThetaDot,
                                      kEndpointLinearTolerance,
