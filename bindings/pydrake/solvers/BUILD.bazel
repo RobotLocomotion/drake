@@ -233,7 +233,10 @@ drake_py_unittest(
         "//tools:no_scs": ["TestOsqpSolver.unavailable"],
         "//conditions:default": [],
     }),
-    deps = [":scs_py"],
+    deps = [
+        ":scs_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
 )
 
 drake_py_unittest(

@@ -1,7 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
 import unittest
+
 import numpy as np
+
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.scs import ScsSolver
 
@@ -22,8 +25,10 @@ class TestScsSolver(unittest.TestCase):
 
         result = solver.Solve(prog, None, None)
         self.assertTrue(result.is_success())
-        self.assertTrue(np.allclose(result.GetSolution(x), np.array([1, 1])))
-        self.assertAlmostEqual(result.get_solver_details().primal_objective, 1)
+        numpy_compare.assert_float_allclose(
+            result.GetSolution(x), [1.0, 1.0], atol=1E-7)
+        numpy_compare.assert_float_allclose(
+            result.get_solver_details().primal_objective, 1.0, atol=1E-7)
 
     def unavailable(self):
         """Per the BUILD file, this test is only run when OSQP is disabled."""
