@@ -50,7 +50,7 @@ GTEST_TEST(VariantTest, BasicTest) {
 
   // Bad access.
   dut = 0;
-  EXPECT_THROW(get<double>(dut), std::logic_error);
+  EXPECT_THROW(get<double>(dut), std::exception);
 }
 
 }  // namespace

@@ -769,25 +769,25 @@ void TestMimo(bool is_discrete) {
   const double tol = 1e-8;
 
   // First-input, first output.
-  auto sys00 = Linearize(sys, *context, 0, 0);
+  auto sys00 = Linearize(sys, *context, InputPortIndex{0}, OutputPortIndex{0});
   EXPECT_TRUE(CompareMatrices(sys00->A(), sys.A_, tol));
   EXPECT_TRUE(CompareMatrices(sys00->B(), sys.B0_, tol));
   EXPECT_TRUE(CompareMatrices(sys00->C(), sys.C0_, tol));
   EXPECT_TRUE(CompareMatrices(sys00->D(), sys.D00_, tol));
 
-  auto sys01 = Linearize(sys, *context, 0, 1);
+  auto sys01 = Linearize(sys, *context, InputPortIndex{0}, OutputPortIndex{1});
   EXPECT_TRUE(CompareMatrices(sys01->A(), sys.A_, tol));
   EXPECT_TRUE(CompareMatrices(sys01->B(), sys.B0_, tol));
   EXPECT_TRUE(CompareMatrices(sys01->C(), sys.C1_, tol));
   EXPECT_TRUE(CompareMatrices(sys01->D(), sys.D10_, tol));
 
-  auto sys10 = Linearize(sys, *context, 1, 0);
+  auto sys10 = Linearize(sys, *context, InputPortIndex{1}, OutputPortIndex{0});
   EXPECT_TRUE(CompareMatrices(sys10->A(), sys.A_, tol));
   EXPECT_TRUE(CompareMatrices(sys10->B(), sys.B1_, tol));
   EXPECT_TRUE(CompareMatrices(sys10->C(), sys.C0_, tol));
   EXPECT_TRUE(CompareMatrices(sys10->D(), sys.D01_, tol));
 
-  auto sys11 = Linearize(sys, *context, 1, 1);
+  auto sys11 = Linearize(sys, *context, InputPortIndex{1}, OutputPortIndex{1});
   EXPECT_TRUE(CompareMatrices(sys11->A(), sys.A_, tol));
   EXPECT_TRUE(CompareMatrices(sys11->B(), sys.B1_, tol));
   EXPECT_TRUE(CompareMatrices(sys11->C(), sys.C1_, tol));
