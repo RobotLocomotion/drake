@@ -109,11 +109,18 @@ PYBIND11_MODULE(plant, m) {
               return self->AddFrame(std::move(frame));
             },
             py_reference_internal, py::arg("frame"), cls_doc.AddFrame.doc)
+        .def("AddModelInstance", &Class::AddModelInstance,
+            py::arg("name"), cls_doc.AddModelInstance.doc)
         .def("AddRigidBody",
             py::overload_cast<const std::string&,
                 const SpatialInertia<double>&>(&Class::AddRigidBody),
             py::arg("name"), py::arg("M_BBo_B"), py_reference_internal,
             cls_doc.AddRigidBody.doc_2args)
+        .def("AddRigidBody",
+            py::overload_cast<const std::string&, ModelInstanceIndex,
+                const SpatialInertia<double>&>(&Class::AddRigidBody),
+            py::arg("name"), py::arg("model_instance"), py::arg("M_BBo_B"), py_reference_internal,
+            cls_doc.AddRigidBody.doc_3args)
         .def("WeldFrames",
             py::overload_cast<const Frame<T>&, const Frame<T>&,
                 const RigidTransform<double>&>(&Class::WeldFrames),
