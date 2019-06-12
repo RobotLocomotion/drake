@@ -791,7 +791,7 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
   // sized.
   if (num_contacts == 0) return;
 
-  const Frame<T>& world_frame = world_frame();
+  const Frame<T>& world_frame = internal_tree().world_frame();
   for (int icontact = 0; icontact < num_contacts; ++icontact) {
     const auto& point_pair = point_pairs_set[icontact];
 

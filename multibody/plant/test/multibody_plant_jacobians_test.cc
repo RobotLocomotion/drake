@@ -243,10 +243,9 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
   // Test CalcJacobianTranslationalVelocity() by calculating the 3xn matrix for
   // point Ep's translational velocity Jacobian in W (world) and ensuring this
   // is the last 3 rows of the spatial velocity Jacobian Jq_V_WEp.
-  MatrixX<double> Jq_v_WEp(3, num_generalized_positions);
+  Matrix3X<double> Jq_v_WEp(3, num_generalized_positions);
   plant_->CalcJacobianTranslationalVelocity(*context_,
                                             JacobianWrtVariable::kQDot,
-                                            end_effector_frame,
                                             end_effector_frame,
                                             p_EoEp_E,
                                             world_frame,

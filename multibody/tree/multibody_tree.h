@@ -2285,17 +2285,14 @@ class MultibodyTree {
   // partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
   // positions) or with respect to 𝑠 = v (generalized velocities).
   // @param[in] frame_B The frame on which point Bi is fixed (e.g., welded).
-  // @param[in] frame_F The frame associated with `p_FoBi_F` (next argument),
-  // which must be either frame_B or the world frame W.
-  // @param[in] p_FoBi_F A position vector or list of position vectors from
-  // Fo (frame_F's origin) to points Bi (regarded as fixed to B), where each
-  // position vector is expressed in frame F.
+  // @param[in] p_WoBi_W A position vector or list of position vectors from
+  // Wo (world frame W's origin) to points Bi (regarded as fixed to B),
+  // where each position vector is expressed in frame W.
   // @param[in] frame_A The frame that measures `v_ABi` (Bi's velocity in A).
   // @param[out] Js_v_ABi_W Point Bi's velocity Jacobian in frame A with
   // respect to speeds 𝑠 (which is either q̇ or v), expressed in world frame W.
   // `Js_v_ABi_E` is a `3 x n` matrix, where n is the number of elements in 𝑠.
   // @throws std::exception if `Js_v_ABi_W` is nullptr or not of size `3 x n`.
-  // @throws std::exception if frame_F is not frame_B or not the world frame W.
   void CalcJacobianTranslationalVelocityHelper(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
