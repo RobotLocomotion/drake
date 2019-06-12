@@ -2207,6 +2207,25 @@ class MathematicalProgram {
   AddSosConstraint(const symbolic::Expression& e);
 
   /**
+   * Constraining that two polynomials are the same (i.e., they have the same
+   * coefficients for each monomial). This function is often used in
+   * sum-of-squares optimization.
+   * We will impose the linear equality constraint that the coefficient of a
+   * monomial in @p p1 is the same as the coefficient of the same monomial in @p
+   * p2.
+   * @param p1 Note that p1's indeterminates should have been registered as
+   * indeterminates in this MathematicalProgram object, and p1's coefficients
+   * are affine functions of decision variables in this MathematicalProgram
+   * object.
+   * @param p2 Note that p2's indeterminates should have been registered as
+   * indeterminates in this MathematicalProgram object, and p2's coefficients
+   * are affine functions of decision variables in this MathematicalProgram
+   * object.
+   */
+  void AddEqualityConstraintBetweenPolynomials(const symbolic::Polynomial& p1,
+                                               const symbolic::Polynomial& p2);
+
+  /**
    * Adds the exponential cone constraint that
    * z = binding.evaluator()->A() * binding.variables() +
    *     binding.evaluator()->b()
