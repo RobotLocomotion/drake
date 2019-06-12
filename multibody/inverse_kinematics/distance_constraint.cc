@@ -24,7 +24,7 @@ DistanceConstraint::DistanceConstraint(
       geometry_pair_{std::move(geometry_pair)} {
   if (!plant_.geometry_source_is_registered()) {
     throw std::invalid_argument(
-        "MinimumDistanceConstraint: MultibodyPlant has not registered its "
+        "DistanceConstraint: MultibodyPlant has not registered its "
         "geometry source with SceneGraph yet. Please refer to "
         "AddMultibodyPlantSceneGraph on how to connect MultibodyPlant to "
         "SceneGraph.");
@@ -43,6 +43,7 @@ DistanceConstraint::DistanceConstraint(
 template <typename T>
 void DistanceConstraint::DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x,
                                        VectorX<T>* y) const {
+  y->resize(num_constraints());
   internal::UpdateContextConfiguration(plant_context_, plant_, x);
   const auto& query_port = plant_.get_geometry_query_input_port();
   const auto& query_object =

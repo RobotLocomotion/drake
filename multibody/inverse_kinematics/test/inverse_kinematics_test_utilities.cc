@@ -133,6 +133,11 @@ TwoFreeSpheresTest::TwoFreeSpheresTest() {
   diagram_context_autodiff_ = diagram_autodiff_->CreateDefaultContext();
   plant_context_autodiff_ = &(diagram_autodiff_->GetMutableSubsystemContext(
       *plant_autodiff_, diagram_context_autodiff_.get()));
+
+  sphere1_geometry_id_ = plant_double_->GetCollisionGeometriesForBody(
+      plant_double_->get_frame(sphere1_index_).body())[0];
+  sphere2_geometry_id_ = plant_double_->GetCollisionGeometriesForBody(
+      plant_double_->get_frame(sphere2_index_).body())[0];
 }
 
 template <typename T>

@@ -138,6 +138,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "distance_constraint_test",
+    deps = [
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_constraint",
+        "//solvers/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "inverse_kinematics_test",
     # TODO(betsymcphail) Ubsan fails for this test. See #9475.
     tags = [
