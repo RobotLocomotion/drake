@@ -2208,7 +2208,7 @@ class MathematicalProgram {
 
   /**
    * Constraining that two polynomials are the same (i.e., they have the same
-   * coefficients for each monomials). This function is often used in
+   * coefficients for each monomial). This function is often used in
    * sum-of-squares optimization.
    * We will impose the linear equality constraint that the coefficient of a
    * monomial in @p p1 is the same as the coefficient of the same monomial in @p
