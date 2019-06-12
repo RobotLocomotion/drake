@@ -4,6 +4,7 @@ import unittest
 
 import numpy as np
 
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.snopt import SnoptSolver
 
@@ -22,6 +23,6 @@ class TestSnoptSolver(unittest.TestCase):
 
             result = solver.Solve(prog, None, None)
             self.assertTrue(result.is_success())
-            self.assertTrue(np.allclose(
-                result.GetSolution(x), np.array([0, 1])))
+            numpy_compare.assert_float_allclose(
+                result.GetSolution, [0., 1.], atol=1E-7)
             self.assertEqual(result.get_solver_details().info, 1)

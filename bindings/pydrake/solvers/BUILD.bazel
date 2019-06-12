@@ -250,7 +250,10 @@ drake_py_unittest(
 drake_py_unittest(
     name = "snopt_solver_test",
     tags = ["snopt"],
-    deps = [":snopt_py"],
+    deps = [
+        ":snopt_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
 )
 
 drake_py_unittest(
