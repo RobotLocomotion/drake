@@ -607,6 +607,133 @@ TEST_F(KukaIiwaModelTests, CalcPointsGeometricJacobianExpressedInWorld) {
                               kTolerance, MatrixCompareType::relative));
 }
 
+// This test is used to verify the correctness of the method
+// MultibodyTree::CalcJacobianTranslationalVelocity().
+// It test the end effector's translational Jacobian Jv_v_WE_W with two methods:
+// 1. Calling MultibodyTree::CalcJacobianTranslationalVelocity().
+// 2. Using AutoDiffXd to compute the partial derivative of v_WE_W(q, v) with
+//    respect to v.
+// In addition, this also tests the methods:
+// - MultibodyTree::CalcPointsPositions()
+// - MultibodyTree::CalcAllBodySpatialVelocitiesInWorld()
+TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocity) {
+  // The number of generalized positions in the Kuka iiwa robot arm model.
+  const int kNumPositions = tree().num_positions();
+  const int kNumVelocities = tree().num_velocities();
+  const int kNumStates = tree().num_states();
+
+  ASSERT_EQ(kNumPositions, 7);
+  ASSERT_EQ(kNumVelocities, 7);
+  ASSERT_EQ(kNumPositions + kNumVelocities, kNumStates);
+
+  ASSERT_EQ(tree_autodiff().num_positions(), kNumPositions);
+  ASSERT_EQ(tree_autodiff().num_states(), kNumStates);
+
+  ASSERT_EQ(context_->num_continuous_states(), kNumStates);
+  ASSERT_EQ(context_autodiff_->num_continuous_states(), kNumStates);
+
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+
+  // Choose joint angle values that avoid in-plane motion.
+  VectorX<double> q, v;
+  GetArbitraryNonZeroConfiguration(&q, &v);
+
+  // Set the robot's joint angles and rates (generalized positions/velocities).
+  int angle_index = 0;
+  for (const RevoluteJoint<double>* joint : joints_) {
+    joint->set_angle(context_.get(), q[angle_index]);
+    joint->set_angular_rate(context_.get(), v[angle_index]);
+    angle_index++;
+  }
+
+  // Compute the end effector's velocity.
+  const Vector3<double> v_WE = CalcEndEffectorVelocity(tree(), *context_);
+
+  context_autodiff_->SetTimeStateAndParametersFrom(*context_);
+
+  // Initialize v_autodiff to have values v and so that v is the independent
+  // variable of the problem.
+  VectorX<AutoDiffXd> v_autodiff(kNumPositions);
+  math::initializeAutoDiff(v, v_autodiff);
+  context_autodiff_->get_mutable_continuous_state()
+      .get_mutable_generalized_velocity()
+      .SetFromVector(v_autodiff);
+
+  const Vector3<AutoDiffXd> v_WE_autodiff =
+      CalcEndEffectorVelocity(tree_autodiff(), *context_autodiff_);
+
+  const Vector3<double> v_WE_value = math::autoDiffToValueMatrix(v_WE_autodiff);
+  const MatrixX<double> v_WE_derivs =
+      math::autoDiffToGradientMatrix(v_WE_autodiff);
+
+  // Values from <AutoDiffXd> should match those computed with <double>.
+  EXPECT_TRUE(CompareMatrices(v_WE_value, v_WE, kTolerance,
+                              MatrixCompareType::relative));
+
+  // Some sanity checks on the expected sizes of the derivatives.
+  EXPECT_EQ(v_WE_derivs.rows(), 3);
+  EXPECT_EQ(v_WE_derivs.cols(), kNumPositions);
+
+  MatrixX<double> Jv_WE(3, kNumVelocities);
+  // The end effector (G) Jacobian is computed by asking the Jacobian for a
+  // point P with position p_GP = 0 in the G frame.
+  const Frame<double>& end_effector_frame = end_effector_link_->body_frame();
+  const Frame<double>& world_frame = tree().world_frame();
+  tree().CalcJacobianTranslationalVelocity(*context_,
+                                           JacobianWrtVariable::kV,
+                                           end_effector_frame,
+                                           end_effector_frame,
+                                           Vector3<double>::Zero(),
+                                           world_frame,
+                                           world_frame,
+                                           &Jv_WE);
+
+  // Verify the computed Jacobian matches the one from auto-differentiation.
+  EXPECT_TRUE(CompareMatrices(Jv_WE, v_WE_derivs, kTolerance,
+                              MatrixCompareType::relative));
+
+  // Verify that v_WE = Jv_WE * v:
+  const Vector3<double> Jv_WE_times_v = Jv_WE * v;
+  EXPECT_TRUE(CompareMatrices(Jv_WE_times_v, v_WE, kTolerance,
+                              MatrixCompareType::relative));
+
+  // Use different frame arguments to again calculate the Jacobian.
+  // Again verify the computed Jacobian matches that from auto-differentiation.
+  const Vector3<double> p_WE = CalcEndEffectorPosition(tree(), *context_);
+  tree().CalcJacobianTranslationalVelocity(*context_,
+                                           JacobianWrtVariable::kV,
+                                           end_effector_frame,
+                                           world_frame,
+                                           p_WE,
+                                           world_frame,
+                                           world_frame,
+                                           &Jv_WE);
+  EXPECT_TRUE(CompareMatrices(Jv_WE, v_WE_derivs, kTolerance,
+                              MatrixCompareType::relative));
+
+  // The derivative with respect to time should equal v_WE.
+  const VectorX<AutoDiffXd> q_autodiff =
+      // For reasons beyond my understanding, we need to pass MatrixXd to
+      // math::initializeAutoDiffGivenGradientMatrix().
+      math::initializeAutoDiffGivenGradientMatrix(MatrixXd(q), MatrixXd(v));
+  v_autodiff = v.cast<AutoDiffXd>();
+  context_autodiff_->get_mutable_continuous_state()
+      .get_mutable_generalized_position()
+      .SetFromVector(q_autodiff);
+  context_autodiff_->get_mutable_continuous_state()
+      .get_mutable_generalized_velocity()
+      .SetFromVector(v_autodiff);
+
+  Vector3<AutoDiffXd> p_WE_autodiff =
+      CalcEndEffectorPosition(tree_autodiff(), *context_autodiff_);
+  Vector3<double> p_WE_derivs(p_WE_autodiff[0].derivatives()[0],
+                              p_WE_autodiff[1].derivatives()[0],
+                              p_WE_autodiff[2].derivatives()[0]);
+  EXPECT_TRUE(CompareMatrices(p_WE_derivs, v_WE, kTolerance,
+                              MatrixCompareType::relative));
+}
+
 // Unit tests MBT::CalcBiasForJacobianTranslationalVelocity() using
 // AutoDiffXd to compute time derivatives of the geometric Jacobian to obtain a
 // reference solution.

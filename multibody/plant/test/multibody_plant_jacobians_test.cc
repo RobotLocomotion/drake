@@ -240,13 +240,18 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
   EXPECT_TRUE(CompareMatrices(Jq_w_WE, top_three_rows, kTolerance,
                               MatrixCompareType::relative));
 
-  // Test CalcJacobianTranslationalVelocity by calculating the 3xn matrix for
+  // Test CalcJacobianTranslationalVelocity() by calculating the 3xn matrix for
   // point Ep's translational velocity Jacobian in W (world) and ensuring this
   // is the last 3 rows of the spatial velocity Jacobian Jq_V_WEp.
   MatrixX<double> Jq_v_WEp(3, num_generalized_positions);
-  plant_->CalcJacobianTranslationalVelocity(
-      *context_, JacobianWrtVariable::kQDot, end_effector_frame, p_EoEp_E,
-      world_frame, world_frame, &Jq_v_WEp);
+  plant_->CalcJacobianTranslationalVelocity(*context_,
+                                            JacobianWrtVariable::kQDot,
+                                            end_effector_frame,
+                                            end_effector_frame,
+                                            p_EoEp_E,
+                                            world_frame,
+                                            world_frame,
+                                            &Jq_v_WEp);
   MatrixX<double> bottom_three_rows(3, num_generalized_positions);
   bottom_three_rows = Jq_V_WEp.template bottomRows<3>();
   EXPECT_TRUE(CompareMatrices(Jq_v_WEp, bottom_three_rows, kTolerance,
