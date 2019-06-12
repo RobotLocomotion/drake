@@ -230,7 +230,39 @@ PYBIND11_MODULE(mathematicalprogram, m) {
 
   // TODO(jwnimmer-tri) Bind the accessors for SolverOptions.
   py::class_<SolverOptions>(m, "SolverOptions", doc.SolverOptions.doc)
-      .def(py::init<>(), doc.SolverOptions.ctor.doc);
+      .def(py::init<>(), doc.SolverOptions.ctor.doc)
+      .def("SetOption",
+          [](SolverOptions& self, const SolverType& solver_type,
+              const std::string& solver_option, double option_value) {
+            self.SetOption(SolverTypeConverter::TypeToId(solver_type),
+                solver_option, option_value);
+          },
+          doc.SolverOptions.SetOption.doc)
+      .def("SetOption",
+          [](SolverOptions& self, const SolverType& solver_type,
+              const std::string& solver_option, int option_value) {
+            self.SetOption(SolverTypeConverter::TypeToId(solver_type),
+                solver_option, option_value);
+          },
+          doc.SolverOptions.SetOption.doc)
+      .def("SetOption",
+          [](SolverOptions& self, const SolverType& solver_type,
+              const std::string& solver_option,
+              const std::string& option_value) {
+            self.SetOption(SolverTypeConverter::TypeToId(solver_type),
+                solver_option, option_value);
+          },
+          doc.SolverOptions.SetOption.doc)
+      .def("GetOption",
+          [](const SolverOptions& solver_options, SolverType solver_type) {
+            py::dict out;
+            py::object update = out.attr("update");
+            const SolverId id = SolverTypeConverter::TypeToId(solver_type);
+            update(solver_options.GetOptionsDouble(id));
+            update(solver_options.GetOptionsInt(id));
+            update(solver_options.GetOptionsStr(id));
+            return out;
+          });
 
   py::class_<MathematicalProgramResult>(
       m, "MathematicalProgramResult", doc.MathematicalProgramResult.doc)

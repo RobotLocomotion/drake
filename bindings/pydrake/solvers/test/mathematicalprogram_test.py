@@ -571,6 +571,12 @@ class TestMathematicalProgram(unittest.TestCase):
         # For now, just make sure the constructor exists.  Once we bind more
         # accessors, we can test them here.
         options_object = SolverOptions()
+        options_object.SetOption(SolverType.kGurobi, "double_key", 1.0)
+        options_object.SetOption(SolverType.kGurobi, "int_key", 2)
+        options_object.SetOption(SolverType.kGurobi, "string_key", "3")
+        options = options_object.GetOption(SolverType.kGurobi)
+        self.assertDictEqual(
+            options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
 
     def test_infeasible_constraints(self):
         prog = mp.MathematicalProgram()
