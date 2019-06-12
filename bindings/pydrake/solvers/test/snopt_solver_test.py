@@ -1,7 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
 import unittest
+
 import numpy as np
+
 from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.snopt import SnoptSolver
 
@@ -15,7 +17,7 @@ class TestSnoptSolver(unittest.TestCase):
         prog.AddLinearCost(x[0])
 
         solver = SnoptSolver()
-        if (solver.available()):
+        if solver.available():
             self.assertEqual(solver.solver_type(), mp.SolverType.kSnopt)
 
             result = solver.Solve(prog, None, None)
