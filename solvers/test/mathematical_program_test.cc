@@ -2824,6 +2824,55 @@ GTEST_TEST(TestMathematicalProgram, NewNonnegativePolynomial) {
   CheckNewNonnegativePolynomial(
       MathematicalProgram::NonnegativePolynomial::kDsos);
 }
+
+GTEST_TEST(TestMathematicalProgram, AddEqualityConstraintBetweenPolynomials) {
+  MathematicalProgram prog;
+  auto x = prog.NewIndeterminates<1>()(0);
+  auto a = prog.NewContinuousVariables<4>();
+  const symbolic::Polynomial p1(a(0) * x + a(1) + 2, {x});
+  const symbolic::Polynomial p2((a(2) + 1) * x + 2 * a(3), {x});
+
+  EXPECT_EQ(prog.linear_equality_constraints().size(), 0);
+  prog.AddEqualityConstraintBetweenPolynomials(p1, p2);
+  EXPECT_EQ(prog.linear_equality_constraints().size(), 2);
+
+  // Test with different value of a, some satisfies the polynomial equality
+  // constraints.
+  auto is_satisfied = [&prog](const Eigen::Vector4d& a_val) {
+    for (const auto& linear_eq_constraint :
+         prog.linear_equality_constraints()) {
+      const auto constraint_val = prog.EvalBinding(linear_eq_constraint, a_val);
+      EXPECT_EQ(constraint_val.size(), 1);
+      if (std::abs(constraint_val(0) -
+                   linear_eq_constraint.evaluator()->lower_bound()(0)) >
+          1E-12) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  EXPECT_TRUE(is_satisfied(Eigen::Vector4d(1, 2, 0, 2)));
+  EXPECT_FALSE(is_satisfied(Eigen::Vector4d(1, 2, 0, 1)));
+  EXPECT_FALSE(is_satisfied(Eigen::Vector4d(1, 2, 1, 2)));
+
+  // Test with a polynomial whose coefficients are not affine function of
+  // decision variables.
+  EXPECT_THROW(prog.AddEqualityConstraintBetweenPolynomials(
+                   p1, symbolic::Polynomial(a(0) * a(1) * x, {x})),
+               std::runtime_error);
+  // Test with a polynomial whose coefficients depend on variables that are not
+  // decision variables of prog.
+  symbolic::Variable b("b");
+  EXPECT_THROW(prog.AddEqualityConstraintBetweenPolynomials(
+                   p1, symbolic::Polynomial(b * x, {x})),
+               std::runtime_error);
+  // If we add `b` to prog as decision variable, then the code throws no
+  // exceptions.
+  prog.AddDecisionVariables(Vector1<symbolic::Variable>(b));
+  EXPECT_NO_THROW(prog.AddEqualityConstraintBetweenPolynomials(
+      p1, symbolic::Polynomial(b * x, {x})));
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

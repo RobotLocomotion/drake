@@ -602,6 +602,10 @@ PYBIND11_MODULE(mathematicalprogram, m) {
                   MathematicalProgram::*)(const Expression&)>(
               &MathematicalProgram::AddSosConstraint),
           doc.MathematicalProgram.AddSosConstraint.doc_1args_e)
+      .def("AddEqualityConstraintBetweenPolynomials",
+          &MathematicalProgram::AddEqualityConstraintBetweenPolynomials,
+          py::arg("p1"), py::arg("p2"),
+          doc.MathematicalProgram.AddEqualityConstraintBetweenPolynomials.doc)
       .def("AddVisualizationCallback",
           static_cast<Binding<VisualizationCallback> (MathematicalProgram::*)(
               const VisualizationCallback::CallbackFunction&,
