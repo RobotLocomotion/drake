@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/unused.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -55,18 +56,20 @@ class PortSwitch final : public LeafSystem<T> {
       : PortSwitch(-1, AbstractValue::Make<OutputType>(model_value), nullptr,
                    nullptr) {}
 
-  /** Constructs a %PortSwitch using the type of `model_value` as the model for
+  /** Constructs a %PortSwitch using the type of `dummy_value` as the model for
   the output port.  This version provides support for input/output values
   that are templated on scalar type; the scalar type on the port is kept
   consistent with the scalar type of the System (even through scalar
-  conversion). The type of `model_value` must be default constructible.  */
+  conversion). The type of `dummy_value` must be default constructible.  */
   template <template <typename> class OutputType>
-  explicit PortSwitch(const OutputType<T>& model_value)
+  explicit PortSwitch(const OutputType<T>& dummy_value)
       : PortSwitch(
             -1, std::unique_ptr<AbstractValue>(new Value<OutputType<double>>()),
             std::unique_ptr<AbstractValue>(new Value<OutputType<AutoDiffXd>>()),
             std::unique_ptr<AbstractValue>(
-                new Value<OutputType<symbolic::Expression>>())) {}
+                new Value<OutputType<symbolic::Expression>>())) {
+    unused(dummy_value);
+  }
 
   /** Scalar-type converting copy constructor. See @ref
   system_scalar_conversion. */
