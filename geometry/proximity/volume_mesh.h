@@ -134,7 +134,7 @@ class VolumeMesh {
   */
   using Barycentric = Vector<T, kDim + 1>;
 
-  /** Type of cartesian coordinates. Mesh consumers can use it in conversion
+  /** Type of Cartesian coordinates. Mesh consumers can use it in conversion
    from Cartesian coordinates to barycentric coordinates.
    */
   using Cartesian = Vector<T, 3>;

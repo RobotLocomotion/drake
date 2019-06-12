@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <limits>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -27,7 +28,7 @@ using std::make_unique;
 using std::vector;
 using std::move;
 
-// TODO(DamrongGuoy): Take care of double counting problem when a triagle of
+// TODO(DamrongGuoy): Take care of double counting problem when a triangle of
 //  a surface mesh overlaps a triangular face shared by two tetrahedrons of a
 //  volume mesh. The fix will require several functions in the code to work
 //  together. These ideas should help:
@@ -64,9 +65,14 @@ Vector3<T> CalcIntersection(const Vector3<T>& A,
   //  and the line far from the plane.
   T a = halfspace.signedDistance(A);
   T b = halfspace.signedDistance(B);
+  DRAKE_DEMAND(a != b);
   T wa = b / (b - a);
   T wb = a / (a - b);
-  return wa * A + wb * B;
+  Vector3<T> intersection = wa * A + wb * B;
+  T kEps = std::numeric_limits<double>::epsilon();
+  T check = halfspace.signedDistance(intersection);
+  DRAKE_DEMAND(-check < kEps && check < kEps);
+  return intersection;
   // Justification.
   // 1. We set up the weights wa and wb such that wa + wb = 1, which
   //    guarantees that the linear combination is on the straight line
@@ -87,8 +93,19 @@ Vector3<T> CalcIntersection(const Vector3<T>& A,
 
 // Clips a polygon by a halfspace, which is the inner loop of a modified
 // Sutherland-Hodgman algorithm for clipping a polygon.
-// TODO(DamrongGuoy): Handle the cases that a vertex or an edge of the
-//  polygon is on or numerically on the bounding plane of the halfspace.
+// @param[in] input_polygon
+//     Input polygon is represented as a sequence of positions of its vertices.
+// @return
+//     Output polygon is represented as a sequence of positions of its vertices.
+//     It could be an empty sequence if the input polygon is entirely outside
+//     the halfspace. The output polygon could be the same as the input
+//     polygon if the input polygon is entirely inside the halfspace.
+// @note
+//     If the input polygon is near or on the surface of the halfspace, the
+//     computation might be unstable. If the input polygon has a vertex or an
+//     edge near or on the surface of the halfspace, the computation might be
+//     unstable.
+// TODO(DamrongGuoy): Handle the cases in the note above.
 template <typename T>
 vector<Vector3<T>> ClipPolygonByHalfspace(
     const vector<Vector3<T>>& input_polygon,
@@ -100,12 +117,16 @@ vector<Vector3<T>> ClipPolygonByHalfspace(
     const Vector3<T>& previous = input_polygon[(i - 1 + size) % size];
     if (IsPointInHalfspace(current, halfspace)) {
       if (!IsPointInHalfspace(previous, halfspace)) {
+        // Calculate line-plane intersection when the `current` point
+        // "enters" the halfspace
         output_polygon.push_back(
             CalcIntersection(current, previous, halfspace));
       }
       output_polygon.push_back(current);
     } else {  // current is outside.
       if (IsPointInHalfspace(previous, halfspace)) {
+        // Calculate line-plane intersection when the `current` point
+        // "exits" the halfspace.
         output_polygon.push_back(
             CalcIntersection(current, previous, halfspace));
       }
@@ -325,10 +346,11 @@ void IntersectSoftVolumeRigidSurface(
       // new vertices.
       for (int v = num_original_vertices; v < num_current_vertices; ++v) {
         const Vector3<T>& r_M = vertices_MN_M[v].r_MV();
-        const T pressure = soft_M.EvaluateC(element_M, r_M);
+        const T pressure = soft_M.EvaluateCartesian(element_M, r_M);
         e_values.push_back(pressure);
         const Vector3<T> r_N = X_MN.inverse() * r_M;
-        const Vector3<T> normal_N = normal_field_N->EvaluateC(face_N, r_N);
+        const Vector3<T> normal_N =
+            normal_field_N->EvaluateCartesian(face_N, r_N);
         Vector3<T> normal_M = (X_MN.rotation() * normal_N).normalized();
         grad_h_MN_M_values.push_back(normal_M);
       }
@@ -366,7 +388,7 @@ void IntersectSoftVolumeRigidSurface(
 //                     ooo   soft M
 //                  o       o
 //                 o         o         = Contact surface (M,N).
-//                 o ||||||| o         | Vector field from N to M is upwards.
+//                 o ↑↑↑↑↑↑↑ o         ↑ Vector field from N to M is upwards.
 //           +------=========-------+
 //           |      o       o       |
 //   rigid N |         ooo          |
@@ -420,9 +442,9 @@ unique_ptr<ContactSurface<T>> ComputeContactSurfaceSoftRigid(
 //                     ooo   soft B
 //                  o       o
 //                 o         o         = Contact surface (A, B).
-//                 o         o         | Vector field from B to A is downwards.
+//                 o         o         ↓ Vector field from B to A is downwards.
 //           +------=========-------+
-//           |      o ||||| o       |
+//           |      o ↓↓↓↓↓ o       |
 //   rigid A |         ooo          |
 //           |                      |
 //           +----------------------+

@@ -85,13 +85,42 @@ template <typename T>
 void TestCalcBarycentric() {
   auto volume_mesh = TestVolumeMesh<T>();
   const T kTolerance(std::numeric_limits<double>::epsilon());
+  const VolumeElementIndex element(0);
 
-  Vector3<T> p_M(0.25, 0.25, 0.25);
-  const VolumeElementIndex e(0);
-  auto barycentric = volume_mesh->CalcBarycentric(p_M, e);
-  typename VolumeMesh<T>::Barycentric expect_barycentric(0.25, 0.25, 0.25,
-                                                         0.25);
-  EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
+  // At the centroid of the tetrahedral element v0v1v2v3.
+  {
+    Vector3<T> p_M(0.25, 0.25, 0.25);
+    typename VolumeMesh<T>::Barycentric barycentric =
+        volume_mesh->CalcBarycentric(p_M, element);
+    typename VolumeMesh<T>::Barycentric expect_barycentric(0.25, 0.25, 0.25,
+                                                           0.25);
+    EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
+  }
+  // At the centroid of the face v0v1v2.
+  {
+    Vector3<T> p_M(1./3., 1./3., 0.);
+    typename VolumeMesh<T>::Barycentric barycentric =
+        volume_mesh->CalcBarycentric(p_M, element);
+    typename VolumeMesh<T>::Barycentric expect_barycentric(1. / 3., 1. / 3.,
+                                                           1. / 3., 0.);
+    EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
+  }
+  // At the middle of the edge v0v1.
+  {
+    Vector3<T> p_M(0.5, 0., 0.);
+    typename VolumeMesh<T>::Barycentric barycentric =
+        volume_mesh->CalcBarycentric(p_M, element);
+    typename VolumeMesh<T>::Barycentric expect_barycentric(0.5, 0.5, 0., 0.);
+    EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
+  }
+  // At the vertex v0.
+  {
+    Vector3<T> p_M(0., 0., 0.);
+    typename VolumeMesh<T>::Barycentric barycentric =
+        volume_mesh->CalcBarycentric(p_M, element);
+    typename VolumeMesh<T>::Barycentric expect_barycentric(1., 0., 0., 0.);
+    EXPECT_LE((barycentric - expect_barycentric).norm(), kTolerance);
+  }
 }
 
 // Tests instantiation of VolumeMeshField and evaluating a scalar field value.

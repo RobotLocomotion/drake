@@ -36,7 +36,7 @@ class MeshField {
    @param e The index of the element.
    @param b The Cartesian coordinates.
    */
-  virtual FieldValue EvaluateC(
+  virtual FieldValue EvaluateCartesian(
       const typename MeshType::ElementIndex e,
       const typename MeshType::Cartesian& b) const = 0;
 

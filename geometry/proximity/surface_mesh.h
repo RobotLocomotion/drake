@@ -200,24 +200,29 @@ class SurfaceMesh {
   }
 
   /** Calculate barycentric coordinates with respect to the triangular face `f`
-   of the projection of a position `p_M` to the plane of the face.
+   of the projection of a position `p_M` to the plane of the face. This
+   operation is expensive compared with going from barycentric to Cartesian.
    @param p_M  A position expressed in the frame M of the mesh.
    @param f    The index of a triangular face.
    @note  If the projection of p_M is outside the triangle, the
           barycentric coordinates (b₀, b₁, b₂) still satisfy b₀ + b₁ + b₂ = 1;
           however, some bᵢ will be negative.
    */
-  Barycentric CalcBarycentric(const Cartesian& p_M, ElementIndex e) const {
-    Eigen::Matrix<T, 4, 3> A;
-    for (int i = 0; i < 3; ++i) {
-      A.col(i) << T(1.0), vertex(element(e).vertex(i)).r_MV();
-    }
-    Vector4<T> b;
-    b << T(1.0), p_M;
-    Barycentric barycentric = A.colPivHouseholderQr().solve(b);
-    // TODO(DamrongGuoy): Save the colPivHouseholderQr() of all faces instead of
-    //  calculating it on the fly.
-    return barycentric;
+  Barycentric CalcBarycentric(const Cartesian& p_M, SurfaceFaceIndex f) const {
+    const Vector3<T>& v0 = vertex(element(f).vertex(0)).r_MV();
+    const Vector3<T>& v1 = vertex(element(f).vertex(1)).r_MV();
+    const Vector3<T>& v2 = vertex(element(f).vertex(2)).r_MV();
+
+    Eigen::Matrix<T, 3, 2> A;
+    A.col(0) << v1 - v0;
+    A.col(1) << v2 - v0;
+    Vector3<T> b = p_M - v0;
+    Vector2<T> b1b2 = A.colPivHouseholderQr().solve(b);
+
+    const T& b1 = b1b2(0);
+    const T& b2 = b1b2(1);
+    const T b0 = T(1.) - b1 - b2;
+    return Barycentric(b0, b1, b2);
   }
 
  private:

@@ -134,8 +134,9 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
     return value;
   }
 
-  FieldValue EvaluateC(const typename MeshType::ElementIndex e,
-                       const typename MeshType::Cartesian& c) const final {
+  FieldValue EvaluateCartesian(
+                 const typename MeshType::ElementIndex e,
+                 const typename MeshType::Cartesian& c) const final {
     return Evaluate(e, this->mesh().CalcBarycentric(c, e));
   }
 
