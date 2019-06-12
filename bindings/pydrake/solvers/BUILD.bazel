@@ -126,6 +126,22 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
+    name = "scs_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:value_pybind",
+    ],
+    cc_srcs = ["scs_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":mathematicalprogram_py",
+        # TODO(jwnimmer-tri) Only for AbstractValue; we should switch this to
+        # depend on on pydrake/common once the Value bindings have moved there.
+        "//bindings/pydrake/systems:framework_py",
+    ],
+)
+
+drake_pybind_library(
     name = "snopt_py",
     cc_deps = ["//bindings/pydrake:documentation_pybind"],
     cc_srcs = ["snopt_py.cc"],
@@ -150,6 +166,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":mathematicalprogram_py",
     ":mosek_py",
     ":osqp_py",
+    ":scs_py",
     ":snopt_py",
 ]
 
@@ -208,6 +225,18 @@ drake_py_unittest(
         "//conditions:default": [],
     }),
     deps = [":osqp_py"],
+)
+
+drake_py_unittest(
+    name = "scs_solver_test",
+    args = select({
+        "//tools:no_scs": ["TestOsqpSolver.unavailable"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":scs_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
 )
 
 drake_py_unittest(
