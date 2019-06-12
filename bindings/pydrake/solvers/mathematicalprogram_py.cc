@@ -225,6 +225,7 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       .value("kMosek", SolverType::kMosek, doc.SolverType.kMosek.doc)
       .value("kNlopt", SolverType::kNlopt, doc.SolverType.kNlopt.doc)
       .value("kOsqp", SolverType::kOsqp, doc.SolverType.kOsqp.doc)
+      .value("kScs", SolverType::kScs, doc.SolverType.kScs.doc)
       .value("kSnopt", SolverType::kSnopt, doc.SolverType.kSnopt.doc);
 
   // TODO(jwnimmer-tri) Bind the accessors for SolverOptions.
