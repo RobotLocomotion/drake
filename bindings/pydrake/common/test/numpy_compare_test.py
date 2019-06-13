@@ -4,7 +4,7 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.symbolic import Expression, Variable
+from pydrake.symbolic import Expression, Formula, Variable
 
 
 class Custom(object):
@@ -142,3 +142,6 @@ class TestNumpyCompareSimple(unittest.TestCase):
         numpy_compare.assert_equal(e, "(x + y)")
         numpy_compare.assert_not_equal(e, x - y)
         numpy_compare.assert_not_equal(e, "(x - y)")
+        numpy_compare.assert_equal(Formula.True_(), True)
+        numpy_compare.assert_equal(Formula.False_(), False)
+        numpy_compare.assert_not_equal(Formula.True_(), False)

@@ -174,6 +174,7 @@ class TestMath(unittest.TestCase):
     def check_rotation_matrix(self, T):
         # - Constructors.
         RotationMatrix = mut.RotationMatrix_[T]
+        AngleAxis = AngleAxis_[T]
         Quaternion = Quaternion_[T]
         RollPitchYaw = mut.RollPitchYaw_[T]
 
@@ -188,17 +189,41 @@ class TestMath(unittest.TestCase):
         numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
         R = RotationMatrix(quaternion=Quaternion.Identity())
         numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
+        R = RotationMatrix(theta_lambda=AngleAxis(angle=0, axis=[0, 0, 1]))
+        numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
         R = RotationMatrix(rpy=RollPitchYaw(rpy=[0, 0, 0]))
+        numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
+        # One axis RotationMatrices
+        R = RotationMatrix.MakeXRotation(theta=0)
+        numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
+        R = RotationMatrix.MakeYRotation(theta=0)
+        numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
+        R = RotationMatrix.MakeZRotation(theta=0)
+        numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
+        # TODO(eric.cousineau): #11575, remove the conditional.
+        if T == float:
+            numpy_compare.assert_float_equal(R.row(index=0), [1., 0., 0.])
+            numpy_compare.assert_float_equal(R.col(index=0), [1., 0., 0.])
+        R.set(R=np.eye(3))
         numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
         # - Nontrivial quaternion.
         q = Quaternion(wxyz=[0.5, 0.5, 0.5, 0.5])
         R = RotationMatrix(quaternion=q)
         q_R = R.ToQuaternion()
         numpy_compare.assert_float_equal(
-                q.wxyz(), numpy_compare.to_float(q_R.wxyz()))
-        # - Inverse.
+            q.wxyz(), numpy_compare.to_float(q_R.wxyz()))
+        # - Inverse, transpose, projection
         R_I = R.inverse().multiply(R)
         numpy_compare.assert_float_equal(R_I.matrix(), np.eye(3))
+        R_T = R.transpose().multiply(R)
+        numpy_compare.assert_float_equal(R_T.matrix(), np.eye(3))
+        R_P = RotationMatrix.ProjectToRotationMatrix(M=2*np.eye(3))
+        numpy_compare.assert_float_equal(R_P.matrix(), np.eye(3))
+        # Matrix checks
+        numpy_compare.assert_equal(R.IsValid(), True)
+        R = RotationMatrix()
+        numpy_compare.assert_equal(R.IsExactlyIdentity(), True)
+        numpy_compare.assert_equal(R.IsIdentityToInternalTolerance(), True)
         if six.PY3:
             numpy_compare.assert_float_equal(
                     eval("R.inverse() @ R").matrix(), np.eye(3))
