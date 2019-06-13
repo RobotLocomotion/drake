@@ -2,4 +2,11 @@
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+# Patch to allow OctoMap to be compiled with -std=c++17 against libc++.
+# Submitted upstream at https://github.com/OctoMap/octomap/pull/233.
+exports_files(
+    ["do_not_use_random_shuffle.patch"],
+    licenses = ["notice"],  # BSD-3-Clause
+)
+
 add_lint_tests()
