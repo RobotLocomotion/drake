@@ -211,6 +211,7 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           [](const SolverInterface& self) { return self.solver_id().name(); });
 
   py::class_<SolverId>(m, "SolverId", doc.SolverId.doc)
+      .def(py::init<std::string>(), py::arg("name"), doc.SolverId.ctor.doc)
       .def("name", &SolverId::name, doc.SolverId.name.doc);
 
   py::enum_<SolverType>(m, "SolverType", doc.SolverType.doc)
@@ -230,7 +231,32 @@ PYBIND11_MODULE(mathematicalprogram, m) {
 
   // TODO(jwnimmer-tri) Bind the accessors for SolverOptions.
   py::class_<SolverOptions>(m, "SolverOptions", doc.SolverOptions.doc)
-      .def(py::init<>(), doc.SolverOptions.ctor.doc);
+      .def(py::init<>(), doc.SolverOptions.ctor.doc)
+      .def("SetOption",
+          py::overload_cast<const SolverId&, const std::string&, double>(
+              &SolverOptions::SetOption),
+          py::arg("solver_id"), py::arg("solver_option"),
+          py::arg("option_value"), doc.SolverOptions.SetOption.doc)
+      .def("SetOption",
+          py::overload_cast<const SolverId&, const std::string&, int>(
+              &SolverOptions::SetOption),
+          py::arg("solver_id"), py::arg("solver_option"),
+          py::arg("option_value"), doc.SolverOptions.SetOption.doc)
+      .def("SetOption",
+          py::overload_cast<const SolverId&, const std::string&,
+              const std::string&>(&SolverOptions::SetOption),
+          py::arg("solver_id"), py::arg("solver_option"),
+          py::arg("option_value"), doc.SolverOptions.SetOption.doc)
+      .def("GetOptions",
+          [](const SolverOptions& solver_options, SolverId solver_id) {
+            py::dict out;
+            py::object update = out.attr("update");
+            update(solver_options.GetOptionsDouble(solver_id));
+            update(solver_options.GetOptionsInt(solver_id));
+            update(solver_options.GetOptionsStr(solver_id));
+            return out;
+          },
+          py::arg("solver_id"), doc.SolverOptions.GetOptionsDouble.doc);
 
   py::class_<MathematicalProgramResult>(
       m, "MathematicalProgramResult", doc.MathematicalProgramResult.doc)
@@ -741,6 +767,21 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           py::arg("decision_variables_new_values"), py::arg("values"),
           doc.MathematicalProgram.SetDecisionVariableValueInVector
               .doc_3args_decision_variables_decision_variables_new_values_values)
+      .def("SetSolverOption",
+          py::overload_cast<const SolverId&, const std::string&, double>(
+              &MathematicalProgram::SetSolverOption),
+          py::arg("solver_id"), py::arg("solver_option"),
+          py::arg("option_value"), doc.MathematicalProgram.SetSolverOption.doc)
+      .def("SetSolverOption",
+          py::overload_cast<const SolverId&, const std::string&, int>(
+              &MathematicalProgram::SetSolverOption),
+          py::arg("solver_id"), py::arg("solver_option"),
+          py::arg("option_value"), doc.MathematicalProgram.SetSolverOption.doc)
+      .def("SetSolverOption",
+          py::overload_cast<const SolverId&, const std::string&,
+              const std::string&>(&MathematicalProgram::SetSolverOption),
+          py::arg("solver_id"), py::arg("solver_option"),
+          py::arg("option_value"), doc.MathematicalProgram.SetSolverOption.doc)
       .def("SetSolverOption", &SetSolverOptionBySolverType<double>,
           doc.MathematicalProgram.SetSolverOption.doc)
       .def("SetSolverOption", &SetSolverOptionBySolverType<int>,
@@ -748,6 +789,15 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       .def("SetSolverOption", &SetSolverOptionBySolverType<string>,
           doc.MathematicalProgram.SetSolverOption.doc)
       // TODO(m-chaturvedi) Add Pybind11 documentation.
+      .def("GetSolverOptions",
+          [](MathematicalProgram& prog, SolverId solver_id) {
+            py::dict out;
+            py::object update = out.attr("update");
+            update(prog.GetSolverOptionsDouble(solver_id));
+            update(prog.GetSolverOptionsInt(solver_id));
+            update(prog.GetSolverOptionsStr(solver_id));
+            return out;
+          })
       .def("GetSolverOptions",
           [](MathematicalProgram& prog, SolverType solver_type) {
             py::dict out;
