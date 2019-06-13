@@ -13,7 +13,6 @@
 
 using drake::math::RigidTransformd;
 using drake::math::RollPitchYawd;
-using Eigen::Vector3d;
 
 namespace drake {
 namespace geometry {
@@ -54,14 +53,26 @@ class TetrahedronIntersectionTest : public ::testing::Test {
 TEST_F(TetrahedronIntersectionTest, EmptyIntersection) {
   std::vector<SurfaceVertex<double>> vertices;
   std::vector<SurfaceFace> faces;
+  std::vector<double> e_M_surface;
+  std::vector<Vector3<double>> grad_e_M_surface;
 
   // All positive vertices.
   Vector4<double> phi_N = Vector4<double>::Ones();
-  EXPECT_EQ(IntersectTetWithLevelSet(unit_tet_, phi_N, &vertices, &faces), 0);
+
+  // Arbitrary values of scalar and vector fields since they are not used in
+  // this test.
+  const Vector4<double> e_M = Vector4<double>::Zero();
+  std::array<Vector3<double>, 4> grad_e_M;
+  grad_e_M.fill(Vector3<double>::Zero());
+  EXPECT_EQ(IntersectTetWithLevelSet(unit_tet_, phi_N, e_M, grad_e_M, &vertices,
+                                     &faces, &e_M_surface, &grad_e_M_surface),
+            0);
 
   // All negative vertices.
   phi_N = -Vector4<double>::Ones();
-  EXPECT_EQ(IntersectTetWithLevelSet(unit_tet_, phi_N, &vertices, &faces), 0);
+  EXPECT_EQ(IntersectTetWithLevelSet(unit_tet_, phi_N, e_M, grad_e_M, &vertices,
+                                     &faces, &e_M_surface, &grad_e_M_surface),
+            0);
 }
 
 // Case I of marching tetrahedra: only one of the vertices has a sign different
@@ -69,6 +80,8 @@ TEST_F(TetrahedronIntersectionTest, EmptyIntersection) {
 TEST_F(TetrahedronIntersectionTest, CaseI) {
   std::vector<SurfaceVertex<double>> vertices;
   std::vector<SurfaceFace> faces;
+  std::vector<double> e_M_surface;
+  std::vector<Vector3<double>> grad_e_M_surface;
   const double kTolerance = 5.0 * std::numeric_limits<double>::epsilon();
 
   const int expected_num_intersections = 3;
@@ -86,13 +99,21 @@ TEST_F(TetrahedronIntersectionTest, CaseI) {
     return (to - from).normalized();
   };
 
+  // Arbitrary values of scalar and vector fields since they are not used in
+  // this test.
+  const Vector4<double> e_M = Vector4<double>::Zero();
+  std::array<Vector3<double>, 4> grad_e_M;
+  grad_e_M.fill(Vector3<double>::Zero());
+
   // All vertices are positive but the i-th vertex.
   for (int i = 0; i < 4; ++i) {
     vertices.clear();
     faces.clear();
     Vector4<double> phi_N = Vector4<double>::Ones();
     phi_N[i] = -1.0;
-    ASSERT_EQ(IntersectTetWithLevelSet(unit_tet_, phi_N, &vertices, &faces),
+    ASSERT_EQ(
+        IntersectTetWithLevelSet(unit_tet_, phi_N, e_M, grad_e_M, &vertices,
+                                 &faces, &e_M_surface, &grad_e_M_surface),
         expected_num_intersections);
 
     ASSERT_EQ(faces.size(), 1);
@@ -116,7 +137,9 @@ TEST_F(TetrahedronIntersectionTest, CaseI) {
     faces.clear();
     Vector4<double> phi_N = -Vector4<double>::Ones();
     phi_N[i] = 1.0;
-    ASSERT_EQ(IntersectTetWithLevelSet(unit_tet_, phi_N, &vertices, &faces),
+    ASSERT_EQ(
+        IntersectTetWithLevelSet(unit_tet_, phi_N, e_M, grad_e_M, &vertices,
+                                 &faces, &e_M_surface, &grad_e_M_surface),
         expected_num_intersections);
 
     ASSERT_EQ(faces.size(), 1);
@@ -158,7 +181,16 @@ TEST_F(TetrahedronIntersectionTest, CaseII) {
 
     std::vector<SurfaceVertex<double>> vertices;
     std::vector<SurfaceFace> faces;
-    ASSERT_EQ(IntersectTetWithLevelSet(unit_tet_, phi_N, &vertices, &faces),
+    std::vector<double> e_M_surface;
+    std::vector<Vector3<double>> grad_e_M_surface;
+    // Arbitrary values of scalar and vector fields since they are not used in
+    // this test.
+    const Vector4<double> e_M = Vector4<double>::Zero();
+    std::array<Vector3<double>, 4> grad_e_M;
+    grad_e_M.fill(Vector3<double>::Zero());
+    ASSERT_EQ(
+        IntersectTetWithLevelSet(unit_tet_, phi_N, e_M, grad_e_M, &vertices,
+                                 &faces, &e_M_surface, &grad_e_M_surface),
         expected_num_vertices);
 
     ASSERT_EQ(faces.size(), 4);
@@ -219,6 +251,18 @@ class BoxPlaneIntersectionTest : public ::testing::Test {
     box_B_ = std::make_unique<VolumeMesh<double>>(std::move(elements),
                                                   std::move(vertices));
     half_space_H_ = [](const Vector3<double>& p_HQ) { return p_HQ[2]; };
+
+    // For unit testing purposes, generate scalar and vector fields that are
+    // linear with the position coordinates.
+    // Since CalcZeroLevelSetInMeshDomain() uses linear interpolations, we
+    // expect to get exact values to machine precision.
+    for (VolumeVertexIndex v(0); v < box_B_->num_vertices(); ++v) {
+      const Vector3<double>& p_BV = box_B_->vertex(v).r_MV();
+      const double eb = p_BV[2] + 0.5;
+      const Vector3<double> grad_eb_B = p_BV + 0.5 * Vector3<double>::Ones();
+      e_b_.push_back(eb);
+      grad_e_b_B_.push_back(grad_eb_B);
+    }
   }
 
   double CalcSurfaceArea(const SurfaceMesh<double>& mesh) {
@@ -232,6 +276,11 @@ class BoxPlaneIntersectionTest : public ::testing::Test {
   // Mesh modeling a box, with its vertex positions expressed in the frame of
   // the box B.
   std::unique_ptr<VolumeMesh<double>> box_B_;
+
+  // Value of a scalar field e_b defined on the volume mesh box_B_.
+  std::vector<double> e_b_;
+  // Gradient of the scalar field e_b, expressed in the box frame B.
+  std::vector<Vector3<double>> grad_e_b_B_;
 
   // A level set function, chosen to be the distance function, for a half space.
   // It is defined as a function φ: ℝ³ → ℝ with the input position vector
@@ -247,13 +296,17 @@ class BoxPlaneIntersectionTest : public ::testing::Test {
 // verify this.
 TEST_F(BoxPlaneIntersectionTest, ImminentContact) {
   const double kEpsilon = std::numeric_limits<double>::epsilon();
+  std::vector<double> e_b_surface;
+  std::vector<Vector3<double>> grad_e_b_B_surface;
 
   // The box overlaps the plane by kEpsilon. Expect intersection.
   {
     const math::RigidTransformd X_HB =
         Translation3<double>(0.0, 0.0, 0.5 - 5 * kEpsilon);
-    DRAKE_EXPECT_THROWS_MESSAGE(CalcZeroLevelSetInMeshDomain(
-            *box_B_, half_space_H_, X_HB),
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        CalcZeroLevelSetInMeshDomain(*box_B_, half_space_H_, X_HB, e_b_,
+                                     grad_e_b_B_, &e_b_surface,
+                                     &grad_e_b_B_surface),
         std::logic_error,
         "One or more faces of this tetrahedron are close to being a zero "
         "crossing.*");
@@ -263,8 +316,10 @@ TEST_F(BoxPlaneIntersectionTest, ImminentContact) {
   {
     const math::RigidTransformd X_HB =
         Translation3<double>(0.0, 0.0, 0.5 + 5 * kEpsilon);
-    DRAKE_EXPECT_THROWS_MESSAGE(CalcZeroLevelSetInMeshDomain(
-            *box_B_, half_space_H_, X_HB),
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        CalcZeroLevelSetInMeshDomain(*box_B_, half_space_H_, X_HB, e_b_,
+                                     grad_e_b_B_, &e_b_surface,
+                                     &grad_e_b_B_surface),
         std::logic_error,
         "One or more faces of this tetrahedron are close to being a zero "
         "crossing.*");
@@ -308,10 +363,44 @@ TEST_F(BoxPlaneIntersectionTest, VerifyContactArea) {
       RigidTransformd(Ry_pi, middle),
       RigidTransformd(Ry_pi, highest)};
 
+  std::vector<double> e_b_surface;
+  std::vector<Vector3<double>> grad_e_b_B_surface;
   for (const auto& X_HB : poses) {
     const SurfaceMesh<double> contact_surface = CalcZeroLevelSetInMeshDomain(
-            *box_B_, half_space_H_, X_HB);
+        *box_B_, half_space_H_, X_HB, e_b_, grad_e_b_B_, &e_b_surface,
+        &grad_e_b_B_surface);
     EXPECT_NEAR(CalcSurfaceArea(contact_surface), 1.0, kTolerance);
+  }
+}
+
+// This unit test verifies that CalcZeroLevelSetInMeshDomain() properly
+// interpolates both scalar and vector fields onto the zero-level set surface.
+TEST_F(BoxPlaneIntersectionTest, VerifySurfaceFieldsInterpolations) {
+  const double kEpsilon = std::numeric_limits<double>::epsilon();
+  const double kTolerance = 5.0 * kEpsilon;
+
+  std::vector<double> heights = {-0.4, -0.2, 0.0, 0.2, 0.4};
+
+  std::vector<double> e_b_surface;
+  std::vector<Vector3<double>> grad_e_b_B_surface;
+  for (const auto& h : heights) {
+    const RigidTransformd X_HB = Translation3<double>(0.0, 0.0, h);
+    const SurfaceMesh<double> contact_surface = CalcZeroLevelSetInMeshDomain(
+        *box_B_, half_space_H_, X_HB, e_b_, grad_e_b_B_, &e_b_surface,
+        &grad_e_b_B_surface);
+
+    const double eb_expected = 0.5 - h;
+    for (SurfaceVertexIndex v(0); v < contact_surface.num_vertices(); ++v) {
+      const double eb = e_b_surface[v];
+      const Vector3<double>& grad_eb_B = grad_e_b_B_surface[v];
+      const Vector3<double>& p_HV = contact_surface.vertex(v).r_MV();
+      const Vector3<double> p_BV = X_HB.inverse() * p_HV;
+      const Vector3<double> grad_eb_B_expected =
+          p_BV + 0.5 * Vector3<double>::Ones();
+      EXPECT_NEAR(eb, eb_expected, kTolerance);
+      EXPECT_TRUE(
+          CompareMatrices(grad_eb_B, grad_eb_B_expected, kTolerance));
+    }
   }
 }
 
@@ -347,8 +436,11 @@ TEST_F(BoxPlaneIntersectionTest, NoIntersection) {
       RigidTransformd(Ry_pi, highest)};
 
   for (const auto& X_HB : poses) {
+    std::vector<double> e_b_surface;
+    std::vector<Vector3<double>> grad_e_b_B_surface;
     const SurfaceMesh<double> contact_surface = CalcZeroLevelSetInMeshDomain(
-            *box_B_, half_space_H_, X_HB);
+        *box_B_, half_space_H_, X_HB, e_b_, grad_e_b_B_, &e_b_surface,
+        &grad_e_b_B_surface);
     EXPECT_NEAR(CalcSurfaceArea(contact_surface), 0.0, kTolerance);
   }
 }
@@ -358,14 +450,30 @@ TEST_F(BoxPlaneIntersectionTest, NoIntersection) {
 // In particular, we verify that the vertices on the contact surface are
 // properly interpolated to lie on the plane within a circle of the expected
 // radius, and normals point towards the positive side of the plane.
-GTEST_TEST(SpherePlaneIntersectionTest, VerticesProperlyInterpolated) {
+// We also verify that both scalar and vector fields are properly interpolated
+// onto the zero-level set surface.
+GTEST_TEST(SpherePlaneIntersectionTest, VerifyInterpolations) {
   const double kTolerance = 5.0 * std::numeric_limits<double>::epsilon();
 
   // A tessellation of a unit sphere. Vertices are in the mesh frame M.
   // This creates a volume mesh with over 32K tetrahedra.
   const VolumeMesh<double> sphere_M = MakeUnitSphereMesh<double>(4);
-  // A level set for a half-space, as a function of the position vector p_WQ for
-  // points Q in the world frame W.
+
+  // We generate scalar and vector fields linear in the position coordinates.
+  // Since CalcZeroLevelSetInMeshDomain() uses linear interpolations, we
+  // expect to get exact values to machine precision.
+  std::vector<double> em_volume;
+  std::vector<Vector3<double>> grad_em_M_volume;
+  for (VolumeVertexIndex v(0); v < sphere_M.num_vertices(); ++v) {
+    const Vector3<double>& p_MV = sphere_M.vertex(v).r_MV();
+    const double em = (p_MV[1] + 1) / 2.0;
+    em_volume.push_back(em);
+    const Vector3<double> grad_em_M = (p_MV + Vector3<double>::Ones()) / 2.0;
+    grad_em_M_volume.push_back(grad_em_M);
+  }
+
+  // A level set for a half-space, as a function of the position vector p_WQ
+  // for points Q in the world frame W.
   std::function<double(const Vector3<double>&)> half_space_W =
       [](const Vector3<double>& p_WQ) { return p_WQ[2]; };
 
@@ -377,14 +485,19 @@ GTEST_TEST(SpherePlaneIntersectionTest, VerticesProperlyInterpolated) {
 
   // The contact surface is expressed in the frame of the level set, in this
   // case the world frame W.
-  const SurfaceMesh<double> contact_surface_W =
-      CalcZeroLevelSetInMeshDomain(sphere_M, half_space_W, X_WM);
+  std::vector<double> e_m_surface;
+  std::vector<Vector3<double>> grad_e_m_M_surface;
+  const SurfaceMesh<double> contact_surface_W = CalcZeroLevelSetInMeshDomain(
+      sphere_M, half_space_W, X_WM, em_volume, grad_em_M_volume, &e_m_surface,
+      &grad_e_m_M_surface);
   // Assert non-empty intersection.
   ASSERT_GT(contact_surface_W.num_faces(), 0);
 
+  ASSERT_EQ(e_m_surface.size(), contact_surface_W.num_vertices());
+
   for (SurfaceVertexIndex v(0); v < contact_surface_W.num_vertices(); ++v) {
     const Vector3<double>& p_WV = contact_surface_W.vertex(v).r_MV();
-    // We verify that the postions were correctly interpolated to lie on the
+    // We verify that the positions were correctly interpolated to lie on the
     // plane.
     EXPECT_NEAR(p_WV[2], 0.0, kTolerance);
 
@@ -392,6 +505,18 @@ GTEST_TEST(SpherePlaneIntersectionTest, VerticesProperlyInterpolated) {
     const double surface_radius = std::sqrt(1.0 - height * height);
     const double radius = p_WV.norm();  // since z component is zero.
     EXPECT_LE(radius, surface_radius);
+
+    // Since the scalar field is linear in y and CalcZeroLevelSetInMeshDomain()
+    // uses linear interpolations, we expect an exact match with the analytical
+    // expression (modulo machine precision).
+    const double em_expected = (1.0 + p_WV[1]) / 2.0;
+    EXPECT_NEAR(e_m_surface[v], em_expected, kTolerance);
+
+    const Vector3<double> p_MV = X_WM.inverse() * p_WV;
+    const Vector3<double> grad_em_M_expected =
+        (p_MV + Vector3<double>::Ones()) / 2.0;
+    EXPECT_TRUE(
+        CompareMatrices(grad_e_m_M_surface[v], grad_em_M_expected, kTolerance));
   }
 
   // Verify all normals point towards the positive side of the plane.
@@ -410,7 +535,8 @@ GTEST_TEST(SpherePlaneIntersectionTest, VerticesProperlyInterpolated) {
     //   1) precision loss in the frame transformation between the sphere and
     //      the plane.
     //   2) Interpolation within the tetrahedra.
-    EXPECT_TRUE(CompareMatrices(normal_W, Vector3d::UnitZ(), 40 * kTolerance));
+    EXPECT_TRUE(
+        CompareMatrices(normal_W, Vector3<double>::UnitZ(), 40 * kTolerance));
   }
 }
 
