@@ -3,6 +3,9 @@
 #include <string>
 #include <unordered_map>
 
+#define throw(...) throw()
+#include <interval/interval.hpp>
+#undef throw
 #include <dreal/dreal.h>
 
 #include "drake/common/drake_copyable.h"
