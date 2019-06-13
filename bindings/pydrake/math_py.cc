@@ -133,17 +133,42 @@ void DoDefinitions(py::module m, T) {
             cls_doc.ctor.doc_1args_R)
         .def(py::init<Eigen::Quaternion<T>>(), py::arg("quaternion"),
             cls_doc.ctor.doc_1args_quaternion)
+        .def(py::init<const Eigen::AngleAxis<T>&>(), py::arg("theta_lambda"),
+            cls_doc.ctor.doc_1args_theta_lambda)
         .def(py::init<const RollPitchYaw<T>&>(), py::arg("rpy"),
             cls_doc.ctor.doc_1args_rpy)
+        .def_static("MakeXRotation", &Class::MakeXRotation, py::arg("theta"),
+            cls_doc.MakeXRotation.doc)
+        .def_static("MakeYRotation", &Class::MakeYRotation, py::arg("theta"),
+            cls_doc.MakeYRotation.doc)
+        .def_static("MakeZRotation", &Class::MakeZRotation, py::arg("theta"),
+            cls_doc.MakeZRotation.doc)
+        .def_static("Identity", &Class::Identity, cls_doc.Identity.doc)
+        .def("set", &Class::set, py::arg("R"), cls_doc.set.doc)
+        .def("inverse", &Class::inverse, cls_doc.inverse.doc)
+        .def("transpose", &Class::transpose, cls_doc.transpose.doc)
         .def("matrix", &Class::matrix, cls_doc.matrix.doc)
+        .def("row", &Class::row, py::arg("index"), cls_doc.row.doc)
+        .def("col", &Class::col, py::arg("index"), cls_doc.col.doc)
         .def("multiply",
             [](const Class& self, const Class& other) { return self * other; },
             cls_doc.operator_mul.doc_1args_other)
-        .def("inverse", &Class::inverse, cls_doc.inverse.doc)
+        .def("IsValid", overload_cast_explicit<boolean<T>>(&Class::IsValid),
+            cls_doc.IsValid.doc_0args)
+        .def("IsExactlyIdentity", &Class::IsExactlyIdentity,
+            cls_doc.IsExactlyIdentity.doc)
+        .def("IsIdentityToInternalTolerance",
+            &Class::IsIdentityToInternalTolerance,
+            cls_doc.IsIdentityToInternalTolerance.doc)
+        // Does not return the quality_factor
+        .def_static("ProjectToRotationMatrix",
+            [](const Matrix3<T>& M) {
+              return RotationMatrix<T>::ProjectToRotationMatrix(M);
+            },
+            py::arg("M"), cls_doc.ProjectToRotationMatrix.doc)
         .def("ToQuaternion",
             overload_cast_explicit<Eigen::Quaternion<T>>(&Class::ToQuaternion),
-            cls_doc.ToQuaternion.doc_0args)
-        .def_static("Identity", &Class::Identity, cls_doc.Identity.doc);
+            cls_doc.ToQuaternion.doc_0args);
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
   }
