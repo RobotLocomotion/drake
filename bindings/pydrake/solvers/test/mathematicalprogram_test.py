@@ -5,7 +5,8 @@ from pydrake.solvers.gurobi import GurobiSolver
 from pydrake.solvers.snopt import SnoptSolver
 from pydrake.solvers.mathematicalprogram import (
     SolverOptions,
-    SolverType
+    SolverType,
+    SolverId
     )
 
 from functools import partial
@@ -571,10 +572,12 @@ class TestMathematicalProgram(unittest.TestCase):
         # For now, just make sure the constructor exists.  Once we bind more
         # accessors, we can test them here.
         options_object = SolverOptions()
-        options_object.SetOption(SolverType.kGurobi, "double_key", 1.0)
-        options_object.SetOption(SolverType.kGurobi, "int_key", 2)
-        options_object.SetOption(SolverType.kGurobi, "string_key", "3")
-        options = options_object.GetOption(SolverType.kGurobi)
+        solver_id = SolverId("dummy")
+        self.assertEqual(solver_id.name(), "dummy")
+        options_object.SetOption(solver_id, "double_key", 1.0)
+        options_object.SetOption(solver_id, "int_key", 2)
+        options_object.SetOption(solver_id, "string_key", "3")
+        options = options_object.GetOptions(solver_id)
         self.assertDictEqual(
             options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
 

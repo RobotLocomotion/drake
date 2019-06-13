@@ -211,6 +211,7 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           [](const SolverInterface& self) { return self.solver_id().name(); });
 
   py::class_<SolverId>(m, "SolverId", doc.SolverId.doc)
+      .def(py::init<std::string>(), py::arg("name"), doc.SolverId.ctor.doc)
       .def("name", &SolverId::name, doc.SolverId.name.doc);
 
   py::enum_<SolverType>(m, "SolverType", doc.SolverType.doc)
@@ -232,37 +233,37 @@ PYBIND11_MODULE(mathematicalprogram, m) {
   py::class_<SolverOptions>(m, "SolverOptions", doc.SolverOptions.doc)
       .def(py::init<>(), doc.SolverOptions.ctor.doc)
       .def("SetOption",
-          [](SolverOptions& self, const SolverType& solver_type,
+          [](SolverOptions& self, const SolverId& solver_id,
               const std::string& solver_option, double option_value) {
-            self.SetOption(SolverTypeConverter::TypeToId(solver_type),
-                solver_option, option_value);
+            self.SetOption(solver_id, solver_option, option_value);
           },
-          doc.SolverOptions.SetOption.doc)
+          py::arg("solver_id"), py::arg("solver_option"),
+          py::arg("option_value"), doc.SolverOptions.SetOption.doc)
       .def("SetOption",
-          [](SolverOptions& self, const SolverType& solver_type,
+          [](SolverOptions& self, const SolverId& solver_id,
               const std::string& solver_option, int option_value) {
-            self.SetOption(SolverTypeConverter::TypeToId(solver_type),
-                solver_option, option_value);
+            self.SetOption(solver_id, solver_option, option_value);
           },
-          doc.SolverOptions.SetOption.doc)
+          py::arg("solver_id"), py::arg("solver_option"),
+          py::arg("option_value"), doc.SolverOptions.SetOption.doc)
       .def("SetOption",
-          [](SolverOptions& self, const SolverType& solver_type,
+          [](SolverOptions& self, const SolverId& solver_id,
               const std::string& solver_option,
               const std::string& option_value) {
-            self.SetOption(SolverTypeConverter::TypeToId(solver_type),
-                solver_option, option_value);
+            self.SetOption(solver_id, solver_option, option_value);
           },
-          doc.SolverOptions.SetOption.doc)
-      .def("GetOption",
-          [](const SolverOptions& solver_options, SolverType solver_type) {
+          py::arg("solver_id"), py::arg("solver_option"),
+          py::arg("option_value"), doc.SolverOptions.SetOption.doc)
+      .def("GetOptions",
+          [](const SolverOptions& solver_options, SolverId solver_id) {
             py::dict out;
             py::object update = out.attr("update");
-            const SolverId id = SolverTypeConverter::TypeToId(solver_type);
-            update(solver_options.GetOptionsDouble(id));
-            update(solver_options.GetOptionsInt(id));
-            update(solver_options.GetOptionsStr(id));
+            update(solver_options.GetOptionsDouble(solver_id));
+            update(solver_options.GetOptionsInt(solver_id));
+            update(solver_options.GetOptionsStr(solver_id));
             return out;
-          });
+          },
+          py::arg("solver_id"), doc.SolverOptions.GetOptionsDouble.doc);
 
   py::class_<MathematicalProgramResult>(
       m, "MathematicalProgramResult", doc.MathematicalProgramResult.doc)
