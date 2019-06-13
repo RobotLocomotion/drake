@@ -87,33 +87,6 @@ class MeshField {
 template <typename FieldValue, typename T>
 using SurfaceMeshField = MeshField<FieldValue, SurfaceMesh<T>>;
 
-// TODO(DamrongGuoy): Repackage the classes in the MeshField family to this
-//  structure:
-//   mesh_field.h
-//     MeshField (abstract)
-//   mesh_field_linear.h
-//     MeshFieldLinear (concrete)
-//   surface_mesh_field.h (new file)
-//     SurfaceMeshField = MeshField<_,SurfaceMesh> (abstract)
-//     SurfaceMeshFieldLinear = MeshFieldLinear<_,SurfaceMesh> (concrete)
-//   volume_mesh_field.h
-//     VolumeMeshField = MeshField<_, VolumeMesh<_>> (abstract)
-//     VolumeMeshFieldLinear = MeshFieldLinear<_,VolumeMesh> (concrete)
-//   surface_mesh.h
-//     SurfaceMesh<T>
-//   volume_mesh.h
-//     VolumeMesh<T>
-//   drake_cc_library("mesh_field")
-//     mesh_field.h
-//     mesh_field_linear.h
-//   drake_cc_library("surface_mesh_field")
-//     surface_mesh.h
-//     surface_mesh_field.h
-//   drake_cc_library("volume_mesh_field")
-//     volume_mesh.h
-//     volume_mesh_field.h
-// The current structure is slightly different from above.
-
 }  // namespace geometry
 }  // namespace drake
 

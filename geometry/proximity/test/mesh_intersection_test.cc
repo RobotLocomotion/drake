@@ -19,6 +19,130 @@ namespace {
 using math::RigidTransform;
 using math::RollPitchYaw;
 
+// TODO(DamrongGuoy): More comprehensive tests.
+GTEST_TEST(MeshIntersectionTest, CalcIntersection) {
+  const double kEps = std::numeric_limits<double>::epsilon();
+  // Halfspace {(x,y,z) : x <= 2.0}
+  const Vector3<double> unit_normal = Vector3<double>::UnitX();
+  const double plane_offset = 2.0;
+  const fcl::Halfspace<double> halfspace(unit_normal, plane_offset);
+
+  // The line AB intersects the plane of the halfspace.
+  {
+    const Vector3<double> A = Vector3<double>::Zero();
+    const Vector3<double> B(4, 6, 10);
+    const Vector3<double> intersection =
+        mesh_intersection::CalcIntersection(A, B, halfspace);
+    const Vector3<double> expect_intersection(2, 3, 5);
+    EXPECT_LE((expect_intersection - intersection).norm(), kEps);
+  }
+
+  // The line AB is almost parallel to the plane of the halfspace.
+  {
+    const Vector3<double> A(plane_offset + 2.0 * kEps, 0., 0.);
+    const Vector3<double> B(plane_offset - 2.0 * kEps, 1., 1.);
+    const Vector3<double> intersection =
+        mesh_intersection::CalcIntersection(A, B, halfspace);
+    const Vector3<double> expect_intersection(2., 0.5, 0.5);
+    EXPECT_LE((expect_intersection - intersection).norm(), kEps);
+  }
+}
+
+// TODO(DamrongGuoy): Move the definition of this function here after 11612
+//  landed.
+template <typename T>
+bool CompareConvexPolygon(const std::vector<Vector3<T>>& polygon0,
+                          const std::vector<Vector3<T>>& polygon1);
+
+GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfspace) {
+  // Halfspace {(x,y,z) : x <= 2.0}
+  const Vector3<double> unit_normal = Vector3<double>::UnitX();
+  const double offset = 2.0;
+  const fcl::Halfspace<double> halfspace(unit_normal, offset);
+
+  // The input polygon is on the plane X=0, which is parallel to the plane of
+  // the halfspace and is completely inside the halfspace. Expect the input
+  // polygon and the output polygon to be the same.
+  {
+    const std::vector<Vector3<double>> input_polygon{
+        {0., 0., 0.},
+        {0., 1., 0.},
+        {0., 1., 1.},
+        {0., 0., 1.}
+    };
+    const std::vector<Vector3<double>> output_polygon =
+        mesh_intersection::ClipPolygonByHalfspace(input_polygon, halfspace);
+    EXPECT_TRUE(CompareConvexPolygon(input_polygon, output_polygon));
+  }
+  // The input polygon is on the plane X=3, which is parallel to the plane of
+  // the halfspace and is completely outside the halfspace. Expect the output
+  // polygon to be empty.
+  {
+    const std::vector<Vector3<double>> input_polygon{
+        {3., 0., 0.},
+        {3., 1., 0.},
+        {3., 1., 1.},
+        {3., 0., 1.}
+    };
+    const std::vector<Vector3<double>> output_polygon =
+        mesh_intersection::ClipPolygonByHalfspace(input_polygon, halfspace);
+    const std::vector<Vector3<double>> expect_empty_polygon;
+    EXPECT_TRUE(CompareConvexPolygon(expect_empty_polygon, output_polygon));
+  }
+  // The input polygon is on the plane X=2 of the halfspace. Expect the input
+  // polygon and the output polygon to be the same.
+  {
+    const std::vector<Vector3<double>> input_polygon{
+        {2., 0., 0.},
+        {2., 1., 0.},
+        {2., 1., 1.},
+        {2., 0., 1.}
+    };
+    const std::vector<Vector3<double>> output_polygon =
+        mesh_intersection::ClipPolygonByHalfspace(input_polygon, halfspace);
+    EXPECT_TRUE(CompareConvexPolygon(input_polygon, output_polygon));
+  }
+  // The input polygon is outside the halfspace, but it has one edge on the
+  // plane of the halfspace. Expect the output polygon to be a zero-area
+  // rectangle with two pairs of duplicated vertices.
+  {
+    const std::vector<Vector3<double>> input_polygon{
+        {2., 0., 0.},
+        {2., 2., 0.},
+        {3., 2., 0.},
+        {3., 0., 0.}
+    };
+    const std::vector<Vector3<double>> output_polygon =
+        mesh_intersection::ClipPolygonByHalfspace(input_polygon, halfspace);
+    const std::vector<Vector3<double>> expect_output_polygon{
+        {2., 0., 0.},
+        {2., 0., 0.},
+        {2., 2., 0.},
+        {2., 2., 0.},
+    };
+    EXPECT_TRUE(CompareConvexPolygon(expect_output_polygon, output_polygon));
+  }
+  // The input polygon is outside the halfspace, but it has one vertex on the
+  // plane of the halfspace. Expect the output polygon to be a zero-area
+  // triangle with three duplicated vertices.
+  {
+    const std::vector<Vector3<double>> input_polygon{
+        {2., 0., 0.},
+        {3., 2., 0.},
+        {3., 0., 0.}
+    };
+    const std::vector<Vector3<double>> output_polygon =
+        mesh_intersection::ClipPolygonByHalfspace(input_polygon, halfspace);
+    const std::vector<Vector3<double>> expect_output_polygon{
+        {2., 0., 0.},
+        {2., 0., 0.},
+        {2., 0., 0.}
+    };
+    EXPECT_TRUE(CompareConvexPolygon(expect_output_polygon, output_polygon));
+  }
+}
+
+
 // Generates a trivial surface mesh consisting of one triangle with vertices
 // at the origin and on the X- and Y-axes. We will use it for testing
 // triangle-tetrahedron intersection.
@@ -121,7 +245,10 @@ bool CompareConvexPolygon(const std::vector<Vector3<T>>& polygon0,
   struct Same {
     explicit Same(const Vector3<T>& u_in) : u(u_in) {}
     bool operator()(const Vector3<T>& v) {
-      return (u - v).norm() < std::numeric_limits<double>::epsilon();
+      // Empirically we found that numeric_limits<double>::epsilon() 2.2e-16 is
+      // too small.
+      const T kEps(1e-14);
+      return (u - v).norm() < kEps;
     }
    private:
     const Vector3<T>& u;
@@ -138,10 +265,6 @@ bool CompareConvexPolygon(const std::vector<Vector3<T>>& polygon0,
   return true;
 }
 
-// TODO(DamrongGuoy): Add unit tests for CalcIntersection().
-
-// TODO(DamrongGuoy): Add unit tests for ClipPolygonByHalfspace().
-
 GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedron) {
   auto volume_M = TrivialVolumeMesh<double>();
   auto surface_N = TrivialSurfaceMesh<double>();
@@ -149,8 +272,32 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedron) {
   const VolumeElementIndex element1(1);
   SurfaceFaceIndex face(0);
 
+  // The triangle is outside the first tetrahedron with one vertex on a face
+  // of the tetrahedron. Expect the output polygon to be empty.
+  {
+    const auto X_MN = RigidTransform<double>(Vector3<double>::UnitX());
+    const auto polygon = mesh_intersection::ClipTriangleByTetrahedron(
+        element0, *volume_M, face, *surface_N, X_MN);
+    const std::vector<Vector3<double>> expect_empty_polygon;
+    EXPECT_TRUE(CompareConvexPolygon(expect_empty_polygon, polygon));
+  }
+  // The triangle is outside the tetrahedron `element0` with one edge on a
+  // face of the tetrahedron. Expect the output polygon to be empty.
+  {
+    const auto X_MN = RigidTransform<double>(RollPitchYaw<double>(0, 0, M_PI_2),
+                                             Vector3<double>::Zero());
+    const auto polygon = mesh_intersection::ClipTriangleByTetrahedron(
+        element0, *volume_M, face, *surface_N, X_MN);
+    const std::vector<Vector3<double>> expect_empty_polygon;
+    EXPECT_TRUE(CompareConvexPolygon(expect_empty_polygon, polygon));
+  }
+
   // The triangle in surface_N coincides with the shared face between the two
-  // tetrahedral elements of volume_M.
+  // tetrahedral elements of volume_M. Expect "double count". Both
+  // tetrahedral elements give the same intersecting polygon, which is the
+  // triangle.
+  // TODO(DamrongGuoy): Change the expectation when we solve the "double
+  //  count" problem.
   {
     const auto X_MN = RigidTransform<double>::Identity();
     const auto polygon0_M = mesh_intersection::ClipTriangleByTetrahedron(
@@ -161,10 +308,6 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedron) {
         Vector3<double>::Zero(),
         Vector3<double>::UnitX(),
         Vector3<double>::UnitY()};
-    // Expect "double count". Both tetrahedral elements give the same
-    // intersecting polygon, which is a triangle.
-    // TODO(DamrongGuoy): Change the expectation when we solve the "double
-    //  count" problem.
     EXPECT_TRUE(CompareConvexPolygon(expect_triangle_M, polygon0_M));
     EXPECT_TRUE(CompareConvexPolygon(expect_triangle_M, polygon1_M));
   }
@@ -205,6 +348,104 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedron) {
   //  - the intersecting polygon is a pentagon,
   //  - the intersecting polygon is a hexagon,
   //  - More general X_MN.
+}
+
+// Tests a triangle intersect a tetrahedron into a heptagon (seven-sided
+// polygon). Strategy:
+// 1. Create a tetrahedron that intersects the X-Y plane (Z=0)into a square.
+//    A tetrahedron with vertices v0,v1,v2,v3 in this picture will do:
+//
+//                   +Z   v1(-2,0,2)
+//                    |  /|
+//                    | / |
+//                    |/  +
+//                    +  /
+//  v0 is (2,0,2).   /| /
+//                  / |/
+//           +-----/--+------+----+Y
+//           |    v0 /|      |
+//           |    | / |      |
+//  (0,-2,-2)v3---|/--+------v2(0,2,-2)
+//                +
+//               /
+//              /
+//            +X
+//
+// This tetrahedron intersects the X-Y plane into a square with vertices at
+// u0 = (v0+v2)/2, u1 = (v1+v2)/2, u2 = (v1+v3)/2, u3 = (v0+v3)/2,
+// u0 = (1,1,0),   u1 = (-1,1,0),  u2 = (-1,-1,0), u3 = (1,-1,0).
+//
+// In X-Y plane, the square u0,u1,u2,u3 will look like this:
+//
+//
+//             +Y          t0
+//              |
+//      u1------1-------u0
+//      |       |       |
+//      |       |       |
+//      |       |       |
+// t1---+-------+-------1---+X
+//      |       |       |
+//      |       |       |
+//      |       |       |
+//      u2------+-------u3
+//              |
+//              t2
+//
+// 2. Create a triangle on the X-Y plane that intersects the square into a
+//    heptagon. A triangle with vertices t0(1.5,1.5,0), t1(-1.5,0,0), and
+//    t2(0,-1.5,0) will do. See the above picture.
+//
+GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedronIntoHeptagon) {
+  std::unique_ptr<VolumeMesh<double>> volume_M;
+  {
+    const int element_data[4] = {0, 1, 2, 3};
+    std::vector<VolumeElement> elements {VolumeElement(element_data)};
+    const Vector3<double> vertex_data[4] = {
+        2.0 * ( Vector3<double>::UnitX() + Vector3<double>::UnitZ()),
+        2.0 * (-Vector3<double>::UnitX() + Vector3<double>::UnitZ()),
+        2.0 * ( Vector3<double>::UnitY() - Vector3<double>::UnitZ()),
+        2.0 * (-Vector3<double>::UnitY() - Vector3<double>::UnitZ())
+    };
+    std::vector<VolumeVertex<double>> vertices;
+    for (auto& vertex : vertex_data) {
+      vertices.emplace_back(vertex);
+    }
+    volume_M = std::make_unique<VolumeMesh<double>>(std::move(elements),
+                                                    std::move(vertices));
+  }
+  std::unique_ptr<SurfaceMesh<double>> surface_N;
+  {
+    const int face_data[3] = {0, 1, 2};
+    std::vector<SurfaceFace> faces {SurfaceFace(face_data)};
+    const Vector3<double> vertex_data[3] = {
+        { 1.5, 1.5, 0.},
+        {-1.5, 0.,  0.},
+        { 0., -1.5, 0.}
+    };
+    std::vector<SurfaceVertex<double>> vertices;
+    for (auto& vertex : vertex_data) {
+      vertices.emplace_back(vertex);
+    }
+    surface_N = std::make_unique<SurfaceMesh<double>>(std::move(faces),
+                                                      std::move(vertices));
+  }
+  const VolumeElementIndex tetrahedron(0);
+  const SurfaceFaceIndex triangle(0);
+  const auto X_MN = RigidTransform<double>::Identity();
+  const auto polygon_M = mesh_intersection::ClipTriangleByTetrahedron(
+      tetrahedron, *volume_M, triangle, *surface_N, X_MN);
+  const std::vector<Vector3<double>> expect_heptagon_M {
+      { 1.,    1.,   0.},
+      { 0.5,   1.,   0.},
+      {-1.,    0.25, 0.},
+      {-1.,   -0.5,  0.},
+      {-0.5,  -1.,   0.},
+      { 0.25, -1.,   0.},
+      { 1.,    0.5,  0.}
+  };
+  EXPECT_EQ(7, polygon_M.size());
+  EXPECT_TRUE(CompareConvexPolygon(expect_heptagon_M, polygon_M));
 }
 
 // TODO(DamrongGuoy): Add unit tests for AddFacesVertices().

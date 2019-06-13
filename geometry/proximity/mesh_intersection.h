@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <memory>
 #include <utility>
@@ -23,11 +24,6 @@ namespace mesh_intersection {
 
 #ifndef DRAKE_DOXYGEN_CXX  // Hide from Doxygen for now.
 
-using std::unique_ptr;
-using std::make_unique;
-using std::vector;
-using std::move;
-
 // TODO(DamrongGuoy): Take care of double counting problem when a triangle of
 //  a surface mesh overlaps a triangular face shared by two tetrahedrons of a
 //  volume mesh. The fix will require several functions in the code to work
@@ -37,7 +33,8 @@ using std::move;
 //  - Require unique vertices in the surface mesh and in the volume mesh.
 
 // TODO(DamrongGuoy): Take care of special cases when `p` lies on the
-//  plane of the halfspace to help with the double counting problem.
+//  plane of the halfspace to help with the double counting problem. Right
+//  now it is taken as being inside the halfspace.
 //    Instead of fcl::Halfspace(normal, distance), we might want to specify
 //  the halfspace using a pair (face, element), i.e., a triangular face of a
 //  tetrahedral element. It will identify the halfspace bounded by the plane
@@ -55,23 +52,26 @@ bool IsPointInHalfspace(const Vector3<T>& p,
 // Calculate the intersection point between an infinite straight line and the
 // bounding plane of a halfspace. The straight line is specified by two
 // points A and B.
+// @note
+//     Assume that the line is not parallel to the plane of the halfspace.
+// TODO(DamrongGuoy): Handle the case that the line is parallel to the plane.
 template <typename T>
 Vector3<T> CalcIntersection(const Vector3<T>& A,
                             const Vector3<T>& B,
                             const fcl::Halfspace<T>& halfspace) {
-  // TODO(DamrongGuoy): Handle the case that the line is parallel to the plane.
-  //  Right now we assume that the caller ClipPolygonByHalfspace will not call
-  //  this function in such a case. The subcases are the line on the plane
-  //  and the line far from the plane.
   T a = halfspace.signedDistance(A);
   T b = halfspace.signedDistance(B);
+  // Check that the line is not parallel to the plane.
   DRAKE_DEMAND(a != b);
   T wa = b / (b - a);
   T wb = a / (a - b);
   Vector3<T> intersection = wa * A + wb * B;
-  T kEps = std::numeric_limits<double>::epsilon();
-  T check = halfspace.signedDistance(intersection);
-  DRAKE_DEMAND(-check < kEps && check < kEps);
+  using std::abs;
+  // Empirically we found that numeric_limits<double>::epsilon() 2.2e-16 is
+  // too small.
+  const T kEps(1e-14);
+  // Verify that the intersection point is on the plane of the halfspace.
+  DRAKE_DEMAND(abs(halfspace.signedDistance(intersection)) < kEps);
   return intersection;
   // Justification.
   // 1. We set up the weights wa and wb such that wa + wb = 1, which
@@ -92,25 +92,36 @@ Vector3<T> CalcIntersection(const Vector3<T>& A,
 }
 
 // Clips a polygon by a halfspace, which is the inner loop of a modified
-// Sutherland-Hodgman algorithm for clipping a polygon.
+// Sutherland-Hodgman algorithm for clipping a polygon. It keeps the part of
+// the polygon inside the halfspace.
 // @param[in] input_polygon
 //     Input polygon is represented as a sequence of positions of its vertices.
 // @return
 //     Output polygon is represented as a sequence of positions of its vertices.
 //     It could be an empty sequence if the input polygon is entirely outside
-//     the halfspace. The output polygon could be the same as the input
-//     polygon if the input polygon is entirely inside the halfspace.
+//     the halfspace. It could be the same as the input polygon if the input
+//     polygon is entirely inside the halfspace.
 // @note
-//     If the input polygon is near or on the surface of the halfspace, the
-//     computation might be unstable. If the input polygon has a vertex or an
-//     edge near or on the surface of the halfspace, the computation might be
-//     unstable.
-// TODO(DamrongGuoy): Handle the cases in the note above.
+//     1. For an input polygon P that is parallel to the plane of the halfspace,
+//        there are three cases:
+//        1.1 If P is completely inside the halfspace, the output polygon
+//            will be the same as P.
+//        1.2 If P is completely outside the halfspace, the output polygon will
+//            be empty.
+//        1.3.If P is on the plane of the halfspace, the output polygon will be
+//           the same as P.
+//     2. For an input polygon P outside the halfspace with one edge on the
+//        plane of the halfspace, the output polygon will be a zero-area
+//        rectangle with two pairs of duplicated vertices.
+//     3. For an input polygon P outside the halfspace with one vetex on the
+//        plane of the halfspace, the output polygon will be a zero-area
+//        triangle with three duplicated vertices.
+// TODO(DamrongGuoy): Handle the degenerated cases in the note above.
 template <typename T>
-vector<Vector3<T>> ClipPolygonByHalfspace(
-    const vector<Vector3<T>>& input_polygon,
+std::vector<Vector3<T>> ClipPolygonByHalfspace(
+    const std::vector<Vector3<T>>& input_polygon,
     const fcl::Halfspace<T>& halfspace) {
-  vector<Vector3<T>> output_polygon;
+  std::vector<Vector3<T>> output_polygon;
   const int size = input_polygon.size();
   for (int i = 0; i < size; ++i) {
     const Vector3<T>& current = input_polygon[i];
@@ -118,7 +129,7 @@ vector<Vector3<T>> ClipPolygonByHalfspace(
     if (IsPointInHalfspace(current, halfspace)) {
       if (!IsPointInHalfspace(previous, halfspace)) {
         // Calculate line-plane intersection when the `current` point
-        // "enters" the halfspace
+        // "enters" the halfspace.
         output_polygon.push_back(
             CalcIntersection(current, previous, halfspace));
       }
@@ -136,8 +147,9 @@ vector<Vector3<T>> ClipPolygonByHalfspace(
 }
 
 // Clips a triangle by a tetrahedron using a modified Sutherland-Hodgman
-// algorithm for clipping a polygon. It clips the triangle by each halfspace
-// defined each face of the tetrahedron.
+// algorithm for clipping a polygon and outputs the part of the triangle
+// inside the tetrahedron. It clips the triangle by each halfspace
+// defined by each face of the tetrahedron.
 // @param element
 //     Index of the tetrahedron in a volume mesh.
 // @param volume_M
@@ -148,17 +160,24 @@ vector<Vector3<T>> ClipPolygonByHalfspace(
 //     The surface mesh whose vertex positions are expressed in N's frame.
 // @param X_MN
 //     The rigid transform from N to M.
-// @returnval polygon
-//     The output polygon represented by positions of its vertices, expressed
-//     in M's frame.
+// @retval polygon
+//     The output polygon represented by a sequence of positions of its
+//     vertices, expressed in M's frame. It can have up to seven vertices.
+// @note
+//     1. If the triangle is outside the tetrahedron with one vertex on a
+//        face of the tetrahedron, the output polygon will be empty.
+//     2. If the triangle is outside the tetrahedron with an edge on a face
+//        of the tetrahedron, the output polygon will be empty.
+//     3. If the triangle is on a face of the tetrahedron, the output polygon
+//        will be the part of the triangle inside the face of the tetrahedron.
 template <typename T>
-vector<Vector3<T>> ClipTriangleByTetrahedron(
+std::vector<Vector3<T>> ClipTriangleByTetrahedron(
     VolumeElementIndex element, const VolumeMesh<T>& volume_M,
     SurfaceFaceIndex face, const SurfaceMesh<T>& surface_N,
     const math::RigidTransform<T>& X_MN) {
   // Initialize output polygon in M's frame from the triangular `face` of
   // surface_N.
-  vector<Vector3<T>> output_M;
+  std::vector<Vector3<T>> output_M;
   for (int i = 0; i < 3; ++i) {
     SurfaceVertexIndex v = surface_N.element(face).vertex(i);
     output_M.emplace_back(X_MN * surface_N.vertex(v).r_MV());
@@ -212,14 +231,25 @@ vector<Vector3<T>> ClipTriangleByTetrahedron(
   //  vertex or an edge of the triangle `face` of suface_N is on a face of the
   //  tetrahedron `element` of volume_M.
   if (output_M.size() >= 3) {
-    auto it = std::unique(output_M.begin(), output_M.end());
+    auto near = [](const Vector3<T>& p, const Vector3<T>& q) -> bool {
+      // Empirically we found that numeric_limits<double>::epsilon() 2.2e-16 is
+      // too small.
+      const T kEps(1e-14);
+      return (p - q).norm() < kEps;
+    };
+    auto it = std::unique(output_M.begin(), output_M.end(), near);
     output_M.resize(it - output_M.begin());
-    if (output_M.size() >= 3) {
-      if (*output_M.begin() == *output_M.rbegin()) {
+    if (near(*output_M.begin(), *output_M.rbegin())) {
         output_M.resize(output_M.size() - 1);
-      }
     }
   }
+  // Empty the polygon if it has less than 3 points left after removing
+  // duplicated points.
+  if (output_M.size() < 3) {
+    output_M.clear();
+  }
+  // TODO(DamrongGuoy): Calculate area of the polygon. If it's too small,
+  //  return an empty polygon.
   return output_M;
 }
 
@@ -238,8 +268,8 @@ vector<Vector3<T>> ClipTriangleByTetrahedron(
 //  remove the above note.
 template <typename T>
 void AddFacesVertices(
-    const vector<Vector3<T>>& polygon, vector<SurfaceFace>* faces,
-    vector<SurfaceVertex<T>>* vertices) {
+    const std::vector<Vector3<T>>& polygon, std::vector<SurfaceFace>* faces,
+    std::vector<SurfaceVertex<T>>* vertices) {
   if (polygon.size() < 3) return;
 
   const int num_original_vertices = vertices->size();
@@ -267,10 +297,11 @@ void AddFacesVertices(
 // @note The face normal is calculated as the right-handed face normal of the
 // triangle.
 template <typename T>
-unique_ptr<SurfaceMeshField<Vector3<T>, T>> ComputeNormalField(
+std::unique_ptr<SurfaceMeshField<Vector3<T>, T>> ComputeNormalField(
     const SurfaceMesh<T>& surface) {
-  vector<Vector3<T>> normal_values(surface.num_vertices(), Vector3<T>::Zero());
-  vector<T> areas(surface.num_vertices(), 0);
+  std::vector<Vector3<T>> normal_values(surface.num_vertices(),
+                                        Vector3<T>::Zero());
+  std::vector<T> areas(surface.num_vertices(), 0);
   for (SurfaceFaceIndex face_index(0); face_index < surface.num_faces();
        ++face_index) {
     const SurfaceFace& face = surface.element(face_index);
@@ -288,8 +319,8 @@ unique_ptr<SurfaceMeshField<Vector3<T>, T>> ComputeNormalField(
     normal_values[vertex_index] /= areas[vertex_index];
     normal_values[vertex_index] = normal_values[vertex_index].normalized();
   }
-  return make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
-      "normal", move(normal_values), &surface);
+  return std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
+      "normal", std::move(normal_values), &surface);
 }
 
 // Computes the intersecting surface `surface_MN` between a soft geometry M
@@ -326,14 +357,14 @@ void IntersectSoftVolumeRigidSurface(
     const VolumeMeshField<T, T>& soft_M,
     const SurfaceMesh<T>& rigid_N,
     const math::RigidTransform<T>& X_MN,
-    unique_ptr<SurfaceMesh<T>>* surface_MN_M,
-    unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
-    unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>>* grad_h_MN_M) {
+    std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
+    std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
+    std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>>* grad_h_MN_M) {
   auto normal_field_N = ComputeNormalField(rigid_N);
-  vector<SurfaceFace> faces_MN;
-  vector<SurfaceVertex<T>> vertices_MN_M;
-  vector<T> e_values;
-  vector<Vector3<T>> grad_h_MN_M_values;
+  std::vector<SurfaceFace> faces_MN;
+  std::vector<SurfaceVertex<T>> vertices_MN_M;
+  std::vector<T> e_values;
+  std::vector<Vector3<T>> grad_h_MN_M_values;
   for (VolumeElementIndex element_M(0);
        element_M < soft_M.mesh().num_elements(); ++element_M) {
     for (SurfaceFaceIndex face_N(0); face_N < rigid_N.num_faces(); ++face_N) {
@@ -356,12 +387,12 @@ void IntersectSoftVolumeRigidSurface(
       }
     }
   }
-  *surface_MN_M =
-      make_unique<SurfaceMesh<T>>(move(faces_MN), move(vertices_MN_M));
-  *e_MN = make_unique<SurfaceMeshFieldLinear<T, T>>(
-      "e", move(e_values), surface_MN_M->get());
-  *grad_h_MN_M = make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
-      "grad_h_MN_M", move(grad_h_MN_M_values), surface_MN_M->get());
+  *surface_MN_M = std::make_unique<SurfaceMesh<T>>(std::move(faces_MN),
+                                                   std::move(vertices_MN_M));
+  *e_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
+      "e", std::move(e_values), surface_MN_M->get());
+  *grad_h_MN_M = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
+      "grad_h_MN_M", std::move(grad_h_MN_M_values), surface_MN_M->get());
 }
 
 // Computes the contact surface between a soft geometry M and a rigid
@@ -397,19 +428,20 @@ void IntersectSoftVolumeRigidSurface(
 //
 //
 template <typename T>
-unique_ptr<ContactSurface<T>> ComputeContactSurfaceSoftRigid(
+std::unique_ptr<ContactSurface<T>> ComputeContactSurfaceSoftRigid(
     const GeometryId id_M, const GeometryId id_N,
     const VolumeMeshField<T, T>& soft_M,
     const SurfaceMesh<T>& rigid_N,
     const math::RigidTransform<T>& X_MN) {
-  unique_ptr<SurfaceMesh<T>> surface_MN_M;
-  unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN;
-  unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_MN_M;
+  std::unique_ptr<SurfaceMesh<T>> surface_MN_M;
+  std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN;
+  std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_MN_M;
   IntersectSoftVolumeRigidSurface(soft_M, rigid_N, X_MN,
                                   &surface_MN_M, &e_MN, &grad_h_MN_M);
 
-  return make_unique<ContactSurface<T>>(
-      id_M, id_N, move(surface_MN_M), move(e_MN), move(grad_h_MN_M));
+  return std::make_unique<ContactSurface<T>>(
+      id_M, id_N, std::move(surface_MN_M), std::move(e_MN),
+      std::move(grad_h_MN_M));
 }
 
 // TODO(DamrongGuoy): Try to combine ComputeContactSurfaceSoftRigid() and
@@ -453,45 +485,45 @@ unique_ptr<ContactSurface<T>> ComputeContactSurfaceSoftRigid(
 //  changing IntersectSoftVolumeRigidSurface to work with both
 //  (soft_M, rigid_N) and (rigid_A, soft_B).
 template <typename T>
-unique_ptr<ContactSurface<T>> ComputeContactSurfaceRigidSoft(
+std::unique_ptr<ContactSurface<T>> ComputeContactSurfaceRigidSoft(
     const GeometryId id_A, const GeometryId id_B,
     const SurfaceMesh<T>& rigid_A,
     const VolumeMeshField<T, T>& soft_B,
     const math::RigidTransform<T>& X_AB) {
   math::RigidTransform<T> X_BA = X_AB.inverse();
-  unique_ptr<SurfaceMesh<T>> surface_BA_B;
-  unique_ptr<SurfaceMeshFieldLinear<T, T>> e_BA;
-  unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_BA_B;
+  std::unique_ptr<SurfaceMesh<T>> surface_BA_B;
+  std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_BA;
+  std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_BA_B;
   IntersectSoftVolumeRigidSurface(soft_B, rigid_A, X_BA,
                                   &surface_BA_B, &e_BA, &grad_h_BA_B);
 
   // Change positions of vertices of the intersecting mesh from B's frame to
   // A's frame.
-  vector<SurfaceVertex<T>> vertices_A;
+  std::vector<SurfaceVertex<T>> vertices_A;
   for (SurfaceVertexIndex v(0); v < surface_BA_B->num_vertices(); ++v) {
     const Vector3<T>& r_BV = surface_BA_B->vertex(v).r_MV();
     const Vector3<T> r_AV = X_AB * r_BV;
     vertices_A.emplace_back(r_AV);
   }
   // Re-orient the faces of the intersecting mesh.
-  vector<SurfaceFace> faces_AB;
+  std::vector<SurfaceFace> faces_AB;
   for (SurfaceFaceIndex f(0); f < surface_BA_B->num_faces(); ++f) {
     const SurfaceFace& face_BA = surface_BA_B->element(f);
     // Switch the order from (0, 1, 2) to (0, 2, 1) to flip the orientation.
     faces_AB.emplace_back(face_BA.vertex(0), face_BA.vertex(2),
                           face_BA.vertex(1));
   }
-  auto surface_AB_A =
-      make_unique<SurfaceMesh<T>>(move(faces_AB), move(vertices_A));
+  auto surface_AB_A = std::make_unique<SurfaceMesh<T>>(std::move(faces_AB),
+                                                       std::move(vertices_A));
 
   // Copy the scalar field directly.
-  vector<T> e_values = e_BA->values();
-  auto e_AB = make_unique<SurfaceMeshFieldLinear<T, T>>(
-      "e", move(e_values), surface_AB_A.get());
+  std::vector<T> e_values = e_BA->values();
+  auto e_AB = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
+      "e", std::move(e_values), surface_AB_A.get());
 
   // Express the vector field in A's frame and reverse its direction from
   // rigid_A-to-soft_B to soft_B-to-rigid_A.
-  vector<Vector3<T>> grad_h_AB_A_values;
+  std::vector<Vector3<T>> grad_h_AB_A_values;
   for (SurfaceVertexIndex v(0); v < surface_BA_B->num_vertices(); ++v) {
     const Vector3<T>& normal_BA_B = grad_h_BA_B->values()[v];
     const Vector3<T> normal_BA_A = X_AB.rotation() * normal_BA_B;
@@ -499,12 +531,13 @@ unique_ptr<ContactSurface<T>> ComputeContactSurfaceRigidSoft(
     grad_h_AB_A_values.emplace_back(normal_AB_A);
   }
   auto grad_h_AB_A =
-      make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
-          "grad_h_MN_M", move(grad_h_AB_A_values), surface_AB_A.get());
+      std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
+          "grad_h_MN_M", std::move(grad_h_AB_A_values), surface_AB_A.get());
 
   // Create the contact surface.
-  return make_unique<ContactSurface<T>>(id_A, id_B, move(surface_AB_A),
-                                             move(e_AB), move(grad_h_AB_A));
+  return std::make_unique<ContactSurface<T>>(
+      id_A, id_B, std::move(surface_AB_A), std::move(e_AB),
+      std::move(grad_h_AB_A));
 }
 
 #endif  // #ifndef DRAKE_DOXYGEN_CXX
