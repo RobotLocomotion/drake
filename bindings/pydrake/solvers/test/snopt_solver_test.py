@@ -24,5 +24,5 @@ class TestSnoptSolver(unittest.TestCase):
             result = solver.Solve(prog, None, None)
             self.assertTrue(result.is_success())
             numpy_compare.assert_float_allclose(
-                result.GetSolution, [0., 1.], atol=1E-7)
+                result.GetSolution(x), [0., 1.], atol=1E-7)
             self.assertEqual(result.get_solver_details().info, 1)
