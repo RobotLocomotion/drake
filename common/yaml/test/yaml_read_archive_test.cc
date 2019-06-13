@@ -512,7 +512,7 @@ TEST_F(YamlReadArchiveTest, VisitVariantFoundUnknownTag) {
       "YAML node of type Map \\(with size 1 and keys \\{value\\}\\) "
       "has unsupported type tag !UnknownTag "
       "while selecting a variant<> entry for "
-      "stx::variant<std::string,double,\\(anonymous\\)::DoubleStruct> value.");
+      "st.::variant<std::string,double,\\(anonymous\\)::DoubleStruct> value.");
 }
 
 // This finds nothing when an Eigen::Vector or Eigen::Matrix was wanted.
