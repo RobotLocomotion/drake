@@ -3,14 +3,19 @@
 Things to note:
 
 * The `.all` modules in `pydrake` are intended as convenient end-user shortcut
-  for interactive or tutorial use.
+  for interactive or tutorial use. Please only use it for prototyping, but do
+  not use it in production code.
 * Code within pydrake itself should not use the all shortcut, but rather
   import only exactly what is needed.
-* The downside of importing an `.all` module is (a) pulling in additional
+* The downsides of importing an `.all` module are (a) pulling in additional
   dependencies, (b) the potential to lose a symbol if there is a conflict
   (e.g. something like `pydrake.multibody.shapes.Element` vs
   `pydrake.multibody.collision.Element` (which does not exist yet)), and
   (c) deprecated symbols could get removed without warning from `all` modules.
+* Deprecated modules will *not* be incorporated in `all` modules, because
+  otherwise, `all` would emit noisy deprecation warnings, or if they are
+  suppressed, subseqeuent imports of those deprecated modules will not trigger
+  warnings.
 
 Note:
     Import order matters! If there is a name conflict, the last one imported

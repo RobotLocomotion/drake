@@ -4,6 +4,8 @@ import sys
 import unittest
 import warnings
 
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+
 
 class TestAll(unittest.TestCase):
     # N.B. Synchronize code snippests with `doc/python_bindings.rst`.
@@ -20,10 +22,17 @@ class TestAll(unittest.TestCase):
             # avoid issues on different machines, but still catch meaningful
             # warnings.
             warnings.simplefilter("always", Warning)
+            warnings.filterwarnings(
+                "ignore", message="Matplotlib is building the font cache",
+                category=UserWarning)
             import pydrake.all
             if w:
                 sys.stderr.write("Encountered import warnings:\n{}\n".format(
                     "\n".join(map(str, w)) + "\n"))
+            self.assertEqual(len(w), 0)
+        # Show that deprecated modules are not incorporated in `.all` (#11363).
+        with catch_drake_warnings(expected_count=1):
+            import pydrake.multibody.rigid_body_tree
 
     def test_usage_no_all(self):
         from pydrake.common import FindResourceOrThrow
