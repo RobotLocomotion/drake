@@ -162,7 +162,7 @@ PY_LIBRARIES_ATTIC_ALIASES = [
 drake_py_library_aliases(
     actual_subdir = "bindings/pydrake/attic/multibody",
     add_deprecation_warning = 1,
-    deprecation_removal_date = "2019-06-01",
+    deprecation_removal_date = "2019-10-01",
     relative_labels = PY_LIBRARIES_ATTIC_ALIASES,
 )
 
