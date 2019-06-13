@@ -21,13 +21,7 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
                           Vector1d(0), Vector1d(0)),
       plant_{RefFromPtrOrThrow(plant)},
       plant_context_{plant_context} {
-  if (!plant_.geometry_source_is_registered()) {
-    throw std::invalid_argument(
-        "MinimumDistanceConstraint: MultibodyPlant has not registered its "
-        "geometry source with SceneGraph yet. Please refer to "
-        "AddMultibodyPlantSceneGraph on how to connect MultibodyPlant to "
-        "SceneGraph.");
-  }
+  CheckPlantConnectSceneGraph(plant_, *plant_context_);
   if (!std::isfinite(influence_distance_offset)) {
     throw std::invalid_argument(
         "MinimumDistanceConstraint: influence_distance_offset must be finite.");
@@ -38,14 +32,6 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
         "positive.");
   }
   const auto& query_port = plant_.get_geometry_query_input_port();
-  if (!query_port.HasValue(*plant_context_)) {
-    throw std::invalid_argument(
-        "MinimumDistanceConstraint: Cannot get a valid geometry::QueryObject. "
-        "Either the plant geometry_query_input_port() is not properly "
-        "connected to the SceneGraph's output port, or the plant_context_ is "
-        "incorrect. Please refer to AddMultibodyPlantSceneGraph on connecting "
-        "MultibodyPlant to SceneGraph.");
-  }
   // Maximum number of SignedDistancePairs returned by calls to
   // ComputeSignedDistancePairwiseClosestPoints().
   const int num_collision_candidates =

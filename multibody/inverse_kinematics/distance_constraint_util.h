@@ -34,6 +34,12 @@ void Distance(const MultibodyPlant<double>& plant,
               const Eigen::Vector3d& nhat_BA_W,
               const Eigen::Ref<const AutoDiffVecXd>& q,
               AutoDiffXd* distance_autodiff);
+
+/**
+ * Check if the plant has registered its geometry with the SceneGraph.
+ */
+void CheckPlantConnectSceneGraph(const MultibodyPlant<double>& plant,
+                                 const systems::Context<double>& plant_context);
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
