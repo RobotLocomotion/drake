@@ -562,10 +562,13 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = mp.MathematicalProgram()
 
         prog.SetSolverOption(SolverType.kGurobi, "double_key", 1.0)
-        prog.SetSolverOption(SolverType.kGurobi, "int_key", 2)
+        prog.SetSolverOption(GurobiSolver().solver_id(), "int_key", 2)
         prog.SetSolverOption(SolverType.kGurobi, "string_key", "3")
 
         options = prog.GetSolverOptions(SolverType.kGurobi)
+        self.assertDictEqual(
+            options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
+        options = prog.GetSolverOptions(GurobiSolver().solver_id())
         self.assertDictEqual(
             options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
 

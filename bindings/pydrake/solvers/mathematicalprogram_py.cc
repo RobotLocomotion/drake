@@ -767,6 +767,21 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           py::arg("decision_variables_new_values"), py::arg("values"),
           doc.MathematicalProgram.SetDecisionVariableValueInVector
               .doc_3args_decision_variables_decision_variables_new_values_values)
+      .def("SetSolverOption",
+          py::overload_cast<const SolverId&, const std::string&, double>(
+              &MathematicalProgram::SetSolverOption),
+          py::arg("solver_id"), py::arg("solver_option"),
+          py::arg("option_value"), doc.MathematicalProgram.SetSolverOption.doc)
+      .def("SetSolverOption",
+          py::overload_cast<const SolverId&, const std::string&, int>(
+              &MathematicalProgram::SetSolverOption),
+          py::arg("solver_id"), py::arg("solver_option"),
+          py::arg("option_value"), doc.MathematicalProgram.SetSolverOption.doc)
+      .def("SetSolverOption",
+          py::overload_cast<const SolverId&, const std::string&,
+              const std::string&>(&MathematicalProgram::SetSolverOption),
+          py::arg("solver_id"), py::arg("solver_option"),
+          py::arg("option_value"), doc.MathematicalProgram.SetSolverOption.doc)
       .def("SetSolverOption", &SetSolverOptionBySolverType<double>,
           doc.MathematicalProgram.SetSolverOption.doc)
       .def("SetSolverOption", &SetSolverOptionBySolverType<int>,
@@ -774,6 +789,15 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       .def("SetSolverOption", &SetSolverOptionBySolverType<string>,
           doc.MathematicalProgram.SetSolverOption.doc)
       // TODO(m-chaturvedi) Add Pybind11 documentation.
+      .def("GetSolverOptions",
+          [](MathematicalProgram& prog, SolverId solver_id) {
+            py::dict out;
+            py::object update = out.attr("update");
+            update(prog.GetSolverOptionsDouble(solver_id));
+            update(prog.GetSolverOptionsInt(solver_id));
+            update(prog.GetSolverOptionsStr(solver_id));
+            return out;
+          })
       .def("GetSolverOptions",
           [](MathematicalProgram& prog, SolverType solver_type) {
             py::dict out;
