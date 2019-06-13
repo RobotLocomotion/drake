@@ -28,7 +28,6 @@ class TestNloptSolver(unittest.TestCase):
         self.assertTrue(result.is_success())
         numpy_compare.assert_float_allclose(
             result.GetSolution(x), x_expected, atol=1E-7)
-        self.assertTrue(np.allclose(result.GetSolution(x), x_expected))
         self.assertEqual(result.get_solver_details().status, 4)
 
     def unavailable(self):
