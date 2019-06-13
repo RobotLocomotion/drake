@@ -489,9 +489,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Sets all generalized positions and velocities from the given vector
   /// [q; v].
-  /// @throws std::exception if the `context` is nullptr, if the context does
-  /// not correspond to the context for a multibody model, or if the length of
-  /// `q_v` is not equal to `num_positions() + num_velocities()`.
+  /// @throws std::exception if the `context` is nullptr, or if the context
+  /// does not correspond to the context for a multibody model.
+  /// @pre The length of `q_v` is equal to
+  /// `num_positions() + num_velocities()`.
   void SetPositionsAndVelocities(
       systems::Context<T>* context, const VectorX<T>& q_v) const {
     DRAKE_DEMAND(q_v.size() == (num_positions() + num_velocities()));
@@ -501,12 +502,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Sets generalized positions and velocities from the given vector
   /// [q; v] for the specified model instance.
   /// @throws std::exception if the `context` is nullptr, if the context does
-  /// not correspond to the context for a multibody model, if the model instance
-  /// index is invalid, or if the length of `q_v` is not equal to
+  /// not correspond to the context for a multibody model, or if the model
+  /// instance index is invalid.
+  /// @pre The length of `q_v` is not equal to
   /// `num_positions(model_instance) + num_velocities(model_instance)`.
   void SetPositionsAndVelocities(
       systems::Context<T>* context, ModelInstanceIndex model_instance,
       const VectorX<T>& q_v) const {
+    DRAKE_DEMAND(
+        q_v.size() ==
+        (num_positions(model_instance) + num_velocities(model_instance)));
     internal_tree().SetPositionsAndVelocities(model_instance, q_v, context);
   }
 
@@ -580,33 +585,38 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Sets all generalized positions from the given vector.
   /// @throws std::exception if the `context` is nullptr, if the context does
-  /// not correspond to the context for a multibody model, or if the length of
-  /// `q` is not equal to `num_positions()`.
+  /// not correspond to the context for a multibody model.
+  /// @pre The length of `q` is equal to `num_positions()`.
   void SetPositions(systems::Context<T>* context, const VectorX<T>& q) const {
+    DRAKE_DEMAND(q.size() == num_positions());
     GetMutablePositions(context) = q;
   }
 
   /// Sets the positions for a particular model instance from the given vector.
   /// @throws std::exception if the `context` is nullptr, if the context does
-  /// not correspond to the context for a multibody model, if the model instance
-  /// index is invalid, or if the length of `q_instance` is not equal to
+  /// not correspond to the context for a multibody model, or if the model
+  /// instance index is invalid.
+  /// @pre The length of `q_instance` is equal to
   /// `num_positions(model_instance)`.
   void SetPositions(
       systems::Context<T>* context,
       ModelInstanceIndex model_instance, const VectorX<T>& q_instance) const {
+    DRAKE_DEMAND(q_instance.size() == num_positions(model_instance));
     Eigen::VectorBlock<VectorX<T>> q = GetMutablePositions(context);
     internal_tree().SetPositionsInArray(model_instance, q_instance, &q);
   }
 
   /// Sets the positions for a particular model instance from the given vector.
   /// @throws std::exception if the `state` is nullptr, if the context does
-  /// not correspond to the context for a multibody model, if the model instance
-  /// index is invalid, or if the length of `q_instance` is not equal to
+  /// not correspond to the context for a multibody model, or if the model
+  /// instance index is invalid.
+  /// @pre The length of `q_instance` is not equal to
   /// `num_positions(model_instance)`.
   /// @pre `state` comes from this MultibodyPlant.
   void SetPositions(const systems::Context<T>& context,
                     systems::State<T>* state, ModelInstanceIndex model_instance,
                     const VectorX<T>& q_instance) const {
+    DRAKE_DEMAND(q_instance.size() == num_positions(model_instance));
     CheckValidState(state);
     Eigen::VectorBlock<VectorX<T>> q = GetMutablePositions(context, state);
     internal_tree().SetPositionsInArray(model_instance, q_instance, &q);
@@ -666,23 +676,26 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// Sets all generalized velocities from the given vector.
-  /// @throws std::exception if the `context` is nullptr, if the context does
-  /// not correspond to the context for a multibody model, or if the length of
-  /// `v` is not equal to `num_velocities()`.
+  /// @throws std::exception if the `context` is nullptr, or if the context
+  /// does not correspond to the context for a multibody model.
+  /// @pre The length of `v` is equal to `num_velocities()`.
   void SetVelocities(systems::Context<T>* context, const VectorX<T>& v) const {
+    DRAKE_DEMAND(v.size() == num_velocities());
     GetMutableVelocities(context) = v;
   }
 
   /// Sets the generalized velocities for a particular model instance from the
   /// given vector.
   /// @throws std::exception if the `context` is nullptr, if the context does
-  /// not correspond to the context for a multibody model, if the model instance
-  /// index is invalid, or if the length of `v_instance` is not equal to
+  /// not correspond to the context for a multibody model, or if the model
+  /// instance index is invalid.
+  /// @pre The length of `v_instance` is equal to
   /// `num_velocities(model_instance)`.
   /// @pre `state` comes from this MultibodyPlant.
   void SetVelocities(
       const systems::Context<T>& context, systems::State<T>* state,
       ModelInstanceIndex model_instance, const VectorX<T>& v_instance) const {
+    DRAKE_DEMAND(v_instance.size() == num_velocities(model_instance));
     CheckValidState(state);
     Eigen::VectorBlock<VectorX<T>> v = GetMutableVelocities(context, state);
     internal_tree().SetVelocitiesInArray(model_instance, v_instance, &v);
@@ -691,12 +704,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Sets the generalized velocities for a particular model instance from the
   /// given vector.
   /// @throws std::exception if the `context` is nullptr, if the context does
-  /// not correspond to the context for a multibody model, if the model instance
-  /// index is invalid, or if the length of `v_instance` is not equal to
+  /// not correspond to the context for a multibody model, or if the model
+  /// instance index is invalid.
+  /// @pre The length of `v_instance` is not equal to
   /// `num_velocities(model_instance)`.
   void SetVelocities(
       systems::Context<T>* context,
       ModelInstanceIndex model_instance, const VectorX<T>& v_instance) const {
+    DRAKE_DEMAND(v_instance.size() == num_velocities(model_instance));
     Eigen::VectorBlock<VectorX<T>> v = GetMutableVelocities(context);
     internal_tree().SetVelocitiesInArray(model_instance, v_instance, &v);
   }
