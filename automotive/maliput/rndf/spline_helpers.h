@@ -7,6 +7,7 @@
 #include "ignition/math/Spline.hh"
 #include "ignition/math/Vector3.hh"
 
+#include "drake/automotive/deprecated.h"
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
@@ -17,7 +18,8 @@ namespace rndf {
 /// Helpful for path-length parameterization with ignition::math::Splines.
 /// Given a function F, its domain D, and codomain CD, this class gives a linear
 /// interpolant of F's inverse that maps CD to D.
-class InverseFunctionInterpolator {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    InverseFunctionInterpolator {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseFunctionInterpolator)
 
@@ -86,7 +88,8 @@ class InverseFunctionInterpolator {
 
 /// An extension for ignition::math::Splines that reparameterizes
 /// them by path length.
-class ArcLengthParameterizedSpline {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    ArcLengthParameterizedSpline {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ArcLengthParameterizedSpline)
 

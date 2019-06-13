@@ -15,7 +15,8 @@ namespace geometry_base {
 /// @see https://arne-mertz.de/2016/10/passkey-idiom/
 /// @see https://stackoverflow.com/questions/3324898/can-we-increase-the-re-usability-of-this-key-oriented-access-protection-pattern
 template <class T>
-class Passkey {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Passkey {
  private:
   // Only T may construct a Passkey<T>!
   friend T;

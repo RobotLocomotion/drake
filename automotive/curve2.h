@@ -7,6 +7,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/common/autodiffxd_make_coherent.h"
 #include "drake/common/drake_copyable.h"
 
@@ -30,7 +31,8 @@ namespace automotive {
 /// are traversing between the waypoints.
 ///
 template <typename T>
-class Curve2 {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Curve2 {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Curve2)
 

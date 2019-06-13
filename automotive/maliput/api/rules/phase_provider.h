@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/rules/phase.h"
 #include "drake/automotive/maliput/api/rules/phase_ring.h"
 #include "drake/common/drake_copyable.h"
@@ -12,7 +13,8 @@ namespace rules {
 
 /// Abstract interface for providing the dynamic states (Phase::Id) of a
 /// collection of PhaseRings.
-class PhaseProvider {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    PhaseProvider {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PhaseProvider);
 

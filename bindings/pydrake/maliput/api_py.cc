@@ -15,11 +15,19 @@
 namespace drake {
 namespace pydrake {
 
+// TODO(jwnimmer-tri) Add python deprecation warnings for this entire module,
+// once we have the sugar requested in #10605 ready.
+
 PYBIND11_MODULE(api, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::maliput::api;
 
-  m.doc() = "Bindings for the Maliput API.";
+  m.doc() =
+      "Bindings for the Maliput API. "
+      "WARNING The drake/automotive package is being removed. "
+      "See RobotLocomotion/drake/issues/11603. "
+      "The drake/automotive code will be removed from Drake on "
+      "or after 2019-09-01.";
   constexpr auto& doc = pydrake_doc.drake.maliput.api;
 
   // TODO(jadecastro) These bindings are work-in-progress. Expose additional

@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/rules/direction_usage_rule.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
@@ -22,7 +23,8 @@ namespace rules {
 ///
 /// Concrete implementations of this interface shall be provided by
 /// implementing the pure virtual methods declared in private scope.
-class RoadRulebook {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    RoadRulebook {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RoadRulebook);
 

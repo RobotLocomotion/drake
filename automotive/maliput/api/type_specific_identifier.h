@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/hash.h"
@@ -36,7 +37,8 @@ namespace api {
 /// %TypeSpecificIdentifier also provides a specialization of std::hash to make
 /// it easy to use with std::unordered_set and std::unordered_map.
 template <typename T>
-class TypeSpecificIdentifier {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    TypeSpecificIdentifier {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TypeSpecificIdentifier);
 
@@ -86,14 +88,16 @@ namespace std {
 
 /// Specialization of std::hash for TypeSpecificIdentifier<T>.
 template <typename T>
-struct hash<drake::maliput::api::TypeSpecificIdentifier<T>>
+struct DRAKE_DEPRECATED_AUTOMOTIVE
+    hash<drake::maliput::api::TypeSpecificIdentifier<T>>
     : public drake::DefaultHash {};
 
 /// Specialization of std::less for TypeSpecificIdentifier<T> providing a
 /// strict ordering over TypeSpecificIdentifier<T> suitable for use with ordered
 /// containers.
 template <typename T>
-struct less<drake::maliput::api::TypeSpecificIdentifier<T>> {
+struct DRAKE_DEPRECATED_AUTOMOTIVE
+    less<drake::maliput::api::TypeSpecificIdentifier<T>> {
   bool operator()(const drake::maliput::api::TypeSpecificIdentifier<T>& lhs,
                   const drake::maliput::api::TypeSpecificIdentifier<T>& rhs)
       const {

@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/branch_point.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/segment.h"
@@ -25,7 +26,8 @@ class BranchPoint;
 /// This base implementation will handle all the non-geometric stuff from the
 /// lane. All geometric computation will be moved to each sub lane child. See
 /// SplineLane for an example.
-class Lane : public api::Lane {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Lane : public api::Lane {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Lane)
 

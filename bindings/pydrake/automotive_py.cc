@@ -19,13 +19,21 @@
 namespace drake {
 namespace pydrake {
 
+// TODO(jwnimmer-tri) Add python deprecation warnings for this entire module,
+// once we have the sugar requested in #10605 ready.
+
 PYBIND11_MODULE(automotive, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::automotive;
 
-  m.doc() = "Bindings for Automotive systems";
+  m.doc() =
+      "Bindings for Automotive systems. "
+      "WARNING The drake/automotive package is being removed. "
+      "See RobotLocomotion/drake/issues/11603. "
+      "The drake/automotive code will be removed from Drake on "
+      "or after 2019-09-01.";
   constexpr auto& doc = pydrake_doc.drake.automotive;
 
   py::module::import("pydrake.systems.framework");

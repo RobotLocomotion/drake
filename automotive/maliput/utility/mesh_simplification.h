@@ -11,6 +11,7 @@
 
 #include <Eigen/Geometry>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/utility/mesh.h"
 #include "drake/common/hash.h"
 
@@ -20,7 +21,8 @@ namespace utility {
 namespace mesh {
 
 /// Index for a directed edge in a GeoMesh.
-struct DirectedEdgeIndex {
+struct DRAKE_DEPRECATED_AUTOMOTIVE
+    DirectedEdgeIndex {
   /// Returns this edge but reversed.
   DirectedEdgeIndex reverse() const {
     return {end_vertex_index, start_vertex_index};
@@ -56,7 +58,8 @@ void hash_append(
 
 
 /// Index for a face edge in a GeoMesh.
-struct FaceEdgeIndex {
+struct DRAKE_DEPRECATED_AUTOMOTIVE
+    FaceEdgeIndex {
   int face_index{-1};  ///< Index of the face the edge belongs to, or
                        ///  -1 to mark index as invalid.
   int edge_index{-1};  ///< Index of the edge, corresponding to its
@@ -225,7 +228,8 @@ FindOuterFaceEdgeIndex(const std::set<int>& simply_connected_faces_indices,
 
 
 /// Index of a face vertex in a GeoMesh.
-struct FaceVertexIndex {
+struct DRAKE_DEPRECATED_AUTOMOTIVE
+    FaceVertexIndex {
   int face_index{-1};  ///< Index of the face the vertex belongs to, or
                        ///  -1 to mark index as invalid.
   int vertex_index{-1};  ///< Index of the face vertex, or -1 to mark index

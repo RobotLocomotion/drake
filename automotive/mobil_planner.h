@@ -8,6 +8,7 @@
 #include <Eigen/Geometry>
 
 #include "drake/automotive/calc_ongoing_road_position.h"
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/gen/idm_planner_parameters.h"
 #include "drake/automotive/gen/mobil_planner_parameters.h"
 #include "drake/automotive/idm_planner.h"
@@ -84,7 +85,8 @@ namespace automotive {
 ///     Transportation Research Board, v1999, 2007, pp 86-94.
 ///     http://trrjournalonline.trb.org/doi/abs/10.3141/1999-10.
 template <typename T>
-class MobilPlanner : public systems::LeafSystem<T> {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    MobilPlanner : public systems::LeafSystem<T> {
  public:
   typedef typename std::map<AheadOrBehind, const ClosestPose<T>> ClosestPoses;
 

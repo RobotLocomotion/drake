@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/automotive/deprecated.h"
 #include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
@@ -30,7 +31,8 @@ namespace automotive {
 ///
 /// @ingroup automotive_plants
 template <typename T>
-class SimplePowertrain final : public systems::LinearSystem<T> {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    SimplePowertrain final : public systems::LinearSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimplePowertrain);
 
