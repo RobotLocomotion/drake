@@ -6,6 +6,7 @@
 #include "ignition/math/Vector3.hh"
 #include "ignition/rndf/UniqueId.hh"
 
+#include "drake/automotive/deprecated.h"
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
@@ -14,7 +15,8 @@ namespace rndf {
 
 /// A container that holds the information needed by a Builder to construct a
 /// Lane from a sequence of ignition::rndf::Waypoint objects.
-class DirectedWaypoint {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    DirectedWaypoint {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DirectedWaypoint)
 

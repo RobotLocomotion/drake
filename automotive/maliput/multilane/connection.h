@@ -7,6 +7,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/multilane/road_curve.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -25,7 +26,8 @@ namespace multilane {
 /// - y: y position
 /// - heading: counter-clockwise around z=cross(x,y). It is the heading of
 ///            reference path (radians, zero == x-direction).
-class EndpointXy {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    EndpointXy {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EndpointXy)
 
@@ -73,7 +75,8 @@ std::ostream& operator<<(std::ostream& out, const EndpointXy& endpoint_xy);
 ///              unknown when building a RoadGeometry and the Builder may need
 ///              to adjust it to force the same orientation for all r at a
 ///              certain s coordinate of the Segment surface.
-class EndpointZ {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    EndpointZ {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EndpointZ)
   // Constructs an EndpointZ with all zero parameters.
@@ -118,7 +121,8 @@ std::ostream& operator<<(std::ostream& out, const EndpointZ& endpoint_z);
 /// specified in the world frame.  It comprises two subsets of parameters:
 /// those pertaining only to the xy ground-plane, and those pertaining to
 /// out-of-plane aspects of an endpoint.
-class Endpoint {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Endpoint {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Endpoint)
 
@@ -151,7 +155,8 @@ std::ostream& operator<<(std::ostream& out, const Endpoint& endpoint);
 
 /// Specification for path offset along a line.
 ///  * length: length of the line, which must be nonnegative.
-class LineOffset {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    LineOffset {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LineOffset)
 
@@ -178,7 +183,8 @@ std::ostream& operator<<(std::ostream& out, const LineOffset& line_offset);
 ///  * d_theta:  angle of arc segment (Δθ)
 ///    * d_theta > 0 is counterclockwise ('veer to left')
 ///    * d_theta < 0 is clockwise ('veer to right')
-class ArcOffset {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    ArcOffset {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArcOffset)
 
@@ -216,7 +222,8 @@ std::ostream& operator<<(std::ostream& out, const ArcOffset& arc_offset);
 /// (locally-flat) plane of the earth.  The out-of-plane shape of
 /// the path will be determined by the EndpointZ (elevation) parameters
 /// of the endpoints.
-class Connection {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Connection {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Connection)
 
@@ -407,7 +414,8 @@ class Connection {
 ///
 /// Users should construct Groups via a Builder using one of the
 /// Builder::MakeGroup() methods.
-class Group {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Group {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Group)
 
@@ -429,7 +437,8 @@ class Group {
 ///
 /// Defined for testing purposes, and production code must use GroupFactory
 /// objects.
-class GroupFactoryBase {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    GroupFactoryBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GroupFactoryBase)
 
@@ -450,7 +459,8 @@ class GroupFactoryBase {
 
 
 /// Implements a GroupFactoryBase to construct Group objects.
-class GroupFactory : public GroupFactoryBase {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    GroupFactory : public GroupFactoryBase {
  private:
   // A group of Connections.
   //

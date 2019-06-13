@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/common/drake_copyable.h"
 
@@ -11,7 +12,8 @@ namespace maliput {
 namespace rndf {
 
 /// Holds common api::RoadGeometry characteristics needed to construct one.
-struct RoadCharacteristics {
+struct DRAKE_DEPRECATED_AUTOMOTIVE
+    RoadCharacteristics {
   RoadCharacteristics() = default;
 
   /// Constructor for custom geometry characteristics.

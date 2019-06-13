@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/lane_direction.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/common/drake_copyable.h"
@@ -27,7 +28,8 @@ namespace automotive {
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///           Only double is supported.
 template <typename T>
-class RoadPath {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    RoadPath {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RoadPath)
 

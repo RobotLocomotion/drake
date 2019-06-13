@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/gen/idm_planner_parameters.h"
 #include "drake/common/drake_copyable.h"
 
@@ -39,7 +40,8 @@ namespace automotive {
 ///
 /// [2] https://en.wikipedia.org/wiki/Intelligent_driver_model.
 template <typename T>
-class IdmPlanner {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    IdmPlanner {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IdmPlanner)
   IdmPlanner() = delete;

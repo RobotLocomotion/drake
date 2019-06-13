@@ -36,8 +36,13 @@ drake_cc_library(
     hdrs = [
         "intersection.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":manual_phase_provider",
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//common:essential",
     ],
@@ -51,8 +56,13 @@ drake_cc_library(
     hdrs = [
         "intersection_book.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":intersection",
+        "//automotive:deprecated",
     ],
 )
 
@@ -64,8 +74,13 @@ drake_cc_library(
     hdrs = [
         "intersection_book_loader.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":intersection_book",
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//common:essential",
         "@yaml_cpp",
@@ -80,7 +95,12 @@ drake_cc_library(
     hdrs = [
         "manual_phase_provider.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//common:essential",
     ],
@@ -94,7 +114,12 @@ drake_cc_library(
     hdrs = [
         "manual_phase_ring_book.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//common:essential",
     ],
@@ -108,7 +133,12 @@ drake_cc_library(
     hdrs = [
         "manual_rulebook.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//common:essential",
         "//common:unused",
@@ -125,7 +155,12 @@ drake_cc_library(
     hdrs = [
         "phase_based_rule_state_provider.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//common:essential",
     ],
@@ -139,8 +174,13 @@ drake_cc_library(
     hdrs = [
         "phase_ring_book_loader.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":manual_phase_ring_book",
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//common:essential",
         "@yaml_cpp",
@@ -155,8 +195,13 @@ drake_cc_library(
     hdrs = [
         "road_rulebook_loader.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":manual_rulebook",
+        "//automotive:deprecated",
         "//common:essential",
         "//common:find_resource",
         "@yaml_cpp",
@@ -171,7 +216,12 @@ drake_cc_library(
     hdrs = [
         "traffic_light_book.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//common:essential",
     ],
@@ -185,8 +235,13 @@ drake_cc_library(
     hdrs = [
         "traffic_light_book_loader.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":traffic_light_book",
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//common:essential",
         "@yaml_cpp",
@@ -201,7 +256,12 @@ drake_cc_library(
     hdrs = [
         "manual_rule_state_provider.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//common:essential",
     ],
@@ -211,6 +271,10 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "intersection_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":intersection",
     ],
@@ -218,6 +282,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "intersection_book_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":intersection_book",
     ],
@@ -225,6 +293,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "intersection_book_loader_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         "//automotive/maliput/multilane:yamls",
     ],
@@ -241,6 +313,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "phase_based_rule_state_provider_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":phase_based_rule_state_provider",
         "//automotive/maliput/base",
@@ -249,6 +325,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "phase_ring_book_loader_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         "//automotive/maliput/multilane:yamls",
     ],
@@ -265,6 +345,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "road_rulebook_loader_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         "//automotive/maliput/multilane:yamls",
     ],
@@ -277,6 +361,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "manual_phase_ring_book_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":manual_phase_ring_book",
     ],
@@ -284,6 +372,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "manual_phase_provider_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":manual_phase_provider",
     ],
@@ -291,6 +383,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "manual_rulebook_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":manual_rulebook",
         "//automotive/maliput/api/test_utilities:rules_test_utilities",
@@ -299,6 +395,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "traffic_light_book_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":traffic_light_book",
         "//automotive/maliput/api/test_utilities:rules_test_utilities",
@@ -307,6 +407,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "traffic_light_book_loader_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         "//automotive/maliput/multilane:yamls",
     ],
@@ -320,6 +424,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "manual_rule_state_provider_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":manual_rule_state_provider",
         "//automotive/maliput/api/test_utilities:rules_test_utilities",

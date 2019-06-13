@@ -37,9 +37,14 @@ drake_cc_library(
         "generate_urdf.h",
         "segment_analysis.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     visibility = ["//visibility:private"],
     deps = [
         ":meshes",
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//math:geometric_transform",
     ],
@@ -54,8 +59,13 @@ drake_cc_library(
         "mesh.h",
         "mesh_simplification.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     visibility = ["//visibility:private"],
     deps = [
+        "//automotive:deprecated",
         "//automotive/maliput/api",
     ],
 )
@@ -63,6 +73,10 @@ drake_cc_library(
 drake_cc_binary(
     name = "yaml_to_obj",
     srcs = ["yaml_to_obj.cc"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":utility",
         "//automotive/maliput/multilane",
@@ -80,6 +94,10 @@ drake_cc_binary(
     name = "rndf_to_obj",
     srcs = ["rndf_to_obj.cc"],
     add_test_rule = 1,
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     test_rule_args = [
         "-rndf_file",
         "$(location :t_intersection.rndf)",
@@ -106,6 +124,10 @@ filegroup(
 
 drake_cc_googletest(
     name = "generate_obj_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         ":test_data",
     ],
@@ -119,6 +141,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "generate_string_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         "//automotive/maliput/multilane:yamls",
     ],
@@ -131,6 +157,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "generate_urdf_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":utility",
         "//automotive/maliput/multilane",
@@ -140,6 +170,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "segment_analysis_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":utility",
         "//automotive/maliput/multilane:loader",
@@ -158,6 +192,10 @@ drake_py_unittest(
 
 drake_cc_googletest(
     name = "mesh_simplification_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":meshes",
     ],

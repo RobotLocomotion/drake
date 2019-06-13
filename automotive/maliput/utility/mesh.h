@@ -10,6 +10,7 @@
 
 #include "fmt/ostream.h"
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/hash.h"
@@ -28,7 +29,8 @@ namespace mesh {
 /// @tparam KeyEqual  an equivalence relation suitable for std::unordered_map
 ///                   (e.g., std::equal_to)
 template <class T, class Hash, class KeyEqual>
-class UniqueIndexer {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    UniqueIndexer {
  public:
   /// Creates an empty UniqueIndexer.
   UniqueIndexer() = default;
@@ -59,7 +61,8 @@ class UniqueIndexer {
 
 
 /// A world frame vertex.
-class GeoVertex {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    GeoVertex {
  public:
   /// A hasher operation suitable for std::unordered_map.
   using Hash = drake::DefaultHash;
@@ -93,7 +96,8 @@ class GeoVertex {
 
 
 /// A world frame normal vector.
-class GeoNormal {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    GeoNormal {
  public:
   /// A hasher operation suitable for std::unordered_map.
   using Hash = drake::DefaultHash;
@@ -127,7 +131,8 @@ class GeoNormal {
 
 
 /// A world frame face:  a sequence of vertices with corresponding normals.
-class GeoFace {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    GeoFace {
  public:
   GeoFace() {}
 
@@ -155,7 +160,8 @@ class GeoFace {
 /// A face --- a sequence of vertices with normals --- in which the
 /// vertices and normals are represented by integer indices into some
 /// other container/dictionary.
-class IndexFace {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    IndexFace {
  public:
   struct Vertex {
     Vertex(int vertex_index_in, int normal_index_in)
@@ -178,7 +184,8 @@ class IndexFace {
 
 
 /// A world frame mesh:  a collection of GeoFaces.
-class GeoMesh {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    GeoMesh {
  public:
   GeoMesh() {}
 
@@ -288,7 +295,8 @@ class GeoMesh {
 /// A `Lane`-frame face: a sequence of vertices expressed in the (s,r,h)
 /// coordinates of an api::Lane (which is not referenced here).  Each
 /// vertex has a normal vector also expressed in the `Lane`-frame.
-class SrhFace {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    SrhFace {
  public:
   SrhFace(const std::initializer_list<api::LanePosition> vertices,
           const api::LanePosition& normal)

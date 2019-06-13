@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/branch_point.h"
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/lane.h"
@@ -27,7 +28,8 @@ using RoadGeometryId = TypeSpecificIdentifier<class RoadGeometry>;
 //                          scalar type T like everything else in drake.
 /// Abstract API for the geometry of a road network, including both
 /// the network topology and the geometry of its embedding in 3-space.
-class RoadGeometry {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    RoadGeometry {
  public:
   class IdIndex;
 
@@ -175,7 +177,8 @@ class RoadGeometry {
 /// Abstract interface for a collection of methods which allow accessing
 /// objects in a RoadGeometry's object graph (Lanes, Segments, Junctions,
 /// BranchPoints) by their unique id's.
-class RoadGeometry::IdIndex {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    RoadGeometry::IdIndex {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IdIndex);
   virtual ~IdIndex() = default;

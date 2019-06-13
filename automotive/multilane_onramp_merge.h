@@ -3,6 +3,7 @@
 #include <cmath>
 #include <memory>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/multilane/builder.h"
 #include "drake/automotive/maliput/multilane/road_curve.h"
@@ -13,7 +14,8 @@ namespace automotive {
 /// MultilaneRoadCharacteristics computes and stores characteristics of a
 /// multilane road network; i.e. bounds on the lane width and shoulders width.
 /// Default settings are taken if no others are specified.
-struct MultilaneRoadCharacteristics {
+struct DRAKE_DEPRECATED_AUTOMOTIVE
+    MultilaneRoadCharacteristics {
   /// Constructor for using default road geometries.
   MultilaneRoadCharacteristics() = default;
 
@@ -72,7 +74,8 @@ struct MultilaneRoadCharacteristics {
 /// creating the RoadGeometry. Linear and angular tolerances, the scale length
 /// and the ComputationPolicy are set to appropriate values to build this
 /// RoadGeometry.
-class MultilaneOnrampMerge {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    MultilaneOnrampMerge {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultilaneOnrampMerge)
 

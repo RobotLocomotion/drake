@@ -6,6 +6,7 @@
 
 #include "ignition/math/Vector3.hh"
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/segment.h"
@@ -20,7 +21,8 @@ namespace rndf {
 class SplineLane;
 
 /// An api::Segment implementation for RNDF.
-class Segment : public api::Segment {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Segment : public api::Segment {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Segment)
 

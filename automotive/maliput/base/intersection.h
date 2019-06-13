@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/intersection.h"
 #include "drake/automotive/maliput/api/rules/phase_provider.h"
 #include "drake/automotive/maliput/api/rules/phase_ring.h"
@@ -14,7 +15,8 @@ namespace drake {
 namespace maliput {
 
 /// A concrete implementation of the api::Intersection abstract interface.
-class Intersection : public api::Intersection {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Intersection : public api::Intersection {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Intersection)
 

@@ -17,6 +17,7 @@ def pybind_py_library(
         name,
         cc_srcs = [],
         cc_deps = [],
+        cc_copts = [],
         cc_so_name = None,
         cc_binary_rule = native.cc_binary,
         py_srcs = [],
@@ -63,7 +64,7 @@ def pybind_py_library(
             # GCC and Clang don't always agree / succeed when inferring storage
             # duration (#9600). Workaround it for now.
             "-Wno-unused-lambda-capture",
-        ],
+        ] + cc_copts,
         # Always link to pybind11.
         deps = [
             "@pybind11",
@@ -96,6 +97,7 @@ def drake_pybind_library(
         name,
         cc_srcs = [],
         cc_deps = [],
+        cc_copts = [],
         cc_so_name = None,
         package_info = None,
         py_srcs = [],
@@ -141,6 +143,7 @@ def drake_pybind_library(
             "//:drake_shared_library",
             "//bindings/pydrake:pydrake_pybind",
         ],
+        cc_copts = cc_copts,
         cc_binary_rule = drake_cc_binary,
         py_srcs = py_srcs,
         py_deps = py_deps,

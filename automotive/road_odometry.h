@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/systems/rendering/frame_velocity.h"
@@ -10,7 +11,8 @@ namespace automotive {
 /// RoadOdometry contains the position of the vehicle with respect to a lane in
 /// a road, along with its velocity vector in the world frame.
 template <typename T>
-struct RoadOdometry {
+struct DRAKE_DEPRECATED_AUTOMOTIVE
+    RoadOdometry {
   /// Default constructor.
   RoadOdometry() = default;
   /// Fully-parameterized constructor.
