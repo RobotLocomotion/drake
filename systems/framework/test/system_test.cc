@@ -403,7 +403,8 @@ TEST_F(SystemTest, PortSelectionTest) {
                 InputPortSelection::kUseFirstInputIfItExists),
             &input_port);
 
-  EXPECT_EQ(system_.get_input_port_selection(0), &system_.get_input_port(0));
+  EXPECT_EQ(system_.get_input_port_selection(InputPortIndex{0}),
+            &system_.get_input_port(0));
 
   // Output ports.
   EXPECT_EQ(system_.get_output_port_selection(OutputPortSelection::kNoOutput),
@@ -417,7 +418,8 @@ TEST_F(SystemTest, PortSelectionTest) {
                 OutputPortSelection::kUseFirstOutputIfItExists),
             &output_port);
 
-  EXPECT_EQ(system_.get_output_port_selection(0), &system_.get_output_port(0));
+  EXPECT_EQ(system_.get_output_port_selection(OutputPortIndex{0}),
+            &system_.get_output_port(0));
 }
 
 // Tests the constraint list logic.
