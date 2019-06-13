@@ -14,9 +14,11 @@ from pydrake.automotive import (
 )
 
 import unittest
+import warnings
 
 import numpy as np
 
+from pydrake.common.deprecation import DrakeDeprecationWarning
 import pydrake.systems.framework as framework
 from pydrake.maliput.api import (
     LanePosition,
@@ -51,6 +53,9 @@ def make_two_lane_road():
 
 
 class TestAutomotive(unittest.TestCase):
+    def setUp(self):
+        warnings.simplefilter("ignore", DrakeDeprecationWarning)
+
     def test_road_odometry(self):
         RoadOdometry()
         rg = make_two_lane_road()
