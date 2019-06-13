@@ -755,7 +755,7 @@ GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA2) {
   // Test the program that cannot be formulated in SDPA format.
   MathematicalProgram prog1;
   prog1.NewBinaryVariables<2>();
-  EXPECT_FALSE(GenerateSDPA(prog1, "tmp"));
+  EXPECT_THROW(GenerateSDPA(prog1, "tmp"), std::invalid_argument);
 
   MathematicalProgram prog2;
   auto x = prog2.NewContinuousVariables<2>();

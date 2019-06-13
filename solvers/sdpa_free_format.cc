@@ -12,6 +12,8 @@
 #include <Eigen/Sparse>
 #include <Eigen/SparseQR>
 
+#include "drake/common/text_logging.h"
+
 namespace drake {
 namespace solvers {
 namespace internal {
@@ -626,6 +628,18 @@ void SdpaFreeFormat::Finalize() {
 }
 
 SdpaFreeFormat::SdpaFreeFormat(const MathematicalProgram& prog) {
+  ProgramAttributes solver_capabilities(std::initializer_list<ProgramAttribute>{
+      ProgramAttribute::kLinearCost, ProgramAttribute::kLinearConstraint,
+      ProgramAttribute::kLinearEqualityConstraint,
+      ProgramAttribute::kLorentzConeConstraint,
+      ProgramAttribute::kRotatedLorentzConeConstraint,
+      ProgramAttribute::kPositiveSemidefiniteConstraint});
+  if (!AreRequiredAttributesSupported(prog.required_capabilities(),
+                                      solver_capabilities)) {
+    throw std::invalid_argument(
+        "GenerateSDPA(): the program cannot be formulated as an SDP "
+        "in the standard form.\n");
+  }
   prog_var_in_sdpa_.reserve(prog.num_vars());
   for (int i = 0; i < prog.num_vars(); ++i) {
     prog_var_in_sdpa_.emplace_back(nullptr);
@@ -656,23 +670,12 @@ SdpaFreeFormat::SdpaFreeFormat(const MathematicalProgram& prog) {
 
 bool GenerateSDPA(const MathematicalProgram& prog,
                   const std::string& file_name) {
-  ProgramAttributes solver_capabilities(std::initializer_list<ProgramAttribute>{
-      ProgramAttribute::kLinearCost, ProgramAttribute::kLinearConstraint,
-      ProgramAttribute::kLinearEqualityConstraint,
-      ProgramAttribute::kLorentzConeConstraint,
-      ProgramAttribute::kRotatedLorentzConeConstraint,
-      ProgramAttribute::kPositiveSemidefiniteConstraint});
-  if (!AreRequiredAttributesSupported(prog.required_capabilities(),
-                                      solver_capabilities)) {
-    std::cout << "GenerateSDPA(): the program cannot be formulated as an SDP "
-                 "in the standard form.\n";
-    return false;
-  }
   const internal::SdpaFreeFormat sdpa_free_format(prog);
   if (sdpa_free_format.num_free_variables() != 0) {
-    std::cout << "GenerateSDPA(): the program contains variables that are "
-                 "unbounded (no upper bound or lower bound). The program "
-                 "cannot be formulated as an SDP in the standard form.\n";
+    drake::log()->warn(
+        "GenerateSDPA(): the program contains variables that are "
+        "unbounded (no upper bound or lower bound). The program "
+        "cannot be formulated as an SDP in the standard form.\n");
     return false;
   }
   std::ofstream sdpa_file;
@@ -690,6 +693,7 @@ bool GenerateSDPA(const MathematicalProgram& prog,
           break;
         }
         case internal::BlockType::kDiagonal: {
+          // Negative value indates diagonal block according to SDPA format.
           sdpa_file << -X_block.num_rows;
           break;
         }

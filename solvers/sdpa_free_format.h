@@ -311,8 +311,8 @@ class SdpaFreeFormat {
  * This function reads a MathematicalProgram that can be formulated as above,
  * and write an SDPA file.
  * @param prog a program that contains an optimization program.
- * @param file_name The name of the file, note that the user don't add the file
- * extension.
+ * @param file_name The name of the file, note that the extension will be added
+ * automatically.
  * @retval is_success. Returns true if we can generate the SDPA file. The
  * failure could be @prog cannot be captured by the formulation above, cannot
  * create a file with the given name, etc.
