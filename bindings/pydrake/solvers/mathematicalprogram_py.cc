@@ -233,25 +233,18 @@ PYBIND11_MODULE(mathematicalprogram, m) {
   py::class_<SolverOptions>(m, "SolverOptions", doc.SolverOptions.doc)
       .def(py::init<>(), doc.SolverOptions.ctor.doc)
       .def("SetOption",
-          [](SolverOptions& self, const SolverId& solver_id,
-              const std::string& solver_option, double option_value) {
-            self.SetOption(solver_id, solver_option, option_value);
-          },
+          py::overload_cast<const SolverId&, const std::string&, double>(
+              &SolverOptions::SetOption),
           py::arg("solver_id"), py::arg("solver_option"),
           py::arg("option_value"), doc.SolverOptions.SetOption.doc)
       .def("SetOption",
-          [](SolverOptions& self, const SolverId& solver_id,
-              const std::string& solver_option, int option_value) {
-            self.SetOption(solver_id, solver_option, option_value);
-          },
+          py::overload_cast<const SolverId&, const std::string&, int>(
+              &SolverOptions::SetOption),
           py::arg("solver_id"), py::arg("solver_option"),
           py::arg("option_value"), doc.SolverOptions.SetOption.doc)
       .def("SetOption",
-          [](SolverOptions& self, const SolverId& solver_id,
-              const std::string& solver_option,
-              const std::string& option_value) {
-            self.SetOption(solver_id, solver_option, option_value);
-          },
+          py::overload_cast<const SolverId&, const std::string&,
+              const std::string&>(&SolverOptions::SetOption),
           py::arg("solver_id"), py::arg("solver_option"),
           py::arg("option_value"), doc.SolverOptions.SetOption.doc)
       .def("GetOptions",
