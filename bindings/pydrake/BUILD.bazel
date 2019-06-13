@@ -309,7 +309,10 @@ drake_py_unittest(
     name = "all_test",
     timeout = "moderate",
     data = ["//examples/pendulum:models"],
-    deps = [":all_py"],
+    deps = [
+        ":all_py",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
+    ],
 )
 
 drake_py_library(
