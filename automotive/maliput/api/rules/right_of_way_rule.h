@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/drake_copyable.h"
@@ -37,7 +38,8 @@ namespace rules {
 /// semantics.  A rule instance with multiple States is considered "dynamic"
 /// and determination of the active rule State at any given time is delegated
 /// to a RuleStateProvider agent, linked by the rule's Id.
-class RightOfWayRule final {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    RightOfWayRule final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RightOfWayRule);
 

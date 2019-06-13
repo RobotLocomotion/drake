@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/branch_point.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/segment.h"
@@ -22,7 +23,8 @@ typedef Vector2<double> V2;
 typedef Vector3<double> V3;
 
 /// Base class for the multilane implementation of api::Lane.
-class Lane : public api::Lane {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Lane : public api::Lane {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Lane)
 

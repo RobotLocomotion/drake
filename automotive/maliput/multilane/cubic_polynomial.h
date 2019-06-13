@@ -3,6 +3,7 @@
 #include <cmath>
 #include <ostream>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/unused.h"
 
@@ -11,7 +12,8 @@ namespace maliput {
 namespace multilane {
 
 /// A cubic polynomial, f(p) = a + b*p + c*p^2 + d*p^3.
-class CubicPolynomial {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    CubicPolynomial {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CubicPolynomial)
 

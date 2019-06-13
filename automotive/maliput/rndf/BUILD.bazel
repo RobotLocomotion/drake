@@ -28,9 +28,14 @@ drake_cc_library(
     hdrs = [
         "loader.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":builder",
         ":lanes",
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//common",
         "@ignition_math",
@@ -50,8 +55,13 @@ drake_cc_library(
         "connection.h",
         "directed_waypoint.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":lanes",
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//common:essential",
         "//common/trajectories:piecewise_polynomial",
@@ -82,7 +92,12 @@ drake_cc_library(
         "spline_helpers.h",
         "spline_lane.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//common:essential",
         "//common/trajectories:piecewise_polynomial",
@@ -99,6 +114,10 @@ drake_cc_binary(
     testonly = 1,
     srcs = ["test/rndf_load.cc"],
     add_test_rule = 1,
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     test_rule_args = [
         "-rndf_file",
         "$(location :test/maps/cross.rndf)",
@@ -114,6 +133,10 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "connection_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":builder",
         "//automotive/maliput/rndf/test_utilities",
@@ -124,6 +147,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "directed_waypoint_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":builder",
         "//automotive/maliput/rndf/test_utilities",
@@ -134,6 +161,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "builder_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":builder",
         "//automotive/maliput/api/test_utilities",
@@ -149,6 +180,10 @@ filegroup(
 
 drake_cc_googletest(
     name = "loader_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         ":test_maps",
     ],
@@ -162,6 +197,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "ignition_rndf_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "@ignition_rndf",
     ],
@@ -169,6 +208,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "junction_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":lanes",
     ],
@@ -176,6 +219,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "road_geometry_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":lanes",
     ],
@@ -183,6 +230,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "segment_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":lanes",
     ],
@@ -190,6 +241,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "spline_lane_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":lanes",
         "//automotive/maliput/api/test_utilities",
@@ -198,6 +253,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "spline_helpers_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":lanes",
         "//automotive/maliput/rndf/test_utilities",

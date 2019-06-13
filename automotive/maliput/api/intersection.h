@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/rules/phase_provider.h"
 #include "drake/automotive/maliput/api/rules/phase_ring.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
@@ -17,7 +18,8 @@ namespace api {
 /// intersection. Its primary purpose is to serve as a single source of this
 /// information and to remove the need for users to query numerous disparate
 /// data structures and state providers.
-class Intersection {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Intersection {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Intersection)
 

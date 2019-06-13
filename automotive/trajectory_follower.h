@@ -2,6 +2,7 @@
 
 #include <Eigen/Geometry>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/gen/simple_car_state.h"
 #include "drake/automotive/trajectory.h"
 #include "drake/common/drake_copyable.h"
@@ -44,7 +45,8 @@ namespace automotive {
 ///
 /// @ingroup automotive_plants
 template <typename T>
-class TrajectoryFollower final : public systems::LeafSystem<T> {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    TrajectoryFollower final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryFollower)
 

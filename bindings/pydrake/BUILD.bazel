@@ -124,6 +124,10 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "automotive_py",
+    cc_copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:value_pybind",

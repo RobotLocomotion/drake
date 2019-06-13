@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/lane_data.h"
@@ -52,7 +53,8 @@ class Junction;
    Note that lane indices increase to the left, which matches the fact that
    within a Lane, `r` increases to the left.
 */
-class Segment final : public api::Segment {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Segment final : public api::Segment {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Segment)
 

@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "drake/automotive/curve2.h"
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/gen/maliput_railcar_state.h"
 #include "drake/automotive/gen/trajectory_car_state.h"
 #include "drake/automotive/idm_controller.h"
@@ -42,7 +43,8 @@ namespace automotive {
 ///
 /// They are already available to link against in the containing library.
 template <typename T>
-class AutomotiveSimulator {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    AutomotiveSimulator {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AutomotiveSimulator)
 

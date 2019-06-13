@@ -4,6 +4,7 @@
 
 #include <Eigen/Geometry>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/gen/bicycle_car_parameters.h"
 #include "drake/automotive/gen/bicycle_car_state.h"
 #include "drake/common/drake_copyable.h"
@@ -66,7 +67,8 @@ namespace automotive {
 ///
 /// @ingroup automotive_plants
 template <typename T>
-class BicycleCar final : public systems::LeafSystem<T> {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    BicycleCar final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BicycleCar)
 

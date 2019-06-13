@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/gen/driving_command.h"
 #include "drake/automotive/gen/simple_car_params.h"
 #include "drake/automotive/gen/simple_car_state.h"
@@ -53,7 +54,8 @@ namespace automotive {
 ///
 /// @ingroup automotive_plants
 template <typename T>
-class SimpleCar final : public systems::LeafSystem<T> {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    SimpleCar final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleCar)
 

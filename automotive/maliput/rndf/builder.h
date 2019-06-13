@@ -9,6 +9,7 @@
 #include "ignition/math/Spline.hh"
 #include "ignition/math/Vector3.hh"
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/rndf/connection.h"
@@ -124,7 +125,8 @@ namespace rndf {
 ///    between RNDF lanes and zone perimeters (actually connecting
 ///    their fake inner lanes to the outer real ones).
 /// -# Call Build() to get the built api::RoadGeometry.
-class Builder {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Builder {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Builder)
 

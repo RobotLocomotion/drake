@@ -40,7 +40,12 @@ drake_cc_library(
         "road_geometry.h",
         "segment.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//common:essential",
         "//common:unused",
@@ -55,6 +60,10 @@ drake_cc_googletest(
     name = "geometry_base_test",
     srcs = [
         "test/geometry_base_test.cc",
+    ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
     ],
     deps = [
         ":everything",

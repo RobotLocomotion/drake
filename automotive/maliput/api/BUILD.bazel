@@ -56,8 +56,13 @@ drake_cc_library(
         "segment.h",
         "type_specific_identifier.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     visibility = ["//visibility:private"],
     deps = [
+        "//automotive:deprecated",
         "//common:default_scalars",
         "//common:essential",
         "//math:geometric_transform",
@@ -74,15 +79,24 @@ drake_cc_library(
     hdrs = [
         "test/mock.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     tags = ["exclude_from_package"],
     visibility = ["//visibility:private"],
     deps = [
         ":everything",
+        "//automotive:deprecated",
     ],
 )
 
 drake_cc_googletest(
     name = "lane_data_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":api",
         "//common/test_utilities:eigen_matrix_compare",
@@ -91,6 +105,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "maliput_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":api",
     ],
@@ -98,6 +116,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "type_specific_identifier_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":api",
     ],
@@ -105,6 +127,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "road_network_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":api",
         ":mock",
@@ -123,6 +149,10 @@ drake_cc_googletest(
         "test/rules_road_rulebook_test.cc",
         "test/rules_speed_limit_test.cc",
         "test/traffic_lights_test.cc",
+    ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
     ],
     deps = [
         ":api",

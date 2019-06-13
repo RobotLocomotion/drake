@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/branch_point.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/common/drake_optional.h"
@@ -72,7 +73,8 @@ class Segment;
   (default) ongoing lane for LaneEnd::kFinish is LaneEnd::kStart of the same
   lane, and vice versa.
 */
-class Lane final : public api::Lane {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Lane final : public api::Lane {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Lane)
 

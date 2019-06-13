@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/rules/traffic_lights.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
@@ -11,7 +12,8 @@ namespace rules {
 
 /// Abstract interface for providing the mapping from TrafficLight::Id to
 /// TrafficLight.
-class TrafficLightBook {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    TrafficLightBook {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrafficLightBook);
 

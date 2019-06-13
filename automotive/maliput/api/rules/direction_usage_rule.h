@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/drake_copyable.h"
@@ -27,7 +28,8 @@ namespace rules {
 /// semantics.
 ///
 /// Each Lane location can be governed by at most one DirectionUsageRule.
-class DirectionUsageRule final {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    DirectionUsageRule final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DirectionUsageRule);
 

@@ -7,6 +7,7 @@
 #include <tuple>
 
 #include "drake/automotive/curve2.h"
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/trajectory_car.h"

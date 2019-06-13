@@ -8,6 +8,7 @@
 #include "ignition/math/Spline.hh"
 #include "ignition/math/Vector3.hh"
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/rndf/lane.h"
 #include "drake/automotive/maliput/rndf/spline_helpers.h"
@@ -22,7 +23,8 @@ namespace rndf {
 /// Specialization of drake::maliput::rndf::Lane with a spline curve as its
 /// reference path. RNDF specification lacks elevation and superelevation so
 /// all the Lanes will depict a flat path just over the ground.
-class SplineLane : public Lane {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    SplineLane : public Lane {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SplineLane)
 

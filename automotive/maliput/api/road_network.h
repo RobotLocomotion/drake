@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/intersection_book.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/api/rules/direction_usage_rule.h"
@@ -21,7 +22,8 @@ namespace maliput {
 namespace api {
 
 /// A container that aggregates everything pertaining to Maliput.
-class RoadNetwork {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    RoadNetwork {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RoadNetwork)
 

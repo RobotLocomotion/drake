@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/branch_point.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
@@ -21,7 +22,8 @@ class Lane;
 class RoadGeometry;
 
 /// geometry_base's implementation of api::BranchPoint.
-class BranchPoint : public api::BranchPoint {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    BranchPoint : public api::BranchPoint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BranchPoint);
 

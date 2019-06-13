@@ -27,8 +27,13 @@ drake_cc_library(
         "derive_lane_s_routes.h",
         "find_lane_sequences.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     visibility = ["//visibility:private"],
     deps = [
+        "//automotive:deprecated",
         "//automotive/maliput/api",
     ],
 )
@@ -37,6 +42,10 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "derive_lane_s_routes_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":routing",
         "//automotive/maliput/dragway/test_utilities:fixtures",
@@ -47,6 +56,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "find_lane_sequences_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":routing",
         "//automotive/maliput/dragway/test_utilities:fixtures",

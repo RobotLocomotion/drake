@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/lane_data.h"
 
 namespace drake {

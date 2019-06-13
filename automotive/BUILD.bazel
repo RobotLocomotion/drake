@@ -33,6 +33,7 @@ drake_cc_package_library(
         ":calc_smooth_acceleration",
         ":create_trajectory_params",
         ":curve2",
+        ":deprecated",
         ":driving_command_mux",
         ":dynamic_bicycle_car",
         ":generated_vectors",
@@ -83,10 +84,27 @@ drake_cc_vector_gen_library(
 )
 
 drake_cc_library(
+    name = "deprecated",
+    hdrs = ["deprecated.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "trajectory",
     srcs = ["trajectory.cc"],
     hdrs = ["trajectory.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
+        "//automotive:deprecated",
         "//common/trajectories:piecewise_polynomial",
         "//common/trajectories:piecewise_quaternion",
         "//math:geometric_transform",
@@ -98,8 +116,13 @@ drake_cc_library(
     name = "bicycle_car",
     srcs = ["bicycle_car.cc"],
     hdrs = ["bicycle_car.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":generated_vectors",
+        "//automotive:deprecated",
         "//common:symbolic",
         "//systems/framework:leaf_system",
     ],
@@ -109,9 +132,14 @@ drake_cc_library(
     name = "create_trajectory_params",
     srcs = ["create_trajectory_params.cc"],
     hdrs = ["create_trajectory_params.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":curve2",
         ":trajectory_car",
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//automotive/maliput/dragway",
         "//common:symbolic",
@@ -122,8 +150,13 @@ drake_cc_library(
     name = "curve2",
     srcs = ["curve2.cc"],
     hdrs = ["curve2.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":generated_vectors",
+        "//automotive:deprecated",
         "//common:autodiff",
         "//common:autodiffxd_make_coherent",
     ],
@@ -133,8 +166,13 @@ drake_cc_library(
     name = "driving_command_mux",
     srcs = ["driving_command_mux.cc"],
     hdrs = ["driving_command_mux.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":generated_vectors",
+        "//automotive:deprecated",
         "//common:default_scalars",
         "//systems/framework:leaf_system",
     ],
@@ -144,8 +182,13 @@ drake_cc_library(
     name = "dynamic_bicycle_car",
     srcs = ["dynamic_bicycle_car.cc"],
     hdrs = ["dynamic_bicycle_car.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":generated_vectors",
+        "//automotive:deprecated",
         "//systems/framework",
     ],
 )
@@ -154,11 +197,16 @@ drake_cc_library(
     name = "idm_controller",
     srcs = ["idm_controller.cc"],
     hdrs = ["idm_controller.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":calc_ongoing_road_position",
         ":generated_vectors",
         ":idm_planner",
         ":pose_selector",
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//common:default_scalars",
         "//systems/framework:leaf_system",
@@ -171,8 +219,13 @@ drake_cc_library(
     name = "idm_planner",
     srcs = ["idm_planner.cc"],
     hdrs = ["idm_planner.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":generated_vectors",
+        "//automotive:deprecated",
         "//common:default_scalars",
         "//common:extract_double",
     ],
@@ -182,7 +235,12 @@ drake_cc_library(
     name = "lane_direction",
     srcs = ["lane_direction.cc"],
     hdrs = ["lane_direction.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
+        "//automotive:deprecated",
         "//automotive/maliput/api",
     ],
 )
@@ -191,10 +249,15 @@ drake_cc_library(
     name = "maliput_railcar",
     srcs = ["maliput_railcar.cc"],
     hdrs = ["maliput_railcar.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":calc_smooth_acceleration",
         ":generated_vectors",
         ":lane_direction",
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//math:geometric_transform",
         "//systems/framework:leaf_system",
@@ -207,6 +270,10 @@ drake_cc_library(
     name = "mobil_planner",
     srcs = ["mobil_planner.cc"],
     hdrs = ["mobil_planner.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":calc_ongoing_road_position",
         ":generated_vectors",
@@ -214,6 +281,7 @@ drake_cc_library(
         ":lane_direction",
         ":pose_selector",
         ":road_odometry",
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//common:cond",
         "//math:saturate",
@@ -227,7 +295,12 @@ drake_cc_library(
     name = "multilane_onramp_merge",
     srcs = ["multilane_onramp_merge.cc"],
     hdrs = ["multilane_onramp_merge.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//automotive/maliput/multilane",
     ],
@@ -237,9 +310,14 @@ drake_cc_library(
     name = "pose_selector",
     srcs = ["pose_selector.cc"],
     hdrs = ["pose_selector.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":lane_direction",
         ":road_odometry",
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//common:autodiffxd_make_coherent",
         "//common:extract_double",
@@ -252,9 +330,14 @@ drake_cc_library(
     name = "pure_pursuit",
     srcs = ["pure_pursuit.cc"],
     hdrs = ["pure_pursuit.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":generated_vectors",
         ":lane_direction",
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//common:symbolic",
         "//math:geometric_transform",
@@ -267,10 +350,15 @@ drake_cc_library(
     name = "pure_pursuit_controller",
     srcs = ["pure_pursuit_controller.cc"],
     hdrs = ["pure_pursuit_controller.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":generated_vectors",
         ":lane_direction",
         ":pure_pursuit",
+        "//automotive:deprecated",
         "//systems/framework:leaf_system",
         "//systems/rendering:pose_vector",
     ],
@@ -280,7 +368,12 @@ drake_cc_library(
     name = "road_odometry",
     srcs = ["road_odometry.cc"],
     hdrs = ["road_odometry.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//systems/rendering:frame_velocity",
     ],
@@ -290,8 +383,13 @@ drake_cc_library(
     name = "road_path",
     srcs = ["road_path.cc"],
     hdrs = ["road_path.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":lane_direction",
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//common:essential",
         "//common:unused",
@@ -306,9 +404,14 @@ drake_cc_library(
     hdrs = [
         "simple_car.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":calc_smooth_acceleration",
         ":generated_vectors",
+        "//automotive:deprecated",
         "//common:cond",
         "//common:double",
         "//common:symbolic",
@@ -323,7 +426,12 @@ drake_cc_library(
     name = "simple_powertrain",
     srcs = ["simple_powertrain.cc"],
     hdrs = ["simple_powertrain.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
+        "//automotive:deprecated",
         "//systems/primitives:linear_system",
     ],
 )
@@ -332,8 +440,13 @@ drake_cc_library(
     name = "calc_ongoing_road_position",
     srcs = ["calc_ongoing_road_position.cc"],
     hdrs = ["calc_ongoing_road_position.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":pose_selector",
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//common:autodiff",
         "//common:default_scalars",
@@ -347,7 +460,12 @@ drake_cc_library(
     name = "calc_smooth_acceleration",
     srcs = ["calc_smooth_acceleration.cc"],
     hdrs = ["calc_smooth_acceleration.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
+        "//automotive:deprecated",
         "//common:autodiff",
         "//common:symbolic",
     ],
@@ -357,9 +475,14 @@ drake_cc_library(
     name = "trajectory_follower",
     srcs = ["trajectory_follower.cc"],
     hdrs = ["trajectory_follower.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":generated_vectors",
         ":trajectory",
+        "//automotive:deprecated",
         "//common:autodiff",
         "//common:extract_double",
         "//systems/framework:leaf_system",
@@ -372,10 +495,15 @@ drake_cc_library(
     name = "trajectory_car",
     srcs = ["trajectory_car.cc"],
     hdrs = ["trajectory_car.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":calc_smooth_acceleration",
         ":curve2",
         ":generated_vectors",
+        "//automotive:deprecated",
         "//common:autodiff",
         "//common:extract_double",
         "//systems/framework:leaf_system",
@@ -388,6 +516,10 @@ drake_cc_library(
     name = "automotive_simulator",
     srcs = ["automotive_simulator.cc"],
     hdrs = ["automotive_simulator.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":driving_command_mux",
         ":generated_vectors",
@@ -398,6 +530,7 @@ drake_cc_library(
         ":pure_pursuit_controller",
         ":simple_car",
         ":trajectory_car",
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//automotive/maliput/utility",
         "//common:temp_directory",
@@ -418,6 +551,10 @@ drake_cc_binary(
     name = "automotive_demo",
     srcs = [
         "automotive_demo.cc",
+    ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
     ],
     data = [
         "//automotive/models:prod_models",
@@ -471,8 +608,13 @@ drake_cc_library(
     name = "autodiff_test_utilities",
     testonly = 1,
     hdrs = ["test/autodiff_test_utilities.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     visibility = ["//visibility:private"],
     deps = [
+        "//automotive:deprecated",
         "//common:autodiff",
         "//common/test_utilities:eigen_matrix_compare",
     ],
@@ -480,6 +622,10 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "trajectory_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "//automotive:trajectory",
         "//common/test_utilities:eigen_matrix_compare",
@@ -489,6 +635,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "automotive_simulator_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     data = ["//automotive/models:prod_models"],
     deps = [
         "//automotive:automotive_simulator",
@@ -501,6 +651,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "bicycle_car_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "//automotive:bicycle_car",
         "//common/test_utilities:eigen_matrix_compare",
@@ -510,6 +664,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "curve2_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "//automotive:curve2",
     ],
@@ -517,6 +675,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "driving_command_mux_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":driving_command_mux",
         "//systems/framework",
@@ -526,6 +688,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "dynamic_bicycle_car_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "//automotive:dynamic_bicycle_car",
         "//systems/framework/test_utilities",
@@ -534,6 +700,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "maliput_railcar_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "//automotive:maliput_railcar",
         "//automotive/maliput/api",
@@ -546,6 +716,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "multilane_onramp_merge_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":multilane_onramp_merge",
         "//automotive/maliput/api",
@@ -556,6 +730,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "simple_car_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "//automotive:simple_car",
         "//common/test_utilities:eigen_matrix_compare",
@@ -565,6 +743,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "idm_controller_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "//automotive:idm_controller",
         "//automotive/maliput/dragway",
@@ -575,6 +757,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "idm_planner_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "//automotive:autodiff_test_utilities",
         "//automotive:idm_planner",
@@ -585,6 +771,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "mobil_planner_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "//automotive:mobil_planner",
         "//automotive/maliput/dragway",
@@ -594,6 +784,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "pose_selector_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "//automotive:pose_selector",
         "//automotive/maliput/dragway",
@@ -604,6 +798,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "road_path_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":road_path",
         "//automotive/maliput/dragway",
@@ -614,6 +812,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "pure_pursuit_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "//automotive:pure_pursuit",
         "//automotive/maliput/dragway",
@@ -624,6 +826,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "pure_pursuit_controller_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "//automotive:pure_pursuit_controller",
         "//automotive/maliput/dragway",
@@ -633,6 +839,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "simple_powertrain_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "//automotive:simple_powertrain",
         "//systems/framework/test_utilities",
@@ -641,6 +851,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "calc_smooth_acceleration_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "//automotive:calc_smooth_acceleration",
         "//common:essential",
@@ -649,6 +863,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "calc_ongoing_road_position_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "//automotive:calc_ongoing_road_position",
         "//automotive:multilane_onramp_merge",
@@ -660,6 +878,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "trajectory_follower_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "//automotive:trajectory_follower",
         "//common:extract_double",
@@ -670,6 +892,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "trajectory_car_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "//automotive:autodiff_test_utilities",
         "//automotive:trajectory_car",
@@ -683,6 +909,10 @@ drake_cc_googletest(
     name = "trajectory_optimization_test",
     # Test timeout increased to not timeout when run with Valgrind.
     timeout = "moderate",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     # Disable IPOPT for this example due to test timeouts on Mac-Clang-Bazel
     # builds (see #6223).
     tags = ["snopt"],

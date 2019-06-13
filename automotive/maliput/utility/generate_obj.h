@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/api/segment.h"
 
@@ -12,7 +13,8 @@ namespace utility {
 
 /// Multitude of parameters for generating an OBJ model of a road surface,
 /// with sensible defaults.
-struct ObjFeatures {
+struct DRAKE_DEPRECATED_AUTOMOTIVE
+    ObjFeatures {
   /// Maximum distance between rendered vertices, in either s- or r-dimension,
   /// along a lane's surface
   double max_grid_unit{1.0};

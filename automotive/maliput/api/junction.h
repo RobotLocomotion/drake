@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/drake_copyable.h"
 
@@ -24,7 +25,8 @@ using JunctionId = TypeSpecificIdentifier<class Junction>;
 /// connected to one another in the network topology.
 ///
 /// Junctions are grouped by RoadGeometry.
-class Junction {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Junction {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Junction)
 

@@ -34,8 +34,13 @@ drake_cc_library(
         "road_geometry.h",
         "segment.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     visibility = ["//visibility:private"],
     deps = [
+        "//automotive:deprecated",
         "//automotive/maliput/api",
         "//common:essential",
         "//common:unused",
@@ -46,6 +51,10 @@ drake_cc_library(
 drake_cc_binary(
     name = "dragway_to_urdf",
     srcs = ["dragway_to_urdf.cc"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":dragway",
         "//automotive/maliput/utility",
@@ -61,6 +70,10 @@ drake_cc_binary(
 drake_cc_googletest(
     name = "dragway_test",
     srcs = ["test/dragway_test.cc"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":dragway",
         "//automotive/maliput/api/test_utilities",

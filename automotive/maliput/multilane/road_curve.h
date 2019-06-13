@@ -6,6 +6,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/multilane/cubic_polynomial.h"
 #include "drake/common/drake_copyable.h"
@@ -25,7 +26,8 @@ namespace multilane {
 /// This effects a compound rotation around space-fixed x-y-z axes:
 ///
 ///   Rot3(roll, pitch, yaw) * V = RotZ(yaw) * RotY(pitch) * RotX(roll) * V
-class Rot3 {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Rot3 {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Rot3)
 
@@ -105,7 +107,8 @@ enum class ComputationPolicy {
 ///
 /// where P:(s, r0) --> (p) is a (potentially non-linear) function dependent on
 /// the RoadCurve's reference-curve, elevation, and superelevation functions.
-class RoadCurve {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    RoadCurve {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RoadCurve)
 

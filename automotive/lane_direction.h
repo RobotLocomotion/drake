@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/lane.h"
 
 namespace drake {
@@ -10,7 +11,8 @@ namespace automotive {
 /// LaneDirection holds the lane that a MaliputRailcar is traversing and the
 /// direction in which it is moving. A MaliputRailcar can either travel in the
 /// increasing-`s` direction or in the decreasing-`s` direction.
-struct LaneDirection {
+struct DRAKE_DEPRECATED_AUTOMOTIVE
+    LaneDirection {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LaneDirection)
 
   /// Default constructor.

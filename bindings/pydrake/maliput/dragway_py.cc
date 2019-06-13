@@ -12,12 +12,20 @@ namespace pydrake {
 using std::make_unique;
 using std::unique_ptr;
 
+// TODO(jwnimmer-tri) Add python deprecation warnings for this entire module,
+// once we have the sugar requested in #10605 ready.
+
 PYBIND11_MODULE(dragway, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::maliput;
   constexpr auto& doc = pydrake_doc.drake.maliput;
 
-  m.doc() = "Bindings for the Dragway backend.";
+  m.doc() =
+      "Bindings for the Dragway backend. "
+      "WARNING The drake/automotive package is being removed. "
+      "See RobotLocomotion/drake/issues/11603. "
+      "The drake/automotive code will be removed from Drake on "
+      "or after 2019-09-01.";
 
   py::class_<dragway::RoadGeometry, api::RoadGeometry>(
       m, "RoadGeometry", doc.dragway.RoadGeometry.doc);

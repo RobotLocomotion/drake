@@ -4,6 +4,7 @@
 #include <limits>
 #include <utility>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/multilane/road_curve.h"
 #include "drake/common/drake_assert.h"
@@ -17,7 +18,8 @@ namespace maliput {
 namespace multilane {
 
 /// RoadCurve specification for a reference curve that describes a line.
-class LineRoadCurve : public RoadCurve {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    LineRoadCurve : public RoadCurve {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LineRoadCurve)
 
