@@ -22,22 +22,7 @@ DistanceConstraint::DistanceConstraint(
       plant_{RefFromPtrOrThrow(plant)},
       plant_context_{plant_context},
       geometry_pair_{std::move(geometry_pair)} {
-  if (!plant_.geometry_source_is_registered()) {
-    throw std::invalid_argument(
-        "DistanceConstraint: MultibodyPlant has not registered its "
-        "geometry source with SceneGraph yet. Please refer to "
-        "AddMultibodyPlantSceneGraph on how to connect MultibodyPlant to "
-        "SceneGraph.");
-  }
-  const auto& query_port = plant_.get_geometry_query_input_port();
-  if (!query_port.HasValue(*plant_context_)) {
-    throw std::invalid_argument(
-        "DistanceConstraint: Cannot get a valid geometry::QueryObject. "
-        "Either the plant geometry_query_input_port() is not properly "
-        "connected to the SceneGraph's output port, or the plant_context_ is "
-        "incorrect. Please refer to AddMultibodyPlantSceneGraph on connecting "
-        "MultibodyPlant to SceneGraph.");
-  }
+  CheckPlantConnectSceneGraph(plant_, *plant_context_);
 }
 
 template <typename T>
@@ -48,7 +33,7 @@ void DistanceConstraint::DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x,
   const auto& query_port = plant_.get_geometry_query_input_port();
   const auto& query_object =
       query_port.Eval<geometry::QueryObject<double>>(*plant_context_);
-  // TODO(hognkai.dai): call the distance for the single pair instead for all
+  // TODO(hongkai.dai): call the distance for the single pair instead for all
   // pairs when SceneGraph provides the API.
   const std::vector<geometry::SignedDistancePair<double>>
       signed_distance_pairs =
@@ -79,7 +64,7 @@ void DistanceConstraint::DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x,
   }
   if (!found_pair) {
     throw std::runtime_error(
-        "DistanceConstraint::DoEvalGeneric(): SceneGraph does not report the "
+        "DistanceConstraint::DoEvalGeneric(): SceneGraph did not report the "
         "distance between the pair of geometry (" +
         std::to_string(geometry_pair_.first().get_value()) + ", " +
         std::to_string(geometry_pair_.second().get_value()) + ")");

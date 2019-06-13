@@ -44,7 +44,9 @@ TEST_F(TwoFreeSpheresTest, TestEval) {
   const math::RigidTransformd X_WS2 = X_WB2 * X_B2S2_;
   const double y_expected =
       (X_WS1.translation() - X_WS2.translation()).norm() - radius1_ - radius2_;
-  EXPECT_TRUE(CompareMatrices(y, Vector1d(y_expected), 1E-12));
+  EXPECT_TRUE(
+      CompareMatrices(y, Vector1d(y_expected),
+                      1E-12 /* tolerance is chosen as about 1E4 * eps*/));
 
   Eigen::Matrix<AutoDiffXd, 14, 1> q_autodiff = math::initializeAutoDiff(q);
   CheckConstraintEvalNonsymbolic(dut, q_autodiff, 1E-12);

@@ -10,8 +10,8 @@
 namespace drake {
 namespace multibody {
 /**
- * Constrains that the distance between a pair of geometries to be within a
- * range [distance_lower, distance_upper].
+ * Constrains the distance between a pair of geometries to be within a range
+ * [distance_lower, distance_upper].
  */
 class DistanceConstraint : public solvers::Constraint {
  public:
@@ -23,7 +23,7 @@ class DistanceConstraint : public solvers::Constraint {
    * @param geometry_pair The pair of geometries between which the distance is
    * constrained. Notice that we only consider the distance between a static
    * geometry and a dynamic geometry, or a pair of dynamic geometries. We don't
-   * allow to constrain the distance between two static geometries.
+   * allow constraining the distance between two static geometries.
    * @param plant_context The context for the plant. @p plant_context should
    * outlive this DistanceConstraint object.
    * @param distance_lower The lower bound on the distance.
