@@ -2,8 +2,11 @@ from __future__ import print_function
 
 import copy
 import unittest
+import warnings
+
 import numpy as np
 
+from pydrake.common.deprecation import DrakeDeprecationWarning
 import pydrake.systems.framework as framework
 from pydrake.maliput.api import (
     LanePosition,
@@ -35,6 +38,9 @@ def make_test_dragway(lane_width, length):
 
 # Tests the bindings for the API and backend implementations.
 class TestMaliput(unittest.TestCase):
+    def setUp(self):
+        warnings.simplefilter("ignore", DrakeDeprecationWarning)
+
     def test_api(self):
         # Test the containers' constructors and accessors.
         srh = [4., 5., 6.]
@@ -136,5 +142,3 @@ class TestMaliput(unittest.TestCase):
                                     lane_pos_expected.srh()))
         self.assertTrue(np.allclose(nearest_pos.xyz(), geo_pos.xyz()))
         self.assertTrue(distance == 0.)
-
-    # TODO(jadecastro) Add more maliput backends as needed.
