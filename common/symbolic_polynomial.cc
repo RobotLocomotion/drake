@@ -655,7 +655,6 @@ Polynomial Polynomial::RemoveTermsWithSmallCoefficients(
     double coefficient_tol) const {
   DRAKE_DEMAND(coefficient_tol > 0);
   MapType cleaned_polynomial{};
-  cleaned_polynomial.reserve(monomial_to_coefficient_map_.size());
   for (const auto& term : monomial_to_coefficient_map_) {
     if (is_constant(term.second) &&
         std::abs(get_constant_value(term.second)) <= coefficient_tol) {
