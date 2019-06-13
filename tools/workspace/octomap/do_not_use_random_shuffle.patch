@@ -1,0 +1,38 @@
+From 7811ac619f0d88e466e7706583a471e6acaa72de Mon Sep 17 00:00:00 2001
+From: Jamie Snape <jamie.snape@kitware.com>
+Date: Thu, 30 May 2019 12:18:45 -0400
+Subject: [PATCH] Do not use std::random_shuffle with C++11 or above
+
+---
+ octomap/src/Pointcloud.cpp | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git octomap/src/Pointcloud.cpp octomap/src/Pointcloud.cpp
+index 09349db04c1255e1ba69f6b7bd141708e257de76..741273993ab71516e598a0b6cf077872c5aa1269 100644
+--- octomap/src/Pointcloud.cpp
++++ octomap/src/Pointcloud.cpp
+@@ -38,6 +38,9 @@
+ 
+ #if defined(_MSC_VER) || defined(_LIBCPP_VERSION)
+   #include <algorithm>
++  #if __cplusplus >= 201103L
++    #include <random>
++  #endif
+ #else
+   #include <ext/algorithm>
+ #endif
+@@ -210,7 +213,13 @@ namespace octomap {
+   #if defined(_MSC_VER) || defined(_LIBCPP_VERSION)
+     samples.reserve(this->size());
+     samples.insert(samples.end(), this->begin(), this->end());
+-    std::random_shuffle(samples.begin(), samples.end());
++    #if __cplusplus > 199711L
++      std::random_device r;
++      std::mt19937 urbg(r());
++      std::shuffle(samples.begin(), samples.end(), urbg);
++    #else
++      std::random_shuffle(samples.begin(), samples.end());
++    #endif
+     samples.resize(num_samples);
+   #else
+     random_sample_n(begin(), end(), std::back_insert_iterator<point3d_collection>(samples), num_samples);
