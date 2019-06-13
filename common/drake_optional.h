@@ -1,42 +1,62 @@
 #pragma once
 
+/// @file
+/// Provides drake::optional as an alias for the appropriate implementation of
+/// std::optional or stx::optional for the C++ toolchain being used.
+
+// If the current toolchain offers a working std::optional, then use it.  If
+// std::optional does not exist, do not use std::experimental::optional (even
+// though STX would otherwise do so by default) because its API often differs
+// from std::optional.
+#define STX_NO_STD_OPTIONAL
+#if __cplusplus >= 201703L
+#if defined(__has_include)
+#if __has_include(<optional>)
+#include <optional>
+#undef STX_NO_STD_OPTIONAL
+#endif
+#endif
+#endif
+
+// If the current toolchain offers a working std::variant, then use it.
+#define STX_NO_STD_VARIANT
+#if __cplusplus >= 201703L
+#if defined(__has_include)
+#if __has_include(<variant>)
+#include <variant>
+#undef STX_NO_STD_VARIANT
+#endif
+#endif
+#endif
+
 // Due to https://github.com/tcbrindle/cpp17_headers/issues/4, we must always
 // include variant before optional.  Rather than leaving that up to our users,
 // we force the issue here.  Note that this does NOT place stx::variant into
 // the drake namespace, so users still need to include drake_variant.h in order
 // to use variants.
 //
-// Furthermore, the stx header is broken in various ways, so we have to do some
-// work-arounds before and after including it.
-#if defined(__has_include)
-#if __has_include(<variant>)
-#include <variant>
-#endif
-#endif
+// Furthermore, the stx header is broken in various ways, so we have to do
+// work-arounds after including it.
+#ifdef STX_NO_STD_VARIANT
 #include <stx/variant.hpp>
 #define STX_HAVE_IN_PLACE_T 1
-
-// As of our currently supported platforms (Ubuntu 16.04 Xenial and macOS 10.13
-// High Sierra), the std::experimental::optional implementations for libstdc++
-// and libc++ lack some C++17 features, such as std::optional::has_value() or
-// std::bad_optional_acces.  Thus, we'll force-enable the STX implementation
-// for now.  In the future if some new platform has C++17 support, we'll want
-// to allow this to fallback to use it.
-#define STX_NO_STD_OPTIONAL
-
+#endif
+#ifdef STX_NO_STD_OPTIONAL
 #include <stx/optional.hpp>
-
-/// @file
-/// Provides drake::optional as an alias for the appropriate implementation of
-/// std::optional or std::experimental::optional or stx::optional for the C++
-/// toolchain being used.  (The alias is selected preferentially in that order,
-/// so the most widely-compatible implementation will always be used.)
+#endif
 
 namespace drake {
 
+#ifdef STX_NO_STD_OPTIONAL
 template <typename T>
 using optional = stx::optional<T>;
-
 constexpr auto nullopt = stx::nullopt;
+using nullopt_t = stx::nullopt_t;
+#else
+template <typename T>
+using optional = std::optional<T>;
+constexpr auto nullopt = std::nullopt;
+using nullopt_t = std::nullopt_t;
+#endif
 
 }  // namespace drake
