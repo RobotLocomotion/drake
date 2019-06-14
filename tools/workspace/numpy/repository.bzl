@@ -34,7 +34,9 @@ def _impl(repository_ctx):
     ))
 
     if not python:
-        fail("Could NOT find python{}".format(repository_ctx.attr.version))
+        fail("Could NOT find python{}".format(
+            repository_ctx.attr.python_version,
+        ))
 
     result = repository_ctx.execute([
         python,
