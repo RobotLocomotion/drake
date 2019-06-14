@@ -72,7 +72,7 @@ def assert_equal(a, b):
     if a.size == 0 and b.size == 0:
         return
     if a.dtype != object and b.dtype != object:
-        np.testing.assert_equal(a, b)
+        np.testing.assert_allclose(a, b)
     else:
         _registry.get_comparator_from_arrays(a, b).assert_eq(a, b)
 
