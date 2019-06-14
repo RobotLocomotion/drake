@@ -20,12 +20,12 @@ namespace geometry {
  - By definition, nhat_AB_W must be in the opposite direction of nhat_BA_W.
  - (p_WCa - p_Wcb) = distance · nhat_BA_W.
  - In some cases, nhat_BA_W is not unique, and is_nhat_BA_W_unique is false.
- @warning For two geometries that are just touching, the underlying code can
-          guarantee a correct value for nhat_BA_W only when one geometry is a
-          sphere, and the other geometry is a sphere, a box, or a cylinder.
-          Otherwise, the underlying code is not in place yet to guarantee a
-          correct value for nhat_BA_W when surfaces are just touching, and the
-          vector will be populated by NaN values.
+ @warning For two geometries that are just touching (i.e., distance = 0), the
+          underlying code can guarantee a correct value for nhat_BA_W only
+          when one geometry is a sphere, and the other geometry is a sphere, a
+          box, or a cylinder. Otherwise, the underlying code is not in place yet
+          to guarantee a correct value for nhat_BA_W when surfaces are just
+          touching, and the vector will be populated by NaN values.
  @tparam T The underlying scalar type. Must be a valid Eigen scalar.
  */
 template <typename T>
