@@ -27,14 +27,14 @@ void Distance(const MultibodyPlant<double>& plant,
   // point on geometry B.
   // Hence when we take the gradient on both sides
   // ∂d / ∂q =   p_CbCa_Wᵀ * (∂n̂_BA_W / ∂q) + n̂_BA_Wᵀ * (∂p_CbCa_W /∂q)   (2)
-  // Using the face that p_CbCa_W = d * n̂_BA_W, we have
+  // Using the fact that p_CbCa_W = d * n̂_BA_W, we have
   // ∂d / ∂q = d * n̂_BA_Wᵀ * (∂n̂_BA_W / ∂q) + n̂_BA_Wᵀ * (∂p_CbCa_W /∂q)   (3)
   // We also know that for whatever q, the normal n̂_BA_W is always a unit length
   // vector, hence n̂_BA_Wᵀ * n̂_BA_W = 1 for whatever q. This invariance means
   // that the gradient of (n̂_BA_Wᵀ * n̂_BA_W) w.r.t q is zero, namely
   // ∂ 1/∂ q = ∂ (n̂_BA_Wᵀ * n̂_BA_W) /∂ q = 2 * n̂_BA_Wᵀ * (∂n̂_BA_W /∂q)
   // Since ∂ 1/∂ q = 0, we conclude that n̂_BA_Wᵀ * (∂n̂_BA_W /∂q) = 0, hence the
-  // first term in the right-hand side equation (3) disppears. Thus
+  // first term in the right-hand side equation (3) disappears. Thus
   // ∂d / ∂q = n̂_BA_Wᵀ * (∂p_CbCa_W /∂q)                                  (4)
   // Note that ∂p_CbCa_W /∂q is computed as a Jacobian matrix in MultibodyPlant.
   Eigen::Matrix<double, 3, Eigen::Dynamic> Jq_v_BCa_W(3, plant.num_positions());
