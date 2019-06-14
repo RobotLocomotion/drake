@@ -91,7 +91,7 @@ Vector3<T> CalcIntersection(const Vector3<T>& A,
   //      = 0 when a != b.
 }
 
-// Clips a polygon by a halfspace, which is the inner loop of a modified
+// Intersects a polygon by a halfspace, which is the inner loop of a modified
 // Sutherland-Hodgman algorithm for clipping a polygon. It keeps the part of
 // the polygon inside the halfspace.
 // @param[in] input_polygon
@@ -116,7 +116,8 @@ Vector3<T> CalcIntersection(const Vector3<T>& A,
 //     3. For an input polygon P outside the halfspace with one vetex on the
 //        plane of the halfspace, the output polygon will be a zero-area
 //        triangle with three duplicated vertices.
-// TODO(DamrongGuoy): Handle the degenerated cases in the note above.
+// TODO(DamrongGuoy): Avoid duplicated vertices mentioned in the note above and
+//  check whether we can have other degenerated cases that we don't know.
 template <typename T>
 std::vector<Vector3<T>> ClipPolygonByHalfspace(
     const std::vector<Vector3<T>>& input_polygon,
@@ -129,7 +130,8 @@ std::vector<Vector3<T>> ClipPolygonByHalfspace(
     if (IsPointInHalfspace(current, halfspace)) {
       if (!IsPointInHalfspace(previous, halfspace)) {
         // Calculate line-plane intersection when the `current` point
-        // "enters" the halfspace.
+        // "enters" the halfspace, i.e., `current` is inside but `previous`
+        // is outside the halfspace.
         output_polygon.push_back(
             CalcIntersection(current, previous, halfspace));
       }
@@ -137,7 +139,8 @@ std::vector<Vector3<T>> ClipPolygonByHalfspace(
     } else {  // current is outside.
       if (IsPointInHalfspace(previous, halfspace)) {
         // Calculate line-plane intersection when the `current` point
-        // "exits" the halfspace.
+        // "exits" the halfspace, i.e., `current` is outside but `previous`
+        // is inside the halfspace.
         output_polygon.push_back(
             CalcIntersection(current, previous, halfspace));
       }
@@ -146,9 +149,62 @@ std::vector<Vector3<T>> ClipPolygonByHalfspace(
   return output_polygon;
 }
 
-// Clips a triangle by a tetrahedron using a modified Sutherland-Hodgman
+// Remove duplicated vertices from a polygon represented as a sequence of
+// positions of its vertices.
+// @param[in] polygon
+//     The input polygon, pass by value.
+// @return
+//     The polygon modified to have no duplicated vertices.
+// @pre
+//     Assume the duplicated vertices are consecutive in the circular
+//     order. For example, the first and the last vertices in "A,B,C,A"
+//     are considered duplicated, and it will become "A,B,C".
+// @note
+//     The polygon might become a pair of points or a single point.  For
+//     example, a polygon "A,A,B,B" becomes "A,B", and a polygon "A,A,A"
+//     becomes "A".
+template <typename T>
+std::vector<Vector3<T>> RemoveDuplicatedVertices(
+    std::vector<Vector3<T>> polygon) {
+  if (polygon.size() <= 1)
+    return polygon;
+
+  auto near = [](const Vector3<T>& p, const Vector3<T>& q) -> bool {
+    // Empirically we found that numeric_limits<double>::epsilon() 2.2e-16 is
+    // too small, especially when the objects are not axis-aligned.
+    const T kEps(1e-14);
+    return (p - q).norm() < kEps;
+  };
+
+  // Remove consecutive vertices that are duplicated in the linear order.  It
+  // will change "A,B,B,C,C,A" to "A,B,C,A". To close the circular order, we
+  // will check the first and the last vertices again near the end of the
+  // function.
+  auto it = std::unique(polygon.begin(), polygon.end(), near);
+  polygon.resize(it - polygon.begin());
+
+  if (polygon.size() == 1)
+    return polygon;
+
+  if (polygon.size() == 2) {
+    DRAKE_ASSERT(!near(polygon[0], polygon[1]));
+    return polygon;
+  }
+
+  DRAKE_ASSERT(polygon.size() >= 3);
+
+  // Check the first and the last vertices in the sequence. For example, given
+  // "ABCA", we want "ABC".
+  if (near(polygon[0], *polygon.rbegin())) {
+    polygon.pop_back();
+  }
+
+  return polygon;
+}
+
+// Intersects a triangle by a tetrahedron using a modified Sutherland-Hodgman
 // algorithm for clipping a polygon and outputs the part of the triangle
-// inside the tetrahedron. It clips the triangle by each halfspace
+// inside the tetrahedron. It intersects the triangle by each halfspace
 // defined by each face of the tetrahedron.
 // @param element
 //     Index of the tetrahedron in a volume mesh.
@@ -159,10 +215,12 @@ std::vector<Vector3<T>> ClipPolygonByHalfspace(
 // @param surface_N
 //     The surface mesh whose vertex positions are expressed in N's frame.
 // @param X_MN
-//     The rigid transform from N to M.
+//     The pose of the surface frame N in the volume frame M.
 // @retval polygon
 //     The output polygon represented by a sequence of positions of its
-//     vertices, expressed in M's frame. It can have up to seven vertices.
+//     vertices, expressed in M's frame. It can have up to seven vertices
+//     because each time a halfspace intersects a polygon, it can increase
+//     the number of vertices by at most one.
 // @note
 //     1. If the triangle is outside the tetrahedron with one vertex on a
 //        face of the tetrahedron, the output polygon will be empty.
@@ -170,6 +228,9 @@ std::vector<Vector3<T>> ClipPolygonByHalfspace(
 //        of the tetrahedron, the output polygon will be empty.
 //     3. If the triangle is on a face of the tetrahedron, the output polygon
 //        will be the part of the triangle inside the face of the tetrahedron.
+//     4. The output polygon can be a heptagon (seven-sided polygon) when the
+//        plane of the triangle cuts the tetrahedron into a rectangle, and
+//        the triangle intersects the rectangle into a heptagon.
 template <typename T>
 std::vector<Vector3<T>> ClipTriangleByTetrahedron(
     VolumeElementIndex element, const VolumeMesh<T>& volume_M,
@@ -190,10 +251,9 @@ std::vector<Vector3<T>> ClipTriangleByTetrahedron(
     p_MV[i] = volume_M.vertex(v).r_MV();
   }
   // Set up the four halfspaces of the four triangular faces of the tetrahedron.
-  // Assume the tetrahedron has the
-  // fourth vertex seeing the first three vertices in CCW order; for example,
-  // a tetrahedron of (Zero(), UnitX(), UnitY(), UnitZ()) (see the picture
-  // below) has this orientation.
+  // Assume the tetrahedron has the fourth vertex seeing the first three
+  // vertices in CCW order; for example, a tetrahedron of (Zero(), UnitX(),
+  // UnitY(), UnitZ()) (see the picture below) has this orientation.
   //
   //      +Z
   //       |
@@ -212,80 +272,89 @@ std::vector<Vector3<T>> ClipTriangleByTetrahedron(
   // tetrahedron, which is suitable for setting up the halfspace. Refer to
   // the above picture.
   const int faces[4][3] = {{1, 2, 3}, {0, 3, 2}, {0, 1, 3}, {0, 2, 1}};
-  std::vector<fcl::Halfspace<T>> halfspaces_M;
   for (auto& face_vertex : faces) {
     const Vector3<T>& A = p_MV[face_vertex[0]];
     const Vector3<T>& B = p_MV[face_vertex[1]];
     const Vector3<T>& C = p_MV[face_vertex[2]];
     const Vector3<T> normal_M = (B - A).cross(C - A).normalized();
-    T distance = normal_M.dot(A);
-    halfspaces_M.emplace_back(normal_M, distance);
-  }
-  // Clip the output polygon by each halfspace defined by each triangular
-  // face of the tetrahedron.
-  for (const auto& halfspace_M : halfspaces_M) {
+    T height = normal_M.dot(A);
+    fcl::Halfspace<T> halfspace_M(normal_M, height);
+    // Intersects the output polygon by the halfspace of each face of the
+    // tetrahedron.
     output_M = ClipPolygonByHalfspace(output_M, halfspace_M);
   }
-  // TODO(DamrongGuoy): Improve robustness so that we don't have to filter
-  //  out duplicated points in the output polygon.  It can happen when a
-  //  vertex or an edge of the triangle `face` of suface_N is on a face of the
-  //  tetrahedron `element` of volume_M.
-  if (output_M.size() >= 3) {
-    auto near = [](const Vector3<T>& p, const Vector3<T>& q) -> bool {
-      // Empirically we found that numeric_limits<double>::epsilon() 2.2e-16 is
-      // too small.
-      const T kEps(1e-14);
-      return (p - q).norm() < kEps;
-    };
-    auto it = std::unique(output_M.begin(), output_M.end(), near);
-    output_M.resize(it - output_M.begin());
-    if (near(*output_M.begin(), *output_M.rbegin())) {
-        output_M.resize(output_M.size() - 1);
-    }
-  }
-  // Empty the polygon if it has less than 3 points left after removing
-  // duplicated points.
+
+  // TODO(DamrongGuoy): Remove the code below when ClipPolygonByHalfspace()
+  //  stops generating duplicated vertices. See the note in
+  //  ClipPolygonByHalsspace().
+
+  // Remove possible duplicated vertices from ClipPolygonByHalfspace().
+  output_M = RemoveDuplicatedVertices(output_M);
   if (output_M.size() < 3) {
+    // RemoveDuplicatedVertices() may have shrunk the polygon down to one or
+    // two vertices, so we empty the polygon.
     output_M.clear();
   }
+
   // TODO(DamrongGuoy): Calculate area of the polygon. If it's too small,
   //  return an empty polygon.
+
+  // The output polygon could be at most a heptagon.
+  DRAKE_DEMAND(output_M.size() <= 7);
   return output_M;
 }
 
 // Triangulates a polygon and adds the triangles and the points into `faces`
 // and `vertices`.  Triangulation is done by connecting the centroid of the
-// the polygon to its edges.
+// the polygon to its edges.  This method of triangulation is required for
+// smooth evolution of a contact surface for infinitesimal pose changes. This
+// ensures that new triangles enter and leave with zero area.
 // @param[in] polygon
 //     The input polygon is represented by positions of its vertices.
-// @param[out] faces
-//     Add new triangles into `faces`.
-// @param[out] vertices
+// @param[in, out] faces
+//     Add new triangles into `faces`. Each new triangle has the same
+//     orientation as the input polygon.
+// @param[in ,out] vertices
 //     Add new vertices into `vertices`.
 // @note
-//     New vertices may be duplication of existing vertices.
+//     1. New vertices may be duplication of existing vertices in other
+//        polygons.
+//     2. If the input polygon is already a triangle, we do not add its
+//        centroid.
 // TODO(DamrongGuoy): Maintain book keeping to avoid duplicated vertices and
 //  remove the above note.
 template <typename T>
 void AddFacesVertices(
     const std::vector<Vector3<T>>& polygon, std::vector<SurfaceFace>* faces,
     std::vector<SurfaceVertex<T>>* vertices) {
-  if (polygon.size() < 3) return;
+  const int polygon_size = polygon.size();
+  if (polygon_size < 3) return;
 
   const int num_original_vertices = vertices->size();
 
+  // Exception to a triangle.
+  if (polygon_size == 3) {
+    int vertex_index[3];
+    for (int i = 0; i < 3; ++i) {
+      vertices->emplace_back(polygon[i]);
+      vertex_index[i] = i + num_original_vertices;
+    }
+    faces->emplace_back(vertex_index);
+    return;
+  }
+
   Vector3<T> centroid = Vector3<T>::Zero();
-  for (int i = 0; size_t(i) < polygon.size(); ++i) {
+  for (int i = 0; i < polygon_size; ++i) {
     vertices->emplace_back(polygon[i]);
     centroid += polygon[i];
   }
-  centroid /= T(polygon.size());
+  centroid /= T(polygon_size);
   SurfaceVertexIndex centroid_index(vertices->size());
   vertices->emplace_back(centroid);
 
-  for (int i = 0; size_t(i) < polygon.size(); ++i) {
+  for (int i = 0; i < polygon_size; ++i) {
     SurfaceVertexIndex current(i + num_original_vertices);
-    SurfaceVertexIndex next((i + 1) % polygon.size() + num_original_vertices);
+    SurfaceVertexIndex next((i + 1) % polygon_size + num_original_vertices);
     faces->emplace_back(current, next, centroid_index);
   }
 }
@@ -301,7 +370,7 @@ std::unique_ptr<SurfaceMeshField<Vector3<T>, T>> ComputeNormalField(
     const SurfaceMesh<T>& surface) {
   std::vector<Vector3<T>> normal_values(surface.num_vertices(),
                                         Vector3<T>::Zero());
-  std::vector<T> areas(surface.num_vertices(), 0);
+  std::vector<T> areas(surface.num_vertices(), T(0.0));
   for (SurfaceFaceIndex face_index(0); face_index < surface.num_faces();
        ++face_index) {
     const SurfaceFace& face = surface.element(face_index);
@@ -310,12 +379,14 @@ std::unique_ptr<SurfaceMeshField<Vector3<T>, T>> ComputeNormalField(
     const Vector3<T>& C = surface.vertex(face.vertex(2)).r_MV();
     Vector3<T> unit_normal = (B - A).cross(C - A).normalized();
     for (int v = 0; v < 3; ++v) {
+      DRAKE_ASSERT(surface.area(face_index) > T(0.0));
       normal_values[face.vertex(v)] += surface.area(face_index) * unit_normal;
       areas[face.vertex(v)] += surface.area(face_index);
     }
   }
   for (SurfaceVertexIndex vertex_index(0);
        vertex_index < surface.num_vertices(); ++vertex_index) {
+    DRAKE_ASSERT(areas[vertex_index] > T(0.0));
     normal_values[vertex_index] /= areas[vertex_index];
     normal_values[vertex_index] = normal_values[vertex_index].normalized();
   }
@@ -334,7 +405,7 @@ std::unique_ptr<SurfaceMeshField<Vector3<T>, T>> ComputeNormalField(
 //     positions are in N's frame. We assume that triangles are oriented
 //     outward.
 // @param[in] X_MN
-//     The rigid transform from N's frame to M's frame.
+//     The pose of frame N in frame M.
 // @param[out] surface_MN_M
 //     The intersecting surface between the volume of M and the surface of N.
 //     Vertex positions are expressed in M's frame. Triangles are oriented
@@ -365,21 +436,24 @@ void IntersectSoftVolumeRigidSurface(
   std::vector<SurfaceVertex<T>> vertices_MN_M;
   std::vector<T> e_values;
   std::vector<Vector3<T>> grad_h_MN_M_values;
-  for (VolumeElementIndex element_M(0);
-       element_M < soft_M.mesh().num_elements(); ++element_M) {
+  // TODO(DamrongGuoy): Use the broadphase to avoid O(n^2) check of all
+  //  tetrahedrons against all triangles.
+  const math::RigidTransform<T> X_NM = X_MN.inverse();
+  for (VolumeElementIndex tetrahedron_M(0);
+       tetrahedron_M < soft_M.mesh().num_elements(); ++tetrahedron_M) {
     for (SurfaceFaceIndex face_N(0); face_N < rigid_N.num_faces(); ++face_N) {
-      auto polygon_M = ClipTriangleByTetrahedron(element_M, soft_M.mesh(),
+      auto polygon_M = ClipTriangleByTetrahedron(tetrahedron_M, soft_M.mesh(),
                                                  face_N, rigid_N, X_MN);
-      const int num_original_vertices = vertices_MN_M.size();
+      const int num_previous_vertices = vertices_MN_M.size();
       AddFacesVertices(polygon_M, &faces_MN, &vertices_MN_M);
       const int num_current_vertices = vertices_MN_M.size();
       // Calculate values of the pressure field and the normal field at the
       // new vertices.
-      for (int v = num_original_vertices; v < num_current_vertices; ++v) {
+      for (int v = num_previous_vertices; v < num_current_vertices; ++v) {
         const Vector3<T>& r_M = vertices_MN_M[v].r_MV();
-        const T pressure = soft_M.EvaluateCartesian(element_M, r_M);
+        const T pressure = soft_M.EvaluateCartesian(tetrahedron_M, r_M);
         e_values.push_back(pressure);
-        const Vector3<T> r_N = X_MN.inverse() * r_M;
+        const Vector3<T> r_N = X_NM * r_M;
         const Vector3<T> normal_N =
             normal_field_N->EvaluateCartesian(face_N, r_N);
         Vector3<T> normal_M = (X_MN.rotation() * normal_N).normalized();
@@ -387,6 +461,8 @@ void IntersectSoftVolumeRigidSurface(
       }
     }
   }
+  DRAKE_DEMAND(vertices_MN_M.size() == e_values.size());
+  DRAKE_DEMAND(vertices_MN_M.size() == grad_h_MN_M_values.size());
   *surface_MN_M = std::make_unique<SurfaceMesh<T>>(std::move(faces_MN),
                                                    std::move(vertices_MN_M));
   *e_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(

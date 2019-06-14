@@ -60,6 +60,25 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfspace) {
   const double offset = 2.0;
   const fcl::Halfspace<double> halfspace(unit_normal, offset);
 
+  // The input polygon is half inside the halfspace and half outside the
+  // halfspace. Expect the output polygon to be half of the input polygon.
+  {
+    const std::vector<Vector3<double>> input_polygon{
+        {1., 0., 0.},
+        {1., 2., 0.},
+        {3., 2., 0.},
+        {3., 0., 0.}
+    };
+    const std::vector<Vector3<double>> output_polygon =
+        mesh_intersection::ClipPolygonByHalfspace(input_polygon, halfspace);
+    const std::vector<Vector3<double>> expect_output_polygon{
+        {1., 0., 0.},
+        {1., 2., 0.},
+        {2., 2., 0.},
+        {2., 0., 0.},
+    };
+    EXPECT_TRUE(CompareConvexPolygon(expect_output_polygon, output_polygon));
+  }
   // The input polygon is on the plane X=0, which is parallel to the plane of
   // the halfspace and is completely inside the halfspace. Expect the input
   // polygon and the output polygon to be the same.
@@ -142,6 +161,50 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfspace) {
   }
 }
 
+GTEST_TEST(MeshIntersectionTest, RemoveDuplicatedVertices) {
+  // No duplicated vertices. Expect no change to the polygon.
+  {
+    const std::vector<Vector3<double>> input_polygon {
+        {0., 0., 0.},
+        {0., 1., 0.},
+        {0., 1., 1.},
+        {0., 0., 1.}
+    };
+    const std::vector<Vector3<double>> output_polygon =
+        mesh_intersection::RemoveDuplicatedVertices(input_polygon);
+    EXPECT_TRUE(CompareConvexPolygon(input_polygon, output_polygon));
+  }
+  // Same three vertices. Expect one vertex left.
+  {
+    const std::vector<Vector3<double>> input_polygon{
+        {2., 0., 0.},
+        {2., 0., 0.},
+        {2., 0., 0.}
+    };
+    const std::vector<Vector3<double>> output_polygon =
+        mesh_intersection::RemoveDuplicatedVertices(input_polygon);
+    const std::vector<Vector3<double>> expect_single_vertex{
+        {2., 0., 0.}
+    };
+    EXPECT_TRUE(CompareConvexPolygon(expect_single_vertex, output_polygon));
+  }
+  // Two pairs of duplicated vertices. Expect two vertices left.
+  {
+    const std::vector<Vector3<double>> input_polygon{
+        {2., 0., 0.},
+        {2., 0., 0.},
+        {2., 2., 0.},
+        {2., 2., 0.},
+    };
+    const std::vector<Vector3<double>> output_polygon =
+        mesh_intersection::RemoveDuplicatedVertices(input_polygon);
+    const std::vector<Vector3<double>> expect_single_vertex{
+        {2., 0., 0.},
+        {2., 2., 0.}
+    };
+    EXPECT_TRUE(CompareConvexPolygon(expect_single_vertex, output_polygon));
+  }
+}
 
 // Generates a trivial surface mesh consisting of one triangle with vertices
 // at the origin and on the X- and Y-axes. We will use it for testing
@@ -402,9 +465,9 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedronIntoHeptagon) {
     const int element_data[4] = {0, 1, 2, 3};
     std::vector<VolumeElement> elements {VolumeElement(element_data)};
     const Vector3<double> vertex_data[4] = {
-        2.0 * ( Vector3<double>::UnitX() + Vector3<double>::UnitZ()),
+        2.0 *  (Vector3<double>::UnitX() + Vector3<double>::UnitZ()),
         2.0 * (-Vector3<double>::UnitX() + Vector3<double>::UnitZ()),
-        2.0 * ( Vector3<double>::UnitY() - Vector3<double>::UnitZ()),
+        2.0 *  (Vector3<double>::UnitY() - Vector3<double>::UnitZ()),
         2.0 * (-Vector3<double>::UnitY() - Vector3<double>::UnitZ())
     };
     std::vector<VolumeVertex<double>> vertices;
@@ -469,15 +532,11 @@ GTEST_TEST(MeshIntersectionTest, IntersectSoftVolumeRigidSurface) {
       &surface, &e_field, &grad_h_field);
 
   const double kEps = std::numeric_limits<double>::epsilon();
-  EXPECT_EQ(3, surface->num_faces());
+  EXPECT_EQ(1, surface->num_faces());
   // TODO(DamrongGuoy): More comprehensive checks.
-  const double area0 = surface->area(SurfaceFaceIndex(0));
-  const double area1 = surface->area(SurfaceFaceIndex(1));
-  const double area2 = surface->area(SurfaceFaceIndex(2));
-  const double expect_area = (1./2.) * 0.5 * 0.5 / 3.0;
-  EXPECT_NEAR(expect_area, area0, kEps);
-  EXPECT_NEAR(expect_area, area1, kEps);
-  EXPECT_NEAR(expect_area, area2, kEps);
+  const double area = surface->area(SurfaceFaceIndex(0));
+  const double expect_area = (1./2.) * 0.5 * 0.5;
+  EXPECT_NEAR(expect_area, area, kEps);
   const SurfaceFaceIndex face0(0);
   const SurfaceMesh<double>::Barycentric centroid(1./3., 1./3., 1./3.);
   const double e = e_field->Evaluate(face0, centroid);
@@ -605,7 +664,7 @@ void TestComputeContactSurfaceSoftRigid() {
 
   auto contact_MN_M = mesh_intersection::ComputeContactSurfaceSoftRigid(
       id_M, id_N, *soft_M, *rigid_N, X_MN);
-  EXPECT_EQ(12, contact_MN_M->mesh().num_faces());
+  EXPECT_EQ(4, contact_MN_M->mesh().num_faces());
   const SurfaceFaceIndex face0(0);
   const typename SurfaceMesh<T>::Barycentric centroid(1./3., 1./3., 1./3.);
   const auto grad_h_M = contact_MN_M->EvaluateGrad_h_MN_M(face0, centroid);
@@ -634,7 +693,7 @@ void TestComputeContactSurfaceRigidSoft() {
 
   auto contact_AB_A = mesh_intersection::ComputeContactSurfaceRigidSoft(
       id_A, id_B, *rigid_A, *soft_B, X_AB);
-  EXPECT_EQ(12, contact_AB_A->mesh().num_faces());
+  EXPECT_EQ(4, contact_AB_A->mesh().num_faces());
   const SurfaceFaceIndex face0(0);
   const typename SurfaceMesh<T>::Barycentric centroid(1./3., 1./3., 1./3.);
   const auto grad_h_M = contact_AB_A->EvaluateGrad_h_MN_M(face0, centroid);
@@ -700,7 +759,7 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
         id_M, id_N, *soft_M, *rigid_N, X_MN);
     // TODO(DamrongGuoy): More comprehensive checks on the mesh of the contact
     //  surface. Here we only check the number of triangles.
-    EXPECT_EQ(12, contact_MN_M->mesh().num_faces());
+    EXPECT_EQ(4, contact_MN_M->mesh().num_faces());
     SurfaceFaceIndex face;
     SurfaceMesh<double>::Barycentric apex;
     bool found = findFaceVertex(Vector3<double>::Zero(), contact_MN_M->mesh(),
@@ -741,7 +800,7 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
         id_M, id_N, *soft_M, *rigid_N, X_MN);
     // TODO(DamrongGuoy): More comprehensive checks on the mesh of the contact
     //  surface.  Here we only check the number of triangles.
-    EXPECT_EQ(12, contact_MN_M->mesh().num_faces());
+    EXPECT_EQ(4, contact_MN_M->mesh().num_faces());
     SurfaceFaceIndex face;
     SurfaceMesh<double>::Barycentric center;
     bool found = findFaceVertex(-Vector3<double>::UnitY() / 2.,
