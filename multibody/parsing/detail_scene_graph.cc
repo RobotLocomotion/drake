@@ -158,6 +158,7 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
         make_as_convex =
             GetChildElementValueOrThrow<bool>(*mesh_element, "drake:convex");
       }
+      // TODO(amcastro-tri): Fix the given path to be an absolute path.
       if (make_as_convex) {
         return make_unique<geometry::Convex>(file_name, scale);
       } else {
