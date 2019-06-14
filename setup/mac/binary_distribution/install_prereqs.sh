@@ -26,5 +26,16 @@ fi
 /usr/local/bin/brew uninstall --force ipopt
 /usr/local/bin/brew bundle --file="${BASH_SOURCE%/*}/Brewfile"
 
+if ! command -v /usr/local/bin/pip2 &>/dev/null; then
+  echo 'ERROR: pip2 is NOT installed. The post-install step for the python@2 formula may have failed.' >&2
+  exit 2
+fi
+
 /usr/local/bin/pip2 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements.txt"
+
+if ! command -v /usr/local/bin/pip3 &>/dev/null; then
+  echo 'ERROR: pip3 is NOT installed. The post-install step for the python formula may have failed.' >&2
+  exit 3
+fi
+
 /usr/local/bin/pip3 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements.txt"
