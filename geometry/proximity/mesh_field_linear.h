@@ -112,7 +112,7 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
   /** Constructs a MeshFieldLinear.
    @param name    The name of the field variable.
    @param values  The field value at each vertex of the mesh.
-   @param mesh    The mesh to which this MeshField refers.
+   @param mesh    The mesh M to which this MeshField refers.
    @pre   The `mesh` is non-null, and the number of entries in `values` is the
           same as the number of vertices of the mesh.
    */
@@ -136,8 +136,8 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
 
   FieldValue EvaluateCartesian(
                  const typename MeshType::ElementIndex e,
-                 const typename MeshType::Cartesian& c) const final {
-    return Evaluate(e, this->mesh().CalcBarycentric(c, e));
+                 const typename MeshType::Cartesian& p_MQ) const final {
+    return Evaluate(e, this->mesh().CalcBarycentric(p_MQ, e));
   }
 
   const std::string& name() const { return name_; }

@@ -59,13 +59,13 @@ template <typename T>
 Vector3<T> CalcIntersection(const Vector3<T>& A,
                             const Vector3<T>& B,
                             const fcl::Halfspace<T>& halfspace) {
-  T a = halfspace.signedDistance(A);
-  T b = halfspace.signedDistance(B);
+  const T a = halfspace.signedDistance(A);
+  const T b = halfspace.signedDistance(B);
   // Check that the line is not parallel to the plane.
   DRAKE_DEMAND(a != b);
-  T wa = b / (b - a);
-  T wb = a / (a - b);
-  Vector3<T> intersection = wa * A + wb * B;
+  const T wa = b / (b - a);
+  const T wb = T(1.0) - wa;  // Same as a / (a - b).
+  const Vector3<T> intersection = wa * A + wb * B;
   using std::abs;
   // Empirically we found that numeric_limits<double>::epsilon() 2.2e-16 is
   // too small.
@@ -156,7 +156,7 @@ std::vector<Vector3<T>> ClipPolygonByHalfspace(
 // @return
 //     The polygon modified to have no duplicated vertices.
 // @pre
-//     Assume the duplicated vertices are consecutive in the circular
+//     Assume the duplicated vertices are consecutive in the cyclic
 //     order. For example, the first and the last vertices in "A,B,C,A"
 //     are considered duplicated, and it will become "A,B,C".
 // @note
@@ -177,7 +177,7 @@ std::vector<Vector3<T>> RemoveDuplicatedVertices(
   };
 
   // Remove consecutive vertices that are duplicated in the linear order.  It
-  // will change "A,B,B,C,C,A" to "A,B,C,A". To close the circular order, we
+  // will change "A,B,B,C,C,A" to "A,B,C,A". To close the cyclic order, we
   // will check the first and the last vertices again near the end of the
   // function.
   auto it = std::unique(polygon.begin(), polygon.end(), near);
@@ -286,7 +286,7 @@ std::vector<Vector3<T>> ClipTriangleByTetrahedron(
 
   // TODO(DamrongGuoy): Remove the code below when ClipPolygonByHalfspace()
   //  stops generating duplicated vertices. See the note in
-  //  ClipPolygonByHalsspace().
+  //  ClipPolygonByHalfspace().
 
   // Remove possible duplicated vertices from ClipPolygonByHalfspace().
   output_M = RemoveDuplicatedVertices(output_M);

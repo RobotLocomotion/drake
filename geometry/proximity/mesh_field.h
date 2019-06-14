@@ -11,7 +11,7 @@ namespace drake {
 namespace geometry {
 
 /** %MeshField is an abstract class that represents a field variable defined
-  on a mesh. It can evaluate the field value at any location on any element
+  on a mesh M. It can evaluate the field value at any location on any element
   of the mesh.
 
   @tparam FieldValue  a valid Eigen scalar or vector of valid Eigen scalars for
@@ -32,13 +32,14 @@ class MeshField {
       const typename MeshType::ElementIndex e,
       const typename MeshType::Barycentric& b) const = 0;
 
-  /** Evaluates the field value at a location on an element.
+  /** Evaluates the field value at a point Q on an element.
    @param e The index of the element.
-   @param b The Cartesian coordinates.
+   @param p_MQ The position of point Q expressed in frame M, in Cartesian
+               coordinates. M is the frame of the mesh.
    */
   virtual FieldValue EvaluateCartesian(
       const typename MeshType::ElementIndex e,
-      const typename MeshType::Cartesian& b) const = 0;
+      const typename MeshType::Cartesian& p_MQ) const = 0;
 
   /** Copy to a new %MeshField and set the new %MeshField to use a new
    compatible mesh. %MeshField needs a mesh to operate; however, %MeshField
