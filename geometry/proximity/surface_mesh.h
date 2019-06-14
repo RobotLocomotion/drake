@@ -123,10 +123,14 @@ class SurfaceMesh {
   using ElementIndex = SurfaceFaceIndex;
 
   /**
-    Type of barycentric coordinates on a triangular element.
-    Barycentric coordinates (b₀, b₁, b₂) satisfy b₀ + b₁ + b₂ = 1, bᵢ >= 0, so
-    technically we could calculate one of the bᵢ from the others; however,
-    there is no standard way to omit one of the coordinates.
+    Type of barycentric coordinates on a triangular element. Barycentric
+    coordinates (b₀, b₁, b₂) satisfy b₀ + b₁ + b₂ = 1. It corresponds to a
+    position on the plane of the triangle. If all bᵢ >= 0, it corresponds to
+    a position inside the triangle or on the edges of the triangle. If some
+    bᵢ < 0, it corresponds to a position on the plane of the triangle that is
+    outside the triangle. Technically we could calculate one of the bᵢ from
+    the others; however, there is no standard way to omit one of the
+    coordinates.
    */
   using Barycentric = Vector<T, kDim + 1>;
 

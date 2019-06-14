@@ -128,9 +128,12 @@ class VolumeMesh {
   using ElementIndex = VolumeElementIndex;
 
   /** Type of barycentric coordinates on a tetrahedral element. Barycentric
-   coordinates (b₀, b₁, b₂, b₃) satisfy b₀ + b₁ + b₂ + b₃ = 1, bᵢ >= 0, so
-   technically we could calculate one of the bᵢ from the others; however,
-   there is no standard way to omit one of the coordinates.
+   coordinates (b₀, b₁, b₂, b₃) satisfy b₀ + b₁ + b₂ + b₃ = 1. It corresponds
+   to a position in the space. If all bᵢ >= 0, it corresponds to a position
+   inside the tetrahedron or on the faces of the tetrahedron. If some bᵢ < 0,
+   it corresponds to a position outside the tetrahedron. Technically we
+   could calculate one of the bᵢ from the others; however, there is no
+   standard way to omit one of the coordinates.
   */
   using Barycentric = Vector<T, kDim + 1>;
 

@@ -221,6 +221,7 @@ drake_cc_googletest(
     name = "surface_mesh_test",
     deps = [
         "//geometry/proximity:surface_mesh",
+        "//math:geometric_transform",
     ],
 )
 

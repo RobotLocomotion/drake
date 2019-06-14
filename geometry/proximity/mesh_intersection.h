@@ -485,7 +485,7 @@ void IntersectSoftVolumeRigidSurface(
 //     positions are in N's frame. We assume that triangles are oriented
 //     outward.
 // @param[in] X_MN
-//     The rigid transform from N's frame to M's frame.
+//     The pose of frame N in frame M.
 // @return
 //     The contact surface between M and N.  Positions of vertex coordinates
 //     are expressed in M's frame. The pressure distribution comes from the
@@ -540,7 +540,7 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurfaceSoftRigid(
 //     The soft geometry is described by a scalar pressure field defined on
 //     its volume mesh, whose vertex positions are in B's frame.
 // @param[in] X_AB
-//     The rigid transform from B's frame to A's frame.
+//     The pose of frame B in frame A.
 // @return
 //     The contact surface between A and B.  Positions of vertex coordinates
 //     are expressed in A's frame. The pressure distribution comes from the
