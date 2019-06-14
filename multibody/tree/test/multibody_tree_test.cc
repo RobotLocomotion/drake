@@ -640,12 +640,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocity) {
   GetArbitraryNonZeroConfiguration(&q, &v);
 
   // Set the robot's joint angles and rates (generalized positions/velocities).
-  int angle_index = 0;
-  for (const RevoluteJoint<double>* joint : joints_) {
-    joint->set_angle(context_.get(), q[angle_index]);
-    joint->set_angular_rate(context_.get(), v[angle_index]);
-    angle_index++;
-  }
+  tree().GetMutablePositionsAndVelocities(context_.get()) << q, v;
 
   // Compute the end effector's velocity.
   const Vector3<double> v_WE = CalcEndEffectorVelocity(tree(), *context_);
@@ -654,8 +649,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocity) {
 
   // Initialize v_autodiff to have values v and so that v is the independent
   // variable of the problem.
-  VectorX<AutoDiffXd> v_autodiff(kNumPositions);
-  math::initializeAutoDiff(v, v_autodiff);
+  VectorX<AutoDiffXd> v_autodiff = drake::math::initializeAutoDiff(v);
   context_autodiff_->get_mutable_continuous_state()
       .get_mutable_generalized_velocity()
       .SetFromVector(v_autodiff);
@@ -675,7 +669,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocity) {
   EXPECT_EQ(v_WE_derivs.rows(), 3);
   EXPECT_EQ(v_WE_derivs.cols(), kNumPositions);
 
-  MatrixX<double> Jv_WE(3, kNumVelocities);
+  Matrix3X<double> Jv_WE(3, kNumVelocities);
   // The end effector (G) Jacobian is computed by asking the Jacobian for a
   // point P with position p_GP = 0 in the G frame.
   const Frame<double>& end_effector_frame = end_effector_link_->body_frame();
@@ -714,16 +708,10 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocity) {
 
   // The derivative with respect to time should equal v_WE.
   const VectorX<AutoDiffXd> q_autodiff =
-      // For reasons beyond my understanding, we need to pass MatrixXd to
-      // math::initializeAutoDiffGivenGradientMatrix().
-      math::initializeAutoDiffGivenGradientMatrix(MatrixXd(q), MatrixXd(v));
+      math::initializeAutoDiffGivenGradientMatrix(q, MatrixXd(v));
   v_autodiff = v.cast<AutoDiffXd>();
-  context_autodiff_->get_mutable_continuous_state()
-      .get_mutable_generalized_position()
-      .SetFromVector(q_autodiff);
-  context_autodiff_->get_mutable_continuous_state()
-      .get_mutable_generalized_velocity()
-      .SetFromVector(v_autodiff);
+  tree_autodiff().GetMutablePositionsAndVelocities(context_autodiff_.get())
+      << q_autodiff, v_autodiff;
 
   Vector3<AutoDiffXd> p_WE_autodiff =
       CalcEndEffectorPosition(tree_autodiff(), *context_autodiff_);

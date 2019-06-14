@@ -251,7 +251,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
                                             world_frame,
                                             world_frame,
                                             &Jq_v_WEp);
-  MatrixX<double> bottom_three_rows(3, num_generalized_positions);
+  Matrix3X<double> bottom_three_rows(3, num_generalized_positions);
   bottom_three_rows = Jq_V_WEp.template bottomRows<3>();
   EXPECT_TRUE(CompareMatrices(Jq_v_WEp, bottom_three_rows, kTolerance,
                               MatrixCompareType::relative));

@@ -2066,7 +2066,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_B,
-      const Eigen::Ref<const MatrixX<T>>& p_BoBi_B,
+      const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
       const Frame<T>& frame_A,
       const Frame<T>& frame_E,
       EigenPtr<MatrixX<T>> Js_v_ABi_E) const {

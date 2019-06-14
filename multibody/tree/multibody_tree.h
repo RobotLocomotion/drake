@@ -1342,7 +1342,7 @@ class MultibodyTree {
       JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_B,
       const Frame<T>& frame_F,
-      const Eigen::Ref<const MatrixX<T>>& p_FoBi_F,
+      const Eigen::Ref<const Matrix3X<T>>& p_FoBi_F,
       const Frame<T>& frame_A,
       const Frame<T>& frame_E,
       EigenPtr<MatrixX<T>> Js_v_ABp_E) const;
@@ -2297,7 +2297,7 @@ class MultibodyTree {
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_B,
-      const Eigen::Ref<const MatrixX<T>>& p_WoBi_W,
+      const Eigen::Ref<const Matrix3X<T>>& p_WoBi_W,
       const Frame<T>& frame_A,
       EigenPtr<MatrixX<T>> Js_v_ABi_E) const;
 
