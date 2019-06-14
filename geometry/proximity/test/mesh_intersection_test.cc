@@ -198,11 +198,29 @@ GTEST_TEST(MeshIntersectionTest, RemoveDuplicatedVertices) {
     };
     const std::vector<Vector3<double>> output_polygon =
         mesh_intersection::RemoveDuplicatedVertices(input_polygon);
-    const std::vector<Vector3<double>> expect_single_vertex{
+    const std::vector<Vector3<double>> expect_two_vertices{
         {2., 0., 0.},
         {2., 2., 0.}
     };
-    EXPECT_TRUE(CompareConvexPolygon(expect_single_vertex, output_polygon));
+    EXPECT_TRUE(CompareConvexPolygon(expect_two_vertices, output_polygon));
+  }
+  // The first and the last vertex are duplicated within 2*numerics::epsilon().
+  // Expect only one of them remains.
+  {
+    const std::vector<Vector3<double>> input_polygon{
+        {2., 0., 0.},
+        {2., 0., 1.},
+        {2., 1., 0.},
+        {2., 0., 2. * std::numeric_limits<double>::epsilon()},
+    };
+    const std::vector<Vector3<double>> output_polygon =
+        mesh_intersection::RemoveDuplicatedVertices(input_polygon);
+    const std::vector<Vector3<double>> expect_three_vertices{
+        {2., 0., 0.},
+        {2., 0., 1.},
+        {2., 1., 0.},
+    };
+    EXPECT_TRUE(CompareConvexPolygon(expect_three_vertices, output_polygon));
   }
 }
 
@@ -281,7 +299,7 @@ std::unique_ptr<VolumeMesh<T>> TrivialVolumeMesh() {
 
 template <typename T>
 std::unique_ptr<VolumeMeshFieldLinear<T, T>> TrivialVolumeMeshField(
-    VolumeMesh<T>* volume_mesh) {
+    const VolumeMesh<T>* volume_mesh) {
   // Pressure field value pᵢ at vertex vᵢ.
   const T p0{0.};
   const T p1{0.};
@@ -289,6 +307,7 @@ std::unique_ptr<VolumeMeshFieldLinear<T, T>> TrivialVolumeMeshField(
   const T p3{1.};
   const T p4{1.};
   std::vector<T> p_values = {p0, p1, p2, p3, p4};
+  DRAKE_DEMAND(5 == volume_mesh->num_vertices());
   auto volume_mesh_field = std::make_unique<VolumeMeshFieldLinear<T, T>>(
       "pressure", std::move(p_values), volume_mesh);
 
@@ -296,18 +315,28 @@ std::unique_ptr<VolumeMeshFieldLinear<T, T>> TrivialVolumeMeshField(
 }
 
 // Checks whether two convex polygons are equal. Here, equality means they
-// have the same set of vertices in the same cyclic order.
+// have the same set of vertices in the same cyclic order. Any corresponding
+// pair of vertices between the two polygons do not necessarily have the same
+// vertex indices.
+//     We use this function in testing ClipTriangleByTetrahedron. Expect to
+// work for polygons within 10 meters from the origin since we use absolute
+// tolerance. Do not use this function in production.
 template <typename T>
 bool CompareConvexPolygon(const std::vector<Vector3<T>>& polygon0,
                           const std::vector<Vector3<T>>& polygon1) {
+  const int polygon0_size = polygon0.size();
+  const int polygon1_size = polygon1.size();
   // Check that they have the same number of vertices.
-  if (polygon0.size() != polygon1.size()) return false;
+  if (polygon0_size != polygon1_size) return false;
   // Two null polygons are considered equal.
-  if (polygon0.size() == 0) return true;
-  // Two vertices are the same if they are within epsilon of the other.
+  if (polygon0_size == 0) return true;
+  // Two vertices are the same if they are within a very small tolerance from
+  // the other.
   struct Same {
     explicit Same(const Vector3<T>& u_in) : u(u_in) {}
     bool operator()(const Vector3<T>& v) {
+      DRAKE_DEMAND(u.norm() < T(10.0));
+      DRAKE_DEMAND(v.norm() < T(10.0));
       // Empirically we found that numeric_limits<double>::epsilon() 2.2e-16 is
       // too small.
       const T kEps(1e-14);
@@ -316,14 +345,19 @@ bool CompareConvexPolygon(const std::vector<Vector3<T>>& polygon0,
    private:
     const Vector3<T>& u;
   };
+  // Find the first vertex in polygon1 that matches vertex 0 of polygon0.
   auto it = std::find_if(polygon1.begin(), polygon1.end(), Same(polygon0[0]));
   if (it == polygon1.end()) {
     return false;
   }
+  // Vertex i1 of polygon1 matches vetex 0 of polygon0.
   int i1 = it - polygon1.begin();
-  for (int i0 = 0; size_t(i0) < polygon0.size(); ++i0) {
+  // Vertex 0 was checked already. Go to the next one.
+  int i0 = 1;
+  i1 = (i1 + 1) % polygon1_size;
+  for (; i0 < polygon0_size; ++i0) {
     if (!Same(polygon0[i0])(polygon1[i1])) return false;
-    i1 = (i1 + 1) % polygon1.size();
+    i1 = (i1 + 1) % polygon1_size;
   }
   return true;
 }
@@ -651,6 +685,13 @@ std::unique_ptr<SurfaceMesh<T>> PyramidSurface() {
                                           std::move(vertices));
 }
 
+// The following two set of tests TestComputeContactSurfaceSoftRigid() and
+// TestComputeContactSurfaceRigidSoft() check that when we switch the order
+// of the two geometries (soft_M, rigid_N) v.s. (rigid_A, soft_B), we will
+// get the vector field on the contact surface in the opposite direction. In
+// the first case, the vector points down, and in the second case, the vector
+// points up.
+
 template <typename T>
 void TestComputeContactSurfaceSoftRigid() {
   auto id_M = GeometryId::get_new_id();
@@ -667,6 +708,8 @@ void TestComputeContactSurfaceSoftRigid() {
   EXPECT_EQ(4, contact_MN_M->mesh().num_faces());
   const SurfaceFaceIndex face0(0);
   const typename SurfaceMesh<T>::Barycentric centroid(1./3., 1./3., 1./3.);
+  // The soft octahedron M is below the rigid pyramid N. We check that the
+  // vector field is pointing down.
   const auto grad_h_M = contact_MN_M->EvaluateGrad_h_MN_M(face0, centroid);
   EXPECT_TRUE(grad_h_M(2) < T(0.));
 }
@@ -696,6 +739,8 @@ void TestComputeContactSurfaceRigidSoft() {
   EXPECT_EQ(4, contact_AB_A->mesh().num_faces());
   const SurfaceFaceIndex face0(0);
   const typename SurfaceMesh<T>::Barycentric centroid(1./3., 1./3., 1./3.);
+  // The rigid pyramid A is above the soft octahedron B. We check that the
+  // vector field is pointing up.
   const auto grad_h_M = contact_AB_A->EvaluateGrad_h_MN_M(face0, centroid);
   EXPECT_TRUE(grad_h_M(2) > T(0.));
 }
@@ -719,10 +764,12 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceRigidSoftAutoDiffXd) {
 // @param[out] face
 //     A face that contains the vertex.
 // @param[out] vertex
-//     Barycentric coordinates of the vertex in the face.
+//     Barycentric coordinates of the vertex in the face. It would be either
+//     (1,0,0) or (0,1,0) or (0,0,1) depending on which vertex in the face
+//     matches `p_M`.
 // @return
 //     true if found.
-bool findFaceVertex(Vector3<double> p_M, const SurfaceMesh<double>& surface_M,
+bool FindFaceVertex(Vector3<double> p_M, const SurfaceMesh<double>& surface_M,
                     SurfaceFaceIndex* face,
                     SurfaceMesh<double>::Barycentric* vertex) {
   for (SurfaceFaceIndex f(0); f < surface_M.num_faces(); ++f) {
@@ -739,9 +786,13 @@ bool findFaceVertex(Vector3<double> p_M, const SurfaceMesh<double>& surface_M,
   return false;
 }
 
-// TODO(DamrongGuoy): More comprehensive tests.
 // Tests ComputeContactSurfaceSoftRigid as we move the rigid geometry around.
 // Use double as the representative type argument.
+// TODO(DamrongGuoy): More comprehensive tests. We should have a better way
+//  to check the SurfaceMesh in the output ContactSurface. We should apply
+//  general rotations in the pose of N w.r.t. M, instead of 90 degrees turn.
+//  We should check the scalar field and the vector field in a more
+//  comprehensive way.
 GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
   auto id_M = GeometryId::get_new_id();
   auto id_N = GeometryId::get_new_id();
@@ -762,7 +813,7 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
     EXPECT_EQ(4, contact_MN_M->mesh().num_faces());
     SurfaceFaceIndex face;
     SurfaceMesh<double>::Barycentric apex;
-    bool found = findFaceVertex(Vector3<double>::Zero(), contact_MN_M->mesh(),
+    bool found = FindFaceVertex(Vector3<double>::Zero(), contact_MN_M->mesh(),
                                 &face, &apex);
     ASSERT_TRUE(found);
     const auto e_MN = contact_MN_M->EvaluateE_MN(face, apex);
@@ -803,7 +854,7 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
     EXPECT_EQ(4, contact_MN_M->mesh().num_faces());
     SurfaceFaceIndex face;
     SurfaceMesh<double>::Barycentric center;
-    bool found = findFaceVertex(-Vector3<double>::UnitY() / 2.,
+    bool found = FindFaceVertex(-Vector3<double>::UnitY() / 2.,
                                 contact_MN_M->mesh(), &face, &center);
     ASSERT_TRUE(found);
     const auto e_MN = contact_MN_M->EvaluateE_MN(face, center);

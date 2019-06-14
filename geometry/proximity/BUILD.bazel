@@ -229,6 +229,7 @@ drake_cc_googletest(
     name = "volume_mesh_test",
     deps = [
         "//geometry/proximity:volume_mesh",
+        "//math:geometric_transform",
     ],
 )
 

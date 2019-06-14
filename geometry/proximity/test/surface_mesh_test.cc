@@ -68,7 +68,7 @@ GTEST_TEST(SurfaceMeshTest, TestSurfaceMeshDouble) {
 
 // Smoke tests using `AutoDiffXd` as the underlying scalar type. The purpose
 // of this test is simply to check that it compiles. There is no test of
-// diffrentiation.
+// differentiation.
 GTEST_TEST(SurfaceMeshTest, TestSurfaceMeshAutoDiffXd) {
   auto surface_mesh = TestSurfaceMesh<AutoDiffXd>();
 }
