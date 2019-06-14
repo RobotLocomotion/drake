@@ -216,18 +216,63 @@ class SurfaceMesh {
     const Vector3<T>& v0 = vertex(element(f).vertex(0)).r_MV();
     const Vector3<T>& v1 = vertex(element(f).vertex(1)).r_MV();
     const Vector3<T>& v2 = vertex(element(f).vertex(2)).r_MV();
-
+    // Translate v0 to the origin. Cartesian coordinates change but
+    // barycentric coordinates stay the same.
+    //     v0 becomes u0 = v0 - v0 = 0 vector
+    //     v1 becomes u1 = v1 - v0.
+    //     v2 becomes u2 = v2 - v0.
+    //     p_M becomes q = p_M - v0.
+    //
+    // Consider q* on the spanning plane through the origin, u1, u2:
+    //     q* = b₀*u0 + b₁*u1 + b₂*u2
+    //        = 0 + b₁*u1 + b₂*u2
+    //        = b₁*u1 + b₂*u2
+    //
+    // Solve for b₁, b₂ that give q* "closest" to q in the least square sense:
+    //
+    //      ||   | ||b1|   |||
+    //      |u1  u2||b2| ~ |q|
+    //      ||   | |       |||
+    //
+    // return Barycentric (1-b₁-b₂, b₁, b₂)
+    //
     Eigen::Matrix<T, 3, 2> A;
     A.col(0) << v1 - v0;
     A.col(1) << v2 - v0;
-    Vector3<T> b = p_M - v0;
-    Vector2<T> b1b2 = A.colPivHouseholderQr().solve(b);
+    Vector2<T> solution = A.colPivHouseholderQr().solve(p_M - v0);
 
-    const T& b1 = b1b2(0);
-    const T& b2 = b1b2(1);
+    const T& b1 = solution(0);
+    const T& b2 = solution(1);
     const T b0 = T(1.) - b1 - b2;
     return Barycentric(b0, b1, b2);
   }
+  // TODO(DamrongGuoy): Investigate alternative calculation suggested by
+  //  Alejandro Castro:
+  // 1. Translate v0 to the origin.
+  //        v0 becomes u0 = v0 - v0 = 0 vector
+  //        v1 becomes u1 = v1 - v0.
+  //        v2 becomes u2 = v2 - v0.
+  //        p_M becomes x₀ₚ = p_M - v0.
+  // 2. Calculate the unit normal vector n to the spanning plane S through
+  //    the origin, u1, and u2.
+  //        n = u1.cross(u2).normalize().
+  // 3. Project x₀ₚ to xₛ on the plane S,
+  //        xₛ = x₀ₚ - (x₀ₚ.dot(n))*n
+  //
+  // Now we have xₛ = b₀*u0 + b₁*u1 + b₂*u2 by barycentric coordinates.
+  //                =   0   + b₁*u1 + b₂*u2
+  //
+  // 5. Solve for b₁ and b₂.
+  //        (b₁*u1 + b₂*u2).dot(u1) = xₛ.dot(u1)
+  //        (b₁*u1 + b₂*u2).dot(u2) = xₛ.dot(u2)
+  //    Therefore, the 2x2 system:
+  //        |u1.dot(u1)  u2.dot(u1)||b1| = |xₛ.dot(u1)|
+  //        |u1.dot(u2)  u2.dot(u2)||b2|   |xₛ.dot(u2)|
+  //
+  // 6. return Barycentric(1-b₁-b₂, b₁, b₂)
+  //
+  // Optimization: save n, and the matrix |uᵢ.dot(uⱼ)| for later.
+  //
 
  private:
   // Initialization.

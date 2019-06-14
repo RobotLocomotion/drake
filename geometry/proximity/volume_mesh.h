@@ -183,6 +183,19 @@ class VolumeMesh {
           however, some bᵢ will be negative.
    */
   Barycentric CalcBarycentric(const Cartesian& p_M, ElementIndex e) const {
+    // We have two conditions to satisfy.
+    // 1. b₀ + b₁ + b₂ + b₃ = 1
+    // 2. b₀*v0 + b₁*v1 + b₂*v2 + b₃*v3 = p_M.
+    // Together they create this 4x4 linear system:
+    //
+    //      | 1  1  1  1 ||b₀|   | 1 |
+    //      | |  |  |  | ||b₁| = | | |
+    //      | v0 v1 v2 v3||b₂|   |p_M|
+    //      | |  |  |  | ||b₃|   | | |
+    //
+    // q = p_M - v0 = b₀*u0 + b₁*u1 + b₂*u2 + b₃*u3
+    //              = 0 + b₁*u1 + b₂*u2 + b₃*u3
+
     Matrix4<T> A;
     for (int i = 0; i < 4; ++i) {
       A.col(i) << T(1.0), vertex(element(e).vertex(i)).r_MV();
@@ -190,8 +203,9 @@ class VolumeMesh {
     Vector4<T> b;
     b << T(1.0), p_M;
     Barycentric barycentric = A.partialPivLu().solve(b);
-    // TODO(DamrongGuoy): Save the partialPivLu() of all elements instead of
-    //  calculating it on the fly.
+    // TODO(DamrongGuoy): Save the inverse of the matrix instead of
+    //  calculating it on the fly. We can reduce to 3x3 system too.  See
+    //  issue #11653.
     return barycentric;
   }
 

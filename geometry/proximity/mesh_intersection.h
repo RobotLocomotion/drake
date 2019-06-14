@@ -432,6 +432,14 @@ void IntersectSoftVolumeRigidSurface(
     std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
     std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>>* grad_h_MN_M) {
   auto normal_field_N = ComputeNormalField(rigid_N);
+  // TODO(DamrongGuoy): Store normal_field_N in SurfaceMesh to avoid
+  //  recomputing every time. Right now it is not straightforward to store
+  //  SurfaceMeshField inside SurfaceMesh due to imperfect library packaging.
+  //  SurfaceMeshField already depended on SurfaceMesh, and storing
+  //  SurfaceMeshField inside SurfaceMesh will make SurfaceMesh depend on
+  //  SurfaceMeshField. This circular dependency might need both SurfaceMesh
+  //  and SurfaceMeshField to be in the same header file, or we might need to
+  //  break the .h into .h and -inl.h like in multibody_tree{-inl}.h.
   std::vector<SurfaceFace> faces_MN;
   std::vector<SurfaceVertex<T>> vertices_MN_M;
   std::vector<T> e_values;
