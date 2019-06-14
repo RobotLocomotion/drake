@@ -637,7 +637,7 @@ SdpaFreeFormat::SdpaFreeFormat(const MathematicalProgram& prog) {
   if (!AreRequiredAttributesSupported(prog.required_capabilities(),
                                       solver_capabilities)) {
     throw std::invalid_argument(
-        "GenerateSDPA(): the program cannot be formulated as an SDP "
+        "SdpaFreeFormat(): the program cannot be formulated as an SDP "
         "in the standard form.\n");
   }
   prog_var_in_sdpa_.reserve(prog.num_vars());

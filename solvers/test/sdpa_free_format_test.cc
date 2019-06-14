@@ -751,12 +751,13 @@ GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA1) {
   infile.close();
 }
 
-GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA2) {
+GTEST_TEST(SdpaFreeFormatTest, GenerateInvalidSDPA) {
   // Test the program that cannot be formulated in SDPA format.
   MathematicalProgram prog1;
   prog1.NewBinaryVariables<2>();
   EXPECT_THROW(GenerateSDPA(prog1, "tmp"), std::invalid_argument);
 
+  // program with unbounded variables.
   MathematicalProgram prog2;
   auto x = prog2.NewContinuousVariables<2>();
   prog2.AddLinearEqualityConstraint(x(0) + x(1), 1);
