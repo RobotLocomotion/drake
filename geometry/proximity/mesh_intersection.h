@@ -354,6 +354,7 @@ void AddFacesVertices(
 
   for (int i = 0; i < polygon_size; ++i) {
     SurfaceVertexIndex current(i + num_original_vertices);
+    // The mod "% polygon_size" is only needed in the last iteration.
     SurfaceVertexIndex next((i + 1) % polygon_size + num_original_vertices);
     faces->emplace_back(current, next, centroid_index);
   }
