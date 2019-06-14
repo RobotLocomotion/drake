@@ -154,9 +154,9 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       }
 
       bool make_as_convex = false;
-      if (mesh_element->HasElement("drake::convex")) {
+      if (mesh_element->HasElement("drake:convex")) {
         make_as_convex =
-            GetChildElementValueOrThrow<bool>(*mesh_element, "drake::convex");
+            GetChildElementValueOrThrow<bool>(*mesh_element, "drake:convex");
       }
       if (make_as_convex) {
         return make_unique<geometry::Convex>(file_name, scale);

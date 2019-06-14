@@ -199,11 +199,11 @@ std::unique_ptr<geometry::Shape> ParseMesh(
 
   std::string convex;
   bool make_as_convex = false;
-  if (ParseStringAttribute(shape_node, "drake::convex", &convex)) {
+  if (ParseStringAttribute(shape_node, "drake:convex", &convex)) {
     if (convex != "false" && convex != "False" && convex != "true" &&
         convex != "True") {
       throw std::runtime_error(
-          "Valid options for drake::convex are '[Ff]alse' and '[Tt]rue': you "
+          "Valid options for drake:convex are '[Ff]alse' and '[Tt]rue': you "
           "provided " +
           convex);
     }

@@ -230,8 +230,8 @@ GTEST_TEST(SceneGraphParserDetail, MakeMeshFromSdfGeometry) {
 GTEST_TEST(SceneGraphParserDetail, MakeConvexFromSdfGeometry) {
   const std::string absolute_file_path = "path/to/some/mesh.obj";
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
-      "<mesh drake='drake.mit.edu'>"
-      "  <drake::convex>True</drake::convex>"
+      "<mesh xmlns:drake='drake.mit.edu'>"
+      "  <drake:convex>True</drake:convex>"
       "  <uri>" + absolute_file_path + "</uri>"
       "  <scale> 3 3 3 </scale>"
       "</mesh>");

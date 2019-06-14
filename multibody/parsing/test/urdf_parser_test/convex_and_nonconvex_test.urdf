@@ -8,17 +8,17 @@ This URDF contains a single link with, in order:
 3) A mesh that is not declared to be either, which should parse into
   geometry::Mesh.
 -->
-<robot name="non_conflicting_materials_2" drake="drake.mit.edu">
+<robot name="non_conflicting_materials_2" xmlns:drake="drake.mit.edu">
   <link name="base_link">
    <collision>
       <geometry>
-        <mesh drake::convex="True" filename="../tri_cube.obj" scale="1.1 1.1 1.1"/>
+        <mesh drake:convex="True" filename="../tri_cube.obj" scale="1.1 1.1 1.1"/>
       </geometry>
     </collision>
 
    <collision>
       <geometry>
-        <mesh drake::convex="False" filename="../tri_cube.obj" scale="1.1 1.1 1.1"/>
+        <mesh drake:convex="False" filename="../tri_cube.obj" scale="1.1 1.1 1.1"/>
       </geometry>
     </collision>
 
