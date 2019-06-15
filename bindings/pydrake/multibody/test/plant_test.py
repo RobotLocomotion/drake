@@ -104,6 +104,10 @@ class TestPlant(unittest.TestCase):
         spatial_inertia = SpatialInertia()
         body = plant.AddRigidBody(name="new_body",
                                   M_BBo_B=spatial_inertia)
+        new_model_instance = plant.AddModelInstance("new_model_instance")
+        body = plant.AddRigidBody(name="new_body_2",
+                                  M_BBo_B=spatial_inertia,
+                                  model_instance=new_model_instance)
         box = Box(width=0.5, depth=1.0, height=2.0)
         body_X_BG = RigidTransform()
         body_friction = CoulombFriction(static_friction=0.6,
