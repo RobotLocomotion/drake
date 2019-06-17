@@ -1,15 +1,19 @@
 #include "drake/solvers/sdpa_free_format.h"
 
+#include <fstream>
 #include <limits>
 #include <utility>
 
 #include <gtest/gtest.h>
+#include <spruce.hh>
 
+#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/test/csdp_test_examples.h"
 
 namespace drake {
 namespace solvers {
+const double kInf = std::numeric_limits<double>::infinity();
 namespace internal {
 
 void CompareProgVarInSdpa(const SdpaFreeFormat& sdpa_free_format,
@@ -694,5 +698,71 @@ TEST_F(TrivialSOCP3, TestSdpaFreeFormatConstructor) {
 }
 
 }  // namespace internal
+GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA1) {
+  // This is the sample program from http://plato.asu.edu/ftp/sdpa_format.txt
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto X = prog.NewSymmetricContinuousVariables<2>();
+  prog.AddBoundingBoxConstraint(0, kInf, x);
+  prog.AddPositiveSemidefiniteConstraint(X);
+  prog.AddLinearCost(-x(0) - 2 * x(1) - 3 * X(0, 0) - 4 * X(1, 1));
+  prog.AddLinearEqualityConstraint(x(0) + x(1), 10);
+  prog.AddLinearEqualityConstraint(
+      x(1) + 5 * X(0, 0) + 4 * X(0, 1) + 6 * X(1, 1), 20);
+
+  const std::string file_name = temp_directory() + "/sdpa";
+  std::cout << file_name << "\n";
+  EXPECT_TRUE(GenerateSDPA(prog, file_name));
+  EXPECT_TRUE(spruce::path(file_name + ".dat-s").exists());
+
+  std::ifstream infile(file_name + ".dat-s");
+  ASSERT_TRUE(infile.is_open());
+  std::string line;
+  std::getline(infile, line);
+  EXPECT_EQ(line, "2");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "2");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "2 -2 ");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "10 20");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "0 1 1 1 3");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "0 1 2 2 4");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "0 2 1 1 1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "0 2 2 2 2");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1 2 1 1 1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1 2 2 2 1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "2 1 1 1 5");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "2 1 1 2 2");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "2 1 2 2 6");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "2 2 2 2 1");
+  EXPECT_FALSE(std::getline(infile, line));
+
+  infile.close();
+}
+
+GTEST_TEST(SdpaFreeFormatTest, GenerateInvalidSDPA) {
+  // Test the program that cannot be formulated in SDPA format.
+  MathematicalProgram prog1;
+  prog1.NewBinaryVariables<2>();
+  EXPECT_THROW(GenerateSDPA(prog1, "tmp"), std::invalid_argument);
+
+  // program with unbounded variables.
+  MathematicalProgram prog2;
+  auto x = prog2.NewContinuousVariables<2>();
+  prog2.AddLinearEqualityConstraint(x(0) + x(1), 1);
+  EXPECT_FALSE(GenerateSDPA(prog2, "tmp"));
+}
+
 }  // namespace solvers
 }  // namespace drake
