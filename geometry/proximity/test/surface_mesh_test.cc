@@ -7,18 +7,27 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
 namespace {
 
+using Eigen::AngleAxisd;
+using Eigen::Vector3d;
+using math::RigidTransformd;
+
+// TODO(SeanCurtis-TRI): Due to parallel PRs, there are now *two* two-triangle
+//  toy meshes for examining mesh functions. This should be distilled back down
+//  to just one.
+
 // Used for testing instantiation of SurfaceMesh and inspecting its components.
 template <typename T>
 std::unique_ptr<SurfaceMesh<T>> GenerateTwoTriangleMesh() {
-  // The surface mesh will consist of four vertices and two faces and will
-  // be constructed such that area and geometric centroid are straightforward
-  // to check.
+  // The surface mesh will consist of four vertices and two co-planar faces and
+  // will be constructed such that area and geometric centroid are
+  // straightforward to check.
 
   // Create the vertices.
   std::vector<SurfaceVertex<T>> vertices;
@@ -70,11 +79,11 @@ std::unique_ptr<SurfaceMesh<double>> GenerateZeroAreaMesh() {
 // Test instantiation of SurfaceMesh of a surface M and inspecting its
 // components. By default, the vertex positions are expressed in M's frame.
 // The optional parameter X_WM will change the vertex positions to W's frame.
-template <typename T>
+template<typename T>
 std::unique_ptr<SurfaceMesh<T>> TestSurfaceMesh(
     const math::RigidTransform<T> X_WM = math::RigidTransform<T>::Identity()) {
-  // A simple surface mesh comprises of two triangles with vertices on the
-  // coordinate axes and the origin like this:
+  // A simple surface mesh comprises of two co-planar triangles with vertices on
+  // the coordinate axes and the origin like this:
   //   y
   //   |
   //   |
@@ -167,7 +176,7 @@ GTEST_TEST(SurfaceMeshTest, TestSurfaceMeshAutoDiffXd) {
   auto surface_mesh = TestSurfaceMesh<AutoDiffXd>();
 }
 
-template <typename T>
+template<typename T>
 void TestCalcBarycentric() {
   const math::RigidTransform<T> X_WM(
       math::RollPitchYaw<T>(M_PI / 6.0, 2.0 * M_PI / 3.0, 7.0 * M_PI / 4.0),
@@ -232,6 +241,76 @@ GTEST_TEST(SurfaceMeshTest, TestCalcBarycentricDouble) {
 
 GTEST_TEST(SurfaceMeshTest, TestCalcBarycentricAutoDiffXd) {
   TestCalcBarycentric<AutoDiffXd>();
+}
+
+GTEST_TEST(SurfaceMeshTest, ReverseFaceWinding) {
+  auto ref_mesh = TestSurfaceMesh<double>();
+  auto test_mesh = std::make_unique<SurfaceMesh<double>>(*ref_mesh);
+
+  // Simply confirms the two faces have the same indices in the same order.
+  auto faces_match = [](const SurfaceFace& ref_face,
+                            const SurfaceFace& test_face) {
+    for (int i = 0; i < 3; ++i) {
+      if (ref_face.vertex(i) != test_face.vertex(i)) return false;
+    }
+    return true;
+  };
+
+  for (int value : {0, 1}) {
+    SurfaceFaceIndex i(value);
+    EXPECT_TRUE(faces_match(ref_mesh->element(i), test_mesh->element(i)));
+  }
+
+  test_mesh->ReverseFaceWinding();
+
+  // Confirms that the two faces have the same indices but in reverse order.
+  auto winding_reversed = [](const SurfaceFace& ref_face,
+                             const SurfaceFace& test_face) {
+    int test_first = test_face.vertex(0);
+    int ref_first = -1;
+    for (int i = 0; i < 3; ++i) {
+      if (test_first == ref_face.vertex(i)) {
+        ref_first = i;
+        break;
+      }
+    }
+    if (ref_first == -1)  return false;
+
+    // We now have a common vertex: v at indices r and t, for the ref face and
+    // test face, respectively. Confirm that ref[r + 1] == test[t - 1]
+    // and ref[r + 2] == test[t - 2]. We know that t = 0 by construction so
+    // we know at compile time that t - 1 = 2 and t - 2 = 1 (via circular
+    // indexing). So, we only need to find r as (r + i) % 3.
+    bool winding_is_valid = true;
+    winding_is_valid &= ref_face.vertex((ref_first + 1) % 3) ==
+        test_face.vertex(2);
+    winding_is_valid &= ref_face.vertex((ref_first + 2) % 3) ==
+        test_face.vertex(1);
+    return winding_is_valid;
+  };
+
+  for (int value : {0, 1}) {
+    SurfaceFaceIndex i(value);
+    EXPECT_TRUE(winding_reversed(ref_mesh->element(i), test_mesh->element(i)));
+  }
+}
+
+GTEST_TEST(SurfaceMeshTest, TransformVertices) {
+  auto ref_mesh = TestSurfaceMesh<double>();
+  auto test_mesh = std::make_unique<SurfaceMesh<double>>(*ref_mesh);
+
+  // Assume that the copy constructor works properly.
+
+  RigidTransformd X_FM{AngleAxisd{M_PI / 4, Vector3d(1, 2, 3).normalized()},
+                       Vector3d{1, 2, 3}};
+  test_mesh->TransformVertices(X_FM);
+
+  for (SurfaceVertexIndex v(0); v < test_mesh->num_vertices(); ++v) {
+    const Vector3d& p_FV_test = test_mesh->vertex(v).r_MV();
+    const Vector3d& p_MV_ref = ref_mesh->vertex(v).r_MV();
+    const Vector3d p_FV_ref = X_FM * p_MV_ref;
+    EXPECT_TRUE(CompareMatrices(p_FV_test, p_FV_ref));
+  }
 }
 
 }  // namespace
