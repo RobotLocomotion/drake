@@ -5,6 +5,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/multibody/inverse_kinematics/distance_constraint_utilities.h"
 #include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
 
 namespace drake {
@@ -20,13 +21,7 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
                           Vector1d(0), Vector1d(0)),
       plant_{RefFromPtrOrThrow(plant)},
       plant_context_{plant_context} {
-  if (!plant_.geometry_source_is_registered()) {
-    throw std::invalid_argument(
-        "MinimumDistanceConstraint: MultibodyPlant has not registered its "
-        "geometry source with SceneGraph yet. Please refer to "
-        "AddMultibodyPlantSceneGraph on how to connect MultibodyPlant to "
-        "SceneGraph.");
-  }
+  CheckPlantIsConnectedToSceneGraph(plant_, *plant_context_);
   if (!std::isfinite(influence_distance_offset)) {
     throw std::invalid_argument(
         "MinimumDistanceConstraint: influence_distance_offset must be finite.");
@@ -37,14 +32,6 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
         "positive.");
   }
   const auto& query_port = plant_.get_geometry_query_input_port();
-  if (!query_port.HasValue(*plant_context_)) {
-    throw std::invalid_argument(
-        "MinimumDistanceConstraint: Cannot get a valid geometry::QueryObject. "
-        "Either the plant geometry_query_input_port() is not properly "
-        "connected to the SceneGraph's output port, or the plant_context_ is "
-        "incorrect. Please refer to AddMultibodyPlantSceneGraph on connecting "
-        "MultibodyPlant to SceneGraph.");
-  }
   // Maximum number of SignedDistancePairs returned by calls to
   // ComputeSignedDistancePairwiseClosestPoints().
   const int num_collision_candidates =
@@ -67,41 +54,6 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
     minimum_value_constraint_->set_penalty_function(penalty_function);
   }
 }
-
-namespace {
-void Distance(const MultibodyPlant<double>&, const systems::Context<double>&,
-              const Frame<double>&, const Frame<double>&,
-              const Eigen::Vector3d&, double distance, const Eigen::Vector3d&,
-              const Eigen::Ref<const AutoDiffVecXd>&, double* distance_double) {
-  *distance_double = distance;
-}
-
-void Distance(const MultibodyPlant<double>& plant,
-              const systems::Context<double>& context,
-              const Frame<double>& frameA, const Frame<double>& frameB,
-              const Eigen::Vector3d& p_ACa, double distance,
-              const Eigen::Vector3d& nhat_BA_W,
-              const Eigen::Ref<const AutoDiffVecXd>& q,
-              AutoDiffXd* distance_autodiff) {
-  // The distance is d = sign * |p_CbCa_B|, where the
-  // closest points are Ca on object A, and Cb on object B.
-  // So the gradient ∂d/∂q = p_CbCa_W * ∂p_BCa_B/∂q / d (Note that
-  // ∂p_BCa_B/∂q = ∂p_CbCa_B/∂q).
-  //
-  // Since dividing by d is undefined when d = 0, and p_CbCa_W / d =
-  // nhat_BA_W whenever d ≠ 0, we use ∂d/∂q = nhat_BA_W′ * ∂p_BCa_B/∂q. This
-  // allows us to compute a gradient at d = 0 in certain cases (See
-  // geometry::SignedDistancePair for details).
-  Eigen::Matrix<double, 3, Eigen::Dynamic> Jq_v_BCa_W(3, plant.num_positions());
-  plant.CalcJacobianTranslationalVelocity(context, JacobianWrtVariable::kQDot,
-                                          frameA, p_ACa, frameB,
-                                          plant.world_frame(), &Jq_v_BCa_W);
-  const Eigen::RowVectorXd ddistance_dq = nhat_BA_W.transpose() * Jq_v_BCa_W;
-  distance_autodiff->value() = distance;
-  distance_autodiff->derivatives() =
-      ddistance_dq * math::autoDiffToGradientMatrix(q);
-}
-}  // namespace
 
 template <typename T>
 VectorX<T> MinimumDistanceConstraint::Distances(
@@ -137,11 +89,12 @@ VectorX<T> MinimumDistanceConstraint::Distances(
           plant_.GetBodyFromFrameId(frame_A_id)->body_frame();
       const Frame<double>& frameB =
           plant_.GetBodyFromFrameId(frame_B_id)->body_frame();
-      Distance(plant_, *plant_context_, frameA, frameB,
-               inspector.X_FG(signed_distance_pair.id_A) *
-                   signed_distance_pair.p_ACa,
-               signed_distance_pair.distance, signed_distance_pair.nhat_BA_W, q,
-               &distances(distance_count++));
+      internal::CalcDistanceDerivatives(
+          plant_, *plant_context_, frameA, frameB,
+          inspector.X_FG(signed_distance_pair.id_A) *
+              signed_distance_pair.p_ACa,
+          signed_distance_pair.distance, signed_distance_pair.nhat_BA_W, q,
+          &distances(distance_count++));
     }
   }
   distances.resize(distance_count);
