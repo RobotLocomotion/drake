@@ -990,6 +990,7 @@ drake_cc_library(
         "//conditions:default": [
             "csdp_solver.cc",
             "csdp_solver_common.cc",
+            "csdp_solver_internal.cc",
         ],
         "//tools:no_csdp": [
             "no_csdp.cc",
@@ -1721,6 +1722,7 @@ add_lint_tests(cpplint_extra_srcs = [
     "csdp_solver.cc",
     "csdp_solver_common.cc",
     "csdp_solver_internal.h",
+    "csdp_solver_internal.cc",
     "fast_qp.h",
     "gurobi_qp.h",
     "gurobi_solver.cc",

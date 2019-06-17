@@ -40,7 +40,7 @@ void GenerateCsdpProblemDataWithoutFreeVariables(
  * We are given C, Ai, rhs in the Eigen sparse matrix format, convert these data
  * to CSDP format.
  */
-void ConvertSparseMatrixFormattToCsdpProblemData(
+void ConvertSparseMatrixFormatToCsdpProblemData(
     const std::vector<BlockInX>& X_blocks, const Eigen::SparseMatrix<double>& C,
     const std::vector<Eigen::SparseMatrix<double>> A,
     const Eigen::VectorXd& rhs, csdp::blockmatrix* C_csdp, double** rhs_csdp,
