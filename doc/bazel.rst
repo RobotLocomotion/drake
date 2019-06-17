@@ -100,7 +100,7 @@ Cheat sheet for operating on specific portions of the project::
   bazel build -c dbg common:polynomial_test && \
     gdb bazel-bin/common/polynomial_test               # Run one test under gdb.
 
-  bazel test --config lint //...                       # Only run style checks; don't build or test anything else.
+  bazel test --config=lint //...                       # Only run style checks; don't build or test anything else.
 
 - The "``:``" syntax separates target names from the directory path of the
   ``BUILD`` file they appear in.  In this case, for example,
@@ -109,6 +109,10 @@ Cheat sheet for operating on specific portions of the project::
   entire command.  For example, running a test in ``dbg`` mode means that its
   prerequisite libraries are also compiled and linked in ``dbg`` mode.
 - For the definitions of the "``--config``" options see ``drake/tools/bazel.rc``.
+- Some commands (like those run via ``--config=lint``) may point you to tools
+  to fix up your files (e.g. ``bazel-bin/tools/lint/clang-format-includes``).
+  If that binary does not exist, be sure to build it (e.g.
+  ``bazel build //tools/lint:clang-format-includes``)
 
 Running with Flags
 ------------------
