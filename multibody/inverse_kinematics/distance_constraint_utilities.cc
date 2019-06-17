@@ -57,7 +57,7 @@ void CheckPlantIsConnectedToSceneGraph(
     const systems::Context<double>& plant_context) {
   if (!plant.geometry_source_is_registered()) {
     throw std::invalid_argument(
-        "CheckPlantIsConnectToSceneGraph: MultibodyPlant has not registered "
+        "Kinematic constraint: MultibodyPlant has not registered "
         "with a SceneGraph yet. Please refer to "
         "AddMultibodyPlantSceneGraph on how to connect MultibodyPlant to "
         "SceneGraph.");
@@ -65,7 +65,7 @@ void CheckPlantIsConnectedToSceneGraph(
   const auto& query_port = plant.get_geometry_query_input_port();
   if (!query_port.HasValue(plant_context)) {
     throw std::invalid_argument(
-        "CheckPlantIsConnectedToSceneGraph(): Cannot get a valid "
+        "Kinematic constraint: Cannot get a valid "
         "geometry::QueryObject. Either the plant's geometry query input port "
         "is not properly connected to the SceneGraph's geometry query output "
         "port, or the plant_context_ is incorrect. Please refer to "
