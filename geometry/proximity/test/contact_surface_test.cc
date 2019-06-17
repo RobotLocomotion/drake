@@ -7,13 +7,19 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/mesh_field.h"
 #include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
 namespace {
+
+using Eigen::AngleAxisd;
+using math::RigidTransformd;
+using Eigen::Vector3d;
 
 // TODO(DamrongGuoy): Consider splitting the test into several smaller tests
 //  including a separated mesh test.
@@ -163,7 +169,55 @@ GTEST_TEST(ContactSurfaceTest, TestCopy) {
   EXPECT_EQ(original.EvaluateGrad_h_MN_M(f, b), copy.EvaluateGrad_h_MN_M(f, b));
 }
 
+GTEST_TEST(ContactSurfaceTest, SwapMAndN) {
+  const ContactSurface<double> original = TestContactSurface<double>();
+  ContactSurface<double> dut(original);
+
+  // We assume the copy works.
+
+  const RigidTransformd X_NM{
+      AngleAxisd{M_PI / 4, Vector3d{1, 2, 3}.normalized()}, Vector3d{1, 2, 3}};
+  dut.SwapMAndN(X_NM);
+
+  // We rely on the underlying meshes and mesh fields to *do* the right thing.
+  // These tests are just to confirm that those things changed that we expected
+  // to change (and not, where appropriate).
+
+  // Ids have swapped.
+  EXPECT_EQ(dut.id_M(), original.id_N());
+  EXPECT_EQ(dut.id_N(), original.id_M());
+
+  // Determines if two faces have the same indices in the same order.
+  auto are_identical = [](const SurfaceFace& f1, const SurfaceFace& f2) {
+    return f1.vertex(0) == f2.vertex(0) && f1.vertex(1) == f2.vertex(1) &&
+           f1.vertex(2) == f2.vertex(2);
+  };
+  // Face winding is changed.
+  for (SurfaceFaceIndex f(0); f < original.mesh().num_faces(); ++f) {
+    EXPECT_FALSE(
+        are_identical(dut.mesh().element(f), original.mesh().element(f)));
+  }
+
+  // Vertices have been transformed.
+  for (SurfaceVertexIndex v(0); v < original.mesh().num_vertices(); ++v) {
+    const Vector3d r_NV = X_NM * original.mesh().vertex(v).r_MV();
+    EXPECT_TRUE(CompareMatrices(dut.mesh().vertex(v).r_MV(), r_NV));
+  }
+
+  // Test the mesh fields by evaluating each field, once per face for an
+  // arbitrary point Q on the interior of the triangle. We expect:
+  //    e_MN function hasn't changed.
+  //    grad_H function has been re-expressed and mirrored.
+  const SurfaceMesh<double>::Barycentric b_Q{0.25, 0.25, 0.5};
+  for (SurfaceFaceIndex f(0); f < original.mesh().num_faces(); ++f) {
+    EXPECT_EQ(dut.EvaluateE_MN(f, b_Q), original.EvaluateE_MN(f, b_Q));
+    const Vector3d expected_norm =
+        -(X_NM.rotation() * original.EvaluateGrad_h_MN_M(f, b_Q));
+    EXPECT_TRUE(CompareMatrices(dut.EvaluateGrad_h_MN_M(f, b_Q), expected_norm,
+                                std::numeric_limits<double>::epsilon()));
+  }
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake
-
