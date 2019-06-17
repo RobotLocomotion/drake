@@ -401,7 +401,7 @@ class RigidTransform {
     const Eigen::Matrix<typename Derived::Scalar, 3, Derived::ColsAtCompileTime>
         p_BoQ_A = R_AB.matrix() * p_BoQ_B;
 
-    // Reserve space (on stack on heap) to store the result.
+    // Reserve space (on stack or heap) to store the result.
     const int number_of_position_vectors = p_BoQ_B.cols();
     Eigen::Matrix<typename Derived::Scalar, 3, Derived::ColsAtCompileTime>
         p_AoQ_A(3, number_of_position_vectors);
