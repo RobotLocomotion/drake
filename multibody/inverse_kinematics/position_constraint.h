@@ -45,6 +45,19 @@ class PositionConstraint : public solvers::Constraint {
                      const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
                      systems::Context<double>* context);
 
+  /**
+   * Overloaded constructor. Same as the constructor with the double version
+   * (using MultibodyPlant<double> and Context<double>. Except the gradient of
+   * the constraint is computed from autodiff.
+   */
+  PositionConstraint(const MultibodyPlant<AutoDiffXd>* const plant,
+                     const Frame<AutoDiffXd>& frameA,
+                     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
+                     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
+                     const Frame<AutoDiffXd>& frameB,
+                     const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+                     systems::Context<AutoDiffXd>* context);
+
   ~PositionConstraint() override {}
 
  private:
@@ -60,11 +73,16 @@ class PositionConstraint : public solvers::Constraint {
         "PositionConstraint::DoEval() does not work for symbolic variables.");
   }
 
-  const MultibodyPlant<double>& plant_;
+  const MultibodyPlant<double>* const plant_double_;
   const FrameIndex frameA_index_;
   const FrameIndex frameB_index_;
   const Eigen::Vector3d p_BQ_;
-  systems::Context<double>* const context_;
+  systems::Context<double>* const context_double_;
+
+  const MultibodyPlant<AutoDiffXd>* const plant_autodiff_;
+  systems::Context<AutoDiffXd>* const context_autodiff_;
+
+  const bool use_autodiff_;
 };
 }  // namespace multibody
 }  // namespace drake

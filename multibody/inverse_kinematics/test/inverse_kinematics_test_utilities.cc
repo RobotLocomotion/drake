@@ -31,8 +31,6 @@ IiwaKinematicConstraintTest::IiwaKinematicConstraintTest() {
                      plant_->GetFrameByName("iiwa_link_0"));
   plant_->Finalize();
 
-  drake::log()->info("plant_->num_positions = {}", plant_->num_positions());
-
   diagram_ = builder.Build();
   diagram_context_ = diagram_->CreateDefaultContext();
   plant_context_ =
