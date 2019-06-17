@@ -217,13 +217,17 @@ else()
   string(REPLACE "." ";" WITH_PYTHON_VERSION_LIST "${WITH_PYTHON_VERSION}")
   list(GET WITH_PYTHON_VERSION_LIST 0 WITH_PYTHON_VERSION_MAJOR)
 
-  if(APPLE AND WITH_PYTHON_VERSION_MAJOR EQUAL 2)
-    # Ensure that the python2 executable or link is used in preference to the
-    # python and python2.7 executables or links, which correspond to the
-    # system version of Python installed on macOS. There is no system python3
-    # as of macOS Mojave 10.14.
-    find_program(PYTHON_EXECUTABLE NAMES python2)
+  if(APPLE)
+    set(FIND_PYTHON_EXECUTABLE_PATHS /usr/local/bin)
+  else()
+    set(FIND_PYTHON_EXECUTABLE_PATHS /usr/bin)
   endif()
+
+  find_program(PYTHON_EXECUTABLE
+    NAMES python${WITH_PYTHON_VERSION_MAJOR}
+    PATHS "${FIND_PYTHON_EXECUTABLE_PATHS}"
+    NO_DEFAULT_PATH
+  )
 
   find_package(PythonInterp ${WITH_PYTHON_VERSION} EXACT MODULE REQUIRED)
 endif()
@@ -237,6 +241,8 @@ if(NOT PYTHON_VERSION_MAJOR_MINOR IN_LIST SUPPORTED_PYTHON_VERSIONS)
     "Python ${PYTHON_VERSION_MAJOR_MINOR} is NOT supported. Python code in project drake_cxx_python may fail at runtime."
   )
 endif()
+
+set(BAZEL_PYTHON_VERSION PY${PYTHON_VERSION_MAJOR})
 
 if(CMAKE_COLOR_MAKEFILE)
   set(BAZEL_COLOR yes)

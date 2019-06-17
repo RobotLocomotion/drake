@@ -12,7 +12,8 @@
 
 build --action_env=DRAKE_PYTHON_BIN_PATH=@PYTHON_EXECUTABLE@
 build --color=@BAZEL_COLOR@
-build --python_path=@PYTHON_EXECUTABLE@
+build --host_force_python=@BAZEL_PYTHON_VERSION@
+build --python_version=@BAZEL_PYTHON_VERSION@
 build --subcommands=@BAZEL_SUBCOMMANDS@
 build --symlink_prefix=/
 

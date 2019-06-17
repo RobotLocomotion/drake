@@ -5,6 +5,11 @@
 
 workspace(name = "drake")
 
+register_toolchains(
+    "//tools/py_toolchain:linux_python_toolchain",
+    "//tools/py_toolchain:macos_python_toolchain",
+)
+
 load("//tools/workspace:default.bzl", "add_default_repositories")
 
 add_default_repositories()

@@ -1,5 +1,6 @@
 # Import some helper configurations.
 import %workspace%/tools/cc_toolchain/bazel.rc
+import %workspace%/tools/py_toolchain/bazel.rc
 import %workspace%/tools/dynamic_analysis/bazel.rc
 import %workspace%/tools/lint/bazel.rc
 

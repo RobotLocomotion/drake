@@ -1,0 +1,4 @@
+build --host_force_python=PY2
+build --python_version=PY2
+build:python3 --host_force_python=PY3
+build:python3 --python_version=PY3
