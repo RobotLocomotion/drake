@@ -32,7 +32,10 @@ class MeshField {
       const typename MeshType::ElementIndex e,
       const typename MeshType::Barycentric& b) const = 0;
 
-  /** Evaluates the field value at a point Q on an element.
+  /** Evaluates the field value at a point Q on an element. For the case where
+   the element has lower dimension than Q, Q's dimension is reduced via
+   projection into Q' and the field is evaluated at Q'. (Note: if the dimension
+   of the element is greater than or equal to that of Q, then `Q = Q'`.)
    @param e The index of the element.
    @param p_MQ The position of point Q expressed in frame M, in Cartesian
                coordinates. M is the frame of the mesh.
@@ -51,7 +54,7 @@ class MeshField {
     DRAKE_DEMAND(new_mesh != nullptr);
     DRAKE_DEMAND(new_mesh->num_vertices() == mesh_->num_vertices());
     // TODO(DamrongGuoy): Check that the `new_mesh` is equivalent to the
-    //  current `mesh_`.
+    //  current `mesh_M_`.
     std::unique_ptr<MeshField> new_mesh_field = CloneWithNullMesh();
     new_mesh_field->mesh_ = new_mesh;
     return new_mesh_field;
