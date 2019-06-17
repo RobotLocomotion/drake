@@ -329,8 +329,7 @@ class TestPlant(unittest.TestCase):
         CoulombFriction(static_friction=0.7, dynamic_friction=0.6)
 
     def test_multibody_gravity_default(self):
-        # SceneGraph does not support `Expression` type.
-        self.check_nonsymbolic_types(self.check_multibody_gravity_default)
+        self.check_all_types(self.check_multibody_gravity_default)
 
     def check_multibody_gravity_default(self, T):
         MultibodyPlant = MultibodyPlant_[T]
