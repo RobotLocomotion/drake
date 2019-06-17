@@ -278,7 +278,6 @@ drake_cc_library(
     srcs = ["solver_type_converter.cc"],
     hdrs = ["solver_type_converter.h"],
     deps = [
-        ":csdp_solver",
         ":dreal_solver",
         ":equality_constrained_qp_solver",
         ":gurobi_solver",
@@ -1175,7 +1174,9 @@ drake_cc_googletest(
     deps = [
         ":csdp_test_examples",
         ":sdpa_free_format",
+        "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
+        "@spruce",
     ],
 )
 
