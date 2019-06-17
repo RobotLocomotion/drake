@@ -1181,6 +1181,27 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "csdp_solver_internal_test",
+    deps = [
+        ":csdp_solver",
+        ":csdp_test_examples",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "csdp_solver_test",
+    deps = [
+        ":csdp_solver",
+        ":csdp_test_examples",
+        ":linear_program_examples",
+        ":second_order_cone_program_examples",
+        ":semidefinite_program_examples",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "decision_variable_test",
     deps = [
         ":mathematical_program_private",
