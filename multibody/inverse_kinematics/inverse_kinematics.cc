@@ -3,6 +3,7 @@
 #include <limits>
 
 #include "drake/multibody/inverse_kinematics/angle_between_vectors_constraint.h"
+#include "drake/multibody/inverse_kinematics/distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/gaze_target_constraint.h"
 #include "drake/multibody/inverse_kinematics/minimum_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
@@ -87,6 +88,15 @@ InverseKinematics::AddMinimumDistanceConstraint(
       std::shared_ptr<MinimumDistanceConstraint>(new MinimumDistanceConstraint(
           &plant_, minimum_distance, get_mutable_context(), {},
           influence_distance_offset));
+  return prog_->AddConstraint(constraint, q_);
+}
+
+solvers::Binding<solvers::Constraint> InverseKinematics::AddDistanceConstraint(
+    const SortedPair<geometry::GeometryId>& geometry_pair,
+    double distance_lower, double distance_upper) {
+  auto constraint = std::make_shared<DistanceConstraint>(
+      &plant_, geometry_pair, get_mutable_context(), distance_lower,
+      distance_upper);
   return prog_->AddConstraint(constraint, q_);
 }
 }  // namespace multibody

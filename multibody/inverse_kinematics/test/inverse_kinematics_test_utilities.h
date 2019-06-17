@@ -115,6 +115,9 @@ class TwoFreeSpheresTest : public ::testing::Test {
   FrameIndex sphere1_index_;
   FrameIndex sphere2_index_;
 
+  geometry::GeometryId sphere1_geometry_id_;
+  geometry::GeometryId sphere2_geometry_id_;
+
   // The pose of sphere 1's collision geometry in sphere 1's body frame.
   math::RigidTransformd X_B1S1_;
   // The pose of sphere 2's collision geometry in sphere 2's body frame.

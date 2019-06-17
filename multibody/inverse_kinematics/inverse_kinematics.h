@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/sorted_pair.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
@@ -206,6 +207,10 @@ class InverseKinematics {
   solvers::Binding<solvers::Constraint> AddMinimumDistanceConstraint(
       double minimum_distance, double influence_distance_offset = 1);
 
+  solvers::Binding<solvers::Constraint> AddDistanceConstraint(
+      const SortedPair<geometry::GeometryId>& geometry_pair,
+      double distance_lower, double distance_upper);
+
   /** Getter for q. q is the decision variable for the generalized positions of
    * the robot. */
   const solvers::VectorXDecisionVariable& q() const { return q_; }
@@ -216,9 +221,13 @@ class InverseKinematics {
   /** Getter for the optimization program constructed by InverseKinematics. */
   solvers::MathematicalProgram* get_mutable_prog() const { return prog_.get(); }
 
- private:
+  /** Getter for the plant context. */
+  const systems::Context<double>& context() const { return *context_; }
+
+  /** Getter for the mutable plant context. */
   systems::Context<double>* get_mutable_context() { return context_; }
 
+ private:
   std::unique_ptr<solvers::MathematicalProgram> prog_;
   const MultibodyPlant<double>& plant_;
   std::unique_ptr<systems::Context<double>> const owned_context_;

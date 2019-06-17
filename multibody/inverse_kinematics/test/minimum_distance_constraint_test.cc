@@ -164,8 +164,8 @@ GTEST_TEST(MinimumDistanceConstraintTest,
   DRAKE_EXPECT_THROWS_MESSAGE(
       MinimumDistanceConstraint(plant.get(), 0.1, context.get()),
       std::invalid_argument,
-      "MinimumDistanceConstraint: MultibodyPlant has not registered its "
-      "geometry source with SceneGraph yet. Please refer to "
+      "Kinematic constraint: MultibodyPlant has not registered "
+      "with a SceneGraph yet. Please refer to "
       "AddMultibodyPlantSceneGraph on how to connect MultibodyPlant to "
       "SceneGraph.");
 }
