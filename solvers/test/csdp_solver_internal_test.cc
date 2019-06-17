@@ -293,6 +293,119 @@ TEST_F(TrivialSDP1, Solve) {
                   Z);
 }
 
+void CheckRemoveFreeVariableByNullspaceApproach(
+    const SdpaFreeFormat& dut, const Eigen::SparseMatrix<double>& C_hat,
+    const std::vector<Eigen::SparseMatrix<double>>& A_hat,
+    const Eigen::VectorXd& rhs_hat, const Eigen::VectorXd& y_hat,
+    const Eigen::SparseQR<Eigen::SparseMatrix<double>,
+                          Eigen::COLAMDOrdering<int>>& QR_B,
+    double tol) {
+  EXPECT_EQ(y_hat.rows(), static_cast<int>(dut.A().size()));
+  // Check Bᵀ * ŷ = d
+  EXPECT_TRUE(CompareMatrices(Eigen::VectorXd(dut.B().transpose() * y_hat),
+                              Eigen::VectorXd(dut.d()), tol));
+  // Check Ĉ = C -∑ᵢ ŷᵢAᵢ
+  Eigen::SparseMatrix<double> C_hat_expected = dut.C();
+  for (int i = 0; i < y_hat.rows(); ++i) {
+    C_hat_expected -= y_hat(i) * dut.A()[i];
+  }
+  EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(C_hat),
+                              Eigen::MatrixXd(C_hat_expected), tol));
+  // N is the null space of Bᵀ. Namely if we do a QR decomposition on B, then
+  // N = Q₂.
+  Eigen::SparseMatrix<double> Q;
+  Q = QR_B.matrixQ();
+  const Eigen::SparseMatrix<double> N =
+      Q.rightCols(dut.B().rows() - QR_B.rank());
+  EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(dut.B().transpose() * N),
+                              Eigen::MatrixXd::Zero(dut.B().cols(), N.cols()),
+                              tol));
+  // Check rhs_hat = Nᵀ * rhs
+  EXPECT_TRUE(
+      CompareMatrices(rhs_hat, Eigen::VectorXd(N.transpose() * dut.g()), tol));
+  // Check Âᵢ = ∑ⱼNⱼᵢAⱼ
+  EXPECT_EQ(static_cast<int>(A_hat.size()), N.cols());
+  for (int i = 0; i < N.cols(); ++i) {
+    Eigen::SparseMatrix<double> A_hat_expected(dut.num_X_rows(),
+                                               dut.num_X_rows());
+    A_hat_expected.setZero();
+    for (int j = 0; j < static_cast<int>(dut.A().size()); ++j) {
+      A_hat_expected += N.coeff(j, i) * dut.A()[j];
+    }
+    EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(A_hat[i]),
+                                Eigen::MatrixXd(A_hat_expected), tol));
+  }
+}
+
+void TestRemoveFreeVariableByNullspaceApproach(
+    const MathematicalProgram& prog) {
+  const SdpaFreeFormat dut(prog);
+  Eigen::SparseMatrix<double> C_hat;
+  std::vector<Eigen::SparseMatrix<double>> A_hat;
+  Eigen::VectorXd rhs_hat, y_hat;
+  Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>> QR_B;
+  RemoveFreeVariableByNullspaceApproach(dut, &C_hat, &A_hat, &rhs_hat, &y_hat,
+                                        &QR_B);
+  CheckRemoveFreeVariableByNullspaceApproach(dut, C_hat, A_hat, rhs_hat, y_hat,
+                                             QR_B, 1E-10);
+}
+
+TEST_F(LinearProgramBoundingBox1, RemoveFreeVariableByNullspaceApproach) {
+  const SdpaFreeFormat dut(*prog_);
+  Eigen::SparseMatrix<double> C_hat;
+  std::vector<Eigen::SparseMatrix<double>> A_hat;
+  Eigen::VectorXd rhs_hat, y_hat;
+  Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>> QR_B;
+  RemoveFreeVariableByNullspaceApproach(dut, &C_hat, &A_hat, &rhs_hat, &y_hat,
+                                        &QR_B);
+  CheckRemoveFreeVariableByNullspaceApproach(dut, C_hat, A_hat, rhs_hat, y_hat,
+                                             QR_B, 1E-10);
+
+  // Now try to call CSDP to solve this problem.
+  csdp::blockmatrix C_csdp;
+  double* rhs_csdp;
+  csdp::constraintmatrix* constraints_csdp;
+  ConvertSparseMatrixFormatToCsdpProblemData(dut.X_blocks(), C_hat, A_hat,
+                                              rhs_hat, &C_csdp, &rhs_csdp,
+                                              &constraints_csdp);
+  struct csdp::blockmatrix X_csdp, Z;
+  double* y;
+  csdp::initsoln(dut.num_X_rows(), rhs_hat.rows(), C_csdp, rhs_csdp,
+                 constraints_csdp, &X_csdp, &y, &Z);
+  double pobj, dobj;
+  const int ret = csdp::easy_sdp(
+      dut.num_X_rows(), rhs_hat.rows(), C_csdp, rhs_csdp, constraints_csdp,
+      -dut.constant_min_cost_term() + dut.g().dot(y_hat), &X_csdp, &y, &Z,
+      &pobj, &dobj);
+  EXPECT_EQ(ret, 0 /* 0 is for success */);
+  Eigen::SparseMatrix<double> X_hat(dut.num_X_rows(), dut.num_X_rows());
+  ConvertCsdpBlockMatrixtoEigen(X_csdp, &X_hat);
+  // Now compute the free variable values.
+  Eigen::VectorXd AX(dut.A().size());
+  for (int i = 0; i < AX.rows(); ++i) {
+    AX(i) = (dut.A()[i].cwiseProduct(X_hat)).sum();
+  }
+  Eigen::VectorXd s_val;
+  s_val = QR_B.solve(dut.g() - AX);
+  const double tol = 1E-6;
+  EXPECT_NEAR(pobj, 43, tol);
+  EXPECT_EQ(X_csdp.nblocks, 1);
+  CompareBlockrec(X_csdp.blocks[1], csdp::DIAG, 7, {0, 5, 0, 0, 0, 7, 0}, tol);
+  csdp::free_prob(dut.num_X_rows(), rhs_hat.rows(), C_csdp, rhs_csdp,
+                  constraints_csdp, X_csdp, y, Z);
+}
+
+TEST_F(CsdpLinearProgram2, RemoveFreeVariableByNullspaceApproach) {
+  TestRemoveFreeVariableByNullspaceApproach(*prog_);
+}
+
+TEST_F(TrivialSDP2, RemoveFreeVariableByNullspaceApproach) {
+  TestRemoveFreeVariableByNullspaceApproach(*prog_);
+}
+
+TEST_F(TrivialSOCP1, RemoveFreeVariableByNullspaceApproach) {
+  TestRemoveFreeVariableByNullspaceApproach(*prog_);
+}
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake
