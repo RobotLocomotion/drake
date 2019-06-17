@@ -9,9 +9,9 @@ namespace geometry {
 
 /** %VolumeMeshField is an abstract class that represents a field variable
  defined on a volume mesh.
- @tparam FieldValue  a valid Eigen scalar or vector of valid Eigen scalars for
+ @tparam FieldValue  A valid Eigen scalar or vector of valid Eigen scalars for
                      the field value.
- @tparam T  a valid Eigen scalar for coordinates.
+ @tparam T  A valid Eigen scalar for coordinates.
  */
 template <typename FieldValue, typename T>
 using VolumeMeshField = MeshField<FieldValue, VolumeMesh<T>>;

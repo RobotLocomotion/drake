@@ -142,6 +142,7 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
 
   const std::string& name() const { return name_; }
   const std::vector<FieldValue>& values() const { return values_; }
+  std::vector<FieldValue>& mutable_values() { return values_; }
 
  private:
   // Clones MeshFieldLinear data under the assumption that the mesh

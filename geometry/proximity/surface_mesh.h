@@ -8,6 +8,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/type_safe_index.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -42,6 +43,12 @@ class SurfaceVertex {
    vertex, expressed in M's frame.
    */
   const Vector3<T>& r_MV() const { return r_MV_; }
+
+  /** Transforms this vertex position from its initial frame M to a new frame N.
+   */
+  void Transform(const math::RigidTransform<T>& X_NM) {
+    r_MV_ = X_NM * r_MV_;
+  }
 
  private:
   // Displacement vector from the origin of M's frame to this vertex,
@@ -80,6 +87,13 @@ class SurfaceFace {
    */
   SurfaceVertexIndex vertex(int i) const {
     return vertex_.at(i);
+  }
+
+  /** Reverses the order of the vertex indices -- this essentially flips the
+   face normal based on the right-handed normal rule.
+   */
+  void ReverseWinding() {
+    std::swap(vertex_[0], vertex_[1]);
   }
 
  private:
@@ -131,6 +145,8 @@ class SurfaceMesh {
     outside the triangle. Technically we could calculate one of the bᵢ from
     the others; however, there is no standard way to omit one of the
     coordinates.
+
+    The barycentric coordinates for a point Q are notated a b_Q.
    */
   using Barycentric = Vector<T, kDim + 1>;
 
@@ -174,6 +190,24 @@ class SurfaceMesh {
     CalcAreasAndCentroid();
   }
 
+  /** Transforms the vertices of this mesh from its initial frame M to the new
+   frame N.
+   */
+  void TransformVertices(const math::RigidTransform<T>& X_NM) {
+    for (auto& v : vertices_) {
+      v.Transform(X_NM);
+    }
+  }
+
+  /** Reverses the ordering of all the faces' indices -- see
+    SurfaceFace::ReverseWinding().
+   */
+  void ReverseFaceWinding() {
+    for (auto& f : faces_) {
+      f.ReverseWinding();
+    }
+  }
+
   /** Returns the number of triangular elements in the mesh.
    */
   int num_faces() const { return faces_.size(); }
@@ -203,7 +237,7 @@ class SurfaceMesh {
    `element_index` to its position vector p_MQ.
    */
   Vector3<T> CalcCartesianFromBarycentric(
-      ElementIndex element_index, const Vector3<T>& Q_barycentric) const {
+      ElementIndex element_index, const Vector3<T>& b_Q) const {
     const SurfaceVertex<T> va = vertex(element(element_index).vertex(0));
     const SurfaceVertex<T> vb = vertex(element(element_index).vertex(1));
     const SurfaceVertex<T> vc = vertex(element(element_index).vertex(2));
@@ -215,46 +249,48 @@ class SurfaceMesh {
     T_CB.col(1) = vb.r_MV();
     T_CB.col(2) = vc.r_MV();
 
-    return T_CB * Q_barycentric;
+    return T_CB * b_Q;
   }
 
   /** Calculate barycentric coordinates with respect to the triangular face `f`
-   of the projection of a position `p_M` to the plane of the face. This
-   operation is expensive compared with going from barycentric to Cartesian.
-   @param p_M  A position expressed in the frame M of the mesh.
-   @param f    The index of a triangular face.
-   @note  If the projection of p_M is outside the triangle, the
-          barycentric coordinates (b₀, b₁, b₂) still satisfy b₀ + b₁ + b₂ = 1;
-          however, some bᵢ will be negative.
+   of the point Q'. Q' is the projection of the provided point Q on the plane
+   of triangle `f`. If Q lies on the plane, Q = Q'. This operation is expensive
+   compared with going from barycentric to Cartesian.
+   @param p_MQ   The position of point Q measured and expressed in the mesh's
+                 frame M.
+   @param f      The index of a triangular face.
+   @retval b_Q'  The barycentric coordinates of Q' (projection of Q onto `f`'s
+                 plane) relative to triangle f.
+   @note  If Q' is outside the triangle, the barycentric coordinates
+          (b₀, b₁, b₂) still satisfy b₀ + b₁ + b₂ = 1; however, some bᵢ will be
+          negative.
    */
-  Barycentric CalcBarycentric(const Cartesian& p_M, SurfaceFaceIndex f) const {
+  Barycentric CalcBarycentric(const Cartesian& p_MQ, SurfaceFaceIndex f) const {
     const Vector3<T>& v0 = vertex(element(f).vertex(0)).r_MV();
     const Vector3<T>& v1 = vertex(element(f).vertex(1)).r_MV();
     const Vector3<T>& v2 = vertex(element(f).vertex(2)).r_MV();
-    // Translate v0 to the origin. Cartesian coordinates change but
+    // Translate the triangle to the origin to simplify calculations;
     // barycentric coordinates stay the same.
-    //     v0 becomes u0 = v0 - v0 = 0 vector
-    //     v1 becomes u1 = v1 - v0.
-    //     v2 becomes u2 = v2 - v0.
-    //     p_M becomes q = p_M - v0.
+    //     u⃗i = v⃗i - v0
+    //     p_MR = p_MQ - v0
     //
-    // Consider q* on the spanning plane through the origin, u1, u2:
-    //     q* = b₀*u0 + b₁*u1 + b₂*u2
+    // Consider R' on the spanning plane through the origin, u1, u2:
+    //     R' = b₀*u0 + b₁*u1 + b₂*u2
     //        = 0 + b₁*u1 + b₂*u2
     //        = b₁*u1 + b₂*u2
     //
-    // Solve for b₁, b₂ that give q* "closest" to q in the least square sense:
+    // Solve for b₁, b₂ that give R' "closest" to R in the least square sense:
     //
-    //      ||   | ||b1|   |||
-    //      |u1  u2||b2| ~ |q|
-    //      ||   | |       |||
+    //      |      ||b1|
+    //      |u⃗1  u⃗2||b2| ~ R'
+    //      |      |
     //
     // return Barycentric (1-b₁-b₂, b₁, b₂)
     //
     Eigen::Matrix<T, 3, 2> A;
     A.col(0) << v1 - v0;
     A.col(1) << v2 - v0;
-    Vector2<T> solution = A.colPivHouseholderQr().solve(p_M - v0);
+    Vector2<T> solution = A.colPivHouseholderQr().solve(p_MQ - v0);
 
     const T& b1 = solution(0);
     const T& b2 = solution(1);
@@ -263,30 +299,26 @@ class SurfaceMesh {
   }
   // TODO(DamrongGuoy): Investigate alternative calculation suggested by
   //  Alejandro Castro:
-  // 1. Translate v0 to the origin.
-  //        v0 becomes u0 = v0 - v0 = 0 vector
-  //        v1 becomes u1 = v1 - v0.
-  //        v2 becomes u2 = v2 - v0.
-  //        p_M becomes x₀ₚ = p_M - v0.
+  // 1. Starting with the same ui and p_MR.
   // 2. Calculate the unit normal vector n to the spanning plane S through
   //    the origin, u1, and u2.
   //        n = u1.cross(u2).normalize().
-  // 3. Project x₀ₚ to xₛ on the plane S,
-  //        xₛ = x₀ₚ - (x₀ₚ.dot(n))*n
+  // 3. Project p_MR to p_MR' on the plane S,
+  //        p_MR' = p_MR - (p_MR.dot(n))*n
   //
-  // Now we have xₛ = b₀*u0 + b₁*u1 + b₂*u2 by barycentric coordinates.
-  //                =   0   + b₁*u1 + b₂*u2
+  // Now we have p_MR' = b₀*u⃗0 + b₁*u⃗1 + b₂*u⃗2 by barycentric coordinates.
+  //                   =   0   + b₁*u1 + b₂*u2
   //
   // 5. Solve for b₁ and b₂.
-  //        (b₁*u1 + b₂*u2).dot(u1) = xₛ.dot(u1)
-  //        (b₁*u1 + b₂*u2).dot(u2) = xₛ.dot(u2)
+  //        (b₁*u1 + b₂*u2).dot(u1) = p_MR'.dot(u1)
+  //        (b₁*u1 + b₂*u2).dot(u2) = p_MR'.dot(u2)
   //    Therefore, the 2x2 system:
-  //        |u1.dot(u1)  u2.dot(u1)||b1| = |xₛ.dot(u1)|
-  //        |u1.dot(u2)  u2.dot(u2)||b2|   |xₛ.dot(u2)|
+  //        |u1.dot(u1)  u2.dot(u1)||b1| = |p_MR'.dot(u1)|
+  //        |u1.dot(u2)  u2.dot(u2)||b2|   |p_MR'.dot(u2)|
   //
   // 6. return Barycentric(1-b₁-b₂, b₁, b₂)
   //
-  // Optimization: save n, and the matrix |uᵢ.dot(uⱼ)| for later.
+  // Optimization: save n, and the inverse of matrix |uᵢ.dot(uⱼ)| for later.
   //
 
  private:

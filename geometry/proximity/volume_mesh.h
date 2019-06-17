@@ -183,15 +183,16 @@ class VolumeMesh {
    */
   int num_vertices() const { return vertices_.size(); }
 
-  /** Calculate barycentric coordinates of a position `p_M` with respect to the
-   element `e`.
-   @param p_M  A position expressed in the frame M of the mesh.
-   @param e    The index of a tetrahedral element.
-   @note  If p_M is outside the tetrahedral element, the barycentric
+  /** Calculate barycentric coordinates with respect to the tetrahedron `e`
+   of the point Q'. This operation is expensive compared with going from
+   barycentric to Cartesian.
+   @param p_MQ  A position expressed in the frame M of the mesh.
+   @param e     The index of a tetrahedral element.
+   @note  If p_MQ is outside the tetrahedral element, the barycentric
           coordinates (b₀, b₁, b₂, b₃) still satisfy b₀ + b₁ + b₂ + b₃ = 1;
           however, some bᵢ will be negative.
    */
-  Barycentric CalcBarycentric(const Cartesian& p_M, ElementIndex e) const {
+  Barycentric CalcBarycentric(const Cartesian& p_MQ, ElementIndex e) const {
     // We have two conditions to satisfy.
     // 1. b₀ + b₁ + b₂ + b₃ = 1
     // 2. b₀*v0 + b₁*v1 + b₂*v2 + b₃*v3 = p_M.
@@ -210,12 +211,12 @@ class VolumeMesh {
       A.col(i) << T(1.0), vertex(element(e).vertex(i)).r_MV();
     }
     Vector4<T> b;
-    b << T(1.0), p_M;
-    Barycentric barycentric = A.partialPivLu().solve(b);
+    b << T(1.0), p_MQ;
+    Barycentric b_Q = A.partialPivLu().solve(b);
     // TODO(DamrongGuoy): Save the inverse of the matrix instead of
     //  calculating it on the fly. We can reduce to 3x3 system too.  See
     //  issue #11653.
-    return barycentric;
+    return b_Q;
   }
 
  private:
