@@ -75,17 +75,6 @@ GTEST_TEST(VolumeMeshTest, TestVolumeMeshAutoDiffXd) {
 }
 
 template <typename T>
-void TestCalcBarycentric();
-
-GTEST_TEST(VolumeMeshTest, TestCalcBarycentricDouble) {
-  TestCalcBarycentric<double>();
-}
-
-GTEST_TEST(VolumeMeshTest, TestCalcBarycentricAutoffXd) {
-  TestCalcBarycentric<AutoDiffXd>();
-}
-
-template <typename T>
 void TestCalcBarycentric() {
   const math::RigidTransform<T> X_WM(
       math::RollPitchYaw<T>(M_PI / 6.0, 2.0 * M_PI / 3.0, 7.0 * M_PI / 4.0),
@@ -132,6 +121,16 @@ void TestCalcBarycentric() {
   }
 }
 
+GTEST_TEST(VolumeMeshTest, TestCalcBarycentricDouble) {
+  TestCalcBarycentric<double>();
+}
+
+GTEST_TEST(VolumeMeshTest, TestCalcBarycentricAutoffXd) {
+  TestCalcBarycentric<AutoDiffXd>();
+}
+
+// TODO(SeanCurtis-TRI): Remove the forward declaration in place of simply
+//  defining the method here.
 // Tests instantiation of VolumeMeshField and evaluating a scalar field value.
 template <typename T>
 std::unique_ptr<VolumeMeshFieldLinear<T, T>> TestVolumeMeshField();
