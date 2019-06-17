@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 // This code is pulled from upstream Protobuf:
-// https://github.com/google/protobuf/blob/4fc9304/src/google/protobuf/generated_message_util.h#L80
+// https://github.com/google/protobuf/blob/d5f0dac/src/google/protobuf/generated_message_util.h#L78
 // This is necessary because Protobuf 2.6 (which Drake is currently using from
 // the system) won't test cleanly under UBSan.  The way this works is that
 // the drake_cc_proto_library() skylark function splices this header file into
@@ -57,7 +57,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // For Clang we use __builtin_offsetof() and suppress the warning,
 // to avoid Control Flow Integrity and UBSan vptr sanitizers from
 // crashing while trying to validate the invalid reinterpet_casts.
-#define GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TYPE, FIELD)  \
+#define GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TYPE, FIELD) \
   _Pragma("clang diagnostic push")                                   \
   _Pragma("clang diagnostic ignored \"-Winvalid-offsetof\"")         \
   __builtin_offsetof(TYPE, FIELD)                                    \
@@ -67,11 +67,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // just use zero, GCC complains about dereferencing a NULL pointer.  We
 // choose 16 rather than some other number just in case the compiler would
 // be confused by an unaligned pointer.
-#define GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TYPE, FIELD)  \
-  static_cast< ::google::protobuf::uint32>(                           \
-      reinterpret_cast<const char*>(                                 \
-          &reinterpret_cast<const TYPE*>(16)->FIELD) -               \
-      reinterpret_cast<const char*>(16))
+#define GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TYPE, FIELD)      \
+  static_cast< ::google::protobuf::uint32>(reinterpret_cast<const char*>(                   \
+                             &reinterpret_cast<const TYPE*>(16)->FIELD) - \
+                         reinterpret_cast<const char*>(16))
 #endif
 
 #endif

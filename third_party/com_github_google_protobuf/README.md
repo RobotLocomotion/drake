@@ -1,6 +1,6 @@
 This directory holds vendored and modified copies of Bazel support code from
 https://github.com/google/protobuf, originally downloaded from commit
-4fc93044a5de018527ec027dbee6a882012e0d9d.  The following lists which files are
+d5f0dac497f833d06f92d246431f4f2f42509e04.  The following lists which files are
 copyrighted by whom:
 
 LICENSE - Google, protobuf project
