@@ -1244,13 +1244,16 @@ class MultibodyTree {
   /// See MultibodyPlant method.
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_FP_list,
-      EigenPtr<MatrixX<T>> p_WP_list, EigenPtr<MatrixX<T>> Jv_WFp) const;
+      const Frame<T>& frame_F,
+      const Eigen::Ref<const MatrixX<T>>& p_FP_list,
+      EigenPtr<MatrixX<T>> p_WP_list,
+      EigenPtr<MatrixX<T>> Jv_WFp) const;
 
   /// See MultibodyPlant method.
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_WP_list,
+      const Frame<T>& frame_F,
+      const Eigen::Ref<const MatrixX<T>>& p_WP_list,
       EigenPtr<MatrixX<T>> Jv_WFp) const;
 
   /// See MultibodyPlant method.
@@ -1299,12 +1302,50 @@ class MultibodyTree {
                                    const Frame<T>& frame_E,
                                    EigenPtr<MatrixX<T>> Js_w_AB_E) const;
 
-  /// See MultibodyPlant method.
+  /// Return a point's translational velocity Jacobian in a frame A with respect
+  /// to "speeds" 𝑠, where 𝑠 is either q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of
+  /// j generalized positions) or v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+  /// For each point Bi of (fixed to) a frame B whose translational velocity
+  /// `v_ABi` in a frame A is characterized by speeds 𝑠, Bi's velocity Jacobian
+  /// in A with respect to 𝑠 is defined as
+  /// <pre>
+  ///      Js_v_ABi = [ ∂(v_ABi)/∂𝑠₁,  ...  ∂(v_ABi)/∂𝑠ₙ ]    (n is j or k)
+  /// </pre>
+  /// Point Bi's velocity in A is linear in 𝑠₁, ... 𝑠ₙ and can be written
+  /// `v_ABi = Js_v_ABi ⋅ 𝑠`  where 𝑠 is [𝑠₁ ... 𝑠ₙ]ᵀ.
+  ///
+  /// @param[in] context The state of the multibody system.
+  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `Js_v_ABi` is
+  /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
+  /// positions) or with respect to 𝑠 = v (generalized velocities).
+  /// @param[in] frame_B The frame on which point Bi is fixed (e.g., welded).
+  /// @param[in] frame_F The frame associated with `p_FoBi_F` (next argument),
+  /// which is usually (but is not necessarily) frame_B or the world frame W.
+  /// @param[in] p_FoBi_F A position vector or list of position vectors from
+  /// Fo (frame_F's origin) to points Bi (regarded as fixed to B), where each
+  /// position vector is expressed in frame F.
+  /// @param[in] frame_A The frame that measures `v_ABi` (Bi's velocity in A).
+  /// @param[in] frame_E The frame in which `v_ABi` is expressed on input and
+  /// the frame in which the Jacobian `Js_v_ABi` is expressed on output.
+  /// @param[out] Js_v_ABi_E Point Bi's velocity Jacobian in frame A with
+  /// respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
+  /// `Js_v_ABi_E` is a `3 x n` matrix, where n is the number of elements in 𝑠.
+  /// The Jacobian is a function of only generalized positions q (which are
+  /// pulled from the context).
+  /// @throws std::exception if `Js_v_ABi_E` is nullptr or not of size `3 x n`.
+  ///
+  /// Note: This method is more general than the corresponding MultibodyPlant
+  /// method as it also contains the argument `frame_F`.
   void CalcJacobianTranslationalVelocity(
       const systems::Context<T>& context,
-      JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
-      const Eigen::Ref<const Vector3<T>>& p_BoBp_B, const Frame<T>& frame_A,
-      const Frame<T>& frame_E, EigenPtr<MatrixX<T>> Js_v_ABp_E) const;
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_B,
+      const Frame<T>& frame_F,
+      const Eigen::Ref<const Matrix3X<T>>& p_FoBi_F,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E,
+      EigenPtr<MatrixX<T>> Js_v_ABi_E) const;
 
   /// @}
   // End of multibody Jacobian methods section.
@@ -2234,7 +2275,31 @@ class MultibodyTree {
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_WQ_list,
       JacobianWrtVariable with_respect_to,
-      EigenPtr<MatrixX<T>> Jr_WFq, EigenPtr<MatrixX<T>> Jt_WFq) const;
+      EigenPtr<MatrixX<T>> Jr_WFq,
+      EigenPtr<MatrixX<T>> Jt_WFq) const;
+
+  // Helper method for CalcJacobianTranslationalVelocity().
+  // @param[in] context The state of the multibody system.
+  // @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  // JacobianWrtVariable::kV, indicating whether the Jacobian `Js_v_ABi` is
+  // partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
+  // positions) or with respect to 𝑠 = v (generalized velocities).
+  // @param[in] frame_B The frame on which point Bi is fixed (e.g., welded).
+  // @param[in] p_WoBi_W A position vector or list of position vectors from
+  // Wo (world frame W's origin) to points Bi (regarded as fixed to B),
+  // where each position vector is expressed in frame W.
+  // @param[in] frame_A The frame that measures `v_ABi` (Bi's velocity in A).
+  // @param[out] Js_v_ABi_W Point Bi's velocity Jacobian in frame A with
+  // respect to speeds 𝑠 (which is either q̇ or v), expressed in world frame W.
+  // `Js_v_ABi_E` is a `3 x n` matrix, where n is the number of elements in 𝑠.
+  // @throws std::exception if `Js_v_ABi_W` is nullptr or not of size `3 x n`.
+  void CalcJacobianTranslationalVelocityHelper(
+      const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_B,
+      const Eigen::Ref<const Matrix3X<T>>& p_WoBi_W,
+      const Frame<T>& frame_A,
+      EigenPtr<MatrixX<T>> Js_v_ABi_E) const;
 
   // Helper method to apply forces due to damping at the joints.
   // MultibodyTree treats damping forces separately from other ForceElement
