@@ -32,11 +32,12 @@ void Distance(const MultibodyPlant<double>& plant,
   // We also know that for whatever q, the normal n̂_BA_W is always a unit length
   // vector, hence n̂_BA_Wᵀ * n̂_BA_W = 1 for whatever q. This invariance means
   // that the gradient of (n̂_BA_Wᵀ * n̂_BA_W) w.r.t q is zero, namely
-  // ∂ 1/∂ q = ∂ (n̂_BA_Wᵀ * n̂_BA_W) /∂ q = 2 * n̂_BA_Wᵀ * (∂n̂_BA_W /∂q)
-  // Since ∂ 1/∂ q = 0, we conclude that n̂_BA_Wᵀ * (∂n̂_BA_W /∂q) = 0, hence the
+  // ∂1 / ∂q = ∂(n̂_BA_Wᵀ * n̂_BA_W) / ∂q = 2 * n̂_BA_Wᵀ * (∂n̂_BA_W / ∂q)
+  // Since ∂1 / ∂q = 0, we conclude that n̂_BA_Wᵀ * (∂n̂_BA_W / ∂q) = 0, hence the
   // first term in the right-hand side equation (3) disappears. Thus
-  // ∂d / ∂q = n̂_BA_Wᵀ * (∂p_CbCa_W /∂q)                                  (4)
-  // Note that ∂p_CbCa_W /∂q is computed as a Jacobian matrix in MultibodyPlant.
+  // ∂d / ∂q = n̂_BA_Wᵀ * (∂p_CbCa_W / ∂q)                                  (4)
+  // Note that ∂p_CbCa_W / ∂q is computed as a Jacobian matrix in
+  // MultibodyPlant.
   Eigen::Matrix<double, 3, Eigen::Dynamic> Jq_v_BCa_W(3, plant.num_positions());
   plant.CalcJacobianTranslationalVelocity(context, JacobianWrtVariable::kQDot,
                                           frameA, p_ACa, frameB,
