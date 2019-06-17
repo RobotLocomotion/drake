@@ -2,19 +2,8 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl_bind.h"
 
-#ifndef __clang__
-// N.B. Without this, GCC 7.4.0 on Ubuntu complains about
-// `AutoDiffScalar(const AutoDiffScalar& other)` having uninitialized values.
-// TODO(eric.cousineau):  #11566 Figure out why?
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#pragma GCC diagnostic pop
-#else
-#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#endif  // __clang__
-
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
@@ -45,6 +34,12 @@ using math::RigidTransform;
 using systems::Context;
 using systems::State;
 
+namespace {
+constexpr char doc_iso3_deprecation[] = R"""(
+This API using Isometry3 is / will be deprecated soon with the resolution of
+#9865. We only offer it for backwards compatibility. DO NOT USE!.
+)""";
+
 template <typename T>
 int GetVariableSize(const multibody::MultibodyPlant<T>& plant,
     multibody::JacobianWrtVariable wrt) {
@@ -64,29 +59,17 @@ VectorX<T> CopyIfNotPodType(Eigen::VectorBlock<const VectorX<T>> x) {
   return x;
 }
 
-// TODO(eric-cousineau): Fix when `ndarray[object]` can reference existing
-// C arrays (#8116).
-Eigen::VectorBlock<const VectorX<double>> CopyIfNotPodType(
-    Eigen::VectorBlock<const VectorX<double>> x) {
-  return x;
-}
-
-namespace {
-constexpr char doc_iso3_deprecation[] = R"""(
-This API using Isometry3 is / will be deprecated soon with the resolution of
-#9865. We only offer it for backwards compatibility. DO NOT USE!.
-)""";
-
+/**
+ * Adds Python bindings for its contents to module `m`, for template `T`.
+ * @param m Module.
+ * @param T Template.
+ */
 template <typename T>
-void DoDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module m, T) {
   py::tuple param = GetPyParam<T>();
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody;
-  py::module::import("pydrake.geometry");
-  py::module::import("pydrake.multibody.math");
-  py::module::import("pydrake.multibody.tree");
-  py::module::import("pydrake.systems.framework");
   // TODO(eric.cousineau): #8116 Simplify this.
   py::return_value_policy rvp_for_type =
       (std::is_same<T, double>::value ? py::return_value_policy::reference
@@ -98,7 +81,6 @@ void DoDefinitions(py::module m, T) {
     constexpr auto& cls_doc = doc.PointPairContactInfo;
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "PointPairContactInfo", param, cls_doc.doc);
-
     cls  // BR
         .def(py::init<BodyIndex, BodyIndex, const Vector3<T>, const Vector3<T>,
                  const T&, const T&,
@@ -122,7 +104,6 @@ void DoDefinitions(py::module m, T) {
     constexpr auto& cls_doc = doc.ContactResults;
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "ContactResults", param, cls_doc.doc);
-
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def("num_contacts", &Class::num_contacts, cls_doc.num_contacts.doc)
@@ -190,9 +171,9 @@ void DoDefinitions(py::module m, T) {
             },
             py_reference_internal, py::arg("frame"), cls_doc.AddFrame.doc)
         .def("AddRigidBody",
-            [](Class * self, const std::string& A,
+            [](Class * self, const std::string& name,
                 const SpatialInertia<double>& s) -> auto& {
-              return self->AddRigidBody(A, s);
+              return self->AddRigidBody(name, s);
             },
             py::arg("name"), py::arg("M_BBo_B"), py_reference_internal,
             cls_doc.AddRigidBody.doc_2args)
@@ -836,7 +817,14 @@ PYBIND11_MODULE(plant, m) {
   using namespace drake::multibody;
 
   m.doc() = "Bindings for MultibodyPlant and related classes.";
-  type_visit([m](auto dummy) { DoDefinitions(m, dummy); }, CommonScalarPack{});
+
+  py::module::import("pydrake.geometry");
+  py::module::import("pydrake.multibody.math");
+  py::module::import("pydrake.multibody.tree");
+  py::module::import("pydrake.systems.framework");
+
+  type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
+      CommonScalarPack{});
   constexpr auto& doc = pydrake_doc.drake.multibody;
 
   using T = double;
@@ -858,8 +846,8 @@ PYBIND11_MODULE(plant, m) {
   }
 
   m.def("ConnectContactResultsToDrakeVisualizer",
-      [](systems::DiagramBuilder<T>* builder, const MultibodyPlant<T>& plant,
-          lcm::DrakeLcmInterface* lcm) {
+      [](systems::DiagramBuilder<double>* builder,
+          const MultibodyPlant<double>& plant, lcm::DrakeLcmInterface* lcm) {
         return drake::multibody::ConnectContactResultsToDrakeVisualizer(
             builder, plant, lcm);
       },

@@ -1,5 +1,12 @@
 #pragma once
 
+#ifndef __clang__
+// N.B. Without this, GCC 7.4.0 on Ubuntu complains about
+// `AutoDiffScalar(const AutoDiffScalar& other)` having uninitialized values.
+// TODO(eric.cousineau):  #11566 Figure out why?
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif  // __clang__
 /// @file
 /// Helpers for defining scalars and values.
 
@@ -29,3 +36,6 @@ using NonSymbolicScalarPack = type_pack<  // BR
 
 }  // namespace pydrake
 }  // namespace drake
+#ifndef __clang__
+#pragma GCC diagnostic pop
+#endif  // __clang__

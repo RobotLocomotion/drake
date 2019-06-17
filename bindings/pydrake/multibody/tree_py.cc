@@ -1,19 +1,9 @@
 #include "pybind11/eigen.h"
 #include "pybind11/eval.h"
 #include "pybind11/pybind11.h"
-#ifndef __clang__
-// N.B. Without this, GCC 7.4.0 on Ubuntu complains about
-// `AutoDiffScalar(const AutoDiffScalar& other)` having uninitialized values.
-// TODO(eric.cousineau):  #11566 Figure out why?
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#pragma GCC diagnostic pop
-#else
-#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#endif  // __clang__
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
@@ -54,7 +44,7 @@ namespace {
 // polymorphism).
 // TODO(jamiesnape): Add documentation for bindings generated with this
 // function.
-template <typename T, typename PyClass>
+template <typename PyClass>
 void BindMultibodyTreeElementMixin(PyClass* pcls) {
   using Class = typename PyClass::type;
   // TODO(eric.cousineau): Fix docstring generation for `MultibodyTreeElement`.
@@ -68,24 +58,53 @@ void BindMultibodyTreeElementMixin(PyClass* pcls) {
       cls, "get_parent_tree", "`get_parent_tree()` will soon be internal.");
 }
 
+void DoScalarIndependentDefinitions(py::module m) {
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::multibody;
+  constexpr auto& doc = pydrake_doc.drake.multibody;
+  // To simplify checking binding coverage, these are defined in the same order
+  // as `multibody_tree_indexes.h`.
+  BindTypeSafeIndex<FrameIndex>(m, "FrameIndex", doc.FrameIndex.doc);
+  BindTypeSafeIndex<BodyIndex>(m, "BodyIndex", doc.BodyIndex.doc);
+  BindTypeSafeIndex<ForceElementIndex>(
+      m, "ForceElementIndex", doc.ForceElementIndex.doc);
+  BindTypeSafeIndex<JointIndex>(m, "JointIndex", doc.JointIndex.doc);
+  BindTypeSafeIndex<JointActuatorIndex>(
+      m, "JointActuatorIndex", doc.JointActuatorIndex.doc);
+  BindTypeSafeIndex<ModelInstanceIndex>(
+      m, "ModelInstanceIndex", doc.ModelInstanceIndex.doc);
+  m.def("world_index", &world_index, doc.world_index.doc);
+
+  {
+    using Enum = JacobianWrtVariable;
+    constexpr auto& enum_doc = doc.JacobianWrtVariable;
+    py::enum_<Enum> enum_py(m, "JacobianWrtVariable", enum_doc.doc);
+    enum_py  // BR
+        .value("kQDot", Enum::kQDot, enum_doc.kQDot.doc)
+        .value("kV", Enum::kV, enum_doc.kV.doc);
+  }
+}
+
+/**
+ * Adds Python bindings for its contents to module `m`, for template `T`.
+ * @param m Module.
+ * @param T Template.
+ */
 template <typename T>
-void DoDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module m, T) {
   py::tuple param = GetPyParam<T>();
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody;
 
-  py::module::import("pydrake.common.eigen_geometry");
-  py::module::import("pydrake.multibody.math");
-
-  //  Frames.
+  // Frames.
   {
     using Class = Frame<T>;
     constexpr auto& cls_doc = doc.Frame;
     auto cls =
         DefineTemplateClassWithDefault<Class>(m, "Frame", param, cls_doc.doc);
-    BindMultibodyTreeElementMixin<T>(&cls);
+    BindMultibodyTreeElementMixin(&cls);
     cls  // BR
         .def("name", &Class::name, cls_doc.name.doc)
         .def("body", &Class::body, py_reference_internal, cls_doc.body.doc)
@@ -122,13 +141,13 @@ void DoDefinitions(py::module m, T) {
             py::arg("model_instance") = nullopt, doc_iso3_deprecation);
   }
 
-  //  Bodies.
+  // Bodies.
   {
     using Class = Body<T>;
     constexpr auto& cls_doc = doc.Body;
     auto cls =
         DefineTemplateClassWithDefault<Class>(m, "Body", param, cls_doc.doc);
-    BindMultibodyTreeElementMixin<T>(&cls);
+    BindMultibodyTreeElementMixin(&cls);
     cls  // BR
         .def("name", &Class::name, cls_doc.name.doc)
         .def("body_frame", &Class::body_frame, py_reference_internal,
@@ -149,13 +168,13 @@ void DoDefinitions(py::module m, T) {
         m, "RigidBody", param, cls_doc.doc);
   }
 
-  //  Joints.
+  // Joints.
   {
     using Class = Joint<T>;
     constexpr auto& cls_doc = doc.Joint;
     auto cls =
         DefineTemplateClassWithDefault<Class>(m, "Joint", param, cls_doc.doc);
-    BindMultibodyTreeElementMixin<T>(&cls);
+    BindMultibodyTreeElementMixin(&cls);
     cls  // BR
         .def("name", &Class::name, cls_doc.name.doc)
         .def("parent_body", &Class::parent_body, py_reference_internal,
@@ -187,7 +206,7 @@ void DoDefinitions(py::module m, T) {
             cls_doc.acceleration_upper_limits.doc);
   }
 
-  //  PrismaticJoint
+  // PrismaticJoint
   {
     using Class = PrismaticJoint<T>;
     constexpr auto& cls_doc = doc.PrismaticJoint;
@@ -217,7 +236,7 @@ void DoDefinitions(py::module m, T) {
             cls_doc.set_random_translation_distribution.doc);
   }
 
-  //  RevoluteJoint
+  // RevoluteJoint
   {
     using Class = RevoluteJoint<T>;
     constexpr auto& cls_doc = doc.RevoluteJoint;
@@ -238,7 +257,7 @@ void DoDefinitions(py::module m, T) {
             cls_doc.set_random_angle_distribution.doc);
   }
 
-  //  WeldJoint
+  // WeldJoint
   {
     using Class = WeldJoint<T>;
     constexpr auto& cls_doc = doc.WeldJoint;
@@ -261,25 +280,25 @@ void DoDefinitions(py::module m, T) {
             py::arg("child_frame_C"), py::arg("X_PC"), doc_iso3_deprecation);
   }
 
-  //  Actuators.
+  // Actuators.
   {
     using Class = JointActuator<T>;
     constexpr auto& cls_doc = doc.JointActuator;
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "JointActuator", param, cls_doc.doc);
-    BindMultibodyTreeElementMixin<T>(&cls);
+    BindMultibodyTreeElementMixin(&cls);
     cls  // BR
         .def("name", &Class::name, cls_doc.name.doc)
         .def("joint", &Class::joint, py_reference_internal, cls_doc.joint.doc);
   }
 
-  //  Force Elements.
+  // Force Elements.
   {
     using Class = ForceElement<T>;
     constexpr auto& cls_doc = doc.ForceElement;
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "ForceElement", param, cls_doc.doc);
-    BindMultibodyTreeElementMixin<T>(&cls);
+    BindMultibodyTreeElementMixin(&cls);
   }
 
   {
@@ -296,7 +315,7 @@ void DoDefinitions(py::module m, T) {
             cls_doc.set_gravity_vector.doc);
   }
 
-  //  MultibodyForces
+  // MultibodyForces
   {
     using Class = MultibodyForces<T>;
     constexpr auto& cls_doc = doc.MultibodyForces;
@@ -323,7 +342,7 @@ void DoDefinitions(py::module m, T) {
             cls_doc.AddInForces.doc);
   }
 
-  //  Inertias
+  // Inertias
   {
     using Class = UnitInertia<T>;
     constexpr auto& cls_doc = doc.UnitInertia;
@@ -335,7 +354,7 @@ void DoDefinitions(py::module m, T) {
             py::arg("Iyy"), py::arg("Izz"), cls_doc.ctor.doc_3args);
   }
 
-  //  SpatialInertia
+  // SpatialInertia
   {
     using Class = SpatialInertia<T>;
     constexpr auto& cls_doc = doc.SpatialInertia;
@@ -354,36 +373,15 @@ void DoDefinitions(py::module m, T) {
 PYBIND11_MODULE(tree, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
-  constexpr auto& doc = pydrake_doc.drake.multibody;
 
   m.doc() = "Bindings for MultibodyTree and related components.";
 
   py::module::import("pydrake.common.eigen_geometry");
   py::module::import("pydrake.multibody.math");
 
-  type_visit([m](auto dummy) { DoDefinitions(m, dummy); }, CommonScalarPack{});
-
-  // To simplify checking binding coverage, these are defined in the same order
-  // as `multibody_tree_indexes.h`.
-  BindTypeSafeIndex<FrameIndex>(m, "FrameIndex", doc.FrameIndex.doc);
-  BindTypeSafeIndex<BodyIndex>(m, "BodyIndex", doc.BodyIndex.doc);
-  BindTypeSafeIndex<ForceElementIndex>(
-      m, "ForceElementIndex", doc.ForceElementIndex.doc);
-  BindTypeSafeIndex<JointIndex>(m, "JointIndex", doc.JointIndex.doc);
-  BindTypeSafeIndex<JointActuatorIndex>(
-      m, "JointActuatorIndex", doc.JointActuatorIndex.doc);
-  BindTypeSafeIndex<ModelInstanceIndex>(
-      m, "ModelInstanceIndex", doc.ModelInstanceIndex.doc);
-  m.def("world_index", &world_index, doc.world_index.doc);
-
-  {
-    using Enum = JacobianWrtVariable;
-    constexpr auto& enum_doc = doc.JacobianWrtVariable;
-    py::enum_<Enum> enum_py(m, "JacobianWrtVariable", enum_doc.doc);
-    enum_py  // BR
-        .value("kQDot", Enum::kQDot, enum_doc.kQDot.doc)
-        .value("kV", Enum::kV, enum_doc.kV.doc);
-  }
+  DoScalarIndependentDefinitions(m);
+  type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
+      CommonScalarPack{});
 }
 
 }  // namespace pydrake

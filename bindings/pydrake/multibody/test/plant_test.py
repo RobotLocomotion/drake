@@ -33,7 +33,6 @@ from pydrake.multibody.math import (
     SpatialForce_,
     SpatialVelocity_,
 )
-
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
     ConnectContactResultsToDrakeVisualizer,
@@ -50,12 +49,10 @@ from pydrake.multibody.benchmarks.acrobot import (
     AcrobotParameters,
     MakeAcrobotPlant,
 )
-
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities import numpy_compare
-
 from pydrake.geometry import (
     Box,
     GeometryId,
@@ -139,6 +136,7 @@ class TestPlant(unittest.TestCase):
         check_func(AutoDiffXd)
 
     def test_multibody_plant_construction_api(self):
+        # SceneGraph does not support `Expression` type.
         self.check_nonsymbolic_types(
             self.check_multibody_plant_construction_api)
 
@@ -182,6 +180,7 @@ class TestPlant(unittest.TestCase):
         # This a subset of `multibody_plant_sdf_parser_test.cc`.
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        # N.B. `Parser` only supports `MultibodyPlant_[float]`.
         plant_f = MultibodyPlant_[float](time_step=0.01)
         model_instance = Parser(plant_f).AddModelFromFile(file_name)
         self.assertIsInstance(model_instance, ModelInstanceIndex)
@@ -330,6 +329,7 @@ class TestPlant(unittest.TestCase):
         CoulombFriction(static_friction=0.7, dynamic_friction=0.6)
 
     def test_multibody_gravity_default(self):
+        # SceneGraph does not support `Expression` type.
         self.check_nonsymbolic_types(self.check_multibody_gravity_default)
 
     def check_multibody_gravity_default(self, T):
@@ -902,6 +902,7 @@ class TestPlant(unittest.TestCase):
         MultibodyPlant = MultibodyPlant_[T]
         RigidTransform = RigidTransform_[T]
         RollPitchYaw = RollPitchYaw_[T]
+        # N.B. `Parser` only supports `MultibodyPlant_[float]`.
         plant_f = MultibodyPlant_[float]()
         iiwa_sdf_path = FindResourceOrThrow(
             "drake/manipulation/models/"
@@ -946,6 +947,7 @@ class TestPlant(unittest.TestCase):
         # programmatically constructed bodies once this API is exposed in
         # Python.
         num_joints = 2
+        # N.B. `Parser` only supports `MultibodyPlant_[float]`.
         plant_f = MultibodyPlant_[float]()
         parser = Parser(plant_f)
         instances = []
@@ -1013,6 +1015,7 @@ class TestPlant(unittest.TestCase):
 
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        # N.B. `Parser` only supports `MultibodyPlant_[float]`.
         plant_f = MultibodyPlant_[float]()
         Parser(plant_f).AddModelFromFile(file_name)
         # Getting ready for when we set foot on Mars :-).
@@ -1085,6 +1088,7 @@ class TestPlant(unittest.TestCase):
             2 * F_expected)
 
     def test_contact(self):
+        # PenetrationAsPointPair has been bound for non-symbolic types only.
         self.check_nonsymbolic_types(self.check_contact)
 
     def check_contact(self, T):
@@ -1154,12 +1158,14 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(publisher, LcmPublisherSystem)
 
     def test_scene_graph_queries(self):
+        # SceneGraph does not support `Expression` type.
         self.check_nonsymbolic_types(self.check_scene_graph_queries)
 
     def check_scene_graph_queries(self, T):
         PenetrationAsPointPair = PenetrationAsPointPair_[T]
 
         builder_f = DiagramBuilder_[float]()
+        # N.B. `Parser` only supports `MultibodyPlant_[float]`.
         plant_f, scene_graph_f = AddMultibodyPlantSceneGraph(builder_f)
         parser = Parser(plant=plant_f, scene_graph=scene_graph_f)
         parser.AddModelFromFile(
