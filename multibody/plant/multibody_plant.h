@@ -1514,7 +1514,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
   // most applications it is all we need and it is more efficient to compute.
   // TODO(amcastro-tri): Rework this method as per issue #10155.
-  DRAKE_DEPRECATED("2019-09-01", "Use CalcJacobianTranslationalVelocity().")
+  DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
@@ -1663,7 +1663,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
   // most applications it is all we need and it is more efficient to compute.
   // TODO(amcastro-tri): Rework this method as per issue #10155.
-  DRAKE_DEPRECATED("2019-09-01", "Use CalcJacobianTranslationalVelocity().")
+  DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F,

@@ -1247,14 +1247,14 @@ class MultibodyTree {
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_FP_list,
       EigenPtr<MatrixX<T>> p_WP_list,
-      EigenPtr<MatrixX<T>> Jv_v_WFp_W) const;
+      EigenPtr<MatrixX<T>> Jv_WFp) const;
 
   /// See MultibodyPlant method.
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_WP_list,
-      EigenPtr<MatrixX<T>> Jv_v_WFp_W) const;
+      EigenPtr<MatrixX<T>> Jv_WFp) const;
 
   /// See MultibodyPlant method.
   VectorX<T> CalcBiasForJacobianTranslationalVelocity(
@@ -1302,9 +1302,6 @@ class MultibodyTree {
                                    const Frame<T>& frame_E,
                                    EigenPtr<MatrixX<T>> Js_w_AB_E) const;
 
-  /// Note: This method is more general than the corresponding MultibodyPlant
-  /// method as it also contains the argument `frame_F`.
-  ///
   /// Return a point's translational velocity Jacobian in a frame A with respect
   /// to "speeds" 𝑠, where 𝑠 is either q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of
   /// j generalized positions) or v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
@@ -1337,6 +1334,9 @@ class MultibodyTree {
   /// The Jacobian is a function of only generalized positions q (which are
   /// pulled from the context).
   /// @throws std::exception if `Js_v_ABi_E` is nullptr or not of size `3 x n`.
+  ///
+  /// Note: This method is more general than the corresponding MultibodyPlant
+  /// method as it also contains the argument `frame_F`.
   void CalcJacobianTranslationalVelocity(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
@@ -1345,7 +1345,7 @@ class MultibodyTree {
       const Eigen::Ref<const Matrix3X<T>>& p_FoBi_F,
       const Frame<T>& frame_A,
       const Frame<T>& frame_E,
-      EigenPtr<MatrixX<T>> Js_v_ABp_E) const;
+      EigenPtr<MatrixX<T>> Js_v_ABi_E) const;
 
   /// @}
   // End of multibody Jacobian methods section.

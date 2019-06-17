@@ -791,7 +791,7 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
   // sized.
   if (num_contacts == 0) return;
 
-  const Frame<T>& world_frame = internal_tree().world_frame();
+  const Frame<T>& frame_W = internal_tree().world_frame();
   for (int icontact = 0; icontact < num_contacts; ++icontact) {
     const auto& point_pair = point_pairs_set[icontact];
 
@@ -820,10 +820,10 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
     internal_tree().CalcJacobianTranslationalVelocity(context,
                                                       JacobianWrtVariable::kV,
                                                       bodyA.body_frame(),
-                                                      world_frame,
+                                                      frame_W,
                                                       p_WCa,
-                                                      world_frame,
-                                                      world_frame,
+                                                      frame_W,
+                                                      frame_W,
                                                       &Jv_WAc);
 
     // Geometric Jacobian for the velocity of the contact point C as moving with
@@ -832,10 +832,10 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
     internal_tree().CalcJacobianTranslationalVelocity(context,
                                                       JacobianWrtVariable::kV,
                                                       bodyB.body_frame(),
-                                                      world_frame,
+                                                      frame_W,
                                                       p_WCb,
-                                                      world_frame,
-                                                      world_frame,
+                                                      frame_W,
+                                                      frame_W,
                                                       &Jv_WBc);
 
     // Computation of the normal separation velocities Jacobian Jn:
