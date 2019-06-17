@@ -30,7 +30,7 @@ drake_cc_library(
     srcs = [
         "angle_between_vectors_constraint.cc",
         "distance_constraint.cc",
-        "distance_constraint_util.cc",
+        "distance_constraint_utilities.cc",
         "gaze_target_constraint.cc",
         "kinematic_constraint_utilities.cc",
         "minimum_distance_constraint.cc",
@@ -40,7 +40,7 @@ drake_cc_library(
     hdrs = [
         "angle_between_vectors_constraint.h",
         "distance_constraint.h",
-        "distance_constraint_util.h",
+        "distance_constraint_utilities.h",
         "gaze_target_constraint.h",
         "kinematic_constraint_utilities.h",
         "minimum_distance_constraint.h",

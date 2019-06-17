@@ -5,7 +5,7 @@
 
 #include <Eigen/Dense>
 
-#include "drake/multibody/inverse_kinematics/distance_constraint_util.h"
+#include "drake/multibody/inverse_kinematics/distance_constraint_utilities.h"
 #include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
 
 namespace drake {
@@ -21,7 +21,7 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
                           Vector1d(0), Vector1d(0)),
       plant_{RefFromPtrOrThrow(plant)},
       plant_context_{plant_context} {
-  CheckPlantConnectSceneGraph(plant_, *plant_context_);
+  CheckPlantIsConnectedToSceneGraph(plant_, *plant_context_);
   if (!std::isfinite(influence_distance_offset)) {
     throw std::invalid_argument(
         "MinimumDistanceConstraint: influence_distance_offset must be finite.");
@@ -89,12 +89,12 @@ VectorX<T> MinimumDistanceConstraint::Distances(
           plant_.GetBodyFromFrameId(frame_A_id)->body_frame();
       const Frame<double>& frameB =
           plant_.GetBodyFromFrameId(frame_B_id)->body_frame();
-      internal::Distance(plant_, *plant_context_, frameA, frameB,
-                         inspector.X_FG(signed_distance_pair.id_A) *
-                             signed_distance_pair.p_ACa,
-                         signed_distance_pair.distance,
-                         signed_distance_pair.nhat_BA_W, q,
-                         &distances(distance_count++));
+      internal::CalcDistanceDerivatives(
+          plant_, *plant_context_, frameA, frameB,
+          inspector.X_FG(signed_distance_pair.id_A) *
+              signed_distance_pair.p_ACa,
+          signed_distance_pair.distance, signed_distance_pair.nhat_BA_W, q,
+          &distances(distance_count++));
     }
   }
   distances.resize(distance_count);

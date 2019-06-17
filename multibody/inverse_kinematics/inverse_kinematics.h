@@ -221,6 +221,10 @@ class InverseKinematics {
   /** Getter for the optimization program constructed by InverseKinematics. */
   solvers::MathematicalProgram* get_mutable_prog() const { return prog_.get(); }
 
+  /** Getter for the plant context. */
+  const systems::Context<double>& context() const { return *context_; }
+
+  /** Getter for the mutable plant context. */
   systems::Context<double>* get_mutable_context() { return context_; }
 
  private:

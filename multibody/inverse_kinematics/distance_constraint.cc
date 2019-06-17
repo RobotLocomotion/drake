@@ -4,13 +4,16 @@
 #include <utility>
 #include <vector>
 
-#include "drake/multibody/inverse_kinematics/distance_constraint_util.h"
+#include "drake/multibody/inverse_kinematics/distance_constraint_utilities.h"
 #include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
 
 namespace drake {
 namespace multibody {
 using internal::RefFromPtrOrThrow;
+
+namespace {
 const double kInf = std::numeric_limits<double>::infinity();
+}  // namespace
 
 DistanceConstraint::DistanceConstraint(
     const multibody::MultibodyPlant<double>* const plant,
@@ -22,7 +25,7 @@ DistanceConstraint::DistanceConstraint(
       plant_{RefFromPtrOrThrow(plant)},
       plant_context_{plant_context},
       geometry_pair_{std::move(geometry_pair)} {
-  CheckPlantConnectSceneGraph(plant_, *plant_context_);
+  CheckPlantIsConnectedToSceneGraph(plant_, *plant_context_);
 }
 
 template <typename T>
@@ -54,11 +57,12 @@ void DistanceConstraint::DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x,
           plant_.GetBodyFromFrameId(frame_A_id)->body_frame();
       const Frame<double>& frameB =
           plant_.GetBodyFromFrameId(frame_B_id)->body_frame();
-      internal::Distance(plant_, *plant_context_, frameA, frameB,
-                         inspector.X_FG(signed_distance_pair.id_A) *
-                             signed_distance_pair.p_ACa,
-                         signed_distance_pair.distance,
-                         signed_distance_pair.nhat_BA_W, x, y->data());
+      internal::CalcDistanceDerivatives(
+          plant_, *plant_context_, frameA, frameB,
+          inspector.X_FG(signed_distance_pair.id_A) *
+              signed_distance_pair.p_ACa,
+          signed_distance_pair.distance, signed_distance_pair.nhat_BA_W, x,
+          y->data());
       break;
     }
   }
