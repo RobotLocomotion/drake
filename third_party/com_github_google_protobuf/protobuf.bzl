@@ -1,5 +1,3 @@
-load("@bazel_skylib//lib:versions.bzl", "versions")
-
 def _GetPath(ctx, path):
     if ctx.label.workspace_root:
         return ctx.label.workspace_root + "/" + path
@@ -228,10 +226,10 @@ def cc_proto_library(
         deps = [],
         cc_libs = [],
         include = None,
-        protoc = "@com_google_protobuf//:protoc",
+        protoc = "//:protoc",
         internal_bootstrap_hack = False,
         use_grpc_plugin = False,
-        default_runtime = "@com_google_protobuf//:protobuf",
+        default_runtime = "//:protobuf",
         **kargs):
     """Bazel rule to create a C++ protobuf library from proto source files
 
@@ -379,8 +377,8 @@ def py_proto_library(
         py_libs = [],
         py_extra_srcs = [],
         include = None,
-        default_runtime = "@com_google_protobuf//:protobuf_python",
-        protoc = "@com_google_protobuf//:protoc",
+        default_runtime = "//:protobuf_python",
+        protoc = "//:protoc",
         use_grpc_plugin = False,
         **kargs):
     """Bazel rule to create a Python protobuf library from proto source files
@@ -464,11 +462,3 @@ def internal_protobuf_py_tests(
             main = s,
             **kargs
         )
-
-def check_protobuf_required_bazel_version():
-    """For WORKSPACE files, to check the installed version of bazel.
-
-    This ensures bazel supports our approach to proto_library() depending on a
-    copied filegroup. (Fixed in bazel 0.5.4)
-    """
-    versions.check(minimum_bazel_version = "0.5.4")
