@@ -9,7 +9,6 @@
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
-#include "drake/geometry/render/render_label_manager.h"
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -498,54 +497,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   //@}
 
-  /** @name     SceneGraph management of render labels
-
-   When rendering label images (via QueryObject::RenderLabelImage()), it is
-   necessary to assign meaningful RenderLabel values to all of the renderable
-   geometry. The @ref allocate_render_label "documentation in RenderLabel"
-   discusses two strategies: self-managed and SceneGraph-managed. This API
-   supports the second strategy.
-
-   %SceneGraph knows nothing about the semantic meaning of any class of
-   geometries. Geometry sources define their own semantic classes (e.g., "desk",
-   "ball", "robot", etc.) and inform %SceneGraph of these class names via the
-   GetRenderLabel() method, receiving a RenderLabel in return. %SceneGraph
-   maintains the mapping from named class to RenderLabel value.
-
-   Label images can be interpreted by mapping a particular pixel's value back to
-   its class's name. %SceneGraph's GetRenderClasses() method will provide that
-   mapping, guaranteeing that the class _names_ are unique across all sources
-   (see GetRenderClasses() for details on "uniqueness"). If a downstream system
-   requires access to this map, it should store the map as a parameter.
-
-   There is no provision for returning previously allocated render labels back
-   to the pool.
-
-   @see render::RenderLabel  */
-
-  //@{
-
-  /** Returns a unique RenderLabel for the (`source_id`, `name`) pair. This
-   defines a render label class owned by the source with the given `id` and
-   with the given `name` and associates it with the returned RenderLabel.
-   If that pair has previously been requested, the previous value is returned.
-   Otherwise, a new RenderLabel is allocated and returned.
-   @throws std::logic_error  If it attempts to allocate and all valid
-                             RenderLabel values have been allocated.  */
-  render::RenderLabel GetRenderLabel(SourceId id, std::string name);
-
-  /** Returns a map between all allocated labels and their _unique_ class names.
-   The class name's uniqueness is guaranteed within the scope of `this`
-   %SceneGraph instance. If multiple sources have requested labels with
-   the same name, the returned name will be a combination of the source's
-   name and the registered name. This method provides the basis for writing
-   a table that maps the label pixel values with human readable semantic
-   classes.
-   @throws std::logic_error if a context has been allocated.  */
-  std::unordered_map<render::RenderLabel, std::string> GetRenderClasses() const;
-
-  //@}
-
   /** @name     Assigning roles to geometry
 
    Geometries must be assigned one or more *roles* before they have an effect
@@ -809,10 +760,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // allocating contexts for this system). The instance is owned by
   // model_abstract_states_.
   GeometryState<T>* initial_state_{};
-
-  // The manager for render labels allocated by this SceneGraph.
-  copyable_unique_ptr<render::internal::RenderLabelManager>
-      render_label_manager_{};
 
   SceneGraphInspector<T> model_inspector_;
 

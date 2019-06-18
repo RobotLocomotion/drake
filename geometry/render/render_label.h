@@ -52,39 +52,16 @@ namespace render {
  to a geometry. A RenderEngine implementation is entitled to throw an exception
  if you attempt to do so.
 
- @anchor allocate_render_label
  <h2>Usage</h2>
-
- For a label image to be _meaningful_, every pixel value should admit an
- unambiguous interpretation. To do that, %RenderLabels need to be coordinated
- to avoid accidental overloading. An application can achieve this in one of two
- ways: the application can rely on SceneGraph to allocate and coordinate
- %RenderLabel values across multiple geometry sources or the application can
- manage its own %RenderLabel values. Mixing the two strategies is highly
- inadvisable; the responsibility for guaranteeing unique %RenderLabel values
- does not survive sharing well.
-
- <h3>Allocation of %RenderLabel values from SceneGraph</h3>
-
- An application defines a semantic class with a name (e.g., "car", "robot",
- "table", etc.) and associated source id -- if two sources were both to define
- their own semantic class named "robot", they would be considered distinct
- classes by virtue of their different source ids.
-
- The application associates a %RenderLabel with its semantic class by
- invoking SceneGraph::GetRenderLabel(). SceneGraph maintains a mapping between
- %RenderLabel and all registered semantic classes. The set of all registered
- semantic classes can be acquired from SceneGraph::GetRenderClasses().
-
- <h3>Manual %RenderLabel allocation</h3>
 
  An application can simply instantiate %RenderLabel with an arbitrary value.
  This allows the application to define a particular mapping from render label
- class to a preferred %RenderLabel value. The application bears _full_
- responsibility in making sure that a single value is not inadvertently
- associated with multiple render classes. Finally, a %RenderLabel cannot be
- explicitly constructed with a reserved value -- those can only be accessed
- through the static methods provided.
+ class to a preferred %RenderLabel value. For a label image to be _meaningful_,
+ every pixel value should admit an unambiguous interpretation. The application
+ bears _full_ responsibility in making sure that a single value is not
+ inadvertently associated with multiple render classes. Finally, a %RenderLabel
+ cannot be explicitly constructed with a reserved value -- those can only be
+ accessed through the static methods provided.
 
  @note The %RenderLabel class is based on a 16-bit integer. This makes the label
  image more compact but means there are only, approximately, 32,000 unique

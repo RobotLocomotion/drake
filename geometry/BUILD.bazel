@@ -177,7 +177,6 @@ drake_cc_library(
         "//geometry/query_results:penetration_as_point_pair",
         "//geometry/query_results:signed_distance_pair",
         "//geometry/query_results:signed_distance_to_point",
-        "//geometry/render:render_label_manager",
         "//systems/framework",
         "//systems/rendering:pose_bundle",
     ],
@@ -331,7 +330,6 @@ drake_cc_googletest(
     deps = [
         ":geometry_state",
         "//common/test_utilities",
-        "//geometry/render:render_label_manager",
         "//geometry/test_utilities:dummy_render_engine",
     ],
 )

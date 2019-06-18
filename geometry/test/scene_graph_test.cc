@@ -445,55 +445,6 @@ TEST_F(SceneGraphTest, RoleManagementSmokeTest) {
   EXPECT_EQ(scene_graph_.RemoveRole(s_id, g_id, Role::kIllustration), 1);
 }
 
-// Tests the RenderLabel management methods of the SceneGraph instance.
-TEST_F(SceneGraphTest, RenderLabelManagement) {
-  // NOTE: SceneGraph::GetRenderLabel() is not explicitly tested because
-  // the method is a *thin* wrapper of the RenderLabelManager method that has
-  // already been tested.
-  //
-  // Instead, this test assumes that GetRenderLabel() works and focuses  on the
-  // unique code for SceneGraph::GetRenderClasses().
-
-  // Two sources. Each request two render labels. They both use the *same* name
-  // for one render label and a unique name for the other.
-
-  // SceneGraph already has *some* render classes -- the reserved render labels.
-  const int count_builtin_labels =
-      static_cast<int>(scene_graph_.GetRenderClasses().size());
-
-  SourceId s1_id = scene_graph_.RegisterSource("source1");
-  SourceId s2_id = scene_graph_.RegisterSource("source2");
-  RenderLabel label1_1 = scene_graph_.GetRenderLabel(s1_id, "1");
-  RenderLabel label1_2 = scene_graph_.GetRenderLabel(s1_id, "2");
-  RenderLabel label2_1 = scene_graph_.GetRenderLabel(s2_id, "1");
-  RenderLabel label2_3 = scene_graph_.GetRenderLabel(s2_id, "3");
-
-  // Asking for the same render label produces the same render label value.
-  RenderLabel label1_1_dupe = scene_graph_.GetRenderLabel(s1_id, "1");
-  ASSERT_EQ(label1_1, label1_1_dupe);
-
-  unordered_map<RenderLabel, std::string> render_classes =
-      scene_graph_.GetRenderClasses();
-
-  // Four unique calls to GetRenderLabel produce four unique classes (plus the
-  // builtins).
-  ASSERT_EQ(render_classes.size(), 4 + count_builtin_labels);
-  EXPECT_EQ(render_classes.count(label1_1), 1);
-  EXPECT_EQ(render_classes.count(label1_2), 1);
-  EXPECT_EQ(render_classes.count(label2_1), 1);
-  EXPECT_EQ(render_classes.count(label2_3), 1);
-
-  // Render label class names which are *not* duplicated across sources are
-  // simply the original name.
-  EXPECT_EQ(render_classes[label1_2], "2");
-  EXPECT_EQ(render_classes[label2_3], "3");
-
-  // Render label class names which are used by multiple sources get source
-  // ids appended.
-  EXPECT_EQ(render_classes[label1_1], "1 (source1)");
-  EXPECT_EQ(render_classes[label2_1], "1 (source2)");
-}
-
 // Dummy system to serve as geometry source.
 class GeometrySourceSystem : public systems::LeafSystem<double> {
  public:

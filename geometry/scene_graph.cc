@@ -16,7 +16,6 @@ namespace drake {
 namespace geometry {
 
 using render::RenderLabel;
-using render::internal::RenderLabelManager;
 using systems::Context;
 using systems::InputPort;
 using systems::LeafContext;
@@ -86,9 +85,6 @@ SceneGraph<T>::SceneGraph()
       "Cache guard for pose updates", &SceneGraph::CalcPoseUpdate,
       {this->all_input_ports_ticket()});
   pose_update_index_ = pose_update_cache_entry.cache_index();
-
-  render_label_manager_ =
-      make_unique<RenderLabelManager>(initial_state_->self_source_);
 }
 
 template <typename T>
@@ -101,7 +97,6 @@ SceneGraph<T>::SceneGraph(const SceneGraph<U>& other) : SceneGraph() {
     *initial_state_ = *(other.initial_state_->ToAutoDiffXd());
     model_inspector_.set(initial_state_);
   }
-  *render_label_manager_ = *other.render_label_manager_;
 
   // We need to guarantee that the same source ids map to the same port indices.
   // We'll do this by processing the source ids in monotonically increasing
@@ -231,45 +226,6 @@ int SceneGraph<T>::RendererCount() const {
 template <typename T>
 std::vector<std::string> SceneGraph<T>::RegisteredRendererNames() const {
   return initial_state_->RegisteredRendererNames();
-}
-
-template <typename T>
-RenderLabel SceneGraph<T>::GetRenderLabel(SourceId source_id,
-                                          std::string name) {
-  DRAKE_DEMAND(render_label_manager_ != nullptr);
-  return render_label_manager_->GetRenderLabel(source_id, move(name));
-}
-
-template <typename T>
-unordered_map<render::RenderLabel, std::string>
-SceneGraph<T>::GetRenderClasses() const {
-  using render::internal::RenderLabelClass;
-
-  DRAKE_DEMAND(render_label_manager_ != nullptr);
-
-  unordered_map<render::RenderLabel, std::string> class_map;
-  // TODO(SeanCurtis-TRI): This suggests that source id -> names map
-  // shouldn't live in the geometry state.
-  const std::unordered_map<SourceId, std::string>& source_names =
-      initial_state_->source_names_;
-
-  const std::unordered_multimap<std::string, RenderLabelClass>& label_classes =
-      render_label_manager_->render_label_classes();
-  for (const auto& pair : label_classes) {
-    std::string label_name = pair.first;
-    const RenderLabelClass& label_class = pair.second;
-    // NOTE: This count is regrettable; simulating the multimap as a map to
-    // vectors provides more direct access to the multiplicity of a given key
-    // *while* iterating through the key.
-    if (label_classes.count(label_name) > 1) {
-      label_name +=
-          fmt::format(" ({})", source_names.at(label_class.source_id));
-    }
-    DRAKE_DEMAND(class_map.count(label_class.label) == 0);
-    class_map[label_class.label] = label_name;
-  }
-
-  return class_map;
 }
 
 template <typename T>
