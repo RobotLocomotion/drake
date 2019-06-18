@@ -56,6 +56,20 @@ class GazeTargetConstraint : public solvers::Constraint {
       const Eigen::Ref<const Eigen::Vector3d>& p_BT, double cone_half_angle,
       systems::Context<double>* context);
 
+  /**
+   * Overloaded constructor.
+   * Construct from MultibodyPlant<AutoDiffXd> instead of
+   * MultibodyPlant<double>.
+   */
+  GazeTargetConstraint(const MultibodyPlant<AutoDiffXd>* const plant,
+                       const Frame<AutoDiffXd>& frameA,
+                       const Eigen::Ref<const Eigen::Vector3d>& p_AS,
+                       const Eigen::Ref<const Eigen::Vector3d>& n_A,
+                       const Frame<AutoDiffXd>& frameB,
+                       const Eigen::Ref<const Eigen::Vector3d>& p_BT,
+                       double cone_half_angle,
+                       systems::Context<AutoDiffXd>* context);
+
   ~GazeTargetConstraint() override{};
 
  private:
@@ -70,7 +84,7 @@ class GazeTargetConstraint : public solvers::Constraint {
     throw std::logic_error(
         "GazeTargetConstraint::DoEval() does not work for symbolic variables.");
   }
-  const MultibodyPlant<double>& plant_;
+  const MultibodyPlant<double>* const plant_double_;
   const FrameIndex frameA_index_;
   const FrameIndex frameB_index_;
   const Eigen::Vector3d p_AS_;
@@ -78,7 +92,11 @@ class GazeTargetConstraint : public solvers::Constraint {
   const Eigen::Vector3d p_BT_;
   const double cone_half_angle_;
   const double cos_cone_half_angle_;
-  systems::Context<double>* const context_;
+  systems::Context<double>* const context_double_;
+
+  const MultibodyPlant<AutoDiffXd>* const plant_autodiff_;
+  systems::Context<AutoDiffXd>* const context_autodiff_;
+  const bool use_autodiff_;
 };
 }  // namespace multibody
 }  // namespace drake
