@@ -6,21 +6,7 @@
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-
-#ifndef __clang__
-// N.B. Without this, GCC 7.4.0 on Ubuntu complains about
-// `AutoDiffScalar(const AutoDiffScalar& other)` having uninitialized values.
-// TODO(eric.cousineau):  #11566 Figure out why?
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif  // __clang__
-
 #include "drake/math/autodiff.h"
-
-#ifndef __clang__
-#pragma GCC diagnostic pop
-#endif  // __clang__
-
 #include "drake/math/autodiff_gradient.h"
 
 using Eigen::AutoDiffScalar;
