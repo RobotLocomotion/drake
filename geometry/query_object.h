@@ -357,16 +357,10 @@ class QueryObject {
    extrinsic and intrinsic properties and %QueryObject renders into the
    provided image.
 
-   Eventually, there will be multiple renderers that can be invoked which vary
-   in the fidelity of the images they produce. Currently, only the low fidelity
-   renderer is implemented. Invocation on a higher level of fidelity will throw
-   an exception. As additional renderers get added, they will be engaged via
-   this same interface.
-
    <!-- TODO(SeanCurtis-TRI): Currently, pose is requested as a transform of
    double. This puts the burden on the caller to be compatible. Provide
    specializations for AutoDiff and symbolic (the former extracts a
-   double-valued transform and the latter throws).
+   double-valued transform and the latter throws). -->
    */
   //@{
 
