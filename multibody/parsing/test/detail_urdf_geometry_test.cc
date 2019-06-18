@@ -261,7 +261,7 @@ TEST_F(UrdfGeometryTests, TestParseConvexMesh) {
 
   EXPECT_NO_THROW(ParseUrdfGeometry(convex_and_nonconvex_test));
 
-  ASSERT_EQ(collision_instances_.size(), 3);
+  ASSERT_EQ(collision_instances_.size(), 2);
 
   {
     const auto& instance = collision_instances_[0];
@@ -272,13 +272,6 @@ TEST_F(UrdfGeometryTests, TestParseConvexMesh) {
 
   {
     const auto& instance = collision_instances_[1];
-    const geometry::Mesh* mesh =
-        dynamic_cast<const geometry::Mesh*>(&instance.shape());
-    ASSERT_TRUE(mesh);
-  }
-
-  {
-    const auto& instance = collision_instances_[2];
     const geometry::Mesh* mesh =
         dynamic_cast<const geometry::Mesh*>(&instance.shape());
     ASSERT_TRUE(mesh);

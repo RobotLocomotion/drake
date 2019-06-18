@@ -197,19 +197,11 @@ std::unique_ptr<geometry::Shape> ParseMesh(
     scale = scale_vector(0);
   }
 
-  std::string convex;
-  bool make_as_convex = false;
-  if (ParseStringAttribute(shape_node, "drake:convex", &convex)) {
-    if (convex != "false" && convex != "False" && convex != "true" &&
-        convex != "True") {
-      throw std::runtime_error(
-          "Valid options for drake:convex are '[Ff]alse' and '[Tt]rue': you "
-          "provided " +
-          convex);
-    }
-    make_as_convex = (convex == "true" || convex == "True");
-  }
-  if (make_as_convex) {
+  // TODO(gizatt): When it's possible to check if geometry
+  // is convex, make the convex/mesh choice automatically,
+  // and assert that the geometry is convex if the DeclareConvex
+  // tag is present.
+  if (shape_node->FirstChildElement("drake:DeclareConvex")) {
     return std::make_unique<geometry::Convex>(resolved_filename, scale);
   } else {
     return std::make_unique<geometry::Mesh>(resolved_filename, scale);

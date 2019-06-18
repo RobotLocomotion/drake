@@ -153,13 +153,12 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
         scale = scale_vector.X();
       }
 
-      bool make_as_convex = false;
-      if (mesh_element->HasElement("drake:convex")) {
-        make_as_convex =
-            GetChildElementValueOrThrow<bool>(*mesh_element, "drake:convex");
-      }
+      // TODO(gizatt): When it's possible to check if geometry
+      // is convex, make the convex/mesh choice automatically,
+      // and assert that the geometry is convex if the DeclareConvex
+      // tag is present.
       // TODO(amcastro-tri): Fix the given path to be an absolute path.
-      if (make_as_convex) {
+      if (mesh_element->HasElement("drake:DeclareConvex")) {
         return make_unique<geometry::Convex>(file_name, scale);
       } else {
         return make_unique<geometry::Mesh>(file_name, scale);
