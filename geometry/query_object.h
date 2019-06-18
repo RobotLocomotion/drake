@@ -357,16 +357,10 @@ class QueryObject {
    extrinsic and intrinsic properties and %QueryObject renders into the
    provided image.
 
-   Eventually, there will be multiple renderers that can be invoked which vary
-   in the fidelity of the images they produce. Currently, only the low fidelity
-   renderer is implemented. Invocation on a higher level of fidelity will throw
-   an exception. As additional renderers get added, they will be engaged via
-   this same interface.
-
    <!-- TODO(SeanCurtis-TRI): Currently, pose is requested as a transform of
    double. This puts the burden on the caller to be compatible. Provide
    specializations for AutoDiff and symbolic (the former extracts a
-   double-valued transform and the latter throws).
+   double-valued transform and the latter throws). -->
    */
   //@{
 
@@ -376,13 +370,13 @@ class QueryObject {
    @param camera                The intrinsic properties of the camera.
    @param parent_frame          The id for the camera's parent frame.
    @param X_PC                  The pose of the camera body in the world frame.
-   @param[out] color_image_out  The rendered color image.
-   @param show_window           If true, the render window will be displayed. */
+   @param show_window           If true, the render window will be displayed.
+   @param[out] color_image_out  The rendered color image. */
   void RenderColorImage(const render::CameraProperties& camera,
                         FrameId parent_frame,
                         const math::RigidTransformd& X_PC,
-                        systems::sensors::ImageRgba8U* color_image_out,
-                        bool show_window) const;
+                        bool show_window,
+                        systems::sensors::ImageRgba8U* color_image_out) const;
 
   /** Renders a depth image for the given `camera` posed with respect to the
    indicated parent frame P.
@@ -406,13 +400,13 @@ class QueryObject {
    @param camera                The intrinsic properties of the camera.
    @param parent_frame          The id for the camera's parent frame.
    @param X_PC                  The pose of the camera body in the world frame.
-   @param[out] label_image_out  The rendered label image.
-   @param show_window           If true, the render window will be displayed. */
+   @param show_window           If true, the render window will be displayed.
+   @param[out] label_image_out  The rendered label image. */
   void RenderLabelImage(const render::CameraProperties& camera,
                         FrameId parent_frame,
                         const math::RigidTransformd& X_PC,
-                        systems::sensors::ImageLabel16I* label_image_out,
-                        bool show_window) const;
+                        bool show_window,
+                        systems::sensors::ImageLabel16I* label_image_out) const;
 
   //@}
 

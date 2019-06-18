@@ -118,14 +118,14 @@ template <typename T>
 void QueryObject<T>::RenderColorImage(const CameraProperties& camera,
                                       FrameId parent_frame,
                                       const RigidTransformd& X_PC,
-                                      ImageRgba8U* color_image_out,
-                                      bool show_window) const {
+                                      bool show_window,
+                                      ImageRgba8U* color_image_out) const {
   ThrowIfNotCallable();
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
-  return state.RenderColorImage(camera, parent_frame, X_PC, color_image_out,
-                                show_window);
+  return state.RenderColorImage(camera, parent_frame, X_PC, show_window,
+                                color_image_out);
 }
 
 template <typename T>
@@ -144,14 +144,14 @@ template <typename T>
 void QueryObject<T>::RenderLabelImage(const CameraProperties& camera,
                                       FrameId parent_frame,
                                       const RigidTransformd& X_PC,
-                                      ImageLabel16I* label_image_out,
-                                      bool show_window) const {
+                                      bool show_window,
+                                      ImageLabel16I* label_image_out) const {
   ThrowIfNotCallable();
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
-  return state.RenderLabelImage(camera, parent_frame, X_PC, label_image_out,
-                                show_window);
+  return state.RenderLabelImage(camera, parent_frame, X_PC, show_window,
+                                label_image_out);
 }
 
 template <typename T>

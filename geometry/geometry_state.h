@@ -493,8 +493,8 @@ class GeometryState {
   void RenderColorImage(const render::CameraProperties& camera,
                         FrameId parent_frame,
                         const math::RigidTransformd& X_PC,
-                        systems::sensors::ImageRgba8U* color_image_out,
-                        bool show_window) const;
+                        bool show_window,
+                        systems::sensors::ImageRgba8U* color_image_out) const;
 
   /** Implementation support for QueryObject::RenderDepthImage().
    @pre All poses have already been updated.  */
@@ -508,8 +508,8 @@ class GeometryState {
   void RenderLabelImage(const render::CameraProperties& camera,
                         FrameId parent_frame,
                         const math::RigidTransformd& X_PC,
-                        systems::sensors::ImageLabel16I* label_image_out,
-                        bool show_window) const;
+                        bool show_window,
+                        systems::sensors::ImageLabel16I* label_image_out) const;
 
   //@}
 

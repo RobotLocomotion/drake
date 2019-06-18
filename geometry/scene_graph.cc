@@ -18,14 +18,10 @@ namespace geometry {
 using render::RenderLabel;
 using systems::Context;
 using systems::InputPort;
-using systems::LeafContext;
 using systems::LeafSystem;
 using systems::rendering::PoseBundle;
-using systems::SystemOutput;
-using systems::SystemSymbolicInspector;
 using systems::SystemTypeTag;
 using std::make_unique;
-using std::unordered_map;
 using std::vector;
 
 namespace {
@@ -107,7 +103,7 @@ SceneGraph<T>::SceneGraph(const SceneGraph<U>& other) : SceneGraph() {
   //      time.
   // Therefore, for SourceIds i and j, the if i > j, then the port indices for
   // source i must all be greater than those for j.
-  std::vector<SourceId> source_ids;
+  vector<SourceId> source_ids;
   for (const auto pair : other.input_source_ids_) {
     source_ids.push_back(pair.first);
   }
@@ -137,7 +133,7 @@ bool SceneGraph<T>::SourceIsRegistered(SourceId id) const {
 }
 
 template <typename T>
-const systems::InputPort<T>& SceneGraph<T>::get_source_pose_port(
+const InputPort<T>& SceneGraph<T>::get_source_pose_port(
     SourceId id) const {
   ThrowUnlessRegistered(id, "Can't acquire pose port for unknown source id: ");
   return this->get_input_port(input_source_ids_.at(id).pose_port);
@@ -224,7 +220,7 @@ int SceneGraph<T>::RendererCount() const {
 }
 
 template <typename T>
-std::vector<std::string> SceneGraph<T>::RegisteredRendererNames() const {
+vector<std::string> SceneGraph<T>::RegisteredRendererNames() const {
   return initial_state_->RegisteredRendererNames();
 }
 
@@ -365,7 +361,7 @@ PoseBundle<T> SceneGraph<T>::MakePoseBundle() const {
   // *model*.
   // TODO(SeanCurtis-TRI): This happens *twice* now (once here and once in
   // CalcPoseBundle); might be worth refactoring/caching it.
-  std::vector<FrameId> dynamic_frames;
+  vector<FrameId> dynamic_frames;
   for (const auto& pair : g_state.frames_) {
     const FrameId frame_id = pair.first;
     if (frame_id == world_frame_id()) continue;
@@ -403,7 +399,7 @@ void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
 
   // Collect only those frames that have illustration geometry -- based on the
   // *model*.
-  std::vector<FrameId> dynamic_frames;
+  vector<FrameId> dynamic_frames;
   for (const auto& pair : g_state.frames_) {
     const FrameId frame_id = pair.first;
     if (frame_id == world_frame_id()) continue;

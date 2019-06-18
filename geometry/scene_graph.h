@@ -481,7 +481,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @param name      The unique name of the renderer.
    @param renderer  The `renderer` to add.
    @throws std::logic_error if the name is not unique, or geometry has already
-                               been registered.  */
+                            been registered.  */
   void AddRenderer(std::string name,
                    std::unique_ptr<render::RenderEngine> renderer);
 

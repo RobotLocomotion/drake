@@ -190,7 +190,7 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   RigidTransformd X_WC = RigidTransformd::Identity();
   ImageRgba8U color;
   EXPECT_DEFAULT_ERROR(default_object->RenderColorImage(
-      properties, FrameId::get_new_id(), X_WC, &color, false));
+      properties, FrameId::get_new_id(), X_WC, false, &color));
 
   ImageDepth32F depth;
   EXPECT_DEFAULT_ERROR(default_object->RenderDepthImage(
@@ -198,7 +198,7 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
 
   ImageLabel16I label;
   EXPECT_DEFAULT_ERROR(default_object->RenderLabelImage(
-      properties, FrameId::get_new_id(), X_WC, &label, false));
+      properties, FrameId::get_new_id(), X_WC, false, &label));
 
 #undef EXPECT_DEFAULT_ERROR
 }

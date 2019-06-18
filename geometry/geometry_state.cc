@@ -938,8 +938,8 @@ template <typename T>
 void GeometryState<T>::RenderColorImage(const render::CameraProperties& camera,
                                         FrameId parent_frame,
                                         const RigidTransformd& X_PC,
-                                        ImageRgba8U* color_image_out,
-                                        bool show_window) const {
+                                        bool show_window,
+                                        ImageRgba8U* color_image_out) const {
   const RigidTransformd X_WC = GetDoubleWorldPose(parent_frame) * X_PC;
   const render::RenderEngine& engine =
       GetRenderEngineOrThrow(camera.renderer_name);
@@ -966,8 +966,8 @@ template <typename T>
 void GeometryState<T>::RenderLabelImage(const render::CameraProperties& camera,
                                         FrameId parent_frame,
                                         const RigidTransformd& X_PC,
-                                        ImageLabel16I* label_image_out,
-                                        bool show_window) const {
+                                        bool show_window,
+                                        ImageLabel16I* label_image_out) const {
   const RigidTransformd X_WC = GetDoubleWorldPose(parent_frame) * X_PC;
   const render::RenderEngine& engine =
       GetRenderEngineOrThrow(camera.renderer_name);

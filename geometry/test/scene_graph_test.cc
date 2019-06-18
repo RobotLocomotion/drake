@@ -30,14 +30,11 @@ namespace geometry {
 
 using Eigen::Isometry3d;
 using internal::DummyRenderEngine;
-using math::RigidTransformd;
-using render::RenderLabel;
 using systems::Context;
 using systems::rendering::PoseBundle;
 using systems::System;
 using std::make_unique;
 using std::unique_ptr;
-using std::unordered_map;
 
 // Friend class for working with QueryObjects in a test context.
 class QueryObjectTester {
