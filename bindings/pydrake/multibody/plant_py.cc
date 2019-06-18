@@ -648,8 +648,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("world_frame", &Class::world_frame, py_reference_internal,
             cls_doc.world_frame.doc)
         .def("is_finalized", &Class::is_finalized, cls_doc.is_finalized.doc)
-        .def("Finalize", py::overload_cast<SceneGraph<T>*>(&Class::Finalize),
-            py::arg("scene_graph") = nullptr, cls_doc.Finalize.doc);
+        .def("Finalize", [](Class* self) { self->Finalize(); },
+            cls_doc.Finalize.doc)
+        .def("Finalize",
+            [](Class* self, SceneGraph<T>* scene_graph) {
+              self->Finalize(scene_graph);
+            },
+            py::arg("scene_graph"), cls_doc.Finalize.doc);
     // Position and velocity accessors and mutators.
     cls  // BR
         .def("GetMutablePositionsAndVelocities",

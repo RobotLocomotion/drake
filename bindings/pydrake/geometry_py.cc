@@ -215,15 +215,6 @@ PYBIND11_MODULE(geometry, m) {
   type_visit(
       [m](auto dummy) { DoDefinitions(m, dummy); }, NonSymbolicScalarPack{});
 
-  {
-    py::tuple param = GetPyParam<symbolic::Expression>();
-    DefineTemplateClassWithDefault<SceneGraph<symbolic::Expression>,
-        LeafSystem<symbolic::Expression>>(m, "SceneGraph", param,
-        "Warning:\n    Bindings of ``SceneGraph_[Expression]`` are not "
-        "fully implemented. This is only to permit passing None to APIs "
-        "that take references to existing SceneGraph instances.");
-  }
-
   py::module::import("pydrake.systems.lcm");
   m.def("ConnectDrakeVisualizer",
       py::overload_cast<systems::DiagramBuilder<double>*,
