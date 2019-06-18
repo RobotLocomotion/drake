@@ -539,21 +539,44 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("RegisterVisualGeometry",
             py::overload_cast<const Body<T>&, const RigidTransform<double>&,
                 const geometry::Shape&, const std::string&,
-                const Vector4<double>&, geometry::SceneGraph<T>*>(
-                &Class::RegisterVisualGeometry),
+                const Vector4<double>&>(&Class::RegisterVisualGeometry),
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
-            py::arg("diffuse_color"), py::arg("scene_graph") = nullptr,
+            py::arg("diffuse_color"),
             cls_doc.RegisterVisualGeometry
-                .doc_6args_body_X_BG_shape_name_diffuse_color_scene_graph)
+                .doc_5args_body_X_BG_shape_name_diffuse_color)
+        .def("RegisterVisualGeometry",
+            [](Class* self, const Body<T>& body,
+                const RigidTransform<double>& X_BG,
+                const geometry::Shape& shape, const std::string& name,
+                const Vector4<double>& diffuse_color,
+                geometry::SceneGraph<T>* scene_graph) {
+              WarnDeprecated(
+                  "The scene_graph argument is deprecated; instead, call "
+                  "RegisterAsSourceForSceneGraph first.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->RegisterVisualGeometry(
+                  body, X_BG, shape, name, diffuse_color, scene_graph);
+#pragma GCC diagnostic pop
+            },
+            py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
+            py::arg("diffuse_color"), py::arg("scene_graph"),
+            (std::string("(Deprecated.) ") +
+                cls_doc.RegisterVisualGeometry
+                    .doc_5args_body_X_BG_shape_name_diffuse_color)
+                .c_str())
         .def("RegisterVisualGeometry",
             [](Class* self, const Body<T>& body, const Isometry3<double>& X_BG,
                 const geometry::Shape& shape, const std::string& name,
                 const Vector4<double>& diffuse_color,
                 geometry::SceneGraph<T>* scene_graph) {
               WarnDeprecated(doc_iso3_deprecation);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
               return self->RegisterVisualGeometry(body,
                   RigidTransform<double>(X_BG), shape, name, diffuse_color,
                   scene_graph);
+#pragma GCC diagnostic pop
             },
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
             py::arg("diffuse_color"), py::arg("scene_graph") = nullptr,
@@ -561,20 +584,45 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("RegisterCollisionGeometry",
             py::overload_cast<const Body<T>&, const RigidTransform<double>&,
                 const geometry::Shape&, const std::string&,
-                const CoulombFriction<double>&, geometry::SceneGraph<T>*>(
+                const CoulombFriction<double>&>(
                 &Class::RegisterCollisionGeometry),
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
-            py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
-            cls_doc.RegisterCollisionGeometry.doc)
+            py::arg("coulomb_friction"),
+            cls_doc.RegisterCollisionGeometry
+                .doc_5args_body_X_BG_shape_name_coulomb_friction)
+        .def("RegisterCollisionGeometry",
+            [](Class* self, const Body<T>& body,
+                const RigidTransform<double>& X_BG,
+                const geometry::Shape& shape, const std::string& name,
+                const CoulombFriction<double>& coulomb_friction,
+                geometry::SceneGraph<T>* scene_graph) {
+              WarnDeprecated(
+                  "The scene_graph argument is deprecated; instead, call "
+                  "RegisterAsSourceForSceneGraph first.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->RegisterCollisionGeometry(
+                  body, X_BG, shape, name, coulomb_friction, scene_graph);
+#pragma GCC diagnostic pop
+            },
+            py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
+            py::arg("coulomb_friction"), py::arg("scene_graph"),
+            (std::string("(Deprecated.) ") +
+                cls_doc.RegisterCollisionGeometry
+                    .doc_5args_body_X_BG_shape_name_coulomb_friction)
+                .c_str())
         .def("RegisterCollisionGeometry",
             [](Class* self, const Body<T>& body, const Isometry3<double>& X_BG,
                 const geometry::Shape& shape, const std::string& name,
                 const CoulombFriction<double>& coulomb_friction,
                 geometry::SceneGraph<T>* scene_graph) {
               WarnDeprecated(doc_iso3_deprecation);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
               return self->RegisterCollisionGeometry(body,
                   RigidTransform<double>(X_BG), shape, name, coulomb_friction,
                   scene_graph);
+#pragma GCC diagnostic pop
             },
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
             py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
@@ -655,13 +703,19 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("world_frame", &Class::world_frame, py_reference_internal,
             cls_doc.world_frame.doc)
         .def("is_finalized", &Class::is_finalized, cls_doc.is_finalized.doc)
-        .def("Finalize", [](Class* self) { self->Finalize(); },
+        .def("Finalize", py::overload_cast<>(&Class::Finalize),
             cls_doc.Finalize.doc)
         .def("Finalize",
             [](Class* self, SceneGraph<T>* scene_graph) {
+              WarnDeprecated(
+                  "The scene_graph argument is deprecated; instead, call "
+                  "RegisterAsSourceForSceneGraph first.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
               self->Finalize(scene_graph);
+#pragma GCC diagnostic pop
             },
-            py::arg("scene_graph"), cls_doc.Finalize.doc);
+            py::arg("scene_graph"), cls_doc.Finalize.doc_deprecated);
     // Position and velocity accessors and mutators.
     cls  // BR
         .def("GetMutablePositionsAndVelocities",

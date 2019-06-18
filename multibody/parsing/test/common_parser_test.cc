@@ -39,7 +39,7 @@ class MultibodyPlantLinkTests :
   void LoadMultibodyPlantAndSceneGraph() {
     auto load_model = GetParam();
     load_model(base_name_, &plant_, &scene_graph_);
-    plant_.Finalize(&scene_graph_);
+    plant_.Finalize();
   }
 
  protected:

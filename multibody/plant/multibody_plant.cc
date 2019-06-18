@@ -295,10 +295,28 @@ geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
 template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
     const Body<T>& body, const math::RigidTransform<double>& X_BG,
+    const geometry::Shape& shape, const std::string& name) {
+  return RegisterVisualGeometry(
+      body, X_BG, shape, name, geometry::IllustrationProperties());
+}
+
+template <typename T>
+geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
+    const Body<T>& body, const math::RigidTransform<double>& X_BG,
     const geometry::Shape& shape, const std::string& name,
     geometry::SceneGraph<T>* scene_graph) {
+  CheckUserProvidedSceneGraph(scene_graph);
+  return RegisterVisualGeometry(body, X_BG, shape, name);
+}
+
+template <typename T>
+geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
+    const Body<T>& body, const math::RigidTransform<double>& X_BG,
+    const geometry::Shape& shape, const std::string& name,
+    const Vector4<double>& diffuse_color) {
   return RegisterVisualGeometry(
-      body, X_BG, shape, name, geometry::IllustrationProperties(), scene_graph);
+      body, X_BG, shape, name,
+      geometry::MakePhongIllustrationProperties(diffuse_color));
 }
 
 template <typename T>
@@ -307,17 +325,15 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
     const geometry::Shape& shape, const std::string& name,
     const Vector4<double>& diffuse_color,
     SceneGraph<T>* scene_graph) {
-  return RegisterVisualGeometry(
-      body, X_BG, shape, name,
-      geometry::MakePhongIllustrationProperties(diffuse_color), scene_graph);
+  CheckUserProvidedSceneGraph(scene_graph);
+  return RegisterVisualGeometry(body, X_BG, shape, name, diffuse_color);
 }
 
 template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
     const Body<T>& body, const math::RigidTransform<double>& X_BG,
     const geometry::Shape& shape, const std::string& name,
-    const geometry::IllustrationProperties& properties,
-    SceneGraph<T>* scene_graph) {
+    const geometry::IllustrationProperties& properties) {
   // TODO(SeanCurtis-TRI): Consider simply adding an interface that takes a
   // unique pointer to an already instantiated GeometryInstance. This will
   // require shuffling around a fair amount of code and should ultimately be
@@ -325,7 +341,6 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
   // elements.
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(geometry_source_is_registered());
-  CheckUserProvidedSceneGraph(scene_graph);
 
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
@@ -342,6 +357,16 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
 }
 
 template <typename T>
+geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
+    const Body<T>& body, const math::RigidTransform<double>& X_BG,
+    const geometry::Shape& shape, const std::string& name,
+    const geometry::IllustrationProperties& properties,
+    SceneGraph<T>* scene_graph) {
+  CheckUserProvidedSceneGraph(scene_graph);
+  return RegisterVisualGeometry(body, X_BG, shape, name, properties);
+}
+
+template <typename T>
 const std::vector<geometry::GeometryId>&
 MultibodyPlant<T>::GetVisualGeometriesForBody(const Body<T>& body) const {
   return visual_geometries_[body.index()];
@@ -351,11 +376,9 @@ template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
     const Body<T>& body, const math::RigidTransform<double>& X_BG,
     const geometry::Shape& shape, const std::string& name,
-    const CoulombFriction<double>& coulomb_friction,
-    SceneGraph<T>* scene_graph) {
+    const CoulombFriction<double>& coulomb_friction) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(geometry_source_is_registered());
-  CheckUserProvidedSceneGraph(scene_graph);
 
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
@@ -376,6 +399,16 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   DRAKE_ASSERT(num_bodies() == static_cast<int>(collision_geometries_.size()));
   collision_geometries_[body.index()].push_back(id);
   return id;
+}
+
+template <typename T>
+geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
+    const Body<T>& body, const math::RigidTransform<double>& X_BG,
+    const geometry::Shape& shape, const std::string& name,
+    const CoulombFriction<double>& coulomb_friction,
+    SceneGraph<T>* scene_graph) {
+  CheckUserProvidedSceneGraph(scene_graph);
+  return RegisterCollisionGeometry(body, X_BG, shape, name, coulomb_friction);
 }
 
 template <typename T>
@@ -522,15 +555,20 @@ void MultibodyPlant<T>::CalcForceElementsContribution(
 }
 
 template<typename T>
-void MultibodyPlant<T>::Finalize(geometry::SceneGraph<T>* scene_graph) {
+void MultibodyPlant<T>::Finalize() {
   // After finalizing the base class, tree is read-only.
   internal::MultibodyTreeSystem<T>::Finalize();
-  CheckUserProvidedSceneGraph(scene_graph);
   if (geometry_source_is_registered()) {
     FilterAdjacentBodies();
     ExcludeCollisionsWithVisualGeometry();
   }
   FinalizePlantOnly();
+}
+
+template<typename T>
+void MultibodyPlant<T>::Finalize(geometry::SceneGraph<T>* scene_graph) {
+  CheckUserProvidedSceneGraph(scene_graph);
+  Finalize();
 }
 
 template<typename T>

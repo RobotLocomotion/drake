@@ -1174,7 +1174,7 @@ class TestPlant(unittest.TestCase):
         parser.AddModelFromFile(
             FindResourceOrThrow(
                 "drake/bindings/pydrake/multibody/test/two_bodies.sdf"))
-        plant_f.Finalize(scene_graph_f)
+        plant_f.Finalize()
         diagram_f = builder_f.Build()
 
         # Do conversion.
