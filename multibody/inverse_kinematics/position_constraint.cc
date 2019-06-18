@@ -48,16 +48,42 @@ PositionConstraint::PositionConstraint(
   if (context == nullptr) throw std::invalid_argument("context is nullptr.");
 }
 
-template <typename T>
+template <typename T, typename S>
+void EvalConstraintGradient(const MultibodyPlant<T>&,
+                            const systems::Context<T>&, const Frame<T>&,
+                            const Frame<T>&, const Vector3<T>& p_AQ,
+                            const Eigen::Vector3d&,
+                            const Eigen::Ref<const VectorX<S>>&,
+                            VectorX<S>* y) {
+  *y = p_AQ;
+}
+
+template <>
+void EvalConstraintGradient<double, AutoDiffXd>(
+    const MultibodyPlant<double>& plant,
+    const systems::Context<double>& context, const Frame<double>& frameA,
+    const Frame<double>& frameB, const Eigen::Vector3d& p_AQ,
+    const Eigen::Vector3d& p_BQ, const Eigen::Ref<const AutoDiffVecXd>& x,
+    AutoDiffVecXd* y) {
+  Eigen::MatrixXd Jq_V_ABq(6, plant.num_positions());
+  plant.CalcJacobianSpatialVelocity(context, JacobianWrtVariable::kQDot, frameB,
+                                    p_BQ, frameA, frameA, &Jq_V_ABq);
+  *y = math::initializeAutoDiffGivenGradientMatrix(
+      p_AQ, Jq_V_ABq.bottomRows<3>() * math::autoDiffToGradientMatrix(x));
+}
+
+template <typename T, typename S>
 void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
                    const FrameIndex frameA_index, const FrameIndex frameB_index,
-                   const Eigen::Vector3d p_BQ,
-                   const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* y) {
+                   const Eigen::Vector3d& p_BQ,
+                   const Eigen::Ref<const VectorX<S>>& x, VectorX<S>* y) {
   y->resize(3);
   UpdateContextConfiguration(context, plant, x);
   const Frame<T>& frameA = plant.get_frame(frameA_index);
   const Frame<T>& frameB = plant.get_frame(frameB_index);
-  plant.CalcPointsPositions(*context, frameB, p_BQ.cast<T>(), frameA, y);
+  Vector3<T> p_AQ;
+  plant.CalcPointsPositions(*context, frameB, p_BQ.cast<T>(), frameA, &p_AQ);
+  EvalConstraintGradient(plant, *context, frameA, frameB, p_AQ, p_BQ, x, y);
 }
 
 void PositionConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -74,21 +100,9 @@ void PositionConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
 
 void PositionConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                                 AutoDiffVecXd* y) const {
-  y->resize(3);
   if (!use_autodiff_) {
-    UpdateContextConfiguration(context_double_, *plant_double_,
-                               math::autoDiffToValueMatrix(x));
-    const Frame<double>& frameA = plant_double_->get_frame(frameA_index_);
-    const Frame<double>& frameB = plant_double_->get_frame(frameB_index_);
-    Eigen::Vector3d p_AQ{};
-    plant_double_->CalcPointsPositions(*context_double_, frameB, p_BQ_, frameA,
-                                       &p_AQ);
-    Eigen::MatrixXd Jq_V_ABq(6, plant_double_->num_positions());
-    plant_double_->CalcJacobianSpatialVelocity(
-        *context_double_, JacobianWrtVariable::kQDot, frameB, p_BQ_, frameA,
-        frameA, &Jq_V_ABq);
-    *y = math::initializeAutoDiffGivenGradientMatrix(
-        p_AQ, Jq_V_ABq.bottomRows<3>() * math::autoDiffToGradientMatrix(x));
+    DoEvalGeneric(*plant_double_, context_double_, frameA_index_, frameB_index_,
+                  p_BQ_, x, y);
   } else {
     DoEvalGeneric(*plant_autodiff_, context_autodiff_, frameA_index_,
                   frameB_index_, p_BQ_, x, y);

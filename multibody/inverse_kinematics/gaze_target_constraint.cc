@@ -68,6 +68,7 @@ GazeTargetConstraint::GazeTargetConstraint(
         "GazeTargetConstraint: cone_half_angle should be within [0, pi/2]");
   }
 }
+
 template <typename T, typename S>
 void EvalConstraintGradient(const MultibodyPlant<T>&,
                             const systems::Context<T>&, const Frame<T>&,
