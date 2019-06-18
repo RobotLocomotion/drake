@@ -66,9 +66,12 @@ drake_pybind_library(
     name = "tree_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:cpp_template_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:drake_optional_pybind",
         "//bindings/pydrake/common:eigen_geometry_pybind",
+        "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:type_safe_index_pybind",
     ],
     cc_srcs = ["tree_py.cc"],
@@ -85,9 +88,12 @@ drake_pybind_library(
     name = "plant_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:cpp_template_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:drake_optional_pybind",
         "//bindings/pydrake/common:eigen_geometry_pybind",
+        "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:type_safe_index_pybind",
         "//bindings/pydrake/common:value_pybind",
     ],
@@ -98,6 +104,7 @@ drake_pybind_library(
         ":module_py",
         ":tree_py",
         "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake/common:cpp_template_py",
     ],
 )
 
@@ -209,6 +216,7 @@ drake_py_unittest(
     deps = [
         ":multibody_tree_py",
         ":parsing_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 
@@ -228,7 +236,9 @@ drake_py_unittest(
         ":plant_py",
         ":tree_py",
         "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/systems:analysis_py",
+        "//bindings/pydrake/systems:scalar_conversion_py",
     ],
 )
 

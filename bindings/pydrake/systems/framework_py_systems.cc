@@ -353,6 +353,7 @@ struct Impl {
     auto system_cls = DefineTemplateClassWithDefault<System<T>, PySystem>(
         m, "System", GetPyParam<T>(), doc.SystemBase.doc);
     system_cls  // BR
+        .def("get_name", &System<T>::get_name, doc.SystemBase.get_name.doc)
         .def("set_name", &System<T>::set_name, doc.SystemBase.set_name.doc)
         // Topology.
         .def("num_input_ports", &System<T>::num_input_ports,
@@ -803,7 +804,10 @@ Note: The above is for the C++ documentation. For Python, use
                 &Diagram<T>::GetMutableSubsystemContext),
             py_reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
-            py::keep_alive<0, 3>(), doc.Diagram.GetMutableSubsystemContext.doc);
+            py::keep_alive<0, 3>(), doc.Diagram.GetMutableSubsystemContext.doc)
+        .def("GetSubsystemByName", &Diagram<T>::GetSubsystemByName,
+            py::arg("name"), py_reference_internal,
+            doc.Diagram.GetSubsystemByName.doc);
 
     // N.B. This will effectively allow derived classes of `VectorSystem` to
     // override `LeafSystem` methods, disrespecting `final`-ity.
