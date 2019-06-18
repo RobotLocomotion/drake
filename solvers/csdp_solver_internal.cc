@@ -27,9 +27,9 @@ void ConvertSparseMatrixFormatToCsdpProblemData(
   }
 
   C_csdp->nblocks = static_cast<int>(X_blocks.size());
+  // We need to add 1 here because CSDP uses Fortran 1-indexed, so the
+  // 0'th block is wasted.
   C_csdp->blocks = static_cast<struct csdp::blockrec*>(
-      // We need to add 1 here because CSDP uses Fortran 1-indexed, so the
-      // 0'th block is wasted.
       malloc((C_csdp->nblocks + 1) * sizeof(struct csdp::blockrec)));
   for (int m = 0; m < C_csdp->nblocks; ++m) {
     // CSDP uses Fortran index, so we need to add 1.
@@ -57,8 +57,8 @@ void ConvertSparseMatrixFormatToCsdpProblemData(
         }
       }
     } else if (X_blocks[m].block_type == BlockType::kDiagonal) {
+      // CSDP uses Fortran 1-index array, so the 0'th entry is wasted.
       C_csdp->blocks[m + 1].data.vec = static_cast<double*>(
-          // CSDP uses Fortran 1-index array, so the 0'th entry is wasted.
           malloc((X_blocks[m].num_rows + 1) * sizeof(double)));
       for (int j = 0; j < X_blocks[m].num_rows; ++j) {
         C_csdp->blocks[m + 1].data.vec[j + 1] = 0.0;
@@ -71,7 +71,7 @@ void ConvertSparseMatrixFormatToCsdpProblemData(
       }
     } else {
       throw std::runtime_error(
-          "ConvertSparseMatrixFormatToCsdpProblemData() only support MATRIX "
+          "ConvertSparseMatrixFormatToCsdpProblemData() only supports MATRIX "
           "or DIAG blocks.");
     }
   }
