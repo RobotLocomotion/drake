@@ -50,6 +50,18 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
       double angle_lower, double angle_upper,
       systems::Context<double>* context);
 
+  /**
+   * Overloaded constructor. Use MultibodyPlant<AutoDiffXd> instead of
+   * MultibodyPlant<double>.
+   */
+  AngleBetweenVectorsConstraint(const MultibodyPlant<AutoDiffXd>* const plant,
+                                const Frame<AutoDiffXd>& frameA,
+                                const Eigen::Ref<const Eigen::Vector3d>& a_A,
+                                const Frame<AutoDiffXd>& frameB,
+                                const Eigen::Ref<const Eigen::Vector3d>& b_B,
+                                double angle_lower, double angle_upper,
+                                systems::Context<AutoDiffXd>* context);
+
   ~AngleBetweenVectorsConstraint() override {}
 
  private:
@@ -65,12 +77,16 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
         "AngleBetweenVectorsConstraint::DoEval() does not work for symbolic "
         "variables.");
   }
-  const MultibodyPlant<double>& plant_;
+  const MultibodyPlant<double>* plant_double_;
   const FrameIndex frameA_index_;
   const FrameIndex frameB_index_;
   const Eigen::Vector3d a_unit_A_;
   const Eigen::Vector3d b_unit_B_;
-  systems::Context<double>* const context_;
+  systems::Context<double>* const context_double_;
+
+  const MultibodyPlant<AutoDiffXd>* plant_autodiff_;
+  systems::Context<AutoDiffXd>* const context_autodiff_;
+  const bool use_autodiff_;
 };
 }  // namespace multibody
 }  // namespace drake

@@ -72,6 +72,8 @@ TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
       plant_autodiff_->GetFrameByName(frameB.name()), p_BQ);
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, 1E-12);
 
+  // Checks if the constraint constructed from MBP<ADS> gives the same result
+  // as from MBP<double>.
   PositionConstraint constraint_from_autodiff(
       plant_autodiff_.get(), plant_autodiff_->get_frame(frameA_index),
       p_AQ_lower, p_AQ_upper, plant_autodiff_->get_frame(frameB_index), p_BQ,
