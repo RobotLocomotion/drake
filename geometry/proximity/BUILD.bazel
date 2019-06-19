@@ -74,6 +74,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "level_set_field",
+    hdrs = ["level_set_field.h"],
+    deps = ["//common"],
+)
+
+drake_cc_library(
     name = "mesh_field",
     srcs = [
         "mesh_field.cc",
@@ -136,7 +142,8 @@ drake_cc_library(
     deps = [
         "//common:autodiff",
         "//common:essential",
-        "//geometry/proximity:volume_mesh",
+        "//geometry/proximity:level_set_field",
+        "//geometry/proximity:volume_mesh",        
         "//geometry/query_results:contact_surface",
         "//math:geometric_transform",
     ],

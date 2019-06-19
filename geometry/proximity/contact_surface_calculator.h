@@ -8,6 +8,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/type_safe_index.h"
+#include "drake/geometry/proximity/level_set_field.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
@@ -260,34 +261,43 @@ int IntersectTetWithLevelSet(const std::array<Vector3<T>, 4>& tet_vertices_N,
 ///
 /// Bloomenthal, J., 1994. An Implicit Surface Polygonizer. Graphics Gems IV,
 /// pp. 324-349.
+
+// TODO(amcastro):
+//  1. Write this API in terms of LevelSetField (update PR.)
+//  2. Make the returned surface mesh and gradient to be expressed in the same
+//     frame (right now mesh is in N and gradient in M.). Choose whichever frame
+//     is easier or more convenient.
+//  3. Since the level set is rigid, the normals are know and should exactly
+//     math the level set's gradients. Thefore evaluate the grad_level_set() to
+//     compute the values in grad_e_m_M_surface.
+//  4. Update current PR under review with 1, 2 and 3.
 template <typename T>
 SurfaceMesh<T> CalcZeroLevelSetInMeshDomain(
     const VolumeMesh<T>& mesh_M,
-    std::function<T(const Vector3<T>&)> level_set_N,
+    const LevelSetField<T>& level_set_N,
     const math::RigidTransform<T>& X_NM, const std::vector<T>& e_m_volume,
-    const std::vector<Vector3<T>>& grad_e_m_M_volume,
-    std::vector<T>* e_m_surface, std::vector<Vector3<T>>* grad_e_m_M_surface) {
+    std::vector<T>* e_m_surface, std::vector<Vector3<T>>* surface_normal_N) {
   DRAKE_DEMAND(e_m_surface != nullptr);
-  DRAKE_ASSERT(grad_e_m_M_surface != nullptr);
+  DRAKE_ASSERT(surface_normal_N != nullptr);
   std::vector<SurfaceVertex<T>> vertices;
   std::vector<SurfaceFace> faces;
   e_m_surface->clear();
-  grad_e_m_M_surface->clear();
+  surface_normal_N->clear();
 
   // We scan each tetrahedron in the mesh and compute the zero level set with
   // IntersectTetWithLevelSet().
   std::array<Vector3<T>, 4> tet_vertices_N;
-  Vector4<T> phi_N;
+  Vector4<T> phi;
   Vector4<T> e_m;
-  std::array<Vector3<T>, 4> grad_e_m_M;
+  std::array<Vector3<T>, 4> normal_N;
   for (const auto& tet_indexes : mesh_M.tetrahedra()) {
     // Collect data for each vertex of the tetrahedron.
     for (int i = 0; i < 4; ++i) {
       const auto& p_MV = mesh_M.vertex(tet_indexes.vertex(i)).r_MV();
       tet_vertices_N[i] = X_NM * p_MV;
-      phi_N[i] = level_set_N(tet_vertices_N[i]);
+      phi[i] = level_set_N.CalcLevelSet(tet_vertices_N[i]);
       e_m[i] = e_m_volume[tet_indexes.vertex(i)];
-      grad_e_m_M[i] = grad_e_m_M_volume[tet_indexes.vertex(i)];
+      normal_N[i] = level_set_N.CalcLevelSetGradient(tet_vertices_N[i]);
     }
     // IntersectTetWithLevelSet() uses a different convention than VolumeMesh
     // to index the vertices of a tetrahedra and therefore we swap vertexes 1
@@ -295,11 +305,11 @@ SurfaceMesh<T> CalcZeroLevelSetInMeshDomain(
     // TODO(amcastro-tri): If this becomes a performance issue, re-write
     // IntersectTetWithLevelSet() to use the convention in VolumeMesh.
     std::swap(tet_vertices_N[1], tet_vertices_N[2]);
-    std::swap(phi_N[1], phi_N[2]);
+    std::swap(phi[1], phi[2]);
     std::swap(e_m[1], e_m[2]);
-    std::swap(grad_e_m_M[1], grad_e_m_M[2]);
-    IntersectTetWithLevelSet(tet_vertices_N, phi_N, e_m, grad_e_m_M, &vertices,
-                             &faces, e_m_surface, grad_e_m_M_surface);
+    std::swap(normal_N[1], normal_N[2]);
+    IntersectTetWithLevelSet(tet_vertices_N, phi, e_m, normal_N, &vertices,
+                             &faces, e_m_surface, surface_normal_N);
   }
 
   return SurfaceMesh<T>(std::move(faces), std::move(vertices));
