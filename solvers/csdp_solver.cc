@@ -14,7 +14,7 @@
 
 namespace drake {
 namespace solvers {
-namespace internal {
+namespace {
 void SetCsdpSolverDetails(int csdp_ret, double pobj, double dobj, int y_size,
                           double* y, const csdp::blockmatrix& Z,
                           CsdpSolverDetails* solver_details) {
@@ -23,9 +23,10 @@ void SetCsdpSolverDetails(int csdp_ret, double pobj, double dobj, int y_size,
   solver_details->dual_objective = dobj;
   solver_details->y_val.resize(y_size);
   for (int i = 0; i < y_size; ++i) {
+    // CSDP uses Fortran 1-indexed array.
     solver_details->y_val(i) = y[i + 1];
   }
-  ConvertCsdpBlockMatrixtoEigen(Z, &(solver_details->Z_val));
+  internal::ConvertCsdpBlockMatrixtoEigen(Z, &(solver_details->Z_val));
 }
 
 SolutionResult ConvertCsdpReturnToSolutionResult(int csdp_ret) {
@@ -44,16 +45,16 @@ SolutionResult ConvertCsdpReturnToSolutionResult(int csdp_ret) {
   }
 }
 
-void SetProgramSolution(const SdpaFreeFormat& sdpa_free_format,
+void SetProgramSolution(const internal::SdpaFreeFormat& sdpa_free_format,
                         const csdp::blockmatrix& X,
                         const Eigen::VectorXd& s_val,
                         Eigen::VectorXd* prog_sol) {
   for (int i = 0;
        i < static_cast<int>(sdpa_free_format.prog_var_in_sdpa().size()); ++i) {
-    if (holds_alternative<DecisionVariableInSdpaX>(
+    if (holds_alternative<internal::DecisionVariableInSdpaX>(
             sdpa_free_format.prog_var_in_sdpa()[i])) {
-      const auto& decision_var_in_X =
-          get<DecisionVariableInSdpaX>(sdpa_free_format.prog_var_in_sdpa()[i]);
+      const auto& decision_var_in_X = get<internal::DecisionVariableInSdpaX>(
+          sdpa_free_format.prog_var_in_sdpa()[i]);
 
       double X_entry_val{};
       switch (X.blocks[decision_var_in_X.entry_in_X.block_index + 1]
@@ -61,9 +62,9 @@ void SetProgramSolution(const SdpaFreeFormat& sdpa_free_format,
         case csdp::MATRIX: {
           X_entry_val =
               X.blocks[decision_var_in_X.entry_in_X.block_index + 1]
-                  .data.mat[ijtok(
-                      decision_var_in_X.entry_in_X.row_index_in_block + 1,
-                      decision_var_in_X.entry_in_X.column_index_in_block + 1,
+                  .data.mat[internal::CsdpMatrixIndex(
+                      decision_var_in_X.entry_in_X.row_index_in_block,
+                      decision_var_in_X.entry_in_X.column_index_in_block,
                       X.blocks[decision_var_in_X.entry_in_X.block_index + 1]
                           .blocksize)];
           break;
@@ -82,22 +83,24 @@ void SetProgramSolution(const SdpaFreeFormat& sdpa_free_format,
       }
       (*prog_sol)(i) =
           decision_var_in_X.offset +
-          (decision_var_in_X.coeff_sign == Sign::kPositive ? X_entry_val
-                                                           : -X_entry_val);
+          (decision_var_in_X.coeff_sign == internal::Sign::kPositive
+               ? X_entry_val
+               : -X_entry_val);
     } else if (holds_alternative<double>(
                    sdpa_free_format.prog_var_in_sdpa()[i])) {
       (*prog_sol)(i) = get<double>(sdpa_free_format.prog_var_in_sdpa()[i]);
-    } else if (holds_alternative<SdpaFreeFormat::FreeVariableIndex>(
+    } else if (holds_alternative<internal::SdpaFreeFormat::FreeVariableIndex>(
                    sdpa_free_format.prog_var_in_sdpa()[i])) {
-      (*prog_sol)(i) = s_val(get<SdpaFreeFormat::FreeVariableIndex>(
+      (*prog_sol)(i) = s_val(get<internal::SdpaFreeFormat::FreeVariableIndex>(
           sdpa_free_format.prog_var_in_sdpa()[i]));
     }
   }
 }
 
-void SolveProgramWithNoFreeVariables(const MathematicalProgram& prog,
-                                     const SdpaFreeFormat& sdpa_free_format,
-                                     MathematicalProgramResult* result) {
+void SolveProgramWithNoFreeVariables(
+    const MathematicalProgram& prog,
+    const internal::SdpaFreeFormat& sdpa_free_format,
+    MathematicalProgramResult* result) {
   DRAKE_ASSERT(sdpa_free_format.num_free_variables() == 0);
 
   csdp::blockmatrix C;
@@ -121,8 +124,8 @@ void SolveProgramWithNoFreeVariables(const MathematicalProgram& prog,
       result->SetSolverDetailsType<CsdpSolverDetails>();
   SetCsdpSolverDetails(ret, pobj, dobj, sdpa_free_format.g().rows(), y, Z,
                        &solver_details);
-  // Retrieve the information back to result
-  // Since CSDP solves a mazimization problem max -cost, where "cost" is the
+  // Retrieve the information back to result.
+  // Since CSDP solves a maximization problem max -cost, where "cost" is the
   // minimization cost in MathematicalProgram, we need to negate the cost.
   result->set_optimal_cost(
       ret == 1 /* primal infeasible */ ? MathematicalProgram::
@@ -136,7 +139,7 @@ void SolveProgramWithNoFreeVariables(const MathematicalProgram& prog,
   csdp::free_prob(sdpa_free_format.num_X_rows(), sdpa_free_format.g().rows(), C,
                   rhs, constraints, X, y, Z);
 }
-}  // namespace internal
+}  // namespace
 
 void CsdpSolver::DoSolve(const MathematicalProgram& prog,
                          const Eigen::VectorXd&, const SolverOptions&,
@@ -144,7 +147,7 @@ void CsdpSolver::DoSolve(const MathematicalProgram& prog,
   result->set_solver_id(CsdpSolver::id());
   const internal::SdpaFreeFormat sdpa_free_format(prog);
   if (sdpa_free_format.num_free_variables() == 0) {
-    internal::SolveProgramWithNoFreeVariables(prog, sdpa_free_format, result);
+    SolveProgramWithNoFreeVariables(prog, sdpa_free_format, result);
   } else {
     throw std::runtime_error(
         "CsdpSolver::Solve(): do not support problem with free variables yet.");

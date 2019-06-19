@@ -10,6 +10,7 @@
 
 namespace drake {
 namespace solvers {
+namespace {
 GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithOverlappingVariables) {
   CsdpSolver solver;
   if (solver.available()) {
@@ -68,6 +69,7 @@ TEST_F(TrivialSDP1, Solve) {
     EXPECT_TRUE(CompareMatrices(result.GetSolution(X1_), X1_expected, tol));
   }
 }
+}  // namespace
 
 namespace test {
 TEST_F(InfeasibleLinearProgramTest0, TestInfeasible) {
