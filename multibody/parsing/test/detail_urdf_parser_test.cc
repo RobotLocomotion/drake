@@ -111,7 +111,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestAddWithQuaternionFloatingDof) {
   MultibodyPlant<double> plant;
   SceneGraph<double> scene_graph;
   AddModelFromUrdfFile(model_file, "", package_map, &plant, &scene_graph);
-  plant.Finalize(&scene_graph);
+  plant.Finalize();
 
   EXPECT_EQ(plant.num_positions(), 7);
   EXPECT_EQ(plant.num_velocities(), 6);
