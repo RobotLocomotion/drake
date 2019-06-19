@@ -4,6 +4,8 @@
 #include <string>
 #include <utility>
 
+#include <fmt/format.h>
+
 #include "drake/common/drake_assert.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_state.h"
@@ -13,13 +15,11 @@
 namespace drake {
 namespace geometry {
 
+using render::RenderLabel;
 using systems::Context;
 using systems::InputPort;
-using systems::LeafContext;
 using systems::LeafSystem;
 using systems::rendering::PoseBundle;
-using systems::SystemOutput;
-using systems::SystemSymbolicInspector;
 using systems::SystemTypeTag;
 using std::make_unique;
 using std::vector;
@@ -68,13 +68,13 @@ SceneGraph<T>::SceneGraph()
   model_inspector_.set(initial_state_);
   geometry_state_index_ = this->DeclareAbstractState(std::move(state_value));
 
-  bundle_port_index_ = this->DeclareAbstractOutputPort("lcm_visualization",
-                               &SceneGraph::MakePoseBundle,
-                               &SceneGraph::CalcPoseBundle).get_index();
+  bundle_port_index_ = this->DeclareAbstractOutputPort(
+                               "lcm_visualization", &SceneGraph::MakePoseBundle,
+                               &SceneGraph::CalcPoseBundle)
+                           .get_index();
 
   query_port_index_ =
-      this->DeclareAbstractOutputPort("query",
-                                      &SceneGraph::CalcQueryObject)
+      this->DeclareAbstractOutputPort("query", &SceneGraph::CalcQueryObject)
           .get_index();
 
   auto& pose_update_cache_entry = this->DeclareCacheEntry(
@@ -103,7 +103,7 @@ SceneGraph<T>::SceneGraph(const SceneGraph<U>& other) : SceneGraph() {
   //      time.
   // Therefore, for SourceIds i and j, the if i > j, then the port indices for
   // source i must all be greater than those for j.
-  std::vector<SourceId> source_ids;
+  vector<SourceId> source_ids;
   for (const auto pair : other.input_source_ids_) {
     source_ids.push_back(pair.first);
   }
@@ -133,7 +133,7 @@ bool SceneGraph<T>::SourceIsRegistered(SourceId id) const {
 }
 
 template <typename T>
-const systems::InputPort<T>& SceneGraph<T>::get_source_pose_port(
+const InputPort<T>& SceneGraph<T>::get_source_pose_port(
     SourceId id) const {
   ThrowUnlessRegistered(id, "Can't acquire pose port for unknown source id: ");
   return this->get_input_port(input_source_ids_.at(id).pose_port);
@@ -204,6 +204,27 @@ void SceneGraph<T>::RemoveGeometry(Context<T>* context, SourceId source_id,
 }
 
 template <typename T>
+void SceneGraph<T>::AddRenderer(
+    std::string name, std::unique_ptr<render::RenderEngine> renderer) {
+  return initial_state_->AddRenderer(std::move(name), std::move(renderer));
+}
+
+template <typename T>
+bool SceneGraph<T>::HasRenderer(const std::string& name) const {
+  return initial_state_->HasRenderer(name);
+}
+
+template <typename T>
+int SceneGraph<T>::RendererCount() const {
+  return initial_state_->RendererCount();
+}
+
+template <typename T>
+vector<std::string> SceneGraph<T>::RegisteredRendererNames() const {
+  return initial_state_->RegisteredRendererNames();
+}
+
+template <typename T>
 void SceneGraph<T>::AssignRole(SourceId source_id,
                                GeometryId geometry_id,
                                ProximityProperties properties) {
@@ -211,10 +232,66 @@ void SceneGraph<T>::AssignRole(SourceId source_id,
 }
 
 template <typename T>
+void SceneGraph<T>::AssignRole(Context<T>* context, SourceId source_id,
+                               GeometryId geometry_id,
+                               ProximityProperties properties) const {
+  auto& g_state = mutable_geometry_state(context);
+  g_state.AssignRole(source_id, geometry_id, std::move(properties));
+}
+
+template <typename T>
+void SceneGraph<T>::AssignRole(SourceId source_id,
+                               GeometryId geometry_id,
+                               PerceptionProperties properties) {
+  initial_state_->AssignRole(source_id, geometry_id, std::move(properties));
+}
+
+template <typename T>
+void SceneGraph<T>::AssignRole(Context<T>* context, SourceId source_id,
+                               GeometryId geometry_id,
+                               PerceptionProperties properties) const {
+  auto& g_state = mutable_geometry_state(context);
+  g_state.AssignRole(source_id, geometry_id, std::move(properties));
+}
+
+template <typename T>
 void SceneGraph<T>::AssignRole(SourceId source_id,
                                GeometryId geometry_id,
                                IllustrationProperties properties) {
   initial_state_->AssignRole(source_id, geometry_id, std::move(properties));
+}
+
+template <typename T>
+void SceneGraph<T>::AssignRole(Context<T>* context, SourceId source_id,
+                               GeometryId geometry_id,
+                               IllustrationProperties properties) const {
+  auto& g_state = mutable_geometry_state(context);
+  g_state.AssignRole(source_id, geometry_id, std::move(properties));
+}
+
+template <typename T>
+int SceneGraph<T>::RemoveRole(SourceId source_id, FrameId frame_id, Role role) {
+  return initial_state_->RemoveRole(source_id, frame_id, role);
+}
+
+template <typename T>
+int SceneGraph<T>::RemoveRole(Context<T>* context, SourceId source_id,
+                              FrameId frame_id, Role role) const {
+  auto& g_state = mutable_geometry_state(context);
+  return g_state.RemoveRole(source_id, frame_id, role);
+}
+
+template <typename T>
+int SceneGraph<T>::RemoveRole(SourceId source_id, GeometryId geometry_id,
+                              Role role) {
+  return initial_state_->RemoveRole(source_id, geometry_id, role);
+}
+
+template <typename T>
+int SceneGraph<T>::RemoveRole(Context<T>* context, SourceId source_id,
+                              GeometryId geometry_id, Role role) const {
+  auto& g_state = mutable_geometry_state(context);
+  return g_state.RemoveRole(source_id, geometry_id, role);
 }
 
 template <typename T>
@@ -284,7 +361,7 @@ PoseBundle<T> SceneGraph<T>::MakePoseBundle() const {
   // *model*.
   // TODO(SeanCurtis-TRI): This happens *twice* now (once here and once in
   // CalcPoseBundle); might be worth refactoring/caching it.
-  std::vector<FrameId> dynamic_frames;
+  vector<FrameId> dynamic_frames;
   for (const auto& pair : g_state.frames_) {
     const FrameId frame_id = pair.first;
     if (frame_id == world_frame_id()) continue;
@@ -322,7 +399,7 @@ void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
 
   // Collect only those frames that have illustration geometry -- based on the
   // *model*.
-  std::vector<FrameId> dynamic_frames;
+  vector<FrameId> dynamic_frames;
   for (const auto& pair : g_state.frames_) {
     const FrameId frame_id = pair.first;
     if (frame_id == world_frame_id()) continue;

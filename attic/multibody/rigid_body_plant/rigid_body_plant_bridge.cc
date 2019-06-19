@@ -25,7 +25,9 @@ using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
 using geometry::MakePhongIllustrationProperties;
 using geometry::Mesh;
+using geometry::PerceptionProperties;
 using geometry::ProximityProperties;
+using geometry::render::RenderLabel;
 using geometry::SceneGraph;
 using geometry::Shape;
 using geometry::Sphere;
@@ -112,6 +114,17 @@ RigidBodyPlantBridge<T>::rigid_body_plant_state_input_port() const {
 }
 
 template <typename T>
+int RigidBodyPlantBridge<T>::BodyForLabel(RenderLabel label) const {
+  if (label <= RenderLabel::kMaxUnreserved) {
+    return label_to_index_.at(label);
+  } else if (label == RenderLabel::kDontCare) {
+    return 0;  // world index.
+  } else {
+    return -1;
+  }
+}
+
+template <typename T>
 void RigidBodyPlantBridge<T>::RegisterTree(SceneGraph<T>* scene_graph) {
   // TODO(SeanCurtis-TRI): This treats all bodies in the tree as dynamic. Some
   // may be fixed to the world. In that case, the bodies should *not* be
@@ -135,11 +148,20 @@ void RigidBodyPlantBridge<T>::RegisterTree(SceneGraph<T>* scene_graph) {
 
     // Default to the world body configuration.
     FrameId body_id = scene_graph->world_frame_id();
+    RenderLabel label;
     if (body.get_body_index() != tree_->world().get_body_index()) {
       // All other bodies register a frame and (possibly) get a unique label.
       body_id = scene_graph->RegisterFrame(
           source_id_,
           GeometryFrame(body.get_name(), body.get_model_instance_id()));
+
+      if (body.get_visual_elements().size() > 0) {
+        // We'll have the render label map to the body index.
+        // NOTE: This is only valid if the RBT is the only source of geometry.
+        // But given that the RBT is on the way out, why not?
+        label = RenderLabel(static_cast<int>(body.get_body_index()));
+        label_to_index_[label] = body.get_body_index();
+      }
     }
     body_ids_.push_back(body_id);
 
@@ -160,6 +182,12 @@ void RigidBodyPlantBridge<T>::RegisterTree(SceneGraph<T>* scene_graph) {
         const Vector4<double>& diffuse = visual_element.getMaterial();
         scene_graph->AssignRole(source_id_, id,
                                 MakePhongIllustrationProperties(diffuse));
+
+        // Perception properties -- diffuse color and per-body label.
+        PerceptionProperties perception;
+        perception.AddProperty("phong", "diffuse", diffuse);
+        perception.AddProperty("label", "id", label);
+        scene_graph->AssignRole(source_id_, id, perception);
       }
     }
     int collision_count = 0;

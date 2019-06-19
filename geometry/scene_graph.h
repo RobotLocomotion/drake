@@ -36,13 +36,19 @@ class QueryObject;
  interface for registering the geometry, updating its position based on the
  current context, and performing geometric queries.
 
+ @system{SceneGraph,
+   @input_port{source_pose{0}} @input_port{...} @input_port{source_pose{N-1}},
+   @output_port{lcm_visualization} @output_port{query}
+ }
+
  Only registered "geometry sources" can introduce geometry into %SceneGraph.
  Geometry sources will typically be other leaf systems, but, in the case of
  _anchored_ (i.e., stationary) geometry, it could also be some other block of
  code (e.g., adding a common ground plane with which all systems' geometries
  interact). For dynamic geometry (geometry whose pose depends on a Context), the
  geometry source must also provide pose values for all of the geometries the
- source owns, via a port connection on %SceneGraph.
+ source owns, via a port connection on %SceneGraph. For N geometry sources,
+ the %SceneGraph instance will have N pose input ports.
 
  The basic workflow for interacting with %SceneGraph is:
 
@@ -464,6 +470,33 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   //@}
 
+  /** @name     Managing RenderEngine instances      */
+  //@{
+
+  /** Adds a new render engine to this %SceneGraph. The %SceneGraph owns the
+   render engine. All render engines must be assigned prior to any geometry
+   registration. The render engine's name should be referenced in the
+   @ref render::CameraProperties "CameraProperties" provided in the render
+   queries (see QueryObject::RenderColorImage() as an example).
+   @param name      The unique name of the renderer.
+   @param renderer  The `renderer` to add.
+   @throws std::logic_error if the name is not unique, or geometry has already
+                            been registered.  */
+  void AddRenderer(std::string name,
+                   std::unique_ptr<render::RenderEngine> renderer);
+
+  /** Reports if this %SceneGraph has a renderer registered to the given name.
+   */
+  bool HasRenderer(const std::string& name) const;
+
+  /** Reports the number of renderers registered to this %SceneGraph.  */
+  int RendererCount() const;
+
+  /** Reports the names of all registered renderers.  */
+  std::vector<std::string> RegisteredRendererNames() const;
+
+  //@}
+
   /** @name     Assigning roles to geometry
 
    Geometries must be assigned one or more *roles* before they have an effect
@@ -478,22 +511,87 @@ class SceneGraph final : public systems::LeafSystem<T> {
      - The geometry id is invalid.
      - The geometry id is not owned by the given source id.
      - The indicated role has already been assigned to the geometry.
+     - Another geometry with the same name, affixed to the same frame, already
+       has the role.
 
    This methods modify the underlying model and require a new Context to be
    allocated.  */
 
-  // TODO(SeanCurtis-TRI): Provide mechanism for modifying properties and/or
-  // removing roles.
+  // TODO(SeanCurtis-TRI): Provide mechanism for modifying properties.
 
   //@{
 
-  /** Assigns the proximity role to the given geometry.  */
+  /** Assigns the proximity role to the geometry indicated by `geometry_id`.  */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
                   ProximityProperties properties);
 
-  /** Assigns the illustration role to the given geometry.  */
+  /** systems::Context-modifying variant of
+   @ref AssignRole(SourceId,GeometryId,ProximityProperties) "AssignRole()" for
+   proximity properties. Rather than modifying %SceneGraph's model, it modifies
+   the copy of the model stored in the provided context.  */
+  void AssignRole(systems::Context<T>* context, SourceId source_id,
+                  GeometryId geometry_id, ProximityProperties properties) const;
+
+  /** Assigns the perception role to the geometry indicated by `geometry_id`.
+   */
+  void AssignRole(SourceId source_id, GeometryId geometry_id,
+                  PerceptionProperties properties);
+
+  /** systems::Context-modifying variant of
+   @ref AssignRole(SourceId,GeometryId,PerceptionProperties) "AssignRole()" for
+   perception properties. Rather than modifying %SceneGraph's model, it modifies
+   the copy of the model stored in the provided context.  */
+  void AssignRole(systems::Context<T>* context, SourceId source_id,
+                  GeometryId geometry_id,
+                  PerceptionProperties properties) const;
+
+  /** Assigns the illustration role to the geometry indicated by `geometry_id`.
+   */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
                   IllustrationProperties properties);
+
+  /** systems::Context-modifying variant of
+   @ref AssignRole(SourceId,GeometryId,IllustrationProperties) "AssignRole()"
+   for illustration properties. Rather than modifying %SceneGraph's model, it
+   modifies the copy of the model stored in the provided context.  */
+  void AssignRole(systems::Context<T>* context, SourceId source_id,
+                  GeometryId geometry_id,
+                  IllustrationProperties properties) const;
+
+  /** Removes the indicated `role` from any geometry directly registered to the
+   frame indicated by `frame_id` (if the geometry has the role).
+   @returns The number of geometries affected by the removed role.
+   @throws std::logic_error if 1) `source_id` does not map to a registered
+                            source, 2) `frame_id` does not map to a registered
+                            frame, 3) `frame_id` does not belong to
+                            `source_id` (unless `frame_id` is the world frame
+                            id), or 4) the context has already been
+                            allocated.  */
+  int RemoveRole(SourceId source_id, FrameId frame_id, Role role);
+
+  /** systems::Context-modifying variant of
+   @ref RemoveRole(SourceId,FrameId,Role) "RemoveRole()" for frames.
+   Rather than modifying %SceneGraph's model, it modifies the copy of the model
+   stored in the provided context.  */
+  int RemoveRole(systems::Context<T>* context, SourceId source_id,
+                  FrameId frame_id, Role role) const;
+
+  /** Removes the indicated `role` from the geometry indicated by `geometry_id`.
+   @returns One if the geometry had the role removed and zero if the geometry
+            did not have the role assigned in the first place.
+   @throws std::logic_error if 1) `source_id` does not map to a registered
+                            source, 2) `geometry_id` does not map to a
+                            registered geometry, 3) `geometry_id` does
+                            not belong to `source_id`, or 4) the context has
+                            already been allocated.  */
+  int RemoveRole(SourceId source_id, GeometryId geometry_id, Role role);
+
+  /** systems::Context-modifying variant of
+   @ref RemoveRole(SourceId,GeometryId,Role) "RemoveRole()" for individual
+   geometries. Rather than modifying %SceneGraph's model, it modifies the copy
+   of the model stored in the provided context.  */
+  int RemoveRole(systems::Context<T>* context, SourceId source_id,
+                  GeometryId geometry_id, Role role) const;
 
   //@}
 
@@ -662,6 +760,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // allocating contexts for this system). The instance is owned by
   // model_abstract_states_.
   GeometryState<T>* initial_state_{};
+
   SceneGraphInspector<T> model_inspector_;
 
   // The index of the geometry state in the context's abstract state.
