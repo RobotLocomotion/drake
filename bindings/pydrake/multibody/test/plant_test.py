@@ -167,6 +167,14 @@ class TestPlant(unittest.TestCase):
                 body=body, X_BG=body_X_BG, shape=box,
                 name="new_body_collision", coulomb_friction=body_friction)
 
+    def test_deprecated_finalize(self):
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder)
+        Parser(plant).AddModelFromFile(FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf"))
+        with catch_drake_warnings(expected_count=1):
+            plant.Finalize(scene_graph)
+
     def test_multibody_plant_api_via_parsing(self):
         self.check_all_types(self.check_multibody_plant_api_via_parsing)
 
@@ -1174,7 +1182,7 @@ class TestPlant(unittest.TestCase):
         parser.AddModelFromFile(
             FindResourceOrThrow(
                 "drake/bindings/pydrake/multibody/test/two_bodies.sdf"))
-        plant_f.Finalize(scene_graph_f)
+        plant_f.Finalize()
         diagram_f = builder_f.Build()
 
         # Do conversion.

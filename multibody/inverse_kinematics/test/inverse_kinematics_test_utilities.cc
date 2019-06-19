@@ -104,13 +104,13 @@ std::unique_ptr<systems::Diagram<T>> BuildTwoFreeSpheresDiagram(
   const auto& sphere2 = (*plant)->GetBodyByName("body2");
   (*plant)->RegisterCollisionGeometry(
       sphere1, RigidTransformd(X_B1S1), geometry::Sphere(radius1),
-      "sphere1_collision", multibody::CoulombFriction<double>(), *scene_graph);
+      "sphere1_collision", multibody::CoulombFriction<double>());
   (*plant)->RegisterCollisionGeometry(
       sphere2, RigidTransformd(X_B2S2), geometry::Sphere(radius2),
-      "sphere2_collision", multibody::CoulombFriction<double>(), *scene_graph);
+      "sphere2_collision", multibody::CoulombFriction<double>());
   *sphere1_index = sphere1.body_frame().index();
   *sphere2_index = sphere2.body_frame().index();
-  (*plant)->Finalize(*scene_graph);
+  (*plant)->Finalize();
 
   return builder.Build();
 }
@@ -152,14 +152,14 @@ std::unique_ptr<systems::Diagram<T>> ConstructBoxSphereDiagram(
   (*plant)->RegisterCollisionGeometry(
       box, RigidTransformd::Identity(),
       geometry::Box(box_size(0), box_size(1), box_size(2)), "box",
-      CoulombFriction<double>(0.9, 0.8), *scene_graph);
+      CoulombFriction<double>(0.9, 0.8));
 
   const auto& sphere = (*plant)->AddRigidBody(
       "sphere", SpatialInertia<double>(1, Eigen::Vector3d::Zero(),
                                        UnitInertia<double>(1, 1, 1)));
   (*plant)->RegisterCollisionGeometry(
       sphere, RigidTransformd::Identity(), geometry::Sphere(radius), "sphere",
-      CoulombFriction<double>(0.9, 0.8), *scene_graph);
+      CoulombFriction<double>(0.9, 0.8));
 
   (*plant)->Finalize();
 
