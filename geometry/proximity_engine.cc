@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 
@@ -15,6 +16,9 @@
 #include "drake/geometry/proximity/distance_to_point_with_gradient.h"
 #include "drake/geometry/proximity/distance_to_shape.h"
 #include "drake/geometry/utilities.h"
+
+static_assert(std::is_same<tinyobj::real_t, double>::value,
+              "tinyobjloader must be compiled in double-precision mode");
 
 namespace drake {
 namespace geometry {
