@@ -73,8 +73,8 @@ TEST_F(SDPwithOverlappingVariables,
   EXPECT_EQ(rhs_csdp[1], 0);
 
   // Check the equality constraint from
-  //     [x0 x2] is psd
-  //     [x2 x0]
+  // [x0 x2] is psd
+  // [x2 x0]
   // The equality constraint X(0, 0) - X(2, 2) = 0
   blockptr = constraints[2].blocks;
   block_entries.clear();
@@ -118,7 +118,7 @@ TEST_F(CsdpDocExample, GenerateCsdpProblemDataWithoutFreeVariables) {
   GenerateCsdpProblemDataWithoutFreeVariables(dut, &C_csdp, &rhs_csdp,
                                               &constraints);
 
-  // Check the cost
+  // Check the cost.
   EXPECT_EQ(C_csdp.nblocks, 3);
   CompareBlockrec(C_csdp.blocks[1], csdp::MATRIX, 2, {2, 1, 1, 2}, 0);
   CompareBlockrec(C_csdp.blocks[2], csdp::MATRIX, 3,
@@ -126,7 +126,7 @@ TEST_F(CsdpDocExample, GenerateCsdpProblemDataWithoutFreeVariables) {
   CompareBlockrec(C_csdp.blocks[3], csdp::DIAG, 2, {0, 0}, 0);
 
   // Check constraints.
-  // constraint 1
+  // Constraint 1.
   struct csdp::sparseblock* blockptr = constraints[1].blocks;
   std::vector<Eigen::Triplet<double>> block_entries;
   block_entries.emplace_back(0, 0, 3);
@@ -140,7 +140,7 @@ TEST_F(CsdpDocExample, GenerateCsdpProblemDataWithoutFreeVariables) {
   EXPECT_EQ(blockptr->next, nullptr);
   EXPECT_EQ(rhs_csdp[1], 1);
 
-  // constraint 2.
+  // Constraint 2.
   blockptr = constraints[2].blocks;
   block_entries.clear();
   block_entries.emplace_back(0, 0, 3);
