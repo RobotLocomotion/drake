@@ -2,12 +2,9 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl_bind.h"
 
-#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
-#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
-#include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -27,6 +24,9 @@ PYBIND11_MAKE_OPAQUE(
 namespace drake {
 namespace pydrake {
 
+// TODO(eric.cousineau): Expose available scalar types.
+using T = double;
+
 using std::string;
 
 using geometry::SceneGraph;
@@ -34,13 +34,6 @@ using math::RigidTransform;
 using systems::Context;
 using systems::State;
 
-namespace {
-constexpr char doc_iso3_deprecation[] = R"""(
-This API using Isometry3 is / will be deprecated soon with the resolution of
-#9865. We only offer it for backwards compatibility. DO NOT USE!.
-)""";
-
-template <typename T>
 int GetVariableSize(const multibody::MultibodyPlant<T>& plant,
     multibody::JacobianWrtVariable wrt) {
   switch (wrt) {
@@ -52,91 +45,30 @@ int GetVariableSize(const multibody::MultibodyPlant<T>& plant,
   DRAKE_UNREACHABLE();
 }
 
-Eigen::VectorBlock<const VectorX<double>> CopyIfNotPodType(
-    Eigen::VectorBlock<const VectorX<double>> x) {
-  // N.B. This references the existing vector's data, and does not perform a
-  // copy.
-  return x;
-}
+constexpr char doc_iso3_deprecation[] = R"""(
+This API using Isometry3 is / will be deprecated soon with the resolution of
+#9865. We only offer it for backwards compatibility. DO NOT USE!.
+)""";
 
-template <typename T>
-VectorX<T> CopyIfNotPodType(Eigen::VectorBlock<const VectorX<T>> x) {
-  // N.B. This copies the vector's data.
-  // TODO(eric.cousineau): Remove this once #8116 is resolved.
-  return x;
-}
+PYBIND11_MODULE(plant, m) {
+  PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
 
-/**
- * Adds Python bindings for its contents to module `m`, for template `T`.
- * @param m Module.
- * @param T Template.
- */
-template <typename T>
-void DoScalarDependentDefinitions(py::module m, T) {
-  py::tuple param = GetPyParam<T>();
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody;
-  // TODO(eric.cousineau): #8116 Simplify this.
-  py::return_value_policy rvp_for_type =
-      (std::is_same<T, double>::value ? py::return_value_policy::reference
-                                      : py::return_value_policy::copy);
 
-  // PointPairContactInfo
-  {
-    using Class = PointPairContactInfo<T>;
-    constexpr auto& cls_doc = doc.PointPairContactInfo;
-    auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "PointPairContactInfo", param, cls_doc.doc);
-    cls  // BR
-        .def(py::init<BodyIndex, BodyIndex, const Vector3<T>, const Vector3<T>,
-                 const T&, const T&,
-                 const geometry::PenetrationAsPointPair<T>>(),
-            py::arg("bodyA_index"), py::arg("bodyB_index"), py::arg("f_Bc_W"),
-            py::arg("p_WC"), py::arg("separation_speed"), py::arg("slip_speed"),
-            py::arg("point_pair"), cls_doc.ctor.doc)
-        .def("bodyA_index", &Class::bodyA_index, cls_doc.bodyA_index.doc)
-        .def("bodyB_index", &Class::bodyB_index, cls_doc.bodyB_index.doc)
-        .def("contact_force", &Class::contact_force, cls_doc.contact_force.doc)
-        .def("contact_point", &Class::contact_point, cls_doc.contact_point.doc)
-        .def("slip_speed", &Class::slip_speed, cls_doc.slip_speed.doc)
-        .def("separation_speed", &Class::separation_speed,
-            cls_doc.separation_speed.doc)
-        .def("point_pair", &Class::point_pair, cls_doc.point_pair.doc);
-  }
+  m.doc() = "Bindings for MultibodyPlant and related classes.";
 
-  // ContactResults
-  {
-    using Class = ContactResults<T>;
-    constexpr auto& cls_doc = doc.ContactResults;
-    auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "ContactResults", param, cls_doc.doc);
-    cls  // BR
-        .def(py::init<>(), cls_doc.ctor.doc)
-        .def("num_contacts", &Class::num_contacts, cls_doc.num_contacts.doc)
-        .def("AddContactInfo", &Class::AddContactInfo,
-            py::arg("point_pair_info"), cls_doc.AddContactInfo.doc)
-        .def("contact_info", &Class::contact_info, py::arg("i"),
-            cls_doc.contact_info.doc);
-    AddValueInstantiation<Class>(m);
-  }
-
-  // CoulombFriction
-  {
-    using Class = CoulombFriction<T>;
-    constexpr auto& cls_doc = doc.CoulombFriction;
-    auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "CoulombFriction", param, cls_doc.doc);
-    cls  // BR
-        .def(py::init<const T&, const T&>(), py::arg("static_friction"),
-            py::arg("dynamic_friction"), cls_doc.ctor.doc_2args);
-  }
+  py::module::import("pydrake.geometry");
+  py::module::import("pydrake.multibody.math");
+  py::module::import("pydrake.multibody.tree");
+  py::module::import("pydrake.systems.framework");
 
   {
     using Class = MultibodyPlant<T>;
     constexpr auto& cls_doc = doc.MultibodyPlant;
-    auto cls = DefineTemplateClassWithDefault<Class, systems::LeafSystem<T>>(
-        m, "MultibodyPlant", param, cls_doc.doc);
+    py::class_<Class, systems::LeafSystem<T>> cls(
+        m, "MultibodyPlant", cls_doc.doc);
     // N.B. These are defined as they appear in the class declaration.
     // Forwarded methods from `MultibodyTree`.
     cls  // BR
@@ -173,17 +105,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("joint"), py_reference_internal, cls_doc.AddJoint.doc_1args)
         .def("AddFrame",
-            [](Class * self, std::unique_ptr<Frame<T>> frame) -> auto& {
+            [](Class * self, std::unique_ptr<Frame<double>> frame) -> auto& {
               return self->AddFrame(std::move(frame));
             },
             py_reference_internal, py::arg("frame"), cls_doc.AddFrame.doc)
         .def("AddModelInstance", &Class::AddModelInstance, py::arg("name"),
             cls_doc.AddModelInstance.doc)
         .def("AddRigidBody",
-            [](Class * self, const std::string& name,
-                const SpatialInertia<double>& s) -> auto& {
-              return self->AddRigidBody(name, s);
-            },
+            py::overload_cast<const std::string&,
+                const SpatialInertia<double>&>(&Class::AddRigidBody),
             py::arg("name"), py::arg("M_BBo_B"), py_reference_internal,
             cls_doc.AddRigidBody.doc_2args)
         .def("AddRigidBody",
@@ -219,7 +149,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
       // model. This is ugly API needs to be updated, see #11080.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-              return self->template AddForceElement<UniformGravityFieldElement>(
+              return self->AddForceElement<UniformGravityFieldElement>(
                   force_element->gravity_vector());
 #pragma GCC diagnostic pop
             },
@@ -228,7 +158,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("AddForceElement",
             [](Class * self,
                 std::unique_ptr<ForceElement<T>> force_element) -> auto& {
-              return self->template AddForceElement<ForceElement>(
+              return self->AddForceElement<ForceElement>(
                   std::move(force_element));
             },
             py::arg("force_element"), py_reference_internal,
@@ -311,9 +241,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetPositions",
             [](const Class* self, const Context<T>& context) {
               // Reference.
-              return CopyIfNotPodType(self->GetPositions(context));
+              return self->GetPositions(context);
             },
-            py::arg("context"), rvp_for_type,
+            py::arg("context"), py_reference_internal,
             // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), cls_doc.GetPositions.doc_1args)
         .def("GetPositions",
@@ -327,9 +257,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetVelocities",
             [](const Class* self, const Context<T>& context) {
               // Reference.
-              return CopyIfNotPodType(self->GetVelocities(context));
+              return self->GetVelocities(context);
             },
-            py::arg("context"), rvp_for_type,
+            py::arg("context"), py_reference_internal,
             // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), cls_doc.GetVelocities.doc_1args)
         .def("GetVelocities",
@@ -366,8 +296,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
                 const Eigen::Ref<const Vector3<T>>& p_BP,
                 const Frame<T>& frame_A, const Frame<T>& frame_E) {
-              MatrixX<T> Jw_ABp_E(
-                  6, GetVariableSize<T>(*self, with_respect_to));
+              MatrixX<T> Jw_ABp_E(6, GetVariableSize(*self, with_respect_to));
               self->CalcJacobianSpatialVelocity(context, with_respect_to,
                   frame_B, p_BP, frame_A, frame_E, &Jw_ABp_E);
               return Jw_ABp_E;
@@ -655,13 +584,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("world_frame", &Class::world_frame, py_reference_internal,
             cls_doc.world_frame.doc)
         .def("is_finalized", &Class::is_finalized, cls_doc.is_finalized.doc)
-        .def("Finalize", [](Class* self) { self->Finalize(); },
-            cls_doc.Finalize.doc)
-        .def("Finalize",
-            [](Class* self, SceneGraph<T>* scene_graph) {
-              self->Finalize(scene_graph);
-            },
-            py::arg("scene_graph"), cls_doc.Finalize.doc);
+        .def("Finalize", py::overload_cast<SceneGraph<T>*>(&Class::Finalize),
+            py::arg("scene_graph") = nullptr, cls_doc.Finalize.doc);
     // Position and velocity accessors and mutators.
     cls  // BR
         .def("GetMutablePositionsAndVelocities",
@@ -774,34 +698,71 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("state"), cls_doc.SetDefaultState.doc);
   }
 
-  if (!std::is_same<T, symbolic::Expression>::value) {
-    m.def("AddMultibodyPlantSceneGraph",
-        [](systems::DiagramBuilder<T>* builder,
-            std::unique_ptr<MultibodyPlant<T>> plant,
-            std::unique_ptr<SceneGraph<T>> scene_graph) {
-          auto pair = AddMultibodyPlantSceneGraph<T>(
-              builder, std::move(plant), std::move(scene_graph));
-          // Must do manual keep alive to dig into tuple.
-          py::object builder_py = py::cast(builder, py_reference);
-          py::object plant_py = py::cast(pair.plant, py_reference);
-          py::object scene_graph_py = py::cast(pair.scene_graph, py_reference);
-          return py::make_tuple(
-              // Keep alive, ownership: `plant` keeps `builder` alive.
-              py_keep_alive(plant_py, builder_py),
-              // Keep alive, ownership: `scene_graph` keeps `builder` alive.
-              py_keep_alive(scene_graph_py, builder_py));
-        },
-        py::arg("builder"), py::arg("plant") = nullptr,
-        py::arg("scene_graph") = nullptr, doc.AddMultibodyPlantSceneGraph.doc);
+  // PointPairContactInfo
+  {
+    using Class = PointPairContactInfo<T>;
+    constexpr auto& cls_doc = doc.PointPairContactInfo;
+    py::class_<Class>(m, "PointPairContactInfo", cls_doc.doc)
+        .def(py::init<BodyIndex, BodyIndex, const Vector3<T>, const Vector3<T>,
+                 const T&, const T&,
+                 const geometry::PenetrationAsPointPair<T>>(),
+            py::arg("bodyA_index"), py::arg("bodyB_index"), py::arg("f_Bc_W"),
+            py::arg("p_WC"), py::arg("separation_speed"), py::arg("slip_speed"),
+            py::arg("point_pair"), cls_doc.ctor.doc)
+        .def("bodyA_index", &Class::bodyA_index, cls_doc.bodyA_index.doc)
+        .def("bodyB_index", &Class::bodyB_index, cls_doc.bodyB_index.doc)
+        .def("contact_force", &Class::contact_force, cls_doc.contact_force.doc)
+        .def("contact_point", &Class::contact_point, cls_doc.contact_point.doc)
+        .def("slip_speed", &Class::slip_speed, cls_doc.slip_speed.doc)
+        .def("separation_speed", &Class::separation_speed,
+            cls_doc.separation_speed.doc)
+        .def("point_pair", &Class::point_pair, cls_doc.point_pair.doc);
+  }
+
+  // ContactResults
+  {
+    using Class = ContactResults<T>;
+    constexpr auto& cls_doc = doc.ContactResults;
+    py::class_<Class>(m, "ContactResults", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc)
+        .def("num_contacts", &Class::num_contacts, cls_doc.num_contacts.doc)
+        .def("AddContactInfo", &Class::AddContactInfo,
+            py::arg("point_pair_info"), cls_doc.AddContactInfo.doc)
+        .def("contact_info", &Class::contact_info, py::arg("i"),
+            cls_doc.contact_info.doc);
+    AddValueInstantiation<Class>(m);
+  }
+
+  // ContactResultsToLcmSystem
+  {
+    using Class = ContactResultsToLcmSystem<T>;
+    constexpr auto& cls_doc = doc.ContactResultsToLcmSystem;
+    py::class_<Class, systems::LeafSystem<T>>(
+        m, "ContactResultsToLcmSystem", cls_doc.doc)
+        .def(py::init<const MultibodyPlant<double>&>(), py::arg("plant"),
+            // Keep alive, reference: `self` keeps `plant` alive.
+            py::keep_alive<1, 2>(), cls_doc.ctor.doc)
+        .def("get_contact_result_input_port",
+            &Class::get_contact_result_input_port, py_reference_internal,
+            cls_doc.get_contact_result_input_port.doc)
+        .def("get_lcm_message_output_port", &Class::get_lcm_message_output_port,
+            py_reference_internal, cls_doc.get_lcm_message_output_port.doc);
+  }
+
+  // CoulombFriction
+  {
+    using Class = CoulombFriction<T>;
+    constexpr auto& cls_doc = doc.CoulombFriction;
+    py::class_<Class>(m, "CoulombFriction", cls_doc.doc)
+        .def(py::init<const T&, const T&>(), py::arg("static_friction"),
+            py::arg("dynamic_friction"), cls_doc.ctor.doc_2args);
   }
 
   // ExternallyAppliedSpatialForce
   {
     using Class = multibody::ExternallyAppliedSpatialForce<T>;
     constexpr auto& cls_doc = doc.ExternallyAppliedSpatialForce;
-    auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "ExternallyAppliedSpatialForce", param, cls_doc.doc);
-    cls  // BR
+    py::class_<Class>(m, "ExternallyAppliedSpatialForce", cls_doc.doc)
         .def(py::init<>())
         .def_readwrite("body_index", &Class::body_index, cls_doc.body_index.doc)
         .def_readwrite("p_BoBq_B", &Class::p_BoBq_B, cls_doc.p_BoBq_B.doc)
@@ -813,59 +774,33 @@ void DoScalarDependentDefinitions(py::module m, T) {
   // Python systems to construct AbstractValues of this type with the type
   // being legible for port connections.
   {
-    using Class = std::vector<multibody::ExternallyAppliedSpatialForce<T>>;
-    // TODO(eric.cousineau): Try to make this specialization for
-    // `py::bind_vector` less boiler-platey, like
-    // `DefineTemplateClassWithDefault`.
-    const std::string default_name = "VectorExternallyAppliedSpatialForced";
-    const std::string template_name = default_name + "_";
-    auto cls = py::bind_vector<Class>(m, TemporaryClassName<Class>().c_str());
-    AddTemplateClass(m, template_name.c_str(), cls, param);
-    if (!py::hasattr(m, default_name.c_str())) {
-      m.attr(default_name.c_str()) = cls;
-    }
-    AddValueInstantiation<Class>(m);
+    using Class = multibody::ExternallyAppliedSpatialForce<double>;
+    py::bind_vector<std::vector<Class>>(
+        m, "VectorExternallyAppliedSpatialForced");
+    AddValueInstantiation<std::vector<Class>>(m);
   }
-  // NOLINTNEXTLINE(readability/fn_size)
-}
-}  // namespace
 
-PYBIND11_MODULE(plant, m) {
-  PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake::multibody;
-
-  m.doc() = "Bindings for MultibodyPlant and related classes.";
-
-  py::module::import("pydrake.geometry");
-  py::module::import("pydrake.multibody.math");
-  py::module::import("pydrake.multibody.tree");
-  py::module::import("pydrake.systems.framework");
-
-  type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
-      CommonScalarPack{});
-  constexpr auto& doc = pydrake_doc.drake.multibody;
-
-  using T = double;
-
-  // ContactResultsToLcmSystem
-  {
-    using Class = ContactResultsToLcmSystem<T>;
-    constexpr auto& cls_doc = doc.ContactResultsToLcmSystem;
-    py::class_<Class, systems::LeafSystem<T>>(
-        m, "ContactResultsToLcmSystem", cls_doc.doc)
-        .def(py::init<const MultibodyPlant<T>&>(), py::arg("plant"),
-            // Keep alive, reference: `self` keeps `plant` alive.
-            py::keep_alive<1, 2>(), cls_doc.ctor.doc)
-        .def("get_contact_result_input_port",
-            &Class::get_contact_result_input_port, py_reference_internal,
-            cls_doc.get_contact_result_input_port.doc)
-        .def("get_lcm_message_output_port", &Class::get_lcm_message_output_port,
-            py_reference_internal, cls_doc.get_lcm_message_output_port.doc);
-  }
+  m.def("AddMultibodyPlantSceneGraph",
+      [](systems::DiagramBuilder<T>* builder,
+          std::unique_ptr<MultibodyPlant<T>> plant,
+          std::unique_ptr<SceneGraph<T>> scene_graph) {
+        auto pair = AddMultibodyPlantSceneGraph(
+            builder, std::move(plant), std::move(scene_graph));
+        // Must do manual keep alive to dig into tuple.
+        py::object builder_py = py::cast(builder, py_reference);
+        py::object plant_py = py::cast(pair.plant, py_reference);
+        py::object scene_graph_py = py::cast(pair.scene_graph, py_reference);
+        return py::make_tuple(
+            // Keep alive, ownership: `plant` keeps `builder` alive.
+            py_keep_alive(plant_py, builder_py),
+            // Keep alive, ownership: `scene_graph` keeps `builder` alive.
+            py_keep_alive(scene_graph_py, builder_py));
+      },
+      py::arg("builder"), py::arg("plant") = nullptr,
+      py::arg("scene_graph") = nullptr, doc.AddMultibodyPlantSceneGraph.doc);
 
   m.def("ConnectContactResultsToDrakeVisualizer",
-      [](systems::DiagramBuilder<double>* builder,
+      [](systems::DiagramBuilder<T>* builder,
           const MultibodyPlant<double>& plant, lcm::DrakeLcmInterface* lcm) {
         return drake::multibody::ConnectContactResultsToDrakeVisualizer(
             builder, plant, lcm);
