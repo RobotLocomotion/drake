@@ -254,10 +254,10 @@ int IntersectTetWithLevelSet(const std::array<Vector3<T>, 4>& tet_vertices_N,
 // You can actually evaluate the gradient at each vertex analytically!!!.
 template <typename T>
 SurfaceMesh<T> CalcZeroLevelSetInMeshDomain(
-    const VolumeMesh<T>& mesh_M,
-    const LevelSetField<T>& level_set_N,
+    const VolumeMesh<T>& mesh_M, const LevelSetField<T>& level_set_N,
     const math::RigidTransform<T>& X_NM, const std::vector<T>& e_m_volume,
-    std::vector<T>* e_m_surface, std::vector<Vector3<T>>* level_set_gradient_N) {
+    std::vector<T>* e_m_surface,
+    std::vector<Vector3<T>>* level_set_gradient_N) {
   DRAKE_DEMAND(e_m_surface != nullptr);
   DRAKE_ASSERT(level_set_gradient_N != nullptr);
   std::vector<SurfaceVertex<T>> vertices_N;

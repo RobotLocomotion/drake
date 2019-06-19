@@ -18,6 +18,7 @@ drake_cc_package_library(
         ":distance_to_point",
         ":distance_to_point_with_gradient",
         ":distance_to_shape",
+        ":level_set_field",
         ":make_unit_sphere_mesh",
         ":mesh_field",
         ":proximity_utilities",

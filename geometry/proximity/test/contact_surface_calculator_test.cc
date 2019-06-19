@@ -289,7 +289,7 @@ class BoxPlaneIntersectionTest : public ::testing::Test {
 TEST_F(BoxPlaneIntersectionTest, ImminentContact) {
   const double kEpsilon = std::numeric_limits<double>::epsilon();
   std::vector<double> e_b_surface;
-  std::vector<Vector3<double>> surface_normal_H;
+  std::vector<Vector3<double>> level_set_gradient_H;
 
   // The box overlaps the plane by kEpsilon. Expect intersection.
   {
@@ -297,7 +297,7 @@ TEST_F(BoxPlaneIntersectionTest, ImminentContact) {
         Translation3<double>(0.0, 0.0, 0.5 - 5 * kEpsilon);
     DRAKE_EXPECT_THROWS_MESSAGE(
         CalcZeroLevelSetInMeshDomain(*box_B_, *half_space_H_, X_HB, e_b_,
-                                     &e_b_surface, &surface_normal_H),
+                                     &e_b_surface, &level_set_gradient_H),
         std::logic_error,
         "One or more faces of this tetrahedron are close to being a zero "
         "crossing.*");
@@ -309,7 +309,7 @@ TEST_F(BoxPlaneIntersectionTest, ImminentContact) {
         Translation3<double>(0.0, 0.0, 0.5 + 5 * kEpsilon);
     DRAKE_EXPECT_THROWS_MESSAGE(
         CalcZeroLevelSetInMeshDomain(*box_B_, *half_space_H_, X_HB, e_b_,
-                                     &e_b_surface, &surface_normal_H),
+                                     &e_b_surface, &level_set_gradient_H),
         std::logic_error,
         "One or more faces of this tetrahedron are close to being a zero "
         "crossing.*");
@@ -354,12 +354,12 @@ TEST_F(BoxPlaneIntersectionTest, VerifyContactArea) {
       RigidTransformd(Ry_pi, highest)};
 
   std::vector<double> e_b_surface;
-  std::vector<Vector3<double>> surface_normal_H;
+  std::vector<Vector3<double>> level_set_gradient_H;
   for (const auto& X_HB : poses) {
-    const SurfaceMesh<double> contact_surface =
+    const SurfaceMesh<double> contact_surface_H =
         CalcZeroLevelSetInMeshDomain(*box_B_, *half_space_H_, X_HB, e_b_,
-                                     &e_b_surface, &surface_normal_H);
-    EXPECT_NEAR(CalcSurfaceArea(contact_surface), 1.0, kTolerance);
+                                     &e_b_surface, &level_set_gradient_H);
+    EXPECT_NEAR(CalcSurfaceArea(contact_surface_H), 1.0, kTolerance);
   }
 }
 
@@ -372,23 +372,23 @@ TEST_F(BoxPlaneIntersectionTest, VerifySurfaceFieldsInterpolations) {
   std::vector<double> heights = {-0.4, -0.2, 0.0, 0.2, 0.4};
 
   std::vector<double> e_b_surface;
-  std::vector<Vector3<double>> surface_normal_H;
+  std::vector<Vector3<double>> level_set_gradient_H;
   for (const auto& h : heights) {
     const RigidTransformd X_HB = Translation3<double>(0.0, 0.0, h);
-    const SurfaceMesh<double> contact_surface =
+    const SurfaceMesh<double> contact_surface_H =
         CalcZeroLevelSetInMeshDomain(*box_B_, *half_space_H_, X_HB, e_b_,
-                                     &e_b_surface, &surface_normal_H);
+                                     &e_b_surface, &level_set_gradient_H);
 
     const double eb_expected = 0.5 - h;
-    for (SurfaceVertexIndex v(0); v < contact_surface.num_vertices(); ++v) {
+    for (SurfaceVertexIndex v(0); v < contact_surface_H.num_vertices(); ++v) {
       const double eb = e_b_surface[v];
-      const Vector3<double>& normal_H = surface_normal_H[v];
-      const Vector3<double>& p_HV = contact_surface.vertex(v).r_MV();
-      const Vector3<double> normal_H_expected =
+      const Vector3<double>& grad_level_set_H = level_set_gradient_H[v];
+      const Vector3<double>& p_HV = contact_surface_H.vertex(v).r_MV();
+      const Vector3<double> level_set_gradient_H_expected =
           half_space_H_->CalcLevelSetGradient(p_HV);
       EXPECT_NEAR(eb, eb_expected, kTolerance);
-      EXPECT_TRUE(
-          CompareMatrices(normal_H, normal_H_expected, kTolerance));
+      EXPECT_TRUE(CompareMatrices(grad_level_set_H,
+                                  level_set_gradient_H_expected, kTolerance));
     }
   }
 }
@@ -426,10 +426,10 @@ TEST_F(BoxPlaneIntersectionTest, NoIntersection) {
 
   for (const auto& X_HB : poses) {
     std::vector<double> e_b_surface;
-    std::vector<Vector3<double>> surface_normal_H;
+    std::vector<Vector3<double>> level_set_gradient_H;
     const SurfaceMesh<double> contact_surface =
         CalcZeroLevelSetInMeshDomain(*box_B_, *half_space_H_, X_HB, e_b_,
-                                     &e_b_surface, &surface_normal_H);
+                                     &e_b_surface, &level_set_gradient_H);
     EXPECT_NEAR(CalcSurfaceArea(contact_surface), 0.0, kTolerance);
   }
 }
@@ -477,10 +477,10 @@ GTEST_TEST(SpherePlaneIntersectionTest, VerifyInterpolations) {
   // The contact surface is expressed in the frame of the level set, in this
   // case the world frame W.
   std::vector<double> e_m_surface;
-  std::vector<Vector3<double>> surface_normal_W;
+  std::vector<Vector3<double>> level_set_gradient_W;
   const SurfaceMesh<double> contact_surface_W =
       CalcZeroLevelSetInMeshDomain(sphere_M, half_space_W, X_WM, em_volume,
-                                   &e_m_surface, &surface_normal_W);
+                                   &e_m_surface, &level_set_gradient_W);
   // Assert non-empty intersection.
   ASSERT_GT(contact_surface_W.num_faces(), 0);
 
@@ -504,9 +504,10 @@ GTEST_TEST(SpherePlaneIntersectionTest, VerifyInterpolations) {
     EXPECT_NEAR(e_m_surface[v], em_expected, kTolerance);
 
     // Similarly for the gradient.
-    const Vector3<double> surface_normal_W_expected =
+    const Vector3<double> level_set_gradient_W_expected =
         half_space_W.CalcLevelSetGradient(p_WV);
-    EXPECT_TRUE(CompareMatrices(surface_normal_W[v], surface_normal_W_expected,
+    EXPECT_TRUE(CompareMatrices(level_set_gradient_W[v],
+                                level_set_gradient_W_expected,
                                 40 * kTolerance));
   }
 
