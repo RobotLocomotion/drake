@@ -42,7 +42,10 @@ class SampleGenerator {
 
   SampleGenerator() = default;
   SampleGenerator(Seed seed, RandomDistribution which)
-      : generator_(seed), distribution_(MakeDistributionVariant(which)) {}
+      : seed_(seed), generator_(seed),
+        distribution_(MakeDistributionVariant(which)) {}
+
+  Seed seed() const { return seed_; }
 
   double GenerateNext() {
     switch (distribution_.index()) {
@@ -54,6 +57,7 @@ class SampleGenerator {
   }
 
  private:
+  Seed seed_{RandomGenerator::default_seed};
   RandomGenerator generator_;
   DistributionVariant distribution_;
 };
@@ -70,7 +74,7 @@ Seed get_next_seed() {
 RandomSource::RandomSource(
     RandomDistribution distribution, int num_outputs,
     double sampling_interval_sec)
-    : distribution_(distribution), seed_(get_next_seed()) {
+    : distribution_(distribution), instance_seed_(get_next_seed()) {
   this->DeclareDiscreteState(num_outputs);
   this->DeclareAbstractState(Value<SampleGenerator>().Clone());
   this->DeclarePeriodicUnrestrictedUpdateEvent(
@@ -85,16 +89,23 @@ RandomSource::RandomSource(
 
 RandomSource::~RandomSource() {}
 
+Seed RandomSource::get_seed(const Context<double>& context) const {
+  const auto& source = context.template get_abstract_state<SampleGenerator>(0);
+  return source.seed();
+}
+
 void RandomSource::SetDefaultState(
     const Context<double>& context, State<double>* state) const {
-  SetSeed(seed_, context, state);
+  const Seed seed = fixed_seed_.value_or(instance_seed_);
+  SetSeed(seed, context, state);
 }
 
 void RandomSource::SetRandomState(
     const Context<double>& context, State<double>* state,
     RandomGenerator* seed_generator) const {
   const Seed fresh_seed = (*seed_generator)();
-  SetSeed(fresh_seed, context, state);
+  const Seed seed = fixed_seed_.value_or(fresh_seed);
+  SetSeed(seed, context, state);
 }
 
 // Writes the given seed into abstract state (replacing the existing
