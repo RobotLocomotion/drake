@@ -54,7 +54,6 @@ TEST_F(TetrahedronIntersectionTest, EmptyIntersection) {
   std::vector<SurfaceVertex<double>> vertices;
   std::vector<SurfaceFace> faces;
   std::vector<double> e_M_surface;
-  std::vector<Vector3<double>> grad_e_M_surface;
 
   // All positive vertices.
   Vector4<double> phi_N = Vector4<double>::Ones();
@@ -62,16 +61,14 @@ TEST_F(TetrahedronIntersectionTest, EmptyIntersection) {
   // Arbitrary values of scalar and vector fields since they are not used in
   // this test.
   const Vector4<double> e_M = Vector4<double>::Zero();
-  std::array<Vector3<double>, 4> grad_e_M;
-  grad_e_M.fill(Vector3<double>::Zero());
-  EXPECT_EQ(IntersectTetWithLevelSet(unit_tet_, phi_N, e_M, grad_e_M, &vertices,
-                                     &faces, &e_M_surface, &grad_e_M_surface),
+  EXPECT_EQ(IntersectTetWithLevelSet(unit_tet_, phi_N, e_M, &vertices, &faces,
+                                     &e_M_surface),
             0);
 
   // All negative vertices.
   phi_N = -Vector4<double>::Ones();
-  EXPECT_EQ(IntersectTetWithLevelSet(unit_tet_, phi_N, e_M, grad_e_M, &vertices,
-                                     &faces, &e_M_surface, &grad_e_M_surface),
+  EXPECT_EQ(IntersectTetWithLevelSet(unit_tet_, phi_N, e_M, &vertices, &faces,
+                                     &e_M_surface),
             0);
 }
 
@@ -81,7 +78,6 @@ TEST_F(TetrahedronIntersectionTest, CaseI) {
   std::vector<SurfaceVertex<double>> vertices;
   std::vector<SurfaceFace> faces;
   std::vector<double> e_M_surface;
-  std::vector<Vector3<double>> grad_e_M_surface;
   const double kTolerance = 5.0 * std::numeric_limits<double>::epsilon();
 
   const int expected_num_intersections = 3;
@@ -102,8 +98,6 @@ TEST_F(TetrahedronIntersectionTest, CaseI) {
   // Arbitrary values of scalar and vector fields since they are not used in
   // this test.
   const Vector4<double> e_M = Vector4<double>::Zero();
-  std::array<Vector3<double>, 4> grad_e_M;
-  grad_e_M.fill(Vector3<double>::Zero());
 
   // All vertices are positive but the i-th vertex.
   for (int i = 0; i < 4; ++i) {
@@ -111,10 +105,9 @@ TEST_F(TetrahedronIntersectionTest, CaseI) {
     faces.clear();
     Vector4<double> phi_N = Vector4<double>::Ones();
     phi_N[i] = -1.0;
-    ASSERT_EQ(
-        IntersectTetWithLevelSet(unit_tet_, phi_N, e_M, grad_e_M, &vertices,
-                                 &faces, &e_M_surface, &grad_e_M_surface),
-        expected_num_intersections);
+    ASSERT_EQ(IntersectTetWithLevelSet(unit_tet_, phi_N, e_M, &vertices, &faces,
+                                       &e_M_surface),
+              expected_num_intersections);
 
     ASSERT_EQ(faces.size(), 1);
     const Vector3<int> expected_face(0, 1, 2);
@@ -137,10 +130,9 @@ TEST_F(TetrahedronIntersectionTest, CaseI) {
     faces.clear();
     Vector4<double> phi_N = -Vector4<double>::Ones();
     phi_N[i] = 1.0;
-    ASSERT_EQ(
-        IntersectTetWithLevelSet(unit_tet_, phi_N, e_M, grad_e_M, &vertices,
-                                 &faces, &e_M_surface, &grad_e_M_surface),
-        expected_num_intersections);
+    ASSERT_EQ(IntersectTetWithLevelSet(unit_tet_, phi_N, e_M, &vertices, &faces,
+                                       &e_M_surface),
+              expected_num_intersections);
 
     ASSERT_EQ(faces.size(), 1);
     const Vector3<int> expected_face(0, 1, 2);
@@ -182,16 +174,12 @@ TEST_F(TetrahedronIntersectionTest, CaseII) {
     std::vector<SurfaceVertex<double>> vertices;
     std::vector<SurfaceFace> faces;
     std::vector<double> e_M_surface;
-    std::vector<Vector3<double>> grad_e_M_surface;
     // Arbitrary values of scalar and vector fields since they are not used in
     // this test.
     const Vector4<double> e_M = Vector4<double>::Zero();
-    std::array<Vector3<double>, 4> grad_e_M;
-    grad_e_M.fill(Vector3<double>::Zero());
-    ASSERT_EQ(
-        IntersectTetWithLevelSet(unit_tet_, phi_N, e_M, grad_e_M, &vertices,
-                                 &faces, &e_M_surface, &grad_e_M_surface),
-        expected_num_vertices);
+    ASSERT_EQ(IntersectTetWithLevelSet(unit_tet_, phi_N, e_M, &vertices, &faces,
+                                       &e_M_surface),
+              expected_num_vertices);
 
     ASSERT_EQ(faces.size(), 4);
     ASSERT_EQ(vertices.size(), 5);

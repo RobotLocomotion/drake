@@ -73,24 +73,24 @@ const std::array<std::vector<EdgeIndex>, 16> kMarchingTetsTable = {
 // its right-handed normal pointing towards the outside.
 // The last vertex is on the "negative side" of the first face.
 //
-// @param[in] tet_vertices_N Vertices defining the tetrahedron. The first
-// three vertices define the first face of the tetrahedra, with its
-// right-handed normal pointing towards the outside. The last vertex is on the
-// "negative side" of the first face.
-// @param[in] phi_N The level set function evaluated at each of the four
-// vertices in `tet_vertices_N`, in the same order.
-// @param[in] e_m A scalar field evaluated at each of the four vertices in
-// `tet_vertices_N`, in the same order.
-// @param[in] grad_e_m_M A vector field evaluated at each of the four vertices
-// in `tet_vertices_N`, in the same order. Expressed in a frame M.
-// @param[out] vertices Adds the new vertices into `vertices`.
-// @param[out] faces Adds the new faces into `faces`.
-// @param[out] e_m_surface The scalar field `e_m` linearly interpolated onto
-// each new vertex in `vertices`, in the same order.
-// @param[out] grad_e_m_M_surface The vector field `grad_e_m_M` linearly
-// interpolated onto each new vertex in `vertices`, in the same order.
-// Expressed in the same frame M as the input `grad_e_m_M`.
-// @return The number of vertices added.
+// @param[in] tet_vertices_N
+//   Vertices defining the tetrahedron. The first three vertices define the
+//   first face of the tetrahedra, with its right-handed normal pointing towards
+//   the outside. The last vertex is on the "negative side" of the first face.
+// @param[in] phi_N
+//   The level set function evaluated at each of the four vertices in
+//   `tet_vertices_N`, in the same order.
+// @param[in] e_m
+//   A scalar field evaluated at each of the four vertices in `tet_vertices_N`,
+//   in the same order.
+// @param[out] vertices
+//   Adds the new vertices into `vertices`.
+// @param[out] faces
+//   Adds the new faces into `faces`.
+// @param[out] e_m_surface
+//   The scalar field `e_m` linearly interpolated onto each new vertex in
+//   `vertices`, in the same order.
+// @returns The number of vertices added.
 // @note   The convention used by this private method is different from the
 // one used in VolumeMesh.
 // TODO(amcastro-tri): fix the case for when the zero level set is right in the
@@ -98,15 +98,12 @@ const std::array<std::vector<EdgeIndex>, 16> kMarchingTetsTable = {
 template <typename T>
 int IntersectTetWithLevelSet(const std::array<Vector3<T>, 4>& tet_vertices_N,
                              const Vector4<T>& phi_N, const Vector4<T>& e_m,
-                             const std::array<Vector3<T>, 4>& grad_e_m_M,
                              std::vector<SurfaceVertex<T>>* vertices,
                              std::vector<SurfaceFace>* faces,
-                             std::vector<T>* e_m_surface,
-                             std::vector<Vector3<T>>* grad_e_m_M_surface) {
+                             std::vector<T>* e_m_surface) {
   DRAKE_ASSERT(vertices != nullptr);
   DRAKE_ASSERT(faces != nullptr);
   DRAKE_ASSERT(e_m_surface != nullptr);
-  DRAKE_ASSERT(grad_e_m_M_surface != nullptr);
 
   const double kZeroTolerance = 20 * std::numeric_limits<double>::epsilon();
   using std::abs;
@@ -159,12 +156,9 @@ int IntersectTetWithLevelSet(const std::array<Vector3<T>, 4>& tet_vertices_N,
     // The geometric center is only needed for Case II.
     if (num_intersections == 4) pc_N += pz_N;
 
-    // Interpolate the scalar field e_m and its gradient at the zero crossing z.
+    // Interpolate the scalar field e_m at the zero crossing z.
     const T e_m_at_z = w1 * e_m[v1] + w2 * e_m[v2];
-    const Vector3<T> grad_e_m_M_at_z =
-        w1 * grad_e_m_M[v1] + w2 * grad_e_m_M[v2];
     e_m_surface->emplace_back(e_m_at_z);
-    grad_e_m_M_surface->emplace_back(grad_e_m_M_at_z);
   }
 
   // Case I: A single vertex has different sign from the other three. A single
@@ -186,17 +180,12 @@ int IntersectTetWithLevelSet(const std::array<Vector3<T>, 4>& tet_vertices_N,
     pc_N /= 4.0;
     vertices->emplace_back(pc_N);
 
-    // Interpolate scalar e_m and its gradient at pc_N as the average of the
-    // values at the zero crossings.
+    // Interpolate scalar field e_m at pc_N as the average of the values at the
+    // zero crossings.
     const T e_m_at_c =
         std::accumulate(e_m_surface->end() - 4, e_m_surface->end(), T(0)) /
         T(4.0);
-    const Vector3<T> grad_e_m_M_at_c =
-        std::accumulate(grad_e_m_M_surface->end() - 4,
-                        grad_e_m_M_surface->end(), Vector3<T>(0.0, 0.0, 0.0)) /
-        T(4.0);
     e_m_surface->emplace_back(e_m_at_c);
-    grad_e_m_M_surface->emplace_back(grad_e_m_M_at_c);
 
     // Make four triangles sharing the geometric center. All oriented such
     // that their right-handed normal points towards the positive side.
@@ -275,17 +264,15 @@ SurfaceMesh<T> CalcZeroLevelSetInMeshDomain(
     std::vector<T>* e_m_surface, std::vector<Vector3<T>>* surface_normal_N) {
   DRAKE_DEMAND(e_m_surface != nullptr);
   DRAKE_ASSERT(surface_normal_N != nullptr);
-  std::vector<SurfaceVertex<T>> vertices;
+  std::vector<SurfaceVertex<T>> vertices_N;
   std::vector<SurfaceFace> faces;
   e_m_surface->clear();
-  surface_normal_N->clear();
 
   // We scan each tetrahedron in the mesh and compute the zero level set with
   // IntersectTetWithLevelSet().
   std::array<Vector3<T>, 4> tet_vertices_N;
   Vector4<T> phi;
   Vector4<T> e_m;
-  std::array<Vector3<T>, 4> normal_N;
   for (const auto& tet_indexes : mesh_M.tetrahedra()) {
     // Collect data for each vertex of the tetrahedron.
     for (int i = 0; i < 4; ++i) {
@@ -293,7 +280,6 @@ SurfaceMesh<T> CalcZeroLevelSetInMeshDomain(
       tet_vertices_N[i] = X_NM * p_MV;
       phi[i] = level_set_N.CalcLevelSet(tet_vertices_N[i]);
       e_m[i] = e_m_volume[tet_indexes.vertex(i)];
-      normal_N[i] = level_set_N.CalcLevelSetGradient(tet_vertices_N[i]);
     }
     // IntersectTetWithLevelSet() uses a different convention than VolumeMesh
     // to index the vertices of a tetrahedra and therefore we swap vertexes 1
@@ -303,12 +289,17 @@ SurfaceMesh<T> CalcZeroLevelSetInMeshDomain(
     std::swap(tet_vertices_N[1], tet_vertices_N[2]);
     std::swap(phi[1], phi[2]);
     std::swap(e_m[1], e_m[2]);
-    std::swap(normal_N[1], normal_N[2]);
-    IntersectTetWithLevelSet(tet_vertices_N, phi, e_m, normal_N, &vertices,
-                             &faces, e_m_surface, surface_normal_N);
+    IntersectTetWithLevelSet(tet_vertices_N, phi, e_m, &vertices_N, &faces,
+                             e_m_surface);
   }
 
-  return SurfaceMesh<T>(std::move(faces), std::move(vertices));
+  surface_normal_N->resize(vertices_N.size());
+  for (SurfaceVertexIndex v(0); v < vertices_N.size(); ++v) {
+    const Vector3<T>& p_NV = vertices_N[v].r_MV();
+    (*surface_normal_N)[v] = level_set_N.CalcLevelSetGradient(p_NV);
+  }
+
+  return SurfaceMesh<T>(std::move(faces), std::move(vertices_N));
 }
 
 }  // namespace internal
