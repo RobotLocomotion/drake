@@ -1533,7 +1533,12 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "snopt_solver_test",
-    tags = ["snopt"],
+    tags = [
+        # ThreadSanitizer: lock-order-inversion (potential deadlock) with
+        # snopt_fortran (#11657).
+        "no_tsan",
+        "snopt",
+    ],
     deps = [
         ":linear_program_examples",
         ":mathematical_program_private",
