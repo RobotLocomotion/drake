@@ -132,19 +132,31 @@ class KukaIiwaModelTests : public ::testing::Test {
   // the end effector frame E, given their (fixed) position p_EPi in the end
   // effector frame.
   // This templated helper method allows us to use automatic differentiation.
-  // See MultibodyTree::CalcPointsAnalyticalJacobianExpressedInWorld() for
-  // details.
+  // See MultibodyTree::CalcJacobianTranslationalVelocity() for details.
   // TODO(amcastro-tri): Rename this method as per issue #10155.
+  // TODO(Mitiguy): If this method is not used, delete it per issue #10155.
   template <typename T>
+  DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianSpatialVelocity().")
   void CalcPointsOnEndEffectorAnalyticJacobian(
       const MultibodyPlant<T>& plant_on_T,
       const Context<T>& context_on_T,
-      const MatrixX<T>& p_EPi,
-      MatrixX<T>* p_WPi, MatrixX<T>* Jq_WPi) const {
-    const Body<T>& linkG_on_T =
-        plant_on_T.get_body(end_effector_link_->index());
-    plant_on_T.CalcPointsAnalyticalJacobianExpressedInWorld(
-        context_on_T, linkG_on_T.body_frame(), p_EPi, p_WPi, Jq_WPi);
+      const MatrixX<T>& p_EoEi_E,
+      MatrixX<T>* p_WoEi_W,
+      MatrixX<T>* Jq_v_WEi_W) const {
+    const Frame<T>& frame_W = plant_on_T.world_frame();
+    const Frame<T>& frame_E =  /* End-effector frame E */
+        (plant_on_T.get_body(end_effector_link_->index())).body_frame();
+
+    plant_on_T.CalcJacobianTranslationalVelocity(context_on_T,
+                                                 JacobianWrtVariable::kQDot,
+                                                 frame_E,
+                                                 p_EoEi_E,
+                                                 frame_W,
+                                                 frame_W,
+                                                 Jq_v_WEi_W);
+    plant_on_T.CalcPointsPositions(context_on_T,
+                                   frame_E, p_EoEi_E,     /* From frame E */
+                                   frame_W, p_WoEi_W);   /* To world frame W */
   }
 
  protected:
