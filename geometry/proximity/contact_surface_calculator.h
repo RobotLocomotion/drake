@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/geometry/proximity/level_set_field.h"
@@ -18,7 +19,7 @@ namespace drake {
 namespace geometry {
 #ifndef DRAKE_DOXYGEN_CXX
 namespace internal {
-// This table essentially assigns an index to each edge in the tetrahedra. Each
+// This table essentially assigns an index to each edge in the tetrahedron. Each
 // edge is represented by its pair of vertex indexes.
 using Edge = std::pair<int, int>;
 const std::array<Edge, 6> kEdges = {
@@ -30,12 +31,14 @@ const std::array<Edge, 6> kEdges = {
 // two possible signs, we have a total of 16 entries.
 // We encode the table indexes in binary so that a "1" corresponds to a
 // positive value at that vertex and conversely "0" corresponds to a
-// negative value. The least significan bit, bit 0, maps to vertex 0 while the
+// negative value. The least significant bit, bit 0, maps to vertex 0 while the
 // most significant bit, bit 3, maps to vertex 3.
 // Each entry stores a vector of edges. Based on the sign of the level set,
 // these edges are the ones with a zero level set crossing. Edges are numbered
-// according to table kEdges.
-// See Figure 3 in [Bloomenthal, 1994] cited in the documentation for
+// according to table kEdges. The ordering of the edges is such, that the
+// winding of the intersection vertex for each edge, visited in the same order,
+// is guaranteed to point in the direction of "increasing phi". See Figure 3 in
+// [Bloomenthal, 1994] cited in the documentation for
 // CalcZeroLevelSetInMeshDomain() for details on the entries in this table.
 // We changed the order of the edges here so that they always form a closed
 // boundary oriented according to the right-hand rule around a vector from the
@@ -62,11 +65,11 @@ const std::array<std::vector<EdgeIndex>, 16> kMarchingTetsTable = {
 // Given a tetrahedron defined by the four vertices in `tet_vertices_N` and
 // a corresponding set of level set values at each vertex in `phi_N`, this
 // method computes a triangulation of the zero level set surface within the
-// domain of the tetrahedra.
+// domain of the tetrahedron.
 // On return this method adds the new vertices and faces of the triangulation
-// into `vertices` and `faces` respectively and returns the number of vertices
+// into `vertices` and `faces`, respectively and returns the number of vertices
 // added.
-// The first three "vertices" define the first face of the tetrahedra, with
+// The first three "vertices" define the first face of the tetrahedron, with
 // its right-handed normal pointing towards the outside.
 // The last vertex is on the "negative side" of the first face.
 //
@@ -108,8 +111,9 @@ int IntersectTetWithLevelSet(const std::array<Vector3<T>, 4>& tet_vertices_N,
   const double kZeroTolerance = 20 * std::numeric_limits<double>::epsilon();
   using std::abs;
   int num_zeros = 0;
-  for (int i = 0; i < 4; ++i)
+  for (int i = 0; i < 4; ++i) {
     if (abs(phi_N[i]) < kZeroTolerance) num_zeros++;
+  }
   if (num_zeros >= 3) {
     throw std::logic_error(
         "One or more faces of this tetrahedron are close to being a zero "
@@ -141,27 +145,26 @@ int IntersectTetWithLevelSet(const std::array<Vector3<T>, 4>& tet_vertices_N,
   Vector3<T> pc_N = Vector3<T>::Zero();  // Geometric center.
   for (int edge_index : intersected_edges) {
     const Edge& edge = kEdges[edge_index];
-    const int e1 = edge.first;
-    const int e2 = edge.second;
-    const Vector3<T>& p1_N = tet_vertices_N[e1];
-    const Vector3<T>& p2_N = tet_vertices_N[e2];
-    const T& phi1 = phi_N[e1];
-    const T& phi2 = phi_N[e2];
-    using std::abs;
+    const int v1 = edge.first;
+    const int v2 = edge.second;
+    const Vector3<T>& p1_N = tet_vertices_N[v1];
+    const Vector3<T>& p2_N = tet_vertices_N[v2];
+    const T& phi1 = phi_N[v1];
+    const T& phi2 = phi_N[v2];
     const T w2 = abs(phi1) / (abs(phi1) + abs(phi2));
     const T w1 = 1.0 - w2;
     const Vector3<T> pz_N = w1 * p1_N + w2 * p2_N;
     vertices->emplace_back(pz_N);
 
-    // Interpolate the scalar field e_m and its gradient at the zero crossing z.
-    const T e_m_at_z = w1 * e_m[e1] + w2 * e_m[e2];
-    const Vector3<T> grad_e_m_M_at_z =
-        w1 * grad_e_m_M[e1] + w2 * grad_e_m_M[e2];
-    e_m_surface->emplace_back(e_m_at_z);
-    grad_e_m_M_surface->emplace_back(grad_e_m_M_at_z);
-
     // The geometric center is only needed for Case II.
     if (num_intersections == 4) pc_N += pz_N;
+
+    // Interpolate the scalar field e_m and its gradient at the zero crossing z.
+    const T e_m_at_z = w1 * e_m[v1] + w2 * e_m[v2];
+    const Vector3<T> grad_e_m_M_at_z =
+        w1 * grad_e_m_M[v1] + w2 * grad_e_m_M[v2];
+    e_m_surface->emplace_back(e_m_at_z);
+    grad_e_m_M_surface->emplace_back(grad_e_m_M_at_z);
   }
 
   // Case I: A single vertex has different sign from the other three. A single
@@ -211,12 +214,19 @@ int IntersectTetWithLevelSet(const std::array<Vector3<T>, 4>& tet_vertices_N,
     return 5;
   }
 
-  throw std::logic_error("This line should never be reached.");
+  DRAKE_UNREACHABLE();
 }
 
 /// Given a level set function `φ(V)` and a volume defined by `mesh_M`, this
 /// method computes a triangulation of the zero level set `φ(V)` in the volume
-/// defined by the `mesh_M`.
+/// defined `mesh_M`.
+/// The resolution of the zero level set triangulation depends on the
+/// resolution of the initial volume mesh. That is, if we denote with h the
+/// typical length scale of a tetrahedral element, then the surface
+/// triangulation will also have triangular elements of size in the order of
+/// h. Thus, features in the level set function with a length scale smaller
+/// than h will not be properly captured by the triangulation.
+///
 /// @param mesh_M
 ///   Defines the volume M within which the zero level of `φ(V)` is found.
 /// @param[in] level_set_N
@@ -241,13 +251,6 @@ int IntersectTetWithLevelSet(const std::array<Vector3<T>, 4>& tet_vertices_N,
 ///   interpolated value of the scalar field for each vertex of the output
 ///   surface mesh.
 ///
-/// @note The resolution of the zero level set triangulation depends on the
-/// resolution of the initial volume mesh. That is, if we denote with h the
-/// typical length scale of a tetrahedral element, then the surface
-/// triangulation will also have triangular elements of size in the order of
-/// h. Thus, features in the level set function with a length scale smaller
-/// than h will not be properly captured by the triangulation.
-///
 /// @note This implementation uses the marching tetrahedra algorithm as
 /// described in [Bloomenthal, 1994].
 ///
@@ -263,14 +266,7 @@ int IntersectTetWithLevelSet(const std::array<Vector3<T>, 4>& tet_vertices_N,
 /// pp. 324-349.
 
 // TODO(amcastro):
-//  1. Write this API in terms of LevelSetField (update PR.)
-//  2. Make the returned surface mesh and gradient to be expressed in the same
-//     frame (right now mesh is in N and gradient in M.). Choose whichever frame
-//     is easier or more convenient.
-//  3. Since the level set is rigid, the normals are know and should exactly
-//     math the level set's gradients. Thefore evaluate the grad_level_set() to
-//     compute the values in grad_e_m_M_surface.
-//  4. Update current PR under review with 1, 2 and 3.
+// You can actually evaluate the gradient at each vertex analytically!!!.
 template <typename T>
 SurfaceMesh<T> CalcZeroLevelSetInMeshDomain(
     const VolumeMesh<T>& mesh_M,
