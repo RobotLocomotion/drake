@@ -8,18 +8,17 @@
 namespace drake {
 namespace geometry {
 
-/// This class represents a level set function as the application
+/// This class represents a level set function as the mapping
 /// `φ(ᴹpᴿ): ℝ³ →  ℝ` with `ᴹpᴿ` the position vector for a point R in a frame M.
 // TODO(amcastro-tri): consider making this an abstract class so that we can
 // inherit multiple implementations (analytical, structured grids, etc.)
 template <typename T>
 class LevelSetField {
  public:
-  /// Constructs a level set field from `std::function` objects specifing both
-  /// the level set function `level_set_M` as well as its gradient
-  /// `grad_level_set_M`.
-  /// These functions implicitly define the model frame M for the level set
-  /// field. `level_set_M` defines the level set function at a point R from its
+  /// Constructs a level set field from user-defined functions for a level set
+  /// and its gradient.
+  /// These functions implicitly define a model frame M for the level set
+  /// field. `level_set_M` defines the level set value at a point R from its
   /// position vector `p_MR` in M as `φ(R) ≡ level_set_N(p_MR)`.
   /// Similarly, `grad_level_set_M` is a function taking the position of point R
   /// in model frame M, with the resulting gradient expressed in frame M.
@@ -30,7 +29,7 @@ class LevelSetField {
   LevelSetField(LevelSetField&&) = default;
   LevelSetField& operator=(LevelSetField&&) = default;
 
-  /// Returns the the underlying `std::function` to the level set function.
+  /// Returns the the underlying level set function.
   const std::function<T(const Vector3<T>&)>& level_set_M() const {
     return level_set_M_;
   }
