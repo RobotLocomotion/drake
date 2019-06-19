@@ -19,7 +19,7 @@ GTEST_TEST(MultibodyPositionToGeometryPoseTest, InputOutput) {
   multibody::Parser(&mbp).AddModelFromFile(
       FindResourceOrThrow("drake/manipulation/models/iiwa_description/iiwa7"
                           "/iiwa7_no_collision.sdf"));
-  mbp.Finalize(&scene_graph);
+  mbp.Finalize();
 
   const MultibodyPositionToGeometryPose<double> dut(mbp);
 

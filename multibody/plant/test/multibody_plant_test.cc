@@ -833,7 +833,10 @@ GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodiesSourceErrors) {
   {
     MultibodyPlant<double> plant;
     plant.RegisterAsSourceForSceneGraph(&scene_graph);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     EXPECT_NO_THROW(plant.Finalize(&scene_graph));
+#pragma GCC diagnostic pop
   }
 
   // Case: Registered as source, correct finalization.
@@ -849,18 +852,24 @@ GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodiesSourceErrors) {
     MultibodyPlant<double> plant;
     plant.RegisterAsSourceForSceneGraph(&scene_graph);
     SceneGraph<double> other_graph;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     DRAKE_EXPECT_THROWS_MESSAGE(
         plant.Finalize(&other_graph), std::logic_error,
         "Geometry registration.*first call to RegisterAsSourceForSceneGraph.*");
+#pragma GCC diagnostic pop
   }
 
   // Case: Not registered as source, but passed SceneGraph in anyways - error.
   {
     MultibodyPlant<double> plant;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     DRAKE_EXPECT_THROWS_MESSAGE(
         plant.Finalize(&scene_graph), std::logic_error,
         "This MultibodyPlant instance does not have a SceneGraph registered.*"
         "RegisterAsSourceForSceneGraph.*");
+#pragma GCC diagnostic pop
   }
 }
 
