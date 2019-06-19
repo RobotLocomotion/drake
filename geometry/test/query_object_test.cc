@@ -105,9 +105,14 @@ class QueryObjectTester {
 
 namespace {
 
+using render::DepthCameraProperties;
+using math::RigidTransformd;
 using std::make_unique;
 using std::unique_ptr;
 using systems::Context;
+using systems::sensors::ImageDepth32F;
+using systems::sensors::ImageLabel16I;
+using systems::sensors::ImageRgba8U;
 
 class QueryObjectTest : public ::testing::Test {
  protected:
@@ -164,19 +169,37 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   EXPECT_DEFAULT_ERROR(QOT::ThrowIfNotCallable(*default_object));
 
   // Enumerate *all* queries to confirm they throw the proper exception.
+
+  // Scalar-dependent state queries.
+  EXPECT_DEFAULT_ERROR(default_object->X_WF(FrameId::get_new_id()));
+  EXPECT_DEFAULT_ERROR(default_object->X_PF(FrameId::get_new_id()));
+  EXPECT_DEFAULT_ERROR(default_object->X_WG(GeometryId::get_new_id()));
+
+  // Penetration queries.
   EXPECT_DEFAULT_ERROR(default_object->ComputePointPairPenetration());
+  EXPECT_DEFAULT_ERROR(default_object->ComputeContactSurfaces());
+
+  // Signed distance queries.
   EXPECT_DEFAULT_ERROR(
       default_object->ComputeSignedDistancePairwiseClosestPoints());
   EXPECT_DEFAULT_ERROR(
       default_object->ComputeSignedDistanceToPoint(Vector3<double>::Zero()));
-  EXPECT_DEFAULT_ERROR(
-      default_object->ComputeContactSurfaces());
-  EXPECT_DEFAULT_ERROR(
-      default_object->X_WF(FrameId::get_new_id()));
-  EXPECT_DEFAULT_ERROR(
-      default_object->X_PF(FrameId::get_new_id()));
-  EXPECT_DEFAULT_ERROR(
-      default_object->X_WG(GeometryId::get_new_id()));
+
+  // Render queries.
+  DepthCameraProperties properties(2, 2, M_PI, "dummy_renderer", 0.1, 5.0);
+  RigidTransformd X_WC = RigidTransformd::Identity();
+  ImageRgba8U color;
+  EXPECT_DEFAULT_ERROR(default_object->RenderColorImage(
+      properties, FrameId::get_new_id(), X_WC, false, &color));
+
+  ImageDepth32F depth;
+  EXPECT_DEFAULT_ERROR(default_object->RenderDepthImage(
+      properties, FrameId::get_new_id(), X_WC, &depth));
+
+  ImageLabel16I label;
+  EXPECT_DEFAULT_ERROR(default_object->RenderLabelImage(
+      properties, FrameId::get_new_id(), X_WC, false, &label));
+
 #undef EXPECT_DEFAULT_ERROR
 }
 

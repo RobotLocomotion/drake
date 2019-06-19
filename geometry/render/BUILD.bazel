@@ -17,7 +17,6 @@ drake_cc_package_library(
         ":render_engine_vtk",
         ":render_label",
         ":render_label_class",
-        ":render_label_manager",
     ],
 )
 
@@ -97,17 +96,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "render_label_manager",
-    srcs = ["render_label_manager.cc"],
-    hdrs = ["render_label_manager.h"],
-    deps = [
-        ":render_label",
-        ":render_label_class",
-        "@fmt",
-    ],
-)
-
 # === test/ ===
 
 drake_cc_googletest(
@@ -139,7 +127,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":render_engine_vtk",
-        ":render_label_manager",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
@@ -153,15 +140,6 @@ drake_cc_googletest(
     deps = [
         ":render_label",
         "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "render_label_manager_test",
-    deps = [
-        ":render_label_manager",
-        "//common:value",
-        "//common/test_utilities",
     ],
 )
 

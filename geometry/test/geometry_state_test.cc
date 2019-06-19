@@ -3391,6 +3391,13 @@ TEST_F(GeometryStateNoRendererTest, PerceptionRoleWithoutRenderer) {
       0);
 }
 
+// TODO(SeanCurtis-TRI): The `Render*Image` interface is insufficiently tested.
+//  GeometryState is a thin wrapper on the render engine, but GeometryState is
+//  responsible for:
+//    1. Confirming the parent frame is valid.
+//    2. Updating the camera pose.
+//    3. Calling the appropriate render engine.
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake
