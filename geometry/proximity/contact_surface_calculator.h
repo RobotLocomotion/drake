@@ -81,8 +81,8 @@ const std::array<std::vector<EdgeIndex>, 16> kMarchingTetsTable = {
 //   The level set function evaluated at each of the four vertices in
 //   `tet_vertices_N`, in the same order.
 // @param[in] e_m
-//   A scalar field evaluated at each of the four vertices in `tet_vertices_N`,
-//   in the same order.
+//   A discrete, linear representation of a scalar field, defined by the value
+//   of the field at the tetrahedron vertices.
 // @param[out] vertices
 //   Adds the new vertices into `vertices`.
 // @param[out] faces
@@ -225,23 +225,23 @@ int IntersectTetWithLevelSet(const std::array<Vector3<T>, 4>& tet_vertices_N,
 /// @param[in] X_NM
 ///   The pose of M in N.
 /// @param[in] e_m_volume
-///   A scalar field defined in the volume of the mesh, defined by its values at
-///   each vertex.
-/// @param[in] grad_e_m_M_volume
-///   A vector field defined in the volume of the mesh, defined by the its
-///   values at each vertex. Expressed in the frame M of the mesh.
+///   A discrete, linear representation of a scalar field, defined by the value
+///   of the field at the mesh vertices.
 /// @param[out] e_m_surface
-///   Volumetric scalar field `e_m_volume` interplated onto the zero-level set
-///   surface. Each entry in `e_m_surface` corresponds to the interpolated
-///   value of the scalar field for each vertex of the output surface mesh.
-/// @param[out] grad_e_m_M_surface
-///   Volumetric scalar field `grad_e_m_M_volume` interplated onto the
-///   zero-level set surface. Each entry in `e_m_surface` corresponds to the
-///   interpolated value of the scalar field for each vertex of the output
-///   surface mesh.
+///   The scalar field e_m_volume sampled on the vertices of the zero-level set
+///   contact surface. Because `e_m_volume` is itself a discrete, linear
+///   representation of a continuous scalar field, the values on the contact
+///   surface will be an linear interpolation of those values.
+///   Any existing values in `e_m_surface` at input are cleared.
+/// @param[out] level_set_gradient_N
+///   The gradient of `level_set_N` evaluated with
+///   LevelSetField::CalcLevelSetGradient() at each vertex of the returned
+///   zero-level set surface triangulation, expressed in frame N.
+///   Any existing values in `level_set_gradient_N` at input are cleared.
 ///
 /// @note This implementation uses the marching tetrahedra algorithm as
-/// described in [Bloomenthal, 1994].
+/// described in Bloomenthal, J., 1994. An Implicit Surface Polygonizer.
+/// Graphics Gems IV, pp. 324-349.
 ///
 /// @returns A triangulation of the zero level set of `φ(V)` in the volume
 /// defined by the `mesh_M`.  The triangulation is expressed in frame N. The
@@ -250,10 +250,6 @@ int IntersectTetWithLevelSet(const std::array<Vector3<T>, 4>& tet_vertices_N,
 /// gradient of `φ(V)`.
 ///
 /// @note  The SurfaceMesh may have duplicated vertices.
-///
-/// Bloomenthal, J., 1994. An Implicit Surface Polygonizer. Graphics Gems IV,
-/// pp. 324-349.
-
 // TODO(amcastro):
 // You can actually evaluate the gradient at each vertex analytically!!!.
 template <typename T>
@@ -261,9 +257,9 @@ SurfaceMesh<T> CalcZeroLevelSetInMeshDomain(
     const VolumeMesh<T>& mesh_M,
     const LevelSetField<T>& level_set_N,
     const math::RigidTransform<T>& X_NM, const std::vector<T>& e_m_volume,
-    std::vector<T>* e_m_surface, std::vector<Vector3<T>>* surface_normal_N) {
+    std::vector<T>* e_m_surface, std::vector<Vector3<T>>* level_set_gradient_N) {
   DRAKE_DEMAND(e_m_surface != nullptr);
-  DRAKE_ASSERT(surface_normal_N != nullptr);
+  DRAKE_ASSERT(level_set_gradient_N != nullptr);
   std::vector<SurfaceVertex<T>> vertices_N;
   std::vector<SurfaceFace> faces;
   e_m_surface->clear();
@@ -273,13 +269,13 @@ SurfaceMesh<T> CalcZeroLevelSetInMeshDomain(
   std::array<Vector3<T>, 4> tet_vertices_N;
   Vector4<T> phi;
   Vector4<T> e_m;
-  for (const auto& tet_indexes : mesh_M.tetrahedra()) {
+  for (const auto& tet : mesh_M.tetrahedra()) {
     // Collect data for each vertex of the tetrahedron.
     for (int i = 0; i < 4; ++i) {
-      const auto& p_MV = mesh_M.vertex(tet_indexes.vertex(i)).r_MV();
+      const auto& p_MV = mesh_M.vertex(tet.vertex(i)).r_MV();
       tet_vertices_N[i] = X_NM * p_MV;
       phi[i] = level_set_N.CalcLevelSet(tet_vertices_N[i]);
-      e_m[i] = e_m_volume[tet_indexes.vertex(i)];
+      e_m[i] = e_m_volume[tet.vertex(i)];
     }
     // IntersectTetWithLevelSet() uses a different convention than VolumeMesh
     // to index the vertices of a tetrahedra and therefore we swap vertexes 1
@@ -293,10 +289,10 @@ SurfaceMesh<T> CalcZeroLevelSetInMeshDomain(
                              e_m_surface);
   }
 
-  surface_normal_N->resize(vertices_N.size());
+  level_set_gradient_N->resize(vertices_N.size());
   for (SurfaceVertexIndex v(0); v < vertices_N.size(); ++v) {
     const Vector3<T>& p_NV = vertices_N[v].r_MV();
-    (*surface_normal_N)[v] = level_set_N.CalcLevelSetGradient(p_NV);
+    (*level_set_gradient_N)[v] = level_set_N.CalcLevelSetGradient(p_NV);
   }
 
   return SurfaceMesh<T>(std::move(faces), std::move(vertices_N));

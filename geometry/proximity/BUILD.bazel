@@ -143,7 +143,7 @@ drake_cc_library(
         "//common:autodiff",
         "//common:essential",
         "//geometry/proximity:level_set_field",
-        "//geometry/proximity:volume_mesh",        
+        "//geometry/proximity:volume_mesh",
         "//geometry/query_results:contact_surface",
         "//math:geometric_transform",
     ],
