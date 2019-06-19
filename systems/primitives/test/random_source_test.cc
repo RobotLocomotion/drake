@@ -20,12 +20,10 @@ namespace {
 // the expected statistics.  The histogram is taken over the domain [min_value,
 // max_value] with interval size h.  Statistics are compared against a rigorous
 // bound multiplied by a fudge_factor (>=1, smaller is tighter).
-template <typename Distribution, typename Generator>
 void CheckStatistics(
     const std::function<double(double)>& cumulative_distribution,
     double min_value, double max_value, double h, double fudge_factor,
-    std::unique_ptr<internal::RandomSource<Distribution, Generator>>
-        random_source_system) {
+    std::unique_ptr<RandomSource> random_source_system) {
   DiagramBuilder<double> builder;
 
   auto source = builder.AddSystem(std::move(random_source_system));
@@ -76,7 +74,8 @@ void CheckStatistics(
 }
 
 GTEST_TEST(RandomSourceTest, UniformWhiteNoise) {
-  auto random_source = std::make_unique<UniformRandomSource>(2, 0.0025);
+  auto random_source = std::make_unique<RandomSource>(
+      RandomDistribution::kUniform, 2, 0.0025);
 
   // Cumulative distribution function of the uniform distribution.
   auto Phi = [](double z) { return z; };
@@ -90,7 +89,8 @@ GTEST_TEST(RandomSourceTest, UniformWhiteNoise) {
 }
 
 GTEST_TEST(RandomSourceTest, GaussianWhiteNoise) {
-  auto random_source = std::make_unique<GaussianRandomSource>(2, 0.0025);
+  auto random_source = std::make_unique<RandomSource>(
+      RandomDistribution::kGaussian, 2, 0.0025);
 
   // Cumulative distribution function of the standard normal distribution.
   auto Phi = [](double z) { return 0.5 * std::erfc(-z / std::sqrt(2.0)); };
@@ -104,7 +104,8 @@ GTEST_TEST(RandomSourceTest, GaussianWhiteNoise) {
 }
 
 GTEST_TEST(RandomSourceTest, ExponentialWhiteNoise) {
-  auto random_source = std::make_unique<ExponentialRandomSource>(2, 0.0025);
+  auto random_source = std::make_unique<RandomSource>(
+      RandomDistribution::kExponential, 2, 0.0025);
 
   // Cumulative distribution function of the exponential distribution with λ=1,
   // (note: only valid for z>=0).
@@ -202,12 +203,12 @@ GTEST_TEST(RandomSourceTest, CorrelationTest) {
   DiagramBuilder<double> builder;
   const int kSize = 1;
   const double kSampleTime = 0.0025;
-  const auto* random1 =
-      builder.AddSystem<GaussianRandomSource>(kSize, kSampleTime);
+  const auto* random1 = builder.AddSystem<RandomSource>(
+      RandomDistribution::kGaussian, kSize, kSampleTime);
   const auto* log1 = LogOutput(random1->get_output_port(0), &builder);
 
-  const auto* random2 =
-      builder.AddSystem<GaussianRandomSource>(kSize, kSampleTime);
+  const auto* random2 = builder.AddSystem<RandomSource>(
+      RandomDistribution::kGaussian, kSize, kSampleTime);
   const auto* log2 = LogOutput(random2->get_output_port(0), &builder);
 
   const auto diagram = builder.Build();
@@ -234,7 +235,7 @@ GTEST_TEST(RandomSourceTest, CorrelationTest) {
 // Make sure that calling SetRandomContext changes the output, and
 // SetDefaultContext returns it to the original (default) output.
 GTEST_TEST(RandomSourceTest, SetRandomContextTest) {
-  UniformRandomSource random_source(2, 0.0025);
+  RandomSource random_source(RandomDistribution::kUniform, 2, 0.0025);
 
   auto context = random_source.CreateDefaultContext();
   const Eigen::Vector2d default_values =
