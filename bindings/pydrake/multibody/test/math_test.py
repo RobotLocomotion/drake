@@ -41,9 +41,9 @@ class TestMultibodyTreeMath(unittest.TestCase):
         numpy_compare.assert_float_equal(
                 cls(**coeffs_args).get_coeffs(), coeffs_expected)
 
-    def test_spatial_vector_types(self):
-        for T in [float, AutoDiffXd, Expression]:
-            self.check_spatial_vector(SpatialVelocity_[T], "V", "w", "v")
-            self.check_spatial_vector(
-                    SpatialAcceleration_[T], "A", "alpha", "a")
-            self.check_spatial_vector(SpatialForce_[T], "F", "tau", "f")
+    @numpy_compare.check_all_types
+    def test_spatial_vector_types(self, T):
+        self.check_spatial_vector(SpatialVelocity_[T], "V", "w", "v")
+        self.check_spatial_vector(
+                SpatialAcceleration_[T], "A", "alpha", "a")
+        self.check_spatial_vector(SpatialForce_[T], "F", "tau", "f")

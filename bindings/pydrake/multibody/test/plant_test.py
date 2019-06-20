@@ -126,21 +126,9 @@ class TestPlant(unittest.TestCase):
         if nonzero:
             numpy_compare.assert_float_not_equal(x, 0.)
 
-    def check_all_types(self, check_func):
-        check_func(float)
-        check_func(AutoDiffXd)
-        check_func(Expression)
-
-    def check_nonsymbolic_types(self, check_func):
-        check_func(float)
-        check_func(AutoDiffXd)
-
-    def test_multibody_plant_construction_api(self):
+    @numpy_compare.check_nonsymbolic_types
+    def test_multibody_plant_construction_api(self, T):
         # SceneGraph does not support `Expression` type.
-        self.check_nonsymbolic_types(
-            self.check_multibody_plant_construction_api)
-
-    def check_multibody_plant_construction_api(self, T):
         DiagramBuilder = DiagramBuilder_[T]
         SpatialInertia = SpatialInertia_[float]
         RigidTransform = RigidTransform_[T]
@@ -175,10 +163,8 @@ class TestPlant(unittest.TestCase):
         with catch_drake_warnings(expected_count=1):
             plant.Finalize(scene_graph)
 
-    def test_multibody_plant_api_via_parsing(self):
-        self.check_all_types(self.check_multibody_plant_api_via_parsing)
-
-    def check_multibody_plant_api_via_parsing(self, T):
+    @numpy_compare.check_all_types
+    def test_multibody_plant_api_via_parsing(self, T):
         MultibodyPlant = MultibodyPlant_[T]
         Joint = Joint_[T]
         Body = Body_[T]
@@ -321,10 +307,8 @@ class TestPlant(unittest.TestCase):
         # Just to make it obvious when this is being tested.
         self.assertIsNot(value, None)
 
-    def test_inertia_api(self):
-        self.check_all_types(self.check_inertia_api)
-
-    def check_inertia_api(self, T):
+    @numpy_compare.check_all_types
+    def test_inertia_api(self, T):
         UnitInertia = UnitInertia_[T]
         SpatialInertia = SpatialInertia_[T]
         UnitInertia()
@@ -333,17 +317,13 @@ class TestPlant(unittest.TestCase):
         SpatialInertia(mass=2.5, p_PScm_E=[0.1, -0.2, 0.3],
                        G_SP_E=unit_inertia)
 
-    def test_friction_api(self):
-        self.check_all_types(self.check_friction_api)
-
-    def check_friction_api(self, T):
+    @numpy_compare.check_all_types
+    def test_friction_api(self, T):
         CoulombFriction = CoulombFriction_[T]
         CoulombFriction(static_friction=0.7, dynamic_friction=0.6)
 
-    def test_multibody_gravity_default(self):
-        self.check_all_types(self.check_multibody_gravity_default)
-
-    def check_multibody_gravity_default(self, T):
+    @numpy_compare.check_all_types
+    def test_multibody_gravity_default(self, T):
         MultibodyPlant = MultibodyPlant_[T]
         UniformGravityFieldElement = UniformGravityFieldElement_[T]
         plant = MultibodyPlant()
@@ -352,10 +332,8 @@ class TestPlant(unittest.TestCase):
             plant.AddForceElement(UniformGravityFieldElement())
         plant.Finalize()
 
-    def test_multibody_tree_kinematics(self):
-        self.check_all_types(self.check_multibody_tree_kinematics)
-
-    def check_multibody_tree_kinematics(self, T):
+    @numpy_compare.check_all_types
+    def test_multibody_tree_kinematics(self, T):
         RigidTransform = RigidTransform_[T]
         SpatialVelocity = SpatialVelocity_[T]
         plant_f = MultibodyPlant_[float]()
@@ -428,10 +406,8 @@ class TestPlant(unittest.TestCase):
             context=context, known_vdot=vdot)
         self.assertEqual(len(A_WB_array), plant.num_bodies())
 
-    def test_multibody_state_access(self):
-        self.check_all_types(self.check_multibody_state_access)
-
-    def check_multibody_state_access(self, T):
+    @numpy_compare.check_all_types
+    def test_multibody_state_access(self, T):
         MultibodyPlant = MultibodyPlant_[T]
 
         plant_f = MultibodyPlant_[float]()
@@ -513,10 +489,8 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(plant.GetAccelerationLowerLimits().shape, (nv,))
         self.assertEqual(plant.GetAccelerationUpperLimits().shape, (nv,))
 
-    def test_model_instance_port_access(self):
-        self.check_all_types(self. check_model_instance_port_access)
-
-    def check_model_instance_port_access(self, T):
+    @numpy_compare.check_all_types
+    def test_model_instance_port_access(self, T):
         MultibodyPlant = MultibodyPlant_[T]
         InputPort = InputPort_[T]
         OutputPort = OutputPort_[T]
@@ -638,10 +612,8 @@ class TestPlant(unittest.TestCase):
         simulator = Simulator(diagram)
         simulator.StepTo(0.01)
 
-    def test_model_instance_state_access(self):
-        self.check_all_types(self.check_model_instance_state_access)
-
-    def check_model_instance_state_access(self, T):
+    @numpy_compare.check_all_types
+    def test_model_instance_state_access(self, T):
         # N.B. Please check warning above in `check_multibody_state_access`.
         # Create a MultibodyPlant with a kuka arm and a schunk gripper.
         # the arm is welded to the world, the gripper is welded to the
@@ -787,10 +759,8 @@ class TestPlant(unittest.TestCase):
         numpy_compare.assert_float_equal(plant.GetPositionsAndVelocities(
             context, iiwa_model), np.zeros(nq_iiwa + nv_iiwa))
 
-    def test_model_instance_state_access_by_array(self):
-        self.check_all_types(self.check_model_instance_state_access_by_array)
-
-    def check_model_instance_state_access_by_array(self, T):
+    @numpy_compare.check_all_types
+    def test_model_instance_state_access_by_array(self, T):
         # N.B. Please check warning above in `check_multibody_state_access`.
         MultibodyPlant = MultibodyPlant_[T]
         # Create a MultibodyPlant with a kuka arm and a schunk gripper.
@@ -906,10 +876,8 @@ class TestPlant(unittest.TestCase):
                 model_instance=iiwa_model, u_instance=u_iiwa, u=u)
             numpy_compare.assert_float_equal(u_iiwa, u[:7])
 
-    def test_map_qdot_to_v_and_back(self):
-        self.check_all_types(self.check_map_qdot_to_v_and_back)
-
-    def check_map_qdot_to_v_and_back(self, T):
+    @numpy_compare.check_all_types
+    def test_map_qdot_to_v_and_back(self, T):
         MultibodyPlant = MultibodyPlant_[T]
         RigidTransform = RigidTransform_[T]
         RollPitchYaw = RollPitchYaw_[T]
@@ -940,10 +908,8 @@ class TestPlant(unittest.TestCase):
         v_remap = plant.MapQDotToVelocity(context, qdot)
         numpy_compare.assert_float_allclose(v_remap, v_expected)
 
-    def test_multibody_add_joint(self):
-        self.check_all_types(self.check_multibody_add_joint)
-
-    def check_multibody_add_joint(self, T):
+    @numpy_compare.check_all_types
+    def test_multibody_add_joint(self, T):
         """
         Tests joint constructors and `AddJoint`.
         """
@@ -998,10 +964,8 @@ class TestPlant(unittest.TestCase):
             joint = plant.get_joint(joint_index=joint_f.index())
             self._test_joint_api(T, joint)
 
-    def test_multibody_add_frame(self):
-        self.check_all_types(self.check_multibody_add_frame)
-
-    def check_multibody_add_frame(self, T):
+    @numpy_compare.check_all_types
+    def test_multibody_add_frame(self, T):
         MultibodyPlant = MultibodyPlant_[T]
         FixedOffsetFrame = FixedOffsetFrame_[T]
 
@@ -1016,10 +980,8 @@ class TestPlant(unittest.TestCase):
             frame.GetFixedPoseInBodyFrame().GetAsMatrix4(),
             np.eye(4))
 
-    def test_multibody_dynamics(self):
-        self.check_all_types(self.check_multibody_dynamics)
-
-    def check_multibody_dynamics(self, T):
+    @numpy_compare.check_all_types
+    def test_multibody_dynamics(self, T):
         MultibodyPlant = MultibodyPlant_[T]
         MultibodyForces = MultibodyForces_[T]
         SpatialForce = SpatialForce_[T]
@@ -1098,11 +1060,9 @@ class TestPlant(unittest.TestCase):
             link2.GetForceInWorld(context, forces).get_coeffs()),
             2 * F_expected)
 
-    def test_contact(self):
+    @numpy_compare.check_nonsymbolic_types
+    def test_contact(self, T):
         # PenetrationAsPointPair has been bound for non-symbolic types only.
-        self.check_nonsymbolic_types(self.check_contact)
-
-    def check_contact(self, T):
         PenetrationAsPointPair = PenetrationAsPointPair_[T]
         PointPairContactInfo = PointPairContactInfo_[T]
         ContactResults = ContactResults_[T]
@@ -1168,11 +1128,9 @@ class TestPlant(unittest.TestCase):
         publisher = ConnectContactResultsToDrakeVisualizer(builder, plant)
         self.assertIsInstance(publisher, LcmPublisherSystem)
 
-    def test_scene_graph_queries(self):
+    @numpy_compare.check_nonsymbolic_types
+    def test_scene_graph_queries(self, T):
         # SceneGraph does not support `Expression` type.
-        self.check_nonsymbolic_types(self.check_scene_graph_queries)
-
-    def check_scene_graph_queries(self, T):
         PenetrationAsPointPair = PenetrationAsPointPair_[T]
 
         builder_f = DiagramBuilder_[float]()
