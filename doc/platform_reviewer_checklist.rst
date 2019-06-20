@@ -9,7 +9,7 @@ There are several policies documented in :ref:`GitHub Issue Management
 reviewer should run through this checklist at least once per day.
 
 Search for `issues without an assigned team
-<https://github.com/RobotLocomotion/drake/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+-label%3A%22team%3A+automotive%22+-label%3A%22team%3A+dynamics%22+-label%3A%22team%3A+kitware%22+-label%3A%22team%3A+manipulation%22+-label%3A%22team%3A+russ%22+-label%3A%22team%3A+robot+locomotion+group%22>`_
+<https://github.com/RobotLocomotion/drake/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+-label%3A%22team%3A+dynamics%22+-label%3A%22team%3A+kitware%22+-label%3A%22team%3A+manipulation%22+-label%3A%22team%3A+russ%22+-label%3A%22team%3A+robot+locomotion+group%22>`_
 and assign a team.  When in doubt, seek advice on slack.
 
 Search for `issues without an assigned individual

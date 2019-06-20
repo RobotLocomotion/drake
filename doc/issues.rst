@@ -31,12 +31,6 @@ Team
 Every issue must have at least one ``team`` label. The teams, their leads, and
 their responsibilities are:
 
-- ``automotive``
-
-  lead: jwnimmer-tri
-
-  responsibilities: ``drake/automotive/`` subdirectory
-
 - ``dynamics``
 
   lead: sherm1
