@@ -6,6 +6,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/lcmt_inverse_dynamics_debug_info.hpp"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/deprecated.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -17,7 +18,8 @@ namespace qp_inverse_dynamics {
 /**
  * A discrete time system block for an inverse dynamics controller.
  */
-class QpInverseDynamicsSystem : public systems::LeafSystem<double> {
+class DRAKE_DEPRECATED_QPID QpInverseDynamicsSystem
+    : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QpInverseDynamicsSystem)
 

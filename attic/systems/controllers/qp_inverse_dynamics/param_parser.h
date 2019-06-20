@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_tree_alias_groups.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/deprecated.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics_common.h"
 
 namespace drake {
@@ -37,7 +38,7 @@ namespace qp_inverse_dynamics {
  *
  * This struct holds name, kp, kd, and weight.
  */
-struct DesiredMotionParam {
+struct DRAKE_DEPRECATED_QPID DesiredMotionParam {
   /// Name can be arbitrary.
   std::string name;
   VectorX<double> kp;
@@ -66,6 +67,7 @@ struct DesiredMotionParam {
   }
 };
 
+DRAKE_DEPRECATED_QPID
 std::ostream& operator<<(std::ostream& out, const DesiredMotionParam& param);
 
 /**
@@ -74,7 +76,7 @@ std::ostream& operator<<(std::ostream& out, const DesiredMotionParam& param);
  * ContactInformation which is used by the QP inverse dynamics controller.
  * Please see ContactInformation for more details.
  */
-struct ContactParam {
+struct DRAKE_DEPRECATED_QPID ContactParam {
   /// Name can be arbitrary.
   std::string name;
   /// Specified in the body frame.
@@ -109,6 +111,7 @@ struct ContactParam {
   bool operator!=(const ContactParam& other) const { return !(*this == other); }
 };
 
+DRAKE_DEPRECATED_QPID
 std::ostream& operator<<(std::ostream& out, const ContactParam& param);
 
 /**
@@ -126,7 +129,7 @@ std::ostream& operator<<(std::ostream& out, const ContactParam& param);
  * for string values. It is highly recommended that all fields are specified
  * when writing a config file.
  */
-class ParamSet {
+class DRAKE_DEPRECATED_QPID ParamSet {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ParamSet)
 

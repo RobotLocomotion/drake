@@ -29,9 +29,14 @@ drake_cc_library(
     hdrs = [
         "generic_plan.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "//attic/multibody:rigid_body_tree_alias_groups",
         "//attic/systems/controllers/qp_inverse_dynamics:control",
+        "//attic/systems/controllers/qp_inverse_dynamics:deprecated",
         "//attic/systems/controllers/qp_inverse_dynamics:param_parser",
         "//manipulation/util:trajectory_utils",
         "//systems/controllers:setpoint",
@@ -46,8 +51,13 @@ drake_cc_library(
     hdrs = [
         "manipulator_move_end_effector_plan.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":generic_plan",
+        "//attic/systems/controllers/qp_inverse_dynamics:deprecated",
         "//lcmtypes:manipulator_plan_move_end_effector",
         "//manipulation/util:bot_core_lcm_encode_decode",
     ],
@@ -59,6 +69,10 @@ drake_cc_library(
     hdrs = [
         "test/test_common.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "//attic/multibody:rigid_body_tree_alias_groups",
         "//attic/systems/controllers/qp_inverse_dynamics:param_parser",
@@ -69,8 +83,13 @@ drake_cc_library(
     name = "plan_eval_base_system",
     srcs = ["plan_eval_base_system.cc"],
     hdrs = ["plan_eval_base_system.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "//attic/multibody:rigid_body_tree_alias_groups",
+        "//attic/systems/controllers/qp_inverse_dynamics:deprecated",
         "//attic/systems/controllers/qp_inverse_dynamics:param_parser",
         "//systems/controllers:setpoint",
         "//systems/framework:leaf_system",
@@ -81,6 +100,10 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "generic_plan_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         "//attic/systems/controllers/qp_inverse_dynamics:test/iiwa.alias_groups",  # noqa
         "//attic/systems/controllers/qp_inverse_dynamics:test/iiwa.id_controller_config",  # noqa
@@ -98,6 +121,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "manipulator_plan_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         "//attic/systems/controllers/qp_inverse_dynamics:test/iiwa.alias_groups",  # noqa
         "//attic/systems/controllers/qp_inverse_dynamics:test/iiwa.id_controller_config",  # noqa

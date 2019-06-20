@@ -10,6 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/deprecated.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics_common.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/robot_kinematic_state.h"
 
@@ -18,7 +19,7 @@ namespace systems {
 namespace controllers {
 namespace qp_inverse_dynamics {
 
-class QpInverseDynamics {
+class DRAKE_DEPRECATED_QPID QpInverseDynamics {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QpInverseDynamics)
 

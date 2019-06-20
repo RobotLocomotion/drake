@@ -7,6 +7,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree_alias_groups.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/deprecated.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/param_parser.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -22,7 +23,8 @@ namespace plan_eval {
  * updated in DoCalcUnrestrictedUpdate(). Custom plan types are also stored and
  * updated in the same way.
  */
-class PlanEvalBaseSystem : public systems::LeafSystem<double> {
+class DRAKE_DEPRECATED_QPID PlanEvalBaseSystem
+    : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PlanEvalBaseSystem)
 

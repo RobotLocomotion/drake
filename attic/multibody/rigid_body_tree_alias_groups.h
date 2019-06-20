@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 /**
@@ -53,6 +54,9 @@ class RigidBodyTreeAliasGroups {
    * @throws std::runtime_error if joint names or body names cannot be parsed
    * correctly.
    */
+  DRAKE_DEPRECATED("2019-10-01",
+      "Loading of alias_groups files is deprecated. "
+      "Construct the groups using C++ API calls instead.")
   void LoadFromFile(const std::string& path);
 
   /**

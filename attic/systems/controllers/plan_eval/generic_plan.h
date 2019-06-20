@@ -10,6 +10,7 @@
 #include "drake/common/value.h"
 #include "drake/manipulation/util/trajectory_utils.h"
 #include "drake/multibody/rigid_body_tree_alias_groups.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/deprecated.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/param_parser.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics_common.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/robot_kinematic_state.h"
@@ -50,7 +51,7 @@ typedef std::unordered_set<const RigidBody<double>*> ContactState;
  * for recovering the proper plan type.
  */
 template <typename T>
-class GenericPlan {
+class DRAKE_DEPRECATED_QPID GenericPlan {
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GenericPlan)
 
