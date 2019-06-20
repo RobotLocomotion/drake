@@ -49,6 +49,9 @@ def _check_includes(filename):
               "the #include ordering is incorrect")
         print("note: fix via bazel-bin/tools/lint/clang-format-includes " +
               filename)
+        print("note: if that program does not exist, " +
+              "you might need to compile it first: " +
+              "bazel build //tools/lint/...")
         return 1
     return 0
 
