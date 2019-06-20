@@ -52,6 +52,7 @@ drake_py_library(
     deps = [
         ":deprecation_py",
         ":module_py",
+        ":numpy_compare_py",
     ],
 )
 
