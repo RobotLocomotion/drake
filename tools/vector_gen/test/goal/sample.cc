@@ -1,5 +1,9 @@
 #include "drake/tools/vector_gen/test/gen/sample.h"
 
+#include <stdexcept>
+
+#include <fmt/format.h>
+
 // GENERATED GOAL DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
@@ -24,6 +28,13 @@ const std::vector<std::string>& SampleIndices::GetCoordinateNames() {
   return coordinates.access();
 }
 
+void SampleIndices::ThrowIfWrongSize(int size) {
+  if (size != kNumCoordinates) {
+    throw std::logic_error(fmt::format(
+        "SampleIndices: wanted a vector of size {}, but got size {}",
+        kNumCoordinates, size));
+  }
+}
 }  // namespace test
 }  // namespace tools
 }  // namespace drake

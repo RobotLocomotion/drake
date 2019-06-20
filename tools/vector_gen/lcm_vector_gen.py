@@ -19,6 +19,7 @@ def put(fileobj, text, newlines_after=0):
     fileobj.write(text.strip('\n') + '\n' * newlines_after)
 
 
+# Index-related stuff in the header file.
 INDICES_BEGIN = """
 /// Describes the row indices of a %(camel)s.
 struct %(indices)s {
@@ -28,7 +29,39 @@ struct %(indices)s {
   // The index of each individual coordinate.
 """
 INDICES_FIELD = """static const int %(kname)s = %(kvalue)d;"""
+INDICES_END = """
+  /// Returns a vector containing the names of each coordinate within this
+  /// class. The indices within the returned vector matches that of this class.
+  /// In other words, `%(indices)s::GetCoordinateNames()[i]`
+  /// is the name for `BasicVector::GetAtIndex(i)`.
+  static const std::vector<std::string>& GetCoordinateNames();
+
+  /// Throws an exception if the given size is not kNumCoordiantes.
+  static void ThrowIfWrongSize(int size);
+};
+"""
+
+# Index-related stuff in the cc file.
 INDICES_FIELD_STORAGE = """const int %(indices)s::%(kname)s;"""
+INDICES_NAMES_ACCESSOR_IMPL_START = """
+const std::vector<std::string>& %(camel)sIndices::GetCoordinateNames() {
+  static const drake::never_destroyed<std::vector<std::string>> coordinates(
+      std::vector<std::string>{
+"""
+INDICES_NAMES_ACCESSOR_IMPL_MID = """    \"%(name)s\",  // BR"""
+INDICES_NAMES_ACCESSOR_IMPL_END = """  });
+  return coordinates.access();
+}"""
+
+INDICES_THROW_IMPL = """
+void %(camel)sIndices::ThrowIfWrongSize(int size) {
+  if (size != kNumCoordinates) {
+    throw std::logic_error(fmt::format(
+        "%(camel)sIndices: wanted a vector of size {}, but got size {}",
+         kNumCoordinates, size));
+  }
+}
+"""
 
 
 def to_kname(field):
@@ -37,7 +70,7 @@ def to_kname(field):
         for word in field.split('_')])
 
 
-def generate_indices(hh, caller_context, fields):
+def generate_indices_class_declaration(hh, caller_context, fields):
     """
     Args:
         fields is the list of fieldnames in the LCM message.
@@ -55,9 +88,11 @@ def generate_indices(hh, caller_context, fields):
         context.update(kname=to_kname(field['name']))
         context.update(kvalue=kvalue)
         put(hh, INDICES_FIELD % context, 1)
+    put(hh, "", 1)
+    put(hh, INDICES_END % context, 1)
 
 
-def generate_indices_storage(cc, caller_context, fields):
+def generate_indices_class_definition(cc, caller_context, fields):
     """
     Args:
         fields is the list of fieldnames in the LCM message.
@@ -67,53 +102,24 @@ def generate_indices_storage(cc, caller_context, fields):
     context.update(kname="kNumCoordinates")
     put(cc, INDICES_FIELD_STORAGE % context, 1)
     for kvalue, field in enumerate(fields):
-        # field is the LCM message field name
-        # kname is the C++ kConstant name
-        # kvalue is the C++ vector row index integer value
         context.update(kname=to_kname(field['name']))
         context.update(kvalue=kvalue)
         put(cc, INDICES_FIELD_STORAGE % context, 1)
+    put(cc, "", 1)
+    put(cc, INDICES_NAMES_ACCESSOR_IMPL_START % context, 1)
+    for kvalue, field in enumerate(fields):
+        context.update(name=field['name'])
+        put(cc, INDICES_NAMES_ACCESSOR_IMPL_MID % context, 1)
+    put(cc, INDICES_NAMES_ACCESSOR_IMPL_END % context, 2)
+    put(cc, INDICES_THROW_IMPL % context, 1)
 
 
-INDICES_NAMES_ACCESSOR_DECL = """
-  /// Returns a vector containing the names of each coordinate within this
-  /// class. The indices within the returned vector matches that of this class.
-  /// In other words, `%(indices)s::GetCoordinateNames()[i]`
-  /// is the name for `BasicVector::GetAtIndex(i)`.
-  static const std::vector<std::string>& GetCoordinateNames();
-"""
-INDICES_END = """
-};
-"""
-
-INDICIES_NAMES_ACCESSOR_IMPL_START = """
-const std::vector<std::string>& %(camel)sIndices::GetCoordinateNames() {
-  static const drake::never_destroyed<std::vector<std::string>> coordinates(
-      std::vector<std::string>{
-"""
-INDICES_NAMES_ACCESSOR_IMPL_MID = """    \"%(name)s\",  // BR"""
-INDICES_NAMES_ACCESSOR_IMPL_END = """  });
-  return coordinates.access();
-}"""
-
-
-def generate_indices_names_accessor_decl(hh, caller_context):
-    context = dict(caller_context)
-    put(hh, INDICES_NAMES_ACCESSOR_DECL % context, 1)
-    put(hh, INDICES_END, 2)
-
-
-def generate_indices_names_accessor_impl(cc, caller_context, fields):
+def generate_indices_storage(cc, caller_context, fields):
     """
     Args:
         fields is the list of fieldnames in the LCM message.
     """
     context = dict(caller_context)
-    put(cc, INDICIES_NAMES_ACCESSOR_IMPL_START % context, 1)
-    for kvalue, field in enumerate(fields):
-        context.update(name=field['name'])
-        put(cc, INDICES_NAMES_ACCESSOR_IMPL_MID % context, 1)
-    put(cc, INDICES_NAMES_ACCESSOR_IMPL_END % context, 2)
 
 
 # A default constructor with field-by-field setting.
@@ -368,6 +374,33 @@ def generate_get_element_bounds(hh, caller_context, fields):
     put(hh, GET_ELEMENT_BOUNDS_END % context, 2)
 
 
+VIEW_GETTER_BEGIN = """
+  /// @name Getters
+  //@{
+"""
+VIEW_GETTER_FIELD_METHOD = """
+  /// %(doc)s
+  const T& %(field)s() const {
+    return this->GetAtIndex(K::%(kname)s);
+  }
+"""
+VIEW_GETTER_END = """
+  //@}
+"""
+
+
+def generate_view_getters(hh, caller_context, fields):
+    put(hh, VIEW_GETTER_BEGIN % caller_context, 1)
+    for field in fields:
+        context = dict(caller_context)
+        context.update(field=field['name'])
+        context.update(kname=to_kname(field['name']))
+        context.update(doc=field['doc'])
+        context.update(doc_units=field['doc_units'])
+        put(hh, VIEW_GETTER_FIELD_METHOD % context, 1)
+    put(hh, VIEW_GETTER_END % caller_context, 2)
+
+
 VECTOR_HH_PREAMBLE = """
 #pragma once
 
@@ -383,7 +416,9 @@ VECTOR_HH_PREAMBLE = """
 #include <Eigen/Core>
 
 #include "drake/common/drake_bool.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_nodiscard.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/dummy_value.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/symbolic.h"
@@ -392,7 +427,7 @@ VECTOR_HH_PREAMBLE = """
 %(opening_namespace)s
 """
 
-VECTOR_CLASS_BEGIN = """
+BASIC_VECTOR_SUBCLASS_BEGIN = """
 
 /// Specializes BasicVector with specific getters and setters.
 template <typename T>
@@ -402,7 +437,7 @@ class %(camel)s final : public drake::systems::BasicVector<T> {
   typedef %(indices)s K;
 """
 
-VECTOR_CLASS_END = """
+BASIC_VECTOR_SUBCLASS_END = """
  private:
   void ThrowIfEmpty() const {
     if (this->values().size() == 0) {
@@ -414,12 +449,60 @@ VECTOR_CLASS_END = """
 };
 """
 
+VIEW_VECTOR_BASE_SUBCLASS_BEGIN = """
+
+/// Provides a named getters view into another (untyped) BasicVector or
+/// VectorBlock.
+template <typename T>
+class %(camel)sView final : public drake::systems::VectorBase<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(%(camel)sView)
+
+  /// An abbreviation for our row index constants.
+  typedef %(indices)s K;
+
+  explicit %(camel)sView(const drake::systems::BasicVector<T>* target)
+      : %(camel)sView(
+            target ? target->get_value() : throw std::runtime_error(
+                "%(camel)sView: nullptr target")) {}
+
+  explicit %(camel)sView(const Eigen::VectorBlock<const VectorX<T>>& target)
+      : target_(target) {
+    K::ThrowIfWrongSize(target_.size());
+  }
+
+  // VectorBase override.
+  int size() const final { return K::kNumCoordinates; }
+
+"""
+
+VIEW_VECTOR_BASE_SUBCLASS_END = """
+ private:
+  // VectorBase override.
+  const T& DoGetAtIndex(int index) const final {
+    K::ThrowIfWrongSize(target_.size());
+    return target_.coeffRef(index);
+  }
+
+  // VectorBase override.
+  T& DoGetAtIndex(int) final {
+    throw std::logic_error("%(camel)sView is not mutable");
+  }
+
+  const Eigen::VectorBlock<const VectorX<T>> target_;
+};
+"""
+
 VECTOR_HH_POSTAMBLE = """
 %(closing_namespace)s
 """
 
 VECTOR_CC_PREAMBLE = """
 #include "%(cxx_include_path)s/%(snake)s.h"
+
+#include <stdexcept>
+
+#include <fmt/format.h>
 
 %(generated_code_warning)s
 
@@ -521,10 +604,9 @@ def generate_code(
         with open(vector_hh_filename, 'w') as hh:
             cxx_names.append(hh.name)
             put(hh, VECTOR_HH_PREAMBLE % context, 2)
-            generate_indices(hh, context, fields)
-            put(hh, '', 1)
-            generate_indices_names_accessor_decl(hh, context)
-            put(hh, VECTOR_CLASS_BEGIN % context, 2)
+            generate_indices_class_declaration(hh, context, fields)
+            put(hh, "", 1)
+            put(hh, BASIC_VECTOR_SUBCLASS_BEGIN % context, 2)
             generate_default_ctor(hh, context, fields)
             generate_copy_and_assign(hh, context)
             generate_set_to_named_variables(hh, context, fields)
@@ -533,16 +615,17 @@ def generate_code(
             put(hh, GET_COORDINATE_NAMES % context, 2)
             generate_is_valid(hh, context, fields)
             generate_get_element_bounds(hh, context, fields)
-            put(hh, VECTOR_CLASS_END % context, 2)
+            put(hh, BASIC_VECTOR_SUBCLASS_END % context, 2)
+            put(hh, VIEW_VECTOR_BASE_SUBCLASS_BEGIN % context, 2)
+            generate_view_getters(hh, context, fields)
+            put(hh, VIEW_VECTOR_BASE_SUBCLASS_END % context, 2)
             put(hh, VECTOR_HH_POSTAMBLE % context, 1)
 
     if vector_cc_filename:
         with open(vector_cc_filename, 'w') as cc:
             cxx_names.append(cc.name)
             put(cc, VECTOR_CC_PREAMBLE % context, 2)
-            generate_indices_storage(cc, context, fields)
-            put(cc, '', 1)
-            generate_indices_names_accessor_impl(cc, context, fields)
+            generate_indices_class_definition(cc, context, fields)
             put(cc, VECTOR_CC_POSTAMBLE % context, 1)
 
     if lcm_filename:

@@ -13,7 +13,9 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_bool.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/drake_nodiscard.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/dummy_value.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/symbolic.h"
@@ -39,6 +41,9 @@ struct SampleIndices {
   /// In other words, `SampleIndices::GetCoordinateNames()[i]`
   /// is the name for `BasicVector::GetAtIndex(i)`.
   static const std::vector<std::string>& GetCoordinateNames();
+
+  /// Throws an exception if the given size is not kNumCoordiantes.
+  static void ThrowIfWrongSize(int size);
 };
 
 /// Specializes BasicVector with specific getters and setters.
@@ -209,6 +214,57 @@ class Sample final : public drake::systems::BasicVector<T> {
           "accessor methods may no longer be used");
     }
   }
+};
+
+/// Provides a named getters view into another (untyped) BasicVector or
+/// VectorBlock.
+template <typename T>
+class SampleView final : public drake::systems::VectorBase<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SampleView)
+
+  /// An abbreviation for our row index constants.
+  typedef SampleIndices K;
+
+  explicit SampleView(const drake::systems::BasicVector<T>* target)
+      : SampleView(
+            target ? target->get_value()
+                   : throw std::runtime_error("SampleView: nullptr target")) {}
+
+  explicit SampleView(const Eigen::VectorBlock<const VectorX<T>>& target)
+      : target_(target) {
+    K::ThrowIfWrongSize(target_.size());
+  }
+
+  // VectorBase override.
+  int size() const final { return K::kNumCoordinates; }
+
+  /// @name Getters
+  //@{
+  /// Some coordinate
+  const T& x() const { return this->GetAtIndex(K::kX); }
+  /// A very long documentation string that will certainly flow across multiple
+  /// lines of C++
+  const T& two_word() const { return this->GetAtIndex(K::kTwoWord); }
+  /// A signed, normalized value
+  const T& absone() const { return this->GetAtIndex(K::kAbsone); }
+  /// A value that is unset by default
+  const T& unset() const { return this->GetAtIndex(K::kUnset); }
+  //@}
+
+ private:
+  // VectorBase override.
+  const T& DoGetAtIndex(int index) const final {
+    K::ThrowIfWrongSize(target_.size());
+    return target_.coeffRef(index);
+  }
+
+  // VectorBase override.
+  T& DoGetAtIndex(int) final {
+    throw std::logic_error("SampleView is not mutable");
+  }
+
+  const Eigen::VectorBlock<const VectorX<T>> target_;
 };
 
 }  // namespace test

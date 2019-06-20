@@ -93,8 +93,7 @@ GTEST_TEST(LuenbergerObserverTest, DerivedTypes) {
 
   // The second input is the input of the plant.
   auto input1 = observer->AllocateInputVector(observer->get_input_port(1));
-  EXPECT_TRUE(is_dynamic_castable<examples::pendulum::PendulumInput<double>>(
-      input1.get()));
+  EXPECT_EQ(input1->size(), 1);
 
   // Would love to make the state and output have type PendulumState, but it
   // is not that way yet (see #6998).

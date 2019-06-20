@@ -209,6 +209,59 @@ GTEST_TEST(SampleTest, SymbolicIsValid) {
   EXPECT_TRUE(dut.IsValid().EqualTo(expected_is_valid));
 }
 
+// We don't really expect the SampleView<T> implementation to fail, but we'd
+// like to touch every method as an API sanity check, so that we are reminded
+// in case we change the generated API without realizing it.
+GTEST_TEST(SampleViewTest, SimpleCoverage) {
+  Sample<double> storage;
+
+  // The device under test.
+  SampleView<double> dut(&storage);
+
+  // Size.
+  EXPECT_EQ(dut.size(), SampleIndices::kNumCoordinates);
+
+  // Accessors.
+  storage.set_x(11.0);
+  storage.set_two_word(22.0);
+  EXPECT_EQ(dut.x(), 11.0);
+  EXPECT_EQ(dut.two_word(), 22.0);
+
+  // Exception messages.
+  systems::BasicVector<double> dummy0(0);
+  systems::BasicVector<double> dummy99(99);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SampleView<double> should_throw(&dummy0), std::exception,
+      "SampleIndices: wanted a vector of size 4, but got size 0");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SampleView<double> should_throw(&dummy99), std::exception,
+      "SampleIndices: wanted a vector of size 4, but got size 99");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SampleView<double> should_throw(nullptr), std::exception,
+      "SampleView: nullptr target");
+}
+
+// Confirm that we can't write through the SampleView into the Sample storage.
+GTEST_TEST(SampleViewTest, Constness) {
+  Sample<double> storage;
+  SampleView<double> dut(&storage);
+  const SampleView<double>& const_dut = dut;
+
+  storage[0] = 11.0;
+  EXPECT_EQ(storage.x(), 11.0);
+  EXPECT_EQ(dut.x(), 11.0);
+  EXPECT_EQ(const_dut.x(), 11.0);
+  EXPECT_EQ(const_dut[0], 11.0);
+
+  // Any attempted write fails.
+  EXPECT_THROW(dut[0] = 22.0, std::exception);
+  EXPECT_EQ(storage.x(), 11.0);
+  EXPECT_EQ(dut.x(), 11.0);
+  EXPECT_EQ(const_dut.x(), 11.0);
+  EXPECT_EQ(const_dut[0], 11.0);
+}
+
+
 }  // namespace
 }  // namespace test
 }  // namespace tools

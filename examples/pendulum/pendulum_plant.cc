@@ -12,7 +12,9 @@ template <typename T>
 PendulumPlant<T>::PendulumPlant()
     : systems::LeafSystem<T>(
           systems::SystemTypeTag<pendulum::PendulumPlant>{}) {
-  this->DeclareVectorInputPort("tau", PendulumInput<T>());
+  this->DeclareVectorInputPort(
+      "tau",
+      systems::BasicVector<T>{PendulumInputIndices::kNumCoordinates});
   this->DeclareVectorOutputPort("state", &PendulumPlant::CopyStateOut,
                                 {this->all_state_ticket()});
   this->DeclareContinuousState(PendulumState<T>(), 1 /* num_q */, 1 /* num_v */,
