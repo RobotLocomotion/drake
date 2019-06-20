@@ -30,8 +30,7 @@ GazeTargetConstraint::GazeTargetConstraint(
       cos_cone_half_angle_{std::cos(cone_half_angle_)},
       context_double_{context},
       plant_autodiff_{nullptr},
-      context_autodiff_{nullptr},
-      use_autodiff_{false} {
+      context_autodiff_{nullptr} {
   if (context == nullptr) throw std::invalid_argument("context is nullptr.");
   if (cone_half_angle < 0 || cone_half_angle > M_PI_2) {
     throw std::invalid_argument(
@@ -60,8 +59,7 @@ GazeTargetConstraint::GazeTargetConstraint(
       cos_cone_half_angle_{std::cos(cone_half_angle_)},
       context_double_{nullptr},
       plant_autodiff_{plant},
-      context_autodiff_{context},
-      use_autodiff_{true} {
+      context_autodiff_{context} {
   if (context == nullptr) throw std::invalid_argument("context is nullptr.");
   if (cone_half_angle < 0 || cone_half_angle > M_PI_2) {
     throw std::invalid_argument(
@@ -69,19 +67,18 @@ GazeTargetConstraint::GazeTargetConstraint(
   }
 }
 
-template <typename T, typename S>
+template <typename T>
 void EvalConstraintGradient(const MultibodyPlant<T>&,
                             const systems::Context<T>&, const Frame<T>&,
                             const Frame<T>&, const Eigen::Vector3d&,
                             const Eigen::Vector3d&, const Vector3<T>&, const T&,
                             const Vector2<T>& g,
-                            const Eigen::Ref<const VectorX<S>>&,
-                            VectorX<S>* y) {
+                            const Eigen::Ref<const VectorX<T>>&,
+                            VectorX<T>* y) {
   *y = g;
 }
 
-template <>
-void EvalConstraintGradient<double, AutoDiffXd>(
+void EvalConstraintGradient(
     const MultibodyPlant<double>& plant,
     const systems::Context<double>& context, const Frame<double>& frameA,
     const Frame<double>& frameB, const Eigen::Vector3d& p_BT,
@@ -138,7 +135,7 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
 
 void GazeTargetConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                                   Eigen::VectorXd* y) const {
-  if (use_autodiff_) {
+  if (use_autodiff()) {
     AutoDiffVecXd y_t;
     Eval(math::initializeAutoDiff(x), &y_t);
     *y = math::autoDiffToValueMatrix(y_t);
@@ -150,7 +147,7 @@ void GazeTargetConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
 
 void GazeTargetConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                                   AutoDiffVecXd* y) const {
-  if (use_autodiff_) {
+  if (use_autodiff()) {
     DoEvalGeneric(*plant_autodiff_, context_autodiff_, frameA_index_,
                   frameB_index_, p_AS_, n_A_, p_BT_, cos_cone_half_angle_, x,
                   y);

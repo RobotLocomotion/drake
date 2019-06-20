@@ -77,6 +77,9 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
         "AngleBetweenVectorsConstraint::DoEval() does not work for symbolic "
         "variables.");
   }
+
+  bool use_autodiff() const { return plant_autodiff_; }
+
   const MultibodyPlant<double>* plant_double_;
   const FrameIndex frameA_index_;
   const FrameIndex frameB_index_;
@@ -86,7 +89,6 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
 
   const MultibodyPlant<AutoDiffXd>* plant_autodiff_;
   systems::Context<AutoDiffXd>* const context_autodiff_;
-  const bool use_autodiff_;
 };
 }  // namespace multibody
 }  // namespace drake

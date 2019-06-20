@@ -166,7 +166,7 @@ class BoxSphereTest : public ::testing::Test {
  * Since we can construct the kinematic constraint using both
  * MultibodyPlant<double> (as @p constraint_from_double) and
  * MultibodyPlant<AutoDiffXd> (as @p constraint_from_autodiff), and evaluate the
- * constraint with both VectorX<ouble> and VectorX<AutoDiffXd>, we check if the
+ * constraint with both VectorX<double> and VectorX<AutoDiffXd>, we check if the
  * following evaluation results match:
  * 1. constraint_from_double.Eval(x_double) =
  *    constraint_from_autodiff.Eval(x_double).

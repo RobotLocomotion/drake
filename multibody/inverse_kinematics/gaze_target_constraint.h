@@ -84,6 +84,9 @@ class GazeTargetConstraint : public solvers::Constraint {
     throw std::logic_error(
         "GazeTargetConstraint::DoEval() does not work for symbolic variables.");
   }
+
+  bool use_autodiff() const { return plant_autodiff_; }
+
   const MultibodyPlant<double>* const plant_double_;
   const FrameIndex frameA_index_;
   const FrameIndex frameB_index_;
@@ -96,7 +99,6 @@ class GazeTargetConstraint : public solvers::Constraint {
 
   const MultibodyPlant<AutoDiffXd>* const plant_autodiff_;
   systems::Context<AutoDiffXd>* const context_autodiff_;
-  const bool use_autodiff_;
 };
 }  // namespace multibody
 }  // namespace drake

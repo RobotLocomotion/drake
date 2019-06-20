@@ -24,8 +24,7 @@ AngleBetweenVectorsConstraint::AngleBetweenVectorsConstraint(
       b_unit_B_(NormalizeVector(b_B)),
       context_double_(context),
       plant_autodiff_{nullptr},
-      context_autodiff_{nullptr},
-      use_autodiff_{false} {
+      context_autodiff_{nullptr} {
   if (context == nullptr) throw std::invalid_argument("context is nullptr.");
   if (!(angle_lower >= 0 && angle_upper >= angle_lower &&
         angle_upper <= M_PI)) {
@@ -52,8 +51,7 @@ AngleBetweenVectorsConstraint::AngleBetweenVectorsConstraint(
       b_unit_B_(NormalizeVector(b_B)),
       context_double_(nullptr),
       plant_autodiff_{plant},
-      context_autodiff_{context},
-      use_autodiff_{true} {
+      context_autodiff_{context} {
   if (context == nullptr) throw std::invalid_argument("context is nullptr.");
   if (!(angle_lower >= 0 && angle_upper >= angle_lower &&
         angle_upper <= M_PI)) {
@@ -63,15 +61,14 @@ AngleBetweenVectorsConstraint::AngleBetweenVectorsConstraint(
   }
 }
 
-template <typename T, typename S>
+template <typename T>
 void EvalConstraintGradient(const MultibodyPlant<T>&,
                             const systems::Context<T>&, const Frame<T>&,
                             const Frame<T>&, const Eigen::Vector3d&,
                             const Eigen::Vector3d&, const Matrix3<T>&,
-                            const Eigen::Ref<const VectorX<S>>&, VectorX<S>*) {}
+                            const Eigen::Ref<const VectorX<T>>&, VectorX<T>*) {}
 
-template <>
-void EvalConstraintGradient<double, AutoDiffXd>(
+void EvalConstraintGradient(
     const MultibodyPlant<double>& plant,
     const systems::Context<double>& context, const Frame<double>& frameA,
     const Frame<double>& frameB, const Eigen::Vector3d& a_unit_A,
@@ -130,7 +127,7 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
 
 void AngleBetweenVectorsConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
-  if (use_autodiff_) {
+  if (use_autodiff()) {
     AutoDiffVecXd y_t;
     Eval(math::initializeAutoDiff(x), &y_t);
     *y = math::autoDiffToValueMatrix(y_t);
@@ -142,7 +139,7 @@ void AngleBetweenVectorsConstraint::DoEval(
 
 void AngleBetweenVectorsConstraint::DoEval(
     const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
-  if (use_autodiff_) {
+  if (use_autodiff()) {
     DoEvalGeneric(*plant_autodiff_, context_autodiff_, frameA_index_,
                   frameB_index_, a_unit_A_, b_unit_B_, x, y);
   } else {
