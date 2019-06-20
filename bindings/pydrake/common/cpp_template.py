@@ -12,6 +12,11 @@ def _get_module_name_from_stack(frame=2):
     return inspect.getmodule(inspect.stack()[frame][0]).__name__
 
 
+def _is_pybind11_type_error(e):
+    return ("incompatible function arguments" in str(e) or
+            "incompatible constructor arguments" in str(e))
+
+
 def get_or_init(scope, name, template_cls, *args, **kwargs):
     """Gets an existing template from a scope if it exists; otherwise, it will
     be created and registered.
@@ -78,6 +83,33 @@ class TemplateBase(object):
         if len(param) == 1:
             param = param[0]
         return self.get_instantiation(param)[0]
+
+    def __call__(self, *args, **kwargs):
+        """Permits pseudo argument deduction for a template. This is intended
+        for use with pybind11, where any invalid argument raises a TypeError.
+
+        This must have arguments passed to it.
+
+        Note:
+            While pybind11 has two passes for checking overloads (once
+            without and once with conversions), this only passes through the
+            instantiations once with conversions; therefore, be careful in how
+            arguments are assigned.
+        """
+        if len(args) == 0 and len(kwargs) == 0:
+            raise TypeError(
+                ("{}: incompatible function arguments for template: Cannot "
+                 "call without arguments").format(self.name))
+        for param in self.param_list:
+            instantiation = self._instantiation_map[param]
+            try:
+                return instantiation(*args, **kwargs)
+            except TypeError as e:
+                if not _is_pybind11_type_error(e):
+                    raise e
+        raise TypeError(
+            ("{}: incompatible function arguments for template: No "
+             "compatible instantiations").format(self.name))
 
     # Unique token to signify that this instantiation is deferred when using
     # `add_instantiations` or `define`. The instantiation function will not be
@@ -167,7 +199,7 @@ class TemplateBase(object):
         assert instantiation_func is not None
         if self._instantiation_func is not None:
             raise RuntimeError(
-                "`add_instsantiations` cannot be called multiple times.")
+                "`add_instantiations` cannot be called multiple times.")
         self._instantiation_func = instantiation_func
         for param in param_list:
             self.add_instantiation(param, TemplateBase._deferred)
