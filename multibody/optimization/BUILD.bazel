@@ -15,6 +15,7 @@ drake_cc_package_library(
     deps = [
         ":contact_wrench",
         ":contact_wrench_evaluator",
+        ":manipulator_equation_constraint",
         ":static_equilibrium_constraint",
         ":static_equilibrium_problem",
         ":static_friction_cone_complementarity_constraint",
@@ -47,6 +48,20 @@ drake_cc_library(
     name = "static_equilibrium_constraint",
     srcs = ["static_equilibrium_constraint.cc"],
     hdrs = ["static_equilibrium_constraint.h"],
+    deps = [
+        ":contact_wrench_evaluator",
+        "//geometry:scene_graph",
+        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//multibody/plant",
+        "//solvers:binding",
+        "//solvers:constraint",
+    ],
+)
+
+drake_cc_library(
+    name = "manipulator_equation_constraint",
+    srcs = ["manipulator_equation_constraint.cc"],
+    hdrs = ["manipulator_equation_constraint.h"],
     deps = [
         ":contact_wrench_evaluator",
         "//geometry:scene_graph",
@@ -158,6 +173,18 @@ drake_cc_googletest(
         ":optimization_with_contact_utilities",
         ":static_friction_cone_complementarity_constraint",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "manipulator_equation_constraint_test",
+    deps = [
+        ":manipulator_equation_constraint",
+        ":optimization_with_contact_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:compute_numerical_gradient",
+        "//solvers:mathematical_program_lite",
+        "//solvers:solve",
     ],
 )
 
