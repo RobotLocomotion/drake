@@ -14,31 +14,6 @@
 namespace drake {
 namespace multibody {
 
-namespace internal {
-/**
- * This struct records the contact wrench evaluator, together with the indices
- * of lambda used in this evaluator, among all lambda (the variable bound with
- * the StaticEquilibriumConstraint).
- *
- * The user is not supposed to use this struct. To create a
- * StaticEquilibriumConstraint, the user should call
- * CreateStaticEquilibriumConstraint.
- */
-struct GeometryPairContactWrenchEvaluatorBinding {
-  GeometryPairContactWrenchEvaluatorBinding(
-      std::vector<int> lambda_indices_in_all_lambda_in,
-      std::shared_ptr<ContactWrenchEvaluator> contact_wrench_evaluator_in)
-      : lambda_indices_in_all_lambda{std::move(
-            lambda_indices_in_all_lambda_in)},
-        contact_wrench_evaluator{std::move(contact_wrench_evaluator_in)} {
-    DRAKE_DEMAND(static_cast<int>(lambda_indices_in_all_lambda.size()) ==
-                 contact_wrench_evaluator->num_lambda());
-  }
-  std::vector<int> lambda_indices_in_all_lambda;
-  std::shared_ptr<ContactWrenchEvaluator> contact_wrench_evaluator;
-};
-}  // namespace internal
-
 /**
  * Impose the static equilibrium constraint 0 = τ_g + Bu + ∑J_WBᵀ(q) * Fapp_B_W
  */
