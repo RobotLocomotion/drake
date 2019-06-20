@@ -50,6 +50,24 @@ namespace multibody {
 /// collection of interconnected bodies.  See @ref multibody for an overview of
 /// concepts/notation.
 ///
+/// @system{MultibodyPlant,
+///   @input_port{{model_instance_name[0]}_actuation}
+///   @input_port{...}
+///   @input_port{{model_instance_name[N-1]}_actuation}
+///   @input_port{applied_generalized_force}
+///   @input_port{applied_spatial_force}
+///   @input_port{geometry_query},
+///   @output_port{continuous_state}
+///   @output_port{{model_instance_name[0]}_continuous_state}
+///   @output_port{...}
+///   @output_port{{model_instance_name[N-1]}_continuous_state}
+///   @output_port{{model_instance_name[0]}_generalized_contact_forces}
+///   @output_port{...}
+///   @output_port{{model_instance_name[N-1]}_generalized_contact_forces}
+///   @output_port{contact_results}
+///   @output_port{geometry_pose}
+/// }
+///
 /// %MultibodyPlant provides a user-facing API to:
 ///
 /// - add bodies, joints, force elements, and constraints,
