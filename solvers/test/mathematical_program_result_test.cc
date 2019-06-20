@@ -1,10 +1,13 @@
 #include "drake/solvers/mathematical_program_result.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/cost.h"
+#include "drake/solvers/osqp_solver.h"
 
 namespace drake {
 namespace solvers {
@@ -116,6 +119,29 @@ TEST_F(MathematicalProgramResultTest, EvalBinding) {
                                  Vector1<symbolic::Variable>(x1_)};
   EXPECT_TRUE(CompareMatrices(result.EvalBinding(cost), Vector1d(2)));
 }
+
+GTEST_TEST(TestMathematicalProgramResult, InfeasibleProblem) {
+  // Test if we can query the information in the result when the problem is
+  // infeasible.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(x(0) + x(1) <= 1);
+  prog.AddLinearConstraint(x(0) >= 1);
+  prog.AddLinearConstraint(x(1) >= 1);
+  prog.AddQuadraticCost(x.dot(x.cast<symbolic::Expression>()));
+
+  MathematicalProgramResult result;
+  OsqpSolver osqp_solver;
+  const Eigen::VectorXd x_guess = Eigen::Vector2d::Zero();
+  osqp_solver.Solve(prog, x_guess, {}, &result);
+  EXPECT_TRUE(CompareMatrices(
+      result.GetSolution(x),
+      Eigen::Vector2d::Constant(std::numeric_limits<double>::quiet_NaN())));
+  EXPECT_TRUE(std::isnan(result.GetSolution(x(0))));
+  EXPECT_TRUE(std::isnan(result.GetSolution(x(1))));
+  EXPECT_FALSE(std::isfinite(result.get_optimal_cost()));
+}
+
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

@@ -1669,6 +1669,7 @@ drake_cc_googletest(
     deps = [
         ":cost",
         ":mathematical_program_result",
+        ":osqp_solver",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],

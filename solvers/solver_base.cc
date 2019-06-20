@@ -1,5 +1,6 @@
 #include "drake/solvers/solver_base.h"
 
+#include <limits>
 #include <utility>
 
 #include <fmt/format.h>
@@ -46,6 +47,9 @@ void SolverBase::Solve(const MathematicalProgram& prog,
   }
   result->set_solver_id(solver_id());
   result->set_decision_variable_index(prog.decision_variable_index());
+  result->set_x_val(Eigen::VectorXd::Constant(
+      prog.num_vars(), std::numeric_limits<double>::quiet_NaN()));
+  result->set_optimal_cost(std::numeric_limits<double>::quiet_NaN());
   const Eigen::VectorXd& x_init =
       initial_guess ? *initial_guess : prog.initial_guess();
   if (!solver_options) {
