@@ -146,20 +146,9 @@ After following the above install steps, check to ensure you can import
 
 .. note::
 
-    If you are using macOS, you must ensure that you are using the ``python2``
-    executable to run these scripts. As an example for Homebrew:
-
-    .. code-block:: shell
-
-        export PATH=/usr/local/opt/python/libexec/bin:${PATH}
-
-    If you would like to use ``jupyter``, then be sure to install it via
-    ``pip2 install jupyter`` (*not* ``brew install jupyter``) to ensure that it
-    uses the correct ``PYTHONPATH``.
-
-    ..
-        Developers: Ensure this is synchronized with the steps in
-        ``install_prereqs_user_environment.sh``.
+    If you are using macOS and the Python 2 bindings, you must ensure that you
+    are using the ``python2`` executable (typically located at
+    ``/usr/local/bin/python2``) to run these scripts.
 
 .. note::
 
