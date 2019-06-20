@@ -97,7 +97,7 @@ void CheckAngleAxis(const Eigen::AngleAxis<Expression>&) {}
 }  // namespace
 
 template <typename T>
-void DoDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module m, T) {
   // Do not return references to matrices (e.g. `Eigen::Ref<>`) so that we have
   // tighter control over validation.
 
@@ -361,7 +361,8 @@ PYBIND11_MODULE(eigen_geometry, m) {
 
   py::module::import("pydrake.autodiffutils");
   py::module::import("pydrake.symbolic");
-  type_visit([m](auto dummy) { DoDefinitions(m, dummy); }, CommonScalarPack{});
+  type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
+      CommonScalarPack{});
 }
 
 }  // namespace pydrake
