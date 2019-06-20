@@ -4,14 +4,12 @@
 Bazel build system
 ******************
 
-The Bazel build system is officially supported for a subset of Drake on Ubuntu
-Xenial and Bionic and macOS High Sierra and Mojave.
+Drake's primary build system is Bazel.  For more information about Bazel, see
+https://bazel.build/.
 
-For more information, see:
-
- * https://bazel.build/
- * https://github.com/RobotLocomotion/drake/issues/3129
-
+Drake also offers a CMake build system wrapper that invokes Bazel under the
+hood.
+   
 Bazel Installation
 ==================
 
