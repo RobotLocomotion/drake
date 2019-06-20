@@ -10,6 +10,7 @@ load(
     "@drake//tools/skylark:pybind.bzl",
     "drake_pybind_cc_googletest",
     "drake_pybind_library",
+    "generate_pybind_documentation_header",
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
@@ -102,7 +103,10 @@ drake_cc_library(
     hdrs = ["deprecation_pybind.h"],
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
-    deps = ["//bindings/pydrake:pydrake_pybind"],
+    deps = [
+        ":wrap_function",
+        "//bindings/pydrake:pydrake_pybind",
+    ],
 )
 
 drake_cc_library(
@@ -339,13 +343,42 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "deprecation_example_class",
+    testonly = 1,
+    hdrs = ["test/deprecation_example/example_class.h"],
+    deps = [
+        "//:drake_shared_library",
+    ],
+)
+
+generate_pybind_documentation_header(
+    name = "generate_deprecation_example_class_documentation",
+    testonly = 1,
+    out = "test/deprecation_example/example_class_documentation.h",
+    targets = [":deprecation_example_class"],
+)
+
+drake_cc_library(
+    name = "deprecation_example_class_documentation",
+    testonly = 1,
+    hdrs = ["test/deprecation_example/example_class_documentation.h"],
+    tags = ["nolint"],
+)
+
 drake_pybind_library(
     name = "deprecation_example_cc_module_py",
     testonly = 1,
     add_install = False,
-    cc_deps = [":deprecation_pybind"],
+    cc_deps = [
+        ":deprecation_example_class",
+        ":deprecation_example_class_documentation",
+        ":deprecation_pybind",
+    ],
     cc_so_name = "test/deprecation_example/cc_module",
-    cc_srcs = ["test/deprecation_example/cc_module_py.cc"],
+    cc_srcs = [
+        "test/deprecation_example/cc_module_py.cc",
+    ],
     package_info = PACKAGE_INFO,
     visibility = ["//visibility:private"],
 )
