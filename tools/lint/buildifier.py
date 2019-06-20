@@ -123,6 +123,10 @@ def main(workspace_name="drake"):
                     one_file, "the required formatting is incorrect"))
                 print("ERROR: %s:1: note: fix via %s %s" % (
                     one_file, "bazel-bin/tools/lint/buildifier", one_file))
+                print(("ERROR: %s:1: note: if that program does not exist, " +
+                       "you might need to compile it first: " +
+                       "bazel build //tools/lint/...") %
+                      one_file)
         print("NOTE: see https://drake.mit.edu/bazel.html#buildifier")
         return 1
 
