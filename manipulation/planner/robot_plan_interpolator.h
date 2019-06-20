@@ -28,6 +28,12 @@ enum class InterpolatorType {
 /// The system has two output ports, one with the current desired
 /// state (q,v) of the robot and another for the accelerations.
 ///
+/// @system{ RobotPlanInterpolator,
+///   @input_port{plan},
+///   @output_port{state}
+///   @output_port{acceleration}
+/// }
+///
 /// If a plan is received with no knot points, the system will create
 /// a plan which commands the robot to hold at the measured position.
 ///
