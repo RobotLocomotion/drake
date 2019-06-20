@@ -32,7 +32,7 @@ using symbolic::Expression;
 
 namespace {
 template <typename T>
-void DoDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module m, T) {
   py::tuple param = GetPyParam<T>();
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -227,22 +227,13 @@ void DoDefinitions(py::module m, T) {
   py::implicitly_convertible<RigidTransform<T>, Isometry3<T>>();
 }
 
-}  // namespace
-
-PYBIND11_MODULE(math, m) {
+void DoScalarIndependentDefinitions(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-
-  m.doc() = "Bindings for //math.";
   constexpr auto& doc = pydrake_doc.drake.math;
-
-  py::module::import("pydrake.autodiffutils");
-  py::module::import("pydrake.symbolic");
 
   // TODO(eric.cousineau): Bind remaining classes for all available scalar
   // types.
-
-  type_visit([m](auto dummy) { DoDefinitions(m, dummy); }, CommonScalarPack{});
   using T = double;
   m.def("wrap_to", &wrap_to<T, T>, py::arg("value"), py::arg("low"),
       py::arg("high"), doc.wrap_to.doc);
@@ -361,6 +352,18 @@ PYBIND11_MODULE(math, m) {
   pydrake::internal::BindSymbolicMathOverloads(&m);
 
   ExecuteExtraPythonCode(m);
+}
+}  // namespace
+
+PYBIND11_MODULE(math, m) {
+  m.doc() = "Bindings for //math.";
+
+  py::module::import("pydrake.autodiffutils");
+  py::module::import("pydrake.symbolic");
+
+  type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
+      CommonScalarPack{});
+  DoScalarIndependentDefinitions(m);
 }
 
 }  // namespace pydrake

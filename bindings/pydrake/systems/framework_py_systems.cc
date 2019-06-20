@@ -338,7 +338,7 @@ struct Impl {
     }
   };
 
-  static void DoDefinitions(py::module m) {
+  static void DoScalarDependentDefinitions(py::module m) {
     // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
     using namespace drake::systems;
     constexpr auto& doc = pydrake_doc.drake.systems;
@@ -876,7 +876,7 @@ void DefineFrameworkPySystems(py::module m) {
   // Do templated instantiations of system types.
   auto bind_common_scalar_types = [m](auto dummy) {
     using T = decltype(dummy);
-    Impl<T>::DoDefinitions(m);
+    Impl<T>::DoScalarDependentDefinitions(m);
   };
   type_visit(bind_common_scalar_types, CommonScalarPack{});
 }

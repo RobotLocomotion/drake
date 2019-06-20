@@ -44,7 +44,7 @@ void BindIdentifier(py::module m, const std::string& name, const char* id_doc) {
 }
 
 template <typename T>
-void DoDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module m, T) {
   py::tuple param = GetPyParam<T>();
   constexpr auto& doc = pydrake_doc.drake.geometry;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -203,19 +203,15 @@ void DoDefinitions(py::module m, T) {
   }
 }
 
-PYBIND11_MODULE(geometry, m) {
+void DoScalarIndependentDefinitions(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
-  constexpr auto& doc = pydrake_doc.drake.geometry;
 
+  constexpr auto& doc = pydrake_doc.drake.geometry;
   BindIdentifier<SourceId>(m, "SourceId", doc.SourceId.doc);
   BindIdentifier<FrameId>(m, "FrameId", doc.FrameId.doc);
   BindIdentifier<GeometryId>(m, "GeometryId", doc.GeometryId.doc);
 
-  type_visit(
-      [m](auto dummy) { DoDefinitions(m, dummy); }, NonSymbolicScalarPack{});
-
-  py::module::import("pydrake.systems.lcm");
   m.def("ConnectDrakeVisualizer",
       py::overload_cast<systems::DiagramBuilder<double>*,
           const SceneGraph<double>&, lcm::DrakeLcmInterface*>(
@@ -258,6 +254,13 @@ PYBIND11_MODULE(geometry, m) {
         .def(py::init<std::string, double>(), py::arg("absolute_filename"),
             py::arg("scale") = 1.0, doc.Convex.ctor.doc);
   }
+}
+
+PYBIND11_MODULE(geometry, m) {
+  py::module::import("pydrake.systems.lcm");
+  DoScalarIndependentDefinitions(m);
+  type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
+      NonSymbolicScalarPack{});
 }
 
 }  // namespace
