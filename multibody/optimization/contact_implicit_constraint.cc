@@ -1,4 +1,4 @@
-#include "drake/multibody/optimization/static_equilibrium_constraint.h"
+#include "drake/multibody/optimization/contact_implicit_constraint.h"
 
 #include <unordered_map>
 
@@ -18,45 +18,73 @@ int GetLambdaSize(
   return num_lambda;
 }
 }  // namespace
-StaticEquilibriumConstraint::StaticEquilibriumConstraint(
+
+ContactImplicitConstraint::ContactImplicitConstraint(
     const MultibodyPlant<AutoDiffXd>* plant,
     systems::Context<AutoDiffXd>* context,
     const std::map<SortedPair<geometry::GeometryId>,
                    internal::GeometryPairContactWrenchEvaluatorBinding>&
-        contact_pair_to_wrench_evaluator)
+        contact_pair_to_wrench_evaluator,
+    double time_step)
     : solvers::Constraint(plant->num_velocities(),
-                          plant->num_positions() + plant->num_actuated_dofs() +
+                          plant->num_velocities() + plant->num_positions() +
+                              plant->num_velocities() +
+                              plant->num_actuated_dofs() +
                               GetLambdaSize(contact_pair_to_wrench_evaluator),
                           Eigen::VectorXd::Zero(plant->num_velocities()),
                           Eigen::VectorXd::Zero(plant->num_velocities())),
       plant_{plant},
       context_{context},
       contact_pair_to_wrench_evaluator_(contact_pair_to_wrench_evaluator),
-      B_actuation_{plant_->MakeActuationMatrix()} {}
+      B_actuation_{plant_->MakeActuationMatrix()},
+      time_step_(time_step) {}
 
-void StaticEquilibriumConstraint::DoEval(
+void ContactImplicitConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
   AutoDiffVecXd y_autodiff(num_constraints());
   DoEval(x.cast<AutoDiffXd>(), &y_autodiff);
   *y = math::autoDiffToValueMatrix(y_autodiff);
 }
 
-void StaticEquilibriumConstraint::DoEval(
-    const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
-  const auto& q = x.head(plant_->num_positions());
-  const auto& u =
-      x.segment(plant_->num_positions(), plant_->num_actuated_dofs());
-  *y = B_actuation_ * u;
-  // TODO(hongkai.dai): Use UpdateContextConfiguration when it supports
-  // MultibodyPlant<AutoDiffXd> and Context<AutoDiffXd>
-  if (!internal::AreAutoDiffVecXdEqual(q, plant_->GetPositions(*context_))) {
-    plant_->SetPositions(context_, q);
+// The format of the input to the Eval() function is a vector containing:
+// {v[n], q[n+1], v[n+1], u[n+1], lambda_all[n+1]}.
+// TODO(rcory) Combine duplicate code between ContactImplicitConstraint and
+//  StaticEquilibriumConstraint.
+void ContactImplicitConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                                       AutoDiffVecXd* y) const {
+  const auto num_positions = plant_->num_positions();
+  const auto num_velocities = plant_->num_velocities();
+  const auto& v = x.head(num_velocities);
+  const auto& q_next = x.segment(num_velocities, num_positions);
+  const auto& v_next =
+      x.segment(num_velocities + num_positions, num_velocities);
+  const auto& u_next =
+      x.segment(num_velocities + num_positions + num_velocities,
+                plant_->num_actuated_dofs());
+  *y = B_actuation_ * u_next;
+
+  // TODO(rcory): Use UpdateContextConfiguration when it supports
+  //  MultibodyPlant<AutoDiffXd> and Context<AutoDiffXd>
+  if (!internal::AreAutoDiffVecXdEqual(q_next,
+                                       plant_->GetPositions(*context_))) {
+    plant_->SetPositions(context_, q_next);
   }
-  *y += plant_->CalcGravityGeneralizedForces(*context_);
+  if (!internal::AreAutoDiffVecXdEqual(v_next,
+                                       plant_->GetVelocities(*context_))) {
+    plant_->SetVelocities(context_, v_next);
+  }
+  *y += plant_->CalcGravityGeneralizedForces(*context_);  // g(q[n+1])
+
+  // Calc the bias term C(qₙ₊₁, vₙ₊₁)
+  Eigen::Matrix<AutoDiffXd, Eigen::Dynamic, 1>
+      C_bias(plant_->num_velocities(), 1);
+  plant_->CalcBiasTerm(*context_, &C_bias);
+  *y -= C_bias;
+
   const auto& query_port = plant_->get_geometry_query_input_port();
   if (!query_port.HasValue(*context_)) {
     throw std::invalid_argument(
-        "StaticEquilibriumConstraint: Cannot get a valid "
+        "ContactImplicitConstraint: Cannot get a valid "
         "geometry::QueryObject. Please refer to AddMultibodyPlantSceneGraph "
         "on connecting MultibodyPlant to SceneGraph.");
   }
@@ -67,8 +95,9 @@ void StaticEquilibriumConstraint::DoEval(
           query_object.ComputeSignedDistancePairwiseClosestPoints();
   const geometry::SceneGraphInspector<AutoDiffXd>& inspector =
       query_object.inspector();
-  const int lambda_start_index_in_x =
-      plant_->num_positions() + plant_->num_actuated_dofs();
+  const int lambda_start_index_in_x = num_velocities + num_positions +
+                                      num_velocities +
+                                      plant_->num_actuated_dofs();
   for (const auto& signed_distance_pair : signed_distance_pairs) {
     const geometry::FrameId frame_A_id =
         inspector.GetFrameId(signed_distance_pair.id_A);
@@ -80,13 +109,13 @@ void StaticEquilibriumConstraint::DoEval(
         plant_->GetBodyFromFrameId(frame_B_id)->body_frame();
 
     // Compute the Jacobian.
-    // Define Body A's frame as A, the geometry attached to body A has frame Ga,
-    // and the witness point on geometry Ga is Ca.
+    // Define Body A's frame as A, the geometry attached to body A as frame Ga,
+    // and the witness point on geometry Ga as Ca.
     const auto& X_AGa = inspector.X_FG(signed_distance_pair.id_A);
     const auto& p_GaCa = signed_distance_pair.p_ACa;
     const Vector3<AutoDiffXd> p_ACa = X_AGa.cast<AutoDiffXd>() * p_GaCa;
-    // Define Body B's frame as B, the geometry attached to body B has frame Gb,
-    // and the witness point on geometry Gb is Cb.
+    // Define Body B's frame as B, the geometry attached to body B as frame Gb,
+    // and the witness point on geometry Gb as Cb.
     const auto& X_BGb = inspector.X_FG(signed_distance_pair.id_B);
     const auto& p_GbCb = signed_distance_pair.p_BCb;
     const Vector3<AutoDiffXd> p_BCb = X_BGb.cast<AutoDiffXd>() * p_GbCb;
@@ -103,7 +132,7 @@ void StaticEquilibriumConstraint::DoEval(
 
     const SortedPair<geometry::GeometryId> contact_pair(
         signed_distance_pair.id_A, signed_distance_pair.id_B);
-    // TODO(hongkai.dai): remove the following two lines of DRAKE_DEMAND when
+    // TODO(rcory): remove the following two lines of DRAKE_DEMAND when
     // SceneGraph guarantees that signed_distance_pair sorts id_A and id_B.
     DRAKE_DEMAND(contact_pair.first() == signed_distance_pair.id_A);
     DRAKE_DEMAND(contact_pair.second() == signed_distance_pair.id_B);
@@ -112,7 +141,7 @@ void StaticEquilibriumConstraint::DoEval(
     if (it == contact_pair_to_wrench_evaluator_.end()) {
       throw std::runtime_error(
           "The input argument contact_pair_to_wrench_evaluator in the "
-          "StaticEquilibriumConstraint constructor doesn't include all "
+          "ContactImplicitConstraint constructor doesn't include all "
           "possible contact pairs.");
     }
 
@@ -135,30 +164,49 @@ void StaticEquilibriumConstraint::DoEval(
     // to id_A from id_B at the contact point is -F_AB_W.
     *y += Jv_V_WCa.transpose() * -F_AB_W + Jv_V_WCb.transpose() * F_AB_W;
   }
+
+  Eigen::Matrix<AutoDiffXd, Eigen::Dynamic, Eigen::Dynamic> M_mass(
+      plant_->num_velocities(), plant_->num_velocities());
+  plant_->CalcMassMatrixViaInverseDynamics(*context_, &M_mass);
+
+  *y = *y * time_step_ - M_mass * (v_next - v);
 }
-void StaticEquilibriumConstraint::DoEval(
+void ContactImplicitConstraint::DoEval(
     const Eigen::Ref<const VectorX<symbolic::Variable>>&,
     VectorX<symbolic::Expression>*) const {
   throw std::runtime_error(
-      "StaticEquilibriumConstraint: does not support Eval with symbolic "
+      "ContactImplicitConstraint: does not support Eval with symbolic "
       "variable and expressions.");
 }
 
-solvers::Binding<StaticEquilibriumConstraint>
-StaticEquilibriumConstraint::MakeBinding(
+// This function binds a portion of the decision variables in the
+// MathematicalProgram to a ContactImplicitConstraint, namely {vₙ, qₙ₊₁,
+// vₙ₊₁, uₙ₊₁, λₙ₊₁}, where λ here represents the concatenation
+// of all lambda. For contact implicit trajectory optimization, this binding
+// should be made for each time sample in the trajectory.
+// TODO(rcory) Combine duplicate code between ContactImplicitConstraint and
+//  StaticEquilibriumConstraint.
+solvers::Binding<ContactImplicitConstraint>
+ContactImplicitConstraint::MakeBinding(
     const MultibodyPlant<AutoDiffXd>* plant,
     systems::Context<AutoDiffXd>* context,
     const std::vector<std::pair<std::shared_ptr<ContactWrenchEvaluator>,
                                 VectorX<symbolic::Variable>>>&
         contact_wrench_evaluators_and_lambda,
-    const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
-    const Eigen::Ref<const VectorX<symbolic::Variable>>& u_vars) {
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& v_vars,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& q_next_vars,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& v_next_vars,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& u_next_vars) {
+  if (internal::RefFromPtrOrThrow(plant).time_step() == 0) {
+    throw std::logic_error("ContactImplicitConstraint: MultibodyPlant must"
+                           "be a discrete time model with non-zero time step");
+  }
   // contact_pair_to_wrench_evaluator will be used in the constructor of
-  // StaticEquilibriumConstraint.
+  // ContactImplicitConstraint.
   std::map<SortedPair<geometry::GeometryId>,
            internal::GeometryPairContactWrenchEvaluatorBinding>
       contact_pair_to_wrench_evaluator;
-  // Get the total size of lambda used in this StaticEquilibriumConstraint. We
+  // Get the total size of lambda used in this ContactImplicitConstraint. We
   // find the unique lambda variable for all contact wrench evaluators.
   // We will aggregate the lambda variables for each contact wrench evaluator
   // into a vector `all_lambda`. map_lambda_id_to_index records the index of
@@ -190,30 +238,36 @@ StaticEquilibriumConstraint::MakeBinding(
         internal::GeometryPairContactWrenchEvaluatorBinding{
             lambda_indices_in_all_lambda, contact_wrench_evaluator});
   }
-  // Now compose the vector all_lambda.
+  // Now compose the vector all_next_lambda.
   const int num_lambda = lambda_count;
-  VectorX<symbolic::Variable> all_lambda(num_lambda);
+  VectorX<symbolic::Variable> all_lambda_next(num_lambda);
   for (const auto& contact_wrench_evaluator_and_lambda :
        contact_wrench_evaluators_and_lambda) {
     const auto& lambda_i = contact_wrench_evaluator_and_lambda.second;
     for (int j = 0; j < lambda_i.rows(); ++j) {
-      all_lambda(map_lambda_id_to_index.at(lambda_i[j].get_id())) = lambda_i(j);
+      all_lambda_next(map_lambda_id_to_index.at(lambda_i[j].get_id())) =
+          lambda_i(j);
     }
   }
-  DRAKE_DEMAND(q_vars.rows() == plant->num_positions());
-  DRAKE_DEMAND(u_vars.rows() == plant->num_actuated_dofs());
-  // The bound variable for this StaticEquilibriumConstraint is q_u_lambda.
-  VectorX<symbolic::Variable> q_u_lambda(
-      plant->num_positions() + plant->num_actuated_dofs() + num_lambda);
-  q_u_lambda << q_vars, u_vars, all_lambda;
-  auto static_equilibrium_constraint =
+  DRAKE_DEMAND(v_vars.rows() == plant->num_velocities());
+  DRAKE_DEMAND(q_next_vars.rows() == plant->num_positions());
+  DRAKE_DEMAND(v_next_vars.rows() == plant->num_velocities());
+  DRAKE_DEMAND(u_next_vars.rows() == plant->num_actuated_dofs());
+
+  // The bound variable for this ContactImplicitConstraint is
+  // bound_x = {v, q_next, v_next, u_next, all_lambda_next}.
+  VectorX<symbolic::Variable> bound_x(
+      plant->num_velocities() + plant->num_positions() +
+      plant->num_velocities() + plant->num_actuated_dofs() + num_lambda);
+  bound_x << v_vars, q_next_vars, v_next_vars, u_next_vars, all_lambda_next;
+  auto contact_implicit_constraint =
       // Do not call make_shared because the constructor
-      // StaticEquilibriumConstraint is private.
-      std::shared_ptr<StaticEquilibriumConstraint>(
-          new StaticEquilibriumConstraint(plant, context,
-                                          contact_pair_to_wrench_evaluator));
-  return solvers::Binding<StaticEquilibriumConstraint>(
-      static_equilibrium_constraint, q_u_lambda);
+      // ContactImplicitConstraint is private.
+      std::shared_ptr<ContactImplicitConstraint>(new ContactImplicitConstraint(
+          plant, context, contact_pair_to_wrench_evaluator,
+          plant->time_step()));
+  return solvers::Binding<ContactImplicitConstraint>(
+      contact_implicit_constraint, bound_x);
 }
 }  // namespace multibody
 }  // namespace drake

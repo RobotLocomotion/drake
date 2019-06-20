@@ -58,6 +58,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "contact_implicit_constraint",
+    srcs = ["contact_implicit_constraint.cc"],
+    hdrs = ["contact_implicit_constraint.h"],
+    deps = [
+        ":contact_wrench_evaluator",
+        "//geometry:scene_graph",
+        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//multibody/plant",
+        "//solvers:binding",
+        "//solvers:constraint",
+    ],
+)
+
+drake_cc_library(
     name = "static_friction_cone_constraint",
     srcs = ["static_friction_cone_constraint.cc"],
     hdrs = ["static_friction_cone_constraint.h"],
@@ -158,6 +172,18 @@ drake_cc_googletest(
         ":optimization_with_contact_utilities",
         ":static_friction_cone_complementarity_constraint",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_implicit_constraint_test",
+    deps = [
+        ":contact_implicit_constraint",
+        ":optimization_with_contact_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:compute_numerical_gradient",
+        "//solvers:mathematical_program_lite",
+        "//solvers:solve",
     ],
 )
 

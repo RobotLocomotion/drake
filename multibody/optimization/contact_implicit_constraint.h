@@ -15,44 +15,50 @@ namespace drake {
 namespace multibody {
 
 /**
- * Impose the static equilibrium constraint 0 = τ_g + Bu + ∑J_WBᵀ(q) * Fapp_B_W
+ * A Constraint to impose the contact implicit constraint:
+ * 0 = (Buₙ₊₁ + ∑ᵢ (Jᵢ_WBᵀ(qₙ₊₁)ᵀ * Fᵢ_AB_W(λᵢ,ₙ₊₁))
+ *     + tau_g(qₙ₊₁) - C(qₙ₊₁, Vₙ₊₁)) * dt - M(qₙ₊₁) * (Vₙ₊₁ - Vₙ)
  */
-class StaticEquilibriumConstraint final : public solvers::Constraint {
+class ContactImplicitConstraint final : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StaticEquilibriumConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactImplicitConstraint)
 
   /**
-   * Create a static equilibrium constraint
-   * 0 = g(q) + Bu + ∑ᵢ JᵢᵀFᵢ_AB_W(λᵢ)
-   * This constraint depends on the variables q, u and λ.
+   * This constraint depends on the decision variable vector:
+   * {v[n], q[n+1], v[n+1], u[n+1] and λ[n+1]}.
    * @param plant The plant on which the constraint is imposed.
    * @param context The context for the subsystem @p plant.
    * @param contact_wrench_evaluators_and_lambda For each contact pair, we
    * need to compute the contact wrench applied at the point of contact,
-   * expressed in the world frame, namely Fᵢ_AB_W(λᵢ).
+   * expressed in the world frame, namely Fᵢ_AB_W(λᵢ,ₙ₊₁) at time n+1.
    * `contact_wrench_evaluators_and_lambda.first` is the evaluator for computing
-   * this contact wrench from the variables λᵢ.
-   * `contact_wrench_evaluators_and_lambda.second` are the decision variable λᵢ
-   * used in computing the contact wrench. Notice the generalized position `q`
-   * is not included in variables contact_wrench_evaluators_and_lambda.second.
-   * @param q_vars The decision variables for q (the generalized position).
-   * @param u_vars The decision variables for u (the input).
-   * @return binding The binding between the static equilibrium constraint and
-   * the variables q, u and λ.
-   * @pre @p plant must have been connected to a SceneGraph properly. You could
-   * refer to AddMultibodyPlantSceneGraph on how to connect a MultibodyPlant to
-   * a SceneGraph.
+   * this contact wrench from the variables λᵢ[.].
+   * `contact_wrench_evaluators_and_lambda.second` are the decision variable
+   * λᵢ[n+1] used in computing the contact wrench at time step n+1. Notice the
+   * generalized position `q` is not included in variables
+   * contact_wrench_evaluators_and_lambda.second.
+   * @param v_vars The decision variables for vₙ.
+   * @param q_next_vars The decision variables for qₙ₊₁.
+   * @param v_next_vars The decision variables for vₙ₊₁.
+   * @param u_next_vars The decision variables for uₙ₊₁.
+   * @return binding The binding between the contact implicit constraint and
+   * the variables vₙ, qₙ₊₁, vₙ₊₁, uₙ₊₁ and λₙ₊₁.
+   * @pre @p plant must have been connected to a SceneGraph properly. Refer to
+   * AddMultibodyPlantSceneGraph for documentation on connecting a
+   * MultibodyPlant to a SceneGraph.
    */
-  static solvers::Binding<StaticEquilibriumConstraint> MakeBinding(
+  static solvers::Binding<ContactImplicitConstraint> MakeBinding(
       const MultibodyPlant<AutoDiffXd>* plant,
       systems::Context<AutoDiffXd>* context,
       const std::vector<std::pair<std::shared_ptr<ContactWrenchEvaluator>,
                                   VectorX<symbolic::Variable>>>&
           contact_wrench_evaluators_and_lambda,
-      const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
-      const Eigen::Ref<const VectorX<symbolic::Variable>>& u_vars);
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& v_vars,
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& q_next_vars,
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& v_next_vars,
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& u_next_vars);
 
-  ~StaticEquilibriumConstraint() override {}
+  ~ContactImplicitConstraint() override {}
 
   /**
    * Getter for contact_pair_to_wrench_evaluator, passed in the constructor.
@@ -65,16 +71,15 @@ class StaticEquilibriumConstraint final : public solvers::Constraint {
 
  private:
   /**
-   * The user cannot call this constructor, as it is inconvenient to do so.
-   * The user must call MakeBinding() to construct a
-   * StaticEquilibriumConstraint.
+   * Users do not call this constructor explicitly, and will instead call
+   * MakeBinding() to construct a ContactImplicitConstraint.
    */
-  StaticEquilibriumConstraint(
+  ContactImplicitConstraint(
       const MultibodyPlant<AutoDiffXd>* plant,
       systems::Context<AutoDiffXd>* context,
       const std::map<SortedPair<geometry::GeometryId>,
                      internal::GeometryPairContactWrenchEvaluatorBinding>&
-          contact_pair_to_wrench_evaluator);
+          contact_pair_to_wrench_evaluator, double time_step);
 
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const final;
@@ -89,6 +94,7 @@ class StaticEquilibriumConstraint final : public solvers::Constraint {
                  internal::GeometryPairContactWrenchEvaluatorBinding>
       contact_pair_to_wrench_evaluator_;
   const MatrixX<AutoDiffXd> B_actuation_;
+  const double time_step_;
 };
 
 }  // namespace multibody

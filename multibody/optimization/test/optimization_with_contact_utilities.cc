@@ -35,14 +35,22 @@ template <typename T>
 FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
     std::vector<SphereSpecification> spheres,
     std::vector<BoxSpecification> boxes,
-    CoulombFriction<double> ground_friction)
+    CoulombFriction<double> ground_friction,
+    double time_step)
     : spheres_{std::move(spheres)},
       boxes_{std::move(boxes)},
       ground_friction_{std::move(ground_friction)} {
   const int num_spheres = static_cast<int>(spheres_.size());
   const int num_boxes = static_cast<int>(boxes_.size());
   systems::DiagramBuilder<T> builder;
-  std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder);
+  plant_ = builder.template AddSystem<MultibodyPlant<T>>(time_step);
+  scene_graph_ = builder.template AddSystem<geometry::SceneGraph<T>>();
+  plant_->RegisterAsSourceForSceneGraph(scene_graph_);
+  builder.Connect(
+      plant_->get_geometry_poses_output_port(),
+      scene_graph_->get_source_pose_port(plant_->get_source_id().value()));
+  builder.Connect(scene_graph_->get_query_output_port(),
+                  plant_->get_geometry_query_input_port());
   // Add spheres and register collision geometry.
   for (int i = 0; i < num_spheres; ++i) {
     const auto& sphere =

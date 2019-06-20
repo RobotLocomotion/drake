@@ -54,7 +54,8 @@ class FreeSpheresAndBoxes {
 
   FreeSpheresAndBoxes(std::vector<SphereSpecification> spheres,
                       std::vector<BoxSpecification> boxes,
-                      CoulombFriction<double> ground_friction);
+                      CoulombFriction<double> ground_friction,
+                      double time_step = 0);
 
   const systems::Diagram<T>& diagram() const { return *diagram_; }
 
