@@ -25,10 +25,16 @@ namespace controllers {
  * `q` and `v` stand for the generalized position and velocity, and `vd` is
  * the generalized acceleration. `*` indicates reference values.
  *
- * This controller always has a BasicVector input port for estimated robot state
- * `(q, v)`, a BasicVector input port for reference robot state `(q*, v*)` and
+ * @system{ InverseDynamicsController,
+ *   @input_port{estimated_state}
+ *   @input_port{desired_state}
+ *   @input_port{[desired_acceleration]},
+ *   @output_port{torque} }
+ *
+ * This controller always has a BasicVector input port for `estimated_state`
+ * `(q, v)`, a BasicVector input port for `desired_state` `(q*, v*)` and
  * a BasicVector output port for computed torque `torque`. A constructor flag
- * can be set to track reference acceleration `vd*` as well. When set, a
+ * can be set to track `desired_acceleration` `vd*` as well. When set, a
  * BasicVector input port is also declared, and it's content is used as `vd*`.
  * When unset, `vd*` is be treated as zero.
  *
@@ -116,11 +122,20 @@ class InverseDynamicsController : public Diagram<T>,
   }
 
   /**
-   * Returns the output port for computed control.
+   * Returns the output port for computed torque command (implementing the
+   * StateFeedbackControllerInterface method).
    */
   const OutputPort<T>& get_output_port_control() const final {
-    return this->get_output_port(output_port_index_control_);
+    return this->get_output_port(output_port_index_torque_);
   }
+
+  /**
+   * Returns the output port for computed torque command.
+   */
+  const OutputPort<T>& get_output_port_torque() const {
+    return this->get_output_port(output_port_index_torque_);
+  }
+
 
   /**
    * Returns a constant pointer to the MultibodyPlant used for control.
@@ -141,7 +156,7 @@ class InverseDynamicsController : public Diagram<T>,
   int input_port_index_estimated_state_{-1};
   int input_port_index_desired_state_{-1};
   int input_port_index_desired_acceleration_{-1};
-  int output_port_index_control_{-1};
+  int output_port_index_torque_{-1};
 };
 
 }  // namespace controllers
