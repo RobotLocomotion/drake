@@ -15,6 +15,10 @@
 namespace drake {
 namespace solvers {
 namespace {
+using internal::ConvertCsdpBlockMatrixtoEigen;
+using internal::SdpaFreeFormat;
+using internal::DecisionVariableInSdpaX;
+using internal::CsdpMatrixIndex;
 void SetCsdpSolverDetails(int csdp_ret, double pobj, double dobj, int y_size,
                           double* y, const csdp::blockmatrix& Z,
                           CsdpSolverDetails* solver_details) {
@@ -23,10 +27,11 @@ void SetCsdpSolverDetails(int csdp_ret, double pobj, double dobj, int y_size,
   solver_details->dual_objective = dobj;
   solver_details->y_val.resize(y_size);
   for (int i = 0; i < y_size; ++i) {
-    // CSDP uses Fortran 1-indexed array.
+    // CSDP uses Fortran 1-index array so the array y points to will be of size
+    // y_size + 1 with the zero entry ignored.
     solver_details->y_val(i) = y[i + 1];
   }
-  internal::ConvertCsdpBlockMatrixtoEigen(Z, &(solver_details->Z_val));
+  ConvertCsdpBlockMatrixtoEigen(Z, &(solver_details->Z_val));
 }
 
 SolutionResult ConvertCsdpReturnToSolutionResult(int csdp_ret) {
@@ -45,15 +50,15 @@ SolutionResult ConvertCsdpReturnToSolutionResult(int csdp_ret) {
   }
 }
 
-void SetProgramSolution(const internal::SdpaFreeFormat& sdpa_free_format,
+void SetProgramSolution(const SdpaFreeFormat& sdpa_free_format,
                         const csdp::blockmatrix& X,
                         const Eigen::VectorXd& s_val,
                         Eigen::VectorXd* prog_sol) {
   for (int i = 0;
        i < static_cast<int>(sdpa_free_format.prog_var_in_sdpa().size()); ++i) {
-    if (holds_alternative<internal::DecisionVariableInSdpaX>(
+    if (holds_alternative<DecisionVariableInSdpaX>(
             sdpa_free_format.prog_var_in_sdpa()[i])) {
-      const auto& decision_var_in_X = get<internal::DecisionVariableInSdpaX>(
+      const auto& decision_var_in_X = get<DecisionVariableInSdpaX>(
           sdpa_free_format.prog_var_in_sdpa()[i]);
 
       double X_entry_val{};
@@ -62,7 +67,7 @@ void SetProgramSolution(const internal::SdpaFreeFormat& sdpa_free_format,
         case csdp::MATRIX: {
           X_entry_val =
               X.blocks[decision_var_in_X.entry_in_X.block_index + 1]
-                  .data.mat[internal::CsdpMatrixIndex(
+                  .data.mat[CsdpMatrixIndex(
                       decision_var_in_X.entry_in_X.row_index_in_block,
                       decision_var_in_X.entry_in_X.column_index_in_block,
                       X.blocks[decision_var_in_X.entry_in_X.block_index + 1]
@@ -89,9 +94,9 @@ void SetProgramSolution(const internal::SdpaFreeFormat& sdpa_free_format,
     } else if (holds_alternative<double>(
                    sdpa_free_format.prog_var_in_sdpa()[i])) {
       (*prog_sol)(i) = get<double>(sdpa_free_format.prog_var_in_sdpa()[i]);
-    } else if (holds_alternative<internal::SdpaFreeFormat::FreeVariableIndex>(
+    } else if (holds_alternative<SdpaFreeFormat::FreeVariableIndex>(
                    sdpa_free_format.prog_var_in_sdpa()[i])) {
-      (*prog_sol)(i) = s_val(get<internal::SdpaFreeFormat::FreeVariableIndex>(
+      (*prog_sol)(i) = s_val(get<SdpaFreeFormat::FreeVariableIndex>(
           sdpa_free_format.prog_var_in_sdpa()[i]));
     }
   }
@@ -99,7 +104,7 @@ void SetProgramSolution(const internal::SdpaFreeFormat& sdpa_free_format,
 
 void SolveProgramWithNoFreeVariables(
     const MathematicalProgram& prog,
-    const internal::SdpaFreeFormat& sdpa_free_format,
+    const SdpaFreeFormat& sdpa_free_format,
     MathematicalProgramResult* result) {
   DRAKE_ASSERT(sdpa_free_format.num_free_variables() == 0);
 
@@ -145,7 +150,7 @@ void CsdpSolver::DoSolve(const MathematicalProgram& prog,
                          const Eigen::VectorXd&, const SolverOptions&,
                          MathematicalProgramResult* result) const {
   result->set_solver_id(CsdpSolver::id());
-  const internal::SdpaFreeFormat sdpa_free_format(prog);
+  const SdpaFreeFormat sdpa_free_format(prog);
   if (sdpa_free_format.num_free_variables() == 0) {
     SolveProgramWithNoFreeVariables(prog, sdpa_free_format, result);
   } else {
