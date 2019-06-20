@@ -19,6 +19,7 @@
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
 #include "drake/systems/sensors/pixel_types.h"
+#include "drake/systems/sensors/rgbd_sensor.h"
 
 using std::string;
 using std::unique_ptr;
@@ -34,6 +35,11 @@ template <typename T, T... kPixelTypes>
 using constant_pack = type_pack<type_pack<constant<T, kPixelTypes>>...>;
 
 using Eigen::Map;
+using Eigen::Vector3d;
+using geometry::FrameId;
+using geometry::render::DepthCameraProperties;
+using math::RigidTransformd;
+using math::RollPitchYawd;
 
 PYBIND11_MODULE(sensors, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
@@ -164,6 +170,70 @@ PYBIND11_MODULE(sensors, m) {
   using T = double;
 
   // Systems.
+
+  auto def_camera_ports = [](auto* ppy_class, auto cls_doc) {
+    auto& py_class = *ppy_class;
+    using PyClass = std::decay_t<decltype(py_class)>;
+    using Class = typename PyClass::type;
+    py_class
+        .def("query_object_input_port", &Class::query_object_input_port,
+            py_reference_internal, cls_doc.query_object_input_port.doc)
+        .def("color_image_output_port", &Class::color_image_output_port,
+            py_reference_internal, cls_doc.color_image_output_port.doc)
+        .def("depth_image_32F_output_port", &Class::depth_image_32F_output_port,
+            py_reference_internal, cls_doc.depth_image_32F_output_port.doc)
+        .def("depth_image_16U_output_port", &Class::depth_image_16U_output_port,
+            py_reference_internal, cls_doc.depth_image_16U_output_port.doc)
+        .def("label_image_output_port", &Class::label_image_output_port,
+            py_reference_internal, cls_doc.label_image_output_port.doc)
+        .def("X_WB_output_port", &Class::X_WB_output_port,
+            py_reference_internal, cls_doc.X_WB_output_port.doc);
+  };
+
+  py::class_<RgbdSensor, LeafSystem<T>> rgbd_sensor(
+      m, "RgbdSensor", doc.RgbdSensor.doc);
+
+  py::class_<RgbdSensor::CameraPoses>(
+      rgbd_sensor, "CameraPoses", doc.RgbdSensor.CameraPoses.doc)
+      .def(py::init<>())
+      .def_readwrite("X_BC", &RgbdSensor::CameraPoses::X_BC)
+      .def_readwrite("X_BD", &RgbdSensor::CameraPoses::X_BD);
+
+  rgbd_sensor
+      .def(py::init<FrameId, const RigidTransformd&,
+               const DepthCameraProperties&, const RgbdSensor::CameraPoses&,
+               bool>(),
+          py::arg("parent_id"), py::arg("X_PB"), py::arg("properties"),
+          py::arg("camera_poses") = RgbdSensor::CameraPoses{},
+          py::arg("show_window") = false, doc.RgbdSensor.ctor.doc)
+      .def("color_camera_info", &RgbdSensor::color_camera_info,
+          py_reference_internal, doc.RgbdSensor.color_camera_info.doc)
+      .def("depth_camera_info", &RgbdSensor::depth_camera_info,
+          py_reference_internal, doc.RgbdSensor.depth_camera_info.doc)
+      .def("X_BC", &RgbdSensor::X_BC, doc.RgbdSensor.X_BC.doc)
+      .def("X_BD", &RgbdSensor::X_BD, doc.RgbdSensor.X_BD.doc)
+      .def("parent_frame_id", &RgbdSensor::parent_frame_id,
+          py_reference_internal, doc.RgbdSensor.parent_frame_id.doc);
+  def_camera_ports(&rgbd_sensor, doc.RgbdSensor);
+
+  py::class_<RgbdSensorDiscrete, Diagram<T>> rgbd_camera_discrete(
+      m, "RgbdSensorDiscrete", doc.RgbdSensorDiscrete.doc);
+  rgbd_camera_discrete
+      .def(py::init<unique_ptr<RgbdSensor>, double, bool>(), py::arg("sensor"),
+          py::arg("period") = double{RgbdSensorDiscrete::kDefaultPeriod},
+          py::arg("render_label_image") = true,
+          // Keep alive, ownership: `RgbdSensorDiscrete` keeps `this` alive.
+          py::keep_alive<1, 2>(), doc.RgbdSensorDiscrete.ctor.doc)
+      // N.B. Since `camera` is already connected, we do not need additional
+      // `keep_alive`s.
+      .def("sensor", &RgbdSensorDiscrete::sensor, py_reference_internal,
+          doc.RgbdSensorDiscrete.sensor.doc)
+      .def("period", &RgbdSensorDiscrete::period,
+          doc.RgbdSensorDiscrete.period.doc);
+  def_camera_ports(&rgbd_camera_discrete, doc.RgbdSensorDiscrete);
+  rgbd_camera_discrete.attr("kDefaultPeriod") =
+      double{RgbdSensorDiscrete::kDefaultPeriod};
+
   py::class_<CameraInfo>(m, "CameraInfo", doc.CameraInfo.doc)
       .def(py::init<int, int, double>(), py::arg("width"), py::arg("height"),
           py::arg("fov_y"), doc.CameraInfo.ctor.doc_3args)

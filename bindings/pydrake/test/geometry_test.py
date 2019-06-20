@@ -2,6 +2,9 @@ import pydrake.geometry as mut
 
 import unittest
 import warnings
+from math import pi
+
+import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
@@ -9,8 +12,14 @@ from pydrake.common.eigen_geometry import Isometry3_
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.lcm import DrakeMockLcm
+from pydrake.math import RigidTransform
 from pydrake.symbolic import Expression
 from pydrake.systems.framework import DiagramBuilder_, InputPort_, OutputPort_
+from pydrake.systems.sensors import (
+    ImageRgba8U,
+    ImageDepth32F,
+    ImageLabel16I
+    )
 from pydrake.common.deprecation import DrakeDeprecationWarning
 
 
@@ -32,6 +41,11 @@ class TestGeometry(unittest.TestCase):
             scene_graph.get_pose_bundle_output_port(), OutputPort)
         self.assertIsInstance(
             scene_graph.get_query_output_port(), OutputPort)
+
+        # Test limited rendering API.
+        scene_graph.AddRenderer("test_renderer",
+                                mut.render.MakeRenderEngineVtk(
+                                    mut.render.RenderEngineVtkParams()))
 
     def test_connect_drake_visualizer(self):
         # Test visualization API.
@@ -143,3 +157,88 @@ class TestGeometry(unittest.TestCase):
         ]
         for shape in shapes:
             self.assertIsInstance(shape, mut.Shape)
+
+    def test_render_engine_vtk_params(self):
+        # Confirm default construction of params.
+        params = mut.render.RenderEngineVtkParams()
+        self.assertEqual(params.default_label, None)
+        self.assertEqual(params.default_diffuse, None)
+
+        label = mut.render.RenderLabel(10)
+        diffuse = np.array((1.0, 0.0, 0.0, 0.0))
+        params.default_label = label
+        params.default_diffuse = diffuse
+        self.assertEqual(params.default_label, label)
+        self.assertTrue((params.default_diffuse == diffuse).all())
+
+    def test_render_depth_camera_properties(self):
+        obj = mut.render.DepthCameraProperties(width=320, height=240,
+                                               fov_y=pi/6,
+                                               renderer_name="test_renderer",
+                                               z_near=0.1, z_far=5.0)
+        self.assertEqual(obj.width, 320)
+        self.assertEqual(obj.height, 240)
+        self.assertEqual(obj.fov_y, pi/6)
+        self.assertEqual(obj.renderer_name, "test_renderer")
+        self.assertEqual(obj.z_near, 0.1)
+        self.assertEqual(obj.z_far, 5.0)
+
+    def test_render_label(self):
+        RenderLabel = mut.render.RenderLabel
+        value = 10
+        obj = RenderLabel(value)
+
+        self.assertEqual(value, obj)
+        self.assertEqual(obj, value)
+
+        self.assertFalse(obj.is_reserved())
+        self.assertTrue(RenderLabel.kEmpty.is_reserved())
+        self.assertTrue(RenderLabel.kDoNotRender.is_reserved())
+        self.assertTrue(RenderLabel.kDontCare.is_reserved())
+        self.assertTrue(RenderLabel.kUnspecified.is_reserved())
+        self.assertEqual(RenderLabel(value), RenderLabel(value))
+        self.assertNotEqual(RenderLabel(value), RenderLabel.kEmpty)
+
+    @numpy_compare.check_nonsymbolic_types
+    def test_query_object(self, T):
+        SceneGraph = mut.SceneGraph_[T]
+        QueryObject = mut.QueryObject_[T]
+        SceneGraphInspector = mut.SceneGraphInspector_[T]
+
+        scene_graph = SceneGraph()
+        render_params = mut.render.RenderEngineVtkParams()
+        renderer_name = "test_renderer"
+        scene_graph.AddRenderer(renderer_name,
+                                mut.render.MakeRenderEngineVtk(render_params))
+
+        context = scene_graph.CreateDefaultContext()
+        query_object = scene_graph.get_query_output_port().Eval(context)
+
+        self.assertIsInstance(query_object.inspector(), SceneGraphInspector)
+
+        # Proximity queries -- all of these will produce empty results.
+        results = query_object.ComputeSignedDistancePairwiseClosestPoints()
+        self.assertEqual(len(results), 0)
+        results = query_object.ComputePointPairPenetration()
+        self.assertEqual(len(results), 0)
+        results = query_object.ComputeSignedDistanceToPoint(p_WQ=(1, 2, 3))
+        self.assertEqual(len(results), 0)
+        results = query_object.FindCollisionCandidates()
+        self.assertEqual(len(results), 0)
+
+        # Confirm rendering API returns images of appropriate type.
+        d_camera = mut.render.DepthCameraProperties(
+            width=320, height=240, fov_y=pi/6, renderer_name=renderer_name,
+            z_near=0.1, z_far=5.0)
+        image = query_object.RenderColorImage(
+            camera=d_camera, parent_frame=SceneGraph.world_frame_id(),
+            X_PC=RigidTransform())
+        self.assertIsInstance(image, ImageRgba8U)
+        image = query_object.RenderDepthImage(
+            camera=d_camera, parent_frame=SceneGraph.world_frame_id(),
+            X_PC=RigidTransform())
+        self.assertIsInstance(image, ImageDepth32F)
+        image = query_object.RenderLabelImage(
+            camera=d_camera, parent_frame=SceneGraph.world_frame_id(),
+            X_PC=RigidTransform())
+        self.assertIsInstance(image, ImageLabel16I)
