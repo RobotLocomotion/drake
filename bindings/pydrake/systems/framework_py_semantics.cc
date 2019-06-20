@@ -40,8 +40,7 @@ py::object DoEval(const SomeObject* self, const systems::Context<T>& context) {
     }
     case systems::kAbstractValued: {
       const auto& abstract = self->template Eval<AbstractValue>(context);
-      // TODO(#9398): Figure out why `py_reference` is necessary.
-      py::object value_ref = py::cast(&abstract, py_reference);
+      py::object value_ref = py::cast(&abstract);
       return value_ref.attr("get_value")();
     }
   }
@@ -86,7 +85,6 @@ void DefineFrameworkPySemantics(py::module m) {
   py::class_<FixedInputPortValue>(
       m, "FixedInputPortValue", doc.FixedInputPortValue.doc)
       .def("GetMutableData", &FixedInputPortValue::GetMutableData,
-          // TODO(#9398): Why is `py_reference` necessary?
           py_reference_internal, doc.FixedInputPortValue.GetMutableData.doc);
 
   using AbstractValuePtrList = vector<unique_ptr<AbstractValue>>;
@@ -475,8 +473,7 @@ void DefineFrameworkPySemantics(py::module m) {
         .def("EvalAbstract",
             [](const OutputPort<T>* self, const Context<T>& c) {
               const auto& abstract = self->template Eval<AbstractValue>(c);
-              // TODO(#9398): Figure out why `py_reference` is necessary.
-              return py::cast(&abstract, py_reference);
+              return py::cast(&abstract);
             },
             py::arg("context"),
             "(Advanced.) Returns the value of this output port, typed "
@@ -487,8 +484,7 @@ void DefineFrameworkPySemantics(py::module m) {
         .def("EvalBasicVector",
             [](const OutputPort<T>* self, const Context<T>& c) {
               const auto& basic = self->template Eval<BasicVector<T>>(c);
-              // TODO(#9398): Figure out why `py_reference` is necessary.
-              return py::cast(&basic, py_reference);
+              return py::cast(&basic);
             },
             py::arg("context"),
             "(Advanced.) Returns the value of this output port, typed "
@@ -535,12 +531,7 @@ void DefineFrameworkPySemantics(py::module m) {
               DRAKE_UNREACHABLE();
             },
             doc.InputPort.Eval.doc)
-        .def("EvalAbstract",
-            [](const InputPort<T>* self, const Context<T>& c) {
-              const auto& abstract = self->template Eval<AbstractValue>(c);
-              // TODO(#9398): Figure out why `py_reference` is necessary.
-              return py::cast(&abstract, py_reference);
-            },
+        .def("EvalAbstract", &InputPort<T>::template Eval<AbstractValue>,
             py::arg("context"),
             "(Advanced.) Returns the value of this input port, typed "
             "as an AbstractValue. Most users should call Eval() instead. "
@@ -550,8 +541,7 @@ void DefineFrameworkPySemantics(py::module m) {
         .def("EvalBasicVector",
             [](const InputPort<T>* self, const Context<T>& c) {
               const auto& basic = self->template Eval<BasicVector<T>>(c);
-              // TODO(#9398): Figure out why `py_reference` is necessary.
-              return py::cast(&basic, py_reference);
+              return py::cast(&basic);
             },
             py::arg("context"),
             "(Advanced.) Returns the value of this input port, typed "

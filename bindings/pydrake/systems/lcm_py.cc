@@ -221,7 +221,7 @@ PYBIND11_MODULE(lcm, m) {
 
   m.def("ConnectLcmScope", &ConnectLcmScope, py::arg("src"), py::arg("channel"),
       py::arg("builder"), py::arg("lcm") = nullptr, py::keep_alive<0, 2>(),
-      // TODO(eric.cousineau): Figure out why this is necessary (#9398).
+      // See #11531 for why `py_reference` is needed.
       py_reference, doc.ConnectLcmScope.doc);
 
   // Bind C++ serializers.
