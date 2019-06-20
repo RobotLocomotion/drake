@@ -27,6 +27,7 @@ drake_cc_package_library(
     name = "qp_inverse_dynamics",
     deps = [
         ":control",
+        ":deprecated",
         ":id_controller_config",
         ":lcm_utils",
         ":param_parser",
@@ -34,6 +35,18 @@ drake_cc_package_library(
         ":qp_output_translator_system",
         ":robot_kinematic_state",
         ":robot_kinematic_state_translator_system",
+    ],
+)
+
+drake_cc_library(
+    name = "deprecated",
+    hdrs = ["deprecated.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
+    deps = [
+        "//common:essential",
     ],
 )
 
@@ -52,8 +65,13 @@ drake_cc_library(
     hdrs = [
         "param_parser.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":control",
+        ":deprecated",
         ":id_controller_config",
         "//attic/multibody:rigid_body_tree_alias_groups",
         "//common/proto:protobuf",
@@ -68,7 +86,12 @@ drake_cc_library(
     hdrs = [
         "robot_kinematic_state.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
+        ":deprecated",
         "//attic/multibody:rigid_body_tree",
     ],
 )
@@ -88,7 +111,12 @@ drake_cc_library(
         "qp_inverse_dynamics.h",
         "qp_inverse_dynamics_common.h",
     ],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
+        ":deprecated",
         ":robot_kinematic_state",
         "//attic/multibody:rigid_body_tree",
         "//common:essential",
@@ -102,8 +130,13 @@ drake_cc_library(
     name = "qp_inverse_dynamics_system",
     srcs = ["qp_inverse_dynamics_system.cc"],
     hdrs = ["qp_inverse_dynamics_system.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":control",
+        ":deprecated",
         "//attic/multibody:rigid_body_tree",
         "//lcmtypes:inverse_dynamics_debug_info",
         "//systems/framework:leaf_system",
@@ -114,8 +147,13 @@ drake_cc_library(
     name = "lcm_utils",
     srcs = ["lcm_utils.cc"],
     hdrs = ["lcm_utils.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":control",
+        ":deprecated",
         "//lcmtypes:body_acceleration",
         "//lcmtypes:constrained_values",
         "//lcmtypes:contact_information",
@@ -132,8 +170,13 @@ drake_cc_library(
     name = "qp_output_translator_system",
     srcs = ["qp_output_translator_system.cc"],
     hdrs = ["qp_output_translator_system.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":control",
+        ":deprecated",
         "//attic/multibody:rigid_body_tree",
         "//systems/framework:leaf_system",
         "@lcmtypes_bot2_core",
@@ -144,7 +187,12 @@ drake_cc_library(
     name = "robot_kinematic_state_translator_system",
     srcs = ["robot_kinematic_state_translator_system.cc"],
     hdrs = ["robot_kinematic_state_translator_system.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
+        ":deprecated",
         ":robot_kinematic_state",
         "//attic/multibody:rigid_body_tree",
         "//systems/framework:leaf_system",
@@ -155,6 +203,10 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "lcm_utils_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         "//examples/valkyrie:models",
     ],
@@ -169,6 +221,10 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "param_parser_test",
     srcs = ["test/param_parser_test.cc"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         "test/params.alias_groups",
         "test/params.id_controller_config",
@@ -186,6 +242,10 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "iiwa_inverse_dynamics_test",
     srcs = ["test/iiwa_inverse_dynamics_test.cc"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         "test/iiwa.alias_groups",
         "test/iiwa.id_controller_config",
@@ -205,6 +265,10 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "qp_inverse_dynamics_system_test",
     srcs = ["test/qp_inverse_dynamics_system_test.cc"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         "test/iiwa.alias_groups",
         "test/iiwa.id_controller_config",
@@ -227,6 +291,10 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "qp_output_translator_system_test",
     srcs = ["test/qp_output_translator_system_test.cc"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         "//examples/valkyrie:models",
     ],
@@ -243,6 +311,10 @@ drake_cc_googletest(
     name = "valkyrie_balancing_test",
     timeout = "moderate",
     srcs = ["test/valkyrie_balancing_test.cc"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         "test/valkyrie.alias_groups",
         "test/valkyrie.id_controller_config",

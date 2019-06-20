@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/deprecated.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/robot_kinematic_state.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -13,7 +14,8 @@ namespace qp_inverse_dynamics {
  * Provides transformation from a state vector to RobotKinematicState.
  */
 template <typename T>
-class RobotKinematicStateTranslatorSystem : public LeafSystem<T> {
+class DRAKE_DEPRECATED_QPID RobotKinematicStateTranslatorSystem
+    : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotKinematicStateTranslatorSystem)
 
