@@ -223,7 +223,8 @@ class TestDeprecation(unittest.TestCase):
 
     def test_deprecation_pybind(self):
         """Test C++ usage in `deprecation_pybind.h`."""
-        from deprecation_example.cc_module import ExampleCppClass
+        from deprecation_example.cc_module import (
+            ExampleCppClass, emit_deprecation)
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("once", DrakeDeprecationWarning)
             # This is a descriptor, so it will trigger on class access.
@@ -242,6 +243,18 @@ class TestDeprecation(unittest.TestCase):
             obj.overload(10)
             self.assertEqual(len(w), 3)
             self._check_warning(w[2], "Example message for overload")
+            # Call bad constructors.
+            ExampleCppClass(1)
+            self.assertEqual(len(w), 4)
+            self._check_warning(w[3], "Example message for ctor")
+            # - Factory.
+            ExampleCppClass(2.0)
+            self.assertEqual(len(w), 5)
+            self._check_warning(w[4], "Example message for factory ctor")
+            # Explicit call.
+            emit_deprecation()
+            self.assertEqual(len(w), 6)
+            self._check_warning(w[5], "Example emitting of deprecation")
 
     def test_deprecated_callable(self):
         import deprecation_example.cc_module as m_new

@@ -10,6 +10,11 @@ namespace {
 
 class ExampleCppClass {
  public:
+  ExampleCppClass() {}
+
+  // Deprecated constructors.
+  explicit ExampleCppClass(int) {}
+
   void DeprecatedMethod() {}
   int deprecated_prop{};
 
@@ -24,10 +29,17 @@ class ExampleCppClass {
 };
 
 PYBIND11_MODULE(cc_module, m) {
-  // Add nominal bindings.
+  m.def("emit_deprecation", []() {
+    // N.B. This is only for coverage. You generally do not need this.
+    WarnDeprecated("Example emitting of deprecation");
+  });
+
   py::class_<ExampleCppClass> cls(m, "ExampleCppClass");
   cls  // BR
       .def(py::init())
+      .def(py_init_deprecated<ExampleCppClass, int>("Example message for ctor"))
+      .def(py_init_deprecated("Example message for factory ctor",
+          [](double) { return ExampleCppClass(); }))
       .def("overload", py::overload_cast<>(&ExampleCppClass::overload));
 
   // Add deprecated method.
@@ -39,15 +51,11 @@ PYBIND11_MODULE(cc_module, m) {
   DeprecateAttribute(cls, "deprecated_prop", "Example message for property");
 
   // Add deprecated overload.
-  cls.def("overload", [](ExampleCppClass* self, int value) {
-    // This deprecates the specific overload.
-    WarnDeprecated("Example message for overload");
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // The surrounding `pragma`s allow us to use this without a warning.
-    self->overload(value);
+  cls.def("overload", WrapDeprecated("Example message for overload",
+                          py::overload_cast<int>(&ExampleCppClass::overload)));
 #pragma GCC diagnostic pop
-  });
 }
 
 }  // namespace

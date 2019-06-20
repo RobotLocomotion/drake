@@ -102,7 +102,10 @@ drake_cc_library(
     hdrs = ["deprecation_pybind.h"],
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
-    deps = ["//bindings/pydrake:pydrake_pybind"],
+    deps = [
+        ":wrap_function",
+        "//bindings/pydrake:pydrake_pybind",
+    ],
 )
 
 drake_cc_library(
