@@ -285,8 +285,7 @@ PYBIND11_MODULE(primitives, m) {
   m.def("LogOutput", &LogOutput<double>, py::arg("src"), py::arg("builder"),
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 2>(),
-      // `py_reference` is needed because `automatic` resolves to
-      // `take_ownership`, not `reference`.
+      // See #11531 for why `py_reference` is needed.
       py_reference, doc.LogOutput.doc);
 
   // TODO(eric.cousineau): Add more systems as needed.

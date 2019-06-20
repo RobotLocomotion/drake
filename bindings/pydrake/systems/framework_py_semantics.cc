@@ -489,11 +489,7 @@ void DefineFrameworkPySemantics(py::module m) {
               DRAKE_UNREACHABLE();
             },
             doc.InputPort.Eval.doc)
-        .def("EvalAbstract",
-            [](const InputPort<T>* self, const Context<T>& c) {
-              const auto& abstract = self->template Eval<AbstractValue>(c);
-              return py::cast(&abstract);
-            },
+        .def("EvalAbstract", &InputPort<T>::template Eval<AbstractValue>,
             py::arg("context"),
             "(Advanced.) Returns the value of this input port, typed "
             "as an AbstractValue. Most users should call Eval() instead. "

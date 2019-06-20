@@ -108,8 +108,7 @@ PYBIND11_MODULE(geometry, m) {
       py::arg("builder"), py::arg("scene_graph"), py::arg("lcm") = nullptr,
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 1>(),
-      // `py_reference` is needed because `automatic` resolves to
-      // `take_ownership`, not `reference`.
+      // See #11531 for why `py_reference` is needed.
       py_reference, doc.ConnectDrakeVisualizer.doc_3args);
   m.def("ConnectDrakeVisualizer",
       py::overload_cast<systems::DiagramBuilder<double>*,
@@ -119,8 +118,7 @@ PYBIND11_MODULE(geometry, m) {
       py::arg("pose_bundle_output_port"), py::arg("lcm") = nullptr,
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 1>(),
-      // `py_reference` is needed because `automatic` resolves to
-      // `take_ownership`, not `reference`.
+      // See #11531 for why `py_reference` is needed.
       py_reference, doc.ConnectDrakeVisualizer.doc_4args);
   m.def("DispatchLoadMessage", &DispatchLoadMessage, py::arg("scene_graph"),
       py::arg("lcm"), doc.DispatchLoadMessage.doc);
