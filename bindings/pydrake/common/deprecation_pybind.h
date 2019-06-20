@@ -4,8 +4,11 @@
 /// Provides access to Python deprecation utilities from C++.
 /// For example usages, please see `deprecation_example/cc_module_py.cc`.
 
+#include <utility>
+
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/wrap_function.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 
 namespace drake {
@@ -30,6 +33,38 @@ inline void WarnDeprecated(py::str message) {
   py::object warn_deprecated =
       py::module::import("pydrake.common.deprecation").attr("_warn_deprecated");
   warn_deprecated(message);
+}
+
+namespace detail {
+
+template <typename Func, typename Return, typename... Args>
+auto WrapDeprecatedImpl(py::str message,
+    function_info<Func, Return, Args...>&& info,
+    std::enable_if_t<std::is_same<Return, void>::value, void*> = {}) {
+  return [info = std::move(info), message](Args... args) {
+    WarnDeprecated(message);
+    info.func(std::forward<Args>(args)...);
+  };
+}
+
+template <typename Func, typename Return, typename... Args>
+auto WrapDeprecatedImpl(py::str message,
+    function_info<Func, Return, Args...>&& info,
+    std::enable_if_t<!std::is_same<Return, void>::value, void*> = {}) {
+  return [info = std::move(info), message](Args... args) -> Return {
+    WarnDeprecated(message);
+    return info.func(std::forward<Args>(args)...);
+  };
+}
+
+}  // namespace detail
+
+/// Wraps any callable (function pointer, method pointer, lambda, etc.) to emit
+/// a deprecation message.
+template <typename Function>
+auto WrapDeprecated(py::str message, Function&& function) {
+  return detail::WrapDeprecatedImpl(
+      message, detail::infer_function_info(std::forward<Function>(function)));
 }
 
 }  // namespace pydrake
