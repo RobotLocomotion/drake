@@ -82,6 +82,15 @@ QueryObject<T>::ComputePointPairPenetration() const {
 }
 
 template <typename T>
+std::vector<SortedPair<GeometryId>> QueryObject<T>::ComputeBroadPhase() const {
+  ThrowIfNotCallable();
+  // TODO(amcastro-tri): Modify this when the cache system is in place.
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.ComputeBroadPhase();
+}
+
+template <typename T>
 std::vector<ContactSurface<T>>
 QueryObject<T>::ComputeContactSurfaces() const {
   ThrowIfNotCallable();

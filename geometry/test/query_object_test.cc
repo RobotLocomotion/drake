@@ -185,6 +185,17 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   EXPECT_DEFAULT_ERROR(
       default_object->ComputeSignedDistanceToPoint(Vector3<double>::Zero()));
 
+  EXPECT_DEFAULT_ERROR(
+      default_object->ComputeContactSurfaces());
+      EXPECT_DEFAULT_ERROR(
+      default_object->ComputeBroadPhase());
+  EXPECT_DEFAULT_ERROR(
+      default_object->X_WF(FrameId::get_new_id()));
+  EXPECT_DEFAULT_ERROR(
+      default_object->X_PF(FrameId::get_new_id()));
+  EXPECT_DEFAULT_ERROR(
+      default_object->X_WG(GeometryId::get_new_id()));
+
   // Render queries.
   DepthCameraProperties properties(2, 2, M_PI, "dummy_renderer", 0.1, 5.0);
   RigidTransformd X_WC = RigidTransformd::Identity();
@@ -199,7 +210,6 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   ImageLabel16I label;
   EXPECT_DEFAULT_ERROR(default_object->RenderLabelImage(
       properties, FrameId::get_new_id(), X_WC, false, &label));
-
 #undef EXPECT_DEFAULT_ERROR
 }
 

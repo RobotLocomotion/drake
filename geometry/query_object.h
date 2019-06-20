@@ -186,6 +186,8 @@ class QueryObject {
 
   //@}
 
+  std::vector<SortedPair<GeometryId>> ComputeBroadPhase() const;
+
   //---------------------------------------------------------------------------
   // TODO(DamrongGuoy): Write a better documentation for Signed Distance
   // Queries.

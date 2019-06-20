@@ -11,6 +11,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
+#include "drake/geometry/proximity/broadphase_callback.h"
 #include "drake/geometry/proximity/collision_filter_legacy.h"
 #include "drake/geometry/proximity/distance_to_point.h"
 #include "drake/geometry/proximity/distance_to_point_with_gradient.h"
@@ -630,6 +631,19 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return contacts;
   }
 
+  std::vector<SortedPair<GeometryId>> ComputeBroadPhase(
+      const std::vector<GeometryId>& geometry_map) const {
+    std::vector<SortedPair<GeometryId>> pairs;
+    // All these quantities are aliased in the callback data.
+    BroadphaseCallbackData data{&geometry_map, &collision_filter_, &pairs};
+    dynamic_tree_.collide(&data, BroadphaseCallback);
+    dynamic_tree_.collide(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &anchored_tree_),
+        &data, BroadphaseCallback);
+    return pairs;
+  }
+
   // TODO(SeanCurtis-TRI): Update this with the new collision filter method.
   void ExcludeCollisionsWithin(
       const std::unordered_set<GeometryIndex>& dynamic,
@@ -1008,12 +1022,16 @@ ProximityEngine<T>::ComputePointPairPenetration(
 }
 
 template <typename T>
-std::vector<ContactSurface<T>>
-ProximityEngine<T>::ComputeContactSurfaces(
+std::vector<ContactSurface<T>> ProximityEngine<T>::ComputeContactSurfaces(
     const std::vector<GeometryId>& /* geometry_map */) const {
-  throw std::runtime_error(
-      "ComputeContactSurfaces() is not implemented yet.");
+  throw std::runtime_error("ComputeContactSurfaces() is not implemented yet.");
   // TODO(DamrongGuoy): Compute contact surfaces and remove the above throw.
+}
+
+template <typename T>
+std::vector<SortedPair<GeometryId>> ProximityEngine<T>::ComputeBroadPhase(
+    const std::vector<GeometryId>& geometry_map) const {
+  return impl_->ComputeBroadPhase(geometry_map);
 }
 
 template <typename T>

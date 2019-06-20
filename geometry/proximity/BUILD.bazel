@@ -13,6 +13,7 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "proximity",
     deps = [
+        ":broadphase_callback",
         ":collision_filter_legacy",
         ":contact_surface_calculator",
         ":distance_to_point",
@@ -22,6 +23,20 @@ drake_cc_package_library(
         ":mesh_field",
         ":proximity_utilities",
         ":volume_mesh",
+    ],
+)
+
+drake_cc_library(
+    name = "broadphase_callback",
+    hdrs = [
+        "broadphase_callback.h",
+    ],
+    deps = [
+        ":collision_filter_legacy",
+        ":proximity_utilities",
+        "//common:sorted_pair",
+        "@fcl",
+        "@fmt",
     ],
 )
 
@@ -36,6 +51,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "distance_to_point",
+    hdrs = ["distance_to_point.h"],
+    deps = [
+        ":proximity_utilities",
+        "//common:essential",
+        "//geometry:geometry_ids",
+        "//geometry/query_results:signed_distance_to_point",
+        "//math:geometric_transform",
+        "@fcl",
+    ],
+)
+
+drake_cc_library(
     name = "distance_to_point_with_gradient",
     srcs = ["distance_to_point_with_gradient.cc"],
     hdrs = ["distance_to_point_with_gradient.h"],
@@ -45,19 +73,6 @@ drake_cc_library(
         "//geometry:geometry_ids",
         "//geometry/query_results:signed_distance_to_point_with_gradient",
         "//math",
-        "@fcl",
-    ],
-)
-
-drake_cc_library(
-    name = "distance_to_point",
-    hdrs = ["distance_to_point.h"],
-    deps = [
-        ":proximity_utilities",
-        "//common:essential",
-        "//geometry:geometry_ids",
-        "//geometry/query_results:signed_distance_to_point",
-        "//math:geometric_transform",
         "@fcl",
     ],
 )
@@ -106,8 +121,8 @@ drake_cc_library(
     name = "make_unit_sphere_mesh",
     hdrs = ["make_unit_sphere_mesh.h"],
     deps = [
+        ":volume_mesh",
         "//common:essential",
-        "//geometry/proximity:volume_mesh",
     ],
 )
 
@@ -143,22 +158,27 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "broadphase_callback_test",
+    deps = [
+        ":broadphase_callback",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_surface_test",
+    deps = [
+        "//geometry:geometry_ids",
+        "//geometry/query_results:contact_surface",
+    ],
+)
+
+drake_cc_googletest(
     name = "distance_to_point_test",
     deps = [
         ":distance_to_point",
         "//common/test_utilities",
         "//geometry:utilities",
         "//math",
-    ],
-)
-
-drake_cc_googletest(
-    name = "distance_sphere_to_shape_test",
-    deps = [
-        ":distance_to_shape",
-        "//common/test_utilities",
-        "//geometry:utilities",
-        "//math:gradient",
     ],
 )
 
@@ -171,10 +191,12 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "contact_surface_test",
+    name = "distance_sphere_to_shape_test",
     deps = [
-        "//geometry:geometry_ids",
-        "//geometry/query_results:contact_surface",
+        ":distance_to_shape",
+        "//common/test_utilities",
+        "//geometry:utilities",
+        "//math:gradient",
     ],
 )
 
