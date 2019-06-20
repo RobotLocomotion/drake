@@ -213,3 +213,32 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEqual(str(tpl_1), "<unbound TemplateMethod DummyD.method>")
         tpl_2 = get_tpl_method()
         self.assertTrue(tpl_1 is tpl_2)
+
+    def test_call(self):
+        template = m.TemplateFunction("func")
+
+        def check_int(a):
+            if not isinstance(a, int):
+                # Mock pybind11 errors.
+                raise TypeError("incompatible function arguments: int")
+            return "int"
+
+        def check_float(a):
+            if not isinstance(a, float):
+                # Mock pybind11 errors.
+                raise TypeError("incompatible function arguments: float")
+            return "float"
+
+        template.add_instantiation(int, check_int)
+        template.add_instantiation(float, check_float)
+
+        with self.assertRaises(TypeError) as cm:
+            template()
+        self.assertIn("without argument", str(cm.exception))
+
+        self.assertEqual(template(0), "int")
+        self.assertEqual(template(0.), "float")
+        with self.assertRaises(TypeError) as cm:
+            template("hello")
+        self.assertIn(
+            "incompatible function arguments for template", str(cm.exception))
