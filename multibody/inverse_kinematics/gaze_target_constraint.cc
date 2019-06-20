@@ -68,8 +68,8 @@ GazeTargetConstraint::GazeTargetConstraint(
 }
 
 template <typename T>
-void EvalConstraintGradient(const MultibodyPlant<T>&,
-                            const systems::Context<T>&, const Frame<T>&,
+void EvalConstraintGradient(const systems::Context<T>&,
+                            const MultibodyPlant<T>&, const Frame<T>&,
                             const Frame<T>&, const Eigen::Vector3d&,
                             const Eigen::Vector3d&, const Vector3<T>&, const T&,
                             const Vector2<T>& g,
@@ -79,8 +79,8 @@ void EvalConstraintGradient(const MultibodyPlant<T>&,
 }
 
 void EvalConstraintGradient(
-    const MultibodyPlant<double>& plant,
-    const systems::Context<double>& context, const Frame<double>& frameA,
+    const systems::Context<double>& context,
+    const MultibodyPlant<double>& plant, const Frame<double>& frameA,
     const Frame<double>& frameB, const Eigen::Vector3d& p_BT,
     const Eigen::Vector3d& n_A,
     const Eigen::Vector3d& cos_cone_half_angle_squared_times_p,
@@ -129,7 +129,7 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
   const Vector2<T> g{
       p_dot_n,
       p_dot_n * p_dot_n - cos_cone_half_angle_squared_times_p.dot(p_ST_A)};
-  EvalConstraintGradient(plant, *context, frameA, frameB, p_BT, n_A,
+  EvalConstraintGradient(*context, plant, frameA, frameB, p_BT, n_A,
                          cos_cone_half_angle_squared_times_p, p_dot_n, g, x, y);
 }
 
