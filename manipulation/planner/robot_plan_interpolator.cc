@@ -55,8 +55,7 @@ RobotPlanInterpolator::RobotPlanInterpolator(
     const std::string& model_path, const InterpolatorType interp_type,
     double update_interval)
     : plan_input_port_(this->DeclareAbstractInputPort(
-          systems::kUseDefaultName,
-          Value<robot_plan_t>()).get_index()),
+          "plan", Value<robot_plan_t>()).get_index()),
       interp_type_(interp_type) {
   multibody::Parser(&plant_).AddModelFromFile(model_path);
 
@@ -97,12 +96,12 @@ RobotPlanInterpolator::RobotPlanInterpolator(
   const int num_pv = plant_.num_positions() + plant_.num_velocities();
 
   state_output_port_ =
-      this->DeclareVectorOutputPort(
+      this->DeclareVectorOutputPort("state",
               systems::BasicVector<double>(num_pv),
               &RobotPlanInterpolator::OutputState)
           .get_index();
   acceleration_output_port_ =
-      this->DeclareVectorOutputPort(
+      this->DeclareVectorOutputPort("acceleration",
               systems::BasicVector<double>(plant_.num_velocities()),
               &RobotPlanInterpolator::OutputAccel)
           .get_index();
