@@ -87,8 +87,11 @@ TEST_F(IiwaKinematicConstraintTest, GazeTargetConstraint) {
     dq(i, 0) = i * 2 + 1;
     dq(i, 1) = std::sin(i + 0.2);
   }
+  /* tolerance for checking numerical gradient vs analytical gradient. The
+   * numerical gradient is only accurate up to 1E-6 */
+  const double gradient_tol = 1E-6;
   TestKinematicConstraintEval(constraint, constraint_from_autodiff, q, dq,
-                              1E-6);
+                              gradient_tol);
 }
 
 TEST_F(TwoFreeBodiesConstraintTest, GazeTargetConstraint) {

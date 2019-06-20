@@ -48,20 +48,21 @@ class GazeTargetConstraint : public solvers::Constraint {
    * @throws std::invalid_argument if `cone_half_angle` ∉ [0, π/2].
    * @throws std::invalid_argument if `context` is nullptr.
    */
-  GazeTargetConstraint(
-      const MultibodyPlant<double>* const plant,
-      const Frame<double>& frameA,
-      const Eigen::Ref<const Eigen::Vector3d>& p_AS,
-      const Eigen::Ref<const Eigen::Vector3d>& n_A, const Frame<double>& frameB,
-      const Eigen::Ref<const Eigen::Vector3d>& p_BT, double cone_half_angle,
-      systems::Context<double>* context);
+  GazeTargetConstraint(const MultibodyPlant<double>* plant,
+                       const Frame<double>& frameA,
+                       const Eigen::Ref<const Eigen::Vector3d>& p_AS,
+                       const Eigen::Ref<const Eigen::Vector3d>& n_A,
+                       const Frame<double>& frameB,
+                       const Eigen::Ref<const Eigen::Vector3d>& p_BT,
+                       double cone_half_angle,
+                       systems::Context<double>* context);
 
   /**
    * Overloaded constructor.
    * Construct from MultibodyPlant<AutoDiffXd> instead of
    * MultibodyPlant<double>.
    */
-  GazeTargetConstraint(const MultibodyPlant<AutoDiffXd>* const plant,
+  GazeTargetConstraint(const MultibodyPlant<AutoDiffXd>* plant,
                        const Frame<AutoDiffXd>& frameA,
                        const Eigen::Ref<const Eigen::Vector3d>& p_AS,
                        const Eigen::Ref<const Eigen::Vector3d>& n_A,

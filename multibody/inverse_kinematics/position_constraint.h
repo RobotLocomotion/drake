@@ -37,7 +37,7 @@ class PositionConstraint : public solvers::Constraint {
    * @throws std::invalid_argument if `plant` is nullptr.
    * @throws std::invalid_argument if `context` is nullptr.
    */
-  PositionConstraint(const MultibodyPlant<double>* const plant,
+  PositionConstraint(const MultibodyPlant<double>* plant,
                      const Frame<double>& frameA,
                      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
                      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
@@ -50,7 +50,7 @@ class PositionConstraint : public solvers::Constraint {
    * (using MultibodyPlant<double> and Context<double>. Except the gradient of
    * the constraint is computed from autodiff.
    */
-  PositionConstraint(const MultibodyPlant<AutoDiffXd>* const plant,
+  PositionConstraint(const MultibodyPlant<AutoDiffXd>* plant,
                      const Frame<AutoDiffXd>& frameA,
                      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
                      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,

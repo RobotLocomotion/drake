@@ -43,18 +43,19 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
    * @throws std::invalid_argument if `angle_upper` ∉ [`angle_lower`, π].
    * @throws std::invalid_argument if `context` is nullptr.
    */
-  AngleBetweenVectorsConstraint(
-      const MultibodyPlant<double>* const plant,
-      const Frame<double>& frameA, const Eigen::Ref<const Eigen::Vector3d>& a_A,
-      const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& b_B,
-      double angle_lower, double angle_upper,
-      systems::Context<double>* context);
+  AngleBetweenVectorsConstraint(const MultibodyPlant<double>* plant,
+                                const Frame<double>& frameA,
+                                const Eigen::Ref<const Eigen::Vector3d>& a_A,
+                                const Frame<double>& frameB,
+                                const Eigen::Ref<const Eigen::Vector3d>& b_B,
+                                double angle_lower, double angle_upper,
+                                systems::Context<double>* context);
 
   /**
    * Overloaded constructor. Use MultibodyPlant<AutoDiffXd> instead of
    * MultibodyPlant<double>.
    */
-  AngleBetweenVectorsConstraint(const MultibodyPlant<AutoDiffXd>* const plant,
+  AngleBetweenVectorsConstraint(const MultibodyPlant<AutoDiffXd>* plant,
                                 const Frame<AutoDiffXd>& frameA,
                                 const Eigen::Ref<const Eigen::Vector3d>& a_A,
                                 const Frame<AutoDiffXd>& frameB,
