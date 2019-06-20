@@ -16,6 +16,10 @@ drake_cc_library(
     name = "manipulator_move_joint_plan_eval_system",
     srcs = ["manipulator_move_joint_plan_eval_system.cc"],
     hdrs = ["manipulator_move_joint_plan_eval_system.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         "//attic/systems/controllers/plan_eval:plan_eval_base_system",
         "//lcmtypes:plan_eval_debug_info",
@@ -26,6 +30,10 @@ drake_cc_library(
     name = "manipulator_joint_space_controller",
     srcs = ["manipulator_joint_space_controller.cc"],
     hdrs = ["manipulator_joint_space_controller.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":manipulator_move_joint_plan_eval_system",
         "//attic/multibody/parsers",
@@ -42,6 +50,10 @@ drake_cc_library(
 drake_cc_googletest(
     name = "manipulator_joint_space_controller_test",
     srcs = ["test/manipulator_joint_space_controller_test.cc"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         "//attic/systems/controllers/qp_inverse_dynamics:test/iiwa.alias_groups",  # noqa
         "//attic/systems/controllers/qp_inverse_dynamics:test/iiwa.id_controller_config",  # noqa

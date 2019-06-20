@@ -3,6 +3,7 @@
 #include <string>
 
 #include "drake/systems/controllers/plan_eval/generic_plan.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/deprecated.h"
 
 namespace drake {
 namespace systems {
@@ -17,7 +18,8 @@ namespace plan_eval {
  * position gains to zero in the parameters passed to UpdateQpInput.
  */
 template <typename T>
-class ManipulatorMoveEndEffectorPlan : public GenericPlan<T> {
+class DRAKE_DEPRECATED_QPID ManipulatorMoveEndEffectorPlan
+    : public GenericPlan<T> {
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ManipulatorMoveEndEffectorPlan)
 
