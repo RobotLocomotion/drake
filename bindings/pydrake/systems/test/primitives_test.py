@@ -319,7 +319,7 @@ class TestGeneral(unittest.TestCase):
                             input_vec[i]))
 
         # Test demultiplexer with vector outputs.
-        demux = Demultiplexer(size=4, output_ports_sizes=2)
+        demux = Demultiplexer(size=4, output_ports_size=2)
         context = demux.CreateDefaultContext()
         self.assertEqual(demux.num_input_ports(), 1)
         self.assertEqual(demux.num_output_ports(), 2)
