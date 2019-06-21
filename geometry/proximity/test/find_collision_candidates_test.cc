@@ -1,4 +1,4 @@
-#include "drake/geometry/proximity/broadphase_callback.h"
+#include "drake/geometry/proximity/find_collision_candidates.h"
 
 #include <utility>
 #include <vector>
@@ -9,6 +9,7 @@
 namespace drake {
 namespace geometry {
 namespace internal {
+namespace find_collision_candidates {
 namespace {
 
 using fcl::Boxd;
@@ -18,7 +19,7 @@ using std::vector;
 
 // Confirms that the callback properly returns a sorted pair for the
 // corresponding geometry ids.
-GTEST_TEST(BroadphaseCallback, PairsProperlyFormed) {
+GTEST_TEST(Callback, PairsProperlyFormed) {
   // New ids are created in increasing order. Thus we know in which order they
   // are reported in a sorted pair.
   std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
@@ -36,16 +37,21 @@ GTEST_TEST(BroadphaseCallback, PairsProperlyFormed) {
   data_B.write_to(&box_B);
 
   vector<SortedPair<GeometryId>> pairs;
-  BroadphaseCallbackData data(&geometry_map, &collision_filter, &pairs);
-  BroadphaseCallback(&box_A, &box_B, &data);
+  CallbackData data(&geometry_map, &collision_filter, &pairs);
+  Callback(&box_A, &box_B, &data);
   ASSERT_EQ(pairs.size(), 1u);
-  // Order is guaranteed.
-  EXPECT_EQ(pairs[0].first(), geometry_map[0]);
-  EXPECT_EQ(pairs[0].second(), geometry_map[1]);
+  EXPECT_TRUE(pairs[0].first() < pairs[0].second());
+
+  // We verify that the order the callback receives it doesn't affect the order
+  // of the results.
+  pairs.clear();
+  Callback(&box_B, &box_A, &data);
+  ASSERT_EQ(pairs.size(), 1u);
+  EXPECT_TRUE(pairs[0].first() < pairs[0].second());
 }
 
 // This test verifies that the broad-phase callback respects filtering.
-GTEST_TEST(BroadphaseCallback, RespectsCollisionFilter) {
+GTEST_TEST(Callback, RespectsCollisionFilter) {
   std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
                                        GeometryId::get_new_id()};
   CollisionFilterLegacy collision_filter;
@@ -64,12 +70,13 @@ GTEST_TEST(BroadphaseCallback, RespectsCollisionFilter) {
   data_B.write_to(&box_B);
 
   vector<SortedPair<GeometryId>> pairs;
-  BroadphaseCallbackData data(&geometry_map, &collision_filter, &pairs);
-  BroadphaseCallback(&box_A, &box_B, &data);
+  CallbackData data(&geometry_map, &collision_filter, &pairs);
+  Callback(&box_A, &box_B, &data);
   EXPECT_EQ(pairs.size(), 0u);
 }
 
 }  // namespace
+}  // namespace find_collision_candidates
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake

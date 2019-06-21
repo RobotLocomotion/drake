@@ -186,7 +186,12 @@ class QueryObject {
 
   //@}
 
-  std::vector<SortedPair<GeometryId>> ComputeBroadPhase() const;
+  /** Applies a conservative culling mechanism to create a subset of all
+   possible geometry pairs based on non-zero intersections. A geometry pair
+   that is *absent* from the results is either a) culled by collision filters or
+   b) *known* to be separated. The  caller is responsible for confirming that
+   the remaining, unculled geometry pairs are *actually* in collision. */
+  std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
 
   //---------------------------------------------------------------------------
   // TODO(DamrongGuoy): Write a better documentation for Signed Distance

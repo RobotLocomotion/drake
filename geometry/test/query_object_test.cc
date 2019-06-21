@@ -188,7 +188,7 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   EXPECT_DEFAULT_ERROR(
       default_object->ComputeContactSurfaces());
       EXPECT_DEFAULT_ERROR(
-      default_object->ComputeBroadPhase());
+      default_object->FindCollisionCandidates());
   EXPECT_DEFAULT_ERROR(
       default_object->X_WF(FrameId::get_new_id()));
   EXPECT_DEFAULT_ERROR(

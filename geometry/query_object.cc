@@ -82,12 +82,13 @@ QueryObject<T>::ComputePointPairPenetration() const {
 }
 
 template <typename T>
-std::vector<SortedPair<GeometryId>> QueryObject<T>::ComputeBroadPhase() const {
+std::vector<SortedPair<GeometryId>> QueryObject<T>::FindCollisionCandidates()
+    const {
   ThrowIfNotCallable();
   // TODO(amcastro-tri): Modify this when the cache system is in place.
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
-  return state.ComputeBroadPhase();
+  return state.FindCollisionCandidates();
 }
 
 template <typename T>

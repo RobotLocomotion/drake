@@ -15,8 +15,9 @@
 namespace drake {
 namespace geometry {
 namespace internal {
+namespace find_collision_candidates {
 
-/** Supporting data for the broadphase callback (see BroadphaseCallback below).
+/** Supporting data for the broadphase callback (see Callback below).
    It includes:
 
     - A map from GeometryIndex to GeometryId (to facilitate reporting GeometryId
@@ -25,17 +26,17 @@ namespace internal {
     - A vector of geometry pairs -- each pair of geometries are possibly in
       contact.
  */
-struct BroadphaseCallbackData {
+struct CallbackData {
   /** Constructs the fully-specified callback data. The values are as described
    in the class documentation. The parameters are all aliased in the data and
-   must remain valid at least as long as the %BroadphaseCallbackData instance.
+   must remain valid at least as long as the %CallbackData instance.
 
    @param geometry_map_in         The index -> id map. Aliased.
    @param collision_filter_in     The collision filter system. Aliased.
    @param pairs_in                The output results. Aliased.  */
-  BroadphaseCallbackData(const std::vector<GeometryId>* geometry_map_in,
-                         const CollisionFilterLegacy* collision_filter_in,
-                         std::vector<SortedPair<GeometryId>>* pairs_in)
+  CallbackData(const std::vector<GeometryId>* geometry_map_in,
+               const CollisionFilterLegacy* collision_filter_in,
+               std::vector<SortedPair<GeometryId>>* pairs_in)
       : geometry_map(*geometry_map_in),
         collision_filter(*collision_filter_in),
         pairs(*pairs_in) {
@@ -54,21 +55,21 @@ struct BroadphaseCallbackData {
   std::vector<SortedPair<GeometryId>>& pairs;
 };
 
-/** The callback function storing the geometry ids of two shapes identified as
- potentially being in contact by the broad-phase.
+/** The callback function that stores the geometry ids of two shapes identified
+ as potentially being in contact by the broad-phase.
 
  @param object_A_ptr    Pointer to the first object in the pair (the order has
                         no significance).
  @param object_B_ptr    Pointer to the second object in the pair (the order has
                         no significance).
- @param callback_data   Supporting data to compute the contact surface.
+ @param callback_data   Supporting data to find collision candidates.
  @returns False; the broadphase should *not* terminate its process.
   */
-bool BroadphaseCallback(fcl::CollisionObjectd* object_A_ptr,
-                        fcl::CollisionObjectd* object_B_ptr,
-                        // NOLINTNEXTLINE
-                        void* callback_data) {
-  auto& data = *static_cast<BroadphaseCallbackData*>(callback_data);
+bool Callback(fcl::CollisionObjectd* object_A_ptr,
+              fcl::CollisionObjectd* object_B_ptr,
+              // NOLINTNEXTLINE
+              void* callback_data) {
+  auto& data = *static_cast<CallbackData*>(callback_data);
 
   const EncodedData encoding_a(*object_A_ptr);
   const EncodedData encoding_b(*object_B_ptr);
@@ -84,6 +85,7 @@ bool BroadphaseCallback(fcl::CollisionObjectd* object_A_ptr,
   return false;
 }
 
+}  // namespace find_collision_candidates
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake

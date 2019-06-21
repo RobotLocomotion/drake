@@ -13,12 +13,12 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "proximity",
     deps = [
-        ":broadphase_callback",
         ":collision_filter_legacy",
         ":contact_surface_calculator",
         ":distance_to_point",
         ":distance_to_point_with_gradient",
         ":distance_to_shape",
+        ":find_collision_candidates",
         ":make_unit_sphere_mesh",
         ":mesh_field",
         ":proximity_utilities",
@@ -27,9 +27,9 @@ drake_cc_package_library(
 )
 
 drake_cc_library(
-    name = "broadphase_callback",
+    name = "find_collision_candidates",
     hdrs = [
-        "broadphase_callback.h",
+        "find_collision_candidates.h",
     ],
     deps = [
         ":collision_filter_legacy",
@@ -158,9 +158,9 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "broadphase_callback_test",
+    name = "find_collision_candidates_test",
     deps = [
-        ":broadphase_callback",
+        ":find_collision_candidates",
     ],
 )
 
