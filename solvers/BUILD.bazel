@@ -990,6 +990,7 @@ drake_cc_library(
         "//conditions:default": [
             "csdp_solver.cc",
             "csdp_solver_common.cc",
+            "csdp_solver_internal.cc",
         ],
         "//tools:no_csdp": [
             "no_csdp.cc",
@@ -1177,6 +1178,27 @@ drake_cc_googletest(
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
         "@spruce",
+    ],
+)
+
+drake_cc_googletest(
+    name = "csdp_solver_internal_test",
+    deps = [
+        ":csdp_solver",
+        ":csdp_test_examples",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "csdp_solver_test",
+    deps = [
+        ":csdp_solver",
+        ":csdp_test_examples",
+        ":linear_program_examples",
+        ":second_order_cone_program_examples",
+        ":semidefinite_program_examples",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -1705,6 +1727,7 @@ add_lint_tests(cpplint_extra_srcs = [
     "csdp_solver.cc",
     "csdp_solver_common.cc",
     "csdp_solver_internal.h",
+    "csdp_solver_internal.cc",
     "fast_qp.h",
     "gurobi_qp.h",
     "gurobi_solver.cc",
