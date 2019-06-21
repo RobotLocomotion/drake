@@ -94,6 +94,14 @@ class FreeSpheresAndBoxes {
     return ground_friction_;
   }
 
+  const std::vector<BodyIndex>& sphere_body_indices() const {
+    return sphere_body_indices_;
+  }
+
+  const std::vector<BodyIndex>& box_body_indices() const {
+    return box_body_indices_;
+  }
+
  private:
   const std::vector<SphereSpecification> spheres_;
   const std::vector<BoxSpecification> boxes_;
@@ -101,6 +109,8 @@ class FreeSpheresAndBoxes {
   std::vector<geometry::GeometryId> sphere_geometry_ids_;
   std::vector<geometry::GeometryId> box_geometry_ids_;
   geometry::GeometryId ground_geometry_id_;
+  std::vector<multibody::BodyIndex> sphere_body_indices_;
+  std::vector<multibody::BodyIndex> box_body_indices_;
   std::unique_ptr<systems::Diagram<T>> diagram_;
   MultibodyPlant<T>* plant_{nullptr};
   geometry::SceneGraph<T>* scene_graph_{nullptr};
