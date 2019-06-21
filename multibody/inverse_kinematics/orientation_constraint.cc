@@ -22,8 +22,7 @@ OrientationConstraint::OrientationConstraint(
       R_BbarB_{R_BbarB},
       context_double_(context),
       plant_autodiff_{nullptr},
-      context_autodiff_{nullptr},
-      use_autodiff_{false} {
+      context_autodiff_{nullptr} {
   if (context == nullptr) throw std::invalid_argument("context is nullptr.");
   if (theta_bound < 0) {
     throw std::invalid_argument(
@@ -47,29 +46,28 @@ OrientationConstraint::OrientationConstraint(
       R_BbarB_{R_BbarB},
       context_double_(nullptr),
       plant_autodiff_{plant},
-      context_autodiff_{context},
-      use_autodiff_{true} {
+      context_autodiff_{context} {
   if (context == nullptr) throw std::invalid_argument("context is nullptr.");
   if (theta_bound < 0) {
     throw std::invalid_argument(
         "OrientationConstraint: theta_bound should be non-negative.\n");
   }
 }
-template <typename T, typename S>
-void EvalConstraintGradient(const MultibodyPlant<T>&,
-                            const systems::Context<T>&, const Frame<T>&,
+
+template <typename T>
+void EvalConstraintGradient(const systems::Context<T>&,
+                            const MultibodyPlant<T>&, const Frame<T>&,
                             const Frame<T>&,
                             const math::RotationMatrix<double>&,
                             const Matrix3<T>& R_AB, const Vector3<T>&,
-                            const Eigen::Ref<const VectorX<S>>&,
-                            VectorX<S>* y) {
+                            const Eigen::Ref<const VectorX<T>>&,
+                            VectorX<T>* y) {
   (*y)(0) = R_AB.trace();
 }
 
-template <>
-void EvalConstraintGradient<double, AutoDiffXd>(
-    const MultibodyPlant<double>& plant,
-    const systems::Context<double>& context, const Frame<double>& frameAbar,
+void EvalConstraintGradient(
+    const systems::Context<double>& context,
+    const MultibodyPlant<double>& plant, const Frame<double>& frameAbar,
     const Frame<double>& frameBbar, const math::RotationMatrix<double>& R_AbarA,
     const Matrix3<double>& R_AB, const Vector3<double>& r_AB,
     const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) {
@@ -126,13 +124,13 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
       R_AbarA.inverse().matrix() * R_AbarBbar * R_BbarB.matrix();
   const Vector3<T> r_AB{R_AB(1, 2) - R_AB(2, 1), R_AB(2, 0) - R_AB(0, 2),
                         R_AB(0, 1) - R_AB(1, 0)};
-  EvalConstraintGradient(plant, *context, frameAbar, frameBbar, R_AbarA, R_AB,
+  EvalConstraintGradient(*context, plant, frameAbar, frameBbar, R_AbarA, R_AB,
                          r_AB, x, y);
 }
 
 void OrientationConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                                    Eigen::VectorXd* y) const {
-  if (use_autodiff_) {
+  if (use_autodiff()) {
     AutoDiffVecXd y_t;
     Eval(math::initializeAutoDiff(x), &y_t);
     *y = math::autoDiffToValueMatrix(y_t);
@@ -144,7 +142,7 @@ void OrientationConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
 
 void OrientationConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                                    AutoDiffVecXd* y) const {
-  if (use_autodiff_) {
+  if (use_autodiff()) {
     DoEvalGeneric(*plant_autodiff_, context_autodiff_, frameAbar_index_,
                   frameBbar_index_, R_AbarA_, R_BbarB_, x, y);
   } else {

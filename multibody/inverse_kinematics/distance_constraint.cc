@@ -26,8 +26,7 @@ DistanceConstraint::DistanceConstraint(
       plant_context_double_{plant_context},
       geometry_pair_{std::move(geometry_pair)},
       plant_autodiff_{nullptr},
-      plant_context_autodiff_{nullptr},
-      use_autodiff_{false} {
+      plant_context_autodiff_{nullptr} {
   CheckPlantIsConnectedToSceneGraph(*plant_double_, *plant_context_double_);
 }
 
@@ -42,16 +41,15 @@ DistanceConstraint::DistanceConstraint(
       plant_context_double_{nullptr},
       geometry_pair_{std::move(geometry_pair)},
       plant_autodiff_{plant},
-      plant_context_autodiff_{plant_context},
-      use_autodiff_{true} {
+      plant_context_autodiff_{plant_context} {
   CheckPlantIsConnectedToSceneGraph(*plant_autodiff_, *plant_context_autodiff_);
 }
 
 template <typename T, typename S>
-void EvalGeneric(const MultibodyPlant<T>& plant,
-                 const SortedPair<geometry::GeometryId>& geometry_pair,
-                 systems::Context<T>* context,
-                 const Eigen::Ref<const VectorX<S>>& x, VectorX<S>* y) {
+void EvalDistance(const MultibodyPlant<T>& plant,
+                  const SortedPair<geometry::GeometryId>& geometry_pair,
+                  systems::Context<T>* context,
+                  const Eigen::Ref<const VectorX<S>>& x, VectorX<S>* y) {
   y->resize(1);
   internal::UpdateContextConfiguration(context, plant, x);
   const auto& query_port = plant.get_geometry_query_input_port();
@@ -98,12 +96,12 @@ void EvalGeneric(const MultibodyPlant<T>& plant,
 template <typename T>
 void DistanceConstraint::DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x,
                                        VectorX<T>* y) const {
-  if (use_autodiff_) {
-    EvalGeneric<AutoDiffXd, T>(*plant_autodiff_, geometry_pair_,
-                               plant_context_autodiff_, x, y);
+  if (use_autodiff()) {
+    EvalDistance<AutoDiffXd, T>(*plant_autodiff_, geometry_pair_,
+                                plant_context_autodiff_, x, y);
   } else {
-    EvalGeneric<double, T>(*plant_double_, geometry_pair_,
-                           plant_context_double_, x, y);
+    EvalDistance<double, T>(*plant_double_, geometry_pair_,
+                            plant_context_double_, x, y);
   }
 }
 

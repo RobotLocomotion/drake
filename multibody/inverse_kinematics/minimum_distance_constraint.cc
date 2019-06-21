@@ -110,8 +110,7 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
       plant_double_{plant},
       plant_context_double_{plant_context},
       plant_autodiff_{nullptr},
-      plant_context_autodiff_{nullptr},
-      use_autodiff_{false} {
+      plant_context_autodiff_{nullptr} {
   Initialize(*plant_double_, plant_context_double_, minimum_distance,
              influence_distance_offset, penalty_function);
 }
@@ -126,8 +125,7 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
       plant_double_{nullptr},
       plant_context_double_{nullptr},
       plant_autodiff_{plant},
-      plant_context_autodiff_{plant_context},
-      use_autodiff_{true} {
+      plant_context_autodiff_{plant_context} {
   Initialize(*plant_autodiff_, plant_context_autodiff_, minimum_distance,
              influence_distance_offset, penalty_function);
 }
