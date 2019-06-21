@@ -25,6 +25,10 @@ namespace dev {
 /** An RGB-D camera system that provides RGB, depth, and label images using
  the geometry in the geometry::dev::SceneGraph.
 
+ @warning This is an old interface, with potentially ambiguous and outdated
+ terms. Please see `RgbdSensor` and `CameraInfo` for more modern
+ terminology.
+
  @system{RgbdCamera,
     @input_port{geometry_query},
     @output_port{color_image}

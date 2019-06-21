@@ -10,6 +10,10 @@ namespace render {
 
 // TODO(SeanCurtis-TRI): Allow for configuring the intrinsic matrix directly
 // with a projection matrix.
+// TODO(eric.cousineau): Make this have `CameraInfo` as a member, move that
+// class outside of `drake::systems`, and possibly rename this class, in order
+// to decouple generic pinhole parameters from Drake-specific render engine
+// information.
 /** The intrinsic properties for a render camera. The render system
  uses a reduced set of intrinsic parameters by making some simplifying
  assumptions:

@@ -29,7 +29,9 @@ namespace internal {
     PerceptionProperties (see accepting_properties() and
     rejecting_properties()).
  4. Records which poses have been updated via UpdatePoses() to validate which
-    RenderIndex values are updated and which aren't (and with what pose).  */
+    RenderIndex values are updated and which aren't (and with what pose).
+ 5. Records the camera pose provided to UpdateViewpoint() and report it with
+    last_updated_X_WC().  */
 class DummyRenderEngine final : public render::RenderEngine {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DummyRenderEngine);
@@ -42,7 +44,9 @@ class DummyRenderEngine final : public render::RenderEngine {
 
   /** @group No-op implementation of RenderEngine interface.  */
   //@{
-  void UpdateViewpoint(const math::RigidTransformd&) final {}
+  void UpdateViewpoint(const math::RigidTransformd& X_WC) final {
+    X_WC_ = X_WC;
+  }
   void RenderColorImage(const render::CameraProperties&, bool,
                         systems::sensors::ImageRgba8U*) const final {}
   void RenderDepthImage(const render::DepthCameraProperties&,
@@ -98,6 +102,8 @@ class DummyRenderEngine final : public render::RenderEngine {
     moved_index_ = index;
   }
 
+  const math::RigidTransformd& last_updated_X_WC() const { return X_WC_; }
+
   // Promote these to be public to facilitate testing.
   using RenderEngine::LabelFromColor;
   using RenderEngine::GetColorDFromLabel;
@@ -150,6 +156,9 @@ class DummyRenderEngine final : public render::RenderEngine {
 
   // The RenderIndex value to return on invocation of DoRemoveGeometry().
   optional<RenderIndex> moved_index_{};
+
+  // The last updated camera pose (defaults to identity).
+  math::RigidTransformd X_WC_;
 };
 
 }  // namespace internal

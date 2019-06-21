@@ -598,6 +598,20 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     return it->second;
   }
 
+  /// Reports if the indicated `output` is connected to the `input` port.
+  /// @pre the ports belong to systems that are direct children of this diagram.
+  bool AreConnected(const OutputPort<T>& output,
+                    const InputPort<T>& input) const {
+    InputPortLocator in{&input.get_system(), input.get_index()};
+    OutputPortLocator out{&output.get_system(), output.get_index()};
+
+    const auto range = connection_map_.equal_range(in);
+    for (auto iter = range.first; iter != range.second; ++iter) {
+      if (iter->second == out) return true;
+    }
+    return false;
+  }
+
  protected:
   /// Constructs an uninitialized Diagram. Subclasses that use this constructor
   /// are obligated to call DiagramBuilder::BuildInto(this).  Provides scalar-
