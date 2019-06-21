@@ -239,6 +239,9 @@ class BoxPlaneIntersectionTest : public ::testing::Test {
     box_B_ = std::make_unique<VolumeMesh<double>>(std::move(elements),
                                                   std::move(vertices));
     // Level set for a half-space.
+    // N.B. The "gradient" functor is not the true gradient of the level set
+    // function. We choose however a "more interesting" function for testing
+    // purposes.
     half_space_H_ = std::make_unique<LevelSetField<double>>(
         [](const Vector3<double>& p_HQ) { return p_HQ[2]; },
         [](const Vector3<double>& p_HQ) {
@@ -297,8 +300,8 @@ TEST_F(BoxPlaneIntersectionTest, ImminentContact) {
         CalcZeroLevelSetInMeshDomain(*box_B_, *half_space_H_, X_HB, e_b_,
                                      &e_b_surface, &level_set_gradient_H),
         std::logic_error,
-        "One or more faces of this tetrahedron are close to being a zero "
-        "crossing.*");
+        "One or more faces of this tetrahedron is close to being in the "
+        "zero.*");
   }
 
   // The box is on top of the plane by kEpsilon. Expect no intersection.
@@ -309,8 +312,8 @@ TEST_F(BoxPlaneIntersectionTest, ImminentContact) {
         CalcZeroLevelSetInMeshDomain(*box_B_, *half_space_H_, X_HB, e_b_,
                                      &e_b_surface, &level_set_gradient_H),
         std::logic_error,
-        "One or more faces of this tetrahedron are close to being a zero "
-        "crossing.*");
+        "One or more faces of this tetrahedron is close to being in the "
+        "zero.*");
   }
 }
 

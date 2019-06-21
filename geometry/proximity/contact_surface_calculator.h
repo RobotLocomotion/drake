@@ -1,5 +1,7 @@
 #pragma once
 
+// TODO(amcastro-tri): rename to something less generic.
+
 #include <array>
 #include <limits>
 #include <memory>
@@ -37,7 +39,9 @@ const std::array<Edge, 6> kEdges = {
 // set, these edges are the ones with a zero level set crossing. Edges are
 // numbered according to table kEdges. The edges have been ordered such that a
 // polygon formed by the intersection vertices visited in the same order has a
-// right-handed normal pointing in the direction of increasing "phi". See Figure
+// right-handed normal pointing in the direction of increasing "phi", and it can
+// be shown (through a lot of algebra) that the polygon is always planar (even
+// for arbitrary level set functions and a polygon with four sides). See Figure
 // 3 in [Bloomenthal, 1994] cited in the documentation for
 // CalcZeroLevelSetInMeshDomain() for details on the entries in this table. We
 // changed the order of the edges here so that they always form a closed
@@ -66,15 +70,20 @@ const std::array<std::vector<EdgeIndex>, 16> kMarchingTetsTable = {
 // a corresponding set of level set values at each vertex in `phi`, this
 // method computes a continuous triangulation of the zero level set surface
 // within the domain of the tetrahedron. With "continuous" we mean that small
-// perturbations to `phi` will only cause small perturbations on the location
-// of the resulting vertices.
-// The positions of the input vertices ``tet_vertices_N` are measured and
-// expressed in a frame N.
-// On return this method adds the new vertices and faces of the triangulation
-// into `vertices` and `faces`, respectively and returns the number of vertices
-// added. The first three "vertices" define the first face of the tetrahedron,
-// with its right-handed normal pointing towards the outside. The last vertex is
-// on the "negative side" of the first face.
+// perturbations to `phi` will not induce changes on the topology of the
+// triangulation. To be more precise, As the phi changes continuously the
+// topology remains fixed with the triangles themselves changing continuously.
+// When topoology changes (adding or removing triangles), the disappearing
+// triangle's area has first continuously gone to zero (and, conversely, the
+// newly added triangle's area has continuously increased from zero). The
+// positions of the input vertices `tet_vertices_N` are measured and expressed
+// in a frame N. On return this method adds the new vertices and faces of the
+// triangulation into `vertices_N` and `faces`, respectively and returns the
+// number of vertices added. The geometric interpretation of the tetrahedron is
+// described in the documentation for the parameter `tet_vertices_N`. Finally,
+// the input scalar field `e_m` evaluated at each vertex of the tetrahedron is
+// linearly interpolated for each new vertex in `vertices_N` and placed in
+// `e_m_surface`.
 //
 // @param[in] tet_vertices_N
 //   Vertices defining the tetrahedron. The first three vertices define the
@@ -94,8 +103,9 @@ const std::array<std::vector<EdgeIndex>, 16> kMarchingTetsTable = {
 //   The scalar field `e_m` linearly interpolated onto each new vertex in
 //   `vertices`, in the same order.
 // @returns The number of vertices added.
-// @note   The convention used by this private method is different from the
-// one used in VolumeMesh.
+// @note The convention used by this private method is different from the
+// one used in VolumeMesh. See the documentation in the VolumeMesh class for
+// details.
 // TODO(amcastro-tri): fix the case for when the zero level set is right in the
 // middle between two adjacent faces, which might lead to double counting.
 template <typename T>
@@ -116,8 +126,8 @@ int IntersectTetWithLevelSet(const std::array<Vector3<T>, 4>& tet_vertices_N,
   }
   if (num_zeros >= 3) {
     throw std::logic_error(
-        "One or more faces of this tetrahedron are close to being a zero "
-        "crossing level set, within machine precision. This situation could "
+        "One or more faces of this tetrahedron is close to being in the zero "
+        "level set, within machine precision. This situation could "
         "lead to double counting an interface between two neighboring "
         "tetrahedra. Often changing your initial conditions will mitigate this "
         "problem.");
@@ -212,6 +222,16 @@ int IntersectTetWithLevelSet(const std::array<Vector3<T>, 4>& tet_vertices_N,
 /// Given a level set function `φ(V)` and a volume defined by `mesh_M`, this
 /// method computes a triangulation of the zero level set of `φ(V)` in the
 /// volume defined by `mesh_M`.
+///
+/// This method produces a surface mesh that samples a scalar field defined on a
+/// volume mesh. The geometry of the surface mesh is implicitly defined by a
+/// function. The surface is the zero level set of the function within the
+/// domain of the volume mesh. The vertices of the surface lie on the zero level
+/// set and the normals at the vertices are the gradient of the level set at the
+/// vertex positions. Finally, each surface mesh vertex is associated with the
+/// value of the volume mesh field `e_m_volume` evaluated at the vertex
+/// position.
+///
 /// The resolution of the zero level set triangulation depends on the
 /// resolution of the initial volume mesh. That is, if we denote with h the
 /// typical length scale of a tetrahedral element, then the surface
