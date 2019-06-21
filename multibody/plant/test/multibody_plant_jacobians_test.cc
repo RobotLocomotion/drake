@@ -26,6 +26,51 @@ using test::KukaIiwaModelTests;
 
 namespace {
 
+// For one or more points Ei fixed on a body B, this method computes Jq_v_WEi_W,
+// Ei's translational velocity Jacobian in world W with respect to q̇.  However,
+// the way this calculation is performed is by forming the partial derivatives
+// of p_WoEi_W with respect to q, where p_WoEi_W is Ei's position vector from
+// Wo (world origin) expressed in W (world frame).
+void CalcJacobianViaPartialDerivativesOfPositionWithRespectToQ(
+    const MultibodyPlant<AutoDiffXd>& plant,
+    systems::Context<AutoDiffXd>* context,
+    const VectorX<double>& q_double,
+    const Frame<AutoDiffXd>& frame_E,
+    const Matrix3X<double>& p_EoEi_E_double,
+    MatrixX<double>* p_WoEi_W_deriv_wrt_q) {
+  const int num_positions = plant.num_positions();
+  const int kNumPoints = p_EoEi_E_double.cols();
+  DRAKE_THROW_UNLESS(p_WoEi_W_deriv_wrt_q != nullptr);
+  EXPECT_EQ(p_WoEi_W_deriv_wrt_q->rows(), 3 * kNumPoints);
+  EXPECT_EQ(p_WoEi_W_deriv_wrt_q->cols(), num_positions);
+  EXPECT_EQ(q_double.rows(), num_positions);
+  EXPECT_EQ(p_EoEi_E_double.rows(), 3);
+
+  // Initialize an array of variables q for subsequent partial differentiation
+  // and set q's values to match this system's generalized coordinate values.
+  VectorX<AutoDiffXd> q(num_positions);
+  math::initializeAutoDiff(q_double, q);
+  plant.GetMutablePositions(context) = q;
+
+  // Reserve space and then for each point Ei, calculate Ei's position from
+  // Wo (World origin), expressed in world W.
+  const Matrix3X<AutoDiffXd> p_EoEi_E = p_EoEi_E_double;
+  Matrix3X<AutoDiffXd> p_WoEi_W(3, kNumPoints);
+
+  // Create shortcuts to end-effector link frame E and world frame W.
+  const Frame<AutoDiffXd>& frame_W = plant.world_frame();
+  plant.CalcPointsPositions(*context, frame_E,  p_EoEi_E,   /* From frame E */
+                                      frame_W, &p_WoEi_W);  /* To frame W */
+
+  // Form the partial derivatives of p_WoEi_W with respect to q,
+  // evaluated at q's values.
+  *p_WoEi_W_deriv_wrt_q = math::autoDiffToGradientMatrix(p_WoEi_W);
+
+  // Ensure proper sizes for the matrix storing the partial derivatives.
+  EXPECT_EQ(p_WoEi_W_deriv_wrt_q->rows(), 3 * kNumPoints);
+  EXPECT_EQ(p_WoEi_W_deriv_wrt_q->cols(), num_positions);
+}
+
 TEST_F(KukaIiwaModelTests, FixtureInvariants) {
   // Sanity check basic invariants.
   // Seven dofs for the arm plus floating base.
@@ -126,37 +171,19 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityNonUnitQuaternion) {
                                             frame_W,
                                             &Jq_v_WEi_W);
 
-  // Alternatively, compute the analytic Jacobian by taking the gradient of
-  // the positions p_WoEi_W(q) with respect to the generalized positions. We do
-  // that with the steps below.
-
-  // Initialize q to have values qvalue and so that it is the independent
-  // variable of the problem.
-  VectorX<AutoDiffXd> q_autodiff(num_positions);
-  auto q_double = plant_->GetPositions(*context_);
-  math::initializeAutoDiff(q_double, q_autodiff);
-  plant_autodiff_->GetMutablePositions(context_autodiff_.get()) = q_autodiff;
-
-  const MatrixX<AutoDiffXd> p_EoEi_E_autodiff = p_EoEi_E;
-  MatrixX<AutoDiffXd> p_WoEi_W_autodiff(3, kNumPoints);
-
-  // Get position of Pi from Wo (world origin), expressed in W (world).
-  const Frame<AutoDiffXd>& frame_W_autodiff = plant_autodiff_->world_frame();
+  // Create shortcuts to end-effector link frame E and world frame W.
+  const Body<AutoDiffXd>& end_effector_autodiff =
+      plant_autodiff_->get_body(end_effector_link_->index());
   const Frame<AutoDiffXd>& frame_E_autodiff =
-      (plant_autodiff_->get_body(end_effector_link_->index())).body_frame();
-  plant_autodiff_->CalcPointsPositions(*context_autodiff_,
-      frame_E_autodiff, p_EoEi_E_autodiff,       /* From frame E */
-      frame_W_autodiff, &p_WoEi_W_autodiff);  /* To world frame W */
+      end_effector_autodiff.body_frame();
 
-  // Extract values and derivatives:
-  const Matrix3X<double> p_WoEi_W_value =
-      math::autoDiffToValueMatrix(p_WoEi_W_autodiff);
-  const MatrixX<double> p_WoEi_W_deriv_wrt_q =
-      math::autoDiffToGradientMatrix(p_WoEi_W_autodiff);
-
-  // Ensure proper sizes for the matrix storing the partial derivatives.
-  EXPECT_EQ(p_WoEi_W_deriv_wrt_q.rows(), 3 * kNumPoints);
-  EXPECT_EQ(p_WoEi_W_deriv_wrt_q.cols(), num_positions);
+  // Form the partial derivatives of p_WoEi_W with respect to q,
+  // evaluated at q's values.
+  const VectorX<double> q_double = plant_->GetPositions(*context_);
+  MatrixX<double> p_WoEi_W_deriv_wrt_q(3 * kNumPoints, num_positions);
+  CalcJacobianViaPartialDerivativesOfPositionWithRespectToQ(
+      *plant_, context_autodiff_.get(), q_double, frame_E_autodiff, p_EoEi_E,
+      &p_WoEi_W_deriv_wrt_q);
 
   // Verify the Jacobian Jq_v_WEi_W matches the one from auto-differentiation.
   const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
@@ -296,38 +323,19 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
                                             frame_W,
                                             &Jq_v_WEi_W);
 
-  // Since p_WoEi_W, Ei's position vector from Wo (world origin) expressed in
-  // W (world frame), is a function of generalized coordinates/positions q,
-  // an alternate calculation of Ei's translational velocity Jacobian in world W
-  // with respect to q̇ is by calculating the partial derivatives of p_WoEi_W
-  // with respect to q (generalized coordinates/positions).
-
-  // Initialize an array of variables q for subsequent partial differentiation
-  // and set q's values to match this system's generalized coordinate values.
-  VectorX<AutoDiffXd> q_autodiff(num_positions);
-  const VectorX<double> q_double = plant_->GetPositions(*context_);
-  math::initializeAutoDiff(q_double, q_autodiff);
-  plant_autodiff_->GetMutablePositions(context_autodiff_.get()) = q_autodiff;
-
-  // Reserve space and then for each point Ei, calculate Ei's position from
-  // Wo (World origin), expressed in world W.
-  const MatrixX<AutoDiffXd> p_EoEi_E_autodiff = p_EoEi_E;
-  Matrix3X<AutoDiffXd> p_WoEi_W_autodiff(3, kNumPoints);
-
   // Create shortcuts to end-effector link frame E and world frame W.
   const Body<AutoDiffXd>& end_effector_autodiff =
       plant_autodiff_->get_body(end_effector_link_->index());
   const Frame<AutoDiffXd>& frame_E_autodiff =
       end_effector_autodiff.body_frame();
-  const Frame<AutoDiffXd>& frame_W_autodiff = plant_autodiff_->world_frame();
-  plant_autodiff_->CalcPointsPositions(*context_autodiff_,
-                     frame_E_autodiff, p_EoEi_E_autodiff,    /* From frame E */
-                     frame_W_autodiff, &p_WoEi_W_autodiff);    /* To frame W */
 
   // Form the partial derivatives of p_WoEi_W with respect to q,
   // evaluated at q's values.
-  const MatrixX<double> p_WoEi_W_deriv_wrt_q =
-      math::autoDiffToGradientMatrix(p_WoEi_W_autodiff);
+  const VectorX<double> q_double = plant_->GetPositions(*context_);
+  MatrixX<double> p_WoEi_W_deriv_wrt_q(3 * kNumPoints, num_positions);
+  CalcJacobianViaPartialDerivativesOfPositionWithRespectToQ(
+      *plant_, context_autodiff_.get(), q_double, frame_E_autodiff, p_EoEi_E,
+      &p_WoEi_W_deriv_wrt_q);
 
   // Ensure proper sizes for the matrix storing the partial derivatives.
   EXPECT_EQ(p_WoEi_W_deriv_wrt_q.rows(), 3 * kNumPoints);
