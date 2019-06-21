@@ -62,13 +62,14 @@ class DistanceConstraint : public solvers::Constraint {
   void DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x,
                      VectorX<T>* y) const;
 
+  bool use_autodiff() const { return plant_autodiff_; }
+
   const MultibodyPlant<double>* plant_double_;
   systems::Context<double>* const plant_context_double_;
   SortedPair<geometry::GeometryId> geometry_pair_;
 
   const MultibodyPlant<AutoDiffXd>* const plant_autodiff_;
   systems::Context<AutoDiffXd>* plant_context_autodiff_;
-  const bool use_autodiff_;
 };
 }  // namespace multibody
 }  // namespace drake

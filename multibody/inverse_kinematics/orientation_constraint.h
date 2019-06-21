@@ -92,6 +92,8 @@ class OrientationConstraint : public solvers::Constraint {
         "variables.");
   }
 
+  bool use_autodiff() const { return plant_autodiff_; }
+
   const MultibodyPlant<double>* const plant_double_;
   const FrameIndex frameAbar_index_;
   const FrameIndex frameBbar_index_;
@@ -101,7 +103,6 @@ class OrientationConstraint : public solvers::Constraint {
 
   const MultibodyPlant<AutoDiffXd>* const plant_autodiff_;
   systems::Context<AutoDiffXd>* context_autodiff_;
-  bool use_autodiff_;
 };
 }  // namespace multibody
 }  // namespace drake

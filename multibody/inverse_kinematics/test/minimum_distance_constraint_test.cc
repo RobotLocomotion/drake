@@ -305,8 +305,11 @@ TEST_F(BoxSphereTest, Test) {
       dq(i, 0) = std::sin(i + 1);
       dq(i, 1) = 2 * i - 1;
     }
+    /* tolerance for checking numerical gradient vs analytical gradient. The
+     * numerical gradient is only accurate up to 5E-6 */
+    const double gradient_tol = 5E-6;
     TestKinematicConstraintEval(constraint, constraint_from_autodiff, q, dq,
-                                5E-6);
+                                gradient_tol);
   }
 }
 }  // namespace multibody

@@ -142,7 +142,6 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
   std::unique_ptr<solvers::MinimumValueConstraint> minimum_value_constraint_;
   const multibody::MultibodyPlant<AutoDiffXd>* const plant_autodiff_;
   systems::Context<AutoDiffXd>* const plant_context_autodiff_;
-  const bool use_autodiff_;
 };
 }  // namespace multibody
 }  // namespace drake
