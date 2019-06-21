@@ -78,6 +78,9 @@ class ZeroOrderHold final : public LeafSystem<T> {
     return LeafSystem<T>::get_output_port(0);
   }
 
+  /// Reports the period of this hold (in seconds).
+  double period() const { return period_sec_; }
+
   /// (Advanced) Manually sample the input port and copy ("latch") the value
   /// into the state. This emulates an update event and is mostly useful for
   /// testing.
