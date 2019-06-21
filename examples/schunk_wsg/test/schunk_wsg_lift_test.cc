@@ -446,15 +446,6 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
   const auto final_output_data =
       state_output->get_vector_data(plant_output_port)->get_value();
 
-  drake::log()->debug("Final state:");
-  const int num_movable_links = plant->get_num_positions();
-  for (int link_index = 0; link_index < num_movable_links; link_index++) {
-    drake::log()->debug("  {} {}: {} (v={})",
-                        link_index, tree.get_position_name(link_index),
-                        final_output_data[link_index],
-                        final_output_data[link_index + num_movable_links]);
-  }
-
   // Expect that the gripper is open (even though clamping force is
   // being applied).
   EXPECT_GT(final_output_data[
