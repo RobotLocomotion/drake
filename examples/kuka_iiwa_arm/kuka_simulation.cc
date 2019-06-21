@@ -95,17 +95,17 @@ int DoMain() {
   if (FLAGS_torque_control) {
     VectorX<double> stiffness, damping_ratio;
     SetTorqueControlledIiwaGains(&stiffness, &damping_ratio);
-    stiffness = stiffness.replicate(num_iiwa, 1);
-    damping_ratio = damping_ratio.replicate(num_iiwa, 1);
+    stiffness = stiffness.replicate(num_iiwa, 1).eval();
+    damping_ratio = damping_ratio.replicate(num_iiwa, 1).eval();
     controller = builder.AddController<KukaTorqueController<double>>(
         RigidBodyTreeConstants::kFirstNonWorldModelInstanceId, tree.Clone(),
         stiffness, damping_ratio);
   } else {
     VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
     SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
-    iiwa_kp = iiwa_kp.replicate(num_iiwa, 1);
-    iiwa_kd = iiwa_kd.replicate(num_iiwa, 1);
-    iiwa_ki = iiwa_ki.replicate(num_iiwa, 1);
+    iiwa_kp = iiwa_kp.replicate(num_iiwa, 1).eval();
+    iiwa_kd = iiwa_kd.replicate(num_iiwa, 1).eval();
+    iiwa_ki = iiwa_ki.replicate(num_iiwa, 1).eval();
     controller = builder.AddController<InverseDynamicsController<double>>(
         RigidBodyTreeConstants::kFirstNonWorldModelInstanceId, tree.Clone(),
         iiwa_kp, iiwa_ki, iiwa_kd,
