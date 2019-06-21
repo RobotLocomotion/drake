@@ -20,40 +20,6 @@ using systems::Context;
 namespace multibody {
 namespace internal {
 
-
-// A container that holds a SpatialForce pair that will be applied to two
-// bodies and supports operator overloads necessary for quadrature.
-template <typename T>
-class SpatialForcePair {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialForcePair)
-
-  SpatialForcePair() {
-    first.SetZero();
-    second.SetZero();
-  }
-
-  SpatialForcePair(const SpatialForce<T>& f1, const SpatialForce<T>& f2)
-      : first(f1), second(f2) {}
-
-  SpatialForcePair& operator+=(const SpatialForcePair& f) {
-    first += f.first;
-    second += f.second;
-    return *this;
-  }
-
-  template <typename Scalar>
-  SpatialForcePair operator*(const Scalar& s) const {
-    return SpatialForcePair(first * s, second * s);
-  }
-
-  SpatialForcePair operator+(const SpatialForcePair& f) const {
-    return SpatialForcePair(first + f.first, second + f.second);
-  }
-
-  SpatialForce<T> first, second;
-};
-
 template <typename T>
 HydroelasticTractionCalculator<T>::HydroelasticTractionCalculatorData::
     HydroelasticTractionCalculatorData(const Context<T>& context,
@@ -93,75 +59,78 @@ ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
     const ContactSurface<T>& surface,
     double dissipation, double mu_coulomb,
     SpatialForce<T>* F_Ao_W, SpatialForce<T>* F_Bo_W) const {
-  // Construct the HydroelasticTractionCalculatorData.
-  HydroelasticTractionCalculatorData data(context, plant, &surface);
+  DRAKE_DEMAND(F_Ao_W && F_Bo_W);
 
-  // Zero the spatial forces.
+  // Use a second-order Gaussian quadrature rule. This will be exact for linear
+  // and quadratic pressure fields. We don't expect anything higher order.
+  // TODO(sherm1) Consider 1st-order quadrature for linear pressure fields.
+  const GaussianTriangleQuadratureRule gaussian(2 /* order */);
+
+  // Collect kinematic data once.
+  const HydroelasticTractionCalculatorData data(context, plant, &surface);
+
+  // We'll be accumulating force on body A triangle-by-triangle. Start at zero.
   F_Ao_W->SetZero();
-  F_Bo_W->SetZero();
-
-  // Use a second-order Gaussian quadrature rule.
-  GaussianTriangleQuadratureRule gaussian(2 /* order */);
 
   // Integrate the tractions over all triangles in the contact surface.
   for (geometry::SurfaceFaceIndex i(0); i < surface.mesh().num_faces(); ++i) {
-    Vector3<T> p_WQ;
+    // Construct the function to be integrated over triangle i.
+    // TODO(sherm1) Pull functor creation out of the loop (not a good idea to
+    //              create a new functor for every i).
+    std::function<SpatialForce<T>(const Vector3<T>&)> traction =
+        [this, &data, i, dissipation,
+         mu_coulomb](const Vector3<T>& Q_barycentric) {
+          Vector3<T> p_WQ;
+          const Vector3<T> traction_Aq_W = CalcTractionAtPoint(
+              data, i, Q_barycentric, dissipation, mu_coulomb, &p_WQ);
+          return ComputeSpatialTractionAtAoFromTractionAtPoint(data, p_WQ,
+                                                               traction_Aq_W);
+        };
 
-    // Construct the function to be integrated.
-    std::function<SpatialForcePair<T>(const Vector3<T>&)> f = [this,
-         &data, &p_WQ, i, dissipation, mu_coulomb](
-            const Vector3<T>& Q_barycentric) {
-      const Vector3<T> traction_Aq_W = CalcTractionAtPoint(data, i,
-          Q_barycentric, dissipation, mu_coulomb, &p_WQ);
-      SpatialForcePair<T> F_W_pair;
-      ComputeSpatialForcesAtBodyOriginsFromTraction(
-          data, p_WQ, traction_Aq_W, &F_W_pair.first, &F_W_pair.second);
+    // Compute the integral over the triangle to get a force from the
+    // tractions (force/area) at the Gauss points.
+    const SpatialForce<T> Fi_Ao_W =  // Force from triangle i.
+        TriangleQuadrature<SpatialForce<T>, T>::Integrate(
+            traction, gaussian, surface.mesh().area(i));
 
-      return F_W_pair;
-    };
-
-    // Compute the integral over the triangle.
-    const SpatialForcePair<T> force_pair =
-        TriangleQuadrature<SpatialForcePair<T>, T>::Integrate(
-            f, gaussian, surface.mesh().area(i));
-
-    // Update the spatial forces.
-    (*F_Ao_W) += force_pair.first;
-    (*F_Bo_W) += force_pair.second;
+    // Update the spatial force at body A's origin.
+    (*F_Ao_W) += Fi_Ao_W;
   }
+
+  // The force on body B is equal and opposite to the force on body A, but we
+  // want it applied at B's origin so we need to shift it also.
+  const Vector3<T>& p_WAo = data.X_WA().translation();
+  const Vector3<T>& p_WBo = data.X_WB().translation();
+  const Vector3<T> p_AoBo_W = p_WBo - p_WAo;
+  *F_Bo_W = -(F_Ao_W->Shift(p_AoBo_W));
 }
 
-// Computes the spatial forces on the two bodies due to the traction at the
-// given contact point.
+// Computes the spatial force at the origin Ao of body A due to the traction at
+// the given contact point.
 // @param data computed once for each pair of geometries.
-// @param p_WQ the offset vector from the origin of the world frame to the
-//        contact point, expressed in the world frame.
+// @param p_WQ the position vector from the origin of the world frame to the
+//        contact point Q, expressed in the world frame.
 // @param traction_Aq_W the traction vector applied to Body A at Point Q,
-//        expressed in the world frame, where Body A is the body that
-//        `surface.M_id()` is attached to.
-// @param[out] F_Ao_W on return, the spatial force (due to the traction) that
-//             acts at the origin of the frame of Body A (i.e., that affixed to
-//             `surface.M_id()`).
-// @param[out] F_Bo_W on return, the spatial force (due to the traction) that
-//             acts at the origin of the frame of Body B (i.e., that affixed
-//             to `surface.N_id()`).
+//        expressed in the world frame, where Body A is the body to which
+//        `surface.M_id()` is fixed.
+// @retval F_Ao_W on return, the spatial traction acting at the origin of
+//         Body A resulting from the given traction at Q. (Body A is the one
+//         to which `surface.M_id()` is fixed.)
 template <typename T>
-void HydroelasticTractionCalculator<T>::
-    ComputeSpatialForcesAtBodyOriginsFromTraction(
-        const HydroelasticTractionCalculatorData& data,
-        const Vector3<T>& p_WQ, const Vector3<T>& traction_Aq_W,
-        SpatialForce<T>* F_Ao_W, SpatialForce<T>* F_Bo_W) const {
+SpatialForce<T> HydroelasticTractionCalculator<T>::
+    ComputeSpatialTractionAtAoFromTractionAtPoint(
+        const HydroelasticTractionCalculatorData& data, const Vector3<T>& p_WQ,
+        const Vector3<T>& traction_Aq_W) const {
   // Set the two vectors from the contact point to the two body frames, all
   // expressed in the world frame.
   const Vector3<T> p_QAo_W = data.X_WA().translation() - p_WQ;
-  const Vector3<T> p_QBo_W = data.X_WB().translation() - p_WQ;
 
-  // Convert the traction to a momentless-spatial force (i.e., without
-  // changing the point of application). This force will be applied to one
-  // body and the (negated) reaction force will be applied to the other.
-  SpatialForce<T> F_Q_W(Vector3<T>(0, 0, 0), traction_Aq_W);
-  *F_Ao_W = F_Q_W.Shift(p_QAo_W);
-  *F_Bo_W = (-F_Q_W).Shift(p_QBo_W);
+  // Convert the traction to a momentless-spatial traction (i.e., without
+  // changing the point of application), then shift to body A's origin which
+  // will add a moment.
+  const SpatialForce<T> F_Q_W(Vector3<T>(0, 0, 0), traction_Aq_W);
+  const SpatialForce<T> F_Ao_W = F_Q_W.Shift(p_QAo_W);
+  return F_Ao_W;  // Still a traction (force/area).
 }
 
 template <typename T>

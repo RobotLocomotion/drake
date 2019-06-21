@@ -68,8 +68,8 @@ public ::testing::TestWithParam<RigidTransform<double>> {
   // that the area of the triangle is 1m (assumption is only necessary to make
   // units consistent).
   void ComputeSpatialTractionsAtBodyOriginsFromHydroelasticModel(
-      double dissipation, double mu_coulomb,
-      SpatialForce<double>* F_Ao_W, SpatialForce<double>* F_Bo_W) {
+      double dissipation, double mu_coulomb, SpatialForce<double>* F_Ao_W,
+      SpatialForce<double>* F_Bo_W) {
     // Instantiate the traction calculator data.
     HydroelasticTractionCalculator<double>::HydroelasticTractionCalculatorData
         calculator_data(*plant_context_, *plant_, contact_surface_.get());
@@ -77,11 +77,11 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     // First compute the traction applied to Body A at point Q, expressed in the
     // world frame.
     Vector3<double> p_WQ;
-    const Vector3<double> traction_Aq_W = traction_calculator().
-        CalcTractionAtPoint(
+    const Vector3<double> traction_Aq_W =
+        traction_calculator().CalcTractionAtPoint(
             calculator_data, SurfaceFaceIndex(0),
-            SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0),
-            dissipation, mu_coulomb, &p_WQ);
+            SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0), dissipation,
+            mu_coulomb, &p_WQ);
 
     // Compute the expected point of contact in the world frame. The class
     // definition and SetUp() note that the parameter to this test transforms
@@ -91,11 +91,17 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     const Vector3<double> p_WQ_expected = X_WY * p_YQ;
 
     // Verify the point of contact.
-    for (int i = 0; i < 3; ++i)
-      ASSERT_NEAR(p_WQ[i], p_WQ_expected[i], eps());
+    for (int i = 0; i < 3; ++i) ASSERT_NEAR(p_WQ[i], p_WQ_expected[i], eps());
 
-    traction_calculator().ComputeSpatialForcesAtBodyOriginsFromTraction(
-        calculator_data, p_WQ, traction_Aq_W, F_Ao_W, F_Bo_W);
+    *F_Ao_W =
+        traction_calculator().ComputeSpatialTractionAtAoFromTractionAtPoint(
+            calculator_data, p_WQ, traction_Aq_W);
+
+    // Traction on body B is equal and opposite, but shift it to Bo.
+    const Vector3<double>& p_WAo = calculator_data.X_WA().translation();
+    const Vector3<double>& p_WBo = calculator_data.X_WB().translation();
+    const Vector3<double> p_AoBo_W = p_WBo - p_WAo;
+    *F_Bo_W = -(F_Ao_W->Shift(p_AoBo_W));
   }
 
   void SetBoxTranslationalVelocity(const Vector3<double>& v) {

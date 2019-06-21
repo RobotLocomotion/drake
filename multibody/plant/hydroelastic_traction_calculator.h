@@ -114,12 +114,10 @@ class HydroelasticTractionCalculator {
           Q_barycentric, double dissipation, double mu_coulomb,
       Vector3<T>* p_WQ) const;
 
-  void ComputeSpatialForcesAtBodyOriginsFromTraction(
+  multibody::SpatialForce<T> ComputeSpatialTractionAtAoFromTractionAtPoint(
       const HydroelasticTractionCalculatorData& data,
       const Vector3<T>& p_WQ,
-      const Vector3<T>& traction_Aq_W,
-      multibody::SpatialForce<T>* F_Ao_W,
-      multibody::SpatialForce<T>* F_Bo_W) const;
+      const Vector3<T>& traction_Aq_W) const;
 
   // The parameter (in m/s) for regularizing the Coulomb friction model.
   double vslip_regularizer_{1e-6};
