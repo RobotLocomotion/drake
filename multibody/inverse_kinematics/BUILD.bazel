@@ -81,6 +81,7 @@ drake_cc_library(
     deps = [
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
+        "//math:compute_numerical_gradient",
         "//math:gradient",
         "//multibody/benchmarks/kuka_iiwa_robot",
         "//multibody/parsing",

@@ -25,14 +25,17 @@ bool AreAutoDiffVecXdEqual(const Eigen::Ref<const AutoDiffVecXd>& a,
  * The intention is to avoid dirtying the computation cache, given it is
  * ticket-based rather than hash-based.
  */
-void UpdateContextConfiguration(
-    drake::systems::Context<double>* context,
-    const MultibodyPlant<double>& plant,
-    const Eigen::Ref<const VectorX<double>>& q);
+void UpdateContextConfiguration(drake::systems::Context<double>* context,
+                                const MultibodyPlant<double>& plant,
+                                const Eigen::Ref<const VectorX<double>>& q);
 
 void UpdateContextConfiguration(drake::systems::Context<double>* context,
                                 const MultibodyPlant<double>& plant,
                                 const Eigen::Ref<const VectorX<AutoDiffXd>>& q);
+
+void UpdateContextConfiguration(systems::Context<AutoDiffXd>* context,
+                                const MultibodyPlant<AutoDiffXd>& plant,
+                                const Eigen::Ref<const AutoDiffVecXd>& q);
 
 /**
  * Normalize an Eigen vector of doubles. This function is used in the
@@ -56,8 +59,12 @@ NormalizeVector(const Eigen::MatrixBase<DerivedA>& a) {
  * it points.
  * @throws std::invalid_argument if `plant` is nullptr.
  */
-const MultibodyPlant<double>& RefFromPtrOrThrow(
-    const MultibodyPlant<double>* const plant);
+template <typename T>
+const MultibodyPlant<T>& RefFromPtrOrThrow(
+    const MultibodyPlant<T>* const plant) {
+  if (plant == nullptr) throw std::invalid_argument("plant is nullptr.");
+  return *plant;
+}
 
 }  // namespace internal
 }  // namespace multibody
