@@ -16,6 +16,7 @@ drake_cc_package_library(
         ":contact_wrench",
         ":contact_wrench_evaluator",
         ":manipulator_equation_constraint",
+        ":sliding_friction_complementarity_constraint",
         ":static_equilibrium_constraint",
         ":static_equilibrium_problem",
         ":static_friction_cone_complementarity_constraint",
@@ -41,6 +42,20 @@ drake_cc_library(
         "//multibody/inverse_kinematics:kinematic_constraint",
         "//multibody/plant",
         "//solvers:evaluator_base",
+    ],
+)
+
+drake_cc_library(
+    name = "sliding_friction_complementarity_constraint",
+    srcs = ["sliding_friction_complementarity_constraint.cc"],
+    hdrs = ["sliding_friction_complementarity_constraint.h"],
+    deps = [
+        ":contact_wrench_evaluator",
+        "//geometry:scene_graph",
+        "//multibody/plant",
+        "//solvers:binding",
+        "//solvers:constraint",
+        "//solvers:mathematical_program_lite",
     ],
 )
 
@@ -185,6 +200,15 @@ drake_cc_googletest(
         "//math:compute_numerical_gradient",
         "//solvers:mathematical_program_lite",
         "//solvers:solve",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sliding_friction_complementarity_constraint_test",
+    deps = [
+        ":optimization_with_contact_utilities",
+        ":sliding_friction_complementarity_constraint",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

@@ -47,6 +47,7 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
   for (int i = 0; i < num_spheres; ++i) {
     const auto& sphere =
         plant_->AddRigidBody("sphere" + std::to_string(i), spheres_[i].inertia);
+    sphere_body_indices_.push_back(sphere.index());
     sphere_geometry_ids_.push_back(plant_->RegisterCollisionGeometry(
         sphere, math::RigidTransformd::Identity(),
         geometry::Sphere(spheres_[i].radius), "sphere" + std::to_string(i),
@@ -69,6 +70,7 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
           &(plant_->AddRigidBody("box" + std::to_string(i), boxes_[i].inertia));
       X_BBox = math::RigidTransformd::Identity();
     }
+    box_body_indices_.push_back(box_body->index());
     box_geometry_ids_.push_back(plant_->RegisterCollisionGeometry(
         *box_body, X_BBox,
         geometry::Box(boxes_[i].size(0), boxes_[i].size(1), boxes_[i].size(2)),
