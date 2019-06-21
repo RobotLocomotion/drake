@@ -154,7 +154,8 @@ void SolveProgramThroughNullspaceApproach(
   std::cout
       << "warning: the problem has free variables, and CSDP removes the free "
          "variables by computing the null space of linear constraint in the "
-         "dual space. This step can be time consuming.\n";
+         "dual space. This step can be time consuming. Consider to bound all "
+         "your variables, by either a lower bound or an upper bound. \n";
   Eigen::SparseMatrix<double> C_hat;
   std::vector<Eigen::SparseMatrix<double>> A_hat;
   Eigen::VectorXd rhs_hat, y_hat;
@@ -230,6 +231,13 @@ void SolveProgramThroughNullspaceApproach(
 void SolveProgramThroughTwoSlackVariablesApproach(
     const MathematicalProgram& prog, const SdpaFreeFormat& sdpa_free_format,
     MathematicalProgramResult* result) {
+  std::cout
+      << "warning: the problem has free variables, and CSDP removes the free "
+         "variables by introducing the slack variable y_plus >=0 , y_minus >= "
+         "0, and constraint y_plus - y_minus = free_variable. This can "
+         "introduce numerical problems to the solver. Consider to bound all "
+         "your decision variables, by either provide a lower bound or an upper "
+         "bound";
   std::vector<internal::BlockInX> X_hat_blocks = sdpa_free_format.X_blocks();
   X_hat_blocks.emplace_back(internal::BlockType::kDiagonal,
                             2 * sdpa_free_format.num_free_variables());

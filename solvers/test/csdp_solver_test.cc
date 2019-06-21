@@ -69,47 +69,59 @@ TEST_F(TrivialSDP1, Solve) {
     EXPECT_TRUE(CompareMatrices(result.GetSolution(X1_), X1_expected, tol));
   }
 }
-}  // namespace
+
+std::vector<CsdpSolver::RemoveFreeVariableMethod>
+GetRemoveFreeVariableMethods() {
+  return {CsdpSolver::RemoveFreeVariableMethod::kTwoSlackVariables,
+          CsdpSolver::kTwoSlackVariables};
+}
 
 TEST_F(LinearProgramBoundingBox1, Solve) {
-  CsdpSolver solver;
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(*prog_, {}, {}, &result);
-    EXPECT_TRUE(result.is_success());
-    const double tol = 1E-7;
-    EXPECT_NEAR(result.get_optimal_cost(), -43, tol);
-    Eigen::Matrix<double, 7, 1> x_expected;
-    x_expected << 0, 5, -1, 10, 5, 0, 1;
-    EXPECT_TRUE(
-        CompareMatrices(result.GetSolution(x_).head<7>(), x_expected, tol));
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      MathematicalProgramResult result;
+      solver.Solve(*prog_, {}, {}, &result);
+      EXPECT_TRUE(result.is_success());
+      const double tol = 2E-7;
+      EXPECT_NEAR(result.get_optimal_cost(), -43, tol);
+      Eigen::Matrix<double, 7, 1> x_expected;
+      x_expected << 0, 5, -1, 10, 5, 0, 1;
+      EXPECT_TRUE(
+          CompareMatrices(result.GetSolution(x_).head<7>(), x_expected, tol));
+    }
   }
 }
 
 TEST_F(CsdpLinearProgram2, Solve) {
-  CsdpSolver solver;
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(*prog_, {}, {}, &result);
-    EXPECT_TRUE(result.is_success());
-    const double tol = 1E-7;
-    EXPECT_NEAR(result.get_optimal_cost(), 28.0 / 13, tol);
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(x_),
-                                Eigen::Vector3d(5.0 / 13, -2.0 / 13, 9.0 / 13),
-                                tol));
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      MathematicalProgramResult result;
+      solver.Solve(*prog_, {}, {}, &result);
+      EXPECT_TRUE(result.is_success());
+      const double tol = 1E-7;
+      EXPECT_NEAR(result.get_optimal_cost(), 28.0 / 13, tol);
+      EXPECT_TRUE(
+          CompareMatrices(result.GetSolution(x_),
+                          Eigen::Vector3d(5.0 / 13, -2.0 / 13, 9.0 / 13), tol));
+    }
   }
 }
 
 TEST_F(CsdpLinearProgram3, Solve) {
-  CsdpSolver solver;
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(*prog_, {}, {}, &result);
-    EXPECT_TRUE(result.is_success());
-    const double tol = 1E-7;
-    EXPECT_NEAR(result.get_optimal_cost(), -121.0 / 9, tol);
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(x_),
-                                Eigen::Vector3d(10, -2.0 / 3, -17.0 / 9), tol));
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      MathematicalProgramResult result;
+      solver.Solve(*prog_, {}, {}, &result);
+      EXPECT_TRUE(result.is_success());
+      const double tol = 1E-7;
+      EXPECT_NEAR(result.get_optimal_cost(), -121.0 / 9, tol);
+      EXPECT_TRUE(CompareMatrices(result.GetSolution(x_),
+                                  Eigen::Vector3d(10, -2.0 / 3, -17.0 / 9),
+                                  tol));
+    }
   }
 }
 
@@ -128,90 +140,109 @@ TEST_F(TrivialSDP2, Solve) {
 }
 
 TEST_F(TrivialSOCP1, Solve) {
-  CsdpSolver solver;
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(*prog_, {}, {}, &result);
-    EXPECT_TRUE(result.is_success());
-    const double tol = 1E-7;
-    EXPECT_NEAR(result.get_optimal_cost(), -10, tol);
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(x_),
-                                Eigen::Vector3d(10, 0, 0), tol));
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      MathematicalProgramResult result;
+      solver.Solve(*prog_, {}, {}, &result);
+      EXPECT_TRUE(result.is_success());
+      const double tol = 1E-7;
+      EXPECT_NEAR(result.get_optimal_cost(), -10, tol);
+      EXPECT_TRUE(CompareMatrices(result.GetSolution(x_),
+                                  Eigen::Vector3d(10, 0, 0), tol));
+    }
   }
 }
 
 TEST_F(TrivialSOCP2, Solve) {
-  CsdpSolver solver;
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(*prog_, {}, {}, &result);
-    EXPECT_TRUE(result.is_success());
-    const double tol = 1.1E-5;
-    EXPECT_NEAR(result.get_optimal_cost(), -1, tol);
-    EXPECT_TRUE(
-        CompareMatrices(result.GetSolution(x_), Eigen::Vector2d(0, 1), tol));
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      MathematicalProgramResult result;
+      solver.Solve(*prog_, {}, {}, &result);
+      EXPECT_TRUE(result.is_success());
+      const double tol = 3.8E-5;
+      EXPECT_NEAR(result.get_optimal_cost(), -1, tol);
+      EXPECT_TRUE(
+          CompareMatrices(result.GetSolution(x_), Eigen::Vector2d(0, 1), tol));
+    }
   }
 }
 
 TEST_F(TrivialSOCP3, Solve) {
-  CsdpSolver solver;
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(*prog_, {}, {}, &result);
-    EXPECT_TRUE(result.is_success());
-    const double tol = 1.E-6;
-    EXPECT_NEAR(result.get_optimal_cost(), 2 - std::sqrt(7.1), tol);
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(x_),
-                                Eigen::Vector2d(-0.1, 2 - std::sqrt(7.1)),
-                                tol));
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      MathematicalProgramResult result;
+      solver.Solve(*prog_, {}, {}, &result);
+      EXPECT_TRUE(result.is_success());
+      const double tol = 1.E-6;
+      EXPECT_NEAR(result.get_optimal_cost(), 2 - std::sqrt(7.1), tol);
+      EXPECT_TRUE(CompareMatrices(result.GetSolution(x_),
+                                  Eigen::Vector2d(-0.1, 2 - std::sqrt(7.1)),
+                                  tol));
+    }
   }
 }
+}  // namespace
 
 namespace test {
 TEST_F(InfeasibleLinearProgramTest0, TestInfeasible) {
-  CsdpSolver solver;
-  if (solver.available()) {
-    auto result = solver.Solve(*prog_, {}, {});
-    EXPECT_EQ(result.get_solution_result(),
-              SolutionResult::kInfeasibleConstraints);
-    EXPECT_EQ(result.get_optimal_cost(),
-              MathematicalProgram::kGlobalInfeasibleCost);
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      auto result = solver.Solve(*prog_, {}, {});
+      EXPECT_EQ(result.get_solution_result(),
+                SolutionResult::kInfeasibleConstraints);
+      EXPECT_EQ(result.get_optimal_cost(),
+                MathematicalProgram::kGlobalInfeasibleCost);
+    }
   }
 }
 
 TEST_F(UnboundedLinearProgramTest0, TestUnbounded) {
-  CsdpSolver solver;
-  if (solver.available()) {
-    auto result = solver.Solve(*prog_, {}, {});
-    EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      auto result = solver.Solve(*prog_, {}, {});
+      EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
+    }
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, CommonLyapunov) {
-  CsdpSolver solver;
-  if (solver.available()) {
-    FindCommonLyapunov(solver, 1E-6);
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      FindCommonLyapunov(solver, 1E-6);
+    }
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
-  CsdpSolver solver;
-  if (solver.available()) {
-    FindOuterEllipsoid(solver, 1E-6);
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      FindOuterEllipsoid(solver, 1E-6);
+    }
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
-  CsdpSolver solver;
-  if (solver.available()) {
-    SolveEigenvalueProblem(solver, 1E-6);
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      SolveEigenvalueProblem(solver, 1E-6);
+    }
   }
 }
 
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
-  CsdpSolver solver;
-  if (solver.available()) {
-    SolveAndCheckSolution(solver, 1E-6);
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      SolveAndCheckSolution(solver, 1E-6);
+    }
   }
 }
 
@@ -219,9 +250,11 @@ INSTANTIATE_TEST_CASE_P(CsdpTest, TestEllipsoidsSeparation,
                         ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
 
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
-  CsdpSolver solver;
-  if (solver.available()) {
-    SolveAndCheckSolution(solver, 7E-5);
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      SolveAndCheckSolution(solver, 7E-5);
+    }
   }
 }
 
@@ -231,25 +264,31 @@ INSTANTIATE_TEST_CASE_P(
 
 GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem1) {
   MaximizeGeometricMeanTrivialProblem1 prob;
-  CsdpSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prob.prog(), {}, {});
-    prob.CheckSolution(result, 1E-6);
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      const auto result = solver.Solve(prob.prog(), {}, {});
+      prob.CheckSolution(result, 1E-6);
+    }
   }
 }
 
 GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
   MaximizeGeometricMeanTrivialProblem2 prob;
-  CsdpSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prob.prog(), {}, {});
-    prob.CheckSolution(result, 1E-6);
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      const auto result = solver.Solve(prob.prog(), {}, {});
+      prob.CheckSolution(result, 1E-6);
+    }
   }
 }
 
 GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
-  CsdpSolver solver;
-  SolveAndCheckSmallestEllipsoidCoveringProblems(solver, 1E-6);
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    SolveAndCheckSmallestEllipsoidCoveringProblems(solver, 1E-6);
+  }
 }
 }  // namespace test
 }  // namespace solvers
