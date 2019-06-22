@@ -64,12 +64,13 @@ public ::testing::TestWithParam<RigidTransform<double>> {
   double eps() const { return eps_; }
 
   // Computes the spatial tractions due to the hydroelastic model. This computes
-  // the spatial traction (in units of N) at Vertex 0 of Triangle 0 by assuming
-  // that the area of the triangle is 1m (assumption is only necessary to make
-  // units consistent).
+  // the spatial traction (in units of N/m²) at Vertex 0 of Triangle 0. We're
+  // using the SpatialForce data type to hold these tractions, but they are
+  // not forces. We'll use "Ft" rather than "F" here so we remember these are
+  // tractions.
   void ComputeSpatialTractionsAtBodyOriginsFromHydroelasticModel(
-      double dissipation, double mu_coulomb, SpatialForce<double>* F_Ao_W,
-      SpatialForce<double>* F_Bo_W) {
+      double dissipation, double mu_coulomb, SpatialForce<double>* Ft_Ao_W,
+      SpatialForce<double>* Ft_Bo_W) {
     // Instantiate the traction calculator data.
     HydroelasticTractionCalculator<double>::HydroelasticTractionCalculatorData
         calculator_data(*plant_context_, *plant_, contact_surface_.get());
@@ -93,7 +94,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     // Verify the point of contact.
     for (int i = 0; i < 3; ++i) ASSERT_NEAR(p_WQ[i], p_WQ_expected[i], eps());
 
-    *F_Ao_W =
+    *Ft_Ao_W =
         traction_calculator().ComputeSpatialTractionAtAoFromTractionAtPoint(
             calculator_data, p_WQ, traction_Aq_W);
 
@@ -101,7 +102,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     const Vector3<double>& p_WAo = calculator_data.X_WA().translation();
     const Vector3<double>& p_WBo = calculator_data.X_WB().translation();
     const Vector3<double> p_AoBo_W = p_WBo - p_WAo;
-    *F_Bo_W = -(F_Ao_W->Shift(p_AoBo_W));
+    *Ft_Bo_W = -(Ft_Ao_W->Shift(p_AoBo_W));
   }
 
   void SetBoxTranslationalVelocity(const Vector3<double>& v) {
@@ -214,14 +215,16 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, VanillaTraction) {
   const double mu_coulomb = 0.0;
 
   // Compute the spatial tractions at the origins of the body frames.
-  multibody::SpatialForce<double> F_Ao_W, F_Bo_W;
+  multibody::SpatialForce<double> Ft_Ao_W, Ft_Bo_W;
   ComputeSpatialTractionsAtBodyOriginsFromHydroelasticModel(
-      dissipation, mu_coulomb, &F_Ao_W, &F_Bo_W);
+      dissipation, mu_coulomb, &Ft_Ao_W, &Ft_Bo_W);
 
   // Re-express the spatial tractions in Y's frame for easy interpretability.
+  // Note that f and tau here are still tractions, so our notation is being
+  // misused a little here.
   const math::RotationMatrix<double>& R_WY = GetParam().rotation();
-  const Vector3<double> f_Bo_Y = R_WY.transpose() * F_Bo_W.translational();
-  const Vector3<double> tau_Bo_Y = R_WY.transpose() * F_Bo_W.rotational();
+  const Vector3<double> f_Bo_Y = R_WY.transpose() * Ft_Bo_W.translational();
+  const Vector3<double> tau_Bo_Y = R_WY.transpose() * Ft_Bo_W.rotational();
 
   // Check the spatial traction at p. We know that geometry M is the halfspace,
   // so we'll check the spatial traction for geometry N instead. Note that the
@@ -241,7 +244,7 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, VanillaTraction) {
 
   // The translational components of the two wrenches should be equal and
   // opposite.
-  EXPECT_NEAR((F_Bo_W.translational() + F_Ao_W.translational()).norm(),
+  EXPECT_NEAR((Ft_Bo_W.translational() + Ft_Ao_W.translational()).norm(),
       0, eps());
 }
 
@@ -257,13 +260,15 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithFriction) {
   SetBoxTranslationalVelocity(R_WY * Vector3<double>(1, 0, 0));
 
   // Compute the spatial tractions at the origins of the body frames.
-  multibody::SpatialForce<double> F_Ao_W, F_Bo_W;
+  multibody::SpatialForce<double> Ft_Ao_W, Ft_Bo_W;
   ComputeSpatialTractionsAtBodyOriginsFromHydroelasticModel(
-      dissipation, mu_coulomb, &F_Ao_W, &F_Bo_W);
+      dissipation, mu_coulomb, &Ft_Ao_W, &Ft_Bo_W);
 
   // Re-express the spatial tractions in Y's frame for easy interpretability.
-  const Vector3<double> f_Bo_Y = R_WY.transpose() * F_Bo_W.translational();
-  const Vector3<double> tau_Bo_Y = R_WY.transpose() * F_Bo_W.rotational();
+  // Note that f and tau here are still tractions, so our notation is being
+  // misused a little here.
+  const Vector3<double> f_Bo_Y = R_WY.transpose() * Ft_Bo_W.translational();
+  const Vector3<double> tau_Bo_Y = R_WY.transpose() * Ft_Bo_W.rotational();
 
   // Check the spatial traction at p. We know that geometry M is the halfspace,
   // so we'll check the spatial traction for geometry N instead. The coefficient
@@ -289,7 +294,7 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithFriction) {
 
   // The translational components of the two wrenches should be equal and
   // opposite.
-  EXPECT_NEAR((F_Bo_W.translational() + F_Ao_W.translational()).norm(),
+  EXPECT_NEAR((Ft_Bo_W.translational() + Ft_Ao_W.translational()).norm(),
       0, eps());
 }
 
@@ -315,13 +320,15 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
       damping_traction_magnitude;
 
   // Compute the spatial tractions at the origins of the body frames.
-  multibody::SpatialForce<double> F_Ao_W, F_Bo_W;
+  multibody::SpatialForce<double> Ft_Ao_W, Ft_Bo_W;
   ComputeSpatialTractionsAtBodyOriginsFromHydroelasticModel(
-      dissipation, mu_coulomb, &F_Ao_W, &F_Bo_W);
+      dissipation, mu_coulomb, &Ft_Ao_W, &Ft_Bo_W);
 
   // Re-express the spatial tractions in Y's frame for easy interpretability.
-  const Vector3<double> f_Bo_Y = R_WY.transpose() * F_Bo_W.translational();
-  const Vector3<double> tau_Bo_Y = R_WY.transpose() * F_Bo_W.rotational();
+  // Note that f and tau here are still tractions, so our notation is being
+  // misused a little here.
+  const Vector3<double> f_Bo_Y = R_WY.transpose() * Ft_Bo_W.translational();
+  const Vector3<double> tau_Bo_Y = R_WY.transpose() * Ft_Bo_W.rotational();
 
   // Check the spatial traction at p. We know that geometry M is the halfspace,
   // so we'll check the spatial traction for geometry N instead. The coefficient
@@ -342,7 +349,7 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
 
   // The translational components of the two wrenches should be equal and
   // opposite.
-  EXPECT_NEAR((F_Bo_W.translational() + F_Ao_W.translational()).norm(),
+  EXPECT_NEAR((Ft_Bo_W.translational() + Ft_Ao_W.translational()).norm(),
       0, eps());
 }
 
