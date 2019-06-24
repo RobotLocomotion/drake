@@ -586,37 +586,17 @@ class LeafSystem : public System<T> {
                                            std::move(abstract_params));
   }
 
+  /// (Deprecated.)  See @ref DeclareLeafOutputPort_feedthrough for how to
+  /// declare feedthrough without overriding this method.
+  //
   /// Returns true if there is direct-feedthrough from the given @p input_port
-  /// to the given @p output_port, false if there is not direct-feedthrough, or
-  /// nullopt if unknown (in which case SystemSymbolicInspector will attempt to
-  /// measure the feedthrough using symbolic form).
-  ///
-  /// By default, %LeafSystem assumes there is direct feedthrough of values
-  /// from every input to every output.
-  /// This is a conservative assumption that ensures we detect and can prevent
-  /// the formation of algebraic loops (implicit computations) in system
-  /// Diagrams. Systems which do not have direct feedthrough may override that
-  /// assumption in three ways:
-  ///
-  /// - When calling DeclareFooOutputPort, provide a non-default value to the
-  ///   prerequisites_of_calc argument.  When the prerequisites_of_calc implies
-  ///   no dependency on some inputs, the framework automatically infers that
-  ///   the output does is not direct-feedthrough for those inputs.
-  ///
-  /// - Override DoToSymbolic, allowing %LeafSystem to infer the sparsity
-  ///   from the symbolic equations. This method is typically preferred for
-  ///   systems that have a symbolic form, but should be avoided in certain
-  ///   corner cases where fully descriptive symbolic analysis is impossible,
-  ///   e.g., when the symbolic form depends on C++ native conditionals. For
-  ///   additional discussion, consult the documentation for
-  ///   SystemSymbolicInspector.
-  ///
-  /// - Override this function directly, reporting manual sparsity.  (This
-  ///   alternative is deprecated and is scheduled for removal.  Do not use
-  ///   it in new code.)  Manually configured
-  ///   sparsity must be conservative: if there is any Context for which an
-  ///   input port is direct-feedthrough to an output port, this function must
-  ///   return either true or nullopt for those two ports.
+  /// to the given @p output_port, false if there is not direct- feedthrough,
+  /// or nullopt if unknown.  Subclasses may override this method to report
+  /// manual sparsity, but overriding this method is deprecated and is
+  /// scheduled for removal; do not use it in new code.  Manually configured
+  /// sparsity must be conservative: if there is any Context for which an input
+  /// port is direct-feedthrough to an output port, this function must return
+  /// either true or nullopt.  By default, always returns nullopt.
   DRAKE_DEPRECATED("2019-08-01",
       "Instead of overriding this method, provide the prerequisites_of_calc "
       "argument to the DeclareFooOutputPort call.")
@@ -1705,6 +1685,46 @@ class LeafSystem : public System<T> {
   /// `kUseDefaultName` in which case a name like "y3" is
   /// automatically provided, where the number is the output port index. An
   /// empty name is not permitted.
+  ///
+  /// @anchor DeclareLeafOutputPort_feedthrough
+  /// <em><u>Direct feedthrough</u></em>
+  ///
+  /// The direct-feedthrough relation from input ports to output ports is
+  /// reported via methods such as System::HasDirectFeedthrough().
+  ///
+  /// By default, %LeafSystem assumes there is direct feedthrough of values
+  /// from every input to every output. This is a conservative assumption that
+  /// ensures we detect and can prevent the formation of algebraic loops
+  /// (implicit computations) in system Diagrams. Systems which do not have
+  /// direct feedthrough may override that assumption in either of two ways:
+  ///
+  /// (1) When declaring output ports (e.g., DeclareVectorOutputPort()),
+  /// provide a non-default value to the `prerequisites_of_calc` argument.
+  /// When `the prerequisites_of_calc` implies no dependency on some inputs,
+  /// the framework automatically infers that the output is not
+  /// direct-feedthrough for those inputs.  For example:
+  /// @code
+  /// PendulumPlant<T>::PendulumPlant() {
+  ///   // ...
+  ///   this->DeclareVectorOutputPort(
+  ///       "state", &PendulumPlant::CopyStateOut,
+  ///       {this->all_state_ticket()});
+  ///   // ...
+  /// }
+  /// @endcode
+  ///
+  /// See @ref DependencyTicket_documentation "Dependency tickets" for more
+  /// information about tickets, including a list of possible ticket options.
+  ///
+  /// (2) Add support for the symbolic::Expression scalar type, per
+  /// @ref system_scalar_conversion_how_to_write_a_system
+  /// "How to write a System that supports scalar conversion".
+  /// This allows the %LeafSystem to infer the sparsity from the symbolic
+  /// equations.
+  ///
+  /// Option 2 is a convenient default for simple systems that already support
+  /// symbolic::Expression, but option 1 should be preferred as the most direct
+  /// mechanism to control feedthrough reporting.
   //@{
 
   /// Declares a vector-valued output port by specifying (1) a model vector of
