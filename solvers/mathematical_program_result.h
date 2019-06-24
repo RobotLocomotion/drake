@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <typeinfo>
 #include <unordered_map>
@@ -85,11 +86,14 @@ class MathematicalProgramResult final {
   /**
    * Sets decision_variable_index mapping, that maps each decision variable to
    * its index in the aggregated vector containing all decision variables in
-   * MathematicalProgram.
+   * MathematicalProgram. Initialize x_val to NAN.
    */
   void set_decision_variable_index(
       std::unordered_map<symbolic::Variable::Id, int> decision_variable_index) {
     decision_variable_index_ = std::move(decision_variable_index);
+    x_val_ =
+        Eigen::VectorXd::Constant(decision_variable_index_->size(),
+                                  std::numeric_limits<double>::quiet_NaN());
   }
 
   /** Sets SolutionResult. */
