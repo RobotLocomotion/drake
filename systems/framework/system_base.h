@@ -218,6 +218,9 @@ class SystemBase : public internal::SystemMessageInterface {
   - 0 ≤ u < m,
   - 0 ≤ v < n,
   - and there _might_ be a direct feedthrough from input iᵤ to each output oᵥ.
+
+  See @ref DeclareLeafOutputPort_feedthrough "DeclareLeafOutputPort"
+  documentation for how leaf systems can report their feedthrough.
   */
   virtual std::multimap<int, int> GetDirectFeedthroughs() const = 0;
 
