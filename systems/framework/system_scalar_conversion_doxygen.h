@@ -63,6 +63,7 @@ For a more thorough example, refer to the implementation of
 drake::systems::Linearize.
 
 
+@anchor system_scalar_conversion_how_to_write_a_system
 <h2>How to write a System that supports scalar conversion</h2>
 
 In the typical case, Drake users' Systems should be marked with the C++ keyword
