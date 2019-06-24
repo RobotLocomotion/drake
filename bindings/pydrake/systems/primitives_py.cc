@@ -228,22 +228,11 @@ PYBIND11_MODULE(primitives, m) {
           &BarycentricMeshSystem<double>::get_output_values,
           doc.BarycentricMeshSystem.get_output_values.doc);
 
-  // Docs for typedef not being parsed.
-  py::class_<UniformRandomSource, LeafSystem<double>>(m, "UniformRandomSource")
-      .def(py::init<int, double>(), py::arg("num_outputs"),
-          py::arg("sampling_interval_sec"));
-
-  // Docs for typedef not being parsed.
-  py::class_<GaussianRandomSource, LeafSystem<double>>(
-      m, "GaussianRandomSource")
-      .def(py::init<int, double>(), py::arg("num_outputs"),
-          py::arg("sampling_interval_sec"));
-
-  // Docs for typedef not being parsed.
-  py::class_<ExponentialRandomSource, LeafSystem<double>>(
-      m, "ExponentialRandomSource")
-      .def(py::init<int, double>(), py::arg("num_outputs"),
-          py::arg("sampling_interval_sec"));
+  py::class_<RandomSource, LeafSystem<double>>(
+      m, "RandomSource", doc.RandomSource.doc)
+      .def(py::init<RandomDistribution, int, double>(), py::arg("distribution"),
+          py::arg("num_outputs"), py::arg("sampling_interval_sec"),
+          doc.RandomSource.ctor.doc);
 
   py::class_<TrajectorySource<double>, LeafSystem<double>>(
       m, "TrajectorySource", doc.TrajectorySource.doc)
@@ -289,6 +278,8 @@ PYBIND11_MODULE(primitives, m) {
       py_reference, doc.LogOutput.doc);
 
   // TODO(eric.cousineau): Add more systems as needed.
+
+  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake
