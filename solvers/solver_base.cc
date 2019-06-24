@@ -1,5 +1,6 @@
 #include "drake/solvers/solver_base.h"
 
+#include <limits>
 #include <utility>
 
 #include <fmt/format.h>
