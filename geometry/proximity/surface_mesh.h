@@ -165,7 +165,7 @@ class SurfaceMesh {
         total_area_(0.), p_MSc_(Vector3<T>::Zero()) {
     // Calculate areas and accumulate area-weighted surface centroid Sc.
     for (SurfaceFaceIndex f(0); f < faces_.size(); ++f) {
-      AccumulateAreaAndCentroidForFace(f);
+      AccumulateAreaAndCentroidFromFace(f);
     }
 
     // Finalize centroid.
@@ -219,7 +219,7 @@ class SurfaceMesh {
 
  private:
   // Evaluate area and centroid of a triangular face.
-  void AccumulateAreaAndCentroidForFace(SurfaceFaceIndex f);
+  void AccumulateAreaAndCentroidFromFace(SurfaceFaceIndex f);
 
   // The triangles that comprise the surface.
   std::vector<SurfaceFace> faces_;
@@ -232,12 +232,13 @@ class SurfaceMesh {
   std::vector<T> area_;
   T total_area_{};
 
-  // Area-weighted geometric centroid Sc of the surface mesh.
+  // Area-weighted geometric centroid Sc of the surface mesh as an offset vector
+  // from the origin of Frame M to point Sc, expressed in Frame M.
   Vector3<T> p_MSc_;
 };
 
 template <class T>
-void SurfaceMesh<T>::AccumulateAreaAndCentroidForFace(SurfaceFaceIndex f) {
+void SurfaceMesh<T>::AccumulateAreaAndCentroidFromFace(SurfaceFaceIndex f) {
   const SurfaceFace& face = faces_[f];
   const Vector3<T>& r_MA = vertices_[face.vertex(0)].r_MV();
   const Vector3<T>& r_MB = vertices_[face.vertex(1)].r_MV();
