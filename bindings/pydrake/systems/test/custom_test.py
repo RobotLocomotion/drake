@@ -227,7 +227,7 @@ class TestCustom(unittest.TestCase):
                 ]:
             self.assertIsInstance(func(arg), DependencyTicket, func)
 
-    def test_leaf_system_overrides(self):
+    def test_all_leaf_system_overrides(self):
         test = self
 
         class TrivialSystem(LeafSystem):
