@@ -112,6 +112,7 @@ drake_pybind_library(
         ":framework_py",
         ":module_py",
     ],
+    py_srcs = ["_primitives_extra.py"],
 )
 
 drake_pybind_library(
@@ -456,6 +457,7 @@ drake_py_unittest(
         ":primitives_py",
         ":test_util_py",
         "//bindings/pydrake:trajectories_py",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
     ],
 )
 
