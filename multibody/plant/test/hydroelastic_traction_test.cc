@@ -94,15 +94,18 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     // Verify the point of contact.
     for (int i = 0; i < 3; ++i) ASSERT_NEAR(p_WQ[i], p_WQ_expected[i], eps());
 
-    *Ft_Ao_W =
-        traction_calculator().ComputeSpatialTractionAtAoFromTractionAtPoint(
+    const SpatialForce<double> Ft_Ac_W =
+        traction_calculator().ComputeSpatialTractionAtAcFromTractionAtAq(
             calculator_data, p_WQ, traction_Aq_W);
 
-    // Traction on body B is equal and opposite, but shift it to Bo.
+    // Shift to body origins. Traction on body B is equal and opposite.
+    const Vector3<double>& p_WC = calculator_data.p_WC();
     const Vector3<double>& p_WAo = calculator_data.X_WA().translation();
     const Vector3<double>& p_WBo = calculator_data.X_WB().translation();
-    const Vector3<double> p_AoBo_W = p_WBo - p_WAo;
-    *Ft_Bo_W = -(Ft_Ao_W->Shift(p_AoBo_W));
+    const Vector3<double> p_CAo_W = p_WAo - p_WC;
+    const Vector3<double> p_CBo_W = p_WBo - p_WC;
+    *Ft_Ao_W = Ft_Ac_W.Shift(p_CAo_W);
+    *Ft_Bo_W = -(Ft_Ac_W.Shift(p_CBo_W));
   }
 
   void SetBoxTranslationalVelocity(const Vector3<double>& v) {

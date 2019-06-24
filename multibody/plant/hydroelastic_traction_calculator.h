@@ -76,6 +76,9 @@ class HydroelasticTractionCalculator {
     // Gets the ContactSurface passed to the data structure on construction.
     const geometry::ContactSurface<T>& surface() const { return surface_; }
 
+    // Gets the surface centroid C, measured and expressed in World.
+    const Vector3<T>& p_WC() const { return p_WC_; }
+
     // Gets the pose from Body A (the body that Geometry `surface.M_id()` in the
     // contact surface is affixed to) relative to the world frame.
     const math::RigidTransform<T>& X_WA() const { return X_WA_; }
@@ -100,6 +103,7 @@ class HydroelasticTractionCalculator {
 
    private:
     const geometry::ContactSurface<T>& surface_;
+    Vector3<T> p_WC_;
     math::RigidTransform<T> X_WM_;
     math::RigidTransform<T> X_WA_;
     math::RigidTransform<T> X_WB_;
@@ -110,13 +114,11 @@ class HydroelasticTractionCalculator {
   Vector3<T> CalcTractionAtPoint(
       const HydroelasticTractionCalculatorData& data,
       geometry::SurfaceFaceIndex face_index,
-      const typename geometry::SurfaceMesh<T>::Barycentric&
-          Q_barycentric, double dissipation, double mu_coulomb,
-      Vector3<T>* p_WQ) const;
+      const typename geometry::SurfaceMesh<T>::Barycentric& Q_barycentric,
+      double dissipation, double mu_coulomb, Vector3<T>* p_WQ) const;
 
-  multibody::SpatialForce<T> ComputeSpatialTractionAtAoFromTractionAtPoint(
-      const HydroelasticTractionCalculatorData& data,
-      const Vector3<T>& p_WQ,
+  multibody::SpatialForce<T> ComputeSpatialTractionAtAcFromTractionAtAq(
+      const HydroelasticTractionCalculatorData& data, const Vector3<T>& p_WQ,
       const Vector3<T>& traction_Aq_W) const;
 
   // The parameter (in m/s) for regularizing the Coulomb friction model.
