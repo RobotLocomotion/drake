@@ -76,6 +76,7 @@ void CheckStatistics(
 GTEST_TEST(RandomSourceTest, UniformWhiteNoise) {
   auto random_source = std::make_unique<RandomSource>(
       RandomDistribution::kUniform, 2, 0.0025);
+  EXPECT_EQ(random_source->get_distribution(), RandomDistribution::kUniform);
 
   // Cumulative distribution function of the uniform distribution.
   auto Phi = [](double z) { return z; };
@@ -91,6 +92,7 @@ GTEST_TEST(RandomSourceTest, UniformWhiteNoise) {
 GTEST_TEST(RandomSourceTest, GaussianWhiteNoise) {
   auto random_source = std::make_unique<RandomSource>(
       RandomDistribution::kGaussian, 2, 0.0025);
+  EXPECT_EQ(random_source->get_distribution(), RandomDistribution::kGaussian);
 
   // Cumulative distribution function of the standard normal distribution.
   auto Phi = [](double z) { return 0.5 * std::erfc(-z / std::sqrt(2.0)); };
@@ -106,6 +108,8 @@ GTEST_TEST(RandomSourceTest, GaussianWhiteNoise) {
 GTEST_TEST(RandomSourceTest, ExponentialWhiteNoise) {
   auto random_source = std::make_unique<RandomSource>(
       RandomDistribution::kExponential, 2, 0.0025);
+  EXPECT_EQ(random_source->get_distribution(),
+            RandomDistribution::kExponential);
 
   // Cumulative distribution function of the exponential distribution with λ=1,
   // (note: only valid for z>=0).
