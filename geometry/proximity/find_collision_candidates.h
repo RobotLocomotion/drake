@@ -17,7 +17,7 @@ namespace geometry {
 namespace internal {
 namespace find_collision_candidates {
 
-/** Supporting data for the broadphase callback (see Callback below).
+/** Supporting data for the collision candidates callback (see Callback below).
    It includes:
 
     - A map from GeometryIndex to GeometryId (to facilitate reporting GeometryId
@@ -51,12 +51,12 @@ struct CallbackData {
   /** The collision filter system.  */
   const CollisionFilterLegacy& collision_filter;
 
-  /** The results of the broadphase query.  */
+  /** The results of the collision candidates query.  */
   std::vector<SortedPair<GeometryId>>& pairs;
 };
 
 /** The callback function that stores the geometry ids of two shapes identified
- as potentially being in contact by the broad-phase.
+ as potentially being in contact by the collision candidates query.
 
  @param object_A_ptr    Pointer to the first object in the pair (the order has
                         no significance).
