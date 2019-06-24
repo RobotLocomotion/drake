@@ -27,5 +27,15 @@ using NonSymbolicScalarPack = type_pack<  // BR
     double,                               //
     AutoDiffXd>;
 
+// TODO(eric.cousineau): #8116 Simplify this.
+template <typename T>
+py::return_value_policy rvp_for_type() {
+  if (std::is_same<T, double>::value) {
+    return py::return_value_policy::reference_internal;
+  } else {
+    return py::return_value_policy::copy;
+  }
+}
+
 }  // namespace pydrake
 }  // namespace drake

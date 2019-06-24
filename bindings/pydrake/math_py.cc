@@ -75,7 +75,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.rotation.doc)
         .def("set_rotation", &Class::set_rotation, py::arg("R"),
             cls_doc.set_rotation.doc)
-        .def("translation", &Class::translation, py_reference_internal,
+        .def("translation", &Class::translation, rvp_for_type<T>(),
             cls_doc.translation.doc)
         .def("set_translation", &Class::set_translation, py::arg("p"),
             cls_doc.set_translation.doc)
