@@ -22,6 +22,14 @@ class TestEigenGeometry(unittest.TestCase):
         check_func(AutoDiffXd)
         check_func(Expression)
 
+    def test_argument_deduction(self):
+        self.check_types(self.check_argument_deduction)
+
+    def check_argument_deduction(self, T):
+        # Brief check for argument deduction (#11667).
+        q = mut.Quaternion_(w=T(1), x=T(0), y=T(0), z=T(0))
+        self.assertIsInstance(q, mut.Quaternion_[T])
+
     def test_quaternion(self):
         self.check_types(self.check_quaternion)
 
