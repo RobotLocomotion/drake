@@ -10,6 +10,7 @@
 #include <Eigen/Sparse>
 #include <Eigen/SparseQR>
 
+#include "drake/common/text_logging.h"
 #include "drake/solvers/csdp_solver_internal.h"
 
 namespace drake {
@@ -151,11 +152,11 @@ void SolveProgramWithNoFreeVariables(
 void SolveProgramThroughNullspaceApproach(
     const MathematicalProgram& prog, const SdpaFreeFormat& sdpa_free_format,
     MathematicalProgramResult* result) {
-  std::cout
-      << "warning: the problem has free variables, and CSDP removes the free "
-         "variables by computing the null space of linear constraint in the "
-         "dual space. This step can be time consuming. Consider to bound all "
-         "your variables, by either a lower bound or an upper bound. \n";
+  drake::log()->warn(
+      "The problem has free variables, and CSDP removes the free "
+      "variables by computing the null space of linear constraint in the "
+      "dual space. This step can be time consuming. Consider providing a lower "
+      "and/or upper bound for each decision variable.");
   Eigen::SparseMatrix<double> C_hat;
   std::vector<Eigen::SparseMatrix<double>> A_hat;
   Eigen::VectorXd rhs_hat, y_hat;
@@ -197,7 +198,7 @@ void SolveProgramThroughNullspaceApproach(
   SetCsdpSolverDetails(ret, pobj, dobj, sdpa_free_format.g().rows(), y, Z,
                        &solver_details);
   // Retrieve the information back to result
-  // Since CSDP solves a mazimization problem max -cost, where "cost" is the
+  // Since CSDP solves a maximization problem max -cost, where "cost" is the
   // minimization cost in MathematicalProgram, we need to negate the cost.
   result->set_solution_result(ConvertCsdpReturnToSolutionResult(ret));
   result->set_optimal_cost(
@@ -231,13 +232,12 @@ void SolveProgramThroughNullspaceApproach(
 void SolveProgramThroughTwoSlackVariablesApproach(
     const MathematicalProgram& prog, const SdpaFreeFormat& sdpa_free_format,
     MathematicalProgramResult* result) {
-  std::cout
-      << "warning: the problem has free variables, and CSDP removes the free "
-         "variables by introducing the slack variable y_plus >=0 , y_minus >= "
-         "0, and constraint y_plus - y_minus = free_variable. This can "
-         "introduce numerical problems to the solver. Consider to bound all "
-         "your decision variables, by either provide a lower bound or an upper "
-         "bound";
+  drake::log()->warn(
+      "The problem has free variables, and CSDP removes the free "
+      "variables by introducing the slack variable y_plus >=0 , y_minus >= "
+      "0, and constraint y_plus - y_minus = free_variable. This can "
+      "introduce numerical problems to the solver. Consider providing a lower "
+      "and/or upper bound for each decision variable.");
   std::vector<internal::BlockInX> X_hat_blocks = sdpa_free_format.X_blocks();
   X_hat_blocks.emplace_back(internal::BlockType::kDiagonal,
                             2 * sdpa_free_format.num_free_variables());
@@ -327,7 +327,7 @@ void SolveProgramThroughTwoSlackVariablesApproach(
   SetCsdpSolverDetails(ret, pobj, dobj, sdpa_free_format.g().rows(), y, Z,
                        &solver_details);
   // Retrieve the information back to result
-  // Since CSDP solves a mazimization problem max -cost, where "cost" is the
+  // Since CSDP solves a maximization problem max -cost, where "cost" is the
   // minimization cost in MathematicalProgram, we need to negate the cost.
   result->set_solution_result(ConvertCsdpReturnToSolutionResult(ret));
   result->set_optimal_cost(

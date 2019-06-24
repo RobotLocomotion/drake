@@ -57,9 +57,9 @@ class CsdpSolver final : public SolverBase {
    *     s.t tr(Aᵢ*X) = aᵢ
    *         X ≽ 0
    *
-   * notice that the decision variable X has to be in the proper cone X ≽ 0, and
+   * Notice that the decision variable X has to be in the proper cone X ≽ 0, and
    * it does't accept free variable (without the conic constraint). On the other
-   * hand, most real-world applications requires free variables, namely problem
+   * hand, most real-world applications require free variables, namely problems
    * in this form P2
    *
    *     max tr(C * X) + dᵀs
@@ -69,7 +69,7 @@ class CsdpSolver final : public SolverBase {
    *
    * In order to remove the free variables, we consider two approaches.
    * 1. Replace a free variable s with two variables s = p - q, p ≥ 0, q ≥ 0.
-   * 2. First write the dual of the problem P2 as D1
+   * 2. First write the dual of the problem P2 as D2
    *
    *        min aᵀy
    *        s.t ∑ᵢ yᵢAᵢ - C = Z
@@ -78,14 +78,14 @@ class CsdpSolver final : public SolverBase {
    *
    *    where bᵢᵀ is the i'th row of B.
    *    The last constraint Bᵀ * y = d means y = ŷ + Nt, where Bᵀ * ŷ = d, and N
-   *    is the null space of Bᵀ. Hence D1 is equivalent to D2 in the following
-   *    form.
+   *    is the null space of Bᵀ. Hence, D2 is equivalent to the following
+   *    problem, D3
    *
    *        min aᵀNt + aᵀŷ
    *        s.t ∑ᵢ tᵢFᵢ - (C -∑ᵢ ŷᵢAᵢ) = Z
    *            Z ≽ 0
    *
-   *    where Fᵢ  = ∑ⱼ NⱼᵢAⱼ. D2 is the dual of the following primal problem P3
+   *    where Fᵢ  = ∑ⱼ NⱼᵢAⱼ. D3 is the dual of the following primal problem P3
    *    without free variables
    *
    *        max tr((C-∑ᵢ ŷᵢAᵢ)*X̂) + aᵀŷ
@@ -97,8 +97,8 @@ class CsdpSolver final : public SolverBase {
    *
    */
   enum RemoveFreeVariableMethod {
-    kTwoSlackVariables,  ///< Approach 1, replace a free variable s as s = p -
-                         ///< q, p ≥ 0, q ≥ 0
+    kTwoSlackVariables,  ///< Approach 1, replace a free variable s as
+                         ///< s = y⁺ - y⁻, y⁺ ≥ 0, y⁻ ≥ 0.
     kNullspace,  ///< Approach 2, reformulate the dual problem by considering
                  ///< the nullspace of the linear constraint in the dual.
   };

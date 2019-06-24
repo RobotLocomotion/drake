@@ -161,6 +161,7 @@ TEST_F(TrivialSOCP2, Solve) {
       MathematicalProgramResult result;
       solver.Solve(*prog_, {}, {}, &result);
       EXPECT_TRUE(result.is_success());
+      // CSDP does not have high accuracy for solving an SOCP.
       const double tol = 3.8E-5;
       EXPECT_NEAR(result.get_optimal_cost(), -1, tol);
       EXPECT_TRUE(

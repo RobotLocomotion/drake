@@ -24,12 +24,12 @@ namespace drake {
 namespace solvers {
 namespace internal {
 /**
- * For the problem
+ * For the following problem
  * max tr(C * X) + dᵀs
  * s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ
  *     X ≽ 0
- *     s is free.
- * Remove the free variable s by considering the nullspace of Bᵀ.
+ *     s is free
+ * , remove the free variable s by considering the nullspace of Bᵀ.
  * max tr((C-∑ᵢ ŷᵢAᵢ)*X̂) + aᵀŷ
  * s.t tr(FᵢX̂) = (Nᵀa)(i)
  *     X̂ ≽ 0
