@@ -40,6 +40,10 @@ TEST_F(MathematicalProgramResultTest, DefaultConstructor) {
 TEST_F(MathematicalProgramResultTest, Setters) {
   MathematicalProgramResult result;
   result.set_decision_variable_index(decision_variable_index_);
+  EXPECT_TRUE(CompareMatrices(
+      result.get_x_val(),
+      Eigen::VectorXd::Constant(decision_variable_index_.size(),
+                                std::numeric_limits<double>::quiet_NaN())));
   result.set_solution_result(SolutionResult::kSolutionFound);
   const Eigen::Vector2d x_val(0, 1);
   result.set_x_val(x_val);
@@ -139,7 +143,8 @@ GTEST_TEST(TestMathematicalProgramResult, InfeasibleProblem) {
       Eigen::Vector2d::Constant(std::numeric_limits<double>::quiet_NaN())));
   EXPECT_TRUE(std::isnan(result.GetSolution(x(0))));
   EXPECT_TRUE(std::isnan(result.GetSolution(x(1))));
-  EXPECT_FALSE(std::isfinite(result.get_optimal_cost()));
+  EXPECT_EQ(result.get_optimal_cost(),
+            MathematicalProgram::kGlobalInfeasibleCost);
 }
 
 }  // namespace
