@@ -20,8 +20,6 @@ using std::vector;
 // Confirms that the callback properly returns a sorted pair for the
 // corresponding geometry ids.
 GTEST_TEST(Callback, PairsProperlyFormed) {
-  // New ids are created in increasing order. Thus we know in which order they
-  // are reported in a sorted pair.
   std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
                                        GeometryId::get_new_id()};
   CollisionFilterLegacy collision_filter;
@@ -40,14 +38,15 @@ GTEST_TEST(Callback, PairsProperlyFormed) {
   CallbackData data(&geometry_map, &collision_filter, &pairs);
   Callback(&box_A, &box_B, &data);
   ASSERT_EQ(pairs.size(), 1u);
-  EXPECT_TRUE(pairs[0].first() < pairs[0].second());
+  const SortedPair<GeometryId> expected_pair{geometry_map[0], geometry_map[1]};
+  EXPECT_EQ(pairs[0], expected_pair);
 
-  // We verify that the order the callback receives it doesn't affect the order
-  // of the results.
+  // We verify that the order the callback receives it doesn't affect the
+  // results.
   pairs.clear();
   Callback(&box_B, &box_A, &data);
   ASSERT_EQ(pairs.size(), 1u);
-  EXPECT_TRUE(pairs[0].first() < pairs[0].second());
+  EXPECT_EQ(pairs[0], expected_pair);
 }
 
 // This test verifies that the broad-phase callback respects filtering.

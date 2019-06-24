@@ -36,14 +36,7 @@ struct CallbackData {
    @param pairs_in                The output results. Aliased.  */
   CallbackData(const std::vector<GeometryId>* geometry_map_in,
                const CollisionFilterLegacy* collision_filter_in,
-               std::vector<SortedPair<GeometryId>>* pairs_in)
-      : geometry_map(*geometry_map_in),
-        collision_filter(*collision_filter_in),
-        pairs(*pairs_in) {
-    DRAKE_DEMAND(geometry_map_in);
-    DRAKE_DEMAND(collision_filter_in);
-    DRAKE_DEMAND(pairs_in);
-  }
+               std::vector<SortedPair<GeometryId>>* pairs_in);
 
   /** The map from GeometryIndex to GeometryId.  */
   const std::vector<GeometryId>& geometry_map;
@@ -68,22 +61,7 @@ struct CallbackData {
 bool Callback(fcl::CollisionObjectd* object_A_ptr,
               fcl::CollisionObjectd* object_B_ptr,
               // NOLINTNEXTLINE
-              void* callback_data) {
-  auto& data = *static_cast<CallbackData*>(callback_data);
-
-  const EncodedData encoding_a(*object_A_ptr);
-  const EncodedData encoding_b(*object_B_ptr);
-
-  const bool can_collide = data.collision_filter.CanCollideWith(
-      encoding_a.encoding(), encoding_b.encoding());
-  if (can_collide) {
-    const GeometryId id_a = encoding_a.id(data.geometry_map);
-    const GeometryId id_b = encoding_b.id(data.geometry_map);
-    data.pairs.emplace_back(id_a, id_b);
-  }
-  // Tell the broadphase to keep searching.
-  return false;
-}
+              void* callback_data);
 
 }  // namespace find_collision_candidates
 }  // namespace internal

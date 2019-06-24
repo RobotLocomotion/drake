@@ -28,9 +28,8 @@ drake_cc_package_library(
 
 drake_cc_library(
     name = "find_collision_candidates",
-    hdrs = [
-        "find_collision_candidates.h",
-    ],
+    srcs = ["find_collision_candidates.cc"],
+    hdrs = ["find_collision_candidates.h"],
     deps = [
         ":collision_filter_legacy",
         ":proximity_utilities",

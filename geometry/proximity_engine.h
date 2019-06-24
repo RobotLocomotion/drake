@@ -269,9 +269,10 @@ class ProximityEngine {
   //@}
 
   /**
-   Performs a broad-phase pass and returns a vector containing the set of all
-   collision pair candidates. A pair in the returned set is not necessarily in
-   contact, and further analysis must be done to confirm contact.  */
+   Performs a broad-phase pass and returns a vector containing collision pair
+   candidates. A pair in the returned set is not necessarily in contact, and
+   further analysis must be done to confirm contact. A pair of geometries not
+   present in the result is guaranteed not to be in contact.  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates(
       const std::vector<GeometryId>& geometry_map) const;
 
