@@ -139,6 +139,7 @@ drake_cc_library(
         "//geometry/proximity:volume_mesh",
         "//geometry/query_results:contact_surface",
         "//math:geometric_transform",
+        "//multibody/hydroelastics:level_set_field",
     ],
 )
 

@@ -65,6 +65,11 @@ class VolumeElement {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VolumeElement)
 
   /** Constructs VolumeElement.
+   We follow the convention that the first three vertices define a triangle with
+   its right-handed normal pointing inwards. The fourth vertex is then on the
+   positive side of this first triangle.
+   @warning This class does not enforce our convention for the ordering of the
+   vertices.
    @param v0 Index of the first vertex in VolumeMesh.
    @param v1 Index of the second vertex in VolumeMesh.
    @param v2 Index of the third vertex in VolumeMesh.
@@ -134,6 +139,10 @@ class VolumeMesh {
 
   //@}
 
+  /** Constructor from a vector of vertices and from a vector of elements.
+   Each element must be a valid VolumeElement following the vertex ordering
+   convention documented in the VolumeElement class. This class however does not
+   enforce this convention and it is thus the responsibility of the user.  */
   VolumeMesh(std::vector<VolumeElement>&& elements,
              std::vector<VolumeVertex<T>>&& vertices)
       : elements_(std::move(elements)), vertices_(std::move(vertices)) {}
