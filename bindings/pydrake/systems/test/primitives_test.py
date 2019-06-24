@@ -2,6 +2,8 @@ import unittest
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common import RandomDistribution
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.symbolic import Expression, Variable
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
@@ -36,6 +38,7 @@ from pydrake.systems.primitives import (
     Multiplexer, Multiplexer_,
     ObservabilityMatrix,
     PassThrough, PassThrough_,
+    RandomSource,
     Saturation, Saturation_,
     SignalLogger, SignalLogger_,
     Sine, Sine_,
@@ -362,23 +365,23 @@ class TestGeneral(unittest.TestCase):
                 value = output.get_vector_data(0)
                 self.assertTrue(isinstance(value, MyVector2))
 
-    def test_random_sources(self):
-        uniform_source = UniformRandomSource(num_outputs=2,
-                                             sampling_interval_sec=0.01)
-        self.assertEqual(uniform_source.get_output_port(0).size(), 2)
-
-        gaussian_source = GaussianRandomSource(num_outputs=3,
-                                               sampling_interval_sec=0.01)
-        self.assertEqual(gaussian_source.get_output_port(0).size(), 3)
-
-        exponential_source = ExponentialRandomSource(num_outputs=4,
-                                                     sampling_interval_sec=0.1)
-        self.assertEqual(exponential_source.get_output_port(0).size(), 4)
+    def test_random_source(self):
+        source = RandomSource(distribution=RandomDistribution.kUniform,
+                              num_outputs=2, sampling_interval_sec=0.01)
+        self.assertEqual(source.get_output_port(0).size(), 2)
 
         builder = DiagramBuilder()
         # Note: There are no random inputs to add to the empty diagram, but it
         # confirms the API works.
         AddRandomInputs(sampling_interval_sec=0.01, builder=builder)
+
+    def test_random_sources_deprecated(self):
+        with catch_drake_warnings(expected_count=1):
+            UniformRandomSource(num_outputs=2, sampling_interval_sec=0.01)
+        with catch_drake_warnings(expected_count=1):
+            GaussianRandomSource(num_outputs=3, sampling_interval_sec=0.01)
+        with catch_drake_warnings(expected_count=1):
+            ExponentialRandomSource(num_outputs=4, sampling_interval_sec=0.1)
 
     def test_ctor_api(self):
         """Tests construction of systems for systems whose executions semantics
