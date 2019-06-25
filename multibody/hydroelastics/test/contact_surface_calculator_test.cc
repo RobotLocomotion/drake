@@ -239,10 +239,10 @@ class BoxPlaneIntersectionTest : public ::testing::Test {
     box_B_ = std::make_unique<VolumeMesh<double>>(std::move(elements),
                                                   std::move(vertices));
     // Level set for a half-space.
-    // N.B. The "gradient" functor is not the true gradient of the level set
-    // function. We choose however a "more interesting" function for testing
-    // purposes. What we want to test is that a linear scalar field is
-    // interpolated exactly, whithin machine precision.
+    // N.B. The "gradient" functor is not the true gradient of the value
+    // function. That would be the constant [0, 0, 1]_H. We choose a
+    // position-dependent function to be able to detect that it is being
+    // correctly evaluated at all vertex positions.
     half_space_H_ = std::make_unique<LevelSetField<double>>(
         [](const Vector3<double>& p_HQ) { return p_HQ[2]; },
         [](const Vector3<double>& p_HQ) {
