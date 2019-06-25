@@ -166,16 +166,17 @@ void SolveProgramThroughNullspaceApproach(
 
   // Now try to call CSDP to solve this problem.
   csdp::blockmatrix C_csdp;
-  double* rhs_csdp;
-  csdp::constraintmatrix* constraints_csdp;
+  double* rhs_csdp{nullptr};
+  csdp::constraintmatrix* constraints_csdp{nullptr};
   ConvertSparseMatrixFormatToCsdpProblemData(sdpa_free_format.X_blocks(),
                                               C_hat, A_hat, rhs_hat, &C_csdp,
                                               &rhs_csdp, &constraints_csdp);
   struct csdp::blockmatrix X_csdp, Z;
-  double* y;
+  double* y{nullptr};
   csdp::initsoln(sdpa_free_format.num_X_rows(), rhs_hat.rows(), C_csdp,
                  rhs_csdp, constraints_csdp, &X_csdp, &y, &Z);
-  double pobj, dobj;
+  double pobj{0};
+  double dobj{0};
   const int ret = csdp::easy_sdp(sdpa_free_format.num_X_rows(), rhs_hat.rows(),
                                  C_csdp, rhs_csdp, constraints_csdp,
                                  -sdpa_free_format.constant_min_cost_term() +
@@ -287,16 +288,17 @@ void SolveProgramThroughTwoSlackVariablesApproach(
 
   // Now try to call CSDP to solve this problem.
   csdp::blockmatrix C_csdp;
-  double* rhs_csdp;
-  csdp::constraintmatrix* constraints_csdp;
+  double* rhs_csdp{nullptr};
+  csdp::constraintmatrix* constraints_csdp{nullptr};
   ConvertSparseMatrixFormatToCsdpProblemData(X_hat_blocks, C_hat, A_hat,
                                               sdpa_free_format.g(), &C_csdp,
                                               &rhs_csdp, &constraints_csdp);
   struct csdp::blockmatrix X_csdp, Z;
-  double* y;
+  double* y{nullptr};
   csdp::initsoln(num_X_hat_rows, sdpa_free_format.g().rows(), C_csdp, rhs_csdp,
                  constraints_csdp, &X_csdp, &y, &Z);
-  double pobj, dobj;
+  double pobj{0};
+  double dobj{0};
   const int ret = csdp::easy_sdp(num_X_hat_rows, sdpa_free_format.g().rows(),
                                  C_csdp, rhs_csdp, constraints_csdp,
                                  -sdpa_free_format.constant_min_cost_term(),

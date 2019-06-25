@@ -58,9 +58,9 @@ class CsdpSolver final : public SolverBase {
    *         X ≽ 0.
    *
    * Notice that the decision variable X has to be in the proper cone X ≽ 0, and
-   * it does't accept free variable (without the conic constraint). On the other
-   * hand, most real-world applications require free variables, namely problems
-   * in this form P2
+   * it doesn't accept free variable (without the conic constraint). On the
+   * other hand, most real-world applications require free variables, namely
+   * problems in this form P2
    *
    *     max tr(C * X) + dᵀs
    *     s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ

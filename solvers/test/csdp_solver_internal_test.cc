@@ -363,16 +363,17 @@ TEST_F(LinearProgramBoundingBox1, RemoveFreeVariableByNullspaceApproach) {
 
   // Now try to call CSDP to solve this problem.
   csdp::blockmatrix C_csdp;
-  double* rhs_csdp;
-  csdp::constraintmatrix* constraints_csdp;
+  double* rhs_csdp{nullptr};
+  csdp::constraintmatrix* constraints_csdp{nullptr};
   ConvertSparseMatrixFormatToCsdpProblemData(dut.X_blocks(), C_hat, A_hat,
                                               rhs_hat, &C_csdp, &rhs_csdp,
                                               &constraints_csdp);
   struct csdp::blockmatrix X_csdp, Z;
-  double* y;
+  double* y{nullptr};
   csdp::initsoln(dut.num_X_rows(), rhs_hat.rows(), C_csdp, rhs_csdp,
                  constraints_csdp, &X_csdp, &y, &Z);
-  double pobj, dobj;
+  double pobj{0};
+  double dobj{0};
   const int ret = csdp::easy_sdp(
       dut.num_X_rows(), rhs_hat.rows(), C_csdp, rhs_csdp, constraints_csdp,
       -dut.constant_min_cost_term() + dut.g().dot(y_hat), &X_csdp, &y, &Z,
