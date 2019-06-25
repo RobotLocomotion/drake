@@ -10,6 +10,7 @@
 
 namespace drake {
 namespace geometry {
+namespace {
 
 // Used for testing instantiation of SurfaceMesh and inspecting its components.
 template <typename T>
@@ -107,5 +108,6 @@ GTEST_TEST(SurfaceMeshTest, TestCentroid) {
   EXPECT_NEAR(GenerateZeroAreaMesh()->centroid().norm(), 0.0, eps);
 }
 
+}  // namespace
 }  // namespace geometry
 }  // namespace drake
