@@ -15,6 +15,7 @@
 #include "drake/geometry/proximity/distance_to_point.h"
 #include "drake/geometry/proximity/distance_to_point_with_gradient.h"
 #include "drake/geometry/proximity/distance_to_shape.h"
+#include "drake/geometry/proximity/find_collision_candidates.h"
 #include "drake/geometry/utilities.h"
 
 static_assert(std::is_same<tinyobj::real_t, double>::value,
@@ -630,6 +631,20 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return contacts;
   }
 
+  std::vector<SortedPair<GeometryId>> FindCollisionCandidates(
+      const std::vector<GeometryId>& geometry_map) const {
+    std::vector<SortedPair<GeometryId>> pairs;
+    // All these quantities are aliased in the callback data.
+    find_collision_candidates::CallbackData data{&geometry_map,
+                                                 &collision_filter_, &pairs};
+    dynamic_tree_.collide(&data, find_collision_candidates::Callback);
+    dynamic_tree_.collide(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &anchored_tree_),
+        &data, find_collision_candidates::Callback);
+    return pairs;
+  }
+
   // TODO(SeanCurtis-TRI): Update this with the new collision filter method.
   void ExcludeCollisionsWithin(
       const std::unordered_set<GeometryIndex>& dynamic,
@@ -1008,12 +1023,16 @@ ProximityEngine<T>::ComputePointPairPenetration(
 }
 
 template <typename T>
-std::vector<ContactSurface<T>>
-ProximityEngine<T>::ComputeContactSurfaces(
+std::vector<ContactSurface<T>> ProximityEngine<T>::ComputeContactSurfaces(
     const std::vector<GeometryId>& /* geometry_map */) const {
-  throw std::runtime_error(
-      "ComputeContactSurfaces() is not implemented yet.");
+  throw std::runtime_error("ComputeContactSurfaces() is not implemented yet.");
   // TODO(DamrongGuoy): Compute contact surfaces and remove the above throw.
+}
+
+template <typename T>
+std::vector<SortedPair<GeometryId>> ProximityEngine<T>::FindCollisionCandidates(
+    const std::vector<GeometryId>& geometry_map) const {
+  return impl_->FindCollisionCandidates(geometry_map);
 }
 
 template <typename T>

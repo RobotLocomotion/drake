@@ -418,6 +418,11 @@ class GeometryState {
         geometry_index_to_id_map_);
   }
 
+  /** See QueryObject::FindCollisionCandidates() for documentation.  */
+  std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const {
+    return geometry_engine_->FindCollisionCandidates(geometry_index_to_id_map_);
+  }
+
   //@}
 
   /** @name               Proximity filters
