@@ -23,7 +23,7 @@ std::unique_ptr<SurfaceMesh<T>> GenerateTwoTriangleMesh() {
   vertices.emplace_back(Vector3<T>(0.5, 0.5, -0.5));
   vertices.emplace_back(Vector3<T>(-0.5, 0.5, -0.5));
   vertices.emplace_back(Vector3<T>(-0.5, -0.5, -0.5));
-  vertices.emplace_back(Vector3<T>(0.5, -0.5, -0.5));
+  vertices.emplace_back(Vector3<T>(1.0, -1.0, -0.5));
 
   // Create the two triangles.
   std::vector<SurfaceFace> faces;
@@ -84,8 +84,8 @@ GTEST_TEST(SurfaceMeshTest, TestArea) {
   const double eps = 10 * std::numeric_limits<double>::epsilon();
   auto surface_mesh = GenerateTwoTriangleMesh<double>();
   EXPECT_NEAR(surface_mesh->area(SurfaceFaceIndex(0)), 0.5, eps);
-  EXPECT_NEAR(surface_mesh->area(SurfaceFaceIndex(1)), 0.5, eps);
-  EXPECT_NEAR(surface_mesh->total_area(), 1.0, eps);
+  EXPECT_NEAR(surface_mesh->area(SurfaceFaceIndex(1)), 1.0, eps);
+  EXPECT_NEAR(surface_mesh->total_area(), 1.5, eps);
 
   // Verify that the empty mesh and the zero area mesh both give zero area.
   EXPECT_NEAR(GenerateEmptyMesh()->total_area(), 0.0, eps);
@@ -97,8 +97,8 @@ GTEST_TEST(SurfaceMeshTest, TestCentroid) {
   const double eps = 10 * std::numeric_limits<double>::epsilon();
   auto surface_mesh = GenerateTwoTriangleMesh<double>();
   const Vector3<double> centroid = surface_mesh->centroid();
-  EXPECT_NEAR(centroid[0], 0, eps);
-  EXPECT_NEAR(centroid[1], 0, eps);
+  EXPECT_NEAR(centroid[0], 1.0/6, eps);
+  EXPECT_NEAR(centroid[1], -1.0/6, eps);
   EXPECT_NEAR(centroid[2], -0.5, eps);
 
   // The documentation for the centroid method specifies particular behavior
