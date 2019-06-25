@@ -627,12 +627,16 @@ bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
     xtplus_radau3_ = xt0_ + h * xdot_;
 
     // Compute the RK2 step.
+    const int evals_before_rk2 = rk2_->get_num_evaluations();
     DRAKE_DEMAND(rk2_->IntegrateWithSingleFixedStepToTime(t0 + h));
+    const int evals_after_rk2 = rk2_->get_num_evaluations();
     xtplus_tr_ = context->get_continuous_state().CopyToVector();
 
     // Revert the state to that computed by explicit Euler.
     context->SetTimeAndContinuousState(t0 + h, xtplus_radau3_);
 
+    // Update the error estimation ODE counts.
+    num_err_est_function_evaluations_ += (evals_after_rk2 - evals_before_rk2);
   } else {
     // Try taking the requested step.
     bool success = AttemptStepPaired(t0, h, xt0_, &xtplus_radau3_, &xtplus_tr_);
