@@ -13,7 +13,34 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "hydroelastics",
     deps = [
+        ":contact_surface_calculator",
         ":level_set_field",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_surface_calculator",
+    hdrs = [
+        "contact_surface_calculator.h",
+    ],
+    deps = [
+        ":level_set_field",
+        "//common:autodiff",
+        "//common:essential",
+        "//geometry/proximity:volume_mesh",
+        "//geometry/query_results:contact_surface",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_surface_calculator_test",
+    deps = [
+        ":contact_surface_calculator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry/proximity:make_unit_sphere_mesh",
+        "//math",
     ],
 )
 

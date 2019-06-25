@@ -1,4 +1,4 @@
-#include "drake/geometry/proximity/contact_surface_calculator.h"
+#include "drake/multibody/hydroelastics/contact_surface_calculator.h"
 
 #include <fstream>
 
