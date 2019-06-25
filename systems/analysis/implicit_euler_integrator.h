@@ -9,6 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/systems/analysis/implicit_integrator.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 
 namespace drake {
 namespace systems {
@@ -154,6 +155,10 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 
   // Various statistics.
   int64_t num_nr_iterations_{0};
+
+  // Second order Runge-Kutta method for estimating the integration error for
+  // the requested step size lies below the working step size.
+  std::unique_ptr<RungeKutta2Integrator<T>> rk2_;
 
   // Implicit trapezoid specific statistics.
   int64_t num_err_est_jacobian_reforms_{0};
