@@ -715,6 +715,11 @@ struct MultibodyPlant<T>::SceneGraphStub {
   DRAKE_STUB(FrameId, RegisterFrame)
   DRAKE_STUB(GeometryId, RegisterGeometry)
   DRAKE_STUB(SourceId, RegisterSource)
+  template <typename... Args>
+  geometry::ProximityProperties* GetMutableProximityProperties(Args...) const {
+    Throw("GetMutableProximityProperties");
+    return nullptr;
+  }
 
 #undef DRAKE_STUB
 };

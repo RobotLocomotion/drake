@@ -219,6 +219,10 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetProximityProperties().  */
   const ProximityProperties* GetProximityProperties(GeometryId id) const;
 
+  /** Mutable version of GetProximityProperties().  */
+  ProximityProperties* GetMutableProximityProperties(SourceId source_id,
+                                                     GeometryId geometry_id);
+
   /** Implementation of SceneGraphInspector::GetIllustrationProperties().  */
   const IllustrationProperties* GetIllustrationProperties(GeometryId id) const;
 

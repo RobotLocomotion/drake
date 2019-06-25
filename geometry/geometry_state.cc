@@ -366,6 +366,23 @@ const ProximityProperties* GeometryState<T>::GetProximityProperties(
 }
 
 template <typename T>
+ProximityProperties* GeometryState<T>::GetMutableProximityProperties(
+    SourceId source_id, GeometryId geometry_id) {
+  if (!BelongsToSource(geometry_id, source_id)) {
+    throw std::logic_error("Trying to retrieve the proximity properties "
+                           " for the geometry " + to_string(geometry_id) +
+                           " from source " + to_string(source_id) +
+                           ", but the geometry doesn't belong to that source.");
+  }
+
+  InternalGeometry* geometry = GetMutableGeometry(geometry_id);
+  // Proximity properties are nullptr if not assigned.
+  if (geometry) return geometry->mutable_proximity_properties();
+  throw std::logic_error(fmt::format(
+      "Referenced geometry {} has not been registered", geometry_id));
+}
+
+template <typename T>
 const IllustrationProperties* GeometryState<T>::GetIllustrationProperties(
     GeometryId id) const {
   const InternalGeometry* geometry = GetGeometry(id);

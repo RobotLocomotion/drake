@@ -225,6 +225,12 @@ class InternalGeometry {
     return nullptr;
   }
 
+  /** Mutable version of proximity_properties().  */
+  ProximityProperties* mutable_proximity_properties() {
+    if (proximity_props_) return &*proximity_props_;
+    return nullptr;
+  }
+
   /** Returns a pointer to the geometry's illustration properties (if they are
    defined. Nullptr otherwise.  */
   const IllustrationProperties* illustration_properties() const {

@@ -2,11 +2,12 @@
 
 #include <functional>
 
-#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
-namespace geometry {
+namespace multibody {
+namespace hydroelastics {
+namespace internal {
 
 // TODO(amcastro-tri): consider making this an abstract class so that we can
 // inherit multiple implementations (analytical, structured grids, etc.)
@@ -26,6 +27,7 @@ struct LevelSetField {
                 std::function<Vector3<T>(const Vector3<T>&)> grad_level_set_F)
       : value(level_set_F), gradient(grad_level_set_F) {}
 
+  LevelSetField(LevelSetField&) = delete;
   LevelSetField(LevelSetField&&) = default;
   LevelSetField& operator=(LevelSetField&&) = default;
 
@@ -33,5 +35,7 @@ struct LevelSetField {
   std::function<Vector3<T>(const Vector3<T>&)> gradient;
 };
 
-}  // namespace geometry
+}  // namespace internal
+}  // namespace hydroelastics
+}  // namespace multibody
 }  // namespace drake
