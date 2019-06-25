@@ -55,7 +55,7 @@ class CsdpSolver final : public SolverBase {
    *
    *     max tr(C * X)
    *     s.t tr(Aᵢ*X) = aᵢ
-   *         X ≽ 0
+   *         X ≽ 0.
    *
    * Notice that the decision variable X has to be in the proper cone X ≽ 0, and
    * it does't accept free variable (without the conic constraint). On the other
@@ -74,7 +74,7 @@ class CsdpSolver final : public SolverBase {
    *        min aᵀy
    *        s.t ∑ᵢ yᵢAᵢ - C = Z
    *            Z ≽ 0
-   *            Bᵀ * y = d
+   *            Bᵀ * y = d,
    *
    *    where bᵢᵀ is the i'th row of B.
    *    The last constraint Bᵀ * y = d means y = ŷ + Nt, where Bᵀ * ŷ = d, and N
@@ -83,14 +83,14 @@ class CsdpSolver final : public SolverBase {
    *
    *        min aᵀNt + aᵀŷ
    *        s.t ∑ᵢ tᵢFᵢ - (C -∑ᵢ ŷᵢAᵢ) = Z
-   *            Z ≽ 0
+   *            Z ≽ 0,
    *
    *    where Fᵢ  = ∑ⱼ NⱼᵢAⱼ. D3 is the dual of the following primal problem P3
    *    without free variables
    *
    *        max tr((C-∑ᵢ ŷᵢAᵢ)*X̂) + aᵀŷ
    *        s.t tr(FᵢX̂) = (Nᵀa)(i)
-   *            X̂ ≽ 0
+   *            X̂ ≽ 0.
    *
    *    Then (X, s) = (X̂, B⁻¹(a - tr(Aᵢ X̂))) is the solution to the original
    *    problem P2.

@@ -25,14 +25,17 @@ namespace solvers {
 namespace internal {
 /**
  * For the following problem
- * max tr(C * X) + dᵀs
- * s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ
- *     X ≽ 0
- *     s is free
- * , remove the free variable s by considering the nullspace of Bᵀ.
- * max tr((C-∑ᵢ ŷᵢAᵢ)*X̂) + aᵀŷ
- * s.t tr(FᵢX̂) = (Nᵀa)(i)
- *     X̂ ≽ 0
+ *
+ *     max tr(C * X) + dᵀs
+ *     s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ
+ *         X ≽ 0
+ *         s is free,
+ *
+ * remove the free variable s by considering the nullspace of Bᵀ.
+ *
+ *     max tr((C-∑ᵢ ŷᵢAᵢ)*X̂) + aᵀŷ
+ *     s.t tr(FᵢX̂) = (Nᵀa)(i)
+ *         X̂ ≽ 0,
  * where Fᵢ  = ∑ⱼ NⱼᵢAⱼ, N is the null space of Bᵀ. Bᵀ * ŷ = d.
  * For more information, refer to CsdpSolver::RemoveFreeVariableMethod for the
  * derivation.
