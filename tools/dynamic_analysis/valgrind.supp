@@ -399,3 +399,148 @@
    fun:dmumps_c
    fun:_ZN5Ipopt20MumpsSolverInterfaceC1Ev
 }
+
+{
+   bash: definite leak in set_default_locale
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:xmalloc
+   fun:set_default_locale
+   fun:main
+}
+
+{
+   bash: definite leak in reader_loop
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:xmalloc
+   ...
+   fun:reader_loop
+   fun:main
+}
+
+# TODO(sam.creasey) Write a printer function (or another workaround) for
+# drake::multibody::test::ModelLoadFunction so that gtest won't trigger
+# memcheck. Related to https://github.com/google/googletest/issues/1610.
+{
+   googletest: conditional jump or move depends on uninitialised value in PrintValue
+   Memcheck:Cond
+   ...
+   fun:vfprintf
+   fun:vsnprintf
+   fun:snprintf
+   fun:*PrintByteSegmentInObjectTo*
+   fun:PrintBytesInObjectToImpl
+   fun:*PrintBytesInObjectTo*
+   fun:PrintValue
+}
+
+{
+   googletest: use of uninitialized value of size 8 in PrintValue
+   Memcheck:Value8
+   ...
+   fun:vfprintf
+   fun:vsnprintf
+   fun:snprintf
+   fun:*PrintByteSegmentInObjectTo*
+   fun:PrintBytesInObjectToImpl
+   fun:*PrintBytesInObjectTo*
+   fun:PrintValue
+}
+
+{
+   nvidia-glcore: conditional jump or move depends on uninitialized value
+   Memcheck:Cond
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/libnvidia-glcore.so.*
+}
+
+{
+   python: invalid read of size 4 in PyObject_Free
+   Memcheck:Addr4
+   ...
+   fun:PyObject_Free
+}
+
+{
+   python: invalid read of size 4 in PyObject_Free
+   Memcheck:Value4
+   ...
+   fun:PyObject_Free
+}
+
+{
+   python: use of uninitialized value of size 8 in PyObject_Free
+   Memcheck:Addr8
+   ...
+   fun:PyObject_Free
+}
+
+{
+   python: use of uninitialized value of size 8 in PyObject_Free
+   Memcheck:Value8
+   ...
+   fun:PyObject_Free
+}
+
+{
+   python: conditional jump or move depends on uninitialized value in PyObject_Free
+   Memcheck:Cond
+   ...
+   fun:PyObject_Free
+}
+
+{
+   python: invalid read of size 4 in PyObject_Realloc
+   Memcheck:Addr4
+   ...
+   fun:PyObject_Realloc
+}
+
+{
+   python: invalid read of size 4 in PyObject_Realloc
+   Memcheck:Value4
+   ...
+   fun:PyObject_Realloc
+}
+
+{
+   python: use of uninitialized value of size 8 in PyObject_Realloc
+   Memcheck:Addr8
+   ...
+   fun:PyObject_Realloc
+}
+
+{
+   python: use of uninitialized value of size 8 in PyObject_Realloc
+   Memcheck:Value8
+   ...
+   fun:PyObject_Realloc
+}
+
+{
+   python: conditional jump or move depends on uninitialized value in PyObject_Realloc
+   Memcheck:Cond
+   ...
+   fun:PyObject_Realloc
+}
+
+{
+   swrast: conditional jump or move depends on uninitialized value in clone
+   Memcheck:Cond
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/dri/swrast_dri.so
+   fun:start_thread
+   fun:clone
+}
+
+{
+   swrast: use of uninitialized value of size 8 in clone
+   Memcheck:Value8
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/dri/swrast_dri.so
+   fun:start_thread
+   fun:clone
+}
