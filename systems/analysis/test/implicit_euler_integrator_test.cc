@@ -327,6 +327,29 @@ GTEST_TEST(ImplicitIntegratorErrorEstimatorTest, LinearTest) {
   // Note the very tight tolerance used, which will likely not hold for
   // arbitrary values of C, t_final, or polynomial coefficients.
   EXPECT_NEAR(err_est, 0.0, 2 * std::numeric_limits<double>::epsilon());
+
+  // Repeat this test, but using a final time that is below the working minimum
+  // step size (thereby triggering the implicit integrator's alternate, explicit
+  // mode). To retain our existing tolerances, we change the scale factor
+  // for the linear system.
+  ie.get_mutable_context()->SetTime(0);
+  const double working_min = ie.get_working_minimum_step_size();
+  LinearScalarSystem scaled_linear(4.0/working_min);
+  auto scaled_linear_context = scaled_linear.CreateDefaultContext();
+  ImplicitEulerIntegrator<double> ie2(
+      scaled_linear, scaled_linear_context.get());
+  const double updated_t_final = working_min / 2;
+  ie2.set_maximum_step_size(updated_t_final);
+  ie2.set_fixed_step_mode(true);
+  ie2.Initialize();
+  ASSERT_TRUE(ie2.IntegrateWithSingleFixedStepToTime(updated_t_final));
+
+  const double updated_err_est =
+      ie2.get_error_estimate()->get_vector().GetAtIndex(0);
+
+  // Note the very tight tolerance used, which will likely not hold for
+  // arbitrary values of C, t_final, or polynomial coefficients.
+  EXPECT_NEAR(updated_err_est, 0.0, 2 * std::numeric_limits<double>::epsilon());
 }
 
 // Checks the validity of general integrator statistics and resets statistics.
