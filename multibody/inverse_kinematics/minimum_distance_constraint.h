@@ -92,8 +92,8 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
       double influence_distance_offset = 1);
 
   /**
-   * Overloaded constructor.
-   * Constructs the constraint using MultibodyPlant<AutoDiffXd>.
+   Overloaded constructor.
+   Constructs the constraint using MultibodyPlant<AutoDiffXd>.
    */
   MinimumDistanceConstraint(
       const multibody::MultibodyPlant<AutoDiffXd>* const plant,

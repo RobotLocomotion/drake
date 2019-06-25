@@ -19,7 +19,7 @@ namespace internal {
  * signed distance field to geometry B, expressed in the world frame.
  * @param q The generalized position of the plant, it also stores the gradient
  * dq / dz, where z is some other variables.
- * @param[out] diatance_autodiff Containing the gradient of @p distance w.r.t
+ * @param[out] distance_autodiff Containing the gradient of @p distance w.r.t
  * z (the same variable as shown up in the gradient of q).
  */
 void CalcDistanceDerivatives(const MultibodyPlant<double>& plant,
