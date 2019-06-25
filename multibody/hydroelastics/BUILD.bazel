@@ -13,15 +13,15 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "hydroelastics",
     deps = [
-        ":contact_surface_calculator",
+        ":contact_surface_from_level_set",
         ":level_set_field",
     ],
 )
 
 drake_cc_library(
-    name = "contact_surface_calculator",
+    name = "contact_surface_from_level_set",
     hdrs = [
-        "contact_surface_calculator.h",
+        "contact_surface_from_level_set.h",
     ],
     deps = [
         ":level_set_field",
@@ -34,9 +34,9 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "contact_surface_calculator_test",
+    name = "contact_surface_from_level_set_test",
     deps = [
-        ":contact_surface_calculator",
+        ":contact_surface_from_level_set",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//geometry/proximity:make_unit_sphere_mesh",

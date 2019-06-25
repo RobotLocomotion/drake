@@ -1,4 +1,4 @@
-#include "drake/multibody/hydroelastics/contact_surface_calculator.h"
+#include "drake/multibody/hydroelastics/contact_surface_from_level_set.h"
 
 #include <fstream>
 
