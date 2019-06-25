@@ -7,6 +7,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_optional.h"
+#include "drake/common/sorted_pair.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
 #include "drake/geometry/query_results/contact_surface.h"
@@ -258,7 +259,7 @@ class ProximityEngine {
    map to `id_A` and `id_B` in a fixed, repeatable manner, where `id_A` and
    `id_B` are GeometryId's of geometries g_A and g_B respectively.
 
-   @param[in]   geometry_map  A map from geometry _index_ to the corresponding
+   @param[in] geometry_map    A map from geometry _index_ to the corresponding
                               global geometry identifier.
    @returns A vector populated with all detected intersections characterized as
             contact surfaces.  */
@@ -266,6 +267,14 @@ class ProximityEngine {
       const std::vector<GeometryId>& /* geometry_map */) const;
 
   //@}
+
+  /**
+   Performs a broad-phase pass and returns a vector containing collision pair
+   candidates. A pair in the returned set is not necessarily in contact, and
+   further analysis must be done to confirm contact. A pair of geometries not
+   present in the result is guaranteed not to be in contact.  */
+  std::vector<SortedPair<GeometryId>> FindCollisionCandidates(
+      const std::vector<GeometryId>& geometry_map) const;
 
   /** @name               Collision filters
 
