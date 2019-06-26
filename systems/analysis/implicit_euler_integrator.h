@@ -162,7 +162,7 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // Various statistics.
   int64_t num_nr_iterations_{0};
 
-  // Second order Runge-Kutta method for estimating the integration error for
+  // Second order Runge-Kutta method for estimating the integration error when 
   // the requested step size lies below the working step size.
   std::unique_ptr<RungeKutta2Integrator<T>> rk2_;
 

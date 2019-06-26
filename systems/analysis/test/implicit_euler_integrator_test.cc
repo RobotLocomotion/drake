@@ -299,13 +299,14 @@ TEST_F(ImplicitIntegratorTest, AccuracyEstAndErrorControl) {
   EXPECT_NO_THROW(integrator.request_initial_step_size_target(dt_));
 }
 
-// Tests accuracy for integrating the linear system (with the state at time t
-// corresponding to f(t) ≡ 4t + C, where C is the initial state) over
-// t ∈ [0, 1]. The error estimator from ImplicitEulerIntegrator is
-// second order, meaning that it uses the Taylor Series expansion:
-// f(t+h) ≈ f(t) + hf'(t) + O(h²)
+// Tests accuracy for integrating linear systems (with the state at time t
+// corresponding to f(t) ≡ St + C, where S is a scalar and C is the initial
+// state) over t ∈ [0, 1]. The asymptotic term in ImplicitEulerIntegrator's
+// error estimate is second order, meaning that it uses the Taylor Series
+// expansion:
+// f(t+h) ≈ f(t) + hf'(t) + O(h²).
 // This formula indicates that the approximation error will be zero if
-// f''(t) = 0, which is true for the linear equation. We check that the
+// f''(t) = 0, which is true for linear systems. We check that the
 // error estimator gives a perfect error estimate for this function.
 GTEST_TEST(ImplicitIntegratorErrorEstimatorTest, LinearTest) {
   LinearScalarSystem linear;
@@ -330,7 +331,7 @@ GTEST_TEST(ImplicitIntegratorErrorEstimatorTest, LinearTest) {
 
   // Repeat this test, but using a final time that is below the working minimum
   // step size (thereby triggering the implicit integrator's alternate, explicit
-  // mode). To retain our existing tolerances, we change the scale factor
+  // mode). To retain our existing tolerances, we change the scale factor (S)
   // for the linear system.
   ie.get_mutable_context()->SetTime(0);
   const double working_min = ie.get_working_minimum_step_size();

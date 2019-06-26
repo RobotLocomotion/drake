@@ -34,7 +34,6 @@ class LinearScalarSystem : public LeafSystem<double> {
     (*deriv)[0] = S_;
   }
 
-  // The linear scalar.
   double S_;
 };
 
