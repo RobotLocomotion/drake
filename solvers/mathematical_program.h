@@ -428,16 +428,17 @@ class MathematicalProgram {
   };
 
   /**
-   * Returns a pair of nonnegative polynomial p = mᵀQm and the coefficient
+   * Returns a pair of nonnegative polynomial p = mᵀQm and the Grammian
    * matrix Q, where m is @p monomial_basis. Adds Q as decision variables to the
    * program. Depending on the type of the polynomial, we will impose different
    * constraint on Q.
+   *
    * if type = kSos, we impose Q being positive semidefinite.
    * if type = kSdsos, we impose Q being scaled diagonally dominant.
    * if type = kDsos, we impose Q being positive diagonally dominant.
    * @param monomial_basis The monomial basis.
    * @param type The type of the nonnegative polynomial.
-   * @return (p, Q) The polynomial p and the coefficient matrix Q. Q has been
+   * @return (p, Q) The polynomial p and the Grammian matrix Q. Q has been
    * added as decision variables to the program.
    */
   std::pair<symbolic::Polynomial, MatrixXDecisionVariable>
