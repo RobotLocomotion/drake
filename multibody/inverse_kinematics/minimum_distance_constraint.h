@@ -91,6 +91,16 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
       MinimumDistancePenaltyFunction penalty_function = {},
       double influence_distance_offset = 1);
 
+  /**
+   Overloaded constructor.
+   Constructs the constraint using MultibodyPlant<AutoDiffXd>.
+   */
+  MinimumDistanceConstraint(
+      const multibody::MultibodyPlant<AutoDiffXd>* const plant,
+      double minimum_distance, systems::Context<AutoDiffXd>* plant_context,
+      MinimumDistancePenaltyFunction penalty_function = {},
+      double influence_distance_offset = 1);
+
   ~MinimumDistanceConstraint() override {}
 
   /** Getter for the minimum distance. */
@@ -122,12 +132,16 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
                      VectorX<T>* y) const;
 
   template <typename T>
-  VectorX<T> Distances(const Eigen::Ref<const VectorX<T>>& x,
-                       double influence_distance) const;
+  void Initialize(const MultibodyPlant<T>& plant,
+                  systems::Context<T>* plant_context, double minimum_distance,
+                  double influence_distance_offset,
+                  MinimumDistancePenaltyFunction penalty_function);
 
-  const multibody::MultibodyPlant<double>& plant_;
-  systems::Context<double>* const plant_context_;
+  const multibody::MultibodyPlant<double>* const plant_double_;
+  systems::Context<double>* const plant_context_double_;
   std::unique_ptr<solvers::MinimumValueConstraint> minimum_value_constraint_;
+  const multibody::MultibodyPlant<AutoDiffXd>* const plant_autodiff_;
+  systems::Context<AutoDiffXd>* const plant_context_autodiff_;
 };
 }  // namespace multibody
 }  // namespace drake

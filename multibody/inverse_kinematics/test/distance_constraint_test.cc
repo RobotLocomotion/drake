@@ -9,21 +9,23 @@ namespace multibody {
 using solvers::test::CheckConstraintEvalNonsymbolic;
 
 TEST_F(TwoFreeSpheresTest, Constructor) {
-  const SortedPair<geometry::GeometryId> geometry_pair(sphere1_geometry_id_,
-                                                       sphere2_geometry_id_);
-  const DistanceConstraint dut(plant_double_, geometry_pair,
-                               plant_context_double_, 0.1, 2);
+  const SortedPair<geometry::GeometryId> geometry_pair_double(
+      GetSphereGeometryId(*plant_double_, sphere1_index_),
+      GetSphereGeometryId(*plant_double_, sphere2_index_));
+  const DistanceConstraint constraint(plant_double_, geometry_pair_double,
+                                      plant_context_double_, 0.1, 2);
 
-  EXPECT_EQ(dut.num_vars(), plant_double_->num_positions());
-  EXPECT_TRUE(CompareMatrices(dut.lower_bound(), Vector1d(0.1)));
-  EXPECT_TRUE(CompareMatrices(dut.upper_bound(), Vector1d(2)));
+  EXPECT_EQ(constraint.num_vars(), plant_double_->num_positions());
+  EXPECT_TRUE(CompareMatrices(constraint.lower_bound(), Vector1d(0.1)));
+  EXPECT_TRUE(CompareMatrices(constraint.upper_bound(), Vector1d(2)));
 }
 
 TEST_F(TwoFreeSpheresTest, TestEval) {
-  const SortedPair<geometry::GeometryId> geometry_pair(sphere1_geometry_id_,
-                                                       sphere2_geometry_id_);
-  const DistanceConstraint dut(plant_double_, geometry_pair,
-                               plant_context_double_, 0.1, 2);
+  const SortedPair<geometry::GeometryId> geometry_pair_double(
+      GetSphereGeometryId(*plant_double_, sphere1_index_),
+      GetSphereGeometryId(*plant_double_, sphere2_index_));
+  const DistanceConstraint constraint(plant_double_, geometry_pair_double,
+                                      plant_context_double_, 0.1, 2);
 
   Eigen::Matrix<double, 14, 1> q;
   // Set q to arbitrary value.
@@ -31,7 +33,7 @@ TEST_F(TwoFreeSpheresTest, TestEval) {
       0.5;
 
   Eigen::VectorXd y;
-  dut.Eval(q, &y);
+  constraint.Eval(q, &y);
 
   plant_double_->SetPositions(plant_context_double_, q);
   const math::RigidTransformd X_WB1 = plant_double_->CalcRelativeTransform(
@@ -49,7 +51,26 @@ TEST_F(TwoFreeSpheresTest, TestEval) {
                       1E-12 /* tolerance is chosen as about 1E4 * eps*/));
 
   Eigen::Matrix<AutoDiffXd, 14, 1> q_autodiff = math::initializeAutoDiff(q);
-  CheckConstraintEvalNonsymbolic(dut, q_autodiff, 1E-12);
+  CheckConstraintEvalNonsymbolic(constraint, q_autodiff, 1E-12);
+
+  // Now check if constraint constructed from MBP<ADS> gives the same result
+  // as that from MBP<double>
+  const SortedPair<geometry::GeometryId> geometry_pair_autodiff(
+      GetSphereGeometryId(*plant_autodiff_, sphere1_index_),
+      GetSphereGeometryId(*plant_autodiff_, sphere2_index_));
+  const DistanceConstraint constraint_from_autodiff(
+      plant_autodiff_, geometry_pair_autodiff, plant_context_autodiff_, 0.1, 2);
+  // Set dq to arbitrary values.
+  Eigen::Matrix<double, 14, 2> dq;
+  for (int i = 0; i < 14; ++i) {
+    dq(i, 0) = std::sin(i + 1);
+    dq(i, 1) = 2 * i - 1;
+  }
+  /* tolerance for checking numerical gradient vs analytical gradient. The
+   * numerical gradient is only accurate up to 5E-6 */
+  const double gradient_tol = 5E-6;
+  TestKinematicConstraintEval(constraint, constraint_from_autodiff, q, dq,
+                              gradient_tol);
 }
 }  // namespace multibody
 }  // namespace drake

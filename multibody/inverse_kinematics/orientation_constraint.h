@@ -64,6 +64,18 @@ class OrientationConstraint : public solvers::Constraint {
       const math::RotationMatrix<double>& R_BbarB, double theta_bound,
       systems::Context<double>* context);
 
+  /**
+   * Overloaded constructor.
+   * Constructs the constraint using MultibodyPlant<AutoDiffXd>
+   */
+  OrientationConstraint(const MultibodyPlant<AutoDiffXd>* const plant,
+                        const Frame<AutoDiffXd>& frameAbar,
+                        const math::RotationMatrix<double>& R_AbarA,
+                        const Frame<AutoDiffXd>& frameBbar,
+                        const math::RotationMatrix<double>& R_BbarB,
+                        double theta_bound,
+                        systems::Context<AutoDiffXd>* context);
+
   ~OrientationConstraint() override {}
 
  private:
@@ -80,12 +92,17 @@ class OrientationConstraint : public solvers::Constraint {
         "variables.");
   }
 
-  const MultibodyPlant<double>& plant_;
+  bool use_autodiff() const { return plant_autodiff_; }
+
+  const MultibodyPlant<double>* const plant_double_;
   const FrameIndex frameAbar_index_;
   const FrameIndex frameBbar_index_;
   const math::RotationMatrix<double> R_AbarA_;
   const math::RotationMatrix<double> R_BbarB_;
-  systems::Context<double>* const context_;
+  systems::Context<double>* const context_double_;
+
+  const MultibodyPlant<AutoDiffXd>* const plant_autodiff_;
+  systems::Context<AutoDiffXd>* context_autodiff_;
 };
 }  // namespace multibody
 }  // namespace drake
