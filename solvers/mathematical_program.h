@@ -446,6 +446,15 @@ class MathematicalProgram {
       NonnegativePolynomial type);
 
   /**
+   * Overloads NewNonnegativePolynomial, except the Grammian matrix Q is an
+   * input instead of an output.
+   */
+  symbolic::Polynomial NewNonnegativePolynomial(
+      const Eigen::Ref<const MatrixX<symbolic::Variable>>& grammian,
+      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+      NonnegativePolynomial type);
+
+  /**
    * Returns a pair of nonnegative polynomial p = mᵀQm and the coefficient
    * matrix Q, where m is the monomial basis, containing all monomials of @p
    * indeterminates of total order up to @p degree / 2, hence the polynomial p
