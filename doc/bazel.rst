@@ -144,13 +144,14 @@ For more information, see https://github.com/bazelbuild/bazel/issues/2537.
 
 Python Versions
 ===============
-By default, Python 2 will be used for both Bazel and the Python bindings; it
-is also usable by passing ``--config=python2``.
+By default, Python 3 will be used for both Bazel and the Python bindings if
+supported on the given platform; it is also usable by passing
+``--config=python3``.
 
-To use Python 3, pass ``--config=python3``. As an example to run all lint
-checks in Python 3::
+To use Python 2, pass ``--config=python2``. As an example to run all lint
+checks in Python 2::
 
-    bazel test --config=python3 --config=lint //...
+    bazel test --config=python2 --config=lint //...
 
 Updating BUILD files
 ====================
