@@ -7,6 +7,7 @@ from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.eigen_geometry import Isometry3_
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.lcm import DrakeMockLcm
 from pydrake.symbolic import Expression
 from pydrake.systems.framework import DiagramBuilder_, InputPort_, OutputPort_
@@ -17,14 +18,8 @@ class TestGeometry(unittest.TestCase):
     def setUp(self):
         warnings.simplefilter('error', DrakeDeprecationWarning)
 
-    def check_types(self, check_func):
-        check_func(float)
-        check_func(AutoDiffXd)
-
-    def test_scene_graph_api(self):
-        self.check_types(self.check_scene_graph_api)
-
-    def check_scene_graph_api(self, T):
+    @numpy_compare.check_nonsymbolic_types
+    def test_scene_graph_api(self, T):
         SceneGraph = mut.SceneGraph_[T]
         InputPort = InputPort_[T]
         OutputPort = OutputPort_[T]
@@ -61,10 +56,8 @@ class TestGeometry(unittest.TestCase):
             mut.DispatchLoadMessage(
                 scene_graph=scene_graph, lcm=lcm)
 
-    def test_frame_pose_vector_api(self):
-        self.check_types(self.check_frame_pose_vector_api)
-
-    def check_frame_pose_vector_api(self, T):
+    @numpy_compare.check_nonsymbolic_types
+    def test_frame_pose_vector_api(self, T):
         FramePoseVector = mut.FramePoseVector_[T]
         Isometry3 = Isometry3_[T]
         obj = FramePoseVector()
@@ -107,10 +100,8 @@ class TestGeometry(unittest.TestCase):
             # N.B. Creation order does not imply value.
             self.assertTrue(a < b or b > a)
 
-    def test_penetration_as_point_pair_api(self):
-        self.check_types(self.check_penetration_as_point_pair_api)
-
-    def check_penetration_as_point_pair_api(self, T):
+    @numpy_compare.check_nonsymbolic_types
+    def test_penetration_as_point_pair_api(self, T):
         obj = mut.PenetrationAsPointPair_[T]()
         self.assertIsInstance(obj.id_A, mut.GeometryId)
         self.assertIsInstance(obj.id_B, mut.GeometryId)
@@ -118,10 +109,8 @@ class TestGeometry(unittest.TestCase):
         self.assertTupleEqual(obj.p_WCb.shape, (3,))
         self.assertEqual(obj.depth, -1.)
 
-    def test_signed_distance_api(self):
-        self.check_types(self.check_signed_distance_api)
-
-    def check_signed_distance_api(self, T):
+    @numpy_compare.check_nonsymbolic_types
+    def test_signed_distance_api(self, T):
         obj = mut.SignedDistancePair_[T]()
         self.assertIsInstance(obj.id_A, mut.GeometryId)
         self.assertIsInstance(obj.id_B, mut.GeometryId)
@@ -130,10 +119,8 @@ class TestGeometry(unittest.TestCase):
         self.assertIsInstance(obj.distance, T)
         self.assertTupleEqual(obj.nhat_BA_W.shape, (3,))
 
-    def test_signed_distance_to_point_api(self):
-        self.check_types(self.check_signed_distance_to_point_api)
-
-    def check_signed_distance_to_point_api(self, T):
+    @numpy_compare.check_nonsymbolic_types
+    def test_signed_distance_to_point_api(self, T):
         obj = mut.SignedDistanceToPoint_[T]()
         self.assertIsInstance(obj.id_G, mut.GeometryId)
         self.assertTupleEqual(obj.p_GN.shape, (3,))
