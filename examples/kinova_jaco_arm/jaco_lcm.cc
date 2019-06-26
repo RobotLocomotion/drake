@@ -37,7 +37,10 @@ JacoCommandReceiver::JacoCommandReceiver(int num_joints, int num_fingers)
   this->DeclareVectorOutputPort(
       systems::BasicVector<double>((num_joints_ + num_fingers_) * 2),
       &JacoCommandReceiver::OutputCommand);
-  this->DeclarePeriodicDiscreteUpdate(kJacoLcmStatusPeriod);
+  this->DeclarePeriodicDiscreteUpdateEvent(
+      kJacoLcmStatusPeriod, 0., &JacoCommandReceiver::UpdateDiscreteState);
+  this->DeclareForcedDiscreteUpdateEvent(
+      &JacoCommandReceiver::ForcedUpdateDiscreteState);
   this->DeclareDiscreteState((num_joints_ + num_fingers_) * 2);
 }
 
@@ -52,9 +55,8 @@ void JacoCommandReceiver::set_initial_position(
       VectorX<double>::Zero(num_joints_ + num_fingers_);
 }
 
-void JacoCommandReceiver::DoCalcDiscreteVariableUpdates(
+void JacoCommandReceiver::UpdateDiscreteState(
     const Context<double>& context,
-    const std::vector<const DiscreteUpdateEvent<double>*>&,
     DiscreteValues<double>* discrete_state) const {
   const AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
@@ -80,6 +82,13 @@ void JacoCommandReceiver::DoCalcDiscreteVariableUpdates(
     velocities(i + num_joints_) =
         command.finger_velocity[i] * kFingerSdkToUrdf;
   }
+}
+
+systems::EventStatus JacoCommandReceiver::ForcedUpdateDiscreteState(
+    const Context<double>& context,
+    DiscreteValues<double>* discrete_state) const {
+  UpdateDiscreteState(context, discrete_state);
+  return systems::EventStatus::Succeeded();
 }
 
 void JacoCommandReceiver::OutputCommand(const Context<double>& context,
@@ -134,12 +143,14 @@ JacoStatusReceiver::JacoStatusReceiver(int num_joints, int num_fingers)
       systems::kUseDefaultName,
       Value<lcmt_jaco_status>{});
   this->DeclareDiscreteState((num_joints_ + num_fingers_)* 2);
-  this->DeclarePeriodicDiscreteUpdate(kJacoLcmStatusPeriod);
+  this->DeclarePeriodicDiscreteUpdateEvent(
+      kJacoLcmStatusPeriod, 0., &JacoStatusReceiver::UpdateDiscreteState);
+  this->DeclareForcedDiscreteUpdateEvent(
+      &JacoStatusReceiver::ForcedUpdateDiscreteState);
 }
 
-void JacoStatusReceiver::DoCalcDiscreteVariableUpdates(
+void JacoStatusReceiver::UpdateDiscreteState(
     const Context<double>& context,
-    const std::vector<const DiscreteUpdateEvent<double>*>&,
     DiscreteValues<double>* discrete_state) const {
   const AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
@@ -169,6 +180,13 @@ void JacoStatusReceiver::DoCalcDiscreteVariableUpdates(
     velocities(i + num_joints_) =
         status.finger_velocity[i] * kFingerSdkToUrdf;
   }
+}
+
+systems::EventStatus JacoStatusReceiver::ForcedUpdateDiscreteState(
+    const Context<double>& context,
+    DiscreteValues<double>* discrete_state) const {
+  UpdateDiscreteState(context, discrete_state);
+  return systems::EventStatus::Succeeded();
 }
 
 void JacoStatusReceiver::OutputStatus(const Context<double>& context,

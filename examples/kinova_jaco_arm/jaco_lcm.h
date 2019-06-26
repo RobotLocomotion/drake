@@ -15,6 +15,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/lcmt_jaco_command.hpp"
 #include "drake/lcmt_jaco_status.hpp"
+#include "drake/systems/framework/event_status.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -65,10 +66,17 @@ class JacoCommandReceiver : public systems::LeafSystem<double> {
   void OutputCommand(const systems::Context<double>& context,
                      systems::BasicVector<double>* output) const;
 
-  void DoCalcDiscreteVariableUpdates(
+  /// Event handler of the periodic discrete state update.
+  void UpdateDiscreteState(
       const systems::Context<double>& context,
-      const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
-      systems::DiscreteValues<double>* discrete_state) const override;
+      systems::DiscreteValues<double>* discrete_state) const;
+
+  /// Forced discrete state update handler. This function will call the periodic
+  /// handler since the update mechanism is the same. It is currently used for
+  /// the purpose of unit test.
+  systems::EventStatus ForcedUpdateDiscreteState(
+      const systems::Context<double>& context,
+      systems::DiscreteValues<double>* discrete_state) const;
 
  private:
   const int num_joints_;
@@ -133,10 +141,17 @@ class JacoStatusReceiver : public systems::LeafSystem<double> {
   void OutputStatus(const systems::Context<double>& context,
                     systems::BasicVector<double>* output) const;
 
-  void DoCalcDiscreteVariableUpdates(
+  /// Event handler of the periodic discrete state update.
+  void UpdateDiscreteState(
       const systems::Context<double>& context,
-      const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
-      systems::DiscreteValues<double>* discrete_state) const override;
+      systems::DiscreteValues<double>* discrete_state) const;
+
+  /// Forced discrete state update handler. This function will call the periodic
+  /// handler since the update mechanism is the same. It is currently used for
+  /// the purpose of unit test.
+  systems::EventStatus ForcedUpdateDiscreteState(
+      const systems::Context<double>& context,
+      systems::DiscreteValues<double>* discrete_state) const;
 
   const int num_joints_;
   const int num_fingers_;
