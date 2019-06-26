@@ -330,19 +330,16 @@ trace. As an example:
         insert_awesome_code_here()
 
     if __name__ == "__main__":
-        # main()  # This is what you would have, but the following is useful:
+        # main()  # Normal invocation; commented out, because we will trace it.
 
-        # These are temporary, for debugging, so meh for programming style.
+        # The following (a) imports minimum dependencies, (b) ensures that
+        # output is immediately flushed (e.g. for segfaults), and (c) traces
+        # execution of your function, but filtering out any Python code outside
+        # of the system prefix.
         import sys, trace
-
-        # If there are segfaults, it's a good idea to always use stderr as it
-        # always prints to the screen, so you should get as much output as
-        # possible.
         sys.stdout = sys.stderr
-
-        # Now trace execution:
         tracer = trace.Trace(trace=1, count=0, ignoredirs=["/usr", sys.prefix])
-        tracer.run('main()')
+        tracer.runfunc(main)
 
 .. note::
 
