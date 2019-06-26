@@ -207,12 +207,21 @@ else()
   string(REPLACE ";" " " SUPPORTED_PYTHON_VERSIONS_STRING
     "${SUPPORTED_PYTHON_VERSIONS}"
   )
-  set(WITH_PYTHON_VERSION 2 CACHE STRING
-    "Choose the version of Python to use, options are ${SUPPORTED_PYTHON_VERSIONS_STRING}"
+  # N.B. The real default value is platform-dependent, set below.
+  set(WITH_PYTHON_VERSION "" CACHE STRING
+    "Choose the version of Python to use, options are: ${SUPPORTED_PYTHON_VERSIONS_STRING}"
   )
   set_property(CACHE WITH_PYTHON_VERSION PROPERTY
     STRINGS "${SUPPORTED_PYTHON_VERSIONS}"
   )
+
+  if(NOT WITH_PYTHON_VERSION)
+    if(UNIX_DISTRIBUTION_CODENAME STREQUAL "xenial")
+      set(WITH_PYTHON_VERSION 2)
+    else()
+      set(WITH_PYTHON_VERSION 3)
+    endif()
+  endif()
 
   string(REPLACE "." ";" WITH_PYTHON_VERSION_LIST "${WITH_PYTHON_VERSION}")
   list(GET WITH_PYTHON_VERSION_LIST 0 WITH_PYTHON_VERSION_MAJOR)
