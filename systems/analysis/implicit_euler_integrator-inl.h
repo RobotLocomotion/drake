@@ -69,7 +69,7 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
 
   // Initialize the embedded second order Runge-Kutta integrator. The maximum
   // step size will be set to infinity because we will explicitly request the
-  // step sizes to be taken. 
+  // step sizes to be taken.
   rk2_ = std::make_unique<RungeKutta2Integrator<T>>(
       this->get_system(),
       std::numeric_limits<double>::infinity() /* maximum step size */,
@@ -434,7 +434,7 @@ bool ImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
     // The error estimation process for explicit Euler uses an explicit second
     // order Runge-Kutta method so that the order of the asymptotic term
     // matches that used for estimating the error of the implicit Euler
-    // integrator. 
+    // integrator.
 
     // Compute the Euler step.
     xdot_ = this->EvalTimeDerivatives(*context).CopyToVector();

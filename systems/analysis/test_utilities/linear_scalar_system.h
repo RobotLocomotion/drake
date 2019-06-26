@@ -11,7 +11,7 @@ namespace analysis_test {
 /// St + 3, where S is 4 by default.
 class LinearScalarSystem : public LeafSystem<double> {
  public:
-  LinearScalarSystem(double S = 4.0) : S_(S) {
+  explicit LinearScalarSystem(double S = 4.0) : S_(S) {
       this->DeclareContinuousState(1);
   }
 

@@ -89,7 +89,7 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   /// This first-order integrator uses embedded second order methods to compute
   /// estimates of the local truncation error. The order of the asymptotic
   /// difference between these two methods (from which the error estimate is
-  /// computed) is O(h²). 
+  /// computed) is O(h²).
   int get_error_estimate_order() const final { return 2; }
 
  private:
@@ -162,7 +162,7 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // Various statistics.
   int64_t num_nr_iterations_{0};
 
-  // Second order Runge-Kutta method for estimating the integration error when 
+  // Second order Runge-Kutta method for estimating the integration error when
   // the requested step size lies below the working step size.
   std::unique_ptr<RungeKutta2Integrator<T>> rk2_;
 
