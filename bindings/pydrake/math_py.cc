@@ -350,13 +350,11 @@ void DoScalarIndependentDefinitions(py::module m) {
   // See TODO in corresponding header file - these should be removed soon!
   pydrake::internal::BindAutoDiffMathOverloads(&m);
   pydrake::internal::BindSymbolicMathOverloads(&m);
-
-  ExecuteExtraPythonCode(m);
 }
 }  // namespace
 
 PYBIND11_MODULE(math, m) {
-  m.doc() = "Bindings for //math.";
+  // N.B. Docstring contained in `_math_extra.py`.
 
   py::module::import("pydrake.autodiffutils");
   py::module::import("pydrake.symbolic");
@@ -364,6 +362,8 @@ PYBIND11_MODULE(math, m) {
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       CommonScalarPack{});
   DoScalarIndependentDefinitions(m);
+
+  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake
