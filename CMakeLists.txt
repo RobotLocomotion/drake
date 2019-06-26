@@ -199,7 +199,7 @@ endif()
 
 # The supported Python major/minor versions should match those listed in both
 # doc/developers.rst and tools/workspace/python/repository.bzl.
-set(SUPPORTED_PYTHON_VERSIONS 2 2.7 3 3.6 3.7)
+set(SUPPORTED_PYTHON_VERSIONS 3 3.6 3.7 2 2.7)
 
 if(PYTHON_EXECUTABLE)
   find_package(PythonInterp MODULE REQUIRED)
@@ -207,12 +207,20 @@ else()
   string(REPLACE ";" " " SUPPORTED_PYTHON_VERSIONS_STRING
     "${SUPPORTED_PYTHON_VERSIONS}"
   )
-  set(WITH_PYTHON_VERSION 2 CACHE STRING
-    "Choose the version of Python to use, options are ${SUPPORTED_PYTHON_VERSIONS_STRING}"
+  set(WITH_PYTHON_VERSION default CACHE STRING
+    "Choose the version of Python to use, options are: default ${SUPPORTED_PYTHON_VERSIONS_STRING}"
   )
   set_property(CACHE WITH_PYTHON_VERSION PROPERTY
     STRINGS "${SUPPORTED_PYTHON_VERSIONS}"
   )
+
+  if(WITH_PYTHON_VERSION STREQUAL default)
+    if(UNIX_DISTRIBUTION_CODENAME STREQUAL "xenial")
+      set(WITH_PYTHON_VERSION 2)
+    else()
+      set(WITH_PYTHON_VERSION 3)
+    endif()
+  endif()
 
   string(REPLACE "." ";" WITH_PYTHON_VERSION_LIST "${WITH_PYTHON_VERSION}")
   list(GET WITH_PYTHON_VERSION_LIST 0 WITH_PYTHON_VERSION_MAJOR)
