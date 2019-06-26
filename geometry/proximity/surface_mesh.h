@@ -161,16 +161,8 @@ class SurfaceMesh {
   SurfaceMesh(std::vector<SurfaceFace>&& faces,
               std::vector<SurfaceVertex<T>>&& vertices)
       : faces_(std::move(faces)), vertices_(std::move(vertices)),
-        area_(faces_.size()),  // Pre-allocate here, not yet calculated.
-        total_area_(0.), p_MSc_(Vector3<T>::Zero()) {
-    // Calculate areas and accumulate area-weighted surface centroid Sc.
-    for (SurfaceFaceIndex f(0); f < faces_.size(); ++f) {
-      AccumulateAreaAndCentroidFromFace(f);
-    }
-
-    // Finalize centroid.
-    if (total_area_ != T(0.))
-      p_MSc_ /= (3. * total_area_);
+        area_(faces_.size()) {  // Pre-allocate here, not yet calculated.
+    CalcAreasAndCentroid();
   }
 
   /** Returns the number of triangular elements in the mesh.
@@ -218,8 +210,9 @@ class SurfaceMesh {
   }
 
  private:
-  // Evaluate area and centroid of a triangular face.
-  void AccumulateAreaAndCentroidFromFace(SurfaceFaceIndex f);
+  // Calculates the areas of each triangle, the total area, and the centorid of
+  // the surface.
+  void CalcAreasAndCentroid();
 
   // The triangles that comprise the surface.
   std::vector<SurfaceFace> faces_;
@@ -238,22 +231,31 @@ class SurfaceMesh {
 };
 
 template <class T>
-void SurfaceMesh<T>::AccumulateAreaAndCentroidFromFace(SurfaceFaceIndex f) {
-  const SurfaceFace& face = faces_[f];
-  const Vector3<T>& r_MA = vertices_[face.vertex(0)].r_MV();
-  const Vector3<T>& r_MB = vertices_[face.vertex(1)].r_MV();
-  const Vector3<T>& r_MC = vertices_[face.vertex(2)].r_MV();
-  const auto r_UV_M = r_MB - r_MA;
-  const auto r_UW_M = r_MC - r_MA;
+void SurfaceMesh<T>::CalcAreasAndCentroid() {
+  total_area_ = 0;
+  p_MSc_.setZero();
 
-  const auto cross = r_UV_M.cross(r_UW_M);
-  const T face_area = T(0.5) * cross.norm();
-  area_[f] = face_area;
-  total_area_ += face_area;
+  for (SurfaceFaceIndex f(0); f < faces_.size(); ++f) {
+    const SurfaceFace& face = faces_[f];
+    const Vector3<T>& r_MA = vertices_[face.vertex(0)].r_MV();
+    const Vector3<T>& r_MB = vertices_[face.vertex(1)].r_MV();
+    const Vector3<T>& r_MC = vertices_[face.vertex(2)].r_MV();
+    const auto r_UV_M = r_MB - r_MA;
+    const auto r_UW_M = r_MC - r_MA;
 
-  // Accumulate area-weighted surface centroid; must be divided by 3X the
-  // total area afterwards.
-  p_MSc_ += face_area * (r_MA + r_MB + r_MC);
+    const auto cross = r_UV_M.cross(r_UW_M);
+    const T face_area = T(0.5) * cross.norm();
+    area_[f] = face_area;
+    total_area_ += face_area;
+
+    // Accumulate area-weighted surface centroid; must be divided by 3X the
+    // total area afterwards.
+    p_MSc_ += face_area * (r_MA + r_MB + r_MC);
+  }
+
+  // Finalize centroid.
+  if (total_area_ != T(0.))
+    p_MSc_ /= (3. * total_area_);
 }
 
 }  // namespace geometry

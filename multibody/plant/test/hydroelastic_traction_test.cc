@@ -61,7 +61,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
   const Context<double>& plant_context() const { return *plant_context_; }
 
   // Returns the default numerical tolerance.
-  double eps() const { return eps_; }
+  double tol() const { return tol_; }
 
   // Computes the spatial tractions due to the hydroelastic model. This computes
   // the spatial traction (in units of N/m²) at Vertex 0 of Triangle 0. We're
@@ -92,7 +92,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     const Vector3<double> p_WQ_expected = X_WY * p_YQ;
 
     // Verify the point of contact.
-    for (int i = 0; i < 3; ++i) ASSERT_NEAR(p_WQ[i], p_WQ_expected[i], eps());
+    for (int i = 0; i < 3; ++i) ASSERT_NEAR(p_WQ[i], p_WQ_expected[i], tol());
 
     const SpatialForce<double> Ft_Ac_W =
         traction_calculator().ComputeSpatialTractionAtAcFromTractionAtAq(
@@ -202,7 +202,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
         std::move(faces), std::move(vertices));
   }
 
-  const double eps_{10 * std::numeric_limits<double>::epsilon()};
+  const double tol_{10 * std::numeric_limits<double>::epsilon()};
   MultibodyPlant<double>* plant_;
   std::unique_ptr<Diagram<double>> diagram_;
   std::unique_ptr<Context<double>> context_;
@@ -232,23 +232,23 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, VanillaTraction) {
   // Check the spatial traction at p. We know that geometry M is the halfspace,
   // so we'll check the spatial traction for geometry N instead. Note that the
   // tangential components are zero.
-  EXPECT_NEAR(f_Bo_Y[0], 0.0, eps());
-  EXPECT_NEAR(f_Bo_Y[1], 0.0, eps());
-  EXPECT_NEAR(f_Bo_Y[2], 0.5, eps());
+  EXPECT_NEAR(f_Bo_Y[0], 0.0, tol());
+  EXPECT_NEAR(f_Bo_Y[1], 0.0, tol());
+  EXPECT_NEAR(f_Bo_Y[2], 0.5, tol());
 
   // A moment on the box will be generated due to the normal traction. The
   // origin of the box frame is located at (0,0,0) in the Y frame.
   // The moment arm at the point will be (.5, .5, -.5), again in the Y frame.
   // Crossing this vector with the traction at that point (0, 0, 0.5) yields the
   // following.
-  EXPECT_NEAR(tau_Bo_Y[0], 0.25, eps());
-  EXPECT_NEAR(tau_Bo_Y[1], -0.25, eps());
-  EXPECT_NEAR(tau_Bo_Y[2], 0, eps());
+  EXPECT_NEAR(tau_Bo_Y[0], 0.25, tol());
+  EXPECT_NEAR(tau_Bo_Y[1], -0.25, tol());
+  EXPECT_NEAR(tau_Bo_Y[2], 0, tol());
 
   // The translational components of the two wrenches should be equal and
   // opposite.
   EXPECT_NEAR((Ft_Bo_W.translational() + Ft_Ao_W.translational()).norm(),
-      0, eps());
+      0, tol());
 }
 
 // Tests the traction calculation with friction but without dissipation
@@ -281,24 +281,25 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithFriction) {
   // for comparing frictional traction components (against the Coulomb model);
   // the units are dissimilar (m/s vs. N and Nm) but using this as the tolerance
   // has proven useful.
+  const double field_value = 0.5;  // in N/m².
   const double regularization_scalar =
       traction_calculator().regularization_scalar();
-  EXPECT_NEAR(f_Bo_Y[0], -0.5, regularization_scalar);
-  EXPECT_NEAR(f_Bo_Y[1], 0.0, eps());
-  EXPECT_NEAR(f_Bo_Y[2], 0.5, eps());
+  EXPECT_NEAR(f_Bo_Y[0], -mu_coulomb * field_value, regularization_scalar);
+  EXPECT_NEAR(f_Bo_Y[1], 0.0, tol());
+  EXPECT_NEAR(f_Bo_Y[2], field_value, tol());
 
   // A moment on the box will be generated due to the traction. The
   // origin of the box frame is located at (0,0,0) in the Y frame.
   // The moment arm at the point will be (.5, .5, -.5). Crossing this vector
   // with the traction at that point (-.5, 0, 0.5) yields the following.
-  EXPECT_NEAR(tau_Bo_Y[0], 0.25, eps());
+  EXPECT_NEAR(tau_Bo_Y[0], 0.25, tol());
   EXPECT_NEAR(tau_Bo_Y[1], 0.0, regularization_scalar);
   EXPECT_NEAR(tau_Bo_Y[2], 0.25, regularization_scalar);
 
   // The translational components of the two wrenches should be equal and
   // opposite.
   EXPECT_NEAR((Ft_Bo_W.translational() + Ft_Ao_W.translational()).norm(),
-      0, eps());
+      0, tol());
 }
 
 // Tests the traction calculation with dissipation tractions but without
@@ -337,23 +338,23 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
   // so we'll check the spatial traction for geometry N instead. The coefficient
   // of friction is unity, so the total frictional traction will have the same
   // magnitude as the normal traction.
-  EXPECT_NEAR(f_Bo_Y[0], 0.0, eps());
-  EXPECT_NEAR(f_Bo_Y[1], 0.0, eps());
-  EXPECT_NEAR(f_Bo_Y[2], normal_traction_magnitude, eps());
+  EXPECT_NEAR(f_Bo_Y[0], 0.0, tol());
+  EXPECT_NEAR(f_Bo_Y[1], 0.0, tol());
+  EXPECT_NEAR(f_Bo_Y[2], normal_traction_magnitude, tol());
 
   // A moment on the box will be generated due to the traction. The
   // origin of the box frame is located at (0,0,0) in the world frame.
   // The moment arm at the point will be (.5, .5, -.5). Crossing this vector
   // with the traction at that point (0, 0, normal_traction_magnitude) yields
   // the following.
-  EXPECT_NEAR(tau_Bo_Y[0], 0.5 * normal_traction_magnitude, eps());
-  EXPECT_NEAR(tau_Bo_Y[1], -0.5 * normal_traction_magnitude, eps());
-  EXPECT_NEAR(tau_Bo_Y[2], 0.0, eps());
+  EXPECT_NEAR(tau_Bo_Y[0], 0.5 * normal_traction_magnitude, tol());
+  EXPECT_NEAR(tau_Bo_Y[1], -0.5 * normal_traction_magnitude, tol());
+  EXPECT_NEAR(tau_Bo_Y[2], 0.0, tol());
 
   // The translational components of the two wrenches should be equal and
   // opposite.
   EXPECT_NEAR((Ft_Bo_W.translational() + Ft_Ao_W.translational()).norm(),
-      0, eps());
+      0, tol());
 }
 
 // Tests the traction calculation over an entire contact patch without
@@ -362,26 +363,28 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, VanillaTractionOverPatch) {
   const double dissipation = 0.0;
   const double mu_coulomb = 0.0;
 
-  // Only run this test for Y = identity.
-  if (!GetParam().IsExactlyIdentity())
-    return;
-
   // Compute the spatial forces at the origins of the body frames.
-  multibody::SpatialForce<double> F_Mo_W, F_No_W;
+  multibody::SpatialForce<double> F_Ao_W, F_Bo_W;
   traction_calculator().ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
       plant_context(), plant(), contact_surface(), dissipation, mu_coulomb,
-      &F_Mo_W, &F_No_W);
+      &F_Ao_W, &F_Bo_W);
+
+  // Re-express the spatial forces in Y's frame for easy interpretability.
+  const math::RotationMatrix<double>& R_WY = GetParam().rotation();
+  const Vector3<double> f_Bo_Y = R_WY.transpose() * F_Bo_W.translational();
+  const Vector3<double> tau_Bo_Y = R_WY.transpose() * F_Bo_W.rotational();
 
   // Check the spatial force. We know that geometry M is the halfspace,
   // so we'll check the spatial force for geometry N instead.
-  EXPECT_NEAR(F_No_W.translational()[0], 0.0, eps());
-  EXPECT_NEAR(F_No_W.translational()[1], 0.0, eps());
-  EXPECT_NEAR(F_No_W.translational()[2], 0.5, eps());
+  const double field_value = 0.5;  // in N/m².
+  EXPECT_NEAR(f_Bo_Y[0], 0.0, tol());
+  EXPECT_NEAR(f_Bo_Y[1], 0.0, tol());
+  EXPECT_NEAR(f_Bo_Y[2], field_value, tol());
 
   // We expect no moment on the box.
-  EXPECT_NEAR(F_No_W.rotational()[0], 0.0, eps());
-  EXPECT_NEAR(F_No_W.rotational()[1], 0.0, eps());
-  EXPECT_NEAR(F_No_W.rotational()[2], 0.0, eps());
+  EXPECT_NEAR(tau_Bo_Y[0], 0.0, tol());
+  EXPECT_NEAR(tau_Bo_Y[1], 0.0, tol());
+  EXPECT_NEAR(tau_Bo_Y[2], 0.0, tol());
 }
 
 // Tests the traction calculation over an entire contact patch with
@@ -390,20 +393,20 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, FrictionalTractionOverPatch) {
   const double dissipation = 0.0;
   const double mu_coulomb = 1.0;
 
-  // Only run this test for Y = identity.
-  if (!GetParam().IsExactlyIdentity())
-    return;
-
   // Give the box an initial (vertical) velocity along the +x axis in the Y
   // frame.
   const math::RotationMatrix<double>& R_WY = GetParam().rotation();
   SetBoxTranslationalVelocity(R_WY * Vector3<double>(1, 0, 0));
 
   // Compute the spatial forces at the origins of the body frames.
-  multibody::SpatialForce<double> F_Mo_W, F_No_W;
+  multibody::SpatialForce<double> F_Ao_W, F_Bo_W;
   traction_calculator().ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
       plant_context(), plant(), contact_surface(), dissipation, mu_coulomb,
-      &F_Mo_W, &F_No_W);
+      &F_Ao_W, &F_Bo_W);
+
+  // Re-express the spatial forces in Y's frame for easy interpretability.
+  const Vector3<double> f_Bo_Y = R_WY.transpose() * F_Bo_W.translational();
+  const Vector3<double> tau_Bo_Y = R_WY.transpose() * F_Bo_W.rotational();
 
   // Check the spatial force. We know that geometry M is the halfspace,
   // so we'll check the spatial force for geometry N instead.  Note that the
@@ -411,12 +414,12 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, FrictionalTractionOverPatch) {
   // for comparing frictional traction components (against the Coulomb model);
   // the units are dissimilar (m/s vs. N and Nm) but using this as the tolerance
   // has proven useful.
+  const double field_value = 0.5;  // in N/m².
   const double regularization_scalar =
       traction_calculator().regularization_scalar();
-  EXPECT_NEAR(F_No_W.translational()[0], -mu_coulomb * 0.5,
-      regularization_scalar);
-  EXPECT_NEAR(F_No_W.translational()[1], 0.0, eps());
-  EXPECT_NEAR(F_No_W.translational()[2], 0.5, eps());
+  EXPECT_NEAR(f_Bo_Y[0], -mu_coulomb * field_value, regularization_scalar);
+  EXPECT_NEAR(f_Bo_Y[1], 0.0, tol());
+  EXPECT_NEAR(f_Bo_Y[2], field_value, tol());
 
   // A moment on the box will be generated due to the integral of the tractions.
   // The origin of the box frame is located at (0,0,0) in the Y frame.
@@ -425,9 +428,9 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, FrictionalTractionOverPatch) {
   // vector with the traction at each point (-.5, 0, 0.5) yields (0, 0.25, 0).
   // The area of the contact surface is unity, so scaling this vector by the
   // area changes only the units, not the values.
-  EXPECT_NEAR(F_No_W.rotational()[0], 0.0, eps());
-  EXPECT_NEAR(F_No_W.rotational()[1], 0.25, regularization_scalar);
-  EXPECT_NEAR(F_No_W.rotational()[2], 0.0, eps());
+  EXPECT_NEAR(tau_Bo_Y[0], 0.0, tol());
+  EXPECT_NEAR(tau_Bo_Y[1], 0.25, regularization_scalar);
+  EXPECT_NEAR(tau_Bo_Y[2], 0.0, tol());
 }
 
 // Tests the traction calculation over an entire contact patch without
@@ -437,10 +440,6 @@ TEST_P(MultibodyPlantHydroelasticTractionTests,
   const double dissipation = 1.0;  // Units: s/m.
   const double mu_coulomb = 0.0;
 
-  // Only run this test for Y = identity.
-  if (!GetParam().IsExactlyIdentity())
-    return;
-
   // Give the box an initial (vertical) velocity along the -z axis in the Y
   // frame.
   const math::RotationMatrix<double>& R_WY = GetParam().rotation();
@@ -449,10 +448,14 @@ TEST_P(MultibodyPlantHydroelasticTractionTests,
       Vector3<double>(0, 0, separating_velocity));
 
   // Compute the spatial forces at the origins of the body frames.
-  multibody::SpatialForce<double> F_Mo_W, F_No_W;
+  multibody::SpatialForce<double> F_Ao_W, F_Bo_W;
   traction_calculator().ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
       plant_context(), plant(), contact_surface(), dissipation, mu_coulomb,
-      &F_Mo_W, &F_No_W);
+      &F_Ao_W, &F_Bo_W);
+
+  // Re-express the spatial forces in Y's frame for easy interpretability.
+  const Vector3<double> f_Bo_Y = R_WY.transpose() * F_Bo_W.translational();
+  const Vector3<double> tau_Bo_Y = R_WY.transpose() * F_Bo_W.rotational();
 
   // Compute the magnitude of the normal traction. Note that the damping
   // constant at each point will be field value * dissipation coefficient.
@@ -464,14 +467,14 @@ TEST_P(MultibodyPlantHydroelasticTractionTests,
 
   // Check the spatial force. We know that geometry M is the halfspace,
   // so we'll check the spatial force for geometry N instead.
-  EXPECT_NEAR(F_No_W.translational()[0], 0.0, eps());
-  EXPECT_NEAR(F_No_W.translational()[1], 0.0, eps());
-  EXPECT_NEAR(F_No_W.translational()[2], normal_traction_magnitude, eps());
+  EXPECT_NEAR(f_Bo_Y[0], 0.0, tol());
+  EXPECT_NEAR(f_Bo_Y[1], 0.0, tol());
+  EXPECT_NEAR(f_Bo_Y[2], normal_traction_magnitude, tol());
 
   // We expect no moment on the box.
-  EXPECT_NEAR(F_No_W.rotational()[0], 0.0, eps());
-  EXPECT_NEAR(F_No_W.rotational()[1], 0.0, eps());
-  EXPECT_NEAR(F_No_W.rotational()[2], 0.0, eps());
+  EXPECT_NEAR(tau_Bo_Y[0], 0.0, tol());
+  EXPECT_NEAR(tau_Bo_Y[1], 0.0, tol());
+  EXPECT_NEAR(tau_Bo_Y[2], 0.0, tol());
 }
 
 // These transformations, denoted X_WY, are passed as parameters to the tests

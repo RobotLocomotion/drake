@@ -64,9 +64,14 @@ ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
     SpatialForce<T>* F_Ao_W, SpatialForce<T>* F_Bo_W) const {
   DRAKE_DEMAND(F_Ao_W && F_Bo_W);
 
-  // Use a second-order Gaussian quadrature rule. This will be exact for linear
-  // and quadratic pressure fields. We don't expect anything higher order.
-  // TODO(sherm1) Consider 1st-order quadrature for linear pressure fields.
+  // Use a second-order Gaussian quadrature rule. For linear pressure fields,
+  // the second-order rule allows exact computation (to floating point error)
+  // of the moment on the bodies from the integral of the contact tractions.
+  // The moment r × f is a quadratic function of the surface location, since it
+  // is a linear operation (r × f) applied to a (typically) linear function
+  // (i.e., the traction, f). Higher-order pressure fields and nonlinear
+  // tractions (from, e.g., incorporating the Stribeck curve into the friction
+  // model) might see benefit from a higher-order quadrature.
   const GaussianTriangleQuadratureRule gaussian(2 /* order */);
 
   // Collect kinematic data once.

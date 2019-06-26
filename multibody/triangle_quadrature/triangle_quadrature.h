@@ -80,6 +80,9 @@ NumericReturnType TriangleQuadrature<NumericReturnType, T>::Integrate(
     const std::function<NumericReturnType(const Vector3<T>&)>& f,
     const TriangleQuadratureRule& rule,
     const T& area) {
+  // TODO(edrumwri) These composite functions might be slowing computation.
+  //     Consider optimizing this.
+
   // Create a function fprime accepting a 2D barycentric representation but
   // using it to call the given 3D function f.
   std::function<NumericReturnType(const Vector2<T>&)> fprime = [&f](

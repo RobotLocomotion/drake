@@ -26,7 +26,8 @@ std::unique_ptr<SurfaceMesh<T>> GenerateTwoTriangleMesh() {
   vertices.emplace_back(Vector3<T>(-0.5, -0.5, -0.5));
   vertices.emplace_back(Vector3<T>(1.0, -1.0, -0.5));
 
-  // Create the two triangles.
+  // Create the two triangles. Note that SurfaceMesh does not specify (or use) a
+  // particular winding.
   std::vector<SurfaceFace> faces;
   faces.emplace_back(
       SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2));
@@ -82,30 +83,30 @@ GTEST_TEST(SurfaceMeshTest, GenerateTwoTriangleMeshAutoDiffXd) {
 
 // Checks the area calculations.
 GTEST_TEST(SurfaceMeshTest, TestArea) {
-  const double eps = 10 * std::numeric_limits<double>::epsilon();
+  const double tol = 10 * std::numeric_limits<double>::epsilon();
   auto surface_mesh = GenerateTwoTriangleMesh<double>();
-  EXPECT_NEAR(surface_mesh->area(SurfaceFaceIndex(0)), 0.5, eps);
-  EXPECT_NEAR(surface_mesh->area(SurfaceFaceIndex(1)), 1.0, eps);
-  EXPECT_NEAR(surface_mesh->total_area(), 1.5, eps);
+  EXPECT_NEAR(surface_mesh->area(SurfaceFaceIndex(0)), 0.5, tol);
+  EXPECT_NEAR(surface_mesh->area(SurfaceFaceIndex(1)), 1.0, tol);
+  EXPECT_NEAR(surface_mesh->total_area(), 1.5, tol);
 
   // Verify that the empty mesh and the zero area mesh both give zero area.
-  EXPECT_NEAR(GenerateEmptyMesh()->total_area(), 0.0, eps);
-  EXPECT_NEAR(GenerateZeroAreaMesh()->total_area(), 0.0, eps);
+  EXPECT_NEAR(GenerateEmptyMesh()->total_area(), 0.0, tol);
+  EXPECT_NEAR(GenerateZeroAreaMesh()->total_area(), 0.0, tol);
 }
 
 // Checks the centroid calculations.
 GTEST_TEST(SurfaceMeshTest, TestCentroid) {
-  const double eps = 10 * std::numeric_limits<double>::epsilon();
+  const double tol = 10 * std::numeric_limits<double>::epsilon();
   auto surface_mesh = GenerateTwoTriangleMesh<double>();
   const Vector3<double> centroid = surface_mesh->centroid();
-  EXPECT_NEAR(centroid[0], 1.0/6, eps);
-  EXPECT_NEAR(centroid[1], -1.0/6, eps);
-  EXPECT_NEAR(centroid[2], -0.5, eps);
+  EXPECT_NEAR(centroid[0], 1.0/6, tol);
+  EXPECT_NEAR(centroid[1], -1.0/6, tol);
+  EXPECT_NEAR(centroid[2], -0.5, tol);
 
   // The documentation for the centroid method specifies particular behavior
   // when the total area is zero. Test that.
-  EXPECT_NEAR(GenerateEmptyMesh()->centroid().norm(), 0.0, eps);
-  EXPECT_NEAR(GenerateZeroAreaMesh()->centroid().norm(), 0.0, eps);
+  EXPECT_NEAR(GenerateEmptyMesh()->centroid().norm(), 0.0, tol);
+  EXPECT_NEAR(GenerateZeroAreaMesh()->centroid().norm(), 0.0, tol);
 }
 
 }  // namespace
