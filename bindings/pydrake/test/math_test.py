@@ -142,7 +142,6 @@ class TestMath(unittest.TestCase):
         check_equality(RigidTransform.Identity(), X_I)
         self.assertIsInstance(X.rotation(), RotationMatrix)
         X.set_rotation(R=R_I)
-        # TODO(eric.cousineau): #11575, remove the conditional.
         self.assertIsInstance(X.translation(), np.ndarray)
         X.set_translation(p=np.zeros(3))
         numpy_compare.assert_float_equal(X.GetAsMatrix4(), X_I)

@@ -308,7 +308,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
               // Reference.
               return CopyIfNotPodType(self->GetPositions(context));
             },
-            py::arg("context"), rvp_for_type<T>(),
+            py::arg("context"), return_value_policy_for_scalar_type<T>(),
             // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), cls_doc.GetPositions.doc_1args)
         .def("GetPositions",
@@ -324,7 +324,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
               // Reference.
               return CopyIfNotPodType(self->GetVelocities(context));
             },
-            py::arg("context"), rvp_for_type<T>(),
+            py::arg("context"), return_value_policy_for_scalar_type<T>(),
             // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), cls_doc.GetVelocities.doc_1args)
         .def("GetVelocities",
