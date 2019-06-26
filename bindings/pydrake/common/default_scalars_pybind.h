@@ -27,5 +27,17 @@ using NonSymbolicScalarPack = type_pack<  // BR
     double,                               //
     AutoDiffXd>;
 
+// TODO(eric.cousineau): Simplify this (#8116).
+/// Permits referencing for builtin dtypes (e.g. T = double), but then switches
+/// to copying for custom dtypes (T = {AutoDiffXd, Expression}).
+template <typename T>
+py::return_value_policy return_value_policy_for_scalar_type() {
+  if (std::is_same<T, double>::value) {
+    return py::return_value_policy::reference_internal;
+  } else {
+    return py::return_value_policy::copy;
+  }
+}
+
 }  // namespace pydrake
 }  // namespace drake

@@ -77,11 +77,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody;
-  // TODO(eric.cousineau): #8116 Simplify this.
-  py::return_value_policy rvp_for_type =
-      (std::is_same<T, double>::value ? py::return_value_policy::reference
-                                      : py::return_value_policy::copy);
-
   // PointPairContactInfo
   {
     using Class = PointPairContactInfo<T>;
@@ -313,7 +308,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
               // Reference.
               return CopyIfNotPodType(self->GetPositions(context));
             },
-            py::arg("context"), rvp_for_type,
+            py::arg("context"), return_value_policy_for_scalar_type<T>(),
             // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), cls_doc.GetPositions.doc_1args)
         .def("GetPositions",
@@ -329,7 +324,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
               // Reference.
               return CopyIfNotPodType(self->GetVelocities(context));
             },
-            py::arg("context"), rvp_for_type,
+            py::arg("context"), return_value_policy_for_scalar_type<T>(),
             // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), cls_doc.GetVelocities.doc_1args)
         .def("GetVelocities",
