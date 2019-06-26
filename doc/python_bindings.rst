@@ -112,7 +112,8 @@ Please note the additional CMake options which affect the Python bindings:
 *   ``-DWITH_GUROBI={ON, [OFF]}`` - Build with Gurobi enabled.
 *   ``-DWITH_MOSEK={ON, [OFF]}`` - Build with MOSEK enabled.
 *   ``-DWITH_SNOPT={ON, [OFF]}`` - Build with SNOPT enabled.
-*   ``-DWITH_PYTHON_VERSION={[2], 3}`` - Build with a specific version of Python.
+*   ``-DWITH_PYTHON_VERSION={2, [3]}`` - Build with a specific version of
+    Python. (Default on Xenial is actually Python 2.)
 
 ``{...}`` means a list of options, and the option surrounded by ``[...]`` is
 the default option. An example of building ``pydrake`` with both Gurobi and
