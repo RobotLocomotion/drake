@@ -101,6 +101,22 @@ The following configurations are presently untested in continuous integration:
 
 -   macOS, Ubuntu Bionic: MATLAB
 
+.. platform-support-roadmap:
+
+Platform Support Roadmap
+-------------------------
+
+Support for Ubuntu 16.04 LTS (Xenial Xerus) will be dropped on or around
+2019-10-26.
+
+Support for Python 2 on all platforms will be dropped on or around 2020-01-01,
+coupled with its
+`End of Life <https://devguide.python.org/#status-of-python-branches>`_.
+
+Related issues:
+
+-   `#10606 <https://github.com/RobotLocomotion/drake/issues/10606>`_
+
 .. _configuration-management-non-determinism:
 
 Configuration Management Non-Determinism
