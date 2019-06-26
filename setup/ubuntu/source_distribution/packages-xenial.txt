@@ -56,5 +56,6 @@ python-sphinx-rtd-theme
 ruby
 unzip
 valgrind
+valgrind-dbg
 zip
 zlib1g-dev

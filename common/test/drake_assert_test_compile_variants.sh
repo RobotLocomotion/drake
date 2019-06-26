@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # This test should only be invoked via Bazel.
 set -ex
 

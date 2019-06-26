@@ -1,9 +1,11 @@
+#!/bin/bash
+
 # This test should only be run via Bazel, never directly on the command line.
 # Unit test for lcm_vector_gen.py.
 
 set -ex
 
-[[ -f ./tools/vector_gen/lcm_vector_gen_test ]]  # Fail-fast when not under Bazel.
+[[ -n "${TEST_TMPDIR}" ]]  # Fail-fast when not under Bazel.
 
 # Dump some debugging output.
 find .

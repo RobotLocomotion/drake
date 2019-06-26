@@ -208,11 +208,12 @@ build:memcheck --copt -g
 # https://sourceforge.net/p/valgrind/mailman/valgrind-developers/?viewmonth=201806&viewday=11&style=flat
 build:memcheck --copt -O2
 build:memcheck --run_under=//tools/dynamic_analysis:valgrind
-build:memcheck --test_tag_filters=-gurobi,-mosek,-snopt,-no_memcheck
-build:memcheck --test_lang_filters=-sh,-py
+build:memcheck --test_lang_filters=-py
+build:memcheck --test_tag_filters=-gurobi,-mosek,-snopt,-lint,-no_memcheck
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
 build:memcheck --test_timeout=1500,7500,22500,90000  # 25x
+test:memcheck --test_env=VALGRIND_OPTS
 
 ### Memcheck everything build. ###
 build:memcheck_everything --build_tests_only
