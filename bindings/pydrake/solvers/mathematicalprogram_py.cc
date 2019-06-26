@@ -165,7 +165,12 @@ class PyFunctionConstraint : public Constraint {
 }  // namespace
 
 PYBIND11_MODULE(mathematicalprogram, m) {
-  m.doc() = "Drake MathematicalProgram Bindings";
+  m.doc() = R"""(
+Bindings for MathematicalProgram
+
+If you are formulating constraints using symbolic formulas, please review the
+top-level documentation for :py:mod:`pydrake.math`.
+)""";
   constexpr auto& doc = pydrake_doc.drake.solvers;
 
   py::module::import("pydrake.autodiffutils");
