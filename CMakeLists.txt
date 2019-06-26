@@ -201,13 +201,22 @@ endif()
 # doc/developers.rst and tools/workspace/python/repository.bzl.
 set(SUPPORTED_PYTHON_VERSIONS 2 2.7 3 3.6 3.7)
 
+set(DEFAULT_PYTHON_VERSION)
 if(PYTHON_EXECUTABLE)
   find_package(PythonInterp MODULE REQUIRED)
 else()
+  if(NOT WITH_PYTHON_VERSION)
+    if(UNIX_DISTRIBUTION_CODENAME STREQUAL xenial)
+      set(DEFAULT_PYTHON_VERSION 2)
+    else()
+      set(DEFAULT_PYTHON_VERSION 3)
+    endif()
+  endif()
+
   string(REPLACE ";" " " SUPPORTED_PYTHON_VERSIONS_STRING
     "${SUPPORTED_PYTHON_VERSIONS}"
   )
-  set(WITH_PYTHON_VERSION 2 CACHE STRING
+  set(WITH_PYTHON_VERSION "${DEFAULT_PYTHON_VERSION}" CACHE STRING
     "Choose the version of Python to use, options are ${SUPPORTED_PYTHON_VERSIONS_STRING}"
   )
   set_property(CACHE WITH_PYTHON_VERSION PROPERTY
