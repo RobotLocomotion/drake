@@ -450,7 +450,7 @@ bool ImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
     num_err_est_function_evaluations_ += (evals_after_rk2 - evals_before_rk2);
 
     // Revert the state to that computed by explicit Euler.
-    context->SetTimeAndContinuousState(t0, xtplus_ie_);
+    context->SetTimeAndContinuousState(t0 + h, xtplus_ie_);
   } else {
     // Try taking the requested step.
     bool success = AttemptStepPaired(t0, h, xt0_, &xtplus_ie_, &xtplus_tr_);
