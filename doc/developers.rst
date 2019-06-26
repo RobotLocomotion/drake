@@ -101,6 +101,11 @@ The following configurations are presently untested in continuous integration:
 
 -   macOS, Ubuntu Bionic: MATLAB
 
+Please review the following issues for current support roadmaps:
+
+-   `#10606 <https://github.com/RobotLocomotion/drake/issues/10606>`_
+-   `#11692 <https://github.com/RobotLocomotion/drake/issues/11692>`_
+
 .. _configuration-management-non-determinism:
 
 Configuration Management Non-Determinism
