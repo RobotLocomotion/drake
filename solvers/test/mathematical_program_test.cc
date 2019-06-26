@@ -2814,6 +2814,9 @@ void CheckNewNonnegativePolynomial(
   }
   const symbolic::Polynomial p_expected(m.dot(Q_poly * m));
   EXPECT_TRUE(p.EqualTo(p_expected));
+
+  const auto p2 = prog.NewNonnegativePolynomial(Q, m, type);
+  EXPECT_TRUE(p2.EqualTo(p_expected));
 }
 
 GTEST_TEST(TestMathematicalProgram, NewNonnegativePolynomial) {
