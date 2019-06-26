@@ -15,6 +15,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/lcmt_jaco_command.hpp"
 #include "drake/lcmt_jaco_status.hpp"
+#include "drake/systems/framework/event_status.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -65,12 +66,11 @@ class JacoCommandReceiver : public systems::LeafSystem<double> {
   void OutputCommand(const systems::Context<double>& context,
                      systems::BasicVector<double>* output) const;
 
-  void DoCalcDiscreteVariableUpdates(
+  /// Event handler of the periodic discrete state update.
+  systems::EventStatus UpdateDiscreteState(
       const systems::Context<double>& context,
-      const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
-      systems::DiscreteValues<double>* discrete_state) const override;
+      systems::DiscreteValues<double>* discrete_state) const;
 
- private:
   const int num_joints_;
   const int num_fingers_;
 };
@@ -133,10 +133,10 @@ class JacoStatusReceiver : public systems::LeafSystem<double> {
   void OutputStatus(const systems::Context<double>& context,
                     systems::BasicVector<double>* output) const;
 
-  void DoCalcDiscreteVariableUpdates(
+  /// Event handler of the periodic discrete state update.
+  systems::EventStatus UpdateDiscreteState(
       const systems::Context<double>& context,
-      const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
-      systems::DiscreteValues<double>* discrete_state) const override;
+      systems::DiscreteValues<double>* discrete_state) const;
 
   const int num_joints_;
   const int num_fingers_;
