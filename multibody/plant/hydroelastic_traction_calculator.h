@@ -63,7 +63,7 @@ class HydroelasticTractionCalculator {
        const math::RigidTransform<T>& X_WA,
        const math::RigidTransform<T>& X_WB,
        const SpatialVelocity<T>& V_WA,
-       const SpatialVelocity<T>& V_WB,  
+       const SpatialVelocity<T>& V_WB,
        const math::RigidTransform<T>& X_WM,
        const geometry::ContactSurface<T>& surface,
        double dissipation, double mu_coulomb,
@@ -97,7 +97,7 @@ class HydroelasticTractionCalculator {
         const math::RigidTransform<T>& X_WA,
         const math::RigidTransform<T>& X_WB,
         const SpatialVelocity<T>& V_WA,
-        const SpatialVelocity<T>& V_WB,  
+        const SpatialVelocity<T>& V_WB,
         const math::RigidTransform<T>& X_WM,
         const geometry::ContactSurface<T>* surface);
 
