@@ -5,7 +5,6 @@
 
 #include "drake/math/orthonormal_basis.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
 #include "drake/multibody/triangle_quadrature/triangle_quadrature.h"
 
@@ -15,50 +14,31 @@ using geometry::ContactSurface;
 using geometry::SurfaceFaceIndex;
 using geometry::SurfaceMesh;
 using math::RigidTransform;
-using systems::Context;
 
 namespace multibody {
 namespace internal {
 
 template <typename T>
 HydroelasticTractionCalculator<T>::HydroelasticTractionCalculatorData::
-    HydroelasticTractionCalculatorData(const Context<T>& context,
-                                       const MultibodyPlant<T>& plant,
+    HydroelasticTractionCalculatorData(const RigidTransform<T>& X_WA, 
+                                       const RigidTransform<T>& X_WB,
+				       const SpatialVelocity<T>& V_WA,
+				       const SpatialVelocity<T>& V_WB,
+                                       const RigidTransform<T>& X_WM,
                                        const ContactSurface<T>* surface)
-    : surface_(*surface) {
+    : X_WA_(X_WA), X_WB_(X_WB), V_WA_(V_WA), V_WB_(V_WB), X_WM_(X_WM), 
+      surface_(*surface) {
   DRAKE_DEMAND(surface);
-
-  // Get the transform of the geometry for M to the world frame.
-  const auto& query_object = plant.get_geometry_query_input_port().
-      template Eval<geometry::QueryObject<T>>(context);
-  X_WM_ = query_object.X_WG(surface->id_M());
-
-  const Vector3<T>& p_MC = surface_.mesh().centroid();
-  p_WC_ = X_WM_ * p_MC;
-
-  // Get the bodies that the two geometries are affixed to. We'll call these
-  // A and B.
-  const geometry::FrameId frameM_id = query_object.inspector().GetFrameId(
-      surface->id_M());
-  const geometry::FrameId frameN_id = query_object.inspector().GetFrameId(
-      surface->id_N());
-  const Body<T>& bodyA = *plant.GetBodyFromFrameId(frameM_id);
-  const Body<T>& bodyB = *plant.GetBodyFromFrameId(frameN_id);
-
-  // Get the transformation of the two bodies to the world frame.
-  X_WA_ = plant.EvalBodyPoseInWorld(context, bodyA);
-  X_WB_ = plant.EvalBodyPoseInWorld(context, bodyB);
-
-  // Get the spatial velocities for the two bodies (at the body frames).
-  V_WA_ = plant.EvalBodySpatialVelocityInWorld(context, bodyA);
-  V_WB_ = plant.EvalBodySpatialVelocityInWorld(context, bodyB);
 }
 
 template <class T>
 void HydroelasticTractionCalculator<T>::
 ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-    const Context<T>& context,
-    const MultibodyPlant<T>& plant,
+    const RigidTransform<T>& X_WA, 
+    const RigidTransform<T>& X_WB,
+    const SpatialVelocity<T>& V_WA,
+    const SpatialVelocity<T>& V_WB,
+    const RigidTransform<T>& X_WM,
     const ContactSurface<T>& surface,
     double dissipation, double mu_coulomb,
     SpatialForce<T>* F_Ao_W, SpatialForce<T>* F_Bo_W) const {
@@ -75,7 +55,8 @@ ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
   const GaussianTriangleQuadratureRule gaussian(2 /* order */);
 
   // Collect kinematic data once.
-  const HydroelasticTractionCalculatorData data(context, plant, &surface);
+  const HydroelasticTractionCalculatorData data(
+      X_WA, X_WB, V_WA, V_WB, X_WM, &surface);
 
   // We'll be accumulating force on body A at the surface centroid C,
   // triangle-by-triangle.

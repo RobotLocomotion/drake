@@ -170,9 +170,10 @@ drake_cc_library(
         "hydroelastic_traction_calculator.h",
     ],
     deps = [
-        ":multibody_plant_core",
         "//geometry/proximity:mesh_field",
         "//geometry/query_results:contact_surface",
+	"//math",
+        "//multibody/math",
         "//multibody/triangle_quadrature",
     ],
 )
