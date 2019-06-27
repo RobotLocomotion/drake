@@ -7,6 +7,7 @@
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -1224,6 +1225,42 @@ class MultibodyTree {
       const Eigen::Ref<const MatrixX<T>>& p_BQi,
       const Frame<T>& frame_A,
       EigenPtr<MatrixX<T>> p_AQi) const;
+
+  /// See MultibodyPlant method.
+  void CalcCenterOfMassPosition(const systems::Context<T>& context,
+                                EigenPtr<Vector3<T>> p_WCcm) const;
+
+  /// See MultibodyPlant method.
+  void CalcCenterOfMassPosition(
+      const systems::Context<T>& context,
+      const std::unordered_set<ModelInstanceIndex>& model_instances,
+      EigenPtr<Vector3<T>> p_WCcm) const;
+
+  /// This method computes the Center of Mass position p_WCcm of specified
+  /// bodies measured and expressed in world frame W. The specified bodies
+  /// are considered as a single composite body C, whose center of
+  /// mass is Ccm. The bodies are selected by set of body indexes
+  /// `body_indexes`.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model. It stores the
+  ///   generalized positions q of the model.
+  /// @param[in] body_indexes
+  ///   The set of selected bodies. `body_indexes` **must** not be empty and
+  ///   should not contain `world_body()`.
+  /// @param[out] p_WCcm
+  ///   The output position of Center of Mass. The output `p_WCcm` **must** have
+  ///   three rows.
+  ///
+  /// @throws std::runtime_error if element in body_indexes does not exist in
+  ///   `MultibodyPlant`.
+  /// @throws std::runtime_error if body_indexes has world_body().
+  /// @throws std::runtime_error if `MultibodyPlant` has no body except
+  ///   world_model_instance().
+  void CalcCenterOfMassPosition(
+      const systems::Context<T>& context,
+      const std::unordered_set<BodyIndex>& body_indexes,
+      EigenPtr<Vector3<T>> p_WCcm) const;
 
   /// See MultibodyPlant method.
   const math::RigidTransform<T>& EvalBodyPoseInWorld(

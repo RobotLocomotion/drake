@@ -440,4 +440,12 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "multibody_plant_com_test",
+    deps = [
+        ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
 add_lint_tests()
