@@ -25,17 +25,18 @@ Argument:
 load("@drake//tools/workspace:execute.bzl", "which")
 
 def _impl(repository_ctx):
-    mosek_major_version = 8
-    mosek_minor_version = 1
-    mosek_patch_version = 0
-    mosek_tweak_version = 51
+    # When these values are updated, tools/dynamic_analysis/tsan.supp may also
+    # need updating.
+    mosek_major_version = 9
+    mosek_minor_version = 0
+    mosek_patch_version = 96
 
     if repository_ctx.os.name == "mac os x":
         mosek_platform = "osx64x86"
-        sha256 = "00aed5ca62acca6689b579503ad19aedb100b4a37dfd6b95e52f52dee414520e"  # noqa
+        sha256 = "04bc5e6edf89439931ba2a2090309a5cbecd2d939f7c1cce8f0b304922ed28ed"  # noqa
     elif repository_ctx.os.name == "linux":
         mosek_platform = "linux64x86"
-        sha256 = "ab2f39c1668105acbdfbe6835f59f547dd8b076378d9943ab40839c70e1141a2"  # noqa
+        sha256 = "ef0c7a74e4a51db028f9cf9d0a0f3c31f9866fb2f7e7434e2356c474f73234bf"  # noqa
     else:
         fail(
             "Operating system is NOT supported",
@@ -43,16 +44,18 @@ def _impl(repository_ctx):
         )
 
     # TODO(jwnimmer-tri) Port to use mirrors.bzl.
-    template = "http://download.mosek.com/stable/{}.{}.{}.{}/mosektools{}.tar.bz2"  # noqa
+    template = "https://download.mosek.com/stable/{}.{}.{}/mosektools{}.tar.bz2"  # noqa
     url = template.format(
         mosek_major_version,
         mosek_minor_version,
         mosek_patch_version,
-        mosek_tweak_version,
         mosek_platform,
     )
     root_path = repository_ctx.path("")
-    strip_prefix = "mosek/{}".format(mosek_major_version)
+    strip_prefix = "mosek/{}.{}".format(
+        mosek_major_version,
+        mosek_minor_version,
+    )
 
     repository_ctx.download_and_extract(
         url,
@@ -66,8 +69,8 @@ def _impl(repository_ctx):
     if repository_ctx.os.name == "mac os x":
         install_name_tool = which(repository_ctx, "install_name_tool")
 
-        # Note that in the 8.1.0.51 packages, libmosek64.dylib is a copy of
-        # libmosek64.8.1.dylib instead of a symlink. Otherwise, the list of
+        # Note that libmosek64.dylib is (erroneously) a copy of
+        # libmosek64.9.0.dylib instead of a symlink. Otherwise, the list of
         # files should include the following in place of bin/libmosek64.dylib:
         #
         # "bin/libmosek64.{}.{}.dylib".format(mosek_major_version,
@@ -109,10 +112,9 @@ def _impl(repository_ctx):
             # even though Ubuntu installs the same shared library by default on
             # all systems already. For some reason, Mosek fails when used with
             # Ubuntu's shared library. If Drake users have other third-party
-            # code that assumes use of Ubunut's libcilkrts, there could be
+            # code that assumes use of Ubuntu's libcilkrts, there could be
             # runtime conflicts; however, this risk seems low.
             "bin/libcilkrts.so.5",
-            "bin/libiomp5.so",
             "bin/libmosek64.so.{}.{}".format(
                 mosek_major_version,
                 mosek_minor_version,
@@ -161,11 +163,9 @@ install(
    docs = [
        "mosek-eula.pdf",
        "@drake//tools/workspace/mosek:LICENSE_CilkPlus",
-       "@drake//tools/workspace/mosek:LICENSE_OpenMP",
    ],
    allowed_externals = [
        "@drake//tools/workspace/mosek:LICENSE_CilkPlus",
-       "@drake//tools/workspace/mosek:LICENSE_OpenMP",
    ],
    deps = [":install_libraries"],
 )

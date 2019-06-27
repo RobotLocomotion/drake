@@ -7,7 +7,6 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 exports_files([
     "LICENSE_CilkPlus",
-    "LICENSE_OpenMP",
 ])
 
 add_lint_tests()
