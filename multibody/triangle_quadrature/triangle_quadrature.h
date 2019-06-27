@@ -35,6 +35,18 @@ class TriangleQuadrature {
       const std::function<NumericReturnType(const Vector2<T>&)>& f,
       const TriangleQuadratureRule& rule,
       const T& area);
+
+  /// Alternative signature for Integrate() that uses three-dimensional
+  /// barycentric coordinates.
+  /// @param f(p) a function that returns a numerical value for point p in the
+  ///        domain of the triangle, specified in barycentric coordinates.
+  ///        The barycentric coordinates are given by
+  ///        (p[0], p[1], p[2]).
+  /// @param area the area of the triangle.
+  static NumericReturnType Integrate(
+      const std::function<NumericReturnType(const Vector3<T>&)>& f,
+      const TriangleQuadratureRule& rule,
+      const T& area);
 };
 
 template <typename NumericReturnType, typename T>
@@ -42,7 +54,6 @@ NumericReturnType TriangleQuadrature<NumericReturnType, T>::Integrate(
     const std::function<NumericReturnType(const Vector2<T>&)>& f,
     const TriangleQuadratureRule& rule,
     const T& area) {
-
   // Get the quadrature points and weights.
   const std::vector<Eigen::Vector2d>& barycentric_coordinates =
       rule.quadrature_points();
@@ -62,6 +73,27 @@ NumericReturnType TriangleQuadrature<NumericReturnType, T>::Integrate(
     integral += f(barycentric_coordinates[i]) * weights[i];
 
   return integral * area;
+}
+
+template <typename NumericReturnType, typename T>
+NumericReturnType TriangleQuadrature<NumericReturnType, T>::Integrate(
+    const std::function<NumericReturnType(const Vector3<T>&)>& f,
+    const TriangleQuadratureRule& rule,
+    const T& area) {
+  // TODO(edrumwri) These composite functions might be slowing computation.
+  //     Consider optimizing this.
+
+  // Create a function fprime accepting a 2D barycentric representation but
+  // using it to call the given 3D function f.
+  std::function<NumericReturnType(const Vector2<T>&)> fprime = [&f](
+      const Vector2<T>& barycentric_2D) {
+    return f(Vector3<T>(
+        barycentric_2D[0],
+        barycentric_2D[1],
+        T(1.0) - barycentric_2D[0] - barycentric_2D[1]));
+  };
+
+  return Integrate(fprime, rule, area);
 }
 
 }  // namespace multibody

@@ -185,6 +185,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "surface_mesh_test",
+    deps = [
+        "//geometry/proximity:mesh_field",
+    ],
+)
+
+drake_cc_googletest(
     name = "volume_mesh_test",
     deps = [
         "//geometry/proximity:volume_mesh",

@@ -97,13 +97,13 @@ class GaussianTriangleQuadratureRule final : public TriangleQuadratureRule {
     }
   }
 
-  int do_order() const override { return order_; }
+  int do_order() const final { return order_; }
 
-  const std::vector<double>& do_weights() const override {
+  const std::vector<double>& do_weights() const final {
     return weights_;
   }
 
-  const std::vector<Vector2<double>>& do_quadrature_points() const override {
+  const std::vector<Vector2<double>>& do_quadrature_points() const final {
     return quadrature_points_;
   }
 

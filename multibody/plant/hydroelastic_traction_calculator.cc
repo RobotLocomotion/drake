@@ -1,6 +1,7 @@
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 
 #include <algorithm>
+#include <utility>
 
 #include "drake/math/orthonormal_basis.h"
 #include "drake/math/rotation_matrix.h"
@@ -27,10 +28,13 @@ HydroelasticTractionCalculator<T>::HydroelasticTractionCalculatorData::
     : surface_(*surface) {
   DRAKE_DEMAND(surface);
 
-  // Get the transformation of the geometry for M to the world frame.
+  // Get the transform of the geometry for M to the world frame.
   const auto& query_object = plant.get_geometry_query_input_port().
       template Eval<geometry::QueryObject<T>>(context);
   X_WM_ = query_object.X_WG(surface->id_M());
+
+  const Vector3<T>& p_MC = surface_.mesh().centroid();
+  p_WC_ = X_WM_ * p_MC;
 
   // Get the bodies that the two geometries are affixed to. We'll call these
   // A and B.
@@ -50,37 +54,98 @@ HydroelasticTractionCalculator<T>::HydroelasticTractionCalculatorData::
   V_WB_ = plant.EvalBodySpatialVelocityInWorld(context, bodyB);
 }
 
-// Computes the spatial forces on the two bodies due to the traction at the
-// given contact point.
-// @param data computed once for each pair of geometries.
-// @param p_WQ the offset vector from the origin of the world frame to the
-//        contact point, expressed in the world frame.
-// @param traction_Aq_W the traction vector applied to Body A at Point Q,
-//        expressed in the world frame, where Body A is the body that
-//        `surface.M_id()` is attached to.
-// @param[out] F_Ao_W on return, the spatial force (due to the traction) that
-//             acts at the origin of the frame of Body A (i.e., that affixed to
-//             `surface.M_id()`).
-// @param[out] F_Bo_W on return, the spatial force (due to the traction) that
-//             acts at the origin of the frame of Body B (i.e., that affixed
-//             to `surface.N_id()`).
-template <typename T>
+template <class T>
 void HydroelasticTractionCalculator<T>::
-    ComputeSpatialForcesAtBodyOriginsFromTraction(
-        const HydroelasticTractionCalculatorData& data,
-        const Vector3<T>& p_WQ, const Vector3<T>& traction_Aq_W,
-        SpatialForce<T>* F_Ao_W, SpatialForce<T>* F_Bo_W) const {
-  // Set the two vectors from the contact point to the two body frames, all
-  // expressed in the world frame.
-  const Vector3<T> p_QAo_W = data.X_WA().translation() - p_WQ;
-  const Vector3<T> p_QBo_W = data.X_WB().translation() - p_WQ;
+ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+    const Context<T>& context,
+    const MultibodyPlant<T>& plant,
+    const ContactSurface<T>& surface,
+    double dissipation, double mu_coulomb,
+    SpatialForce<T>* F_Ao_W, SpatialForce<T>* F_Bo_W) const {
+  DRAKE_DEMAND(F_Ao_W && F_Bo_W);
 
-  // Convert the traction to a momentless-spatial force (i.e., without
-  // changing the point of application). This force will be applied to one
-  // body and the (negated) reaction force will be applied to the other.
-  SpatialForce<T> F_Q_W(Vector3<T>(0, 0, 0), traction_Aq_W);
-  *F_Ao_W = F_Q_W.Shift(p_QAo_W);
-  *F_Bo_W = (-F_Q_W).Shift(p_QBo_W);
+  // Use a second-order Gaussian quadrature rule. For linear pressure fields,
+  // the second-order rule allows exact computation (to floating point error)
+  // of the moment on the bodies from the integral of the contact tractions.
+  // The moment r × f is a quadratic function of the surface location, since it
+  // is a linear operation (r × f) applied to a (typically) linear function
+  // (i.e., the traction, f). Higher-order pressure fields and nonlinear
+  // tractions (from, e.g., incorporating the Stribeck curve into the friction
+  // model) might see benefit from a higher-order quadrature.
+  const GaussianTriangleQuadratureRule gaussian(2 /* order */);
+
+  // Collect kinematic data once.
+  const HydroelasticTractionCalculatorData data(context, plant, &surface);
+
+  // We'll be accumulating force on body A at the surface centroid C,
+  // triangle-by-triangle.
+  SpatialForce<T> F_Ac_W;
+  F_Ac_W.SetZero();
+
+  // Integrate the tractions over all triangles in the contact surface.
+  for (geometry::SurfaceFaceIndex i(0); i < surface.mesh().num_faces(); ++i) {
+    // Construct the function to be integrated over triangle i.
+    // TODO(sherm1) Pull functor creation out of the loop (not a good idea to
+    //              create a new functor for every i).
+    std::function<SpatialForce<T>(const Vector3<T>&)> traction_Ac_W =
+        [this, &data, i, dissipation,
+         mu_coulomb](const Vector3<T>& Q_barycentric) {
+          Vector3<T> p_WQ;
+          const Vector3<T> traction_Aq_W = CalcTractionAtPoint(
+              data, i, Q_barycentric, dissipation, mu_coulomb, &p_WQ);
+          return ComputeSpatialTractionAtAcFromTractionAtAq(data, p_WQ,
+                                                            traction_Aq_W);
+        };
+
+    // Compute the integral over the triangle to get a force from the
+    // tractions (force/area) at the Gauss points (shifted to C).
+    const SpatialForce<T> Fi_Ac_W =  // Force from triangle i.
+        TriangleQuadrature<SpatialForce<T>, T>::Integrate(
+            traction_Ac_W, gaussian, surface.mesh().area(i));
+
+    // Update the spatial force at body A's origin.
+    F_Ac_W += Fi_Ac_W;
+  }
+
+  // The spatial force on body A was accumulated at the surface centroid C. We
+  // need to shift it to A's origin Ao. The force on body B is equal and
+  // opposite to the force on body A, but we want it as if applied at Bo.
+  const Vector3<T>& p_WC = data.p_WC();
+  const Vector3<T>& p_WAo = data.X_WA().translation();
+  const Vector3<T>& p_WBo = data.X_WB().translation();
+  const Vector3<T> p_CAo_W = p_WAo - p_WC;
+  const Vector3<T> p_CBo_W = p_WBo - p_WC;
+
+  *F_Ao_W = F_Ac_W.Shift(p_CAo_W);
+  *F_Bo_W = -(F_Ac_W.Shift(p_CBo_W));
+}
+
+// Computes the spatial force on body A acting at a point Ac coincident with
+// the surface centroid C, due to the traction on body A at the given contact
+// point Q.
+// @param data computed once for each pair of geometries.
+// @param p_WQ the position vector from the origin of the world frame to the
+//        contact point Q, expressed in the world frame.
+// @param traction_Aq_W the traction vector applied to Body A at Point Q,
+//        expressed in the world frame, where Body A is the body to which
+//        `surface.M_id()` is fixed.
+// @retval Ft_Ac_W on return, the spatial traction acting at point Ac of
+//         Body A resulting from the given traction at Q. (Body A is the one
+//         to which `surface.M_id()` is fixed.)
+template <typename T>
+SpatialForce<T> HydroelasticTractionCalculator<T>::
+    ComputeSpatialTractionAtAcFromTractionAtAq(
+        const HydroelasticTractionCalculatorData& data, const Vector3<T>& p_WQ,
+        const Vector3<T>& traction_Aq_W) const {
+  // Find the vector from Q to C.
+  const Vector3<T> p_QC_W = data.p_WC() - p_WQ;
+
+  // Convert the traction to a momentless spatial traction (i.e., without
+  // changing the point of application), then shift to body A's origin which
+  // will add a moment. (We're using "Ft" for spatial traction.)
+  const SpatialForce<T> Ft_Aq_W(Vector3<T>(0, 0, 0), traction_Aq_W);
+  const SpatialForce<T> Ft_Ac_W = Ft_Aq_W.Shift(p_QC_W);
+  return Ft_Ac_W;  // Still a traction (force/area).
 }
 
 template <typename T>
@@ -89,6 +154,7 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
     SurfaceFaceIndex face_index,
     const typename SurfaceMesh<T>::Barycentric& Q_barycentric,
     double dissipation, double mu_coulomb, Vector3<T>* p_WQ) const {
+  DRAKE_DEMAND(p_WQ != nullptr);
   // Compute the point of contact in the world frame.
   const Vector3<T> p_MQ = data.surface().mesh().CalcCartesianFromBarycentric(
       face_index, Q_barycentric);

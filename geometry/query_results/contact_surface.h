@@ -77,15 +77,15 @@ namespace geometry {
   <!-- Note from PR discussion
     1. `∇hₘₙ` *is* a well-behaved vector (subject to some assumptions -- see
         below).
-    2. The contact surface "clips" intersecting goemetries M and N into disjoint
-       geometires M' and N'. `∇hₘₙ` points *out* of M' and *into* N'.
+    2. The contact surface "clips" intersecting geometries M and N into disjoint
+       geometries M' and N'. `∇hₘₙ` points *out* of M' and *into* N'.
     Assumptions:
-    - `∇e` is differntiable and "points outward"
+    - `∇e` is differentiable and "points outward"
 
    TODO(DamrongGuoy):
    1. Document the above listed properties of `∇hₘₙ`.
    2. Add a todo indicating M' and N' should be illustrated in the docs.
-   3. Explicitly add the assumptions on `e` that make this interpretatoin valid.
+   3. Explicitly add the assumptions on `e` that make this interpretation valid.
   -->
 
   Notice that the domain of eₘₙ is the two-dimensional surface 𝕊ₘₙ, while the
@@ -110,10 +110,10 @@ namespace geometry {
   contains Q. With vertices of the triangle labeled as v₀, v₁, v₂, we can
   map (b0, b1, b2) to r_MQ by:
 
-               r_MQ = b0 * r_MV₀ + b1 * r_MV₁ + b2 * r_MV₂,
+               r_MQ = b0 * r_Mv₀ + b1 * r_Mv₁ + b2 * r_Mv₂,
                b0 + b1 + b2 = 1, bᵢ ∈ [0,1],
 
-  where r_MVᵢ is the displacement vector of the vertex labeled as vᵢ from the
+  where r_Mvᵢ is the displacement vector of the vertex labeled as vᵢ from the
   origin of M's frame, expressed in M's frame.
 
   We use the barycentric coordinates to evaluate the field values.
