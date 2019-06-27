@@ -116,7 +116,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
         SpatialVelocity<double>(Vector3<double>::Zero(), v));
   }
 
-  // Computes up-to-date values of X_WA, X_WB, V_WA, V_WB, and X_WM.
+  // Computes up-to-date values of X_WA_, X_WB_, V_WA_, V_WB_, and X_WM_.
   void UpdateKinematicQuantities() {
     // Get the transform of the geometry for M to the world frame.
     const auto& query_object = plant_->get_geometry_query_input_port().
