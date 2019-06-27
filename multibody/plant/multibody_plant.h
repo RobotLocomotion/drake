@@ -1520,9 +1520,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///  have the same size as the input array `p_FP_list`.
   /// @throws std::exception if `Jv_WFp` is nullptr or if it does not have the
   /// appropriate size, see documentation for `Jv_WFp` for details.
-  // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
-  // most applications it is all we need and it is more efficient to compute.
-  // TODO(amcastro-tri): Rework this method as per issue #10155.
   DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
@@ -1530,6 +1527,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Eigen::Ref<const MatrixX<T>>& p_FP_list,
       EigenPtr<MatrixX<T>> p_WP_list,
       EigenPtr<MatrixX<T>> Jv_WFp) const {
+    // TODO(amcastro-tri): provide the Jacobian-times-vector operation.  For
+    // most applications it is all we need and it is more efficient to compute.
+    // TODO(amcastro-tri): Rework this method as per issue #10155.
     return internal_tree().CalcPointsGeometricJacobianExpressedInWorld(
         context, frame_F, p_FP_list, p_WP_list, Jv_WFp);
   }
@@ -1567,13 +1567,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   list in the same order they are specified on input.
   ///
   /// @throws std::exception if `p_FP_list` does not have 3 rows.
-  // TODO(amcastro-tri): Rework this method as per issue #10155.
   DRAKE_DEPRECATED("2019-09-01",
                    "Use CalcBiasForJacobianTranslationalVelocity().")
   VectorX<T> CalcBiasForPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_FP_list) const {
+    // TODO(amcastro-tri): Rework this method as per issue #10155.
     return CalcBiasForJacobianTranslationalVelocity(
         context, JacobianWrtVariable::kV, frame_F, p_FP_list,
         world_frame(), world_frame());
@@ -1630,7 +1630,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, with_respect_to, frame_F, p_FP_list, frame_A, frame_E);
   }
 
-  // TODO(eric.cousineau): Reduce duplicate text between overloads.
   /// This is a variant to compute the geometric Jacobian `Jv_WFp` for a list of
   /// points `P` moving with `frame_F`, given that we know the position `p_WP`
   /// of each point in the list measured and expressed in the world frame W. The
@@ -1669,15 +1668,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if `Jv_WFp` is nullptr or if it does not have the
   /// appropriate size, see documentation for `Jv_WFp` for details.
-  // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
-  // most applications it is all we need and it is more efficient to compute.
-  // TODO(amcastro-tri): Rework this method as per issue #10155.
   DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_WP_list,
       EigenPtr<MatrixX<T>> Jv_WFp) const {
+    // TODO(eric.cousineau): Reduce duplicate text between overloads.
+    // TODO(amcastro-tri): provide the Jacobian-times-vector operation.  Forr
+    // most applications it is all we need and it is more efficient to compute.
+    // TODO(amcastro-tri): Rework this method as per issue #10155.
     return internal_tree().CalcPointsGeometricJacobianExpressedInWorld(
         context, frame_F, p_WP_list, Jv_WFp);
   }
@@ -1731,9 +1731,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// have the same size as the input array `p_FP_list`.
   /// @throws std::exception if `Jq_WFp` is nullptr or if it does not have the
   /// appropriate size, see documentation for `Jq_WFp` for details.
-  // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
-  // most applications it is all we need and it is more efficient to compute.
-  // TODO(amcastro-tri): Rework this method as per issue #10155.
   DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
   void CalcPointsAnalyticalJacobianExpressedInWorld(
       const systems::Context<T>& context,
@@ -1741,6 +1738,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Eigen::Ref<const MatrixX<T>>& p_FP_list,
       EigenPtr<MatrixX<T>> p_WP_list,
       EigenPtr<MatrixX<T>> Jq_WFp) const {
+    // TODO(amcastro-tri): provide the Jacobian-times-vector operation.  For
+    // most applications it is all we need and it is more efficient to compute.
+    // TODO(amcastro-tri): Rework this method as per issue #10155.
     internal_tree().CalcPointsAnalyticalJacobianExpressedInWorld(
         context, frame_F, p_FP_list, p_WP_list, Jq_WFp);
   }
@@ -1789,11 +1789,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if `J_WFp` is nullptr or if it is not of size
   ///   `6 x nv`.
-  // TODO(amcastro-tri): Rework this method as per issue #10155.
+  DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianSpatialVelocity().")
   void CalcFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FP,
       EigenPtr<MatrixX<T>> Jv_WFp) const {
+    // TODO(amcastro-tri): Rework this method as per issue #10155.
     internal_tree().CalcFrameGeometricJacobianExpressedInWorld(
         context, frame_F, p_FP, Jv_WFp);
   }
@@ -1845,13 +1846,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if `J_ABp` is nullptr or if it is not of size
   ///   `6 x nv`.
-  // TODO(amcastro-tri): Rework this method as per issue #10155.
   DRAKE_DEPRECATED("2019-09-01", "Use CalcJacobianSpatialVelocity().")
   void CalcRelativeFrameGeometricJacobian(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
       const Frame<T>& frame_A, const Frame<T>& frame_E,
       EigenPtr<MatrixX<T>> Jv_ABp_E) const {
+    // TODO(amcastro-tri): Rework this method as per issue #10155.
     return CalcJacobianSpatialVelocity(context, JacobianWrtVariable::kV,
         frame_B, p_BP, frame_A, frame_E, Jv_ABp_E);
   }
@@ -1885,12 +1886,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   to the bias in angular acceleration and the with the last three elements
   ///   related to the bias in translational acceleration.
   /// @note SpatialAcceleration(Ab_WFp) defines a valid SpatialAcceleration.
-  // TODO(amcastro-tri): Rework this method as per issue #10155.
   DRAKE_DEPRECATED("2019-09-01",
                    "Use CalcBiasForJacobianSpatialVelocity().")
   Vector6<T> CalcBiasForFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FP) const {
+    // TODO(amcastro-tri): Rework this method as per issue #10155.
     return CalcBiasForJacobianSpatialVelocity(context, JacobianWrtVariable::kV,
         frame_F, p_FP, world_frame(), world_frame());
   }
@@ -2001,8 +2002,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void CalcJacobianSpatialVelocity(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
-      const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
-      const Frame<T>& frame_A, const Frame<T>& frame_E,
+      const Frame<T>& frame_B,
+      const Eigen::Ref<const Vector3<T>>& p_BP,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E,
       EigenPtr<MatrixX<T>> Jw_ABp_E) const {
     return internal_tree().CalcJacobianSpatialVelocity(
         context, with_respect_to, frame_B, p_BP, frame_A, frame_E, Jw_ABp_E);
@@ -2062,7 +2065,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
   /// positions) or with respect to 𝑠 = v (generalized velocities).
   /// @param[in] frame_B The frame on which point Bi is fixed (e.g., welded).
-  /// @param[in] p_BoBi_B A position vector or list of position vectors from
+  /// @param[in] p_BoBi_B A position vector or list of p position vectors from
   /// Bo (frame_B's origin) to points Bi (regarded as fixed to B), where each
   /// position vector is expressed in frame_B.
   /// @param[in] frame_A The frame that measures `v_ABi` (Bi's velocity in A).
@@ -2070,10 +2073,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// the frame in which the Jacobian `Js_v_ABi` is expressed on output.
   /// @param[out] Js_v_ABi_E Point Bi's velocity Jacobian in frame A with
   /// respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
-  /// `Js_v_ABi_E` is a `3 x n` matrix, where n is the number of elements in 𝑠.
-  /// The Jacobian is a function of only generalized positions q (which are
-  /// pulled from the context).
-  /// @throws std::exception if `Js_v_ABi_E` is nullptr or not of size `3 x n`.
+  /// `Js_v_ABi_E` is a `3*p x n` matrix, where p is the number of points Bi and
+  /// n is the number of elements in 𝑠.  The Jacobian is a function of only
+  /// generalized positions q (which are pulled from the context).
+  /// @throws std::exception if `Js_v_ABi_E` is nullptr or not sized `3*p x n`.
   void CalcJacobianTranslationalVelocity(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
@@ -2325,10 +2328,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::logic_error if there are repeated indexes in
   /// `user_to_joint_index_map`.
-  // TODO(amcastro-tri): consider having an extra `free_body_index_map`
-  // so that users could also re-order free bodies if they wanted to.
   MatrixX<double> MakeStateSelectorMatrix(
       const std::vector<JointIndex>& user_to_joint_index_map) const {
+    // TODO(amcastro-tri): consider having an extra `free_body_index_map`
+    // so that users could also re-order free bodies if they wanted to.
     return internal_tree().MakeStateSelectorMatrix(user_to_joint_index_map);
   }
 
@@ -2699,10 +2702,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `id` does not correspond to a geometry in `this`
   /// model registered for contact modeling.
   /// @see RegisterCollisionGeometry() for details on geometry registration.
-  // TODO(amcastro-tri): This API might change or disappear completely as GS
-  // provides support for the specification of surface properties.
   const CoulombFriction<double>& default_coulomb_friction(
       geometry::GeometryId id) const {
+    // TODO(amcastro-tri): This API might change or disappear completely as GS
+    // provides support for the specification of surface properties.
     DRAKE_DEMAND(is_collision_geometry(id));
     const int collision_index = geometry_id_to_collision_index_.at(id);
     return default_coulomb_friction_[collision_index];
@@ -2887,12 +2890,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const systems::OutputPort<T>& get_generalized_contact_forces_output_port(
       ModelInstanceIndex model_instance) const;
 
+  // TODO(amcastro-tri): report contact results for plants modeled as a
+  // continuous system as well.
   /// Returns a constant reference to the port that outputs ContactResults.
   /// @throws std::exception if `this` plant is not modeled as a discrete system
   /// with periodic updates.
   /// @throws std::exception if called pre-finalize, see Finalize().
-  // TODO(amcastro-tri): report contact results for plants modeled as a
-  // continuous system as well.
   const systems::OutputPort<T>& get_contact_results_output_port() const;
 
   /// Returns a constant reference to the *world* body.

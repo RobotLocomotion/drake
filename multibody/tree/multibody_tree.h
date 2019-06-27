@@ -1276,7 +1276,8 @@ class MultibodyTree {
   /// See MultibodyPlant method.
   void CalcFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FP,
+      const Frame<T>& frame_F,
+      const Eigen::Ref<const Vector3<T>>& p_FP,
       EigenPtr<MatrixX<T>> Jv_WFp) const;
 
   /// See MultibodyPlant method.
@@ -2208,6 +2209,40 @@ class MultibodyTree {
       std::vector<SpatialForce<T>>* F_BMo_W_array,
       EigenPtr<VectorX<T>> tau_array) const;
 
+  // Helper method for Jacobian methods, namely CalcJacobianAngularVelocity(),
+  // CalcJacobianTranslationalVelocity(), and CalcJacobianSpatialVelocity().
+  // @param[in] context The state of the multibody system.
+  // @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  // JacobianWrtVariable::kV, indicating whether Jacobians Js_w_WF and Js_v_WFpi
+  // are partial derivatives with respect to 𝑠 = q̇ (time-derivatives of
+  // generalized positions) or with respect to 𝑠 = v (generalized velocities).
+  // If 𝑠 = q̇, `w_WF = Js_w_WF ⋅ q̇`  and  `v_WFpi = Js_v_WFpi ⋅ q̇`.
+  // If 𝑠 = v, `w_WF = Js_w_WF ⋅ v`  and  `v_WFpi = Js_v_WFpi ⋅ v`.
+  // @param[in] frame_F The frame on which point Fpi is fixed (e.g., welded).
+  // @param[in] p_WoFpi_W A position vector or list of position vectors from
+  // Wo (world frame W's origin) to points Fpi (regarded as fixed/welded to F),
+  // where each position vector is expressed in frame W.
+  // @param[out] Js_w_WF_W Frame B's angular velocity Jacobian in frame W with
+  // respect to speeds 𝑠 (which is either q̇ or v), expressed in frame W.
+  // `Js_w_WF_W` is either nullptr or a `3 x n` matrix, where n is the number of
+  // elements in 𝑠.
+  // @param[out] Js_v_WFpi_W Point Fpi's velocity Jacobian in world frame W with
+  // respect to speeds 𝑠 (which is either q̇ or v), expressed in frame W.
+  // `Js_v_WFpi_W` is either nullptr or a `3*p x n` matrix, where p is the
+  // number of points in Fpi and n is the number of elements in 𝑠.
+  // @throws std::exception if any of the following occurs:
+  // - The size of `p_WoFpi_W' differs from `3 x n`.
+  // - `Js_w_WF_W` and `Js_v_WFpi_W` are both nullptr.
+  // - `Js_w_WF_W` is not nullptr and its size differs from `3 x n`.
+  // - `Js_v_WFpi_W` is not nullptr and its size differs from `3*p x n`.
+  void CalcJacobianAngularAndOrTranslationalVelocityWorldHelper(
+      const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_F,
+      const Eigen::Ref<const Matrix3X<T>>& p_WoFpi_W,
+      EigenPtr<MatrixX<T>> Js_w_WF_W,
+      EigenPtr<MatrixX<T>> Js_v_WFpi_W) const;
+
   // Helper method to compute the rotational part of the frame Jacobian Jr_WFq
   // and the translational part of the frame Jacobian Jt_WFq for a list of
   // points Q which instantaneously move with frame F that is, the position
@@ -2278,7 +2313,14 @@ class MultibodyTree {
       const Eigen::Ref<const MatrixX<T>>& p_WQ_list,
       JacobianWrtVariable with_respect_to,
       EigenPtr<MatrixX<T>> Jr_WFq,
-      EigenPtr<MatrixX<T>> Jt_WFq) const;
+      EigenPtr<MatrixX<T>> Jt_WFq) const {
+    CalcJacobianAngularAndOrTranslationalVelocityWorldHelper(context,
+                                                             with_respect_to,
+                                                             frame_F,
+                                                             p_WQ_list,
+                                                             Jr_WFq,
+                                                             Jt_WFq);
+  }
 
   // Helper method for CalcJacobianTranslationalVelocity().
   // @param[in] context The state of the multibody system.
@@ -2287,21 +2329,22 @@ class MultibodyTree {
   // partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
   // positions) or with respect to 𝑠 = v (generalized velocities).
   // @param[in] frame_B The frame on which point Bi is fixed (e.g., welded).
-  // @param[in] p_WoBi_W A position vector or list of position vectors from
+  // @param[in] p_WoBi_W A position vector or list of p position vectors from
   // Wo (world frame W's origin) to points Bi (regarded as fixed to B),
   // where each position vector is expressed in frame W.
   // @param[in] frame_A The frame that measures `v_ABi` (Bi's velocity in A).
   // @param[out] Js_v_ABi_W Point Bi's velocity Jacobian in frame A with
   // respect to speeds 𝑠 (which is either q̇ or v), expressed in world frame W.
-  // `Js_v_ABi_E` is a `3 x n` matrix, where n is the number of elements in 𝑠.
-  // @throws std::exception if `Js_v_ABi_W` is nullptr or not of size `3 x n`.
+  // `Js_v_ABi_W` is a `3*p x n` matrix, where p is the number of points Bi and
+  // n is the number of elements in 𝑠.
+  // @throws std::exception if `Js_v_ABi_W` is nullptr or not sized `3*p x n`.
   void CalcJacobianTranslationalVelocityHelper(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_B,
       const Eigen::Ref<const Matrix3X<T>>& p_WoBi_W,
       const Frame<T>& frame_A,
-      EigenPtr<MatrixX<T>> Js_v_ABi_E) const;
+      EigenPtr<MatrixX<T>> Js_v_ABi_W) const;
 
   // Helper method to apply forces due to damping at the joints.
   // MultibodyTree treats damping forces separately from other ForceElement
