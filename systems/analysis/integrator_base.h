@@ -686,7 +686,7 @@ class IntegratorBase {
     // that time be non-negative.
     DRAKE_DEMAND(context_->get_time() >= 0);
     const double tol = 10 * std::numeric_limits<double>::epsilon() *
-        ExtractDoubleOrThrow(max(t_target, context_->get_time()));
+        ExtractDoubleOrThrow(max(1.0, max(t_target, context_->get_time())));
     DRAKE_DEMAND(abs(context_->get_time() - t_target) < tol);
     context_->SetTime(t_target);
 

@@ -5,6 +5,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
 #include "drake/systems/analysis/test_utilities/discontinuous_spring_mass_damper_system.h"
+#include "drake/systems/analysis/test_utilities/linear_scalar_system.h"
 #include "drake/systems/analysis/test_utilities/robertson_system.h"
 #include "drake/systems/analysis/test_utilities/spring_mass_damper_system.h"
 #include "drake/systems/analysis/test_utilities/stationary_system.h"
@@ -15,6 +16,7 @@ namespace drake {
 namespace systems {
 namespace {
 
+using analysis_test::LinearScalarSystem;
 using analysis_test::StationarySystem;
 using implicit_integrator_test::SpringMassDamperSystem;
 using implicit_integrator_test::DiscontinuousSpringMassDamperSystem;
@@ -295,6 +297,58 @@ TEST_F(ImplicitIntegratorTest, AccuracyEstAndErrorControl) {
   EXPECT_EQ(integrator.supports_error_estimation(), true);
   EXPECT_NO_THROW(integrator.set_target_accuracy(1e-1));
   EXPECT_NO_THROW(integrator.request_initial_step_size_target(dt_));
+}
+
+// Tests accuracy for integrating linear systems (with the state at time t
+// corresponding to f(t) ≡ St + C, where S is a scalar and C is the initial
+// state) over t ∈ [0, 1]. The asymptotic term in ImplicitEulerIntegrator's
+// error estimate is second order, meaning that it uses the Taylor Series
+// expansion:
+// f(t+h) ≈ f(t) + hf'(t) + O(h²).
+// This formula indicates that the approximation error will be zero if
+// f''(t) = 0, which is true for linear systems. We check that the
+// error estimator gives a perfect error estimate for this function.
+GTEST_TEST(ImplicitIntegratorErrorEstimatorTest, LinearTest) {
+  LinearScalarSystem linear;
+  auto linear_context = linear.CreateDefaultContext();
+  const double C = linear.Evaluate(0);
+  linear_context->SetTime(0.0);
+  linear_context->get_mutable_continuous_state_vector()[0] = C;
+
+  ImplicitEulerIntegrator<double> ie(linear, linear_context.get());
+  const double t_final = 1.0;
+  ie.set_maximum_step_size(t_final);
+  ie.set_fixed_step_mode(true);
+  ie.Initialize();
+  ASSERT_TRUE(ie.IntegrateWithSingleFixedStepToTime(t_final));
+
+  const double err_est = ie.get_error_estimate()->get_vector()[0];
+
+  // Note the very tight tolerance used, which will likely not hold for
+  // arbitrary values of C, t_final, or polynomial coefficients.
+  EXPECT_NEAR(err_est, 0.0, 2 * std::numeric_limits<double>::epsilon());
+
+  // Repeat this test, but using a final time that is below the working minimum
+  // step size (thereby triggering the implicit integrator's alternate, explicit
+  // mode). To retain our existing tolerances, we change the scale factor (S)
+  // for the linear system.
+  ie.get_mutable_context()->SetTime(0);
+  const double working_min = ie.get_working_minimum_step_size();
+  LinearScalarSystem scaled_linear(4.0/working_min);
+  auto scaled_linear_context = scaled_linear.CreateDefaultContext();
+  ImplicitEulerIntegrator<double> ie2(
+      scaled_linear, scaled_linear_context.get());
+  const double updated_t_final = working_min / 2;
+  ie2.set_maximum_step_size(updated_t_final);
+  ie2.set_fixed_step_mode(true);
+  ie2.Initialize();
+  ASSERT_TRUE(ie2.IntegrateWithSingleFixedStepToTime(updated_t_final));
+
+  const double updated_err_est = ie2.get_error_estimate()->get_vector()[0];
+
+  // Note the very tight tolerance used, which will likely not hold for
+  // arbitrary values of C, t_final, or polynomial coefficients.
+  EXPECT_NEAR(updated_err_est, 0.0, 2 * std::numeric_limits<double>::epsilon());
 }
 
 // Checks the validity of general integrator statistics and resets statistics.

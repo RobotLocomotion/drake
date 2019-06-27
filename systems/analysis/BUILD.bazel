@@ -158,6 +158,7 @@ drake_cc_library(
     ],
     deps = [
         ":implicit_integrator",
+        ":runge_kutta2_integrator",
         "//math:gradient",
     ],
 )
