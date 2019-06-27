@@ -944,6 +944,78 @@ void MultibodyTree<T>::CalcPointsPositions(
 }
 
 template <typename T>
+Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
+    const systems::Context<T>& context) const {
+  DRAKE_THROW_UNLESS(num_bodies() > 1);
+
+  std::unordered_set<ModelInstanceIndex> model_instances;
+  for (ModelInstanceIndex model_instance_index(1);
+       model_instance_index < num_model_instances(); ++model_instance_index)
+    model_instances.insert(model_instance_index);
+
+  return CalcCenterOfMassPosition(context, model_instances);
+}
+
+template <typename T>
+Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
+    const systems::Context<T>& context,
+    const std::unordered_set<ModelInstanceIndex>& model_instances) const {
+  DRAKE_THROW_UNLESS(num_bodies() > 1);
+  DRAKE_THROW_UNLESS(!model_instances.empty());
+
+  // TODO(Zhaoyuan): Consider how to report meaningful error if model_instance
+  // is invalid.
+  for (auto model_instance : model_instances) {
+    DRAKE_THROW_UNLESS(model_instance != world_model_instance());
+    DRAKE_THROW_UNLESS(model_instance < num_model_instances());
+  }
+
+  std::unordered_set<BodyIndex> body_indexes;
+  for (auto model_instance : model_instances) {
+    const std::vector<BodyIndex> body_index_in_instance =
+        GetBodyIndices(model_instance);
+    for (BodyIndex body_index : body_index_in_instance)
+      body_indexes.insert(body_index);
+  }
+
+  return CalcCenterOfMassPosition(context, body_indexes);
+}
+
+template <typename T>
+Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
+    const systems::Context<T>& context,
+    const std::unordered_set<BodyIndex>& body_indexes) const {
+  DRAKE_THROW_UNLESS(num_bodies() > 1);
+  DRAKE_THROW_UNLESS(!body_indexes.empty());
+
+  for (BodyIndex body_index : body_indexes) {
+    DRAKE_THROW_UNLESS(body_index != BodyIndex(0));
+    DRAKE_THROW_UNLESS(body_index < num_bodies());
+  }
+
+  Vector3<T> Mp = Vector3<T>::Zero();
+  T composite_mass = 0;
+
+  for (BodyIndex body_index : body_indexes) {
+    const Body<T>& body = get_body(body_index);
+
+    const Vector3<T> pi_BoBcm = body.CalcCenterOfMassInBodyFrame(context);
+    Vector3<T> pi_WBcm = Vector3<T>::Zero(3);
+    CalcPointsPositions(context, body.body_frame(), pi_BoBcm, world_frame(),
+                        &pi_WBcm);
+
+    // Calculate composite_mass and M * p in world frame.
+    const T& body_mass = body.get_mass(context);
+    // Mp = ∑ mᵢ * pi_WBcm
+    Mp += body_mass * pi_WBcm;
+    // composite_mass = ∑ mᵢ
+    composite_mass += body_mass;
+  }
+
+  return Mp / composite_mass;
+}
+
+template <typename T>
 const RigidTransform<T>& MultibodyTree<T>::EvalBodyPoseInWorld(
     const systems::Context<T>& context,
     const Body<T>& body_B) const {
