@@ -1442,6 +1442,54 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, frame_B, p_BQi, frame_A, p_AQi);
   }
 
+  /// This method computes the Center of Mass position p_WCcm of all bodies in
+  /// `MultibodyPlant` measured and expressed in world frame W. The bodies are
+  /// considered as a single composite body C, whose center of mass is Ccm.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model. It stores the
+  ///   generalized positions q of the model.
+  /// @returns p_WCcm
+  ///   The output position of Center of Mass in the world frame W. The output
+  ///   `p_WCcm` **must** have three rows.
+  ///
+  /// @throws std::runtime_error if `MultibodyPlant` has no body except
+  ///   `world_body()`.
+  Vector3<T> CalcCenterOfMassPosition(
+      const systems::Context<T>& context) const {
+    return internal_tree().CalcCenterOfMassPosition(context);
+  }
+
+  /// This method computes the Center of Mass position p_WCcm of specified model
+  /// instances measured and expressed in world frame W. The specified model
+  /// instances are considered as a single composite body C, whose center of
+  /// mass is Ccm. The models are selected by set of model instances
+  /// `model_instances`. This function does not distinguish between welded
+  /// bodies, joint connected bodies and floating bodies in the
+  /// `model_instances`.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model. It stores the
+  ///   generalized positions q of the model.
+  /// @param[in] model_instances
+  ///   The set selected model instances. `model_instances` **must** not be
+  ///   empty and **must** not contain `world_model_instance()`.
+  /// @returns p_WCcm
+  ///   The output position of Center of Mass in the world frame W. The output
+  ///   `p_WCcm` **must** have three rows.
+  ///
+  /// @throws std::runtime_error if element in model_instances does not exist in
+  ///   `MultibodyPlant`.
+  /// @throws std::runtime_error if model_instances has world_model_instance().
+  /// @throws std::runtime_error if `MultibodyPlant` has no model_instance
+  ///   except `world_model_instance()`.
+  /// @throws std::runtime_error if `model_instances.empty() == true`.
+  Vector3<T> CalcCenterOfMassPosition(
+      const systems::Context<T>& context,
+      const std::unordered_set<ModelInstanceIndex>& model_instances) const {
+    return internal_tree().CalcCenterOfMassPosition(context, model_instances);
+  }
+
   /// Evaluate the pose `X_WB` of a body B in the world frame W.
   /// @param[in] context
   ///   The context storing the state of the model.
