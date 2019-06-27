@@ -2213,6 +2213,12 @@ class System : public SystemBase {
     return *forced_discrete_update_events_;
   }
 
+  EventCollection<UnrestrictedUpdateEvent<T>>&
+  get_mutable_forced_unrestricted_update_events() {
+    DRAKE_DEMAND(forced_unrestricted_update_events_.get());
+    return *forced_unrestricted_update_events_;
+  }
+
   const EventCollection<PublishEvent<T>>&
   get_forced_publish_events() const {
     DRAKE_DEMAND(forced_publish_events_.get());
