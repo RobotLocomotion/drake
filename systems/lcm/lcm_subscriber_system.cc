@@ -22,8 +22,7 @@ constexpr int kMagic = 6832;  // An arbitrary value.
 }  // namespace
 
 LcmSubscriberSystem::LcmSubscriberSystem(
-    const std::string& channel,
-    std::unique_ptr<SerializerInterface> serializer,
+    const std::string& channel, std::unique_ptr<SerializerInterface> serializer,
     drake::lcm::DrakeLcmInterface* lcm)
     : channel_(channel),
       serializer_(std::move(serializer)),
@@ -31,8 +30,8 @@ LcmSubscriberSystem::LcmSubscriberSystem(
   DRAKE_DEMAND(serializer_ != nullptr);
   DRAKE_DEMAND(lcm);
 
-  subscription_ = lcm->Subscribe(
-      channel_, [this](const void* buffer, int size) {
+  subscription_ =
+      lcm->Subscribe(channel_, [this](const void* buffer, int size) {
         this->HandleMessage(buffer, size);
       });
   if (subscription_) {
@@ -42,9 +41,7 @@ LcmSubscriberSystem::LcmSubscriberSystem(
   // Use the "advanced" method to construct explicit non-member functors to
   // deal with the unusual methods we have available.
   DeclareAbstractOutputPort(
-      [this]() {
-        return this->AllocateSerializerOutputValue();
-      },
+      [this]() { return this->AllocateSerializerOutputValue(); },
       [this](const Context<double>& context, AbstractValue* out) {
         this->CalcSerializerOutputValue(context, out);
       });
@@ -55,6 +52,11 @@ LcmSubscriberSystem::LcmSubscriberSystem(
   static_assert(kStateIndexMessageCount == 1, "");
   this->DeclareAbstractState(AbstractValue::Make<int>(0));
 
+  // Declare an unrestricted forced event to update the message and the message
+  // count.
+  this->DeclareForcedUnrestrictedUpdateEvent(
+      &LcmSubscriberSystem::UpdateMessageAndMessageCount);
+
   set_name(make_name(channel_));
 }
 
@@ -63,10 +65,8 @@ LcmSubscriberSystem::~LcmSubscriberSystem() {
   magic_number_ = 0;
 }
 
-void LcmSubscriberSystem::DoCalcUnrestrictedUpdate(
-    const Context<double>&,
-    const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
-    State<double>* state) const {
+systems::EventStatus LcmSubscriberSystem::UpdateMessageAndMessageCount(
+    const Context<double>&, State<double>* state) const {
   AbstractValues& abstract_state = state->get_mutable_abstract_state();
   std::lock_guard<std::mutex> lock(received_message_mutex_);
   if (!received_message_.empty()) {
@@ -76,6 +76,8 @@ void LcmSubscriberSystem::DoCalcUnrestrictedUpdate(
   }
   abstract_state.get_mutable_value(kStateIndexMessageCount)
       .get_mutable_value<int>() = received_message_count_;
+
+  return systems::EventStatus::Succeeded();
 }
 
 int LcmSubscriberSystem::GetMessageCount(const Context<double>& context) const {
@@ -102,11 +104,21 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
 
   // Schedule an update event at the current time.
   *time = context.get_time();
+
+  // Create a unrestricted event and tie the handler to the corresponding
+  // function.
+  systems::UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback
+      callback = [this](const Context<double>& c,
+                        const systems::UnrestrictedUpdateEvent<double>&,
+                        State<double>* s) {
+        this->UpdateMessageAndMessageCount(c, s);
+      };
+
   EventCollection<UnrestrictedUpdateEvent<double>>& uu_events =
       events->get_mutable_unrestricted_update_events();
   uu_events.add_event(
       std::make_unique<systems::UnrestrictedUpdateEvent<double>>(
-          TriggerType::kTimed));
+          TriggerType::kTimed, callback));
 }
 
 std::string LcmSubscriberSystem::make_name(const std::string& channel) {
@@ -141,9 +153,10 @@ void LcmSubscriberSystem::HandleMessage(const void* buffer, int size) {
   received_message_condition_variable_.notify_all();
 }
 
-int LcmSubscriberSystem::WaitForMessage(
-    int old_message_count, AbstractValue* message, double timeout) const {
-// NOLINTNEXTLINE(build/namespaces): The chrono literals are just so convenient.
+int LcmSubscriberSystem::WaitForMessage(int old_message_count,
+                                        AbstractValue* message,
+                                        double timeout) const {
+  // NOLINTNEXTLINE(build/namespaces): The chrono literals are so convenient.
   using namespace std::chrono_literals;
   using Clock = std::chrono::steady_clock;
   using Duration = Clock::duration;
@@ -184,8 +197,8 @@ int LcmSubscriberSystem::WaitForMessage(
   }
 
   if (message) {
-      serializer_->Deserialize(
-          received_message_.data(), received_message_.size(), message);
+    serializer_->Deserialize(received_message_.data(), received_message_.size(),
+                             message);
   }
 
   return received_message_count_;
