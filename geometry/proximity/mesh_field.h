@@ -11,7 +11,7 @@ namespace drake {
 namespace geometry {
 
 /** %MeshField is an abstract class that represents a field variable defined
-  on a mesh. It can evaluate the field value at any location on any element
+  on a mesh M. It can evaluate the field value at any location on any element
   of the mesh.
 
   @tparam FieldValue  a valid Eigen scalar or vector of valid Eigen scalars for
@@ -31,6 +31,15 @@ class MeshField {
   virtual FieldValue Evaluate(
       const typename MeshType::ElementIndex e,
       const typename MeshType::Barycentric& b) const = 0;
+
+  /** Evaluates the field value at a point Q on an element.
+   @param e The index of the element.
+   @param p_MQ The position of point Q expressed in frame M, in Cartesian
+               coordinates. M is the frame of the mesh.
+   */
+  virtual FieldValue EvaluateCartesian(
+      const typename MeshType::ElementIndex e,
+      const typename MeshType::Cartesian& p_MQ) const = 0;
 
   /** Copy to a new %MeshField and set the new %MeshField to use a new
    compatible mesh. %MeshField needs a mesh to operate; however, %MeshField
@@ -61,14 +70,14 @@ class MeshField {
       const = 0;
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshField)
-  explicit MeshField(MeshType* mesh): mesh_(mesh) {
+  explicit MeshField(const MeshType* mesh): mesh_(mesh) {
     DRAKE_DEMAND(mesh_ != nullptr);
   }
 
  private:
   // We use `reset_on_copy` so that the default copy constructor resets
   // the pointer to null when a MeshField is copied.
-  reset_on_copy<MeshType*> mesh_;
+  reset_on_copy<const MeshType*> mesh_;
 };
 
 /**
