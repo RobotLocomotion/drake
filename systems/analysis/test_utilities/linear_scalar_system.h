@@ -34,7 +34,7 @@ class LinearScalarSystem : public LeafSystem<double> {
     (*deriv)[0] = S_;
   }
 
-  double S_;
+  double S_{};
 };
 
 }  // namespace analysis_test

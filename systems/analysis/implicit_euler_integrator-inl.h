@@ -442,7 +442,11 @@ bool ImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
 
     // Compute the RK2 step.
     const int evals_before_rk2 = rk2_->get_num_derivative_evaluations();
-    DRAKE_DEMAND(rk2_->IntegrateWithSingleFixedStepToTime(t0 + h));
+    if (!rk2_->IntegrateWithSingleFixedStepToTime(t0 + h)) {
+      throw std::runtime_error("Embedded RK2 integrator failed to take a single"
+          "fixed step to the requested time.");
+    }
+
     const int evals_after_rk2 = rk2_->get_num_derivative_evaluations();
     xtplus_tr_ = context->get_continuous_state().CopyToVector();
 

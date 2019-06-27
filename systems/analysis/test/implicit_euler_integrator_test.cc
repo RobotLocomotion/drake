@@ -322,8 +322,7 @@ GTEST_TEST(ImplicitIntegratorErrorEstimatorTest, LinearTest) {
   ie.Initialize();
   ASSERT_TRUE(ie.IntegrateWithSingleFixedStepToTime(t_final));
 
-  const double err_est =
-      ie.get_error_estimate()->get_vector().GetAtIndex(0);
+  const double err_est = ie.get_error_estimate()->get_vector()[0];
 
   // Note the very tight tolerance used, which will likely not hold for
   // arbitrary values of C, t_final, or polynomial coefficients.
@@ -345,8 +344,7 @@ GTEST_TEST(ImplicitIntegratorErrorEstimatorTest, LinearTest) {
   ie2.Initialize();
   ASSERT_TRUE(ie2.IntegrateWithSingleFixedStepToTime(updated_t_final));
 
-  const double updated_err_est =
-      ie2.get_error_estimate()->get_vector().GetAtIndex(0);
+  const double updated_err_est = ie2.get_error_estimate()->get_vector()[0];
 
   // Note the very tight tolerance used, which will likely not hold for
   // arbitrary values of C, t_final, or polynomial coefficients.

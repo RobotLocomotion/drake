@@ -156,7 +156,7 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // The continuous state update vector used during Newton-Raphson.
   std::unique_ptr<ContinuousState<T>> dx_state_;
 
-  // Mutable variables to avoid heap allocations.
+  // Variables to avoid heap allocations.
   VectorX<T> xt0_, xdot_, xtplus_ie_, xtplus_tr_;
 
   // Various statistics.
