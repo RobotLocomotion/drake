@@ -39,16 +39,18 @@ class HydroelasticTractionCalculator {
    resulting in a pair of spatial forces at the origins of two body frames.
    The body frames, A and B, are those to which `surface.M_id()` and
    `surface.N_id()` are affixed, respectively.
-   @param X_WA the pose from Body A (the body that Geometry `surface.M_id()` in           the contact surface is affixed to) relative to the world frame.
-   @param X_WB the pose from Body B (the body that Geometry `surface.N_id()` in           the contact surface is affixed to) relative to the world frame.
+   @param X_WA the pose from Body A (the body that Geometry `surface.M_id()` in
+          the contact surface is affixed to) relative to the world frame.
+   @param X_WB the pose from Body B (the body that Geometry `surface.N_id()` in
+          the contact surface is affixed to) relative to the world frame.
    @param V_WA the spatial velocity of Body A (the body that Geometry
           `surface.M_id()` in the contact surface is affixed to) at the origin
-	  of A's frame, measured in the world frame and expressed in the world
-	  frame.
+          of A's frame, measured in the world frame and expressed in the world
+          frame.
    @param V_WB the spatial velocity of Body B (the body that Geometry
           `surface.N_id()` in the contact surface is affixed to) at the origin
-	  of B's frame, measured in the world frame and expressed in the world
-	  frame.
+          of B's frame, measured in the world frame and expressed in the world
+          frame.
    @param X_WM the pose from Geometry `surface.M_id()` in the contact surface
           relative to the world frame.
    @param dissipation the nonnegative coefficient (in s/m) for dissipating
@@ -61,7 +63,7 @@ class HydroelasticTractionCalculator {
        const math::RigidTransform<T>& X_WA,
        const math::RigidTransform<T>& X_WB,
        const SpatialVelocity<T>& V_WA,
-       const SpatialVelocity<T>& V_WB,	
+       const SpatialVelocity<T>& V_WB,  
        const math::RigidTransform<T>& X_WM,
        const geometry::ContactSurface<T>& surface,
        double dissipation, double mu_coulomb,
@@ -92,11 +94,11 @@ class HydroelasticTractionCalculator {
     //        hydroelastic contact model that will be maintained for the life of
     //        this object.
     HydroelasticTractionCalculatorData(
-	const math::RigidTransform<T>& X_WA,
-	const math::RigidTransform<T>& X_WB,
-	const SpatialVelocity<T>& V_WA,
-        const SpatialVelocity<T>& V_WB,	
-	const math::RigidTransform<T>& X_WM,
+        const math::RigidTransform<T>& X_WA,
+        const math::RigidTransform<T>& X_WB,
+        const SpatialVelocity<T>& V_WA,
+        const SpatialVelocity<T>& V_WB,  
+        const math::RigidTransform<T>& X_WM,
         const geometry::ContactSurface<T>* surface);
 
     // Gets the ContactSurface passed to the data structure on construction.

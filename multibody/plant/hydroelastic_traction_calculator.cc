@@ -22,8 +22,8 @@ template <typename T>
 HydroelasticTractionCalculator<T>::HydroelasticTractionCalculatorData::
     HydroelasticTractionCalculatorData(const RigidTransform<T>& X_WA, 
                                        const RigidTransform<T>& X_WB,
-				       const SpatialVelocity<T>& V_WA,
-				       const SpatialVelocity<T>& V_WB,
+                                       const SpatialVelocity<T>& V_WA,
+                                       const SpatialVelocity<T>& V_WB,
                                        const RigidTransform<T>& X_WM,
                                        const ContactSurface<T>* surface)
     : X_WA_(X_WA), X_WB_(X_WB), V_WA_(V_WA), V_WB_(V_WB), X_WM_(X_WM), 

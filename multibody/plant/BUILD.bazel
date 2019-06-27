@@ -172,7 +172,7 @@ drake_cc_library(
     deps = [
         "//geometry/proximity:mesh_field",
         "//geometry/query_results:contact_surface",
-	"//math",
+        "//math",
         "//multibody/math",
         "//multibody/triangle_quadrature",
     ],
