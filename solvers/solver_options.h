@@ -39,7 +39,7 @@ namespace solvers {
  * version used in Drake.
  *
  * "MOSEK" -- Parameter name and values as specified in Mosek Reference
- * https://docs.mosek.com/8.0/capi/parameters.html
+ * https://docs.mosek.com/9.0/capi/parameters.html
  */
 class SolverOptions {
  public:
