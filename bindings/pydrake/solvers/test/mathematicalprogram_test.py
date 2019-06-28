@@ -98,11 +98,10 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(result.get_optimal_cost(), 3.0)
         self.assertTrue(result.get_solver_id().name())
         self.assertTrue(np.allclose(result.GetSolution(), x_expected))
-        self.assertEqual(result.GetSolution(qp.x[0]), 1.0)
+        self.assertAlmostEqual(result.GetSolution(qp.x[0]), 1.0)
         self.assertTrue(np.allclose(result.GetSolution(qp.x), x_expected))
-
-        self.assertTrue(result.GetSolution(
-            sym.Expression(qp.x[0])).EqualTo(1.))
+        self.assertTrue(result.GetSolution(sym.Expression(qp.x[0])).EqualTo(
+            result.GetSolution(qp.x[0])))
         m = np.array([sym.Expression(qp.x[0]), sym.Expression(qp.x[1])])
         self.assertTrue(result.GetSolution(m)[1, 0].EqualTo(
             result.GetSolution(qp.x[1])))
