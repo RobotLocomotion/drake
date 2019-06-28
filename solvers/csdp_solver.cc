@@ -25,6 +25,7 @@ using internal::CsdpMatrixIndex;
 void SetCsdpSolverDetails(int csdp_ret, double pobj, double dobj, int y_size,
                           double* y, const csdp::blockmatrix& Z,
                           CsdpSolverDetails* solver_details) {
+  std::cout << "y_size: " << y_size << "\n";
   solver_details->return_code = csdp_ret;
   solver_details->primal_objective = pobj;
   solver_details->dual_objective = dobj;
@@ -196,7 +197,7 @@ void SolveProgramThroughNullspaceApproach(
   // Set solver details.
   CsdpSolverDetails& solver_details =
       result->SetSolverDetailsType<CsdpSolverDetails>();
-  SetCsdpSolverDetails(ret, pobj, dobj, sdpa_free_format.g().rows(), y, Z,
+  SetCsdpSolverDetails(ret, pobj, dobj, rhs_hat.rows(), y, Z,
                        &solver_details);
   // Retrieve the information back to result
   // Since CSDP solves a maximization problem max -cost, where "cost" is the

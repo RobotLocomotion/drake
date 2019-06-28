@@ -126,16 +126,18 @@ TEST_F(CsdpLinearProgram3, Solve) {
 }
 
 TEST_F(TrivialSDP2, Solve) {
-  CsdpSolver solver;
-  if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(*prog_, {}, {}, &result);
-    EXPECT_TRUE(result.is_success());
-    const double tol = 1E-7;
-    EXPECT_NEAR(result.get_optimal_cost(), -1.0 / 3, tol);
-    EXPECT_TRUE(
-        CompareMatrices(result.GetSolution(X1_), Eigen::Matrix2d::Zero(), tol));
-    EXPECT_NEAR(result.GetSolution(y_), 1.0 / 3, tol);
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      MathematicalProgramResult result;
+      solver.Solve(*prog_, {}, {}, &result);
+      EXPECT_TRUE(result.is_success());
+      const double tol = 1E-7;
+      EXPECT_NEAR(result.get_optimal_cost(), -1.0 / 3, tol);
+      EXPECT_TRUE(CompareMatrices(result.GetSolution(X1_),
+                                  Eigen::Matrix2d::Zero(), tol));
+      EXPECT_NEAR(result.GetSolution(y_), 1.0 / 3, tol);
+    }
   }
 }
 
