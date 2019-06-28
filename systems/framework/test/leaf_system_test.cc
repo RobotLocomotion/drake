@@ -2649,6 +2649,13 @@ class EventSugarTestSystem : public LeafSystem<double> {
     DeclareForcedDiscreteUpdateEvent(
         &EventSugarTestSystem::MySecondDiscreteUpdateHandler);
 
+    // Two forced unrestricted update callbacks (to ensure that they are
+    // additive).
+    DeclareForcedUnrestrictedUpdateEvent(
+        &EventSugarTestSystem::MyUnrestrictedUpdateHandler);
+    DeclareForcedUnrestrictedUpdateEvent(
+        &EventSugarTestSystem::MySecondUnrestrictedUpdateHandler);
+
     // These variants don't require an EventStatus return.
     DeclarePeriodicPublishEvent(kPeriod, kOffset,
         &EventSugarTestSystem::MySuccessfulPublishHandler);
@@ -2668,6 +2675,9 @@ class EventSugarTestSystem : public LeafSystem<double> {
   int num_discrete_update() const {return num_discrete_update_;}
   int num_second_discrete_update() const {return num_second_discrete_update_;}
   int num_unrestricted_update() const {return num_unrestricted_update_;}
+  int num_second_unrestricted_update() const {
+    return num_second_unrestricted_update_;
+  }
 
  private:
   EventStatus MyPublishHandler(const Context<double>& context) const {
@@ -2700,6 +2710,12 @@ class EventSugarTestSystem : public LeafSystem<double> {
     return EventStatus::Succeeded();
   }
 
+  EventStatus MySecondUnrestrictedUpdateHandler(const Context<double>& context,
+                                                State<double>* state) const {
+    ++num_second_unrestricted_update_;
+    return EventStatus::Succeeded();
+  }
+
   void MySuccessfulPublishHandler(const Context<double>&) const {
     ++num_publish_;
   }
@@ -2719,6 +2735,7 @@ class EventSugarTestSystem : public LeafSystem<double> {
   mutable int num_discrete_update_{0};
   mutable int num_second_discrete_update_{0};
   mutable int num_unrestricted_update_{0};
+  mutable int num_second_unrestricted_update_{0};
 };
 
 GTEST_TEST(EventSugarTest, EventsAreRegistered) {
@@ -2764,6 +2781,7 @@ GTEST_TEST(EventSugarTest, HandlersGetCalled) {
 
   dut.CalcUnrestrictedUpdate(
       *context, all_events->get_unrestricted_update_events(), &*state);
+  dut.CalcUnrestrictedUpdate(*context, &*state);
   dut.CalcDiscreteVariableUpdates(
       *context, all_events->get_discrete_update_events(), &*discrete_state);
   dut.CalcDiscreteVariableUpdates(*context, &*discrete_state);
@@ -2774,7 +2792,8 @@ GTEST_TEST(EventSugarTest, HandlersGetCalled) {
   EXPECT_EQ(dut.num_second_publish_handler_publishes(), 1);
   EXPECT_EQ(dut.num_discrete_update(), 5);
   EXPECT_EQ(dut.num_second_discrete_update(), 1);
-  EXPECT_EQ(dut.num_unrestricted_update(), 4);
+  EXPECT_EQ(dut.num_unrestricted_update(), 5);
+  EXPECT_EQ(dut.num_second_unrestricted_update(), 1);
 }
 
 }  // namespace
