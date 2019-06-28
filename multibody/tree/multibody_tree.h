@@ -1303,7 +1303,7 @@ class MultibodyTree {
                                    const Frame<T>& frame_B,
                                    const Frame<T>& frame_A,
                                    const Frame<T>& frame_E,
-                                   EigenPtr<MatrixX<T>> Js_w_AB_E) const;
+                                   EigenPtr<Matrix3X<T>> Js_w_AB_E) const;
 
   /// Return a point's translational velocity Jacobian in a frame A with respect
   /// to "speeds" 𝑠, where 𝑠 is either q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of
@@ -2235,92 +2235,13 @@ class MultibodyTree {
   // - `Js_w_WF_W` and `Js_v_WFpi_W` are both nullptr.
   // - `Js_w_WF_W` is not nullptr and its size differs from `3 x n`.
   // - `Js_v_WFpi_W` is not nullptr and its size differs from `3*p x n`.
-  void CalcJacobianAngularAndOrTranslationalVelocityWorldHelper(
+  void CalcJacobianAngularAndOrTranslationalVelocityInWorld(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_F,
       const Eigen::Ref<const Matrix3X<T>>& p_WoFpi_W,
-      EigenPtr<MatrixX<T>> Js_w_WF_W,
+      EigenPtr<Matrix3X<T>> Js_w_WF_W,
       EigenPtr<MatrixX<T>> Js_v_WFpi_W) const;
-
-  // Helper method to compute the rotational part of the frame Jacobian Jr_WFq
-  // and the translational part of the frame Jacobian Jt_WFq for a list of
-  // points Q which instantaneously move with frame F that is, the position
-  // of these points Q is fixed in frame F.
-  // Jacobians Jr_WFq and Jt_WFq are defined such that the angular velocity
-  // w_WFq and the translational velocity v_WFq of frame F shifted (see
-  // SpatialVelocity::Shift() for a description of the shift operation) to a
-  // frame Fq with origin at a point Q are given by:
-  //   w_WFq = Jr_WFq⋅v
-  //   v_WFq = Jt_WFq⋅v
-  // when computed in terms of generalized velocities
-  // (with_respect_to = JacobianWrtVariable::kV) or by:
-  //   w_WFq = Jr_WFq⋅q̇
-  //   v_WFq = Jt_WFq⋅q̇
-  // when computed in terms of the time derivatives of the generalized
-  // positions (with_respect_to = JacobianWrtVariable::kQDot).
-  //
-  // This method provides the option to specify whether angular and/or
-  // translational terms need to be computed, however the caller must at least
-  // request one of them.
-  // If Jr_WFq is nullptr, then angular terms are not computed.
-  // If Jt_WFq is nullptr, then translational terms are not computed.
-  //
-  //
-  //               Format of the Jacobian matrix Jr_WFq
-  //
-  // Notice that, the angular velocity of frame F shifted to a frame Fq with
-  // origin at a point Q is the same as that of frame F, for any point Q.
-  // That is, w_WFq = w_WF for any point Q. With this in mind, Jr_WFq is
-  // defined so that:
-  //   w_WFq = w_WF = Jr_WFq⋅v  if with_respect_to = JacobianWrtVariable::kV
-  //   w_WFq = w_WF = Jr_WFq⋅q̇  if with_respect_to = JacobianWrtVariable::kQDot
-  // and therefore Jr_WFq is a matrix with 3 rows and
-  // nv columns if with_respect_to = JacobianWrtVariable::kV or
-  // nq columns if with_respect_to = JacobianWrtVariable::kQDot, where nv and nq
-  // are the number of generalized velocities and positions, respectively.
-  // If not nullptr on input, matrix Jr_WFq **must** have the documented size
-  // or this method throws a std::runtime_error exception.
-  //
-  //               Format of the Jacobian matrix Jt_WFq
-  //
-  // We stack the translational velocity of each point Q into a column vector
-  // v_WFq = [v_WFq1; v_WFq2; ...] of size 3⋅np, with np the number of
-  // points in the input list. Then the translational velocities Jacobian is
-  // defined such that:
-  //   v_WFq = Jt_WFq⋅v, if with_respect_to = JacobianWrtVariable::kV
-  //   v_WFq = Jt_WFq⋅q̇, if with_respect_to = JacobianWrtVariable::kQDot
-  //
-  // Therefore Jt_WFq is a matrix with 3⋅np rows and
-  // nv columns if with_respect_to = JacobianWrtVariable::kV or
-  // nq columns if with_respect_to = JacobianWrtVariable::kQDot
-  // If not nullptr on input, matrix Jt_WFq **must** have the required size or
-  // this method throws a std::runtime_error exception.
-  //
-  // This helper throws std::runtime_error when:
-  // - The number of rows in p_WQ_list does not equal three. That is, p_WQ_list
-  //   must be a matrix with each column being a 3D vector for each point Q.
-  // - Jr_WFq and Jt_WFq are both nullptr (caller must request at least one
-  //   Jacobian).
-  // - The number of columns of Jr_WFq and/or Jt_WFq does not equal
-  //   num_velocities() if with_respect_to = JacobianWrtVariable::kV or
-  //   num_positions()  if with_respect_to = JacobianWrtVariable::kQDot.
-  // - The number of rows of Jr_WFq does not equal 3.
-  // - The number of rows of Jt_WFq does not equal 3⋅np.
-  void CalcFrameJacobianExpressedInWorld(
-      const systems::Context<T>& context,
-      const Frame<T>& frame_F,
-      const Eigen::Ref<const MatrixX<T>>& p_WQ_list,
-      JacobianWrtVariable with_respect_to,
-      EigenPtr<MatrixX<T>> Jr_WFq,
-      EigenPtr<MatrixX<T>> Jt_WFq) const {
-    CalcJacobianAngularAndOrTranslationalVelocityWorldHelper(context,
-                                                             with_respect_to,
-                                                             frame_F,
-                                                             p_WQ_list,
-                                                             Jr_WFq,
-                                                             Jt_WFq);
-  }
 
   // Helper method for CalcJacobianTranslationalVelocity().
   // @param[in] context The state of the multibody system.

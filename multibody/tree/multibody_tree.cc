@@ -1167,8 +1167,9 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
   auto Jv_WFp_angular = Jv_WFp->template topRows<3>();
   auto Jv_WFp_translational = Jv_WFp->template bottomRows<3>();
 
-  CalcFrameJacobianExpressedInWorld(context, frame_F, p_WoP_W,
-      JacobianWrtVariable::kV, &Jv_WFp_angular, &Jv_WFp_translational);
+  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
+    JacobianWrtVariable::kV, frame_F, p_WoP_W,
+    &Jv_WFp_angular, &Jv_WFp_translational);
 }
 
 template <typename T>
@@ -1208,17 +1209,17 @@ void MultibodyTree<T>::CalcJacobianSpatialVelocity(
   // TODO(amcastro-tri): When performance becomes an issue, implement this
   // method so that we only consider the kinematic path from A to B.
 
-  MatrixX<T> Jw_WAp(6, num_columns);
+  Matrix6X<T> Jw_WAp(6, num_columns);
   auto Jr_WAp = Jw_WAp.template topRows<3>();     // rotational part.
   auto Jt_WAp = Jw_WAp.template bottomRows<3>();  // translational part.
-  CalcFrameJacobianExpressedInWorld(context, frame_A, p_WP, with_respect_to,
-                                    &Jr_WAp, &Jt_WAp);
+  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
+      with_respect_to, frame_A,  p_WP,  &Jr_WAp, &Jt_WAp);
 
-  MatrixX<T> Jw_WBp(6, num_columns);
+  Matrix6X<T> Jw_WBp(6, num_columns);
   auto Jr_WBp = Jw_WBp.template topRows<3>();     // rotational part.
   auto Jt_WBp = Jw_WBp.template bottomRows<3>();  // translational part.
-  CalcFrameJacobianExpressedInWorld(context, frame_B, p_WP, with_respect_to,
-                                    &Jr_WBp, &Jt_WBp);
+  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
+      with_respect_to, frame_B,  p_WP,  &Jr_WBp, &Jt_WBp);
 
   // Jacobian Jw_ABp_W when E is the world frame W.
   Jw_V_ABp_E->template topRows<3>() = Jr_WBp - Jr_WAp;
@@ -1240,9 +1241,11 @@ void MultibodyTree<T>::CalcJacobianSpatialVelocity(
 template <typename T>
 void MultibodyTree<T>::CalcJacobianAngularVelocity(
     const systems::Context<T>& context,
-    const JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
-    const Frame<T>& frame_A, const Frame<T>& frame_E,
-    EigenPtr<MatrixX<T>> Js_w_AB_E) const {
+    const JacobianWrtVariable with_respect_to,
+    const Frame<T>& frame_B,
+    const Frame<T>& frame_A,
+    const Frame<T>& frame_E,
+    EigenPtr<Matrix3X<T>> Js_w_AB_E) const {
   DRAKE_THROW_UNLESS(Js_w_AB_E != nullptr);
   DRAKE_THROW_UNLESS(Js_w_AB_E->rows() == 3);
   const int num_columns = (with_respect_to == JacobianWrtVariable::kQDot) ?
@@ -1261,20 +1264,20 @@ void MultibodyTree<T>::CalcJacobianAngularVelocity(
   // only using the kinematics path from A to B.
 
   // Create dummy position list for signature requirements of next method.
-  const Eigen::Matrix<T, 0, 0> empty_position_list;
+  const Eigen::Matrix<T, 3, 0> empty_position_list;
 
   // TODO(Mitiguy) One way to avoid memory allocation and speed this up is to
   // be clever and use the input argument as follows:
   // Eigen::Ref<MatrixX<T>> Js_w_WA_W = *Js_w_AB_E;
-  // Also modify CalcFrameJacobianExpressedInWorld() so it can add or subtract
-  // to the Jacobian that is passed to it.
-  MatrixX<T> Js_w_WA_W(3, num_columns);
-  CalcFrameJacobianExpressedInWorld(context, frame_A, empty_position_list,
-                                    with_respect_to, &Js_w_WA_W, nullptr);
+  // Also modify CalcJacobianAngularAndOrTranslationalVelocityInWorld() so
+  // it can add or subtract to the Jacobian that is passed to it.
+  Matrix3X<T> Js_w_WA_W(3, num_columns);
+  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
+      with_respect_to, frame_A, empty_position_list, &Js_w_WA_W, nullptr);
 
-  MatrixX<T> Js_w_WB_W(3, num_columns);
-  CalcFrameJacobianExpressedInWorld(context, frame_B, empty_position_list,
-                                    with_respect_to, &Js_w_WB_W, nullptr);
+  Matrix3X<T> Js_w_WB_W(3, num_columns);
+  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
+      with_respect_to, frame_B, empty_position_list, &Js_w_WB_W, nullptr);
 
   const Frame<T>& frame_W = world_frame();
   if (frame_E.index() == frame_W.index()) {
@@ -1318,13 +1321,13 @@ void MultibodyTree<T>::CalcJacobianTranslationalVelocityHelper(
 
   // Calculate each point Ai's translational velocity Jacobian in world W.
   MatrixX<T> Js_v_WAi_W(3 * num_points, num_columns);
-  CalcFrameJacobianExpressedInWorld(context, frame_A, p_WoBi_W,
-                                    with_respect_to, nullptr, &Js_v_WAi_W);
+  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
+    with_respect_to, frame_A, p_WoBi_W, nullptr, &Js_v_WAi_W);
 
   // Calculate each point Bi's translational velocity Jacobian in world W.
   MatrixX<T> Js_v_WBi_W(3 * num_points, num_columns);
-  CalcFrameJacobianExpressedInWorld(context, frame_B, p_WoBi_W,
-                                    with_respect_to, nullptr, &Js_v_WBi_W);
+  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
+    with_respect_to, frame_B, p_WoBi_W, nullptr, &Js_v_WBi_W);
 
   // Calculate each point Bi's translational velocity Jacobian in frame A,
   // expressed in world W.
@@ -1440,12 +1443,12 @@ Vector6<T> MultibodyTree<T>::CalcBiasForJacobianSpatialVelocity(
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityWorldHelper(
+void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
     const systems::Context<T>& context,
     JacobianWrtVariable with_respect_to,
     const Frame<T>& frame_F,
     const Eigen::Ref<const Matrix3X<T>>& p_WoFpi_W,
-    EigenPtr<MatrixX<T>> Js_w_WF_W,
+    EigenPtr<Matrix3X<T>> Js_w_WF_W,
     EigenPtr<MatrixX<T>> Js_v_WFpi_W) const {
   // At least one of the Jacobian output terms must be nullptr.
   DRAKE_THROW_UNLESS(Js_w_WF_W != nullptr || Js_v_WFpi_W != nullptr);
@@ -1527,7 +1530,7 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityWorldHelper(
     }
 
     // The Jacobian angular velocity term is the same for all points Fpi since
-    // all these are points of (fixed/welded to) the same frame_F and body_F.
+    // all these are points of (fixed/welded to) the same body_F.
     if (Js_w_WF_W) {
       // Get memory address in the output Jacobian angular velocity Js_w_WF_W
       // corresponding to the contribution of the mobilities in level ilevel.
@@ -1566,7 +1569,8 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityWorldHelper(
             Js_v_PFpi_W.block(ipoint_row, 0, 3, mobilizer_jacobian_ncols);
 
         // Now "shift" H_PB_W to H_PFqi_W one column at a time.
-        // Note: w_PFq_W = w_PBq_W since frame_F is fixed/welded to body_F.
+        // Reminder: frame_F is fixed/welded to body_F so its angular velocity
+        // in world W is the same as body_F's angular velocity in W.
         Hv_PFpi_W = (Hv_PB_W + Hw_PB_W.colwise().cross(p_BoFp_W)) * Nplus;
       }  // ipoint.
     }
