@@ -98,7 +98,9 @@ PYBIND11_MODULE(primitives, m) {
     DefineTemplateClassWithDefault<Demultiplexer<T>, LeafSystem<T>>(
         m, "Demultiplexer", GetPyParam<T>(), doc.Demultiplexer.doc)
         .def(py::init<int, int>(), py::arg("size"),
-            py::arg("output_ports_sizes") = 1, doc.Demultiplexer.ctor.doc);
+            py::arg("output_ports_size") = 1, doc.Demultiplexer.ctor.doc_2args)
+        .def(py::init<const std::vector<int>&>(), py::arg("output_ports_sizes"),
+            doc.Demultiplexer.ctor.doc_1args);
 
     DefineTemplateClassWithDefault<                  // BR
         FirstOrderLowPassFilter<T>, LeafSystem<T>>(  //
