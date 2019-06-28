@@ -29,6 +29,10 @@ HydroelasticTractionCalculator<T>::HydroelasticTractionCalculatorData::
     : X_WA_(X_WA), X_WB_(X_WB), V_WA_(V_WA), V_WB_(V_WB), X_WM_(X_WM),
       surface_(*surface) {
   DRAKE_DEMAND(surface);
+
+  // Compute the centroid of the contact surface in the world frame. 
+  const Vector3<T>& p_MC = surface_.mesh().centroid();
+  p_WC_ = X_WM_ * p_MC;
 }
 
 template <class T>

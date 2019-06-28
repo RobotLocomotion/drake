@@ -118,7 +118,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
 
   // Computes up-to-date values of X_WA_, X_WB_, V_WA_, V_WB_, and X_WM_.
   void UpdateKinematicQuantities() {
-    // Get the transform of the geometry for M to the world frame.
+    // Get the pose of the Geometry M in the world frame.
     const auto& query_object = plant_->get_geometry_query_input_port().
         template Eval<geometry::QueryObject<double>>(*plant_context_);
     X_WM_ = query_object.X_WG(contact_surface_->id_M());
@@ -132,7 +132,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     const Body<double>& bodyA = *plant_->GetBodyFromFrameId(frameM_id);
     const Body<double>& bodyB = *plant_->GetBodyFromFrameId(frameN_id);
 
-    // Get the transformation of the two bodies to the world frame.
+    // Get the poses of the two bodies in the world frame.
     X_WA_ = plant_->EvalBodyPoseInWorld(*plant_context_, bodyA);
     X_WB_ = plant_->EvalBodyPoseInWorld(*plant_context_, bodyB);
 

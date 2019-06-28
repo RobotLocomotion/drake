@@ -39,18 +39,14 @@ class HydroelasticTractionCalculator {
    resulting in a pair of spatial forces at the origins of two body frames.
    The body frames, A and B, are those to which `surface.M_id()` and
    `surface.N_id()` are affixed, respectively.
-   @param X_WA the pose from Body A (the body that Geometry `surface.M_id()` in
-          the contact surface is affixed to) relative to the world frame.
-   @param X_WB the pose from Body B (the body that Geometry `surface.N_id()` in
-          the contact surface is affixed to) relative to the world frame.
-   @param V_WA the spatial velocity of Body A (the body that Geometry
-          `surface.M_id()` in the contact surface is affixed to) at the origin
-          of A's frame, measured in the world frame and expressed in the world
-          frame.
-   @param V_WB the spatial velocity of Body B (the body that Geometry
-          `surface.N_id()` in the contact surface is affixed to) at the origin
-          of B's frame, measured in the world frame and expressed in the world
-          frame.
+   @param X_WA the pose of Body A (the body that Geometry `surface.M_id()` in
+          the contact surface is affixed to) in the world frame.
+   @param X_WB the pose of Body B (the body that Geometry `surface.N_id()` in
+          the contact surface is affixed to) in the world frame.
+   @param V_WA the spatial velocity of Body A at the origin of A's frame,
+          measured in the world frame and expressed in the world frame.
+   @param V_WB the spatial velocity of Body B at the origin of B's frame,
+          measured in the world frame and expressed in the world frame.
    @param X_WM the pose from Geometry `surface.M_id()` in the contact surface
           relative to the world frame.
    @param dissipation the nonnegative coefficient (in s/m) for dissipating
@@ -107,16 +103,15 @@ class HydroelasticTractionCalculator {
     // Gets the surface centroid C, measured and expressed in World.
     const Vector3<T>& p_WC() const { return p_WC_; }
 
-    // Gets the pose from Body A (the body that Geometry `surface.M_id()` in the
-    // contact surface is affixed to) relative to the world frame.
+    // Gets the pose of Body A (the body that Geometry `surface.M_id()` in the
+    // contact surface is affixed to) in the world frame.
     const math::RigidTransform<T>& X_WA() const { return X_WA_; }
 
-    // Gets the pose from Body B (the body that Geometry `surface.N_id()` in the
-    // contact surface is affixed to) relative to the world frame.
+    // Gets the pose of Body B (the body that Geometry `surface.N_id()` in the
+    // contact surface is affixed to) in the world frame.
     const math::RigidTransform<T>& X_WB() const { return X_WB_; }
 
-    // Gets the pose from Geometry `surface.M_id()` in the contact surface
-    // relative to the world frame.
+    // Gets the pose of Geometry `surface.M_id()` in the world frame. 
     const math::RigidTransform<T>& X_WM() const { return X_WM_; }
 
     // Gets the spatial velocity of Body A (the body that Geometry
