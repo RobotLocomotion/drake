@@ -1534,9 +1534,9 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
     if (Js_w_WF_W) {
       // Get memory address in the output Jacobian angular velocity Js_w_WF_W
       // corresponding to the contribution of the mobilities in level ilevel.
-      auto Jw_PB_W =
-          Js_w_WF_W->block(0, start_index, 3, mobilizer_jacobian_ncols);
-      Jw_PB_W = Hw_PB_W * Nplus;
+      auto Js_w_PB_W = Js_w_WF_W->block(0, start_index, 3,
+                                        mobilizer_jacobian_ncols);
+      Js_w_PB_W = Hw_PB_W * Nplus;
     }
 
     if (Js_v_WFpi_W) {
