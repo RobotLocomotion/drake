@@ -12,9 +12,11 @@ namespace {
 // will complain if someone adds an enumeration value without an update here.
 optional<SolverType> successor(optional<SolverType> solver_type) {
   if (solver_type == nullopt) {
-    return SolverType::kDReal;
+    return SolverType::kCsdp;
   }
   switch (*solver_type) {
+    case SolverType::kCsdp:
+      return SolverType::kDReal;
     case SolverType::kDReal:
       return SolverType::kEqualityConstrainedQP;
     case SolverType::kEqualityConstrainedQP:
@@ -62,7 +64,7 @@ GTEST_TEST(SolverId, RoundTrip) {
   }
 
   // This should track the number of SolverType values, if we add any.
-  EXPECT_EQ(iterations, 12);
+  EXPECT_EQ(iterations, 13);
 }
 
 }  // namespace
