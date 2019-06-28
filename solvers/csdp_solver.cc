@@ -196,7 +196,7 @@ void SolveProgramThroughNullspaceApproach(
   // Set solver details.
   CsdpSolverDetails& solver_details =
       result->SetSolverDetailsType<CsdpSolverDetails>();
-  SetCsdpSolverDetails(ret, pobj, dobj, sdpa_free_format.g().rows(), y, Z,
+  SetCsdpSolverDetails(ret, pobj, dobj, rhs_hat.rows(), y, Z,
                        &solver_details);
   // Retrieve the information back to result
   // Since CSDP solves a maximization problem max -cost, where "cost" is the
