@@ -154,6 +154,20 @@ bool Expression::is_polynomial() const {
   return ptr_->is_polynomial();
 }
 
+bool Expression::is_expanded() const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return ptr_->is_expanded();
+}
+
+Expression& Expression::set_expanded() {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  // TODO(soonho): Remove the following hack. Since Expression includes a shared
+  // pointer to a *const* ExpressionCell, we need to have this const_cast to
+  // modify the cell's is_expanded_ field.
+  const_cast<ExpressionCell*>(ptr_.get())->set_expanded();
+  return *this;
+}
+
 Polynomiald Expression::ToPolynomial() const {
   DRAKE_ASSERT(ptr_ != nullptr);
   return ptr_->ToPolynomial();
@@ -189,7 +203,13 @@ Expression Expression::EvaluatePartial(const Environment& env) const {
 
 Expression Expression::Expand() const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  return ptr_->Expand();
+  if (ptr_->is_expanded()) {
+    // If it is already expanded, return the current expression without calling
+    // Expand() on the cell.
+    return *this;
+  } else {
+    return ptr_->Expand();
+  }
 }
 
 Expression Expression::Substitute(const Variable& var,
