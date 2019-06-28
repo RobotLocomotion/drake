@@ -42,9 +42,6 @@ class MultibodyPlantTester {
 namespace benchmarks {
 namespace kuka_iiwa_robot {
 
-using Eigen::Vector3d;
-using test_utilities::SpatialKinematicsPVA;
-
 /// Utility struct to assist with returning joint torques/forces.
 /// --------|----------------------------------------------------------
 /// F_Ao_W  | Spatial force on Ao from W, expressed in frame W (world).
@@ -138,7 +135,7 @@ class DrakeKukaIIwaRobot {
   /// @param[in] qDDt 2nd-time-derivative of q.
   ///
   /// @returns G's kinematics in N, expressed in N.
-  SpatialKinematicsPVA<T>
+  test_utilities::SpatialKinematicsPVA<T>
   CalcEndEffectorKinematics(const Eigen::Ref<const VectorX<T>>& q,
                             const Eigen::Ref<const VectorX<T>>& qDt,
                             const Eigen::Ref<const VectorX<T>>& qDDt) {
@@ -167,7 +164,7 @@ class DrakeKukaIIwaRobot {
     const SpatialAcceleration<T>& A_NG_N = A_WB[linkG_->index()];
 
     // Create a class to return the results.
-    return SpatialKinematicsPVA<T>(X_NG, V_NG_N, A_NG_N);
+    return test_utilities::SpatialKinematicsPVA<T>(X_NG, V_NG_N, A_NG_N);
   }
 
   /// This method calculates joint reaction torques/forces for a 7-DOF KUKA iiwa
