@@ -364,6 +364,7 @@ class TestMathematicalProgram(unittest.TestCase):
         # c(0)*x^2 + 2*c(1)*x*y + c(2)*y^2 is SOS,
         # d(0)*x^2 is SOS.
         # d(1)*x^2 is SOS.
+        # d(0) + d(1) = 1
         prog = mp.MathematicalProgram()
         x = prog.NewIndeterminates(1, "x")
         poly = prog.NewFreePolynomial(sym.Variables(x), 1)
@@ -375,6 +376,7 @@ class TestMathematicalProgram(unittest.TestCase):
         d = prog.NewContinuousVariables(2, "d")
         prog.AddSosConstraint(d[0]*x.dot(x))
         prog.AddSosConstraint(d[1]*x.dot(x), [sym.Monomial(x[0])])
+        prog.AddLinearEqualityConstraint(d[0] + d[1] == 1)
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
 
