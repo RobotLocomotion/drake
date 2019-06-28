@@ -91,14 +91,6 @@
  *    <td></td>
  *    <td></td>
  * </tr>
- * <tr><td> <a href="https://github.com/coin-or/Csdp">
- *     CSDP</a></td>
- *     <td align="center">&diams;</td>
- *     <td></td>
- *     <td></td>
- *     <td align="center">&diams;</td>
- *     <td align="center">&diams;</td>
- * </tr>
  * </table>
  *
  * <b>Mixed-Integer Convex Optimization</b>

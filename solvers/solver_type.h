@@ -4,7 +4,6 @@ namespace drake {
 namespace solvers {
 
 enum class SolverType {
-  kCsdp,
   kDReal,
   kEqualityConstrainedQP,
   kGurobi,

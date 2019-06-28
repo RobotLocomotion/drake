@@ -11,9 +11,8 @@
 namespace drake {
 namespace solvers {
 
-CsdpSolver::CsdpSolver(CsdpSolver::RemoveFreeVariableMethod method)
-    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied),
-      method_{method} {}
+CsdpSolver::CsdpSolver()
+    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied) {}
 
 CsdpSolver::~CsdpSolver() = default;
 

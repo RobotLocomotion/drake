@@ -1,6 +1,5 @@
 #include "drake/solvers/choose_best_solver.h"
 
-#include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/ipopt_solver.h"
@@ -45,9 +44,6 @@ SolverId ChooseBestSolver(const MathematicalProgram& prog) {
   } else if (NloptSolver::is_available() &&
              NloptSolver::ProgramAttributesSatisfied(prog)) {
     return NloptSolver::id();
-  } else if (CsdpSolver::is_available() &&
-             CsdpSolver::ProgramAttributesSatisfied(prog)) {
-    return CsdpSolver::id();
   } else if (ScsSolver::is_available() &&
              ScsSolver::ProgramAttributesSatisfied(prog)) {
     // Use SCS as the last resort. SCS uses ADMM method, which converges fast to
@@ -79,8 +75,6 @@ std::unique_ptr<SolverInterface> MakeSolver(const SolverId& id) {
     return std::make_unique<IpoptSolver>();
   } else if (id == NloptSolver::id()) {
     return std::make_unique<NloptSolver>();
-  } else if (id == CsdpSolver::id()) {
-    return std::make_unique<CsdpSolver>();
   } else if (id == ScsSolver::id()) {
     return std::make_unique<ScsSolver>();
   } else {
