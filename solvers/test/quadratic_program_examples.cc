@@ -427,7 +427,14 @@ void TestQPonUnitBallExample(const SolverInterface& solver) {
         RunSolver(prog, solver, initial_guess);
     const auto& x_value = result.GetSolution(x);
 
-    EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1e-4,
+    const SolverType solver_type =
+        SolverTypeConverter::IdToType(result.get_solver_id()).value();
+    double tol = 1E-4;
+    if (solver_type == SolverType::kMosek) {
+      // Regression from MOSEK 8.1 to MOSEK 9.0.
+      tol = 2E-4;
+    }
+    EXPECT_TRUE(CompareMatrices(x_value, x_expected, tol,
                                 MatrixCompareType::absolute));
   }
 
