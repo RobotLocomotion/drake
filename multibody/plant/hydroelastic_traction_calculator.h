@@ -111,7 +111,7 @@ class HydroelasticTractionCalculator {
     // contact surface is affixed to) in the world frame.
     const math::RigidTransform<T>& X_WB() const { return X_WB_; }
 
-    // Gets the pose of Geometry `surface.M_id()` in the world frame. 
+    // Gets the pose of Geometry `surface.M_id()` in the world frame.
     const math::RigidTransform<T>& X_WM() const { return X_WM_; }
 
     // Gets the spatial velocity of Body A (the body that Geometry
