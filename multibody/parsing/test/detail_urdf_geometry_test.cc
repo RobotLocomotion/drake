@@ -253,6 +253,31 @@ TEST_F(UrdfGeometryTests, TestWrongElementType) {
       "In link fake_name expected collision element, got material");
 }
 
+TEST_F(UrdfGeometryTests, TestParseConvexMesh) {
+  const std::string resource_dir{
+      "drake/multibody/parsing/test/urdf_parser_test/"};
+  const std::string convex_and_nonconvex_test =
+      FindResourceOrThrow(resource_dir + "convex_and_nonconvex_test.urdf");
+
+  EXPECT_NO_THROW(ParseUrdfGeometry(convex_and_nonconvex_test));
+
+  ASSERT_EQ(collision_instances_.size(), 2);
+
+  {
+    const auto& instance = collision_instances_[0];
+    const geometry::Convex* convex =
+        dynamic_cast<const geometry::Convex*>(&instance.shape());
+    ASSERT_TRUE(convex);
+  }
+
+  {
+    const auto& instance = collision_instances_[1];
+    const geometry::Mesh* mesh =
+        dynamic_cast<const geometry::Mesh*>(&instance.shape());
+    ASSERT_TRUE(mesh);
+  }
+}
+
 }  // namespace
 }  // namespace detail
 }  // namespace multibody

@@ -27,8 +27,9 @@ namespace internal {
 template <typename T>
 class HydroelasticTractionCalculator {
  public:
-  HydroelasticTractionCalculator() {}
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HydroelasticTractionCalculator)
+
+  HydroelasticTractionCalculator() {}
 
   /**
    Gets the regularization parameter used for friction (in m/s). The closer
@@ -36,6 +37,20 @@ class HydroelasticTractionCalculator {
    model will approximate Coulomb friction.
    */
   double regularization_scalar() const { return vslip_regularizer_; }
+
+  /**
+   Applies the hydroelastic model to two geometries defined in `surface`,
+   resulting in a pair of spatial forces at the origins of two body frames.
+   The body frames, A and B, are those to which `surface.M_id()` and
+   `surface.N_id()` are affixed, respectively.
+   */
+  void ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+       const systems::Context<T>& context,
+       const MultibodyPlant<T>& plant,
+       const geometry::ContactSurface<T>& surface,
+       double dissipation, double mu_coulomb,
+       multibody::SpatialForce<T>* F_Ao_W,
+       multibody::SpatialForce<T>* F_Bo_W) const;
 
  private:
   // To allow GTEST to test private functions.
@@ -61,6 +76,9 @@ class HydroelasticTractionCalculator {
     // Gets the ContactSurface passed to the data structure on construction.
     const geometry::ContactSurface<T>& surface() const { return surface_; }
 
+    // Gets the surface centroid C, measured and expressed in World.
+    const Vector3<T>& p_WC() const { return p_WC_; }
+
     // Gets the pose from Body A (the body that Geometry `surface.M_id()` in the
     // contact surface is affixed to) relative to the world frame.
     const math::RigidTransform<T>& X_WA() const { return X_WA_; }
@@ -85,6 +103,7 @@ class HydroelasticTractionCalculator {
 
    private:
     const geometry::ContactSurface<T>& surface_;
+    Vector3<T> p_WC_;
     math::RigidTransform<T> X_WM_;
     math::RigidTransform<T> X_WA_;
     math::RigidTransform<T> X_WB_;
@@ -95,16 +114,12 @@ class HydroelasticTractionCalculator {
   Vector3<T> CalcTractionAtPoint(
       const HydroelasticTractionCalculatorData& data,
       geometry::SurfaceFaceIndex face_index,
-      const typename geometry::SurfaceMesh<T>::Barycentric&
-          Q_barycentric, double dissipation, double mu_coulomb,
-      Vector3<T>* p_WQ) const;
+      const typename geometry::SurfaceMesh<T>::Barycentric& Q_barycentric,
+      double dissipation, double mu_coulomb, Vector3<T>* p_WQ) const;
 
-  void ComputeSpatialForcesAtBodyOriginsFromTraction(
-      const HydroelasticTractionCalculatorData& data,
-      const Vector3<T>& p_WQ,
-      const Vector3<T>& traction_Aq_W,
-      multibody::SpatialForce<T>* F_Ao_W,
-      multibody::SpatialForce<T>* F_Bo_W) const;
+  multibody::SpatialForce<T> ComputeSpatialTractionAtAcFromTractionAtAq(
+      const HydroelasticTractionCalculatorData& data, const Vector3<T>& p_WQ,
+      const Vector3<T>& traction_Aq_W) const;
 
   // The parameter (in m/s) for regularizing the Coulomb friction model.
   double vslip_regularizer_{1e-6};

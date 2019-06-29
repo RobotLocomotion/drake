@@ -23,10 +23,10 @@ namespace drake {
 namespace solvers {
 namespace {
 // Mosek treats psd matrix variables in a special manner.
-// Check https://docs.mosek.com/8.1/capi/tutorial-sdo-shared.html for more
+// Check https://docs.mosek.com/9.0/capi/tutorial-sdo-shared.html for more
 // details. To summarize, Mosek stores a positive semidefinite (psd) matrix
 // variable as a "bar var" (as called in Mosek's API, for example
-// https://docs.mosek.com/8.1/capi/tutorial-sdo-shared.html). Inside Mosek, it
+// https://docs.mosek.com/9.0/capi/tutorial-sdo-shared.html). Inside Mosek, it
 // accesses each of the psd matrix variable with a unique ID. Moreover, the
 // Mosek user cannot access the entries of the psd matrix variable individually;
 // instead, the user can only access the matrix X̅ as a whole. To impose
@@ -86,8 +86,8 @@ class MatrixVariableEntry {
 
 // This function is used to print information for each iteration to the console,
 // it will show PRSTATUS, PFEAS, DFEAS, etc. For more information, check out
-// https://docs.mosek.com/8.1/capi/solver-io.html. This printstr is copied
-// directly from https://docs.mosek.com/8.1/capi/solver-io.html#stream-logging.
+// https://docs.mosek.com/9.0/capi/solver-io.html. This printstr is copied
+// directly from https://docs.mosek.com/9.0/capi/solver-io.html#stream-logging.
 void MSKAPI printstr(void*, const char str[]) { printf("%s", str); }
 
 enum class LinearConstraintBoundType {
@@ -1228,11 +1228,11 @@ class MosekSolver::License {
 
 std::shared_ptr<MosekSolver::License> MosekSolver::AcquireLicense() {
   // According to
-  // http://docs.mosek.com/8.0/cxxfusion/solving-parallel.html sharing
-  // an env used between threads is safe, but nothing mentions thread-safety
-  // when allocating the environment. We can safeguard against this ambiguity
-  // by using GetScopedSingleton for basic thread-safety when acquiring /
-  // releasing the license.
+  // https://docs.mosek.com/8.1/cxxfusion/solving-parallel.html sharing
+  // an env used between threads is safe (not mentioned in 9.0 documentation),
+  // but nothing mentions thread-safety when allocating the environment. We can
+  // safeguard against this ambiguity by using GetScopedSingleton for basic
+  // thread-safety when acquiring / releasing the license.
   return GetScopedSingleton<MosekSolver::License>();
 }
 
@@ -1295,6 +1295,27 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
 
   // Create the optimization task.
   rescode = MSK_maketask(env, 0, num_nonmatrix_vars_in_prog, &task);
+
+  // Set the options (parameters).
+  for (const auto& double_options : merged_options.GetOptionsDouble(id())) {
+    if (rescode == MSK_RES_OK) {
+      rescode = MSK_putnadouparam(task, double_options.first.c_str(),
+                                  double_options.second);
+    }
+  }
+  for (const auto& int_options : merged_options.GetOptionsInt(id())) {
+    if (rescode == MSK_RES_OK) {
+      rescode = MSK_putnaintparam(task, int_options.first.c_str(),
+                                  int_options.second);
+    }
+  }
+  for (const auto& str_options : merged_options.GetOptionsStr(id())) {
+    if (rescode == MSK_RES_OK) {
+      rescode = MSK_putnastrparam(task, str_options.first.c_str(),
+                                  str_options.second.c_str());
+    }
+  }
+
   // Always check if rescode is MSK_RES_OK before we call any Mosek functions.
   // If it is not MSK_RES_OK, then bypasses everything and exits.
   if (rescode == MSK_RES_OK) {
@@ -1377,27 +1398,6 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
     }
   }
 
-  if (rescode == MSK_RES_OK) {
-    for (const auto& double_options : merged_options.GetOptionsDouble(id())) {
-      if (rescode == MSK_RES_OK) {
-        rescode = MSK_putnadouparam(task, double_options.first.c_str(),
-                                    double_options.second);
-      }
-    }
-    for (const auto& int_options : merged_options.GetOptionsInt(id())) {
-      if (rescode == MSK_RES_OK) {
-        rescode = MSK_putnaintparam(task, int_options.first.c_str(),
-                                    int_options.second);
-      }
-    }
-    for (const auto& str_options : merged_options.GetOptionsStr(id())) {
-      if (rescode == MSK_RES_OK) {
-        rescode = MSK_putnastrparam(task, str_options.first.c_str(),
-                                    str_options.second.c_str());
-      }
-    }
-  }
-
   // Mosek can accept the initial guess on its integer/binary variables, but
   // not on the continuous variables. So it allows some of the variables'
   // initial guess to be unset, while setting the others. If the initial guess
@@ -1410,9 +1410,6 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
     MSKint32t num_mosek_vars{0};
     if (rescode == MSK_RES_OK) {
       rescode = MSK_getnumvar(task, &num_mosek_vars);
-    }
-    if (rescode == MSK_RES_OK) {
-      rescode = MSK_putintparam(task, MSK_IPAR_MIO_CONSTRUCT_SOL, MSK_ON);
     }
     for (int i = 0; i < prog.num_vars(); ++i) {
       auto it = decision_variable_index_to_mosek_nonmatrix_variable.find(i);
@@ -1460,9 +1457,7 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
     if (rescode == MSK_RES_OK) {
       switch (solution_status) {
         case MSK_SOL_STA_OPTIMAL:
-        case MSK_SOL_STA_NEAR_OPTIMAL:
         case MSK_SOL_STA_INTEGER_OPTIMAL:
-        case MSK_SOL_STA_NEAR_INTEGER_OPTIMAL:
         case MSK_SOL_STA_PRIM_FEAS: {
           result->set_solution_result(SolutionResult::kSolutionFound);
           MSKint32t num_mosek_vars;
@@ -1508,12 +1503,11 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
           }
           break;
         }
-        case MSK_SOL_STA_DUAL_INFEAS_CER:
-        case MSK_SOL_STA_NEAR_DUAL_INFEAS_CER:
+        case MSK_SOL_STA_DUAL_INFEAS_CER: {
           result->set_solution_result(SolutionResult::kDualInfeasible);
           break;
-        case MSK_SOL_STA_PRIM_INFEAS_CER:
-        case MSK_SOL_STA_NEAR_PRIM_INFEAS_CER: {
+        }
+        case MSK_SOL_STA_PRIM_INFEAS_CER: {
           result->set_solution_result(SolutionResult::kInfeasibleConstraints);
           break;
         }

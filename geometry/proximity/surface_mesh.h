@@ -160,10 +160,9 @@ class SurfaceMesh {
    */
   SurfaceMesh(std::vector<SurfaceFace>&& faces,
               std::vector<SurfaceVertex<T>>&& vertices)
-      : faces_(std::move(faces)),
-        area_(faces_.size()),
-        vertices_(std::move(vertices)) {
-    init();
+      : faces_(std::move(faces)), vertices_(std::move(vertices)),
+        area_(faces_.size()) {  // Pre-allocate here, not yet calculated.
+    CalcAreasAndCentroid();
   }
 
   /** Returns the number of triangular elements in the mesh.
@@ -174,10 +173,26 @@ class SurfaceMesh {
    */
   const T& area(SurfaceFaceIndex f) const { return area_[f]; }
 
+  /** Returns the total area of all the faces of this surface mesh.
+   */
+  const T& total_area() const { return total_area_; }
+
+  /** Returns the area-weighted geometric centroid of this surface mesh. The
+   returned value is the position vector p_MSc from M's origin to the
+   centroid Sc, expressed in frame M. (M is the frame in which this mesh's
+   vertices are measured and expressed.) Note that the centroid is not
+   necessarily a point on the surface. If the total mesh area is exactly
+   zero, we define the centroid to be (0,0,0).
+
+   The centroid location is calculated _per face_ not _per vertex_ so is
+   insensitive to whether vertices are shared by faces.
+   */
+  const Vector3<T>& centroid() const { return p_MSc_; }
+
   /** 
    Maps the barycentric coordinates `Q_barycentric` of a point Q in
    `element_index` to its position vector p_MQ.
-  */
+   */
   Vector3<T> CalcCartesianFromBarycentric(
       ElementIndex element_index, const Vector3<T>& Q_barycentric) const {
     const SurfaceVertex<T> va = vertex(element(element_index).vertex(0));
@@ -195,33 +210,52 @@ class SurfaceMesh {
   }
 
  private:
-  // Initialization.
-  void init();
-  // Evaluate area of a triangular face.
-  T EvaluateFaceArea(SurfaceFaceIndex f);
+  // Calculates the areas of each triangle, the total area, and the centorid of
+  // the surface.
+  void CalcAreasAndCentroid();
+
   // The triangles that comprise the surface.
   std::vector<SurfaceFace> faces_;
-  // Area of the triangles. Computed in initialization.
-  std::vector<T> area_;
-  // The vertices that are shared between the triangles.
+  // The vertices that are shared among the triangles.
   std::vector<SurfaceVertex<T>> vertices_;
+
+  // Computed in initialization.
+
+  // Area of the triangles.
+  std::vector<T> area_;
+  T total_area_{};
+
+  // Area-weighted geometric centroid Sc of the surface mesh as an offset vector
+  // from the origin of Frame M to point Sc, expressed in Frame M.
+  Vector3<T> p_MSc_;
 };
 
 template <class T>
-void SurfaceMesh<T>::init() {
-  for (SurfaceFaceIndex f(0); f < faces_.size(); ++f)
-    area_[f] = EvaluateFaceArea(f);
-}
+void SurfaceMesh<T>::CalcAreasAndCentroid() {
+  total_area_ = 0;
+  p_MSc_.setZero();
 
-template <class T>
-T SurfaceMesh<T>::EvaluateFaceArea(SurfaceFaceIndex f) {
-  const auto& r_MA = vertices_[faces_[f].vertex(0)].r_MV();
-  const auto& r_MB = vertices_[faces_[f].vertex(1)].r_MV();
-  const auto& r_MC = vertices_[faces_[f].vertex(2)].r_MV();
-  const auto r_UV_M = r_MB - r_MA;
-  const auto r_UW_M = r_MC - r_MA;
-  const auto cross = r_UV_M.cross(r_UW_M);
-  return T(0.5)*cross.norm();
+  for (SurfaceFaceIndex f(0); f < faces_.size(); ++f) {
+    const SurfaceFace& face = faces_[f];
+    const Vector3<T>& r_MA = vertices_[face.vertex(0)].r_MV();
+    const Vector3<T>& r_MB = vertices_[face.vertex(1)].r_MV();
+    const Vector3<T>& r_MC = vertices_[face.vertex(2)].r_MV();
+    const auto r_UV_M = r_MB - r_MA;
+    const auto r_UW_M = r_MC - r_MA;
+
+    const auto cross = r_UV_M.cross(r_UW_M);
+    const T face_area = T(0.5) * cross.norm();
+    area_[f] = face_area;
+    total_area_ += face_area;
+
+    // Accumulate area-weighted surface centroid; must be divided by 3X the
+    // total area afterwards.
+    p_MSc_ += face_area * (r_MA + r_MB + r_MC);
+  }
+
+  // Finalize centroid.
+  if (total_area_ != T(0.))
+    p_MSc_ /= (3. * total_area_);
 }
 
 }  // namespace geometry

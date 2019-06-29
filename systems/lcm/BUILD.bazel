@@ -167,7 +167,6 @@ drake_cc_googletest(
     flaky = 1,
     tags = [
         "no_asan",
-        "no_memcheck",
         "no_tsan",
         "requires-network",
     ],

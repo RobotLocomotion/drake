@@ -7,8 +7,13 @@ namespace kuka_iiwa_robot {
 namespace MG {
 
 using Eigen::Map;
+using Eigen::Matrix3d;
 using Eigen::Matrix;
+using Eigen::Vector3d;
+using SpatialForced = SpatialForce<double>;
 using Vector6d = Eigen::Matrix<double, 6, 1>;
+using Vector7d = Eigen::Matrix<double, 7, 1>;
+using test_utilities::SpatialKinematicsPVA;
 
 template<typename T>
 void MGKukaIIwaRobot<T>::PrepareMGOutput(

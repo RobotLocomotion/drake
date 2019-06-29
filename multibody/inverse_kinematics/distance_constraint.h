@@ -34,6 +34,15 @@ class DistanceConstraint : public solvers::Constraint {
                      systems::Context<double>* plant_context,
                      double distance_lower, double distance_upper);
 
+  /**
+   * Overloaded constructor. Constructs the constraint with
+   * MultibodyPlant<AutoDiffXd>.
+   */
+  DistanceConstraint(const multibody::MultibodyPlant<AutoDiffXd>* const plant,
+                     SortedPair<geometry::GeometryId> geometry_pair,
+                     systems::Context<AutoDiffXd>* plant_context,
+                     double distance_lower, double distance_upper);
+
   ~DistanceConstraint() override {}
 
  private:
@@ -53,9 +62,14 @@ class DistanceConstraint : public solvers::Constraint {
   void DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x,
                      VectorX<T>* y) const;
 
-  const multibody::MultibodyPlant<double>& plant_;
-  systems::Context<double>* const plant_context_;
+  bool use_autodiff() const { return plant_autodiff_; }
+
+  const MultibodyPlant<double>* plant_double_;
+  systems::Context<double>* const plant_context_double_;
   SortedPair<geometry::GeometryId> geometry_pair_;
+
+  const MultibodyPlant<AutoDiffXd>* const plant_autodiff_;
+  systems::Context<AutoDiffXd>* plant_context_autodiff_;
 };
 }  // namespace multibody
 }  // namespace drake

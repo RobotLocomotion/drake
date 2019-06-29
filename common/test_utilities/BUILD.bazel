@@ -150,8 +150,8 @@ drake_cc_googletest(
     ],
 )
 
-# N.B. All sh_tests are excluded from dynamic_analysis (sanitizer and memcheck)
-# build by default; these death tests are skipped under those configurations.
+# N.B. All sh_tests are excluded from sanitizer builds by default; these death
+# tests are therefore skipped under those configurations.
 sh_test(
     name = "limit_malloc_death_test",
     srcs = [":limit_malloc_test"],
@@ -168,6 +168,8 @@ sh_test(
     data = [
         ":limit_malloc_test",
     ],
+    # Fails to terminate when run under Valgrind Memcheck.
+    tags = ["no_memcheck"],
 )
 
 drake_cc_googletest(

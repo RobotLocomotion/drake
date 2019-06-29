@@ -942,6 +942,8 @@ sh_test(
         "--dry-run",
     ],
     data = [":demo"],
+    # Valgrind Memcheck reports numerous leaks in the python executable.
+    tags = ["no_memcheck"],
 )
 
 add_lint_tests()

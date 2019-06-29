@@ -15,10 +15,15 @@ export G_SLICE=always-malloc
 export GTEST_DEATH_TEST_USE_FORK=1
 
 valgrind \
+    --tool=memcheck \
+    --gen-suppressions=all \
     --leak-check=full \
     --suppressions="$mydir/valgrind.supp" \
+    --suppressions=/usr/lib/valgrind/debian.supp \
+    --suppressions=/usr/lib/valgrind/python.supp \
     --error-exitcode=1 \
     --trace-children=yes \
+    --trace-children-skip=/bin/cat,/bin/cp,/bin/mkdir,/bin/sed,/usr/bin/clang,/usr/bin/clang-6.0,/usr/bin/clang-format-6.0,/usr/bin/find,/usr/bin/gcc \
     --track-origins=yes \
     --show-leak-kinds=definite,possible \
     --num-callers=16 \

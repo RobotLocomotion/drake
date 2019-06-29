@@ -75,8 +75,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.rotation.doc)
         .def("set_rotation", &Class::set_rotation, py::arg("R"),
             cls_doc.set_rotation.doc)
-        .def("translation", &Class::translation, py_reference_internal,
-            cls_doc.translation.doc)
+        .def("translation", &Class::translation,
+            return_value_policy_for_scalar_type<T>(), cls_doc.translation.doc)
         .def("set_translation", &Class::set_translation, py::arg("p"),
             cls_doc.set_translation.doc)
         .def("GetAsMatrix4", &Class::GetAsMatrix4, cls_doc.GetAsMatrix4.doc)
@@ -350,13 +350,11 @@ void DoScalarIndependentDefinitions(py::module m) {
   // See TODO in corresponding header file - these should be removed soon!
   pydrake::internal::BindAutoDiffMathOverloads(&m);
   pydrake::internal::BindSymbolicMathOverloads(&m);
-
-  ExecuteExtraPythonCode(m);
 }
 }  // namespace
 
 PYBIND11_MODULE(math, m) {
-  m.doc() = "Bindings for //math.";
+  // N.B. Docstring contained in `_math_extra.py`.
 
   py::module::import("pydrake.autodiffutils");
   py::module::import("pydrake.symbolic");
@@ -364,6 +362,8 @@ PYBIND11_MODULE(math, m) {
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       CommonScalarPack{});
   DoScalarIndependentDefinitions(m);
+
+  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake
