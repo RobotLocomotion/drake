@@ -133,6 +133,10 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   // The iteration matrix for the Radau method.
   typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_radau3_;
 
+  // The iteration matrix for the implicit trapezoid method.
+  typename ImplicitIntegrator<T>::IterationMatrix
+      iteration_matrix_implicit_trapezoid_;
+
   // The (constant) tensor product between A_ and an identity matrix. This
   // product is computed only at initialization.
   MatrixX<T> A_tp_eye_;
@@ -239,9 +243,31 @@ void RadauIntegrator<T, num_stages>::DoInitialize() {
   // Allocate storage for changes to state variables during Newton-Raphson.
   dx_state_ = this->get_system().AllocateTimeDerivatives();
 
-  // Verify that the maximum step size has been set.
-  if (isnan(this->get_maximum_step_size()))
-    throw std::logic_error("Maximum step size has not been set!");
+  const double kDefaultAccuracy = 1e-3;  // Good for this particular integrator.
+  const double kLoosestAccuracy = 1e-2;
+
+  // Set an artificial step size target, if not set already.
+  if (isnan(this->get_initial_step_size_target())) {
+    // Verify that maximum step size has been set.
+    if (isnan(this->get_maximum_step_size()))
+      throw std::logic_error("Neither initial step size target nor maximum "
+                                 "step size has been set!");
+
+    this->request_initial_step_size_target(
+        this->get_maximum_step_size());
+  }
+
+  // Sets the working accuracy to a good value.
+  double working_accuracy = this->get_target_accuracy();
+
+    // If the user asks for accuracy that is looser than the loosest this
+  // integrator can provide, use the integrator's loosest accuracy setting
+  // instead.
+  if (isnan(working_accuracy))
+    working_accuracy = kDefaultAccuracy;
+  else if (working_accuracy > kLoosestAccuracy)
+    working_accuracy = kLoosestAccuracy;
+  this->set_accuracy_in_use(working_accuracy);
 
   // Reset the Jacobian matrix (so that recomputation is forced).
   this->get_mutable_jacobian().resize(0, 0);
@@ -514,6 +540,146 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoid(const T& t0,
 
   return success;
 }
+
+// Does all of the real work for the implicit trapezoid method.
+template <class T, int NumStages>
+bool RadauIntegrator<T, NumStages>::StepImplicitTrapezoidDetail(
+    const T& t0, const T& h,
+    const VectorX<T>& xt0, const std::function<VectorX<T>()>& g,
+    VectorX<T>* xtplus, int trial) {
+  using std::max;
+  using std::min;
+
+  // Verify the trial number is valid.
+  DRAKE_ASSERT(trial >= 1 && trial <= 4);
+
+  // Set the state.
+  Context<T>* context = this->get_mutable_context();
+  context->SetTimeAndContinuousState(t0, xt0);
+
+  // Verify xtplus.
+  DRAKE_ASSERT(xtplus &&
+               xtplus->size() == context->get_continuous_state_vector().size());
+
+  SPDLOG_DEBUG(drake::log(), "StepImplicitTrapezoidDetail() entered for t={}, "
+      "h={}, trial={}", t0, h, trial);
+
+  // Advance the context time; this means that all derivatives will be computed
+  // at t+dt.
+  const T tf = t0 + h;
+  context->SetTimeAndContinuousState(tf, *xtplus);
+
+  // Evaluate the residual error using the current x(t+h) as x⁰(t+h):
+  // g(x⁰(t+h)) = x⁰(t+h) - x(t) - h f(t+h,x⁰(t+h)), where h = dt;
+  VectorX<T> goutput = g();
+
+  // Initialize the "last" state update norm; this will be used to detect
+  // convergence.
+  T last_dx_norm = std::numeric_limits<double>::infinity();
+
+    // Set the iteration matrix construction method.
+  auto construct_iteration_matrix = [this](const MatrixX<T>& J, const T& dt,
+      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) {
+    ComputeImplicitTrapezoidIterationMatrix(J, dt, iteration_matrix);
+  };
+
+  // Calculate Jacobian and iteration matrices (and factorizations), as needed.
+  // Note that we compute this Jacobian about xtplus.
+  if (!this->MaybeFreshenMatrices(t0, *xtplus, h, trial,
+      construct_iteration_matrix, &iteration_matrix_implicit_trapezoid_)) {
+    return false;
+  }
+
+  // The maximum number of Newton-Raphson iterations to take before declaring
+  // failure. [Hairer, 1996] states, "It is our experience that the code becomes
+  // more efficient when we allow a relatively high number of iterations (e.g.,
+  // [7 or 10])", p. 121.  The focus of that quote is a higher order integrator
+  // with a quasi-Newton approach, so our mileage may vary.
+  // TODO(edrumwri): Consider making this a settable parameter. Not putting it
+  //                 toward staving off parameter overload.
+  const int max_iterations = 10;
+
+  // Do the Newton-Raphson iterations.
+  for (int i = 0; i < max_iterations; ++i) {
+    ++num_nr_iterations_;
+
+    // Compute the state update using the equation A*x = -g(), where A is the
+    // iteration matrix.
+    // TODO(edrumwri): Allow caller to provide their own solver.
+    VectorX<T> dx = iteration_matrix_implicit_trapezoid_.Solve(-goutput);
+    SPDLOG_DEBUG(drake::log(), "dx: {}", dx.transpose());
+
+    // Get the infinity norm of the weighted update vector.
+    dx_state_->get_mutable_vector().SetFromVector(dx);
+    T dx_norm = this->CalcStateChangeNorm(*dx_state_);
+
+    // Update the state vector.
+    *xtplus += dx;
+
+    // The check below looks for convergence using machine epsilon. Without
+    // this check, the convergence criteria can be applied when
+    // |dx_norm| ~ 1e-22 (one example taken from practice), which does not
+    // allow the norm to be reduced further. What happens: dx_norm will become
+    // equivalent to last_dx_norm, making theta = 1, and eta = infinity. Thus,
+    // convergence would never be identified.
+    bool converged = (dx_norm < 10 * std::numeric_limits<double>::epsilon());
+    SPDLOG_DEBUG(drake::log(), "norm(dx) indicates convergence? {}", converged);
+
+    // Compute the convergence rate and check convergence.
+    // [Hairer, 1996] notes that this convergence strategy should only be
+    // applied after *at least* two iterations (p. 121).
+    if (!converged && i >= 1) {
+      const T theta = dx_norm / last_dx_norm;
+      const T eta = theta / (1 - theta);
+      SPDLOG_DEBUG(drake::log(), "Newton-Raphson loop {} theta: {}, eta: {}",
+                   i, theta, eta);
+
+      // Look for divergence.
+      if (theta > 1) {
+        SPDLOG_DEBUG(drake::log(), "Newton-Raphson divergence detected for "
+            "h={}", h);
+        break;
+      }
+
+      // Look for convergence using Equation 8.10 from [Hairer, 1996].
+      // [Hairer, 1996] determined values of kappa in [0.01, 0.1] work most
+      // efficiently on a number of test problems with *RADAU5* (a fifth order
+      // implicit integrator), p. 121. We select a value halfway in-between.
+      const double kappa = 0.05;
+      const double k_dot_tol = kappa * this->get_accuracy_in_use();
+      if (eta * dx_norm < k_dot_tol) {
+        SPDLOG_DEBUG(drake::log(), "Newton-Raphson converged; η = {}, h = {}",
+                     eta, h);
+        converged = true;
+      }
+    }
+
+    if (converged) {
+      context->SetContinuousState(*xtplus);
+      return true;
+    }
+
+    // Update the norm of the state update.
+    last_dx_norm = dx_norm;
+
+    // Update the state in the context and compute g(xⁱ⁺¹).
+    context->SetContinuousState(*xtplus);
+    goutput = g();
+  }
+
+  SPDLOG_DEBUG(drake::log(), "StepImplicitTrapezoidDetail() convergence "
+      "failed");
+
+  // If Jacobian and iteration matrix factorizations are not reused, there
+  // is nothing else we can try.
+  if (!this->get_reuse())
+    return false;
+
+  // Try the step again, freshening Jacobians and iteration matrix
+  // factorizations as helpful.
+  return StepImplicitTrapezoidDetail(t0, h, xt0, g, xtplus, trial + 1);
+}
+
 
 // Steps Radau forward by h, if possible.
 // @param t0 the initial time.

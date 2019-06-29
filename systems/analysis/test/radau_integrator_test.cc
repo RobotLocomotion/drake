@@ -30,6 +30,7 @@ GTEST_TEST(RadauIntegratorTest, Reuse) {
 
   euler.set_maximum_step_size(1e-2);  // Maximum step that will be attempted.
   euler.set_throw_on_minimum_step_size_violation(false);
+  euler.set_fixed_step_mode(true);
   euler.set_reuse(true);    // The whole point of this.
 
   // Attempt to integrate the system. Our past experience indicates that this
@@ -104,6 +105,7 @@ GTEST_TEST(RadauIntegratorTest, CubicSystem) {
 
   const double dt = 1.0;
   radau3.set_maximum_step_size(dt);
+  radau3.set_fixed_step_mode(true);
 
   // Integrate the system
   radau3.Initialize();
@@ -118,10 +120,11 @@ GTEST_TEST(RadauIntegratorTest, CubicSystem) {
   // Reset the state.
   context = cubic.CreateDefaultContext();
 
-  // Create an implicit Euler integrator using 1 stage.
+  // Create an implicit Euler integrator using 1 stage and running in fixed step
+  // mode.
   const int num_stages = 1;
   RadauIntegrator<double, num_stages> euler(cubic, context.get());
-
+  euler.set_fixed_step_mode(true);
   euler.set_maximum_step_size(dt);
 
   // Integrate the system
@@ -154,6 +157,7 @@ GTEST_TEST(RadauIntegratorTest, LinearSystem) {
 
   // Integrate the system
   euler.Initialize();
+  euler.set_fixed_step_mode(true);
   ASSERT_TRUE(euler.IntegrateWithSingleFixedStepToTime(dt));
 
   // Verify the solution.
