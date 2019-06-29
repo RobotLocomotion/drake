@@ -1215,7 +1215,14 @@ class MultibodyTree {
   /// See MultibodyPlant method.
   math::RigidTransform<T> CalcRelativeTransform(
       const systems::Context<T>& context,
-      const Frame<T>& frame_A, const Frame<T>& frame_B) const;
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_B) const;
+
+  /// See MultibodyPlant method.
+  math::RotationMatrix<T> CalcRelativeRotationMatrix(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_B) const;
 
   /// See MultibodyPlant method.
   void CalcPointsPositions(
