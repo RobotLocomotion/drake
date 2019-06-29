@@ -24,7 +24,7 @@ namespace systems {
  *
  * A two-stage Radau IIa (see [Hairer, 1996], Ch. 5) method is used for
  * propagating the state forward, by default, while the implicit trapezoid rule
- * is used for estimating the local (truncation) error at every time. The
+ * is used for estimating the local (truncation) error. The
  * state can also be propagated using a single-stage method, in which case it is
  * equivalent to an implicit Euler method, by setting num_stages=1.
  *
@@ -166,7 +166,7 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   VectorX<T> xt0_, xdot_, xtplus_radau3_, xtplus_tr_;
 
   // Second order Runge-Kutta integrator used for error estimation when the
-  // step size becomes too small.
+  // step size becomes smaller than the working minimum step size.
   std::unique_ptr<RungeKutta2Integrator<T>> rk2_;
 
   // Statistics specific to this integrator.
@@ -243,8 +243,10 @@ void RadauIntegrator<T, num_stages>::DoInitialize() {
   // Allocate storage for changes to state variables during Newton-Raphson.
   dx_state_ = this->get_system().AllocateTimeDerivatives();
 
-  const double kDefaultAccuracy = 1e-3;  // Good for this particular integrator.
-  const double kLoosestAccuracy = 1e-2;
+  // TODO(edrumwri): Find the best values for the method.
+  // These values are expected to be good for the particular integrators.
+  const double kDefaultAccuracy = (num_stages == 2) ? 1e-3 : 1e-1;
+  const double kLoosestAccuracy = (num_stages == 2) ? 1e-2 : 5e-1;
 
   // Set an artificial step size target, if not set already.
   if (isnan(this->get_initial_step_size_target())) {
@@ -260,7 +262,7 @@ void RadauIntegrator<T, num_stages>::DoInitialize() {
   // Sets the working accuracy to a good value.
   double working_accuracy = this->get_target_accuracy();
 
-    // If the user asks for accuracy that is looser than the loosest this
+  // If the user asks for accuracy that is looser than the loosest this
   // integrator can provide, use the integrator's loosest accuracy setting
   // instead.
   if (isnan(working_accuracy))
@@ -362,9 +364,8 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
   T last_dx_norm = std::numeric_limits<double>::infinity();
 
   // The maximum number of Newton-Raphson iterations to take before declaring
-  // failure. [Hairer, 1996] states, "It is our experience that the code becomes
-  // more efficient when we allow a relatively high number of iterations (e.g.,
-  // [7 or 10])", p. 121.
+  // failure. See relevant statement about this method in
+  // StepImplicitTrapezoidDetail().
   // TODO(edrumwri): Consider making this a settable parameter. Not doing so
   //                 to avoid parameter overload.
   const int max_iterations = 10;
@@ -542,8 +543,8 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoid(const T& t0,
 }
 
 // Does all of the real work for the implicit trapezoid method.
-template <class T, int NumStages>
-bool RadauIntegrator<T, NumStages>::StepImplicitTrapezoidDetail(
+template <class T, int num_stages>
+bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
     const T& t0, const T& h,
     const VectorX<T>& xt0, const std::function<VectorX<T>()>& g,
     VectorX<T>* xtplus, int trial) {
@@ -553,11 +554,8 @@ bool RadauIntegrator<T, NumStages>::StepImplicitTrapezoidDetail(
   // Verify the trial number is valid.
   DRAKE_ASSERT(trial >= 1 && trial <= 4);
 
-  // Set the state.
-  Context<T>* context = this->get_mutable_context();
-  context->SetTimeAndContinuousState(t0, xt0);
-
   // Verify xtplus.
+  Context<T>* context = this->get_mutable_context();
   DRAKE_ASSERT(xtplus &&
                xtplus->size() == context->get_continuous_state_vector().size());
 
@@ -613,22 +611,22 @@ bool RadauIntegrator<T, NumStages>::StepImplicitTrapezoidDetail(
     dx_state_->get_mutable_vector().SetFromVector(dx);
     T dx_norm = this->CalcStateChangeNorm(*dx_state_);
 
+    // The check below looks for convergence by identifying cases where the
+    // update to the state results in no change. We do this check only after
+    // at least one Newton-Raphson update has been applied to ensure that there
+    // is at least some change to the state, no matter how small, on a
+    // non-stationary system.
+    if (i > 0 && this->IsUpdateZero(*xtplus, dx))
+      return true;
+
     // Update the state vector.
     *xtplus += dx;
-
-    // The check below looks for convergence using machine epsilon. Without
-    // this check, the convergence criteria can be applied when
-    // |dx_norm| ~ 1e-22 (one example taken from practice), which does not
-    // allow the norm to be reduced further. What happens: dx_norm will become
-    // equivalent to last_dx_norm, making theta = 1, and eta = infinity. Thus,
-    // convergence would never be identified.
-    bool converged = (dx_norm < 10 * std::numeric_limits<double>::epsilon());
-    SPDLOG_DEBUG(drake::log(), "norm(dx) indicates convergence? {}", converged);
+    context->SetTimeAndContinuousState(tf, *xtplus);
 
     // Compute the convergence rate and check convergence.
     // [Hairer, 1996] notes that this convergence strategy should only be
     // applied after *at least* two iterations (p. 121).
-    if (!converged && i >= 1) {
+    if (i >= 1) {
       const T theta = dx_norm / last_dx_norm;
       const T eta = theta / (1 - theta);
       SPDLOG_DEBUG(drake::log(), "Newton-Raphson loop {} theta: {}, eta: {}",
@@ -643,27 +641,21 @@ bool RadauIntegrator<T, NumStages>::StepImplicitTrapezoidDetail(
 
       // Look for convergence using Equation 8.10 from [Hairer, 1996].
       // [Hairer, 1996] determined values of kappa in [0.01, 0.1] work most
-      // efficiently on a number of test problems with *RADAU5* (a fifth order
+      // efficiently on a number of test problems with *RADAU5* (the fifth order
       // implicit integrator), p. 121. We select a value halfway in-between.
       const double kappa = 0.05;
       const double k_dot_tol = kappa * this->get_accuracy_in_use();
       if (eta * dx_norm < k_dot_tol) {
         SPDLOG_DEBUG(drake::log(), "Newton-Raphson converged; η = {}, h = {}",
                      eta, h);
-        converged = true;
+        return true;
       }
-    }
-
-    if (converged) {
-      context->SetContinuousState(*xtplus);
-      return true;
     }
 
     // Update the norm of the state update.
     last_dx_norm = dx_norm;
 
     // Update the state in the context and compute g(xⁱ⁺¹).
-    context->SetContinuousState(*xtplus);
     goutput = g();
   }
 
