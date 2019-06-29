@@ -69,7 +69,7 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   bool supports_error_estimation() const final { return true; }
 
   /// The order of the asymptotic term in the embedded implicit trapezoid method
-  /// is 3. 
+  /// is 3.
   int get_error_estimate_order() const final { return 3; }
 
  private:
@@ -78,26 +78,26 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   }
 
   int64_t do_get_num_error_estimator_derivative_evaluations() const final {
-    return num_err_est_iter_factorizations_; 
+    return num_err_est_iter_factorizations_;
   }
 
   int64_t do_get_num_error_estimator_derivative_evaluations_for_jacobian()
       const final {
-    return num_err_est_function_evaluations_; 
+    return num_err_est_function_evaluations_;
   }
 
   int64_t do_get_num_error_estimator_newton_raphson_iterations()
       const final {
-    return num_err_est_nr_iterations_; 
+    return num_err_est_nr_iterations_;
   }
 
   int64_t do_get_num_error_estimator_jacobian_evaluations() const final {
-    return num_err_est_jacobian_reforms_; 
+    return num_err_est_jacobian_reforms_;
   }
 
   int64_t do_get_num_error_estimator_iteration_matrix_factorizations()
       const final {
-    return num_err_est_iter_factorizations_; 
+    return num_err_est_iter_factorizations_;
   }
 
   bool AttemptStepPaired(const T& t0, const T& h,
@@ -163,7 +163,7 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
 
   // Second order Runge-Kutta integrator used for error estimation when the
   // step size becomes too small.
-  std::unique_ptr<RungeKutta2Integrator<T>> rk2_; 
+  std::unique_ptr<RungeKutta2Integrator<T>> rk2_;
 
   // Statistics specific to this integrator.
   int64_t num_nr_iterations_{0};
@@ -251,7 +251,7 @@ void RadauIntegrator<T, num_stages>::DoInitialize() {
   rk2_ = std::make_unique<RungeKutta2Integrator<T>>(
       this->get_system(),
       std::numeric_limits<double>::infinity() /* maximum step size */,
-      this->get_mutable_context()); 
+      this->get_mutable_context());
 }
 
 // Computes F(Z) used in [Hairer, 1996], (IV.8.4). This method evaluates
@@ -479,8 +479,8 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoid(const T& t0,
   std::function<VectorX<T>()> g =
       [&xt0, h, &dx0, context, this]() {
         return (context->get_continuous_state().CopyToVector() - xt0 - h/2 *
-	    (dx0 +
-	       this->EvalTimeDerivatives(this->get_context()).CopyToVector())).eval();
+            (dx0 + this->EvalTimeDerivatives(
+                this->get_context()).CopyToVector())).eval();
       };
 
   // Store statistics before calling StepAbstract(). The difference between
@@ -627,16 +627,16 @@ bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
     xtplus_radau3_ = xt0_ + h * xdot_;
 
     // Compute the RK2 step.
-    const int evals_before_rk2 = rk2_->get_num_evaluations();
+    const int evals_before_rk2 = rk2_->get_num_derivative_evaluations();
     DRAKE_DEMAND(rk2_->IntegrateWithSingleFixedStepToTime(t0 + h));
-    const int evals_after_rk2 = rk2_->get_num_evaluations();
+    const int evals_after_rk2 = rk2_->get_num_derivative_evaluations();
     xtplus_tr_ = context->get_continuous_state().CopyToVector();
-
-    // Revert the state to that computed by explicit Euler.
-    context->SetTimeAndContinuousState(t0 + h, xtplus_radau3_);
 
     // Update the error estimation ODE counts.
     num_err_est_function_evaluations_ += (evals_after_rk2 - evals_before_rk2);
+
+    // Revert the state to that computed by explicit Euler.
+    context->SetTimeAndContinuousState(t0 + h, xtplus_radau3_);
   } else {
     // Try taking the requested step.
     bool success = AttemptStepPaired(t0, h, xt0_, &xtplus_radau3_, &xtplus_tr_);
