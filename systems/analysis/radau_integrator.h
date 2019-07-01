@@ -9,8 +9,8 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/systems/analysis/bogacki_shampine3_integrator.h"
 #include "drake/systems/analysis/implicit_integrator.h"
-#include "drake/systems/analysis/runge_kutta2_integrator.h"
 
 namespace drake {
 namespace systems {
@@ -166,9 +166,9 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   // Variables that replace temporaries to avoid heap allocations.
   VectorX<T> xt0_, xdot_, xtplus_radau3_, xtplus_tr_;
 
-  // Second order Runge-Kutta integrator used for error estimation when the
+  // 3/2 Bogacki-Shampine integrator used for error estimation when the
   // step size becomes smaller than the working minimum step size.
-  std::unique_ptr<RungeKutta2Integrator<T>> rk2_;
+  std::unique_ptr<BogackiShampine3Integrator<T>> bs3_;
 
   // Statistics specific to this integrator.
   int64_t num_nr_iterations_{0};
@@ -274,12 +274,19 @@ void RadauIntegrator<T, num_stages>::DoInitialize() {
   // Reset the Jacobian matrix (so that recomputation is forced).
   this->get_mutable_jacobian().resize(0, 0);
 
-  // Initialize the embedded second order Runge-Kutta integrator. The maximum
-  // step size will be set to infinity because this value will be ignored.
-  rk2_ = std::make_unique<RungeKutta2Integrator<T>>(
+  // Instantiate the embedded third order Bogacki-Shampine3 integrator. Note
+  // that we do not worry about setting the initial step size, since that code
+  // will never be triggered (the integrator will always be used in fixed-step
+  // mode).
+  bs3_ = std::make_unique<BogackiShampine3Integrator<T>>(
       this->get_system(),
-      std::numeric_limits<double>::infinity() /* maximum step size */,
       this->get_mutable_context());
+
+  // Maximum step size is not to be a constraint.
+  bs3_->set_maximum_step_size(std::numeric_limits<double>::max());
+
+  bs3_->Initialize();
+  bs3_->set_fixed_step_mode(true);
 }
 
 // Computes F(Z) used in [Hairer, 1996], (IV.8.4). This method evaluates
@@ -786,31 +793,16 @@ bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
     SPDLOG_DEBUG(drake::log(), "-- requested step too small, taking explicit "
         "step instead");
 
-    // TODO(edrumwri): Investigate replacing this with an explicit trapezoid
-    //                 step, which would be expected to give better accuracy.
-    //                 The mitigating factor is that h is already small, so a
-    //                 test of, e.g., a square wave function, should quantify
-    //                 the improvement (if any).
-
-    // The error estimation process for explicit Euler uses an explicit second
-    // order Runge-Kutta method so that the order of the asymptotic term matches
-    // that used for estimating the error of the Radau integrator.
-
-    // Compute the Euler step.
-    xdot_ = this->EvalTimeDerivatives(*context).CopyToVector();
-    xtplus_radau3_ = xt0_ + h * xdot_;
-
-    // Compute the RK2 step.
-    const int evals_before_rk2 = rk2_->get_num_derivative_evaluations();
-    DRAKE_DEMAND(rk2_->IntegrateWithSingleFixedStepToTime(t0 + h));
-    const int evals_after_rk2 = rk2_->get_num_derivative_evaluations();
-    xtplus_tr_ = context->get_continuous_state().CopyToVector();
+    // Compute the BS3 step.
+    const int evals_before_bs3 = bs3_->get_num_derivative_evaluations();
+    DRAKE_DEMAND(bs3_->IntegrateWithSingleFixedStepToTime(t0 + h));
+    const int evals_after_bs3 = bs3_->get_num_derivative_evaluations();
 
     // Update the error estimation ODE counts.
-    num_err_est_function_evaluations_ += (evals_after_rk2 - evals_before_rk2);
+    num_err_est_function_evaluations_ += (evals_after_bs3 - evals_before_bs3);
 
-    // Revert the state to that computed by explicit Euler.
-    context->SetTimeAndContinuousState(t0 + h, xtplus_radau3_);
+    // Set the error estimate.
+    this->get_mutable_error_estimate()->SetFrom(*bs3_->get_error_estimate());
   } else {
     // Try taking the requested step.
     bool success = AttemptStepPaired(t0, h, xt0_, &xtplus_radau3_, &xtplus_tr_);
@@ -820,16 +812,14 @@ bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
       context->SetTimeAndContinuousState(t0, xt0_);
       return false;
     }
+
+    // Compute and set the error estimate.
+    err_est_vec_ = xtplus_radau3_ - xtplus_tr_;
+    err_est_vec_ = err_est_vec_.cwiseAbs();
+    SPDLOG_DEBUG(drake::log(), "Error estimate: {}", err_est_vec_.transpose());
+    this->get_mutable_error_estimate()->get_mutable_vector().
+        SetFromVector(err_est_vec_);
   }
-
-  // Compute and update the error estimate.
-  err_est_vec_ = xtplus_radau3_ - xtplus_tr_;
-  err_est_vec_ = err_est_vec_.cwiseAbs();
-  SPDLOG_DEBUG(drake::log(), "Error estimate: {}", err_est_vec_.transpose());
-
-  // Update the caller-accessible error estimate.
-  this->get_mutable_error_estimate()->get_mutable_vector().
-      SetFromVector(err_est_vec_);
 
   return true;
 }

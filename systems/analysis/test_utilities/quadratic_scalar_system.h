@@ -9,14 +9,16 @@ namespace systems {
 namespace analysis_test {
 
 /// System where the state at (scalar) time t corresponds to the quadratic
-///  equation 4t² + 4t + 3.
+///  equation St² + St + 3, where S is a user-defined Scalar (4 by default).
 class QuadraticScalarSystem : public LeafSystem<double> {
  public:
-  QuadraticScalarSystem() { this->DeclareContinuousState(1); }
+  explicit QuadraticScalarSystem(double S = 4) : S_(S) {
+    this->DeclareContinuousState(1);
+  }
 
   /// Evaluates the system at time t.
   double Evaluate(double t) const {
-    return 3 + 4 * t * (t + 1);
+    return 3 + S_ * t * (t + 1);
   }
 
  private:
@@ -31,8 +33,11 @@ class QuadraticScalarSystem : public LeafSystem<double> {
       const Context<double>& context,
       ContinuousState<double>* deriv) const override {
     const double t = context.get_time();
-    (*deriv)[0] = 8 * t + 4;
+    (*deriv)[0] = S_ * (2 * t + 1);
   }
+
+  // The scaling factor.
+  double S_{};
 };
 
 }  // namespace analysis_test
