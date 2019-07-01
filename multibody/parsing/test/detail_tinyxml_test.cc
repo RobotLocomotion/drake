@@ -17,7 +17,7 @@ using tinyxml2::XMLElement;
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 namespace {
 
 GTEST_TEST(TinyxmlUtilTest, ParseAttributeTest) {
@@ -75,7 +75,7 @@ GTEST_TEST(TinyxmlUtilTest, OriginAttributesTest) {
   XMLElement* element = xml_doc.FirstChildElement("element");
   ASSERT_TRUE(element != nullptr);
 
-  const RigidTransformd actual = detail::OriginAttributesToTransform(element);
+  const RigidTransformd actual = internal::OriginAttributesToTransform(element);
   const RigidTransformd expected(RollPitchYawd(1, 2, 3), Vector3d(4, 5, 6));
 
   EXPECT_TRUE(CompareMatrices(actual.matrix(), expected.matrix()));
@@ -90,7 +90,7 @@ GTEST_TEST(TinyxmlUtilTest, MalformedRpyOriginAttributesTest) {
   XMLElement* element = xml_doc.FirstChildElement("element");
   ASSERT_TRUE(element != nullptr);
 
-  EXPECT_THROW(detail::OriginAttributesToTransform(element),
+  EXPECT_THROW(internal::OriginAttributesToTransform(element),
                std::invalid_argument);
 }
 
@@ -104,13 +104,13 @@ GTEST_TEST(TinyxmlUtilTest, ThreeVectorAttributeTest) {
   ASSERT_TRUE(element != nullptr);
 
   Vector3d out = Vector3d::Zero();
-  EXPECT_TRUE(detail::ParseThreeVectorAttribute(element, "one", &out));
+  EXPECT_TRUE(internal::ParseThreeVectorAttribute(element, "one", &out));
   EXPECT_TRUE(CompareMatrices(out, Vector3d(1, 1, 1)));
 
-  EXPECT_TRUE(detail::ParseThreeVectorAttribute(element, "three", &out));
+  EXPECT_TRUE(internal::ParseThreeVectorAttribute(element, "three", &out));
   EXPECT_TRUE(CompareMatrices(out, Vector3d(4, 5, 6)));
 
-  EXPECT_FALSE(detail::ParseThreeVectorAttribute(element, "meh", &out));
+  EXPECT_FALSE(internal::ParseThreeVectorAttribute(element, "meh", &out));
 }
 
 GTEST_TEST(TinyxmlUtilTest, LocaleAttributeTest) {
@@ -133,7 +133,7 @@ GTEST_TEST(TinyxmlUtilTest, LocaleAttributeTest) {
   ASSERT_TRUE(element != nullptr);
 
   double scalar = 0.0;
-  EXPECT_TRUE(detail::ParseScalarAttribute(element, "oneAndHalf", &scalar));
+  EXPECT_TRUE(internal::ParseScalarAttribute(element, "oneAndHalf", &scalar));
   EXPECT_EQ(scalar, 1.5);
 
   // Restore the original global locale
@@ -141,6 +141,6 @@ GTEST_TEST(TinyxmlUtilTest, LocaleAttributeTest) {
 }
 
 }  // namespace
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

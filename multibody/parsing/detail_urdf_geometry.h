@@ -14,7 +14,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
 /// A map from the name of a material to its color. The color is specified in
 /// RGBA (Red, Green, Blue, Alpha) format.
@@ -54,6 +54,6 @@ geometry::GeometryInstance ParseCollision(
     const std::string& root_dir, const tinyxml2::XMLElement* node,
     CoulombFriction<double>* friction);
 
-}  /// namespace detail
+}  /// namespace internal
 }  /// namespace multibody
 }  /// namespace drake

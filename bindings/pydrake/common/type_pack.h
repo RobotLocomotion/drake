@@ -15,7 +15,7 @@ namespace drake {
 template <typename... Ts>
 struct type_pack;
 
-namespace detail {
+namespace internal {
 
 // Provides type at given index.
 template <size_t N, size_t K, typename T, typename... Ts>
@@ -67,13 +67,13 @@ struct assert_default_constructible {
       std::is_default_constructible<T>::value, "Must be default constructible");
 };
 
-}  // namespace detail
+}  // namespace internal
 
 /// Extracts the Ith type from a sequence of types.
 template <size_t I, typename... Ts>
 struct type_at {
   static_assert(I >= 0 && I < sizeof...(Ts), "Invalid type index");
-  using type = typename detail::type_at_impl<I, 0, Ts...>::type;
+  using type = typename internal::type_at_impl<I, 0, Ts...>::type;
 };
 
 /// Provides a tag to pass a type for ease of inference.
@@ -118,7 +118,7 @@ Tpl<Ts...> type_bind(type_pack<Ts...>);
 /// Extracts the inner template arguments (typename only) for a typename which
 /// is a template instantiation.
 template <typename T>
-using type_pack_extract = typename detail::type_pack_extract_impl<T>::type;
+using type_pack_extract = typename internal::type_pack_extract_impl<T>::type;
 
 /// Visit a type by constructing its default value.
 /// Useful for iterating over `type_tag`, `type_pack`, `std::integral_constant`,
@@ -128,7 +128,7 @@ struct type_visit_with_default {
   inline static void run(Visitor&& visitor) {
     // TODO(eric.cousineau): Figure out how to make this the only error, without
     // wasting more function calls.
-    (void)detail::assert_default_constructible<T>{};
+    (void)internal::assert_default_constructible<T>{};
     visitor(T{});
   }
 };
@@ -170,8 +170,8 @@ template <class VisitWith = type_visit_with_default,
 void type_visit(Visitor&& visitor, type_pack<Ts...> = {},
     template_single_tag<Predicate> = {}) {
   // clang-format off
-  (void)detail::DummyList{(
-      detail::type_visit_impl<VisitWith, Visitor>::
+  (void)internal::DummyList{(
+      internal::type_visit_impl<VisitWith, Visitor>::
           template runner<Ts, Predicate<Ts>::value>::
               run(std::forward<Visitor>(visitor)),
       true)...};

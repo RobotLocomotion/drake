@@ -12,7 +12,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 namespace {
 
 using Eigen::Vector3d;
@@ -188,6 +188,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
 }
 
 }  // namespace
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

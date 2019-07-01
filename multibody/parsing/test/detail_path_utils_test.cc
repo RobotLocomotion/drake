@@ -12,7 +12,7 @@ using std::string;
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 namespace {
 
 // Verifies that GetFullPath() promotes a relative path to an absolute path,
@@ -139,6 +139,6 @@ GTEST_TEST(ResolveUriTest, TestUnsupported) {
 }
 
 }  // namespace
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

@@ -28,8 +28,9 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   MatrixX<double> J_WE =
       robot.CalcFrameSpatialVelocityJacobianInWorldFrame(cache, frame_E);
   // Call the (non-attic) helper function.
-  return drake::manipulation::planner::detail::DoDifferentialInverseKinematics(
-      cache.getQ(), cache.getV(), X_WE, J_WE, V_WE_desired, parameters);
+  return drake::manipulation::planner::internal::
+      DoDifferentialInverseKinematics(
+          cache.getQ(), cache.getV(), X_WE, J_WE, V_WE_desired, parameters);
 }
 
 }  // namespace rbt

@@ -81,7 +81,7 @@
 #endif
 
 namespace drake {
-namespace detail {
+namespace internal {
 // Abort the program with an error message.
 __attribute__((noreturn)) /* gcc is ok with [[noreturn]]; clang is not. */
 void Abort(const char* condition, const char* func, const char* file, int line);
@@ -89,7 +89,7 @@ void Abort(const char* condition, const char* func, const char* file, int line);
 __attribute__((noreturn)) /* gcc is ok with [[noreturn]]; clang is not. */
 void AssertionFailed(
     const char* condition, const char* func, const char* file, int line);
-}  // namespace detail
+}  // namespace internal
 namespace assert {
 // Allows for specialization of how to bool-convert Conditions used in
 // assertions, in case they are not intrinsically convertible.  See
@@ -107,7 +107,7 @@ struct ConditionTraits {
 }  // namespace drake
 
 #define DRAKE_UNREACHABLE()                                             \
-  ::drake::detail::Abort(                                               \
+  ::drake::internal::Abort(                                             \
       "Unreachable code was reached?!", __func__, __FILE__, __LINE__)
 
 #define DRAKE_DEMAND(condition)                                              \
@@ -116,7 +116,7 @@ struct ConditionTraits {
         typename std::remove_cv<decltype(condition)>::type> Trait;           \
     static_assert(Trait::is_valid, "Condition should be bool-convertible."); \
     if (!Trait::Evaluate(condition)) {                                       \
-      ::drake::detail::AssertionFailed(                                      \
+      ::drake::internal::AssertionFailed(                                    \
            #condition, __func__, __FILE__, __LINE__);                        \
     }                                                                        \
   } while (0)

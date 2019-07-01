@@ -19,7 +19,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
@@ -535,6 +535,6 @@ ModelInstanceIndex AddModelFromUrdfFile(
                    &xml_doc, plant);
 }
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

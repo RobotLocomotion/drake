@@ -2,7 +2,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
 using Eigen::Vector3d;
 using math::RigidTransformd;
@@ -17,6 +17,6 @@ RigidTransformd ToRigidTransform(const ignition::math::Pose3d& pose) {
   return RigidTransformd(rotation, ToVector3(pose.Pos()));;
 }
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

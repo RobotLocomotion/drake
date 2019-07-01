@@ -36,7 +36,7 @@ inline void WarnDeprecated(py::str message) {
   warn_deprecated(message);
 }
 
-namespace detail {
+namespace internal {
 
 template <typename Func, typename Return, typename... Args>
 auto WrapDeprecatedImpl(py::str message,
@@ -58,14 +58,14 @@ auto WrapDeprecatedImpl(py::str message,
   };
 }
 
-}  // namespace detail
+}  // namespace internal
 
 /// Wraps any callable (function pointer, method pointer, lambda, etc.) to emit
 /// a deprecation message.
 template <typename Func>
 auto WrapDeprecated(py::str message, Func&& func) {
-  return detail::WrapDeprecatedImpl(
-      message, detail::infer_function_info(std::forward<Func>(func)));
+  return internal::WrapDeprecatedImpl(
+      message, internal::infer_function_info(std::forward<Func>(func)));
 }
 
 /// Deprecated wrapping of `py::init<>`.

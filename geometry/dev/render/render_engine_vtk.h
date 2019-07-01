@@ -34,7 +34,7 @@ namespace dev {
 namespace render {
 
 #ifndef DRAKE_DOXYGEN_CXX
-namespace detail {
+namespace internal {
 struct ModuleInitVtkRenderingOpenGL2 {
   ModuleInitVtkRenderingOpenGL2(){
     VTK_AUTOINIT_CONSTRUCT(vtkRenderingOpenGL2)
@@ -75,7 +75,7 @@ class ShaderCallback : public vtkCommand {
   float z_far_{0.f};
 };
 
-}  // namespace detail
+}  // namespace internal
 
 #endif
 
@@ -110,7 +110,7 @@ class ShaderCallback : public vtkCommand {
  If no label is provided, it uses the terrain label.
  */
 class RenderEngineVtk final : public RenderEngine,
-                              private detail::ModuleInitVtkRenderingOpenGL2 {
+                              private internal::ModuleInitVtkRenderingOpenGL2 {
  public:
   /** \name Does not allow copy, move, or assignment  */
   //@{
@@ -234,7 +234,7 @@ class RenderEngineVtk final : public RenderEngine,
   // formal thread safe mechanism so that it doesn't rely on that in the future.
   // TODO(SeanCurtis-TRI): Add thread safety mechanisms to the renderings to
   // preclude collisions if this code is executed in a multi-thread context.
-  static vtkNew<detail::ShaderCallback> uniform_setting_callback_;
+  static vtkNew<internal::ShaderCallback> uniform_setting_callback_;
 
   // The collection of per-geometry actors (one actor per pipeline (color,
   // depth, and label) indexed by the geometry's RenderIndex.

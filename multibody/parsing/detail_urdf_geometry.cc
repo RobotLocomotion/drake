@@ -15,7 +15,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;
@@ -464,6 +464,6 @@ geometry::GeometryInstance ParseCollision(
                                     geometry_name);
 }
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

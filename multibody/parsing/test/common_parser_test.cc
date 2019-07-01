@@ -17,7 +17,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 namespace {
 
 using geometry::GeometryId;
@@ -155,6 +155,6 @@ INSTANTIATE_TEST_CASE_P(UrdfMultibodyPlantLinkTests,
                         ::testing::Values(test::LoadFromUrdf));
 
 }  // namespace
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

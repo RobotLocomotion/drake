@@ -39,7 +39,7 @@ namespace systems {
 
 /** @cond */
 // Private helper functions for LeafSystem.
-namespace leaf_system_detail {
+namespace leaf_system_internal {
 
 // Returns the next sample time for the given @p attribute.
 template <typename T>
@@ -73,7 +73,7 @@ static T GetNextSampleTime(
 // Logs a deprecation warning, at most once per process.
 void MaybeWarnDoHasDirectFeedthroughDeprecated();
 
-}  // namespace leaf_system_detail
+}  // namespace leaf_system_internal
 /** @endcond */
 
 
@@ -164,12 +164,13 @@ class LeafSystem : public System<T> {
     // If xc is not BasicVector, the dynamic_cast will yield nullptr, and the
     // invariant-checker will complain.
     const VectorBase<T>* const xc = &context->get_continuous_state_vector();
-    detail::CheckBasicVectorInvariants(dynamic_cast<const BasicVector<T>*>(xc));
+    internal::CheckBasicVectorInvariants(
+        dynamic_cast<const BasicVector<T>*>(xc));
 
     // The discrete state must all be valid BasicVectors.
     for (const BasicVector<T>* group :
         context->get_state().get_discrete_state().get_data()) {
-      detail::CheckBasicVectorInvariants(group);
+      internal::CheckBasicVectorInvariants(group);
     }
 
     // The numeric parameters must all be valid BasicVectors.
@@ -177,7 +178,7 @@ class LeafSystem : public System<T> {
         context->num_numeric_parameter_groups();
     for (int i = 0; i < num_numeric_parameters; ++i) {
       const BasicVector<T>& group = context->get_numeric_parameter(i);
-      detail::CheckBasicVectorInvariants(&group);
+      internal::CheckBasicVectorInvariants(&group);
     }
 
     // Allow derived LeafSystem to validate allocated Context.
@@ -284,7 +285,7 @@ class LeafSystem : public System<T> {
         const optional<bool> user_override = DoHasDirectFeedthrough(u, v);
 #pragma GCC diagnostic pop
         if (user_override) {
-          leaf_system_detail::MaybeWarnDoHasDirectFeedthroughDeprecated();
+          leaf_system_internal::MaybeWarnDoHasDirectFeedthroughDeprecated();
           if (user_override.value()) {
             result.emplace(u, v);
           }
@@ -446,8 +447,8 @@ class LeafSystem : public System<T> {
     for (const auto& event_pair : periodic_events_) {
       const PeriodicEventData& event_data = event_pair.first;
       const Event<T>* const event = event_pair.second.get();
-      const T t =
-          leaf_system_detail::GetNextSampleTime(event_data, context.get_time());
+      const T t = leaf_system_internal::GetNextSampleTime(
+          event_data, context.get_time());
       if (t < min_time) {
         min_time = t;
         next_events = {event};
@@ -2804,16 +2805,16 @@ class LeafSystem : public System<T> {
   DiscreteValues<T> model_discrete_state_;
 
   // A model abstract state to be used during Context allocation.
-  detail::ModelValues model_abstract_states_;
+  internal::ModelValues model_abstract_states_;
 
   // Model inputs to be used in AllocateInput{Vector,Abstract}.
-  detail::ModelValues model_input_values_;
+  internal::ModelValues model_input_values_;
 
   // Model numeric parameters to be used during Context allocation.
-  detail::ModelValues model_numeric_parameters_;
+  internal::ModelValues model_numeric_parameters_;
 
   // Model abstract parameters to be used during Context allocation.
-  detail::ModelValues model_abstract_parameters_;
+  internal::ModelValues model_abstract_parameters_;
 };
 
 }  // namespace systems

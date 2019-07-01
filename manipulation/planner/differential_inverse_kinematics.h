@@ -331,7 +331,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const DifferentialInverseKinematicsParameters& parameters);
 
 #ifndef DRAKE_DOXYGEN_CXX
-namespace detail {
+namespace internal {
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Eigen::Ref<const VectorX<double>>&,
     const Eigen::Ref<const VectorX<double>>&,
@@ -339,7 +339,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Eigen::Ref<const MatrixX<double>>&,
     const Vector6<double>&,
     const DifferentialInverseKinematicsParameters&);
-}  // namespace detail
+}  // namespace internal
 #endif
 
 }  // namespace planner

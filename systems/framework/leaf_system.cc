@@ -4,7 +4,7 @@
 
 namespace drake {
 namespace systems {
-namespace leaf_system_detail {
+namespace leaf_system_internal {
 
 // C++'s deprecation attribute only triggers a diagnostic for callers, not for
 // overriders.  So our "DoHasDirectFeedthroughDeprecated" deprecation would
@@ -18,7 +18,7 @@ void MaybeWarnDoHasDirectFeedthroughDeprecated() {
       "deprecated; please consult its API documentation for alternatives.");
 }
 
-}  // namespace leaf_system_detail
+}  // namespace leaf_system_internal
 }  // namespace systems
 }  // namespace drake
 

@@ -59,7 +59,7 @@ struct GenericTrivialFunctor {
   int numOutputs() const { return 3; }
 
   template <typename T>
-  void eval(const detail::VecIn<T>& x, detail::VecOut<T>* y) const {
+  void eval(const internal::VecIn<T>& x, internal::VecOut<T>* y) const {
     Eigen::Vector3d c(1, 2, 3);
     *y = c * x.transpose() * c;
   }
@@ -133,7 +133,7 @@ class FunctionWrapper {
   int numOutputs() const { return num_outputs_; }
 
   template <typename T>
-  void eval(const detail::VecIn<T>& x, detail::VecOut<T>* y) const {
+  void eval(const internal::VecIn<T>& x, internal::VecOut<T>* y) const {
     callable_(x, y);
   }
 

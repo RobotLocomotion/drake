@@ -92,7 +92,7 @@ class SystemBase : public internal::SystemMessageInterface {
     // We depend on derived classes to call our InitializeContextBase() method
     // after allocating the appropriate concrete Context.
     DRAKE_DEMAND(
-        detail::SystemBaseContextBaseAttorney::is_context_base_initialized(
+        internal::SystemBaseContextBaseAttorney::is_context_base_initialized(
             *context));
 
     return context;

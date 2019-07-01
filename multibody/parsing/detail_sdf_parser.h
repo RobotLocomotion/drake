@@ -10,7 +10,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
 /// Parses a `<model>` element from the SDF file specified by `file_name` and
 /// adds it to `plant`. The SDF file can only contain a single `<model>`
@@ -74,6 +74,6 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr);
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

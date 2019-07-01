@@ -9,7 +9,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
 /// Parses a `<robot>` element from the URDF file specified by @p file_name and
 /// adds it to @p plant.  A new model instance will be added to @p plant.
@@ -36,6 +36,7 @@ ModelInstanceIndex AddModelFromUrdfFile(
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr);
-}  // namespace detail
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
