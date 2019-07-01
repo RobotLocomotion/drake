@@ -67,7 +67,7 @@ GTEST_TEST(GeometryVisualization, SimpleScene) {
   const GeometryState<double>& geometry_state =
       context->get_state().get_abstract_state<GeometryState<double>>(0);
   lcmt_viewer_load_robot message = GeometryVisualizationImpl::BuildLoadMessage(
-      geometry_state);
+      geometry_state, Role::kIllustration);
 
   ASSERT_EQ(message.num_links, 1);
   const lcmt_viewer_link_data& link = message.link[0];
