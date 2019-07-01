@@ -42,19 +42,22 @@ class TestGeometry(unittest.TestCase):
         DiagramBuilder = DiagramBuilder_[T]
         lcm = DrakeMockLcm()
 
-        for i in range(2):
-            builder = DiagramBuilder()
-            scene_graph = builder.AddSystem(SceneGraph())
-            if i == 1:
-                mut.ConnectDrakeVisualizer(
-                    builder=builder, scene_graph=scene_graph)
-            else:
-                mut.ConnectDrakeVisualizer(
-                    builder=builder, scene_graph=scene_graph,
-                    pose_bundle_output_port=(
-                        scene_graph.get_pose_bundle_output_port()))
-            mut.DispatchLoadMessage(
-                scene_graph=scene_graph, lcm=lcm)
+        for role in [mut.Role.kProximity, mut.Role.kIllustration]:
+            for i in range(2):
+                builder = DiagramBuilder()
+                scene_graph = builder.AddSystem(SceneGraph())
+                if i == 1:
+                    mut.ConnectDrakeVisualizer(
+                        builder=builder, scene_graph=scene_graph,
+                        lcm=lcm, role=role)
+                else:
+                    mut.ConnectDrakeVisualizer(
+                        builder=builder, scene_graph=scene_graph,
+                        pose_bundle_output_port=(
+                            scene_graph.get_pose_bundle_output_port()),
+                        lcm=lcm, role=role)
+                mut.DispatchLoadMessage(
+                    scene_graph=scene_graph, lcm=lcm, role=role)
 
     @numpy_compare.check_nonsymbolic_types
     def test_frame_pose_vector_api(self, T):

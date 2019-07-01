@@ -212,27 +212,38 @@ void DoScalarIndependentDefinitions(py::module m) {
   BindIdentifier<FrameId>(m, "FrameId", doc.FrameId.doc);
   BindIdentifier<GeometryId>(m, "GeometryId", doc.GeometryId.doc);
 
+  {
+    constexpr auto& cls_doc = doc.Role;
+    py::enum_<Role>(m, "Role", py::arithmetic(), cls_doc.doc)
+        .value("kUnassigned", Role::kUnassigned, cls_doc.kUnassigned.doc)
+        .value("kProximity", Role::kProximity, cls_doc.kProximity.doc)
+        .value("kIllustration", Role::kIllustration, cls_doc.kIllustration.doc)
+        .value("kPerception", Role::kPerception, cls_doc.kPerception.doc);
+  }
   m.def("ConnectDrakeVisualizer",
       py::overload_cast<systems::DiagramBuilder<double>*,
-          const SceneGraph<double>&, lcm::DrakeLcmInterface*>(
+          const SceneGraph<double>&, lcm::DrakeLcmInterface*, geometry::Role>(
           &ConnectDrakeVisualizer),
       py::arg("builder"), py::arg("scene_graph"), py::arg("lcm") = nullptr,
-      // Keep alive, ownership: `return` keeps `builder` alive.
-      py::keep_alive<0, 1>(),
-      // See #11531 for why `py_reference` is needed.
-      py_reference, doc.ConnectDrakeVisualizer.doc_3args);
-  m.def("ConnectDrakeVisualizer",
-      py::overload_cast<systems::DiagramBuilder<double>*,
-          const SceneGraph<double>&, const systems::OutputPort<double>&,
-          lcm::DrakeLcmInterface*>(&ConnectDrakeVisualizer),
-      py::arg("builder"), py::arg("scene_graph"),
-      py::arg("pose_bundle_output_port"), py::arg("lcm") = nullptr,
+      py::arg("role") = geometry::Role::kIllustration,
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 1>(),
       // See #11531 for why `py_reference` is needed.
       py_reference, doc.ConnectDrakeVisualizer.doc_4args);
+  m.def("ConnectDrakeVisualizer",
+      py::overload_cast<systems::DiagramBuilder<double>*,
+          const SceneGraph<double>&, const systems::OutputPort<double>&,
+          lcm::DrakeLcmInterface*, geometry::Role>(&ConnectDrakeVisualizer),
+      py::arg("builder"), py::arg("scene_graph"),
+      py::arg("pose_bundle_output_port"), py::arg("lcm") = nullptr,
+      py::arg("role") = geometry::Role::kIllustration,
+      // Keep alive, ownership: `return` keeps `builder` alive.
+      py::keep_alive<0, 1>(),
+      // See #11531 for why `py_reference` is needed.
+      py_reference, doc.ConnectDrakeVisualizer.doc_5args);
   m.def("DispatchLoadMessage", &DispatchLoadMessage, py::arg("scene_graph"),
-      py::arg("lcm"), doc.DispatchLoadMessage.doc);
+      py::arg("lcm"), py::arg("role") = geometry::Role::kIllustration,
+      doc.DispatchLoadMessage.doc);
 
   // Shape constructors
   {

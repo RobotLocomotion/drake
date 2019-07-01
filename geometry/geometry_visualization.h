@@ -25,7 +25,7 @@ class GeometryVisualizationImpl {
   // Given an instance of GeometryState, returns an lcm message sufficient
   // to load the state's geometry.
   static lcmt_viewer_load_robot BuildLoadMessage(
-      const GeometryState<double>& state);
+      const GeometryState<double>& state, Role role);
 };
 
 }  // namespace internal
@@ -51,9 +51,10 @@ class GeometryVisualizationImpl {
  @ref geometry_roles for details). Specifically, only geometries with
  the illustration role assigned will be included. The visualization function
  looks for the following properties in the IllustrationProperties instance.
- | Group name | Required | Property Name |  Property Type  | Property Description |
- | :--------: | :------: | :-----------: | :-------------: | :------------------- |
- |    phong   | no       | diffuse       | Eigen::Vector4d | The rgba value of the object surface |
+ | Group name | Required | Property Name |  Property Type  | Property
+ Description | | :--------: | :------: | :-----------: | :-------------: |
+ :------------------- | |    phong   | no       | diffuse       |
+ Eigen::Vector4d | The rgba value of the object surface |
 
  See MakePhongIllustrationProperties() to facilitate making a compliant set of
  illustration properties.
@@ -75,6 +76,8 @@ class GeometryVisualizationImpl {
  @param lcm          An optional lcm interface through which lcm messages will
                      be dispatched. Will be allocated internally if none is
                      supplied.
+ @param role         An optional flag to indicate the role of the geometries to
+                     be visualized; defaults to the illustration role.
 
  @pre This method has not been previously called while building the
       builder's current Diagram.
@@ -90,7 +93,7 @@ class GeometryVisualizationImpl {
 systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const SceneGraph<double>& scene_graph,
-    lcm::DrakeLcmInterface* lcm = nullptr);
+    lcm::DrakeLcmInterface* lcm = nullptr, Role role = Role::kIllustration);
 
 /** Implements ConnectDrakeVisualizer, but using @p pose_bundle_output_port to
  explicitly specify the output port used to get pose bundles for
@@ -106,7 +109,7 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const SceneGraph<double>& scene_graph,
     const systems::OutputPort<double>& pose_bundle_output_port,
-    lcm::DrakeLcmInterface* lcm = nullptr);
+    lcm::DrakeLcmInterface* lcm = nullptr, Role role = Role::kIllustration);
 
 /** Constructs an IllustrationProperties instance compatible with the
  ConnectDrakeVisualizer incorporating the given diffuse color.  */
@@ -124,8 +127,9 @@ IllustrationProperties MakeDrakeVisualizerProperties(
  LCM channel "DRAKE_VIEWER_LOAD_ROBOT".
 
  @see geometry::ConnectDrakeVisualizer() */
-void DispatchLoadMessage(
-    const SceneGraph<double>& scene_graph, lcm::DrakeLcmInterface* lcm);
+void DispatchLoadMessage(const SceneGraph<double>& scene_graph,
+                         lcm::DrakeLcmInterface* lcm,
+                         Role role = Role::kIllustration);
 
 }  // namespace geometry
 }  // namespace drake
