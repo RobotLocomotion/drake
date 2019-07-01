@@ -110,7 +110,8 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   bool StepRadau(const T& t0, const T& h, const VectorX<T>& xt0,
       VectorX<T>* xtplus, int trial = 1);
   bool StepImplicitTrapezoid(const T& t0, const T& h, const VectorX<T>& xt0,
-      const VectorX<T>& dx0, VectorX<T>* xtplus);
+      const VectorX<T>& dx0, const VectorX<T>& xtplus_radau,
+      VectorX<T>* xtplus);
   static MatrixX<T> CalcTensorProduct(const MatrixX<T>& A, const MatrixX<T>& B);
   static void ComputeImplicitTrapezoidIterationMatrix(const MatrixX<T>& J,
       const T& h,
@@ -120,7 +121,7 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
   bool StepImplicitTrapezoidDetail(const T& t0, const T& h,
       const VectorX<T>& xt0, const std::function<VectorX<T>()>& g,
-      VectorX<T>* xtplus, int trial = 1);
+      const VectorX<T>& xtplus_radau, VectorX<T>* xtplus, int trial = 1);
 
   // The num_stages-dimensional (constant) vector of time-scaling coefficients
   // common to Runge-Kutta-type integrators.
@@ -251,20 +252,19 @@ void RadauIntegrator<T, num_stages>::DoInitialize() {
   // Set an artificial step size target, if not set already.
   if (isnan(this->get_initial_step_size_target())) {
     // Verify that maximum step size has been set.
-    if (isnan(this->get_maximum_step_size()))
+    if (isnan(this->get_maximum_step_size())) {
       throw std::logic_error("Neither initial step size target nor maximum "
                                  "step size has been set!");
+    }
 
     this->request_initial_step_size_target(
         this->get_maximum_step_size());
   }
 
-  // Sets the working accuracy to a good value.
-  double working_accuracy = this->get_target_accuracy();
-
   // If the user asks for accuracy that is looser than the loosest this
   // integrator can provide, use the integrator's loosest accuracy setting
   // instead.
+  double working_accuracy = this->get_target_accuracy();
   if (isnan(working_accuracy))
     working_accuracy = kDefaultAccuracy;
   else if (working_accuracy > kLoosestAccuracy)
@@ -491,8 +491,8 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
 // @param t0 the initial time.
 // @param h the integration step size to attempt.
 // @param xt0 the continuous state at time t0.
-// @param [in,out] the starting guess for x(t+h); the value for x(t+h) on
-//        return (assuming that h > 0)
+// @param radau_xtplus the Radau solution for x(t+h)
+// @param [out] the value for x(t+h) on return (assuming that h > 0)
 // @param trial the attempt for this approach (1-4). The method uses more
 //        computationally expensive methods as the trial numbers increase.
 // @returns `true` if the method was successfully able to take an integration
@@ -500,13 +500,12 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
 template <class T, int num_stages>
 bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoid(const T& t0,
     const T& h, const VectorX<T>& xt0, const VectorX<T>& dx0,
-    VectorX<T>* xtplus) {
+    const VectorX<T>& radau_xtplus, VectorX<T>* xtplus) {
   using std::abs;
 
   SPDLOG_DEBUG(drake::log(), "StepImplicitTrapezoid(h={}) t={}",
                h, t0);
 
-  // Set g for the implicit trapezoid method.
   // Define g(x(t+h)) ≡ x(t+h) - x(t) - h/2 (f(t,x(t)) + f(t+h,x(t+h)) and
   // evaluate it at the current x(t+h).
   Context<T>* context = this->get_mutable_context();
@@ -530,7 +529,8 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoid(const T& t0,
   int stored_num_nr_iterations = this->get_num_newton_raphson_iterations();
 
   // Step.
-  bool success = StepImplicitTrapezoidDetail(t0, h, xt0, g, xtplus);
+  bool success = StepImplicitTrapezoidDetail(
+      t0, h, xt0, g, radau_xtplus, xtplus);
 
   // Move statistics to implicit trapezoid-specific.
   num_err_est_jacobian_reforms_ +=
@@ -549,16 +549,12 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoid(const T& t0,
   return success;
 }
 
-// Does all of the real work for the implicit trapezoid method. Note from
-// StepImplicitTrapezoid() that xtplus on entry is the value computed by the
-// Radau method which is close (either O(h³) accurate or O(h) accurate,
-// depending on the number of stages) to the true solution and hence should be
-// an excellent starting point.
+// Does all of the real work for the implicit trapezoid method.
 template <class T, int num_stages>
 bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
     const T& t0, const T& h,
     const VectorX<T>& xt0, const std::function<VectorX<T>()>& g,
-    VectorX<T>* xtplus, int trial) {
+    const VectorX<T>& radau_xtplus, VectorX<T>* xtplus, int trial) {
   using std::max;
   using std::min;
 
@@ -569,6 +565,11 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
   Context<T>* context = this->get_mutable_context();
   DRAKE_ASSERT(xtplus &&
                xtplus->size() == context->get_continuous_state_vector().size());
+
+  // Start from the Radau solution, which is close (either O(h³) accurate or
+  // O(h) accurate, depending on the number of stages) to the true solution and
+  // hence should be an excellent starting point.
+  *xtplus = radau_xtplus;
 
   SPDLOG_DEBUG(drake::log(), "StepImplicitTrapezoidDetail() entered for t={}, "
       "h={}, trial={}", t0, h, trial);
@@ -685,16 +686,16 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
 
   // Try the step again, freshening Jacobians and iteration matrix
   // factorizations as helpful.
-  return StepImplicitTrapezoidDetail(t0, h, xt0, g, xtplus, trial + 1);
+  return StepImplicitTrapezoidDetail(
+      t0, h, xt0, g, radau_xtplus, xtplus, trial + 1);
 }
-
 
 // Steps Radau forward by h, if possible.
 // @param t0 the initial time.
 // @param h the integration step size to attempt.
 // @param xt0 the continuous state at time t0.
 // @param[out] xtplus_radau3 contains the Radau integrator solution on return.
-// @param [out] xtplus_itr contains the implicit trapezoid solution on return
+// @param [out] xtplus_itr contains the implicit trapezoid solution on return.
 // @returns `true` if the integration was successful at the requested step size.
 // @pre The time and state in the system's context (stored by the integrator)
 //      are set to (t0, xt0) on entry.
@@ -748,8 +749,7 @@ bool RadauIntegrator<T, num_stages>::AttemptStepPaired(const T& t0, const T& h,
   // Therefore the asymptotic term is third order.
 
   // Attempt to compute the implicit trapezoid solution.
-  *xtplus_itr = *xtplus_radau3;
-  if (StepImplicitTrapezoid(t0, h, xt0, dx0, xtplus_itr)) {
+  if (StepImplicitTrapezoid(t0, h, xt0, dx0, *xtplus_radau3, xtplus_itr)) {
     // Reset the state to that computed by Radau3.
     this->get_mutable_context()->SetTimeAndContinuousState(
         t0 + h, *xtplus_radau3);
