@@ -66,7 +66,6 @@ using manipulation::kuka_iiwa::IiwaCommandReceiver;
 using manipulation::kuka_iiwa::IiwaCommandSender;
 using manipulation::kuka_iiwa::IiwaStatusReceiver;
 using manipulation::kuka_iiwa::IiwaStatusSender;
-using manipulation::kuka_iiwa::MakeIiwaCommandLcmSubscriberSystem;
 using manipulation::kuka_iiwa::kIiwaLcmStatusPeriod;
 
 }  // namespace kuka_iiwa_arm

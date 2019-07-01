@@ -34,13 +34,13 @@ namespace {
 
 // TODO(eric.cousineau): Remove `*DeprecatedProtectedAlias*` cruft and
 // replace `PYDRAKE_TRY_PROTECTED_OVERLOAD` with `PYBIND11_OVERLOAD` once
-// deprecated methods are removed (on or around 2019-07-01).
+// deprecated methods are removed (on or around 2019-08-01).
 
 // Generates deprecation message pursuant to #9651.
 std::string DeprecatedProtectedAliasMessage(
     std::string name, std::string verb) {
   return fmt::format(
-      "'_{0}' is deprecated and will be removed on or around 2019-07-01. "
+      "'_{0}' is deprecated and will be removed on or around 2019-08-01. "
       "Please {1} '{0}' instead.",
       name, verb);
 }
@@ -358,17 +358,6 @@ struct Impl {
         // Topology.
         .def("num_input_ports", &System<T>::num_input_ports,
             doc.SystemBase.num_input_ports.doc)
-        .def("get_num_input_ports",
-            [](const System<T>* self) {
-              WarnDeprecated(
-                  "Use num_input_ports() instead. Will be removed on or after "
-                  "2019-07-01.");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-              self->get_num_input_ports();
-#pragma GCC diagnostic pop
-            },
-            doc.SystemBase.get_num_input_ports.doc_deprecated)
         .def("get_input_port", &System<T>::get_input_port,
             py_reference_internal, py::arg("port_index"),
             doc.System.get_input_port.doc)
@@ -376,17 +365,6 @@ struct Impl {
             py::arg("port_name"), doc.System.GetInputPort.doc)
         .def("num_output_ports", &System<T>::num_output_ports,
             doc.SystemBase.num_output_ports.doc)
-        .def("get_num_output_ports",
-            [](const System<T>* self) {
-              WarnDeprecated(
-                  "Use num_output_ports() instead. Will be removed on or "
-                  "after 2019-07-01.");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-              self->get_num_output_ports();
-#pragma GCC diagnostic pop
-            },
-            doc.SystemBase.get_num_output_ports.doc_deprecated)
         .def("get_output_port", &System<T>::get_output_port,
             py_reference_internal, py::arg("port_index"),
             doc.System.get_output_port.doc)

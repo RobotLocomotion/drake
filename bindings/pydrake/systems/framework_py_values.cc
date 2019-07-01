@@ -141,11 +141,11 @@ void DefineFrameworkPyValues(py::module m) {
       .def("SetFrom", &AbstractValue::SetFrom,
           pydrake_doc.drake.AbstractValue.SetFrom.doc)
       .def("get_value", abstract_stub("get_value"),
-          pydrake_doc.drake.AbstractValue.GetValue.doc)
+          pydrake_doc.drake.AbstractValue.get_value.doc)
       .def("get_mutable_value", abstract_stub("get_mutable_value"),
-          pydrake_doc.drake.AbstractValue.GetMutableValue.doc)
+          pydrake_doc.drake.AbstractValue.get_mutable_value.doc)
       .def("set_value", abstract_stub("set_value"),
-          pydrake_doc.drake.AbstractValue.SetValue.doc);
+          pydrake_doc.drake.AbstractValue.set_value.doc);
 
   // Add value instantiations for nominal data types. Types that require more
   // pizazz are listed below.
