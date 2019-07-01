@@ -46,6 +46,7 @@ LIBDRAKE_COMPONENTS = [
     "//automotive/maliput/geometry_base",
     "//automotive/maliput/multilane",
     "//automotive/maliput/rndf",
+    "//automotive/maliput/routing",
     "//automotive/maliput/utility",
     "//common",
     "//common/proto",
@@ -72,13 +73,10 @@ LIBDRAKE_COMPONENTS = [
     "//examples/rimless_wheel:rimless_wheel_vector_types",  # unpackaged
     "//examples/van_der_pol:van_der_pol",  # unpackaged
     "//geometry",
-    "//geometry/dev",
-    "//geometry/dev/render",
-    "//geometry/dev/render/shaders",
     "//geometry/proximity",
     "//geometry/query_results",
     "//geometry/render",
-    "//geometry/test_utilities",
+    "//geometry/render/shaders",
     "//lcm",
     "//manipulation/kuka_iiwa",
     "//manipulation/perception",
@@ -114,7 +112,6 @@ LIBDRAKE_COMPONENTS = [
     "//systems/primitives",
     "//systems/rendering",
     "//systems/sensors",
-    "//systems/sensors/dev",
     "//systems/trajectory_optimization",
     # //examples/kuka_iiwa_arm:iiwa_common (indirectly)
     # //examples/kuka_iiwa_arm:iiwa_lcm (indirectly)
