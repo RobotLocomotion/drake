@@ -358,6 +358,18 @@ PYBIND11_MODULE(math, m) {
 
   ExecuteExtraPythonCode(m);
 }
+}  // namespace
+
+PYBIND11_MODULE(math, m) {
+  m.doc() = "Bindings for //math.";
+
+  py::module::import("pydrake.autodiffutils");
+  py::module::import("pydrake.symbolic");
+
+  type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
+      CommonScalarPack{});
+  DoScalarIndependentDefinitions(m);
+}
 
 }  // namespace pydrake
 }  // namespace drake
