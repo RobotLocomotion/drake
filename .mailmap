@@ -1,0 +1,211 @@
+# @file .mailmap - Used by git to map commits, blames, guilt, etc., to
+#                  canonical author names with multiple email addresses.
+#                  RobotLocomotion/drake authors: initial edit 2019.07.01
+# Example A) A general summary of "contributions":      git summary
+# Example B) Who changed the code in the last 3 weeks?  git guilt `git log --until="3 weeks ago" --format="%H" -n 1`
+# Example C) But "git standup" does NOT use .mailmap:   git standup -a all -d 3  # Not consolidated by Proper Name.
+# Example D) Blame counts for all "code" (subjective) in your current branch as of 42 commits ago, not counting whitespace changes:
+#     code='*.cc *.h *.md *.sh *.txt *.yaml */*.cc */*.h */*.hpp */*.md */*.py */*.sh */*.yml .*/*.yml .circleci/*/*/Dockerfile */*.txt */*/*.cc */*/*.h'
+#     git ls-tree -r -z --name-only HEAD -- $code|xargs -0 -n1 git blame --line-porcelain HEAD~42|grep  "^author "|sort|uniq -c|sort -nr
+#
+# To update this file (beyond changing your preferred alias), you may want to use the output of `git summary -e`
+#
+Achim Stein <steinachim@gmx.de>
+Agustin Alba Chicar <ag.albachicar@ekumenlabs.com>
+Akiyoshi Ochiai <aochiai@users.noreply.github.com>
+Alejandro Castro <alejandro.castro@tri.global>
+Alex Dunyak <adunyak@umass.edu>
+Alex Dunyak <anirudha@mit.edu>
+Alexis Pojomovsky <apojomovsky@ekumenlabs.com>
+Andreas Tenpas <andreas.tenpas@tri.global>
+Andreas Tenpas-TRI <40247486+andreas-tenpas-TRI@users.noreply.github.com>
+Andres Erbsen <andreser@mit.edu>
+Andres Fortier <andres@creativa77.com>
+Andres Valenzuela <andres.valenzuela@tri.global>
+Andres Valenzuela <avalenzu@csail.mit.edu>
+Andres Valenzuela <avalenzu@mit.edu>
+Andrew Best <43861892+andrewbest-tri@users.noreply.github.com>
+Andrew Best <andrew.best@tri.global>
+Andrés Fortier <andres@creativa77.com>
+Andrés Fortier <andres@ekumenlabs.com>
+Andrés Valenzuela <andres.valenzuela@tri.global>
+Andrés Valenzuela <avalenzu@mit.edu>
+Andrés Valenzuela <avalenzu@mit.edu>
+Andy Barry <abarry@gmail.com>
+Anirudha Majumdar <anirudha@mit.edu>
+Benoit Landry <landry@mit.edu>
+Betsy McPhail <betsy.mcphail@kitware.com>
+Bill Hoffman <bill.hoffman@kitware.com>
+Brad King <brad.king@kitware.com>
+Brandon D. Northcutt <brandon@northcutt.net>
+Brandon J. DeHart <brandonjdehart@gmail.com>
+Caelan Garrett <caelan@mit.edu>
+Calder Phillips-Grafflin <32444241+calderpg-tri@users.noreply.github.com>
+Carlos Agüero <caguero@osrfoundation.org>
+Carlos Agüero <cen.aguero@gmail.com>
+Carter Sande <carter.sande@duodecima.technology>
+Chien-Liang Fok <liang.fok@tri.global>
+Chien-Liang Fok <liangfok@gmail.com>
+Chien-Liang Fok <liangfok@utexas.edu>
+Chris Lalancette <clalancette@gmail.com>
+Chris Lalancette <clalancette@openrobotics.org>
+Christian Rauch <Christian.Rauch@ed.ac.uk>
+Christopher Dembia <cld72@cornell.edu>
+Christopher J Rogers <crogers3@mit.edu>
+Claudia Pérez D'Arpino <cdarpino@mit.edu>
+Connor Lawson <rconnorlawson@users.noreply.github.com>
+Connor McCann <kb1udn@gmail.com>
+Dale Lukas Peterson <hazelnusse@gmail.com>
+Damrong Guoy <42557859+DamrongGuoy@users.noreply.github.com>
+Damrong Guoy <Damrong.Guoy@tri.global>
+Daniel Stonier <d.stonier@gmail.com>
+David German <david.german@tri.global>
+David German <dgerman@macsim.cam2.tri.global>
+dgc <dgc@rlg-cbse1.(none)>
+Drake Refactor Bot <drake-refactor-bot@tri.global>
+drcbot <drc@drc014.(none)>
+drcbot <drcbot@mit.edu>
+Duy-Nguyen Ta <duynguyen.ta@tri.global>
+Duy-Nguyen Ta <duynguyen@tri.global>
+Duy-Nguyen Ta <thduynguyen@gmail.com>
+Elvis Dowson <elvis.dowson@gmail.com>
+Eric Cousineau <eric.cousineau@tri.global>
+Eric Wieser <wieser.eric@gmail.com>
+Ethan Weber <eweb0124@gmail.com>
+Evan Drumwright <drum@tri.global>
+Evan Drumwright <edrumwri@hotmail.com>
+Francois Budin <francois.budin@kitware.com>
+Frank Permenter <frank.permenter@tri.global>
+Frank Permenter <frankpermenter@gmail.com>
+Geoffrey Lalonde <glalonde@google.com>
+Geoffrey Lalonde <jefesaurus@users.noreply.github.com>
+Gerardo Bledt <gbledt10@gbledt10-ThinkPad-X220-Tablet.(none)>
+Geronimo J Mirano <geronm@mit.edu>
+Grant Gould <ggould@tri.global>
+Grant Gould <grant.gould@tri.global>
+Gregory Izatt <gizatt@mit.edu>
+Gregory Izatt <gregory.izatt@gmail.com>
+Hans Susilo <hanssusilo@gmail.com>
+Henry Wu <hwu2018@mit.edu>
+Hongkai Dai <daih@c9849af7-e679-4ec6-a44e-fc146a885bd3>
+Hongkai Dai <daihongkai@gmail.com>
+Hongkai Dai <hongkai@hongkai-locomotion.(none)>
+Huihua Zhao <51714458+huihuaTRI@users.noreply.github.com>
+Huihua Zhao <huihua.zhao@tri.global>
+Jacob Izraelevitz <jacob.izraelevitz@gmail.com>
+Jamie Snape <jamie.snape@kitware.com>
+Jamie Snape <jamiesnape@users.noreply.github.com>
+Jeremy Nimmer <jeremy.nimmer@tri.global>
+John Carter <psiorx@gmail.com>
+John Carter <psiorx@gmail.com>
+John Hoare <john.hoare@kitware.com>
+John Hoare <john.hoare@kitware.com>
+Jonathan DeCastro <jonathan.decastro@tri.global>
+Jonathan Owens <jonathan-owens@users.noreply.github.com>
+Jonathan Owens <jonathan.owens@kitware.com>
+Jonathan Owens <owensj65@gmail.com>
+Jose Luis Rivero <jrivero@osrfoundation.org>
+Joseph Moore <josephlmoore@gmail.com>
+Josh Petersen <joshpetersen@josh.petersen>
+Josh Pieper <josh.pieper@tri.global>
+Katy Muhlrad <kmuhlrad@gmail.com>
+Katy Muhlrad <kmuhlrad@mit.edu>
+Katy Muhlrad <kmuhlrad@users.noreply.github.com>
+KeyDamo <keysmer@googlemail.com>
+Kunimatsu Hashimoto <kunimatsu.hashimoto@tri.global>
+Kyle Edwards <kyle.edwards@kitware.com>
+Lucas Manuelli <lucas.t.manuelli@gmail.com>
+Lucy Gibson <lucy.gibson@tri.global>
+Lujing Cen <lujingcen@gmail.com>
+Luke Peterson <luke.peterson@tri.global>
+ManuelAhumada-TRI <manuel.ahumada@tri.global>
+Marco Caravagna <marcocaravagna@gmail.com>
+Mark J. Pearrow <mjp@c9849af7-e679-4ec6-a44e-fc146a885bd3>
+Mark J. Pearrow <mpearrow@c9849af7-e679-4ec6-a44e-fc146a885bd3>
+Mark Petersen <31107801+mpetersen94@users.noreply.github.com>
+Mark Petersen <markpetersen@g.harvard.edu>
+Matt Marjanović <maddog@tri.global>
+Matt Sheen <mws262@cornell.edu>
+Matthew Woehlke <matthew.woehlke@kitware.com>
+Maurice Fallon <maurice.fallon@ed.ac.uk>
+Michael Posa <michael.a.posa@gmail.com>
+Michael Posa <michael.a.posa@gmail.com>
+Michael Posa <mposa@mit.edu>
+Michael Posa <mposa@mit.edu>
+Michael Posa <posa@seas.upenn.edu>
+Michael Sherman <msherman@stanford.edu>
+Michael Sherman <sherm1@gmail.com>
+Michael Sherman <sherm@tri.global>
+Michel Hidalgo <hid.michel@gmail.com>
+Michel Hidalgo <michel@ekumenlabs.com>
+Mikael Arguedas <mikael@osrfoundation.org>
+Mike Elkins <mike.elkins@tri.global>
+MJC Fischer-Gundlach <m.j.c.fischer-gundlach@student.tudelft.nl>
+Mmanu Chaturvedi <m-chaturvedi@users.noreply.github.com>
+Mmanu Chaturvedi <mmanu.chaturvedi@kitware.com>
+mmt <mmt@c9849af7-e679-4ec6-a44e-fc146a885bd3>
+Nate Koenig <natekoenig@gmail.com>
+Nate Koenig <nkoenig@users.noreply.github.com>
+Naveen Kuppuswamy <naveen.kuppuswamy@tri.global>
+Naveen Kuppuswamy <naveen.sk@gmail.com>
+Nikos Arechiga <nikos.arechiga@tri.global>
+Pang Tao <pangtao22@users.noreply.github.com>
+Pang Tao <pangtao@mit.edu>
+Pat Marion <james.patrick.marion@gmail.com>
+Patrick Varin <patrickjvarin@gmail.com>
+Patrick Varin <pvarin@users.noreply.github.com>
+Paul Mitiguy <mitiguy@users.noreply.github.com>
+Paul Mitiguy <paul.mitiguy@tri.global>
+Pete Florence <pete.florence@gmail.com>
+Peter Kuan-Ting Yu <peterkty@gmail.com>
+Philipp Föhn <foehnph@ethz.ch>
+Piotr Kaminski <piotr@ideanest.com>
+Rahul Yesantharao <rahulyesantharao@users.noreply.github.com>
+Rick Cory <rick.cory@tri.global>
+Rick Cory <rickcory@gmail.com>
+Rick Poyner <rick.poyner@tri.global>
+Robert Beverly <rab@robertbeverly.com>
+Robert Katzschmann <rkk@csail.mit.edu>
+Robin Deits <rdeits@csail.mit.edu>
+Robin Deits <robin.deits@gmail.com>
+root <root@localhost>
+Russ Tedrake <Russ Tedrake@WIN-PU7OTIFLDSQ.(none)>
+Russ Tedrake <russt@c9849af7-e679-4ec6-a44e-fc146a885bd3>
+Russ Tedrake <russt@drc008.(none)>
+Russ Tedrake <russt@mit.edu>
+Russ Tedrake <russt@ubuntu.(none)>
+Ryan Elandt <ryan.elandt@gmail.com>
+Sam Creasey <sam.creasey@tri.global>
+Sam Creasey <sam.creasey@tri.global>
+Sam Khalandovsky <samkhal@gmail.com>
+Sankhesh Jhaveri <sankhesh.jhaveri@kitware.com>
+Scott Kuindersma <kuindersma@gmail.com>
+Scott Kuindersma <scottk@c9849af7-e679-4ec6-a44e-fc146a885bd3>
+Scott Viteri <scottviteri@gmail.com>
+Scott Viteri <sviteri@mit.edu>
+Sean Curtis <sean.curtis@tri.global>
+Shen Shen <shenshen@mit.edu>
+Silvio Traversaro <pegua1@gmail.com>
+Siyuan Feng <sf.travel@tri.global>
+Siyuan Feng <siyuan.feng@tri.global>
+Soonho Kong <soonho.kong@tri.global>
+Stephen Proulx <steve@csail.mit.edu>
+Steve Heim <heim.steve@gmail.com>
+Steve Heim <heim.steve@gmail.com>
+Steven Peters <scpeters@osrfoundation.org>
+Steven! Ragnarök <nuclearsandwich@users.noreply.github.com>
+Steven! Ragnarök <steven@nuclearsandwich.com>
+Tristan Thrush <tristant@mit.edu>
+Twan Koolen <koolen.twan@gmail.com>
+Twan Koolen <tkoolen@csail.mit.edu>
+Twan Koolen <tkoolen@mit.edu>
+Vincent Tjeng <vincent.tjeng@gmail.com>
+Vincent Tjeng <vtjeng@mit.edu>
+Vladimir Shelbakh <vladimir.shelbakh@tri.global>
+Weiqiao Han <weiqiao@users.noreply.github.com>
+Wenzhen Yuan <41071151+WenzhenYuan-TRI@users.noreply.github.com>
+Wenzhen Yuan <wenzhen.yuan@tri.global>
+Wolfgang Merkt <w.merkt@gmail.com>
+Wolfgang Merkt <wxmerkt@users.noreply.github.com>
+Yonadav Shavit <yonadav@mit.edu>
+Zhaoyuan Gu <guzhaoyuan14@gmail.com>
