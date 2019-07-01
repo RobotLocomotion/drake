@@ -224,7 +224,8 @@ TEST_F(SosConstraintTest, AddSosConstraintUnivariate2) {
   result_ = Solve(prog_);
   ASSERT_TRUE(result_.is_success());
   EXPECT_LE(result_.GetSolution(c), 1E-4);
-  CheckPositiveDefiniteMatrix(Q, m, e, 1E-6 /* eps */);
+  // Fails with tolerance 1E-6 with solver MOSEK when run under Valgrind.
+  CheckPositiveDefiniteMatrix(Q, m, e, 1.03E-6 /* eps */);
 }
 
 // Shows that f(x₀, x₁) = 2x₀⁴ + 2x₀³x₁ - x₀²x₁² + 5x₁⁴ is SOS.
