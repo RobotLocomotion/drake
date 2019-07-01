@@ -769,25 +769,6 @@ class SystemBase : public internal::SystemMessageInterface {
   }
   //@}
 
-#ifndef DRAKE_DOXYGEN_CXX
-  DRAKE_DEPRECATED("2019-07-01", "Use num_total_inputs() instead.")
-  int get_num_total_inputs() const {
-    return num_total_inputs();
-  }
-  DRAKE_DEPRECATED("2019-07-01", "Use num_total_outputs() instead.")
-  int get_num_total_outputs() const {
-    return num_total_outputs();
-  }
-  DRAKE_DEPRECATED("2019-07-01", "Use num_input_ports() instead.")
-  int get_num_input_ports() const {
-    return num_input_ports();
-  }
-  DRAKE_DEPRECATED("2019-07-01", "Use num_output_ports() instead.")
-  int get_num_output_ports() const {
-    return num_output_ports();
-  }
-#endif
-
  protected:
   /** (Internal use only) Default constructor. */
   SystemBase() = default;

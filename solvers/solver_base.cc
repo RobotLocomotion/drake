@@ -74,14 +74,5 @@ bool SolverBase::AreProgramAttributesSatisfied(
   return default_satisfied_(prog);
 }
 
-// NOLINTNEXTLINE(runtime/references)
-SolutionResult SolverBase::Solve(MathematicalProgram& prog) const {
-  // N.B. This (deprecated) method is not very useful because discards all
-  // solution information except for the result code.
-  MathematicalProgramResult result;
-  Solve(prog, {}, {}, &result);
-  return result.get_solution_result();
-}
-
 }  // namespace solvers
 }  // namespace drake

@@ -74,7 +74,7 @@ void DoMain() {
   // Weld the hand to the world frame
   const auto& joint_hand_root = plant.GetBodyByName("hand_root");
   plant.AddJoint<multibody::WeldJoint>("weld_hand", plant.world_body(), nullopt,
-      joint_hand_root, nullopt, Isometry3<double>::Identity());
+      joint_hand_root, nullopt, math::RigidTransformd::Identity());
 
   if (!FLAGS_add_gravity) {
     plant.mutable_gravity_field().set_gravity_vector(

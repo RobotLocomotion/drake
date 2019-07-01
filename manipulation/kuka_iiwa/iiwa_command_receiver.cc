@@ -118,14 +118,6 @@ IiwaCommandReceiver::MapVectorXd IiwaCommandReceiver::input_torque(
       message.joint_torque.size());
 }
 
-std::unique_ptr<systems::lcm::LcmSubscriberSystem>
-MakeIiwaCommandLcmSubscriberSystem(
-    int, const std::string& channel,
-    drake::lcm::DrakeLcmInterface* lcm) {
-  return systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_iiwa_command>(
-      channel, lcm);
-}
-
 }  // namespace kuka_iiwa
 }  // namespace manipulation
 }  // namespace drake

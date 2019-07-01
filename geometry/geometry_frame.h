@@ -44,20 +44,6 @@ class GeometryFrame {
     ThrowIfInvalid();
   }
 
-  /** Constructor.
-   @param frame_name        The name of the frame.
-   @param X_PF              The initial pose of this frame F, measured and
-                            expressed in the _intended_ parent frame P.
-   @param frame_group_id    The optional frame group identifier. If unspecified,
-                            defaults to the common, 0 group. Must be
-                            non-negative.  */
-  DRAKE_DEPRECATED("2019-07-01",
-                   "GeometryFrame no longer requires a pose X_PF; prefer the "
-                   "constructor without pose.")
-  GeometryFrame(const std::string& frame_name, const Isometry3<double>&,
-                int frame_group_id = 0)
-      : GeometryFrame(frame_name, frame_group_id) {}
-
   /** Returns the globally unique id for this geometry specification. Every
    instantiation of %FrameInstance will contain a unique id value. The id
    value is preserved across copies. After successfully registering this
