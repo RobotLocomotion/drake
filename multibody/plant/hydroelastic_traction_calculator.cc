@@ -42,7 +42,7 @@ ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
   F_Ac_W.SetZero();
 
   // Integrate the tractions over all triangles in the contact surface.
-  for (geometry::SurfaceFaceIndex i(0); i < data.surface.mesh().num_faces();
+  for (geometry::SurfaceFaceIndex i(0); i < data.surface_->mesh().num_faces();
       ++i) {
     // Construct the function to be integrated over triangle i.
     // TODO(sherm1) Pull functor creation out of the loop (not a good idea to
@@ -61,7 +61,7 @@ ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
     // tractions (force/area) at the Gauss points (shifted to C).
     const SpatialForce<T> Fi_Ac_W =  // Force from triangle i.
         TriangleQuadrature<SpatialForce<T>, T>::Integrate(
-            traction_Ac_W, gaussian, data.surface.mesh().area(i));
+            traction_Ac_W, gaussian, data.surface_->mesh().area(i));
 
     // Update the spatial force at body A's origin.
     F_Ac_W += Fi_Ac_W;
@@ -70,9 +70,9 @@ ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
   // The spatial force on body A was accumulated at the surface centroid C. We
   // need to shift it to A's origin Ao. The force on body B is equal and
   // opposite to the force on body A, but we want it as if applied at Bo.
-  const Vector3<T>& p_WC = data.p_WC;
-  const Vector3<T>& p_WAo = data.X_WA.translation();
-  const Vector3<T>& p_WBo = data.X_WB.translation();
+  const Vector3<T>& p_WC = data.p_WC_;
+  const Vector3<T>& p_WAo = data.X_WA_.translation();
+  const Vector3<T>& p_WBo = data.X_WB_.translation();
   const Vector3<T> p_CAo_W = p_WAo - p_WC;
   const Vector3<T> p_CBo_W = p_WBo - p_WC;
 
@@ -98,7 +98,7 @@ SpatialForce<T> HydroelasticTractionCalculator<T>::
         const HydroelasticTractionCalculatorData& data, const Vector3<T>& p_WQ,
         const Vector3<T>& traction_Aq_W) const {
   // Find the vector from Q to C.
-  const Vector3<T> p_QC_W = data.p_WC - p_WQ;
+  const Vector3<T> p_QC_W = data.p_WC_ - p_WQ;
 
   // Convert the traction to a momentless spatial traction (i.e., without
   // changing the point of application), then shift to body A's origin which
@@ -116,23 +116,23 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
     double dissipation, double mu_coulomb, Vector3<T>* p_WQ) const {
   DRAKE_DEMAND(p_WQ != nullptr);
   // Compute the point of contact in the world frame.
-  const Vector3<T> p_MQ = data.surface.mesh().CalcCartesianFromBarycentric(
+  const Vector3<T> p_MQ = data.surface_->mesh().CalcCartesianFromBarycentric(
       face_index, Q_barycentric);
-  *p_WQ = data.X_WM * p_MQ;
+  *p_WQ = data.X_WM_ * p_MQ;
 
   // Get the "potential pressure" (in N/m²) at the point as defined in
   // [Elandt 2019]. Note that we drop the _MN suffix here and below, as this
   // suffix can get confused with the identical suffix (used for a different
   // purpose) employed by monogram notation.
-  const T E = data.surface.EvaluateE_MN(face_index, Q_barycentric);
+  const T E = data.surface_->EvaluateE_MN(face_index, Q_barycentric);
 
   // Get the normal from Geometry M to Geometry N, expressed in the world frame,
   // to the contact surface at Point Q. By extension, this means that the normal
   // points from Body A to Body B.
-  const Vector3<T> h_M = data.surface.EvaluateGrad_h_MN_M(
+  const Vector3<T> h_M = data.surface_->EvaluateGrad_h_MN_M(
       face_index, Q_barycentric);
   const Vector3<T> nhat_M = h_M.normalized();
-  const Vector3<T> nhat_W = data.X_WM.rotation() * nhat_M;
+  const Vector3<T> nhat_W = data.X_WM_.rotation() * nhat_M;
 
   // Get the relative spatial velocity at the point Q between the
   // two bodies A and B (to which M and N are affixed, respectively) by
@@ -141,12 +141,12 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   // Body A.
 
   // First compute the spatial velocity of Body A at Aq.
-  const Vector3<T> p_AoAq_W = *p_WQ - data.X_WA.translation();
-  const SpatialVelocity<T> V_WAq = data.V_WA.Shift(p_AoAq_W);
+  const Vector3<T> p_AoAq_W = *p_WQ - data.X_WA_.translation();
+  const SpatialVelocity<T> V_WAq = data.V_WA_.Shift(p_AoAq_W);
 
   // Next compute the spatial velocity of Body B at Bq.
-  const Vector3<T> p_BoBq_W = *p_WQ - data.X_WB.translation();
-  const SpatialVelocity<T> V_WBq = data.V_WB.Shift(p_BoBq_W);
+  const Vector3<T> p_BoBq_W = *p_WQ - data.X_WB_.translation();
+  const SpatialVelocity<T> V_WBq = data.V_WB_.Shift(p_BoBq_W);
 
   // Finally compute the relative velocity of Frame Aq relative to Frame Bq,
   // expressed in the world frame, and then the translational component of this
