@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
@@ -23,15 +22,9 @@ namespace kuka_iiwa {
 /// LcmSubscriberSystem::Make<drake::lcmt_iiwa_command>().
 ///
 /// It has one input port, "lcmt_iiwa_command".
-/// (As well as some deprecated input ports; see below.)
 ///
 /// It has two output ports: one for the commanded position for each joint, and
 /// one for commanded additional feedforward joint torque.
-/// (As well as some deprecated output ports; see below.)
-///
-/// It also has one additional, deprecated output port -- "state" for the
-/// commanded position AND an estimate of the commanded velocity for each
-/// joint.
 ///
 /// @system { IiwaCommandReceiver,
 ///   @input_port{lcmt_iiwa_command}
@@ -67,14 +60,6 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   const int num_joints_;
   const systems::CacheEntry* groomed_input_{};
 };
-
-/// Creates a LcmSubscriberSystem for lcmt_iiwa_command.
-DRAKE_DEPRECATED("2019-07-01",
-    "Call LcmSubscriberSystem::Make<drake::lcmt_iiwa_command> instead.")
-std::unique_ptr<systems::lcm::LcmSubscriberSystem>
-MakeIiwaCommandLcmSubscriberSystem(
-    int num_joints, const std::string& channel,
-    drake::lcm::DrakeLcmInterface* lcm);
 
 }  // namespace kuka_iiwa
 }  // namespace manipulation

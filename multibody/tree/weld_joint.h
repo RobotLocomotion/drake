@@ -57,17 +57,6 @@ class WeldJoint final : public Joint<T> {
     return name.access();
   }
 
-#ifndef DRAKE_DOXYGEN_CXX
-  DRAKE_DEPRECATED(
-      "2019-07-01",
-      "This Isometry3 overload will be removed pending the resolution of "
-      "#9865. Use the RigidTransform overload instead.")
-  WeldJoint(const std::string& name, const Frame<T>& parent_frame_P,
-            const Frame<T>& child_frame_C, const Isometry3<double>& X_PC)
-      : WeldJoint(name, parent_frame_P, child_frame_C,
-                  math::RigidTransformd(X_PC)) {}
-#endif
-
   /// Returns the pose X_PC of frame C in P.
   const math::RigidTransform<double>& X_PC() const {
     return X_PC_;

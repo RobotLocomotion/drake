@@ -262,13 +262,6 @@ class ContextBase : public internal::ContextMessageInterface {
     return ++context->current_change_event_;
   }
 
-#ifndef DRAKE_DOXYGEN_CXX
-  DRAKE_DEPRECATED("2019-07-01", "Use num_input_ports() instead.")
-  int get_num_input_ports() const { return num_input_ports(); }
-  DRAKE_DEPRECATED("2019-07-01", "Use num_output_ports() instead.")
-  int get_num_output_ports() const { return num_output_ports(); }
-#endif
-
  protected:
   /** Default constructor creates an empty ContextBase but initializes all the
   built-in dependency trackers that are the same in every System (like time,

@@ -77,40 +77,6 @@ class FixedOffsetFrame final : public Frame<T> {
       const Body<T>& bodyB, const math::RigidTransform<double>& X_BF)
       : FixedOffsetFrame("", bodyB, X_BF) {}
 
-#ifndef DRAKE_DOXYGEN_CXX
-  DRAKE_DEPRECATED(
-      "2019-07-01",
-      "This Isometry3 overload will be removed pending the resolution of "
-      "#9865. Use the RigidTransform overload instead.")
-  FixedOffsetFrame(const std::string& name, const Frame<T>& P,
-                   const Isometry3<double>& X_PF,
-                   optional<ModelInstanceIndex> model_instance = {})
-      : FixedOffsetFrame(name, P, math::RigidTransformd(X_PF), model_instance) {
-  }
-
-  DRAKE_DEPRECATED(
-      "2019-07-01",
-      "This Isometry3 overload will be removed pending the resolution of "
-      "#9865. Use the RigidTransform overload instead.")
-  FixedOffsetFrame(const Frame<T>& P, const Isometry3<double>& X_PF)
-      : FixedOffsetFrame(P, math::RigidTransformd(X_PF)) {}
-
-  DRAKE_DEPRECATED(
-      "2019-07-01",
-      "This Isometry3 overload will be removed pending the resolution of "
-      "#9865. Use the RigidTransform overload instead.")
-  FixedOffsetFrame(const std::string& name, const Body<T>& bodyB,
-                   const Isometry3<double>& X_BF)
-      : FixedOffsetFrame(name, bodyB, math::RigidTransformd(X_BF)) {}
-
-  DRAKE_DEPRECATED(
-      "2019-07-01",
-      "This Isometry3 overload will be removed pending the resolution of "
-      "#9865. Use the RigidTransform overload instead.")
-  FixedOffsetFrame(const Body<T>& bodyB, const Isometry3<double>& X_BF)
-      : FixedOffsetFrame(bodyB, math::RigidTransformd(X_BF)) {}
-#endif
-
   math::RigidTransform<T> CalcPoseInBodyFrame(
       const systems::Context<T>& context) const override {
     // X_BF = X_BP * X_PF
