@@ -54,6 +54,12 @@ public ::testing::TestWithParam<RigidTransform<double>> {
   const HydroelasticTractionCalculator<double>& traction_calculator() const {
     return traction_calculator_;
   }
+
+  HydroelasticTractionCalculator<double>::
+      HydroelasticTractionCalculatorData& calculator_data() {
+    return *calculator_data_;
+  }
+
   const ContactSurface<double>& contact_surface() const {
       return *contact_surface_;
   }
@@ -69,20 +75,14 @@ public ::testing::TestWithParam<RigidTransform<double>> {
   void ComputeSpatialTractionsAtBodyOriginsFromHydroelasticModel(
       double dissipation, double mu_coulomb, SpatialForce<double>* Ft_Ao_W,
       SpatialForce<double>* Ft_Bo_W) {
-    // Compute up-to-date X_WA_, X_WB_, V_WA_, V_WB_, and X_WM_.
-    UpdateKinematicQuantities();
-
-    // Instantiate the traction calculator data.
-    HydroelasticTractionCalculator<double>::HydroelasticTractionCalculatorData
-        calculator_data(X_WA_, X_WB_, V_WA_, V_WB_, X_WM_,
-            contact_surface_.get());
+    UpdateCalculatorData();
 
     // First compute the traction applied to Body A at point Q, expressed in the
     // world frame.
     Vector3<double> p_WQ;
     const Vector3<double> traction_Aq_W =
         traction_calculator_.CalcTractionAtPoint(
-            calculator_data, SurfaceFaceIndex(0),
+            calculator_data(), SurfaceFaceIndex(0),
             SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0), dissipation,
             mu_coulomb, &p_WQ);
 
@@ -98,12 +98,12 @@ public ::testing::TestWithParam<RigidTransform<double>> {
 
     const SpatialForce<double> Ft_Ac_W =
         traction_calculator().ComputeSpatialTractionAtAcFromTractionAtAq(
-            calculator_data, p_WQ, traction_Aq_W);
+            calculator_data(), p_WQ, traction_Aq_W);
 
     // Shift to body origins. Traction on body B is equal and opposite.
-    const Vector3<double>& p_WC = calculator_data.p_WC();
-    const Vector3<double>& p_WAo = calculator_data.X_WA().translation();
-    const Vector3<double>& p_WBo = calculator_data.X_WB().translation();
+    const Vector3<double>& p_WC = calculator_data().p_WC;
+    const Vector3<double>& p_WAo = calculator_data().X_WA.translation();
+    const Vector3<double>& p_WBo = calculator_data().X_WB.translation();
     const Vector3<double> p_CAo_W = p_WAo - p_WC;
     const Vector3<double> p_CBo_W = p_WBo - p_WC;
     *Ft_Ao_W = Ft_Ac_W.Shift(p_CAo_W);
@@ -116,12 +116,11 @@ public ::testing::TestWithParam<RigidTransform<double>> {
         SpatialVelocity<double>(Vector3<double>::Zero(), v));
   }
 
-  // Computes up-to-date values of X_WA_, X_WB_, V_WA_, V_WB_, and X_WM_.
-  void UpdateKinematicQuantities() {
+  void UpdateCalculatorData() {
     // Get the pose of the Geometry M in the world frame.
     const auto& query_object = plant_->get_geometry_query_input_port().
         template Eval<geometry::QueryObject<double>>(*plant_context_);
-    X_WM_ = query_object.X_WG(contact_surface_->id_M());
+    calculator_data().X_WM = query_object.X_WG(contact_surface_->id_M());
 
     // Get the bodies that the two geometries are affixed to. We'll call these
     // A and B.
@@ -133,23 +132,29 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     const Body<double>& bodyB = *plant_->GetBodyFromFrameId(frameN_id);
 
     // Get the poses of the two bodies in the world frame.
-    X_WA_ = plant_->EvalBodyPoseInWorld(*plant_context_, bodyA);
-    X_WB_ = plant_->EvalBodyPoseInWorld(*plant_context_, bodyB);
+    calculator_data().X_WA =
+        plant_->EvalBodyPoseInWorld(*plant_context_, bodyA);
+    calculator_data().X_WB =
+        plant_->EvalBodyPoseInWorld(*plant_context_, bodyB);
 
     // Get the spatial velocities for the two bodies (at the body frames).
-    V_WA_ = plant_->EvalBodySpatialVelocityInWorld(*plant_context_, bodyA);
-    V_WB_ = plant_->EvalBodySpatialVelocityInWorld(*plant_context_, bodyB);
+    calculator_data().V_WA = plant_->EvalBodySpatialVelocityInWorld(
+        *plant_context_, bodyA);
+    calculator_data().V_WB = plant_->EvalBodySpatialVelocityInWorld(
+        *plant_context_, bodyB);
+
+    // Set the surface centroid.
+    const Vector3<double> p_MC = contact_surface_->mesh().centroid();
+    calculator_data().p_WC = calculator_data().X_WM * p_MC;
   }
 
   void ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
       double dissipation, double mu_coulomb,
       SpatialForce<double>* F_Ao_W, SpatialForce<double>* F_Bo_W) {
-    // Compute up-to-date X_WA_, X_WB_, V_WA_, V_WB_, and X_WM_.
-    UpdateKinematicQuantities();
+    UpdateCalculatorData();
 
     traction_calculator_.ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-        X_WA_, X_WB_, V_WA_, V_WB_, X_WM_, *contact_surface_,
-        dissipation, mu_coulomb, F_Ao_W, F_Bo_W);
+        calculator_data(), dissipation, mu_coulomb, F_Ao_W, F_Bo_W);
   }
 
  private:
@@ -175,6 +180,8 @@ public ::testing::TestWithParam<RigidTransform<double>> {
         &diagram_->GetMutableSubsystemContext(plant, context_.get());
 
     contact_surface_ = CreateContactSurface();
+    calculator_data_ = std::make_unique<HydroelasticTractionCalculator<double>::
+        HydroelasticTractionCalculatorData>(contact_surface());
 
     // See class documentation for description of Frames Y, B, and H.
     const RigidTransform<double>& X_WY = GetParam();
@@ -247,11 +254,8 @@ public ::testing::TestWithParam<RigidTransform<double>> {
   systems::Context<double>* plant_context_;
   std::unique_ptr<ContactSurface<double>> contact_surface_;
   HydroelasticTractionCalculator<double> traction_calculator_;
-
-  // See HydroelasticTractionCalculatorData for a description of these
-  // quantities.
-  math::RigidTransform<double> X_WA_, X_WB_, X_WM_;
-  SpatialVelocity<double> V_WA_, V_WB_;
+  std::unique_ptr<HydroelasticTractionCalculator<double>::
+      HydroelasticTractionCalculatorData> calculator_data_;
 };
 
 // Tests the traction calculation without any frictional or dissipation

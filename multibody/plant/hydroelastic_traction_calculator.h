@@ -22,6 +22,41 @@ namespace internal {
  */
 template <typename T>
 class HydroelasticTractionCalculator {
+ private:
+  // Data structure for storing quantities used repeatedly in the hydroelastic
+  // traction calculations.
+  struct HydroelasticTractionCalculatorData {
+    HydroelasticTractionCalculatorData(
+        const geometry::ContactSurface<T>& s) : surface(s) {}
+
+    // The ContactSurface.
+    const geometry::ContactSurface<T>& surface;
+
+    // The ContactSurface's centroid C, measured and expressed in World.
+    Vector3<T> p_WC;
+
+    // The pose of Body A (the body that Geometry `surface.M_id()` in the
+    // contact surface is affixed to) in the world frame.
+    math::RigidTransform<T> X_WA;
+
+    // The pose of Body B (the body that Geometry `surface.N_id()` in the
+    // contact surface is affixed to) in the world frame.
+    math::RigidTransform<T> X_WB;
+
+    // The pose of Geometry `surface.M_id()` in the world frame.
+    math::RigidTransform<T> X_WM;
+
+    // The spatial velocity of Body A (the body that Geometry
+    // `surface.M_id()` in the contact surface is affixed to) at the origin of
+    // A's frame, measured in the world frame and expressed in the world frame.
+    SpatialVelocity<T> V_WA;
+
+    // The spatial velocity of Body B (the body that Geometry
+    // `surface.N_id()` in the contact surface is affixed to) at the origin of
+    // B's frame, measured in the world frame and expressed in the world frame.
+    SpatialVelocity<T> V_WB;
+  };
+
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HydroelasticTractionCalculator)
 
@@ -39,16 +74,7 @@ class HydroelasticTractionCalculator {
    resulting in a pair of spatial forces at the origins of two body frames.
    The body frames, A and B, are those to which `surface.M_id()` and
    `surface.N_id()` are affixed, respectively.
-   @param X_WA the pose of Body A (the body that Geometry `surface.M_id()` in
-          the contact surface is affixed to) in the world frame.
-   @param X_WB the pose of Body B (the body that Geometry `surface.N_id()` in
-          the contact surface is affixed to) in the world frame.
-   @param V_WA the spatial velocity of Body A at the origin of A's frame,
-          measured in the world frame and expressed in the world frame.
-   @param V_WB the spatial velocity of Body B at the origin of B's frame,
-          measured in the world frame and expressed in the world frame.
-   @param X_WM the pose from Geometry `surface.M_id()` in the contact surface
-          relative to the world frame.
+   @param data Relevant kinematic data.
    @param dissipation the nonnegative coefficient (in s/m) for dissipating
           energy along the direction of the surface normals.
    @param mu_coulomb the nonnegative coefficient for Coulomb friction.
@@ -56,12 +82,7 @@ class HydroelasticTractionCalculator {
    @param[output] F_Bo_W the spatial force on Body B, on return.
    */ 
   void ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-       const math::RigidTransform<T>& X_WA,
-       const math::RigidTransform<T>& X_WB,
-       const SpatialVelocity<T>& V_WA,
-       const SpatialVelocity<T>& V_WB,
-       const math::RigidTransform<T>& X_WM,
-       const geometry::ContactSurface<T>& surface,
+       const HydroelasticTractionCalculatorData& data,
        double dissipation, double mu_coulomb,
        multibody::SpatialForce<T>* F_Ao_W,
        multibody::SpatialForce<T>* F_Bo_W) const;
@@ -69,70 +90,6 @@ class HydroelasticTractionCalculator {
  private:
   // To allow GTEST to test private functions.
   friend class MultibodyPlantHydroelasticTractionTests;
-
-  // Data structure for storing quantities used repeatedly in the hydroelastic
-  // traction calculations.
-  class HydroelasticTractionCalculatorData {
-   public:
-    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HydroelasticTractionCalculatorData)
-
-    // @param X_WA the pose from Body A relative to the world frame. See X_WA()
-    //        for detailed description.
-    // @param X_WB the pose from Body B relative to the world frame. See X_WB()
-    //        for detailed description.
-    // @param V_WA the spatial velocity of Body A in the world frame. See
-    //        V_WA() for detailed description.
-    // @param V_WB the spatial velocity of Body B in the world frame. See
-    //        V_WA() for detailed description.
-    // @param X_WM the pose from Geometry `surface.M_id()` in the contact
-    //        surface to the world frame. See X_WM().
-    // @param surface a pointer to the contact surface computed by the
-    //        hydroelastic contact model that will be maintained for the life of
-    //        this object.
-    HydroelasticTractionCalculatorData(
-        const math::RigidTransform<T>& X_WA,
-        const math::RigidTransform<T>& X_WB,
-        const SpatialVelocity<T>& V_WA,
-        const SpatialVelocity<T>& V_WB,
-        const math::RigidTransform<T>& X_WM,
-        const geometry::ContactSurface<T>* surface);
-
-    // Gets the ContactSurface passed to the data structure on construction.
-    const geometry::ContactSurface<T>& surface() const { return surface_; }
-
-    // Gets the surface centroid C, measured and expressed in World.
-    const Vector3<T>& p_WC() const { return p_WC_; }
-
-    // Gets the pose of Body A (the body that Geometry `surface.M_id()` in the
-    // contact surface is affixed to) in the world frame.
-    const math::RigidTransform<T>& X_WA() const { return X_WA_; }
-
-    // Gets the pose of Body B (the body that Geometry `surface.N_id()` in the
-    // contact surface is affixed to) in the world frame.
-    const math::RigidTransform<T>& X_WB() const { return X_WB_; }
-
-    // Gets the pose of Geometry `surface.M_id()` in the world frame.
-    const math::RigidTransform<T>& X_WM() const { return X_WM_; }
-
-    // Gets the spatial velocity of Body A (the body that Geometry
-    // `surface.M_id()` in the contact surface is affixed to) at the origin of
-    // A's frame, measured in the world frame and expressed in the world frame.
-    const SpatialVelocity<T>& V_WA() const { return V_WA_; }
-
-    // Gets the spatial velocity of Body B (the body that Geometry
-    // `surface.N_id()` in the contact surface is affixed to) at the origin of
-    // B's frame, measured in the world frame and expressed in the world frame.
-    const SpatialVelocity<T>& V_WB() const { return V_WB_; }
-
-   private:
-    Vector3<T> p_WC_;
-    math::RigidTransform<T> X_WA_;
-    math::RigidTransform<T> X_WB_;
-    SpatialVelocity<T> V_WA_;
-    SpatialVelocity<T> V_WB_;
-    math::RigidTransform<T> X_WM_;
-    const geometry::ContactSurface<T>& surface_;
-  };
 
   Vector3<T> CalcTractionAtPoint(
       const HydroelasticTractionCalculatorData& data,
