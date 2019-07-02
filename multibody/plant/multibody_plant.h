@@ -1407,7 +1407,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] frame_A The frame A designated in the RotationMatrix `R_AB`.
   /// @param[in] frame_B The frame B designated in the RotationMatrix `R_AB`.
   /// @retval R_AB  The RotationMatrix relating frame A and frame B.
-  math::RigidTransform<T> CalcRelativeRotationMatrix(
+  math::RotationMatrix<T> CalcRelativeRotationMatrix(
       const systems::Context<T>& context,
       const Frame<T>& frame_A,
       const Frame<T>& frame_B) const {
