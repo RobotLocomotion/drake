@@ -1,7 +1,11 @@
 #pragma once
 
+#include <utility>
+#include <vector>
+
 #include "drake/multibody/optimization/contact_wrench_evaluator.h"
 #include "drake/solvers/constraint.h"
+#include "drake/solvers/mathematical_program.h"
 
 /** @file
  * @anchor sliding_friction_complementarity_constraint
@@ -97,6 +101,16 @@ class SlidingFrictionComplementarityNonlinearConstraint
     *c = x(x.rows() - 1);
   }
 
+  template <typename T>
+  void ComposeX(const Eigen::Ref<const VectorX<T>>& q,
+                const Eigen::Ref<const VectorX<T>>& v,
+                const Eigen::Ref<const VectorX<T>>& lambda,
+                const Vector3<T>& f_static, const Vector3<T>& f_sliding,
+                const T& c, VectorX<T>* x) const {
+    x->resize(num_vars());
+    *x << q, v, lambda, f_static, f_sliding, c;
+  }
+
   /**
    * Return the sparsity pattern of the constraint, when we compute the gradient
    * of the constraint w.r.t the variable itself (namely when
@@ -120,5 +134,34 @@ class SlidingFrictionComplementarityNonlinearConstraint
   symbolic::Variable c_var_;
 };
 }  // namespace internal
+
+/**
+ * Adds the sliding friction complementarity constraint explained in @ref
+ * sliding_friction_complementarity_constraint to an optimization program. This
+ * function adds the slack variables (f_static, f_sliding, c), and impose all
+ * the constraints in @ref sliding_friction_complementarity_constraint.
+ * @note In addition to calling this function, the user also need to impose
+ * either StaticFrictionConeConstraint or
+ * AddStaticFrictionConeComplementarityConstraint() on the contact wrench
+ * evaluator.
+ * @param contact_wrench_evaluator Evaluates the contact wrench between a pair
+ * of geometries.
+ * @param complementarity_tolerance The tolerance on the complementarity
+ * constraint.
+ * @param q_vars The variable for the generalized position q in @p prog.
+ * @param v_vars The variable for the generalized velocity v in @p prog.
+ * @param lambda_vars The varaibles to parameterize the contact wrench between
+ * this pair of geometry.
+ * @param prog The optimization program to which the sliding friction
+ * complementarity constraint is imposed.
+ */
+solvers::Binding<internal::SlidingFrictionComplementarityNonlinearConstraint>
+AddSlidingFrictionComplementarityConstraint(
+    const ContactWrenchEvaluator* contact_wrench_evaluator,
+    double complementarity_tolerance,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& v_vars,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& lambda_vars,
+    solvers::MathematicalProgram* prog);
 }  // namespace multibody
 }  // namespace drake

@@ -28,6 +28,38 @@ void CompareAutoDiff(const Eigen::Ref<const AutoDiffVecXd>& x1,
                               math::autoDiffToGradientMatrix(x2), tol));
 }
 
+template <typename T>
+void ComputeRelativeMotion(test::FreeSpheresAndBoxes<T>* spheres,
+                           const Eigen::Ref<const VectorX<T>>& q,
+                           const Eigen::Ref<const VectorX<T>>& v,
+                           double sphere2_radius, Vector3<T>* nhat_S1S2_W,
+                           Vector3<T>* v_S1Cb_W) {
+  const auto& plant = spheres->plant();
+  plant.SetPositions(spheres->get_mutable_plant_context(), q);
+  plant.SetVelocities(spheres->get_mutable_plant_context(), v);
+  // Now compute v_ACb_W, first I need to compute the poses of the two spheres.
+  const math::RigidTransform<T> X_WS1 = plant.CalcRelativeTransform(
+      spheres->plant_context(), plant.world_frame(),
+      plant.get_body(spheres->sphere_body_indices()[0]).body_frame());
+  const math::RigidTransform<AutoDiffXd> X_WS2 = plant.CalcRelativeTransform(
+      spheres->plant_context(), plant.world_frame(),
+      plant.get_body(spheres->sphere_body_indices()[1]).body_frame());
+
+  *nhat_S1S2_W = (X_WS2.translation() - X_WS1.translation()).normalized();
+  const Vector3<T> p_S2Cb_W = -(*nhat_S1S2_W) * sphere2_radius;
+
+  const SpatialVelocity<T> V_S1S2_W =
+      plant.get_body(spheres->sphere_body_indices()[1])
+          .body_frame()
+          .CalcSpatialVelocity(
+              spheres->plant_context(),
+              plant.get_body(spheres->sphere_body_indices()[0]).body_frame(),
+              plant.world_frame());
+
+  const SpatialVelocity<T> V_S1Cb_W = V_S1S2_W.Shift(p_S2Cb_W);
+  *v_S1Cb_W = V_S1Cb_W.translational();
+}
+
 GTEST_TEST(SlidingFrictionComplementarityNonlinearConstraintTest, Constructor) {
   const test::SphereSpecification sphere1_spec(
       0.1, 1e3, CoulombFriction<double>(1.1, 0.9));
@@ -104,27 +136,9 @@ GTEST_TEST(SlidingFrictionComplementarityNonlinearConstraintTest, Constructor) {
   const double tol = 1E-12;
   CompareAutoDiff(y_autodiff.head<3>(), f_AB_W - f_static - f_sliding, tol);
   // Now compute v_ACb_W, first I need to compute the poses of the two spheres.
-  const math::RigidTransform<AutoDiffXd> X_WS1 = plant.CalcRelativeTransform(
-      spheres.plant_context(), plant.world_frame(),
-      plant.get_body(spheres.sphere_body_indices()[0]).body_frame());
-  const math::RigidTransform<AutoDiffXd> X_WS2 = plant.CalcRelativeTransform(
-      spheres.plant_context(), plant.world_frame(),
-      plant.get_body(spheres.sphere_body_indices()[1]).body_frame());
-
-  const Vector3<AutoDiffXd> n_S1S2_W =
-      (X_WS2.translation() - X_WS1.translation()).normalized();
-  const Vector3<AutoDiffXd> p_S2Cb_W = -n_S1S2_W * sphere2_spec.radius;
-
-  const SpatialVelocity<AutoDiffXd> V_S1S2_W =
-      plant.get_body(spheres.sphere_body_indices()[1])
-          .body_frame()
-          .CalcSpatialVelocity(
-              spheres.plant_context(),
-              plant.get_body(spheres.sphere_body_indices()[0]).body_frame(),
-              plant.world_frame());
-
-  const SpatialVelocity<AutoDiffXd> V_S1Cb_W = V_S1S2_W.Shift(p_S2Cb_W);
-  const Vector3<AutoDiffXd> v_S1Cb_W = V_S1Cb_W.translational();
+  Vector3<AutoDiffXd> n_S1S2_W, v_S1Cb_W;
+  ComputeRelativeMotion<AutoDiffXd>(&spheres, q, v, sphere2_spec.radius,
+                                    &n_S1S2_W, &v_S1Cb_W);
   const Vector3<AutoDiffXd> v_tangential_S1Cb_W =
       (Eigen::Matrix3d::Identity() - n_S1S2_W * n_S1S2_W.transpose()) *
       v_S1Cb_W;
@@ -138,7 +152,7 @@ GTEST_TEST(SlidingFrictionComplementarityNonlinearConstraintTest, Constructor) {
       CalcContactFrictionFromSurfaceProperties(
           plant.default_coulomb_friction(spheres.sphere_geometry_ids()[0]),
           plant.default_coulomb_friction(spheres.sphere_geometry_ids()[1]));
-  CompareAutoDiff(y_autodiff(6), f_sliding.dot(-n_S1S2_W), tol);
+  CompareAutoDiff(y_autodiff(6), f_sliding.dot(n_S1S2_W), tol);
 
   const Vector3<AutoDiffXd> f_sliding_tangential =
       (Eigen::Matrix3d::Identity() - n_S1S2_W * n_S1S2_W.transpose()) *
@@ -177,5 +191,73 @@ GTEST_TEST(SlidingFrictionComplementarityNonlinearConstraintTest, Constructor) {
 }
 }  // namespace
 }  // namespace internal
+
+namespace {
+GTEST_TEST(SlidingFrictionComplementarityConstraintTest, AddConstraint) {
+  const test::SphereSpecification sphere1_spec(
+      0.1, 1e3, CoulombFriction<double>(1.1, 0.9));
+  const test::SphereSpecification sphere2_spec(
+      0.2, 1.2e3, CoulombFriction<double>(1.2, 0.8));
+  const CoulombFriction<double> ground_friction(0.6, 0.5);
+  test::FreeSpheresAndBoxes<AutoDiffXd> spheres(
+      {sphere1_spec, sphere2_spec}, {} /* no box. */, ground_friction);
+
+  const ContactWrenchFromForceInWorldFrameEvaluator contact_wrench_evaluator(
+      &(spheres.plant()), spheres.get_mutable_plant_context(),
+      SortedPair<geometry::GeometryId>(spheres.sphere_geometry_ids()[0],
+                                       spheres.sphere_geometry_ids()[1]));
+
+  const double complementarity_tolerance = 1E-3;
+
+  const auto& plant = spheres.plant();
+  solvers::MathematicalProgram prog;
+  auto q_vars = prog.NewContinuousVariables(plant.num_positions());
+  auto v_vars = prog.NewContinuousVariables(plant.num_velocities());
+  auto lambda_vars = prog.NewContinuousVariables<3>();
+  auto binding = AddSlidingFrictionComplementarityConstraint(
+      &contact_wrench_evaluator, complementarity_tolerance, q_vars, v_vars,
+      lambda_vars, &prog);
+
+  EXPECT_EQ(prog.num_vars(), binding.variables().rows());
+
+  // Now check if the added constraint is satisfied when the sliding friction
+  // force satisfies the complementarity constraint.
+
+  // Set q_val and v_val to arbitrary values
+  Eigen::Matrix<double, 14, 1> q_val;
+  q_val.head<4>() << 0.5, -0.5, 0.5, -0.5;
+  q_val.segment<3>(4) << 0.1, 0.2, 0.3;
+  q_val.segment<4>(7) << 1.0 / 3, 2.0 / 3, 2.0 / 3, 0;
+  q_val.tail<3>() << -0.2, 0.3, 0.1;
+  Eigen::Matrix<double, 12, 1> v_val;
+  v_val << 0.1, 0.2, 0.3, -0.4, 0.5, 0.6, -1.5, 0.3, 0.6, -0.2, 0.7, -1.2;
+  Vector3<AutoDiffXd> nhat_S1S2_W_autodiff, v_S1Cb_W_autodiff;
+  internal::ComputeRelativeMotion<AutoDiffXd>(
+      &spheres, q_val.cast<AutoDiffXd>(), v_val.cast<AutoDiffXd>(),
+      sphere2_spec.radius, &nhat_S1S2_W_autodiff, &v_S1Cb_W_autodiff);
+  Eigen::Vector3d nhat_S1S2_W =
+      math::autoDiffToValueMatrix(nhat_S1S2_W_autodiff);
+  Eigen::Vector3d v_S1Cb_W = math::autoDiffToValueMatrix(v_S1Cb_W_autodiff);
+
+  Eigen::Vector3d v_tangential_S1Cb_W =
+      (Eigen::Matrix3d::Identity() - nhat_S1S2_W * nhat_S1S2_W.transpose()) *
+      v_S1Cb_W;
+  double c_val1 = 0.1;
+  Eigen::Vector3d f_sliding_tangential = -c_val1 * v_tangential_S1Cb_W;
+  const CoulombFriction<double> combined_friction =
+      CalcContactFrictionFromSurfaceProperties(
+          plant.default_coulomb_friction(spheres.sphere_geometry_ids()[0]),
+          plant.default_coulomb_friction(spheres.sphere_geometry_ids()[1]));
+  Eigen::Vector3d f_sliding_normal = nhat_S1S2_W * f_sliding_tangential.norm() /
+                                     combined_friction.dynamic_friction();
+  Eigen::Vector3d f_sliding = f_sliding_normal + f_sliding_tangential;
+  Eigen::Vector3d f_static(0, 0, 0);
+  Eigen::Vector3d lambda = f_sliding + f_static;
+  Eigen::VectorXd x_satisfied;
+  binding.evaluator()->ComposeX<double>(q_val, v_val, lambda, f_static,
+                                        f_sliding, c_val1, &x_satisfied);
+  EXPECT_TRUE(binding.evaluator()->CheckSatisfied(x_satisfied, 1E-14));
+}
+}  // namespace
 }  // namespace multibody
 }  // namespace drake

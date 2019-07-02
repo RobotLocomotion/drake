@@ -1,6 +1,8 @@
 #include "drake/multibody/optimization/sliding_friction_complementarity_constraint.h"
 
 #include <limits>
+#include <memory>
+
 #include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
 
 namespace drake {
@@ -220,9 +222,9 @@ void SlidingFrictionComplementarityNonlinearConstraint::DoEval(
 
       // Impose constraint(3), μ * f_sliding_normal = |f_sliding_tangential|
       // This constraint can be reformulated as
-      // f_slidingᵀ * nhat_BA_W >= 0
+      // f_slidingᵀ * -nhat_BA_W >= 0
       // f_slidingᵀ * (I - (μ²+1) * nhat_BA_W * nhat_BA_Wᵀ) * f_sliding = 0
-      (*y)(6) = f_sliding.dot(nhat_BA_W);
+      (*y)(6) = f_sliding.dot(-nhat_BA_W);
       using std::pow;
       (*y)(7) =
           f_sliding.dot((Eigen::Matrix3d::Identity() -
@@ -256,5 +258,30 @@ void SlidingFrictionComplementarityNonlinearConstraint::DoEval(
       "symbolic variable yet.");
 }
 }  // namespace internal
+
+solvers::Binding<internal::SlidingFrictionComplementarityNonlinearConstraint>
+AddSlidingFrictionComplementarityConstraint(
+    const ContactWrenchEvaluator* contact_wrench_evaluator,
+    double complementarity_tolerance,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& v_vars,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& lambda_vars,
+    solvers::MathematicalProgram* prog) {
+  auto constraint = std::make_shared<
+      internal::SlidingFrictionComplementarityNonlinearConstraint>(
+      contact_wrench_evaluator, complementarity_tolerance);
+  const auto f_static = prog->NewContinuousVariables<3>("f_static");
+  const auto f_sliding = prog->NewContinuousVariables<3>("f_sliding");
+  const auto c_var = prog->NewContinuousVariables<1>(
+      "sliding_friction_complementarity_slack_c")(0);
+  prog->AddBoundingBoxConstraint(0, kInf, c_var);
+  VectorX<symbolic::Variable> bound_vars(constraint->num_vars());
+  constraint->ComposeX<symbolic::Variable>(
+      q_vars, v_vars, lambda_vars, f_static, f_sliding, c_var, &bound_vars);
+  prog->AddConstraint(constraint, bound_vars);
+  return solvers::Binding<
+      internal::SlidingFrictionComplementarityNonlinearConstraint>(constraint,
+                                                                   bound_vars);
+}
 }  // namespace multibody
 }  // namespace drake
