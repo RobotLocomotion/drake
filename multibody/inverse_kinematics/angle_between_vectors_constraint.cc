@@ -117,7 +117,7 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
   UpdateContextConfiguration(context, plant, x);
   const Frame<T>& frameA = plant.get_frame(frameA_index);
   const Frame<T>& frameB = plant.get_frame(frameB_index);
-  const RotationMatrix<T> R_AB =
+  const math::RotationMatrix<T> R_AB =
       plant.CalcRelativeRotationMatrix(*context, frameA, frameB);
   const Vector3<T> b_unit_A = R_AB * b_unit_B;
   *y = a_unit_A.transpose() * b_unit_A;
