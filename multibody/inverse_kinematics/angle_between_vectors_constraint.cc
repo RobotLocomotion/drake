@@ -117,12 +117,12 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
   UpdateContextConfiguration(context, plant, x);
   const Frame<T>& frameA = plant.get_frame(frameA_index);
   const Frame<T>& frameB = plant.get_frame(frameB_index);
-  const Matrix3<T> R_AB =
-      plant.CalcRelativeTransform(*context, frameA, frameB).linear();
+  const RotationMatrix<T> R_AB =
+      plant.CalcRelativeRotationMatrix(*context, frameA, frameB);
   const Vector3<T> b_unit_A = R_AB * b_unit_B;
   *y = a_unit_A.transpose() * b_unit_A;
   EvalConstraintGradient(*context, plant, frameA, frameB, a_unit_A, b_unit_B,
-                         R_AB, x, y);
+                         R_AB.matrix(), x, y);
 }
 
 void AngleBetweenVectorsConstraint::DoEval(

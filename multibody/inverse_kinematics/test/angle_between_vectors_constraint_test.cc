@@ -14,7 +14,7 @@ AutoDiffVecXd EvalAngleBetweenVectorsConstraint(
     const Frame<AutoDiffXd>& frameB, const Vector3<double>& n_B) {
   Vector1<AutoDiffXd> y_autodiff;
   y_autodiff(0) = n_A.normalized().dot(
-      plant.CalcRelativeTransform(context, frameA, frameB).linear() *
+      plant.CalcRelativeRotationMatrix(context, frameA, frameB) *
       n_B.normalized());
   return y_autodiff;
 }

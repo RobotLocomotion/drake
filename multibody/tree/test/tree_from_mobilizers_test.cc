@@ -1343,7 +1343,7 @@ TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {
   const RigidTransformd X_UL(tree().CalcRelativeTransform(
       *context_, upper_link_->body_frame(), lower_link_->body_frame()));
   const Vector3d p_UL = X_UL.translation();
-  const RotationMatrixd R_UL = X_UL.rotation();
+  const RotationMatrixd& R_UL = X_UL.rotation();
 
   const Vector3d p_UL_expected(0.0, -0.5, 0.0);
   const Matrix3d R_UL_expected(Eigen::AngleAxisd(M_PI_4, Vector3d::UnitZ()));
@@ -1352,6 +1352,13 @@ TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {
       p_UL, p_UL_expected, kTolerance, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(
       R_UL.matrix(), R_UL_expected, kTolerance, MatrixCompareType::relative));
+
+  // Now test CalcRelativeRotationMatrix()
+  const math::RotationMatrix<double> RR_UL =
+      tree().CalcRelativeRotationMatrix(*context_, upper_link_->body_frame(),
+                                        lower_link_->body_frame());
+  EXPECT_TRUE(CompareMatrices(
+      RR_UL.matrix(), R_UL_expected, kTolerance, MatrixCompareType::relative));
 }
 
 TEST_F(PendulumKinematicTests, PointsHaveTheWrongSize) {

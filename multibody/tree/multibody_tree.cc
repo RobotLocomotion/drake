@@ -1392,7 +1392,7 @@ void MultibodyTree<T>::CalcJacobianTranslationalVelocity(
   // Js_v_ABi_E = R_EW * (Js_v_WBi_W - Js_v_WAi_W).
   if (&frame_E != &frame_W) {
     const RotationMatrix<T> R_EW =
-        CalcRelativeTransform(context, frame_E, frame_W).rotation();
+        CalcRelativeRotationMatrix(context, frame_E, frame_W);
     // Extract the 3 x num_columns block that starts at row = 3 * i, column = 0.
     for (int i = 0;  i < num_points; ++i) {
       Js_v_ABi_E->template block<3, Eigen::Dynamic>(3 * i, 0, 3, num_columns) =
