@@ -282,7 +282,10 @@ class RenderEngineVtkTest : public ::testing::Test {
 
   // Tests that don't instantiate their own renderers should invoke this.
   void Init(const RigidTransformd& X_WR, bool add_terrain = false) {
-    renderer_ = make_unique<RenderEngineVtk>();
+    const ColorI bg = bg_color();
+    const Vector3d bg_rgb{bg.r / 255., bg.g / 255., bg.b / 255.};
+    RenderEngineVtkParams params{{}, {}, bg_rgb};
+    renderer_ = make_unique<RenderEngineVtk>(params);
     InitializeRenderer(X_WR, add_terrain, renderer_.get());
   }
 
@@ -371,6 +374,10 @@ class RenderEngineVtkTest : public ::testing::Test {
               << "Label at: " << inlier << " for test: " << name;
   }
 
+  ColorI bg_color() const {
+    return DummyRenderEngine::GetColorIFromLabel(RenderLabel::kEmpty);
+  }
+
   // Provide a default visual color for these tests -- it is intended to be
   // different from the default color of the VTK render engine.
   const ColorI kDefaultVisualColor = {229u, 229u, 229u};
@@ -412,6 +419,18 @@ TEST_F(RenderEngineVtkTest, NoBodyTest) {
                      0u);
   VerifyUniformLabel(RenderLabel::kEmpty);
   VerifyUniformDepth(std::numeric_limits<float>::infinity());
+}
+
+// Confirm that the color image clear color gets successfully configured.
+TEST_F(RenderEngineVtkTest, ControlBackgroundColor) {
+  std::vector<ColorI> backgrounds{{10, 20, 30}, {128, 196, 255}, {255, 10, 40}};
+  for (const auto& bg : backgrounds) {
+    RenderEngineVtkParams params{
+        {}, {}, Vector3d{bg.r / 255., bg.g / 255., bg.b / 255.}};
+    RenderEngineVtk engine(params);
+    Render(&engine);
+    VerifyUniformColor(bg, 0u);
+  }
 }
 
 // Tests an image with *only* terrain (perpendicular to the camera's forward
@@ -472,8 +491,7 @@ TEST_F(RenderEngineVtkTest, HorizonTest) {
   };
 
   // Verifies v index of horizon at three different camera heights.
-  const ColorI& kSky =
-      DummyRenderEngine::GetColorIFromLabel(RenderLabel::kEmpty);
+  const ColorI& kSky = bg_color();
   const Vector3d p_WR = X_WR.translation();
   for (const double z : {2., 1., 0.5}) {
     X_WR.set_translation({p_WR(0), p_WR(1), z});

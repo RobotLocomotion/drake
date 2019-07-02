@@ -134,6 +134,9 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtkParams& parameters)
     default_diffuse_ = *parameters.default_diffuse;
   }
 
+  const auto& c = parameters.default_clear_color;
+  default_clear_color_ = ColorD{c(0), c(1), c(2)};
+
   InitializePipelines();
 }
 
@@ -313,7 +316,9 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
     : RenderEngine(other),
       pipelines_{{make_unique<RenderingPipeline>(),
                   make_unique<RenderingPipeline>(),
-                  make_unique<RenderingPipeline>()}} {
+                  make_unique<RenderingPipeline>()}},
+      default_diffuse_{other.default_diffuse_},
+      default_clear_color_{other.default_clear_color_} {
   InitializePipelines();
 
   // Utility function for creating a cloned actor which *shares* the same
@@ -373,8 +378,6 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
 }
 
 void RenderEngineVtk::InitializePipelines() {
-  const ColorD sky_color =
-      RenderEngine::GetColorDFromLabel(RenderLabel::kEmpty);
   const vtkSmartPointer<vtkTransform> vtk_identity =
       ConvertToVtkTransform(RigidTransformd::Identity());
 
@@ -391,7 +394,6 @@ void RenderEngineVtk::InitializePipelines() {
     // tests. Alternatively, find other way to resolve the driver bug.
     pipeline->window->SetMultiSamples(0);
 
-    pipeline->renderer->SetBackground(sky_color.r, sky_color.g, sky_color.b);
     auto camera = pipeline->renderer->GetActiveCamera();
     camera->SetViewAngle(90.0);  // Default to an arbitrary 90° field of view.
     // Initialize far plane to arbitrary value. In the case of depth it will be
@@ -417,8 +419,15 @@ void RenderEngineVtk::InitializePipelines() {
   // distance (e.g., infinity).
   pipelines_[ImageType::kDepth]->renderer->SetBackground(1., 1., 1.);
 
+  const ColorD empty_color =
+      RenderEngine::GetColorDFromLabel(RenderLabel::kEmpty);
+  pipelines_[ImageType::kLabel]->renderer->SetBackground(
+      empty_color.r, empty_color.g, empty_color.b);
+
   pipelines_[ImageType::kColor]->renderer->SetUseDepthPeeling(1);
   pipelines_[ImageType::kColor]->renderer->UseFXAAOn();
+  pipelines_[ImageType::kColor]->renderer->SetBackground(
+      default_clear_color_.r, default_clear_color_.g, default_clear_color_.b);
 }
 
 void RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,

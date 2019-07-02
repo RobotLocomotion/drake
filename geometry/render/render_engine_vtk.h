@@ -140,8 +140,6 @@ class RenderEngineVtk final : public RenderEngine,
 
   using RenderEngine::default_render_label;
 
-  // TODO(SeanCurtis-TRI): Provide a means to set the default clear color.
-
   //@}
 
  private:
@@ -217,12 +215,15 @@ class RenderEngineVtk final : public RenderEngine,
   // prevent undesirable behaviors if used in multi-threaded application.
   static vtkNew<internal::ShaderCallback> uniform_setting_callback_;
 
+  // Obnoxious bright orange.
+  Eigen::Vector4d default_diffuse_{0.9, 0.45, 0.1, 1.0};
+
+  // The color to clear the color buffer to.
+  systems::sensors::ColorD default_clear_color_;
+
   // The collection of per-geometry actors (one actor per pipeline (color,
   // depth, and label) indexed by the geometry's RenderIndex.
   std::vector<std::array<vtkSmartPointer<vtkActor>, 3>> actors_;
-
-  // Obnoxious bright orange.
-  Eigen::Vector4d default_diffuse_{0.9, 0.45, 0.1, 1.0};
 };
 
 }  // namespace render
