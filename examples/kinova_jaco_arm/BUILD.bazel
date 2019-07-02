@@ -50,6 +50,28 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "jaco_simulation",
+    srcs = ["jaco_simulation.cc"],
+    add_test_rule = 1,
+    data = [
+        "//manipulation/models/jaco_description:models",
+    ],
+    test_rule_args = ["--simulation_sec=0.1"],
+    deps = [
+        ":jaco_lcm",
+        "//common:find_resource",
+        "//common:text_logging_gflags",
+        "//geometry:geometry_visualization",
+        "//geometry:scene_graph",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/controllers:inverse_dynamics_controller",
+        "@gflags",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
