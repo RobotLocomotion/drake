@@ -32,24 +32,7 @@ bazel-bin/tools/drake_visualizer
 
 The following examples of a simulated jaco are present:
 
-```
-bazel-bin/examples/kinova_jaco_arm/run_passive_jaco_demo
-```
-
-Simulates a Jaco arm with no control or gravity compensation.
-
-```
-bazel-bin/examples/kinova_jaco_arm/run_setpose_jaco_demo
-```
-
-Simulates a Jaco arm holding a set pose.
-
-```
-bazel-bin/examples/kinova_jaco_arm/run_controlled_jaco_demo
-```
-
-Demonstrates planning a trajectory for a Jaco arm using inverse
-kinematics and simulating an arm following that trajectory.
+None
 
 ## Control
 
