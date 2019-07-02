@@ -120,7 +120,8 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
 
   const math::RotationMatrix<T> R_AbarBbar =
       plant.CalcRelativeRotationMatrix(*context, frameAbar, frameBbar);
-  const Matrix3<T> R_AB = (R_AbarA.inverse() * R_AbarBbar * R_BbarB).matrix();
+  const Matrix3<T> R_AB =
+      R_AbarA.inverse().matrix() * R_AbarBbar.matrix() * R_BbarB.matrix();
   const Vector3<T> r_AB{R_AB(1, 2) - R_AB(2, 1), R_AB(2, 0) - R_AB(0, 2),
                         R_AB(0, 1) - R_AB(1, 0)};
   EvalConstraintGradient(*context, plant, frameAbar, frameBbar, R_AbarA, R_AB,
