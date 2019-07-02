@@ -1284,7 +1284,7 @@ void MultibodyTree<T>::CalcJacobianAngularVelocity(
     // 2. Re-express that Jacobian in frame_E (rather than frame_W).
     const RotationMatrix<T> R_EW(
         CalcRelativeTransform(context, frame_E, frame_W).linear());
-    *Js_w_AB_E = R_EW.matrix() * (Js_w_WB_W - Js_w_WA_W);
+    *Js_w_AB_E = R_EW * (Js_w_WB_W - Js_w_WA_W);
   }
 }
 
@@ -1373,7 +1373,7 @@ void MultibodyTree<T>::CalcJacobianTranslationalVelocity(
     // Extract the 3 x num_columns block that starts at row = 3 * i, column = 0.
     for (int i = 0;  i < num_points; ++i) {
       Js_v_ABi_E->template block<3, Eigen::Dynamic>(3 * i, 0, 3, num_columns) =
-      R_EW.matrix() *
+      R_EW *
       Js_v_ABi_E->template block<3, Eigen::Dynamic>(3 * i, 0, 3, num_columns);
     }
   }

@@ -400,6 +400,31 @@ class RotationMatrix {
     return Vector3<T>(matrix() * v);
   }
 
+  /// Multiplies `this` %RotationMatrix `R_AB` by the n vectors `v1`, ... `vn`,
+  /// where each vector has 3 elements and is expressed in frame B.
+  /// @param[in] v_B `3 x n` matrix whose n columns are regarded as arbitrary
+  /// vectors `v1`, ... `vn` expressed in frame B.
+  /// @retval v_A `3 x n` matrix whose n columns are vectors `v1`, ... `vn`
+  /// expressed in frame A.
+  /// @code{.cc}
+  /// const RollPitchYaw<double> rpy(0.1, 0.2, 0.3);
+  /// const RotationMatrix<double> R_AB(rpy);
+  /// Eigen::Matrix<double, 3, 2> v_B;
+  /// v_B.col(0) = Vector3d(4, 5, 6);
+  /// v_B.col(1) = Vector3d(9, 8, 7);
+  /// const Eigen::Matrix<double, 3, 2> v_A = R_AB * v_B;
+  /// @endcode
+  template <typename Derived>
+  Eigen::Matrix<typename Derived::Scalar, 3, Derived::ColsAtCompileTime>
+  operator*(const Eigen::MatrixBase<Derived>& v_B) const {
+    if (v_B.rows() != 3) {
+      throw std::logic_error(
+          "Error: Inner dimension for matrix multiplication is not 3.");
+    }
+    // Express vectors in terms of frame A as v_A = R_AB * v_B.
+    return matrix() * v_B;
+  }
+
   /// Returns how close the matrix R is to to being a 3x3 orthonormal matrix by
   /// computing `‖R ⋅ Rᵀ - I‖∞` (i.e., the maximum absolute value of the
   /// difference between the elements of R ⋅ Rᵀ and the 3x3 identity matrix).

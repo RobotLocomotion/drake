@@ -763,6 +763,88 @@ GTEST_TEST(RotationMatrixTest, TestProjectionWithAxis) {
   CheckProjectionWithAxis(M, axis, -2 * M_PI, 4 * M_PI);
 }
 
+// Tests RotationMatrix R_AB multiplied by a 3 x n matrix whose columns are
+// arbitrary vectors, expressed in B.  The result is tested to be a 3 x n matrix
+// whose columns are those same vectors but expressed in A.
+GTEST_TEST(RotationMatrixTest, OperatorMultiplyByMatrix3X) {
+  // Create a somewhat arbitrary RotationMatrix.
+  const double r(0.5), p(0.4), y(0.3);
+  const RollPitchYaw<double> rpy(r, p, y);
+  const RotationMatrix<double> R_AB(rpy);
+
+  // Multiply the RigidTransform R_AB by two vectors to test operator* for a
+  // 3 x n matrix, where n = 3 is known before compilation.
+  Eigen::Matrix3d v_B;
+  const Vector3d v1_B(-12, -9, 7);   v_B.col(0) = v1_B;
+  const Vector3d v2_B(-11, -8, 10);  v_B.col(1) = v2_B;
+  const Vector3d v3_B(-10, -7, 12);  v_B.col(2) = v3_B;
+  const auto v_A = R_AB * v_B;
+
+  // Ensure the compiler's declared type for v_A has the proper number of
+  // rows and columns before compilation.  Then verify the results.
+  EXPECT_EQ(decltype(v_A)::RowsAtCompileTime, 3);
+  EXPECT_EQ(decltype(v_A)::ColsAtCompileTime, 3);
+
+  // Ensure the results for v_A match those from Eigen's matrix multiply.
+  // Note: Validating v_A is important because its results are reused below.
+  EXPECT_TRUE(CompareMatrices(v_A.col(0), R_AB.matrix() * v1_B, kEpsilon));
+  EXPECT_TRUE(CompareMatrices(v_A.col(1), R_AB.matrix() * v2_B, kEpsilon));
+
+  // Multiply the RotationMatrix R_AB by n = 2 vectors to test operator* for a
+  // 3 x n matrix, where n is not known before compilation.
+  const int number_of_vectors = 2;
+  Eigen::Matrix3Xd w_B(3, number_of_vectors);
+  w_B.col(0) = v1_B;
+  w_B.col(1) = v2_B;
+  const auto w_A = R_AB * w_B;
+
+  // Ensure the compiler's declared type for w_A has the proper number of
+  // rows before compilation (dictated by the return type of operator*) and
+  // has the proper number of columns at run time.
+  EXPECT_EQ(decltype(w_A)::RowsAtCompileTime, 3);
+  EXPECT_EQ(w_A.cols(), number_of_vectors);
+  for (int i = 0; i < number_of_vectors; ++i) {
+    const Vector3d wi_A = w_A.col(i);
+    const Vector3d wi_A_expected = v_A.col(i);  // Previous result.
+    EXPECT_TRUE(CompareMatrices(wi_A, wi_A_expected, kEpsilon));
+  }
+
+  // Test RotationMatrix operator* can multiply an Eigen expression, namely the
+  // Eigen expression arising from a 3x1 matrix multiplied by a 1x4 matrix.
+  const Eigen::MatrixXd s_A = R_AB * (Eigen::Vector3d(1, 2, 3) *
+      Eigen::RowVector4d(1, 2, 3, 4));
+  EXPECT_EQ(s_A.rows(), 3);
+  EXPECT_EQ(s_A.cols(), 4);
+  Eigen::Matrix<double, 3, 4> m34_expected;
+  m34_expected << 1, 2, 3, 4,
+                  2, 4, 6, 8,
+                  3, 6, 9, 12;
+  EXPECT_TRUE(CompareMatrices(s_A, R_AB.matrix() * m34_expected, kEpsilon));
+
+  // Test RotationMatrix operator* can multiply a different looking Eigen
+  // expression that produces the same result.
+  const auto z_A_expected = R_AB *
+      (Eigen::MatrixXd(3, 4) << Eigen::Vector3d(1, 2, 3),
+          Eigen::Vector3d(2, 4, 6),
+          Eigen::Vector3d(3, 6, 9),
+          Eigen::Vector3d(4, 8, 12)).finished();
+  EXPECT_EQ(decltype(z_A_expected)::RowsAtCompileTime, 3);
+  EXPECT_EQ(z_A_expected.cols(), 4);
+  EXPECT_TRUE(CompareMatrices(s_A, z_A_expected, kEpsilon));
+
+  // Test that operator* disallows weirdly-sized matrix multiplication.
+  if (kDrakeAssertIsArmed) {
+    Eigen::MatrixXd m_7x8(7, 8);
+    m_7x8 = Eigen::MatrixXd::Identity(7, 8);
+    Eigen::MatrixXd bad_matrix_multiply;
+    EXPECT_THROW(bad_matrix_multiply = R_AB * m_7x8, std::logic_error);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        bad_matrix_multiply = R_AB * m_7x8, std::logic_error,
+        "Error: Inner dimension for matrix multiplication is not 3.");
+  }
+}
+
+
 class RotationMatrixConversionTests : public ::testing::Test {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
