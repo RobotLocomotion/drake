@@ -411,7 +411,7 @@ class RigidTransform {
     // Express position vectors in terms of frame A as p_BoQ_A = R_AB * p_BoQ_B.
     const RotationMatrix<typename Derived::Scalar> &R_AB = rotation();
     const Eigen::Matrix<typename Derived::Scalar, 3, Derived::ColsAtCompileTime>
-        p_BoQ_A = R_AB.matrix() * p_BoQ_B;
+        p_BoQ_A = R_AB * p_BoQ_B;
 
     // Reserve space (on stack or heap) to store the result.
     const int number_of_position_vectors = p_BoQ_B.cols();

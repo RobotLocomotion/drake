@@ -773,7 +773,7 @@ GTEST_TEST(RotationMatrixTest, OperatorMultiplyByMatrix3X) {
   const RotationMatrix<double> R_AB(rpy);
 
   // Multiply the RigidTransform R_AB by two vectors to test operator* for a
-  // 3 x n matrix, where n = 2 is known before compilation.
+  // 3 x n matrix, where n = 3 is known before compilation.
   Eigen::Matrix3d v_B;
   const Vector3d v1_B(-12, -9, 7);   v_B.col(0) = v1_B;
   const Vector3d v2_B(-11, -8, 10);  v_B.col(1) = v2_B;
@@ -784,8 +784,11 @@ GTEST_TEST(RotationMatrixTest, OperatorMultiplyByMatrix3X) {
   // rows and columns before compilation.  Then verify the results.
   EXPECT_EQ(decltype(v_A)::RowsAtCompileTime, 3);
   EXPECT_EQ(decltype(v_A)::ColsAtCompileTime, 3);
-  EXPECT_TRUE(CompareMatrices(v_A.col(0), R_AB * v1_B, kEpsilon));
-  EXPECT_TRUE(CompareMatrices(v_A.col(1), R_AB * v2_B, kEpsilon));
+
+  // Ensure the results for v_A match those from Eigen's matrix multiply.
+  // Note: Validating v_A is important because its results are reused below.
+  EXPECT_TRUE(CompareMatrices(v_A.col(0), R_AB.matrix() * v1_B, kEpsilon));
+  EXPECT_TRUE(CompareMatrices(v_A.col(1), R_AB.matrix() * v2_B, kEpsilon));
 
   // Multiply the RotationMatrix R_AB by n = 2 vectors to test operator* for a
   // 3 x n matrix, where n is not known before compilation.
@@ -795,7 +798,7 @@ GTEST_TEST(RotationMatrixTest, OperatorMultiplyByMatrix3X) {
   w_B.col(1) = v2_B;
   const auto w_A = R_AB * w_B;
 
-  // Ensure the compiler's declared type for p_AoP_A has the proper number of
+  // Ensure the compiler's declared type for w_A has the proper number of
   // rows before compilation (dictated by the return type of operator*) and
   // has the proper number of columns at run time.
   EXPECT_EQ(decltype(w_A)::RowsAtCompileTime, 3);
@@ -835,6 +838,9 @@ GTEST_TEST(RotationMatrixTest, OperatorMultiplyByMatrix3X) {
     m_7x8 = Eigen::MatrixXd::Identity(7, 8);
     Eigen::MatrixXd bad_matrix_multiply;
     EXPECT_THROW(bad_matrix_multiply = R_AB * m_7x8, std::logic_error);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        bad_matrix_multiply = R_AB * m_7x8, std::logic_error,
+        "Error: Inner dimension for matrix multiplication is not 3.");
   }
 }
 
