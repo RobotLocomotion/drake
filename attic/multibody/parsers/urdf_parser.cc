@@ -44,8 +44,8 @@ using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
 using drake::parsers::ModelInstanceIdTable;
-using drake::multibody::detail::GetFullPath;
-using drake::multibody::detail::ResolveUri;
+using drake::multibody::internal::GetFullPath;
+using drake::multibody::internal::ResolveUri;
 using drake::multibody::joints::FloatingBaseType;
 using drake::multibody::joints::kRollPitchYaw;
 

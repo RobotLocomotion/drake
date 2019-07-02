@@ -4,7 +4,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
 // Note:
 //   static global variables are strongly discouraged by the C++ style guide:
@@ -17,6 +17,6 @@ inline CoulombFriction<double> default_friction() {
   return CoulombFriction<double>(1.0, 1.0);
 }
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

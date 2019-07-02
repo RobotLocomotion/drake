@@ -14,7 +14,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 namespace {
 
 using tinyxml2::XMLDocument;
@@ -63,8 +63,8 @@ class UrdfGeometryTests : public testing::Test {
            visual_node;
            visual_node = visual_node->NextSiblingElement("visual")) {
         geometry::GeometryInstance geometry_instance =
-            detail::ParseVisual(body_name, package_map_, root_dir_,
-                                visual_node, &materials_);
+            internal::ParseVisual(body_name, package_map_, root_dir_,
+                                  visual_node, &materials_);
         visual_instances_.push_back(geometry_instance);
       }
 
@@ -74,8 +74,8 @@ class UrdfGeometryTests : public testing::Test {
            collision_node = collision_node->NextSiblingElement("collision")) {
         CoulombFriction<double> friction;
         geometry::GeometryInstance geometry_instance =
-            detail::ParseCollision(body_name, package_map_, root_dir_,
-                                   collision_node, &friction);
+            internal::ParseCollision(body_name, package_map_, root_dir_,
+                                     collision_node, &friction);
         collision_instances_.push_back(geometry_instance);
       }
     }
@@ -235,21 +235,21 @@ TEST_F(UrdfGeometryTests, TestWrongElementType) {
   ASSERT_TRUE(node);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      detail::ParseMaterial(node, &materials_), std::runtime_error,
+      internal::ParseMaterial(node, &materials_), std::runtime_error,
       "Expected material element, got robot");
 
   const XMLElement* material_node = node->FirstChildElement("material");
   ASSERT_TRUE(material_node);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      detail::ParseVisual("fake_name", package_map_, root_dir_, material_node,
-                          &materials_), std::runtime_error,
+      internal::ParseVisual("fake_name", package_map_, root_dir_, material_node,
+                            &materials_), std::runtime_error,
       "In link fake_name expected visual element, got material");
 
   CoulombFriction<double> friction;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      detail::ParseCollision("fake_name", package_map_, root_dir_,
-                             material_node, &friction), std::runtime_error,
+      internal::ParseCollision("fake_name", package_map_, root_dir_,
+                               material_node, &friction), std::runtime_error,
       "In link fake_name expected collision element, got material");
 }
 
@@ -279,6 +279,6 @@ TEST_F(UrdfGeometryTests, TestParseConvexMesh) {
 }
 
 }  // namespace
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

@@ -19,10 +19,10 @@ namespace drake {
 namespace systems {
 
 #ifndef DRAKE_DOXYGEN_CXX
-namespace detail {
+namespace internal {
 // This provides SystemBase limited "friend" access to ContextBase.
 class SystemBaseContextBaseAttorney;
-}  // namespace detail
+}  // namespace internal
 #endif
 
 /** Provides non-templatized Context functionality shared by the templatized
@@ -581,7 +581,7 @@ class ContextBase : public internal::ContextMessageInterface {
   }
 
  private:
-  friend class detail::SystemBaseContextBaseAttorney;
+  friend class internal::SystemBaseContextBaseAttorney;
 
   // Returns the parent Context or `nullptr` if this is the root Context.
   const ContextBase* get_parent_base() const { return parent_; }
@@ -661,7 +661,7 @@ class ContextBase : public internal::ContextMessageInterface {
 
 #ifndef DRAKE_DOXYGEN_CXX
 class SystemBase;
-namespace detail {
+namespace internal {
 
 // This is an attorney-client pattern class providing SystemBase with access to
 // certain specific ContextBase private methods, and nothing else.
@@ -735,7 +735,7 @@ class SystemBaseContextBaseAttorney {
   }
 };
 
-}  // namespace detail
+}  // namespace internal
 #endif
 
 }  // namespace systems

@@ -31,7 +31,7 @@ using Eigen::Ref;
 using drake::Vector1d;
 using Eigen::Vector2d;
 using Eigen::VectorXd;
-using drake::solvers::detail::is_convertible_workaround;
+using drake::solvers::internal::is_convertible_workaround;
 using drake::solvers::test::GenericTrivialCost2;
 
 namespace drake {

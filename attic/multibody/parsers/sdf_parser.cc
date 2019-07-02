@@ -50,8 +50,8 @@ using tinyxml2::XMLDocument;
 
 using math::RigidTransformd;
 using math::RollPitchYawd;
-using multibody::detail::GetFullPath;
-using multibody::detail::ResolveUri;
+using multibody::internal::GetFullPath;
+using multibody::internal::ResolveUri;
 using multibody::joints::FloatingBaseType;
 
 void ParseSdfInertial(

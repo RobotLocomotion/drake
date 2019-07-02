@@ -8,9 +8,9 @@
 namespace drake {
 namespace multibody {
 
-using detail::AddModelFromSdfFile;
-using detail::AddModelFromUrdfFile;
-using detail::AddModelsFromSdfFile;
+using internal::AddModelFromSdfFile;
+using internal::AddModelFromUrdfFile;
+using internal::AddModelsFromSdfFile;
 
 Parser::Parser(
     MultibodyPlant<double>* plant,

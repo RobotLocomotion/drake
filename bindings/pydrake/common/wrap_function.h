@@ -6,7 +6,7 @@
 
 namespace drake {
 namespace pydrake {
-namespace detail {
+namespace internal {
 
 // Collects both a functor object and its signature for ease of inference.
 template <typename Func, typename Return, typename... Args>
@@ -81,7 +81,7 @@ struct functor_helpers {
 };
 
 // Infers `function_info<>` from a generic functor.
-template <typename Func, typename = detail::enable_if_lambda_t<Func>>
+template <typename Func, typename = internal::enable_if_lambda_t<Func>>
 auto infer_function_info(Func&& func) {
   return make_function_info(std::forward<Func>(func),
       functor_helpers::infer_function_ptr<std::decay_t<Func>>());
@@ -199,7 +199,7 @@ struct wrap_function_impl {
   }
 };
 
-}  // namespace detail
+}  // namespace internal
 
 /// Wraps the types used in a function signature to produce a new function with
 /// wrapped arguments and return value (if non-void). The wrapping is based on
@@ -232,8 +232,8 @@ template <template <typename...> class wrap_arg_policy,
 auto WrapFunction(Func&& func) {
   // TODO(eric.cousineau): Create an overload with `type_pack<Args...>` to
   // handle overloads, to disambiguate when necessary.
-  return detail::wrap_function_impl<wrap_arg_policy, use_functions>::run(
-      detail::infer_function_info(std::forward<Func>(func)));
+  return internal::wrap_function_impl<wrap_arg_policy, use_functions>::run(
+      internal::infer_function_info(std::forward<Func>(func)));
 }
 
 /// Default case for argument wrapping, with pure pass-through. Consider
@@ -252,7 +252,7 @@ struct wrap_arg_default {
 
 /// Policy for explicitly wrapping functions for a given policy.
 template <template <typename...> class wrap_arg_policy, typename Signature>
-using wrap_arg_function = typename detail::wrap_function_impl<
+using wrap_arg_function = typename internal::wrap_function_impl<
     wrap_arg_policy>::template wrap_arg<std::function<Signature>>;
 
 }  // namespace pydrake

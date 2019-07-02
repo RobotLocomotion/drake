@@ -171,7 +171,7 @@ template <typename T, typename = void>
 struct wrap_change : public wrap_arg_default<T> {};
 
 template <typename T>
-using wrap_change_t = detail::wrap_function_impl<wrap_change>::wrap_type_t<T>;
+using wrap_change_t = internal::wrap_function_impl<wrap_change>::wrap_type_t<T>;
 
 // Wraps any `const T*` with `const_ptr`, except for `int`.
 // SFINAE. Could be achieved with specialization, but using to uphold SFINAE
@@ -239,12 +239,13 @@ template <typename RetExpected, typename... ArgsExpected>
 struct check_signature {
   template <typename FuncActual>
   static void run(const FuncActual& func) {
-    run_impl(detail::infer_function_info(func));
+    run_impl(internal::infer_function_info(func));
   }
 
   template <typename RetActual, typename... ArgsActual, typename FuncActual>
   static void run_impl(
-      const detail::function_info<FuncActual, RetActual, ArgsActual...>& info) {
+      const internal::function_info<FuncActual, RetActual, ArgsActual...>&
+          info) {
     check_type<RetActual, RetExpected>();
     using Dummy = int[];
     (void)Dummy{(check_type<ArgsActual, ArgsExpected>(), 0)...};

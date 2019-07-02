@@ -15,7 +15,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
 using Eigen::Vector3d;
 using std::make_unique;
@@ -389,6 +389,6 @@ sdf::Visual ResolveVisualUri(const sdf::Visual& original,
   return visual;
 }
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
