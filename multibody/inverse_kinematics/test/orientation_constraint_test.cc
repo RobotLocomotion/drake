@@ -16,12 +16,12 @@ AutoDiffVecXd EvalOrientationConstraintAutoDiff(
     const Frame<AutoDiffXd>& frameAbar, const RotationMatrixd& R_AbarA,
     const Frame<AutoDiffXd>& frameBbar, const RotationMatrixd& R_BbarB) {
   Vector1<AutoDiffXd> y_autodiff(1);
-  const RotationMatrix<AutoDiffXd> R_AbarBbar =
+  const math::RotationMatrix<AutoDiffXd> R_AbarBbar =
       plant.CalcRelativeRotationMatrix(context, frameAbar, frameBbar);
-  const Matrix3<AutoDiffXd> R_AB =
-      R_AbarA.matrix().cast<AutoDiffXd>().transpose() * R_AbarBbar.matrix() *
-      R_BbarB.matrix().cast<AutoDiffXd>();
-  y_autodiff(0) = R_AB.trace();
+  const math::RotationMatrix<AutoDiffXd> R_AB =
+      R_AbarA.cast<AutoDiffXd>().transpose() * R_AbarBbar *
+      R_BbarB.cast<AutoDiffXd>();
+  y_autodiff(0) = R_AB.matrix().trace();
   return y_autodiff;
 }
 
