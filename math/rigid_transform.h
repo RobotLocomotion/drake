@@ -14,14 +14,16 @@ namespace drake {
 namespace math {
 
 /// This class represents a proper rigid transform between two frames which can
-/// be regarded in two ways.  It can be regarded as a distance-preserving linear
-/// operator that can rotate and/or translate a rigid body without changing its
-/// shape or size (rigid) and without mirroring/reflecting the body (proper),
-/// e.g., it can add one position vector to another and express the result in a
-/// particular basis as `p_AoQ_A = X_AB * p_BoQ_B` (Q is any point).
-/// Alternately, a rigid transform describes the pose between two frames A and B
-/// (i.e., the relative orientation and position of A to B).  Herein, the terms
-/// rotation/orientation and translation/position are used interchangeably.
+/// be regarded in two ways.  A rigid transform describes the pose between two
+/// frames A and B (i.e., the relative orientation and position of A to B).
+/// Alternately, it can be regarded as a distance-preserving operator that can
+/// rotate and/or translate a rigid body without changing its shape or size
+/// (rigid) and without mirroring/reflecting the body (proper), e.g., it can add
+/// one position vector to another and express the result in a particular basis
+/// as `p_AoQ_A = X_AB * p_BoQ_B` (Q is any point).  In many ways, this rigid
+/// transform class is conceptually similar to using a homogeneous matrix as a
+/// linear operator.  See operator* documentation for an exception.
+///
 /// The class stores a RotationMatrix that relates right-handed orthogonal
 /// unit vectors Ax, Ay, Az fixed in frame A to right-handed orthogonal
 /// unit vectors Bx, By, Bz fixed in frame B.
@@ -37,9 +39,11 @@ namespace math {
 /// multiply %RigidTransforms as `X_AB * X_BC`, but not `X_AB * X_CB`.
 ///
 /// @note This class is not a 4x4 transformation matrix -- even though its
-/// operator*() methods act like 4x4 matrix multiplication.  Instead, this class
-/// contains a rotation matrix class as well as a 3x1 position vector.  To form
-/// a 4x4 matrix, use GetAsMatrix().  GetAsIsometry() is treated similarly.
+/// operator*() methods act mostly like 4x4 matrix multiplication.  Instead,
+/// this class contains a 3x3 rotation matrix class and a 3x1 position vector.
+/// To convert this to a 3x4 matrix, use GetAsMatrix34().
+/// To convert this to a 4x4 matrix, use GetAsMatrix4().
+/// To convert this to an Eigen::Isometry, use GetAsIsometry().
 ///
 /// @note An isometry is sometimes regarded as synonymous with rigid transform.
 /// The %RigidTransform class has important advantages over Eigen::Isometry.
@@ -378,9 +382,17 @@ class RigidTransform {
   /// Multiplies `this` %RigidTransform `X_AB` by the n position vectors
   /// `p_BoQ1_B` ... `p_BoQn_B`, where `p_BoQi_B` is the iᵗʰ position vector
   /// from Bo (frame B's origin) to an arbitrary point Qi, expressed in frame B.
-  /// @param[in] p_BoQ_B `3 x n` matrix with n position vectors `p_BoQi_B`.
+  /// @param[in] p_BoQ_B `3 x n` matrix with n position vectors `p_BoQi_B` or
+  /// an expression that resolves to a `3 x n` matrix of position vectors.
   /// @retval p_AoQ_A `3 x n` matrix with n position vectors `p_AoQi_A`, i.e., n
   /// position vectors from Ao (frame A's origin) to Qi, expressed in frame A.
+  /// Specifically, this operator* is defined so that `X_AB * p_BoQ_B` returns
+  /// `p_AoQ_A = p_AoBo_A + R_AB * p_BoQ_B`, where
+  /// `p_AoBo_A` is the position vector from Ao to Bo expressed in A and
+  /// `R_AB` is the rotation matrix relating the orientation of frames A and B.
+  /// @note As needed, use parentheses.  This operator* is not associative.
+  /// To see this, let `p = p_AoBo_A`, `q = p_BoQ_B` and note
+  /// (X_AB * q) * 7 = (p + R_AB * q) * 7 ≠ X_AB * (q * 7) = p + R_AB * (q * 7).
   /// @code{.cc}
   /// const RollPitchYaw<double> rpy(0.1, 0.2, 0.3);
   /// const RigidTransform<double> X_AB(rpy, Vector3d(1, 2, 3));
