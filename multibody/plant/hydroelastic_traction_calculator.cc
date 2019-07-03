@@ -256,8 +256,8 @@ HydroelasticTractionCalculator<T>::CreateReportingFields(
 
   // Compute a value for each vertex.
   std::vector<bool> value_computed(surface.mesh().num_vertices(), false);
-  std::vector<Vector3<T> vslip(surface.mesh().num_vertices());
-  std::vector<Vector3<T> traction(surface.mesh().num_vertices());
+  std::vector<Vector3<T> vt_AqBq_W(surface.mesh().num_vertices());
+  std::vector<Vector3<T> traction_Aq_W(surface.mesh().num_vertices());
 
   for (SurfaceFaceIndex i(0); i < surface.mesh().num_faces(); ++i) {
     for (int j = 0; j < 3; ++j) {
@@ -267,11 +267,12 @@ HydroelasticTractionCalculator<T>::CreateReportingFields(
       if (value_computed[array_index])
         continue;
 
-      // Compute the traction and the slip velocity.
-      Vector3<T> p_WQ, vt_BqAq_W;
-      tractions[array_index] = CalcTractionAtPoint(
-          data, i, barycentric_coords[j], dissipation, mu_coulomb, &p_WQ,
-	  &vslip[array_index]);
+      // Compute the traction and the slip velocity at the vertex.
+      HydroelasticTractionCalculator<double>::TractionAtPointData output =
+          CalcTractionAtPoint(
+              data, i, barycentric_coords[j], dissipation, mu_coulomb);
+      traction_Aq_W[array_index] = output.traction_Aq_W;
+      vt_AqBq_W[array_index] = output.vt_AqBq_W;
 
       // Indicate that the value has been computed.
       value_computed[surface.vertex(vertex_index)] = true;
@@ -287,9 +288,9 @@ HydroelasticTractionCalculator<T>::CreateReportingFields(
   // Create the field structure.
   ContactReportingFields fields;
   fields.traction = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>>(
-      "traction", std::move(tractions), &data.surface_->mesh());  
+      "traction", std::move(traction_Aq_W), &data.surface_->mesh());  
   fields.vslip = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>>(
-      "slip_velocity", std::move(vslip), &data.surface_->mesh());  
+      "slip_velocity", std::move(vt_AqBq_W), &data.surface_->mesh());  
   return fields;
 }
 */

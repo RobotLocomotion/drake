@@ -27,8 +27,37 @@ using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
 
+typedef HydroelasticTractionCalculator<double>::
+  HydroelasticTractionCalculatorData CalculatorData;
+
 namespace multibody {
 namespace internal {
+
+// Creates a surface mesh that covers the bottom of the "wetted surface",
+// where the wetted surface is the part of the box that would be wet if the
+// halfspace were a fluid. The entire wetted surface *would* yield
+// an open box with five faces but, for simplicity, we'll only
+// use the bottom face (two triangles).
+std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() const {
+  std::vector<SurfaceVertex<double>> vertices;
+  std::vector<SurfaceFace> faces;
+
+  // Create the vertices, all of which are offset vectors defined in the
+  // halfspace body frame.
+  vertices.emplace_back(Vector3<double>(0.5, 0.5, -0.5));
+  vertices.emplace_back(Vector3<double>(-0.5, 0.5, -0.5));
+  vertices.emplace_back(Vector3<double>(-0.5, -0.5, -0.5));
+  vertices.emplace_back(Vector3<double>(0.5, -0.5, -0.5));
+
+  // Create the face comprising two triangles.
+  faces.emplace_back(
+      SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2));
+  faces.emplace_back(
+      SurfaceVertexIndex(2), SurfaceVertexIndex(3), SurfaceVertexIndex(0));
+
+  return std::make_unique<SurfaceMesh<double>>(
+      std::move(faces), std::move(vertices));
+}
 
 GeometryId FindGeometry(
     const MultibodyPlant<double>& plant, const std::string body_name) {
@@ -72,7 +101,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
       double dissipation, double mu_coulomb, SpatialForce<double>* Ft_Ao_W,
       SpatialForce<double>* Ft_Bo_W) {
     // Instantiate the traction calculator data.
-    HydroelasticTractionCalculator<double>::HydroelasticTractionCalculatorData
+    CalculatorData
         calculator_data(*plant_context_, *plant_, contact_surface_.get());
 
     // First compute the traction applied to Body A at point Q, expressed in the
@@ -174,32 +203,6 @@ public ::testing::TestWithParam<RigidTransform<double>> {
           "e_MN", std::move(e_MN), mesh_pointer),
       std::make_unique<MeshFieldLinear<Vector3<double>, SurfaceMesh<double>>>(
           "h_MN_M", std::move(h_MN_M), mesh_pointer));
-  }
-
-  // Creates a surface mesh that covers the bottom of the "wetted surface",
-  // where the wetted surface is the part of the box that would be wet if the
-  // halfspace were a fluid. The entire wetted surface *would* yield
-  // an open box with five faces but, for simplicity, we'll only
-  // use the bottom face (two triangles).
-  std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() const {
-    std::vector<SurfaceVertex<double>> vertices;
-    std::vector<SurfaceFace> faces;
-
-    // Create the vertices, all of which are offset vectors defined in the
-    // halfspace body frame.
-    vertices.emplace_back(Vector3<double>(0.5, 0.5, -0.5));
-    vertices.emplace_back(Vector3<double>(-0.5, 0.5, -0.5));
-    vertices.emplace_back(Vector3<double>(-0.5, -0.5, -0.5));
-    vertices.emplace_back(Vector3<double>(0.5, -0.5, -0.5));
-
-    // Create the face comprising two triangles.
-    faces.emplace_back(
-        SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2));
-    faces.emplace_back(
-        SurfaceVertexIndex(2), SurfaceVertexIndex(3), SurfaceVertexIndex(0));
-
-    return std::make_unique<SurfaceMesh<double>>(
-        std::move(faces), std::move(vertices));
   }
 
   const double tol_{10 * std::numeric_limits<double>::epsilon()};
@@ -475,6 +478,146 @@ TEST_P(MultibodyPlantHydroelasticTractionTests,
   EXPECT_NEAR(tau_Bo_Y[0], 0.0, tol());
   EXPECT_NEAR(tau_Bo_Y[1], 0.0, tol());
   EXPECT_NEAR(tau_Bo_Y[2], 0.0, tol());
+}
+
+// This fixture defines a contacting configuration between a box and a
+// half-space in a local frame, Y. See MultibodyPlantHydroelasticTractionTests
+// class documentation for a description of Frame Y.
+class HydroelasticReportingTests :
+public ::testing::TestWithParam<RigidTransform<double>> {
+ public:
+  const ContactSurface<double>& contact_surface() const {
+      return *contact_surface_;
+  }
+
+  // Returns the default numerical tolerance.
+  double tol() const { return tol_; }
+
+  // Gets the expected pressure (in Pa) at Point Q in Frame Y. To get some
+  // interesting values for testing, we define the pressure at Point Q using
+  // a plane with normal -√2/2 * [1, 1, 1] that passes through the origin.
+  double pressure(const Vector3<T>& P_YQ) const {
+    return pressure_field_normal.dot(P_YQ);
+  }
+
+  // Gets the normal to the pressure field in Frame Y.
+  const Vector3<double>& pressure_field_normal() const {
+    const double sqrt2_2 = std::sqrt(2) / 2;
+    return Vector3<double>(-sqrt2_2, -sqrt2_2, -sqrt2_2);
+  }
+
+  const CalculatorData& data() const { return *calculator_data_; }
+
+ private:
+  void SetUp() override {
+    // Set the poses in the Y frame. Identity poses should be fine for our
+    // purposes because none of the reporting code itself relies upon these (the
+    // code that does rely upon these, e.g., traction calculation, slip velocity
+    // computation) is tested elsewhere in this file).
+    const RigidTransform<double>& X_WY = GetParam();
+    const RigidTransform<double> X_YA = RigidTransform<double>::Identity();
+    const RigidTransform<double> X_YB = RigidTransform<double>::Identity();
+    const RigidTransform<double> X_YM = RigidTransform<double>::Identity();
+
+    // Note: this test does not require valid GeometryIds. 
+    const GeometryId null_id; 
+
+    // Create the surface mesh first.
+    auto mesh = CreateSurfaceMesh();
+
+    // Create the "e" field values (i.e., "hydroelastic pressure").
+    std::vector<double> e_MN(mesh->num_vertices());
+    for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
+      e_MN[i] = pressure(X_YM * mesh->vertex(i).r_MV());
+
+    // Set the gradient of the "h" field.
+    std::vector<Vector3<double>> h_MN_M(
+        mesh->num_vertices, pressure_field_normal());
+
+    SurfaceMesh<double>* mesh_pointer = mesh.get();
+    contact_surface_ = std::make_unique<ContactSurface<double>>(
+      null_id, null_id, std::move(mesh),
+      std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
+          "e_MN", std::move(e_MN), mesh_pointer),
+      std::make_unique<MeshFieldLinear<Vector3<double>, SurfaceMesh<double>>>(
+          "h_MN_M", std::move(h_MN_M), mesh_pointer));
+
+    // Set the velocities to correspond to one body fixed and one body
+    // stationary so that we can test the slip velocity. Additionally, we'll
+    // set the angular velocity to correspond to one of the bodies (A) spinning
+    // along the normal to the contact surface. That will let us verify that the
+    // velocity at the centroid of the contact surface is zero.
+    const double spin_rate = 1.0;  // m/s.
+    const SpatialVelocity<double> V_YA(
+        Vector3<double>(0, 0, spin_rate), Vector3<double>::Zero());
+    const SpatialVelocity<double> V_YB(
+        Vector3<double>::Zero(), Vector3<double>::Zero());
+    
+    // Set the centroid location of the contact surface.
+    const Vector3<double>& P_YQ = mesh_pointer->centroid();
+
+    // Convert all quantities to the world frame.
+    const RigidTransform<double> X_WA = X_WY * X_YA;
+    const RigidTransform<double> X_WB = X_WY * X_YB;
+    const RigidTransform<double> X_WM = X_WY * X_YM;
+    const SpatialVelocity<double> V_WA(X_WY.rotation() * V_YA.rotational(),
+        X_WY.rotation() * V_YA.translational());
+    const SpatialVelocity<double> V_WB(X_WY.rotation() * V_YB.rotational(),
+        X_WY.rotation() * V_YB.translational());
+    const Vector3<double> P_WQ = X_WY * P_YQ;
+
+    // Set the calculator data.
+    calculator_data_ = std::make_unique<CalculatorData>(
+        X_WA, X_WB, V_YA, V_YB, X_WM, contact_surface_.get(), P_WQ);
+  }
+
+  const double tol_{10 * std::numeric_limits<double>::epsilon()};
+  std::unique_ptr<ContactSurface<double>> contact_surface_;
+  std::unique_ptr<CalculatorData> calculator_data_;
+};
+
+// Tests that the traction reporting is accurate. Note that this test only needs
+// to check whether the field is set correctly; tests for traction are handled
+// elsewhere in this file.
+TEST_F(HydroelasticReportingTests, LinearTraction) {
+  // Nonzero values for dissipation and Coulomb friction will only serve to make
+  // the traction harder to interpret. We only need to assess the normal
+  // traction to ensure that the field has been set correctly.
+  const double dissipation = 0.0;
+  const double mu_coulomb = 0.0;
+
+  // Create the fields.
+  HydroelasticTractionCalculator<double> calculator;
+  HydroelasticTractionCalculator<double>::ContactReportingFields fields =
+      calculator.CreateReportingData(data(), dissipation, mu_coulomb);
+
+  // Test the traction at the four vertices of the contact surface.
+
+  // Test the traction at the centroid of the contact surface. This should just
+  // be the mean of the tractions at the four vertices.
+}
+
+// Tests that the slip velocity reporting is accurate. Note that this test only
+// needs to check whether the field is set correctly; tests for traction are
+// handled elsewhere in this file.
+TEST_F(HydroelasticReportingTests, LinearSlipVelocity) {
+  // Dissipation and Coulomb friction will not even be used in this test. Set
+  // the values to NaN to prove it.
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double dissipation = nan;
+  const double mu_coulomb = nan;
+
+  // Create the fields.
+  HydroelasticTractionCalculator<double> calculator;
+  HydroelasticTractionCalculator<double>::ContactReportingFields fields =
+      calculator.CreateReportingData(data(), dissipation, mu_coulomb);
+
+  // Test the slip velocity at the four vertices of the contact surface.
+  
+
+  // Test the slip velocity at the centroid of the contact surface. It can be
+  // easily shown that this velocity is zero (which will also be the mean of
+  // the slip velocities at the four vertices).
 }
 
 // These transformations, denoted X_WY, are passed as parameters to the tests
