@@ -87,8 +87,8 @@ namespace multibody {
 ///
 /// @note The definition of the inertia matrix @f$ I^{S/P} @f$ of an arbitrary
 /// system S about a point P follows the definition of the inertia dyadic 𝐈 of
-/// S about P, which begins by modeling S as having n particles S₁ ... Sₙ (e.g.,
-/// 12 grams of carbon can be modeled with n = 6.02 * 10²³ molecules/particles).
+/// S about P, which begins by modeling S with n particles S₁ ... Sₙ (e.g., 12
+/// grams of carbon can be modeled with n = 6.02 * 10²³ molecules/particles).
 /// The inertia dyadic 𝐈₁ of one particle S₁ about point P is defined [Kane,
 /// 1985] in terms of m₁ (mass of S₁), ᴾ𝐩ˢ¹ (position vector from P to S₁), and
 /// the unit dyadic 𝐔 which is defined by the property 𝐔 ⋅ 𝐯 = 𝐯 where 𝐯 is
