@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -127,30 +128,30 @@ class SurfaceMesh {
   static constexpr int kDim = 2;
 
   /**
-    Index for identifying a vertex.
+   Index for identifying a vertex.
    */
   using VertexIndex = SurfaceVertexIndex;
 
   /**
-    Index for identifying a triangular element.
+   Index for identifying a triangular element.
    */
   using ElementIndex = SurfaceFaceIndex;
 
   /**
-    Type of barycentric coordinates on a triangular element. Barycentric
-    coordinates (b₀, b₁, b₂) satisfy b₀ + b₁ + b₂ = 1. It corresponds to a
-    position on the plane of the triangle. If all bᵢ >= 0, it corresponds to
-    a position inside the triangle or on the edges of the triangle. If some
-    bᵢ < 0, it corresponds to a position on the plane of the triangle that is
-    outside the triangle. Technically we could calculate one of the bᵢ from
-    the others; however, there is no standard way to omit one of the
-    coordinates.
+   Type of barycentric coordinates on a triangular element. Barycentric
+   coordinates (b₀, b₁, b₂) satisfy b₀ + b₁ + b₂ = 1. It corresponds to a
+   position on the plane of the triangle. If all bᵢ >= 0, it corresponds to
+   a position inside the triangle or on the edges of the triangle. If some
+   bᵢ < 0, it corresponds to a position on the plane of the triangle that is
+   outside the triangle. Technically we could calculate one of the bᵢ from
+   the others; however, there is no standard way to omit one of the
+   coordinates.
 
-    The barycentric coordinates for a point Q are notated a b_Q.
+   The barycentric coordinates for a point Q are notated a b_Q.
    */
   using Barycentric = Vector<T, kDim + 1>;
 
-  /** Type of cartesian coordinates. Mesh consumers can use it in conversion
+  /** Type of Cartesian coordinates. Mesh consumers can use it in conversion
    from Cartesian coordinates to barycentric coordinates.
    */
   using Cartesian = Vector<T, 3>;
@@ -164,13 +165,21 @@ class SurfaceMesh {
     return faces_[e];
   }
 
-  /** Returns the vertex identified by a given index.
-    @param v  The index of the vertex.
-    @pre v ∈ {0, 1, 2,...,num_vertices()-1}.
+  /**
+   Returns the vertex identified by a given index.
+   @param v  The index of the vertex.
+   @pre v ∈ {0, 1, 2,...,num_vertices()-1}.
    */
   const SurfaceVertex<T>& vertex(VertexIndex v) const {
     DRAKE_DEMAND(0 <= v && v < num_vertices());
     return vertices_[v];
+  }
+
+  /**
+   Gets the set of triangles that refer to the specified vertex.
+   */
+  const std::set<SurfaceFaceIndex>& referring_triangles(VertexIndex v) const {
+    return referring_triangles_[v];
   }
 
   /** Returns the number of vertices in the mesh.
@@ -179,14 +188,16 @@ class SurfaceMesh {
 
   //@}
 
-  /** Constructs a SurfaceMesh from faces and vertices.
-    @param faces     The triangular faces.
-    @param vertices  The vertices.
+  /**
+   Constructs a SurfaceMesh from faces and vertices.
+   @param faces     The triangular faces.
+   @param vertices  The vertices.
    */
   SurfaceMesh(std::vector<SurfaceFace>&& faces,
               std::vector<SurfaceVertex<T>>&& vertices)
       : faces_(std::move(faces)), vertices_(std::move(vertices)),
         area_(faces_.size()) {  // Pre-allocate here, not yet calculated.
+    SetReferringTriangles();
     CalcAreasAndCentroid();
   }
 
@@ -237,7 +248,7 @@ class SurfaceMesh {
    `element_index` to its position vector p_MQ.
    */
   Vector3<T> CalcCartesianFromBarycentric(
-      ElementIndex element_index, const Vector3<T>& b_Q) const {
+      ElementIndex element_index, const Barycentric& b_Q) const {
     const SurfaceVertex<T> va = vertex(element(element_index).vertex(0));
     const SurfaceVertex<T> vb = vertex(element(element_index).vertex(1));
     const SurfaceVertex<T> vc = vertex(element(element_index).vertex(2));
@@ -326,12 +337,26 @@ class SurfaceMesh {
   // the surface.
   void CalcAreasAndCentroid();
 
+  // Determines the triangular faces that refer to each vertex.
+  void SetReferringTriangles() {
+    referring_triangles_.resize(num_vertices());
+
+    for (SurfaceFaceIndex i(0); i < num_faces(); ++i) {
+      const int kNumVerticesPerFace = 3;
+      for (int j = 0; j < kNumVerticesPerFace; ++j)
+        referring_triangles_[element(i).vertex(j)].insert(i);
+    }
+  }
+
   // The triangles that comprise the surface.
   std::vector<SurfaceFace> faces_;
   // The vertices that are shared among the triangles.
   std::vector<SurfaceVertex<T>> vertices_;
 
   // Computed in initialization.
+
+  // Triangles that reference each vertex.
+  std::vector<std::set<SurfaceFaceIndex>> referring_triangles_;
 
   // Area of the triangles.
   std::vector<T> area_;
