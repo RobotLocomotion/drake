@@ -9,7 +9,7 @@ https://bazel.build/.
 
 Drake also offers a CMake build system wrapper that invokes Bazel under the
 hood.
-   
+
 Bazel Installation
 ==================
 
@@ -174,7 +174,7 @@ Proprietary Solvers
 The Drake Bazel build currently supports the following proprietary solvers:
 
  * Gurobi 8.0.1
- * MOSEK 8.1
+ * MOSEK 9.0
  * SNOPT 7.4
 
 .. When upgrading SNOPT to a newer revision, re-enable TestPrintFile in
@@ -211,10 +211,10 @@ these tests.  If you will be developing with Gurobi regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
 See https://docs.bazel.build/versions/master/user-manual.html#bazelrc.
 
-MOSEK 8.1
----------
+MOSEK
+-----
 
-The Drake Bazel build system downloads MOSEK 8.1.0.51 automatically.  No manual
+The Drake Bazel build system downloads MOSEK 9.0.96 automatically.  No manual
 installation is required.  Set the location of your license file as follows:
 
 ``export MOSEKLM_LICENSE_FILE=/path/to/mosek.lic``
@@ -264,7 +264,7 @@ See https://docs.bazel.build/versions/master/user-manual.html#bazelrc.
 Drake offers two flavors of SNOPT bindings for the MathematicalProgram:
 
  - The ``--config snopt_f2c`` option selects the legacy bindings that use the
-   f2c compiler; these bindings will be removed on 2019-07-01.
+   f2c compiler; these bindings will be removed on 2019-08-01.
  - The ``--config snopt_fortran`` option selects the bindings that use the
    gfortran compiler; these bindings will be supported for the foreseeable
    future.

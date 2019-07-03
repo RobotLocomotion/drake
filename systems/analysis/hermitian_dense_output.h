@@ -20,7 +20,7 @@
 namespace drake {
 namespace systems {
 
-namespace detail {
+namespace internal {
 
 /// Converts a matrix with scalar type `S` elements to a matrix with double
 /// type elements, failing at runtime if the type cannot be converted.
@@ -68,7 +68,7 @@ ExtractDoublesOrThrow(const std::vector<MatrixX<S>>& input_vector) {
   return output_vector;
 }
 
-}  // namespace detail
+}  // namespace internal
 
 /// A StepwiseDenseOutput class implementation using Hermitian interpolators,
 /// and therefore a _continuous extension_ of the solution 𝐱(t) (see
@@ -274,9 +274,9 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
     for (const IntegrationStep& step : raw_steps_) {
       continuous_trajectory_.ConcatenateInTime(
           trajectories::PiecewisePolynomial<double>::Cubic(
-              detail::ExtractDoublesOrThrow(step.get_times()),
-              detail::ExtractDoublesOrThrow(step.get_states()),
-              detail::ExtractDoublesOrThrow(step.get_state_derivatives())));
+              internal::ExtractDoublesOrThrow(step.get_times()),
+              internal::ExtractDoublesOrThrow(step.get_states()),
+              internal::ExtractDoublesOrThrow(step.get_state_derivatives())));
     }
     start_time_ = continuous_trajectory_.start_time();
     end_time_ = continuous_trajectory_.end_time();

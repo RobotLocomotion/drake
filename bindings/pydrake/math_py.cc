@@ -40,7 +40,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
   const char* doc_iso3_deprecation =
       "DO NOT USE!. We only offer this API for backwards compatibility with "
       "Isometry3 and it will be deprecated soon with the resolution of "
-      "#9865. This will be removed on or around 2019-07-01.";
+      "#9865. This will be removed on or around 2019-08-01.";
 
   constexpr auto& doc = pydrake_doc.drake.math;
   {
@@ -95,13 +95,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return *self * p_BoQ_B;
             },
             py::arg("p_BoQ_B"), cls_doc.operator_mul.doc_1args_p_BoQ_B)
-        .def("multiply",
-            [doc_iso3_deprecation](
-                const RigidTransform<T>* self, const Isometry3<T>& other) {
-              WarnDeprecated(doc_iso3_deprecation);
-              return *self * RigidTransform<T>(other);
-            },
-            py::arg("other"), doc_iso3_deprecation)
         .def("matrix", &RigidTransform<T>::matrix, doc_iso3_deprecation)
         .def("linear", &RigidTransform<T>::linear, py_reference_internal,
             doc_iso3_deprecation);
@@ -350,13 +343,11 @@ void DoScalarIndependentDefinitions(py::module m) {
   // See TODO in corresponding header file - these should be removed soon!
   pydrake::internal::BindAutoDiffMathOverloads(&m);
   pydrake::internal::BindSymbolicMathOverloads(&m);
-
-  ExecuteExtraPythonCode(m);
 }
 }  // namespace
 
 PYBIND11_MODULE(math, m) {
-  m.doc() = "Bindings for //math.";
+  // N.B. Docstring contained in `_math_extra.py`.
 
   py::module::import("pydrake.autodiffutils");
   py::module::import("pydrake.symbolic");
@@ -364,6 +355,8 @@ PYBIND11_MODULE(math, m) {
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       CommonScalarPack{});
   DoScalarIndependentDefinitions(m);
+
+  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake

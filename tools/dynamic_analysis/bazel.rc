@@ -37,10 +37,12 @@ build:asan --copt=-g
 # https://github.com/google/sanitizers/wiki/AddressSanitizer#faq
 build:asan --copt=-fno-common
 build:asan --copt=-fsanitize=address
+build:asan --copt=-fsanitize-address-use-after-scope
 build:asan --copt=-fstandalone-debug
 build:asan --copt=-O0
 build:asan --copt=-fno-omit-frame-pointer
 build:asan --linkopt=-fsanitize=address
+build:asan --linkopt=-fsanitize-address-use-after-scope
 build:asan --run_under=//tools/dynamic_analysis:asan
 build:asan --test_env=ASAN_OPTIONS
 build:asan --test_env=LSAN_OPTIONS
@@ -62,10 +64,12 @@ build:asan_everything --copt=-g
 # https://github.com/google/sanitizers/wiki/AddressSanitizer#faq
 build:asan_everything --copt=-fno-common
 build:asan_everything --copt=-fsanitize=address
+build:asan_everything --copt=-fsanitize-address-use-after-scope
 build:asan_everything --copt=-fstandalone-debug
 build:asan_everything --copt=-O0
 build:asan_everything --copt=-fno-omit-frame-pointer
 build:asan_everything --linkopt=-fsanitize=address
+build:asan_everything --linkopt=-fsanitize-address-use-after-scope
 # LSan is run with ASan by default
 build:asan_everything --test_tag_filters=-no_asan,-no_lsan
 build:asan_everything --run_under=//tools/dynamic_analysis:asan

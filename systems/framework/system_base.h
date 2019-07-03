@@ -92,7 +92,7 @@ class SystemBase : public internal::SystemMessageInterface {
     // We depend on derived classes to call our InitializeContextBase() method
     // after allocating the appropriate concrete Context.
     DRAKE_DEMAND(
-        detail::SystemBaseContextBaseAttorney::is_context_base_initialized(
+        internal::SystemBaseContextBaseAttorney::is_context_base_initialized(
             *context));
 
     return context;
@@ -768,25 +768,6 @@ class SystemBase : public internal::SystemMessageInterface {
     return static_cast<int>(abstract_parameter_tickets_.size());
   }
   //@}
-
-#ifndef DRAKE_DOXYGEN_CXX
-  DRAKE_DEPRECATED("2019-07-01", "Use num_total_inputs() instead.")
-  int get_num_total_inputs() const {
-    return num_total_inputs();
-  }
-  DRAKE_DEPRECATED("2019-07-01", "Use num_total_outputs() instead.")
-  int get_num_total_outputs() const {
-    return num_total_outputs();
-  }
-  DRAKE_DEPRECATED("2019-07-01", "Use num_input_ports() instead.")
-  int get_num_input_ports() const {
-    return num_input_ports();
-  }
-  DRAKE_DEPRECATED("2019-07-01", "Use num_output_ports() instead.")
-  int get_num_output_ports() const {
-    return num_output_ports();
-  }
-#endif
 
  protected:
   /** (Internal use only) Default constructor. */

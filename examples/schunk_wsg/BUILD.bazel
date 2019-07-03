@@ -57,8 +57,9 @@ drake_cc_googletest(
     # This test is prohibitively slow with --compilation_mode=dbg.
     disable_in_compilation_mode_dbg = True,
     # TODO(betsymcphail): Re-enable this test when it no longer
-    # causes timeouts in kcov and Valgrind Memcheck.
+    # causes timeouts in kcov, asan, and Valgrind Memcheck.
     tags = [
+        "no_asan",
         "no_kcov",
         "no_memcheck",
     ],

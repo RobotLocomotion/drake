@@ -20,7 +20,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 namespace {
 
 using Eigen::Vector3d;
@@ -414,6 +414,6 @@ GTEST_TEST(SdfParser, TestUnsupportedFrames) {
 
 
 }  // namespace
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

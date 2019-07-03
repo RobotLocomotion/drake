@@ -9,7 +9,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
 /// Parses a string attribute of @p node named @p attribute_name into @p val.
 /// If the attribute is not present, @p val will be cleared.
@@ -79,6 +79,6 @@ bool ParseThreeVectorAttribute(const tinyxml2::XMLElement* node,
                                const char* attribute_name,
                                Eigen::Vector3d* val);
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

@@ -22,7 +22,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
 using Eigen::Matrix3d;
 using Eigen::Translation3d;
@@ -657,6 +657,6 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
   return model_instances;
 }
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

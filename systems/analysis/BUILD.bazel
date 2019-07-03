@@ -158,6 +158,7 @@ drake_cc_library(
     ],
     deps = [
         ":implicit_integrator",
+        ":runge_kutta2_integrator",
         "//math:gradient",
     ],
 )
@@ -402,6 +403,10 @@ drake_cc_googletest(
     timeout = "moderate",
     # This test is prohibitively slow with --compilation_mode=dbg.
     disable_in_compilation_mode_dbg = True,
+    tags = [
+        "no_asan",
+        "no_memcheck",
+    ],
     deps = [
         ":runge_kutta3_integrator",
         "//common/test_utilities:eigen_matrix_compare",

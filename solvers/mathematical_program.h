@@ -110,9 +110,7 @@ void SetVariableNames(const std::string& name, int rows, int cols,
     }
   }
 }
-}  // namespace internal
 
-namespace detail {
 /**
  * Template condition to only catch when Constraints are inadvertently passed
  * as an argument. If the class is binding-compatible with a Constraint, then
@@ -130,7 +128,7 @@ struct assert_if_is_constraint {
       "You cannot pass a Constraint to create a Cost object from a function. "
       "Please ensure you are passing a Cost.");
 };
-}  // namespace detail
+}  // namespace internal
 
 /**
  * MathematicalProgram stores the decision variables, the constraints and costs
@@ -751,7 +749,6 @@ class MathematicalProgram {
    * Convert an input of type @p F to a FunctionCost object.
    * @tparam F This class should have functions numInputs(), numOutputs and
    * eval(x, y).
-   * @see drake::solvers::detail::FunctionTraits.
    */
   template <typename F>
   static std::shared_ptr<Cost> MakeCost(F&& f) {
@@ -761,10 +758,9 @@ class MathematicalProgram {
   /**
    * Adds a cost to the optimization program on a list of variables.
    * @tparam F it should define functions numInputs, numOutputs and eval. Check
-   * drake::solvers::detail::FunctionTraits for more detail.
    */
   template <typename F>
-  typename std::enable_if<detail::is_cost_functor_candidate<F>::value,
+  typename std::enable_if<internal::is_cost_functor_candidate<F>::value,
                           Binding<Cost>>::type
   AddCost(F&& f, const VariableRefList& vars) {
     return AddCost(f, ConcatenateVariableRefList(vars));
@@ -774,10 +770,9 @@ class MathematicalProgram {
    * Adds a cost to the optimization program on an Eigen::Vector containing
    * decision variables.
    * @tparam F Type that defines functions numInputs, numOutputs and eval.
-   * @see drake::solvers::detail::FunctionTraits.
    */
   template <typename F>
-  typename std::enable_if<detail::is_cost_functor_candidate<F>::value,
+  typename std::enable_if<internal::is_cost_functor_candidate<F>::value,
                           Binding<Cost>>::type
   AddCost(F&& f, const Eigen::Ref<const VectorXDecisionVariable>& vars) {
     auto c = MakeFunctionCost(std::forward<F>(f));
@@ -790,7 +785,7 @@ class MathematicalProgram {
    * @tparam F The type to check.
    */
   template <typename F, typename Vars>
-  typename std::enable_if<detail::assert_if_is_constraint<F>::value,
+  typename std::enable_if<internal::assert_if_is_constraint<F>::value,
                           Binding<Cost>>::type
   AddCost(F&&, Vars&&) {
     throw std::runtime_error("This will assert at compile-time.");

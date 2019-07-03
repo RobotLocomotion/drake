@@ -6,7 +6,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
 /// Obtains the full path of @file_name. If @p file_name is already a
 /// full path (i.e., it starts with a "/"), the path is not modified.
@@ -39,6 +39,6 @@ std::string ResolveUri(const std::string& uri,
                        const PackageMap& package_map,
                        const std::string& root_dir);
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

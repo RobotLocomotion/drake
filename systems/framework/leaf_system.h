@@ -39,7 +39,7 @@ namespace systems {
 
 /** @cond */
 // Private helper functions for LeafSystem.
-namespace leaf_system_detail {
+namespace leaf_system_internal {
 
 // Returns the next sample time for the given @p attribute.
 template <typename T>
@@ -73,7 +73,7 @@ static T GetNextSampleTime(
 // Logs a deprecation warning, at most once per process.
 void MaybeWarnDoHasDirectFeedthroughDeprecated();
 
-}  // namespace leaf_system_detail
+}  // namespace leaf_system_internal
 /** @endcond */
 
 
@@ -164,12 +164,13 @@ class LeafSystem : public System<T> {
     // If xc is not BasicVector, the dynamic_cast will yield nullptr, and the
     // invariant-checker will complain.
     const VectorBase<T>* const xc = &context->get_continuous_state_vector();
-    detail::CheckBasicVectorInvariants(dynamic_cast<const BasicVector<T>*>(xc));
+    internal::CheckBasicVectorInvariants(
+        dynamic_cast<const BasicVector<T>*>(xc));
 
     // The discrete state must all be valid BasicVectors.
     for (const BasicVector<T>* group :
         context->get_state().get_discrete_state().get_data()) {
-      detail::CheckBasicVectorInvariants(group);
+      internal::CheckBasicVectorInvariants(group);
     }
 
     // The numeric parameters must all be valid BasicVectors.
@@ -177,7 +178,7 @@ class LeafSystem : public System<T> {
         context->num_numeric_parameter_groups();
     for (int i = 0; i < num_numeric_parameters; ++i) {
       const BasicVector<T>& group = context->get_numeric_parameter(i);
-      detail::CheckBasicVectorInvariants(&group);
+      internal::CheckBasicVectorInvariants(&group);
     }
 
     // Allow derived LeafSystem to validate allocated Context.
@@ -284,7 +285,7 @@ class LeafSystem : public System<T> {
         const optional<bool> user_override = DoHasDirectFeedthrough(u, v);
 #pragma GCC diagnostic pop
         if (user_override) {
-          leaf_system_detail::MaybeWarnDoHasDirectFeedthroughDeprecated();
+          leaf_system_internal::MaybeWarnDoHasDirectFeedthroughDeprecated();
           if (user_override.value()) {
             result.emplace(u, v);
           }
@@ -446,8 +447,8 @@ class LeafSystem : public System<T> {
     for (const auto& event_pair : periodic_events_) {
       const PeriodicEventData& event_data = event_pair.first;
       const Event<T>* const event = event_pair.second.get();
-      const T t =
-          leaf_system_detail::GetNextSampleTime(event_data, context.get_time());
+      const T t = leaf_system_internal::GetNextSampleTime(
+          event_data, context.get_time());
       if (t < min_time) {
         min_time = t;
         next_events = {event};
@@ -1384,7 +1385,6 @@ class LeafSystem : public System<T> {
     // Add the event to the collection of forced publish events.
     this->get_mutable_forced_publish_events().add_event(std::move(forced));
   }
-  //@}
 
   /// Declares a function that is called whenever a user directly calls
   /// CalcDiscreteVariableUpdates(const Context&, DiscreteValues<T>*). Multiple
@@ -1427,6 +1427,47 @@ class LeafSystem : public System<T> {
     this->get_mutable_forced_discrete_update_events().add_event(
         std::move(forced));
   }
+
+  /// Declares a function that is called whenever a user directly calls
+  /// CalcUnrestrictedUpdate(const Context&, State<T>*). Multiple
+  /// calls to DeclareForcedUnrestrictedUpdateEvent() will register
+  /// multiple callbacks, which will be called with the same const Context in
+  /// arbitrary order. The handler should be a class member function (method)
+  /// with this signature:
+  /// @code
+  ///   EventStatus MySystem::MyUnrestrictedUpdates(const Context<T>&,
+  ///   State<T>*);
+  /// @endcode
+  /// where `MySystem` is a class derived from `LeafSystem<T>` and the method
+  /// name is arbitrary.
+  ///
+  /// See @ref declare_forced_events "Declare forced events" for more
+  /// information.
+  /// @pre `this` must be dynamic_cast-able to MySystem.
+  /// @pre `update` must not be null.
+  template <class MySystem>
+  void DeclareForcedUnrestrictedUpdateEvent(
+      EventStatus (MySystem::*update)(const Context<T>&, State<T>*) const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    DRAKE_DEMAND(update != nullptr);
+
+    // Instantiate the event.
+    auto forced = std::make_unique<UnrestrictedUpdateEvent<T>>(
+        TriggerType::kForced,
+        [this_ptr, update](const Context<T>& context,
+                           const UnrestrictedUpdateEvent<T>&, State<T>* state) {
+          // TODO(sherm1) Forward the return status.
+          (this_ptr->*update)(context, state);  // Ignore return status for now.
+        });
+
+    // Add the event to the collection of forced unrestricted update events.
+    this->get_mutable_forced_unrestricted_update_events().add_event(
+        std::move(forced));
+  }
+  //@}
 
   /// @name          Declare continuous state variables
   /// Continuous state consists of up to three kinds of variables: generalized
@@ -2221,77 +2262,6 @@ class LeafSystem : public System<T> {
         this, description, direction_type, calc, e.Clone());
   }
 
-  template <class MySystem>
-  DRAKE_DEPRECATED("2019-07-01", "Please use MakeWitnessFunction().")
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
-      const std::string& description,
-      const WitnessFunctionDirection& direction_type,
-      T (MySystem::*calc)(const Context<T>&) const) const {
-    return MakeWitnessFunction(description, direction_type, calc);
-  }
-
-  DRAKE_DEPRECATED("2019-07-01", "Please use MakeWitnessFunction().")
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
-      const std::string& description,
-      const WitnessFunctionDirection& direction_type,
-      std::function<T(const Context<T>&)> calc) const {
-    return MakeWitnessFunction(description, direction_type, calc);
-  }
-
-  template <class MySystem>
-  DRAKE_DEPRECATED("2019-07-01", "Please use MakeWitnessFunction().")
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
-      const std::string& description,
-      const WitnessFunctionDirection& direction_type,
-      T (MySystem::*calc)(const Context<T>&) const,
-      void (MySystem::*publish_callback)(
-          const Context<T>&, const PublishEvent<T>&) const) const {
-    return MakeWitnessFunction(description, direction_type, calc,
-        publish_callback);
-  }
-
-  template <class MySystem>
-  DRAKE_DEPRECATED("2019-07-01", "Please use MakeWitnessFunction().")
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
-      const std::string& description,
-      const WitnessFunctionDirection& direction_type,
-      T (MySystem::*calc)(const Context<T>&) const,
-      void (MySystem::*du_callback)(const Context<T>&,
-                                    const DiscreteUpdateEvent<T>&,
-                                    DiscreteValues<T>*) const) const {
-    return MakeWitnessFunction(description, direction_type, calc, du_callback);
-  }
-
-  template <class MySystem>
-  DRAKE_DEPRECATED("2019-07-01", "Please use MakeWitnessFunction().")
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
-      const std::string& description,
-      const WitnessFunctionDirection& direction_type,
-      T (MySystem::*calc)(const Context<T>&) const,
-      void (MySystem::*uu_callback)(const Context<T>&,
-                                    const UnrestrictedUpdateEvent<T>&,
-                                    State<T>*) const) const {
-    return MakeWitnessFunction(description, direction_type, calc, uu_callback);
-  }
-
-  template <class MySystem>
-  DRAKE_DEPRECATED("2019-07-01", "Please use MakeWitnessFunction().")
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
-      const std::string& description,
-      const WitnessFunctionDirection& direction_type,
-      T (MySystem::*calc)(const Context<T>&) const,
-      const Event<T>& e) const {
-    return MakeWitnessFunction(description, direction_type, calc, e);
-  }
-
-  DRAKE_DEPRECATED("2019-07-01", "Please use MakeWitnessFunction().")
-  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
-      const std::string& description,
-      const WitnessFunctionDirection& direction_type,
-      std::function<T(const Context<T>&)> calc,
-      const Event<T>& e) const {
-    return MakeWitnessFunction(description, direction_type, calc, e);
-  }
   //@}
 
   /// Declares a system constraint of the form
@@ -2835,16 +2805,16 @@ class LeafSystem : public System<T> {
   DiscreteValues<T> model_discrete_state_;
 
   // A model abstract state to be used during Context allocation.
-  detail::ModelValues model_abstract_states_;
+  internal::ModelValues model_abstract_states_;
 
   // Model inputs to be used in AllocateInput{Vector,Abstract}.
-  detail::ModelValues model_input_values_;
+  internal::ModelValues model_input_values_;
 
   // Model numeric parameters to be used during Context allocation.
-  detail::ModelValues model_numeric_parameters_;
+  internal::ModelValues model_numeric_parameters_;
 
   // Model abstract parameters to be used during Context allocation.
-  detail::ModelValues model_abstract_parameters_;
+  internal::ModelValues model_abstract_parameters_;
 };
 
 }  // namespace systems

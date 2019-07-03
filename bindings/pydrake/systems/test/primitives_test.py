@@ -322,7 +322,7 @@ class TestGeneral(unittest.TestCase):
                             input_vec[i]))
 
         # Test demultiplexer with vector outputs.
-        demux = Demultiplexer(size=4, output_ports_sizes=2)
+        demux = Demultiplexer(size=4, output_ports_size=2)
         context = demux.CreateDefaultContext()
         self.assertEqual(demux.num_input_ports(), 1)
         self.assertEqual(demux.num_output_ports(), 2)
@@ -335,6 +335,28 @@ class TestGeneral(unittest.TestCase):
             self.assertTrue(
                 np.allclose(output.get_vector_data(i).get_value(),
                             input_vec[2*i:2*i+2]))
+
+        # Test demultiplexer with different output port sizes.
+        output_ports_sizes = np.array([1, 2, 1])
+        num_output_ports = output_ports_sizes.size
+        input_vec = np.array([1., 2., 3., 4.])
+        demux = Demultiplexer(output_ports_sizes=output_ports_sizes)
+        context = demux.CreateDefaultContext()
+        self.assertEqual(demux.num_input_ports(), 1)
+        self.assertEqual(demux.num_output_ports(), num_output_ports)
+
+        context.FixInputPort(0, BasicVector(input_vec))
+        output = demux.AllocateOutput()
+        demux.CalcOutput(context, output)
+
+        output_port_start = 0
+        for i in range(num_output_ports):
+            output_port_size = output.get_vector_data(i).size()
+            self.assertTrue(
+                np.allclose(output.get_vector_data(i).get_value(),
+                            input_vec[output_port_start:
+                                      output_port_start+output_port_size]))
+            output_port_start += output_port_size
 
     def test_multiplexer(self):
         my_vector = MyVector2(data=[1., 2.])

@@ -66,6 +66,14 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
 
   // Reset the Jacobian matrix (so that recomputation is forced).
   this->get_mutable_jacobian().resize(0, 0);
+
+  // Initialize the embedded second order Runge-Kutta integrator. The maximum
+  // step size will be set to infinity because we will explicitly request the
+  // step sizes to be taken.
+  rk2_ = std::make_unique<RungeKutta2Integrator<T>>(
+      this->get_system(),
+      std::numeric_limits<double>::infinity() /* maximum step size */,
+      this->get_mutable_context());
 }
 
 template <class T>
@@ -374,12 +382,9 @@ bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
   //          = xₜᵣ(t0+h) + O(h³)      [implicit trapezoid]
   // where x*(t0+h) is the true (generally unknown) answer that we seek.
   // This implies:
-  // xᵢₑ(t0+h) + O(h²) = xₜᵣ(t0+h) + O(h³)
-  // Given that the second order term subsumes the third order one:
-  // xᵢₑ(t0+h) - xₜᵣ(t0+h) = O(h²)
-  // Therefore the difference between the implicit trapezoid solution and the
-  // implicit Euler solution gives a second-order error estimate for the
-  // implicit Euler result xᵢₑ.
+  // xᵢₑ(t0+h) + O(h²) = xₜᵣ(t0+h) + O(h³).
+  // Given that the second order term subsumes the third order one, we have:
+  // xᵢₑ(t0+h) - xₜᵣ(t0+h) = O(h²).
 
   // Attempt to compute the implicit trapezoid solution.
   *xtplus_itr = *xtplus_ie;
@@ -410,16 +415,12 @@ bool ImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
   const T t0 = context->get_time();
   SPDLOG_DEBUG(drake::log(), "IE DoStep(h={}) t={}", h, t0);
 
-  // TODO(sherm1) Heap allocation here; consider mutable temporaries instead.
-  const VectorX<T> xt0 = context->get_continuous_state().CopyToVector();
-  VectorX<T> xtplus_ie(xt0.size()), xtplus_itr(xt0.size());
+  xt0_ = context->get_continuous_state().CopyToVector();
+  xtplus_ie_.resize(xt0_.size());
+  xtplus_tr_.resize(xt0_.size());
 
   // If the requested h is less than the minimum step size, we'll advance time
-  // using two explicit Euler steps of size h/2. For error estimation, we also
-  // take a single step of size h. We can estimate the error in the larger
-  // step that way, but note that we propagate the two half-steps on the
-  // assumption the result will be better despite not having an error estimate
-  // for them (that's called "local extrapolation").
+  // using an explicit Euler step.
   if (h < this->get_working_minimum_step_size()) {
     SPDLOG_DEBUG(drake::log(), "-- requested step too small, taking explicit "
         "step instead");
@@ -430,57 +431,43 @@ bool ImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
     //                 test of, e.g., a square wave function, should quantify
     //                 the improvement (if any).
 
-    // The error estimation process for explicit Euler uses two half-steps
-    // of explicit Euler (for a total of two derivative evaluations). The error
-    // estimation process is derived as follows:
-    // (1) x*(t0+h) = xₑ(t0+h) + h²/2 df/h + ...                [full step]
-    // (2) x*(t0+h) = ̅xₑ(t0+h) + h²/8 (df/h + df₊/h) + ...      [two 1/2-steps]
-    //
-    // where x*(t0+h) is the true (generally unknown) answer that we seek,
-    // f() is the ordinary differential equation evaluated at x(t0), and
-    // f₊() is the derivative evaluated at x(t0 + h/2). Subtracting (1) from
-    // (2), the above equations are rewritten as:
-    // 0 = x̅ₑ(t0+h) - xₑ(t0+h) + h²/8 (-3df/h + df₊/h) + ...
-    // The sum of all but the first two terms on the right hand side
-    // of the above equation is less in magnitude than ch², for some
-    // sufficiently large c. Or, written using Big-Oh notation:
-    // x̅ₑ(t0+h) - xₑ(t0+h) = O(h²)
-    // Thus, subtracting the two solutions yields a second order error estimate
-    // (we compute norms on the error estimate, so the apparent sign error
-    // in the algebra when arriving at the final equation is inconsequential).
+    // The error estimation process for explicit Euler uses an explicit second
+    // order Runge-Kutta method so that the order of the asymptotic term
+    // matches that used for estimating the error of the implicit Euler
+    // integrator.
 
     // Compute the Euler step.
-    // TODO(sherm1) Heap allocation here; consider mutable temporary instead.
-    VectorX<T> xdot = this->EvalTimeDerivatives(*context).CopyToVector();
-    xtplus_ie = xt0 + h * xdot;
+    xdot_ = this->EvalTimeDerivatives(*context).CopyToVector();
+    xtplus_ie_ = xt0_ + h * xdot_;
 
-    // Do one half step.
-    // TODO(sherm1) Heap allocation here; consider mutable temporary instead.
-    const VectorX<T> xtpoint5 = xt0 + h / 2.0 * xdot;
-    context->SetTimeAndContinuousState(t0 + h / 2.0, xtpoint5);
+    // Compute the RK2 step.
+    const int evals_before_rk2 = rk2_->get_num_derivative_evaluations();
+    if (!rk2_->IntegrateWithSingleFixedStepToTime(t0 + h)) {
+      throw std::runtime_error("Embedded RK2 integrator failed to take a single"
+          "fixed step to the requested time.");
+    }
 
-    // Do another half step, then set the "trapezoid" state to be the result of
-    // taking two explicit Euler half steps. The code below the if/then/else
-    // block simply subtracts the two results to obtain the error estimate.
-    xdot = this->EvalTimeDerivatives(*context).CopyToVector();  // xdot(t + h/2)
-    xtplus_itr = xtpoint5 + h / 2.0 * xdot;
-    context->SetTimeAndContinuousState(t0 + h, xtplus_itr);
+    const int evals_after_rk2 = rk2_->get_num_derivative_evaluations();
+    xtplus_tr_ = context->get_continuous_state().CopyToVector();
 
     // Update the error estimation ODE counts.
-    num_err_est_function_evaluations_ += 2;
+    num_err_est_function_evaluations_ += (evals_after_rk2 - evals_before_rk2);
+
+    // Revert the state to that computed by explicit Euler.
+    context->SetTimeAndContinuousState(t0 + h, xtplus_ie_);
   } else {
     // Try taking the requested step.
-    bool success = AttemptStepPaired(t0, h, xt0, &xtplus_ie, &xtplus_itr);
+    bool success = AttemptStepPaired(t0, h, xt0_, &xtplus_ie_, &xtplus_tr_);
 
     // If the step was not successful, reset the time and state.
     if (!success) {
-      context->SetTimeAndContinuousState(t0, xt0);
+      context->SetTimeAndContinuousState(t0, xt0_);
       return false;
     }
   }
 
   // Compute and update the error estimate.
-  err_est_vec_ = xtplus_ie - xtplus_itr;
+  err_est_vec_ = xtplus_ie_ - xtplus_tr_;
 
   // Update the caller-accessible error estimate.
   this->get_mutable_error_estimate()->get_mutable_vector().

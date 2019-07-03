@@ -45,8 +45,8 @@ using Eigen::Vector4d;
 using Eigen::VectorXd;
 
 using drake::Vector1d;
-using drake::solvers::detail::VecIn;
-using drake::solvers::detail::VecOut;
+using drake::solvers::internal::VecIn;
+using drake::solvers::internal::VecOut;
 using drake::symbolic::Expression;
 using drake::symbolic::Formula;
 using drake::symbolic::Variable;

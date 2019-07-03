@@ -267,6 +267,17 @@ class Expression {
    */
   Expression EvaluatePartial(const Environment& env) const;
 
+  /** Returns true if this symbolic expression is already
+   * expanded. Expression::Expand() uses this flag to avoid calling
+   * ExpressionCell::Expand() on an pre-expanded expressions.
+   * Expression::Expand() also sets this flag before returning the result.
+   *
+   * @note This check is conservative in that `false` does not always indicate
+   * that the expression is not expanded. This is because exact checks can be
+   * costly and we want to avoid the exact check at the construction time.
+   */
+  bool is_expanded() const;
+
   /** Expands out products and positive integer powers in expression. For
    * example, `(x + 1) * (x - 1)` is expanded to `x^2 - 1` and `(x + y)^2` is
    * expanded to `x^2 + 2xy + y^2`. Note that Expand applies recursively to
@@ -492,17 +503,58 @@ class Expression {
   friend std::shared_ptr<const ExpressionUninterpretedFunction>
   to_uninterpreted_function(const Expression& e);
 
+  // Cast functions which takes a pointer to a non-const Expression.
+  friend std::shared_ptr<ExpressionConstant> to_constant(Expression* e);
+  friend std::shared_ptr<ExpressionVar> to_variable(Expression* e);
+  friend std::shared_ptr<UnaryExpressionCell> to_unary(Expression* e);
+  friend std::shared_ptr<BinaryExpressionCell> to_binary(Expression* e);
+  friend std::shared_ptr<ExpressionAdd> to_addition(Expression* e);
+  friend std::shared_ptr<ExpressionMul> to_multiplication(Expression* e);
+  friend std::shared_ptr<ExpressionDiv> to_division(Expression* e);
+  friend std::shared_ptr<ExpressionLog> to_log(Expression* e);
+  friend std::shared_ptr<ExpressionAbs> to_abs(Expression* e);
+  friend std::shared_ptr<ExpressionExp> to_exp(Expression* e);
+  friend std::shared_ptr<ExpressionSqrt> to_sqrt(Expression* e);
+  friend std::shared_ptr<ExpressionPow> to_pow(Expression* e);
+  friend std::shared_ptr<ExpressionSin> to_sin(Expression* e);
+  friend std::shared_ptr<ExpressionCos> to_cos(Expression* e);
+  friend std::shared_ptr<ExpressionTan> to_tan(Expression* e);
+  friend std::shared_ptr<ExpressionAsin> to_asin(Expression* e);
+  friend std::shared_ptr<ExpressionAcos> to_acos(Expression* e);
+  friend std::shared_ptr<ExpressionAtan> to_atan(Expression* e);
+  friend std::shared_ptr<ExpressionAtan2> to_atan2(Expression* e);
+  friend std::shared_ptr<ExpressionSinh> to_sinh(Expression* e);
+  friend std::shared_ptr<ExpressionCosh> to_cosh(Expression* e);
+  friend std::shared_ptr<ExpressionTanh> to_tanh(Expression* e);
+  friend std::shared_ptr<ExpressionMin> to_min(Expression* e);
+  friend std::shared_ptr<ExpressionMax> to_max(Expression* e);
+  friend std::shared_ptr<ExpressionCeiling> to_ceil(Expression* e);
+  friend std::shared_ptr<ExpressionFloor> to_floor(Expression* e);
+  friend std::shared_ptr<ExpressionIfThenElse> to_if_then_else(Expression* e);
+  friend std::shared_ptr<ExpressionUninterpretedFunction>
+  to_uninterpreted_function(Expression* e);
+
   friend class ExpressionAddFactory;
   friend class ExpressionMulFactory;
 
+  // The following classes call the private method `set_expand()` and need to be
+  // friends of this class.
+  friend class ExpressionAdd;
+  friend class ExpressionMul;
+  friend class ExpressionDiv;
+  friend class ExpressionPow;
+
  private:
-  explicit Expression(std::shared_ptr<const ExpressionCell> ptr);
+  explicit Expression(std::shared_ptr<ExpressionCell> ptr);
   void HashAppend(DelegatingHasher* hasher) const;
 
-  // Note: We use "const" ExpressionCell type here because an ExpressionCell
-  // object can be shared by multiple expressions, an expression should _not_ be
-  // able to change the cell that it points to.
-  std::shared_ptr<const ExpressionCell> ptr_;
+  // Note: We use "non-const" ExpressionCell type. This allows us to perform
+  // destructive updates on the pointed cell if the cell is not shared with
+  // other Expressions (that is, ptr_.use_count() == 1).
+  std::shared_ptr<ExpressionCell> ptr_;
+
+  /** Sets this symbolic expression as already expanded. */
+  Expression& set_expanded();
 };
 
 Expression operator+(Expression lhs, const Expression& rhs);

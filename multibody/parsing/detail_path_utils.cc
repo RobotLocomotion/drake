@@ -13,7 +13,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
 using std::string;
 
@@ -122,6 +122,6 @@ string ResolveUri(const string& uri, const PackageMap& package_map,
   return result.getStr();
 }
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
