@@ -14,6 +14,7 @@ namespace drake {
 using geometry::ContactSurface;
 using geometry::SurfaceFaceIndex;
 using geometry::SurfaceMesh;
+using geometry::SurfaceMeshFieldLinear;
 using math::RigidTransform;
 using systems::Context;
 
@@ -83,18 +84,17 @@ ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
   F_Ac_W.SetZero();
 
   // Integrate the tractions over all triangles in the contact surface.
-  for (geometry::SurfaceFaceIndex i(0); i < surface.mesh().num_faces(); ++i) {
+  for (SurfaceFaceIndex i(0); i < surface.mesh().num_faces(); ++i) {
     // Construct the function to be integrated over triangle i.
     // TODO(sherm1) Pull functor creation out of the loop (not a good idea to
     //              create a new functor for every i).
     std::function<SpatialForce<T>(const Vector3<T>&)> traction_Ac_W =
         [this, &data, i, dissipation,
          mu_coulomb](const Vector3<T>& Q_barycentric) {
-          Vector3<T> p_WQ;
-          const Vector3<T> traction_Aq_W = CalcTractionAtPoint(
-              data, i, Q_barycentric, dissipation, mu_coulomb, &p_WQ);
-          return ComputeSpatialTractionAtAcFromTractionAtAq(data, p_WQ,
-                                                            traction_Aq_W);
+          TractionAtPointData traction_output = CalcTractionAtPoint(
+              data, i, Q_barycentric, dissipation, mu_coulomb);
+          return ComputeSpatialTractionAtAcFromTractionAtAq(
+              data, traction_output.p_WQ, traction_output.traction_Aq_W);
         };
 
     // Compute the integral over the triangle to get a force from the
@@ -149,16 +149,18 @@ SpatialForce<T> HydroelasticTractionCalculator<T>::
 }
 
 template <typename T>
-Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
+typename HydroelasticTractionCalculator<T>::TractionAtPointData
+HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
     const HydroelasticTractionCalculatorData& data,
     SurfaceFaceIndex face_index,
     const typename SurfaceMesh<T>::Barycentric& Q_barycentric,
-    double dissipation, double mu_coulomb, Vector3<T>* p_WQ) const {
-  DRAKE_DEMAND(p_WQ != nullptr);
+    double dissipation, double mu_coulomb) const {
+  TractionAtPointData traction_data;
+
   // Compute the point of contact in the world frame.
   const Vector3<T> p_MQ = data.surface().mesh().CalcCartesianFromBarycentric(
       face_index, Q_barycentric);
-  *p_WQ = data.X_WM() * p_MQ;
+  traction_data.p_WQ = data.X_WM() * p_MQ;
 
   // Get the "potential pressure" (in N/m²) at the point as defined in
   // [Elandt 2019]. Note that we drop the _MN suffix here and below, as this
@@ -181,11 +183,11 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   // Body A.
 
   // First compute the spatial velocity of Body A at Aq.
-  const Vector3<T> p_AoAq_W = *p_WQ - data.X_WA().translation();
+  const Vector3<T> p_AoAq_W = traction_data.p_WQ - data.X_WA().translation();
   const SpatialVelocity<T> V_WAq = data.V_WA().Shift(p_AoAq_W);
 
   // Next compute the spatial velocity of Body B at Bq.
-  const Vector3<T> p_BoBq_W = *p_WQ - data.X_WB().translation();
+  const Vector3<T> p_BoBq_W = traction_data.p_WQ - data.X_WB().translation();
   const SpatialVelocity<T> V_WBq = data.V_WB().Shift(p_BoBq_W);
 
   // Finally compute the relative velocity of Frame Aq relative to Frame Bq,
@@ -209,24 +211,88 @@ Vector3<T> HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   const T normal_traction = max(E - vn_BqAq_W * c, T(0));
 
   // Get the slip velocity at the point.
-  const Vector3<T> vt_BqAq_W = v_BqAq_W - nhat_W * vn_BqAq_W;
+  traction_data.vt_BqAq_W = v_BqAq_W - nhat_W * vn_BqAq_W;
 
   // Determine the traction using a soft-norm.
   using std::atan;
   using std::sqrt;
-  const T squared_vt = vt_BqAq_W.squaredNorm();
+  const T squared_vt = traction_data.vt_BqAq_W.squaredNorm();
   const T norm_vt = sqrt(squared_vt);
   const T soft_norm_vt = sqrt(squared_vt +
       vslip_regularizer_ * vslip_regularizer_);
 
   // Get the regularized direction of slip.
-  const Vector3<T> vt_hat_BqAq_W = vt_BqAq_W / soft_norm_vt;
+  const Vector3<T> vt_hat_BqAq_W = traction_data.vt_BqAq_W / soft_norm_vt;
 
   // Compute the traction.
   const T frictional_scalar = mu_coulomb * normal_traction *
       2.0 / M_PI * atan(norm_vt / T(vslip_regularizer_));
-  return nhat_W * normal_traction - vt_hat_BqAq_W * frictional_scalar;
+  traction_data.traction_Aq_W = nhat_W * normal_traction -
+      vt_hat_BqAq_W * frictional_scalar;
+
+  return traction_data;
 }
+
+// Creates linearly interpolated fields over the contact surface for use in
+// contact reporting.
+//
+// @warning this mesh field retains a pointer to the
+// surface mesh (i.e., `data.surface_->mesh()`), so that pointer must remain
+// valid while this object is alive.
+/* 
+template <typename T>
+ContactReportingFields 
+HydroelasticTractionCalculator<T>::CreateReportingFields(
+    const HydroelasticTractionCalculator<T>::HydroelasticTractionCalculatorData&
+        data, double dissipation, double mu_coulomb) const { 
+  // Alias the contact surface.
+  const ContactSurface<T>& surface = *data.surface_;
+
+  // The barycentric coordinates corresponding to the three triangle vertices.
+  SurfaceMesh<T>::Barycentric barycentric_coords[3] = {
+      SurfaceMesh<T>::Barycentric(1, 0, 0),
+      SurfaceMesh<T>::Barycentric(0, 1, 0),
+      SurfaceMesh<T>::Barycentric(0, 0, 1) }; 
+
+  // Compute a value for each vertex.
+  std::vector<bool> value_computed(surface.mesh().num_vertices(), false);
+  std::vector<Vector3<T> vslip(surface.mesh().num_vertices());
+  std::vector<Vector3<T> traction(surface.mesh().num_vertices());
+
+  for (SurfaceFaceIndex i(0); i < surface.mesh().num_faces(); ++i) {
+    for (int j = 0; j < 3; ++j) {
+      // Do not compute values twice.
+      const SurfaceVertexIndex vertex_index = surface.element(i).vertex(j);
+      const int array_index = surface.vertex(vertex_index);
+      if (value_computed[array_index])
+        continue;
+
+      // Compute the traction and the slip velocity.
+      Vector3<T> p_WQ, vt_BqAq_W;
+      tractions[array_index] = CalcTractionAtPoint(
+          data, i, barycentric_coords[j], dissipation, mu_coulomb, &p_WQ,
+	  &vslip[array_index]);
+
+      // Indicate that the value has been computed.
+      value_computed[surface.vertex(vertex_index)] = true;
+    }
+  }
+
+  // If assertions are armed, verify that value was computed for each vertex.
+  #ifdef DRAKE_ASSERT_IS_ARMED
+  for (bool flag : value_computed)
+    DRAKE_ASSERT(flag);
+  #endif
+
+  // Create the field structure.
+  ContactReportingFields fields;
+  fields.traction = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>>(
+      "traction", std::move(tractions), &data.surface_->mesh());  
+  fields.vslip = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>>(
+      "slip_velocity", std::move(vslip), &data.surface_->mesh());  
+  return fields;
+}
+*/
 
 }  // namespace internal
 }  // namespace multibody

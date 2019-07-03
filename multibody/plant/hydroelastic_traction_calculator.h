@@ -56,6 +56,21 @@ class HydroelasticTractionCalculator {
   // To allow GTEST to test private functions.
   friend class MultibodyPlantHydroelasticTractionTests;
 
+  // Data structure for passing useful outputs from CalcTractionAtPoint().
+  struct TractionAtPointData {
+    // Point Q that the traction is computed in, as an offset vector expressed
+    // in the world frame.
+    Vector3<T> p_WQ;
+
+    // The slip velocity between Bodies A and B at Point Q, expressed in the
+    // world frame.
+    Vector3<T> vt_BqAq_W;
+
+    // The traction vector applied to Body A at Point Q, expressed in the
+    // world frame.
+    Vector3<T> traction_Aq_W;
+  };
+
   // Data structure for storing quantities used repeatedly in the hydroelastic
   // traction calculations.
   class HydroelasticTractionCalculatorData {
@@ -111,11 +126,11 @@ class HydroelasticTractionCalculator {
     SpatialVelocity<T> V_WB_;
   };
 
-  Vector3<T> CalcTractionAtPoint(
+  TractionAtPointData CalcTractionAtPoint(
       const HydroelasticTractionCalculatorData& data,
       geometry::SurfaceFaceIndex face_index,
       const typename geometry::SurfaceMesh<T>::Barycentric& Q_barycentric,
-      double dissipation, double mu_coulomb, Vector3<T>* p_WQ) const;
+      double dissipation, double mu_coulomb) const;
 
   multibody::SpatialForce<T> ComputeSpatialTractionAtAcFromTractionAtAq(
       const HydroelasticTractionCalculatorData& data, const Vector3<T>& p_WQ,

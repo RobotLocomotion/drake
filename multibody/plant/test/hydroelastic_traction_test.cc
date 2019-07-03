@@ -77,12 +77,11 @@ public ::testing::TestWithParam<RigidTransform<double>> {
 
     // First compute the traction applied to Body A at point Q, expressed in the
     // world frame.
-    Vector3<double> p_WQ;
-    const Vector3<double> traction_Aq_W =
+    HydroelasticTractionCalculator<double>::TractionAtPointData output =
         traction_calculator().CalcTractionAtPoint(
             calculator_data, SurfaceFaceIndex(0),
             SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0), dissipation,
-            mu_coulomb, &p_WQ);
+            mu_coulomb);
 
     // Compute the expected point of contact in the world frame. The class
     // definition and SetUp() note that the parameter to this test transforms
@@ -92,11 +91,12 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     const Vector3<double> p_WQ_expected = X_WY * p_YQ;
 
     // Verify the point of contact.
-    for (int i = 0; i < 3; ++i) ASSERT_NEAR(p_WQ[i], p_WQ_expected[i], tol());
+    for (int i = 0; i < 3; ++i)
+      ASSERT_NEAR(output.p_WQ[i], p_WQ_expected[i], tol());
 
     const SpatialForce<double> Ft_Ac_W =
         traction_calculator().ComputeSpatialTractionAtAcFromTractionAtAq(
-            calculator_data, p_WQ, traction_Aq_W);
+            calculator_data, output.p_WQ, output.traction_Aq_W);
 
     // Shift to body origins. Traction on body B is equal and opposite.
     const Vector3<double>& p_WC = calculator_data.p_WC();
