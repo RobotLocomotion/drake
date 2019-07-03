@@ -55,19 +55,18 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     return traction_calculator_;
   }
 
-  const HydroelasticTractionCalculator<double>::
-      HydroelasticTractionCalculatorData& calculator_data() {
+  const HydroelasticTractionCalculator<double>::Data& calculator_data() {
     return *calculator_data_;
   }
 
-  // Note: see HydroelasticTractionCalculatorData constructor for description of
-  // these parameters.
+  // Sets all kinematic quantities (contact surface will be left untouched).
+  // Note: see Data constructor for description of these parameters.
   void set_calculator_data(
       const RigidTransform<double>& X_WA, const RigidTransform<double>& X_WB,
       const SpatialVelocity<double>& V_WA, const SpatialVelocity<double>& V_WB,
       const RigidTransform<double>& X_WM, const Vector3<double>& p_WC) {
     calculator_data_ = std::make_unique<HydroelasticTractionCalculator<double>::
-        HydroelasticTractionCalculatorData>(
+        Data>(
             X_WA, X_WB, V_WA, V_WB, X_WM, p_WC, &contact_surface());
   }
 
@@ -112,9 +111,9 @@ public ::testing::TestWithParam<RigidTransform<double>> {
             calculator_data(), p_WQ, traction_Aq_W);
 
     // Shift to body origins. Traction on body B is equal and opposite.
-    const Vector3<double>& p_WC = calculator_data().p_WC_;
-    const Vector3<double>& p_WAo = calculator_data().X_WA_.translation();
-    const Vector3<double>& p_WBo = calculator_data().X_WB_.translation();
+    const Vector3<double>& p_WC = calculator_data().p_WC;
+    const Vector3<double>& p_WAo = calculator_data().X_WA.translation();
+    const Vector3<double>& p_WBo = calculator_data().X_WB.translation();
     const Vector3<double> p_CAo_W = p_WAo - p_WC;
     const Vector3<double> p_CBo_W = p_WBo - p_WC;
     *Ft_Ao_W = Ft_Ac_W.Shift(p_CAo_W);
@@ -267,8 +266,8 @@ public ::testing::TestWithParam<RigidTransform<double>> {
   systems::Context<double>* plant_context_;
   std::unique_ptr<ContactSurface<double>> contact_surface_;
   HydroelasticTractionCalculator<double> traction_calculator_;
-  std::unique_ptr<HydroelasticTractionCalculator<double>::
-      HydroelasticTractionCalculatorData> calculator_data_;
+  std::unique_ptr<
+      HydroelasticTractionCalculator<double>::Data> calculator_data_;
 };
 
 // Tests the traction calculation without any frictional or dissipation
