@@ -55,6 +55,11 @@ GTEST_TEST(MeshFieldTest, TestClone) {
                         const MeshType::Barycentric&) const final {
       return FieldValue(0);
     }
+    FieldValue EvaluateCartesian(
+                         const MeshType::ElementIndex,
+                         const MeshType::Cartesian&) const final {
+      return FieldValue(0);
+    }
    private:
     DRAKE_NODISCARD std::unique_ptr<MeshFieldBase> DoCloneWithNullMesh() const
     final {

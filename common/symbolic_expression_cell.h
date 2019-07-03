@@ -67,6 +67,12 @@ class ExpressionCell {
   /** Checks if this symbolic expression is convertible to Polynomial. */
   bool is_polynomial() const { return is_polynomial_; }
 
+  /** Checks if this symbolic expression is already expanded. */
+  bool is_expanded() const { return is_expanded_; }
+
+  /** Sets this symbolic expression as already expanded. */
+  void set_expanded() { is_expanded_ = true; }
+
   /** Returns a Polynomial representing this expression.
    *  Note that the ID of a variable is preserved in this translation.
    *  @pre is_polynomial() is true.
@@ -110,14 +116,16 @@ class ExpressionCell {
   ExpressionCell& operator=(ExpressionCell&& e) = delete;
   /** Copy-assigns (DELETED). */
   ExpressionCell& operator=(const ExpressionCell& e) = delete;
-  /** Constructs ExpressionCell of kind @p k with @p is_poly . */
-  ExpressionCell(ExpressionKind k, bool is_poly);
+  /** Constructs ExpressionCell of kind @p k with @p is_poly and @p is_expanded.
+   */
+  ExpressionCell(ExpressionKind k, bool is_poly, bool is_expanded);
   /** Default destructor. */
   virtual ~ExpressionCell() = default;
 
  private:
   const ExpressionKind kind_{};
   const bool is_polynomial_{false};
+  bool is_expanded_{false};
 };
 
 /** Represents the base class for unary expressions.  */
@@ -142,8 +150,10 @@ class UnaryExpressionCell : public ExpressionCell {
   UnaryExpressionCell& operator=(UnaryExpressionCell&& e) = delete;
   /** Copy-assigns (DELETED). */
   UnaryExpressionCell& operator=(const UnaryExpressionCell& e) = delete;
-  /** Constructs UnaryExpressionCell of kind @p k with @p e, and @p is_poly. */
-  UnaryExpressionCell(ExpressionKind k, const Expression& e, bool is_poly);
+  /** Constructs UnaryExpressionCell of kind @p k with @p e, @p is_poly, and @p
+   * is_expanded. */
+  UnaryExpressionCell(ExpressionKind k, const Expression& e, bool is_poly,
+                      bool is_expanded);
   /** Returns the evaluation result f(@p v ). */
   virtual double DoEvaluate(double v) const = 0;
 
@@ -177,10 +187,10 @@ class BinaryExpressionCell : public ExpressionCell {
   /** Copy-assigns (DELETED). */
   BinaryExpressionCell& operator=(const BinaryExpressionCell& e) = delete;
   /** Constructs BinaryExpressionCell of kind @p k with @p e1, @p e2,
-   * @p is_poly.
+   * @p is_poly, and @p is_expanded.
    */
   BinaryExpressionCell(ExpressionKind k, const Expression& e1,
-                       const Expression& e2, bool is_poly);
+                       const Expression& e2, bool is_poly, bool is_expanded);
   /** Returns the evaluation result f(@p v1, @p v2 ). */
   virtual double DoEvaluate(double v1, double v2) const = 0;
 

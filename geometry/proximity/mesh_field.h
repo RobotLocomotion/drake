@@ -11,7 +11,7 @@ namespace drake {
 namespace geometry {
 
 /** %MeshField is an abstract class that represents a field variable defined
-  on a mesh. It can evaluate the field value at any location on any element
+  on a mesh M. It can evaluate the field value at any location on any element
   of the mesh.
 
   @tparam FieldValue  a valid Eigen scalar or vector of valid Eigen scalars for
@@ -32,6 +32,17 @@ class MeshField {
       const typename MeshType::ElementIndex e,
       const typename MeshType::Barycentric& b) const = 0;
 
+  /** Evaluates the field at a point Qp on an element. If the element is a
+   tetrahedron, Qp is the input point Q. If the element is a triangle, Qp is the
+   projection of Q on the triangle's plane.
+   @param e The index of the element.
+   @param p_MQ The position of point Q expressed in frame M, in Cartesian
+               coordinates. M is the frame of the mesh.
+   */
+  virtual FieldValue EvaluateCartesian(
+      const typename MeshType::ElementIndex e,
+      const typename MeshType::Cartesian& p_MQ) const = 0;
+
   /** Copy to a new %MeshField and set the new %MeshField to use a new
    compatible mesh. %MeshField needs a mesh to operate; however, %MeshField
    does not own the mesh. In fact, several %MeshField objects can use the same
@@ -42,7 +53,7 @@ class MeshField {
     DRAKE_DEMAND(new_mesh != nullptr);
     DRAKE_DEMAND(new_mesh->num_vertices() == mesh_->num_vertices());
     // TODO(DamrongGuoy): Check that the `new_mesh` is equivalent to the
-    //  current `mesh_`.
+    //  current `mesh_M_`.
     std::unique_ptr<MeshField> new_mesh_field = CloneWithNullMesh();
     new_mesh_field->mesh_ = new_mesh;
     return new_mesh_field;
@@ -51,6 +62,12 @@ class MeshField {
   const MeshType& mesh() const { return *mesh_; }
 
  protected:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshField)
+
+  explicit MeshField(const MeshType* mesh): mesh_(mesh) {
+    DRAKE_DEMAND(mesh_ != nullptr);
+  }
+
   DRAKE_NODISCARD std::unique_ptr<MeshField> CloneWithNullMesh() const {
     return DoCloneWithNullMesh();
   }
@@ -60,15 +77,10 @@ class MeshField {
   DRAKE_NODISCARD virtual std::unique_ptr<MeshField> DoCloneWithNullMesh()
       const = 0;
 
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshField)
-  explicit MeshField(MeshType* mesh): mesh_(mesh) {
-    DRAKE_DEMAND(mesh_ != nullptr);
-  }
-
  private:
   // We use `reset_on_copy` so that the default copy constructor resets
   // the pointer to null when a MeshField is copied.
-  reset_on_copy<MeshType*> mesh_;
+  reset_on_copy<const MeshType*> mesh_;
 };
 
 /**
