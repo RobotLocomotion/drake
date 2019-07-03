@@ -81,6 +81,49 @@ GTEST_TEST(SurfaceMeshTest, GenerateTwoTriangleMeshAutoDiffXd) {
   EXPECT_EQ(surface_mesh->num_faces(), 2);
 }
 
+// Tests that referring_triangles() produces the correct sets of referring
+// triangles.
+GTEST_TEST(SurfaceMeshTest, ReferringTriangles) {
+  auto surface_mesh = GenerateTwoTriangleMesh<double>();
+  ASSERT_EQ(surface_mesh->num_vertices(), 4);
+
+  // Gets the first element from a set of SurfaceFaceIndex.
+  auto first = [](const std::set<SurfaceFaceIndex>& s) -> SurfaceFaceIndex {
+    return *s.begin();
+  };
+
+  // Gets the second element from a set of SurfaceFaceIndex.
+  auto second = [](const std::set<SurfaceFaceIndex>& s) -> SurfaceFaceIndex {
+    auto iterator = s.begin();
+    ++iterator;
+    return *iterator;
+  };
+
+  // Get the four sets.
+  const std::set<SurfaceFaceIndex>& tris_referring_to_0 =
+      surface_mesh->referring_triangles(SurfaceVertexIndex(0));
+  const std::set<SurfaceFaceIndex>& tris_referring_to_1 =
+      surface_mesh->referring_triangles(SurfaceVertexIndex(1));
+  const std::set<SurfaceFaceIndex>& tris_referring_to_2 =
+      surface_mesh->referring_triangles(SurfaceVertexIndex(2));
+  const std::set<SurfaceFaceIndex>& tris_referring_to_3 =
+      surface_mesh->referring_triangles(SurfaceVertexIndex(3));
+
+  // Verify that they are the correct size.
+  ASSERT_EQ(tris_referring_to_0.size(), 2);
+  ASSERT_EQ(tris_referring_to_1.size(), 1);
+  ASSERT_EQ(tris_referring_to_2.size(), 2);
+  ASSERT_EQ(tris_referring_to_3.size(), 1);
+
+  // Check the referring triangles.
+  EXPECT_EQ(first(tris_referring_to_0), 0); 
+  EXPECT_EQ(second(tris_referring_to_0), 1);
+  EXPECT_EQ(first(tris_referring_to_1), 0); 
+  EXPECT_EQ(first(tris_referring_to_2), 0); 
+  EXPECT_EQ(second(tris_referring_to_2), 1);
+  EXPECT_EQ(first(tris_referring_to_3), 1);
+}
+
 // Checks the area calculations.
 GTEST_TEST(SurfaceMeshTest, TestArea) {
   const double tol = 10 * std::numeric_limits<double>::epsilon();

@@ -2,6 +2,7 @@
 
 #include <array>
 #include <utility>
+#include <set>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -113,39 +114,48 @@ class SurfaceMesh {
   static constexpr int kDim = 2;
 
   /**
-    Index for identifying a vertex.
+   Index for identifying a vertex.
    */
   using VertexIndex = SurfaceVertexIndex;
 
   /**
-    Index for identifying a triangular element.
+   Index for identifying a triangular element.
    */
   using ElementIndex = SurfaceFaceIndex;
 
   /**
-    Type of barycentric coordinates on a triangular element.
-    Barycentric coordinates (b₀, b₁, b₂) satisfy b₀ + b₁ + b₂ = 1, bᵢ >= 0, so
-    technically we could calculate one of the bᵢ from the others; however,
-    there is no standard way to omit one of the coordinates.
+   Type of barycentric coordinates on a triangular element.
+   Barycentric coordinates (b₀, b₁, b₂) satisfy b₀ + b₁ + b₂ = 1, bᵢ >= 0, so
+   technically we could calculate one of the bᵢ from the others; however,
+   there is no standard way to omit one of the coordinates.
    */
   using Barycentric = Vector<T, kDim + 1>;
 
-  /** Returns the triangular element identified by a given index.
-    @param e   The index of the triangular element.
-    @pre e ∈ {0, 1, 2,..., num_faces()-1}.
+  /** 
+   Returns the triangular element identified by a given index.
+   @param e   The index of the triangular element.
+   @pre e ∈ {0, 1, 2,..., num_faces()-1}.
    */
   const SurfaceFace& element(ElementIndex e) const {
     DRAKE_DEMAND(0 <= e && e < num_faces());
     return faces_[e];
   }
 
-  /** Returns the vertex identified by a given index.
-    @param v  The index of the vertex.
-    @pre v ∈ {0, 1, 2,...,num_vertices()-1}.
+  /**
+   Returns the vertex identified by a given index.
+   @param v  The index of the vertex.
+   @pre v ∈ {0, 1, 2,...,num_vertices()-1}.
    */
   const SurfaceVertex<T>& vertex(VertexIndex v) const {
     DRAKE_DEMAND(0 <= v && v < num_vertices());
     return vertices_[v];
+  }
+
+  /**
+   Gets the set of triangles that refer to the specified vertex.
+   */
+  const std::set<SurfaceFaceIndex> referring_triangles(VertexIndex v) const {
+    return referring_triangles_[v];
   }
 
   /** Returns the number of vertices in the mesh.
@@ -154,30 +164,36 @@ class SurfaceMesh {
 
   //@}
 
-  /** Constructs a SurfaceMesh from faces and vertices.
-    @param faces     The triangular faces.
-    @param vertices  The vertices.
+  /**
+   Constructs a SurfaceMesh from faces and vertices.
+   @param faces     The triangular faces.
+   @param vertices  The vertices.
    */
   SurfaceMesh(std::vector<SurfaceFace>&& faces,
               std::vector<SurfaceVertex<T>>&& vertices)
       : faces_(std::move(faces)), vertices_(std::move(vertices)),
         area_(faces_.size()) {  // Pre-allocate here, not yet calculated.
+    SetReferringTriangles();
     CalcAreasAndCentroid();
   }
 
-  /** Returns the number of triangular elements in the mesh.
+  /**
+   Returns the number of triangular elements in the mesh.
    */
   int num_faces() const { return faces_.size(); }
 
-  /** Returns area of a triangular element.
+  /**
+   Returns area of a triangular element.
    */
   const T& area(SurfaceFaceIndex f) const { return area_[f]; }
 
-  /** Returns the total area of all the faces of this surface mesh.
+  /**
+   Returns the total area of all the faces of this surface mesh.
    */
   const T& total_area() const { return total_area_; }
 
-  /** Returns the area-weighted geometric centroid of this surface mesh. The
+  /**
+   Returns the area-weighted geometric centroid of this surface mesh. The
    returned value is the position vector p_MSc from M's origin to the
    centroid Sc, expressed in frame M. (M is the frame in which this mesh's
    vertices are measured and expressed.) Note that the centroid is not
@@ -188,6 +204,19 @@ class SurfaceMesh {
    insensitive to whether vertices are shared by faces.
    */
   const Vector3<T>& centroid() const { return p_MSc_; }
+
+  /**
+   Determines the triangular faces that refer to each vertex.
+   */
+  void SetReferringTriangles() {
+    referring_triangles_.resize(num_vertices());
+
+    for (SurfaceFaceIndex i(0); i < num_faces(); ++i) {
+      const int num_vertices_per_face = 3;
+      for (int j = 0; j < num_vertices_per_face; ++j)
+        referring_triangles_[element(i).vertex(j)].insert(i);        
+    }    
+  }
 
   /** 
    Maps the barycentric coordinates `Q_barycentric` of a point Q in
@@ -220,6 +249,9 @@ class SurfaceMesh {
   std::vector<SurfaceVertex<T>> vertices_;
 
   // Computed in initialization.
+
+  // Triangles that reference each vertex.
+  std::vector<std::set<SurfaceFaceIndex>> referring_triangles_;
 
   // Area of the triangles.
   std::vector<T> area_;
