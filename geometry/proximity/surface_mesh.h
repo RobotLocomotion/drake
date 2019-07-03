@@ -154,7 +154,7 @@ class SurfaceMesh {
   /**
    Gets the set of triangles that refer to the specified vertex.
    */
-  const std::set<SurfaceFaceIndex> referring_triangles(VertexIndex v) const {
+  const std::set<SurfaceFaceIndex>& referring_triangles(VertexIndex v) const {
     return referring_triangles_[v];
   }
 
@@ -205,19 +205,6 @@ class SurfaceMesh {
    */
   const Vector3<T>& centroid() const { return p_MSc_; }
 
-  /**
-   Determines the triangular faces that refer to each vertex.
-   */
-  void SetReferringTriangles() {
-    referring_triangles_.resize(num_vertices());
-
-    for (SurfaceFaceIndex i(0); i < num_faces(); ++i) {
-      const int num_vertices_per_face = 3;
-      for (int j = 0; j < num_vertices_per_face; ++j)
-        referring_triangles_[element(i).vertex(j)].insert(i);
-    }
-  }
-
   /** 
    Maps the barycentric coordinates `Q_barycentric` of a point Q in
    `element_index` to its position vector p_MQ.
@@ -242,6 +229,19 @@ class SurfaceMesh {
   // Calculates the areas of each triangle, the total area, and the centorid of
   // the surface.
   void CalcAreasAndCentroid();
+
+  /**
+   Determines the triangular faces that refer to each vertex.
+   */
+  void SetReferringTriangles() {
+    referring_triangles_.resize(num_vertices());
+
+    for (SurfaceFaceIndex i(0); i < num_faces(); ++i) {
+      const int kNumVerticesPerFace = 3;
+      for (int j = 0; j < kNumVerticesPerFace; ++j)
+        referring_triangles_[element(i).vertex(j)].insert(i);
+    }
+  }
 
   // The triangles that comprise the surface.
   std::vector<SurfaceFace> faces_;
