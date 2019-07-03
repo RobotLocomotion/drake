@@ -154,6 +154,17 @@ bool Expression::is_polynomial() const {
   return ptr_->is_polynomial();
 }
 
+bool Expression::is_expanded() const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return ptr_->is_expanded();
+}
+
+Expression& Expression::set_expanded() {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  ptr_->set_expanded();
+  return *this;
+}
+
 Polynomiald Expression::ToPolynomial() const {
   DRAKE_ASSERT(ptr_ != nullptr);
   return ptr_->ToPolynomial();
@@ -189,7 +200,13 @@ Expression Expression::EvaluatePartial(const Environment& env) const {
 
 Expression Expression::Expand() const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  return ptr_->Expand();
+  if (ptr_->is_expanded()) {
+    // If it is already expanded, return the current expression without calling
+    // Expand() on the cell.
+    return *this;
+  } else {
+    return ptr_->Expand();
+  }
 }
 
 Expression Expression::Substitute(const Variable& var,
