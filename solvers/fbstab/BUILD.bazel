@@ -28,156 +28,15 @@ drake_cc_library( # variable
             "@eigen"],
 )
 
-drake_cc_library( # residual
-    name = "dense_residual",
-    srcs = ["dense_components/dense_residual.h",
-            "dense_components/dense_residual.cc"
-    ],
-    hdrs = ["dense_components/dense_data.h"],
-    deps = [":dense_variable",
-            ":dense_data",
-            "@eigen"],
-    copts = ["-UNDEBUG"]
-)
-
-drake_cc_library( # feasibility 
-    name = "dense_feasibility",
-    srcs = ["dense_components/dense_feasibility.h",
-            "dense_components/dense_feasibility.cc"
-    ],
-    hdrs = ["dense_components/dense_feasibility.h"],
-    deps = [":dense_variable",
-            ":dense_data",
-            "@eigen"],
-    copts = ["-UNDEBUG"]
-)
-
-drake_cc_library( # linear solver
-    name = "dense_linear_solver",
-    srcs = ["dense_components/dense_linear_solver.h",
-            "dense_components/dense_linear_solver.cc"
-    ],
-    hdrs = ["dense_components/dense_linear_solver.h"],
-    deps = [":dense_variable",
-            ":dense_residual",
-            ":dense_data",
-            "@eigen"],
-    copts = ["-UNDEBUG"]
-)
-
-drake_cc_library( 
-    name = "fbstab_dense",
-    srcs = ["fbstab_dense.h",
-            "fbstab_dense.cc",
-            "algorithm/fbstab_algorithm.h",
-            "algorithm/fbstab_algorithm-inl.h"
-    ],
-    hdrs = ["fbstab_dense.h"],
-    deps = [":dense_data",
-            ":dense_variable",
-            ":dense_residual",
-            ":dense_feasibility",
-            ":dense_linear_solver"],
-)
-
-drake_cc_binary(
-    name = "dense_component_build_test",
-    srcs = ["test/dense_component_build_test.cc"],
-    deps = [":dense_data",
-            ":dense_variable",
-            ":dense_residual",
-            ":dense_linear_solver",
-            ":dense_feasibility"],
-    copts = ["-UNDEBUG"]
-)
-
 drake_cc_googletest( # dense component unit tests
     name = "dense_component_unit_tests",
     srcs = ["test/dense_component_unit_tests.cc",
             "test/dense_component_unit_tests.h"],
     deps = [":dense_data",
-            ":dense_variable",
-            ":dense_residual",
-            ":dense_feasibility",
-            ":dense_linear_solver"],
-)
-
-drake_cc_binary( # build test
-    name = "fbstab_dense_build_test",
-    srcs = ["test/dense_fbstab_build_test.cc"],
-    deps = [":dense_data",
-            ":fbstab_dense"],
-)
-
-drake_cc_googletest( # unit tests
-    name = "dense_unit_tests",
-    srcs = ["test/fbstab_dense_unit_tests.cc"],
-    deps = [":fbstab_dense"
-    ],
-    copts = ["-g"]
-)
-
-# FBstab MPC *************************************
-drake_cc_library(
-    name = "mpc_components",
-    srcs = ["components/mpc_data.h",
-            "components/mpc_variable.h",
-            "components/mpc_residual.h",
-            "components/ricatti_linear_solver.h",
-            "components/mpc_feasibility.h",
-            "components/mpc_data.cc",
-            "components/mpc_variable.cc",
-            "components/mpc_residual.cc",
-            "components/ricatti_linear_solver.cc",
-            "components/mpc_feasibility.cc"
-    ],
-    hdrs = ["components/mpc_data.h",
-            "components/mpc_variable.h",
-            "components/mpc_residual.h",
-            "components/ricatti_linear_solver.h",
-            "components/mpc_feasibility.h"
-    ],
-    deps = [":static_matrix"],
-)
-
-drake_cc_library(
-    name = "fbstab_mpc",
-    srcs = ["fbstab_mpc.h",
-            "fbstab_mpc.cc",
-            "fbstab_algorithm.h",
-            "fbstab_algorithm-inl.h"
-    ],
-    hdrs = ["fbstab_mpc.h"],
-    deps = [":static_matrix",
-            ":mpc_components"],
-)
-
-drake_cc_googletest(
-    name = "mpc_component_tests",
-    srcs = ["test/mpc_component_tests.cc",
-            "test/test_helpers.h"],
-    deps = [":static_matrix",
-            ":mpc_components"
-    ],
+            ":dense_variable"],
 )
 
 
-drake_cc_binary(
-    name = "mpc_build_test",
-    srcs = ["test/fbstab_mpc_build_test.cc",
-            "test/test_helpers.h"],
-    deps = [":static_matrix",
-            ":fbstab_mpc"],
-)
-
-drake_cc_googletest( # fbstab_mpc
-    name = "mpc_tests",
-    srcs = ["test/fbstab_mpc_tests.cc",
-            "test/test_helpers.h"],
-    deps = [":static_matrix",
-            ":fbstab_mpc"
-    ],
-)
 
 
 
