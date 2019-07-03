@@ -248,24 +248,23 @@ HydroelasticTractionCalculator<T>::CreateReportingFields(
   // Alias the contact surface.
   const ContactSurface<T>& surface = *data.surface_;
 
-  // The barycentric coordinates corresponding to the three triangle vertices.
-  SurfaceMesh<T>::Barycentric barycentric_coords[3] = {
-      SurfaceMesh<T>::Barycentric(1, 0, 0),
-      SurfaceMesh<T>::Barycentric(0, 1, 0),
-      SurfaceMesh<T>::Barycentric(0, 0, 1) }; 
-
   // Compute a value for each vertex.
-  std::vector<bool> value_computed(surface.mesh().num_vertices(), false);
   std::vector<Vector3<T> vt_AqBq_W(surface.mesh().num_vertices());
   std::vector<Vector3<T> traction_Aq_W(surface.mesh().num_vertices());
 
-  for (SurfaceFaceIndex i(0); i < surface.mesh().num_faces(); ++i) {
-    for (int j = 0; j < 3; ++j) {
-      // Do not compute values twice.
-      const SurfaceVertexIndex vertex_index = surface.element(i).vertex(j);
-      const int array_index = surface.vertex(vertex_index);
-      if (value_computed[array_index])
-        continue;
+  for (SurfaceVertexIndex i(0); i < surface.mesh().num_vertices(); ++i) {
+      // Get one of the triangles that references this vertex.
+      const std::set<SurfaceFaceIndex>& referring_triangles =
+          surface.mesh().referring_triangles(i);
+
+      // Verify that at least one triangle references this vertex.
+      DRAKE_DEMAND(!referring_triangles.empty());
+
+      // Get the face index.
+      const SurfaceFaceIndex face_index = *referring_triangles.first();
+
+      // Convert the vertex to Barycentric coordinates.
+      
 
       // Compute the traction and the slip velocity at the vertex.
       HydroelasticTractionCalculator<double>::TractionAtPointData output =
@@ -278,12 +277,6 @@ HydroelasticTractionCalculator<T>::CreateReportingFields(
       value_computed[surface.vertex(vertex_index)] = true;
     }
   }
-
-  // If assertions are armed, verify that value was computed for each vertex.
-  #ifdef DRAKE_ASSERT_IS_ARMED
-  for (bool flag : value_computed)
-    DRAKE_ASSERT(flag);
-  #endif
 
   // Create the field structure.
   ContactReportingFields fields;
