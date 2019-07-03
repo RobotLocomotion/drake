@@ -116,10 +116,10 @@ GTEST_TEST(SurfaceMeshTest, ReferringTriangles) {
   ASSERT_EQ(tris_referring_to_3.size(), 1);
 
   // Check the referring triangles.
-  EXPECT_EQ(first(tris_referring_to_0), 0); 
+  EXPECT_EQ(first(tris_referring_to_0), 0);
   EXPECT_EQ(second(tris_referring_to_0), 1);
-  EXPECT_EQ(first(tris_referring_to_1), 0); 
-  EXPECT_EQ(first(tris_referring_to_2), 0); 
+  EXPECT_EQ(first(tris_referring_to_1), 0);
+  EXPECT_EQ(first(tris_referring_to_2), 0);
   EXPECT_EQ(second(tris_referring_to_2), 1);
   EXPECT_EQ(first(tris_referring_to_3), 1);
 }

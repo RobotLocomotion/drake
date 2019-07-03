@@ -1,8 +1,8 @@
 #pragma once
 
 #include <array>
-#include <utility>
 #include <set>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -214,8 +214,8 @@ class SurfaceMesh {
     for (SurfaceFaceIndex i(0); i < num_faces(); ++i) {
       const int num_vertices_per_face = 3;
       for (int j = 0; j < num_vertices_per_face; ++j)
-        referring_triangles_[element(i).vertex(j)].insert(i);        
-    }    
+        referring_triangles_[element(i).vertex(j)].insert(i);
+    }
   }
 
   /** 
