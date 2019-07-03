@@ -61,7 +61,10 @@ class HydroelasticTractionCalculator {
     /// The pose of Geometry `surface.M_id()` in the world frame.
     const math::RigidTransform<T> X_WM;
 
-    /// The ContactSurface's centroid C, measured and expressed in World.
+    /// The traction computation needs a point C near the contact surface at
+    /// which to accumulate forces in a numerically robust way. Our calculations
+    /// define C to be the centroid of the contact surface, and measure and
+    /// express this point in the world frame. 
     const Vector3<T> p_WC;
 
     /// A pointer to the ContactSurface that must be maintained for the life
