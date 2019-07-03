@@ -94,6 +94,29 @@ class EvaluatorBase {
    */
   int num_outputs() const { return num_outputs_; }
 
+  /**
+   * Set the sparsity pattern of the gradient matrix (the gradient is the value
+   * of y in Eval, w.r.t x in Eval) . gradient_sparsity_pattern contains *all*
+   * the pairs of (row_index, col_index) for which the corresponding entries
+   * could have non-zero value in the gradient matrix.
+   */
+  void SetGradientSparsityPattern(
+      const std::vector<std::pair<int, int>>& gradient_sparsity_pattern);
+
+  /**
+   * Returns the vector of (row_index, col_index) that contains all the entries
+   * in the gradient of Eval function (∂y/∂x) whose value could be non-zero,
+   * namely if ∂yᵢ/∂xⱼ could be non-zero, then the pair (i, j) is in
+   * gradient_sparsity_pattern.
+   * @retval gradient_sparsity_pattern If gradient_sparsity_pattern.has_value()
+   * == false, then we regard all entries of the gradient as potentially
+   * non-zero.
+   */
+  const optional<std::vector<std::pair<int, int>>>& gradient_sparsity_pattern()
+      const {
+    return gradient_sparsity_pattern_;
+  }
+
  protected:
   /**
    * Constructs a evaluator.
@@ -150,6 +173,14 @@ class EvaluatorBase {
   int num_vars_{};
   int num_outputs_{};
   std::string description_;
+  // gradient_sparsity_pattern_ records the pair (row_index, col_index) that
+  // contains the non-zero entries in the gradient of the Eval
+  // function. Note that if the entry (row_index, col_index) *can* be non-zero
+  // for certain value of x, then it should be included in
+  // gradient_sparsity_patten_. When gradient_sparsity_pattern_.has_value() =
+  // false, the gradient matrix is regarded as non-sparse, i.e., every entry of
+  // the gradient matrix can be non-zero.
+  optional<std::vector<std::pair<int, int>>> gradient_sparsity_pattern_;
 };
 
 /**
