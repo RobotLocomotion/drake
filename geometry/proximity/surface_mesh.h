@@ -226,13 +226,11 @@ class SurfaceMesh {
   }
 
  private:
-  // Calculates the areas of each triangle, the total area, and the centorid of
+  // Calculates the areas of each triangle, the total area, and the centroid of
   // the surface.
   void CalcAreasAndCentroid();
 
-  /**
-   Determines the triangular faces that refer to each vertex.
-   */
+  // Determines the triangular faces that refer to each vertex.
   void SetReferringTriangles() {
     referring_triangles_.resize(num_vertices());
 
