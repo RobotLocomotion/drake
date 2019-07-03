@@ -64,10 +64,10 @@ public ::testing::TestWithParam<RigidTransform<double>> {
   void set_calculator_data(
       const RigidTransform<double>& X_WA, const RigidTransform<double>& X_WB,
       const SpatialVelocity<double>& V_WA, const SpatialVelocity<double>& V_WB,
-      const RigidTransform<double>& X_WM, const Vector3<double>& p_WC) {
+      const RigidTransform<double>& X_WM) {
     calculator_data_ = std::make_unique<HydroelasticTractionCalculator<double>::
         Data>(
-            X_WA, X_WB, V_WA, V_WB, X_WM, p_WC, &contact_surface());
+            X_WA, X_WB, V_WA, V_WB, X_WM, &contact_surface());
   }
 
   const ContactSurface<double>& contact_surface() const {
@@ -154,12 +154,8 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     const SpatialVelocity<double> V_WB = plant_->EvalBodySpatialVelocityInWorld(
         *plant_context_, bodyB);
 
-    // Set the surface centroid.
-    const Vector3<double> p_MC = contact_surface_->mesh().centroid();
-    const Vector3<double> p_WC = X_WM * p_MC;
-
     // (Re)-initialize the traction calculator data.
-    set_calculator_data(X_WA, X_WB, V_WA, V_WB, X_WM, p_WC);
+    set_calculator_data(X_WA, X_WB, V_WA, V_WB, X_WM);
   }
 
   void ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
