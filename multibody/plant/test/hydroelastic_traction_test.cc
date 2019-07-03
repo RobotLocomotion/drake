@@ -54,11 +54,25 @@ public ::testing::TestWithParam<RigidTransform<double>> {
   const HydroelasticTractionCalculator<double>& traction_calculator() const {
     return traction_calculator_;
   }
-  const MultibodyPlant<double>& plant() const { return *plant_; }
+
+  const HydroelasticTractionCalculator<double>::Data& calculator_data() {
+    return *calculator_data_;
+  }
+
+  // Sets all kinematic quantities (contact surface will be left untouched).
+  // Note: see Data constructor for description of these parameters.
+  void set_calculator_data(
+      const RigidTransform<double>& X_WA, const RigidTransform<double>& X_WB,
+      const SpatialVelocity<double>& V_WA, const SpatialVelocity<double>& V_WB,
+      const RigidTransform<double>& X_WM) {
+    calculator_data_ = std::make_unique<HydroelasticTractionCalculator<double>::
+        Data>(
+            X_WA, X_WB, V_WA, V_WB, X_WM, &contact_surface());
+  }
+
   const ContactSurface<double>& contact_surface() const {
       return *contact_surface_;
   }
-  const Context<double>& plant_context() const { return *plant_context_; }
 
   // Returns the default numerical tolerance.
   double tol() const { return tol_; }
@@ -71,16 +85,14 @@ public ::testing::TestWithParam<RigidTransform<double>> {
   void ComputeSpatialTractionsAtBodyOriginsFromHydroelasticModel(
       double dissipation, double mu_coulomb, SpatialForce<double>* Ft_Ao_W,
       SpatialForce<double>* Ft_Bo_W) {
-    // Instantiate the traction calculator data.
-    HydroelasticTractionCalculator<double>::HydroelasticTractionCalculatorData
-        calculator_data(*plant_context_, *plant_, contact_surface_.get());
+    UpdateCalculatorData();
 
     // First compute the traction applied to Body A at point Q, expressed in the
     // world frame.
     Vector3<double> p_WQ;
     const Vector3<double> traction_Aq_W =
-        traction_calculator().CalcTractionAtPoint(
-            calculator_data, SurfaceFaceIndex(0),
+        traction_calculator_.CalcTractionAtPoint(
+            calculator_data(), SurfaceFaceIndex(0),
             SurfaceMesh<double>::Barycentric(1.0, 0.0, 0.0), dissipation,
             mu_coulomb, &p_WQ);
 
@@ -96,12 +108,12 @@ public ::testing::TestWithParam<RigidTransform<double>> {
 
     const SpatialForce<double> Ft_Ac_W =
         traction_calculator().ComputeSpatialTractionAtAcFromTractionAtAq(
-            calculator_data, p_WQ, traction_Aq_W);
+            calculator_data(), p_WQ, traction_Aq_W);
 
     // Shift to body origins. Traction on body B is equal and opposite.
-    const Vector3<double>& p_WC = calculator_data.p_WC();
-    const Vector3<double>& p_WAo = calculator_data.X_WA().translation();
-    const Vector3<double>& p_WBo = calculator_data.X_WB().translation();
+    const Vector3<double>& p_WC = calculator_data().p_WC;
+    const Vector3<double>& p_WAo = calculator_data().X_WA.translation();
+    const Vector3<double>& p_WBo = calculator_data().X_WB.translation();
     const Vector3<double> p_CAo_W = p_WAo - p_WC;
     const Vector3<double> p_CBo_W = p_WBo - p_WC;
     *Ft_Ao_W = Ft_Ac_W.Shift(p_CAo_W);
@@ -112,6 +124,47 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     plant_->SetFreeBodySpatialVelocity(plant_context_,
         plant_->GetBodyByName("box"),
         SpatialVelocity<double>(Vector3<double>::Zero(), v));
+  }
+
+  void UpdateCalculatorData() {
+    // Get the pose of the Geometry M in the world frame.
+    const auto& query_object = plant_->get_geometry_query_input_port().
+        template Eval<geometry::QueryObject<double>>(*plant_context_);
+    const math::RigidTransform<double> X_WM = query_object.X_WG(
+        contact_surface_->id_M());
+
+    // Get the bodies that the two geometries are affixed to. We'll call these
+    // A and B.
+    const geometry::FrameId frameM_id = query_object.inspector().GetFrameId(
+        contact_surface_->id_M());
+    const geometry::FrameId frameN_id = query_object.inspector().GetFrameId(
+        contact_surface_->id_N());
+    const Body<double>& bodyA = *plant_->GetBodyFromFrameId(frameM_id);
+    const Body<double>& bodyB = *plant_->GetBodyFromFrameId(frameN_id);
+
+    // Get the poses of the two bodies in the world frame.
+    const math::RigidTransform<double> X_WA =
+        plant_->EvalBodyPoseInWorld(*plant_context_, bodyA);
+    const math::RigidTransform<double> X_WB =
+        plant_->EvalBodyPoseInWorld(*plant_context_, bodyB);
+
+    // Get the spatial velocities for the two bodies (at the body frames).
+    const SpatialVelocity<double> V_WA = plant_->EvalBodySpatialVelocityInWorld(
+        *plant_context_, bodyA);
+    const SpatialVelocity<double> V_WB = plant_->EvalBodySpatialVelocityInWorld(
+        *plant_context_, bodyB);
+
+    // (Re)-initialize the traction calculator data.
+    set_calculator_data(X_WA, X_WB, V_WA, V_WB, X_WM);
+  }
+
+  void ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+      double dissipation, double mu_coulomb,
+      SpatialForce<double>* F_Ao_W, SpatialForce<double>* F_Bo_W) {
+    UpdateCalculatorData();
+
+    traction_calculator_.ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+        calculator_data(), dissipation, mu_coulomb, F_Ao_W, F_Bo_W);
   }
 
  private:
@@ -209,6 +262,8 @@ public ::testing::TestWithParam<RigidTransform<double>> {
   systems::Context<double>* plant_context_;
   std::unique_ptr<ContactSurface<double>> contact_surface_;
   HydroelasticTractionCalculator<double> traction_calculator_;
+  std::unique_ptr<
+      HydroelasticTractionCalculator<double>::Data> calculator_data_;
 };
 
 // Tests the traction calculation without any frictional or dissipation
@@ -365,9 +420,8 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, VanillaTractionOverPatch) {
 
   // Compute the spatial forces at the origins of the body frames.
   multibody::SpatialForce<double> F_Ao_W, F_Bo_W;
-  traction_calculator().ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-      plant_context(), plant(), contact_surface(), dissipation, mu_coulomb,
-      &F_Ao_W, &F_Bo_W);
+  ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+      dissipation, mu_coulomb, &F_Ao_W, &F_Bo_W);
 
   // Re-express the spatial forces in Y's frame for easy interpretability.
   const math::RotationMatrix<double>& R_WY = GetParam().rotation();
@@ -400,9 +454,8 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, FrictionalTractionOverPatch) {
 
   // Compute the spatial forces at the origins of the body frames.
   multibody::SpatialForce<double> F_Ao_W, F_Bo_W;
-  traction_calculator().ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-      plant_context(), plant(), contact_surface(), dissipation, mu_coulomb,
-      &F_Ao_W, &F_Bo_W);
+  ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+      dissipation, mu_coulomb, &F_Ao_W, &F_Bo_W);
 
   // Re-express the spatial forces in Y's frame for easy interpretability.
   const Vector3<double> f_Bo_Y = R_WY.transpose() * F_Bo_W.translational();
@@ -449,9 +502,8 @@ TEST_P(MultibodyPlantHydroelasticTractionTests,
 
   // Compute the spatial forces at the origins of the body frames.
   multibody::SpatialForce<double> F_Ao_W, F_Bo_W;
-  traction_calculator().ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-      plant_context(), plant(), contact_surface(), dissipation, mu_coulomb,
-      &F_Ao_W, &F_Bo_W);
+  ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+      dissipation, mu_coulomb, &F_Ao_W, &F_Bo_W);
 
   // Re-express the spatial forces in Y's frame for easy interpretability.
   const Vector3<double> f_Bo_Y = R_WY.transpose() * F_Bo_W.translational();
