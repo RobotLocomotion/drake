@@ -917,33 +917,33 @@ VectorX<T> MultibodyTree<T>::CalcGravityGeneralizedForces(
 template <typename T>
 RigidTransform<T> MultibodyTree<T>::CalcRelativeTransform(
     const systems::Context<T>& context,
-    const Frame<T>& frame_E,
-    const Frame<T>& frame_F) const {
+    const Frame<T>& frame_F,
+    const Frame<T>& frame_G) const {
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  const Body<T>& A = frame_E.body();
-  const Body<T>& B = frame_F.body();
+  const Body<T>& A = frame_F.body();
+  const Body<T>& B = frame_G.body();
   const RigidTransform<T>& X_WA = pc.get_X_WB(A.node_index());
   const RigidTransform<T>& X_WB = pc.get_X_WB(B.node_index());
-  const RigidTransform<T> X_WE = X_WA * frame_E.CalcPoseInBodyFrame(context);
-  const RigidTransform<T> X_WF = X_WB * frame_F.CalcPoseInBodyFrame(context);
-  return X_WE.inverse() * X_WF;  // X_EF = X_EW * X_WF;
+  const RigidTransform<T> X_WF = X_WA * frame_F.CalcPoseInBodyFrame(context);
+  const RigidTransform<T> X_WG = X_WB * frame_G.CalcPoseInBodyFrame(context);
+  return X_WF.inverse() * X_WG;  // X_FG = X_FW * X_WG;
 }
 
 template <typename T>
 RotationMatrix<T> MultibodyTree<T>::CalcRelativeRotationMatrix(
     const systems::Context<T>& context,
-    const Frame<T>& frame_E,
-    const Frame<T>& frame_F) const {
+    const Frame<T>& frame_F,
+    const Frame<T>& frame_G) const {
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  const Body<T>& A = frame_E.body();
-  const Body<T>& B = frame_F.body();
+  const Body<T>& A = frame_F.body();
+  const Body<T>& B = frame_G.body();
   const RotationMatrix<T>& R_WA = pc.get_X_WB(A.node_index()).rotation();
   const RotationMatrix<T>& R_WB = pc.get_X_WB(B.node_index()).rotation();
-  const RotationMatrix<T> R_WE =
-      R_WA * frame_E.CalcPoseInBodyFrame(context).rotation();
   const RotationMatrix<T> R_WF =
-      R_WB * frame_F.CalcPoseInBodyFrame(context).rotation();
-  return R_WE.inverse() * R_WF;  // R_EF = R_EW * R_WF;
+      R_WA * frame_F.CalcPoseInBodyFrame(context).rotation();
+  const RotationMatrix<T> R_WG =
+      R_WB * frame_G.CalcPoseInBodyFrame(context).rotation();
+  return R_WF.inverse() * R_WG;  // R_FG = R_FW * R_WG;
 }
 
 template <typename T>

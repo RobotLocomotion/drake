@@ -1381,38 +1381,41 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_F, const Body<T>& body,
       const math::RigidTransform<T>& X_FB) const;
 
-  /// Calculates the rigid transform `X_AB` that stores the pose (orientation
-  /// and position) of a frame B relative to a frame A.  `X_AB` stores the
-  /// rotation matrix `R_AB` that relates two sets of right-handed orthogonal
-  /// unit vectors, namely Ax, Ay, Az fixed in A to Bx, By, Bz fixed in B.
-  /// It also stores the position vector `p_AoBo_A`  from Ao (A's origin) to
-  /// Bo (B's origin), expressed in frame A (in terms of Ax, Ay, Az).
-  /// @param[in] context The state of the multibody system, which includes the
-  /// system's generalized positions q.  Note: `X_AB` is a function of q.
-  /// @param[in] frame_A The frame A designated in the rigid transform `X_AB`.
-  /// @param[in] frame_B The frame B designated in the rigid transform `X_AB`.
-  /// @retval X_AB  The RigidTransform relating frame A and frame B.
+  /// Calculates the rigid transform (pose) `X_FG` relating frame F and frame G.
+  /// `X_FG` stores the rotation matrix `R_FG` and the position vector
+  /// `p_FoGo_F` from Fo (F's origin) to Go (G's origin), expressed in frame F.
+  /// @param[in] context
+  ///    The state of the multibody system, which includes the system's
+  ///    generalized positions q.  Note: `X_FG` is a function of q.
+  /// @param[in] frame_F
+  ///    The frame F designated in the rigid transform `X_FG`.
+  /// @param[in] frame_G
+  ///    The frame G designated in the rigid transform `X_FG`.
+  /// @retval X_FG
+  ///    The RigidTransform relating frame F and frame G.
   math::RigidTransform<T> CalcRelativeTransform(
       const systems::Context<T>& context,
-      const Frame<T>& frame_A,
-      const Frame<T>& frame_B) const {
-    return internal_tree().CalcRelativeTransform(context, frame_A, frame_B);
+      const Frame<T>& frame_F,
+      const Frame<T>& frame_G) const {
+    return internal_tree().CalcRelativeTransform(context, frame_F, frame_G);
   }
 
-  /// Calculates the rotation matrix R_AB that stores the orientation of a frame
-  /// B relative to a frame A.  R_AB relates two sets of right-handed orthogonal
-  /// unit vectors, namely Ax, Ay, Az fixed in A to Bx, By, Bz fixed in B.
-  /// @param[in] context The state of the multibody system, which includes the
-  /// system's generalized positions q.  Note: R_AB is a function of q.
-  /// @param[in] frame_A The frame A designated in the RotationMatrix `R_AB`.
-  /// @param[in] frame_B The frame B designated in the RotationMatrix `R_AB`.
-  /// @retval R_AB  The RotationMatrix relating frame A and frame B.
+  /// Calculates the rotation matrix `R_FG` relating frame F and frame G.
+  /// @param[in] context
+  ///    The state of the multibody system, which includes the system's
+  ///    generalized positions q.  Note: `R_FG` is a function of q.
+  /// @param[in] frame_F
+  ///    The frame F designated in the rigid transform `R_FG`.
+  /// @param[in] frame_G
+  ///    The frame G designated in the rigid transform `R_FG`.
+  /// @retval R_FG
+  ///    The RigidTransform relating frame F and frame G.
   math::RotationMatrix<T> CalcRelativeRotationMatrix(
       const systems::Context<T>& context,
-      const Frame<T>& frame_A,
-      const Frame<T>& frame_B) const {
+      const Frame<T>& frame_F,
+      const Frame<T>& frame_G) const {
     return internal_tree().CalcRelativeRotationMatrix(context,
-                                                      frame_A, frame_B);
+                                                      frame_F, frame_G);
   }
 
   /// Given the positions `p_BQi` for a set of points `Qi` measured and
