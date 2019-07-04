@@ -85,7 +85,7 @@ namespace multibody {
 /// axes of inertia** so that the inertia matrix is diagonalized with elements
 /// called **principal moments of inertia**.
 ///
-/// @note The definition of the inertia matrix @f$ I^{S/P} @f$ of an arbitrary
+/// @note The formal definition of the inertia matrix @f$ I^{S/P} @f$ of a
 /// system S about a point P follows the definition of the inertia dyadic 𝐈 of
 /// S about P, which begins by modeling S with n particles S₁ ... Sₙ (e.g., 12
 /// grams of carbon can be modeled with n = 6.02 * 10²³ molecules/particles).
@@ -97,9 +97,11 @@ namespace multibody {
 /// <pre>
 ///     𝐈₁ = m₁ * [𝐔 * (ᴾ𝐩ˢ¹ ⋅ ᴾ𝐩ˢ¹)  -  ᴾ𝐩ˢ¹ * ᴾ𝐩ˢ¹]
 /// </pre>
-/// Note: The dot-product (⋅) and vector multiply (*) are different.
-/// The inertia dyadic 𝐈 of the entire system S is defined by summing the
-/// inertia dyadic of each particle Sᵢ about P (i = 1, ... n), i.e.,
+/// Note: The vector dot-product (⋅) above produces a scalar whereas the vector
+/// multiply (*) produces a dyadic which is a 2nd-order tensor (ᴾ𝐩ˢ¹ * ᴾ𝐩ˢ¹ is
+/// similar to the matrix outer-product of a 3x1 matrix multiplied by a 1x3
+/// matrix). The inertia dyadic 𝐈 of the entire system S is defined by summing
+/// the inertia dyadic of each particle Sᵢ about P (i = 1, ... n), i.e.,
 /// <pre>
 ///     𝐈 = 𝐈₁ + 𝐈₂ + ... 𝐈ₙ
 /// </pre>
