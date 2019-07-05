@@ -122,8 +122,8 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
       plant.CalcRelativeRotationMatrix(*context, frameAbar, frameBbar);
 
   // TODO(Mitiguy) Improve RotationMatrix operator* to allow multiplication of
-  // R * S where R is a RotationMatrix of one type and S is a RotationMatrix of
-  // a different type (e.g., R is type `<double>` and S is type `<AutoDiffXd>~).
+  // R1 * R2 where R1 is a RotationMatrix of one type and R2 is a RotationMatrix
+  // of a different type (e.g., R1 is `<double>` and R2 is `<AutoDiffXd>`).
   // Background: The code below cannot use RotationMatrix operator* without a
   // cast or RotationMatrix::matrix() [which uses Eigen's functionality].
   // Why? R_AB is of type `<T>` whereas R_BC is of type `<double>`, yet
