@@ -1382,8 +1382,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const math::RigidTransform<T>& X_FB) const;
 
   /// Calculates the rigid transform (pose) `X_FG` relating frame F and frame G.
-  /// `X_FG` stores the rotation matrix `R_FG` and the position vector
-  /// `p_FoGo_F` from Fo (F's origin) to Go (G's origin), expressed in frame F.
   /// @param[in] context
   ///    The state of the multibody system, which includes the system's
   ///    generalized positions q.  Note: `X_FG` is a function of q.
