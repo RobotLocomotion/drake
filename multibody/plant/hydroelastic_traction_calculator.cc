@@ -194,6 +194,11 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   return traction_data;
 }
 
+// Creates linearly interpolated fields over the contact surface for use in
+// contact reporting.
+// @warning The newly created mesh fields retain a pointer to the surface mesh
+//         (i.e., `data.surface_->mesh()`), so that pointer must remain valid
+//        while this object is alive.
 template <typename T>
 typename HydroelasticTractionCalculator<T>::ContactReportingFields 
 HydroelasticTractionCalculator<T>::CreateReportingFields(

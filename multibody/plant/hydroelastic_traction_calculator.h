@@ -72,17 +72,6 @@ class HydroelasticTractionCalculator {
     const Vector3<T> p_WC;
   };
 
-  /// Various fields used for querying kinematic and dynamic quantities over the
-  /// contact surface.
-  struct ContactReportingFields {
-    // The traction acting on Body A and expressed in the world frame.  
-    std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_W;
-
-    // The slip velocity of Body B relative to Body A, expressed in the world
-    // frame.
-    std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_W;
-  };
-
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HydroelasticTractionCalculator)
 
   HydroelasticTractionCalculator() {}
@@ -111,16 +100,6 @@ class HydroelasticTractionCalculator {
        multibody::SpatialForce<T>* F_Ao_W,
        multibody::SpatialForce<T>* F_Bo_W) const;
 
-  /**
-   Creates linearly interpolated fields over the contact surface for use in
-   contact reporting.
-   @warning The newly created mesh fields retain a pointer to the surface mesh
-            (i.e., `data.surface_->mesh()`), so that pointer must remain valid
-            while this object is alive.
-   */
-  ContactReportingFields CreateReportingFields(
-      const Data& data, double dissipation, double mu_coulomb) const;
-
  private:
   // To allow GTEST to test private functions.
   friend class MultibodyPlantHydroelasticTractionTests;
@@ -139,6 +118,21 @@ class HydroelasticTractionCalculator {
     // world frame.
     Vector3<T> traction_Aq_W;
   };
+
+  // Various fields used for querying kinematic and dynamic quantities over a 
+  // contact surface.
+  struct ContactReportingFields {
+    // The traction acting on Body A (i.e., the body that Geometry M is affixed
+    // to), expressed in the world frame.  
+    std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_W;
+
+    // The slip velocity of Body B (i.e., the body that Geometry N is affixed 
+    // to) relative to Body A, expressed in the world frame.
+    std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_W;
+  };
+
+  ContactReportingFields CreateReportingFields(
+      const Data& data, double dissipation, double mu_coulomb) const;
 
   TractionAtPointData CalcTractionAtPoint(
       const Data& data,
