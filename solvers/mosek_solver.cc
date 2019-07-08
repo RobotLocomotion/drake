@@ -575,7 +575,7 @@ MSKrescodee AddConeConstraints(
     } else if (std::is_same<C, ExponentialConeConstraint>::value) {
       cone_type = MSK_CT_PEXP;
     } else {
-      throw std::runtime_error("MosekSolver: unsupported cone type.");
+      DRAKE_UNREACHABLE();
     }
     rescode =
         MSK_appendcone(*task, cone_type, 0.0, num_z, new_var_indices.data());
