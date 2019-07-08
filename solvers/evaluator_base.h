@@ -95,10 +95,10 @@ class EvaluatorBase {
   int num_outputs() const { return num_outputs_; }
 
   /**
-   * Set the sparsity pattern of the gradient matrix (the gradient is the value
-   * of y in Eval, w.r.t x in Eval) . gradient_sparsity_pattern contains *all*
-   * the pairs of (row_index, col_index) for which the corresponding entries
-   * could have non-zero value in the gradient matrix.
+   * Set the sparsity pattern of the gradient matrix ∂y/∂x( the gradient of
+   * y value in Eval, w.r.t x in Eval) . gradient_sparsity_pattern contains
+   * *all* the pairs of (row_index, col_index) for which the corresponding
+   * entries could have non-zero value in the gradient matrix ∂y/∂x.
    */
   void SetGradientSparsityPattern(
       const std::vector<std::pair<int, int>>& gradient_sparsity_pattern);
