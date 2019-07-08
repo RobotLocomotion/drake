@@ -75,10 +75,12 @@ class HydroelasticTractionCalculator {
   /// Various fields used for querying kinematic and dynamic quantities over the
   /// contact surface.
   struct ContactReportingFields {
-    // TODO(edrumwri): Document these.
-    std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction;
+    // The traction acting on Body A and expressed in the world frame.  
+    std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_W;
 
-    std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip;
+    // The slip velocity of Body B relative to Body A, expressed in the world
+    // frame.
+    std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_W;
   };
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HydroelasticTractionCalculator)

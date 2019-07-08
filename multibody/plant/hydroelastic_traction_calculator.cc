@@ -252,9 +252,9 @@ HydroelasticTractionCalculator<T>::CreateReportingFields(
 
   // Create the field structure.
   ContactReportingFields fields;
-  fields.traction = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
+  fields.traction_W = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
       "traction", std::move(traction_Aq_W), &surface.mesh());  
-  fields.vslip = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
+  fields.vslip_W = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
       "slip_velocity", std::move(vt_BqAq_W), &surface.mesh());  
   return fields;
 }

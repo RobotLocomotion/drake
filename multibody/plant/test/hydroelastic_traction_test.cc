@@ -637,6 +637,9 @@ TEST_P(HydroelasticReportingTests, LinearTraction) {
   const double dissipation = 0.0;
   const double mu_coulomb = 0.0;
 
+  // A tight tolerance at which all tests pass.
+  const double tol = 10 * std::numeric_limits<double>::epsilon();
+
   // Create the fields.
   HydroelasticTractionCalculator<double> calculator;
   HydroelasticTractionCalculator<double>::ContactReportingFields fields =
@@ -646,7 +649,26 @@ TEST_P(HydroelasticReportingTests, LinearTraction) {
   // Test the traction at the vertices of the contact surface.
   for (SurfaceVertexIndex(i);
       i < calculator_data().surface.mesh().num_vertices(); ++i) {
-    
+    // Get one of the faces that refers to vertex i.
+    const std::set<SurfaceFaceIndex> referring_tris =
+        calculator_data().surface.mesh().referring_triangles(i);
+    DRAKE_DEMAND(!referring_tris.empty());
+
+    // Get the barycentric coordinates of vertex i.
+    SurfaceFaceIndex face_index = *referring_tris.begin();
+    const SurfaceMesh<double>::Barycentric b_MV =
+        calculator_data().surface.mesh().GetBarycentric(face_index, i); 
+
+    // Evaluate the traction at vertex i on Body A (the body to which geometry
+    // M is attached). 
+    const Vector3<double> traction_Av_W =
+       fields.traction_W->Evaluate(face_index, b_MV); 
+
+    // Check the pressure is evaluated to how we constructed it.
+    const Vector3<double>& r_MV =
+        calculator_data().surface.mesh().vertex(i).r_MV();
+    const Vector3<double> r_WV = calculator_data().X_WM * r_MV;
+    EXPECT_LT(std::abs(traction_Av_W.norm() - pressure(r_WV)), tol);
   }
 
   // Test the traction at the centroid of the contact surface. This should just
@@ -655,25 +677,30 @@ TEST_P(HydroelasticReportingTests, LinearTraction) {
   Vector3<double> mean_traction_W = Vector3<double>::Zero();
   for (SurfaceVertexIndex(i);
       i < calculator_data().surface.mesh().num_vertices(); ++i) {
-    // Get one of the faces that refers to this vertex.
+    // Get one of the faces that refers to vertex i.
     const std::set<SurfaceFaceIndex> referring_tris =
         calculator_data().surface.mesh().referring_triangles(i);
     DRAKE_DEMAND(!referring_tris.empty());
+
+    // Get the barycentric coordinates of vertex i.
     SurfaceFaceIndex face_index = *referring_tris.begin();
     const SurfaceMesh<double>::Barycentric b_MV =
-        calculator_data().surface.mesh().CalcBarycentric(
-            calculator_data().surface.mesh().vertex(i).r_MV(), face_index); 
-    mean_traction_W += fields.traction->Evaluate(face_index, b_MV); 
+        calculator_data().surface.mesh().GetBarycentric(face_index, i);
+
+    // Evaluate the traction at vertex i. 
+    mean_traction_W += fields.traction_W->Evaluate(face_index, b_MV); 
   }
   mean_traction_W /= calculator_data().surface.mesh().num_vertices();
-  // 2. Compute the traction at the centroid of the contact surface.
+  // 2. Compute the traction at the centroid of the contact surface. Note that
+  //    we a SurfaceFaceIndex (zero) arbitrarily- the centroid is located on
+  //    both faces in this particular instance.
   const SurfaceMesh<double>::Barycentric b_MC =
       calculator_data().surface.mesh().CalcBarycentric(
           calculator_data().surface.mesh().centroid(), SurfaceFaceIndex(0)); 
-  const Vector3<double> traction_Ac_W = fields.traction->Evaluate(
+  const Vector3<double> traction_Ac_W = fields.traction_W->Evaluate(
       SurfaceFaceIndex(0), b_MC); 
 
-  const double tol = 100 * std::numeric_limits<double>::epsilon();
+  // Check that the two are approximately equal.
   for (int i = 0; i < 3; ++i)
     EXPECT_NEAR(mean_traction_W[i], traction_Ac_W[i], tol); 
 }
