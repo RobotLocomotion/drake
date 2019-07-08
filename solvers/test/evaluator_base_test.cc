@@ -221,17 +221,17 @@ GTEST_TEST(EvaluatorBaseTest, SetGradientSparsityPattern) {
     }
   }
 
-#ifdef DRAKE_ASSERT_IS_ARMED
-  // row index out of range.
-  EXPECT_THROW(evaluator.SetGradientSparsityPattern({{-1, 0}}),
-               std::invalid_argument);
-  // column index out of range.
-  EXPECT_THROW(evaluator.SetGradientSparsityPattern({{0, -1}}),
-               std::invalid_argument);
-  // repeated entries.
-  EXPECT_THROW(evaluator.SetGradientSparsityPattern({{0, 0}, {0, 0}}),
-               std::invalid_argument);
-#endif
+  if (kDrakeAssertIsArmed) {
+    // row index out of range.
+    EXPECT_THROW(evaluator.SetGradientSparsityPattern({{-1, 0}}),
+                 std::invalid_argument);
+    // column index out of range.
+    EXPECT_THROW(evaluator.SetGradientSparsityPattern({{0, -1}}),
+                 std::invalid_argument);
+    // repeated entries.
+    EXPECT_THROW(evaluator.SetGradientSparsityPattern({{0, 0}, {0, 0}}),
+                 std::invalid_argument);
+  }
 }
 
 }  // anonymous namespace
