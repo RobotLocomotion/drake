@@ -138,7 +138,8 @@ class RotationMatrix {
   /// rotate relative to frame A by a roll angle `y` about `Bz = Az`.
   /// Note: B and A are no longer aligned.
   explicit RotationMatrix(const RollPitchYaw<T>& rpy) {
-    // TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
+    // TODO(@mitiguy) Add publically viewable documentation on how Sherm and
+    // Goldstein's like to visualize/conceptualize rotation sequences.
     const T& r = rpy.roll_angle();
     const T& p = rpy.pitch_angle();
     const T& y = rpy.yaw_angle();
@@ -291,6 +292,17 @@ class RotationMatrix {
   /// currently allows cast from type double to AutoDiffXd, but not vice-versa.
   template <typename U>
   RotationMatrix<U> cast() const {
+    // TODO(Mitiguy) Make the RotationMatrix::cast() method more robust.  It is
+    // currently limited by Eigen's cast() for the matrix underlying this class.
+    // Consider the following logic to improve casts (and address issue #11785).
+    // 1. If relevant, use Eigen's underlying cast method.
+    // 2. Strip derivative data when casting from `<AutoDiffXd>` to `<double>`.
+    // 3. Call ExtractDoubleOrThrow() when casting from `<symbolic::Expression>`
+    //    to `<double>`.
+    // 4. The current RotationMatrix::cast() method incurs overhead due to its
+    //    underlying call to a RotationMatrix constructor. Perhaps create
+    //    specialized code to return a reference if casting to the same type,
+    //    e.g., casting from `<double>` to `<double>' should be inexpensive.
     const Matrix3<U> m = R_AB_.template cast<U>();
     return RotationMatrix<U>(m, true);
   }

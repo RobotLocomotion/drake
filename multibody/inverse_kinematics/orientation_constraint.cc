@@ -121,16 +121,17 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
   const math::RotationMatrix<T> R_AbarBbar =
       plant.CalcRelativeRotationMatrix(*context, frameAbar, frameBbar);
 
-  // TODO(Mitiguy) Improve RotationMatrix operator* to allow multiplication of
-  // R1 * R2 where R1 is a RotationMatrix of one type and R2 is a RotationMatrix
-  // of a different type (e.g., R1 is `<double>` and R2 is `<AutoDiffXd>`).
-  // Background: The code below cannot use RotationMatrix operator* without a
-  // cast or RotationMatrix::matrix() [which uses Eigen's functionality].
-  // Why? R_AB is of type `<T>` whereas R_BC is of type `<double>`, yet
-  // RotationMatrix operator* only works for R_AB * R_BC if the type of R_AB
-  // is identical to the type of R_BC.  See issue #11779.
-  const math::RotationMatrix<T> R_AB = R_AbarA.cast<T>().inverse() *
-                          R_AbarBbar * R_BbarB.cast<T>();
+  // The code below casts a RotationMatrix of type `<double>` to type `<T>`
+  // which allows the RotationMatrix::operator* to multiply a RotationMatrix of
+  // type `<T>` by another RotationMatrix also of type `<T>`.
+  // Alternately, use Eigen's underlying overloaded operator*, e.g., as
+  // const Matrix3<T> m = R_AbarA.matrix().inverse() * R_AbarBbar.matrix()
+  //                    * R_BbarB.matrix();
+  // const math::RotationMatrix<T> R_AB(m);
+  // Either way, the explicit cast() helps communicate the intent of this code
+  // which is to preserve the derivative information in R_AbarBbar.
+  const math::RotationMatrix<T> R_AB = R_AbarA.cast<T>().inverse() * R_AbarBbar
+                                     * R_BbarB.cast<T>();
   const Matrix3<T>& m = R_AB.matrix();
   const Vector3<T> r_AB{m(1, 2) - m(2, 1),
                         m(2, 0) - m(0, 2),
