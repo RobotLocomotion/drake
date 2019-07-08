@@ -8,6 +8,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -207,7 +208,7 @@ GTEST_TEST(SurfaceMeshTest, TestSurfaceMeshAutoDiffXd) {
   auto surface_mesh = TestSurfaceMesh<AutoDiffXd>();
 }
 
-GTEST_TEST(SurfaceMeshTest, TestGetBarycentric) {
+GTEST_TEST(SurfaceMeshTest, TestGetVertexBarycentric) {
   auto surface_mesh_W = TestSurfaceMesh<double>();
   ASSERT_EQ(surface_mesh_W->num_faces(), 2);
 
@@ -219,14 +220,20 @@ GTEST_TEST(SurfaceMeshTest, TestGetBarycentric) {
   const Vector3<double> bz(0, 0, 1);
 
   // Test the vertices from the first face.
-  EXPECT_EQ(bx, surface_mesh_W->GetBarycentric(SurfaceFaceIndex(0), v0));
-  EXPECT_EQ(by, surface_mesh_W->GetBarycentric(SurfaceFaceIndex(0), v1));
-  EXPECT_EQ(bz, surface_mesh_W->GetBarycentric(SurfaceFaceIndex(0), v2));
+  EXPECT_EQ(bx, surface_mesh_W->GetVertexBarycentric(SurfaceFaceIndex(0), v0));
+  EXPECT_EQ(by, surface_mesh_W->GetVertexBarycentric(SurfaceFaceIndex(0), v1));
+  EXPECT_EQ(bz, surface_mesh_W->GetVertexBarycentric(SurfaceFaceIndex(0), v2));
 
   // Test the vertices from the second face.
-  EXPECT_EQ(bx, surface_mesh_W->GetBarycentric(SurfaceFaceIndex(1), v2));
-  EXPECT_EQ(by, surface_mesh_W->GetBarycentric(SurfaceFaceIndex(1), v3));
-  EXPECT_EQ(bz, surface_mesh_W->GetBarycentric(SurfaceFaceIndex(1), v0));
+  EXPECT_EQ(bx, surface_mesh_W->GetVertexBarycentric(SurfaceFaceIndex(1), v2));
+  EXPECT_EQ(by, surface_mesh_W->GetVertexBarycentric(SurfaceFaceIndex(1), v3));
+  EXPECT_EQ(bz, surface_mesh_W->GetVertexBarycentric(SurfaceFaceIndex(1), v0));
+
+  // Verify that an exception is thrown when trying to query the barycentric
+  // coordinates of a vertex not referenced by a face.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      surface_mesh_W->GetVertexBarycentric(SurfaceFaceIndex(0), v3),
+      std::logic_error, ".*vertex index.*not referenced.*");
 }
 
 template<typename T>
