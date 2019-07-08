@@ -54,12 +54,20 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(pp.cols(), 1)
         np.testing.assert_equal(x, pp.value(11.))
 
+    def test_piecewise_polynomial_vector_constructor(self):
+        p1 = Polynomial(1)
+        p2 = Polynomial(2)
+        pp = PiecewisePolynomial([p1, p2], [0, 1, 2])
+
     def test_zero_order_hold(self):
         x = np.array([[1., 2.], [3., 4.], [5., 6.]]).transpose()
         pp = PiecewisePolynomial.ZeroOrderHold([0., 1., 2.], x)
         pp_d = pp.derivative(derivative_order=1)
         np.testing.assert_equal(np.array([[1.], [2.]]), pp.value(.5))
         np.testing.assert_equal(pp_d.value(.5), np.array([[0.], [0.]]))
+        p = pp.getPolynomial(segment_index=0, row=1, col=0)
+        np.testing.assert_equal(p.GetCoefficients(), np.array([2]))
+        self.assertEqual(pp.getSegmentPolynomialDegree(segment_index=1), 0)
         self.assertEqual(pp.get_number_of_segments(), 2)
         self.assertEqual(pp.start_time(), 0.)
         self.assertEqual(pp.end_time(), 2.)
@@ -101,3 +109,11 @@ class TestTrajectories(unittest.TestCase):
         pp_sub.shiftRight(10.)
         self.assertEqual(pp_sub.start_time(), 11.)
         self.assertEqual(pp_sub.end_time(), 12.)
+
+    def test_compare_and_concatenate(self):
+        x = np.array([[10.], [20.], [30.]]).transpose()
+        pp1 = PiecewisePolynomial.FirstOrderHold([0., 1., 2.], x)
+        pp2 = PiecewisePolynomial.FirstOrderHold([2., 3., 4.], x)
+        self.assertTrue(pp1.isApprox(other=pp1, tol=1e-14))
+        pp1.ConcatenateInTime(other=pp2)
+        self.assertEqual(pp1.end_time(), 4.)
