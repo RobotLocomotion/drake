@@ -1630,6 +1630,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, with_respect_to, frame_F, p_FP_list, frame_A, frame_E);
   }
 
+  // TODO(eric.cousineau): Reduce duplicate text between overloads.
   /// This is a variant to compute the geometric Jacobian `Jv_WFp` for a list of
   /// points `P` moving with `frame_F`, given that we know the position `p_WP`
   /// of each point in the list measured and expressed in the world frame W. The
@@ -1674,8 +1675,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_WP_list,
       EigenPtr<MatrixX<T>> Jv_WFp) const {
-    // TODO(eric.cousineau): Reduce duplicate text between overloads.
-    // TODO(amcastro-tri): provide the Jacobian-times-vector operation.  Forr
+    // TODO(amcastro-tri): provide the Jacobian-times-vector operation.  For
     // most applications it is all we need and it is more efficient to compute.
     // TODO(amcastro-tri): Rework this method as per issue #10155.
     return internal_tree().CalcPointsGeometricJacobianExpressedInWorld(
