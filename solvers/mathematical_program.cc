@@ -176,34 +176,45 @@ MathematicalProgram::NewNonnegativePolynomial(
     NonnegativePolynomial type) {
   const MatrixXDecisionVariable Q =
       NewSymmetricContinuousVariables(monomial_basis.size());
+  const symbolic::Polynomial p =
+      NewNonnegativePolynomial(Q, monomial_basis, type);
+  return std::make_pair(p, Q);
+}
+
+symbolic::Polynomial MathematicalProgram::NewNonnegativePolynomial(
+    const Eigen::Ref<const MatrixX<symbolic::Variable>>& grammian,
+    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+    NonnegativePolynomial type) {
+  DRAKE_ASSERT(grammian.rows() == grammian.cols());
+  DRAKE_ASSERT(grammian.rows() == monomial_basis.rows());
   // TODO(hongkai.dai & soonho.kong): ideally we should compute p in one line as
-  // monomial_basis.dot(Q * monomial_basis). But as explained in #10200, this
-  // one line version is too slow, so we use this double for loop to compute
-  // the matrix product by hand. I will revert to the one line version when it
-  // is fast.
+  // monomial_basis.dot(grammian * monomial_basis). But as explained in #10200,
+  // this one line version is too slow, so we use this double for loop to
+  // compute the matrix product by hand. I will revert to the one line version
+  // when it is fast.
   symbolic::Polynomial p{};
-  for (int i = 0; i < Q.rows(); ++i) {
-    p.AddProduct(Q(i, i), pow(monomial_basis(i), 2));
-    for (int j = i + 1; j < Q.cols(); ++j) {
-      p.AddProduct(2 * Q(i, j), monomial_basis(i) * monomial_basis(j));
+  for (int i = 0; i < grammian.rows(); ++i) {
+    p.AddProduct(grammian(i, i), pow(monomial_basis(i), 2));
+    for (int j = i + 1; j < grammian.cols(); ++j) {
+      p.AddProduct(2 * grammian(i, j), monomial_basis(i) * monomial_basis(j));
     }
   }
   switch (type) {
     case MathematicalProgram::NonnegativePolynomial::kSos: {
-      AddPositiveSemidefiniteConstraint(Q);
+      AddPositiveSemidefiniteConstraint(grammian);
       break;
     }
     case MathematicalProgram::NonnegativePolynomial::kSdsos: {
-      AddScaledDiagonallyDominantMatrixConstraint(Q);
+      AddScaledDiagonallyDominantMatrixConstraint(grammian);
       break;
     }
     case MathematicalProgram::NonnegativePolynomial::kDsos: {
       AddPositiveDiagonallyDominantMatrixConstraint(
-          Q.cast<symbolic::Expression>());
+          grammian.cast<symbolic::Expression>());
       break;
     }
   }
-  return std::make_pair(p, Q);
+  return p;
 }
 
 pair<symbolic::Polynomial, MatrixXDecisionVariable>

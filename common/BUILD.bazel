@@ -1001,6 +1001,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
+        "//common/test_utilities:limit_malloc",
         "//common/test_utilities:symbolic_test_util",
     ],
 )
@@ -1011,6 +1012,15 @@ drake_cc_googletest(
         ":essential",
         ":symbolic",
         "//common/test_utilities:is_memcpy_movable",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_expression_cell_test",
+    deps = [
+        ":essential",
+        ":symbolic",
         "//common/test_utilities:symbolic_test_util",
     ],
 )

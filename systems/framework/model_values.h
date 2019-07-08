@@ -11,7 +11,7 @@
 
 namespace drake {
 namespace systems {
-namespace detail {
+namespace internal {
 
 /// Represents models for a sequence of AbstractValues (usually a sequence of
 /// either input or output ports).  The models are the "prototype" design
@@ -92,6 +92,6 @@ ModelValues::CloneVectorModel(int index) const {
   return basic_vector.Clone();
 }
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace systems
 }  // namespace drake

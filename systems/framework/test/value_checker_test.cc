@@ -51,7 +51,7 @@ class NotQuiteGoodVector : public GoodVector {
 
 // A convenience wrapper for the "device under test".
 void CheckVector(const BasicVector<double>* basic_vector) {
-  drake::systems::detail::CheckBasicVectorInvariants(basic_vector);
+  drake::systems::internal::CheckBasicVectorInvariants(basic_vector);
 }
 
 GTEST_TEST(ValueCheckerTest, CheckBasicVectorInvariantsTest) {
@@ -71,7 +71,7 @@ GTEST_TEST(ValueCheckerTest, CheckBasicVectorInvariantsTest) {
 
 // A convenience wrapper for the "device under test".
 void CheckValue(const AbstractValue* abstract_value) {
-  drake::systems::detail::CheckVectorValueInvariants<double>(abstract_value);
+  drake::systems::internal::CheckVectorValueInvariants<double>(abstract_value);
 }
 
 GTEST_TEST(ValueCheckerTest, CheckVectorValueInvariantsTest) {

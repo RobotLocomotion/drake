@@ -17,7 +17,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 namespace {
 
 using Eigen::Matrix3d;
@@ -35,11 +35,11 @@ using geometry::Sphere;
 using math::RigidTransformd;
 using math::RollPitchYaw;
 using math::RotationMatrix;
-using multibody::detail::MakeCoulombFrictionFromSdfCollisionOde;
-using multibody::detail::MakeGeometryInstanceFromSdfVisual;
-using multibody::detail::MakeGeometryPoseFromSdfCollision;
-using multibody::detail::MakeShapeFromSdfGeometry;
-using multibody::detail::MakeVisualPropertiesFromSdfVisual;
+using multibody::internal::MakeCoulombFrictionFromSdfCollisionOde;
+using multibody::internal::MakeGeometryInstanceFromSdfVisual;
+using multibody::internal::MakeGeometryPoseFromSdfCollision;
+using multibody::internal::MakeShapeFromSdfGeometry;
+using multibody::internal::MakeVisualPropertiesFromSdfVisual;
 using std::make_unique;
 using std::unique_ptr;
 using systems::Context;
@@ -913,7 +913,7 @@ GTEST_TEST(SceneGraphParserDetail,
 }
 
 }  // namespace
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 

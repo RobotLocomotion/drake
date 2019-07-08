@@ -9,6 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/systems/analysis/implicit_integrator.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 
 namespace drake {
 namespace systems {
@@ -85,7 +86,10 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   /// The integrator supports error estimation.
   bool supports_error_estimation() const final { return true; }
 
-  /// This integrator provides second order error estimates.
+  /// This first-order integrator uses embedded second order methods to compute
+  /// estimates of the local truncation error. The order of the asymptotic
+  /// difference between these two methods (from which the error estimate is
+  /// computed) is O(h²).
   int get_error_estimate_order() const final { return 2; }
 
  private:
@@ -152,8 +156,15 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // The continuous state update vector used during Newton-Raphson.
   std::unique_ptr<ContinuousState<T>> dx_state_;
 
+  // Variables to avoid heap allocations.
+  VectorX<T> xt0_, xdot_, xtplus_ie_, xtplus_tr_;
+
   // Various statistics.
   int64_t num_nr_iterations_{0};
+
+  // Second order Runge-Kutta method for estimating the integration error when
+  // the requested step size lies below the working step size.
+  std::unique_ptr<RungeKutta2Integrator<T>> rk2_;
 
   // Implicit trapezoid specific statistics.
   int64_t num_err_est_jacobian_reforms_{0};

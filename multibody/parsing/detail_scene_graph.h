@@ -12,7 +12,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
 /** Given an sdf::Geometry object representing a <geometry> element from an SDF
  file, this method makes a new drake::geometry::Shape object from this
@@ -123,6 +123,6 @@ sdf::Visual ResolveVisualUri(const sdf::Visual& original,
                              const multibody::PackageMap& package_map,
                              const std::string& root_dir);
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

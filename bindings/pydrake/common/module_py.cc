@@ -66,7 +66,7 @@ PYBIND11_MODULE(_module_py, m) {
       if (p) {
         std::rethrow_exception(p);
       }
-    } catch (const drake::detail::assertion_error& e) {
+    } catch (const drake::internal::assertion_error& e) {
       PyErr_SetString(PyExc_SystemExit, e.what());
     }
   });

@@ -104,6 +104,13 @@ class TwoFreeSpheresTest : public ::testing::Test {
  public:
   TwoFreeSpheresTest();
 
+  template <typename T>
+  geometry::GeometryId GetSphereGeometryId(const MultibodyPlant<T>& plant,
+                                           FrameIndex sphere_index) const {
+    return plant.GetCollisionGeometriesForBody(
+        plant.get_frame(sphere_index).body())[0];
+  }
+
  protected:
   double radius1_{0.1};
   double radius2_{0.2};
@@ -116,9 +123,6 @@ class TwoFreeSpheresTest : public ::testing::Test {
 
   FrameIndex sphere1_index_;
   FrameIndex sphere2_index_;
-
-  geometry::GeometryId sphere1_geometry_id_;
-  geometry::GeometryId sphere2_geometry_id_;
 
   // The pose of sphere 1's collision geometry in sphere 1's body frame.
   math::RigidTransformd X_B1S1_;

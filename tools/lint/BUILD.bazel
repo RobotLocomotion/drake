@@ -137,6 +137,8 @@ sh_test(
     data = [
         ":clang-format-includes",
     ],
+    # Valgrind Memcheck reports numerous leaks in the python executable.
+    tags = ["no_memcheck"],
 )
 
 # Exercise `ignore` for `python_lint`.

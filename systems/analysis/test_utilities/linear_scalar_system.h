@@ -8,14 +8,16 @@ namespace systems {
 namespace analysis_test {
 
 /// System where the state at (scalar) time t corresponds to the linear equation
-/// 4t + 3.
+/// St + 3, where S is 4 by default.
 class LinearScalarSystem : public LeafSystem<double> {
  public:
-  LinearScalarSystem() { this->DeclareContinuousState(1); }
+  explicit LinearScalarSystem(double S = 4.0) : S_(S) {
+      this->DeclareContinuousState(1);
+  }
 
   // Evaluates the system at time t.
   double Evaluate(double t) const {
-    return 3 + 4 * t;
+    return 3 + S_ * t;
   }
 
  private:
@@ -29,8 +31,10 @@ class LinearScalarSystem : public LeafSystem<double> {
   void DoCalcTimeDerivatives(
       const Context<double>&,
       ContinuousState<double>* deriv) const override {
-    (*deriv)[0] = 4;
+    (*deriv)[0] = S_;
   }
+
+  double S_{};
 };
 
 }  // namespace analysis_test

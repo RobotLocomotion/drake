@@ -197,18 +197,6 @@ GTEST_TEST(ValueTest, MaybeGetValue) {
 
   ASSERT_NE(string_value->maybe_get_value<std::string>(), nullptr);
   EXPECT_EQ(*string_value->maybe_get_value<std::string>(), "hello");
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(double_value->MaybeGetValue<std::string>(), nullptr);
-  EXPECT_EQ(string_value->MaybeGetValue<double>(), nullptr);
-
-  ASSERT_NE(double_value->MaybeGetValue<double>(), nullptr);
-  EXPECT_EQ(*double_value->MaybeGetValue<double>(), 3.);
-
-  ASSERT_NE(string_value->MaybeGetValue<std::string>(), nullptr);
-  EXPECT_EQ(*string_value->MaybeGetValue<std::string>(), "hello");
-#pragma GCC diagnostic pop
 }
 
 TYPED_TEST(TypedValueTest, Access) {
@@ -219,14 +207,6 @@ TYPED_TEST(TypedValueTest, Access) {
   EXPECT_EQ(3, erased.get_value<T>());
   ASSERT_NE(erased.maybe_get_value<T>(), nullptr);
   EXPECT_EQ(3, *erased.maybe_get_value<T>());
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(3, erased.GetValue<T>());
-  EXPECT_EQ(3, erased.GetValueOrThrow<T>());
-  ASSERT_NE(erased.MaybeGetValue<T>(), nullptr);
-  EXPECT_EQ(3, *erased.MaybeGetValue<T>());
-#pragma GCC diagnostic pop
 }
 
 TYPED_TEST(TypedValueTest, Clone) {
@@ -248,18 +228,6 @@ TYPED_TEST(TypedValueTest, Mutation) {
   EXPECT_EQ(5, erased.get_value<T>());
   erased.SetFrom(Value<T>(6));
   EXPECT_EQ(6, erased.get_value<T>());
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  erased.SetValue<T>(T{7});
-  EXPECT_EQ(7, erased.GetValue<T>());
-  erased.SetValueOrThrow<T>(T{8});
-  EXPECT_EQ(8, erased.GetValue<T>());
-  erased.SetFrom(Value<T>(9));
-  EXPECT_EQ(9, erased.GetValue<T>());
-  erased.SetFromOrThrow(Value<T>(10));
-  EXPECT_EQ(10, erased.GetValue<T>());
-#pragma GCC diagnostic pop
 }
 
 TYPED_TEST(TypedValueTest, BadCast) {
@@ -271,14 +239,6 @@ TYPED_TEST(TypedValueTest, BadCast) {
   EXPECT_THROW(erased.get_mutable_value<T>(), std::logic_error);
   EXPECT_THROW(erased.set_value<T>(T{3}), std::logic_error);
   EXPECT_THROW(erased.SetFrom(Value<T>(2)), std::logic_error);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_THROW(erased.GetValueOrThrow<T>(), std::logic_error);
-  EXPECT_THROW(erased.GetMutableValueOrThrow<T>(), std::logic_error);
-  EXPECT_THROW(erased.SetValueOrThrow<T>(T{3}), std::logic_error);
-  EXPECT_THROW(erased.SetFromOrThrow(Value<T>(2)), std::logic_error);
-#pragma GCC diagnostic pop
 }
 
 class PrintInterface {

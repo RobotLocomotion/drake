@@ -293,6 +293,23 @@ TEST_F(BoxSphereTest, Test) {
         Eigen::MatrixXd::Identity(kNumPositionsForTwoFreeBodies,
                                   kNumPositionsForTwoFreeBodies),
         1E-12, box_size_, radius_);
+
+    // Now check if constraint constructed from MBP<ADS> gives the same result
+    // as that from MBP<double>
+    const MinimumDistanceConstraint constraint_from_autodiff(
+        plant_autodiff_, minimum_distance, plant_context_autodiff_,
+        penalty_function);
+    // Set dq to arbitrary values.
+    Eigen::Matrix<double, 14, 2> dq;
+    for (int i = 0; i < 14; ++i) {
+      dq(i, 0) = std::sin(i + 1);
+      dq(i, 1) = 2 * i - 1;
+    }
+    /* tolerance for checking numerical gradient vs analytical gradient. The
+     * numerical gradient is only accurate up to 5E-6 */
+    const double gradient_tol = 5E-6;
+    TestKinematicConstraintEval(constraint, constraint_from_autodiff, q, dq,
+                                gradient_tol);
   }
 }
 }  // namespace multibody

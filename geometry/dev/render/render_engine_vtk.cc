@@ -107,15 +107,15 @@ std::string RemoveFileExtension(const std::string& filepath) {
 
 }  // namespace
 
-namespace detail {
+namespace internal {
 
 ShaderCallback::ShaderCallback() :
     z_near_(kClippingPlaneNear),
     z_far_(kClippingPlaneFar) {}
 
-}  // namespace detail
+}  // namespace internal
 
-vtkNew<detail::ShaderCallback> RenderEngineVtk::uniform_setting_callback_;
+vtkNew<internal::ShaderCallback> RenderEngineVtk::uniform_setting_callback_;
 
 RenderEngineVtk::RenderEngineVtk()
     : color_palette_(kNumMaxLabel, RenderLabel::terrain_label(),

@@ -20,10 +20,10 @@ namespace systems {
 class ContextBase;
 
 #ifndef DRAKE_DOXYGEN_CXX
-namespace detail {
+namespace internal {
 // This provides ContextBase limited "friend" access to FixedInputPortValue.
 class ContextBaseFixedInputAttorney;
-}  // namespace detail
+}  // namespace internal
 #endif
 
 /** A %FixedInputPortValue encapsulates a vector or abstract value for
@@ -105,7 +105,7 @@ class FixedInputPortValue {
   }
 
  private:
-  friend class detail::ContextBaseFixedInputAttorney;
+  friend class internal::ContextBaseFixedInputAttorney;
 
   // Allow this adapter access to our private copy constructor. This is intended
   // only for use by ContextBase.
@@ -157,7 +157,7 @@ class FixedInputPortValue {
 };
 
 #ifndef DRAKE_DOXYGEN_CXX
-namespace detail {
+namespace internal {
 
 class ContextBaseFixedInputAttorney {
  public:
@@ -191,7 +191,7 @@ class ContextBaseFixedInputAttorney {
   }
 };
 
-}  // namespace detail
+}  // namespace internal
 #endif
 
 }  // namespace systems

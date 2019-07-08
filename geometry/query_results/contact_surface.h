@@ -10,6 +10,7 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/mesh_field_linear.h"
 #include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -77,15 +78,15 @@ namespace geometry {
   <!-- Note from PR discussion
     1. `∇hₘₙ` *is* a well-behaved vector (subject to some assumptions -- see
         below).
-    2. The contact surface "clips" intersecting goemetries M and N into disjoint
-       geometires M' and N'. `∇hₘₙ` points *out* of M' and *into* N'.
+    2. The contact surface "clips" intersecting geometries M and N into disjoint
+       geometries M' and N'. `∇hₘₙ` points *out* of M' and *into* N'.
     Assumptions:
-    - `∇e` is differntiable and "points outward"
+    - `∇e` is differentiable and "points outward"
 
    TODO(DamrongGuoy):
    1. Document the above listed properties of `∇hₘₙ`.
    2. Add a todo indicating M' and N' should be illustrated in the docs.
-   3. Explicitly add the assumptions on `e` that make this interpretatoin valid.
+   3. Explicitly add the assumptions on `e` that make this interpretation valid.
   -->
 
   Notice that the domain of eₘₙ is the two-dimensional surface 𝕊ₘₙ, while the
@@ -110,14 +111,21 @@ namespace geometry {
   contains Q. With vertices of the triangle labeled as v₀, v₁, v₂, we can
   map (b0, b1, b2) to r_MQ by:
 
-               r_MQ = b0 * r_MV₀ + b1 * r_MV₁ + b2 * r_MV₂,
+               r_MQ = b0 * r_Mv₀ + b1 * r_Mv₁ + b2 * r_Mv₂,
                b0 + b1 + b2 = 1, bᵢ ∈ [0,1],
 
-  where r_MVᵢ is the displacement vector of the vertex labeled as vᵢ from the
+  where r_Mvᵢ is the displacement vector of the vertex labeled as vᵢ from the
   origin of M's frame, expressed in M's frame.
 
   We use the barycentric coordinates to evaluate the field values.
 
+  <h2>Result invariance<h2>
+
+  For two geometries, A and B, there is a mapping to M and N (as documented in
+  this class). The mapping is based on the values of `id_A` and `id_B`. For
+  fixed values of `id_A` and `id_B`, the mapping from (A, B) to (M, N) will
+  _always_ be the same. (Although thre is no guarantee as to _what_ that mapping
+  is.)
   @tparam T the underlying scalar type. Must be a valid Eigen scalar.
  */
 template <typename T>
@@ -133,12 +141,14 @@ class ContactSurface {
 
     id_M_ = surface.id_M_;
     id_N_ = surface.id_N_;
-    mesh_ = std::make_unique<SurfaceMesh<T>>(*surface.mesh_.get());
+    mesh_M_ = std::make_unique<SurfaceMesh<T>>(*surface.mesh_M_);
 
     // We can't simply copy the mesh fields; the copies must contain pointers
     // to the new mesh. So, we use CloneAndSetMesh() instead.
-    e_MN_ = surface.e_MN_->CloneAndSetMesh(mesh_.get());
-    grad_h_MN_M_ = surface.grad_h_MN_M_->CloneAndSetMesh(mesh_.get());
+    e_MN_.reset(static_cast<SurfaceMeshFieldLinear<T, T>*>(
+        surface.e_MN_->CloneAndSetMesh(mesh_M_.get()).release()));
+    grad_h_MN_M_.reset(static_cast<SurfaceMeshFieldLinear<Vector3<T>, T>*>(
+        surface.grad_h_MN_M_->CloneAndSetMesh(mesh_M_.get()).release()));
 
     return *this;
   }
@@ -146,11 +156,15 @@ class ContactSurface {
   ContactSurface(ContactSurface&&) = default;
   ContactSurface& operator=(ContactSurface&&) = default;
 
+  // TODO(SeanCurtis-TRI): There are two quantities that care about frames:
+  //  the mesh vertex positions and grad_h_MN. Is there *actual* value in
+  //  defining them in one particular geometry's frame as opposed to some third
+  //  frame (e.g., world frame)?
   /** Constructs a ContactSurface.
    @param id_M         The id of the first geometry M.
    @param id_N         The id of the second geometry N.
-   @param mesh         The surface mesh of the contact surface 𝕊ₘₙ between M
-                       and N.
+   @param mesh_M       The surface mesh of the contact surface 𝕊ₘₙ between M
+                       and N. The mesh vertices are defined in frame M.
    @param e_MN         Represents the scalar field eₘₙ on the surface mesh.
    @param grad_h_MN_M  Represents the vector field ∇hₘₙ on the surface mesh,
                        expressed in M's frame. Due to discretization,
@@ -160,12 +174,12 @@ class ContactSurface {
                        discretization.
    */
   ContactSurface(
-      GeometryId id_M, GeometryId id_N, std::unique_ptr<SurfaceMesh<T>> mesh,
+      GeometryId id_M, GeometryId id_N, std::unique_ptr<SurfaceMesh<T>> mesh_M,
       std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN,
       std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_MN_M)
       : id_M_(id_M),
         id_N_(id_N),
-        mesh_(std::move(mesh)),
+        mesh_M_(std::move(mesh_M)),
         e_MN_(std::move(e_MN)),
         grad_h_MN_M_(std::move(grad_h_MN_M)) {}
 
@@ -198,11 +212,40 @@ class ContactSurface {
     return grad_h_MN_M_->Evaluate(face, barycentric);
   }
 
-  /** Returns the reference to the surface mesh.
+  /** Returns a reference to the surface mesh.
    */
   const SurfaceMesh<T>& mesh() const {
-    DRAKE_DEMAND(mesh_.get() != nullptr);
-    return *mesh_;
+    DRAKE_DEMAND(mesh_M_ != nullptr);
+    return *mesh_M_;
+  }
+
+  /** Swaps M and N (modifying the data in place to reflect the change in
+   frames).
+   @param X_NM  The pose of frame M in N.
+   */
+  void SwapMAndN(const math::RigidTransform<T>& X_NM) {
+    std::swap(id_M_, id_N_);
+    mesh_M_->TransformVertices(X_NM);
+    // TODO(SeanCurtis-TRI): Determine if this work is necessary. It is neither
+    // documented nor tested that the face winding is guaranteed to be one way
+    // or the other. Alternatively, this should be documented and tested.
+    mesh_M_->ReverseFaceWinding();
+
+    // TODO(SeanCurtis-TRI): We have no reasonable interface for transforming a
+    //  mesh field. In this case, we want to re-express some vectors and then
+    //  reverse them (i.e., reflect them around the origin). Generically, we
+    //  should apply an arbitrary 3x3 matrix (which encompasses a rotation and a
+    //  reflection). But that would *not* be a valid rotation matrix
+    //  (handed-ness would be wrong).
+    std::vector<Vector3<T>>& values = grad_h_MN_M_->mutable_values();
+    for (SurfaceVertexIndex v(0); v < mesh_M_->num_vertices(); ++v) {
+      const Vector3<T>& normal_MN_M = values[v];
+      const Vector3<T> normal_MN_N = X_NM.rotation() * normal_MN_M;
+      const Vector3<T> normal_NM_N = -normal_MN_N;
+      values[v] = normal_NM_N;
+    }
+
+    // Note: the scalar field does not depend on frames.
   }
 
  private:
@@ -211,12 +254,15 @@ class ContactSurface {
   /** The id of the second geometry N. */
   GeometryId id_N_;
   /** The surface mesh of the contact surface 𝕊ₘₙ between M and N. */
-  std::unique_ptr<SurfaceMesh<T>> mesh_;
+  std::unique_ptr<SurfaceMesh<T>> mesh_M_;
+  // TODO(SeanCurtis-TRI): We can only construct from a linear field, so store
+  //  it as such for now. This can be promoted once there's a construction that
+  //  uses a different derivation.
   /** Represents the scalar field eₘₙ on the surface mesh. */
-  std::unique_ptr<SurfaceMeshField<T, T>> e_MN_;
+  std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN_;
   /** Represents the vector field ∇hₘₙ on the surface mesh, expressed in M's
     frame */
-  std::unique_ptr<SurfaceMeshField<Vector3<T>, T>> grad_h_MN_M_;
+  std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_MN_M_;
   friend class ContactSurfaceTester;
 };
 

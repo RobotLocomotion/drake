@@ -77,11 +77,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody;
-  // TODO(eric.cousineau): #8116 Simplify this.
-  py::return_value_policy rvp_for_type =
-      (std::is_same<T, double>::value ? py::return_value_policy::reference
-                                      : py::return_value_policy::copy);
-
   // PointPairContactInfo
   {
     using Class = PointPairContactInfo<T>;
@@ -313,7 +308,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
               // Reference.
               return CopyIfNotPodType(self->GetPositions(context));
             },
-            py::arg("context"), rvp_for_type,
+            py::arg("context"), return_value_policy_for_scalar_type<T>(),
             // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), cls_doc.GetPositions.doc_1args)
         .def("GetPositions",
@@ -329,7 +324,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
               // Reference.
               return CopyIfNotPodType(self->GetVelocities(context));
             },
-            py::arg("context"), rvp_for_type,
+            py::arg("context"), return_value_policy_for_scalar_type<T>(),
             // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), cls_doc.GetVelocities.doc_1args)
         .def("GetVelocities",
@@ -587,9 +582,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 const CoulombFriction<double>&>(
                 &Class::RegisterCollisionGeometry),
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
-            py::arg("coulomb_friction"),
-            cls_doc.RegisterCollisionGeometry
-                .doc_5args_body_X_BG_shape_name_coulomb_friction)
+            py::arg("coulomb_friction"), cls_doc.RegisterCollisionGeometry.doc)
         .def("RegisterCollisionGeometry",
             [](Class* self, const Body<T>& body,
                 const RigidTransform<double>& X_BG,
@@ -607,26 +600,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
             py::arg("coulomb_friction"), py::arg("scene_graph"),
-            (std::string("(Deprecated.) ") +
-                cls_doc.RegisterCollisionGeometry
-                    .doc_5args_body_X_BG_shape_name_coulomb_friction)
-                .c_str())
-        .def("RegisterCollisionGeometry",
-            [](Class* self, const Body<T>& body, const Isometry3<double>& X_BG,
-                const geometry::Shape& shape, const std::string& name,
-                const CoulombFriction<double>& coulomb_friction,
-                geometry::SceneGraph<T>* scene_graph) {
-              WarnDeprecated(doc_iso3_deprecation);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-              return self->RegisterCollisionGeometry(body,
-                  RigidTransform<double>(X_BG), shape, name, coulomb_friction,
-                  scene_graph);
-#pragma GCC diagnostic pop
-            },
-            py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
-            py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
-            doc_iso3_deprecation)
+            cls_doc.RegisterCollisionGeometry.doc_deprecated)
         .def("get_source_id", &Class::get_source_id, cls_doc.get_source_id.doc)
         .def("get_geometry_query_input_port",
             &Class::get_geometry_query_input_port, py_reference_internal,

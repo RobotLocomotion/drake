@@ -15,7 +15,7 @@
 #include "drake/common/never_destroyed.h"
 
 namespace drake {
-namespace detail {
+namespace internal {
 namespace {
 
 // Singleton to manage assertion configuration.
@@ -67,7 +67,7 @@ void AssertionFailed(const char* condition, const char* func, const char* file,
   }
 }
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace drake
 
 // Configures the DRAKE_ASSERT and DRAKE_DEMAND assertion failure handling
@@ -82,6 +82,6 @@ void AssertionFailed(const char* condition, const char* func, const char* file,
 // This method is intended ONLY for use by pydrake bindings, and thus is not
 // declared in any header file, to discourage anyone from using it.
 extern "C" void drake_set_assertion_failure_to_throw_exception() {
-  drake::detail::AssertionConfig::singleton().
+  drake::internal::AssertionConfig::singleton().
       assertion_failures_are_exceptions = true;
 }

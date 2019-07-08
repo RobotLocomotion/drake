@@ -8,7 +8,7 @@
 
 namespace drake {
 namespace solvers {
-namespace detail {
+namespace internal {
 
 template <typename ScalarType>
 using VecIn = Eigen::Ref<const VectorX<ScalarType>>;
@@ -81,6 +81,6 @@ struct FunctionTraits<std::unique_ptr<F>> {
 // void eval(x1,..., xn,  y1,..., ym), and
 // InputOutputRelation getInputOutputRelation(input_index, output_index)
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace solvers
 }  // namespace drake

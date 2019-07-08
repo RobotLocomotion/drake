@@ -51,11 +51,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
   using namespace drake::geometry;
   py::module::import("pydrake.systems.framework");
 
-  // TODO(eric.cousineau): #8116 Simplify this.
-  py::return_value_policy rvp_for_type =
-      (std::is_same<T, double>::value ? py::return_value_policy::automatic
-                                      : py::return_value_policy::copy);
-
   //  SceneGraphInspector
   {
     using Class = SceneGraphInspector<T>;
@@ -151,14 +146,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
             doc.SignedDistancePair.id_A.doc)
         .def_readwrite("id_B", &SignedDistancePair<T>::id_B,
             doc.SignedDistancePair.id_B.doc)
-        .def_readwrite("p_ACa", &SignedDistancePair<T>::p_ACa, rvp_for_type,
+        .def_readwrite("p_ACa", &SignedDistancePair<T>::p_ACa,
+            return_value_policy_for_scalar_type<T>(),
             doc.SignedDistancePair.p_ACa.doc)
-        .def_readwrite("p_BCb", &SignedDistancePair<T>::p_BCb, rvp_for_type,
+        .def_readwrite("p_BCb", &SignedDistancePair<T>::p_BCb,
+            return_value_policy_for_scalar_type<T>(),
             doc.SignedDistancePair.p_BCb.doc)
         .def_readwrite("distance", &SignedDistancePair<T>::distance,
             doc.SignedDistancePair.distance.doc)
         .def_readwrite("nhat_BA_W", &SignedDistancePair<T>::nhat_BA_W,
-            rvp_for_type, doc.SignedDistancePair.nhat_BA_W.doc)
+            return_value_policy_for_scalar_type<T>(),
+            doc.SignedDistancePair.nhat_BA_W.doc)
         .def_readwrite("is_nhat_BA_W_unique",
             &SignedDistancePair<T>::is_nhat_BA_W_unique,
             doc.SignedDistancePair.is_nhat_BA_W_unique.doc);
@@ -173,12 +171,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(py::init<>(), doc.SignedDistanceToPoint.ctor.doc)
         .def_readwrite("id_G", &SignedDistanceToPoint<T>::id_G,
             doc.SignedDistanceToPoint.id_G.doc)
-        .def_readwrite("p_GN", &SignedDistanceToPoint<T>::p_GN, rvp_for_type,
+        .def_readwrite("p_GN", &SignedDistanceToPoint<T>::p_GN,
+            return_value_policy_for_scalar_type<T>(),
             doc.SignedDistanceToPoint.p_GN.doc)
         .def_readwrite("distance", &SignedDistanceToPoint<T>::distance,
             doc.SignedDistanceToPoint.distance.doc)
         .def_readwrite("grad_W", &SignedDistanceToPoint<T>::grad_W,
-            rvp_for_type, doc.SignedDistanceToPoint.grad_W.doc);
+            return_value_policy_for_scalar_type<T>(),
+            doc.SignedDistanceToPoint.grad_W.doc);
   }
 
   // PenetrationAsPointPair
@@ -212,27 +212,38 @@ void DoScalarIndependentDefinitions(py::module m) {
   BindIdentifier<FrameId>(m, "FrameId", doc.FrameId.doc);
   BindIdentifier<GeometryId>(m, "GeometryId", doc.GeometryId.doc);
 
+  {
+    constexpr auto& cls_doc = doc.Role;
+    py::enum_<Role>(m, "Role", py::arithmetic(), cls_doc.doc)
+        .value("kUnassigned", Role::kUnassigned, cls_doc.kUnassigned.doc)
+        .value("kProximity", Role::kProximity, cls_doc.kProximity.doc)
+        .value("kIllustration", Role::kIllustration, cls_doc.kIllustration.doc)
+        .value("kPerception", Role::kPerception, cls_doc.kPerception.doc);
+  }
   m.def("ConnectDrakeVisualizer",
       py::overload_cast<systems::DiagramBuilder<double>*,
-          const SceneGraph<double>&, lcm::DrakeLcmInterface*>(
+          const SceneGraph<double>&, lcm::DrakeLcmInterface*, geometry::Role>(
           &ConnectDrakeVisualizer),
       py::arg("builder"), py::arg("scene_graph"), py::arg("lcm") = nullptr,
-      // Keep alive, ownership: `return` keeps `builder` alive.
-      py::keep_alive<0, 1>(),
-      // See #11531 for why `py_reference` is needed.
-      py_reference, doc.ConnectDrakeVisualizer.doc_3args);
-  m.def("ConnectDrakeVisualizer",
-      py::overload_cast<systems::DiagramBuilder<double>*,
-          const SceneGraph<double>&, const systems::OutputPort<double>&,
-          lcm::DrakeLcmInterface*>(&ConnectDrakeVisualizer),
-      py::arg("builder"), py::arg("scene_graph"),
-      py::arg("pose_bundle_output_port"), py::arg("lcm") = nullptr,
+      py::arg("role") = geometry::Role::kIllustration,
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 1>(),
       // See #11531 for why `py_reference` is needed.
       py_reference, doc.ConnectDrakeVisualizer.doc_4args);
+  m.def("ConnectDrakeVisualizer",
+      py::overload_cast<systems::DiagramBuilder<double>*,
+          const SceneGraph<double>&, const systems::OutputPort<double>&,
+          lcm::DrakeLcmInterface*, geometry::Role>(&ConnectDrakeVisualizer),
+      py::arg("builder"), py::arg("scene_graph"),
+      py::arg("pose_bundle_output_port"), py::arg("lcm") = nullptr,
+      py::arg("role") = geometry::Role::kIllustration,
+      // Keep alive, ownership: `return` keeps `builder` alive.
+      py::keep_alive<0, 1>(),
+      // See #11531 for why `py_reference` is needed.
+      py_reference, doc.ConnectDrakeVisualizer.doc_5args);
   m.def("DispatchLoadMessage", &DispatchLoadMessage, py::arg("scene_graph"),
-      py::arg("lcm"), doc.DispatchLoadMessage.doc);
+      py::arg("lcm"), py::arg("role") = geometry::Role::kIllustration,
+      doc.DispatchLoadMessage.doc);
 
   // Shape constructors
   {

@@ -12,9 +12,14 @@ Prefer comparisons in the following order:
 # coordinates and stuff.
 
 from collections import namedtuple
+import functools
 from itertools import product
 
 import numpy as np
+
+from pydrake.autodiffutils import AutoDiffXd
+from pydrake.symbolic import (
+    Expression, Formula, Monomial, Polynomial, Variable)
 
 
 class _UnwantedEquality(AssertionError):
@@ -161,7 +166,6 @@ def _str_ne(a, b):
 
 
 def _register_autodiff():
-    from pydrake.autodiffutils import AutoDiffXd
 
     def autodiff_eq(a, b):
         assert a.value() == b.value(), (a.value(), b.value())
@@ -178,8 +182,6 @@ def _register_autodiff():
 
 
 def _register_symbolic():
-    from pydrake.symbolic import (
-        Expression, Formula, Monomial, Polynomial, Variable)
 
     def sym_struct_eq(a, b):
         assert a.EqualTo(b), (a, b)
@@ -220,3 +222,28 @@ def _register_symbolic():
 _registry = _Registry()
 _register_autodiff()
 _register_symbolic()
+
+
+def check_all_types(check_func):
+    """Decorator to call a function multiple times with `T={type}`, where
+    `type` covers all (common) scalar types for Drake."""
+
+    @functools.wraps(check_func)
+    def wrapper(*args, **kwargs):
+        check_func(*args, T=float, **kwargs)
+        check_func(*args, T=AutoDiffXd, **kwargs)
+        check_func(*args, T=Expression, **kwargs)
+
+    return wrapper
+
+
+def check_nonsymbolic_types(check_func):
+    """Decorator to call a function multiple types with `T={type}`, where
+    `type` covers all (common) non-symbolic scalar types for Drake."""
+
+    @functools.wraps(check_func)
+    def wrapper(*args, **kwargs):
+        check_func(*args, T=float, **kwargs)
+        check_func(*args, T=AutoDiffXd, **kwargs)
+
+    return wrapper

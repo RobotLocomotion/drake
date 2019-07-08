@@ -3,7 +3,6 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/solution_result.h"
@@ -21,19 +20,6 @@ class SolverInterface {
 
   /// Returns true iff this solver was enabled at compile-time.
   virtual bool available() const = 0;
-
-  /// Solves an optimization program and returns a solution result (whether a
-  /// solution was found or else why not).  If no solver is available, throws
-  /// std::runtime_error.
-  /// @warning This method *discards* the solved decision variable values.
-  DRAKE_DEPRECATED(
-      "2019-07-01",
-      "MathematicalProgram methods that assume the solution is stored inside "
-      "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.")
-  virtual SolutionResult Solve(
-      // NOLINTNEXTLINE(runtime/references)
-      MathematicalProgram& prog) const = 0;
 
   /// Solves an optimization program with optional initial guess and solver
   /// options. Note that these initial guess and solver options are not written

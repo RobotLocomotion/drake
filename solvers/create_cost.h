@@ -33,11 +33,8 @@ Binding<PolynomialCost> ParsePolynomialCost(const symbolic::Expression& e);
  */
 Binding<Cost> ParseCost(const symbolic::Expression& e);
 
-}  // namespace internal
-
 // TODO(eric.cousineau): Remove this when functor cost is no longer exposed
 // externally, and must be explicitly called.
-namespace detail {
 
 // From Drake git sha 24452c1:
 // drake/solvers/mathematical_program.h:739
@@ -79,7 +76,6 @@ struct is_cost_functor_candidate
                                        (!is_convertible_workaround<
                                            F, symbolic::Expression>::value)> {};
 
-}  // namespace detail
-
+}  // namespace internal
 }  // namespace solvers
 }  // namespace drake

@@ -98,11 +98,10 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(result.get_optimal_cost(), 3.0)
         self.assertTrue(result.get_solver_id().name())
         self.assertTrue(np.allclose(result.GetSolution(), x_expected))
-        self.assertEqual(result.GetSolution(qp.x[0]), 1.0)
+        self.assertAlmostEqual(result.GetSolution(qp.x[0]), 1.0)
         self.assertTrue(np.allclose(result.GetSolution(qp.x), x_expected))
-
-        self.assertTrue(result.GetSolution(
-            sym.Expression(qp.x[0])).EqualTo(1.))
+        self.assertTrue(result.GetSolution(sym.Expression(qp.x[0])).EqualTo(
+            result.GetSolution(qp.x[0])))
         m = np.array([sym.Expression(qp.x[0]), sym.Expression(qp.x[1])])
         self.assertTrue(result.GetSolution(m)[1, 0].EqualTo(
             result.GetSolution(qp.x[1])))
@@ -364,6 +363,7 @@ class TestMathematicalProgram(unittest.TestCase):
         # c(0)*x^2 + 2*c(1)*x*y + c(2)*y^2 is SOS,
         # d(0)*x^2 is SOS.
         # d(1)*x^2 is SOS.
+        # d(0) + d(1) = 1
         prog = mp.MathematicalProgram()
         x = prog.NewIndeterminates(1, "x")
         poly = prog.NewFreePolynomial(sym.Variables(x), 1)
@@ -375,6 +375,7 @@ class TestMathematicalProgram(unittest.TestCase):
         d = prog.NewContinuousVariables(2, "d")
         prog.AddSosConstraint(d[0]*x.dot(x))
         prog.AddSosConstraint(d[1]*x.dot(x), [sym.Monomial(x[0])])
+        prog.AddLinearEqualityConstraint(d[0] + d[1] == 1)
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
 

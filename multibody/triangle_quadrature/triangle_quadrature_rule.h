@@ -22,12 +22,15 @@ class TriangleQuadratureRule {
     return rule_order;
   }
 
-  /// Returns the vector of quadrature points.
+  /// Returns the vector of quadrature points. These are returned as the first
+  /// two barycentric coordinates b0 b1; the third is just b2 = 1 - b0 - b1.
+  /// Each of these has a corresponding weight returned by weights().
   const std::vector<Vector2<double>>& quadrature_points() const {
     return do_quadrature_points();
   }
 
-  /// Returns the vector of weights.
+  /// Returns the vector of weights. These sum to 1 and there is one weight
+  /// for each point returned by quadrature_points().
   const std::vector<double>& weights() const {
     return do_weights();
   }

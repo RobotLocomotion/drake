@@ -20,7 +20,9 @@ drake_cc_package_library(
         ":find_collision_candidates",
         ":make_unit_sphere_mesh",
         ":mesh_field",
+        ":mesh_intersection",
         ":proximity_utilities",
+        ":surface_mesh",
         ":volume_mesh",
     ],
 )
@@ -91,15 +93,14 @@ drake_cc_library(
     srcs = [
         "mesh_field.cc",
         "mesh_field_linear.cc",
-        "surface_mesh.cc",
     ],
     hdrs = [
         "mesh_field.h",
         "mesh_field_linear.h",
-        "surface_mesh.h",
     ],
     deps = [
         "//common",
+        "//geometry/proximity:surface_mesh",
     ],
 )
 
@@ -121,6 +122,34 @@ drake_cc_library(
     deps = [
         ":volume_mesh",
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "mesh_intersection",
+    srcs = ["mesh_intersection.cc"],
+    hdrs = ["mesh_intersection.h"],
+    deps = [
+        "//common",
+        "//geometry/proximity:mesh_field",
+        "//geometry/proximity:surface_mesh",
+        "//geometry/proximity:volume_mesh",
+        "//geometry/query_results:contact_surface",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "surface_mesh",
+    srcs = [
+        "surface_mesh.cc",
+    ],
+    hdrs = [
+        "surface_mesh.h",
+    ],
+    deps = [
+        "//common",
+        "//math:geometric_transform",
     ],
 )
 
@@ -151,6 +180,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "contact_surface_test",
     deps = [
+        "//common/test_utilities:eigen_matrix_compare",
         "//geometry:geometry_ids",
         "//geometry/query_results:contact_surface",
     ],
@@ -179,8 +209,19 @@ drake_cc_googletest(
     deps = [
         ":distance_to_shape",
         "//common/test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry:geometry_ids",
         "//geometry:utilities",
         "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "surface_mesh_test",
+    deps = [
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:surface_mesh",
+        "//math:geometric_transform",
     ],
 )
 
@@ -188,6 +229,7 @@ drake_cc_googletest(
     name = "volume_mesh_test",
     deps = [
         "//geometry/proximity:volume_mesh",
+        "//math:geometric_transform",
     ],
 )
 
@@ -209,6 +251,14 @@ drake_cc_googletest(
     name = "make_unit_sphere_mesh_test",
     deps = [
         ":make_unit_sphere_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mesh_intersection_test",
+    deps = [
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/proximity:mesh_intersection",
     ],
 )
 
