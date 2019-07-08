@@ -103,9 +103,6 @@
       "Location": "@prefix@/lib/libdrake_marker.so"
     }
   },
-  "X-CMake-Variables": {
-    "drake_RESOURCE_ROOT": "${CMAKE_CURRENT_LIST_DIR}/../../../share/drake"
-  },
   "X-CMake-Variables-Init": {
     "_Boost_IMPORTED_TARGETS": 1,
     "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR}/modules/3.10;${CMAKE_MODULE_PATH}"

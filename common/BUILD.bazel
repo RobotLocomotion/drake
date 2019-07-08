@@ -1001,6 +1001,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
+        "//common/test_utilities:limit_malloc",
         "//common/test_utilities:symbolic_test_util",
     ],
 )

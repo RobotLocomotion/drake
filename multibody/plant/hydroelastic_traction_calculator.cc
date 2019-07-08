@@ -5,62 +5,26 @@
 
 #include "drake/math/orthonormal_basis.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
 #include "drake/multibody/triangle_quadrature/triangle_quadrature.h"
 
 namespace drake {
 
 using geometry::ContactSurface;
+using geometry::SurfaceFace;
 using geometry::SurfaceFaceIndex;
 using geometry::SurfaceMesh;
 using geometry::SurfaceMeshFieldLinear;
+using geometry::SurfaceVertexIndex;
 using math::RigidTransform;
-using systems::Context;
 
 namespace multibody {
 namespace internal {
 
-template <typename T>
-HydroelasticTractionCalculator<T>::HydroelasticTractionCalculatorData::
-    HydroelasticTractionCalculatorData(const Context<T>& context,
-                                       const MultibodyPlant<T>& plant,
-                                       const ContactSurface<T>* surface)
-    : surface_(*surface) {
-  DRAKE_DEMAND(surface);
-
-  // Get the transform of the geometry for M to the world frame.
-  const auto& query_object = plant.get_geometry_query_input_port().
-      template Eval<geometry::QueryObject<T>>(context);
-  X_WM_ = query_object.X_WG(surface->id_M());
-
-  const Vector3<T>& p_MC = surface_.mesh().centroid();
-  p_WC_ = X_WM_ * p_MC;
-
-  // Get the bodies that the two geometries are affixed to. We'll call these
-  // A and B.
-  const geometry::FrameId frameM_id = query_object.inspector().GetFrameId(
-      surface->id_M());
-  const geometry::FrameId frameN_id = query_object.inspector().GetFrameId(
-      surface->id_N());
-  const Body<T>& bodyA = *plant.GetBodyFromFrameId(frameM_id);
-  const Body<T>& bodyB = *plant.GetBodyFromFrameId(frameN_id);
-
-  // Get the transformation of the two bodies to the world frame.
-  X_WA_ = plant.EvalBodyPoseInWorld(context, bodyA);
-  X_WB_ = plant.EvalBodyPoseInWorld(context, bodyB);
-
-  // Get the spatial velocities for the two bodies (at the body frames).
-  V_WA_ = plant.EvalBodySpatialVelocityInWorld(context, bodyA);
-  V_WB_ = plant.EvalBodySpatialVelocityInWorld(context, bodyB);
-}
-
 template <class T>
 void HydroelasticTractionCalculator<T>::
 ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-    const Context<T>& context,
-    const MultibodyPlant<T>& plant,
-    const ContactSurface<T>& surface,
+    const Data& data,
     double dissipation, double mu_coulomb,
     SpatialForce<T>* F_Ao_W, SpatialForce<T>* F_Bo_W) const {
   DRAKE_DEMAND(F_Ao_W && F_Bo_W);
@@ -75,16 +39,13 @@ ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
   // model) might see benefit from a higher-order quadrature.
   const GaussianTriangleQuadratureRule gaussian(2 /* order */);
 
-  // Collect kinematic data once.
-  const HydroelasticTractionCalculatorData data(context, plant, &surface);
-
   // We'll be accumulating force on body A at the surface centroid C,
   // triangle-by-triangle.
   SpatialForce<T> F_Ac_W;
   F_Ac_W.SetZero();
 
   // Integrate the tractions over all triangles in the contact surface.
-  for (SurfaceFaceIndex i(0); i < surface.mesh().num_faces(); ++i) {
+  for (SurfaceFaceIndex i(0); i < data.surface.mesh().num_faces(); ++i) {
     // Construct the function to be integrated over triangle i.
     // TODO(sherm1) Pull functor creation out of the loop (not a good idea to
     //              create a new functor for every i).
@@ -101,7 +62,7 @@ ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
     // tractions (force/area) at the Gauss points (shifted to C).
     const SpatialForce<T> Fi_Ac_W =  // Force from triangle i.
         TriangleQuadrature<SpatialForce<T>, T>::Integrate(
-            traction_Ac_W, gaussian, surface.mesh().area(i));
+            traction_Ac_W, gaussian, data.surface.mesh().area(i));
 
     // Update the spatial force at body A's origin.
     F_Ac_W += Fi_Ac_W;
@@ -110,9 +71,9 @@ ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
   // The spatial force on body A was accumulated at the surface centroid C. We
   // need to shift it to A's origin Ao. The force on body B is equal and
   // opposite to the force on body A, but we want it as if applied at Bo.
-  const Vector3<T>& p_WC = data.p_WC();
-  const Vector3<T>& p_WAo = data.X_WA().translation();
-  const Vector3<T>& p_WBo = data.X_WB().translation();
+  const Vector3<T>& p_WC = data.p_WC;
+  const Vector3<T>& p_WAo = data.X_WA.translation();
+  const Vector3<T>& p_WBo = data.X_WB.translation();
   const Vector3<T> p_CAo_W = p_WAo - p_WC;
   const Vector3<T> p_CBo_W = p_WBo - p_WC;
 
@@ -135,10 +96,10 @@ ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
 template <typename T>
 SpatialForce<T> HydroelasticTractionCalculator<T>::
     ComputeSpatialTractionAtAcFromTractionAtAq(
-        const HydroelasticTractionCalculatorData& data, const Vector3<T>& p_WQ,
+        const Data& data, const Vector3<T>& p_WQ,
         const Vector3<T>& traction_Aq_W) const {
   // Find the vector from Q to C.
-  const Vector3<T> p_QC_W = data.p_WC() - p_WQ;
+  const Vector3<T> p_QC_W = data.p_WC - p_WQ;
 
   // Convert the traction to a momentless spatial traction (i.e., without
   // changing the point of application), then shift to body A's origin which
@@ -151,30 +112,30 @@ SpatialForce<T> HydroelasticTractionCalculator<T>::
 template <typename T>
 typename HydroelasticTractionCalculator<T>::TractionAtPointData
 HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
-    const HydroelasticTractionCalculatorData& data,
+    const Data& data,
     SurfaceFaceIndex face_index,
     const typename SurfaceMesh<T>::Barycentric& Q_barycentric,
     double dissipation, double mu_coulomb) const {
   TractionAtPointData traction_data;
 
   // Compute the point of contact in the world frame.
-  const Vector3<T> p_MQ = data.surface().mesh().CalcCartesianFromBarycentric(
+  const Vector3<T> p_MQ = data.surface.mesh().CalcCartesianFromBarycentric(
       face_index, Q_barycentric);
-  traction_data.p_WQ = data.X_WM() * p_MQ;
+  traction_data.p_WQ = data.X_WM * p_MQ;
 
   // Get the "potential pressure" (in N/m²) at the point as defined in
   // [Elandt 2019]. Note that we drop the _MN suffix here and below, as this
   // suffix can get confused with the identical suffix (used for a different
   // purpose) employed by monogram notation.
-  const T E = data.surface().EvaluateE_MN(face_index, Q_barycentric);
+  const T E = data.surface.EvaluateE_MN(face_index, Q_barycentric);
 
   // Get the normal from Geometry M to Geometry N, expressed in the world frame,
   // to the contact surface at Point Q. By extension, this means that the normal
   // points from Body A to Body B.
-  const Vector3<T> h_M = data.surface().EvaluateGrad_h_MN_M(
+  const Vector3<T> h_M = data.surface.EvaluateGrad_h_MN_M(
       face_index, Q_barycentric);
   const Vector3<T> nhat_M = h_M.normalized();
-  const Vector3<T> nhat_W = data.X_WM().rotation() * nhat_M;
+  const Vector3<T> nhat_W = data.X_WM.rotation() * nhat_M;
 
   // Get the relative spatial velocity at the point Q between the
   // two bodies A and B (to which M and N are affixed, respectively) by
@@ -183,12 +144,12 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   // Body A.
 
   // First compute the spatial velocity of Body A at Aq.
-  const Vector3<T> p_AoAq_W = traction_data.p_WQ - data.X_WA().translation();
-  const SpatialVelocity<T> V_WAq = data.V_WA().Shift(p_AoAq_W);
+  const Vector3<T> p_AoAq_W = traction_data.p_WQ - data.X_WA.translation();
+  const SpatialVelocity<T> V_WAq = data.V_WA.Shift(p_AoAq_W);
 
   // Next compute the spatial velocity of Body B at Bq.
-  const Vector3<T> p_BoBq_W = traction_data.p_WQ - data.X_WB().translation();
-  const SpatialVelocity<T> V_WBq = data.V_WB().Shift(p_BoBq_W);
+  const Vector3<T> p_BoBq_W = traction_data.p_WQ - data.X_WB.translation();
+  const SpatialVelocity<T> V_WBq = data.V_WB.Shift(p_BoBq_W);
 
   // Finally compute the relative velocity of Frame Aq relative to Frame Bq,
   // expressed in the world frame, and then the translational component of this
@@ -233,60 +194,70 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   return traction_data;
 }
 
-// Creates linearly interpolated fields over the contact surface for use in
-// contact reporting.
-//
-// @warning this mesh field retains a pointer to the
-// surface mesh (i.e., `data.surface_->mesh()`), so that pointer must remain
-// valid while this object is alive.
-/* 
 template <typename T>
-ContactReportingFields 
+typename HydroelasticTractionCalculator<T>::ContactReportingFields 
 HydroelasticTractionCalculator<T>::CreateReportingFields(
-    const HydroelasticTractionCalculator<T>::HydroelasticTractionCalculatorData&
-        data, double dissipation, double mu_coulomb) const { 
+    const HydroelasticTractionCalculator<T>::Data& data,
+    double dissipation, double mu_coulomb) const { 
   // Alias the contact surface.
-  const ContactSurface<T>& surface = *data.surface_;
+  const ContactSurface<T>& surface = data.surface;
+
+  // Set the three barycentric coordinates for each triangle.
+  const Vector3<T> bcoords[3] = {
+      Vector3<T>(1, 0, 0),
+      Vector3<T>(0, 1, 0),
+      Vector3<T>(0, 0, 1)
+  }; 
+
+  auto GetBarycentric = [&bcoords](
+      const SurfaceFace& f, SurfaceVertexIndex v) -> const Vector3<T>& {
+    if (f.vertex(0) == v) {
+      return bcoords[0];
+    } else {
+      if (f.vertex(1) == v) {
+        return bcoords[1];
+      } else {
+        DRAKE_DEMAND(f.vertex(2) == v);
+        return bcoords[2];
+      }
+    }
+  };
 
   // Compute a value for each vertex.
-  std::vector<Vector3<T> vt_AqBq_W(surface.mesh().num_vertices());
-  std::vector<Vector3<T> traction_Aq_W(surface.mesh().num_vertices());
+  std::vector<Vector3<T>> vt_BqAq_W(surface.mesh().num_vertices());
+  std::vector<Vector3<T>> traction_Aq_W(surface.mesh().num_vertices());
 
   for (SurfaceVertexIndex i(0); i < surface.mesh().num_vertices(); ++i) {
-      // Get one of the triangles that references this vertex.
-      const std::set<SurfaceFaceIndex>& referring_triangles =
-          surface.mesh().referring_triangles(i);
+    // Get one of the triangles that references this vertex.
+    const std::set<SurfaceFaceIndex>& referring_triangles =
+        surface.mesh().referring_triangles(i);
 
-      // Verify that at least one triangle references this vertex.
-      DRAKE_DEMAND(!referring_triangles.empty());
+    // Verify that at least one triangle references this vertex.
+    DRAKE_DEMAND(!referring_triangles.empty());
 
-      // Get the face index.
-      const SurfaceFaceIndex face_index = *referring_triangles.first();
+    // Get the face index.
+    const SurfaceFaceIndex face_index = *referring_triangles.begin();
 
-      // Convert the vertex to Barycentric coordinates.
-      
+    // Get the vertex's barycentric coordinates.
+    const Vector3<T> vertex_b = GetBarycentric(
+        surface.mesh().element(face_index), i);
 
-      // Compute the traction and the slip velocity at the vertex.
-      HydroelasticTractionCalculator<double>::TractionAtPointData output =
-          CalcTractionAtPoint(
-              data, i, barycentric_coords[j], dissipation, mu_coulomb);
-      traction_Aq_W[array_index] = output.traction_Aq_W;
-      vt_AqBq_W[array_index] = output.vt_AqBq_W;
-
-      // Indicate that the value has been computed.
-      value_computed[surface.vertex(vertex_index)] = true;
-    }
+    // Compute the traction and the slip velocity at the vertex.
+    HydroelasticTractionCalculator<T>::TractionAtPointData output =
+        CalcTractionAtPoint(
+            data, face_index, vertex_b, dissipation, mu_coulomb);
+    traction_Aq_W[i] = output.traction_Aq_W;
+    vt_BqAq_W[i] = output.vt_BqAq_W;
   }
 
   // Create the field structure.
   ContactReportingFields fields;
-  fields.traction = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>>(
-      "traction", std::move(traction_Aq_W), &data.surface_->mesh());  
-  fields.vslip = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>>(
-      "slip_velocity", std::move(vt_AqBq_W), &data.surface_->mesh());  
+  fields.traction = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
+      "traction", std::move(traction_Aq_W), &surface.mesh());  
+  fields.vslip = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
+      "slip_velocity", std::move(vt_BqAq_W), &surface.mesh());  
   return fields;
 }
-*/
 
 }  // namespace internal
 }  // namespace multibody
