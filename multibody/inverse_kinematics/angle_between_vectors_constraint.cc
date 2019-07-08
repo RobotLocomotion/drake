@@ -119,14 +119,14 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
   const Frame<T>& frameB = plant.get_frame(frameB_index);
   const math::RotationMatrix<T> R_AB =
       plant.CalcRelativeRotationMatrix(*context, frameA, frameB);
-  // TODO(Mitiguy) Improve RotationMatrix operator* to allow multiplication of
-  // R * S where R is a RotationMatrix of one type and S is a Vector3 of a
-  // different type (e.g., R is type `<double>` and S is type `<AutoDiffXd>`).
-  // Background: The code below cannot use RotationMatrix operator* without a
-  // cast or RotationMatrix::matrix() [which uses Eigen's functionality].
-  // Why? R_AB is of type `<T>` whereas b_unit_B is of type `<double>`, yet
-  // RotationMatrix operator* only works for R_AB * b_unit_B if the type of
-  // R_AB is identical to the type of b_unit_B.  See issue #11779.
+
+  // Note: The code below casts the Vector3 of type `<double>` to type `<T>`
+  // which allows RotationMatrix::operator* to multiply the RotationMatrix of
+  // type `<T>` by a Vector3 of type `<T>`.
+  // Alternately, use Eigen's underlying overloaded operator*, e.g., as
+  // const Vector3<T> b_unit_A = R_AB.matrix() * b_unit_B;
+  // Either way, the explicit cast() helps communicate the intent of this code
+  // which is to preserve the derivative information in R_AB.
   const Vector3<T> b_unit_A = R_AB * b_unit_B.cast<T>();
   *y = a_unit_A.transpose() * b_unit_A;
   EvalConstraintGradient(*context, plant, frameA, frameB, a_unit_A, b_unit_B,
