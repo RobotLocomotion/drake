@@ -105,9 +105,19 @@ class SceneGraphInspector {
    guaranteed to have any particular meaning. But the order is
    guaranteed to remain fixed between topological changes (e.g., removal or
    addition of geometry/frames).  */
-  const std::vector<GeometryId>& all_geometry_ids() const {
+  const std::vector<GeometryId> AllGeometryIds() const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->get_geometry_ids();
+    return state_->AllGeometryIds();
+  }
+
+  /** Returns the set of all ids for registered geometries. The order is _not_
+   guaranteed to have any particular meaning. But the order is
+   guaranteed to remain fixed between topological changes (e.g., removal or
+   addition of geometry/frames).  */
+  DRAKE_DEPRECATED("2019-11-01", "Please use AllGeometryIds() instead")
+  const std::vector<GeometryId> all_geometry_ids() const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->AllGeometryIds();
   }
 
   /** Reports the _total_ number of geometries in the scene graph with the
