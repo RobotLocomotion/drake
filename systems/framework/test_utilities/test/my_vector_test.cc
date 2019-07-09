@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/copyable_unique_ptr.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/common/value.h"
 
@@ -32,15 +33,15 @@ GTEST_TEST(MyVectorTest, Construction) {
 }
 
 // Misuse of the test utility is an abort-able infraction.
-GTEST_TEST(MyVectorDeathTest, DeathOnBadSize) {
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+GTEST_TEST(MyVectorTest, BadSize) {
   Vector4d fixed_size4(1., 2., 3., 4.);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MyVector3d(VectorX<double>(fixed_size4)),
+      std::exception, ".*size.*fail.*");
 
   // This won't compile since there is no constructor with mismatched sizes.
   // MyVector3d from_4(fixed_size4);
-
-  // This should blow a DRAKE_DEMAND at runtime.
-  EXPECT_DEATH(MyVector3d(VectorX<double>(fixed_size4)), ".*");
 }
 
 // Test the Make() method (takes a variable length arg list).

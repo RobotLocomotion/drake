@@ -1,6 +1,7 @@
 #include "drake/systems/primitives/affine_system.h"
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/test/affine_linear_test.h"
 
@@ -294,16 +295,17 @@ class IllegalTimeVaryingAffineSystem : public SimpleTimeVaryingAffineSystem {
   }
 };
 
-GTEST_TEST(IllegalTimeVaryingAffineSystemTest, EvalDeathTest) {
+GTEST_TEST(IllegalTimeVaryingAffineSystemTest, BadSizeTest) {
   IllegalTimeVaryingAffineSystem sys;
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
   const double t = 2.5;
 
   auto context = sys.CreateDefaultContext();
   context->SetTime(t);
 
   auto derivatives = sys.AllocateTimeDerivatives();
-  ASSERT_DEATH(sys.CalcTimeDerivatives(*context, derivatives.get()), "rows");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      sys.CalcTimeDerivatives(*context, derivatives.get()),
+      std::exception, ".*rows.*");
 }
 
 class AffineSystemSymbolicTest : public ::testing::Test {
