@@ -124,6 +124,10 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
                  this->mesh().num_vertices());
   }
 
+  FieldValue Evaluate(const typename MeshType::VertexIndex v) const final {
+    return values_[v];
+  }
+
   FieldValue Evaluate(const typename MeshType::ElementIndex e,
                       const typename MeshType::Barycentric& b) const final {
     const auto& element = this->mesh().element(e);

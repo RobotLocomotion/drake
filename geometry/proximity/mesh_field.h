@@ -24,6 +24,12 @@ template <class FieldValue, class MeshType>
 class MeshField {
  public:
   virtual ~MeshField() = default;
+  /** Evaluates the field value at a vertex.
+   @param v The index of the vertex.
+   */
+  virtual FieldValue Evaluate(
+      const typename MeshType::VertexIndex e) const = 0;
+
   /** Evaluates the field value at a location on an element.
    @param e The index of the element.
    @param b The barycentric coordinates.

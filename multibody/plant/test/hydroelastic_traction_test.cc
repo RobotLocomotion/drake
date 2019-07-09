@@ -715,18 +715,66 @@ TEST_P(HydroelasticReportingTests, LinearSlipVelocity) {
   const double dissipation = nan;
   const double mu_coulomb = nan;
 
+  // A tight tolerance at which all tests pass.
+  const double tol = 10 * std::numeric_limits<double>::epsilon();
+
   // Create the fields.
   HydroelasticTractionCalculator<double> calculator;
   HydroelasticTractionCalculator<double>::ContactReportingFields fields =
       calculator.CreateReportingFields(
           calculator_data(), dissipation, mu_coulomb);
 
-  // Test the slip velocity at the four vertices of the contact surface.
-  
+  // Test the slip velocity at the vertices of the contact surface.
+  const SurfaceMesh<double>& mesh = calculator_data().surface().mesh();
+  for (SurfaceVertexIndex(i);
+      i < calculator_data().mesh.num_vertices(); ++i) {
+    // Compute the vertex location (V) in the world frame. 
+    const Vector3<double> p_MV = mesh.vertex(i).p_MV();
+    const Vector3<double> p_WV = calculator_data().X_WM * p_MV;
 
-  // Test the slip velocity at the centroid of the contact surface. It can be
-  // easily shown that this velocity is zero (which will also be the mean of
-  // the slip velocities at the four vertices).
+    // Get the normal from Geometry M to Geometry N, expressed in the world
+    // frame to the contact surface at Point Q. By extension, this means that
+    // the normal points from Body A to Body B.
+    const Vector3<double> h_M = calculator_data().surface.EvaluateGrad_h_MN_M(
+        face_index, V_barycentric);
+    const Vector3<double> nhat_M = h_M.normalized();
+    const Vector3<double> nhat_W = calculator_data().X_WM.rotation() * nhat_M;
+
+    // First compute the spatial velocity of Body A at Av.
+    const Vector3<double> p_AoAv_W =
+        p_WV - calculator_data().X_WA.translation();
+    const SpatialVelocity<double> V_WAv =
+        calculator_data().V_WA.Shift(p_AoAv_W);
+
+    // Next compute the spatial velocity of Body B at Bq.
+    const Vector3<double> p_BoBv_W =
+        p_WV - calculator_data().X_WB.translation();
+    const SpatialVelocity<double> V_WBv =
+        calculator_data().V_WB.Shift(p_BoBv_W);
+
+    // Compute the relative velocity between the bodies at the vertex.
+    const multibody::SpatialVelocity<double> V_BvAv_W = V_WAv - V_WBv;
+    const Vector3<double>& v_BvAv_W = V_BvAv_W.translational();
+    const double vn_BvAv_W = v_BvAv_W.dot(nhat_W)
+
+    // Compute the slip velocity.
+    const Vector3<double> vt_BvAv_W = v_BvAv_W - nhat_W * vn_BvAv_W;
+
+    // Check against the reported slip velocity.
+    const Vector3<double> vt_BvAv_W_reported = fields.traction_W->Evaluate(
+      face_index, p_WV);
+    EXPECT_LT((vt_BvAv_W - vt_BvAv_W_reported).norm(), tol);
+  }
+
+  // Test the slip velocity at the centroid of the contact surface. As long as
+  // the centroid lies directly below the body's center-of-mass, the slip
+  // velocity will be zero. The face index below is arbitrary; the centroid
+  // lies on the edge of both triangles.
+  const SurfaceMesh<double>::Barycentric b_MC =
+      mesh.CalcBarycentric(mesh.centroid(), SurfaceFaceIndex(0));
+  const Vector3<double> vt_BcAc_W = fields.traction_W->Evaluate(
+      SurfaceFaceIndex(0), b_MC);
+  EXPECT_LT(vt_BcAc_W.norm(), tol); 
 }
 
 // These transformations, denoted X_WY, are passed as parameters to the tests
