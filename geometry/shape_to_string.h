@@ -14,7 +14,7 @@ namespace geometry {
  ```c++
  ShapeToString reifier;
  SceneGraphInspector inspector = ...;  // Get the inspector from somewhere.
- for (GeometryId id : inspector.all_geometry_ids()) {
+ for (GeometryId id : inspector.GetAllGeometryIds()) {
    inspector.Reify(id, reifier);
    std::cout << reifier.string() << "\n";
  }

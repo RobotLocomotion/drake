@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <limits>
 #include <tuple>
+#include <unordered_map>
 #include <vector>
 
 #include <fcl/fcl.h>
@@ -26,12 +27,10 @@ namespace point_distance {
  It includes:
     - The query point Q, measured and expressed in the world frame, `p_WQ_W`.
     - The fcl collision object representing the query point, Q.
-    - A map from GeometryIndex to GeometryId (to facilitate reporting GeometryId
-      values in the results).
     - A distance threshold beyond which distances will not be reported.
     - The pose of the geometry being queried against.
     - The T-valued poses of _all_ geometries in the corresponding SceneGraph
-      indexable by their GeometryIndex.
+      keyed on their GeometryId.
     - A vector of distance results -- one instance of SignedDistanceToPoint for
       every supported geometry which lies with the threshold.
  */
@@ -43,36 +42,29 @@ struct CallbackData {
    instance.
 
    @param query_in            The object representing the query point. Aliased.
-   @param geometry_map_in     The index -> id map. Aliased.
    @param threshold_in        The query threshold.
    @param p_WQ_W_in           The T-valued position of the query point.
-   @param X_WGs_in             The T-valued poses. Aliased.
+   @param X_WGs_in            The T-valued poses. Aliased.
    @param distances_in[out]   The output results. Aliased.
    */
   CallbackData(
       fcl::CollisionObjectd* query_in,
-      const std::vector<GeometryId>* geometry_map_in,
       const double threshold_in,
       const Vector3<T>& p_WQ_W_in,
-      const std::vector<Isometry3<T>>* X_WGs_in,
+      const std::unordered_map<GeometryId, Isometry3<T>>* X_WGs_in,
       std::vector<SignedDistanceToPoint<T>>* distances_in)
       : query_point(*query_in),
-        geometry_map(*geometry_map_in),
         threshold(threshold_in),
         p_WQ_W(p_WQ_W_in),
         X_WGs(*X_WGs_in),
         distances(*distances_in) {
     DRAKE_DEMAND(query_in);
-    DRAKE_DEMAND(geometry_map_in);
     DRAKE_DEMAND(X_WGs_in);
     DRAKE_DEMAND(distances_in);
   }
 
   /** The query fcl object.  */
   const fcl::CollisionObjectd& query_point;
-
-  /** The index --> id map.  */
-  const std::vector<GeometryId>& geometry_map;
 
   /** The query threshold.  */
   const double threshold;
@@ -81,7 +73,7 @@ struct CallbackData {
   const Vector3<T> p_WQ_W;
 
   /** The T-valued pose of every geometry.  */
-  const std::vector<Isometry3<T>>& X_WGs;
+  const std::unordered_map<GeometryId, Isometry3<T>>& X_WGs;
 
   /** The accumulator for results.  */
   std::vector<SignedDistanceToPoint<T>>& distances;
@@ -565,14 +557,13 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
   const fcl::CollisionObjectd* geometry_object =
       (&data.query_point == object_A_ptr) ? object_B_ptr : object_A_ptr;
 
-  const std::vector<GeometryId>& geometry_map = data.geometry_map;
   const EncodedData encoding(*geometry_object);
-  GeometryId geometry_id = encoding.id(geometry_map);
+  GeometryId geometry_id = encoding.id();
 
   const fcl::CollisionGeometryd* collision_geometry =
       geometry_object->collisionGeometry().get();
   if (ScalarSupport<T>::is_supported(collision_geometry->getNodeType())) {
-    const math::RigidTransform<T> typed_X_WG(data.X_WGs[encoding.index()]);
+    const math::RigidTransform<T> typed_X_WG(data.X_WGs.at(geometry_id));
     DistanceToPoint<T> distance_to_point(geometry_id, typed_X_WG, data.p_WQ_W);
 
     SignedDistanceToPoint<T> distance;

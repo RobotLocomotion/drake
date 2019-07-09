@@ -12,7 +12,6 @@
 #include <fmt/format.h>
 
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/geometry_index.h"
 
 namespace drake {
 namespace geometry {
@@ -29,21 +28,26 @@ constexpr double DistanceToPointRelativeTolerance(double size) {
 
 /** Class for coordinating the collision objects stored in the proximity engine
  with the geometries stored in SceneGraph. The two are related in that the
- collision object stores the GeometryIndex of the corresponding SceneGraph
+ collision object stores the GeometryId of the corresponding SceneGraph
  geometry as well as a bit to mark whether it is anchored or dynamic.
 
  It stores this data by compactly "encoding" them. The encoding packs a geometry
- index value with a bit indicating if the index refers to dynamic or anchored
- geometry (proximity engine segregates them). The highest-order bit indicates
- dynamic (1) or anchored (0). The remaining lower bits store the index. The data
- is stored in a pointer-sized integer. This integer is, in turn, stored directly
- into fcl::CollisionObject's void* user data member.  */
+ id value with a bit indicating if the id refers to dynamic or anchored geometry
+ (proximity engine segregates them). The highest-order bit indicates dynamic (1)
+ or anchored (0). The remaining lower bits store the id. The data is stored in a
+ pointer-sized integer. This integer is, in turn, stored directly into
+ fcl::CollisionObject's void* user data member.  */
 class EncodedData {
  public:
-  /** Constructs encoded data directly from the index and the known
+  using ValueType = decltype(GeometryId::get_new_id().get_value());
+
+  /** Constructs encoded data directly from the id and the known
    anchored/dynamic characterization.  */
-  EncodedData(GeometryIndex index, bool is_dynamic)
-      : data_(static_cast<uintptr_t>(index)) {
+  EncodedData(GeometryId id, bool is_dynamic)
+      : data_(static_cast<ValueType>(id.get_value())) {
+    // Make sure we haven't used so many ids that we're *using* the highest-
+    // order bit -- i.e., it must be strictly positive.
+    DRAKE_DEMAND(data_ > 0);
     if (is_dynamic) set_dynamic();
     // NOTE: data is encoded as anchored by default. So, an action only needs to
     // be taken in the dynamic case.
@@ -52,16 +56,16 @@ class EncodedData {
   /** Constructs encoded data by extracting it from the given collision object.
    */
   explicit EncodedData(const fcl::CollisionObject<double>& fcl_object)
-      : data_(reinterpret_cast<uintptr_t>(fcl_object.getUserData())) {}
+      : data_(reinterpret_cast<ValueType>(fcl_object.getUserData())) {}
 
-  /** Constucts encoded data for the given index identified as dynamic.  */
-  static EncodedData encode_dynamic(GeometryIndex index) {
-    return EncodedData(index, true);
+  /** Constructs encoded data for the given id identified as dynamic.  */
+  static EncodedData encode_dynamic(GeometryId id) {
+    return {id, true};
   }
 
-  /** Constucts encoded data for the given index identified as anchored.  */
-  static EncodedData encode_anchored(GeometryIndex index) {
-    return EncodedData(index, false);
+  /** Constructs encoded data for the given id identified as anchored.  */
+  static EncodedData encode_anchored(GeometryId id) {
+    return {id, false};
   }
 
   /** Sets the encoded data to be dynamic.  */
@@ -79,35 +83,41 @@ class EncodedData {
    */
   bool is_dynamic() const { return (data_ & kIsDynamicMask) != 0; }
 
-  /** Reports the stored index.  */
-  GeometryIndex index() const {
-    return static_cast<GeometryIndex>(data_ & ~kIsDynamicMask);
-  }
-
-  /** Given a map from GeometryIndex to ids of the SceneGraph geometries,
-   reports the geometry id for the encoded data.  */
-  GeometryId id(const std::vector<GeometryId>& geometry_map) const {
-    return geometry_map[index()];
+  /** Reports the stored id.  */
+  GeometryId id() const {
+    return static_cast<GeometryId>(data_ & ~kIsDynamicMask);
   }
 
   /** Reports the encoded data.  */
-  uintptr_t encoding() const { return data_; }
+  ValueType encoding() const { return data_; }
 
  private:
-  // Note: This sets a mask to be 1000...0 based on the size of a pointer.
-  // C++ guarantees that uintptr_t can hold a pointer and cast to a pointer,
-  // but it doesn't guarantee it's the *same size* as a pointer. So, we set
-  // the mask value based on pointer size. This is important because we're
-  // storing it in the void* of the collision object.
-  static const uintptr_t kIsDynamicMask = uintptr_t{1}
+  // For this encoding to work we have the following requirements:
+  //  1. ValueType must be at least as large as a pointer.
+  //  2. ValueType must be at least as large as GeometryId. (At least as large
+  //     still implies that with enough GeometryIds allocated, the high order
+  //     bit could become ambiguous -- however, that would require one id for
+  //     each atom in the universe).
+  // These static asserts guarantee these conditions.
+
+  // This is redundant of the declaration of ValueType; it serves as an
+  // independent witness to the requirement in case the declaration changes.
+  static_assert(sizeof(ValueType) >= sizeof(GeometryId),
+                "The encoded data type must be at least as large as the "
+                "identifier to use in EncodedData");
+
+  static_assert(sizeof(ValueType) >= sizeof(void*),
+                "The encoded data type must be at least as large as a pointer "
+                "type");
+
+  // Regardless of how large ValueType is, ultimately, we need to be able to
+  // pack the encoding into a void*. So, we set the bit mask as the highest
+  // order bit of something pointer sized.
+  static const ValueType kIsDynamicMask = ValueType{1}
       << (sizeof(void*) * 8 - 1);
 
-  // The encoded data - index and mobility type.
-  // We're using an unsigned value here because:
-  //   - Bitmasking games are typically more intuitive with unsigned values
-  //     (think of bit shifting as an example here).
-  //   - This unsigned integer doesn't bleed out into the API at all.
-  uintptr_t data_{};
+  // The encoded data - id and mobility type masked together.
+  ValueType data_{};
 };
 
 /** Returns the name of the geometry associated with the given collision

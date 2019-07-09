@@ -32,7 +32,7 @@ drake_cc_library(
     ],
     deps = [
         ":render_label",
-        "//geometry:geometry_index",
+        "//geometry:geometry_ids",
         "//geometry:geometry_roles",
         "//geometry:shape_specification",
         "//geometry:utilities",

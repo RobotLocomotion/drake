@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -27,11 +28,9 @@ namespace shape_distance {
 /** Supporting data for the shape-to-shape signed distance callback (see
  Callback below). It includes:
 
-    - A map from GeometryIndex to GeometryId (to facilitate reporting GeometryId
-      values in the results).
     - A collision filter instance.
-    - The T-valued poses of _all_ geometries in the corresponding SceneGraph,
-      each indexed by its corresponding geometry's GeometryIndex.
+    - The T-valued poses of _all_ geometries in the corresponding SceneGraph
+      keyed on their GeometryId.
     - A vector of distance results -- one instance of SignedDistancePair for
       every supported geometry which lies within the threshold.
 
@@ -44,36 +43,29 @@ struct CallbackData {
    all aliased in the data and require the aliased parameters to remain valid at
    least as long as the CallbackData instance.
 
-   @param geometry_map_in         The index -> id map. Aliased.
    @param collision_filter_in     The collision filter system. Aliased.
    @param X_WGs_in                The T-valued poses. Aliased.
    @param max_distance_in         The maximum distance at which a pair is
                                   reported.
    @param nearest_pairs_in[out]   The output results. Aliased.  */
-  CallbackData(const std::vector<GeometryId>* geometry_map_in,
-               const CollisionFilterLegacy* collision_filter_in,
-               const std::vector<Isometry3<T>>* X_WGs_in,
+  CallbackData(const CollisionFilterLegacy* collision_filter_in,
+               const std::unordered_map<GeometryId, Isometry3<T>>* X_WGs_in,
                const double max_distance_in,
                std::vector<SignedDistancePair<T>>* nearest_pairs_in)
-      : geometry_map(*geometry_map_in),
-        collision_filter(*collision_filter_in),
+      : collision_filter(*collision_filter_in),
         X_WGs(*X_WGs_in),
         max_distance(max_distance_in),
         nearest_pairs(*nearest_pairs_in) {
-    DRAKE_DEMAND(geometry_map_in);
     DRAKE_DEMAND(collision_filter_in);
     DRAKE_DEMAND(X_WGs_in);
     DRAKE_DEMAND(nearest_pairs_in);
   }
 
-  /** The map from GeometryIndex to GeometryId.  */
-  const std::vector<GeometryId>& geometry_map;
-
   /** The collision filter system.  */
   const CollisionFilterLegacy& collision_filter;
 
   /** The T-valued poses of all geometries.  */
-  const std::vector<Isometry3<T>>& X_WGs;
+  const std::unordered_map<GeometryId, Isometry3<T>>& X_WGs;
 
   /** The maximum distance at which a pair's distance will be reported.  */
   const double max_distance;
@@ -206,7 +198,6 @@ template <typename T>
 void CalcDistanceFallback(const fcl::CollisionObjectd& a,
                           const fcl::CollisionObjectd& b,
                           const fcl::DistanceRequestd&,
-                          const std::vector<GeometryId>&,
                           SignedDistancePair<T>* /* pair_data */) {
   // By default, there is no fallback. For every scalar type for which one
   // actually exists, it should be specialized below.
@@ -222,13 +213,12 @@ template <>
 void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
                                   const fcl::CollisionObjectd& b,
                                   const fcl::DistanceRequestd& request,
-                                  const std::vector<GeometryId>& geometry_map,
                                   SignedDistancePair<double>* pair_data) {
   fcl::DistanceResultd result;
   fcl::distance(&a, &b, request, result);
 
-  pair_data->id_A = EncodedData(a).id(geometry_map);
-  pair_data->id_B = EncodedData(b).id(geometry_map);
+  pair_data->id_A = EncodedData(a).id();
+  pair_data->id_B = EncodedData(b).id();
 
   pair_data->distance = result.min_distance;
 
@@ -268,7 +258,6 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
  @param X_WA            The pose of object `a` expressed in the world frame.
  @param b               The second object in the pair.
  @param X_WB            The pose of object `b` expressed in the world frame.
- @param geometry_map    A map from GeometryIndex to GeometryId.
  @param request         The distance request parameters.
  @param result          The structure to capture the computation results in.
  @tparam T Computation scalar type.
@@ -278,7 +267,6 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
                                 const Isometry3<T>& X_WA,
                                 const fcl::CollisionObjectd& b,
                                 const Isometry3<T>& X_WB,
-                                const std::vector<GeometryId>& geometry_map,
                                 const fcl::DistanceRequestd& request,
                                 SignedDistancePair<T>* result) {
   DRAKE_DEMAND(result != nullptr);
@@ -289,7 +277,7 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
   const bool b_is_sphere = b_geometry->getNodeType() == fcl::GEOM_SPHERE;
   const bool no_sphere = !(a_is_sphere || b_is_sphere);
   if (no_sphere) {
-    CalcDistanceFallback<T>(a, b, request, geometry_map, result);
+    CalcDistanceFallback<T>(a, b, request, result);
     return;
   }
   DRAKE_ASSERT(a_is_sphere || b_is_sphere);
@@ -305,8 +293,8 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
   const fcl::CollisionGeometryd* o_geometry = o.collisionGeometry().get();
   const math::RigidTransform<T> X_WS(a_is_sphere ? X_WA : X_WB);
   const math::RigidTransform<T> X_WO(a_is_sphere ? X_WB : X_WA);
-  const auto id_S = EncodedData(s).id(geometry_map);
-  const auto id_O = EncodedData(o).id(geometry_map);
+  const auto id_S = EncodedData(s).id();
+  const auto id_O = EncodedData(o).id();
   DistancePairGeometry<T> distance_pair(id_S, id_O, X_WS, X_WO, result);
   const auto& sphere_S = *static_cast<const fcl::Sphered*>(s_geometry);
   switch (o_geometry->getNodeType()) {
@@ -334,7 +322,7 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
     default: {
       // We don't have a closed form solution for the other geometry, so we
       // call FCL GJK/EPA.
-      CalcDistanceFallback<T>(a, b, request,  geometry_map, result);
+      CalcDistanceFallback<T>(a, b, request, result);
       break;
     }
   }
@@ -456,13 +444,12 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
     if (ScalarSupport<T>::is_supported(
             object_A_ptr->collisionGeometry()->getNodeType(),
             object_B_ptr->collisionGeometry()->getNodeType())) {
-      const std::vector<GeometryId>& geometry_map = data.geometry_map;
       // We want to pass object_A and object_B to the narrowphase distance in a
       // specific order. This way the broadphase distance is free to give us
       // either (A,B) or (B,A), but the narrowphase distance will always receive
       // the result in a consistent order.
-      const GeometryId orig_id_A = encoding_a.id(geometry_map);
-      const GeometryId orig_id_B = encoding_b.id(geometry_map);
+      const GeometryId orig_id_A = encoding_a.id();
+      const GeometryId orig_id_B = encoding_b.id();
       const bool swap_AB = (orig_id_B < orig_id_A);
 
       // NOTE: Although this function *takes* pointers to non-const objects to
@@ -474,15 +461,15 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
       const fcl::CollisionObjectd& fcl_object_B =
           *(swap_AB ? object_A_ptr : object_B_ptr);
 
-      const GeometryIndex index_A =
-          swap_AB ? encoding_b.index() : encoding_a.index();
-      const GeometryIndex index_B =
-          swap_AB ? encoding_a.index() : encoding_b.index();
+      const GeometryId id_A =
+          swap_AB ? encoding_b.id() : encoding_a.id();
+      const GeometryId id_B =
+          swap_AB ? encoding_a.id() : encoding_b.id();
 
       SignedDistancePair<T> signed_pair;
-      ComputeNarrowPhaseDistance(fcl_object_A, data.X_WGs[index_A],
-                                 fcl_object_B, data.X_WGs[index_B],
-                                 geometry_map, data.request, &signed_pair);
+      ComputeNarrowPhaseDistance(fcl_object_A, data.X_WGs.at(id_A),
+                                 fcl_object_B, data.X_WGs.at(id_B),
+                                 data.request, &signed_pair);
       if (ExtractDoubleOrThrow(signed_pair.distance) <= data.max_distance) {
         data.nearest_pairs.emplace_back(std::move(signed_pair));
       }
