@@ -10,78 +10,41 @@ std::unique_ptr<RenderEngine> RenderEngine::Clone() const {
   return std::unique_ptr<RenderEngine>(DoClone());
 }
 
-optional<RenderIndex> RenderEngine::RegisterVisual(
-    GeometryIndex index, const drake::geometry::Shape& shape,
+bool RenderEngine::RegisterVisual(
+    GeometryId id, const drake::geometry::Shape& shape,
     const PerceptionProperties& properties,
     const RigidTransformd& X_WG, bool needs_updates) {
-  optional<RenderIndex> render_index =
-      DoRegisterVisual(shape, properties, X_WG);
-  if (render_index) {
+  // TODO(SeanCurtis-TRI): Test that the id hasn't already been used.
+  const bool accepted = DoRegisterVisual(id, shape, properties, X_WG);
+  if (accepted) {
     if (needs_updates) {
-      update_indices_.insert({*render_index, index});
+      update_ids_.insert(id);
     } else {
-      anchored_indices_.insert({*render_index, index});
+      anchored_ids_.insert(id);
     }
   }
-  return render_index;
+  return accepted;
 }
 
-optional<GeometryIndex> RenderEngine::RemoveGeometry(RenderIndex index) {
-  // The underlying engine doesn't know if the geometry to remove or the
-  // geometry that gets moved requires updates or not. As such, the removed
-  // index and the moved index can arbitrarily come from either mapping.
-  // Possible scenarios:
-  // Remove index in map A
-  //   Case 1: nothing moved
-  //     1. Remove the (remove index, remove GeometryIndex) pair from A.
-  //     2. return nullopt.
-  //   Case 2: moved geometry in A (i.e., _same_ map)
-  //     1. Remove the (moved index, moved GeometryIndex) pair from A.
-  //     2. Add the (removed index, moved GeometryIndex) pair into A.
-  //     3. Return moved GeometryIndex.
-  //   Case 3: moved geometry in B (i.e., _different_ map)
-  //     1. Remove the (removed index, removed GI) pair from A.
-  //     2. Remove the (moved index, moved GI) pair from B.
-  //     3. Add the (removed index, moved GI) pair to B.
-  //     4. Return moved GeometryIndex.
-
-  // Given an index, return a pointer to the anchored/update index map in which
-  // this index belongs.
-  auto get_index_map = [this](const RenderIndex r_index) {
-    auto iter = update_indices_.find(r_index);
-    if (iter != update_indices_.end()) return &update_indices_;
-    iter = anchored_indices_.find(r_index);
-    if (iter != anchored_indices_.end()) return &anchored_indices_;
-    throw std::logic_error(fmt::format(
-        "Error finding RenderIndex ({}) as either dynamic or anchored",
-        r_index));
-  };
-
-  // Determine map A.
-  std::unordered_map<RenderIndex, GeometryIndex>* map_A = get_index_map(index);
-
-  GeometryIndex moved_internal_index;
-  optional<RenderIndex> moved_index = DoRemoveGeometry(index);
-
-  // Determine map B.
-  std::unordered_map<RenderIndex, GeometryIndex>* map_B = nullptr;
-  if (moved_index) {
-    map_B = get_index_map(*moved_index);
-    moved_internal_index = (*map_B)[*moved_index];
+bool RenderEngine::RemoveGeometry(GeometryId id) {
+  const bool removed = DoRemoveGeometry(id);
+  if (removed) {
+    if (update_ids_.erase(id) == 0) {
+      if (anchored_ids_.erase(id) == 0) {
+        // The implementation shouldn't be able to remove something that the
+        // base class isn't tracking in its sets of ids.
+        DRAKE_UNREACHABLE();
+      }
+    }
+  } else {
+    if (update_ids_.count(id) > 0 || anchored_ids_.count(id) > 0) {
+      // If the implementation says id wasn't removed, it must be because the
+      // id doesn't belong to the renderer and can't exist in the base class's
+      // set of tracked ids.
+      DRAKE_UNREACHABLE();
+    }
   }
-
-  // Examine cases:
-  map_A->erase(index);
-  if (map_B == nullptr) {                        // Case 1.
-    return nullopt;
-  } else if (map_A == map_B) {                   // Case 2.
-    map_A->erase(*moved_index);
-    (*map_A)[index] = moved_internal_index;
-  } else {                                       // Case 3.
-    map_B->erase(*moved_index);
-    (*map_B)[index] = moved_internal_index;
-  }
-  return moved_internal_index;
+  return removed;
 }
 
 RenderLabel RenderEngine::GetRenderLabelOrThrow(

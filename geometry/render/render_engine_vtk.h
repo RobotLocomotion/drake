@@ -3,6 +3,7 @@
 #include <array>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <vtkActor.h>
@@ -144,16 +145,16 @@ class RenderEngineVtk final : public RenderEngine,
 
  private:
   // @see RenderEngine::DoRegisterVisual().
-  optional<RenderIndex> DoRegisterVisual(
-      const Shape& shape, const PerceptionProperties& properties,
+  bool DoRegisterVisual(
+      GeometryId id, const Shape& shape, const PerceptionProperties& properties,
       const math::RigidTransformd& X_WG) final;
 
   // @see RenderEngine::DoUpdateVisualPose().
-  void DoUpdateVisualPose(RenderIndex index,
+  void DoUpdateVisualPose(GeometryId id,
                           const math::RigidTransformd& X_WG) final;
 
   // @see RenderEngine::DoRemoveGeometry().
-  optional<RenderIndex> DoRemoveGeometry(RenderIndex index) final;
+  bool DoRemoveGeometry(GeometryId id) final;
 
   // @see RenderEngine::DoClone().
   std::unique_ptr<RenderEngine> DoClone() const final;
@@ -222,8 +223,9 @@ class RenderEngineVtk final : public RenderEngine,
   systems::sensors::ColorD default_clear_color_;
 
   // The collection of per-geometry actors (one actor per pipeline (color,
-  // depth, and label) indexed by the geometry's RenderIndex.
-  std::vector<std::array<vtkSmartPointer<vtkActor>, 3>> actors_;
+  // depth, and label) keyed by the geometry's GeometryId.
+  std::unordered_map<GeometryId, std::array<vtkSmartPointer<vtkActor>, 3>>
+      actors_;
 };
 
 }  // namespace render

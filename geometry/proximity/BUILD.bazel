@@ -262,4 +262,9 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "proximity_utilities_test",
+    deps = [":proximity_utilities"],
+)
+
 add_lint_tests()
