@@ -189,10 +189,11 @@ class Identifier {
     return Identifier(next_index.access()++);
   }
 
- private:
+ protected:
   // Instantiates an identifier from the underlying representation type.
   explicit Identifier(int64_t val) : value_(val) {}
 
+ private:
   // The underlying value.
   int64_t value_{};
 };

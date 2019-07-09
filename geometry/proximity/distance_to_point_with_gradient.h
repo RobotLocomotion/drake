@@ -32,7 +32,7 @@ class DistanceToPointWithGradient {
   SignedDistanceToPointWithGradient operator()(
       const fcl::Sphered& sphere) const;
 
-  /** Overload for halfspace object */
+  /** Overload for half space object */
   SignedDistanceToPointWithGradient operator()(
       const fcl::Halfspaced& halfspace) const;
 
