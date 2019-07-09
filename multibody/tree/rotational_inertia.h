@@ -113,6 +113,21 @@ namespace multibody {
 ///    Iyx = Ey ⋅ 𝐈 ⋅ Ex      Iyy = Ey ⋅ 𝐈 ⋅ Ey      Iyz = Ey ⋅ 𝐈 ⋅ Ez
 ///    Izx = Ez ⋅ 𝐈 ⋅ Ex      Izy = Ez ⋅ 𝐈 ⋅ Ey      Izz = Ez ⋅ 𝐈 ⋅ Ez
 /// </pre>
+/// The inertia dyadic 𝐈ᴮ of a rigid body B about Bcm (B's center of mass) is
+/// related to various dynamic quantities. For example, B's angular momentum 𝐇
+/// about Bcm in a frame N and B's kinetic energy KE in N relate to 𝐈ᴮ by
+/// <pre>
+///    𝐇 = 𝐈ᴮ ⋅ 𝛚
+///    KE = 1/2 𝛚 ⋅ 𝐈ᴮ ⋅ 𝛚  +  1/2 mᴮ 𝐯 ⋅ 𝐯
+/// </pre>
+/// where 𝛚 is B's angular velocity in N, 𝐯 is Bcm's translational velocity in
+/// N, and mᴮ is B's mass.  When frame N happens to be a Newtonian frame (also
+/// called an inertial frame or non-rotating/non-accelerating frame), the moment
+/// 𝐓 of all forces on B about Bcm relates to 𝐈ᴮ and 𝛂 (B's angular
+/// acceleration in N) by Euler's rigid body equation as
+/// <pre>
+///    𝐓 = 𝐈ᴮ ⋅ 𝛂  +  𝛚 × 𝐈ᴮ ⋅ 𝛚
+/// </pre>
 /// [Kane, 1985] pg. 68. "Dynamics: Theory and Applications," McGraw-Hill Co.,
 /// New York, 1985 (with D. A. Levinson).  Available for free .pdf download:
 /// https://ecommons.cornell.edu/handle/1813/637
