@@ -116,9 +116,14 @@ class GeometryState {
     return static_cast<int>(geometries_.size());
   }
 
-  /** Implementation of SceneGraphInspector::all_geometry_ids().  */
-  const std::vector<GeometryId>& get_geometry_ids() const {
-    return geometry_index_to_id_map_;
+  /** Implementation of SceneGraphInspector::GetAllGeometryIds().  */
+  std::vector<GeometryId> GetAllGeometryIds() const {
+    std::vector<GeometryId> ids;
+    ids.reserve(geometries_.size());
+    for (const auto& id_geometry_pair : geometries_) {
+      ids.push_back(id_geometry_pair.first);
+    }
+    return ids;
   }
 
   /** Implementation of SceneGraphInspector::NumGeometriesWithRole().  */
@@ -411,19 +416,17 @@ class GeometryState {
   /** See QueryObject::ComputePointPairPenetration() for documentation.  */
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
       const {
-    return geometry_engine_->ComputePointPairPenetration(
-        geometry_index_to_id_map_);
+    return geometry_engine_->ComputePointPairPenetration();
   }
 
   /** See QueryObject::ComputeContactSurfaces() for documentation.  */
   std::vector<ContactSurface<T>> ComputeContactSurfaces() const {
-    return geometry_engine_->ComputeContactSurfaces(
-        geometry_index_to_id_map_);
+    return geometry_engine_->ComputeContactSurfaces();
   }
 
   /** See QueryObject::FindCollisionCandidates() for documentation.  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const {
-    return geometry_engine_->FindCollisionCandidates(geometry_index_to_id_map_);
+    return geometry_engine_->FindCollisionCandidates();
   }
 
   //@}
@@ -460,19 +463,19 @@ class GeometryState {
 
   /** Supporting function for
    QueryObject::ComputeSignedDistancePairwiseClosestPoints().  */
-  std::vector<SignedDistancePair<T>>
-  ComputeSignedDistancePairwiseClosestPoints(const double max_distance) const {
+  std::vector<SignedDistancePair<T>> ComputeSignedDistancePairwiseClosestPoints(
+      double max_distance) const {
     return geometry_engine_->ComputeSignedDistancePairwiseClosestPoints(
-        geometry_index_to_id_map_, X_WG_, max_distance);
+        X_WGs_, max_distance);
   }
 
   /** Supporting function for QueryObject::ComputeSignedDistanceToPoint().  */
   std::vector<SignedDistanceToPoint<T>>
   ComputeSignedDistanceToPoint(
       const Vector3<T> &p_WQ,
-      const double threshold) const {
-    return geometry_engine_->ComputeSignedDistanceToPoint(
-        p_WQ, geometry_index_to_id_map_, X_WG_, threshold);
+      double threshold) const {
+    return geometry_engine_->ComputeSignedDistanceToPoint(p_WQ, X_WGs_,
+                                                          threshold);
   }
 
   //@}
@@ -551,26 +554,32 @@ class GeometryState {
         source_anchored_geometry_map_(source.source_anchored_geometry_map_),
         frames_(source.frames_),
         geometries_(source.geometries_),
-        geometry_index_to_id_map_(source.geometry_index_to_id_map_),
         frame_index_to_id_map_(source.frame_index_to_id_map_),
-        dynamic_proximity_index_to_internal_map_(
-            source.dynamic_proximity_index_to_internal_map_),
         geometry_engine_(std::move(source.geometry_engine_->ToAutoDiffXd())),
         render_engines_(source.render_engines_) {
     // NOTE: Can't assign Isometry3<double> to Isometry3<AutoDiff>. But we _can_
     // assign Matrix<double> to Matrix<AutoDiff>, so that's what we're doing.
-    auto convert = [](const std::vector<Isometry3<U>>& s,
-                      std::vector<Isometry3<T>>* d) {
+    auto convert_pose_vector = [](const std::vector<Isometry3<U>>& s,
+                                  std::vector<Isometry3<T>>* d) {
       std::vector<Isometry3<T>>& dest = *d;
       dest.resize(s.size());
       for (size_t i = 0; i < s.size(); ++i) {
         dest[i].matrix() = s[i].matrix();
       }
     };
+    convert_pose_vector(source.X_PF_, &X_PF_);
+    convert_pose_vector(source.X_WF_, &X_WF_);
 
-    convert(source.X_PF_, &X_PF_);
-    convert(source.X_WG_, &X_WG_);
-    convert(source.X_WF_, &X_WF_);
+    // Now convert the id -> pose map.
+    std::unordered_map<GeometryId, Isometry3<T>>& dest = X_WGs_;
+    const std::unordered_map<GeometryId, Isometry3<U>>& s = source.X_WGs_;
+    for (const auto& id_pose_pair : s) {
+      const GeometryId id = id_pose_pair.first;
+      const Isometry3<U>& X_WG_source = id_pose_pair.second;
+      Isometry3<T> X_WG;
+      X_WG.matrix() = X_WG_source.matrix();
+      dest.insert({id, std::move(X_WG)});
+    }
   }
 
   // NOTE: This friend class is responsible for evaluating the internals of
@@ -591,24 +600,24 @@ class GeometryState {
         *geometry_engine_);
   }
 
-  // Takes the frame and geometry ids from the given geometry set and
-  // populates the sets of geometry _indices_ for the dynamic and anchored
-  // geometries implied by the group. Ids that can't be identified will cause
-  // an exception to be thrown.
-  // TODO(SeanCurtis-TRI): Because all geometries now only have a single index
-  // type, we have two sets of the same index type. The compiler cannot know
+  // Defines the full set of geometry ids from the GeometrySet (which may be
+  // defined in terms of geometry ids *and* frame ids). If GeometrySet only
+  // has GeometryIds, it is essentially a copy. Ids that can't be identified
+  // will cause an exception to be thrown.
+  // TODO(SeanCurtis-TRI): Because all geometries only have a single id
+  // type, we have two sets of the same id type. The compiler cannot know
   // that only anchored geometries go into the anchored set and only dynamic go
   // into the dynamic set. It relies on the correctness of the implementation.
   // This *could* be worked around: this function could simply provide
-  // _unclassified_ geometry indices. However, the engine needs to know which
+  // _unclassified_ geometry ids. However, the engine needs to know which
   // are dynamic and which are anchored and currently has no facility to do
   // so. So, it would have to, essentially, duplicate the data stored in the
   // InternalGeometry instances to classify the union of these two sets. For
   // now, we accept the *slightly* dissatisfying artifact of having the same
-  // index type in both sets.
-  void CollectIndices(const GeometrySet& geometry_set,
-                      std::unordered_set<GeometryIndex>* dynamic,
-                      std::unordered_set<GeometryIndex>* anchored);
+  // id type in both sets.
+  void CollectIds(const GeometrySet& geometry_set,
+                  std::unordered_set<GeometryId>* dynamic,
+                  std::unordered_set<GeometryId>* anchored);
 
   // Sets the kinematic poses for the frames indicated by the given ids.
   // @param poses The frame id and pose values.
@@ -776,14 +785,6 @@ class GeometryState {
   // The geometry data, keyed on unique geometry identifiers.
   std::unordered_map<GeometryId, internal::InternalGeometry> geometries_;
 
-  // This provides the look up from internal index to geometry id for all
-  // geometries. It is constructed so that the index value of any position in
-  // the vector _is_ the geometry index of the corresponding geometry.
-  // The following invariants should always be true:
-  //   1. geometries_[geometry_index_to_id_map_[i]].index() == i.
-  //   2. geometry_index_to_id_map_.size() == geometries_.size().
-  std::vector<GeometryId> geometry_index_to_id_map_;
-
   // This provides the look up from the internal index of a frame to its frame
   // id. It is constructed so that the index value of any position in the vector
   // _is_ the frame index of the corresponding frame.
@@ -793,22 +794,6 @@ class GeometryState {
   //      i.e. the largest pose index associated with frames_ is the last valid
   //      index of this vector.
   std::vector<FrameId> frame_index_to_id_map_;
-
-  // This contains internal indices into X_WG_. If a _dynamic_ geometry G has a
-  // proximity role, in addition to its internal index, it will
-  // also have a proximity index. It must be the case that
-  // G.internal_index ==
-  //      dynamic_proximity_index_to_internal_map_[G.proximity_index]
-  // if it has a proximity role.
-  // Generally, internal_index is not equal to the role index. This allows
-  // just those geometries with the proximity role to be provided to
-  // the proximity engine.
-  // NOTE: There is no equivalent for anchored geometries because anchored
-  // geometries do not need updating.
-  // TODO(SeanCurtis-TRI): Move this into the proximity engine. Its presence
-  // here is an anachronism. Better yet, this will die when we make GeometryId
-  // the only identifier that moves between GeometryState and the engines.
-  std::vector<GeometryIndex> dynamic_proximity_index_to_internal_map_;
 
   // ---------------------------------------------------------------------
   // These values depend on time-dependent input values (e.g., current frame
@@ -821,18 +806,18 @@ class GeometryState {
 
   // Map from a frame's index to the _current_ pose of the frame F it identifies
   // relative to its parent frame P, i.e., X_PF.
+  // TODO(SeanCurtis-TRI): Rename this to X_PFs_ to reflect multiplicity.
   std::vector<Isometry3<T>> X_PF_;
 
   // The pose of every geometry relative to the _world_ frame (regardless of
-  // roles) indexed by GeometryIndex. After a complete state update from input
-  // poses,
-  //   X_WG_[i] == X_WFₙ · X_FₙFₙ₋₁ · ... · X_F₁F · G_i.X_FG()
+  // roles) keyed by the corresponding geometry's id. After a complete state
+  // update from input poses,
+  //   X_WGs_[i] == X_WFₙ · X_FₙFₙ₋₁ · ... · X_F₁F · G_i.X_FG()
   // Where F is the parent frame of geometry G_i, Fₖ₊₁ is the parent frame of
   // frame Fₖ, and the world frame W is the parent of frame Fₙ.
   // In other words, it is the full evaluation of the kinematic chain from the
   // geometry to the world frame.
-  // TODO(SeanCurtis-TRI): Rename this to X_WGs_ to reflect multiplicity.
-  std::vector<Isometry3<T>> X_WG_;
+  std::unordered_map<GeometryId, Isometry3<T>> X_WGs_;
 
   // The pose of each frame relative to the _world_ frame.
   // frames_.size() == X_WF_.size() is an invariant. Furthermore, after a
@@ -842,6 +827,7 @@ class GeometryState {
   // frame Fₖ, and the world frame W is the parent of frame Fₙ.
   // In other words, it is the full evaluation of the kinematic chain from
   // frame i to the world frame.
+  // TODO(SeanCurtis-TRI): Rename this to X_WFs_ to reflect multiplicity.
   std::vector<Isometry3<T>> X_WF_;
 
   // The underlying geometry engine. The topology of the engine does _not_
