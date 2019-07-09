@@ -263,34 +263,6 @@ class SurfaceMesh {
     return T_CB * b_Q;
   }
 
-  /** Gets the barycentric coordinates for a vertex of a face. This method is
-   much faster than CalcBarycentric().
-   @param face_index the index of a face that references the mesh vertex given
-          by `vertex_index`.
-   @param vertex_index the index of a vertex in the surface mesh that is
-          referenced by the face given by `face_index`. 
-   @throws std::logic_error if `vertex_index` is not referenced by the face
-           given by `face_index`.         
-   */ 
-  Barycentric GetVertexBarycentric(
-      SurfaceFaceIndex face_index, VertexIndex vertex_index) const {
-    const SurfaceFace& f = element(face_index);
-    if (f.vertex(0) == vertex_index) {
-      return Barycentric(1, 0, 0);
-    } else {
-      if (f.vertex(1) == vertex_index) {
-        return Barycentric(0, 1, 0);
-      } else {
-        if (f.vertex(2) == vertex_index) {
-          return Barycentric(0, 0, 1);
-        } else {
-          throw std::logic_error("The vertex index is not referenced by the "
-              "specified face.");
-        }
-      }
-    }
-  }
-
   /** Calculate barycentric coordinates with respect to the triangular face `f`
    of the point Q'. Q' is the projection of the provided point Q on the plane
    of triangle `f`. If Q lies on the plane, Q = Q'. This operation is expensive
