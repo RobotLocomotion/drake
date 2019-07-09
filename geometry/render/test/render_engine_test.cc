@@ -1,8 +1,7 @@
 #include "drake/geometry/render/render_engine.h"
 
-#include <map>
-#include <memory>
-#include <string>
+#include <set>
+#include <unordered_map>
 
 #include <gtest/gtest.h>
 
@@ -15,18 +14,18 @@ namespace drake {
 namespace geometry {
 namespace render {
 
-using math::RigidTransformd;
-
 class RenderEngineTester {
  public:
   explicit RenderEngineTester(const RenderEngine* engine) : engine_(*engine) {}
 
-  const std::unordered_map<RenderIndex, GeometryIndex>& update_map() const {
-    return engine_.update_indices_;
+  int num_geometries() const {
+    return static_cast<int>(engine_.update_ids_.size() +
+                            engine_.anchored_ids_.size());
   }
 
-  const std::unordered_map<RenderIndex, GeometryIndex>& anchored_map() const {
-    return engine_.anchored_indices_;
+  bool has_id(GeometryId id) const {
+    return engine_.update_ids_.count(id) > 0 ||
+           engine_.anchored_ids_.count(id) > 0;
   }
 
  private:
@@ -36,6 +35,9 @@ class RenderEngineTester {
 namespace {
 
 using geometry::internal::DummyRenderEngine;
+using math::RigidTransformd;
+using std::set;
+using std::unordered_map;
 using systems::sensors::ColorI;
 using systems::sensors::ColorD;
 
@@ -51,12 +53,16 @@ GTEST_TEST(RenderEngine, RegistrationAndUpdate) {
   PerceptionProperties skip_properties = engine.rejecting_properties();
   PerceptionProperties add_properties = engine.accepting_properties();
   Sphere sphere(1.0);
-  RigidTransformd X_WG = RigidTransformd::Identity();
+  const RigidTransformd X_WG = RigidTransformd::Identity();
+
   // A collection of poses to provide to calls to UpdatePoses(). Configured
   // to all identity transforms because the values generally don't matter. In
   // the single case where it does matter, a value is explicitly set (see
   // below).
-  std::vector<RigidTransformd> X_WG_all{3, X_WG};
+  unordered_map<GeometryId, RigidTransformd> X_WG_all{
+      {GeometryId::get_new_id(), X_WG},
+      {GeometryId::get_new_id(), X_WG},
+      {GeometryId::get_new_id(), X_WG}};
 
   // These test cases are accumulative; re-ordering them will require
   // refactoring.
@@ -64,17 +70,18 @@ GTEST_TEST(RenderEngine, RegistrationAndUpdate) {
   // Tests that rely on the RenderEngine's default value are tested below in the
   // DefaultRenderLabel test.
 
-  // Create properties with the given RenderLabel value.
+  // Create properties with the given RenderLabel value. Used only to test
+  // failure when providing an invalid render label. (See Case 1.)
   auto make_properties = [](RenderLabel label) {
     PerceptionProperties properties;
     properties.AddProperty("label", "id", label);
     return properties;
   };
 
-  // Case: Explicitly providing the unspecified or empty render label throws.
+  // Case 1: Explicitly providing the unspecified or empty render label throws.
   for (const auto label : {RenderLabel::kEmpty, RenderLabel::kUnspecified}) {
     DRAKE_EXPECT_THROWS_MESSAGE(
-        engine.RegisterVisual(GeometryIndex(0), sphere,
+        engine.RegisterVisual(GeometryId::get_new_id(), sphere,
                               make_properties(label), X_WG,
                               false),
         std::logic_error,
@@ -83,200 +90,85 @@ GTEST_TEST(RenderEngine, RegistrationAndUpdate) {
   }
 
   // Case: the shape is configured to be ignored by the render engine. Returns
-  // nullopt (and other arguments do not matter).
-  optional<RenderIndex> optional_index = engine.RegisterVisual(
-      GeometryIndex(0), sphere, skip_properties, X_WG, false);
-  EXPECT_FALSE(optional_index);
-  optional_index = engine.RegisterVisual(GeometryIndex(0), sphere,
-                                         skip_properties, X_WG, true);
-  EXPECT_FALSE(optional_index);
+  // false (and other arguments do not matter).
+  const GeometryId id1 = GeometryId::get_new_id();
+  const bool is_dynamic = true;
+  const bool dynamic_accepted =
+      engine.RegisterVisual(id1, sphere, skip_properties, X_WG, is_dynamic);
+  EXPECT_FALSE(dynamic_accepted);
+  const bool anchored_accepted =
+      engine.RegisterVisual(id1, sphere, skip_properties, X_WG, !is_dynamic);
+  EXPECT_FALSE(anchored_accepted);
   // Confirm nothing is updated - because nothing is registered.
   engine.UpdatePoses(X_WG_all);
-  EXPECT_EQ(engine.updated_indices().size(), 0);
+  EXPECT_EQ(engine.updated_ids().size(), 0);
 
   // Case: the shape is configured for registration, but does *not* require
-  // updating. We get a valid render index, but it is _not_ included in
-  // UpdatePoses().
-  optional_index = engine.RegisterVisual(GeometryIndex(1), sphere,
-                                         add_properties, X_WG, false);
-  EXPECT_TRUE(optional_index);
+  // updating.
+  bool accepted = engine.RegisterVisual(X_WG_all.begin()->first, sphere,
+                                         add_properties, X_WG, !is_dynamic);
+  EXPECT_TRUE(accepted);
   engine.UpdatePoses(X_WG_all);
-  EXPECT_EQ(engine.updated_indices().size(), 0);
+  EXPECT_EQ(engine.updated_ids().size(), 0);
 
-  // Case: the shape is configured for registration *and* requires updating. We
-  // get a valid render index and it _is_ included in UpdatePoses().
-  GeometryIndex update_index{2};
-  // Configure the pose for index 2 to *not* be the identity so we can confirm
-  // that the registered GeometryIndex is properly associated with the resulting
-  // RenderIndex.
+  // Case: the shape is configured for registration *and* requires updating.
+  // Configure the pose for the id so it is *not* the identity.
+  const GeometryId id2 = (++X_WG_all.begin())->first;
   const Vector3<double> p_WG(1, 2, 3);
-  X_WG_all[update_index].set_translation(p_WG);
-  optional_index =
-      engine.RegisterVisual(update_index, sphere, add_properties, X_WG, true);
-  EXPECT_TRUE(optional_index);
+  X_WG_all[id2].set_translation(p_WG);
+  accepted =
+      engine.RegisterVisual(id2, sphere, add_properties, X_WG, is_dynamic);
+  EXPECT_TRUE(accepted);
   engine.UpdatePoses(X_WG_all);
-  EXPECT_EQ(engine.updated_indices().size(), 1);
-  ASSERT_EQ(engine.updated_indices().count(*optional_index), 1);
+  EXPECT_EQ(engine.updated_ids().size(), 1);
+  ASSERT_EQ(engine.updated_ids().count(id2), 1);
   EXPECT_TRUE(CompareMatrices(
-      engine.updated_indices().at(*optional_index).translation(), p_WG));
+      engine.updated_ids().at(id2).translation(), p_WG));
 }
 
 // Tests the removal of geometry from the renderer -- confirms that the
-// RenderEngine is
-//   a) Reporting the correct geometry index for the removed geometry and
-//   b) Updating the remaining RenderIndex -> GeometryIndex pairs correctly.
+// RenderEngine removes the geometry appropriately.
 GTEST_TEST(RenderEngine, RemoveGeometry) {
   const int need_update_count = 3;
   const int anchored_count = 2;
-  std::vector<GeometryIndex> render_index_to_geometry_index;
-  // Configure a clean render engine so each test is independent. Specifically,
-  // It creates three dynamic geometries and two anchored. The initial render
-  // index and geometry index matches for each geometry. Conceptually, we'll
-  // have two maps:
-  //  dynamic map: {{0, 0}, {1, 1}, {2, 2}}
-  //  anchored map: {{3, 3}, {4, 4}}
-  // Ultimately, we'll examine the the maps after removing geometry to confirm
-  // the state of the mappings as a perturbation from this initial condition.
-  auto make_engine = [&render_index_to_geometry_index]() -> DummyRenderEngine {
-    render_index_to_geometry_index.clear();
-    // Change the default render label to something registerable.
-    DummyRenderEngine engine({RenderLabel::kDontCare});
-    // A set of properties that will cause a shape to be properly registered.
-    PerceptionProperties add_properties = engine.accepting_properties();
-    RigidTransformd X_WG = RigidTransformd::Identity();
-    Sphere sphere(1.0);
 
-    for (int i = 0; i < need_update_count + anchored_count; ++i) {
-      const GeometryIndex geometry_index = GeometryIndex(i);
-      optional<RenderIndex> render_index = engine.RegisterVisual(
-          geometry_index, sphere, add_properties, X_WG, i < need_update_count);
-      if (!render_index || *render_index != i) {
-        throw std::logic_error("Unexpected render indices");
-      }
-      render_index_to_geometry_index.push_back(geometry_index);
+  // The test render engine contains three dynamic geometries and two anchored.
+
+  // Set the default render label to something registerable.
+  DummyRenderEngine engine({RenderLabel::kDontCare});
+  // A set of properties that will cause a shape to be properly registered.
+  PerceptionProperties add_properties = engine.accepting_properties();
+  RigidTransformd X_WG = RigidTransformd::Identity();
+  Sphere sphere(1.0);
+
+  set<GeometryId> ids;
+
+  for (int i = 0; i < need_update_count + anchored_count; ++i) {
+    const GeometryId id = GeometryId::get_new_id();
+    const bool is_dynamic = i % 2 == 0;  // alternate dynamic, anchored, etc.
+    const bool accepted = engine.RegisterVisual(id, sphere, add_properties,
+                                                X_WG, is_dynamic);
+    if (!accepted) {
+      throw std::logic_error("The geometry wasn't accepted for registration");
     }
-    return engine;
-  };
-
-  // Function for performing the removal and testing the results.
-  auto expect_removal =
-      [make_engine](RenderIndex remove_index, optional<RenderIndex> move_index,
-         optional<GeometryIndex> expected_moved,
-         std::initializer_list<std::pair<int, int>> dynamic_map,
-         std::initializer_list<std::pair<int, int>> anchored_map,
-         const char* case_description) {
-        DummyRenderEngine engine = make_engine();
-        engine.set_moved_index(move_index);
-        optional<GeometryIndex> moved_index =
-            engine.RemoveGeometry(remove_index);
-        EXPECT_EQ(moved_index, expected_moved) << case_description;
-        RenderEngineTester tester(&engine);
-        EXPECT_EQ(tester.update_map().size(), dynamic_map.size())
-            << case_description;
-        for (const auto& pair : dynamic_map) {
-          EXPECT_EQ(tester.update_map().at(RenderIndex(pair.first)),
-                    GeometryIndex(pair.second))
-              << case_description;
-        }
-        EXPECT_EQ(tester.anchored_map().size(), anchored_map.size())
-            << case_description;
-        for (const auto& pair : anchored_map) {
-          EXPECT_EQ(tester.anchored_map().at(RenderIndex(pair.first)),
-                    GeometryIndex(pair.second))
-              << case_description;
-        }
-      };
-
-  using IndexMap = std::initializer_list<std::pair<int, int>>;
-
-  // Case 1: remove dynamic geometry where nothing gets moved. Specifically,
-  // remove the geometry (2, 2) with nothing else changing.
-  {
-    const RenderIndex remove_index(need_update_count - 1);
-    optional<RenderIndex> moved_render_index = nullopt;
-    optional<GeometryIndex> moved_geometry_index = nullopt;
-    // Note: loss of need_update_count - 1 (i.e., 2) from the dynamic map.
-    IndexMap expected_dynamic_map = {{0, 0}, {1, 1}};
-    IndexMap expected_anchored_map = {{3, 3}, {4, 4}};
-    expect_removal(remove_index, moved_render_index, moved_geometry_index,
-                   expected_dynamic_map, expected_anchored_map, "case 1");
+    ids.insert(id);
   }
+  RenderEngineTester tester(&engine);
 
-  // Case 2: remove dynamic geometry where dynamic geometry gets moved.
-  // Specifically, we have three dynamic geometries (0, 1, 2). We remove
-  // geometry 1 and 2 gets moved into its slot.
-  {
-    const RenderIndex remove_index(1);
-    const int move_value = 2;
-    optional<RenderIndex> moved_render_index = RenderIndex(move_value);
-    optional<GeometryIndex> moved_geometry_index = GeometryIndex(move_value);
-    // Note: loss (1, 1) and (2, 2) gets moved to (1, 2) in the dynamic map.
-    IndexMap expected_dynamic_map = {{0, 0}, {1, 2}};
-    IndexMap expected_anchored_map = {{3, 3}, {4, 4}};
-    expect_removal(remove_index, moved_render_index, moved_geometry_index,
-                   expected_dynamic_map, expected_anchored_map, "case 2");
-  }
+  // Case: invalid ids don't get removed.
+  EXPECT_FALSE(engine.RemoveGeometry(GeometryId::get_new_id()));
 
-  // Case 3: remove dynamic geometry where anchored geometry gets moved.
-  // Specifically, remove the last dynamic geometry (2, 2), and move the last
-  // anchored geometry (4, 4) into its slot.
-  {
-    const RenderIndex remove_index(2);
-    const int move_value = 4;
-    optional<RenderIndex> moved_render_index = RenderIndex(move_value);
-    optional<GeometryIndex> moved_geometry_index = GeometryIndex(move_value);
-    // Note: loss of (2, 2) from the dynamic map.
-    IndexMap expected_dynamic_map = {{0, 0}, {1, 1}};
-    // Note: (4, 4) gets moved to use the removed render index (2). So,
-    // (4, 4) becomes (2, 4).
-    IndexMap expected_anchored_map = {{3, 3}, {2, 4}};
-    expect_removal(remove_index, moved_render_index, moved_geometry_index,
-                   expected_dynamic_map, expected_anchored_map, "case 3");
-  }
-
-  // Case 4: remove anchored geometry where nothing gets moved.
-  {
-    const RenderIndex remove_index(4);
-    optional<RenderIndex> moved_render_index = nullopt;
-    optional<GeometryIndex> moved_geometry_index = nullopt;
-    // Dynamic map untouched.
-    IndexMap expected_dynamic_map = {{0, 0}, {1, 1}, {2, 2}};
-    // Geometry (4, 4) has been removed.
-    IndexMap expected_anchored_map = {{3, 3}};
-    expect_removal(remove_index, moved_render_index, moved_geometry_index,
-                   expected_dynamic_map, expected_anchored_map, "case 4");
-  }
-
-  // Case 5: remove anchored geometry where dynamic geometry gets moved.
-  // Specifically, remove the _last_ anchored geometry (4, 4) and move the
-  // last dynamic geometry (2, 2) into that slot to become (2, 4).
-  {
-    const RenderIndex remove_index(4);
-    const int move_value = 2;
-    optional<RenderIndex> moved_render_index = RenderIndex(move_value);
-    optional<GeometryIndex> moved_geometry_index = GeometryIndex(move_value);
-    // Note: (2, 2) has been moved into the remove index (4, 2).
-    IndexMap expected_dynamic_map = {{0, 0}, {1, 1}, {4, 2}};
-    // Note: (4, 4) has been removed
-    IndexMap expected_anchored_map = {{3, 3}};
-    expect_removal(remove_index, moved_render_index, moved_geometry_index,
-                   expected_dynamic_map, expected_anchored_map, "case 5");
-  }
-
-  // Case 6: remove anchored geometry where anchored geometry gets moved.
-  // We have two anchored geometries: (3, 3) and (4, 4). Remove (3, 3) and move
-  // (4, 4) into its place (3, 4).
-  {
-    const RenderIndex remove_index(3);
-    const int move_value = 4;
-    optional<RenderIndex> moved_render_index = RenderIndex(move_value);
-    optional<GeometryIndex> moved_geometry_index = GeometryIndex(move_value);
-    // Note: Dynamic is untouched.
-    IndexMap expected_dynamic_map = {{0, 0}, {1, 1}, {2, 2}};
-    // Note: Remove (3, 3) and move (4, 4) into position 3: (3, 4).
-    IndexMap expected_anchored_map = {{3, 4}};
-    expect_removal(remove_index, moved_render_index, moved_geometry_index,
-                   expected_dynamic_map, expected_anchored_map, "case 6");
+  // Case: Systematically remove remaining geometries and confirm state --
+  // because of how geometries were added, this will alternate dynamic,
+  // anchored, dynamic, etc.
+  while (!ids.empty()) {
+    const GeometryId id = *ids.begin();
+    EXPECT_TRUE(engine.RemoveGeometry(id));
+    ids.erase(ids.begin());
+    EXPECT_EQ(static_cast<int>(ids.size()), tester.num_geometries());
+    for (GeometryId remaining_id : ids) {
+      EXPECT_TRUE(tester.has_id(remaining_id));
+    }
   }
 }
 

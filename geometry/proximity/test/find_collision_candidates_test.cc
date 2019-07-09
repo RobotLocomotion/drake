@@ -20,12 +20,12 @@ using std::vector;
 // Confirms that the callback properly returns a sorted pair for the
 // corresponding geometry ids.
 GTEST_TEST(Callback, PairsProperlyFormed) {
-  std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
-                                       GeometryId::get_new_id()};
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
   CollisionFilterLegacy collision_filter;
 
-  EncodedData data_A(GeometryIndex{0}, true);
-  EncodedData data_B(GeometryIndex{1}, true);
+  EncodedData data_A(id_A, true);
+  EncodedData data_B(id_B, true);
   collision_filter.AddGeometry(data_A.encoding());
   collision_filter.AddGeometry(data_B.encoding());
 
@@ -35,10 +35,10 @@ GTEST_TEST(Callback, PairsProperlyFormed) {
   data_B.write_to(&box_B);
 
   vector<SortedPair<GeometryId>> pairs;
-  CallbackData data(&geometry_map, &collision_filter, &pairs);
+  CallbackData data(&collision_filter, &pairs);
   Callback(&box_A, &box_B, &data);
   ASSERT_EQ(pairs.size(), 1u);
-  const SortedPair<GeometryId> expected_pair{geometry_map[0], geometry_map[1]};
+  const SortedPair<GeometryId> expected_pair{id_A, id_B};
   EXPECT_EQ(pairs[0], expected_pair);
 
   // We verify that the order the callback receives it doesn't affect the
@@ -51,12 +51,10 @@ GTEST_TEST(Callback, PairsProperlyFormed) {
 
 // This test verifies that the broad-phase callback respects filtering.
 GTEST_TEST(Callback, RespectsCollisionFilter) {
-  std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
-                                       GeometryId::get_new_id()};
   CollisionFilterLegacy collision_filter;
 
-  EncodedData data_A(GeometryIndex{0}, true);
-  EncodedData data_B(GeometryIndex{1}, true);
+  EncodedData data_A(GeometryId::get_new_id(), true);
+  EncodedData data_B(GeometryId::get_new_id(), true);
   collision_filter.AddGeometry(data_A.encoding());
   collision_filter.AddGeometry(data_B.encoding());
   // Filter the pair (A, B) by adding them to the same clique.
@@ -69,7 +67,7 @@ GTEST_TEST(Callback, RespectsCollisionFilter) {
   data_B.write_to(&box_B);
 
   vector<SortedPair<GeometryId>> pairs;
-  CallbackData data(&geometry_map, &collision_filter, &pairs);
+  CallbackData data(&collision_filter, &pairs);
   Callback(&box_A, &box_B, &data);
   EXPECT_EQ(pairs.size(), 0u);
 }
