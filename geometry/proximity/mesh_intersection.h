@@ -69,8 +69,8 @@ class HalfSpace {
     // evaluated magnitude is within epsilon of one. There may be some
     // unconsidered value that disproves this -- at that point, adapt the
     // tolerance here and add it to the unit test.
-    DRAKE_DEMAND(abs(nhat_F_.norm() - 1.0) <=
-                 std::numeric_limits<double>::epsilon());
+    DRAKE_THROW_UNLESS(abs(nhat_F_.norm() - 1.0) <=
+                       std::numeric_limits<double>::epsilon());
   }
 
   /** Computes the signed distance to the point Q (measured and expressed in
