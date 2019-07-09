@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
@@ -231,11 +232,13 @@ GTEST_TEST(SineTest, SineParameterTimeTest) {
                  expected_first_deriv, expected_second_deriv);
 }
 
-GTEST_TEST(SineTest, SineVectorDeathTest) {
+GTEST_TEST(SineTest, BadSizeTest) {
   Eigen::Vector4d kAmp(1.1, 1.2, 1.3, 1.4);
   Eigen::Vector4d kFreq(1.5, 1.6, 1.7, 1.8);
   Eigen::Vector3d kPhase(1.9, 2.0, 2.1);
-  ASSERT_DEATH(Sine<double>(kAmp, kFreq, kPhase, true), "abort: Failure");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Sine<double>(kAmp, kFreq, kPhase, true),
+      std::exception, ".*amplitudes.*==.*phases.*");
 }
 
 GTEST_TEST(SineTest, SineAccessorTest) {

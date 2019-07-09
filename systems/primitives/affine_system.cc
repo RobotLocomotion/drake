@@ -4,6 +4,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/symbolic_decompose.h"
@@ -96,20 +97,20 @@ void TimeVaryingAffineSystem<T>::DoCalcTimeDerivatives(
   const T t = context.get_time();
 
   VectorX<T> xdot = f0(t);
-  DRAKE_DEMAND(xdot.rows() == num_states_);
+  DRAKE_THROW_UNLESS(xdot.rows() == num_states_);
 
   const auto& x =
       dynamic_cast<const BasicVector<T>&>(context.get_continuous_state_vector())
           .get_value();
   const MatrixX<T> At = A(t);
-  DRAKE_DEMAND(At.rows() == num_states_ && At.cols() == num_states_);
+  DRAKE_THROW_UNLESS(At.rows() == num_states_ && At.cols() == num_states_);
   xdot += At * x;
 
   if (num_inputs_ > 0) {
     const auto& u = get_input_port().Eval(context);
 
     const MatrixX<T> Bt = B(t);
-    DRAKE_DEMAND(Bt.rows() == num_states_ && Bt.cols() == num_inputs_);
+    DRAKE_THROW_UNLESS(Bt.rows() == num_states_ && Bt.cols() == num_inputs_);
     xdot += Bt * u;
   }
   derivatives->SetFromVector(xdot);

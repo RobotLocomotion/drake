@@ -1355,8 +1355,6 @@ TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {
 }
 
 TEST_F(PendulumKinematicTests, PointsHaveTheWrongSize) {
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
   shoulder_mobilizer_->set_angle(context_.get(), M_PI / 4.0);
   elbow_mobilizer_->set_angle(context_.get(), M_PI / 4.0);
 
