@@ -105,7 +105,7 @@ class CollisionFilterLegacy {
    @pre `old_encoding` must exist in the map of filters and `new_encoding` must
          *not*.  */
   void UpdateEncoding(uintptr_t old_encoding, uintptr_t new_encoding) {
-    // NOTE: The keys in the cliques is a function of a geometry's GeometryIndex
+    // NOTE: The keys in the cliques is a function of a geometry's GeometryId
     // and dynamic property (dynamic or anchored). When GeometryState *moves* a
     // geometry in its compact vector, that geometry's index changes. That means
     // we need remap the collision cliques from its old encoding to its new.
