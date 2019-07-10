@@ -1,6 +1,7 @@
 #include "drake/solvers/fbstab/dense_components/dense_data.h"
 
 #include <cmath>
+#include <stdexcept>
 #include <Eigen/Dense>
 
 namespace drake {

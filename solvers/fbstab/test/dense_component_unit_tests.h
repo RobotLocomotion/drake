@@ -11,6 +11,7 @@
 namespace drake {
 namespace solvers {
 namespace fbstab {
+namespace test {
 
 using MatrixXd = Eigen::MatrixXd;
 using VectorXd = Eigen::VectorXd;
@@ -96,10 +97,11 @@ class DenseComponentUnitTests {
   VectorXd f_;
   VectorXd b_;
 
-  int n_;
-  int q_;
+  int n_ = 0;
+  int q_ = 0;
 };
 
+}  // namespace test
 }  // namespace fbstab
 }  // namespace solvers
 }  // namespace drake

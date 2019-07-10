@@ -1,6 +1,7 @@
 #include "drake/solvers/fbstab/dense_components/dense_variable.h"
 
 #include <cmath>
+#include <stdexcept>
 #include <Eigen/Dense>
 
 #include "drake/solvers/fbstab/dense_components/dense_data.h"
@@ -16,10 +17,13 @@ DenseVariable::DenseVariable(int nz, int nv) {
   nz_ = nz;
   nv_ = nv;
 
-  z_ = new VectorXd(nz_);
-  v_ = new VectorXd(nv_);
-  y_ = new VectorXd(nv_);
-  memory_allocated_ = true;
+  z_storage_ = std::make_unique<VectorXd>(nz_);
+  v_storage_ = std::make_unique<VectorXd>(nv_);
+  y_storage_ = std::make_unique<VectorXd>(nv_);
+
+  z_ = z_storage_.get();
+  v_ = v_storage_.get();
+  y_ = y_storage_.get();
 }
 
 DenseVariable::DenseVariable(VectorXd* z, VectorXd* v, VectorXd* y) {
@@ -36,32 +40,21 @@ DenseVariable::DenseVariable(VectorXd* z, VectorXd* v, VectorXd* y) {
   z_ = z;
   v_ = v;
   y_ = y;
-  memory_allocated_ = false;
 }
-
-DenseVariable::~DenseVariable() {
-  if (memory_allocated_) {
-    delete z_;
-    delete v_;
-    delete y_;
-  }
-}
-
-void DenseVariable::LinkData(const DenseData* data) { data_ = data; }
 
 void DenseVariable::Fill(double a) {
   if (data_ == nullptr) {
     throw std::runtime_error(
         "Cannot call DenseVariable::Fill unless data is linked");
   }
-  z_->fill(a);
-  v_->fill(a);
+  z_->setConstant(a);
+  v_->setConstant(a);
 
   // Compute y = b - A*z
   if (a == 0.0) {
     *y_ = data_->b();
   } else {
-    y_->noalias() = data_->b() - data_->A() * (*z_);
+    InitializeConstraintMargin();
   }
 }
 
@@ -96,7 +89,11 @@ void DenseVariable::Copy(const DenseVariable& x) {
 
 void DenseVariable::ProjectDuals() { *v_ = v_->cwiseMax(0); }
 
-double DenseVariable::Norm() const { return z_->norm() + v_->norm(); }
+double DenseVariable::Norm() const {
+  double t1 = z_->norm();
+  double t2 = v_->norm();
+  return sqrt(t1 * t1 + t2 * t2);
+}
 
 }  // namespace fbstab
 }  // namespace solvers

@@ -2,6 +2,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/solvers/fbstab/dense_components/dense_data.h"
 
 namespace drake {
@@ -9,8 +10,8 @@ namespace solvers {
 namespace fbstab {
 
 /**
- * Implements primal-dual variables for inequality constrained QPs.
- * See dense_data.h for a mathematical description.
+ * Implements primal-dual variables for inequality constrained QPs,
+ * see dense_data.h for a mathematical description.
  * This class stores variables and defines methods implementing useful
  * operations.
  *
@@ -26,6 +27,8 @@ namespace fbstab {
  */
 class DenseVariable {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseVariable);
+
   /**
    * Allocates memory for a primal-dual variables.
    *
@@ -36,79 +39,83 @@ class DenseVariable {
 
   /**
    * Creates a primal-dual variable using preallocated memory.
-   * @param[in] z    A vector to store the decision variables
-   * @param[in] v    A vector to store the dual variables
-   * @param[in] y    A vector to store the inequality margin
-   *
-   * Checks to ensure that v.size() == y.size().
+   * @param[in] z    A vector to store the decision variables.
+   * @param[in] v    A vector to store the dual variables.
+   * @param[in] y    A vector to store the inequality margin.
    */
   DenseVariable(Eigen::VectorXd* z, Eigen::VectorXd* v, Eigen::VectorXd* y);
 
   /**
-   * Frees memory if it was allocated.
-   */
-  ~DenseVariable();
-
-  /**
-   * Links to problem data needed to perform calculations
-   * Calculations cannot be performed until a data object is provided
+   * Links to problem data needed to perform calculations,
+   * Calculations cannot be performed until a data object is provided.
    * @param[in] data Pointer to the problem data
    */
-  void LinkData(const DenseData* data);
+  void LinkData(const DenseData* data) { data_ = data; };
 
   /**
-   * Filles the variable with one value,
-   * i.e., x <- a * ones
+   * Fills the variable with one value,
+   * i.e., x <- a * ones.
    * @param[in] a
    */
   void Fill(double a);
 
   /**
-   * Sets the field x.y = b - A* x.z
+   * Sets the field x.y = b - A* x.z.
    */
   void InitializeConstraintMargin();
 
   /**
    * Performs the operation u <- a*x + u
-   * (where u is this object)
-   * This is a level 1 BLAS operation for this object,
-   * see http://www.netlib.org/blas/blasqr.pdf
+   * (where u is this object).
+   * This is a level 1 BLAS operation for this object;
+   * see http://www.netlib.org/blas/blasqr.pdf.
    *
    * @param[in] x the other variable
    * @param[in] a scalar
    *
    * Note that this handles the constraint margin correctly, i.e., after the
-   * operation u.y = b - A*(u.z + a*x.z)
+   * operation u.y = b - A*(u.z + a*x.z).
    */
   void axpy(const DenseVariable& x, double a);
 
   /**
-   * Deep copy
+   * Performs a deep copy operation.
    * @param[in] x variable to be copied
    */
   void Copy(const DenseVariable& x);
 
   /**
    * Projects the inequality duals onto the non-negative orthant,
-   * i.e., v <- max(0,v)
+   * i.e., v <- max(0,v).
    */
   void ProjectDuals();
 
   /**
-   * Compute the Euclidean norm
-   * @return ||z|| + ||v||
+   * Computes the Euclidean norm.
+   * @return sqrt(|z|^2 + |v|^2)
    */
   double Norm() const;
 
-  /** Accessors */
+  /** Accessor for the primal variable. */
   Eigen::VectorXd& z() { return *z_; };
+
+  /** Accessor for the dual variable. */
   Eigen::VectorXd& v() { return *v_; };
+
+  /** Accessor for the constraint margin. */
   Eigen::VectorXd& y() { return *y_; };
+
+  /** Accessor for the primal variable. */
   const Eigen::VectorXd& z() const { return *z_; };
+
+  /** Accessor for the dual variable. */
   const Eigen::VectorXd& v() const { return *v_; };
+
+  /** Accessor for the constraint margin. */
   const Eigen::VectorXd& y() const { return *y_; };
-  int num_constraints() { return nv_; }
-  int num_variables() { return nz_; }
+
+  int num_constraints() const { return nv_; }
+  int num_variables() const { return nz_; }
 
  private:
   int nz_ = 0;  // Number of decision variable
@@ -117,7 +124,9 @@ class DenseVariable {
   Eigen::VectorXd* z_ = nullptr;  // primal variable
   Eigen::VectorXd* v_ = nullptr;  // dual variable
   Eigen::VectorXd* y_ = nullptr;  // inequality margin
-  bool memory_allocated_ = false;
+  std::unique_ptr<Eigen::VectorXd> z_storage_;
+  std::unique_ptr<Eigen::VectorXd> v_storage_;
+  std::unique_ptr<Eigen::VectorXd> y_storage_;
 
   friend class DenseResidual;
   friend class DenseLinearSolver;

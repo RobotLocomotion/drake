@@ -2,6 +2,8 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_copyable.h"
+
 namespace drake {
 namespace solvers {
 namespace fbstab {
@@ -16,8 +18,9 @@ namespace fbstab {
  */
 class DenseData {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseData);
   /**
-   * Store the problem data and perform input validation.
+   * Stores the problem data and performs input validation.
    * This class assumes that the pointers to the data remain valid.
    *
    * @param[in] H Hessian matrix
@@ -28,31 +31,35 @@ class DenseData {
   DenseData(const Eigen::MatrixXd* H, const Eigen::VectorXd* f,
             const Eigen::MatrixXd* A, const Eigen::VectorXd* b);
 
-  /**
-   * Read only accessors.
-   */
+  /** Read only accessor for the H matrix. */
   const Eigen::MatrixXd& H() const { return *H_; };
+
+  /** Read only accessor for the f vector. */
   const Eigen::VectorXd& f() const { return *f_; };
+
+  /** Read only accessor for the A matrix. */
   const Eigen::MatrixXd& A() const { return *A_; };
+
+  /** Read only accessor for the b vector. */
   const Eigen::VectorXd& b() const { return *b_; };
 
   /**
    * @return number of decision variables (i.e., dimension of z)
    */
-  int num_variables() { return nz_; }
+  int num_variables() const { return nz_; }
   /**
    * @return number of inequality constraints
    */
-  int num_constraints() { return nv_; }
+  int num_constraints() const { return nv_; }
 
  private:
   int nz_ = 0;  // Number of decision variables.
   int nv_ = 0;  // Number of constraints.
 
-  const Eigen::MatrixXd* H_;
-  const Eigen::VectorXd* f_;
-  const Eigen::MatrixXd* A_;
-  const Eigen::VectorXd* b_;
+  const Eigen::MatrixXd* H_{nullptr};
+  const Eigen::VectorXd* f_{nullptr};
+  const Eigen::MatrixXd* A_{nullptr};
+  const Eigen::VectorXd* b_{nullptr};
 
   friend class DenseVariable;
   friend class DenseResidual;
