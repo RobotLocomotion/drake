@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <Eigen/Dense>
 
 #include "drake/common/drake_copyable.h"

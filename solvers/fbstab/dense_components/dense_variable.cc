@@ -1,6 +1,7 @@
 #include "drake/solvers/fbstab/dense_components/dense_variable.h"
 
 #include <cmath>
+#include <memory>
 #include <stdexcept>
 #include <Eigen/Dense>
 
