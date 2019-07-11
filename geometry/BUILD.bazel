@@ -362,7 +362,11 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "identifier_test",
-    deps = [":identifier"],
+    deps = [
+        ":identifier",
+        "//common:unused",
+        "//common/test_utilities:expect_throws_message",
+    ],
 )
 
 drake_cc_googletest(
