@@ -1,10 +1,10 @@
 #pragma once
 
 #include <memory>
-#include <Eigen/Dense>
 
+#include <Eigen/Dense>
 #include "drake/common/drake_copyable.h"
-#include "drake/solvers/fbstab/dense_components/dense_data.h"
+#include "drake/solvers/fbstab/components/dense_data.h"
 
 namespace drake {
 namespace solvers {
@@ -33,8 +33,8 @@ class DenseVariable {
   /**
    * Allocates memory for a primal-dual variables.
    *
-   * @param[in] nz Number of decision variables
-   * @param[in] nv Number of inequality constraints
+   * @param[in] nz Number of decision variables > 0
+   * @param[in] nv Number of inequality constraints > 0
    */
   DenseVariable(int nz, int nv);
 
@@ -43,6 +43,8 @@ class DenseVariable {
    * @param[in] z    A vector to store the decision variables.
    * @param[in] v    A vector to store the dual variables.
    * @param[in] y    A vector to store the inequality margin.
+   *
+   * Throws an exception if any inputs are null or have mismatched or zero size.
    */
   DenseVariable(Eigen::VectorXd* z, Eigen::VectorXd* v, Eigen::VectorXd* y);
 
@@ -57,11 +59,14 @@ class DenseVariable {
    * Fills the variable with one value,
    * i.e., x <- a * ones.
    * @param[in] a
+   *
+   * Throws an exception if problem data has not been linked.
    */
   void Fill(double a);
 
   /**
    * Sets the field x.y = b - A* x.z.
+   * Throws an exception if problem data has not been linked.
    */
   void InitializeConstraintMargin();
 
@@ -76,12 +81,15 @@ class DenseVariable {
    *
    * Note that this handles the constraint margin correctly, i.e., after the
    * operation u.y = b - A*(u.z + a*x.z).
+   * Throws an exception if problem data has not been linked.
    */
   void axpy(const DenseVariable& x, double a);
 
   /**
    * Performs a deep copy operation.
    * @param[in] x variable to be copied
+   *
+   * Throws an exception if sizes are mismatched.
    */
   void Copy(const DenseVariable& x);
 

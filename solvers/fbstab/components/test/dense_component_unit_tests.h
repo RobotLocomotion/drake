@@ -1,12 +1,12 @@
 #pragma once
 
-#include "drake/solvers/fbstab/dense_components/dense_data.h"
-#include "drake/solvers/fbstab/dense_components/dense_variable.h"
-
 #include <cmath>
 #include <iostream>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
+#include "drake/solvers/fbstab/components/dense_data.h"
+#include "drake/solvers/fbstab/components/dense_variable.h"
 
 namespace drake {
 namespace solvers {
@@ -35,9 +35,7 @@ class DenseComponentUnitTests {
     q_ = b_.size();
 
     H_ << 3, 1, 1, 1;
-
     A_ << -1, 0, 0, 1;
-
     f_ << 1, 6;
     b_ << 0, -1;
   }

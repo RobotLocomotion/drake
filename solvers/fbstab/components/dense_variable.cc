@@ -1,11 +1,11 @@
-#include "drake/solvers/fbstab/dense_components/dense_variable.h"
+#include "drake/solvers/fbstab/components/dense_variable.h"
 
 #include <cmath>
 #include <memory>
 #include <stdexcept>
-#include <Eigen/Dense>
 
-#include "drake/solvers/fbstab/dense_components/dense_data.h"
+#include <Eigen/Dense>
+#include "drake/solvers/fbstab/components/dense_data.h"
 
 namespace drake {
 namespace solvers {
@@ -15,6 +15,10 @@ using MatrixXd = Eigen::MatrixXd;
 using VectorXd = Eigen::VectorXd;
 
 DenseVariable::DenseVariable(int nz, int nv) {
+  if (nz <= 0 || nv <= 0) {
+    throw std::runtime_error(
+        "Inputs nz and nv to DenseVariable::DenseVariable must be positive.");
+  }
   nz_ = nz;
   nv_ = nv;
 
@@ -38,6 +42,11 @@ DenseVariable::DenseVariable(VectorXd* z, VectorXd* v, VectorXd* y) {
   }
   nz_ = z->size();
   nv_ = v->size();
+
+  if (nz_ == 0 || nv_ == 0) {
+    throw std::runtime_error(
+        "Inputs to DenseVariable::DenseVariable must have nonzero sizes.");
+  }
   z_ = z;
   v_ = v;
   y_ = y;
@@ -46,7 +55,7 @@ DenseVariable::DenseVariable(VectorXd* z, VectorXd* v, VectorXd* y) {
 void DenseVariable::Fill(double a) {
   if (data_ == nullptr) {
     throw std::runtime_error(
-        "Cannot call DenseVariable::Fill unless data is linked");
+        "Cannot call DenseVariable::Fill unless data is linked.");
   }
   z_->setConstant(a);
   v_->setConstant(a);
@@ -63,7 +72,7 @@ void DenseVariable::InitializeConstraintMargin() {
   if (data_ == nullptr) {
     throw std::runtime_error(
         "Cannot call DenseVariable::InitializeConstraintMargin unless data is "
-        "linked");
+        "linked.");
   }
   y_->noalias() = data_->b() - data_->A() * (*z_);
 }
@@ -71,7 +80,7 @@ void DenseVariable::InitializeConstraintMargin() {
 void DenseVariable::axpy(const DenseVariable& x, double a) {
   if (data_ == nullptr) {
     throw std::runtime_error(
-        "Cannot call DenseVariable::axpy unless data is linked");
+        "Cannot call DenseVariable::axpy unless data is linked.");
   }
   (*z_) += a * x.z();
   (*v_) += a * x.v();

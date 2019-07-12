@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Eigen/Dense>
-
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
@@ -27,6 +26,9 @@ class DenseData {
    * @param[in] f Linear term
    * @param[in] A Constraint matrix
    * @param[in] b Constraint vector
+   *
+   * Throws a runtime exception if any of the inputs are null or if
+   * the sizes of the inputs are inconsistent.
    */
   DenseData(const Eigen::MatrixXd* H, const Eigen::VectorXd* f,
             const Eigen::MatrixXd* A, const Eigen::VectorXd* b);
@@ -56,10 +58,10 @@ class DenseData {
   int nz_ = 0;  // Number of decision variables.
   int nv_ = 0;  // Number of constraints.
 
-  const Eigen::MatrixXd* H_{nullptr};
-  const Eigen::VectorXd* f_{nullptr};
-  const Eigen::MatrixXd* A_{nullptr};
-  const Eigen::VectorXd* b_{nullptr};
+  const Eigen::MatrixXd* const H_{nullptr};
+  const Eigen::VectorXd* const f_{nullptr};
+  const Eigen::MatrixXd* const A_{nullptr};
+  const Eigen::VectorXd* const b_{nullptr};
 
   friend class DenseVariable;
   friend class DenseResidual;

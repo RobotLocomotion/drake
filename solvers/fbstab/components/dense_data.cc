@@ -1,7 +1,8 @@
-#include "drake/solvers/fbstab/dense_components/dense_data.h"
+#include "drake/solvers/fbstab/components/dense_data.h"
 
 #include <cmath>
 #include <stdexcept>
+
 #include <Eigen/Dense>
 
 namespace drake {
@@ -12,7 +13,8 @@ using MatrixXd = Eigen::MatrixXd;
 using VectorXd = Eigen::VectorXd;
 
 DenseData::DenseData(const MatrixXd* H, const VectorXd* f, const MatrixXd* A,
-                     const VectorXd* b) {
+                     const VectorXd* b)
+    : H_{H}, f_{f}, A_{A}, b_{b} {
   if (H == nullptr || f == nullptr || A == nullptr || b == nullptr) {
     throw std::runtime_error("Inputs to DenseData::DenseData cannot be null.");
   }
@@ -28,11 +30,6 @@ DenseData::DenseData(const MatrixXd* H, const VectorXd* f, const MatrixXd* A,
 
   nz_ = f->size();
   nv_ = b->size();
-
-  H_ = H;
-  A_ = A;
-  f_ = f;
-  b_ = b;
 }
 
 }  // namespace fbstab
