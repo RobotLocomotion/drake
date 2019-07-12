@@ -3,9 +3,10 @@ from __future__ import print_function
 import numpy as np
 import unittest
 
+from pydrake.common.test_utilities import numpy_compare
+from pydrake.polynomial import Polynomial
 from pydrake.trajectories import (
     PiecewisePolynomial,
-    Polynomial,
 )
 
 
@@ -77,6 +78,8 @@ class TestTrajectories(unittest.TestCase):
         self.assertTrue(pp.is_time_in_range(t=1.5))
         self.assertEqual(pp.get_segment_index(t=1.5), 1)
         self.assertEqual(pp.get_segment_times(), [0., 1., 2.])
+        # tmp
+        print(pp.getPolynomialMatrix(0))
 
     def test_first_order_hold(self):
         x = np.array([[1., 2.], [3., 4.], [5., 6.]]).transpose()

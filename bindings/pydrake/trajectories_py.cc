@@ -9,11 +9,20 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/trajectory.h"
 
+PYBIND11_NUMPY_OBJECT_DTYPE(Polynomial<double>);
+
 namespace drake {
 namespace pydrake {
 
 PYBIND11_MODULE(trajectories, m) {
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::trajectories;
+  constexpr auto& doc = pydrake_doc.drake.trajectories;
+
+  using T = double;
+
   {
+    // TODO(eric.cousineau): Where to put this?
     using CoefficientType = double;
     using Class = Polynomial<CoefficientType>;
     constexpr auto& cls_doc = pydrake_doc.Polynomial;
@@ -49,12 +58,6 @@ PYBIND11_MODULE(trajectories, m) {
         // Logical comparison
         .def(py::self == py::self);
   }
-
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake::trajectories;
-  constexpr auto& doc = pydrake_doc.drake.trajectories;
-
-  using T = double;
 
   py::class_<Trajectory<T>>(m, "Trajectory", doc.Trajectory.doc);
 
@@ -142,9 +145,9 @@ PYBIND11_MODULE(trajectories, m) {
       .def("derivative", &PiecewisePolynomial<T>::derivative,
           py::arg("derivative_order") = 1,
           doc.PiecewisePolynomial.derivative.doc)
-      // .def("getPolynomialMatrix", &PiecewisePolynomial<T>::getPolynomialMatrix,
-      //     py::arg("segment_index"),
-      //     doc.PiecewisePolynomial.getPolynomialMatrix.doc)
+      .def("getPolynomialMatrix", &PiecewisePolynomial<T>::getPolynomialMatrix,
+          py::arg("segment_index"),
+          doc.PiecewisePolynomial.getPolynomialMatrix.doc)
       .def("getPolynomial", &PiecewisePolynomial<T>::getPolynomial,
           py::arg("segment_index"), py::arg("row") = 0, py::arg("col") = 0,
           doc.PiecewisePolynomial.getPolynomial.doc)
@@ -164,12 +167,12 @@ PYBIND11_MODULE(trajectories, m) {
           py::arg("start_segment_index"), py::arg("num_segments"),
           doc.PiecewisePolynomial.slice.doc)
       .def("shiftRight", &PiecewisePolynomial<T>::shiftRight, py::arg("offset"),
-          doc.PiecewisePolynomial.shiftRight.doc);
-      // .def("setPolynomialMatrixBlock",
-      //     &PiecewisePolynomial<T>::setPolynomialMatrixBlock,
-      //     py::arg("replacement"), py::arg("segment_index"),
-      //     py::arg("row_start") = 0, py::arg("col_start") = 0,
-      //     doc.PiecewisePolynomial.setPolynomialMatrixBlock.doc);
+          doc.PiecewisePolynomial.shiftRight.doc)
+      .def("setPolynomialMatrixBlock",
+          &PiecewisePolynomial<T>::setPolynomialMatrixBlock,
+          py::arg("replacement"), py::arg("segment_index"),
+          py::arg("row_start") = 0, py::arg("col_start") = 0,
+          doc.PiecewisePolynomial.setPolynomialMatrixBlock.doc);
 }
 
 }  // namespace pydrake

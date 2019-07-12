@@ -438,7 +438,10 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "trajectories_test",
-    deps = [":trajectories_py"],
+    deps = [
+        ":trajectories_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
 )
 
 drake_py_unittest(
