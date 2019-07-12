@@ -30,9 +30,12 @@ def _run_git(repo_ctx, *args):
 def _git_clone(
         repo_ctx,
         remote = None,
-        commit = None):
-    # Clones a git repository named by the given remote and reset it to the
-    # given commit.
+        commit = None,
+        branch = None,
+        tag = None):
+    # If a commit is specified, clones a git repository named by the given
+    # remote and reset it to the given commit. If a branch or tag is specified,
+    # shallow clones the git repository named by the given remote with depth 1.
     #
     # The clone is placed into "." (which is the workspace being populated by
     # whatever repository_rule calls this function).  This function assumes
@@ -44,9 +47,23 @@ def _git_clone(
     # We would prefer to load `@bazel_tools//tools/build_defs/repo:git.bzl` and
     # use its `git_repository` rule, but there is no flavor of that rule that
     # allows us to pass in the repo_ctx from our own repository_rule.
-    (commit and remote) or fail("Missing commit or remote")
-    _run_git(repo_ctx, "clone", remote, ".")
-    _run_git(repo_ctx, "reset", "--hard", commit)
+    if (not branch and not commit and not tag) or (commit and tag) or (branch and tag) or (branch and commit):  # noqa
+        fail("Exactly one of branch, commit, or tag must be provided.")
+
+    args = []
+    ref = commit
+
+    if branch or tag:
+        ref = "tags/{}".format(tag) if tag else branch
+        args.extend(["--branch", ref, "--depth", "1"])
+
+    args.extend([remote, "."])
+
+    repo_ctx.report_progress("cloning {} of {}".format(ref, remote))
+    _run_git(repo_ctx, "clone", *args)
+
+    if commit:
+        _run_git(repo_ctx, "reset", "--hard", commit)
 
 def _setup_git(repo_ctx):
     # Download the snopt sources from an access-controlled git repository.
@@ -62,6 +79,8 @@ def _setup_git(repo_ctx):
         repo_ctx,
         remote = repo_ctx.attr.remote,
         commit = repo_ctx.attr.commit,
+        branch = repo_ctx.attr.branch,
+        tag = repo_ctx.attr.tag,
     )
     patchfile = repo_ctx.path(
         Label("@drake//tools/workspace/snopt:snopt-openmp.patch"),
@@ -184,7 +203,9 @@ def _impl(repo_ctx):
 snopt_repository = repository_rule(
     attrs = {
         "remote": attr.string(default = "git@github.com:RobotLocomotion/snopt.git"),  # noqa
-        "commit": attr.string(default = "0254e961cb8c60193b0862a0428fd6a42bfb5243"),  # noqa
+        "commit": attr.string(),
+        "branch": attr.string(default = "2015-02-26"),
+        "tag": attr.string(),
         "use_drake_build_rules": attr.bool(
             default = True,
             doc = ("When obtaining SNOPT via git, controls whether or not " +
