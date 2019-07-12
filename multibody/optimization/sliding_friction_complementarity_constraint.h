@@ -9,8 +9,8 @@
 
 /** @file
  * @anchor sliding_friction_complementarity_constraint
- * Impose the complementarity constraint on the sliding friction using Coulomb
- * friction cone model, that if the contact is sliding, then the tangential
+ * Impose the complementarity constraint on the sliding friction using a Coulomb
+ * friction cone model. If the contact is sliding, then the tangential
  * friction force is in the opposite direction to the sliding velocity, and the
  * contact force is at the boundary of the friction cone. If the contact is
  * static, then the contact force is within the friction cone.
@@ -30,17 +30,18 @@
  *
  *     μ * f_sliding_normal = |f_sliding_tangential|      (3)
  *
- * To enforce that the sliding force is on the opposite direction of the sliding
+ * To enforce that the sliding force is in the opposite direction of the sliding
  * velocity, we impose the following constraint with a slack variable c.
  *
  *     f_sliding_tangential = -c * v_sliding_tangential   (4)
  *     c ≥ 0                                              (5)
  *
- * Finally, we need the constraint that the contact force f is in the
- * friction cone. Namely | f_tangential | ≤ μ f_normal, and maybe the
- * complementarity condition that the contact force can only be non-zero when
- * the contact distance is zero (f_normal * φ(q) = 0). This constraint is not
- * implemented in this file. The user could refer to either
+ * @note the user should impose the constraint that the contact
+ * force f is in the friction cone. Namely | f_tangential | ≤ μ f_normal.
+ * They can do it by either adding a StaticFrictionConeConstraint, if the user
+ * knows explicitly that the contact occurs, or calling
+ * AddStaticFrictionConeComplementarityConstraint if the user doesn't know if
+ * the contact has to occur. The user could refer to
  * static_friction_cone_constraint.h or
  * static_friction_cone_complementarity_constraint.h
  */
@@ -66,10 +67,10 @@ class SlidingFrictionComplementarityNonlinearConstraint
 
   /**
    * @param contact_wrench_evaluator An evaluator that computes the contact
-   * wrench between a pair of geometriex. We will only impose the constraint on
+   * wrench between a pair of geometries. We will only impose the constraint on
    * the contact force, the contact torque is unconstrained.
    * @param complementarity_tolerance The small constant ε for relaxing the
-   * complementarity constraint.
+   * complementarity constraint (2).
    */
   SlidingFrictionComplementarityNonlinearConstraint(
       const ContactWrenchEvaluator* contact_wrench_evaluator,
@@ -140,7 +141,7 @@ class SlidingFrictionComplementarityNonlinearConstraint
  * sliding_friction_complementarity_constraint to an optimization program. This
  * function adds the slack variables (f_static, f_sliding, c), and impose all
  * the constraints in @ref sliding_friction_complementarity_constraint.
- * @note In addition to calling this function, the user also need to impose
+ * @note In addition to calling this function, the user also needs to impose
  * either StaticFrictionConeConstraint or
  * AddStaticFrictionConeComplementarityConstraint() on the contact wrench
  * evaluator.
