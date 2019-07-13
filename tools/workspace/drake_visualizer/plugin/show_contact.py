@@ -68,7 +68,7 @@ class ContactVisualizer(object):
             point = np.array([contact.contact_point[0],
                               contact.contact_point[1],
                               contact.contact_point[2]])
-            force = -np.array([contact.contact_force[0],
+            force = np.array([contact.contact_force[0],
                               contact.contact_force[1],
                               contact.contact_force[2]])
             mag = np.linalg.norm(force)
@@ -96,7 +96,7 @@ class ContactVisualizer(object):
                            headRadius=0.01)
 
             vis.showPolyData(
-                d.getPolyData(), str(key), parent=folder, color=[0.2, 0.8, 0.4])
+                d.getPolyData(), str(key), parent=folder, color=[0.2, 0.8, 0.2])
 
 
 @scoped_singleton_func
