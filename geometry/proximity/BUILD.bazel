@@ -220,7 +220,6 @@ drake_cc_googletest(
     name = "surface_mesh_test",
     deps = [
         "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
         "//geometry/proximity:surface_mesh",
         "//math:geometric_transform",
     ],

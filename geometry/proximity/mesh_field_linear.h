@@ -124,11 +124,11 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
                  this->mesh().num_vertices());
   }
 
-  FieldValue Evaluate(const typename MeshType::VertexIndex v) const final {
+  FieldValue EvaluateAtVertex(typename MeshType::VertexIndex v) const final {
     return values_[v];
   }
 
-  FieldValue Evaluate(const typename MeshType::ElementIndex e,
+  FieldValue Evaluate(typename MeshType::ElementIndex e,
                       const typename MeshType::Barycentric& b) const final {
     const auto& element = this->mesh().element(e);
     FieldValue value = b[0] * values_[element.vertex(0)];
@@ -139,7 +139,7 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
   }
 
   FieldValue EvaluateCartesian(
-                 const typename MeshType::ElementIndex e,
+                 typename MeshType::ElementIndex e,
                  const typename MeshType::Cartesian& p_MQ) const final {
     return Evaluate(e, this->mesh().CalcBarycentric(p_MQ, e));
   }

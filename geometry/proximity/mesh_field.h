@@ -27,15 +27,15 @@ class MeshField {
   /** Evaluates the field value at a vertex.
    @param v The index of the vertex.
    */
-  virtual FieldValue Evaluate(
-      const typename MeshType::VertexIndex e) const = 0;
+  virtual FieldValue EvaluateAtVertex(
+      typename MeshType::VertexIndex e) const = 0;
 
   /** Evaluates the field value at a location on an element.
    @param e The index of the element.
    @param b The barycentric coordinates.
    */
   virtual FieldValue Evaluate(
-      const typename MeshType::ElementIndex e,
+      typename MeshType::ElementIndex e,
       const typename MeshType::Barycentric& b) const = 0;
 
   /** Evaluates the field at a point Qp on an element. If the element is a
@@ -46,7 +46,7 @@ class MeshField {
                coordinates. M is the frame of the mesh.
    */
   virtual FieldValue EvaluateCartesian(
-      const typename MeshType::ElementIndex e,
+      typename MeshType::ElementIndex e,
       const typename MeshType::Cartesian& p_MQ) const = 0;
 
   /** Copy to a new %MeshField and set the new %MeshField to use a new
