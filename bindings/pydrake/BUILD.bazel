@@ -63,7 +63,6 @@ generate_pybind_documentation_header(
     root_name = "pydrake_doc",
     targets = [
         "//:drake_shared_library",
-        "//examples/acrobot:acrobot_plant",
         "//examples/compass_gait:compass_gait",
         "//examples/manipulation_station:manipulation_station",
         "//examples/manipulation_station:manipulation_station_hardware_interface",  # noqa

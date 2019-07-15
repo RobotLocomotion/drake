@@ -57,6 +57,8 @@ LIBDRAKE_COMPONENTS = [
     "//examples/acrobot:acrobot_params",  # unpackaged
     "//examples/acrobot:acrobot_plant",  # unpackaged
     "//examples/acrobot:acrobot_state",  # unpackaged
+    "//examples/acrobot:spong_controller",  # unpackaged
+    "//examples/acrobot:spong_controller_params",  # unpackaged
     "//examples/compass_gait:compass_gait",  # unpackaged
     "//examples/compass_gait:compass_gait_vector_types",  # unpackaged
     "//examples/manipulation_station:manipulation_station",  # unpackaged
