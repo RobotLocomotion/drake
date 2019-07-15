@@ -200,6 +200,15 @@ class ContactSurface {
     return e_MN_->Evaluate(face, barycentric);
   }
 
+  /** Evaluates the scalar field eₘₙ at the given vertex on the contact surface
+    mesh.
+    @param vertex       The index of the vertex in the mesh.
+   */
+  T EvaluateE_MN(
+      SurfaceVertexIndex vertex) const {
+    return e_MN_->EvaluateAtVertex(vertex);
+  }
+
   /** Evaluates the vector field ∇hₘₙ at Point Q on a triangle.
     Point Q is specified by its barycentric coordinates.
     @param face         The face index of the triangle.
@@ -212,24 +221,20 @@ class ContactSurface {
     return grad_h_MN_M_->Evaluate(face, barycentric);
   }
 
+  /** Evaluates the vector field ∇hₘₙ at the given vertex on the contact surface
+    mesh.
+    @param vertex       The index of the vertex in the mesh.
+    @retval  grad_h_MN_M is the vector expressed in M's frame.
+   */ 
+  Vector3<T> EvaluateGrad_h_MN_M(SurfaceVertexIndex vertex) const {
+    return grad_h_MN_M_->EvaluateAtVertex(vertex);
+  }
+
   /** Returns a reference to the surface mesh.
    */
   const SurfaceMesh<T>& mesh() const {
     DRAKE_DEMAND(mesh_M_ != nullptr);
     return *mesh_M_;
-  }
-
-  /** Returns a reference to the scalar field eₘₙ.
-   */
-  const SurfaceMeshFieldLinear<T, T>& e_MN() const {
-    return *e_MN_; 
-  }
-
-  /** Returns a reference to the vector field .
-   */
-  const SurfaceMeshFieldLinear<Vector3<T>, T>&
-      grad_h_MN_M() const {
-    return *grad_h_MN_M_;
   }
 
   /** Swaps M and N (modifying the data in place to reflect the change in

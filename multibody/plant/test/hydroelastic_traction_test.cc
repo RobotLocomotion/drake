@@ -714,7 +714,7 @@ TEST_P(HydroelasticReportingTests, LinearSlipVelocity) {
     // frame to the contact surface at Point Q. By extension, this means that
     // the normal points from Body A to Body B.
     const Vector3<double> h_M =
-        calculator_data().surface.grad_h_MN_M().EvaluateAtVertex(i);
+        calculator_data().surface.EvaluateGrad_h_MN_M(i);
     const Vector3<double> nhat_M = h_M.normalized();
     const Vector3<double> nhat_W = calculator_data().X_WM.rotation() * nhat_M;
 

@@ -140,11 +140,23 @@ class HydroelasticTractionCalculator {
   ContactReportingFields CreateReportingFields(
       const Data& data, double dissipation, double mu_coulomb) const;
 
+  TractionAtPointData CalcTractionAtVertex(
+      const Data& data,
+      geometry::SurfaceVertexIndex vertex_index,
+      double dissipation, double mu_coulomb) const;
+
   TractionAtPointData CalcTractionAtPoint(
       const Data& data,
       geometry::SurfaceFaceIndex face_index,
       const typename geometry::SurfaceMesh<T>::Barycentric& Q_barycentric,
       double dissipation, double mu_coulomb) const;
+
+  void CalcTractionAtPoint(
+      const Data& data,
+      const T& e, const Vector3<T>& nhat_W,
+      double dissipation, double mu_coulomb,
+      HydroelasticTractionCalculator<T>::TractionAtPointData* traction_data)
+      const;
 
   multibody::SpatialForce<T> ComputeSpatialTractionAtAcFromTractionAtAq(
       const Data& data, const Vector3<T>& p_WQ,

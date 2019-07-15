@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <memory>
-#include <set>
 #include <utility>
 #include <vector>
 
@@ -114,6 +113,36 @@ SpatialForce<T> HydroelasticTractionCalculator<T>::
 
 template <typename T>
 typename HydroelasticTractionCalculator<T>::TractionAtPointData
+HydroelasticTractionCalculator<T>::CalcTractionAtVertex(
+    const Data& data,
+    SurfaceVertexIndex vertex_index,
+    double dissipation, double mu_coulomb) const {
+  TractionAtPointData traction_data;
+
+  // Compute the point of contact in the world frame.
+  traction_data.p_WQ = data.X_WM *
+      data.surface.mesh().vertex(vertex_index).r_MV();
+
+  // Get the "potential pressure" (in N/m²) at the point as defined in
+  // [Elandt 2019]. Note that we drop the _MN suffix here and below, as this
+  // suffix can get confused with the identical suffix (used for a different
+  // purpose) employed by monogram notation.
+  const T e = data.surface.EvaluateE_MN(vertex_index);
+
+  // Get the normal from Geometry M to Geometry N, expressed in the world frame,
+  // to the contact surface at Point Q. By extension, this means that the normal
+  // points from Body A to Body B.
+  const Vector3<T> h_M = data.surface.EvaluateGrad_h_MN_M(vertex_index);
+  const Vector3<T> nhat_M = h_M.normalized();
+  const Vector3<T> nhat_W = data.X_WM.rotation() * nhat_M;
+
+  CalcTractionAtPoint(data, e, nhat_W, dissipation, mu_coulomb, &traction_data);
+
+  return traction_data;
+}
+
+template <typename T>
+typename HydroelasticTractionCalculator<T>::TractionAtPointData
 HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
     const Data& data,
     SurfaceFaceIndex face_index,
@@ -140,6 +169,18 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   const Vector3<T> nhat_M = h_M.normalized();
   const Vector3<T> nhat_W = data.X_WM.rotation() * nhat_M;
 
+  CalcTractionAtPoint(data, E, nhat_W, dissipation, mu_coulomb, &traction_data);
+
+  return traction_data;
+}
+
+template <typename T>
+void HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
+    const Data& data,
+    const T& e, const Vector3<T>& nhat_W,
+    double dissipation, double mu_coulomb,
+    typename HydroelasticTractionCalculator<T>::TractionAtPointData*
+        traction_data) const {
   // Get the relative spatial velocity at the point Q between the
   // two bodies A and B (to which M and N are affixed, respectively) by
   // subtracting the spatial velocity of a point (Bq) coincident with p_WQ on
@@ -147,11 +188,11 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   // Body A.
 
   // First compute the spatial velocity of Body A at Aq.
-  const Vector3<T> p_AoAq_W = traction_data.p_WQ - data.X_WA.translation();
+  const Vector3<T> p_AoAq_W = traction_data->p_WQ - data.X_WA.translation();
   const SpatialVelocity<T> V_WAq = data.V_WA.Shift(p_AoAq_W);
 
   // Next compute the spatial velocity of Body B at Bq.
-  const Vector3<T> p_BoBq_W = traction_data.p_WQ - data.X_WB.translation();
+  const Vector3<T> p_BoBq_W = traction_data->p_WQ - data.X_WB.translation();
   const SpatialVelocity<T> V_WBq = data.V_WB.Shift(p_BoBq_W);
 
   // Finally compute the relative velocity of Frame Aq relative to Frame Bq,
@@ -168,33 +209,31 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   // Get the damping value (c) from the compliant model dissipation (α).
   // Equation (16) from [Hunt 1975], but neglecting the 3/2 term used for
   // Hertzian contact, yields c = α * e_mn with units of N⋅s/m³.
-  const T c = dissipation * E;
+  const T c = dissipation * e;
 
   // Determine the normal traction at the point.
   using std::max;
-  const T normal_traction = max(E - vn_BqAq_W * c, T(0));
+  const T normal_traction = max(e - vn_BqAq_W * c, T(0));
 
   // Get the slip velocity at the point.
-  traction_data.vt_BqAq_W = v_BqAq_W - nhat_W * vn_BqAq_W;
+  traction_data->vt_BqAq_W = v_BqAq_W - nhat_W * vn_BqAq_W;
 
   // Determine the traction using a soft-norm.
   using std::atan;
   using std::sqrt;
-  const T squared_vt = traction_data.vt_BqAq_W.squaredNorm();
+  const T squared_vt = traction_data->vt_BqAq_W.squaredNorm();
   const T norm_vt = sqrt(squared_vt);
   const T soft_norm_vt = sqrt(squared_vt +
       vslip_regularizer_ * vslip_regularizer_);
 
   // Get the regularized direction of slip.
-  const Vector3<T> vt_hat_BqAq_W = traction_data.vt_BqAq_W / soft_norm_vt;
+  const Vector3<T> vt_hat_BqAq_W = traction_data->vt_BqAq_W / soft_norm_vt;
 
   // Compute the traction.
   const T frictional_scalar = mu_coulomb * normal_traction *
       2.0 / M_PI * atan(norm_vt / T(vslip_regularizer_));
-  traction_data.traction_Aq_W = nhat_W * normal_traction -
+  traction_data->traction_Aq_W = nhat_W * normal_traction -
       vt_hat_BqAq_W * frictional_scalar;
-
-  return traction_data;
 }
 
 // Creates linearly interpolated fields over the contact surface for use in
@@ -210,50 +249,14 @@ HydroelasticTractionCalculator<T>::CreateReportingFields(
   // Alias the contact surface.
   const ContactSurface<T>& surface = data.surface;
 
-  // Set the three barycentric coordinates for each triangle.
-  const Vector3<T> bcoords[3] = {
-      Vector3<T>(1, 0, 0),
-      Vector3<T>(0, 1, 0),
-      Vector3<T>(0, 0, 1)
-  };
-
-  auto GetBarycentric = [&bcoords](
-      const SurfaceFace& f, SurfaceVertexIndex v) -> const Vector3<T>& {
-    if (f.vertex(0) == v) {
-      return bcoords[0];
-    } else {
-      if (f.vertex(1) == v) {
-        return bcoords[1];
-      } else {
-        DRAKE_DEMAND(f.vertex(2) == v);
-        return bcoords[2];
-      }
-    }
-  };
-
   // Compute a value for each vertex.
   std::vector<Vector3<T>> vt_BqAq_W(surface.mesh().num_vertices());
   std::vector<Vector3<T>> traction_Aq_W(surface.mesh().num_vertices());
 
   for (SurfaceVertexIndex i(0); i < surface.mesh().num_vertices(); ++i) {
-    // Get one of the triangles that references this vertex.
-    const std::set<SurfaceFaceIndex>& referring_triangles =
-        surface.mesh().referring_triangles(i);
-
-    // Verify that at least one triangle references this vertex.
-    DRAKE_DEMAND(!referring_triangles.empty());
-
-    // Get the face index.
-    const SurfaceFaceIndex face_index = *referring_triangles.begin();
-
-    // Get the vertex's barycentric coordinates.
-    const Vector3<T> vertex_b = GetBarycentric(
-        surface.mesh().element(face_index), i);
-
     // Compute the traction and the slip velocity at the vertex.
     HydroelasticTractionCalculator<T>::TractionAtPointData output =
-        CalcTractionAtPoint(
-            data, face_index, vertex_b, dissipation, mu_coulomb);
+        CalcTractionAtVertex(data, i, dissipation, mu_coulomb);
     traction_Aq_W[i] = output.traction_Aq_W;
     vt_BqAq_W[i] = output.vt_BqAq_W;
   }
