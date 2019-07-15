@@ -517,7 +517,6 @@ GTEST_TEST(RNDFMakeBezierCurveMonotonicTest, CaseObliqueNonConvexConnection) {
 
 // Checks that all the constraints throw when conditions are not satisfied.
 GTEST_TEST(RNDFCreatePChipBasedSplineTest, CaseExceptions) {
-  ::testing::FLAGS_gtest_death_test_style = "fast";
   // Checks that it throws when a bad vector is supplied.
   EXPECT_THROW(CreatePChipBasedSpline({}), std::runtime_error);
   // Check the nice case.

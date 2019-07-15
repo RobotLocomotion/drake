@@ -47,10 +47,10 @@ GTEST_TEST(HalfSpace, Construction) {
 }
 
 // Confirms that a plane normal that is *insufficiently* unit length aborts.
-GTEST_TEST(HalfSpaceDeathTest, Unnormalized) {
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+GTEST_TEST(HalfSpaceTest, Unnormalized) {
   const double kDelta = 4 * std::sqrt(std::numeric_limits<double>::epsilon());
-  ASSERT_DEATH(HalfSpace<double>(Vector3d{1, kDelta, kDelta}, 0.25), "");
+  EXPECT_THROW(HalfSpace<double>(Vector3d{1, kDelta, kDelta}, 0.25),
+               std::exception);
 }
 
 // TODO(SeanCurtis-TRI): Robustly confirm that epsilon of 1e-14 is correct for

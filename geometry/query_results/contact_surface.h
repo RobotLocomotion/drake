@@ -219,6 +219,19 @@ class ContactSurface {
     return *mesh_M_;
   }
 
+  /** Returns a reference to the scalar field eₘₙ.
+   */
+  const SurfaceMeshFieldLinear<T, T>& e_MN() const {
+    return *e_MN_; 
+  }
+
+  /** Returns a reference to the vector field .
+   */
+  const SurfaceMeshFieldLinear<Vector3<T>, T>&
+      grad_h_MN_M() const {
+    return *grad_h_MN_M_;
+  }
+
   /** Swaps M and N (modifying the data in place to reflect the change in
    frames).
    @param X_NM  The pose of frame M in N.

@@ -1365,6 +1365,7 @@ drake_cc_googletest(
     tags = mosek_test_tags(),
     use_default_main = False,
     deps = [
+        ":exponential_cone_program_examples",
         ":linear_program_examples",
         ":mathematical_program_private",
         ":mathematical_program_test_util",

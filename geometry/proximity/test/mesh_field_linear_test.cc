@@ -42,16 +42,16 @@ std::unique_ptr<SurfaceMesh<T>> GenerateMesh() {
 }
 
 // Tests Evaluate(VertexIndex).
-GTEST_TEST(MeshFieldLinearTest, EvaluateVertex) {
+GTEST_TEST(MeshFieldLinearTest, EvaluateAtVertex) {
   auto mesh = GenerateMesh<double>();
   std::vector<double> e_values = {0., 1., 2., 3.};
   auto mesh_field =
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
           "e", std::move(e_values), mesh.get());
-  EXPECT_EQ(mesh_field->Evaluate(SurfaceVertexIndex(0)), 0);
-  EXPECT_EQ(mesh_field->Evaluate(SurfaceVertexIndex(1)), 1);
-  EXPECT_EQ(mesh_field->Evaluate(SurfaceVertexIndex(2)), 2);
-  EXPECT_EQ(mesh_field->Evaluate(SurfaceVertexIndex(3)), 3);
+  EXPECT_EQ(mesh_field->EvaluateAtVertex(SurfaceVertexIndex(0)), 0);
+  EXPECT_EQ(mesh_field->EvaluateAtVertex(SurfaceVertexIndex(1)), 1);
+  EXPECT_EQ(mesh_field->EvaluateAtVertex(SurfaceVertexIndex(2)), 2);
+  EXPECT_EQ(mesh_field->EvaluateAtVertex(SurfaceVertexIndex(3)), 3);
 }
 
 // Tests CloneAndSetMesh(). We use `double` and SurfaceMesh<double> as

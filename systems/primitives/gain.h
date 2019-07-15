@@ -1,6 +1,6 @@
 #pragma once
 
-#include <sstream>
+#include <fmt/format.h>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
@@ -55,8 +55,8 @@ class Gain final : public VectorSystem<T> {
 
   /// Returns the gain constant. This method should only be called if the gain
   /// can be represented as a scalar value, i.e., every element in the gain
-  /// vector is the same. It will abort if the gain cannot be represented as a
-  /// single scalar value.
+  /// vector is the same. It will throw an exception if the gain cannot be
+  /// represented as a single scalar value.
   double get_gain() const;
 
   /// Returns the gain vector constant.
@@ -90,10 +90,10 @@ Gain<T>::Gain(const Gain<U>& other)
 template <typename T>
 double Gain<T>::get_gain() const {
   if (!k_.isConstant(k_[0])) {
-    std::stringstream s;
-    s << "The gain vector, [" << k_ << "], cannot be represented as a scalar "
-      << "value. Please use drake::systems::Gain::get_gain_vector() instead.";
-    throw std::runtime_error(s.str().c_str());
+    throw std::runtime_error(fmt::format(
+        "The gain vector [{}] cannot be represented as a scalar value. "
+        "Please use drake::systems::Gain::get_gain_vector() instead.",
+        k_.transpose()));
   }
   return k_[0];
 }

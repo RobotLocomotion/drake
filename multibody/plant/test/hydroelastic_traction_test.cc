@@ -570,8 +570,8 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     const RigidTransform<double> X_YB = RigidTransform<double>::Identity();
     const RigidTransform<double> X_YM = RigidTransform<double>::Identity();
 
-    // Note: this test does not require valid GeometryIds. 
-    const GeometryId null_id; 
+    // Note: this test does not require valid GeometryIds.
+    const GeometryId null_id;
 
     // Create the surface mesh first.
     auto mesh = CreateSurfaceMesh();
@@ -605,7 +605,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
         Vector3<double>(0, 0, spin_rate), Vector3<double>::Zero());
     const SpatialVelocity<double> V_YB(
         Vector3<double>::Zero(), Vector3<double>::Zero());
-    
+
     // Convert all quantities to the world frame.
     const RigidTransform<double> X_WA = X_WY * X_YA;
     const RigidTransform<double> X_WB = X_WY * X_YB;
@@ -649,20 +649,10 @@ TEST_P(HydroelasticReportingTests, LinearTraction) {
   // Test the traction at the vertices of the contact surface.
   for (SurfaceVertexIndex(i);
       i < calculator_data().surface.mesh().num_vertices(); ++i) {
-    // Get one of the faces that refers to vertex i.
-    const std::set<SurfaceFaceIndex> referring_tris =
-        calculator_data().surface.mesh().referring_triangles(i);
-    DRAKE_DEMAND(!referring_tris.empty());
-
-    // Get the barycentric coordinates of vertex i.
-    SurfaceFaceIndex face_index = *referring_tris.begin();
-    const SurfaceMesh<double>::Barycentric b_MV =
-        calculator_data().surface.mesh().GetBarycentric(face_index, i); 
-
     // Evaluate the traction at vertex i on Body A (the body to which geometry
-    // M is attached). 
+    // M is attached).
     const Vector3<double> traction_Av_W =
-       fields.traction_W->Evaluate(face_index, b_MV); 
+       fields.traction_W->EvaluateAtVertex(i);
 
     // Check the pressure is evaluated to how we constructed it.
     const Vector3<double>& r_MV =
@@ -677,18 +667,7 @@ TEST_P(HydroelasticReportingTests, LinearTraction) {
   Vector3<double> mean_traction_W = Vector3<double>::Zero();
   for (SurfaceVertexIndex(i);
       i < calculator_data().surface.mesh().num_vertices(); ++i) {
-    // Get one of the faces that refers to vertex i.
-    const std::set<SurfaceFaceIndex> referring_tris =
-        calculator_data().surface.mesh().referring_triangles(i);
-    DRAKE_DEMAND(!referring_tris.empty());
-
-    // Get the barycentric coordinates of vertex i.
-    SurfaceFaceIndex face_index = *referring_tris.begin();
-    const SurfaceMesh<double>::Barycentric b_MV =
-        calculator_data().surface.mesh().GetBarycentric(face_index, i);
-
-    // Evaluate the traction at vertex i. 
-    mean_traction_W += fields.traction_W->Evaluate(face_index, b_MV); 
+    mean_traction_W += fields.traction_W->EvaluateAtVertex(i);
   }
   mean_traction_W /= calculator_data().surface.mesh().num_vertices();
   // 2. Compute the traction at the centroid of the contact surface. Note that
@@ -696,13 +675,13 @@ TEST_P(HydroelasticReportingTests, LinearTraction) {
   //    both faces in this particular instance.
   const SurfaceMesh<double>::Barycentric b_MC =
       calculator_data().surface.mesh().CalcBarycentric(
-          calculator_data().surface.mesh().centroid(), SurfaceFaceIndex(0)); 
+          calculator_data().surface.mesh().centroid(), SurfaceFaceIndex(0));
   const Vector3<double> traction_Ac_W = fields.traction_W->Evaluate(
-      SurfaceFaceIndex(0), b_MC); 
+      SurfaceFaceIndex(0), b_MC);
 
   // Check that the two are approximately equal.
   for (int i = 0; i < 3; ++i)
-    EXPECT_NEAR(mean_traction_W[i], traction_Ac_W[i], tol); 
+    EXPECT_NEAR(mean_traction_W[i], traction_Ac_W[i], tol);
 }
 
 // Tests that the slip velocity reporting is accurate. Note that this test only
@@ -725,18 +704,17 @@ TEST_P(HydroelasticReportingTests, LinearSlipVelocity) {
           calculator_data(), dissipation, mu_coulomb);
 
   // Test the slip velocity at the vertices of the contact surface.
-  const SurfaceMesh<double>& mesh = calculator_data().surface().mesh();
-  for (SurfaceVertexIndex(i);
-      i < calculator_data().mesh.num_vertices(); ++i) {
-    // Compute the vertex location (V) in the world frame. 
-    const Vector3<double> p_MV = mesh.vertex(i).p_MV();
+  const SurfaceMesh<double>& mesh = calculator_data().surface.mesh();
+  for (SurfaceVertexIndex(i); i < mesh.num_vertices(); ++i) {
+    // Compute the vertex location (V) in the world frame.
+    const Vector3<double> p_MV = mesh.vertex(i).r_MV();
     const Vector3<double> p_WV = calculator_data().X_WM * p_MV;
 
     // Get the normal from Geometry M to Geometry N, expressed in the world
     // frame to the contact surface at Point Q. By extension, this means that
     // the normal points from Body A to Body B.
-    const Vector3<double> h_M = calculator_data().surface.EvaluateGrad_h_MN_M(
-        face_index, V_barycentric);
+    const Vector3<double> h_M =
+        calculator_data().surface.grad_h_MN_M().EvaluateAtVertex(i);
     const Vector3<double> nhat_M = h_M.normalized();
     const Vector3<double> nhat_W = calculator_data().X_WM.rotation() * nhat_M;
 
@@ -755,14 +733,14 @@ TEST_P(HydroelasticReportingTests, LinearSlipVelocity) {
     // Compute the relative velocity between the bodies at the vertex.
     const multibody::SpatialVelocity<double> V_BvAv_W = V_WAv - V_WBv;
     const Vector3<double>& v_BvAv_W = V_BvAv_W.translational();
-    const double vn_BvAv_W = v_BvAv_W.dot(nhat_W)
+    const double vn_BvAv_W = v_BvAv_W.dot(nhat_W);
 
     // Compute the slip velocity.
     const Vector3<double> vt_BvAv_W = v_BvAv_W - nhat_W * vn_BvAv_W;
 
     // Check against the reported slip velocity.
-    const Vector3<double> vt_BvAv_W_reported = fields.traction_W->Evaluate(
-      face_index, p_WV);
+    const Vector3<double> vt_BvAv_W_reported =
+        fields.traction_W->EvaluateAtVertex(i);
     EXPECT_LT((vt_BvAv_W - vt_BvAv_W_reported).norm(), tol);
   }
 
@@ -774,7 +752,7 @@ TEST_P(HydroelasticReportingTests, LinearSlipVelocity) {
       mesh.CalcBarycentric(mesh.centroid(), SurfaceFaceIndex(0));
   const Vector3<double> vt_BcAc_W = fields.traction_W->Evaluate(
       SurfaceFaceIndex(0), b_MC);
-  EXPECT_LT(vt_BcAc_W.norm(), tol); 
+  EXPECT_LT(vt_BcAc_W.norm(), tol);
 }
 
 // These transformations, denoted X_WY, are passed as parameters to the tests

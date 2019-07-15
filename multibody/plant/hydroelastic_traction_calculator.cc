@@ -1,7 +1,10 @@
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 
 #include <algorithm>
+#include <memory>
+#include <set>
 #include <utility>
+#include <vector>
 
 #include "drake/math/orthonormal_basis.h"
 #include "drake/math/rotation_matrix.h"
@@ -200,10 +203,10 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
 //         (i.e., `data.surface_->mesh()`), so that pointer must remain valid
 //        while this object is alive.
 template <typename T>
-typename HydroelasticTractionCalculator<T>::ContactReportingFields 
+typename HydroelasticTractionCalculator<T>::ContactReportingFields
 HydroelasticTractionCalculator<T>::CreateReportingFields(
     const HydroelasticTractionCalculator<T>::Data& data,
-    double dissipation, double mu_coulomb) const { 
+    double dissipation, double mu_coulomb) const {
   // Alias the contact surface.
   const ContactSurface<T>& surface = data.surface;
 
@@ -212,7 +215,7 @@ HydroelasticTractionCalculator<T>::CreateReportingFields(
       Vector3<T>(1, 0, 0),
       Vector3<T>(0, 1, 0),
       Vector3<T>(0, 0, 1)
-  }; 
+  };
 
   auto GetBarycentric = [&bcoords](
       const SurfaceFace& f, SurfaceVertexIndex v) -> const Vector3<T>& {
@@ -258,9 +261,9 @@ HydroelasticTractionCalculator<T>::CreateReportingFields(
   // Create the field structure.
   ContactReportingFields fields;
   fields.traction_W = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
-      "traction", std::move(traction_Aq_W), &surface.mesh());  
+      "traction", std::move(traction_Aq_W), &surface.mesh());
   fields.vslip_W = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
-      "slip_velocity", std::move(vt_BqAq_W), &surface.mesh());  
+      "slip_velocity", std::move(vt_BqAq_W), &surface.mesh());
   return fields;
 }
 

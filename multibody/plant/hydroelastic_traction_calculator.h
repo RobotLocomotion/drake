@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <set>
+
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/math/rigid_transform.h"
@@ -94,7 +97,7 @@ class HydroelasticTractionCalculator {
    @param mu_coulomb the nonnegative coefficient for Coulomb friction.
    @param[output] F_Ao_W the spatial force on Body A, on return.
    @param[output] F_Bo_W the spatial force on Body B, on return.
-   */ 
+   */
   void ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
        const Data& data, double dissipation, double mu_coulomb,
        multibody::SpatialForce<T>* F_Ao_W,
@@ -103,6 +106,9 @@ class HydroelasticTractionCalculator {
  private:
   // To allow GTEST to test private functions.
   friend class MultibodyPlantHydroelasticTractionTests;
+  friend class HydroelasticReportingTests;
+  friend class HydroelasticReportingTests_LinearTraction_Test;
+  friend class HydroelasticReportingTests_LinearSlipVelocity_Test;
 
   // Data structure for passing useful outputs from CalcTractionAtPoint().
   struct TractionAtPointData {
@@ -119,14 +125,14 @@ class HydroelasticTractionCalculator {
     Vector3<T> traction_Aq_W;
   };
 
-  // Various fields used for querying kinematic and dynamic quantities over a 
+  // Various fields used for querying kinematic and dynamic quantities over a
   // contact surface.
   struct ContactReportingFields {
     // The traction acting on Body A (i.e., the body that Geometry M is affixed
-    // to), expressed in the world frame.  
+    // to), expressed in the world frame.
     std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_W;
 
-    // The slip velocity of Body B (i.e., the body that Geometry N is affixed 
+    // The slip velocity of Body B (i.e., the body that Geometry N is affixed
     // to) relative to Body A, expressed in the world frame.
     std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_W;
   };
