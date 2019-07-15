@@ -33,6 +33,12 @@ drake_cc_vector_gen_library(
     visibility = ["//visibility:public"],
 )
 
+drake_cc_vector_gen_library(
+    name = "spong_controller_params",
+    srcs = ["spong_controller_params.named_vector"],
+    visibility = ["//visibility:public"],
+)
+
 drake_cc_library(
     name = "acrobot_lcm",
     srcs = ["acrobot_lcm.cc"],
@@ -58,6 +64,23 @@ drake_cc_library(
         "//systems/controllers:linear_quadratic_regulator",
         "//systems/framework",
         "//systems/sensors:rotary_encoders",
+    ],
+)
+
+drake_cc_library(
+    name = "spong_controller",
+    srcs = ["spong_controller.cc"],
+    hdrs = ["spong_controller.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":acrobot_plant",
+        ":spong_controller_params",
+        "//common:default_scalars",
+        "//math:wrap_to",
+        "//systems/controllers:linear_quadratic_regulator",
+        "//systems/framework:leaf_system",
+        "//systems/framework:vector",
+        "//systems/primitives:linear_system",
     ],
 )
 
@@ -152,7 +175,6 @@ drake_cc_binary(
     name = "run_swing_up",
     srcs = [
         "run_swing_up.cc",
-        "spong_controller.h",
     ],
     add_test_rule = 1,
     data = [":models"],
@@ -163,15 +185,15 @@ drake_cc_binary(
     ],
     deps = [
         ":acrobot_plant",
+        ":spong_controller",
+        ":spong_controller_params",
         "//attic/multibody:rigid_body_tree",
         "//attic/multibody/joints",
         "//attic/multibody/parsers",
         "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//common:find_resource",
         "//lcm",
-        "//math:wrap_to",
         "//systems/analysis",
-        "//systems/controllers:linear_quadratic_regulator",
         "@gflags",
     ],
 )
@@ -204,7 +226,6 @@ drake_cc_binary(
 drake_cc_binary(
     name = "spong_controller_w_lcm",
     srcs = [
-        "spong_controller.h",
         "spong_controller_w_lcm.cc",
     ],
     add_test_rule = 1,
@@ -214,6 +235,8 @@ drake_cc_binary(
     deps = [
         ":acrobot_lcm",
         ":acrobot_plant",
+        ":spong_controller",
+        ":spong_controller_params",
         "//attic/multibody:rigid_body_tree",
         "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//lcm",
