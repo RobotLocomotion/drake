@@ -153,15 +153,15 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
 }
 
 /*
- Utility function for computing the traction at a point, respective of whether
- that point is coincident with a vertex or is simply located at an arbitrary
+ Utility function for computing the traction at a point, irrespective of whether
+ that point is coincident with a vertex or is located at an arbitrary
  point on the contact surface.
  @param e the "potential pressure" (in N/m²) at the point as defined in
         [Elandt 2019]. Note that we drop the _MN suffix here, as this
         suffix can get confused with the identical suffix (used for a different
         purpose) employed by monogram notation.
  @param nhat_W the normal from Geometry M to Geometry N, expressed in the world
-        frame, to the contact surface at traction_data->p_WQ. By extension, this
+        frame, to the contact surface at p_WQ. By extension, this
         means that the normal points from Body A to Body B.
  @param dissipation the dissipation acting between the two bodies.
  @param mu_coulomb the coefficient of friction acting between the two bodies.

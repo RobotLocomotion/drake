@@ -654,7 +654,7 @@ TEST_P(HydroelasticReportingTests, LinearTraction) {
     const Vector3<double> traction_Av_W =
        fields.traction_W->EvaluateAtVertex(i);
 
-    // Check the pressure is evaluated to how we constructed it.
+    // Check the pressure is evaluated in accordance with how we constructed it.
     const Vector3<double>& r_MV =
         calculator_data().surface.mesh().vertex(i).r_MV();
     const Vector3<double> r_WV = calculator_data().X_WM * r_MV;
@@ -671,7 +671,7 @@ TEST_P(HydroelasticReportingTests, LinearTraction) {
   }
   mean_traction_W /= calculator_data().surface.mesh().num_vertices();
   // 2. Compute the traction at the centroid of the contact surface. Note that
-  //    we a SurfaceFaceIndex (zero) arbitrarily- the centroid is located on
+  //    we use SurfaceFaceIndex zero arbitrarily- the centroid is located on
   //    both faces in this particular instance.
   const SurfaceMesh<double>::Barycentric b_MC =
       calculator_data().surface.mesh().CalcBarycentric(
