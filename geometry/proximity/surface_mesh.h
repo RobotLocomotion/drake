@@ -275,8 +275,6 @@ class SurfaceMesh {
    @note  If Q' is outside the triangle, the barycentric coordinates
           (b₀, b₁, b₂) still satisfy b₀ + b₁ + b₂ = 1; however, some bᵢ will be
           negative.
-   @note  If Q coincides with one of the triangle vertices,
-          GetVertexBarycentric() will be much more efficient.
    */
   Barycentric CalcBarycentric(const Cartesian& p_MQ, SurfaceFaceIndex f) const {
     const Vector3<T>& v0 = vertex(element(f).vertex(0)).r_MV();
