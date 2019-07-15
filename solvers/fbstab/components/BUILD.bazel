@@ -3,6 +3,7 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -27,6 +28,49 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "dense_residual",
+    srcs = [
+        "dense_residual.cc",
+    ],
+    hdrs = ["dense_residual.h"],
+    deps = [
+        ":dense_data",
+        ":dense_variable",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "dense_feasibility",
+    srcs = [
+        "dense_feasibility.cc",
+    ],
+    hdrs = ["dense_feasibility.h"],
+    deps = [
+        ":dense_data",
+        ":dense_variable",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "dense_linear_solver",
+    srcs = [
+        "dense_linear_solver.cc",
+    ],
+    hdrs = ["dense_linear_solver.h"],
+    deps = [
+        ":dense_data",
+        ":dense_residual",
+        ":dense_variable",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
 drake_cc_googletest(
     name = "dense_component_unit_tests",
     srcs = [
@@ -35,7 +79,12 @@ drake_cc_googletest(
     ],
     deps = [
         ":dense_data",
+        ":dense_feasibility",
+        ":dense_linear_solver",
+        ":dense_residual",
         ":dense_variable",
         "//common:essential",
     ],
 )
+
+add_lint_tests()

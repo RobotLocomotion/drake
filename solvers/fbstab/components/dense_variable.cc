@@ -5,6 +5,7 @@
 #include <stdexcept>
 
 #include <Eigen/Dense>
+
 #include "drake/solvers/fbstab/components/dense_data.h"
 
 namespace drake {
@@ -97,6 +98,14 @@ void DenseVariable::Copy(const DenseVariable& x) {
   data_ = x.data_;
 }
 
+const DenseData* DenseVariable::data() const {
+  if (data_ == nullptr) {
+    throw std::runtime_error(
+        "In DenseData::data: pointer to data requested before being assigned.");
+  }
+
+  return data_;
+}
 void DenseVariable::ProjectDuals() { *v_ = v_->cwiseMax(0); }
 
 double DenseVariable::Norm() const {
