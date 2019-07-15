@@ -117,28 +117,17 @@ HydroelasticTractionCalculator<T>::CalcTractionAtVertex(
     const Data& data,
     SurfaceVertexIndex vertex_index,
     double dissipation, double mu_coulomb) const {
-  TractionAtPointData traction_data;
-
   // Compute the point of contact in the world frame.
-  traction_data.p_WQ = data.X_WM *
+  const Vector3<T> p_WQ = data.X_WM *
       data.surface.mesh().vertex(vertex_index).r_MV();
 
-  // Get the "potential pressure" (in N/m²) at the point as defined in
-  // [Elandt 2019]. Note that we drop the _MN suffix here and below, as this
-  // suffix can get confused with the identical suffix (used for a different
-  // purpose) employed by monogram notation.
   const T e = data.surface.EvaluateE_MN(vertex_index);
 
-  // Get the normal from Geometry M to Geometry N, expressed in the world frame,
-  // to the contact surface at Point Q. By extension, this means that the normal
-  // points from Body A to Body B.
   const Vector3<T> h_M = data.surface.EvaluateGrad_h_MN_M(vertex_index);
   const Vector3<T> nhat_M = h_M.normalized();
   const Vector3<T> nhat_W = data.X_WM.rotation() * nhat_M;
 
-  CalcTractionAtPoint(data, e, nhat_W, dissipation, mu_coulomb, &traction_data);
-
-  return traction_data;
+  return CalcTractionAtPoint(data, e, nhat_W, dissipation, mu_coulomb, p_WQ);
 }
 
 template <typename T>
@@ -148,39 +137,48 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
     SurfaceFaceIndex face_index,
     const typename SurfaceMesh<T>::Barycentric& Q_barycentric,
     double dissipation, double mu_coulomb) const {
-  TractionAtPointData traction_data;
-
   // Compute the point of contact in the world frame.
   const Vector3<T> p_MQ = data.surface.mesh().CalcCartesianFromBarycentric(
       face_index, Q_barycentric);
-  traction_data.p_WQ = data.X_WM * p_MQ;
+  const Vector3<T> p_WQ = data.X_WM * p_MQ;
 
-  // Get the "potential pressure" (in N/m²) at the point as defined in
-  // [Elandt 2019]. Note that we drop the _MN suffix here and below, as this
-  // suffix can get confused with the identical suffix (used for a different
-  // purpose) employed by monogram notation.
-  const T E = data.surface.EvaluateE_MN(face_index, Q_barycentric);
+  const T e = data.surface.EvaluateE_MN(face_index, Q_barycentric);
 
-  // Get the normal from Geometry M to Geometry N, expressed in the world frame,
-  // to the contact surface at Point Q. By extension, this means that the normal
-  // points from Body A to Body B.
   const Vector3<T> h_M = data.surface.EvaluateGrad_h_MN_M(
       face_index, Q_barycentric);
   const Vector3<T> nhat_M = h_M.normalized();
   const Vector3<T> nhat_W = data.X_WM.rotation() * nhat_M;
 
-  CalcTractionAtPoint(data, E, nhat_W, dissipation, mu_coulomb, &traction_data);
-
-  return traction_data;
+  return CalcTractionAtPoint(data, e, nhat_W, dissipation, mu_coulomb, p_WQ);
 }
 
+/*
+ Utility function for computing the traction at a point, respective of whether
+ that point is coincident with a vertex or is simply located at an arbitrary
+ point on the contact surface.
+ @param e the "potential pressure" (in N/m²) at the point as defined in
+        [Elandt 2019]. Note that we drop the _MN suffix here, as this
+        suffix can get confused with the identical suffix (used for a different
+        purpose) employed by monogram notation.
+ @param nhat_W the normal from Geometry M to Geometry N, expressed in the world
+        frame, to the contact surface at traction_data->p_WQ. By extension, this
+        means that the normal points from Body A to Body B.
+ @param dissipation the dissipation acting between the two bodies.
+ @param mu_coulomb the coefficient of friction acting between the two bodies.
+ @param p_WQ the point localized to the contact surface, as an offset vector
+        expressed in the world frame.
+ */
 template <typename T>
-void HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
+typename HydroelasticTractionCalculator<T>::TractionAtPointData
+HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
     const Data& data,
     const T& e, const Vector3<T>& nhat_W,
-    double dissipation, double mu_coulomb,
-    typename HydroelasticTractionCalculator<T>::TractionAtPointData*
-        traction_data) const {
+    double dissipation, double mu_coulomb, const Vector3<T>& p_WQ) const {
+  HydroelasticTractionCalculator<T>::TractionAtPointData traction_data;
+
+  // Set p_WQ first.
+  traction_data.p_WQ = p_WQ;
+
   // Get the relative spatial velocity at the point Q between the
   // two bodies A and B (to which M and N are affixed, respectively) by
   // subtracting the spatial velocity of a point (Bq) coincident with p_WQ on
@@ -188,11 +186,11 @@ void HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   // Body A.
 
   // First compute the spatial velocity of Body A at Aq.
-  const Vector3<T> p_AoAq_W = traction_data->p_WQ - data.X_WA.translation();
+  const Vector3<T> p_AoAq_W = traction_data.p_WQ - data.X_WA.translation();
   const SpatialVelocity<T> V_WAq = data.V_WA.Shift(p_AoAq_W);
 
   // Next compute the spatial velocity of Body B at Bq.
-  const Vector3<T> p_BoBq_W = traction_data->p_WQ - data.X_WB.translation();
+  const Vector3<T> p_BoBq_W = traction_data.p_WQ - data.X_WB.translation();
   const SpatialVelocity<T> V_WBq = data.V_WB.Shift(p_BoBq_W);
 
   // Finally compute the relative velocity of Frame Aq relative to Frame Bq,
@@ -216,24 +214,26 @@ void HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   const T normal_traction = max(e - vn_BqAq_W * c, T(0));
 
   // Get the slip velocity at the point.
-  traction_data->vt_BqAq_W = v_BqAq_W - nhat_W * vn_BqAq_W;
+  traction_data.vt_BqAq_W = v_BqAq_W - nhat_W * vn_BqAq_W;
 
   // Determine the traction using a soft-norm.
   using std::atan;
   using std::sqrt;
-  const T squared_vt = traction_data->vt_BqAq_W.squaredNorm();
+  const T squared_vt = traction_data.vt_BqAq_W.squaredNorm();
   const T norm_vt = sqrt(squared_vt);
   const T soft_norm_vt = sqrt(squared_vt +
       vslip_regularizer_ * vslip_regularizer_);
 
   // Get the regularized direction of slip.
-  const Vector3<T> vt_hat_BqAq_W = traction_data->vt_BqAq_W / soft_norm_vt;
+  const Vector3<T> vt_hat_BqAq_W = traction_data.vt_BqAq_W / soft_norm_vt;
 
   // Compute the traction.
   const T frictional_scalar = mu_coulomb * normal_traction *
       2.0 / M_PI * atan(norm_vt / T(vslip_regularizer_));
-  traction_data->traction_Aq_W = nhat_W * normal_traction -
+  traction_data.traction_Aq_W = nhat_W * normal_traction -
       vt_hat_BqAq_W * frictional_scalar;
+
+  return traction_data;
 }
 
 // Creates linearly interpolated fields over the contact surface for use in

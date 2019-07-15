@@ -151,12 +151,10 @@ class HydroelasticTractionCalculator {
       const typename geometry::SurfaceMesh<T>::Barycentric& Q_barycentric,
       double dissipation, double mu_coulomb) const;
 
-  void CalcTractionAtPoint(
+  HydroelasticTractionCalculator<T>::TractionAtPointData CalcTractionAtPoint(
       const Data& data,
       const T& e, const Vector3<T>& nhat_W,
-      double dissipation, double mu_coulomb,
-      HydroelasticTractionCalculator<T>::TractionAtPointData* traction_data)
-      const;
+      double dissipation, double mu_coulomb, const Vector3<T>& p_WQ) const;
 
   multibody::SpatialForce<T> ComputeSpatialTractionAtAcFromTractionAtAq(
       const Data& data, const Vector3<T>& p_WQ,
