@@ -21,6 +21,14 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(pp.cols(), 1)
         np.testing.assert_equal(x, pp.value(11.))
 
+    def test_piecewise_polynomial_matrix_constructor(self):
+        pm1 = np.array([[Polynomial(1), Polynomial(2)]])
+        pm2 = np.array([[Polynomial(2), Polynomial(0)]])
+        pp = PiecewisePolynomial([pm1, pm2], [0, 1, 2])
+        np.testing.assert_equal(pp.getPolynomialMatrix(segment_index=0), pm1)
+        pm3 = np.array([[Polynomial(5), Polynomial(10)]])
+        pp.setPolynomialMatrixBlock(replacement=pm3, segment_index=1)
+
     def test_piecewise_polynomial_vector_constructor(self):
         p1 = Polynomial(1)
         p2 = Polynomial(2)
@@ -44,8 +52,6 @@ class TestTrajectories(unittest.TestCase):
         self.assertTrue(pp.is_time_in_range(t=1.5))
         self.assertEqual(pp.get_segment_index(t=1.5), 1)
         self.assertEqual(pp.get_segment_times(), [0., 1., 2.])
-        # tmp
-        print(pp.getPolynomialMatrix(0))
 
     def test_first_order_hold(self):
         x = np.array([[1., 2.], [3., 4.], [5., 6.]]).transpose()
