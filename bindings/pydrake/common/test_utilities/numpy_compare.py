@@ -20,7 +20,7 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import (
     Expression, Formula, Monomial, Polynomial, Variable)
-from pydrake.common.polynomial import Polynomial as RawPolynomial
+from pydrake.polynomial import Polynomial as RawPolynomial
 
 
 class _UnwantedEquality(AssertionError):

@@ -13,9 +13,9 @@ namespace drake {
 namespace pydrake {
 
 PYBIND11_MODULE(polynomial, m) {
-  constexpr auto& doc = pydrake_doc;
+  // constexpr auto& doc = pydrake_doc;
 
-  using T = double;
+  // using T = double;
 
   {
     // TODO(eric.cousineau): Where to put this?

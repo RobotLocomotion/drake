@@ -21,44 +21,6 @@ PYBIND11_MODULE(trajectories, m) {
 
   using T = double;
 
-  {
-    // TODO(eric.cousineau): Where to put this?
-    using CoefficientType = double;
-    using Class = Polynomial<CoefficientType>;
-    constexpr auto& cls_doc = pydrake_doc.Polynomial;
-    py::class_<Class>(m, "Polynomial", cls_doc.doc)
-        .def(py::init<>(), cls_doc.ctor.doc_0args)
-        .def(py::init<const CoefficientType&>(), cls_doc.ctor.doc_1args_scalar)
-        .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&>(),
-            cls_doc.ctor.doc_1args_constEigenMatrixBase)
-        .def("GetNumberOfCoefficients", &Class::GetNumberOfCoefficients,
-            cls_doc.GetNumberOfCoefficients.doc)
-        .def("GetDegree", &Class::GetDegree, cls_doc.GetDegree.doc)
-        .def("IsAffine", &Class::IsAffine, cls_doc.IsAffine.doc)
-        .def("GetCoefficients", &Class::GetCoefficients,
-            cls_doc.GetCoefficients.doc)
-        .def("Derivative", &Class::Derivative, py::arg("derivative_order") = 1,
-            cls_doc.Derivative.doc)
-        .def("Integral", &Class::Integral,
-            py::arg("integration_constant") = 0.0, cls_doc.Integral.doc)
-        .def("IsApprox", &Class::IsApprox, py::arg("other"), py::arg("tol"),
-            cls_doc.IsApprox.doc)
-        // Arithmetic
-        .def(-py::self)
-        .def(py::self + py::self)
-        .def(py::self + double())
-        .def(double() + py::self)
-        .def(py::self - py::self)
-        .def(py::self - double())
-        .def(double() - py::self)
-        .def(py::self * py::self)
-        .def(py::self * double())
-        .def(double() * py::self)
-        .def(py::self / double())
-        // Logical comparison
-        .def(py::self == py::self);
-  }
-
   py::class_<Trajectory<T>>(m, "Trajectory", doc.Trajectory.doc);
 
   py::class_<PiecewiseTrajectory<T>, Trajectory<T>>(
@@ -94,11 +56,11 @@ PYBIND11_MODULE(trajectories, m) {
       .def(py::init<>(), doc.PiecewisePolynomial.ctor.doc_0args)
       .def(py::init<const Eigen::Ref<const MatrixX<T>>&>(),
           doc.PiecewisePolynomial.ctor.doc_1args)
-      // .def(PiecewisePolynomial(std::vector<PolynomialMatrix> const& polynomials,
-      //                          std::vector<double> const& breaks))
-      // Documentation for this method is not building
+      // Documentation for these methods are not building
+      .def(py::init<std::vector<MatrixX<Polynomial<T>>> const&,
+          std::vector<double> const&>())
       .def(py::init<std::vector<Polynomial<T>> const&,
-              std::vector<double> const&>())
+          std::vector<double> const&>())
       .def_static("ZeroOrderHold",
           py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const MatrixX<T>>&>(
