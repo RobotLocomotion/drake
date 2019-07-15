@@ -80,7 +80,7 @@ supported for CMake builds using the "Unix Makefiles" generator.
 | Operating System                 | Bazel | CMake | C/C++ Compiler      | Java       | MATLAB (Optional) | Python |
 +==================================+=======+=======+=====================+============+===================+========+
 +----------------------------------+-------+-------+---------------------+------------+-------------------+--------+
-| Ubuntu 16.04 LTS (Xenial Xerus)  | 0.25  | 3.5   | | Clang 6.0         | OpenJDK 8  | R2017a            | 2.7    |
+| Ubuntu 16.04 LTS (Xenial Xerus)  | 0.28  | 3.5   | | Clang 6.0         | OpenJDK 8  | R2017a            | 2.7    |
 |                                  |       |       | | GCC 5.4           |            |                   |        |
 +----------------------------------+       +-------+---------------------+------------+-------------------+--------+
 | Ubuntu 18.04 LTS (Bionic Beaver) |       | 3.10  | | Clang 6.0         | OpenJDK 11 | R2018b            | | 2.7  |
