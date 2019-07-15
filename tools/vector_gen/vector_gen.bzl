@@ -145,6 +145,7 @@ def drake_cc_vector_gen(
             "//systems/framework:vector",
             "//common:dummy_value",
             "//common:essential",
+            "//common:name_value",
             "//common:symbolic",
         ]],
     )

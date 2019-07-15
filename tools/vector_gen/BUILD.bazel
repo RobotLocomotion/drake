@@ -75,6 +75,7 @@ drake_cc_googletest(
         "//common:autodiff",
         "//common:symbolic",
         "//common/test_utilities",
+        "//common/yaml",
     ],
 )
 
