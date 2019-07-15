@@ -17,6 +17,31 @@ GTEST_TEST(FBstabDense, DenseVariable) {
   test.DenseVariableTests();
 }
 
+GTEST_TEST(FBstabDense, TestInnerResidualCalculation) {
+  DenseComponentUnitTests test;
+  test.InnerResidualCalculation();
+}
+
+GTEST_TEST(FBstabDense, NaturalResidualCalculation) {
+  DenseComponentUnitTests test;
+  test.NaturalResidualCalculation();
+}
+
+GTEST_TEST(FBstabDense, DenseLinearSolver) {
+  DenseComponentUnitTests test;
+  test.LinearSolverResidual();
+}
+
+GTEST_TEST(FBstabDense, InfeasibilityDetection) {
+  DenseComponentUnitTests test;
+  test.InfeasibilityDetection();
+}
+
+GTEST_TEST(FBstabDense, UnboundednessDetection) {
+  DenseComponentUnitTests test;
+  test.UnboundednessDetection();
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace fbstab
