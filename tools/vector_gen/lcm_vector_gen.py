@@ -284,6 +284,32 @@ def generate_accessors(hh, caller_context, fields):
     put(hh, ACCESSOR_END % caller_context, 2)
 
 
+SERIALIZE_BEGIN = """
+  /// Visit each field of this named vector, passing them (in order) to the
+  /// given Archive.  The archive can read and/or write to the vector values.
+  /// One common use of Serialize is the //common/yaml tools.
+  template <typename Archive>
+  void Serialize(Archive* a) {
+"""
+SERIALIZE_FIELD = """
+    T& %(field)s_ref = this->GetAtIndex(K::%(kname)s);
+    a->Visit(drake::MakeNameValue("%(field)s", &%(field)s_ref));
+"""
+SERIALIZE_END = """
+  }
+"""
+
+
+def generate_serialize(hh, caller_context, fields):
+    put(hh, SERIALIZE_BEGIN % caller_context, 1)
+    for field in fields:
+        context = dict(caller_context)
+        context.update(field=field['name'])
+        context.update(kname=to_kname(field['name']))
+        put(hh, SERIALIZE_FIELD % context, 1)
+    put(hh, SERIALIZE_END % caller_context, 2)
+
+
 GET_COORDINATE_NAMES = """
     /// See %(camel)sIndices::GetCoordinateNames().
     static const std::vector<std::string>& GetCoordinateNames() {
@@ -385,6 +411,7 @@ VECTOR_HH_PREAMBLE = """
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_nodiscard.h"
 #include "drake/common/dummy_value.h"
+#include "drake/common/name_value.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -530,6 +557,7 @@ def generate_code(
             generate_set_to_named_variables(hh, context, fields)
             generate_do_clone(hh, context, fields)
             generate_accessors(hh, context, fields)
+            generate_serialize(hh, context, fields)
             put(hh, GET_COORDINATE_NAMES % context, 2)
             generate_is_valid(hh, context, fields)
             generate_get_element_bounds(hh, context, fields)

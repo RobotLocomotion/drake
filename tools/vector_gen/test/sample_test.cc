@@ -10,6 +10,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/yaml/yaml_read_archive.h"
 
 namespace drake {
 namespace tools {
@@ -207,6 +208,24 @@ GTEST_TEST(SampleTest, SymbolicIsValid) {
       (dut.absone() >= -1.0) &&
       (dut.absone() <= 1.0);
   EXPECT_TRUE(dut.IsValid().EqualTo(expected_is_valid));
+}
+
+// Cover Serialize and its relationship to YAML.
+GTEST_TEST(SampleTest, YamlTest) {
+  const std::string yaml_text = R"R(
+values:
+  x: 0
+  two_word: -1
+  absone: 0.25
+  unset: 99e9
+)R";
+  const YAML::Node yaml_node = YAML::Load(yaml_text);
+  Sample<double> dut;
+  drake::yaml::YamlReadArchive(yaml_node["values"]).Accept(&dut);
+  EXPECT_EQ(dut.x(), 0.0);
+  EXPECT_EQ(dut.two_word(), -1.0);
+  EXPECT_EQ(dut.absone(), 0.25);
+  EXPECT_EQ(dut.unset(), 99e9);
 }
 
 }  // namespace
