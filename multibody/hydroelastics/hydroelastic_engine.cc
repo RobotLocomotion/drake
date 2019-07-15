@@ -260,7 +260,7 @@ class HydroelasticEngine<T>::Impl final : public geometry::ShapeReifier {
                              std::move(grad_level_set_R));
   }
 
-  mutable ModelData model_data_;
+  ModelData model_data_;
 };
 
 template <typename T>
