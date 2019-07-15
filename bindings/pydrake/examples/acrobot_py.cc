@@ -4,9 +4,11 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
+#include "drake/examples/acrobot/spong_controller.h"
 #include "drake/examples/acrobot/gen/acrobot_input.h"
 #include "drake/examples/acrobot/gen/acrobot_params.h"
 #include "drake/examples/acrobot/gen/acrobot_state.h"
+#include "drake/examples/acrobot/gen/spong_controller_params.h"
 
 using std::make_unique;
 using std::unique_ptr;
@@ -40,8 +42,16 @@ PYBIND11_MODULE(acrobot, m) {
           doc.AcrobotPlant.DoCalcKineticEnergy.doc)
       .def("DynamicsBiasTerm", &AcrobotPlant<T>::DynamicsBiasTerm,
           doc.AcrobotPlant.DynamicsBiasTerm.doc)
+      .def("SetMITAcrobotParameters", &AcrobotPlant<T>::SetMITAcrobotParameters,
+           doc.AcrobotPlant.SetMITAcrobotParameters.doc)
       .def("MassMatrix", &AcrobotPlant<T>::MassMatrix,
           doc.AcrobotPlant.MassMatrix.doc);
+
+  py::class_<AcrobotSpongController<T>, LeafSystem<T>>(
+      m, "AcrobotSpongController", doc.AcrobotSpongController.doc)
+      .def(py::init<>(), doc.AcrobotSpongController.ctor.doc)
+      .def("get_parameters", &AcrobotSpongController<T>::get_parameters)
+      .def("get_mutable_parameters", &AcrobotSpongController<T>::get_mutable_parameters);
 
   // TODO(russt): Remove custom bindings once #8096 is resolved.
   py::class_<AcrobotInput<T>, BasicVector<T>>(
@@ -92,6 +102,28 @@ PYBIND11_MODULE(acrobot, m) {
           doc.AcrobotState.set_theta2.doc)
       .def("set_theta2dot", &AcrobotState<T>::set_theta2dot,
           doc.AcrobotState.set_theta2dot.doc);
+
+  py::class_<SpongControllerParams<T>, BasicVector<T>>(
+      m, "SpongControllerParams", doc.AcrobotParams.doc)
+      .def(py::init<>(), doc.SpongControllerParams.ctor.doc)
+      .def("k_e", &SpongControllerParams<T>::k_e,
+          doc.SpongControllerParams.k_e.doc)
+      .def("k_p", &SpongControllerParams<T>::k_p,
+          doc.SpongControllerParams.k_p.doc)
+      .def("k_d", &SpongControllerParams<T>::k_d,
+          doc.SpongControllerParams.k_d.doc)
+      .def("balancing_threshold",
+          &SpongControllerParams<T>::balancing_threshold,
+          doc.SpongControllerParams.balancing_threshold.doc)
+      .def("set_k_e", &SpongControllerParams<T>::set_k_e,
+          doc.SpongControllerParams.set_k_e.doc)
+      .def("set_k_p", &SpongControllerParams<T>::set_k_p,
+          doc.SpongControllerParams.set_k_p.doc)
+      .def("set_k_d", &SpongControllerParams<T>::set_k_d,
+          doc.SpongControllerParams.set_k_d.doc)
+      .def("set_balancing_threshold",
+          &SpongControllerParams<T>::set_balancing_threshold,
+          doc.SpongControllerParams.set_balancing_threshold.doc);
 }
 
 }  // namespace pydrake
