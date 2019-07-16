@@ -2515,6 +2515,9 @@ TEST_F(GeometryStateTest, RoleLookUp) {
   // Invalid id throws.
   EXPECT_THROW(geometry_state_.GetProximityProperties(invalid_id),
                std::logic_error);
+  EXPECT_THROW(
+      geometry_state_.GetMutableProximityProperties(source_id_, invalid_id),
+      std::logic_error);
   EXPECT_THROW(geometry_state_.GetIllustrationProperties(invalid_id),
                std::logic_error);
   EXPECT_THROW(geometry_state_.GetPerceptionProperties(invalid_id),
@@ -2522,12 +2525,18 @@ TEST_F(GeometryStateTest, RoleLookUp) {
 
   // Missing role returns nullptr.
   EXPECT_EQ(geometry_state_.GetProximityProperties(no_role_id), nullptr);
+  EXPECT_EQ(
+      geometry_state_.GetMutableProximityProperties(source_id_, no_role_id),
+      nullptr);
   EXPECT_EQ(geometry_state_.GetIllustrationProperties(no_role_id), nullptr);
   EXPECT_EQ(geometry_state_.GetPerceptionProperties(no_role_id), nullptr);
 
   // Non-null when properties exist. Actual values not tested here; they've
   // been tested elsewhere.
   EXPECT_NE(geometry_state_.GetProximityProperties(geometries_[0]), nullptr);
+  EXPECT_NE(
+      geometry_state_.GetMutableProximityProperties(source_id_, geometries_[0]),
+      nullptr);
   EXPECT_NE(geometry_state_.GetIllustrationProperties(geometries_[0]), nullptr);
   EXPECT_NE(geometry_state_.GetPerceptionProperties(geometries_[0]), nullptr);
 }

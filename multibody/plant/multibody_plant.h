@@ -2710,6 +2710,25 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return default_coulomb_friction_[collision_index];
   }
 
+  /// Specifies the `elastic_modulus` for a geometry identified by its `id`.
+  /// @throws std::exception if `id` does not correspond to a collision
+  /// geometry previously registered with this model.
+  /// @throws std::exception if called post-finalize.
+  void set_elastic_modulus(geometry::GeometryId id, double elastic_modulus) {
+    // It must not be finalized so that member_scene_graph() is valid.
+    DRAKE_MBP_THROW_IF_FINALIZED();
+    DRAKE_THROW_UNLESS(is_collision_geometry(id));
+    geometry::ProximityProperties* properties =
+        member_scene_graph().GetMutableProximityProperties(*source_id_, id);
+    if (!properties) {
+      throw std::runtime_error(
+          "The geometry with this id "
+          " does not have a proximity role.");
+    }
+    properties->AddProperty("hydroelastics", "elastic modulus",
+                            elastic_modulus);
+  }
+
   /// @name Retrieving ports for communication with a SceneGraph.
   /// @{
 

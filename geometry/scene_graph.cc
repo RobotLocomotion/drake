@@ -288,6 +288,12 @@ int SceneGraph<T>::RemoveRole(SourceId source_id, GeometryId geometry_id,
 }
 
 template <typename T>
+ProximityProperties* SceneGraph<T>::GetMutableProximityProperties(
+    SourceId source_id, GeometryId geometry_id) {
+  return initial_state_->GetMutableProximityProperties(source_id, geometry_id);
+}
+
+template <typename T>
 int SceneGraph<T>::RemoveRole(Context<T>* context, SourceId source_id,
                               GeometryId geometry_id, Role role) const {
   auto& g_state = mutable_geometry_state(context);

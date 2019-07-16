@@ -593,6 +593,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
   int RemoveRole(systems::Context<T>* context, SourceId source_id,
                   GeometryId geometry_id, Role role) const;
 
+  ProximityProperties* GetMutableProximityProperties(SourceId source_id,
+                                                     GeometryId geometry_id);
+
   //@}
 
   /** Reports the identifier for the world frame.  */
