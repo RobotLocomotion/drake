@@ -2502,6 +2502,71 @@ TEST_F(GeometryStateTest, AssignRolesToGeometry) {
   EXPECT_TRUE(has_expected_roles(anchored_geometry_, true, false, true));
 }
 
+// Test the ability to reassign properties to a role that already exists.
+TEST_F(GeometryStateTest, ModifyRoleProperties) {
+  SetUpSingleSourceTree();
+
+  ProximityProperties empty_props;
+  ProximityProperties props1;
+  props1.AddProperty("prop1", "value", 1);
+  ProximityProperties props2;
+  props2.AddProperty("prop2", "value", 2);
+
+  // Case: Can't reassign when it hasn't been assigned.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.AssignRole(source_id_, geometries_[0], empty_props,
+                                 RoleAssign::kReplace),
+      std::logic_error,
+      "Trying to replace the properties on geometry id \\d+ for the 'proximity'"
+      " role.*");
+
+  // Case: Try reassigning the properties.
+
+  // Configure and confirm initial state.
+  geometry_state_.AssignRole(source_id_, geometries_[0], props1);
+  const ProximityProperties* props =
+      geometry_state_.GetProximityProperties(geometries_[0]);
+  EXPECT_NE(props, nullptr);
+  EXPECT_TRUE(props->HasGroup("prop1"));
+  EXPECT_TRUE(props->HasProperty("prop1", "value"));
+  EXPECT_EQ(props->GetProperty<int>("prop1", "value"),
+            props1.GetProperty<int>("prop1", "value"));
+
+  EXPECT_NO_THROW(geometry_state_.AssignRole(source_id_, geometries_[0], props2,
+                                             RoleAssign::kReplace));
+
+  props =
+      geometry_state_.GetProximityProperties(geometries_[0]);
+  EXPECT_NE(props, nullptr);
+  EXPECT_TRUE(props->HasGroup("prop2"));
+  EXPECT_FALSE(props->HasGroup("prop1"));
+  EXPECT_TRUE(props->HasProperty("prop2", "value"));
+  EXPECT_EQ(props->GetProperty<int>("prop2", "value"),
+            props2.GetProperty<int>("prop2", "value"));
+
+  // Case: confirm throw for perception and illustration properties.
+  PerceptionProperties perception_props =
+      render_engine_->accepting_properties();
+  perception_props.AddProperty("label", "id", RenderLabel(10));
+  geometry_state_.AssignRole(source_id_, geometries_[1], perception_props);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.AssignRole(source_id_, geometries_[1], perception_props,
+                                 RoleAssign::kReplace),
+      std::logic_error,
+      "AssignRole.. for updating properties currently only supports proximity "
+      "properties");
+
+  geometry_state_.AssignRole(source_id_, geometries_[1],
+                             IllustrationProperties());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.AssignRole(source_id_, geometries_[1],
+                                 IllustrationProperties(),
+                                 RoleAssign::kReplace),
+      std::logic_error,
+      "AssignRole.. for updating properties currently only supports proximity "
+      "properties");
+}
+
 // Tests the various Get*Properties(GeometryId) methods.
 TEST_F(GeometryStateTest, RoleLookUp) {
   SetUpSingleSourceTree(Assign::kProximity | Assign::kIllustration |
@@ -2716,13 +2781,16 @@ TEST_F(GeometryStateTest, RoleAssignExceptions) {
       geometry_state_.AssignRole(source_id_, geometries_[0],
                                  ProximityProperties()),
       std::logic_error,
-      "Geometry already has proximity role assigned");
+      "Trying to assign the 'proximity' role to geometry id \\d+ for the first "
+      "time.*");
 
   EXPECT_NO_THROW(
       geometry_state_.AssignRole(source_id_, geometries_[0], perception_props));
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.AssignRole(source_id_, geometries_[0], perception_props),
-      std::logic_error, "Geometry already has perception role assigned");
+      std::logic_error,
+      "Trying to assign the 'perception' role to geometry id \\d+ for the "
+      "first time.*");
 
   EXPECT_NO_THROW(geometry_state_.AssignRole(source_id_, geometries_[0],
                                              IllustrationProperties()));
@@ -2730,7 +2798,8 @@ TEST_F(GeometryStateTest, RoleAssignExceptions) {
       geometry_state_.AssignRole(source_id_, geometries_[0],
                                  IllustrationProperties()),
       std::logic_error,
-      "Geometry already has illustration role assigned");
+      "Trying to assign the 'illustration' role to geometry id \\d+ for the "
+      "first time.*");
 
   // Addition of geometry with duplicate name -- no problem. Assigning it a
   // duplicate role -- bad.

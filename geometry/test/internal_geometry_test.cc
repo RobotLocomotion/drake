@@ -20,17 +20,12 @@ GTEST_TEST(InternalGeometryTest, RenderIndexAccess) {
   EXPECT_EQ(geometry.render_index(renderer_name), index);
 }
 
-// Confirms that redundantly setting properties causes an exception to be
-// thrown.
-GTEST_TEST(InternalGeometryTest, RedundantPropertyAssignment) {
+// Confirms that properties get set properly.
+GTEST_TEST(InternalGeometryTest, PropertyAssignment) {
   InternalGeometry geometry;
 
   EXPECT_FALSE(geometry.has_proximity_role());
   EXPECT_NO_THROW(geometry.SetRole(ProximityProperties()));
-  EXPECT_TRUE(geometry.has_proximity_role());
-  DRAKE_EXPECT_THROWS_MESSAGE(geometry.SetRole(ProximityProperties()),
-                              std::logic_error,
-                              "Geometry already has proximity role assigned");
   EXPECT_TRUE(geometry.has_proximity_role());
 
   EXPECT_FALSE(geometry.has_illustration_role());

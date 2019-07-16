@@ -497,66 +497,119 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   //@}
 
-  /** @name     Assigning roles to geometry
+  /** @name     Managing geometry roles
 
-   Geometries must be assigned one or more *roles* before they have an effect
+   Geometries _must_ be assigned one or more *roles* before they have an effect
    on SceneGraph computations (see @ref geometry_roles for details). These
-   methods provide the ability to assign a role after registering a geometry.
+   methods provide the ability to manage roles for a registered geometry.
 
-   The owner that registered the geometry provides its source id, the registered
-   geometry id, and a collection of properties associated with the desired role.
-   These methods will throw exceptions in any of the following circumstances:
+   The `AssignRole()` methods provide the mechanism for initially assigning a
+   role (via its corresponding properties) and, subsequently, modifying those
+   properties.
 
-     - The source id is invalid.
-     - The geometry id is invalid.
-     - The geometry id is not owned by the given source id.
-     - The indicated role has already been assigned to the geometry.
+   <h4>Assigning roles for the first time</h4>
+
+   If a geometry has not had a particular role assigned to it, the role is
+   assigned by the following call:
+
+   @code
+   scene_graph.AssignRole(source_id, geometry_id, properties);
+   @endcode
+
+   The role is inferred by the type of properties provided. An exception will
+   be thrown if the geometry has already had the implied role assigned to it.
+
+   <h4>Changing the properties for an assigned role</h4>
+
+   If  the geometry has previously been assigned a role, the properties for
+   that role can be modified with the following code (using ProximityProperties
+   as an example):
+
+   @code
+   ProximityProperties props;
+   props.AddProperty(....);  // Populate the properties.
+   scene_graph.AssignRole(source_id, geometry_id, props, RoleAssign::kReplace);
+   @endcode
+
+   An exception will be thrown if the geometry _has not_ already had a role
+   assigned.
+
+   If the goal is to modify the properties that have already been assigned, we
+   recommend the following (again, using ProximityProperties as an example):
+
+   @code
+   const ProximityProperties* old_props =
+       scene_graph.model_inspector().GetProximityProperties(geometry_id);
+   DRAKE_DEMAND(old_props);
+   ProximityProperties new_props(*old_props);
+   new_props.AddProperty(...);  // add additional properties.
+   scene_graph.AssignRole(source_id, geometry_id, new_props,
+                          RoleAssign::kReplace);
+   @endcode
+
+   Calling `AssignRole()` with an empty set of properties will *not* remove the
+   role; it will simply eliminate possibly necessary properties. To remove
+   the role completely, call `RemoveRole()`.
+
+   @warning Currently, only __proximity__ properties can be updated via this
+   mechanism. Updating illustration and perception will throw an exception (to
+   be implemented in the near future).
+
+   All invocations of `AssignRole()` will throw an exception if:
+
+     - the source id is invalid.
+     - the geometry id is invalid.
+     - the geometry id is not owned by the given source id.
      - Another geometry with the same name, affixed to the same frame, already
        has the role.
 
-   This methods modify the underlying model and require a new Context to be
-   allocated.  */
+   <h4>Removing roles</h4>
 
-  // TODO(SeanCurtis-TRI): Provide mechanism for modifying properties.
+   Calling `RemoveRole()` will remove the properties and _role_ entirely.
 
+   These methods include the model- and context-modifying variants.  */
   //@{
 
   /** Assigns the proximity role to the geometry indicated by `geometry_id`.  */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
-                  ProximityProperties properties);
+                  ProximityProperties properties,
+                  RoleAssign assign = RoleAssign::kNew);
 
   /** systems::Context-modifying variant of
    @ref AssignRole(SourceId,GeometryId,ProximityProperties) "AssignRole()" for
    proximity properties. Rather than modifying %SceneGraph's model, it modifies
    the copy of the model stored in the provided context.  */
   void AssignRole(systems::Context<T>* context, SourceId source_id,
-                  GeometryId geometry_id, ProximityProperties properties) const;
+                  GeometryId geometry_id, ProximityProperties properties,
+                  RoleAssign assign = RoleAssign::kNew) const;
 
   /** Assigns the perception role to the geometry indicated by `geometry_id`.
    */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
-                  PerceptionProperties properties);
+                  PerceptionProperties properties,
+                  RoleAssign assign = RoleAssign::kNew);
 
   /** systems::Context-modifying variant of
    @ref AssignRole(SourceId,GeometryId,PerceptionProperties) "AssignRole()" for
    perception properties. Rather than modifying %SceneGraph's model, it modifies
    the copy of the model stored in the provided context.  */
   void AssignRole(systems::Context<T>* context, SourceId source_id,
-                  GeometryId geometry_id,
-                  PerceptionProperties properties) const;
+                  GeometryId geometry_id, PerceptionProperties properties,
+                  RoleAssign assign = RoleAssign::kNew) const;
 
   /** Assigns the illustration role to the geometry indicated by `geometry_id`.
    */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
-                  IllustrationProperties properties);
+                  IllustrationProperties properties,
+                  RoleAssign assign = RoleAssign::kNew);
 
   /** systems::Context-modifying variant of
    @ref AssignRole(SourceId,GeometryId,IllustrationProperties) "AssignRole()"
    for illustration properties. Rather than modifying %SceneGraph's model, it
    modifies the copy of the model stored in the provided context.  */
   void AssignRole(systems::Context<T>* context, SourceId source_id,
-                  GeometryId geometry_id,
-                  IllustrationProperties properties) const;
+                  GeometryId geometry_id, IllustrationProperties properties,
+                  RoleAssign assign = RoleAssign::kNew) const;
 
   /** Removes the indicated `role` from any geometry directly registered to the
    frame indicated by `frame_id` (if the geometry has the role).

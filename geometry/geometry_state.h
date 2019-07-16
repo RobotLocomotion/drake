@@ -338,19 +338,22 @@ class GeometryState {
    @ref SceneGraph::AssignRole(SourceId, GeometryId, ProximityProperties)
    "SceneGraph::AssignRole()".  */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
-                  ProximityProperties properties);
+                  ProximityProperties properties,
+                  RoleAssign assign = RoleAssign::kNew);
 
   /** Implementation of
    @ref SceneGraph::AssignRole(SourceId, GeometryId, PerceptionProperties)
    "SceneGraph::AssignRole()".  */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
-                  PerceptionProperties properties);
+                  PerceptionProperties properties,
+                  RoleAssign assign = RoleAssign::kNew);
 
   /** Implementation of
    @ref SceneGraph::AssignRole(SourceId, GeometryId, IllustrationProperties)
    "SceneGraph::AssignRole()".  */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
-                  IllustrationProperties properties);
+                  IllustrationProperties properties,
+                  RoleAssign assign = RoleAssign::kNew);
 
   /** Implementation of
    @ref SceneGraph::RemoveRole(SourceId, FrameId, Role)
@@ -685,9 +688,11 @@ class GeometryState {
   void ThrowIfNameExistsInRole(FrameId id, Role role,
                                const std::string& name) const;
 
-  template <typename PropertyType>
-  void AssignRoleInternal(SourceId source_id, GeometryId geometry_id,
-                          PropertyType properties, Role role);
+  // Confirms that the given role assignment is valid and return the geometry
+  // if valid. Throws if not.
+  internal::InternalGeometry& ValidateRoleAssign(SourceId source_id,
+                                                 GeometryId geometry_id,
+                                                 Role role, RoleAssign assign);
 
   // Attempts to remove the indicated `role` from the indicated geometry.
   // Returns true if removed (false doesn't imply "failure", just nothing to

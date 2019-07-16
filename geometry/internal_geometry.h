@@ -179,12 +179,8 @@ class InternalGeometry {
    engine's understanding as well.  */
   //@{
 
-  /** Assigns a proximity role to this geometry. Fails if it has already been
-   assigned.  */
+  /** Assigns a proximity role to this geometry.  */
   void SetRole(ProximityProperties properties) {
-    if (proximity_props_) {
-      throw std::logic_error("Geometry already has proximity role assigned");
-    }
     proximity_props_ = std::move(properties);
   }
 
