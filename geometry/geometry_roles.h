@@ -191,6 +191,16 @@ enum class Role {
   kPerception = 0x4
 };
 
+// NOTE: Currently this only includes new and replace; but someday it could also
+// include other operations: merge, subtract, etc.
+/** The operations that can be performed on the given properties when assigning
+ roles to geometry.  */
+enum class RoleAssign {
+  kNew,      ///< Assign the properties to a geometry that doesn't already have
+             ///< the role.
+  kReplace   ///< Replace the existing role properties completely.
+};
+
 /** @name  Geometry role to string conversions
 
  These are simply convenience functions for converting the Role enumeration into

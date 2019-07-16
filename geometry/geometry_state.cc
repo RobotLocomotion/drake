@@ -687,9 +687,9 @@ class MeshIdentifier final : public ShapeReifier {
 }  // namespace
 
 template <typename T>
-void GeometryState<T>::AssignRole(SourceId source_id,
-                                  GeometryId geometry_id,
-                                  ProximityProperties properties) {
+void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
+                                  ProximityProperties properties,
+                                  RoleAssign assign) {
   // TODO(SeanCurtis-TRI): When meshes are supported for proximity roles, remove
   // this test and the MeshIdentifier class.
   {
@@ -701,26 +701,28 @@ void GeometryState<T>::AssignRole(SourceId source_id,
     }
   }
 
-  AssignRoleInternal(source_id, geometry_id, std::move(properties),
-                     Role::kProximity);
+  InternalGeometry& geometry =
+      ValidateRoleAssign(source_id, geometry_id, Role::kProximity, assign);
 
-  InternalGeometry* geometry = GetMutableGeometry(geometry_id);
-  // This *must* be non-null, otherwise the internal role assignment would have
-  // failed.
-  DRAKE_DEMAND(geometry != nullptr);
+  // TODO(SeanCurtis-TRI): Currently, proximity engine doesn't directly depend
+  //  on the properties. However, when it *does*, it will need to explicitly
+  //  handle the case where assign == RoleAssign::kReplace (i.e., deleting
+  //  data, redefining discrete versions of continuous geometry, etc.)
 
-  const GeometryIndex index = geometry->index();
-  if (geometry->is_dynamic()) {
+  geometry.SetRole(std::move(properties));
+
+  const GeometryIndex index = geometry.index();
+  if (geometry.is_dynamic()) {
     // Pass the geometry to the engine.
     ProximityIndex proximity_index =
-        geometry_engine_->AddDynamicGeometry(geometry->shape(), index);
-    geometry->set_proximity_index(proximity_index);
+        geometry_engine_->AddDynamicGeometry(geometry.shape(), index);
+    geometry.set_proximity_index(proximity_index);
     DRAKE_DEMAND(
         static_cast<int>(dynamic_proximity_index_to_internal_map_.size()) ==
         proximity_index);
     dynamic_proximity_index_to_internal_map_.push_back(index);
 
-    InternalFrame& frame = frames_[geometry->frame_id()];
+    InternalFrame& frame = frames_[geometry.frame_id()];
 
     int child_count = static_cast<int>(frame.child_geometries().size());
     if (child_count > 1) {
@@ -765,43 +767,50 @@ void GeometryState<T>::AssignRole(SourceId source_id,
     // If it's not dynamic, it must be anchored. No clique madness required;
     // anchored geometries are not tested against each other by the process.
     ProximityIndex proximity_index = geometry_engine_->AddAnchoredGeometry(
-        geometry->shape(), geometry->X_FG(), index);
-    geometry->set_proximity_index(proximity_index);
+        geometry.shape(), geometry.X_FG(), index);
+    geometry.set_proximity_index(proximity_index);
   }
 }
 
 template <typename T>
-void GeometryState<T>::AssignRole(SourceId source_id,
-                                  GeometryId geometry_id,
-                                  PerceptionProperties properties) {
-  AssignRoleInternal(source_id, geometry_id, std::move(properties),
-                     Role::kPerception);
+void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
+                                  PerceptionProperties properties,
+                                  RoleAssign assign) {
+  InternalGeometry& geometry = ValidateRoleAssign(source_id, geometry_id,
+                     Role::kPerception, assign);
 
-  InternalGeometry* geometry = GetMutableGeometry(geometry_id);
-  // This *must* be non-null, otherwise the role assignment would have failed.
-  DRAKE_DEMAND(geometry != nullptr);
+  // TODO(SeanCurtis-TRI): To support RoleAssign::kReplace, the render engines
+  //  need to handle these changes.
+
+  geometry.SetRole(std::move(properties));
 
   for (auto& pair : render_engines_) {
     const std::string& renderer_name = pair.first;
     auto& engine = pair.second;
     optional<RenderIndex> index =
-        engine->RegisterVisual(geometry->index(), geometry->shape(),
-                               *geometry->perception_properties(),
-                               RigidTransformd(geometry->X_FG()),
-                               geometry->is_dynamic());
+        engine->RegisterVisual(geometry.index(), geometry.shape(),
+                               *geometry.perception_properties(),
+                               RigidTransformd(geometry.X_FG()),
+                               geometry.is_dynamic());
     // If index is nullopt, then engine has chosen to *not* register the
     // geometry (See docs on RenderEngine::RegisterVisual()).
-    if (index) geometry->set_render_index(renderer_name, *index);
+    if (index) geometry.set_render_index(renderer_name, *index);
   }
 }
 
 template <typename T>
-void GeometryState<T>::AssignRole(SourceId source_id,
-                                  GeometryId geometry_id,
-                                  IllustrationProperties properties) {
-  AssignRoleInternal(source_id, geometry_id, std::move(properties),
-                     Role::kIllustration);
-  // NOTE: No need to assign to any engines.
+void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
+                                  IllustrationProperties properties,
+                                  RoleAssign assign) {
+  InternalGeometry& geometry =
+      ValidateRoleAssign(source_id, geometry_id, Role::kIllustration, assign);
+  // TODO(SeanCurtis-TRI): Ideally, if assign == RoleAssign::kReplace, this
+  //  should cause the visualization to change. I.e., if I've loaded an object
+  //  then I change its color here, it would be great if the visualization
+  //  reflected this. That is a *huge* issue that is not easily resolved.
+  //  Alternatively, I need to document that this *doesn't* happen and that it
+  //  is up to the visualizer to re-initialize itself.
+  geometry.SetRole(std::move(properties));
 }
 
 template <typename T>
@@ -1232,10 +1241,16 @@ void GeometryState<T>::ThrowIfNameExistsInRole(FrameId id, Role role,
 }
 
 template <typename T>
-template <typename PropertyType>
-void GeometryState<T>::AssignRoleInternal(SourceId source_id,
-                                          GeometryId geometry_id,
-                                          PropertyType properties, Role role) {
+InternalGeometry& GeometryState<T>::ValidateRoleAssign(SourceId source_id,
+                                                       GeometryId geometry_id,
+                                                       Role role,
+                                                       RoleAssign assign) {
+  if (assign == RoleAssign::kReplace &&
+      (role == Role::kPerception || role == Role::kIllustration)) {
+    throw std::logic_error(
+        "AssignRole() for updating properties currently only supports "
+        "proximity properties");
+  }
   if (!BelongsToSource(geometry_id, source_id)) {
     throw std::logic_error("Given geometry id " + to_string(geometry_id) +
         " does not belong to the given source id " +
@@ -1246,7 +1261,22 @@ void GeometryState<T>::AssignRoleInternal(SourceId source_id,
   // `BelongsToSource()` call.
   DRAKE_DEMAND(geometry != nullptr);
 
-  if (!geometry->has_role(role)) {
+  // For now, we only have "new" and "replace" as operations. Therefore, the
+  //  validity of this operation is simply expressed.
+  const bool has_role = geometry->has_role(role);
+  if (has_role && assign == RoleAssign::kNew) {
+    throw std::logic_error(
+        "Trying to assign the '" + to_string(role)
+        + "' role to geometry id " + to_string(geometry_id)
+        + " for the first time; it already has the role assigned");
+  } else if (!has_role && assign == RoleAssign::kReplace) {
+    throw std::logic_error(
+        "Trying to replace the properties on geometry id "
+        + to_string(geometry_id) + " for the '" + to_string(role)
+        + "' role; it has not had the role initially assigned");
+  }
+
+  if (!has_role && assign == RoleAssign::kNew) {
     // Only test for name uniqueness if this geometry doesn't already have the
     // specified role. This is here for two reasons:
     //   1. If the role has already been assigned, we want that error to
@@ -1257,7 +1287,7 @@ void GeometryState<T>::AssignRoleInternal(SourceId source_id,
     //      role assigned.
     ThrowIfNameExistsInRole(geometry->frame_id(), role, geometry->name());
   }
-  geometry->SetRole(std::move(properties));
+  return *geometry;
 }
 
 template <typename T>
