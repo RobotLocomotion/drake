@@ -36,6 +36,7 @@ class HydroelasticField {
         grad_e_m_M_(std::move(grad_e_m_M)) {}
 
   HydroelasticField(HydroelasticField&) = delete;
+  HydroelasticField& operator=(const HydroelasticField&) = delete;
   HydroelasticField(HydroelasticField&&) = default;
   HydroelasticField& operator=(HydroelasticField&&) = default;
 
@@ -49,11 +50,11 @@ class HydroelasticField {
   // const VolumeMeshFieldLinear<Vector3<T>, T>& gradient_field() const;
 
  private:
-  /** The surface mesh of the contact surface 𝕊ₘₙ between M and N. */
+  /** The volume mesh of M. */
   std::unique_ptr<geometry::VolumeMesh<T>> mesh_M_;
-  /** Represents the scalar field eₘₙ on the surface mesh. */
+  /** Represents the scalar field eₘ on the surface mesh. */
   std::unique_ptr<geometry::VolumeMeshFieldLinear<T, T>> e_m_;
-  /** Represents the vector field ∇hₘₙ on the surface mesh, expressed in M's
+  /** Represents the vector field ∇hₘ on the surface mesh, expressed in M's
     frame */
   std::unique_ptr<geometry::VolumeMeshFieldLinear<Vector3<T>, T>> grad_e_m_M_;
 };

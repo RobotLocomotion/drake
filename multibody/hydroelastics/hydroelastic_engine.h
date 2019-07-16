@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include "drake/common/drake_optional.h"
@@ -60,8 +61,11 @@ class HydroelasticGeometry {
   /// Sets the modulus of elasticity for `this` model.
   /// If infinity, the model is considered to be rigid.
   /// @throws std::exception if the geometry is rigid.
+  /// @throws std::exception if `elastic_modulus` is infinity.
   void set_elastic_modulus(double elastic_modulus) {
     DRAKE_THROW_UNLESS(is_soft());
+    DRAKE_THROW_UNLESS(elastic_modulus !=
+                       std::numeric_limits<double>::infinity());
     elastic_modulus_ = elastic_modulus;
   }
 
@@ -88,10 +92,9 @@ class HydroelasticGeometry {
 ///
 /// @warning
 /// Currently %HydroelasticEngine only provides support for hydroelastic contact
-/// specific queries between soft spheres and rigid half spaces. Other
-/// geometries are ignored by the engine to support backards compatibility with
-/// simulation cases that only require the supported geometries and ignoring the
-/// rest of the collision geometries is enough.
+/// specific queries between soft spheres and rigid half spaces. The engine will
+/// throw an exception if two unsupported geometries are detected to possibly be
+/// in contact during the broadphase.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 ///
@@ -110,22 +113,31 @@ class HydroelasticEngine final : public geometry::ShapeReifier {
   ~HydroelasticEngine() = default;
 
   /// This method builds the underlying computational representation as needed
-  /// for the Hydroelastic Model for each geometry specified in `inspector`.
+  /// for the hydroelastic model for each geometry specified in `inspector`.
   /// As outlined in the class's documentation, %HydroelasticEngine ignores
   /// geometries that are not supported. Therefore, models for unsupported
   /// geometries are not instantiated and num_models() might differ from the
   /// number of collision geometries in `inspector`.
+  /// Physical properties will be obtained from the
+  /// `geometry::ProximityProperties` for each geometry. Hydroelastic model
+  /// relevant properties are expected to be within a group named
+  /// "hydroelastics". The value of the "elastic modulus" is assumed to be
+  /// infinity, rigid object, if not provided.
   void MakeModels(const geometry::SceneGraphInspector<T>& inspector);
 
   /// Returns the number of underlying %HydroelasticGeometry models.
   int num_models() const;
 
-  /// Returns a constant reference to the underlying HydroelasticGeometry for
-  /// the given geometry identified by its `id`.
+  /// Returns the underlying HydroelasticGeometry for the given geometry
+  /// identified by its `id` or `nullptr` if the engine did not create a
+  /// hydroelastic model for this geometry.
   const HydroelasticGeometry<T>* get_model(geometry::GeometryId id) const;
 
   /// For a given state of `query_object`, this method computes the contact
   /// surfaces for all geometries in contact.
+  /// @warning Unsupported geometries are ignored unless the broadphase pass
+  /// detects that they are possibly in contact. In this case an exception is
+  /// thrown.
   std::vector<geometry::ContactSurface<T>> ComputeContactSurfaces(
       const geometry::QueryObject<T>& query_object) const;
 

@@ -7,7 +7,8 @@
   This model defines a link with "sphere" geometry and a link with "plane"
   geometry in order to test hydroelastic specific queries involving these
   gometry types. This model also includes un-supported geometry to test the
-  engine properly  ignores these geometries.  -->
+  engine properly throws an exception when un-supported geometry is detected to
+  possibly be in contact by the broadphase. -->
   <model name='box_vs_plane'>
     <!-- A link to model the ground. Inertia values are not particularly
          important since the ground does not move. -->
@@ -47,6 +48,7 @@
     This link and its collision should be removed/updated once boxes are
     supported. -->
     <link name='anchored_link'>
+      <pose>0 0.1 0.005 0 0 0</pose>
       <inertial>
         <mass>1.0</mass>
         <inertia>

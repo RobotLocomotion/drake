@@ -28,6 +28,7 @@ struct LevelSetField {
       : value(level_set_F), gradient(grad_level_set_F) {}
 
   LevelSetField(LevelSetField&) = delete;
+  LevelSetField& operator=(const LevelSetField&) = delete;
   LevelSetField(LevelSetField&&) = default;
   LevelSetField& operator=(LevelSetField&&) = default;
 

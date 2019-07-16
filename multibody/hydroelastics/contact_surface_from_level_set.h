@@ -105,7 +105,7 @@ const std::array<std::vector<EdgeIndex>, 16> kMarchingTetsTable = {
 //   `vertices`, in the same order.
 // @returns The number of vertices added.
 // @note The convention used by this private method is different from the
-// one used in geometry::VolumeMesh. For this method, vertices are must be
+// one used in geometry::VolumeMesh. For this method, vertices must be
 // provided in the order documented in the input parameter `tet_vertices_N`. For
 // geometry::VolumeMesh, the convention is documented in the class's constructor
 // and in the constructor for VolumeElement. Please refer to the documentation

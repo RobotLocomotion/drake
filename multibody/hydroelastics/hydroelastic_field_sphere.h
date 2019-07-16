@@ -13,9 +13,10 @@ namespace hydroelastics {
 namespace internal {
 
 /// Creates a HydroelasticField for a sphere of a given radius.
-/// The input parameter `refinement_level`, ℓ ∈ ℕ₀, controls the the number of
-/// vertices (and faces) generated. The resulting number of tetrahedra nₜ can
-/// be predicted according to: nₜ = 8ˡ⁺¹.
+/// The input parameter `refinement_level`, ℓ ∈ ℕ₀, controls the resolution of
+/// the mesh generated. The resulting number of tetrahedra nₜ can
+/// be predicted according to: nₜ = 8ˡ⁺¹. A characteristic tetrahedron length
+/// can be estimated with `h  = R / (ℓ + 1)`, with R the sphere radius.
 /// Even though the dimensionless hydroelastic strain field is arbitrary, we
 /// construct it to satisfy a number of properties:
 ///  1. The field ε is zero at the boundary and increases towards the interior.

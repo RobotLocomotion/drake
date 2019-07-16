@@ -2,7 +2,6 @@
 
 #include <limits>
 #include <memory>
-#include <unordered_map>
 #include <utility>
 
 #include "drake/common/default_scalars.h"
@@ -92,7 +91,11 @@ std::vector<ContactSurface<T>> HydroelasticEngine<T>::ComputeContactSurfaces(
 
     // Skip contact surface computation if these ids do not have a hydrostatic
     // model.
-    if (!model_M || !model_N) continue;
+    if (!model_M || !model_N) {
+      throw std::runtime_error(
+          "HydroelasticEngine. Unsupported geometries possibly in contact. "
+          "You'd need to change your model to use supported geometries.");
+    }
 
     // Thus far we only support rigid vs. soft.
     if (model_M->is_soft() == model_N->is_soft()) {
@@ -145,7 +148,7 @@ optional<ContactSurface<T>> HydroelasticEngine<T>::CalcContactSurface(
   for (T& e_s : e_s_surface) e_s *= soft_model_S.elastic_modulus();
 
   auto e_s = std::make_unique<geometry::SurfaceMeshFieldLinear<T, T>>(
-      "scalar field", std::move(e_s_surface), surface_R.get());
+      "e_MN", std::move(e_s_surface), surface_R.get());
   auto grad_level_set_R =
       std::make_unique<geometry::SurfaceMeshFieldLinear<Vector3<T>, T>>(
           "grad_h_MN_M", std::move(grad_level_set_R_surface), surface_R.get());

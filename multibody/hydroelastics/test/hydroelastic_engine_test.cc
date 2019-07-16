@@ -13,16 +13,16 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
 
-using drake::geometry::ContactSurface;
-using drake::geometry::SurfaceMesh;
-using drake::math::RigidTransformd;
-using Eigen::Vector3d;
-
 namespace drake {
 namespace multibody {
 namespace hydroelastics {
 namespace internal {
 namespace {
+
+using drake::geometry::ContactSurface;
+using drake::geometry::SurfaceMesh;
+using drake::math::RigidTransformd;
+using Eigen::Vector3d;
 
 class SphereVsPlaneTest : public ::testing::Test {
  public:
@@ -69,6 +69,15 @@ class SphereVsPlaneTest : public ::testing::Test {
     plant_->SetFreeBodyPoseInWorldFrame(plant_context_, *sphere_, X_WS);
   }
 
+  // Sets the sphere pose in a configuration such that it is clearly overlapping
+  // with the anchored box in the model. Since box-sphere is currently not
+  // supported by HydroelasticEngine, we expect a contact query to throw an
+  // exception.
+  void SetInUnsupportedConfiguration() {
+    const RigidTransformd X_WS = Eigen::Translation3d(0.0, 0.1, height_);
+    plant_->SetFreeBodyPoseInWorldFrame(plant_context_, *sphere_, X_WS);
+  }
+
   void MakeNewContext() {
     context_ = diagram_->CreateDefaultContext();
     plant_context_ =
@@ -96,6 +105,9 @@ class SphereVsPlaneTest : public ::testing::Test {
   double radius_{0.05};  // consistent with the *.sdf file.
 };
 
+// HydroelasticEngine relies on QueryObject::FindCollisionCandidates() for
+// collision filtering. This is just a smoke test to detect if the upstream ever
+// changes behavior.
 TEST_F(SphereVsPlaneTest, RespectsCollisionFilter) {
   // Before filtering is applied the engine should report contact.
   EXPECT_EQ(engine_->ComputeContactSurfaces(*query_object_).size(), 1u);
@@ -110,10 +122,6 @@ TEST_F(SphereVsPlaneTest, RespectsCollisionFilter) {
   scene_graph_->ExcludeCollisionsBetween(context_.get(),
                                          geometry::GeometrySet(*ground_id),
                                          geometry::GeometrySet(*sphere_id));
-
-  // Set objects to be in contact.
-  SetInContactConfiguration();
-
   EXPECT_EQ(engine_->ComputeContactSurfaces(*query_object_).size(), 0u);
 }
 
@@ -135,10 +143,9 @@ TEST_F(SphereVsPlaneTest, VerifyModelSizeAndResults) {
 
   ASSERT_EQ(all_surfaces.size(), 1u);
   const ContactSurface<double>& surface = all_surfaces[0];
-  // HydroelasticEngine always makes M to be the id for the rigid geometry and
-  // N the id for the soft geometry.
-  EXPECT_EQ(surface.id_M(), ground_geometry_id_);
-  EXPECT_EQ(surface.id_N(), sphere_geometry_id_);
+
+  // Verify the invariang id_M < id_N.
+  EXPECT_LT(surface.id_M(), surface.id_N());
 
   // Verify that the sphere is soft and the ground is rigid.
   EXPECT_TRUE(engine_->get_model(sphere_geometry_id_)->is_soft());
@@ -170,6 +177,12 @@ TEST_F(SphereVsPlaneTest, VerifyModelSizeAndResults) {
   // The number of models should not change on further queries.
   engine_->ComputeContactSurfaces(*query_object_);
   EXPECT_EQ(engine_->num_models(), 2);
+}
+
+TEST_F(SphereVsPlaneTest, ThrowsIfUnspportedGeometriesAreInContact) {
+  SetInUnsupportedConfiguration();
+  EXPECT_THROW(engine_->ComputeContactSurfaces(*query_object_),
+               std::runtime_error);
 }
 
 }  // namespace
