@@ -704,72 +704,76 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
   InternalGeometry& geometry =
       ValidateRoleAssign(source_id, geometry_id, Role::kProximity, assign);
 
-  // TODO(SeanCurtis-TRI): Currently, proximity engine doesn't directly depend
-  //  on the properties. However, when it *does*, it will need to explicitly
-  //  handle the case where assign == RoleAssign::kReplace (i.e., deleting
-  //  data, redefining discrete versions of continuous geometry, etc.)
+  // TODO(SeanCurtis-TRI): Before setting the properties, if this is kReplace I
+  //  may need to address the changes between properties (possibly undoing
+  //  something).
 
   geometry.SetRole(std::move(properties));
 
-  const GeometryIndex index = geometry.index();
-  if (geometry.is_dynamic()) {
-    // Pass the geometry to the engine.
-    ProximityIndex proximity_index =
-        geometry_engine_->AddDynamicGeometry(geometry.shape(), index);
-    geometry.set_proximity_index(proximity_index);
-    DRAKE_DEMAND(
-        static_cast<int>(dynamic_proximity_index_to_internal_map_.size()) ==
-        proximity_index);
-    dynamic_proximity_index_to_internal_map_.push_back(index);
+  if (assign == RoleAssign::kNew) {
+    const GeometryIndex index = geometry.index();
+    if (geometry.is_dynamic()) {
+      // Pass the geometry to the engine.
+      ProximityIndex proximity_index =
+          geometry_engine_->AddDynamicGeometry(geometry.shape(), index);
+      geometry.set_proximity_index(proximity_index);
+      DRAKE_DEMAND(
+          static_cast<int>(dynamic_proximity_index_to_internal_map_.size()) ==
+              proximity_index);
+      dynamic_proximity_index_to_internal_map_.push_back(index);
 
-    InternalFrame& frame = frames_[geometry.frame_id()];
+      InternalFrame& frame = frames_[geometry.frame_id()];
 
-    int child_count = static_cast<int>(frame.child_geometries().size());
-    if (child_count > 1) {
-      // Having multiple children is _necessary_ but not _sufficient_ to require
-      // collision filtering. Only if there are multiple children with the
-      // proximity role do we engage filtering.
-      // TODO(SeanCurtis-TRI): Perhaps refactor this elsewhere?
-      std::vector<GeometryId> proximity_geometries;
-      proximity_geometries.reserve(child_count);
-      for (GeometryId child_id : frame.child_geometries()) {
-        if (geometries_[child_id].has_proximity_role()) {
-          proximity_geometries.push_back(child_id);
+      int child_count = static_cast<int>(frame.child_geometries().size());
+      if (child_count > 1) {
+        // Having multiple children is _necessary_ but not _sufficient_ to
+        // require collision filtering. Only if there are multiple children with
+        // the proximity role do we engage filtering.
+        // TODO(SeanCurtis-TRI): Perhaps refactor this elsewhere?
+        std::vector<GeometryId> proximity_geometries;
+        proximity_geometries.reserve(child_count);
+        for (GeometryId child_id : frame.child_geometries()) {
+          if (geometries_[child_id].has_proximity_role()) {
+            proximity_geometries.push_back(child_id);
+          }
         }
-      }
-      const int proximity_count = static_cast<int>(proximity_geometries.size());
+        const int proximity_count =
+            static_cast<int>(proximity_geometries.size());
 
-      if (proximity_count > 1) {
-        // Filter collisions between geometries affixed to the same frame. We
-        // only add a clique to a frame's geometries when there are *multiple*
-        // child geometries.
-        ProximityEngine<T>& engine = *geometry_engine_.get_mutable();
-        if (proximity_count > 2) {
-          // Assume all previous geometries have already had the clique
-          // assigned.
-          GeometryStateCollisionFilterAttorney::set_dynamic_geometry_clique(
-              &engine, index, frame.clique());
-        } else {  // proximity_count == 2.
-          // This geometry tips us over to the point where we need to assign
-          // the clique to the new (and previous) geometries.
-          // NOTE: this is an optimization based on the clunky nature of the
-          // current collision filtering -- we're benefited in limiting the
-          // number of cliques assigned to a geometry.
-          for (GeometryId child_id : proximity_geometries) {
-            GeometryIndex child_index = geometries_[child_id].index();
+        if (proximity_count > 1) {
+          // Filter collisions between geometries affixed to the same frame. We
+          // only add a clique to a frame's geometries when there are *multiple*
+          // child geometries.
+          ProximityEngine<T>& engine = *geometry_engine_.get_mutable();
+          if (proximity_count > 2) {
+            // Assume all previous geometries have already had the clique
+            // assigned.
             GeometryStateCollisionFilterAttorney::set_dynamic_geometry_clique(
-                &engine, child_index, frame.clique());
+                &engine, index, frame.clique());
+          } else {  // proximity_count == 2.
+            // This geometry tips us over to the point where we need to assign
+            // the clique to the new (and previous) geometries.
+            // NOTE: this is an optimization based on the clunky nature of the
+            // current collision filtering -- we're benefited in limiting the
+            // number of cliques assigned to a geometry.
+            for (GeometryId child_id : proximity_geometries) {
+              GeometryIndex child_index = geometries_[child_id].index();
+              GeometryStateCollisionFilterAttorney::set_dynamic_geometry_clique(
+                  &engine, child_index, frame.clique());
+            }
           }
         }
       }
+    } else {
+      // If it's not dynamic, it must be anchored. No clique madness required;
+      // anchored geometries are not tested against each other by the process.
+      ProximityIndex proximity_index = geometry_engine_->AddAnchoredGeometry(
+          geometry.shape(), geometry.X_FG(), index);
+      geometry.set_proximity_index(proximity_index);
     }
-  } else {
-    // If it's not dynamic, it must be anchored. No clique madness required;
-    // anchored geometries are not tested against each other by the process.
-    ProximityIndex proximity_index = geometry_engine_->AddAnchoredGeometry(
-        geometry.shape(), geometry.X_FG(), index);
-    geometry.set_proximity_index(proximity_index);
   }
+  // TODO(SeanCurtis-TRI): Handle the assign == kReplace branch for when
+  //  ProximityEngine depends on the properties.
 }
 
 template <typename T>
