@@ -132,7 +132,7 @@ class HydroelasticTractionCalculator {
     // The traction acting on Body A (i.e., the body that Geometry M is affixed
     // to), expressed in the world frame. At each point Q on the contact
     // surface, `traction_A_W` gives the traction `traction_Aq_W`, where Aq
-    // is a frame attached to Body A.
+    // is a frame attached to Body A and shifted to Q.
     std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_A_W;
 
     // The slip velocity of Body B (i.e., the body that Geometry N is affixed

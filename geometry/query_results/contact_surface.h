@@ -189,6 +189,9 @@ class ContactSurface {
   /** Returns the geometry id of Geometry N. */
   GeometryId id_N() const { return id_N_; }
 
+  // TODO(damrongguoy) Consider removing these evaluation methods and instead
+  // make the fields accessible, and then evaluate the fields directly.
+
   /** Evaluates the scalar field eₘₙ at Point Q in a triangle.
     Point Q is specified by its barycentric coordinates.
     @param face         The face index of the triangle.
@@ -224,7 +227,7 @@ class ContactSurface {
     mesh.
     @param vertex       The index of the vertex in the mesh.
     @retval  grad_h_MN_M is the vector expressed in M's frame.
-   */ 
+   */
   Vector3<T> EvaluateGrad_h_MN_M(SurfaceVertexIndex vertex) const {
     return grad_h_MN_M_->EvaluateAtVertex(vertex);
   }

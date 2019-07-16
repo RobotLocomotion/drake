@@ -544,7 +544,8 @@ public ::testing::TestWithParam<RigidTransform<double>> {
 
   // Gets the expected pressure (in Pa) at Point Q in Frame Y. To get some
   // interesting values for testing, we define the pressure at Point Q using
-  // a plane with normal -√3/2 * [1, 1, 1] that passes through the origin.
+  // a plane with normal in the direction [-1, -1, -1] that passes through the
+  // origin.
   double pressure(const Vector3<double>& P_YQ) const {
     return pressure_field_normal().dot(P_YQ);
   }
