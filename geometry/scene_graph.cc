@@ -225,48 +225,54 @@ vector<std::string> SceneGraph<T>::RegisteredRendererNames() const {
 }
 
 template <typename T>
-void SceneGraph<T>::AssignRole(SourceId source_id,
-                               GeometryId geometry_id,
-                               ProximityProperties properties) {
-  initial_state_->AssignRole(source_id, geometry_id, std::move(properties));
+void SceneGraph<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
+                               ProximityProperties properties,
+                               RoleAssign assign) {
+  initial_state_->AssignRole(source_id, geometry_id, std::move(properties),
+                             assign);
 }
 
 template <typename T>
 void SceneGraph<T>::AssignRole(Context<T>* context, SourceId source_id,
                                GeometryId geometry_id,
-                               ProximityProperties properties) const {
+                               ProximityProperties properties,
+                               RoleAssign assign) const {
   auto& g_state = mutable_geometry_state(context);
-  g_state.AssignRole(source_id, geometry_id, std::move(properties));
+  g_state.AssignRole(source_id, geometry_id, std::move(properties), assign);
 }
 
 template <typename T>
-void SceneGraph<T>::AssignRole(SourceId source_id,
-                               GeometryId geometry_id,
-                               PerceptionProperties properties) {
-  initial_state_->AssignRole(source_id, geometry_id, std::move(properties));
+void SceneGraph<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
+                               PerceptionProperties properties,
+                               RoleAssign assign) {
+  initial_state_->AssignRole(source_id, geometry_id, std::move(properties),
+                             assign);
 }
 
 template <typename T>
 void SceneGraph<T>::AssignRole(Context<T>* context, SourceId source_id,
                                GeometryId geometry_id,
-                               PerceptionProperties properties) const {
+                               PerceptionProperties properties,
+                               RoleAssign assign) const {
   auto& g_state = mutable_geometry_state(context);
-  g_state.AssignRole(source_id, geometry_id, std::move(properties));
+  g_state.AssignRole(source_id, geometry_id, std::move(properties), assign);
 }
 
 template <typename T>
-void SceneGraph<T>::AssignRole(SourceId source_id,
-                               GeometryId geometry_id,
-                               IllustrationProperties properties) {
-  initial_state_->AssignRole(source_id, geometry_id, std::move(properties));
+void SceneGraph<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
+                               IllustrationProperties properties,
+                               RoleAssign assign) {
+  initial_state_->AssignRole(source_id, geometry_id, std::move(properties),
+                             assign);
 }
 
 template <typename T>
 void SceneGraph<T>::AssignRole(Context<T>* context, SourceId source_id,
                                GeometryId geometry_id,
-                               IllustrationProperties properties) const {
+                               IllustrationProperties properties,
+                               RoleAssign assign) const {
   auto& g_state = mutable_geometry_state(context);
-  g_state.AssignRole(source_id, geometry_id, std::move(properties));
+  g_state.AssignRole(source_id, geometry_id, std::move(properties), assign);
 }
 
 template <typename T>
