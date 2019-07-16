@@ -31,6 +31,7 @@ using Eigen::Vector3d;
 using internal::DummyRenderEngine;
 using internal::InternalFrame;
 using internal::InternalGeometry;
+using internal::ProximityEngine;
 using render::RenderLabel;
 using std::make_unique;
 using std::map;
@@ -132,6 +133,10 @@ class GeometryStateTester {
   const render::RenderEngine& GetRenderEngineOrThrow(
       const std::string& name) const {
     return state_->GetRenderEngineOrThrow(name);
+  }
+
+  const ProximityEngine<T>& proximity_engine() const {
+    return *state_->geometry_engine_;
   }
 
   const unordered_map<string, copyable_unique_ptr<render::RenderEngine>>&
@@ -2505,6 +2510,8 @@ TEST_F(GeometryStateTest, AssignRolesToGeometry) {
 // Test the ability to reassign properties to a role that already exists.
 TEST_F(GeometryStateTest, ModifyRoleProperties) {
   SetUpSingleSourceTree();
+  // No roles assigned.
+  EXPECT_EQ(gs_tester_.proximity_engine().num_geometries(), 0);
 
   ProximityProperties empty_props;
   ProximityProperties props1;
@@ -2524,6 +2531,8 @@ TEST_F(GeometryStateTest, ModifyRoleProperties) {
 
   // Configure and confirm initial state.
   geometry_state_.AssignRole(source_id_, geometries_[0], props1);
+  // One geometry now has the role.
+  EXPECT_EQ(gs_tester_.proximity_engine().num_geometries(), 1);
   const ProximityProperties* props =
       geometry_state_.GetProximityProperties(geometries_[0]);
   EXPECT_NE(props, nullptr);
@@ -2534,6 +2543,8 @@ TEST_F(GeometryStateTest, ModifyRoleProperties) {
 
   EXPECT_NO_THROW(geometry_state_.AssignRole(source_id_, geometries_[0], props2,
                                              RoleAssign::kReplace));
+  // Confirm modification doesn't introduce duplicates; should still be one.
+  EXPECT_EQ(gs_tester_.proximity_engine().num_geometries(), 1);
 
   props =
       geometry_state_.GetProximityProperties(geometries_[0]);
