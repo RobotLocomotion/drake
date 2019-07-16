@@ -18,7 +18,8 @@
 #include "drake/multibody/hydroelastics/level_set_field.h"
 
 namespace drake {
-namespace geometry {
+namespace multibody {
+namespace hydroelastics {
 #ifndef DRAKE_DOXYGEN_CXX
 namespace internal {
 // This table essentially assigns an index to each edge in the tetrahedron. Each
@@ -104,18 +105,17 @@ const std::array<std::vector<EdgeIndex>, 16> kMarchingTetsTable = {
 //   `vertices`, in the same order.
 // @returns The number of vertices added.
 // @note The convention used by this private method is different from the
-// one used in VolumeMesh. For this method, vertices are must be provided in
-// the order documented in the input parameter `tet_vertices_N`.
-// For VolumeMesh, the convention is documented in the class's constructor and
-// in the constructor for VolumeElement. Please refer to the documentation
-// for VolumeMesh and VolumeElement.
+// one used in geometry::VolumeMesh. For this method, vertices must be
+// provided in the order documented in the input parameter `tet_vertices_N`. For
+// geometry::VolumeMesh, the convention is documented in the class's constructor
+// and in the constructor for VolumeElement. Please refer to the documentation
+// for geometry::VolumeMesh and VolumeElement.
 // details.
 template <typename T>
-int IntersectTetWithLevelSet(const std::array<Vector3<T>, 4>& tet_vertices_N,
-                             const Vector4<T>& phi, const Vector4<T>& e_m,
-                             std::vector<SurfaceVertex<T>>* vertices_N,
-                             std::vector<SurfaceFace>* faces,
-                             std::vector<T>* e_m_surface) {
+int IntersectTetWithLevelSet(
+    const std::array<Vector3<T>, 4>& tet_vertices_N, const Vector4<T>& phi,
+    const Vector4<T>& e_m, std::vector<geometry::SurfaceVertex<T>>* vertices_N,
+    std::vector<geometry::SurfaceFace>* faces, std::vector<T>* e_m_surface) {
   DRAKE_ASSERT(vertices_N != nullptr);
   DRAKE_ASSERT(faces != nullptr);
   DRAKE_ASSERT(e_m_surface != nullptr);
@@ -187,7 +187,7 @@ int IntersectTetWithLevelSet(const std::array<Vector3<T>, 4>& tet_vertices_N,
   // Case I: A single vertex has different sign from the other three. A single
   // triangle is formed. We form a triangle so that its right handed normal
   // points in the direction of the positive side of the volume.
-  using V = SurfaceVertexIndex;
+  using V = geometry::SurfaceVertexIndex;
   if (num_intersections == 3) {
     faces->emplace_back(V(num_vertices), V(num_vertices + 1),
                         V(num_vertices + 2));
@@ -280,17 +280,16 @@ int IntersectTetWithLevelSet(const std::array<Vector3<T>, 4>& tet_vertices_N,
 /// right handed normal of each triangle points towards the positive side of the
 /// level set function `φ(V)`.
 ///
-/// @note  The SurfaceMesh may have duplicate vertices.
+/// @note  The geometry::SurfaceMesh may have duplicate vertices.
 template <typename T>
-SurfaceMesh<T> CalcZeroLevelSetInMeshDomain(
-    const VolumeMesh<T>& mesh_M, const LevelSetField<T>& phi_N,
+std::unique_ptr<geometry::SurfaceMesh<T>> CalcZeroLevelSetInMeshDomain(
+    const geometry::VolumeMesh<T>& mesh_M, const LevelSetField<T>& phi_N,
     const math::RigidTransform<T>& X_NM, const std::vector<T>& e_m_volume,
-    std::vector<T>* e_m_surface,
-    std::vector<Vector3<T>>* phi_gradient_N) {
+    std::vector<T>* e_m_surface, std::vector<Vector3<T>>* phi_gradient_N) {
   DRAKE_DEMAND(e_m_surface != nullptr);
   DRAKE_ASSERT(phi_gradient_N != nullptr);
-  std::vector<SurfaceVertex<T>> vertices_N;
-  std::vector<SurfaceFace> faces;
+  std::vector<geometry::SurfaceVertex<T>> vertices_N;
+  std::vector<geometry::SurfaceFace> faces;
   e_m_surface->clear();
 
   // We scan each tetrahedron in the mesh and compute the zero level set with
@@ -306,11 +305,11 @@ SurfaceMesh<T> CalcZeroLevelSetInMeshDomain(
       phi[i] = phi_N.value(tet_vertices_N[i]);
       e_m[i] = e_m_volume[tet.vertex(i)];
     }
-    // IntersectTetWithLevelSet() uses a different convention than VolumeMesh
-    // to index the vertices of a tetrahedra and therefore we swap vertexes 1
-    // and 2.
+    // IntersectTetWithLevelSet() uses a different convention than
+    // geometry::VolumeMesh to index the vertices of a tetrahedra and therefore
+    // we swap vertexes 1 and 2.
     // TODO(amcastro-tri): re-write IntersectTetWithLevelSet() to use the
-    // convention in VolumeMesh.
+    // convention in geometry::VolumeMesh.
     std::swap(tet_vertices_N[1], tet_vertices_N[2]);
     std::swap(phi[1], phi[2]);
     std::swap(e_m[1], e_m[2]);
@@ -319,15 +318,17 @@ SurfaceMesh<T> CalcZeroLevelSetInMeshDomain(
   }
 
   phi_gradient_N->resize(vertices_N.size());
-  for (SurfaceVertexIndex v(0); v < vertices_N.size(); ++v) {
+  for (geometry::SurfaceVertexIndex v(0); v < vertices_N.size(); ++v) {
     const Vector3<T>& p_NV = vertices_N[v].r_MV();
     (*phi_gradient_N)[v] = phi_N.gradient(p_NV);
   }
 
-  return SurfaceMesh<T>(std::move(faces), std::move(vertices_N));
+  return std::make_unique<geometry::SurfaceMesh<T>>(std::move(faces),
+                                                    std::move(vertices_N));
 }
 
 }  // namespace internal
 #endif
-}  // namespace geometry
+}  // namespace hydroelastics
+}  // namespace multibody
 }  // namespace drake
