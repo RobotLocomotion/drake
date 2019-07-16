@@ -101,49 +101,67 @@ class HydroelasticGeometry {
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template <typename T>
-class HydroelasticEngine {
+class HydroelasticEngine final : public geometry::ShapeReifier {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HydroelasticEngine)
 
-  /// Constructor for an engine to be used by a given `plant`.
-  /// %HydroelasticEngine keeps a reference to `plant` that must remain valid
-  /// for the lifetime of the engine.
-  ///
-  /// %HydroelasticEngine will create an appropriate computation model for each
-  /// geometry registered with this `plant` on the first call to
-  /// `ComputeContactSurfaces()`.
-  ///
-  /// @throws std::exception if `plant` is nullptr.
-  HydroelasticEngine();
+  HydroelasticEngine() = default;
 
-  ~HydroelasticEngine();
+  ~HydroelasticEngine() = default;
 
-  /// Returns the number of underlying %HydroelasticGeometry models.
+  /// This method builds the underlying computational representation as needed
+  /// for the Hydroelastic Model for each geometry specified in `inspector`.
   /// As outlined in the class's documentation, %HydroelasticEngine ignores
   /// geometries that are not supported. Therefore, models for unsupported
   /// geometries are not instantiated and num_models() might differ from the
-  /// number of collision geometries in the original model passed on the first
-  /// call to ComputeContactSurfaces() with the geometry::QueryObject object.
+  /// number of collision geometries in `inspector`.
+  void MakeModels(const geometry::SceneGraphInspector<T>& inspector);
+
+  /// Returns the number of underlying %HydroelasticGeometry models.
   int num_models() const;
 
   /// Returns a constant reference to the underlying HydroelasticGeometry for
   /// the given geometry identified by its `id`.
-  const HydroelasticGeometry<T>& get_model(geometry::GeometryId id) const;
+  const HydroelasticGeometry<T>* get_model(geometry::GeometryId id) const;
 
   /// For a given state of `query_object`, this method computes the contact
   /// surfaces for all geometries in contact.
-  /// On the first call to this method, the engine creates the underlying
-  /// computational representation for each geometry in the model, which is then
-  /// used in future queries. Geometries that are currently not supported by
-  /// %HydroelasticEngine (see this class's documentation) are ignored.
-  /// TODO(amcastro-tri): Replace this short-term hack with a cache-compliant
-  /// mechanism.
   std::vector<geometry::ContactSurface<T>> ComputeContactSurfaces(
       const geometry::QueryObject<T>& query_object) const;
 
  private:
-  class Impl;
-  Impl* impl_{};
+  // This struct stores additional data passed to ImplementGeometry() during
+  // the reification proceses.
+  struct GeometryImplementationData {
+    geometry::GeometryId id;
+    double elastic_modulus;
+  };
+
+  // This struct holds the engines's data, created by the call to
+  // MakeGeometryModels() the first time a query is issued.
+  struct ModelData {
+    bool models_are_initialized_{false};
+    std::unordered_map<geometry::GeometryId,
+                       std::unique_ptr<HydroelasticGeometry<T>>>
+        geometry_id_to_model_;
+  };
+
+  // Helper method to comptue the contact surface betwen a soft model S and a
+  // rigid model R with a relative pose X_RS.
+  optional<geometry::ContactSurface<T>> CalcContactSurface(
+      geometry::GeometryId id_S, const HydroelasticGeometry<T>& soft_model_S,
+      geometry::GeometryId id_R, const HydroelasticGeometry<T>& rigid_model_R,
+      const math::RigidTransform<T>& X_RS) const;
+
+  // Implementation of ShapeReifier interface
+  void ImplementGeometry(const geometry::Sphere&, void*) override;
+  void ImplementGeometry(const geometry::HalfSpace&, void*) override;
+  void ImplementGeometry(const geometry::Cylinder&, void*) override;
+  void ImplementGeometry(const geometry::Box&, void*) override;
+  void ImplementGeometry(const geometry::Mesh&, void*) override;
+  void ImplementGeometry(const geometry::Convex&, void*) override;
+
+  ModelData model_data_;
 };
 
 }  // namespace internal

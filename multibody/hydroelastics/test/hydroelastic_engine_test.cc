@@ -56,6 +56,7 @@ class SphereVsPlaneTest : public ::testing::Test {
     MakeNewContext();
 
     engine_ = std::make_unique<HydroelasticEngine<double>>();
+    engine_->MakeModels(scene_graph_->model_inspector());
 
     SetInContactConfiguration();
   }
@@ -119,14 +120,6 @@ TEST_F(SphereVsPlaneTest, RespectsCollisionFilter) {
 TEST_F(SphereVsPlaneTest, VerifyModelSizeAndResults) {
   EXPECT_EQ(plant_->num_bodies(), 4);  // Including the "world" body.
 
-  // Models are created not until the first query.
-  EXPECT_EQ(engine_->num_models(), 0);
-
-  // First query will create the underlying hydroelastic models including
-  // tetrahedral meshes, fields and level sets.
-  const std::vector<ContactSurface<double>> all_surfaces =
-      engine_->ComputeContactSurfaces(*query_object_);
-
   // We expect three collision geomtries from the SDF: a plane for the ground, a
   // box attached to the ground, and a sphere.
   EXPECT_EQ(scene_graph_->model_inspector().num_geometries(), 3);
@@ -134,6 +127,11 @@ TEST_F(SphereVsPlaneTest, VerifyModelSizeAndResults) {
   // Expect a model for the sphere and for the half-space. Currently, the box is
   // ignored.
   EXPECT_EQ(engine_->num_models(), 2);
+
+  // First query will create the underlying hydroelastic models including
+  // tetrahedral meshes, fields and level sets.
+  const std::vector<ContactSurface<double>> all_surfaces =
+      engine_->ComputeContactSurfaces(*query_object_);
 
   ASSERT_EQ(all_surfaces.size(), 1u);
   const ContactSurface<double>& surface = all_surfaces[0];
@@ -143,8 +141,8 @@ TEST_F(SphereVsPlaneTest, VerifyModelSizeAndResults) {
   EXPECT_EQ(surface.id_N(), sphere_geometry_id_);
 
   // Verify that the sphere is soft and the ground is rigid.
-  EXPECT_TRUE(engine_->get_model(sphere_geometry_id_).is_soft());
-  EXPECT_FALSE(engine_->get_model(ground_geometry_id_).is_soft());
+  EXPECT_TRUE(engine_->get_model(sphere_geometry_id_)->is_soft());
+  EXPECT_FALSE(engine_->get_model(ground_geometry_id_)->is_soft());
 
   // This is merely a sanity check on the returned results. The contact
   // surface calculation implemented in ContactSurfaceCalculator, already has
