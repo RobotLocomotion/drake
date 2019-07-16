@@ -172,16 +172,23 @@ class ContactSurface {
                        orthogonal to every triangle sharing the vertex.
                        Orthogonality generally does improve with finer
                        discretization.
+   @param X_MN         The pose of the frame of N in the frame of M.
+   @note If the id_M is greater than the id_N, we will swap M and N.
+         Therefore, the mesh_M and grad_h_MN_M will change their frames.
+         Furthermore, the vector field grad_h_MN_M will switch its direction.
    */
   ContactSurface(
       GeometryId id_M, GeometryId id_N, std::unique_ptr<SurfaceMesh<T>> mesh_M,
       std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN,
-      std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_MN_M)
+      std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_MN_M,
+      const math::RigidTransform<T>& X_MN)
       : id_M_(id_M),
         id_N_(id_N),
         mesh_M_(std::move(mesh_M)),
         e_MN_(std::move(e_MN)),
-        grad_h_MN_M_(std::move(grad_h_MN_M)) {}
+        grad_h_MN_M_(std::move(grad_h_MN_M)) {
+    if (id_N_ < id_M_) SwapMAndN(X_MN.inverse());
+  }
 
   /** Returns the geometry id of Geometry M. */
   GeometryId id_M() const { return id_M_; }
@@ -239,10 +246,10 @@ class ContactSurface {
     return *mesh_M_;
   }
 
-  /** Swaps M and N (modifying the data in place to reflect the change in
-   frames).
-   @param X_NM  The pose of frame M in N.
-   */
+ private:
+  // Swaps M and N (modifying the data in place to reflect the change in
+  // frames).
+  // @param X_NM  The pose of frame M in N.
   void SwapMAndN(const math::RigidTransform<T>& X_NM) {
     std::swap(id_M_, id_N_);
     mesh_M_->TransformVertices(X_NM);
@@ -268,22 +275,23 @@ class ContactSurface {
     // Note: the scalar field does not depend on frames.
   }
 
- private:
-  /** The id of the first geometry M */
+  // The id of the first geometry M.
   GeometryId id_M_;
-  /** The id of the second geometry N. */
+  // The id of the second geometry N.
   GeometryId id_N_;
-  /** The surface mesh of the contact surface 𝕊ₘₙ between M and N. */
+  // The surface mesh of the contact surface 𝕊ₘₙ between M and N.
   std::unique_ptr<SurfaceMesh<T>> mesh_M_;
   // TODO(SeanCurtis-TRI): We can only construct from a linear field, so store
   //  it as such for now. This can be promoted once there's a construction that
   //  uses a different derivation.
-  /** Represents the scalar field eₘₙ on the surface mesh. */
+  // Represents the scalar field eₘₙ on the surface mesh.
   std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN_;
-  /** Represents the vector field ∇hₘₙ on the surface mesh, expressed in M's
-    frame */
+  // Represents the vector field ∇hₘₙ on the surface mesh, expressed in M's
+  // frame.
   std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_MN_M_;
-  friend class ContactSurfaceTester;
+  // TODO(DamrongGuoy): Remove this when we allow direct access to e_MN and
+  //  grad_h_MN.
+  template <typename U> friend class ContactSurfaceTester;
 };
 
 }  // namespace geometry

@@ -636,19 +636,15 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId id_S, const VolumeMeshField<T, T>& field_S,
     const GeometryId id_R, const SurfaceMesh<T>& mesh_R,
     const math::RigidTransform<T>& X_SR) {
-  std::unique_ptr<SurfaceMesh<T>> surface_MN_M;
-  std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN;
-  std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_MN_M;
-  SampleVolumeFieldOnSurface(field_S, mesh_R, X_SR, &surface_MN_M, &e_MN,
-                             &grad_h_MN_M);
+  std::unique_ptr<SurfaceMesh<T>> surface_SR_S;
+  std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_SR;
+  std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_SR_S;
+  SampleVolumeFieldOnSurface(field_S, mesh_R, X_SR, &surface_SR_S, &e_SR,
+                             &grad_h_SR_S);
 
-  // Blindly map S->M and R->N.
-  auto surface = std::make_unique<ContactSurface<T>>(
-      id_S, id_R, std::move(surface_MN_M), std::move(e_MN),
-      std::move(grad_h_MN_M));
-  // Correct mapping as necessary.
-  if (surface->id_N() < surface->id_M()) surface->SwapMAndN(X_SR.inverse());
-  return surface;
+  return std::make_unique<ContactSurface<T>>(
+      id_S, id_R, std::move(surface_SR_S), std::move(e_SR),
+      std::move(grad_h_SR_S), X_SR);
 }
 
 #endif  // #ifndef DRAKE_DOXYGEN_CXX

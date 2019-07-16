@@ -158,14 +158,8 @@ optional<ContactSurface<T>> HydroelasticEngine<T>::CalcContactSurface(
   // expressed, in this case id_R.
   ContactSurface<T> contact_surface(id_R, id_S, std::move(surface_R),
                                     std::move(e_s),
-                                    std::move(grad_level_set_R));
-  // ContactSurface's contract is that id_M < id_N. We make sure this is the
-  // case by swapping if needed.
-  // TODO(amcastro-tri): Update to pass X_SR to ContactSurface's constructor
-  // once ContactSurface takes care of the swapping at construction.
-  if (id_S < id_R) {
-    contact_surface.SwapMAndN(X_RS.inverse());
-  }
+                                    std::move(grad_level_set_R),
+                                    X_RS);
   return contact_surface;
 }
 
