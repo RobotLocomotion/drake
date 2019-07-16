@@ -687,9 +687,10 @@ TEST_P(HydroelasticReportingTests, LinearTraction) {
     EXPECT_NEAR(expected_traction_A_W[i], traction_Ac_W[i], tol());
 }
 
-// Tests that the slip velocity reporting is accurate. Note that this test only
-// needs to check whether the field is set correctly; tests for traction are
-// handled elsewhere in this file.
+// Tests that the slip velocity reporting is consistent with the values computed
+// by the HydroelasticTractionCalculator. Note that this test only needs to
+// check whether the field is set correctly; tests for traction are handled
+// elsewhere in this file.
 TEST_P(HydroelasticReportingTests, LinearSlipVelocity) {
   // Dissipation and Coulomb friction will not even be used in this test. Set
   // the values to NaN to prove it.

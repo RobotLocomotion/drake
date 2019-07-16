@@ -128,7 +128,7 @@ HydroelasticTractionCalculator<T>::CalcTractionAtVertex(
   const Vector3<T> nhat_M = h_M.normalized();
   const Vector3<T> nhat_W = data.X_WM.rotation() * nhat_M;
 
-  return CalcTractionAtXHelper(data, e, nhat_W, dissipation, mu_coulomb, p_WQ);
+  return CalcTractionAtQHelper(data, e, nhat_W, dissipation, mu_coulomb, p_WQ);
 }
 
 // Method for computing traction at a point on a face of the contact surface.
@@ -153,7 +153,7 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   const Vector3<T> nhat_M = h_M.normalized();
   const Vector3<T> nhat_W = data.X_WM.rotation() * nhat_M;
 
-  return CalcTractionAtXHelper(data, e, nhat_W, dissipation, mu_coulomb, p_WQ);
+  return CalcTractionAtQHelper(data, e, nhat_W, dissipation, mu_coulomb, p_WQ);
 }
 
 /*
@@ -174,7 +174,7 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
  */
 template <typename T>
 typename HydroelasticTractionCalculator<T>::TractionAtPointData
-HydroelasticTractionCalculator<T>::CalcTractionAtXHelper(
+HydroelasticTractionCalculator<T>::CalcTractionAtQHelper(
     const Data& data,
     const T& e, const Vector3<T>& nhat_W,
     double dissipation, double mu_coulomb, const Vector3<T>& p_WQ) const {
