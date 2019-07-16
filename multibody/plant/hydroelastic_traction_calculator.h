@@ -129,11 +129,11 @@ class HydroelasticTractionCalculator {
   struct ContactReportingFields {
     // The traction acting on Body A (i.e., the body that Geometry M is affixed
     // to), expressed in the world frame.
-    std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_W;
+    std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_A_W;
 
     // The slip velocity of Body B (i.e., the body that Geometry N is affixed
     // to) relative to Body A, expressed in the world frame.
-    std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_W;
+    std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_AB_W;
   };
 
   ContactReportingFields CreateReportingFields(
@@ -150,7 +150,7 @@ class HydroelasticTractionCalculator {
       const typename geometry::SurfaceMesh<T>::Barycentric& Q_barycentric,
       double dissipation, double mu_coulomb) const;
 
-  HydroelasticTractionCalculator<T>::TractionAtPointData CalcTractionAtPoint(
+  TractionAtPointData CalcTractionAtPoint(
       const Data& data,
       const T& e, const Vector3<T>& nhat_W,
       double dissipation, double mu_coulomb, const Vector3<T>& p_WQ) const;

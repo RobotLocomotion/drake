@@ -204,8 +204,7 @@ class ContactSurface {
     mesh.
     @param vertex       The index of the vertex in the mesh.
    */
-  T EvaluateE_MN(
-      SurfaceVertexIndex vertex) const {
+  T EvaluateE_MN(SurfaceVertexIndex vertex) const {
     return e_MN_->EvaluateAtVertex(vertex);
   }
 

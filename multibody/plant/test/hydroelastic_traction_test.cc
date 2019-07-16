@@ -544,15 +544,15 @@ public ::testing::TestWithParam<RigidTransform<double>> {
 
   // Gets the expected pressure (in Pa) at Point Q in Frame Y. To get some
   // interesting values for testing, we define the pressure at Point Q using
-  // a plane with normal -√2/2 * [1, 1, 1] that passes through the origin.
+  // a plane with normal -√3/2 * [1, 1, 1] that passes through the origin.
   double pressure(const Vector3<double>& P_YQ) const {
     return pressure_field_normal().dot(P_YQ);
   }
 
   // Gets the normal to the pressure field in Frame Y.
   Vector3<double> pressure_field_normal() const {
-    const double sqrt2_2 = std::sqrt(2) / 2;
-    return Vector3<double>(-sqrt2_2, -sqrt2_2, -sqrt2_2);
+    const double sqrt3_2 = std::sqrt(3) / 2;
+    return Vector3<double>(-sqrt3_2, -sqrt3_2, -sqrt3_2);
   }
 
   const HydroelasticTractionCalculator<double>::Data& calculator_data() {
@@ -578,12 +578,12 @@ public ::testing::TestWithParam<RigidTransform<double>> {
 
     // Create the "e" field values (i.e., "hydroelastic pressure").
     std::vector<double> e_MN(mesh->num_vertices());
-    for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i) {
-      const Vector3<double>& p = X_YM * mesh->vertex(i).r_MV();
-      e_MN[i] = pressure(p);
-    }
+    for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
+      e_MN[i] = pressure(mesh->vertex(i).r_MV());
 
-    // Set the gradient of the "h" field.
+    // Set the gradient of the "h" field. Note that even though this pressure
+    // field is normalized, the "h" need not be (it's always normalized before
+    // use).
     std::vector<Vector3<double>> h_MN_M(
         mesh->num_vertices(), pressure_field_normal());
 
@@ -618,7 +618,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     // Set the calculator data.
     calculator_data_ = std::make_unique<
         HydroelasticTractionCalculator<double>::Data>(
-            X_WA, X_WB, V_YA, V_YB, X_WM, contact_surface_.get());
+            X_WA, X_WB, V_WA, V_WB, X_WM, contact_surface_.get());
   }
 
   const double tol_{10 * std::numeric_limits<double>::epsilon()};
@@ -652,36 +652,43 @@ TEST_P(HydroelasticReportingTests, LinearTraction) {
     // Evaluate the traction at vertex i on Body A (the body to which geometry
     // M is attached).
     const Vector3<double> traction_Av_W =
-       fields.traction_W->EvaluateAtVertex(i);
+       fields.traction_A_W->EvaluateAtVertex(i);
+
+    // Get the normal to the contact surface at the point. The test below will
+    // rely upon the assumption (specified in the construction of the field)
+    // that this vector is normalized.
+    const Vector3<double> normal_M =
+        calculator_data().surface.EvaluateGrad_h_MN_M(i);
+    EXPECT_NEAR(normal_M.norm(), 1.0, tol);
 
     // Check the pressure is evaluated in accordance with how we constructed it.
     const Vector3<double>& r_MV =
         calculator_data().surface.mesh().vertex(i).r_MV();
     const Vector3<double> r_WV = calculator_data().X_WM * r_MV;
-    EXPECT_LT(std::abs(traction_Av_W.norm() - pressure(r_WV)), tol);
+    EXPECT_LT((traction_Av_W - normal_M * pressure(r_WV)).norm(), tol);
   }
 
   // Test the traction at the centroid of the contact surface. This should just
   // be the mean of the tractions at the vertices.
   // 1. Compute the mean traction at the vertices.
-  Vector3<double> mean_traction_W = Vector3<double>::Zero();
+  Vector3<double> mean_traction_A_W = Vector3<double>::Zero();
   for (SurfaceVertexIndex(i);
       i < calculator_data().surface.mesh().num_vertices(); ++i) {
-    mean_traction_W += fields.traction_W->EvaluateAtVertex(i);
+    mean_traction_A_W += fields.traction_A_W->EvaluateAtVertex(i);
   }
-  mean_traction_W /= calculator_data().surface.mesh().num_vertices();
+  mean_traction_A_W /= calculator_data().surface.mesh().num_vertices();
   // 2. Compute the traction at the centroid of the contact surface. Note that
   //    we use SurfaceFaceIndex zero arbitrarily- the centroid is located on
   //    both faces in this particular instance.
   const SurfaceMesh<double>::Barycentric b_MC =
       calculator_data().surface.mesh().CalcBarycentric(
           calculator_data().surface.mesh().centroid(), SurfaceFaceIndex(0));
-  const Vector3<double> traction_Ac_W = fields.traction_W->Evaluate(
+  const Vector3<double> traction_Ac_W = fields.traction_A_W->Evaluate(
       SurfaceFaceIndex(0), b_MC);
 
   // Check that the two are approximately equal.
   for (int i = 0; i < 3; ++i)
-    EXPECT_NEAR(mean_traction_W[i], traction_Ac_W[i], tol);
+    EXPECT_NEAR(mean_traction_A_W[i], traction_Ac_W[i], tol);
 }
 
 // Tests that the slip velocity reporting is accurate. Note that this test only
@@ -707,7 +714,7 @@ TEST_P(HydroelasticReportingTests, LinearSlipVelocity) {
   const SurfaceMesh<double>& mesh = calculator_data().surface.mesh();
   for (SurfaceVertexIndex(i); i < mesh.num_vertices(); ++i) {
     // Compute the vertex location (V) in the world frame.
-    const Vector3<double> p_MV = mesh.vertex(i).r_MV();
+    const Vector3<double>& p_MV = mesh.vertex(i).r_MV();
     const Vector3<double> p_WV = calculator_data().X_WM * p_MV;
 
     // Get the normal from Geometry M to Geometry N, expressed in the world
@@ -740,7 +747,7 @@ TEST_P(HydroelasticReportingTests, LinearSlipVelocity) {
 
     // Check against the reported slip velocity.
     const Vector3<double> vt_BvAv_W_reported =
-        fields.traction_W->EvaluateAtVertex(i);
+        fields.vslip_AB_W->EvaluateAtVertex(i);
     EXPECT_LT((vt_BvAv_W - vt_BvAv_W_reported).norm(), tol);
   }
 
@@ -750,7 +757,7 @@ TEST_P(HydroelasticReportingTests, LinearSlipVelocity) {
   // lies on the edge of both triangles.
   const SurfaceMesh<double>::Barycentric b_MC =
       mesh.CalcBarycentric(mesh.centroid(), SurfaceFaceIndex(0));
-  const Vector3<double> vt_BcAc_W = fields.traction_W->Evaluate(
+  const Vector3<double> vt_BcAc_W = fields.vslip_AB_W->Evaluate(
       SurfaceFaceIndex(0), b_MC);
   EXPECT_LT(vt_BcAc_W.norm(), tol);
 }

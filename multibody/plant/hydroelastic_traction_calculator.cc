@@ -174,7 +174,7 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
     const Data& data,
     const T& e, const Vector3<T>& nhat_W,
     double dissipation, double mu_coulomb, const Vector3<T>& p_WQ) const {
-  HydroelasticTractionCalculator<T>::TractionAtPointData traction_data;
+  TractionAtPointData traction_data;
 
   // Set p_WQ first.
   traction_data.p_WQ = p_WQ;
@@ -239,7 +239,7 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
 // Creates linearly interpolated fields over the contact surface for use in
 // contact reporting.
 // @warning The newly created mesh fields retain a pointer to the surface mesh
-//         (i.e., `data.surface_->mesh()`), so that pointer must remain valid
+//         (i.e., `data.surface.mesh()`), so that pointer must remain valid
 //        while this object is alive.
 template <typename T>
 typename HydroelasticTractionCalculator<T>::ContactReportingFields
@@ -263,9 +263,9 @@ HydroelasticTractionCalculator<T>::CreateReportingFields(
 
   // Create the field structure.
   ContactReportingFields fields;
-  fields.traction_W = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
+  fields.traction_A_W = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
       "traction", std::move(traction_Aq_W), &surface.mesh());
-  fields.vslip_W = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
+  fields.vslip_AB_W = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
       "slip_velocity", std::move(vt_BqAq_W), &surface.mesh());
   return fields;
 }
