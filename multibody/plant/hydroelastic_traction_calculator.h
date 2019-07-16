@@ -103,15 +103,17 @@ class HydroelasticTractionCalculator {
        multibody::SpatialForce<T>* F_Bo_W) const;
 
  private:
+  // TODO(edrumwri): Consider methods that expose inner structures of
+  // HydroelasticTractionCalculator in HydroelasticReportingTests if we have
+  // to "friend" too many testing functions.
   // To allow GTEST to test private functions.
   friend class MultibodyPlantHydroelasticTractionTests;
   friend class HydroelasticReportingTests;
   friend class HydroelasticReportingTests_LinearTraction_Test;
   friend class HydroelasticReportingTests_LinearSlipVelocity_Test;
 
-  // Data structure for passing useful outputs from CalcTractionAtPoint().
   struct TractionAtPointData {
-    // Point Q that the traction is computed in, as an offset vector expressed
+    // Q, the point that the traction is computed, as an offset vector expressed
     // in the world frame.
     Vector3<T> p_WQ;
 
@@ -128,11 +130,19 @@ class HydroelasticTractionCalculator {
   // contact surface.
   struct ContactReportingFields {
     // The traction acting on Body A (i.e., the body that Geometry M is affixed
-    // to), expressed in the world frame.
+    // to), expressed in the world frame. At each point Q on the contact
+    // surface, `traction_A_W` gives the traction `traction_Aq_W`, where Aq
+    // is a frame attached to Body A.
     std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_A_W;
 
     // The slip velocity of Body B (i.e., the body that Geometry N is affixed
-    // to) relative to Body A, expressed in the world frame.
+    // to) relative to Body A, expressed in the world frame. At each point Q on
+    // the contact surface, `vslip_AB_W` gives the slip velocity `vslip_AqBq_W`,
+    // which is the "tangential" velocity of Frame Bq (located at Q and attached
+    // Frame B) relative to the tangential velocity of Frame Aq (also located
+    // at Q and attached to Frame B). The tangential velocity at Q corresponds
+    // to the components of velocity orthogonal to the normal to the contact
+    // surface at Q.
     std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_AB_W;
   };
 
@@ -150,7 +160,7 @@ class HydroelasticTractionCalculator {
       const typename geometry::SurfaceMesh<T>::Barycentric& Q_barycentric,
       double dissipation, double mu_coulomb) const;
 
-  TractionAtPointData CalcTractionAtPoint(
+  TractionAtPointData CalcTractionAtXHelper(
       const Data& data,
       const T& e, const Vector3<T>& nhat_W,
       double dissipation, double mu_coulomb, const Vector3<T>& p_WQ) const;

@@ -551,8 +551,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
 
   // Gets the normal to the pressure field in Frame Y.
   Vector3<double> pressure_field_normal() const {
-    const double sqrt3_2 = std::sqrt(3) / 2;
-    return Vector3<double>(-sqrt3_2, -sqrt3_2, -sqrt3_2);
+    return Vector3<double>(-1, -1, -1).normalized();
   }
 
   const HydroelasticTractionCalculator<double>::Data& calculator_data() {
@@ -596,7 +595,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
           "h_MN_M", std::move(h_MN_M), mesh_pointer));
 
     // Set the velocities to correspond to one body fixed and one body
-    // stationary so that we can test the slip velocity. Additionally, we'll
+    // free so that we can test the slip velocity. Additionally, we'll
     // set the angular velocity to correspond to one of the bodies (A) spinning
     // along the normal to the contact surface. That will let us verify that the
     // velocity at the centroid of the contact surface is zero.
@@ -637,9 +636,6 @@ TEST_P(HydroelasticReportingTests, LinearTraction) {
   const double dissipation = 0.0;
   const double mu_coulomb = 0.0;
 
-  // A tight tolerance at which all tests pass.
-  const double tol = 10 * std::numeric_limits<double>::epsilon();
-
   // Create the fields.
   HydroelasticTractionCalculator<double> calculator;
   HydroelasticTractionCalculator<double>::ContactReportingFields fields =
@@ -659,24 +655,25 @@ TEST_P(HydroelasticReportingTests, LinearTraction) {
     // that this vector is normalized.
     const Vector3<double> normal_M =
         calculator_data().surface.EvaluateGrad_h_MN_M(i);
-    EXPECT_NEAR(normal_M.norm(), 1.0, tol);
+    EXPECT_NEAR(normal_M.norm(), 1.0, tol());
 
     // Check the pressure is evaluated in accordance with how we constructed it.
     const Vector3<double>& r_MV =
         calculator_data().surface.mesh().vertex(i).r_MV();
     const Vector3<double> r_WV = calculator_data().X_WM * r_MV;
-    EXPECT_LT((traction_Av_W - normal_M * pressure(r_WV)).norm(), tol);
+    EXPECT_LT((traction_Av_W - normal_M * pressure(r_WV)).norm(), tol());
   }
 
   // Test the traction at the centroid of the contact surface. This should just
-  // be the mean of the tractions at the vertices.
-  // 1. Compute the mean traction at the vertices.
-  Vector3<double> mean_traction_A_W = Vector3<double>::Zero();
+  // be the mean of the tractions at the vertices since (a) the pressure field
+  // is linear and (b) there is no sliding velocity.
+  // 1. Compute the mean of the tractions at the vertices.
+  Vector3<double> expected_traction_A_W = Vector3<double>::Zero();
   for (SurfaceVertexIndex(i);
       i < calculator_data().surface.mesh().num_vertices(); ++i) {
-    mean_traction_A_W += fields.traction_A_W->EvaluateAtVertex(i);
+    expected_traction_A_W += fields.traction_A_W->EvaluateAtVertex(i);
   }
-  mean_traction_A_W /= calculator_data().surface.mesh().num_vertices();
+  expected_traction_A_W /= calculator_data().surface.mesh().num_vertices();
   // 2. Compute the traction at the centroid of the contact surface. Note that
   //    we use SurfaceFaceIndex zero arbitrarily- the centroid is located on
   //    both faces in this particular instance.
@@ -688,7 +685,7 @@ TEST_P(HydroelasticReportingTests, LinearTraction) {
 
   // Check that the two are approximately equal.
   for (int i = 0; i < 3; ++i)
-    EXPECT_NEAR(mean_traction_A_W[i], traction_Ac_W[i], tol);
+    EXPECT_NEAR(expected_traction_A_W[i], traction_Ac_W[i], tol());
 }
 
 // Tests that the slip velocity reporting is accurate. Note that this test only
@@ -700,9 +697,6 @@ TEST_P(HydroelasticReportingTests, LinearSlipVelocity) {
   const double nan = std::numeric_limits<double>::quiet_NaN();
   const double dissipation = nan;
   const double mu_coulomb = nan;
-
-  // A tight tolerance at which all tests pass.
-  const double tol = 10 * std::numeric_limits<double>::epsilon();
 
   // Create the fields.
   HydroelasticTractionCalculator<double> calculator;
@@ -748,7 +742,7 @@ TEST_P(HydroelasticReportingTests, LinearSlipVelocity) {
     // Check against the reported slip velocity.
     const Vector3<double> vt_BvAv_W_reported =
         fields.vslip_AB_W->EvaluateAtVertex(i);
-    EXPECT_LT((vt_BvAv_W - vt_BvAv_W_reported).norm(), tol);
+    EXPECT_LT((vt_BvAv_W - vt_BvAv_W_reported).norm(), tol());
   }
 
   // Test the slip velocity at the centroid of the contact surface. As long as
@@ -759,7 +753,7 @@ TEST_P(HydroelasticReportingTests, LinearSlipVelocity) {
       mesh.CalcBarycentric(mesh.centroid(), SurfaceFaceIndex(0));
   const Vector3<double> vt_BcAc_W = fields.vslip_AB_W->Evaluate(
       SurfaceFaceIndex(0), b_MC);
-  EXPECT_LT(vt_BcAc_W.norm(), tol);
+  EXPECT_LT(vt_BcAc_W.norm(), tol());
 }
 
 // These transformations, denoted X_WY, are passed as parameters to the tests

@@ -111,6 +111,7 @@ SpatialForce<T> HydroelasticTractionCalculator<T>::
   return Ft_Ac_W;  // Still a traction (force/area).
 }
 
+// Method for computing traction at a vertex of the contact surface.
 template <typename T>
 typename HydroelasticTractionCalculator<T>::TractionAtPointData
 HydroelasticTractionCalculator<T>::CalcTractionAtVertex(
@@ -127,9 +128,12 @@ HydroelasticTractionCalculator<T>::CalcTractionAtVertex(
   const Vector3<T> nhat_M = h_M.normalized();
   const Vector3<T> nhat_W = data.X_WM.rotation() * nhat_M;
 
-  return CalcTractionAtPoint(data, e, nhat_W, dissipation, mu_coulomb, p_WQ);
+  return CalcTractionAtXHelper(data, e, nhat_W, dissipation, mu_coulomb, p_WQ);
 }
 
+// Method for computing traction at a point on a face of the contact surface.
+// If the point is coincident with a vertex, CalcTractionAtVertex()
+// is more efficient.
 template <typename T>
 typename HydroelasticTractionCalculator<T>::TractionAtPointData
 HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
@@ -149,11 +153,11 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   const Vector3<T> nhat_M = h_M.normalized();
   const Vector3<T> nhat_W = data.X_WM.rotation() * nhat_M;
 
-  return CalcTractionAtPoint(data, e, nhat_W, dissipation, mu_coulomb, p_WQ);
+  return CalcTractionAtXHelper(data, e, nhat_W, dissipation, mu_coulomb, p_WQ);
 }
 
 /*
- Utility function for computing the traction at a point, irrespective of whether
+ Helper function for computing the traction at a point, irrespective of whether
  that point is coincident with a vertex or is located at an arbitrary
  point on the contact surface.
  @param e the "potential pressure" (in N/m²) at the point as defined in
@@ -170,7 +174,7 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
  */
 template <typename T>
 typename HydroelasticTractionCalculator<T>::TractionAtPointData
-HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
+HydroelasticTractionCalculator<T>::CalcTractionAtXHelper(
     const Data& data,
     const T& e, const Vector3<T>& nhat_W,
     double dissipation, double mu_coulomb, const Vector3<T>& p_WQ) const {
