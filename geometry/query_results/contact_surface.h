@@ -189,6 +189,9 @@ class ContactSurface {
   /** Returns the geometry id of Geometry N. */
   GeometryId id_N() const { return id_N_; }
 
+  // TODO(damrongguoy) Consider removing these evaluation methods and instead
+  // make the fields accessible, and then evaluate the fields directly.
+
   /** Evaluates the scalar field eₘₙ at Point Q in a triangle.
     Point Q is specified by its barycentric coordinates.
     @param face         The face index of the triangle.
@@ -198,6 +201,14 @@ class ContactSurface {
       SurfaceFaceIndex face,
       const typename SurfaceMesh<T>::Barycentric& barycentric) const {
     return e_MN_->Evaluate(face, barycentric);
+  }
+
+  /** Evaluates the scalar field eₘₙ at the given vertex on the contact surface
+    mesh.
+    @param vertex       The index of the vertex in the mesh.
+   */
+  T EvaluateE_MN(SurfaceVertexIndex vertex) const {
+    return e_MN_->EvaluateAtVertex(vertex);
   }
 
   /** Evaluates the vector field ∇hₘₙ at Point Q on a triangle.
@@ -210,6 +221,15 @@ class ContactSurface {
       SurfaceFaceIndex face,
       const typename SurfaceMesh<T>::Barycentric& barycentric) const {
     return grad_h_MN_M_->Evaluate(face, barycentric);
+  }
+
+  /** Evaluates the vector field ∇hₘₙ at the given vertex on the contact surface
+    mesh.
+    @param vertex       The index of the vertex in the mesh.
+    @retval  grad_h_MN_M is the vector expressed in M's frame.
+   */
+  Vector3<T> EvaluateGrad_h_MN_M(SurfaceVertexIndex vertex) const {
+    return grad_h_MN_M_->EvaluateAtVertex(vertex);
   }
 
   /** Returns a reference to the surface mesh.
