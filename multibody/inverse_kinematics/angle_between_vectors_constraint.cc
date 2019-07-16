@@ -120,13 +120,8 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
   const math::RotationMatrix<T> R_AB =
       plant.CalcRelativeRotationMatrix(*context, frameA, frameB);
 
-  // Note: The code below casts the Vector3 of type `<double>` to type `<T>`
-  // which allows RotationMatrix::operator* to multiply the RotationMatrix of
-  // type `<T>` by a Vector3 of type `<T>`.
-  // Alternately, use Eigen's underlying overloaded operator*, e.g., as
-  // const Vector3<T> b_unit_A = R_AB.matrix() * b_unit_B;
-  // Either way, the explicit cast() helps communicate the intent of this code
-  // which is to preserve the derivative information in R_AB.
+  // Note: The cast() below of Vector3 from type `<double>` to type `<T>`
+  // helps preserve derivative information in R_AB (if it exists).
   const Vector3<T> b_unit_A = R_AB * b_unit_B.cast<T>();
   *y = a_unit_A.transpose() * b_unit_A;
   EvalConstraintGradient(*context, plant, frameA, frameB, a_unit_A, b_unit_B,

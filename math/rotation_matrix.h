@@ -139,7 +139,7 @@ class RotationMatrix {
   /// Note: B and A are no longer aligned.
   explicit RotationMatrix(const RollPitchYaw<T>& rpy) {
     // TODO(@mitiguy) Add publically viewable documentation on how Sherm and
-    // Goldstein's like to visualize/conceptualize rotation sequences.
+    // Goldstein like to visualize/conceptualize rotation sequences.
     const T& r = rpy.roll_angle();
     const T& p = rpy.pitch_angle();
     const T& y = rpy.yaw_angle();

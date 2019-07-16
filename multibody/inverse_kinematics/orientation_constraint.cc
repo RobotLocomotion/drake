@@ -121,15 +121,8 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
   const math::RotationMatrix<T> R_AbarBbar =
       plant.CalcRelativeRotationMatrix(*context, frameAbar, frameBbar);
 
-  // The code below casts a RotationMatrix of type `<double>` to type `<T>`
-  // which allows the RotationMatrix::operator* to multiply a RotationMatrix of
-  // type `<T>` by another RotationMatrix also of type `<T>`.
-  // Alternately, use Eigen's underlying overloaded operator*, e.g., as
-  // const Matrix3<T> m = R_AbarA.matrix().inverse() * R_AbarBbar.matrix()
-  //                    * R_BbarB.matrix();
-  // const math::RotationMatrix<T> R_AB(m);
-  // Either way, the explicit cast() helps communicate the intent of this code
-  // which is to preserve the derivative information in R_AbarBbar.
+  // Note: The casts below of RotationMatrix from type `<double>` to type `<T>`
+  // helps preserve derivative information in R_AbarBbar (if it exists).
   const math::RotationMatrix<T> R_AB = R_AbarA.cast<T>().inverse() * R_AbarBbar
                                      * R_BbarB.cast<T>();
   const Matrix3<T>& m = R_AB.matrix();
