@@ -210,15 +210,16 @@ GTEST_TEST(RadauIntegratorTest, QuadraticTest) {
   const double working_min = radau.get_working_minimum_step_size();
   QuadraticScalarSystem scaled_quadratic(4.0/working_min);
   auto scaled_quadratic_context = scaled_quadratic.CreateDefaultContext();
-  RadauIntegrator<double> radau2(
+  RadauIntegrator<double> scaled_radau(
       scaled_quadratic, scaled_quadratic_context.get());
   const double updated_t_final = working_min / 2;
-  radau2.set_maximum_step_size(updated_t_final);
-  radau2.set_fixed_step_mode(true);
-  radau2.Initialize();
-  ASSERT_TRUE(radau2.IntegrateWithSingleFixedStepToTime(updated_t_final));
+  scaled_radau.set_maximum_step_size(updated_t_final);
+  scaled_radau.set_fixed_step_mode(true);
+  scaled_radau.Initialize();
+  ASSERT_TRUE(scaled_radau.IntegrateWithSingleFixedStepToTime(updated_t_final));
 
-  const double updated_err_est = radau2.get_error_estimate()->get_vector()[0];
+  const double updated_err_est =
+      scaled_radau.get_error_estimate()->get_vector()[0];
 
   // Note the very tight tolerance used, which will likely not hold for
   // arbitrary values of C, t_final, or polynomial coefficients.
