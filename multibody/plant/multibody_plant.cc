@@ -696,6 +696,13 @@ MatrixX<T> MultibodyPlant<T>::MakeActuationMatrix() const {
 
 template <typename T>
 struct MultibodyPlant<T>::SceneGraphStub {
+  struct StubSceneGraphInspector {
+    const geometry::ProximityProperties* GetProximityProperties(
+        GeometryId) const {
+      return nullptr;
+    }
+  };
+
   static void Throw(const char* operation_name) {
     throw std::logic_error(fmt::format(
         "Cannot {} on a SceneGraph<symbolic::Expression>", operation_name));
@@ -715,6 +722,10 @@ struct MultibodyPlant<T>::SceneGraphStub {
   DRAKE_STUB(FrameId, RegisterFrame)
   DRAKE_STUB(GeometryId, RegisterGeometry)
   DRAKE_STUB(SourceId, RegisterSource)
+  const StubSceneGraphInspector model_inspector() const {
+    Throw("model_inspector");
+    return StubSceneGraphInspector();
+  }
 
 #undef DRAKE_STUB
 };
