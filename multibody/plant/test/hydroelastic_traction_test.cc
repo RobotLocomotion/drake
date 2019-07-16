@@ -609,10 +609,8 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     const RigidTransform<double> X_WA = X_WY * X_YA;
     const RigidTransform<double> X_WB = X_WY * X_YB;
     const RigidTransform<double> X_WM = X_WY * X_YM;
-    const SpatialVelocity<double> V_WA(X_WY.rotation() * V_YA.rotational(),
-        X_WY.rotation() * V_YA.translational());
-    const SpatialVelocity<double> V_WB(X_WY.rotation() * V_YB.rotational(),
-        X_WY.rotation() * V_YB.translational());
+    const SpatialVelocity<double> V_WA = X_WY.rotation() * V_YA;
+    const SpatialVelocity<double> V_WB = X_WY.rotation() * V_YB;
 
     // Set the calculator data.
     calculator_data_ = std::make_unique<
