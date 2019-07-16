@@ -13,8 +13,32 @@
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/math/rigid_transform.h"
 
+// TODO(DamrongGuoy): Move to geometry/query_results/test/.
 namespace drake {
 namespace geometry {
+
+// TODO(DamrongGuoy): Remove this helper class when ContactSurface allows
+//  direct access to e_MN_ and grad_h_MN_M_.
+template <typename T>
+class ContactSurfaceTester {
+ public:
+  explicit ContactSurfaceTester(const geometry::ContactSurface<T>& surface)
+      : surface_(surface) {}
+
+  const SurfaceMeshFieldLinear<T, T>& e_MN() const {
+    DRAKE_DEMAND(surface_.e_MN_ != nullptr);
+    return *(surface_.e_MN_);
+  }
+
+  const SurfaceMeshFieldLinear<Vector3<T>, T>& grad_h_MN_M() const {
+    DRAKE_DEMAND(surface_.grad_h_MN_M_ != nullptr);
+    return *(surface_.grad_h_MN_M_);
+  }
+
+ private:
+  const geometry::ContactSurface<T>& surface_;
+};
+
 namespace {
 
 using Eigen::AngleAxisd;
@@ -104,7 +128,8 @@ ContactSurface<T> TestContactSurface() {
 
   ContactSurface<T> contact_surface(id_M, id_N, std::move(surface_mesh),
                                     std::move(e_field),
-                                    std::move(grad_h_MN_M_field));
+                                    std::move(grad_h_MN_M_field),
+                                    math::RigidTransform<T>::Identity());
 
   // Start testing the ContactSurface<> data structure.
   EXPECT_EQ(id_M, contact_surface.id_M());
@@ -169,23 +194,44 @@ GTEST_TEST(ContactSurfaceTest, TestCopy) {
   EXPECT_EQ(original.EvaluateGrad_h_MN_M(f, b), copy.EvaluateGrad_h_MN_M(f, b));
 }
 
-GTEST_TEST(ContactSurfaceTest, SwapMAndN) {
+// Tests the constructor of ContactSurface that when id_M is greater than
+// id_N, it will swap M and N.
+GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
+  // Create the original contact surface for comparison later.
   const ContactSurface<double> original = TestContactSurface<double>();
-  ContactSurface<double> dut(original);
-
-  // We assume the copy works.
+  auto mesh = std::make_unique<SurfaceMesh<double>>(original.mesh());
+  SurfaceMesh<double>* mesh_pointer = mesh.get();
+  // TODO(DamrongGuoy): Remove `original_tester` when ContactSurface allows
+  //  direct access to e_MN and grad_h_MN_M.
+  const ContactSurfaceTester<double> original_tester(original);
+  std::vector<double> e_MN_values = original_tester.e_MN().values();
+  std::vector<Vector3<double>> grad_h_MN_M_values =
+      original_tester.grad_h_MN_M().values();
 
   const RigidTransformd X_NM{
       AngleAxisd{M_PI / 4, Vector3d{1, 2, 3}.normalized()}, Vector3d{1, 2, 3}};
-  dut.SwapMAndN(X_NM);
+  const RigidTransformd X_MN = X_NM.inverse();
+
+  // Create id_M after id_N, so id_M > id_N. This condition will trigger
+  // SwapMAndN in the constructor of ContactSurface.
+  auto id_N = GeometryId::get_new_id();
+  auto id_M = GeometryId::get_new_id();
+  ASSERT_LT(id_N, id_M);
+  ContactSurface<double> dut(
+      id_M, id_N, std::move(mesh),
+      std::make_unique<SurfaceMeshFieldLinear<double, double>>(
+          "e_MN", std::move(e_MN_values), mesh_pointer),
+      std::make_unique<SurfaceMeshFieldLinear<Vector3<double>, double>>(
+          "grad_h_MN_M", std::move(grad_h_MN_M_values), mesh_pointer),
+      X_MN);
 
   // We rely on the underlying meshes and mesh fields to *do* the right thing.
-  // These tests are just to confirm that those things changed that we expected
-  // to change (and not, where appropriate).
+  // These tests are just to confirm that those things changed where we
+  // expected to change (and not, where appropriate).
 
   // Ids have swapped.
-  EXPECT_EQ(dut.id_M(), original.id_N());
-  EXPECT_EQ(dut.id_N(), original.id_M());
+  EXPECT_EQ(dut.id_M(), id_N);
+  EXPECT_EQ(dut.id_N(), id_M);
 
   // Determines if two faces have the same indices in the same order.
   auto are_identical = [](const SurfaceFace& f1, const SurfaceFace& f2) {
@@ -200,8 +246,9 @@ GTEST_TEST(ContactSurfaceTest, SwapMAndN) {
 
   // Vertices have been transformed.
   for (SurfaceVertexIndex v(0); v < original.mesh().num_vertices(); ++v) {
-    const Vector3d r_NV = X_NM * original.mesh().vertex(v).r_MV();
-    EXPECT_TRUE(CompareMatrices(dut.mesh().vertex(v).r_MV(), r_NV));
+    const Vector3d expected_r_NV = X_NM * original.mesh().vertex(v).r_MV();
+    EXPECT_TRUE(CompareMatrices(dut.mesh().vertex(v).r_MV(), expected_r_NV,
+                                2.0 * std::numeric_limits<double>::epsilon()));
   }
 
   // Test the mesh fields by evaluating each field, once per face for an
