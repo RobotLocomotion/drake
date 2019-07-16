@@ -1,0 +1,41 @@
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+
+package(default_visibility = ["//visibility:private"])
+
+drake_cc_library(
+    name = "dense_data",
+    srcs = ["dense_data.cc"],
+    hdrs = ["dense_data.h"],
+    deps = [
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "dense_variable",
+    srcs = ["dense_variable.cc"],
+    hdrs = ["dense_variable.h"],
+    deps = [
+        ":dense_data",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_googletest(
+    name = "dense_component_unit_tests",
+    srcs = [
+        "test/dense_component_unit_tests.cc",
+        "test/dense_component_unit_tests.h",
+    ],
+    deps = [
+        ":dense_data",
+        ":dense_variable",
+        "//common:essential",
+    ],
+)
