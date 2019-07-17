@@ -83,7 +83,7 @@ supported for CMake builds using the "Unix Makefiles" generator.
 | Ubuntu 16.04 LTS (Xenial Xerus)  | 0.28  | 3.5   | | Clang 6.0         | OpenJDK 8  | R2017a            | 2.7    |
 |                                  |       |       | | GCC 5.4           |            |                   |        |
 +----------------------------------+       +-------+---------------------+------------+-------------------+--------+
-| Ubuntu 18.04 LTS (Bionic Beaver) |       | 3.10  | | Clang 6.0         | OpenJDK 11 | R2018b            | | 2.7  |
+| Ubuntu 18.04 LTS (Bionic Beaver) |       | 3.10  | | Clang 6.0         | OpenJDK 11 | Not Supported     | | 2.7  |
 |                                  |       |       | | GCC 7.3           |            |                   | | 3.6  |
 +----------------------------------+       +-------+---------------------+------------+                   +--------+
 | macOS High Sierra (10.13)        |       | 3.14  | | Apple LLVM 10.0.0 | Oracle 12  |                   | | 2.7  |
@@ -96,10 +96,6 @@ supported for CMake builds using the "Unix Makefiles" generator.
 CPython is the only Python implementation supported. On all platforms, Python 2.7
 is the default version. On Ubuntu, amd64 (i.e., x86_64) is the only supported
 architecture.
-
-The following configurations are presently untested in continuous integration:
-
--   macOS, Ubuntu Bionic: MATLAB
 
 Please review the following issues for current support roadmaps:
 

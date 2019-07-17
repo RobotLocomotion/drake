@@ -4,9 +4,8 @@
 Using Drake from MATLAB
 ***********************
 
-MATLAB code/bindings available in Drake are unit tested on MATLAB R2017a.
-Other MATLAB versions may work (namely R2016a or above) but are not officially
-supported.
+MATLAB code/bindings available in Drake are unit tested on MATLAB R2017a on
+Ubuntu 16.04 (Xenial Xerus).
 
 We are currently experimenting with a few solutions for implementing the
 MATLAB bindings for Drake's new C++ libraries.  You will find minimal
@@ -45,13 +44,3 @@ If so, modify your MATLAB installation as follows:
     sudo ln -s /usr/lib/x86_64-linux-gnu/libgfortran.so.3 libgfortran.so.3
     sudo ln -s /usr/lib/x86_64-linux-gnu/libstdc++.so.6 libstdc++.so.6
     sudo ln -s /usr/lib/x86_64-linux-gnu/libquadmath.so.0 libquadmath.so.0
-
-Original MATLAB
-===============
-
-Prior to 2016, Drake was built around a substantial base of MATLAB software.
-Most of that was removed from the head of git master during 2017.
-
-To view or use the original MATLAB implementation, you may use this tag:
-
-https://github.com/RobotLocomotion/drake/tree/last_sha_with_original_matlab
