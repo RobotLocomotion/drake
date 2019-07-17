@@ -91,8 +91,8 @@ TEST_F(IiwaKinematicConstraintTest, OrientationConstraint) {
     dq(i, 0) = i * 2 + 1;
     dq(i, 1) = std::sin(i + 0.2);
   }
-  /* tolerance for checking numerical gradient vs analytical gradient. The
-   * numerical gradient is only accurate up to 2E-6 */
+  // tolerance for checking numerical gradient vs analytical gradient.
+  // The numerical gradient is only accurate up to 2E-6.
   const double gradient_tol = 2E-6;
   TestKinematicConstraintEval(*constraint, constraint_from_autodiff, q, dq,
                               gradient_tol);
