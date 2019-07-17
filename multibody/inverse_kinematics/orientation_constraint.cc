@@ -121,8 +121,9 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
   const math::RotationMatrix<T> R_AbarBbar =
       plant.CalcRelativeRotationMatrix(*context, frameAbar, frameBbar);
 
-  // Note: The casts below of RotationMatrix from type `<double>` to type `<T>`
-  // helps preserve derivative information in R_AbarBbar (if it exists).
+  // Note: The expression below has quantities with different scalar types.
+  // The casts from `double` to `T` preserves derivative or symbolic information
+  // in R_AbarBbar (if it exists).
   const math::RotationMatrix<T> R_AB = R_AbarA.cast<T>().inverse() * R_AbarBbar
                                      * R_BbarB.cast<T>();
   const Matrix3<T>& m = R_AB.matrix();

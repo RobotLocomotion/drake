@@ -120,8 +120,9 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
   const math::RotationMatrix<T> R_AB =
       plant.CalcRelativeRotationMatrix(*context, frameA, frameB);
 
-  // Note: The cast() below of Vector3 from type `<double>` to type `<T>`
-  // helps preserve derivative information in R_AB (if it exists).
+  // Note: The expression below has quantities with different scalar types.
+  // The cast from `double` to `T` preserves derivative or symbolic information
+  // in R_AB (if it exists).
   const Vector3<T> b_unit_A = R_AB * b_unit_B.cast<T>();
   *y = a_unit_A.transpose() * b_unit_A;
   EvalConstraintGradient(*context, plant, frameA, frameB, a_unit_A, b_unit_B,
