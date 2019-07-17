@@ -62,7 +62,7 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     info_msg.timestamp = msg.timestamp;
 
     const PointPairContactInfo<T>& contact_info =
-        contact_results.contact_info(i);
+        contact_results.point_pair_contact_info(i);
 
     info_msg.body1_name = body_names_.at(contact_info.bodyA_index());
     info_msg.body2_name = body_names_.at(contact_info.bodyB_index());

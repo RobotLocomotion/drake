@@ -5,7 +5,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/plant/contact_info.h"
+#include "drake/multibody/plant/point_pair_contact_info.h"
 
 namespace drake {
 namespace multibody {
@@ -37,7 +37,7 @@ class ContactResults {
 
   /** Retrieves the ith PointPairContactInfo instance. The input index `i`
    must be in the range [0, get_num_contacts() - 1] or this method aborts. */
-  const PointPairContactInfo<T>& contact_info(int i) const;
+  const PointPairContactInfo<T>& point_pair_contact_info(int i) const;
 
  private:
   std::vector<PointPairContactInfo<T>> point_pairs_info_;

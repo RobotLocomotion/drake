@@ -64,6 +64,32 @@ GeometryId FindGeometry(
   return geometries[0];
 }
 
+// Creates a contact surface between the two given geometries.
+std::unique_ptr<ContactSurface<double>> CreateContactSurface(
+    GeometryId halfspace_id, GeometryId block_id) {
+// Create the surface mesh first.
+auto mesh = CreateSurfaceMesh();
+
+// Create the "e" field values (i.e., "hydroelastic pressure") using
+// negated "z" values.
+std::vector<double> e_MN(mesh->num_vertices());
+for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
+    e_MN[i] = -mesh->vertex(i).r_MV()[2];
+
+// Create the gradient of the "h" field, pointing toward what will be
+// geometry "M" (the halfspace).
+std::vector<Vector3<double>> h_MN_M(mesh->num_vertices(),
+    Vector3<double>(0, 0, -1));
+
+SurfaceMesh<double>* mesh_pointer = mesh.get();
+return std::make_unique<ContactSurface<double>>(
+    halfspace_id, block_id, std::move(mesh),
+    std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
+        "e_MN", std::move(e_MN), mesh_pointer),
+    std::make_unique<MeshFieldLinear<Vector3<double>, SurfaceMesh<double>>>(
+        "h_MN_M", std::move(h_MN_M), mesh_pointer));
+}
+
 // This fixture defines a contacting configuration between a box and a
 // half-space in a local frame, Y. In Frame Y, half-space Frame H is
 // positioned such that it passes through the origin and its normal Hz is
@@ -215,7 +241,9 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     plant_context_ =
         &diagram_->GetMutableSubsystemContext(plant, context_.get());
 
-    contact_surface_ = CreateContactSurface();
+    GeometryId halfspace_id = internal::FindGeometry(plant, "ground");
+    GeometryId block_id = internal::FindGeometry(plant, "box");
+    contact_surface_ = CreateContactSurface(halfspace_id, block_id);
 
     // See class documentation for description of Frames Y, B, and H.
     const RigidTransform<double>& X_WY = GetParam();
@@ -225,34 +253,6 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     const RigidTransform<double> X_WB = X_WY * X_YB;
     plant.SetFreeBodyPose(plant_context_, plant.GetBodyByName("ground"), X_WH);
     plant.SetFreeBodyPose(plant_context_, plant.GetBodyByName("box"), X_WB);
-  }
-
-  std::unique_ptr<ContactSurface<double>> CreateContactSurface() const {
-    // Get the geometry IDs for the ground halfspace and the block.
-    GeometryId halfspace_id = internal::FindGeometry(*plant_, "ground");
-    GeometryId block_id = internal::FindGeometry(*plant_, "box");
-
-    // Create the surface mesh first.
-    auto mesh = CreateSurfaceMesh();
-
-    // Create the "e" field values (i.e., "hydroelastic pressure") using
-    // negated "z" values.
-    std::vector<double> e_MN(mesh->num_vertices());
-    for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
-      e_MN[i] = -mesh->vertex(i).r_MV()[2];
-
-    // Create the gradient of the "h" field, pointing toward what will be
-    // geometry "M" (the halfspace).
-    std::vector<Vector3<double>> h_MN_M(mesh->num_vertices(),
-        Vector3<double>(0, 0, -1));
-
-    SurfaceMesh<double>* mesh_pointer = mesh.get();
-    return std::make_unique<ContactSurface<double>>(
-      halfspace_id, block_id, std::move(mesh),
-      std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-          "e_MN", std::move(e_MN), mesh_pointer),
-      std::make_unique<MeshFieldLinear<Vector3<double>, SurfaceMesh<double>>>(
-          "h_MN_M", std::move(h_MN_M), mesh_pointer));
   }
 
   const double tol_{10 * std::numeric_limits<double>::epsilon()};
@@ -768,6 +768,37 @@ const RigidTransform<double> poses[] = {
 INSTANTIATE_TEST_CASE_P(PoseInstantiations,
                         MultibodyPlantHydroelasticTractionTests,
                         ::testing::ValuesIn(poses));
+
+// Verifies that the HydroelasticContactInfo structure can be created.
+GTEST_TEST(Hydroelastics, ContactInfo) {
+  // Create the contact surface using a duplicated arbitrary ID: geometry IDs
+  // are irrelevant for this test.
+  GeometryId arbitrary_id;
+  std::unique_ptr<ContactSurface<double>> contact_surface =
+      CreateContactSurface(arbitrary_id, arbitrary_id);
+
+  // Create the calculator data, populated with dummy values since we're only
+  // testing that the structure can be created.
+  const RigidTransform<double> X_WA = RigidTransform<double>::Identity();
+  const RigidTransform<double> X_WB = RigidTransform<double>::Identity();
+  const RigidTransform<double> X_WM = RigidTransform<double>::Identity();
+  const SpatialVelocity<double> V_WA = SpatialVelocity<double>::Zero();
+  const SpatialVelocity<double> V_WB = SpatialVelocity<double>::Zero();
+  HydroelasticTractionCalculator<double>::Data data(
+      X_WA, X_WB, V_WA, V_WB, X_WM, contact_surface.get());
+
+  // Material properties are also dummies.
+  const double dissipation = 0.0;
+  const double mu_coulomb = 0.0;
+
+  // Create the HydroelasticContactInfo and validate the contact surface pointer
+  // is correct. Correctness of field values is validated elsewhere in this
+  // file.
+  HydroelasticTractionCalculator<double> calculator;
+  HydroelasticContactInfo<double> contact_info = calculator.ComputeContactInfo(
+      data, dissipation, mu_coulomb);
+  EXPECT_EQ(&contact_info.contact_surface(), contact_surface.get());
+}
 
 }  // namespace internal
 }  // namespace multibody
