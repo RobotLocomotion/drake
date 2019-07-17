@@ -124,7 +124,7 @@ TEST_F(CompliantContactModelTestDouble, ModelSingleCollision) {
 
   // Confirms the contact details are as expected.
   const auto& resultant = info.get_resultant_force();
-  SpatialForce<double> expected_spatial_force;
+  Vector6<double> expected_spatial_force;
 
   // NOTE: the *effective* Young's modulus of the contact is half of the
   // material Young's modulus.
@@ -222,7 +222,7 @@ TEST_F(CompliantHeterogeneousModelTest, ModelSingleCollision) {
 
   // Confirms the contact details are as expected.
   const auto& resultant = info.get_resultant_force();
-  SpatialForce<double> expected_spatial_force;
+  Vector6<double> expected_spatial_force;
 
   // NOTE: Each sphere is moved toward the other offset distance which makes
   // the penetration depth 2 * offset.
