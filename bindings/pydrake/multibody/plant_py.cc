@@ -14,11 +14,11 @@
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/plant/contact_info.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/point_pair_contact_info.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 
 PYBIND11_MAKE_OPAQUE(
