@@ -14,6 +14,9 @@ drake_cc_package_library(
     name = "hydroelastics",
     deps = [
         ":contact_surface_from_level_set",
+        ":hydroelastic_engine",
+        ":hydroelastic_field",
+        ":hydroelastic_field_sphere",
         ":level_set_field",
     ],
 )
@@ -33,6 +36,53 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "hydroelastic_engine",
+    srcs = [
+        "hydroelastic_engine.cc",
+    ],
+    hdrs = [
+        "hydroelastic_engine.h",
+    ],
+    deps = [
+        ":contact_surface_from_level_set",
+        ":hydroelastic_field",
+        ":hydroelastic_field_sphere",
+        ":level_set_field",
+        "//common:essential",
+        "//geometry:scene_graph",
+    ],
+)
+
+drake_cc_library(
+    name = "hydroelastic_field",
+    hdrs = [
+        "hydroelastic_field.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//geometry/proximity:mesh_field",
+    ],
+)
+
+drake_cc_library(
+    name = "hydroelastic_field_sphere",
+    hdrs = [
+        "hydroelastic_field_sphere.h",
+    ],
+    deps = [
+        ":hydroelastic_field",
+        "//common:essential",
+        "//geometry/proximity:make_unit_sphere_mesh",
+    ],
+)
+
+drake_cc_library(
+    name = "level_set_field",
+    hdrs = ["level_set_field.h"],
+    deps = ["//common:essential"],
+)
+
 drake_cc_googletest(
     name = "contact_surface_from_level_set_test",
     deps = [
@@ -44,10 +94,20 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_library(
-    name = "level_set_field",
-    hdrs = ["level_set_field.h"],
-    deps = ["//common"],
+drake_cc_googletest(
+    name = "hydroelastic_engine_test",
+    data = [
+        "test/sphere_vs_plane.sdf",
+    ],
+    deps = [
+        ":hydroelastic_engine",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//math:geometric_transform",
+        "//multibody/parsing",
+        "//multibody/plant",
+    ],
 )
 
 add_lint_tests()
