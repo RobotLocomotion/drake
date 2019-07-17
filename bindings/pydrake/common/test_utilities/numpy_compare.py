@@ -20,6 +20,7 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import (
     Expression, Formula, Monomial, Polynomial, Variable)
+from pydrake.polynomial import Polynomial as RawPolynomial
 
 
 class _UnwantedEquality(AssertionError):
@@ -80,6 +81,10 @@ def assert_equal(a, b):
         np.testing.assert_equal(a, b)
     else:
         _registry.get_comparator_from_arrays(a, b).assert_eq(a, b)
+
+
+def _raw_eq(a, b):
+    assert a == b, (a, b)
 
 
 def _raw_ne(a, b):
@@ -218,10 +223,16 @@ def _register_symbolic():
             lhs_type, rhs_type, sym_struct_eq, sym_struct_ne)
 
 
+def _register_polynomial():
+    _registry.register_comparator(
+        RawPolynomial, RawPolynomial, _raw_eq, _raw_ne)
+
+
 # Globals.
 _registry = _Registry()
 _register_autodiff()
 _register_symbolic()
+_register_polynomial()
 
 
 def check_all_types(check_func):
