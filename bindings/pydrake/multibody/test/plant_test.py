@@ -1097,7 +1097,8 @@ class TestPlant(unittest.TestCase):
         contact_results.AddContactInfo(contact_info)
         self.assertTrue(contact_results.num_contacts() == 1)
         self.assertTrue(
-            isinstance(contact_results.contact_info(0), PointPairContactInfo))
+            isinstance(contact_results.point_pair_contact_info(0),
+                       PointPairContactInfo))
 
     def test_contact_results_to_lcm(self):
         # ContactResultsToLcmSystem

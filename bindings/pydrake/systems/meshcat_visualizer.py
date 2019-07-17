@@ -422,7 +422,7 @@ class MeshcatContactVisualizer(LeafSystem):
         vis = self._meshcat_viz.vis
         prefix = self._meshcat_viz.prefix
         for i_contact in range(contact_results.num_contacts()):
-            contact_info_i = contact_results.contact_info(i_contact)
+            contact_info_i = contact_results.point_pair_contact_info(i_contact)
 
             # Do not display small forces.
             force_norm = np.linalg.norm(contact_info_i.contact_force())
