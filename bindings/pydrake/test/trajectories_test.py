@@ -25,7 +25,8 @@ class TestTrajectories(unittest.TestCase):
         pm1 = np.array([[Polynomial(1), Polynomial(2)]])
         pm2 = np.array([[Polynomial(2), Polynomial(0)]])
         pp = PiecewisePolynomial([pm1, pm2], [0, 1, 2])
-        np.testing.assert_equal(pp.getPolynomialMatrix(segment_index=0), pm1)
+        numpy_compare.assert_equal(pp.getPolynomialMatrix(segment_index=0),
+                                   pm1)
         pm3 = np.array([[Polynomial(5), Polynomial(10)]])
         pp.setPolynomialMatrixBlock(replacement=pm3, segment_index=1)
 

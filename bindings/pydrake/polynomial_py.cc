@@ -4,21 +4,15 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/polynomial_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/polynomial.h"
-
-PYBIND11_NUMPY_OBJECT_DTYPE(Polynomial<double>);
 
 namespace drake {
 namespace pydrake {
 
 PYBIND11_MODULE(polynomial, m) {
-  // constexpr auto& doc = pydrake_doc;
-
-  // using T = double;
-
   {
-    // TODO(eric.cousineau): Where to put this?
     using CoefficientType = double;
     using Class = Polynomial<CoefficientType>;
     constexpr auto& cls_doc = pydrake_doc.Polynomial;

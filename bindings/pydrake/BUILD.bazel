@@ -258,11 +258,15 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "trajectories_py",
-    cc_deps = ["//bindings/pydrake:documentation_pybind"],
+    cc_deps = [
+        ":polynomial_types_pybind",
+        "//bindings/pydrake:documentation_pybind",
+    ],
     cc_srcs = ["trajectories_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
+        "//bindings/pydrake:polynomial_py",
     ],
 )
 

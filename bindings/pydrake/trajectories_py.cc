@@ -4,12 +4,11 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/polynomial_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/trajectory.h"
-
-PYBIND11_NUMPY_OBJECT_DTYPE(Polynomial<double>);
 
 namespace drake {
 namespace pydrake {
@@ -18,6 +17,7 @@ PYBIND11_MODULE(trajectories, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::trajectories;
   constexpr auto& doc = pydrake_doc.drake.trajectories;
+  py::module::import("pydrake.polynomial");
 
   using T = double;
 
@@ -56,7 +56,7 @@ PYBIND11_MODULE(trajectories, m) {
       .def(py::init<>(), doc.PiecewisePolynomial.ctor.doc_0args)
       .def(py::init<const Eigen::Ref<const MatrixX<T>>&>(),
           doc.PiecewisePolynomial.ctor.doc_1args)
-      // Documentation for these methods are not building
+      // TODO(eric.cousineau): Add docstrings once #11800 is resolved.
       .def(py::init<std::vector<MatrixX<Polynomial<T>>> const&,
           std::vector<double> const&>())
       .def(py::init<std::vector<Polynomial<T>> const&,
