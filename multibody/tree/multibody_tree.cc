@@ -414,7 +414,8 @@ void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   const QuaternionFloatingMobilizer<T>& mobilizer =
       GetFreeBodyMobilizerOrThrow(body);
-  mobilizer.set_quaternion(context, Quaternion<T>(X_WB.linear()), state);
+  const RotationMatrix<T>& R_WB = X_WB.rotation();
+  mobilizer.set_quaternion(context, R_WB.ToQuaternion(), state);
   mobilizer.set_position(context, X_WB.translation(), state);
 }
 
@@ -916,15 +917,33 @@ VectorX<T> MultibodyTree<T>::CalcGravityGeneralizedForces(
 template <typename T>
 RigidTransform<T> MultibodyTree<T>::CalcRelativeTransform(
     const systems::Context<T>& context,
-    const Frame<T>& frame_A, const Frame<T>& frame_B) const {
+    const Frame<T>& frame_F,
+    const Frame<T>& frame_G) const {
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  const RigidTransform<T>& X_WA =
-      pc.get_X_WB(frame_A.body().node_index()) *
-      frame_A.CalcPoseInBodyFrame(context);
-  const RigidTransform<T>& X_WB =
-      pc.get_X_WB(frame_B.body().node_index()) *
-      frame_B.CalcPoseInBodyFrame(context);
-  return X_WA.inverse() * X_WB;
+  const Body<T>& A = frame_F.body();
+  const Body<T>& B = frame_G.body();
+  const RigidTransform<T>& X_WA = pc.get_X_WB(A.node_index());
+  const RigidTransform<T>& X_WB = pc.get_X_WB(B.node_index());
+  const RigidTransform<T> X_WF = X_WA * frame_F.CalcPoseInBodyFrame(context);
+  const RigidTransform<T> X_WG = X_WB * frame_G.CalcPoseInBodyFrame(context);
+  return X_WF.inverse() * X_WG;  // X_FG = X_FW * X_WG;
+}
+
+template <typename T>
+RotationMatrix<T> MultibodyTree<T>::CalcRelativeRotationMatrix(
+    const systems::Context<T>& context,
+    const Frame<T>& frame_F,
+    const Frame<T>& frame_G) const {
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const Body<T>& A = frame_F.body();
+  const Body<T>& B = frame_G.body();
+  const RotationMatrix<T>& R_WA = pc.get_X_WB(A.node_index()).rotation();
+  const RotationMatrix<T>& R_WB = pc.get_X_WB(B.node_index()).rotation();
+  const RotationMatrix<T> R_WF =
+      R_WA * frame_F.CalcPoseInBodyFrame(context).rotation();
+  const RotationMatrix<T> R_WG =
+      R_WB * frame_G.CalcPoseInBodyFrame(context).rotation();
+  return R_WF.inverse() * R_WG;  // R_FG = R_FW * R_WG;
 }
 
 template <typename T>
@@ -1228,9 +1247,8 @@ void MultibodyTree<T>::CalcJacobianSpatialVelocity(
   // If the expressed-in frame E is not the world frame, we need to perform
   // an additional operation.
   if (frame_E.index() != world_frame().index()) {
-    const RigidTransform<T> X_EW =
-        CalcRelativeTransform(context, frame_E, world_frame());
-    const Matrix3<T>& R_EW = X_EW.linear();
+    const RotationMatrix<T> R_EW =
+        CalcRelativeRotationMatrix(context, frame_E, world_frame());
     Jw_V_ABp_E->template topRows<3>() =
         R_EW * Jw_V_ABp_E->template topRows<3>();
     Jw_V_ABp_E->template bottomRows<3>() =
@@ -1287,8 +1305,8 @@ void MultibodyTree<T>::CalcJacobianAngularVelocity(
     // When frame E is not the world frame:
     // 1. Calculate B's angular velocity Jacobian in A, expressed in W.
     // 2. Re-express that Jacobian in frame_E (rather than frame_W).
-    const RotationMatrix<T> R_EW(
-        CalcRelativeTransform(context, frame_E, frame_W).linear());
+    const RotationMatrix<T> R_EW =
+        CalcRelativeRotationMatrix(context, frame_E, frame_W);
     *Js_w_AB_E = R_EW * (Js_w_WB_W - Js_w_WA_W);
   }
 }
@@ -1374,7 +1392,7 @@ void MultibodyTree<T>::CalcJacobianTranslationalVelocity(
   // Js_v_ABi_E = R_EW * (Js_v_WBi_W - Js_v_WAi_W).
   if (&frame_E != &frame_W) {
     const RotationMatrix<T> R_EW =
-        CalcRelativeTransform(context, frame_E, frame_W).rotation();
+        CalcRelativeRotationMatrix(context, frame_E, frame_W);
     // Extract the 3 x num_columns block that starts at row = 3 * i, column = 0.
     for (int i = 0;  i < num_points; ++i) {
       Js_v_ABi_E->template block<3, Eigen::Dynamic>(3 * i, 0, 3, num_columns) =

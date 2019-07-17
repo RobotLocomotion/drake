@@ -16,12 +16,12 @@ AutoDiffVecXd EvalOrientationConstraintAutoDiff(
     const Frame<AutoDiffXd>& frameAbar, const RotationMatrixd& R_AbarA,
     const Frame<AutoDiffXd>& frameBbar, const RotationMatrixd& R_BbarB) {
   Vector1<AutoDiffXd> y_autodiff(1);
-  const Matrix3<AutoDiffXd> R_AbarBbar =
-      plant.CalcRelativeTransform(context, frameAbar, frameBbar).linear();
-  const Matrix3<AutoDiffXd> R_AB =
-      R_AbarA.matrix().cast<AutoDiffXd>().transpose() * R_AbarBbar *
-      R_BbarB.matrix().cast<AutoDiffXd>();
-  y_autodiff(0) = R_AB.trace();
+  const math::RotationMatrix<AutoDiffXd> R_AbarBbar =
+      plant.CalcRelativeRotationMatrix(context, frameAbar, frameBbar);
+  const math::RotationMatrix<AutoDiffXd> R_AB =
+      R_AbarA.cast<AutoDiffXd>().transpose() * R_AbarBbar *
+      R_BbarB.cast<AutoDiffXd>();
+  y_autodiff(0) = R_AB.matrix().trace();
   return y_autodiff;
 }
 
@@ -91,8 +91,8 @@ TEST_F(IiwaKinematicConstraintTest, OrientationConstraint) {
     dq(i, 0) = i * 2 + 1;
     dq(i, 1) = std::sin(i + 0.2);
   }
-  /* tolerance for checking numerical gradient vs analytical gradient. The
-   * numerical gradient is only accurate up to 2E-6 */
+  // tolerance for checking numerical gradient vs analytical gradient.
+  // The numerical gradient is only accurate up to 2E-6.
   const double gradient_tol = 2E-6;
   TestKinematicConstraintEval(*constraint, constraint_from_autodiff, q, dq,
                               gradient_tol);
