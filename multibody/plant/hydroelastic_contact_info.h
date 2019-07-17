@@ -32,7 +32,7 @@ namespace multibody {
 template <typename T>
 class HydroelasticContactInfo {
  public:
-  // Neither assignment, nor copy construction is provided.
+  // Neither assignment nor copy construction is provided.
   HydroelasticContactInfo(const HydroelasticContactInfo&) = delete;
   HydroelasticContactInfo& operator=(
       const HydroelasticContactInfo& contact_info) = delete;

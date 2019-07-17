@@ -108,7 +108,6 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//geometry/query_results:contact_surface",
-        "//multibody/tree:multibody_tree_indexes",
     ],
 )
 
