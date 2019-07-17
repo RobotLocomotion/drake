@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/query_object.h"
@@ -822,6 +823,39 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // The cache index for the pose update cache entry.
   systems::CacheIndex pose_update_index_{};
 };
+
+#ifndef DRAKE_DOXYGEN_CXX
+// Specialization to allow compilation of user code with symbolic::Expression.
+// This specialization only provides stub methods that throw an exception at
+// runtime.
+template <>
+class SceneGraph<symbolic::Expression> {
+ public:
+  static FrameId world_frame_id() {
+    return SceneGraph<double>::world_frame_id();
+  }
+
+#define DRAKE_STUB(Ret, Name)                   \
+  template <typename... Args>                   \
+  Ret Name(Args...) const { Throw(#Name); return Ret(); }
+
+  DRAKE_STUB(void, AssignRole)
+  DRAKE_STUB(void, ExcludeCollisionsBetween)
+  DRAKE_STUB(void, ExcludeCollisionsWithin)
+  DRAKE_STUB(FrameId, RegisterFrame)
+  DRAKE_STUB(GeometryId, RegisterGeometry)
+  DRAKE_STUB(SourceId, RegisterSource)
+  DRAKE_STUB(SceneGraphInspector<symbolic::Expression>, model_inspector)
+
+ private:
+  static void Throw(const char* operation_name) {
+    throw std::logic_error(fmt::format(
+        "Cannot {} on a SceneGraph<symbolic::Expression>", operation_name));
+  }
+
+#undef DRAKE_STUB
+};
+#endif  // DRAKE_DOXYGEN_CXX
 
 }  // namespace geometry
 

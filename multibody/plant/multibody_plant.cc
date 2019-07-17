@@ -695,55 +695,9 @@ MatrixX<T> MultibodyPlant<T>::MakeActuationMatrix() const {
 }
 
 template <typename T>
-struct MultibodyPlant<T>::SceneGraphStub {
-  struct StubSceneGraphInspector {
-    const geometry::ProximityProperties* GetProximityProperties(
-        GeometryId) const {
-      return nullptr;
-    }
-  };
-
-  static void Throw(const char* operation_name) {
-    throw std::logic_error(fmt::format(
-        "Cannot {} on a SceneGraph<symbolic::Expression>", operation_name));
-  }
-
-  static FrameId world_frame_id() {
-    return SceneGraph<double>::world_frame_id();
-  }
-
-#define DRAKE_STUB(Ret, Name)                   \
-  template <typename... Args>                   \
-  Ret Name(Args...) const { Throw(#Name); return Ret(); }
-
-  DRAKE_STUB(void, AssignRole)
-  DRAKE_STUB(void, ExcludeCollisionsBetween)
-  DRAKE_STUB(void, ExcludeCollisionsWithin)
-  DRAKE_STUB(FrameId, RegisterFrame)
-  DRAKE_STUB(GeometryId, RegisterGeometry)
-  DRAKE_STUB(SourceId, RegisterSource)
-  const StubSceneGraphInspector model_inspector() const {
-    Throw("model_inspector");
-    return StubSceneGraphInspector();
-  }
-
-#undef DRAKE_STUB
-};
-
-template <typename T>
-typename MultibodyPlant<T>::MemberSceneGraph&
-MultibodyPlant<T>::member_scene_graph() {
+SceneGraph<T>& MultibodyPlant<T>::member_scene_graph() {
   DRAKE_THROW_UNLESS(scene_graph_ != nullptr);
   return *scene_graph_;
-}
-
-// Specialize this function so that we can use our Stub class; we cannot call
-// methods on SceneGraph<Expression> because they do not exist.
-template <>
-typename MultibodyPlant<symbolic::Expression>::MemberSceneGraph&
-MultibodyPlant<symbolic::Expression>::member_scene_graph() {
-  static never_destroyed<SceneGraphStub> stub_;
-  return stub_.access();
 }
 
 template <typename T>

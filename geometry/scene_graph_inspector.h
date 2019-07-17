@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/shape_specification.h"
@@ -400,6 +401,23 @@ class SceneGraphInspector {
 
   const GeometryState<T>* state_{nullptr};
 };
+
+// Specialization to allow compilation of user code with symbolic::Expression.
+// This specialization only provides stub methods that throw an exception at
+// runtime.
+#ifndef DRAKE_DOXYGEN_CXX
+template <>
+class SceneGraphInspector<symbolic::Expression> {
+ public:
+  const geometry::ProximityProperties* GetProximityProperties(
+      GeometryId) const {
+    throw std::logic_error(
+        "Cannot GetProximityProperties on a "
+        "SceneGraphInspector<symbolic::Expression>");
+    return nullptr;
+  }
+};
+#endif
 
 }  // namespace geometry
 }  // namespace drake

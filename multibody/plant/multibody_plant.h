@@ -3288,18 +3288,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // MultibodyTree::Finalize() was called.
   void FinalizePlantOnly();
 
-  // MemberSceneGraph is an alias for SceneGraph<T>, except when T = Expression.
-  struct SceneGraphStub;
-  using MemberSceneGraph = typename std::conditional<
-      std::is_same<T, symbolic::Expression>::value,
-      SceneGraphStub, geometry::SceneGraph<T>>::type;
-
   // Returns the SceneGraph that pre-Finalize geometry operations should
   // interact with.  In most cases, that will be whatever the user has passed
   // into RegisterAsSourceForSceneGraph.  However, when T = Expression, the
   // result will be a stub type instead.  (We can get rid of the stub once
   // SceneGraph supports symbolic::Expression.)
-  MemberSceneGraph& member_scene_graph();
+  geometry::SceneGraph<T>& member_scene_graph();
 
   // Helper to check when a deprecated user-provided `scene_graph` pointer is
   // passed in via public API (aside form `RegisterAsSourceForSceneGraph`).
@@ -3930,9 +3924,6 @@ struct AddMultibodyPlantSceneGraphResult final {
 #ifndef DRAKE_DOXYGEN_CXX
 // Forward-declare specializations, prior to DRAKE_DECLARE... below.
 // See the .cc file for an explanation why we specialize these methods.
-template <>
-typename MultibodyPlant<symbolic::Expression>::SceneGraphStub&
-MultibodyPlant<symbolic::Expression>::member_scene_graph();
 template <>
 std::vector<geometry::PenetrationAsPointPair<double>>
 MultibodyPlant<double>::CalcPointPairPenetrations(
