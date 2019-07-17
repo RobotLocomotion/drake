@@ -74,7 +74,7 @@ class RobotStateEncoder final : public LeafSystem<double> {
 
   // Computes the spatial force applied at the origin of Body1 by Body2,
   // expressed in Body1's local frame.
-  SpatialForce<double> GetSpatialForceActingOnBody1ByBody2InBody1Frame(
+  Vector6<double> GetSpatialForceActingOnBody1ByBody2InBody1Frame(
       const KinematicsResults<double>& kinematics_results,
       const ContactResults<double>& contact_results,
       const RigidBody<double>& body1, const RigidBody<double>& body2) const;

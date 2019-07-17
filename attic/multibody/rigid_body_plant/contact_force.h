@@ -101,8 +101,8 @@ class ContactForce {
 
    @returns the resultant spatial force.
    */
-  SpatialForce <T> get_spatial_force() const {
-    SpatialForce<T> spatial_force;
+  Vector6<T> get_spatial_force() const {
+    Vector6<T> spatial_force;
     spatial_force.template head<3>() = torque_;
     spatial_force.template tail<3>() = force_;
     return spatial_force;
