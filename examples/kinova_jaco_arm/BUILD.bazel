@@ -72,6 +72,25 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "move_jaco_ee",
+    srcs = ["move_jaco_ee.cc"],
+    data = [
+        "//manipulation/models/jaco_description:models",
+    ],
+    deps = [
+        ":jaco_lcm",
+        "//common:find_resource",
+        "//common:text_logging_gflags",
+        "//lcmtypes:jaco",
+        "//manipulation/planner:differential_inverse_kinematics",
+        "//math:geometric_transform",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "@lcm",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
