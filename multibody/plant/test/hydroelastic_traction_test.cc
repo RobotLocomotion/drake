@@ -87,8 +87,8 @@ return std::make_unique<ContactSurface<double>>(
     std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
         "e_MN", std::move(e_MN), mesh_pointer),
     std::make_unique<MeshFieldLinear<Vector3<double>, SurfaceMesh<double>>>(
-        "h_MN_M", std::move(h_MN_M), mesh_pointer,
-    RigidTransform<double>::Identity()));
+        "h_MN_M", std::move(h_MN_M), mesh_pointer),
+    RigidTransform<double>::Identity());
 }
 
 // This fixture defines a contacting configuration between a box and a
@@ -776,7 +776,7 @@ INSTANTIATE_TEST_CASE_P(PoseInstantiations,
 GTEST_TEST(Hydroelastics, ContactInfo) {
   // Create the contact surface using a duplicated arbitrary ID: geometry IDs
   // are irrelevant for this test.
-  GeometryId arbitrary_id;
+  GeometryId arbitrary_id = GeometryId::get_new_id();
   std::unique_ptr<ContactSurface<double>> contact_surface =
       CreateContactSurface(arbitrary_id, arbitrary_id);
 
