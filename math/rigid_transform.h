@@ -105,7 +105,7 @@ class RigidTransform {
   RigidTransform(const Eigen::Quaternion<T>& quaternion, const Vector3<T>& p)
       : RigidTransform(RotationMatrix<T>(quaternion), p) {}
 
-  /// Constructs a %RigidTransform from a AngleAxis and a position vector.
+  /// Constructs a %RigidTransform from an AngleAxis and a position vector.
   /// @param[in] theta_lambda an Eigen::AngleAxis whose associated axis (vector
   /// direction herein called `lambda`) is non-zero and finite, but which may or
   /// may not have unit length [i.e., `lambda.norm()` does not have to be 1].
@@ -213,6 +213,36 @@ class RigidTransform {
   /// Sets the %RotationMatrix portion of `this` %RigidTransform.
   /// @param[in] R rotation matrix relating frames A and B (e.g., `R_AB`).
   void set_rotation(const RotationMatrix<T>& R) { R_AB_ = R; }
+
+  /// Sets the rotation part of `this` %RigidTransform from a RollPitchYaw.
+  /// @param[in] rpy a %RollPitchYaw which is a Space-fixed (extrinsic) X-Y-Z
+  /// rotation with "roll-pitch-yaw" angles `[r, p, y]` or equivalently a Body-
+  /// fixed (intrinsic) Z-Y-X rotation with "yaw-pitch-roll" angles `[y, p, r]`.
+  /// @see RotationMatrix::RotationMatrix(const RollPitchYaw<T>&)
+  void set_rotation(const RollPitchYaw<T>& rpy) {
+    set_rotation(RotationMatrix<T>(rpy));
+  }
+
+  /// Sets the rotation part of `this` %RigidTransform from a Quaternion.
+  /// @param[in] quaternion a non-zero, finite quaternion which may or may not
+  /// have unit length [i.e., `quaternion.norm()` does not have to be 1].
+  /// @throws std::logic_error in debug builds if the rotation matrix
+  /// that is built from `quaternion` is invalid.
+  /// @see RotationMatrix::RotationMatrix(const Eigen::Quaternion<T>&)
+  void set_rotation(const Eigen::Quaternion<T>& quaternion) {
+    set_rotation(RotationMatrix<T>(quaternion));
+  }
+
+  /// Sets the rotation part of `this` %RigidTransform from an AngleAxis.
+  /// @param[in] theta_lambda an Eigen::AngleAxis whose associated axis (vector
+  /// direction herein called `lambda`) is non-zero and finite, but which may or
+  /// may not have unit length [i.e., `lambda.norm()` does not have to be 1].
+  /// @throws std::logic_error in debug builds if the rotation matrix
+  /// that is built from `theta_lambda` is invalid.
+  /// @see RotationMatrix::RotationMatrix(const Eigen::AngleAxis<T>&)
+  void set_rotation(const Eigen::AngleAxis<T>& theta_lambda) {
+    set_rotation(RotationMatrix<T>(theta_lambda));
+  }
 
   /// Returns `p_AoBo_A`, the position vector portion of `this` %RigidTransform,
   /// i.e., position vector from Ao (frame A's origin) to Bo (frame B's origin).

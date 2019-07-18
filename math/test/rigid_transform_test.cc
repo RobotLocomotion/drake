@@ -498,6 +498,42 @@ GTEST_TEST(RigidTransform, ConstructRigidTransformFromTranslation3) {
   EXPECT_TRUE(X_AB.IsExactlyEqualTo(X_AB_implicit));
 }
 
+// Test the RigidTransform set_rotation() methods.
+GTEST_TEST(RigidTransform, SetRotationMethods) {
+  const Vector3d p_AoBo_A(1.0, 2.0, 3.0);
+  RigidTransformd X_AB(p_AoBo_A);
+  EXPECT_TRUE(X_AB.rotation().IsExactlyIdentity());
+
+  // Test RigidTransform set_rotation() method with a RollPitchYaw.
+  const RollPitchYaw<double> rpy(0.1, 0.2, 0.3);
+  X_AB.set_rotation(rpy);
+  EXPECT_TRUE(X_AB.rotation().IsExactlyEqualTo(RotationMatrix<double>(rpy)));
+  EXPECT_TRUE(X_AB.translation().isApprox(p_AoBo_A, kEpsilon));
+  X_AB.set_rotation(RotationMatrix<double>::Identity());
+  EXPECT_TRUE(X_AB.rotation().IsExactlyIdentity());
+
+  // Test RigidTransform set_rotation() method with a Quaternion.
+  Eigen::Quaterniond quat(1, 2, 3, 4);
+  quat.normalize();
+  X_AB.set_rotation(quat);
+  EXPECT_TRUE(X_AB.rotation().IsExactlyEqualTo(RotationMatrix<double>(quat)));
+  EXPECT_TRUE(X_AB.translation().isApprox(p_AoBo_A, kEpsilon));
+  X_AB.set_rotation(RotationMatrix<double>::Identity());
+  EXPECT_TRUE(X_AB.rotation().IsExactlyIdentity());
+
+  // Test RigidTransform set_rotation() method with a Quaternion.
+  // Choose a unit vector using a Pythagorean quadruple, i.e., a set of integers
+  // a, b, c and d, such that a² + b² + c² = d².  One set is [1, 2, 2, 3].
+  const Eigen::Vector3d axis(1.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0);
+  const Eigen::AngleAxis<double> angle_axis(0.234, axis);
+  X_AB.set_rotation(angle_axis);
+  EXPECT_TRUE(
+      X_AB.rotation().IsExactlyEqualTo(RotationMatrix<double>(angle_axis)));
+  EXPECT_TRUE(X_AB.translation().isApprox(p_AoBo_A, kEpsilon));
+  X_AB.set_rotation(RotationMatrix<double>::Identity());
+  EXPECT_TRUE(X_AB.rotation().IsExactlyIdentity());
+}
+
 // Test multiplying a RigidTransform by an Eigen::Translation3 and vice-versa.
 GTEST_TEST(RigidTransform, OperatorMultiplyByTranslation3AndViceVersa) {
   const Vector3d p_AoBo_A(1.0, 2.0, 3.0);
