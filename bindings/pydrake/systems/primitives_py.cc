@@ -188,7 +188,7 @@ PYBIND11_MODULE(primitives, m) {
             &SignalLogger<T>::set_forced_publish_only,
             doc.SignalLogger.set_forced_publish_only.doc)
         .def("sample_times", &SignalLogger<T>::sample_times,
-            doc.SignalLogger.sample_times.doc)
+            py_reference_internal, doc.SignalLogger.sample_times.doc)
         .def("data", &SignalLogger<T>::data, py_reference_internal,
             doc.SignalLogger.data.doc)
         .def("reset", &SignalLogger<T>::reset, doc.SignalLogger.reset.doc);

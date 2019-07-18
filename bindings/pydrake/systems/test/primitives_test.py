@@ -138,14 +138,14 @@ class TestGeneral(unittest.TestCase):
         # Verify that t and x retain their values after systems are deleted.
         t_copy = t.copy()
         x_copy = x.copy()
-        del(builder)
-        del(integrator)
-        del(logger_periodic)
-        del(logger_per_step)
-        del(logger_per_step_2)
-        del(diagram)
-        del(simulator)
-        del(source)
+        del builder
+        del integrator
+        del logger_periodic
+        del logger_per_step
+        del logger_per_step_2
+        del diagram
+        del simulator
+        del source
         gc.collect()
         self.assertTrue((t == t_copy).all())
         self.assertTrue((x == x_copy).all())
