@@ -1,3 +1,4 @@
+import gc
 import unittest
 import numpy as np
 
@@ -133,6 +134,21 @@ class TestGeneral(unittest.TestCase):
         self.assertTrue(t.shape[0] == np.floor(kTime / kPeriod) + 1.)
 
         logger_per_step.reset()
+
+        # Verify that t and x retain their values after systems are deleted.
+        t_copy = t.copy()
+        x_copy = x.copy()
+        del builder
+        del integrator
+        del logger_periodic
+        del logger_per_step
+        del logger_per_step_2
+        del diagram
+        del simulator
+        del source
+        gc.collect()
+        self.assertTrue((t == t_copy).all())
+        self.assertTrue((x == x_copy).all())
 
     def test_linear_affine_system(self):
         # Just make sure linear system is spelled correctly.
