@@ -87,7 +87,8 @@ return std::make_unique<ContactSurface<double>>(
     std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
         "e_MN", std::move(e_MN), mesh_pointer),
     std::make_unique<MeshFieldLinear<Vector3<double>, SurfaceMesh<double>>>(
-        "h_MN_M", std::move(h_MN_M), mesh_pointer));
+        "h_MN_M", std::move(h_MN_M), mesh_pointer,
+    RigidTransform<double>::Identity()));
 }
 
 // This fixture defines a contacting configuration between a box and a
@@ -569,6 +570,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     const RigidTransform<double> X_YA = RigidTransform<double>::Identity();
     const RigidTransform<double> X_YB = RigidTransform<double>::Identity();
     const RigidTransform<double> X_YM = RigidTransform<double>::Identity();
+    const RigidTransform<double> X_MN = RigidTransform<double>::Identity();
 
     // Note: this test does not require valid GeometryIds.
     const GeometryId null_id;
@@ -593,7 +595,8 @@ public ::testing::TestWithParam<RigidTransform<double>> {
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
           "e_MN", std::move(e_MN), mesh_pointer),
       std::make_unique<MeshFieldLinear<Vector3<double>, SurfaceMesh<double>>>(
-          "h_MN_M", std::move(h_MN_M), mesh_pointer));
+          "h_MN_M", std::move(h_MN_M), mesh_pointer),
+      X_MN);
 
     // Set the velocities to correspond to one body fixed and one body
     // free so that we can test the slip velocity. Additionally, we'll

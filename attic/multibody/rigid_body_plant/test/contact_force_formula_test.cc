@@ -164,7 +164,7 @@ TEST_F(ContactFormulaTest, ZeroVelocityCollision) {
   double expected_force_magnitude = kPenetrationDepth * youngs_modulus_;
   const auto info = contacts_.get_contact_info(0);
   const auto& resultant = info.get_resultant_force();
-  SpatialForce<double> expected_spatial_force;
+  Vector6<double> expected_spatial_force;
   // This force should be pushing sphere1 to the left.
   expected_spatial_force << 0, 0, 0, -expected_force_magnitude, 0, 0;
   ASSERT_TRUE(CompareMatrices(resultant.get_spatial_force(),
@@ -198,7 +198,7 @@ TEST_F(ConvergingContactFormulaTest, ConvergingContactTest) {
       kPenetrationDepth * youngs_modulus_ * (1 + dissipation_ * get_x_dot());
   const auto info = contacts_.get_contact_info(0);
   const auto& resultant = info.get_resultant_force();
-  SpatialForce<double> expected_spatial_force;
+  Vector6<double> expected_spatial_force;
   // This force should be pushing sphere1 to the left.
   expected_spatial_force << 0, 0, 0, -expected_force_magnitude, 0, 0;
   ASSERT_TRUE(CompareMatrices(resultant.get_spatial_force(),
@@ -235,7 +235,7 @@ TEST_F(DivergingContactFormulaTest, DivergingContactTest) {
       kPenetrationDepth * youngs_modulus_ * (1 + dissipation_ * get_x_dot());
   const auto info = contacts_.get_contact_info(0);
   const auto& resultant = info.get_resultant_force();
-  SpatialForce<double> expected_spatial_force;
+  Vector6<double> expected_spatial_force;
   // This force should be pushing to the left.
   expected_spatial_force << 0, 0, 0, -expected_force_magnitude, 0, 0;
   ASSERT_TRUE(CompareMatrices(resultant.get_spatial_force(),
@@ -305,7 +305,7 @@ TEST_F(StictionContactFormulaTest, StictionContactTest) {
   double expected_tangent_magnitude = expected_mu * expected_normal_magnitude;
   const auto info = contacts_.get_contact_info(0);
   const auto& resultant = info.get_resultant_force();
-  SpatialForce<double> expected_spatial_force;
+  Vector6<double> expected_spatial_force;
   // The normal component should be pointing to the left (-x) and the tangential
   // component should be pointing up (+y).
   expected_spatial_force << 0, 0, 0, -expected_normal_magnitude,
@@ -346,7 +346,7 @@ TEST_F(TransitionContactFormulaTest, TransitionContactTest) {
   double expected_tangent_magnitude = expected_mu * expected_normal_magnitude;
   const auto info = contacts_.get_contact_info(0);
   const auto& resultant = info.get_resultant_force();
-  SpatialForce<double> expected_spatial_force;
+  Vector6<double> expected_spatial_force;
   // The normal component should be pointing to the left (-x) and the tangential
   // component should be pointing up (+y).
   expected_spatial_force << 0, 0, 0, -expected_normal_magnitude,
@@ -385,7 +385,7 @@ TEST_F(SlidingContactFormulaTest, SlidingContactTest) {
   double expected_tangent_magnitude = expected_mu * expected_normal_magnitude;
   const auto info = contacts_.get_contact_info(0);
   const auto& resultant = info.get_resultant_force();
-  SpatialForce<double> expected_spatial_force;
+  Vector6<double> expected_spatial_force;
   // The normal component should be pointing to the left (-x) and the tangential
   // component should be pointing up (+y).
   expected_spatial_force << 0, 0, 0, -expected_normal_magnitude,
@@ -427,7 +427,7 @@ TEST_F(SlidingSpinContactFormulaTest, SlidingSpinContactTest) {
   double expected_tangent_magnitude = expected_mu * expected_normal_magnitude;
   const auto info = contacts_.get_contact_info(0);
   const auto& resultant = info.get_resultant_force();
-  SpatialForce<double> expected_spatial_force;
+  Vector6<double> expected_spatial_force;
   // The normal component should be pointing to the left (-x) and the tangential
   // component should be pointing up (+y).
   expected_spatial_force << 0, 0, 0, -expected_normal_magnitude,

@@ -35,13 +35,13 @@ using multibody::joints::FloatingBaseType;
 static ContactForce<double> TransformContactWrench(
     const RigidBodyFrame<double>& sensor_info,
     const Isometry3<double>& body_pose,
-    const SpatialForce<double>& spatial_force_in_sensor_frame) {
+    const Vector6<double>& spatial_force_in_sensor_frame) {
   Isometry3<double> sensor_pose =
       body_pose * sensor_info.get_transform_to_body();
   Isometry3<double> sensor_to_world_aligned_sensor = sensor_pose;
   sensor_to_world_aligned_sensor.translation().setZero();
 
-  SpatialForce<double> spatial_force_in_world_aligned_sensor =
+  Vector6<double> spatial_force_in_world_aligned_sensor =
       transformSpatialForce(sensor_to_world_aligned_sensor,
                             spatial_force_in_sensor_frame);
 

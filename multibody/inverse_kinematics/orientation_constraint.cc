@@ -118,14 +118,20 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
   const Frame<T>& frameAbar = plant.get_frame(frameAbar_index);
   const Frame<T>& frameBbar = plant.get_frame(frameBbar_index);
 
-  const Matrix3<T> R_AbarBbar =
-      plant.CalcRelativeTransform(*context, frameAbar, frameBbar).linear();
-  const Matrix3<T> R_AB =
-      R_AbarA.inverse().matrix() * R_AbarBbar * R_BbarB.matrix();
-  const Vector3<T> r_AB{R_AB(1, 2) - R_AB(2, 1), R_AB(2, 0) - R_AB(0, 2),
-                        R_AB(0, 1) - R_AB(1, 0)};
-  EvalConstraintGradient(*context, plant, frameAbar, frameBbar, R_AbarA, R_AB,
-                         r_AB, x, y);
+  const math::RotationMatrix<T> R_AbarBbar =
+      plant.CalcRelativeRotationMatrix(*context, frameAbar, frameBbar);
+
+  // Note: The expression below has quantities with different scalar types.
+  // The casts from `double` to `T` preserves derivative or symbolic information
+  // in R_AbarBbar (if it exists).
+  const math::RotationMatrix<T> R_AB = R_AbarA.cast<T>().inverse() * R_AbarBbar
+                                     * R_BbarB.cast<T>();
+  const Matrix3<T>& m = R_AB.matrix();
+  const Vector3<T> r_AB{m(1, 2) - m(2, 1),
+                        m(2, 0) - m(0, 2),
+                        m(0, 1) - m(1, 0)};
+  EvalConstraintGradient(*context, plant, frameAbar, frameBbar, R_AbarA,
+                         R_AB.matrix(), r_AB, x, y);
 }
 
 void OrientationConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

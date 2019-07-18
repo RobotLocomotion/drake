@@ -16,6 +16,7 @@
 #include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 
 namespace drake {
 
@@ -167,7 +168,9 @@ using WrenchVector = Eigen::Matrix<Scalar, 6, 1>;
 /// SpatialForce the rotational force can be a pure torque or the accumulation
 /// of moments and need not necessarily be a function of the force term.
 template <typename Scalar>
-using SpatialForce = Eigen::Matrix<Scalar, 6, 1>;
+using SpatialForce
+DRAKE_DEPRECATED("2019-10-15", "Please use Vector6<> instead.")
+    = Eigen::Matrix<Scalar, 6, 1>;
 
 /// EigenSizeMinPreferDynamic<a, b>::value gives the min between compile-time
 /// sizes @p a and @p b. 0 has absolute priority, followed by 1, followed by

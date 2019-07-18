@@ -1,5 +1,7 @@
 #include "drake/multibody/triangle_quadrature/triangle_quadrature.h"
 
+#include "drake/multibody/math/spatial_force.h"
+
 // Default template instantiations below.
 namespace drake {
 namespace multibody {

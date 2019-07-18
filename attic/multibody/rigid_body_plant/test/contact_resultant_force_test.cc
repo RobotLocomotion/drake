@@ -76,7 +76,7 @@ GTEST_TEST(ContactResultantForceTest,
   ref_point << 0, 0, 3;
   ContactForce<double> cforce(pos, normal, force, torque);
 
-  SpatialForce<double> eq_wrench;
+  Vector6<double> eq_wrench;
   Isometry3<double> transform(Isometry3<double>::Identity());
   transform.translation() = pos - ref_point;
   eq_wrench = transformSpatialForce(transform, cforce.get_spatial_force());
@@ -100,7 +100,7 @@ GTEST_TEST(ContactResultantForceTest, ForceAccumulationTest) {
   normal = normal_force.normalized();
   torque << 6, 7, 8;
   pos << 10, 11, 12;
-  SpatialForce<double> full_wrench, torque_free_wrench;
+  Vector6<double> full_wrench, torque_free_wrench;
   full_wrench.template head<3>() = torque;
   full_wrench.template tail<3>() = force;
   torque_free_wrench.template head<3>() << 0, 0, 0;

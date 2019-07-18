@@ -40,6 +40,7 @@ drake_cc_library(
     deps = [
         ":triangle_quadrature_rules",
         "//common:essential",
+        "//multibody/math:spatial_force",
     ],
 )
 
