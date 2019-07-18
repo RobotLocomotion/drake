@@ -787,7 +787,8 @@ GTEST_TEST(Hydroelastics, ContactInfo) {
   HydroelasticTractionCalculator<double>::Data data(
       X_WA, X_WB, V_WA, V_WB, X_WM, contact_surface.get());
 
-  // Material properties are also dummies.
+  // Material properties are also dummies (the test will be unaffected by their
+  // settings).
   const double dissipation = 0.0;
   const double mu_coulomb = 0.0;
 

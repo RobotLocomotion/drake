@@ -23,7 +23,7 @@ namespace multibody {
     - The slip speed at every point on the contact surface.
 
  The two geometries, denoted M and N (and obtainable via
- `contact_surface().geom_M()` and `contact_surface().geom_M()`) are attached to
+ `contact_surface().id_M()` and `contact_surface().id_N()`) are attached to
  bodies A and B, respectively.
 
  @tparam T Must be one of drake's default scalar types.

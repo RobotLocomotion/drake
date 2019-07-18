@@ -111,6 +111,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("num_contacts", &Class::num_contacts, cls_doc.num_contacts.doc)
         .def("AddContactInfo", &Class::AddContactInfo,
             py::arg("point_pair_info"), cls_doc.AddContactInfo.doc)
+        .def("contact_info", &Class::point_pair_contact_info, py::arg("i"),
+            (std::string("(Deprecated.) ") +
+            cls_doc.point_pair_contact_info.doc))
         .def("point_pair_contact_info", &Class::point_pair_contact_info,
             py::arg("i"), cls_doc.point_pair_contact_info.doc);
     AddValueInstantiation<Class>(m);
