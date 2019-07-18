@@ -63,16 +63,23 @@ AngleBetweenVectorsConstraint::AngleBetweenVectorsConstraint(
 
 template <typename T>
 void EvalConstraintGradient(const systems::Context<T>&,
-                            const MultibodyPlant<T>&, const Frame<T>&,
-                            const Frame<T>&, const Eigen::Vector3d&,
-                            const Eigen::Vector3d&, const Matrix3<T>&,
-                            const Eigen::Ref<const VectorX<T>>&, VectorX<T>*) {}
+                            const MultibodyPlant<T>&,
+                            const Frame<T>&,
+                            const Frame<T>&,
+                            const Eigen::Vector3d&,
+                            const Eigen::Vector3d&,
+                            const math::RotationMatrix<T>&,
+                            const Eigen::Ref<const VectorX<T>>&,
+                            VectorX<T>*) {}
 
 void EvalConstraintGradient(
     const systems::Context<double>& context,
-    const MultibodyPlant<double>& plant, const Frame<double>& frameA,
-    const Frame<double>& frameB, const Eigen::Vector3d& a_unit_A,
-    const Eigen::Vector3d& b_unit_B, const Matrix3<double>& R_AB,
+    const MultibodyPlant<double>& plant,
+    const Frame<double>& frameA,
+    const Frame<double>& frameB,
+    const Eigen::Vector3d& a_unit_A,
+    const Eigen::Vector3d& b_unit_B,
+    const math::RotationMatrix<double>& R_AB,
     const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) {
   // The constraint function is
   //   g(q) = a_unit_Aᵀ * R_AB(q) * b_unit_B.
@@ -126,7 +133,7 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
   const Vector3<T> b_unit_A = R_AB * b_unit_B.cast<T>();
   *y = a_unit_A.transpose() * b_unit_A;
   EvalConstraintGradient(*context, plant, frameA, frameB, a_unit_A, b_unit_B,
-                         R_AB.matrix(), x, y);
+                         R_AB, x, y);
 }
 
 void AngleBetweenVectorsConstraint::DoEval(

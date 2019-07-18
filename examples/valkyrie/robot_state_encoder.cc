@@ -3,6 +3,7 @@
 #include <list>
 
 #include "drake/common/constants.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/rigid_body_plant/contact_force.h"
 #include "drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h"
 #include "drake/multibody/rigid_body_plant/contact_results.h"
@@ -179,10 +180,10 @@ RobotStateEncoder::GetSpatialForceActingOnBody1ByBody2InBody1Frame(
 
   SpatialForce<double> spatial_force_in_world_aligned_body_frame =
       calc.ComputeResultant(reference_point).get_spatial_force();
-  Isometry3<double> world_aligned_to_body_frame(Isometry3<double>::Identity());
-  world_aligned_to_body_frame.linear() =
-      kinematics_results.get_pose_in_world(body1).linear().transpose();
-  return transformSpatialForce(world_aligned_to_body_frame,
+  const math::RotationMatrix<double> R(
+      kinematics_results.get_pose_in_world(body1).linear());
+  const math::RigidTransform<double> world_aligned_to_body_frame(R.transpose());
+  return transformSpatialForce(world_aligned_to_body_frame.GetAsIsometry3(),
                                spatial_force_in_world_aligned_body_frame);
 }
 

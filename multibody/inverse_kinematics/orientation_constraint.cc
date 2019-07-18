@@ -56,20 +56,25 @@ OrientationConstraint::OrientationConstraint(
 
 template <typename T>
 void EvalConstraintGradient(const systems::Context<T>&,
-                            const MultibodyPlant<T>&, const Frame<T>&,
+                            const MultibodyPlant<T>&,
+                            const Frame<T>&,
                             const Frame<T>&,
                             const math::RotationMatrix<double>&,
-                            const Matrix3<T>& R_AB, const Vector3<T>&,
+                            const math::RotationMatrix<T>& R_AB,
+                            const Vector3<T>&,
                             const Eigen::Ref<const VectorX<T>>&,
                             VectorX<T>* y) {
-  (*y)(0) = R_AB.trace();
+  (*y)(0) = R_AB.matrix().trace();
 }
 
 void EvalConstraintGradient(
     const systems::Context<double>& context,
-    const MultibodyPlant<double>& plant, const Frame<double>& frameAbar,
-    const Frame<double>& frameBbar, const math::RotationMatrix<double>& R_AbarA,
-    const Matrix3<double>& R_AB, const Vector3<double>& r_AB,
+    const MultibodyPlant<double>& plant,
+    const Frame<double>& frameAbar,
+    const Frame<double>& frameBbar,
+    const math::RotationMatrix<double>& R_AbarA,
+    const math::RotationMatrix<double>& R_AB,
+    const Vector3<double>& r_AB,
     const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) {
   // The constraint function is
   //  g(q) = tr(R_AB(q)).
@@ -103,7 +108,7 @@ void EvalConstraintGradient(
   const Eigen::MatrixXd Jq_w_AB =
       R_AbarA.inverse().matrix() * Jq_V_AbarBbar.topRows<3>();
   *y = math::initializeAutoDiffGivenGradientMatrix(
-      Vector1d(R_AB.trace()),
+      Vector1d(R_AB.matrix().trace()),
       r_AB.transpose() * Jq_w_AB * math::autoDiffToGradientMatrix(x));
 }
 
@@ -131,7 +136,7 @@ void DoEvalGeneric(const MultibodyPlant<T>& plant, systems::Context<T>* context,
                         m(2, 0) - m(0, 2),
                         m(0, 1) - m(1, 0)};
   EvalConstraintGradient(*context, plant, frameAbar, frameBbar, R_AbarA,
-                         R_AB.matrix(), r_AB, x, y);
+                         R_AB, r_AB, x, y);
 }
 
 void OrientationConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

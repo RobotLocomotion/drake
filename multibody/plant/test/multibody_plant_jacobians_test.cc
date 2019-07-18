@@ -243,11 +243,11 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
   // Compute V_WEp.
   const Body<AutoDiffXd>& end_effector_link_autodiff =
       plant_autodiff_->get_body(end_effector_link_->index());
-  const RigidTransform<AutoDiffXd>& X_WE_autodiff =
+  const RotationMatrix<AutoDiffXd>& R_WE_autodiff =
       plant_autodiff_->EvalBodyPoseInWorld(*context_autodiff_,
-                                           end_effector_link_autodiff);
+          end_effector_link_autodiff).rotation();
   const Vector3<AutoDiffXd> p_EoEp_W =
-      X_WE_autodiff.linear() * p_EoEp_E.cast<AutoDiffXd>();
+      R_WE_autodiff * p_EoEp_E.cast<AutoDiffXd>();
   const SpatialVelocity<AutoDiffXd> V_WEp_autodiff =
       plant_autodiff_->EvalBodySpatialVelocityInWorld(*context_autodiff_,
                          end_effector_link_autodiff).Shift(p_EoEp_W);
