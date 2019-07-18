@@ -189,7 +189,8 @@ PYBIND11_MODULE(primitives, m) {
             doc.SignalLogger.set_forced_publish_only.doc)
         .def("sample_times", &SignalLogger<T>::sample_times,
             doc.SignalLogger.sample_times.doc)
-        .def("data", &SignalLogger<T>::data, doc.SignalLogger.data.doc)
+        .def("data", &SignalLogger<T>::data, py_reference_internal,
+            doc.SignalLogger.data.doc)
         .def("reset", &SignalLogger<T>::reset, doc.SignalLogger.reset.doc);
 
     DefineTemplateClassWithDefault<SymbolicVectorSystem<T>, LeafSystem<T>>(m,
