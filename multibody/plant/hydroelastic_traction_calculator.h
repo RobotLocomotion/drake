@@ -1,12 +1,14 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/math/spatial_force.h"
 #include "drake/multibody/math/spatial_velocity.h"
+#include "drake/multibody/plant/hydroelastic_contact_info.h"
 
 namespace drake {
 namespace multibody {
@@ -14,8 +16,9 @@ namespace multibody {
 namespace internal {
 
 /**
- A class for computing the spatial forces on rigid bodies in a MultibodyPlant
- using the hydroelastic contact model, as described in:
+ A class for computing the spatial forces and related reporting data (like
+ pressure, traction, and slip) on rigid bodies under the hydroelastic contact
+ model, as described in:
 
  [Elandt, 2019]  R. Elandt, E. Drumwright, M. Sherman, and A. Ruina.
  A pressure field model for fast, robust approximation of net contact force and
@@ -63,7 +66,7 @@ class HydroelasticTractionCalculator {
     /// The pose of Geometry `surface.M_id()` in the world frame.
     const math::RigidTransform<T> X_WM;
 
-    /// A pointer to the ContactSurface that must be maintained for the life
+    /// A reference to the ContactSurface that must be maintained for the life
     /// of this object.
     const geometry::ContactSurface<T>& surface;
 
@@ -101,6 +104,25 @@ class HydroelasticTractionCalculator {
        const Data& data, double dissipation, double mu_coulomb,
        multibody::SpatialForce<T>* F_Ao_W,
        multibody::SpatialForce<T>* F_Bo_W) const;
+
+  /**
+   Computes reporting information from the hydroelastic model.
+   @param data Relevant kinematic data.
+   @param dissipation the nonnegative coefficient (in s/m) for dissipating
+          energy along the direction of the surface normals.
+   @param mu_coulomb the nonnegative coefficient for Coulomb friction.
+   @return the reporting information via the HydroelasticContactInfo data
+           structure.
+   */
+  HydroelasticContactInfo<T> ComputeContactInfo(
+       const Data& data, double dissipation, double mu_coulomb) const {
+     ContactReportingFields fields =
+         CreateReportingFields(data, dissipation, mu_coulomb);
+     return HydroelasticContactInfo<T>(
+         &data.surface,
+         std::move(fields.traction_A_W),
+         std::move(fields.vslip_AB_W));
+  }
 
  private:
   // TODO(edrumwri): Consider methods that expose inner structures of

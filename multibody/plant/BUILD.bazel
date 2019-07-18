@@ -16,15 +16,16 @@ package(
 drake_cc_package_library(
     name = "plant",
     deps = [
-        ":contact_info",
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
         ":externally_applied_spatial_force",
+        ":hydroelastic_contact_info",
         ":hydroelastic_traction",
         ":implicit_stribeck_solver",
         ":implicit_stribeck_solver_results",
         ":multibody_plant_core",
+        ":point_pair_contact_info",
     ],
 )
 
@@ -68,12 +69,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "contact_info",
+    name = "point_pair_contact_info",
     srcs = [
-        "contact_info.cc",
+        "point_pair_contact_info.cc",
     ],
     hdrs = [
-        "contact_info.h",
+        "point_pair_contact_info.h",
     ],
     deps = [
         "//common:default_scalars",
@@ -93,6 +94,20 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "hydroelastic_contact_info",
+    srcs = [
+        "hydroelastic_contact_info.cc",
+    ],
+    hdrs = [
+        "hydroelastic_contact_info.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//geometry/query_results:contact_surface",
     ],
 )
 
@@ -118,7 +133,7 @@ drake_cc_library(
         "contact_results.h",
     ],
     deps = [
-        ":contact_info",
+        ":point_pair_contact_info",
         "//common:default_scalars",
     ],
 )
@@ -170,6 +185,7 @@ drake_cc_library(
         "hydroelastic_traction_calculator.h",
     ],
     deps = [
+        ":hydroelastic_contact_info",
         "//geometry/proximity:mesh_field",
         "//geometry/query_results:contact_surface",
         "//math",
