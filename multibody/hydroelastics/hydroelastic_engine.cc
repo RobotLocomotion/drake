@@ -156,17 +156,8 @@ optional<ContactSurface<T>> HydroelasticEngine<T>::CalcContactSurface(
   // In consistency with ContactSurface's contract, the first id must belong
   // to the geometry associated with the frame in which quantities are
   // expressed, in this case id_R.
-  ContactSurface<T> contact_surface(id_R, id_S, std::move(surface_R),
-                                    std::move(e_s),
-                                    std::move(grad_level_set_R));
-  // ContactSurface's contract is that id_M < id_N. We make sure this is the
-  // case by swapping if needed.
-  // TODO(amcastro-tri): Update to pass X_SR to ContactSurface's constructor
-  // once ContactSurface takes care of the swapping at construction.
-  if (id_S < id_R) {
-    contact_surface.SwapMAndN(X_RS.inverse());
-  }
-  return contact_surface;
+  return ContactSurface<T>(id_R, id_S, std::move(surface_R), std::move(e_s),
+                           std::move(grad_level_set_R), X_RS);
 }
 
 template <typename T>
