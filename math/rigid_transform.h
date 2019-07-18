@@ -215,17 +215,15 @@ class RigidTransform {
   void set_rotation(const RotationMatrix<T>& R) { R_AB_ = R; }
 
   /// Sets the rotation part of `this` %RigidTransform from a RollPitchYaw.
-  /// @param[in] rpy a %RollPitchYaw which is a Space-fixed (extrinsic) X-Y-Z
-  /// rotation with "roll-pitch-yaw" angles `[r, p, y]` or equivalently a Body-
-  /// fixed (intrinsic) Z-Y-X rotation with "yaw-pitch-roll" angles `[y, p, r]`.
+  /// @param[in] rpy "roll-pitch-yaw" angles `[r, p, y]` for Space-fixed
+  /// (extrinsic) X-Y-Z rotation sequence.
   /// @see RotationMatrix::RotationMatrix(const RollPitchYaw<T>&)
   void set_rotation(const RollPitchYaw<T>& rpy) {
     set_rotation(RotationMatrix<T>(rpy));
   }
 
   /// Sets the rotation part of `this` %RigidTransform from a Quaternion.
-  /// @param[in] quaternion a non-zero, finite quaternion which may or may not
-  /// have unit length [i.e., `quaternion.norm()` does not have to be 1].
+  /// @param[in] quaternion a quaternion which may or may not have unit length.
   /// @throws std::logic_error in debug builds if the rotation matrix
   /// that is built from `quaternion` is invalid.
   /// @see RotationMatrix::RotationMatrix(const Eigen::Quaternion<T>&)
@@ -234,9 +232,8 @@ class RigidTransform {
   }
 
   /// Sets the rotation part of `this` %RigidTransform from an AngleAxis.
-  /// @param[in] theta_lambda an Eigen::AngleAxis whose associated axis (vector
-  /// direction herein called `lambda`) is non-zero and finite, but which may or
-  /// may not have unit length [i.e., `lambda.norm()` does not have to be 1].
+  /// @param[in] theta_lambda an angle `theta` (in radians) and vector `lambda`
+  /// (which may or may not have unit length).
   /// @throws std::logic_error in debug builds if the rotation matrix
   /// that is built from `theta_lambda` is invalid.
   /// @see RotationMatrix::RotationMatrix(const Eigen::AngleAxis<T>&)
