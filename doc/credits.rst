@@ -23,6 +23,7 @@ since contributed their talents to help make Drake successful.  Here's an alphab
 * David German
 * Lucy Gibson
 * Grant Gould
+* Zhaoyuan Gu
 * Kunimatsu Hashimoto
 * Bill Hoffman
 * Greg Izatt
@@ -45,3 +46,4 @@ since contributed their talents to help make Drake successful.  Here's an alphab
 * `Russ Tedrake <http://people.csail.mit.edu/russt/>`_
 * Andres Valenzuela
 * Matthew Woehlke
+* Huihua Zhao
