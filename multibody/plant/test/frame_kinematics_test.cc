@@ -60,7 +60,8 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
           *context_, *frame_H_, end_effector_link_->body_frame());
   // Compute V_HL3_E_expected.
   const SpatialVelocity<double> V_WH_E = R_WE.transpose() * V_WH;
-  const Matrix3<double> R_EH = frame_H_->GetFixedPoseInBodyFrame().linear();
+  const math::RotationMatrix<double> R_EH =
+      frame_H_->GetFixedPoseInBodyFrame().rotation();
   const Vector3<double> p_HL3_E = R_EH * X_HL3.translation();
   const SpatialVelocity<double> V_WL3_E =
       R_WE.transpose() * link3.EvalSpatialVelocityInWorld(*context_);

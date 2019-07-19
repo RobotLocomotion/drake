@@ -263,15 +263,13 @@ GTEST_TEST(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
   const RigidTransformd X_LC(geometry_instance->pose());
 
   // These are the expected values as specified by the string above.
-  const Vector3d expected_rpy(3.14, 6.28, 1.57);
-  const Matrix3d R_LC_expected =
-      RotationMatrix<double>(RollPitchYaw<double>(expected_rpy)).matrix();
+  const RollPitchYaw<double> expected_rpy(3.14, 6.28, 1.57);
+  const RotationMatrix<double> R_LC_expected(expected_rpy);
   const Vector3d p_LCo_expected(1.0, 2.0, 3.0);
 
   // Verify results to precision given by kTolerance.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(X_LC.linear(), R_LC_expected,
-                              kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(X_LC.rotation().IsNearlyEqualTo(R_LC_expected, kTolerance));
   EXPECT_TRUE(CompareMatrices(X_LC.translation(), p_LCo_expected,
                               kTolerance, MatrixCompareType::relative));
 }
@@ -412,18 +410,16 @@ GTEST_TEST(SceneGraphParserDetail, MakeHalfSpaceGeometryInstanceFromSdfVisual) {
 
   // The expected orientation of the canonical frame C (in which the plane's
   // normal aligns with Cz) in the link frame L.
-  const Matrix3d R_LC_expected =
-      HalfSpace::MakePose(normal_L_expected, Vector3d::Zero()).linear();
+  const RotationMatrix<double> R_LC_expected(
+      HalfSpace::MakePose(normal_L_expected, Vector3d::Zero()).linear());
 
   // Retrieve the GeometryInstance pose as parsed from the sdf::Visual.
-  const RigidTransformd X_LC(geometry_instance->pose());
-  const Matrix3d& R_LC = X_LC.linear();
+  const RotationMatrix<double> R_LC(geometry_instance->pose().linear());
   const Vector3d normal_L = R_LC.col(2);
 
   // Verify results to precision given by kTolerance.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(X_LC.linear(), R_LC_expected,
-                              kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(R_LC.IsNearlyEqualTo(R_LC_expected, kTolerance));
   EXPECT_TRUE(CompareMatrices(normal_L, normal_L_expected,
                               kTolerance, MatrixCompareType::relative));
 }
@@ -704,15 +700,13 @@ GTEST_TEST(SceneGraphParserDetail, MakeGeometryPoseFromSdfCollision) {
   const RigidTransformd X_LG = MakeGeometryPoseFromSdfCollision(*sdf_collision);
 
   // These are the expected values as specified by the string above.
-  const Vector3d expected_rpy(3.14, 6.28, 1.57);
-  const Matrix3d R_LG_expected =
-      RotationMatrix<double>(RollPitchYaw<double>(expected_rpy)).matrix();
+  const RollPitchYaw<double> expected_rpy(3.14, 6.28, 1.57);
+  const RotationMatrix<double> R_LG_expected(expected_rpy);
   const Vector3d p_LGo_expected(1.0, 2.0, 3.0);
 
   // Verify results to precision given by kTolerance.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(X_LG.linear(), R_LG_expected,
-                              kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(X_LG.rotation().IsNearlyEqualTo(R_LG_expected, kTolerance));
   EXPECT_TRUE(CompareMatrices(X_LG.translation(), p_LGo_expected,
                               kTolerance, MatrixCompareType::relative));
 }
@@ -741,13 +735,12 @@ GTEST_TEST(SceneGraphParserDetail,
 
   // The expected orientation of the canonical frame C (in which the plane's
   // normal aligns with Cz) in the link frame L.
-  const Matrix3d R_LG_expected =
-      HalfSpace::MakePose(normal_L_expected, Vector3d::Zero()).linear();
+  const RotationMatrix<double> R_LG_expected(
+      HalfSpace::MakePose(normal_L_expected, Vector3d::Zero()).linear());
 
   // Verify results to precision given by kTolerance.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(X_LG.linear(), R_LG_expected,
-                              kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(X_LG.rotation().IsNearlyEqualTo(R_LG_expected, kTolerance));
   EXPECT_TRUE(CompareMatrices(X_LG.translation(), Vector3d::Zero(),
                               kTolerance, MatrixCompareType::relative));
 }

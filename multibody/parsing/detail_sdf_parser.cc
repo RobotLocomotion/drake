@@ -30,6 +30,7 @@ using Eigen::Vector3d;
 using geometry::GeometryInstance;
 using geometry::SceneGraph;
 using math::RigidTransformd;
+using math::RotationMatrixd;
 using std::unique_ptr;
 
 // Unnamed namespace for free functions local to this file.
@@ -87,7 +88,7 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
   const RigidTransformd X_BBi = ToRigidTransform(Inertial_BBcm_Bi.Pose());
 
   // B and Bi are not necessarily aligned.
-  const math::RotationMatrix<double> R_BBi(X_BBi.linear());
+  const RotationMatrixd R_BBi = X_BBi.rotation();
 
   // Re-express in frame B as needed.
   const RotationalInertia<double> I_BBcm_B = I_BBcm_Bi.ReExpress(R_BBi);
@@ -140,15 +141,15 @@ Vector3d ExtractJointAxis(const sdf::Model& model_spec,
   // supported by sdformat.
   Vector3d axis_J = ToVector3(axis->Xyz());
   if (axis->UseParentModelFrame()) {
-    // Pose of the joint frame J in the frame of the child link C.
+    // RotationMatrix of the joint frame J in the frame of the child link C.
     ThrowIfPoseFrameSpecified(joint_spec.Element());
-    const RigidTransformd X_CJ = ToRigidTransform(joint_spec.Pose());
-    // Get the pose of the child link C in the model frame M.
-    const RigidTransformd X_MC = ToRigidTransform(
-        model_spec.LinkByName(joint_spec.ChildLinkName())->Pose());
-    const RigidTransformd X_MJ = X_MC * X_CJ;
+    const RotationMatrixd R_CJ = ToRigidTransform(joint_spec.Pose()).rotation();
+    // Get the RotationMatrix of the child link C in the model frame M.
+    const RotationMatrixd R_MC = ToRigidTransform(
+        model_spec.LinkByName(joint_spec.ChildLinkName())->Pose()).rotation();
+    const RotationMatrixd R_MJ = R_MC * R_CJ;
     // axis_J actually contains axis_M, expressed in the model frame M.
-    axis_J = X_MJ.linear().transpose() * axis_J;
+    axis_J = R_MJ.transpose() * axis_J;
   }
   return axis_J;
 }
