@@ -52,6 +52,11 @@ exports_files(
 drake_py_unittest(
     name = "meshcat_test",
     legacy_create_init = 0,
+    # Defects related to ZMQ when run under DRD or Helgrind.
+    tags = [
+        "no_drd",
+        "no_helgrind",
+    ],
     deps = ["@meshcat_python//:meshcat"],
 )
 

@@ -248,3 +248,39 @@ build:fastmemcheck --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
 build:fastmemcheck --test_timeout=1500,7500,22500,90000  # 25x
+
+### DRD: A Valgrind thread error detector ###
+test:_drd --build_tests_only=yes
+test:_drd --copt=-fno-omit-frame-pointer
+test:_drd --copt=-g
+test:_drd --copt=-O1
+test:_drd --run_under=//tools/dynamic_analysis:drd
+test:_drd --test_env=VALGRIND_OPTS
+test:_drd --test_timeout=600,3000,10800,36000  # 10x
+
+test:drd --config=_drd
+test:drd --test_tag_filters=-gurobi,-lint,-mosek,-snopt,-no_drd
+
+test:drd_everything --config=_drd
+test:drd_everything --define=WITH_GUROBI=ON
+test:drd_everything --define=WITH_MOSEK=ON
+test:drd_everything --define=WITH_SNOPT=ON
+test:drd_everything --test_tag_filters=-lint,-no_drd
+
+### Helgrind: A Valgrind thread error detector ###
+test:_helgrind --build_tests_only=yes
+test:_helgrind --copt=-fno-omit-frame-pointer
+test:_helgrind --copt=-g
+test:_helgrind --copt=-O1
+test:_helgrind --run_under=//tools/dynamic_analysis:helgrind
+test:_helgrind --test_env=VALGRIND_OPTS
+test:_helgrind --test_timeout=600,3000,10800,36000  # 10x
+
+test:helgrind --config=_helgrind
+test:helgrind --test_tag_filters=-gurobi,-lint,-mosek,-snopt,-no_helgrind
+
+test:helgrind_everything --config=_helgrind
+test:helgrind_everything --define=WITH_GUROBI=ON
+test:helgrind_everything --define=WITH_MOSEK=ON
+test:helgrind_everything --define=WITH_SNOPT=ON
+test:helgrind_everything --test_tag_filters=-lint,-no_helgrind

@@ -1,6 +1,6 @@
 #!/bin/bash
 me=$(python -c 'import os; print(os.path.realpath("'"$0"'"))')
-mydir=$(dirname "$me")
+mydir=$(dirname "${me}")
 
 # Ensure that newly allocated memory that is not directly initialized by GLib
 # and memory being freed by GLib are reset to zero.
@@ -11,21 +11,19 @@ export G_DEBUG=gc-friendly
 # g_malloc() and g_free().
 export G_SLICE=always-malloc
 
-# Disable GTest death test use of clone() because it confuses valgrind.
+# Ensure that Google Test uses _exit() or fork() instead of clone() in death
+# tests.
 export GTEST_DEATH_TEST_USE_FORK=1
 
 valgrind \
-    --tool=memcheck \
+    --error-exitcode=1 \
     --gen-suppressions=all \
-    --leak-check=full \
-    --suppressions="$mydir/valgrind.supp" \
+    --num-callers=16 \
+    --suppressions="${mydir}/helgrind.supp" \
     --suppressions=/usr/lib/valgrind/debian.supp \
     --suppressions=/usr/lib/valgrind/python.supp \
-    --error-exitcode=1 \
+    --tool=helgrind \
     --trace-children=yes \
     --trace-children-skip=/bin/cat,/bin/cp,/bin/mkdir,/bin/sed,/usr/bin/clang,/usr/bin/clang-6.0,/usr/bin/clang-format-6.0,/usr/bin/dot,/usr/bin/fc-list,/usr/bin/find,/usr/bin/gcc \
     --trace-children-skip-by-arg=meshcat.servers.zmqserver \
-    --track-origins=yes \
-    --show-leak-kinds=definite,possible \
-    --num-callers=16 \
     "$@"

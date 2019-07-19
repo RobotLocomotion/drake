@@ -5,6 +5,7 @@
 
 load("@drake//tools/install:install.bzl", "install", "install_test")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "no_valgrind_tools_test_tags")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -75,6 +76,8 @@ install_test(
         ":install",
         _INSTALL_TEST_COMMANDS,
     ],
+    # Fails when run under Valgrind tools.
+    tags = no_valgrind_tools_test_tags(),
 )
 
 add_lint_tests()

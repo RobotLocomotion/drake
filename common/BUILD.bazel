@@ -14,6 +14,7 @@ load(
 )
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "no_valgrind_tools_test_tags")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -723,6 +724,8 @@ sh_test(
         "//tools/cc_toolchain:capture_cc.env",
         "//tools/cc_toolchain:toolchain_deps",
     ],
+    # Fails when run under Valgrind tools.
+    tags = no_valgrind_tools_test_tags(),
 )
 
 # TODO(eric.cousineau): Remove this alias and update `issue_template.md` to
@@ -1273,6 +1276,8 @@ drake_py_unittest(
         ":cpplint_wrapper",
         ":eigen_types.h",
     ],
+    # Exceeds timeout when run under Valgrind tools.
+    tags = no_valgrind_tools_test_tags(),
 )
 
 drake_py_unittest(
@@ -1285,6 +1290,8 @@ drake_py_unittest(
         ":resource_tool",
         "//examples/pendulum:models",
     ],
+    # Fails when run under Valgrind tools.
+    tags = no_valgrind_tools_test_tags(),
 )
 
 drake_cc_googletest(
