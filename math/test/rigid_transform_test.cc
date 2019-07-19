@@ -508,7 +508,7 @@ GTEST_TEST(RigidTransform, SetRotationMethods) {
   const RollPitchYaw<double> rpy(0.1, 0.2, 0.3);
   X_AB.set_rotation(rpy);
   EXPECT_TRUE(X_AB.rotation().IsExactlyEqualTo(RotationMatrix<double>(rpy)));
-  EXPECT_TRUE(X_AB.translation().isApprox(p_AoBo_A, kEpsilon));
+  EXPECT_EQ(X_AB.translation(), p_AoBo_A);
   X_AB.set_rotation(RotationMatrix<double>::Identity());
   EXPECT_TRUE(X_AB.rotation().IsExactlyIdentity());
 
@@ -517,7 +517,7 @@ GTEST_TEST(RigidTransform, SetRotationMethods) {
   quat.normalize();
   X_AB.set_rotation(quat);
   EXPECT_TRUE(X_AB.rotation().IsExactlyEqualTo(RotationMatrix<double>(quat)));
-  EXPECT_TRUE(X_AB.translation().isApprox(p_AoBo_A, kEpsilon));
+  EXPECT_EQ(X_AB.translation(), p_AoBo_A);
   X_AB.set_rotation(RotationMatrix<double>::Identity());
   EXPECT_TRUE(X_AB.rotation().IsExactlyIdentity());
 
@@ -529,7 +529,7 @@ GTEST_TEST(RigidTransform, SetRotationMethods) {
   X_AB.set_rotation(angle_axis);
   EXPECT_TRUE(
       X_AB.rotation().IsExactlyEqualTo(RotationMatrix<double>(angle_axis)));
-  EXPECT_TRUE(X_AB.translation().isApprox(p_AoBo_A, kEpsilon));
+  EXPECT_EQ(X_AB.translation(), p_AoBo_A);
   X_AB.set_rotation(RotationMatrix<double>::Identity());
   EXPECT_TRUE(X_AB.rotation().IsExactlyIdentity());
 }
