@@ -120,6 +120,14 @@ GTEST_TEST(Box, UnderStiction) {
     const PointPairContactInfo<double>& point_pair_contact_info =
         contact_results.point_pair_contact_info(0);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // Verify the deprecated method still works.
+    ASSERT_EQ(
+        &contact_results.contact_info(0),
+        &contact_results.point_pair_contact_info(0));
+#pragma GCC diagnostic pop
+
     // Verify the bodies referenced by the contact info.
     const Body<double>& ground = the_plant.GetBodyByName("ground");
     const Body<double>& box = the_plant.GetBodyByName("box");
