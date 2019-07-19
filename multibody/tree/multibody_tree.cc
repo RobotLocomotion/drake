@@ -963,6 +963,85 @@ void MultibodyTree<T>::CalcPointsPositions(
 }
 
 template <typename T>
+Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
+    const systems::Context<T>& context) const {
+  if (!(num_bodies() > 1)) {
+    throw std::runtime_error(
+        "CalcCenterOfMassPosition(): this MultibodyPlant contains only "
+        "world_body() so its center of mass is undefined.");
+  }
+
+  std::vector<ModelInstanceIndex> model_instances;
+  for (ModelInstanceIndex model_instance_index(1);
+       model_instance_index < num_model_instances(); ++model_instance_index)
+    model_instances.push_back(model_instance_index);
+
+  return CalcCenterOfMassPosition(context, model_instances);
+}
+
+template <typename T>
+Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
+    const systems::Context<T>& context,
+    const std::vector<ModelInstanceIndex>& model_instances) const {
+  if (!(num_model_instances() > 1)) {
+    throw std::runtime_error(
+        "CalcCenterOfMassPosition(): this MultibodyPlant contains only "
+        "world_body() so its center of mass is undefined.");
+  }
+
+  std::vector<BodyIndex> body_indexes;
+  for (auto model_instance : model_instances) {
+    const std::vector<BodyIndex> body_index_in_instance =
+        GetBodyIndices(model_instance);
+    for (BodyIndex body_index : body_index_in_instance)
+      body_indexes.push_back(body_index);
+  }
+
+  return CalcCenterOfMassPosition(context, body_indexes);
+}
+
+template <typename T>
+Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
+    const systems::Context<T>& context,
+    const std::vector<BodyIndex>& body_indexes) const {
+  if (!(num_bodies() > 1)) {
+    throw std::runtime_error(
+        "CalcCenterOfMassPosition(): this MultibodyPlant contains only "
+        "world_body() so its center of mass is undefined.");
+  }
+  if (body_indexes.empty()) {
+    throw std::runtime_error(
+        "CalcCenterOfMassPosition(): you must provide at least one selected "
+        "body.");
+  }
+
+  Vector3<T> Mp = Vector3<T>::Zero();
+  T composite_mass = 0;
+
+  for (BodyIndex body_index : body_indexes) {
+    if (body_index == 0) continue;
+
+    const Body<T>& body = get_body(body_index);
+
+    const Vector3<T> pi_BoBcm = body.CalcCenterOfMassInBodyFrame(context);
+    Vector3<T> pi_WBcm = body.EvalPoseInWorld(context) * pi_BoBcm;
+
+    // Calculate composite_mass and M * p in world frame.
+    const T& body_mass = body.get_mass(context);
+    // Mp = ∑ mᵢ * pi_WBcm
+    Mp += body_mass * pi_WBcm;
+    // composite_mass = ∑ mᵢ
+    composite_mass += body_mass;
+  }
+
+  if (!(composite_mass > 0)) {
+    throw std::runtime_error(
+        "CalcCenterOfMassPosition(): the total mass must larger than zero.");
+  }
+  return Mp / composite_mass;
+}
+
+template <typename T>
 const RigidTransform<T>& MultibodyTree<T>::EvalBodyPoseInWorld(
     const systems::Context<T>& context,
     const Body<T>& body_B) const {
