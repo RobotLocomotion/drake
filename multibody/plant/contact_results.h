@@ -37,7 +37,9 @@ class ContactResults {
   void AddContactInfo(const PointPairContactInfo<T>& point_pair_info);
 
   DRAKE_DEPRECATED("2019-10-01", "Use point_pair_contact_info() instead.")
-  const PointPairContactInfo<T>& contact_info(int i) const;
+  const PointPairContactInfo<T>& contact_info(int i) const {
+    return point_pair_contact_info(i);
+  }
 
   /** Retrieves the ith PointPairContactInfo instance. The input index `i`
    must be in the range [0, get_num_contacts() - 1] or this method aborts. */
