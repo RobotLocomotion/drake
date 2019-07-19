@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "drake/common/default_scalars.h"
@@ -91,8 +92,11 @@ std::vector<ContactSurface<T>> HydroelasticEngine<T>::ComputeContactSurfaces(
     // Skip contact surface computation if these ids do not have a hydrostatic
     // model.
     if (!model_M || !model_N) {
+      const std::string name_M = query_object.inspector().GetName(id_M);
+      const std::string name_N = query_object.inspector().GetName(id_N);
       throw std::runtime_error(
           "HydroelasticEngine. Unsupported geometries possibly in contact. "
+          "For the geometry pair ('" + name_M + "', '" + name_N + "')."
           "You can remove the unsupported geometries, replace them with "
           "supported geometry, or filter collisions on them.");
     }
@@ -146,6 +150,13 @@ optional<ContactSurface<T>> HydroelasticEngine<T>::CalcContactSurface(
   if (surface_R->num_vertices() == 0) return nullopt;
   // Compute pressure field.
   for (T& e_s : e_s_surface) e_s *= soft_model_S.elastic_modulus();
+
+  // ∇hₘₙ is a vector that points from N (in this case S) into M (in this case
+  // R). However, the gradient of the level set function points into S (N).
+  // Therefore we flip its direction.
+  for (Vector3<T>& grad_level_set_R : grad_level_set_R_surface) {
+    grad_level_set_R = -grad_level_set_R;
+  }
 
   auto e_s = std::make_unique<geometry::SurfaceMeshFieldLinear<T, T>>(
       "e_MN", std::move(e_s_surface), surface_R.get());
