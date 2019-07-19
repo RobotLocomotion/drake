@@ -105,7 +105,7 @@ class RigidTransform {
   RigidTransform(const Eigen::Quaternion<T>& quaternion, const Vector3<T>& p)
       : RigidTransform(RotationMatrix<T>(quaternion), p) {}
 
-  /// Constructs a %RigidTransform from a AngleAxis and a position vector.
+  /// Constructs a %RigidTransform from an AngleAxis and a position vector.
   /// @param[in] theta_lambda an Eigen::AngleAxis whose associated axis (vector
   /// direction herein called `lambda`) is non-zero and finite, but which may or
   /// may not have unit length [i.e., `lambda.norm()` does not have to be 1].
@@ -213,6 +213,30 @@ class RigidTransform {
   /// Sets the %RotationMatrix portion of `this` %RigidTransform.
   /// @param[in] R rotation matrix relating frames A and B (e.g., `R_AB`).
   void set_rotation(const RotationMatrix<T>& R) { R_AB_ = R; }
+
+  /// Sets the rotation part of `this` %RigidTransform from a RollPitchYaw.
+  /// @param[in] rpy "roll-pitch-yaw" angles.
+  /// @see RotationMatrix::RotationMatrix(const RollPitchYaw<T>&) which
+  /// describes the parameter, preconditions, etc.
+  void set_rotation(const RollPitchYaw<T>& rpy) {
+    set_rotation(RotationMatrix<T>(rpy));
+  }
+
+  /// Sets the rotation part of `this` %RigidTransform from a Quaternion.
+  /// @param[in] quaternion a quaternion which may or may not have unit length.
+  /// @see RotationMatrix::RotationMatrix(const Eigen::Quaternion<T>&) which
+  /// describes the parameter, preconditions, exception conditions, etc.
+  void set_rotation(const Eigen::Quaternion<T>& quaternion) {
+    set_rotation(RotationMatrix<T>(quaternion));
+  }
+
+  /// Sets the rotation part of `this` %RigidTransform from an AngleAxis.
+  /// @param[in] theta_lambda an angle `theta` (in radians) and vector `lambda`.
+  /// @see RotationMatrix::RotationMatrix(const Eigen::AngleAxis<T>&) which
+  /// describes the parameter, preconditions, exception conditions, etc.
+  void set_rotation(const Eigen::AngleAxis<T>& theta_lambda) {
+    set_rotation(RotationMatrix<T>(theta_lambda));
+  }
 
   /// Returns `p_AoBo_A`, the position vector portion of `this` %RigidTransform,
   /// i.e., position vector from Ao (frame A's origin) to Bo (frame B's origin).

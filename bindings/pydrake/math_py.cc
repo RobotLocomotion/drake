@@ -73,8 +73,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("Identity", &Class::Identity, cls_doc.Identity.doc)
         .def("rotation", &Class::rotation, py_reference_internal,
             cls_doc.rotation.doc)
-        .def("set_rotation", &Class::set_rotation, py::arg("R"),
-            cls_doc.set_rotation.doc)
+        .def("set_rotation",
+            py::overload_cast<const RotationMatrix<T>&>(&Class::set_rotation),
+            py::arg("R"), cls_doc.set_rotation.doc_1args_R)
+        .def("set_rotation",
+            py::overload_cast<const RollPitchYaw<T>&>(&Class::set_rotation),
+            py::arg("rpy"), cls_doc.set_rotation.doc_1args_rpy)
+        .def("set_rotation",
+            py::overload_cast<const Eigen::Quaternion<T>&>(
+                &Class::set_rotation),
+            py::arg("quaternion"), cls_doc.set_rotation.doc_1args_quaternion)
+        .def("set_rotation",
+            py::overload_cast<const Eigen::AngleAxis<T>&>(&Class::set_rotation),
+            py::arg("theta_lambda"),
+            cls_doc.set_rotation.doc_1args_theta_lambda)
         .def("translation", &Class::translation,
             return_value_policy_for_scalar_type<T>(), cls_doc.translation.doc)
         .def("set_translation", &Class::set_translation, py::arg("p"),
