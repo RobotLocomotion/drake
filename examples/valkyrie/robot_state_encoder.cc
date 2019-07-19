@@ -180,9 +180,10 @@ RobotStateEncoder::GetSpatialForceActingOnBody1ByBody2InBody1Frame(
 
   SpatialForce<double> spatial_force_in_world_aligned_body_frame =
       calc.ComputeResultant(reference_point).get_spatial_force();
-  const math::RotationMatrix<double> R(
+  const math::RotationMatrix<double> R_WB(
       kinematics_results.get_pose_in_world(body1).linear());
-  const math::RigidTransform<double> world_aligned_to_body_frame(R.transpose());
+  const math::RigidTransform<double> world_aligned_to_body_frame(
+      R_WB.transpose());
   return transformSpatialForce(world_aligned_to_body_frame.GetAsIsometry3(),
                                spatial_force_in_world_aligned_body_frame);
 }
