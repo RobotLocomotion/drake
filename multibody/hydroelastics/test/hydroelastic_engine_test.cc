@@ -155,6 +155,10 @@ TEST_F(SphereVsPlaneTest, VerifyModelSizeAndResults) {
   const SurfaceMesh<double>& mesh_G = surface.mesh();
   EXPECT_GT(mesh_G.num_vertices(), 0);
   const double kTolerance = 5.0 * std::numeric_limits<double>::epsilon();
+  // The expected value of ∇hₘₙ, which by definition points from N towards M.
+  const Vector3<double> expected_grad_h_mn_M =
+      surface.id_M() == sphere_geometry_id_ ? Vector3<double>(0.0, 0.0, 1.0)
+                                            : Vector3<double>(0.0, 0.0, -1.0);
   for (geometry::SurfaceVertexIndex v(0); v < mesh_G.num_vertices(); ++v) {
     // Position of a vertex V in the frame S of the soft sphere.
     const Vector3d p_SV = mesh_G.vertex(v).r_MV();
@@ -168,6 +172,10 @@ TEST_F(SphereVsPlaneTest, VerifyModelSizeAndResults) {
         std::sqrt(radius_ * radius_ - height_ * height_);
     const double radius = p_SV.norm();  // since z component is zero.
     EXPECT_LE(radius, surface_radius);
+
+    // We expect ∇hₘₙ to point from N towards M.
+    const Vector3<double> grad_h_mn_M = surface.EvaluateGrad_h_MN_M(v);
+    EXPECT_TRUE(CompareMatrices(grad_h_mn_M, expected_grad_h_mn_M, kTolerance));
   }
 
   // The number of models should not change on further queries.
