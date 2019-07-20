@@ -65,10 +65,9 @@ void CheckDistanceToSphere(const fcl::Sphered& sphere,
 }
 
 GTEST_TEST(DistanceToPointTest, TestSphere) {
-  math::RigidTransformd X_WG;
-  X_WG.set_rotation(math::RotationMatrixd{Eigen::AngleAxisd(
-      0.2 * M_PI, Eigen::Vector3d(0.1, 0.5, -0.3).normalized())});
-  X_WG.set_translation(Eigen::Vector3d(0.5, -0.5, 0.3));
+  const math::RigidTransformd X_WG(
+    Eigen::AngleAxisd(0.2 * M_PI, Eigen::Vector3d(0.1, 0.5, -0.3).normalized()),
+    Eigen::Vector3d(0.5, -0.5, 0.3));
   Eigen::Vector3d p_GQ(0.4, 0.8, 1);
 
   fcl::Sphered sphere(p_GQ.norm() * 0.5);
@@ -126,10 +125,9 @@ void CheckDistanceToHalfspace(const fcl::Halfspaced& halfspace,
 
 GTEST_TEST(DistanceToPointTest, TestHalfspace) {
   // Arbitrary X_WG and p_GQ
-  math::RigidTransformd X_WG;
-  X_WG.set_rotation(math::RotationMatrixd{Eigen::AngleAxisd(
-      0.2 * M_PI, Eigen::Vector3d(0.1, 0.5, -0.3).normalized())});
-  X_WG.set_translation(Eigen::Vector3d(0.5, -0.5, 0.3));
+  const math::RigidTransformd X_WG(
+    Eigen::AngleAxisd(0.2 * M_PI, Eigen::Vector3d(0.1, 0.5, -0.3).normalized()),
+    Eigen::Vector3d(0.5, -0.5, 0.3));
 
   // Drake initializes *all* halfspaces to n = (0, 0, 1) and d = 0.
   fcl::Halfspaced halfspace(Eigen::Vector3d::UnitZ(), 0.0);
