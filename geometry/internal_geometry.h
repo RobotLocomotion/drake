@@ -226,11 +226,15 @@ class InternalGeometry {
     return nullptr;
   }
 
+  // TODO(SeanCurtis-TRI): Investigate removing this pair of methods and
+  //  completely rely on the render engine to report whether a geometry has
+  //  been registered with it.
   /** Informs this geometry that it is registered to the given named render
-   engine.
+   engine. Subsequent to this call, `in_renderer(renderer_name)` should return
+   true.
    @pre This geometry doesn't already have this renderer name.
    @pre The `renderer_name` is a name for a valid renderer.  */
-  void set_renderer(std::string renderer_name);
+  void add_renderer(std::string renderer_name);
 
   /** Reports true if this geometry knows that it is registered with a render
    engine with the given name.  */

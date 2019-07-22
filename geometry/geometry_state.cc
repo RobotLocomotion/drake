@@ -783,7 +783,7 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                RigidTransformd(geometry.X_FG()),
                                geometry.is_dynamic());
     // If accepted, inform the geometry that it exists in the renderer.
-    if (accepted) geometry.set_renderer(renderer_name);
+    if (accepted) geometry.add_renderer(renderer_name);
   }
 }
 
@@ -909,17 +909,25 @@ void GeometryState<T>::ExcludeCollisionsBetween(const GeometrySet& setA,
 template <typename T>
 void GeometryState<T>::AddRenderer(
     std::string name, std::unique_ptr<render::RenderEngine> renderer) {
-  if (geometries_.size() > 0) {
-    throw std::logic_error(
-        fmt::format("AddRenderer(): Error adding renderer '{}'; geometries "
-                    "have already been registered",
-                    name));
-  }
   if (render_engines_.count(name) > 0) {
     throw std::logic_error(fmt::format(
         "AddRenderer(): A renderer with the name '{}' already exists", name));
   }
-  render_engines_[move(name)] = move(renderer);
+  render::RenderEngine* render_engine = renderer.get();
+  render_engines_[name] = move(renderer);
+  for (auto& id_geo_pair : geometries_) {
+    InternalGeometry& geometry = id_geo_pair.second;
+    if (geometry.has_perception_role()) {
+      const GeometryId id = id_geo_pair.first;
+      const PerceptionProperties* properties = geometry.perception_properties();
+      DRAKE_DEMAND(properties != nullptr);
+      const bool accepted = render_engine->RegisterVisual(
+          id, geometry.shape(), *properties, RigidTransformd(geometry.X_FG()),
+          geometry.is_dynamic());
+      // If accepted, inform the geometry that it exists in the renderer.
+      if (accepted) geometry.add_renderer(name);
+    }
+  }
 }
 
 template <typename T>

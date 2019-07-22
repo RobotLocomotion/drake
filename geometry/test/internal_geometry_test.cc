@@ -74,8 +74,8 @@ GTEST_TEST(InternalGeometryTest, RemovePerceptionRole) {
   // Configure a geometry with all roles; we assume from previous unit tests
   // that the geometry's state is correct.
   InternalGeometry geometry;
-  geometry.set_renderer(renderer1);
-  geometry.set_renderer(renderer2);
+  geometry.add_renderer(renderer1);
+  geometry.add_renderer(renderer2);
   geometry.SetRole(PerceptionProperties());
   EXPECT_TRUE(geometry.in_renderer(renderer1));
   EXPECT_TRUE(geometry.in_renderer(renderer2));
@@ -105,7 +105,7 @@ GTEST_TEST(InternalGeometryTest, RemovePerceptionRole) {
   // Case: Removing from last render engine leaves the geometry with perception
   // properties.
   // In preparation, we reassign perception role and render engine.
-  geometry.set_renderer(renderer1);
+  geometry.add_renderer(renderer1);
   geometry.SetRole(PerceptionProperties());
   // Confirm it's wired up for renderer1.
   EXPECT_TRUE(geometry.in_renderer(renderer1));

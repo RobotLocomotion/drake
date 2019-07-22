@@ -474,14 +474,28 @@ class SceneGraph final : public systems::LeafSystem<T> {
   //@{
 
   /** Adds a new render engine to this %SceneGraph. The %SceneGraph owns the
-   render engine. All render engines must be assigned prior to any geometry
-   registration. The render engine's name should be referenced in the
+   render engine. The render engine's name should be referenced in the
    @ref render::CameraProperties "CameraProperties" provided in the render
    queries (see QueryObject::RenderColorImage() as an example).
+
+   There is no restriction on when a renderer is added relative to geometry
+   registration and role assignment. Given a representative sequence of
+   registration and perception role assignment, the addition of the renderer
+   can be introduced anywhere in the sequence and the end result would be
+   the same.
+
+   ```
+   GeometryId id1 = scene_graph.RegisterGeometry(source_id, ...);
+   scene_graph.AssignRole(source_id, id1, PerceptionProperties());
+   GeometryId id2 = scene_graph.RegisterGeometry(source_id, ...);
+   scene_graph.AssignRole(source_id, id2, PerceptionProperties());
+   GeometryId id3 = scene_graph.RegisterGeometry(source_id, ...);
+   scene_graph.AssignRole(source_id, id3, PerceptionProperties());
+   ```
+
    @param name      The unique name of the renderer.
    @param renderer  The `renderer` to add.
-   @throws std::logic_error if the name is not unique, or geometry has already
-                            been registered.  */
+   @throws std::logic_error if the name is not unique.  */
   void AddRenderer(std::string name,
                    std::unique_ptr<render::RenderEngine> renderer);
 
