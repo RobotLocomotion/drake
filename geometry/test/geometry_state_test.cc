@@ -3025,6 +3025,35 @@ TEST_F(GeometryStateTest, RemoveFrameFromRenderer) {
       "Referenced frame .+ but the frame doesn't belong to the source.");
 }
 
+TEST_F(GeometryStateTest, AddRendererAfterGeometry) {
+  SetUpSingleSourceTree(Assign::kPerception);
+  // Add one geometry that has no perception properties.
+  const GeometryId id_no_perception = geometry_state_.RegisterGeometry(
+      source_id_, frames_[0],
+      make_unique<GeometryInstance>(Isometry3d::Identity(),
+                                    make_unique<Sphere>(0.5), "shape"));
+  EXPECT_EQ(render_engine_->num_registered(),
+            single_tree_total_geometry_count());
+
+  auto new_renderer = make_unique<DummyRenderEngine>();
+  DummyRenderEngine* other_renderer = new_renderer.get();
+  // The new renderer has no geometry assigned.
+  EXPECT_EQ(other_renderer->num_registered(), 0);
+  const string other_name = "other";
+  geometry_state_.AddRenderer(other_name, move(new_renderer));
+  // The new renderer only has the geometries with perception properties
+  // assigned.
+  EXPECT_EQ(other_renderer->num_registered(),
+            single_tree_total_geometry_count());
+
+  EXPECT_FALSE(
+      gs_tester_.GetGeometry(id_no_perception)->in_renderer(other_name));
+
+  for (const GeometryId id : geometries_) {
+    EXPECT_TRUE(gs_tester_.GetGeometry(id)->in_renderer(other_name));
+  }
+}
+
 // Successful invocations of AddRenderer are implicit in SetupSingleSource().
 // This merely tests the error conditions.
 TEST_F(GeometryStateTest, AddRendererError) {
@@ -3037,15 +3066,6 @@ TEST_F(GeometryStateTest, AddRendererError) {
       geometry_state_.AddRenderer(kName, make_unique<DummyRenderEngine>()),
       std::logic_error,
       fmt::format("AddRenderer..: A renderer with the name '{}' already exists",
-                  kName));
-
-  // Geometry has been registered.
-  SetUpSingleSourceTree();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.AddRenderer(kName, make_unique<DummyRenderEngine>()),
-      std::logic_error,
-      fmt::format("AddRenderer..: Error adding renderer '{}'; geometries have "
-                  "already been registered",
                   kName));
 }
 
