@@ -4,6 +4,8 @@
 #include <vector>
 
 #include "drake/multibody/optimization/contact_wrench_evaluator.h"
+#include "drake/multibody/optimization/static_friction_cone_complementarity_constraint.h"
+#include "drake/multibody/optimization/static_friction_cone_constraint.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -36,10 +38,13 @@
  *     f_sliding_tangential = -c * v_sliding_tangential   (4)
  *     c ≥ 0                                              (5)
  *
- * @note the user should impose the constraint that the contact
- * force f is in the friction cone. Namely | f_tangential | ≤ μ f_normal.
- * They can do it by either adding a StaticFrictionConeConstraint, if the user
- * knows explicitly that the contact occurs, or calling
+ * To enforce that the contact force is in the friction cone, we impose
+ *
+ *     | f_tangential | ≤ μ f_normal                      (6)
+ *
+ * Depending on whether the contact is explicit or implicit, we add constraint
+ * (6) by either adding a StaticFrictionConeConstraint, if the user knows
+ * explicitly that the contact occurs, or calling
  * AddStaticFrictionConeComplementarityConstraint if the user doesn't know if
  * the contact has to occur. The user could refer to
  * static_friction_cone_constraint.h or
@@ -137,14 +142,11 @@ class SlidingFrictionComplementarityNonlinearConstraint
 }  // namespace internal
 
 /**
- * Adds the sliding friction complementarity constraint explained in @ref
+ * For a pair of geometries in explicit contact, adds the sliding friction
+ * complementarity constraint explained in @ref
  * sliding_friction_complementarity_constraint to an optimization program. This
  * function adds the slack variables (f_static, f_sliding, c), and impose all
  * the constraints in @ref sliding_friction_complementarity_constraint.
- * @note In addition to calling this function, the user also needs to impose
- * either StaticFrictionConeConstraint or
- * AddStaticFrictionConeComplementarityConstraint() on the contact wrench
- * evaluator.
  * @param contact_wrench_evaluator Evaluates the contact wrench between a pair
  * of geometries.
  * @param complementarity_tolerance The tolerance on the complementarity
@@ -155,9 +157,36 @@ class SlidingFrictionComplementarityNonlinearConstraint
  * this pair of geometry.
  * @param prog The optimization program to which the sliding friction
  * complementarity constraint is imposed.
+ * @return (sliding_friction_complementarity_constraint,
+ * static_friction_cone_constraint), the pair of constraint that imposes (1)-(4)
+ * and (6) in @ref sliding_friction_complementarity_constraint.
  */
-solvers::Binding<internal::SlidingFrictionComplementarityNonlinearConstraint>
-AddSlidingFrictionComplementarityConstraint(
+std::pair<solvers::Binding<
+              internal::SlidingFrictionComplementarityNonlinearConstraint>,
+          solvers::Binding<StaticFrictionConeConstraint>>
+AddSlidingFrictionComplementarityExplicitContactConstraint(
+    const ContactWrenchEvaluator* contact_wrench_evaluator,
+    double complementarity_tolerance,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& v_vars,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& lambda_vars,
+    solvers::MathematicalProgram* prog);
+
+/**
+ * For a pair of geometries in implicit contact (they may or may not be in
+ * contact, and hence we impose the complementarity constraint 0 ≤ φ(q) ⊥ fₙ ≥
+ * 0), we impose the complementarity constraint on the sliding friction force
+ * constraint explained in @ref sliding_friction_complementarity_constraint. The
+ * input arguments are the same as those in
+ * AddSlidingFrictionComplementarityExplicitContactConstraint(). The difference
+ * is that the returned argument includes the nonlinear complementarity
+ * constraint 0 ≤ φ(q) ⊥ fₙ≥ 0.
+ */
+std::pair<solvers::Binding<
+              internal::SlidingFrictionComplementarityNonlinearConstraint>,
+          solvers::Binding<
+              internal::StaticFrictionConeComplementarityNonlinearConstraint>>
+AddSlidingFrictionComplementarityImplicitContactConstraint(
     const ContactWrenchEvaluator* contact_wrench_evaluator,
     double complementarity_tolerance,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,

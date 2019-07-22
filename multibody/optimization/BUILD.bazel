@@ -51,6 +51,8 @@ drake_cc_library(
     hdrs = ["sliding_friction_complementarity_constraint.h"],
     deps = [
         ":contact_wrench_evaluator",
+        ":static_friction_cone_complementarity_constraint",
+        ":static_friction_cone_constraint",
         "//geometry:scene_graph",
         "//multibody/plant",
         "//solvers:binding",

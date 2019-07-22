@@ -32,23 +32,23 @@ template <typename T>
 void ComputeRelativeMotion(test::FreeSpheresAndBoxes<T>* spheres,
                            const Eigen::Ref<const VectorX<T>>& q,
                            const Eigen::Ref<const VectorX<T>>& v,
-                           double sphere2_radius, Vector3<T>* nhat_S1S2_W,
-                           Vector3<T>* v_S1Cb_W) {
+                           double sphere2_radius, Vector3<T>* nhat_SaSb_W,
+                           Vector3<T>* v_SaCb_W) {
   const auto& plant = spheres->plant();
   plant.SetPositions(spheres->get_mutable_plant_context(), q);
   plant.SetVelocities(spheres->get_mutable_plant_context(), v);
-  // Now compute v_ACb_W, first I need to compute the poses of the two spheres.
-  const math::RigidTransform<T> X_WS1 = plant.CalcRelativeTransform(
+  // Now compute v_SaCb_W, first I need to compute the poses of the two spheres.
+  const math::RigidTransform<T> X_WSa = plant.CalcRelativeTransform(
       spheres->plant_context(), plant.world_frame(),
       plant.get_body(spheres->sphere_body_indices()[0]).body_frame());
-  const math::RigidTransform<AutoDiffXd> X_WS2 = plant.CalcRelativeTransform(
+  const math::RigidTransform<AutoDiffXd> X_WSb = plant.CalcRelativeTransform(
       spheres->plant_context(), plant.world_frame(),
       plant.get_body(spheres->sphere_body_indices()[1]).body_frame());
 
-  *nhat_S1S2_W = (X_WS2.translation() - X_WS1.translation()).normalized();
-  const Vector3<T> p_S2Cb_W = -(*nhat_S1S2_W) * sphere2_radius;
+  *nhat_SaSb_W = (X_WSb.translation() - X_WSa.translation()).normalized();
+  const Vector3<T> p_SbCb_W = -(*nhat_SaSb_W) * sphere2_radius;
 
-  const SpatialVelocity<T> V_S1S2_W =
+  const SpatialVelocity<T> V_SaSb_W =
       plant.get_body(spheres->sphere_body_indices()[1])
           .body_frame()
           .CalcSpatialVelocity(
@@ -56,8 +56,8 @@ void ComputeRelativeMotion(test::FreeSpheresAndBoxes<T>* spheres,
               plant.get_body(spheres->sphere_body_indices()[0]).body_frame(),
               plant.world_frame());
 
-  const SpatialVelocity<T> V_S1Cb_W = V_S1S2_W.Shift(p_S2Cb_W);
-  *v_S1Cb_W = V_S1Cb_W.translational();
+  const SpatialVelocity<T> V_SaCb_W = V_SaSb_W.Shift(p_SbCb_W);
+  *v_SaCb_W = V_SaCb_W.translational();
 }
 
 GTEST_TEST(SlidingFrictionComplementarityNonlinearConstraintTest, Constructor) {
@@ -135,38 +135,38 @@ GTEST_TEST(SlidingFrictionComplementarityNonlinearConstraintTest, Constructor) {
   const Vector3<AutoDiffXd> f_AB_W = lambda;
   const double tol = 1E-12;
   CompareAutoDiff(y_autodiff.head<3>(), f_AB_W - f_static - f_sliding, tol);
-  // Now compute v_ACb_W, first I need to compute the poses of the two spheres.
-  Vector3<AutoDiffXd> n_S1S2_W, v_S1Cb_W;
+  // Now compute v_SaCb_W, first I need to compute the poses of the two spheres.
+  Vector3<AutoDiffXd> n_SaSb_W, v_SaCb_W;
   ComputeRelativeMotion<AutoDiffXd>(&spheres, q, v, sphere2_spec.radius,
-                                    &n_S1S2_W, &v_S1Cb_W);
-  const Vector3<AutoDiffXd> v_tangential_S1Cb_W =
-      (Eigen::Matrix3d::Identity() - n_S1S2_W * n_S1S2_W.transpose()) *
-      v_S1Cb_W;
-  const AutoDiffXd f_static_normal_magnitude = f_static.dot(n_S1S2_W);
+                                    &n_SaSb_W, &v_SaCb_W);
+  const Vector3<AutoDiffXd> v_tangential_SaCb_W =
+      (Eigen::Matrix3d::Identity() - n_SaSb_W * n_SaSb_W.transpose()) *
+      v_SaCb_W;
+  const AutoDiffXd f_static_normal_magnitude = f_static.dot(n_SaSb_W);
 
   CompareAutoDiff(y_autodiff.segment<3>(3),
-                  v_tangential_S1Cb_W * (f_static.dot(-n_S1S2_W)), tol);
+                  v_tangential_SaCb_W * (f_static.dot(-n_SaSb_W)), tol);
 
   // Evaluate constraint (3)
   const CoulombFriction<double> combined_friction =
       CalcContactFrictionFromSurfaceProperties(
           plant.default_coulomb_friction(spheres.sphere_geometry_ids()[0]),
           plant.default_coulomb_friction(spheres.sphere_geometry_ids()[1]));
-  CompareAutoDiff(y_autodiff(6), f_sliding.dot(n_S1S2_W), tol);
+  CompareAutoDiff(y_autodiff(6), f_sliding.dot(n_SaSb_W), tol);
 
   const Vector3<AutoDiffXd> f_sliding_tangential =
-      (Eigen::Matrix3d::Identity() - n_S1S2_W * n_S1S2_W.transpose()) *
+      (Eigen::Matrix3d::Identity() - n_SaSb_W * n_SaSb_W.transpose()) *
       f_sliding;
   CompareAutoDiff(
       y_autodiff(7),
       f_sliding_tangential.squaredNorm() -
-          pow((combined_friction.dynamic_friction() * f_sliding.dot(n_S1S2_W)),
+          pow((combined_friction.dynamic_friction() * f_sliding.dot(n_SaSb_W)),
               2),
       tol);
 
   // Evaluate constraint (4)
   CompareAutoDiff(y_autodiff.tail<3>(),
-                  f_sliding_tangential + c * v_tangential_S1Cb_W, tol);
+                  f_sliding_tangential + c * v_tangential_SaCb_W, tol);
 
   // Check the gradient sparsity pattern.
   // The gradient in x_autodiff2 is identity.
@@ -214,11 +214,11 @@ GTEST_TEST(SlidingFrictionComplementarityConstraintTest, AddConstraint) {
   auto q_vars = prog.NewContinuousVariables(plant.num_positions());
   auto v_vars = prog.NewContinuousVariables(plant.num_velocities());
   auto lambda_vars = prog.NewContinuousVariables<3>();
-  auto binding = AddSlidingFrictionComplementarityConstraint(
+  auto bindings = AddSlidingFrictionComplementarityExplicitContactConstraint(
       &contact_wrench_evaluator, complementarity_tolerance, q_vars, v_vars,
       lambda_vars, &prog);
 
-  EXPECT_EQ(prog.num_vars(), binding.variables().rows());
+  EXPECT_EQ(prog.num_vars(), bindings.first.variables().rows());
 
   // Now check if the added constraint is satisfied when the sliding friction
   // force satisfies the complementarity constraint.
@@ -231,32 +231,32 @@ GTEST_TEST(SlidingFrictionComplementarityConstraintTest, AddConstraint) {
   q_val.tail<3>() << -0.2, 0.3, 0.1;
   Eigen::Matrix<double, 12, 1> v_val;
   v_val << 0.1, 0.2, 0.3, -0.4, 0.5, 0.6, -1.5, 0.3, 0.6, -0.2, 0.7, -1.2;
-  Vector3<AutoDiffXd> nhat_S1S2_W_autodiff, v_S1Cb_W_autodiff;
+  Vector3<AutoDiffXd> nhat_SaSb_W_autodiff, v_SaCb_W_autodiff;
   internal::ComputeRelativeMotion<AutoDiffXd>(
       &spheres, q_val.cast<AutoDiffXd>(), v_val.cast<AutoDiffXd>(),
-      sphere2_spec.radius, &nhat_S1S2_W_autodiff, &v_S1Cb_W_autodiff);
-  Eigen::Vector3d nhat_S1S2_W =
-      math::autoDiffToValueMatrix(nhat_S1S2_W_autodiff);
-  Eigen::Vector3d v_S1Cb_W = math::autoDiffToValueMatrix(v_S1Cb_W_autodiff);
+      sphere2_spec.radius, &nhat_SaSb_W_autodiff, &v_SaCb_W_autodiff);
+  Eigen::Vector3d nhat_SaSb_W =
+      math::autoDiffToValueMatrix(nhat_SaSb_W_autodiff);
+  Eigen::Vector3d v_SaCb_W = math::autoDiffToValueMatrix(v_SaCb_W_autodiff);
 
-  Eigen::Vector3d v_tangential_S1Cb_W =
-      (Eigen::Matrix3d::Identity() - nhat_S1S2_W * nhat_S1S2_W.transpose()) *
-      v_S1Cb_W;
+  Eigen::Vector3d v_tangential_SaCb_W =
+      (Eigen::Matrix3d::Identity() - nhat_SaSb_W * nhat_SaSb_W.transpose()) *
+      v_SaCb_W;
   double c_val1 = 0.1;
-  Eigen::Vector3d f_sliding_tangential = -c_val1 * v_tangential_S1Cb_W;
+  Eigen::Vector3d f_sliding_tangential = -c_val1 * v_tangential_SaCb_W;
   const CoulombFriction<double> combined_friction =
       CalcContactFrictionFromSurfaceProperties(
           plant.default_coulomb_friction(spheres.sphere_geometry_ids()[0]),
           plant.default_coulomb_friction(spheres.sphere_geometry_ids()[1]));
-  Eigen::Vector3d f_sliding_normal = nhat_S1S2_W * f_sliding_tangential.norm() /
+  Eigen::Vector3d f_sliding_normal = nhat_SaSb_W * f_sliding_tangential.norm() /
                                      combined_friction.dynamic_friction();
   Eigen::Vector3d f_sliding = f_sliding_normal + f_sliding_tangential;
   Eigen::Vector3d f_static(0, 0, 0);
   Eigen::Vector3d lambda = f_sliding + f_static;
   Eigen::VectorXd x_satisfied;
-  binding.evaluator()->ComposeX<double>(q_val, v_val, lambda, f_static,
-                                        f_sliding, c_val1, &x_satisfied);
-  EXPECT_TRUE(binding.evaluator()->CheckSatisfied(x_satisfied, 1E-14));
+  bindings.first.evaluator()->ComposeX<double>(q_val, v_val, lambda, f_static,
+                                               f_sliding, c_val1, &x_satisfied);
+  EXPECT_TRUE(bindings.first.evaluator()->CheckSatisfied(x_satisfied, 1E-14));
 }
 }  // namespace
 }  // namespace multibody
