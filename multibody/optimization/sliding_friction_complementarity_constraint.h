@@ -43,12 +43,11 @@
  *     | f_tangential | ≤ μ f_normal                      (6)
  *
  * Depending on whether the contact is explicit or implicit, we add constraint
- * (6) by either adding a StaticFrictionConeConstraint, if the user knows
- * explicitly that the contact occurs, or calling
- * AddStaticFrictionConeComplementarityConstraint if the user doesn't know if
- * the contact has to occur. The user could refer to
- * static_friction_cone_constraint.h or
- * static_friction_cone_complementarity_constraint.h
+ * (6) by either calling
+ * AddSlidingFrictionComplementarityExplicitContactConstraint(), if the user
+ * knows explicitly that the contact occurs, or calling
+ * AddSlidingFrictionComplementarityImplicitContactConstraint() if the user
+ * doesn't know if the contact has to occur.
  */
 namespace drake {
 namespace multibody {
@@ -174,13 +173,12 @@ AddSlidingFrictionComplementarityExplicitContactConstraint(
 
 /**
  * For a pair of geometries in implicit contact (they may or may not be in
- * contact, and hence we impose the complementarity constraint 0 ≤ φ(q) ⊥ fₙ ≥
- * 0), we impose the complementarity constraint on the sliding friction force
- * constraint explained in @ref sliding_friction_complementarity_constraint. The
- * input arguments are the same as those in
+ * contact, adds the sliding friction complementarity constraint explained in
+ * @ref sliding_friction_complementarity_constraint. The input arguments are the
+ * same as those in
  * AddSlidingFrictionComplementarityExplicitContactConstraint(). The difference
- * is that the returned argument includes the nonlinear complementarity
- * constraint 0 ≤ φ(q) ⊥ fₙ≥ 0.
+ * is that the returned argument includes the nonlinear complementarity binding
+ * 0 ≤ φ(q) ⊥ fₙ≥ 0, which imposes the constraint for implicit contact.
  */
 std::pair<solvers::Binding<
               internal::SlidingFrictionComplementarityNonlinearConstraint>,
