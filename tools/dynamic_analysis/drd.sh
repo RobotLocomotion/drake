@@ -18,15 +18,12 @@ export GTEST_DEATH_TEST_USE_FORK=1
 valgrind \
     --error-exitcode=1 \
     --gen-suppressions=all \
-    --leak-check=full \
     --num-callers=16 \
-    --show-leak-kinds=definite,possible \
-    --suppressions="${mydir}/valgrind.supp" \
+    --suppressions="${mydir}/drd.supp" \
     --suppressions=/usr/lib/valgrind/debian.supp \
     --suppressions=/usr/lib/valgrind/python.supp \
-    --tool=memcheck \
+    --tool=drd \
     --trace-children=yes \
     --trace-children-skip=/bin/cat,/bin/cp,/bin/mkdir,/bin/sed,/usr/bin/clang,/usr/bin/clang-6.0,/usr/bin/clang-format-6.0,/usr/bin/dot,/usr/bin/fc-list,/usr/bin/find,/usr/bin/gcc \
     --trace-children-skip-by-arg=meshcat.servers.zmqserver \
-    --track-origins=yes \
     "$@"

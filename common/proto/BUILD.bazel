@@ -19,6 +19,7 @@ load(
 )
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "no_valgrind_tools_test_tags")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -168,6 +169,8 @@ drake_py_unittest(
     flaky = 1,
     # We wish to access neighboring files.
     isolate = 0,
+    # Fails when run under Valgrind tools.
+    tags = no_valgrind_tools_test_tags(),
 )
 
 drake_cc_googletest(

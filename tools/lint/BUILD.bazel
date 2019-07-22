@@ -14,6 +14,7 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
+load("//tools/skylark:test_tags.bzl", "no_valgrind_tools_test_tags")
 
 # TODO(jwnimmer-tri) This probably deserves to live in drake/common, since it
 # should probably be widely used, but we'll wait until we have more evidence
@@ -103,6 +104,8 @@ drake_py_binary(
 drake_py_unittest(
     name = "buildifier_test",
     data = [":buildifier"],
+    # Fails when run under Valgrind tools.
+    tags = no_valgrind_tools_test_tags(),
 )
 
 drake_py_unittest(

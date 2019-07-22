@@ -26,6 +26,7 @@ load(
     "drake_py_proto_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "no_valgrind_tools_test_tags")
 
 drake_py_proto_library(
     name = "named_vector",
@@ -91,6 +92,8 @@ sh_test(
         "test/goal/sample.h",
         "test/lcmt_sample_t.lcm",
     ],
+    # Fails when run under Valgrind tools.
+    tags = no_valgrind_tools_test_tags(),
 )
 
 add_lint_tests()

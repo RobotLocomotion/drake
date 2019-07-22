@@ -14,6 +14,7 @@ load(
     "mosek_test_tags",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "no_valgrind_tools_test_tags")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -1226,16 +1227,14 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "dreal_solver_test",
     timeout = "moderate",
-    tags = [
-        # For most of floating-point operations, Valgrind only supports the
-        # IEEE default mode (round to nearest) while dReal uses to +infinity
-        # and to -infinity rounding modes intensively to maintain conservative
-        # interval approximations. This causes some of the assertions to fail
-        # in the test. So we disable memcheck for this test. See
-        # http://valgrind.org/docs/manual/manual-core.html#manual-core.limits
-        # for more information.
-        "no_memcheck",
-    ],
+    # For most of floating-point operations, Valgrind core only supports the
+    # IEEE default mode (round to nearest) while dReal uses to +infinity
+    # and to -infinity rounding modes intensively to maintain conservative
+    # interval approximations. This causes some of the assertions to fail
+    # in the test. So we disable memcheck for this test. See
+    # http://valgrind.org/docs/manual/manual-core.html#manual-core.limits
+    # for more information.
+    tags = no_valgrind_tools_test_tags(),
     deps = [
         ":dreal_solver",
         ":generic_trivial_constraint",

@@ -7,6 +7,7 @@ load(
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "no_valgrind_tools_test_tags")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -300,9 +301,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "simulator_denorm_test",
-    # Valgrind doesn't support the floating point register
+    # Valgrind core does not support the floating point register
     # instructions that this test uses.
-    tags = ["no_memcheck"],
+    tags = no_valgrind_tools_test_tags(),
     deps = [
         ":simulator",
     ],

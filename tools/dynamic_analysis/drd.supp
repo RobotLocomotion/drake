@@ -1,0 +1,32 @@
+{
+   zmq: conflicting load/store by thread
+   drd:ConflictingAccess
+   ...
+   obj:/usr/lib/x86_64-linux-gnu/libzmq.so.*
+}
+
+{
+   mosek: probably a race condition: condition variable has been signaled but the associated mutex is not locked by the signalling thread in MSK_deleteenv
+   drd:CondRaceErr
+   ...
+   fun:lc_free_job
+   fun:MSK_provmqpch
+   fun:MSK_deleteenv
+}
+
+{
+   mosek: destroying locked mutex in MSK_deleteenv
+   drd:MutexErr
+   ...
+   fun:lc_free_job
+   fun:MSK_provmqpch
+   fun:MSK_deleteenv
+}
+
+{
+   mosek: mutex not locked in MSK_checkoutlicense
+   drd:MutexErr
+   ...
+   fun:lc_checkout
+   fun:MSK_checkoutlicense
+}
