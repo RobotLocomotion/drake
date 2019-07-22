@@ -114,7 +114,6 @@ class DenseComponentUnitTests {
     y.InitializeConstraintMargin();
 
     DenseResidual r(n_, q_);
-    r.LinkData(&data);
 
     double sigma = 0.5;
 
@@ -146,7 +145,6 @@ class DenseComponentUnitTests {
     x.InitializeConstraintMargin();
 
     DenseResidual r(n_, q_);
-    r.LinkData(&data);
 
     r.NaturalResidual(x);
     VectorXd rz_expected(n_);
@@ -188,11 +186,9 @@ class DenseComponentUnitTests {
     y.InitializeConstraintMargin();
 
     DenseResidual r(n_, q_);
-    r.LinkData(&data);
     r.Fill(1.0);
 
     DenseLinearSolver solver(n_, q_);
-    solver.LinkData(&data);
 
     double sigma = 0.5;
     solver.Factor(x, y, sigma);
@@ -225,7 +221,7 @@ class DenseComponentUnitTests {
    * infeasibility, i.e., it seperates Range(A) and b.
    * The example is from https://arxiv.org/pdf/1901.04046.pdf
    */
-  void InfeasibilityDetection() {
+  void PrimalInfeasibilityDetection() {
     MatrixXd H(2, 2);
     MatrixXd A(5, 2);
     VectorXd f(2);
@@ -252,7 +248,6 @@ class DenseComponentUnitTests {
     dx.InitializeConstraintMargin();
 
     DenseFeasibility feas(n, q);
-    feas.LinkData(&data);
     feas.ComputeFeasibility(dx, 1e-8);
 
     ASSERT_TRUE(feas.IsDualFeasible());
@@ -261,12 +256,12 @@ class DenseComponentUnitTests {
 
   /**
    * This test checks that the infeasibility checker class correctly
-   * identifies certificates of  unboundedness.
+   * identifies certificates of dual infeasibility.
    * The QP used in this example has a direction of infinite descent
    * given by [0 1].
    * The example is taken from https://arxiv.org/pdf/1901.04046.pdf
    */
-  void UnboundednessDetection() {
+  void DualInfeasibilityDetection() {
     MatrixXd H(2, 2);
     MatrixXd A(4, 2);
     VectorXd f(2);
@@ -292,7 +287,6 @@ class DenseComponentUnitTests {
     dx.z() << 0, 1;
 
     DenseFeasibility feas(n, q);
-    feas.LinkData(&data);
     feas.ComputeFeasibility(dx, 1e-8);
 
     ASSERT_FALSE(feas.IsDualFeasible());

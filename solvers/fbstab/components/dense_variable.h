@@ -130,6 +130,7 @@ class DenseVariable {
   int nz_ = 0;  // Number of decision variable
   int nv_ = 0;  // Number of inequality constraints
   const DenseData* data_ = nullptr;
+  const DenseData* data() const;
   Eigen::VectorXd* z_ = nullptr;  // primal variable
   Eigen::VectorXd* v_ = nullptr;  // dual variable
   Eigen::VectorXd* y_ = nullptr;  // inequality margin

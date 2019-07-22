@@ -16,14 +16,16 @@ namespace fbstab {
  * QPs. See dense_data.h for a description of the QP.
  *
  * Residuals have 2 components:
- * z: Optimality residual
- * v: Complementarity residual
+ * - z: Stationarity residual
+ * - v: Complementarity residual
  */
 class DenseResidual {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseResidual);
   /**
    * Allocates memory for computing and storing residual vectors.
+   * Uses alpha = 0.95 (see (19) in https://arxiv.org/pdf/1901.04046.pdf) 
+   * by default.
    *
    * @param[in] nz Number of decision variables
    * @param[in] nv Number of inequality constraints
@@ -31,13 +33,6 @@ class DenseResidual {
    * Throws an exception if any inputs aren't positive.
    */
   DenseResidual(int nz, int nv);
-
-  /**
-   * Links the residual object with the problem data needed to
-   * perform calculations.
-   * @param[in] data pointer to the problem data.
-   */
-  void LinkData(const DenseData* data) { data_ = data; };
 
   /**
    * Performs the operation
@@ -52,7 +47,7 @@ class DenseResidual {
    * where P is the proximal operator.
    *
    * See (11) and (20) in https://arxiv.org/pdf/1901.04046.pdf
-   * for a mathematical description.
+   * for a mathematical description. 
    *
    * @param[in] x      Inner loop variable
    * @param[in] xbar   Outer loop variable
@@ -65,7 +60,7 @@ class DenseResidual {
                      double sigma);
 
   /**
-   * Computes \pi(x): the natural residual of the QP
+   * Computes π(x): the natural residual of the QP
    * at the primal-dual point x and stores the result internally.
    * See (17) in https://arxiv.org/pdf/1901.04046.pdf
    * for a mathematical definition.
@@ -109,10 +104,18 @@ class DenseResidual {
 
   /** Accessor for stationarity residual. */
   Eigen::VectorXd& z() { return z_; };
+  /** Accessor for stationarity residual. */
+  const Eigen::VectorXd& z() const { return z_; };
 
   /** Accessor for complementarity residual. */
   Eigen::VectorXd& v() { return v_; };
+  /** Accessor for complementarity residual. */
+  const Eigen::VectorXd& v() const { return v_; };
 
+   /** 
+   * Sets the alpha parameter defined in (19)
+   * of https://arxiv.org/pdf/1901.04046.pdf.
+   */
   void SetAlpha(double alpha) { alpha_ = alpha; }
 
   /** Norm of the stationarity residual. */
@@ -125,10 +128,9 @@ class DenseResidual {
    * so this methods returns 0.
    * It's needed by the printing routines of the FBstabAlgorithm class.
    */
-  double l_norm() const { return 0; }
+  double l_norm() const { return 0.0; }
 
  private:
-  const DenseData* data_ = nullptr;  // access to the data object
   int nz_ = 0;                       // number of decision variables
   int nv_ = 0;                       // number of inequality constraints
   Eigen::VectorXd z_;                // storage for the stationarity residual
@@ -138,7 +140,7 @@ class DenseResidual {
   double vnorm_ = 0.0;
 
   /*
-   * Evaluate the Penalized Fischer-Burmeister function
+   * Evaluate the Penalized Fischer-Burmeister (PFB) function
    * (19) in https://arxiv.org/pdf/1901.04046.pdf
    */
   static double pfb(double a, double b, double alpha);

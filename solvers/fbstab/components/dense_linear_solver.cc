@@ -1,9 +1,8 @@
 #include "drake/solvers/fbstab/components/dense_linear_solver.h"
 
 #include <cmath>
-#include <iostream>
-#include <Eigen/Dense>
 
+#include <Eigen/Dense>
 #include "drake/solvers/fbstab/components/dense_data.h"
 #include "drake/solvers/fbstab/components/dense_residual.h"
 #include "drake/solvers/fbstab/components/dense_variable.h"
@@ -33,6 +32,11 @@ void DenseLinearSolver::SetAlpha(double alpha) { alpha_ = alpha; }
 
 bool DenseLinearSolver::Factor(const DenseVariable& x,
                                const DenseVariable& xbar, double sigma) {
+  const DenseData* const data = x.data();
+  if (xbar.data() != data) {
+    throw std::runtime_error(
+        "In DenseLinearSolver::Factor: x and xbar have mismatched problem data.");
+  }
   if (xbar.nz_ != x.nz_ || xbar.nv_ != x.nv_) {
     throw std::runtime_error(
         "In DenseLinearSolver::Factor: inputs must be the same size");
@@ -45,19 +49,15 @@ bool DenseLinearSolver::Factor(const DenseVariable& x,
     throw std::runtime_error(
         "In DenseLinearSolver::Factor: sigma must be positive.");
   }
-  if (data_ == nullptr) {
-    throw std::runtime_error(
-        "In DenseLinearSolver::Factor: problem data not linked.");
-  }
-  const Eigen::MatrixXd& H = data_->H();
-  const Eigen::MatrixXd& A = data_->A();
+  const Eigen::MatrixXd& H = data->H();
+  const Eigen::MatrixXd& A = data->A();
 
   K_ = H + sigma * Eigen::MatrixXd::Identity(nz_, nz_);
 
   // K <- K + A'*diag(Gamma(x))*A
   Point2D pfb_gradient;
   for (int i = 0; i < nv_; i++) {
-    double ys = x.y()(i) + sigma * (x.v()(i) - xbar.v()(i));
+    const double ys = x.y()(i) + sigma * (x.v()(i) - xbar.v()(i));
     pfb_gradient = PFBGradient(ys, x.v()(i));
     gamma_(i) = pfb_gradient.x;
     mus_(i) = pfb_gradient.y + sigma * pfb_gradient.x;
@@ -73,7 +73,7 @@ bool DenseLinearSolver::Factor(const DenseVariable& x,
   return true;
 }
 
-bool DenseLinearSolver::Solve(const DenseResidual& r, DenseVariable* x) {
+bool DenseLinearSolver::Solve(const DenseResidual& r, DenseVariable* x) const {
   if (x == nullptr) {
     throw std::runtime_error("In DenseLinearSolver::Solve: x cannot be null.");
   }
@@ -86,12 +86,9 @@ bool DenseLinearSolver::Solve(const DenseResidual& r, DenseVariable* x) {
     throw std::runtime_error(
         "In DenseLinearSolver::Factor: inputs must match object size.");
   }
-  if (data_ == nullptr) {
-    throw std::runtime_error(
-        "In DenseLinearSolver::Solve: problem data not linked.");
-  }
-  const Eigen::MatrixXd& A = data_->A();
-  const Eigen::VectorXd& b = data_->b();
+  const DenseData* const data = x->data();
+  const Eigen::MatrixXd& A = data->A();
+  const Eigen::VectorXd& b = data->b();
 
   // This method solves the system:
   // KK'z = rz - A'*diag(1/mus)*rv
@@ -99,7 +96,7 @@ bool DenseLinearSolver::Solve(const DenseResidual& r, DenseVariable* x) {
   // Where K has been precomputed by the factor routine.
   // See (28) and (29) in https://arxiv.org/pdf/1901.04046.pdf
 
-  // compute rz - A'*(rv./mus) and store it in r1_
+  // Compute rz - A'*(rv./mus) and store it in r1_.
   r2_ = r.v_.cwiseQuotient(mus_);
   r1_.noalias() = r.z_ - A.transpose() * r2_;
 
@@ -125,7 +122,7 @@ bool DenseLinearSolver::Solve(const DenseResidual& r, DenseVariable* x) {
 }
 
 void DenseLinearSolver::CholeskySolve(const Eigen::MatrixXd& A,
-                                      Eigen::VectorXd* b) {
+                                      Eigen::VectorXd* b) const {
   A.triangularView<Eigen::Lower>().solveInPlace(*b);
   A.triangularView<Eigen::Lower>().transpose().solveInPlace(*b);
 }
@@ -133,8 +130,8 @@ void DenseLinearSolver::CholeskySolve(const Eigen::MatrixXd& A,
 DenseLinearSolver::Point2D DenseLinearSolver::PFBGradient(double a, double b) {
   double y = 0;
   double x = 0;
-  double r = sqrt(a * a + b * b);
-  double d = 1.0 / sqrt(2.0);
+  const double r = sqrt(a * a + b * b);
+  const double d = 1.0 / sqrt(2.0);
 
   if (r < zero_tolerance_) {
     x = alpha_ * (1.0 - d);

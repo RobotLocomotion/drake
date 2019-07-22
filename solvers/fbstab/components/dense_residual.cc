@@ -2,8 +2,8 @@
 
 #include <cmath>
 #include <iostream>
-#include <Eigen/Dense>
 
+#include <Eigen/Dense>
 #include "drake/solvers/fbstab/components/dense_data.h"
 #include "drake/solvers/fbstab/components/dense_variable.h"
 
@@ -24,15 +24,12 @@ void DenseResidual::Negate() {
 }
 
 void DenseResidual::NaturalResidual(const DenseVariable& x) {
-  if (data_ == nullptr) {
-    throw std::runtime_error(
-        "DenseResidual::NaturalResidual cannot be used unless data is linked");
-  }
+  const DenseData* const data = x.data();
   // rz = H*z + f + A'*v
-  // calls are arranged to avoid creating temporaries
-  z_.noalias() = data_->H() * x.z();
-  z_.noalias() += data_->f();
-  z_.noalias() += data_->A().transpose() * x.v();
+  // Calls are arranged to avoid creating temporaries.
+  z_.noalias() = data->H() * x.z();
+  z_.noalias() += data->f();
+  z_.noalias() += data->A().transpose() * x.v();
 
   // rv = min(y,v)
   v_.noalias() = x.y().cwiseMin(x.v());
@@ -42,52 +39,40 @@ void DenseResidual::NaturalResidual(const DenseVariable& x) {
 }
 
 void DenseResidual::PenalizedNaturalResidual(const DenseVariable& x) {
-  if (data_ == nullptr) {
-    throw std::runtime_error(
-        "DenseResidual::PenalizedNaturalResidual cannot be used unless data is "
-        "linked");
-  }
-  // rz = H*z + f + A'*v
-  // calls are arranged to avoid creating temporaries
-  z_.noalias() = data_->H() * x.z();
-  z_.noalias() += data_->f();
-  z_.noalias() += data_->A().transpose() * x.v();
-
-  // rv = min(y,v) + max(0,y)*max(0,v)
+  NaturalResidual(x);
   for (int i = 0; i < nv_; i++) {
-    v_(i) = min(x.y()(i), x.v()(i));
     v_(i) = alpha_ * v()(i) +
             (1.0 - alpha_) * max(0.0, x.y()(i)) * max(0.0, x.v()(i));
   }
-
   znorm_ = z_.norm();
   vnorm_ = v_.norm();
 }
 
 void DenseResidual::InnerResidual(const DenseVariable& x,
                                   const DenseVariable& xbar, double sigma) {
-  if (data_ == nullptr) {
+  const DenseData* const data = x.data();
+  if (xbar.data() != data) {
     throw std::runtime_error(
-        "DenseResidual::InnerResidual cannot be used unless data is linked");
+        "In DenseResidual::InnerResidual: x and xbar have mismatched problem data.");
   }
   if (x.num_variables() != xbar.num_variables() ||
       x.num_constraints() != xbar.num_constraints()) {
-    throw std::runtime_error("Size mismatch in DenseResidual::InnerResidual");
+    throw std::runtime_error("Size mismatch in DenseResidual::InnerResidual.");
   }
   if (sigma <= 0) {
     throw std::runtime_error(
         "In DenseResidual::InnerResidual: sigma must be positive.");
   }
   // rz = Hz + f + A'v + sigma(z - zbar)
-  // calls are arranged to avoid creating temporaries
-  z_.noalias() = data_->H() * x.z();
-  z_.noalias() += data_->f();
-  z_.noalias() += data_->A().transpose() * x.v();
+  // Calls are arranged so as to avoid creating temporaries.
+  z_.noalias() = data->H() * x.z();
+  z_.noalias() += data->f();
+  z_.noalias() += data->A().transpose() * x.v();
   z_.noalias() += sigma * (x.z() - xbar.z());
 
   // v_ = phi(ys,v), ys = y + sigma(x.v - xbar.v)
   for (int i = 0; i < nv_; i++) {
-    double ys = x.y()(i) + sigma * (x.v()(i) - xbar.v()(i));
+    const double ys = x.y()(i) + sigma * (x.v()(i) - xbar.v()(i));
     v_(i) = pfb(ys, x.v()(i), alpha_);
   }
 
@@ -105,7 +90,7 @@ double DenseResidual::Norm() const {
 }
 
 double DenseResidual::Merit() const {
-  double temp = Norm();
+  const double temp = Norm();
   return 0.5 * temp * temp;
 }
 
@@ -114,7 +99,7 @@ double DenseResidual::max(double a, double b) { return a > b ? a : b; }
 double DenseResidual::min(double a, double b) { return a < b ? a : b; }
 
 double DenseResidual::pfb(double a, double b, double alpha) {
-  double fb = a + b - sqrt(a * a + b * b);
+  const double fb = a + b - sqrt(a * a + b * b);
   return alpha * fb + (1.0 - alpha) * max(0, a) * max(0, b);
 }
 

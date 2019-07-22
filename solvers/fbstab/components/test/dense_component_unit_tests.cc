@@ -32,14 +32,14 @@ GTEST_TEST(FBstabDense, DenseLinearSolver) {
   test.LinearSolverResidual();
 }
 
-GTEST_TEST(FBstabDense, InfeasibilityDetection) {
+GTEST_TEST(FBstabDense, PrimalInfeasibilityDetection) {
   DenseComponentUnitTests test;
-  test.InfeasibilityDetection();
+  test.PrimalInfeasibilityDetection();
 }
 
-GTEST_TEST(FBstabDense, UnboundednessDetection) {
+GTEST_TEST(FBstabDense, DualInfeasibilityDetection) {
   DenseComponentUnitTests test;
-  test.UnboundednessDetection();
+  test.DualInfeasibilityDetection();
 }
 
 }  // namespace
