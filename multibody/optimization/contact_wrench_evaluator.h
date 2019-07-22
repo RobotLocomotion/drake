@@ -1,7 +1,9 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "drake/common/sorted_pair.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -184,12 +186,10 @@ class ContactWrenchFromForceInWorldFrameEvaluator final
 namespace internal {
 /**
  * This struct records the contact wrench evaluator, together with the indices
- * of lambda used in this evaluator, among all lambda (the variable bound with
- * the StaticEquilibriumConstraint).
+ * of lambda used in this evaluator, among all lambda.
  *
- * The user is not supposed to use this struct. To create a
- * StaticEquilibriumConstraint, the user should call
- * CreateStaticEquilibriumConstraint.
+ * The user is not supposed to use this struct directly. It is used internally
+ * by the constraint's MakeBinding() method.
  */
 struct GeometryPairContactWrenchEvaluatorBinding {
   GeometryPairContactWrenchEvaluatorBinding(

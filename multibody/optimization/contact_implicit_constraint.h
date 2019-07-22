@@ -25,9 +25,10 @@ class ContactImplicitConstraint final : public solvers::Constraint {
 
   /**
    * This constraint depends on the decision variable vector:
-   * {v[n], q[n+1], v[n+1], u[n+1] and λ[n+1]}.
+   * {vₙ, qₙ₊₁, vₙ₊₁, uₙ₊₁, λₙ₊₁, dt}.
    * @param plant The plant on which the constraint is imposed.
-   * @param context The context for the subsystem @p plant.
+   * @param context The context for the subsystem @p plant. This context stores
+   * the next state {qₙ₊₁, vₙ₊₁}.
    * @param contact_wrench_evaluators_and_lambda For each contact pair, we
    * need to compute the contact wrench applied at the point of contact,
    * expressed in the world frame, namely Fᵢ_AB_W(λᵢ,ₙ₊₁) at time n+1.
@@ -41,8 +42,9 @@ class ContactImplicitConstraint final : public solvers::Constraint {
    * @param q_next_vars The decision variables for qₙ₊₁.
    * @param v_next_vars The decision variables for vₙ₊₁.
    * @param u_next_vars The decision variables for uₙ₊₁.
+   * @param dt_var The decision variable for dt.
    * @return binding The binding between the contact implicit constraint and
-   * the variables vₙ, qₙ₊₁, vₙ₊₁, uₙ₊₁ and λₙ₊₁.
+   * the variables vₙ, qₙ₊₁, vₙ₊₁, uₙ₊₁, λₙ₊₁, and dt.
    * @pre @p plant must have been connected to a SceneGraph properly. Refer to
    * AddMultibodyPlantSceneGraph for documentation on connecting a
    * MultibodyPlant to a SceneGraph.
@@ -56,7 +58,8 @@ class ContactImplicitConstraint final : public solvers::Constraint {
       const Eigen::Ref<const VectorX<symbolic::Variable>>& v_vars,
       const Eigen::Ref<const VectorX<symbolic::Variable>>& q_next_vars,
       const Eigen::Ref<const VectorX<symbolic::Variable>>& v_next_vars,
-      const Eigen::Ref<const VectorX<symbolic::Variable>>& u_next_vars);
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& u_next_vars,
+      const symbolic::Variable& dt_var);
 
   ~ContactImplicitConstraint() override {}
 
@@ -79,7 +82,7 @@ class ContactImplicitConstraint final : public solvers::Constraint {
       systems::Context<AutoDiffXd>* context,
       const std::map<SortedPair<geometry::GeometryId>,
                      internal::GeometryPairContactWrenchEvaluatorBinding>&
-          contact_pair_to_wrench_evaluator, double time_step);
+          contact_pair_to_wrench_evaluator);
 
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const final;
@@ -94,7 +97,6 @@ class ContactImplicitConstraint final : public solvers::Constraint {
                  internal::GeometryPairContactWrenchEvaluatorBinding>
       contact_pair_to_wrench_evaluator_;
   const MatrixX<AutoDiffXd> B_actuation_;
-  const double time_step_;
 };
 
 }  // namespace multibody

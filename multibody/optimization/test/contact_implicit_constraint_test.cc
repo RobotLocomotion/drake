@@ -22,10 +22,9 @@ class TwoFreeSpheresTest : public ::testing::Test {
     spheres.emplace_back(0.2, 1E3, CoulombFriction<double>(0.9, 0.7));
     spheres_ = std::make_unique<test::FreeSpheresAndBoxes<AutoDiffXd>>(
         spheres, std::vector<test::BoxSpecification>() /* no boxes */,
-        CoulombFriction<double>(1, 0.8), time_step_);
+        CoulombFriction<double>(1, 0.8));
     spheres_double_ = std::make_unique<test::FreeSpheresAndBoxes<double>>(
-        spheres_->spheres(), spheres_->boxes(), spheres_->ground_friction(),
-        time_step_);
+        spheres_->spheres(), spheres_->boxes(), spheres_->ground_friction());
     const auto& query_port = spheres_->plant().get_geometry_query_input_port();
     const auto& query_object =
         query_port.Eval<geometry::QueryObject<AutoDiffXd>>(
@@ -35,8 +34,10 @@ class TwoFreeSpheresTest : public ::testing::Test {
             query_object.inspector().GetCollisionCandidates();
     const auto& plant = spheres_->plant();
     v_vars_ = prog_.NewContinuousVariables(plant.num_velocities(), "v");
-    q_next_vars_ = prog_.NewContinuousVariables(plant.num_positions(), "q_next");
-    v_next_vars_ = prog_.NewContinuousVariables(plant.num_velocities(), "v_next");
+    q_next_vars_ =
+        prog_.NewContinuousVariables(plant.num_positions(), "q_next");
+    v_next_vars_ =
+        prog_.NewContinuousVariables(plant.num_velocities(), "v_next");
     int geometry_pair_count = 0;
     for (const auto& geometry_pair : collision_candidate_pairs) {
       auto wrench_evaluator =
@@ -51,6 +52,7 @@ class TwoFreeSpheresTest : public ::testing::Test {
           std::make_pair(wrench_evaluator, lambda_i));
       geometry_pair_count++;
     }
+    dt_var_ = prog_.NewContinuousVariables(1, "dt")(0);
   }
 
   void CheckContactImplicitConstraintEval(
@@ -59,7 +61,8 @@ class TwoFreeSpheresTest : public ::testing::Test {
       const Eigen::Ref<const AutoDiffVecXd>& v_autodiff,
       const Eigen::Ref<const AutoDiffVecXd>& q_next_autodiff,
       const Eigen::Ref<const AutoDiffVecXd>& v_next_autodiff,
-      const Eigen::Ref<const AutoDiffVecXd> lambda_autodiff) {
+      const Eigen::Ref<const AutoDiffVecXd>& lambda_autodiff,
+      const Eigen::Ref<const AutoDiffVecXd>& dt_autodiff) {
     // Manually evaluates the contact implicit constraint
     // (Bu[n+1]  + ∑ᵢ Jᵢ(q[n+1])ᵀFᵢ_AB_W(λᵢ[n+1]) + g(q[n+1])
     //  - C(q[n+1], v[n+1])) * dt
@@ -134,11 +137,13 @@ class TwoFreeSpheresTest : public ::testing::Test {
     spheres_->plant().CalcMassMatrixViaInverseDynamics(
         *spheres_->get_mutable_plant_context(), &M_mass_autodiff);
 
-    y_autodiff_expected = y_autodiff_expected * time_step_ -
+    y_autodiff_expected = y_autodiff_expected * dt_autodiff -
                           M_mass_autodiff * (v_next_autodiff - v_autodiff);
 
-    AutoDiffVecXd x_autodiff(47);
-    x_autodiff << v_autodiff, q_next_autodiff, v_next_autodiff, lambda_autodiff;
+    // 48 = 24 for velocities, 14 for positions, 9 for lambda, 1 for dt
+    AutoDiffVecXd x_autodiff(48);
+    x_autodiff << v_autodiff, q_next_autodiff, v_next_autodiff, lambda_autodiff,
+        dt_autodiff;
     AutoDiffVecXd y_autodiff;
     contact_implicit_binding.evaluator()->Eval(x_autodiff, &y_autodiff);
     EXPECT_TRUE(CompareMatrices(
@@ -175,7 +180,7 @@ class TwoFreeSpheresTest : public ::testing::Test {
   std::vector<std::pair<std::shared_ptr<ContactWrenchEvaluator>,
                         VectorX<symbolic::Variable>>>
       contact_wrench_evaluators_and_lambda_;
-  double time_step_{0.1};
+  symbolic::Variable dt_var_;
 };
 
 TEST_F(TwoFreeSpheresTest, Construction) {
@@ -184,10 +189,11 @@ TEST_F(TwoFreeSpheresTest, Construction) {
   const auto contact_implicit_binding = ContactImplicitConstraint::MakeBinding(
       &plant, spheres_->get_mutable_plant_context(),
       contact_wrench_evaluators_and_lambda_, v_vars_, q_next_vars_,
-      v_next_vars_, u_next_vars_);
+      v_next_vars_, u_next_vars_, dt_var_);
   // Test the size of ContactImplicitConstraint
-  EXPECT_EQ(contact_implicit_binding.evaluator()->num_vars(),
-            47 /* 24 for velocities, 14 for positions, 9 for lambda */);
+  EXPECT_EQ(
+      contact_implicit_binding.evaluator()->num_vars(),
+      48 /* 24 for velocities, 14 for positions, 9 for lambda, 1 for dt */);
   EXPECT_EQ(contact_implicit_binding.evaluator()->num_constraints(),
             plant.num_velocities());
   EXPECT_TRUE(
@@ -223,7 +229,7 @@ TEST_F(TwoFreeSpheresTest, Eval) {
       ContactImplicitConstraint::MakeBinding(
           &plant, spheres_->get_mutable_plant_context(),
           contact_wrench_evaluators_and_lambda_, v_vars_, q_next_vars_,
-          v_next_vars_, u_next_vars_);
+          v_next_vars_, u_next_vars_, dt_var_);
   math::RigidTransform<double> X_WS0, X_WS1;
   // Set the sphere pose X_WS0 and X_WS1 arbitrarily.
   X_WS0.set(math::RotationMatrix<double>(Eigen::AngleAxisd(
@@ -247,21 +253,26 @@ TEST_F(TwoFreeSpheresTest, Eval) {
   Eigen::VectorXd lambda_val(9);
   // Test lambda = 0.
   lambda_val.setZero();
-  Eigen::VectorXd x_val(47);
-  x_val << v_val, q_next_val, v_next_val, lambda_val;
+  double dt_val = 0.1;
+  // 48 = 24 for velocities, 14 for positions, 9 for lambda, 1 for dt
+  Eigen::VectorXd x_val(48);
+  x_val << v_val, q_next_val, v_next_val, lambda_val, dt_val;
+
   auto x_autodiff = math::initializeAutoDiff(x_val);
+
   CheckContactImplicitConstraintEval(
       contact_implicit_binding, x_autodiff.head<12>(),
       x_autodiff.segment<14>(12), x_autodiff.segment<12>(12 + 14),
-      x_autodiff.tail<9>());
+      x_autodiff.segment<9>(12 + 14 + 12), x_autodiff.tail<1>());
+
   // Test lambda != 0
   lambda_val << 2, 3, 4, 5, 6, 7, 8, 9, 10;
-  x_val << v_val, q_next_val, v_next_val, lambda_val;
+  x_val << v_val, q_next_val, v_next_val, lambda_val, dt_val;
   x_autodiff = math::initializeAutoDiff(x_val);
   CheckContactImplicitConstraintEval(
       contact_implicit_binding, x_autodiff.head<12>(),
       x_autodiff.segment<14>(12), x_autodiff.segment<12>(12 + 14),
-      x_autodiff.tail<9>());
+      x_autodiff.segment<9>(12 + 14 + 12), x_autodiff.tail<1>());
 
   // Solves the optimization problem.
   // Note that we don't impose the complementarity constraint signed_distance *
@@ -293,6 +304,7 @@ TEST_F(TwoFreeSpheresTest, Eval) {
       contact_wrench_evaluators_and_lambda_[2].second,
       Eigen::Vector3d(0, 0, -spheres_->spheres()[1].inertia.get_mass() * 9.81),
       &x_init);
+  prog_.SetDecisionVariableValueInVector(dt_var_, dt_val, &x_init);
 
   auto result = solvers::Solve(prog_, x_init);
   EXPECT_TRUE(result.is_success());
@@ -373,8 +385,8 @@ TEST_F(TwoFreeSpheresTest, Eval) {
     }
   }
 
-  Eigen::Matrix<double, Eigen::Dynamic, 1>
-      C_bias(spheres_double_->plant().num_velocities(), 1);
+  Eigen::Matrix<double, Eigen::Dynamic, 1> C_bias(
+      spheres_double_->plant().num_velocities(), 1);
   spheres_double_->plant().CalcBiasTerm(
       *spheres_double_->get_mutable_plant_context(), &C_bias);
   EXPECT_TRUE(CompareMatrices(C_bias, Eigen::VectorXd(12).setZero(), 1e-12));
@@ -386,22 +398,20 @@ TEST_F(TwoFreeSpheresTest, Eval) {
       *spheres_double_->get_mutable_plant_context(), &M_mass);
   auto v_sol = result.GetSolution(v_vars_);
   auto v_next_sol = result.GetSolution(v_next_vars_);
+  auto dt_sol = result.GetSolution(dt_var_);
 
   // Compute the inertial forces (i.e., the left hand side of the multibody
   // dynamics equation), expressed in the world frame.
-  Eigen::VectorXd lhs = M_mass * (v_next_sol - v_sol) / time_step_;
-  lhs.head<3>() = lhs.head<3>() +
-      X_WS0.translation().cross(lhs.segment<3>(3));
-  lhs.segment<3>(6) = lhs.segment<3>(6) +
-      X_WS1.translation().cross(lhs.tail<3>());
+  Eigen::VectorXd lhs = M_mass * (v_next_sol - v_sol) / dt_sol;
+  lhs.head<3>() = lhs.head<3>() + X_WS0.translation().cross(lhs.segment<3>(3));
+  lhs.segment<3>(6) =
+      lhs.segment<3>(6) + X_WS1.translation().cross(lhs.tail<3>());
 
   // The solver's default tolerance is 1E-6 (with normalization). The
   // unnormalized tolerance is about 1E-5.
   const double tol = 1E-5;
-  EXPECT_TRUE(
-      CompareMatrices(sphere0_total_wrench, lhs.head<6>(), tol));
-  EXPECT_TRUE(
-      CompareMatrices(sphere1_total_wrench, lhs.tail<6>(), tol));
+  EXPECT_TRUE(CompareMatrices(sphere0_total_wrench, lhs.head<6>(), tol));
+  EXPECT_TRUE(CompareMatrices(sphere1_total_wrench, lhs.tail<6>(), tol));
 }
 }  // namespace
 }  // namespace multibody

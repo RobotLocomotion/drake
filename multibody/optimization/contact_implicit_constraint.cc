@@ -24,20 +24,19 @@ ContactImplicitConstraint::ContactImplicitConstraint(
     systems::Context<AutoDiffXd>* context,
     const std::map<SortedPair<geometry::GeometryId>,
                    internal::GeometryPairContactWrenchEvaluatorBinding>&
-        contact_pair_to_wrench_evaluator,
-    double time_step)
+        contact_pair_to_wrench_evaluator)
     : solvers::Constraint(plant->num_velocities(),
                           plant->num_velocities() + plant->num_positions() +
                               plant->num_velocities() +
                               plant->num_actuated_dofs() +
-                              GetLambdaSize(contact_pair_to_wrench_evaluator),
+                              GetLambdaSize(contact_pair_to_wrench_evaluator) +
+                              1 /* for dt */,
                           Eigen::VectorXd::Zero(plant->num_velocities()),
                           Eigen::VectorXd::Zero(plant->num_velocities())),
       plant_{plant},
       context_{context},
       contact_pair_to_wrench_evaluator_(contact_pair_to_wrench_evaluator),
-      B_actuation_{plant_->MakeActuationMatrix()},
-      time_step_(time_step) {}
+      B_actuation_{plant_->MakeActuationMatrix()} {}
 
 void ContactImplicitConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
@@ -47,7 +46,8 @@ void ContactImplicitConstraint::DoEval(
 }
 
 // The format of the input to the Eval() function is a vector containing:
-// {v[n], q[n+1], v[n+1], u[n+1], lambda_all[n+1]}.
+// {vₙ, qₙ₊₁, vₙ₊₁, uₙ₊₁, λₙ₊₁, dt},
+// where λₙ₊₁ is a concatenation of lambdas for all contacts.
 // TODO(rcory) Combine duplicate code between ContactImplicitConstraint and
 //  StaticEquilibriumConstraint.
 void ContactImplicitConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
@@ -61,6 +61,8 @@ void ContactImplicitConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
   const auto& u_next =
       x.segment(num_velocities + num_positions + num_velocities,
                 plant_->num_actuated_dofs());
+  const auto& time_step = x.tail<1>();
+
   *y = B_actuation_ * u_next;
 
   // TODO(rcory): Use UpdateContextConfiguration when it supports
@@ -169,7 +171,7 @@ void ContactImplicitConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
       plant_->num_velocities(), plant_->num_velocities());
   plant_->CalcMassMatrixViaInverseDynamics(*context_, &M_mass);
 
-  *y = *y * time_step_ - M_mass * (v_next - v);
+  *y = *y * time_step - M_mass * (v_next - v);
 }
 void ContactImplicitConstraint::DoEval(
     const Eigen::Ref<const VectorX<symbolic::Variable>>&,
@@ -196,11 +198,9 @@ ContactImplicitConstraint::MakeBinding(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& v_vars,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& q_next_vars,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& v_next_vars,
-    const Eigen::Ref<const VectorX<symbolic::Variable>>& u_next_vars) {
-  if (internal::RefFromPtrOrThrow(plant).time_step() == 0) {
-    throw std::logic_error("ContactImplicitConstraint: MultibodyPlant must"
-                           "be a discrete time model with non-zero time step");
-  }
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& u_next_vars,
+    const symbolic::Variable& dt_var) {
+
   // contact_pair_to_wrench_evaluator will be used in the constructor of
   // ContactImplicitConstraint.
   std::map<SortedPair<geometry::GeometryId>,
@@ -255,17 +255,17 @@ ContactImplicitConstraint::MakeBinding(
   DRAKE_DEMAND(u_next_vars.rows() == plant->num_actuated_dofs());
 
   // The bound variable for this ContactImplicitConstraint is
-  // bound_x = {v, q_next, v_next, u_next, all_lambda_next}.
+  // bound_x = {v, q_next, v_next, u_next, all_lambda_next, dt}.
   VectorX<symbolic::Variable> bound_x(
       plant->num_velocities() + plant->num_positions() +
-      plant->num_velocities() + plant->num_actuated_dofs() + num_lambda);
-  bound_x << v_vars, q_next_vars, v_next_vars, u_next_vars, all_lambda_next;
+      plant->num_velocities() + plant->num_actuated_dofs() + num_lambda + 1);
+  bound_x << v_vars, q_next_vars, v_next_vars, u_next_vars, all_lambda_next,
+      dt_var;
   auto contact_implicit_constraint =
       // Do not call make_shared because the constructor
       // ContactImplicitConstraint is private.
       std::shared_ptr<ContactImplicitConstraint>(new ContactImplicitConstraint(
-          plant, context, contact_pair_to_wrench_evaluator,
-          plant->time_step()));
+          plant, context, contact_pair_to_wrench_evaluator));
   return solvers::Binding<ContactImplicitConstraint>(
       contact_implicit_constraint, bound_x);
 }
