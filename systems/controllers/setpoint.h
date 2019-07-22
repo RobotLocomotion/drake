@@ -76,7 +76,7 @@ class CartesianSetpoint {
     // H^w_m = measured orientation in the world frame,
     // E = a small rotation in the world frame from measured to desired.
     // H^w_d = E * H^w_m, E = H^w_d * H^w_m.inverse()
-    Quaternion<Scalar> quat_d = pose_d_.rotation().matrix());
+    Quaternion<Scalar> quat_d = pose_d_.rotation().ToQuaternion();
     Quaternion<Scalar> quat(pose.linear());
     // Make sure the relative rotation between the desired and the measured
     // rotation goes the "shortest" way.
