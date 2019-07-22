@@ -257,7 +257,6 @@ void SlidingFrictionComplementarityNonlinearConstraint::DoEval(
       "SlidingFrictionComplementarityNonlinearConstraint: Eval doesn't support "
       "symbolic variable yet.");
 }
-}  // namespace internal
 
 solvers::Binding<internal::SlidingFrictionComplementarityNonlinearConstraint>
 AddSlidingFrictionComplementarityConstraint(
@@ -282,6 +281,54 @@ AddSlidingFrictionComplementarityConstraint(
   return solvers::Binding<
       internal::SlidingFrictionComplementarityNonlinearConstraint>(constraint,
                                                                    bound_vars);
+}
+}  // namespace internal
+
+std::pair<solvers::Binding<
+              internal::SlidingFrictionComplementarityNonlinearConstraint>,
+          solvers::Binding<StaticFrictionConeConstraint>>
+AddSlidingFrictionComplementarityExplicitContactConstraint(
+    const ContactWrenchEvaluator* contact_wrench_evaluator,
+    double complementarity_tolerance,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& v_vars,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& lambda_vars,
+    solvers::MathematicalProgram* prog) {
+  const auto sliding_friction_complementarity_constraint =
+      internal::AddSlidingFrictionComplementarityConstraint(
+          contact_wrench_evaluator, complementarity_tolerance, q_vars, v_vars,
+          lambda_vars, prog);
+  solvers::Binding<StaticFrictionConeConstraint>
+      static_friction_cone_constraint(
+          std::make_shared<StaticFrictionConeConstraint>(
+              contact_wrench_evaluator),
+          {q_vars, lambda_vars});
+  prog->AddConstraint(static_friction_cone_constraint);
+  return std::make_pair(sliding_friction_complementarity_constraint,
+                        static_friction_cone_constraint);
+}
+
+std::pair<solvers::Binding<
+              internal::SlidingFrictionComplementarityNonlinearConstraint>,
+          solvers::Binding<
+              internal::StaticFrictionConeComplementarityNonlinearConstraint>>
+AddSlidingFrictionComplementarityImplicitContactConstraint(
+    const ContactWrenchEvaluator* contact_wrench_evaluator,
+    double complementarity_tolerance,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& v_vars,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& lambda_vars,
+    solvers::MathematicalProgram* prog) {
+  const auto sliding_friction_complementarity_constraint =
+      internal::AddSlidingFrictionComplementarityConstraint(
+          contact_wrench_evaluator, complementarity_tolerance, q_vars, v_vars,
+          lambda_vars, prog);
+  const auto static_friction_complementarity_constraint =
+      AddStaticFrictionConeComplementarityConstraint(contact_wrench_evaluator,
+                                                     complementarity_tolerance,
+                                                     q_vars, lambda_vars, prog);
+  return std::make_pair(sliding_friction_complementarity_constraint,
+                        static_friction_complementarity_constraint);
 }
 }  // namespace multibody
 }  // namespace drake
