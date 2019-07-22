@@ -1,4 +1,5 @@
 boto3; python_version >= "3.3"
+docutils < 0.15; python_version < "3.0"
 pygame
 # Constrain Sphinx due to hack customizations for templates in
 # `pydrake_sphinx_extension`.
