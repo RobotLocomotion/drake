@@ -12,6 +12,7 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/render/render_label.h"
 #include "drake/math/orthonormal_basis.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rotation_matrix.h"
@@ -36,6 +37,7 @@ using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::PenetrationAsPointPair;
+using geometry::render::RenderLabel;
 using geometry::SceneGraph;
 using geometry::SourceId;
 using systems::InputPort;
@@ -349,6 +351,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
       RegisterGeometry(body, X_BG, shape,
                        GetScopedName(*this, body.model_instance(), name));
   member_scene_graph().AssignRole(*source_id_, id, properties);
+
   const int visual_index = geometry_id_to_visual_index_.size();
   geometry_id_to_visual_index_[id] = visual_index;
   DRAKE_ASSERT(num_bodies() == static_cast<int>(visual_geometries_.size()));
@@ -559,6 +562,7 @@ void MultibodyPlant<T>::Finalize() {
   // After finalizing the base class, tree is read-only.
   internal::MultibodyTreeSystem<T>::Finalize();
   if (geometry_source_is_registered()) {
+    MakeVisualRenderable();
     FilterAdjacentBodies();
     ExcludeCollisionsWithVisualGeometry();
   }
@@ -701,6 +705,10 @@ struct MultibodyPlant<T>::SceneGraphStub {
         GeometryId) const {
       return nullptr;
     }
+    const geometry::IllustrationProperties* GetIllustrationProperties(
+        GeometryId) const {
+      return nullptr;
+    }
   };
 
   static void Throw(const char* operation_name) {
@@ -772,6 +780,36 @@ void MultibodyPlant<T>::CheckValidState(const systems::State<T>* state) const {
   DRAKE_THROW_UNLESS(state != nullptr);
   DRAKE_THROW_UNLESS(
       is_discrete() == (state->get_discrete_state().num_groups() > 0));
+}
+
+template <typename T>
+void MultibodyPlant<T>::MakeVisualRenderable() {
+  // Note: this work can't be done at registration time because the body doesn't
+  // have a node index yet.
+  const auto& inspector = member_scene_graph().model_inspector();
+  for (int b = 0; b < static_cast<int>(visual_geometries_.size()); ++b) {
+    DRAKE_DEMAND(geometry_source_is_registered());
+    const SourceId source_id = *get_source_id();
+
+    const std::vector<GeometryId>& body_geometries = visual_geometries_[b];
+    for (auto id : body_geometries) {
+      // Build render properties and assign role.
+      // Because parsing comes through MBP, we need to also instantiate
+      // rendering  parameters. By default, we have the following protocol:
+      //   1. The RenderLabel is the body's node index.
+      //   2. A phong color is defined; copied from the illustration properties
+      //      if provided, default to grey if not.
+      geometry::PerceptionProperties render_properties;
+      render_properties.AddProperty("label", "id", RenderLabel(b));
+      const auto* visual_properties = inspector.GetIllustrationProperties(id);
+      DRAKE_DEMAND(visual_properties != nullptr);
+      render_properties.AddProperty(
+          "phong", "diffuse",
+          visual_properties->GetPropertyOrDefault(
+              "phong", "diffuse", Vector4<double>(0.9, 0.9, 0.9, 1.0)));
+      member_scene_graph().AssignRole(source_id, id, render_properties);
+    }
+  }
 }
 
 template <typename T>
