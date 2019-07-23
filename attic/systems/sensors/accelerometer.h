@@ -67,7 +67,7 @@ namespace sensors {
 /// `g_A` is computed as follows:
 ///
 /// <pre>
-/// g_A = R_AW * (-g_W)
+/// g_A = R_AW * g_W
 /// </pre>
 ///
 /// `g_A` is then added to `a_WAo_A`:
