@@ -10,6 +10,15 @@
 namespace drake {
 namespace solvers {
 namespace fbstab {
+namespace {
+// Solves the system A*A' x = b in place
+// where A is lower triangular and invertible.
+void CholeskySolve(const Eigen::MatrixXd& A,
+                                      Eigen::VectorXd* b) {
+  A.triangularView<Eigen::Lower>().solveInPlace(*b);
+  A.triangularView<Eigen::Lower>().transpose().solveInPlace(*b);
+}
+} //  namespace
 
 DenseLinearSolver::DenseLinearSolver(int nz, int nv) {
   if (nz <= 0 || nv <= 0) {
@@ -55,12 +64,12 @@ bool DenseLinearSolver::Factor(const DenseVariable& x,
   K_ = H + sigma * Eigen::MatrixXd::Identity(nz_, nz_);
 
   // K <- K + A'*diag(Gamma(x))*A
-  Point2D pfb_gradient;
+  Eigen::Vector2d pfb_gradient;
   for (int i = 0; i < nv_; i++) {
     const double ys = x.y()(i) + sigma * (x.v()(i) - xbar.v()(i));
     pfb_gradient = PFBGradient(ys, x.v()(i));
-    gamma_(i) = pfb_gradient.x;
-    mus_(i) = pfb_gradient.y + sigma * pfb_gradient.x;
+    gamma_(i) = pfb_gradient(0);
+    mus_(i) = pfb_gradient(1) + sigma * pfb_gradient(0);
     Gamma_(i) = gamma_(i) / mus_(i);
   }
   // B is used to avoid temporaries
@@ -121,33 +130,26 @@ bool DenseLinearSolver::Solve(const DenseResidual& r, DenseVariable* x) const {
   return true;
 }
 
-void DenseLinearSolver::CholeskySolve(const Eigen::MatrixXd& A,
-                                      Eigen::VectorXd* b) const {
-  A.triangularView<Eigen::Lower>().solveInPlace(*b);
-  A.triangularView<Eigen::Lower>().transpose().solveInPlace(*b);
-}
 
-DenseLinearSolver::Point2D DenseLinearSolver::PFBGradient(double a, double b) {
-  double y = 0;
-  double x = 0;
+Eigen::Vector2d DenseLinearSolver::PFBGradient(double a, double b) const {
   const double r = sqrt(a * a + b * b);
   const double d = 1.0 / sqrt(2.0);
 
+  Eigen::Vector2d v;
   if (r < zero_tolerance_) {
-    x = alpha_ * (1.0 - d);
-    y = alpha_ * (1.0 - d);
+    v(0) = alpha_ * (1.0 - d);
+    v(1) = alpha_ * (1.0 - d);
 
   } else if ((a > 0) && (b > 0)) {
-    x = alpha_ * (1.0 - a / r) + (1.0 - alpha_) * b;
-    y = alpha_ * (1.0 - b / r) + (1.0 - alpha_) * a;
+    v(0) = alpha_ * (1.0 - a / r) + (1.0 - alpha_) * b;
+    v(1) = alpha_ * (1.0 - b / r) + (1.0 - alpha_) * a;
 
   } else {
-    x = alpha_ * (1.0 - a / r);
-    y = alpha_ * (1.0 - b / r);
+    v(0) = alpha_ * (1.0 - a / r);
+    v(1) = alpha_ * (1.0 - b / r);
   }
 
-  Point2D output = {x, y};
-  return output;
+  return v;
 }
 
 }  // namespace fbstab

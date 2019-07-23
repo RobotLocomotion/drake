@@ -101,19 +101,10 @@ class DenseLinearSolver {
   Eigen::VectorXd gamma_;
   Eigen::MatrixXd B_;
 
-  struct Point2D {
-    double x;
-    double y;
-  };
-
   // Computes the gradient of the penalized fischer-burmeister (PFB)
   // function, (19) in https://arxiv.org/pdf/1901.04046.pdf.
   // See section 3.3.
-  Point2D PFBGradient(double a, double b);
-
-  // Solves the system A*A' x = b in place
-  // where A is lower triangular and invertible.
-  void CholeskySolve(const Eigen::MatrixXd& A, Eigen::VectorXd* b) const;
+  Eigen::Vector2d PFBGradient(double a, double b) const;
 };
 
 }  // namespace fbstab
