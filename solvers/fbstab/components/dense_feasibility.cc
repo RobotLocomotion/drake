@@ -23,8 +23,9 @@ DenseFeasibility::DenseFeasibility(int nz, int nv) {
 }
 
 void DenseFeasibility::ComputeFeasibility(const DenseVariable& x, double tol) {
-  if(tol <= 0){
-    throw std::runtime_error("In DenseFeasibility::ComputeFeasibility: tol must be positive.");
+  if (tol <= 0) {
+    throw std::runtime_error(
+        "In DenseFeasibility::ComputeFeasibility: tol must be positive.");
   }
   const DenseData* const data = x.data();
   const Eigen::MatrixXd& H = data->H();
@@ -43,7 +44,7 @@ void DenseFeasibility::ComputeFeasibility(const DenseVariable& x, double tol) {
   const double d3 = z1_.lpNorm<Eigen::Infinity>();
   const double w = x.z().lpNorm<Eigen::Infinity>();
 
-  if ((d1 <= tol*w) && (d2 < 0) && (d3 <= tol * w)) {
+  if ((d1 <= tol * w) && (d2 < 0) && (d3 <= tol * w)) {
     dual_feasible_ = false;
   } else {
     dual_feasible_ = true;

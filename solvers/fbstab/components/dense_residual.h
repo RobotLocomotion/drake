@@ -24,7 +24,7 @@ class DenseResidual {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseResidual);
   /**
    * Allocates memory for computing and storing residual vectors.
-   * Uses alpha = 0.95 (see (19) in https://arxiv.org/pdf/1901.04046.pdf) 
+   * Uses alpha = 0.95 (see (19) in https://arxiv.org/pdf/1901.04046.pdf)
    * by default.
    *
    * @param[in] nz Number of decision variables
@@ -47,7 +47,7 @@ class DenseResidual {
    * where P is the proximal operator.
    *
    * See (11) and (20) in https://arxiv.org/pdf/1901.04046.pdf
-   * for a mathematical description. 
+   * for a mathematical description.
    *
    * @param[in] x      Inner loop variable
    * @param[in] xbar   Outer loop variable
@@ -112,7 +112,7 @@ class DenseResidual {
   /** Accessor for complementarity residual. */
   const Eigen::VectorXd& v() const { return v_; };
 
-   /** 
+  /**
    * Sets the alpha parameter defined in (19)
    * of https://arxiv.org/pdf/1901.04046.pdf.
    */
@@ -131,10 +131,10 @@ class DenseResidual {
   double l_norm() const { return 0.0; }
 
  private:
-  int nz_ = 0;                       // number of decision variables
-  int nv_ = 0;                       // number of inequality constraints
-  Eigen::VectorXd z_;                // storage for the stationarity residual
-  Eigen::VectorXd v_;                // storage for the complementarity residual
+  int nz_ = 0;         // number of decision variables
+  int nv_ = 0;         // number of inequality constraints
+  Eigen::VectorXd z_;  // storage for the stationarity residual
+  Eigen::VectorXd v_;  // storage for the complementarity residual
   double alpha_ = 0.95;
   double znorm_ = 0.0;
   double vnorm_ = 0.0;

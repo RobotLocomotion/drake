@@ -13,12 +13,11 @@ namespace fbstab {
 namespace {
 // Solves the system A*A' x = b in place
 // where A is lower triangular and invertible.
-void CholeskySolve(const Eigen::MatrixXd& A,
-                                      Eigen::VectorXd* b) {
+void CholeskySolve(const Eigen::MatrixXd& A, Eigen::VectorXd* b) {
   A.triangularView<Eigen::Lower>().solveInPlace(*b);
   A.triangularView<Eigen::Lower>().transpose().solveInPlace(*b);
 }
-} //  namespace
+}  //  namespace
 
 DenseLinearSolver::DenseLinearSolver(int nz, int nv) {
   if (nz <= 0 || nv <= 0) {
@@ -44,7 +43,8 @@ bool DenseLinearSolver::Factor(const DenseVariable& x,
   const DenseData* const data = x.data();
   if (xbar.data() != data) {
     throw std::runtime_error(
-        "In DenseLinearSolver::Factor: x and xbar have mismatched problem data.");
+        "In DenseLinearSolver::Factor: x and xbar have mismatched problem "
+        "data.");
   }
   if (xbar.nz_ != x.nz_ || xbar.nv_ != x.nv_) {
     throw std::runtime_error(
@@ -129,7 +129,6 @@ bool DenseLinearSolver::Solve(const DenseResidual& r, DenseVariable* x) const {
 
   return true;
 }
-
 
 Eigen::Vector2d DenseLinearSolver::PFBGradient(double a, double b) const {
   const double r = sqrt(a * a + b * b);

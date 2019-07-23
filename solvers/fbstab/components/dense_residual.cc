@@ -53,7 +53,8 @@ void DenseResidual::InnerResidual(const DenseVariable& x,
   const DenseData* const data = x.data();
   if (xbar.data() != data) {
     throw std::runtime_error(
-        "In DenseResidual::InnerResidual: x and xbar have mismatched problem data.");
+        "In DenseResidual::InnerResidual: x and xbar have mismatched problem "
+        "data.");
   }
   if (x.num_variables() != xbar.num_variables() ||
       x.num_constraints() != xbar.num_constraints()) {

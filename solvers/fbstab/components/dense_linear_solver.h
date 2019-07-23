@@ -28,7 +28,7 @@ class DenseComponentUnitTests;
  * This class allocates its own workspace memory and splits step computation
  * into solve and factor steps to allow for solving with multiple
  * right hand sides.
- * 
+ *
  * This class had mutable fields and is thus not thread safe.
  *
  * Usage:
@@ -79,7 +79,7 @@ class DenseLinearSolver {
    */
   bool Solve(const DenseResidual& r, DenseVariable* x) const;
 
-  /** 
+  /**
    * Sets the alpha parameter defined in (19)
    * of https://arxiv.org/pdf/1901.04046.pdf.
    */
@@ -90,7 +90,7 @@ class DenseLinearSolver {
   int nz_ = 0;  // number of decision variables
   int nv_ = 0;  // number of inequality constraints
 
-  double alpha_ = 0.95; // See (19) in https://arxiv.org/pdf/1901.04046.pdf.
+  double alpha_ = 0.95;  // See (19) in https://arxiv.org/pdf/1901.04046.pdf.
   const double zero_tolerance_ = 1e-13;
 
   // workspace variables

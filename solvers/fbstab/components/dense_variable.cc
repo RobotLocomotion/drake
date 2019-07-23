@@ -98,9 +98,10 @@ void DenseVariable::Copy(const DenseVariable& x) {
 }
 
 const DenseData* DenseVariable::data() const {
-  if(data_ == nullptr){
-      throw std::runtime_error("In DenseData::data: pointer to data requested before being assigned.");
-    }
+  if (data_ == nullptr) {
+    throw std::runtime_error(
+        "In DenseData::data: pointer to data requested before being assigned.");
+  }
 
   return data_;
 }
