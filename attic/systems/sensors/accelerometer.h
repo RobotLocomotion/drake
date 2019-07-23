@@ -58,7 +58,7 @@ namespace sensors {
 /// Let:
 ///
 /// - `g_W` be the acceleration due to gravity in `W`, which is equal to
-///   (-1) * RigidBodyTree::a_grav. Note that the grativy pulls the mass inside
+///   (-1) * RigidBodyTree::a_grav. Note that the gravity pulls the mass inside
 ///   the accelerometer downward, resulting in an upward measured acceleration.
 ///   See the first paragraph of Wikipedia for more detail:
 ///   https://en.wikipedia.org/wiki/Accelerometer
