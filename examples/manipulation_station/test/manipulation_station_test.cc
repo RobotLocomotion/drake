@@ -6,6 +6,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/test_utilities/dummy_render_engine.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/primitives/discrete_derivative.h"
@@ -18,6 +19,7 @@ namespace {
 
 using Eigen::Vector2d;
 using Eigen::VectorXd;
+using geometry::internal::DummyRenderEngine;
 using multibody::RevoluteJoint;
 using systems::BasicVector;
 
@@ -348,7 +350,7 @@ GTEST_TEST(ManipulationStationTest, RegisterRgbdCameraTest) {
     multibody::MultibodyPlant<double>& plant =
         dut.get_mutable_multibody_plant();
 
-    geometry::dev::render::DepthCameraProperties camera_properties(
+    geometry::render::DepthCameraProperties camera_properties(
         640, 480, M_PI_4, dut.default_renderer_name(), 0.1, 2.0);
 
     const Eigen::Translation3d X_WF0(0, 0, 0.2);
@@ -356,14 +358,14 @@ GTEST_TEST(ManipulationStationTest, RegisterRgbdCameraTest) {
     const auto& frame0 =
         plant.AddFrame(std::make_unique<multibody::FixedOffsetFrame<double>>(
             "frame0", plant.world_frame(), X_WF0));
-    dut.RegisterRgbdCamera("camera0", frame0, X_F0C0, camera_properties);
+    dut.RegisterRgbdSensor("camera0", frame0, X_F0C0, camera_properties);
 
     const Eigen::Translation3d X_F0F1(0, -0.1, 0.2);
     const Eigen::Translation3d X_F1C1(-0.2, 0.2, 0.33);
     const auto& frame1 =
         plant.AddFrame(std::make_unique<multibody::FixedOffsetFrame<double>>(
             "frame1", frame0, X_F0F1));
-    dut.RegisterRgbdCamera("camera1", frame1, X_F1C1, camera_properties);
+    dut.RegisterRgbdSensor("camera1", frame1, X_F1C1, camera_properties);
 
     std::map<std::string, math::RigidTransform<double>> camera_poses =
         dut.GetStaticCameraPosesInWorld();
@@ -375,63 +377,6 @@ GTEST_TEST(ManipulationStationTest, RegisterRgbdCameraTest) {
   }
 }
 
-// TODO(SeanCurtis-TRI): Refactor this (and other copies of it) into a geometry
-// test utility.
-// A simple dummy render engine implementation to facilitate testing. The
-// methods are mostly no-ops. The single exception is in registering geometry.
-// Every call returns a valid RenderIndex with the value `n` for the `n`th
-// call to `RegisterVisual()`.
-class DummyRenderEngine final : public geometry::dev::render::RenderEngine {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DummyRenderEngine);
-  DummyRenderEngine() = default;
-  void UpdateViewpoint(const Eigen::Isometry3d&) const final {}
-  void RenderColorImage(const geometry::dev::render::CameraProperties&,
-                        systems::sensors::ImageRgba8U*, bool) const final {}
-  void RenderDepthImage(const geometry::dev::render::DepthCameraProperties&,
-                        systems::sensors::ImageDepth32F*) const final {}
-  void RenderLabelImage(const geometry::dev::render::CameraProperties&,
-                        systems::sensors::ImageLabel16I*, bool) const final {}
-  void ImplementGeometry(const geometry::Sphere& sphere,
-                         void* user_data) final {}
-  void ImplementGeometry(const geometry::Cylinder& cylinder,
-                         void* user_data) final {}
-  void ImplementGeometry(const geometry::HalfSpace& half_space,
-                         void* user_data) final {}
-  void ImplementGeometry(const geometry::Box& box, void* user_data) final {}
-  void ImplementGeometry(const geometry::Mesh& mesh, void* user_data) final {}
-  void ImplementGeometry(const geometry::Convex& convex,
-                         void* user_data) final {}
-
-  void set_moved_render_index(optional<geometry::dev::RenderIndex> index) {
-    moved_render_index_ = index;
-  }
-
- protected:
-  optional<geometry::dev::RenderIndex> DoRegisterVisual(
-      const geometry::Shape&, const geometry::dev::PerceptionProperties&,
-      const Isometry3<double>&) final {
-    return geometry::dev::RenderIndex(calls_to_register_++);
-  }
-  void DoUpdateVisualPose(const Eigen::Isometry3d&,
-                          geometry::dev::RenderIndex) final {}
-
-  optional<geometry::dev::RenderIndex> DoRemoveGeometry(
-      geometry::dev::RenderIndex index) final {
-    return moved_render_index_;
-  }
-
-  std::unique_ptr<geometry::dev::render::RenderEngine> DoClone() const final {
-    return std::make_unique<DummyRenderEngine>(*this);
-  }
-
- private:
-  int calls_to_register_{};
-  // The value that `DoRemoveGeometry()` returns. Configurable by test. Defaults
-  // to returning nothing.
-  optional<geometry::dev::RenderIndex> moved_render_index_{nullopt};
-};
-
 // Confirms initialization of renderers. With none specified, the default
 // renderer is used. Otherwise, the user-specified renderers are provided.
 GTEST_TEST(ManipulationStationTest, ConfigureRenderer) {
@@ -440,7 +385,7 @@ GTEST_TEST(ManipulationStationTest, ConfigureRenderer) {
     ManipulationStation<double> dut;
     dut.SetupManipulationClassStation();
     dut.Finalize();
-    const auto& scene_graph = dut.get_render_scene_graph();
+    const auto& scene_graph = dut.get_scene_graph();
     EXPECT_EQ(1, scene_graph.RendererCount());
     EXPECT_TRUE(scene_graph.HasRenderer(dut.default_renderer_name()));
   }
@@ -449,7 +394,7 @@ GTEST_TEST(ManipulationStationTest, ConfigureRenderer) {
   {
     ManipulationStation<double> dut;
     dut.SetupManipulationClassStation();
-    std::map<std::string, std::unique_ptr<geometry::dev::render::RenderEngine>>
+    std::map<std::string, std::unique_ptr<geometry::render::RenderEngine>>
         engines;
     const std::string name1 = "engine1";
     engines[name1] = std::make_unique<DummyRenderEngine>();
@@ -457,7 +402,7 @@ GTEST_TEST(ManipulationStationTest, ConfigureRenderer) {
     engines[name2] = std::make_unique<DummyRenderEngine>();
     dut.Finalize(std::move(engines));
 
-    const auto& scene_graph = dut.get_render_scene_graph();
+    const auto& scene_graph = dut.get_scene_graph();
     EXPECT_EQ(2, scene_graph.RendererCount());
     EXPECT_TRUE(scene_graph.HasRenderer(name1));
     EXPECT_TRUE(scene_graph.HasRenderer(name2));

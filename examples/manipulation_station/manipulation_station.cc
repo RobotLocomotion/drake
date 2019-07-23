@@ -6,8 +6,7 @@
 #include <utility>
 
 #include "drake/common/find_resource.h"
-#include "drake/geometry/dev/render/render_engine_vtk.h"
-#include "drake/geometry/dev/scene_graph.h"
+#include "drake/geometry/render/render_engine_vtk_factory.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h"
 #include "drake/math/rigid_transform.h"
@@ -24,7 +23,7 @@
 #include "drake/systems/primitives/linear_system.h"
 #include "drake/systems/primitives/matrix_gain.h"
 #include "drake/systems/primitives/pass_through.h"
-#include "drake/systems/sensors/dev/rgbd_camera.h"
+#include "drake/systems/sensors/rgbd_sensor.h"
 
 namespace drake {
 namespace examples {
@@ -33,7 +32,10 @@ namespace manipulation_station {
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using geometry::SceneGraph;
+using geometry::render::MakeRenderEngineVtk;
+using geometry::render::RenderEngineVtkParams;
 using math::RigidTransform;
+using math::RigidTransformd;
 using math::RollPitchYaw;
 using math::RotationMatrix;
 using multibody::Joint;
@@ -219,10 +221,10 @@ void ManipulationStation<T>::SetupClutterClearingStation(
     const int kHeight = 480;
     const int kWidth = 848;
     const double fov_y = std::atan(kHeight / 2. / kFocalY) * 2;
-    geometry::dev::render::DepthCameraProperties camera_properties(
+    geometry::render::DepthCameraProperties camera_properties(
         kWidth, kHeight, fov_y, default_renderer_name_, 0.1, 2.0);
 
-    RegisterRgbdCamera("0", plant_->world_frame(),
+    RegisterRgbdSensor("0", plant_->world_frame(),
                        X_WCameraBody.value_or(math::RigidTransform<double>(
                            math::RollPitchYaw<double>(-0.3, 0.8, 1.5),
                            Eigen::Vector3d(0, -1.5, 1.5))),
@@ -295,10 +297,10 @@ void ManipulationStation<T>::SetupManipulationClassStation(
     const int kHeight = 480;
     const int kWidth = 848;
     const double fov_y = std::atan(kHeight / 2. / kFocalY) * 2;
-    geometry::dev::render::DepthCameraProperties camera_properties(
+    geometry::render::DepthCameraProperties camera_properties(
         kWidth, kHeight, fov_y, default_renderer_name_, 0.1, 2.0);
     for (const auto& camera_pair : camera_poses) {
-      RegisterRgbdCamera(camera_pair.first, plant_->world_frame(),
+      RegisterRgbdSensor(camera_pair.first, plant_->world_frame(),
                          camera_pair.second, camera_properties);
     }
   }
@@ -408,7 +410,7 @@ void ManipulationStation<T>::Finalize() {
 
 template <typename T>
 void ManipulationStation<T>::Finalize(
-    std::map<std::string, std::unique_ptr<geometry::dev::render::RenderEngine>>
+    std::map<std::string, std::unique_ptr<geometry::render::RenderEngine>>
         render_engines) {
   DRAKE_THROW_UNLESS(iiwa_model_.model_instance.is_valid());
   DRAKE_THROW_UNLESS(wsg_model_.model_instance.is_valid());
@@ -607,23 +609,14 @@ void ManipulationStation<T>::Finalize(
                        "iiwa_torque_external");
 
   {  // RGB-D Cameras
-    render_scene_graph_ =
-        builder.template AddSystem<geometry::dev::SceneGraph>();
-    render_scene_graph_->set_name("dev_scene_graph_for_rendering");
     if (render_engines.size() > 0) {
       for (auto& pair : render_engines) {
-        render_scene_graph_->AddRenderer(pair.first, std::move(pair.second));
+        scene_graph_->AddRenderer(pair.first, std::move(pair.second));
       }
     } else {
-      render_scene_graph_->AddRenderer(
-          default_renderer_name_,
-          std::make_unique<geometry::dev::render::RenderEngineVtk>());
+      scene_graph_->AddRenderer(
+          default_renderer_name_, MakeRenderEngineVtk(RenderEngineVtkParams()));
     }
-    render_scene_graph_->CopyFrom(*scene_graph_);
-
-    builder.Connect(plant_->get_geometry_poses_output_port(),
-                    render_scene_graph_->get_source_pose_port(
-                        plant_->get_source_id().value()));
 
     for (const auto& info_pair : camera_information_) {
       std::string camera_name = "camera_" + info_pair.first;
@@ -632,19 +625,17 @@ void ManipulationStation<T>::Finalize(
       const optional<geometry::FrameId> parent_body_id =
           plant_->GetBodyFrameIdIfExists(info.parent_frame->body().index());
       DRAKE_THROW_UNLESS(parent_body_id.has_value());
-      const Isometry3<double> X_PC =
+      const RigidTransform<double> X_PC =
           info.parent_frame->GetFixedPoseInBodyFrame() * info.X_PC;
 
-      auto camera =
-          builder.template AddSystem<systems::sensors::dev::RgbdCamera>(
-              camera_name, parent_body_id.value(), X_PC, info.properties,
-              false);
-      builder.Connect(render_scene_graph_->get_query_output_port(),
+      auto camera = builder.template AddSystem<systems::sensors::RgbdSensor>(
+          parent_body_id.value(), X_PC, info.properties);
+      builder.Connect(scene_graph_->get_query_output_port(),
                       camera->query_object_input_port());
 
       builder.ExportOutput(camera->color_image_output_port(),
                            camera_name + "_rgb_image");
-      builder.ExportOutput(camera->GetOutputPort("depth_image_16u"),
+      builder.ExportOutput(camera->depth_image_16U_output_port(),
                            camera_name + "_depth_image");
       builder.ExportOutput(camera->label_image_output_port(),
                            camera_name + "_label_image");
@@ -826,10 +817,10 @@ void ManipulationStation<T>::RegisterWsgControllerModel(
 }
 
 template <typename T>
-void ManipulationStation<T>::RegisterRgbdCamera(
+void ManipulationStation<T>::RegisterRgbdSensor(
     const std::string& name, const multibody::Frame<T>& parent_frame,
     const RigidTransform<double>& X_PC,
-    const geometry::dev::render::DepthCameraProperties& properties) {
+    const geometry::render::DepthCameraProperties& properties) {
   CameraInformation info;
   info.parent_frame = &parent_frame;
   info.X_PC = X_PC;
