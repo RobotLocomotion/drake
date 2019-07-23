@@ -28,9 +28,10 @@ class DenseComponentUnitTests;
  * This class allocates its own workspace memory and splits step computation
  * into solve and factor steps to allow for solving with multiple
  * right hand sides.
+ * 
+ * This class had mutable fields and is thus not thread safe.
  *
  * Usage:
- *
  * @code
  * DenseLinearSolver solver(2,2);
  * solver.Factor(x,xbar,sigma);
