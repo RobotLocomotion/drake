@@ -324,8 +324,7 @@ void SolarSystem<T>::CalcFramePoseOutput(const Context<T>& context,
     // Frames only revolve around their origin; it is only necessary to set the
     // rotation value.
     T rotation{state[i]};
-    pose.set_rotation(
-        math::RotationMatrix<T>(AngleAxis<T>(rotation, axes_[i])));
+    pose.set_rotation(AngleAxis<T>(rotation, axes_[i]));
     poses->set_value(body_ids_[i], pose.GetAsIsometry3());
   }
 }
