@@ -93,7 +93,7 @@ void TestAccelerometerFreeFall(const Eigen::Vector3d& xyz,
   // with the world frame (the default RotationMatrix constructor is identity).
   const math::RotationMatrix<double> R_BW;
   const math::RotationMatrix<double> R_AB = R_BA.inverse();
-  const Vector3d expected_measurement = R_AB * R_BW * tree->a_grav.tail<3>();
+  const Vector3d expected_measurement = R_AB * R_BW * (-tree->a_grav.tail<3>());
   EXPECT_TRUE(CompareMatrices(output->get_vector_data(0)->get_value(),
                               expected_measurement, 1e-10,
                               MatrixCompareType::absolute));
@@ -212,7 +212,7 @@ GTEST_TEST(TestAccelerometer, TestSensorAttachedToSwingingPendulum) {
 
   Vector3d v_dot_in_world_frame = w_dot_cross_r + w_cross_r_dot;
   if (diagram.get_accelerometer().get_include_gravity()) {
-     v_dot_in_world_frame += diagram.get_tree().a_grav.tail<3>();
+     v_dot_in_world_frame += -diagram.get_tree().a_grav.tail<3>();
   }
   const Vector3d v_dot = r.linear().transpose() * v_dot_in_world_frame;
 
