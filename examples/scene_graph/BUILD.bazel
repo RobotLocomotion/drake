@@ -35,15 +35,20 @@ drake_cc_binary(
     add_test_rule = 1,
     test_rule_args = [
         "--simulation_time=0.1",
+        # Test to see if the leak is coming from rendering, specifically.
+        "--render_on=0",
     ],
     deps = [
         ":bouncing_ball_plant",
         "//geometry:geometry_visualization",
         "//geometry:scene_graph",
+        "//geometry/render:render_engine_vtk",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
+        "//systems/lcm:lcm_pubsub_system",
         "//systems/primitives:constant_vector_source",
-        "//systems/primitives:signal_logger",
+        "//systems/sensors:image_to_lcm_image_array_t",
+        "//systems/sensors:rgbd_sensor",
         "@gflags",
     ],
 )
