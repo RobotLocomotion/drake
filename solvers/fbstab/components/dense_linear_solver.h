@@ -30,7 +30,7 @@ class DenseComponentUnitTests;
  * into solve and factor steps to allow for solving with multiple
  * right hand sides.
  *
- * This class had mutable fields and is thus not thread safe.
+ * This class has mutable fields and is thus not thread safe.
  *
  * Usage:
  * @code
