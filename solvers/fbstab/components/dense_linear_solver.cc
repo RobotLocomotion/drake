@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include <Eigen/Dense>
+
 #include "drake/solvers/fbstab/components/dense_data.h"
 #include "drake/solvers/fbstab/components/dense_residual.h"
 #include "drake/solvers/fbstab/components/dense_variable.h"

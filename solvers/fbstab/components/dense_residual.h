@@ -3,6 +3,7 @@
 #include <stdexcept>
 
 #include <Eigen/Dense>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/fbstab/components/dense_data.h"
 #include "drake/solvers/fbstab/components/dense_variable.h"
@@ -103,14 +104,14 @@ class DenseResidual {
   double Merit() const;
 
   /** Accessor for stationarity residual. */
-  Eigen::VectorXd& z() { return z_; };
+  Eigen::VectorXd& z() { return z_; }
   /** Accessor for stationarity residual. */
-  const Eigen::VectorXd& z() const { return z_; };
+  const Eigen::VectorXd& z() const { return z_; }
 
   /** Accessor for complementarity residual. */
-  Eigen::VectorXd& v() { return v_; };
+  Eigen::VectorXd& v() { return v_; }
   /** Accessor for complementarity residual. */
-  const Eigen::VectorXd& v() const { return v_; };
+  const Eigen::VectorXd& v() const { return v_; }
 
   /**
    * Sets the alpha parameter defined in (19)
@@ -146,10 +147,10 @@ class DenseResidual {
   static double pfb(double a, double b, double alpha);
 
   /* Scalar max function. */
-  static double max(double a, double b);
+  static double max(double a, double b); //NOLINT
 
   /* Scalar min function. */
-  static double min(double a, double b);
+  static double min(double a, double b); //NOLINT
 
   friend class DenseLinearSolver;
 };

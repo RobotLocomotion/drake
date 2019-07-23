@@ -5,6 +5,7 @@
 #include <stdexcept>
 
 #include <Eigen/Dense>
+
 #include "drake/solvers/fbstab/components/dense_data.h"
 
 namespace drake {
