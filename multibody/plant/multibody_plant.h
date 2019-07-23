@@ -2552,6 +2552,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Registers geometry in a SceneGraph with a given geometry::Shape to be
   /// used for visualization of a given `body`.
   ///
+  /// @note Currently, the visual geometry will _also_ be assigned a perception
+  /// role. Its render label's value will be equal to the body's index and its
+  /// perception color will be the same as its illustration color (defaulting to
+  /// gray if no color is provided). This behavior will change in the near
+  /// future and code that directly relies on this behavior will break.
+  ///
   /// @param[in] body
   ///   The body for which geometry is being registered.
   /// @param[in] X_BG

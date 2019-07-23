@@ -12,6 +12,7 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/render/render_label.h"
 #include "drake/math/orthonormal_basis.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rotation_matrix.h"
@@ -36,6 +37,7 @@ using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::PenetrationAsPointPair;
+using geometry::render::RenderLabel;
 using geometry::SceneGraph;
 using geometry::SourceId;
 using systems::InputPort;
@@ -349,6 +351,17 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
       RegisterGeometry(body, X_BG, shape,
                        GetScopedName(*this, body.model_instance(), name));
   member_scene_graph().AssignRole(*source_id_, id, properties);
+
+  // TODO(SeanCurtis-TRI): Eliminate the automatic assignment of perception
+  //  and illustration in favor of a protocol that allows definition.
+  geometry::PerceptionProperties perception_props;
+  perception_props.AddProperty("label", "id", RenderLabel(body.index()));
+  perception_props.AddProperty(
+      "phong", "diffuse",
+      properties.GetPropertyOrDefault(
+          "phong", "diffuse", Vector4<double>(0.9, 0.9, 0.9, 1.0)));
+  member_scene_graph().AssignRole(*source_id_, id, perception_props);
+
   const int visual_index = geometry_id_to_visual_index_.size();
   geometry_id_to_visual_index_[id] = visual_index;
   DRAKE_ASSERT(num_bodies() == static_cast<int>(visual_geometries_.size()));
@@ -698,6 +711,10 @@ template <typename T>
 struct MultibodyPlant<T>::SceneGraphStub {
   struct StubSceneGraphInspector {
     const geometry::ProximityProperties* GetProximityProperties(
+        GeometryId) const {
+      return nullptr;
+    }
+    const geometry::IllustrationProperties* GetIllustrationProperties(
         GeometryId) const {
       return nullptr;
     }

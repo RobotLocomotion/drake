@@ -27,7 +27,8 @@ namespace internal {
  3. It facilitates testing the RegisterGeometry() method by making the
     registration of a geometry dependent on particular contents in the
     PerceptionProperties (see accepting_properties() and
-    rejecting_properties()).
+    rejecting_properties()). Also provides an override so that every geometry
+    is accepted (set_force_accept()).
  4. Records which poses have been updated via UpdatePoses() to validate which
     RenderIndex values are updated and which aren't (and with what pose).
  5. Records the camera pose provided to UpdateViewpoint() and report it with
@@ -85,6 +86,11 @@ class DummyRenderEngine final : public render::RenderEngine {
     register_count_ = 0;
   }
 
+  /** If true, this render engine will accept all registered geometry.  */
+  void set_force_accept(bool force_accept) {
+    force_accept_ = force_accept;
+  }
+
   /** Reports the number of geometries that have been _accepted_ in
    registration.  */
   int num_registered() const { return register_count_; }
@@ -110,14 +116,15 @@ class DummyRenderEngine final : public render::RenderEngine {
   using RenderEngine::GetColorIFromLabel;
 
  protected:
-  /** Dummy implementation that registers the given `shape` iff the `properties`
-   contains the "in_test" group. (Also counts the number of successfully
-   registered shape over the lifespan of `this` instance.)  */
+  /** Dummy implementation that registers the given `shape` if the `properties`
+   contains the "in_test" group or the render engine has been forced to accept
+   all geometires (via set_force_accept()). (Also counts the number of
+   successfully registered shape over the lifespan of `this` instance.)  */
   optional<RenderIndex> DoRegisterVisual(const Shape&,
                                          const PerceptionProperties& properties,
                                          const math::RigidTransformd&) final {
     GetRenderLabelOrThrow(properties);
-    if (properties.HasGroup(include_group_name_)) {
+    if (force_accept_ || properties.HasGroup(include_group_name_)) {
       return RenderIndex(register_count_++);
     }
     return nullopt;
@@ -143,6 +150,9 @@ class DummyRenderEngine final : public render::RenderEngine {
   }
 
  private:
+  // If true, the engine will accept all geometries.
+  bool force_accept_{};
+
   // Number of registered geometries.
   int register_count_{};
 
