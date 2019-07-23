@@ -129,8 +129,8 @@ void Accelerometer::CalcAccelerationOutput(
   Vector3d a_WF_F = R_FW * a_WF_W;  // Re-expresses acceleration in F.
 
   if (include_gravity_) {
-    const Vector3d gravity_W = -tree_.a_grav.tail<3>();
-    a_WF_F += R_FW * gravity_W;
+    const Vector3d gravity_W = tree_.a_grav.tail<3>();
+    a_WF_F -= R_FW * gravity_W;
   }
 
   // Saves the acceleration readings into the output port.
