@@ -5,6 +5,7 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -12,6 +13,9 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
+#include "drake/geometry/render/render_engine.h"
+#include "drake/geometry/render/render_engine_vtk_factory.h"
+#include "drake/geometry/render/render_label.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
 
@@ -43,10 +47,87 @@ void BindIdentifier(py::module m, const std::string& name, const char* id_doc) {
       .def_static("get_new_id", &Class::get_new_id, cls_doc.get_new_id.doc);
 }
 
+void def_geometry_render(py::module m) {
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake;
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::geometry::render;
+  m.doc() = "Local bindings for `drake::geometry::render`";
+  constexpr auto& doc = pydrake_doc.drake.geometry.render;
+
+  {
+    using Class = CameraProperties;
+    py::class_<Class>(m, "CameraProperties", doc.CameraProperties.doc)
+        .def(py::init<int, int, double, std::string>(), py::arg("width"),
+            py::arg("height"), py::arg("fov_y"), py::arg("renderer_name"),
+            doc.CameraProperties.ctor.doc)
+        .def_readwrite("width", &Class::width, doc.CameraProperties.width.doc)
+        .def_readwrite(
+            "height", &Class::height, doc.CameraProperties.height.doc)
+        .def_readwrite("fov_y", &Class::fov_y, doc.CameraProperties.fov_y.doc)
+        .def_readwrite("renderer_name", &Class::renderer_name,
+            doc.CameraProperties.renderer_name.doc);
+  }
+
+  {
+    using Class = DepthCameraProperties;
+    py::class_<Class, CameraProperties>(
+        m, "DepthCameraProperties", doc.DepthCameraProperties.doc)
+        .def(py::init<int, int, double, std::string, double, double>(),
+            py::arg("width"), py::arg("height"), py::arg("fov_y"),
+            py::arg("renderer_name"), py::arg("z_near"), py::arg("z_far"),
+            doc.DepthCameraProperties.ctor.doc)
+        .def_readwrite(
+            "z_near", &Class::z_near, doc.DepthCameraProperties.z_near.doc)
+        .def_readwrite(
+            "z_far", &Class::z_far, doc.DepthCameraProperties.z_far.doc);
+  }
+
+  {
+    // TODO(SeanCurtis-TRI): Expose the full public API after the RenderIndex
+    //  and GeometryIndex classes go away (everything will become GeometryId
+    //  centric).
+    using Class = RenderEngine;
+    py::class_<Class>(m, "RenderEngine");
+  }
+
+  py::class_<RenderEngineVtkParams>(
+      m, "RenderEngineVtkParams", doc.RenderEngineVtkParams.doc)
+      .def(py::init<>())
+      .def_readwrite("default_label", &RenderEngineVtkParams::default_label,
+          doc.RenderEngineVtkParams.default_label.doc)
+      .def_readwrite("default_diffuse", &RenderEngineVtkParams::default_diffuse,
+          doc.RenderEngineVtkParams.default_diffuse.doc);
+
+  m.def("MakeRenderEngineVtk", &MakeRenderEngineVtk, py::arg("params"),
+      doc.MakeRenderEngineVtk.doc);
+
+  {
+    py::class_<RenderLabel> render_label(m, "RenderLabel", doc.RenderLabel.doc);
+    render_label
+        .def(py::init<int>(), py::arg("value"), doc.RenderLabel.ctor.doc_1args)
+        .def("is_reserved", &RenderLabel::is_reserved)
+        // EQ(==).
+        .def(py::self == py::self)
+        .def(py::self == int{})
+        .def(int{} == py::self)
+        // NE(!=).
+        .def(py::self != py::self)
+        .def(py::self != int{})
+        .def(int{} != py::self);
+    render_label.attr("kEmpty") = RenderLabel::kEmpty;
+    render_label.attr("kDoNotRender") = RenderLabel::kDoNotRender;
+    render_label.attr("kDontCare") = RenderLabel::kDontCare;
+    render_label.attr("kUnspecified") = RenderLabel::kUnspecified;
+    render_label.attr("kMaxUnreserved") = RenderLabel::kMaxUnreserved;
+  }
+}
+
 template <typename T>
 void DoScalarDependentDefinitions(py::module m, T) {
   py::tuple param = GetPyParam<T>();
   constexpr auto& doc = pydrake_doc.drake.geometry;
+
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
   py::module::import("pydrake.systems.framework");
@@ -80,7 +161,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("RegisterSource",
             py::overload_cast<const std::string&>(  // BR
                 &SceneGraph<T>::RegisterSource),
-            py::arg("name") = "", doc.SceneGraph.RegisterSource.doc);
+            py::arg("name") = "", doc.SceneGraph.RegisterSource.doc)
+        .def("AddRenderer", &SceneGraph<T>::AddRenderer,
+            py::arg("renderer_name"), py::arg("renderer"),
+            doc.SceneGraph.AddRenderer.doc)
+        .def_static("world_frame_id", &SceneGraph<T>::world_frame_id,
+            doc.SceneGraph.world_frame_id.doc);
   }
 
   //  FramePoseVector
@@ -131,15 +217,52 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("ComputeSignedDistanceToPoint",
             &QueryObject<T>::ComputeSignedDistanceToPoint, py::arg("p_WQ"),
             py::arg("threshold") = std::numeric_limits<double>::infinity(),
-            doc.QueryObject.ComputeSignedDistanceToPoint.doc);
+            doc.QueryObject.ComputeSignedDistanceToPoint.doc)
+        .def("FindCollisionCandidates",
+            &QueryObject<T>::FindCollisionCandidates,
+            doc.QueryObject.FindCollisionCandidates.doc)
+        .def("RenderColorImage",
+            [](const Class* self, const render::CameraProperties& camera,
+                FrameId parent_frame, const math::RigidTransformd& X_PC,
+                bool show_window) {
+              systems::sensors::ImageRgba8U img(camera.width, camera.height);
+              self->RenderColorImage(
+                  camera, parent_frame, X_PC, show_window, &img);
+              return img;
+            },
+            py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
+            py::arg("show_window") = false,
+            doc.QueryObject.RenderColorImage.doc)
+        .def("RenderDepthImage",
+            [](const Class* self, const render::DepthCameraProperties& camera,
+                FrameId parent_frame, const math::RigidTransformd& X_PC) {
+              systems::sensors::ImageDepth32F img(camera.width, camera.height);
+              self->RenderDepthImage(camera, parent_frame, X_PC, &img);
+              return img;
+            },
+            py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
+            doc.QueryObject.RenderDepthImage.doc)
+        .def("RenderLabelImage",
+            [](const Class* self, const render::CameraProperties& camera,
+                FrameId parent_frame, const math::RigidTransformd& X_PC,
+                bool show_window = false) {
+              systems::sensors::ImageLabel16I img(camera.width, camera.height);
+              self->RenderLabelImage(
+                  camera, parent_frame, X_PC, show_window, &img);
+              return img;
+            },
+            py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
+            py::arg("show_window") = false,
+            doc.QueryObject.RenderLabelImage.doc);
+
     AddValueInstantiation<QueryObject<T>>(m);
   }
 
   // SignedDistancePair
   {
     using Class = SignedDistancePair<T>;
-    auto cls =
-        DefineTemplateClassWithDefault<Class>(m, "SignedDistancePair", param);
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "SignedDistancePair", param, doc.SignedDistancePair.doc);
     cls  // BR
         .def(py::init<>(), doc.SignedDistancePair.ctor.doc_7args)
         .def_readwrite("id_A", &SignedDistancePair<T>::id_A,
@@ -166,7 +289,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
   {
     using Class = SignedDistanceToPoint<T>;
     auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "SignedDistanceToPoint", param);
+        m, "SignedDistanceToPoint", param, doc.SignedDistanceToPoint.doc);
     cls  // BR
         .def(py::init<>(), doc.SignedDistanceToPoint.ctor.doc)
         .def_readwrite("id_G", &SignedDistanceToPoint<T>::id_G,
@@ -185,7 +308,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
   {
     using Class = PenetrationAsPointPair<T>;
     auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "PenetrationAsPointPair", param);
+        m, "PenetrationAsPointPair", param, doc.PenetrationAsPointPair.doc);
     cls  // BR
         .def(py::init<>(), doc.PenetrationAsPointPair.ctor.doc)
         .def_readwrite("id_A", &PenetrationAsPointPair<T>::id_A,
@@ -265,6 +388,9 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def(py::init<std::string, double>(), py::arg("absolute_filename"),
             py::arg("scale") = 1.0, doc.Convex.ctor.doc);
   }
+
+  // Rendering
+  def_geometry_render(m.def_submodule("render"));
 }
 
 PYBIND11_MODULE(geometry, m) {
