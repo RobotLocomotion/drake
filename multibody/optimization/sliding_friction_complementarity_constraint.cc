@@ -194,17 +194,20 @@ void SlidingFrictionComplementarityNonlinearConstraint::DoEval(
       const SpatialVelocity<AutoDiffXd> V_AB_W =
           frameB.CalcSpatialVelocity(context, frameA, plant.world_frame());
 
-      const Vector3<AutoDiffXd> p_BCb =
-          inspector.X_FG(signed_distance_pair.id_B) *
-          signed_distance_pair.p_BCb;
-      const Vector3<AutoDiffXd> p_BCb_W =
+      // We use Bg to mean the geometry frame attached to body B, and Bb to mean
+      // the body frame of body B.
+      const Vector3<AutoDiffXd>& p_BgCb = signed_distance_pair.p_BCb;
+      const Vector3<AutoDiffXd> p_BbCb =
+          inspector.X_FG(signed_distance_pair.id_B) * p_BgCb;
+      const Vector3<AutoDiffXd> p_BbCb_W =
           plant.CalcRelativeTransform(context, plant.world_frame(), frameB)
               .rotation() *
-          p_BCb;
+          p_BbCb;
 
       // v_ACb_W is the sliding velocity of witness point Cb measured from the
       // geometry A, expressed in the world frame.
-      const Vector3<AutoDiffXd> v_ACb_W = V_AB_W.Shift(p_BCb_W).translational();
+      const Vector3<AutoDiffXd> v_ACb_W =
+          V_AB_W.Shift(p_BbCb_W).translational();
 
       // We need to project the sliding velocity v_ACb_W to the tangential
       // plane. To do so, we first find the normal vector nhat_BA_W of that
@@ -225,7 +228,6 @@ void SlidingFrictionComplementarityNonlinearConstraint::DoEval(
       // f_slidingᵀ * -nhat_BA_W >= 0
       // f_slidingᵀ * (I - (μ²+1) * nhat_BA_W * nhat_BA_Wᵀ) * f_sliding = 0
       (*y)(6) = f_sliding.dot(-nhat_BA_W);
-      using std::pow;
       (*y)(7) =
           f_sliding.dot((Eigen::Matrix3d::Identity() -
                          (pow(combined_friction.dynamic_friction(), 2) + 1) *
@@ -245,7 +247,7 @@ void SlidingFrictionComplementarityNonlinearConstraint::DoEval(
   if (!found_geometry_pair) {
     throw std::runtime_error(
         "SlidingFrictionComplementarityNonlinearConstraint: the input "
-        "contact_wrench_evaluator contains a pair of geometry, that has not "
+        "contact_wrench_evaluator contains a pair of geometry that has not "
         "been registered to the SceneGraph for distance computation.");
   }
 }
@@ -255,7 +257,7 @@ void SlidingFrictionComplementarityNonlinearConstraint::DoEval(
     VectorX<symbolic::Expression>*) const {
   throw std::runtime_error(
       "SlidingFrictionComplementarityNonlinearConstraint: Eval doesn't support "
-      "symbolic variable yet.");
+      "symbolic variables yet.");
 }
 
 solvers::Binding<internal::SlidingFrictionComplementarityNonlinearConstraint>
