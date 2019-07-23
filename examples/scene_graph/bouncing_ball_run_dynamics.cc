@@ -6,15 +6,27 @@
 #include "drake/examples/scene_graph/bouncing_ball_plant.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/render/render_engine_vtk_factory.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_publisher_system.h"
+#include "drake/systems/sensors/image_to_lcm_image_array_t.h"
+#include "drake/systems/sensors/pixel_types.h"
+#include "drake/systems/sensors/rgbd_sensor.h"
 
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
+DEFINE_bool(render_on, true, "Sets rendering generally enabled (or not)");
+DEFINE_bool(color, true, "Sets the enabled camera to render color");
+DEFINE_bool(depth, true, "Sets the enabled camera to render depth");
+DEFINE_bool(label, true, "Sets the enabled camera to render label");
+DEFINE_double(render_fps, 10, "Frames per simulation second to render");
 
 namespace drake {
 namespace examples {
@@ -22,21 +34,36 @@ namespace scene_graph {
 namespace bouncing_ball {
 namespace {
 
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using geometry::ConnectDrakeVisualizer;
 using geometry::GeometryInstance;
 using geometry::SceneGraph;
 using geometry::GeometryId;
 using geometry::HalfSpace;
 using geometry::IllustrationProperties;
+using geometry::PerceptionProperties;
 using geometry::ProximityProperties;
+using geometry::render::DepthCameraProperties;
+using geometry::render::RenderEngineVtkParams;
+using geometry::render::RenderLabel;
+using geometry::SceneGraph;
 using geometry::SourceId;
 using lcm::DrakeLcm;
+using math::RigidTransformd;
+using math::RotationMatrixd;
 using systems::InputPort;
+using systems::sensors::PixelType;
+using systems::sensors::RgbdSensor;
 using std::make_unique;
 
 int do_main() {
   systems::DiagramBuilder<double> builder;
   auto scene_graph = builder.AddSystem<SceneGraph<double>>();
   scene_graph->set_name("scene_graph");
+  const std::string render_name("renderer");
+  scene_graph->AddRenderer(render_name,
+                           MakeRenderEngineVtk(RenderEngineVtkParams()));
 
   // Create two bouncing balls --> two plants. Put the balls at positions
   // mirrored over the origin (<0.25, 0.25> and <-0.25, -0.25>, respectively).
@@ -74,7 +101,80 @@ int do_main() {
   builder.Connect(scene_graph->get_query_output_port(),
                   bouncing_ball2->get_geometry_query_input_port());
 
-  geometry::ConnectDrakeVisualizer(&builder, *scene_graph);
+  DrakeLcm lcm;
+  ConnectDrakeVisualizer(&builder, *scene_graph, &lcm);
+
+  if (FLAGS_render_on) {
+    PerceptionProperties properties;
+    properties.AddProperty("phong", "diffuse", Vector4d{0.8, 0.8, 0.8, 1.0});
+    properties.AddProperty("label", "id", RenderLabel(ground_id.get_value()));
+    scene_graph->AssignRole(global_source, ground_id, properties);
+
+    // Create the camera.
+    DepthCameraProperties camera_properties(640, 480, M_PI_4, render_name, 0.1,
+                                            2.0);
+    // In camera_info.h, it is documented that the camera points in the Cz
+    // direction with the Cy pointing down on the image. For the RgbdCamera,
+    // X_BC = I. So, to aim the camera, Cz = Bz should point from the camera
+    // position to the origin. The camera up (Cy) should point opposite the
+    // world up. So, we compute the basis using camera up-ish in the By ~ -Wz
+    // direction to compute Bx and Bz and Cx to compute Cy.
+    const Vector3d p_WB(0.3, -1, 0.25);
+    // Set rotation looking at the origin.
+    const Vector3d Bz_W = -p_WB.normalized();
+    const Vector3d Bx_W = -Vector3d::UnitZ().cross(Bz_W).normalized();
+    const Vector3d By_W = Bz_W.cross(Bx_W).normalized();
+    const RotationMatrixd R_WB =
+        RotationMatrixd::MakeFromOrthonormalColumns(Bx_W, By_W, Bz_W);
+    const RigidTransformd X_WB(R_WB, p_WB);
+
+    auto camera = builder.AddSystem<RgbdSensor>(
+        scene_graph->world_frame_id(), X_WB, camera_properties);
+    builder.Connect(scene_graph->get_query_output_port(),
+                    camera->query_object_input_port());
+
+    // Broadcast the images.
+    // Publishing images to drake visualizer
+    auto image_to_lcm_image_array =
+        builder.template AddSystem<systems::sensors::ImageToLcmImageArrayT>();
+    image_to_lcm_image_array->set_name("converter");
+
+    systems::lcm::LcmPublisherSystem* image_array_lcm_publisher{nullptr};
+    if ((FLAGS_color || FLAGS_depth || FLAGS_label)) {
+      image_array_lcm_publisher =
+          builder.template AddSystem(systems::lcm::LcmPublisherSystem::Make<
+              robotlocomotion::image_array_t>(
+              "DRAKE_RGBD_CAMERA_IMAGES", &lcm,
+              1. / FLAGS_render_fps /* publish period */));
+      image_array_lcm_publisher->set_name("publisher");
+
+      builder.Connect(
+          image_to_lcm_image_array->image_array_t_msg_output_port(),
+          image_array_lcm_publisher->get_input_port());
+    }
+
+    if (FLAGS_color) {
+      const auto& port =
+          image_to_lcm_image_array->DeclareImageInputPort<PixelType::kRgba8U>(
+              "color");
+      builder.Connect(camera->color_image_output_port(), port);
+    }
+
+    if (FLAGS_depth) {
+      const auto& port =
+          image_to_lcm_image_array
+              ->DeclareImageInputPort<PixelType::kDepth32F>("depth");
+      builder.Connect(camera->depth_image_32F_output_port(), port);
+    }
+
+    if (FLAGS_label) {
+      const auto& port =
+          image_to_lcm_image_array
+              ->DeclareImageInputPort<PixelType::kLabel16I>("label");
+      builder.Connect(camera->label_image_output_port(), port);
+    }
+  }
+
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
@@ -92,6 +192,8 @@ int do_main() {
   simulator.get_mutable_integrator().set_maximum_step_size(0.002);
   simulator.set_target_realtime_rate(1.f);
   simulator.Initialize();
+  simulator.set_publish_every_time_step(false);
+  simulator.set_publish_at_initialization(false);
   simulator.AdvanceTo(FLAGS_simulation_time);
 
   return 0;
