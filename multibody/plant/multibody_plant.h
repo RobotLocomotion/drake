@@ -3369,6 +3369,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Checks that the provided State is consistent with this plant.
   void CheckValidState(const systems::State<T>*) const;
 
+  // TODO(SeanCurtis-TRI): Remove this when illustration/percpetion can be well
+  //  distinguished/defined during parsing.
+  // Every visual geometry is now also renderable.
+  void MakeVisualRenderable();
+
   // Helper method to apply collision filters based on body-adjacency. By
   // default, we don't consider collisions between geometries affixed to
   // bodies connected by a joint.
