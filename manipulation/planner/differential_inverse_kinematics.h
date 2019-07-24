@@ -12,6 +12,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/multibody/math/spatial_velocity.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -335,9 +337,9 @@ namespace internal {
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Eigen::Ref<const VectorX<double>>&,
     const Eigen::Ref<const VectorX<double>>&,
-    const Isometry3<double>&,
-    const Eigen::Ref<const MatrixX<double>>&,
-    const Vector6<double>&,
+    const math::RigidTransform<double>&,
+    const Eigen::Ref<const Matrix6X<double>>&,
+    const multibody::SpatialVelocity<double>&,
     const DifferentialInverseKinematicsParameters&);
 }  // namespace internal
 #endif

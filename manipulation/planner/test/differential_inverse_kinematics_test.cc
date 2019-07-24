@@ -10,6 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/solvers/constraint.h"
@@ -20,11 +21,8 @@ namespace planner {
 
 namespace {
 
-using Eigen::Isometry3d;
-using Eigen::Translation3d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
-using Vector6d = Vector6<double>;
 using examples::kuka_iiwa_arm::get_iiwa_max_joint_velocities;
 using multibody::MultibodyPlant;
 using multibody::FixedOffsetFrame;
@@ -45,12 +43,10 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
         plant_->GetFrameByName("iiwa_link_0"));
 
     // Add the EE frame.
-    const Isometry3d X_7E =
-        Translation3d(Vector3d(0.1, 0, 0)) *
-        AngleAxis<double>(M_PI, Vector3d::UnitZ());
+    const math::RigidTransformd X_7E(AngleAxis<double>(M_PI, Vector3d::UnitZ()),
+                                     Vector3d(0.1, 0, 0));
     frame_E_ = &plant_->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-        plant_->GetBodyByName("iiwa_link_7").body_frame(),
-        math::RigidTransformd(X_7E)));
+        plant_->GetBodyByName("iiwa_link_7").body_frame(), X_7E));
     plant_->Finalize();
     owned_context_ = plant_->CreateDefaultContext();
     context_ = owned_context_.get();
@@ -87,14 +83,19 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
     plant_->SetVelocities(context_, v);
   }
 
-  template <typename Vector6OrIsometry3>
-  DifferentialInverseKinematicsResult DoDiffIK(
-      const Vector6OrIsometry3& desired_WE) {
+  DifferentialInverseKinematicsResult DoDiffIKForRigidTransform(
+      const math::RigidTransform<double>& X_WE_desired) {
     return DoDifferentialInverseKinematics(
-        *plant_, *context_, desired_WE, *frame_E_, *params_);
+        *plant_, *context_, X_WE_desired.GetAsIsometry3(), *frame_E_, *params_);
   }
 
-  void CheckPositiveResult(const Vector6d& V_WE,
+  DifferentialInverseKinematicsResult DoDiffIKForSpatialVelocity(
+      const multibody::SpatialVelocity<double>& V_WE_W_desired) {
+    return DoDifferentialInverseKinematics(
+        *plant_, *context_, V_WE_W_desired.get_coeffs(), *frame_E_, *params_);
+  }
+
+  void CheckPositiveResult(const multibody::SpatialVelocity<double>& V_WE,
                            const DifferentialInverseKinematicsResult& result) {
     ASSERT_TRUE(result.joint_velocities != nullopt);
     drake::log()->info("result.joint_velocities = {}",
@@ -109,9 +110,9 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
         frame_E_->CalcSpatialVelocityInWorld(*temp_context);
     drake::log()->info(
         "V_WE_actual = {}", V_WE_actual.get_coeffs().transpose());
-    drake::log()->info("V_WE = {}", V_WE.transpose());
-    EXPECT_TRUE(CompareMatrices(
-        V_WE_actual.get_coeffs().normalized(), V_WE.normalized(), 1e-6));
+    drake::log()->info("V_WE = {}", V_WE.get_coeffs().transpose());
+    EXPECT_TRUE(CompareMatrices(V_WE_actual.get_coeffs().normalized(),
+                                V_WE.get_coeffs().normalized(), 1e-6));
 
     const int num_velocities{plant_->num_velocities()};
     ASSERT_EQ(result.joint_velocities->size(), num_velocities);
@@ -134,26 +135,27 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
 };
 
 TEST_F(DifferentialInverseKinematicsTest, PositiveTest) {
-  auto V_WE = (Vector6d() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0).finished();
-
+  const multibody::SpatialVelocity<double> V_WE_W(Vector3d(1.0, 2.0, 3.0),
+                                                  Vector3d(4.0, 5.0, 6.0));
   // Test without additional linear constraints.
-  auto result = DoDiffIK(V_WE);
+  DifferentialInverseKinematicsResult result =
+      DoDiffIKForSpatialVelocity(V_WE_W);
   drake::log()->info("result.status = {}", result.status);
-  CheckPositiveResult(V_WE, result);
+  CheckPositiveResult(V_WE_W, result);
 
   // Test with additional linear constraints.
   const auto A = (MatrixX<double>(1, 7) << 1, -1, 0, 0, 0, 0, 0).finished();
   const auto b = VectorXd::Zero(A.rows());
   params_->AddLinearVelocityConstraint(
       std::make_shared<LinearConstraint>(A, b, b));
-  result = DoDiffIK(V_WE);
+  result = DoDiffIKForSpatialVelocity(V_WE_W);
   drake::log()->info("result.status = {}", result.status);
-  CheckPositiveResult(V_WE, result);
+  CheckPositiveResult(V_WE_W, result);
 }
 
 TEST_F(DifferentialInverseKinematicsTest, OverConstrainedTest) {
-  auto V_WE = (Vector6d() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0).finished();
-
+  const multibody::SpatialVelocity<double> V_WE_W(Vector3d(1.0, 2.0, 3.0),
+                                                  Vector3d(4.0, 5.0, 6.0));
   // clang-format off
   const auto A = (MatrixX<double>(2, 7) <<
       1, -1,  0, 0, 0, 0, 0,
@@ -162,7 +164,8 @@ TEST_F(DifferentialInverseKinematicsTest, OverConstrainedTest) {
   const auto b = VectorXd::Zero(A.rows());
   params_->AddLinearVelocityConstraint(
       std::make_shared<LinearConstraint>(A, b, b));
-  auto result = DoDiffIK(V_WE);
+  const DifferentialInverseKinematicsResult result =
+      DoDiffIKForSpatialVelocity(V_WE_W);
   drake::log()->info("result.status = {}", result.status);
   ASSERT_TRUE(result.joint_velocities == nullopt);
 }
@@ -172,39 +175,39 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
 
   const math::RigidTransform<double> X_WE =
       frame_E_->CalcPoseInWorld(*context_);
+  const math::RotationMatrix<double> R_EW = X_WE.rotation().transpose();
   MatrixX<double> J(6, plant_->num_velocities());
   plant_->CalcFrameGeometricJacobianExpressedInWorld(
       *context_, *frame_E_, Vector3<double>::Zero(), &J);
 
-  Vector6d V_WE_W, V_WE_W_desired, V_WE_E, V_WE_E_desired;
-  V_WE_W_desired << 0.1, -0.2, 0.3, -0.3, 0.2, -0.1;
-  V_WE_W_desired /= 2.;
+  const multibody::SpatialVelocity<double> V_WE_W_desired(
+    Vector3d(0.1, -0.2, 0.3) / 2, Vector3d(-0.3, 0.2, -0.1) / 2);
 
-  Vector6d gain_E = Vector6d::Constant(1);
+  Vector6<double> gain_E = Vector6<double>::Constant(1);
   for (int i = 0; i < 6; i++) {
     gain_E(i) = 0;
     params_->set_end_effector_velocity_gain(gain_E);
 
-    auto result = DoDiffIK(V_WE_W_desired);
+    const DifferentialInverseKinematicsResult result =
+        DoDiffIKForSpatialVelocity(V_WE_W_desired);
     ASSERT_TRUE(result.joint_velocities != nullopt);
 
     // Transform the resulting end effector frame's velocity into body frame.
     plant_->SetPositions(context_, q);
     plant_->SetVelocities(context_, result.joint_velocities.value());
 
-    V_WE_W = frame_E_->CalcSpatialVelocityInWorld(*context_).get_coeffs();
-    const math::RotationMatrix<double> R_EW = X_WE.rotation().transpose();
-    V_WE_E.head<3>() = R_EW * V_WE_W.head<3>();
-    V_WE_E.tail<3>() = R_EW * V_WE_W.tail<3>();
+    const multibody::SpatialVelocity<double> V_WE_W =
+        frame_E_->CalcSpatialVelocityInWorld(*context_);
+    const multibody::SpatialVelocity<double> V_WE_E = R_EW * V_WE_W;
 
-    // Transform the desired end effector velocity into body frame.
-    V_WE_E_desired.head<3>() = R_EW * V_WE_W_desired.head<3>();
-    V_WE_E_desired.tail<3>() = R_EW * V_WE_W_desired.tail<3>();
+    // Transform the desired end effector velocity into the body frame.
+    const multibody::SpatialVelocity<double> V_WE_E_desired =
+        R_EW * V_WE_W_desired;
 
     for (int j = 0; j < 6; j++) {
       // For the constrained dof, the velocity should match.
       if (gain_E(j) > 0) {
-        EXPECT_NEAR(V_WE_E(j), V_WE_E_desired(j), 5e-3);
+        EXPECT_NEAR(V_WE_E[j], V_WE_E_desired[j], 5e-3);
       }
     }
   }
@@ -224,10 +227,12 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
 
 // Use the solver to track a fixed end effector pose.
 TEST_F(DifferentialInverseKinematicsTest, SimpleTracker) {
-  Isometry3d X_WE = frame_E_->CalcPoseInWorld(*context_);
-  Isometry3d X_WE_desired = Translation3d(Vector3d(-0.02, -0.01, -0.03)) * X_WE;
+  math::RigidTransform<double> X_WE = frame_E_->CalcPoseInWorld(*context_);
+  math::RigidTransform<double> X_WE_desired =
+      math::RigidTransform<double>(Vector3d(-0.02, -0.01, -0.03)) * X_WE;
   for (int iteration = 0; iteration < 900; ++iteration) {
-    const auto result = DoDiffIK(X_WE_desired);
+    const DifferentialInverseKinematicsResult result =
+        DoDiffIKForRigidTransform(X_WE_desired);
     EXPECT_EQ(result.status,
               DifferentialInverseKinematicsStatus::kSolutionFound);
 
@@ -253,8 +258,7 @@ GTEST_TEST(DifferentialInverseKinematicsParametersTest, TestSetter) {
   EXPECT_THROW(dut.set_nominal_joint_position(VectorXd(2)),
                std::exception);
 
-  Vector6d gain;
-  gain << 1, 2, 3, -4, 5, 6;
+  Vector6<double> gain = (Vector6<double>() << 1, 2, 3, -4, 5, 6).finished();
   EXPECT_THROW(dut.set_end_effector_velocity_gain(gain), std::exception);
 
   VectorXd l = VectorXd::Constant(1, 2);
