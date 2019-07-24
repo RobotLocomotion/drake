@@ -5,13 +5,10 @@ namespace geometry {
 namespace internal {
 namespace find_collision_candidates {
 
-CallbackData::CallbackData(const std::vector<GeometryId>* geometry_map_in,
-                           const CollisionFilterLegacy* collision_filter_in,
+CallbackData::CallbackData(const CollisionFilterLegacy* collision_filter_in,
                            std::vector<SortedPair<GeometryId>>* pairs_in)
-    : geometry_map(*geometry_map_in),
-      collision_filter(*collision_filter_in),
+    : collision_filter(*collision_filter_in),
       pairs(*pairs_in) {
-  DRAKE_DEMAND(geometry_map_in);
   DRAKE_DEMAND(collision_filter_in);
   DRAKE_DEMAND(pairs_in);
 }
@@ -28,9 +25,7 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
   const bool can_collide = data.collision_filter.CanCollideWith(
       encoding_a.encoding(), encoding_b.encoding());
   if (can_collide) {
-    const GeometryId id_a = encoding_a.id(data.geometry_map);
-    const GeometryId id_b = encoding_b.id(data.geometry_map);
-    data.pairs.emplace_back(id_a, id_b);
+    data.pairs.emplace_back(encoding_a.id(), encoding_b.id());
   }
   // Tell the broadphase to keep searching.
   return false;

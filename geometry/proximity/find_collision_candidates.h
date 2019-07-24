@@ -20,8 +20,6 @@ namespace find_collision_candidates {
 /** Supporting data for the collision candidates callback (see Callback below).
    It includes:
 
-    - A map from GeometryIndex to GeometryId (to facilitate reporting GeometryId
-      values in the results).
     - A collision filter instance.
     - A vector of geometry pairs -- each pair of geometries are possibly in
       contact.
@@ -31,15 +29,10 @@ struct CallbackData {
    in the class documentation. The parameters are all aliased in the data and
    must remain valid at least as long as the %CallbackData instance.
 
-   @param geometry_map_in         The index -> id map. Aliased.
    @param collision_filter_in     The collision filter system. Aliased.
    @param pairs_in                The output results. Aliased.  */
-  CallbackData(const std::vector<GeometryId>* geometry_map_in,
-               const CollisionFilterLegacy* collision_filter_in,
+  CallbackData(const CollisionFilterLegacy* collision_filter_in,
                std::vector<SortedPair<GeometryId>>* pairs_in);
-
-  /** The map from GeometryIndex to GeometryId.  */
-  const std::vector<GeometryId>& geometry_map;
 
   /** The collision filter system.  */
   const CollisionFilterLegacy& collision_filter;

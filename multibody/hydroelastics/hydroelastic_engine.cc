@@ -45,7 +45,7 @@ template <typename T>
 void HydroelasticEngine<T>::MakeModels(
     const geometry::SceneGraphInspector<T>& inspector) {
   // Only reify geometries with proximity roles.
-  for (const geometry::GeometryId geometry_id : inspector.all_geometry_ids()) {
+  for (const geometry::GeometryId geometry_id : inspector.GetAllGeometryIds()) {
     if (const geometry::ProximityProperties* properties =
             inspector.GetProximityProperties(geometry_id)) {
       const Shape& shape = inspector.GetShape(geometry_id);

@@ -99,6 +99,7 @@ enum ImageType {
 struct RegistrationData {
   const PerceptionProperties& properties;
   const RigidTransformd& X_FG;
+  const GeometryId id;
   // The file name if the shape being registered is a mesh.
   optional<std::string> mesh_filename;
 };
@@ -273,39 +274,40 @@ void RenderEngineVtk::ImplementGeometry(const Convex& convex, void* user_data) {
   ImplementObj(convex.filename(), convex.scale(), user_data);
 }
 
-optional<RenderIndex> RenderEngineVtk::DoRegisterVisual(
-    const Shape& shape, const PerceptionProperties& properties,
+bool RenderEngineVtk::DoRegisterVisual(
+    GeometryId id, const Shape& shape, const PerceptionProperties& properties,
     const RigidTransformd& X_FG) {
   // Note: the user_data interface on reification requires a non-const pointer.
-  RegistrationData data{properties, X_FG};
+  RegistrationData data{properties, X_FG, id};
   shape.Reify(this, &data);
-  return RenderIndex(static_cast<int>(actors_.size()) - 1);
+  return true;
 }
 
-void RenderEngineVtk::DoUpdateVisualPose(RenderIndex index,
+void RenderEngineVtk::DoUpdateVisualPose(GeometryId id,
                                          const RigidTransformd& X_WG) {
   vtkSmartPointer<vtkTransform> vtk_X_WG = ConvertToVtkTransform(X_WG);
-  // TODO(SeanCurtis-TRI): Provide the ability to specify specific actors; i.e.
-  // only update the visual actor or only the label actor, etc.
-  for (const auto& actor : actors_.at(index)) {
+  // TODO(SeanCurtis-TRI): Perhaps provide the ability to specify actors for
+  //  specific pipelines; i.e. only update the color actor or only the label
+  //  actor, etc.
+  for (const auto& actor : actors_.at(id)) {
     actor->SetUserTransform(vtk_X_WG);
   }
 }
 
-optional<RenderIndex> RenderEngineVtk::DoRemoveGeometry(RenderIndex index) {
-  DRAKE_DEMAND(index >= 0 && index < actors_.size());
-  for (int i = 0; i < kNumPipelines; ++i) {
-    // If the label actor hasn't been added to its renderer, this is a no-op.
-    pipelines_[i]->renderer->RemoveActor(actors_[index][i]);
+bool RenderEngineVtk::DoRemoveGeometry(GeometryId id) {
+  auto iter = actors_.find(id);
+
+  if (iter != actors_.end()) {
+    std::array<vtkSmartPointer<vtkActor>, 3>& pipe_actors = iter->second;
+    for (int i = 0; i < kNumPipelines; ++i) {
+      // If the label actor hasn't been added to its renderer, this is a no-op.
+      pipelines_[i]->renderer->RemoveActor(pipe_actors[i]);
+    }
+    actors_.erase(iter);
+    return true;
   }
-  optional<RenderIndex> moved_index{};
-  RenderIndex last_index{static_cast<int>(actors_.size()) - 1};
-  if (index < last_index) {
-    moved_index = last_index;
-    std::swap(actors_[index], actors_[last_index]);
-    actors_.pop_back();
-  }
-  return moved_index;
+
+  return false;
 }
 
 std::unique_ptr<RenderEngine> RenderEngineVtk::DoClone() const {
@@ -359,12 +361,13 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
     }
   };
 
-  for (size_t a = 0; a < other.actors_.size(); ++a) {
+  for (const auto& other_id_actor_pair : other.actors_) {
     std::array<vtkSmartPointer<vtkActor>, kNumPipelines> actors{
         vtkSmartPointer<vtkActor>::New(), vtkSmartPointer<vtkActor>::New(),
         vtkSmartPointer<vtkActor>::New()};
-    clone_actor_array(other.actors_.at(a), &actors);
-    actors_.emplace_back(actors);
+    clone_actor_array(other_id_actor_pair.second, &actors);
+    const GeometryId id = other_id_actor_pair.first;
+    actors_.insert({id, move(actors)});
   }
 
   // Copy camera properties
@@ -543,7 +546,7 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
   connect_actor(ImageType::kDepth);
 
   // Take ownership of the actors.
-  actors_.emplace_back(std::move(actors));
+  actors_.insert({data.id, std::move(actors)});
 }
 
 void RenderEngineVtk::PerformVtkUpdate(const RenderingPipeline& p) {

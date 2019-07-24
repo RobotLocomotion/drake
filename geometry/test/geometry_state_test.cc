@@ -44,6 +44,9 @@ using std::unordered_map;
 using std::unordered_set;
 using std::vector;
 
+template <typename T>
+using IdPoseMap = unordered_map<GeometryId, Isometry3<T>>;
+
 // Implementation of friend class that allows me to peek into the geometry state
 // to confirm invariants on the state's internal workings as a result of
 // operations.
@@ -84,20 +87,12 @@ class GeometryStateTester {
     return state_->geometries_;
   }
 
-  const vector<GeometryId>& get_geometry_index_id_map() const {
-    return state_->geometry_index_to_id_map_;
-  }
-
   const vector<FrameId>& get_frame_index_id_map() const {
     return state_->frame_index_to_id_map_;
   }
 
-  const vector<GeometryIndex>& get_dynamic_pose_index_id_map() const {
-    return state_->dynamic_proximity_index_to_internal_map_;
-  }
-
-  const vector<Isometry3<T>>& get_geometry_world_poses() const {
-    return state_->X_WG_;
+  const IdPoseMap<T>& get_geometry_world_poses() const {
+    return state_->X_WGs_;
   }
 
   const vector<Isometry3<T>>& get_frame_world_poses() const {
@@ -744,38 +739,53 @@ void ExpectSuccessfulTransmogrification(
   EXPECT_EQ(ad_tester.get_geometries(), d_tester.get_geometries());
   EXPECT_EQ(ad_tester.get_frames(), d_tester.get_frames());
 
-  // 2. Test the vectors of ids
-  EXPECT_EQ(ad_tester.get_geometry_index_id_map(),
-            d_tester.get_geometry_index_id_map());
+  // 2. Confirm that the ids all made it across.
   EXPECT_EQ(ad_tester.get_frame_index_id_map(),
             d_tester.get_frame_index_id_map());
-  EXPECT_EQ(ad_tester.get_dynamic_pose_index_id_map(),
-            d_tester.get_dynamic_pose_index_id_map());
 
   // 3. Compare Isometry3d with Isometry3<AutoDiffXd>
-  for (GeometryId id : ad_tester.get_geometry_index_id_map()) {
+  for (const auto& id_geom_pair : ad_tester.get_geometries()) {
+    const GeometryId id = id_geom_pair.first;
+    const auto& ad_geometry = id_geom_pair.second;
     EXPECT_TRUE(CompareMatrices(
-        ad_tester.get_geometries().at(id).X_FG().matrix().block<3, 4>(0, 0),
+        ad_geometry.X_FG().matrix().block<3, 4>(0, 0),
         d_tester.get_geometries().at(id).X_FG().matrix().block<3, 4>(0, 0)));
   }
 
   // 4. Compare Isometry3<AutoDiffXd> with Isometry3d
-  auto test_ad_vs_double = [](const vector<Isometry3<AutoDiffXd>>& test,
-                              const vector<Isometry3d>& ref) {
+  auto test_ad_vs_double_pose = [](const Isometry3<AutoDiffXd>& test,
+                                   const Isometry3d& ref) {
+    for (int row = 0; row < 3; ++row) {
+      for (int col = 0; col < 4; ++col) {
+        EXPECT_EQ(test(row, col).value(), ref(row, col));
+      }
+    }
+  };
+
+  auto test_ad_vs_double = [test_ad_vs_double_pose](
+                               const vector<Isometry3<AutoDiffXd>>& test,
+                               const vector<Isometry3d>& ref) {
     EXPECT_EQ(test.size(), ref.size());
     for (size_t i = 0; i < ref.size(); ++i) {
-      for (int row = 0; row < 3; ++row) {
-        for (int col = 0; col < 4; ++col) {
-          EXPECT_EQ(test[i](row, col).value(), ref[i](row, col));
-        }
-      }
+      test_ad_vs_double_pose(test[i], ref[i]);
+    }
+  };
+
+  auto test_ad_vs_double_map = [test_ad_vs_double_pose](
+                                   const IdPoseMap<AutoDiffXd>& test,
+                                   const IdPoseMap<double>& ref) {
+    ASSERT_EQ(test.size(), ref.size());
+    for (const auto& id_pose_pair : ref) {
+      const GeometryId id = id_pose_pair.first;
+      const Isometry3d& ref_pose = id_pose_pair.second;
+      test_ad_vs_double_pose(test.at(id), ref_pose);
     }
   };
 
   test_ad_vs_double(ad_tester.get_frame_parent_poses(),
                     d_tester.get_frame_parent_poses());
-  test_ad_vs_double(ad_tester.get_geometry_world_poses(),
-                    d_tester.get_geometry_world_poses());
+  test_ad_vs_double_map(ad_tester.get_geometry_world_poses(),
+                        d_tester.get_geometry_world_poses());
   test_ad_vs_double(ad_tester.get_frame_world_poses(),
                     d_tester.get_frame_world_poses());
 
@@ -897,9 +907,7 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
       EXPECT_EQ(geometry.child_geometry_ids().size(), 0);
       EXPECT_FALSE(geometry.parent_id());
       EXPECT_EQ(geometry.name(), geometry_names_[i]);
-      EXPECT_EQ(geometry.index(), i);
-      EXPECT_FALSE(geometry.render_index(kDummyRenderName));
-      EXPECT_FALSE(geometry.proximity_index().is_valid());
+      EXPECT_FALSE(geometry.in_renderer(kDummyRenderName));
       EXPECT_EQ(geometry.child_geometry_ids().size(), 0);
 
       // Note: There are no geometries parented to other geometries. The results
@@ -911,10 +919,6 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
       EXPECT_TRUE(CompareMatrices(
           geometry_state_.GetPoseInParent(geometry.id()).matrix(),
           X_FGs_[i].matrix()));
-
-      EXPECT_EQ(
-          gs_tester_.get_geometry_index_id_map()[geometry.index()],
-          geometry.id());
     }
   }
   EXPECT_EQ(static_cast<int>(gs_tester_.get_geometry_world_poses().size()),
@@ -1275,47 +1279,17 @@ TEST_F(GeometryStateTest, RegisterAnchoredNullGeometry) {
 }
 
 // Tests the RemoveGeometry() functionality. This action will have several
-// effects which will all be confirmed. By removing geometry 0 (the first
-// registered geometry and first dynamic geometry), the following effects are
-// expected:
-//   1. GeometryState moves geometries around to maintain compact distribution
-//      of GeometryIndex values. Therefore, the GeometryIndex(0) (which
-//      previously referred to the removed geometry now refers to the anchored
-//      geometry (the *last* geometry added to the state in the tree).
-//   2. The proximity engine will likewise shuffle indices. Therefore,
-//      ProximityIndex(0) will now refer to the last _dynamic_ geometry (the
-//      dynamic geometry that previously had the highest ProximityIndex value
-//      because the proximity engine only moves dynamic geometries in place of
-//      dynamic geometries and anchored for anchored).
-//   3. The renderer engine will also shuffle indices. So, RenderIndex(0) will
-//      belong to the anchored geometry. (Note: the mapping _from_ render index
-//      _to_ GeometryIndex is stored inside the RenderEngine and confirming that
-//      that has been correctly remapped is a test of the RenderEngine
-//      implementation.)
-// TODO(SeanCurtis-TRI): Consider breaking this test apart into those data
-// members *owned* by GeometryState and those that are role-specific. Right now
-// the test is huge and hard to follow.
+// effects which will all be confirmed.
+//  - The geometry is no longer known to the proximity engine.
+//  - The geometry is no longer known to the render engine.
+//  - confirm that various operation still work post remove:
+//    - pose updates
+//    - registration of geometry
+//    - assignment of roles.
 TEST_F(GeometryStateTest, RemoveGeometry) {
   // Every geometry gets proximity and perception properties.
   const SourceId s_id =
       SetUpSingleSourceTree(Assign::kProximity | Assign::kPerception);
-
-  // Set the render index to be reported as moved as the last geometry added:
-  // the anchored geometry.
-  render_engine_->set_moved_index(
-      gs_tester_.GetGeometry(anchored_geometry_)
-          ->render_index(kDummyRenderName));
-
-  // Confirm that the render indices are set up as expected, that
-  // GeometryIndex(i) has RenderIndex(i);
-  for (GeometryId id : all_geometry_ids()) {
-    const InternalGeometry* geometry = gs_tester_.GetGeometry(id);
-    optional<RenderIndex> render_index =
-        geometry->render_index(kDummyRenderName);
-    ASSERT_TRUE(render_index);
-    int geometry_index_value = geometry->index();
-    EXPECT_EQ(*render_index, geometry_index_value);
-  }
 
   // Pose all of the frames to the default poses (X_PFs_).
   FramePoseVector<double> poses;
@@ -1325,27 +1299,18 @@ TEST_F(GeometryStateTest, RemoveGeometry) {
   gs_tester_.SetFramePoses(s_id, poses);
   gs_tester_.FinalizePoseUpdate();
 
-  // The geometry to remove, its parent frame, and its engine indices.
+  // The geometry to remove and  its parent frame.
   const GeometryId g_id = geometries_[0];
   const FrameId f_id = frames_[0];
-  const ProximityIndex proximity_index =
-      gs_tester_.get_geometries().at(g_id).proximity_index();
-  const RenderIndex render_index =
-      *gs_tester_.get_geometries().at(g_id).render_index(kDummyRenderName);
 
   // Confirm initial state.
   ASSERT_EQ(geometry_state_.GetFrameId(g_id), f_id);
   EXPECT_EQ(geometry_state_.get_num_geometries(),
             single_tree_total_geometry_count());
-  EXPECT_NE(
-      gs_tester_.get_geometries().at(geometries_.back()).proximity_index(),
-      proximity_index);
-  EXPECT_NE(*gs_tester_.get_geometries()
-                 .at(geometries_.back())
-                 .render_index(kDummyRenderName),
-            render_index);
   EXPECT_EQ(geometry_state_.GetNumDynamicGeometries(),
             single_tree_dynamic_geometry_count());
+  // We assume that role assignment works (tested below), such that the
+  // geometries are registered with the appropriate engines.
 
   geometry_state_.RemoveGeometry(s_id, g_id);
 
@@ -1357,71 +1322,27 @@ TEST_F(GeometryStateTest, RemoveGeometry) {
   EXPECT_FALSE(gs_tester_.get_frames().at(f_id).has_child(g_id));
   EXPECT_EQ(gs_tester_.get_geometries().count(g_id), 0);
 
-  // Confirm GeometryIndex(0) now maps to the anchored geometry.
-  const InternalGeometry& anchored_geometry =
-      gs_tester_.get_geometries().at(anchored_geometry_);
-  EXPECT_EQ(anchored_geometry.proximity_index(), proximity_index);
-  EXPECT_EQ(gs_tester_.get_geometry_index_id_map()[0], anchored_geometry_);
-
-  // Confirm that the anchored geometry now contains RenderIndex(0) for the
-  // dummy render engine.
-  EXPECT_EQ(*anchored_geometry.render_index(kDummyRenderName), RenderIndex(0));
-
-  // Confirm that the anchored geometry now contains ProximityIndex(0) --
-  // also confirm that the X_WG_ quantity indexed by proximity index points to
-  // that geometry's world pose.
-  EXPECT_EQ(
-      gs_tester_.get_geometries().at(geometries_.back()).proximity_index(),
-      proximity_index);
-  // The anchored geometry's world pose is simply the last pose in X_FGs_;
-  // it was added last and its parent is the world frame.
-  const Isometry3d& X_WA = X_FGs_.back();
-  EXPECT_TRUE(CompareMatrices(gs_tester_.get_geometry_world_poses()[0].matrix(),
-                              X_WA.matrix()));
-
   // Confirm that, post removal, updating poses still works.
   EXPECT_NO_THROW(gs_tester_.FinalizePoseUpdate());
 
-  // Adding a new geometry should bring the number of total geometries back to
-  // the original count.
-  const GeometryId added_id = geometry_state_.RegisterGeometry(
-      source_id_, frames_[0],
-      make_unique<GeometryInstance>(Isometry3d::Identity(),
-                                    make_unique<Sphere>(1), "newest"));
-  const InternalGeometry& added_geo = gs_tester_.get_geometries().at(added_id);
-  // Highest index should be number of geometries - 1.
-  EXPECT_EQ(added_geo.index(),
-            GeometryIndex(single_tree_total_geometry_count() - 1));
+  // Adding a new geometry; various operations should still "work" (in the sense
+  // that nothing explodes).
+  GeometryId added_id;
+  EXPECT_NO_THROW(
+      added_id = geometry_state_.RegisterGeometry(
+          source_id_, frames_[0],
+          make_unique<GeometryInstance>(Isometry3d::Identity(),
+                                        make_unique<Sphere>(1), "newest")));
 
   // Adding proximity role to the new geometry brings the total number of
   // dynamic geometries with proximity roles back up to the original value.
-  geometry_state_.AssignRole(source_id_, added_id, ProximityProperties());
-  // As the added geometry is dynamic, the highest index is total number of
-  // _dynamic_ geometries - 1.
-  EXPECT_EQ(added_geo.proximity_index(),
-            ProximityIndex(single_tree_dynamic_geometry_count() - 1));
+  EXPECT_NO_THROW(
+      geometry_state_.AssignRole(source_id_, added_id, ProximityProperties()));
 
-  // Now remove the *final* geometry; even though it doesn't require re-ordering
-  // proximity indices, it should still keep things valid -- in other words,
-  // the mapping from proximity index to internal index for *dynamic* geometries
-  // should shrink appropriately.
-  geometry_state_.RemoveGeometry(s_id, added_id);
+  // Now remove the *final* geometry, it should still keep things valid -- in
+  // other words, we should still be able to finalized poses.
+  EXPECT_NO_THROW(geometry_state_.RemoveGeometry(s_id, added_id));
   // Confirm that, post removal, updating poses still works.
-  EXPECT_NO_THROW(gs_tester_.FinalizePoseUpdate());
-
-  // Test the case where a geometry gets re-ordered, but it has no roles. To
-  // make sure the geometry moves, it needs to _not_ be the last added geometry.
-  // So, we add the geometry we're going to remove _and_ an additional geometry
-  // after it.
-  const GeometryId no_role_id = geometry_state_.RegisterGeometry(
-      source_id_, frames_[0],
-      make_unique<GeometryInstance>(
-          Isometry3d::Identity(), make_unique<Sphere>(1), "no_role_geometry"));
-  geometry_state_.RegisterGeometry(
-      source_id_, frames_[0],
-      make_unique<GeometryInstance>(
-          Isometry3d::Identity(), make_unique<Sphere>(1), "no_role_geometry2"));
-  EXPECT_NO_THROW(geometry_state_.RemoveGeometry(s_id, no_role_id));
   EXPECT_NO_THROW(gs_tester_.FinalizePoseUpdate());
 }
 
@@ -1429,6 +1350,7 @@ TEST_F(GeometryStateTest, RemoveGeometry) {
 // geometry children.
 TEST_F(GeometryStateTest, RemoveGeometryTree) {
   const SourceId s_id = SetUpSingleSourceTree(Assign::kProximity);
+
   // Pose all of the frames to the specified poses in their parent frame.
   FramePoseVector<double> poses;
   for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
@@ -1437,11 +1359,10 @@ TEST_F(GeometryStateTest, RemoveGeometryTree) {
   gs_tester_.SetFramePoses(s_id, poses);
   gs_tester_.FinalizePoseUpdate();
 
-  // The geometry to remove, its parent frame, and its proximity index.
+  // The geometry to remove and its parent frame.
   const GeometryId root_id = geometries_[0];
   const FrameId f_id = frames_[0];
-  auto proximity_index =
-      gs_tester_.get_geometries().at(root_id).proximity_index();
+
   // Confirm that the first geometry belongs to the first frame.
   ASSERT_EQ(geometry_state_.GetFrameId(root_id), f_id);
   // Hang geometry from the first geometry.
@@ -1456,8 +1377,6 @@ TEST_F(GeometryStateTest, RemoveGeometryTree) {
   EXPECT_EQ(geometry_state_.GetNumDynamicGeometries(),
             single_tree_dynamic_geometry_count() + 1);
   EXPECT_EQ(geometry_state_.GetFrameId(g_id), f_id);
-  EXPECT_EQ(gs_tester_.get_geometries().at(g_id).proximity_index(),
-            geometries_.size());
 
   geometry_state_.RemoveGeometry(s_id, root_id);
   EXPECT_EQ(geometry_state_.get_num_geometries(),
@@ -1470,35 +1389,13 @@ TEST_F(GeometryStateTest, RemoveGeometryTree) {
   EXPECT_FALSE(frame.has_child(g_id));
   EXPECT_EQ(gs_tester_.get_geometries().count(root_id), 0);
   EXPECT_EQ(gs_tester_.get_geometries().count(g_id), 0);
-
-  // Deleting a tree of geometry is a bottom-up operation. That means the newly
-  // added leaf geometry will be deleted first. By construction, it *is* the
-  // last geometry added (highest proximity index and highest geometry index)
-  // so no index swapping will take place to remove it. However, there will be
-  // swapping akin to that in the RemoveGeometry() test.
-
-  // Confirm GeometryIndex(0) now maps to the anchored geometry.
-  const GeometryId last_geometry_id = anchored_geometry_;
-  const auto& last_geometry =
-      gs_tester_.get_geometries().at(last_geometry_id);
-  EXPECT_EQ(last_geometry.proximity_index(), proximity_index);
-  EXPECT_EQ(gs_tester_.get_geometry_index_id_map()[0], last_geometry_id);
-
-  // Confirm that ProximityIndex(0) belongs to the last dynamic geometry --
-  // also confirm that the X_WG_ quantity indexed by proximity index points to
-  // that geometry's world pose.
-  EXPECT_EQ(
-      gs_tester_.get_geometries().at(geometries_.back()).proximity_index(),
-      proximity_index);
-  const Isometry3d X_WG = X_WFs_.back() * X_FGs_.back();
-  EXPECT_TRUE(CompareMatrices(gs_tester_.get_geometry_world_poses()[0].matrix(),
-                              X_WG.matrix()));
 }
 
 // Tests the RemoveGeometry functionality in which the geometry is a child of
 // another geometry (and has no child geometries itself).
 TEST_F(GeometryStateTest, RemoveChildLeaf) {
   const SourceId s_id = SetUpSingleSourceTree(Assign::kProximity);
+
   // The geometry parent and frame to which it belongs.
   const GeometryId parent_id = geometries_[0];
   const FrameId frame_id = frames_[0];
@@ -1523,13 +1420,6 @@ TEST_F(GeometryStateTest, RemoveChildLeaf) {
   EXPECT_FALSE(gs_tester_.get_frames().at(frame_id).has_child(g_id));
   EXPECT_TRUE(gs_tester_.get_frames().at(frame_id).has_child(parent_id));
   EXPECT_FALSE(gs_tester_.get_geometries().at(parent_id).has_child(g_id));
-
-  // The geometry we deleted is the *last*; the engine indices of all other
-  // geometries should be unchanged.
-  for (size_t i = 0; i < geometries_.size(); ++i) {
-    EXPECT_EQ(gs_tester_.get_geometry_index_id_map().at(i),
-              geometries_[i]);
-  }
 }
 
 // Tests the response to invalid use of RemoveGeometry.
@@ -1578,31 +1468,15 @@ TEST_F(GeometryStateTest, RemoveAnchoredGeometry) {
                                     make_unique<HalfSpace>(), "anchored1"));
   geometry_state_.AssignRole(s_id, anchored_id_1, ProximityProperties());
   // Confirm conditions of having added the anchored geometry.
-  EXPECT_EQ(gs_tester_.get_geometry_index_id_map().size(),
-            single_tree_total_geometry_count() + 1);
   EXPECT_TRUE(geometry_state_.BelongsToSource(anchored_id_1, s_id));
-  EXPECT_EQ(gs_tester_.GetGeometry(anchored_id_1)->proximity_index(), 1);
 
   geometry_state_.RemoveGeometry(s_id, anchored_geometry_);
 
   EXPECT_EQ(gs_tester_.GetGeometry(anchored_geometry_), nullptr);
-
-  // Two indices move:
-  //  The new anchored geometry gets the geometry index of the old anchored
-  //     geometry.
-  //  The new anchored geometry engine index goes down to zero.
-  EXPECT_EQ(gs_tester_.get_geometry_index_id_map().size(),
-            single_tree_total_geometry_count());
-  EXPECT_EQ(gs_tester_.get_geometry_index_id_map().back(),
-            anchored_id_1);
-  // The highest *index* is always count - 1.
-  EXPECT_EQ(gs_tester_.get_geometries().at(anchored_id_1).index(),
-            single_tree_total_geometry_count() - 1);
-  EXPECT_EQ(gs_tester_.get_geometries().at(anchored_id_1).proximity_index(), 0);
 }
 
 // Tests removal of geometry when collision filters are present. As geometries
-// move around, their filter semantics should follow.
+// are removed, surrounding filter semantics should *not* change.
 TEST_F(GeometryStateTest, RemoveGeometryWithCollisionFilters) {
   const SourceId s_id = SetUpSingleSourceTree(Assign::kProximity);
   auto is_filtered = [this](int index0, int index1) {
@@ -1628,13 +1502,10 @@ TEST_F(GeometryStateTest, RemoveGeometryWithCollisionFilters) {
   EXPECT_FALSE(is_filtered(3, 4));
   EXPECT_FALSE(is_filtered(3, 5));
 
-  // Note: removing anchored geometry because it was the last registered; it
-  // will be moved but has no filtered relationships with anyone. So, pop it
-  // and move on.
+  // Note: removing anchored geometry because it was the last registered.
   geometry_state_.RemoveGeometry(s_id, anchored_geometry_);
-  // Now geometries_[5] is the last; it will be moved into GeometryIndex(1). The
-  // failure we're testing for is that it doesn't inherit geometries_[1]'s
-  // collision filter semantics, but maintains its own.
+  // Now remove some interior geometry -- make sure filter semantics don't get
+  // crossed.
   geometry_state_.RemoveGeometry(s_id, geometries_[1]);
 
   // Repeat the test above, but exclude all pairs including the removed
@@ -1795,14 +1666,16 @@ TEST_F(GeometryStateTest, SetFramePoses) {
 
   // NOTE: Don't re-order the tests; they rely on an accumulative set of changes
   // to the `frame_poses` vector of poses.
+  const int total_geom = single_tree_dynamic_geometry_count();
 
   // Case 1: Set all frames to identity poses. The world pose of all the
   // geometry should be that of the geometry in its frame.
   FramePoseVector<double> poses1 = make_pose_vector();
   gs_tester_.SetFramePoses(s_id, poses1);
   const auto& world_poses = gs_tester_.get_geometry_world_poses();
-  for (int i = 0; i < kFrameCount * kGeometryCount; ++i) {
-    EXPECT_TRUE(CompareMatrices(world_poses[i].matrix().block<3, 4>(0, 0),
+  for (int i = 0; i < total_geom; ++i) {
+    const GeometryId id = geometries_[i];
+    EXPECT_TRUE(CompareMatrices(world_poses.at(id).matrix().block<3, 4>(0, 0),
                                 X_FGs_[i].matrix().block<3, 4>(0, 0)));
   }
 
@@ -1814,9 +1687,10 @@ TEST_F(GeometryStateTest, SetFramePoses) {
   frame_poses[1] = offset;
   FramePoseVector<double> poses2 = make_pose_vector();
   gs_tester_.SetFramePoses(s_id, poses2);
-  for (int i = 0; i < kFrameCount * kGeometryCount; ++i) {
+  for (int i = 0; i < total_geom; ++i) {
+    const GeometryId id = geometries_[i];
     EXPECT_TRUE(
-        CompareMatrices(world_poses[i].matrix().block<3, 4>(0, 0),
+        CompareMatrices(world_poses.at(id).matrix().block<3, 4>(0, 0),
                         (offset * X_FGs_[i].matrix()).block<3, 4>(0, 0)));
   }
 
@@ -1825,16 +1699,17 @@ TEST_F(GeometryStateTest, SetFramePoses) {
   frame_poses[2] = offset;
   FramePoseVector<double> poses3 = make_pose_vector();
   gs_tester_.SetFramePoses(s_id, poses3);
-  for (int i = 0; i < (kFrameCount - 1) * kGeometryCount; ++i) {
-    EXPECT_TRUE(
-        CompareMatrices(world_poses[i].matrix().block<3, 4>(0, 0),
-                        (offset * X_FGs_[i].matrix()).block<3, 4>(0, 0)));
-  }
-  for (int i = (kFrameCount - 1) * kGeometryCount;
-       i < kFrameCount * kGeometryCount; ++i) {
-    EXPECT_TRUE(CompareMatrices(
-        world_poses[i].matrix().block<3, 4>(0, 0),
-        (offset * offset * X_FGs_[i].matrix()).block<3, 4>(0, 0)));
+  for (int i = 0; i < total_geom; ++i) {
+    const GeometryId id = geometries_[i];
+    if (i < (kFrameCount - 1) * kGeometryCount) {
+      EXPECT_TRUE(
+          CompareMatrices(world_poses.at(id).matrix().block<3, 4>(0, 0),
+                          (offset * X_FGs_[i].matrix()).block<3, 4>(0, 0)));
+    } else {
+      EXPECT_TRUE(CompareMatrices(
+          world_poses.at(id).matrix().block<3, 4>(0, 0),
+          (offset * offset * X_FGs_[i].matrix()).block<3, 4>(0, 0)));
+    }
   }
 }
 
@@ -2466,11 +2341,10 @@ TEST_F(GeometryStateTest, AssignRolesToGeometry) {
                                  : "not expected, but found. ");
       passes = false;
     }
-    if (has_perception !=
-        (geometry->render_index(kDummyRenderName).has_value())) {
+    if (has_perception != geometry->has_perception_role()) {
       failure << "Perception role: "
-              << (has_perception ? "expected, but no render index found"
-                                 : "not expected, but render index found");
+              << (has_perception ? "expected, but not found"
+                                 : "not expected, but found");
       passes = false;
     }
     if (has_illustration != (geometry->illustration_properties() != nullptr)) {
@@ -2977,30 +2851,28 @@ TEST_F(GeometryStateTest, RemoveUnassignedRole) {
 TEST_F(GeometryStateTest, RemoveGeometryFromRenderer) {
   // Add an additional renderer *before* populating the world (as required).
   const string other_renderer_name = "alt_renderer";
-  DummyRenderEngine* other_renderer{nullptr};
-  {
-    auto new_renderer = make_unique<DummyRenderEngine>();
-    other_renderer = new_renderer.get();
-    geometry_state_.AddRenderer(other_renderer_name, move(new_renderer));
-  }
+  geometry_state_.AddRenderer(other_renderer_name,
+                              make_unique<DummyRenderEngine>());
+
   SetUpSingleSourceTree(Assign::kPerception);
 
-  // Each geometry must have a render index for the default render engine. In
+  // Note: we simulate the derived engine reporting removal of geometry ids via
+  // set_geometry_remove({true | false}). When we expect the id won't be removed
+  // (because it doesn't exist), we set it to false. Otherwise true.
+
+  // Each geometry must report that it is in the default render engine, in
   // addition,
-  //   a) have an index for the "other" render engine, xor
+  //   a) report itself in the "other" render engine, xor
   //   b) be present in the `removed_from_renderer` set.
   auto confirm_renderers = [=](set<GeometryId> removed_from_renderer) {
     set<GeometryId> ids(geometries_.begin(), geometries_.end());
     ids.insert(anchored_geometry_);
     for (GeometryId id : ids) {
-      // All should have render indices in the dummy renderer.
-      EXPECT_TRUE(gs_tester_.GetGeometry(id)
-                      ->render_index(kDummyRenderName)
-                      .has_value());
-      // Should have a render index if it is *not* in the removed set.
+      // All should report in the dummy renderer.
+      EXPECT_TRUE(gs_tester_.GetGeometry(id)->in_renderer(kDummyRenderName));
+      // Should report in the renderer if it is *not* in the removed set.
       EXPECT_EQ(gs_tester_.GetGeometry(id)
-                    ->render_index(other_renderer_name)
-                    .has_value(),
+                    ->in_renderer(other_renderer_name),
                 removed_from_renderer.count(id) == 0);
     }
   };
@@ -3009,28 +2881,14 @@ TEST_F(GeometryStateTest, RemoveGeometryFromRenderer) {
   // Confirm geometries assigned to _both_ renderers.
   confirm_renderers(removed_ids);
 
-  // Configure the renderer to return the _last_ geometry (anchored) to be
-  // swapped with the removed geometry.
-  const RenderIndex anchored_old_index =
-      *gs_tester_.GetGeometry(anchored_geometry_)
-          ->render_index(other_renderer_name);
-  other_renderer->set_moved_index(anchored_old_index);
-
-  // Case: Remove geometry from a single renderer (should have one left).
+  // Case: Remove geometry from a single renderer (geometry should still be in
+  // the default renderer).
   const GeometryId remove_id = geometries_[0];
-  const RenderIndex old_index_for_zero =
-      *gs_tester_.GetGeometry(remove_id)->render_index(other_renderer_name);
   EXPECT_EQ(geometry_state_.RemoveFromRenderer(other_renderer_name, source_id_,
                                                remove_id),
             1);
   removed_ids.insert(remove_id);
   confirm_renderers(removed_ids);
-
-  // Confirm that the anchored geometry's render index has moved to the slot
-  // freed up by the removed geometry.
-  EXPECT_EQ(*gs_tester_.GetGeometry(anchored_geometry_)
-      ->render_index(other_renderer_name),
-            old_index_for_zero);
 
   // Case: Try removing geometry from renderer that doesn't belong to renderer
   // should simply report 0.
@@ -3071,24 +2929,27 @@ TEST_F(GeometryStateTest, RemoveFrameFromRenderer) {
   const string other_renderer_name = "alt_renderer";
   geometry_state_.AddRenderer(other_renderer_name,
                               make_unique<DummyRenderEngine>());
+
   SetUpSingleSourceTree(Assign::kPerception);
 
-  // Each geometry must have a render index for the default render engine. In
+  // Note: we simulate the derived engine reporting removal of geometry ids via
+  // set_geometry_remove({true | false}). When we expect the id won't be removed
+  // (because it doesn't exist), we set it to false. Otherwise true.
+
+  // Each geometry must report that it is in the default render engine, in
   // addition,
-  //   a) have an index for the "other" render engine, xor
+  //   a) report itself in the "other" render engine, xor
   //   b) be present in the `removed_from_renderer` set.
   auto confirm_renderers = [=](set<GeometryId> removed_from_renderer) {
     set<GeometryId> ids(geometries_.begin(), geometries_.end());
     ids.insert(anchored_geometry_);
     for (GeometryId id : ids) {
-      // All should have render indices in the dummy renderer.
+      // All should report in the dummy renderer.
       EXPECT_TRUE(gs_tester_.GetGeometry(id)
-                      ->render_index(kDummyRenderName)
-                      .has_value());
-      // Should have a render index if it is *not* in the removed set.
+                      ->in_renderer(kDummyRenderName));
+      // Should report in the renderer if it is *not* in the removed set.
       EXPECT_EQ(gs_tester_.GetGeometry(id)
-                    ->render_index(other_renderer_name)
-                    .has_value(),
+                    ->in_renderer(other_renderer_name),
                 removed_from_renderer.count(id) == 0);
     }
   };
@@ -3203,22 +3064,20 @@ TEST_F(GeometryStateTest, RendererPoseUpdate) {
   // Add a *second* render engine to make sure that *all* get updated.
   auto render_engine = make_unique<DummyRenderEngine>();
   DummyRenderEngine* second_engine = render_engine.get();
-  geometry_state_.AddRenderer("second_engine", move(render_engine));
+  const std::string second_engine_name = "second_engine";
+  geometry_state_.AddRenderer(second_engine_name, move(render_engine));
 
   SetUpSingleSourceTree(Assign::kPerception);
 
-  // Reality check -- the render indices for each geometry should be the same
-  // for each renderer.
-  std::vector<RenderIndex> render_indices;
+  // Reality check -- all geometries report as part of both engines.
   for (int i = 0; i < single_tree_dynamic_geometry_count(); ++i) {
     const InternalGeometry* geometry = gs_tester_.GetGeometry(geometries_[i]);
-    ASSERT_EQ(geometry->render_index(kDummyRenderName),
-              geometry->render_index("second_engine"));
-    render_indices.push_back(*geometry->render_index(kDummyRenderName));
+    EXPECT_TRUE(geometry->in_renderer(kDummyRenderName));
+    EXPECT_TRUE(geometry->in_renderer(second_engine_name));
   }
 
-  EXPECT_EQ(second_engine->updated_indices().size(), 0u);
-  EXPECT_EQ(render_engine_->updated_indices().size(), 0u);
+  EXPECT_EQ(second_engine->updated_ids().size(), 0u);
+  EXPECT_EQ(render_engine_->updated_ids().size(), 0u);
 
   // Set poses of frames to the initial values.
   FramePoseVector<double> poses;
@@ -3228,31 +3087,32 @@ TEST_F(GeometryStateTest, RendererPoseUpdate) {
   gs_tester_.SetFramePoses(source_id_, poses);
   gs_tester_.FinalizePoseUpdate();
 
-  // Confirm poses.
+  // Confirm poses between two GeometryId -> Pose maps.
   auto expect_poses = [](const auto& test, const auto& expected) {
-    EXPECT_EQ(test.size(), expected.size());
-    for (const auto& expected_pair : expected) {
-      const auto& test_iter = test.find(expected_pair.first);
+    ASSERT_EQ(test.size(), expected.size());
+    for (const auto& expected_id_pose_pair : expected) {
+      const GeometryId expected_id = expected_id_pose_pair.first;
+      const auto& test_iter = test.find(expected_id);
       EXPECT_NE(test_iter, test.end());
       EXPECT_TRUE(CompareMatrices(test_iter->second.matrix(),
-                                  expected_pair.second.matrix()));
+                                  expected_id_pose_pair.second.matrix()));
     }
   };
 
-  auto get_expected_indices = [this, &render_indices]() {
-    map<RenderIndex, Isometry3d> expected;
+  auto get_expected_ids = [this]() {
+    map<GeometryId, Isometry3d> expected;
     for (int i = 0; i < single_tree_dynamic_geometry_count(); ++i) {
-      expected.emplace(render_indices[i],
-                       gs_tester_.get_geometry_world_poses()[i]);
+      const GeometryId id = geometries_[i];
+      expected.insert({id, gs_tester_.get_geometry_world_poses().at(id)});
     }
     return expected;
   };
 
-  map<RenderIndex, Isometry3d> expected_indices = get_expected_indices();
-  expect_poses(second_engine->updated_indices(), expected_indices);
-  expect_poses(render_engine_->updated_indices(), expected_indices);
-  render_engine_->reset();
-  second_engine->reset();
+  map<GeometryId, Isometry3d> expected_ids = get_expected_ids();
+  expect_poses(second_engine->updated_ids(), expected_ids);
+  expect_poses(render_engine_->updated_ids(), expected_ids);
+  render_engine_->init_test_data();
+  second_engine->init_test_data();
 
   // Set poses of frames to an alternate value - fixed offset from initial
   // values.
@@ -3262,15 +3122,15 @@ TEST_F(GeometryStateTest, RendererPoseUpdate) {
     X_PF.translation() += offset;
     poses.set_value(frames_[f], X_PF);
   }
-  EXPECT_EQ(second_engine->updated_indices().size(), 0u);
-  EXPECT_EQ(render_engine_->updated_indices().size(), 0u);
+  EXPECT_EQ(second_engine->updated_ids().size(), 0u);
+  EXPECT_EQ(render_engine_->updated_ids().size(), 0u);
   gs_tester_.SetFramePoses(source_id_, poses);
   gs_tester_.FinalizePoseUpdate();
 
   // Confirm poses.
-  expected_indices = get_expected_indices();
-  expect_poses(second_engine->updated_indices(), expected_indices);
-  expect_poses(render_engine_->updated_indices(), expected_indices);
+  expected_ids = get_expected_ids();
+  expect_poses(second_engine->updated_ids(), expected_ids);
+  expect_poses(render_engine_->updated_ids(), expected_ids);
 }
 
 // The framework for testing the removal of roles, generally, parameterized on
@@ -3282,7 +3142,8 @@ class RemoveRoleTests : public GeometryStateTestBase,
     TestInit();
     // Add an *additional* renderer just to confirm that removing the perception
     // role from a geometry/frame still counts geometries removed and not
-    // (geometry, renderer) pairs.
+    // (geometry, renderer) pairs - i.e., removing a geometry from two renderers
+    // still only reports one geometry's role has been removed.
     geometry_state_.AddRenderer("other", make_unique<DummyRenderEngine>());
     SetUpSingleSourceTree(Assign::kPerception | Assign::kProximity |
                           Assign::kIllustration);

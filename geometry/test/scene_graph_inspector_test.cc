@@ -45,7 +45,11 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   inspector.num_frames();
   inspector.all_frame_ids();
   inspector.num_geometries();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   inspector.all_geometry_ids();
+#pragma GCC diagnostic pop
+  inspector.GetAllGeometryIds();
   inspector.NumGeometriesWithRole(Role::kUnassigned);
   inspector.GetNumDynamicGeometries();
   inspector.GetNumAnchoredGeometries();
