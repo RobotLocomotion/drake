@@ -124,23 +124,23 @@ class LcmSubscriberSystem : public LeafSystem<double> {
    */
   int GetMessageCount(const Context<double>& context) const;
 
- protected:
-  void DoCalcNextUpdateTime(const Context<double>& context,
-                            systems::CompositeEventCollection<double>* events,
-                            double* time) const override;
-
-  void DoCalcUnrestrictedUpdate(
-      const Context<double>&,
-      const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
-      State<double>* state) const override;
-
  private:
   // Callback entry point from LCM into this class.
   void HandleMessage(const void*, int);
 
+  // Adds additional event scheduling to the default implementation:
+  // If a new message has been received, add an event trigger scheduled
+  // for the current time so it will be handled immediately.
+  void DoCalcNextUpdateTime(const Context<double>& context,
+                            systems::CompositeEventCollection<double>* events,
+                            double* time) const override;
+
   std::unique_ptr<AbstractValue> AllocateSerializerOutputValue() const;
   void CalcSerializerOutputValue(const Context<double>& context,
                                  AbstractValue* output_value) const;
+
+  systems::EventStatus ProcessMessageAndStoreToAbstractState(
+      const Context<double>&, State<double>* state) const;
 
   // The channel on which to receive LCM messages.
   const std::string channel_;
