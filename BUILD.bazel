@@ -75,6 +75,9 @@ install_test(
         ":install",
         _INSTALL_TEST_COMMANDS,
     ],
+    # Running acceptance tests under Valgrind tools is extremely slow and of
+    # limited value, so skip them.
+    tags = ["no_valgrind_tools"],
 )
 
 add_lint_tests()

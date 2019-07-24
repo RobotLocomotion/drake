@@ -300,9 +300,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "simulator_denorm_test",
-    # Valgrind doesn't support the floating point register
+    # Valgrind core does not support the floating point register
     # instructions that this test uses.
-    tags = ["no_memcheck"],
+    tags = ["no_valgrind_tools"],
     deps = [
         ":simulator",
     ],
