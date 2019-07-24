@@ -11,7 +11,9 @@
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/query_object.h"
+#include "drake/geometry/render/render_label.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/geometry/test_utilities/dummy_render_engine.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -27,6 +29,7 @@ namespace drake {
 namespace geometry {
 
 using Eigen::Isometry3d;
+using internal::DummyRenderEngine;
 using systems::Context;
 using systems::rendering::PoseBundle;
 using systems::System;
@@ -396,6 +399,49 @@ TEST_F(SceneGraphTest, ModelInspector) {
             anchored_id);
 }
 
+// SceneGraph provides a thin wrapper on the GeometryState renderer
+// configuration/introspection code. These tests are just smoke tests that the
+// functions work. It relies on GeometryState to properly unit test the
+// full behavior.
+TEST_F(SceneGraphTest, RendererSmokeTest) {
+  const std::string kRendererName = "bob";
+
+  EXPECT_EQ(scene_graph_.RendererCount(), 0);
+  EXPECT_EQ(scene_graph_.RegisteredRendererNames().size(), 0u);
+  EXPECT_FALSE(scene_graph_.HasRenderer(kRendererName));
+
+  EXPECT_NO_THROW(scene_graph_.AddRenderer(kRendererName,
+                                           make_unique<DummyRenderEngine>()));
+
+  EXPECT_EQ(scene_graph_.RendererCount(), 1);
+  EXPECT_EQ(scene_graph_.RegisteredRendererNames()[0], kRendererName);
+  EXPECT_TRUE(scene_graph_.HasRenderer(kRendererName));
+}
+
+// SceneGraph provides a thin wrapper on the GeometryState role manipulation
+// code. These tests are just smoke tests that the functions work. It relies on
+// GeometryState to properly unit test the full behavior.
+TEST_F(SceneGraphTest, RoleManagementSmokeTest) {
+  SourceId s_id = scene_graph_.RegisterSource("test");
+  FrameId f_id = scene_graph_.RegisterFrame(s_id, GeometryFrame("frame"));
+  auto instance = make_unique<GeometryInstance>(
+      Isometry3<double>::Identity(), make_unique<Sphere>(1.0), "sphere");
+  instance->set_illustration_properties(IllustrationProperties());
+  instance->set_proximity_properties(ProximityProperties());
+  instance->set_perception_properties(PerceptionProperties());
+
+  GeometryId g_id = scene_graph_.RegisterGeometry(s_id, f_id, move(instance));
+
+  const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
+  EXPECT_NE(inspector.GetProximityProperties(g_id), nullptr);
+  EXPECT_NE(inspector.GetIllustrationProperties(g_id), nullptr);
+  EXPECT_NE(inspector.GetPerceptionProperties(g_id), nullptr);
+
+  EXPECT_EQ(scene_graph_.RemoveRole(s_id, g_id, Role::kPerception), 1);
+  EXPECT_EQ(scene_graph_.RemoveRole(s_id, g_id, Role::kProximity), 1);
+  EXPECT_EQ(scene_graph_.RemoveRole(s_id, g_id, Role::kIllustration), 1);
+}
+
 // Dummy system to serve as geometry source.
 class GeometrySourceSystem : public systems::LeafSystem<double> {
  public:
@@ -713,6 +759,33 @@ GTEST_TEST(SceneGraphContextModifier, CollisionFilters) {
 
   // TODO(SeanCurtis-TRI): When post-allocation model modification is allowed,
   // confirm that the model didn't change.
+}
+
+// A limited test -- the majority of this functionality is encoded in and tested
+// via GeometryState. This is just a regression test to make sure SceneGraph's
+// invocation of that function doesn't become corrupt.
+GTEST_TEST(SceneGraphRenderTest, AddRenderer) {
+  SceneGraph<double> scene_graph;
+
+  EXPECT_NO_THROW(scene_graph.AddRenderer("unique",
+                                          make_unique<DummyRenderEngine>()));
+
+  // Non-unique renderer name.
+  // NOTE: The error message is tested in geometry_state_test.cc.
+  EXPECT_THROW(
+      scene_graph.AddRenderer("unique", make_unique<DummyRenderEngine>()),
+      std::logic_error);
+
+  // Adding a renderer _after_ geometry registration.
+  SourceId s_id = scene_graph.RegisterSource("dummy");
+  scene_graph.RegisterGeometry(
+      s_id, scene_graph.world_frame_id(),
+      make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+                                    make_unique<Sphere>(1.0), "sphere"));
+
+  EXPECT_THROW(
+      scene_graph.AddRenderer("different", make_unique<DummyRenderEngine>()),
+      std::logic_error);
 }
 
 }  // namespace

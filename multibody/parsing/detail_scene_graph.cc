@@ -15,7 +15,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
 using Eigen::Vector3d;
 using std::make_unique;
@@ -152,8 +152,13 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
         }
         scale = scale_vector.X();
       }
+
       // TODO(amcastro-tri): Fix the given path to be an absolute path.
-      return make_unique<geometry::Mesh>(file_name, scale);
+      if (mesh_element->HasElement("drake:declare_convex")) {
+        return make_unique<geometry::Convex>(file_name, scale);
+      } else {
+        return make_unique<geometry::Mesh>(file_name, scale);
+      }
     }
   }
 
@@ -384,6 +389,6 @@ sdf::Visual ResolveVisualUri(const sdf::Visual& original,
   return visual;
 }
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

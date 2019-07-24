@@ -12,9 +12,15 @@ Prefer comparisons in the following order:
 # coordinates and stuff.
 
 from collections import namedtuple
+import functools
 from itertools import product
 
 import numpy as np
+
+from pydrake.autodiffutils import AutoDiffXd
+from pydrake.symbolic import (
+    Expression, Formula, Monomial, Polynomial, Variable)
+from pydrake.polynomial import Polynomial as RawPolynomial
 
 
 class _UnwantedEquality(AssertionError):
@@ -75,6 +81,10 @@ def assert_equal(a, b):
         np.testing.assert_equal(a, b)
     else:
         _registry.get_comparator_from_arrays(a, b).assert_eq(a, b)
+
+
+def _raw_eq(a, b):
+    assert a == b, (a, b)
 
 
 def _raw_ne(a, b):
@@ -161,7 +171,6 @@ def _str_ne(a, b):
 
 
 def _register_autodiff():
-    from pydrake.autodiffutils import AutoDiffXd
 
     def autodiff_eq(a, b):
         assert a.value() == b.value(), (a.value(), b.value())
@@ -178,8 +187,6 @@ def _register_autodiff():
 
 
 def _register_symbolic():
-    from pydrake.symbolic import (
-        Expression, Formula, Monomial, Polynomial, Variable)
 
     def sym_struct_eq(a, b):
         assert a.EqualTo(b), (a, b)
@@ -187,8 +194,26 @@ def _register_symbolic():
     def sym_struct_ne(a, b):
         assert not a.EqualTo(b), (a, b)
 
+    def from_bool(x):
+        assert isinstance(x, (bool, np.bool_)), type(x)
+        if x:
+            return Formula.True_()
+        else:
+            return Formula.False_()
+
+    def formula_bool_eq(a, b):
+        return sym_struct_eq(a, from_bool(b))
+
+    def formula_bool_ne(a, b):
+        return sym_struct_ne(a, from_bool(b))
+
     _registry.register_to_float(Expression, Expression.Evaluate)
     _registry.register_comparator(Formula, str, _str_eq, _str_ne)
+    # Ensure that we can do simple boolean comparison, e.g. in lieu of
+    # `unittest.TestCase.assertTrue`, use
+    # `numpy_compare.assert_equal(f, True)`.
+    _registry.register_comparator(
+        Formula, bool, formula_bool_eq, formula_bool_ne)
     lhs_types = [Variable, Expression, Polynomial, Monomial]
     rhs_types = lhs_types + [float]
     for lhs_type in lhs_types:
@@ -198,7 +223,38 @@ def _register_symbolic():
             lhs_type, rhs_type, sym_struct_eq, sym_struct_ne)
 
 
+def _register_polynomial():
+    _registry.register_comparator(
+        RawPolynomial, RawPolynomial, _raw_eq, _raw_ne)
+
+
 # Globals.
 _registry = _Registry()
 _register_autodiff()
 _register_symbolic()
+_register_polynomial()
+
+
+def check_all_types(check_func):
+    """Decorator to call a function multiple times with `T={type}`, where
+    `type` covers all (common) scalar types for Drake."""
+
+    @functools.wraps(check_func)
+    def wrapper(*args, **kwargs):
+        check_func(*args, T=float, **kwargs)
+        check_func(*args, T=AutoDiffXd, **kwargs)
+        check_func(*args, T=Expression, **kwargs)
+
+    return wrapper
+
+
+def check_nonsymbolic_types(check_func):
+    """Decorator to call a function multiple types with `T={type}`, where
+    `type` covers all (common) non-symbolic scalar types for Drake."""
+
+    @functools.wraps(check_func)
+    def wrapper(*args, **kwargs):
+        check_func(*args, T=float, **kwargs)
+        check_func(*args, T=AutoDiffXd, **kwargs)
+
+    return wrapper

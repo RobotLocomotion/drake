@@ -82,7 +82,7 @@ class NoisyQuadraticCost {
   int numInputs() const { return 1; }
   int numOutputs() const { return 1; }
   template <typename T>
-  void eval(detail::VecIn<T> const& x, detail::VecOut<T>* y) const {
+  void eval(internal::VecIn<T> const& x, internal::VecOut<T>* y) const {
     // Parabola with minimum at (-1, 1) with some deterministic noise applied to
     // the input so derivatives will be correctish but not easily followable to
     // the minimum.

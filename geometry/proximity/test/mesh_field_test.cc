@@ -51,8 +51,17 @@ GTEST_TEST(MeshFieldTest, TestClone) {
    public:
     explicit MeshFieldSubclass(MeshType* mesh): MeshFieldBase(mesh) {}
 
-    FieldValue Evaluate(const MeshType::ElementIndex,
+    FieldValue EvaluateAtVertex(MeshType::VertexIndex) const final {
+      return FieldValue(0);
+    }
+
+    FieldValue Evaluate(MeshType::ElementIndex,
                         const MeshType::Barycentric&) const final {
+      return FieldValue(0);
+    }
+    FieldValue EvaluateCartesian(
+                         MeshType::ElementIndex,
+                         const MeshType::Cartesian&) const final {
       return FieldValue(0);
     }
    private:

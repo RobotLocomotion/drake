@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 
 using std::function;
@@ -15,6 +16,9 @@ using std::runtime_error;
 using std::vector;
 
 namespace drake {
+
+using test::LimitMalloc;
+
 namespace symbolic {
 namespace {
 
@@ -166,8 +170,10 @@ TEST_F(SymbolicExpansionTest, ExpressionExpansion) {
 
   for (const pair<Expression, Expression>& p : test_exprs) {
     const Expression& e{p.first};
+    const Expression expanded{e.Expand()};
     const Expression& expected{p.second};
-    EXPECT_PRED2(ExprEqual, e.Expand(), expected);
+    EXPECT_PRED2(ExprEqual, expanded, expected);
+    EXPECT_TRUE(expanded.is_expanded());
     EXPECT_TRUE(CheckExpandPreserveEvaluation(e, 1e-8));
     EXPECT_TRUE(CheckExpandIsFixpoint(e));
   }
@@ -215,29 +221,43 @@ TEST_F(SymbolicExpansionTest, MathFunctions) {
 
   for (const F& f : contexts) {
     for (const Expression& e : expressions) {
-      EXPECT_PRED2(ExprEqual, f(e).Expand(), f(e.Expand()));
-      EXPECT_TRUE(CheckAlreadyExpanded(f(e).Expand()));
+      const Expression e1{f(e).Expand()};
+      const Expression e2{f(e.Expand())};
+
+      EXPECT_PRED2(ExprEqual, e1, e2);
+      EXPECT_TRUE(e1.is_expanded());
+      EXPECT_TRUE(e2.is_expanded());
+      EXPECT_TRUE(CheckAlreadyExpanded(e1));
     }
   }
 }
 
 TEST_F(SymbolicExpansionTest, NaN) {
+  // NaN is considered as not expanded so that ExpressionNaN::Expand() is called
+  // and throws an exception.
+  EXPECT_FALSE(Expression::NaN().is_expanded());
   // NaN should be detected during expansion and throw runtime_error.
   EXPECT_THROW(Expression::NaN().Expand(), runtime_error);
 }
 
 TEST_F(SymbolicExpansionTest, IfThenElse) {
-  EXPECT_THROW(if_then_else(x_ > y_, pow(x_ + y_, 2), pow(x_ - y_, 2)).Expand(),
-               runtime_error);
+  const Expression e{if_then_else(x_ > y_, pow(x_ + y_, 2), pow(x_ - y_, 2))};
+  EXPECT_THROW(e.Expand(), runtime_error);
+  // An if-then-else expression is considered as not expanded so that
+  // ExpressionIfThenElse::Expand() is called and throws an exception.
+  EXPECT_FALSE(e.is_expanded());
 }
 
 TEST_F(SymbolicExpansionTest, UninterpretedFunction) {
   const Expression uf1{uninterpreted_function("uf1", {})};
   EXPECT_PRED2(ExprEqual, uf1, uf1.Expand());
+  EXPECT_TRUE(uf1.Expand().is_expanded());
+
   const Expression e1{3 * (x_ + y_)};
   const Expression e2{pow(x_ + y_, 2)};
   const Expression uf2{uninterpreted_function("uf2", {e1, e2})};
   EXPECT_PRED2(ExprNotEqual, uf2, uf2.Expand());
+  EXPECT_TRUE(uf2.Expand().is_expanded());
   const Expression uf2_expand_expected{
       uninterpreted_function("uf2", {e1.Expand(), e2.Expand()})};
   EXPECT_PRED2(ExprEqual, uf2.Expand(), uf2_expand_expected);
@@ -283,6 +303,21 @@ TEST_F(SymbolicExpansionTest, DivideByConstant) {
   // Note that we do not cancel x out since it can be zero.
   EXPECT_PRED2(ExprEqual, (36 * x_ * y_ / x_ / -3).Expand(),
                -12 * x_ * y_ / x_);
+}
+
+TEST_F(SymbolicExpansionTest, RepeatedExpandShouldBeNoop) {
+  const Expression e{(x_ + y_) * (x_ + y_)};
+
+  // New ExpressionCells are created here.
+  const Expression e_expanded{e.Expand()};
+  {
+    LimitMalloc guard;
+    // e_expanded is already expanded, so the following line should not create a
+    // new cell and no memory allocation should occur. We use LimitMalloc to
+    // check this claim.
+    const Expression e_expanded_expanded = e_expanded.Expand();
+    EXPECT_PRED2(ExprEqual, e_expanded, e_expanded_expanded);
+  }
 }
 
 }  // namespace

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/branch_point.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/segment.h"
@@ -15,7 +16,8 @@ class BranchPoint;
 class Segment;
 
 /// geometry_base's implementation of api::Lane.
-class Lane : public api::Lane {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Lane : public api::Lane {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Lane);
 

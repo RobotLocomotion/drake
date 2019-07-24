@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_quaternion.h"
@@ -20,7 +21,8 @@ namespace automotive {
 /// of a reference frame A with respect to world frame W, expressed in x-y-z
 /// coordinates, and translational and rotational velocities of frame A with
 /// respect to W.
-class PoseVelocity final {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    PoseVelocity final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PoseVelocity)
 
@@ -82,7 +84,8 @@ class PoseVelocity final {
 /// PoseVelocity instance is therefore well-defined when evaluated at a given
 /// time and, additionally, the translaton and rotation components of PoseVector
 /// match the input pose data exactly.
-class Trajectory final {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Trajectory final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Trajectory)
 

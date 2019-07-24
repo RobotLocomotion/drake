@@ -56,9 +56,6 @@ drake_cc_googletest(
     ],
     # This test is prohibitively slow with --compilation_mode=dbg.
     disable_in_compilation_mode_dbg = True,
-    # TODO(betsymcphail): Re-enable this test when it no longer
-    # causes timeouts in kcov.
-    tags = ["no_kcov"],
     deps = [
         "//attic/multibody:rigid_body_tree",
         "//attic/multibody:rigid_body_tree_construction",

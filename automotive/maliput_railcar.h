@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/gen/maliput_railcar_params.h"
 #include "drake/automotive/gen/maliput_railcar_state.h"
 #include "drake/automotive/lane_direction.h"
@@ -64,7 +65,8 @@ namespace automotive {
 ///
 /// @ingroup automotive_plants
 template <typename T>
-class MaliputRailcar final : public systems::LeafSystem<T> {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    MaliputRailcar final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MaliputRailcar)
   /// Defines a distance that is "close enough" to the end of a lane for the

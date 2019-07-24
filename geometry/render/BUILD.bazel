@@ -7,6 +7,7 @@ load(
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -17,7 +18,6 @@ drake_cc_package_library(
         ":render_engine_vtk",
         ":render_label",
         ":render_label_class",
-        ":render_label_manager",
     ],
 )
 
@@ -32,7 +32,7 @@ drake_cc_library(
     ],
     deps = [
         ":render_label",
-        "//geometry:geometry_index",
+        "//geometry:geometry_ids",
         "//geometry:geometry_roles",
         "//geometry:shape_specification",
         "//geometry:utilities",
@@ -97,17 +97,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "render_label_manager",
-    srcs = ["render_label_manager.cc"],
-    hdrs = ["render_label_manager.h"],
-    deps = [
-        ":render_label",
-        ":render_label_class",
-        "@fmt",
-    ],
-)
-
 # === test/ ===
 
 drake_cc_googletest(
@@ -125,21 +114,9 @@ drake_cc_googletest(
     data = [
         "//systems/sensors:test_models",
     ],
-    # Mitigates driver-related issues when running under `bazel test`. For more
-    # information, see #7004.
-    local = 1,
-    tags = [
-        # Disable under LeakSanitizer and Valgrind Memcheck due to
-        # driver-related leaks. For more information, see #7520.
-        "no_lsan",
-        "no_memcheck",
-        # Mitigates driver-related issues when running under `bazel test`. For
-        # more information, see #7004.
-        "no-sandbox",
-    ],
+    tags = vtk_test_tags(),
     deps = [
         ":render_engine_vtk",
-        ":render_label_manager",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
@@ -153,15 +130,6 @@ drake_cc_googletest(
     deps = [
         ":render_label",
         "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "render_label_manager_test",
-    deps = [
-        ":render_label_manager",
-        "//common:value",
-        "//common/test_utilities",
     ],
 )
 

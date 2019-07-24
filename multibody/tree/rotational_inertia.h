@@ -69,8 +69,8 @@ namespace multibody {
 /// expressed-in frame. To help users of this class track the about-point and
 /// expressed-in frame, we strongly recommend the following notation.
 ///
-/// In typeset material, use the symbol @f$ [I^{S/P}]_E @f$ to represent the
-/// rotational inertia (inertia matrix) of a body (or composite body) S
+/// @note In typeset material, use the symbol @f$ [I^{S/P}]_E @f$ to represent
+/// the rotational inertia (inertia matrix) of a body (or composite body) S
 /// about-point P, expressed in frame E. In code and comments, use the monogram
 /// notation `I_SP_E` (e.g., as described in @ref multibody_spatial_inertia).
 /// If the about-point P is fixed to a body B, the point is named @f$ B_P @f$
@@ -84,6 +84,53 @@ namespace multibody {
 /// of a special frame whose orthogonal unit vectors are parallel to **principal
 /// axes of inertia** so that the inertia matrix is diagonalized with elements
 /// called **principal moments of inertia**.
+///
+/// @note The formal definition of the inertia matrix @f$ I^{S/P} @f$ of a
+/// system S about a point P follows the definition of the inertia dyadic 𝐈 of
+/// S about P, which begins by modeling S with n particles S₁ ... Sₙ (e.g., 12
+/// grams of carbon can be modeled with n = 6.02 * 10²³ molecules/particles).
+/// The inertia dyadic 𝐈₁ of one particle S₁ about point P is defined [Kane,
+/// 1985] in terms of m₁ (mass of S₁), ᴾ𝐩ˢ¹ (position vector from P to S₁), and
+/// the unit dyadic 𝐔 which is defined by the property 𝐔 ⋅ 𝐯 = 𝐯 where 𝐯 is
+/// is any vector (this definition of 𝐔 is analogous to defining the identity
+/// matrix by the property 𝑰𝒅𝒆𝒏𝒕𝒊𝒕𝒚𝑴𝒂𝒕𝒓𝒊𝒙 * 𝒂𝒏𝒚𝑴𝒂𝒕𝒓𝒊𝒙 = 𝒂𝒏𝒚𝑴𝒂𝒕𝒓𝒊𝒙).
+/// <pre>
+///     𝐈₁ = m₁ * [𝐔 * (ᴾ𝐩ˢ¹ ⋅ ᴾ𝐩ˢ¹)  -  ᴾ𝐩ˢ¹ * ᴾ𝐩ˢ¹]
+/// </pre>
+/// Note: The vector dot-product (⋅) above produces a scalar whereas the vector
+/// multiply (*) produces a dyadic which is a 2nd-order tensor (ᴾ𝐩ˢ¹ * ᴾ𝐩ˢ¹ is
+/// similar to the matrix outer-product of a 3x1 matrix multiplied by a 1x3
+/// matrix). The inertia dyadic 𝐈 of the entire system S is defined by summing
+/// the inertia dyadic of each particle Sᵢ about P (i = 1, ... n), i.e.,
+/// <pre>
+///     𝐈 = 𝐈₁ + 𝐈₂ + ... 𝐈ₙ
+/// </pre>
+/// The elements of the inertia matrix @f$ [I^{S/P}]_E @f$ expressed in frame E
+/// (in terms of unit vectors Ex, Ey, Ez) are found by pre-dot multiplication
+/// and post-dot multiplication of 𝐈 with the appropriate unit vectors.
+/// <pre>
+///    Ixx = Ex ⋅ 𝐈 ⋅ Ex      Ixy = Ex ⋅ 𝐈 ⋅ Ey      Ixz = Ex ⋅ 𝐈 ⋅ Ez
+///    Iyx = Ey ⋅ 𝐈 ⋅ Ex      Iyy = Ey ⋅ 𝐈 ⋅ Ey      Iyz = Ey ⋅ 𝐈 ⋅ Ez
+///    Izx = Ez ⋅ 𝐈 ⋅ Ex      Izy = Ez ⋅ 𝐈 ⋅ Ey      Izz = Ez ⋅ 𝐈 ⋅ Ez
+/// </pre>
+/// The inertia dyadic 𝐈ᴮ of a rigid body B about Bcm (B's center of mass) is
+/// related to various dynamic quantities. For example, B's angular momentum 𝐇
+/// about Bcm in a frame N and B's kinetic energy KE in N relate to 𝐈ᴮ by
+/// <pre>
+///    𝐇 = 𝐈ᴮ ⋅ 𝛚
+///    KE = 1/2 𝛚 ⋅ 𝐈ᴮ ⋅ 𝛚  +  1/2 mᴮ 𝐯 ⋅ 𝐯
+/// </pre>
+/// where 𝛚 is B's angular velocity in N, 𝐯 is Bcm's translational velocity in
+/// N, and mᴮ is B's mass.  When frame N happens to be a Newtonian frame (also
+/// called an inertial frame or non-rotating/non-accelerating frame), the moment
+/// 𝐓 of all forces on B about Bcm relates to 𝐈ᴮ and 𝛂 (B's angular
+/// acceleration in N) by Euler's rigid body equation as
+/// <pre>
+///    𝐓 = 𝐈ᴮ ⋅ 𝛂  +  𝛚 × 𝐈ᴮ ⋅ 𝛚
+/// </pre>
+/// [Kane, 1985] pg. 68. "Dynamics: Theory and Applications," McGraw-Hill Co.,
+/// New York, 1985 (with D. A. Levinson).  Available for free .pdf download:
+/// https://ecommons.cornell.edu/handle/1813/637
 ///
 /// @note Several methods in this class throw a std::exception for invalid
 /// rotational inertia operations in debug releases only.  This provides speed

@@ -63,7 +63,6 @@ generate_pybind_documentation_header(
     root_name = "pydrake_doc",
     targets = [
         "//:drake_shared_library",
-        "//examples/acrobot:acrobot_plant",
         "//examples/compass_gait:compass_gait",
         "//examples/manipulation_station:manipulation_station",
         "//examples/manipulation_station:manipulation_station_hardware_interface",  # noqa
@@ -124,8 +123,13 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "automotive_py",
+    cc_copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:value_pybind",
         "//bindings/pydrake/common:wrap_pybind",
     ],
@@ -140,6 +144,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:drake_optional_pybind",
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:value_pybind",
         "//lcmtypes:viewer",
@@ -206,6 +211,28 @@ drake_pybind_library(
 )
 
 drake_cc_library(
+    name = "polynomial_types_pybind",
+    hdrs = ["polynomial_types_pybind.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
+    deps = ["//:drake_shared_library"],
+)
+
+drake_pybind_library(
+    name = "polynomial_py",
+    cc_deps = [
+        ":polynomial_types_pybind",
+        "//bindings/pydrake:documentation_pybind",
+    ],
+    cc_srcs = ["polynomial_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/common:deprecation_py",
+    ],
+)
+
+drake_cc_library(
     name = "symbolic_types_pybind",
     hdrs = ["symbolic_types_pybind.h"],
     declare_installed_headers = 0,
@@ -231,11 +258,15 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "trajectories_py",
-    cc_deps = ["//bindings/pydrake:documentation_pybind"],
+    cc_deps = [
+        ":polynomial_types_pybind",
+        "//bindings/pydrake:documentation_pybind",
+    ],
     cc_srcs = ["trajectories_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
+        "//bindings/pydrake:polynomial_py",
     ],
 )
 
@@ -246,6 +277,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":lcm_py",
     ":math_py",
     ":perception_py",
+    ":polynomial_py",
     ":symbolic_py",
     ":trajectories_py",
     "//bindings/pydrake/attic",
@@ -304,7 +336,10 @@ drake_py_unittest(
     name = "all_test",
     timeout = "moderate",
     data = ["//examples/pendulum:models"],
-    deps = [":all_py"],
+    deps = [
+        ":all_py",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
+    ],
 )
 
 drake_py_library(
@@ -382,6 +417,7 @@ drake_py_unittest(
     deps = [
         ":geometry_py",
         "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/systems:sensors_py",
     ],
 )
 
@@ -419,6 +455,14 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "polynomial_test",
+    deps = [
+        ":polynomial_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
+)
+
+drake_py_unittest(
     name = "symbolic_test",
     deps = [
         ":algebra_test_util_py",
@@ -430,7 +474,10 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "trajectories_test",
-    deps = [":trajectories_py"],
+    deps = [
+        ":trajectories_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
 )
 
 drake_py_unittest(

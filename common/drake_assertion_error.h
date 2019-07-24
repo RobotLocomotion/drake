@@ -4,7 +4,7 @@
 #include <string>
 
 namespace drake {
-namespace detail {
+namespace internal {
 
 /// This is what DRAKE_ASSERT and DRAKE_DEMAND throw when our assertions are
 /// configured to throw.
@@ -14,5 +14,5 @@ class assertion_error : public std::runtime_error {
       : std::runtime_error(what_arg) {}
 };
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace drake

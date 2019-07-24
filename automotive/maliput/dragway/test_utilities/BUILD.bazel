@@ -23,7 +23,12 @@ drake_cc_library(
     testonly = 1,
     srcs = ["fixtures.cc"],
     hdrs = ["fixtures.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
+        "//automotive:deprecated",
         "//automotive/maliput/dragway",
         "//common:essential",
         "@gtest//:without_main",

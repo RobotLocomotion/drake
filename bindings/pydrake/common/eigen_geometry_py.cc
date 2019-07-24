@@ -4,17 +4,7 @@
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
-#ifndef __clang__
-// N.B. Without this, GCC 7.4.0 on Ubuntu complains about
-// `AutoDiffScalar(const AutoDiffScalar& other)` having uninitialized values.
-// TODO(eric.cousineau): Figure out why?
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#pragma GCC diagnostic pop
-#else
-#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#endif  // __clang__
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -97,7 +87,7 @@ void CheckAngleAxis(const Eigen::AngleAxis<Expression>&) {}
 }  // namespace
 
 template <typename T>
-void DoDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module m, T) {
   // Do not return references to matrices (e.g. `Eigen::Ref<>`) so that we have
   // tighter control over validation.
 
@@ -361,7 +351,8 @@ PYBIND11_MODULE(eigen_geometry, m) {
 
   py::module::import("pydrake.autodiffutils");
   py::module::import("pydrake.symbolic");
-  type_visit([m](auto dummy) { DoDefinitions(m, dummy); }, CommonScalarPack{});
+  type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
+      CommonScalarPack{});
 }
 
 }  // namespace pydrake

@@ -434,41 +434,49 @@ GTEST_TEST(DistanceToPoint, Cylinder) {
 }
 #endif
 
-// TODO(SeanCurtis-TRI): Refactor these tests to reduce duplication.
+// Helper functions to indicate expectation on whether I get a distance result
+// with a cylinder based on scalar type.
+template <typename T>
+int ExpectedCylinderResult() {
+  return 1;
+}
 
-// This test simply confirms which scalar-shape combinations produce answers
-// and which don't. That culling takes place at the Callback level so that is
-// what is exercised here. Lack of support is signaled by no distance data
-// being returned.
-GTEST_TEST(DistanceToPoint, ScalarShapeSupportDouble) {
+template <>
+int ExpectedCylinderResult<AutoDiffXd>() {
+  return 0;
+}
+
+template <typename T>
+void TestScalarShapeSupport() {
   // Configure the basic query.
-  Vector3d p_WQ{10, 10, 10};
-  Isometry3d X_WQ{Translation3d{p_WQ}};
+  Vector3<T> p_WQ{10, 10, 10};
+  Isometry3<T> X_WQ{Translation3<T>{p_WQ}};
   auto point_geometry = make_shared<fcl::Sphered>(0);
+  const GeometryId point_id = GeometryId::get_new_id();
   fcl::CollisionObjectd query_point(point_geometry);
-  query_point.setTranslation(p_WQ);
-  EncodedData encoding(GeometryIndex(0), true);
+  query_point.setTranslation(convert_to_double(p_WQ));
+  EncodedData encoding(point_id, true);
   encoding.write_to(&query_point);
-  std::vector<SignedDistanceToPoint<double>> distances;
-  std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
-                                       GeometryId::get_new_id()};
+  std::vector<SignedDistanceToPoint<T>> distances;
   double threshold = std::numeric_limits<double>::max();
-  std::vector<Isometry3d> X_WGs{X_WQ, Isometry3d::Identity()};
-  CallbackData<double> data{&query_point, &geometry_map, threshold,
-                            p_WQ,         &X_WGs,        &distances};
-
+  const GeometryId other_id = GeometryId::get_new_id();
+  std::unordered_map<GeometryId, Isometry3<T>> X_WGs{
+      {point_id, X_WQ}, {other_id, Isometry3<T>::Identity()}};
+  CallbackData<T> data{&query_point, threshold, p_WQ, &X_WGs, &distances};
 
   // The Drake-supported geometries (minus Mesh which isn't supported by
   // ProximityEngine yet).
 
-  auto run_callback = [&query_point, &threshold, &distances, &data](
-                          auto geometry_shared_ptr) {
+  auto run_callback = [&query_point, &threshold, &distances, &data, other_id](
+      auto geometry_shared_ptr) {
+    // Note: the `threshold` value gets reset by invoking Callback(). So, we
+    // need to reset it each time.
     threshold = std::numeric_limits<double>::max();
     distances.clear();
     fcl::CollisionObjectd object(geometry_shared_ptr);
-    EncodedData object_encoding(GeometryIndex(1), true);
+    EncodedData object_encoding(other_id, true);
     object_encoding.write_to(&object);
-    Callback<double>(&query_point, &object, &data, threshold);
+    Callback<T>(&query_point, &object, &data, threshold);
   };
 
   // Sphere
@@ -480,7 +488,7 @@ GTEST_TEST(DistanceToPoint, ScalarShapeSupportDouble) {
   // Cylinder
   {
     run_callback(make_shared<fcl::Cylinderd>(1.0, 2.0));
-    EXPECT_EQ(distances.size(), 1);
+    EXPECT_EQ(distances.size(), ExpectedCylinderResult<T>());
   }
 
   // HalfSpace
@@ -500,65 +508,17 @@ GTEST_TEST(DistanceToPoint, ScalarShapeSupportDouble) {
   // utility test to generate a tetrahedron.
 }
 
+// This test simply confirms which scalar-shape combinations produce answers
+// and which don't. That culling takes place at the Callback level so that is
+// what is exercised here. Lack of support is signaled by no distance data
+// being returned.
+GTEST_TEST(DistanceToPoint, ScalarShapeSupportDouble) {
+  TestScalarShapeSupport<double>();
+}
+
 // The autodiff version of DistanceToPoint.ScalarShapeSupportDouble.
 GTEST_TEST(DistanceToPoint, ScalarShapeSupportAutoDiff) {
-  // Configure the basic query.
-  Vector3<AutoDiffXd> p_WQ{10, 10, 10};
-  Isometry3<AutoDiffXd> X_WQ{Translation3<AutoDiffXd>{p_WQ}};
-  auto point_geometry = make_shared<fcl::Sphered>(0);
-  fcl::CollisionObjectd query_point(point_geometry);
-  query_point.setTranslation(convert_to_double(p_WQ));
-  EncodedData encoding(GeometryIndex(0), true);
-  encoding.write_to(&query_point);
-  std::vector<SignedDistanceToPoint<AutoDiffXd>> distances;
-std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
-                                     GeometryId::get_new_id()};
-  double threshold = std::numeric_limits<double>::max();
-  std::vector<Isometry3<AutoDiffXd>> X_WGs{X_WQ,
-                                           Isometry3<AutoDiffXd>::Identity()};
-  CallbackData<AutoDiffXd> data{&query_point, &geometry_map, threshold,
-                                p_WQ,         &X_WGs,        &distances};
-
-  // The Drake-supported geometries (minus Mesh which isn't supported by
-  // ProximityEngine yet).
-
-  auto run_callback = [&query_point, &threshold, &distances,
-                       &data](auto geometry_shared_ptr) {
-    threshold = std::numeric_limits<double>::max();
-    distances.clear();
-    fcl::CollisionObjectd object(geometry_shared_ptr);
-    EncodedData object_encoding(GeometryIndex(1), true);
-    object_encoding.write_to(&object);
-    Callback<AutoDiffXd>(&query_point, &object, &data, threshold);
-  };
-
-  // Sphere
-  {
-    run_callback(make_shared<fcl::Sphered>(1.0));
-    EXPECT_EQ(distances.size(), 1);
-  }
-
-  // Cylinder
-  {
-    run_callback(make_shared<fcl::Cylinderd>(1.0, 2.0));
-    EXPECT_EQ(distances.size(), 0);  // Query not supported.
-  }
-
-  // HalfSpace
-  {
-    run_callback(make_shared<fcl::Halfspaced>(Vector3d::UnitZ(), 0));
-    EXPECT_EQ(distances.size(), 1);
-  }
-
-  // Box
-  {
-    run_callback(make_shared<fcl::Boxd>(1.0, 2.0, 3.5));
-    EXPECT_EQ(distances.size(), 1);
-  }
-
-  // Convex
-  // TODO(SeanCurtis-TRI): Add convex that is *not* supported; create a small
-  // utility test to generate a tetrahedron.
+  TestScalarShapeSupport<AutoDiffXd>();
 }
 
 }  // namespace

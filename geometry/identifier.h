@@ -5,8 +5,8 @@
 #include <functional>
 #include <string>
 
-#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/never_destroyed.h"
 
 namespace drake {
@@ -62,7 +62,7 @@ namespace geometry {
  facilitate use with STL containers that require default constructors. Using an
  invalid identifier in any operation is considered an error. In Debug build,
  attempts to compare, get the value of, hash, or write an invalid identifier to
- a stream will cause program failure.
+ a stream will throw an exception.
 
  Functions that query for identifiers should not return invalid identifiers. We
  prefer the practice of returning std::optional<Identifier> instead.
@@ -146,8 +146,11 @@ class Identifier {
    considered invalid for invalid ids and is strictly enforced in Debug builds.
    */
   int64_t get_value() const {
-    DRAKE_ASSERT(is_valid());
-    return value_; }
+    if (kDrakeAssertIsArmed) {
+      DRAKE_THROW_UNLESS(this->is_valid());
+    }
+    return value_;
+  }
 
   /** Reports if the id is valid. */
   bool is_valid() const { return value_ > 0; }
@@ -156,24 +159,21 @@ class Identifier {
    is considered invalid for invalid ids and is strictly enforced in Debug
    builds. */
   bool operator==(Identifier other) const {
-    DRAKE_ASSERT(is_valid() && other.is_valid());
-    return value_ == other.value_;
+    return this->get_value() == other.get_value();
   }
 
   /** Compares one identifier with another of the same type for inequality. This
    is considered invalid for invalid ids and is strictly enforced in Debug
    builds. */
   bool operator!=(Identifier other) const {
-    DRAKE_ASSERT(is_valid() && other.is_valid());
-    return value_ != other.value_ && is_valid() && other.is_valid();
+    return this->get_value() != other.get_value();
   }
 
   /** Compare two identifiers in order to define a total ordering among
    identifiers. This makes identifiers compatible with data structures which
    require total ordering (e.g., std::set).  */
   bool operator<(Identifier other) const {
-    DRAKE_ASSERT(is_valid() && other.is_valid());
-    return value_ < other.value_;
+    return this->get_value() < other.get_value();
   }
 
   /** Generates a new identifier for this id type. This new identifier will be
@@ -189,12 +189,13 @@ class Identifier {
     return Identifier(next_index.access()++);
   }
 
- private:
+ protected:
   // Instantiates an identifier from the underlying representation type.
   explicit Identifier(int64_t val) : value_(val) {}
 
+ private:
   // The underlying value.
-  int64_t value_;
+  int64_t value_{};
 };
 
 /** Streaming output operator.   This is considered invalid for invalid ids and

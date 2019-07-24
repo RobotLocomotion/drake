@@ -8,10 +8,6 @@ load(
     "drake_cc_package_library",
     "drake_cc_test",
 )
-load(
-    "@drake//tools/skylark:drake_proto.bzl",
-    "drake_cc_proto_library",
-)
 load("@drake//tools/skylark:test_tags.bzl", "gurobi_test_tags")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -29,6 +25,8 @@ drake_cc_library(
     name = "kinematic_constraint",
     srcs = [
         "angle_between_vectors_constraint.cc",
+        "distance_constraint.cc",
+        "distance_constraint_utilities.cc",
         "gaze_target_constraint.cc",
         "kinematic_constraint_utilities.cc",
         "minimum_distance_constraint.cc",
@@ -37,6 +35,8 @@ drake_cc_library(
     ],
     hdrs = [
         "angle_between_vectors_constraint.h",
+        "distance_constraint.h",
+        "distance_constraint_utilities.h",
         "gaze_target_constraint.h",
         "kinematic_constraint_utilities.h",
         "minimum_distance_constraint.h",
@@ -81,6 +81,7 @@ drake_cc_library(
     deps = [
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
+        "//math:compute_numerical_gradient",
         "//math:gradient",
         "//multibody/benchmarks/kuka_iiwa_robot",
         "//multibody/parsing",
@@ -129,6 +130,15 @@ drake_cc_googletest(
         ":inverse_kinematics_test_utilities",
         ":kinematic_constraint",
         "//common/test_utilities:expect_throws_message",
+        "//solvers/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "distance_constraint_test",
+    deps = [
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_constraint",
         "//solvers/test_utilities",
     ],
 )

@@ -99,6 +99,22 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
+    name = "nlopt_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:value_pybind",
+    ],
+    cc_srcs = ["nlopt_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":mathematicalprogram_py",
+        # TODO(jwnimmer-tri) Only for AbstractValue; we should switch this to
+        # depend on on pydrake/common once the Value bindings have moved there.
+        "//bindings/pydrake/systems:framework_py",
+    ],
+)
+
+drake_pybind_library(
     name = "mosek_py",
     cc_deps = [
         ":solvers_pybind",
@@ -143,10 +159,18 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "snopt_py",
-    cc_deps = ["//bindings/pydrake:documentation_pybind"],
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:value_pybind",
+    ],
     cc_srcs = ["snopt_py.cc"],
     package_info = PACKAGE_INFO,
-    py_deps = [":mathematicalprogram_py"],
+    py_deps = [
+        ":mathematicalprogram_py",
+        # TODO(jwnimmer-tri) Only for AbstractValue; we should switch this to
+        # depend on on pydrake/common once the Value bindings have moved there.
+        "//bindings/pydrake/systems:framework_py",
+    ],
 )
 
 PY_LIBRARIES_ATTIC_ALIASES = [
@@ -156,7 +180,7 @@ PY_LIBRARIES_ATTIC_ALIASES = [
 drake_py_library_aliases(
     actual_subdir = "bindings/pydrake/attic/solvers",
     add_deprecation_warning = 1,
-    deprecation_removal_date = "2019-06-01",
+    deprecation_removal_date = "2019-10-01",
     relative_labels = PY_LIBRARIES_ATTIC_ALIASES,
 )
 
@@ -165,6 +189,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":ipopt_py",
     ":mathematicalprogram_py",
     ":mosek_py",
+    ":nlopt_py",
     ":osqp_py",
     ":scs_py",
     ":snopt_py",
@@ -219,6 +244,18 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "nlopt_solver_test",
+    args = select({
+        "//tools:no_nlopt": ["TestIpoptSolver.unavailable"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":nlopt_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
+)
+
+drake_py_unittest(
     name = "osqp_solver_test",
     args = select({
         "//tools:no_osqp": ["TestOsqpSolver.unavailable"],
@@ -235,6 +272,15 @@ drake_py_unittest(
     }),
     deps = [
         ":scs_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "snopt_solver_test",
+    tags = ["snopt"],
+    deps = [
+        ":snopt_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )

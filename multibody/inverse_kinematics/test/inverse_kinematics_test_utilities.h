@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <string>
 
@@ -8,6 +9,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/compute_numerical_gradient.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree.h"
@@ -102,6 +104,13 @@ class TwoFreeSpheresTest : public ::testing::Test {
  public:
   TwoFreeSpheresTest();
 
+  template <typename T>
+  geometry::GeometryId GetSphereGeometryId(const MultibodyPlant<T>& plant,
+                                           FrameIndex sphere_index) const {
+    return plant.GetCollisionGeometriesForBody(
+        plant.get_frame(sphere_index).body())[0];
+  }
+
  protected:
   double radius1_{0.1};
   double radius2_{0.2};
@@ -156,6 +165,74 @@ class BoxSphereTest : public ::testing::Test {
   systems::Context<double>* plant_context_double_{nullptr};
   systems::Context<AutoDiffXd>* plant_context_autodiff_{nullptr};
 };
+
+/**
+ * Since we can construct the kinematic constraint using both
+ * MultibodyPlant<double> (as @p constraint_from_double) and
+ * MultibodyPlant<AutoDiffXd> (as @p constraint_from_autodiff), and evaluate the
+ * constraint with both VectorX<double> and VectorX<AutoDiffXd>, we check if the
+ * following evaluation results match:
+ * 1. constraint_from_double.Eval(x_double) =
+ *    constraint_from_autodiff.Eval(x_double).
+ * 2. constraint_from_double.Eval(x_autodiff) =
+ *    constraint_from_autodiff.Eval(x_autodiff).
+ * 3. constraint_from_double.Eval(x_double) =
+ *    constraint_from_double.Eval(x_autodiff).value()
+ * 4. numerical_gradient(constraint_from_double.Eval(x_double)) ≈
+ *    constraint_from_double.Eval(x_autodiff).
+ * @param constraint_from_double A kinematic constraint constructed from
+ * MultibodyPlant<double>
+ * @param constraint_from_autodiff The same kinematic constraint, but
+ * constructed from MultibodyPlant<AutoDiffXd>.
+ * @param x_double The value of x passed to the constraint Eval function.
+ * @param dx The gradient of x_double. dx must have the same number of rows as
+ * x_double.
+ * @param gradient_tol The tolerance for checking the 4th condition above, that
+ * the numerical gradient should be close to the analytical gradient.
+ */
+template <typename ConstraintType>
+void TestKinematicConstraintEval(
+    const ConstraintType& constraint_from_double,
+    const ConstraintType& constraint_from_autodiff,
+    const Eigen::Ref<const Eigen::VectorXd>& x_double,
+    const Eigen::Ref<const Eigen::MatrixXd>& dx, double gradient_tol) {
+  const double tol = 1000 * std::numeric_limits<double>::epsilon();
+  // condition 1.
+  Eigen::VectorXd y1_left, y1_right;
+  constraint_from_double.Eval(x_double, &y1_left);
+  constraint_from_autodiff.Eval(x_double, &y1_right);
+  EXPECT_TRUE(CompareMatrices(y1_left, y1_right, tol));
+
+  // condition 2
+  const auto x_autodiff =
+      math::initializeAutoDiffGivenGradientMatrix(x_double, dx);
+  AutoDiffVecXd y2_left, y2_right;
+  constraint_from_double.Eval(x_autodiff, &y2_left);
+  constraint_from_autodiff.Eval(x_autodiff, &y2_right);
+  EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(y2_left),
+                              math::autoDiffToValueMatrix(y2_right), tol));
+  EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(y2_left),
+                              math::autoDiffToGradientMatrix(y2_right), tol));
+
+  // condition 3
+  Eigen::VectorXd y3_left;
+  AutoDiffVecXd y3_right;
+  constraint_from_double.Eval(x_double, &y3_left);
+  constraint_from_double.Eval(x_autodiff, &y3_right);
+  EXPECT_TRUE(
+      CompareMatrices(y3_left, math::autoDiffToValueMatrix(y3_right), tol));
+
+  // condition 4
+  std::function<void(const Eigen::Ref<const Eigen::VectorXd>&,
+                     Eigen::VectorXd*)>
+      eval_fun = [&constraint_from_double](
+                     const Eigen::Ref<const Eigen::VectorXd>& x,
+                     Eigen::VectorXd* y) { constraint_from_double.Eval(x, y); };
+  const auto dy_dx_numeric = math::ComputeNumericalGradient(eval_fun, x_double);
+  const Eigen::MatrixXd y_grad_numeric = dy_dx_numeric * dx;
+  EXPECT_TRUE(CompareMatrices(
+      y_grad_numeric, math::autoDiffToGradientMatrix(y2_right), gradient_tol));
+}
 
 }  // namespace multibody
 }  // namespace drake

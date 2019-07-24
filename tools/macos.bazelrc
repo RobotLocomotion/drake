@@ -1,12 +1,16 @@
 # N.B. Ensure we only use Homebrew's Python in `/usr/local`.
 
-# Use Python 2 by default.
-build --python_path=/usr/local/bin/python2
-build --action_env=DRAKE_PYTHON_BIN_PATH=/usr/local/bin/python2
+# Explicit configuration for Python 2.
+build:python2 --python_path=/usr/local/bin/python2
+build:python2 --action_env=DRAKE_PYTHON_BIN_PATH=/usr/local/bin/python2
 
 # Explicit configuration for Python 3.
 build:python3 --python_path=/usr/local/bin/python3
 build:python3 --action_env=DRAKE_PYTHON_BIN_PATH=/usr/local/bin/python3
+
+# Use Python 3 by default.
+build --python_path=/usr/local/bin/python3
+build --action_env=DRAKE_PYTHON_BIN_PATH=/usr/local/bin/python3
 
 # Configure ${PATH} for actions.
 # N.B. Ensure this is consistent with `execute.bzl`.

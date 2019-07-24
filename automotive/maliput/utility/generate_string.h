@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 
 namespace drake {
@@ -9,7 +10,8 @@ namespace maliput {
 namespace utility {
 
 /// Parameters that specify what details about an api::RoadGeometry to print.
-struct GenerateStringOptions {
+struct DRAKE_DEPRECATED_AUTOMOTIVE
+    GenerateStringOptions {
   /// Whether to include a label indicating the type, e.g., "geometry",
   /// "junction", "segment", or "lane".
   bool include_type_labels{false};

@@ -7,6 +7,7 @@
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/api/road_network.h"
 #include "drake/automotive/maliput/api/segment.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -15,43 +16,66 @@
 namespace drake {
 namespace pydrake {
 
+// TODO(jwnimmer-tri) Add python deprecation warnings to all methods, once we
+// have the sugar requested in #10605 ready.
+
+constexpr const char kDeprecation[] =
+    "WARNING The drake/automotive package is being removed. "
+    "See RobotLocomotion/drake/issues/11603. "
+    "The drake/automotive code will be removed from Drake on "
+    "or after 2019-09-01.";
+
 PYBIND11_MODULE(api, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::maliput::api;
 
-  m.doc() = "Bindings for the Maliput API.";
+  m.doc() = std::string("Bindings for the Maliput API. ") + kDeprecation;
   constexpr auto& doc = pydrake_doc.drake.maliput.api;
 
-  // TODO(jadecastro) These bindings are work-in-progress. Expose additional
-  // Maliput API features, as necessary (see #7918).
-
-  // TODO(m-chaturvedi) Add doc when typedefs are parsed (#9599)
   py::class_<RoadGeometryId>(m, "RoadGeometryId")
-      .def(py::init<std::string>(), doc.RoadGeometry.ctor.doc)
+      .def(py::init([](const std::string& arg) {
+        WarnDeprecated(kDeprecation);
+        return std::make_unique<RoadGeometryId>(arg);
+      }),
+          doc.RoadGeometry.ctor.doc)
       .def("string", &RoadGeometryId::string, py_reference_internal);
 
   py::class_<GeoPosition>(m, "GeoPosition", doc.GeoPositionT.doc)
-      .def(py::init<double, double, double>(), py::arg("x"), py::arg("y"),
-          py::arg("z"), doc.GeoPositionT.ctor.doc_3args)
+      .def(py::init([](double x, double y, double z) {
+        WarnDeprecated(kDeprecation);
+        return std::make_unique<GeoPosition>(x, y, z);
+      }),
+          py::arg("x"), py::arg("y"), py::arg("z"),
+          doc.GeoPositionT.ctor.doc_3args)
       .def("xyz", &GeoPosition::xyz, py_reference_internal,
           doc.GeoPositionT.xyz.doc);
 
   py::class_<LanePosition>(m, "LanePosition", doc.LanePositionT.doc)
-      .def(py::init<double, double, double>(), py::arg("s"), py::arg("r"),
-          py::arg("h"), doc.LanePositionT.ctor.doc_3args)
+      .def(py::init([](double s, double r, double h) {
+        WarnDeprecated(kDeprecation);
+        return std::make_unique<LanePosition>(s, r, h);
+      }),
+          py::arg("s"), py::arg("r"), py::arg("h"),
+          doc.LanePositionT.ctor.doc_3args)
       .def("srh", &LanePosition::srh, py_reference_internal,
           doc.LanePositionT.srh.doc);
 
   py::class_<RoadPosition> road_position(
       m, "RoadPosition", doc.RoadPosition.doc);
   road_position  // BR
-      .def(py::init<>(), doc.RoadPosition.ctor.doc_0args)
-      .def(py::init<const Lane*, const LanePosition&>(), py::arg("lane"),
-          py::arg("pos"),
+      .def(py::init([]() {
+        WarnDeprecated(kDeprecation);
+        return std::make_unique<RoadPosition>();
+      }),
+          doc.RoadPosition.ctor.doc_0args)
+      .def(py::init([](const Lane* lane, const LanePosition& pos) {
+        WarnDeprecated(kDeprecation);
+        return std::make_unique<RoadPosition>(lane, pos);
+      }),
+          py::arg("lane"), py::arg("pos"),
           // Keep alive, reference: `self` keeps `Lane*` alive.
           py::keep_alive<1, 2>(), doc.RoadPosition.ctor.doc_2args)
       .def_readwrite("pos", &RoadPosition::pos, doc.RoadPosition.pos.doc);
-  // TODO(m-chaturvedi) Add doc when typedefs are parsed (#9599)
   DefReadWriteKeepAlive(&road_position, "lane", &RoadPosition::lane);
 
   py::class_<Rotation>(m, "Rotation", doc.Rotation.doc)
@@ -90,9 +114,12 @@ PYBIND11_MODULE(api, m) {
       .def("num_lanes", &Segment::num_lanes, doc.Segment.num_lanes.doc)
       .def("lane", &Segment::lane, py_reference_internal, doc.Segment.lane.doc);
 
-  // TODO(m-chaturvedi) Add Pybind11 documentation.
   py::class_<LaneId>(m, "LaneId")
-      .def(py::init<std::string>(), doc.Lane.id.doc)
+      .def(py::init([](const std::string& arg) {
+        WarnDeprecated(kDeprecation);
+        return std::make_unique<LaneId>(arg);
+      }),
+          doc.Lane.id.doc)
       .def("string", &LaneId::string, py_reference_internal);
 
   py::class_<Lane>(m, "Lane", doc.Lane.doc)

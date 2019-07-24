@@ -107,6 +107,7 @@ drake_cc_library(
     srcs = ["choose_best_solver.cc"],
     hdrs = ["choose_best_solver.h"],
     deps = [
+        ":csdp_solver",
         ":equality_constrained_qp_solver",
         ":gurobi_solver",
         ":ipopt_solver",
@@ -991,6 +992,7 @@ drake_cc_library(
         "//conditions:default": [
             "csdp_solver.cc",
             "csdp_solver_common.cc",
+            "csdp_solver_internal.cc",
         ],
         "//tools:no_csdp": [
             "no_csdp.cc",
@@ -1175,6 +1177,29 @@ drake_cc_googletest(
     deps = [
         ":csdp_test_examples",
         ":sdpa_free_format",
+        "//common:temp_directory",
+        "//common/test_utilities:eigen_matrix_compare",
+        "@spruce",
+    ],
+)
+
+drake_cc_googletest(
+    name = "csdp_solver_internal_test",
+    deps = [
+        ":csdp_solver",
+        ":csdp_test_examples",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "csdp_solver_test",
+    deps = [
+        ":csdp_solver",
+        ":csdp_test_examples",
+        ":linear_program_examples",
+        ":second_order_cone_program_examples",
+        ":semidefinite_program_examples",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -1340,6 +1365,7 @@ drake_cc_googletest(
     tags = mosek_test_tags(),
     use_default_main = False,
     deps = [
+        ":exponential_cone_program_examples",
         ":linear_program_examples",
         ":mathematical_program_private",
         ":mathematical_program_test_util",
@@ -1404,9 +1430,9 @@ drake_cc_googletest(
     # This test is quite long, so split it into 4 processes for better latency.
     shard_count = 4,
     tags = gurobi_test_tags() + mosek_test_tags() + [
-        # Excluding asan because it is unreasonably slow (> 30 minutes).
+        # Excluding asan and memcheck because it is unreasonably slow
+        # (> 30 minutes).
         "no_asan",
-        # Takes too long to run with Valgrind.
         "no_memcheck",
         # Excluding tsan because an assertion fails in LLVM code. Issue #6179.
         "no_tsan",
@@ -1532,7 +1558,12 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "snopt_solver_test",
-    tags = ["snopt"],
+    tags = [
+        # ThreadSanitizer: lock-order-inversion (potential deadlock) with
+        # snopt_fortran (#11657).
+        "no_tsan",
+        "snopt",
+    ],
     deps = [
         ":linear_program_examples",
         ":mathematical_program_private",
@@ -1663,6 +1694,7 @@ drake_cc_googletest(
     deps = [
         ":cost",
         ":mathematical_program_result",
+        ":osqp_solver",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
@@ -1699,6 +1731,7 @@ add_lint_tests(cpplint_extra_srcs = [
     "csdp_solver.cc",
     "csdp_solver_common.cc",
     "csdp_solver_internal.h",
+    "csdp_solver_internal.cc",
     "fast_qp.h",
     "gurobi_qp.h",
     "gurobi_solver.cc",

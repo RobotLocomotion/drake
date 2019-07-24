@@ -19,7 +19,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
@@ -86,8 +86,7 @@ void ParseBody(const multibody::PackageMap& package_map,
                ModelInstanceIndex model_instance,
                XMLElement* node,
                MaterialMap* materials,
-               MultibodyPlant<double>* plant,
-               geometry::SceneGraph<double>* scene_graph) {
+               MultibodyPlant<double>* plant) {
   std::string drake_ignore;
   if (ParseStringAttribute(node, "drake_ignore", &drake_ignore) &&
       drake_ignore == std::string("true")) {
@@ -129,7 +128,7 @@ void ParseBody(const multibody::PackageMap& package_map,
       plant->RegisterVisualGeometry(
           body, RigidTransformd(geometry_instance.pose()),
           geometry_instance.shape(), geometry_instance.name(),
-          *geometry_instance.illustration_properties(), scene_graph);
+          *geometry_instance.illustration_properties());
     }
 
     for (XMLElement* collision_node = node->FirstChildElement("collision");
@@ -141,8 +140,7 @@ void ParseBody(const multibody::PackageMap& package_map,
                          &friction);
       plant->RegisterCollisionGeometry(
           body, RigidTransformd(geometry_instance.pose()),
-          geometry_instance.shape(), geometry_instance.name(), friction,
-          scene_graph);
+          geometry_instance.shape(), geometry_instance.name(), friction);
     }
   }
 }
@@ -432,8 +430,7 @@ ModelInstanceIndex ParseUrdf(
     const multibody::PackageMap& package_map,
     const std::string& root_dir,
     XMLDocument* xml_doc,
-    MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph) {
+    MultibodyPlant<double>* plant) {
 
   XMLElement* node = xml_doc->FirstChildElement("robot");
   if (!node) {
@@ -465,7 +462,7 @@ ModelInstanceIndex ParseUrdf(
        link_node;
        link_node = link_node->NextSiblingElement("link")) {
     ParseBody(package_map, root_dir, model_instance, link_node,
-              &materials, plant, scene_graph);
+              &materials, plant);
   }
 
   // TODO(sam.creasey) Parse collision filter groups.
@@ -535,9 +532,9 @@ ModelInstanceIndex AddModelFromUrdfFile(
   }
 
   return ParseUrdf(model_name_in, package_map, root_dir,
-                   &xml_doc, plant, scene_graph);
+                   &xml_doc, plant);
 }
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

@@ -5,6 +5,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/deprecated.h"
 
 namespace drake {
 namespace systems {
@@ -18,7 +19,7 @@ namespace qp_inverse_dynamics {
  * is ready.
  */
 template <typename T>
-class RobotKinematicState {
+class DRAKE_DEPRECATED_QPID RobotKinematicState {
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RobotKinematicState)
 

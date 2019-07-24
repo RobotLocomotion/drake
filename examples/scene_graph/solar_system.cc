@@ -108,22 +108,22 @@ void MakeArm(SourceId source_id, ParentId parent_id, double length,
              double height, double radius,
              const IllustrationProperties& material,
              SceneGraph<double>* scene_graph) {
-  Isometry3<double> arm_pose = Isometry3<double>::Identity();
   // tilt it horizontally
-  arm_pose.linear() =
-      Eigen::AngleAxis<double>(M_PI / 2, Vector3<double>::UnitY()).matrix();
-  arm_pose.translation() << length / 2, 0, 0;
+  const math::RigidTransform<double> arm_pose(
+      Eigen::AngleAxis<double>(M_PI / 2, Vector3<double>::UnitY()),
+      Vector3<double>(length / 2, 0, 0));
   GeometryId id = scene_graph->RegisterGeometry(
       source_id, parent_id, make_unique<GeometryInstance>(
-                                arm_pose, make_unique<Cylinder>(radius, length),
+                                arm_pose.GetAsIsometry3(),
+                                make_unique<Cylinder>(radius, length),
                                 "horz_arm"));
   scene_graph->AssignRole(source_id, id, material);
 
-  Isometry3<double> post_pose = Isometry3<double>::Identity();
-  post_pose.translation() << length, 0, height / 2;
+  const math::RigidTransform<double> post_pose(
+      Vector3<double>(length, 0, height / 2));
   id = scene_graph->RegisterGeometry(
       source_id, parent_id,
-      make_unique<GeometryInstance>(post_pose,
+      make_unique<GeometryInstance>(post_pose.GetAsIsometry3(),
                                     make_unique<Cylinder>(radius, height),
                                     "vert_arm"));
   scene_graph->AssignRole(source_id, id, material);
@@ -320,12 +320,12 @@ void SolarSystem<T>::CalcFramePoseOutput(const Context<T>& context,
   const BasicVector<T>& state = get_state(context);
   poses->clear();
   for (int i = 0; i < kBodyCount; ++i) {
-    Isometry3<T> pose = body_offset_[i];
+    math::RigidTransform<T> pose(body_offset_[i]);
     // Frames only revolve around their origin; it is only necessary to set the
     // rotation value.
     T rotation{state[i]};
-    pose.linear() = AngleAxis<T>(rotation, axes_[i]).matrix();
-    poses->set_value(body_ids_[i], pose);
+    pose.set_rotation(AngleAxis<T>(rotation, axes_[i]));
+    poses->set_value(body_ids_[i], pose.GetAsIsometry3());
   }
 }
 

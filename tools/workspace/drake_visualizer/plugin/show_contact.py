@@ -95,8 +95,8 @@ class ContactVisualizer(object):
                            tubeRadius=0.005,
                            headRadius=0.01)
 
-            vis.showPolyData(
-                d.getPolyData(), str(key), parent=folder, color=[0, 1, 0])
+            vis.showPolyData(d.getPolyData(), str(key), parent=folder,
+                             color=[0.2, 0.8, 0.2])
 
 
 @scoped_singleton_func

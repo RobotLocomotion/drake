@@ -4,6 +4,8 @@
 #include <utility>
 #include <vector>
 
+#include <Eigen/Dense>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -65,6 +67,11 @@ class VolumeElement {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VolumeElement)
 
   /** Constructs VolumeElement.
+   We follow the convention that the first three vertices define a triangle with
+   its right-handed normal pointing inwards. The fourth vertex is then on the
+   positive side of this first triangle.
+   @warning This class does not enforce our convention for the ordering of the
+   vertices.
    @param v0 Index of the first vertex in VolumeMesh.
    @param v1 Index of the second vertex in VolumeMesh.
    @param v2 Index of the third vertex in VolumeMesh.
@@ -126,14 +133,26 @@ class VolumeMesh {
   using ElementIndex = VolumeElementIndex;
 
   /** Type of barycentric coordinates on a tetrahedral element. Barycentric
-   coordinates (b₀, b₁, b₂, b₃) satisfy b₀ + b₁ + b₂ + b₃ = 1, bᵢ >= 0, so
-   technically we could calculate one of the bᵢ from the others; however,
-   there is no standard way to omit one of the coordinates.
+   coordinates (b₀, b₁, b₂, b₃) satisfy b₀ + b₁ + b₂ + b₃ = 1. It corresponds
+   to a position in the space. If all bᵢ >= 0, it corresponds to a position
+   inside the tetrahedron or on the faces of the tetrahedron. If some bᵢ < 0,
+   it corresponds to a position outside the tetrahedron. Technically we
+   could calculate one of the bᵢ from the others; however, there is no
+   standard way to omit one of the coordinates.
   */
   using Barycentric = Vector<T, kDim + 1>;
 
+  /** Type of Cartesian coordinates. Mesh consumers can use it in conversion
+   from Cartesian coordinates to barycentric coordinates.
+   */
+  using Cartesian = Vector<T, 3>;
+
   //@}
 
+  /** Constructor from a vector of vertices and from a vector of elements.
+   Each element must be a valid VolumeElement following the vertex ordering
+   convention documented in the VolumeElement class. This class however does not
+   enforce this convention and it is thus the responsibility of the user.  */
   VolumeMesh(std::vector<VolumeElement>&& elements,
              std::vector<VolumeVertex<T>>&& vertices)
       : elements_(std::move(elements)), vertices_(std::move(vertices)) {}
@@ -163,6 +182,42 @@ class VolumeMesh {
   /** Returns the number of vertices in the mesh.
    */
   int num_vertices() const { return vertices_.size(); }
+
+  /** Calculate barycentric coordinates with respect to the tetrahedron `e`
+   of the point Q'. This operation is expensive compared with going from
+   barycentric to Cartesian.
+   @param p_MQ  A position expressed in the frame M of the mesh.
+   @param e     The index of a tetrahedral element.
+   @note  If p_MQ is outside the tetrahedral element, the barycentric
+          coordinates (b₀, b₁, b₂, b₃) still satisfy b₀ + b₁ + b₂ + b₃ = 1;
+          however, some bᵢ will be negative.
+   */
+  Barycentric CalcBarycentric(const Cartesian& p_MQ, ElementIndex e) const {
+    // We have two conditions to satisfy.
+    // 1. b₀ + b₁ + b₂ + b₃ = 1
+    // 2. b₀*v0 + b₁*v1 + b₂*v2 + b₃*v3 = p_M.
+    // Together they create this 4x4 linear system:
+    //
+    //      | 1  1  1  1 ||b₀|   | 1 |
+    //      | |  |  |  | ||b₁| = | | |
+    //      | v0 v1 v2 v3||b₂|   |p_M|
+    //      | |  |  |  | ||b₃|   | | |
+    //
+    // q = p_M - v0 = b₀*u0 + b₁*u1 + b₂*u2 + b₃*u3
+    //              = 0 + b₁*u1 + b₂*u2 + b₃*u3
+
+    Matrix4<T> A;
+    for (int i = 0; i < 4; ++i) {
+      A.col(i) << T(1.0), vertex(element(e).vertex(i)).r_MV();
+    }
+    Vector4<T> b;
+    b << T(1.0), p_MQ;
+    Barycentric b_Q = A.partialPivLu().solve(b);
+    // TODO(DamrongGuoy): Save the inverse of the matrix instead of
+    //  calculating it on the fly. We can reduce to 3x3 system too.  See
+    //  issue #11653.
+    return b_Q;
+  }
 
  private:
   // The tetrahedral elements that comprise the volume.

@@ -414,7 +414,8 @@ void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   const QuaternionFloatingMobilizer<T>& mobilizer =
       GetFreeBodyMobilizerOrThrow(body);
-  mobilizer.set_quaternion(context, Quaternion<T>(X_WB.linear()), state);
+  const RotationMatrix<T>& R_WB = X_WB.rotation();
+  mobilizer.set_quaternion(context, R_WB.ToQuaternion(), state);
   mobilizer.set_position(context, X_WB.translation(), state);
 }
 
@@ -916,15 +917,33 @@ VectorX<T> MultibodyTree<T>::CalcGravityGeneralizedForces(
 template <typename T>
 RigidTransform<T> MultibodyTree<T>::CalcRelativeTransform(
     const systems::Context<T>& context,
-    const Frame<T>& frame_A, const Frame<T>& frame_B) const {
+    const Frame<T>& frame_F,
+    const Frame<T>& frame_G) const {
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  const RigidTransform<T>& X_WA =
-      pc.get_X_WB(frame_A.body().node_index()) *
-      frame_A.CalcPoseInBodyFrame(context);
-  const RigidTransform<T>& X_WB =
-      pc.get_X_WB(frame_B.body().node_index()) *
-      frame_B.CalcPoseInBodyFrame(context);
-  return X_WA.inverse() * X_WB;
+  const Body<T>& A = frame_F.body();
+  const Body<T>& B = frame_G.body();
+  const RigidTransform<T>& X_WA = pc.get_X_WB(A.node_index());
+  const RigidTransform<T>& X_WB = pc.get_X_WB(B.node_index());
+  const RigidTransform<T> X_WF = X_WA * frame_F.CalcPoseInBodyFrame(context);
+  const RigidTransform<T> X_WG = X_WB * frame_G.CalcPoseInBodyFrame(context);
+  return X_WF.inverse() * X_WG;  // X_FG = X_FW * X_WG;
+}
+
+template <typename T>
+RotationMatrix<T> MultibodyTree<T>::CalcRelativeRotationMatrix(
+    const systems::Context<T>& context,
+    const Frame<T>& frame_F,
+    const Frame<T>& frame_G) const {
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const Body<T>& A = frame_F.body();
+  const Body<T>& B = frame_G.body();
+  const RotationMatrix<T>& R_WA = pc.get_X_WB(A.node_index()).rotation();
+  const RotationMatrix<T>& R_WB = pc.get_X_WB(B.node_index()).rotation();
+  const RotationMatrix<T> R_WF =
+      R_WA * frame_F.CalcPoseInBodyFrame(context).rotation();
+  const RotationMatrix<T> R_WG =
+      R_WB * frame_G.CalcPoseInBodyFrame(context).rotation();
+  return R_WF.inverse() * R_WG;  // R_FG = R_FW * R_WG;
 }
 
 template <typename T>
@@ -940,11 +959,86 @@ void MultibodyTree<T>::CalcPointsPositions(
   DRAKE_THROW_UNLESS(p_AQi->cols() == p_BQi.cols());
   const RigidTransform<T> X_AB =
       CalcRelativeTransform(context, frame_A, frame_B);
-  // We demanded above that these matrices have three rows. Therefore we tell
-  // Eigen so. We also convert to Isometry3 to take advantage of the operator*()
-  // for a column vector of Vector3 without using heap allocation. See #10986.
-  p_AQi->template topRows<3>() =
-      X_AB.GetAsIsometry3() * p_BQi.template topRows<3>();
+  p_AQi->template topRows<3>() = X_AB * p_BQi.template topRows<3>();
+}
+
+template <typename T>
+Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
+    const systems::Context<T>& context) const {
+  if (!(num_bodies() > 1)) {
+    throw std::runtime_error(
+        "CalcCenterOfMassPosition(): this MultibodyPlant contains only "
+        "world_body() so its center of mass is undefined.");
+  }
+
+  std::vector<ModelInstanceIndex> model_instances;
+  for (ModelInstanceIndex model_instance_index(1);
+       model_instance_index < num_model_instances(); ++model_instance_index)
+    model_instances.push_back(model_instance_index);
+
+  return CalcCenterOfMassPosition(context, model_instances);
+}
+
+template <typename T>
+Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
+    const systems::Context<T>& context,
+    const std::vector<ModelInstanceIndex>& model_instances) const {
+  if (!(num_model_instances() > 1)) {
+    throw std::runtime_error(
+        "CalcCenterOfMassPosition(): this MultibodyPlant contains only "
+        "world_body() so its center of mass is undefined.");
+  }
+
+  std::vector<BodyIndex> body_indexes;
+  for (auto model_instance : model_instances) {
+    const std::vector<BodyIndex> body_index_in_instance =
+        GetBodyIndices(model_instance);
+    for (BodyIndex body_index : body_index_in_instance)
+      body_indexes.push_back(body_index);
+  }
+
+  return CalcCenterOfMassPosition(context, body_indexes);
+}
+
+template <typename T>
+Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
+    const systems::Context<T>& context,
+    const std::vector<BodyIndex>& body_indexes) const {
+  if (!(num_bodies() > 1)) {
+    throw std::runtime_error(
+        "CalcCenterOfMassPosition(): this MultibodyPlant contains only "
+        "world_body() so its center of mass is undefined.");
+  }
+  if (body_indexes.empty()) {
+    throw std::runtime_error(
+        "CalcCenterOfMassPosition(): you must provide at least one selected "
+        "body.");
+  }
+
+  Vector3<T> Mp = Vector3<T>::Zero();
+  T composite_mass = 0;
+
+  for (BodyIndex body_index : body_indexes) {
+    if (body_index == 0) continue;
+
+    const Body<T>& body = get_body(body_index);
+
+    const Vector3<T> pi_BoBcm = body.CalcCenterOfMassInBodyFrame(context);
+    Vector3<T> pi_WBcm = body.EvalPoseInWorld(context) * pi_BoBcm;
+
+    // Calculate composite_mass and M * p in world frame.
+    const T& body_mass = body.get_mass(context);
+    // Mp = ∑ mᵢ * pi_WBcm
+    Mp += body_mass * pi_WBcm;
+    // composite_mass = ∑ mᵢ
+    composite_mass += body_mass;
+  }
+
+  if (!(composite_mass > 0)) {
+    throw std::runtime_error(
+        "CalcCenterOfMassPosition(): the total mass must larger than zero.");
+  }
+  return Mp / composite_mass;
 }
 
 template <typename T>
@@ -991,48 +1085,61 @@ void MultibodyTree<T>::CalcAcrossNodeGeometricJacobianExpressedInWorld(
   }
 }
 
+// TODO(Mitiguy) Delete this method as per issue #10155.
+// DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
 template <typename T>
 void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
     const systems::Context<T>& context,
-    const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_FP_list,
-    EigenPtr<MatrixX<T>> p_WP_list, EigenPtr<MatrixX<T>> Jv_WFp) const {
-  DRAKE_THROW_UNLESS(p_FP_list.rows() == 3);
+    const Frame<T>& frame_F,
+    const Eigen::Ref<const MatrixX<T>>& p_FP_list,
+    EigenPtr<MatrixX<T>> p_WP_list,
+    EigenPtr<MatrixX<T>> Jv_WFp) const {
   const int num_points = p_FP_list.cols();
   DRAKE_THROW_UNLESS(p_WP_list != nullptr);
   DRAKE_THROW_UNLESS(p_WP_list->cols() == num_points);
-  DRAKE_THROW_UNLESS(Jv_WFp != nullptr);
-  DRAKE_THROW_UNLESS(Jv_WFp->rows() == 3 * num_points);
-  DRAKE_THROW_UNLESS(Jv_WFp->cols() == num_velocities());
 
-  // Compute p_WFp for each point Pi in the set P_BPi_list.
-  CalcPointsPositions(context,
-                      frame_F, p_FP_list,        /* From frame B */
-                      world_frame(), p_WP_list); /* To world frame W */
-
-  CalcPointsGeometricJacobianExpressedInWorld(
-      context, frame_F, *p_WP_list, Jv_WFp);
+  // For each point Fi, calculate Fi's position from Wo (World origin),
+  // expressed in world W.
+  const Frame<T>& frame_W = world_frame();
+  CalcPointsPositions(context, frame_F, p_FP_list,      /* From frame F */
+                      frame_W, p_WP_list);          /* To world frame W */
+  CalcJacobianTranslationalVelocity(context,
+                                    JacobianWrtVariable::kV,
+                                    frame_F,
+                                    frame_W,
+                                    *p_WP_list,
+                                    frame_W,
+                                    frame_W,
+                                    Jv_WFp);
 }
 
+// TODO(Mitiguy) Delete this method as per issue #10155.
+// DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
 template <typename T>
 void MultibodyTree<T>::CalcPointsAnalyticalJacobianExpressedInWorld(
     const systems::Context<T>& context,
-    const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_FP_list,
-    EigenPtr<MatrixX<T>> p_WP_list, EigenPtr<MatrixX<T>> Jq_WFp) const {
-  DRAKE_THROW_UNLESS(p_FP_list.rows() == 3);
+    const Frame<T>& frame_F,
+    const Eigen::Ref<const MatrixX<T>>& p_FP_list,
+    EigenPtr<MatrixX<T>> p_WP_list,
+    EigenPtr<MatrixX<T>> Jq_WFp) const {
   const int num_points = p_FP_list.cols();
   DRAKE_THROW_UNLESS(p_WP_list != nullptr);
   DRAKE_THROW_UNLESS(p_WP_list->cols() == num_points);
-  DRAKE_THROW_UNLESS(Jq_WFp != nullptr);
-  DRAKE_THROW_UNLESS(Jq_WFp->rows() == 3 * num_points);
-  DRAKE_THROW_UNLESS(Jq_WFp->cols() == num_positions());
 
-  // Compute p_WPi for each point Pi in the set p_FP_list.
-  CalcPointsPositions(context,
-                      frame_F, p_FP_list,        /* From frame F */
-                      world_frame(), p_WP_list); /* To world frame W */
+  // For each point Fi, calculate Fi's position from Wo (World origin),
+  // expressed in world W.
+  const Frame<T>& frame_W = world_frame();
+  CalcPointsPositions(context, frame_F, p_FP_list,     /* From frame F */
+                      frame_W, p_WP_list);         /* To world frame W */
 
-  CalcFrameJacobianExpressedInWorld(context, frame_F, *p_WP_list,
-      JacobianWrtVariable::kQDot, nullptr /* angular not needed */, Jq_WFp);
+  CalcJacobianTranslationalVelocity(context,
+                                    JacobianWrtVariable::kQDot,
+                                    frame_F,
+                                    frame_W,
+                                    *p_WP_list,
+                                    frame_W,
+                                    frame_W,
+                                    Jq_WFp);
 }
 
 template <typename T>
@@ -1122,18 +1229,23 @@ VectorX<T> MultibodyTree<T>::CalcBiasForJacobianTranslationalVelocity(
   return Abias_WFp_array;
 }
 
+// TODO(Mitiguy) Delete this method as per issue #10155.
+// DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
 template <typename T>
 void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
     const systems::Context<T>& context,
-    const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_WP_list,
+    const Frame<T>& frame_F,
+    const Eigen::Ref<const MatrixX<T>>& p_WP_list,
     EigenPtr<MatrixX<T>> Jv_WFp) const {
-  DRAKE_THROW_UNLESS(p_WP_list.rows() == 3);
-  const int num_points = p_WP_list.cols();
-  DRAKE_THROW_UNLESS(Jv_WFp != nullptr);
-  DRAKE_THROW_UNLESS(Jv_WFp->rows() == 3 * num_points);
-  DRAKE_THROW_UNLESS(Jv_WFp->cols() == num_velocities());
-  CalcFrameJacobianExpressedInWorld(context, frame_F, p_WP_list,
-      JacobianWrtVariable::kV, nullptr /* angular not needed */, Jv_WFp);
+  const Frame<T>& frame_W = world_frame();
+  CalcJacobianTranslationalVelocity(context,
+                                    JacobianWrtVariable::kV,
+                                    frame_F,
+                                    frame_W,
+                                    p_WP_list,
+                                    frame_W,
+                                    frame_W,
+                                    Jv_WFp);
 }
 
 template <typename T>
@@ -1153,16 +1265,19 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
   auto Jv_WFp_angular = Jv_WFp->template topRows<3>();
   auto Jv_WFp_translational = Jv_WFp->template bottomRows<3>();
 
-  CalcFrameJacobianExpressedInWorld(context, frame_F, p_WoP_W,
-      JacobianWrtVariable::kV, &Jv_WFp_angular, &Jv_WFp_translational);
+  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
+    JacobianWrtVariable::kV, frame_F, p_WoP_W,
+    &Jv_WFp_angular, &Jv_WFp_translational);
 }
 
 template <typename T>
 void MultibodyTree<T>::CalcJacobianSpatialVelocity(
     const systems::Context<T>& context,
     const JacobianWrtVariable with_respect_to,
-    const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
-    const Frame<T>& frame_A, const Frame<T>& frame_E,
+    const Frame<T>& frame_B,
+    const Eigen::Ref<const Vector3<T>>& p_BP,
+    const Frame<T>& frame_A,
+    const Frame<T>& frame_E,
     EigenPtr<MatrixX<T>> Jw_V_ABp_E) const {
   DRAKE_THROW_UNLESS(Jw_V_ABp_E != nullptr);
   DRAKE_THROW_UNLESS(Jw_V_ABp_E->rows() == 6);
@@ -1192,17 +1307,17 @@ void MultibodyTree<T>::CalcJacobianSpatialVelocity(
   // TODO(amcastro-tri): When performance becomes an issue, implement this
   // method so that we only consider the kinematic path from A to B.
 
-  MatrixX<T> Jw_WAp(6, num_columns);
+  Matrix6X<T> Jw_WAp(6, num_columns);
   auto Jr_WAp = Jw_WAp.template topRows<3>();     // rotational part.
   auto Jt_WAp = Jw_WAp.template bottomRows<3>();  // translational part.
-  CalcFrameJacobianExpressedInWorld(context, frame_A, p_WP, with_respect_to,
-                                    &Jr_WAp, &Jt_WAp);
+  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
+      with_respect_to, frame_A,  p_WP,  &Jr_WAp, &Jt_WAp);
 
-  MatrixX<T> Jw_WBp(6, num_columns);
+  Matrix6X<T> Jw_WBp(6, num_columns);
   auto Jr_WBp = Jw_WBp.template topRows<3>();     // rotational part.
   auto Jt_WBp = Jw_WBp.template bottomRows<3>();  // translational part.
-  CalcFrameJacobianExpressedInWorld(context, frame_B, p_WP, with_respect_to,
-                                    &Jr_WBp, &Jt_WBp);
+  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
+      with_respect_to, frame_B,  p_WP,  &Jr_WBp, &Jt_WBp);
 
   // Jacobian Jw_ABp_W when E is the world frame W.
   Jw_V_ABp_E->template topRows<3>() = Jr_WBp - Jr_WAp;
@@ -1211,9 +1326,8 @@ void MultibodyTree<T>::CalcJacobianSpatialVelocity(
   // If the expressed-in frame E is not the world frame, we need to perform
   // an additional operation.
   if (frame_E.index() != world_frame().index()) {
-    const RigidTransform<T> X_EW =
-        CalcRelativeTransform(context, frame_E, world_frame());
-    const Matrix3<T>& R_EW = X_EW.linear();
+    const RotationMatrix<T> R_EW =
+        CalcRelativeRotationMatrix(context, frame_E, world_frame());
     Jw_V_ABp_E->template topRows<3>() =
         R_EW * Jw_V_ABp_E->template topRows<3>();
     Jw_V_ABp_E->template bottomRows<3>() =
@@ -1224,9 +1338,11 @@ void MultibodyTree<T>::CalcJacobianSpatialVelocity(
 template <typename T>
 void MultibodyTree<T>::CalcJacobianAngularVelocity(
     const systems::Context<T>& context,
-    const JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
-    const Frame<T>& frame_A, const Frame<T>& frame_E,
-    EigenPtr<MatrixX<T>> Js_w_AB_E) const {
+    const JacobianWrtVariable with_respect_to,
+    const Frame<T>& frame_B,
+    const Frame<T>& frame_A,
+    const Frame<T>& frame_E,
+    EigenPtr<Matrix3X<T>> Js_w_AB_E) const {
   DRAKE_THROW_UNLESS(Js_w_AB_E != nullptr);
   DRAKE_THROW_UNLESS(Js_w_AB_E->rows() == 3);
   const int num_columns = (with_respect_to == JacobianWrtVariable::kQDot) ?
@@ -1245,22 +1361,22 @@ void MultibodyTree<T>::CalcJacobianAngularVelocity(
   // only using the kinematics path from A to B.
 
   // Create dummy position list for signature requirements of next method.
-  const Eigen::Matrix<T, 0, 0> empty_position_list;
+  const Eigen::Matrix<T, 3, 0> empty_position_list;
 
   // TODO(Mitiguy) One way to avoid memory allocation and speed this up is to
   // be clever and use the input argument as follows:
   // Eigen::Ref<MatrixX<T>> Js_w_WA_W = *Js_w_AB_E;
-  // Also modify CalcFrameJacobianExpressedInWorld() so it can add or subtract
-  // to the Jacobian that is passed to it.
-  MatrixX<T> Js_w_WA_W(3, num_columns);
-  CalcFrameJacobianExpressedInWorld(context, frame_A, empty_position_list,
-                                    with_respect_to, &Js_w_WA_W, nullptr);
+  // Also modify CalcJacobianAngularAndOrTranslationalVelocityInWorld() so
+  // it can add or subtract to the Jacobian that is passed to it.
+  Matrix3X<T> Js_w_WA_W(3, num_columns);
+  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
+      with_respect_to, frame_A, empty_position_list, &Js_w_WA_W, nullptr);
 
-  MatrixX<T> Js_w_WB_W(3, num_columns);
-  CalcFrameJacobianExpressedInWorld(context, frame_B, empty_position_list,
-                                    with_respect_to, &Js_w_WB_W, nullptr);
+  Matrix3X<T> Js_w_WB_W(3, num_columns);
+  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
+      with_respect_to, frame_B, empty_position_list, &Js_w_WB_W, nullptr);
 
-  const BodyFrame<T>& frame_W = world_frame();
+  const Frame<T>& frame_W = world_frame();
   if (frame_E.index() == frame_W.index()) {
     // Calculate B's angular velocity Jacobian in A, expressed in W.
     *Js_w_AB_E = Js_w_WB_W - Js_w_WA_W;  // This calculates Js_w_AB_W.
@@ -1268,60 +1384,100 @@ void MultibodyTree<T>::CalcJacobianAngularVelocity(
     // When frame E is not the world frame:
     // 1. Calculate B's angular velocity Jacobian in A, expressed in W.
     // 2. Re-express that Jacobian in frame_E (rather than frame_W).
-    const RotationMatrix<T> R_EW(
-        CalcRelativeTransform(context, frame_E, frame_W).linear());
-    *Js_w_AB_E = R_EW.matrix() * (Js_w_WB_W - Js_w_WA_W);
+    const RotationMatrix<T> R_EW =
+        CalcRelativeRotationMatrix(context, frame_E, frame_W);
+    *Js_w_AB_E = R_EW * (Js_w_WB_W - Js_w_WA_W);
   }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcJacobianTranslationalVelocityHelper(
+    const systems::Context<T>& context,
+    const JacobianWrtVariable with_respect_to,
+    const Frame<T>& frame_B,
+    const Eigen::Ref<const Matrix3X<T>>& p_WoBi_W,
+    const Frame<T>& frame_A,
+    EigenPtr<MatrixX<T>> Js_v_ABi_W) const {
+  const int num_columns = (with_respect_to == JacobianWrtVariable::kQDot) ?
+                          num_positions() : num_velocities();
+  const int num_points = p_WoBi_W.cols();
+  DRAKE_THROW_UNLESS(num_points > 0);
+  DRAKE_THROW_UNLESS(Js_v_ABi_W != nullptr);
+  DRAKE_THROW_UNLESS(Js_v_ABi_W->rows() == 3 * num_points);
+  DRAKE_THROW_UNLESS(Js_v_ABi_W->cols() == num_columns);
+
+  // Bi's velocity in W can be calculated v_WBi = v_WAi + v_ABi, where
+  // v_WBi is point Bi's translational velocity in world W,
+  // v_WAi is point Ai's translational velocity in world W
+  //         (where Ai is the point of A coincident with Bi),
+  // v_ABi is point Bi's translational velocity in frame A.
+  // Rearrange to calculate Bi's velocity in A as v_ABi = v_WBi - v_WAi.
+
+  // TODO(Mitiguy): When performance becomes an issue, optimize this method by
+  // only using the kinematics path from A to B.
+
+  // Calculate each point Ai's translational velocity Jacobian in world W.
+  MatrixX<T> Js_v_WAi_W(3 * num_points, num_columns);
+  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
+    with_respect_to, frame_A, p_WoBi_W, nullptr, &Js_v_WAi_W);
+
+  // Calculate each point Bi's translational velocity Jacobian in world W.
+  MatrixX<T> Js_v_WBi_W(3 * num_points, num_columns);
+  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
+    with_respect_to, frame_B, p_WoBi_W, nullptr, &Js_v_WBi_W);
+
+  // Calculate each point Bi's translational velocity Jacobian in frame A,
+  // expressed in world W.
+  *Js_v_ABi_W = Js_v_WBi_W - Js_v_WAi_W;  // This calculates Js_v_ABi_W.
 }
 
 template <typename T>
 void MultibodyTree<T>::CalcJacobianTranslationalVelocity(
     const systems::Context<T>& context,
-    const JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
-    const Eigen::Ref<const Vector3<T>>& p_BoBp_B, const Frame<T>& frame_A,
-    const Frame<T>& frame_E, EigenPtr<MatrixX<T>> Js_v_ABp_E) const {
-  DRAKE_THROW_UNLESS(Js_v_ABp_E != nullptr);
-  DRAKE_THROW_UNLESS(Js_v_ABp_E->rows() == 3);
+    const JacobianWrtVariable with_respect_to,
+    const Frame<T>& frame_B,
+    const Frame<T>& frame_F,
+    const Eigen::Ref<const Matrix3X<T>>& p_FoBi_F,
+    const Frame<T>& frame_A,
+    const Frame<T>& frame_E,
+    EigenPtr<MatrixX<T>> Js_v_ABi_E) const {
   const int num_columns = (with_respect_to == JacobianWrtVariable::kQDot) ?
                           num_positions() : num_velocities();
-  DRAKE_THROW_UNLESS(Js_v_ABp_E->cols() == num_columns);
+  const int num_points = p_FoBi_F.cols();
+  DRAKE_THROW_UNLESS(num_points > 0);
+  DRAKE_THROW_UNLESS(p_FoBi_F.rows() == 3);
+  DRAKE_THROW_UNLESS(Js_v_ABi_E != nullptr);
+  DRAKE_THROW_UNLESS(Js_v_ABi_E->rows() == 3 * num_points);
+  DRAKE_THROW_UNLESS(Js_v_ABi_E->cols() == num_columns);
 
-  // Bp's velocity in W can be calculated v_WBp = v_WAp + v_ABp, where
-  // v_WBp is point Bp's translational velocity in world W,
-  // v_WAp is point Ap's translational velocity in world W
-  //         (where Ap is the point of A coincident with Bp),
-  // v_ABp is point Bp's translational velocity in frame A.
-  // Rearrange to calculate Bp's velocity in A as v_ABp = v_WBp - v_WAp.
-  // So Bp's translational velocity Jacobian in A, expressed in frame E is
-  // Js_v_ABp_E = R_EW * (Js_v_WBp_W - Js_v_WAp_W).
-
-  // TODO(Mitiguy): When performance becomes an issue, optimize this method by
-  // only using the kinematics path from A to B.
-
-  // Determine Bp's position from Wo (World origin), expressed in World W.
-  Vector3<T> p_WoBp_W;
-  CalcPointsPositions(context, frame_B, p_BoBp_B, /* From frame B */
-                      world_frame(), &p_WoBp_W);  /* To world frame W */
-
-  MatrixX<T> Js_v_WAp_W(3, num_columns);
-  CalcFrameJacobianExpressedInWorld(context, frame_A, p_WoBp_W,
-                                    with_respect_to, nullptr, &Js_v_WAp_W);
-
-  MatrixX<T> Js_v_WBp_W(3, num_columns);
-  CalcFrameJacobianExpressedInWorld(context, frame_B, p_WoBp_W,
-                                    with_respect_to, nullptr, &Js_v_WBp_W);
-
-  const BodyFrame<T>& frame_W = world_frame();
-  if (frame_E.index() == frame_W.index()) {
-    // Calculate Bp's translational velocity Jacobian in A, expressed in W.
-    *Js_v_ABp_E = Js_v_WBp_W - Js_v_WAp_W;  // This calculates Js_v_ABp_W.
+  // If frame_F == frame_W (World), then just call helper method.
+  // The helper method returns each point Bi's translational velocity Jacobian
+  // in frame A, expressed in world W, i.e., helper method returns Js_v_ABi_W.
+  const Frame<T>& frame_W = world_frame();
+  if (&frame_F == &frame_W) {
+    CalcJacobianTranslationalVelocityHelper(context, with_respect_to, frame_B,
+                                            p_FoBi_F, frame_A, Js_v_ABi_E);
   } else {
-    // When frame E is not the world frame:
-    // 1. Calculate Bp's translational velocity Jacobian in A, expressed in W.
-    // 2. Re-express that Jacobian in frame_E (rather than frame_W).
-    const RotationMatrix<T> R_EW(
-        CalcRelativeTransform(context, frame_E, frame_W).linear());
-    *Js_v_ABp_E = R_EW.matrix() * (Js_v_WBp_W - Js_v_WAp_W);
+    // If frame_F != frame_W, then for each point Bi, determine Bi's position
+    // from Wo (World origin), expressed in world W and call helper method.
+    Matrix3X<T> p_WoBi_W(3, num_points);
+    CalcPointsPositions(context, frame_F, p_FoBi_F,  /* From frame F */
+                        world_frame(), &p_WoBi_W);   /* To world frame W */
+    CalcJacobianTranslationalVelocityHelper(context, with_respect_to, frame_B,
+                                            p_WoBi_W, frame_A, Js_v_ABi_E);
+  }
+
+  // If frame_E is not the world frame, re-express Js_v_ABi_W in frame_E as
+  // Js_v_ABi_E = R_EW * (Js_v_WBi_W - Js_v_WAi_W).
+  if (&frame_E != &frame_W) {
+    const RotationMatrix<T> R_EW =
+        CalcRelativeRotationMatrix(context, frame_E, frame_W);
+    // Extract the 3 x num_columns block that starts at row = 3 * i, column = 0.
+    for (int i = 0;  i < num_points; ++i) {
+      Js_v_ABi_E->template block<3, Eigen::Dynamic>(3 * i, 0, 3, num_columns) =
+      R_EW *
+      Js_v_ABi_E->template block<3, Eigen::Dynamic>(3 * i, 0, 3, num_columns);
+    }
   }
 }
 
@@ -1384,46 +1540,43 @@ Vector6<T> MultibodyTree<T>::CalcBiasForJacobianSpatialVelocity(
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcFrameJacobianExpressedInWorld(
+void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
     const systems::Context<T>& context,
+    JacobianWrtVariable with_respect_to,
     const Frame<T>& frame_F,
-    const Eigen::Ref<const MatrixX<T>>& p_WQ_list,
-    const JacobianWrtVariable with_respect_to,
-    EigenPtr<MatrixX<T>> Jr_WFq, EigenPtr<MatrixX<T>> Jt_WFq) const {
-  // The user must request at least one of the terms.
-  DRAKE_THROW_UNLESS(Jr_WFq != nullptr || Jt_WFq != nullptr);
+    const Eigen::Ref<const Matrix3X<T>>& p_WoFpi_W,
+    EigenPtr<Matrix3X<T>> Js_w_WF_W,
+    EigenPtr<MatrixX<T>> Js_v_WFpi_W) const {
+  // At least one of the Jacobian output terms must be nullptr.
+  DRAKE_THROW_UNLESS(Js_w_WF_W != nullptr || Js_v_WFpi_W != nullptr);
 
   const bool is_wrt_qdot = (with_respect_to == JacobianWrtVariable::kQDot);
   const int num_columns = is_wrt_qdot ? num_positions() : num_velocities();
+  const int num_points = p_WoFpi_W.cols();
 
-  // If non-nullptr, check the proper size of the output Jacobian matrices.
-  if (Jr_WFq) {
-    DRAKE_THROW_UNLESS(Jr_WFq->rows() == 3);
-    DRAKE_THROW_UNLESS(Jr_WFq->cols() == num_columns);
+  // If non-nullptr, check the proper size of the output Jacobian matrices and
+  // initialize the contents to zero.
+  if (Js_w_WF_W) {
+    DRAKE_THROW_UNLESS(Js_w_WF_W->rows() == 3);
+    DRAKE_THROW_UNLESS(Js_w_WF_W->cols() == num_columns);
+    Js_w_WF_W->setZero();
   }
-  const int num_points = p_WQ_list.cols();
-  const int Jt_nrows = 3 * num_points;
-  if (Jt_WFq) {
-    DRAKE_THROW_UNLESS(Jt_WFq->rows() == Jt_nrows);
-    DRAKE_THROW_UNLESS(Jt_WFq->cols() == num_columns);
+  if (Js_v_WFpi_W) {
+    DRAKE_THROW_UNLESS(Js_v_WFpi_W->rows() == 3 * num_points);
+    DRAKE_THROW_UNLESS(Js_v_WFpi_W->cols() == num_columns);
+    Js_v_WFpi_W->setZero();
   }
 
-  // If a user is re-using one of these Jacobians within a loop the first thing
-  // we'll want to do is to re-initialize it to zero.
-  if (Jr_WFq) Jr_WFq->setZero();
-  if (Jt_WFq) Jt_WFq->setZero();
+  // Body to which frame_F is welded/attached.
+  const Body<T>& body_F = frame_F.body();
 
-  // Body to which frame F is attached to:
-  const Body<T>& body_B = frame_F.body();
+  // Return zero Jacobians for bodies anchored to the world, since for anchored
+  // bodies, w_wF = Js_w_WF * v = 0  and  v_WFpi = Js_v_WFpi * v = 0.
+  if (body_F.index() == world_index()) return;
 
-  // Do nothing for bodies anchored to the world and return zero Jacobians.
-  // That is, Jw_WFq * v = 0 and Jv_WFq * v = 0, always, for anchored bodies.
-  if (body_B.index() == world_index()) return;
-
-  // Compute kinematic path from body B to the world:
+  // Form kinematic path from body_F to the world.
   std::vector<BodyNodeIndex> path_to_world;
-  topology_.GetKinematicPathToWorld(body_B.node_index(), &path_to_world);
-
+  topology_.GetKinematicPathToWorld(body_F.node_index(), &path_to_world);
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
   const std::vector<Vector6<T>>& H_PB_W_cache =
@@ -1432,11 +1585,11 @@ void MultibodyTree<T>::CalcFrameJacobianExpressedInWorld(
   // A statically allocated matrix with a maximum number of rows and columns.
   Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, 0, 6, 7> Nplus;
 
-  // Performs a scan of all bodies in the kinematic path from the world to
-  // body_B, computing each node's contribution to the Jacobians.
+  // For all bodies in the kinematic path from the world to body_F, compute
+  // each node's contribution to the Jacobians.
   // Skip the world (ilevel = 0).
   for (size_t ilevel = 1; ilevel < path_to_world.size(); ++ilevel) {
-    BodyNodeIndex body_node_index = path_to_world[ilevel];
+    const BodyNodeIndex body_node_index = path_to_world[ilevel];
     const BodyNode<T>& node = *body_nodes_[body_node_index];
     const BodyNodeTopology& node_topology = node.get_topology();
     const Mobilizer<T>& mobilizer = node.get_mobilizer();
@@ -1447,11 +1600,13 @@ void MultibodyTree<T>::CalcFrameJacobianExpressedInWorld(
     const int mobilizer_num_positions =
         node_topology.num_mobilizer_positions;
 
-    // Across-node Jacobian.
+    // "Hinge matrix" H for across-node Jacobian.
+    // Herein P designates the inboard (parent) body frame P.
+    // B designates the current outboard body in this outward sweep.
     Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
         node.GetJacobianFromArray(H_PB_W_cache);
 
-    // Aliases to angular and translational components in H_PB_W:
+    // Aliases to angular and translational components in H_PB_W.
     const auto Hw_PB_W = H_PB_W.template topRows<3>();
     const auto Hv_PB_W = H_PB_W.template bottomRows<3>();
 
@@ -1471,51 +1626,49 @@ void MultibodyTree<T>::CalcFrameJacobianExpressedInWorld(
       Nplus.setIdentity(mobilizer_num_velocities, mobilizer_num_velocities);
     }
 
-    // The angular term is the same for all points since the angular
-    // velocity of frame Fq, obtained by shifting frame F to origin at point Q,
-    // is the same as that of frame F, for all point Q in the input list.
-    if (Jr_WFq) {
-      // Output block corresponding to the contribution of the mobilities in
-      // level ilevel to the angular Jacobian Jr_WFq.
-      auto Jw_PFq_W =
-          Jr_WFq->block(0, start_index, 3, mobilizer_jacobian_ncols);
-
-      // Note: w_PFq_W = w_PF_W = w_PB_W.
-      Jw_PFq_W = Hw_PB_W * Nplus;
+    // The Jacobian angular velocity term is the same for all points Fpi since
+    // all these are points of (fixed/welded to) the same body_F.
+    if (Js_w_WF_W) {
+      // Get memory address in the output Jacobian angular velocity Js_w_WF_W
+      // corresponding to the contribution of the mobilities in level ilevel.
+      auto Js_w_PB_W = Js_w_WF_W->block(0, start_index, 3,
+                                        mobilizer_jacobian_ncols);
+      Js_w_PB_W = Hw_PB_W * Nplus;
     }
 
-    if (Jt_WFq) {
-      // Output block corresponding to mobilities in the current node.
-      // This correspond to the geometric Jacobian to compute the translational
-      // velocity of frame Fq (same as that of point Q) measured in the inboard
-      // body frame P and expressed in world. That is, v_PQ_W = v_PFq_W =
-      // Jv_PFq_W * v(B), with v(B) the mobilities that correspond to the
-      // current node.
-      auto Jv_PFq_W =
-          Jt_WFq->block(0, start_index, Jt_nrows, mobilizer_jacobian_ncols);
+    if (Js_v_WFpi_W) {
+      // Get memory address in the output block Jacobian translational velocity
+      // Js_v_PFpi_W corresponding to the contribution of the mobilities in
+      // level ilevel.  This address corresponds to point Fpi's Jacobian
+      // translational velocity in the inboard (parent) body frame P, expressed
+      // in world frame W.  That is, v_PFpi_W = Js_v_PFpi_W * v(B), where v(B)
+      // are the mobilities that correspond to the current node.
+      auto Js_v_PFpi_W = Js_v_WFpi_W->block(0, start_index, 3 * num_points,
+                                            mobilizer_jacobian_ncols);
 
-      // Position of the body Bi for the node at level ilevel in the world W.
-      const Vector3<T>& p_WBi = pc.get_X_WB(node.index()).translation();
+      // Position from Wo (world origin) to Bo (origin of body associated with
+      // node at level ilevel), expressed in world frame W.
+      const Vector3<T>& p_WoBo = pc.get_X_WB(node.index()).translation();
 
       for (int ipoint = 0; ipoint < num_points; ++ipoint) {
-        const Vector3<T>& p_WQ = p_WQ_list.col(ipoint);
+        // Position from Wo to Fp (ith point of Fpi), expressed in world W.
+        const Vector3<T>& p_WoFp = p_WoFpi_W.col(ipoint);
 
-        // Position of point P measured from Bi, expressed in the world W.
-        const Vector3<T> p_BiQ_W = p_WQ - p_WBi;
+        // Position from Bo to Fp, expressed in world W.
+        const Vector3<T> p_BoFp_W = p_WoFp - p_WoBo;
 
-        // We stack the Jacobian for each translational velocity in the same
-        // order the input points Q are provided in the input list.
+        // Point Fp's Jacobian translational velocity is placed in the output
+        // memory block in the same order input points Fpi are listed on input.
+        // Get a mutable alias into Js_v_PFpi_W for the Jacobian translational
+        // velocity term for the currently indexed (ipoint) point.
         const int ipoint_row = 3 * ipoint;
+        auto Hv_PFpi_W =
+            Js_v_PFpi_W.block(ipoint_row, 0, 3, mobilizer_jacobian_ncols);
 
-        // Mutable alias into J_PFq_W for the translational terms for the
-        // ipoint-th point.
-        auto Hv_PFqi_W =
-            Jv_PFq_W.block(ipoint_row, 0, 3, mobilizer_jacobian_ncols);
-
-        // Now "shift" H_PB_W to H_PBqi_W.
-        // We do it by shifting one column at a time:
-        // Note: w_PFq_W equals w_PBq_W since F moves with B.
-        Hv_PFqi_W = (Hv_PB_W + Hw_PB_W.colwise().cross(p_BiQ_W)) * Nplus;
+        // Now "shift" H_PB_W to H_PFqi_W one column at a time.
+        // Reminder: frame_F is fixed/welded to body_F so its angular velocity
+        // in world W is the same as body_F's angular velocity in W.
+        Hv_PFpi_W = (Hv_PB_W + Hw_PB_W.colwise().cross(p_BoFp_W)) * Nplus;
       }  // ipoint.
     }
   }  // body_node_index

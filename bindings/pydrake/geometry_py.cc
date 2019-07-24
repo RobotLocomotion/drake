@@ -1,20 +1,11 @@
 #include "pybind11/eigen.h"
 #include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
-#ifndef __clang__
-// N.B. Without this, GCC 7.4.0 on Ubuntu complains about
-// `AutoDiffScalar(const AutoDiffScalar& other)` having uninitialized values.
-// TODO(eric.cousineau):  #11566 Figure out why?
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#pragma GCC diagnostic pop
-#else
-#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#endif  // __clang__
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -22,6 +13,9 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
+#include "drake/geometry/render/render_engine.h"
+#include "drake/geometry/render/render_engine_vtk_factory.h"
+#include "drake/geometry/render/render_label.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
 
@@ -53,18 +47,90 @@ void BindIdentifier(py::module m, const std::string& name, const char* id_doc) {
       .def_static("get_new_id", &Class::get_new_id, cls_doc.get_new_id.doc);
 }
 
+void def_geometry_render(py::module m) {
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake;
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::geometry::render;
+  m.doc() = "Local bindings for `drake::geometry::render`";
+  constexpr auto& doc = pydrake_doc.drake.geometry.render;
+
+  {
+    using Class = CameraProperties;
+    py::class_<Class>(m, "CameraProperties", doc.CameraProperties.doc)
+        .def(py::init<int, int, double, std::string>(), py::arg("width"),
+            py::arg("height"), py::arg("fov_y"), py::arg("renderer_name"),
+            doc.CameraProperties.ctor.doc)
+        .def_readwrite("width", &Class::width, doc.CameraProperties.width.doc)
+        .def_readwrite(
+            "height", &Class::height, doc.CameraProperties.height.doc)
+        .def_readwrite("fov_y", &Class::fov_y, doc.CameraProperties.fov_y.doc)
+        .def_readwrite("renderer_name", &Class::renderer_name,
+            doc.CameraProperties.renderer_name.doc);
+  }
+
+  {
+    using Class = DepthCameraProperties;
+    py::class_<Class, CameraProperties>(
+        m, "DepthCameraProperties", doc.DepthCameraProperties.doc)
+        .def(py::init<int, int, double, std::string, double, double>(),
+            py::arg("width"), py::arg("height"), py::arg("fov_y"),
+            py::arg("renderer_name"), py::arg("z_near"), py::arg("z_far"),
+            doc.DepthCameraProperties.ctor.doc)
+        .def_readwrite(
+            "z_near", &Class::z_near, doc.DepthCameraProperties.z_near.doc)
+        .def_readwrite(
+            "z_far", &Class::z_far, doc.DepthCameraProperties.z_far.doc);
+  }
+
+  {
+    // TODO(SeanCurtis-TRI): Expose the full public API after the RenderIndex
+    //  and GeometryIndex classes go away (everything will become GeometryId
+    //  centric).
+    using Class = RenderEngine;
+    py::class_<Class>(m, "RenderEngine");
+  }
+
+  py::class_<RenderEngineVtkParams>(
+      m, "RenderEngineVtkParams", doc.RenderEngineVtkParams.doc)
+      .def(py::init<>())
+      .def_readwrite("default_label", &RenderEngineVtkParams::default_label,
+          doc.RenderEngineVtkParams.default_label.doc)
+      .def_readwrite("default_diffuse", &RenderEngineVtkParams::default_diffuse,
+          doc.RenderEngineVtkParams.default_diffuse.doc);
+
+  m.def("MakeRenderEngineVtk", &MakeRenderEngineVtk, py::arg("params"),
+      doc.MakeRenderEngineVtk.doc);
+
+  {
+    py::class_<RenderLabel> render_label(m, "RenderLabel", doc.RenderLabel.doc);
+    render_label
+        .def(py::init<int>(), py::arg("value"), doc.RenderLabel.ctor.doc_1args)
+        .def("is_reserved", &RenderLabel::is_reserved)
+        // EQ(==).
+        .def(py::self == py::self)
+        .def(py::self == int{})
+        .def(int{} == py::self)
+        // NE(!=).
+        .def(py::self != py::self)
+        .def(py::self != int{})
+        .def(int{} != py::self);
+    render_label.attr("kEmpty") = RenderLabel::kEmpty;
+    render_label.attr("kDoNotRender") = RenderLabel::kDoNotRender;
+    render_label.attr("kDontCare") = RenderLabel::kDontCare;
+    render_label.attr("kUnspecified") = RenderLabel::kUnspecified;
+    render_label.attr("kMaxUnreserved") = RenderLabel::kMaxUnreserved;
+  }
+}
+
 template <typename T>
-void DoDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module m, T) {
   py::tuple param = GetPyParam<T>();
   constexpr auto& doc = pydrake_doc.drake.geometry;
+
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
   py::module::import("pydrake.systems.framework");
-
-  // TODO(eric.cousineau): #8116 Simplify this.
-  py::return_value_policy rvp_for_type =
-      (std::is_same<T, double>::value ? py::return_value_policy::automatic
-                                      : py::return_value_policy::copy);
 
   //  SceneGraphInspector
   {
@@ -95,7 +161,12 @@ void DoDefinitions(py::module m, T) {
         .def("RegisterSource",
             py::overload_cast<const std::string&>(  // BR
                 &SceneGraph<T>::RegisterSource),
-            py::arg("name") = "", doc.SceneGraph.RegisterSource.doc);
+            py::arg("name") = "", doc.SceneGraph.RegisterSource.doc)
+        .def("AddRenderer", &SceneGraph<T>::AddRenderer,
+            py::arg("renderer_name"), py::arg("renderer"),
+            doc.SceneGraph.AddRenderer.doc)
+        .def_static("world_frame_id", &SceneGraph<T>::world_frame_id,
+            doc.SceneGraph.world_frame_id.doc);
   }
 
   //  FramePoseVector
@@ -146,29 +217,69 @@ void DoDefinitions(py::module m, T) {
         .def("ComputeSignedDistanceToPoint",
             &QueryObject<T>::ComputeSignedDistanceToPoint, py::arg("p_WQ"),
             py::arg("threshold") = std::numeric_limits<double>::infinity(),
-            doc.QueryObject.ComputeSignedDistanceToPoint.doc);
+            doc.QueryObject.ComputeSignedDistanceToPoint.doc)
+        .def("FindCollisionCandidates",
+            &QueryObject<T>::FindCollisionCandidates,
+            doc.QueryObject.FindCollisionCandidates.doc)
+        .def("RenderColorImage",
+            [](const Class* self, const render::CameraProperties& camera,
+                FrameId parent_frame, const math::RigidTransformd& X_PC,
+                bool show_window) {
+              systems::sensors::ImageRgba8U img(camera.width, camera.height);
+              self->RenderColorImage(
+                  camera, parent_frame, X_PC, show_window, &img);
+              return img;
+            },
+            py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
+            py::arg("show_window") = false,
+            doc.QueryObject.RenderColorImage.doc)
+        .def("RenderDepthImage",
+            [](const Class* self, const render::DepthCameraProperties& camera,
+                FrameId parent_frame, const math::RigidTransformd& X_PC) {
+              systems::sensors::ImageDepth32F img(camera.width, camera.height);
+              self->RenderDepthImage(camera, parent_frame, X_PC, &img);
+              return img;
+            },
+            py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
+            doc.QueryObject.RenderDepthImage.doc)
+        .def("RenderLabelImage",
+            [](const Class* self, const render::CameraProperties& camera,
+                FrameId parent_frame, const math::RigidTransformd& X_PC,
+                bool show_window = false) {
+              systems::sensors::ImageLabel16I img(camera.width, camera.height);
+              self->RenderLabelImage(
+                  camera, parent_frame, X_PC, show_window, &img);
+              return img;
+            },
+            py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
+            py::arg("show_window") = false,
+            doc.QueryObject.RenderLabelImage.doc);
+
     AddValueInstantiation<QueryObject<T>>(m);
   }
 
   // SignedDistancePair
   {
     using Class = SignedDistancePair<T>;
-    auto cls =
-        DefineTemplateClassWithDefault<Class>(m, "SignedDistancePair", param);
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "SignedDistancePair", param, doc.SignedDistancePair.doc);
     cls  // BR
         .def(py::init<>(), doc.SignedDistancePair.ctor.doc_7args)
         .def_readwrite("id_A", &SignedDistancePair<T>::id_A,
             doc.SignedDistancePair.id_A.doc)
         .def_readwrite("id_B", &SignedDistancePair<T>::id_B,
             doc.SignedDistancePair.id_B.doc)
-        .def_readwrite("p_ACa", &SignedDistancePair<T>::p_ACa, rvp_for_type,
+        .def_readwrite("p_ACa", &SignedDistancePair<T>::p_ACa,
+            return_value_policy_for_scalar_type<T>(),
             doc.SignedDistancePair.p_ACa.doc)
-        .def_readwrite("p_BCb", &SignedDistancePair<T>::p_BCb, rvp_for_type,
+        .def_readwrite("p_BCb", &SignedDistancePair<T>::p_BCb,
+            return_value_policy_for_scalar_type<T>(),
             doc.SignedDistancePair.p_BCb.doc)
         .def_readwrite("distance", &SignedDistancePair<T>::distance,
             doc.SignedDistancePair.distance.doc)
         .def_readwrite("nhat_BA_W", &SignedDistancePair<T>::nhat_BA_W,
-            rvp_for_type, doc.SignedDistancePair.nhat_BA_W.doc)
+            return_value_policy_for_scalar_type<T>(),
+            doc.SignedDistancePair.nhat_BA_W.doc)
         .def_readwrite("is_nhat_BA_W_unique",
             &SignedDistancePair<T>::is_nhat_BA_W_unique,
             doc.SignedDistancePair.is_nhat_BA_W_unique.doc);
@@ -178,24 +289,26 @@ void DoDefinitions(py::module m, T) {
   {
     using Class = SignedDistanceToPoint<T>;
     auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "SignedDistanceToPoint", param);
+        m, "SignedDistanceToPoint", param, doc.SignedDistanceToPoint.doc);
     cls  // BR
         .def(py::init<>(), doc.SignedDistanceToPoint.ctor.doc)
         .def_readwrite("id_G", &SignedDistanceToPoint<T>::id_G,
             doc.SignedDistanceToPoint.id_G.doc)
-        .def_readwrite("p_GN", &SignedDistanceToPoint<T>::p_GN, rvp_for_type,
+        .def_readwrite("p_GN", &SignedDistanceToPoint<T>::p_GN,
+            return_value_policy_for_scalar_type<T>(),
             doc.SignedDistanceToPoint.p_GN.doc)
         .def_readwrite("distance", &SignedDistanceToPoint<T>::distance,
             doc.SignedDistanceToPoint.distance.doc)
         .def_readwrite("grad_W", &SignedDistanceToPoint<T>::grad_W,
-            rvp_for_type, doc.SignedDistanceToPoint.grad_W.doc);
+            return_value_policy_for_scalar_type<T>(),
+            doc.SignedDistanceToPoint.grad_W.doc);
   }
 
   // PenetrationAsPointPair
   {
     using Class = PenetrationAsPointPair<T>;
     auto cls = DefineTemplateClassWithDefault<Class>(
-        m, "PenetrationAsPointPair", param);
+        m, "PenetrationAsPointPair", param, doc.PenetrationAsPointPair.doc);
     cls  // BR
         .def(py::init<>(), doc.PenetrationAsPointPair.ctor.doc)
         .def_readwrite("id_A", &PenetrationAsPointPair<T>::id_A,
@@ -213,40 +326,47 @@ void DoDefinitions(py::module m, T) {
   }
 }
 
-PYBIND11_MODULE(geometry, m) {
+void DoScalarIndependentDefinitions(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
-  constexpr auto& doc = pydrake_doc.drake.geometry;
 
+  constexpr auto& doc = pydrake_doc.drake.geometry;
   BindIdentifier<SourceId>(m, "SourceId", doc.SourceId.doc);
   BindIdentifier<FrameId>(m, "FrameId", doc.FrameId.doc);
   BindIdentifier<GeometryId>(m, "GeometryId", doc.GeometryId.doc);
 
-  type_visit(
-      [m](auto dummy) { DoDefinitions(m, dummy); }, NonSymbolicScalarPack{});
-
-  py::module::import("pydrake.systems.lcm");
+  {
+    constexpr auto& cls_doc = doc.Role;
+    py::enum_<Role>(m, "Role", py::arithmetic(), cls_doc.doc)
+        .value("kUnassigned", Role::kUnassigned, cls_doc.kUnassigned.doc)
+        .value("kProximity", Role::kProximity, cls_doc.kProximity.doc)
+        .value("kIllustration", Role::kIllustration, cls_doc.kIllustration.doc)
+        .value("kPerception", Role::kPerception, cls_doc.kPerception.doc);
+  }
   m.def("ConnectDrakeVisualizer",
       py::overload_cast<systems::DiagramBuilder<double>*,
-          const SceneGraph<double>&, lcm::DrakeLcmInterface*>(
+          const SceneGraph<double>&, lcm::DrakeLcmInterface*, geometry::Role>(
           &ConnectDrakeVisualizer),
       py::arg("builder"), py::arg("scene_graph"), py::arg("lcm") = nullptr,
+      py::arg("role") = geometry::Role::kIllustration,
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 1>(),
-      // TODO(eric.cousineau): Figure out why this is necessary (#9398).
-      py_reference, doc.ConnectDrakeVisualizer.doc_3args);
+      // See #11531 for why `py_reference` is needed.
+      py_reference, doc.ConnectDrakeVisualizer.doc_4args);
   m.def("ConnectDrakeVisualizer",
       py::overload_cast<systems::DiagramBuilder<double>*,
           const SceneGraph<double>&, const systems::OutputPort<double>&,
-          lcm::DrakeLcmInterface*>(&ConnectDrakeVisualizer),
+          lcm::DrakeLcmInterface*, geometry::Role>(&ConnectDrakeVisualizer),
       py::arg("builder"), py::arg("scene_graph"),
       py::arg("pose_bundle_output_port"), py::arg("lcm") = nullptr,
+      py::arg("role") = geometry::Role::kIllustration,
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 1>(),
-      // TODO(eric.cousineau): Figure out why this is necessary (#9398).
-      py_reference, doc.ConnectDrakeVisualizer.doc_4args);
+      // See #11531 for why `py_reference` is needed.
+      py_reference, doc.ConnectDrakeVisualizer.doc_5args);
   m.def("DispatchLoadMessage", &DispatchLoadMessage, py::arg("scene_graph"),
-      py::arg("lcm"), doc.DispatchLoadMessage.doc);
+      py::arg("lcm"), py::arg("role") = geometry::Role::kIllustration,
+      doc.DispatchLoadMessage.doc);
 
   // Shape constructors
   {
@@ -268,6 +388,16 @@ PYBIND11_MODULE(geometry, m) {
         .def(py::init<std::string, double>(), py::arg("absolute_filename"),
             py::arg("scale") = 1.0, doc.Convex.ctor.doc);
   }
+
+  // Rendering
+  def_geometry_render(m.def_submodule("render"));
+}
+
+PYBIND11_MODULE(geometry, m) {
+  py::module::import("pydrake.systems.lcm");
+  DoScalarIndependentDefinitions(m);
+  type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
+      NonSymbolicScalarPack{});
 }
 
 }  // namespace

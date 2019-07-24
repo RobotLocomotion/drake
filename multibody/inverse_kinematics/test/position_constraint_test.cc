@@ -23,8 +23,10 @@ TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
   const Eigen::Vector3d p_BQ(0.1, 0.2, 0.3);
   const Eigen::Vector3d p_AQ_lower(-0.2, -0.3, -0.4);
   const Eigen::Vector3d p_AQ_upper(0.2, 0.3, 0.4);
-  const Frame<double>& frameB = plant_->GetFrameByName("iiwa_link_7");
-  const Frame<double>& frameA = plant_->GetFrameByName("iiwa_link_3");
+  const auto frameA_index = plant_->GetFrameByName("iiwa_link_7").index();
+  const auto frameB_index = plant_->GetFrameByName("iiwa_link_3").index();
+  const Frame<double>& frameA = plant_->get_frame(frameA_index);
+  const Frame<double>& frameB = plant_->get_frame(frameB_index);
   PositionConstraint constraint(plant_, frameA, p_AQ_lower, p_AQ_upper, frameB,
                                 p_BQ, plant_context_);
 
@@ -69,6 +71,24 @@ TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
       plant_autodiff_->GetFrameByName(frameA.name()),
       plant_autodiff_->GetFrameByName(frameB.name()), p_BQ);
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, 1E-12);
+
+  // Checks if the constraint constructed from MBP<ADS> gives the same result
+  // as from MBP<double>.
+  PositionConstraint constraint_from_autodiff(
+      plant_autodiff_.get(), plant_autodiff_->get_frame(frameA_index),
+      p_AQ_lower, p_AQ_upper, plant_autodiff_->get_frame(frameB_index), p_BQ,
+      plant_context_autodiff_.get());
+  // Set dq to arbitrary value.
+  Eigen::Matrix<double, 7, 2> dq;
+  for (int i = 0; i < 7; ++i) {
+    dq(i, 0) = i * 2 + 1;
+    dq(i, 1) = std::sin(i + 0.2);
+  }
+  /* tolerance for checking numerical gradient vs analytical gradient. The
+   * numerical gradient is only accurate up to 2E-7 */
+  const double gradient_tol = 2E-7;
+  TestKinematicConstraintEval(constraint, constraint_from_autodiff, q, dq,
+                              gradient_tol);
 }
 
 TEST_F(TwoFreeBodiesConstraintTest, PositionConstraint) {

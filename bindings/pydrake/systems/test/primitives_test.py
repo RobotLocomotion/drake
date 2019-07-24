@@ -1,7 +1,10 @@
+import gc
 import unittest
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common import RandomDistribution
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.symbolic import Expression, Variable
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
@@ -36,6 +39,7 @@ from pydrake.systems.primitives import (
     Multiplexer, Multiplexer_,
     ObservabilityMatrix,
     PassThrough, PassThrough_,
+    RandomSource,
     Saturation, Saturation_,
     SignalLogger, SignalLogger_,
     Sine, Sine_,
@@ -130,6 +134,21 @@ class TestGeneral(unittest.TestCase):
         self.assertTrue(t.shape[0] == np.floor(kTime / kPeriod) + 1.)
 
         logger_per_step.reset()
+
+        # Verify that t and x retain their values after systems are deleted.
+        t_copy = t.copy()
+        x_copy = x.copy()
+        del builder
+        del integrator
+        del logger_periodic
+        del logger_per_step
+        del logger_per_step_2
+        del diagram
+        del simulator
+        del source
+        gc.collect()
+        self.assertTrue((t == t_copy).all())
+        self.assertTrue((x == x_copy).all())
 
     def test_linear_affine_system(self):
         # Just make sure linear system is spelled correctly.
@@ -319,7 +338,7 @@ class TestGeneral(unittest.TestCase):
                             input_vec[i]))
 
         # Test demultiplexer with vector outputs.
-        demux = Demultiplexer(size=4, output_ports_sizes=2)
+        demux = Demultiplexer(size=4, output_ports_size=2)
         context = demux.CreateDefaultContext()
         self.assertEqual(demux.num_input_ports(), 1)
         self.assertEqual(demux.num_output_ports(), 2)
@@ -332,6 +351,28 @@ class TestGeneral(unittest.TestCase):
             self.assertTrue(
                 np.allclose(output.get_vector_data(i).get_value(),
                             input_vec[2*i:2*i+2]))
+
+        # Test demultiplexer with different output port sizes.
+        output_ports_sizes = np.array([1, 2, 1])
+        num_output_ports = output_ports_sizes.size
+        input_vec = np.array([1., 2., 3., 4.])
+        demux = Demultiplexer(output_ports_sizes=output_ports_sizes)
+        context = demux.CreateDefaultContext()
+        self.assertEqual(demux.num_input_ports(), 1)
+        self.assertEqual(demux.num_output_ports(), num_output_ports)
+
+        context.FixInputPort(0, BasicVector(input_vec))
+        output = demux.AllocateOutput()
+        demux.CalcOutput(context, output)
+
+        output_port_start = 0
+        for i in range(num_output_ports):
+            output_port_size = output.get_vector_data(i).size()
+            self.assertTrue(
+                np.allclose(output.get_vector_data(i).get_value(),
+                            input_vec[output_port_start:
+                                      output_port_start+output_port_size]))
+            output_port_start += output_port_size
 
     def test_multiplexer(self):
         my_vector = MyVector2(data=[1., 2.])
@@ -362,23 +403,23 @@ class TestGeneral(unittest.TestCase):
                 value = output.get_vector_data(0)
                 self.assertTrue(isinstance(value, MyVector2))
 
-    def test_random_sources(self):
-        uniform_source = UniformRandomSource(num_outputs=2,
-                                             sampling_interval_sec=0.01)
-        self.assertEqual(uniform_source.get_output_port(0).size(), 2)
-
-        gaussian_source = GaussianRandomSource(num_outputs=3,
-                                               sampling_interval_sec=0.01)
-        self.assertEqual(gaussian_source.get_output_port(0).size(), 3)
-
-        exponential_source = ExponentialRandomSource(num_outputs=4,
-                                                     sampling_interval_sec=0.1)
-        self.assertEqual(exponential_source.get_output_port(0).size(), 4)
+    def test_random_source(self):
+        source = RandomSource(distribution=RandomDistribution.kUniform,
+                              num_outputs=2, sampling_interval_sec=0.01)
+        self.assertEqual(source.get_output_port(0).size(), 2)
 
         builder = DiagramBuilder()
         # Note: There are no random inputs to add to the empty diagram, but it
         # confirms the API works.
         AddRandomInputs(sampling_interval_sec=0.01, builder=builder)
+
+    def test_random_sources_deprecated(self):
+        with catch_drake_warnings(expected_count=1):
+            UniformRandomSource(num_outputs=2, sampling_interval_sec=0.01)
+        with catch_drake_warnings(expected_count=1):
+            GaussianRandomSource(num_outputs=3, sampling_interval_sec=0.01)
+        with catch_drake_warnings(expected_count=1):
+            ExponentialRandomSource(num_outputs=4, sampling_interval_sec=0.1)
 
     def test_ctor_api(self):
         """Tests construction of systems for systems whose executions semantics

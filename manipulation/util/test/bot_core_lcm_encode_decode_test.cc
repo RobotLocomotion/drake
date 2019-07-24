@@ -4,6 +4,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/random_rotation.h"
+#include "drake/math/rigid_transform.h"
 
 using Eigen::Sequential;
 using Eigen::Vector3d;
@@ -36,16 +37,14 @@ GTEST_TEST(TestLcmUtil, testQuaternion) {
 GTEST_TEST(TestLcmUtil, testPose) {
   std::default_random_engine generator;
   generator.seed(0);
-  Eigen::Isometry3d pose;
-  pose.linear() = math::UniformlyRandomRotationMatrix(&generator).matrix();
-  pose.translation().setLinSpaced(0, drake::kSpaceDimension);
-  pose.makeAffine();
-  const Eigen::Isometry3d& const_pose = pose;
+  const math::RigidTransform<double> pose(
+    math::UniformlyRandomRotationMatrix(&generator),
+    Vector3d(0, 1, 2));
   bot_core::position_3d_t msg;
-  EncodePose(const_pose, msg);
-  Eigen::Isometry3d pose_back = DecodePose(msg);
-  EXPECT_TRUE(CompareMatrices(pose.matrix(), pose_back.matrix(), 1e-12,
-                              MatrixCompareType::absolute));
+  EncodePose(pose.GetAsIsometry3(), msg);
+  const math::RigidTransform<double> pose_back(DecodePose(msg));
+  EXPECT_TRUE(CompareMatrices(pose.GetAsMatrix34(), pose_back.GetAsMatrix34(),
+                              1E-12, MatrixCompareType::absolute));
 }
 
 GTEST_TEST(TestLcmUtil, testTwist) {

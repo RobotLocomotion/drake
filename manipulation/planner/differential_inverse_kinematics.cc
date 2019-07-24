@@ -12,7 +12,7 @@ namespace drake {
 namespace manipulation {
 namespace planner {
 
-namespace detail {
+namespace internal {
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Eigen::Ref<const VectorX<double>>& q_current,
     const Eigen::Ref<const VectorX<double>>& v_current,
@@ -44,7 +44,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
       q_current, v_current, V_WE_E_scaled.head(num_cart_constraints),
       J_WE_E_scaled.topRows(num_cart_constraints), parameters);
 }
-}  // namespace detail
+}  // namespace internal
 
 std::ostream& operator<<(std::ostream& os,
                          const DifferentialInverseKinematicsStatus value) {
@@ -240,15 +240,15 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Vector6<double>& V_WE_desired,
     const multibody::Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters) {
-  const Isometry3<double> X_WE =
+  const math::RigidTransform<double> X_WE =
       plant.CalcRelativeTransform(context, plant.world_frame(), frame_E);
   MatrixX<double> J_WE(6, plant.num_velocities());
   plant.CalcFrameGeometricJacobianExpressedInWorld(
       context, frame_E, Vector3<double>::Zero(), &J_WE);
 
-  return detail::DoDifferentialInverseKinematics(
+  return internal::DoDifferentialInverseKinematics(
       plant.GetPositions(context), plant.GetVelocities(context),
-      X_WE, J_WE, V_WE_desired, parameters);
+      X_WE.GetAsIsometry3(), J_WE, V_WE_desired, parameters);
 }
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(

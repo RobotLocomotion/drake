@@ -66,8 +66,8 @@ class GenericTrivialCost2 {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
-  void eval(detail::VecIn<ScalarType> const& x,
-            detail::VecOut<ScalarType>* y) const {
+  void eval(internal::VecIn<ScalarType> const& x,
+            internal::VecOut<ScalarType>* y) const {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
     DRAKE_ASSERT(static_cast<size_t>(y->rows()) == numOutputs());
     (*y)(0) = x(0) * x(0) - x(1) * x(1) + 2;

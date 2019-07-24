@@ -178,7 +178,7 @@ TEST_F(SymbolicExpressionMatrixTest, CheckStructuralEquality) {
 bool CheckMatrixOperatorEq(const MatrixX<Expression>& m1,
                            const MatrixX<Expression>& m2) {
   const Formula f1{m1 == m2};
-  const Formula f2{(m1.array() == m2.array()).redux(detail::logic_and)};
+  const Formula f2{(m1.array() == m2.array()).redux(internal::logic_and)};
   return f1.EqualTo(f2);
 }
 
@@ -188,7 +188,7 @@ bool CheckMatrixOperatorEq(const MatrixX<Expression>& m1,
 bool CheckMatrixOperatorNeq(const MatrixX<Expression>& m1,
                             const MatrixX<Expression>& m2) {
   const Formula f1{m1 != m2};
-  const Formula f2{(m1.array() != m2.array()).redux(detail::logic_or)};
+  const Formula f2{(m1.array() != m2.array()).redux(internal::logic_or)};
   return f1.EqualTo(f2);
 }
 
@@ -198,7 +198,7 @@ bool CheckMatrixOperatorNeq(const MatrixX<Expression>& m1,
 bool CheckMatrixOperatorLt(const MatrixX<Expression>& m1,
                            const MatrixX<Expression>& m2) {
   const Formula f1{m1 < m2};
-  const Formula f2{(m1.array() < m2.array()).redux(detail::logic_and)};
+  const Formula f2{(m1.array() < m2.array()).redux(internal::logic_and)};
   return f1.EqualTo(f2);
 }
 
@@ -208,7 +208,7 @@ bool CheckMatrixOperatorLt(const MatrixX<Expression>& m1,
 bool CheckMatrixOperatorLte(const MatrixX<Expression>& m1,
                             const MatrixX<Expression>& m2) {
   const Formula f1{m1 <= m2};
-  const Formula f2{(m1.array() <= m2.array()).redux(detail::logic_and)};
+  const Formula f2{(m1.array() <= m2.array()).redux(internal::logic_and)};
   return f1.EqualTo(f2);
 }
 
@@ -218,7 +218,7 @@ bool CheckMatrixOperatorLte(const MatrixX<Expression>& m1,
 bool CheckMatrixOperatorGt(const MatrixX<Expression>& m1,
                            const MatrixX<Expression>& m2) {
   const Formula f1{m1 > m2};
-  const Formula f2{(m1.array() > m2.array()).redux(detail::logic_and)};
+  const Formula f2{(m1.array() > m2.array()).redux(internal::logic_and)};
   return f1.EqualTo(f2);
 }
 
@@ -228,7 +228,7 @@ bool CheckMatrixOperatorGt(const MatrixX<Expression>& m1,
 bool CheckMatrixOperatorGte(const MatrixX<Expression>& m1,
                             const MatrixX<Expression>& m2) {
   const Formula f1{m1 >= m2};
-  const Formula f2{(m1.array() >= m2.array()).redux(detail::logic_and)};
+  const Formula f2{(m1.array() >= m2.array()).redux(internal::logic_and)};
   return f1.EqualTo(f2);
 }
 

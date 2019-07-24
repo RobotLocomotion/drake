@@ -36,10 +36,13 @@ void UpdateContextConfiguration(drake::systems::Context<double>* context,
                                     math::autoDiffToValueMatrix(q));
 }
 
-const MultibodyPlant<double>& RefFromPtrOrThrow(
-    const MultibodyPlant<double>* const plant) {
-  if (plant == nullptr) throw std::invalid_argument("plant is nullptr.");
-  return *plant;
+void UpdateContextConfiguration(systems::Context<AutoDiffXd>* context,
+                                const MultibodyPlant<AutoDiffXd>& plant,
+                                const Eigen::Ref<const AutoDiffVecXd>& q) {
+  DRAKE_ASSERT(context);
+  if (!AreAutoDiffVecXdEqual(q, plant.GetPositions(*context))) {
+    plant.SetPositions(context, q);
+  }
 }
 
 }  // namespace internal

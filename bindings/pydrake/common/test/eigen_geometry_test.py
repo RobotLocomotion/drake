@@ -17,15 +17,14 @@ def normalize(x):
 
 
 class TestEigenGeometry(unittest.TestCase):
-    def check_types(self, check_func):
-        check_func(float)
-        check_func(AutoDiffXd)
-        check_func(Expression)
+    @numpy_compare.check_all_types
+    def test_argument_deduction(self, T):
+        # Brief check for argument deduction (#11667).
+        q = mut.Quaternion_(w=T(1), x=T(0), y=T(0), z=T(0))
+        self.assertIsInstance(q, mut.Quaternion_[T])
 
-    def test_quaternion(self):
-        self.check_types(self.check_quaternion)
-
-    def check_quaternion(self, T):
+    @numpy_compare.check_all_types
+    def test_quaternion(self, T):
         # Simple API.
         Quaternion = mut.Quaternion_[T]
         cast = np.vectorize(T)
@@ -108,10 +107,8 @@ class TestEigenGeometry(unittest.TestCase):
             self.assertTrue(isinstance(value, mut.Quaternion))
             test_util.check_quaternion(value)
 
-    def test_isometry3(self):
-        self.check_types(self.check_isometry3)
-
-    def check_isometry3(self, T):
+    @numpy_compare.check_all_types
+    def test_isometry3(self, T):
         Isometry3 = mut.Isometry3_[T]
         # - Default constructor
         transform = Isometry3()
@@ -181,10 +178,8 @@ class TestEigenGeometry(unittest.TestCase):
         self.assertEqual(value.shape, (3,))
         test_util.check_translation(value)
 
-    def test_angle_axis(self):
-        self.check_types(self.check_angle_axis)
-
-    def check_angle_axis(self, T):
+    @numpy_compare.check_all_types
+    def test_angle_axis(self, T):
         AngleAxis = mut.AngleAxis_[T]
         value_identity = AngleAxis.Identity()
         self.assertEqual(numpy_compare.resolve_type(value_identity.angle()), T)

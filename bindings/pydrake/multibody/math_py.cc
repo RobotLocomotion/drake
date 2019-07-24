@@ -1,19 +1,8 @@
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
 
-#ifndef __clang__
-// N.B. Without this, GCC 7.4.0 on Ubuntu complains about
-// `AutoDiffScalar(const AutoDiffScalar& other)` having uninitialized values.
-// TODO(eric.cousineau):  #11566 Figure out why?
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#pragma GCC diagnostic pop
-#else
-#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#endif  // __clang__
-
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -49,7 +38,7 @@ void BindSpatialVectorMixin(PyClass* pcls) {
 
 namespace {
 template <typename T>
-void DoDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module m, T) {
   py::tuple param = GetPyParam<T>();
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
@@ -106,7 +95,8 @@ PYBIND11_MODULE(math, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   m.doc() = "Bindings for multibody math.";
-  type_visit([m](auto dummy) { DoDefinitions(m, dummy); }, CommonScalarPack{});
+  type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
+      CommonScalarPack{});
 }
 
 }  // namespace pydrake

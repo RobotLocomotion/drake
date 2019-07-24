@@ -3,8 +3,8 @@
 #include <memory>
 #include <utility>
 
-#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -24,7 +24,7 @@ class MyVector : public BasicVector<T> {
 
   /// Constructs from a variable-length vector whose length must be N.
   explicit MyVector(const VectorX<T>& data) : BasicVector<T>(data) {
-    DRAKE_DEMAND(data.size() == N);
+    DRAKE_THROW_UNLESS(data.size() == N);
   }
 
   /// Constructs from a fixed-size Eigen VectorN.

@@ -85,8 +85,10 @@ dreal_repository = repository_rule(
         # in the pkg_config_repository rule.
         "pkg_config_paths": attr.string_list(
             default = [
+                # TODO(soonho-tri): Remove the following two lines.
                 "/usr/local/opt/clp/lib/pkgconfig",
                 "/usr/local/opt/coinutils/lib/pkgconfig",
+                "/usr/local/opt/clp@1.17/lib/pkgconfig",
                 "/usr/local/opt/dreal/lib/pkgconfig",
                 "/usr/local/opt/ibex@{}/share/pkgconfig".format(IBEX_VERSION),
                 "/usr/local/opt/nlopt/lib/pkgconfig",
@@ -108,13 +110,13 @@ dreal_repository = repository_rule(
         "filenames": attr.string_list(
             default = [
                 "d/dreal/dreal_{}_amd64.deb".format(DREAL_VERSION),
-                "libi/libibex-dev/libibex-dev_{}.20181130120337.git65fc3b6c28ea49cb2da7e9b693add6ba7c5fc4ae~16.04_amd64.deb".format(IBEX_VERSION),  # noqa
+                "libi/libibex-dev/libibex-dev_{}.20190612163212.gitfd0888707728e183c860793f225fd4e5e2ce9d91~16.04_amd64.deb".format(IBEX_VERSION),  # noqa
             ],
         ),
         "sha256s": attr.string_list(
             default = [
-                "7e751c5fb0039361d5cc19f730cbf234e07a75fd8e0dc320e0f13f55e37c8075",  # noqa
-                "865db247f0a4fd97d41da07abf917faea444c91647178c17fc4fdb9a9b15d3b2",  # noqa
+                "000b99ad5a86c46eda98d12622688555350d94b24a16941bb0e45c8d2c613952",  # noqa
+                "b996e587c9731b90be3d0f31f8e0b5db364a6b7847a8e2207361d753c985cfed",  # noqa
             ],
         ),
         "build_file": attr.label(

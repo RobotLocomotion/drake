@@ -59,7 +59,7 @@ struct GenericTrivialFunctor {
   int numOutputs() const { return 3; }
 
   template <typename T>
-  void eval(const detail::VecIn<T>& x, detail::VecOut<T>* y) const {
+  void eval(const internal::VecIn<T>& x, internal::VecOut<T>* y) const {
     Eigen::Vector3d c(1, 2, 3);
     *y = c * x.transpose() * c;
   }
@@ -133,7 +133,7 @@ class FunctionWrapper {
   int numOutputs() const { return num_outputs_; }
 
   template <typename T>
-  void eval(const detail::VecIn<T>& x, detail::VecOut<T>* y) const {
+  void eval(const internal::VecIn<T>& x, internal::VecOut<T>* y) const {
     callable_(x, y);
   }
 
@@ -164,6 +164,74 @@ GTEST_TEST(EvaluatorBaseTest, FunctionEvaluatorTest) {
     *y1 = c * x1.transpose() * c;
   };
   VerifyFunctionEvaluator(MakeFunctionWrapped(callable, 3, 3), x);
+}
+
+class SimpleEvaluator : public EvaluatorBase {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleEvaluator)
+  SimpleEvaluator() : EvaluatorBase(2, 3) {
+    c_.resize(2, 3);
+    c_ << 1, 2, 3, 4, 5, 6;
+  }
+
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const override {
+    DoEvalGeneric(x, y);
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const override {
+    DoEvalGeneric(x, y);
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override {
+    DoEvalGeneric(x, y);
+  }
+
+ private:
+  template <typename DerivedX, typename ScalarY>
+  void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
+                     VectorX<ScalarY>* y) const {
+    *y = c_ * x.template cast<ScalarY>();
+  }
+
+  Eigen::MatrixXd c_;
+};
+
+GTEST_TEST(EvaluatorBaseTest, SetGradientSparsityPattern) {
+  const VectorXd lb = VectorXd::Constant(2, -1);
+  const VectorXd ub = VectorXd::Constant(2, 1);
+  SimpleEvaluator evaluator;
+  // The gradient sparsity pattern should be unset at evaluator construction.
+  EXPECT_FALSE(evaluator.gradient_sparsity_pattern().has_value());
+  // Now set the gradient sparsity pattern.
+  evaluator.SetGradientSparsityPattern(
+      {{0, 0}, {0, 1}, {0, 2}, {1, 0}, {1, 1}, {1, 2}});
+  const auto& gradient_sparsity_pattern = evaluator.gradient_sparsity_pattern();
+  int gradient_entry_count = 0;
+  for (int i = 0; i < 2; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      EXPECT_EQ(gradient_sparsity_pattern.value()[gradient_entry_count].first,
+                i);
+      EXPECT_EQ(gradient_sparsity_pattern.value()[gradient_entry_count].second,
+                j);
+      ++gradient_entry_count;
+    }
+  }
+
+  if (kDrakeAssertIsArmed) {
+    // row index out of range.
+    EXPECT_THROW(evaluator.SetGradientSparsityPattern({{-1, 0}}),
+                 std::invalid_argument);
+    // column index out of range.
+    EXPECT_THROW(evaluator.SetGradientSparsityPattern({{0, -1}}),
+                 std::invalid_argument);
+    // repeated entries.
+    EXPECT_THROW(evaluator.SetGradientSparsityPattern({{0, 0}, {0, 0}}),
+                 std::invalid_argument);
+  }
 }
 
 }  // anonymous namespace

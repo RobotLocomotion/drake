@@ -5,7 +5,8 @@ from pydrake.solvers.gurobi import GurobiSolver
 from pydrake.solvers.snopt import SnoptSolver
 from pydrake.solvers.mathematicalprogram import (
     SolverOptions,
-    SolverType
+    SolverType,
+    SolverId
     )
 
 from functools import partial
@@ -97,11 +98,10 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(result.get_optimal_cost(), 3.0)
         self.assertTrue(result.get_solver_id().name())
         self.assertTrue(np.allclose(result.GetSolution(), x_expected))
-        self.assertEqual(result.GetSolution(qp.x[0]), 1.0)
+        self.assertAlmostEqual(result.GetSolution(qp.x[0]), 1.0)
         self.assertTrue(np.allclose(result.GetSolution(qp.x), x_expected))
-
-        self.assertTrue(result.GetSolution(
-            sym.Expression(qp.x[0])).EqualTo(1.))
+        self.assertTrue(result.GetSolution(sym.Expression(qp.x[0])).EqualTo(
+            result.GetSolution(qp.x[0])))
         m = np.array([sym.Expression(qp.x[0]), sym.Expression(qp.x[1])])
         self.assertTrue(result.GetSolution(m)[1, 0].EqualTo(
             result.GetSolution(qp.x[1])))
@@ -363,6 +363,7 @@ class TestMathematicalProgram(unittest.TestCase):
         # c(0)*x^2 + 2*c(1)*x*y + c(2)*y^2 is SOS,
         # d(0)*x^2 is SOS.
         # d(1)*x^2 is SOS.
+        # d(0) + d(1) = 1
         prog = mp.MathematicalProgram()
         x = prog.NewIndeterminates(1, "x")
         poly = prog.NewFreePolynomial(sym.Variables(x), 1)
@@ -374,6 +375,7 @@ class TestMathematicalProgram(unittest.TestCase):
         d = prog.NewContinuousVariables(2, "d")
         prog.AddSosConstraint(d[0]*x.dot(x))
         prog.AddSosConstraint(d[1]*x.dot(x), [sym.Monomial(x[0])])
+        prog.AddLinearEqualityConstraint(d[0] + d[1] == 1)
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
 
@@ -561,16 +563,27 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = mp.MathematicalProgram()
 
         prog.SetSolverOption(SolverType.kGurobi, "double_key", 1.0)
-        prog.SetSolverOption(SolverType.kGurobi, "int_key", 2)
+        prog.SetSolverOption(GurobiSolver().solver_id(), "int_key", 2)
         prog.SetSolverOption(SolverType.kGurobi, "string_key", "3")
 
         options = prog.GetSolverOptions(SolverType.kGurobi)
+        self.assertDictEqual(
+            options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
+        options = prog.GetSolverOptions(GurobiSolver().solver_id())
         self.assertDictEqual(
             options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
 
         # For now, just make sure the constructor exists.  Once we bind more
         # accessors, we can test them here.
         options_object = SolverOptions()
+        solver_id = SolverId("dummy")
+        self.assertEqual(solver_id.name(), "dummy")
+        options_object.SetOption(solver_id, "double_key", 1.0)
+        options_object.SetOption(solver_id, "int_key", 2)
+        options_object.SetOption(solver_id, "string_key", "3")
+        options = options_object.GetOptions(solver_id)
+        self.assertDictEqual(
+            options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
 
     def test_infeasible_constraints(self):
         prog = mp.MathematicalProgram()

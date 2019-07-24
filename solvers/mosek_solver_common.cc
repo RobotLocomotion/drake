@@ -26,6 +26,7 @@ bool MosekSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
           ProgramAttribute::kLorentzConeConstraint,
           ProgramAttribute::kRotatedLorentzConeConstraint,
           ProgramAttribute::kPositiveSemidefiniteConstraint,
+          ProgramAttribute::kExponentialConeConstraint,
           ProgramAttribute::kLinearCost, ProgramAttribute::kQuadraticCost,
           ProgramAttribute::kBinaryVariable});
   return AreRequiredAttributesSupported(prog.required_capabilities(),

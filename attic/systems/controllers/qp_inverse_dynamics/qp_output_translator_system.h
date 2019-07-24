@@ -4,6 +4,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/deprecated.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -17,7 +18,8 @@ namespace qp_inverse_dynamics {
  * need to implement DoCalcExtendedOutput() to generate additional custom
  * outputs.
  */
-class QpOutputTranslatorSystem : public systems::LeafSystem<double> {
+class DRAKE_DEPRECATED_QPID QpOutputTranslatorSystem
+    : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QpOutputTranslatorSystem)
 

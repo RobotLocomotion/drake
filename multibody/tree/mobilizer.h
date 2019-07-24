@@ -171,7 +171,7 @@ template<typename T> class BodyNode;
 /// </pre>
 ///
 /// Similarly, for the rotational component: <pre>
-///  dR_FM/dt = Xdot_FM.linear() = [w_FM] * R_FM = [Hw_FM * v] * R_FM
+///  dR_FM/dt = Xdot_FM.rotation() = [w_FM] * R_FM = [Hw_FM * v] * R_FM
 /// </pre>
 /// where `[w_FM]` is the cross product matrix of the across-mobilizer angular
 /// velocity `w_FM`, `R_FM` is the orientation of M in F, and `Hw_FM`

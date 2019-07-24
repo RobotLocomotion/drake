@@ -3,6 +3,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/test_utilities/maliput_types_compare.h"
 #include "drake/automotive/maliput/multilane/builder.h"
 #include "drake/automotive/maliput/multilane/connection.h"
@@ -111,7 +112,8 @@ using ::testing::MatchResultListener;
                                                   double tolerance);
 
 /// Wraps api::HBounds comparison into a MatcherInterface.
-class HBoundsMatcher : public MatcherInterface<const api::HBounds&> {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    HBoundsMatcher : public MatcherInterface<const api::HBounds&> {
  public:
   HBoundsMatcher(const api::HBounds& elevation_bounds, double tolerance)
       : elevation_bounds_(elevation_bounds), tolerance_(tolerance) {}
@@ -136,7 +138,8 @@ Matcher<const api::HBounds&> Matches(const api::HBounds& elevation_bounds,
                                      double tolerance);
 
 /// Wraps an ArcOffset comparison into a MatcherInterface.
-class ArcOffsetMatcher : public MatcherInterface<const ArcOffset&> {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    ArcOffsetMatcher : public MatcherInterface<const ArcOffset&> {
  public:
   ArcOffsetMatcher(const ArcOffset& arc_offset, double linear_tolerance,
                    double angular_tolerance)
@@ -168,7 +171,8 @@ Matcher<const ArcOffset&> Matches(const ArcOffset& arc_offset,
                                   double angular_tolerance);
 
 /// Wraps a LineOffset comparison into a MatcherInterface.
-class LineOffsetMatcher : public MatcherInterface<const LineOffset&> {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    LineOffsetMatcher : public MatcherInterface<const LineOffset&> {
  public:
   LineOffsetMatcher(const LineOffset& line_offset, double tolerance)
       : line_offset_(line_offset), tolerance_(tolerance) {}
@@ -194,7 +198,8 @@ Matcher<const LineOffset&> Matches(const LineOffset& line_offset,
                                    double tolerance);
 
 /// Wraps a LineOffset comparison into a MatcherInterface.
-class LaneLayoutMatcher : public MatcherInterface<const LaneLayout&> {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    LaneLayoutMatcher : public MatcherInterface<const LaneLayout&> {
  public:
   LaneLayoutMatcher(const LaneLayout& lane_layout, double tolerance)
       : lane_layout_(lane_layout), tolerance_(tolerance) {}
@@ -234,7 +239,8 @@ Matcher<const LaneLayout&> Matches(const LaneLayout& lane_layout,
                                    double tolerance);
 
 /// Wraps a StartReference::Spec comparison into a MatcherInterface.
-class StartReferenceSpecMatcher
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    StartReferenceSpecMatcher
     : public MatcherInterface<const StartReference::Spec&> {
  public:
   StartReferenceSpecMatcher(const StartReference::Spec& start_reference,
@@ -268,7 +274,8 @@ Matcher<const StartReference::Spec&> Matches(
     double linear_tolerance, double angular_tolerance);
 
 /// Wraps a EndReference::Spec comparison into a MatcherInterface.
-class EndReferenceSpecMatcher
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    EndReferenceSpecMatcher
     : public MatcherInterface<const EndReference::Spec&> {
  public:
   EndReferenceSpecMatcher(const EndReference::Spec& end_reference,
@@ -296,7 +303,8 @@ class EndReferenceSpecMatcher
 };
 
 /// Wraps a StartLane::Spec comparison into a MatcherInterface.
-class StartLaneSpecMatcher : public MatcherInterface<const StartLane::Spec&> {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    StartLaneSpecMatcher : public MatcherInterface<const StartLane::Spec&> {
  public:
   StartLaneSpecMatcher(const StartLane::Spec& start_lane,
                        double linear_tolerance, double angular_tolerance)
@@ -336,7 +344,8 @@ Matcher<const EndReference::Spec&> Matches(
     double linear_tolerance, double angular_tolerance);
 
 /// Wraps a EndLane::Spec comparison into a MatcherInterface.
-class EndLaneSpecMatcher : public MatcherInterface<const EndLane::Spec&> {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    EndLaneSpecMatcher : public MatcherInterface<const EndLane::Spec&> {
  public:
   EndLaneSpecMatcher(const EndLane::Spec& end_lane, double linear_tolerance,
                      double angular_tolerance)

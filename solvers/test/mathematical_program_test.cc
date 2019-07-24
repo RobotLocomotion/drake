@@ -45,8 +45,8 @@ using Eigen::Vector4d;
 using Eigen::VectorXd;
 
 using drake::Vector1d;
-using drake::solvers::detail::VecIn;
-using drake::solvers::detail::VecOut;
+using drake::solvers::internal::VecIn;
+using drake::solvers::internal::VecOut;
 using drake::symbolic::Expression;
 using drake::symbolic::Formula;
 using drake::symbolic::Variable;
@@ -2814,6 +2814,9 @@ void CheckNewNonnegativePolynomial(
   }
   const symbolic::Polynomial p_expected(m.dot(Q_poly * m));
   EXPECT_TRUE(p.EqualTo(p_expected));
+
+  const auto p2 = prog.NewNonnegativePolynomial(Q, m, type);
+  EXPECT_TRUE(p2.EqualTo(p_expected));
 }
 
 GTEST_TEST(TestMathematicalProgram, NewNonnegativePolynomial) {

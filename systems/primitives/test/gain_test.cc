@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
@@ -86,11 +87,13 @@ GTEST_TEST(GainTest, DirectFeedthrough) {
   EXPECT_FALSE(zero_gain->HasAnyDirectFeedthrough());
 }
 
-GTEST_TEST(GainDeathTest, GainAccessorTest) {
+GTEST_TEST(GainTest, GainAccessorTest) {
   const Vector4<double> gain_values(1.0, 2.0, 3.0, 4.0);
   const auto gain_system = make_unique<Gain<double>>(gain_values);
-  // Verifies the gain accessors are OK.
-  EXPECT_THROW(gain_system->get_gain(), std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      gain_system->get_gain(),
+      std::runtime_error,
+      ".*vector \\[1 2 3 4\\] cannot be represented as a scalar value.*");
 }
 
 GTEST_TEST(GainTest, ToAutoDiff) {

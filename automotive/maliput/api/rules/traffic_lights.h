@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/drake_copyable.h"
@@ -42,7 +43,8 @@ enum class BulbState { kOff = 0, kOn, kBlinking };
 std::unordered_map<BulbState, const char*, DefaultHash> BulbStateMapper();
 
 /// Models a bulb within a bulb group.
-class Bulb final {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Bulb final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Bulb);
 
@@ -175,7 +177,8 @@ class Bulb final {
 /// Models a group of bulbs within a traffic light. All of the bulbs within a
 /// group should share the same approximate orientation. However, this is not
 /// programmatically enforced.
-class BulbGroup final {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    BulbGroup final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BulbGroup);
 
@@ -244,7 +247,8 @@ class BulbGroup final {
 /// the underlying right-of-way rules instead of traffic lights when navigating
 /// intersections. TrafficLight exists for testing autonomous vehicles that do
 /// not have access to right-of-way rules.
-class TrafficLight final {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    TrafficLight final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TrafficLight);
 
@@ -302,7 +306,8 @@ class TrafficLight final {
 /// Uniquely identifies a bulb in the world. This consists of the concatenation
 /// of the bulb's ID, the ID of the bulb group that contains the bulb, and the
 /// the ID of the traffic light that contains the bulb group.
-struct UniqueBulbId {
+struct DRAKE_DEPRECATED_AUTOMOTIVE
+    UniqueBulbId {
   /// Returns the string representation of the %TypeSpecificIdentifier.
   const std::string to_string() const {
     return traffic_light_id.string() + "-" + bulb_group_id.string() + "-" +
@@ -343,14 +348,16 @@ namespace std {
 
 /// Specialization of std::hash for drake::maliput::api::rules::UniqueBulbId.
 template <>
-struct hash<drake::maliput::api::rules::UniqueBulbId>
+struct DRAKE_DEPRECATED_AUTOMOTIVE
+    hash<drake::maliput::api::rules::UniqueBulbId>
     : public drake::DefaultHash {};
 
 /// Specialization of std::less for drake::maliput::api::rules::UniqueBulbId
 /// providing a strict ordering over drake::maliput::api::rules::UniqueBulbId
 /// suitable for use with ordered containers.
 template <>
-struct less<drake::maliput::api::rules::UniqueBulbId> {
+struct DRAKE_DEPRECATED_AUTOMOTIVE
+    less<drake::maliput::api::rules::UniqueBulbId> {
   bool operator()(const drake::maliput::api::rules::UniqueBulbId& lhs,
                   const drake::maliput::api::rules::UniqueBulbId& rhs) const {
     if (lhs.traffic_light_id.string() < rhs.traffic_light_id.string()) {

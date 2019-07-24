@@ -10,7 +10,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
 namespace {
 std::vector<double> ConvertToDoubles(const std::string& str) {
@@ -129,6 +129,6 @@ bool ParseThreeVectorAttribute(const tinyxml2::XMLElement* node,
   return true;
 }
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

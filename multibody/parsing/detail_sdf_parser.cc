@@ -22,7 +22,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
 using Eigen::Matrix3d;
 using Eigen::Translation3d;
@@ -30,6 +30,7 @@ using Eigen::Vector3d;
 using geometry::GeometryInstance;
 using geometry::SceneGraph;
 using math::RigidTransformd;
+using math::RotationMatrixd;
 using std::unique_ptr;
 
 // Unnamed namespace for free functions local to this file.
@@ -87,7 +88,7 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
   const RigidTransformd X_BBi = ToRigidTransform(Inertial_BBcm_Bi.Pose());
 
   // B and Bi are not necessarily aligned.
-  const math::RotationMatrix<double> R_BBi(X_BBi.linear());
+  const RotationMatrixd R_BBi = X_BBi.rotation();
 
   // Re-express in frame B as needed.
   const RotationalInertia<double> I_BBcm_B = I_BBcm_Bi.ReExpress(R_BBi);
@@ -140,15 +141,15 @@ Vector3d ExtractJointAxis(const sdf::Model& model_spec,
   // supported by sdformat.
   Vector3d axis_J = ToVector3(axis->Xyz());
   if (axis->UseParentModelFrame()) {
-    // Pose of the joint frame J in the frame of the child link C.
+    // RotationMatrix of the joint frame J in the frame of the child link C.
     ThrowIfPoseFrameSpecified(joint_spec.Element());
-    const RigidTransformd X_CJ = ToRigidTransform(joint_spec.Pose());
-    // Get the pose of the child link C in the model frame M.
-    const RigidTransformd X_MC = ToRigidTransform(
-        model_spec.LinkByName(joint_spec.ChildLinkName())->Pose());
-    const RigidTransformd X_MJ = X_MC * X_CJ;
+    const RotationMatrixd R_CJ = ToRigidTransform(joint_spec.Pose()).rotation();
+    // Get the RotationMatrix of the child link C in the model frame M.
+    const RotationMatrixd R_MC = ToRigidTransform(
+        model_spec.LinkByName(joint_spec.ChildLinkName())->Pose()).rotation();
+    const RotationMatrixd R_MJ = R_MC * R_CJ;
     // axis_J actually contains axis_M, expressed in the model frame M.
-    axis_J = X_MJ.linear().transpose() * axis_J;
+    axis_J = R_MJ.transpose() * axis_J;
   }
   return axis_J;
 }
@@ -390,7 +391,6 @@ void AddLinksFromSpecification(
     const ModelInstanceIndex model_instance,
     const sdf::Model& model,
     MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph,
     const PackageMap& package_map,
     const std::string& root_dir) {
 
@@ -457,7 +457,7 @@ void AddLinksFromSpecification(
               MakeCoulombFrictionFromSdfCollisionOde(sdf_collision);
           plant->RegisterCollisionGeometry(body, X_LG, *shape,
                                            sdf_collision.Name(),
-                                           coulomb_friction, scene_graph);
+                                           coulomb_friction);
         }
       }
     }
@@ -514,7 +514,6 @@ ModelInstanceIndex AddModelFromSpecification(
     const sdf::Model& model,
     const std::string& model_name,
     MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph,
     const PackageMap& package_map,
     const std::string& root_dir) {
 
@@ -543,7 +542,7 @@ ModelInstanceIndex AddModelFromSpecification(
 
   // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
   AddLinksFromSpecification(
-      model_instance, model, plant, scene_graph, package_map, root_dir);
+      model_instance, model, plant, package_map, root_dir);
 
   // Add all the joints
   // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
@@ -595,7 +594,7 @@ ModelInstanceIndex AddModelFromSdfFile(
       model_name_in.empty() ? model.Name() : model_name_in;
 
   return AddModelFromSpecification(
-      model, model_name, plant, scene_graph, package_map, root_dir);
+      model, model_name, plant, package_map, root_dir);
 }
 
 std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
@@ -641,7 +640,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
       // Get the model.
       const sdf::Model& model = *root.ModelByIndex(i);
       model_instances.push_back(AddModelFromSpecification(
-            model, model.Name(), plant, scene_graph, package_map, root_dir));
+            model, model.Name(), plant, package_map, root_dir));
     }
   } else {
     // Load the world and all the models in the world.
@@ -652,13 +651,13 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
       // Get the model.
       const sdf::Model& model = *world.ModelByIndex(model_index);
       model_instances.push_back(AddModelFromSpecification(
-            model, model.Name(), plant, scene_graph, package_map, root_dir));
+            model, model.Name(), plant, package_map, root_dir));
     }
   }
 
   return model_instances;
 }
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

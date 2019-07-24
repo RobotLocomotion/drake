@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/drake_copyable.h"
@@ -13,7 +14,8 @@ namespace rules {
 
 
 /// Directed, inclusive longitudinal (s value) range from s0 to s1.
-class SRange {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    SRange {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SRange);
 
@@ -42,7 +44,8 @@ class SRange {
 
 
 /// Directed longitudinal range of a specific Lane, identified by a LaneId.
-class LaneSRange {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    LaneSRange {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LaneSRange);
 
@@ -69,7 +72,8 @@ class LaneSRange {
 /// The sequence of LaneSRanges should be contiguous.  (In other words,
 /// taken as a Lane-space path with r=0 and h=0, it should present a
 /// G1-continuous curve.)
-class LaneSRoute {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    LaneSRoute {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LaneSRoute);
 

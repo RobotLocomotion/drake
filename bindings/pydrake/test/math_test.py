@@ -96,15 +96,8 @@ class TestMath(unittest.TestCase):
         for f_core, f_cpp in binary:
             self.assertEqual(f_core(a, b), f_cpp(a, b))
 
-    def check_types(self, check_func):
-        check_func(float)
-        check_func(AutoDiffXd)
-        check_func(Expression)
-
-    def test_rigid_transform(self):
-        self.check_types(self.check_rigid_transform)
-
-    def check_rigid_transform(self, T):
+    @numpy_compare.check_all_types
+    def test_rigid_transform(self, T):
         RigidTransform = mut.RigidTransform_[T]
         RotationMatrix = mut.RotationMatrix_[T]
         RollPitchYaw = mut.RollPitchYaw_[T]
@@ -142,9 +135,10 @@ class TestMath(unittest.TestCase):
         check_equality(RigidTransform.Identity(), X_I)
         self.assertIsInstance(X.rotation(), RotationMatrix)
         X.set_rotation(R=R_I)
-        # TODO(eric.cousineau): #11575, remove the conditional.
-        if T == float:
-            self.assertIsInstance(X.translation(), np.ndarray)
+        X.set_rotation(rpy=rpy_I)
+        X.set_rotation(quaternion=quaternion_I)
+        X.set_rotation(theta_lambda=angle_axis)
+        self.assertIsInstance(X.translation(), np.ndarray)
         X.set_translation(p=np.zeros(3))
         numpy_compare.assert_float_equal(X.GetAsMatrix4(), X_I)
         numpy_compare.assert_float_equal(X.GetAsMatrix34(), X_I[:3])
@@ -158,22 +152,19 @@ class TestMath(unittest.TestCase):
                 eval("X @ RigidTransform()"), RigidTransform)
             self.assertIsInstance(eval("X @ [0, 0, 0]"), np.ndarray)
 
-    def test_isometry_implicit(self):
-        self.check_types(self.check_isometry_implicit)
-
-    def check_isometry_implicit(self, T):
+    @numpy_compare.check_all_types
+    def test_isometry_implicit(self, T):
         Isometry3 = Isometry3_[T]
         # Explicitly disabled, to mirror C++ API.
         with self.assertRaises(TypeError):
             self.assertTrue(mtest.TakeRigidTransform(Isometry3()))
         self.assertTrue(mtest.TakeIsometry3(mut.RigidTransform()))
 
-    def test_rotation_matrix(self):
-        self.check_types(self.check_rotation_matrix)
-
-    def check_rotation_matrix(self, T):
+    @numpy_compare.check_all_types
+    def test_rotation_matrix(self, T):
         # - Constructors.
         RotationMatrix = mut.RotationMatrix_[T]
+        AngleAxis = AngleAxis_[T]
         Quaternion = Quaternion_[T]
         RollPitchYaw = mut.RollPitchYaw_[T]
 
@@ -188,25 +179,47 @@ class TestMath(unittest.TestCase):
         numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
         R = RotationMatrix(quaternion=Quaternion.Identity())
         numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
+        R = RotationMatrix(theta_lambda=AngleAxis(angle=0, axis=[0, 0, 1]))
+        numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
         R = RotationMatrix(rpy=RollPitchYaw(rpy=[0, 0, 0]))
+        numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
+        # One axis RotationMatrices
+        R = RotationMatrix.MakeXRotation(theta=0)
+        numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
+        R = RotationMatrix.MakeYRotation(theta=0)
+        numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
+        R = RotationMatrix.MakeZRotation(theta=0)
+        numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
+        # TODO(eric.cousineau): #11575, remove the conditional.
+        if T == float:
+            numpy_compare.assert_float_equal(R.row(index=0), [1., 0., 0.])
+            numpy_compare.assert_float_equal(R.col(index=0), [1., 0., 0.])
+        R.set(R=np.eye(3))
         numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
         # - Nontrivial quaternion.
         q = Quaternion(wxyz=[0.5, 0.5, 0.5, 0.5])
         R = RotationMatrix(quaternion=q)
         q_R = R.ToQuaternion()
         numpy_compare.assert_float_equal(
-                q.wxyz(), numpy_compare.to_float(q_R.wxyz()))
-        # - Inverse.
+            q.wxyz(), numpy_compare.to_float(q_R.wxyz()))
+        # - Inverse, transpose, projection
         R_I = R.inverse().multiply(R)
         numpy_compare.assert_float_equal(R_I.matrix(), np.eye(3))
+        R_T = R.transpose().multiply(R)
+        numpy_compare.assert_float_equal(R_T.matrix(), np.eye(3))
+        R_P = RotationMatrix.ProjectToRotationMatrix(M=2*np.eye(3))
+        numpy_compare.assert_float_equal(R_P.matrix(), np.eye(3))
+        # Matrix checks
+        numpy_compare.assert_equal(R.IsValid(), True)
+        R = RotationMatrix()
+        numpy_compare.assert_equal(R.IsExactlyIdentity(), True)
+        numpy_compare.assert_equal(R.IsIdentityToInternalTolerance(), True)
         if six.PY3:
             numpy_compare.assert_float_equal(
                     eval("R.inverse() @ R").matrix(), np.eye(3))
 
-    def test_roll_pitch_yaw(self):
-        self.check_types(self.check_roll_pitch_yaw)
-
-    def check_roll_pitch_yaw(self, T):
+    @numpy_compare.check_all_types
+    def test_roll_pitch_yaw(self, T):
         # - Constructors.
         RollPitchYaw = mut.RollPitchYaw_[T]
         RotationMatrix = mut.RotationMatrix_[T]

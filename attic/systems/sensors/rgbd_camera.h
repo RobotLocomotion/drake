@@ -24,6 +24,10 @@ namespace sensors {
 /// An RGB-D camera system that provides RGB, depth and label images using
 /// visual elements of RigidBodyTree.
 ///
+/// @warning This is an old interface, with potentially ambiguous and outdated
+/// terms. Please see `RgbdSensor` and `CameraInfo` for more modern
+/// terminology.
+///
 /// Let `W` be the world coordinate system. In addition to `W`, there are three
 /// more coordinate systems that are associated with an RgbdCamera. They are
 /// defined as follows:

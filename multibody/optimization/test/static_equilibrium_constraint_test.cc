@@ -144,8 +144,6 @@ class TwoFreeSpheresTest : public ::testing::Test {
  protected:
   std::unique_ptr<test::FreeSpheresAndBoxes<AutoDiffXd>> spheres_;
   std::unique_ptr<test::FreeSpheresAndBoxes<double>> spheres_double_;
-  std::unique_ptr<solvers::Binding<StaticEquilibriumConstraint>>
-      static_equilibrium_binding_;
   solvers::MathematicalProgram prog_;
   VectorX<symbolic::Variable> q_vars_;
   VectorX<symbolic::Variable> u_vars_{0};

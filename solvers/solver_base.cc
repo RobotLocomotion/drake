@@ -1,5 +1,6 @@
 #include "drake/solvers/solver_base.h"
 
+#include <limits>
 #include <utility>
 
 #include <fmt/format.h>
@@ -71,15 +72,6 @@ bool SolverBase::AreProgramAttributesSatisfied(
     const MathematicalProgram& prog) const {
   DRAKE_DEMAND(default_satisfied_ != nullptr);
   return default_satisfied_(prog);
-}
-
-// NOLINTNEXTLINE(runtime/references)
-SolutionResult SolverBase::Solve(MathematicalProgram& prog) const {
-  // N.B. This (deprecated) method is not very useful because discards all
-  // solution information except for the result code.
-  MathematicalProgramResult result;
-  Solve(prog, {}, {}, &result);
-  return result.get_solution_result();
 }
 
 }  // namespace solvers

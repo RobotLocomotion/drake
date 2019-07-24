@@ -19,6 +19,7 @@
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/geometry/test_utilities/dummy_render_engine.h"
 #include "drake/geometry/test_utilities/geometry_set_tester.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
@@ -50,6 +51,7 @@ using geometry::FrameId;
 using geometry::FramePoseVector;
 using geometry::GeometryId;
 using geometry::IllustrationProperties;
+using geometry::internal::DummyRenderEngine;
 using geometry::PenetrationAsPointPair;
 using geometry::QueryObject;
 using geometry::SceneGraph;
@@ -833,7 +835,10 @@ GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodiesSourceErrors) {
   {
     MultibodyPlant<double> plant;
     plant.RegisterAsSourceForSceneGraph(&scene_graph);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     EXPECT_NO_THROW(plant.Finalize(&scene_graph));
+#pragma GCC diagnostic pop
   }
 
   // Case: Registered as source, correct finalization.
@@ -849,18 +854,24 @@ GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodiesSourceErrors) {
     MultibodyPlant<double> plant;
     plant.RegisterAsSourceForSceneGraph(&scene_graph);
     SceneGraph<double> other_graph;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     DRAKE_EXPECT_THROWS_MESSAGE(
         plant.Finalize(&other_graph), std::logic_error,
         "Geometry registration.*first call to RegisterAsSourceForSceneGraph.*");
+#pragma GCC diagnostic pop
   }
 
   // Case: Not registered as source, but passed SceneGraph in anyways - error.
   {
     MultibodyPlant<double> plant;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     DRAKE_EXPECT_THROWS_MESSAGE(
         plant.Finalize(&scene_graph), std::logic_error,
         "This MultibodyPlant instance does not have a SceneGraph registered.*"
         "RegisterAsSourceForSceneGraph.*");
+#pragma GCC diagnostic pop
   }
 }
 
@@ -1244,8 +1255,21 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   const double radius = 0.5;
 
   SceneGraph<double> scene_graph;
+
+  // Add a render engine so we can confirm that the current default behavior of
+  // assigning perception roles to visual geometries is happening.
+  auto temp_engine = std::make_unique<DummyRenderEngine>();
+  // We want to confirm MBP is assigning perception roles; so we force the
+  // engine to accept all registered visuals so we don't have to worry about
+  // possible *conditions* of acceptance. To attempt a registration is to
+  // succeed. That way, we can simply look at the number of registered ids to
+  // determine role assignment has happened.
+  temp_engine->set_force_accept(true);
+  const DummyRenderEngine& render_engine = *temp_engine;
+  scene_graph.AddRenderer("dummy", move(temp_engine));
   MultibodyPlant<double> plant;
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  EXPECT_EQ(render_engine.num_registered(), 0);
 
   // A half-space for the ground geometry -- uses default visual material
   GeometryId ground_id = plant.RegisterVisualGeometry(
@@ -1254,6 +1278,7 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
       RigidTransformd(
           geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero())),
       geometry::HalfSpace(), "ground");
+  EXPECT_EQ(render_engine.num_registered(), 1);
 
   // Add two spherical bodies.
   const RigidBody<double>& sphere1 =
@@ -1262,12 +1287,14 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   GeometryId sphere1_id = plant.RegisterVisualGeometry(
       sphere1, RigidTransformd::Identity(), geometry::Sphere(radius),
       "visual", sphere1_diffuse);
+  EXPECT_EQ(render_engine.num_registered(), 2);
   const RigidBody<double>& sphere2 =
       plant.AddRigidBody("Sphere2", SpatialInertia<double>());
   Vector4<double> sphere2_diffuse{0.1, 0.9, 0.1, 0.5};
   GeometryId sphere2_id = plant.RegisterVisualGeometry(
       sphere2, RigidTransformd::Identity(), geometry::Sphere(radius),
       "visual", sphere2_diffuse);
+  EXPECT_EQ(render_engine.num_registered(), 3);
 
   // We are done defining the model.
   plant.Finalize();

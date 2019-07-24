@@ -34,7 +34,7 @@ std::string ContextBase::GetSystemPathname() const {
 FixedInputPortValue& ContextBase::FixInputPort(
     int index, std::unique_ptr<AbstractValue> value) {
   std::unique_ptr<FixedInputPortValue> fixed =
-      detail::ContextBaseFixedInputAttorney::CreateFixedInputPortValue(
+      internal::ContextBaseFixedInputAttorney::CreateFixedInputPortValue(
           std::move(value));
   FixedInputPortValue& fixed_ref = *fixed;
   SetFixedInputPortValue(InputPortIndex(index), std::move(fixed));
@@ -110,9 +110,9 @@ void ContextBase::SetFixedInputPortValue(
   }
 
   // Fill in the FixedInputPortValue object and install it.
-  detail::ContextBaseFixedInputAttorney::set_ticket(port_value.get(),
-                                                    ticket_to_use);
-  detail::ContextBaseFixedInputAttorney::set_owning_subcontext(
+  internal::ContextBaseFixedInputAttorney::set_ticket(port_value.get(),
+                                                      ticket_to_use);
+  internal::ContextBaseFixedInputAttorney::set_owning_subcontext(
       port_value.get(), this);
   input_port_values_[index] = std::move(port_value);
 
@@ -300,7 +300,7 @@ void ContextBase::FixContextPointers(
   clone->cache_.RepairCachePointers(clone);
   for (auto& fixed_input : clone->input_port_values_) {
     if (fixed_input != nullptr) {
-      detail::ContextBaseFixedInputAttorney::set_owning_subcontext(
+      internal::ContextBaseFixedInputAttorney::set_owning_subcontext(
           fixed_input.get_mutable(), clone);
     }
   }

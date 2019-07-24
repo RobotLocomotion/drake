@@ -98,7 +98,9 @@ PYBIND11_MODULE(primitives, m) {
     DefineTemplateClassWithDefault<Demultiplexer<T>, LeafSystem<T>>(
         m, "Demultiplexer", GetPyParam<T>(), doc.Demultiplexer.doc)
         .def(py::init<int, int>(), py::arg("size"),
-            py::arg("output_ports_sizes") = 1, doc.Demultiplexer.ctor.doc);
+            py::arg("output_ports_size") = 1, doc.Demultiplexer.ctor.doc_2args)
+        .def(py::init<const std::vector<int>&>(), py::arg("output_ports_sizes"),
+            doc.Demultiplexer.ctor.doc_1args);
 
     DefineTemplateClassWithDefault<                  // BR
         FirstOrderLowPassFilter<T>, LeafSystem<T>>(  //
@@ -186,8 +188,9 @@ PYBIND11_MODULE(primitives, m) {
             &SignalLogger<T>::set_forced_publish_only,
             doc.SignalLogger.set_forced_publish_only.doc)
         .def("sample_times", &SignalLogger<T>::sample_times,
-            doc.SignalLogger.sample_times.doc)
-        .def("data", &SignalLogger<T>::data, doc.SignalLogger.data.doc)
+            py_reference_internal, doc.SignalLogger.sample_times.doc)
+        .def("data", &SignalLogger<T>::data, py_reference_internal,
+            doc.SignalLogger.data.doc)
         .def("reset", &SignalLogger<T>::reset, doc.SignalLogger.reset.doc);
 
     DefineTemplateClassWithDefault<SymbolicVectorSystem<T>, LeafSystem<T>>(m,
@@ -228,22 +231,11 @@ PYBIND11_MODULE(primitives, m) {
           &BarycentricMeshSystem<double>::get_output_values,
           doc.BarycentricMeshSystem.get_output_values.doc);
 
-  // Docs for typedef not being parsed.
-  py::class_<UniformRandomSource, LeafSystem<double>>(m, "UniformRandomSource")
-      .def(py::init<int, double>(), py::arg("num_outputs"),
-          py::arg("sampling_interval_sec"));
-
-  // Docs for typedef not being parsed.
-  py::class_<GaussianRandomSource, LeafSystem<double>>(
-      m, "GaussianRandomSource")
-      .def(py::init<int, double>(), py::arg("num_outputs"),
-          py::arg("sampling_interval_sec"));
-
-  // Docs for typedef not being parsed.
-  py::class_<ExponentialRandomSource, LeafSystem<double>>(
-      m, "ExponentialRandomSource")
-      .def(py::init<int, double>(), py::arg("num_outputs"),
-          py::arg("sampling_interval_sec"));
+  py::class_<RandomSource, LeafSystem<double>>(
+      m, "RandomSource", doc.RandomSource.doc)
+      .def(py::init<RandomDistribution, int, double>(), py::arg("distribution"),
+          py::arg("num_outputs"), py::arg("sampling_interval_sec"),
+          doc.RandomSource.ctor.doc);
 
   py::class_<TrajectorySource<double>, LeafSystem<double>>(
       m, "TrajectorySource", doc.TrajectorySource.doc)
@@ -285,10 +277,12 @@ PYBIND11_MODULE(primitives, m) {
   m.def("LogOutput", &LogOutput<double>, py::arg("src"), py::arg("builder"),
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 2>(),
-      // TODO(eric.cousineau): Figure out why this is necessary (#9398).
+      // See #11531 for why `py_reference` is needed.
       py_reference, doc.LogOutput.doc);
 
   // TODO(eric.cousineau): Add more systems as needed.
+
+  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake

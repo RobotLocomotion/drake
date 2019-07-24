@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/drake_copyable.h"
@@ -19,7 +20,8 @@ namespace rules {
 /// Each instance mandates a maximum speed limit as well as a minimum
 /// speed limit.  Since neither limit may be less than zero, a minimum
 /// limit of exactly zero is equivalent to having no minimum limit at all.
-class SpeedLimitRule {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    SpeedLimitRule {
  public:
   using Id = TypeSpecificIdentifier<class SpeedLimitRule>;
 

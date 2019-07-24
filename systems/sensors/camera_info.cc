@@ -25,6 +25,13 @@ CameraInfo::CameraInfo(int width, int height, double vertical_fov_rad)
                  height * 0.5 / std::tan(0.5 * vertical_fov_rad),
                  height * 0.5 / std::tan(0.5 * vertical_fov_rad),
                  width * 0.5 - 0.5, height * 0.5 - 0.5) {}
+// TODO(SeanCurtis-TRI): The shift of the principal point by (-0.5, -0.5) is
+//  overly opaque. The primary explanation comes from pixel addressing
+//  conventions used in various APIs (see
+//  https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_fragment_coord_conventions.txt
+//  However, we don't want to look like this class is coupled with OpenGL. How
+//  do we articulate this math in a way that *doesn't* depend on OpenGL?
+//  See https://github.com/SeanCurtis-TRI/drake/pull/5#pullrequestreview-264447958.
 
 }  // namespace sensors
 }  // namespace systems

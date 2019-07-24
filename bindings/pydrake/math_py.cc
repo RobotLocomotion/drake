@@ -4,19 +4,10 @@
 #include "pybind11/functional.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
-#ifndef __clang__
-// N.B. Without this, GCC 7.4.0 on Ubuntu complains about
-// `AutoDiffScalar(const AutoDiffScalar& other)` having uninitialized values.
-// TODO(eric.cousineau):  #11566 Figure out why?
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#pragma GCC diagnostic pop
-#else
-#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#endif  // __clang__
+
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -41,7 +32,7 @@ using symbolic::Expression;
 
 namespace {
 template <typename T>
-void DoDefinitions(py::module m, T) {
+void DoScalarDependentDefinitions(py::module m, T) {
   py::tuple param = GetPyParam<T>();
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -49,7 +40,7 @@ void DoDefinitions(py::module m, T) {
   const char* doc_iso3_deprecation =
       "DO NOT USE!. We only offer this API for backwards compatibility with "
       "Isometry3 and it will be deprecated soon with the resolution of "
-      "#9865. This will be removed on or around 2019-07-01.";
+      "#9865. This will be removed on or around 2019-08-01.";
 
   constexpr auto& doc = pydrake_doc.drake.math;
   {
@@ -82,10 +73,22 @@ void DoDefinitions(py::module m, T) {
         .def_static("Identity", &Class::Identity, cls_doc.Identity.doc)
         .def("rotation", &Class::rotation, py_reference_internal,
             cls_doc.rotation.doc)
-        .def("set_rotation", &Class::set_rotation, py::arg("R"),
-            cls_doc.set_rotation.doc)
-        .def("translation", &Class::translation, py_reference_internal,
-            cls_doc.translation.doc)
+        .def("set_rotation",
+            py::overload_cast<const RotationMatrix<T>&>(&Class::set_rotation),
+            py::arg("R"), cls_doc.set_rotation.doc_1args_R)
+        .def("set_rotation",
+            py::overload_cast<const RollPitchYaw<T>&>(&Class::set_rotation),
+            py::arg("rpy"), cls_doc.set_rotation.doc_1args_rpy)
+        .def("set_rotation",
+            py::overload_cast<const Eigen::Quaternion<T>&>(
+                &Class::set_rotation),
+            py::arg("quaternion"), cls_doc.set_rotation.doc_1args_quaternion)
+        .def("set_rotation",
+            py::overload_cast<const Eigen::AngleAxis<T>&>(&Class::set_rotation),
+            py::arg("theta_lambda"),
+            cls_doc.set_rotation.doc_1args_theta_lambda)
+        .def("translation", &Class::translation,
+            return_value_policy_for_scalar_type<T>(), cls_doc.translation.doc)
         .def("set_translation", &Class::set_translation, py::arg("p"),
             cls_doc.set_translation.doc)
         .def("GetAsMatrix4", &Class::GetAsMatrix4, cls_doc.GetAsMatrix4.doc)
@@ -104,13 +107,6 @@ void DoDefinitions(py::module m, T) {
               return *self * p_BoQ_B;
             },
             py::arg("p_BoQ_B"), cls_doc.operator_mul.doc_1args_p_BoQ_B)
-        .def("multiply",
-            [doc_iso3_deprecation](
-                const RigidTransform<T>* self, const Isometry3<T>& other) {
-              WarnDeprecated(doc_iso3_deprecation);
-              return *self * RigidTransform<T>(other);
-            },
-            py::arg("other"), doc_iso3_deprecation)
         .def("matrix", &RigidTransform<T>::matrix, doc_iso3_deprecation)
         .def("linear", &RigidTransform<T>::linear, py_reference_internal,
             doc_iso3_deprecation);
@@ -133,17 +129,42 @@ void DoDefinitions(py::module m, T) {
             cls_doc.ctor.doc_1args_R)
         .def(py::init<Eigen::Quaternion<T>>(), py::arg("quaternion"),
             cls_doc.ctor.doc_1args_quaternion)
+        .def(py::init<const Eigen::AngleAxis<T>&>(), py::arg("theta_lambda"),
+            cls_doc.ctor.doc_1args_theta_lambda)
         .def(py::init<const RollPitchYaw<T>&>(), py::arg("rpy"),
             cls_doc.ctor.doc_1args_rpy)
+        .def_static("MakeXRotation", &Class::MakeXRotation, py::arg("theta"),
+            cls_doc.MakeXRotation.doc)
+        .def_static("MakeYRotation", &Class::MakeYRotation, py::arg("theta"),
+            cls_doc.MakeYRotation.doc)
+        .def_static("MakeZRotation", &Class::MakeZRotation, py::arg("theta"),
+            cls_doc.MakeZRotation.doc)
+        .def_static("Identity", &Class::Identity, cls_doc.Identity.doc)
+        .def("set", &Class::set, py::arg("R"), cls_doc.set.doc)
+        .def("inverse", &Class::inverse, cls_doc.inverse.doc)
+        .def("transpose", &Class::transpose, cls_doc.transpose.doc)
         .def("matrix", &Class::matrix, cls_doc.matrix.doc)
+        .def("row", &Class::row, py::arg("index"), cls_doc.row.doc)
+        .def("col", &Class::col, py::arg("index"), cls_doc.col.doc)
         .def("multiply",
             [](const Class& self, const Class& other) { return self * other; },
             cls_doc.operator_mul.doc_1args_other)
-        .def("inverse", &Class::inverse, cls_doc.inverse.doc)
+        .def("IsValid", overload_cast_explicit<boolean<T>>(&Class::IsValid),
+            cls_doc.IsValid.doc_0args)
+        .def("IsExactlyIdentity", &Class::IsExactlyIdentity,
+            cls_doc.IsExactlyIdentity.doc)
+        .def("IsIdentityToInternalTolerance",
+            &Class::IsIdentityToInternalTolerance,
+            cls_doc.IsIdentityToInternalTolerance.doc)
+        // Does not return the quality_factor
+        .def_static("ProjectToRotationMatrix",
+            [](const Matrix3<T>& M) {
+              return RotationMatrix<T>::ProjectToRotationMatrix(M);
+            },
+            py::arg("M"), cls_doc.ProjectToRotationMatrix.doc)
         .def("ToQuaternion",
             overload_cast_explicit<Eigen::Quaternion<T>>(&Class::ToQuaternion),
-            cls_doc.ToQuaternion.doc_0args)
-        .def_static("Identity", &Class::Identity, cls_doc.Identity.doc);
+            cls_doc.ToQuaternion.doc_0args);
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
   }
@@ -211,22 +232,13 @@ void DoDefinitions(py::module m, T) {
   py::implicitly_convertible<RigidTransform<T>, Isometry3<T>>();
 }
 
-}  // namespace
-
-PYBIND11_MODULE(math, m) {
+void DoScalarIndependentDefinitions(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-
-  m.doc() = "Bindings for //math.";
   constexpr auto& doc = pydrake_doc.drake.math;
-
-  py::module::import("pydrake.autodiffutils");
-  py::module::import("pydrake.symbolic");
 
   // TODO(eric.cousineau): Bind remaining classes for all available scalar
   // types.
-
-  type_visit([m](auto dummy) { DoDefinitions(m, dummy); }, CommonScalarPack{});
   using T = double;
   m.def("wrap_to", &wrap_to<T, T>, py::arg("value"), py::arg("low"),
       py::arg("high"), doc.wrap_to.doc);
@@ -343,6 +355,18 @@ PYBIND11_MODULE(math, m) {
   // See TODO in corresponding header file - these should be removed soon!
   pydrake::internal::BindAutoDiffMathOverloads(&m);
   pydrake::internal::BindSymbolicMathOverloads(&m);
+}
+}  // namespace
+
+PYBIND11_MODULE(math, m) {
+  // N.B. Docstring contained in `_math_extra.py`.
+
+  py::module::import("pydrake.autodiffutils");
+  py::module::import("pydrake.symbolic");
+
+  type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
+      CommonScalarPack{});
+  DoScalarIndependentDefinitions(m);
 
   ExecuteExtraPythonCode(m);
 }

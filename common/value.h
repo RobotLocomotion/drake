@@ -9,7 +9,6 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/hash.h"
 #include "drake/common/is_cloneable.h"
 #include "drake/common/nice_type_name.h"
@@ -103,60 +102,6 @@ class AbstractValue {
   template <typename T>
   const T* maybe_get_value() const;
 
-  /// Returns the value wrapped in this AbstractValue, which must be of
-  /// exactly type T.  T cannot be a superclass, abstract or otherwise.
-  /// In Debug builds, if the types don't match, an std::logic_error will be
-  /// thrown with a helpful error message. In Release builds, this is not
-  /// guaranteed.
-  template <typename T>
-  DRAKE_DEPRECATED("2019-07-01", "Use get_value<T>() instead.")
-  const T& GetValue() const;
-
-  /// Like GetValue, but throws std::logic_error on mismatched types even in
-  /// Release builds.
-  template <typename T>
-  DRAKE_DEPRECATED("2019-07-01", "Use get_value<T>() instead.")
-  const T& GetValueOrThrow() const;
-
-  /// Like GetValue, but quietly returns nullptr on mismatched types,
-  /// even in Release builds.
-  /// @returns A pointer to the stored value if T is the right type,
-  ///          otherwise nullptr.
-  template <typename T>
-  DRAKE_DEPRECATED("2019-07-01", "Use maybe_get_value<T>() instead.")
-  const T* MaybeGetValue() const;
-
-  /// Returns the value wrapped in this AbstractValue, which must be of
-  /// exactly type T.  T cannot be a superclass, abstract or otherwise.
-  /// In Debug builds, if the types don't match, an std::logic_error will be
-  /// thrown with a helpful error message. In Release builds, this is not
-  /// guaranteed. Intentionally not const: holders of const references to the
-  /// AbstractValue should not be able to mutate the value it contains.
-  template <typename T>
-  DRAKE_DEPRECATED("2019-07-01", "Use get_mutable_value<T>() instead.")
-  T& GetMutableValue();
-
-  /// Like GetMutableValue, but throws std::logic_error on mismatched types even
-  /// in Release builds.
-  template <typename T>
-  DRAKE_DEPRECATED("2019-07-01", "Use get_mutable_value<T>() instead.")
-  T& GetMutableValueOrThrow();
-
-  /// Sets the value wrapped in this AbstractValue, which must be of
-  /// exactly type T.  T cannot be a superclass, abstract or otherwise.
-  /// @param value_to_set The value to be copied or cloned into this
-  /// AbstractValue. In Debug builds, if the types don't match,
-  /// an std::logic_error will be thrown with a helpful error message. In
-  /// Release builds, this is not guaranteed.
-  template <typename T>
-  DRAKE_DEPRECATED("2019-07-01", "Use set_value<T>() instead.")
-  void SetValue(const T& value_to_set);
-
-  /// Like SetValue, but throws on mismatched types even in Release builds.
-  template <typename T>
-  DRAKE_DEPRECATED("2019-07-01", "Use set_value<T>() instead.")
-  void SetValueOrThrow(const T& value_to_set);
-
   /// Returns a copy of this AbstractValue.
   virtual std::unique_ptr<AbstractValue> Clone() const = 0;
 
@@ -164,11 +109,6 @@ class AbstractValue {
   /// with this object, a std::logic_error will be thrown with a helpful error
   /// message.
   virtual void SetFrom(const AbstractValue& other) = 0;
-
-  /// Like SetFrom, but throws std::logic_error on mismatched types even in
-  /// Release builds.
-  DRAKE_DEPRECATED("2019-07-01", "Use SetFrom() instead.")
-  virtual void SetFromOrThrow(const AbstractValue& other) = 0;
 
   /// Returns typeid of the contained object of type T. If T is polymorphic,
   /// this returns the typeid of the most-derived type of the contained object.
@@ -280,7 +220,6 @@ class Value : public AbstractValue {
   // AbstractValue overrides.
   std::unique_ptr<AbstractValue> Clone() const override;
   void SetFrom(const AbstractValue& other) override;
-  void SetFromOrThrow(const AbstractValue& other) final;
   const std::type_info& type_info() const final;
   const std::type_info& static_type_info() const final;
 
@@ -686,46 +625,6 @@ const T* AbstractValue::maybe_get_value() const {
   return &self.get_value();
 }
 
-template <typename T>
-const T& AbstractValue::GetValue() const {
-  return get_value<T>();
-}
-
-template <typename T>
-const T& AbstractValue::GetValueOrThrow() const {
-  if (typeid(T) != static_type_info()) { ThrowCastError<T>(); }
-  return get_value<T>();
-}
-
-template <typename T>
-const T* AbstractValue::MaybeGetValue() const {
-  if (typeid(T) != static_type_info()) { return nullptr; }
-  auto* value = static_cast<const Value<T>*>(this);
-  return &value->get_value();
-}
-
-template <typename T>
-T& AbstractValue::GetMutableValue() {
-  return get_mutable_value<T>();
-}
-
-template <typename T>
-T& AbstractValue::GetMutableValueOrThrow() {
-  if (typeid(T) != static_type_info()) { ThrowCastError<T>(); }
-  return get_mutable_value<T>();
-}
-
-template <typename T>
-void AbstractValue::SetValue(const T& value_to_set) {
-  set_value<T>(value_to_set);
-}
-
-template <typename T>
-void AbstractValue::SetValueOrThrow(const T& value_to_set) {
-  if (typeid(T) != static_type_info()) { ThrowCastError<T>(); }
-  set_value<T>(value_to_set);
-}
-
 // In Debug mode, returns true iff `this` is-a `Value<T>`.  In Release mode, a
 // false return means `this` is definitely not a `Value<T>`; true means `this`
 // is-probably-a `Value<T>`, but might rarely appear even for mismatched types.
@@ -842,14 +741,6 @@ std::unique_ptr<AbstractValue> Value<T>::Clone() const {
 template <typename T>
 void Value<T>::SetFrom(const AbstractValue& other) {
   value_ = Traits::to_storage(other.get_value<T>());
-}
-
-template <typename T>
-void Value<T>::SetFromOrThrow(const AbstractValue& other) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  value_ = Traits::to_storage(other.GetValueOrThrow<T>());
-#pragma GCC diagnostic pop
 }
 
 template <typename T>

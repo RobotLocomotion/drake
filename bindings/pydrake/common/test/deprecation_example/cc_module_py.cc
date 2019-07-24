@@ -1,6 +1,8 @@
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/test/deprecation_example/example_class.h"  // NOLINT
+#include "drake/bindings/pydrake/common/test/deprecation_example/example_class_documentation.h"  // NOLINT
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_deprecated.h"
 
@@ -8,46 +10,74 @@ namespace drake {
 namespace pydrake {
 namespace {
 
-class ExampleCppClass {
- public:
-  void DeprecatedMethod() {}
-  int deprecated_prop{};
-
-  // Good overload.
-  void overload() {}
-
-  // Deprecated overload.
-  // N.B. We add an actual C++ deprecation to show an example of how to
-  // suppress the error when calling the method.
-  DRAKE_DEPRECATED("2038-01-19", "Example message for overload")
-  void overload(int) {}
-};
-
 PYBIND11_MODULE(cc_module, m) {
-  // Add nominal bindings.
-  py::class_<ExampleCppClass> cls(m, "ExampleCppClass");
-  cls  // BR
-      .def(py::init())
-      .def("overload", py::overload_cast<>(&ExampleCppClass::overload));
+  constexpr auto& doc = pydrake_doc.drake.example_class;
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::example_class;
 
-  // Add deprecated method.
-  cls.def("DeprecatedMethod", &ExampleCppClass::DeprecatedMethod);
-  DeprecateAttribute(cls, "DeprecatedMethod", "Example message for method");
+  m.def("emit_deprecation", []() {
+    // N.B. This is only for coverage. You generally do not need this.
+    WarnDeprecated("Example emitting of deprecation");
+  });
 
-  // Add deprecated property.
-  cls.def_readwrite("deprecated_prop", &ExampleCppClass::deprecated_prop);
-  DeprecateAttribute(cls, "deprecated_prop", "Example message for property");
+  {
+    using Class = ExampleCppClass;
+    constexpr auto& cls_doc = doc.ExampleCppClass;
+    py::class_<Class> cls(m, "ExampleCppClass", cls_doc.doc);
+    cls  // BR
+        .def(py::init(), cls_doc.ctor.doc_0args)
+        .def("overload", py::overload_cast<>(&Class::overload),
+            cls_doc.overload.doc)
+        .def_readwrite("prop", &Class::prop, cls_doc.prop.doc);
 
-  // Add deprecated overload.
-  cls.def("overload", [](ExampleCppClass* self, int value) {
-    // This deprecates the specific overload.
-    WarnDeprecated("Example message for overload");
+    // Bind deprecated constructor overload.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // The surrounding `pragma`s allow us to use this without a warning.
-    self->overload(value);
+    cls.def(py_init_deprecated<Class, int>(
+                cls_doc.ctor.doc_deprecated_deprecated_1args_int),
+        cls_doc.ctor.doc_deprecated_deprecated_1args_int);
 #pragma GCC diagnostic pop
-  });
+
+    // Bind deprecated factory-style constructor.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def(
+        py_init_deprecated(cls_doc.ctor.doc_deprecated_deprecated_1args_double,
+            [](double arg) { return Class(arg); }),
+        cls_doc.ctor.doc_deprecated_deprecated_1args_double);
+#pragma GCC diagnostic pop
+
+    // Bind deprecated overload.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("overload",
+        WrapDeprecated(cls_doc.overload.doc_deprecated,
+            py::overload_cast<int>(&ExampleCppClass::overload)),
+        cls_doc.overload.doc_deprecated);
+#pragma GCC diagnostic pop
+
+    // Bind entirely deprecated method.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("DeprecatedMethod", &ExampleCppClass::DeprecatedMethod,
+        cls_doc.DeprecatedMethod.doc_deprecated);
+#pragma GCC diagnostic pop
+    DeprecateAttribute(
+        cls, "DeprecatedMethod", cls_doc.DeprecatedMethod.doc_deprecated);
+
+    // Bind deprecated property (which forwards to original property).
+    constexpr char deprecated_prop_doc[] =
+        "Do not use deprecated_prop. This will be removed on or after "
+        "2038-01-19.";
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def_property("deprecated_prop",
+        [](const Class* self) { return self->prop; },
+        [](Class* self, int value) { self->prop = value; },
+        deprecated_prop_doc);
+#pragma GCC diagnostic pop
+    DeprecateAttribute(cls, "deprecated_prop", deprecated_prop_doc);
+  }
 }
 
 }  // namespace

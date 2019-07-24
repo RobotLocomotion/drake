@@ -15,7 +15,7 @@
 
 namespace drake {
 namespace multibody {
-namespace detail {
+namespace internal {
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;
@@ -196,7 +196,12 @@ std::unique_ptr<geometry::Shape> ParseMesh(
     }
     scale = scale_vector(0);
   }
-  return std::make_unique<geometry::Mesh>(resolved_filename, scale);
+
+  if (shape_node->FirstChildElement("drake:declare_convex")) {
+    return std::make_unique<geometry::Convex>(resolved_filename, scale);
+  } else {
+    return std::make_unique<geometry::Mesh>(resolved_filename, scale);
+  }
 }
 
 std::unique_ptr<geometry::Shape> ParseGeometry(
@@ -459,6 +464,6 @@ geometry::GeometryInstance ParseCollision(
                                     geometry_name);
 }
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

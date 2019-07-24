@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/rules/traffic_light_book.h"
 #include "drake/automotive/maliput/api/rules/traffic_lights.h"
 #include "drake/common/drake_copyable.h"
@@ -12,7 +13,8 @@ namespace maliput {
 
 /// A concrete implementation of the api::rules::TrafficLightBook abstract
 /// interface. It allows users to obtain a TrafficLight using its ID.
-class TrafficLightBook : public api::rules::TrafficLightBook {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    TrafficLightBook : public api::rules::TrafficLightBook {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrafficLightBook);
 

@@ -3,6 +3,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <unordered_set>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
@@ -21,18 +22,19 @@ namespace internal {
 
  1. It makes the RenderLabel-Color conversion methods of the RenderEngine
     public to this renderer (so test infrastructure can invoke the conversion).
- 2. It facilitates testing RemoveGeometry() logic by allowing the test to
-    explicitly set what RenderIndex this dummy engine returns in
-    DoRemoveGeometry().
- 3. It facilitates testing the RegisterGeometry() method by making the
-    registration of a geometry dependent on particular contents in the
-    PerceptionProperties (see accepting_properties() and
-    rejecting_properties()).
+ 2. It conditionally registers geometry based on an "accepting" set of
+    properties and remembers the ids of geometries successfully registered.
+ 3. By remembering successful registration, it can test geometry removal (in
+    that this implementation will only report removal of a geometry id that it
+    knows to be registered).
  4. Records which poses have been updated via UpdatePoses() to validate which
-    RenderIndex values are updated and which aren't (and with what pose).  */
+    ids values are updated and which aren't (and with what pose).
+ 5. Records the camera pose provided to UpdateViewpoint() and report it with
+    last_updated_X_WC().  */
 class DummyRenderEngine final : public render::RenderEngine {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DummyRenderEngine);
+
   /** Constructor to exercise the default constructor of RenderEngine.  */
   DummyRenderEngine() = default;
 
@@ -42,7 +44,9 @@ class DummyRenderEngine final : public render::RenderEngine {
 
   /** @group No-op implementation of RenderEngine interface.  */
   //@{
-  void UpdateViewpoint(const math::RigidTransformd&) final {}
+  void UpdateViewpoint(const math::RigidTransformd& X_WC) final {
+    X_WC_ = X_WC;
+  }
   void RenderColorImage(const render::CameraProperties&, bool,
                         systems::sensors::ImageRgba8U*) const final {}
   void RenderDepthImage(const render::DepthCameraProperties&,
@@ -74,29 +78,30 @@ class DummyRenderEngine final : public render::RenderEngine {
     return PerceptionProperties();
   }
 
-  /** Resets all state to the initially constructed state.  */
-  void reset() {
-    updated_indices_.clear();
-    moved_index_ = nullopt;
-    register_count_ = 0;
+  /** Initializes the set data to the freshly-constructed values. This
+   leaves the registered data intact.  */
+  void init_test_data() {
+    updated_ids_.clear();
+  }
+
+  /** If true, this render engine will accept all registered geometry.  */
+  void set_force_accept(bool force_accept) {
+    force_accept_ = force_accept;
   }
 
   /** Reports the number of geometries that have been _accepted_ in
    registration.  */
-  int num_registered() const { return register_count_; }
+  int num_registered() const {
+    return static_cast<int>(registered_geometries_.size());
+  }
 
-  /** Returns the indices that have been updated via a call to UpdatePoses() and
+  /** Returns the ids that have been updated via a call to UpdatePoses() and
    the poses that were set.  */
-  const std::map<RenderIndex, math::RigidTransformd>& updated_indices() const {
-    return updated_indices_;
+  const std::map<GeometryId, math::RigidTransformd>& updated_ids() const {
+    return updated_ids_;
   }
 
-  /** Sets the RenderIndex that DoRemoveGeometry() returns. Set to `nullopt`
-   to have RemoveGeometry() do no additional work. Otherwise, set it to some
-   valid index to cause index re-ordering.  */
-  void set_moved_index(optional<RenderIndex> index) {
-    moved_index_ = index;
-  }
+  const math::RigidTransformd& last_updated_X_WC() const { return X_WC_; }
 
   // Promote these to be public to facilitate testing.
   using RenderEngine::LabelFromColor;
@@ -104,31 +109,32 @@ class DummyRenderEngine final : public render::RenderEngine {
   using RenderEngine::GetColorIFromLabel;
 
  protected:
-  /** Dummy implementation that registers the given `shape` iff the `properties`
-   contains the "in_test" group. (Also counts the number of successfully
-   registered shape over the lifespan of `this` instance.)  */
-  optional<RenderIndex> DoRegisterVisual(const Shape&,
-                                         const PerceptionProperties& properties,
-                                         const math::RigidTransformd&) final {
+  /** Dummy implementation that registers the given `shape` if the `properties`
+   contains the "in_test" group or the render engine has been forced to accept
+   all geometries (via set_force_accept()). (Also counts the number of
+   successfully registered shape over the lifespan of `this` instance.)  */
+  bool DoRegisterVisual(GeometryId id, const Shape&,
+                        const PerceptionProperties& properties,
+                        const math::RigidTransformd&) final {
     GetRenderLabelOrThrow(properties);
-    if (properties.HasGroup(include_group_name_)) {
-      return RenderIndex(register_count_++);
+    if (force_accept_ || properties.HasGroup(include_group_name_)) {
+      registered_geometries_.insert(id);
+      return true;
     }
-    return nullopt;
+    return false;
   }
 
-  /** Updates the pose X_WG for the geometry with the given `index`. Also tracks
-   which indices have been updated and the poses set (over the _lifespan_ of
-   `this` instance).  */
-  void DoUpdateVisualPose(RenderIndex index,
+  /** Updates the pose X_WG for the geometry with the given `id`. Also tracks
+   which ids have been updated and the poses set (over the _lifespan_ of
+   `this` instance). This can be reset with a call to init_test_data().  */
+  void DoUpdateVisualPose(GeometryId id,
                           const math::RigidTransformd& X_WG) final {
-    updated_indices_[index] = X_WG;
+    updated_ids_[id] = X_WG;
   }
 
-  /** Simulates removing a geometry and returns the index defined by
-   set_moved_index().  */
-  optional<RenderIndex> DoRemoveGeometry(RenderIndex index) final {
-    return moved_index_;
+  /** Removes the given geometry id (if it is registered).  */
+  bool DoRemoveGeometry(GeometryId id) final {
+    return registered_geometries_.erase(id) > 0;
   }
 
   /** Implementation of RenderEngine::DoClone().  */
@@ -137,19 +143,20 @@ class DummyRenderEngine final : public render::RenderEngine {
   }
 
  private:
-  // Number of registered geometries.
-  int register_count_{};
+  // If true, the engine will accept all geometries.
+  bool force_accept_{};
 
-  // Track each index and what it has been updated to (allows us to confirm
-  // RenderIndex and GeometryIndex association.
-  std::map<RenderIndex, math::RigidTransformd> updated_indices_;
+  std::unordered_set<GeometryId> registered_geometries_;
+
+  // Track each id that gets updated and what it has been updated to.
+  std::map<GeometryId, math::RigidTransformd> updated_ids_;
 
   // The group name whose presence will lead to a shape being added to the
   // engine.
   std::string include_group_name_{"in_test"};
 
-  // The RenderIndex value to return on invocation of DoRemoveGeometry().
-  optional<RenderIndex> moved_index_{};
+  // The last updated camera pose (defaults to identity).
+  math::RigidTransformd X_WC_;
 };
 
 }  // namespace internal

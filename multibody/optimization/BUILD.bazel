@@ -6,10 +6,6 @@ load(
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load(
-    "@drake//tools/skylark:drake_proto.bzl",
-    "drake_cc_proto_library",
-)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -19,6 +15,8 @@ drake_cc_package_library(
     deps = [
         ":contact_wrench",
         ":contact_wrench_evaluator",
+        ":manipulator_equation_constraint",
+        ":sliding_friction_complementarity_constraint",
         ":static_equilibrium_constraint",
         ":static_equilibrium_problem",
         ":static_friction_cone_complementarity_constraint",
@@ -48,9 +46,39 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "sliding_friction_complementarity_constraint",
+    srcs = ["sliding_friction_complementarity_constraint.cc"],
+    hdrs = ["sliding_friction_complementarity_constraint.h"],
+    deps = [
+        ":contact_wrench_evaluator",
+        ":static_friction_cone_complementarity_constraint",
+        ":static_friction_cone_constraint",
+        "//geometry:scene_graph",
+        "//multibody/plant",
+        "//solvers:binding",
+        "//solvers:constraint",
+        "//solvers:mathematical_program_lite",
+    ],
+)
+
+drake_cc_library(
     name = "static_equilibrium_constraint",
     srcs = ["static_equilibrium_constraint.cc"],
     hdrs = ["static_equilibrium_constraint.h"],
+    deps = [
+        ":contact_wrench_evaluator",
+        "//geometry:scene_graph",
+        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//multibody/plant",
+        "//solvers:binding",
+        "//solvers:constraint",
+    ],
+)
+
+drake_cc_library(
+    name = "manipulator_equation_constraint",
+    srcs = ["manipulator_equation_constraint.cc"],
+    hdrs = ["manipulator_equation_constraint.h"],
     deps = [
         ":contact_wrench_evaluator",
         "//geometry:scene_graph",
@@ -161,6 +189,27 @@ drake_cc_googletest(
     deps = [
         ":optimization_with_contact_utilities",
         ":static_friction_cone_complementarity_constraint",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "manipulator_equation_constraint_test",
+    deps = [
+        ":manipulator_equation_constraint",
+        ":optimization_with_contact_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:compute_numerical_gradient",
+        "//solvers:mathematical_program_lite",
+        "//solvers:solve",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sliding_friction_complementarity_constraint_test",
+    deps = [
+        ":optimization_with_contact_utilities",
+        ":sliding_friction_complementarity_constraint",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )

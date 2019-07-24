@@ -99,29 +99,6 @@ class CollisionFilterLegacy {
    next_clique_id().  */
   int peek_next_clique() const { return next_available_clique_; }
 
-  /** A geometry that was previously registered under the `old_encoding` will
-   now be recognized under the `new_encoding`. The `old_encoding` will no longer
-   be valid.
-   @pre `old_encoding` must exist in the map of filters and `new_encoding` must
-         *not*.  */
-  void UpdateEncoding(uintptr_t old_encoding, uintptr_t new_encoding) {
-    // NOTE: The keys in the cliques is a function of a geometry's GeometryIndex
-    // and dynamic property (dynamic or anchored). When GeometryState *moves* a
-    // geometry in its compact vector, that geometry's index changes. That means
-    // we need remap the collision cliques from its old encoding to its new.
-    //
-    // Generally, this movement is to make the array of geometries compact; so
-    // a geometry is moved into a slot of a geometry that is being removed.
-    // Therefore, we require that the slot being moved into must *not* be
-    // occupied; i.e., the removed geometry has been removed.
-    auto old_iter = collision_cliques_.find(old_encoding);
-    DRAKE_DEMAND(old_iter != collision_cliques_.end());
-    auto new_iter = collision_cliques_.find(new_encoding);
-    DRAKE_DEMAND(new_iter == collision_cliques_.end());
-    collision_cliques_.emplace(new_encoding, std::move(old_iter->second));
-    collision_cliques_.erase(old_encoding);
-  }
-
  private:
   // A map between the EncodedData::encoding() value for a geometry and
   // its set of cliques.

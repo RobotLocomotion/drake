@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/branch_point.h"
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
@@ -21,7 +22,8 @@ namespace rndf {
 ///
 /// api::RoadGeometry::ToRoadPosition should not be called as DoToRoadPosition
 /// is not implemented.
-class RoadGeometry : public api::RoadGeometry {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    RoadGeometry : public api::RoadGeometry {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RoadGeometry)
 

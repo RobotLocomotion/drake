@@ -112,20 +112,24 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
   /** Constructs a MeshFieldLinear.
    @param name    The name of the field variable.
    @param values  The field value at each vertex of the mesh.
-   @param mesh    The mesh to which this MeshField refers.
+   @param mesh    The mesh M to which this MeshField refers.
    @pre   The `mesh` is non-null, and the number of entries in `values` is the
           same as the number of vertices of the mesh.
    */
   MeshFieldLinear(std::string name, std::vector<FieldValue>&& values,
-                  MeshType* mesh)
+                  const MeshType* mesh)
       : MeshField<FieldValue, MeshType>(mesh),
         name_(std::move(name)), values_(std::move(values)) {
     DRAKE_DEMAND(static_cast<int>(values_.size()) ==
                  this->mesh().num_vertices());
   }
 
-  FieldValue Evaluate(const typename MeshType::ElementIndex e,
-                     const typename MeshType::Barycentric& b) const final {
+  FieldValue EvaluateAtVertex(typename MeshType::VertexIndex v) const final {
+    return values_[v];
+  }
+
+  FieldValue Evaluate(typename MeshType::ElementIndex e,
+                      const typename MeshType::Barycentric& b) const final {
     const auto& element = this->mesh().element(e);
     FieldValue value = b[0] * values_[element.vertex(0)];
     for (int i = 1; i < MeshType::kDim + 1; ++i) {
@@ -134,8 +138,15 @@ class MeshFieldLinear final : public MeshField<FieldValue, MeshType> {
     return value;
   }
 
+  FieldValue EvaluateCartesian(
+                 typename MeshType::ElementIndex e,
+                 const typename MeshType::Cartesian& p_MQ) const final {
+    return Evaluate(e, this->mesh().CalcBarycentric(p_MQ, e));
+  }
+
   const std::string& name() const { return name_; }
   const std::vector<FieldValue>& values() const { return values_; }
+  std::vector<FieldValue>& mutable_values() { return values_; }
 
  private:
   // Clones MeshFieldLinear data under the assumption that the mesh

@@ -49,7 +49,8 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
         Translation3d(Vector3d(0.1, 0, 0)) *
         AngleAxis<double>(M_PI, Vector3d::UnitZ());
     frame_E_ = &plant_->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-        plant_->GetBodyByName("iiwa_link_7").body_frame(), X_7E));
+        plant_->GetBodyByName("iiwa_link_7").body_frame(),
+        math::RigidTransformd(X_7E)));
     plant_->Finalize();
     owned_context_ = plant_->CreateDefaultContext();
     context_ = owned_context_.get();
@@ -169,21 +170,22 @@ TEST_F(DifferentialInverseKinematicsTest, OverConstrainedTest) {
 TEST_F(DifferentialInverseKinematicsTest, GainTest) {
   const VectorXd q = plant_->GetPositions(*context_);
 
-  const Isometry3d X_WE = frame_E_->CalcPoseInWorld(*context_);
+  const math::RigidTransform<double> X_WE =
+      frame_E_->CalcPoseInWorld(*context_);
   MatrixX<double> J(6, plant_->num_velocities());
   plant_->CalcFrameGeometricJacobianExpressedInWorld(
       *context_, *frame_E_, Vector3<double>::Zero(), &J);
 
-  Vector6d V_WE_W, V_WE_desired, V_WE_E, V_WE_E_desired;
-  V_WE_desired << 0.1, -0.2, 0.3, -0.3, 0.2, -0.1;
-  V_WE_desired /= 2.;
+  Vector6d V_WE_W, V_WE_W_desired, V_WE_E, V_WE_E_desired;
+  V_WE_W_desired << 0.1, -0.2, 0.3, -0.3, 0.2, -0.1;
+  V_WE_W_desired /= 2.;
 
   Vector6d gain_E = Vector6d::Constant(1);
   for (int i = 0; i < 6; i++) {
     gain_E(i) = 0;
     params_->set_end_effector_velocity_gain(gain_E);
 
-    auto result = DoDiffIK(V_WE_desired);
+    auto result = DoDiffIK(V_WE_W_desired);
     ASSERT_TRUE(result.joint_velocities != nullopt);
 
     // Transform the resulting end effector frame's velocity into body frame.
@@ -191,15 +193,13 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
     plant_->SetVelocities(context_, result.joint_velocities.value());
 
     V_WE_W = frame_E_->CalcSpatialVelocityInWorld(*context_).get_coeffs();
-    auto R_EW = X_WE.linear().transpose().eval();  // Rotation matrix inverse.
+    const math::RotationMatrix<double> R_EW = X_WE.rotation().transpose();
     V_WE_E.head<3>() = R_EW * V_WE_W.head<3>();
     V_WE_E.tail<3>() = R_EW * V_WE_W.tail<3>();
 
     // Transform the desired end effector velocity into body frame.
-    V_WE_E_desired.head<3>() =
-        X_WE.linear().transpose() * V_WE_desired.head<3>();
-    V_WE_E_desired.tail<3>() =
-        X_WE.linear().transpose() * V_WE_desired.tail<3>();
+    V_WE_E_desired.head<3>() = R_EW * V_WE_W_desired.head<3>();
+    V_WE_E_desired.tail<3>() = R_EW * V_WE_W_desired.tail<3>();
 
     for (int j = 0; j < 6; j++) {
       // For the constrained dof, the velocity should match.

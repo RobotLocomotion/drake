@@ -101,6 +101,13 @@ cc_library(
         "-w",
     ],
     linkstatic = 1,
+    # Always link all of OSQP.  It includes an implementation of
+    # SuiteSparse_malloc internally which it needs to be able to find.
+    # Without this flag, in some circumstances applications linking to
+    # both OSQP and SCS can end up using the SuiteSparse_malloc from
+    # the SCS shared library, which has an incompatible signature.
+    # This ends badly.
+    alwayslink = 1,
     deps = [
         "@qdldl",
     ],

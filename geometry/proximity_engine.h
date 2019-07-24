@@ -2,13 +2,14 @@
 
 #include <limits>
 #include <memory>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_optional.h"
+#include "drake/common/sorted_pair.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/geometry_index.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
@@ -81,39 +82,26 @@ class ProximityEngine {
 
   /** Adds the given `shape` to the engine's _dynamic_ geometry.
    @param shape   The shape to add.
-   @param index   The index of the geometry in SceneGraph to which this shape
-                  belongs.
-   @returns the index of the added shape in the proximity engine.  */
-  ProximityIndex AddDynamicGeometry(const Shape& shape, GeometryIndex index);
+   @param id      The id of the geometry in SceneGraph to which this shape
+                  belongs.  */
+  void AddDynamicGeometry(const Shape& shape, GeometryId id);
 
   /** Adds the given `shape` to the engine's _anchored_ geometry.
    @param shape   The shape to add.
    @param X_WG    The pose of the shape in the world frame.
-   @param index   The index of the geometry in SceneGraph to which this shape
-                  belongs.
-   @returns the index of the added shape in the proximity engine.  */
-  ProximityIndex AddAnchoredGeometry(const Shape& shape,
-                                     const Isometry3<double>& X_WG,
-                                     GeometryIndex index);
+   @param id      The id of the geometry in SceneGraph to which this shape
+                  belongs.  */
+  void AddAnchoredGeometry(const Shape& shape, const Isometry3<double>& X_WG,
+                           GeometryId id);
 
-  /** Informs the proximity engine that the geometry at `proximity_index` has
-   moved in the GeometryState storage (i.e., it's GeometryIndex has changed).
-   @param proximity_index   The index of the geometry.
-   @param is_dynamic        True if the geometry is dynamic (false if anchored).
-   @param geometry_index    The new _GeometryIndex_ for the geometry.  */
-  void UpdateGeometryIndex(ProximityIndex proximity_index, bool is_dynamic,
-                           GeometryIndex geometry_index);
-
-  /** Removes the given geometry indicated by `index` from the engine. Returns
-   the index of the geometry that was moved into this newly cleared index
-   position to maintain contiguous indices.
-   @param index       The proximity index of the geometry to be removed.
+  // TODO(SeanCurtis-TRI): Decide if knowing whether something is dynamic or not
+  //  is *actually* sufficiently helpful to justify this act.
+  /** Removes the given geometry indicated by `id` from the engine.
+   @param id          The id of the geometry to be removed.
    @param is_dynamic  True if the geometry is dynamic, false if anchored.
-   @returns The GeometryIndex of the geometry that was moved into this index
-            or nullopt if no geometry was moved.
-   @pre the index is valid value.
+   @throws std::logic_error if `id` does not refer to a geometry in this engine.
   */
-  optional<GeometryIndex> RemoveGeometry(ProximityIndex index, bool is_dynamic);
+  void RemoveGeometry(GeometryId id, bool is_dynamic);
 
   /** Reports the _total_ number of geometries in the engine -- dynamic and
    anchored (spanning all sources).  */
@@ -136,61 +124,55 @@ class ProximityEngine {
 
   //@}
 
-  /** Updates the poses for all of the dynamic geometries in the engine. It
-   is an invariant that _every_ registered dynamic geometry, across _all_
-   geometry sources, with a proximity role has a _unique_ index that lies in the
-   range [0, num_dynamic() - 1]. `indices.size()` should be equal to
-   num_dynamic() and any other length will cause program failure.
-   @param X_WG      The poses of each geometry `G` measured and expressed in the
+  /** Updates the poses for all of the _dynamic_ geometries in the engine.
+   @param X_WGs     The poses of each geometry `G` measured and expressed in the
                     world frame `W` (including geometries which may *not* be
-                    registered with the proximity engine).
-   @param indices   Indices into `X_WG` mapping engine index to geometry index.
+                    registered with the proximity engine or may not be
+                    dynamic).
   */
   // TODO(SeanCurtis-TRI): I could do things here differently a number of ways:
   //  1. I could make this move semantics (or swap semantics).
   //  2. I could simply have a method that returns a mutable reference to such
   //    a vector and the caller sets values there directly.
-  void UpdateWorldPoses(const std::vector<Isometry3<T>>& X_WG,
-                        const std::vector<GeometryIndex>& indices);
+  void UpdateWorldPoses(
+      const std::unordered_map<GeometryId, Isometry3<T>>& X_WGs);
 
   // ----------------------------------------------------------------------
   /**@name              Signed Distance Queries
   See @ref signed_distance_query "Signed Distance Query" for more details.  */
 
   //@{
+  // TODO(SeanCurtis-TRI): Remove this documentation in favor of a link to the
+  // public API.
   // NOTE: This maps to Model::ClosestPointsAllToAll().
-  /** Determines all the closest points between any pair of bodies/elements.
-   This function returns the _signed_ distance between all _valid_ pairs of
-   geometries. A valid pair consists of either two dynamic geometries or a
-   dynamic geometry and an anchored geometry. It _never_ includes two anchored
-   geometries. The order and size of the returned vector are invariant
-   when the poses of the objects are changed.
+  /** Determines the closest points between "all" pairs of bodies/elements. In
+   this case, for a signed distance to be reported for geometry pair (A, B):
 
-   @param[in] geometry_map    A map from geometry _index_ to the corresponding
-                              global geometry identifier.
-   @param[in] X_WGs           The pose of all geometries in world, indexed by
-                              each geometry's GeometryIndex.
+     - A and B cannot both be anchored.
+     - The pair (A, B) cannot be marked as filtered.
+     - The distance between A and B must be less than `max_distance`.
+
+   For a geometry pair (A, B), the returned results will always be reported in
+   a fixed order (e.g., always (A, B) and never (B, A)). The _basis_ for the
+   ordering is arbitrary (and therefore undocumented), but guaranteed to be
+   fixed and repeatable.
+
+   @param[in] X_WGs           The pose of all geometries in World, keyed on
+                              each geometry's GeometryId.
    @param[in] max_distance    The maximum distance between objects such that
                               they will be included in the results.
    @returns  A vector populated with per-object-pair signed distance values (and
-             supporting data). All reported pairs will have a distance <=
-             `max_distance`. Note: For a geometry pair (A, B), the supporting
-             data will always be reported in a fixed order (e.g., always (A, B)
-             and never (B, A)). The _basis_ for the ordering is arbitrary (and
-             therefore undocumented), but guaranteed to be fixed and repeatable.
+             supporting data).
    */
   std::vector<SignedDistancePair<T>>
   ComputeSignedDistancePairwiseClosestPoints(
-      const std::vector<GeometryId>& geometry_map,
-      const std::vector<Isometry3<T>>& X_WGs,
+      const std::unordered_map<GeometryId, Isometry3<T>>& X_WGs,
       const double max_distance) const;
 
   /** Performs work in support of GeometryState::ComputeSignedDistanceToPoint().
    @param[in] p_WQ            Position of a query point Q in world frame W.
-   @param[in] geometry_map    A map from geometry _index_ to the corresponding
-                              global geometry identifier.
-   @param[in] X_WGs           The pose of all geometries in world, indexed by
-                              each geometry's GeometryIndex.
+   @param[in] X_WGs           The pose of all geometries in world, keyed by
+                              each geometry's GeometryId.
    @param[in] threshold       Ignore any object beyond this distance.
    @retval signed_distances   A vector populated with per-object signed
                               distance and gradient vector.
@@ -199,8 +181,7 @@ class ProximityEngine {
   std::vector<SignedDistanceToPoint<T>>
   ComputeSignedDistanceToPoint(
       const Vector3<T>& p_WQ,
-      const std::vector<GeometryId>& geometry_map,
-      const std::vector<Isometry3<T>>& X_WGs,
+      const std::unordered_map<GeometryId, Isometry3<T>>& X_WGs,
       const double threshold = std::numeric_limits<double>::infinity()) const;
   //@}
 
@@ -243,12 +224,10 @@ class ProximityEngine {
    For two penetrating geometries g_A and g_B, it is guaranteed that they will
    map to `id_A` and `id_B` in a fixed, repeatable manner.
 
-   @param[in]   geometry_map  A map from geometry _index_ to the corresponding
-                              global geometry identifier.
    @returns A vector populated with all detected penetrations characterized as
             point pairs.  */
-  std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration(
-      const std::vector<GeometryId>& geometry_map) const;
+  std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
+      const;
 
   /**
    Computes the intersections across all pairs of geometries in the world with
@@ -258,14 +237,18 @@ class ProximityEngine {
    map to `id_A` and `id_B` in a fixed, repeatable manner, where `id_A` and
    `id_B` are GeometryId's of geometries g_A and g_B respectively.
 
-   @param[in]   geometry_map  A map from geometry _index_ to the corresponding
-                              global geometry identifier.
    @returns A vector populated with all detected intersections characterized as
             contact surfaces.  */
-  std::vector<ContactSurface<T>> ComputeContactSurfaces(
-      const std::vector<GeometryId>& /* geometry_map */) const;
+  std::vector<ContactSurface<T>> ComputeContactSurfaces() const;
 
   //@}
+
+  /**
+   Performs a broad-phase pass and returns a vector containing collision pair
+   candidates. A pair in the returned set is not necessarily in contact, and
+   further analysis must be done to confirm contact. A pair of geometries not
+   present in the result is guaranteed not to be in contact.  */
+  std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
 
   /** @name               Collision filters
 
@@ -280,14 +263,14 @@ class ProximityEngine {
   /** Excludes geometry pairs from collision evaluation by updating the
    candidate pair set `C = C - P`, where `P = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ G` and
    `G = dynamic ⋃ anchored = {g₀, g₁, ..., gₙ}`.
-   @param[in]   dynamic     The set of geometry indices for _dynamic_ geometries
+   @param[in]   dynamic     The set of geometry ids for _dynamic_ geometries
                             for which no collisions can be reported.
-   @param[in]   anchored    The set of geometry indices for _anchored_
+   @param[in]   anchored    The set of geometry ids for _anchored_
                             geometries for which no collisions can be reported.
   */
   void ExcludeCollisionsWithin(
-      const std::unordered_set<GeometryIndex>& dynamic,
-      const std::unordered_set<GeometryIndex>& anchored);
+      const std::unordered_set<GeometryId>& dynamic,
+      const std::unordered_set<GeometryId>& anchored);
 
   /** Excludes geometry pairs from collision evaluation by updating the
    candidate pair set `C = C - P`, where `P = {(a, b)}, ∀ a ∈ A, b ∈ B` and
@@ -295,15 +278,15 @@ class ProximityEngine {
    `B = dynamic2 ⋃ anchored2 = {b₀, b₁, ..., bₙ}`. This does _not_
    preclude collisions between members of the _same_ set.   */
   void ExcludeCollisionsBetween(
-      const std::unordered_set<GeometryIndex>& dynamic1,
-      const std::unordered_set<GeometryIndex>& anchored1,
-      const std::unordered_set<GeometryIndex>& dynamic2,
-      const std::unordered_set<GeometryIndex>& anchored2);
+      const std::unordered_set<GeometryId>& dynamic1,
+      const std::unordered_set<GeometryId>& anchored1,
+      const std::unordered_set<GeometryId>& dynamic2,
+      const std::unordered_set<GeometryId>& anchored2);
 
-  /** Reports true if the geometry pair (index1, index2) has been filtered from
+  /** Reports true if the geometry pair (id1, id2) has been filtered from
    collision.  */
-  bool CollisionFiltered(GeometryIndex index1, bool is_dynamic_1,
-                         GeometryIndex index2, bool is_dynamic_2) const;
+  bool CollisionFiltered(GeometryId id1, bool is_dynamic_1,
+                         GeometryId id2, bool is_dynamic_2) const;
   //@}
 
  private:
@@ -313,10 +296,10 @@ class ProximityEngine {
   // Retrieves the next available clique.
   int get_next_clique();
 
-  // Assigns the given clique to the dynamic geometry indicated by `index`.
+  // Assigns the given clique to the geometry indicated by `id`.
   // This is exposed via the GeometryStateCollisionFilterAttorney to allow
   // GeometryState to set up cliques between sibling geometries.
-  void set_clique(GeometryIndex index, int clique);
+  void set_clique(GeometryId id, int clique);
 
   ////////////////////////////////////////////////////////////////////////////
 
@@ -331,11 +314,8 @@ class ProximityEngine {
   // Reveals what the next generated clique will be (without changing it).
   int peek_next_clique() const;
 
-  // Reports the pose (X_WG) of the geometry at the given index.
-  const Isometry3<double>& GetX_WG(ProximityIndex index, bool is_dynamic) const;
-
-  // Reports the GeometryIndex for the geometry at the given index.
-  GeometryIndex GetGeometryIndex(ProximityIndex index, bool is_dynamic) const;
+  // Reports the pose (X_WG) of the geometry with the given id.
+  const Isometry3<double>& GetX_WG(GeometryId id, bool is_dynamic) const;
 
   ////////////////////////////////////////////////////////////////////////////
 
@@ -390,12 +370,12 @@ class GeometryStateCollisionFilterAttorney {
   }
 
   // Assigns the given clique to the *dynamic* geometry indicated by the given
-  // index. This function exists for one reason, and one reason only. To allow
+  // id. This function exists for one reason, and one reason only. To allow
   // GeometryState to automatically exclude pair (gᵢ, gⱼ) from collision if gᵢ
   // and gⱼ are affixed to the same frame.
   template <typename T>
   static void set_dynamic_geometry_clique(ProximityEngine<T>* engine,
-                                          GeometryIndex geometry_index,
+                                          GeometryId geometry_index,
                                           int clique) {
     engine->set_clique(geometry_index, clique);
   }

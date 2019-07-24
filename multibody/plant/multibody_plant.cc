@@ -12,6 +12,7 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/render/render_label.h"
 #include "drake/math/orthonormal_basis.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rotation_matrix.h"
@@ -36,6 +37,7 @@ using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::PenetrationAsPointPair;
+using geometry::render::RenderLabel;
 using geometry::SceneGraph;
 using geometry::SourceId;
 using systems::InputPort;
@@ -295,10 +297,28 @@ geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
 template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
     const Body<T>& body, const math::RigidTransform<double>& X_BG,
+    const geometry::Shape& shape, const std::string& name) {
+  return RegisterVisualGeometry(
+      body, X_BG, shape, name, geometry::IllustrationProperties());
+}
+
+template <typename T>
+geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
+    const Body<T>& body, const math::RigidTransform<double>& X_BG,
     const geometry::Shape& shape, const std::string& name,
     geometry::SceneGraph<T>* scene_graph) {
+  CheckUserProvidedSceneGraph(scene_graph);
+  return RegisterVisualGeometry(body, X_BG, shape, name);
+}
+
+template <typename T>
+geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
+    const Body<T>& body, const math::RigidTransform<double>& X_BG,
+    const geometry::Shape& shape, const std::string& name,
+    const Vector4<double>& diffuse_color) {
   return RegisterVisualGeometry(
-      body, X_BG, shape, name, geometry::IllustrationProperties(), scene_graph);
+      body, X_BG, shape, name,
+      geometry::MakePhongIllustrationProperties(diffuse_color));
 }
 
 template <typename T>
@@ -307,17 +327,15 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
     const geometry::Shape& shape, const std::string& name,
     const Vector4<double>& diffuse_color,
     SceneGraph<T>* scene_graph) {
-  return RegisterVisualGeometry(
-      body, X_BG, shape, name,
-      geometry::MakePhongIllustrationProperties(diffuse_color), scene_graph);
+  CheckUserProvidedSceneGraph(scene_graph);
+  return RegisterVisualGeometry(body, X_BG, shape, name, diffuse_color);
 }
 
 template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
     const Body<T>& body, const math::RigidTransform<double>& X_BG,
     const geometry::Shape& shape, const std::string& name,
-    const geometry::IllustrationProperties& properties,
-    SceneGraph<T>* scene_graph) {
+    const geometry::IllustrationProperties& properties) {
   // TODO(SeanCurtis-TRI): Consider simply adding an interface that takes a
   // unique pointer to an already instantiated GeometryInstance. This will
   // require shuffling around a fair amount of code and should ultimately be
@@ -325,7 +343,6 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
   // elements.
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(geometry_source_is_registered());
-  CheckUserProvidedSceneGraph(scene_graph);
 
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
@@ -334,11 +351,32 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
       RegisterGeometry(body, X_BG, shape,
                        GetScopedName(*this, body.model_instance(), name));
   member_scene_graph().AssignRole(*source_id_, id, properties);
+
+  // TODO(SeanCurtis-TRI): Eliminate the automatic assignment of perception
+  //  and illustration in favor of a protocol that allows definition.
+  geometry::PerceptionProperties perception_props;
+  perception_props.AddProperty("label", "id", RenderLabel(body.index()));
+  perception_props.AddProperty(
+      "phong", "diffuse",
+      properties.GetPropertyOrDefault(
+          "phong", "diffuse", Vector4<double>(0.9, 0.9, 0.9, 1.0)));
+  member_scene_graph().AssignRole(*source_id_, id, perception_props);
+
   const int visual_index = geometry_id_to_visual_index_.size();
   geometry_id_to_visual_index_[id] = visual_index;
   DRAKE_ASSERT(num_bodies() == static_cast<int>(visual_geometries_.size()));
   visual_geometries_[body.index()].push_back(id);
   return id;
+}
+
+template <typename T>
+geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
+    const Body<T>& body, const math::RigidTransform<double>& X_BG,
+    const geometry::Shape& shape, const std::string& name,
+    const geometry::IllustrationProperties& properties,
+    SceneGraph<T>* scene_graph) {
+  CheckUserProvidedSceneGraph(scene_graph);
+  return RegisterVisualGeometry(body, X_BG, shape, name, properties);
 }
 
 template <typename T>
@@ -351,11 +389,9 @@ template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
     const Body<T>& body, const math::RigidTransform<double>& X_BG,
     const geometry::Shape& shape, const std::string& name,
-    const CoulombFriction<double>& coulomb_friction,
-    SceneGraph<T>* scene_graph) {
+    const CoulombFriction<double>& coulomb_friction) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(geometry_source_is_registered());
-  CheckUserProvidedSceneGraph(scene_graph);
 
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
@@ -376,6 +412,16 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   DRAKE_ASSERT(num_bodies() == static_cast<int>(collision_geometries_.size()));
   collision_geometries_[body.index()].push_back(id);
   return id;
+}
+
+template <typename T>
+geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
+    const Body<T>& body, const math::RigidTransform<double>& X_BG,
+    const geometry::Shape& shape, const std::string& name,
+    const CoulombFriction<double>& coulomb_friction,
+    SceneGraph<T>* scene_graph) {
+  CheckUserProvidedSceneGraph(scene_graph);
+  return RegisterCollisionGeometry(body, X_BG, shape, name, coulomb_friction);
 }
 
 template <typename T>
@@ -522,15 +568,20 @@ void MultibodyPlant<T>::CalcForceElementsContribution(
 }
 
 template<typename T>
-void MultibodyPlant<T>::Finalize(geometry::SceneGraph<T>* scene_graph) {
+void MultibodyPlant<T>::Finalize() {
   // After finalizing the base class, tree is read-only.
   internal::MultibodyTreeSystem<T>::Finalize();
-  CheckUserProvidedSceneGraph(scene_graph);
   if (geometry_source_is_registered()) {
     FilterAdjacentBodies();
     ExcludeCollisionsWithVisualGeometry();
   }
   FinalizePlantOnly();
+}
+
+template<typename T>
+void MultibodyPlant<T>::Finalize(geometry::SceneGraph<T>* scene_graph) {
+  CheckUserProvidedSceneGraph(scene_graph);
+  Finalize();
 }
 
 template<typename T>
@@ -658,6 +709,17 @@ MatrixX<T> MultibodyPlant<T>::MakeActuationMatrix() const {
 
 template <typename T>
 struct MultibodyPlant<T>::SceneGraphStub {
+  struct StubSceneGraphInspector {
+    const geometry::ProximityProperties* GetProximityProperties(
+        GeometryId) const {
+      return nullptr;
+    }
+    const geometry::IllustrationProperties* GetIllustrationProperties(
+        GeometryId) const {
+      return nullptr;
+    }
+  };
+
   static void Throw(const char* operation_name) {
     throw std::logic_error(fmt::format(
         "Cannot {} on a SceneGraph<symbolic::Expression>", operation_name));
@@ -677,6 +739,10 @@ struct MultibodyPlant<T>::SceneGraphStub {
   DRAKE_STUB(FrameId, RegisterFrame)
   DRAKE_STUB(GeometryId, RegisterGeometry)
   DRAKE_STUB(SourceId, RegisterSource)
+  const StubSceneGraphInspector model_inspector() const {
+    Throw("model_inspector");
+    return StubSceneGraphInspector();
+  }
 
 #undef DRAKE_STUB
 };
@@ -791,6 +857,7 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
   // sized.
   if (num_contacts == 0) return;
 
+  const Frame<T>& frame_W = internal_tree().world_frame();
   for (int icontact = 0; icontact < num_contacts; ++icontact) {
     const auto& point_pair = point_pairs_set[icontact];
 
@@ -815,15 +882,27 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
     // Geometric Jacobian for the velocity of the contact point C as moving with
     // body A, s.t.: v_WAc = Jv_WAc * v
     // where v is the vector of generalized velocities.
-    MatrixX<T> Jv_WAc(3, this->num_velocities());
-    internal_tree().CalcPointsGeometricJacobianExpressedInWorld(
-        context, bodyA.body_frame(), p_WCa, &Jv_WAc);
+    Matrix3X<T> Jv_WAc(3, this->num_velocities());
+    internal_tree().CalcJacobianTranslationalVelocity(context,
+                                                      JacobianWrtVariable::kV,
+                                                      bodyA.body_frame(),
+                                                      frame_W,
+                                                      p_WCa,
+                                                      frame_W,
+                                                      frame_W,
+                                                      &Jv_WAc);
 
     // Geometric Jacobian for the velocity of the contact point C as moving with
     // body B, s.t.: v_WBc = Jv_WBc * v.
-    MatrixX<T> Jv_WBc(3, this->num_velocities());
-    internal_tree().CalcPointsGeometricJacobianExpressedInWorld(
-        context, bodyB.body_frame(), p_WCb, &Jv_WBc);
+    Matrix3X<T> Jv_WBc(3, this->num_velocities());
+    internal_tree().CalcJacobianTranslationalVelocity(context,
+                                                      JacobianWrtVariable::kV,
+                                                      bodyB.body_frame(),
+                                                      frame_W,
+                                                      p_WCb,
+                                                      frame_W,
+                                                      frame_W,
+                                                      &Jv_WBc);
 
     // Computation of the normal separation velocities Jacobian Jn:
     //

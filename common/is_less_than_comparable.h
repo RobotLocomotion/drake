@@ -8,7 +8,7 @@ namespace drake {
 
 #ifndef DRAKE_DOXYGEN_CXX
 
-namespace is_less_than_comparable_detail {
+namespace is_less_than_comparable_internal {
 
 // Default case; assumes that a class is *not* less-than comparable.
 template <typename T, typename = void>
@@ -22,7 +22,7 @@ struct is_less_than_comparable_helper<T, typename std::enable_if<true,
     decltype(unused(std::declval<T&>() < std::declval<T&>()),
     (void)0)>::type> : std::true_type {};
 
-}  // namespace is_less_than_comparable_detail
+}  // namespace is_less_than_comparable_internal
 
 /** @endcond */
 
@@ -67,7 +67,7 @@ struct is_less_than_comparable_helper<T, typename std::enable_if<true,
  */
 template <typename T>
 using is_less_than_comparable =
-    is_less_than_comparable_detail::is_less_than_comparable_helper<T, void>;
+    is_less_than_comparable_internal::is_less_than_comparable_helper<T, void>;
 
 }  // namespace drake
 

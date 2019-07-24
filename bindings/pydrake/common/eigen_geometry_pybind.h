@@ -18,7 +18,7 @@
 
 namespace drake {
 namespace pydrake {
-namespace detail {
+namespace internal {
 
 // Implements a `type_caster<>` specialization used to convert types using a
 // specific wrapping policy.
@@ -97,7 +97,7 @@ struct wrapper_eigen_translation {
 // N.B. Since `Isometry3<>` and `Eigen::Quaternion<>` have more
 // complicated structures, they are registered as types in `eigen_geometry_py`.
 
-}  // namespace detail
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake
 
@@ -106,8 +106,8 @@ namespace detail {
 
 template <typename T, int Dim>
 struct type_caster<Eigen::Translation<T, Dim>>
-    : public drake::pydrake::detail::type_caster_wrapped<
-          drake::pydrake::detail::wrapper_eigen_translation<T, Dim>> {};
+    : public drake::pydrake::internal::type_caster_wrapped<
+          drake::pydrake::internal::wrapper_eigen_translation<T, Dim>> {};
 
 }  // namespace detail
 }  // namespace pybind11

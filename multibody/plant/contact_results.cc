@@ -20,7 +20,8 @@ template <typename T>
 void ContactResults<T>::Clear() { point_pairs_info_.clear(); }
 
 template <typename T>
-const PointPairContactInfo<T>& ContactResults<T>::contact_info(int i) const {
+const PointPairContactInfo<T>&
+ContactResults<T>::point_pair_contact_info(int i) const {
   DRAKE_DEMAND(i >= 0 && i < num_contacts());
   return point_pairs_info_[i];
 }

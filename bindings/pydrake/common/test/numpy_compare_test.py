@@ -4,7 +4,7 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.symbolic import Expression, Variable
+from pydrake.symbolic import Expression, Formula, Variable
 
 
 class Custom(object):
@@ -142,3 +142,26 @@ class TestNumpyCompareSimple(unittest.TestCase):
         numpy_compare.assert_equal(e, "(x + y)")
         numpy_compare.assert_not_equal(e, x - y)
         numpy_compare.assert_not_equal(e, "(x - y)")
+        numpy_compare.assert_equal(Formula.True_(), True)
+        numpy_compare.assert_equal(Formula.False_(), False)
+        numpy_compare.assert_not_equal(Formula.True_(), False)
+
+    def test_decorators(self):
+        T_list_all = []
+        T_list_nonsymbolic = []
+
+        @numpy_compare.check_all_types
+        def decorated_all(arg, T):
+            self.assertEqual(arg, 1)
+            T_list_all.append(T)
+
+        @numpy_compare.check_nonsymbolic_types
+        def decorated_nonsymbolic(arg, T):
+            self.assertEqual(arg, 2)
+            T_list_nonsymbolic.append(T)
+
+        decorated_all(1)
+        self.assertEqual(T_list_all, [float, AutoDiffXd, Expression])
+
+        decorated_nonsymbolic(2)
+        self.assertEqual(T_list_nonsymbolic, [float, AutoDiffXd])

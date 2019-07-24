@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/intersection.h"
 #include "drake/automotive/maliput/api/intersection_book.h"
 #include "drake/common/drake_copyable.h"
@@ -10,7 +11,8 @@ namespace drake {
 namespace maliput {
 
 /// A concrete implementation of the api::IntersectionBook abstract interface.
-class IntersectionBook : public api::IntersectionBook {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    IntersectionBook : public api::IntersectionBook {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IntersectionBook);
 

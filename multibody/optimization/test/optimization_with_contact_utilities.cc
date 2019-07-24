@@ -47,14 +47,15 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
   for (int i = 0; i < num_spheres; ++i) {
     const auto& sphere =
         plant_->AddRigidBody("sphere" + std::to_string(i), spheres_[i].inertia);
+    sphere_body_indices_.push_back(sphere.index());
     sphere_geometry_ids_.push_back(plant_->RegisterCollisionGeometry(
         sphere, math::RigidTransformd::Identity(),
         geometry::Sphere(spheres_[i].radius), "sphere" + std::to_string(i),
-        spheres_[i].friction, scene_graph_));
+        spheres_[i].friction));
     plant_->RegisterVisualGeometry(
         sphere, math::RigidTransformd::Identity(),
         geometry::Sphere(spheres_[i].radius), "sphere" + std::to_string(i),
-        geometry::IllustrationProperties(), scene_graph_);
+        geometry::IllustrationProperties());
   }
   // Add boxes and register collision geometry.
   for (int i = 0; i < num_boxes; ++i) {
@@ -69,15 +70,15 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
           &(plant_->AddRigidBody("box" + std::to_string(i), boxes_[i].inertia));
       X_BBox = math::RigidTransformd::Identity();
     }
+    box_body_indices_.push_back(box_body->index());
     box_geometry_ids_.push_back(plant_->RegisterCollisionGeometry(
         *box_body, X_BBox,
         geometry::Box(boxes_[i].size(0), boxes_[i].size(1), boxes_[i].size(2)),
-        "box" + std::to_string(i), boxes_[i].friction, scene_graph_));
+        "box" + std::to_string(i), boxes_[i].friction));
     plant_->RegisterVisualGeometry(
         *box_body, X_BBox,
         geometry::Box(boxes_[i].size(0), boxes_[i].size(1), boxes_[i].size(2)),
-        "box" + std::to_string(i), geometry::IllustrationProperties(),
-        scene_graph_);
+        "box" + std::to_string(i), geometry::IllustrationProperties());
   }
   // Add the ground, register collision geometry.
   // The mass and inertia of the ground don't matter. Set them to arbitrary
@@ -88,7 +89,7 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
   ground_geometry_id_ = plant_->RegisterCollisionGeometry(
       plant_->world_body(), X_WG,
       geometry::Box(ground_box_size(0), ground_box_size(1), ground_box_size(2)),
-      "ground", ground_friction_, scene_graph_);
+      "ground", ground_friction_);
 
   plant_->Finalize();
 

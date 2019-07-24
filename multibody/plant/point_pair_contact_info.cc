@@ -1,4 +1,4 @@
-#include "drake/multibody/plant/contact_info.h"
+#include "drake/multibody/plant/point_pair_contact_info.h"
 
 namespace drake {
 namespace multibody {

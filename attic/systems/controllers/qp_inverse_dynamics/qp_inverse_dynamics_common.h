@@ -10,6 +10,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/systems/controllers/qp_inverse_dynamics/deprecated.h"
 
 namespace drake {
 namespace systems {
@@ -24,6 +25,7 @@ namespace qp_inverse_dynamics {
  */
 enum class ConstraintType { Hard = -1, Skip = 0, Soft = 1 };
 
+DRAKE_DEPRECATED_QPID
 std::ostream& operator<<(std::ostream& out, const ConstraintType& type);
 
 /**
@@ -32,7 +34,7 @@ std::ostream& operator<<(std::ostream& out, const ConstraintType& type);
  * cost terms depending on the specified types.
  * For cost terms, a positive weight needs to be specified.
  */
-class ConstrainedValues {
+class DRAKE_DEPRECATED_QPID ConstrainedValues {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConstrainedValues)
 
@@ -144,7 +146,7 @@ class ConstrainedValues {
  * This condition can be enforced either as an equality constraint or as a
  * cost term.
  */
-class ContactInformation {
+class DRAKE_DEPRECATED_QPID ContactInformation {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactInformation)
 
@@ -317,6 +319,7 @@ class ContactInformation {
   ConstraintType acceleration_constraint_type_;
 };
 
+DRAKE_DEPRECATED_QPID
 std::ostream& operator<<(std::ostream& out, const ContactInformation& contact);
 
 // TODO(siyuan.feng): Expand this to be expressed in other frame.
@@ -332,7 +335,7 @@ std::ostream& operator<<(std::ostream& out, const ContactInformation& contact);
  * The desired acceleration can be skipped, enforced as equality constraints
  * or optimized as a cost term depending on the constraint type.
  */
-class DesiredBodyMotion : public ConstrainedValues {
+class DRAKE_DEPRECATED_QPID DesiredBodyMotion : public ConstrainedValues {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DesiredBodyMotion)
 
@@ -374,6 +377,7 @@ class DesiredBodyMotion : public ConstrainedValues {
   bool control_during_contact_;
 };
 
+DRAKE_DEPRECATED_QPID
 std::ostream& operator<<(std::ostream& out, const DesiredBodyMotion& input);
 
 // TODO(siyuan.feng): Expand this to have policies (controllers).
@@ -384,7 +388,7 @@ std::ostream& operator<<(std::ostream& out, const DesiredBodyMotion& input);
  * The desired acceleration can be skipped, enforced as equality constraints
  * or optimized as a cost term depending on the constraint type.
  */
-class DesiredDofMotions : public ConstrainedValues {
+class DRAKE_DEPRECATED_QPID DesiredDofMotions : public ConstrainedValues {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DesiredDofMotions)
 
@@ -416,6 +420,7 @@ class DesiredDofMotions : public ConstrainedValues {
   std::vector<std::string> dof_names_;
 };
 
+DRAKE_DEPRECATED_QPID
 std::ostream& operator<<(std::ostream& out, const DesiredDofMotions& input);
 
 // TODO(siyuan.feng): Expand this to have policies (controllers).
@@ -430,7 +435,8 @@ std::ostream& operator<<(std::ostream& out, const DesiredDofMotions& input);
  * equality constraints or optimized as a cost term depending on the
  * constraint type.
  */
-class DesiredCentroidalMomentumDot : public ConstrainedValues {
+class DRAKE_DEPRECATED_QPID DesiredCentroidalMomentumDot
+    : public ConstrainedValues {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DesiredCentroidalMomentumDot)
 
@@ -441,13 +447,14 @@ class DesiredCentroidalMomentumDot : public ConstrainedValues {
   std::string get_row_name(int i) const;
 };
 
+DRAKE_DEPRECATED_QPID
 std::ostream& operator<<(std::ostream& out,
                          const DesiredCentroidalMomentumDot& input);
 
 /**
  * Input to the QP inverse dynamics controller.
  */
-class QpInput {
+class DRAKE_DEPRECATED_QPID QpInput {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(QpInput)
 
@@ -529,13 +536,14 @@ class QpInput {
   double w_basis_reg_;
 };
 
+DRAKE_DEPRECATED_QPID
 std::ostream& operator<<(std::ostream& out, const QpInput& input);
 
 /**
  * This class holds contact force related information, and works closely
  * with ContactInformation.
  */
-class ResolvedContact {
+class DRAKE_DEPRECATED_QPID ResolvedContact {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ResolvedContact)
 
@@ -617,13 +625,14 @@ class ResolvedContact {
   Vector3<double> reference_point_;
 };
 
+DRAKE_DEPRECATED_QPID
 std::ostream& operator<<(std::ostream& out, const ResolvedContact& contact);
 
 /**
  * This class holds spatial acceleration for a rigid body. The first three
  * elements are angular accelerations.
  */
-class BodyAcceleration {
+class DRAKE_DEPRECATED_QPID BodyAcceleration {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BodyAcceleration)
 
@@ -656,12 +665,13 @@ class BodyAcceleration {
   Vector6<double> accelerations_;
 };
 
+DRAKE_DEPRECATED_QPID
 std::ostream& operator<<(std::ostream& out, const BodyAcceleration& acc);
 
 /**
  * Output of the QP inverse dynamics controller.
  */
-class QpOutput {
+class DRAKE_DEPRECATED_QPID QpOutput {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(QpOutput)
 
@@ -757,11 +767,13 @@ class QpOutput {
   std::vector<std::pair<std::string, double>> costs_;
 };
 
+DRAKE_DEPRECATED_QPID
 std::ostream& operator<<(std::ostream& out, const QpOutput& output);
 
 // TODO(siyuanfeng): This should be made more robust and general, and it
 // should also be in RigidBodyTree.
 template <typename T>
+DRAKE_DEPRECATED_QPID
 std::vector<std::string> GetDofNames(const RigidBodyTree<T>& robot) {
   std::vector<std::string> names(robot.get_num_velocities());
   // strip out the "dot" part from name

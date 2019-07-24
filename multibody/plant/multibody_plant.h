@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/random.h"
@@ -494,7 +495,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// `q_v` is not equal to `num_positions() + num_velocities()`.
   void SetPositionsAndVelocities(
       systems::Context<T>* context, const VectorX<T>& q_v) const {
-    DRAKE_DEMAND(q_v.size() == (num_positions() + num_velocities()));
+    DRAKE_THROW_UNLESS(q_v.size() == (num_positions() + num_velocities()));
     internal_tree().GetMutablePositionsAndVelocities(context) = q_v;
   }
 
@@ -507,6 +508,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetPositionsAndVelocities(
       systems::Context<T>* context, ModelInstanceIndex model_instance,
       const VectorX<T>& q_v) const {
+    DRAKE_THROW_UNLESS(
+        q_v.size() ==
+        (num_positions(model_instance) + num_velocities(model_instance)));
     internal_tree().SetPositionsAndVelocities(model_instance, q_v, context);
   }
 
@@ -583,6 +587,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// not correspond to the context for a multibody model, or if the length of
   /// `q` is not equal to `num_positions()`.
   void SetPositions(systems::Context<T>* context, const VectorX<T>& q) const {
+    DRAKE_THROW_UNLESS(q.size() == num_positions());
     GetMutablePositions(context) = q;
   }
 
@@ -594,6 +599,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetPositions(
       systems::Context<T>* context,
       ModelInstanceIndex model_instance, const VectorX<T>& q_instance) const {
+    DRAKE_THROW_UNLESS(q_instance.size() == num_positions(model_instance));
     Eigen::VectorBlock<VectorX<T>> q = GetMutablePositions(context);
     internal_tree().SetPositionsInArray(model_instance, q_instance, &q);
   }
@@ -607,6 +613,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetPositions(const systems::Context<T>& context,
                     systems::State<T>* state, ModelInstanceIndex model_instance,
                     const VectorX<T>& q_instance) const {
+    DRAKE_THROW_UNLESS(q_instance.size() == num_positions(model_instance));
     CheckValidState(state);
     Eigen::VectorBlock<VectorX<T>> q = GetMutablePositions(context, state);
     internal_tree().SetPositionsInArray(model_instance, q_instance, &q);
@@ -670,6 +677,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// not correspond to the context for a multibody model, or if the length of
   /// `v` is not equal to `num_velocities()`.
   void SetVelocities(systems::Context<T>* context, const VectorX<T>& v) const {
+    DRAKE_THROW_UNLESS(v.size() == num_velocities());
     GetMutableVelocities(context) = v;
   }
 
@@ -683,6 +691,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetVelocities(
       const systems::Context<T>& context, systems::State<T>* state,
       ModelInstanceIndex model_instance, const VectorX<T>& v_instance) const {
+    DRAKE_THROW_UNLESS(v_instance.size() == num_velocities(model_instance));
     CheckValidState(state);
     Eigen::VectorBlock<VectorX<T>> v = GetMutableVelocities(context, state);
     internal_tree().SetVelocitiesInArray(model_instance, v_instance, &v);
@@ -697,6 +706,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetVelocities(
       systems::Context<T>* context,
       ModelInstanceIndex model_instance, const VectorX<T>& v_instance) const {
+    DRAKE_THROW_UNLESS(v_instance.size() == num_velocities(model_instance));
     Eigen::VectorBlock<VectorX<T>> v = GetMutableVelocities(context);
     internal_tree().SetVelocitiesInArray(model_instance, v_instance, &v);
   }
@@ -1371,26 +1381,39 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_F, const Body<T>& body,
       const math::RigidTransform<T>& X_FB) const;
 
-  /// Computes the relative transform `X_AB(q)` from a frame B to a frame A, as
-  /// a function of the generalized positions q of the model.
-  /// That is, the position `p_AQ` of a point Q measured and expressed in
-  /// frame A can be computed from the position `p_BQ` of this point measured
-  /// and expressed in frame B using the transformation `p_AQ = X_AB⋅p_BQ`.
-  ///
+  /// Calculates the rigid transform (pose) `X_FG` relating frame F and frame G.
   /// @param[in] context
-  ///   The context containing the state of the model. It stores the
-  ///   generalized positions q of the model.
-  /// @param[in] frame_A
-  ///   The target frame A in the computed relative transform `X_AB`.
-  /// @param[in] frame_B
-  ///   The source frame B in the computed relative transform `X_AB`.
-  /// @retval X_AB
-  ///   The relative transform from frame B to frame A, such that
-  ///   `p_AQ = X_AB⋅p_BQ`.
+  ///    The state of the multibody system, which includes the system's
+  ///    generalized positions q.  Note: `X_FG` is a function of q.
+  /// @param[in] frame_F
+  ///    The frame F designated in the rigid transform `X_FG`.
+  /// @param[in] frame_G
+  ///    The frame G designated in the rigid transform `X_FG`.
+  /// @retval X_FG
+  ///    The RigidTransform relating frame F and frame G.
   math::RigidTransform<T> CalcRelativeTransform(
-      const systems::Context<T>& context, const Frame<T>& frame_A,
-      const Frame<T>& frame_B) const {
-    return internal_tree().CalcRelativeTransform(context, frame_A, frame_B);
+      const systems::Context<T>& context,
+      const Frame<T>& frame_F,
+      const Frame<T>& frame_G) const {
+    return internal_tree().CalcRelativeTransform(context, frame_F, frame_G);
+  }
+
+  /// Calculates the rotation matrix `R_FG` relating frame F and frame G.
+  /// @param[in] context
+  ///    The state of the multibody system, which includes the system's
+  ///    generalized positions q.  Note: `R_FG` is a function of q.
+  /// @param[in] frame_F
+  ///    The frame F designated in the rigid transform `R_FG`.
+  /// @param[in] frame_G
+  ///    The frame G designated in the rigid transform `R_FG`.
+  /// @retval R_FG
+  ///    The RigidTransform relating frame F and frame G.
+  math::RotationMatrix<T> CalcRelativeRotationMatrix(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_F,
+      const Frame<T>& frame_G) const {
+    return internal_tree().CalcRelativeRotationMatrix(context,
+                                                      frame_F, frame_G);
   }
 
   /// Given the positions `p_BQi` for a set of points `Qi` measured and
@@ -1430,6 +1453,50 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       EigenPtr<MatrixX<T>> p_AQi) const {
     return internal_tree().CalcPointsPositions(
         context, frame_B, p_BQi, frame_A, p_AQi);
+  }
+
+  /// This method computes the center of mass position p_WCcm of all bodies in
+  /// `MultibodyPlant` measured and expressed in world frame W. The bodies are
+  /// considered as a single composite body C, whose center of mass
+  /// `composite_mass` is located at Ccm. The world_body() is ignored.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model. It stores the
+  ///   generalized positions q of the model.
+  /// @retval p_WCcm
+  ///   The output position of center of mass in the world frame W.
+  ///
+  /// @throws std::runtime_error if `MultibodyPlant` has no body except
+  ///   `world_body()`.
+  /// @throws std::runtime_error unless `composite_mass > 0`.
+  Vector3<T> CalcCenterOfMassPosition(
+      const systems::Context<T>& context) const {
+    return internal_tree().CalcCenterOfMassPosition(context);
+  }
+
+  /// This method computes the center of mass position p_WCcm of specified model
+  /// instances measured and expressed in world frame W. The specified model
+  /// instances are considered as a single composite body C, whose center of
+  /// mass `composite_mass` is located at Ccm. The models are selected by a
+  /// vector of model instances `model_instances`. This function does not
+  /// distinguish between welded bodies, joint connected bodies and floating
+  /// bodies in the `model_instances`. The world_body() is ignored.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model. It stores the
+  ///   generalized positions q of the model.
+  /// @param[in] model_instances
+  ///   The vector of selected model instances.
+  /// @retval p_WCcm
+  ///   The output position of center of mass in the world frame W.
+  ///
+  /// @throws std::runtime_error if `MultibodyPlant` has no model_instance
+  ///   except `world_model_instance()`.
+  /// @throws std::runtime_error unless `composite_mass > 0`.
+  Vector3<T> CalcCenterOfMassPosition(
+      const systems::Context<T>& context,
+      const std::vector<ModelInstanceIndex>& model_instances) const {
+    return internal_tree().CalcCenterOfMassPosition(context, model_instances);
   }
 
   /// Evaluate the pose `X_WB` of a body B in the world frame W.
@@ -1510,13 +1577,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///  have the same size as the input array `p_FP_list`.
   /// @throws std::exception if `Jv_WFp` is nullptr or if it does not have the
   /// appropriate size, see documentation for `Jv_WFp` for details.
-  // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
-  // most applications it is all we need and it is more efficient to compute.
-  // TODO(amcastro-tri): Rework this method as per issue #10155.
+  DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_FP_list,
-      EigenPtr<MatrixX<T>> p_WP_list, EigenPtr<MatrixX<T>> Jv_WFp) const {
+      const Frame<T>& frame_F,
+      const Eigen::Ref<const MatrixX<T>>& p_FP_list,
+      EigenPtr<MatrixX<T>> p_WP_list,
+      EigenPtr<MatrixX<T>> Jv_WFp) const {
+    // TODO(amcastro-tri): provide the Jacobian-times-vector operation.  For
+    // most applications it is all we need and it is more efficient to compute.
+    // TODO(amcastro-tri): Rework this method as per issue #10155.
     return internal_tree().CalcPointsGeometricJacobianExpressedInWorld(
         context, frame_F, p_FP_list, p_WP_list, Jv_WFp);
   }
@@ -1554,13 +1624,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   list in the same order they are specified on input.
   ///
   /// @throws std::exception if `p_FP_list` does not have 3 rows.
-  // TODO(amcastro-tri): Rework this method as per issue #10155.
   DRAKE_DEPRECATED("2019-09-01",
                    "Use CalcBiasForJacobianTranslationalVelocity().")
   VectorX<T> CalcBiasForPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_FP_list) const {
+    // TODO(amcastro-tri): Rework this method as per issue #10155.
     return CalcBiasForJacobianTranslationalVelocity(
         context, JacobianWrtVariable::kV, frame_F, p_FP_list,
         world_frame(), world_frame());
@@ -1656,13 +1726,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if `Jv_WFp` is nullptr or if it does not have the
   /// appropriate size, see documentation for `Jv_WFp` for details.
-  // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
-  // most applications it is all we need and it is more efficient to compute.
-  // TODO(amcastro-tri): Rework this method as per issue #10155.
+  DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_WP_list,
+      const Frame<T>& frame_F,
+      const Eigen::Ref<const MatrixX<T>>& p_WP_list,
       EigenPtr<MatrixX<T>> Jv_WFp) const {
+    // TODO(amcastro-tri): provide the Jacobian-times-vector operation.  For
+    // most applications it is all we need and it is more efficient to compute.
+    // TODO(amcastro-tri): Rework this method as per issue #10155.
     return internal_tree().CalcPointsGeometricJacobianExpressedInWorld(
         context, frame_F, p_WP_list, Jv_WFp);
   }
@@ -1716,13 +1788,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// have the same size as the input array `p_FP_list`.
   /// @throws std::exception if `Jq_WFp` is nullptr or if it does not have the
   /// appropriate size, see documentation for `Jq_WFp` for details.
-  // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
-  // most applications it is all we need and it is more efficient to compute.
-  // TODO(amcastro-tri): Rework this method as per issue #10155.
+  DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianTranslationalVelocity().")
   void CalcPointsAnalyticalJacobianExpressedInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_FP_list,
-      EigenPtr<MatrixX<T>> p_WP_list, EigenPtr<MatrixX<T>> Jq_WFp) const {
+      const Frame<T>& frame_F,
+      const Eigen::Ref<const MatrixX<T>>& p_FP_list,
+      EigenPtr<MatrixX<T>> p_WP_list,
+      EigenPtr<MatrixX<T>> Jq_WFp) const {
+    // TODO(amcastro-tri): provide the Jacobian-times-vector operation.  For
+    // most applications it is all we need and it is more efficient to compute.
+    // TODO(amcastro-tri): Rework this method as per issue #10155.
     internal_tree().CalcPointsAnalyticalJacobianExpressedInWorld(
         context, frame_F, p_FP_list, p_WP_list, Jq_WFp);
   }
@@ -1771,11 +1846,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if `J_WFp` is nullptr or if it is not of size
   ///   `6 x nv`.
-  // TODO(amcastro-tri): Rework this method as per issue #10155.
   void CalcFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FP,
       EigenPtr<MatrixX<T>> Jv_WFp) const {
+    // TODO(amcastro-tri): Rework this method as per issue #10155.
     internal_tree().CalcFrameGeometricJacobianExpressedInWorld(
         context, frame_F, p_FP, Jv_WFp);
   }
@@ -1827,13 +1902,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if `J_ABp` is nullptr or if it is not of size
   ///   `6 x nv`.
-  // TODO(amcastro-tri): Rework this method as per issue #10155.
   DRAKE_DEPRECATED("2019-09-01", "Use CalcJacobianSpatialVelocity().")
   void CalcRelativeFrameGeometricJacobian(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
       const Frame<T>& frame_A, const Frame<T>& frame_E,
       EigenPtr<MatrixX<T>> Jv_ABp_E) const {
+    // TODO(amcastro-tri): Rework this method as per issue #10155.
     return CalcJacobianSpatialVelocity(context, JacobianWrtVariable::kV,
         frame_B, p_BP, frame_A, frame_E, Jv_ABp_E);
   }
@@ -1867,12 +1942,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   to the bias in angular acceleration and the with the last three elements
   ///   related to the bias in translational acceleration.
   /// @note SpatialAcceleration(Ab_WFp) defines a valid SpatialAcceleration.
-  // TODO(amcastro-tri): Rework this method as per issue #10155.
   DRAKE_DEPRECATED("2019-09-01",
                    "Use CalcBiasForJacobianSpatialVelocity().")
   Vector6<T> CalcBiasForFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FP) const {
+    // TODO(amcastro-tri): Rework this method as per issue #10155.
     return CalcBiasForJacobianSpatialVelocity(context, JacobianWrtVariable::kV,
         frame_F, p_FP, world_frame(), world_frame());
   }
@@ -1983,8 +2058,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void CalcJacobianSpatialVelocity(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
-      const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
-      const Frame<T>& frame_A, const Frame<T>& frame_E,
+      const Frame<T>& frame_B,
+      const Eigen::Ref<const Vector3<T>>& p_BP,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E,
       EigenPtr<MatrixX<T>> Jw_ABp_E) const {
     return internal_tree().CalcJacobianSpatialVelocity(
         context, with_respect_to, frame_B, p_BP, frame_A, frame_E, Jw_ABp_E);
@@ -2021,48 +2098,51 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                    const Frame<T>& frame_B,
                                    const Frame<T>& frame_A,
                                    const Frame<T>& frame_E,
-                                   EigenPtr<MatrixX<T>> Js_w_AB_E) const {
+                                   EigenPtr<Matrix3X<T>> Js_w_AB_E) const {
     return internal_tree().CalcJacobianAngularVelocity(
         context, with_respect_to, frame_B, frame_A, frame_E, Js_w_AB_E);
   }
 
   /// Return a point's translational velocity Jacobian in a frame A with respect
   /// to "speeds" 𝑠, where 𝑠 is either q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of
-  /// generalized positions) or v ≜ [v₁ ... vₖ]ᵀ (generalized velocities).
-  /// For a point Bp of (fixed/welded to) a frame B whose translational velocity
-  /// `v_ABp` in a frame A is characterized by speeds 𝑠, Bp's velocity Jacobian
+  /// j generalized positions) or v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+  /// For each point Bi of (fixed to) a frame B whose translational velocity
+  /// `v_ABi` in a frame A is characterized by speeds 𝑠, Bi's velocity Jacobian
   /// in A with respect to 𝑠 is defined as
   /// <pre>
-  ///      Js_v_ABp = [ ∂(v_ABp)/∂𝑠₁,  ...  ∂(v_ABp)/∂𝑠ₙ ]    (n is j or k)
+  ///      Js_v_ABi = [ ∂(v_ABi)/∂𝑠₁,  ...  ∂(v_ABi)/∂𝑠ₙ ]    (n is j or k)
   /// </pre>
-  /// Point Bp's velocity in A is linear in 𝑠₁, ... 𝑠ₙ and can be written
-  /// `v_ABp = Js_v_ABp ⋅ 𝑠`  where 𝑠 is [𝑠₁ ... 𝑠ₙ]ᵀ.
+  /// Point Bi's velocity in A is linear in 𝑠₁, ... 𝑠ₙ and can be written
+  /// `v_ABi = Js_v_ABi ⋅ 𝑠`  where 𝑠 is [𝑠₁ ... 𝑠ₙ]ᵀ.
   ///
   /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the Jacobian `Js_v_ABp` is
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `Js_v_ABi` is
   /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
   /// positions) or with respect to 𝑠 = v (generalized velocities).
-  /// @param[in] frame_B The frame on which point Bp is fixed/welded.
-  /// @param[in] p_BoBp_B The position vector from Bo (frame_B's origin) to
-  ///   point Bp (which is regarded as fixed to B), expressed in frame B.
-  /// @param[in] frame_A The frame that measures `v_ABp` (Bp's velocity in A).
-  /// @param[in] frame_E The frame in which `v_ABp` is expressed on input and
-  /// the frame in which the Jacobian `Js_v_ABp` is expressed on output.
-  /// @param[out] Js_v_ABp_E Point Bp's velocity Jacobian in frame A with
+  /// @param[in] frame_B The frame on which point Bi is fixed (e.g., welded).
+  /// @param[in] p_BoBi_B A position vector or list of p position vectors from
+  /// Bo (frame_B's origin) to points Bi (regarded as fixed to B), where each
+  /// position vector is expressed in frame_B.
+  /// @param[in] frame_A The frame that measures `v_ABi` (Bi's velocity in A).
+  /// @param[in] frame_E The frame in which `v_ABi` is expressed on input and
+  /// the frame in which the Jacobian `Js_v_ABi` is expressed on output.
+  /// @param[out] Js_v_ABi_E Point Bi's velocity Jacobian in frame A with
   /// respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
-  /// The Jacobian is a function of only generalized positions q (which are
-  /// pulled from the context).  The previous definition shows `Js_v_ABp_E` is
-  /// a matrix of size `3 x n`, where n is the number of elements in 𝑠.
-  /// @throws std::exception if `Js_v_ABp_E` is nullptr or not of size `3 x n`.
+  /// `Js_v_ABi_E` is a `3*p x n` matrix, where p is the number of points Bi and
+  /// n is the number of elements in 𝑠.  The Jacobian is a function of only
+  /// generalized positions q (which are pulled from the context).
+  /// @throws std::exception if `Js_v_ABi_E` is nullptr or not sized `3*p x n`.
   void CalcJacobianTranslationalVelocity(
-      const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
-      const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
-      const Frame<T>& frame_A, const Frame<T>& frame_E,
-      EigenPtr<MatrixX<T>> Js_v_ABp_E) const {
-    return internal_tree().CalcJacobianTranslationalVelocity(
-        context, with_respect_to, frame_B, p_BoBp_B, frame_A, frame_E,
-        Js_v_ABp_E);
+      const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_B,
+      const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E,
+      EigenPtr<MatrixX<T>> Js_v_ABi_E) const {
+    internal_tree().CalcJacobianTranslationalVelocity(context, with_respect_to,
+        frame_B, frame_B, p_BoBi_B, frame_A, frame_E, Js_v_ABi_E);
   }
 
   /// Given the state of this model in `context` and a known vector
@@ -2304,10 +2384,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::logic_error if there are repeated indexes in
   /// `user_to_joint_index_map`.
-  // TODO(amcastro-tri): consider having an extra `free_body_index_map`
-  // so that users could also re-order free bodies if they wanted to.
   MatrixX<double> MakeStateSelectorMatrix(
       const std::vector<JointIndex>& user_to_joint_index_map) const {
+    // TODO(amcastro-tri): consider having an extra `free_body_index_map`
+    // so that users could also re-order free bodies if they wanted to.
     return internal_tree().MakeStateSelectorMatrix(user_to_joint_index_map);
   }
 
@@ -2472,6 +2552,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Registers geometry in a SceneGraph with a given geometry::Shape to be
   /// used for visualization of a given `body`.
   ///
+  /// @note Currently, the visual geometry will _also_ be assigned a perception
+  /// role. Its render label's value will be equal to the body's index and its
+  /// perception color will be the same as its illustration color (defaulting to
+  /// gray if no color is provided). This behavior will change in the near
+  /// future and code that directly relies on this behavior will break.
+  ///
   /// @param[in] body
   ///   The body for which geometry is being registered.
   /// @param[in] X_BG
@@ -2484,9 +2570,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   drake::geometry::GeometryInstance.
   /// @param[in] properties
   ///   The illustration properties for this geometry.
-  /// @param[out] scene_graph
-  ///   (Deprecated) A valid non nullptr to a SceneGraph on which geometry will
-  ///   get registered.
   /// @throws std::exception if called post-finalize.
   /// @throws std::exception if `scene_graph` does not correspond to the same
   /// instance with which RegisterAsSourceForSceneGraph() was called.
@@ -2494,8 +2577,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
+      const geometry::IllustrationProperties& properties);
+
+  /// (Do not use.)  This is a deprecated overload that takes a scene_graph
+  /// argument.
+  DRAKE_DEPRECATED("2019-10-01",
+      "Remove the scene_graph argument at the call site; instead of passing a "
+      "scene_graph pointer, call RegisterAsSourceForSceneGraph first, instead.")
+  geometry::GeometryId RegisterVisualGeometry(
+      const Body<T>& body, const math::RigidTransform<double>& X_BG,
+      const geometry::Shape& shape, const std::string& name,
       const geometry::IllustrationProperties& properties,
-      geometry::SceneGraph<T>* scene_graph = nullptr);
+      geometry::SceneGraph<T>* scene_graph);
 
   /// Overload for visual geometry registration; it converts the `diffuse_color`
   /// (RGBA with values in the range [0, 1]) into a
@@ -2504,16 +2597,35 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
+      const Vector4<double>& diffuse_color);
+
+  /// (Do not use.)  This is a deprecated overload that takes a scene_graph
+  /// argument.
+  DRAKE_DEPRECATED("2019-10-01",
+      "Remove the scene_graph argument at the call site; instead of passing a "
+      "scene_graph pointer, call RegisterAsSourceForSceneGraph first, instead.")
+  geometry::GeometryId RegisterVisualGeometry(
+      const Body<T>& body, const math::RigidTransform<double>& X_BG,
+      const geometry::Shape& shape, const std::string& name,
       const Vector4<double>& diffuse_color,
-      geometry::SceneGraph<T>* scene_graph = nullptr);
+      geometry::SceneGraph<T>* scene_graph);
 
   /// Overload for visual geometry registration; it relies on the downstream
   /// geometry::IllustrationProperties _consumer_ to provide default parameter
   /// values (see @ref geometry_roles for details).
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const math::RigidTransform<double>& X_BG,
+      const geometry::Shape& shape, const std::string& name);
+
+  /// (Do not use.)  This is a deprecated overload that takes a scene_graph
+  /// argument.
+  DRAKE_DEPRECATED("2019-10-01",
+      "Remove the scene_graph argument at the call site; instead of passing a "
+      "scene_graph pointer, call RegisterAsSourceForSceneGraph first, instead.")
+  geometry::GeometryId RegisterVisualGeometry(
+      const Body<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
-      geometry::SceneGraph<T>* scene_graph = nullptr);
+      geometry::SceneGraph<T>* scene_graph);
 
   /// Returns an array of GeometryId's identifying the different visual
   /// geometries for `body` previously registered with a SceneGraph.
@@ -2548,17 +2660,24 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] coulomb_friction
   ///   Coulomb's law of friction coefficients to model friction on the
   ///   surface of `shape` for the given `body`.
-  /// @param[out] scene_graph
-  ///   (Deprecated) A valid, non-null pointer to a SceneGraph on which
-  ///   geometry will get registered.
   /// @throws std::exception if called post-finalize.
+  geometry::GeometryId RegisterCollisionGeometry(
+      const Body<T>& body, const math::RigidTransform<double>& X_BG,
+      const geometry::Shape& shape, const std::string& name,
+      const CoulombFriction<double>& coulomb_friction);
+
+  /// (Do not use.)  This is a deprecated overload that takes a scene_graph
+  /// argument.
   /// @throws std::exception if `scene_graph` does not correspond to the
   /// same instance with which RegisterAsSourceForSceneGraph() was called.
+  DRAKE_DEPRECATED("2019-10-01",
+      "Remove the scene_graph argument at the call site; instead of passing a "
+      "scene_graph pointer, call RegisterAsSourceForSceneGraph first, instead.")
   geometry::GeometryId RegisterCollisionGeometry(
       const Body<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
       const CoulombFriction<double>& coulomb_friction,
-      geometry::SceneGraph<T>* scene_graph = nullptr);
+      geometry::SceneGraph<T>* scene_graph);
 
   /// Returns an array of GeometryId's identifying the different contact
   /// geometries for `body` previously registered with a SceneGraph.
@@ -2645,13 +2764,31 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `id` does not correspond to a geometry in `this`
   /// model registered for contact modeling.
   /// @see RegisterCollisionGeometry() for details on geometry registration.
-  // TODO(amcastro-tri): This API might change or disappear completely as GS
-  // provides support for the specification of surface properties.
   const CoulombFriction<double>& default_coulomb_friction(
       geometry::GeometryId id) const {
+    // TODO(amcastro-tri): This API might change or disappear completely as GS
+    // provides support for the specification of surface properties.
     DRAKE_DEMAND(is_collision_geometry(id));
     const int collision_index = geometry_id_to_collision_index_.at(id);
     return default_coulomb_friction_[collision_index];
+  }
+
+  /// Specifies the `elastic_modulus` for a geometry identified by its `id`.
+  /// @throws std::exception if `id` does not correspond to a collision
+  /// geometry previously registered with this model.
+  /// @throws std::exception if called post-finalize.
+  void set_elastic_modulus(geometry::GeometryId id, double elastic_modulus) {
+    // It must not be finalized so that member_scene_graph() is valid.
+    DRAKE_MBP_THROW_IF_FINALIZED();
+    DRAKE_THROW_UNLESS(is_collision_geometry(id));
+
+    const geometry::ProximityProperties* old_props =
+        member_scene_graph().model_inspector().GetProximityProperties(id);
+    DRAKE_DEMAND(old_props);
+    geometry::ProximityProperties new_props(*old_props);
+    new_props.AddProperty("hydroelastics", "elastic modulus", elastic_modulus);
+    member_scene_graph().AssignRole(*get_source_id(), id, new_props,
+                                    geometry::RoleAssign::kReplace);
   }
 
   /// @name Retrieving ports for communication with a SceneGraph.
@@ -2833,12 +2970,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const systems::OutputPort<T>& get_generalized_contact_forces_output_port(
       ModelInstanceIndex model_instance) const;
 
+  // TODO(amcastro-tri): report contact results for plants modeled as a
+  // continuous system as well.
   /// Returns a constant reference to the port that outputs ContactResults.
   /// @throws std::exception if `this` plant is not modeled as a discrete system
   /// with periodic updates.
   /// @throws std::exception if called pre-finalize, see Finalize().
-  // TODO(amcastro-tri): report contact results for plants modeled as a
-  // continuous system as well.
   const systems::OutputPort<T>& get_contact_results_output_port() const;
 
   /// Returns a constant reference to the *world* body.
@@ -2942,11 +3079,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @see is_finalized().
   ///
-  /// @throws std::logic_error if
-  ///          1. the %MultibodyPlant has already been finalized or
-  ///          3. a different scene_graph instance is provided than the one
-  ///             for which this plant is a geometry source.
-  void Finalize(geometry::SceneGraph<T>* scene_graph = nullptr);
+  /// @throws std::logic_error if the %MultibodyPlant has already been
+  /// finalized.
+  void Finalize();
+
+  /// (Do not use.)  This is a deprecated overload that takes a scene_graph
+  /// argument.
+  /// @throws std::logic_error if a different scene_graph instance is provided
+  /// than the one for which this plant is a geometry source.
+  DRAKE_DEPRECATED("2019-10-01",
+      "Remove the scene_graph argument at the call site; instead of passing a "
+      "scene_graph pointer, call RegisterAsSourceForSceneGraph first, instead.")
+  void Finalize(geometry::SceneGraph<T>* scene_graph);
 
   /// The time step (or period) used to model `this` plant as a discrete system
   /// with periodic updates. Returns 0 (zero) if the plant is modeled as a
@@ -3160,159 +3304,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     CheckValidState(state);
     internal_tree().SetRandomState(context, state, generator);
   }
-
-#ifndef DRAKE_DOXYGEN_CXX
-  // These APIs using Isometry3 will be deprecated soon with the resolution of
-  // #9865. Right now we offer them for backwards compatibility.
-
-  DRAKE_DEPRECATED(
-      "2019-07-01",
-      "This Isometry3 overload will be removed pending the resolution of "
-      "#9865. Use the RigidTransform overload instead.")
-  void SetFreeBodyPose(systems::Context<T>* context, const Body<T>& body,
-                       const Isometry3<T>& X_WB) const {
-    SetFreeBodyPose(context, body, math::RigidTransform<T>(X_WB));
-  }
-
-  DRAKE_DEPRECATED(
-      "2019-07-01",
-      "This Isometry3 overload will be removed pending the resolution of "
-      "#9865. Use the RigidTransform overload instead.")
-  void SetFreeBodyPose(const systems::Context<T>& context,
-                       systems::State<T>* state, const Body<T>& body,
-                       const Isometry3<T>& X_WB) const {
-    SetFreeBodyPose(context, state, body, math::RigidTransform<T>(X_WB));
-  }
-
-  // Allows having a non-empty X_PF isometry and a nullopt X_BM.
-  template <template <typename> class JointType, typename... Args>
-  DRAKE_DEPRECATED(
-      "2019-07-01",
-      "This Isometry3 overload will be removed pending the resolution of "
-      "#9865. Use the RigidTransform overload instead.")
-  const JointType<T>& AddJoint(const std::string& name, const Body<T>& parent,
-                               const Isometry3<double>& X_PF,
-                               const Body<T>& child,
-                               const optional<Isometry3<double>>& X_BM,
-                               Args&&... args) {
-    DRAKE_MBP_THROW_IF_FINALIZED();
-
-    const math::RigidTransform<double> X_PF_rt(X_PF);
-    const optional<math::RigidTransform<double>> X_BM_rt =
-        X_BM ? optional<math::RigidTransform<T>>(math::RigidTransform<T>(*X_BM))
-             : nullopt;
-
-    auto& joint = AddJoint<JointType>(
-        name, parent, X_PF_rt, child, X_BM_rt, std::forward<Args>(args)...);
-    return joint;
-  }
-
-  // Allows having a nullopt X_PF and a non-empty X_BM isometry.
-  template <template <typename> class JointType, typename... Args>
-  DRAKE_DEPRECATED(
-      "2019-07-01",
-      "This Isometry3 overload will be removed pending the resolution of "
-      "#9865. Use the RigidTransform overload instead.")
-  const JointType<T>& AddJoint(const std::string& name, const Body<T>& parent,
-                               const optional<Isometry3<double>>& X_PF,
-                               const Body<T>& child,
-                               const Isometry3<double>& X_BM,
-                               Args&&... args) {
-    DRAKE_MBP_THROW_IF_FINALIZED();
-    optional<math::RigidTransform<double>> X_PF_rt =
-        X_PF ? optional<math::RigidTransform<T>>(math::RigidTransform<T>(*X_PF))
-             : nullopt;
-    const math::RigidTransform<double> X_BM_rt(X_BM);
-
-    auto& joint = AddJoint<JointType>(
-        name, parent, X_PF_rt, child, X_BM_rt, std::forward<Args>(args)...);
-    return joint;
-  }
-
-  DRAKE_DEPRECATED(
-      "2019-07-01",
-      "This Isometry3 overload will be removed pending the resolution of "
-      "#9865. Use the RigidTransform overload instead.")
-  const WeldJoint<T>& WeldFrames(
-      const Frame<T>& A, const Frame<T>& B,
-      const Isometry3<double>& X_AB) {
-    return WeldFrames(A, B, math::RigidTransform<double>(X_AB));
-  }
-
-  DRAKE_DEPRECATED(
-      "2019-07-01",
-      "This Isometry3 overload will be removed pending the resolution of "
-      "#9865. Use the RigidTransform overload instead.")
-  void SetFreeBodyPoseInWorldFrame(systems::Context<T>* context,
-                                   const Body<T>& body,
-                                   const Isometry3<T>& X_WB) const {
-    SetFreeBodyPoseInWorldFrame(context, body, math::RigidTransform<T>(X_WB));
-  }
-
-  DRAKE_DEPRECATED(
-      "2019-07-01",
-      "This Isometry3 overload will be removed pending the resolution of "
-      "#9865. Use the RigidTransform overload instead.")
-  void SetFreeBodyPoseInAnchoredFrame(systems::Context<T>* context,
-                                      const Frame<T>& frame_F,
-                                      const Body<T>& body,
-                                      const Isometry3<T>& X_FB) const {
-    SetFreeBodyPoseInAnchoredFrame(context, frame_F, body,
-                                   math::RigidTransform<T>(X_FB));
-  }
-
-  DRAKE_DEPRECATED(
-      "2019-07-01",
-      "This Isometry3 overload will be removed pending the resolution of "
-      "#9865. Use the RigidTransform overload instead.")
-  geometry::GeometryId RegisterVisualGeometry(
-      const Body<T>& body, const Isometry3<double>& X_BG,
-      const geometry::Shape& shape, const std::string& name,
-      const geometry::IllustrationProperties& properties,
-      geometry::SceneGraph<T>* scene_graph = nullptr) {
-    return RegisterVisualGeometry(body, math::RigidTransform<double>(X_BG),
-                                  shape, name, properties, scene_graph);
-  }
-
-  DRAKE_DEPRECATED(
-      "2019-07-01",
-      "This Isometry3 overload will be removed pending the resolution of "
-      "#9865. Use the RigidTransform overload instead.")
-  geometry::GeometryId RegisterVisualGeometry(
-      const Body<T>& body, const Isometry3<double>& X_BG,
-      const geometry::Shape& shape, const std::string& name,
-      const Vector4<double>& diffuse_color,
-      geometry::SceneGraph<T>* scene_graph = nullptr) {
-    return RegisterVisualGeometry(body, math::RigidTransform<double>(X_BG),
-                                  shape, name, diffuse_color, scene_graph);
-  }
-
-  DRAKE_DEPRECATED(
-      "2019-07-01",
-      "This Isometry3 overload will be removed pending the resolution of "
-      "#9865. Use the RigidTransform overload instead.")
-  geometry::GeometryId RegisterVisualGeometry(
-      const Body<T>& body, const Isometry3<double>& X_BG,
-      const geometry::Shape& shape, const std::string& name,
-      geometry::SceneGraph<T>* scene_graph = nullptr) {
-    return RegisterVisualGeometry(body, math::RigidTransform<double>(X_BG),
-                                  shape, name, scene_graph);
-  }
-
-  DRAKE_DEPRECATED(
-      "2019-07-01",
-      "This Isometry3 overload will be removed pending the resolution of "
-      "#9865. Use the RigidTransform overload instead.")
-  geometry::GeometryId RegisterCollisionGeometry(
-      const Body<T>& body, const Isometry3<double>& X_BG,
-      const geometry::Shape& shape, const std::string& name,
-      const CoulombFriction<double>& coulomb_friction,
-      geometry::SceneGraph<T>* scene_graph = nullptr) {
-    return RegisterCollisionGeometry(body, math::RigidTransform<double>(X_BG),
-                                     shape, name, coulomb_friction,
-                                     scene_graph);
-  }
-#endif
 
   using internal::MultibodyTreeSystem<T>::is_discrete;
   using internal::MultibodyTreeSystem<T>::EvalPositionKinematics;

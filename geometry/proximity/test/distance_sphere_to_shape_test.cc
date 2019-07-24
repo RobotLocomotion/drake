@@ -36,7 +36,6 @@ template <>
 void CalcDistanceFallback<float>(const fcl::CollisionObjectd&,
                                  const fcl::CollisionObjectd&,
                                  const fcl::DistanceRequestd&,
-                                 const std::vector<GeometryId>&,
                                  SignedDistancePair<float>*) {
   throw std::logic_error("Float fallback called!");
 }
@@ -88,28 +87,28 @@ GTEST_TEST(SphereShapeDistance, FallbackSupport) {
   CollisionObjectd obj_a(sphere);
   CollisionObjectd obj_b(sphere);
   fcl::DistanceRequestd request{};
-  std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
-                                       GeometryId::get_new_id()};
-  EncodedData(GeometryIndex{0}, true).write_to(&obj_a);
-  EncodedData(GeometryIndex{1}, true).write_to(&obj_b);
+  const GeometryId id_a = GeometryId::get_new_id();
+  const GeometryId id_b = GeometryId::get_new_id();
+  EncodedData(id_a, true).write_to(&obj_a);
+  EncodedData(id_b, true).write_to(&obj_b);
 
   SignedDistancePair<double> distance_pair_d{};
   EXPECT_NO_THROW(CalcDistanceFallback<double>(obj_a, obj_b, request,
-                                               geometry_map, &distance_pair_d));
+                                               &distance_pair_d));
   EXPECT_TRUE(distance_pair_d.id_A.is_valid());
-  EXPECT_EQ(distance_pair_d.id_A, geometry_map[0]);
   EXPECT_TRUE(distance_pair_d.id_B.is_valid());
-  EXPECT_EQ(distance_pair_d.id_B, geometry_map[1]);
+  ASSERT_LT(id_a, id_b);  // Confirm assumption that the next two tests require.
+  EXPECT_EQ(distance_pair_d.id_A, id_a);
+  EXPECT_EQ(distance_pair_d.id_B, id_b);
 
   SignedDistancePair<AutoDiffXd> distance_pair_ad{};
   DRAKE_EXPECT_THROWS_MESSAGE(
-      CalcDistanceFallback<AutoDiffXd>(obj_a, obj_b, request, geometry_map,
+      CalcDistanceFallback<AutoDiffXd>(obj_a, obj_b, request,
                                        &distance_pair_ad),
       std::logic_error,
       "Signed distance queries between shapes .+ and .+ are not supported for "
       "scalar type .*AutoDiffXd");
 }
-
 // TODO(SeanCurtis-TRI): Create a more general test framework when we have
 //  shape-shape primitives that *aren't* covered by the point-shape tests.
 //  For arbitrary derivatives, use `ComputeNumericalGradient()` to test.
@@ -348,6 +347,7 @@ TEST_F(DistancePairGeometryTest, SphereSphereDouble) {
   EXPECT_TRUE((ResultsMatch<double, Sphered>(Sphered(1.3))));
 }
 
+
 TEST_F(DistancePairGeometryTest, SphereBoxDouble) {
   EXPECT_TRUE((ResultsMatch<double, Boxd>(Boxd{1.3, 2.3, 0.7})));
 }
@@ -383,9 +383,9 @@ TYPED_TEST_CASE(ComputeNarrowHalfspaceTest, ScalarTypes);
 GTEST_TEST(ComputeNarrowPhaseDistance, NoFallbackInvocation) {
   // Parameters that don't depend on T.
   CollisionObjectd sphere(make_shared<Sphered>(1));
-  EncodedData(GeometryIndex(0), true).write_to(&sphere);
-  std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
-                                       GeometryId::get_new_id()};
+  const GeometryId sphere_id = GeometryId::get_new_id();
+  EncodedData(sphere_id, true).write_to(&sphere);
+  const GeometryId other_id = GeometryId::get_new_id();
   fcl::DistanceRequestd request{};
 
   // T-valued parameters.
@@ -398,26 +398,26 @@ GTEST_TEST(ComputeNarrowPhaseDistance, NoFallbackInvocation) {
   // by primitives.
 
   EXPECT_NO_THROW(ComputeNarrowPhaseDistance<T>(
-      sphere, X_WA, sphere, X_WB, geometry_map, request, &result));
+      sphere, X_WA, sphere, X_WB, request, &result));
 
   std::vector<std::shared_ptr<fcl::CollisionGeometry<double>>> supported{
       make_shared<Boxd>(1, 1, 1), make_shared<Cylinderd>(1, 1)};
   for (auto other_geo : supported) {
     CollisionObjectd other(other_geo);
-    EncodedData(GeometryIndex(1), true).write_to(&other);
+    EncodedData(other_id, true).write_to(&other);
 
     EXPECT_NO_THROW(ComputeNarrowPhaseDistance<T>(
-        other, X_WA, sphere, X_WB, geometry_map, request, &result));
+        other, X_WA, sphere, X_WB, request, &result));
     EXPECT_NO_THROW(ComputeNarrowPhaseDistance<T>(
-        sphere, X_WA, other, X_WB, geometry_map, request, &result));
+        sphere, X_WA, other, X_WB, request, &result));
   }
 }
 
 // Confirms that the fallback *is* invoked for other geometry pairs.
 GTEST_TEST(ComputeNarrowPhaseDistance, FallbackInvocation) {
   // Parameters that don't depend on T.
-  std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
-                                       GeometryId::get_new_id()};
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
   fcl::DistanceRequestd request{};
 
   // T-valued parameters.
@@ -437,16 +437,14 @@ GTEST_TEST(ComputeNarrowPhaseDistance, FallbackInvocation) {
   // clang-format on
   for (const auto& pair : unsupported_pairs) {
     CollisionObjectd A(pair.first);
-    EncodedData{GeometryIndex(0), true}.write_to(&A);
+    EncodedData{id_A, true}.write_to(&A);
     CollisionObjectd B(pair.second);
-    EncodedData{GeometryIndex(1), true}.write_to(&A);
+    EncodedData{id_B, true}.write_to(&B);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        ComputeNarrowPhaseDistance<T>(A, X_WA, B, X_WB, geometry_map, request,
-                                      &result),
+        ComputeNarrowPhaseDistance<T>(A, X_WA, B, X_WB, request, &result),
         std::logic_error, "Float fallback called!");
     DRAKE_EXPECT_THROWS_MESSAGE(
-        ComputeNarrowPhaseDistance<T>(B, X_WB, A, X_WA, geometry_map, request,
-                                      &result),
+        ComputeNarrowPhaseDistance<T>(B, X_WB, A, X_WA, request, &result),
         std::logic_error, "Float fallback called!");
   }
 }
@@ -456,14 +454,14 @@ GTEST_TEST(ComputeNarrowPhaseDistance, FallbackInvocation) {
 GTEST_TEST(ComputeNarrowPhaseDistance, OrderInvariance) {
   // Sphere
   CollisionObjectd sphere(make_shared<Sphered>(1));
-  EncodedData(GeometryIndex(0), true).write_to(&sphere);
+  const GeometryId sphere_id = GeometryId::get_new_id();
+  EncodedData(sphere_id, true).write_to(&sphere);
 
   // Box
   CollisionObjectd box(make_shared<Boxd>(1, 1, 1));
-  EncodedData(GeometryIndex(1), true).write_to(&box);
+  const GeometryId box_id = GeometryId::get_new_id();
+  EncodedData(box_id, true).write_to(&box);
 
-  std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
-                                       GeometryId::get_new_id()};
   fcl::DistanceRequestd request{};
   const Isometry3<double> X_WS(Translation3d{2, 2, 2});
   const Isometry3<double> X_WB(
@@ -471,11 +469,11 @@ GTEST_TEST(ComputeNarrowPhaseDistance, OrderInvariance) {
   SignedDistancePair<double> result_BS;
   SignedDistancePair<double> result_SB;
 
-  ComputeNarrowPhaseDistance<double>(sphere, X_WS, box, X_WB, geometry_map,
-                                     request, &result_SB);
+  ComputeNarrowPhaseDistance<double>(sphere, X_WS, box, X_WB, request,
+                                     &result_SB);
 
-  ComputeNarrowPhaseDistance<double>(box, X_WB, sphere, X_WS, geometry_map,
-                                     request, &result_BS);
+  ComputeNarrowPhaseDistance<double>(box, X_WB, sphere, X_WS, request,
+                                     &result_BS);
 
   EXPECT_EQ(result_SB.id_A, result_BS.id_B);
   EXPECT_EQ(result_SB.id_B, result_BS.id_A);
@@ -496,23 +494,21 @@ GTEST_TEST(ComputeNarrowPhaseDistance, sphere_touches_shape) {
   // Sphere
   const double radius = 1;
   CollisionObjectd sphere(make_shared<Sphered>(radius));
-  EncodedData(GeometryIndex(0), true).write_to(&sphere);
+  const GeometryId sphere_id = GeometryId::get_new_id();
+  EncodedData(sphere_id, true).write_to(&sphere);
 
   // Box [-1,1]x[-1,1]x[-1,1].
   const double side = 2;
   CollisionObjectd box(make_shared<Boxd>(side, side, side));
-  EncodedData(GeometryIndex(1), true).write_to(&box);
+  const GeometryId box_id = GeometryId::get_new_id();
+  EncodedData(box_id, true).write_to(&box);
   const Isometry3<double> X_WB(Isometry3<double>::Identity());
-
-  const std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
-                                             GeometryId::get_new_id()};
   const fcl::DistanceRequestd request{};
 
   // The sphere touches the box in the middle of a face of the box.
   const Isometry3<double> X_WS(Translation3d{radius + side / 2., 0, 0});
   SignedDistancePair<double> result;
-  ComputeNarrowPhaseDistance<double>(sphere, X_WS, box, X_WB, geometry_map,
-                                     request, &result);
+  ComputeNarrowPhaseDistance<double>(sphere, X_WS, box, X_WB, request, &result);
   const auto p_WCs = X_WS * result.p_ACa;
   const auto p_WCb = X_WB * result.p_BCb;
   EXPECT_EQ(p_WCs, p_WCb);
@@ -528,15 +524,15 @@ GTEST_TEST(ComputeNarrowPhaseDistance, sphere_touches_shape) {
 GTEST_TEST(ComputeNarrowPhaseDistance, is_nhat_BA_W_well_defined) {
   // Sphere
   CollisionObjectd sphere(make_shared<Sphered>(1));
-  EncodedData(GeometryIndex(0), true).write_to(&sphere);
+  const GeometryId sphere_id = GeometryId::get_new_id();
+  EncodedData(sphere_id, true).write_to(&sphere);
 
   // Box [-1,1]x[-1,1]x[-1,1].
   CollisionObjectd box(make_shared<Boxd>(2, 2, 2));
-  EncodedData(GeometryIndex(1), true).write_to(&box);
+  const GeometryId box_id = GeometryId::get_new_id();
+  EncodedData(box_id, true).write_to(&box);
   const Isometry3<double> X_WB(Isometry3<double>::Identity());
 
-  const std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
-                                             GeometryId::get_new_id()};
   const fcl::DistanceRequestd request{};
 
   // Tests when `is_nhat_BA_W_unique` is true.
@@ -544,8 +540,8 @@ GTEST_TEST(ComputeNarrowPhaseDistance, is_nhat_BA_W_well_defined) {
     // The center of the sphere is outside the box.
     const Isometry3<double> X_WS(Translation3d{3, 3, 3});
     SignedDistancePair<double> result;
-    ComputeNarrowPhaseDistance<double>(sphere, X_WS, box, X_WB, geometry_map,
-                                       request, &result);
+    ComputeNarrowPhaseDistance<double>(sphere, X_WS, box, X_WB, request,
+                                       &result);
     EXPECT_EQ(true, result.is_nhat_BA_W_unique);
   }
   // Tests when `is_nhat_BA_W_unique` is false.
@@ -553,8 +549,8 @@ GTEST_TEST(ComputeNarrowPhaseDistance, is_nhat_BA_W_well_defined) {
     // The center of the sphere is at a corner of the box.
     const Isometry3<double> X_WS(Translation3d{1, 1, 1});
     SignedDistancePair<double> result;
-    ComputeNarrowPhaseDistance<double>(sphere, X_WS, box, X_WB, geometry_map,
-                                       request, &result);
+    ComputeNarrowPhaseDistance<double>(sphere, X_WS, box, X_WB, request,
+                                       &result);
     EXPECT_EQ(false, result.is_nhat_BA_W_unique);
   }
 }
@@ -563,24 +559,23 @@ template <typename T>
 class CallbackScalarSupport : public ::testing::Test {
  public:
   CallbackScalarSupport()
-      : geometry_map_(),
-        collision_filter_(),
+      : collision_filter_(),
         X_WGs_(),
         results_(),
-        data_(&geometry_map_, &collision_filter_, &X_WGs_, kInf, &results_),
+        data_(&collision_filter_, &X_WGs_, kInf, &results_),
         spheres_() {}
 
  protected:
   void SetUp() override {
     // Populate the callback data structures.
-    geometry_map_.push_back(GeometryId::get_new_id());
-    geometry_map_.push_back(GeometryId::get_new_id());
-    EncodedData data_A(GeometryIndex{0}, true);
-    EncodedData data_B(GeometryIndex{1}, true);
+    const GeometryId id_A = GeometryId::get_new_id();
+    const GeometryId id_B = GeometryId::get_new_id();
+    EncodedData data_A(id_A, true);
+    EncodedData data_B(id_B, true);
     collision_filter_.AddGeometry(data_A.encoding());
     collision_filter_.AddGeometry(data_B.encoding());
-    X_WGs_.emplace_back(Translation3<T>{10, 11, 12});
-    X_WGs_.push_back(Isometry3<T>::Identity());
+    X_WGs_[id_A] = Isometry3<T>{Translation3<T>{10, 11, 12}};
+    X_WGs_[id_B] = Isometry3<T>::Identity();
 
     auto apply_data = [&data_A, &data_B](auto& shapes) {
       data_A.write_to(&shapes[0]);
@@ -619,9 +614,8 @@ class CallbackScalarSupport : public ::testing::Test {
   }
 
  protected:
-  std::vector<GeometryId> geometry_map_;
   CollisionFilterLegacy collision_filter_;
-  std::vector<Isometry3<T>> X_WGs_;
+  std::unordered_map<GeometryId, Isometry3<T>> X_WGs_;
   std::vector<SignedDistancePair<T>> results_;
   CallbackData<T> data_;
   std::vector<CollisionObjectd> spheres_;
@@ -699,19 +693,19 @@ TYPED_TEST(CallbackScalarSupport, SupportedPairClassification) {
 // affected by scalar support.
 GTEST_TEST(Callback, ScalarSupportWithFilters) {
   using T = AutoDiffXd;
-  std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
-                                       GeometryId::get_new_id()};
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
   CollisionFilterLegacy collision_filter;
 
-  EncodedData data_A(GeometryIndex{0}, true);
-  EncodedData data_B(GeometryIndex{1}, true);
+  EncodedData data_A(id_A, true);
+  EncodedData data_B(id_B, true);
   collision_filter.AddGeometry(data_A.encoding());
   collision_filter.AddGeometry(data_B.encoding());
   // Filter the pair (A, B) by adding them to the same clique.
   collision_filter.AddToCollisionClique(data_A.encoding(), 1);
   collision_filter.AddToCollisionClique(data_B.encoding(), 1);
-  std::vector<Isometry3<T>> X_WGs{Isometry3<T>::Identity(),
-                                  Isometry3<T>::Identity()};
+  std::unordered_map<GeometryId, Isometry3<T>> X_WGs{
+      {id_A, Isometry3<T>::Identity()}, {id_B, Isometry3<T>::Identity()}};
 
   CollisionObjectd box_A(make_shared<fcl::Boxd>(0.25, 0.3, 0.4));
   data_A.write_to(&box_A);
@@ -719,22 +713,24 @@ GTEST_TEST(Callback, ScalarSupportWithFilters) {
   data_B.write_to(&box_B);
 
   std::vector<SignedDistancePair<T>> results;
-  CallbackData<T> data(&geometry_map, &collision_filter, &X_WGs, kInf,
-                       &results);
+  CallbackData<T> data(&collision_filter, &X_WGs, kInf, &results);
   double threshold = kInf;
   EXPECT_NO_THROW(Callback<T>(&box_A, &box_B, &data, threshold));
   EXPECT_EQ(results.size(), 0u);
 }
 
 GTEST_TEST(Callback, RespectCollisionFiltering) {
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
   CollisionObjectd sphere_A(make_shared<Sphered>(0.25));
   CollisionObjectd sphere_B(make_shared<Sphered>(0.25));
-  EncodedData data_A(GeometryIndex{0}, true);
-  EncodedData data_B(GeometryIndex{1}, true);
+  EncodedData data_A(id_A, true);
+  EncodedData data_B(id_B, true);
   data_A.write_to(&sphere_A);
   data_B.write_to(&sphere_B);
-  std::vector<Isometry3d> X_WGs{Isometry3d{Translation3d{10, 11, 12}},
-                                Isometry3d::Identity()};
+  std::unordered_map<GeometryId, Isometry3d> X_WGs{
+      {id_A, Isometry3d{Translation3d{10, 11, 12}}},
+      {id_B, Isometry3d::Identity()}};
   std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
                                        GeometryId::get_new_id()};
   std::vector<SignedDistancePair<double>> results;
@@ -742,8 +738,7 @@ GTEST_TEST(Callback, RespectCollisionFiltering) {
   collision_filter.AddGeometry(data_A.encoding());
   collision_filter.AddGeometry(data_B.encoding());
 
-  CallbackData<double> data{&geometry_map, &collision_filter, &X_WGs, kInf,
-                            &results};
+  CallbackData<double> data{&collision_filter, &X_WGs, kInf, &results};
 
   // Case: No collision filters added should produce a single result.
   double threshold = std::numeric_limits<double>::max();
@@ -762,16 +757,17 @@ GTEST_TEST(Callback, RespectCollisionFiltering) {
 // Confirms that regardless of the order of the two objects, the result always
 // has the same (A, B) ordering such that id_A < id_B.
 GTEST_TEST(Callback, ABOrdering) {
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
   CollisionObjectd sphere_A(make_shared<Sphered>(0.25));
   CollisionObjectd sphere_B(make_shared<Sphered>(0.25));
-  EncodedData data_A(GeometryIndex{0}, true);
-  EncodedData data_B(GeometryIndex{1}, true);
+  EncodedData data_A(id_A, true);
+  EncodedData data_B(id_B, true);
   data_A.write_to(&sphere_A);
   data_B.write_to(&sphere_B);
-  std::vector<Isometry3d> X_WGs{Isometry3d{Translation3d{10, 11, 12}},
-                                Isometry3d::Identity()};
-  std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
-                                       GeometryId::get_new_id()};
+  std::unordered_map<GeometryId, Isometry3d> X_WGs{
+      {id_A, Isometry3d{Translation3d{10, 11, 12}}},
+      {id_B, Isometry3d::Identity()}};
   CollisionFilterLegacy collision_filter;
   collision_filter.AddGeometry(data_A.encoding());
   collision_filter.AddGeometry(data_B.encoding());
@@ -779,16 +775,14 @@ GTEST_TEST(Callback, ABOrdering) {
 
   // Pass in the two geometries in order (A, B).
   std::vector<SignedDistancePair<double>> results1;
-  CallbackData<double> data1{&geometry_map, &collision_filter, &X_WGs, kInf,
-                             &results1};
+  CallbackData<double> data1{&collision_filter, &X_WGs, kInf, &results1};
   Callback<double>(&sphere_A, &sphere_B, &data1, threshold);
   ASSERT_EQ(results1.size(), 1u);
   EXPECT_TRUE(results1[0].id_A < results1[0].id_B);
 
   // Pass in the two geometries in order (B, A).
   std::vector<SignedDistancePair<double>> results2;
-  CallbackData<double> data2{&geometry_map, &collision_filter, &X_WGs, kInf,
-                             &results2};
+  CallbackData<double> data2{&collision_filter, &X_WGs, kInf, &results2};
   Callback<double>(&sphere_B, &sphere_A, &data2, threshold);
   ASSERT_EQ(results2.size(), 1u);
   EXPECT_TRUE(results2[0].id_A < results2[0].id_B);
@@ -813,12 +807,12 @@ TYPED_TEST_CASE(CallbackMaxDistanceTest, ScalarTypes);
 TYPED_TEST(CallbackMaxDistanceTest, MaxDistanceThreshold) {
   using T = TypeParam;
 
-  std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
-                                       GeometryId::get_new_id()};
   CollisionFilterLegacy collision_filter;
 
-  EncodedData data_A(GeometryIndex{0}, true);
-  EncodedData data_B(GeometryIndex{1}, true);
+  const GeometryId id_A = GeometryId::get_new_id();
+  const GeometryId id_B = GeometryId::get_new_id();
+  EncodedData data_A(id_A, true);
+  EncodedData data_B(id_B, true);
   collision_filter.AddGeometry(data_A.encoding());
   collision_filter.AddGeometry(data_B.encoding());
 
@@ -835,14 +829,14 @@ TYPED_TEST(CallbackMaxDistanceTest, MaxDistanceThreshold) {
   data_B.write_to(&sphere_B);
   const Vector3<T> p_WB = Vector3<T>(2, 3, 4).normalized() *
       (kMaxDistance + radius_A + radius_B - kEps);
-  std::vector<Isometry3<T>> X_WGs{Isometry3<T>::Identity(),
-                                  Isometry3<T>{Translation3<T>{p_WB}}};
+  std::unordered_map<GeometryId, Isometry3<T>> X_WGs{
+      {id_A, Isometry3<T>::Identity()},
+      {id_B, Isometry3<T>{Translation3<T>{p_WB}}}};
 
   // Case: just inside the max distance.
   {
     std::vector<SignedDistancePair<T>> results;
-    CallbackData<T> data(&geometry_map, &collision_filter, &X_WGs, kMaxDistance,
-                         &results);
+    CallbackData<T> data(&collision_filter, &X_WGs, kMaxDistance, &results);
     // NOTE: When done, this should match kMaxDistance.
     double threshold = kInf;
     EXPECT_NO_THROW(Callback<T>(&sphere_A, &sphere_B, &data, threshold));
@@ -852,11 +846,10 @@ TYPED_TEST(CallbackMaxDistanceTest, MaxDistanceThreshold) {
 
   // Case: just outside the max distance.
   {
-    X_WGs[1] = Translation3<T>{Vector3<T>(2, 3, 4).normalized() *
-                        (kMaxDistance + radius_A + radius_B + kEps)};
+    X_WGs[id_B] = Translation3<T>{Vector3<T>(2, 3, 4).normalized() *
+                                  (kMaxDistance + radius_A + radius_B + kEps)};
     std::vector<SignedDistancePair<T>> results;
-    CallbackData<T> data(&geometry_map, &collision_filter, &X_WGs, kMaxDistance,
-                         &results);
+    CallbackData<T> data(&collision_filter, &X_WGs, kMaxDistance, &results);
     // NOTE: When done, this should match kMaxDistance.
     double threshold = kInf;
     EXPECT_NO_THROW(Callback<T>(&sphere_A, &sphere_B, &data, threshold));

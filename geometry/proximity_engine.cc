@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 
@@ -14,18 +15,24 @@
 #include "drake/geometry/proximity/distance_to_point.h"
 #include "drake/geometry/proximity/distance_to_point_with_gradient.h"
 #include "drake/geometry/proximity/distance_to_shape.h"
+#include "drake/geometry/proximity/find_collision_candidates.h"
 #include "drake/geometry/utilities.h"
+
+static_assert(std::is_same<tinyobj::real_t, double>::value,
+              "tinyobjloader must be compiled in double-precision mode");
 
 namespace drake {
 namespace geometry {
 namespace internal {
 
 using Eigen::Vector3d;
+using fcl::CollisionObjectd;
 using std::make_shared;
 using std::make_unique;
 using std::move;
 using std::shared_ptr;
 using std::unique_ptr;
+using std::unordered_map;
 
 namespace {
 
@@ -34,12 +41,9 @@ namespace {
 // Struct for use in SingleCollisionCallback(). Contains the collision request
 // and accumulates results in a drake::multibody::collision::PointPair vector.
 struct CollisionData {
-  CollisionData(const std::vector<GeometryId>* geometry_map_in,
-                const CollisionFilterLegacy* collision_filter_in)
-      : geometry_map(*geometry_map_in),
-        collision_filter(*collision_filter_in) {}
-  // Maps so the penetration call back can map from engine index to geometry id.
-  const std::vector<GeometryId>& geometry_map;
+  explicit CollisionData(const CollisionFilterLegacy* collision_filter_in)
+      : collision_filter(*collision_filter_in) {}
+  // Collision filter used to exclude filtered pairs.
   const CollisionFilterLegacy& collision_filter;
 
   // Collision request
@@ -51,15 +55,15 @@ struct CollisionData {
 
 // Callback function for FCL's collide() function for retrieving a *single*
 // contact.
-bool SingleCollisionCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
-                             fcl::CollisionObjectd* fcl_object_B_ptr,
+bool SingleCollisionCallback(CollisionObjectd* fcl_object_A_ptr,
+                             CollisionObjectd* fcl_object_B_ptr,
                              void* callback_data) {
   // NOTE: Although this function *takes* non-const pointers to satisfy the
   // fcl api, it should not exploit the non-constness to modify the collision
   // objects. We insure this by immediately assigning to a const version and
   // not directly using the provided parameters.
-  const fcl::CollisionObjectd& fcl_object_A = *fcl_object_A_ptr;
-  const fcl::CollisionObjectd& fcl_object_B = *fcl_object_B_ptr;
+  const CollisionObjectd& fcl_object_A = *fcl_object_A_ptr;
+  const CollisionObjectd& fcl_object_B = *fcl_object_B_ptr;
 
   auto& collision_data = *static_cast<CollisionData*>(callback_data);
 
@@ -121,11 +125,8 @@ bool SingleCollisionCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
 
   PenetrationAsPointPair<double> penetration;
   penetration.depth = depth;
-  // The engine doesn't know geometry ids; it returns engine indices. The
-  // caller must map engine indices to geometry ids.
-  const std::vector<GeometryId>& geometry_map = collision_data.geometry_map;
-  penetration.id_A = encoding_A.id(geometry_map);
-  penetration.id_B = encoding_B.id(geometry_map);
+  penetration.id_A = encoding_A.id();
+  penetration.id_B = encoding_B.id();
   penetration.p_WCa = p_WAc;
   penetration.p_WCb = p_WBc;
   penetration.nhat_BA_W = drake_normal;
@@ -190,11 +191,11 @@ shared_ptr<fcl::ShapeBased> CopyShapeOrThrow(
 }
 
 // Helper function that creates a *deep* copy of the given collision object.
-unique_ptr<fcl::CollisionObjectd> CopyFclObjectOrThrow(
-    const fcl::CollisionObjectd& object) {
+unique_ptr<CollisionObjectd> CopyFclObjectOrThrow(
+    const CollisionObjectd& object) {
   shared_ptr<fcl::ShapeBased> geometry_copy =
       CopyShapeOrThrow(*object.collisionGeometry());
-  auto copy = make_unique<fcl::CollisionObjectd>(geometry_copy);
+  auto copy = make_unique<CollisionObjectd>(geometry_copy);
   copy->setUserData(object.getUserData());
   copy->setTransform(object.getTransform());
   copy->computeAABB();
@@ -207,16 +208,16 @@ unique_ptr<fcl::CollisionObjectd> CopyFclObjectOrThrow(
 // to facilitate copying broadphase culling data structures (see
 // ProximityEngine::operator=()).
 void CopyFclObjectsOrThrow(
-    const std::vector<unique_ptr<fcl::CollisionObjectd>>& source_objects,
-    std::vector<unique_ptr<fcl::CollisionObjectd>>* target_objects,
-    std::unordered_map<const fcl::CollisionObjectd*, fcl::CollisionObjectd*>*
-        copy_map) {
+    const unordered_map<GeometryId, unique_ptr<CollisionObjectd>>&
+        source_objects,
+    unordered_map<GeometryId, unique_ptr<CollisionObjectd>>* target_objects,
+    std::unordered_map<const CollisionObjectd*, CollisionObjectd*>* copy_map) {
   DRAKE_ASSERT(target_objects->size() == 0);
-  target_objects->reserve(source_objects.size());
-  for (const unique_ptr<fcl::CollisionObjectd>& source_object :
-       source_objects) {
-    target_objects->emplace_back(CopyFclObjectOrThrow(*source_object));
-    copy_map->insert({source_object.get(), target_objects->back().get()});
+  for (const auto& source_id_object_pair : source_objects) {
+    const GeometryId source_id = source_id_object_pair.first;
+    const CollisionObjectd& source_object = *source_id_object_pair.second;
+    (*target_objects)[source_id] = CopyFclObjectOrThrow(source_object);
+    copy_map->insert({&source_object, (*target_objects)[source_id].get()});
   }
 }
 
@@ -225,10 +226,10 @@ void CopyFclObjectsOrThrow(
 // collision objects (the map populated by CopyFclObjectsOrThrow()).
 void BuildTreeFromReference(
     const fcl::DynamicAABBTreeCollisionManager<double>& other,
-    const std::unordered_map<const fcl::CollisionObjectd*,
-                             fcl::CollisionObjectd*>& copy_map,
+    const std::unordered_map<const CollisionObjectd*,
+                             CollisionObjectd*>& copy_map,
     fcl::DynamicAABBTreeCollisionManager<double>* target) {
-  std::vector<fcl::CollisionObjectd*> other_objects;
+  std::vector<CollisionObjectd*> other_objects;
   other.getObjects(other_objects);
   for (auto* other_object : other_objects) {
     target->registerObject(copy_map.at(other_object));
@@ -252,9 +253,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     anchored_tree_.clear();
     anchored_objects_.clear();
 
-    // Copy all of the geometry to ensure that the engine index values stay
-    // aligned.
-    std::unordered_map<const fcl::CollisionObjectd*, fcl::CollisionObjectd*>
+    // Copy all of the geometry.
+    std::unordered_map<const CollisionObjectd*, CollisionObjectd*>
         object_map;
     CopyFclObjectsOrThrow(other.anchored_objects_, &anchored_objects_,
                           &object_map);
@@ -279,9 +279,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // TODO(SeanCurtis-TRI): When AutoDiff is fully supported in the internal
     // types, modify this map to the appropriate scalar and modify consuming
     // functions accordingly.
-    // Copy all of the geometry to ensure that the engine index values stay
-    // aligned.
-    std::unordered_map<const fcl::CollisionObjectd*, fcl::CollisionObjectd*>
+    // Copy all of the geometry.
+    std::unordered_map<const CollisionObjectd*, CollisionObjectd*>
         object_map;
     CopyFclObjectsOrThrow(anchored_objects_, &engine->anchored_objects_,
                           &object_map);
@@ -296,64 +295,41 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return engine;
   }
 
-  ProximityIndex AddDynamicGeometry(const Shape& shape,
-                                    GeometryIndex index) {
+  void AddDynamicGeometry(const Shape& shape, GeometryId id) {
     // The collision object gets instantiated in the reification process and
     // placed in this unique pointer.
-    std::unique_ptr<fcl::CollisionObject<double>> fcl_object;
+    std::unique_ptr<CollisionObjectd> fcl_object;
     shape.Reify(this, &fcl_object);
     dynamic_tree_.registerObject(fcl_object.get());
-    ProximityIndex proximity_index(static_cast<int>(dynamic_objects_.size()));
-    // Encode the *global* pose index so that the geometry id can be looked up
-    // in the event of a collision.
-    EncodedData encoding(index, true /* is dynamic */);
+    EncodedData encoding(id, true /* is dynamic */);
     encoding.write_to(fcl_object.get());
-    dynamic_objects_.emplace_back(std::move(fcl_object));
+    dynamic_objects_[id] = std::move(fcl_object);
 
     collision_filter_.AddGeometry(encoding.encoding());
-
-    return proximity_index;
   }
 
-  ProximityIndex AddAnchoredGeometry(const Shape& shape,
-                                     const Isometry3<double>& X_WG,
-                                     GeometryIndex index) {
+  void AddAnchoredGeometry(const Shape& shape, const Isometry3<double>& X_WG,
+                           GeometryId id) {
     // The collision object gets instantiated in the reification process and
     // placed in this unique pointer.
-    std::unique_ptr<fcl::CollisionObject<double>> fcl_object;
+    std::unique_ptr<CollisionObjectd> fcl_object;
     shape.Reify(this, &fcl_object);
     fcl_object->setTransform(X_WG);
     fcl_object->computeAABB();
     anchored_tree_.registerObject(fcl_object.get());
     anchored_tree_.update();
-    ProximityIndex proximity_index(static_cast<int>(anchored_objects_.size()));
-    EncodedData encoding(index, false /* is dynamic */);
+    EncodedData encoding(id, false /* is dynamic */);
     encoding.write_to(fcl_object.get());
-    anchored_objects_.emplace_back(std::move(fcl_object));
+    anchored_objects_[id] = std::move(fcl_object);
 
     collision_filter_.AddGeometry(encoding.encoding());
-
-    return proximity_index;
   }
 
-  void UpdateGeometryIndex(ProximityIndex proximity_index, bool is_dynamic,
-                           GeometryIndex geometry_index) {
-    fcl::CollisionObject<double>& object = is_dynamic ?
-        *dynamic_objects_[proximity_index] :
-        *anchored_objects_[proximity_index];
-    EncodedData old_data(object);
-
-    EncodedData new_data(geometry_index, is_dynamic);
-    new_data.write_to(&object);
-    collision_filter_.UpdateEncoding(old_data.encoding(), new_data.encoding());
-  }
-
-  optional<GeometryIndex> RemoveGeometry(ProximityIndex index,
-                                         bool is_dynamic) {
+  void RemoveGeometry(GeometryId id, bool is_dynamic) {
     if (is_dynamic) {
-      return RemoveGeometry(index, &dynamic_tree_, &dynamic_objects_);
+      RemoveGeometry(id, &dynamic_tree_, &dynamic_objects_);
     } else {
-      return RemoveGeometry(index, &anchored_tree_, &anchored_objects_);
+      RemoveGeometry(id, &anchored_tree_, &anchored_objects_);
     }
   }
 
@@ -375,14 +351,15 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   //  1. I could make this move semantics (or swap semantics).
   //  2. I could simply have a method that returns a mutable reference to such
   //    a vector and the caller sets values there directly.
-  void UpdateWorldPoses(const std::vector<Isometry3<T>>& X_WG,
-                        const std::vector<GeometryIndex>& indices) {
-    DRAKE_DEMAND(indices.size() == dynamic_objects_.size());
-    for (size_t i = 0; i < indices.size(); ++i) {
+  void UpdateWorldPoses(
+      const std::unordered_map<GeometryId, Isometry3<T>>& X_WGs) {
+    for (const auto& id_object_pair : dynamic_objects_) {
+      const GeometryId id = id_object_pair.first;
+      const Isometry3<T>& X_WG = X_WGs.at(id);
       // The FCL broadphase requires double-valued poses; so we use ADL to
       // efficiently get double-valued poses out of arbitrary T-valued poses.
-      dynamic_objects_[i]->setTransform(convert_to_double(X_WG[indices[i]]));
-      dynamic_objects_[i]->computeAABB();
+      dynamic_objects_[id]->setTransform(convert_to_double(X_WG));
+      dynamic_objects_[id]->computeAABB();
     }
     dynamic_tree_.update();
   }
@@ -551,12 +528,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   std::vector<SignedDistancePair<T>> ComputeSignedDistancePairwiseClosestPoints(
-      const std::vector<GeometryId>& geometry_map,
-      const std::vector<Isometry3<T>>& X_WGs, const double max_distance) const {
+      const std::unordered_map<GeometryId, Isometry3<T>>& X_WGs,
+      const double max_distance) const {
     std::vector<SignedDistancePair<T>> witness_pairs;
     // All these quantities are aliased in the callback data.
-    shape_distance::CallbackData<T> data{&geometry_map, &collision_filter_,
-                                         &X_WGs, max_distance, &witness_pairs};
+    shape_distance::CallbackData<T> data{&collision_filter_, &X_WGs,
+                                         max_distance, &witness_pairs};
     data.request.enable_nearest_points = true;
     data.request.enable_signed_distance = true;
     data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
@@ -572,13 +549,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceToPoint(
       const Vector3<T>& p_WQ,
-      const std::vector<GeometryId>& geometry_map,
-      const std::vector<Isometry3<T>>& X_WGs,
+      const std::unordered_map<GeometryId, Isometry3<T>>& X_WGs,
       const double threshold) const {
     // We create a sphere of zero radius centered at the query point and put
-    // it into a fcl::CollisionObject.
+    // it into a CollisionObject.
     auto fcl_sphere = make_shared<fcl::Sphered>(0.0);  // sphere of zero radius
-    fcl::CollisionObjectd query_point(fcl_sphere);
+    CollisionObjectd query_point(fcl_sphere);
     // The FCL broadphase requires double-valued poses; so we use ADL to
     // efficiently get double-valued poses out of arbitrary T-valued poses.
     query_point.setTranslation(convert_to_double(p_WQ));
@@ -587,7 +563,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     std::vector<SignedDistanceToPoint<T>> distances;
 
     point_distance::CallbackData<T> data{
-        &query_point, &geometry_map, threshold, p_WQ, &X_WGs, &distances};
+        &query_point, threshold, p_WQ, &X_WGs, &distances};
 
     anchored_tree_.distance(&query_point, &data, point_distance::Callback<T>);
     dynamic_tree_.distance(&query_point, &data, point_distance::Callback<T>);
@@ -595,11 +571,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return distances;
   }
 
-  std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration(
-      const std::vector<GeometryId>& geometry_map) const {
+  std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
+      const {
     std::vector<PenetrationAsPointPair<double>> contacts;
     // CollisionData stores references to the provided data structures.
-    CollisionData collision_data{&geometry_map, &collision_filter_};
+    CollisionData collision_data{&collision_filter_};
     collision_data.contacts = &contacts;
     collision_data.request.num_max_contacts = 1;
     collision_data.request.enable_contact = true;
@@ -626,10 +602,22 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return contacts;
   }
 
+  std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const {
+    std::vector<SortedPair<GeometryId>> pairs;
+    // All these quantities are aliased in the callback data.
+    find_collision_candidates::CallbackData data{&collision_filter_, &pairs};
+    dynamic_tree_.collide(&data, find_collision_candidates::Callback);
+    dynamic_tree_.collide(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &anchored_tree_),
+        &data, find_collision_candidates::Callback);
+    return pairs;
+  }
+
   // TODO(SeanCurtis-TRI): Update this with the new collision filter method.
   void ExcludeCollisionsWithin(
-      const std::unordered_set<GeometryIndex>& dynamic,
-      const std::unordered_set<GeometryIndex>& anchored) {
+      const std::unordered_set<GeometryId>& dynamic,
+      const std::unordered_set<GeometryId>& anchored) {
     // Preventing collision between members in a single set is simple: assign
     // every geometry to the same clique.
 
@@ -646,22 +634,22 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     if (dynamic.size() > 1 || (dynamic.size() > 0 && anchored.size() > 0)) {
       int clique = collision_filter_.next_clique_id();
-      for (auto index : dynamic) {
-        EncodedData encoding(index, true /* is dynamic */);
+      for (auto id : dynamic) {
+        EncodedData encoding(id, true /* is dynamic */);
         collision_filter_.AddToCollisionClique(encoding.encoding(), clique);
       }
-      for (auto index : anchored) {
-        EncodedData encoding(index, false /* is dynamic */);
+      for (auto id : anchored) {
+        EncodedData encoding(id, false /* is dynamic */);
         collision_filter_.AddToCollisionClique(encoding.encoding(), clique);
       }
     }
   }
 
   void ExcludeCollisionsBetween(
-      const std::unordered_set<GeometryIndex>& dynamic1,
-      const std::unordered_set<GeometryIndex>& anchored1,
-      const std::unordered_set<GeometryIndex>& dynamic2,
-      const std::unordered_set<GeometryIndex>& anchored2) {
+      const std::unordered_set<GeometryId>& dynamic1,
+      const std::unordered_set<GeometryId>& anchored1,
+      const std::unordered_set<GeometryId>& dynamic2,
+      const std::unordered_set<GeometryId>& anchored2) {
     // TODO(SeanCurtis-TRI): Update this with the new collision filter method.
 
     // NOTE: This is a brute-force implementation. It does not claim to be
@@ -712,20 +700,20 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     }
   }
 
-  bool CollisionFiltered(GeometryIndex index1, bool is_dynamic_1,
-                         GeometryIndex index2, bool is_dynamic_2) const {
+  bool CollisionFiltered(GeometryId id1, bool is_dynamic_1,
+                         GeometryId id2, bool is_dynamic_2) const {
     // Collisions between anchored geometries are implicitly filtered.
     if (!is_dynamic_1 && !is_dynamic_2) return true;
-    EncodedData encoding1(index1, is_dynamic_1);
-    EncodedData encoding2(index2, is_dynamic_2);
+    EncodedData encoding1(id1, is_dynamic_1);
+    EncodedData encoding2(id2, is_dynamic_2);
     return !collision_filter_.CanCollideWith(encoding1.encoding(),
                                              encoding2.encoding());
   }
 
   int get_next_clique() { return collision_filter_.next_clique_id(); }
 
-  void set_clique(GeometryIndex index, int clique) {
-    EncodedData encoding(index, true /* is dynamic */);
+  void set_clique(GeometryId id, int clique) {
+    EncodedData encoding(id, true /* is dynamic */);
     collision_filter_.AddToCollisionClique(encoding.encoding(), clique);
   }
 
@@ -737,8 +725,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       // "identical" data. The test isn't exhaustive (for example, the
       // parameters of the particular geometric shape are not compared--instead,
       // we compare the AABBs).
-      auto ValidateObject = [](const fcl::CollisionObject<double>& test,
-                               const fcl::CollisionObject<double>& ref) {
+      auto ValidateObject = [](const CollisionObjectd& test,
+                               const CollisionObjectd& ref) {
         return test.getUserData() == ref.getUserData() && &test != &ref &&
                test.getNodeType() == ref.getNodeType() &&
                test.getObjectType() == ref.getObjectType() &&
@@ -754,18 +742,18 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
           is_copy &&
           this->anchored_objects_.size() == other.anchored_objects_.size();
       if (is_copy) {
-        for (size_t i = 0; i < this->dynamic_objects_.size(); ++i) {
-          const fcl::CollisionObject<double>& test_object =
-              *this->dynamic_objects_.at(i);
-          const fcl::CollisionObject<double>& ref_object =
-              *other.dynamic_objects_.at(i);
+        for (const auto& id_object_pair : this->dynamic_objects_) {
+          const GeometryId test_id = id_object_pair.first;
+          const CollisionObjectd& test_object = *id_object_pair.second;
+          const CollisionObjectd& ref_object =
+              *other.dynamic_objects_.at(test_id);
           is_copy = is_copy && ValidateObject(test_object, ref_object);
         }
-        for (size_t i = 0; i < this->anchored_objects_.size(); ++i) {
-          const fcl::CollisionObject<double>& test_object =
-              *this->anchored_objects_.at(i);
-          const fcl::CollisionObject<double>& ref_object =
-              *other.anchored_objects_.at(i);
+        for (const auto& id_object_pair : this->anchored_objects_) {
+          const GeometryId test_id = id_object_pair.first;
+          const CollisionObjectd& test_object = *id_object_pair.second;
+          const CollisionObjectd& ref_object =
+              *other.anchored_objects_.at(test_id);
           is_copy = is_copy && ValidateObject(test_object, ref_object);
         }
       }
@@ -777,20 +765,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   int peek_next_clique() const { return collision_filter_.peek_next_clique(); }
 
-  const Isometry3<double>& GetX_WG(ProximityIndex index,
+  const Isometry3<double>& GetX_WG(GeometryId id,
                                    bool is_dynamic) const {
     if (is_dynamic) {
-      return dynamic_objects_[index]->getTransform();
+      return dynamic_objects_.at(id)->getTransform();
     } else {
-      return anchored_objects_[index]->getTransform();
-    }
-  }
-
-  GeometryIndex GetGeometryIndex(ProximityIndex index, bool is_dynamic) const {
-    if (is_dynamic) {
-      return EncodedData(*dynamic_objects_[index]).index();
-    } else {
-      return EncodedData(*anchored_objects_[index]).index();
+      return anchored_objects_.at(id)->getTransform();
     }
   }
 
@@ -800,35 +780,21 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   template <typename>
   friend class ProximityEngine;
 
-  // Removes the geometry with the given proximity index from the given tree. It
-  // potentially moves another object to take its slot in the vector of objects
-  // to maintain a contiguous memory block.
-  optional<GeometryIndex> RemoveGeometry(
-      ProximityIndex index, fcl::DynamicAABBTreeCollisionManager<double>* tree,
-      std::vector<std::unique_ptr<fcl::CollisionObject<double>>>* geometries) {
-    std::vector<unique_ptr<fcl::CollisionObject<double>>>& typed_geometries =
+  // Removes the geometry with the given id from the given tree.
+  void RemoveGeometry(
+      GeometryId id, fcl::DynamicAABBTreeCollisionManager<double>* tree,
+      unordered_map<GeometryId, unique_ptr<CollisionObjectd>>* geometries) {
+    unordered_map<GeometryId, unique_ptr<CollisionObjectd>>& typed_geometries =
         *geometries;
-    fcl::CollisionObjectd* fcl_object = typed_geometries[index].get();
+    CollisionObjectd* fcl_object = typed_geometries.at(id).get();
     const size_t old_size = tree->size();
     tree->unregisterObject(fcl_object);
     EncodedData filter_key(*fcl_object);
     collision_filter_.RemoveGeometry(filter_key.encoding());
+    typed_geometries.erase(id);
     // NOTE: The FCL API provides no other mechanism for confirming the
     // unregistration was successful.
     DRAKE_DEMAND(old_size == tree->size() + 1);
-    optional<GeometryIndex> moved{};
-    DRAKE_DEMAND(typed_geometries.size() > 0);
-    const size_t last = typed_geometries.size() - 1;
-    if (index < last) {
-      // Removed geometry that *isn't* the last in the geometries. Swap last
-      // into empty slot.
-      const fcl::CollisionObjectd* move_object = typed_geometries[last].get();
-      EncodedData encoding(*move_object);
-      moved = encoding.index();
-      typed_geometries[index].swap(typed_geometries.back());
-    }
-    typed_geometries.pop_back();
-    return moved;
   }
 
   // TODO(SeanCurtis-TRI): Convert these to scalar type T when I know how to
@@ -842,27 +808,23 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   void TakeShapeOwnership(const std::shared_ptr<fcl::ShapeBased>& shape,
                           void* data) {
     DRAKE_ASSERT(data != nullptr);
-    std::unique_ptr<fcl::CollisionObject<double>>& fcl_object_ptr =
-        *reinterpret_cast<std::unique_ptr<fcl::CollisionObject<double>>*>(data);
-    fcl_object_ptr = make_unique<fcl::CollisionObject<double>>(shape);
+    std::unique_ptr<CollisionObjectd>& fcl_object_ptr =
+        *reinterpret_cast<std::unique_ptr<CollisionObjectd>*>(data);
+    fcl_object_ptr = make_unique<CollisionObjectd>(shape);
   }
 
   // The BVH of all dynamic geometries; this depends on *all* inputs.
   // TODO(SeanCurtis-TRI): Ultimately, this should probably be a cache entry.
   fcl::DynamicAABBTreeCollisionManager<double> dynamic_tree_;
 
-  // All of the *dynamic* collision elements (spanning all sources). Their
-  // GeometryIndex maps to their position in *this* vector.
-  // TODO(SeanCurtis-TRI): Cluster the geometries on source such that each
-  // source owns a _contiguous_ block of engine indices.
-  std::vector<std::unique_ptr<fcl::CollisionObject<double>>> dynamic_objects_;
+  // All of the *dynamic* collision elements (spanning all sources).
+  unordered_map<GeometryId, unique_ptr<CollisionObjectd>> dynamic_objects_;
 
   // The tree containing all of the anchored geometry.
   fcl::DynamicAABBTreeCollisionManager<double> anchored_tree_;
 
-  // All of the *anchored* collision elements (spanning *all* sources). Their
-  // AnchoredGeometryIndex maps to their position in *this* vector.
-  std::vector<std::unique_ptr<fcl::CollisionObject<double>>> anchored_objects_;
+  // All of the *anchored* collision elements (spanning *all* sources).
+  unordered_map<GeometryId, unique_ptr<CollisionObjectd>> anchored_objects_;
 
   // The mechanism for dictating collision filtering.
   CollisionFilterLegacy collision_filter_;
@@ -914,28 +876,20 @@ ProximityEngine<T>& ProximityEngine<T>::operator=(
 }
 
 template <typename T>
-ProximityIndex ProximityEngine<T>::AddDynamicGeometry(
-    const Shape& shape, GeometryIndex index) {
-  return impl_->AddDynamicGeometry(shape, index);
+void ProximityEngine<T>::AddDynamicGeometry(
+    const Shape& shape, GeometryId id) {
+  impl_->AddDynamicGeometry(shape, id);
 }
 
 template <typename T>
-ProximityIndex ProximityEngine<T>::AddAnchoredGeometry(
-    const Shape& shape, const Isometry3<double>& X_WG, GeometryIndex index) {
-  return impl_->AddAnchoredGeometry(shape, X_WG, index);
+void ProximityEngine<T>::AddAnchoredGeometry(
+    const Shape& shape, const Isometry3<double>& X_WG, GeometryId id) {
+  impl_->AddAnchoredGeometry(shape, X_WG, id);
 }
 
 template <typename T>
-void ProximityEngine<T>::UpdateGeometryIndex(ProximityIndex proximity_index,
-                                             bool is_dynamic,
-                                             GeometryIndex geometry_index) {
-  impl_->UpdateGeometryIndex(proximity_index, is_dynamic, geometry_index);
-}
-
-template <typename T>
-optional<GeometryIndex> ProximityEngine<T>::RemoveGeometry(
-    ProximityIndex index, bool is_dynamic) {
-  return impl_->RemoveGeometry(index, is_dynamic);
+void ProximityEngine<T>::RemoveGeometry(GeometryId id, bool is_dynamic) {
+  impl_->RemoveGeometry(id, is_dynamic);
 }
 
 template <typename T>
@@ -972,67 +926,67 @@ std::unique_ptr<ProximityEngine<AutoDiffXd>> ProximityEngine<T>::ToAutoDiffXd()
 
 template <typename T>
 void ProximityEngine<T>::UpdateWorldPoses(
-    const std::vector<Isometry3<T>>& X_WG,
-    const std::vector<GeometryIndex>& indices) {
-  impl_->UpdateWorldPoses(X_WG, indices);
+    const unordered_map<GeometryId, Isometry3<T>>& X_WGs) {
+  impl_->UpdateWorldPoses(X_WGs);
 }
 
 template <typename T>
 std::vector<SignedDistancePair<T>>
 ProximityEngine<T>::ComputeSignedDistancePairwiseClosestPoints(
-    const std::vector<GeometryId>& geometry_map,
-    const std::vector<Isometry3<T>>& X_WGs,
+    const std::unordered_map<GeometryId, Isometry3<T>>& X_WGs,
     const double max_distance) const {
-  return impl_->ComputeSignedDistancePairwiseClosestPoints(geometry_map, X_WGs,
-                                                           max_distance);
+  return impl_->ComputeSignedDistancePairwiseClosestPoints(X_WGs, max_distance);
 }
 
 template <typename T>
 std::vector<SignedDistanceToPoint<T>>
 ProximityEngine<T>::ComputeSignedDistanceToPoint(
-    const Vector3<T>& query, const std::vector<GeometryId>& geometry_map,
-    const std::vector<Isometry3<T>>& X_WGs, const double threshold) const {
-  return impl_->ComputeSignedDistanceToPoint(query, geometry_map, X_WGs,
-                                             threshold);
+    const Vector3<T>& query,
+    const std::unordered_map<GeometryId, Isometry3<T>>& X_WGs,
+    const double threshold) const {
+  return impl_->ComputeSignedDistanceToPoint(query, X_WGs, threshold);
 }
 
 template <typename T>
 std::vector<PenetrationAsPointPair<double>>
-ProximityEngine<T>::ComputePointPairPenetration(
-    const std::vector<GeometryId>& geometry_map) const {
-  return impl_->ComputePointPairPenetration(geometry_map);
+ProximityEngine<T>::ComputePointPairPenetration() const {
+  return impl_->ComputePointPairPenetration();
 }
 
 template <typename T>
-std::vector<ContactSurface<T>>
-ProximityEngine<T>::ComputeContactSurfaces(
-    const std::vector<GeometryId>& /* geometry_map */) const {
-  throw std::runtime_error(
-      "ComputeContactSurfaces() is not implemented yet.");
+std::vector<ContactSurface<T>> ProximityEngine<T>::ComputeContactSurfaces()
+    const {
+  throw std::runtime_error("ComputeContactSurfaces() is not implemented yet.");
   // TODO(DamrongGuoy): Compute contact surfaces and remove the above throw.
 }
 
 template <typename T>
+std::vector<SortedPair<GeometryId>>
+ProximityEngine<T>::FindCollisionCandidates() const {
+  return impl_->FindCollisionCandidates();
+}
+
+template <typename T>
 void ProximityEngine<T>::ExcludeCollisionsWithin(
-    const std::unordered_set<GeometryIndex>& dynamic,
-    const std::unordered_set<GeometryIndex>& anchored) {
+    const std::unordered_set<GeometryId>& dynamic,
+    const std::unordered_set<GeometryId>& anchored) {
   impl_->ExcludeCollisionsWithin(dynamic, anchored);
 }
 
 template <typename T>
 void ProximityEngine<T>::ExcludeCollisionsBetween(
-    const std::unordered_set<GeometryIndex>& dynamic1,
-    const std::unordered_set<GeometryIndex>& anchored1,
-    const std::unordered_set<GeometryIndex>& dynamic2,
-    const std::unordered_set<GeometryIndex>& anchored2) {
+    const std::unordered_set<GeometryId>& dynamic1,
+    const std::unordered_set<GeometryId>& anchored1,
+    const std::unordered_set<GeometryId>& dynamic2,
+    const std::unordered_set<GeometryId>& anchored2) {
   impl_->ExcludeCollisionsBetween(dynamic1, anchored1, dynamic2, anchored2);
 }
 
 template <typename T>
 bool ProximityEngine<T>::CollisionFiltered(
-    GeometryIndex index1, bool is_dynamic_1,
-    GeometryIndex index2, bool is_dynamic_2) const {
-  return impl_->CollisionFiltered(index1, is_dynamic_1, index2, is_dynamic_2);
+    GeometryId id1, bool is_dynamic_1,
+    GeometryId id2, bool is_dynamic_2) const {
+  return impl_->CollisionFiltered(id1, is_dynamic_1, id2, is_dynamic_2);
 }
 
 // Client-attorney interface for GeometryState to manipulate collision filters.
@@ -1043,8 +997,8 @@ int ProximityEngine<T>::get_next_clique() {
 }
 
 template <typename T>
-void ProximityEngine<T>::set_clique(GeometryIndex index, int clique) {
-  impl_->set_clique(index, clique);
+void ProximityEngine<T>::set_clique(GeometryId id, int clique) {
+  impl_->set_clique(id, clique);
 }
 
 // Testing utilities
@@ -1060,15 +1014,9 @@ int ProximityEngine<T>::peek_next_clique() const {
 }
 
 template <typename T>
-const Isometry3<double>& ProximityEngine<T>::GetX_WG(ProximityIndex index,
+const Isometry3<double>& ProximityEngine<T>::GetX_WG(GeometryId id,
                                                      bool is_dynamic) const {
-  return impl_->GetX_WG(index, is_dynamic);
-}
-
-template <typename T>
-GeometryIndex ProximityEngine<T>::GetGeometryIndex(ProximityIndex index,
-                                                   bool is_dynamic) const {
-  return impl_->GetGeometryIndex(index, is_dynamic);
+  return impl_->GetX_WG(id, is_dynamic);
 }
 
 }  // namespace internal

@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
 #include "drake/automotive/maliput/api/rules/rule_state_provider.h"
 #include "drake/common/drake_copyable.h"
@@ -10,7 +11,8 @@ namespace drake {
 namespace maliput {
 
 /// A trivial implementation of an api::rules::RuleStateProvider.
-class ManualRuleStateProvider final : public api::rules::RuleStateProvider {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    ManualRuleStateProvider final : public api::rules::RuleStateProvider {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManualRuleStateProvider)
 

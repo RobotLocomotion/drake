@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/rules/phase_ring.h"
 #include "drake/automotive/maliput/api/rules/phase_ring_book.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
@@ -15,7 +16,8 @@ namespace maliput {
 /// A simple concrete implementation of the api::rules::PhaseRingBook abstract
 /// interface that enables manual addition and removal of api::rules::PhaseRing
 /// instances.
-class ManualPhaseRingBook : public api::rules::PhaseRingBook {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    ManualPhaseRingBook : public api::rules::PhaseRingBook {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManualPhaseRingBook)
 

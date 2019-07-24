@@ -34,13 +34,13 @@ namespace {
 
 // TODO(eric.cousineau): Remove `*DeprecatedProtectedAlias*` cruft and
 // replace `PYDRAKE_TRY_PROTECTED_OVERLOAD` with `PYBIND11_OVERLOAD` once
-// deprecated methods are removed (on or around 2019-07-01).
+// deprecated methods are removed (on or around 2019-08-01).
 
 // Generates deprecation message pursuant to #9651.
 std::string DeprecatedProtectedAliasMessage(
     std::string name, std::string verb) {
   return fmt::format(
-      "'_{0}' is deprecated and will be removed on or around 2019-07-01. "
+      "'_{0}' is deprecated and will be removed on or around 2019-08-01. "
       "Please {1} '{0}' instead.",
       name, verb);
 }
@@ -338,7 +338,7 @@ struct Impl {
     }
   };
 
-  static void DoDefinitions(py::module m) {
+  static void DoScalarDependentDefinitions(py::module m) {
     // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
     using namespace drake::systems;
     constexpr auto& doc = pydrake_doc.drake.systems;
@@ -353,21 +353,11 @@ struct Impl {
     auto system_cls = DefineTemplateClassWithDefault<System<T>, PySystem>(
         m, "System", GetPyParam<T>(), doc.SystemBase.doc);
     system_cls  // BR
+        .def("get_name", &System<T>::get_name, doc.SystemBase.get_name.doc)
         .def("set_name", &System<T>::set_name, doc.SystemBase.set_name.doc)
         // Topology.
         .def("num_input_ports", &System<T>::num_input_ports,
             doc.SystemBase.num_input_ports.doc)
-        .def("get_num_input_ports",
-            [](const System<T>* self) {
-              WarnDeprecated(
-                  "Use num_input_ports() instead. Will be removed on or after "
-                  "2019-07-01.");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-              self->get_num_input_ports();
-#pragma GCC diagnostic pop
-            },
-            doc.SystemBase.get_num_input_ports.doc_deprecated)
         .def("get_input_port", &System<T>::get_input_port,
             py_reference_internal, py::arg("port_index"),
             doc.System.get_input_port.doc)
@@ -375,17 +365,6 @@ struct Impl {
             py::arg("port_name"), doc.System.GetInputPort.doc)
         .def("num_output_ports", &System<T>::num_output_ports,
             doc.SystemBase.num_output_ports.doc)
-        .def("get_num_output_ports",
-            [](const System<T>* self) {
-              WarnDeprecated(
-                  "Use num_output_ports() instead. Will be removed on or "
-                  "after 2019-07-01.");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-              self->get_num_output_ports();
-#pragma GCC diagnostic pop
-            },
-            doc.SystemBase.get_num_output_ports.doc_deprecated)
         .def("get_output_port", &System<T>::get_output_port,
             py_reference_internal, py::arg("port_index"),
             doc.System.get_output_port.doc)
@@ -803,7 +782,10 @@ Note: The above is for the C++ documentation. For Python, use
                 &Diagram<T>::GetMutableSubsystemContext),
             py_reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
-            py::keep_alive<0, 3>(), doc.Diagram.GetMutableSubsystemContext.doc);
+            py::keep_alive<0, 3>(), doc.Diagram.GetMutableSubsystemContext.doc)
+        .def("GetSubsystemByName", &Diagram<T>::GetSubsystemByName,
+            py::arg("name"), py_reference_internal,
+            doc.Diagram.GetSubsystemByName.doc);
 
     // N.B. This will effectively allow derived classes of `VectorSystem` to
     // override `LeafSystem` methods, disrespecting `final`-ity.
@@ -872,7 +854,7 @@ void DefineFrameworkPySystems(py::module m) {
   // Do templated instantiations of system types.
   auto bind_common_scalar_types = [m](auto dummy) {
     using T = decltype(dummy);
-    Impl<T>::DoDefinitions(m);
+    Impl<T>::DoScalarDependentDefinitions(m);
   };
   type_visit(bind_common_scalar_types, CommonScalarPack{});
 }

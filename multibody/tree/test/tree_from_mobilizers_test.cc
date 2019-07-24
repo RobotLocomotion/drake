@@ -1340,23 +1340,25 @@ TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {
   EXPECT_TRUE(CompareMatrices(
       p_WPi_set, p_WPi_set_expected, kTolerance, MatrixCompareType::relative));
 
-  const RigidTransformd X_UL(tree().CalcRelativeTransform(
-      *context_, upper_link_->body_frame(), lower_link_->body_frame()));
-  const Vector3d p_UL = X_UL.translation();
-  const RotationMatrixd R_UL = X_UL.rotation();
-
   const Vector3d p_UL_expected(0.0, -0.5, 0.0);
   const Matrix3d R_UL_expected(Eigen::AngleAxisd(M_PI_4, Vector3d::UnitZ()));
 
-  EXPECT_TRUE(CompareMatrices(
-      p_UL, p_UL_expected, kTolerance, MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(
-      R_UL.matrix(), R_UL_expected, kTolerance, MatrixCompareType::relative));
+  // Verify the RotationMatrix and position returned by CalcRelativeTransform().
+  const RigidTransformd X_UL(tree().CalcRelativeTransform(
+      *context_, upper_link_->body_frame(), lower_link_->body_frame()));
+  EXPECT_TRUE(CompareMatrices(X_UL.rotation().matrix(), R_UL_expected,
+                              kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(X_UL.translation(), p_UL_expected,
+                              kTolerance, MatrixCompareType::relative));
+
+  // Verify the RotationMatrix returned by CalcRelativeRotationMatrix().
+  const RotationMatrixd R_UL = tree().CalcRelativeRotationMatrix(
+      *context_, upper_link_->body_frame(), lower_link_->body_frame());
+  EXPECT_TRUE(CompareMatrices(R_UL.matrix(), R_UL_expected,
+                              kTolerance, MatrixCompareType::relative));
 }
 
 TEST_F(PendulumKinematicTests, PointsHaveTheWrongSize) {
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
   shoulder_mobilizer_->set_angle(context_.get(), M_PI / 4.0);
   elbow_mobilizer_->set_angle(context_.get(), M_PI / 4.0);
 

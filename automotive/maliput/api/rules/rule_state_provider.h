@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
@@ -10,7 +11,8 @@ namespace api {
 namespace rules {
 
 /// Abstract interface for the provider of the state of various rules.
-class RuleStateProvider {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    RuleStateProvider {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RuleStateProvider)
 

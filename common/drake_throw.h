@@ -10,11 +10,11 @@
 /// ::abort(), and cannot be disabled.
 
 namespace drake {
-namespace detail {
+namespace internal {
 // Throw an error message.
 __attribute__((noreturn)) /* gcc is ok with [[noreturn]]; clang is not. */
 void Throw(const char* condition, const char* func, const char* file, int line);
-}  // namespace detail
+}  // namespace internal
 }  // namespace drake
 
 /// Evaluates @p condition and iff the value is false will throw an exception
@@ -26,6 +26,6 @@ void Throw(const char* condition, const char* func, const char* file, int line);
         typename std::remove_cv<decltype(condition)>::type> Trait;           \
     static_assert(Trait::is_valid, "Condition should be bool-convertible."); \
     if (!Trait::Evaluate(condition)) {                                       \
-      ::drake::detail::Throw(#condition, __func__, __FILE__, __LINE__);      \
+      ::drake::internal::Throw(#condition, __func__, __FILE__, __LINE__);    \
     }                                                                        \
   } while (0)

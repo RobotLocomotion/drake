@@ -206,16 +206,6 @@ class Context : public ContextBase {
     return get_parameters().get_abstract_parameter(index);
   }
 
-#ifndef DRAKE_DOXYGEN_CXX
-  DRAKE_DEPRECATED("2019-07-01", "Use num_discrete_state_groups() instead.")
-  int get_num_discrete_state_groups() const {
-    return num_discrete_state_groups();
-  }
-  DRAKE_DEPRECATED("2019-07-01", "Use num_abstract_states() instead.")
-  int get_num_abstract_states() const { return num_abstract_states(); }
-  DRAKE_DEPRECATED("2019-07-01", "Use num_total_states() instead.")
-  int get_num_total_states() const { return num_total_states(); }
-#endif
   //@}
 
   /// @anchor context_value_change_methods
@@ -548,12 +538,6 @@ class Context : public ContextBase {
     PropagateAccuracyChange(this, accuracy, change_event);
   }
 
-#ifndef DRAKE_DOXYGEN_CXX
-  DRAKE_DEPRECATED("2019-07-01", "Use SetTime() instead.")
-  void set_time(const T& time_sec) { SetTime(time_sec); }
-  DRAKE_DEPRECATED("2019-07-01", "Use SetAccuracy() instead.")
-  void set_accuracy(const optional<double>& accuracy) { SetAccuracy(accuracy); }
-#endif
   //@}
 
   /// @anchor dangerous_context_value_change_methods

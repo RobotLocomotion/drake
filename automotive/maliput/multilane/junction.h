@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/api/segment.h"
@@ -16,7 +17,8 @@ namespace maliput {
 namespace multilane {
 
 /// An api::Junction implementation.
-class Junction : public api::Junction {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    Junction : public api::Junction {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Junction);
 

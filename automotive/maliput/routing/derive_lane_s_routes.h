@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
 

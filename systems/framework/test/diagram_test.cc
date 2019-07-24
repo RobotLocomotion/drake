@@ -596,6 +596,30 @@ TEST_F(DiagramTest, Topology) {
   }
 }
 
+// Confirms that the Diagram::AreConnected() query reports the correct results.
+TEST_F(DiagramTest, AreConnected) {
+  // Several verifiably connected ports.
+  EXPECT_TRUE(diagram_->AreConnected(diagram_->adder0()->get_output_port(),
+                                     diagram_->adder1()->get_input_port(0)));
+  EXPECT_TRUE(diagram_->AreConnected(diagram_->adder1()->get_output_port(),
+                                     diagram_->adder2()->get_input_port(1)));
+  EXPECT_TRUE(diagram_->AreConnected(diagram_->adder0()->get_output_port(),
+                                     diagram_->adder2()->get_input_port(0)));
+
+  // A couple unconnected ports -- but they all belong to the diagram.
+  EXPECT_FALSE(diagram_->AreConnected(diagram_->adder0()->get_output_port(),
+                                      diagram_->adder1()->get_input_port(1)));
+  EXPECT_FALSE(diagram_->AreConnected(diagram_->adder1()->get_output_port(),
+                                      diagram_->adder2()->get_input_port(0)));
+
+  // Test against a port that does *not* belong to the diagram.
+  Adder<double> temp_adder(2, kSize);
+  EXPECT_FALSE(diagram_->AreConnected(temp_adder.get_output_port(),
+                                      diagram_->adder1()->get_input_port(1)));
+  EXPECT_FALSE(diagram_->AreConnected(diagram_->adder1()->get_output_port(),
+                                      temp_adder.get_input_port(1)));
+}
+
 // Tests that dependency wiring is set up correctly between
 //  1. input ports and their source output ports,
 //  2. diagram output ports and their source leaf output ports,

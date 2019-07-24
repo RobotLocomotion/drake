@@ -4,13 +4,11 @@
 Bazel build system
 ******************
 
-The Bazel build system is officially supported for a subset of Drake on Ubuntu
-Xenial and Bionic and macOS High Sierra and Mojave.
+Drake's primary build system is Bazel.  For more information about Bazel, see
+https://bazel.build/.
 
-For more information, see:
-
- * https://bazel.build/
- * https://github.com/RobotLocomotion/drake/issues/3129
+Drake also offers a CMake build system wrapper that invokes Bazel under the
+hood.
 
 Bazel Installation
 ==================
@@ -146,12 +144,14 @@ For more information, see https://github.com/bazelbuild/bazel/issues/2537.
 
 Python Versions
 ===============
-By default, Python 2 will be used. To use Python 3 for both Bazel and the Python
-bindings, use ``--config=python3``.
+By default, Python 3 will be used for both Bazel and the Python bindings if
+supported on the given platform; it is also usable by passing
+``--config=python3``.
 
-As an example to run all lint checks in Python 3::
+To use Python 2, pass ``--config=python2``. As an example to run all lint
+checks in Python 2::
 
-    bazel test --config=python3 --config=lint //...
+    bazel test --config=python2 --config=lint //...
 
 Updating BUILD files
 ====================
@@ -175,7 +175,7 @@ Proprietary Solvers
 The Drake Bazel build currently supports the following proprietary solvers:
 
  * Gurobi 8.0.1
- * MOSEK 8.1
+ * MOSEK 9.0
  * SNOPT 7.4
 
 .. When upgrading SNOPT to a newer revision, re-enable TestPrintFile in
@@ -212,10 +212,10 @@ these tests.  If you will be developing with Gurobi regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
 See https://docs.bazel.build/versions/master/user-manual.html#bazelrc.
 
-MOSEK 8.1
----------
+MOSEK
+-----
 
-The Drake Bazel build system downloads MOSEK 8.1.0.51 automatically.  No manual
+The Drake Bazel build system downloads MOSEK 9.0.96 automatically.  No manual
 installation is required.  Set the location of your license file as follows:
 
 ``export MOSEKLM_LICENSE_FILE=/path/to/mosek.lic``
@@ -265,7 +265,7 @@ See https://docs.bazel.build/versions/master/user-manual.html#bazelrc.
 Drake offers two flavors of SNOPT bindings for the MathematicalProgram:
 
  - The ``--config snopt_f2c`` option selects the legacy bindings that use the
-   f2c compiler; these bindings will be removed on 2019-07-01.
+   f2c compiler; these bindings will be removed on 2019-08-01.
  - The ``--config snopt_fortran`` option selects the bindings that use the
    gfortran compiler; these bindings will be supported for the foreseeable
    future.

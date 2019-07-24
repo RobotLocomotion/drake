@@ -10,6 +10,7 @@
 #include "drake/automotive/pure_pursuit_controller.h"
 #include "drake/automotive/road_odometry.h"
 #include "drake/automotive/simple_car.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -19,13 +20,22 @@
 namespace drake {
 namespace pydrake {
 
+// TODO(jwnimmer-tri) Add python deprecation warnings to all methods, once we
+// have the sugar requested in #10605 ready.
+
+constexpr const char kDeprecation[] =
+    "WARNING The drake/automotive package is being removed. "
+    "See RobotLocomotion/drake/issues/11603. "
+    "The drake/automotive code will be removed from Drake on "
+    "or after 2019-09-01.";
+
 PYBIND11_MODULE(automotive, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::automotive;
 
-  m.doc() = "Bindings for Automotive systems";
+  m.doc() = std::string("Bindings for Automotive systems. ") + kDeprecation;
   constexpr auto& doc = pydrake_doc.drake.automotive;
 
   py::module::import("pydrake.systems.framework");
@@ -50,9 +60,16 @@ PYBIND11_MODULE(automotive, m) {
           "kBranches", ScanStrategy::kBranches, doc.ScanStrategy.kBranches.doc);
 
   py::class_<ClosestPose<T>>(m, "ClosestPose", doc.ClosestPose.doc)
-      .def(py::init<>(), doc.ClosestPose.ctor.doc_0args)
-      .def(py::init<const RoadOdometry<T>&, const T&>(), py::arg("odom"),
-          py::arg("dist"),
+      .def(py::init([]() {
+        WarnDeprecated(kDeprecation);
+        return std::make_unique<ClosestPose<T>>();
+      }),
+          doc.ClosestPose.ctor.doc_0args)
+      .def(py::init([](const RoadOdometry<T>& odom, const T& dist) {
+        WarnDeprecated(kDeprecation);
+        return std::make_unique<ClosestPose<T>>(odom, dist);
+      }),
+          py::arg("odom"), py::arg("dist"),
           // Keep alive, transitive: `self` keeps `RoadOdometry` pointer
           // members alive.
           py::keep_alive<1, 2>(), doc.ClosestPose.ctor.doc_2args)
@@ -64,37 +81,56 @@ PYBIND11_MODULE(automotive, m) {
   py::class_<RoadOdometry<T>> road_odometry(
       m, "RoadOdometry", doc.RoadOdometry.doc);
   road_odometry  // BR
-      .def(py::init<>(), doc.RoadOdometry.ctor.doc_0args)
-      .def(py::init<const maliput::api::RoadPosition&,
-               const systems::rendering::FrameVelocity<T>&>(),
+      .def(py::init([]() {
+        WarnDeprecated(kDeprecation);
+        return std::make_unique<RoadOdometry<T>>();
+      }),
+          doc.RoadOdometry.ctor.doc_0args)
+      .def(py::init(
+               [](const maliput::api::RoadPosition& road_position,
+                   const systems::rendering::FrameVelocity<T>& frame_velocity) {
+                 WarnDeprecated(kDeprecation);
+                 return std::make_unique<RoadOdometry<T>>(
+                     road_position, frame_velocity);
+               }),
           py::arg("road_position"), py::arg("frame_velocity"),
           // Keep alive, transitive: `self` keeps `RoadPosition` pointer
           // members alive.
           py::keep_alive<1, 2>(), doc.RoadOdometry.ctor.doc_2args)
-      .def(py::init<const maliput::api::Lane*,
-               const maliput::api::LanePositionT<T>&,
-               const systems::rendering::FrameVelocity<T>&>(),
+      .def(py::init(
+               [](const maliput::api::Lane* lane,
+                   const maliput::api::LanePositionT<T>& lane_position,
+                   const systems::rendering::FrameVelocity<T>& frame_velocity) {
+                 WarnDeprecated(kDeprecation);
+                 return std::make_unique<RoadOdometry<T>>(
+                     lane, lane_position, frame_velocity);
+               }),
           py::arg("lane"), py::arg("lane_position"), py::arg("frame_velocity"),
           // Keep alive, reference: `self` keeps `Lane*` alive.
           py::keep_alive<1, 2>(), doc.RoadOdometry.ctor.doc_3args)
       .def_readwrite("pos", &RoadOdometry<T>::pos, doc.RoadOdometry.pos.doc)
       .def_readwrite("vel", &RoadOdometry<T>::vel, doc.RoadOdometry.vel.doc);
-  // TODO(m-chaturvedi) Add Pybind11 documentation.
   DefReadWriteKeepAlive(&road_odometry, "lane", &RoadOdometry<T>::lane);
 
   py::class_<LaneDirection>(m, "LaneDirection", doc.LaneDirection.doc)
-      .def(py::init<const maliput::api::Lane*, bool>(), py::arg("lane"),
-          py::arg("with_s"), doc.LaneDirection.ctor.doc_2args)
+      .def(py::init([](const maliput::api::Lane* lane, bool with_s) {
+        WarnDeprecated(kDeprecation);
+        return std::make_unique<LaneDirection>(lane, with_s);
+      }),
+          py::arg("lane"), py::arg("with_s"), doc.LaneDirection.ctor.doc_2args)
       .def_readwrite("lane", &LaneDirection::lane, py_reference_internal,
           doc.LaneDirection.lane.doc)
       .def_readwrite(
           "with_s", &LaneDirection::with_s, doc.LaneDirection.with_s.doc);
   AddValueInstantiation<LaneDirection>(m);
 
-  // TODO(eric.cousineau) Bind this named vector automatically (see #8096).
   py::class_<DrivingCommand<T>, BasicVector<T>>(
       m, "DrivingCommand", doc.DrivingCommand.doc)
-      .def(py::init<>(), doc.DrivingCommand.ctor.doc)
+      .def(py::init([]() {
+        WarnDeprecated(kDeprecation);
+        return std::make_unique<DrivingCommand<T>>();
+      }),
+          doc.DrivingCommand.ctor.doc)
       .def("steering_angle", &DrivingCommand<T>::steering_angle,
           doc.DrivingCommand.steering_angle.doc)
       .def("acceleration", &DrivingCommand<T>::acceleration,
@@ -106,8 +142,14 @@ PYBIND11_MODULE(automotive, m) {
 
   py::class_<IdmController<T>, LeafSystem<T>>(
       m, "IdmController", doc.IdmController.doc)
-      .def(py::init<const maliput::api::RoadGeometry&, ScanStrategy,
-               RoadPositionStrategy, double>(),
+      .def(py::init([](const maliput::api::RoadGeometry& road,
+                        ScanStrategy path_or_branches,
+                        RoadPositionStrategy road_position_strategy,
+                        double period_sec) {
+        WarnDeprecated(kDeprecation);
+        return std::make_unique<IdmController<T>>(
+            road, path_or_branches, road_position_strategy, period_sec);
+      }),
           py::arg("road"), py::arg("path_or_branches"),
           py::arg("road_position_strategy"), py::arg("period_sec"),
           doc.IdmController.ctor.doc)
@@ -150,7 +192,11 @@ PYBIND11_MODULE(automotive, m) {
 
   py::class_<PurePursuitController<T>, LeafSystem<T>>(
       m, "PurePursuitController", doc.PurePursuitController.doc)
-      .def(py::init<>(), doc.PurePursuitController.ctor.doc)
+      .def(py::init([]() {
+        WarnDeprecated(kDeprecation);
+        return std::make_unique<PurePursuitController<T>>();
+      }),
+          doc.PurePursuitController.ctor.doc)
       .def("ego_pose_input", &PurePursuitController<T>::ego_pose_input,
           py_reference_internal, doc.PurePursuitController.ego_pose_input.doc)
       .def("lane_input", &PurePursuitController<T>::lane_input,
@@ -160,10 +206,13 @@ PYBIND11_MODULE(automotive, m) {
           py_reference_internal,
           doc.PurePursuitController.steering_command_output.doc);
 
-  // TODO(eric.cousineau) Bind this named vector automatically (see #8096).
   py::class_<SimpleCarState<T>, BasicVector<T>>(
       m, "SimpleCarState", doc.SimpleCarState.doc)
-      .def(py::init<>(), doc.SimpleCarState.ctor.doc)
+      .def(py::init([]() {
+        WarnDeprecated(kDeprecation);
+        return std::make_unique<SimpleCarState<T>>();
+      }),
+          doc.SimpleCarState.ctor.doc)
       .def("x", &SimpleCarState<T>::x, doc.SimpleCarState.x.doc)
       .def("y", &SimpleCarState<T>::y, doc.SimpleCarState.y.doc)
       .def("heading", &SimpleCarState<T>::heading,
@@ -178,15 +227,17 @@ PYBIND11_MODULE(automotive, m) {
           doc.SimpleCarState.set_velocity.doc);
 
   py::class_<SimpleCar<T>, LeafSystem<T>>(m, "SimpleCar", doc.SimpleCar.doc)
-      .def(py::init<>(), doc.SimpleCar.ctor.doc)
+      .def(py::init([]() {
+        WarnDeprecated(kDeprecation);
+        return std::make_unique<SimpleCar<T>>();
+      }),
+          doc.SimpleCar.ctor.doc)
       .def("state_output", &SimpleCar<T>::state_output, py_reference_internal,
           doc.SimpleCar.state_output.doc)
       .def("pose_output", &SimpleCar<T>::pose_output, py_reference_internal,
           doc.SimpleCar.pose_output.doc)
       .def("velocity_output", &SimpleCar<T>::velocity_output,
           py_reference_internal, doc.SimpleCar.velocity_output.doc);
-
-  // TODO(jadecastro) Bind more systems as appropriate.
 }
 
 }  // namespace pydrake

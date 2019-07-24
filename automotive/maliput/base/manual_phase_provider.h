@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/api/rules/phase.h"
 #include "drake/automotive/maliput/api/rules/phase_provider.h"
 #include "drake/automotive/maliput/api/rules/phase_ring.h"
@@ -13,7 +14,8 @@ namespace maliput {
 
 /// A concrete implementation of the api::rules::PhaseProvider abstract
 /// interface that allows the current phase to be manually set.
-class ManualPhaseProvider : public api::rules::PhaseProvider {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    ManualPhaseProvider : public api::rules::PhaseProvider {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManualPhaseProvider);
 

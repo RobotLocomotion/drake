@@ -63,12 +63,12 @@ class SystemConstraintBounds final {
   /// The upper bounds are all positive infinity.
   SystemConstraintBounds(
       const Eigen::Ref<const Eigen::VectorXd>& lower,
-      stx::nullopt_t);
+      nullopt_t);
 
   /// Creates an inequality constraint with the given upper bounds for `f(x)`.
   /// The lower bounds are all negative infinity.
   SystemConstraintBounds(
-      stx::nullopt_t,
+      nullopt_t,
       const Eigen::Ref<const Eigen::VectorXd>& upper);
 
   int size() const { return size_; }

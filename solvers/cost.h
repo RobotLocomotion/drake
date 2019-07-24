@@ -251,7 +251,6 @@ class PolynomialCost : public EvaluatorCost<PolynomialEvaluator> {
  * @tparam FF The forwarded function type (e.g., `const F&, `F&&`, ...).
  * The class `F` should have functions numInputs(), numOutputs(), and
  * eval(x, y).
- * @see detail::FunctionTraits.
  */
 template <typename FF>
 std::shared_ptr<Cost> MakeFunctionCost(FF&& f) {

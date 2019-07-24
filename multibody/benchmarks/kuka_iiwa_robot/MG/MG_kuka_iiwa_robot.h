@@ -15,12 +15,6 @@ namespace benchmarks {
 namespace kuka_iiwa_robot {
 namespace MG {
 
-using Eigen::Vector3d;
-using Eigen::Matrix3d;
-using test_utilities::SpatialKinematicsPVA;
-using SpatialForced = SpatialForce<double>;
-using Vector7d = Eigen::Matrix<double, 7, 1>;
-
 /// This class is Drake's interface to the MotionGenesis solution for a
 /// 7-DOF KUKA LBR iiwa robot (14 kg payload) which is described at:
 /// https://www.kuka.com/en-de/products/robot-systems/industrial-robots/lbr-iiwa
@@ -83,10 +77,10 @@ class MGKukaIIwaRobot {
   /// v_NGo_N    | Go's velocity in N, expressed in N.
   /// alpha_NG_N | G's angular acceleration in N, expressed in N.
   /// a_NGo_N    | Go's acceleration in N, expressed in N.
-  SpatialKinematicsPVA<T> CalcEndEffectorKinematics(
-                            const Eigen::Ref<const VectorX<T>>& q,
-                            const Eigen::Ref<const VectorX<T>>& qDt,
-                            const Eigen::Ref<const VectorX<T>>& qDDt) const;
+  test_utilities::SpatialKinematicsPVA<T> CalcEndEffectorKinematics(
+      const Eigen::Ref<const VectorX<T>>& q,
+      const Eigen::Ref<const VectorX<T>>& qDt,
+      const Eigen::Ref<const VectorX<T>>& qDDt) const;
 
   /// This method calculates joint reaction force/torques for the 7 joints
   /// that connect frames Na to A, Ab to B, Bc to C, ... Fg to G.
@@ -129,8 +123,9 @@ class MGKukaIIwaRobot {
   /// F_Eo_De    | Spatial force on Eo from D, expressed in frame De.
   /// F_Fo_Ef    | Spatial force on Fo from E, expressed in frame Ef.
   /// F_Go_Fg    | Spatial force on Go from F, expressed in frame Fg.
-  std::tuple<SpatialForced, SpatialForced, SpatialForced, SpatialForced,
-             SpatialForced, SpatialForced, SpatialForced>
+  std::tuple<SpatialForce<double>, SpatialForce<double>, SpatialForce<double>,
+             SpatialForce<double>, SpatialForce<double>, SpatialForce<double>,
+             SpatialForce<double>>
   CalcJointReactionForcesExpressedInMobilizer(
                           const Eigen::Ref<const VectorX<T>>& q,
                           const Eigen::Ref<const VectorX<T>>& qDt,
@@ -146,8 +141,9 @@ class MGKukaIIwaRobot {
   /// F_Eo_W  | Spatial force on Eo from D, expressed in world frame W.
   /// F_Fo_W  | Spatial force on Fo from E, expressed in world frame W.
   /// F_Go_W  | Spatial force on Go from F, expressed in world frame W.
-  std::tuple<SpatialForced, SpatialForced, SpatialForced, SpatialForced,
-             SpatialForced, SpatialForced, SpatialForced>
+  std::tuple<SpatialForce<double>, SpatialForce<double>, SpatialForce<double>,
+             SpatialForce<double>, SpatialForce<double>, SpatialForce<double>,
+             SpatialForce<double>>
   CalcJointReactionForcesExpressedInWorld(
                           const Eigen::Ref<const VectorX<T>>& q,
                           const Eigen::Ref<const VectorX<T>>& qDt,
@@ -170,7 +166,7 @@ class MGKukaIIwaRobot {
   ///
   /// @returns 7x1 matrix of machine-precision values for the actuation
   /// (generalized) torques tAz, tBz, tCz, tDz, tEz, tFz, tGz.
-  Vector7d
+  Vector<double, 7>
   CalcRevoluteMotorZTorques(const Eigen::Ref<const VectorX<T>>& q,
                             const Eigen::Ref<const VectorX<T>>& qDt,
                             const Eigen::Ref<const VectorX<T>>& qDDt) const;

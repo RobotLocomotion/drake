@@ -22,7 +22,12 @@ drake_cc_library(
     testonly = 1,
     srcs = ["ignition_types_compare.cc"],
     hdrs = ["ignition_types_compare.h"],
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
+        "//automotive:deprecated",
         "@gtest//:without_main",
         "@ignition_rndf",
     ],

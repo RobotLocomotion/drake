@@ -9,28 +9,12 @@ namespace geometry {
 namespace internal {
 namespace {
 
-GTEST_TEST(InternalGeometryTest, RenderIndexAccess) {
-  InternalGeometry geometry;
-
-  const std::string renderer_name{"valid"};
-  EXPECT_FALSE(geometry.render_index(renderer_name));
-  RenderIndex index(2);
-  EXPECT_NO_THROW(geometry.set_render_index(renderer_name, index));
-  ASSERT_TRUE(geometry.render_index(renderer_name));
-  EXPECT_EQ(geometry.render_index(renderer_name), index);
-}
-
-// Confirms that redundantly setting properties causes an exception to be
-// thrown.
-GTEST_TEST(InternalGeometryTest, RedundantPropertyAssignment) {
+// Confirms that properties get set properly.
+GTEST_TEST(InternalGeometryTest, PropertyAssignment) {
   InternalGeometry geometry;
 
   EXPECT_FALSE(geometry.has_proximity_role());
   EXPECT_NO_THROW(geometry.SetRole(ProximityProperties()));
-  EXPECT_TRUE(geometry.has_proximity_role());
-  DRAKE_EXPECT_THROWS_MESSAGE(geometry.SetRole(ProximityProperties()),
-                              std::logic_error,
-                              "Geometry already has proximity role assigned");
   EXPECT_TRUE(geometry.has_proximity_role());
 
   EXPECT_FALSE(geometry.has_illustration_role());
@@ -90,43 +74,45 @@ GTEST_TEST(InternalGeometryTest, RemovePerceptionRole) {
   // Configure a geometry with all roles; we assume from previous unit tests
   // that the geometry's state is correct.
   InternalGeometry geometry;
-  const RenderIndex index1(10);
-  const RenderIndex index2(20);
-  geometry.set_render_index(renderer1, index1);
-  geometry.set_render_index(renderer2, index2);
+  geometry.set_renderer(renderer1);
+  geometry.set_renderer(renderer2);
   geometry.SetRole(PerceptionProperties());
-
-  // Case: Remove render index for a non-existent render engine; old index is
-  // still valid and there are still perception properties.
-  EXPECT_NO_THROW(geometry.ClearRenderIndex("invalid"));
-  EXPECT_EQ(geometry.render_index(renderer1), index1);
-  EXPECT_EQ(geometry.render_index(renderer2), index2);
+  EXPECT_TRUE(geometry.in_renderer(renderer1));
+  EXPECT_TRUE(geometry.in_renderer(renderer2));
   EXPECT_TRUE(geometry.has_role(Role::kPerception));
 
-  // Case: Remove render index for valid render engine; no index exists and it
-  // still has perception properties.
-  EXPECT_NO_THROW(geometry.ClearRenderIndex(renderer1));
-  EXPECT_EQ(geometry.render_index(renderer1), nullopt);
-  EXPECT_EQ(geometry.render_index(renderer2), index2);
+  // Case: Remove from a non-existent render engine; its perception role
+  // configuration should remain unchanged.
+  EXPECT_NO_THROW(geometry.ClearRenderer("invalid"));
+  EXPECT_TRUE(geometry.in_renderer(renderer1));
+  EXPECT_TRUE(geometry.in_renderer(renderer2));
+  EXPECT_TRUE(geometry.has_role(Role::kPerception));
+
+  // Case: Remove from a valid render engine; otherwise unchanged perception
+  // role configuration.
+  EXPECT_NO_THROW(geometry.ClearRenderer(renderer1));
+  EXPECT_FALSE(geometry.in_renderer(renderer1));
+  EXPECT_TRUE(geometry.in_renderer(renderer2));
   EXPECT_TRUE(geometry.has_role(Role::kPerception));
 
   // Case: Remove perception properties while there is still a valid render
-  // index. All render indices are cleared.
+  // engine. The remaining valid render engines are cleared.
   EXPECT_NO_THROW(geometry.RemovePerceptionRole());
-  EXPECT_EQ(geometry.render_index(renderer1), nullopt);
-  EXPECT_EQ(geometry.render_index(renderer2), nullopt);
+  EXPECT_FALSE(geometry.in_renderer(renderer1));
+  EXPECT_FALSE(geometry.in_renderer(renderer2));
   EXPECT_FALSE(geometry.has_role(Role::kPerception));
 
-  // Case: Removing render index leaves the geometry with *no* render indices,
-  // but it *still* has perception properties.
-  geometry.set_render_index(renderer1, index1);
+  // Case: Removing from last render engine leaves the geometry with perception
+  // properties.
+  // In preparation, we reassign perception role and render engine.
+  geometry.set_renderer(renderer1);
   geometry.SetRole(PerceptionProperties());
   // Confirm it's wired up for renderer1.
-  EXPECT_EQ(geometry.render_index(renderer1), index1);
+  EXPECT_TRUE(geometry.in_renderer(renderer1));
   EXPECT_TRUE(geometry.has_role(Role::kPerception));
 
-  EXPECT_NO_THROW(geometry.ClearRenderIndex(renderer1));
-  EXPECT_EQ(geometry.render_index(renderer1), nullopt);
+  EXPECT_NO_THROW(geometry.ClearRenderer(renderer1));
+  EXPECT_FALSE(geometry.in_renderer(renderer1));
   EXPECT_TRUE(geometry.has_role(Role::kPerception));
 }
 

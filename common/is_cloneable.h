@@ -7,7 +7,7 @@ namespace drake {
 
 /** @cond */
 
-namespace is_cloneable_detail {
+namespace is_cloneable_internal {
 
 // Default case; assumes that a class is *not* cloneable.
 template <typename T, class>
@@ -24,7 +24,7 @@ struct is_cloneable_helper<
         typename std::remove_const<T>::type*>::value>::type>
     : std::true_type {};
 
-}  // namespace is_cloneable_detail
+}  // namespace is_cloneable_internal
 
 /** @endcond */
 
@@ -80,6 +80,6 @@ struct is_cloneable_helper<
  */
 template <typename T>
 using is_cloneable =
-    is_cloneable_detail::is_cloneable_helper<T, void>;
+    is_cloneable_internal::is_cloneable_helper<T, void>;
 
 }  // namespace drake

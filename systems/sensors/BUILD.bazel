@@ -33,6 +33,7 @@ drake_cc_package_library(
         ":lcm_image_array_to_images",
         ":lcm_image_traits",
         ":optitrack_sender",
+        ":rgbd_sensor",
         ":rotary_encoders",
         ":vtk_util",
     ],
@@ -178,6 +179,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "rgbd_sensor",
+    srcs = ["rgbd_sensor.cc"],
+    hdrs = ["rgbd_sensor.h"],
+    deps = [
+        ":camera_info",
+        ":image",
+        "//geometry:geometry_ids",
+        "//geometry:scene_graph",
+        "//geometry/render:render_engine",
+        "//systems/framework:leaf_system",
+        "//systems/primitives:zero_order_hold",
+        "//systems/rendering:pose_vector",
+    ],
+)
+
+drake_cc_library(
     name = "rotary_encoders",
     srcs = ["rotary_encoders.cc"],
     hdrs = ["rotary_encoders.h"],
@@ -267,6 +284,16 @@ drake_cc_googletest(
         "//common/test_utilities",
         "@spruce",
         "@vtk//:vtkIOImage",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rgbd_sensor_test",
+    tags = vtk_test_tags(),
+    deps = [
+        ":rgbd_sensor",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/test_utilities:dummy_render_engine",
     ],
 )
 

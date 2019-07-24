@@ -6,6 +6,7 @@
 #include "drake/common/temp_directory.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mixed_integer_optimization_util.h"
+#include "drake/solvers/test/exponential_cone_program_examples.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
 #include "drake/solvers/test/second_order_cone_program_examples.h"
@@ -38,7 +39,7 @@ TEST_F(UnboundedLinearProgramTest0, Test) {
         result.get_solver_details<MosekSolver>();
     EXPECT_EQ(mosek_solver_details.rescode, 0);
     // This problem status is defined in
-    // https://docs.mosek.com/8.1/capi/constants.html#mosek.prosta
+    // https://docs.mosek.com/9.0/capi/constants.html#mosek.prosta
     const int MSK_SOL_STA_DUAL_INFEAS_CER = 6;
     EXPECT_EQ(mosek_solver_details.solution_status,
               MSK_SOL_STA_DUAL_INFEAS_CER);
@@ -124,7 +125,7 @@ GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
 
 GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   MosekSolver solver;
-  // Mosek 8 returns a solution that is accurate up to 1.2E-5 for this specific
+  // Mosek 9 returns a solution that is accurate up to 1.2E-5 for this specific
   // problem. Might need to change the tolerance when we upgrade Mosek.
   SolveAndCheckSmallestEllipsoidCoveringProblems(solver, 1.2E-5);
 }
@@ -178,6 +179,27 @@ GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithOverlappingVariables) {
   }
 }
 
+GTEST_TEST(TestExponentialConeProgram, ExponentialConeTrivialExample) {
+  MosekSolver solver;
+  if (solver.available()) {
+    ExponentialConeTrivialExample(solver, 1E-5);
+  }
+}
+
+GTEST_TEST(TestExponentialConeProgram, MinimizeKLDivengence) {
+  MosekSolver solver;
+  if (solver.available()) {
+    MinimizeKLDivergence(solver, 2E-5);
+  }
+}
+
+GTEST_TEST(TestExponentialConeProgram, MinimalEllipsoidConveringPoints) {
+  MosekSolver solver;
+  if (solver.available()) {
+    MinimalEllipsoidCoveringPoints(solver, 1E-6);
+  }
+}
+
 GTEST_TEST(MosekTest, TestLogFile) {
   // Test if we can print the logging info to a log file.
   MathematicalProgram prog;
@@ -202,30 +224,29 @@ GTEST_TEST(MosekTest, TestLogFile) {
 }
 
 GTEST_TEST(MosekTest, SolverOptionsTest) {
+  // We test that passing solver options change the behavior of
+  // MosekSolver::Solve().
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
-  prog.AddLinearConstraint(x(0) + x(1) >= 0);
-  prog.AddLinearConstraint(x(1) <= 1);
-  prog.AddLinearConstraint(x(0) <= 1);
-  // The Hessian of the quadratic cost has an eigen value -1e-8, so it is not
-  // positive semidefinite. By adjusting Mosek's tolerance on the semidefinite
-  // matrix, we expect the solver to give a different result.
-  prog.AddQuadraticCost(x(0) * x(0) - 1E-8 * x(1) * x(1));
+  prog.AddLinearConstraint(100 * x(0) + 100 * x(1) <= 1);
+  prog.AddConstraint(x(0) >= 0);
+  prog.AddConstraint(x(1) >= 0);
+  prog.AddLinearCost(1E5* x(0) + x(1));
 
   SolverOptions solver_options;
-  // First try a big positive semidefinite matrix tolerance.
-  solver_options.SetOption(MosekSolver::id(),
-                           "MSK_DPAR_SEMIDEFINITE_TOL_APPROX", 1E-6);
+  solver_options.SetOption(MosekSolver::id(), "MSK_DPAR_DATA_TOL_C_HUGE", 1E3);
   MathematicalProgramResult result;
   MosekSolver mosek_solver;
   mosek_solver.Solve(prog, {}, solver_options, &result);
-  EXPECT_TRUE(result.is_success());
-
-  // Now try a small positive semidefinite matrix tolerance.
-  solver_options.SetOption(MosekSolver::id(),
-                           "MSK_DPAR_SEMIDEFINITE_TOL_APPROX", 1E-10);
-  mosek_solver.Solve(prog, {}, solver_options, &result);
   EXPECT_FALSE(result.is_success());
+  // This response code is defined in
+  // https://docs.mosek.com/9.0/capi/response-codes.html#mosek.rescode
+  const int MSK_RES_ERR_HUGE_C{1375};
+  EXPECT_EQ(result.get_solver_details<MosekSolver>().rescode,
+            MSK_RES_ERR_HUGE_C);
+  solver_options.SetOption(MosekSolver::id(), "MSK_DPAR_DATA_TOL_C_HUGE", 1E6);
+  mosek_solver.Solve(prog, {}, solver_options, &result);
+  EXPECT_TRUE(result.is_success());
 }
 
 GTEST_TEST(MosekSolver, SolverOptionsErrorTest) {
@@ -241,11 +262,11 @@ GTEST_TEST(MosekSolver, SolverOptionsErrorTest) {
   mosek_solver.Solve(prog, {}, solver_options, &result);
   const auto& solver_details = result.get_solver_details<MosekSolver>();
   // This response code is defined in
-  // https://docs.mosek.com/8.1/capi/response-codes.html#mosek.rescode
+  // https://docs.mosek.com/9.0/capi/response-codes.html#mosek.rescode
   const int MSK_RES_ERR_PARAM_NAME_INT = 1207;
   EXPECT_EQ(solver_details.rescode, MSK_RES_ERR_PARAM_NAME_INT);
   // This problem status is defined in
-  // https://docs.mosek.com/8.1/capi/constants.html#mosek.prosta
+  // https://docs.mosek.com/9.0/capi/constants.html#mosek.prosta
   const int MSK_PRO_STA_UNKNOWN = 0;
   EXPECT_EQ(solver_details.solution_status, MSK_PRO_STA_UNKNOWN);
 

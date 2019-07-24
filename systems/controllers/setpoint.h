@@ -35,7 +35,7 @@ class CartesianSetpoint {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CartesianSetpoint)
 
   CartesianSetpoint() {
-    pose_d_.setIdentity();
+    pose_d_.SetIdentity();
     vel_d_.setZero();
     acc_d_.setZero();
     Kp_.setZero();
@@ -52,7 +52,7 @@ class CartesianSetpoint {
   CartesianSetpoint(const Isometry3<Scalar>& pose_d,
                     const Vector6<Scalar>& vel_d, const Vector6<Scalar>& acc_d,
                     const Vector6<Scalar>& Kp, const Vector6<Scalar>& Kd) {
-    pose_d_ = pose_d;
+    pose_d_ = math::RigidTransform<Scalar>(pose_d);
     vel_d_ = vel_d;
     acc_d_ = acc_d;
     Kp_ = Kp;
@@ -76,7 +76,7 @@ class CartesianSetpoint {
     // H^w_m = measured orientation in the world frame,
     // E = a small rotation in the world frame from measured to desired.
     // H^w_d = E * H^w_m, E = H^w_d * H^w_m.inverse()
-    Quaternion<Scalar> quat_d(pose_d_.linear());
+    Quaternion<Scalar> quat_d = pose_d_.rotation().ToQuaternion();
     Quaternion<Scalar> quat(pose.linear());
     // Make sure the relative rotation between the desired and the measured
     // rotation goes the "shortest" way.
@@ -105,7 +105,7 @@ class CartesianSetpoint {
   bool is_valid() const {
     bool ret = pose_d_.translation().allFinite();
     ret &= Matrix3<Scalar>::Identity().isApprox(
-        pose_d_.linear() * pose_d_.linear().transpose(),
+        (pose_d_.rotation() * pose_d_.rotation().transpose()).matrix(),
         Eigen::NumTraits<Scalar>::epsilon());
     ret &= vel_d_.allFinite();
     ret &= acc_d_.allFinite();
@@ -115,14 +115,18 @@ class CartesianSetpoint {
   }
 
   // Getters
-  inline const Isometry3<Scalar>& desired_pose() const { return pose_d_; }
+  inline const math::RigidTransform<Scalar>& desired_pose() const {
+    return pose_d_;
+  }
   inline const Vector6<Scalar>& desired_velocity() const { return vel_d_; }
   inline const Vector6<Scalar>& desired_acceleration() const { return acc_d_; }
   inline const Vector6<Scalar>& Kp() const { return Kp_; }
   inline const Vector6<Scalar>& Kd() const { return Kd_; }
 
   // Setters
-  inline Isometry3<Scalar>& mutable_desired_pose() { return pose_d_; }
+  inline math::RigidTransform<Scalar>& mutable_desired_pose() {
+    return pose_d_;
+  }
   inline Vector6<Scalar>& mutable_desired_velocity() { return vel_d_; }
   inline Vector6<Scalar>& mutable_desired_acceleration() { return acc_d_; }
   inline Vector6<Scalar>& mutable_Kp() { return Kp_; }
@@ -132,7 +136,7 @@ class CartesianSetpoint {
 
  private:
   // Desired pose
-  Isometry3<Scalar> pose_d_;
+  math::RigidTransform<Scalar> pose_d_;
   // Desired velocity
   Vector6<Scalar> vel_d_;
   // Desired acceleration

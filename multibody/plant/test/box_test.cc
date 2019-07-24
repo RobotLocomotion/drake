@@ -117,54 +117,64 @@ GTEST_TEST(Box, UnderStiction) {
             .Eval<ContactResults<double>>(the_context);
 
     ASSERT_EQ(contact_results.num_contacts(), 1);  // only one contact pair.
-    const PointPairContactInfo<double>& contact_info =
-        contact_results.contact_info(0);
+    const PointPairContactInfo<double>& point_pair_contact_info =
+        contact_results.point_pair_contact_info(0);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // Verify the deprecated method still works.
+    ASSERT_EQ(
+        &contact_results.contact_info(0),
+        &contact_results.point_pair_contact_info(0));
+#pragma GCC diagnostic pop
 
     // Verify the bodies referenced by the contact info.
     const Body<double>& ground = the_plant.GetBodyByName("ground");
     const Body<double>& box = the_plant.GetBodyByName("box");
-    EXPECT_TRUE((contact_info.bodyA_index() == box.index() &&
-                 contact_info.bodyB_index() == ground.index()) ||
-                (contact_info.bodyB_index() == box.index() &&
-                 contact_info.bodyA_index() == ground.index()));
+    EXPECT_TRUE((point_pair_contact_info.bodyA_index() == box.index() &&
+                 point_pair_contact_info.bodyB_index() == ground.index()) ||
+                (point_pair_contact_info.bodyB_index() == box.index() &&
+                 point_pair_contact_info.bodyA_index() == ground.index()));
 
     // Whether the normal points up or down depends on the order in which
     // the geometry engine orders bodies in the contact pair. direction = +1
     // indicates the normal is the +z axis pointing into the box (i.e. the
     // outward normal to the ground plane). direction = -1 indicates the
     // outward normal to the box (i.e. pointing down in the -z direction).
-    double direction = contact_info.bodyA_index() == box.index() ? 1.0 : -1.0;
+    double direction =
+        point_pair_contact_info.bodyA_index() == box.index() ? 1.0 : -1.0;
 
     // The expected value of the contact force applied on the box at the
     // contact point C.
     const Vector3<double> f_Bc_W(-applied_force, 0.0, mass * g);
-    EXPECT_TRUE(CompareMatrices(contact_info.contact_force(),
+    EXPECT_TRUE(CompareMatrices(point_pair_contact_info.contact_force(),
                                 f_Bc_W * direction, kTolerance,
                                 MatrixCompareType::relative));
 
     // Upper limit on the x displacement computed using the maximum possible
     // velocity under stiction, i.e. the stiction tolerance.
     const double x_upper_limit = stiction_tolerance * simulation_time;
-    EXPECT_LT(contact_info.contact_point().x(), x_upper_limit);
+    EXPECT_LT(point_pair_contact_info.contact_point().x(), x_upper_limit);
 
     // The penetration allowance is just an estimate. Therefore we only
     // expect the penetration depth to be close enough to it.
-    EXPECT_NEAR(contact_info.point_pair().depth, penetration_allowance, 1.0e-3);
+    EXPECT_NEAR(point_pair_contact_info.point_pair().depth,
+        penetration_allowance, 1.0e-3);
 
     // Whether the normal points up or down depends on the order in which
     // scene graph orders bodies in the contact pair.
     const Vector3<double> expected_normal =
         Vector3<double>::UnitZ() * direction;
-    EXPECT_TRUE(CompareMatrices(contact_info.point_pair().nhat_BA_W,
+    EXPECT_TRUE(CompareMatrices(point_pair_contact_info.point_pair().nhat_BA_W,
                                 expected_normal, kTolerance,
                                 MatrixCompareType::relative));
 
     // If we are in stiction, the slip speed should be smaller than the
     // specified stiction tolerance.
-    EXPECT_LT(contact_info.slip_speed(), stiction_tolerance);
+    EXPECT_LT(point_pair_contact_info.slip_speed(), stiction_tolerance);
 
     // There should not be motion in the normal direction.
-    EXPECT_NEAR(contact_info.separation_speed(), 0.0, kTolerance);
+    EXPECT_NEAR(point_pair_contact_info.separation_speed(), 0.0, kTolerance);
   };
 
   // Verify contact results at the end of the simulation.

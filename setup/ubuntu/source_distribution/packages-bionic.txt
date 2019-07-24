@@ -42,6 +42,7 @@ libyaml-cpp-dev
 lldb
 locales
 openssh-client
+patch
 patchelf
 patchutils
 pkg-config
@@ -62,5 +63,6 @@ python3-sphinx-rtd-theme
 ruby
 unzip
 valgrind
+valgrind-dbg
 zip
 zlib1g-dev

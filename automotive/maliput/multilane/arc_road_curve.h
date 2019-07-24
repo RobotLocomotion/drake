@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "drake/automotive/deprecated.h"
 #include "drake/automotive/maliput/multilane/road_curve.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
@@ -13,7 +14,8 @@ namespace multilane {
 
 /// RoadCurve specification for a reference curve that describes a piece
 /// of an arc.
-class ArcRoadCurve : public RoadCurve {
+class DRAKE_DEPRECATED_AUTOMOTIVE
+    ArcRoadCurve : public RoadCurve {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ArcRoadCurve)
 
