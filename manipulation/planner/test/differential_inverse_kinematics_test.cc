@@ -10,8 +10,8 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/math/rigid_transform.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/solvers/constraint.h"
 
