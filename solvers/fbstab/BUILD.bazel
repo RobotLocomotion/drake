@@ -7,4 +7,31 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:private"])
 
+drake_cc_library(
+    name = "fbstab_dense",
+    srcs = [
+        "fbstab_algorithm.h",
+        "fbstab_dense.cc",
+    ],
+    hdrs = ["fbstab_dense.h"],
+    deps = [
+        "//common:essential",
+        "//solvers/fbstab/components:dense_data",
+        "//solvers/fbstab/components:dense_feasibility",
+        "//solvers/fbstab/components:dense_linear_solver",
+        "//solvers/fbstab/components:dense_residual",
+        "//solvers/fbstab/components:dense_variable",
+        "@eigen",
+    ],
+)
+
+drake_cc_googletest(
+    name = "dense_unit_tests",
+    srcs = ["test/fbstab_dense_unit_tests.cc"],
+    deps = [
+        ":fbstab_dense",
+        "@eigen",
+    ],
+)
+
 add_lint_tests()

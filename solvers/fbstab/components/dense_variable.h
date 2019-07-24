@@ -18,9 +18,9 @@ namespace fbstab {
  * operations.
  *
  * Primal-dual variables have 3 components:
- * z: Decision variables
- * v: Inequality duals
- * y: Inequality margins
+ * - z: Decision variables
+ * - v: Inequality duals
+ * - y: Inequality margins
  *
  * where
  * length(z) = nz
@@ -72,19 +72,19 @@ class DenseVariable {
   void InitializeConstraintMargin();
 
   /**
-   * Performs the operation u <- a*x + u
+   * Performs the operation *this <- a*x + *this
    * (where u is this object).
    * This is a level 1 BLAS operation for this object;
    * see http://www.netlib.org/blas/blasqr.pdf.
    *
-   * @param[in] x the other variable
    * @param[in] a scalar
+   * @param[in] x vector
    *
    * Note that this handles the constraint margin correctly, i.e., after the
    * operation u.y = b - A*(u.z + a*x.z).
    * Throws an exception if problem data has not been linked.
    */
-  void axpy(const DenseVariable& x, double a);
+  void axpy(double a, const DenseVariable& x);
 
   /**
    * Performs a deep copy operation.

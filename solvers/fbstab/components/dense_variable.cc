@@ -78,7 +78,7 @@ void DenseVariable::InitializeConstraintMargin() {
   y_->noalias() = data_->b() - data_->A() * (*z_);
 }
 
-void DenseVariable::axpy(const DenseVariable& x, double a) {
+void DenseVariable::axpy(double a, const DenseVariable& x) {
   if (data_ == nullptr) {
     throw std::runtime_error(
         "Cannot call DenseVariable::axpy unless data is linked.");
