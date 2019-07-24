@@ -5,7 +5,7 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-package(default_visibility = ["//visibility:private"])
+package(default_visibility = ["//solvers/fbstab:__pkg__"])
 
 drake_cc_library(
     name = "dense_data",
