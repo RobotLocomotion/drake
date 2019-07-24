@@ -55,6 +55,10 @@ LcmSubscriberSystem::LcmSubscriberSystem(
   static_assert(kStateIndexMessageCount == 1, "");
   this->DeclareAbstractState(AbstractValue::Make<int>(0));
 
+  // Declare an unrestricted forced update when a new message is arrived.
+  this->DeclareForcedUnrestrictedUpdateEvent(
+      &LcmSubscriberSystem::ProcessMessageAndStoreToAbstractState);
+
   set_name(make_name(channel_));
 }
 
@@ -63,10 +67,10 @@ LcmSubscriberSystem::~LcmSubscriberSystem() {
   magic_number_ = 0;
 }
 
-void LcmSubscriberSystem::DoCalcUnrestrictedUpdate(
-    const Context<double>&,
-    const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
-    State<double>* state) const {
+// This function processes the internal received message and store the results
+// to the abstract states, which include both the message and message counts.
+systems::EventStatus LcmSubscriberSystem::ProcessMessageAndStoreToAbstractState(
+    const Context<double>&, State<double>* state) const {
   AbstractValues& abstract_state = state->get_mutable_abstract_state();
   std::lock_guard<std::mutex> lock(received_message_mutex_);
   if (!received_message_.empty()) {
@@ -76,6 +80,8 @@ void LcmSubscriberSystem::DoCalcUnrestrictedUpdate(
   }
   abstract_state.get_mutable_value(kStateIndexMessageCount)
       .get_mutable_value<int>() = received_message_count_;
+
+  return systems::EventStatus::Succeeded();
 }
 
 int LcmSubscriberSystem::GetMessageCount(const Context<double>& context) const {
@@ -99,6 +105,15 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
   if (last_message_count == received_message_count) {
     return;
   }
+
+  // Create a unrestricted event and tie the handler to the corresponding
+  // function.
+  systems::UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback
+      callback = [this](const Context<double>& c,
+                        const systems::UnrestrictedUpdateEvent<double>&,
+                        State<double>* s) {
+        this->ProcessMessageAndStoreToAbstractState(c, s);
+      };
 
   // Schedule an update event at the current time.
   *time = context.get_time();

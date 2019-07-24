@@ -125,14 +125,13 @@ class LcmSubscriberSystem : public LeafSystem<double> {
   int GetMessageCount(const Context<double>& context) const;
 
  protected:
+  /// Overrides the simulator periodic events dispatcher, in which it checks
+  /// whether there is a new message that has been received by the subscriber.
+  /// If yes, create and trigger a forced unrestricted update to process the new
+  /// message.
   void DoCalcNextUpdateTime(const Context<double>& context,
                             systems::CompositeEventCollection<double>* events,
                             double* time) const override;
-
-  void DoCalcUnrestrictedUpdate(
-      const Context<double>&,
-      const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
-      State<double>* state) const override;
 
  private:
   // Callback entry point from LCM into this class.
@@ -141,6 +140,9 @@ class LcmSubscriberSystem : public LeafSystem<double> {
   std::unique_ptr<AbstractValue> AllocateSerializerOutputValue() const;
   void CalcSerializerOutputValue(const Context<double>& context,
                                  AbstractValue* output_value) const;
+
+  systems::EventStatus ProcessMessageAndStoreToAbstractState(
+      const Context<double>&, State<double>* state) const;
 
   // The channel on which to receive LCM messages.
   const std::string channel_;
