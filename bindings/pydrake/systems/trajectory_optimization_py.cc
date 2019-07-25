@@ -129,6 +129,11 @@ PYBIND11_MODULE(trajectory_optimization, m) {
               const solvers::MathematicalProgramResult&>(
               &MultipleShooting::GetStateSamples),
           doc.MultipleShooting.GetStateSamples.doc)
+      .def("GetSequentialVariableSamples",
+          overload_cast_explicit<Eigen::MatrixXd,
+              const solvers::MathematicalProgramResult&, const std::string&>(
+              &MultipleShooting::GetSequentialVariableSamples),
+          doc.MultipleShooting.GetSequentialVariableSamples.doc)
       .def("ReconstructInputTrajectory",
           overload_cast_explicit<trajectories::PiecewisePolynomial<double>,
               const solvers::MathematicalProgramResult&>(

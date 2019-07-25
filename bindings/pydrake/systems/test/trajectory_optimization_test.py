@@ -78,6 +78,7 @@ class TestTrajectoryOptimization(unittest.TestCase):
         times = dircol.GetSampleTimes(result)
         inputs = dircol.GetInputSamples(result)
         states = dircol.GetStateSamples(result)
+        variables = dircol.GetSequentialVariableSamples(result, "test")
         input_traj = dircol.ReconstructInputTrajectory(result)
         state_traj = dircol.ReconstructStateTrajectory(result)
 

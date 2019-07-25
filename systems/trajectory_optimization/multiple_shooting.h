@@ -287,6 +287,12 @@ class MultipleShooting : public solvers::MathematicalProgram {
   Eigen::MatrixXd GetStateSamples(
       const solvers::MathematicalProgramResult& result) const;
 
+  /// Returns a matrix containing the sequential variable values (arranged in
+  /// columns) at each knot point at the solution.
+  Eigen::MatrixXd GetSequentialVariableSamples(
+      const solvers::MathematicalProgramResult& result,
+      const std::string& name) const;
+
   /// Get the input trajectory at the solution as a PiecewisePolynomial.  The
   /// order of the trajectory will be determined by the integrator used in
   /// the dynamic constraints.  Requires that the system has at least one input

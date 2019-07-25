@@ -241,6 +241,18 @@ Eigen::MatrixXd MultipleShooting::GetStateSamples(
   return states;
 }
 
+Eigen::MatrixXd MultipleShooting::GetSequentialVariableSamples(
+    const solvers::MathematicalProgramResult& result,
+    const std::string& name) const {
+  int num_sequential_variables = sequential_expression_manager_.num_rows(name);
+  Eigen::MatrixXd sequential_variables(num_sequential_variables, N_);
+  for (int i = 0; i < N_; i++) {
+    sequential_variables.col(i) =
+        result.GetSolution(GetSequentialVariableAtIndex(name, i));
+  }
+  return sequential_variables;
+}
+
 symbolic::Substitution
 MultipleShooting::ConstructPlaceholderVariableSubstitution(
     int interval_index) const {

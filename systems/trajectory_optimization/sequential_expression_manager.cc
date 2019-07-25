@@ -61,6 +61,13 @@ SequentialExpressionManager::GetSequentialExpressionsByName(
   return sequential_expressions.col(index);
 }
 
+int SequentialExpressionManager::num_rows(const std::string& name) const {
+  const auto it = name_to_placeholders_and_sequential_expressions_.find(name);
+  DRAKE_THROW_UNLESS(it !=
+                     name_to_placeholders_and_sequential_expressions_.end());
+  return it->second.first.size();
+}
+
 }  // namespace internal
 }  // namespace trajectory_optimization
 }  // namespace systems

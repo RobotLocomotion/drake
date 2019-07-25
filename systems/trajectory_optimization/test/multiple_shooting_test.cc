@@ -433,16 +433,20 @@ GTEST_TEST(MultipleShootingTest, NewSequentialVariableTest) {
 
   solvers::MathematicalProgramResult result = Solve(prog);
   ASSERT_TRUE(result.is_success());
+  // osqp can fail in polishing step, such that the accuracy cannot reach
+  // 1E-6.
+  const double tol =
+      result.get_solver_id() == solvers::OsqpSolver::id() ? 4E-6 : 1E-6;
   for (int i = 0; i < kNumSampleTimes; i++) {
-    // osqp can fail in polishing step, such that the accuracy cannot reach
-    // 1E-6.
-    const double tol =
-        result.get_solver_id() == solvers::OsqpSolver::id() ? 4E-6 : 1E-6;
     // Verify that GetSequentialVariableAtIndex() works as expected.
     EXPECT_TRUE(CompareMatrices(
         -2.0 * result.GetSolution(prog.GetSequentialVariableAtIndex("w", i)),
         state_value, tol));
   }
+
+  EXPECT_TRUE(
+      CompareMatrices(-2.0 * prog.GetSequentialVariableSamples(result, "w"),
+                      prog.GetStateSamples(result), tol));
 
   const solvers::VectorDecisionVariable<1>& t = prog.time();
   const solvers::VectorXDecisionVariable& u = prog.input();
