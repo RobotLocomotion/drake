@@ -64,6 +64,18 @@ PYBIND11_MODULE(trajectory_optimization, m) {
           [](const MultipleShooting& self, int index)
               -> VectorXDecisionVariable { return self.input(index); },
           doc.MultipleShooting.input.doc_1args)
+      .def("NewSequentialVariable",
+          [](MultipleShooting& self, int rows,
+              const std::string& name) -> VectorXDecisionVariable {
+            return self.NewSequentialVariable(rows, name);
+          },
+          doc.MultipleShooting.NewSequentialVariable.doc)
+      .def("GetSequentialVariableAtIndex",
+          [](const MultipleShooting& self, const std::string& name,
+              int index) -> VectorXDecisionVariable {
+            return self.GetSequentialVariableAtIndex(name, index);
+          },
+          doc.MultipleShooting.GetSequentialVariableAtIndex.doc)
       .def("AddRunningCost",
           [](MultipleShooting& prog, const symbolic::Expression& g) {
             prog.AddRunningCost(g);

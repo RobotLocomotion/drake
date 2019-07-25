@@ -40,6 +40,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
         xf = dircol.final_state()
         u = dircol.input()
         u2 = dircol.input(2)
+        v = dircol.NewSequentialVariable(1, "test")
+        v2 = dircol.GetSequentialVariableAtIndex("test", 2)
 
         dircol.AddRunningCost(x.dot(x))
         dircol.AddConstraintToAllKnotPoints(u[0] == 0)
