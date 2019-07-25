@@ -55,12 +55,13 @@ PYBIND11_MODULE(trajectories, m) {
       m, "PiecewisePolynomial", doc.PiecewisePolynomial.doc)
       .def(py::init<>(), doc.PiecewisePolynomial.ctor.doc_0args)
       .def(py::init<const Eigen::Ref<const MatrixX<T>>&>(),
-          doc.PiecewisePolynomial.ctor.doc_1args)
-      // TODO(eric.cousineau): Add docstrings once #11800 is resolved.
+          doc.PiecewisePolynomial.ctor.doc_1args_constEigenMatrixBase)
       .def(py::init<std::vector<MatrixX<Polynomial<T>>> const&,
-          std::vector<double> const&>())
+               std::vector<double> const&>(),
+          doc.PiecewisePolynomial.ctor.doc_2args_polynomials_matrix_breaks)
       .def(py::init<std::vector<Polynomial<T>> const&,
-          std::vector<double> const&>())
+               std::vector<double> const&>(),
+          doc.PiecewisePolynomial.ctor.doc_2args_polynomials_breaks)
       .def_static("ZeroOrderHold",
           py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const MatrixX<T>>&>(
