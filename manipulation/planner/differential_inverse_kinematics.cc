@@ -24,10 +24,8 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   const multibody::SpatialVelocity<double> V_WE_E = R_EW * V_WE_desired;
 
   // Rotate the 6 x n Jacobian from the world frame W to the E frame.
-  // TODO(Mitiguy) In conjunction with the RotationMatrix, implement matrix
-  // multiplication functionality if there is a clear unambiguous way to
-  // multiply a RotationMatrix be an `6 x n` array, where each column is
-  // regarded as a SpatialVector.
+  // TODO(Mitiguy) Switch to direct application of RotationMatrix multiplied by
+  // a `6 x n` array if that becomes available.
   const int num_columns = J_WE_W.cols();
   Matrix6X<double> J_WE_E{6, num_columns};
   J_WE_E.topRows<3>() = R_EW * J_WE_W.topRows<3>();
