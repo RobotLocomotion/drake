@@ -1,6 +1,7 @@
 #include "drake/solvers/fbstab/fbstab_dense.h"
 
 #include <memory>
+#include <stdexcept>
 
 #include <Eigen/Dense>
 
@@ -16,6 +17,9 @@ namespace solvers {
 namespace fbstab {
 
 FBstabDense::FBstabDense(int num_variables, int num_constraints) {
+  if(num_variables <= 0 || num_constraints <=0){
+    throw std::runtime_error("In FBstabDense::FBstabDense: Inputs must be positive.");
+  }
   nz_ = num_variables;
   nv_ = num_constraints;
 
@@ -35,10 +39,10 @@ FBstabDense::FBstabDense(int num_variables, int num_constraints) {
       linear_solver_.get(), feasibility_checker_.get());
 }
 
-SolverOut FBstabDense::Solve(const DenseQPData& qp, const DenseQPVariable& x,
+SolverOut FBstabDense::Solve(const DenseQPData& qp, const DenseQPVariable* x,
                              bool use_initial_guess) {
   DenseData data(qp.H, qp.f, qp.A, qp.b);
-  DenseVariable x0(x.z, x.v, x.y);
+  DenseVariable x0(x->z, x->v, x->y);
 
   if (nz_ != data.num_variables() || nv_ != data.num_constraints()) {
     throw std::runtime_error(
@@ -69,6 +73,9 @@ void FBstabDense::UpdateOption(const char* option, bool value) {
 void FBstabDense::SetDisplayLevel(FBstabAlgoDense::Display level) {
   algorithm_->display_level() = level;
 }
+
+// Explicit instantiation.
+template class FBstabAlgorithm<DenseVariable, DenseResidual, DenseData,DenseLinearSolver, DenseFeasibility>;
 
 }  // namespace fbstab
 }  // namespace solvers

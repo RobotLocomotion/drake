@@ -4,6 +4,8 @@
 #include <cmath>
 #include <cstdio>
 #include <iostream>
+#include <algorithm>
+#include <cstring>
 
 namespace drake {
 namespace solvers {
@@ -37,16 +39,20 @@ struct SolverOut {
  *
  * FBstab tries to solve instances of the following convex QP:
  *
- * min.  1/2 z'*H*z + f'*z
+ *     min.  1/2 z'*H*z + f'*z
  *
- * s.t.  Gz =  h
- *       Az <= b
+ *     s.t.  Gz =  h
+ *           Az <= b
  *
  * The algorithm is implemented using to abstract objects
  * representing variables, residuals etc.
  * These are template parameters for the class and
  * should be written so as to be efficient for specific classes
  * of QPs, e.g., model predictive control QPs or sparse QPs.
+ * 
+ * The algorithm exits when: ||π(x)|| <= abs_tol + ||π(x0)|| rel_tol
+ * where π is the natural residual function,
+ * (17) in https://arxiv.org/pdf/1901.04046.pdf.
  *
  * @tparam Variable:      storage and methods for primal-dual variables
  * @tparam Residual:      storage and methods for QP residuals
@@ -58,9 +64,7 @@ template <class Variable, class Residual, class Data, class LinearSolver,
           class Feasibility>
 class FBstabAlgorithm {
  public:
-  /**
-   * Display settings
-   */
+  /** Display settings */
   enum Display {
     OFF = 0,           // no display
     FINAL = 1,         // prints message upon completion
@@ -113,7 +117,7 @@ class FBstabAlgorithm {
    * data starting from the supplied initial guess.
    *
    * @param[in] qp_data problem data
-   * @param[both] x0    initial primal-dual guess, overwritten with the solution
+   * @param[in,out] x0    initial primal-dual guess, overwritten with the solution
    *
    * @return Details on the solver output
    */
@@ -123,79 +127,74 @@ class FBstabAlgorithm {
    * Allows setting of algorithm options.
    * @param[in] option option name
    * @param[in] value  new value
-
+   * 
    * Possible options and default parameters are:
-   * sigma0{1e-8}: Initial stabilization parameter
-   * alpha{0.95}:  Penalized FB function parameter
-   * beta{0.7}:    Backtracking linesearch parameter
-   * eta{1e-8}:    Sufficient decrease parameter
-   * inner_tol_multiplier{0.2}: Reduction factor for subproblem tolerance
+   * - sigma0{1e-8}: Initial stabilization parameter
+   * - alpha{0.95}:  Penalized FB function parameter
+   * - beta{0.7}:    Backtracking linesearch parameter
+   * - eta{1e-8}:    Sufficient decrease parameter
+   * - inner_tol_multiplier{0.2}: Reduction factor for subproblem tolerance
+   * 
+   * - abs_tol{1e-6}: Absolute tolerance
+   * - rel_tol{1e-12}: Relative tolerance
+   * - stall_tol{1e-10}: Tolerance on ||dx||
+   * - infeas_tol{1e-8}: Relative tolerance used in feasibility checking
    *
-   * The algorithm exists when: ||\pi(x)|| <= abs_tol + ||\pi(x0)|| rel_tol
-   * where \pi is the natural residual function,
-   * (17) in https://arxiv.org/pdf/1901.04046.pdf.
+   * - inner_tol_max{1.0}: Maximum value for the subproblem tolerance
+   * - inner_tol_min{1e-12}: Minimum value for the subproblem tolerance
    *
-   * abs_tol{1e-6}: Absolute tolerance
-   * rel_tol{1e-12}: Relative tolerance
-   * stall_tol{1e-10}: If the residual doesn't decrease by at least this failure
-   * is declared
-   * infeas_tol{1e-8}: Relative tolerance used in feasibility checking
-   *
-   * inner_tol_max{1.0}: Maximum value for the subproblem tolerance
-   * inner_tol_min{1e-12}: Minimum value for the subproblem tolerance
-   *
-   * max_newton_iters{200}: Maximum number of Newton iterations before timeout
-   * max_prox_iters{30}: Maximum number of proximal iterations before timeout
-   * max_inner_iters{50}: Maximum number of iterations that can be applied
+   * - max_newton_iters{200}: Maximum number of Newton iterations before timeout
+   * - max_prox_iters{30}: Maximum number of proximal iterations before timeout
+   * - max_inner_iters{50}: Maximum number of iterations that can be applied
    * to a single subproblem
-   * max_linesearch_iters{20}: Maximum number of backtracking linesearch steps
+   * - max_linesearch_iters{20}: Maximum number of backtracking linesearch steps
    *
-   * check_feasibility{true}: Enables or disables the feasibility checker,
+   * - check_feasibility{true}: Enables or disables the feasibility checker,
    * if the problem is known to be feasible then it can be disabled for speed.
    */
   void UpdateOption(const char* option, double value) {
-    if (strcmp(option, "abs_tol")) {
-      abs_tol_ = max(value, 1e-14);
-    } else if (strcmp(option, "rel_tol")) {
-      rel_tol_ = max(value, 0.0);
-    } else if (strcmp(option, "stall_tol")) {
-      stall_tol_ = max(value, 1e-14);
-    } else if (strcmp(option, "infeas_tol")) {
-      infeasibility_tol_ = max(value, 1e-14);
-    } else if (strcmp(option, "sigma0")) {
-      sigma0_ = max(value, 1e-14);
-    } else if (strcmp(option, "alpha")) {
-      alpha_ = max(value, 0.001);
-      alpha_ = min(alpha_, 0.999);
-    } else if (strcmp(option, "beta")) {
-      beta_ = max(value, 0.1);
-      beta_ = min(beta_, 0.99);
-    } else if (strcmp(option, "eta")) {
-      eta_ = max(value, 1e-12);
-      eta_ = min(eta_, 0.499);
-    } else if (strcmp(option, "inner_tol_multiplier")) {
-      inner_tol_multiplier_ = max(value, 0.0001);
-      inner_tol_multiplier_ = min(inner_tol_multiplier_, 0.99);
-    } else if (strcmp(option, "inner_tol_max")) {
-      inner_tol_max_ = max(value, 1e-8);
-      inner_tol_max_ = min(inner_tol_max_, 100.0);
-    } else if (strcmp(option, "inner_tol_min")) {
-      inner_tol_min_ = max(value, 1e-14);
-      inner_tol_min_ = min(inner_tol_min_, 1e-2);
+    if (std::strcmp(option, "abs_tol") == 0) {
+      abs_tol_ = std::max(value, 1e-14);
+    } else if (std::strcmp(option, "rel_tol") == 0) {
+      rel_tol_ = std::max(value, 0.0);
+    } else if (std::strcmp(option, "stall_tol") == 0) {
+      stall_tol_ = std::max(value, 1e-14);
+    } else if (std::strcmp(option, "infeas_tol") == 0) {
+      infeasibility_tol_ = std::max(value, 1e-14);
+    } else if (std::strcmp(option, "sigma0") == 0) {
+      sigma0_ = std::max(value, 1e-14);
+    } else if (std::strcmp(option, "alpha") == 0) {
+      alpha_ = std::max(value, 0.001);
+      alpha_ = std::min(alpha_, 0.999);
+    } else if (std::strcmp(option, "beta") == 0) {
+      beta_ = std::max(value, 0.1);
+      beta_ = std::min(beta_, 0.99);
+    } else if (std::strcmp(option, "eta") == 0) {
+      eta_ = std::max(value, 1e-12);
+      eta_ = std::min(eta_, 0.499);
+    } else if (std::strcmp(option, "inner_tol_multiplier") ==0) {
+      inner_tol_multiplier_ = std::max(value, 0.0001);
+      inner_tol_multiplier_ = std::min(inner_tol_multiplier_, 0.99);
+    } else if (std::strcmp(option, "inner_tol_max") == 0) {
+      inner_tol_max_ = std::max(value, 1e-8);
+      inner_tol_max_ = std::min(inner_tol_max_, 100.0);
+    } else if (std::strcmp(option, "inner_tol_min") == 0) {
+      inner_tol_min_ = std::max(value, 1e-14);
+      inner_tol_min_ = std::min(inner_tol_min_, 1e-2);
     } else {
       printf("%s is not an option, no action taken\n", option);
     }
   }
 
   void UpdateOption(const char* option, int value) {
-    if (strcmp(option, "max_newton_iters")) {
-      max_newton_iters_ = max(value, 1);  // NOLINT
-    } else if (strcmp(option, "max_prox_iters")) {
-      max_prox_iters_ = max(value, 1);  // NOLINT
-    } else if (strcmp(option, "max_inner_iters")) {
-      max_inner_iters_ = max(value, 1);  // NOLINT
-    } else if (strcmp(option, "max_linesearch_iters")) {
-      max_linesearch_iters_ = max(value, 1);  // NOLINT
+    if (std::strcmp(option, "max_newton_iters") == 0) {
+      max_newton_iters_ = std::max(value, 1);  
+    } else if (std::strcmp(option, "max_prox_iters") == 0) {
+      max_prox_iters_ = std::max(value, 1);  
+    } else if (std::strcmp(option, "max_inner_iters") == 0) {
+      max_inner_iters_ = std::max(value, 1);  
+    } else if (std::strcmp(option, "max_linesearch_iters") == 0) {
+      max_linesearch_iters_ = std::max(value, 1); 
     } else {
       printf("%s is not an option, no action taken\n", option);
     }
@@ -313,13 +312,6 @@ class FBstabAlgorithm {
     merit_buffer_.at(0) = x;
   }
 
-  // Sets all elements in merit_buffer_ to 0.
-  void ClearMeritBuffer() {
-    for (int i = 0; i < static_cast<int>(merit_buffer_.size()); i++) {
-      merit_buffer_.at(i) = 0.0;
-    }
-  }
-
   // @return maximum value in merit_buffer_
   double MaxMerit() {
     double current_max = merit_buffer_.at(0);
@@ -331,38 +323,14 @@ class FBstabAlgorithm {
     return current_max;
   }
 
-  // Element wise max.
-  template <class T>
-  static T max(T a, T b) {
-    return (a > b) ? a : b;
-  }
-
-  // Element wise min.
-  template <class T>
-  static T min(T a, T b) {
-    return (a > b) ? b : a;
-  }
-
   // Projects x onto [a,b].
   template <class T>
-  static T saturate(T x, T a, T b) {
-    const T temp = min(x, b);  // NOLINT
-    return max(temp, a);       // NOLINT
-  }
-
-  /**
-   * Compares two C style strings.
-   * @param[in]  x
-   * @param[in]  y
-   * @return     true if x and y are equal
-   */
-  static bool strcmp(const char* x, const char* y) {
-    for (int i = 0; x[i] != '\0' || y[i] != '\0'; i++) {
-      if (x[i] != y[i]) {
-        return false;
-      }
+  static T saturate(const T& x, T a, T b) {
+    if(a > b){
+      throw std::runtime_error("In FBstabAlgorithm::saturate: upper bound must be larger than the lower bound");
     }
-    return true;
+    const T temp = std::min(x, b); 
+    return std::max(temp, a);      
   }
 
   FBstabAlgorithm::Display display_level_ = FINAL;  // Default display settings.
@@ -501,7 +469,6 @@ SolverOut FBstabAlgorithm<Variable, Residual, Data, LinearSolver,
     // b) the iterations stall, ie., ||x(k) - x(k-1)|| <= tol
     rk_->PenalizedNaturalResidual(*xk_);
     Ek = rk_->Norm();
-
     if (Ek <= abs_tol_ + E0 * rel_tol_ || dx_->Norm() <= stall_tol_) {
       output.eflag = SUCCESS;
       output.residual = Ek;
@@ -586,7 +553,7 @@ template <class Variable, class Residual, class Data, class LinearSolver,
 double FBstabAlgorithm<Variable, Residual, Data, LinearSolver, Feasibility>::
     SolveProximalSubproblem(Variable* x, Variable* xbar, double tol,
                             double sigma, double current_outer_residual) {
-  ClearMeritBuffer();
+  merit_buffer_.fill(0.0); // Clear the buffer of past merit function values.
 
   double Eo = 0;   // KKT residual.
   double t = 1.0;  // Linesearch parameter.
