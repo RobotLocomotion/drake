@@ -141,6 +141,10 @@ class RenderEngine : public ShapeReifier {
             registered with this engine).  */
   bool RemoveGeometry(GeometryId id);
 
+  /** Reports true if a geometry with the given `id` has been registered with
+   `this` engine.  */
+  bool has_geometry(GeometryId id) const;
+
   /** Updates the poses of all geometries marked as "needing update" (see
  RegisterVisual()).
 
