@@ -30,7 +30,7 @@ FBstabDense::FBstabDense(int num_variables, int num_constraints) {
   linear_solver_ = std::make_unique<DenseLinearSolver>(nz_, nv_);
   feasibility_checker_ = std::make_unique<DenseFeasibility>(nz_, nv_);
 
-  algorithm_ = std::make_unique<FBstabAlgoDense >(
+  algorithm_ = std::make_unique<FBstabAlgoDense>(
       x1_.get(), x2_.get(), x3_.get(), x4_.get(), r1_.get(), r2_.get(),
       linear_solver_.get(), feasibility_checker_.get());
 }

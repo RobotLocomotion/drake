@@ -11,7 +11,6 @@ drake_cc_library(
     name = "fbstab_dense",
     srcs = [
         "fbstab_algorithm.h",
-        "fbstab_algorithm-inl.h",
         "fbstab_dense.cc",
     ],
     hdrs = ["fbstab_dense.h"],
