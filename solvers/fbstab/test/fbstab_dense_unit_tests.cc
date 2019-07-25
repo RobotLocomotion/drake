@@ -1,8 +1,9 @@
-#include "drake/solvers/fbstab/fbstab_dense.h"
-
 #include <cmath>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
+
+#include "drake/solvers/fbstab/fbstab_dense.h"
 
 namespace drake {
 namespace solvers {
