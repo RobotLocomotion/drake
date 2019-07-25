@@ -14,8 +14,6 @@
     <xacro:property name="l2_inertia" value="0.0083" />
     <xacro:property name="sensor_stack_len" value="0.001" />
     <xacro:property name="tip_radius" value="0.015" />
-    <!--<xacro:property name="config_radius" value="0.18" />-->
-    <!--<xacro:property name="config_angle" value="2.1" />-->
 
     <xacro:macro name="finger" params="fnum">
       <link name="finger${fnum}_base">

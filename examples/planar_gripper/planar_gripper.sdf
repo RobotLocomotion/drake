@@ -5,8 +5,6 @@
 <!-- =================================================================================== -->
 <sdf version="1.6" xmlns:xacro="http://www.ros.org/wiki/xacro">
   <model name="planar_gripper">
-    <!--<xacro:property name="config_radius" value="0.18" />-->
-    <!--<xacro:property name="config_angle" value="2.1" />-->
     <link name="finger1_base">
       <visual name="base_visual">
         <pose>0 0 0 0 0 0</pose>

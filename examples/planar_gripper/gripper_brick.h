@@ -27,13 +27,13 @@ enum class BrickFace {
 };
 
 /**
- * The factory class that contains the diagram of the planar gripper (3 planar
+ * The helper class that contains the diagram of the planar gripper (3 planar
  * fingers) with a brick.
  */
 template <typename T>
-class GripperBrickFactory {
+class GripperBrickHelper {
  public:
-  GripperBrickFactory();
+  GripperBrickHelper();
 
   const systems::Diagram<T>& diagram() const { return *diagram_; }
 

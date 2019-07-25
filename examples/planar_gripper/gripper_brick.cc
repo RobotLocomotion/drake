@@ -75,7 +75,7 @@ std::unique_ptr<systems::Diagram<T>> ConstructDiagram(
 }
 
 template <typename T>
-GripperBrickFactory<T>::GripperBrickFactory() {
+GripperBrickHelper<T>::GripperBrickHelper() {
   diagram_ = ConstructDiagram<T>(&plant_, &scene_graph_);
   InitializeDiagramSimulator(*diagram_);
 
@@ -118,7 +118,7 @@ GripperBrickFactory<T>::GripperBrickFactory() {
 }
 
 template <typename T>
-const multibody::Frame<double>& GripperBrickFactory<T>::finger_link2_frame(
+const multibody::Frame<double>& GripperBrickHelper<T>::finger_link2_frame(
     Finger finger) const {
   switch (finger) {
     case Finger::kFinger1: {
@@ -136,7 +136,7 @@ const multibody::Frame<double>& GripperBrickFactory<T>::finger_link2_frame(
 }
 
 template <typename T>
-int GripperBrickFactory<T>::finger_base_position_index(Finger finger) const {
+int GripperBrickHelper<T>::finger_base_position_index(Finger finger) const {
   switch (finger) {
     case Finger::kFinger1:
       return finger_base_position_indices_[0];
@@ -151,7 +151,7 @@ int GripperBrickFactory<T>::finger_base_position_index(Finger finger) const {
 }
 
 template <typename T>
-int GripperBrickFactory<T>::finger_mid_position_index(Finger finger) const {
+int GripperBrickHelper<T>::finger_mid_position_index(Finger finger) const {
   switch (finger) {
     case Finger::kFinger1:
       return finger_mid_position_indices_[0];
@@ -166,7 +166,7 @@ int GripperBrickFactory<T>::finger_mid_position_index(Finger finger) const {
 }
 
 // Explicit instantiation
-template class GripperBrickFactory<double>;
+template class GripperBrickHelper<double>;
 }  // namespace planar_gripper
 }  // namespace examples
 }  // namespace drake

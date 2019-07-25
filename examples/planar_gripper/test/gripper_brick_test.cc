@@ -7,8 +7,8 @@
 namespace drake {
 namespace examples {
 namespace planar_gripper {
-GTEST_TEST(GripperBrickFactoryTest, Test) {
-  GripperBrickFactory<double> dut;
+GTEST_TEST(GripperBrickHelperTest, Test) {
+  GripperBrickHelper<double> dut;
   EXPECT_TRUE(CompareMatrices(dut.p_L2Tip(), Eigen::Vector3d(0, 0, -0.086)));
   EXPECT_EQ(dut.finger_tip_radius(), 0.015);
   EXPECT_TRUE(
