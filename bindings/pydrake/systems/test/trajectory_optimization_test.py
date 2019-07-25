@@ -59,6 +59,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
         input_was_called = False
         global state_was_called
         state_was_called = False
+        global complete_was_called
+        complete_was_called = False
 
         def input_callback(t, u):
             global input_was_called
@@ -68,12 +70,18 @@ class TestTrajectoryOptimization(unittest.TestCase):
             global state_was_called
             state_was_called = True
 
+        def complete_callback(t, x, u, v):
+            global complete_was_called
+            complete_was_called = True
+
         dircol.AddInputTrajectoryCallback(input_callback)
         dircol.AddStateTrajectoryCallback(state_callback)
+        dircol.AddCompleteTrajectoryCallback(complete_callback, ["test"])
 
         result = mp.Solve(dircol)
         self.assertTrue(input_was_called)
         self.assertTrue(state_was_called)
+        self.assertTrue(complete_was_called)
 
         times = dircol.GetSampleTimes(result)
         inputs = dircol.GetInputSamples(result)

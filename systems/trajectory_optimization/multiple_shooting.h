@@ -207,6 +207,12 @@ class MultipleShooting : public solvers::MathematicalProgram {
   typedef std::function<
       void(const Eigen::Ref<const Eigen::VectorXd>& sample_times,
            const Eigen::Ref<const Eigen::MatrixXd>& values)> TrajectoryCallback;
+  typedef std::function<void(
+      const Eigen::Ref<const Eigen::VectorXd>& sample_times,
+      const Eigen::Ref<const Eigen::MatrixXd>& states,
+      const Eigen::Ref<const Eigen::MatrixXd>& inputs,
+      const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& values)>
+      CompleteTrajectoryCallback;
 
   /**
    * Adds a callback method to visualize intermediate results of the
@@ -241,6 +247,27 @@ class MultipleShooting : public solvers::MathematicalProgram {
    */
   solvers::Binding<solvers::VisualizationCallback>
   AddStateTrajectoryCallback(const TrajectoryCallback& callback);
+
+  /**
+   * Adds a callback method to visualize intermediate results of the
+   * trajectory optimization.  The callback should be of the form
+   *   MyVisualization(sample_times, states, inputs, values),
+   * where sample_times is a N-by-1 VectorXd of sample times, states is a
+   * num_states-by-N MatrixXd of the current (intermediate) state trajectory at
+   * the break points, inputs is a num_inputs-by-N MatrixXd of the current
+   * (intermediate) input trajectory at the break points and values is a
+   * num_extra-by-N MatrixXd of the current (intermediate) extra variable
+   * trajectory at the break points.
+   *
+   * Note: Just like other costs/constraints, not all solvers support callbacks.
+   * Adding a callback here will force MathematicalProgram::Solve to select a
+   * solver that support callbacks.  For instance, adding a visualization
+   * callback to a quadratic programming problem may result in using a nonlinear
+   * programming solver as the default solver.
+   */
+  solvers::Binding<solvers::VisualizationCallback>
+  AddCompleteTrajectoryCallback(const CompleteTrajectoryCallback& callback,
+                                const std::vector<std::string>& names);
 
   /// Set the initial guess for the trajectory decision variables.
   ///
@@ -357,6 +384,11 @@ class MultipleShooting : public solvers::MathematicalProgram {
   const solvers::VectorXDecisionVariable& u_vars() const { return u_vars_; }
 
   const solvers::VectorXDecisionVariable& x_vars() const { return x_vars_; }
+
+  /// Returns the decision variables associated with the sequential variable
+  /// `name`.
+  const solvers::VectorXDecisionVariable GetSequentialVariable(
+      const std::string& name) const;
 
  private:
   MultipleShooting(int num_inputs, int num_states, int num_time_samples,

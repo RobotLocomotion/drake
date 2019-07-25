@@ -52,6 +52,7 @@ class MyDirectTrajOpt : public MultipleShooting {
   using MultipleShooting::u_vars;
   using MultipleShooting::timesteps_are_decision_variables;
   using MultipleShooting::fixed_timestep;
+  using MultipleShooting::GetSequentialVariable;
 
  private:
   void DoAddRunningCost(const symbolic::Expression& g) override {}
@@ -275,6 +276,7 @@ GTEST_TEST(MultipleShootingTest, TrajectoryCallbackTest) {
   const int kNumStates{2};
   const int kNumSampleTimes{3};
   const double kFixedTimeStep{0.1};
+  const std::vector<std::string> extra_variables{"v", "w"};
 
   bool input_callback_was_called = false;
   auto my_input_callback = [&input_callback_was_called](
@@ -297,6 +299,25 @@ GTEST_TEST(MultipleShootingTest, TrajectoryCallbackTest) {
     EXPECT_TRUE(CompareMatrices(x, x_expected));
     state_callback_was_called = true;
   };
+  bool complete_callback_was_called = false;
+  auto my_complete_callback =
+      [&complete_callback_was_called](
+          const Eigen::Ref<const Eigen::VectorXd>& t,
+          const Eigen::Ref<const Eigen::MatrixXd>& x,
+          const Eigen::Ref<const Eigen::MatrixXd>& u,
+          const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& v) {
+        EXPECT_TRUE(CompareMatrices(t, Eigen::Vector3d(0., .1, .2)));
+        Eigen::MatrixXd x_expected(2, 3);
+        // clang-format off
+        x_expected << 4., 6., 8.,
+                      5., 7., 9.;
+        // clang-format on
+        EXPECT_TRUE(CompareMatrices(x, x_expected));
+        EXPECT_TRUE(CompareMatrices(u, Eigen::RowVector3d(1., 2., 3.)));
+        EXPECT_TRUE(CompareMatrices(v[0], Eigen::RowVector3d(10., 11., 12.)));
+        EXPECT_TRUE(CompareMatrices(v[1], Eigen::RowVector3d(13., 14., 15.)));
+        complete_callback_was_called = true;
+      };
 
   // Test *without* timesteps as decision variables.
   MyDirectTrajOpt prog(kNumInputs, kNumStates, kNumSampleTimes, kFixedTimeStep);
@@ -315,6 +336,18 @@ GTEST_TEST(MultipleShootingTest, TrajectoryCallbackTest) {
   state_callback_was_called = false;
   prog.EvalBindingAtInitialGuess(b);
   EXPECT_TRUE(state_callback_was_called);
+
+  prog.NewSequentialVariable(1, extra_variables[0]);
+  prog.NewSequentialVariable(1, extra_variables[1]);
+  prog.SetInitialGuess(prog.GetSequentialVariable(extra_variables[0]),
+                       Eigen::Vector3d::LinSpaced(3, 10., 12.));
+  prog.SetInitialGuess(prog.GetSequentialVariable(extra_variables[1]),
+                       Eigen::Vector3d::LinSpaced(3, 13., 15.));
+  b = prog.AddCompleteTrajectoryCallback(my_complete_callback, extra_variables);
+  EXPECT_EQ(prog.visualization_callbacks().size(), 3);
+  complete_callback_was_called = false;
+  prog.EvalBindingAtInitialGuess(b);
+  EXPECT_TRUE(complete_callback_was_called);
 
   // Test with timesteps as decision variables.
   MyDirectTrajOpt prog2(kNumInputs, kNumStates, kNumSampleTimes, kFixedTimeStep,
@@ -335,6 +368,19 @@ GTEST_TEST(MultipleShootingTest, TrajectoryCallbackTest) {
   state_callback_was_called = false;
   prog2.EvalBindingAtInitialGuess(b);
   EXPECT_TRUE(state_callback_was_called);
+
+  prog2.NewSequentialVariable(1, extra_variables[0]);
+  prog2.NewSequentialVariable(1, extra_variables[1]);
+  prog2.SetInitialGuess(prog2.GetSequentialVariable(extra_variables[0]),
+                        Eigen::Vector3d::LinSpaced(3, 10., 12.));
+  prog2.SetInitialGuess(prog2.GetSequentialVariable(extra_variables[1]),
+                        Eigen::Vector3d::LinSpaced(3, 13., 15.));
+  b = prog2.AddCompleteTrajectoryCallback(my_complete_callback,
+                                          extra_variables);
+  EXPECT_EQ(prog2.visualization_callbacks().size(), 3);
+  complete_callback_was_called = false;
+  prog2.EvalBindingAtInitialGuess(b);
+  EXPECT_TRUE(complete_callback_was_called);
 }
 
 GTEST_TEST(MultipleShootingTest, InitialGuessTest) {

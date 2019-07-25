@@ -112,6 +112,9 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       .def("AddStateTrajectoryCallback",
           &MultipleShooting::AddStateTrajectoryCallback,
           doc.MultipleShooting.AddStateTrajectoryCallback.doc)
+      .def("AddCompleteTrajectoryCallback",
+          &MultipleShooting::AddCompleteTrajectoryCallback,
+          doc.MultipleShooting.AddCompleteTrajectoryCallback.doc)
       .def("SetInitialTrajectory", &MultipleShooting::SetInitialTrajectory,
           doc.MultipleShooting.SetInitialTrajectory.doc)
       .def("GetSampleTimes",
