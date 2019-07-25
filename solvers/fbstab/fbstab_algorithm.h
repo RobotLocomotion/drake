@@ -299,7 +299,8 @@ class FBstabAlgorithm {
   }
 
   static constexpr int knonmonotone_linesearch = 5;
-  std::array<double, knonmonotone_linesearch> merit_buffer_ = {0.0};
+  std::array<double, knonmonotone_linesearch> merit_buffer_ = {
+      {0.0, 0.0, 0.0, 0.0, 0.0}};
 
   /**
    * Shifts all elements in merit_buffer_ up one spot then inserts at [0].
