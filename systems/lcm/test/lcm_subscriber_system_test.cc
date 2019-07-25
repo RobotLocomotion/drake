@@ -48,6 +48,34 @@ struct SampleData {
   }
 };
 
+// Tests the forced update hander of LcmSubscriberSystem.
+GTEST_TEST(LcmSubscriberSystemTest, ForcedEventTest) {
+  drake::lcm::DrakeMockLcm lcm;
+  const std::string channel_name = "channel_name";
+
+  // The "device under test".
+  auto dut = LcmSubscriberSystem::Make<lcmt_drake_signal>(channel_name, &lcm);
+
+  // Establishes the context and output for the dut.
+  std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
+  std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput();
+
+  // MockLcm produces a sample message.
+  SampleData sample_data;
+  sample_data.MockPublish(&lcm, channel_name);
+
+  // Call the forced update handler to update the abstract states.
+  std::unique_ptr<State<double>> tmp_state = context->CloneState();
+  dut->CalcUnrestrictedUpdate(*context, tmp_state.get());
+  context->get_mutable_state().SetFrom(*tmp_state);
+  dut->CalcOutput(*context, output.get());
+
+  const AbstractValue* abstract_value = output->get_data(0);
+  ASSERT_NE(abstract_value, nullptr);
+  auto value = abstract_value->get_value<lcmt_drake_signal>();
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(value, sample_data.value));
+}
+
 // Tests LcmSubscriberSystem using a Serializer.
 GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   drake::lcm::DrakeMockLcm lcm;
