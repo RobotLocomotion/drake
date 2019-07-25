@@ -160,9 +160,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * over each segment.
    *
    * @pre `polynomials.size() == breaks.size() - 1`
-   * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
-  PiecewisePolynomial(std::vector<PolynomialMatrix> const& polynomials,
+  PiecewisePolynomial(std::vector<PolynomialMatrix> const& polynomials_matrix,
                       std::vector<double> const& breaks);
 
   /**
@@ -170,7 +169,6 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * over each segment.
    *
    * @pre `polynomials.size() == breaks.size() - 1`
-   * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
   PiecewisePolynomial(std::vector<PolynomialType> const& polynomials,
                       std::vector<double> const& breaks);
