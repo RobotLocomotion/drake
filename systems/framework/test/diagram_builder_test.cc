@@ -6,6 +6,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/trajectories/exponential_plus_piecewise_polynomial.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -299,6 +301,21 @@ GTEST_TEST(DiagramBuilderTest, ConnectAbstractTypeMismatchThrow) {
       "Mismatched value types while connecting "
       "output port y0 of System char_system \\(type char\\) to "
       "input port u0 of System int_system \\(type int\\)");
+}
+
+// Test that port connections can be polymorphic, especially for types that are
+// both copyable and cloneable.  {ExponentialPlus,}PiecewisePolynomial are both
+// copyable (to themselves) and cloneable (to a common base class, Trajectory).
+// To connect them in a diagram, we must specify we want to use the subtyping.
+GTEST_TEST(DiagramBuilderTest, ConnectAbstractSubtypes) {
+  DiagramBuilder<double> builder;
+  auto sys1 = builder.AddSystem<PassThrough<double>>(
+      Value<trajectories::Trajectory<double>>(
+          trajectories::PiecewisePolynomial<double>{}));
+  auto sys2 = builder.AddSystem<PassThrough<double>>(
+      Value<trajectories::Trajectory<double>>(
+          trajectories::ExponentialPlusPiecewisePolynomial<double>{}));
+  EXPECT_NO_THROW(builder.Connect(*sys1, *sys2));
 }
 
 // Helper class that has one input port, and no output ports.

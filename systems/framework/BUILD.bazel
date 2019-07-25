@@ -676,6 +676,7 @@ drake_cc_googletest(
         ":diagram_builder",
         "//common:essential",
         "//common/test_utilities:expect_throws_message",
+        "//common/trajectories",
         "//systems/primitives:adder",
         "//systems/primitives:constant_vector_source",
         "//systems/primitives:demultiplexer",
