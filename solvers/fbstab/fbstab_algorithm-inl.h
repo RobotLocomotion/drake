@@ -300,13 +300,13 @@ template <class Variable, class Residual, class Data, class LinearSolver,
 void FBstabAlgorithm<Variable, Residual, Data, LinearSolver,
                      Feasibility>::UpdateOption(const char* option, int value) {
   if (strcmp(option, "max_newton_iters")) {
-    max_newton_iters_ = max(value, 1); //NOLINT
+    max_newton_iters_ = max(value, 1);  //NOLINT
   } else if (strcmp(option, "max_prox_iters")) {
-    max_prox_iters_ = max(value, 1); //NOLINT
+    max_prox_iters_ = max(value, 1);  //NOLINT
   } else if (strcmp(option, "max_inner_iters")) {
     max_inner_iters_ = max(value, 1); //NOLINT
   } else if (strcmp(option, "max_linesearch_iters")) {
-    max_linesearch_iters_ = max(value, 1);
+    max_linesearch_iters_ = max(value, 1);  //NOLINT
   } else {
     printf("%s is not an option, no action taken\n", option);
   }
@@ -352,7 +352,7 @@ template <class Variable, class Residual, class Data, class LinearSolver,
 double FBstabAlgorithm<Variable, Residual, Data, LinearSolver,
                        Feasibility>::MaxMerit() {
   double current_max = merit_buffer_.at(0);
-  for (int i = 1; i < static_cast<int>(merit_buffer_.size()); i++) { //
+  for (int i = 1; i < static_cast<int>(merit_buffer_.size()); i++) {
     if (merit_buffer_.at(i) > current_max) {
       current_max = merit_buffer_.at(i);
     }

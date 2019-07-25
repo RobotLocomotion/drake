@@ -191,8 +191,8 @@ class FBstabAlgorithm {
   // Projects x onto [a,b].
   template <class T>
   static T saturate(T x, T a, T b) {
-    const T temp = min(x, b);
-    return max(temp, a);
+    const T temp = min(x, b);  // NOLINT
+    return max(temp, a);  // NOLINT
   }
 
   /**
