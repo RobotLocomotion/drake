@@ -168,8 +168,8 @@ sh_test(
     data = [
         ":limit_malloc_test",
     ],
-    # Fails to terminate when run under Valgrind Memcheck.
-    tags = ["no_memcheck"],
+    # Fails to terminate when run under Valgrind tools.
+    tags = ["no_valgrind_tools"],
 )
 
 drake_cc_googletest(

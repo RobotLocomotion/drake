@@ -36,9 +36,13 @@ drake_py_binary(
         "images/doxygen_instructions/visual_studio_build_targets.png",
         "sample_vimrc",
     ],
-    # Some (currently disabled) Sphinx extensions try to reach out to the
-    # network; we should fail-fast if someone tries to turn them on.
-    tags = ["block-network"],
+    tags = [
+        # Some (currently disabled) Sphinx extensions try to reach out to the
+        # network; we should fail-fast if someone tries to turn them on.
+        "block-network",
+        # Test exceeds timeout when run under Valgrind tools.
+        "no_valgrind_tools",
+    ],
     test_rule_args = [
         "--out_dir=<test>",
     ],
