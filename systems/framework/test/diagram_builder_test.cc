@@ -6,6 +6,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/trajectories/exponential_plus_piecewise_polynomial.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -299,6 +301,52 @@ GTEST_TEST(DiagramBuilderTest, ConnectAbstractTypeMismatchThrow) {
       "Mismatched value types while connecting "
       "output port y0 of System char_system \\(type char\\) to "
       "input port u0 of System int_system \\(type int\\)");
+}
+
+// Test that port connections can be polymorphic, especially for types that are
+// both copyable and cloneable.  {ExponentialPlus,}PiecewisePolynomial are both
+// copyable (to themselves) and cloneable (to a common base class, Trajectory).
+// To connect them in a diagram, we must specify we want to use the subtyping.
+GTEST_TEST(DiagramBuilderTest, ConnectAbstractSubtypes) {
+  using Trajectoryd = trajectories::Trajectory<double>;
+  using PiecewisePolynomiald = trajectories::PiecewisePolynomial<double>;
+  using ExponentialPlusPiecewisePolynomiald =
+      trajectories::ExponentialPlusPiecewisePolynomial<double>;
+
+  DiagramBuilder<double> builder;
+  auto sys1 = builder.AddSystem<PassThrough<double>>(
+      Value<Trajectoryd>(PiecewisePolynomiald{}));
+  auto sys2 = builder.AddSystem<PassThrough<double>>(
+      Value<Trajectoryd>(ExponentialPlusPiecewisePolynomiald{}));
+  EXPECT_NO_THROW(builder.Connect(*sys1, *sys2));
+  builder.ExportInput(sys1->get_input_port());
+  builder.ExportOutput(sys2->get_output_port());
+  auto diagram = builder.Build();
+
+  // We can feed PiecewisePolynomial through the Diagram.
+  {
+    auto context = diagram->CreateDefaultContext();
+    const PiecewisePolynomiald input(Vector1d(22.0));
+    diagram->get_input_port(0).FixValue(
+        context.get(), Value<Trajectoryd>(input));
+    const auto& output =
+        dynamic_cast<const PiecewisePolynomiald&>(
+            diagram->get_output_port(0).Eval<Trajectoryd>(*context));
+    EXPECT_EQ(output.value(0.0)(0), 22.0);
+  }
+
+  // We can feed ExponentialPlusPiecewisePolynomial through the Diagram.
+  {
+    auto context = diagram->CreateDefaultContext();
+    const ExponentialPlusPiecewisePolynomiald input(
+        PiecewisePolynomiald(Vector1d(22.0)));
+    diagram->get_input_port(0).FixValue(
+        context.get(), Value<Trajectoryd>(input));
+    const auto& output =
+        dynamic_cast<const ExponentialPlusPiecewisePolynomiald&>(
+            diagram->get_output_port(0).Eval<Trajectoryd>(*context));
+    EXPECT_EQ(output.value(0.0)(0), 22.0);
+  }
 }
 
 // Helper class that has one input port, and no output ports.
