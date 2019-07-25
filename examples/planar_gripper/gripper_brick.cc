@@ -1,11 +1,11 @@
 #include "drake/examples/planar_gripper/gripper_brick.h"
 
 #include "drake/common/find_resource.h"
+#include "drake/examples/planar_gripper/planar_gripper_common.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/examples/planar_gripper/planar_gripper_common.h"
 
 namespace drake {
 namespace examples {
@@ -27,32 +27,32 @@ std::string to_string(Finger finger) {
   }
 }
 
-template<typename T>
-void AddDrakeVisualizer(systems::DiagramBuilder<T> *,
-                        const geometry::SceneGraph<T> &) {
+template <typename T>
+void AddDrakeVisualizer(systems::DiagramBuilder<T>*,
+                        const geometry::SceneGraph<T>&) {
   // Disabling visualization for non-double scalar type T.
 }
 
-template<>
+template <>
 void AddDrakeVisualizer<double>(
-    systems::DiagramBuilder<double> *builder,
-    const geometry::SceneGraph<double> &scene_graph) {
+    systems::DiagramBuilder<double>* builder,
+    const geometry::SceneGraph<double>& scene_graph) {
   geometry::ConnectDrakeVisualizer(builder, scene_graph);
 }
 
-template<typename T>
-void InitializeDiagramSimulator(const systems::Diagram<T> &) {}
+template <typename T>
+void InitializeDiagramSimulator(const systems::Diagram<T>&) {}
 
-template<>
+template <>
 void InitializeDiagramSimulator<double>(
-    const systems::Diagram<double> &diagram) {
+    const systems::Diagram<double>& diagram) {
   systems::Simulator<double>(diagram).Initialize();
 }
 
-template<typename T>
+template <typename T>
 std::unique_ptr<systems::Diagram<T>> ConstructDiagram(
-    multibody::MultibodyPlant<T> **plant,
-    geometry::SceneGraph<T> **scene_graph) {
+    multibody::MultibodyPlant<T>** plant,
+    geometry::SceneGraph<T>** scene_graph) {
   systems::DiagramBuilder<T> builder;
   std::tie(*plant, *scene_graph) =
       multibody::AddMultibodyPlantSceneGraph(&builder);
@@ -74,7 +74,7 @@ std::unique_ptr<systems::Diagram<T>> ConstructDiagram(
   return builder.Build();
 }
 
-template<typename T>
+template <typename T>
 GripperBrickSystem<T>::GripperBrickSystem() {
   diagram_ = ConstructDiagram<T>(&plant_, &scene_graph_);
   InitializeDiagramSimulator(*diagram_);
@@ -83,7 +83,7 @@ GripperBrickSystem<T>::GripperBrickSystem() {
     finger_shoulder_position_indices_[i] =
         plant_
             ->GetJointByName("finger" + std::to_string(i + 1) +
-                "_ShoulderJoint")
+                             "_ShoulderJoint")
             .position_start();
     finger_elbow_position_indices_[i] =
         plant_->GetJointByName("finger" + std::to_string(i + 1) + "_ElbowJoint")
@@ -100,8 +100,8 @@ GripperBrickSystem<T>::GripperBrickSystem() {
   brick_frame_ = &(plant_->GetFrameByName("brick_link"));
 }
 
-template<typename T>
-const multibody::Frame<double> &GripperBrickSystem<T>::finger_link2_frame(
+template <typename T>
+const multibody::Frame<double>& GripperBrickSystem<T>::finger_link2_frame(
     Finger finger) const {
   switch (finger) {
     case Finger::kFinger1: {
@@ -113,28 +113,35 @@ const multibody::Frame<double> &GripperBrickSystem<T>::finger_link2_frame(
     case Finger::kFinger3: {
       return *(finger_link2_frames_[2]);
     }
-    default:throw std::invalid_argument("finger_link2_frame(), unknown finger.");
+    default:
+      throw std::invalid_argument("finger_link2_frame(), unknown finger.");
   }
 }
 
-template<typename T>
+template <typename T>
 int GripperBrickSystem<T>::finger_shoulder_position_index(Finger finger) const {
   switch (finger) {
-    case Finger::kFinger1:return finger_shoulder_position_indices_[0];
-    case Finger::kFinger2:return finger_shoulder_position_indices_[1];
-    case Finger::kFinger3:return finger_shoulder_position_indices_[2];
+    case Finger::kFinger1:
+      return finger_shoulder_position_indices_[0];
+    case Finger::kFinger2:
+      return finger_shoulder_position_indices_[1];
+    case Finger::kFinger3:
+      return finger_shoulder_position_indices_[2];
     default:
       throw std::invalid_argument(
           "finger_shoulder_position_index(): unknown finger");
   }
 }
 
-template<typename T>
+template <typename T>
 int GripperBrickSystem<T>::finger_elbow_position_index(Finger finger) const {
   switch (finger) {
-    case Finger::kFinger1:return finger_elbow_position_indices_[0];
-    case Finger::kFinger2:return finger_elbow_position_indices_[1];
-    case Finger::kFinger3:return finger_elbow_position_indices_[2];
+    case Finger::kFinger1:
+      return finger_elbow_position_indices_[0];
+    case Finger::kFinger2:
+      return finger_elbow_position_indices_[1];
+    case Finger::kFinger3:
+      return finger_elbow_position_indices_[2];
     default:
       throw std::invalid_argument(
           "finger_elbow_position_index(): unknown finger");
@@ -142,8 +149,7 @@ int GripperBrickSystem<T>::finger_elbow_position_index(Finger finger) const {
 }
 
 // Explicit instantiation
-template
-class GripperBrickSystem<double>;
-}  // planar_gripper
+template class GripperBrickSystem<double>;
+}  // namespace planar_gripper
 }  // namespace examples
 }  // namespace drake

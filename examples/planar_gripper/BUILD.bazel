@@ -48,3 +48,5 @@ drake_cc_library(
         "//systems/framework:diagram",
     ],
 )
+
+add_lint_tests()
