@@ -428,6 +428,11 @@ drake_py_unittest(
         "//manipulation/models/iiwa_description:models",
         "//systems/sensors:test_models",
     ],
+    # Defects related to ZMQ when run under DRD or Helgrind.
+    tags = [
+        "no_drd",
+        "no_helgrind",
+    ],
     deps = [
         ":analysis_py",
         ":framework_py",

@@ -213,7 +213,7 @@ build:memcheck --copt -g
 build:memcheck --copt -O2
 build:memcheck --run_under=//tools/dynamic_analysis:valgrind
 build:memcheck --test_lang_filters=-py
-build:memcheck --test_tag_filters=-gurobi,-mosek,-snopt,-lint,-no_memcheck
+build:memcheck --test_tag_filters=-gurobi,-mosek,-snopt,-lint,-no_memcheck,-no_valgrind_tools
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
 build:memcheck --test_timeout=1500,7500,22500,90000  # 25x
@@ -227,7 +227,7 @@ build:memcheck_everything --define=WITH_SNOPT=ON
 build:memcheck_everything --copt -g
 # https://sourceforge.net/p/valgrind/mailman/valgrind-developers/?viewmonth=201806&viewday=11&style=flat
 build:memcheck_everything --copt -O2
-build:memcheck_everything --test_tag_filters=-no_memcheck
+build:memcheck_everything --test_tag_filters=-no_memcheck,-no_valgrind_tools
 build:memcheck_everything --run_under=//tools/dynamic_analysis:valgrind
 build:memcheck_everything --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
@@ -248,3 +248,41 @@ build:fastmemcheck --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
 build:fastmemcheck --test_timeout=1500,7500,22500,90000  # 25x
+
+### DRD: A Valgrind thread error detector ###
+# Not tested in continuous integration so may fail, even on master.
+build:_drd --build_tests_only=yes
+build:_drd --copt=-fno-omit-frame-pointer
+build:_drd --copt=-g
+build:_drd --copt=-O1
+build:_drd --run_under=//tools/dynamic_analysis:drd
+build:_drd --test_env=VALGRIND_OPTS
+build:_drd --test_timeout=600,3000,10800,36000  # 10x
+
+build:drd --config=_drd
+build:drd --test_tag_filters=-gurobi,-lint,-mosek,-snopt,-no_drd,-no_valgrind_tools
+
+build:drd_everything --config=_drd
+build:drd_everything --define=WITH_GUROBI=ON
+build:drd_everything --define=WITH_MOSEK=ON
+build:drd_everything --define=WITH_SNOPT=ON
+build:drd_everything --test_tag_filters=-lint,-no_drd,-no_valgrind_tools
+
+### Helgrind: A Valgrind thread error detector ###
+# Not tested in continuous integration so may fail, even on master.
+build:_helgrind --build_tests_only=yes
+build:_helgrind --copt=-fno-omit-frame-pointer
+build:_helgrind --copt=-g
+build:_helgrind --copt=-O1
+build:_helgrind --run_under=//tools/dynamic_analysis:helgrind
+build:_helgrind --test_env=VALGRIND_OPTS
+build:_helgrind --test_timeout=600,3000,10800,36000  # 10x
+
+build:helgrind --config=_helgrind
+build:helgrind --test_tag_filters=-gurobi,-lint,-mosek,-snopt,-no_helgrind,-no_valgrind_tools
+
+build:helgrind_everything --config=_helgrind
+build:helgrind_everything --define=WITH_GUROBI=ON
+build:helgrind_everything --define=WITH_MOSEK=ON
+build:helgrind_everything --define=WITH_SNOPT=ON
+build:helgrind_everything --test_tag_filters=-lint,-no_helgrind,-no_valgrind_tools

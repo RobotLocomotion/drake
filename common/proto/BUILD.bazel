@@ -168,6 +168,8 @@ drake_py_unittest(
     flaky = 1,
     # We wish to access neighboring files.
     isolate = 0,
+    # Fails when run under Valgrind tools.
+    tags = ["no_valgrind_tools"],
 )
 
 drake_cc_googletest(
