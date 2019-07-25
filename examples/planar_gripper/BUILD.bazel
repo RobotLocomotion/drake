@@ -48,3 +48,13 @@ drake_cc_library(
         "//systems/framework:diagram",
     ],
 )
+
+drake_cc_googletest(
+    name = "gripper_brick_test",
+    deps = [
+        ":gripper_brick",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+add_lint_tests()
