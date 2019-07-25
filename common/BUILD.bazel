@@ -723,6 +723,8 @@ sh_test(
         "//tools/cc_toolchain:capture_cc.env",
         "//tools/cc_toolchain:toolchain_deps",
     ],
+    # Fails when run under Valgrind tools.
+    tags = ["no_valgrind_tools"],
 )
 
 # TODO(eric.cousineau): Remove this alias and update `issue_template.md` to
@@ -1273,6 +1275,8 @@ drake_py_unittest(
         ":cpplint_wrapper",
         ":eigen_types.h",
     ],
+    # Exceeds timeout when run under Valgrind tools.
+    tags = ["no_valgrind_tools"],
 )
 
 drake_py_unittest(
@@ -1285,6 +1289,10 @@ drake_py_unittest(
         ":resource_tool",
         "//examples/pendulum:models",
     ],
+    # Fails when run under Valgrind tools due to stdout/stderr mixing.
+    # TODO(jwnimmer-tri): Amend the test to stream stderr separately and then
+    # re-enable Valgrind tools.
+    tags = ["no_valgrind_tools"],
 )
 
 drake_cc_googletest(

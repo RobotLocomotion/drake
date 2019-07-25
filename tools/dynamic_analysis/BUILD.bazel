@@ -47,6 +47,18 @@ sh_binary(
 )
 
 sh_binary(
+    name = "drd",
+    srcs = ["drd.sh"],
+    data = ["drd.supp"],
+)
+
+sh_binary(
+    name = "helgrind",
+    srcs = ["helgrind.sh"],
+    data = ["helgrind.supp"],
+)
+
+sh_binary(
     name = "valgrind",
     srcs = ["valgrind.sh"],
     data = ["valgrind.supp"],

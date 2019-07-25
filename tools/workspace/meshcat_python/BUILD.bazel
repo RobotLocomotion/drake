@@ -52,6 +52,8 @@ exports_files(
 drake_py_unittest(
     name = "meshcat_test",
     legacy_create_init = 0,
+    # Conflicting access defects related to ZMQ when run under DRD.
+    tags = ["no_drd"],
     deps = ["@meshcat_python//:meshcat"],
 )
 
