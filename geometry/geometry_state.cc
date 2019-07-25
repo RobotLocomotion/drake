@@ -775,15 +775,10 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
   geometry.SetRole(std::move(properties));
 
   for (auto& pair : render_engines_) {
-    const std::string& renderer_name = pair.first;
     auto& engine = pair.second;
-    const bool accepted =
-        engine->RegisterVisual(geometry_id, geometry.shape(),
-                               *geometry.perception_properties(),
-                               RigidTransformd(geometry.X_FG()),
-                               geometry.is_dynamic());
-    // If accepted, inform the geometry that it exists in the renderer.
-    if (accepted) geometry.add_renderer(renderer_name);
+    engine->RegisterVisual(
+        geometry_id, geometry.shape(), *geometry.perception_properties(),
+        RigidTransformd(geometry.X_FG()), geometry.is_dynamic());
   }
 }
 
@@ -921,11 +916,9 @@ void GeometryState<T>::AddRenderer(
       const GeometryId id = id_geo_pair.first;
       const PerceptionProperties* properties = geometry.perception_properties();
       DRAKE_DEMAND(properties != nullptr);
-      const bool accepted = render_engine->RegisterVisual(
-          id, geometry.shape(), *properties, RigidTransformd(geometry.X_FG()),
-          geometry.is_dynamic());
-      // If accepted, inform the geometry that it exists in the renderer.
-      if (accepted) geometry.add_renderer(name);
+      render_engine->RegisterVisual(id, geometry.shape(), *properties,
+                                    RigidTransformd(geometry.X_FG()),
+                                    geometry.is_dynamic());
     }
   }
 }
@@ -1278,16 +1271,10 @@ bool GeometryState<T>::RemoveRoleUnchecked(GeometryId geometry_id, Role role) {
 template <typename T>
 bool GeometryState<T>::RemoveFromRendererUnchecked(
     const std::string& renderer_name, GeometryId id) {
-  internal::InternalGeometry* geometry = GetMutableGeometry(id);
-
-  if (geometry->in_renderer(renderer_name)) {
-    // Speculatively remove the id from the renderer. If it hasn't been
-    // registered, we'll simply return false.
-    render::RenderEngine* engine = render_engines_[renderer_name].get_mutable();
-    geometry->ClearRenderer(renderer_name);
-    // The internal geometry instance has reported its belief that it is in
-    // this named renderer. Therefore, attempting to remove its id from the
-    // renderer should report success.
+  render::RenderEngine* engine = render_engines_[renderer_name].get_mutable();
+  if (engine->has_geometry(id)) {
+    // The engine has reported the belief that it has geometry `id`. Therefore,
+    // removal should report true.
     DRAKE_DEMAND(engine->RemoveGeometry(id) == true);
     return true;
   }

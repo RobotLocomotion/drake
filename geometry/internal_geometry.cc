@@ -37,13 +37,6 @@ bool InternalGeometry::has_role(Role role) const {
   DRAKE_UNREACHABLE();
 }
 
-void InternalGeometry::add_renderer(std::string renderer_name) {
-  auto result = renderers_.emplace(move(renderer_name));
-  // As an internal class, setting a duplicate renderer is a programming error
-  // in SceneGraph's internals.
-  DRAKE_ASSERT(result.second);
-}
-
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
