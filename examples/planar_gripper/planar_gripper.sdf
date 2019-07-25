@@ -58,14 +58,14 @@
         </material>
       </visual>
     </link>
-    <joint name="finger1_ShoulderJoint" type="revolute">
+    <joint name="finger1_BaseJoint" type="revolute">
       <child>finger1_link1</child>
       <parent>finger1_base</parent>
       <axis>
         <xyz>1 0 0</xyz>
         <limit>
           <!-- Drake parses a zero effort joint as an un-actuated joint. -->
-          <effort>100</effort>
+          <effort>75</effort>
           <lower>-1.57</lower>
           <upper>1.57</upper>
         </limit>
@@ -118,6 +118,18 @@
           <diffuse>.1 .1 .1 1</diffuse>
         </material>
       </visual>
+      <collision name="link2_collision">
+        <pose>0 0 -0.035 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.07</length>
+            <radius>0.011</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0 0 1</diffuse>
+        </material>
+      </collision>
       <collision name="link2_pad_collision">
         <pose>0 0 -0.086 0 0 0</pose>
         <geometry>
@@ -138,7 +150,7 @@
         </material>
       </visual>
     </link>
-    <joint name="finger1_ElbowJoint" type="revolute">
+    <joint name="finger1_MidJoint" type="revolute">
       <parent>finger1_link1</parent>
       <child>finger1_link2</child>
       <!-- Pose X_CJ of the joint frame J in the frame C of the child link -->
@@ -146,9 +158,7 @@
       <axis>
         <xyz>1 0 0</xyz>
         <limit>
-          <effort>100</effort>
-          <!-- No limit provided. sdformat defaults to -1, which we parse as
-                 an actuated joint. -->
+          <effort>75</effort>
           <lower>-1.57</lower>
           <upper>1.57</upper>
         </limit>
@@ -209,14 +219,14 @@
         </material>
       </visual>
     </link>
-    <joint name="finger2_ShoulderJoint" type="revolute">
+    <joint name="finger2_BaseJoint" type="revolute">
       <child>finger2_link1</child>
       <parent>finger2_base</parent>
       <axis>
         <xyz>1 0 0</xyz>
         <limit>
           <!-- Drake parses a zero effort joint as an un-actuated joint. -->
-          <effort>100</effort>
+          <effort>75</effort>
           <lower>-1.57</lower>
           <upper>1.57</upper>
         </limit>
@@ -258,6 +268,17 @@
           <diffuse>1 0 0 1</diffuse>
         </material>
       </visual>
+      <visual name="link2_sensor">
+        <pose>0 0 -0.071 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.011</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>.1 .1 .1 1</diffuse>
+        </material>
+      </visual>
       <collision name="link2_collision">
         <pose>0 0 -0.035 0 0 0</pose>
         <geometry>
@@ -270,18 +291,6 @@
           <diffuse>1 0 0 1</diffuse>
         </material>
       </collision>
-
-      <visual name="link2_sensor">
-        <pose>0 0 -0.071 0 0 0</pose>
-        <geometry>
-          <sphere>
-            <radius>0.011</radius>
-          </sphere>
-        </geometry>
-        <material>
-          <diffuse>.1 .1 .1 1</diffuse>
-        </material>
-      </visual>
       <collision name="link2_pad_collision">
         <pose>0 0 -0.086 0 0 0</pose>
         <geometry>
@@ -302,7 +311,7 @@
         </material>
       </visual>
     </link>
-    <joint name="finger2_ElbowJoint" type="revolute">
+    <joint name="finger2_MidJoint" type="revolute">
       <parent>finger2_link1</parent>
       <child>finger2_link2</child>
       <!-- Pose X_CJ of the joint frame J in the frame C of the child link -->
@@ -310,9 +319,7 @@
       <axis>
         <xyz>1 0 0</xyz>
         <limit>
-          <effort>100</effort>
-          <!-- No limit provided. sdformat defaults to -1, which we parse as
-                 an actuated joint. -->
+          <effort>75</effort>
           <lower>-1.57</lower>
           <upper>1.57</upper>
         </limit>
@@ -373,14 +380,14 @@
         </material>
       </visual>
     </link>
-    <joint name="finger3_ShoulderJoint" type="revolute">
+    <joint name="finger3_BaseJoint" type="revolute">
       <child>finger3_link1</child>
       <parent>finger3_base</parent>
       <axis>
         <xyz>1 0 0</xyz>
         <limit>
           <!-- Drake parses a zero effort joint as an un-actuated joint. -->
-          <effort>100</effort>
+          <effort>75</effort>
           <lower>-1.57</lower>
           <upper>1.57</upper>
         </limit>
@@ -433,6 +440,18 @@
           <diffuse>.1 .1 .1 1</diffuse>
         </material>
       </visual>
+      <collision name="link2_collision">
+        <pose>0 0 -0.035 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.07</length>
+            <radius>0.011</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0 0 1</diffuse>
+        </material>
+      </collision>
       <collision name="link2_pad_collision">
         <pose>0 0 -0.086 0 0 0</pose>
         <geometry>
@@ -453,7 +472,7 @@
         </material>
       </visual>
     </link>
-    <joint name="finger3_ElbowJoint" type="revolute">
+    <joint name="finger3_MidJoint" type="revolute">
       <parent>finger3_link1</parent>
       <child>finger3_link2</child>
       <!-- Pose X_CJ of the joint frame J in the frame C of the child link -->
@@ -461,9 +480,7 @@
       <axis>
         <xyz>1 0 0</xyz>
         <limit>
-          <effort>100</effort>
-          <!-- No limit provided. sdformat defaults to -1, which we parse as
-                 an actuated joint. -->
+          <effort>75</effort>
           <lower>-1.57</lower>
           <upper>1.57</upper>
         </limit>
@@ -473,26 +490,5 @@
         <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-    <!--<link name="finger1_ground">-->
-    <!--<pose>0 0 -${config_radius} 0 0 0</pose>-->
-    <!--</link>-->
-    <!--<joint name="finger1_weld" type="fixed">-->
-    <!--<child>finger1_base</child>-->
-    <!--<parent>finger1_ground</parent>-->
-    <!--</joint>-->
-    <!--<link name="finger2_ground">-->
-    <!--<pose>0 0 -${config_radius} ${config_angle} 0 0</pose>-->
-    <!--</link>-->
-    <!--<joint name="finger2_weld" type="fixed">-->
-    <!--<child>finger2_base</child>-->
-    <!--<parent>finger2_ground</parent>-->
-    <!--</joint>-->
-    <!--<link name="finger3_ground">-->
-    <!--<pose>0 0 -${config_radius} ${2*config_angle} 0 0</pose>-->
-    <!--</link>-->
-    <!--<joint name="finger3_weld" type="fixed">-->
-    <!--<child>finger3_base</child>-->
-    <!--<parent>finger3_ground</parent>-->
-    <!--</joint>-->
   </model>
 </sdf>
