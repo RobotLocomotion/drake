@@ -33,64 +33,61 @@ class TestTrajectoryOptimization(unittest.TestCase):
         # as a consistent optimization.  The goal is to check the bindings,
         # not the implementation.
         t = dircol.time()
-        dt = dircol.timestep(0)
+        dt = dircol.timestep(index=0)
         x = dircol.state()
-        x2 = dircol.state(2)
+        x2 = dircol.state(index=2)
         x0 = dircol.initial_state()
         xf = dircol.final_state()
         u = dircol.input()
-        u2 = dircol.input(2)
+        u2 = dircol.input(index=2)
         v = dircol.NewSequentialVariable(rows=1, name="test")
         v2 = dircol.GetSequentialVariableAtIndex(name="test", index=2)
 
         dircol.AddRunningCost(x.dot(x))
         dircol.AddConstraintToAllKnotPoints(u[0] == 0)
-        dircol.AddTimeIntervalBounds(0.3, 0.4)
+        dircol.AddTimeIntervalBounds(lower_bound=0.3, upper_bound=0.4)
         dircol.AddEqualTimeIntervalsConstraints()
-        dircol.AddDurationBounds(.3*21, 0.4*21)
+        dircol.AddDurationBounds(lower_bound=.3*21, upper_bound=0.4*21)
         dircol.AddFinalCost(2*x.dot(x))
 
         initial_u = PiecewisePolynomial.ZeroOrderHold([0, .3*21],
                                                       np.zeros((1, 2)))
         initial_x = PiecewisePolynomial()
-        dircol.SetInitialTrajectory(initial_u, initial_x)
+        dircol.SetInitialTrajectory(traj_init_u=initial_u,
+                                    traj_init_x=initial_x)
 
-        global input_was_called
-        input_was_called = False
-        global state_was_called
-        state_was_called = False
-        global complete_was_called
-        complete_was_called = False
+        was_called = dict(
+            input=False,
+            state=False,
+            complete=False
+        )
 
         def input_callback(t, u):
-            global input_was_called
-            input_was_called = True
+            was_called["input"] = True
 
         def state_callback(t, x):
-            global state_was_called
-            state_was_called = True
+            was_called["state"] = True
 
         def complete_callback(t, x, u, v):
-            global complete_was_called
-            complete_was_called = True
+            was_called["complete"] = True
 
-        dircol.AddInputTrajectoryCallback(input_callback)
-        dircol.AddStateTrajectoryCallback(state_callback)
+        dircol.AddInputTrajectoryCallback(callback=input_callback)
+        dircol.AddStateTrajectoryCallback(callback=state_callback)
         dircol.AddCompleteTrajectoryCallback(callback=complete_callback,
                                              names=["test"])
 
         result = mp.Solve(dircol)
-        self.assertTrue(input_was_called)
-        self.assertTrue(state_was_called)
-        self.assertTrue(complete_was_called)
+        self.assertTrue(was_called["input"])
+        self.assertTrue(was_called["state"])
+        self.assertTrue(was_called["complete"])
 
-        times = dircol.GetSampleTimes(result)
-        inputs = dircol.GetInputSamples(result)
-        states = dircol.GetStateSamples(result)
+        times = dircol.GetSampleTimes(result=result)
+        inputs = dircol.GetInputSamples(result=result)
+        states = dircol.GetStateSamples(result=result)
         variables = dircol.GetSequentialVariableSamples(result=result,
                                                         name="test")
-        input_traj = dircol.ReconstructInputTrajectory(result)
-        state_traj = dircol.ReconstructStateTrajectory(result)
+        input_traj = dircol.ReconstructInputTrajectory(result=result)
+        state_traj = dircol.ReconstructStateTrajectory(result=result)
 
         constraint = DirectCollocationConstraint(plant, context)
         AddDirectCollocationConstraint(constraint, dircol.timestep(0),

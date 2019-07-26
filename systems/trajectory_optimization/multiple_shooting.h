@@ -195,7 +195,7 @@ class MultipleShooting : public solvers::MathematicalProgram {
 
   /// Adds support for passing in a (scalar) matrix Expression, which is a
   /// common output of most symbolic linear algebra operations.
-  /// Note: Derived classes will need to type
+  /// @note Derived classes will need to type
   ///    using MultipleShooting::AddFinalCost;
   /// to "unhide" this method.
   void AddFinalCost(
@@ -222,7 +222,7 @@ class MultipleShooting : public solvers::MathematicalProgram {
    * num_inputs-by-N MatrixXd representing the current (intermediate) value of
    * the input trajectory at the break points in each column.
    *
-   * Note: Just like other costs/constraints, not all solvers support callbacks.
+   * @note Just like other costs/constraints, not all solvers support callbacks.
    * Adding a callback here will force MathematicalProgram::Solve to select a
    * solver that support callbacks.  For instance, adding a visualization
    * callback to a quadratic programming problem may result in using a nonlinear
@@ -239,7 +239,7 @@ class MultipleShooting : public solvers::MathematicalProgram {
    * num_states-by-N MatrixXd representing the current (intermediate) value of
    * the state trajectory at the break points in each column.
    *
-   * Note: Just like other costs/constraints, not all solvers support callbacks.
+   * @note Just like other costs/constraints, not all solvers support callbacks.
    * Adding a callback here will force MathematicalProgram::Solve to select a
    * solver that support callbacks.  For instance, adding a visualization
    * callback to a quadratic programming problem may result in using a nonlinear
