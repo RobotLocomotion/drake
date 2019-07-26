@@ -139,6 +139,7 @@ drake_cc_googletest(
     deps = [
         ":integration_constraint",
         "//common/test_utilities:eigen_matrix_compare",
+        "//math:gradient",
     ],
 )
 
