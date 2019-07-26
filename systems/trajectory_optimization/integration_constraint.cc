@@ -1,5 +1,8 @@
 #include "drake/systems/trajectory_optimization/integration_constraint.h"
 
+#include <utility>
+#include <vector>
+
 namespace drake {
 namespace systems {
 namespace trajectory_optimization {
@@ -8,7 +11,21 @@ MidPointIntegrationConstraint::MidPointIntegrationConstraint(int dim)
     : solvers::Constraint(dim, 4 * dim + 1, Eigen::VectorXd::Zero(dim),
                           Eigen::VectorXd::Zero(dim),
                           "midpoint_integration_constraint"),
-      dim_{dim} {}
+      dim_{dim} {
+  // Set the sparsity pattern of the constraint gradient. The i'th row of the
+  // constraint only depends on variable x_r(i), x_l(i), xdot_r(i), xdot_l(i)
+  // and dt.
+  std::vector<std::pair<int, int>> gradient_sparsity_pattern;
+  gradient_sparsity_pattern.reserve(5 * dim);
+  for (int i = 0; i < dim_; ++i) {
+    gradient_sparsity_pattern.emplace_back(i, i);            // x_r(i)
+    gradient_sparsity_pattern.emplace_back(i, i + dim);      // x_l(i)
+    gradient_sparsity_pattern.emplace_back(i, i + 2 * dim);  // xdot_r(i)
+    gradient_sparsity_pattern.emplace_back(i, i + 3 * dim);  // xdot_r(i)
+    gradient_sparsity_pattern.emplace_back(i, 4 * dim);      // dt
+  }
+  SetGradientSparsityPattern(gradient_sparsity_pattern);
+}
 
 template <typename T>
 void MidPointIntegrationConstraint::DoEvalGeneric(
