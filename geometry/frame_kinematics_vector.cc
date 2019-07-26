@@ -18,27 +18,8 @@ void InitializeKinematicsValue(Isometry3<T>* value) {
 }
 }  // namespace
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename KinematicsValue>
-FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector()
-    : FrameKinematicsVector<KinematicsValue>({}, {}) {}
-#pragma GCC diagnostic pop
-
-template <typename KinematicsValue>
-FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector(
-    SourceId source_id, const std::vector<FrameId>& ids)
-    : source_id_(source_id), values_(0) {
-  optional<KinematicsValue> default_value{KinematicsValue{}};
-  InitializeKinematicsValue(&default_value.value());
-  for (FrameId id : ids) {
-    bool is_unique = values_.emplace(id, default_value).second;
-    if (!is_unique) {
-      throw std::runtime_error(
-          fmt::format("At least one frame id appears multiple times: {}", id));
-    }
-    ++size_;
-  }
+FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector() {
   DRAKE_ASSERT_VOID(CheckInvariants());
 }
 

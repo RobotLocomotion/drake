@@ -176,12 +176,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "FramePoseVector", param, doc.FrameKinematicsVector.doc);
     cls  // BR
         .def(py::init<>(), doc.FrameKinematicsVector.ctor.doc_0args)
-        .def(py::init([](SourceId source_id, const std::vector<FrameId>& ids) {
-          WarnDeprecated("See API docs for deprecation notice.");
-          return std::make_unique<FramePoseVector<T>>(source_id, ids);
-        }),
-            py::arg("source_id"), py::arg("ids"),
-            doc.FrameKinematicsVector.ctor.doc_deprecated_2args)
         .def("clear", &FramePoseVector<T>::clear,
             doc.FrameKinematicsVector.clear.doc)
         .def("set_value", &FramePoseVector<T>::set_value, py::arg("id"),

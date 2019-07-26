@@ -7,7 +7,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
@@ -97,11 +96,6 @@ class FrameKinematicsVector {
   /** Initializes the vector using an invalid SourceId with no frames .*/
   FrameKinematicsVector();
 
-  /** Initializes the vector to the given source ID and frame IDs, using a
-  default value for each frame. */
-  DRAKE_DEPRECATED("2019-08-01", "Simply use the default constructor.")
-  FrameKinematicsVector(SourceId source_id, const std::vector<FrameId>& ids);
-
   /** Initializes the vector using an invalid SourceId and the given frames and
   kinematics values. */
   FrameKinematicsVector(
@@ -116,11 +110,6 @@ class FrameKinematicsVector {
 
   /** Sets the kinematics `value` for the frame indicated by the given `id`. */
   void set_value(FrameId id, const KinematicsValue& value);
-
-  DRAKE_DEPRECATED("2019-08-01",
-      "The source_id is being removed from FrameKinematicsVector; "
-      "the SceneGraph no longer requires that it be set.")
-  SourceId source_id() const { return source_id_; }
 
   /** Returns number of frame_ids(). */
   int size() const {
@@ -149,11 +138,6 @@ class FrameKinematicsVector {
 
  private:
   void CheckInvariants() const;
-
-  // TODO(jwnimmer-tri) This field is only here to support the deprecated
-  // source_id() method; when that method is removed, this field should be
-  // removed also.
-  SourceId source_id_;
 
   // Mapping from frame id to its current pose.  If the map's optional value is
   // nullopt, we treat it as if the map key were absent instead.  We do this in
