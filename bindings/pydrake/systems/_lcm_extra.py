@@ -26,21 +26,6 @@ class PySerializer(SerializerInterface):
         return message.encode()
 
 
-class PyUtimeMessageToSeconds(LcmMessageToTimeInterface):
-    """Provides a Python implementation of `UtimeMessageToSeconds` for use
-    with `LcmDrivenLoop`.
-    """
-    def __init__(self, lcm_type):
-        LcmMessageToTimeInterface.__init__(self)
-        self._lcm_type = lcm_type
-
-    def GetTimeInSeconds(self, abstract_value):
-        assert isinstance(abstract_value, AbstractValue)
-        message = abstract_value.get_value()
-        assert isinstance(message, self._lcm_type)
-        return message.utime / 1.0e6
-
-
 @staticmethod
 def _make_lcm_subscriber(channel, lcm_type, lcm, use_cpp_serializer=False):
     """Convenience to create an LCM subscriber system with a concrete type.

@@ -49,28 +49,8 @@ PYBIND11_MODULE(lcm, m) {
     constexpr auto& cls_doc = doc.DrakeLcm;
     py::class_<Class, DrakeLcmInterface>(m, "DrakeLcm", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc_0args)
-        .def(
-            py::init<std::string>(), py::arg("lcm_url"), cls_doc.ctor.doc_1args)
-        .def("StartReceiveThread",
-            [](DrakeLcm* self) {
-              WarnDeprecated(
-                  "Call DrakeLcm.HandleSubscriptions periodically instead.");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-              self->StartReceiveThread();
-#pragma GCC diagnostic pop
-            },
-            cls_doc.StartReceiveThread.doc_deprecated)
-        .def("StopReceiveThread",
-            [](DrakeLcm* self) {
-              WarnDeprecated(
-                  "Call DrakeLcm.HandleSubscriptions periodically instead.");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-              self->StopReceiveThread();
-#pragma GCC diagnostic pop
-            },
-            cls_doc.StopReceiveThread.doc_deprecated);
+        .def(py::init<std::string>(), py::arg("lcm_url"),
+            cls_doc.ctor.doc_1args);
     // TODO(eric.cousineau): Add remaining methods.
   }
 

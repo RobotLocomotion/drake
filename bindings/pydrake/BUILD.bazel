@@ -425,7 +425,6 @@ drake_py_unittest(
     name = "lcm_test",
     deps = [
         ":lcm_py",
-        "//bindings/pydrake/common/test_utilities",
         "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_py",
     ],
 )
