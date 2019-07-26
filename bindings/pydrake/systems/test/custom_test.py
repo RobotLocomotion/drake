@@ -104,10 +104,6 @@ class CustomVectorSystem(VectorSystem):
         x_n[:] = x + 2*u
         self.has_called.append("discrete")
 
-    def DoHasDirectFeedthrough(self, input_port, output_port):
-        self.has_called.append("feedthrough")
-        return True
-
 
 # Wraps `Adder`.
 class CustomDiagram(Diagram):
@@ -228,7 +224,6 @@ class TestCustom(unittest.TestCase):
             def __init__(self):
                 LeafSystem.__init__(self)
                 self.called_publish = False
-                self.called_feedthrough = False
                 self.called_continuous = False
                 self.called_discrete = False
                 self.called_initialize = False
@@ -287,19 +282,6 @@ class TestCustom(unittest.TestCase):
                 # even when we explicitly say not to publish at initialize.
                 self.called_publish = True
 
-            def DoHasDirectFeedthrough(self, input_port, output_port):
-                # Test inputs.
-                test.assertIn(input_port, [0, 1])
-                test.assertEqual(output_port, 0)
-                # Call base method to ensure we do not get recursion.
-                with catch_drake_warnings(expected_count=1):
-                    base_return = LeafSystem.DoHasDirectFeedthrough(
-                        self, input_port, output_port)
-                test.assertTrue(base_return is None)
-                # Return custom methods.
-                self.called_feedthrough = True
-                return False
-
             def DoCalcTimeDerivatives(self, context, derivatives):
                 # Note:  Don't call base method here; it would abort because
                 # derivatives.size() != 0.
@@ -352,13 +334,11 @@ class TestCustom(unittest.TestCase):
 
         system = TrivialSystem()
         self.assertFalse(system.called_publish)
-        self.assertFalse(system.called_feedthrough)
         self.assertFalse(system.called_continuous)
         self.assertFalse(system.called_discrete)
         self.assertFalse(system.called_initialize)
         results = call_leaf_system_overrides(system)
         self.assertTrue(system.called_publish)
-        self.assertTrue(system.called_feedthrough)
         self.assertFalse(results["has_direct_feedthrough"])
         self.assertTrue(system.called_continuous)
         self.assertTrue(system.called_discrete)
@@ -465,7 +445,7 @@ class TestCustom(unittest.TestCase):
             update_type = is_discrete and "discrete" or "continuous"
             self.assertEqual(
                 system.has_called,
-                [update_type, "feedthrough", "output", "feedthrough"])
+                [update_type, "output"])
 
             # Check values.
             state = context.get_state()

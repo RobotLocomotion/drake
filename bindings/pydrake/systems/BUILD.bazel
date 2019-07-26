@@ -41,21 +41,6 @@ drake_py_library(
     ],
 )
 
-drake_cc_library(
-    name = "systems_pybind",
-    hdrs = ["systems_pybind.h"],
-    declare_installed_headers = 0,
-    deprecation = "This will be removed on or around 2019-08-01. Please " +
-                  "use constituent libraries instead.",
-    tags = ["manual"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//bindings/pydrake:pydrake_pybind",
-        "//bindings/pydrake/common:default_scalars_pybind",
-        "//bindings/pydrake/common:value_pybind",
-    ],
-)
-
 drake_pybind_library(
     name = "framework_py",
     cc_deps = [
