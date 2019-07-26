@@ -1029,7 +1029,7 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
   const Frame<double>& frame_W = tree().world_frame();
   tree().CalcJacobianSpatialVelocity(*context_,
                                      JacobianWrtVariable::kV,
-                                     end_effector_link_->body_frame(), p_EoFo_E,                                        ,
+                                     end_effector_link_->body_frame(), p_EoFo_E,
                                      frame_W, frame_W,
                                      &Jv_WF);
 
@@ -1179,7 +1179,7 @@ TEST_F(KukaIiwaModelTests, FrameGeometricJacobianForTheWorldFrame) {
   const Frame<double>& frame_W = tree().world_frame();
   tree().CalcJacobianSpatialVelocity(*context_,
                                      JacobianWrtVariable::kV,
-                                     tree().world_body().body_frame(), p_WP,                                        ,
+                                     tree().world_body().body_frame(), p_WP,
                                      frame_W, frame_W,
                                      &Jv_WP);
 
