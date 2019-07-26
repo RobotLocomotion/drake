@@ -44,7 +44,8 @@ drake_py_binary(
     deps = [
         ":module_py",
         "//bindings/pydrake:lcm_py",
-        "//bindings/pydrake/multibody:multibody_tree_py",
+        "//bindings/pydrake/multibody:parsing_py",
+        "//bindings/pydrake/multibody:plant_py",
         "//bindings/pydrake/systems:analysis_py",
     ],
 )

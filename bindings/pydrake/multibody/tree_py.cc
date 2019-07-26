@@ -52,10 +52,6 @@ void BindMultibodyTreeElementMixin(PyClass* pcls) {
   cls  // BR
       .def("index", &Class::index)
       .def("model_instance", &Class::model_instance);
-  // Deprecated:
-  cls.def("get_parent_tree", &Class::get_parent_tree, py_reference_internal);
-  DeprecateAttribute(
-      cls, "get_parent_tree", "`get_parent_tree()` will soon be internal.");
 }
 
 void DoScalarIndependentDefinitions(py::module m) {

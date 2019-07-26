@@ -486,7 +486,7 @@ drake_py_unittest(
         ":automotive_py",
         "//bindings/pydrake/maliput:api_py",
         "//bindings/pydrake/maliput:dragway_py",
-        "//bindings/pydrake/multibody:multibody_tree_py",
+        "//bindings/pydrake/multibody:math_py",
         "//bindings/pydrake/systems",
     ],
 )

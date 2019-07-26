@@ -42,7 +42,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
-        ":multibody_tree_py",
+        ":plant_py",
     ],
 )
 
@@ -109,22 +109,6 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
-    name = "multibody_tree_py",
-    cc_deps = [
-        "//bindings/pydrake/common:deprecation_pybind",
-    ],
-    cc_srcs = ["multibody_tree_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":math_py",
-        ":module_py",
-        ":parsing_py",
-        ":plant_py",
-        ":tree_py",
-    ],
-)
-
-drake_pybind_library(
     name = "parsing_py",
     cc_deps = ["//bindings/pydrake:documentation_pybind"],
     cc_srcs = ["parsing_py.cc"],
@@ -144,7 +128,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
-        ":multibody_tree_py",
+        ":plant_py",
         "//bindings/pydrake/solvers:mathematicalprogram_py",
     ],
 )
@@ -170,7 +154,6 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":benchmarks_py",
     ":inverse_kinematics_py",
     ":math_py",
-    ":multibody_tree_py",
     ":parsing_py",
     ":plant_py",
     ":tree_py",
@@ -214,8 +197,8 @@ drake_py_unittest(
         "//multibody/benchmarks/acrobot:models",
     ],
     deps = [
-        ":multibody_tree_py",
         ":parsing_py",
+        ":plant_py",
         "//bindings/pydrake/common/test_utilities",
     ],
 )
@@ -232,7 +215,7 @@ drake_py_unittest(
     ],
     deps = [
         ":benchmarks_py",
-        ":multibody_tree_py",
+        ":parsing_py",
         ":plant_py",
         ":tree_py",
         "//bindings/pydrake/common/test_utilities",
@@ -258,6 +241,7 @@ drake_py_unittest(
     deps = [
         ":benchmarks_py",
         ":inverse_kinematics_py",
+        ":parsing_py",
         "//bindings/pydrake/common/test_utilities",
     ],
 )

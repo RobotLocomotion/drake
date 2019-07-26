@@ -175,7 +175,8 @@ drake_py_unittest(
     name = "manipulation_station_test",
     deps = [
         ":manipulation_station_py",
-        "//bindings/pydrake/multibody:multibody_tree_py",
+        "//bindings/pydrake/multibody:parsing_py",
+        "//bindings/pydrake/multibody:plant_py",
     ],
 )
 
