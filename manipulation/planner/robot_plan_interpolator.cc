@@ -22,6 +22,7 @@ namespace planner {
 
 using multibody::BodyIndex;
 using multibody::JointIndex;
+using multibody::JointActuatorIndex;
 using trajectories::PiecewisePolynomial;
 
 namespace {
@@ -57,15 +58,14 @@ RobotPlanInterpolator::RobotPlanInterpolator(
     : plan_input_port_(this->DeclareAbstractInputPort(
           "plan", Value<robot_plan_t>()).get_index()),
       interp_type_(interp_type) {
-  plant_ = std::make_shared<multibody::MultibodyPlant<double>>();
-  multibody::Parser(plant_.get()).AddModelFromFile(model_path);
+  multibody::Parser(&owned_plant_).AddModelFromFile(model_path);
 
   // Search for any bodies with no parent.  We'll weld those to the world.
   std::set<BodyIndex> parent_bodies;
   std::set<BodyIndex> child_bodies;
-  for (JointIndex i(0); i < plant_->num_joints(); ++i) {
-    const multibody::Joint<double>& joint = plant_->get_joint(i);
-    if (joint.parent_body().index() == plant_->world_body().index()) {
+  for (JointIndex i(0); i < owned_plant_.num_joints(); ++i) {
+    const multibody::Joint<double>& joint = owned_plant_.get_joint(i);
+    if (joint.parent_body().index() == owned_plant_.world_body().index()) {
       // Nothing to weld, we're connected to the world.
       parent_bodies.clear();
       break;
@@ -84,40 +84,42 @@ RobotPlanInterpolator::RobotPlanInterpolator(
     // Weld all remaining parents to the world.  This probably isn't going to
     // work for all model types.
     for (const BodyIndex index : parent_bodies) {
-      plant_->WeldFrames(plant_->world_frame(),
-                        plant_->get_body(index).body_frame());
+      owned_plant_.WeldFrames(owned_plant_.world_frame(),
+                        owned_plant_.get_body(index).body_frame());
     }
   }
-  plant_->Finalize();
+  owned_plant_.Finalize();
+  plant_ptr_ = &owned_plant_;
   FinalizeSystem(update_interval);
 }
 
 RobotPlanInterpolator::RobotPlanInterpolator(
-    const std::shared_ptr<multibody::MultibodyPlant<double>> plant,
-    const InterpolatorType interp_type,
-    double update_interval)
+    const multibody::MultibodyPlant<double>* plant_ptr_in,
+    const InterpolatorType interp_type, double update_interval)
     : plan_input_port_(this->DeclareAbstractInputPort(
-    systems::kUseDefaultName,
-    Value<robot_plan_t>()).get_index()), plant_(std::move(plant)),
+        "plan", Value<robot_plan_t>()).get_index()),
+      plant_ptr_(plant_ptr_in),
       interp_type_(interp_type) {
-    FinalizeSystem(update_interval);
+  DRAKE_DEMAND(plant_ptr_ != nullptr);
+  FinalizeSystem(update_interval);
 }
 
 void RobotPlanInterpolator::FinalizeSystem(double update_interval) {
   // TODO(sammy-tri) This implementation doesn't know how to
   // calculate velocities/accelerations for differing numbers of
   // positions and velocities.
-  DRAKE_DEMAND(plant_->num_positions() == plant_->num_velocities());
-  const int num_pv = plant_->num_positions() + plant_->num_velocities();
+  DRAKE_DEMAND(plant_ptr_->num_positions() == plant_ptr_->num_velocities());
+  const int num_pv = plant_ptr_->num_positions() + plant_ptr_->num_velocities();
 
-  state_output_port_ = this->DeclareVectorOutputPort(
-          "state", systems::BasicVector<double>(num_pv),
-          &RobotPlanInterpolator::OutputState)
-      .get_index();
+  state_output_port_ =
+      this->DeclareVectorOutputPort("state",
+              systems::BasicVector<double>(num_pv),
+              &RobotPlanInterpolator::OutputState)
+          .get_index();
   acceleration_output_port_ =
       this->DeclareVectorOutputPort(
               "acceleration",
-              systems::BasicVector<double>(plant_->num_velocities()),
+              systems::BasicVector<double>(plant_ptr_->num_velocities()),
               &RobotPlanInterpolator::OutputAccel)
           .get_index();
 
@@ -159,9 +161,9 @@ void RobotPlanInterpolator::OutputState(const systems::Context<double>& context,
       output->get_mutable_value();
 
   const double current_plan_time = context.get_time() - plan.start_time;
-  output_vec.head(plant_->num_positions()) =
+  output_vec.head(plant_ptr_->num_positions()) =
       plan.pp.value(current_plan_time);
-  output_vec.tail(plant_->num_velocities()) =
+  output_vec.tail(plant_ptr_->num_velocities()) =
       plan.pp_deriv.value(current_plan_time);
 }
 
@@ -188,7 +190,7 @@ void RobotPlanInterpolator::MakeFixedPlan(
     double plan_start_time, const VectorX<double>& q0,
     systems::State<double>* state) const {
   DRAKE_DEMAND(state != nullptr);
-  DRAKE_DEMAND(q0.size() == plant_->num_positions());
+  DRAKE_DEMAND(q0.size() == plant_ptr_->num_positions());
   PlanData& plan =
       state->get_mutable_abstract_state<PlanData>(kAbsStateIdxPlan);
 
@@ -237,14 +239,14 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
       plan.start_time = context.get_time();
       std::vector<Eigen::MatrixXd> knots(
           plan_input.num_states,
-          Eigen::MatrixXd::Zero(plant_->num_positions(), 1));
+          Eigen::MatrixXd::Zero(plant_ptr_->num_positions(), 1));
       for (int i = 0; i < plan_input.num_states; ++i) {
         const auto& plan_state = plan_input.plan[i];
         for (int j = 0; j < plan_state.num_joints; ++j) {
-          if (!plant_->HasJointNamed(plan_state.joint_name[j])) {
+          if (!plant_ptr_->HasJointNamed(plan_state.joint_name[j])) {
             continue;
           }
-          const auto joint_index = plant_->GetJointByName(
+          const auto joint_index = plant_ptr_->GetJointByName(
               plan_state.joint_name[j]).index();
           knots[i](joint_index, 0) = plan_state.joint_position[j];
         }
@@ -256,7 +258,7 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
       }
 
       const Eigen::MatrixXd knot_dot =
-          Eigen::MatrixXd::Zero(plant_->num_velocities(), 1);
+          Eigen::MatrixXd::Zero(plant_ptr_->num_velocities(), 1);
       switch (interp_type_) {
         case InterpolatorType::ZeroOrderHold :
           plan.pp = PiecewisePolynomial<double>::ZeroOrderHold(
@@ -281,28 +283,24 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
   }
 }
 
-robotlocomotion::robot_plan_t EncodeKeyFrames(
-    const multibody::MultibodyPlant<double>& robot,
-    const std::vector<double>& time,
-    const std::vector<int>& info,
-    const MatrixX<double>& keyframes) {
-  const int num_positions = robot.num_positions();
-  DRAKE_DEMAND(keyframes.rows() == num_positions);
-  std::vector<std::string> joint_names(num_positions);
-  for (int i = 0; i < num_positions; ++i) {
-    joint_names[i] = robot.get_joint(JointIndex(i)).name();
+robotlocomotion::robot_plan_t RobotPlanInterpolator::EncodeKeyFrames(
+    const std::vector<double>& time, const MatrixX<double>& keyframes) const {
+  const int num_actuators = plant_ptr_->num_actuators();
+  DRAKE_DEMAND(keyframes.rows() == num_actuators);
+  std::vector<std::string> joint_names(num_actuators);
+  for (int i = 0; i < num_actuators; ++i) {
+    auto& joint =
+        plant_ptr_->get_joint_actuator(JointActuatorIndex(i)).joint();
+    joint_names[i] = joint.name();
   }
-
-  return EncodeKeyFrames(joint_names, time, info, keyframes);
+  return EncodeKeyFrames(joint_names, time, keyframes);
 }
 
-robotlocomotion::robot_plan_t EncodeKeyFrames(
+robotlocomotion::robot_plan_t RobotPlanInterpolator::EncodeKeyFrames(
     const std::vector<std::string>& joint_names,
     const std::vector<double>& time,
-    const std::vector<int>& info,
-    const MatrixX<double>& keyframes) {
+    const MatrixX<double>& keyframes) const {
 
-  DRAKE_DEMAND(info.size() == time.size());
   DRAKE_DEMAND(keyframes.cols() == static_cast<int>(time.size()));
   DRAKE_DEMAND(keyframes.rows() == static_cast<int>(joint_names.size()));
 
@@ -327,7 +325,7 @@ robotlocomotion::robot_plan_t EncodeKeyFrames(
       step.joint_velocity.push_back(0);
       step.joint_effort.push_back(0);
     }
-    plan.plan_info[i] = info[i];
+    plan.plan_info[i] = 1;
   }
   plan.num_grasp_transitions = 0;
   plan.left_arm_control_type = plan.NONE;

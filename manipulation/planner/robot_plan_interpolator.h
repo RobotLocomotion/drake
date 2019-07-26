@@ -44,14 +44,21 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotPlanInterpolator)
 
+  /// Takes a file path @p model_path that indicates the model to parse in using
+  /// an internally created MultibodyPlant.  All floating bodies are welded to
+  /// to world frame.
   RobotPlanInterpolator(const std::string& model_path,
                         const InterpolatorType = InterpolatorType::Cubic,
                         double update_interval = kDefaultPlanUpdateInterval);
 
+  /// Takes an already constructed MultibodyPlant.
+  /// @pre Finalize() must have already been called on the @p plant.
+  /// @pre The pointer @p plant_ptr_in must outlive this object.
   RobotPlanInterpolator(
-      const std::shared_ptr<multibody::MultibodyPlant<double>> plant,
+      const multibody::MultibodyPlant<double>* plant_ptr_in,
       const InterpolatorType = InterpolatorType::Cubic,
       double update_interval = kDefaultPlanUpdateInterval);
+
   ~RobotPlanInterpolator() override;
 
   /// N.B. This input port is useless and may be left disconnected.
@@ -77,7 +84,22 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
   void Initialize(double plan_start_time, const VectorX<double>& q0,
                   systems::State<double>* state) const;
 
-  const multibody::MultibodyPlant<double>& plant() { return *plant_; }
+  const multibody::MultibodyPlant<double>& plant() { return owned_plant_; }
+
+  /// Makes a robotlocomotion::robot_plan_t message.  The number of rows in
+  /// @p keyframes must match the number of actuators and each row is assumed to
+  /// match joint actuator odering. The number of columns in @p keyframes must
+  /// match the size of @p time.  Times must be in strictly increasing order.
+  robotlocomotion::robot_plan_t EncodeKeyFrames(
+      const std::vector<double>& time, const MatrixX<double>& keyframes) const;
+
+  /// Makes a robotlocomotion::robot_plan_t message.  The number of rows in @p
+  /// keyframes must match the size of @p joint_names.  The number of columns in
+  /// @p keyframes must match the size of @p time.  Times must be in strictly
+  /// increasing order.
+  robotlocomotion::robot_plan_t EncodeKeyFrames(
+      const std::vector<std::string>& joint_names,
+      const std::vector<double>& time, const MatrixX<double>& keyframes) const;
 
  protected:
   void SetDefaultState(const systems::Context<double>& context,
@@ -93,7 +115,7 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
  private:
   struct PlanData;
 
-  // Creates the input/output ports for the system.
+  // Creates the output ports for the system.
   void FinalizeSystem(double update_interval);
 
   // Calculator method for the state output port.
@@ -111,26 +133,10 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
   const int plan_input_port_{};
   int state_output_port_{-1};
   int acceleration_output_port_{-1};
-  std::shared_ptr<multibody::MultibodyPlant<double>> plant_;
+  multibody::MultibodyPlant<double> owned_plant_;
+  const multibody::MultibodyPlant<double>* plant_ptr_{nullptr};
   const InterpolatorType interp_type_;
 };
-
-/// Makes a robotlocomotion::robot_plan_t message.  The number of
-/// columns in @p keyframes must match the size of @p time.  Times
-/// must be in strictly increasing order.
-robotlocomotion::robot_plan_t EncodeKeyFrames(
-    const multibody::MultibodyPlant<double>& robot,
-    const std::vector<double>& time, const std::vector<int>& info,
-    const MatrixX<double>& keyframes);
-
-/// Makes a robotlocomotion::robot_plan_t message.  The number of rows in @p
-/// keyframes must match the size of @p joint_names.  The number of columns in
-/// @p keyframes must match the size of @p time.  Times must be in strictly
-/// increasing order.
-robotlocomotion::robot_plan_t EncodeKeyFrames(
-    const std::vector<std::string>& joint_names,
-    const std::vector<double>& time, const std::vector<int>& info,
-    const MatrixX<double>& keyframes);
 
 }  // namespace planner
 }  // namespace manipulation
