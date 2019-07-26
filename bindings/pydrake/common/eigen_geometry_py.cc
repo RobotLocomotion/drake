@@ -27,6 +27,7 @@ using std::abs;
 // N.B. Use a loose tolerance, so that we don't have to be super strict with
 // C++.
 const double kCheckTolerance = 1e-5;
+constexpr char kCastDoc[] = "Cast to desired scalar type.";
 
 using symbolic::Expression;
 
@@ -176,6 +177,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls.attr("__matmul__") = cls.attr("multiply");
     py::implicitly_convertible<Matrix4<T>, Class>();
     DefCopyAndDeepCopy(&cls);
+    DefCast<T>(&cls, kCastDoc);
   }
 
   // Quaternion.
@@ -265,6 +267,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("conjugate", [](const Class* self) { return self->conjugate(); });
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
+    DefCast<T>(&cls, kCastDoc);
   }
 
   // Angle-axis.
@@ -343,6 +346,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("inverse", [](const Class* self) { return self->inverse(); });
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
+    DefCast<T>(&cls, kCastDoc);
   }
 }
 

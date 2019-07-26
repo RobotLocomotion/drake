@@ -96,6 +96,16 @@ class TestMath(unittest.TestCase):
         for f_core, f_cpp in binary:
             self.assertEqual(f_core(a, b), f_cpp(a, b))
 
+    def check_cast(self, template, T):
+        value = template[T]()
+        # Refer to docstrings for `CastUPack` in `default_scalars_pybind.h`.
+        if T == float:
+            U_list = [float, AutoDiffXd, Expression]
+        else:
+            U_list = [T]
+        for U in U_list:
+            self.assertIsInstance(value.cast[U](), template[U], U)
+
     @numpy_compare.check_all_types
     def test_rigid_transform(self, T):
         RigidTransform = mut.RigidTransform_[T]
@@ -128,6 +138,8 @@ class TestMath(unittest.TestCase):
         check_equality(RigidTransform(theta_lambda=angle_axis, p=p_I), X_I)
         check_equality(RigidTransform(R=R_I), X_I)
         check_equality(RigidTransform(p=p_I), X_I)
+        # - Cast.
+        self.check_cast(mut.RigidTransform_, T)
         # - Accessors, mutators, and general methods.
         X = RigidTransform()
         X.set(R=R_I, p=p_I)
@@ -196,6 +208,8 @@ class TestMath(unittest.TestCase):
             numpy_compare.assert_float_equal(R.col(index=0), [1., 0., 0.])
         R.set(R=np.eye(3))
         numpy_compare.assert_float_equal(R.matrix(), np.eye(3))
+        # - Cast.
+        self.check_cast(mut.RotationMatrix_, T)
         # - Nontrivial quaternion.
         q = Quaternion(wxyz=[0.5, 0.5, 0.5, 0.5])
         R = RotationMatrix(quaternion=q)
