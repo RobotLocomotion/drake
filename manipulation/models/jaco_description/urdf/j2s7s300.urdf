@@ -120,7 +120,10 @@
     <parent link="j2s7s300_link_base"/>
     <child link="j2s7s300_link_1"/>
     <axis xyz="0 0 1"/>
-    <limit effort="2000" lower="-6.28318530718" upper="6.28318530718" velocity="1"/>
+    <!-- The upper and lower limits below are set based on the range
+         of +/- 10000 degrees listed in the "JACO2 Spherical 7 DOF
+         Advanced specification guide" from Kinova. -->
+    <limit effort="2000" lower="-174.532925" upper="174.532925" velocity="1"/>
     <origin rpy="0 3.14159265359 0" xyz="0 0 0.15675"/>
     <dynamics damping="0.0" friction="0.0"/>
   </joint>
@@ -206,7 +209,7 @@
     <parent link="j2s7s300_link_2"/>
     <child link="j2s7s300_link_3"/>
     <axis xyz="0 0 1"/>
-    <limit effort="2000" lower="-6.28318530718" upper="6.28318530718" velocity="1"/>
+    <limit effort="2000" lower="-174.532925" upper="174.532925" velocity="1"/>
     <origin rpy="-1.57079632679 0 0" xyz="0 -0.205 0"/>
     <dynamics damping="0.0" friction="0.0"/>
   </joint>
@@ -292,7 +295,7 @@
     <parent link="j2s7s300_link_4"/>
     <child link="j2s7s300_link_5"/>
     <axis xyz="0 0 1"/>
-    <limit effort="2000" lower="-6.28318530718" upper="6.28318530718" velocity="1"/>
+    <limit effort="2000" lower="-174.532925" upper="174.532925" velocity="1"/>
     <origin rpy="-1.57079632679 0 3.14159265359" xyz="0 0.2073 -0.0114"/>
     <dynamics damping="0.0" friction="0.0"/>
   </joint>
@@ -378,7 +381,7 @@
     <parent link="j2s7s300_link_6"/>
     <child link="j2s7s300_link_7"/>
     <axis xyz="0 0 1"/>
-    <limit effort="2000" lower="-6.28318530718" upper="6.28318530718" velocity="1"/>
+    <limit effort="2000" lower="-174.532925" upper="174.532925" velocity="1"/>
     <origin rpy="-1.57079632679 0 3.14159265359" xyz="0 0.10375 0"/>
     <dynamics damping="0.0" friction="0.0"/>
   </joint>
