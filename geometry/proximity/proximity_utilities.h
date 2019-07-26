@@ -12,10 +12,54 @@
 #include <fmt/format.h>
 
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/shape_specification.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
+
+/** Class that reports the name of the type of shape being reified (e.g.,
+ Sphere, Box, etc.)  */
+class ShapeName final : public ShapeReifier {
+ public:
+  ShapeName() = default;
+
+  /** Constructs a %ShapeName from the given `shape` such that `string()`
+   already contains the string representation of `shape`.  */
+  explicit ShapeName(const Shape& shape) {
+    shape.Reify(this);
+  }
+
+  /** @name  Implementation of ShapeReifier interface  */
+  //@{
+
+  void ImplementGeometry(const Sphere&, void*) final {
+    string_ = "Sphere";
+  }
+  void ImplementGeometry(const Cylinder&, void*) final {
+    string_ = "Cylinder";
+  }
+  void ImplementGeometry(const HalfSpace&, void*) final {
+    string_ = "HalfSpace";
+  }
+  void ImplementGeometry(const Box&, void*) final {
+    string_ = "Box";
+  }
+  void ImplementGeometry(const Mesh&, void*) final {
+    string_ = "Mesh";
+  }
+  void ImplementGeometry(const Convex&, void*) final {
+    string_ = "Convex";
+  }
+
+  //@}
+  const std::string& string() const { return string_; }
+
+ private:
+  std::string string_;
+};
+
+std::ostream& operator<<(std::ostream& out, const ShapeName& name);
 
 // TODO(SeanCurtis-TRI): Snake case this name.
 /** Calculates an absolute tolerance value conditioned to a problem's
