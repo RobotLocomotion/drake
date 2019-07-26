@@ -14,15 +14,12 @@ drake_cc_package_library(
     name = "lcm",
     deps = [
         ":connect_lcm_scope",
-        ":lcm_driven_loop",
         ":lcm_interface_system",
         ":lcm_log_playback_system",
         ":lcm_publisher_system",
         ":lcm_pubsub_system",
         ":lcm_subscriber_system",
-        ":lcmt_drake_signal_translator",
         ":serializer",
-        ":translator",
     ],
 )
 
@@ -39,23 +36,6 @@ drake_cc_library(
         "//lcmtypes:drake_signal",
         "//systems/framework:diagram_builder",
         "//systems/framework:leaf_system",
-    ],
-)
-
-drake_cc_library(
-    name = "translator",
-    srcs = [
-        "lcm_and_vector_base_translator.cc",
-    ],
-    hdrs = [
-        "lcm_and_vector_base_translator.h",
-    ],
-    copts = [
-        "-Wno-deprecated-declarations",
-    ],
-    deps = [
-        "//common:essential",
-        "//systems/framework:vector",
     ],
 )
 
@@ -125,60 +105,7 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "lcm_driven_loop",
-    srcs = [
-        "lcm_driven_loop.cc",
-    ],
-    hdrs = [
-        "lcm_driven_loop.h",
-    ],
-    deps = [
-        ":lcm_pubsub_system",
-        "//lcm",
-        "//systems/analysis:simulator",
-    ],
-)
-
-drake_cc_library(
-    name = "lcmt_drake_signal_translator",
-    srcs = ["lcmt_drake_signal_translator.cc"],
-    hdrs = ["lcmt_drake_signal_translator.h"],
-    copts = [
-        "-Wno-deprecated-declarations",
-    ],
-    deps = [
-        ":translator",
-        "//lcmtypes:drake_signal",
-        "//systems/framework:vector",
-    ],
-)
-
 # === test ===
-
-drake_cc_googletest(
-    name = "lcm_driven_loop_test",
-    copts = [
-        # The entire class under test is deprecated; when the class is removed,
-        # remove this entire unit test as well.
-        "-Wno-deprecated-declarations",
-    ],
-    # TODO(jamiesnape, siyuanfeng-tri): Remove flaky flag, see #5936.
-    flaky = 1,
-    tags = [
-        "no_asan",
-        "no_tsan",
-        "requires-network",
-    ],
-    deps = [
-        "//common/test_utilities:eigen_matrix_compare",
-        "//lcm",
-        "//lcmtypes:drake_signal",
-        "//systems/framework",
-        "//systems/lcm:lcm_driven_loop",
-        "//systems/primitives:signal_logger",
-    ],
-)
 
 drake_cc_googletest(
     name = "lcm_interface_system_test",

@@ -1,3 +1,4 @@
+#include <atomic>
 #include <chrono>
 #include <mutex>
 #include <stdexcept>
@@ -101,19 +102,18 @@ class DrakeLcmThreadTest : public ::testing::Test {
   // Call publish() until the mailbox matches our expected message.
   void LoopUntilDone(const MessageMailbox& mailbox,
                      const std::function<void(void)>& publish) {
-    // TODO(jwnimmer-tri) When DrakeLcm loses its Thread methods, just make a
-    // std::thread here instead.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    EXPECT_FALSE(dut_.IsReceiveThreadRunning());
-    dut_.StartReceiveThread();
-    EXPECT_TRUE(dut_.IsReceiveThreadRunning());
-#pragma GCC diagnostic pop
+    // Launch a received thread until message_was_recived is done.
+    std::atomic_bool message_was_received{false};
+    DrakeLcm* const dut = &dut_;
+    std::thread receive_thread([dut, &message_was_received]() {
+      while (!message_was_received) {
+        dut->HandleSubscriptions(300);
+      }
+    });
 
     // Try until we're either done, or we timeout (5 seconds).
     const std::chrono::milliseconds kDelay(50);
     const int kMaxCount = 100;
-    bool message_was_received = false;
     int count = 0;
     while (!message_was_received && count++ < kMaxCount) {
       publish();
@@ -123,11 +123,9 @@ class DrakeLcmThreadTest : public ::testing::Test {
     }
     EXPECT_TRUE(message_was_received);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    dut_.StopReceiveThread();
-    EXPECT_FALSE(dut_.IsReceiveThreadRunning());
-#pragma GCC diagnostic pop
+    // Stop the thread.
+    message_was_received = true;
+    receive_thread.join();
   }
 
   // The device under test.
