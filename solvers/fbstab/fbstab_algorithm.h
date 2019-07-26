@@ -303,7 +303,8 @@ class FBstabAlgorithm {
   }
 
   static constexpr int kNonMonotoneLineSearch = 5;
-  static_assert(kNonMonotoneLineSearch > 0,"kNonMonotoneLineSearch must be positive");
+  static_assert(kNonMonotoneLineSearch > 0,
+                "kNonMonotoneLineSearch must be positive");
   std::array<double, kNonMonotoneLineSearch> merit_buffer_ = {
       {0.0, 0.0, 0.0, 0.0, 0.0}};
 
@@ -407,7 +408,7 @@ class FBstabAlgorithm {
           printf(" Dual Infeasibility\n");
           break;
         case ExitFlag::PRIMAL_DUAL_INFEASIBLE:
-        printf(" Primal-Dual Infeasibility\n");
+          printf(" Primal-Dual Infeasibility\n");
           break;
         default:
           DRAKE_UNREACHABLE();
@@ -438,10 +439,10 @@ SolverOut FBstabAlgorithm<Variable, Residual, Data, LinearSolver,
   linear_solver_->SetAlpha(alpha_);
 
   struct SolverOut output = {
-     ExitFlag::MAXITERATIONS,  // exit flag
-      0.0,            // residual
-      0,              // prox iters
-      0               // newton iters
+      ExitFlag::MAXITERATIONS,  // exit flag
+      0.0,                      // residual
+      0,                        // prox iters
+      0                         // newton iters
   };
 
   // Supply a pointer to the data object.
