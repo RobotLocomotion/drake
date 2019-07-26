@@ -442,8 +442,12 @@ class KukaIiwaModelTests : public ::testing::Test {
       const Context<T>& context_on_T,
       const Vector3<T>& p_HPo, MatrixX<T>* Jv_WHp) const {
     const Frame<T>& frameH_on_T = model_on_T.get_variant(*frame_H_);
-    model_on_T.CalcFrameGeometricJacobianExpressedInWorld(
-        context_on_T, frameH_on_T, p_HPo, Jv_WHp);
+    const Frame<T>& frame_W = model_on_T.world_frame();
+    model_on_T.CalcJacobianSpatialVelocity(context_on_T,
+                                           JacobianWrtVariable::kV,
+                                           frameH_on_T, p_HPo,
+                                           frame_W, frame_W,
+                                           Jv_WHp);
   }
 
   const MultibodyTree<double>& tree() const {
@@ -1022,11 +1026,14 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
   MatrixX<double> Jv_WF(6, tree().num_velocities());
   // Compute the Jacobian Jv_WF for that relate the generalized velocities with
   // the spatial velocity of frame F.
-  tree().CalcFrameGeometricJacobianExpressedInWorld(
-      *context_,
-      end_effector_link_->body_frame(), p_EoFo_E, &Jv_WF);
+  const Frame<double>& frame_W = tree().world_frame();
+  tree().CalcJacobianSpatialVelocity(*context_,
+                                     JacobianWrtVariable::kV,
+                                     end_effector_link_->body_frame(), p_EoFo_E,                                        ,
+                                     frame_W, frame_W,
+                                     &Jv_WF);
 
-  // Verify that V_WEf = Jv_WF * v:
+   // Verify that V_WEf = Jv_WF * v:
   const SpatialVelocity<double> Jv_WF_times_v(Jv_WF * v);
 
   EXPECT_TRUE(Jv_WF_times_v.IsApprox(V_WEf, kTolerance));
@@ -1169,8 +1176,12 @@ TEST_F(KukaIiwaModelTests, FrameGeometricJacobianForTheWorldFrame) {
   // The state stored in the context should not affect the result of this test.
   // Therefore we do not set it.
 
-  tree().CalcFrameGeometricJacobianExpressedInWorld(
-      *context_, tree().world_body().body_frame(), p_WP, &Jv_WP);
+  const Frame<double>& frame_W = tree().world_frame();
+  tree().CalcJacobianSpatialVelocity(*context_,
+                                     JacobianWrtVariable::kV,
+                                     tree().world_body().body_frame(), p_WP,                                        ,
+                                     frame_W, frame_W,
+                                     &Jv_WP);
 
   // Since in this case we are querying for the world frame, the Jacobian should
   // be exactly zero.

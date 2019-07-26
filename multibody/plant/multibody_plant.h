@@ -1846,13 +1846,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if `J_WFp` is nullptr or if it is not of size
   ///   `6 x nv`.
+  // DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianSpatialVelocity().")
   void CalcFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FP,
-      EigenPtr<MatrixX<T>> Jv_WFp) const {
+      const Frame<T>& frame_F,
+      const Eigen::Ref<const Vector3<T>>& p_FP,
+      EigenPtr<MatrixX<T>> J_WFp) const {
     // TODO(amcastro-tri): Rework this method as per issue #10155.
-    internal_tree().CalcFrameGeometricJacobianExpressedInWorld(
-        context, frame_F, p_FP, Jv_WFp);
+    return CalcJacobianSpatialVelocity(context,
+                                       JacobianWrtVariable::kV,
+                                       frame_F, p_FP,
+                                       world_frame(), world_frame(),
+                                       J_WFp);
   }
 
   /// Computes the geometric Jacobian for a point moving with a given frame.
@@ -1909,7 +1914,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_A, const Frame<T>& frame_E,
       EigenPtr<MatrixX<T>> Jv_ABp_E) const {
     // TODO(amcastro-tri): Rework this method as per issue #10155.
-    return CalcJacobianSpatialVelocity(context, JacobianWrtVariable::kV,
+    CalcJacobianSpatialVelocity(context, JacobianWrtVariable::kV,
         frame_B, p_BP, frame_A, frame_E, Jv_ABp_E);
   }
 
@@ -2063,7 +2068,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_A,
       const Frame<T>& frame_E,
       EigenPtr<MatrixX<T>> Jw_ABp_E) const {
-    return internal_tree().CalcJacobianSpatialVelocity(
+    internal_tree().CalcJacobianSpatialVelocity(
         context, with_respect_to, frame_B, p_BP, frame_A, frame_E, Jw_ABp_E);
   }
 
