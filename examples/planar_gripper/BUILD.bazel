@@ -1,0 +1,60 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+)
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/install:install_data.bzl", "install_data")
+load(
+    "@drake//tools/vector_gen:vector_gen.bzl",
+    "drake_cc_vector_gen_library",
+)
+
+drake_cc_library(
+    name = "planar_gripper_common",
+    hdrs = ["planar_gripper_common.h"],
+    deps = [
+        "//common:find_resource",
+        "//multibody/plant",
+        "//systems/lcm:lcm_interface_system",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
+drake_cc_library(
+    name = "gripper_brick",
+    srcs = ["gripper_brick.cc"],
+    hdrs = ["gripper_brick.h"],
+    data = [
+        "//examples/planar_gripper:planar_brick.sdf",
+        "//examples/planar_gripper:planar_gripper.sdf",
+    ],
+    deps = [
+        "//common:find_resource",
+        "//examples/planar_gripper:planar_gripper_common",
+        "//geometry:geometry_visualization",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+    ],
+)
+
+drake_cc_googletest(
+    name = "gripper_brick_test",
+    deps = [
+        ":gripper_brick",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+add_lint_tests()

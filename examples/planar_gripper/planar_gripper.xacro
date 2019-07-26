@@ -1,0 +1,179 @@
+<?xml version="1.0"?>
+
+<sdf xmlns:xacro="http://www.ros.org/wiki/xacro" version='1.6'>
+  <model name='planar_gripper'>
+
+    <xacro:property name="base_dim" value=".08" />
+    <xacro:property name="l1_length" value="0.07" />
+    <xacro:property name="l1_radius" value="0.011" />
+    <xacro:property name="l1_mass" value="0.1" />
+    <xacro:property name="l1_inertia" value="0.0083" />
+    <xacro:property name="l2_length" value="0.07" />
+    <xacro:property name="l2_radius" value="0.011" />
+    <xacro:property name="l2_mass" value="0.1" />
+    <xacro:property name="l2_inertia" value="0.0083" />
+    <xacro:property name="sensor_stack_len" value="0.001" />
+    <xacro:property name="tip_radius" value="0.015" />
+
+    <xacro:macro name="finger" params="fnum">
+      <link name="finger${fnum}_base">
+        <visual name='base_visual'>
+          <pose>0 0 0 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>${base_dim} ${base_dim} ${base_dim/10}</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>0.1 0.1 0.1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <link name="finger${fnum}_link1">
+        <pose>0 0 0 0 0 0</pose>
+        <inertial>
+          <pose>0 0 -${l1_length/2} 0 0 0</pose>
+          <mass>${l1_mass}</mass>
+          <inertia>
+            <ixx>${l1_inertia}</ixx><iyy>${l1_inertia}</iyy><izz>5e-7</izz>
+            <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <visual name='link1_visual'>
+          <pose>0 0 -${l1_length/2} 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <length>${l1_length}</length>
+              <radius>${l1_radius}</radius>
+            </cylinder>
+          </geometry>
+          <material>
+            <diffuse>1 0 0 1</diffuse>
+          </material>
+        </visual>
+        <visual name='link1_joint_visual'>
+          <pose>0 0 -${l1_length} 0 0 0</pose>
+          <geometry>
+            <sphere>
+              <radius>${l1_radius*1.2}</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <diffuse>.1 .1 .1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <joint name='finger${fnum}_BaseJoint' type='revolute'>
+        <child>finger${fnum}_link1</child>
+        <parent>finger${fnum}_base</parent>
+        <axis>
+          <xyz>1 0 0</xyz>
+          <limit>
+            <!-- Drake parses a zero effort joint as an un-actuated joint. -->
+            <effort>75</effort>
+            <lower>-1.57</lower>
+            <upper>1.57</upper>
+          </limit>
+          <dynamics>
+            <damping>0.1</damping>
+          </dynamics>
+          <use_parent_model_frame>1</use_parent_model_frame>
+        </axis>
+      </joint>
+      <link name="finger${fnum}_link2">
+        <!-- The origin of the Link2 frame is defined to be coincident with
+       the origin of the x-z plane in the elbow joint frame. -->
+        <pose>0 0 -${l1_length} 0 0 0</pose>
+        <inertial>
+          <pose>0 0 -${l2_length/2} 0 0 0</pose>
+          <mass>${l2_mass}</mass>
+          <!-- This inertia is based on a solid cylinder with
+               radius=1.0 meters and height=2.0 meters. -->
+          <!-- For this model we could make izz = 0 however, sdformat will throw
+               an exception. -->
+          <inertia>
+            <ixx>${l2_inertia}</ixx><iyy>${l2_inertia}</iyy><izz>5e-7</izz>
+            <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <visual name='link2_visual'>
+          <pose>0 0 -${l2_length/2} 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <length>${l2_length}</length>
+              <radius>${l2_radius}</radius>
+            </cylinder>
+          </geometry>
+          <material>
+            <diffuse>1 0 0 1</diffuse>
+          </material>
+        </visual>
+        <visual name='link2_sensor'>
+          <pose>0 0 -${l2_length + sensor_stack_len} 0 0 0</pose>
+          <geometry>
+            <sphere>
+              <radius>${l2_radius}</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <diffuse>.1 .1 .1 1</diffuse>
+          </material>
+        </visual>
+        <collision name='link2_collision'>
+          <pose>0 0 -${l2_length/2} 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <length>${l2_length}</length>
+              <radius>${l2_radius}</radius>
+            </cylinder>
+          </geometry>
+          <material>
+            <diffuse>1 0 0 1</diffuse>
+          </material>
+        </collision>
+        <collision name='link2_pad_collision'>
+          <pose>0 0 -${l2_length + sensor_stack_len + tip_radius} 0 0 0</pose>
+          <geometry>
+            <sphere>
+              <radius>${tip_radius}</radius>
+            </sphere>
+          </geometry>
+        </collision>
+        <visual name='link2_pad_visual'>
+          <pose>0 0 -${l2_length + sensor_stack_len + tip_radius} 0 0 0</pose>
+          <geometry>
+            <sphere>
+              <radius>${tip_radius}</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <diffuse>1 1 1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <joint name='finger${fnum}_MidJoint' type='revolute'>
+        <parent>finger${fnum}_link1</parent>
+        <child>finger${fnum}_link2</child>
+        <!-- Pose X_CJ of the joint frame J in the frame C of the child link -->
+        <pose>0 0 0 0 0 0</pose>
+        <axis>
+          <xyz>1 0 0</xyz>
+          <limit>
+            <effort>75</effort>
+            <lower>-1.57</lower>
+            <upper>1.57</upper>
+          </limit>
+          <dynamics>
+            <damping>0.1</damping>
+          </dynamics>
+          <use_parent_model_frame>1</use_parent_model_frame>
+        </axis>
+      </joint>
+    </xacro:macro>
+
+    <xacro:finger fnum="1" />
+    <xacro:finger fnum="2" />
+    <xacro:finger fnum="3" />
+
+  </model>
+</sdf>
