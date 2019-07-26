@@ -40,8 +40,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
         xf = dircol.final_state()
         u = dircol.input()
         u2 = dircol.input(2)
-        v = dircol.NewSequentialVariable(1, "test")
-        v2 = dircol.GetSequentialVariableAtIndex("test", 2)
+        v = dircol.NewSequentialVariable(rows=1, name="test")
+        v2 = dircol.GetSequentialVariableAtIndex(name="test", index=2)
 
         dircol.AddRunningCost(x.dot(x))
         dircol.AddConstraintToAllKnotPoints(u[0] == 0)
@@ -76,7 +76,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
 
         dircol.AddInputTrajectoryCallback(input_callback)
         dircol.AddStateTrajectoryCallback(state_callback)
-        dircol.AddCompleteTrajectoryCallback(complete_callback, ["test"])
+        dircol.AddCompleteTrajectoryCallback(callback=complete_callback,
+                                             names=["test"])
 
         result = mp.Solve(dircol)
         self.assertTrue(input_was_called)
@@ -86,7 +87,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
         times = dircol.GetSampleTimes(result)
         inputs = dircol.GetInputSamples(result)
         states = dircol.GetStateSamples(result)
-        variables = dircol.GetSequentialVariableSamples(result, "test")
+        variables = dircol.GetSequentialVariableSamples(result=result,
+                                                        name="test")
         input_traj = dircol.ReconstructInputTrajectory(result)
         state_traj = dircol.ReconstructStateTrajectory(result)
 

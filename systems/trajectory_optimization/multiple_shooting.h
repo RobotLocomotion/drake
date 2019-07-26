@@ -259,7 +259,7 @@ class MultipleShooting : public solvers::MathematicalProgram {
    * num_extra-by-N MatrixXd of the current (intermediate) extra variable
    * trajectory at the break points.
    *
-   * Note: Just like other costs/constraints, not all solvers support callbacks.
+   * @note Just like other costs/constraints, not all solvers support callbacks.
    * Adding a callback here will force MathematicalProgram::Solve to select a
    * solver that support callbacks.  For instance, adding a visualization
    * callback to a quadratic programming problem may result in using a nonlinear
