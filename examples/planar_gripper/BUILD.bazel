@@ -21,6 +21,7 @@ load(
 
 drake_cc_library(
     name = "planar_gripper_common",
+    srcs = ["planar_gripper_common.cc"],
     hdrs = ["planar_gripper_common.h"],
     deps = [
         "//common:find_resource",
@@ -46,6 +47,37 @@ drake_cc_library(
         "//multibody/plant",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
+    ],
+)
+
+drake_cc_binary(
+    name = "planar_gripper_simulation",
+    srcs = ["planar_gripper_simulation.cc"],
+    add_test_rule = 1,
+    data = [
+        "//examples/planar_gripper:planar_brick.sdf",
+        "//examples/planar_gripper:planar_gripper.sdf",
+        "//examples/planar_gripper:postures.txt",
+    ],
+    test_rule_args = [
+        "--simulation_time=0.1",
+        "--target_realtime_rate=0",
+    ],
+    deps = [
+        ":planar_gripper_common",
+        "//common:find_resource",
+        "//common:text_logging_gflags",
+        "//common/trajectories:piecewise_polynomial",
+        "//geometry:geometry_visualization",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/controllers:inverse_dynamics_controller",
+        "//systems/framework:diagram",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:trajectory_source",
+        "@gflags",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 
