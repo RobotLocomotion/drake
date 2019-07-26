@@ -5,7 +5,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 
 namespace drake {
@@ -72,20 +71,6 @@ class FindResourceResult {
   // message from get_error_message().
   optional<std::string> error_message_;
 };
-
-/// (Deprecated.)  Sets the kDrakeResourceRootEnvironmentVariableName
-/// environment variable to @p root_directory.
-/// @throws std::runtime_error if the environment variable is already set.
-/// @throws std::runtime_error if the given path is not absolute.
-DRAKE_DEPRECATED("2019-08-01",
-    "Call setenv(kDrakeResourceRootEnvironmentVariableName) instead.")
-void AddResourceSearchPath(const std::string& root_directory);
-
-/// Returns a single-element vector containing the last root_directory passed
-/// to AddResourceSearchPath() if any; otherwise, returns an empty vector.
-DRAKE_DEPRECATED("2019-08-01",
-    "Call getenv(kDrakeResourceRootEnvironmentVariableName) instead.")
-std::vector<std::string> GetResourceSearchPaths();
 
 /// Attempts to locate a Drake resource named by the given @p resource_path.
 /// The @p resource_path refers to the relative path within the Drake source

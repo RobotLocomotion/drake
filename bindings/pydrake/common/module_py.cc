@@ -70,26 +70,6 @@ PYBIND11_MODULE(_module_py, m) {
       PyErr_SetString(PyExc_SystemExit, e.what());
     }
   });
-  // Convenient wrapper to add a resource search path.
-  m.def("AddResourceSearchPath",
-      [](const std::string& x) {
-        WarnDeprecated("See API docs for deprecation notice.");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        AddResourceSearchPath(x);
-#pragma GCC diagnostic pop
-      },
-      py::arg("search_path"), doc.AddResourceSearchPath.doc_deprecated);
-  // Convenient wrapper to get the list of resource search paths.
-  m.def("GetResourceSearchPaths",
-      []() {
-        WarnDeprecated("See API docs for deprecation notice.");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        return GetResourceSearchPaths();
-#pragma GCC diagnostic pop
-      },
-      doc.GetResourceSearchPaths.doc_deprecated);
   // Convenient wrapper for querying FindResource(resource_path).
   m.def("FindResourceOrThrow", &FindResourceOrThrow,
       "Attempts to locate a Drake resource named by the given path string. "

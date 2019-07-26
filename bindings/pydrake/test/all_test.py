@@ -98,7 +98,7 @@ class TestAll(unittest.TestCase):
             "SimpleCar",
             # common
             # - __init__
-            "AddResourceSearchPath",
+            "RandomDistribution",
             # - compatibility
             "maybe_patch_numpy_formatters",
             # - containers
