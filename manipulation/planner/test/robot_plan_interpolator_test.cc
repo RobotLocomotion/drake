@@ -34,12 +34,13 @@ GTEST_TEST(RobotPlanInterpolatorTest, InstanceTest) {
             systems::kVectorValued);
   EXPECT_EQ(dut1.get_acceleration_output_port().size(), kNumJoints);
 
-  // This constructor takes in a shared pointer to an already built MBP.
-  auto plant = std::make_unique<multibody::MultibodyPlant<double>>();
-  multibody::Parser(plant.get())
+  // This constructor takes a pointer to an already built MBP.
+  multibody::MultibodyPlant<double> plant;
+  multibody::Parser(&plant)
       .AddModelFromFile(FindResourceOrThrow(kIiwaUrdf));
-  plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("iiwa_link_0"));
-  RobotPlanInterpolator dut2(FindResourceOrThrow(kIiwaUrdf));
+  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"));
+  plant.Finalize();
+  RobotPlanInterpolator dut2(&plant);
   EXPECT_EQ(dut2.get_plan_input_port().get_data_type(),
             systems::kAbstractValued);
   EXPECT_EQ(dut2.get_state_output_port().get_data_type(),
@@ -101,7 +102,7 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
   plan.num_states = num_time_steps;
   const bot_core::robot_state_t default_robot_state{};
   plan.plan.resize(num_time_steps, default_robot_state);
-  plan.plan_info.resize(num_time_steps, 0);
+  plan.plan_info.resize(num_time_steps, 1);
   for (int i = 0; i < num_time_steps; i++) {
     bot_core::robot_state_t& step = plan.plan[i];
     step.utime = t[i] * 1e6;
@@ -226,6 +227,41 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
             << "Failed at interpolator type: " << interp_str;
 }
 
+GTEST_TEST(RobotPlanInterpolatorTest, EncodeKeyFramesTest) {
+  // Checks that plan is appropriately generated.
+  RobotPlanInterpolator dut(FindResourceOrThrow(kIiwaUrdf));
+  EXPECT_EQ(dut.plant().num_positions(), kNumJoints);
+  EXPECT_EQ(dut.plant().num_velocities(), kNumJoints);
+  EXPECT_EQ(dut.plant().num_actuators(), kNumJoints);
+
+  std::vector<double> times{0, 1, 2};
+  Eigen::MatrixXd kKeyFrames = Eigen::MatrixXd::Zero(kNumJoints, times.size());
+  kKeyFrames << 1, 1, 0,
+                1, 1, 0,
+                1, 1, 0,
+                0, 1, 1,
+                0, 1, 1,
+                0, 0, 1,
+                0, 0, 1;
+  auto plan = dut.EncodeKeyFrames(times, kKeyFrames);
+  DRAKE_DEMAND(plan.plan.size() == 3);
+  std::vector<std::string> names{
+      "iiwa_joint_1", "iiwa_joint_2", "iiwa_joint_3", "iiwa_joint_4",
+      "iiwa_joint_5", "iiwa_joint_6",  "iiwa_joint_7"};
+  EXPECT_EQ(plan.plan[0].joint_name.size(), 7);
+  EXPECT_EQ(plan.plan[1].joint_name.size(), 7);
+  EXPECT_EQ(plan.plan[2].joint_name.size(), 7);
+  for (auto i = names.begin(); i != names.end(); i++) {
+    EXPECT_TRUE(*i == plan.plan[0].joint_name[i - names.begin()]);
+    EXPECT_TRUE(*i == plan.plan[1].joint_name[i - names.begin()]);
+    EXPECT_TRUE(*i == plan.plan[2].joint_name[i - names.begin()]);
+  }
+  for (int col = 0; col < 3; col++) {
+    for (int row = 0; row < kNumJoints; row++) {
+      EXPECT_EQ(plan.plan[col].joint_position[row], kKeyFrames(row, col));
+    }
+  }
+}
 
 class TrajectoryTestClass : public testing::TestWithParam<InterpolatorType> {
  public:
