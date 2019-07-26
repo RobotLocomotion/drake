@@ -252,14 +252,14 @@ class MultipleShooting : public solvers::MathematicalProgram {
    * Adds a callback method to visualize intermediate results of the
    * trajectory optimization.  The callback should be of the form
    *   MyVisualization(sample_times, states, inputs, values),
-   * where sample_times is a N-by-1 VectorXd of sample times, states is a
+   * where sample_times is an N-by-1 VectorXd of sample times, states is a
    * num_states-by-N MatrixXd of the current (intermediate) state trajectory at
    * the break points, inputs is a num_inputs-by-N MatrixXd of the current
    * (intermediate) input trajectory at the break points and values is a
-   * num_extra-by-N MatrixXd of the current (intermediate) extra variable
-   * trajectory at the break points.
+   * vector of num_rows-by-N MatrixXds of the current (intermediate) extra
+   * sequenctial variables specified by @p names at the break points.
    *
-   * Note: Just like other costs/constraints, not all solvers support callbacks.
+   * @note Just like other costs/constraints, not all solvers support callbacks.
    * Adding a callback here will force MathematicalProgram::Solve to select a
    * solver that support callbacks.  For instance, adding a visualization
    * callback to a quadratic programming problem may result in using a nonlinear
@@ -316,6 +316,9 @@ class MultipleShooting : public solvers::MathematicalProgram {
 
   /// Returns a matrix containing the sequential variable values (arranged in
   /// columns) at each knot point at the solution.
+  ///
+  /// @param name The name of sequential variable to get the results for.  Must
+  /// correspond to an already added sequential variable.
   Eigen::MatrixXd GetSequentialVariableSamples(
       const solvers::MathematicalProgramResult& result,
       const std::string& name) const;
