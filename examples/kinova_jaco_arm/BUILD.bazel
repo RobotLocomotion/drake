@@ -37,34 +37,6 @@ drake_cc_library(
 )
 
 drake_cc_binary(
-    name = "jaco_controller",
-    srcs = ["jaco_controller.cc"],
-    copts = [
-        # TODO(sammy-tri) Remove this once ported away from lcm_driven_loop.
-        "-Wno-deprecated-declarations",
-    ],
-    data = [
-        "//manipulation/models/jaco_description:models",
-    ],
-    deps = [
-        ":jaco_lcm",
-        "//common:find_resource",
-        "//common:text_logging_gflags",
-        "//lcm",
-        "//manipulation/planner:robot_plan_interpolator",
-        "//systems/controllers:pid_controller",
-        "//systems/lcm:lcm_driven_loop",
-        "//systems/lcm:lcm_pubsub_system",
-        "//systems/primitives:adder",
-        "//systems/primitives:demultiplexer",
-        "//systems/primitives:multiplexer",
-        "@gflags",
-        "@lcmtypes_bot2_core",
-        "@lcmtypes_robotlocomotion",
-    ],
-)
-
-drake_cc_binary(
     name = "run_passive_jaco_demo",
     srcs = ["run_passive_jaco_demo.cc"],
     add_test_rule = 1,
