@@ -34,86 +34,59 @@ GTEST_TEST(InternalGeometryTest, PropertyAssignment) {
   EXPECT_TRUE(geometry.has_perception_role());
 }
 
-// Tests the removal of proximity and illustration roles -- the removal is
-// identical for both. Perception requires special treatment (see below).
-GTEST_TEST(InternalGeometryTest, RemoveRole_NonPerception) {
+// Tests the removal of all roles.
+GTEST_TEST(InternalGeometryTest, RemoveRole) {
   // Configure a geometry with all roles; we assume from previous unit tests
   // that the geometry's state is correct.
   InternalGeometry geometry;
   geometry.SetRole(ProximityProperties());
   geometry.SetRole(IllustrationProperties());
-
-  // Case: Remove proximity, illustration persists.
-  EXPECT_NO_THROW(geometry.RemoveProximityRole());
-  EXPECT_FALSE(geometry.has_role(Role::kProximity));
-  EXPECT_TRUE(geometry.has_role(Role::kIllustration));
-
-  // Case: Redundant removal of role is a no-op.
-  EXPECT_NO_THROW(geometry.RemoveProximityRole());
-  EXPECT_FALSE(geometry.has_role(Role::kProximity));
-  EXPECT_TRUE(geometry.has_role(Role::kIllustration));
-
-  // Case: Remove illustration, no roles exist.
-  EXPECT_NO_THROW(geometry.RemoveIllustrationRole());
-  EXPECT_FALSE(geometry.has_role(Role::kProximity));
-  EXPECT_FALSE(geometry.has_role(Role::kIllustration));
-
-  // Case: Redundant removal of role is a no-op.
-  EXPECT_NO_THROW(geometry.RemoveIllustrationRole());
-  EXPECT_FALSE(geometry.has_role(Role::kProximity));
-  EXPECT_FALSE(geometry.has_role(Role::kIllustration));
-}
-
-// Test the perception role removal. This is its own unique test because it has
-// special, per-renderer logic that doesn't apply to either proximity or
-// illustration.
-GTEST_TEST(InternalGeometryTest, RemovePerceptionRole) {
-  const std::string renderer1("renderer1");
-  const std::string renderer2("renderer2");
-
-  // Configure a geometry with all roles; we assume from previous unit tests
-  // that the geometry's state is correct.
-  InternalGeometry geometry;
-  geometry.set_renderer(renderer1);
-  geometry.set_renderer(renderer2);
   geometry.SetRole(PerceptionProperties());
-  EXPECT_TRUE(geometry.in_renderer(renderer1));
-  EXPECT_TRUE(geometry.in_renderer(renderer2));
+
+  // Two notes on the structure of this test:
+  //  1. As currently formulated, the correctness of the test depends on the
+  //     order of these actions. Changing the order can lead to meaningless
+  //     test failure.
+  //  2. This test doesn't exhaustively test all permutations of removing a
+  //     role. (There are 8 unique configurations and 24 total possible removal
+  //     invocations.) We assume that the *suggestion* of independence suggested
+  //     here is actually true.
+
+  // Case: Remove proximity, other roles persist.
+  EXPECT_NO_THROW(geometry.RemoveProximityRole());
+  EXPECT_FALSE(geometry.has_role(Role::kProximity));
+  EXPECT_TRUE(geometry.has_role(Role::kIllustration));
   EXPECT_TRUE(geometry.has_role(Role::kPerception));
 
-  // Case: Remove from a non-existent render engine; its perception role
-  // configuration should remain unchanged.
-  EXPECT_NO_THROW(geometry.ClearRenderer("invalid"));
-  EXPECT_TRUE(geometry.in_renderer(renderer1));
-  EXPECT_TRUE(geometry.in_renderer(renderer2));
+  // Case: Redundant removal of role is a no-op.
+  EXPECT_NO_THROW(geometry.RemoveProximityRole());
+  EXPECT_FALSE(geometry.has_role(Role::kProximity));
+  EXPECT_TRUE(geometry.has_role(Role::kIllustration));
   EXPECT_TRUE(geometry.has_role(Role::kPerception));
 
-  // Case: Remove from a valid render engine; otherwise unchanged perception
-  // role configuration.
-  EXPECT_NO_THROW(geometry.ClearRenderer(renderer1));
-  EXPECT_FALSE(geometry.in_renderer(renderer1));
-  EXPECT_TRUE(geometry.in_renderer(renderer2));
+  // Case: Remove illustration, only perception remains.
+  EXPECT_NO_THROW(geometry.RemoveIllustrationRole());
+  EXPECT_FALSE(geometry.has_role(Role::kProximity));
+  EXPECT_FALSE(geometry.has_role(Role::kIllustration));
   EXPECT_TRUE(geometry.has_role(Role::kPerception));
 
-  // Case: Remove perception properties while there is still a valid render
-  // engine. The remaining valid render engines are cleared.
+  // Case: Redundant removal of role is a no-op.
+  EXPECT_NO_THROW(geometry.RemoveIllustrationRole());
+  EXPECT_FALSE(geometry.has_role(Role::kProximity));
+  EXPECT_FALSE(geometry.has_role(Role::kIllustration));
+  EXPECT_TRUE(geometry.has_role(Role::kPerception));
+
+  // Case: Remove perception, no roles exist.
   EXPECT_NO_THROW(geometry.RemovePerceptionRole());
-  EXPECT_FALSE(geometry.in_renderer(renderer1));
-  EXPECT_FALSE(geometry.in_renderer(renderer2));
+  EXPECT_FALSE(geometry.has_role(Role::kProximity));
+  EXPECT_FALSE(geometry.has_role(Role::kIllustration));
   EXPECT_FALSE(geometry.has_role(Role::kPerception));
 
-  // Case: Removing from last render engine leaves the geometry with perception
-  // properties.
-  // In preparation, we reassign perception role and render engine.
-  geometry.set_renderer(renderer1);
-  geometry.SetRole(PerceptionProperties());
-  // Confirm it's wired up for renderer1.
-  EXPECT_TRUE(geometry.in_renderer(renderer1));
-  EXPECT_TRUE(geometry.has_role(Role::kPerception));
-
-  EXPECT_NO_THROW(geometry.ClearRenderer(renderer1));
-  EXPECT_FALSE(geometry.in_renderer(renderer1));
-  EXPECT_TRUE(geometry.has_role(Role::kPerception));
+  // Case: Redundant removal of role is a no-op.
+  EXPECT_NO_THROW(geometry.RemoveIllustrationRole());
+  EXPECT_FALSE(geometry.has_role(Role::kProximity));
+  EXPECT_FALSE(geometry.has_role(Role::kIllustration));
+  EXPECT_FALSE(geometry.has_role(Role::kPerception));
 }
 
 }  // namespace

@@ -35,8 +35,11 @@ bool RenderEngine::RemoveGeometry(GeometryId id) {
   } else {
     DRAKE_DEMAND(update_ids_.count(id) == 0 || anchored_ids_.count(id) == 0);
   }
-
   return removed;
+}
+
+bool RenderEngine::has_geometry(GeometryId id) const {
+  return update_ids_.count(id) > 0 || anchored_ids_.count(id) > 0;
 }
 
 RenderLabel RenderEngine::GetRenderLabelOrThrow(

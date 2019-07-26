@@ -907,7 +907,6 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
       EXPECT_EQ(geometry.child_geometry_ids().size(), 0);
       EXPECT_FALSE(geometry.parent_id());
       EXPECT_EQ(geometry.name(), geometry_names_[i]);
-      EXPECT_FALSE(geometry.in_renderer(kDummyRenderName));
       EXPECT_EQ(geometry.child_geometry_ids().size(), 0);
 
       // Note: There are no geometries parented to other geometries. The results
@@ -2851,8 +2850,9 @@ TEST_F(GeometryStateTest, RemoveUnassignedRole) {
 TEST_F(GeometryStateTest, RemoveGeometryFromRenderer) {
   // Add an additional renderer *before* populating the world (as required).
   const string other_renderer_name = "alt_renderer";
-  geometry_state_.AddRenderer(other_renderer_name,
-                              make_unique<DummyRenderEngine>());
+  auto temp_engine = make_unique<DummyRenderEngine>();
+  const DummyRenderEngine& other_engine = *temp_engine;
+  geometry_state_.AddRenderer(other_renderer_name, move(temp_engine));
 
   SetUpSingleSourceTree(Assign::kPerception);
 
@@ -2864,15 +2864,15 @@ TEST_F(GeometryStateTest, RemoveGeometryFromRenderer) {
   // addition,
   //   a) report itself in the "other" render engine, xor
   //   b) be present in the `removed_from_renderer` set.
-  auto confirm_renderers = [=](set<GeometryId> removed_from_renderer) {
+  auto confirm_renderers = [=, &other_engine](
+                               set<GeometryId> removed_from_renderer) {
     set<GeometryId> ids(geometries_.begin(), geometries_.end());
     ids.insert(anchored_geometry_);
     for (GeometryId id : ids) {
       // All should report in the dummy renderer.
-      EXPECT_TRUE(gs_tester_.GetGeometry(id)->in_renderer(kDummyRenderName));
+      EXPECT_TRUE(render_engine_->has_geometry(id));
       // Should report in the renderer if it is *not* in the removed set.
-      EXPECT_EQ(gs_tester_.GetGeometry(id)
-                    ->in_renderer(other_renderer_name),
+      EXPECT_EQ(other_engine.has_geometry(id),
                 removed_from_renderer.count(id) == 0);
     }
   };
@@ -2927,8 +2927,9 @@ TEST_F(GeometryStateTest, RemoveFrameFromRenderer) {
   // TODO(SeanCurtis-TRI): Consider refactoring this set-up code between _this_
   // test and the RemoveGeometryFromRenderer test.
   const string other_renderer_name = "alt_renderer";
-  geometry_state_.AddRenderer(other_renderer_name,
-                              make_unique<DummyRenderEngine>());
+  auto temp_engine = make_unique<DummyRenderEngine>();
+  const DummyRenderEngine& other_engine = *temp_engine;
+  geometry_state_.AddRenderer(other_renderer_name, move(temp_engine));
 
   SetUpSingleSourceTree(Assign::kPerception);
 
@@ -2940,16 +2941,15 @@ TEST_F(GeometryStateTest, RemoveFrameFromRenderer) {
   // addition,
   //   a) report itself in the "other" render engine, xor
   //   b) be present in the `removed_from_renderer` set.
-  auto confirm_renderers = [=](set<GeometryId> removed_from_renderer) {
+  auto confirm_renderers = [=, &other_engine](
+                               set<GeometryId> removed_from_renderer) {
     set<GeometryId> ids(geometries_.begin(), geometries_.end());
     ids.insert(anchored_geometry_);
     for (GeometryId id : ids) {
       // All should report in the dummy renderer.
-      EXPECT_TRUE(gs_tester_.GetGeometry(id)
-                      ->in_renderer(kDummyRenderName));
+      EXPECT_TRUE(render_engine_->has_geometry(id));
       // Should report in the renderer if it is *not* in the removed set.
-      EXPECT_EQ(gs_tester_.GetGeometry(id)
-                    ->in_renderer(other_renderer_name),
+      EXPECT_EQ(other_engine.has_geometry(id),
                 removed_from_renderer.count(id) == 0);
     }
   };
@@ -3025,6 +3025,34 @@ TEST_F(GeometryStateTest, RemoveFrameFromRenderer) {
       "Referenced frame .+ but the frame doesn't belong to the source.");
 }
 
+TEST_F(GeometryStateTest, AddRendererAfterGeometry) {
+  SetUpSingleSourceTree(Assign::kPerception);
+  // Add one geometry that has no perception properties.
+  const GeometryId id_no_perception = geometry_state_.RegisterGeometry(
+      source_id_, frames_[0],
+      make_unique<GeometryInstance>(Isometry3d::Identity(),
+                                    make_unique<Sphere>(0.5), "shape"));
+  EXPECT_EQ(render_engine_->num_registered(),
+            single_tree_total_geometry_count());
+
+  auto new_renderer = make_unique<DummyRenderEngine>();
+  DummyRenderEngine* other_renderer = new_renderer.get();
+  // The new renderer has no geometry assigned.
+  EXPECT_EQ(other_renderer->num_registered(), 0);
+  const string other_name = "other";
+  geometry_state_.AddRenderer(other_name, move(new_renderer));
+  // The new renderer only has the geometries with perception properties
+  // assigned.
+  EXPECT_EQ(other_renderer->num_registered(),
+            single_tree_total_geometry_count());
+
+  EXPECT_FALSE(other_renderer->has_geometry(id_no_perception));
+
+  for (const GeometryId id : geometries_) {
+    EXPECT_TRUE(other_renderer->has_geometry(id));
+  }
+}
+
 // Successful invocations of AddRenderer are implicit in SetupSingleSource().
 // This merely tests the error conditions.
 TEST_F(GeometryStateTest, AddRendererError) {
@@ -3037,15 +3065,6 @@ TEST_F(GeometryStateTest, AddRendererError) {
       geometry_state_.AddRenderer(kName, make_unique<DummyRenderEngine>()),
       std::logic_error,
       fmt::format("AddRenderer..: A renderer with the name '{}' already exists",
-                  kName));
-
-  // Geometry has been registered.
-  SetUpSingleSourceTree();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.AddRenderer(kName, make_unique<DummyRenderEngine>()),
-      std::logic_error,
-      fmt::format("AddRenderer..: Error adding renderer '{}'; geometries have "
-                  "already been registered",
                   kName));
 }
 
@@ -3072,8 +3091,8 @@ TEST_F(GeometryStateTest, RendererPoseUpdate) {
   // Reality check -- all geometries report as part of both engines.
   for (int i = 0; i < single_tree_dynamic_geometry_count(); ++i) {
     const InternalGeometry* geometry = gs_tester_.GetGeometry(geometries_[i]);
-    EXPECT_TRUE(geometry->in_renderer(kDummyRenderName));
-    EXPECT_TRUE(geometry->in_renderer(second_engine_name));
+    EXPECT_TRUE(render_engine_->has_geometry(geometry->id()));
+    EXPECT_TRUE(second_engine->has_geometry(geometry->id()));
   }
 
   EXPECT_EQ(second_engine->updated_ids().size(), 0u);

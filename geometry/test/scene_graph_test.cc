@@ -776,16 +776,17 @@ GTEST_TEST(SceneGraphRenderTest, AddRenderer) {
       scene_graph.AddRenderer("unique", make_unique<DummyRenderEngine>()),
       std::logic_error);
 
-  // Adding a renderer _after_ geometry registration.
+  // Adding a renderer _after_ geometry registration. We rely on geometry state
+  // tests to confirm that the right thing happens; this just confirms that it's
+  // not an error in the SceneGraph API.
   SourceId s_id = scene_graph.RegisterSource("dummy");
   scene_graph.RegisterGeometry(
       s_id, scene_graph.world_frame_id(),
       make_unique<GeometryInstance>(Isometry3<double>::Identity(),
                                     make_unique<Sphere>(1.0), "sphere"));
 
-  EXPECT_THROW(
-      scene_graph.AddRenderer("different", make_unique<DummyRenderEngine>()),
-      std::logic_error);
+  EXPECT_NO_THROW(
+      scene_graph.AddRenderer("different", make_unique<DummyRenderEngine>()));
 }
 
 }  // namespace

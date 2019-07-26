@@ -226,28 +226,6 @@ class InternalGeometry {
     return nullptr;
   }
 
-  /** Informs this geometry that it is registered to the given named render
-   engine.
-   @pre This geometry doesn't already have this renderer name.
-   @pre The `renderer_name` is a name for a valid renderer.  */
-  void set_renderer(std::string renderer_name);
-
-  /** Reports true if this geometry knows that it is registered with a render
-   engine with the given name.  */
-  bool in_renderer(const std::string& renderer_name) const {
-    return renderers_.count(renderer_name) > 0;
-  }
-
-  /** Clears this geometry's knowledge that it has been registered with the
-   named render engine. If the geometry doesn't know about the given name,
-   nothing happens.
-   @note This leaves the properties intact; it makes no effort to divine which
-   properties caused this geometry to be accepted by that renderer or its
-   uniqueness (both would be required for removing those properties).  */
-  void ClearRenderer(const std::string& renderer_name) {
-    renderers_.erase(renderer_name);
-  }
-
   /** Removes the proximity role assigned to this geometry -- if there was
    no proximity role previously, this has no effect.  */
   void RemoveProximityRole() {
@@ -264,7 +242,6 @@ class InternalGeometry {
    no perception role previously, this has no effect.  */
   void RemovePerceptionRole() {
     perception_props_ = nullopt;
-    renderers_.clear();
   }
 
   //@}
@@ -307,9 +284,6 @@ class InternalGeometry {
   optional<ProximityProperties> proximity_props_{};
   optional<IllustrationProperties> illustration_props_{};
   optional<PerceptionProperties> perception_props_{};
-
-  // The renderers in which this geometry is registered.
-  std::unordered_set<std::string> renderers_;
 };
 
 }  // namespace internal
