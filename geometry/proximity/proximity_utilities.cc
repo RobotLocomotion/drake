@@ -4,6 +4,11 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+std::ostream& operator<<(std::ostream& out, const ShapeName& name) {
+  out << name.string();
+  return out;
+}
+
 std::string GetGeometryName(const fcl::CollisionObjectd& object) {
   switch (object.collisionGeometry()->getNodeType()) {
     case fcl::BV_UNKNOWN:
