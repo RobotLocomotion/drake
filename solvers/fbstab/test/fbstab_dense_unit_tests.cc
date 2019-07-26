@@ -66,10 +66,10 @@ GTEST_TEST(FBstabDense, FeasibleQP) {
 
   FBstabDense solver(n, q);
   solver.UpdateOption("abs_tol", 1e-8);
-  solver.SetDisplayLevel(FBstabAlgoDense::OFF);
+  solver.SetDisplayLevel(FBstabAlgoDense::Display::OFF);
   SolverOut out = solver.Solve(data, &x0);
 
-  ASSERT_EQ(out.eflag, SUCCESS);
+  ASSERT_EQ(out.eflag, ExitFlag::SUCCESS);
 
   VectorXd zopt(2);
   VectorXd vopt(2);
@@ -132,10 +132,10 @@ GTEST_TEST(FBstabDense, DegenerateQP) {
 
   FBstabDense solver(n, q);
   solver.UpdateOption("abs_tol", 1e-8);
-  solver.SetDisplayLevel(FBstabAlgoDense::OFF);
+  solver.SetDisplayLevel(FBstabAlgoDense::Display::OFF);
   SolverOut out = solver.Solve(data, &x0);
 
-  ASSERT_EQ(out.eflag, SUCCESS);
+  ASSERT_EQ(out.eflag, ExitFlag::SUCCESS);
   EXPECT_NEAR(z0(0), 1, 1e-8);
   EXPECT_TRUE((z0(1) >= 1) && (z0(1) <= 3));
 }
@@ -188,10 +188,10 @@ GTEST_TEST(FBstabDense, InfeasibleQP) {
 
   FBstabDense solver(n, q);
   solver.UpdateOption("abs_tol", 1e-8);
-  solver.SetDisplayLevel(FBstabAlgoDense::OFF);
+  solver.SetDisplayLevel(FBstabAlgoDense::Display::OFF);
   SolverOut out = solver.Solve(data, &x0);
 
-  ASSERT_EQ(out.eflag, PRIMAL_INFEASIBLE);
+  ASSERT_EQ(out.eflag, ExitFlag::PRIMAL_INFEASIBLE);
 }
 
 /**
@@ -241,10 +241,10 @@ GTEST_TEST(FBstabDense, UnboundedQP) {
 
   FBstabDense solver(n, q);
   solver.UpdateOption("abs_tol", 1e-8);
-  solver.SetDisplayLevel(FBstabAlgoDense::OFF);
+  solver.SetDisplayLevel(FBstabAlgoDense::Display::OFF);
   SolverOut out = solver.Solve(data, &x0);
 
-  ASSERT_EQ(out.eflag, DUAL_INFEASIBLE);
+  ASSERT_EQ(out.eflag, ExitFlag::DUAL_INFEASIBLE);
 }
 
 }  // namespace test

@@ -1,18 +1,20 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdio>
-#include <iostream>
-#include <algorithm>
 #include <cstring>
+#include <iostream>
+
+#include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace solvers {
 namespace fbstab {
 
 // Return codes for the solver.
-enum ExitFlag {
+enum class ExitFlag {
   SUCCESS = 0,
   DIVERGENCE = 1,
   MAXITERATIONS = 2,
@@ -26,10 +28,10 @@ enum ExitFlag {
  * and iteration counts.
  */
 struct SolverOut {
-  ExitFlag eflag;
-  double residual;
-  int newton_iters;
-  int prox_iters;
+  ExitFlag eflag = ExitFlag::MAXITERATIONS;
+  double residual = 0.0;
+  int newton_iters = 0;
+  int prox_iters = 0;
 };
 
 /**
@@ -49,7 +51,7 @@ struct SolverOut {
  * These are template parameters for the class and
  * should be written so as to be efficient for specific classes
  * of QPs, e.g., model predictive control QPs or sparse QPs.
- * 
+ *
  * The algorithm exits when: ||π(x)|| <= abs_tol + ||π(x0)|| rel_tol
  * where π is the natural residual function,
  * (17) in https://arxiv.org/pdf/1901.04046.pdf.
@@ -65,7 +67,7 @@ template <class Variable, class Residual, class Data, class LinearSolver,
 class FBstabAlgorithm {
  public:
   /** Display settings */
-  enum Display {
+  enum class Display {
     OFF = 0,           // no display
     FINAL = 1,         // prints message upon completion
     ITER = 2,          // basic information at each outer loop iteration
@@ -117,7 +119,8 @@ class FBstabAlgorithm {
    * data starting from the supplied initial guess.
    *
    * @param[in] qp_data problem data
-   * @param[in,out] x0    initial primal-dual guess, overwritten with the solution
+   * @param[in,out] x0    initial primal-dual guess, overwritten with the
+   * solution
    *
    * @return Details on the solver output
    */
@@ -127,14 +130,14 @@ class FBstabAlgorithm {
    * Allows setting of algorithm options.
    * @param[in] option option name
    * @param[in] value  new value
-   * 
+   *
    * Possible options and default parameters are:
    * - sigma0{1e-8}: Initial stabilization parameter
    * - alpha{0.95}:  Penalized FB function parameter
    * - beta{0.7}:    Backtracking linesearch parameter
    * - eta{1e-8}:    Sufficient decrease parameter
    * - inner_tol_multiplier{0.2}: Reduction factor for subproblem tolerance
-   * 
+   *
    * - abs_tol{1e-6}: Absolute tolerance
    * - rel_tol{1e-12}: Relative tolerance
    * - stall_tol{1e-10}: Tolerance on ||dx||
@@ -172,7 +175,7 @@ class FBstabAlgorithm {
     } else if (std::strcmp(option, "eta") == 0) {
       eta_ = std::max(value, 1e-12);
       eta_ = std::min(eta_, 0.499);
-    } else if (std::strcmp(option, "inner_tol_multiplier") ==0) {
+    } else if (std::strcmp(option, "inner_tol_multiplier") == 0) {
       inner_tol_multiplier_ = std::max(value, 0.0001);
       inner_tol_multiplier_ = std::min(inner_tol_multiplier_, 0.99);
     } else if (std::strcmp(option, "inner_tol_max") == 0) {
@@ -188,13 +191,13 @@ class FBstabAlgorithm {
 
   void UpdateOption(const char* option, int value) {
     if (std::strcmp(option, "max_newton_iters") == 0) {
-      max_newton_iters_ = std::max(value, 1);  
+      max_newton_iters_ = std::max(value, 1);
     } else if (std::strcmp(option, "max_prox_iters") == 0) {
-      max_prox_iters_ = std::max(value, 1);  
+      max_prox_iters_ = std::max(value, 1);
     } else if (std::strcmp(option, "max_inner_iters") == 0) {
-      max_inner_iters_ = std::max(value, 1);  
+      max_inner_iters_ = std::max(value, 1);
     } else if (std::strcmp(option, "max_linesearch_iters") == 0) {
-      max_linesearch_iters_ = std::max(value, 1); 
+      max_linesearch_iters_ = std::max(value, 1);
     } else {
       printf("%s is not an option, no action taken\n", option);
     }
@@ -207,8 +210,10 @@ class FBstabAlgorithm {
     }
   }
 
-  /** Acessor for display_level_ */
-  Display& display_level() { return display_level_; }
+  /** Getter for display_level_ */
+  Display get_display_level() { return display_level_; }
+  /** Setter for display_level_ */
+  void set_display_level(Display v) { display_level_ = v; }
 
  private:
   // Codes for infeasibility detection.
@@ -258,7 +263,7 @@ class FBstabAlgorithm {
 
   bool check_feasibility_ = true;
 
-  /**
+  /*
    * Attempts to solve a proximal subproblem x = P(xbar,sigma) using
    * the semismooth Newton's method. See (11) in
    * https://arxiv.org/pdf/1901.04046.pdf.
@@ -297,8 +302,9 @@ class FBstabAlgorithm {
     return status;
   }
 
-  static constexpr int knonmonotone_linesearch = 5;
-  std::array<double, knonmonotone_linesearch> merit_buffer_ = {
+  static constexpr int kNonMonotoneLineSearch = 5;
+  static_assert(kNonMonotoneLineSearch > 0,"kNonMonotoneLineSearch must be positive");
+  std::array<double, kNonMonotoneLineSearch> merit_buffer_ = {
       {0.0, 0.0, 0.0, 0.0, 0.0}};
 
   /**
@@ -313,31 +319,28 @@ class FBstabAlgorithm {
   }
 
   // @return maximum value in merit_buffer_
-  double MaxMerit() {
-    double current_max = merit_buffer_.at(0);
-    for (int i = 1; i < static_cast<int>(merit_buffer_.size()); i++) {
-      if (merit_buffer_.at(i) > current_max) {
-        current_max = merit_buffer_.at(i);
-      }
-    }
-    return current_max;
+  double MaxMerit() const {
+    return *std::max_element(merit_buffer_.begin(), merit_buffer_.end());
   }
 
   // Projects x onto [a,b].
   template <class T>
-  static T saturate(const T& x, T a, T b) {
-    if(a > b){
-      throw std::runtime_error("In FBstabAlgorithm::saturate: upper bound must be larger than the lower bound");
+  static T saturate(const T& x, const T& a, const T& b) {
+    if (a > b) {
+      throw std::runtime_error(
+          "In FBstabAlgorithm::saturate: upper bound must be larger than the "
+          "lower bound");
     }
-    const T temp = std::min(x, b); 
-    return std::max(temp, a);      
+    const T temp = std::min(x, b);
+    return std::max(temp, a);
   }
 
-  FBstabAlgorithm::Display display_level_ = FINAL;  // Default display settings.
+  // Default display settings.
+  FBstabAlgorithm::Display display_level_ = Display::FINAL;
 
   // Prints a header line to stdout depending on display settings.
   void PrintIterHeader() {
-    if (display_level_ == ITER) {
+    if (display_level_ == Display::ITER) {
       printf("%12s  %12s  %12s  %12s  %12s  %12s  %12s\n", "prox iter",
              "newton iters", "|rz|", "|rl|", "|rv|", "Inner res", "Inner tol");
     }
@@ -346,7 +349,7 @@ class FBstabAlgorithm {
   // Prints an iteration progress line to stdout depending on display settings.
   void PrintIterLine(int prox_iters, int newton_iters, const Residual& rk,
                      const Residual& ri, double itol) {
-    if (display_level_ == ITER) {
+    if (display_level_ == Display::ITER) {
       printf("%12d  %12d  %12.4e  %12.4e  %12.4e  %12.4e  %12.4e\n", prox_iters,
              newton_iters, rk.z_norm(), rk.l_norm(), rk.v_norm(), ri.Norm(),
              itol);
@@ -356,7 +359,7 @@ class FBstabAlgorithm {
   // Prints a detailed header line to stdout depending on display settings.
   void PrintDetailedHeader(int prox_iters, int newton_iters,
                            const Residual& r) {
-    if (display_level_ == ITER_DETAILED) {
+    if (display_level_ == Display::ITER_DETAILED) {
       double t = r.Norm();
       printf("Begin Prox Iter: %d, Total Newton Iters: %d, Residual: %6.4e\n",
              prox_iters, newton_iters, t);
@@ -368,7 +371,7 @@ class FBstabAlgorithm {
   // Prints inner loop iterations details to stdout depending on display
   // settings.
   void PrintDetailedLine(int iter, double step_length, const Residual& r) {
-    if (display_level_ == ITER_DETAILED) {
+    if (display_level_ == Display::ITER_DETAILED) {
       printf("%10d  %10e  %10e  %10e  %10e\n", iter, step_length, r.z_norm(),
              r.l_norm(), r.v_norm());
     }
@@ -376,7 +379,7 @@ class FBstabAlgorithm {
 
   // Prints a footer to stdout depending on display settings.
   void PrintDetailedFooter(double tol, const Residual& r) {
-    if (display_level_ == ITER_DETAILED) {
+    if (display_level_ == Display::ITER_DETAILED) {
       printf(
           "Exiting inner loop. Inner residual: %6.4e, Inner tolerance: %6.4e\n",
           r.Norm(), tol);
@@ -385,26 +388,29 @@ class FBstabAlgorithm {
   // Prints a summary to stdout depending on display settings.
   void PrintFinal(int prox_iters, int newton_iters, ExitFlag eflag,
                   const Residual& r) {
-    if (display_level_ >= FINAL) {
+    if (display_level_ >= Display::FINAL) {
       printf("Optimization completed!  Exit code:");
       switch (eflag) {
-        case SUCCESS:
+        case ExitFlag::SUCCESS:
           printf(" Success\n");
           break;
-        case DIVERGENCE:
+        case ExitFlag::DIVERGENCE:
           printf(" Divergence\n");
           break;
-        case MAXITERATIONS:
+        case ExitFlag::MAXITERATIONS:
           printf(" Iteration limit exceeded\n");
           break;
-        case PRIMAL_INFEASIBLE:
+        case ExitFlag::PRIMAL_INFEASIBLE:
           printf(" Primal Infeasibility\n");
           break;
-        case DUAL_INFEASIBLE:
+        case ExitFlag::DUAL_INFEASIBLE:
           printf(" Dual Infeasibility\n");
           break;
+        case ExitFlag::PRIMAL_DUAL_INFEASIBLE:
+        printf(" Primal-Dual Infeasibility\n");
+          break;
         default:
-          printf(" ???\n");
+          DRAKE_UNREACHABLE();
       }
       printf("Proximal iterations: %d out of %d\n", prox_iters,
              max_prox_iters_);
@@ -432,7 +438,7 @@ SolverOut FBstabAlgorithm<Variable, Residual, Data, LinearSolver,
   linear_solver_->SetAlpha(alpha_);
 
   struct SolverOut output = {
-      MAXITERATIONS,  // exit flag
+     ExitFlag::MAXITERATIONS,  // exit flag
       0.0,            // residual
       0,              // prox iters
       0               // newton iters
@@ -446,7 +452,7 @@ SolverOut FBstabAlgorithm<Variable, Residual, Data, LinearSolver,
   x0->LinkData(qp_data);
 
   // Initialization phase.
-  double sigma_ = sigma0_;
+  const double sigma = sigma0_;
 
   x0->InitializeConstraintMargin();
   xk_->Copy(*x0);
@@ -470,7 +476,7 @@ SolverOut FBstabAlgorithm<Variable, Residual, Data, LinearSolver,
     rk_->PenalizedNaturalResidual(*xk_);
     Ek = rk_->Norm();
     if (Ek <= abs_tol_ + E0 * rel_tol_ || dx_->Norm() <= stall_tol_) {
-      output.eflag = SUCCESS;
+      output.eflag = ExitFlag::SUCCESS;
       output.residual = Ek;
       output.newton_iters = newton_iters_;
       output.prox_iters = prox_iters_;
@@ -493,9 +499,9 @@ SolverOut FBstabAlgorithm<Variable, Residual, Data, LinearSolver,
 
     // Solve the proximal subproblem.
     xi_->Copy(*xk_);
-    double Eo = SolveProximalSubproblem(xi_, xk_, inner_tol, sigma_, Ek);
+    const double Eo = SolveProximalSubproblem(xi_, xk_, inner_tol, sigma, Ek);
     if (newton_iters_ >= max_newton_iters_) {
-      output.eflag = MAXITERATIONS;
+      output.eflag = ExitFlag::MAXITERATIONS;
       if (Eo < Ek) {
         x0->Copy(*xi_);
         output.residual = Eo;
@@ -518,11 +524,11 @@ SolverOut FBstabAlgorithm<Variable, Residual, Data, LinearSolver,
       InfeasibilityStatus status = CheckInfeasibility(*dx_);
       if (status != FEASIBLE) {
         if (status == PRIMAL) {
-          output.eflag = PRIMAL_INFEASIBLE;
+          output.eflag = ExitFlag::PRIMAL_INFEASIBLE;
         } else if (status == DUAL) {
-          output.eflag = DUAL_INFEASIBLE;
+          output.eflag = ExitFlag::DUAL_INFEASIBLE;
         } else if (status == BOTH) {
-          output.eflag = PRIMAL_DUAL_INFEASIBLE;
+          output.eflag = ExitFlag::PRIMAL_DUAL_INFEASIBLE;
         }
         output.residual = Ek;
         output.newton_iters = newton_iters_;
@@ -538,7 +544,7 @@ SolverOut FBstabAlgorithm<Variable, Residual, Data, LinearSolver,
   }  // end proximal loop
 
   // Timeout exit.
-  output.eflag = MAXITERATIONS;
+  output.eflag = ExitFlag::MAXITERATIONS;
   output.residual = Ek;
   output.newton_iters = newton_iters_;
   output.prox_iters = prox_iters_;
@@ -553,7 +559,7 @@ template <class Variable, class Residual, class Data, class LinearSolver,
 double FBstabAlgorithm<Variable, Residual, Data, LinearSolver, Feasibility>::
     SolveProximalSubproblem(Variable* x, Variable* xbar, double tol,
                             double sigma, double current_outer_residual) {
-  merit_buffer_.fill(0.0); // Clear the buffer of past merit function values.
+  merit_buffer_.fill(0.0);  // Clear the buffer of past merit function values.
 
   double Eo = 0;   // KKT residual.
   double t = 1.0;  // Linesearch parameter.

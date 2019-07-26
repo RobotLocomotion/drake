@@ -16,7 +16,6 @@ namespace drake {
 namespace solvers {
 namespace fbstab {
 
-
 /**
  * Structure to hold the problem data.
  * Fields:
