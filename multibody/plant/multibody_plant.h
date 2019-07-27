@@ -1846,6 +1846,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if `J_WFp` is nullptr or if it is not of size
   ///   `6 x nv`.
+  // TODO(Mitiguy) Uncomment the next line when this is removed from Python.
   // DRAKE_DEPRECATED("2019-10-01", "Use CalcJacobianSpatialVelocity().")
   void CalcFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
@@ -2006,70 +2007,59 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, with_respect_to, frame_F, p_FoFp_F, frame_A, frame_E);
   }
 
-  /// Computes the Jacobian of spatial velocity for a frame instantaneously
-  /// moving with a specified frame in the model. Consider a point P
-  /// instantaneously moving with a frame B with position `p_BP` in that frame.
-  /// Frame `Bp` is the frame defined by shifting frame B with origin at `Bo` to
-  /// a new origin at point P. The spatial velocity `V_ABp_E` of frame `Bp`
-  /// measured in a frame A and expressed in a frame E can be expressed as:
+  /// For each point Bi of (fixed to) a frame B with spatial velocity
+  /// `v_ABi` in a frame A, calculates Bi's spatial velocity Jacobian in A
+  /// with respect to 𝑠, which is defined as
   /// <pre>
-  ///   V_ABp_E(q, w) = Jw_ABp_E(q)⋅w
+  ///      Js_V_ABi = [ ∂(V_ABi)/∂𝑠₁,  ...  ∂(V_ABi)/∂𝑠ₙ ]    (n is j or k)
   /// </pre>
-  /// where w represents
-  ///   * the time derivative of the generalized position vector q̇, if
-  ///     `with_respect_to` is JacobianWrtVariable::kQDot.
-  ///   * the generalized velocity vector v, if `with_respect_to` is
-  ///     JacobianWrtVariable::kV.
+  /// where "speeds" 𝑠 is either q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j
+  /// generalized positions) or v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+  /// Note: Spatial velocity `V_ABi` is linear in 𝑠₁, ... 𝑠ₙ and can be written
+  /// `V_ABi = Js_V_ABi ⋅ 𝑠`  where 𝑠 is [𝑠₁ ... 𝑠ₙ]ᵀ.
   ///
-  /// This method computes `Jw_ABp_E(q)`.
-  ///
-  /// @param[in] context
-  ///   The context containing the state of the model. It stores the
-  ///   generalized positions q.
-  /// @param[in] with_respect_to
-  ///   Enum indicating whether `Jw_ABp_E` converts generalized velocities or
-  ///   time-derivatives of generalized positions to spatial velocities.
-  /// @param[in] frame_B
-  ///   The position `p_BP` of point P is measured and expressed in this frame.
-  /// @param[in] p_BP
-  ///   The (fixed) position of the origin `P` of frame `Bp` as measured and
-  ///   expressed in frame B.
-  /// @param[in] frame_A
-  ///   The second frame in which the spatial velocity `V_ABp` is measured.
-  /// @param[in] frame_E
-  ///   Frame in which the velocity V_ABp_E, and therefore the Jacobian Jw_ABp_E
-  ///   is expressed.
-  /// @param[out] Jw_ABp_E
-  ///   The Jacobian `Jw_ABp_E(q)`, function of the generalized
-  ///   positions q only. This Jacobian relates to the spatial velocity
-  ///   `V_ABp_E` of frame `Bp` in `A` and expressed in `E` by: <pre>
-  ///     V_ABp_E(q, w) = Jw_ABp_E(q)⋅w </pre>
-  ///   Therefore `Jw_ABp_E` is a matrix of size `6 x nz`, where `nz` is the
-  ///   number of elements in w. On input, matrix `Jv_ABp_E` **must** have size
-  ///   `6 x nz` or this method throws an exception. Given a `6 x nz` Jacobian
-  ///   J, let Jr be the `3 x nz` rotational part (top 3 rows) and Jt be the
-  ///   translational part (bottom 3 rows). These can be obtained as follows:
+  /// @param[in] context The state of the multibody system.
+  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `Js_V_ABi` is
+  /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
+  /// positions) or with respect to 𝑠 = v (generalized velocities).
+  /// @param[in] frame_B The frame on which point Bi is fixed (e.g., welded).
+  /// @param[in] p_BoBi_B A position vector or list of p position vectors from
+  /// Bo (frame_B's origin) to points Bi (regarded as fixed to B), where each
+  /// position vector is expressed in frame_B.
+  /// @param[in] frame_A The frame that measures `v_ABi` (Bi's velocity in A).
+  /// @param[in] frame_E The frame in which `v_ABi` is expressed on input and
+  /// the frame in which the Jacobian `Js_V_ABi` is expressed on output.
+  /// @param[out] Js_V_ABi_E Point Bi's spatial velocity Jacobian in frame A
+  /// with respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
+  /// `Js_V_ABi_E` is a `3*p x n` matrix, where p is the number of points Bi and
+  /// n is the number of elements in 𝑠.  The Jacobian is a function of only
+  /// generalized positions q (which are pulled from the context).
+  /// Note: If p = 1 (one point), a `6 x n` matrix is returned with the first
+  /// three rows storing frame B's angular velocity Jacobian in A and rows 4-6
+  /// storing point Bi's translational velocity Jacobian in A, i.e.,
   ///   ```
-  ///     Jr_ABp_E = Jw_ABp_E.topRows<3>();
-  ///     Jt_ABp_E = Jw_ABp_E.bottomRows<3>();
+  ///     Js_wAB_E = Js_V_ABi_E.topRows<3>();
+  ///     Js_vAB1_E = Js_V_ABi_E.bottomRows<3>();
   ///   ```
-  ///   This ordering is consistent with the internal storage of the
-  ///   SpatialVelocity class. Therefore the following operations results in
-  ///   a valid spatial velocity: <pre>
-  ///     SpatialVelocity<double> V_ABp(Jw_ABp * w); </pre>
-  ///
-  /// @throws std::exception if `Jw_ABp_E` is nullptr or if it is not of size
-  ///   `6 x nz`.
+  /// If p = 2 (two points), a `12 x n` matrix is returned.  Rows 1-3 and 7-9
+  /// store exactly identical information (B's angular velocity Jacobian in A).
+  /// Rows 4-6 store point B1's translational velocity Jacobian which differs
+  /// from rows 10-12 which store point B2's translational velocity Jacobian.
+  /// If p is large and storage efficiency is a concern, calculate frame B's
+  /// angular velocity Jacobian using CalcJacobianAngularVelocity() and then use
+  /// CalcJacobianTranslationalVelocity().
+  /// @throws std::exception if `Js_V_ABi_E` is nullptr or not sized `3*p x n`.
   void CalcJacobianSpatialVelocity(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_B,
-      const Eigen::Ref<const Vector3<T>>& p_BP,
+      const Eigen::Ref<const Vector3<T>>& p_BoBi_B,
       const Frame<T>& frame_A,
       const Frame<T>& frame_E,
       EigenPtr<MatrixX<T>> Jw_ABp_E) const {
     internal_tree().CalcJacobianSpatialVelocity(
-        context, with_respect_to, frame_B, p_BP, frame_A, frame_E, Jw_ABp_E);
+       context, with_respect_to, frame_B, p_BoBi_B, frame_A, frame_E, Jw_ABp_E);
   }
 
   /// Returns a frame B's angular velocity Jacobian in a frame A with respect
@@ -2108,16 +2098,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, with_respect_to, frame_B, frame_A, frame_E, Js_w_AB_E);
   }
 
-  /// Return a point's translational velocity Jacobian in a frame A with respect
-  /// to "speeds" 𝑠, where 𝑠 is either q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of
-  /// j generalized positions) or v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
-  /// For each point Bi of (fixed to) a frame B whose translational velocity
-  /// `v_ABi` in a frame A is characterized by speeds 𝑠, Bi's velocity Jacobian
-  /// in A with respect to 𝑠 is defined as
+  /// For each point Bi of (fixed to) a frame B with translational velocity
+  /// `v_ABi` in a frame A, calculates Bi's translational velocity Jacobian in A
+  /// with respect to 𝑠, which is defined as
   /// <pre>
   ///      Js_v_ABi = [ ∂(v_ABi)/∂𝑠₁,  ...  ∂(v_ABi)/∂𝑠ₙ ]    (n is j or k)
   /// </pre>
-  /// Point Bi's velocity in A is linear in 𝑠₁, ... 𝑠ₙ and can be written
+  /// where "speeds" 𝑠 is either q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j
+  /// generalized positions) or v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
+  /// Note: Point Bi's velocity in A is linear in 𝑠₁, ... 𝑠ₙ and can be written
   /// `v_ABi = Js_v_ABi ⋅ 𝑠`  where 𝑠 is [𝑠₁ ... 𝑠ₙ]ᵀ.
   ///
   /// @param[in] context The state of the multibody system.

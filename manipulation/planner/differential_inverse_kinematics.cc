@@ -246,8 +246,11 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   const math::RigidTransform<double> X_WE =
       plant.CalcRelativeTransform(context, plant.world_frame(), frame_E);
   MatrixX<double> J_WE(6, plant.num_velocities());
-  plant.CalcFrameGeometricJacobianExpressedInWorld(
-      context, frame_E, Vector3<double>::Zero(), &J_WE);
+  const multibody::Frame<double>& frame_W = plant.world_frame();
+  plant.CalcJacobianSpatialVelocity(context,
+                                    multibody::JacobianWrtVariable::kV,
+                                    frame_E, Vector3<double>::Zero(),
+                                    frame_W, frame_W, &J_WE);
 
   return internal::DoDifferentialInverseKinematics(
       plant.GetPositions(context), plant.GetVelocities(context),

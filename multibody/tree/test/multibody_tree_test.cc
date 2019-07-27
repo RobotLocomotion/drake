@@ -434,10 +434,9 @@ class KukaIiwaModelTests : public ::testing::Test {
   // Computes the frame geometric Jacobian Jv_WHp for frame Hp which is the
   // frame H (attached to the end effector, see test fixture docs) shifted to
   // have its origin at Po. Po's position p_HPo is specified in frame H.
-  // See MultibodyTree::CalcFrameGeometricJacobianExpressedInWorld() for
-  // details.
+  // See MultibodyTree::CalcJacobianSpatialVelocity() for details.
   template <typename T>
-  void CalcFrameHpGeometricJacobian(
+  void CalcFrameHpJacobianSpatialVelocityInWorld(
       const MultibodyTree<T>& model_on_T,
       const Context<T>& context_on_T,
       const Vector3<T>& p_HPo, MatrixX<T>* Jv_WHp) const {
@@ -975,7 +974,7 @@ TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
                               kTolerance, MatrixCompareType::relative));
 }
 
-TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
+TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityInWorld) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = tree().num_positions();
   const int kNumStates = tree().num_states();
@@ -1033,7 +1032,7 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
                                      frame_W, frame_W,
                                      &Jv_WF);
 
-   // Verify that V_WEf = Jv_WF * v:
+  // Verify that V_WEf = Jv_WF * v:
   const SpatialVelocity<double> Jv_WF_times_v(Jv_WF * v);
 
   EXPECT_TRUE(Jv_WF_times_v.IsApprox(V_WEf, kTolerance));
@@ -1098,7 +1097,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianSpatialVelocity) {
   MatrixX<AutoDiffXd> Jv_WHp_autodiff(6, kNumVelocities);
 
   // Compute J̇_WHp using AutoDiffXd.
-  CalcFrameHpGeometricJacobian(
+  CalcFrameHpJacobianSpatialVelocityInWorld(
       tree_autodiff(), *context_autodiff_, p_HPo_autodiff, &Jv_WHp_autodiff);
 
   // Extract time derivatives:
@@ -1169,8 +1168,7 @@ TEST_F(KukaIiwaModelTests, FrameGeometricJacobianForTheWorldFrame) {
   const int nv = tree().num_velocities();
 
   // We set the output Jacobian to garbage so that upon returning from
-  // CalcFrameGeometricJacobianExpressedInWorld() we can verify it was
-  // properly set to zero.
+  // CalcJacobianSpatialVelocity() we can verify it was properly set to zero.
   MatrixX<double> Jv_WP = MatrixX<double>::Constant(6, nv, M_E);
 
   // The state stored in the context should not affect the result of this test.
