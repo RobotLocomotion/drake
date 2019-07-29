@@ -27,10 +27,10 @@ class MidPointIntegrationConstraint : public solvers::Constraint {
                 const Eigen::Ref<const VectorX<T>>& xdot_l, const T& dt,
                 VectorX<T>* x) const {
     x->resize(num_vars());
-    x->template head(dim_) = x_r;
-    x->template segment(dim_, dim_) = x_l;
-    x->template segment(2 * dim_, dim_) = xdot_r;
-    x->template segment(3 * dim_, dim_) = xdot_l;
+    x->head(dim_) = x_r;
+    x->segment(dim_, dim_) = x_l;
+    x->segment(2 * dim_, dim_) = xdot_r;
+    x->segment(3 * dim_, dim_) = xdot_l;
     (*x)(num_vars() - 1) = dt;
   }
 
@@ -39,10 +39,10 @@ class MidPointIntegrationConstraint : public solvers::Constraint {
   void DecomposeX(const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* x_r,
                   VectorX<T>* x_l, VectorX<T>* xdot_r, VectorX<T>* xdot_l,
                   T* dt) const {
-    *x_r = x.template head(dim_);
-    *x_l = x.template segment(dim_, dim_);
-    *xdot_r = x.template segment(2 * dim_, dim_);
-    *xdot_l = x.template segment(3 * dim_, dim_);
+    *x_r = x.head(dim_);
+    *x_l = x.segment(dim_, dim_);
+    *xdot_r = x.segment(2 * dim_, dim_);
+    *xdot_l = x.segment(3 * dim_, dim_);
     *dt = x(num_vars() - 1);
   }
 
