@@ -1,3 +1,11 @@
+/**
+ * @file Unit tests for FBstabDense
+ * which is designed to solve QPs of the form:
+ *
+ * min  0.5 z'Hz + f'z
+ * s.t. Az <= b
+ *
+ */
 #include <cmath>
 
 #include <Eigen/Dense>
@@ -13,14 +21,6 @@ namespace test {
 using MatrixXd = Eigen::MatrixXd;
 using VectorXd = Eigen::VectorXd;
 
-/**
- * @file Unit tests for FBstabDense
- * which is designed to solve QPs of the form:
- *
- * min  0.5 z'Hz + f'z
- * s.t. Az <= b
- *
- */
 
 /**
  * Tests FBstab with
@@ -49,7 +49,7 @@ GTEST_TEST(FBstabDense, FeasibleQP) {
   int n = f.size();
   int q = b.size();
 
-  DenseQPData data;
+  FBstabDense::QPData data;
   data.H = &H;
   data.f = &f;
   data.A = &A;
@@ -59,7 +59,7 @@ GTEST_TEST(FBstabDense, FeasibleQP) {
   VectorXd v0 = Eigen::VectorXd::Zero(q);
   VectorXd y0 = Eigen::VectorXd::Zero(q);
 
-  DenseQPVariable x0;
+  FBstabDense::QPVariable x0;
   x0.z = &z0;
   x0.v = &v0;
   x0.y = &y0;
@@ -115,7 +115,7 @@ GTEST_TEST(FBstabDense, DegenerateQP) {
   int n = f.size();
   int q = b.size();
 
-  DenseQPData data;
+  FBstabDense::QPData data;
   data.H = &H;
   data.f = &f;
   data.A = &A;
@@ -125,7 +125,7 @@ GTEST_TEST(FBstabDense, DegenerateQP) {
   VectorXd v0 = Eigen::VectorXd::Zero(q);
   VectorXd y0 = Eigen::VectorXd::Zero(q);
 
-  DenseQPVariable x0;
+  FBstabDense::QPVariable x0;
   x0.z = &z0;
   x0.v = &v0;
   x0.y = &y0;
@@ -171,7 +171,7 @@ GTEST_TEST(FBstabDense, InfeasibleQP) {
   int n = f.size();
   int q = b.size();
 
-  DenseQPData data;
+  FBstabDense::QPData data;
   data.H = &H;
   data.f = &f;
   data.A = &A;
@@ -181,7 +181,7 @@ GTEST_TEST(FBstabDense, InfeasibleQP) {
   VectorXd v0 = Eigen::VectorXd::Zero(q);
   VectorXd y0 = Eigen::VectorXd::Zero(q);
 
-  DenseQPVariable x0;
+  FBstabDense::QPVariable x0;
   x0.z = &z0;
   x0.v = &v0;
   x0.y = &y0;
@@ -224,7 +224,7 @@ GTEST_TEST(FBstabDense, UnboundedQP) {
   int n = f.size();
   int q = b.size();
 
-  DenseQPData data;
+  FBstabDense::QPData data;
   data.H = &H;
   data.f = &f;
   data.A = &A;
@@ -234,7 +234,7 @@ GTEST_TEST(FBstabDense, UnboundedQP) {
   VectorXd v0 = Eigen::VectorXd::Zero(q);
   VectorXd y0 = Eigen::VectorXd::Zero(q);
 
-  DenseQPVariable x0;
+  FBstabDense::QPVariable x0;
   x0.z = &z0;
   x0.v = &v0;
   x0.y = &y0;

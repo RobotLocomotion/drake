@@ -40,7 +40,7 @@ FBstabDense::FBstabDense(int num_variables, int num_constraints) {
       linear_solver_.get(), feasibility_checker_.get());
 }
 
-SolverOut FBstabDense::Solve(const DenseQPData& qp, const DenseQPVariable* x,
+SolverOut FBstabDense::Solve(const QPData& qp, const QPVariable* x,
                              bool use_initial_guess) {
   DenseData data(qp.H, qp.f, qp.A, qp.b);
   DenseVariable x0(x->z, x->v, x->y);

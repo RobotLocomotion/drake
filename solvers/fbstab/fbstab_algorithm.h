@@ -68,10 +68,10 @@ class FBstabAlgorithm {
  public:
   /** Display settings */
   enum class Display {
-    OFF = 0,           // no display
-    FINAL = 1,         // prints message upon completion
-    ITER = 2,          // basic information at each outer loop iteration
-    ITER_DETAILED = 3  // print detailed inner loop information
+    OFF = 0,           ///< no display
+    FINAL = 1,         ///< prints message upon completion
+    ITER = 2,          ///< basic information at each outer loop iteration
+    ITER_DETAILED = 3  ///< print detailed inner loop information
   };
 
   /**
@@ -167,23 +167,17 @@ class FBstabAlgorithm {
     } else if (std::strcmp(option, "sigma0") == 0) {
       sigma0_ = std::max(value, 1e-14);
     } else if (std::strcmp(option, "alpha") == 0) {
-      alpha_ = std::max(value, 0.001);
-      alpha_ = std::min(alpha_, 0.999);
+      alpha_ = saturate(value, 0.001, 0.999);
     } else if (std::strcmp(option, "beta") == 0) {
-      beta_ = std::max(value, 0.1);
-      beta_ = std::min(beta_, 0.99);
+      beta_ = saturate(value, 0.1, 0.99);
     } else if (std::strcmp(option, "eta") == 0) {
-      eta_ = std::max(value, 1e-12);
-      eta_ = std::min(eta_, 0.499);
+      eta_ = saturate(value, 1e-12, 0.499);
     } else if (std::strcmp(option, "inner_tol_multiplier") == 0) {
-      inner_tol_multiplier_ = std::max(value, 0.0001);
-      inner_tol_multiplier_ = std::min(inner_tol_multiplier_, 0.99);
+      inner_tol_multiplier_ = saturate(value, 0.0001, 0.99);
     } else if (std::strcmp(option, "inner_tol_max") == 0) {
-      inner_tol_max_ = std::max(value, 1e-8);
-      inner_tol_max_ = std::min(inner_tol_max_, 100.0);
+      inner_tol_max_ = saturate(value, 1e-8, 100.0);
     } else if (std::strcmp(option, "inner_tol_min") == 0) {
-      inner_tol_min_ = std::max(value, 1e-14);
-      inner_tol_min_ = std::min(inner_tol_min_, 1e-2);
+      inner_tol_min_ = saturate(value, 1e-14, 1e-2);
     } else {
       printf("%s is not an option, no action taken\n", option);
     }
@@ -211,7 +205,7 @@ class FBstabAlgorithm {
   }
 
   /** Getter for display_level_ */
-  Display get_display_level() { return display_level_; }
+  Display get_display_level() const { return display_level_; }
   /** Setter for display_level_ */
   void set_display_level(Display v) { display_level_ = v; }
 
@@ -263,6 +257,15 @@ class FBstabAlgorithm {
 
   bool check_feasibility_ = true;
 
+  // Default display settings.
+  FBstabAlgorithm::Display display_level_ = Display::FINAL;
+
+  static constexpr int kNonMonotoneLineSearch = 5;
+  static_assert(kNonMonotoneLineSearch > 0,
+                "kNonMonotoneLineSearch must be positive");
+  std::array<double, kNonMonotoneLineSearch> merit_buffer_ = {
+      {0.0, 0.0, 0.0, 0.0, 0.0}};
+
   /*
    * Attempts to solve a proximal subproblem x = P(xbar,sigma) using
    * the semismooth Newton's method. See (11) in
@@ -275,8 +278,7 @@ class FBstabAlgorithm {
    * @param[in]    Eouter Current overall problem residual
    * @return Residual for the outer problem evaluated at x
    *
-   * Note: Uses
-   * rk_, ri_, dx_, and xp_ as workspaces.
+   * This method uses the member variables rk_, ri_, dx_, and xp_ as workspaces.
    */
   double SolveProximalSubproblem(Variable* x, Variable* xbar, double tol,
                                  double sigma, double current_outer_residual);
@@ -301,12 +303,6 @@ class FBstabAlgorithm {
     }
     return status;
   }
-
-  static constexpr int kNonMonotoneLineSearch = 5;
-  static_assert(kNonMonotoneLineSearch > 0,
-                "kNonMonotoneLineSearch must be positive");
-  std::array<double, kNonMonotoneLineSearch> merit_buffer_ = {
-      {0.0, 0.0, 0.0, 0.0, 0.0}};
 
   /**
    * Shifts all elements in merit_buffer_ up one spot then inserts at [0].
@@ -335,9 +331,6 @@ class FBstabAlgorithm {
     const T temp = std::min(x, b);
     return std::max(temp, a);
   }
-
-  // Default display settings.
-  FBstabAlgorithm::Display display_level_ = Display::FINAL;
 
   // Prints a header line to stdout depending on display settings.
   void PrintIterHeader() {
