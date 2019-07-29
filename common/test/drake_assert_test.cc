@@ -24,6 +24,9 @@ GTEST_TEST(DrakeAssertTest, MatchingConfigTest) {
 #endif
 }
 
+// Note that Drake's styleguide forbids death tests, but our only choice here
+// is to use death tests because our implementation is documented to abort().
+
 GTEST_TEST(DrakeAssertDeathTest, DemandTest) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
   ASSERT_DEATH(
