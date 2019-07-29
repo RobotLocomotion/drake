@@ -73,6 +73,12 @@ class SequentialExpressionManager {
    */
   int num_samples() const { return num_samples_; }
 
+  /**
+   * Returns the number of rows for the sequential expression vector `name`.
+   * @pre `name` is associated with a registered sequential expression vector.
+   */
+  int num_rows(const std::string& name) const;
+
  private:
   int num_samples_{};
   std::unordered_map<std::string, std::pair<VectorX<symbolic::Variable>,

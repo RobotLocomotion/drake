@@ -64,6 +64,20 @@ PYBIND11_MODULE(trajectory_optimization, m) {
           [](const MultipleShooting& self, int index)
               -> VectorXDecisionVariable { return self.input(index); },
           doc.MultipleShooting.input.doc_1args)
+      .def("NewSequentialVariable",
+          [](MultipleShooting& self, int rows,
+              const std::string& name) -> VectorXDecisionVariable {
+            return self.NewSequentialVariable(rows, name);
+          },
+          py::arg("rows"), py::arg("name"),
+          doc.MultipleShooting.NewSequentialVariable.doc)
+      .def("GetSequentialVariableAtIndex",
+          [](const MultipleShooting& self, const std::string& name,
+              int index) -> VectorXDecisionVariable {
+            return self.GetSequentialVariableAtIndex(name, index);
+          },
+          py::arg("name"), py::arg("index"),
+          doc.MultipleShooting.GetSequentialVariableAtIndex.doc)
       .def("AddRunningCost",
           [](MultipleShooting& prog, const symbolic::Expression& g) {
             prog.AddRunningCost(g);
@@ -100,6 +114,10 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       .def("AddStateTrajectoryCallback",
           &MultipleShooting::AddStateTrajectoryCallback,
           doc.MultipleShooting.AddStateTrajectoryCallback.doc)
+      .def("AddCompleteTrajectoryCallback",
+          &MultipleShooting::AddCompleteTrajectoryCallback, py::arg("callback"),
+          py::arg("names"),
+          doc.MultipleShooting.AddCompleteTrajectoryCallback.doc)
       .def("SetInitialTrajectory", &MultipleShooting::SetInitialTrajectory,
           doc.MultipleShooting.SetInitialTrajectory.doc)
       .def("GetSampleTimes",
@@ -117,6 +135,12 @@ PYBIND11_MODULE(trajectory_optimization, m) {
               const solvers::MathematicalProgramResult&>(
               &MultipleShooting::GetStateSamples),
           doc.MultipleShooting.GetStateSamples.doc)
+      .def("GetSequentialVariableSamples",
+          overload_cast_explicit<Eigen::MatrixXd,
+              const solvers::MathematicalProgramResult&, const std::string&>(
+              &MultipleShooting::GetSequentialVariableSamples),
+          py::arg("result"), py::arg("name"),
+          doc.MultipleShooting.GetSequentialVariableSamples.doc)
       .def("ReconstructInputTrajectory",
           overload_cast_explicit<trajectories::PiecewisePolynomial<double>,
               const solvers::MathematicalProgramResult&>(

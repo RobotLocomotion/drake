@@ -45,6 +45,7 @@ TEST_F(SequentialExpressionManagerTests, RegisterAndSubstituteExpressionTest) {
   x_sequential.cwiseSqrt();
   VectorX<Variable> x_placeholder =
       dut_.RegisterSequentialExpressions(x_sequential.cast<Expression>(), "x");
+  EXPECT_EQ(dut_.num_rows("x"), num_variables_);
   MatrixX<Expression> placeholder_expression =
       x_placeholder * x_placeholder.transpose();
   for (int j = 0; j < num_samples_; ++j) {

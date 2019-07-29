@@ -157,6 +157,46 @@ MultipleShooting::AddStateTrajectoryCallback(
       {h_vars_, x_vars_});
 }
 
+solvers::Binding<solvers::VisualizationCallback>
+MultipleShooting::AddCompleteTrajectoryCallback(
+    const MultipleShooting::CompleteTrajectoryCallback& callback,
+    const std::vector<std::string>& names) {
+  int num_extra_vars = 0;
+  std::vector<int> size_extra_vars;
+  for (size_t ii = 0; ii < names.size(); ii++) {
+    int num_rows = sequential_expression_manager_.num_rows(names[ii]);
+    num_extra_vars += num_rows;
+    size_extra_vars.push_back(num_rows);
+  }
+  solvers::VectorXDecisionVariable extra_vars(num_extra_vars * N_);
+  int row_offset = 0;
+  for (size_t ii = 0; ii < names.size(); ii++) {
+    extra_vars.middleRows(row_offset, size_extra_vars[ii] * N_) =
+        GetSequentialVariable(names[ii]);
+    row_offset += size_extra_vars[ii] * N_;
+  }
+
+  return AddVisualizationCallback(
+      [this, callback,
+       size_extra_vars](const Eigen::Ref<const Eigen::VectorXd>& x) {
+        const Eigen::VectorXd times = GetSampleTimes(x.head(h_vars_.size()));
+        const Eigen::Map<const Eigen::MatrixXd> states(
+            x.data() + h_vars_.size(), num_states_, N_);
+        const Eigen::Map<const Eigen::MatrixXd> inputs(
+            x.data() + h_vars_.size() + x_vars_.size(), num_inputs_, N_);
+        int data_offset = h_vars_.size() + u_vars_.size() + x_vars_.size();
+        std::vector<Eigen::Ref<const Eigen::MatrixXd>> extras_vec;
+        for (size_t ii = 0; ii < size_extra_vars.size(); ii++) {
+          const Eigen::Map<const Eigen::MatrixXd> extras(
+              x.data() + data_offset, size_extra_vars[ii], N_);
+          data_offset += size_extra_vars[ii] * N_;
+          extras_vec.push_back(extras);
+        }
+        callback(times, states, inputs, extras_vec);
+      },
+      {h_vars_, x_vars_, u_vars_, extra_vars});
+}
+
 void MultipleShooting::SetInitialTrajectory(
     const PiecewisePolynomial<double>& traj_init_u,
     const PiecewisePolynomial<double>& traj_init_x) {
@@ -241,6 +281,18 @@ Eigen::MatrixXd MultipleShooting::GetStateSamples(
   return states;
 }
 
+Eigen::MatrixXd MultipleShooting::GetSequentialVariableSamples(
+    const solvers::MathematicalProgramResult& result,
+    const std::string& name) const {
+  int num_sequential_variables = sequential_expression_manager_.num_rows(name);
+  Eigen::MatrixXd sequential_variables(num_sequential_variables, N_);
+  for (int i = 0; i < N_; i++) {
+    sequential_variables.col(i) =
+        result.GetSolution(GetSequentialVariableAtIndex(name, i));
+  }
+  return sequential_variables;
+}
+
 symbolic::Substitution
 MultipleShooting::ConstructPlaceholderVariableSubstitution(
     int interval_index) const {
@@ -251,6 +303,17 @@ MultipleShooting::ConstructPlaceholderVariableSubstitution(
 symbolic::Expression MultipleShooting::SubstitutePlaceholderVariables(
     const symbolic::Expression& e, int interval_index) const {
   return e.Substitute(ConstructPlaceholderVariableSubstitution(interval_index));
+}
+
+const solvers::VectorXDecisionVariable MultipleShooting::GetSequentialVariable(
+    const std::string& name) const {
+  int rows = sequential_expression_manager_.num_rows(name);
+  VectorX<symbolic::Expression> sequential_variable(rows * N_);
+  for (int i = 0; i < N_; i++) {
+    sequential_variable.segment(i * rows, rows) =
+        sequential_expression_manager_.GetSequentialExpressionsByName(name, i);
+  }
+  return symbolic::GetVariableVector(sequential_variable);
 }
 
 symbolic::Formula MultipleShooting::SubstitutePlaceholderVariables(
