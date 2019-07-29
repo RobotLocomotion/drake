@@ -15,6 +15,7 @@ drake_cc_package_library(
     deps = [
         ":direct_collocation",
         ":direct_transcription",
+        ":integration_constraint",
         ":multiple_shooting",
         ":sequential_expression_manager",
     ],
@@ -79,6 +80,15 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "integration_constraint",
+    srcs = ["integration_constraint.cc"],
+    hdrs = ["integration_constraint.h"],
+    deps = [
+        "//solvers:constraint",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -121,6 +131,15 @@ drake_cc_googletest(
     deps = [
         ":sequential_expression_manager",
         "@fmt",
+    ],
+)
+
+drake_cc_googletest(
+    name = "integration_constraint_test",
+    deps = [
+        ":integration_constraint",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:gradient",
     ],
 )
 
