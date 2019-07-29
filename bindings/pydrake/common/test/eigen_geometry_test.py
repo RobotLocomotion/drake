@@ -17,6 +17,16 @@ def normalize(x):
 
 
 class TestEigenGeometry(unittest.TestCase):
+    def check_cast(self, template, T):
+        value = template[T]()
+        # Refer to docstrings for `CastUPack` in `default_scalars_pybind.h`.
+        if T == float:
+            U_list = [float, AutoDiffXd, Expression]
+        else:
+            U_list = [T]
+        for U in U_list:
+            self.assertIsInstance(value.cast[U](), template[U], U)
+
     @numpy_compare.check_all_types
     def test_argument_deduction(self, T):
         # Brief check for argument deduction (#11667).
@@ -39,6 +49,7 @@ class TestEigenGeometry(unittest.TestCase):
             self.assertEqual(
                 str(q_identity),
                 "Quaternion_[float](w=1.0, x=0.0, y=0.0, z=0.0)")
+        self.check_cast(mut.Quaternion_, T)
         # Test ordering.
         q_wxyz = normalize([0.1, 0.3, 0.7, 0.9])
         q = Quaternion(w=q_wxyz[0], x=q_wxyz[1], y=q_wxyz[2], z=q_wxyz[3])
@@ -142,6 +153,8 @@ class TestEigenGeometry(unittest.TestCase):
         numpy_compare.assert_float_equal(transform.rotation(), R)
         transform.set_rotation(R.T)
         numpy_compare.assert_float_equal(transform.rotation(), R.T)
+        # - Cast
+        self.check_cast(mut.Isometry3_, T)
         # - Check transactions for bad values.
         if T != Expression:
             transform = Isometry3(rotation=R, translation=p)
@@ -223,6 +236,9 @@ class TestEigenGeometry(unittest.TestCase):
         value.set_axis(v)
         numpy_compare.assert_float_equal(value.angle(), np.pi / 4)
         numpy_compare.assert_float_equal(value.axis(), v)
+
+        # Cast.
+        self.check_cast(mut.AngleAxis_, T)
 
         # Test symmetry based on accessors.
         # N.B. `Eigen::AngleAxis` does not disambiguate by restricting internal

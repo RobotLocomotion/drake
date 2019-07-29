@@ -115,6 +115,7 @@ drake_cc_library(
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
     deps = [
+        ":cpp_template_pybind",
         ":type_pack",
         "//:drake_shared_library",
         "//bindings/pydrake:autodiff_types_pybind",

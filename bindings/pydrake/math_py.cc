@@ -112,6 +112,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             doc_iso3_deprecation);
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
+    DefCast<T>(&cls, cls_doc.cast.doc);
     // .def("IsNearlyEqualTo", ...)
     // .def("IsExactlyEqualTo", ...)
   }
@@ -167,6 +168,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.ToQuaternion.doc_0args);
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
+    DefCast<T>(&cls, cls_doc.cast.doc);
   }
 
   {
@@ -218,6 +220,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("alpha_AD_D"),
             cls_doc.CalcRpyDDtFromAngularAccelInChild.doc);
     DefCopyAndDeepCopy(&cls);
+    // N.B. `RollPitchYaw::cast` is not defined in C++.
   }
 
   auto eigen_geometry_py = py::module::import("pydrake.common.eigen_geometry");
