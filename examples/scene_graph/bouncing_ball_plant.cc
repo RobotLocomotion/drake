@@ -15,12 +15,15 @@ namespace examples {
 namespace scene_graph {
 namespace bouncing_ball {
 
+using Eigen::Vector4d;
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
 using geometry::PenetrationAsPointPair;
+using geometry::PerceptionProperties;
 using geometry::ProximityProperties;
+using geometry::render::RenderLabel;
 using geometry::SceneGraph;
 using geometry::SourceId;
 using geometry::Sphere;
@@ -58,6 +61,12 @@ BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
   // Use the default material.
   scene_graph->AssignRole(source_id, ball_id_, IllustrationProperties());
   scene_graph->AssignRole(source_id, ball_id_, ProximityProperties());
+  PerceptionProperties perception_properties;
+  perception_properties.AddProperty("phong", "diffuse",
+                                    Vector4d{0.8, 0.8, 0.8, 1.0});
+  perception_properties.AddProperty("label", "id",
+                                    RenderLabel(ball_id_.get_value()));
+  scene_graph->AssignRole(source_id, ball_id_, perception_properties);
 
   // Allocate the output port now that the frame has been registered.
   geometry_pose_port_ = this->DeclareAbstractOutputPort(
@@ -114,9 +123,8 @@ void BouncingBallPlant<T>::DoCalcTimeDerivatives(
   const BouncingBallVector<T>& state = get_state(context);
   BouncingBallVector<T>& derivative_vector = get_mutable_state(derivatives);
 
-  const geometry::QueryObject<T>& query_object =
-      get_geometry_query_input_port().
-          template Eval<geometry::QueryObject<T>>(context);
+  const auto& query_object = get_geometry_query_input_port().
+      template Eval<geometry::QueryObject<T>>(context);
 
   std::vector<PenetrationAsPointPair<T>> penetrations =
       query_object.ComputePointPairPenetration();
