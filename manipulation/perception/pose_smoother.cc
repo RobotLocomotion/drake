@@ -64,21 +64,12 @@ VectorX<double> ComputeVelocities(const Isometry3d& pose_1,
 // PoseVector or a similar future variant.
 // Sets a pose from a 7-element array whose first 3 elements are position and
 // last 4 elements are a quaternion (w, x, y, z) with w >= 0 (canonical form).
-Isometry3d Vector7ToIsometry3d(const VectorX<double>& pose_vector) {
+math::RigidTransform<double> PoseVector7ToRigidTransform(
+    const VectorX<double>& pose_vector) {
   DRAKE_ASSERT(pose_vector.size() == 7);
   Quaterniond quaternion(pose_vector(3), pose_vector(4),
                          pose_vector(5), pose_vector(6));
-  Isometry3<double> pose = Isometry3<double>::Identity();
-  quaternion = quaternion.normalized();
-  pose.linear() = quaternion.toRotationMatrix();
-  pose.translation() = pose_vector.head<3>();
-  pose.makeAffine();
-  // TODO(Mitiguy) If this function can or should use a normalized quaternion,
-  // change this function so it instead returns a rigid transform.  The
-  // RigidTransform constructor shown below indirectly normalizes the quaternion
-  // in an efficient way that avoids a square-root.
-  // return RigidTransform(quaternion, pose_vector.head<3>());
-  return pose;
+  return math::RigidTransform<double>(quaternion, pose_vector.head<3>());
 }
 
 // Convert a pose into a 7 element array whose first 3 elements are position and
@@ -158,18 +149,19 @@ void PoseSmoother::DoCalcUnrestrictedUpdate(
     const math::RotationMatrixd input_R(input_quaternion);
     math::RigidTransformd corrected_input(input_R, input_pose.translation());
 
-    Isometry3d accepted_pose = corrected_input.GetAsIsometry3();
+    math::RigidTransform<double> accepted_pose = corrected_input;
     // If the smoother is enabled.
     if (is_filter_enabled_) {
       VectorX<double> temp = internal_state.filter->Update(
           RigidTransformdToVector7(corrected_input));
-      accepted_pose = Vector7ToIsometry3d(temp);
+      accepted_pose = PoseVector7ToRigidTransform(temp);
     }
 
-    current_velocity = ComputeVelocities(
-        accepted_pose, current_pose, current_time - time_at_last_accepted_pose);
+    current_velocity =
+        ComputeVelocities(accepted_pose.GetAsIsometry3(), current_pose,
+                          current_time - time_at_last_accepted_pose);
     time_at_last_accepted_pose = current_time;
-    current_pose = accepted_pose;
+    current_pose = accepted_pose.GetAsIsometry3();
   } else {
     drake::log()->debug("Data point rejected");
   }
