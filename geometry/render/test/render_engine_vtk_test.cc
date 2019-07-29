@@ -789,7 +789,6 @@ TEST_F(RenderEngineVtkTest, CloneIndependence) {
   unique_ptr<RenderEngine> clone = renderer_->Clone();
   // Move the terrain *up* 10 units in the z.
   RigidTransformd X_WT_new{Vector3d{0, 0, 10}};
-  // This assumes that the terrain is zero-indexed.
   renderer_->UpdatePoses(
       unordered_map<GeometryId, RigidTransformd>{{geometry_id_, X_WT_new}});
   PerformCenterShapeTest(static_cast<RenderEngineVtk*>(clone.get()),
