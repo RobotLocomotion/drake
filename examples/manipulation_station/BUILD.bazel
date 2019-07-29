@@ -35,7 +35,8 @@ drake_cc_library(
     deps = [
         "//common:find_resource",
         "//geometry:scene_graph",
-        "//geometry/render:render_engine_vtk",
+        "//geometry/dev:scene_graph",
+        "//geometry/dev/render:render_engine_vtk",
         "//manipulation/schunk_wsg:schunk_wsg_constants",
         "//manipulation/schunk_wsg:schunk_wsg_position_controller",
         "//math:geometric_transform",
@@ -43,7 +44,7 @@ drake_cc_library(
         "//multibody/plant",
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/framework",
-        "//systems/sensors:rgbd_sensor",
+        "//systems/sensors/dev:rgbd_camera",
     ],
 )
 
@@ -121,7 +122,6 @@ drake_cc_googletest(
     deps = [
         ":manipulation_station",
         "//common/test_utilities:eigen_matrix_compare",
-        "//geometry/test_utilities:dummy_render_engine",
     ],
 )
 
