@@ -77,8 +77,8 @@ SKIP_RECURSE_NAMES = [
 # Exceptions to `SKIP_RECURSE_NAMES`; only one degree of exception is made
 # (i.e., nested symbols are still subject to `SKIP_RECURSE_NAMES`).
 SKIP_RECURSE_EXCEPTIONS = [
-    # TODO(eric.cousineau): Remove once #9366 is complete and all deprecated
-    # symbols are removed.
+    # TODO(eric.cousineau): Remove this once we figure out why not having
+    # it breaks the doc generation process.
     ('drake', 'multibody', 'internal'),
 ]
 
