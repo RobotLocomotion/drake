@@ -21,6 +21,7 @@ load(
 
 drake_cc_library(
     name = "planar_gripper_common",
+    srcs = ["planar_gripper_common.cc"],
     hdrs = ["planar_gripper_common.h"],
     deps = [
         "//common:find_resource",

@@ -1,7 +1,6 @@
 #include <memory>
 
 #include <gflags/gflags.h>
-#include "Eigen/src/Core/Matrix.h"
 #include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/common/drake_assert.h"
@@ -91,7 +90,7 @@ int DoMain() {
   MultibodyPlant<double>& plant =
       *builder.AddSystem<MultibodyPlant>(FLAGS_time_step);
   auto plant_id = Parser(&plant, &scene_graph).AddModelFromFile(full_name);
-  examples::planar_gripper::WeldGripperFrames<double>(&plant);
+  WeldGripperFrames<double>(&plant);
 
   // Adds the object to be manipulated.
   auto brick_file_name =
@@ -102,11 +101,9 @@ int DoMain() {
   plant.WeldFrames(plant.world_frame(), brick_base_frame);
 
   // Create the controlled plant. Contains only the fingers (no objects).
-  auto control_plant_ptr =
-      std::make_shared<multibody::MultibodyPlant<double>>(FLAGS_time_step);
-  MultibodyPlant<double>& control_plant = *control_plant_ptr;
+  MultibodyPlant<double> control_plant(FLAGS_time_step);
   Parser(&control_plant).AddModelFromFile(full_name);
-  drake::examples::planar_gripper::WeldGripperFrames<double>(&control_plant);
+  WeldGripperFrames<double>(&control_plant);
 
   plant.Finalize();
   control_plant.Finalize();
@@ -138,24 +135,21 @@ int DoMain() {
       examples::planar_gripper::ParseKeyframes(keyframe_path, &brick_ics);
   keyframes.transposeInPlace();
 
+  // Add the plan interpolator to the diagram.
+  auto interp = builder.AddSystem<RobotPlanInterpolator>(
+      &control_plant, manipulation::planner::InterpolatorType::Pchip,
+      FLAGS_keyframe_dt);
+
   // Creates the time vector for the plan interpolator.
   std::vector<double> times(keyframes.cols());
   times[0] = 0.0;
   for (int i = 1; i < keyframes.cols(); ++i) {
     times[i] = times[i - 1] + FLAGS_keyframe_dt;
   }
-  std::vector<int> info(times.size(), 1);
   robotlocomotion::robot_plan_t plan{};
-  plan = manipulation::planner::EncodeKeyFrames(control_plant, times, info,
-                                                keyframes);
-
+  plan = interp->EncodeKeyFrames(times, keyframes);
   // Publish the plan for inspection.
   examples::planar_gripper::PublishRobotPlan(plan);
-
-  // Add the plan interpolator to the diagram.
-  auto interp = builder.AddSystem<RobotPlanInterpolator>(
-      control_plant_ptr, manipulation::planner::InterpolatorType::Pchip,
-      FLAGS_keyframe_dt);
   auto const_value_src =
       builder.AddSystem<systems::ConstantValueSource<double>>(
           *AbstractValue::Make(plan));
