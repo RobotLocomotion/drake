@@ -215,8 +215,8 @@ class MultipleShooting : public solvers::MathematicalProgram {
       CompleteTrajectoryCallback;
 
   /**
-   * Adds a callback method to visualize intermediate results of the
-   * trajectory optimization.  The callback should be of the form
+   * Adds a callback method to visualize intermediate results of input variables
+   * used in the trajectory optimization.  The callback should be of the form
    *   MyVisualization(sample_times, values),
    * where breaks is a N-by-1 VectorXd of sample times, and values is a
    * num_inputs-by-N MatrixXd representing the current (intermediate) value of
@@ -232,8 +232,8 @@ class MultipleShooting : public solvers::MathematicalProgram {
   AddInputTrajectoryCallback(const TrajectoryCallback& callback);
 
   /**
-   * Adds a callback method to visualize intermediate results of the
-   * trajectory optimization.  The callback should be of the form
+   * Adds a callback method to visualize intermediate results of state variables
+   * used in the trajectory optimization.  The callback should be of the form
    *   MyVisualization(sample_times, values),
    * where sample_times is a N-by-1 VectorXd of sample times, and values is a
    * num_states-by-N MatrixXd representing the current (intermediate) value of
@@ -249,15 +249,15 @@ class MultipleShooting : public solvers::MathematicalProgram {
   AddStateTrajectoryCallback(const TrajectoryCallback& callback);
 
   /**
-   * Adds a callback method to visualize intermediate results of the
-   * trajectory optimization.  The callback should be of the form
+   * Adds a callback method to visualize intermediate results of all variables
+   * used in the trajectory optimization.  The callback should be of the form
    *   MyVisualization(sample_times, states, inputs, values),
    * where sample_times is an N-by-1 VectorXd of sample times, states is a
    * num_states-by-N MatrixXd of the current (intermediate) state trajectory at
    * the break points, inputs is a num_inputs-by-N MatrixXd of the current
    * (intermediate) input trajectory at the break points and values is a
    * vector of num_rows-by-N MatrixXds of the current (intermediate) extra
-   * sequenctial variables specified by @p names at the break points.
+   * sequential variables specified by @p names at the break points.
    *
    * @note Just like other costs/constraints, not all solvers support callbacks.
    * Adding a callback here will force MathematicalProgram::Solve to select a
