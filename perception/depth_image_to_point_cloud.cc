@@ -6,7 +6,6 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/never_destroyed.h"
 
-using Eigen::Isometry3f;
 using Eigen::Matrix3Xf;
 using Eigen::Vector3f;
 using drake::AbstractValue;
@@ -76,9 +75,8 @@ void DoConvert(const optional<pc_flags::BaseFieldT>& exact_base_fields,
   const float cy = camera_info.center_y();
   const float fx_inv = 1.f / camera_info.focal_x();
   const float fy_inv = 1.f / camera_info.focal_y();
-  const Isometry3f X_PC = camera_pose
-                              ? camera_pose->GetAsIsometry3().cast<float>()
-                              : Isometry3f::Identity();
+  const math::RigidTransform<float> X_PC = (camera_pose != nullptr) ?
+      camera_pose->cast<float>() : math::RigidTransform<float>::Identity();
 
   for (int v = 0; v < height; ++v) {
     for (int u = 0; u < width; ++u) {

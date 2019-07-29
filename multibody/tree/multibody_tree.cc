@@ -1249,28 +1249,6 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
-    const systems::Context<T>& context,
-    const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FP,
-    EigenPtr<MatrixX<T>> Jv_WFp) const {
-  DRAKE_THROW_UNLESS(Jv_WFp != nullptr);
-  DRAKE_THROW_UNLESS(Jv_WFp->rows() == 6);
-  DRAKE_THROW_UNLESS(Jv_WFp->cols() == num_velocities());
-  // Compute the position of Fp's origin P in the world frame.
-  Vector3<T> p_WoP_W;
-  CalcPointsPositions(context,
-                      frame_F, p_FP,             /* From frame F */
-                      world_frame(), &p_WoP_W);  /* To world frame W */
-
-  auto Jv_WFp_angular = Jv_WFp->template topRows<3>();
-  auto Jv_WFp_translational = Jv_WFp->template bottomRows<3>();
-
-  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
-    JacobianWrtVariable::kV, frame_F, p_WoP_W,
-    &Jv_WFp_angular, &Jv_WFp_translational);
-}
-
-template <typename T>
 void MultibodyTree<T>::CalcJacobianSpatialVelocity(
     const systems::Context<T>& context,
     const JacobianWrtVariable with_respect_to,

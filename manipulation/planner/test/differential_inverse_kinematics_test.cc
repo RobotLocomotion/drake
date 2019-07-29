@@ -176,9 +176,6 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
   const math::RigidTransform<double> X_WE =
       frame_E_->CalcPoseInWorld(*context_);
   const math::RotationMatrix<double> R_EW = X_WE.rotation().transpose();
-  MatrixX<double> J(6, plant_->num_velocities());
-  plant_->CalcFrameGeometricJacobianExpressedInWorld(
-      *context_, *frame_E_, Vector3<double>::Zero(), &J);
 
   const multibody::SpatialVelocity<double> V_WE_W_desired(
     Vector3d(0.1, -0.2, 0.3) / 2, Vector3d(-0.3, 0.2, -0.1) / 2);

@@ -1313,13 +1313,6 @@ class MultibodyTree {
       EigenPtr<MatrixX<T>> Jq_WFp) const;
 
   /// See MultibodyPlant method.
-  void CalcFrameGeometricJacobianExpressedInWorld(
-      const systems::Context<T>& context,
-      const Frame<T>& frame_F,
-      const Eigen::Ref<const Vector3<T>>& p_FP,
-      EigenPtr<MatrixX<T>> Jv_WFp) const;
-
-  /// See MultibodyPlant method.
   Vector6<T> CalcBiasForJacobianSpatialVelocity(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
