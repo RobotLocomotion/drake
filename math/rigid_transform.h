@@ -334,9 +334,12 @@ class RigidTransform {
 
 #ifndef DRAKE_DOXYGEN_CXX
   // DO NOT USE. These methods will soon be deprecated as #9865 is resolved.
-  // They are only provided to support backwards compatibility with
-  // Isometry3 as we migrate Drake's codebase to use RigidTransform. New uses of
-  // Isometry3 are discouraged.
+  // They are only provided to support backwards compatibility with Isometry3
+  // as we migrate Drake's codebase to use RigidTransform. New uses of
+  // Isometry3 are discouraged. These methods will remain intact (though
+  // possibly marked as deprecated) until at least 2019-12-01. N.B. Keep the
+  // deprecation date here in sync with the deprecation comment inside
+  // drake/bindings/pydrake/math_py.cc.
   operator Isometry3<T>() const { return GetAsIsometry3(); }
   const Matrix3<T>& linear() const { return R_AB_.matrix(); }
   Matrix4<T> matrix() const { return GetAsMatrix4(); }

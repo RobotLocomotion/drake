@@ -37,13 +37,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
-  const char* doc_iso3_deprecation =
-      "DO NOT USE!. We only offer this API for backwards compatibility with "
-      "Isometry3 and it will be deprecated soon with the resolution of "
-      "#9865. This will be removed on or around 2019-08-01.";
-
   constexpr auto& doc = pydrake_doc.drake.math;
+
   {
+    // N.B. Keep the deprecation date here in sync with the deprecation comment
+    // inside drake/math/rigid_transform.h.
+    const char* doc_rigid_transform_linear_matrix_deprecation =
+        "DO NOT USE! We offer this API for backwards compatibility with "
+        "Isometry3, but it will be removed on or around 2019-12-01. "
+        "See drake issue #9865 for details.";
+
     using Class = RigidTransform<T>;
     constexpr auto& cls_doc = doc.RigidTransform;
     auto cls = DefineTemplateClassWithDefault<Class>(
@@ -107,9 +110,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return *self * p_BoQ_B;
             },
             py::arg("p_BoQ_B"), cls_doc.operator_mul.doc_1args_p_BoQ_B)
-        .def("matrix", &RigidTransform<T>::matrix, doc_iso3_deprecation)
+        .def("matrix", &RigidTransform<T>::matrix,
+            doc_rigid_transform_linear_matrix_deprecation)
         .def("linear", &RigidTransform<T>::linear, py_reference_internal,
-            doc_iso3_deprecation);
+            doc_rigid_transform_linear_matrix_deprecation);
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
     DefCast<T>(&cls, cls_doc.cast.doc);
