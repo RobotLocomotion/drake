@@ -18,9 +18,9 @@ namespace fbstab {
  * operations.
  *
  * Primal-dual variables have 3 components:
- * z: Decision variables
- * v: Inequality duals
- * y: Inequality margins
+ * - z: Decision variables
+ * - v: Inequality duals
+ * - y: Inequality margins
  *
  * where
  * length(z) = nz
