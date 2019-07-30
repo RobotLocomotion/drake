@@ -7,11 +7,21 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-JointActuator<T>::JointActuator(
-    const std::string& name, const Joint<T>& joint)
+JointActuator<T>::JointActuator(const std::string& name, const Joint<T>& joint,
+                                double effort_limit)
     : MultibodyTreeElement<JointActuator<T>, JointActuatorIndex>(
           joint.model_instance()),
-    name_(name), joint_index_(joint.index()) {}
+      name_(name),
+      joint_index_(joint.index()) {
+  // The effort_limit should always be non-negative. Negative value will be
+  // treated as infinity (i.e. no limit) as specified by the sdf standard.
+  // 0 effort limit is treated as no actuation.
+  effort_limit_ = effort_limit < 0 ? std::numeric_limits<double>::infinity()
+                                     : effort_limit;
+  if (effort_limit_ == 0) {
+    throw std::runtime_error("Zero effort limit is treated as no actuator.");
+  }
+}
 
 template <typename T>
 const Joint<T>& JointActuator<T>::joint() const {
@@ -52,7 +62,7 @@ std::unique_ptr<JointActuator<double>>
 JointActuator<T>::DoCloneToScalar(
     const internal::MultibodyTree<double>&) const {
   return std::unique_ptr<JointActuator<double>>(
-      new JointActuator<double>(name_, joint_index_));
+      new JointActuator<double>(name_, joint_index_, effort_limit_));
 }
 
 template <typename T>
@@ -60,7 +70,7 @@ std::unique_ptr<JointActuator<AutoDiffXd>>
 JointActuator<T>::DoCloneToScalar(
     const internal::MultibodyTree<AutoDiffXd>&) const {
   return std::unique_ptr<JointActuator<AutoDiffXd>>(
-      new JointActuator<AutoDiffXd>(name_, joint_index_));
+      new JointActuator<AutoDiffXd>(name_, joint_index_, effort_limit_));
 }
 
 template <typename T>
@@ -68,7 +78,8 @@ std::unique_ptr<JointActuator<symbolic::Expression>>
 JointActuator<T>::DoCloneToScalar(
     const internal::MultibodyTree<symbolic::Expression>&) const {
   return std::unique_ptr<JointActuator<symbolic::Expression>>(
-      new JointActuator<symbolic::Expression>(name_, joint_index_));
+      new JointActuator<symbolic::Expression>(name_, joint_index_,
+                                              effort_limit_));
 }
 
 }  // namespace multibody

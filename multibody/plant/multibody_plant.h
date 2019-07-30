@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <map>
 #include <memory>
 #include <string>
@@ -1006,14 +1007,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   already exists in the model. See HasJointActuatorNamed().
   /// @param[in] joint
   ///   The Joint to be actuated by the new JointActuator.
+  /// @param[in] effort_limit
+  ///   The maximum effort for the actuator. It must be greater than 0. It will
+  ///   throw if the effort limit is 0 since 0 is considered as no actuation.
+  ///   If the user does not set this value or pass a negative value, the limit
+  ///   will be set to +∞.
   /// @returns A constant reference to the new JointActuator just added, which
   /// will remain valid for the lifetime of `this` plant.
   /// @throws std::exception if `joint.num_velocities() > 1` since for now we
   /// only support actuators for single dof joints.
   const JointActuator<T>& AddJointActuator(
-      const std::string& name, const Joint<T>& joint) {
+      const std::string& name, const Joint<T>& joint,
+      double effort_limit = std::numeric_limits<double>::infinity()) {
     DRAKE_THROW_UNLESS(joint.num_velocities() == 1);
-    return this->mutable_tree().AddJointActuator(name, joint);
+    return this->mutable_tree().AddJointActuator(name, joint, effort_limit);
   }
 
   /// Creates a new model instance.  Returns the index for the model
