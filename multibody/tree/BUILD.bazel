@@ -451,4 +451,12 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "joint_actuator_test",
+    deps = [
+        ":tree",
+        "//common/test_utilities",
+    ],
+)
+
 add_lint_tests()
