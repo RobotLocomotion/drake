@@ -1,15 +1,14 @@
 #include <memory>
 
 #include <gflags/gflags.h>
-#include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging_gflags.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/examples/planar_gripper/planar_gripper_common.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/manipulation/planner/robot_plan_interpolator.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -17,8 +16,8 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/trajectory_source.h"
 
 namespace drake {
 namespace examples {
@@ -33,7 +32,6 @@ using drake::multibody::RevoluteJoint;
 using drake::multibody::PrismaticJoint;
 using drake::math::RigidTransform;
 using drake::math::RollPitchYaw;
-using drake::manipulation::planner::RobotPlanInterpolator;
 using drake::multibody::JointActuatorIndex;
 using drake::multibody::ModelInstanceIndex;
 
@@ -135,27 +133,16 @@ int DoMain() {
       examples::planar_gripper::ParseKeyframes(keyframe_path, &brick_ics);
   keyframes.transposeInPlace();
 
-  // Add the plan interpolator to the diagram.
-  auto interp = builder.AddSystem<RobotPlanInterpolator>(
-      &control_plant, manipulation::planner::InterpolatorType::Pchip,
-      FLAGS_keyframe_dt);
-
   // Creates the time vector for the plan interpolator.
-  std::vector<double> times(keyframes.cols());
-  times[0] = 0.0;
+  Eigen::VectorXd times = Eigen::VectorXd::Zero(keyframes.cols());
   for (int i = 1; i < keyframes.cols(); ++i) {
-    times[i] = times[i - 1] + FLAGS_keyframe_dt;
+    times(i) = times(i - 1) + FLAGS_keyframe_dt;
   }
-  robotlocomotion::robot_plan_t plan{};
-  plan = interp->EncodeKeyFrames(times, keyframes);
-  // Publish the plan for inspection.
-  examples::planar_gripper::PublishRobotPlan(plan);
-  auto const_value_src =
-      builder.AddSystem<systems::ConstantValueSource<double>>(
-          *AbstractValue::Make(plan));
-  builder.Connect(const_value_src->get_output_port(0),
-                  interp->get_plan_input_port());
-  builder.Connect(interp->get_state_output_port(),
+  const auto pp =
+      trajectories::PiecewisePolynomial<double>::Pchip(times, keyframes);
+  auto traj_src = builder.AddSystem<systems::TrajectorySource<double>>(
+      pp, 1 /* with one derivative */);
+  builder.Connect(traj_src->get_output_port(),
                   id_controller->get_input_port_desired_state());
 
   // The inverse dynamics controller internally uses a "controlled plant", which
@@ -233,14 +220,6 @@ int DoMain() {
   x_revolute.set_angle(&plant_context, brick_ics(2));
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
-
-  // Initialize the interpolator.
-  auto& dcontext = simulator.get_mutable_context();
-  auto& interpolator_context =
-      diagram->GetMutableSubsystemContext(*interp, &dcontext);
-  interp->Initialize(0 /* plan start time */, gripper_ics.head(6),
-                     &interpolator_context.get_mutable_state());
-
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
