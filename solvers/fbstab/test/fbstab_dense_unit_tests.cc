@@ -21,7 +21,6 @@ namespace test {
 using MatrixXd = Eigen::MatrixXd;
 using VectorXd = Eigen::VectorXd;
 
-
 /**
  * Tests FBstab with
  *
@@ -138,6 +137,12 @@ GTEST_TEST(FBstabDense, DegenerateQP) {
   ASSERT_EQ(out.eflag, ExitFlag::SUCCESS);
   EXPECT_NEAR(z0(0), 1, 1e-8);
   EXPECT_TRUE((z0(1) >= 1) && (z0(1) <= 3));
+
+  // Check satisfaction of KKT conditions.
+  VectorXd r1 = H * z0 + f + A.transpose() * v0;
+  VectorXd r2 = y0.cwiseMin(v0);
+
+  ASSERT_NEAR(r1.norm() + r2.norm(), 0, 1e-6);
 }
 
 /**

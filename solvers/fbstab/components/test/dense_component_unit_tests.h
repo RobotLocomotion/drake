@@ -192,7 +192,7 @@ class DenseComponentUnitTests {
     DenseLinearSolver solver(n_, q_);
 
     double sigma = 0.5;
-    solver.Factor(x, y, sigma);
+    solver.Initialize(x, y, sigma);
     solver.Solve(r, &y);
 
     // Construct the linear system

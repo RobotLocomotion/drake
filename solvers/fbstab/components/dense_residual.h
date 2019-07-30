@@ -35,7 +35,6 @@ class DenseResidual {
    */
   DenseResidual(int nz, int nv);
 
-
   /**
    * Performs the operation
    * y <- -1*y (y is this object).
@@ -149,10 +148,10 @@ class DenseResidual {
   static double pfb(double a, double b, double alpha);
 
   /* Scalar max function. */
-  static double max(double a, double b); //NOLINT
+  static double max(double a, double b);  // NOLINT
 
   /* Scalar min function. */
-  static double min(double a, double b); //NOLINT
+  static double min(double a, double b);  // NOLINT
 
   friend class DenseLinearSolver;
 };

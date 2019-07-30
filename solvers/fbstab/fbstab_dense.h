@@ -79,7 +79,7 @@ class FBstabDense {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FBstabDense);
   /** Structure to hold the problem data. */
   struct QPData {
-    /// nz x nz real Hessian matrix.
+    /// nz x nz real positive semidefinite Hessian matrix.
     const Eigen::MatrixXd* H = nullptr;
     /// nv x nz real constraint Jacobian.
     const Eigen::MatrixXd* A = nullptr;

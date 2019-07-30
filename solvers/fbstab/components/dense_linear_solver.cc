@@ -39,8 +39,8 @@ DenseLinearSolver::DenseLinearSolver(int nz, int nv) {
 
 void DenseLinearSolver::SetAlpha(double alpha) { alpha_ = alpha; }
 
-bool DenseLinearSolver::Factor(const DenseVariable& x,
-                               const DenseVariable& xbar, double sigma) {
+bool DenseLinearSolver::Initialize(const DenseVariable& x,
+                                   const DenseVariable& xbar, double sigma) {
   const DenseData* const data = x.data();
   if (xbar.data() != data) {
     throw std::runtime_error(
@@ -80,7 +80,12 @@ bool DenseLinearSolver::Factor(const DenseVariable& x,
   // Factor K = LL' in place
   Eigen::LLT<Eigen::Ref<Eigen::MatrixXd> > L(K_);
 
-  return true;
+  Eigen::ComputationInfo status = L.info();
+  if (status != Eigen::Success) {
+    return false;
+  } else {
+    return true;
+  }
 }
 
 bool DenseLinearSolver::Solve(const DenseResidual& r, DenseVariable* x) const {

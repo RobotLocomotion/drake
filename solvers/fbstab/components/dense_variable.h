@@ -84,7 +84,7 @@ class DenseVariable {
    * operation u.y = b - A*(u.z + a*x.z).
    * Throws an exception if problem data has not been linked.
    */
-  void axpy(const DenseVariable& x, double a);
+  void axpy(double a, const DenseVariable& x);
 
   /**
    * Performs a deep copy operation.

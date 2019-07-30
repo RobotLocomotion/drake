@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <stdexcept>
 
 #include "drake/common/drake_assert.h"
 
@@ -211,13 +212,18 @@ class FBstabAlgorithm {
 
  private:
   // Codes for infeasibility detection.
-  enum InfeasibilityStatus { FEASIBLE = 0, PRIMAL = 1, DUAL = 2, BOTH = 3 };
+  enum class InfeasibilityStatus {
+    FEASIBLE = 0,
+    PRIMAL = 1,
+    DUAL = 2,
+    BOTH = 3
+  };
 
   // Iteration counters.
   int newton_iters_ = 0;
   int prox_iters_ = 0;
 
-  // Cariable objects
+  // Variable objects
   Variable* xk_ = nullptr;  // outer loop variable
   Variable* xi_ = nullptr;  // inner loop variable
   Variable* xp_ = nullptr;  // workspace
@@ -260,6 +266,8 @@ class FBstabAlgorithm {
   // Default display settings.
   FBstabAlgorithm::Display display_level_ = Display::FINAL;
 
+  // TODO(dliaomcp@umich.edu) Switch to circular buffer implementation to avoid
+  // copy overhead.
   static constexpr int kNonMonotoneLineSearch = 5;
   static_assert(kNonMonotoneLineSearch > 0,
                 "kNonMonotoneLineSearch must be positive");
@@ -291,15 +299,15 @@ class FBstabAlgorithm {
   InfeasibilityStatus CheckInfeasibility(const Variable& x) {
     feasibility_->ComputeFeasibility(x, infeasibility_tol_);
 
-    InfeasibilityStatus status = FEASIBLE;
+    InfeasibilityStatus status = InfeasibilityStatus::FEASIBLE;
     if (!feasibility_->IsPrimalFeasible()) {
-      status = PRIMAL;
+      status = InfeasibilityStatus::PRIMAL;
     }
     if (!feasibility_->IsDualFeasible()) {
-      status = DUAL;
+      status = InfeasibilityStatus::DUAL;
     }
     if (!feasibility_->IsDualFeasible() && !feasibility_->IsPrimalFeasible()) {
-      status = BOTH;
+      status = InfeasibilityStatus::BOTH;
     }
     return status;
   }
@@ -512,16 +520,16 @@ SolverOut FBstabAlgorithm<Variable, Residual, Data, LinearSolver,
 
     // Compute dx <- x(k+1) - x(k).
     dx_->Copy(*xi_);
-    dx_->axpy(*xk_, -1.0);
+    dx_->axpy(-1.0, *xk_);
     // Check for infeasibility.
     if (check_feasibility_) {
       InfeasibilityStatus status = CheckInfeasibility(*dx_);
-      if (status != FEASIBLE) {
-        if (status == PRIMAL) {
+      if (status != InfeasibilityStatus::FEASIBLE) {
+        if (status == InfeasibilityStatus::PRIMAL) {
           output.eflag = ExitFlag::PRIMAL_INFEASIBLE;
-        } else if (status == DUAL) {
+        } else if (status == InfeasibilityStatus::DUAL) {
           output.eflag = ExitFlag::DUAL_INFEASIBLE;
-        } else if (status == BOTH) {
+        } else if (status == InfeasibilityStatus::BOTH) {
           output.eflag = ExitFlag::PRIMAL_DUAL_INFEASIBLE;
         }
         output.residual = Ek;
@@ -582,9 +590,18 @@ double FBstabAlgorithm<Variable, Residual, Data, LinearSolver, Feasibility>::
     }
 
     // Solve for the Newton step.
-    linear_solver_->Factor(*x, *xbar, sigma);
+    const bool initialize_flag = linear_solver_->Initialize(*x, *xbar, sigma);
+    if (initialize_flag != true) {
+      throw std::runtime_error(
+          "In FBstabAlgorithm::Solve: LinearSolver::Initialize failed.");
+    }
     ri_->Negate();
-    linear_solver_->Solve(*ri_, dx_);
+
+    const bool solve_flag = linear_solver_->Solve(*ri_, dx_);
+    if (solve_flag != true) {
+      throw std::runtime_error(
+          "In FBstabAlgorithm::Solve: LinearSolver::Solve failed.");
+    }
     newton_iters_++;
 
     // Perform a non-monotone linesearch.
@@ -596,7 +613,7 @@ double FBstabAlgorithm<Variable, Residual, Data, LinearSolver, Feasibility>::
       // Compute a trial point xp = x + t*dx
       // and evaluate the merit function at xp.
       xp_->Copy(*x);
-      xp_->axpy(*dx_, t);
+      xp_->axpy(t, *dx_);
       ri_->InnerResidual(*xp_, *xbar, sigma);
       const double mp = ri_->Merit();
       // Armijo descent check.
@@ -606,7 +623,7 @@ double FBstabAlgorithm<Variable, Residual, Data, LinearSolver, Feasibility>::
         t *= beta_;
       }
     }
-    x->axpy(*dx_, t);  // x <- x + t*dx
+    x->axpy(t, *dx_);  // x <- x + t*dx
   }
   // Make duals non-negative.
   x->ProjectDuals();
