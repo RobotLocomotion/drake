@@ -529,8 +529,10 @@ class MultibodyTree {
   /// JointActuator::get_name().
   // TODO(amcastro-tri): consider adding sugar method to declare an actuated
   // joint with a single call. Maybe MBT::AddActuatedJoint() or the like.
-  const JointActuator<T>& AddJointActuator(
-      const std::string& name, const Joint<T>& joint);
+  template <typename... Args>
+  const JointActuator<T>& AddJointActuator(const std::string& name,
+                                           const Joint<T>& joint,
+                                           Args&&... args);
 
   /// Creates a new model instance.  Returns the index for a new model
   /// instance (as there is no concrete object beyond the index).

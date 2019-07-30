@@ -1010,10 +1010,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// will remain valid for the lifetime of `this` plant.
   /// @throws std::exception if `joint.num_velocities() > 1` since for now we
   /// only support actuators for single dof joints.
-  const JointActuator<T>& AddJointActuator(
-      const std::string& name, const Joint<T>& joint) {
+  template <typename... Args>
+  const JointActuator<T>& AddJointActuator(const std::string& name,
+                                           const Joint<T>& joint,
+                                           Args&&... args) {
     DRAKE_THROW_UNLESS(joint.num_velocities() == 1);
-    return this->mutable_tree().AddJointActuator(name, joint);
+    return this->mutable_tree().AddJointActuator(name, joint,
+                                                 std::forward<Args>(args)...);
   }
 
   /// Creates a new model instance.  Returns the index for the model

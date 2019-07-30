@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -43,7 +44,24 @@ class JointActuator final
   /// Creates an actuator for `joint` with the given `name`.
   /// The name must be unique within the given MultibodyTree model. This is
   /// enforced by MultibodyTree::AddJointActuator().
-  JointActuator(const std::string& name, const Joint<T>& joint);
+  /// @param[in] name
+  ///   A string with a name identifying `this` actuator.
+  /// @param[in] joint
+  ///   The `joint` that the created actuator will act on.
+  /// @param[in] effort_lower_limits
+  ///   A vector storing the lower limit for each actuator.
+  ///   It must have the same size as `effort_upper_limit`.
+  ///   A value equal to -∞ implies no lower limit.
+  /// @param[in] effort_upper_limits
+  ///   A vector storing the upper limit for  each actuator.
+  ///   It must have the same size as `effort_lower_limit`.
+  ///   A value equal to +∞ implies no upper limit.
+  JointActuator(
+      const std::string& name, const Joint<T>& joint,
+      const VectorX<double>& effort_lower_limits = VectorX<double>::Constant(
+          1, -std::numeric_limits<double>::infinity()),
+      const VectorX<double>& effort_upper_limits = VectorX<double>::Constant(
+          1, std::numeric_limits<double>::infinity()));
 
   /// Returns the name of the actuator.
   const std::string& name() const { return name_; }
@@ -105,6 +123,28 @@ class JointActuator final
       const Eigen::Ref<const VectorX<T>>& u_instance,
       EigenPtr<VectorX<T>> u) const;
 
+  /// Returns the effort lower limits.
+  const VectorX<double>& effort_lower_limits() const {
+    return effort_lower_limits_;
+  }
+
+  /// Returns the effort upper limits.
+  const VectorX<double>& effort_upper_limits() const {
+    return effort_upper_limits_;
+  }
+
+  /// Sets the effort limits to @p lower_limits and @p upper_limits. @throws
+  /// std::exception if the dimension of @p lower_limits does not match
+  /// @p upper_limits. @throws std::exception if any of @p lower_limits is
+  /// larger than the corresponding term in @p upper_limits.
+  void set_effort_limits(const VectorX<double>& lower_limits,
+                         const VectorX<double>& upper_limits) {
+    DRAKE_THROW_UNLESS(lower_limits.size() == upper_limits.size());
+    DRAKE_THROW_UNLESS((lower_limits.array() <= upper_limits.array()).all());
+    effort_lower_limits_ = lower_limits;
+    effort_upper_limits_ = upper_limits;
+  }
+
   /// @cond
   // For internal use only.
   // NVI to DoCloneToScalar() templated on the scalar type of the new clone to
@@ -123,8 +163,13 @@ class JointActuator final
   template <typename U> friend class JointActuator;
 
   // Private constructor used for cloning.
-  JointActuator(const std::string& name, JointIndex joint_index)
-      : name_(name), joint_index_(joint_index) {}
+  JointActuator(const std::string& name, JointIndex joint_index,
+                const VectorX<double>& effort_lower_limits,
+                const VectorX<double>& effort_upper_limits)
+      : name_(name),
+        joint_index_(joint_index),
+        effort_lower_limits_(effort_lower_limits),
+        effort_upper_limits_(effort_upper_limits) {}
 
   // Helper to clone an actuator (templated on T) to an actuator templated on
   // `double`.
@@ -149,6 +194,11 @@ class JointActuator final
 
   // The index of the joint on which this actuator acts.
   JointIndex joint_index_;
+
+  // Actuator effort limits. These vectors have zero size for joints with no
+  // such limits.
+  VectorX<double> effort_lower_limits_;
+  VectorX<double> effort_upper_limits_;
 
   // The topology of this actuator. Only valid post- MultibodyTree::Finalize().
   internal::JointActuatorTopology topology_;

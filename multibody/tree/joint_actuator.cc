@@ -7,11 +7,15 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-JointActuator<T>::JointActuator(
-    const std::string& name, const Joint<T>& joint)
+JointActuator<T>::JointActuator(const std::string& name, const Joint<T>& joint,
+                                const VectorX<double>& effort_lower_limits,
+                                const VectorX<double>& effort_upper_limits)
     : MultibodyTreeElement<JointActuator<T>, JointActuatorIndex>(
           joint.model_instance()),
-    name_(name), joint_index_(joint.index()) {}
+      name_(name),
+      joint_index_(joint.index()),
+      effort_lower_limits_(effort_lower_limits),
+      effort_upper_limits_(effort_upper_limits) {}
 
 template <typename T>
 const Joint<T>& JointActuator<T>::joint() const {
@@ -51,8 +55,8 @@ template <typename T>
 std::unique_ptr<JointActuator<double>>
 JointActuator<T>::DoCloneToScalar(
     const internal::MultibodyTree<double>&) const {
-  return std::unique_ptr<JointActuator<double>>(
-      new JointActuator<double>(name_, joint_index_));
+  return std::unique_ptr<JointActuator<double>>(new JointActuator<double>(
+      name_, joint_index_, effort_lower_limits_, effort_upper_limits_));
 }
 
 template <typename T>
@@ -60,7 +64,8 @@ std::unique_ptr<JointActuator<AutoDiffXd>>
 JointActuator<T>::DoCloneToScalar(
     const internal::MultibodyTree<AutoDiffXd>&) const {
   return std::unique_ptr<JointActuator<AutoDiffXd>>(
-      new JointActuator<AutoDiffXd>(name_, joint_index_));
+      new JointActuator<AutoDiffXd>(name_, joint_index_, effort_lower_limits_,
+                                    effort_upper_limits_));
 }
 
 template <typename T>
@@ -68,7 +73,8 @@ std::unique_ptr<JointActuator<symbolic::Expression>>
 JointActuator<T>::DoCloneToScalar(
     const internal::MultibodyTree<symbolic::Expression>&) const {
   return std::unique_ptr<JointActuator<symbolic::Expression>>(
-      new JointActuator<symbolic::Expression>(name_, joint_index_));
+      new JointActuator<symbolic::Expression>(
+          name_, joint_index_, effort_lower_limits_, effort_upper_limits_));
 }
 
 }  // namespace multibody

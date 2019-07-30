@@ -55,7 +55,12 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
       tree.AddJoint<PrismaticJoint>(
           "prism3", body4, math::RigidTransformd::Identity(),
           body5, math::RigidTransformd::Identity(), Eigen::Vector3d(0, 0, 1));
-  tree.AddJointActuator("act3", body4_body5);
+  // Set the effort limit of the actuator to test the effort is setup properly.
+  const double max_effort = 1e3;
+  const auto effort_lower_limit = Vector1d(-max_effort);
+  const auto effort_upper_limit = Vector1d(max_effort);
+  tree.AddJointActuator("act3", body4_body5, effort_lower_limit,
+                        effort_upper_limit);
 
   tree.Finalize();
 
@@ -65,6 +70,11 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   EXPECT_EQ(tree.num_positions(instance2), 8);
   EXPECT_EQ(tree.num_velocities(instance2), 7);
   EXPECT_EQ(tree.num_actuated_dofs(instance2), 1);
+
+  // Validate the actuator effort limit has been setup correctly.
+  const auto& act3 = tree.GetJointActuatorByName("act3");
+  EXPECT_EQ(act3.effort_lower_limits(), effort_lower_limit);
+  EXPECT_EQ(act3.effort_upper_limits(), effort_upper_limit);
 
   Eigen::Vector3d act_vector(0, 0, 0);
   tree.SetActuationInArray(instance1, Eigen::Vector2d(1, 2), &act_vector);

@@ -369,8 +369,9 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
 }
 
 template <typename T>
+template <typename... Args>
 const JointActuator<T>& MultibodyTree<T>::AddJointActuator(
-    const std::string& name, const Joint<T>& joint) {
+    const std::string& name, const Joint<T>& joint, Args&&... args) {
   if (HasJointActuatorNamed(name, joint.model_instance())) {
     throw std::logic_error(
         "Model instance '" +
@@ -387,7 +388,8 @@ const JointActuator<T>& MultibodyTree<T>::AddJointActuator(
 
   const JointActuatorIndex actuator_index =
       topology_.add_joint_actuator(joint.num_velocities());
-  owned_actuators_.push_back(std::make_unique<JointActuator<T>>(name, joint));
+  owned_actuators_.push_back(std::make_unique<JointActuator<T>>(
+      name, joint, std::forward<Args>(args)...));
   JointActuator<T>* actuator = owned_actuators_.back().get();
   actuator->set_parent_tree(this, actuator_index);
   actuator_name_to_index_.insert(std::make_pair(name, actuator_index));

@@ -196,16 +196,17 @@ void AddJointActuatorFromSpecification(
         "An axis must be specified for joint '" + joint_spec.Name() + "'");
   }
 
-  double max_effort = axis->Effort();
+  double effort_limit = axis->Effort();
 
   // The SDF specification defines this max_effort = -1 when no limit is
   // provided (a non-zero value). In Drake we interpret a value of exactly zero
   // as a way to specify un-actuated joints. Thus, the user would say
   // <effort>0</effort> for un-actuated joints.
-  if (max_effort != 0) {
+  if (effort_limit != 0) {
     // TODO(amcastro-tri): For positive max_effort values, store it and use it
     // to limit input actuation.
-    plant->AddJointActuator(joint_spec.Name(), joint);
+    plant->AddJointActuator(joint_spec.Name(), joint, Vector1d(-effort_limit),
+                            Vector1d(effort_limit));
   }
 }
 
