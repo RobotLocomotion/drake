@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -522,6 +523,9 @@ class MultibodyTree {
   ///   HasJointActuatorNamed().
   /// @param[in] joint
   ///   The Joint to be actuated by the new JointActuator.
+  /// @param[in] effort_limit
+  ///   The maximum effort for the actuator. It must be greater than 0. If
+  ///   the user does not set this value, the default value is +∞.
   /// @returns A constant reference to the new JointActuator just added, which
   /// will remain valid for the lifetime of `this` %MultibodyTree.
   /// @throws std::exception if `this` model already contains a joint actuator
@@ -530,7 +534,8 @@ class MultibodyTree {
   // TODO(amcastro-tri): consider adding sugar method to declare an actuated
   // joint with a single call. Maybe MBT::AddActuatedJoint() or the like.
   const JointActuator<T>& AddJointActuator(
-      const std::string& name, const Joint<T>& joint);
+      const std::string& name, const Joint<T>& joint,
+      double effort_limit = std::numeric_limits<double>::infinity());
 
   /// Creates a new model instance.  Returns the index for a new model
   /// instance (as there is no concrete object beyond the index).
