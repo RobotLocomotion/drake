@@ -7,11 +7,17 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-JointActuator<T>::JointActuator(
-    const std::string& name, const Joint<T>& joint)
+JointActuator<T>::JointActuator(const std::string& name, const Joint<T>& joint,
+                                double effort_limit)
     : MultibodyTreeElement<JointActuator<T>, JointActuatorIndex>(
           joint.model_instance()),
-    name_(name), joint_index_(joint.index()) {}
+      name_(name),
+      joint_index_(joint.index()),
+      effort_limit_(effort_limit) {
+  if (effort_limit_ <= 0.0) {
+    throw std::runtime_error("Effort limit must be strictly positive!");
+  }
+}
 
 template <typename T>
 const Joint<T>& JointActuator<T>::joint() const {
@@ -52,7 +58,7 @@ std::unique_ptr<JointActuator<double>>
 JointActuator<T>::DoCloneToScalar(
     const internal::MultibodyTree<double>&) const {
   return std::unique_ptr<JointActuator<double>>(
-      new JointActuator<double>(name_, joint_index_));
+      new JointActuator<double>(name_, joint_index_, effort_limit_));
 }
 
 template <typename T>
@@ -60,7 +66,7 @@ std::unique_ptr<JointActuator<AutoDiffXd>>
 JointActuator<T>::DoCloneToScalar(
     const internal::MultibodyTree<AutoDiffXd>&) const {
   return std::unique_ptr<JointActuator<AutoDiffXd>>(
-      new JointActuator<AutoDiffXd>(name_, joint_index_));
+      new JointActuator<AutoDiffXd>(name_, joint_index_, effort_limit_));
 }
 
 template <typename T>
@@ -68,7 +74,8 @@ std::unique_ptr<JointActuator<symbolic::Expression>>
 JointActuator<T>::DoCloneToScalar(
     const internal::MultibodyTree<symbolic::Expression>&) const {
   return std::unique_ptr<JointActuator<symbolic::Expression>>(
-      new JointActuator<symbolic::Expression>(name_, joint_index_));
+      new JointActuator<symbolic::Expression>(name_, joint_index_,
+                                              effort_limit_));
 }
 
 }  // namespace multibody

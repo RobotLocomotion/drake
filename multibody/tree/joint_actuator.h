@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -41,9 +42,21 @@ class JointActuator final
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JointActuator)
 
   /// Creates an actuator for `joint` with the given `name`.
-  /// The name must be unique within the given MultibodyTree model. This is
-  /// enforced by MultibodyTree::AddJointActuator().
-  JointActuator(const std::string& name, const Joint<T>& joint);
+  /// The name must be unique within the given multibody model. This is
+  /// enforced by MultibodyPlant::AddJointActuator().
+  /// @param[in] name
+  ///   A string with a name identifying `this` actuator.
+  /// @param[in] joint
+  ///   The `joint` that the created actuator will act on.
+  /// @param[in] effort_limit
+  ///   The maximum effort for the actuator. It must be strictly positive,
+  ///   otherwise an std::exception is thrown. If +∞, the actuator has no limit,
+  ///   which is the default. The effort limit has physical units in accordance
+  ///   to the joint type it actuates. For instance, it will have units of
+  ///   N⋅m (torque) for revolute joints while it will have units of N (force)
+  ///   for prismatic joints.
+  JointActuator(const std::string& name, const Joint<T>& joint,
+                double effort_limit = std::numeric_limits<double>::infinity());
 
   /// Returns the name of the actuator.
   const std::string& name() const { return name_; }
@@ -105,6 +118,9 @@ class JointActuator final
       const Eigen::Ref<const VectorX<T>>& u_instance,
       EigenPtr<VectorX<T>> u) const;
 
+  /// Returns the actuator effort limit.
+  double effort_limit() const { return effort_limit_; }
+
   /// @cond
   // For internal use only.
   // NVI to DoCloneToScalar() templated on the scalar type of the new clone to
@@ -123,8 +139,9 @@ class JointActuator final
   template <typename U> friend class JointActuator;
 
   // Private constructor used for cloning.
-  JointActuator(const std::string& name, JointIndex joint_index)
-      : name_(name), joint_index_(joint_index) {}
+  JointActuator(const std::string& name, JointIndex joint_index,
+                double effort_limit)
+      : name_(name), joint_index_(joint_index), effort_limit_(effort_limit) {}
 
   // Helper to clone an actuator (templated on T) to an actuator templated on
   // `double`.
@@ -149,6 +166,9 @@ class JointActuator final
 
   // The index of the joint on which this actuator acts.
   JointIndex joint_index_;
+
+  // Actuator effort limit. It must be greater than 0.
+  double effort_limit_;
 
   // The topology of this actuator. Only valid post- MultibodyTree::Finalize().
   internal::JointActuatorTopology topology_;
