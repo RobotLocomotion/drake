@@ -27,6 +27,8 @@ namespace internal {
 
 using Eigen::Vector3d;
 using fcl::CollisionObjectd;
+using math::RigidTransform;
+using math::RigidTransformd;
 using std::make_shared;
 using std::make_unique;
 using std::move;
@@ -35,8 +37,6 @@ using std::unique_ptr;
 using std::unordered_map;
 
 namespace {
-
-// TODO(SeanCurtis-TRI): Swap all Isometry3 for RigidTransforms.
 
 // Struct for use in SingleCollisionCallback(). Contains the collision request
 // and accumulates results in a drake::multibody::collision::PointPair vector.
@@ -308,13 +308,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     collision_filter_.AddGeometry(encoding.encoding());
   }
 
-  void AddAnchoredGeometry(const Shape& shape, const Isometry3<double>& X_WG,
+  void AddAnchoredGeometry(const Shape& shape, const RigidTransformd& X_WG,
                            GeometryId id) {
     // The collision object gets instantiated in the reification process and
     // placed in this unique pointer.
     std::unique_ptr<CollisionObjectd> fcl_object;
     shape.Reify(this, &fcl_object);
-    fcl_object->setTransform(X_WG);
+    fcl_object->setTransform(X_WG.GetAsIsometry3());
     fcl_object->computeAABB();
     anchored_tree_.registerObject(fcl_object.get());
     anchored_tree_.update();
@@ -352,13 +352,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   //  2. I could simply have a method that returns a mutable reference to such
   //    a vector and the caller sets values there directly.
   void UpdateWorldPoses(
-      const std::unordered_map<GeometryId, Isometry3<T>>& X_WGs) {
+      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) {
     for (const auto& id_object_pair : dynamic_objects_) {
       const GeometryId id = id_object_pair.first;
-      const Isometry3<T>& X_WG = X_WGs.at(id);
+      const RigidTransform<T>& X_WG = X_WGs.at(id);
       // The FCL broadphase requires double-valued poses; so we use ADL to
       // efficiently get double-valued poses out of arbitrary T-valued poses.
-      dynamic_objects_[id]->setTransform(convert_to_double(X_WG));
+      dynamic_objects_[id]->setTransform(
+          convert_to_double(X_WG).GetAsIsometry3());
       dynamic_objects_[id]->computeAABB();
     }
     dynamic_tree_.update();
@@ -528,7 +529,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   std::vector<SignedDistancePair<T>> ComputeSignedDistancePairwiseClosestPoints(
-      const std::unordered_map<GeometryId, Isometry3<T>>& X_WGs,
+      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
       const double max_distance) const {
     std::vector<SignedDistancePair<T>> witness_pairs;
     // All these quantities are aliased in the callback data.
@@ -549,7 +550,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceToPoint(
       const Vector3<T>& p_WQ,
-      const std::unordered_map<GeometryId, Isometry3<T>>& X_WGs,
+      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
       const double threshold) const {
     // We create a sphere of zero radius centered at the query point and put
     // it into a CollisionObject.
@@ -765,12 +766,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   int peek_next_clique() const { return collision_filter_.peek_next_clique(); }
 
-  const Isometry3<double>& GetX_WG(GeometryId id,
-                                   bool is_dynamic) const {
+  const RigidTransformd GetX_WG(GeometryId id, bool is_dynamic) const {
     if (is_dynamic) {
-      return dynamic_objects_.at(id)->getTransform();
+      return RigidTransformd(dynamic_objects_.at(id)->getTransform());
     } else {
-      return anchored_objects_.at(id)->getTransform();
+      return RigidTransformd(anchored_objects_.at(id)->getTransform());
     }
   }
 
@@ -883,7 +883,7 @@ void ProximityEngine<T>::AddDynamicGeometry(
 
 template <typename T>
 void ProximityEngine<T>::AddAnchoredGeometry(
-    const Shape& shape, const Isometry3<double>& X_WG, GeometryId id) {
+    const Shape& shape, const RigidTransformd& X_WG, GeometryId id) {
   impl_->AddAnchoredGeometry(shape, X_WG, id);
 }
 
@@ -926,14 +926,14 @@ std::unique_ptr<ProximityEngine<AutoDiffXd>> ProximityEngine<T>::ToAutoDiffXd()
 
 template <typename T>
 void ProximityEngine<T>::UpdateWorldPoses(
-    const unordered_map<GeometryId, Isometry3<T>>& X_WGs) {
+    const unordered_map<GeometryId, RigidTransform<T>>& X_WGs) {
   impl_->UpdateWorldPoses(X_WGs);
 }
 
 template <typename T>
 std::vector<SignedDistancePair<T>>
 ProximityEngine<T>::ComputeSignedDistancePairwiseClosestPoints(
-    const std::unordered_map<GeometryId, Isometry3<T>>& X_WGs,
+    const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
     const double max_distance) const {
   return impl_->ComputeSignedDistancePairwiseClosestPoints(X_WGs, max_distance);
 }
@@ -942,7 +942,7 @@ template <typename T>
 std::vector<SignedDistanceToPoint<T>>
 ProximityEngine<T>::ComputeSignedDistanceToPoint(
     const Vector3<T>& query,
-    const std::unordered_map<GeometryId, Isometry3<T>>& X_WGs,
+    const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
     const double threshold) const {
   return impl_->ComputeSignedDistanceToPoint(query, X_WGs, threshold);
 }
@@ -1014,8 +1014,8 @@ int ProximityEngine<T>::peek_next_clique() const {
 }
 
 template <typename T>
-const Isometry3<double>& ProximityEngine<T>::GetX_WG(GeometryId id,
-                                                     bool is_dynamic) const {
+const RigidTransformd ProximityEngine<T>::GetX_WG(GeometryId id,
+                                                  bool is_dynamic) const {
   return impl_->GetX_WG(id, is_dynamic);
 }
 

@@ -46,7 +46,7 @@ namespace geometry {
    }
 
    std::vector<FrameId> frame_ids_;
-   std::vector<Isometry3<T>> poses_;
+   std::vector<RigidTransform<T>> poses_;
  };
  ```
 
@@ -56,7 +56,7 @@ namespace geometry {
  ```
    void CalcFramePoseOutput(const Context<T>& context,
                             geometry::FramePoseVector<T>* poses) const {
-     const Isometry3<T>& pose = ...;
+     const RigidTransform<T>& pose = ...;
      *poses = {{frame_id_, pose}};
    }
  ```
@@ -74,19 +74,20 @@ namespace geometry {
  One should never interact with the %FrameKinematicsVector class directly.
  Instead, the FramePoseVector, FrameVelocityVector, and FrameAccelerationVector
  classes are aliases of the %FrameKinematicsVector instantiated on specific
- data types (Isometry3, SpatialVector, and SpatialAcceleration, respectively).
- Each of these data types are templated on Eigen scalars. All supported
- combinations of data type and scalar type are already available to link against
- in the containing library. No other values for KinematicsValue are supported.
+ data types (RigidTransform, SpatialVector, and SpatialAcceleration,
+ respectively). Each of these data types are templated on Eigen scalars. All
+ supported combinations of data type and scalar type are already available to
+ link against in the containing library. No other values for KinematicsValue are
+ supported.
 
  Currently, the following data types with the following scalar types are
  supported:
 
-  Alias           | Instantiation                            | Scalar types
- -----------------|------------------------------------------|--------------
-  FramePoseVector | FrameKinematicsVector<Isometry3<Scalar>> | double
-  FramePoseVector | FrameKinematicsVector<Isometry3<Scalar>> | AutoDiffXd
-  FramePoseVector | FrameKinematicsVector<Isometry3<Scalar>> | Expression
+  Alias           | Instantiation                                 | Scalar types
+ -----------------|-----------------------------------------------|-------------
+  FramePoseVector | FrameKinematicsVector<RigidTransform<Scalar>> | double
+  FramePoseVector | FrameKinematicsVector<RigidTransform<Scalar>> | AutoDiffXd
+  FramePoseVector | FrameKinematicsVector<RigidTransform<Scalar>> | Expression
   */
 template <class KinematicsValue>
 class FrameKinematicsVector {
@@ -169,7 +170,7 @@ class FrameKinematicsVector {
  No other values for T are currently supported.
  */
 template <typename T>
-using FramePoseVector = FrameKinematicsVector<Isometry3<T>>;
+using FramePoseVector = FrameKinematicsVector<math::RigidTransform<T>>;
 
 }  // namespace geometry
 }  // namespace drake

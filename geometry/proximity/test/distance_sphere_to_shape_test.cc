@@ -58,8 +58,6 @@ void DistancePairGeometry<float>::operator()(const fcl::Sphered&,
 
 namespace {
 
-using Eigen::Isometry3d;
-using Eigen::Translation3d;
 using Eigen::Vector3d;
 using fcl::Boxd;
 using fcl::CollisionObjectd;
@@ -390,8 +388,8 @@ GTEST_TEST(ComputeNarrowPhaseDistance, NoFallbackInvocation) {
 
   // T-valued parameters.
   using T = float;
-  const Isometry3<T> X_WA = Isometry3<T>::Identity();
-  const Isometry3<T> X_WB = Isometry3<T>::Identity();
+  const RigidTransform<T> X_WA = RigidTransform<T>::Identity();
+  const RigidTransform<T> X_WB = RigidTransform<T>::Identity();
   SignedDistancePair<T> result;
 
   // These scenarios should *not* invoke the fallback; they will be exercised
@@ -422,8 +420,8 @@ GTEST_TEST(ComputeNarrowPhaseDistance, FallbackInvocation) {
 
   // T-valued parameters.
   using T = float;
-  const Isometry3<T> X_WA = Isometry3<T>::Identity();
-  const Isometry3<T> X_WB = Isometry3<T>::Identity();
+  const RigidTransform<T> X_WA = RigidTransform<T>::Identity();
+  const RigidTransform<T> X_WB = RigidTransform<T>::Identity();
   SignedDistancePair<T> result;
 
   // TODO(SeanCurtis-TRI): Add convex-* pairs to this list.
@@ -463,9 +461,10 @@ GTEST_TEST(ComputeNarrowPhaseDistance, OrderInvariance) {
   EncodedData(box_id, true).write_to(&box);
 
   fcl::DistanceRequestd request{};
-  const Isometry3<double> X_WS(Translation3d{2, 2, 2});
-  const Isometry3<double> X_WB(
-      AngleAxis<double>(M_PI / 5, Vector3d{2, 4, 7}.normalized()));
+  const RigidTransformd X_WS(Vector3d{2, 2, 2});
+  const RigidTransformd X_WB(
+      AngleAxis<double>(M_PI / 5, Vector3d{2, 4, 7}.normalized()),
+      Vector3d::Zero());
   SignedDistancePair<double> result_BS;
   SignedDistancePair<double> result_SB;
 
@@ -502,11 +501,11 @@ GTEST_TEST(ComputeNarrowPhaseDistance, sphere_touches_shape) {
   CollisionObjectd box(make_shared<Boxd>(side, side, side));
   const GeometryId box_id = GeometryId::get_new_id();
   EncodedData(box_id, true).write_to(&box);
-  const Isometry3<double> X_WB(Isometry3<double>::Identity());
+  const RigidTransformd X_WB(RigidTransformd::Identity());
   const fcl::DistanceRequestd request{};
 
   // The sphere touches the box in the middle of a face of the box.
-  const Isometry3<double> X_WS(Translation3d{radius + side / 2., 0, 0});
+  const RigidTransformd X_WS(Vector3d{radius + side / 2., 0, 0});
   SignedDistancePair<double> result;
   ComputeNarrowPhaseDistance<double>(sphere, X_WS, box, X_WB, request, &result);
   const auto p_WCs = X_WS * result.p_ACa;
@@ -531,14 +530,14 @@ GTEST_TEST(ComputeNarrowPhaseDistance, is_nhat_BA_W_well_defined) {
   CollisionObjectd box(make_shared<Boxd>(2, 2, 2));
   const GeometryId box_id = GeometryId::get_new_id();
   EncodedData(box_id, true).write_to(&box);
-  const Isometry3<double> X_WB(Isometry3<double>::Identity());
+  const RigidTransformd X_WB(RigidTransformd::Identity());
 
   const fcl::DistanceRequestd request{};
 
   // Tests when `is_nhat_BA_W_unique` is true.
   {
     // The center of the sphere is outside the box.
-    const Isometry3<double> X_WS(Translation3d{3, 3, 3});
+    const RigidTransformd X_WS(Vector3d{3, 3, 3});
     SignedDistancePair<double> result;
     ComputeNarrowPhaseDistance<double>(sphere, X_WS, box, X_WB, request,
                                        &result);
@@ -547,7 +546,7 @@ GTEST_TEST(ComputeNarrowPhaseDistance, is_nhat_BA_W_well_defined) {
   // Tests when `is_nhat_BA_W_unique` is false.
   {
     // The center of the sphere is at a corner of the box.
-    const Isometry3<double> X_WS(Translation3d{1, 1, 1});
+    const RigidTransformd X_WS(Vector3d{1, 1, 1});
     SignedDistancePair<double> result;
     ComputeNarrowPhaseDistance<double>(sphere, X_WS, box, X_WB, request,
                                        &result);
@@ -574,8 +573,8 @@ class CallbackScalarSupport : public ::testing::Test {
     EncodedData data_B(id_B, true);
     collision_filter_.AddGeometry(data_A.encoding());
     collision_filter_.AddGeometry(data_B.encoding());
-    X_WGs_[id_A] = Isometry3<T>{Translation3<T>{10, 11, 12}};
-    X_WGs_[id_B] = Isometry3<T>::Identity();
+    X_WGs_[id_A] = RigidTransform<T>{Translation3<T>{10, 11, 12}};
+    X_WGs_[id_B] = RigidTransform<T>::Identity();
 
     auto apply_data = [&data_A, &data_B](auto& shapes) {
       data_A.write_to(&shapes[0]);
@@ -615,7 +614,7 @@ class CallbackScalarSupport : public ::testing::Test {
 
  protected:
   CollisionFilterLegacy collision_filter_;
-  std::unordered_map<GeometryId, Isometry3<T>> X_WGs_;
+  std::unordered_map<GeometryId, RigidTransform<T>> X_WGs_;
   std::vector<SignedDistancePair<T>> results_;
   CallbackData<T> data_;
   std::vector<CollisionObjectd> spheres_;
@@ -704,8 +703,9 @@ GTEST_TEST(Callback, ScalarSupportWithFilters) {
   // Filter the pair (A, B) by adding them to the same clique.
   collision_filter.AddToCollisionClique(data_A.encoding(), 1);
   collision_filter.AddToCollisionClique(data_B.encoding(), 1);
-  std::unordered_map<GeometryId, Isometry3<T>> X_WGs{
-      {id_A, Isometry3<T>::Identity()}, {id_B, Isometry3<T>::Identity()}};
+  const std::unordered_map<GeometryId, RigidTransform<T>> X_WGs{
+      {id_A, RigidTransform<T>::Identity()},
+      {id_B, RigidTransform<T>::Identity()}};
 
   CollisionObjectd box_A(make_shared<fcl::Boxd>(0.25, 0.3, 0.4));
   data_A.write_to(&box_A);
@@ -728,11 +728,10 @@ GTEST_TEST(Callback, RespectCollisionFiltering) {
   EncodedData data_B(id_B, true);
   data_A.write_to(&sphere_A);
   data_B.write_to(&sphere_B);
-  std::unordered_map<GeometryId, Isometry3d> X_WGs{
-      {id_A, Isometry3d{Translation3d{10, 11, 12}}},
-      {id_B, Isometry3d::Identity()}};
-  std::vector<GeometryId> geometry_map{GeometryId::get_new_id(),
-                                       GeometryId::get_new_id()};
+  const std::unordered_map<GeometryId, RigidTransformd> X_WGs{
+      {id_A, RigidTransformd{Vector3d{10, 11, 12}}},
+      {id_B, RigidTransformd::Identity()}};
+
   std::vector<SignedDistancePair<double>> results;
   CollisionFilterLegacy collision_filter;
   collision_filter.AddGeometry(data_A.encoding());
@@ -765,9 +764,9 @@ GTEST_TEST(Callback, ABOrdering) {
   EncodedData data_B(id_B, true);
   data_A.write_to(&sphere_A);
   data_B.write_to(&sphere_B);
-  std::unordered_map<GeometryId, Isometry3d> X_WGs{
-      {id_A, Isometry3d{Translation3d{10, 11, 12}}},
-      {id_B, Isometry3d::Identity()}};
+  const std::unordered_map<GeometryId, RigidTransformd> X_WGs{
+      {id_A, RigidTransformd{Vector3d{10, 11, 12}}},
+      {id_B, RigidTransformd::Identity()}};
   CollisionFilterLegacy collision_filter;
   collision_filter.AddGeometry(data_A.encoding());
   collision_filter.AddGeometry(data_B.encoding());
@@ -829,9 +828,9 @@ TYPED_TEST(CallbackMaxDistanceTest, MaxDistanceThreshold) {
   data_B.write_to(&sphere_B);
   const Vector3<T> p_WB = Vector3<T>(2, 3, 4).normalized() *
       (kMaxDistance + radius_A + radius_B - kEps);
-  std::unordered_map<GeometryId, Isometry3<T>> X_WGs{
-      {id_A, Isometry3<T>::Identity()},
-      {id_B, Isometry3<T>{Translation3<T>{p_WB}}}};
+  std::unordered_map<GeometryId, RigidTransform<T>> X_WGs{
+      {id_A, RigidTransform<T>::Identity()},
+      {id_B, RigidTransform<T>{Translation3<T>{p_WB}}}};
 
   // Case: just inside the max distance.
   {
@@ -846,8 +845,9 @@ TYPED_TEST(CallbackMaxDistanceTest, MaxDistanceThreshold) {
 
   // Case: just outside the max distance.
   {
-    X_WGs[id_B] = Translation3<T>{Vector3<T>(2, 3, 4).normalized() *
-                                  (kMaxDistance + radius_A + radius_B + kEps)};
+    X_WGs.at(id_B) = RigidTransform<T>(
+        Translation3<T>{Vector3<T>(2, 3, 4).normalized() *
+                        (kMaxDistance + radius_A + radius_B + kEps)});
     std::vector<SignedDistancePair<T>> results;
     CallbackData<T> data(&collision_filter, &X_WGs, kMaxDistance, &results);
     // NOTE: When done, this should match kMaxDistance.

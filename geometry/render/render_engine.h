@@ -156,7 +156,7 @@ class RenderEngine : public ShapeReifier {
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs) {
     for (const GeometryId id : update_ids_) {
       const math::RigidTransformd X_WG =
-          geometry::internal::convert(X_WGs.at(id));
+          geometry::internal::convert_to_double(X_WGs.at(id));
       DoUpdateVisualPose(id, X_WG);
     }
   }

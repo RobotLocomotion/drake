@@ -14,6 +14,7 @@
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -45,7 +46,7 @@ class InternalGeometry {
    @param X_FG          The pose of the geometry G in the parent frame F.  */
   InternalGeometry(SourceId source_id, std::unique_ptr<Shape> shape,
                    FrameId frame_id, GeometryId geometry_id, std::string name,
-                   const Isometry3<double>& X_FG);
+                   math::RigidTransform<double> X_FG);
 
   /** Compares two %InternalGeometry instances for "equality". Two internal
    geometries are considered equal if they have the same geometry identifier.
@@ -95,11 +96,11 @@ class InternalGeometry {
   /** Returns the pose of this geometry in the declared *parent* frame -- note
    if this geometry was registered as a child of another geometry it will *not*
    be the same as X_FG().  */
-  const Isometry3<double>& X_PG() const { return X_PG_; }
+  const math::RigidTransform<double>& X_PG() const { return X_PG_; }
 
   /** Returns the pose of this geometry in the frame to which it is ultimately
    rigidly attached. This is in contrast to X_PG().  */
-  const Isometry3<double>& X_FG() const { return X_FG_; }
+  const math::RigidTransform<double>& X_FG() const { return X_FG_; }
 
   // TODO(SeanCurtis-TRI): Determine if tracking this parent geometry is
   // necessary for now or if that only exists to facilitate removal later on.
@@ -111,10 +112,10 @@ class InternalGeometry {
    be updated.
    @param id    The id of the parent geometry.
    @param X_FG  The new value for X_FG (assuming the constructed value is to be
-                interpreted as X_PG.  */
-  void set_geometry_parent(GeometryId id, const Isometry3<double>& X_FG) {
+                interpreted as X_PG).  */
+  void set_geometry_parent(GeometryId id, math::RigidTransform<double> X_FG) {
     parent_geometry_id_ = id;
-    X_FG_ = X_FG;
+    X_FG_ = std::move(X_FG);
   }
 
   /** Returns true if this geometry has a geometry parent and the parent has the
@@ -265,11 +266,11 @@ class InternalGeometry {
 
   // The pose of this geometry in the registered parent frame. The parent may be
   // a frame or another registered geometry.
-  Isometry3<double> X_PG_;
+  math::RigidTransform<double> X_PG_;
 
   // The pose of this geometry in the ultimate frame to which this geometry is
   // rigidly affixed. If there is no parent geometry, X_PG_ == X_FG_.
-  Isometry3<double> X_FG_;
+  math::RigidTransform<double> X_FG_;
 
   // The identifier for this frame's parent frame.
   optional<GeometryId> parent_geometry_id_{};

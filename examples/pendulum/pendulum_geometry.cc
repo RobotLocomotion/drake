@@ -103,7 +103,7 @@ void PendulumGeometry::OutputGeometryPose(
   const double theta = input.theta();
   const math::RigidTransformd pose(math::RotationMatrixd::MakeYRotation(theta));
 
-  *poses = {{frame_id_, pose.GetAsIsometry3()}};
+  *poses = {{frame_id_, pose}};
 }
 
 }  // namespace pendulum

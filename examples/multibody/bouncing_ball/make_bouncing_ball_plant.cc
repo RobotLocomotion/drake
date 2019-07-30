@@ -35,7 +35,7 @@ MakeBouncingBallPlant(double radius, double mass,
     Vector3<double> normal_W(0, 0, 1);
     Vector3<double> point_W(0, 0, 0);
 
-    const RigidTransformd X_WG(HalfSpace::MakePose(normal_W, point_W));
+    const RigidTransformd X_WG(HalfSpace::MakePoseInF(normal_W, point_W));
     // A half-space for the ground geometry.
     plant->RegisterCollisionGeometry(plant->world_body(), X_WG, HalfSpace(),
                                      "collision", surface_friction);

@@ -24,6 +24,11 @@ namespace geometry {
 
 namespace {
 
+using Eigen::Quaterniond;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using math::RigidTransformd;
+
 // Simple class for converting shape specifications into LCM-compatible shapes.
 class ShapeToLcm : public ShapeReifier {
  public:
@@ -33,8 +38,8 @@ class ShapeToLcm : public ShapeReifier {
   ~ShapeToLcm() override = default;
 
   lcmt_viewer_geometry_data Convert(const Shape& shape,
-                                    const Isometry3<double>& X_PG,
-                                    const Eigen::Vector4d& in_color) {
+                                    const RigidTransformd& X_PG,
+                                    const Vector4d& in_color) {
     X_PG_ = X_PG;
     // NOTE: Reify *may* change X_PG_ based on the shape. For example, the
     // half-space requires an additional offset to shift the box representing
@@ -47,7 +52,7 @@ class ShapeToLcm : public ShapeReifier {
     Eigen::Map<Eigen::Vector3f> position(geometry_data_.position);
     position = X_PG_.translation().cast<float>();
     // LCM quaternion must be w, x, y, z.
-    Eigen::Quaternion<double> q(X_PG_.linear());
+    Quaterniond q(X_PG_.rotation().ToQuaternion());
     geometry_data_.quaternion[0] = q.w();
     geometry_data_.quaternion[1] = q.x();
     geometry_data_.quaternion[2] = q.y();
@@ -88,9 +93,8 @@ class ShapeToLcm : public ShapeReifier {
     // The final pose of the box is the half-space's pose pre-multiplied by
     // an offset sufficient to move the box down so it's top face lies on the
     // z = 0 plane.
-    Isometry3<double> box_xform = Isometry3<double>::Identity();
     // Shift it down so that the origin lies on the top surface.
-    box_xform.translation() << 0, 0, -thickness / 2;
+    RigidTransformd box_xform{Vector3d{0, 0, -thickness / 2}};
     X_PG_ = X_PG_ * box_xform;
   }
 
@@ -125,12 +129,12 @@ class ShapeToLcm : public ShapeReifier {
  private:
   lcmt_viewer_geometry_data geometry_data_{};
   // The transform from the geometry frame to its parent frame.
-  Eigen::Isometry3d X_PG_;
+  RigidTransformd X_PG_;
 };
 
 lcmt_viewer_geometry_data MakeGeometryData(const Shape& shape,
-                                           const Isometry3<double>& X_PG,
-                                           const Eigen::Vector4d& in_color) {
+                                           const RigidTransformd& X_PG,
+                                           const Vector4d& in_color) {
   ShapeToLcm converter;
   return converter.Convert(shape, X_PG, in_color);
 }
@@ -169,7 +173,7 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
   message.num_links = frame_count;
   message.link.resize(frame_count);
 
-  const Eigen::Vector4d default_color({0.9, 0.9, 0.9, 1.0});
+  const Vector4d default_color({0.9, 0.9, 0.9, 1.0});
 
   auto get_properties = [](const InternalGeometry& geometry,
                            Role role_for_visualization) {
@@ -205,7 +209,7 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
       const GeometryProperties* props = get_properties(geometry, role);
       if (props != nullptr) {
         const Shape& shape = geometry.shape();
-        const Eigen::Vector4d& color = props->GetPropertyOrDefault(
+        const Vector4d& color = props->GetPropertyOrDefault(
             "phong", "diffuse", default_color);
         message.link[0].geom[geom_index] = MakeGeometryData(
             shape, geometry.X_FG(), color);
@@ -235,7 +239,7 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
       const GeometryProperties* props = get_properties(geometry, role);
       if (props != nullptr) {
         const Shape& shape = geometry.shape();
-        const Eigen::Vector4d& color = props->GetPropertyOrDefault(
+        const Vector4d& color = props->GetPropertyOrDefault(
             "phong", "diffuse", default_color);
         message.link[link_index].geom[geom_index] =
             MakeGeometryData(shape, geometry.X_FG(), color);
