@@ -72,13 +72,13 @@ class DenseVariable {
   void InitializeConstraintMargin();
 
   /**
-   * Performs the operation u <- a*x + u
+   * Performs the operation *this <- a*x + *this
    * (where u is this object).
    * This is a level 1 BLAS operation for this object;
    * see http://www.netlib.org/blas/blasqr.pdf.
    *
-   * @param[in] x the other variable
    * @param[in] a scalar
+   * @param[in] x vector
    *
    * Note that this handles the constraint margin correctly, i.e., after the
    * operation u.y = b - A*(u.z + a*x.z).
