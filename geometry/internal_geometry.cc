@@ -8,18 +8,19 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+using math::RigidTransform;
 using std::move;
 
 InternalGeometry::InternalGeometry(
     SourceId source_id, std::unique_ptr<Shape> shape, FrameId frame_id,
-    GeometryId geometry_id, std::string name, const Isometry3<double>& X_FG)
+    GeometryId geometry_id, std::string name, RigidTransform<double> X_FG)
     : shape_spec_(std::move(shape)),
       id_(geometry_id),
       name_(std::move(name)),
       source_id_(source_id),
       frame_id_(frame_id),
-      X_PG_(X_FG),
-      X_FG_(X_FG),
+      X_PG_(move(X_FG)),
+      X_FG_(X_PG_),
       parent_geometry_id_(nullopt) {}
 
 bool InternalGeometry::has_role(Role role) const {

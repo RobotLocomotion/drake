@@ -69,7 +69,7 @@ void QuadrotorGeometry::OutputGeometryPose(
       math::RollPitchYawd(state.segment<3>(3)),
       state.head<3>());
 
-  *poses = {{frame_id_, pose.GetAsIsometry3()}};
+  *poses = {{frame_id_, pose}};
 }
 
 }  // namespace quadrotor

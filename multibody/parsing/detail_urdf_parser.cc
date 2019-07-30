@@ -126,8 +126,8 @@ void ParseBody(const multibody::PackageMap& package_map,
       // instance, even if it is empty.
       DRAKE_DEMAND(geometry_instance.illustration_properties() != nullptr);
       plant->RegisterVisualGeometry(
-          body, RigidTransformd(geometry_instance.pose()),
-          geometry_instance.shape(), geometry_instance.name(),
+          body, geometry_instance.X_PG(), geometry_instance.shape(),
+          geometry_instance.name(),
           *geometry_instance.illustration_properties());
     }
 
@@ -138,9 +138,9 @@ void ParseBody(const multibody::PackageMap& package_map,
       geometry::GeometryInstance geometry_instance =
           ParseCollision(body_name, package_map, root_dir, collision_node,
                          &friction);
-      plant->RegisterCollisionGeometry(
-          body, RigidTransformd(geometry_instance.pose()),
-          geometry_instance.shape(), geometry_instance.name(), friction);
+      plant->RegisterCollisionGeometry(body, geometry_instance.X_PG(),
+                                       geometry_instance.shape(),
+                                       geometry_instance.name(), friction);
     }
   }
 }

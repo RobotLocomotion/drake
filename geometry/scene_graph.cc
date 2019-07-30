@@ -415,7 +415,10 @@ void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
   }
 
   for (FrameId f_id : dynamic_frames) {
-    output->set_pose(i, g_state.get_pose_in_world(f_id));
+    // TODO(SeanCurtis-TRI): Remove GetAsIsometry3() when PoseBundle supports
+    //  RigidTransform.
+    //  https://github.com/RobotLocomotion/drake/issues/11888
+    output->set_pose(i, g_state.get_pose_in_world(f_id).GetAsIsometry3());
     // TODO(SeanCurtis-TRI): Handle velocity.
     ++i;
   }

@@ -7,14 +7,15 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/symbolic.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
 
 namespace {
 template <typename T>
-void InitializeKinematicsValue(Isometry3<T>* value) {
-  value->setIdentity();
+void InitializeKinematicsValue(math::RigidTransform<T>* value) {
+  value->SetIdentity();
 }
 }  // namespace
 
@@ -108,9 +109,10 @@ void FrameKinematicsVector<KinematicsValue>::CheckInvariants() const {
 }
 
 // Explicitly instantiates on the most common scalar types.
-template class FrameKinematicsVector<Isometry3<double>>;
-template class FrameKinematicsVector<Isometry3<AutoDiffXd>>;
-template class FrameKinematicsVector<Isometry3<symbolic::Expression>>;
+template class FrameKinematicsVector<math::RigidTransform<double>>;
+template class FrameKinematicsVector<math::RigidTransform<AutoDiffXd>>;
+template class FrameKinematicsVector<
+    math::RigidTransform<symbolic::Expression>>;
 
 }  // namespace geometry
 }  // namespace drake

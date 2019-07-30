@@ -45,30 +45,30 @@ QueryObject<T>& QueryObject<T>::operator=(const QueryObject<T>& query_object) {
 }
 
 template <typename T>
-RigidTransform<T> QueryObject<T>::X_WF(FrameId id) const {
+const RigidTransform<T>& QueryObject<T>::X_WF(FrameId id) const {
   ThrowIfNotCallable();
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
-  return RigidTransform<T>(state.get_pose_in_world(id));
+  return state.get_pose_in_world(id);
 }
 
 template <typename T>
-RigidTransform<T> QueryObject<T>::X_PF(FrameId id) const {
+const RigidTransform<T>& QueryObject<T>::X_PF(FrameId id) const {
   ThrowIfNotCallable();
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
-  return RigidTransform<T>(state.get_pose_in_parent(id));
+  return state.get_pose_in_parent(id);
 }
 
 template <typename T>
-RigidTransform<T> QueryObject<T>::X_WG(GeometryId id) const {
+const RigidTransform<T>& QueryObject<T>::X_WG(GeometryId id) const {
   ThrowIfNotCallable();
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
-  return RigidTransform<T>(state.get_pose_in_world(id));
+  return state.get_pose_in_world(id);
 }
 
 template <typename T>

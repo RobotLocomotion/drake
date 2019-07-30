@@ -436,8 +436,8 @@ void AddLinksFromSpecification(
               geometry_instance->illustration_properties() != nullptr);
 
           plant->RegisterVisualGeometry(
-              body, RigidTransformd(geometry_instance->pose()),
-              geometry_instance->shape(), geometry_instance->name(),
+              body, geometry_instance->X_PG(), geometry_instance->shape(),
+              geometry_instance->name(),
               *geometry_instance->illustration_properties());
         }
       }
