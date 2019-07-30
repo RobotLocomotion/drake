@@ -256,7 +256,8 @@ class TestSensors(unittest.TestCase):
         X_WB = RigidTransform()
         # This id would fail if we tried to render; no such id exists.
         parent_id = FrameId.get_new_id()
-        camera_poses = mut.RgbdSensor.CameraPoses()
+        camera_poses = mut.RgbdSensor.CameraPoses(
+            X_BC=RigidTransform(), X_BD=RigidTransform())
         sensor = mut.RgbdSensor(parent_id=parent_id, X_PB=X_WB,
                                 properties=properties,
                                 camera_poses=camera_poses)

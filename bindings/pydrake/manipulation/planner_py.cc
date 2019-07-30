@@ -33,11 +33,8 @@ PYBIND11_MODULE(planner, m) {
         doc.DifferentialInverseKinematicsResult.doc);
 
     // TODO(m-chaturvedi) Add Pybind11 documentation.
-    cls.def(py::init([](optional<VectorX<double>> joint_velocities,
-                         DifferentialInverseKinematicsStatus status) {
-         return Class{joint_velocities, status};
-       }),
-           py::arg("joint_velocities"), py::arg("status"))
+    cls  // BR
+        .def(ParamInit<Class>())
         .def_readwrite("joint_velocities", &Class::joint_velocities,
             cls_doc.joint_velocities.doc)
         .def_readwrite("status", &Class::status, cls_doc.status.doc);

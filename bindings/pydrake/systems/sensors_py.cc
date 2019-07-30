@@ -195,7 +195,7 @@ PYBIND11_MODULE(sensors, m) {
 
   py::class_<RgbdSensor::CameraPoses>(
       rgbd_sensor, "CameraPoses", doc.RgbdSensor.CameraPoses.doc)
-      .def(py::init<>())
+      .def(ParamInit<RgbdSensor::CameraPoses>())
       .def_readwrite("X_BC", &RgbdSensor::CameraPoses::X_BC)
       .def_readwrite("X_BD", &RgbdSensor::CameraPoses::X_BD);
 

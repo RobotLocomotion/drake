@@ -93,7 +93,7 @@ void def_geometry_render(py::module m) {
 
   py::class_<RenderEngineVtkParams>(
       m, "RenderEngineVtkParams", doc.RenderEngineVtkParams.doc)
-      .def(py::init<>())
+      .def(ParamInit<RenderEngineVtkParams>())
       .def_readwrite("default_label", &RenderEngineVtkParams::default_label,
           doc.RenderEngineVtkParams.default_label.doc)
       .def_readwrite("default_diffuse", &RenderEngineVtkParams::default_diffuse,
@@ -264,7 +264,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "SignedDistancePair", param, doc.SignedDistancePair.doc);
     cls  // BR
-        .def(py::init<>(), doc.SignedDistancePair.ctor.doc_7args)
+        .def(ParamInit<Class>(), doc.SignedDistancePair.ctor.doc_7args)
         .def_readwrite("id_A", &SignedDistancePair<T>::id_A,
             doc.SignedDistancePair.id_A.doc)
         .def_readwrite("id_B", &SignedDistancePair<T>::id_B,
@@ -291,7 +291,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "SignedDistanceToPoint", param, doc.SignedDistanceToPoint.doc);
     cls  // BR
-        .def(py::init<>(), doc.SignedDistanceToPoint.ctor.doc)
+        .def(ParamInit<Class>(), doc.SignedDistanceToPoint.ctor.doc)
         .def_readwrite("id_G", &SignedDistanceToPoint<T>::id_G,
             doc.SignedDistanceToPoint.id_G.doc)
         .def_readwrite("p_GN", &SignedDistanceToPoint<T>::p_GN,
@@ -310,7 +310,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "PenetrationAsPointPair", param, doc.PenetrationAsPointPair.doc);
     cls  // BR
-        .def(py::init<>(), doc.PenetrationAsPointPair.ctor.doc)
+        .def(ParamInit<Class>(), doc.PenetrationAsPointPair.ctor.doc)
         .def_readwrite("id_A", &PenetrationAsPointPair<T>::id_A,
             doc.PenetrationAsPointPair.id_A.doc)
         .def_readwrite("id_B", &PenetrationAsPointPair<T>::id_B,
