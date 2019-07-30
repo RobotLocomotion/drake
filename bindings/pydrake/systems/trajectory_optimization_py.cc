@@ -29,7 +29,7 @@ PYBIND11_MODULE(trajectory_optimization, m) {
   py::class_<MultipleShooting, solvers::MathematicalProgram>(
       m, "MultipleShooting", doc.MultipleShooting.doc)
       .def("time", &MultipleShooting::time, doc.MultipleShooting.time.doc)
-      .def("timestep", &MultipleShooting::timestep,
+      .def("timestep", &MultipleShooting::timestep, py::arg("index"),
           doc.MultipleShooting.timestep.doc)
       .def("fixed_timestep", &MultipleShooting::fixed_timestep,
           doc.MultipleShooting.fixed_timestep.doc)
@@ -44,7 +44,7 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       .def("state",
           [](const MultipleShooting& self, int index)
               -> VectorXDecisionVariable { return self.state(index); },
-          doc.MultipleShooting.state.doc_1args)
+          py::arg("index"), doc.MultipleShooting.state.doc_1args)
       .def("initial_state",
           [](const MultipleShooting& self) -> VectorXDecisionVariable {
             return self.initial_state();
@@ -63,7 +63,7 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       .def("input",
           [](const MultipleShooting& self, int index)
               -> VectorXDecisionVariable { return self.input(index); },
-          doc.MultipleShooting.input.doc_1args)
+          py::arg("index"), doc.MultipleShooting.input.doc_1args)
       .def("NewSequentialVariable",
           [](MultipleShooting& self, int rows,
               const std::string& name) -> VectorXDecisionVariable {
@@ -82,59 +82,64 @@ PYBIND11_MODULE(trajectory_optimization, m) {
           [](MultipleShooting& prog, const symbolic::Expression& g) {
             prog.AddRunningCost(g);
           },
-          doc.MultipleShooting.AddRunningCost.doc_1args_g)
+          py::arg("g"), doc.MultipleShooting.AddRunningCost.doc_1args_g)
       .def("AddRunningCost",
           [](MultipleShooting& prog,
               const Eigen::Ref<const MatrixX<symbolic::Expression>>& g) {
             prog.AddRunningCost(g);
           },
+          py::arg("g"),
           doc.MultipleShooting.AddRunningCost.doc_1args_constEigenMatrixBase)
       .def("AddConstraintToAllKnotPoints",
-          &MultipleShooting::AddConstraintToAllKnotPoints,
+          &MultipleShooting::AddConstraintToAllKnotPoints, py::arg("f"),
           doc.MultipleShooting.AddConstraintToAllKnotPoints.doc)
       .def("AddTimeIntervalBounds", &MultipleShooting::AddTimeIntervalBounds,
+          py::arg("lower_bound"), py::arg("upper_bound"),
           doc.MultipleShooting.AddTimeIntervalBounds.doc)
       .def("AddEqualTimeIntervalsConstraints",
           &MultipleShooting::AddEqualTimeIntervalsConstraints,
           doc.MultipleShooting.AddEqualTimeIntervalsConstraints.doc)
       .def("AddDurationBounds", &MultipleShooting::AddDurationBounds,
+          py::arg("lower_bound"), py::arg("upper_bound"),
           doc.MultipleShooting.AddDurationBounds.doc)
       .def("AddFinalCost",
           py::overload_cast<const symbolic::Expression&>(
               &MultipleShooting::AddFinalCost),
-          doc.MultipleShooting.AddFinalCost.doc_1args_e)
+          py::arg("e"), doc.MultipleShooting.AddFinalCost.doc_1args_e)
       .def("AddFinalCost",
           py::overload_cast<
               const Eigen::Ref<const MatrixX<symbolic::Expression>>&>(
               &MultipleShooting::AddFinalCost),
-          doc.MultipleShooting.AddFinalCost.doc_1args_matrix)
+          py::arg("matrix"), doc.MultipleShooting.AddFinalCost.doc_1args_matrix)
       .def("AddInputTrajectoryCallback",
-          &MultipleShooting::AddInputTrajectoryCallback,
+          &MultipleShooting::AddInputTrajectoryCallback, py::arg("callback"),
           doc.MultipleShooting.AddInputTrajectoryCallback.doc)
       .def("AddStateTrajectoryCallback",
-          &MultipleShooting::AddStateTrajectoryCallback,
+          &MultipleShooting::AddStateTrajectoryCallback, py::arg("callback"),
           doc.MultipleShooting.AddStateTrajectoryCallback.doc)
       .def("AddCompleteTrajectoryCallback",
           &MultipleShooting::AddCompleteTrajectoryCallback, py::arg("callback"),
           py::arg("names"),
           doc.MultipleShooting.AddCompleteTrajectoryCallback.doc)
       .def("SetInitialTrajectory", &MultipleShooting::SetInitialTrajectory,
+          py::arg("traj_init_u"), py::arg("traj_init_x"),
           doc.MultipleShooting.SetInitialTrajectory.doc)
       .def("GetSampleTimes",
           overload_cast_explicit<Eigen::VectorXd,
               const solvers::MathematicalProgramResult&>(
               &MultipleShooting::GetSampleTimes),
+          py::arg("result"),
           doc.MultipleShooting.GetSampleTimes.doc_1args_h_var_values)
       .def("GetInputSamples",
           overload_cast_explicit<Eigen::MatrixXd,
               const solvers::MathematicalProgramResult&>(
               &MultipleShooting::GetInputSamples),
-          doc.MultipleShooting.GetInputSamples.doc)
+          py::arg("result"), doc.MultipleShooting.GetInputSamples.doc)
       .def("GetStateSamples",
           overload_cast_explicit<Eigen::MatrixXd,
               const solvers::MathematicalProgramResult&>(
               &MultipleShooting::GetStateSamples),
-          doc.MultipleShooting.GetStateSamples.doc)
+          py::arg("result"), doc.MultipleShooting.GetStateSamples.doc)
       .def("GetSequentialVariableSamples",
           overload_cast_explicit<Eigen::MatrixXd,
               const solvers::MathematicalProgramResult&, const std::string&>(
@@ -145,11 +150,13 @@ PYBIND11_MODULE(trajectory_optimization, m) {
           overload_cast_explicit<trajectories::PiecewisePolynomial<double>,
               const solvers::MathematicalProgramResult&>(
               &MultipleShooting::ReconstructInputTrajectory),
+          py::arg("result"),
           doc.MultipleShooting.ReconstructInputTrajectory.doc)
       .def("ReconstructStateTrajectory",
           overload_cast_explicit<trajectories::PiecewisePolynomial<double>,
               const solvers::MathematicalProgramResult&>(
               &MultipleShooting::ReconstructStateTrajectory),
+          py::arg("result"),
           doc.MultipleShooting.ReconstructStateTrajectory.doc);
 
   py::class_<DirectCollocation, MultipleShooting>(
