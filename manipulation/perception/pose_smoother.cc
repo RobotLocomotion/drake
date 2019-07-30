@@ -15,6 +15,8 @@ namespace drake {
 
 using Eigen::Quaterniond;
 using Eigen::Isometry3d;
+using math::RigidTransform;
+using math::RotationMatrix;
 namespace manipulation {
 
 using util::MovingAverageFilter;
@@ -26,7 +28,7 @@ struct InternalState {
              std::make_unique<MovingAverageFilter<VectorX<double>>>(
                  filter_window_size) : nullptr) {}
 
-  Isometry3<double> pose{Isometry3d::Identity()};
+  RigidTransform<double> pose;  // Initializes to identity RigidTransform.
   Vector6<double> velocity{Vector6<double>::Zero()};
   double time_at_last_accepted_pose{0.0};
   bool is_first_time{true};
@@ -37,8 +39,9 @@ struct InternalState {
  * Computes velocity of the motion from pose_2 to pose_1 taking place in
  * delta_t seconds.
  */
-VectorX<double> ComputeVelocities(const Isometry3d& pose_1,
-                                  const Isometry3d& pose_2, double delta_t) {
+VectorX<double> ComputeVelocities(const RigidTransform<double>& pose_1,
+                                  const RigidTransform<double>& pose_2,
+                                  double delta_t) {
   VectorX<double> velocities = VectorX<double>::Zero(6);
 
   // Since the condition delta_t = 0 can only occur at the first instance of
@@ -50,10 +53,10 @@ VectorX<double> ComputeVelocities(const Isometry3d& pose_1,
         pose_1.translation() - pose_2.translation();
     velocities.head<3>() = (translation_diff / delta_t).matrix();
 
-    Eigen::AngleAxisd angle_axis_diff;
     // Computes angular velocity from the angle difference.
-    angle_axis_diff =
-        Eigen::AngleAxisd(pose_1.linear() * pose_2.linear().inverse());
+    const RotationMatrix<double> R = pose_1.rotation()
+                                   * pose_2.rotation().inverse();
+    const Eigen::AngleAxisd angle_axis_diff = R.ToAngleAxis();
     velocities.tail<3>() =
         angle_axis_diff.axis() * angle_axis_diff.angle() / delta_t;
   }
@@ -64,21 +67,20 @@ VectorX<double> ComputeVelocities(const Isometry3d& pose_1,
 // PoseVector or a similar future variant.
 // Sets a pose from a 7-element array whose first 3 elements are position and
 // last 4 elements are a quaternion (w, x, y, z) with w >= 0 (canonical form).
-math::RigidTransform<double> PoseVector7ToRigidTransform(
+RigidTransform<double> PoseVector7ToRigidTransform(
     const VectorX<double>& pose_vector) {
   DRAKE_ASSERT(pose_vector.size() == 7);
   Quaterniond quaternion(pose_vector(3), pose_vector(4),
                          pose_vector(5), pose_vector(6));
-  return math::RigidTransform<double>(quaternion, pose_vector.head<3>());
+  return RigidTransform<double>(quaternion, pose_vector.head<3>());
 }
 
 // Convert a pose into a 7 element array whose first 3 elements are position and
 // last 4 elements are a quaternion (w, x, y, z) with w >= 0 (canonical form).
-VectorX<double> RigidTransformdToVector7(const math::RigidTransformd& pose) {
+VectorX<double> RigidTransformdToVector7(const RigidTransform<double>& pose) {
   VectorX<double> pose_vector = VectorX<double>::Zero(7);
   pose_vector.head<3>() = pose.translation();
-  Quaterniond quat(pose.rotation().matrix());
-  quat = math::QuaternionToCanonicalForm(quat);
+  const Quaterniond quat = pose.rotation().ToQuaternion();
   pose_vector.tail<4>() =
       (VectorX<double>(4) << quat.w(), quat.x(), quat.y(), quat.z()).finished();
   return pose_vector;
@@ -115,9 +117,10 @@ void PoseSmoother::DoCalcUnrestrictedUpdate(
       state->get_mutable_abstract_state<InternalState>(0);
 
   // Update world state from inputs.
-  const auto& input_pose = this->get_input_port(0).Eval<Isometry3d>(context);
+  const RigidTransform<double> input_pose(
+      this->get_input_port(0).Eval<Isometry3d>(context));
 
-  double current_time = context.get_time();
+      double current_time = context.get_time();
 
   // Set the initial state of the smoother.
   if (internal_state.is_first_time) {
@@ -127,13 +130,12 @@ void PoseSmoother::DoCalcUnrestrictedUpdate(
     drake::log()->debug("PoseSmoother initial state set.");
   }
 
-  Isometry3d& current_pose = internal_state.pose;
+  RigidTransform<double>& current_pose = internal_state.pose;
   double& time_at_last_accepted_pose =
       internal_state.time_at_last_accepted_pose;
   Vector6<double>& current_velocity = internal_state.velocity;
-
-  Vector6<double> new_velocity = ComputeVelocities(
-      input_pose, current_pose, current_time - time_at_last_accepted_pose);
+  Vector6<double> new_velocity = ComputeVelocities(input_pose, current_pose,
+                                  current_time - time_at_last_accepted_pose);
 
   bool accept_data_point = true;
   for (int i = 0; i < 3; ++i) {
@@ -145,23 +147,18 @@ void PoseSmoother::DoCalcUnrestrictedUpdate(
   }
   // If data is below threshold it can be added to the filter.
   if (accept_data_point) {
-    Quaterniond input_quaternion(input_pose.linear());
-    const math::RotationMatrixd input_R(input_quaternion);
-    math::RigidTransformd corrected_input(input_R, input_pose.translation());
-
-    math::RigidTransform<double> accepted_pose = corrected_input;
+    RigidTransform<double> accepted_pose = input_pose;
     // If the smoother is enabled.
     if (is_filter_enabled_) {
       VectorX<double> temp = internal_state.filter->Update(
-          RigidTransformdToVector7(corrected_input));
+          RigidTransformdToVector7(input_pose));
       accepted_pose = PoseVector7ToRigidTransform(temp);
     }
 
-    current_velocity =
-        ComputeVelocities(accepted_pose.GetAsIsometry3(), current_pose,
-                          current_time - time_at_last_accepted_pose);
+    current_velocity = ComputeVelocities(
+        accepted_pose, current_pose, current_time - time_at_last_accepted_pose);
     time_at_last_accepted_pose = current_time;
-    current_pose = accepted_pose.GetAsIsometry3();
+    current_pose = accepted_pose;
   } else {
     drake::log()->debug("Data point rejected");
   }
@@ -170,7 +167,7 @@ void PoseSmoother::DoCalcUnrestrictedUpdate(
 void PoseSmoother::OutputSmoothedPose(const systems::Context<double>& context,
                                       Isometry3d* output) const {
   const auto internal_state = context.get_abstract_state<InternalState>(0);
-  *output = internal_state.pose;
+  *output = internal_state.pose.GetAsIsometry3();
   output->makeAffine();
 }
 
