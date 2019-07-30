@@ -24,7 +24,7 @@
 namespace drake {
 namespace multibody {
 
-/// This class helps describe the mass distribution (inertia properties) of a
+/// This class describes the mass distribution (inertia properties) of a
 /// body or composite body about a particular point.  Herein, "composite body"
 /// means one body or a collection of bodies that are welded together.  In this
 /// documentation, "body" and "composite body" are used interchangeably.
@@ -34,8 +34,9 @@ namespace multibody {
 /// inertia about a particular point. The term **rotational inertia** is used
 /// here and by [Jain 2010] to distinguish from a body's **spatial inertia**.
 /// In this class, a 3x3 **inertia matrix** I represents a body's rotational
-/// inertia about a point and expressed in a frame (e.g., about-point P and
-/// expressed-in frame E with right-handed orthogonal unit vectors x̂, ŷ, ẑ).
+/// inertia about a point and expressed in a frame.  More specifically, `I_BP_E`
+/// is the inertia matrix of a body B about-point P and expressed-in frame E
+/// (herein frame E's orthogonal unit vectors Ex, Ey, Ez are denoted 𝐱̂, 𝐲̂, 𝐳̂).
 /// <pre>
 ///     | Ixx Ixy Ixz |
 /// I = | Ixy Iyy Iyz |
@@ -58,8 +59,8 @@ namespace multibody {
 ///
 /// The 3x3 inertia matrix is symmetric and its diagonal elements (moments of
 /// inertia) and off-diagonal elements (products of inertia) are associated
-/// with a body (or composite body) S, an about-point P, and an expressed-in-
-/// frame E (x̂, ŷ, ẑ).  A rotational inertia is ill-defined unless there is a
+/// with a body (or composite body) S, an about-point P, and an expressed-in
+/// frame E (𝐱̂, 𝐲̂, 𝐳̂̂).  A rotational inertia is ill-defined unless there is a
 /// body S, about-point P, and expressed-in frame E. The user of this class is
 /// responsible for tracking the body S, about-point P and expressed-in frame E
 /// (none of these are stored in this class).
@@ -100,18 +101,19 @@ namespace multibody {
 /// Note: The vector dot-product (⋅) above produces a scalar whereas the vector
 /// multiply (*) produces a dyadic which is a 2nd-order tensor (ᴾ𝐩ˢ¹ * ᴾ𝐩ˢ¹ is
 /// similar to the matrix outer-product of a 3x1 matrix multiplied by a 1x3
-/// matrix). The inertia dyadic 𝐈 of the entire system S is defined by summing
+/// matrix). An example inertia dyadic for a single particle is shown further
+/// below.  The inertia dyadic 𝐈 of the entire system S is defined by summing
 /// the inertia dyadic of each particle Sᵢ about P (i = 1, ... n), i.e.,
 /// <pre>
 ///     𝐈 = 𝐈₁ + 𝐈₂ + ... 𝐈ₙ
 /// </pre>
 /// The elements of the inertia matrix @f$ [I^{S/P}]_E @f$ expressed in frame E
-/// (in terms of unit vectors Ex, Ey, Ez) are found by pre-dot multiplication
-/// and post-dot multiplication of 𝐈 with the appropriate unit vectors.
+/// (in terms of orthogonal unit vectors 𝐱̂, 𝐲̂, 𝐳̂̂) are found by pre-dot
+/// multiplying and post-dot multiplying 𝐈 with appropriate unit vectors.
 /// <pre>
-///    Ixx = Ex ⋅ 𝐈 ⋅ Ex      Ixy = Ex ⋅ 𝐈 ⋅ Ey      Ixz = Ex ⋅ 𝐈 ⋅ Ez
-///    Iyx = Ey ⋅ 𝐈 ⋅ Ex      Iyy = Ey ⋅ 𝐈 ⋅ Ey      Iyz = Ey ⋅ 𝐈 ⋅ Ez
-///    Izx = Ez ⋅ 𝐈 ⋅ Ex      Izy = Ez ⋅ 𝐈 ⋅ Ey      Izz = Ez ⋅ 𝐈 ⋅ Ez
+///    Ixx = 𝐱̂ ⋅ 𝐈 ⋅ 𝐱̂     Ixy = 𝐱̂ ⋅ 𝐈 ⋅ 𝐲̂      Ixz = 𝐱̂ ⋅ 𝐈 ⋅ 𝐳̂̂
+///    Iyx = 𝐲̂ ⋅ 𝐈 ⋅ 𝐱̂     Iyy = 𝐲̂ ⋅ 𝐈 ⋅ 𝐲̂      Iyz = 𝐲̂ ⋅ 𝐈 ⋅ 𝐳̂̂
+///    Izx = 𝐳̂̂ ⋅ 𝐈 ⋅ 𝐱̂     Izy = 𝐳̂̂ ⋅ 𝐈 ⋅ 𝐲̂      Izz = 𝐳̂̂ ⋅ 𝐈 ⋅ 𝐳̂̂
 /// </pre>
 /// The inertia dyadic 𝐈ᴮ of a rigid body B about Bcm (B's center of mass) is
 /// related to various dynamic quantities. For example, B's angular momentum 𝐇
@@ -127,6 +129,22 @@ namespace multibody {
 /// acceleration in N) by Euler's rigid body equation as
 /// <pre>
 ///    𝐓 = 𝐈ᴮ ⋅ 𝛂  +  𝛚 × 𝐈ᴮ ⋅ 𝛚
+/// </pre>
+/// Example: For a particle Q of mass m whose position vector from a point O is
+/// written in terms of right-handed orthogonal unit vectors 𝐱̂, 𝐲̂, 𝐳̂ (below),
+/// the inertia dyadic 𝐈 of particle Q about point O is defined and calculated
+/// <pre>
+///     𝐩 = x 𝐱̂  +  y 𝐲̂                               (given)
+///     𝐈 = m * [𝐔 * (𝐩 ⋅ 𝐩)  -  𝐩 * 𝐩]              (definition)
+///       = m * [𝐔 * (x² + y²)  -  (x𝐱̂ + y𝐲̂̂) * (x𝐱̂ + y𝐲̂)
+///       = m * [(𝐱̂𝐱̂ + 𝐲̂𝐲̂ + 𝐳̂𝐳̂) * (x² + y²) - (x²𝐱̂𝐱̂ + xy𝐱̂𝐲̂̂ + xy𝐲̂̂𝐱̂ + y²𝐲̂̂𝐲̂̂)]
+///       = m * [y²𝐱̂𝐱̂ + x²𝐲̂𝐲̂ + (x² + y²)𝐳̂𝐳̂ - xy𝐱̂𝐲̂̂ - xy𝐲̂̂𝐱̂]
+/// </pre>
+/// which means the inertia matrix for particle Q about point O for 𝐱̂, 𝐲̂, 𝐳̂ is
+/// <pre>
+///     |  m y²     -m x y         0     |
+/// I = | -m x y     m x²          0     |
+///     |    0         0     m (x² + y²) |
 /// </pre>
 /// [Kane, 1985] pg. 68. "Dynamics: Theory and Applications," McGraw-Hill Co.,
 /// New York, 1985 (with D. A. Levinson).  Available for free .pdf download:
@@ -460,7 +478,7 @@ class RotationalInertia {
     return RotationalInertia<Scalar>(I_SP_E_.template cast<Scalar>());
   }
 
-  /// This method takes `this` rotational inertia about-point P, expressed-in-
+  /// This method takes `this` rotational inertia about-point P, expressed-in
   /// frame E, and computes its principal moments of inertia about-point P, but
   /// expressed-in a frame aligned with the principal axes.
   ///
@@ -1004,7 +1022,7 @@ class RotationalInertia {
 
   // The 3x3 inertia matrix is symmetric and its diagonal elements (moments of
   // inertia) and off-diagonal elements (products of inertia) are associated
-  // with a body (or composite body) S, an about-point P, and an expressed-in-
+  // with a body (or composite body) S, an about-point P, and an expressed-in
   // frame E.  However the user of this class is responsible for tracking S, P,
   // and E  (none of these are stored in this class).
   // The only data stored by the rotational inertia class is its inertia matrix.
