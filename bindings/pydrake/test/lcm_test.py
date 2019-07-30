@@ -4,8 +4,6 @@ from pydrake.lcm import DrakeLcm, DrakeLcmInterface, DrakeMockLcm, Subscriber
 
 from robotlocomotion import quaternion_t
 
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-
 
 class TestLcm(unittest.TestCase):
     def setUp(self):
@@ -19,10 +17,6 @@ class TestLcm(unittest.TestCase):
     def test_lcm(self):
         dut = DrakeLcm()
         self.assertIsInstance(dut, DrakeLcmInterface)
-        # Quickly start and stop the receiving thread.
-        with catch_drake_warnings(expected_count=2):
-            dut.StartReceiveThread()
-            dut.StopReceiveThread()
         # Test virtual function names.
         dut.Publish
         dut.HandleSubscriptions

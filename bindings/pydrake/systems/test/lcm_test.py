@@ -113,30 +113,21 @@ class TestSystemsLcm(unittest.TestCase):
         self.assert_lcm_equal(actual_message, model_message)
 
     def test_subscriber_wait_for_message(self):
-        """Ensures that `WaitForMessage` threading works in a Python workflow
-        that is not threaded."""
-        # N.B. This will fail with `threading`. See below for using
-        # `multithreading`.
+        """Checks how `WaitForMessage` works without Python threads."""
         lcm = DrakeLcm("memq://")
-        with catch_drake_warnings(expected_count=1):
-            lcm.StartReceiveThread()
         sub = mut.LcmSubscriberSystem.Make("TEST_LOOP", header_t, lcm)
         value = AbstractValue.Make(header_t())
-        for i in range(3):
+        for old_message_count in range(3):
             message = header_t()
-            message.utime = i
+            message.utime = old_message_count + 1
             lcm.Publish("TEST_LOOP", message.encode())
-            sub.WaitForMessage(i, value)
-            self.assertEqual(value.get_value().utime, i)
-
-    def test_subscriber_wait_for_message_with_timeout(self):
-        """Confirms that the subscriber times out."""
-        lcm = DrakeLcm("memq://")
-        with catch_drake_warnings(expected_count=1):
-            lcm.StartReceiveThread()
-        sub = mut.LcmSubscriberSystem.Make("TEST_LOOP", header_t, lcm)
-        sub.WaitForMessage(0, timeout=0.02)
-        # This test fails if the test hangs.
+            for attempt in range(10):
+                new_count = sub.WaitForMessage(
+                    old_message_count, value, timeout=0.02)
+                if new_count > old_message_count:
+                    break
+                lcm.HandleSubscriptions(0)
+            self.assertEqual(value.get_value().utime, old_message_count + 1)
 
     def _fix_and_publish(self, dut, value):
         context = dut.CreateDefaultContext()
@@ -173,79 +164,3 @@ class TestSystemsLcm(unittest.TestCase):
                             channel="TEST_CHANNEL",
                             builder=builder,
                             lcm=DrakeMockLcm())
-
-    def test_utime_to_seconds(self):
-        msg = header_t()
-        msg.utime = int(1e6)
-        with catch_drake_warnings(expected_count=1):
-            dut = mut.PyUtimeMessageToSeconds(header_t)
-        t_sec = dut.GetTimeInSeconds(AbstractValue.Make(msg))
-        self.assertEqual(t_sec, 1)
-
-    def test_lcm_driven_loop(self):
-        """Duplicates the test logic in `lcm_driven_loop_test.cc`."""
-        lcm_url = "udpm://239.255.76.67:7669"
-        t_start = 3.
-        t_end = 10.
-
-        def publish_loop():
-            # Publishes a set of messages for the driven loop. This should be
-            # run from a separate process.
-            # N.B. Because of this, care should be taken not to share C++
-            # objects between process boundaries.
-            t = t_start
-            while t <= t_end:
-                message = header_t()
-                message.utime = int(1e6 * t)
-                lcm.Publish("TEST_LOOP", message.encode())
-                time.sleep(0.1)
-                t += 1
-
-        class DummySys(LeafSystem):
-            # Converts message to time in seconds.
-            def __init__(self):
-                LeafSystem.__init__(self)
-                self.DeclareAbstractInputPort(
-                    "header_t", AbstractValue.Make(header_t))
-                self.DeclareVectorOutputPort(
-                    BasicVector(1), self._calc_output)
-
-            def _calc_output(self, context, output):
-                message = self.EvalAbstractInput(context, 0).get_value()
-                y = output.get_mutable_value()
-                y[:] = message.utime / 1e6
-
-        # Construct diagram for LcmDrivenLoop.
-        lcm = DrakeLcm(lcm_url)
-        with catch_drake_warnings(expected_count=1):
-            utime = mut.PyUtimeMessageToSeconds(header_t)
-        sub = mut.LcmSubscriberSystem.Make("TEST_LOOP", header_t, lcm)
-        builder = DiagramBuilder()
-        builder.AddSystem(sub)
-        dummy = builder.AddSystem(DummySys())
-        builder.Connect(sub.get_output_port(0), dummy.get_input_port(0))
-        logger = LogOutput(dummy.get_output_port(0), builder)
-        logger.set_forced_publish_only()
-        diagram = builder.Build()
-        with catch_drake_warnings(expected_count=1):
-            dut = mut.LcmDrivenLoop(diagram, sub, None, lcm, utime)
-        dut.set_publish_on_every_received_message(True)
-
-        # N.B. Use `multiprocessing` instead of `threading` so that we may
-        # avoid issues with GIL deadlocks.
-        publish_proc = Process(target=publish_loop)
-        publish_proc.start()
-        # Initialize to first message.
-        first_msg = dut.WaitForMessage()
-        dut.get_mutable_context().SetTime(utime.GetTimeInSeconds(first_msg))
-        # Run to desired amount. (Anything more will cause interpreter to
-        # "freeze".)
-        dut.RunToSecondsAssumingInitialized(t_end)
-        publish_proc.join()
-
-        # Check expected values.
-        log_t_expected = np.array([4, 5, 6, 7, 8, 9])
-        log_t = logger.sample_times()
-        self.assertTrue(np.allclose(log_t_expected, log_t))
-        log_y = logger.data()
-        self.assertTrue(np.allclose(log_t_expected, log_y))

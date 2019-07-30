@@ -17,7 +17,6 @@ drake_cc_package_library(
         ":drake_lcm",
         ":interface",
         ":lcm_log",
-        ":lcm_receive_thread",
         ":mock",
         ":real",
     ],
@@ -46,7 +45,6 @@ drake_cc_library(
     name = "real",
     deps = [
         ":drake_lcm",
-        ":lcm_receive_thread",
     ],
 )
 
@@ -56,16 +54,6 @@ drake_cc_library(
     hdrs = ["drake_lcm.h"],
     deps = [
         ":interface",
-        "//common:essential",
-        "@lcm",
-    ],
-)
-
-drake_cc_library(
-    name = "lcm_receive_thread",
-    srcs = ["lcm_receive_thread.cc"],
-    hdrs = ["lcm_receive_thread.h"],
-    deps = [
         "//common:essential",
         "@lcm",
     ],

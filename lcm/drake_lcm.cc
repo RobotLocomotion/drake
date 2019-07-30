@@ -1,9 +1,7 @@
 #include "drake/lcm/drake_lcm.h"
 
 #include <algorithm>
-#include <atomic>
 #include <cstdlib>
-#include <thread>
 #include <utility>
 #include <vector>
 
@@ -49,11 +47,6 @@ class DrakeLcm::Impl {
   std::string lcm_url_;
   ::lcm::LCM lcm_;
   std::vector<std::weak_ptr<DrakeSubscription>> subscriptions_;
-
-  // TODO(jwnimmer-tri) To be removed once deprecated methods are gone.
-  std::unique_ptr<std::thread> receive_thread_;
-  // TODO(jwnimmer-tri) To be removed once deprecated methods are gone.
-  std::atomic_bool receive_thread_stopping_{false};
 };
 
 DrakeLcm::DrakeLcm() : DrakeLcm(std::string{}) {}
@@ -65,32 +58,6 @@ DrakeLcm::DrakeLcm(std::string lcm_url)
   // this, ThreadSanitizer builds may report false positives related to the
   // self-test happening concurrently with the LCM publishing.
   impl_->lcm_.getFileno();
-}
-
-// TODO(jwnimmer-tri) To be deprecated.
-void DrakeLcm::StartReceiveThread() {
-  DRAKE_DEMAND(impl_->receive_thread_ == nullptr);
-  impl_->receive_thread_ = std::make_unique<std::thread>(
-      [this](){
-        while (!this->impl_->receive_thread_stopping_) {
-          this->HandleSubscriptions(300);
-        }
-      });
-}
-
-// TODO(jwnimmer-tri) To be deprecated.
-void DrakeLcm::StopReceiveThread() {
-  if (impl_->receive_thread_ != nullptr) {
-    impl_->receive_thread_stopping_ = true;
-    impl_->receive_thread_->join();
-    impl_->receive_thread_stopping_ = false;
-    impl_->receive_thread_.reset();
-  }
-}
-
-// TODO(jwnimmer-tri) To be deprecated.
-bool DrakeLcm::IsReceiveThreadRunning() const {
-  return impl_->receive_thread_ != nullptr;
 }
 
 std::string DrakeLcm::get_lcm_url() const {
@@ -261,12 +228,6 @@ int DrakeLcm::HandleSubscriptions(int timeout_millis) {
 }
 
 DrakeLcm::~DrakeLcm() {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // Stop invoking the subscriptions, prior to destroying them.
-  StopReceiveThread();
-#pragma GCC diagnostic pop
-
   // Invalidate our DrakeSubscription objects.
   for (const auto& weak_subscription : impl_->subscriptions_) {
     auto subscription = weak_subscription.lock();
