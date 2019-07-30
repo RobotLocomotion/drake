@@ -13,6 +13,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "test_utilities",
+    testonly = 1,
     deps = [
         ":dummy_render_engine",
         ":geometry_set_tester",
@@ -21,8 +22,7 @@ drake_cc_package_library(
 
 drake_cc_library(
     name = "geometry_set_tester",
-    # TODO(SeanCurtis-TRI): Make this `testonly = 1` once dev/GeometryState is
-    # removed.
+    testonly = 1,
     srcs = [],
     hdrs = ["geometry_set_tester.h"],
     deps = ["//geometry:geometry_set"],
@@ -30,8 +30,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "dummy_render_engine",
-    # TODO(SeanCurtis-TRI): Make this `testonly = 1` once dev/GeometryState is
-    # removed; then all of these become testonly (as does the package).
+    testonly = 1,
     srcs = [],
     hdrs = ["dummy_render_engine.h"],
     deps = ["//geometry/render:render_engine"],
