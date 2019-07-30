@@ -166,8 +166,8 @@ class TestGeometry(unittest.TestCase):
 
         label = mut.render.RenderLabel(10)
         diffuse = np.array((1.0, 0.0, 0.0, 0.0))
-        params.default_label = label
-        params.default_diffuse = diffuse
+        params = mut.render.RenderEngineVtkParams(
+            default_label=label, default_diffuse=diffuse)
         self.assertEqual(params.default_label, label)
         self.assertTrue((params.default_diffuse == diffuse).all())
 
