@@ -5,8 +5,6 @@
 #include <string>
 #include <vector>
 
-#include "robotlocomotion/robot_plan_t.hpp"
-
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
 #include "drake/lcm/drake_lcm.h"
@@ -57,16 +55,6 @@ void WeldGripperFrames(MultibodyPlant<T>* plant) {
 
 // Explicit instantiations.
 template void WeldGripperFrames(MultibodyPlant<double>* plant);
-
-void PublishRobotPlan(const robotlocomotion::robot_plan_t& plan) {
-  // Publish the plan for inspection
-  drake::systems::lcm::LcmInterfaceSystem lcm;
-  const int num_bytes = plan.getEncodedSize();
-  const size_t size_bytes = static_cast<size_t>(num_bytes);
-  std::vector<uint8_t> bytes(size_bytes);
-  plan.encode(bytes.data(), 0, num_bytes);
-  lcm.Publish("ROBOT_PLAN", bytes.data(), num_bytes, {});
-}
 
 MatrixX<double> ParseKeyframes(const std::string& name,
                                EigenPtr<Vector3<double>> brick_initial_pose) {
