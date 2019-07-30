@@ -16,11 +16,11 @@
 #include "drake/lcmt_jaco_command.hpp"
 #include "drake/lcmt_jaco_status.hpp"
 #include "drake/manipulation/planner/robot_plan_interpolator.h"
+#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/lcm/lcm_driven_loop.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/adder.h"
@@ -71,15 +71,6 @@ int DoMain() {
   DRAKE_DEMAND(plan_source->plant().num_velocities() ==
                num_joints + num_fingers);
 
-  auto status_sub = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::Make<lcmt_jaco_status>(
-          kLcmStatusChannel, &lcm));
-  auto status_receiver = builder.AddSystem<JacoStatusReceiver>(
-      num_joints, num_fingers);
-
-  builder.Connect(status_sub->get_output_port(),
-                  status_receiver->get_input_port(0));
-
   // The driver is operating in joint velocity mode, so that's the
   // meaningful part of the command message we'll eventually
   // construct.  We create a pid controller which calculates
@@ -104,6 +95,11 @@ int DoMain() {
 
   auto pid_controller = builder.AddSystem<systems::controllers::PidController>(
       jaco_kp, jaco_ki, jaco_kd);
+
+  // We'll directly fix the input to the status receiver later from our lcm
+  // subscriber.
+  auto status_receiver = builder.AddSystem<JacoStatusReceiver>(
+      num_joints, num_fingers);
 
   builder.Connect(status_receiver->get_output_port(0),
                   pid_controller->get_input_port_estimated_state());
@@ -143,18 +139,16 @@ int DoMain() {
   builder.Connect(command_sender->get_output_port(0),
                   command_pub->get_input_port());
 
-  auto diagram = builder.Build();
+  auto owned_diagram = builder.Build();
+  const systems::Diagram<double>* diagram = owned_diagram.get();
+  systems::Simulator<double> simulator(std::move(owned_diagram));
 
-  systems::lcm::LcmDrivenLoop loop(
-      *diagram, *status_sub, nullptr, &lcm,
-      std::make_unique<
-          systems::lcm::UtimeMessageToSeconds<lcmt_jaco_status>>());
+  // Wait for the first message.
+  drake::log()->info("Waiting for first lcmt_jaco_status");
+  lcm::Subscriber<lcmt_jaco_status> status_sub(&lcm, kLcmStatusChannel);
+  LcmHandleSubscriptionsUntil(&lcm, [&]() { return status_sub.count() > 0; });
 
-  // Waits for the first message.
-  const AbstractValue& first_msg = loop.WaitForMessage();
-  double msg_time =
-      loop.get_message_to_time_converter().GetTimeInSeconds(first_msg);
-  const auto& first_status = first_msg.get_value<lcmt_jaco_status>();
+  const lcmt_jaco_status& first_status = status_sub.message();
   DRAKE_DEMAND(first_status.num_joints == 0 ||
                first_status.num_joints == num_joints);
   DRAKE_DEMAND(first_status.num_fingers == 0 ||
@@ -169,20 +163,39 @@ int DoMain() {
     q0(i + num_joints) = first_status.finger_position[i];
   }
 
-  systems::Context<double>& diagram_context = loop.get_mutable_context();
-  systems::Context<double>& status_sub_context =
-      diagram->GetMutableSubsystemContext(*status_sub, &diagram_context);
-  status_sub->SetDefaultContext(&status_sub_context);
+  systems::Context<double>& diagram_context = simulator.get_mutable_context();
+  const double t0 = first_status.utime * 1e-6;
+  diagram_context.SetTime(t0);
 
-  // Explicit initialization.
-  diagram_context.SetTime(msg_time);
   auto& plan_source_context =
       diagram->GetMutableSubsystemContext(*plan_source, &diagram_context);
-  plan_source->Initialize(msg_time, q0,
+  plan_source->Initialize(t0, q0,
                           &plan_source_context.get_mutable_state());
 
-  loop.RunToSecondsAssumingInitialized();
-  return 0;
+  systems::Context<double>& status_context =
+      diagram->GetMutableSubsystemContext(*status_receiver, &diagram_context);
+  auto& status_value = status_receiver->get_input_port(0).FixValue(
+      &status_context, first_status);
+
+  // Run forever, using the lcmt_jaco_status message to dictate when simulation
+  // time advances.  The robot_plan_t message is handled whenever the next
+  // lcmt_jaco_status occurs.
+  drake::log()->info("Controller started");
+  while (true) {
+    // Wait for an lcmt_jaco_status message.
+    status_sub.clear();
+    LcmHandleSubscriptionsUntil(&lcm, [&]() { return status_sub.count() > 0; });
+    // Write the lcmt_jaco_status message into the context and advance.
+    status_value.GetMutableData()->set_value(status_sub.message());
+    const double time = status_sub.message().utime * 1e-6;
+    simulator.AdvanceTo(time);
+    // Force-publish the lcmt_jaco_command (via the command_pub system within
+    // the diagram).
+    diagram->Publish(diagram_context);
+  }
+
+  // We should never reach here.
+  return EXIT_FAILURE;
 }
 
 }  // namespace
