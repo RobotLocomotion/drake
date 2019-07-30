@@ -114,7 +114,7 @@ class QueryObject {
   /** Reports the position of the frame indicated by `id` relative to the world
    frame.
    @throws std::logic_error if the frame `id` is not valid.  */
-  math::RigidTransform<T> X_WF(FrameId id) const;
+  const math::RigidTransform<T>& X_WF(FrameId id) const;
 
   /** Reports the position of the frame indicated by `id` relative to its parent
    frame. If the frame was registered with the world frame as its parent frame,
@@ -122,12 +122,12 @@ class QueryObject {
    @note This is analogous to but distinct from SceneGraphInspector::X_PG().
    In this case, the pose will *always* be relative to another frame.
    @throws std::logic_error if the frame `id` is not valid.  */
-  math::RigidTransform<T> X_PF(FrameId id) const;
+  const math::RigidTransform<T>& X_PF(FrameId id) const;
 
   /** Reports the position of the geometry indicated by `id` relative to the
    world frame.
    @throws std::logic_error if the geometry `id` is not valid.  */
-  math::RigidTransform<T> X_WG(GeometryId id) const;
+  const math::RigidTransform<T>& X_WG(GeometryId id) const;
 
   //@}
 

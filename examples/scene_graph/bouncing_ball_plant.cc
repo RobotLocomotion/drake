@@ -27,6 +27,8 @@ using geometry::render::RenderLabel;
 using geometry::SceneGraph;
 using geometry::SourceId;
 using geometry::Sphere;
+using math::RigidTransform;
+using math::RigidTransformd;
 using std::make_unique;
 using systems::Context;
 
@@ -55,7 +57,7 @@ BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
       source_id, GeometryFrame("ball_frame"));
   ball_id_ = scene_graph->RegisterGeometry(
       source_id, ball_frame_id_,
-      make_unique<GeometryInstance>(Isometry3<double>::Identity(), /*X_FG*/
+      make_unique<GeometryInstance>(RigidTransformd::Identity(), /*X_FG*/
                                     make_unique<Sphere>(diameter_ / 2.0),
                                     "ball"));
   // Use the default material.
@@ -107,9 +109,9 @@ void BouncingBallPlant<T>::CopyStateToOutput(
 template <typename T>
 void BouncingBallPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
-  Isometry3<T> pose = Isometry3<T>::Identity();
+  RigidTransform<T> pose = RigidTransform<T>::Identity();
   const BouncingBallVector<T>& state = get_state(context);
-  pose.translation() << p_WB_.x(), p_WB_.y(), state.z();
+  pose.set_translation({p_WB_.x(), p_WB_.y(), state.z()});
   *poses = {{ball_frame_id_, pose}};
 }
 

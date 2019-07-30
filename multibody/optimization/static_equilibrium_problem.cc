@@ -122,7 +122,8 @@ std::vector<ContactWrench> StaticEquilibriumProblem::GetContactWrenchSolution(
         body_B_index = frame_Fb.body().index();
         // Define Body B's frame as Fb, the geometry attached to body B has
         // frame Gb, and the witness point on geometry Gb is Cb.
-        const auto& X_FbGb = inspector.X_FG(signed_distance_pair.id_B);
+        const auto& X_FbGb = inspector.GetPoseInFrame(signed_distance_pair.id_B)
+                                 .template cast<AutoDiffXd>();
         const auto& p_GbCb = signed_distance_pair.p_BCb;
         const Vector3<AutoDiffXd> p_FbCb = X_FbGb * p_GbCb;
         plant_.CalcPointsPositions(*context_, frame_Fb, p_FbCb,

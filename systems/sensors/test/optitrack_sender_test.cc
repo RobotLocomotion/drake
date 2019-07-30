@@ -4,12 +4,14 @@
 #include "optitrack/optitrack_frame_t.hpp"
 
 #include "drake/geometry/frame_kinematics_vector.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace systems {
 namespace sensors {
 
+using math::RigidTransformd;
 using optitrack::optitrack_frame_t;
 
 // This test sets up a systems::sensors::TrackedBody structure to be passed
@@ -33,10 +35,9 @@ GTEST_TEST(OptitrackSenderTest, OptitrackLcmSenderTest) {
 
   // Sets up a test body with an arbitrarily chosen pose.
   Eigen::Vector3d axis(1 / sqrt(3), 1 / sqrt(3), 1 / sqrt(3));
-  const geometry::FramePoseVector<double> pose_vector{{
-      frame_id,
-      Eigen::Isometry3d(Eigen::AngleAxis<double>(0.2, axis)).
-          pretranslate(Eigen::Vector3d(tx, ty, tz))}};
+  const geometry::FramePoseVector<double> pose_vector{
+      {frame_id, RigidTransformd(Eigen::AngleAxis<double>(0.2, axis),
+                                 Eigen::Vector3d(tx, ty, tz))}};
 
   EXPECT_EQ(pose_vector.value(frame_id).translation()[0], tx);
   EXPECT_EQ(pose_vector.value(frame_id).translation()[1], ty);

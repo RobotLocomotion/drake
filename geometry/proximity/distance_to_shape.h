@@ -49,7 +49,8 @@ struct CallbackData {
                                   reported.
    @param nearest_pairs_in[out]   The output results. Aliased.  */
   CallbackData(const CollisionFilterLegacy* collision_filter_in,
-               const std::unordered_map<GeometryId, Isometry3<T>>* X_WGs_in,
+               const std::unordered_map<GeometryId,
+               math::RigidTransform<T>>* X_WGs_in,
                const double max_distance_in,
                std::vector<SignedDistancePair<T>>* nearest_pairs_in)
       : collision_filter(*collision_filter_in),
@@ -65,7 +66,7 @@ struct CallbackData {
   const CollisionFilterLegacy& collision_filter;
 
   /** The T-valued poses of all geometries.  */
-  const std::unordered_map<GeometryId, Isometry3<T>>& X_WGs;
+  const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs;
 
   /** The maximum distance at which a pair's distance will be reported.  */
   const double max_distance;
@@ -264,9 +265,9 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
  @pre The pair should *not* be (Halfspace, X), unless X is Sphere.  */
 template <typename T>
 void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
-                                const Isometry3<T>& X_WA,
+                                const math::RigidTransform<T>& X_WA,
                                 const fcl::CollisionObjectd& b,
-                                const Isometry3<T>& X_WB,
+                                const math::RigidTransform<T>& X_WB,
                                 const fcl::DistanceRequestd& request,
                                 SignedDistancePair<T>* result) {
   DRAKE_DEMAND(result != nullptr);

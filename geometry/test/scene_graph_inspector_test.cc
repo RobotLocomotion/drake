@@ -27,6 +27,7 @@ class SceneGraphInspectorTester {
 
 namespace {
 
+using math::RigidTransformd;
 using std::make_unique;
 
 // Simply exercises all the methods to confirm there's no build or execution
@@ -77,7 +78,7 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   const GeometryId geometry_id =
       tester.mutable_state().RegisterGeometry(
           source_id, frame_id,
-          make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+          make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                         make_unique<Sphere>(1.0), "sphere"));
   inspector.GetGeometryIdByName(frame_id, Role::kUnassigned, "sphere");
 
@@ -87,8 +88,13 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   inspector.GetFrameId(geometry_id);
   inspector.GetName(geometry_id);
   inspector.GetShape(geometry_id);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   inspector.X_PG(geometry_id);
   inspector.X_FG(geometry_id);
+#pragma GCC diagnostic pop
+  inspector.GetPoseInParent(geometry_id);
+  inspector.GetPoseInFrame(geometry_id);
   inspector.GetProximityProperties(geometry_id);
   inspector.GetIllustrationProperties(geometry_id);
   inspector.GetPerceptionProperties(geometry_id);
@@ -97,7 +103,7 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   const GeometryId geometry_id2 =
       tester.mutable_state().RegisterGeometry(
           source_id, frame_id,
-          make_unique<GeometryInstance>(Isometry3<double>::Identity(),
+          make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                         make_unique<Sphere>(1.0), "sphere2"));
   tester.mutable_state().AssignRole(source_id, geometry_id,
                                     ProximityProperties());

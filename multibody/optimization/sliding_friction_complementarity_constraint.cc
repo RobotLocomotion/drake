@@ -198,7 +198,9 @@ void SlidingFrictionComplementarityNonlinearConstraint::DoEval(
       // the body frame of body B.
       const Vector3<AutoDiffXd>& p_BgCb = signed_distance_pair.p_BCb;
       const Vector3<AutoDiffXd> p_BbCb =
-          inspector.X_FG(signed_distance_pair.id_B) * p_BgCb;
+          inspector.GetPoseInFrame(signed_distance_pair.id_B)
+              .template cast<AutoDiffXd>() *
+          p_BgCb;
       const Vector3<AutoDiffXd> p_BbCb_W =
           plant.CalcRelativeTransform(context, plant.world_frame(), frameB)
               .rotation() *

@@ -7,6 +7,7 @@
 
 using drake::geometry::FrameId;
 using drake::geometry::SourceId;
+using drake::math::RigidTransform;
 
 namespace drake {
 namespace systems {
@@ -28,7 +29,7 @@ RenderPoseToGeometryPose<T>::RenderPoseToGeometryPose(
       [this, frame_id](const Context<T>& context, AbstractValue* calculated) {
         const Input& input = get_input_port().template Eval<Input>(context);
         calculated->get_mutable_value<Output>() =
-            {{frame_id, input.get_isometry()}};
+            {{frame_id, RigidTransform<T>(input.get_isometry())}};
       });
 }
 

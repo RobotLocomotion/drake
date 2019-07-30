@@ -107,9 +107,7 @@ class GeometryState {
   int get_num_frames() const { return static_cast<int>(frames_.size()); }
 
   /** Implementation of SceneGraphInspector::all_frame_ids().  */
-  FrameIdRange get_frame_ids() const {
-    return FrameIdRange(&frames_);
-  }
+  FrameIdRange get_frame_ids() const { return FrameIdRange(&frames_); }
 
   /** Implementation of SceneGraphInspector::num_geometries().  */
   int get_num_geometries() const {
@@ -189,8 +187,7 @@ class GeometryState {
   int NumGeometriesWithRole(FrameId frame_id, Role role) const;
 
   /** Implementation of SceneGraphInspector::GetGeometryIdByName().  */
-  GeometryId GetGeometryFromName(FrameId frame_id,
-                                 Role role,
+  GeometryId GetGeometryFromName(FrameId frame_id, Role role,
                                  const std::string& name) const;
 
   //@}
@@ -216,10 +213,12 @@ class GeometryState {
   const Shape& GetShape(GeometryId id) const;
 
   /** Implementation of SceneGraphInspector::X_FG().  */
-  const Isometry3<double>& GetPoseInFrame(GeometryId geometry_id) const;
+  const math::RigidTransform<double>& GetPoseInFrame(
+      GeometryId geometry_id) const;
 
   /** Implementation of SceneGraphInspector::X_PG().  */
-  const Isometry3<double>& GetPoseInParent(GeometryId geometry_id) const;
+  const math::RigidTransform<double>& GetPoseInParent(
+      GeometryId geometry_id) const;
 
   /** Implementation of SceneGraphInspector::GetProximityProperties().  */
   const ProximityProperties* GetProximityProperties(GeometryId id) const;
@@ -242,13 +241,14 @@ class GeometryState {
   //@{
 
   /** Implementation of QueryObject::X_WF().  */
-  const Isometry3<T>& get_pose_in_world(FrameId frame_id) const;
+  const math::RigidTransform<T>& get_pose_in_world(FrameId frame_id) const;
 
   /** Implementation of QueryObject::X_WG().  */
-  const Isometry3<T>& get_pose_in_world(GeometryId geometry_id) const;
+  const math::RigidTransform<T>& get_pose_in_world(
+      GeometryId geometry_id) const;
 
   /** Implementation of QueryObject::X_PF().  */
-  const Isometry3<T>& get_pose_in_parent(FrameId frame_id) const;
+  const math::RigidTransform<T>& get_pose_in_parent(FrameId frame_id) const;
 
   //@}
 
@@ -292,13 +292,15 @@ class GeometryState {
                         const GeometryFrame& frame);
 
   /** Implementation of
-   @ref SceneGraph::RegisterGeometry(SourceId,FrameId,std::unique_ptr<GeometryInstance>)
+   @ref
+   SceneGraph::RegisterGeometry(SourceId,FrameId,std::unique_ptr<GeometryInstance>)
    "SceneGraph::RegisterGeometry()" with parent FrameId.  */
   GeometryId RegisterGeometry(SourceId source_id, FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
   /** Implementation of
-   @ref SceneGraph::RegisterGeometry(SourceId,GeometryId,std::unique_ptr<GeometryInstance>)
+   @ref
+   SceneGraph::RegisterGeometry(SourceId,GeometryId,std::unique_ptr<GeometryInstance>)
    "SceneGraph::RegisterGeometry()" with parent GeometryId.  */
   GeometryId RegisterGeometryWithParent(
       SourceId source_id, GeometryId parent_id,
@@ -308,8 +310,7 @@ class GeometryState {
   // wrapper for the more general `RegisterGeometry()`.
   /** Implementation of SceneGraph::RegisterAnchoredGeometry().  */
   GeometryId RegisterAnchoredGeometry(
-      SourceId source_id,
-      std::unique_ptr<GeometryInstance> geometry);
+      SourceId source_id, std::unique_ptr<GeometryInstance> geometry);
 
   /** Removes the given geometry from the the indicated source's geometries. Any
    geometry that was hung from the indicated geometry will _also_ be removed.
@@ -470,10 +471,8 @@ class GeometryState {
   }
 
   /** Supporting function for QueryObject::ComputeSignedDistanceToPoint().  */
-  std::vector<SignedDistanceToPoint<T>>
-  ComputeSignedDistanceToPoint(
-      const Vector3<T> &p_WQ,
-      double threshold) const {
+  std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceToPoint(
+      const Vector3<T>& p_WQ, double threshold) const {
     return geometry_engine_->ComputeSignedDistanceToPoint(p_WQ, X_WGs_,
                                                           threshold);
   }
@@ -502,23 +501,20 @@ class GeometryState {
   /** Implementation support for QueryObject::RenderColorImage().
    @pre All poses have already been updated.  */
   void RenderColorImage(const render::CameraProperties& camera,
-                        FrameId parent_frame,
-                        const math::RigidTransformd& X_PC,
+                        FrameId parent_frame, const math::RigidTransformd& X_PC,
                         bool show_window,
                         systems::sensors::ImageRgba8U* color_image_out) const;
 
   /** Implementation support for QueryObject::RenderDepthImage().
    @pre All poses have already been updated.  */
   void RenderDepthImage(const render::DepthCameraProperties& camera,
-                        FrameId parent_frame,
-                        const math::RigidTransformd& X_PC,
+                        FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageDepth32F* depth_image_out) const;
 
   /** Implementation support for QueryObject::RenderLabelImage().
    @pre All poses have already been updated.  */
   void RenderLabelImage(const render::CameraProperties& camera,
-                        FrameId parent_frame,
-                        const math::RigidTransformd& X_PC,
+                        FrameId parent_frame, const math::RigidTransformd& X_PC,
                         bool show_window,
                         systems::sensors::ImageLabel16I* label_image_out) const;
 
@@ -557,28 +553,25 @@ class GeometryState {
         frame_index_to_id_map_(source.frame_index_to_id_map_),
         geometry_engine_(std::move(source.geometry_engine_->ToAutoDiffXd())),
         render_engines_(source.render_engines_) {
-    // NOTE: Can't assign Isometry3<double> to Isometry3<AutoDiff>. But we _can_
-    // assign Matrix<double> to Matrix<AutoDiff>, so that's what we're doing.
-    auto convert_pose_vector = [](const std::vector<Isometry3<U>>& s,
-                                  std::vector<Isometry3<T>>* d) {
-      std::vector<Isometry3<T>>& dest = *d;
+    auto convert_pose_vector = [](const std::vector<math::RigidTransform<U>>& s,
+                                  std::vector<math::RigidTransform<T>>* d) {
+      std::vector<math::RigidTransform<T>>& dest = *d;
       dest.resize(s.size());
       for (size_t i = 0; i < s.size(); ++i) {
-        dest[i].matrix() = s[i].matrix();
+        dest[i] = s[i].template cast<T>();
       }
     };
     convert_pose_vector(source.X_PF_, &X_PF_);
     convert_pose_vector(source.X_WF_, &X_WF_);
 
     // Now convert the id -> pose map.
-    std::unordered_map<GeometryId, Isometry3<T>>& dest = X_WGs_;
-    const std::unordered_map<GeometryId, Isometry3<U>>& s = source.X_WGs_;
+    std::unordered_map<GeometryId, math::RigidTransform<T>>& dest = X_WGs_;
+    const std::unordered_map<GeometryId, math::RigidTransform<U>>& s =
+        source.X_WGs_;
     for (const auto& id_pose_pair : s) {
       const GeometryId id = id_pose_pair.first;
-      const Isometry3<U>& X_WG_source = id_pose_pair.second;
-      Isometry3<T> X_WG;
-      X_WG.matrix() = X_WG_source.matrix();
-      dest.insert({id, std::move(X_WG)});
+      const math::RigidTransform<U>& X_WG_source = id_pose_pair.second;
+      dest.insert({id, X_WG_source.template cast<T>()});
     }
   }
 
@@ -592,7 +585,8 @@ class GeometryState {
 
   // Friend declaration so that the internals of the state can be confirmed in
   // unit tests.
-  template <class U> friend class GeometryStateTester;
+  template <class U>
+  friend class GeometryStateTester;
 
   // Function to facilitate testing.
   int peek_next_clique() const {
@@ -652,8 +646,8 @@ class GeometryState {
   // TODO(SeanCurtis-TRI): Add `kFrame` when this can be invoked by removing
   // a frame.
   enum class RemoveGeometryOrigin {
-    kGeometry,   // Invoked by RemoveGeometry().
-    kRecurse     // Invoked by recursive call in RemoveGeometryUnchecked.
+    kGeometry,  // Invoked by RemoveGeometry().
+    kRecurse    // Invoked by recursive call in RemoveGeometryUnchecked.
   };
 
   // Performs the work necessary to remove the identified geometry from
@@ -674,7 +668,7 @@ class GeometryState {
   // rooted at the given frame, whose parent's pose in the world frame is given
   // as `X_WP`.
   void UpdatePosesRecursively(const internal::InternalFrame& frame,
-                              const Isometry3<T>& X_WP,
+                              const math::RigidTransform<T>& X_WP,
                               const FramePoseVector<T>& poses);
 
   // Reports true if the given id refers to a _dynamic_ geometry. Assumes the
@@ -714,7 +708,7 @@ class GeometryState {
   // nothing to remove). This does no checking on ownership.
   // @pre geometry_id maps to a registered geometry.
   bool RemoveFromRendererUnchecked(const std::string& renderer_name,
-                                  GeometryId id);
+                                   GeometryId id);
 
   bool RemoveProximityRole(GeometryId geometry_id);
   bool RemoveIllustrationRole(GeometryId geometry_id);
@@ -735,7 +729,7 @@ class GeometryState {
   // and, assuming the ids and relationships are valid, returns the frame
   // requested.
   const internal::InternalFrame& ValidateAndGetFrame(SourceId source_id,
-      FrameId frame_id) const;
+                                                     FrameId frame_id) const;
 
   // Retrieves the requested renderer (if supported), throwing otherwise.
   const render::RenderEngine& GetRenderEngineOrThrow(
@@ -807,7 +801,7 @@ class GeometryState {
   // Map from a frame's index to the _current_ pose of the frame F it identifies
   // relative to its parent frame P, i.e., X_PF.
   // TODO(SeanCurtis-TRI): Rename this to X_PFs_ to reflect multiplicity.
-  std::vector<Isometry3<T>> X_PF_;
+  std::vector<math::RigidTransform<T>> X_PF_;
 
   // The pose of every geometry relative to the _world_ frame (regardless of
   // roles) keyed by the corresponding geometry's id. After a complete state
@@ -817,7 +811,7 @@ class GeometryState {
   // frame Fₖ, and the world frame W is the parent of frame Fₙ.
   // In other words, it is the full evaluation of the kinematic chain from the
   // geometry to the world frame.
-  std::unordered_map<GeometryId, Isometry3<T>> X_WGs_;
+  std::unordered_map<GeometryId, math::RigidTransform<T>> X_WGs_;
 
   // The pose of each frame relative to the _world_ frame.
   // frames_.size() == X_WF_.size() is an invariant. Furthermore, after a
@@ -828,7 +822,7 @@ class GeometryState {
   // In other words, it is the full evaluation of the kinematic chain from
   // frame i to the world frame.
   // TODO(SeanCurtis-TRI): Rename this to X_WFs_ to reflect multiplicity.
-  std::vector<Isometry3<T>> X_WF_;
+  std::vector<math::RigidTransform<T>> X_WF_;
 
   // The underlying geometry engine. The topology of the engine does _not_
   // change with respect to time. But its values do. This straddles the two

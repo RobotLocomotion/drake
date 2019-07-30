@@ -903,8 +903,7 @@ class SphereChainScenario {
     ground_id_ = plant_->RegisterCollisionGeometry(
         plant_->world_body(),
         // A half-space passing through the origin in the x-z plane.
-        RigidTransformd(
-            geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero())),
+        geometry::HalfSpace::MakePoseInF(Vector3d::UnitY(), Vector3d::Zero()),
         geometry::HalfSpace(), "ground", CoulombFriction<double>());
 
     auto make_sphere = [this](int i) {
@@ -1172,8 +1171,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   GeometryId ground_id = plant.RegisterCollisionGeometry(
       plant.world_body(),
       // A half-space passing through the origin in the x-z plane.
-      RigidTransformd(
-          geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero())),
+      geometry::HalfSpace::MakePoseInF(Vector3d::UnitY(), Vector3d::Zero()),
       geometry::HalfSpace(), "ground", ground_friction);
 
   // Add two spherical bodies.
@@ -1275,8 +1273,7 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   GeometryId ground_id = plant.RegisterVisualGeometry(
       plant.world_body(),
       // A half-space passing through the origin in the x-z plane.
-      RigidTransformd(
-          geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero())),
+      geometry::HalfSpace::MakePoseInF(Vector3d::UnitY(), Vector3d::Zero()),
       geometry::HalfSpace(), "ground");
   EXPECT_EQ(render_engine.num_registered(), 1);
 
