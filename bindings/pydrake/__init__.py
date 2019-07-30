@@ -56,3 +56,9 @@ def _execute_extra_python_code(m):
         with open(filename) as f:
             _code = compile(f.read(), filename, 'exec')
             exec(_code, m.__dict__, m.__dict__)
+
+
+def _setattr_kwargs(obj, kwargs):
+    # For `ParamInit` in `pydrake_pybind.h`.
+    for name, value in kwargs.items():
+        setattr(obj, name, value)

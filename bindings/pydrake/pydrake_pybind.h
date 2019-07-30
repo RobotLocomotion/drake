@@ -82,6 +82,23 @@ void DefClone(PyClass* ppy_class) {
           [](const Class* self, py::dict /* memo */) { return self->Clone(); });
 }
 
+/// Returns a constructor for initializing parameters directly, namely for
+/// parameter structs. Should be passed directly to `.def(...)`.
+template <typename Class>
+auto ParamInit() {
+  return py::init([](py::kwargs kwargs) {
+    // N.B. We use `Class` here because `pybind11` strongly requires that we
+    // return the instance itself, not just `py::object`.
+    // TODO(eric.cousineau): This may hurt `keep_alive` behavior, as this
+    // reference may evaporate by the time the true holding pybind11 record is
+    // constructed. Would be alleviated using old-style pybind11 init :(
+    Class obj{};
+    py::object py_obj = py::cast(&obj, py_reference);
+    py::module::import("pydrake").attr("_setattr_kwargs")(py_obj, kwargs);
+    return obj;
+  });
+}
+
 /// Executes Python code to introduce additional symbols for a given module.
 /// For a module with local name `{name}`, the code executed will be
 /// `_{name}_extra.py`. See #9599 for relevant background.

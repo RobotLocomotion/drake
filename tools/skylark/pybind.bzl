@@ -239,8 +239,9 @@ def _get_package_info(base_package, sub_package = None):
 def drake_pybind_cc_googletest(
         name,
         cc_srcs = [],
-        py_deps = [],
         cc_deps = [],
+        py_srcs = [],
+        py_deps = [],
         args = [],
         visibility = None,
         tags = []):
@@ -269,6 +270,7 @@ def drake_pybind_cc_googletest(
     # external tools.
     drake_py_library(
         name = py_name,
+        srcs = py_srcs,
         deps = py_deps,
         testonly = 1,
         visibility = visibility,
