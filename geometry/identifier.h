@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/hash.h"
 #include "drake/common/never_destroyed.h"
 
 namespace drake {
@@ -189,6 +190,13 @@ class Identifier {
     return Identifier(next_index.access()++);
   }
 
+  /** Implements the @ref hash_append concept.  */
+  template <typename HashAlgorithm>
+  friend void hash_append(HashAlgorithm& hasher, const Identifier& i) noexcept {
+    using drake::hash_append;
+    hash_append(hasher, i.value_);
+  }
+
  protected:
   // Instantiates an identifier from the underlying representation type.
   explicit Identifier(int64_t val) : value_(val) {}
@@ -226,10 +234,12 @@ namespace std {
  @relates Identifier
  */
 template <typename Tag>
-struct hash<drake::geometry::Identifier<Tag>> {
-  size_t operator()(const drake::geometry::Identifier<Tag>& id) const {
-    return std::hash<int64_t>()(id.get_value());
-  }
-};
+struct hash<drake::geometry::Identifier<Tag>> : public drake::DefaultHash {};
+#if defined(__GLIBCXX__)
+// https://gcc.gnu.org/onlinedocs/libstdc++/manual/unordered_associative.html
+template <class Tag>
+struct __is_fast_hash<hash<drake::geometry::Identifier<Tag>>>
+    : std::false_type {};
+#endif
 
 }  // namespace std

@@ -234,7 +234,10 @@ drake_cc_library(
     name = "identifier",
     srcs = [],
     hdrs = ["identifier.h"],
-    deps = ["//common:essential"],
+    deps = [
+        "//common:essential",
+        "//common:hash",
+    ],
 )
 
 drake_cc_library(
@@ -364,6 +367,7 @@ drake_cc_googletest(
     name = "identifier_test",
     deps = [
         ":identifier",
+        "//common:sorted_pair",
         "//common:unused",
         "//common/test_utilities:expect_throws_message",
     ],
