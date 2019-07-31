@@ -312,7 +312,7 @@ void MPCData::validate_length() const {
 
   // Uses an unsigned long here
   // for consistency with the return type of vector::size.
-  unsigned long N = Q_->size();
+  int N = static_cast<int> Q_->size();
   if (N <= 0) {
     throw std::runtime_error("Horizon length must be at least 1.");
   }
