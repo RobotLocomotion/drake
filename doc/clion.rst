@@ -34,10 +34,10 @@ Installing CLion
 
 The most recent versions that we have tested for compatibility are:
   - Ubuntu 18.04
-  - Bazel 0.25.2 (May 10, 2019)
+  - Bazel 0.28.0 (July 10, 2019)
   - CLion 2019.1.3 (May 6, 2019) with:
 
-    - Bazel plugin 2019.05.01.0.3 (May 10, 2019).
+    - Bazel plugin 2019.07.08.0.2 (July 19, 2019).
 
 Many versions of the above (Bazel / CLion / Bazel plugin) are *not* compatible
 with each other.  We strongly suggest using only the versions shown above, when
