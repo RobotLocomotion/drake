@@ -76,7 +76,7 @@ void BrickStaticEquilibriumNonlinearConstraint::DoEvalGeneric(
     (*y)(2) += p_BC(0) * x(plant.num_positions() + 2 * i + 1) -
                p_BC(1) * x(plant.num_positions() + 2 * i);
   }
-}  // namespace examples
+}
 
 void BrickStaticEquilibriumNonlinearConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
