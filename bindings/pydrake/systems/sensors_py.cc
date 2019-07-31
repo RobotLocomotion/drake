@@ -53,6 +53,7 @@ PYBIND11_MODULE(sensors, m) {
   m.doc() = "Bindings for the sensors portion of the Systems framework.";
 
   py::module::import("pydrake.common.eigen_geometry");
+  py::module::import("pydrake.geometry.render");
   py::module::import("pydrake.systems.framework");
 
   // Expose only types that are used.
