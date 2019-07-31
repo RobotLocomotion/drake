@@ -107,7 +107,10 @@ class RgbdSensorTest : public ::testing::Test {
  public:
   RgbdSensorTest()
       : ::testing::Test(),
-        properties_(640, 480, M_PI / 4, kRendererName, 0.1, 10) {}
+        // N.B. This is using arbitrary yet different intrinsics for color vs.
+        // depth.
+        color_properties_(640, 480, M_PI / 4, kRendererName),
+        depth_properties_(320, 240, M_PI / 6, kRendererName, 0.1, 10) {}
 
  protected:
   // Creates a Diagram with a SceneGraph and RgbdSensor connected appropriately.
@@ -148,11 +151,17 @@ class RgbdSensorTest : public ::testing::Test {
              << ") does not match the expected id (" << parent_id << ")";
     }
     ::testing::AssertionResult result = ::testing::AssertionSuccess();
-    CameraInfo expected_info(properties_.width, properties_.height,
-                             properties_.fov_y);
-    result = CompareCameraInfo(sensor_->color_camera_info(), expected_info);
+    const CameraInfo expected_color_info(
+        color_properties_.width, color_properties_.height,
+        color_properties_.fov_y);
+    result = CompareCameraInfo(
+        sensor_->color_camera_info(), expected_color_info);
     if (!result) return result;
-    result = CompareCameraInfo(sensor_->depth_camera_info(), expected_info);
+    const CameraInfo expected_depth_info(
+        depth_properties_.width, depth_properties_.height,
+        depth_properties_.fov_y);
+    result = CompareCameraInfo(
+        sensor_->depth_camera_info(), expected_depth_info);
     if (!result) return result;
 
     // By default, frames B, C, and D are aligned and coincident.
@@ -172,7 +181,8 @@ class RgbdSensorTest : public ::testing::Test {
     return result;
   }
 
-  DepthCameraProperties properties_;
+  CameraProperties color_properties_;
+  DepthCameraProperties depth_properties_;
   unique_ptr<Diagram<double>> diagram_;
   unique_ptr<Context<double>> context_;
 
@@ -194,7 +204,8 @@ const char RgbdSensorTest::kRendererName[] = "renderer";
 // frame-fixed port.
 TEST_F(RgbdSensorTest, PortNames) {
   RgbdSensor sensor(SceneGraph<double>::world_frame_id(),
-                    RigidTransformd::Identity(), properties_);
+                    RigidTransformd::Identity(), color_properties_,
+                    depth_properties_);
   EXPECT_EQ(sensor.query_object_input_port().get_name(), "geometry_query");
   EXPECT_EQ(sensor.color_image_output_port().get_name(), "color_image");
   EXPECT_EQ(sensor.depth_image_32F_output_port().get_name(), "depth_image_32f");
@@ -212,7 +223,7 @@ TEST_F(RgbdSensorTest, ConstructAnchoredCamera) {
 
   auto make_sensor = [this, &X_WB](SceneGraph<double>*) {
     return make_unique<RgbdSensor>(SceneGraph<double>::world_frame_id(), X_WB,
-                                   properties_);
+                                   color_properties_, depth_properties_);
   };
   MakeCameraDiagram(make_sensor);
 
@@ -239,7 +250,8 @@ TEST_F(RgbdSensorTest, ConstructFrameFixedCamera) {
                       &X_PB](SceneGraph<double>* graph) {
     source_id = graph->RegisterSource("source");
     graph->RegisterFrame(source_id, frame);
-    return make_unique<RgbdSensor>(frame.id(), X_PB, properties_);
+    return make_unique<RgbdSensor>(frame.id(), X_PB, color_properties_,
+                                   depth_properties_);
   };
   MakeCameraDiagram(make_sensor);
 
@@ -267,8 +279,8 @@ TEST_F(RgbdSensorTest, ConstructCameraWithNonTrivialOffsets) {
   const RigidTransformd X_BD{X_BC.inverse()};
   const RigidTransformd X_WB;
   const RgbdSensor sensor(
-      scene_graph_->world_frame_id(), X_WB, properties_,
-      RgbdSensor::CameraPoses{X_BC, X_BD});
+      scene_graph_->world_frame_id(), X_WB, color_properties_,
+      depth_properties_, RgbdSensor::CameraPoses{X_BC, X_BD});
   EXPECT_TRUE(CompareMatrices(sensor.X_BC().matrix(), X_BC.matrix()));
   EXPECT_TRUE(CompareMatrices(sensor.X_BD().matrix(), X_BD.matrix()));
 }
@@ -316,6 +328,8 @@ GTEST_TEST(RgbdSensorDiscrete, Construction) {
   const double kPeriod = 0.1;
 
   const bool include_render_port = true;
+  // N.B. In addition to testing a discrete sensor, this also tests
+  // the `RgbdSensor` constructor which takes only `DepthCameraProperties`.
   RgbdSensorDiscrete sensor(
       make_unique<RgbdSensor>(SceneGraph<double>::world_frame_id(),
                               RigidTransformd::Identity(), properties),
@@ -336,6 +350,8 @@ GTEST_TEST(RgbdSensorDiscrete, Construction) {
 // wired correctly.
 GTEST_TEST(RgbdSensorDiscrete, ImageHold) {
   DepthCameraProperties properties(640, 480, M_PI / 4, "render", 0.1, 10);
+  // N.B. In addition to testing a discrete sensor, this also tests
+  // the `RgbdSensor` constructor which takes only `DepthCameraProperties`.
   auto sensor =
       make_unique<RgbdSensor>(SceneGraph<double>::world_frame_id(),
                               RigidTransformd::Identity(), properties);
