@@ -2545,6 +2545,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Registers geometry in a SceneGraph with a given geometry::Shape to be
   /// used for visualization of a given `body`.
   ///
+  /// This implicitly creates a frame F in SceneGraph that is rigidly affixed to
+  /// the body frame B. By construction `X_BF = I`, which also implies that
+  /// `X_BG = X_FG`. Informally, one could think of the SceneGraph frame to be
+  /// an alternate _name_ for the body frame B. For _every_ body frame B_i with
+  /// geometry registered to it, there will be a SceneGraph frame F_i such that
+  /// `X_B_iF_i = I`.
+  ///
   /// @note Currently, the visual geometry will _also_ be assigned a perception
   /// role. Its render label's value will be equal to the body's index and its
   /// perception color will be the same as its illustration color (defaulting to
@@ -2642,6 +2649,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// More than one geometry can be registered with a body, in which case the
   /// body's contact geometry is the union of all geometries registered to that
   /// body.
+  ///
+  /// This implicitly creates a frame F in SceneGraph that is rigidly affixed to
+  /// the body frame B. By construction `X_BF = I`, which also implies that
+  /// `X_BG = X_FG`. Informally, one could think of the SceneGraph frame to be
+  /// an alternate _name_ for the body frame B. For _every_ body frame B_i with
+  /// geometry registered to it, there will be a SceneGraph frame F_i such that
+  /// `X_B_iF_i = I`.
   ///
   /// @param[in] body
   ///   The body for which geometry is being registered.
