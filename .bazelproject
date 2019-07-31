@@ -16,3 +16,6 @@ directories:
 targets:
   //...:all
 
+build_flags:
+  --experimental_google_legacy_api
+
