@@ -82,7 +82,7 @@ class DenseComponentUnitTests {
     v_expected = a * x.v() + y.v();
     y_expected = b_ - A_ * z_expected;
 
-    y.axpy(x, a);
+    y.axpy(a, x);
 
     for (int i = 0; i < n_; i++) {
       EXPECT_DOUBLE_EQ(y.z()(i), z_expected(i));
@@ -192,7 +192,7 @@ class DenseComponentUnitTests {
     DenseLinearSolver solver(n_, q_);
 
     double sigma = 0.5;
-    solver.Factor(x, y, sigma);
+    solver.Initialize(x, y, sigma);
     solver.Solve(r, &y);
 
     // Construct the linear system
