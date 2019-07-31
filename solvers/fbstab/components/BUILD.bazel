@@ -87,4 +87,39 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "mpc_data",
+    srcs = ["mpc_data.cc"],
+    hdrs = ["mpc_data.h"],
+    deps = [
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "mpc_variable",
+    srcs = ["mpc_variable.cc"],
+    hdrs = ["mpc_variable.h"],
+    deps = [
+        ":mpc_data",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mpc_component_unit_tests",
+    srcs = [
+        "test/mpc_component_unit_tests.cc",
+        "test/mpc_component_unit_tests.h",
+    ],
+    deps = [
+        ":mpc_data",
+        ":mpc_variable",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
 add_lint_tests()
