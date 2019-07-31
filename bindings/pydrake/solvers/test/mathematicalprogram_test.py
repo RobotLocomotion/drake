@@ -270,7 +270,7 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_cost_api(self):
         prog = mp.MathematicalProgram()
         x0, = prog.NewContinuousVariables(1, "x")
-        lc = prog.AddLinearCost(1*x0 + 2).evaluator()
+        lc = prog.AddLinearCost([1], 2, [x0]).evaluator()
         qc = prog.AddQuadraticCost(0.5*x0**2 + 2*x0 + 3).evaluator()
 
         def check_linear_cost(cost, a, b):
