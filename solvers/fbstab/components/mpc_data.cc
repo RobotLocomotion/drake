@@ -1,7 +1,7 @@
 #include "drake/solvers/fbstab/components/mpc_data.h"
 
-#include <stdexcept>
 #include <iostream>
+#include <stdexcept>
 
 #include <Eigen/Dense>
 
@@ -89,17 +89,17 @@ void MPCData::gemvH(const Eigen::VectorXd& x, double a, double b,
     // [yx] += a * [Q(i) S(i)'] [vx]
     // [yu]        [S(i) R(i) ] [vu]
     // Using lazyProduct is inefficient so should be avoided when possible.
-    if(a == 1.0){
-      yx.noalias() += Q*vx + S.transpose()*vu;
-      yu.noalias() += S*vx + R*vu;
-    } else if(a == -1.0){
-      yx.noalias() -= Q*vx + S.transpose()*vu;
-      yu.noalias() -= S*vx + R*vu;
-    } else{
-      yx += a* Q.lazyProduct(vx);
-      yx += a*S.transpose().lazyProduct(vu);
-      yu += a*S.lazyProduct(vx);
-      yu += a*R.lazyProduct(vu);
+    if (a == 1.0) {
+      yx.noalias() += Q * vx + S.transpose() * vu;
+      yu.noalias() += S * vx + R * vu;
+    } else if (a == -1.0) {
+      yx.noalias() -= Q * vx + S.transpose() * vu;
+      yu.noalias() -= S * vx + R * vu;
+    } else {
+      yx += a * Q.lazyProduct(vx);
+      yx += a * S.transpose().lazyProduct(vu);
+      yu += a * S.lazyProduct(vx);
+      yu += a * R.lazyProduct(vu);
     }
   }
 }
@@ -130,14 +130,14 @@ void MPCData::gemvA(const Eigen::VectorXd& x, double a, double b,
     const auto ui = z.block(nx_, i, nu_, 1);
 
     // yi += a*(E*vx + L*vu)
-    if(a == 1.0){
-      yi.noalias() += E*xi + L*ui;
-    } else if (a == -1.0){
-      yi.noalias() -= E*xi + L*ui;
+    if (a == 1.0) {
+      yi.noalias() += E * xi + L * ui;
+    } else if (a == -1.0) {
+      yi.noalias() -= E * xi + L * ui;
     } else {
       yi += a * E.lazyProduct(xi);
       yi += a * L.lazyProduct(ui);
-   }
+    }
   }
 }
 
@@ -170,19 +170,18 @@ void MPCData::gemvG(const Eigen::VectorXd& x, double a, double b,
     const auto xi = z.block(0, i, nx_, 1);
 
     // y(i) += a*(A(i-1)*x(i-1) + B(i-1)u(i-1) - x(i))
-    if(a == 1.0){
-      yi.noalias() += A*xm1 + B*um1;
+    if (a == 1.0) {
+      yi.noalias() += A * xm1 + B * um1;
       yi.noalias() -= xi;
-    } else if(a == -1.0){
-      yi.noalias() -= A*xm1 + B*um1;
+    } else if (a == -1.0) {
+      yi.noalias() -= A * xm1 + B * um1;
       yi.noalias() += xi;
-    } else{
+    } else {
       yi += a * A.lazyProduct(xm1);
       yi += a * B.lazyProduct(um1);
       yi -= a * xi;
     }
   }
-
 }
 
 void MPCData::gemvGT(const Eigen::VectorXd& x, double a, double b,
@@ -215,13 +214,13 @@ void MPCData::gemvGT(const Eigen::VectorXd& x, double a, double b,
     // x(i) += a*(-v(i) + A(i)' * v(i+1))
     // u(i) += a*B(i)' * v(i+1)
     xi.noalias() += -a * vi;
-    if(a == 1.0){
-      xi.noalias() += A.transpose()*vp1;
-      ui.noalias() += B.transpose()*vp1;
-    } else if(a == -1.0){
-      xi.noalias() -= A.transpose()*vp1;
-      ui.noalias() -= B.transpose()*vp1;
-    } else{
+    if (a == 1.0) {
+      xi.noalias() += A.transpose() * vp1;
+      ui.noalias() += B.transpose() * vp1;
+    } else if (a == -1.0) {
+      xi.noalias() -= A.transpose() * vp1;
+      ui.noalias() -= B.transpose() * vp1;
+    } else {
       xi.noalias() += a * A.transpose().lazyProduct(vp1);
     }
   }
@@ -253,12 +252,12 @@ void MPCData::gemvAT(const Eigen::VectorXd& x, double a, double b,
     const auto vi = v.col(i);
     // x(i) += a*E(i)' * v(i)
     // u(i) += a*L(i)' * v(i)
-    if(a == 1.0){
-      xi.noalias() += E.transpose()*vi;
-      ui.noalias() += L.transpose()*vi;
-    } else if(a == -1.0){
-      xi.noalias() -= E.transpose()*vi;
-      ui.noalias() -= L.transpose()*vi;
+    if (a == 1.0) {
+      xi.noalias() += E.transpose() * vi;
+      ui.noalias() += L.transpose() * vi;
+    } else if (a == -1.0) {
+      xi.noalias() -= E.transpose() * vi;
+      ui.noalias() -= L.transpose() * vi;
     } else {
       ui.noalias() += a * L.transpose().lazyProduct(vi);
       xi.noalias() += a * E.transpose().lazyProduct(vi);
