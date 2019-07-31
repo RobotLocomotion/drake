@@ -108,18 +108,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "mpc_residual",
-    srcs = ["mpc_residual.cc"],
-    hdrs = ["mpc_residual.h"],
-    deps = [
-        ":mpc_data",
-        ":mpc_variable",
-        "//common:essential",
-        "@eigen",
-    ],
-)
-
 drake_cc_googletest(
     name = "mpc_component_unit_tests",
     srcs = [
@@ -128,7 +116,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":mpc_data",
-        ":mpc_residual",
         ":mpc_variable",
         "//common:essential",
         "@eigen",

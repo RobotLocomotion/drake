@@ -7,7 +7,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/solvers/fbstab/components/mpc_data.h"
-#include "drake/solvers/fbstab/components/mpc_residual.h"
 #include "drake/solvers/fbstab/components/mpc_variable.h"
 
 namespace drake {
@@ -307,50 +306,6 @@ class MPCComponentUnitTests {
     for (int i = 0; i < y_expected.size(); i++) {
       ASSERT_EQ(x.y()(i), y_expected(i));
       ASSERT_EQ(x.v()(i), v_expected(i));
-    }
-  }
-
-  /**
-   * Tests against hand calculations.
-   */
-  void InnerResidual() {
-    MPCData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
-
-    MPCVariable x(data.N_, data.nx_, data.nu_, data.nc_);
-    MPCVariable y(data.N_, data.nx_, data.nu_, data.nc_);
-    x.LinkData(&data);
-    y.LinkData(&data);
-
-    x.Fill(2.0);
-    y.Fill(-2.0);
-
-    double sigma = 1.0;
-
-    MPCResidual r(data.N_, data.nx_, data.nu_, data.nc_);
-    r.InnerResidual(x, y, sigma);
-
-    VectorXd rz_expected(data.nz_);
-    VectorXd rl_expected(data.nl_);
-    VectorXd rv_expected(data.nv_);
-
-    rz_expected << 8, 8, 14, 8, 8, 14, 6, 4, 12;
-    rl_expected << 6, 6, 2, 2, 2, 2;
-    rv_expected << 2.19167244568008, 2.19167244568008, 1.85147084275040,
-        1.85147084275040, 2.33389560518351, 1.62472628830921, 2.19167244568008,
-        2.19167244568008, 1.85147084275040, 1.85147084275040, 2.33389560518351,
-        1.62472628830921, 2.19167244568008, 2.19167244568008, 1.85147084275040,
-        1.85147084275040, 2.33389560518351, 1.62472628830921;
-
-    for (int i = 0; i < rz_expected.size(); i++) {
-      EXPECT_NEAR(r.z()(i), rz_expected(i), 1e-14);
-    }
-
-    for (int i = 0; i < rl_expected.size(); i++) {
-      EXPECT_NEAR(r.l()(i), rl_expected(i), 1e-14);
-    }
-
-    for (int i = 0; i < rv_expected.size(); i++) {
-      EXPECT_NEAR(r.v()(i), rv_expected(i), 1e-14);
     }
   }
 
