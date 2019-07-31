@@ -24,6 +24,7 @@ namespace sensors {
 using Eigen::Translation3d;
 using geometry::FrameId;
 using geometry::QueryObject;
+using geometry::render::CameraProperties;
 using geometry::render::DepthCameraProperties;
 using geometry::SceneGraph;
 using math::RigidTransformd;
@@ -31,14 +32,18 @@ using std::move;
 
 RgbdSensor::RgbdSensor(FrameId parent_id,
                        const RigidTransformd& X_PB,
-                       const DepthCameraProperties& properties,
+                       const CameraProperties& color_properties,
+                       const DepthCameraProperties& depth_properties,
                        const CameraPoses& camera_poses,
                        bool show_window)
     : parent_frame_id_(parent_id),
       show_window_(show_window),
-      color_camera_info_(properties.width, properties.height, properties.fov_y),
-      depth_camera_info_(properties.width, properties.height, properties.fov_y),
-      properties_(properties),
+      color_camera_info_(color_properties.width, color_properties.height,
+                         color_properties.fov_y),
+      depth_camera_info_(depth_properties.width, depth_properties.height,
+                         depth_properties.fov_y),
+      color_properties_(color_properties),
+      depth_properties_(depth_properties),
       X_PB_(X_PB),
       X_BC_(camera_poses.X_BC),
       X_BD_(camera_poses.X_BD) {
@@ -70,11 +75,11 @@ RgbdSensor::RgbdSensor(FrameId parent_id,
 
   const float kMaxValidDepth16UInMM =
       (std::numeric_limits<uint16_t>::max() - 1) / 1000.;
-  if (properties.z_far > kMaxValidDepth16UInMM) {
+  if (depth_properties.z_far > kMaxValidDepth16UInMM) {
     drake::log()->warn(
         "Specified max depth is {} > max valid depth for 16 bits {}. "
         "depth_image_16u might not be able to capture the full depth range.",
-        properties.z_far, kMaxValidDepth16UInMM);
+        depth_properties.z_far, kMaxValidDepth16UInMM);
   }
 }
 
@@ -105,15 +110,15 @@ const OutputPort<double>& RgbdSensor::X_WB_output_port() const {
 void RgbdSensor::CalcColorImage(const Context<double>& context,
                                 ImageRgba8U* color_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
-  query_object.RenderColorImage(properties_, parent_frame_id_, X_PB_ * X_BC_,
-                                show_window_, color_image);
+  query_object.RenderColorImage(color_properties_, parent_frame_id_,
+                                X_PB_ * X_BC_, show_window_, color_image);
 }
 
 void RgbdSensor::CalcDepthImage32F(const Context<double>& context,
                                    ImageDepth32F* depth_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
-  query_object.RenderDepthImage(properties_, parent_frame_id_, X_PB_ * X_BD_,
-                                depth_image);
+  query_object.RenderDepthImage(depth_properties_, parent_frame_id_,
+                                X_PB_ * X_BD_, depth_image);
 }
 
 void RgbdSensor::CalcDepthImage16U(const Context<double>& context,
@@ -126,8 +131,8 @@ void RgbdSensor::CalcDepthImage16U(const Context<double>& context,
 void RgbdSensor::CalcLabelImage(const Context<double>& context,
                                 ImageLabel16I* label_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
-  query_object.RenderLabelImage(properties_, parent_frame_id_, X_PB_ * X_BC_,
-                                show_window_, label_image);
+  query_object.RenderLabelImage(color_properties_, parent_frame_id_,
+                                X_PB_ * X_BC_, show_window_, label_image);
 }
 
 void RgbdSensor::CalcX_WB(
