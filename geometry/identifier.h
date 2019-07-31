@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/hash.h"
 #include "drake/common/never_destroyed.h"
 
 namespace drake {
@@ -29,7 +30,7 @@ namespace geometry {
 
  It is possible for a programmer to accidentally switch the two ids in an
  invocation. This mistake would still be _syntactically_ correct; it will
- successfully compile but  lead to inscrutable run-time errors. This identifier
+ successfully compile but lead to inscrutable run-time errors. This identifier
  class provides the same speed and efficiency of passing `int64_t`s, but
  enforces unique types and limits the valid operations, providing compile-time
  checking. The function would now look like:
@@ -60,9 +61,9 @@ namespace geometry {
 
  While there _is_ the concept of an invalid identifier, this only exists to
  facilitate use with STL containers that require default constructors. Using an
- invalid identifier in any operation is considered an error. In Debug build,
- attempts to compare, get the value of, hash, or write an invalid identifier to
- a stream will throw an exception.
+ invalid identifier is generally considered to be an error. In Debug build,
+ attempts to compare, get the value of, or write an invalid identifier to a
+ stream will throw an exception.
 
  Functions that query for identifiers should not return invalid identifiers. We
  prefer the practice of returning std::optional<Identifier> instead.
@@ -189,6 +190,16 @@ class Identifier {
     return Identifier(next_index.access()++);
   }
 
+  /** Implements the @ref hash_append concept. And invalid id will successfully
+   hash (in order to satisfy STL requirements), and it is up to the user to
+   confirm it is valid before using it as a key (or other hashing application).
+   */
+  template <typename HashAlgorithm>
+  friend void hash_append(HashAlgorithm& hasher, const Identifier& i) noexcept {
+    using drake::hash_append;
+    hash_append(hasher, i.value_);
+  }
+
  protected:
   // Instantiates an identifier from the underlying representation type.
   explicit Identifier(int64_t val) : value_(val) {}
@@ -222,14 +233,11 @@ std::string to_string(const drake::geometry::Identifier<Tag>& id) {
 }  // namespace drake
 
 namespace std {
+
 /** Enables use of the identifier to serve as a key in STL containers.
  @relates Identifier
  */
 template <typename Tag>
-struct hash<drake::geometry::Identifier<Tag>> {
-  size_t operator()(const drake::geometry::Identifier<Tag>& id) const {
-    return std::hash<int64_t>()(id.get_value());
-  }
-};
+struct hash<drake::geometry::Identifier<Tag>> : public drake::DefaultHash {};
 
 }  // namespace std
