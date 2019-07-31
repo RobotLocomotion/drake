@@ -2545,6 +2545,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Registers geometry in a SceneGraph with a given geometry::Shape to be
   /// used for visualization of a given `body`.
   ///
+  /// This implicitly creates a frame F in geometry::SceneGraph that corresponds
+  /// to the body frame B of `body`. By construction F and B are coincident and
+  /// aligned, i.e., `X_BF = I`. Thus queries on the position of a geometry
+  /// with respect to its SceneGraph frame F (see
+  /// geometry::SceneGraphInspector::X_FG) is equivalent to the geometry's pose
+  /// with respect to the body frame.
+  ///
   /// @note Currently, the visual geometry will _also_ be assigned a perception
   /// role. Its render label's value will be equal to the body's index and its
   /// perception color will be the same as its illustration color (defaulting to
@@ -2642,6 +2649,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// More than one geometry can be registered with a body, in which case the
   /// body's contact geometry is the union of all geometries registered to that
   /// body.
+  ///
+  /// This implicitly creates a frame F in geometry::SceneGraph that corresponds
+  /// to the body frame B of `body`. By construction F and B are coincident and
+  /// aligned, i.e., `X_BF = I`. Thus queries on the position of a geometry
+  /// with respect to its SceneGraph frame F (see
+  /// geometry::SceneGraphInspector::X_FG) is equivalent to the geometry's pose
+  /// with respect to the body frame.
   ///
   /// @param[in] body
   ///   The body for which geometry is being registered.
