@@ -32,6 +32,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "brick_static_equilibrium_constraint",
+    srcs = ["brick_static_equilibrium_constraint.cc"],
+    hdrs = ["brick_static_equilibrium_constraint.h"],
+    deps = [
+        ":gripper_brick",
+        ":gripper_brick_planning_utils",
+        "//math:autodiff",
+        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//multibody/plant",
+        "//solvers:constraint",
+        "//solvers:mathematical_program_lite",
+    ],
+)
+
+drake_cc_library(
     name = "gripper_brick",
     srcs = ["gripper_brick.cc"],
     hdrs = ["gripper_brick.h"],
@@ -87,6 +102,34 @@ drake_cc_googletest(
     deps = [
         ":gripper_brick",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_library(
+    name = "gripper_brick_planning_utils",
+    srcs = ["gripper_brick_planning_utils.cc"],
+    hdrs = ["gripper_brick_planning_utils.h"],
+    deps = [
+        ":gripper_brick",
+        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//solvers:mathematical_program_lite",
+    ],
+)
+
+drake_cc_googletest(
+    name = "brick_static_equilibrium_constraint_test",
+    deps = [
+        ":brick_static_equilibrium_constraint",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:compute_numerical_gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "gripper_brick_planning_utils_test",
+    deps = [
+        ":gripper_brick_planning_utils",
+        "//solvers:solve",
     ],
 )
 
