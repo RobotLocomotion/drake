@@ -70,6 +70,21 @@ const double kColorPixelTolerance = 1.001;
 // larger (in area) than the default image size.
 const double kDepthTolerance = 2e-4;
 
+// Background (sky) and terrain colors.
+const ColorI kBgColor = {254u, 127u, 0u};
+const ColorD kTerrainColorD{0., 0., 0.};
+const ColorI kTerrainColorI{0, 0, 0};
+
+// Provide a default visual color for these tests -- it is intended to be
+// different from the default color of the VTK render engine.
+const ColorI kDefaultVisualColor = {229u, 229u, 229u};
+const float kDefaultDistance{3.f};
+
+// Values to be used with the "centered shape" tests.
+// The amount inset from the edge of the images to *still* expect ground plane
+// values.
+static constexpr int kInset{10};
+
 // Holds `(x, y)` indices of the screen coordinate system where the ranges of
 // `x` and `y` are [0, image_width) and [0, image_height) respectively.
 struct ScreenCoord {
@@ -106,17 +121,24 @@ std::ostream& operator<<(std::ostream& out, const RgbaColor& c) {
   return out;
 }
 
+// Tests color within tolerance.
+bool IsColorNear(
+    const RgbaColor& expected, const RgbaColor& tested,
+    double tolerance = kColorPixelTolerance) {
+  using std::abs;
+  return (abs(expected.r - tested.r) < tolerance &&
+      abs(expected.g - tested.g) < tolerance &&
+      abs(expected.b - tested.b) < tolerance &&
+      abs(expected.a - tested.a) < tolerance);
+}
+
 // Tests that the color in the given `image` located at screen coordinate `p`
 // matches the `expected` color to within the given `tolerance`.
 ::testing::AssertionResult CompareColor(
     const RgbaColor& expected, const ImageRgba8U& image, const ScreenCoord& p,
     double tolerance = kColorPixelTolerance) {
-  using std::abs;
   RgbaColor tested(image.at(p.x, p.y));
-  if (abs(expected.r - tested.r) < tolerance &&
-      abs(expected.g - tested.g) < tolerance &&
-      abs(expected.b - tested.b) < tolerance &&
-      abs(expected.a - tested.a) < tolerance) {
+  if (IsColorNear(expected, tested, tolerance)) {
     return ::testing::AssertionSuccess();
   }
   return ::testing::AssertionFailure() << "Expected: " << expected
@@ -285,11 +307,15 @@ class RenderEngineVtkTest : public ::testing::Test {
 
   // Tests that don't instantiate their own renderers should invoke this.
   void Init(const RigidTransformd& X_WR, bool add_terrain = false) {
-    const ColorI bg = bg_color();
-    const Vector3d bg_rgb{bg.r / 255., bg.g / 255., bg.b / 255.};
+    const Vector3d bg_rgb{
+        kBgColor.r / 255., kBgColor.g / 255., kBgColor.b / 255.};
     RenderEngineVtkParams params{{}, {}, bg_rgb};
     renderer_ = make_unique<RenderEngineVtk>(params);
     InitializeRenderer(X_WR, add_terrain, renderer_.get());
+    // Ensure that we truly have a non-default color.
+    EXPECT_FALSE(IsColorNear(
+        RgbaColor(kDefaultVisualColor, 1.),
+        RgbaColor(renderer_->default_diffuse())));
   }
 
   // Tests that instantiate their own renderers can initialize their renderers
@@ -299,13 +325,11 @@ class RenderEngineVtkTest : public ::testing::Test {
     engine->UpdateViewpoint(X_WR);
 
     if (add_terrain) {
-      ColorD terrain_color =
-          DummyRenderEngine::GetColorDFromLabel(RenderLabel::kDontCare);
       PerceptionProperties material;
       material.AddProperty("label", "id", RenderLabel::kDontCare);
       material.AddProperty(
           "phong", "diffuse",
-          Vector4d{terrain_color.r, terrain_color.g, terrain_color.b, 1.0});
+          Vector4d{kTerrainColorD.r, kTerrainColorD.g, kTerrainColorD.b, 1.0});
       engine->RegisterVisual(GeometryId::get_new_id(), HalfSpace(), material,
                              RigidTransformd::Identity(),
                              false /** needs update */);
@@ -325,8 +349,7 @@ class RenderEngineVtkTest : public ::testing::Test {
   // Resets all expected values to the initial, default values.
   void ResetExpectations() {
     expected_color_ = RgbaColor{kDefaultVisualColor, 255};
-    expected_outlier_color_ = RgbaColor(
-        DummyRenderEngine::GetColorIFromLabel(RenderLabel::kDontCare), 255);
+    expected_outlier_color_ = RgbaColor(kTerrainColorI, 255);
     expected_outlier_depth_ = 3.f;
     expected_object_depth_ = 2.f;
     // We expect each test to explicitly set this.
@@ -377,20 +400,6 @@ class RenderEngineVtkTest : public ::testing::Test {
               << "Label at: " << inlier << " for test: " << name;
   }
 
-  ColorI bg_color() const {
-    return DummyRenderEngine::GetColorIFromLabel(RenderLabel::kEmpty);
-  }
-
-  // Provide a default visual color for these tests -- it is intended to be
-  // different from the default color of the VTK render engine.
-  const ColorI kDefaultVisualColor = {229u, 229u, 229u};
-  const float kDefaultDistance{3.f};
-
-  // Values to be used with the "centered shape" tests.
-  // The amount inset from the edge of the images to *still* expect ground plane
-  // values.
-  static constexpr int kInset{10};
-
   RgbaColor expected_color_{kDefaultVisualColor, 255};
   RgbaColor expected_outlier_color_{kDefaultVisualColor, 255};
   float expected_outlier_depth_{3.f};
@@ -419,8 +428,7 @@ TEST_F(RenderEngineVtkTest, NoBodyTest) {
   Init(RigidTransformd::Identity());
   Render();
 
-  VerifyUniformColor(DummyRenderEngine::GetColorIFromLabel(RenderLabel::kEmpty),
-                     0u);
+  VerifyUniformColor(kBgColor, 0u);
   VerifyUniformLabel(RenderLabel::kEmpty);
   VerifyUniformDepth(std::numeric_limits<float>::infinity());
 }
@@ -443,14 +451,12 @@ TEST_F(RenderEngineVtkTest, TerrainTest) {
   Init(X_WC_, true);
   const Vector3d p_WR = X_WC_.translation();
 
-  const ColorI& kTerrain =
-      DummyRenderEngine::GetColorIFromLabel(RenderLabel::kDontCare);
   // At two different distances.
   for (auto depth : std::array<float, 2>({{2.f, 4.9999f}})) {
     X_WC_.set_translation({p_WR(0), p_WR(1), depth});
     renderer_->UpdateViewpoint(X_WC_);
     Render();
-    VerifyUniformColor(kTerrain, 255u);
+    VerifyUniformColor(kTerrainColorI, 255u);
     VerifyUniformLabel(RenderLabel::kDontCare);
     VerifyUniformDepth(depth);
   }
@@ -459,7 +465,7 @@ TEST_F(RenderEngineVtkTest, TerrainTest) {
   X_WC_.set_translation({p_WR(0), p_WR(1), kZNear - 1e-5});
   renderer_->UpdateViewpoint(X_WC_);
   Render();
-  VerifyUniformColor(kTerrain, 255u);
+  VerifyUniformColor(kTerrainColorI, 255u);
   VerifyUniformLabel(RenderLabel::kDontCare);
   VerifyUniformDepth(InvalidDepth::kTooClose);
 
@@ -467,7 +473,7 @@ TEST_F(RenderEngineVtkTest, TerrainTest) {
   X_WC_.set_translation({p_WR(0), p_WR(1), kZFar + 1e-3});
   renderer_->UpdateViewpoint(X_WC_);
   Render();
-  VerifyUniformColor(kTerrain, 255u);
+  VerifyUniformColor(kTerrainColorI, 255u);
   VerifyUniformLabel(RenderLabel::kDontCare);
   // Verifies depth.
   for (int y = 0; y < kHeight; ++y) {
@@ -495,7 +501,6 @@ TEST_F(RenderEngineVtkTest, HorizonTest) {
   };
 
   // Verifies v index of horizon at three different camera heights.
-  const ColorI& kSky = bg_color();
   const Vector3d p_WR = X_WR.translation();
   for (const double z : {2., 1., 0.5}) {
     X_WR.set_translation({p_WR(0), p_WR(1), z});
@@ -505,9 +510,9 @@ TEST_F(RenderEngineVtkTest, HorizonTest) {
     int actual_horizon{0};
     for (int y = 0; y < kHeight; ++y) {
       // Looking for the boundary between the sky and the ground.
-      if ((static_cast<uint8_t>(kSky.r != color_.at(0, y)[0])) ||
-          (static_cast<uint8_t>(kSky.g != color_.at(0, y)[1])) ||
-          (static_cast<uint8_t>(kSky.b != color_.at(0, y)[2]))) {
+      if ((static_cast<uint8_t>(kBgColor.r != color_.at(0, y)[0])) ||
+          (static_cast<uint8_t>(kBgColor.g != color_.at(0, y)[1])) ||
+          (static_cast<uint8_t>(kBgColor.b != color_.at(0, y)[2]))) {
         actual_horizon = y;
         break;
       }
