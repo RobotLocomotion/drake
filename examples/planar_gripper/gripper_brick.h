@@ -73,6 +73,33 @@ class GripperBrickHelper {
 
   Eigen::Vector3d brick_size() const { return brick_size_; }
 
+  /**
+   * Return the orientation of link 2. Notice that since the finger only moves
+   * in the planar surface, the orientation can be represented by the rotation
+   * angle around the world x axis.
+   */
+  template <typename U>
+  U CalcFingerLink2Orientation(Finger finger, const U& base_joint_angle,
+                               const U& middle_joint_angle) const {
+    double base_theta;
+    switch (finger) {
+      case Finger::kFinger1: {
+        base_theta = 1.0 / 3 * M_PI;
+        break;
+      }
+      case Finger::kFinger2: {
+        base_theta = M_PI;
+        break;
+      }
+      case Finger::kFinger3: {
+        base_theta = -1.0 / 3 * M_PI;
+        break;
+      }
+      default: { throw std::runtime_error("Unknown finger."); }
+    }
+    return base_theta + base_joint_angle + middle_joint_angle;
+  }
+
  private:
   std::unique_ptr<systems::Diagram<T>> diagram_;
   multibody::MultibodyPlant<T>* plant_;
