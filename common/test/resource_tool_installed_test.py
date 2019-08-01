@@ -59,18 +59,6 @@ class TestResourceTool(unittest.TestCase):
         with open(absolute_path, 'r') as data:
             self.assertEqual(data.read(), resource_data)
 
-        # Use the installed resource_tool to find a directory.
-        # (This feature is deprecated and will eventually be removed.)
-        absolute_path = install_test_helper.check_output(
-            [resource_tool,
-             "--print_resource_path",
-             "drake/common/test",
-             ],
-            env=tool_env,
-            ).strip()
-        with open(absolute_path + '/tmp_resource', 'r') as data:
-            self.assertEqual(data.read(), resource_data)
-
         # Use the installed resource_tool to find a resource, but with a bogus
         # DRAKE_RESOURCE_ROOT that should be ignored.
         tool_env[env_name] = os.path.join(tmp_dir, "share", "drake")
@@ -87,20 +75,6 @@ class TestResourceTool(unittest.TestCase):
         self.assertIn("FindResource ignoring DRAKE_RESOURCE_ROOT", warning)
         self.assertTrue(os.path.exists(absolute_path),
                         absolute_path + " does not exist")
-
-        # Use --add_resource_search_path instead of environment variable
-        # to find resources.
-        # (This feature is deprecated and will eventually be removed.)
-        absolute_path = install_test_helper.check_output(
-            [resource_tool,
-             "--print_resource_path",
-             "drake/common/test/tmp_resource",
-             "--add_resource_search_path",
-             os.path.join(tmp_dir, "share"),
-             ],
-            ).strip()
-        with open(absolute_path, 'r') as data:
-            self.assertEqual(data.read(), resource_data)
 
 
 if __name__ == '__main__':
