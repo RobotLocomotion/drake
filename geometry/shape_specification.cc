@@ -22,13 +22,8 @@ Cylinder::Cylinder(double radius, double length)
 
 HalfSpace::HalfSpace() : Shape(ShapeTag<HalfSpace>()) {}
 
-Isometry3<double> HalfSpace::MakePose(const Vector3<double>& Hz_dir_F,
-                                      const Vector3<double>& p_FB) {
-  return MakePoseInF(Hz_dir_F, p_FB).GetAsIsometry3();
-}
-
-RigidTransform<double> HalfSpace::MakePoseInF(const Vector3<double>& Hz_dir_F,
-                                              const Vector3<double>& p_FB) {
+RigidTransform<double> HalfSpace::MakePose(const Vector3<double>& Hz_dir_F,
+                                           const Vector3<double>& p_FB) {
   const double norm = Hz_dir_F.norm();
   // Note: this value of epsilon is somewhat arbitrary. It's merely a minor
   // fence over which ridiculous vectors will trip.

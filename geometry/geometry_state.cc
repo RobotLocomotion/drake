@@ -554,12 +554,12 @@ GeometryId GeometryState<T>::RegisterGeometry(
 
   // X_PG() is always RigidTransform<double>, to account for
   // GeometryState<AutoDiff>, we need to cast it to the common type T.
-  X_WGs_[geometry_id] = geometry->X_PG().cast<T>();
+  X_WGs_[geometry_id] = geometry->pose().cast<T>();
 
   geometries_.emplace(
       geometry_id,
       InternalGeometry(source_id, geometry->release_shape(), frame_id,
-                       geometry_id, geometry->name(), geometry->X_PG()));
+                       geometry_id, geometry->name(), geometry->pose()));
 
   // Any roles defined on the geometry instance propagate through automatically.
   if (geometry->illustration_properties()) {
