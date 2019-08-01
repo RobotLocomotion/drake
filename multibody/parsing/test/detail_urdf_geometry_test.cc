@@ -119,7 +119,7 @@ TEST_F(UrdfGeometryTests, TestParseMaterial1) {
   EXPECT_EQ(visual.name().substr(0, name_base.size()), name_base);
 
   EXPECT_TRUE(CompareMatrices(
-      visual.X_PG().GetAsMatrix34(), RigidTransformd().GetAsMatrix34()));
+      visual.pose().GetAsMatrix34(), RigidTransformd().GetAsMatrix34()));
 
   const geometry::Box* box =
       dynamic_cast<const geometry::Box*>(&visual.shape());
@@ -149,7 +149,7 @@ TEST_F(UrdfGeometryTests, TestParseMaterial2) {
 
   const RigidTransformd expected_pose(Eigen::Vector3d(0, 0, 0.3));
   EXPECT_TRUE(CompareMatrices(
-      visual.X_PG().GetAsMatrix34(), expected_pose.GetAsMatrix34()));
+      visual.pose().GetAsMatrix34(), expected_pose.GetAsMatrix34()));
 
   const geometry::Cylinder* cylinder =
       dynamic_cast<const geometry::Cylinder*>(&visual.shape());
@@ -201,7 +201,7 @@ TEST_F(UrdfGeometryTests, TestParseMaterialDuplicateButSame) {
       math::RotationMatrix<double>(expected_rpy), expected_xyz);
 
   const auto& visual = visual_instances_.front();
-  math::RigidTransform<double> actual_pose(visual.X_PG());
+  math::RigidTransform<double> actual_pose(visual.pose());
   EXPECT_TRUE(actual_pose.IsNearlyEqualTo(expected_pose, 1e-10));
 }
 

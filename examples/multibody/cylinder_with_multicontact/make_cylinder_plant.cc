@@ -90,7 +90,7 @@ MakeCylinderPlant(double radius, double length, double mass,
   Vector3<double> point_W(0, 0, 0);
 
   // A half-space for the ground geometry.
-  RigidTransformd X_WG(HalfSpace::MakePoseInF(normal_W, point_W));
+  RigidTransformd X_WG(HalfSpace::MakePose(normal_W, point_W));
   plant->RegisterCollisionGeometry(plant->world_body(), X_WG, HalfSpace(),
                                    "collision", surface_friction);
 

@@ -109,14 +109,11 @@ class GeometryInstance {
    representation as well.  */
   GeometryId id() const { return id_; }
 
-  const math::RigidTransform<double>& X_PG() const { return X_PG_; }
-  void set_X_PG(math::RigidTransform<double> X_PG) { X_PG_ = std::move(X_PG); }
+  /** Returns the instance geometry's pose in its parent frame.  */
+  const math::RigidTransformd& pose() const { return X_PG_; }
 
-  DRAKE_DEPRECATED("2019-11-01", "Please use X_PG().")
-  const Isometry3<double> pose() const { return X_PG_.GetAsIsometry3(); }
-
-  DRAKE_DEPRECATED("2019-11-01", "Please use set_X_PG().")
-  void set_pose(const Isometry3<double>& X_PG) { X_PG_.SetFromIsometry3(X_PG); }
+  /** Sets the pose of this instance in its parent's frame.  */
+  void set_pose(const math::RigidTransformd& X_PG) { X_PG_ = X_PG; }
 
   const Shape& shape() const {
     DRAKE_DEMAND(shape_ != nullptr);

@@ -260,7 +260,7 @@ GTEST_TEST(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(*sdf_visual);
 
-  const RigidTransformd X_LC(geometry_instance->X_PG());
+  const RigidTransformd X_LC(geometry_instance->pose());
 
   // These are the expected values as specified by the string above.
   const RollPitchYaw<double> expected_rpy(3.14, 6.28, 1.57);
@@ -410,11 +410,11 @@ GTEST_TEST(SceneGraphParserDetail, MakeHalfSpaceGeometryInstanceFromSdfVisual) {
 
   // The expected orientation of the canonical frame C (in which the plane's
   // normal aligns with Cz) in the link frame L.
-  const RotationMatrix<double> R_LC_expected(
-      HalfSpace::MakePoseInF(normal_L_expected, Vector3d::Zero()).linear());
+  const RotationMatrix<double> R_LC_expected =
+      HalfSpace::MakePose(normal_L_expected, Vector3d::Zero()).rotation();
 
   // Retrieve the GeometryInstance pose as parsed from the sdf::Visual.
-  const RotationMatrix<double> R_LC(geometry_instance->X_PG().linear());
+  const RotationMatrix<double> R_LC = geometry_instance->pose().rotation();
   const Vector3d normal_L = R_LC.col(2);
 
   // Verify results to precision given by kTolerance.
@@ -735,8 +735,8 @@ GTEST_TEST(SceneGraphParserDetail,
 
   // The expected orientation of the canonical frame C (in which the plane's
   // normal aligns with Cz) in the link frame L.
-  const RotationMatrix<double> R_LG_expected(
-      HalfSpace::MakePoseInF(normal_L_expected, Vector3d::Zero()).linear());
+  const RotationMatrix<double>& R_LG_expected =
+      HalfSpace::MakePose(normal_L_expected, Vector3d::Zero()).rotation();
 
   // Verify results to precision given by kTolerance.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();

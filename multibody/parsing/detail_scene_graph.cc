@@ -211,7 +211,7 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
       // in its canonical frame C in which the normal aligns with the z-axis
       // direction.
       const RigidTransformd X_GC(
-          geometry::HalfSpace::MakePoseInF(normal_G, Vector3d::Zero()));
+          geometry::HalfSpace::MakePose(normal_G, Vector3d::Zero()));
 
       // Correct X_LC to include the pose X_GC
       X_LC = X_LG * X_GC;
@@ -314,7 +314,7 @@ RigidTransformd MakeGeometryPoseFromSdfCollision(
       // in its canonical frame C in which the normal aligns with the z-axis
       // direction.
       const RigidTransformd X_GC(
-          geometry::HalfSpace::MakePoseInF(normal_G, Vector3d::Zero()));
+          geometry::HalfSpace::MakePose(normal_G, Vector3d::Zero()));
 
       // Correct X_LC to include the pose X_GC
       X_LC = X_LG * X_GC;
