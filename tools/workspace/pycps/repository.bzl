@@ -8,8 +8,8 @@ def pycps_repository(
     github_archive(
         name = name,
         repository = "mwoehlke/pycps",
-        commit = "83326ffaf03528e83f673eccb8af9b129504bf42",
-        sha256 = "eede05c985d35f683445d8267be1ad7679b296b2d00290870c347e91822f51d1",  # noqa
+        commit = "793363729e60bfdc4b0b1d7a99038aa481aac960",
+        sha256 = "1c304023e5dbce21a423cd5665ee0e3f2deadcd42413bb1bca36d2bd747f1564",  # noqa
         build_file = "@drake//tools/workspace/pycps:package.BUILD.bazel",
         mirrors = mirrors,
     )
