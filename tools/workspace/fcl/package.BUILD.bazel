@@ -30,13 +30,32 @@ generate_export_header(
     static_define = "FCL_STATIC_DEFINE",
 )
 
+# Generates a version.cmake stub based on package.xml contents.
+genrule(
+    name = "version-from-xml.cmake_genrule",
+    srcs = [
+        "package.xml",
+        "@drake//tools/workspace/fcl:version-from-xml.sed",
+    ],
+    outs = [
+        "version-from-xml.cmake",
+    ],
+    cmd = " ".join([
+        "sed",
+        "-f $(execpath @drake//tools/workspace/fcl:version-from-xml.sed)",
+        "-n $(execpath package.xml) > $@",
+        "&&",
+        "test -s $@",
+    ]),
+)
+
 # Generates config.h based on the version numbers in CMake code.
 cmake_configure_file(
     name = "config",
     src = "include/fcl/config.h.in",
     out = "include/fcl/config.h",
     cmakelists = [
-        "CMakeModules/FCLVersion.cmake",
+        ":version-from-xml.cmake",
         "@octomap//:cmakelists_with_version",
     ],
     defines = ["FCL_HAVE_OCTOMAP"],
