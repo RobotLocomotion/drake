@@ -15,7 +15,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/unused.h"
@@ -69,9 +68,6 @@ static T GetNextSampleTime(
   DRAKE_ASSERT(next_t > current_time_sec);
   return next_t;
 }
-
-// Logs a deprecation warning, at most once per process.
-void MaybeWarnDoHasDirectFeedthroughDeprecated();
 
 }  // namespace leaf_system_internal
 /** @endcond */
@@ -265,6 +261,13 @@ class LeafSystem : public System<T> {
 
     // The list of pairs where we don't know an answer yet.
     std::multimap<InputPortIndex, OutputPortIndex> unknown;
+    for (InputPortIndex u{0}; u < this->num_input_ports(); ++u) {
+      for (OutputPortIndex v{0}; v < this->num_output_ports(); ++v) {
+        unknown.emplace(u, v);
+      }
+    }
+
+    // A helper function to remove an item from `unknown`.
     auto remove_unknown = [&unknown](const auto& in_out_pair) {
       for (auto iter = unknown.lower_bound(in_out_pair.first); ; ++iter) {
         DRAKE_DEMAND(iter != unknown.end());
@@ -276,26 +279,7 @@ class LeafSystem : public System<T> {
       }
     };
 
-    // For all input-output pairs ask the subclass if the port has feedthrough.
-    // Add true pairs to the result map and nullopt pairs to the unknown map.
-    for (InputPortIndex u{0}; u < this->num_input_ports(); ++u) {
-      for (OutputPortIndex v{0}; v < this->num_output_ports(); ++v) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        const optional<bool> user_override = DoHasDirectFeedthrough(u, v);
-#pragma GCC diagnostic pop
-        if (user_override) {
-          leaf_system_internal::MaybeWarnDoHasDirectFeedthroughDeprecated();
-          if (user_override.value()) {
-            result.emplace(u, v);
-          }
-        } else {
-          unknown.emplace(u, v);
-        }
-      }
-    }
-
-    // If unknown pairs remain, ask the dependency graph if we can exclude them.
+    // Ask the dependency graph if we can exclude any pairs.
     if (!unknown.empty()) {
       auto context = this->AllocateContext();
       const auto orig_unknown = unknown;
@@ -585,26 +569,6 @@ class LeafSystem : public System<T> {
     }
     return std::make_unique<Parameters<T>>(std::move(numeric_params),
                                            std::move(abstract_params));
-  }
-
-  /// (Deprecated.)  See @ref DeclareLeafOutputPort_feedthrough for how to
-  /// declare feedthrough without overriding this method.
-  //
-  /// Returns true if there is direct-feedthrough from the given @p input_port
-  /// to the given @p output_port, false if there is not direct- feedthrough,
-  /// or nullopt if unknown.  Subclasses may override this method to report
-  /// manual sparsity, but overriding this method is deprecated and is
-  /// scheduled for removal; do not use it in new code.  Manually configured
-  /// sparsity must be conservative: if there is any Context for which an input
-  /// port is direct-feedthrough to an output port, this function must return
-  /// either true or nullopt.  By default, always returns nullopt.
-  DRAKE_DEPRECATED("2019-08-01",
-      "Instead of overriding this method, provide the prerequisites_of_calc "
-      "argument to the DeclareFooOutputPort call.")
-  virtual optional<bool> DoHasDirectFeedthrough(
-      int input_port, int output_port) const {
-    unused(input_port, output_port);
-    return nullopt;
   }
 
   // =========================================================================
