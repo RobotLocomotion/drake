@@ -2,9 +2,6 @@
 #include "drake/solvers/snopt_solver.h"
 /* clang-format on */
 
-// NOLINTNEXTLINE(whitespace/line_length)
-#warning DRAKE DEPRECATED: The f2c-based SNOPT bindings are deprecated, in favor of the Fortran-based SNOPT bindings.  The f2c-based SNOPT bindings will be removed from Drake on or after 2019-11-01.
-
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
