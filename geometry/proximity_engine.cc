@@ -475,9 +475,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // We keep polygonal faces without triangulating them. Some algorithms for
     // convex geometry perform better with fewer faces.
     bool do_tinyobj_triangulation = false;
-    // We use default value (NULL) for the base directory of .mtl file (material
-    // description), so it will be searched from the working directory.
-    const char* mtl_basedir = nullptr;
+
+    // Tinyobj doesn't infer the search directory from the directory containing
+    // the obj file. We have to provide that directory; of course, this assumes
+    // that the material library reference is relative to the obj directory.
+    const size_t pos = convex.filename().find_last_of('/');
+    const std::string obj_folder = convex.filename().substr(0, pos + 1);
+    const char* mtl_basedir = obj_folder.c_str();
+
     bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
         convex.filename().c_str(), mtl_basedir, do_tinyobj_triangulation);
     if (!ret || !err.empty()) {

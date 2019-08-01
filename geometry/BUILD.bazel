@@ -273,6 +273,7 @@ drake_cc_googletest(
     name = "proximity_engine_test",
     data = [
         "test/forbidden_two_cubes.obj",
+        "test/quad_cube.mtl",
         "test/quad_cube.obj",
     ],
     deps = [
