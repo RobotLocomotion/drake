@@ -2922,12 +2922,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @pre Finalize() was already called on `this` plant.
   const systems::OutputPort<T>& get_state_output_port() const;
 
-  /// Returns a constant reference to the output port for the full continuous
-  /// state `x = [q v]` of the model.
-  /// @pre Finalize() was already called on `this` plant.
-  DRAKE_DEPRECATED("2019-08-01", "Use get_state_output_port() instead.")
-  const systems::OutputPort<T>& get_continuous_state_output_port() const;
-
   /// Returns a constant reference to the output port for the state of a
   /// specific model instance.
   /// @pre Finalize() was already called on `this` plant.
@@ -2937,15 +2931,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const systems::OutputPort<T>& get_state_output_port(
       ModelInstanceIndex model_instance) const;
 
-  /// Returns a constant reference to the output port for the continuous
-  /// state of a specific model instance.
-  /// @pre Finalize() was already called on `this` plant.
-  /// @throws std::exception if called before Finalize() or if the model
-  /// instance does not have any state.
-  /// @throws std::exception if the model instance does not exist.
-  DRAKE_DEPRECATED("2019-08-01", "Use get_state_output_port() instead.")
-  const systems::OutputPort<T>& get_continuous_state_output_port(
-      ModelInstanceIndex model_instance) const;
   /// @}
   // Closes Doxygen section "Continuous state output"
 
