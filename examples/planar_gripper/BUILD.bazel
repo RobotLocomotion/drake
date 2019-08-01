@@ -38,6 +38,7 @@ drake_cc_library(
         "//examples/planar_gripper:planar_brick.sdf",
         "//examples/planar_gripper:planar_gripper.sdf",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//common:find_resource",
         "//examples/planar_gripper:planar_gripper_common",
