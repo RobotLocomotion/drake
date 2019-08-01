@@ -9,7 +9,6 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.eigen_geometry import Isometry3_
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.lcm import DrakeMockLcm
 from pydrake.math import RigidTransform
@@ -88,9 +87,6 @@ class TestGeometry(unittest.TestCase):
         self.assertIsInstance(obj.frame_ids()[0], mut.FrameId)
         obj.clear()
         self.assertEqual(obj.size(), 0)
-        with catch_drake_warnings(expected_count=1):
-            mut.FramePoseVector(source_id=mut.SourceId.get_new_id(),
-                                ids=[mut.FrameId.get_new_id()])
 
     def test_query_object_api(self):
         # TODO(eric.cousineau): Create self-contained unittests (#9899).

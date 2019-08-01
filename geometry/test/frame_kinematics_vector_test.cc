@@ -25,44 +25,8 @@ namespace test {
 
 GTEST_TEST(FrameKinematicsVector, DefaultConstructor) {
   const FramePoseVector<double> dut;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_FALSE(dut.source_id().is_valid());
-#pragma GCC diagnostic pop
   EXPECT_EQ(dut.size(), 0);
 }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(FrameKinematicsVector, Constructor) {
-  SourceId source_id = SourceId::get_new_id();
-
-  std::vector<FrameId> ids;
-  FramePoseVector<double> poses1(source_id, ids);
-
-  EXPECT_EQ(poses1.source_id(), source_id);
-  EXPECT_EQ(poses1.size(), 0);
-
-  const int kCount = 5;
-  for (int i = 0; i < kCount; ++i) ids.push_back(FrameId::get_new_id());
-  FramePoseVector<double> poses2(source_id, ids);
-
-  EXPECT_EQ(poses2.source_id(), source_id);
-  EXPECT_EQ(poses2.size(), kCount);
-
-  // Confirm that the values are properly initialized.
-  for (int i = 0; i < kCount; ++i) {
-    EXPECT_TRUE(ExpectExactIdentity(poses2.value(ids[i])));
-  }
-
-  FrameId duplicate = FrameId::get_new_id();
-  std::vector<FrameId> duplicate_ids{duplicate, FrameId::get_new_id(),
-                                     duplicate};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      FramePoseVector<double>(source_id, duplicate_ids), std::runtime_error,
-      "At least one frame id appears multiple times: \\d+");
-}
-#pragma GCC diagnostic pop
 
 GTEST_TEST(FrameKinematicsVector, InitializerListCtor) {
   const auto& id_0 = FrameId::get_new_id();
