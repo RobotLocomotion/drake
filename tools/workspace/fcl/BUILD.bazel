@@ -2,4 +2,6 @@
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+exports_files(["version-from-xml.sed"])
+
 add_lint_tests()
