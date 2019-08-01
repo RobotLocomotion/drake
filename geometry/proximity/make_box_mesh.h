@@ -39,7 +39,7 @@ class MakeBoxVolumeMesh {
   */
   static VolumeMesh<T> generate(const Box& box, T target_edge_length);
 
- private:
+ protected:
   // Uniformly samples the interval [`first`, `last`]. The first sample
   // is exactly `first`, and the last sample is exactly `last`.
   // @param num_sample
@@ -199,8 +199,6 @@ class MakeBoxVolumeMesh {
     }
     return elements;
   }
-
-  template <typename U> friend class MakeBoxVolumeMeshTester;
 };  // class MakeBoxVolumeMesh
 
 template <typename T>

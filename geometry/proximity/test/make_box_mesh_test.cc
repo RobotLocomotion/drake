@@ -19,7 +19,7 @@ typedef std::vector<std::vector<int>> MultiArrayInt2D;
 typedef std::vector<std::vector<std::vector<int>>> MultiArrayInt3D;
 
 template <typename T>
-class MakeBoxVolumeMeshTester {
+class MakeBoxVolumeMeshTester : public MakeBoxVolumeMesh<T> {
  public:
   static std::vector<T> UniformSample(T first, T last, int num_sample) {
     return MakeBoxVolumeMesh<T>::UniformSample(first, last, num_sample);
