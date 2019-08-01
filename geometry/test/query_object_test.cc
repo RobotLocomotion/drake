@@ -9,6 +9,7 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -105,8 +106,9 @@ class QueryObjectTester {
 
 namespace {
 
-using render::DepthCameraProperties;
+using Eigen::Vector3d;
 using math::RigidTransformd;
+using render::DepthCameraProperties;
 using std::make_unique;
 using std::unique_ptr;
 using systems::Context;
@@ -213,7 +215,7 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
 GTEST_TEST(QueryObjectInspectTest, CreateValidInspector) {
   SceneGraph<double> scene_graph;
   SourceId source_id = scene_graph.RegisterSource("source");
-  auto identity = Isometry3<double>::Identity();
+  auto identity = RigidTransformd::Identity();
   FrameId frame_id =
       scene_graph.RegisterFrame(source_id, GeometryFrame("frame"));
   GeometryId geometry_id = scene_graph.RegisterGeometry(
@@ -241,7 +243,7 @@ GTEST_TEST(QueryObjectBakeTest, BakedCopyHasFullUpdate) {
   SourceId s_id = scene_graph.RegisterSource("BakeTest");
   FrameId frame_id = scene_graph.RegisterFrame(s_id, GeometryFrame("frame"));
   unique_ptr<Context<double>> context = scene_graph.AllocateContext();
-  Isometry3<double> X_WF{Translation3<double>{1, 2, 3}};
+  RigidTransformd X_WF{Vector3d{1, 2, 3}};
   FramePoseVector<double> poses{{frame_id, X_WF}};
   scene_graph.get_source_pose_port(s_id).FixValue(context.get(), poses);
   const auto& query_object =
@@ -257,13 +259,15 @@ GTEST_TEST(QueryObjectBakeTest, BakedCopyHasFullUpdate) {
   const GeometryState<double>& state = QOT::state(query_object);
   const auto& stale_pose = state.get_pose_in_world(frame_id);
   // Confirm the live state hasn't been updated yet.
-  EXPECT_FALSE(CompareMatrices(stale_pose.matrix(), X_WF.matrix()));
+  EXPECT_FALSE(
+      CompareMatrices(stale_pose.GetAsMatrix34(), X_WF.GetAsMatrix34()));
 
   const QueryObject<double> baked(query_object);
 
   const GeometryState<double>& baked_state = QOT::state(query_object);
   const auto& baked_pose = baked_state.get_pose_in_world(frame_id);
-  EXPECT_TRUE(CompareMatrices(baked_pose.matrix(), X_WF.matrix()));
+  EXPECT_TRUE(
+      CompareMatrices(baked_pose.GetAsMatrix34(), X_WF.GetAsMatrix34()));
 }
 
 }  // namespace

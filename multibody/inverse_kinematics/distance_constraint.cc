@@ -77,7 +77,11 @@ void EvalDistance(const MultibodyPlant<T>& plant,
           plant.GetBodyFromFrameId(frame_B_id)->body_frame();
       internal::CalcDistanceDerivatives(
           plant, *context, frameA, frameB,
-          inspector.X_FG(signed_distance_pair.id_A) *
+          // GetPoseInFrame() returns RigidTransform<double> -- we can't
+          // multiply across heterogeneous scalar types; so we cast the double
+          // to T.
+          inspector.GetPoseInFrame(signed_distance_pair.id_A)
+                  .template cast<T>() *
               signed_distance_pair.p_ACa,
           signed_distance_pair.distance, signed_distance_pair.nhat_BA_W, x,
           y->data());

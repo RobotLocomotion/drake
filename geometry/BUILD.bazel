@@ -227,6 +227,7 @@ drake_cc_library(
         ":shape_specification",
         "//common:copyable_unique_ptr",
         "//common:essential",
+        "//math:geometric_transform",
     ],
 )
 
@@ -244,7 +245,10 @@ drake_cc_library(
     name = "shape_specification",
     srcs = ["shape_specification.cc"],
     hdrs = ["shape_specification.h"],
-    deps = ["//common:essential"],
+    deps = [
+        "//common:essential",
+        "//math:geometric_transform",
+    ],
 )
 
 drake_cc_library(

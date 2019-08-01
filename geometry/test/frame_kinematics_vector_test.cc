@@ -17,10 +17,12 @@ namespace drake {
 namespace geometry {
 namespace test {
 
-::testing::AssertionResult ExpectExactIdentity(const Isometry3<double>& pose) {
-  const Isometry3<double> I = Isometry3<double>::Identity();
-  return CompareMatrices(pose.matrix().block<3, 4>(0, 0),
-                         I.matrix().block<3, 4>(0, 0));
+using math::RigidTransform;
+using math::RigidTransformd;
+
+::testing::AssertionResult ExpectExactIdentity(const RigidTransformd& pose) {
+  const RigidTransformd I = RigidTransformd::Identity();
+  return CompareMatrices(pose.GetAsMatrix34(), I.GetAsMatrix34());
 }
 
 GTEST_TEST(FrameKinematicsVector, DefaultConstructor) {
@@ -30,11 +32,10 @@ GTEST_TEST(FrameKinematicsVector, DefaultConstructor) {
 
 GTEST_TEST(FrameKinematicsVector, InitializerListCtor) {
   const auto& id_0 = FrameId::get_new_id();
-  const Isometry3<double> pose_0 = Isometry3<double>::Identity();
+  const RigidTransformd pose_0 = RigidTransformd::Identity();
   const auto& id_1 = FrameId::get_new_id();
-  const Isometry3<double> pose_1 =
-      math::RigidTransformd{Eigen::Translation3d(0.1, 0.2, 0.3)}.
-          GetAsIsometry3();
+  const RigidTransformd pose_1 =
+      math::RigidTransformd{Eigen::Translation3d(0.1, 0.2, 0.3)};
 
   const FramePoseVector<double> dut{{id_0, pose_0}, {id_1, pose_1}};
   ASSERT_EQ(dut.size(), 2);
@@ -42,32 +43,29 @@ GTEST_TEST(FrameKinematicsVector, InitializerListCtor) {
   EXPECT_TRUE(dut.has_id(id_1));
   EXPECT_FALSE(dut.has_id(FrameId::get_new_id()));
   EXPECT_TRUE(ExpectExactIdentity(dut.value(id_0)));
-  EXPECT_TRUE(CompareMatrices(
-      dut.value(id_1).matrix().block<3, 4>(0, 0),
-      pose_1.matrix().block<3, 4>(0, 0)));
+  EXPECT_TRUE(
+      CompareMatrices(dut.value(id_1).GetAsMatrix34(), pose_1.GetAsMatrix34()));
 }
 
 GTEST_TEST(FrameKinematicsVector, InitializerListAssign) {
   const auto& id_0 = FrameId::get_new_id();
-  const Isometry3<double> pose_0 = Isometry3<double>::Identity();
+  const RigidTransformd pose_0 = RigidTransformd::Identity();
   const auto& id_1 = FrameId::get_new_id();
-  const Isometry3<double> pose_1 =
-      math::RigidTransformd{Eigen::Translation3d(0.1, 0.2, 0.3)}.
-          GetAsIsometry3();
+  const RigidTransformd pose_1 =
+      math::RigidTransformd{Eigen::Translation3d(0.1, 0.2, 0.3)};
 
   // Start with a non-empty dut, so we confirm that assignment replaces all of
   // the existing values.  (An STL map insert defaults to a no-op when the key
   // exists already; we don't want that!)
-  FramePoseVector<double> dut{{id_1, Isometry3<double>::Identity()}};
+  FramePoseVector<double> dut{{id_1, RigidTransformd::Identity()}};
   dut = {{id_0, pose_0}, {id_1, pose_1}};
   ASSERT_EQ(dut.size(), 2);
   EXPECT_TRUE(dut.has_id(id_0));
   EXPECT_TRUE(dut.has_id(id_1));
   EXPECT_FALSE(dut.has_id(FrameId::get_new_id()));
   EXPECT_TRUE(ExpectExactIdentity(dut.value(id_0)));
-  EXPECT_TRUE(CompareMatrices(
-      dut.value(id_1).matrix().block<3, 4>(0, 0),
-      pose_1.matrix().block<3, 4>(0, 0)));
+  EXPECT_TRUE(
+      CompareMatrices(dut.value(id_1).GetAsMatrix34(), pose_1.GetAsMatrix34()));
 
   dut = {};
   ASSERT_EQ(dut.size(), 0);
@@ -79,10 +77,11 @@ GTEST_TEST(FrameKinematicsVector, WorkingWithValues) {
   for (int i = 0; i < kPoseCount; ++i) ids.push_back(FrameId::get_new_id());
   FramePoseVector<double> poses;
 
-  std::vector<Isometry3<double>> recorded_poses;
+  std::vector<RigidTransform<double>> recorded_poses;
   for (int i = 0; i < kPoseCount; ++i) {
-    Isometry3<double> pose = Isometry3<double>::Identity();
-    pose.translation() << i, i, i;
+    RigidTransformd pose = RigidTransformd::Identity();
+    const double d = i;
+    pose.set_translation({d, d, d});
     recorded_poses.push_back(pose);
     EXPECT_NO_THROW(poses.set_value(ids[i], pose));
   }
@@ -90,8 +89,9 @@ GTEST_TEST(FrameKinematicsVector, WorkingWithValues) {
   // Confirm that poses get recorded properly.
   for (int i = 0; i < kPoseCount; ++i) {
     EXPECT_TRUE(poses.has_id(ids[i]));
-    const Isometry3<double>& pose = poses.value(ids[i]);
-    EXPECT_TRUE(CompareMatrices(pose.matrix(), recorded_poses[i].matrix()));
+    const RigidTransformd& pose = poses.value(ids[i]);
+    EXPECT_TRUE(CompareMatrices(pose.GetAsMatrix34(),
+                                recorded_poses[i].GetAsMatrix34()));
   }
 
   // Confirm that poses get cleared properly.
@@ -106,8 +106,9 @@ GTEST_TEST(FrameKinematicsVector, WorkingWithValues) {
   }
   for (int i = 0; i < kPoseCount; ++i) {
     EXPECT_TRUE(poses.has_id(ids[i]));
-    const Isometry3<double>& pose = poses.value(ids[i]);
-    EXPECT_TRUE(CompareMatrices(pose.matrix(), recorded_poses[i].matrix()));
+    const RigidTransformd& pose = poses.value(ids[i]);
+    EXPECT_TRUE(CompareMatrices(pose.GetAsMatrix34(),
+                                recorded_poses[i].GetAsMatrix34()));
   }
 
   // Ask for the pose of an id that does not belong to the set.
@@ -123,10 +124,10 @@ GTEST_TEST(FrameKinematicsVector, SetWithoutAllocations) {
     FrameId::get_new_id(),
     FrameId::get_new_id(),
   };
-  const std::vector<Isometry3<double>> poses{
-    Isometry3<double>::Identity(),
-    Isometry3<double>::Identity(),
-    Isometry3<double>::Identity(),
+  const std::vector<RigidTransform<double>> poses{
+    RigidTransformd::Identity(),
+    RigidTransformd::Identity(),
+    RigidTransformd::Identity(),
   };
 
   // For the initial setting, we'd expect to see allocations.
@@ -147,7 +148,8 @@ GTEST_TEST(FrameKinematicsVector, SetWithoutAllocations) {
 
 GTEST_TEST(FrameKinematicsVector, AutoDiffInstantiation) {
   FramePoseVector<AutoDiffXd> poses;
-  poses.set_value(FrameId::get_new_id(), Isometry3<AutoDiffXd>::Identity());
+  poses.set_value(FrameId::get_new_id(),
+                  RigidTransform<AutoDiffXd>::Identity());
   EXPECT_EQ(poses.size(), 1);
 }
 
@@ -159,7 +161,7 @@ GTEST_TEST(FrameKinematicsVector, SymbolicInstantiation) {
   FramePoseVector<Expression> poses;
 
   // Set and retrieve a simple symbolic::Expression.
-  poses.set_value(ids[0], Isometry3<Expression>::Identity());
+  poses.set_value(ids[0], RigidTransform<Expression>::Identity());
 
   const Variable var_x_{"x"};
   const Variable var_y_{"y"};
@@ -168,7 +170,7 @@ GTEST_TEST(FrameKinematicsVector, SymbolicInstantiation) {
   const Expression y_{var_y_};
   const Expression z_{var_z_};
 
-  const Isometry3<Expression> pose = Isometry3<Expression>
+  const RigidTransform<Expression> pose = RigidTransform<Expression>
       (Translation3<Expression>(x_, y_, z_));
   poses.set_value(ids[1], pose);
 
@@ -182,7 +184,7 @@ GTEST_TEST(FrameKinematicsVector, FrameIdRange) {
   std::vector<FrameId> ids;
   for (int i = 0; i < 3; ++i) {
     ids.push_back(FrameId::get_new_id());
-    poses.set_value(ids.back(), Isometry3<double>::Identity());
+    poses.set_value(ids.back(), RigidTransformd::Identity());
   }
 
   std::set<FrameId> actual_ids;

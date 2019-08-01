@@ -25,13 +25,14 @@
 namespace drake {
 namespace geometry {
 
-using Eigen::Isometry3d;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 using internal::DummyRenderEngine;
 using internal::InternalFrame;
 using internal::InternalGeometry;
 using internal::ProximityEngine;
+using math::RigidTransform;
+using math::RigidTransformd;
 using render::RenderLabel;
 using std::make_unique;
 using std::map;
@@ -45,7 +46,7 @@ using std::unordered_set;
 using std::vector;
 
 template <typename T>
-using IdPoseMap = unordered_map<GeometryId, Isometry3<T>>;
+using IdPoseMap = unordered_map<GeometryId, RigidTransform<T>>;
 
 // Implementation of friend class that allows me to peek into the geometry state
 // to confirm invariants on the state's internal workings as a result of
@@ -95,11 +96,11 @@ class GeometryStateTester {
     return state_->X_WGs_;
   }
 
-  const vector<Isometry3<T>>& get_frame_world_poses() const {
+  const vector<RigidTransform<T>>& get_frame_world_poses() const {
     return state_->X_WF_;
   }
 
-  const vector<Isometry3<T>>& get_frame_parent_poses() const {
+  const vector<RigidTransform<T>>& get_frame_parent_poses() const {
     return state_->X_PF_;
   }
 
@@ -160,7 +161,7 @@ class ShapeMatcher final : public ShapeReifier {
                                               FrameId frame_id) {
     GeometryId g_id = state->RegisterGeometry(
         source_id, frame_id,
-        make_unique<GeometryInstance>(Isometry3d::Identity(),
+        make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                       make_unique<ShapeType>(expected_),
                                       "shape"));
     state->GetShape(g_id).Reify(this);
@@ -336,7 +337,7 @@ class GeometryStateTestBase {
   // should invoke this in its SetUp() method.
   void TestInit(bool add_renderer = true) {
     frame_ = make_unique<GeometryFrame>("ref_frame");
-    instance_pose_.translation() << 10, 20, 30;
+    instance_pose_.set_translation({10, 20, 30});
     instance_ = make_unique<GeometryInstance>(
         instance_pose_, make_unique<Sphere>(1.0), "instance");
     gs_tester_.set_state(&geometry_state_);
@@ -403,17 +404,18 @@ class GeometryStateTestBase {
     source_id_ = NewSource();
 
     // Create f0.
-    Isometry3d pose = Isometry3d::Identity();
-    pose.translation() << 1, 2, 3;
-    pose.linear() << 1, 0, 0, 0, 0, 1, 0, -1, 0;  // 90° around x-axis.
+    // 90° around x-axis.
+    RigidTransformd pose(AngleAxis<double>(M_PI_2, Vector3d::UnitX()),
+                         Vector3d{1, 2, 3});
     frames_.push_back(geometry_state_.RegisterFrame(
         source_id_, GeometryFrame("f0")));
     X_WFs_.push_back(pose);
     X_PFs_.push_back(pose);
 
     // Create f1.
-    pose.translation() << 10, 20, 30;
-    pose.linear() << 0, 0, -1, 0, 1, 0, 1, 0, 0;  // 90° around y-axis.
+    // 90° around y-axis.
+    pose = RigidTransformd(AngleAxis<double>(M_PI_2, Vector3d::UnitY()),
+                           Vector3d{10, 20, 30});
     frames_.push_back(geometry_state_.RegisterFrame(
         source_id_, GeometryFrame("f1")));
     X_WFs_.push_back(pose);
@@ -433,12 +435,10 @@ class GeometryStateTestBase {
     int g_count = 0;
     for (auto frame_id : frames_) {
       for (int i = 0; i < kGeometryCount; ++i) {
-        pose.translation() << g_count + 1, 0, 0;
-        pose.linear() =
-            AngleAxis<double>(g_count * M_PI / 2.0, x_axis).matrix();
+        pose = RigidTransformd(AngleAxis<double>(g_count * M_PI_2, x_axis),
+                               Vector3d{g_count + 1.0, 0, 0});
         // Have the name reflect the frame and the index in the geometry.
-        const string& name =
-            to_string(frame_id) + "_g" + to_string(i);
+        const string& name = to_string(frame_id) + "_g" + to_string(i);
         geometry_names_[g_count] = name;
         geometries_[g_count] = geometry_state_.RegisterGeometry(
             source_id_, frame_id,
@@ -449,7 +449,7 @@ class GeometryStateTestBase {
     }
 
     // Create anchored geometry.
-    X_WA_ = Isometry3d{Translation3d{0, 0, -1}};
+    X_WA_ = RigidTransformd{Translation3d{0, 0, -1}};
     // This simultaneously tests the named registration function and
     // _implicitly_ tests registration of geometry against the world frame id
     // (as that is how `RegisterAnchoredGeometry()` works.
@@ -503,7 +503,7 @@ class GeometryStateTestBase {
   // Members owned by the test class.
   unique_ptr<GeometryFrame> frame_;
   unique_ptr<GeometryInstance> instance_;
-  Isometry3d instance_pose_{Isometry3d::Identity()};
+  RigidTransformd instance_pose_{RigidTransformd::Identity()};
   GeometryState<double> geometry_state_;
   GeometryStateTester<double> gs_tester_;
   DummyRenderEngine* render_engine_{};
@@ -531,13 +531,13 @@ class GeometryStateTestBase {
   SourceId source_id_;
 
   // The poses of the frames in the world frame.
-  vector<Isometry3d> X_WFs_;
+  vector<RigidTransformd> X_WFs_;
   // The poses of the frames in the parent's frame.
-  vector<Isometry3d> X_PFs_;
+  vector<RigidTransformd> X_PFs_;
   // The poses of the dynamic geometries in the parent frame.
-  vector<Isometry3d> X_FGs_;
+  vector<RigidTransformd> X_FGs_;
   // The pose of the anchored geometry in the world frame.
-  Isometry3d X_WA_;
+  RigidTransformd X_WA_;
   // The default source name.
   const string kSourceName{"default_source"};
   // The name of the dummy renderer added to the geometry state.
@@ -743,28 +743,29 @@ void ExpectSuccessfulTransmogrification(
   EXPECT_EQ(ad_tester.get_frame_index_id_map(),
             d_tester.get_frame_index_id_map());
 
-  // 3. Compare Isometry3d with Isometry3<AutoDiffXd>
+  // 3. Compare RigidTransformd with RigidTransform<AutoDiffXd>.
   for (const auto& id_geom_pair : ad_tester.get_geometries()) {
     const GeometryId id = id_geom_pair.first;
     const auto& ad_geometry = id_geom_pair.second;
     EXPECT_TRUE(CompareMatrices(
-        ad_geometry.X_FG().matrix().block<3, 4>(0, 0),
-        d_tester.get_geometries().at(id).X_FG().matrix().block<3, 4>(0, 0)));
+        ad_geometry.X_FG().GetAsMatrix34(),
+        d_tester.get_geometries().at(id).X_FG().GetAsMatrix34()));
   }
 
-  // 4. Compare Isometry3<AutoDiffXd> with Isometry3d
-  auto test_ad_vs_double_pose = [](const Isometry3<AutoDiffXd>& test,
-                                   const Isometry3d& ref) {
+  // 4. Compare RigidTransform<AutoDiffXd> with RigidTransformd.
+  auto test_ad_vs_double_pose = [](const RigidTransform<AutoDiffXd>& test,
+                                   const RigidTransformd& ref) {
     for (int row = 0; row < 3; ++row) {
       for (int col = 0; col < 4; ++col) {
-        EXPECT_EQ(test(row, col).value(), ref(row, col));
+        EXPECT_EQ(test.GetAsMatrix34()(row, col).value(),
+                  ref.GetAsMatrix34()(row, col));
       }
     }
   };
 
   auto test_ad_vs_double = [test_ad_vs_double_pose](
-                               const vector<Isometry3<AutoDiffXd>>& test,
-                               const vector<Isometry3d>& ref) {
+                               const vector<RigidTransform<AutoDiffXd>>& test,
+                               const vector<RigidTransformd>& ref) {
     EXPECT_EQ(test.size(), ref.size());
     for (size_t i = 0; i < ref.size(); ++i) {
       test_ad_vs_double_pose(test[i], ref[i]);
@@ -777,7 +778,7 @@ void ExpectSuccessfulTransmogrification(
     ASSERT_EQ(test.size(), ref.size());
     for (const auto& id_pose_pair : ref) {
       const GeometryId id = id_pose_pair.first;
-      const Isometry3d& ref_pose = id_pose_pair.second;
+      const RigidTransformd& ref_pose = id_pose_pair.second;
       test_ad_vs_double_pose(test.at(id), ref_pose);
     }
   };
@@ -870,16 +871,17 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
                                       child_geometries.end());
       const auto& frame_in_parent = gs_tester_.get_frame_parent_poses();
       EXPECT_TRUE(
-          CompareMatrices(frame_in_parent[frame.index()].matrix(),
-                          X_PFs_[i].matrix()));
+          CompareMatrices(frame_in_parent[frame.index()].GetAsMatrix34(),
+                          X_PFs_[i].GetAsMatrix34()));
     };
 
     // When added, all frames' poses w.r.t. their parents are the identity.
     const auto& frame_in_parent = gs_tester_.get_frame_parent_poses();
     for (FrameId frame_id : frames_) {
       const auto& frame = internal_frames.at(frame_id);
-      EXPECT_TRUE(CompareMatrices(frame_in_parent[frame.index()].matrix(),
-                                  Isometry3d::Identity().matrix()));
+      EXPECT_TRUE(
+          CompareMatrices(frame_in_parent[frame.index()].GetAsMatrix34(),
+                          RigidTransformd::Identity().GetAsMatrix34()));
     }
 
     // Confirm posing positions the frames properly.
@@ -913,11 +915,11 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
       // of GetPoseInFrame() and GetPoseInParent() must be the identical (as
       // the documentation for GeometryState::GetPoseInParent() indicates).
       EXPECT_TRUE(CompareMatrices(
-          geometry_state_.GetPoseInFrame(geometry.id()).matrix(),
-          X_FGs_[i].matrix()));
+          geometry_state_.GetPoseInFrame(geometry.id()).GetAsMatrix34(),
+          X_FGs_[i].GetAsMatrix34()));
       EXPECT_TRUE(CompareMatrices(
-          geometry_state_.GetPoseInParent(geometry.id()).matrix(),
-          X_FGs_[i].matrix()));
+          geometry_state_.GetPoseInParent(geometry.id()).GetAsMatrix34(),
+          X_FGs_[i].GetAsMatrix34()));
     }
   }
   EXPECT_EQ(static_cast<int>(gs_tester_.get_geometry_world_poses().size()),
@@ -1074,8 +1076,9 @@ TEST_F(GeometryStateTest, RegisterGeometryGoodSource) {
   EXPECT_EQ(g_id, expected_g_id);
   EXPECT_EQ(geometry_state_.GetFrameId(g_id), f_id);
   EXPECT_TRUE(geometry_state_.BelongsToSource(g_id, s_id));
-  const Isometry3d& X_FG = geometry_state_.GetPoseInFrame(g_id);
-  EXPECT_TRUE(CompareMatrices(X_FG.matrix(), instance_pose_.matrix()));
+  const RigidTransformd& X_FG = geometry_state_.GetPoseInFrame(g_id);
+  EXPECT_TRUE(
+      CompareMatrices(X_FG.GetAsMatrix34(), instance_pose_.GetAsMatrix34()));
 
   EXPECT_TRUE(gs_tester_.get_frames().at(f_id).has_child(g_id));
   const auto& geometry = gs_tester_.get_geometries().at(g_id);
@@ -1133,7 +1136,7 @@ TEST_F(GeometryStateTest, RegisterGeometryonValidGeometry) {
   const double x = 3;
   const double y = 2;
   const double z = 1;
-  Isometry3d pose{Translation3d{x, y, z}};
+  RigidTransformd pose{Translation3d{x, y, z}};
   const int parent_index = 0;
   const GeometryId parent_id = geometries_[parent_index];
   const FrameId frame_id = geometry_state_.GetFrameId(parent_id);
@@ -1150,15 +1153,16 @@ TEST_F(GeometryStateTest, RegisterGeometryonValidGeometry) {
   // geometry is at [parent_index + 1, 0, 0] and this is at [3, 2, 1]. They
   // simply sum up. The parent has *no* rotation so the resultant transform is
   // simply the sum of the translation vectors.
-  const Isometry3d expected_pose_in_frame{
+  const RigidTransformd expected_pose_in_frame{
       Translation3d{(parent_index + 1) + x, y, z}};
   EXPECT_EQ(frame_id, geometry_state_.GetFrameId(g_id));
 
-  const Isometry3d& X_FG = geometry_state_.GetPoseInFrame(g_id);
-  EXPECT_TRUE(CompareMatrices(X_FG.matrix(), expected_pose_in_frame.matrix(),
-                  1e-14, MatrixCompareType::absolute));
-  const Isometry3d& X_PG = geometry_state_.GetPoseInParent(g_id);
-  EXPECT_TRUE(CompareMatrices(X_PG.matrix(), pose.matrix(),
+  const RigidTransformd& X_FG = geometry_state_.GetPoseInFrame(g_id);
+  EXPECT_TRUE(CompareMatrices(X_FG.GetAsMatrix34(),
+                              expected_pose_in_frame.GetAsMatrix34(), 1e-14,
+                              MatrixCompareType::absolute));
+  const RigidTransformd& X_PG = geometry_state_.GetPoseInParent(g_id);
+  EXPECT_TRUE(CompareMatrices(X_PG.GetAsMatrix34(), pose.GetAsMatrix34(),
                   1e-14, MatrixCompareType::absolute));
 
   EXPECT_TRUE(gs_tester_.get_frames().at(frame_id).has_child(g_id));
@@ -1179,7 +1183,7 @@ TEST_F(GeometryStateTest, RegisterGeometryonValidGeometry) {
 TEST_F(GeometryStateTest, RegisterGeometryonInvalidGeometry) {
   const SourceId s_id = SetUpSingleSourceTree();
   auto instance = make_unique<GeometryInstance>(
-      Isometry3d::Identity(), make_unique<Sphere>(1), "sphere");
+      RigidTransformd::Identity(), make_unique<Sphere>(1), "sphere");
   const GeometryId junk_id = GeometryId::get_new_id();
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.RegisterGeometryWithParent(s_id, junk_id, move(instance)),
@@ -1202,7 +1206,7 @@ TEST_F(GeometryStateTest, RegisterNullGeometryonGeometry) {
 TEST_F(GeometryStateTest, RegisterAnchoredGeometry) {
   const SourceId s_id = NewSource("new source");
   auto instance = make_unique<GeometryInstance>(
-      Isometry3d::Identity(), make_unique<Sphere>(1), "sphere");
+      RigidTransformd::Identity(), make_unique<Sphere>(1), "sphere");
   const GeometryId expected_g_id = instance->id();
   const auto g_id =
       geometry_state_.RegisterAnchoredGeometry(s_id, move(instance));
@@ -1214,20 +1218,21 @@ TEST_F(GeometryStateTest, RegisterAnchoredGeometry) {
   EXPECT_EQ(s_id, g->source_id());
   // Assigned directly to the world frame means the pose in parent and frame
   // should match.
-  EXPECT_TRUE(CompareMatrices(g->X_FG().matrix(), g->X_PG().matrix()));
+  EXPECT_TRUE(
+      CompareMatrices(g->X_FG().GetAsMatrix34(), g->X_PG().GetAsMatrix34()));
 }
 
 // Tests the registration of a new geometry on another geometry.
 TEST_F(GeometryStateTest, RegisterAnchoredOnAnchoredGeometry) {
   // Add an anchored geometry.
   const SourceId s_id = NewSource("new source");
-  Isometry3d pose{Translation3d{1, 2, 3}};
+  RigidTransformd pose{Translation3d{1, 2, 3}};
   auto instance = make_unique<GeometryInstance>(
       pose, make_unique<Sphere>(1), "sphere1");
   auto parent_id = geometry_state_.RegisterAnchoredGeometry(s_id,
                                                             move(instance));
 
-  pose = Isometry3d::Identity();
+  pose = RigidTransformd::Identity();
   instance = make_unique<GeometryInstance>(
       pose, make_unique<Sphere>(1), "sphere2");
   auto child_id = geometry_state_.RegisterGeometryWithParent(s_id, parent_id,
@@ -1237,9 +1242,11 @@ TEST_F(GeometryStateTest, RegisterAnchoredOnAnchoredGeometry) {
   EXPECT_TRUE(parent->has_child(child_id));
   EXPECT_TRUE(static_cast<bool>(child->parent_id()));
   EXPECT_EQ(parent_id, *child->parent_id());
-  EXPECT_TRUE(CompareMatrices(pose.matrix(), child->X_PG().matrix()));
-  const Isometry3d& X_FP = parent->X_FG();
-  EXPECT_TRUE(CompareMatrices((X_FP * pose).matrix(), child->X_FG().matrix()));
+  EXPECT_TRUE(
+      CompareMatrices(pose.GetAsMatrix34(), child->X_PG().GetAsMatrix34()));
+  const RigidTransformd& X_FP = parent->X_FG();
+  EXPECT_TRUE(CompareMatrices((X_FP * pose).GetAsMatrix34(),
+                              child->X_FG().GetAsMatrix34()));
   EXPECT_EQ(InternalFrame::world_frame_id(), parent->frame_id());
 }
 
@@ -1258,7 +1265,7 @@ TEST_F(GeometryStateTest, RegisterDuplicateAnchoredGeometry) {
 // Tests the attempt to register anchored geometry on an invalid source.
 TEST_F(GeometryStateTest, RegisterAnchoredGeometryInvalidSource) {
   auto instance = make_unique<GeometryInstance>(
-      Isometry3d::Identity(), make_unique<Sphere>(1), "sphere");
+      RigidTransformd::Identity(), make_unique<Sphere>(1), "sphere");
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.RegisterAnchoredGeometry(SourceId::get_new_id(),
                                                move(instance)),
@@ -1330,7 +1337,7 @@ TEST_F(GeometryStateTest, RemoveGeometry) {
   EXPECT_NO_THROW(
       added_id = geometry_state_.RegisterGeometry(
           source_id_, frames_[0],
-          make_unique<GeometryInstance>(Isometry3d::Identity(),
+          make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                         make_unique<Sphere>(1), "newest")));
 
   // Adding proximity role to the new geometry brings the total number of
@@ -1367,7 +1374,7 @@ TEST_F(GeometryStateTest, RemoveGeometryTree) {
   // Hang geometry from the first geometry.
   const GeometryId g_id = geometry_state_.RegisterGeometryWithParent(
       s_id, root_id,
-      make_unique<GeometryInstance>(Isometry3d::Identity(),
+      make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                     unique_ptr<Shape>(new Sphere(1)), "leaf"));
   geometry_state_.AssignRole(s_id, g_id, ProximityProperties());
 
@@ -1403,7 +1410,7 @@ TEST_F(GeometryStateTest, RemoveChildLeaf) {
   // Hang geometry from the first geometry.
   const GeometryId g_id = geometry_state_.RegisterGeometryWithParent(
       s_id, parent_id,
-      make_unique<GeometryInstance>(Isometry3d::Identity(),
+      make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                     unique_ptr<Shape>(new Sphere(1)), "leaf"));
   EXPECT_EQ(geometry_state_.get_num_geometries(),
             single_tree_total_geometry_count() + 1);
@@ -1444,7 +1451,7 @@ TEST_F(GeometryStateTest, RemoveGeometryInvalid) {
   EXPECT_EQ(geometry_state_.get_num_frames(), single_tree_frame_count() + 1);
   const GeometryId g_id = geometry_state_.RegisterGeometry(
       s_id2, frame_id,
-      make_unique<GeometryInstance>(Isometry3d::Identity(),
+      make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                     unique_ptr<Shape>(new Sphere(1)), "new"));
   EXPECT_EQ(geometry_state_.get_num_geometries(),
             single_tree_total_geometry_count() + 1);
@@ -1459,11 +1466,11 @@ TEST_F(GeometryStateTest, RemoveGeometryInvalid) {
 TEST_F(GeometryStateTest, RemoveAnchoredGeometry) {
   const SourceId s_id = SetUpSingleSourceTree(Assign::kProximity);
 
-  const Vector3<double> normal{0, 1, 0};
-  const Vector3<double> point{1, 1, 1};
+  const Vector3<double> normal_W{0, 1, 0};
+  const Vector3<double> p_WB{1, 1, 1};
   const auto anchored_id_1 = geometry_state_.RegisterAnchoredGeometry(
       s_id,
-      make_unique<GeometryInstance>(HalfSpace::MakePose(normal, point),
+      make_unique<GeometryInstance>(HalfSpace::MakePose(normal_W, p_WB),
                                     make_unique<HalfSpace>(), "anchored1"));
   geometry_state_.AssignRole(s_id, anchored_id_1, ProximityProperties());
   // Confirm conditions of having added the anchored geometry.
@@ -1554,7 +1561,7 @@ TEST_F(GeometryStateTest, SourceOwnershipInvalidSource) {
   SetUpSingleSourceTree();
   const GeometryId anchored_id = geometry_state_.RegisterAnchoredGeometry(
       source_id_,
-      make_unique<GeometryInstance>(Isometry3d::Identity(),
+      make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                     make_unique<Sphere>(1),
                                     "sphere"));
   // Valid frame/geometry ids.
@@ -1587,7 +1594,7 @@ TEST_F(GeometryStateTest, SourceOwnershipFrameId) {
 TEST_F(GeometryStateTest, SourceOwnershipGeometryId) {
   const SourceId s_id = SetUpSingleSourceTree();
   const GeometryId anchored_id = geometry_state_.RegisterAnchoredGeometry(
-      s_id, make_unique<GeometryInstance>(Isometry3d::Identity(),
+      s_id, make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                           make_unique<Sphere>(1),
                                           "sphere"));
   // Test for invalid geometry.
@@ -1612,7 +1619,7 @@ TEST_F(GeometryStateTest, ValidateFrameIds) {
   const SourceId s_id = SetUpSingleSourceTree();
   FramePoseVector<double> frame_set;
   for (auto frame_id : frames_) {
-    frame_set.set_value(frame_id, Isometry3d::Identity());
+    frame_set.set_value(frame_id, RigidTransformd::Identity());
   }
   // Case: frame ids are valid.
   EXPECT_NO_THROW(gs_tester_.ValidateFrameIds(s_id, frame_set));
@@ -1620,7 +1627,7 @@ TEST_F(GeometryStateTest, ValidateFrameIds) {
   // Case: Right number, wrong frames.
   FramePoseVector<double> frame_set_2;
   for (int i = 0; i < kFrameCount; ++i) {
-    frame_set_2.set_value(FrameId::get_new_id(), Isometry3d::Identity());
+    frame_set_2.set_value(FrameId::get_new_id(), RigidTransformd::Identity());
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
       gs_tester_.ValidateFrameIds(s_id, frame_set_2), std::runtime_error,
@@ -1630,7 +1637,7 @@ TEST_F(GeometryStateTest, ValidateFrameIds) {
   // Case: Too few frames.
   FramePoseVector<double> frame_set_3;
   for (int i = 0; i < kFrameCount - 1; ++i) {
-    frame_set.set_value(frames_[i], Isometry3d::Identity());
+    frame_set.set_value(frames_[i], RigidTransformd::Identity());
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
       gs_tester_.ValidateFrameIds(s_id, frame_set_3), std::runtime_error,
@@ -1648,9 +1655,9 @@ TEST_F(GeometryStateTest, ValidateFrameIds) {
 TEST_F(GeometryStateTest, SetFramePoses) {
   const SourceId s_id = SetUpSingleSourceTree();
   // A vector of poses we will use to populate FramePoseVectors.
-  vector<Isometry3d> frame_poses;
+  vector<RigidTransformd> frame_poses;
   for (int i = 0; i < kFrameCount; ++i) {
-    frame_poses.push_back(Isometry3d::Identity());
+    frame_poses.push_back(RigidTransformd::Identity());
   }
 
   auto make_pose_vector =
@@ -1674,23 +1681,22 @@ TEST_F(GeometryStateTest, SetFramePoses) {
   const auto& world_poses = gs_tester_.get_geometry_world_poses();
   for (int i = 0; i < total_geom; ++i) {
     const GeometryId id = geometries_[i];
-    EXPECT_TRUE(CompareMatrices(world_poses.at(id).matrix().block<3, 4>(0, 0),
-                                X_FGs_[i].matrix().block<3, 4>(0, 0)));
+    EXPECT_TRUE(CompareMatrices(world_poses.at(id).GetAsMatrix34(),
+                                X_FGs_[i].GetAsMatrix34()));
   }
 
   // Case 2: Move the two *root* frames 1 unit in the +y direction. The f2 will
   // stay at the identity.
   // The final geometry poses should all be offset by 1 unit in the y.
-  const Isometry3d offset{Translation3d{0, 1, 0}};
+  const RigidTransformd offset{Translation3d{0, 1, 0}};
   frame_poses[0] = offset;
   frame_poses[1] = offset;
   FramePoseVector<double> poses2 = make_pose_vector();
   gs_tester_.SetFramePoses(s_id, poses2);
   for (int i = 0; i < total_geom; ++i) {
     const GeometryId id = geometries_[i];
-    EXPECT_TRUE(
-        CompareMatrices(world_poses.at(id).matrix().block<3, 4>(0, 0),
-                        (offset * X_FGs_[i].matrix()).block<3, 4>(0, 0)));
+    EXPECT_TRUE(CompareMatrices(world_poses.at(id).GetAsMatrix34(),
+                                (offset * X_FGs_[i]).GetAsMatrix34()));
   }
 
   // Case 3: All frames get set to move up one unit. This will leave geometries
@@ -1701,13 +1707,12 @@ TEST_F(GeometryStateTest, SetFramePoses) {
   for (int i = 0; i < total_geom; ++i) {
     const GeometryId id = geometries_[i];
     if (i < (kFrameCount - 1) * kGeometryCount) {
-      EXPECT_TRUE(
-          CompareMatrices(world_poses.at(id).matrix().block<3, 4>(0, 0),
-                          (offset * X_FGs_[i].matrix()).block<3, 4>(0, 0)));
+      EXPECT_TRUE(CompareMatrices(world_poses.at(id).GetAsMatrix34(),
+                                  (offset * X_FGs_[i]).GetAsMatrix34()));
     } else {
-      EXPECT_TRUE(CompareMatrices(
-          world_poses.at(id).matrix().block<3, 4>(0, 0),
-          (offset * offset * X_FGs_[i].matrix()).block<3, 4>(0, 0)));
+      EXPECT_TRUE(
+          CompareMatrices(world_poses.at(id).GetAsMatrix34(),
+                          (offset * offset * X_FGs_[i]).GetAsMatrix34()));
     }
   }
 }
@@ -1737,35 +1742,35 @@ TEST_F(GeometryStateTest, QueryFrameProperties) {
   for (int i = 0; i < kFrameCount; ++i) poses.set_value(frames_[i], X_PFs_[i]);
   gs_tester_.SetFramePoses(s_id, poses);
 
+  EXPECT_TRUE(CompareMatrices(
+      geometry_state_.get_pose_in_world(frames_[0]).GetAsMatrix34(),
+      X_WFs_[0].GetAsMatrix34()));
   EXPECT_TRUE(
-      CompareMatrices(geometry_state_.get_pose_in_world(frames_[0]).matrix(),
-                      X_WFs_[0].matrix()));
-  EXPECT_TRUE(
-      CompareMatrices(geometry_state_.get_pose_in_world(world).matrix(),
-                      Isometry3d::Identity().matrix()));
+      CompareMatrices(geometry_state_.get_pose_in_world(world).GetAsMatrix34(),
+                      RigidTransformd::Identity().GetAsMatrix34()));
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.get_pose_in_world(FrameId::get_new_id()),
       std::logic_error, "No world pose available for invalid frame id: \\d+");
 
   // This assumes that geometry parent belongs to frame 0.
-  const Isometry3d X_WG = X_WFs_[0] * X_FGs_[0];
+  const RigidTransformd X_WG = X_WFs_[0] * X_FGs_[0];
   EXPECT_TRUE(CompareMatrices(
-      geometry_state_.get_pose_in_world(geometries_[0]).matrix(),
-      X_WG.matrix()));
+      geometry_state_.get_pose_in_world(geometries_[0]).GetAsMatrix34(),
+      X_WG.GetAsMatrix34()));
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.get_pose_in_world(GeometryId::get_new_id()),
       std::logic_error,
       "No world pose available for invalid geometry id: \\d+");
   EXPECT_TRUE(CompareMatrices(
-      geometry_state_.get_pose_in_world(anchored_geometry_).matrix(),
-      X_WA_.matrix()));
+      geometry_state_.get_pose_in_world(anchored_geometry_).GetAsMatrix34(),
+      X_WA_.GetAsMatrix34()));
 
+  EXPECT_TRUE(CompareMatrices(
+      geometry_state_.get_pose_in_parent(frames_[0]).GetAsMatrix34(),
+      X_PFs_[0].GetAsMatrix34()));
   EXPECT_TRUE(
-      CompareMatrices(geometry_state_.get_pose_in_parent(frames_[0]).matrix(),
-                      X_PFs_[0].matrix()));
-  EXPECT_TRUE(
-      CompareMatrices(geometry_state_.get_pose_in_parent(world).matrix(),
-                      Isometry3d::Identity().matrix()));
+      CompareMatrices(geometry_state_.get_pose_in_parent(world).GetAsMatrix34(),
+                      RigidTransformd::Identity().GetAsMatrix34()));
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.get_pose_in_parent(FrameId::get_new_id()),
       std::logic_error, "No pose available for invalid frame id: \\d+");
@@ -1981,7 +1986,7 @@ TEST_F(GeometryStateTest, NonProximityRoleInCollisionFilter) {
   // Documentation on the single source tree indicates that the previous spheres
   // are at (5, 0, 0) and (6, 0, 0), respectively. Split the distance to put the
   // new geometry in a penetrating configuration.
-  const Isometry3d pose{Translation3d{5.5, 0, 0}};
+  const RigidTransformd pose{Translation3d{5.5, 0, 0}};
   const string name("added_sphere");
   GeometryId added_id = geometry_state_.RegisterGeometry(
       source_id_, frames_[2],
@@ -2183,7 +2188,7 @@ TEST_F(GeometryStateTest, GetGeometryIdFromName) {
   for (int i = 0; i < 2; ++i) {
     geometry_state_.RegisterGeometry(
         source_id_, frames_[0],
-        make_unique<GeometryInstance>(Isometry3d::Identity(),
+        make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                       make_unique<Sphere>(1), dummy_name));
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -2206,7 +2211,7 @@ TEST_F(GeometryStateTest, GeometryNameStorage) {
     const GeometryId id = geometry_state_.RegisterGeometry(
         source_id_, frames_[0],
         make_unique<GeometryInstance>(
-            Isometry3d::Identity(), make_unique<Sphere>(1), " " + name));
+            RigidTransformd::Identity(), make_unique<Sphere>(1), " " + name));
     EXPECT_EQ(geometry_state_.GetName(id), name);
   }
 
@@ -2216,7 +2221,7 @@ TEST_F(GeometryStateTest, GeometryNameStorage) {
     const GeometryId id = geometry_state_.RegisterGeometry(
         source_id_, frames_[1],
         make_unique<GeometryInstance>(
-            Isometry3d::Identity(), make_unique<Sphere>(1), name));
+            RigidTransformd::Identity(), make_unique<Sphere>(1), name));
     EXPECT_EQ(geometry_state_.GetName(id), name);
   }
 }
@@ -2299,7 +2304,7 @@ TEST_F(GeometryStateTest, AssignRolesToGeometry) {
 
   // We need at least 8 geometries to run through all role permutations. Add
   // geometries until we're there.
-  const Isometry3d pose = Isometry3d::Identity();
+  const RigidTransformd pose = RigidTransformd::Identity();
   for (int i = 0; i < 8 - single_tree_dynamic_geometry_count(); ++i) {
     const string name = "new_geom" + std::to_string(i);
     geometries_.push_back(geometry_state_.RegisterGeometry(
@@ -2457,7 +2462,7 @@ TEST_F(GeometryStateTest, RoleLookUp) {
                         Assign::kPerception);
   GeometryId no_role_id = geometry_state_.RegisterGeometry(
       source_id_, frames_[0],
-      make_unique<GeometryInstance>(Isometry3d::Identity(),
+      make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                     make_unique<Sphere>(0.5), "no_roles"));
   GeometryId invalid_id = GeometryId::get_new_id();
 
@@ -2688,9 +2693,9 @@ TEST_F(GeometryStateTest, RoleAssignExceptions) {
   // Addition of geometry with duplicate name -- no problem. Assigning it a
   // duplicate role -- bad.
   const GeometryId new_id = geometry_state_.RegisterGeometry(
-      source_id_, frames_[0],
-      make_unique<GeometryInstance>(
-          Isometry3d::Identity(), make_unique<Sphere>(1), geometry_names_[0]));
+      source_id_, frames_[0], make_unique<GeometryInstance>(
+                                  RigidTransformd::Identity(),
+                                  make_unique<Sphere>(1), geometry_names_[0]));
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.AssignRole(source_id_, new_id, ProximityProperties()),
       std::logic_error,
@@ -2814,7 +2819,7 @@ TEST_F(GeometryStateTest, ProximityRoleOnMesh) {
   // Add a mesh to a frame.
   const GeometryId mesh_id = geometry_state_.RegisterGeometry(
       source_id_, frames_[0],
-      make_unique<GeometryInstance>(Isometry3d::Identity(),
+      make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                     make_unique<Mesh>("path", 1.0), "mesh"));
   const InternalGeometry* mesh = gs_tester_.GetGeometry(mesh_id);
   ASSERT_NE(mesh, nullptr);
@@ -3030,7 +3035,7 @@ TEST_F(GeometryStateTest, AddRendererAfterGeometry) {
   // Add one geometry that has no perception properties.
   const GeometryId id_no_perception = geometry_state_.RegisterGeometry(
       source_id_, frames_[0],
-      make_unique<GeometryInstance>(Isometry3d::Identity(),
+      make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                     make_unique<Sphere>(0.5), "shape"));
   EXPECT_EQ(render_engine_->num_registered(),
             single_tree_total_geometry_count());
@@ -3113,13 +3118,14 @@ TEST_F(GeometryStateTest, RendererPoseUpdate) {
       const GeometryId expected_id = expected_id_pose_pair.first;
       const auto& test_iter = test.find(expected_id);
       EXPECT_NE(test_iter, test.end());
-      EXPECT_TRUE(CompareMatrices(test_iter->second.matrix(),
-                                  expected_id_pose_pair.second.matrix()));
+      EXPECT_TRUE(
+          CompareMatrices(test_iter->second.GetAsMatrix34(),
+                          expected_id_pose_pair.second.GetAsMatrix34()));
     }
   };
 
   auto get_expected_ids = [this]() {
-    map<GeometryId, Isometry3d> expected;
+    map<GeometryId, RigidTransformd> expected;
     for (int i = 0; i < single_tree_dynamic_geometry_count(); ++i) {
       const GeometryId id = geometries_[i];
       expected.insert({id, gs_tester_.get_geometry_world_poses().at(id)});
@@ -3127,7 +3133,7 @@ TEST_F(GeometryStateTest, RendererPoseUpdate) {
     return expected;
   };
 
-  map<GeometryId, Isometry3d> expected_ids = get_expected_ids();
+  map<GeometryId, RigidTransformd> expected_ids = get_expected_ids();
   expect_poses(second_engine->updated_ids(), expected_ids);
   expect_poses(render_engine_->updated_ids(), expected_ids);
   render_engine_->init_test_data();
@@ -3137,8 +3143,8 @@ TEST_F(GeometryStateTest, RendererPoseUpdate) {
   // values.
   const Vector3d offset{1, 2, 3};
   for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
-    Isometry3d X_PF = X_PFs_[f];
-    X_PF.translation() += offset;
+    RigidTransformd X_PF = X_PFs_[f];
+    X_PF.set_translation(X_PF.translation() + offset);
     poses.set_value(frames_[f], X_PF);
   }
   EXPECT_EQ(second_engine->updated_ids().size(), 0u);

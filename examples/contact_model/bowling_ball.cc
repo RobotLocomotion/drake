@@ -31,7 +31,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/geometry/geometry_visualization.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant_bridge.h"
@@ -43,9 +42,7 @@
 namespace drake {
 namespace systems {
 
-using drake::lcm::DrakeLcm;
 using multibody::joints::kQuaternion;
-using Eigen::VectorXd;
 using std::make_unique;
 
 // Simulation parameters.

@@ -20,12 +20,10 @@ namespace {
 // TODO(SeanCurtis-TRI): Run through proximity_engine_test and pull the tests
 // from there that better belong here.
 
-using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using math::RigidTransform;
 using math::RigidTransformd;
 using math::RotationMatrix;
-using Eigen::Translation3d;
 using std::make_shared;
 
 // Performs a point-to-shape signed-distance query and tests the result. This
@@ -450,7 +448,7 @@ template <typename T>
 void TestScalarShapeSupport() {
   // Configure the basic query.
   Vector3<T> p_WQ{10, 10, 10};
-  Isometry3<T> X_WQ{Translation3<T>{p_WQ}};
+  RigidTransform<T> X_WQ{Translation3<T>{p_WQ}};
   auto point_geometry = make_shared<fcl::Sphered>(0);
   const GeometryId point_id = GeometryId::get_new_id();
   fcl::CollisionObjectd query_point(point_geometry);
@@ -460,8 +458,8 @@ void TestScalarShapeSupport() {
   std::vector<SignedDistanceToPoint<T>> distances;
   double threshold = std::numeric_limits<double>::max();
   const GeometryId other_id = GeometryId::get_new_id();
-  std::unordered_map<GeometryId, Isometry3<T>> X_WGs{
-      {point_id, X_WQ}, {other_id, Isometry3<T>::Identity()}};
+  std::unordered_map<GeometryId, RigidTransform<T>> X_WGs{
+      {point_id, X_WQ}, {other_id, RigidTransform<T>::Identity()}};
   CallbackData<T> data{&query_point, threshold, p_WQ, &X_WGs, &distances};
 
   // The Drake-supported geometries (minus Mesh which isn't supported by

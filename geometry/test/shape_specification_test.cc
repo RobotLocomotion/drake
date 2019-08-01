@@ -11,6 +11,7 @@ namespace drake {
 namespace geometry {
 namespace {
 
+using math::RigidTransformd;
 using std::unique_ptr;
 
 // Confirm correct interactions with the Reifier.
@@ -152,61 +153,64 @@ TEST_F(ReifierTest, CloningShapes) {
 // that the pose conforms to expectations. Also confirms that the rotational
 // component is orthonormal.
 ::testing::AssertionResult ValidatePlanePose(
-    const Eigen::Isometry3d& pose, const Vector3<double>& expected_z,
+    const RigidTransformd& pose, const Vector3<double>& expected_z,
     const Vector3<double>& expected_translation, double tolerance = 1e-14) {
   using std::abs;
 
   // Test expected z-axis value.
-  const Vector3<double>& z_axis = pose.linear().col(2);
+  const Vector3<double>& z_axis = pose.rotation().col(2);
   if (!CompareMatrices(z_axis, expected_z, tolerance,
                        MatrixCompareType::absolute)) {
     return ::testing::AssertionFailure()
-        << "pose =\n"
-        << pose.matrix() << "\nExpected z-axis " << expected_z.transpose()
-        << " does not match pose's z-axis " << z_axis.transpose();
+           << "pose =\n"
+           << pose.GetAsMatrix34() << "\nExpected z-axis "
+           << expected_z.transpose() << " does not match pose's z-axis "
+           << z_axis.transpose();
   }
 
   // Test expected translation.
   if (!CompareMatrices(pose.translation(), expected_translation, tolerance,
                        MatrixCompareType::absolute)) {
     return ::testing::AssertionFailure()
-        << "pose =\n"
-        << pose.matrix() << "\nExpected translation "
-        << expected_translation.transpose()
-        << " does not match pose's translation "
-        << pose.translation().transpose();
+           << "pose =\n"
+           << pose.GetAsMatrix34() << "\nExpected translation "
+           << expected_translation.transpose()
+           << " does not match pose's translation "
+           << pose.translation().transpose();
   }
 
   // Test unit-length rotation.
   char axis_labels[] = {'x', 'y', 'z'};
   for (int i = 0; i < 3; ++i) {
-    if (abs(pose.linear().col(i).norm() - 1) > tolerance) {
+    if (abs(pose.rotation().col(i).norm() - 1) > tolerance) {
       return ::testing::AssertionFailure()
-          << "pose =\n"
-          << pose.matrix() << "\ndoes not have unit length " << axis_labels[i]
-          << "-axis " << pose.linear().col(i).transpose();
+             << "pose =\n"
+             << pose.GetAsMatrix34() << "\ndoes not have unit length "
+             << axis_labels[i] << "-axis "
+             << pose.rotation().col(i).transpose();
     }
   }
 
   // Test orthogonality.
   for (int i = 0; i < 2; ++i) {
     for (int j = i + 1; j < 3; ++j) {
-      double dot_product = pose.linear().col(i).dot(pose.linear().col(j));
+      double dot_product = pose.rotation().col(i).dot(pose.rotation().col(j));
       if (abs(dot_product) > tolerance) {
         return ::testing::AssertionFailure()
-            << "For pose =\n"
-            << pose.matrix() << "\nThe " << axis_labels[i] << "-axis and "
-            << axis_labels[j] << "-axis are not orthogonal";
+               << "For pose =\n"
+               << pose.GetAsMatrix34() << "\nThe " << axis_labels[i]
+               << "-axis and " << axis_labels[j] << "-axis are not orthogonal";
       }
     }
   }
   return ::testing::AssertionSuccess()
-      << "pose =\n"
-      << pose.matrix() << "\nhas expected z-axis = " << expected_z.transpose()
-      << "\nand expected translation = " << expected_translation.transpose();
+         << "pose =\n"
+         << pose.GetAsMatrix34()
+         << "\nhas expected z-axis = " << expected_z.transpose()
+         << "\nand expected translation = " << expected_translation.transpose();
 }
 
-// Confirms that the pose computed by HalfSpace::MakePose is consistent with
+// Confirms that the pose computed by HalfSpace::X_FC() is consistent with
 // the normal and point provided.
 GTEST_TEST(HalfSpaceTest, MakePose) {
   Vector3<double> n;
@@ -219,7 +223,7 @@ GTEST_TEST(HalfSpaceTest, MakePose) {
   {
     n << 0, 0, 1;
     p << 0, 0, 0;
-    Isometry3<double> pose = HalfSpace::MakePose(n, p);
+    RigidTransformd pose = HalfSpace::MakePose(n, p);
     EXPECT_TRUE(ValidatePlanePose(pose, n, p));
   }
 
@@ -227,7 +231,7 @@ GTEST_TEST(HalfSpaceTest, MakePose) {
   {
     n << 0, 0, 1;
     p << 0, 0, 1;
-    Isometry3<double> pose = HalfSpace::MakePose(n, p);
+    RigidTransformd pose = HalfSpace::MakePose(n, p);
     EXPECT_TRUE(ValidatePlanePose(pose, n, p));
   }
 
@@ -236,7 +240,7 @@ GTEST_TEST(HalfSpaceTest, MakePose) {
   {
     n << 0, 0, 1;
     p << 1, 0, 0;
-    Isometry3<double> pose = HalfSpace::MakePose(n, p);
+    RigidTransformd pose = HalfSpace::MakePose(n, p);
     EXPECT_TRUE(ValidatePlanePose(pose, n, Vector3<double>::Zero()));
   }
 
@@ -245,7 +249,7 @@ GTEST_TEST(HalfSpaceTest, MakePose) {
   {
     n << 0, 0, 1;
     p << 1, 1, 1;
-    Isometry3<double> pose = HalfSpace::MakePose(n, p);
+    RigidTransformd pose = HalfSpace::MakePose(n, p);
     p << 0, 0, 1;
     EXPECT_TRUE(ValidatePlanePose(pose, n, p));
   }
@@ -255,7 +259,7 @@ GTEST_TEST(HalfSpaceTest, MakePose) {
   {
     n << 1, 1, 1;
     p << 0, 0, 0;
-    Isometry3<double> pose = HalfSpace::MakePose(n, p);
+    RigidTransformd pose = HalfSpace::MakePose(n, p);
     EXPECT_TRUE(ValidatePlanePose(pose, n.normalized(), p));
   }
 
@@ -264,7 +268,7 @@ GTEST_TEST(HalfSpaceTest, MakePose) {
   {
     n << 1, 1, 1;
     p << 1, 1, 1;
-    Isometry3<double> pose = HalfSpace::MakePose(n, p);
+    RigidTransformd pose = HalfSpace::MakePose(n, p);
     EXPECT_TRUE(ValidatePlanePose(pose, n.normalized(), p));
   }
 
@@ -274,7 +278,7 @@ GTEST_TEST(HalfSpaceTest, MakePose) {
   {
     n << 1, 1, 1;
     p << 1, 0, 0;
-    Isometry3<double> pose = HalfSpace::MakePose(n, p);
+    RigidTransformd pose = HalfSpace::MakePose(n, p);
     p = n / 3.0;
     EXPECT_TRUE(ValidatePlanePose(pose, n.normalized(), p));
   }

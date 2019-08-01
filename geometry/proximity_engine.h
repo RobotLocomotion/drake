@@ -15,6 +15,7 @@
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -28,8 +29,6 @@ namespace internal {
 // the purpose of collision filters.
 class GeometryStateCollisionFilterAttorney;
 #endif
-
-// TODO(SeanCurtis-TRI): Swap Isometry3 for the new Transform class.
 
 /** The underlying engine for performing geometric _proximity_ queries.
  It owns the geometry instances and, once it has been provided with the poses
@@ -91,8 +90,8 @@ class ProximityEngine {
    @param X_WG    The pose of the shape in the world frame.
    @param id      The id of the geometry in SceneGraph to which this shape
                   belongs.  */
-  void AddAnchoredGeometry(const Shape& shape, const Isometry3<double>& X_WG,
-                           GeometryId id);
+  void AddAnchoredGeometry(const Shape& shape,
+                           const math::RigidTransformd& X_WG, GeometryId id);
 
   // TODO(SeanCurtis-TRI): Decide if knowing whether something is dynamic or not
   //  is *actually* sufficiently helpful to justify this act.
@@ -135,7 +134,7 @@ class ProximityEngine {
   //  2. I could simply have a method that returns a mutable reference to such
   //    a vector and the caller sets values there directly.
   void UpdateWorldPoses(
-      const std::unordered_map<GeometryId, Isometry3<T>>& X_WGs);
+      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs);
 
   // ----------------------------------------------------------------------
   /**@name              Signed Distance Queries
@@ -166,7 +165,7 @@ class ProximityEngine {
    */
   std::vector<SignedDistancePair<T>>
   ComputeSignedDistancePairwiseClosestPoints(
-      const std::unordered_map<GeometryId, Isometry3<T>>& X_WGs,
+      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
       const double max_distance) const;
 
   /** Performs work in support of GeometryState::ComputeSignedDistanceToPoint().
@@ -181,7 +180,7 @@ class ProximityEngine {
   std::vector<SignedDistanceToPoint<T>>
   ComputeSignedDistanceToPoint(
       const Vector3<T>& p_WQ,
-      const std::unordered_map<GeometryId, Isometry3<T>>& X_WGs,
+      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
       const double threshold = std::numeric_limits<double>::infinity()) const;
   //@}
 
@@ -315,7 +314,8 @@ class ProximityEngine {
   int peek_next_clique() const;
 
   // Reports the pose (X_WG) of the geometry with the given id.
-  const Isometry3<double>& GetX_WG(GeometryId id, bool is_dynamic) const;
+  const math::RigidTransform<double> GetX_WG(GeometryId id,
+                                             bool is_dynamic) const;
 
   ////////////////////////////////////////////////////////////////////////////
 

@@ -31,6 +31,7 @@ using geometry::render::RenderLabel;
 using geometry::SceneGraph;
 using geometry::Shape;
 using geometry::Sphere;
+using math::RigidTransform;
 
 namespace {
 
@@ -148,22 +149,22 @@ void RigidBodyPlantBridge<T>::RegisterTree(SceneGraph<T>* scene_graph) {
 
     // Default to the world body configuration.
     FrameId body_id = scene_graph->world_frame_id();
-    RenderLabel label;
     if (body.get_body_index() != tree_->world().get_body_index()) {
-      // All other bodies register a frame and (possibly) get a unique label.
+      // All other bodies register a frame.
       body_id = scene_graph->RegisterFrame(
           source_id_,
           GeometryFrame(body.get_name(), body.get_model_instance_id()));
-
-      if (body.get_visual_elements().size() > 0) {
-        // We'll have the render label map to the body index.
-        // NOTE: This is only valid if the RBT is the only source of geometry.
-        // But given that the RBT is on the way out, why not?
-        label = RenderLabel(static_cast<int>(body.get_body_index()));
-        label_to_index_[label] = body.get_body_index();
-      }
     }
     body_ids_.push_back(body_id);
+
+    // By default, the render label value is the body index value.
+    RenderLabel label(static_cast<int>(body.get_body_index()));
+    if (body.get_visual_elements().size() > 0) {
+      // We'll have the render label map to the body index.
+      // NOTE: This is only valid if the RBT is the only source of geometry.
+      // But given that the RBT is on the way out, why not?
+      label_to_index_[label] = body.get_body_index();
+    }
 
     // TODO(SeanCurtis-TRI): Detect if equivalent shapes are used for visual
     // and collision and then simply assign it additional roles. This is an
@@ -231,8 +232,8 @@ void RigidBodyPlantBridge<T>::CalcFramePoseOutput(
   // When we start skipping welded frames, or frames without geometry, this
   // mapping won't be so trivial.
   for (size_t i = 1; i < tree_->get_bodies().size(); ++i) {
-    poses->set_value(body_ids_[i],
-                     tree_->relativeTransform(cache, world_body, i));
+    poses->set_value(body_ids_[i], RigidTransform<T>(tree_->relativeTransform(
+                                       cache, world_body, i)));
   }
 }
 
