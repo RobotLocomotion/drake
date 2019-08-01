@@ -327,7 +327,7 @@ class SceneGraphInspector {
    _topological parent_ P, `X_PG`. That topological parent may be a frame F or
    another geometry. If the geometry was registered directly to F, then
    `X_PG = X_FG`.
-   @sa GetPoseInFrame
+   @sa GetPoseInFrame()
    @throws std::logic_error if `id` does not map to a registered geometry.  */
   const math::RigidTransform<double>& GetPoseInParent(GeometryId id) const {
     DRAKE_DEMAND(state_ != nullptr);
@@ -348,7 +348,7 @@ class SceneGraphInspector {
    frame F (regardless of whether its _topological parent_ is another geometry P
    or not). If the geometry was registered directly to the frame F, then
    `X_PG = X_FG`.
-   @sa GetPoseInParent
+   @sa GetPoseInParent()
    @throws std::logic_error if `id` does not map to a registered geometry.  */
   const math::RigidTransform<double>& GetPoseInFrame(GeometryId id) const {
     DRAKE_DEMAND(state_ != nullptr);

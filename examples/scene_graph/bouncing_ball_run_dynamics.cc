@@ -86,7 +86,7 @@ int do_main() {
   Vector3<double> p_WHo_W(0, 0, 0);
   const GeometryId ground_id = scene_graph->RegisterAnchoredGeometry(
       global_source,
-      make_unique<GeometryInstance>(HalfSpace::MakePoseInF(Hz_W, p_WHo_W),
+      make_unique<GeometryInstance>(HalfSpace::MakePose(Hz_W, p_WHo_W),
                                     make_unique<HalfSpace>(), "ground"));
   scene_graph->AssignRole(global_source, ground_id, ProximityProperties());
   scene_graph->AssignRole(global_source, ground_id, IllustrationProperties());

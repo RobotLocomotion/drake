@@ -212,7 +212,7 @@ TEST_F(ReifierTest, CloningShapes) {
 
 // Confirms that the pose computed by HalfSpace::X_FC() is consistent with
 // the normal and point provided.
-GTEST_TEST(HalfSpaceTest, MakePoseInF) {
+GTEST_TEST(HalfSpaceTest, MakePose) {
   Vector3<double> n;
   Vector3<double> p;
 
@@ -223,7 +223,7 @@ GTEST_TEST(HalfSpaceTest, MakePoseInF) {
   {
     n << 0, 0, 1;
     p << 0, 0, 0;
-    RigidTransformd pose = HalfSpace::MakePoseInF(n, p);
+    RigidTransformd pose = HalfSpace::MakePose(n, p);
     EXPECT_TRUE(ValidatePlanePose(pose, n, p));
   }
 
@@ -231,7 +231,7 @@ GTEST_TEST(HalfSpaceTest, MakePoseInF) {
   {
     n << 0, 0, 1;
     p << 0, 0, 1;
-    RigidTransformd pose = HalfSpace::MakePoseInF(n, p);
+    RigidTransformd pose = HalfSpace::MakePose(n, p);
     EXPECT_TRUE(ValidatePlanePose(pose, n, p));
   }
 
@@ -240,7 +240,7 @@ GTEST_TEST(HalfSpaceTest, MakePoseInF) {
   {
     n << 0, 0, 1;
     p << 1, 0, 0;
-    RigidTransformd pose = HalfSpace::MakePoseInF(n, p);
+    RigidTransformd pose = HalfSpace::MakePose(n, p);
     EXPECT_TRUE(ValidatePlanePose(pose, n, Vector3<double>::Zero()));
   }
 
@@ -249,7 +249,7 @@ GTEST_TEST(HalfSpaceTest, MakePoseInF) {
   {
     n << 0, 0, 1;
     p << 1, 1, 1;
-    RigidTransformd pose = HalfSpace::MakePoseInF(n, p);
+    RigidTransformd pose = HalfSpace::MakePose(n, p);
     p << 0, 0, 1;
     EXPECT_TRUE(ValidatePlanePose(pose, n, p));
   }
@@ -259,7 +259,7 @@ GTEST_TEST(HalfSpaceTest, MakePoseInF) {
   {
     n << 1, 1, 1;
     p << 0, 0, 0;
-    RigidTransformd pose = HalfSpace::MakePoseInF(n, p);
+    RigidTransformd pose = HalfSpace::MakePose(n, p);
     EXPECT_TRUE(ValidatePlanePose(pose, n.normalized(), p));
   }
 
@@ -268,7 +268,7 @@ GTEST_TEST(HalfSpaceTest, MakePoseInF) {
   {
     n << 1, 1, 1;
     p << 1, 1, 1;
-    RigidTransformd pose = HalfSpace::MakePoseInF(n, p);
+    RigidTransformd pose = HalfSpace::MakePose(n, p);
     EXPECT_TRUE(ValidatePlanePose(pose, n.normalized(), p));
   }
 
@@ -278,7 +278,7 @@ GTEST_TEST(HalfSpaceTest, MakePoseInF) {
   {
     n << 1, 1, 1;
     p << 1, 0, 0;
-    RigidTransformd pose = HalfSpace::MakePoseInF(n, p);
+    RigidTransformd pose = HalfSpace::MakePose(n, p);
     p = n / 3.0;
     EXPECT_TRUE(ValidatePlanePose(pose, n.normalized(), p));
   }
@@ -288,20 +288,8 @@ GTEST_TEST(HalfSpaceTest, MakePoseInF) {
     n << 1, 1, 1;
     n *= 1e-11;
     p << 0, 0, 0;
-    EXPECT_THROW(HalfSpace::MakePoseInF(n, p), std::logic_error);
+    EXPECT_THROW(HalfSpace::MakePose(n, p), std::logic_error);
   }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // Simple reality check that the deprecated function still works. Simple
-  // repeats a valid test (the first case).
-  {
-    n << 0, 0, 1;
-    p << 0, 0, 0;
-    Isometry3<double> pose = HalfSpace::MakePose(n, p);
-    EXPECT_TRUE(ValidatePlanePose(math::RigidTransformd(pose), n, p));
-  }
-#pragma GCC diagnostic pop
 }
 
 // Confirms the Box::MakeCube correctness.

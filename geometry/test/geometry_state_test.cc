@@ -1470,7 +1470,7 @@ TEST_F(GeometryStateTest, RemoveAnchoredGeometry) {
   const Vector3<double> p_WB{1, 1, 1};
   const auto anchored_id_1 = geometry_state_.RegisterAnchoredGeometry(
       s_id,
-      make_unique<GeometryInstance>(HalfSpace::MakePoseInF(normal_W, p_WB),
+      make_unique<GeometryInstance>(HalfSpace::MakePose(normal_W, p_WB),
                                     make_unique<HalfSpace>(), "anchored1"));
   geometry_state_.AssignRole(s_id, anchored_id_1, ProximityProperties());
   // Confirm conditions of having added the anchored geometry.
