@@ -54,11 +54,12 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
   // Time in microseconds.
   msg.timestamp = static_cast<int64_t>(
       ExtractDoubleOrThrow(context.get_time()) * 1e6);
-  msg.num_contacts = contact_results.num_contacts();
-  msg.contact_info.resize(msg.num_contacts);
+  msg.num_point_pair_contacts = contact_results.num_point_pair_contacts();
+  msg.point_pair_contact_info.resize(msg.num_point_pair_contacts);
 
-  for (int i = 0; i < contact_results.num_contacts(); ++i) {
-    lcmt_contact_info_for_viz& info_msg = msg.contact_info[i];
+  for (int i = 0; i < contact_results.num_point_pair_contacts(); ++i) {
+    lcmt_point_pair_contact_info_for_viz& info_msg =
+        msg.point_pair_contact_info[i];
     info_msg.timestamp = msg.timestamp;
 
     const PointPairContactInfo<T>& contact_info =

@@ -1,0 +1,11 @@
+package drake;
+
+struct lcmt_hydroelastic_contact_surface_tri_for_viz {
+  // The timestamp in microseconds.
+  int64_t timestamp;
+
+  // The three vertices of each triangle, all expressed in the global frame.
+  double a[3];
+  double b[3];
+  double c[3];
+}

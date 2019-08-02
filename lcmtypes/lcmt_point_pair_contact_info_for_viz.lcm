@@ -1,6 +1,6 @@
 package drake;
 
-struct lcmt_contact_info_for_viz {
+struct lcmt_point_pair_contact_info_for_viz {
   // In microseconds
   int64_t timestamp;
 

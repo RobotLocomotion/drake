@@ -3,18 +3,32 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/query_results/contact_surface.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/plant/contact_results.h"
+#include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
 
+using geometry::ContactSurface;
 using geometry::GeometryId;
+using geometry::MeshFieldLinear;
 using geometry::PenetrationAsPointPair;
+using geometry::SurfaceFace;
+using geometry::SurfaceMesh;
+using geometry::SurfaceVertex;
+using geometry::SurfaceVertexIndex;
+using math::RigidTransform;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::benchmarks::acrobot::AcrobotParameters;
+// TODO(edrumwri) Remove this code when MultibodyPlant outputs hydroelastic
+// contact results.  
+using multibody::internal::HydroelasticTractionCalculator;
+using systems::Context;
 
 namespace multibody {
 namespace {
@@ -39,12 +53,13 @@ GTEST_TEST(ContactResultToLcmSystem, EmptyMultibodyPlant) {
   // We haven't stepped, so we should assume the time is the context's default
   // value.
   EXPECT_EQ(lcm_message.timestamp, 0);
-  EXPECT_EQ(lcm_message.num_contacts, 0);
+  EXPECT_EQ(lcm_message.num_point_pair_contacts, 0);
+  EXPECT_EQ(lcm_message.num_hydroelastic_contact_surfaces, 0);
 }
 
 // Common case: confirm that the reported contacts map to the right lcm message.
 // In this test, we're using a MBP that doesn't actually have collision
-// geometry, but simulate collision results by reporting that two bodies are
+// geometry, but simulating collision results by reporting that two bodies are
 // colliding. That is enough to test the ContactResultsToLcmSystem.
 GTEST_TEST(ContactResultToLcmSystem, NonEmptyMultibodyPlantEmptyContact) {
   using std::to_string;
@@ -77,7 +92,7 @@ GTEST_TEST(ContactResultToLcmSystem, NonEmptyMultibodyPlantEmptyContact) {
   PointPairContactInfo<double> pair_info{
       index1,           index2,     f_BC_W,          p_WC,
       separation_speed, slip_speed, penetration_data};
-  contacts.AddContactInfo(pair_info);
+  contacts.AddPointPairContactInfo(pair_info);
   Value<ContactResults<double>> contacts_value(contacts);
   auto lcm_context = lcm_system.AllocateContext();
   lcm_context->FixInputPort(
@@ -93,8 +108,9 @@ GTEST_TEST(ContactResultToLcmSystem, NonEmptyMultibodyPlantEmptyContact) {
   // We haven't stepped, so we should assume the time is the context's default
   // value.
   EXPECT_EQ(lcm_message.timestamp, 0);
-  ASSERT_EQ(lcm_message.num_contacts, 1);
-  const lcmt_contact_info_for_viz& info_msg = lcm_message.contact_info[0];
+  ASSERT_EQ(lcm_message.num_point_pair_contacts, 1);
+  const lcmt_point_pair_contact_info_for_viz& info_msg =
+      lcm_message.point_pair_contact_info[0];
   EXPECT_EQ(info_msg.timestamp, 0);
   EXPECT_EQ(info_msg.body1_name, name1);
   EXPECT_EQ(info_msg.body2_name, name2);
@@ -160,6 +176,114 @@ GTEST_TEST(ConnectContactResultsToDrakeVisualizer, NestedDiagramTest) {
   EXPECT_EQ(periodic_events.size(), 1);
   EXPECT_EQ(periodic_events.begin()->first.period_sec(), 1/60.0);
 }
+
+// TODO(edrumwri) Remove this code (which is a duplicate of that in
+// hydroelastic_traction_test.cc) when MultibodyPlant outputs hydroelastic
+// contact results.  
+// Creates a surface mesh.
+std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() {
+  std::vector<SurfaceVertex<double>> vertices;
+  std::vector<SurfaceFace> faces;
+
+  // Create the vertices, all of which are offset vectors defined in the
+  // halfspace body frame.
+  vertices.emplace_back(Vector3<double>(0.5, 0.5, -0.5));
+  vertices.emplace_back(Vector3<double>(-0.5, 0.5, -0.5));
+  vertices.emplace_back(Vector3<double>(-0.5, -0.5, -0.5));
+  vertices.emplace_back(Vector3<double>(0.5, -0.5, -0.5));
+
+  // Create the face comprising two triangles.
+  faces.emplace_back(
+      SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2));
+  faces.emplace_back(
+      SurfaceVertexIndex(2), SurfaceVertexIndex(3), SurfaceVertexIndex(0));
+
+  return std::make_unique<SurfaceMesh<double>>(
+      std::move(faces), std::move(vertices));
+}
+
+// TODO(edrumwri) Remove this code (which is a duplicate of that in
+// hydroelastic_traction_test.cc) when MultibodyPlant outputs hydroelastic
+// contact results.  
+// Creates a contact surface between the two given geometries.
+std::unique_ptr<ContactSurface<double>> CreateContactSurface(
+    GeometryId halfspace_id, GeometryId block_id) {
+  // Create the surface mesh first.
+  auto mesh = CreateSurfaceMesh();
+
+  // Create the "e" field values (i.e., "hydroelastic pressure") using
+  // negated "z" values.
+  std::vector<double> e_MN(mesh->num_vertices());
+  for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
+    e_MN[i] = -mesh->vertex(i).r_MV()[2];
+
+  // Create the gradient of the "h" field, pointing toward what will be
+  // geometry "M" (the halfspace).
+  std::vector<Vector3<double>> h_MN_M(mesh->num_vertices(),
+      Vector3<double>(0, 0, -1));
+
+  SurfaceMesh<double>* mesh_pointer = mesh.get();
+  return std::make_unique<ContactSurface<double>>(
+      halfspace_id, block_id, std::move(mesh),
+      std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
+          "e_MN", std::move(e_MN), mesh_pointer),
+      std::make_unique<MeshFieldLinear<Vector3<double>, SurfaceMesh<double>>>(
+          "h_MN_M", std::move(h_MN_M), mesh_pointer),
+      RigidTransform<double>::Identity());
+}
+
+// A class for outputting a ContactResults structure with non-empty
+// hydroelastic contact surface.
+class DummyOutputter : public systems::LeafSystem<double> {
+ public:
+  DummyOutputter() {
+    this->DeclareAbstractOutputPort("contact_results", ContactResults<double>(),
+        &DummyOutputter::CopyContactResultsOutput);
+  }
+
+ private:
+  void CopyContactResultsOutput(
+      const Context<double>& context,
+      ContactResults<double>* output) const {
+    // Create the contact surface using a duplicated arbitrary ID: geometry IDs
+    // are irrelevant for this test.
+    GeometryId arbitrary_id = GeometryId::get_new_id();
+    std::unique_ptr<ContactSurface<double>> contact_surface =
+        CreateContactSurface(arbitrary_id, arbitrary_id);
+
+    // Create the calculator data, populated with dummy values since we're only
+    // testing that the structure can be created.
+    const RigidTransform<double> X_WA = RigidTransform<double>::Identity();
+    const RigidTransform<double> X_WB = RigidTransform<double>::Identity();
+    const RigidTransform<double> X_WM = RigidTransform<double>::Identity();
+    const SpatialVelocity<double> V_WA = SpatialVelocity<double>::Zero();
+    const SpatialVelocity<double> V_WB = SpatialVelocity<double>::Zero();
+    HydroelasticTractionCalculator<double>::Data data(
+        X_WA, X_WB, V_WA, V_WB, X_WM, contact_surface.get());
+
+    // Material properties are also dummies (the test will be unaffected by
+    // their settings).
+    const double dissipation = 0.0;
+    const double mu_coulomb = 0.0;
+
+    // Create the HydroelasticContactInfo and validate the contact surface
+    // pointer is correct. Correctness of field values is validated elsewhere in
+    // this file.
+    HydroelasticTractionCalculator<double> calculator;
+    output->AddHydroelasticContactInfo(
+        std::make_unique<HydroelasticContactInfo<double>>(
+            calculator.ComputeContactInfo(data, dissipation, mu_coulomb)));
+  } 
+};
+
+// TODO(edrumwri) Replace this with a test that uses MultibodyPlant when
+// MultibodyPlant outputs hydroelastic contact results.
+class HydroelasticContactResults : public ::testing::Test {
+ private:
+  void SetUp() override {
+    
+  }
+};
 
 }  // namespace
 }  // namespace multibody

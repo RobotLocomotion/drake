@@ -1138,8 +1138,8 @@ void MultibodyPlant<T>::CalcContactResults(
     const T separation_velocity = vn(icontact);
 
     // Add pair info to the contact results.
-    contact_results->AddContactInfo({bodyA_index, bodyB_index, f_Bc_W, p_WC,
-                                     separation_velocity, slip, pair});
+    contact_results->AddPointPairContactInfo({bodyA_index, bodyB_index,
+        f_Bc_W, p_WC, separation_velocity, slip, pair});
   }
 }
 

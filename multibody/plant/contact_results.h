@@ -2,10 +2,12 @@
 
 #include <vector>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/plant/hydroelastic_contact_info.h"
 #include "drake/multibody/plant/point_pair_contact_info.h"
 
 namespace drake {
@@ -28,25 +30,56 @@ class ContactResults {
    invalid. */
   void Clear();
 
-  /** Returns the number of unique collision element pairs in contact. */
-  // TODO(amcastro-tri): provide a proper definition of "unique" contact pair.
+  DRAKE_DEPRECATED("2019-10-01", "Use num_point_pair_contacts() instead.")
   int num_contacts() const;
 
-  /** Add a new contact pair result to the set of contact pairs stored by
-   `this` class. */
-  void AddContactInfo(const PointPairContactInfo<T>& point_pair_info);
+  /** Returns the number of point pair elements. */
+  int num_point_pair_contacts() const {
+    return static_cast<int>(point_pairs_info_.size());
+  }
+
+  /** Returns the number of hydroelastic contact reporting elements. */
+  int num_hydroelastic_contact_elements() const {
+    return static_cast<int>(hydroelastic_contact_info_.size());
+  }
+
+  DRAKE_DEPRECATED("2019-10-01", "Use num_point_pair_contacts() instead.")
+  void AddContactInfo(const PointPairContactInfo<T>& point_pair_info) {
+    AddPointPairContactInfo(point_pair_info);
+  }
+
+  /** Add a new contact pair result to `this`. */
+  void AddPointPairContactInfo(const PointPairContactInfo<T>& point_pair_info) {
+    point_pairs_info_.push_back(point_pair_info);
+  }
+
+  /** Add a new hydroelastic contact reporting element to `this`. */
+  void AddHydroelasticContactInfo(
+      std::unique_ptr<HydroelasticContactInfo<T>> hydroelastic_contact_info) {
+    hydroelastic_contact_info_.push_back(
+        copyable_unique_ptr<HydroelasticContactInfo<T>>(
+            hydroelastic_contact_info));
+  }
 
   DRAKE_DEPRECATED("2019-10-01", "Use point_pair_contact_info() instead.")
   const PointPairContactInfo<T>& contact_info(int i) const {
     return point_pair_contact_info(i);
   }
 
-  /** Retrieves the ith PointPairContactInfo instance. The input index `i`
-   must be in the range [0, get_num_contacts() - 1] or this method aborts. */
+  /** Retrieves the ith PointPairContactInfo instance. The input index i
+   must be in the range [0, `num_point_pair_contacts()` - 1] or this method
+   aborts. */
   const PointPairContactInfo<T>& point_pair_contact_info(int i) const;
+
+  /** Retrieves the ith HydroelasticContactInfo instance. The input index i
+   must be in the range [0, `num_hydroelastic_contact_elements()` - 1] or this
+   method aborts. */
+  const HydroelasticContactInfo<T>& hydroelastic_contact_info(int i) const;
 
  private:
   std::vector<PointPairContactInfo<T>> point_pairs_info_;
+  std::vector<copyable_unique_ptr<HydroelasticContactInfo<T>>>
+      hydroelastic_contact_info_;
 };
 
 // Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which

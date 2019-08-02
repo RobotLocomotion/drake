@@ -33,10 +33,8 @@ class HydroelasticContactInfo {
  public:
   // Neither assignment nor copy construction is provided.
   HydroelasticContactInfo(const HydroelasticContactInfo&) = delete;
-  HydroelasticContactInfo& operator=(
-      const HydroelasticContactInfo& contact_info) = delete;
-  HydroelasticContactInfo& operator=(
-      HydroelasticContactInfo&& contact_info) = delete;
+  HydroelasticContactInfo& operator=(const HydroelasticContactInfo&) = delete;
+  HydroelasticContactInfo& operator=(HydroelasticContactInfo&&) = delete;
 
   HydroelasticContactInfo(HydroelasticContactInfo&& contact_info) :
       contact_surface_(contact_info.contact_surface_) {
@@ -63,6 +61,11 @@ class HydroelasticContactInfo {
     DRAKE_DEMAND(contact_surface);
     DRAKE_DEMAND(traction_A_W_.get());
     DRAKE_DEMAND(vslip_AB_W_.get());
+  }
+
+  std::unique_ptr<HydroelasticContactInfo<T>> Clone() const {
+    return std::make_unique<HydroelasticContactInfo<T>>(
+        &contact_surface_, traction_A_W_->Clone(), vslip_AB_W_->Clone());
   }
 
   /// Returns a reference to the ContactSurface data structure.

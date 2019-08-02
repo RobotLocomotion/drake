@@ -49,6 +49,12 @@ class MeshField {
       typename MeshType::ElementIndex e,
       const typename MeshType::Cartesian& p_MQ) const = 0;
 
+  DRAKE_NODISCARD std::unique_ptr<MeshField> Clone() const {
+    std::unique_ptr<MeshField> new_mesh_field = CloneWithNullMesh();
+    new_mesh_field->mesh_ = mesh_;
+    return new_mesh_field;
+  }
+
   /** Copy to a new %MeshField and set the new %MeshField to use a new
    compatible mesh. %MeshField needs a mesh to operate; however, %MeshField
    does not own the mesh. In fact, several %MeshField objects can use the same
