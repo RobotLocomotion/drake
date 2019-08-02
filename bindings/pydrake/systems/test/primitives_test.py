@@ -24,6 +24,7 @@ from pydrake.systems.primitives import (
     ConstantVectorSource, ConstantVectorSource_,
     ControllabilityMatrix,
     Demultiplexer, Demultiplexer_,
+    DiscreteTimeDelay, DiscreteTimeDelay_,
     ExponentialRandomSource,
     FirstOrderLowPassFilter,
     FirstOrderTaylorApproximation,
@@ -77,6 +78,7 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(ConstantValueSource_)
         self._check_instantiations(ConstantVectorSource_)
         self._check_instantiations(Demultiplexer_)
+        self._check_instantiations(DiscreteTimeDelay_)
         self._check_instantiations(Gain_)
         self._check_instantiations(Integrator_)
         self._check_instantiations(LinearSystem_)
@@ -427,6 +429,10 @@ class TestGeneral(unittest.TestCase):
         """
         ConstantValueSource(AbstractValue.Make("Hello world"))
         ConstantVectorSource(source_value=[1., 2.])
+        DiscreteTimeDelay(update_sec=0.1, delay_timesteps=5, vector_size=2)
+        DiscreteTimeDelay(
+            update_sec=0.1, delay_timesteps=5,
+            abstract_model_value=AbstractValue.Make("Hello world"))
         ZeroOrderHold(period_sec=0.1, vector_size=2)
         ZeroOrderHold(
             period_sec=0.1,
