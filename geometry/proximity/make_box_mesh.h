@@ -12,6 +12,166 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+#ifndef DRAKE_DOXYGEN_CXX
+
+// Uniformly samples the interval [`first`, `last`]. The first sample
+// is exactly `first`, and the last sample is exactly `last`.
+// @param num_sample
+//     The number of samples.
+// @retval samples
+// @pre `num_sample` is at least 2.
+template <typename T>
+static std::vector<T> UniformSample(T first, T last, int num_sample) {
+  DRAKE_DEMAND(num_sample >= 2);
+  const int num_sub_interval = num_sample - 1;
+  const T delta = (last - first) / num_sub_interval;
+  std::vector<T> samples(num_sample);
+  T sample = first;
+  for (int i = 0; i < num_sample - 1; ++i) {
+    samples[i] = sample;
+    sample += delta;
+  }
+  // Assign the last sample outside the for-loop to avoid accumulation
+  // error that might numerically deviate `sample` from `last`.
+  samples[num_sample - 1] = last;
+  return samples;
+}
+
+// Calculates the sequential vertex index of the vertex specified by the
+// (i, j, k)-index in the Cartesian grid defined by the number of vertices in
+// x-, y-, and z-directions.
+// @param i  Index in x-direction.
+// @param j  Index in y-direction.
+// @param k  Index in z-direction.
+// @param num_vertices  Number of vertices in x-, y-, and z-directions.
+// @pre 0 ≤ i < num_vertices.x(),
+//      0 ≤ j < num_vertices.y(), and
+//      0 ≤ k < num_vertices.z().
+int CalcSequentialIndex(int i, int j, int k, const Vector3<int>& num_vertices) {
+  DRAKE_DEMAND(0 <= i && i < num_vertices.x());
+  DRAKE_DEMAND(0 <= j && j < num_vertices.y());
+  DRAKE_DEMAND(0 <= k && k < num_vertices.z());
+  return i * num_vertices.y() * num_vertices.z() + j * num_vertices.z() + k;
+}
+
+// Generates unique vertices on a Cartesian grid of the box. In each of the
+// x-, y-, and z-directions, the vertices are distributed uniformly.
+// @param[in] box
+//     The box shape specification (see drake::geometry::Box).
+// @param[in] num_vertices
+//     Number of vertices in each of x-, y-, and z-directions.
+// @retval vertices
+//     The linear sequence of vertices consistent with CalcSequentialIndex.
+template <typename T>
+static std::vector<VolumeVertex<T>> GenerateVertices(
+    const Box& box, const Vector3<int>& num_vertices) {
+  T half_x = box.width() / T(2);
+  T half_y = box.depth() / T(2);
+  T half_z = box.height() / T(2);
+  auto x_coords = UniformSample(-half_x, half_x, num_vertices.x());
+  auto y_coords = UniformSample(-half_y, half_y, num_vertices.y());
+  auto z_coords = UniformSample(-half_z, half_z, num_vertices.z());
+
+  std::vector<VolumeVertex<T>> vertices;
+  vertices.reserve(num_vertices.x() * num_vertices.y() * num_vertices.z());
+  // The order of nested i-loop, j-loop, then k-loop makes the sequence of
+  // vertices consistent with CalcSequentialIndex.
+  for (int i = 0; i < num_vertices.x(); ++i) {
+    for (int j = 0; j < num_vertices.y(); ++j) {
+      for (int k = 0; k < num_vertices.z(); ++k) {
+        vertices.emplace_back(x_coords[i], y_coords[j], z_coords[k]);
+      }
+    }
+  }
+  return vertices;
+}
+
+// Adds six tetrahedra of a given rectangular cell to the list of tetrahedral
+// elements. The rectangular cell is identified by the (i,j,k)-index of its
+// lowest vertex. The (i,j,k)-indices of its 8 vertices are
+// (i,j,k) + {0,1}x{0,1}x{0,1}.
+// @param[in] lowest
+//     The (i,j,k) index of the lowest vertex of the rectangular cell.
+// @param[in] num_vertices
+//     Number of vertices in each of x-, y-, and z-directions.
+// @param[in,out] elements
+//     The six tetrahedra are added into this list of elements.
+static void AddSixTetrahedraOfCell(const Vector3<int>& lowest,
+                                   const Vector3<int>& num_vertices,
+                                   std::vector<VolumeElement>* elements) {
+  const int i = lowest.x();
+  const int j = lowest.y();
+  const int k = lowest.z();
+  // Get the sequential indices of the eight vertices of the rectangular cell.
+  int v[8];
+  int s = 0;
+  for (int l = 0; l < 2; ++l)
+    for (int m = 0; m < 2; ++m)
+      for (int n = 0; n < 2; ++n)
+        v[s++] = CalcSequentialIndex(i + l, j + m, k + n, num_vertices);
+  // The following picture shows where vertex vₛ (for `v[s]` above) locates
+  // in the rectangular cell.  The I-, J-, K-axes show the direction of
+  // increasing i, j, k indices.
+  //
+  //               v₁     v₃
+  //               ●------●
+  //              /|     /|
+  //             / |  v₇/ |
+  //         v₅ ●------●  |
+  //            |  |   |  |
+  //            |  ●---|--● v₂
+  //            | /v₀  | /
+  //            |/     |/
+  //    +K   v₄ ●------● v₆
+  //     |
+  //     |
+  //     o------+J
+  //    /
+  //   /
+  // +I
+  //
+  // The following table subdivides the rectangular cell into six tetrahedra.
+  // Refer to the picture above to determine which four vertices form a
+  // tetrahedron. The six tetrahedra form a cycle around the diagonal v₀v₇
+  // of the cell. Refer to:
+  // http://www.baumanneduard.ch/Splitting%20a%20cube%20in%20tetrahedras2.htm
+  const int tetrahedron[6][4]{
+      // clang-format off
+      {v[0], v[7], v[4], v[6]},
+      {v[0], v[7], v[6], v[2]},
+      {v[0], v[7], v[2], v[3]},
+      {v[0], v[7], v[3], v[1]},
+      {v[0], v[7], v[1], v[5]},
+      {v[0], v[7], v[5], v[4]}};
+      // clang-format on
+  // The above table guarantees that adjacent rectangular cells will be
+  // subdivided in a consistent way, i.e., both cells will pick the same
+  // diagonal of their shared rectangular face.
+  for (int t = 0; t < 6; ++t)
+    elements->emplace_back(tetrahedron[t]);
+}
+
+// Generates connectivity for the tetrahedral elements of the mesh.
+// @param[in] num_vertices
+//     Number of vertices in each of x-, y-, and z-directions.
+// @return
+//     A sequence of tetrahedral elements that share unique vertices.
+static std::vector<VolumeElement> GenerateElements(
+    const Vector3<int>& num_vertices) {
+  std::vector<VolumeElement> elements;
+  const Vector3<int> num_cell = num_vertices - Vector3<int>(1, 1, 1);
+  elements.reserve(6 * num_cell.x() * num_cell.y() * num_cell.z());
+  for (int i = 0; i < num_cell.x(); ++i) {
+    for (int j = 0; j < num_cell.y(); ++j) {
+      for (int k = 0; k < num_cell.z(); ++k) {
+        AddSixTetrahedraOfCell(Vector3<int>(i, j, k), num_vertices, &elements);
+      }
+    }
+  }
+  return elements;
+}
+#endif  // #ifndef DRAKE_DOXYGEN_CXX
+
 /**
  Generates a tetrahedral volume mesh of a given box by subdividing the box
  into _rectangular cells_ (volume bounded by six axis-aligned faces) and
@@ -19,208 +179,32 @@ namespace internal {
  have these properties:-
  1. The generated vertices are unique. There is no repeating vertices in
     the list of vertex coordinates.
- 2. The generated tetrahedra are _conforming_. Two tetrahedra intersects in
+ 2. The generated tetrahedra are _conforming_. Two tetrahedra intersect in
     their shared face, or shared edge, or shared vertex, or not at all.
     There is no partial overlapping of two tetrahedra.
-
+ @param[in] box
+     The box shape specification (see drake::geomety::Box).
+ @param[in] target_edge_length
+     Control the resolution of the mesh. The length of axis-aligned edges
+     of the mesh will be within this parameter.  The length of
+     non-axis-aligned edges will be within √2 or √3 of this parameter.
+ @retval volume_mesh
  @tparam T The underlying scalar type. Must be a valid Eigen scalar.
  */
-template<typename T>
-class MakeBoxVolumeMesh {
- public:
-  /** Generates a tetrahedral volume mesh of a given box.
-   @param[in] box
-       The box shape specification (see drake::geomety::Box).
-   @param[in] target_edge_length
-       Control the resolution of the mesh. The length of axis-aligned edges
-       of the mesh will be within this parameter.  The length of
-       non-axis-aligned edges will be within √2 or √3 of this parameter.
-   @retval volume_mesh
-  */
-  static VolumeMesh<T> Generate(const Box& box, T target_edge_length);
-
- protected:
-  // Uniformly samples the interval [`first`, `last`]. The first sample
-  // is exactly `first`, and the last sample is exactly `last`.
-  // @param num_sample
-  //     The number of samples.
-  // @retval samples
-  // @pre `num_sample` is at least 2.
-  static std::vector<T> UniformSample(T first, T last, int num_sample) {
-    DRAKE_ASSERT(num_sample >= 2);
-    const int num_sub_interval = num_sample - 1;
-    DRAKE_DEMAND(num_sub_interval >= 1);
-    const T delta = (last - first) / num_sub_interval;
-    std::vector<T> samples(num_sample);
-    T sample = first;
-    for (int i = 0; i < num_sample - 1; ++i) {
-      samples[i] = sample;
-      sample += delta;
-    }
-    // Assign the last sample outside the for-loop to avoid accumulation
-    // error that might numerically deviate `sample` from `last`.
-    samples[num_sample - 1] = last;
-    return samples;
-  }
-
-  // TODO(DamrongGuoy): Switch to something like boost::multi_array.
-  //  We like "int vertex_index[nx][ny][nz]"; however, it loses info at
-  //  function call boundaries. Furthermore, we calculate nx, ny, nz at run
-  //  time, so we can't "typedef int MultiArrayInt3D[nx][ny][nz]".
-  //  Here we use a less-efficient work around by nested std::vector.
-  typedef std::vector<int> MultiArrayInt1D;
-  typedef std::vector<std::vector<int>> MultiArrayInt2D;
-  typedef std::vector<std::vector<std::vector<int>>> MultiArrayInt3D;
-
-  // Generates unique vertices on a Cartesian grid of the box. In each of the
-  // x-, y-, and z-directions, the vertices are distributed uniformly.
-  // @param[in] box
-  //     The box shape specification (see drake::geomety::Box).
-  // @param[in] num_vertex
-  //     Number of vertices in each of x-, y-, and z-directions.
-  // @param[out] vertex_index
-  //     On return, vertex_index[i][j][k] is the sequential vertex index of
-  //     the vertex specified by the tuple (i, j, k) on the Cartesian grid.
-  // @retval vertices
-  //     The linear sequence of vertices indexed by the value of
-  //     vertex_index[i][j][k].
-  static std::vector<VolumeVertex<T>> GenerateVertices(
-      const Box& box, const Vector3<int>& num_vertex,
-      MultiArrayInt3D* vertex_index) {
-    T half_x = box.width() / T(2);
-    T half_y = box.depth() / T(2);
-    T half_z = box.height() / T(2);
-    auto x_coords = UniformSample(-half_x, half_x, num_vertex.x());
-    auto y_coords = UniformSample(-half_y, half_y, num_vertex.y());
-    auto z_coords = UniformSample(-half_z, half_z, num_vertex.z());
-
-    std::vector<VolumeVertex<T>> vertices;
-    vertices.reserve(num_vertex.x() * num_vertex.y() * num_vertex.z());
-    for (int i = 0; i < num_vertex.x(); ++i) {
-      for (int j = 0; j < num_vertex.y(); ++j) {
-        for (int k = 0; k < num_vertex.z(); ++k) {
-          (*vertex_index)[i][j][k] = vertices.size();
-          vertices.emplace_back(x_coords[i], y_coords[j], z_coords[k]);
-        }
-      }
-    }
-    return vertices;
-  }
-
-  // Adds six tetrahedra of a given rectangular cell to the list of tetrahedral
-  // elements. The rectangular cell is identified by the (i,j,k)-index of its
-  // lowest vertex. The (i,j,k)-indices of its 8 vertices are
-  // (i,j,k) + {0,1}x{0,1}x{0,1}.
-  // @param[in] lowest
-  //     The (i,j,k) index of the lowest vertex of the rectangular cell.
-  // @param[in] vertex_index
-  //     `vertex_index[i][j][k]` gives the sequential vertex index of the
-  //     vertex specified by (i,j,k)-index.
-  // @param[in,out] elements
-  //     The six tetrahedra are added into this list of elements.
-  static void AddSixTetrahedraOfCell(const Vector3<int>& lowest,
-                                     const MultiArrayInt3D& vertex_index,
-                                     std::vector<VolumeElement>* elements) {
-    const int i = lowest.x();
-    const int j = lowest.y();
-    const int k = lowest.z();
-    // Get the sequential indices of the eight vertices of the rectangular
-    // cell from `vertex_index[][][]` into `v[]`.
-    int v[8];
-    int s = 0;
-    for (int l = 0; l < 2; ++l)
-      for (int m = 0; m < 2; ++m)
-        for (int n = 0; n < 2; ++n)
-          v[s++] = vertex_index[i + l][j + m][k + n];
-    // The following picture shows where vertex vₛ (for `v[s]` above) locates
-    // in the rectangular cell.  The I-, J-, K-axes show the direction of
-    // increasing i, j, k indices.
-    //
-    //               v₁     v₃
-    //               ●------●
-    //              /|     /|
-    //             / |  v₇/ |
-    //         v₅ ●------●  |
-    //            |  |   |  |
-    //            |  ●---|--● v₂
-    //            | /v₀  | /
-    //            |/     |/
-    //    +K   v₄ ●------● v₆
-    //     |
-    //     |
-    //     o------+J
-    //    /
-    //   /
-    // +I
-    //
-    // The following table subdivides the rectangular cell into six tetrahedra.
-    // Refer to the picture above to determine which four vertices form a
-    // tetrahedron. The six tetrahedra form a cycle around the diagonal v₀v₇
-    // of the cell.
-    // TODO(DamrongGuoy): Find a better way to describe this table. Why would
-    //  the six tetrahedra are conforming within the rectangular cell? Why
-    //  would tetrahedra from adjacent rectangular cells be conforming?
-    const int tetrahedron[6][4]{
-        // clang-format off
-        {v[0], v[7], v[4], v[6]},
-        {v[0], v[7], v[6], v[2]},
-        {v[0], v[7], v[2], v[3]},
-        {v[0], v[7], v[3], v[1]},
-        {v[0], v[7], v[1], v[5]},
-        {v[0], v[7], v[5], v[4]}};
-        // clang-format on
-    // The above table guarantees that adjacent rectangular cells will be
-    // subdivided in a consistent way, i.e., both cells will pick the same
-    // diagonal of their shared rectangular face.
-    for (int t = 0; t < 6; ++t)
-      elements->emplace_back(tetrahedron[t]);
-  }
-
-  // Generates connectivity for the tetrahedral elements of the mesh.
-  // @param[in] num_vertex
-  //     Number of vertices in each of x-, y-, and z-directions.
-  // @param[in] vertex_index
-  //     The vertex_index[i][j][k] is the sequential vertex index of the vertex
-  //     specified by the tuple (i, j, k).
-  // @return
-  //     A sequence of tetrahedral elements that share unique vertices.
-  static std::vector<VolumeElement> GenerateElements(
-      const Vector3<int>& num_vertex, const MultiArrayInt3D& vertex_index) {
-    std::vector<VolumeElement> elements;
-    const Vector3<int> num_cell = num_vertex - Vector3<int>(1, 1, 1);
-    elements.reserve(6 * num_cell.x() * num_cell.y() * num_cell.z());
-    for (int i = 0; i < num_cell.x(); ++i) {
-      for (int j = 0; j < num_cell.y(); ++j) {
-        for (int k = 0; k < num_cell.z(); ++k) {
-          AddSixTetrahedraOfCell(Vector3<int>(i, j, k), vertex_index,
-                                 &elements);
-        }
-      }
-    }
-    return elements;
-  }
-};  // class MakeBoxVolumeMesh
-
 template <typename T>
-VolumeMesh<T> MakeBoxVolumeMesh<T>::Generate(const Box& box,
-                                             T target_edge_length) {
-  DRAKE_DEMAND(target_edge_length > T(0));
+VolumeMesh<T> MakeBoxVolumeMesh(const Box& box, double target_edge_length) {
+  DRAKE_DEMAND(target_edge_length > 0.);
   // Number of vertices in x-, y-, and z- directions.  In each direction,
   // there is one more vertices than cells.
-  Vector3<int> num_vertex{
+  Vector3<int> num_vertices {
       1 + static_cast<int>(ceil(box.width() / target_edge_length)),
       1 + static_cast<int>(ceil(box.depth() / target_edge_length)),
       1 + static_cast<int>(ceil(box.height() / target_edge_length))};
 
-  MultiArrayInt3D vertex_index(
-      num_vertex.x(),
-      MultiArrayInt2D(num_vertex.y(), MultiArrayInt1D(num_vertex.z())));
-
   std::vector<VolumeVertex<T>> vertices =
-      GenerateVertices(box, num_vertex, &vertex_index);
+      GenerateVertices<T>(box, num_vertices);
 
-  std::vector<VolumeElement> elements =
-      GenerateElements(num_vertex, vertex_index);
+  std::vector<VolumeElement> elements = GenerateElements(num_vertices);
 
   return VolumeMesh<T>(std::move(elements), std::move(vertices));
 }

@@ -75,6 +75,28 @@ GTEST_TEST(VolumeMeshTest, TestVolumeMeshAutoDiffXd) {
 }
 
 template <typename T>
+void TestCalcTetrahedronVolume() {
+  const math::RigidTransform<T> X_WM(
+      math::RollPitchYaw<T>(M_PI / 6.0, 2.0 * M_PI / 3.0, 7.0 * M_PI / 4.0),
+      Vector3<T>(1.0, 2.0, 3.0));
+  auto volume_mesh = TestVolumeMesh<T>(X_WM);
+
+  const T expect_tetrahedron_volume(1. / 6.);
+  for (int e = 0; e < 2; ++e) {
+    EXPECT_EQ(expect_tetrahedron_volume,
+              volume_mesh->CalcTetrahedronVolume(VolumeElementIndex(e)));
+  }
+}
+
+GTEST_TEST(VolumeMeshTest, TestCalcTetrahedronVolumeDouble) {
+  TestCalcTetrahedronVolume<double>();
+}
+
+GTEST_TEST(VolumeMeshTest, TestCalcTetrahedronVolumeAutoDiffXd) {
+  TestCalcTetrahedronVolume<AutoDiffXd>();
+}
+
+template <typename T>
 void TestCalcBarycentric() {
   const math::RigidTransform<T> X_WM(
       math::RollPitchYaw<T>(M_PI / 6.0, 2.0 * M_PI / 3.0, 7.0 * M_PI / 4.0),
