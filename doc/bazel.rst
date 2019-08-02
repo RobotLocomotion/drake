@@ -265,16 +265,15 @@ See https://docs.bazel.build/versions/master/user-manual.html#bazelrc.
 Drake offers two flavors of SNOPT bindings for the MathematicalProgram:
 
  - The ``--config snopt_f2c`` option selects the legacy bindings that use the
-   f2c compiler; these bindings will be removed on 2019-08-01.
+   f2c compiler; these bindings will be removed on 2019-11-01.
  - The ``--config snopt_fortran`` option selects the bindings that use the
    gfortran compiler; these bindings will be supported for the foreseeable
    future.
- - The ``--config snopt`` option selects a default choice (currently f2c, but
-   will soon change to gfortran).
+ - The ``--config snopt`` is synonymous with ``--config snopt_fortran``.
 
 The gfortran bindings are superior in several ways (such as being threadsafe),
-but have a known problem with unbounded linear programs (see drake issue
-`#10423 <https://github.com/RobotLocomotion/drake/issues/10423>`_).
+but have some known problems on certain programs (see drake issue `#10422
+<https://github.com/RobotLocomotion/drake/issues/10422>`_ for a summary).
 
 Optional Tools
 ==============

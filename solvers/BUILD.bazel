@@ -812,11 +812,10 @@ drake_cc_library(
 drake_cc_library(
     name = "snopt_solver",
     srcs = select({
-        # For now `--config snopt` ("Use the default SNOPT flavor") is a
-        # synonym for `--config snopt_f2c` ("Use the f2c SNOPT flavor").
-        # In the future, the default will change to be the Fortran flavor.
+        # The `--config snopt` ("Use the default SNOPT flavor") is a synonym
+        # for `--config snopt_fortran` ("Use the Fortran SNOPT flavor").
         "//tools:with_snopt": [
-            "snopt_solver_f2c.cc",
+            "snopt_solver.cc",
             "snopt_solver_common.cc",
         ],
         # This is always the Fortran flavor.
@@ -837,12 +836,12 @@ drake_cc_library(
     }),
     hdrs = ["snopt_solver.h"],
     deps = select({
-        # This is Drake's default flavor; currently f2c.
+        # This is Drake's default flavor (Fortran).
         "//tools:with_snopt": [
             ":mathematical_program_private",
             ":solver_base",
             "//math:autodiff",
-            "@snopt//:snopt_c",
+            "@snopt//:snopt_cwrap",
         ],
         # This is always the Fortran flavor.
         "//tools:with_snopt_fortran": [
