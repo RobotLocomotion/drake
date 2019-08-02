@@ -24,12 +24,7 @@ def _gfortran_impl(repo_ctx):
     compiler = str(which(repo_ctx, "gfortran"))
     if not compiler:
         fail("Could not find gfortran")
-
-    # Emit a compiler wrapper.
-    repo_ctx.file("compiler.sh", content = "\n".join([
-        "#!/bin/bash",
-        "exec {} \"$@\"".format(compiler),
-    ]))
+    repo_ctx.symlink(compiler, "gfortran-found")
 
     # Find the runtime libraries based on the OS.
     os_result = determine_os(repo_ctx)
@@ -72,7 +67,7 @@ def _gfortran_impl(repo_ctx):
 
     sh_binary(
         name = "compiler",
-        srcs = ["compiler.sh"],
+        srcs = ["gfortran-found"],
         visibility = ["//visibility:public"],
     )
     cc_library(
