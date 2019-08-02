@@ -18,6 +18,8 @@ typedef std::vector<int> MultiArrayInt1D;
 typedef std::vector<std::vector<int>> MultiArrayInt2D;
 typedef std::vector<std::vector<std::vector<int>>> MultiArrayInt3D;
 
+// For testing purpose, we inherit protected functions from MakeBoxVolumeMesh
+// to make them publicly accessible in our unit tests.
 template <typename T>
 class MakeBoxVolumeMeshTester : public MakeBoxVolumeMesh<T> {
  public:
@@ -58,8 +60,13 @@ GTEST_TEST(MakeBoxVolumeMeshTest, UniformSample) {
 }
 
 GTEST_TEST(MakeBoxVolumeMeshTest, GenerateVertices) {
-  const Box box(1.0, 2.0, 3.0);
-  const Vector3<int> num_vertex{2, 3, 4};
+  // Set up a box [-1,1]x[-2,2]x[-3,3] whose corners have integer coordinates.
+  const Box box(2.0, 4.0, 6.0);
+  // Request the number of vertices so that the vertices have integer
+  // coordinates {-1,0,1} x {-2,-1,0,1,2} x {-3,-2,-1,0,1,2,3}.
+  // Vertex[i][j][k] should have coordinates (i-1, j-2, k-3) for
+  // 0 ≤ i < 3, 0 ≤ j < 5, 0 ≤ k < 7.
+  const Vector3<int> num_vertex{3, 5, 7};
   MultiArrayInt3D vertex_index(
       num_vertex.x(),
       MultiArrayInt2D(num_vertex.y(), MultiArrayInt1D(num_vertex.z())));
@@ -67,19 +74,12 @@ GTEST_TEST(MakeBoxVolumeMeshTest, GenerateVertices) {
   auto vertices = MakeBoxVolumeMeshTester<double>::GenerateVertices(
       box, num_vertex, &vertex_index);
 
-  EXPECT_EQ(24, vertices.size());
+  EXPECT_EQ(105, vertices.size());
   for (int i = 0; i < num_vertex.x(); ++i) {
     for (int j = 0; j < num_vertex.y(); ++j) {
       for (int k = 0; k < num_vertex.z(); ++k) {
         int sequential_index = vertex_index[i][j][k];
-        // The number of vertex in each of x-, y-, z-directions is chosen so
-        // that the number of rectangular cells in each direction equals the
-        // size of the box in that direction. Therefore, each rectangular
-        // cell is a unit cube. In this case, the vertices are on the
-        // interger lattice shifted by half the size of the box in each
-        // direction.
-        Vector3<double> expect_r_MV =
-            Vector3<double>(i, j, k) - box.size() / 2.0;
+        Vector3<double> expect_r_MV = Vector3<double>(i - 1, j - 2, k - 3);
         auto r_MV = vertices[sequential_index].r_MV();
         EXPECT_TRUE(CompareMatrices(expect_r_MV, r_MV))
                     << "Incorrect vertex position.";
@@ -88,54 +88,51 @@ GTEST_TEST(MakeBoxVolumeMeshTest, GenerateVertices) {
   }
 }
 
-//
-// The following picture shows our model of a logical cube with vertices
-// v[i][j][k], i, j, k = 0,1, where v[i][j][k] = v_(4*i + 2*j + k).
-// The picture omits v0 at the origin.
-//
-//        +Z
-//         |
-//         |v1     v3
-//         ●------●
-//        /      /|
-//       /   v7 / |v2
-//   v5 ●------●  ●-----+Y
-//      |      | /
-//      |      |/
-//   v4 ●------● v6
-//     /
-//    /
-//  +X
-//
-// Our code should create these six logical tetrahedra of the cube
-// {v0, v7, v4, v6},
-// {v0, v7, v6, v2},
-// {v0, v7, v2, v3},
-// {v0, v7, v3, v1},
-// {v0, v7, v1, v5},
-// {v0, v7, v5, v4}.
-//
-GTEST_TEST(MakeBoxVolumeMeshTest, AddSixTetrahedraOfCell) {
-  const Vector3<int> base(0, 0, 0);
-  MultiArrayInt3D vertex_index(2, MultiArrayInt2D(2, MultiArrayInt1D(2)));
-  for (int i = 0; i < 2; ++i)
-    for (int j = 0; j < 2; ++j)
-      for (int k = 0; k < 2; ++k)
-        vertex_index[i][j][k] = 4 * i + 2 * j + k;
+GTEST_TEST(MakeBoxVolumeMeshTest, AddSixTetrahedraOfCell2) {
+  const Vector3<int> lowest(1, 2, 3);
+  MultiArrayInt3D vertex_index(3, MultiArrayInt2D(4, MultiArrayInt1D(5)));
+  int index = 0;
+  for (int i = 0; i < 3; ++i)
+    for (int j = 0; j < 4; ++j)
+      for (int k = 0; k < 5; ++k)
+        vertex_index[i][j][k] = index++;
   std::vector<VolumeElement> elements;
 
-  MakeBoxVolumeMeshTester<double>::AddSixTetrahedraOfCell(base, vertex_index,
+  MakeBoxVolumeMeshTester<double>::AddSixTetrahedraOfCell(lowest, vertex_index,
                                                           &elements);
   ASSERT_EQ(6, elements.size());
+
+  // In a 3x4x5 grid of vertices. vertex_index[1][2][3] = 33. This picture
+  // shows how the rectangular cell with its lowest vertex v₃₃ looks like.
+  //
+  //               v₃₄     v₃₉
+  //               ●------●
+  //              /|     /|
+  //             / | v₅₉/ |
+  //        v₅₄ ●------●  |
+  //            |  |   |  |
+  //            |  ●---|--● v₃₈
+  //            | /v₃₃ | /
+  //            |/     |/
+  //    +K  v₅₃ ●------● v₅₈
+  //     |
+  //     |
+  //     o------+J
+  //    /
+  //   /
+  // +I
+  //
+  // This table has the expected six tetrahedra of the rectangular cell.
+  // They share the main diagonal v₃₃v₅₉.
   const int expect_elements[6][4] {
       // clang-format off
-      {0, 7, 4, 6},
-      {0, 7, 6, 2},
-      {0, 7, 2, 3},
-      {0, 7, 3, 1},
-      {0, 7, 1, 5},
-      {0, 7, 5, 4}};
-      // clang-format on
+      {33, 59, 53, 58},
+      {33, 59, 58, 38},
+      {33, 59, 38, 39},
+      {33, 59, 39, 34},
+      {33, 59, 34, 54},
+      {33, 59, 54, 53}};
+  // clang-format on
   for (int e = 0; e < 6; ++e)
     for (int v = 0; v < 4; ++v)
       EXPECT_EQ(expect_elements[e][v], elements[e].vertex(v));
@@ -143,26 +140,31 @@ GTEST_TEST(MakeBoxVolumeMeshTest, AddSixTetrahedraOfCell) {
 
 GTEST_TEST(MakeBoxVolumeMeshTest, GenerateElements) {
   const Vector3<int>& num_vertex{3, 5, 7};
+  const int expect_total_num_vertex =
+      num_vertex.x() * num_vertex.y() * num_vertex.z();
+
   const Vector3<int>& num_cell{2, 4, 6};
+  const int expect_num_cell = num_cell.x() * num_cell.y() * num_cell.z();
+  const int expect_num_element = 6 * expect_num_cell;
+
   MultiArrayInt3D vertex_index(3, MultiArrayInt2D(5, MultiArrayInt1D(7)));
+  int index = 0;
   for (int i = 0; i < 3; ++i)
     for (int j = 0; j < 5; ++j)
       for (int k = 0; k < 7; ++k)
-        vertex_index[i][j][k] = 35 * i + 7 * j + k;
+        vertex_index[i][j][k] = index++;
 
   auto elements = MakeBoxVolumeMeshTester<double>::GenerateElements(
       num_vertex, vertex_index);
 
-  const int expect_num_cell = num_cell.x() * num_cell.y() * num_cell.z();
-  const int expect_num_element = 6 * expect_num_cell;
-  const int expect_num_vertex =
-      num_vertex.x() * num_vertex.y() * num_vertex.z();
-
   EXPECT_EQ(expect_num_element, elements.size());
+  // TODO(DamrongGuoy): Find a better way to test `elements`. Currently we
+  //  only test that each tetrahedron uses vertices with indices in the range
+  //  [0, expect_total_num_vertex).
   for (const auto& tetrahedron : elements) {
     for (int v = 0; v < 4; ++v) {
       EXPECT_GE(tetrahedron.vertex(v), 0);
-      EXPECT_LT(tetrahedron.vertex(v), expect_num_vertex);
+      EXPECT_LT(tetrahedron.vertex(v), expect_total_num_vertex);
     }
   }
 }
@@ -201,12 +203,12 @@ double CalcTetrahedronMeshVolume(const VolumeMesh<double>& mesh) {
 
 GTEST_TEST(MakeBoxVolumeMeshTest, GenerateMesh) {
   const Box box(0.2, 0.4, 0.8);
-  VolumeMesh<double> box_mesh = MakeBoxVolumeMesh<double>::generate(box, 0.1);
+  VolumeMesh<double> box_mesh = MakeBoxVolumeMesh<double>::Generate(box, 0.1);
 
   const int rectangular_cells = 2 * 4 * 8;
-  const int elements_per_cell = 6;
-  const int expect_num_elements = rectangular_cells * elements_per_cell;
-  EXPECT_EQ(expect_num_elements, box_mesh.num_elements());
+  const int tetrahedra_per_cell = 6;
+  const int expect_num_tetrahedra = rectangular_cells * tetrahedra_per_cell;
+  EXPECT_EQ(expect_num_tetrahedra, box_mesh.num_elements());
 
   const int expect_num_vertices = 3 * 5 * 9;
   EXPECT_EQ(expect_num_vertices, box_mesh.num_vertices());

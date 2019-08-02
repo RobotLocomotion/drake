@@ -37,7 +37,7 @@ class MakeBoxVolumeMesh {
        non-axis-aligned edges will be within √2 or √3 of this parameter.
    @retval volume_mesh
   */
-  static VolumeMesh<T> generate(const Box& box, T target_edge_length);
+  static VolumeMesh<T> Generate(const Box& box, T target_edge_length);
 
  protected:
   // Uniformly samples the interval [`first`, `last`]. The first sample
@@ -115,7 +115,7 @@ class MakeBoxVolumeMesh {
   //     The (i,j,k) index of the lowest vertex of the rectangular cell.
   // @param[in] vertex_index
   //     `vertex_index[i][j][k]` gives the sequential vertex index of the
-  //     vertex specified by the (i,j,k)-index.
+  //     vertex specified by (i,j,k)-index.
   // @param[in,out] elements
   //     The six tetrahedra are added into this list of elements.
   static void AddSixTetrahedraOfCell(const Vector3<int>& lowest,
@@ -125,7 +125,7 @@ class MakeBoxVolumeMesh {
     const int j = lowest.y();
     const int k = lowest.z();
     // Get the sequential indices of the eight vertices of the rectangular
-    // cell from `vertex_index[][][]`.
+    // cell from `vertex_index[][][]` into `v[]`.
     int v[8];
     int s = 0;
     for (int l = 0; l < 2; ++l)
@@ -157,9 +157,9 @@ class MakeBoxVolumeMesh {
     // Refer to the picture above to determine which four vertices form a
     // tetrahedron. The six tetrahedra form a cycle around the diagonal v₀v₇
     // of the cell.
-    // TODO(DamrongGuoy): Find a better way to describe this table. Why the
-    //  tetrahedra are conforming within the rectangular cell and across
-    //  two adjacent rectangular cells?
+    // TODO(DamrongGuoy): Find a better way to describe this table. Why would
+    //  the six tetrahedra are conforming within the rectangular cell? Why
+    //  would tetrahedra from adjacent rectangular cells be conforming?
     const int tetrahedron[6][4]{
         // clang-format off
         {v[0], v[7], v[4], v[6]},
@@ -169,9 +169,9 @@ class MakeBoxVolumeMesh {
         {v[0], v[7], v[1], v[5]},
         {v[0], v[7], v[5], v[4]}};
         // clang-format on
-    // The table guarantees adjacent rectangular cells will be subdivided in a
-    // consistent way, i.e., both cells will pick the same diagonal of their
-    // shared rectangular face.
+    // The above table guarantees that adjacent rectangular cells will be
+    // subdivided in a consistent way, i.e., both cells will pick the same
+    // diagonal of their shared rectangular face.
     for (int t = 0; t < 6; ++t)
       elements->emplace_back(tetrahedron[t]);
   }
@@ -202,7 +202,7 @@ class MakeBoxVolumeMesh {
 };  // class MakeBoxVolumeMesh
 
 template <typename T>
-VolumeMesh<T> MakeBoxVolumeMesh<T>::generate(const Box& box,
+VolumeMesh<T> MakeBoxVolumeMesh<T>::Generate(const Box& box,
                                              T target_edge_length) {
   DRAKE_DEMAND(target_edge_length > T(0));
   // Number of vertices in x-, y-, and z- directions.  In each direction,
