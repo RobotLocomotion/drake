@@ -63,7 +63,7 @@ class GripperBrickHelper {
 
   /** Position of the finger tip sphere center "Tip" in the finger_link2 frame.
    */
-  Eigen::Vector3d p_L2Tip() const { return p_L2Tip_; }
+  Eigen::Vector3d p_L2Fingertip() const { return p_L2Fingertip_; }
 
   const multibody::Frame<double>& brick_frame() const { return *brick_frame_; }
 
@@ -81,6 +81,8 @@ class GripperBrickHelper {
   template <typename U>
   U CalcFingerLink2Orientation(Finger finger, const U& base_joint_angle,
                                const U& middle_joint_angle) const {
+    // base_theta is the yal angle to weld the finger base. Keep the values in
+    // synchronous with WeldGripperFrames() in planar_gripper_common.h.
     double base_theta;
     switch (finger) {
       case Finger::kFinger1: {
@@ -112,7 +114,7 @@ class GripperBrickHelper {
   const multibody::Frame<double>* brick_frame_;
   std::array<const multibody::Frame<double>*, 3> finger_link2_frames_;
 
-  Eigen::Vector3d p_L2Tip_;
+  Eigen::Vector3d p_L2Fingertip_;
   double finger_tip_radius_;
   Eigen::Vector3d brick_size_;
 };

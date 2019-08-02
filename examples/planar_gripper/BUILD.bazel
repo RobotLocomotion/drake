@@ -97,14 +97,6 @@ drake_cc_binary(
     ],
 )
 
-drake_cc_googletest(
-    name = "gripper_brick_test",
-    deps = [
-        ":gripper_brick",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
 drake_cc_library(
     name = "gripper_brick_planning_utils",
     srcs = ["gripper_brick_planning_utils.cc"],
@@ -113,6 +105,14 @@ drake_cc_library(
         ":gripper_brick",
         "//multibody/inverse_kinematics:kinematic_constraint",
         "//solvers:mathematical_program_lite",
+    ],
+)
+
+drake_cc_googletest(
+    name = "gripper_brick_test",
+    deps = [
+        ":gripper_brick",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

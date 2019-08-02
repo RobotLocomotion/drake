@@ -9,7 +9,8 @@ namespace examples {
 namespace planar_gripper {
 GTEST_TEST(GripperBrickHelperTest, Test) {
   GripperBrickHelper<double> dut;
-  EXPECT_TRUE(CompareMatrices(dut.p_L2Tip(), Eigen::Vector3d(0, 0, -0.086)));
+  EXPECT_TRUE(
+      CompareMatrices(dut.p_L2Fingertip(), Eigen::Vector3d(0, 0, -0.086)));
   EXPECT_EQ(dut.finger_tip_radius(), 0.015);
   EXPECT_TRUE(
       CompareMatrices(dut.brick_size(), Eigen::Vector3d(0.025, 0.092, 0.092)));
@@ -34,9 +35,9 @@ GTEST_TEST(GripperBrickHelperTest, Test) {
     const double theta = dut.CalcFingerLink2Orientation(
         finger, q(dut.finger_base_position_index(finger)),
         q(dut.finger_mid_position_index(finger)));
-    if (angle_axis.axis().dot(Eigen::Vector3d::UnitX()) > 1 - 1E-5) {
+    if (angle_axis.axis().dot(Eigen::Vector3d::UnitX()) > 1 - 1E-14) {
       EXPECT_NEAR(std::fmod(theta - angle_axis.angle(), 2 * M_PI), 0, 1E-14);
-    } else if (angle_axis.axis().dot(-Eigen::Vector3d::UnitX()) > 1 - 1E-5) {
+    } else if (angle_axis.axis().dot(-Eigen::Vector3d::UnitX()) > 1 - 1E-14) {
       EXPECT_NEAR(std::fmod(theta + angle_axis.angle(), 2 * M_PI), 0, 1E-14);
     } else {
       throw std::runtime_error("The rotation axis should be x axis.");

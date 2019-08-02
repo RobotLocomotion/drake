@@ -49,21 +49,21 @@ GTEST_TEST(BrickStaticEquilibriumNonlinearConstraint, TestEval) {
                9.81))
           .tail<2>();
   Eigen::Vector3d total_torque(0, 0, 0);
-  Eigen::Vector3d p_BTip0;
+  Eigen::Vector3d p_BFingertip0;
   plant.CalcPointsPositions(
       *plant_mutable_context,
       gripper_brick_system.finger_link2_frame(finger_face_contacts[0].first),
-      gripper_brick_system.p_L2Tip(), gripper_brick_system.brick_frame(),
-      &p_BTip0);
-  Eigen::Vector3d p_BC0 = p_BTip0;
+      gripper_brick_system.p_L2Fingertip(), gripper_brick_system.brick_frame(),
+      &p_BFingertip0);
+  Eigen::Vector3d p_BC0 = p_BFingertip0;
   p_BC0(2) -= gripper_brick_system.finger_tip_radius();
-  Eigen::Vector3d p_BTip1;
+  Eigen::Vector3d p_BFingertip1;
   plant.CalcPointsPositions(
       *plant_mutable_context,
       gripper_brick_system.finger_link2_frame(finger_face_contacts[1].first),
-      gripper_brick_system.p_L2Tip(), gripper_brick_system.brick_frame(),
-      &p_BTip1);
-  Eigen::Vector3d p_BC1 = p_BTip1;
+      gripper_brick_system.p_L2Fingertip(), gripper_brick_system.brick_frame(),
+      &p_BFingertip1);
+  Eigen::Vector3d p_BC1 = p_BFingertip1;
   p_BC1(1) -= gripper_brick_system.finger_tip_radius();
   total_torque += p_BC0.cross(Eigen::Vector3d(0, x(9), x(10))) +
                   p_BC1.cross(Eigen::Vector3d(0, x(11), x(12)));

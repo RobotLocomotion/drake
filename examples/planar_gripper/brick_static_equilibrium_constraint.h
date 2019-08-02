@@ -11,9 +11,20 @@
 namespace drake {
 namespace examples {
 namespace planar_gripper {
-/** Given the set of contacts between the fingers and the brick, impose the
+/** Given the set of contacts between the fingertips and the brick, impose the
  * static equilibrium as a nonlinear constraint, that the total force/torque
- * applied on the brick is 0.
+ * applied on the brick is 0. The decision variables are (q, f_Cb_B) where q is
+ * the generalized position, and f_Cb_B are the contact force (y, z) component
+ * applied to the point Cb on the brick, expressed in the brick frame B.
+ * The constraint are
+ *
+ *     0 = R_WBᵀ * mg +  ∑ᵢ f_Cbi_B
+ *     0 = ∑ᵢp_Cbi_B.cross(f_Cbi_B)
+ * Notice that since the gripper/brick system is planar, the first equation is
+ * only on the (y, z) component of the total force, and the second equation is
+ * only on the x component of the torque.
+ *
+ * The constraint evaluates the right-hand side of the two equations above.
  */
 class BrickStaticEquilibriumNonlinearConstraint : public solvers::Constraint {
  public:
@@ -42,7 +53,7 @@ class BrickStaticEquilibriumNonlinearConstraint : public solvers::Constraint {
 };
 
 /**
- * Given the assignment of contacts between fingers and faces, add following
+ * Given the assignment of contacts between fingers and faces, add the following
  * constraints/variables to the program.
  * 1. Decision variables representing the finger contact force on the brick,
  * expressed in the brick frame.
