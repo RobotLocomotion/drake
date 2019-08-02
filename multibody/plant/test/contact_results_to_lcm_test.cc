@@ -11,6 +11,7 @@
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
 
@@ -26,9 +27,11 @@ using math::RigidTransform;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 // TODO(edrumwri) Remove this code when MultibodyPlant outputs hydroelastic
-// contact results.  
+// contact results.
 using multibody::internal::HydroelasticTractionCalculator;
 using systems::Context;
+using systems::Diagram;
+using systems::DiagramBuilder;
 
 namespace multibody {
 namespace {
@@ -179,7 +182,7 @@ GTEST_TEST(ConnectContactResultsToDrakeVisualizer, NestedDiagramTest) {
 
 // TODO(edrumwri) Remove this code (which is a duplicate of that in
 // hydroelastic_traction_test.cc) when MultibodyPlant outputs hydroelastic
-// contact results.  
+// contact results.
 // Creates a surface mesh.
 std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() {
   std::vector<SurfaceVertex<double>> vertices;
@@ -204,7 +207,7 @@ std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() {
 
 // TODO(edrumwri) Remove this code (which is a duplicate of that in
 // hydroelastic_traction_test.cc) when MultibodyPlant outputs hydroelastic
-// contact results.  
+// contact results.
 // Creates a contact surface between the two given geometries.
 std::unique_ptr<ContactSurface<double>> CreateContactSurface(
     GeometryId halfspace_id, GeometryId block_id) {
@@ -234,11 +237,11 @@ std::unique_ptr<ContactSurface<double>> CreateContactSurface(
 
 // A class for outputting a ContactResults structure with non-empty
 // hydroelastic contact surface.
-class DummyOutputter : public systems::LeafSystem<double> {
+class DummyOutputer : public systems::LeafSystem<double> {
  public:
-  DummyOutputter() {
+  DummyOutputer() {
     this->DeclareAbstractOutputPort("contact_results", ContactResults<double>(),
-        &DummyOutputter::CopyContactResultsOutput);
+        &DummyOutputer::CopyContactResultsOutput);
   }
 
  private:
@@ -273,7 +276,7 @@ class DummyOutputter : public systems::LeafSystem<double> {
     output->AddHydroelasticContactInfo(
         std::make_unique<HydroelasticContactInfo<double>>(
             calculator.ComputeContactInfo(data, dissipation, mu_coulomb)));
-  } 
+  }
 };
 
 // TODO(edrumwri) Replace this with a test that uses MultibodyPlant when
@@ -281,7 +284,16 @@ class DummyOutputter : public systems::LeafSystem<double> {
 class HydroelasticContactResults : public ::testing::Test {
  private:
   void SetUp() override {
-    
+    DiagramBuilder<double> builder;
+    MultibodyPlant<double> plant;   // Dummy plant- the test won't leverage it.
+
+    DummyOutputer* dummy_outputer = builder.AddSystem<DummyOutputer>();
+    ContactResultsToLcmSystem<double>* contact_results_to_lcm_system =
+        builder.AddSystem<ContactResultsToLcmSystem<double>>(plant);
+    builder.Connect(
+        dummy_outputer->get_output_port(0),
+        contact_results_to_lcm_system->get_contact_result_input_port());
+    std::unique_ptr<Diagram<double>> diagram = builder.Build();
   }
 };
 
