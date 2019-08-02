@@ -1,59 +1,52 @@
 #pragma once
 
-#include <fstream>
 #include <map>
 #include <string>
-#include <vector>
+#include <utility>
 
-#include "robotlocomotion/robot_plan_t.hpp"
-
-#include "drake/common/drake_assert.h"
-#include "drake/common/find_resource.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/systems/lcm/lcm_interface_system.h"
 
 namespace drake {
 namespace examples {
 namespace planar_gripper {
 
-using drake::math::RigidTransform;
-using drake::math::RollPitchYaw;
 using drake::multibody::MultibodyPlant;
 
+/**
+ * Welds each finger's base frame to the world. The planar-gripper is made up of
+ * three 2-DOF fingers, whose bases are fixed equidistant along the perimeter of
+ * a circle. All "fingertips" point inwards (towards the world origin) when all
+ * joint angles are zero, and all motion lies in the Y-Z plane.
+ * @tparam T The scalar type. Currently only supports double.
+ * @param plant The plant containing the planar-gripper.
+ */
 template <typename T>
-void WeldGripperFrames(multibody::MultibodyPlant<T>* plant) {
-  const double outer_radius = 0.19;
-  const double f1_angle = M_PI / 3;
-  const math::RigidTransformd XT(math::RollPitchYaw<double>(0, 0, 0),
-                                 Eigen::Vector3d(0, 0, outer_radius));
+void WeldGripperFrames(MultibodyPlant<T>* plant);
 
-  // Weld the first finger.
-  math::RigidTransformd X_PC1(math::RollPitchYaw<double>(f1_angle, 0, 0),
-                              Eigen::Vector3d::Zero());
-  X_PC1 = X_PC1 * XT;
-  const multibody::Frame<T>& finger1_base_frame =
-      plant->GetFrameByName("finger1_base");
-  plant->WeldFrames(plant->world_frame(), finger1_base_frame, X_PC1);
+/**
+ * Parses a text file containing keyframe joint positions for the planar gripper
+ * and the planar brick (the object being manipulated).
+ * @param[in] name The file name to parse.
+ * @param[out] brick_initial_pose A vector containing the initial brick pose.
+ * @return A std::pair containing a matrix of finger joint position keyframes
+ * (each matrix row represents a single keyframe containing values for all joint
+ * positions) and a std::map containing the mapping between each finger joint
+ * name and the corresponding column index in the keyframe matrix containing the
+ * data for that joint.
+ * @pre The file should begin with a header row that indicates the joint
+ * ordering for keyframes. Header names should consist of three finger base
+ * joints, three finger mid joints, and three brick joints (9 total):
+ * {finger1_BaseJoint, finger2_BaseJoint, finger3_BaseJoint, finger1_MidJoint,
+ * finger2_MidJoint, finger3_MindJoint, brick_translate_y_joint,
+ * brick_translate_z_joint, brick_revolute_x_joint}. Names may appear in any
+ * order. Each row (keyframe) following the header should contain the same
+ * number of values as indicated in the header. All entries should be white
+ * space delimited and the file should end in a newline character. The behavior
+ * of parsing is undefined if these conditions are not met.
+ */
+std::pair<MatrixX<double>, std::map<std::string, int>> ParseKeyframes(
+    const std::string& name, EigenPtr<Vector3<double>> brick_initial_pose);
 
-  // Weld the second finger.
-  const math::RigidTransformd X_PC2 =
-      math::RigidTransformd(math::RollPitchYawd(M_PI / 3 * 2, 0, 0),
-                            Eigen::Vector3d::Zero()) *
-      X_PC1;
-  const multibody::Frame<T>& finger2_base_frame =
-      plant->GetFrameByName("finger2_base");
-  plant->WeldFrames(plant->world_frame(), finger2_base_frame, X_PC2);
-
-  // Weld the 3rd finger.
-  const math::RigidTransformd X_PC3 =
-      math::RigidTransformd(math::RollPitchYawd(M_PI / 3 * 2, 0, 0),
-                            Eigen::Vector3d::Zero()) *
-      X_PC2;
-  const multibody::Frame<T>& finger3_base_frame =
-      plant->GetFrameByName("finger3_base");
-  plant->WeldFrames(plant->world_frame(), finger3_base_frame, X_PC3);
-}
 }  // namespace planar_gripper
 }  // namespace examples
 }  // namespace drake
