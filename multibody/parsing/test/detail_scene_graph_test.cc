@@ -735,7 +735,7 @@ GTEST_TEST(SceneGraphParserDetail,
 
   // The expected orientation of the canonical frame C (in which the plane's
   // normal aligns with Cz) in the link frame L.
-  const RotationMatrix<double>& R_LG_expected =
+  const RotationMatrix<double> R_LG_expected =
       HalfSpace::MakePose(normal_L_expected, Vector3d::Zero()).rotation();
 
   // Verify results to precision given by kTolerance.
