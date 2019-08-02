@@ -56,6 +56,10 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
   static constexpr int contact_result_input_port_index_{0};
   static constexpr int message_output_port_index_{0};
 
+  // A mapping from geometry IDs to body indices.
+  std::unordered_map<geometry::GeometryId, multibody::BodyIndex>
+      geometry_id_to_body_index_map_;
+
   // A mapping from body index values to body names.
   std::vector<std::string> body_names_;
 };

@@ -108,9 +108,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "ContactResults", param, cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
-        .def("num_contacts", &Class::num_contacts, cls_doc.num_contacts.doc)
-        .def("AddContactInfo", &Class::AddContactInfo,
-            py::arg("point_pair_info"), cls_doc.AddContactInfo.doc)
+        .def("num_contacts", &Class::num_point_pair_contacts,
+            "Deprecated. Using num_point_pair_contacts() instead.")
+        .def("num_point_pair_contacts", &Class::num_point_pair_contacts,
+            cls_doc.num_point_pair_contacts.doc)
+        .def("AddContactInfo", &Class::AddPointPairContactInfo,
+            py::arg("point_pair_info"),
+            "Deprecated. Use AddPointPairContactInfo() instead.")
+        .def("AddPointPairContactInfo", &Class::AddPointPairContactInfo,
+            py::arg("point_pair_info"), cls_doc.AddPointPairContactInfo.doc)
         .def("contact_info", &Class::point_pair_contact_info, py::arg("i"),
             "Deprecated. Use point_pair_contact_info() instead.")
         .def("point_pair_contact_info", &Class::point_pair_contact_info,

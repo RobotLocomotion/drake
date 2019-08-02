@@ -64,7 +64,7 @@ class ContactVisualizer(object):
 
         # A map from pair of body names to a list of contact forces
         collision_pair_to_forces = {}
-        for contact in msg.contact_info:
+        for contact in msg.point_pair_contact_info:
             point = np.array([contact.contact_point[0],
                               contact.contact_point[1],
                               contact.contact_point[2]])
