@@ -59,7 +59,7 @@ MPCData::MPCData(const std::vector<Eigen::MatrixXd>* Q,
 
 void MPCData::gemvH(const Eigen::VectorXd& x, double a, double b,
                     Eigen::VectorXd* y) const {
-  if(y == nullptr){
+  if (y == nullptr) {
     throw std::runtime_error("In MPCData::gemvH: y input is null.");
   }
   if (x.size() != nz_ || y->size() != nz_) {
@@ -109,7 +109,7 @@ void MPCData::gemvH(const Eigen::VectorXd& x, double a, double b,
 
 void MPCData::gemvA(const Eigen::VectorXd& x, double a, double b,
                     Eigen::VectorXd* y) const {
-  if(y == nullptr){
+  if (y == nullptr) {
     throw std::runtime_error("In MPCData::gemvA: y input is null.");
   }
   if (x.size() != nz_ || y->size() != nv_) {
@@ -149,7 +149,7 @@ void MPCData::gemvA(const Eigen::VectorXd& x, double a, double b,
 
 void MPCData::gemvG(const Eigen::VectorXd& x, double a, double b,
                     Eigen::VectorXd* y) const {
-  if(y == nullptr){
+  if (y == nullptr) {
     throw std::runtime_error("In MPCData::gemvG: y input is null.");
   }
   if (x.size() != nz_ || y->size() != nl_) {
@@ -195,7 +195,7 @@ void MPCData::gemvG(const Eigen::VectorXd& x, double a, double b,
 
 void MPCData::gemvGT(const Eigen::VectorXd& x, double a, double b,
                      Eigen::VectorXd* y) const {
-  if(y == nullptr){
+  if (y == nullptr) {
     throw std::runtime_error("In MPCData::gemvGT: y input is null.");
   }
   if (x.size() != nl_ || y->size() != nz_) {
@@ -242,7 +242,7 @@ void MPCData::gemvGT(const Eigen::VectorXd& x, double a, double b,
 
 void MPCData::gemvAT(const Eigen::VectorXd& x, double a, double b,
                      Eigen::VectorXd* y) const {
-  if(y == nullptr){
+  if (y == nullptr) {
     throw std::runtime_error("In MPCData::gemvAT: y input is null.");
   }
   if (x.size() != nv_ || y->size() != nz_) {
@@ -281,13 +281,12 @@ void MPCData::gemvAT(const Eigen::VectorXd& x, double a, double b,
 }
 
 void MPCData::axpyf(double a, Eigen::VectorXd* y) const {
-  if(y == nullptr){
+  if (y == nullptr) {
     throw std::runtime_error("In MPCData::axpyf: y input is null.");
   }
   if (y->size() != nz_) {
     throw std::runtime_error("Size mismatch in MPCData::axpyf.");
   }
-
 
   // Create reshaped view of the input vector.
   Map w(y->data(), nx_ + nu_, N_ + 1);
@@ -302,7 +301,7 @@ void MPCData::axpyf(double a, Eigen::VectorXd* y) const {
 }
 
 void MPCData::axpyh(double a, Eigen::VectorXd* y) const {
-  if(y == nullptr){
+  if (y == nullptr) {
     throw std::runtime_error("In MPCData::axpyh: y input is null.");
   }
   if (y->size() != nl_) {
@@ -318,7 +317,7 @@ void MPCData::axpyh(double a, Eigen::VectorXd* y) const {
 }
 
 void MPCData::axpyb(double a, Eigen::VectorXd* y) const {
-  if(y == nullptr){
+  if (y == nullptr) {
     throw std::runtime_error("In MPCData::axpyb: y input is null.");
   }
   if (y->size() != nv_) {
@@ -337,7 +336,7 @@ void MPCData::validate_length() const {
 
   // Uses an unsigned long here
   // for consistency with the return type of vector::size.
-  unsigned long N = Q_->size(); // NOLINT
+  unsigned long N = Q_->size();  // NOLINT
   if (N <= 0) {
     throw std::runtime_error("Horizon length must be at least 1.");
   }
