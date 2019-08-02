@@ -55,75 +55,78 @@ void AddFrictionConeConstraint(
   }
 }
 
-void AddFingerTipInContactWithBrickFace(
+void AddFingerTipInContactWithBrickFaceConstraint(
     const GripperBrickHelper<double>& gripper_brick_system, Finger finger,
     BrickFace brick_face, solvers::MathematicalProgram* prog,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
-    systems::Context<double>* plant_context, double face_shrink_factor) {
+    systems::Context<double>* plant_context, double face_shrink_factor,
+    double depth) {
   const multibody::Frame<double>& finger_link2 =
       gripper_brick_system.finger_link2_frame(finger);
-  // position of Tip in the finger link 2 farme (F2).
-  const Eigen::Vector3d p_L2Tip = gripper_brick_system.p_L2Tip();
+  // position of finger tip in the finger link 2 farme (F2).
+  const Eigen::Vector3d p_L2Fingertip = gripper_brick_system.p_L2Fingertip();
   const multibody::Frame<double>& brick = gripper_brick_system.brick_frame();
   const Eigen::Vector3d brick_size = gripper_brick_system.brick_size();
-  Eigen::Vector3d p_BTip_lower = -brick_size * face_shrink_factor / 2;
-  Eigen::Vector3d p_BTip_upper = brick_size * face_shrink_factor / 2;
+  Eigen::Vector3d p_BFingertip_lower = -brick_size * face_shrink_factor / 2;
+  Eigen::Vector3d p_BFingertip_upper = brick_size * face_shrink_factor / 2;
   const double finger_tip_radius = gripper_brick_system.finger_tip_radius();
-  const double depth = 1E-3;
   switch (brick_face) {
     case BrickFace::kPosZ: {
-      p_BTip_lower(2) = brick_size(2) / 2 + finger_tip_radius - depth;
-      p_BTip_upper(2) = brick_size(2) / 2 + finger_tip_radius - depth;
+      p_BFingertip_lower(2) = brick_size(2) / 2 + finger_tip_radius - depth;
+      p_BFingertip_upper(2) = brick_size(2) / 2 + finger_tip_radius - depth;
       break;
     }
     case BrickFace::kNegZ: {
-      p_BTip_lower(2) = -brick_size(2) / 2 - finger_tip_radius + depth;
-      p_BTip_upper(2) = -brick_size(2) / 2 - finger_tip_radius + depth;
+      p_BFingertip_lower(2) = -brick_size(2) / 2 - finger_tip_radius + depth;
+      p_BFingertip_upper(2) = -brick_size(2) / 2 - finger_tip_radius + depth;
       break;
     }
     case BrickFace::kPosY: {
-      p_BTip_lower(1) = brick_size(1) / 2 + finger_tip_radius - depth;
-      p_BTip_upper(1) = brick_size(1) / 2 + finger_tip_radius - depth;
+      p_BFingertip_lower(1) = brick_size(1) / 2 + finger_tip_radius - depth;
+      p_BFingertip_upper(1) = brick_size(1) / 2 + finger_tip_radius - depth;
       break;
     }
     case BrickFace::kNegY: {
-      p_BTip_lower(1) = -brick_size(1) / 2 - finger_tip_radius + depth;
-      p_BTip_upper(1) = -brick_size(1) / 2 - finger_tip_radius + depth;
+      p_BFingertip_lower(1) = -brick_size(1) / 2 - finger_tip_radius + depth;
+      p_BFingertip_upper(1) = -brick_size(1) / 2 - finger_tip_radius + depth;
       break;
     }
   }
-  prog->AddConstraint(std::make_shared<multibody::PositionConstraint>(
-                          &(gripper_brick_system.plant()), brick, p_BTip_lower,
-                          p_BTip_upper, finger_link2, p_L2Tip, plant_context),
-                      q_vars);
+  prog->AddConstraint(
+      std::make_shared<multibody::PositionConstraint>(
+          &(gripper_brick_system.plant()), brick, p_BFingertip_lower,
+          p_BFingertip_upper, finger_link2, p_L2Fingertip, plant_context),
+      q_vars);
 }
 
 Eigen::Vector3d ComputeFingerTipInBrickFrame(
     const GripperBrickHelper<double>& gripper_brick, const Finger finger,
     const systems::Context<double>& plant_context,
     const Eigen::Ref<const Eigen::VectorXd>&) {
-  Eigen::Vector3d p_BTip;
+  Eigen::Vector3d p_BFingertip;
   gripper_brick.plant().CalcPointsPositions(
       plant_context, gripper_brick.finger_link2_frame(finger),
-      gripper_brick.p_L2Tip(), gripper_brick.brick_frame(), &p_BTip);
-  return p_BTip;
+      gripper_brick.p_L2Fingertip(), gripper_brick.brick_frame(),
+      &p_BFingertip);
+  return p_BFingertip;
 }
 
 Vector3<AutoDiffXd> ComputeFingerTipInBrickFrame(
     const GripperBrickHelper<double>& gripper_brick, const Finger finger,
     const systems::Context<double>& plant_context,
     const Eigen::Ref<const AutoDiffVecXd>& q) {
-  Eigen::Vector3d p_BTip;
+  Eigen::Vector3d p_BFingertip;
   gripper_brick.plant().CalcPointsPositions(
       plant_context, gripper_brick.finger_link2_frame(finger),
-      gripper_brick.p_L2Tip(), gripper_brick.brick_frame(), &p_BTip);
-  Eigen::Matrix3Xd Js_v_BF2_B(3, gripper_brick.plant().num_positions());
+      gripper_brick.p_L2Fingertip(), gripper_brick.brick_frame(),
+      &p_BFingertip);
+  Eigen::Matrix3Xd Jv_BF2_B(3, gripper_brick.plant().num_positions());
   gripper_brick.plant().CalcJacobianTranslationalVelocity(
       plant_context, multibody::JacobianWrtVariable::kQDot,
-      gripper_brick.finger_link2_frame(finger), gripper_brick.p_L2Tip(),
-      gripper_brick.brick_frame(), gripper_brick.brick_frame(), &Js_v_BF2_B);
+      gripper_brick.finger_link2_frame(finger), gripper_brick.p_L2Fingertip(),
+      gripper_brick.brick_frame(), gripper_brick.brick_frame(), &Jv_BF2_B);
   return math::initializeAutoDiffGivenGradientMatrix(
-      p_BTip, Js_v_BF2_B * math::autoDiffToGradientMatrix(q));
+      p_BFingertip, Jv_BF2_B * math::autoDiffToGradientMatrix(q));
 }
 
 template void AddFrictionConeConstraint<double>(

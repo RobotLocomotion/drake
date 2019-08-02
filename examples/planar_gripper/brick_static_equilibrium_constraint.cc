@@ -16,10 +16,12 @@ BrickStaticEquilibriumNonlinearConstraint::
         const GripperBrickHelper<double>& gripper_brick_system,
         std::vector<std::pair<Finger, BrickFace>> finger_face_contacts,
         systems::Context<double>* plant_mutable_context)
-    : solvers::Constraint(3,
-                          gripper_brick_system.plant().num_positions() +
-                              finger_face_contacts.size() * 2,
-                          Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero()),
+    : solvers::Constraint(
+          3,  // planar case, only constrain the (y, z) component
+              // of the force, and x component of the torque.
+          gripper_brick_system.plant().num_positions() +
+              finger_face_contacts.size() * 2,
+          Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero()),
       gripper_brick_system_{gripper_brick_system},
       finger_face_contacts_(std::move(finger_face_contacts)),
       plant_mutable_context_(plant_mutable_context) {
@@ -31,6 +33,8 @@ BrickStaticEquilibriumNonlinearConstraint::
 template <typename T>
 void BrickStaticEquilibriumNonlinearConstraint::DoEvalGeneric(
     const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* y) const {
+  // y = [R_WBᵀ * mg +  ∑ᵢ f_Cbi_B]
+  //     [∑ᵢp_Cbi_B.cross(f_Cbi_B)]
   y->resize(3);
   const auto& plant = gripper_brick_system_.plant();
   multibody::internal::UpdateContextConfiguration(
@@ -42,39 +46,44 @@ void BrickStaticEquilibriumNonlinearConstraint::DoEvalGeneric(
   const T cos_theta = cos(theta);
   Matrix2<T> R_WB;
   R_WB << cos_theta, -sin_theta, sin_theta, cos_theta;
+  // Compute R_WBᵀ * mg, the gravitational force expressed in the brick frame.
   const Vector2<T> f_B =
       R_WB.transpose() * Eigen::Vector2d(0, -brick_mass_ * 9.81);
-  y->template head<2>() = f_B.template tail<2>();
+  y->template head<2>() = f_B;
   (*y)(2) = T(0);
   for (int i = 0; i < static_cast<int>(finger_face_contacts_.size()); ++i) {
+    // Compute ∑ᵢ f_Cbi_B.
     y->template head<2>() +=
-        x.template segment<2>(plant.num_positions() + i * 2);
-    const Vector3<T> p_BTip = ComputeFingerTipInBrickFrame(
+        x.template segment<2>(plant.num_positions() + i * 2);  // f_Cbi_B
+    // Compute the fingertip contact point Cb in the brick frame.
+    // We first compute finger tip (sphere center) position in the brick frame.
+    const Vector3<T> p_BFingertip = ComputeFingerTipInBrickFrame(
         gripper_brick_system_, finger_face_contacts_[i].first,
         *plant_mutable_context_, x.head(plant.num_positions()));
-    // C is the point of contact between the finger and the brick.
-    Vector2<T> p_BC = p_BTip.template tail<2>();
+    // p_BCb is to shift p_BFingertip along the face inward normal direction by
+    // finger tip sphere radius.
+    Vector2<T> p_BCb = p_BFingertip.template tail<2>();
     switch (finger_face_contacts_[i].second) {
       case BrickFace::kPosY: {
-        p_BC(0) -= T(gripper_brick_system_.finger_tip_radius());
+        p_BCb(0) -= T(gripper_brick_system_.finger_tip_radius());
         break;
       }
       case BrickFace::kNegY: {
-        p_BC(0) += T(gripper_brick_system_.finger_tip_radius());
+        p_BCb(0) += T(gripper_brick_system_.finger_tip_radius());
         break;
       }
       case BrickFace::kPosZ: {
-        p_BC(1) -= T(gripper_brick_system_.finger_tip_radius());
+        p_BCb(1) -= T(gripper_brick_system_.finger_tip_radius());
         break;
       }
       case BrickFace::kNegZ: {
-        p_BC(1) += T(gripper_brick_system_.finger_tip_radius());
+        p_BCb(1) += T(gripper_brick_system_.finger_tip_radius());
         break;
       }
     }
     // Now compute the torque about the COM
-    (*y)(2) += p_BC(0) * x(plant.num_positions() + 2 * i + 1) -
-               p_BC(1) * x(plant.num_positions() + 2 * i);
+    (*y)(2) += p_BCb(0) * x(plant.num_positions() + 2 * i + 1) -
+               p_BCb(1) * x(plant.num_positions() + 2 * i);
   }
 }
 

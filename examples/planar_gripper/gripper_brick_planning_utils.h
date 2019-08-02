@@ -9,7 +9,11 @@ namespace planar_gripper {
 /**
  * Adds the friction cone as linear constraints on the contact force f_Cb_B (the
  * contact force applied on the brick contact point Cb, expressed in the brick
- * frame B).
+ * frame B). Notice that since the example is planar, we can write this friction
+ * cone as linear constraints, as opposed to the general nonlinear constraint in
+ * StaticFrictionConeConstraint.
+ * @param gripper_brick The planar gripper system manipulating a brick.
+ * @param finger The finger in touch with the brick face.
  * @param brick_face The contact facet on the brick.
  * @param f_Cb_B The contact force applied on the brick contact point Cb,
  * expressed in the brick frame B.
@@ -23,8 +27,9 @@ void AddFrictionConeConstraint(
     solvers::MathematicalProgram* prog);
 
 /**
- * Add the kinematic constraint that the finger tip is in contact with a shrunk
- * region on the brick face.
+ * Add the kinematic constraint that the finger tip (the sphere collision
+ * geometry in the tip of the finger) is in contact with a shrunk region on the
+ * brick face.
  * @param gripper_brick_system The gripper brick system on which the constraint
  * is imposed.
  * @param finger The finger in contact.
@@ -33,15 +38,18 @@ void AddFrictionConeConstraint(
  * @param q_vars The variable for the configuration.
  * @param plant_context The context containing the value of q_vars.
  * @param face_shrink_factor A factor to determine the shrunk region on each
- * face. If face_shrink_factor = 1, then the region include the whole face,
+ * face. If face_shrink_factor = 1, then the region includes the whole face,
  * 0 < face_shrink_factor < 1 corresponds to the scaled region of the face,
  * if face_shrink_factor = 0, then the region shrinks to the singleton centroid.
+ * @param depth The penetration depth between the finger tip sphere and the
+ * brick. @default to 1mm.
  */
-void AddFingerTipInContactWithBrickFace(
+void AddFingerTipInContactWithBrickFaceConstraint(
     const GripperBrickHelper<double>& gripper_brick_system, Finger finger,
     BrickFace brick_face, solvers::MathematicalProgram* prog,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
-    systems::Context<double>* plant_context, double face_shrink_factor);
+    systems::Context<double>* plant_context, double face_shrink_factor,
+    double depth = 1e-3);
 
 Eigen::Vector3d ComputeFingerTipInBrickFrame(
     const GripperBrickHelper<double>& gripper_brick, const Finger finger,
