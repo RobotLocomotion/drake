@@ -32,9 +32,9 @@ class MPCComponentUnitTests;
  * length(v) = nv = nc*(N+1)
  * length(y) = nv = nc*(N+1)
  */
-class MPCVariable {
+class MpcVariable {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MPCVariable);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MpcVariable);
   /**
    * Allocates memory for a primal-dual variable.
    *
@@ -42,8 +42,10 @@ class MPCVariable {
    * @param[in] nx number of states
    * @param[in] nu number of control input
    * @param[in] nc number of constraints per stage
+   *
+   * Throws a runtime_error if any of the inputs are non-positive.
    */
-  MPCVariable(int N, int nx, int nu, int nc);
+  MpcVariable(int N, int nx, int nu, int nc);
 
   /**
    * Creates a primal-dual variable using preallocated memory.
@@ -52,8 +54,11 @@ class MPCVariable {
    * @param[in] l    A vector to store the co-states/equality duals.
    * @param[in] v    A vector to store the dual variables.
    * @param[in] y    A vector to store the inequality margin.
+   *
+   * Throws a runtime_error if sizes are mismatched or if any of the inputs are
+   * null.
    */
-  MPCVariable(Eigen::VectorXd* z, Eigen::VectorXd* l, Eigen::VectorXd* v,
+  MpcVariable(Eigen::VectorXd* z, Eigen::VectorXd* l, Eigen::VectorXd* v,
               Eigen::VectorXd* y);
 
   /**
@@ -61,7 +66,7 @@ class MPCVariable {
    * Calculations cannot be performed until a data object is provided.
    * @param[in] data pointer to the problem data
    */
-  void LinkData(const MPCData* data) { data_ = data; }
+  void LinkData(const MpcData* data) { data_ = data; }
 
   /**
    * Fills the variable with one value.
@@ -71,6 +76,7 @@ class MPCVariable {
 
   /**
    * Sets the constraint margin to y = b - Az.
+   * Throws a runtime_error if problem data hasn't been provided.
    */
   void InitializeConstraintMargin();
 
@@ -84,14 +90,16 @@ class MPCVariable {
    *
    * Note that this handles the constraint margin correctly, i.e., after the
    * operation u.y = b - A*(u.z + a*x.z).
+   *
+   * Throws a runtime_error if problem data hasn't been provided.
    */
-  void axpy(double a, const MPCVariable& x);
+  void axpy(double a, const MpcVariable& x);
 
   /**
    * Deep copies x into this.
    * @param[in] x variable to be copied.
    */
-  void Copy(const MPCVariable& x);
+  void Copy(const MpcVariable& x);
 
   /**
    * Projects the inequality duals onto the non-negative orthant,
@@ -106,7 +114,7 @@ class MPCVariable {
   double Norm() const;
 
   /** Returns true if x and y have the same dimensions. */
-  static bool SameSize(const MPCVariable& x, const MPCVariable& y);
+  static bool SameSize(const MpcVariable& x, const MpcVariable& y);
 
   /** Accessor for the decision variable. */
   Eigen::VectorXd& z() { return *z_; }
@@ -143,10 +151,10 @@ class MPCVariable {
   int nz_ = 0;  // number of primal variables
   int nl_ = 0;  // number of equality duals
   int nv_ = 0;  // number of inequality duals
-  const MPCData* data_ = nullptr;
+  const MpcData* data_ = nullptr;
 
   // Getter for data_ with a nullptr check.
-  const MPCData* data() const;
+  const MpcData* data() const;
 
   friend class MPCResidual;
   friend class MPCFeasibility;

@@ -41,9 +41,9 @@ class MPCComponentUnitTests;
  * This class contains storage and methods for implicitly working with the
  * compact representation (2) in an efficient manner.
  */
-class MPCData {
+class MpcData {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MPCData);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MpcData);
   /**
    * Creates problem data and performs input validation. Throws
    * a runtime_error if the problem data aren't consistently sized.
@@ -53,7 +53,7 @@ class MPCData {
    * All arguments are inputs and point to data defining a linear-quadratic
    * optimal control problem, see the class comment.
    */
-  MPCData(const std::vector<Eigen::MatrixXd>* Q,
+  MpcData(const std::vector<Eigen::MatrixXd>* Q,
           const std::vector<Eigen::MatrixXd>* R,
           const std::vector<Eigen::MatrixXd>* S,
           const std::vector<Eigen::VectorXd>* q,
@@ -178,27 +178,26 @@ class MPCData {
   int nl_ = 0;  // number of equality duals
   int nv_ = 0;  // number of inequality duals
 
-  const std::vector<Eigen::MatrixXd>* Q_;
-  const std::vector<Eigen::MatrixXd>* R_;
-  const std::vector<Eigen::MatrixXd>* S_;
-  const std::vector<Eigen::VectorXd>* q_;
-  const std::vector<Eigen::VectorXd>* r_;
-  const std::vector<Eigen::MatrixXd>* A_;
-  const std::vector<Eigen::MatrixXd>* B_;
-  const std::vector<Eigen::VectorXd>* c_;
-  const std::vector<Eigen::MatrixXd>* E_;
-  const std::vector<Eigen::MatrixXd>* L_;
-  const std::vector<Eigen::VectorXd>* d_;
-  const Eigen::VectorXd* x0_;
+  const std::vector<Eigen::MatrixXd>* Q_ = nullptr;
+  const std::vector<Eigen::MatrixXd>* R_ = nullptr;
+  const std::vector<Eigen::MatrixXd>* S_ = nullptr;
+  const std::vector<Eigen::VectorXd>* q_ = nullptr;
+  const std::vector<Eigen::VectorXd>* r_ = nullptr;
+  const std::vector<Eigen::MatrixXd>* A_ = nullptr;
+  const std::vector<Eigen::MatrixXd>* B_ = nullptr;
+  const std::vector<Eigen::VectorXd>* c_ = nullptr;
+  const std::vector<Eigen::MatrixXd>* E_ = nullptr;
+  const std::vector<Eigen::MatrixXd>* L_ = nullptr;
+  const std::vector<Eigen::VectorXd>* d_ = nullptr;
+  const Eigen::VectorXd* x0_ = nullptr;
 
-  // Throws an exception if any of the inputs have inconsistent lengths.
+  // Throws an exception if any of the input vectors have inconsistent lengths.
   void validate_length() const;
 
-  // Throws an exception if any of the inputs have inconsistent sizes.
+  // Throws an exception if any of the input matrices have inconsistent sizes.
   // Assumes that validate_length() has already been called.
   void validate_size() const;
 
-  // friend class RicattiLinearSolver;
   friend class test::MPCComponentUnitTests;
   friend class RicattiLinearSolver;
   friend class FBstabMPC;

@@ -14,10 +14,10 @@ namespace fbstab {
 using VectorXd = Eigen::VectorXd;
 using MatrixXd = Eigen::MatrixXd;
 
-MPCVariable::MPCVariable(int N, int nx, int nu, int nc) {
+MpcVariable::MpcVariable(int N, int nx, int nu, int nc) {
   if (N <= 0 || nx <= 0 || nu <= 0 || nc <= 0) {
     throw std::runtime_error(
-        "All size inputs to MPCVariable::MPCVariable must be >= 1.");
+        "All size inputs to MpcVariable::MpcVariable must be >= 1.");
   }
   N_ = N;
   nx_ = nx;
@@ -44,18 +44,18 @@ MPCVariable::MPCVariable(int N, int nx, int nu, int nc) {
   y_->setConstant(0.0);
 }
 
-MPCVariable::MPCVariable(VectorXd* z, VectorXd* l, VectorXd* v, VectorXd* y) {
+MpcVariable::MpcVariable(VectorXd* z, VectorXd* l, VectorXd* v, VectorXd* y) {
   if (z == nullptr || l == nullptr || v == nullptr || y == nullptr) {
     throw std::runtime_error(
-        "Inputs to MPCVariable::MPCVariable cannot be null.");
+        "Inputs to MpcVariable::MpcVariable cannot be null.");
   }
   if (z->size() == 0 || l->size() == 0 || v->size() == 0 || y->size() == 0) {
     throw std::runtime_error(
-        "All size inputs to MPCVariable::MPCVariable must be >= 1.");
+        "All size inputs to MpcVariable::MpcVariable must be >= 1.");
   }
   if (v->size() != y->size()) {
     throw std::runtime_error(
-        "In MPCVariable::MPCVariable, y and v must be the same size");
+        "In MpcVariable::MpcVariable, y and v must be the same size");
   }
 
   nz_ = z->size();
@@ -68,17 +68,17 @@ MPCVariable::MPCVariable(VectorXd* z, VectorXd* l, VectorXd* v, VectorXd* y) {
   y_ = y;
 }
 
-void MPCVariable::Fill(double a) {
+void MpcVariable::Fill(double a) {
   z_->setConstant(a);
   l_->setConstant(a);
   v_->setConstant(a);
   InitializeConstraintMargin();
 }
 
-void MPCVariable::InitializeConstraintMargin() {
+void MpcVariable::InitializeConstraintMargin() {
   if (data_ == nullptr) {
     throw std::runtime_error(
-        "Cannot call MPCVariable::InitializeConstraintMargin unless data is "
+        "Cannot call MpcVariable::InitializeConstraintMargin unless data is "
         "linked.");
   }
   // y = b - A*z
@@ -87,10 +87,10 @@ void MPCVariable::InitializeConstraintMargin() {
   data_->gemvA(*z_, -1.0, 1.0, y_);
 }
 
-void MPCVariable::axpy(double a, const MPCVariable& x) {
+void MpcVariable::axpy(double a, const MpcVariable& x) {
   if (data_ == nullptr) {
     throw std::runtime_error(
-        "Cannot call MPCVariable::axpy unless data is linked.");
+        "Cannot call MpcVariable::axpy unless data is linked.");
   }
 
   z_->noalias() += a * (*x.z_);
@@ -102,7 +102,7 @@ void MPCVariable::axpy(double a, const MPCVariable& x) {
   data_->axpyb(-a, y_);
 }
 
-void MPCVariable::Copy(const MPCVariable& x) {
+void MpcVariable::Copy(const MpcVariable& x) {
   *z_ = *x.z_;
   *l_ = *x.l_;
   *v_ = *x.v_;
@@ -110,17 +110,18 @@ void MPCVariable::Copy(const MPCVariable& x) {
   data_ = x.data_;
 }
 
-const MPCData* MPCVariable::data() const {
+const MpcData* MpcVariable::data() const {
   if (data_ == nullptr) {
     throw std::runtime_error(
-        "In MPCData::data: tried to access problem data before it's assigned.");
+        "In MpcVariable::data: tried to access problem data before it's "
+        "linked.");
   }
   return data_;
 }
 
-void MPCVariable::ProjectDuals() { *v_ = v_->cwiseMax(0); }
+void MpcVariable::ProjectDuals() { *v_ = v_->cwiseMax(0); }
 
-double MPCVariable::Norm() const {
+double MpcVariable::Norm() const {
   const double t1 = z_->norm();
   const double t2 = l_->norm();
   const double t3 = v_->norm();
@@ -128,7 +129,7 @@ double MPCVariable::Norm() const {
   return sqrt(t1 * t1 + t2 * t2 + t3 * t3);
 }
 
-bool MPCVariable::SameSize(const MPCVariable& x, const MPCVariable& y) {
+bool MpcVariable::SameSize(const MpcVariable& x, const MpcVariable& y) {
   return (x.nz_ == y.nz_ && x.nl_ == y.nl_ && x.nv_ == y.nv_);
 }
 

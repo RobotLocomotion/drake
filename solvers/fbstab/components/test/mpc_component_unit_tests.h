@@ -19,8 +19,8 @@ using VectorXd = Eigen::VectorXd;
 
 /**
  * This class implements unit tests for the following classes:
- * MPCData
- * MPCVariable
+ * MpcData
+ * MpcVariable
  * MPCResidual
  * MPCFeasibiity
  * RicattiLinearSolver
@@ -96,7 +96,7 @@ class MPCComponentUnitTests {
    * Tests against hand calculations.
    */
   void GEMVH() {
-    MPCData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
+    MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
     int nz = data.nz_;
 
     VectorXd z(nz);
@@ -120,7 +120,7 @@ class MPCComponentUnitTests {
    * Tests against hand calculations.
    */
   void GEMVA() {
-    MPCData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
+    MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
     int nv = data.nv_;
     int nz = data.nz_;
 
@@ -144,7 +144,7 @@ class MPCComponentUnitTests {
    * Tests against hand calculations.
    */
   void GEMVG() {
-    MPCData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
+    MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
     int nl = data.nl_;
     int nz = data.nz_;
 
@@ -168,7 +168,7 @@ class MPCComponentUnitTests {
    * Tests against hand calculations.
    */
   void GEMVGT() {
-    MPCData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
+    MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
     int nl = data.nl_;
     int nz = data.nz_;
 
@@ -192,7 +192,7 @@ class MPCComponentUnitTests {
    * Tests against hand calculations.
    */
   void GEMVAT() {
-    MPCData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
+    MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
     int nv = data.nv_;
     int nz = data.nz_;
 
@@ -216,7 +216,7 @@ class MPCComponentUnitTests {
    * Tests against hand calculations.
    */
   void AXPYF() {
-    MPCData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
+    MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
     int nz = data.nz_;
 
     VectorXd y(nz);
@@ -235,7 +235,7 @@ class MPCComponentUnitTests {
    * Tests against hand calculations.
    */
   void AXPYH() {
-    MPCData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
+    MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
     int nl = data.nl_;
 
     VectorXd y(nl);
@@ -254,7 +254,7 @@ class MPCComponentUnitTests {
    * Tests against hand calculations.
    */
   void AXPYB() {
-    MPCData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
+    MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
     int nv = data.nv_;
 
     VectorXd y(nv);
@@ -274,10 +274,10 @@ class MPCComponentUnitTests {
    * Tests against hand calculations.
    */
   void Variable() {
-    MPCData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
+    MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
 
-    MPCVariable x(data.N_, data.nx_, data.nu_, data.nc_);
-    MPCVariable y(data.N_, data.nx_, data.nu_, data.nc_);
+    MpcVariable x(data.N_, data.nx_, data.nu_, data.nc_);
+    MpcVariable y(data.N_, data.nx_, data.nu_, data.nc_);
     x.LinkData(&data);
     y.LinkData(&data);
 
