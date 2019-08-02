@@ -59,6 +59,9 @@ MPCData::MPCData(const std::vector<Eigen::MatrixXd>* Q,
 
 void MPCData::gemvH(const Eigen::VectorXd& x, double a, double b,
                     Eigen::VectorXd* y) const {
+  if(y == nullptr){
+    throw std::runtime_error("In MPCData::gemvH: y input is null.");
+  }
   if (x.size() != nz_ || y->size() != nz_) {
     throw std::runtime_error("Size mismatch in MPCData::gemvH.");
   }
@@ -106,6 +109,9 @@ void MPCData::gemvH(const Eigen::VectorXd& x, double a, double b,
 
 void MPCData::gemvA(const Eigen::VectorXd& x, double a, double b,
                     Eigen::VectorXd* y) const {
+  if(y == nullptr){
+    throw std::runtime_error("In MPCData::gemvA: y input is null.");
+  }
   if (x.size() != nz_ || y->size() != nv_) {
     throw std::runtime_error("Size mismatch in MPCData::gemvA.");
   }
@@ -143,6 +149,9 @@ void MPCData::gemvA(const Eigen::VectorXd& x, double a, double b,
 
 void MPCData::gemvG(const Eigen::VectorXd& x, double a, double b,
                     Eigen::VectorXd* y) const {
+  if(y == nullptr){
+    throw std::runtime_error("In MPCData::gemvG: y input is null.");
+  }
   if (x.size() != nz_ || y->size() != nl_) {
     throw std::runtime_error("Size mismatch in MPCData::gemvG.");
   }
@@ -186,6 +195,9 @@ void MPCData::gemvG(const Eigen::VectorXd& x, double a, double b,
 
 void MPCData::gemvGT(const Eigen::VectorXd& x, double a, double b,
                      Eigen::VectorXd* y) const {
+  if(y == nullptr){
+    throw std::runtime_error("In MPCData::gemvGT: y input is null.");
+  }
   if (x.size() != nl_ || y->size() != nz_) {
     throw std::runtime_error("Size mismatch in MPCData::gemvGT.");
   }
@@ -230,6 +242,9 @@ void MPCData::gemvGT(const Eigen::VectorXd& x, double a, double b,
 
 void MPCData::gemvAT(const Eigen::VectorXd& x, double a, double b,
                      Eigen::VectorXd* y) const {
+  if(y == nullptr){
+    throw std::runtime_error("In MPCData::gemvAT: y input is null.");
+  }
   if (x.size() != nv_ || y->size() != nz_) {
     throw std::runtime_error("Size mismatch in MPCData::gemvAT.");
   }
@@ -266,9 +281,13 @@ void MPCData::gemvAT(const Eigen::VectorXd& x, double a, double b,
 }
 
 void MPCData::axpyf(double a, Eigen::VectorXd* y) const {
+  if(y == nullptr){
+    throw std::runtime_error("In MPCData::axpyf: y input is null.");
+  }
   if (y->size() != nz_) {
     throw std::runtime_error("Size mismatch in MPCData::axpyf.");
   }
+
 
   // Create reshaped view of the input vector.
   Map w(y->data(), nx_ + nu_, N_ + 1);
@@ -283,6 +302,9 @@ void MPCData::axpyf(double a, Eigen::VectorXd* y) const {
 }
 
 void MPCData::axpyh(double a, Eigen::VectorXd* y) const {
+  if(y == nullptr){
+    throw std::runtime_error("In MPCData::axpyh: y input is null.");
+  }
   if (y->size() != nl_) {
     throw std::runtime_error("Size mismatch in MPCData::axpyh.");
   }
@@ -296,6 +318,9 @@ void MPCData::axpyh(double a, Eigen::VectorXd* y) const {
 }
 
 void MPCData::axpyb(double a, Eigen::VectorXd* y) const {
+  if(y == nullptr){
+    throw std::runtime_error("In MPCData::axpyb: y input is null.");
+  }
   if (y->size() != nv_) {
     throw std::runtime_error("Size mismatch in MPCData::axpyb.");
   }

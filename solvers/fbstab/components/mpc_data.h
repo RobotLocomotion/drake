@@ -74,6 +74,8 @@ class MPCData {
    * @param[in] a Input scaling
    * @param[in] b Scaling
    * @param[in,out] y Output vector, length(y) = (nx+nu)*(N+1)
+   *
+   * Throws a runtime_error if sizes aren't consistent or y is null.
    */
   void gemvH(const Eigen::VectorXd& x, double a, double b,
              Eigen::VectorXd* y) const;
@@ -86,6 +88,8 @@ class MPCData {
    * @param[in] a Input scaling
    * @param[in] b Scaling
    * @param[in,out] y Output vector, length(y) = nc*(N+1)
+   *
+   * Throws a runtime_error if sizes aren't consistent or y is null.
    */
   void gemvA(const Eigen::VectorXd& x, double a, double b,
              Eigen::VectorXd* y) const;
@@ -98,6 +102,8 @@ class MPCData {
    * @param[in] a Input scaling
    * @param[in] b Scaling
    * @param[in,out] y Output vector, length(y) = nx*(N+1)
+   *
+   * Throws a runtime_error if sizes aren't consistent or y is null.
    */
   void gemvG(const Eigen::VectorXd& x, double a, double b,
              Eigen::VectorXd* y) const;
@@ -110,6 +116,8 @@ class MPCData {
    * @param[in] a Input scaling
    * @param[in] b Scaling
    * @param[in,out] y Output vector, length(y) = (nx+nu)*(N+1)
+   *
+   * Throws a runtime_error if sizes aren't consistent or y is null.
    */
   void gemvAT(const Eigen::VectorXd& x, double a, double b,
               Eigen::VectorXd* y) const;
@@ -122,6 +130,8 @@ class MPCData {
    * @param[in] a Input scaling
    * @param[in] b Scaling
    * @param[in,out] y Output vector, length(y) = (nx+nu)*(N+1)
+   *
+   * Throws a runtime_error if sizes aren't consistent or y is null.
    */
   void gemvGT(const Eigen::VectorXd& x, double a, double b,
               Eigen::VectorXd* y) const;
@@ -132,6 +142,8 @@ class MPCData {
    * http://www.netlib.org/blas/blasqr.pdf.
    * @param[in] a Scaling factor
    * @param[in,out] y Output vector, length(y) = (nx+nu)*(N+1)
+   *
+   * Throws a runtime_error if sizes aren't consistent or y is null.
    */
   void axpyf(double a, Eigen::VectorXd* y) const;
 
@@ -141,6 +153,8 @@ class MPCData {
    * http://www.netlib.org/blas/blasqr.pdf.
    * @param[in] a Scaling factor
    * @param[in,out] y Output vector, length(y) = nx*(N+1)
+   *
+   * Throws a runtime_error if sizes aren't consistent or y is null.
    */
   void axpyh(double a, Eigen::VectorXd* y) const;
 
@@ -150,6 +164,8 @@ class MPCData {
    * http://www.netlib.org/blas/blasqr.pdf.
    * @param[in] a Scaling factor
    * @param[in,out] y Output vector, length(y) = nc*(N+1)
+   *
+   * Throws a runtime_error if sizes aren't consistent or y is null.
    */
   void axpyb(double a, Eigen::VectorXd* y) const;
 
