@@ -15,6 +15,7 @@ load(
 )
 load(
     "@drake//tools/skylark:pybind.bzl",
+    "drake_pybind_cc_googletest",
     "drake_pybind_library",
     "generate_pybind_documentation_header",
     "get_drake_py_installs",
@@ -330,6 +331,15 @@ drake_cc_googletest(
     deps = [
         ":documentation_pybind",
     ],
+)
+
+# N.B. Due to dependency on `common` (#7912), this is not a fully isolated /
+# decoupled test.
+drake_pybind_cc_googletest(
+    name = "pydrake_pybind_test",
+    cc_deps = ["//bindings/pydrake:test_util_pybind"],
+    py_deps = [":module_py"],
+    py_srcs = ["test/_pydrake_pybind_test_extra.py"],
 )
 
 drake_py_unittest(

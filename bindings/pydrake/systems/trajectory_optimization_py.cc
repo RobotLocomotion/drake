@@ -191,9 +191,9 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       py::arg("prog"), doc.AddDirectCollocationConstraint.doc);
 
   // TimeStep
-  py::class_<TimeStep>(m, "TimeStep")
-      .def(py::init<double>())
-      .def_readwrite("value", &TimeStep::value);
+  py::class_<TimeStep>(m, "TimeStep", doc.TimeStep.doc)
+      .def(py::init<double>(), py::arg("value"))
+      .def_readwrite("value", &TimeStep::value, doc.TimeStep.value.doc);
 
   py::class_<DirectTranscription, MultipleShooting>(
       m, "DirectTranscription", doc.DirectTranscription.doc)
