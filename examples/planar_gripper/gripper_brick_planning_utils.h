@@ -13,7 +13,7 @@ namespace planar_gripper {
  * cone as linear constraints, as opposed to the general nonlinear constraint in
  * StaticFrictionConeConstraint.
  * @param gripper_brick The planar gripper system manipulating a brick.
- * @param finger The finger in touch with the brick face.
+ * @param finger The finger in contact with the brick face.
  * @param brick_face The contact facet on the brick.
  * @param f_Cb_B The contact force applied on the brick contact point Cb,
  * expressed in the brick frame B.

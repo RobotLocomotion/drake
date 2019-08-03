@@ -81,8 +81,9 @@ class GripperBrickHelper {
   template <typename U>
   U CalcFingerLink2Orientation(Finger finger, const U& base_joint_angle,
                                const U& middle_joint_angle) const {
-    // base_theta is the yal angle to weld the finger base. Keep the values in
-    // synchronous with WeldGripperFrames() in planar_gripper_common.h.
+    // base_theta is the yaw angle to weld the finger base. Keep the values
+    // synchronized with WeldGripperFrames() in planar_gripper_common.h. The
+    // test in gripper_brick_test.cc guarantees that base_theta is synchronized.
     double base_theta;
     switch (finger) {
       case Finger::kFinger1: {
