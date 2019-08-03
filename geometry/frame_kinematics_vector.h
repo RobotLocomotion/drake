@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
@@ -14,6 +15,25 @@
 
 namespace drake {
 namespace geometry {
+
+namespace internal {
+/** A helper class to add an Isometry3 overload for initializer_list. */
+template <class KinematicsValue>
+struct FrameIdAndValuePair : public std::pair<const FrameId, KinematicsValue> {
+  // Inherit all constructors.
+  using Base = std::pair<const FrameId, KinematicsValue>;
+  using Base::Base;
+
+  // Add an extra constructor overload for Eigen::Isometry3<T>.  Once this
+  // deprecated method is removed, we should nix FrameIdAndValuePair entirely
+  // and go back to using std::pair like we used to do.
+  using DeprecatedKinematicsValue =
+      decltype(std::declval<KinematicsValue>().GetAsIsometry3());
+  DRAKE_DEPRECATED("2019-11-01", "Use RigidTransform instead of Isometry3.")
+  FrameIdAndValuePair(const FrameId id, DeprecatedKinematicsValue value)
+      : Base(id, KinematicsValue(value)) {}
+};
+}  // namespace internal
 
 /** A %FrameKinematicsVector is used to report kinematics data for registered
  frames (identified by unique FrameId values) to SceneGraph.
@@ -100,17 +120,27 @@ class FrameKinematicsVector {
   /** Initializes the vector using an invalid SourceId and the given frames and
   kinematics values. */
   FrameKinematicsVector(
-      std::initializer_list<std::pair<const FrameId, KinematicsValue>> init);
+      std::initializer_list<internal::FrameIdAndValuePair<KinematicsValue>>
+          init);
 
   /** Resets the vector to the given frames and kinematics values .*/
   FrameKinematicsVector& operator=(
-      std::initializer_list<std::pair<const FrameId, KinematicsValue>> init);
+      std::initializer_list<internal::FrameIdAndValuePair<KinematicsValue>>
+          init);
 
   /** Clears all values, resetting the size to zero. */
   void clear();
 
   /** Sets the kinematics `value` for the frame indicated by the given `id`. */
   void set_value(FrameId id, const KinematicsValue& value);
+
+  /** Sets the kinematics `value` for the frame indicated by the given `id`. */
+  DRAKE_DEPRECATED("2019-11-01", "Use RigidTransform instead of Isometry3.")
+  void set_value(
+      FrameId id,
+      const decltype(std::declval<KinematicsValue>().GetAsIsometry3())& iso3) {
+    set_value(id, KinematicsValue(iso3));
+  }
 
   /** Returns number of frame_ids(). */
   int size() const {

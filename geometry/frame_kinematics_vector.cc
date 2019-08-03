@@ -26,7 +26,8 @@ FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector() {
 
 template <typename KinematicsValue>
 FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector(
-    std::initializer_list<std::pair<const FrameId, KinematicsValue>> init) {
+    std::initializer_list<internal::FrameIdAndValuePair<KinematicsValue>>
+        init) {
   values_.insert(init.begin(), init.end());
   size_ = init.size();
   DRAKE_ASSERT_VOID(CheckInvariants());
@@ -35,7 +36,8 @@ FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector(
 template <typename KinematicsValue>
 FrameKinematicsVector<KinematicsValue>&
 FrameKinematicsVector<KinematicsValue>::operator=(
-    std::initializer_list<std::pair<const FrameId, KinematicsValue>> init) {
+    std::initializer_list<internal::FrameIdAndValuePair<KinematicsValue>>
+        init) {
   // N.B. We can't use unordered_map::insert in our operator= implementation
   // because it does not overwrite pre-existing keys.  (Our clear() doesn't
   // remove the keys, it only nulls the values.)
