@@ -19,7 +19,8 @@ Usage example: @code
 @endcode
 The regular expression must match the entire error message. If there is
 boilerplate you don't care to match at the beginning and end, surround with
-`.*` to ignore.
+with `.*` to ignore in single-line messages or `[\s\S]*` for multiline
+messages.
 
 Following GTest's conventions, failure to perform as expected here is a
 non-fatal test error. An `ASSERT` variant is provided to make it fatal. There
