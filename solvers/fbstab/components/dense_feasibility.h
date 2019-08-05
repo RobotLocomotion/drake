@@ -19,7 +19,7 @@ namespace fbstab {
  */
 class DenseFeasibility {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseFeasibility);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseFeasibility)
   /**
    * Allocates workspace memory.
    * @param[in] nz number of decision variables

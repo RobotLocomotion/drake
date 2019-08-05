@@ -2,6 +2,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/solvers/fbstab/components/dense_data.h"
 #include "drake/solvers/fbstab/components/dense_residual.h"
 #include "drake/solvers/fbstab/components/dense_variable.h"
@@ -41,6 +42,7 @@ class DenseComponentUnitTests;
  */
 class DenseLinearSolver {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseLinearSolver)
   /**
    * Allocates workspace memory.
    * @param [nz] Number of decision variables.
