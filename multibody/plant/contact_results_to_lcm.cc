@@ -63,6 +63,8 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
   msg.point_pair_contact_info.resize(msg.num_point_pair_contacts);
   msg.num_hydroelastic_contact_surfaces =
       contact_results.num_hydroelastic_contact_elements();
+  msg.hydroelastic_contact_surfaces.resize(
+      msg.num_hydroelastic_contact_surfaces);
 
   auto write_double3 = [](const Vector3<T>& src, double* dest) {
     dest[0] = ExtractDoubleOrThrow(src(0));

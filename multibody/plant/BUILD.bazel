@@ -156,8 +156,8 @@ drake_cc_library(
     deps = [
         ":contact_results",
         ":plant",
-        "//lcmtypes:point_pair_contact_info_for_viz",
         "//lcmtypes:contact_results_for_viz",
+        "//lcmtypes:point_pair_contact_info_for_viz",
         "//systems/framework:diagram_builder",
         "//systems/lcm:lcm_pubsub_system",
     ],
@@ -395,7 +395,9 @@ drake_cc_googletest(
     deps = [
         ":contact_results_to_lcm",
         "//common/test_utilities:eigen_geometry_compare",
+        "//geometry:geometry_visualization",
         "//multibody/benchmarks/acrobot",
+        "//multibody/benchmarks/inclined_plane",
     ],
 )
 
