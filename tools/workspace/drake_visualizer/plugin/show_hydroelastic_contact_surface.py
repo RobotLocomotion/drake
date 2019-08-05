@@ -64,20 +64,18 @@ class HydroelasticContactSurfaceVisualizer(object):
         # DebugData() allows us to draw.
         d = DebugData()
 
-        # Iterate over all triangles.
+        # Iterate over all triangles, drawing the contact surface as a triangle
+        # outlined in blue.
         for surface in msg.hydroelastic_contact_surfaces:
             for tri in surface.triangles:
                 va = np.array([tri.a[0], tri.a[1], tri.a[2]])
                 vb = np.array([tri.b[0], tri.b[1], tri.b[2]])
                 vc = np.array([tri.c[0], tri.c[1], tri.c[2]])
-                #d.addPolygon(points=[va, vb, vc])
                 d.addLine(p1=va, p2=vb, radius=0, color=[0, 0, 1])
                 d.addLine(p1=vb, p2=vc, radius=0, color=[0, 0, 1])
                 d.addLine(p1=va, p2=vc, radius=0, color=[0, 0, 1])
 
         key = ''
-        # Show the contact surface in blue. If one of the bodies is rigid, this
-        # is the same as the "wetted surface".
         vis.showPolyData(
             d.getPolyData(), str(key), parent=folder, color=[0, 0, 1])
 

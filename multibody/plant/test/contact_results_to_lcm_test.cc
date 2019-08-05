@@ -29,7 +29,7 @@ using geometry::SurfaceVertexIndex;
 using math::RigidTransform;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::benchmarks::acrobot::AcrobotParameters;
-// TODO(edrumwri) Remove this code when MultibodyPlant outputs hydroelastic
+// TODO(edrumwri) Remove the next line when MultibodyPlant outputs hydroelastic
 // contact results.
 using multibody::internal::HydroelasticTractionCalculator;
 using systems::Context;
@@ -65,7 +65,7 @@ GTEST_TEST(ContactResultsToLcmSystem, EmptyMultibodyPlant) {
 
 // Common case: confirm that the reported contacts map to the right lcm message.
 // In this test, we're using a MBP that doesn't actually have collision
-// geometry, but simulating collision results by reporting that two bodies are
+// geometry, but simulates collision results by reporting that two bodies are
 // colliding. That is enough to test the ContactResultsToLcmSystem.
 GTEST_TEST(ContactResultsToLcmSystem, NonEmptyMultibodyPlantEmptyContact) {
   using std::to_string;
@@ -184,7 +184,7 @@ GTEST_TEST(ConnectContactResultsToDrakeVisualizer, NestedDiagramTest) {
   EXPECT_EQ(periodic_events.begin()->first.period_sec(), 1/60.0);
 }
 
-// TODO(edrumwri) Remove this code (which is a duplicate of that in
+// TODO(edrumwri) Remove this function (which is a duplicate of that in
 // hydroelastic_traction_test.cc) when MultibodyPlant outputs hydroelastic
 // contact results.
 // Creates a surface mesh.
@@ -209,7 +209,7 @@ std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() {
       std::move(faces), std::move(vertices));
 }
 
-// TODO(edrumwri) Remove this code (which is a duplicate of that in
+// TODO(edrumwri) Remove this function (which is a duplicate of that in
 // hydroelastic_traction_test.cc) when MultibodyPlant outputs hydroelastic
 // contact results.
 // Creates a contact surface between the two given geometries.
@@ -239,7 +239,7 @@ std::unique_ptr<ContactSurface<double>> CreateContactSurface(
       RigidTransform<double>::Identity());
 }
 
-// TODO(edrumwri) Remove this code when MultibodyPlant outputs hydroelastic
+// TODO(edrumwri) Remove this function when MultibodyPlant outputs hydroelastic
 // contact results.
 ContactResults<double> GenerateHydroelasticContactResults(
     const MultibodyPlant<double>& plant,
@@ -259,6 +259,7 @@ ContactResults<double> GenerateHydroelasticContactResults(
   // are irrelevant for this test.
   *contact_surface =
       CreateContactSurface(world_geoms.front(), block_geoms.front());
+
   // Create the calculator data, populated with dummy values since we're only
   // testing that the structure can be created.
   const RigidTransform<double> X_WA = RigidTransform<double>::Identity();
@@ -268,10 +269,12 @@ ContactResults<double> GenerateHydroelasticContactResults(
   const SpatialVelocity<double> V_WB = SpatialVelocity<double>::Zero();
   HydroelasticTractionCalculator<double>::Data data(
       X_WA, X_WB, V_WA, V_WB, X_WM, contact_surface->get());
+
   // Material properties are also dummies (the test will be unaffected by
   // their settings).
   const double dissipation = 0.0;
   const double mu_coulomb = 0.0;
+
   // Create the HydroelasticContactInfo and validate the contact surface
   // pointer is correct. Correctness of field values is validated elsewhere in
   // this file.
@@ -283,6 +286,10 @@ ContactResults<double> GenerateHydroelasticContactResults(
   return output;
 }
 
+// TODO(edrumwri) Update this test purpose when MultibodyPlant outputs
+// hydroelastic contact results.
+// Verifies that the LCM message is consistent with the hydroelastic contact
+// surface that we create.
 GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
   DiagramBuilder<double> builder;
   MultibodyPlant<double>* plant;
@@ -312,6 +319,8 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
   const auto& lcm_system =
       *builder.AddSystem<ContactResultsToLcmSystem<double>>(*plant);
 
+  // TODO(edrumwri) Replace this code block when MultibodyPlant outputs
+  // hydroelastic contact results.
   // Hook a publisher to the contact results system.
   auto& contact_results_publisher = *builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
@@ -319,9 +328,6 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
   contact_results_publisher.set_name("contact_results_publisher");
   builder.Connect(lcm_system.get_output_port(0),
                    contact_results_publisher.get_input_port());
-
-  // TODO(edrumwri) Replace this code when MultibodyPlant outputs hydroelastic
-  // contact results.
   systems::InputPortIndex contact_results_input_port_index =
       builder.ExportInput(lcm_system.get_contact_result_input_port());
   systems::OutputPortIndex lcm_hydroelastic_contact_surface_output_port_index =
@@ -332,8 +338,8 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
   std::unique_ptr<Diagram<double>> diagram = builder.Build();
   auto diagram_context = diagram->CreateDefaultContext();
 
-  // TODO(edrumwri) Replace this code when MultibodyPlant outputs hydroelastic
-  // contact results.
+  // TODO(edrumwri) Remove this code block when MultibodyPlant outputs
+  // hydroelastic contact results.
   std::unique_ptr<ContactSurface<double>> contact_surface;
   diagram_context->FixInputPort(
       contact_results_input_port_index,
@@ -345,7 +351,7 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
   geometry::DispatchLoadMessage(*scene_graph, &lcm);
   diagram->Publish(*diagram_context);
 
-  // Get the LCM message that results.
+  // Get the LCM message that corresponds to the contact results.
   Value<lcmt_contact_results_for_viz> lcm_message_value;
   diagram->get_output_port(
       lcm_hydroelastic_contact_surface_output_port_index).Calc(
