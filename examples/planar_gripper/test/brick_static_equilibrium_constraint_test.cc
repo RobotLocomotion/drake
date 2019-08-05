@@ -46,7 +46,7 @@ GTEST_TEST(BrickStaticEquilibriumNonlinearConstraint, TestEval) {
        Eigen::Vector3d(
            0, 0,
            -gripper_brick_system.brick_frame().body().get_default_mass() *
-               9.81))
+               multibody::UniformGravityFieldElement<double>::kDefaultStrength))
           .tail<2>();
   Eigen::Vector3d total_torque(0, 0, 0);
   Eigen::Vector3d p_BFingertip0;
