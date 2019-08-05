@@ -14,29 +14,6 @@ namespace internal {
 
 #ifndef DRAKE_DOXYGEN_CXX
 
-// Uniformly samples the interval [`first`, `last`]. The first sample
-// is exactly `first`, and the last sample is exactly `last`.
-// @param num_sample
-//     The number of samples.
-// @retval samples
-// @pre `num_sample` is at least 2.
-template <typename T>
-static std::vector<T> UniformSample(T first, T last, int num_sample) {
-  DRAKE_DEMAND(num_sample >= 2);
-  const int num_sub_interval = num_sample - 1;
-  const T delta = (last - first) / num_sub_interval;
-  std::vector<T> samples(num_sample);
-  T sample = first;
-  for (int i = 0; i < num_sample - 1; ++i) {
-    samples[i] = sample;
-    sample += delta;
-  }
-  // Assign the last sample outside the for-loop to avoid accumulation
-  // error that might numerically deviate `sample` from `last`.
-  samples[num_sample - 1] = last;
-  return samples;
-}
-
 // Calculates the sequential vertex index of the vertex specified by the
 // (i, j, k)-index in the Cartesian grid defined by the number of vertices in
 // x-, y-, and z-directions.
@@ -68,9 +45,9 @@ static std::vector<VolumeVertex<T>> GenerateVertices(
   T half_x = box.width() / T(2);
   T half_y = box.depth() / T(2);
   T half_z = box.height() / T(2);
-  auto x_coords = UniformSample(-half_x, half_x, num_vertices.x());
-  auto y_coords = UniformSample(-half_y, half_y, num_vertices.y());
-  auto z_coords = UniformSample(-half_z, half_z, num_vertices.z());
+  auto x_coords = VectorX<T>::LinSpaced(num_vertices.x(), -half_x, half_x);
+  auto y_coords = VectorX<T>::LinSpaced(num_vertices.y(), -half_y, half_y);
+  auto z_coords = VectorX<T>::LinSpaced(num_vertices.z(), -half_z, half_z);
 
   std::vector<VolumeVertex<T>> vertices;
   vertices.reserve(num_vertices.x() * num_vertices.y() * num_vertices.z());

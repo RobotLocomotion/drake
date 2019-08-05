@@ -9,18 +9,6 @@ namespace geometry {
 namespace internal {
 namespace {
 
-GTEST_TEST(MakeBoxVolumeMeshTest, UniformSample) {
-  const double first = -0.5;
-  const double last = 0.5;
-  const int num_sample = 3;
-  std::vector<double> samples = UniformSample(first, last, num_sample);
-
-  EXPECT_EQ(3, samples.size());
-  EXPECT_EQ(-0.5, samples[0]);
-  EXPECT_EQ(0.0, samples[1]);
-  EXPECT_EQ(0.5, samples[2]);
-}
-
 GTEST_TEST(MakeBoxVolumeMeshTest, CalcSequentialIndex) {
   const Vector3<int> num_vertices(3, 2, 5);
   EXPECT_EQ(28, CalcSequentialIndex(2, 1, 3, num_vertices));
