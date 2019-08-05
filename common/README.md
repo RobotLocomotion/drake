@@ -10,7 +10,6 @@ Use this directory for general purpose C++ utilities that are used throughout Dr
 - and similar code.
 
 Do not include:
-- Matlab code
 - Example programs
 - Code that is specific to a Drake subarea that could be localized to that subarea.
 

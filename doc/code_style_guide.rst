@@ -97,32 +97,6 @@ Additional Rules
 .. [#bazel_py_script] Generally, this means scripts that run via ``bazel run``,
    ``bazel test``, or ``./bazel-bin/...``.
 
-.. _code-style-guide-matlab:
-
-MATLAB Style
-============
-
-* All of the above rules still hold as relevant (e.g. variable names).
-* A short list of variable name exceptions for common acronyms:
-   * `rpy` or `somethingRPY` (for roll-pitch-yaw)
-* All classes and methods should be commented with Doxygen compatible
-  formatting (using the tags `@param` to describe each input, `@option` to
-  describe the elements of an option structure, `@retval` to describe each
-  output, and `@default` to describe default values for an input.  Class
-  methods need not document the trivial first input argument (which is the
-  class object) with a `@param` tag.
-* Calls to MATLAB class member functions in speed critical loops for classes
-  which overload subsref use `memberFunc(obj,...)` instead of
-  `obj.memberFunc(...)`.  This is because obj.member calls the `subsref`
-  method, which is only notably slower for classes which have overloaded
-  `subsref`.  All other calls should use `obj.memberFunc(...)`.
-* All methods that are outside runtime execution loops begin by checking their
-  inputs (e.g. with `typecheck`,`sizecheck`,`rangecheck`,etc).  Methods that
-  get called repeatedly inside a simulation or optimization loop should not
-  perform these checks.
-* All methods (including mex) should treat `nargout==0` as if we received
-  `nargout==1`
-
 .. _code-style-guide-java:
 
 Java Style

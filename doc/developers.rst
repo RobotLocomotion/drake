@@ -76,30 +76,26 @@ integration. All other configurations are provided on a best-effort basis.
 Drake requires a compiler running in C++14 mode or greater. MATLAB is only
 supported for CMake builds using the "Unix Makefiles" generator.
 
-+----------------------------------+-------+-------+---------------------+------------+-------------------+---------+
-| Operating System                 | Bazel | CMake | C/C++ Compiler      | Java       | MATLAB (Optional) | Python  |
-+==================================+=======+=======+=====================+============+===================+=========+
-+----------------------------------+-------+-------+---------------------+------------+-------------------+---------+
-| Ubuntu 16.04 LTS (Xenial Xerus)  | 0.28  | 3.5   | | Clang 6.0         | OpenJDK 8  | R2017a            | [2.7]   |
-|                                  |       |       | | GCC 5.4           |            |                   |         |
-+----------------------------------+       +-------+---------------------+------------+-------------------+---------+
-| Ubuntu 18.04 LTS (Bionic Beaver) |       | 3.10  | | Clang 6.0         | OpenJDK 11 | R2018b            | | 2.7   |
-|                                  |       |       | | GCC 7.3           |            |                   | | [3.6] |
-+----------------------------------+       +-------+---------------------+------------+                   +---------+
-| macOS High Sierra (10.13)        |       | 3.14  | | Apple LLVM 10.0.0 | Oracle 12  |                   | | 2.7   |
-|                                  |       |       | | (Xcode 10.1)      |            |                   | | [3.7] |
-+----------------------------------+       |       +---------------------+            |                   |         |
-| macOS Mojave (10.14)             |       |       | | Apple LLVM 10.0.1 |            |                   |         |
-|                                  |       |       | | (Xcode 10.2)      |            |                   |         |
-+----------------------------------+-------+-------+---------------------+------------+-------------------+---------+
++----------------------------------+-------+-------+---------------------+------------+---------+
+| Operating System                 | Bazel | CMake | C/C++ Compiler      | Java       | Python  |
++==================================+=======+=======+=====================+============+=========+
++----------------------------------+-------+-------+---------------------+------------+---------+
+| Ubuntu 16.04 LTS (Xenial Xerus)  | 0.28  | 3.5   | | Clang 6.0         | OpenJDK 8  | [2.7]   |
+|                                  |       |       | | GCC 5.4           |            |         |
++----------------------------------+       +-------+---------------------+------------+---------+
+| Ubuntu 18.04 LTS (Bionic Beaver) |       | 3.10  | | Clang 6.0         | OpenJDK 11 | | 2.7   |
+|                                  |       |       | | GCC 7.3           |            | | [3.6] |
++----------------------------------+       +-------+---------------------+------------+---------+
+| macOS High Sierra (10.13)        |       | 3.15  | | Apple LLVM 10.0.0 | Oracle 12  | | 2.7   |
+|                                  |       |       | | (Xcode 10.1)      |            | | [3.7] |
++----------------------------------+       |       +---------------------+            |         |
+| macOS Mojave (10.14)             |       |       | | Apple LLVM 10.0.1 |            |         |
+|                                  |       |       | | (Xcode 10.3)      |            |         |
++----------------------------------+-------+-------+---------------------+------------+---------+
 
 CPython is the only Python implementation supported; default versions are
 indicated in square brackets. On Ubuntu, amd64 (i.e., x86_64) is the only
 supported architecture.
-
-The following configurations are presently untested in continuous integration:
-
--   macOS, Ubuntu Bionic: MATLAB
 
 Please review the following issues for current support roadmaps:
 

@@ -18,7 +18,6 @@ build --symlink_prefix=/
 
 @MAYBE_BAZEL_CONFIG@
 @MAYBE_BAZEL_CXXOPT_STD@
-@MAYBE_BAZEL_DEFINE@
 
 build:Debug --compilation_mode=dbg
 build:MinSizeRel --compilation_mode=opt @MAYBE_BAZEL_COPT_OS@

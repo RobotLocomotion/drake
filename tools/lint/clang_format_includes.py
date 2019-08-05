@@ -34,8 +34,7 @@ def main(workspace_name="drake"):
             os.path.join(workspace_dir, relpath)
             for relpath in relpaths
             if os.path.splitext(relpath)[1][1:] in extensions and
-            not relpath.startswith("third_party") and
-            not relpath.startswith("matlab")
+            not relpath.startswith("third_party")
         ]
     else:
         filenames = args.filenames
