@@ -2,9 +2,6 @@
 
 load("@cc//:compiler.bzl", "COMPILER_ID")
 
-# Keep CXX_FLAGS, CLANG_FLAGS, and GCC_FLAGS in sync with CMAKE_CXX_FLAGS in
-# matlab/cmake/flags.cmake.
-
 # The CXX_FLAGS will be enabled for all C++ rules in the project
 # building with any compiler.
 CXX_FLAGS = [
@@ -476,22 +473,6 @@ def drake_cc_binary(
         testonly = testonly,
         **kwargs
     )
-    if linkshared == 1:
-        # On Linux, we need to disable "new" dtags in the linker so that we use
-        # RPATH instead of RUNPATH.  When doing runtime linking, RPATH is
-        # checked *before* LD_LIBRARY_PATH, which is important to avoid using
-        # the MATLAB versions of certain libraries (protobuf).  macOS doesn't
-        # understand this flag, so it is conditional on Linux only.  Note that
-        # the string we use for rpath here doesn't actually matter; it will be
-        # replaced during installation later.
-        linkopts = select({
-            "//tools/cc_toolchain:apple": linkopts,
-            "//conditions:default": linkopts + [
-                "-Wl,--disable-new-dtags",
-                "-Wl,-rpath=/usr/lib/x86_64-linux-gnu",
-                "-Wl,-soname," + name,
-            ],
-        })
 
     native.cc_binary(
         name = name,
