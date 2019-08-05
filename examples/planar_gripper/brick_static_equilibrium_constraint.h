@@ -18,7 +18,7 @@ namespace planar_gripper {
  * applied to the point Cb on the brick, expressed in the brick frame B.
  * The constraint are
  *
- *     0 = R_WBᵀ * mg +  ∑ᵢ f_Cbi_B
+ *     0 = R_BW * m * g_W +  ∑ᵢ f_Cbi_B
  *     0 = ∑ᵢp_Cbi_B.cross(f_Cbi_B)
  * Notice that since the gripper/brick system is planar, the first equation is
  * only on the (y, z) component of the total force, and the second equation is
@@ -54,15 +54,14 @@ class BrickStaticEquilibriumNonlinearConstraint : public solvers::Constraint {
 
 /**
  * Given the assignment of contacts between fingers and faces, add the following
- * constraints/variables to the program.
+ * constraints/variables to the program:
  * 1. Decision variables representing the finger contact force on the brick,
- * expressed in the brick frame.
- * 2. The static equilibrium constraint, that the total wrench on the brick is
- * 0.
+ *    expressed in the brick frame.
+ * 2. The static equilibrium constraint ensuring that the total wrench on the
+ *    brick is 0.
  * 3. The constraint that the contact force is within a friction cone.
  */
-Eigen::Matrix<symbolic::Variable, 2, Eigen::Dynamic>
-AddBrickStaticEquilibriumConstraint(
+Matrix2X<symbolic::Variable> AddBrickStaticEquilibriumConstraint(
     const GripperBrickHelper<double>& gripper_brick_system,
     const std::vector<std::pair<Finger, BrickFace>>& finger_face_contacts,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,

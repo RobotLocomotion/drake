@@ -1,4 +1,4 @@
-#include "drake/examples/planar_gripper/gripper_brick_planning_utils.h"
+#include "drake/examples/planar_gripper/gripper_brick_planning_constraint_helper.h"
 
 #include <gtest/gtest.h>
 

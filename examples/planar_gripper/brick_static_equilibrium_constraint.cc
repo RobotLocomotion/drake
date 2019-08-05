@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/examples/planar_gripper/gripper_brick_planning_utils.h"
+#include "drake/examples/planar_gripper/gripper_brick_planning_constraint_helper.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
@@ -35,20 +35,24 @@ void BrickStaticEquilibriumNonlinearConstraint::DoEvalGeneric(
     const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* y) const {
   // y = [R_WBᵀ * mg +  ∑ᵢ f_Cbi_B]
   //     [∑ᵢp_Cbi_B.cross(f_Cbi_B)]
+  using std::cos;
+  using std::sin;
   y->resize(3);
   const auto& plant = gripper_brick_system_.plant();
   multibody::internal::UpdateContextConfiguration(
       plant_mutable_context_, plant, x.head(plant.num_positions()));
   const T theta = x(gripper_brick_system_.brick_revolute_x_position_index());
-  using std::cos;
-  using std::sin;
   const T sin_theta = sin(theta);
   const T cos_theta = cos(theta);
   Matrix2<T> R_WB;
   R_WB << cos_theta, -sin_theta, sin_theta, cos_theta;
   // Compute R_WBᵀ * mg, the gravitational force expressed in the brick frame.
   const Vector2<T> f_B =
-      R_WB.transpose() * Eigen::Vector2d(0, -brick_mass_ * 9.81);
+      R_WB.transpose() *
+      Eigen::Vector2d(
+          0,
+          -brick_mass_ *
+              multibody::UniformGravityFieldElement<double>::kDefaultStrength);
   y->template head<2>() = f_B;
   (*y)(2) = T(0);
   for (int i = 0; i < static_cast<int>(finger_face_contacts_.size()); ++i) {
