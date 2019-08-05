@@ -8,13 +8,10 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/controllers/dynamic_programming.h"
 #include "drake/systems/controllers/inverse_dynamics.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
-#include "drake/systems/controllers/rbt_inverse_dynamics.h"
-#include "drake/systems/controllers/rbt_inverse_dynamics_controller.h"
 
 namespace drake {
 namespace pydrake {
@@ -153,8 +150,6 @@ PYBIND11_MODULE(controllers, m) {
       py::arg("system"), py::arg("context"), py::arg("Q"), py::arg("R"),
       py::arg("N") = Eigen::Matrix<double, 0, 0>::Zero(),
       py::arg("input_port_index") = 0, doc.LinearQuadraticRegulator.doc_6args);
-
-  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake
