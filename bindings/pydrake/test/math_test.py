@@ -138,6 +138,8 @@ class TestMath(unittest.TestCase):
         check_equality(RigidTransform(theta_lambda=angle_axis, p=p_I), X_I)
         check_equality(RigidTransform(R=R_I), X_I)
         check_equality(RigidTransform(p=p_I), X_I)
+        check_equality(RigidTransform(matrix=X_I), X_I)
+        check_equality(RigidTransform.FromMatrix4(matrix=X_I), X_I)
         # - Cast.
         self.check_cast(mut.RigidTransform_, T)
         # - Accessors, mutators, and general methods.

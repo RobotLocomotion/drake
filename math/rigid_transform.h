@@ -154,6 +154,25 @@ class RigidTransform {
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
   explicit RigidTransform(const Isometry3<T>& pose) { SetFromIsometry3(pose); }
 
+  // TODO(eric.cousineau): Figure out why `RigidTransform(const Matrix4<T>&)`
+  // causes compilation errors (e.g. with `make_pendulum_plant.cc`).
+  /// Creates a %RigidTransform from a 4x4 matrix that has the same structure
+  /// as indicated in GetAsMatrix4().
+  /// @param[in] matrix that contains an allegedly valid rotation matrix
+  /// `R_AB` and also contains a position vector `p_AoBo_A` from frame A's
+  /// origin to frame B's origin.  `p_AoBo_A` must be expressed in frame A.
+  /// @throws std::logic_error in debug builds if R_AB is not a proper
+  /// orthonormal 3x3 rotation matrix or if `matrix` is not homogeneous.
+  /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
+  /// `matrix`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
+  static RigidTransform<T> FromMatrix4(const Matrix4<T>& matrix) {
+    RigidTransform<T> X(
+        RotationMatrix<T>(matrix.template block<3, 3>(0, 0)),
+        matrix.template block<3, 1>(0, 3));
+    DRAKE_ASSERT_VOID(ThrowIfNotHomogeneous(matrix));
+    return X;
+  }
+
   /// Sets `this` %RigidTransform from a RotationMatrix and a position vector.
   /// @param[in] R rotation matrix relating frames A and B (e.g., `R_AB`).
   /// @param[in] p position vector from frame A's origin to frame B's origin,
@@ -492,6 +511,23 @@ class RigidTransform {
   // constructor.
   template <typename U>
   friend class RigidTransform;
+
+  // Declares the allowable tolerance (small multiplier of double-precision
+  // epsilon) used to check whether or not a matrix is homogeneous.
+  static constexpr double kInternalToleranceForHomogeneousCheck{
+      4 * std::numeric_limits<double>::epsilon() };
+
+  static void ThrowIfNotHomogeneous(const Matrix4<T>& matrix) {
+    const RowVector4<T> expected_bottom(0, 0, 0, 1);
+    const T measure = (
+        expected_bottom - matrix.row(3)).template lpNorm<Eigen::Infinity>();
+    const double measure_double = ExtractDoubleOrThrow(measure);
+    if (measure_double > kInternalToleranceForHomogeneousCheck) {
+      throw std::logic_error(fmt::format(
+          "Error: 4x4 matrix is not homogeneous.\n"
+          "  Bottom row differs from [0, 0, 0, 1] by: {:G}", measure_double));
+    }
+  }
 
   // Rotation matrix relating two frames, e.g. frame A and frame B.
   // The default constructor for R_AB_ is an identity matrix.
