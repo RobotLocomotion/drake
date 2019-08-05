@@ -12,6 +12,7 @@ import drake as lcmdrakemsg
 
 from drake.tools.workspace.drake_visualizer.plugin import scoped_singleton_func
 
+
 class HydroelasticContactSurfaceVisualizer(object):
     def __init__(self):
         self._folder_name = 'Hydroelastic Contact Surface'

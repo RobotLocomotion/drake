@@ -103,8 +103,8 @@ drake_cc_library(
     ],
     deps = [
         ":rigid_body_plant",
-        "//lcmtypes:point_pair_contact_info_for_viz",
         "//lcmtypes:contact_results_for_viz",
+        "//lcmtypes:point_pair_contact_info_for_viz",
     ],
 )
 

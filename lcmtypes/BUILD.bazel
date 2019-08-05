@@ -71,8 +71,10 @@ drake_lcm_cc_library(
     name = "contact_results_for_viz",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_contact_results_for_viz.lcm"],
-    deps = [":hydroelastic_contact_surface_for_viz",
-            ":point_pair_contact_info_for_viz"],
+    deps = [
+        ":hydroelastic_contact_surface_for_viz",
+        ":point_pair_contact_info_for_viz",
+    ],
 )
 
 drake_lcm_cc_library(
