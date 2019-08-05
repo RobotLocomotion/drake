@@ -114,9 +114,9 @@ class RgbdSensor final : public LeafSystem<double> {
                          affixed with pose `X_PB`.
    @param X_PB           The pose of the camera `B` frame relative to the parent
                          frame `P`.
-   @param properties     The properties which define this camera's intrinsics.
-                         Please note that this assumes that the color and depth
-                         cameras share the same intrinsics.
+   @param color_properties Defines camera's color (and label) intrinsics and
+                           renderer.
+   @param depth_properties Defines camera's depth intrinsics and renderer.
    @param camera_poses   The poses of the color (C) and depth camera (D) frames
                          with respect to the sensor base (B). If omitted, all
                          three frames will be aligned and coincident.
@@ -125,11 +125,27 @@ class RgbdSensor final : public LeafSystem<double> {
    */
   RgbdSensor(geometry::FrameId parent_id,
              const math::RigidTransformd& X_PB,
-             const geometry::render::DepthCameraProperties& properties,
+             const geometry::render::CameraProperties& color_properties,
+             const geometry::render::DepthCameraProperties& depth_properties,
              const CameraPoses& camera_poses = {},
              bool show_window = false);
 
+  /** Constructs an %RgbdSensor in the same way as the above overload, but
+   using the `CameraProperties` portion of `properties` for color (and label)
+   properties, and all of `properties` for depth properties.
+   */
+  RgbdSensor(geometry::FrameId parent_id,
+             const math::RigidTransformd& X_PB,
+             const geometry::render::DepthCameraProperties& properties,
+             const CameraPoses& camera_poses = {},
+             bool show_window = false)
+    : RgbdSensor(
+          parent_id, X_PB, properties, properties, camera_poses, show_window)
+      {}
+
   ~RgbdSensor() = default;
+
+  // TODO(eric.cousineau): Expose which renderer color / depth uses?
 
   /** Returns the color sensor's info.  */
   const CameraInfo& color_camera_info() const { return color_camera_info_; }
@@ -212,7 +228,8 @@ class RgbdSensor final : public LeafSystem<double> {
   const bool show_window_;
   const CameraInfo color_camera_info_;
   const CameraInfo depth_camera_info_;
-  const geometry::render::DepthCameraProperties properties_;
+  const geometry::render::CameraProperties color_properties_;
+  const geometry::render::DepthCameraProperties depth_properties_;
   // The position of the camera's B frame relative to its parent frame P.
   const math::RigidTransformd X_PB_;
   // Camera poses.

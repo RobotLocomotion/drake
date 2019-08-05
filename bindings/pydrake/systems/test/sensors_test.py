@@ -8,7 +8,7 @@ import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import FrameId
-from pydrake.geometry.render import DepthCameraProperties
+from pydrake.geometry.render import CameraProperties, DepthCameraProperties
 from pydrake.math import (
     RigidTransform,
     RollPitchYaw,
@@ -247,10 +247,12 @@ class TestSensors(unittest.TestCase):
         width = 1280
         height = 720
 
-        properties = DepthCameraProperties(width=width, height=height,
-                                           fov_y=np.pi/6,
-                                           renderer_name="renderer",
-                                           z_near=0.1, z_far=5.5)
+        color_properties = CameraProperties(
+            width=width, height=height, fov_y=np.pi/6,
+            renderer_name="renderer")
+        depth_properties = DepthCameraProperties(
+            width=width, height=height, fov_y=np.pi/6,
+            renderer_name="renderer", z_near=0.1, z_far=5.5)
 
         # Put it at the origin.
         X_WB = RigidTransform()
@@ -259,8 +261,10 @@ class TestSensors(unittest.TestCase):
         camera_poses = mut.RgbdSensor.CameraPoses(
             X_BC=RigidTransform(), X_BD=RigidTransform())
         sensor = mut.RgbdSensor(parent_id=parent_id, X_PB=X_WB,
-                                properties=properties,
-                                camera_poses=camera_poses)
+                                color_properties=color_properties,
+                                depth_properties=depth_properties,
+                                camera_poses=camera_poses,
+                                show_window=False)
 
         def check_info(camera_info):
             self.assertIsInstance(camera_info, mut.CameraInfo)
@@ -276,7 +280,13 @@ class TestSensors(unittest.TestCase):
         self.assertEqual(sensor.parent_frame_id(), parent_id)
         check_ports(sensor)
 
-        # Test discrete camera.
+        # Test discrete camera, reconstructing using single-properties
+        # constructor.
+        color_and_depth_properties = depth_properties
+        sensor = mut.RgbdSensor(parent_id=parent_id, X_PB=X_WB,
+                                properties=color_and_depth_properties,
+                                camera_poses=camera_poses,
+                                show_window=False)
         period = mut.RgbdSensorDiscrete.kDefaultPeriod
         discrete = mut.RgbdSensorDiscrete(
             sensor=sensor, period=period, render_label_image=True)
