@@ -70,6 +70,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.ctor.doc_1args_p)
         .def(py::init<const Isometry3<T>&>(), py::arg("pose"),
             cls_doc.ctor.doc_1args_pose)
+        // Since Python doesn't suffer from ambiguities that C++ is, we can
+        // bind the Matrix4 constructor.
+        .def(py::init([](const Matrix4<T>& matrix) {
+          return Class::FromMatrix4(matrix);
+        }),
+            py::arg("matrix"), "Python-specific alias for ``FromMatrix4``.")
+        .def_static("FromMatrix4", &Class::FromMatrix4, py::arg("matrix"),
+            cls_doc.FromMatrix4.doc)
         .def("set", &Class::set, py::arg("R"), py::arg("p"), cls_doc.set.doc)
         .def("SetFromIsometry3", &Class::SetFromIsometry3, py::arg("pose"),
             cls_doc.SetFromIsometry3.doc)

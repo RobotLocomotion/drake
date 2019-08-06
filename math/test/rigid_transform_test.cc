@@ -195,6 +195,24 @@ GTEST_TEST(RigidTransform, ConstructorAngleAxisPositionVector) {
   EXPECT_TRUE(X.translation() == position);
 }
 
+// Tests constructing a RigidTransform from a 4x4 matrix.
+GTEST_TEST(RigidTransform, FromMatrix4) {
+  const RotationMatrixd R = GetRotationMatrixB();
+  const Vector3<double> position(4, 5, 6);
+  Matrix4<double> matrix;
+  matrix <<
+      R.matrix(), position,
+      0, 0, 0, 1;
+  const RigidTransformd X = RigidTransformd::FromMatrix4(matrix);
+  EXPECT_TRUE(CompareMatrices(X.GetAsMatrix4(), matrix));
+
+  if (kDrakeAssertIsArmed) {
+    // Corrupt the matrix.
+    matrix(3, 3) += 1e-5;
+    EXPECT_THROW((RigidTransformd::FromMatrix4(matrix)), std::logic_error);
+  }
+}
+
 // Tests getting a 4x4 and 3x4 matrix from a RigidTransform.
 GTEST_TEST(RigidTransform, GetAsMatrices) {
   const RotationMatrix<double> R = GetRotationMatrixB();
