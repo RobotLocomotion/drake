@@ -9,7 +9,7 @@ import numpy as np
 
 from pydrake.examples.manipulation_station import (
     ManipulationStation, ManipulationStationHardwareInterface,
-    CreateDefaultYcbObjectList)
+    CreateClutterClearingYcbObjectList)
 from pydrake.geometry import ConnectDrakeVisualizer
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.manipulation.simple_ui import SchunkWsgButtons
@@ -197,7 +197,7 @@ else:
             RigidTransform(RotationMatrix.Identity(), [0.6, 0, 0]))
     elif args.setup == 'clutter_clearing':
         station.SetupClutterClearingStation()
-        ycb_objects = CreateDefaultYcbObjectList()
+        ycb_objects = CreateClutterClearingYcbObjectList()
         for model_file, X_WObject in ycb_objects:
             station.AddManipulandFromFile(model_file, X_WObject)
 
