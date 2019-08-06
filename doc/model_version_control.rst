@@ -8,16 +8,14 @@ Adding Model Artifacts in Pull Requests
 =======================================
 
 If you are adding model artifacts, such as textures or meshes, that are small
-enough (<100KB), and there are <10MB of such files in the source tree at any
-time, then add them directly to Git.
+enough (<100KB in a given directory), then add them directly to Git.
 
 Otherwise, you should add your models to
 `RobotLocomotion/models <https://github.com/RobotLocomotion/models>`_.
 
-These artifacts SHOULD be things that are large and should change infrequently,
-e.g. ``*.obj``, ``*.stl``, ``*.png``.
-
-These should NOT be things that are small, e.g. ``*.sdf``, ``*.urdf``.
+These artifacts *should* be things that are large and should change
+infrequently, e.g. ``*.obj``, ``*.stl``, ``*.png``. These should *not* be
+things that are small, e.g. ``*.sdf``, ``*.urdf``.
 
 See below for the suggested workflow.
 
@@ -25,10 +23,12 @@ Develop Changes Locally
 -----------------------
 
 #. Clone ``RobotLocomotion/models`` locally
+#. Create a Git branch in your local checkouts of *both* ``models`` and
+   ``drake``.
 #. Update ``tools/workspace/models/repository.bzl`` to point to your checkout
    using ``github_archive(..., local_repository_override = <path>)``.
-#. Update ``tools/workspace/models/files.bzl`` to incorporate the models you
-   want.
+#. Update ``drake/tools/workspace/models/files.bzl`` to incorporate the models
+   you want.
 #. Ensure that you use ``forward_files`` to make the files available inside
    the Drake bazel workspace. For an example, see
    ``manipulation/models/ycb/BUILD.bazel``.
@@ -39,9 +39,11 @@ Submit Changes in a Pull Request
 --------------------------------
 
 #. Push your changes to your fork of ``RobotLocomotion/models``. Make a PR.
-#. Update ``.../models/repository.bzl`` to use the commit you pushed.
-#. Submit a PR to Drake, label it as ``do not merge``. Reference your ``models``
-   PR in this PR.
+#. Update ``drake/tools/workspace/models/models/repository.bzl`` to use the
+   commit you pushed.
+#. Submit a PR to Drake, and add a self-blocking discussion thread, such as
+   ``"Working temporary SHA1 until the models PR <LINK> is merged."``,
+   where ``<LINK>`` references your ``models`` PR.
 #. Get review on your Drake PR first. Once it is generally approved, then
    request review for your ``models`` PR.
 #. Once both PRs are approved:
@@ -49,4 +51,4 @@ Submit Changes in a Pull Request
    #) Merge your ``models`` PR.
    #) Update Drake's ``.../models/repository.bzl`` to the latest merge commit on
       ``master`` for ``RobotLocomotion/models``.
-   #) Ensure your PR fully passes CI, then have your PR merged.
+   #) Merge your ``drake`` PR.
