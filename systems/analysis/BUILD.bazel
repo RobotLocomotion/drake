@@ -184,6 +184,7 @@ drake_cc_library(
     deps = [
         ":bogacki_shampine3_integrator",
         ":implicit_integrator",
+        ":runge_kutta2_integrator",
     ],
 )
 

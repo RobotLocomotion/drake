@@ -11,6 +11,7 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/systems/analysis/bogacki_shampine3_integrator.h"
 #include "drake/systems/analysis/implicit_integrator.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
 
 namespace drake {
 namespace systems {
@@ -55,7 +56,7 @@ namespace systems {
  *       in fixed-step mode, to limit the error in the underlying Newton-Raphson
  *       process. See IntegratorBase::set_target_accuracy() for more info.
  */
-template <class T, int num_stages = 2>
+template <typename T, int num_stages = 2>
 class RadauIntegrator final : public ImplicitIntegrator<T> {
   static_assert(num_stages == 1 || num_stages == 2,
       "Only 1-stage and 2-stage Radau are supported.");
@@ -69,9 +70,19 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
 
   bool supports_error_estimation() const final { return true; }
 
-  /// The order of the asymptotic term in the embedded implicit trapezoid method
-  /// is 3.
-  int get_error_estimate_order() const final { return 3; }
+  /// This integrator uses embedded second order methods to compute estimates of
+  /// the local truncation error. The order of the asymptotic difference between
+  /// the third-order Radau method and an embedded second order method is O(h³).
+  /// The order of the asymptotic difference between the first-order Radau
+  /// method and an embedded second order method is O(h²).
+  int get_error_estimate_order() const final {
+    if (num_stages == 2) {
+      return 3;
+    } else {
+      DRAKE_DEMAND(num_stages == 1);
+      return 2;
+    }
+  }
 
  private:
   int64_t do_get_num_newton_raphson_iterations() const final {
@@ -101,6 +112,8 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
     return num_err_est_iter_factorizations_;
   }
 
+  void ComputeAndSetErrorEstimate(
+      const VectorX<T>& xtplus_prop, const VectorX<T>& xtplus_embed);
   bool AttemptStepPaired(const T& t0, const T& h,
       const VectorX<T>& xt0, VectorX<T>* xtplus_radau, VectorX<T>* xtplus_tr);
   const VectorX<T>& ComputeFofZ(
@@ -164,12 +177,29 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   // The continuous state update vector used during Newton-Raphson.
   std::unique_ptr<ContinuousState<T>> dx_state_;
 
-  // Variables that replace temporaries to avoid heap allocations.
-  VectorX<T> xt0_, xdot_, xtplus_radau_, xtplus_tr_;
+  // Continuous state at the beginning of an integration step (stored to avoid
+  // heap allocations).
+  VectorX<T> xt0_;
 
-  // 3/2 Bogacki-Shampine integrator used for error estimation when the
-  // step size becomes smaller than the working minimum step size.
+  // Time-derivative of continuous state (stored to avoid heap allocations).
+  VectorX<T> xdot_;
+
+  // "Propagated" solution computed by the integrator (stored to avoid heap
+  // allocations)- this is the solution that will be propagated forward in time.
+  VectorX<T> xtplus_prop_;
+
+  // "Error estimate" solution computed by the embedded method (stored to avoid
+  // allocations)- this is the solution that will be used in concert with the
+  // propagated solution to compute the error estimate.
+  VectorX<T> xtplus_embed_;
+
+  // 3/2 Bogacki-Shampine integrator used for propagation and error estimation
+  // when the step size becomes smaller than the working minimum step size.
   std::unique_ptr<BogackiShampine3Integrator<T>> bs3_;
+
+  // Second order Runge-Kutta integrator used for error estimation when the
+  // step size becomes smaller than the working minimum step size.
+  std::unique_ptr<RungeKutta2Integrator<T>> rk2_;
 
   // Statistics specific to this integrator.
   int64_t num_nr_iterations_{0};
@@ -182,7 +212,17 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   int64_t num_err_est_nr_iterations_{0};
 };
 
-template <class T, int num_stages>
+template <typename T, int num_stages>
+void RadauIntegrator<T, num_stages>::DoResetImplicitIntegratorStatistics() {
+  num_nr_iterations_ = 0;
+  num_err_est_jacobian_reforms_ = 0;
+  num_err_est_jacobian_function_evaluations_ = 0;
+  num_err_est_iter_factorizations_ = 0;
+  num_err_est_function_evaluations_ = 0;
+  num_err_est_nr_iterations_ = 0;
+}
+
+template <typename T, int num_stages>
 RadauIntegrator<T, num_stages>::RadauIntegrator(const System<T>& system,
     Context<T>* context) : ImplicitIntegrator<T>(system, context) {
   A_.resize(num_stages, num_stages);
@@ -213,17 +253,7 @@ RadauIntegrator<T, num_stages>::RadauIntegrator(const System<T>& system,
   }
 }
 
-template <class T, int num_stages>
-void RadauIntegrator<T, num_stages>::DoResetImplicitIntegratorStatistics() {
-  num_nr_iterations_ = 0;
-  num_err_est_nr_iterations_ = 0;
-  num_err_est_function_evaluations_ = 0;
-  num_err_est_jacobian_function_evaluations_ = 0;
-  num_err_est_jacobian_reforms_ = 0;
-  num_err_est_iter_factorizations_ = 0;
-}
-
-template <class T, int num_stages>
+template <typename T, int num_stages>
 void RadauIntegrator<T, num_stages>::DoInitialize() {
   using std::isnan;
 
@@ -283,11 +313,19 @@ void RadauIntegrator<T, num_stages>::DoInitialize() {
       this->get_system(),
       this->get_mutable_context());
 
+  // Instantiate the embedded second-order Runge-Kutta integrator.
+  rk2_ = std::make_unique<RungeKutta2Integrator<T>>(
+      this->get_system(),
+      std::numeric_limits<double>::max() /* no maximum step size */,
+      this->get_mutable_context());
+
   // Maximum step size is not to be a constraint.
   bs3_->set_maximum_step_size(std::numeric_limits<double>::max());
 
   bs3_->Initialize();
+  rk2_->Initialize();
   bs3_->set_fixed_step_mode(true);
+  // Note: RK2 only operates in fixed step mode.
 }
 
 // Computes F(Z) used in [Hairer, 1996], (IV.8.4). This method evaluates
@@ -298,7 +336,7 @@ void RadauIntegrator<T, num_stages>::DoInitialize() {
 // @param Z the current iterate, of dimension state_dim * num_stages.
 // @post the state of the internal context will be set to (t0, xt0) on return.
 // @return a (state_dim * num_stages)-dimensional vector.
-template <class T, int num_stages>
+template <typename T, int num_stages>
 const VectorX<T>& RadauIntegrator<T, num_stages>::ComputeFofZ(
       const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& Z) {
   Context<T>* context = this->get_mutable_context();
@@ -328,7 +366,7 @@ const VectorX<T>& RadauIntegrator<T, num_stages>::ComputeFofZ(
 //       `false`.
 // @returns `true` if the method was successfully able to take an integration
 //           step of size `h`.
-template <class T, int num_stages>
+template <typename T, int num_stages>
 bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
     const VectorX<T>& xt0, VectorX<T>* xtplus, int trial) {
   using std::max;
@@ -505,7 +543,7 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
 //        computationally expensive methods as the trial numbers increase.
 // @returns `true` if the method was successfully able to take an integration
 //           step of size `h` (or `false` otherwise).
-template <class T, int num_stages>
+template <typename T, int num_stages>
 bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoid(const T& t0,
     const T& h, const VectorX<T>& xt0, const VectorX<T>& dx0,
     const VectorX<T>& radau_xtplus, VectorX<T>* xtplus) {
@@ -558,7 +596,7 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoid(const T& t0,
 }
 
 // Does all of the real work for the implicit trapezoid method.
-template <class T, int num_stages>
+template <typename T, int num_stages>
 bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
     const T& t0, const T& h,
     const VectorX<T>& xt0, const std::function<VectorX<T>()>& g,
@@ -595,18 +633,13 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
   // convergence.
   T last_dx_norm = std::numeric_limits<double>::infinity();
 
-    // Set the iteration matrix construction method.
-  auto construct_iteration_matrix = [](const MatrixX<T>& J, const T& dt,
-      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) {
-    ComputeImplicitTrapezoidIterationMatrix(J, dt, iteration_matrix);
-  };
-
   // Calculate Jacobian and iteration matrices (and factorizations), as needed.
   // Note that this method computes the Jacobian matrix around (tf, *xtplus),
   // where *xtplus is the solution computed by the Radau method, whereas the
   // Radau3 method computes it around (t0, xt0).
   if (!this->MaybeFreshenMatrices(t0, *xtplus, h, trial,
-      construct_iteration_matrix, &iteration_matrix_implicit_trapezoid_)) {
+      ComputeImplicitTrapezoidIterationMatrix,
+      &iteration_matrix_implicit_trapezoid_)) {
     return false;
   }
 
@@ -711,7 +744,7 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
 //       will be set to t0+h and `xtplus_radau` on successful exit (indicated
 //       by this function returning `true`) and will be indeterminate on
 //       unsuccessful exit (indicated by this function returning `false`).
-template <class T, int num_stages>
+template <typename T, int num_stages>
 bool RadauIntegrator<T, num_stages>::AttemptStepPaired(const T& t0, const T& h,
     const VectorX<T>& xt0, VectorX<T>* xtplus_radau, VectorX<T>* xtplus_itr) {
   using std::abs;
@@ -771,12 +804,26 @@ bool RadauIntegrator<T, num_stages>::AttemptStepPaired(const T& t0, const T& h,
   return true;
 }
 
+// Updates the error estimate from the propagated solution and the embedded
+// solution.
+template <typename T, int num_stages>
+void RadauIntegrator<T, num_stages>::ComputeAndSetErrorEstimate(
+    const VectorX<T>& xtplus_prop, const VectorX<T>& xtplus_embed) {
+  err_est_vec_ = xtplus_prop - xtplus_embed;
+  err_est_vec_ = err_est_vec_.cwiseAbs();
+
+  // Compute and set the error estimate.
+  SPDLOG_DEBUG(drake::log(), "Error estimate: {}", err_est_vec_.transpose());
+  this->get_mutable_error_estimate()->get_mutable_vector().
+      SetFromVector(err_est_vec_);
+}
+
 /// Takes a given step of the requested size, if possible.
 /// @returns `true` if successful.
 /// @post the time and continuous state will be advanced only if `true` is
 ///       returned (if `false` is returned, the time and state will be reset
 ///       to their values on entry).
-template <class T, int num_stages>
+template <typename T, int num_stages>
 bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
   Context<T>* context = this->get_mutable_context();
 
@@ -785,8 +832,8 @@ bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
   SPDLOG_DEBUG(drake::log(), "Radau DoStep(h={}) t={}", h, t0);
 
   xt0_ = context->get_continuous_state().CopyToVector();
-  xtplus_radau_.resize(xt0_.size());
-  xtplus_tr_.resize(xt0_.size());
+  xtplus_prop_.resize(xt0_.size());
+  xtplus_embed_.resize(xt0_.size());
 
   // If the requested h is less than the minimum step size, we'll advance time
   // using an explicit Bogacki-Shampine step.
@@ -794,19 +841,49 @@ bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
     SPDLOG_DEBUG(drake::log(), "-- requested step too small, taking explicit "
         "step instead");
 
-    // Compute the BS3 step.
-    const int evals_before_bs3 = bs3_->get_num_derivative_evaluations();
-    DRAKE_DEMAND(bs3_->IntegrateWithSingleFixedStepToTime(t0 + h));
-    const int evals_after_bs3 = bs3_->get_num_derivative_evaluations();
+    // We want to maintain the order of the error estimation process even as we
+    // take this very small step.
+    if (num_stages == 2) {
+      // The BS3 integrator provides exactly the same order as 2-stage
+      // Radau + embedded implicit trapezoid.
+      const int evals_before_bs3 = bs3_->get_num_derivative_evaluations();
+      DRAKE_DEMAND(bs3_->IntegrateWithSingleFixedStepToTime(t0 + h));
+      const int evals_after_bs3 = bs3_->get_num_derivative_evaluations();
+      this->get_mutable_error_estimate()->SetFrom(*bs3_->get_error_estimate());
+      this->set_num_derivative_evaluations(
+          this->get_num_derivative_evaluations() +
+          evals_after_bs3 -
+          evals_before_bs3);
+    } else {
+      // First-order Euler + RK2 provides exactly the same order as 1-stage
+      // Radau + embedded implicit trapezoid.
+      DRAKE_DEMAND(num_stages == 1);
 
-    // Update the error estimation ODE counts.
-    num_err_est_function_evaluations_ += (evals_after_bs3 - evals_before_bs3);
+      // Compute the Euler step.
+      xdot_ = this->EvalTimeDerivatives(*context).CopyToVector();
+      xtplus_prop_ = xt0_ + h * xdot_;
 
-    // Set the error estimate.
-    this->get_mutable_error_estimate()->SetFrom(*bs3_->get_error_estimate());
+      // Compute the RK2 step.
+      const int evals_before_rk2 = rk2_->get_num_derivative_evaluations();
+      DRAKE_DEMAND(rk2_->IntegrateWithSingleFixedStepToTime(t0 + h));
+      const int evals_after_rk2 = rk2_->get_num_derivative_evaluations();
+
+      // Update the error estimation ODE counts.
+      num_err_est_function_evaluations_ += (evals_after_rk2 - evals_before_rk2);
+
+      // Store the embedded solution.
+      xtplus_embed_ = context->get_continuous_state().CopyToVector();
+
+      // Reset the state to the propagated solution.
+      context->SetTimeAndContinuousState(t0 + h, xtplus_prop_);
+
+      // Update the error estimate.
+      ComputeAndSetErrorEstimate(xtplus_prop_, xtplus_embed_);
+    }
   } else {
     // Try taking the requested step.
-    bool success = AttemptStepPaired(t0, h, xt0_, &xtplus_radau_, &xtplus_tr_);
+    bool success = AttemptStepPaired(
+        t0, h, xt0_, &xtplus_prop_, &xtplus_embed_);
 
     // If the step was not successful, reset the time and state.
     if (!success) {
@@ -814,12 +891,8 @@ bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
       return false;
     }
 
-    // Compute and set the error estimate.
-    err_est_vec_ = xtplus_radau_ - xtplus_tr_;
-    err_est_vec_ = err_est_vec_.cwiseAbs();
-    SPDLOG_DEBUG(drake::log(), "Error estimate: {}", err_est_vec_.transpose());
-    this->get_mutable_error_estimate()->get_mutable_vector().
-        SetFromVector(err_est_vec_);
+    // Update the error estimate.
+    ComputeAndSetErrorEstimate(xtplus_prop_, xtplus_embed_);
   }
 
   return true;
@@ -827,7 +900,7 @@ bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
 
 // Function for computing the iteration matrix for the Implicit Trapezoid
 // method.
-template <class T, int num_stages>
+template <typename T, int num_stages>
 void RadauIntegrator<T, num_stages>::ComputeImplicitTrapezoidIterationMatrix(
     const MatrixX<T>& J,
     const T& h,
@@ -840,7 +913,7 @@ void RadauIntegrator<T, num_stages>::ComputeImplicitTrapezoidIterationMatrix(
 
 // Function for computing the iteration matrix for the Radau method. This
 // is the matrix in [Hairer, 1996] (IV.8.4) on p.119.
-template <class T, int num_stages>
+template <typename T, int num_stages>
 void RadauIntegrator<T, num_stages>::ComputeRadauIterationMatrix(
     const MatrixX<T>& J,
     const T& h,
@@ -861,7 +934,7 @@ void RadauIntegrator<T, num_stages>::ComputeRadauIterationMatrix(
 // A ⊗ B = | a11B ... a1mB |
 //         | ...      ...  |
 //         | an1B ... anmB |
-template <class T, int num_stages>
+template <typename T, int num_stages>
 MatrixX<T> RadauIntegrator<T, num_stages>::CalcTensorProduct(
     const MatrixX<T>& A, const MatrixX<T>& B) {
   const int rows_A = A.rows();

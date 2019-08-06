@@ -102,8 +102,8 @@ GTEST_TEST(RadauIntegratorTest, CubicSystem) {
   CubicScalarSystem cubic;
   std::unique_ptr<Context<double>> context = cubic.CreateDefaultContext();
 
-  // Create the integrator: assumes that the default number of stages is 2.
-  RadauIntegrator<double> radau3(cubic, context.get());
+  // Create the integrator using two stages.
+  RadauIntegrator<double, 2> radau3(cubic, context.get());
 
   const double dt = 1.0;
   radau3.set_maximum_step_size(dt);
@@ -170,37 +170,49 @@ GTEST_TEST(RadauIntegratorTest, LinearSystem) {
 }
 
 // Tests accuracy for integrating the quadratic system (with the state at time t
-// corresponding to f(t) ≡ 4t² + 4t + C, where C is the initial state) over
-// t ∈ [0, 1]. The error estimate from Radau is second order accurate, meaning
-// that the approximation error will be zero if f'''(t) = 0, which is true for
-// the quadratic equation. We check that the error estimate is perfect for this
-// function.
+// corresponding to f(t) ≡ C₂t² + C₁t + C₀, where C₀ is the initial state) over
+// t ∈ [0, 1]. The error estimate from 2-stage Radau is second order accurate,
+// meaning that the approximation error will be zero if f'''(t) = 0, which is
+// true for the quadratic equation. We check that the error estimate is perfect
+// for this function.
 GTEST_TEST(RadauIntegratorTest, QuadraticTest) {
   QuadraticScalarSystem quadratic;
   auto quadratic_context = quadratic.CreateDefaultContext();
-  const double C = quadratic.Evaluate(0);
+  const double C0 = quadratic.Evaluate(0);
   quadratic_context->SetTime(0.0);
-  quadratic_context->get_mutable_continuous_state_vector()[0] = C;
+  quadratic_context->get_mutable_continuous_state_vector()[0] = C0;
 
-  // Create the integrator: assumes that the default number of stages is 2.
-  RadauIntegrator<double> radau(quadratic, quadratic_context.get());
+  // Create the integrator.
+  const int num_stages = 2;
+  RadauIntegrator<double, num_stages> radau(quadratic, quadratic_context.get());
   const double t_final = 1.0;
   radau.set_maximum_step_size(t_final);
   radau.set_fixed_step_mode(true);
   radau.Initialize();
   ASSERT_TRUE(radau.IntegrateWithSingleFixedStepToTime(t_final));
 
+  // Ensure that Radau, and not BS3, was used by counting the number of
+  // function evaluations.
+  EXPECT_EQ(radau.get_num_derivative_evaluations(), 9);
+
   // Per the description in IntegratorBase::get_error_estimate_order(), this
   // should return "3", in accordance with the order of the polynomial in the
-  // Big-Oh term.
+  // Big-Oh term; for the single-stage Radau integrator, this value will be
+  // different.
   ASSERT_EQ(radau.get_error_estimate_order(), 3);
 
   const double err_est =
       radau.get_error_estimate()->get_vector().GetAtIndex(0);
 
   // Note the very tight tolerance used, which will likely not hold for
-  // arbitrary values of C, t_final, or polynomial coefficients.
+  // arbitrary values of C0, t_final, or polynomial coefficients.
   EXPECT_NEAR(err_est, 0.0, 2 * std::numeric_limits<double>::epsilon());
+
+  // Verify the solution too.
+  EXPECT_NEAR(
+      quadratic_context->get_continuous_state().get_vector().CopyToVector()[0],
+      quadratic.Evaluate(t_final),
+      std::numeric_limits<double>::epsilon());
 
   // Repeat this test, but using a final time that is below the working minimum
   // step size (thereby triggering the implicit integrator's alternate, explicit
@@ -218,12 +230,103 @@ GTEST_TEST(RadauIntegratorTest, QuadraticTest) {
   scaled_radau.Initialize();
   ASSERT_TRUE(scaled_radau.IntegrateWithSingleFixedStepToTime(updated_t_final));
 
+  // Ensure that BS3, and not Radau, was used by counting the number of
+  // function evaluations.
+  EXPECT_EQ(scaled_radau.get_num_derivative_evaluations(), 4);
+
   const double updated_err_est =
       scaled_radau.get_error_estimate()->get_vector()[0];
 
   // Note the very tight tolerance used, which will likely not hold for
-  // arbitrary values of C, t_final, or polynomial coefficients.
+  // arbitrary values of C0, t_final, or polynomial coefficients.
   EXPECT_NEAR(updated_err_est, 0.0, 2 * std::numeric_limits<double>::epsilon());
+
+  // Verify the solution too.
+  EXPECT_NEAR(
+      scaled_quadratic_context->get_continuous_state().get_vector().
+          CopyToVector()[0],
+      scaled_quadratic.Evaluate(updated_t_final),
+      10 * std::numeric_limits<double>::epsilon());
+}
+
+// Tests accuracy for integrating the linear system (with the state at time t
+// corresponding to f(t) ≡ C₁t + C₀, where C₀ is the initial state) over
+// t ∈ [0, 1]. The error estimate from 1-stage Radau is first order accurate,
+// meaning that the approximation error will be zero if f''(t) = 0, which is
+// true for the linear equation. We check that the error estimate is perfect
+// for this function.
+GTEST_TEST(RadauIntegratorTest, LinearTest) {
+  LinearScalarSystem linear;
+  auto linear_context = linear.CreateDefaultContext();
+  const double C0 = linear.Evaluate(0);
+  linear_context->SetTime(0.0);
+  linear_context->get_mutable_continuous_state_vector()[0] = C0;
+
+  // Create the integrator.
+  const int num_stages = 1;
+  RadauIntegrator<double, num_stages> radau(linear, linear_context.get());
+  const double t_final = 1.0;
+  radau.set_maximum_step_size(t_final);
+  radau.set_fixed_step_mode(true);
+  radau.Initialize();
+  ASSERT_TRUE(radau.IntegrateWithSingleFixedStepToTime(t_final));
+
+  // Ensure that Radau, and not Euler+RK2, was used by counting the number of
+  // function evaluations.
+  EXPECT_EQ(radau.get_num_derivative_evaluations(), 7);
+
+  // Per the description in IntegratorBase::get_error_estimate_order(), this
+  // should return "2", in accordance with the order of the polynomial in the
+  // Big-Oh term; for the two-stage Radau integrator, this value will be
+  // different.
+  ASSERT_EQ(radau.get_error_estimate_order(), 2);
+
+  const double err_est =
+      radau.get_error_estimate()->get_vector().GetAtIndex(0);
+
+  // Note the very tight tolerance used, which will likely not hold for
+  // arbitrary values of C0, t_final, or polynomial coefficients.
+  EXPECT_NEAR(err_est, 0.0, 2 * std::numeric_limits<double>::epsilon());
+
+  // Verify the solution too.
+  EXPECT_NEAR(
+      linear_context->get_continuous_state().get_vector().CopyToVector()[0],
+      linear.Evaluate(t_final),
+      std::numeric_limits<double>::epsilon());
+
+  // Repeat this test, but using a final time that is below the working minimum
+  // step size (thereby triggering the implicit integrator's alternate, explicit
+  // mode). To retain our existing tolerances, we change the scale factor (S)
+  // for the linear system.
+  radau.get_mutable_context()->SetTime(0);
+  const double working_min = radau.get_working_minimum_step_size();
+  LinearScalarSystem scaled_linear(4.0/working_min);
+  auto scaled_linear_context = scaled_linear.CreateDefaultContext();
+  RadauIntegrator<double> scaled_radau(
+      scaled_linear, scaled_linear_context.get());
+  const double updated_t_final = working_min / 2;
+  scaled_radau.set_maximum_step_size(updated_t_final);
+  scaled_radau.set_fixed_step_mode(true);
+  scaled_radau.Initialize();
+  ASSERT_TRUE(scaled_radau.IntegrateWithSingleFixedStepToTime(updated_t_final));
+
+  // Ensure that explicit Euler + RK2, and not Radau, was used by counting the
+  // number of function evaluations.
+  EXPECT_EQ(scaled_radau.get_num_derivative_evaluations(), 4);
+
+  const double updated_err_est =
+      scaled_radau.get_error_estimate()->get_vector()[0];
+
+  // Note the very tight tolerance used, which will likely not hold for
+  // arbitrary values of C0, t_final, or polynomial coefficients.
+  EXPECT_NEAR(updated_err_est, 0.0, 2 * std::numeric_limits<double>::epsilon());
+
+  // Verify the solution too.
+  EXPECT_NEAR(
+      scaled_linear_context->get_continuous_state().get_vector().
+          CopyToVector()[0],
+      scaled_linear.Evaluate(updated_t_final),
+      10 * std::numeric_limits<double>::epsilon());
 }
 
 }  // namespace

@@ -739,15 +739,15 @@ class IntegratorBase {
     return num_shrinkages_from_error_control_;
   }
 
-/**
- * Returns the number of ODE function evaluations (calls to
- * CalcTimeDerivatives()) since the last call to ResetStatistics() or
- * Initialize(). This count includes *all* such calls including (1)
- * those necessary to compute Jacobian matrices; (2) those used in rejected
- * integrated steps (for, e.g., purposes of error control); (3) those used
- * strictly for integrator error estimation; and (4) calls that exhibit little
- * cost (due to results being cached).
- */
+  /**
+   * Returns the number of ODE function evaluations (calls to
+   * CalcTimeDerivatives()) since the last call to ResetStatistics() or
+   * Initialize(). This count includes *all* such calls including (1)
+   * those necessary to compute Jacobian matrices; (2) those used in rejected
+   * integrated steps (for, e.g., purposes of error control); (3) those used
+   * strictly for integrator error estimation; and (4) calls that exhibit little
+   * cost (due to results being cached).
+   */
   int64_t get_num_derivative_evaluations() const { return num_ode_evals_; }
 
   /**
@@ -780,6 +780,15 @@ class IntegratorBase {
    * or ResetStatistics() call.
    */
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
+
+  /** Manually sets the statistic for the number of ODE evaluations.
+   * @warning Implementations should generally avoid calling this method;
+   *          evaluating the ODEs using EvalTimeDerivatives() updates this
+   *          statistic automatically and intelligently (by leveraging the
+   *          caching system to avoid incrementing the count when cached
+   *          evaluations are used).
+   */
+  void set_num_derivative_evaluations(double evals) { num_ode_evals_ = evals; }
 
   /**
    * @}
