@@ -36,21 +36,3 @@ class TestAtticForwarding(unittest.TestCase):
     def test_solvers_modules(self):
         with self.expect_deprecation():
             import pydrake.solvers.ik
-
-    def test_systems_symbols(self):
-        from pydrake.systems.controllers import (
-            RbtInverseDynamics, RbtInverseDynamicsController,
-        )
-        from pydrake.systems.sensors import RgbdCamera, RgbdCameraDiscrete
-        callable_list = [
-            RbtInverseDynamics,
-            RbtInverseDynamicsController,
-            RgbdCamera,
-            RgbdCameraDiscrete,
-        ]
-        for c in callable_list:
-            with self.expect_deprecation():
-                # N.B. This will emit a deprecation warning before it tries to
-                # call the original constructor, so we need not worry about the
-                # specific arguments.
-                c()
