@@ -26,28 +26,12 @@ namespace {
 // N.B. All of these were confirmed during the development however they did not
 // make it into a clean unit test.
 
-// Computes the volume of a tetrahedron given the four vertices that define it.
-// The convention is that the first three vertices a, b, c define a triangle
-// with its right-handed normal pointing towards the inside of the tetrahedra.
-// The fourth vertex, d, is on the positive side of the plane defined by a, b,
-// c. With this convention, the computed volume will be positive, otherwise
-// negative.
-double CalcTetrahedronVolume(const Vector3<double>& a, const Vector3<double>& b,
-                             const Vector3<double>& c,
-                             const Vector3<double>& d) {
-  return (d - a).dot((b - a).cross(c - a)) / 6.0;
-}
-
 // Computes the total volume of a VolumeMesh by summing up the contribution
 // of each tetrahedron.
 double CalcTetrahedronMeshVolume(const VolumeMesh<double>& mesh) {
-  const std::vector<VolumeVertex<double>>& vertices = mesh.vertices();
-  const std::vector<VolumeElement>& tetrahedra = mesh.tetrahedra();
   double volume = 0.0;
-  for (const auto& t : tetrahedra) {
-    volume += CalcTetrahedronVolume(
-        vertices[t.vertex(0)].r_MV(), vertices[t.vertex(1)].r_MV(),
-        vertices[t.vertex(2)].r_MV(), vertices[t.vertex(3)].r_MV());
+  for (int e = 0; e < mesh.num_elements(); ++e) {
+    volume += mesh.CalcTetrahedronVolume(VolumeElementIndex(e));
   }
   return volume;
 }

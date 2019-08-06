@@ -195,7 +195,9 @@ class VolumeMesh {
     // fourth vertex, d, is on the positive side of the plane defined by a,
     // b, c. With this convention, the computed volume will be positive,
     // otherwise negative.
-    return (d - a).dot((b - a).cross(c - a)) / T(6.0);
+    T volume = (d - a).dot((b - a).cross(c - a)) / T(6.0);
+    DRAKE_ASSERT(volume > T(0));
+    return volume;
   }
 
   /** Calculate barycentric coordinates with respect to the tetrahedron `e`

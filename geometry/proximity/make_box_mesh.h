@@ -153,7 +153,7 @@ static std::vector<VolumeElement> GenerateElements(
  Generates a tetrahedral volume mesh of a given box by subdividing the box
  into _rectangular cells_ (volume bounded by six axis-aligned faces) and
  subdividing each rectangular cell into six tetrahedra. The output mesh will
- have these properties:-
+ have these properties:
  1. The generated vertices are unique. There is no repeating vertices in
     the list of vertex coordinates.
  2. The generated tetrahedra are _conforming_. Two tetrahedra intersect in
