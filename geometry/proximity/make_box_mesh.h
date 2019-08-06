@@ -14,16 +14,18 @@ namespace internal {
 
 #ifndef DRAKE_DOXYGEN_CXX
 
-// Calculates the sequential vertex index of the vertex specified by the
-// (i, j, k)-index in the Cartesian grid defined by the number of vertices in
-// x-, y-, and z-directions.
-// @param i  Index in x-direction.
-// @param j  Index in y-direction.
-// @param k  Index in z-direction.
-// @param num_vertices  Number of vertices in x-, y-, and z-directions.
-// @pre 0 ≤ i < num_vertices.x(),
-//      0 ≤ j < num_vertices.y(), and
-//      0 ≤ k < num_vertices.z().
+/**
+ Calculates the sequential vertex index of the vertex specified by the
+ (i, j, k)-index in the Cartesian grid defined by the number of vertices in
+ x-, y-, and z-directions.
+ @param i  Index in x-direction.
+ @param j  Index in y-direction.
+ @param k  Index in z-direction.
+ @param num_vertices  Number of vertices in x-, y-, and z-directions.
+ @pre 0 ≤ i < num_vertices.x(),
+      0 ≤ j < num_vertices.y(), and
+      0 ≤ k < num_vertices.z().
+ */
 int CalcSequentialIndex(int i, int j, int k, const Vector3<int>& num_vertices) {
   DRAKE_DEMAND(0 <= i && i < num_vertices.x());
   DRAKE_DEMAND(0 <= j && j < num_vertices.y());
@@ -31,14 +33,16 @@ int CalcSequentialIndex(int i, int j, int k, const Vector3<int>& num_vertices) {
   return i * num_vertices.y() * num_vertices.z() + j * num_vertices.z() + k;
 }
 
-// Generates unique vertices on a Cartesian grid of the box. In each of the
-// x-, y-, and z-directions, the vertices are distributed uniformly.
-// @param[in] box
-//     The box shape specification (see drake::geometry::Box).
-// @param[in] num_vertices
-//     Number of vertices in each of x-, y-, and z-directions.
-// @retval vertices
-//     The linear sequence of vertices consistent with CalcSequentialIndex.
+/**
+ Generates unique vertices on a Cartesian grid of the box. In each of the
+ x-, y-, and z-directions, the vertices are distributed uniformly.
+ @param[in] box
+     The box shape specification (see drake::geometry::Box).
+ @param[in] num_vertices
+     Number of vertices in each of x-, y-, and z-directions.
+ @retval vertices
+     The linear sequence of vertices consistent with CalcSequentialIndex.
+ */
 template <typename T>
 static std::vector<VolumeVertex<T>> GenerateVertices(
     const Box& box, const Vector3<int>& num_vertices) {
@@ -63,16 +67,18 @@ static std::vector<VolumeVertex<T>> GenerateVertices(
   return vertices;
 }
 
-// Adds six tetrahedra of a given rectangular cell to the list of tetrahedral
-// elements. The rectangular cell is identified by the (i,j,k)-index of its
-// lowest vertex. The (i,j,k)-indices of its 8 vertices are
-// (i,j,k) + {0,1}x{0,1}x{0,1}.
-// @param[in] lowest
-//     The (i,j,k) index of the lowest vertex of the rectangular cell.
-// @param[in] num_vertices
-//     Number of vertices in each of x-, y-, and z-directions.
-// @param[in,out] elements
-//     The six tetrahedra are added into this list of elements.
+/**
+ Adds six tetrahedra of a given rectangular cell to the list of tetrahedral
+ elements. The rectangular cell is identified by the (i,j,k)-index of its
+ lowest vertex. The (i,j,k)-indices of its 8 vertices are
+ (i,j,k) + {0,1}x{0,1}x{0,1}.
+ @param[in] lowest
+     The (i,j,k) index of the lowest vertex of the rectangular cell.
+ @param[in] num_vertices
+     Number of vertices in each of x-, y-, and z-directions.
+ @param[in,out] elements
+     The six tetrahedra are added into this list of elements.
+ */
 static void AddSixTetrahedraOfCell(const Vector3<int>& lowest,
                                    const Vector3<int>& num_vertices,
                                    std::vector<VolumeElement>* elements) {
@@ -128,11 +134,13 @@ static void AddSixTetrahedraOfCell(const Vector3<int>& lowest,
     elements->emplace_back(tetrahedron[t]);
 }
 
-// Generates connectivity for the tetrahedral elements of the mesh.
-// @param[in] num_vertices
-//     Number of vertices in each of x-, y-, and z-directions.
-// @return
-//     A sequence of tetrahedral elements that share unique vertices.
+/**
+ Generates connectivity for the tetrahedral elements of the mesh.
+ @param[in] num_vertices
+     Number of vertices in each of x-, y-, and z-directions.
+ @return
+     A sequence of tetrahedral elements that share unique vertices.
+ */
 static std::vector<VolumeElement> GenerateElements(
     const Vector3<int>& num_vertices) {
   std::vector<VolumeElement> elements;
@@ -167,7 +175,10 @@ static std::vector<VolumeElement> GenerateElements(
      non-axis-aligned edges will be within √2 or √3 of this parameter.
  @retval volume_mesh
  @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+ @note The mesh has no guarantee on the inner boundary for a rigid core.
  */
+// TODO(DamrongGuoy): Generate the mesh with rigid core at medial axis or offset
+//  surface (issue #11906) and remove the "@note" above.
 template <typename T>
 VolumeMesh<T> MakeBoxVolumeMesh(const Box& box, double target_edge_length) {
   DRAKE_DEMAND(target_edge_length > 0.);
