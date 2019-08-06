@@ -7,18 +7,19 @@ Model Version Control
 Adding Model Artifacts in Pull Requests
 =======================================
 
-If you are adding model artifacts, such as textures or meshes, that are small
-enough (<100KB in a given directory), then add them directly to Git.
+Model artifacts have the potential to be very large, and we should avoid
+committing large files directly to Git.
 
-Otherwise, you should add your models to
-`RobotLocomotion/models <https://github.com/RobotLocomotion/models>`_.
+If your model's files are small enough (<100KB in a given directory), then you
+may add them directly to Git in a PR to master.
 
-These artifacts *should* be things that are large and should change
-infrequently, e.g. ``*.obj``, ``*.stl``, ``*.png``. These should *not* be
-things that are small, e.g. ``*.sdf``, ``*.urdf``.
+Otherwise, you should add the large files to
+`RobotLocomotion/models <https://github.com/RobotLocomotion/models>`_. Please do
+not commit files that are generally small, like ``*.sdf`` or ``*.urdf`` files,
+in ``RobotLocomotion/models``; instead, please commit those directly.
 
 Before you decide to submit models, please ensure that you have tests that
-will use them. Do not submit a PR that adds models but has zero intent to use
+will need them. Do not submit a PR that adds models but has zero intent to use
 them, as Drake is not a model repository.
 
 See below for the suggested workflow.
@@ -29,13 +30,14 @@ Develop Changes Locally
 #. Clone ``RobotLocomotion/models`` locally
 #. Create a Git branch in your local checkouts of *both* ``models`` and
    ``drake``.
-#. Update ``tools/workspace/models/repository.bzl`` to point to your checkout
-   using ``github_archive(..., local_repository_override = <path>)``.
+#. Update ``drake/tools/workspace/models/repository.bzl`` to point to your
+   ``models`` checkout using
+   ``github_archive(..., local_repository_override = <path>)``.
 #. Update ``drake/tools/workspace/models/files.bzl`` to incorporate the models
    you want.
 #. Ensure that you use ``forward_files`` to make the files available inside
    the Drake bazel workspace. For an example, see
-   ``manipulation/models/ycb/BUILD.bazel``.
+   `drake/manipulation/models/ycb/BUILD.bazel <https://github.com/RobotLocomotion/drake/blob/master/manipulation/models/ycb/BUILD.bazel>`_.
 #. Ensure your tests pass under ``bazel test``.
 
 Submit Changes in a Pull Request
@@ -52,6 +54,6 @@ Submit Changes in a Pull Request
 #. Once both PRs are approved:
 
    #) Merge your ``models`` PR.
-   #) Update Drake's ``.../models/repository.bzl`` to the latest merge commit on
-      ``master`` for ``RobotLocomotion/models``.
+   #) Update ``drake/tools/workspace/models/repository.bzl`` to the latest
+      merge commit on ``master`` for ``RobotLocomotion/models``.
    #) Merge your ``drake`` PR.
