@@ -192,10 +192,10 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// @}
 
  protected:
-   /// Derived classes can override this method to change the number of
-   /// Newton-Raphson iterations (10 by default) to take before the
-   /// Newton-Raphson process decides that convergence will not be attained.
-   virtual int do_max_newton_raphson_iterations() const { return 10; }
+  /// Derived classes can override this method to change the number of
+  /// Newton-Raphson iterations (10 by default) to take before the
+  /// Newton-Raphson process decides that convergence will not be attained.
+  virtual int do_max_newton_raphson_iterations() const { return 10; }
 
   /// A class for storing the factorization of an iteration matrix and using it
   /// to solve linear systems of equations. This class exists simply because
