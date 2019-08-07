@@ -185,10 +185,10 @@ class VolumeMesh {
 
   /** Calculates volume of a tetrahedral element.
    */
-  // TODO(DamrongGuoy): Refactor this function out of VolumeMesh when we need
-  //  it. CalcTetrahedronVolume(VolumeElementIndex) will call
-  //  CalcTetrahedronVolume(Vector3, Vector3, Vector3, Vector3).
   T CalcTetrahedronVolume(VolumeElementIndex e) const {
+    // TODO(DamrongGuoy): Refactor this function out of VolumeMesh when we need
+    //  it. CalcTetrahedronVolume(VolumeElementIndex) will call
+    //  CalcTetrahedronVolume(Vector3, Vector3, Vector3, Vector3).
     const Vector3<T>& a = vertices_[elements_[e].vertex(0)].r_MV();
     const Vector3<T>& b = vertices_[elements_[e].vertex(1)].r_MV();
     const Vector3<T>& c = vertices_[elements_[e].vertex(2)].r_MV();
@@ -198,7 +198,7 @@ class VolumeMesh {
     // fourth vertex, d, is on the positive side of the plane defined by a,
     // b, c. With this convention, the computed volume will be positive,
     // otherwise negative.
-    T volume = (d - a).dot((b - a).cross(c - a)) / T(6.0);
+    const T volume = (d - a).dot((b - a).cross(c - a)) / T(6.0);
     DRAKE_ASSERT(volume > T(0));
     return volume;
   }

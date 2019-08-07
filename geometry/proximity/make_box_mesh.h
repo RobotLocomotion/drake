@@ -46,12 +46,15 @@ int CalcSequentialIndex(int i, int j, int k, const Vector3<int>& num_vertices) {
 template <typename T>
 static std::vector<VolumeVertex<T>> GenerateVertices(
     const Box& box, const Vector3<int>& num_vertices) {
-  T half_x = box.width() / T(2);
-  T half_y = box.depth() / T(2);
-  T half_z = box.height() / T(2);
-  auto x_coords = VectorX<T>::LinSpaced(num_vertices.x(), -half_x, half_x);
-  auto y_coords = VectorX<T>::LinSpaced(num_vertices.y(), -half_y, half_y);
-  auto z_coords = VectorX<T>::LinSpaced(num_vertices.z(), -half_z, half_z);
+  const T half_x = box.width() / T(2);
+  const T half_y = box.depth() / T(2);
+  const T half_z = box.height() / T(2);
+  const auto x_coords =
+      VectorX<T>::LinSpaced(num_vertices.x(), -half_x, half_x);
+  const auto y_coords =
+      VectorX<T>::LinSpaced(num_vertices.y(), -half_y, half_y);
+  const auto z_coords =
+      VectorX<T>::LinSpaced(num_vertices.z(), -half_z, half_z);
 
   std::vector<VolumeVertex<T>> vertices;
   vertices.reserve(num_vertices.x() * num_vertices.y() * num_vertices.z());
@@ -168,7 +171,7 @@ static std::vector<VolumeElement> GenerateElements(
     their shared face, or shared edge, or shared vertex, or not at all.
     There is no partial overlapping of two tetrahedra.
  @param[in] box
-     The box shape specification (see drake::geomety::Box).
+     The box shape specification (see drake::geometry::Box).
  @param[in] target_edge_length
      Control the resolution of the mesh. The length of axis-aligned edges
      of the mesh will be within this parameter.  The length of
@@ -177,14 +180,14 @@ static std::vector<VolumeElement> GenerateElements(
  @tparam T The underlying scalar type. Must be a valid Eigen scalar.
  @note The mesh has no guarantee on the inner boundary for a rigid core.
  */
-// TODO(DamrongGuoy): Generate the mesh with rigid core at medial axis or offset
-//  surface (issue #11906) and remove the "@note" above.
 template <typename T>
 VolumeMesh<T> MakeBoxVolumeMesh(const Box& box, double target_edge_length) {
+  // TODO(DamrongGuoy): Generate the mesh with rigid core at medial axis or
+  //  offset surface (issue #11906) and remove the "@note" above.
   DRAKE_DEMAND(target_edge_length > 0.);
   // Number of vertices in x-, y-, and z- directions.  In each direction,
   // there is one more vertices than cells.
-  Vector3<int> num_vertices {
+  const Vector3<int> num_vertices {
       1 + static_cast<int>(ceil(box.width() / target_edge_length)),
       1 + static_cast<int>(ceil(box.depth() / target_edge_length)),
       1 + static_cast<int>(ceil(box.height() / target_edge_length))};
