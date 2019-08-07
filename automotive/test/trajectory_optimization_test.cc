@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/simple_car.h"
-#include "drake/common/proto/call_matlab.h"
+#include "drake/common/proto/call_python.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/solve.h"
 #include "drake/systems/trajectory_optimization/direct_collocation.h"
@@ -106,13 +106,16 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   EXPECT_TRUE(result.is_success());
 
   // Plot the solution.
-  // Note: see call_matlab.h for instructions on viewing the plot.
+  // Note: see call_python_client.py for instructions on viewing the plot.
   Eigen::MatrixXd inputs = prog.GetInputSamples(result);
   Eigen::MatrixXd states = prog.GetStateSamples(result);
-  common::CallMatlab("plot", states.row(SimpleCarStateIndices::kX),
+  using common::CallPython;
+  CallPython("figure", 1);
+  CallPython("clf");
+  CallPython("plot", states.row(SimpleCarStateIndices::kX),
                      states.row(SimpleCarStateIndices::kY));
-  common::CallMatlab("xlabel", "x (m)");
-  common::CallMatlab("ylabel", "y (m)");
+  CallPython("xlabel", "x (m)");
+  CallPython("ylabel", "y (m)");
 
   // Checks that the input commands found are not too large.
   EXPECT_LE(inputs.row(0).lpNorm<1>(), 0.1);

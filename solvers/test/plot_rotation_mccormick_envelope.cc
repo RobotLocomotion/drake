@@ -2,7 +2,7 @@
 #include "drake/solvers/test/rotation_constraint_visualization.h"
 /* clang-format on */
 
-#include "drake/common/proto/call_matlab.h"
+#include "drake/common/proto/call_python.h"
 #include "drake/solvers/rotation_constraint.h"
 
 // Plot the McCormick Envelope on the unit sphere, to help developers to
@@ -32,12 +32,11 @@ void DrawAllMcCormickEnvelopes(int num_bins) {
 }
 
 void DoMain() {
-  using common::CallMatlab;
+  using common::CallPython;
   for (int num_bins = 1; num_bins <= 3; ++num_bins) {
-    CallMatlab("figure", num_bins);
-    CallMatlab("clf");
-    CallMatlab("hold", "on");
-    CallMatlab("axis", "equal");
+    CallPython("figure", num_bins);
+    CallPython("clf");
+    CallPython("axis", "equal");
     DrawSphere();
     DrawAllMcCormickEnvelopes(num_bins);
   }

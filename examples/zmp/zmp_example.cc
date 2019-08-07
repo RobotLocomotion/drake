@@ -1,7 +1,7 @@
 #include <chrono>
 #include <thread>
 
-#include "drake/common/proto/call_matlab.h"
+#include "drake/common/proto/call_python.h"
 #include "drake/systems/controllers/test/zmp_test_util.h"
 
 namespace drake {
@@ -10,72 +10,74 @@ namespace zmp {
 namespace {
 
 void PlotResults(const systems::controllers::ZMPTestTraj& traj) {
-  using drake::common::CallMatlab;
+  using common::CallPython;
+  using common::ToPythonTuple;
 
-  CallMatlab("figure", 1);
-  CallMatlab("clf");
-  CallMatlab("subplot", 2, 1, 1);
-  CallMatlab("hold", "on");
-  CallMatlab("plot", traj.time, traj.desired_zmp.row(0), "r");
-  CallMatlab("plot", traj.time, traj.nominal_com.row(0), "b");
-  CallMatlab("plot", traj.time, traj.cop.row(0), "g");
-  CallMatlab("plot", traj.time, traj.x.row(0), "c");
-  CallMatlab("xlabel", "time [s]");
-  CallMatlab("ylabel", "x [m]");
-  CallMatlab("legend", "desired zmp", "planned com", "planned cop",
-                "actual com");
+  CallPython("figure", 1);
+  CallPython("clf");
+  CallPython("subplot", 2, 1, 1);
+  CallPython("plot", traj.time.transpose(),
+             traj.desired_zmp.row(0).transpose(), "r");
+  CallPython("plot", traj.time.transpose(),
+             traj.nominal_com.row(0).transpose(), "b");
+  CallPython("plot", traj.time.transpose(), traj.cop.row(0).transpose(), "g");
+  CallPython("plot", traj.time.transpose(), traj.x.row(0).transpose(), "c");
+  CallPython("xlabel", "time [s]");
+  CallPython("ylabel", "x [m]");
+  CallPython("legend", ToPythonTuple("desired zmp", "planned com",
+                                     "planned cop", "actual com"));
 
-  CallMatlab("subplot", 2, 1, 2);
-  CallMatlab("hold", "on");
-  CallMatlab("plot", traj.time, traj.desired_zmp.row(1), "r");
-  CallMatlab("plot", traj.time, traj.nominal_com.row(1), "b");
-  CallMatlab("plot", traj.time, traj.cop.row(1), "g");
-  CallMatlab("plot", traj.time, traj.x.row(1), "c");
-  CallMatlab("xlabel", "time [s]");
-  CallMatlab("ylabel", "y [m]");
-  CallMatlab("legend", "desired zmp", "planned com", "planned cop",
-                "actual com");
-  // Give time for matlab to plot.
+  CallPython("subplot", 2, 1, 2);
+  CallPython("plot", traj.time.transpose(),
+             traj.desired_zmp.row(1).transpose(), "r");
+  CallPython("plot", traj.time.transpose(),
+             traj.nominal_com.row(1).transpose(), "b");
+  CallPython("plot", traj.time.transpose(), traj.cop.row(1).transpose(), "g");
+  CallPython("plot", traj.time.transpose(), traj.x.row(1).transpose(), "c");
+  CallPython("xlabel", "time [s]");
+  CallPython("ylabel", "y [m]");
+  CallPython("legend", ToPythonTuple("desired zmp", "planned com",
+                                     "planned cop", "actual com"));
+  // Give time for Python to plot.
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
-  CallMatlab("figure", 2);
-  CallMatlab("clf");
-  CallMatlab("subplot", 2, 1, 1);
-  CallMatlab("hold", "on");
-  CallMatlab("plot", traj.time, traj.nominal_com.row(2), "b");
-  CallMatlab("plot", traj.time, traj.x.row(2), "c");
-  CallMatlab("xlabel", "time [s]");
-  CallMatlab("ylabel", "xd [m/s]");
-  CallMatlab("legend", "planned comd", "actual comd");
+  CallPython("figure", 2);
+  CallPython("clf");
+  CallPython("subplot", 2, 1, 1);
+  CallPython("plot", traj.time.transpose(),
+             traj.nominal_com.row(2).transpose(), "b");
+  CallPython("plot", traj.time.transpose(), traj.x.row(2).transpose(), "c");
+  CallPython("xlabel", "time [s]");
+  CallPython("ylabel", "xd [m/s]");
+  CallPython("legend", ToPythonTuple("planned comd", "actual comd"));
 
-  CallMatlab("subplot", 2, 1, 2);
-  CallMatlab("hold", "on");
-  CallMatlab("plot", traj.time, traj.nominal_com.row(3), "b");
-  CallMatlab("plot", traj.time, traj.x.row(3), "c");
-  CallMatlab("xlabel", "time [s]");
-  CallMatlab("ylabel", "yd [m/s]");
-  CallMatlab("legend", "planned comd", "actual comd");
-  // Give time for matlab to plot.
+  CallPython("subplot", 2, 1, 2);
+  CallPython("plot", traj.time.transpose(),
+             traj.nominal_com.row(3).transpose(), "b");
+  CallPython("plot", traj.time.transpose(), traj.x.row(3).transpose(), "c");
+  CallPython("xlabel", "time [s]");
+  CallPython("ylabel", "yd [m/s]");
+  CallPython("legend", ToPythonTuple("planned comd", "actual comd"));
+  // Give time for Python to plot.
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
-  CallMatlab("figure", 3);
-  CallMatlab("clf");
-  CallMatlab("subplot", 2, 1, 1);
-  CallMatlab("hold", "on");
-  CallMatlab("plot", traj.time, traj.u.row(0), "r");
-  CallMatlab("plot", traj.time, traj.nominal_com.row(4), "b.");
-  CallMatlab("xlabel", "time [s]");
-  CallMatlab("ylabel", "xdd [m/s2]");
-  CallMatlab("legend", "comdd from policy", "nominal comdd");
-
-  CallMatlab("subplot", 2, 1, 2);
-  CallMatlab("hold", "on");
-  CallMatlab("plot", traj.time, traj.u.row(1), "r");
-  CallMatlab("plot", traj.time, traj.nominal_com.row(5), "b.");
-  CallMatlab("xlabel", "time [s]");
-  CallMatlab("ylabel", "ydd [m/s2]");
-  CallMatlab("legend", "comdd from policy", "nominal comdd");
-  // Give time for matlab to plot.
+  CallPython("figure", 3);
+  CallPython("clf");
+  CallPython("subplot", 2, 1, 1);
+  CallPython("plot", traj.time.transpose(), traj.u.row(0).transpose(), "r");
+  CallPython("plot", traj.time.transpose(),
+             traj.nominal_com.row(4).transpose(), "b.");
+  CallPython("xlabel", "time [s]");
+  CallPython("ylabel", "xdd [m/s2]");
+  CallPython("legend", ToPythonTuple("comdd from policy", "nominal comdd"));
+  CallPython("subplot", 2, 1, 2);
+  CallPython("plot", traj.time.transpose(), traj.u.row(1).transpose(), "r");
+  CallPython("plot", traj.time.transpose(),
+             traj.nominal_com.row(5).transpose(), "b.");
+  CallPython("xlabel", "time [s]");
+  CallPython("ylabel", "ydd [m/s2]");
+  CallPython("legend", ToPythonTuple("comdd from policy", "nominal comdd"));
+  // Give time for Python to plot.
   std::this_thread::sleep_for(std::chrono::seconds(1));
 }
 

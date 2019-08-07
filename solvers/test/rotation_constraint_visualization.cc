@@ -1,6 +1,6 @@
 #include "drake/solvers/test/rotation_constraint_visualization.h"
 
-#include "drake/common/proto/call_matlab.h"
+#include "drake/common/proto/call_python.h"
 #include "drake/solvers/mixed_integer_rotation_constraint.h"
 #include "drake/solvers/mixed_integer_rotation_constraint_internal.h"
 #include "drake/solvers/rotation_constraint.h"
@@ -60,26 +60,26 @@ void DrawArcBoundaryOfBoxSphereIntersection(const Eigen::Vector3d& arc_end0,
       via_pts(free_axis1, i) *= -1;
     }
   }
-  auto h = common::CallMatlab(1, "plot3", via_pts.row(0), via_pts.row(1),
-                              via_pts.row(2));
-  common::CallMatlab("set", h[0], "Color", color);
+  using common::CallPython;
+  using common::ToPythonKwargs;
+  CallPython("plot3", via_pts.row(0).transpose(), via_pts.row(1).transpose(),
+             via_pts.row(2).transpose(),
+             ToPythonKwargs("color", color.transpose()));
 }
 }  // namespace
 
 void DrawSphere(const Eigen::RowVector3d& color) {
-  using common::CallMatlab;
-  auto xyz_sphere = common::CallMatlab(3, "sphere", 40);
-  auto h_sphere =
-      CallMatlab(1, "surf", xyz_sphere[0], xyz_sphere[1], xyz_sphere[2]);
-  CallMatlab("set", h_sphere[0], "FaceColor", color);
-  CallMatlab("set", h_sphere[0], "FaceAlpha", 0.2);
-  CallMatlab("set", h_sphere[0], "EdgeColor", color);
-  CallMatlab("set", h_sphere[0], "LineStyle", "none");
+  using common::CallPython;
+  using common::ToPythonKwargs;
+  CallPython("sphere", 40,
+             ToPythonKwargs("alpha", 0.2, "color", color.transpose(),
+                            "linestyle", "None"));
 }
 
 void DrawBox(const Eigen::Vector3d& bmin, const Eigen::Vector3d& bmax,
              const Eigen::RowVector3d& color) {
-  using common::CallMatlab;
+  using common::CallPython;
+  using common::ToPythonKwargs;
   if ((bmin.array() < 0).any()) {
     throw std::runtime_error("bmin should be in the first orthant in DrawBox.");
   }
@@ -88,37 +88,9 @@ void DrawBox(const Eigen::Vector3d& bmin, const Eigen::Vector3d& bmax,
   }
   if (bmin.norm() <= 1 && bmax.norm() >= 1) {
     // The box and the sphere has intersections.
-
-    // Draw 6 planes
-    for (int fixed_axis = 0; fixed_axis < 3; ++fixed_axis) {
-      int free_axis0 = (fixed_axis + 1) % 3;
-      int free_axis1 = (fixed_axis + 2) % 3;
-      std::array<Eigen::Matrix2d, 3> plane;
-      // For the free axes, one axis takes the mesh points
-      // bmin bmin
-      // bmax bmax
-      // The other axis takes the mesh points
-      // bmin bmax
-      // bmin bmax
-      // Please refer to MATLAB meshgrid function for more details
-      // https://www.mathworks.com/help/matlab/ref/meshgrid.html
-      plane[free_axis0] << Eigen::RowVector2d::Constant(bmin(free_axis0)),
-          Eigen::RowVector2d::Constant(bmax(free_axis0));
-      plane[free_axis1].col(0) = Eigen::Vector2d::Constant(bmin(free_axis1));
-      plane[free_axis1].col(1) = Eigen::Vector2d::Constant(bmax(free_axis1));
-      plane[fixed_axis] = Eigen::Matrix2d::Constant(bmin(fixed_axis));
-      auto h0 = CallMatlab(1, "surf", plane[0], plane[1], plane[2]);
-      plane[fixed_axis] = Eigen::Matrix2d::Constant(bmax(fixed_axis));
-      auto h1 = CallMatlab(1, "surf", plane[0], plane[1], plane[2]);
-
-      std::array<common::MatlabRemoteVariable, 2> h = {{h0[0], h1[0]}};
-      for (int i = 0; i < 2; ++i) {
-        CallMatlab("set", h[i], "FaceColor", color);
-        CallMatlab("set", h[i], "FaceAlpha", 0.2);
-        CallMatlab("set", h[i], "EdgeColor", color);
-        CallMatlab("set", h[i], "LineStyle", "none");
-      }
-    }
+    CallPython("box", bmin, bmax,
+               ToPythonKwargs("alpha", 0.2, "color", color.transpose(),
+                              "linestyle", "None"));
   }
 }
 

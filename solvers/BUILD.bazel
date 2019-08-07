@@ -508,7 +508,7 @@ drake_cc_library(
     deps = [
         ":mixed_integer_rotation_constraint",
         ":rotation_constraint",
-        "//common/proto:call_matlab",
+        "//common/proto:call_python",
     ],
 )
 
@@ -1511,7 +1511,7 @@ drake_cc_binary(
         ":mixed_integer_rotation_constraint",
         ":rotation_constraint",
         ":solve",
-        "//common/proto:call_matlab",
+        "//common/proto:call_python",
     ],
 )
 
