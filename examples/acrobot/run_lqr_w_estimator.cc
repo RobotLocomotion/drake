@@ -4,7 +4,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/common/proto/call_matlab.h"
+#include "drake/common/proto/call_python.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
 #include "drake/examples/acrobot/gen/acrobot_state.h"
 #include "drake/lcm/drake_lcm.h"
@@ -139,22 +139,28 @@ int do_main() {
   simulator.Initialize();
   simulator.AdvanceTo(FLAGS_simulation_sec);
 
-  // Plot the results (launch call_matlab_client to see the plots).
-  using common::CallMatlab;
-  CallMatlab("figure", 1);
-  CallMatlab("plot", x_logger->sample_times(),
-             (x_logger->data().row(0).array() - M_PI).matrix(),
-             x_logger->sample_times(), x_logger->data().row(1));
-  CallMatlab("legend", "theta1 - PI", "theta2");
-  CallMatlab("axis", "tight");
+  // Plot the results (launch call_python_client to see the plots).
+  using common::CallPython;
+  using common::ToPythonTuple;
+  CallPython("figure", 1);
+  CallPython("clf");
+  CallPython("plot", x_logger->sample_times(),
+             (x_logger->data().row(0).array() - M_PI)
+                 .matrix().transpose());
+  CallPython("plot", x_logger->sample_times(),
+             x_logger->data().row(1).transpose());
+  CallPython("legend", ToPythonTuple("theta1 - PI", "theta2"));
+  CallPython("axis", "tight");
 
-  CallMatlab("figure", 2);
-  CallMatlab("plot", x_logger->sample_times(),
+  CallPython("figure", 2);
+  CallPython("clf");
+  CallPython("plot", x_logger->sample_times(),
              (x_logger->data().array() - xhat_logger->data().array())
                  .matrix().transpose());
-  CallMatlab("ylabel", "error");
-  CallMatlab("legend", "theta1", "theta2", "theta1dot", "theta2dot");
-  CallMatlab("axis", "tight");
+  CallPython("ylabel", "error");
+  CallPython("legend", ToPythonTuple("theta1", "theta2", "theta1dot",
+                                     "theta2dot"));
+  CallPython("axis", "tight");
 
   return 0;
 }
