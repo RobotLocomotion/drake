@@ -7,6 +7,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/extract_double.h"
 #include "drake/geometry/proximity/mesh_field_linear.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/math/rigid_transform.h"
@@ -72,6 +73,31 @@ GTEST_TEST(VolumeMeshTest, TestVolumeMeshDouble) {
 // differentiation.
 GTEST_TEST(VolumeMeshTest, TestVolumeMeshAutoDiffXd) {
   auto volume_mesh = TestVolumeMesh<AutoDiffXd>();
+}
+
+template <typename T>
+void TestCalcTetrahedronVolume() {
+  const math::RigidTransform<T> X_WM(
+      math::RollPitchYaw<T>(M_PI / 6.0, 2.0 * M_PI / 3.0, 7.0 * M_PI / 4.0),
+      Vector3<T>(1.0, 2.0, 3.0));
+  auto volume_mesh = TestVolumeMesh<T>(X_WM);
+  // Estimate 4 multiply+add, each introduces 2 epsilons.
+  const double kTolerance(8.0 * std::numeric_limits<double>::epsilon());
+
+  const double expect_tetrahedron_volume(1. / 6.);
+  for (int e = 0; e < 2; ++e) {
+    const double tetrahedron_volume = ExtractDoubleOrThrow(
+        volume_mesh->CalcTetrahedronVolume(VolumeElementIndex(e)));
+    EXPECT_NEAR(expect_tetrahedron_volume, tetrahedron_volume, kTolerance);
+  }
+}
+
+GTEST_TEST(VolumeMeshTest, TestCalcTetrahedronVolumeDouble) {
+  TestCalcTetrahedronVolume<double>();
+}
+
+GTEST_TEST(VolumeMeshTest, TestCalcTetrahedronVolumeAutoDiffXd) {
+  TestCalcTetrahedronVolume<AutoDiffXd>();
 }
 
 template <typename T>
