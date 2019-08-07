@@ -356,6 +356,41 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_upper_limits(), inf));
 }
 
+// Verifies that the SDF parser parses the joint actuator limit correctly.
+GTEST_TEST(MultibodyPlantSdfParserTest, JointActuatorParsingTest) {
+  MultibodyPlant<double> plant;
+
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "joint_actuator_parsing_test.sdf");
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(full_name);
+
+  // Read in the SDF file.
+  AddModelFromSdfFile(full_name, "", package_map, &plant, nullptr);
+  plant.Finalize();
+
+  // In SDF, effort limits are specified in <joint><axis><limit><effort>,
+  // which is the reason we read the joint actuator using the joint name.
+  // Test the joint actuator with a positive effort limit.
+  const auto& limited_joint_actuator =
+      plant.GetJointActuatorByName("revolute_joint_positive_limit");
+  EXPECT_EQ(limited_joint_actuator.effort_limit(), 100);
+
+  // Test the joint actuator with the effort limit set to negative value,
+  // which will be treated as no limit per the SDF standard.
+  constexpr double kInf = std::numeric_limits<double>::infinity();
+  const auto& no_limit_joint_actuator =
+      plant.GetJointActuatorByName("revolute_joint_no_limit");
+  EXPECT_TRUE(no_limit_joint_actuator.effort_limit() == kInf);
+
+  // Test the joint actuator with the effort limit set to 0, which means no
+  // actuation.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.GetJointActuatorByName("prismatic_joint_zero_limit"),
+      std::logic_error, "There is no joint actuator named '.*' in the model.");
+}
+
 void ExpectUnsupportedFrame(const std::string& inner) {
   const std::string filename = temp_directory() + "/bad.sdf";
   std::ofstream file(filename);
