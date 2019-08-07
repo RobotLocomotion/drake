@@ -781,14 +781,14 @@ class IntegratorBase {
    */
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
 
-  /** Manually sets the statistic for the number of ODE evaluations.
+  /** Manually increments the statistic for the number of ODE evaluations.
    * @warning Implementations should generally avoid calling this method;
    *          evaluating the ODEs using EvalTimeDerivatives() updates this
    *          statistic automatically and intelligently (by leveraging the
    *          caching system to avoid incrementing the count when cached
    *          evaluations are used).
    */
-  void set_num_derivative_evaluations(double evals) { num_ode_evals_ = evals; }
+  void add_derivative_evaluations(double evals) { num_ode_evals_ += evals; }
 
   /**
    * @}

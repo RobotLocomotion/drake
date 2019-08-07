@@ -25,10 +25,11 @@ namespace systems {
  *         Radau3 (default). Other values are invalid.
  *
  * A two-stage Radau IIa (see [Hairer, 1996], Ch. 5) method is used for
- * propagating the state forward, by default, while the implicit trapezoid rule
- * is used for estimating the local (truncation) error. The
- * state can also be propagated using a single-stage method, in which case it is
- * equivalent to an implicit Euler method, by setting num_stages=1.
+ * propagating the state forward, by default. The state can also be propagated
+ * using a single-stage method, in which case it is equivalent to an implicit
+ * Euler method, by setting num_stages=1. Regardless of the order of propagating
+ * state, the local (truncation) error is estimated through the implicit
+ * trapezoid rule.
  *
  * Radau IIa methods are known to be L-Stable, meaning both that
  * applying it at a fixed integration step to the  "test" equation `y(t) = eᵏᵗ`
@@ -37,9 +38,12 @@ namespace systems {
  * coefficient system `dx/dt = Ax` at any step size without the solution
  * becoming unstable (growing without bound). The practical effect of
  * L-Stability is that the integrator tends to be stable for any given step size
- * on an arbitrary system of ordinary differential equations. See
- * [Lambert, 1991], Ch. 6 for an approachable discussion on stiff differential
- * equations and L- and A-Stability.
+ * on an arbitrary system of ordinary differential equations. Note that the
+ * implicit trapezoid rule used for error estimation is "only" A-Stable; whether
+ * this lesser stability has some practical effect on the efficiency of this
+ * integrator is currently unknown. See [Lambert, 1991], Ch. 6 for an
+ * approachable discussion on stiff differential equations and L- and
+ * A-Stability.
  *
  * This implementation uses Newton-Raphson (NR). General implementation
  * details were taken from [Hairer, 1996] Ch. 8.
@@ -112,6 +116,15 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
     return num_err_est_iter_factorizations_;
   }
 
+  enum class ConvergenceStatus {
+    kDiverged,
+    kConverged,
+    kNotConverged,
+  };
+  ConvergenceStatus CheckConvergence(int iteration, const VectorX<T>& xtplus,
+      const VectorX<T>& dx, const T& dx_norm, const T& last_dx_norm) const;
+  void ComputeSolutionFromIterate(
+      const VectorX<T>& xt0, const VectorX<T>& Z, VectorX<T>* xtplus) const;
   void ComputeAndSetErrorEstimate(
       const VectorX<T>& xtplus_prop, const VectorX<T>& xtplus_embed);
   bool AttemptStepPaired(const T& t0, const T& h,
@@ -353,13 +366,78 @@ const VectorX<T>& RadauIntegrator<T, num_stages>::ComputeFofZ(
   return F_of_Z_;
 }
 
+// Computes the solution xtplus (i.e., the continuous state at t0 + h) from the
+// continuous state at t0 and the current Newton-Raphson iterate (Z).
+template <typename T, int num_stages>
+void RadauIntegrator<T, num_stages>::ComputeSolutionFromIterate(
+    const VectorX<T>& xt0, const VectorX<T>& Z, VectorX<T>* xtplus) const {
+  const int state_dim = xt0.size();
+
+  // Compute the solution using (IV.8.2b) in [Hairer, 1996].
+  xtplus->setZero();
+  for (int i = 0, j = 0; i < num_stages; ++i, j += state_dim) {
+    if (d_[i] != 0.0)
+      *xtplus += d_[i] * Z.segment(j, state_dim);
+  }
+  *xtplus += xt0;
+}
+
+// Checks the Newton-Raphson iteration process for convergence.
+template <typename T, int num_stages>
+typename RadauIntegrator<T, num_stages>::ConvergenceStatus
+RadauIntegrator<T, num_stages>::CheckConvergence(
+    int iteration, const VectorX<T>& xtplus, const VectorX<T>& dx,
+    const T& dx_norm, const T& last_dx_norm) const {
+  // The check below looks for convergence by identifying cases where the
+  // update to the state results in no change. We do this check only after
+  // at least one Newton-Raphson update has been applied to ensure that there
+  // is at least some change to the state, no matter how small, on a
+  // non-stationary system.
+  if (iteration > 0 && this->IsUpdateZero(xtplus, dx)) {
+    SPDLOG_DEBUG(drake::log(), "norm(dx) indicates convergence");
+    return ConvergenceStatus::kConverged;
+  }
+
+  // Compute the convergence rate and check convergence.
+  // [Hairer, 1996] notes that this convergence strategy should only be
+  // applied after *at least* two iterations (p. 121).
+  if (iteration > 1) {
+    // TODO(edrumwri) Hairer's RADAU5 implementation (allegedly) uses
+    // theta = sqrt(dx[k] / dx[k-2]) while DASSL uses
+    // theta = pow(dx[k] / dx[0], 1/k), so investigate setting
+    // theta to these alternative values for minimizing convergence failures.
+    const T theta = dx_norm / last_dx_norm;
+    const T eta = theta / (1 - theta);
+    SPDLOG_DEBUG(drake::log(), "Newton-Raphson loop {} theta: {}, eta: {}",
+                 iteration, theta, eta);
+
+    // Look for divergence.
+    if (theta > 1) {
+      SPDLOG_DEBUG(drake::log(), "Newton-Raphson divergence detected");
+      return ConvergenceStatus::kDiverged;
+    }
+
+    // Look for convergence using Equation IV.8.10 from [Hairer, 1996].
+    // [Hairer, 1996] determined values of kappa in [0.01, 0.1] work most
+    // efficiently on a number of test problems with *Radau5* (a fifth order
+    // implicit integrator), p. 121. We select a value halfway in-between.
+    const double kappa = 0.05;
+    const double k_dot_tol = kappa * this->get_accuracy_in_use();
+    if (eta * dx_norm < k_dot_tol) {
+      SPDLOG_DEBUG(drake::log(), "Newton-Raphson converged; η = {}", eta);
+      return ConvergenceStatus::kConverged;
+    }
+  }
+
+  return ConvergenceStatus::kNotConverged;
+}
+
 // Computes the next continuous state (at t0 + h) using the Radau method,
 // assuming that the method is able to converge at that step size.
 // @param t0 the initial time.
 // @param h the integration step size to attempt.
 // @param xt0 the continuous state at time t0.
-// @param[in,out] xtplus the starting guess for x(t+h); the value for x(t+h) on
-//        return (assuming that h > 0).
+// @param[out] the value for x(t+h) on return.
 // @param trial the attempt for this approach (1-4). StepRadau() uses more
 //        computationally expensive methods as the trial numbers increase.
 // @post the internal context will be in an indeterminate state on returning
@@ -409,25 +487,8 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
   // Initialize the "last" norm of dx; this will be used to detect convergence.
   T last_dx_norm = std::numeric_limits<double>::infinity();
 
-  // The maximum number of Newton-Raphson iterations to take before declaring
-  // failure. See relevant statement about this method in
-  // StepImplicitTrapezoidDetail().
-  // TODO(edrumwri): Consider making this a settable parameter. Not doing so
-  //                 to avoid parameter overload.
-  const int max_iterations = 10;
-
-  auto compute_solution_from_iterate = [this, xtplus, state_dim, &xt0]() {
-    // Set the solution using (IV.8.2b) in [Hairer, 1996].
-    xtplus->setZero();
-    for (int i = 0, j = 0; i < num_stages; ++i, j += state_dim) {
-      if (d_[i] != 0.0)
-        *xtplus += d_[i] * Z_.segment(j, state_dim);
-    }
-    *xtplus += xt0;
-  };
-
   // Do the Newton-Raphson iterations.
-  for (int iter = 0; iter < max_iterations; ++iter) {
+  for (int iter = 0; iter < this->max_newton_raphson_iterations(); ++iter) {
     SPDLOG_DEBUG(drake::log(), "Newton-Raphson iteration {}", iter);
 
     // Update the number of Newton-Raphson iterations.
@@ -470,50 +531,18 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
     dx_state_->get_mutable_vector().SetFromVector(dx);
     T dx_norm = this->CalcStateChangeNorm(*dx_state_);
 
-    // The check below looks for convergence by identifying cases where the
-    // update to the state results in no change. We do this check only after
-    // at least one Newton-Raphson update has been applied to ensure that there
-    // is at least some change to the state, no matter how small, on a
-    // non-stationary system.
-    if (iter > 0 && this->IsUpdateZero(*xtplus, dx)) {
-      SPDLOG_DEBUG(drake::log(), "norm(dx) indicates convergence");
-      compute_solution_from_iterate();
-      return true;
-    }
+    // Compute the update.
+    ComputeSolutionFromIterate(xt0, Z_, &(*xtplus));
 
-    // Compute the convergence rate and check convergence.
-    // [Hairer, 1996] notes that this convergence strategy should only be
-    // applied after *at least* two iterations (p. 121).
-    if (iter >= 1) {
-      // TODO(edrumwri) Hairer's RADAU5 implementation (allegedly) uses
-      // theta = sqrt(dx[k] / dx[k-2]) while DASSL uses
-      // theta = pow(dx[k] / dx[0], 1/k), so investigate setting
-      // theta to these alternative values for minimizing convergence failures
-      // (and update similar code in StepImplicitTrapezoidDetail()).
-      const T theta = dx_norm / last_dx_norm;
-      const T eta = theta / (1 - theta);
-      SPDLOG_DEBUG(drake::log(), "Newton-Raphson loop {} theta: {}, eta: {}",
-                   iter, theta, eta);
-
-      // Look for divergence.
-      if (theta > 1) {
-        SPDLOG_DEBUG(drake::log(), "Newton-Raphson divergence detected for "
-            "h={}", h);
-        break;
-      }
-
-      // Look for convergence using Equation IV.8.10 from [Hairer, 1996].
-      // [Hairer, 1996] determined values of kappa in [0.01, 0.1] work most
-      // efficiently on a number of test problems with *Radau5* (a fifth order
-      // implicit integrator), p. 121. We select a value halfway in-between.
-      const double kappa = 0.05;
-      const double k_dot_tol = kappa * this->get_accuracy_in_use();
-      if (eta * dx_norm < k_dot_tol) {
-        SPDLOG_DEBUG(drake::log(), "Newton-Raphson converged; η = {}, h = {}",
-                     eta, h);
-        compute_solution_from_iterate();
+    // Check for convergence.
+    ConvergenceStatus status =
+        CheckConvergence(iter, *xtplus, dx, dx_norm, last_dx_norm);
+    if (status == ConvergenceStatus::kDiverged) {
+      break;
+    } else {
+      if (status == ConvergenceStatus::kConverged)
         return true;
-      }
+      DRAKE_DEMAND(status == ConvergenceStatus::kNotConverged);
     }
 
     // Update the norm of the state update.
@@ -523,7 +552,8 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
   SPDLOG_DEBUG(drake::log(), "StepRadau() convergence failed");
 
   // If Jacobian and iteration matrix factorizations are not reused, there
-  // is nothing else we can try.
+  // is nothing else we can try; otherwise, the following code will recurse
+  // into this function again, and freshen computations as helpful.
   if (!this->get_reuse())
     return false;
 
@@ -537,8 +567,8 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
 // @param t0 the initial time.
 // @param h the integration step size to attempt.
 // @param xt0 the continuous state at time t0.
-// @param radau_xtplus the Radau solution for x(t+h)
-// @param [out] the value for x(t+h) on return (assuming that h > 0)
+// @param radau_xtplus the Radau solution for x(t+h).
+// @param [out] the value for x(t+h) on return.
 // @param trial the attempt for this approach (1-4). The method uses more
 //        computationally expensive methods as the trial numbers increase.
 // @returns `true` if the method was successfully able to take an integration
@@ -625,8 +655,7 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
   const T tf = t0 + h;
   context->SetTimeAndContinuousState(tf, *xtplus);
 
-  // Evaluate the residual error using the current x(t+h) as x⁰(t+h):
-  // g(x⁰(t+h)) = x⁰(t+h) - x(t) - h f(t+h,x⁰(t+h)), where h = dt;
+  // Evaluate the residual error using the current x(t+h).
   VectorX<T> goutput = g();
 
   // Initialize the "last" state update norm; this will be used to detect
@@ -643,17 +672,7 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
     return false;
   }
 
-  // The maximum number of Newton-Raphson iterations to take before declaring
-  // failure. [Hairer, 1996] states, "It is our experience that the code becomes
-  // more efficient when we allow a relatively high number of iterations (e.g.,
-  // [7 or 10])", p. 121.  The focus of that quote is a higher order integrator
-  // with a quasi-Newton approach, so our mileage may vary.
-  // TODO(edrumwri): Consider making this a settable parameter. Not putting it
-  //                 toward staving off parameter overload.
-  const int max_iterations = 10;
-
-  // Do the Newton-Raphson iterations.
-  for (int iter = 0; iter < max_iterations; ++iter) {
+  for (int iter = 0; iter < this->max_newton_raphson_iterations(); ++iter) {
     SPDLOG_DEBUG(drake::log(), "Newton-Raphson iteration {}", iter);
     ++num_nr_iterations_;
 
@@ -667,47 +686,19 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
     dx_state_->get_mutable_vector().SetFromVector(dx);
     T dx_norm = this->CalcStateChangeNorm(*dx_state_);
 
-    // The check below looks for convergence by identifying cases where the
-    // update to the state results in no change. We do this check only after
-    // at least one Newton-Raphson update has been applied to ensure that there
-    // is at least some change to the state, no matter how small, on a
-    // non-stationary system.
-    if (iter > 0 && this->IsUpdateZero(*xtplus, dx)) {
-      SPDLOG_DEBUG(drake::log(), "norm(dx) indicates convergence");
-      return true;
-    }
-
     // Update the state vector.
     *xtplus += dx;
     context->SetTimeAndContinuousState(tf, *xtplus);
 
-    // Compute the convergence rate and check convergence.
-    // [Hairer, 1996] notes that this convergence strategy should only be
-    // applied after *at least* two iterations (p. 121).
-    if (iter >= 1) {
-      const T theta = dx_norm / last_dx_norm;
-      const T eta = theta / (1 - theta);
-      SPDLOG_DEBUG(drake::log(), "Newton-Raphson loop {} theta: {}, eta: {}",
-                   iter, theta, eta);
-
-      // Look for divergence.
-      if (theta > 1) {
-        SPDLOG_DEBUG(drake::log(), "Newton-Raphson divergence detected for "
-            "h={}", h);
-        break;
-      }
-
-      // Look for convergence using Equation IV.8.10 from [Hairer, 1996].
-      // [Hairer, 1996] determined values of kappa in [0.01, 0.1] work most
-      // efficiently on a number of test problems with *RADAU5* (the fifth order
-      // implicit integrator), p. 121. We select a value halfway in-between.
-      const double kappa = 0.05;
-      const double k_dot_tol = kappa * this->get_accuracy_in_use();
-      if (eta * dx_norm < k_dot_tol) {
-        SPDLOG_DEBUG(drake::log(), "Newton-Raphson converged; η = {}, h = {}",
-                     eta, h);
+    // Check for convergence.
+    ConvergenceStatus status =
+        CheckConvergence(iter, *xtplus, dx, dx_norm, last_dx_norm);
+    if (status == ConvergenceStatus::kDiverged) {
+      break;
+    } else {
+      if (status == ConvergenceStatus::kConverged)
         return true;
-      }
+      DRAKE_DEMAND(status == ConvergenceStatus::kNotConverged);
     }
 
     // Update the norm of the state update.
@@ -736,7 +727,7 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
 // @param h the integration step size to attempt.
 // @param xt0 the continuous state at time t0.
 // @param[out] xtplus_radau contains the Radau integrator solution on return.
-// @param [out] xtplus_itr contains the implicit trapezoid solution on return.
+// @param[out] xtplus_itr contains the implicit trapezoid solution on return.
 // @returns `true` if the integration was successful at the requested step size.
 // @pre The time and state in the system's context (stored by the integrator)
 //      are set to (t0, xt0) on entry.
@@ -777,17 +768,31 @@ bool RadauIntegrator<T, num_stages>::AttemptStepPaired(const T& t0, const T& h,
   // The error estimation process uses the implicit trapezoid method, which
   // is defined as:
   // x(t+h) = x(t) + h/2 (f(t, x(t) + f(t+h, x(t+h))
-  // x(t+h) from the Radau3 method is presumably a good starting point.
+  // x(t+h) from the Radau method is presumably a good starting point.
 
-  // The error estimate is derived as follows (thanks to Michael Sherman):
-  // x*(t+h) = xᵣ(t+h) + O(h⁴)      [Radau3]
-  //         = xₜ(t+h) + O(h³)      [implicit trapezoid]
+  // The error estimate for 2-stage (3rd order) Radau is derived as follows
+  // (thanks to Michael Sherman):
+  // x*(t+h) = xᵣ₃(t+h) + O(h⁴)      [Radau3]
+  //         = xₜ(t+h) + O(h³)       [implicit trapezoid]
   // where x*(t+h) is the true (generally unknown) answer that we seek.
   // This implies:
-  // xᵣ(t+h) + O(h⁴) = xₜ(t+h) + O(h³)
+  // xᵣ₃(t+h) + O(h⁴) = xₜ(t+h) + O(h³)
   // Given that the third order term subsumes the second order one:
-  // xᵣ(t+h) - xₜ(t+h) = O(h³)
+  // xᵣ₃(t+h) - xₜ(t+h) = O(h³)
   // Therefore the asymptotic term is third order.
+
+  // For 1-stage (1st order) Radau, the error estimate is derived analogously:
+  // x*(t+h) = xᵣ₁(t+h) + O(h²)      [Radau1]
+  //         = xₜ(t+h) + O(h³)       [implicit trapezoid]
+  // By the same reasoning as above, this implies that:
+  // xᵣ₁(t+h) - xₜ(t+h) = O(h²)
+  // In this case, the asymptotic term is second order.
+
+  // One subtlety in this analysis is that the first case (with Radau3) gives
+  // an error estimate for the implicit trapezoid method, while the second case
+  // gives an error estimate for the Radau1 method. Put another way: the higher
+  // order result is propagated in the 3rd order method while the lower order
+  // result is propagated in the 1st order method.
 
   // Attempt to compute the implicit trapezoid solution.
   if (StepImplicitTrapezoid(t0, h, xt0, dx0, *xtplus_radau, xtplus_itr)) {
@@ -836,7 +841,8 @@ bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
   xtplus_embed_.resize(xt0_.size());
 
   // If the requested h is less than the minimum step size, we'll advance time
-  // using an explicit Bogacki-Shampine step.
+  // using an explicit Bogacki-Shampine/explicit Euler step, depending on the
+  // number of stages in use.
   if (h < this->get_working_minimum_step_size()) {
     SPDLOG_DEBUG(drake::log(), "-- requested step too small, taking explicit "
         "step instead");
@@ -850,10 +856,7 @@ bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
       DRAKE_DEMAND(bs3_->IntegrateWithSingleFixedStepToTime(t0 + h));
       const int evals_after_bs3 = bs3_->get_num_derivative_evaluations();
       this->get_mutable_error_estimate()->SetFrom(*bs3_->get_error_estimate());
-      this->set_num_derivative_evaluations(
-          this->get_num_derivative_evaluations() +
-          evals_after_bs3 -
-          evals_before_bs3);
+      this->add_derivative_evaluations(evals_after_bs3 - evals_before_bs3);
     } else {
       // First-order Euler + RK2 provides exactly the same order as 1-stage
       // Radau + embedded implicit trapezoid.

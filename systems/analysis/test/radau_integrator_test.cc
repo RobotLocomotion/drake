@@ -192,7 +192,8 @@ GTEST_TEST(RadauIntegratorTest, QuadraticTest) {
   ASSERT_TRUE(radau.IntegrateWithSingleFixedStepToTime(t_final));
 
   // Ensure that Radau, and not BS3, was used by counting the number of
-  // function evaluations.
+  // function evaluations.  Note that this number is somewhat brittle and might
+  // need to be revised in the future.
   EXPECT_EQ(radau.get_num_derivative_evaluations(), 9);
 
   // Per the description in IntegratorBase::get_error_estimate_order(), this
@@ -272,7 +273,8 @@ GTEST_TEST(RadauIntegratorTest, LinearTest) {
   ASSERT_TRUE(radau.IntegrateWithSingleFixedStepToTime(t_final));
 
   // Ensure that Radau, and not Euler+RK2, was used by counting the number of
-  // function evaluations.
+  // function evaluations. Note that this number is somewhat brittle and might
+  // need to be revised in the future.
   EXPECT_EQ(radau.get_num_derivative_evaluations(), 7);
 
   // Per the description in IntegratorBase::get_error_estimate_order(), this
