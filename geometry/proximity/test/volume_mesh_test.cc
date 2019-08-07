@@ -81,7 +81,8 @@ void TestCalcTetrahedronVolume() {
       math::RollPitchYaw<T>(M_PI / 6.0, 2.0 * M_PI / 3.0, 7.0 * M_PI / 4.0),
       Vector3<T>(1.0, 2.0, 3.0));
   auto volume_mesh = TestVolumeMesh<T>(X_WM);
-  const double kTolerance(std::numeric_limits<double>::epsilon());
+  // Estimate 4 multiply+add, each introduces 2 epsilons.
+  const double kTolerance(8.0* std::numeric_limits<double>::epsilon());
 
   const double expect_tetrahedron_volume(1. / 6.);
   for (int e = 0; e < 2; ++e) {
