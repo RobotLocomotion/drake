@@ -121,10 +121,13 @@ inline void ExecuteExtraPythonCode(py::module m) {
 // reimported in Python3. See pybind/pybind11#1559 for more details.
 // Use this ONLY when necessary (e.g. when using a utility method which imports
 // the module, within the module itself).
+// TODO(eric.cousineau): Unfold cyclic references, and remove the need for this
+// macro (see #11868 for rationale).
 #define PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(variable)                 \
   {                                                                       \
     static py::handle variable##_original;                                \
     if (variable##_original) {                                            \
+      variable##_original.inc_ref();                                      \
       variable = py::reinterpret_borrow<py::module>(variable##_original); \
       return;                                                             \
     } else {                                                              \
