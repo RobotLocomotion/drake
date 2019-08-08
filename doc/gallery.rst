@@ -107,6 +107,8 @@ task-and-motion-planning framework.
 Third Party Documentation / Tutorials
 =====================================
 
+Greg's Tutorial (Python)
+------------------------
 Greg Izatt put together a nice tutorial demonstrating how to put together a
 pretty complete simulation of kuka iiwa picking up a block with dynamics,
 planning, control, and depth sensing, all through the pydrake interface.
@@ -118,5 +120,13 @@ planning, control, and depth sensing, all through the pydrake interface.
 
 *Source Code:* https://github.com/gizatt/drake_periscope_tutorial
 
+Zhaoyuan's Tutorial (Drake concepts, C++ examples)
+--------------------------------------------------
+Zhaoyuan Gu learned Drake from scratch as a 2019 TRI summer intern and
+wrote this beginner's tutorial: https://drake.guzhaoyuan.com
 
+.. raw :: html
 
+  <img height=224 src="https://blobscdn.gitbook.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-LgYfwVg89cfloOSocyC%2F-LhJQm219Jka_jubcY86%2F-LhJQsQLlSIty5iywZxX%2FUntitled.gif?alt=media&token=c343b42a-5927-48c9-981b-b2074ae3da56"/>
+
+  <img height=224 src="https://blobscdn.gitbook.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-LgYfwVg89cfloOSocyC%2F-Lhq9MPiXqZNYqPUQ9bG%2F-Lhq9Tp8S5LlQUyPQaW-%2Fcart_pole_tracking.gif?alt=media&token=d5e653f0-810e-4008-8279-f1607cb12664"/>
