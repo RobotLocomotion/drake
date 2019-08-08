@@ -437,7 +437,7 @@ RadauIntegrator<T, num_stages>::CheckConvergence(
 // @param t0 the initial time.
 // @param h the integration step size to attempt.
 // @param xt0 the continuous state at time t0.
-// @param[out] the value for x(t+h) on return.
+// @param[out] xtplus the value for x(t+h) on return.
 // @param trial the attempt for this approach (1-4). StepRadau() uses more
 //        computationally expensive methods as the trial numbers increase.
 // @post the internal context will be in an indeterminate state on returning
@@ -537,13 +537,9 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
     // Check for convergence.
     ConvergenceStatus status =
         CheckConvergence(iter, *xtplus, dx, dx_norm, last_dx_norm);
-    if (status == ConvergenceStatus::kDiverged) {
-      break;
-    } else {
-      if (status == ConvergenceStatus::kConverged)
-        return true;
-      DRAKE_DEMAND(status == ConvergenceStatus::kNotConverged);
-    }
+    if (status == ConvergenceStatus::kConverged) return true;  // We win.
+    if (status == ConvergenceStatus::kDiverged) break;  // Try something else.
+    DRAKE_DEMAND(status == ConvergenceStatus::kNotConverged);
 
     // Update the norm of the state update.
     last_dx_norm = dx_norm;
@@ -568,7 +564,7 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
 // @param h the integration step size to attempt.
 // @param xt0 the continuous state at time t0.
 // @param radau_xtplus the Radau solution for x(t+h).
-// @param [out] the value for x(t+h) on return.
+// @param[out] xtplus the value for x(t+h) on return.
 // @param trial the attempt for this approach (1-4). The method uses more
 //        computationally expensive methods as the trial numbers increase.
 // @returns `true` if the method was successfully able to take an integration
@@ -693,13 +689,9 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
     // Check for convergence.
     ConvergenceStatus status =
         CheckConvergence(iter, *xtplus, dx, dx_norm, last_dx_norm);
-    if (status == ConvergenceStatus::kDiverged) {
-      break;
-    } else {
-      if (status == ConvergenceStatus::kConverged)
-        return true;
-      DRAKE_DEMAND(status == ConvergenceStatus::kNotConverged);
-    }
+    if (status == ConvergenceStatus::kConverged) return true;  // We win.
+    if (status == ConvergenceStatus::kDiverged) break;  // Try something else.
+    DRAKE_DEMAND(status == ConvergenceStatus::kNotConverged);
 
     // Update the norm of the state update.
     last_dx_norm = dx_norm;
@@ -777,7 +769,7 @@ bool RadauIntegrator<T, num_stages>::AttemptStepPaired(const T& t0, const T& h,
   // where x*(t+h) is the true (generally unknown) answer that we seek.
   // This implies:
   // xᵣ₃(t+h) + O(h⁴) = xₜ(t+h) + O(h³)
-  // Given that the third order term subsumes the second order one:
+  // Given that the third order term subsumes the fourth order one:
   // xᵣ₃(t+h) - xₜ(t+h) = O(h³)
   // Therefore the asymptotic term is third order.
 
