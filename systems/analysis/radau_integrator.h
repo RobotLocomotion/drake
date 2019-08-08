@@ -289,7 +289,8 @@ void RadauIntegrator<T, num_stages>::DoInitialize() {
   dx_state_ = this->get_system().AllocateTimeDerivatives();
 
   // TODO(edrumwri): Find the best values for the method.
-  // These values are expected to be good for the particular integrators.
+  // These values are expected to be good for the two-stage and one-stage
+  // methods, respectively.
   const double kDefaultAccuracy = (num_stages == 2) ? 1e-3 : 1e-1;
   const double kLoosestAccuracy = (num_stages == 2) ? 1e-2 : 5e-1;
 
@@ -394,7 +395,8 @@ RadauIntegrator<T, num_stages>::CheckConvergence(
   // is at least some change to the state, no matter how small, on a
   // non-stationary system.
   if (iteration > 0 && this->IsUpdateZero(xtplus, dx)) {
-    SPDLOG_DEBUG(drake::log(), "norm(dx) indicates convergence");
+    SPDLOG_DEBUG(
+        drake::log(), "magnitude of state update indicates convergence");
     return ConvergenceStatus::kConverged;
   }
 
