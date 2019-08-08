@@ -16,27 +16,6 @@
 namespace drake {
 namespace common {
 
-static int globally_unique_id = 0;
-
-MatlabRemoteVariable::MatlabRemoteVariable()
-    : unique_id_(globally_unique_id++)
-// TODO(russt): replace this with a random int64_t, e.g.
-// http://stackoverflow.com/questions/7114043/random-number-generation-in-c11-how-to-generate-how-do-they-work
-// TODO(russt): david-german-tri recommended a more robust (but more complex)
-// solution was to use e.g. [IP address + process id + time].  We decided this
-// was sufficient for now.
-{}
-
-void ToMatlabArray(const MatlabRemoteVariable& var, MatlabArray* matlab_array) {
-  matlab_array->set_type(MatlabArray::REMOTE_VARIABLE_REFERENCE);
-  matlab_array->set_shape_type(MatlabArray::SCALAR);
-  matlab_array->set_rows(1);
-  matlab_array->set_cols(1);
-  int num_bytes = sizeof(int64_t);
-  int64_t uid = var.unique_id();
-  matlab_array->set_data(&uid, num_bytes);
-}
-
 void ToMatlabArray(double var, MatlabArray* matlab_array) {
   matlab_array->set_type(MatlabArray::DOUBLE);
   matlab_array->set_shape_type(MatlabArray::SCALAR);
@@ -114,13 +93,6 @@ CreateOutputStream(const std::string& filename) {
           open(filename.c_str(), O_WRONLY | O_CREAT, S_IRWXU));
   raw_output->SetCloseOnDelete(true);
   return raw_output;
-}
-
-void PublishCallMatlab(const MatlabRPC& message) {
-  // TODO(russt): Provide option for setting the filename.
-  const std::string output_file = GetRpcPipeTempDirectory() + "/matlab_rpc";
-  static auto raw_output = CreateOutputStream(output_file);
-  PublishCall(raw_output.get(), message);
 }
 
 void PublishCall(

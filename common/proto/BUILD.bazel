@@ -144,13 +144,6 @@ install(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "call_matlab_test",
-    deps = [
-        ":call_matlab",
-    ],
-)
-
-drake_cc_googletest(
     name = "call_python_server_test",
     tags = ["manual"],
     deps = [
