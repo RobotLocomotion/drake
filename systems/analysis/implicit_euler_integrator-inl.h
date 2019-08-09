@@ -161,17 +161,8 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
     return false;
   }
 
-  // The maximum number of Newton-Raphson iterations to take before declaring
-  // failure. [Hairer, 1996] states, "It is our experience that the code becomes
-  // more efficient when we allow a relatively high number of iterations (e.g.,
-  // [7 or 10])", p. 121.  The focus of that quote is a higher order integrator
-  // with a quasi-Newton approach, so our mileage may vary.
-  // TODO(edrumwri): Consider making this a settable parameter. Not putting it
-  //                 toward staving off parameter overload.
-  const int max_iterations = 10;
-
   // Do the Newton-Raphson iterations.
-  for (int i = 0; i < max_iterations; ++i) {
+  for (int i = 0; i < this->max_newton_raphson_iterations(); ++i) {
     // Update the number of Newton-Raphson iterations.
     num_nr_iterations_++;
 

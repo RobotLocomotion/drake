@@ -28,6 +28,21 @@ class ImplicitIntegrator : public IntegratorBase<T> {
                                    Context<T>* context = nullptr)
       : IntegratorBase<T>(system, context) {}
 
+  /** The maximum number of Newton-Raphson iterations to take before the
+   Newton-Raphson process decides that convergence will not be attained. This
+   number affects the speed with which a solution is found. If the number is
+   too small, Jacobian/iteration matrix reformations and refactorizations will
+   be performed unnecessarily. If the number is too large, the Newton-Raphson
+   process will waste time evaluating derivatives when convergence is
+   infeasible. [Hairer, 1996] states, "It is our experience that the code
+   becomes more efficient when we allow a relatively high number of iterations
+   (e.g., [7 or 10])", p. 121.  Note that the focus of that quote is a 5th order
+   integrator that uses a quasi-Newton approach.
+   */
+  int max_newton_raphson_iterations() const {
+    return do_max_newton_raphson_iterations();
+  }
+
   enum class JacobianComputationScheme {
     /// Forward differencing.
     kForwardDifference,
@@ -177,6 +192,11 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// @}
 
  protected:
+  /// Derived classes can override this method to change the number of
+  /// Newton-Raphson iterations (10 by default) to take before the
+  /// Newton-Raphson process decides that convergence will not be attained.
+  virtual int do_max_newton_raphson_iterations() const { return 10; }
+
   /// A class for storing the factorization of an iteration matrix and using it
   /// to solve linear systems of equations. This class exists simply because
   /// Eigen AutoDiff puts limitations on what kinds of factorizations can be
