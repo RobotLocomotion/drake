@@ -76,9 +76,9 @@ class HydroelasticContactSurfaceVisualizer(object):
                 d.addLine(p1=vb, p2=vc, radius=0, color=[0, 0, 1])
                 d.addLine(p1=va, p2=vc, radius=0, color=[0, 0, 1])
 
-        key = ''
-        vis.showPolyData(
-            d.getPolyData(), str(key), parent=folder, color=[0, 0, 1])
+            key = (str(surface.body1_name), str(surface.body2_name))
+            vis.showPolyData(
+                d.getPolyData(), str(key), parent=folder, color=[0, 0, 1])
 
 
 @scoped_singleton_func

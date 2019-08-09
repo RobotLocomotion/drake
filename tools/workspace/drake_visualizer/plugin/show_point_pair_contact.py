@@ -15,7 +15,7 @@ from drake.tools.workspace.drake_visualizer.plugin import scoped_singleton_func
 
 class ContactVisualizer(object):
     def __init__(self):
-        self._folder_name = 'Contact Results'
+        self._folder_name = 'Point Pair Contact Results'
         self._name = "Contact Visualizer"
         self._enabled = False
         self._sub = None
