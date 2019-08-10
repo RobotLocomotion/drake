@@ -64,6 +64,20 @@ class ContactVisualizer(object):
 
         # A map from pair of body names to a list of contact forces
         collision_pair_to_forces = {}
+
+        # Scale all arrows by the largest force.
+        max_mag = 1e-4
+        for contact in msg.contact_info:
+            force = np.array([contact.contact_force[0],
+                              contact.contact_force[1],
+                              contact.contact_force[2]])
+            mag = np.linalg.norm(force)
+            if mag > max_mag:
+                max_mag = mag
+
+        # .1 is the length of the arrow for the largest force
+        scale = .1 / max_mag
+
         for contact in msg.contact_info:
             point = np.array([contact.contact_point[0],
                               contact.contact_point[1],
@@ -71,21 +85,18 @@ class ContactVisualizer(object):
             force = np.array([contact.contact_force[0],
                               contact.contact_force[1],
                               contact.contact_force[2]])
-            mag = np.linalg.norm(force)
-            if mag > 1e-4:
-                mag = 0.3 / mag
 
             key1 = (str(contact.body1_name), str(contact.body2_name))
             key2 = (str(contact.body2_name), str(contact.body1_name))
 
             if key1 in collision_pair_to_forces:
                 collision_pair_to_forces[key1].append(
-                    (point, point + mag * force))
+                    (point, point + force * scale))
             elif key2 in collision_pair_to_forces:
                 collision_pair_to_forces[key2].append(
-                    (point, point + mag * force))
+                    (point, point + force * scale))
             else:
-                collision_pair_to_forces[key1] = [(point, point + mag * force)]
+                collision_pair_to_forces[key1] = [(point, point + force * scale)]
 
         for key, list_of_forces in iteritems(collision_pair_to_forces):
             d = DebugData()
