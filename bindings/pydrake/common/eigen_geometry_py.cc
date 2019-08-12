@@ -167,12 +167,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
             [](py::object self) { return py::str(self.attr("matrix")()); })
         .def("multiply",
             [](const Class& self, const Class& other) { return self * other; },
-            py::arg("other"))
+            py::arg("other"), "RigidTransform multiplication")
         .def("multiply",
             [](const Class& self, const Vector3<T>& position) {
               return self * position;
             },
-            py::arg("position"))
+            py::arg("position"), "Position vector multiplication")
+        .def("multiply",
+            [](const Class& self, const Matrix3X<T>& position) {
+              return self * position;
+            },
+            py::arg("position"), "Position vector list multiplication")
         .def("inverse", [](const Class* self) { return self->inverse(); });
     cls.attr("__matmul__") = cls.attr("multiply");
     py::implicitly_convertible<Matrix4<T>, Class>();
@@ -257,12 +262,26 @@ void DoScalarDependentDefinitions(py::module m, T) {
                       self->y(), self->z());
             })
         .def("multiply",
-            [](const Class& self, const Class& other) { return self * other; })
+            [](const Class& self, const Class& other) { return self * other; },
+            "Quaternion multiplication")
+        // TODO(eric.cousineau): Depeprecate "position" and rename args to
+        // "vector".
         .def("multiply",
             [](const Class& self, const Vector3<T>& position) {
               return self * position;
             },
-            py::arg("position"))
+            py::arg("position"),
+            "Multiplication of a vector expressed in a frame")
+        .def("multiply",
+            [](const Class& self, const Matrix3X<T>& position) {
+              Matrix3X<T> out(position.rows(), position.cols());
+              for (int i = 0; i < position.cols(); ++i) {
+                out.col(i) = self * position.col(i);
+              }
+              return out;
+            },
+            py::arg("position"),
+            "Multiplication of a list of vectors expressed in the same frame")
         .def("inverse", [](const Class* self) { return self->inverse(); })
         .def("conjugate", [](const Class* self) { return self->conjugate(); });
     cls.attr("__matmul__") = cls.attr("multiply");
@@ -325,7 +344,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
               Class update(rotation);
               CheckAngleAxis(update);
               *self = update;
-            })
+            },
+            py::arg("rotation"))
         .def("quaternion",
             [](const Class* self) { return Eigen::Quaternion<T>(*self); })
         .def("set_quaternion",
@@ -334,7 +354,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
               Class update(q);
               CheckAngleAxis(update);
               *self = update;
-            })
+            },
+            py::arg("q"))
         .def("__str__",
             [py_class_obj](const Class* self) {
               return py::str("{}(angle={}, axis={})")
@@ -342,7 +363,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
                       self->axis());
             })
         .def("multiply",
-            [](const Class& self, const Class& other) { return self * other; })
+            [](const Class& self, const Class& other) { return self * other; },
+            py::arg("other"))
         .def("inverse", [](const Class* self) { return self->inverse(); });
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
