@@ -165,6 +165,10 @@ class TestMath(unittest.TestCase):
             self.assertIsInstance(
                 eval("X @ RigidTransform()"), RigidTransform)
             self.assertIsInstance(eval("X @ [0, 0, 0]"), np.ndarray)
+        # - Test list multiplication.
+        # N.B. Remember that this takes ndarray[3, n], NOT ndarray[n, 3]!
+        p_I_list = np.array([p_I, p_I]).T
+        self.assertIsInstance(X.multiply(p_BoQ_B=p_I_list), np.ndarray)
 
     @numpy_compare.check_all_types
     def test_isometry_implicit(self, T):
@@ -221,18 +225,24 @@ class TestMath(unittest.TestCase):
         # - Inverse, transpose, projection
         R_I = R.inverse().multiply(R)
         numpy_compare.assert_float_equal(R_I.matrix(), np.eye(3))
+        if six.PY3:
+            numpy_compare.assert_float_equal(
+                    eval("R.inverse() @ R").matrix(), np.eye(3))
         R_T = R.transpose().multiply(R)
         numpy_compare.assert_float_equal(R_T.matrix(), np.eye(3))
         R_P = RotationMatrix.ProjectToRotationMatrix(M=2*np.eye(3))
         numpy_compare.assert_float_equal(R_P.matrix(), np.eye(3))
+        # - Multiplication.
+        v_I = np.zeros(3)
+        numpy_compare.assert_float_equal(R_I.multiply(v_B=v_I), v_I)
+        # See above note about how Matrix3X
+        v_I_list = np.array([v_I, v_I]).T
+        numpy_compare.assert_float_equal(R_I.multiply(v_B=v_I_list), v_I_list)
         # Matrix checks
         numpy_compare.assert_equal(R.IsValid(), True)
         R = RotationMatrix()
         numpy_compare.assert_equal(R.IsExactlyIdentity(), True)
         numpy_compare.assert_equal(R.IsIdentityToInternalTolerance(), True)
-        if six.PY3:
-            numpy_compare.assert_float_equal(
-                    eval("R.inverse() @ R").matrix(), np.eye(3))
 
     @numpy_compare.check_all_types
     def test_roll_pitch_yaw(self, T):

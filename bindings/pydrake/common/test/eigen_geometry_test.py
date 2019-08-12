@@ -108,6 +108,12 @@ class TestEigenGeometry(unittest.TestCase):
         if six.PY3:
             numpy_compare.assert_float_equal(
                 eval("q.inverse() @ q").wxyz(), [1., 0, 0, 0])
+        v_I = np.zeros(3)
+        numpy_compare.assert_float_equal(q_I.multiply(position=v_I), v_I)
+        v_I_list = np.array([v_I, v_I]).T
+        print(v_I_list)
+        numpy_compare.assert_float_equal(
+            q_I.multiply(position=v_I_list), v_I_list)
         q_conj = q.conjugate()
         numpy_compare.assert_float_equal(
                 q_conj.wxyz(), [0.5, -0.5, -0.5, -0.5])
@@ -179,6 +185,9 @@ class TestEigenGeometry(unittest.TestCase):
         numpy_compare.assert_float_equal(transform_I.matrix(), np.eye(4))
         numpy_compare.assert_float_equal(
             transform.multiply(position=[10, 20, 30]), [21., -8, 33])
+        v_I_list = np.zeros((3, 2))
+        numpy_compare.assert_float_equal(
+            transform_I.multiply(position=v_I_list), v_I_list)
         if six.PY3:
             numpy_compare.assert_float_equal(
                 eval("transform.inverse() @ transform").matrix(), np.eye(4))
