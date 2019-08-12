@@ -173,6 +173,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return self * position;
             },
             py::arg("position"))
+        .def("multiply",
+            [](const Class& self, const Matrix3X<T>& position) {
+              return self * position;
+            },
+            py::arg("position"), "Point list multiplication")
         .def("inverse", [](const Class* self) { return self->inverse(); });
     cls.attr("__matmul__") = cls.attr("multiply");
     py::implicitly_convertible<Matrix4<T>, Class>();
@@ -263,6 +268,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return self * position;
             },
             py::arg("position"))
+        .def("multiply",
+            [](const Class& self, const Matrix3X<T>& position) {
+              Matrix3X<T> out(position.rows(), position.cols());
+              for (int i = 0; i < position.cols(); ++i) {
+                out.col(i) = self * position.col(i);
+              }
+              return out;
+            },
+            py::arg("position"))
         .def("inverse", [](const Class* self) { return self->inverse(); })
         .def("conjugate", [](const Class* self) { return self->conjugate(); });
     cls.attr("__matmul__") = cls.attr("multiply");
@@ -325,7 +339,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
               Class update(rotation);
               CheckAngleAxis(update);
               *self = update;
-            })
+            },
+            py::arg("rotation"))
         .def("quaternion",
             [](const Class* self) { return Eigen::Quaternion<T>(*self); })
         .def("set_quaternion",
@@ -334,7 +349,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
               Class update(q);
               CheckAngleAxis(update);
               *self = update;
-            })
+            },
+            py::arg("q"))
         .def("__str__",
             [py_class_obj](const Class* self) {
               return py::str("{}(angle={}, axis={})")
@@ -342,7 +358,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
                       self->axis());
             })
         .def("multiply",
-            [](const Class& self, const Class& other) { return self * other; })
+            [](const Class& self, const Class& other) { return self * other; },
+            py::arg("other"))
         .def("inverse", [](const Class* self) { return self->inverse(); });
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
