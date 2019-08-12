@@ -405,10 +405,11 @@ class RotationMatrix {
     return RotationMatrix<T>(matrix() * other.matrix(), true);
   }
 
-  /// Calculates `this` rotation matrix R multiplied by an arbitrary Vector3.
-  /// @param[in] v 3x1 vector that post-multiplies `this`.
-  /// @returns 3x1 vector that results from `R * v`.
-  Vector3<T> operator*(const Vector3<T>& v) const {
+  /// Calculates `this` rotation matrix `R_AB` multiplied by an arbitrary
+  /// Vector3.
+  /// @param[in] v_B 3x1 vector that post-multiplies `this`.
+  /// @returns 3x1 vector `v_A = R_AB * v_B`.
+  Vector3<T> operator*(const Vector3<T>& v_B) const {
     return Vector3<T>(matrix() * v);
   }
 
