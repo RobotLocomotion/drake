@@ -96,7 +96,8 @@ class ContactVisualizer(object):
                 collision_pair_to_forces[key2].append(
                     (point, point + force * scale))
             else:
-                collision_pair_to_forces[key1] = [(point, point + force * scale)]
+                collision_pair_to_forces[key1] =
+                    [(point, point + force * scale)]
 
         for key, list_of_forces in iteritems(collision_pair_to_forces):
             d = DebugData()
