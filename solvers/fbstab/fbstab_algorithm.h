@@ -318,7 +318,7 @@ class FBstabAlgorithm {
         0,                        // prox iters
         0,                        // newton iters
         -1.0 / 1000.0,            // solve time
-                                  //(-ve value indicates no timing data
+                                  // (-ve value indicates no timing data
                                   // available)
     };
 
