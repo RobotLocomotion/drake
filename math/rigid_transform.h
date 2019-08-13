@@ -128,6 +128,7 @@ class RigidTransform {
   /// position vector `p`.
   /// @param[in] p position vector from frame A's origin to frame B's origin,
   /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
+  // DRAKE_DEPRECATED("2019-12-31", "Use RigidTransform::MakeFromVector3(p).")
   explicit RigidTransform(const Vector3<T>& p) { set_translation(p); }
 
   /// Constructs a %RigidTransform that contains an identity RotationMatrix and
@@ -154,23 +155,69 @@ class RigidTransform {
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
   explicit RigidTransform(const Isometry3<T>& pose) { SetFromIsometry3(pose); }
 
-  // TODO(eric.cousineau): Figure out why `RigidTransform(const Matrix4<T>&)`
-  // causes compilation errors (e.g. with `make_pendulum_plant.cc`).
-  /// Creates a %RigidTransform from a 4x4 matrix that has the same structure
-  /// as indicated in GetAsMatrix4().
-  /// @param[in] matrix that contains an allegedly valid rotation matrix
-  /// `R_AB` and also contains a position vector `p_AoBo_A` from frame A's
-  /// origin to frame B's origin.  `p_AoBo_A` must be expressed in frame A.
-  /// @throws std::logic_error in debug builds if R_AB is not a proper
-  /// orthonormal 3x3 rotation matrix or if `matrix` is not homogeneous.
-  /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
-  /// `matrix`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
-  static RigidTransform<T> FromMatrix4(const Matrix4<T>& matrix) {
-    RigidTransform<T> X(
-        RotationMatrix<T>(matrix.template block<3, 3>(0, 0)),
-        matrix.template block<3, 1>(0, 3));
-    DRAKE_ASSERT_VOID(ThrowIfNotHomogeneous(matrix));
+  /// Makes a %RigidTransform with an identity RotationMatrix and a given
+  /// position vector `p`.
+  /// @param[in] p position vector from frame A's origin to frame B's origin,
+  /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
+  static RigidTransform<T> MakeFromPositionVector(const Vector3<T>& p) {
+    RigidTransform<T> X;
+    X.set_translation(p);
     return X;
+  }
+
+  /// Makes a %RigidTransform from a 3x4 matrix whose structure is shown below.
+  /// @param[in] pose 3x4 matrix that contains an allegedly valid 3x3 rotation
+  /// matrix `R_AB` and also a 3x1 position vector `p_AoBo_A` (the position
+  /// vector from frame A's origin to frame B's origin, expressed in frame A).
+  /// <pre>
+  ///  ┌                ┐
+  ///  │ R_AB  p_AoBo_A │
+  ///  └                ┘
+  /// </pre>
+  /// @throws std::logic_error in debug builds if the `R_AB` part of `pose` is
+  /// not a proper orthonormal 3x3 rotation matrix.
+  /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
+  /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
+  static RigidTransform<T> MakeFromMatrix34(const Eigen::Matrix<T, 3, 4> pose) {
+    RigidTransform<T> X(RotationMatrix<T>(pose.template block<3, 3>(0, 0)),
+                                          pose.template block<3, 1>(0, 3));
+    return X;
+  }
+
+  /// Makes a %RigidTransform from a 4x4 matrix whose structure is shown below.
+  /// @param[in] pose 4x4 matrix that contains an allegedly valid 3x3 rotation
+  /// matrix `R_AB` and also a 3x1 position vector `p_AoBo_A` (the position
+  /// vector from frame A's origin to frame B's origin, expressed in frame A).
+  /// <pre>
+  ///  ┌                ┐
+  ///  │ R_AB  p_AoBo_A │
+  ///  │                │
+  ///  │   0      1     │
+  ///  └                ┘
+  /// </pre>
+  /// @throws std::logic_error in debug builds if the `R_AB` part of `pose` is
+  /// not a proper orthonormal 3x3 rotation matrix or if `pose` is not
+  /// homogeneous, i.e., the final row is not [0, 0, 0, 1].
+  /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
+  /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
+  static RigidTransform<T> MakeFromMatrix4(const Matrix4<T>& pose) {
+    DRAKE_ASSERT_VOID(ThrowIfNotHomogeneous(pose));
+    return MakeFromMatrix34(pose.topRows(3));
+  }
+
+  /// Makes a %RigidTransform from a 4x4 matrix with the structure shown in
+  /// MakeAsMatrix4().
+  /// @param[in] pose 4x4 matrix that contains an allegedly valid 3x3 rotation
+  /// matrix `R_AB` and also a 3x1 position vector `p_AoBo_A` (the position
+  /// vector from frame A's origin to frame B's origin, expressed in frame A).
+  /// @throws std::logic_error in debug builds if the `R_AB` part of `pose` is
+  /// not a proper orthonormal 3x3 rotation matrix or if `pose` is not
+  /// homogeneous, i.e., the final row is not [0, 0, 0, 1].
+  /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
+  /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
+  // DRAKE_DEPRECATED("2019-12-31", "Use RigidTransform::MakeFromMatrix4(pose)")
+  static RigidTransform<T> FromMatrix4(const Matrix4<T>& pose) {
+    return MakeFromMatrix4(pose);
   }
 
   /// Sets `this` %RigidTransform from a RotationMatrix and a position vector.
