@@ -19,6 +19,7 @@ drake_cc_package_library(
         ":distance_to_shape",
         ":find_collision_candidates",
         ":make_box_mesh",
+        ":make_cylinder_mesh",
         ":make_unit_sphere_mesh",
         ":mesh_field",
         ":mesh_intersection",
@@ -129,6 +130,15 @@ drake_cc_library(
 drake_cc_library(
     name = "make_unit_sphere_mesh",
     hdrs = ["make_unit_sphere_mesh.h"],
+    deps = [
+        ":volume_mesh",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "make_cylinder_mesh",
+    hdrs = ["make_cylinder_mesh.h"],
     deps = [
         ":volume_mesh",
         "//common:essential",
@@ -269,6 +279,13 @@ drake_cc_googletest(
     name = "make_unit_sphere_mesh_test",
     deps = [
         ":make_unit_sphere_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_cylinder_mesh_test",
+    deps = [
+        ":make_cylinder_mesh",
     ],
 )
 
