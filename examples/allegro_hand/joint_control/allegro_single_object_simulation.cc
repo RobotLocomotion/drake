@@ -107,7 +107,8 @@ void DoMain() {
                   plant.get_geometry_query_input_port());
 
   // Publish contact results for visualization.
-  multibody::ConnectContactResultsToDrakeVisualizer(&builder, plant, lcm);
+  multibody::ConnectContactResultsToDrakeVisualizer(
+      &builder, plant, scene_graph, lcm);
 
   // PID controller for position control of the finger joints
   VectorX<double> kp, kd, ki;

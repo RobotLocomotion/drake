@@ -156,6 +156,7 @@ drake_cc_library(
     deps = [
         ":contact_results",
         ":plant",
+        "//geometry:scene_graph",
         "//lcmtypes:contact_results_for_viz",
         "//lcmtypes:point_pair_contact_info_for_viz",
         "//systems/framework:diagram_builder",

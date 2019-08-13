@@ -2,12 +2,23 @@
 
 #include <memory>
 
+#include "drake/geometry/query_object.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
 
 namespace drake {
 namespace multibody {
 
 using systems::Context;
+
+namespace {
+// A dummy, placeholder type.
+struct SymbolicGeometryValue {};
+// An alias for QueryObject<T>, except when T = Expression.
+template <typename T>
+using ModelQueryObject = typename std::conditional<
+    std::is_same<T, symbolic::Expression>::value,
+    SymbolicGeometryValue, geometry::QueryObject<T>>::type;
+}  // namespace
 
 template <typename T>
 ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
@@ -29,17 +40,27 @@ ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
   }
 
   this->set_name("ContactResultsToLcmSystem");
-  // Must be the first declared input port to be compatible with the constexpr
-  // declaration of contact_result_input_port_index_.
-  this->DeclareAbstractInputPort(Value<ContactResults<T>>());
-  this->DeclareAbstractOutputPort(
-      &ContactResultsToLcmSystem::CalcLcmContactOutput);
+  contact_result_input_port_index_ =
+      this->DeclareAbstractInputPort(Value<ContactResults<T>>()).get_index();
+  geometry_query_input_port_index_ = this->DeclareAbstractInputPort(
+      "geometry_query", Value<ModelQueryObject<T>>{}).get_index();
+
+  // Must be the first declared output port to be compatible with the constexpr
+  // declaration of message_output_port_index_.
+  message_output_port_index_ = this->DeclareAbstractOutputPort(
+      &ContactResultsToLcmSystem::CalcLcmContactOutput).get_index();
 }
 
 template <typename T>
 const systems::InputPort<T>&
 ContactResultsToLcmSystem<T>::get_contact_result_input_port() const {
   return this->get_input_port(contact_result_input_port_index_);
+}
+
+template <typename T>
+const systems::InputPort<T>&
+ContactResultsToLcmSystem<T>::get_geometry_query_input_port() const {
+  return this->get_input_port(geometry_query_input_port_index_);
 }
 
 template <typename T>
@@ -55,6 +76,9 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
   const auto& contact_results = get_contact_result_input_port().
       template Eval<ContactResults<T>>(context);
   auto& msg = *output;
+
+  const auto& query_object = get_geometry_query_input_port().
+      template Eval<geometry::QueryObject<T>>(context);
 
   // Time in microseconds.
   msg.timestamp = static_cast<int64_t>(
@@ -106,16 +130,18 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
             hydroelastic_contact_info.contact_surface().id_N()));
 
     const auto& mesh = hydroelastic_contact_info.contact_surface().mesh();
-    const int num_triangles = mesh.num_faces();
-    surface_msg.num_triangles = num_triangles;
+    surface_msg.num_triangles = mesh.num_faces();
     surface_msg.triangles.resize(surface_msg.num_triangles);
+
+    // Get the pose for Geometry M.
+    const math::RigidTransform<T> X_WM =
+        query_object.X_WG(hydroelastic_contact_info.contact_surface().id_M());
 
     // Loop through each contact triangle on the contact surface.
     for (geometry::SurfaceFaceIndex j(0); j < surface_msg.num_triangles; ++j) {
       lcmt_hydroelastic_contact_surface_tri_for_viz& tri_msg =
           surface_msg.triangles[j];
       tri_msg.timestamp = msg.timestamp;
-       tri_msg.timestamp = msg.timestamp;
 
       // Get the three vertices.
       const auto& face = mesh.element(j);
@@ -123,9 +149,9 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
       const geometry::SurfaceVertex<T>& vB = mesh.vertex(face.vertex(1));
       const geometry::SurfaceVertex<T>& vC = mesh.vertex(face.vertex(2));
 
-      write_double3(vA.r_MV(), tri_msg.a);
-      write_double3(vB.r_MV(), tri_msg.b);
-      write_double3(vC.r_MV(), tri_msg.c);
+      write_double3(X_WM * vA.r_MV(), tri_msg.a);
+      write_double3(X_WM * vB.r_MV(), tri_msg.b);
+      write_double3(X_WM * vC.r_MV(), tri_msg.c);
     }
   }
 }
@@ -133,16 +159,20 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& multibody_plant,
+    const geometry::SceneGraph<double>& scene_graph,
     lcm::DrakeLcmInterface* lcm) {
   return ConnectContactResultsToDrakeVisualizer(
       builder, multibody_plant,
-      multibody_plant.get_contact_results_output_port(), lcm);
+      multibody_plant.get_contact_results_output_port(),
+      scene_graph.get_query_output_port(),
+      lcm);
 }
 
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& multibody_plant,
     const systems::OutputPort<double>& contact_results_port,
+    const systems::OutputPort<double>& geometry_query_port,
     lcm::DrakeLcmInterface* lcm) {
   DRAKE_DEMAND(builder != nullptr);
 
@@ -156,9 +186,12 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
           "CONTACT_RESULTS", lcm, 1.0 / 60 /* publish period */));
   contact_results_publisher->set_name("contact_results_publisher");
 
-  builder->Connect(contact_results_port, contact_to_lcm->get_input_port(0));
+  builder->Connect(contact_results_port,
+      contact_to_lcm->get_contact_result_input_port());
+  builder->Connect(geometry_query_port,
+      contact_to_lcm->get_geometry_query_input_port());
   builder->Connect(contact_to_lcm->get_output_port(0),
-                   contact_results_publisher->get_input_port());
+      contact_results_publisher->get_input_port());
 
   return contact_results_publisher;
 }
@@ -166,5 +199,5 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class drake::multibody::ContactResultsToLcmSystem)

@@ -44,7 +44,7 @@ class ContactResults {
     return static_cast<int>(hydroelastic_contact_info_.size());
   }
 
-  DRAKE_DEPRECATED("2019-10-01", "Use num_point_pair_contacts() instead.")
+  DRAKE_DEPRECATED("2019-10-01", "Use AddPointPairContactInfo() instead.")
   void AddContactInfo(const PointPairContactInfo<T>& point_pair_info) {
     AddPointPairContactInfo(point_pair_info);
   }

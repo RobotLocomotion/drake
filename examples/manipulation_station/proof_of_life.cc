@@ -64,7 +64,8 @@ int do_main(int argc, char* argv[]) {
                                    station->GetOutputPort("pose_bundle"));
   multibody::ConnectContactResultsToDrakeVisualizer(
       &builder, station->get_mutable_multibody_plant(),
-      station->GetOutputPort("contact_results"));
+      station->GetOutputPort("contact_results"),
+      station->GetOutputPort("geometry_query"));
 
   auto image_to_lcm_image_array =
       builder.template AddSystem<systems::sensors::ImageToLcmImageArrayT>();

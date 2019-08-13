@@ -8,6 +8,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -43,6 +44,7 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
       : systems::LeafSystem<T>(), body_names_(other.body_names_) {}
 
   const systems::InputPort<T>& get_contact_result_input_port() const;
+  const systems::InputPort<T>& get_geometry_query_input_port() const;
   const systems::OutputPort<T>& get_lcm_message_output_port() const;
 
  private:
@@ -54,8 +56,9 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
                             lcmt_contact_results_for_viz* output) const;
 
   // Named indices for the i/o ports.
-  static constexpr int contact_result_input_port_index_{0};
-  static constexpr int message_output_port_index_{0};
+  systems::InputPortIndex contact_result_input_port_index_;
+  systems::InputPortIndex geometry_query_input_port_index_;
+  systems::OutputPortIndex message_output_port_index_;
 
   // A mapping from geometry IDs to body indices.
   std::unordered_map<geometry::GeometryId, multibody::BodyIndex>
@@ -64,7 +67,6 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
   // A mapping from body index values to body names.
   std::vector<std::string> body_names_;
 };
-
 
 /** Extends a Diagram with the required components to publish contact results
  to drake_visualizer. This must be called _during_ Diagram building and
@@ -83,6 +85,7 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
                          Diagram.
  @param multibody_plant  The System in `builder` containing the plant whose
                          contact results are to be visualized.
+ @param scene_graph      The SceneGraph System constructed in `builder`.
  @param lcm              An optional lcm interface through which lcm messages
                          will be dispatched. Will be allocated internally if
                          none is supplied.
@@ -98,13 +101,13 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& multibody_plant,
+    const geometry::SceneGraph<double>& scene_graph,
     lcm::DrakeLcmInterface* lcm = nullptr);
 
-/** Implements ConnectContactResultsToDrakeVisualizer, but using @p
- contact_results_port to explicitly specify the output port used to get
- contact results for @p multibody_plant.  This is required, for instance,
- when the MultibodyPlant is inside a Diagram, and the Diagram exports the
- pose bundle port.
+/** Implements ConnectContactResultsToDrakeVisualizer, but using
+ explicitly specified `contact_results_port` and `geometry_input_port`
+ arguments.  This call is required, for instance, when the MultibodyPlant is
+ inside a Diagram, and the Diagram exports the pose bundle port.
 
  @pre contact_results_port must be connected to the contact_results_port of
  @p multibody_plant.
@@ -117,10 +120,11 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& multibody_plant,
     const systems::OutputPort<double>& contact_results_port,
+    const systems::OutputPort<double>& geometry_input_port,
     lcm::DrakeLcmInterface* lcm = nullptr);
 
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class drake::multibody::ContactResultsToLcmSystem)

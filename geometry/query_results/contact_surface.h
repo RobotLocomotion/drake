@@ -239,12 +239,18 @@ class ContactSurface {
     return grad_h_MN_M_->EvaluateAtVertex(vertex);
   }
 
-  /** Returns a reference to the surface mesh.
-   */
+  DRAKE_DEPRECATED("2019-11-01", "Use mesh_M() instead.");
   const SurfaceMesh<T>& mesh() const {
+    return mesh_M();
+  }
+
+  /** Returns a reference to the surface mesh, which is defined in M's frame.
+   */
+  const SurfaceMesh<T>& mesh_M() const {
     DRAKE_DEMAND(mesh_M_ != nullptr);
     return *mesh_M_;
   }
+
 
  private:
   // Swaps M and N (modifying the data in place to reflect the change in

@@ -205,6 +205,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "QueryObject", param, doc.QueryObject.doc);
     cls  // BR
+        .def(py::init<>(), doc.QueryObject.ctor.doc)
         .def("inspector", &QueryObject<T>::inspector, py_reference_internal,
             doc.QueryObject.inspector.doc)
         .def("ComputeSignedDistancePairwiseClosestPoints",

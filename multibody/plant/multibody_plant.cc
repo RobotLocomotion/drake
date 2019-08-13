@@ -2060,7 +2060,6 @@ template <typename T>
 const systems::OutputPort<T>&
 MultibodyPlant<T>::get_contact_results_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  DRAKE_THROW_UNLESS(is_discrete());
   return this->get_output_port(contact_results_port_);
 }
 

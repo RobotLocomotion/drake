@@ -5,6 +5,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
@@ -22,6 +23,7 @@ using geometry::ContactSurface;
 using geometry::GeometryId;
 using geometry::MeshFieldLinear;
 using geometry::PenetrationAsPointPair;
+using geometry::SceneGraph;
 using geometry::SurfaceFace;
 using geometry::SurfaceMesh;
 using geometry::SurfaceVertex;
@@ -48,6 +50,9 @@ GTEST_TEST(ContactResultsToLcmSystem, EmptyMultibodyPlant) {
   lcm_context->FixInputPort(
       lcm_system.get_contact_result_input_port().get_index(),
       Value<ContactResults<double>>());
+  lcm_context->FixInputPort(
+      lcm_system.get_geometry_query_input_port().get_index(),
+      Value<geometry::QueryObject<double>>());
 
   Value<lcmt_contact_results_for_viz> lcm_message_value;
   lcm_system.get_lcm_message_output_port().Calc(*lcm_context,
@@ -105,6 +110,11 @@ GTEST_TEST(ContactResultsToLcmSystem, NonEmptyMultibodyPlantEmptyContact) {
       lcm_system.get_contact_result_input_port().get_index(),
       Value<ContactResults<double>>(contacts));
 
+  // Since this is a point-pair test, no geometry pose queries are necessary.
+  lcm_context->FixInputPort(
+      lcm_system.get_geometry_query_input_port().get_index(),
+      Value<geometry::QueryObject<double>>());
+
   Value<lcmt_contact_results_for_viz> lcm_message_value;
   lcm_system.get_lcm_message_output_port().Calc(*lcm_context,
                                                 &lcm_message_value);
@@ -142,12 +152,15 @@ GTEST_TEST(ContactResultsToLcmSystem, Transmogrify) {
 GTEST_TEST(ConnectContactResultsToDrakeVisualizer, BasicTest) {
   systems::DiagramBuilder<double> builder;
 
-  // Make a trivial plant with at least one body and a discrete time step.
-  auto plant = builder.AddSystem<MultibodyPlant>(0.001);
+  // Make a trivial plant with at least one body.
+  MultibodyPlant<double>* plant;
+  SceneGraph<double>* scene_graph;
+  std::tie(plant, scene_graph) = AddMultibodyPlantSceneGraph(&builder);
   plant->AddRigidBody("link", SpatialInertia<double>());
   plant->Finalize();
 
-  auto publisher = ConnectContactResultsToDrakeVisualizer(&builder, *plant);
+  auto publisher = ConnectContactResultsToDrakeVisualizer(
+      &builder, *plant, *scene_graph);
 
   // Confirm that we get a non-null result.
   EXPECT_NE(publisher, nullptr);
@@ -159,21 +172,25 @@ GTEST_TEST(ConnectContactResultsToDrakeVisualizer, BasicTest) {
 }
 
 GTEST_TEST(ConnectContactResultsToDrakeVisualizer, NestedDiagramTest) {
-  systems::DiagramBuilder<double> interior_builder;
+  systems::DiagramBuilder<double> builder;
 
-  // Make a trivial plant with at least one body and a discrete time step.
-  auto plant = interior_builder.AddSystem<MultibodyPlant>(0.001);
+  // Make a trivial plant with at least one body.
+  MultibodyPlant<double>* plant;
+  SceneGraph<double>* scene_graph;
+  std::tie(plant, scene_graph) = AddMultibodyPlantSceneGraph(&builder);
   plant->AddRigidBody("link", SpatialInertia<double>());
   plant->Finalize();
 
-  interior_builder.ExportOutput(plant->get_contact_results_output_port(),
+  builder.ExportOutput(plant->get_contact_results_output_port(),
       "contact_results");
+  builder.ExportOutput(scene_graph->get_query_output_port(),
+      "geometric_query");
 
-  systems::DiagramBuilder<double> builder;
-  auto interior_diagram = builder.AddSystem(interior_builder.Build());
+  auto diagram = builder.AddSystem(builder.Build());
 
   auto publisher = ConnectContactResultsToDrakeVisualizer(
-      &builder, *plant, interior_diagram->GetOutputPort("contact_results"));
+      &builder, *plant, diagram->GetOutputPort("contact_results"),
+      diagram->GetOutputPort("geometric_query"));
 
   // Confirm that we get a non-null result.
   EXPECT_NE(publisher, nullptr);
@@ -292,6 +309,9 @@ ContactResults<double> GenerateHydroelasticContactResults(
 // surface that we create.
 GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
   DiagramBuilder<double> builder;
+
+  // Note: the plant will never be connected in the Diagram. It is used only to
+  // set up the ContactResultsToLcmSystem.
   MultibodyPlant<double>* plant;
   geometry::SceneGraph<double>* scene_graph;
   std::tie(plant, scene_graph) = AddMultibodyPlantSceneGraph(&builder);
@@ -320,17 +340,21 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
       *builder.AddSystem<ContactResultsToLcmSystem<double>>(*plant);
 
   // TODO(edrumwri) Replace this code block when MultibodyPlant outputs
-  // hydroelastic contact results.
+  // hydroelastic contact results: at that point, replace this code block
+  // with a call to ConnectContactResultsToDrakeVisualizer().
   // Hook a publisher to the contact results system.
   auto& contact_results_publisher = *builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
           "CONTACT_RESULTS", &lcm, 1.0 / 60 /* publish period */));
   contact_results_publisher.set_name("contact_results_publisher");
+  builder.Connect(scene_graph->get_query_output_port(),
+      lcm_system.get_geometry_query_input_port());
   builder.Connect(lcm_system.get_output_port(0),
-                   contact_results_publisher.get_input_port());
-  systems::InputPortIndex contact_results_input_port_index =
+                  contact_results_publisher.get_input_port());
+  const systems::InputPortIndex contact_results_input_port_index =
       builder.ExportInput(lcm_system.get_contact_result_input_port());
-  systems::OutputPortIndex lcm_hydroelastic_contact_surface_output_port_index =
+  const systems::OutputPortIndex
+      lcm_hydroelastic_contact_surface_output_port_index =
       builder.ExportOutput(lcm_system.get_lcm_message_output_port());
 
   // Finish constructing the diagram; note that we use the default pose for
@@ -373,6 +397,9 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
   // Verify that the contact surface has the expected vertex locations.
   for (int i = 0; i < surface_msg.num_triangles; ++i) {
     for (int j = 0; j < 3; ++j) {
+      // Note that we do not want to predicate the correctness of this test on
+      // the order in which the triangles are present in the message. We do
+      // know that each element of each vertex is located at ± 0.5.
       EXPECT_EQ(std::abs(surface_msg.triangles[i].a[j]), 0.5);
       EXPECT_EQ(std::abs(surface_msg.triangles[i].b[j]), 0.5);
       EXPECT_EQ(std::abs(surface_msg.triangles[i].c[j]), 0.5);

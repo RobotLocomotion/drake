@@ -46,6 +46,7 @@ int do_main() {
   auto pair = AddMultibodyPlantSceneGraph(
       &builder, std::make_unique<MultibodyPlant<double>>(FLAGS_time_step));
   MultibodyPlant<double>& plant = pair.plant;
+  geometry::SceneGraph<double>& scene_graph = pair.scene_graph;
 
   const std::string full_name =
       FindResourceOrThrow("drake/examples/atlas/urdf/atlas_convex_hull.urdf");
@@ -90,7 +91,7 @@ int do_main() {
   DRAKE_DEMAND(pelvis.floating_velocities_start() == plant.num_positions());
 
   // Publish contact results for visualization.
-  ConnectContactResultsToDrakeVisualizer(&builder, plant);
+  ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph);
 
   geometry::ConnectDrakeVisualizer(&builder, pair.scene_graph);
   auto diagram = builder.Build();
