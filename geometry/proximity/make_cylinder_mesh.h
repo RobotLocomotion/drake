@@ -87,9 +87,9 @@ struct VertexPairHashFunction {
 };
 
 struct VertexPairEqualsFunction {
-  bool operator()(const std::pair<VolumeVertexIndex, VolumeVertexIndex> &a,
+  bool operator()(const std::pair<VolumeVertexIndex, VolumeVertexIndex>& a,
                   const std::pair<VolumeVertexIndex,
-                                  VolumeVertexIndex> &b) const {
+                                  VolumeVertexIndex>& b) const {
     VolumeVertexIndex ax = std::min(a.first, a.second);
     VolumeVertexIndex ay = std::max(a.first, a.second);
     VolumeVertexIndex bx = std::min(b.first, b.second);
