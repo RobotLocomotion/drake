@@ -67,7 +67,7 @@ class HydroelasticContactSurfaceVisualizer(object):
 
         # Iterate over all triangles, drawing the contact surface as a triangle
         # outlined in blue.
-        for surface in msg.hydroelastic_contact_surfaces:
+        for surface in msg.hydroelastic_contacts:
             for tri in surface.triangles:
                 va = np.array([tri.a[0], tri.a[1], tri.a[2]])
                 vb = np.array([tri.b[0], tri.b[1], tri.b[2]])

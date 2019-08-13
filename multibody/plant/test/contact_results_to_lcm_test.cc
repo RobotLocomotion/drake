@@ -65,7 +65,7 @@ GTEST_TEST(ContactResultsToLcmSystem, EmptyMultibodyPlant) {
   // value.
   EXPECT_EQ(lcm_message.timestamp, 0);
   EXPECT_EQ(lcm_message.num_point_pair_contacts, 0);
-  EXPECT_EQ(lcm_message.num_hydroelastic_contact_surfaces, 0);
+  EXPECT_EQ(lcm_message.num_hydroelastic_contacts, 0);
 }
 
 // Common case: confirm that the reported contacts map to the right lcm message.
@@ -125,7 +125,7 @@ GTEST_TEST(ContactResultsToLcmSystem, NonEmptyMultibodyPlantEmptyContact) {
   // value.
   EXPECT_EQ(lcm_message.timestamp, 0);
   ASSERT_EQ(lcm_message.num_point_pair_contacts, 1);
-  EXPECT_EQ(lcm_message.num_hydroelastic_contact_surfaces, 0);
+  EXPECT_EQ(lcm_message.num_hydroelastic_contacts, 0);
   const lcmt_point_pair_contact_info_for_viz& info_msg =
       lcm_message.point_pair_contact_info[0];
   EXPECT_EQ(info_msg.timestamp, 0);
@@ -387,9 +387,9 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
   // value.
   EXPECT_EQ(lcm_message.timestamp, 0);
   EXPECT_EQ(lcm_message.num_point_pair_contacts, 0);
-  ASSERT_EQ(lcm_message.num_hydroelastic_contact_surfaces, 1);
+  ASSERT_EQ(lcm_message.num_hydroelastic_contacts, 1);
   const lcmt_hydroelastic_contact_surface_for_viz& surface_msg =
-      lcm_message.hydroelastic_contact_surfaces[0];
+      lcm_message.hydroelastic_contacts[0];
   EXPECT_EQ(surface_msg.timestamp, 0);
   EXPECT_EQ(surface_msg.body1_name, "WorldBody(0)");
   EXPECT_EQ(surface_msg.body2_name, "BodyB(1)");

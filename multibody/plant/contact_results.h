@@ -34,13 +34,13 @@ class ContactResults {
   DRAKE_DEPRECATED("2019-10-01", "Use num_point_pair_contacts() instead.")
   int num_contacts() const;
 
-  /** Returns the number of point pair elements. */
+  /** Returns the number of point pair contacts. */
   int num_point_pair_contacts() const {
     return static_cast<int>(point_pairs_info_.size());
   }
 
-  /** Returns the number of hydroelastic contact reporting elements. */
-  int num_hydroelastic_contact_elements() const {
+  /** Returns the number of hydroelastic contacts. */
+  int num_hydroelastic_contacts() const {
     return static_cast<int>(hydroelastic_contact_info_.size());
   }
 
@@ -54,7 +54,7 @@ class ContactResults {
     point_pairs_info_.push_back(point_pair_info);
   }
 
-  /** Add a new hydroelastic contact reporting element to `this`. */
+  /** Add a new hydroelastic contact to `this`. */
   void AddHydroelasticContactInfo(
       std::unique_ptr<HydroelasticContactInfo<T>> hydroelastic_contact_info) {
     hydroelastic_contact_info_.push_back(
@@ -73,7 +73,7 @@ class ContactResults {
   const PointPairContactInfo<T>& point_pair_contact_info(int i) const;
 
   /** Retrieves the ith HydroelasticContactInfo instance. The input index i
-   must be in the range [0, `num_hydroelastic_contact_elements()` - 1] or this
+   must be in the range [0, `num_hydroelastic_contacts()` - 1] or this
    method aborts. */
   const HydroelasticContactInfo<T>& hydroelastic_contact_info(int i) const;
 

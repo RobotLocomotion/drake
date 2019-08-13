@@ -8,7 +8,7 @@ struct lcmt_contact_results_for_viz {
   lcmt_point_pair_contact_info_for_viz point_pair_contact_info[
       num_point_pair_contacts];
 
-  int32_t num_hydroelastic_contact_surfaces;
-  lcmt_hydroelastic_contact_surface_for_viz hydroelastic_contact_surfaces[
-      num_hydroelastic_contact_surfaces];
+  int32_t num_hydroelastic_contacts;
+  lcmt_hydroelastic_contact_surface_for_viz hydroelastic_contacts[
+      num_hydroelastic_contacts];
 }

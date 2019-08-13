@@ -21,7 +21,7 @@ ContactResults<T>::point_pair_contact_info(int i) const {
 template <typename T>
 const HydroelasticContactInfo<T>&
 ContactResults<T>::hydroelastic_contact_info(int i) const {
-  DRAKE_DEMAND(i >= 0 && i < num_hydroelastic_contact_elements());
+  DRAKE_DEMAND(i >= 0 && i < num_hydroelastic_contacts());
   return *hydroelastic_contact_info_[i];
 }
 

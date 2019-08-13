@@ -85,10 +85,8 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
       ExtractDoubleOrThrow(context.get_time()) * 1e6);
   msg.num_point_pair_contacts = contact_results.num_point_pair_contacts();
   msg.point_pair_contact_info.resize(msg.num_point_pair_contacts);
-  msg.num_hydroelastic_contact_surfaces =
-      contact_results.num_hydroelastic_contact_elements();
-  msg.hydroelastic_contact_surfaces.resize(
-      msg.num_hydroelastic_contact_surfaces);
+  msg.num_hydroelastic_contacts = contact_results.num_hydroelastic_contacts();
+  msg.hydroelastic_contacts.resize(msg.num_hydroelastic_contacts);
 
   auto write_double3 = [](const Vector3<T>& src, double* dest) {
     dest[0] = ExtractDoubleOrThrow(src(0));
@@ -112,10 +110,9 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     write_double3(contact_info.point_pair().nhat_BA_W, info_msg.normal);
   }
 
-  for (int i = 0; i < contact_results.num_hydroelastic_contact_elements();
-      ++i) {
+  for (int i = 0; i < contact_results.num_hydroelastic_contacts(); ++i) {
     lcmt_hydroelastic_contact_surface_for_viz& surface_msg =
-        msg.hydroelastic_contact_surfaces[i];
+        msg.hydroelastic_contacts[i];
     surface_msg.timestamp = msg.timestamp;
 
     const HydroelasticContactInfo<T>& hydroelastic_contact_info =
