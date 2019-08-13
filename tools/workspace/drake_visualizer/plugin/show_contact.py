@@ -6,12 +6,67 @@ from director import objectmodel as om
 from director import visualization as vis
 from director.debugVis import DebugData
 import numpy as np
+from PythonQt import QtCore, QtGui
 from six import iteritems
 
 import drake as lcmdrakemsg
 
 from drake.tools.workspace.drake_visualizer.plugin import scoped_singleton_func
 
+class ContactConfigDialog(QtGui.QDialog):
+    '''A simple dialog for configuring the contact visualization'''
+    def __init__(self, visualizer, parent=None):
+        QtGui.QDialog.__init__(self, parent)
+        self.setWindowTitle("Configure Contact Visualization")
+        layout = QtGui.QGridLayout()
+        layout.setColumnStretch(0, 0)
+        layout.setColumnStretch(1, 1)
+
+        row = 0
+
+        # Fixed length.
+        layout.addWidget(QtGui.QLabel("Fixed length"), row, 0)
+        self.fixed_length = QtGui.QCheckBox()
+        self.fixed_length.setToolTip('If checked, all forces with magnitude '
+                                     'greater than the threshold will have a '
+                                     'fixed length')
+        self.fixed_length.setChecked(visualizer.fixed_length)
+        layout.addWidget(self.fixed_length, row, 1)
+        row += 1
+
+        # Global scale.
+        layout.addWidget(QtGui.QLabel("Global scale"), row, 0)
+        self.global_scale = QtGui.QLineEdit()
+        self.global_scale.setToolTip('All visualized forces are multiplied by '
+                                     'this scale factor (must be non-negative)')
+        validator = QtGui.QDoubleValidator(0, 100, 3, self.global_scale)
+        validator.setNotation(QtGui.QDoubleValidator.StandardNotation)
+        self.global_scale.setValidator(validator)
+        self.global_scale.setText("{:.3f}".format(visualizer.global_scale))
+        layout.addWidget(self.global_scale, row, 1)
+        row += 1
+
+        # Magnitude cut-off.
+        layout.addWidget(QtGui.QLabel("Minimum force"), row, 0)
+        self.min_magnitude = QtGui.QLineEdit()
+        self.min_magnitude.setToolTip('Forces with a magnitude less than this '
+                                      'value will not be visualized (must be > '
+                                      '1e-10)')
+        validator = QtGui.QDoubleValidator(1e-10, 100, 10, self.min_magnitude)
+        validator.setNotation(QtGui.QDoubleValidator.StandardNotation)
+        self.min_magnitude.setValidator(validator)
+        self.min_magnitude.setText("{:.3g}".format(visualizer.min_magnitude))
+        layout.addWidget(self.min_magnitude, row, 1)
+        row += 1
+
+        # Accept/cancel.
+        btns = QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel
+        buttons = QtGui.QDialogButtonBox(btns, QtCore.Qt.Horizontal, self)
+        buttons.connect('accepted()', self.accept)
+        buttons.connect('rejected()', self.reject)
+        layout.addWidget(buttons, row, 0, 1, 2)
+
+        self.setLayout(layout)
 
 class ContactVisualizer(object):
     def __init__(self):
@@ -20,7 +75,27 @@ class ContactVisualizer(object):
         self._enabled = False
         self._sub = None
 
+        # Visualization parameters
+        self.fixed_length = True
+        self.global_scale = 0.3
+        self.min_magnitude = 1e-4
+
+        main_window = applogic.getMainWindow()
+        self.contact_menu = main_window.menuBar().addMenu('&Contacts')
+        self.configure_action = self.contact_menu.addAction("&Configure")
+        self.configure_action.connect('triggered()', self.do_configure)
+
         self.set_enabled(True)
+
+    def do_configure(self):
+        '''Configures the visualization'''
+        dlg = ContactConfigDialog(self)
+        if dlg.exec_() == QtGui.QDialog.Accepted:
+            # TODO(SeanCurtis-TRI): Cause this to redraw any forces that are
+            #  currently visualized.
+            self.fixed_length = dlg.fixed_length.isChecked()
+            self.global_scale = float(dlg.global_scale.text)
+            self.min_magnitude = float(dlg.min_magnitude.text)
 
     def add_subscriber(self):
         if self._sub is not None:
@@ -48,8 +123,12 @@ class ContactVisualizer(object):
         self._enabled = enable
         if enable:
             self.add_subscriber()
+            self.configure_action.setEnabled(True)
         else:
             self.remove_subscriber()
+            self.configure_action.setEnabled(False)
+            # Removes the folder completely.
+            om.removeFromObjectModel(om.findObjectByName(self._folder_name))
 
     def handle_message(self, msg):
         # Limits the rate of message handling, since redrawing is done in the
@@ -72,20 +151,27 @@ class ContactVisualizer(object):
                               contact.contact_force[1],
                               contact.contact_force[2]])
             mag = np.linalg.norm(force)
-            if mag > 1e-4:
-                mag = 0.3 / mag
+
+            if mag < self.min_magnitude:
+                continue
+
+            scale = self.global_scale
+            if self.fixed_length:
+                # mag must be > 0 otherwise this force would be skipped.
+                scale /= mag
+            vis_force = force * scale
 
             key1 = (str(contact.body1_name), str(contact.body2_name))
             key2 = (str(contact.body2_name), str(contact.body1_name))
 
             if key1 in collision_pair_to_forces:
                 collision_pair_to_forces[key1].append(
-                    (point, point + mag * force))
+                    (point, point + vis_force))
             elif key2 in collision_pair_to_forces:
                 collision_pair_to_forces[key2].append(
-                    (point, point + mag * force))
+                    (point, point + vis_force))
             else:
-                collision_pair_to_forces[key1] = [(point, point + mag * force)]
+                collision_pair_to_forces[key1] = [(point, point + vis_force)]
 
         for key, list_of_forces in iteritems(collision_pair_to_forces):
             d = DebugData()
