@@ -10,7 +10,7 @@
 #include "drake/solvers/fbstab/components/mpc_feasibility.h"
 #include "drake/solvers/fbstab/components/mpc_residual.h"
 #include "drake/solvers/fbstab/components/mpc_variable.h"
-#include "drake/solvers/fbstab/components/ricatti_linear_solver.h"
+#include "drake/solvers/fbstab/components/riccati_linear_solver.h"
 
 namespace drake {
 namespace solvers {

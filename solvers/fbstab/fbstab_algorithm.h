@@ -28,6 +28,8 @@ enum class ExitFlag {
 /**
  * Packages the exit flag, overall residual, solve time,
  * and iteration counts.
+ *
+ * A negative valuve for solve_time indicates that no timing data is available.
  */
 struct SolverOut {
   ExitFlag eflag = ExitFlag::MAXITERATIONS;
@@ -37,6 +39,7 @@ struct SolverOut {
   double solve_time = 0.0;  /// CPU time in s.
 };
 
+using clock = std::chrono::high_resolution_clock;
 /**
  * This class implements the FBstab solver for
  * convex quadratic programs, see
@@ -215,8 +218,7 @@ class FBstabAlgorithm {
   void set_display_level(Display v) { display_level_ = v; }
 
  private:
-  using time_instant =
-      std::chrono::time_point<std::chrono::high_resolution_clock>;
+  using time_point = clock::time_point;
   // Codes for infeasibility detection.
   enum class InfeasibilityStatus {
     FEASIBLE = 0,
@@ -301,7 +303,6 @@ class FBstabAlgorithm {
 
   /*
    * Prepares a suitable output structure.
-   * If
    *
    * @param[in] e exit flag
    * @param[in] prox_iters
@@ -310,17 +311,19 @@ class FBstabAlgorithm {
    * @param[in] start time instant when the solve call started
    */
   SolverOut PrepareOutput(ExitFlag e, int prox_iters, int newton_iters,
-                          const Residual& r, time_instant start) const {
+                          const Residual& r, time_point start) const {
     struct SolverOut output = {
         ExitFlag::MAXITERATIONS,  // exit flag
         0.0,                      // residual
         0,                        // prox iters
         0,                        // newton iters
         -1.0 / 1000.0,            // solve time
+                                  //(-ve value indicates no timing data
+                                  // available)
     };
 
     if (record_solve_time_) {
-      time_instant now = std::chrono::high_resolution_clock::now();
+      time_point now = clock::now();
       std::chrono::duration<double> elapsed = now - start;
       output.solve_time = elapsed.count();
     }
@@ -328,6 +331,7 @@ class FBstabAlgorithm {
     output.residual = r.Norm();
     output.newton_iters = newton_iters;
     output.prox_iters = prox_iters;
+
     // Printing is in ms.
     PrintFinal(prox_iters, newton_iters, e, r, 1000.0 * output.solve_time);
     return output;
@@ -478,10 +482,8 @@ template <class Variable, class Residual, class Data, class LinearSolver,
 SolverOut FBstabAlgorithm<Variable, Residual, Data, LinearSolver,
                           Feasibility>::Solve(const Data* qp_data,
                                               Variable* x0) {
-  time_instant start_time;
-  if (record_solve_time_) {
-    start_time = std::chrono::high_resolution_clock::now();
-  }
+  const time_point start_time{record_solve_time_ ? clock::now()
+                                                 : time_point{} /* dummy */};
 
   // Make sure the linear solver and residuals objects are using the same value
   // for the alpha parameter.

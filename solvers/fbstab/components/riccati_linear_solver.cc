@@ -1,4 +1,4 @@
-#include "drake/solvers/fbstab/components/ricatti_linear_solver.h"
+#include "drake/solvers/fbstab/components/riccati_linear_solver.h"
 
 #include <cmath>
 #include <iostream>
