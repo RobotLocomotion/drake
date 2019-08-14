@@ -13,10 +13,10 @@ namespace fbstab {
 namespace test {
 
 /**
- * This class is used to create OCPs in a format FBstab accepts.
- * It stores the problem data internally and only passes pointers
- * to FBstab. Make sure these pointers are valid for the length
- * of the solve.
+ * This class is used to create optimal control problems (OCPs) in a format
+ * FBstab accepts. It stores the problem data internally and only passes
+ * pointers to FBstab. Make sure these pointers are valid for the length of the
+ * solve.
  */
 class OcpGenerator {
  public:
@@ -145,13 +145,13 @@ class OcpGenerator {
 
  private:
   // Repeats the given matrices into N or N+1 length vectors.
-  void ExtendOverHorizon(const Eigen::MatrixXd& Q, const Eigen::MatrixXd& R,
-                         const Eigen::MatrixXd& S, const Eigen::VectorXd& q,
-                         const Eigen::VectorXd& r, const Eigen::MatrixXd& A,
-                         const Eigen::MatrixXd& B, const Eigen::VectorXd& c,
-                         const Eigen::MatrixXd& E, const Eigen::MatrixXd& L,
-                         const Eigen::VectorXd& d, const Eigen::VectorXd& x0,
-                         int N);
+  void CopyOverHorizon(const Eigen::MatrixXd& Q, const Eigen::MatrixXd& R,
+                       const Eigen::MatrixXd& S, const Eigen::VectorXd& q,
+                       const Eigen::VectorXd& r, const Eigen::MatrixXd& A,
+                       const Eigen::MatrixXd& B, const Eigen::VectorXd& c,
+                       const Eigen::MatrixXd& E, const Eigen::MatrixXd& L,
+                       const Eigen::VectorXd& d, const Eigen::VectorXd& x0,
+                       int N);
 
   std::vector<Eigen::MatrixXd> Q_;
   std::vector<Eigen::MatrixXd> R_;

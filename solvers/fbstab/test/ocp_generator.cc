@@ -148,7 +148,7 @@ void OcpGenerator::CopolymerizationReactor(int N) {
 
   VectorXd d = -umax * VectorXd::Ones(10);
 
-  ExtendOverHorizon(Q, R, S, q, r, A, B, c, E, L, d, x0, N);
+  CopyOverHorizon(Q, R, S, q, r, A, B, c, E, L, d, x0, N);
 
   // Simulation data.
   Asim_ = A;
@@ -223,7 +223,7 @@ void OcpGenerator::SpacecraftRelativeMotion(int N) {
   VectorXd d(12);
   d << -umax * VectorXd::Ones(6), -vmax * VectorXd::Ones(6);
 
-  ExtendOverHorizon(Q, R, S, q, r, A, B, c, E, L, d, x0, N);
+  CopyOverHorizon(Q, R, S, q, r, A, B, c, E, L, d, x0, N);
 
   // Simulation data.
   Asim_ = A;
@@ -294,7 +294,7 @@ void OcpGenerator::ServoMotor(int N) {
   L << 0, 0, 1, -1;
   d << -ymax, -ymax, -umax, -umax;
 
-  ExtendOverHorizon(Q, R, S, q, r, A, B, c, E, L, d, x0, N);
+  CopyOverHorizon(Q, R, S, q, r, A, B, c, E, L, d, x0, N);
 
   // Simulation data.
   Asim_ = A;
@@ -341,7 +341,7 @@ void OcpGenerator::DoubleIntegrator(int N) {
 
   x0 << 0, 0;
 
-  ExtendOverHorizon(Q, R, S, q, r, A, B, c, E, L, d, x0, N);
+  CopyOverHorizon(Q, R, S, q, r, A, B, c, E, L, d, x0, N);
 
   // Simulation data.
   Asim_ = A;
@@ -351,13 +351,13 @@ void OcpGenerator::DoubleIntegrator(int N) {
   T_ = 40;
 }
 
-void OcpGenerator::ExtendOverHorizon(const MatrixXd& Q, const MatrixXd& R,
-                                     const MatrixXd& S, const VectorXd& q,
-                                     const VectorXd& r, const MatrixXd& A,
-                                     const MatrixXd& B, const VectorXd& c,
-                                     const MatrixXd& E, const MatrixXd& L,
-                                     const VectorXd& d, const VectorXd& x0,
-                                     int N) {
+void OcpGenerator::CopyOverHorizon(const MatrixXd& Q, const MatrixXd& R,
+                                   const MatrixXd& S, const VectorXd& q,
+                                   const VectorXd& r, const MatrixXd& A,
+                                   const MatrixXd& B, const VectorXd& c,
+                                   const MatrixXd& E, const MatrixXd& L,
+                                   const VectorXd& d, const VectorXd& x0,
+                                   int N) {
   // These are indexed from 0 to N.
   for (int i = 0; i < N + 1; i++) {
     Q_.push_back(Q);

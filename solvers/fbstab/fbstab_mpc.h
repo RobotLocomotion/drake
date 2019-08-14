@@ -17,7 +17,7 @@ namespace drake {
 namespace solvers {
 namespace fbstab {
 
-/** Conveience typedef for the templated version of the algorithm.*/
+/** Convenience typedef for the templated version of the algorithm.*/
 using FBstabAlgoMpc = FBstabAlgorithm<MpcVariable, MpcResidual, MpcData,
                                       RiccatiLinearSolver, MpcFeasibility>;
 
