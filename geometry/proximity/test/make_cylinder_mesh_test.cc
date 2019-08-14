@@ -21,15 +21,15 @@ namespace {
 // The fourth vertex, d, is on the positive side of the plane defined by a, b,
 // c. With this convention, the computed volume will be positive, otherwise
 // negative.
-double CalcTetrahedronVolume(const Vector3<double> &a, const Vector3<double> &b,
-                             const Vector3<double> &c,
-                             const Vector3<double> &d) {
+double CalcTetrahedronVolume(const Vector3<double>& a, const Vector3<double>& b,
+                             const Vector3<double>& c,
+                             const Vector3<double>& d) {
   return (d - a).dot((b - a).cross(c - a)) / 6.0;
 }
 
 // Computes the total volume of a VolumeMesh by summing up the contribution
 // of each tetrahedron.
-double CalcTetrahedronMeshVolume(const VolumeMesh<double> &mesh) {
+double CalcTetrahedronMeshVolume(const VolumeMesh<double>& mesh) {
   const std::vector<VolumeVertex<double>> &vertices = mesh.vertices();
   const std::vector<VolumeElement> &tetrahedra = mesh.tetrahedra();
   double volume = 0.0;
@@ -92,20 +92,20 @@ GTEST_TEST(MakeCylinderMesh, VolumeConvergence) {
 
 // This could use a better hash function, but two random primes do pretty well
 struct EdgeHashFunction {
-  std::size_t operator()(const std::pair<VolumeVertexIndex, VolumeVertexIndex>
-      &element) const {
+  std::size_t operator()(const std::pair<VolumeVertexIndex,
+      VolumeVertexIndex>& element) const {
     // Take the convention that x is the smaller of the pair
     // so that the hash is commutative
-    std::size_t x = std::min(element.first, element.second);
-    std::size_t y = std::max(element.first, element.second);
+    const VolumeVertexIndex x = std::min(element.first, element.second);
+    const VolumeVertexIndex y = std::max(element.first, element.second);
 
     return x * 779230947 + y * 247091631;
   }
 };
 
 struct EdgeEqualsFunction {
-  bool operator()(const std::pair<VolumeVertexIndex, VolumeVertexIndex> &a,
-                  const std::pair<VolumeVertexIndex, VolumeVertexIndex> &b)
+  bool operator()(const std::pair<VolumeVertexIndex, VolumeVertexIndex>& a,
+                  const std::pair<VolumeVertexIndex, VolumeVertexIndex>& b)
                   const {
     VolumeVertexIndex ax = std::min(a.first, a.second);
     VolumeVertexIndex ay = std::max(a.first, a.second);
@@ -117,7 +117,7 @@ struct EdgeEqualsFunction {
 };
 
 // Counts the unique 1-simplices in the mesh
-int CountEdges(const VolumeMesh<double> &mesh) {
+int CountEdges(const VolumeMesh<double>& mesh) {
   std::unordered_set<std::pair<VolumeVertexIndex, VolumeVertexIndex>,
       EdgeHashFunction, EdgeEqualsFunction> edges;
 
@@ -138,15 +138,15 @@ struct FaceHashFunction {
   std::size_t operator()(
       const std::tuple<VolumeVertexIndex,
                        VolumeVertexIndex,
-                       VolumeVertexIndex> &element) const {
+                       VolumeVertexIndex>& element) const {
     // Take the convention that x is the smaller of the
     // pair so that the hash is commutative
     std::vector<VolumeVertexIndex> v =
         {std::get<0>(element), std::get<1>(element), std::get<2>(element)};
     std::sort(v.begin(), v.end());
-    std::size_t x = v[0];
-    std::size_t y = v[1];
-    std::size_t z = v[2];
+    const VolumeVertexIndex x = v[0];
+    const VolumeVertexIndex y = v[1];
+    const VolumeVertexIndex z = v[2];
 
     return x * 779230947 + y * 247091631 + z * 119428962;
   }
@@ -155,9 +155,9 @@ struct FaceHashFunction {
 struct FaceEqualsFunction {
   bool operator() (
       const std::tuple<VolumeVertexIndex, VolumeVertexIndex,
-      VolumeVertexIndex> &a,
+      VolumeVertexIndex>& a,
       const std::tuple<VolumeVertexIndex, VolumeVertexIndex,
-      VolumeVertexIndex> &b) const {
+      VolumeVertexIndex>& b) const {
     std::vector<VolumeVertexIndex> av =
         {std::get<0>(a), std::get<1>(a), std::get<2>(a)};
 
@@ -167,21 +167,21 @@ struct FaceEqualsFunction {
     std::sort(av.begin(), av.end());
     std::sort(bv.begin(), bv.end());
 
-    std::size_t ax = av[0], ay = av[1], az = av[2];
-    std::size_t bx = bv[0], by = bv[1], bz = bv[2];
+    const VolumeVertexIndex ax = av[0], ay = av[1], az = av[2];
+    const VolumeVertexIndex bx = bv[0], by = bv[1], bz = bv[2];
 
     return (ax == bx) && (ay == by) && (az == bz);
   }
 };
 
 // Counts the unique 2-simplices in the face
-int CountFaces(const VolumeMesh<double> &mesh) {
+int CountFaces(const VolumeMesh<double>& mesh) {
   std::unordered_set<
       std::tuple<VolumeVertexIndex, VolumeVertexIndex, VolumeVertexIndex>,
       FaceHashFunction,
       FaceEqualsFunction> faces;
 
-  for (auto &t : mesh.tetrahedra()) {
+  for (const auto & t : mesh.tetrahedra()) {
     // 4 faces of a tetrahedron, all facing in
     faces.insert(std::make_tuple(t.vertex(0), t.vertex(1), t.vertex(2)));
     faces.insert(std::make_tuple(t.vertex(1), t.vertex(0), t.vertex(3)));
@@ -192,7 +192,7 @@ int CountFaces(const VolumeMesh<double> &mesh) {
   return faces.size();
 }
 
-int ComputeEulerCharacteristic(const VolumeMesh<double> &mesh) {
+int ComputeEulerCharacteristic(const VolumeMesh<double>& mesh) {
   const int k0 = mesh.vertices().size();
   const int k1 = CountEdges(mesh);
   const int k2 = CountFaces(mesh);
