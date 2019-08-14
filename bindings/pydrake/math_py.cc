@@ -118,6 +118,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return *self * p_BoQ_B;
             },
             py::arg("p_BoQ_B"), cls_doc.operator_mul.doc_1args_p_BoQ_B)
+        .def("multiply",
+            [](const Class* self, const Matrix3X<T>& p_BoQ_B) {
+              return *self * p_BoQ_B;
+            },
+            py::arg("p_BoQ_B"),
+            cls_doc.operator_mul.doc_1args_constEigenMatrixBase)
         .def("matrix", &RigidTransform<T>::matrix,
             doc_rigid_transform_linear_matrix_deprecation)
         .def("linear", &RigidTransform<T>::linear, py_reference_internal,
@@ -161,7 +167,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("col", &Class::col, py::arg("index"), cls_doc.col.doc)
         .def("multiply",
             [](const Class& self, const Class& other) { return self * other; },
-            cls_doc.operator_mul.doc_1args_other)
+            py::arg("other"), cls_doc.operator_mul.doc_1args_other)
+        .def("multiply",
+            [](const Class& self, const Vector3<T>& v_B) { return self * v_B; },
+            py::arg("v_B"), cls_doc.operator_mul.doc_1args_v_B)
+        .def("multiply",
+            [](const Class& self, const Matrix3X<T>& v_B) {
+              return self * v_B;
+            },
+            py::arg("v_B"), cls_doc.operator_mul.doc_1args_constEigenMatrixBase)
         .def("IsValid", overload_cast_explicit<boolean<T>>(&Class::IsValid),
             cls_doc.IsValid.doc_0args)
         .def("IsExactlyIdentity", &Class::IsExactlyIdentity,
