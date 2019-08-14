@@ -44,7 +44,6 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
       : systems::LeafSystem<T>(), body_names_(other.body_names_) {}
 
   const systems::InputPort<T>& get_contact_result_input_port() const;
-  const systems::InputPort<T>& get_geometry_query_input_port() const;
   const systems::OutputPort<T>& get_lcm_message_output_port() const;
 
  private:
@@ -57,7 +56,6 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
 
   // Named indices for the i/o ports.
   systems::InputPortIndex contact_result_input_port_index_;
-  systems::InputPortIndex geometry_query_input_port_index_;
   systems::OutputPortIndex message_output_port_index_;
 
   // A mapping from geometry IDs to body indices.
@@ -85,7 +83,6 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
                          Diagram.
  @param multibody_plant  The System in `builder` containing the plant whose
                          contact results are to be visualized.
- @param scene_graph      The SceneGraph System constructed in `builder`.
  @param lcm              An optional lcm interface through which lcm messages
                          will be dispatched. Will be allocated internally if
                          none is supplied.
@@ -101,7 +98,6 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& multibody_plant,
-    const geometry::SceneGraph<double>& scene_graph,
     lcm::DrakeLcmInterface* lcm = nullptr);
 
 /** Implements ConnectContactResultsToDrakeVisualizer, but using
@@ -120,7 +116,6 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& multibody_plant,
     const systems::OutputPort<double>& contact_results_port,
-    const systems::OutputPort<double>& geometry_input_port,
     lcm::DrakeLcmInterface* lcm = nullptr);
 
 }  // namespace multibody

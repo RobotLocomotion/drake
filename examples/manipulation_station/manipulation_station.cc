@@ -644,7 +644,6 @@ void ManipulationStation<T>::Finalize(
 
   builder.ExportOutput(scene_graph_->get_pose_bundle_output_port(),
                        "pose_bundle");
-  builder.ExportOutput(scene_graph_->get_query_output_port(), "geometry_query");
 
   builder.ExportOutput(plant_->get_contact_results_output_port(),
                        "contact_results");

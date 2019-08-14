@@ -108,7 +108,7 @@ void DoMain() {
 
   // Publish contact results for visualization.
   multibody::ConnectContactResultsToDrakeVisualizer(
-      &builder, plant, scene_graph, lcm);
+      &builder, plant, lcm);
 
   // PID controller for position control of the finger joints
   VectorX<double> kp, kd, ki;

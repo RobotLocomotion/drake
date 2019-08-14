@@ -896,29 +896,23 @@ PYBIND11_MODULE(plant, m) {
         .def("get_contact_result_input_port",
             &Class::get_contact_result_input_port, py_reference_internal,
             cls_doc.get_contact_result_input_port.doc)
-        .def("get_geometry_query_input_port",
-            &Class::get_geometry_query_input_port, py_reference_internal,
-            cls_doc.get_geometry_query_input_port.doc)
         .def("get_lcm_message_output_port", &Class::get_lcm_message_output_port,
             py_reference_internal, cls_doc.get_lcm_message_output_port.doc);
   }
 
   m.def("ConnectContactResultsToDrakeVisualizer",
       [](systems::DiagramBuilder<double>* builder,
-          const MultibodyPlant<double>& plant,
-          const SceneGraph<double>& scene_graph, lcm::DrakeLcmInterface* lcm) {
+          const MultibodyPlant<double>& plant, lcm::DrakeLcmInterface* lcm) {
         return drake::multibody::ConnectContactResultsToDrakeVisualizer(
-            builder, plant, scene_graph, lcm);
+            builder, plant, lcm);
       },
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 1>(),
       // Keep alive, reference transfer: `plant` keeps `builder` alive.
       py::keep_alive<2, 1>(),
-      // Keep alive, reference transfer: `scene_graph` keeps `builder` alive.
-      py::keep_alive<3, 1>(),
       // Keep alive, reference transfer: `lcm` keeps `builder` alive.
-      py::keep_alive<4, 1>(), py_reference, py::arg("builder"),
-      py::arg("plant"), py::arg("scene_graph"), py::arg("lcm") = nullptr,
+      py::keep_alive<3, 1>(), py_reference, py::arg("builder"),
+      py::arg("plant"), py::arg("lcm") = nullptr,
       doc.ConnectContactResultsToDrakeVisualizer.doc_4args);
 }  // NOLINT(readability/fn_size)
 

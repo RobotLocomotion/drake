@@ -265,7 +265,7 @@ int do_main() {
   // Publish contact results for visualization.
   // (Currently only available when time stepping.)
   if (FLAGS_time_stepping)
-    ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph, &lcm);
+    ConnectContactResultsToDrakeVisualizer(&builder, plant, &lcm);
 
   // Sinusoidal force input. We want the gripper to follow a trajectory of the
   // form x(t) = X0 * sin(ω⋅t). By differentiating once, we can compute the

@@ -101,7 +101,7 @@ int do_main() {
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
 
   // Publish contact results for visualization.
-  ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph, &lcm);
+  ConnectContactResultsToDrakeVisualizer(&builder, plant, &lcm);
 
   auto diagram = builder.Build();
 

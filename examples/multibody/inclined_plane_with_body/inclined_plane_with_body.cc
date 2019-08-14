@@ -138,7 +138,7 @@ int do_main() {
   // Publish contact results for visualization.
   // TODO(Mitiguy) Ensure contact forces can be displayed when time_step = 0.
   if (FLAGS_time_step > 0)
-    ConnectContactResultsToDrakeVisualizer(&builder, plant, pair.scene_graph);
+    ConnectContactResultsToDrakeVisualizer(&builder, plant);
 
   geometry::ConnectDrakeVisualizer(&builder, pair.scene_graph);
   auto diagram = builder.Build();

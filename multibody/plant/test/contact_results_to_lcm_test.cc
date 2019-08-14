@@ -5,7 +5,6 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/proximity/surface_mesh.h"
-#include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
@@ -50,9 +49,6 @@ GTEST_TEST(ContactResultsToLcmSystem, EmptyMultibodyPlant) {
   lcm_context->FixInputPort(
       lcm_system.get_contact_result_input_port().get_index(),
       Value<ContactResults<double>>());
-  lcm_context->FixInputPort(
-      lcm_system.get_geometry_query_input_port().get_index(),
-      Value<geometry::QueryObject<double>>());
 
   Value<lcmt_contact_results_for_viz> lcm_message_value;
   lcm_system.get_lcm_message_output_port().Calc(*lcm_context,
@@ -110,11 +106,6 @@ GTEST_TEST(ContactResultsToLcmSystem, NonEmptyMultibodyPlantEmptyContact) {
       lcm_system.get_contact_result_input_port().get_index(),
       Value<ContactResults<double>>(contacts));
 
-  // Since this is a point-pair test, no geometry pose queries are necessary.
-  lcm_context->FixInputPort(
-      lcm_system.get_geometry_query_input_port().get_index(),
-      Value<geometry::QueryObject<double>>());
-
   Value<lcmt_contact_results_for_viz> lcm_message_value;
   lcm_system.get_lcm_message_output_port().Calc(*lcm_context,
                                                 &lcm_message_value);
@@ -160,7 +151,7 @@ GTEST_TEST(ConnectContactResultsToDrakeVisualizer, BasicTest) {
   plant->Finalize();
 
   auto publisher = ConnectContactResultsToDrakeVisualizer(
-      &builder, *plant, *scene_graph);
+      &builder, *plant);
 
   // Confirm that we get a non-null result.
   EXPECT_NE(publisher, nullptr);
@@ -183,14 +174,11 @@ GTEST_TEST(ConnectContactResultsToDrakeVisualizer, NestedDiagramTest) {
 
   builder.ExportOutput(plant->get_contact_results_output_port(),
       "contact_results");
-  builder.ExportOutput(scene_graph->get_query_output_port(),
-      "geometric_query");
 
   auto diagram = builder.AddSystem(builder.Build());
 
   auto publisher = ConnectContactResultsToDrakeVisualizer(
-      &builder, *plant, diagram->GetOutputPort("contact_results"),
-      diagram->GetOutputPort("geometric_query"));
+      &builder, *plant, diagram->GetOutputPort("contact_results"));
 
   // Confirm that we get a non-null result.
   EXPECT_NE(publisher, nullptr);
@@ -347,8 +335,6 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
       systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
           "CONTACT_RESULTS", &lcm, 1.0 / 60 /* publish period */));
   contact_results_publisher.set_name("contact_results_publisher");
-  builder.Connect(scene_graph->get_query_output_port(),
-      lcm_system.get_geometry_query_input_port());
   builder.Connect(lcm_system.get_output_port(0),
                   contact_results_publisher.get_input_port());
   const systems::InputPortIndex contact_results_input_port_index =

@@ -57,7 +57,6 @@ from pydrake.geometry import (
     Box,
     GeometryId,
     PenetrationAsPointPair_,
-    QueryObject,
     SceneGraph_,
     SignedDistancePair_,
     SignedDistanceToPoint_,
@@ -1111,7 +1110,6 @@ class TestPlant(unittest.TestCase):
         contact_results_to_lcm = ContactResultsToLcmSystem(plant)
         context = contact_results_to_lcm.CreateDefaultContext()
         context.FixInputPort(0, AbstractValue.Make(ContactResults_[float]()))
-        context.FixInputPort(1, AbstractValue.Make(QueryObject()))
         output = contact_results_to_lcm.AllocateOutput()
         contact_results_to_lcm.CalcOutput(context, output)
         result = output.get_data(0)
@@ -1120,18 +1118,15 @@ class TestPlant(unittest.TestCase):
     def test_connect_contact_results(self):
         DiagramBuilder = DiagramBuilder_[float]
         MultibodyPlant = MultibodyPlant_[float]
-        SceneGraph = SceneGraph_[float]
 
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         builder = DiagramBuilder()
         plant = builder.AddSystem(MultibodyPlant(0.001))
-        scene_graph = builder.AddSystem(SceneGraph())
         Parser(plant).AddModelFromFile(file_name)
         plant.Finalize()
 
-        publisher = ConnectContactResultsToDrakeVisualizer(
-            builder, plant, scene_graph)
+        publisher = ConnectContactResultsToDrakeVisualizer(builder, plant)
         self.assertIsInstance(publisher, LcmPublisherSystem)
 
     @numpy_compare.check_nonsymbolic_types
