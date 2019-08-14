@@ -145,7 +145,6 @@ GTEST_TEST(RigidTransform, ConstructorFromRotationMatrix) {
 }
 
 // Tests constructing a RigidTransform from just a position vector.
-// TODO(Mitiguy) Delete this test when the deprecated constructor is deleted.
 GTEST_TEST(RigidTransform, ConstructorFromPositionVector) {
   const Vector3<double> p(4, 5, 6);
   const RigidTransform<double> X(p);
@@ -196,47 +195,85 @@ GTEST_TEST(RigidTransform, ConstructorAngleAxisPositionVector) {
   EXPECT_TRUE(X.translation() == position);
 }
 
-// Tests making a RigidTransform from just a position vector.
-GTEST_TEST(RigidTransform, MakeFromPositionVector) {
-  const Vector3<double> p(4, 5, 6);
-  const RigidTransform<double> X =
-      RigidTransform<double>::MakeFromPositionVector(p);
-  EXPECT_TRUE(X.rotation().IsExactlyIdentity());
-  EXPECT_TRUE(X.translation() == p);
-}
-
-// Tests making a RigidTransform from a 3x4 matrix.
-GTEST_TEST(RigidTransform, MakeFromMatrix34) {
+// Test constructing a RigidTransform from a 3x4 matrix.
+GTEST_TEST(RigidTransform, ConstructorFromMatrix34) {
   const RotationMatrixd R = GetRotationMatrixB();
   const Vector3<double> position(4, 5, 6);
   Eigen::Matrix<double, 3, 4> pose;
   pose << R.matrix(), position;
-  const RigidTransformd X = RigidTransformd::MakeFromMatrix34(pose);
+  const RigidTransformd X(pose);
   EXPECT_TRUE(CompareMatrices(X.GetAsMatrix34(), pose));
 
   if (kDrakeAssertIsArmed) {
-    pose(2, 2) += 1e-5;  // Corrupt the last element of the rotation matrix.
-    EXPECT_THROW((RigidTransformd::MakeFromMatrix34(pose)), std::logic_error);
+    pose(2, 2) += 1E-5;  // Corrupt the last element of the rotation matrix.
+    EXPECT_THROW(RigidTransformd XX(pose), std::logic_error);
   }
 }
 
-// Tests making a RigidTransform from a 4x4 matrix.
-GTEST_TEST(RigidTransform, MakeFromMatrix4) {
+// Test constructing a RigidTransform from a 4x4 matrix.
+GTEST_TEST(RigidTransform, ConstructorFromMatrix4) {
   const RotationMatrixd R = GetRotationMatrixB();
   const Vector3<double> position(4, 5, 6);
   Matrix4<double> pose;
   pose << R.matrix(), position,
           0, 0, 0, 1;
-  const RigidTransformd X = RigidTransformd::MakeFromMatrix4(pose);
+  const RigidTransformd X(pose);
   EXPECT_TRUE(CompareMatrices(X.GetAsMatrix4(), pose));
 
-  // TODO(Mitiguy) Delete next 2 lines when the deprecated method is deleted.
-  const RigidTransformd XX = RigidTransformd::FromMatrix4(pose);
-  EXPECT_TRUE(CompareMatrices(XX.GetAsMatrix4(), pose));
+  if (kDrakeAssertIsArmed) {
+    pose(3, 3) += 1E-5;  // Corrupt the final "1" element in the matrix.
+    EXPECT_THROW(RigidTransformd XX(pose), std::logic_error);
+  }
+}
+
+// Test constructing a RigidTransform from an Eigen expression.
+// Valid expressions need to resolve to Vector3, 3x4, or 4x4 matrix.
+GTEST_TEST(RigidTransform, ConstructorFromEigenExpression) {
+  // Test constructor with a Vector3 Eigen expression.
+  const Vector3<double> p(4, 5, 6);
+  const RigidTransform<double> X1(3 * p);
+  EXPECT_TRUE(X1.rotation().IsExactlyIdentity());
+  EXPECT_TRUE(X1.translation() == 3 * p);
+
+  // Test constructor with a 3x4 matrix Eigen expression.
+  const RotationMatrixd R = GetRotationMatrixB();
+  const Vector3<double> position(4, 5, 6);
+  Eigen::Matrix<double, 3, 4> pose2;
+  pose2 << R.matrix(), position;
+  const RigidTransform<double> X2((1 + kEpsilon) * pose2);
+  EXPECT_TRUE(CompareMatrices(X2.GetAsMatrix34(), (1 + kEpsilon) * pose2));
+
+  // Test constructor with a 3x3 matrix Eigen expression (which should fail).
+  if (kDrakeAssertIsArmed) {
+    const Matrix3<double> m = R.matrix();
+    EXPECT_THROW(RigidTransformd Xm((1 + kEpsilon) * m);, std::logic_error);
+  }
+
+#if 0
+  // Test constructor with a 4x4 matrix Eigen expression.
+  Matrix4<double> pose3, pose4;
+  pose3 << R.matrix(), position,
+           0, 0, 0, 1;
+  pose4 << GetRotationMatrixA().matrix(), 4 * position;
+  Matrix4<double> foo(pose3 * pose4);
+  const RigidTransform<double> X3(foo);
+  // const RigidTransform<double> X3((1 + kEpsilon) * pose3);
+  EXPECT_TRUE(CompareMatrices(X3.GetAsMatrix34(), pose3 * pose2));
+#endif
+}
+
+// Tests making a RigidTransform from a 4x4 matrix.
+GTEST_TEST(RigidTransform, FromMatrix4) {
+  const RotationMatrixd R = GetRotationMatrixB();
+  const Vector3<double> position(4, 5, 6);
+  Matrix4<double> pose;
+  pose << R.matrix(), position,
+          0, 0, 0, 1;
+  const RigidTransformd X = RigidTransformd::FromMatrix4(pose);
+  EXPECT_TRUE(CompareMatrices(X.GetAsMatrix4(), pose));
 
   if (kDrakeAssertIsArmed) {
-    pose(3, 3) += 1e-5;  // Corrupt the final "1" element in the matrix.
-    EXPECT_THROW((RigidTransformd::MakeFromMatrix4(pose)), std::logic_error);
+    pose(3, 3) += 1E-5;  // Corrupt the final "1" element in the matrix.
     EXPECT_THROW((RigidTransformd::FromMatrix4(pose)), std::logic_error);
   }
 }
