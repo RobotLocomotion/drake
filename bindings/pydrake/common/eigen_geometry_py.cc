@@ -264,24 +264,33 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("multiply",
             [](const Class& self, const Class& other) { return self * other; },
             "Quaternion multiplication")
-        // TODO(eric.cousineau): Depeprecate "position" and rename args to
-        // "vector".
         .def("multiply",
-            [](const Class& self, const Vector3<T>& position) {
-              return self * position;
+            [](const Class& self, const Vector3<T>& vector) {
+              return self * vector;
             },
-            py::arg("position"),
-            "Multiplication of a vector expressed in a frame")
+            py::arg("vector"),
+            "Multiplication by a vector expressed in a frame")
         .def("multiply",
-            [](const Class& self, const Matrix3X<T>& position) {
-              Matrix3X<T> out(position.rows(), position.cols());
-              for (int i = 0; i < position.cols(); ++i) {
-                out.col(i) = self * position.col(i);
+            [](const Class& self, const Matrix3X<T>& vector) {
+              Matrix3X<T> out(vector.rows(), vector.cols());
+              for (int i = 0; i < vector.cols(); ++i) {
+                out.col(i) = self * vector.col(i);
               }
               return out;
             },
+            py::arg("vector"),
+            "Multiplication by a list of vectors expressed in the same frame")
+        .def("multiply",
+            [](const Class& self, py::object position) {
+              WarnDeprecated(
+                  "Please use 'vector' argument instead. This will be removed "
+                  "on or around 2019-11-15");
+              py::handle py_self = ;
+              return py::cast(&self).attr("multiply")(
+                  **py::kwargs(py::arg("vector") = position));
+            },
             py::arg("position"),
-            "Multiplication of a list of vectors expressed in the same frame")
+            "DEPRECATED: Please use ``vector`` argument instead.")
         .def("inverse", [](const Class* self) { return self->inverse(); })
         .def("conjugate", [](const Class* self) { return self->conjugate(); });
     cls.attr("__matmul__") = cls.attr("multiply");

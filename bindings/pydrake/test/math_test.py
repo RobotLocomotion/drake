@@ -175,10 +175,10 @@ class TestMath(unittest.TestCase):
         p_AQ = [21., -8, 33]
         numpy_compare.assert_float_equal(X_AB.multiply(p_BoQ_B=p_BQ), p_AQ)
         # N.B. Remember that this takes ndarray[3, n], NOT ndarray[n, 3]!
-        p_BQlist = np.array([p_BQ, p_BQ]).T
-        p_AQlist = np.array([p_AQ, p_AQ]).T
+        plist_BQ = np.array([p_BQ, p_BQ]).T
+        plist_AQ = np.array([p_AQ, p_AQ]).T
         numpy_compare.assert_float_equal(
-            X_AB.multiply(p_BoQ_B=p_BQlist), p_AQlist)
+            X_AB.multiply(p_BoQ_B=plist_BQ), plist_AQ)
 
     @numpy_compare.check_all_types
     def test_isometry_implicit(self, T):
@@ -251,9 +251,9 @@ class TestMath(unittest.TestCase):
         v_A = [20., -10., 30]
         numpy_compare.assert_float_equal(R_AB.multiply(v_B=v_B), v_A)
         # N.B. Remember that this takes ndarray[3, n], NOT ndarray[n, 3]!
-        v_B_list = np.array([v_B, v_B]).T
-        v_A_list = np.array([v_A, v_A]).T
-        numpy_compare.assert_float_equal(R_AB.multiply(v_B=v_B_list), v_A_list)
+        vlist_B = np.array([v_B, v_B]).T
+        vlist_A = np.array([v_A, v_A]).T
+        numpy_compare.assert_float_equal(R_AB.multiply(v_B=vlist_B), vlist_A)
         # Matrix checks
         numpy_compare.assert_equal(R.IsValid(), True)
         R = RotationMatrix()

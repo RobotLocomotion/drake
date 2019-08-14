@@ -108,11 +108,18 @@ class TestEigenGeometry(unittest.TestCase):
                 eval("q_AB.inverse() @ q_AB").wxyz(), [1., 0, 0, 0])
         v_B = np.array([1., 2, 3])
         v_A = np.array([3., 1, 2])
-        numpy_compare.assert_float_allclose(q_AB.multiply(position=v_B), v_A)
-        v_B_list = np.array([v_B, v_B]).T
-        v_A_list = np.array([v_A, v_A]).T
+        numpy_compare.assert_float_allclose(q_AB.multiply(vector=v_B), v_A)
+        vlist_B = np.array([v_B, v_B]).T
+        vlist_A = np.array([v_A, v_A]).T
         numpy_compare.assert_float_equal(
-            q_AB.multiply(position=v_B_list), v_A_list)
+            q_AB.multiply(vector=vlist_B), vlist_A)
+        # Test deprecation.
+        with expect_deprecation(num=2):
+            self.assertEqual(q_AB.multiply(position=v_B).shape, v_B.shape)
+            self.assertEqual(q_AB.multiply(position=vlist_B).shape, vlist_B.shape)
+        # - No deprectation should happen without kwarg.
+        self.assertEqual(q_AB.multiply(v_B).shape, v_B.shape)
+        self.assertEqual(q_AB.multiply(vlist_B).shape, v_B.shape)
         q_AB_conj = q_AB.conjugate()
         numpy_compare.assert_float_equal(
                 q_AB_conj.wxyz(), [0.5, -0.5, -0.5, -0.5])
@@ -189,10 +196,10 @@ class TestEigenGeometry(unittest.TestCase):
         p_BQ = [10, 20, 30]
         p_AQ = [21., -8, 33]
         numpy_compare.assert_float_equal(X_AB.multiply(position=p_BQ), p_AQ)
-        p_BQlist = np.array([p_BQ, p_BQ]).T
-        p_AQlist = np.array([p_AQ, p_AQ]).T
+        plist_BQ = np.array([p_BQ, p_BQ]).T
+        plist_AQ = np.array([p_AQ, p_AQ]).T
         numpy_compare.assert_float_equal(
-            X_AB.multiply(position=p_BQlist), p_AQlist)
+            X_AB.multiply(position=plist_BQ), plist_AQ)
         if six.PY3:
             numpy_compare.assert_float_equal(
                 eval("X_AB.inverse() @ X_AB").matrix(), X_I_np)
