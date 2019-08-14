@@ -5,6 +5,7 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -263,25 +264,32 @@ void DoScalarDependentDefinitions(py::module m, T) {
             })
         .def("multiply",
             [](const Class& self, const Class& other) { return self * other; },
-            "Quaternion multiplication")
-        // TODO(eric.cousineau): Depeprecate "position" and rename args to
-        // "vector".
+            "Quaternion multiplication");
+    constexpr char doc_deprecated_position[] =
+        "Please use multiply(vector=...) instead. This will be "
+        "removed on or around 2019-11-15";
+    auto multiply_vector = [](const Class& self, const Vector3<T>& vector) {
+      return self * vector;
+    };
+    auto multiply_vector_list = [](const Class& self,
+                                    const Matrix3X<T>& vector) {
+      Matrix3X<T> out(vector.rows(), vector.cols());
+      for (int i = 0; i < vector.cols(); ++i) {
+        out.col(i) = self * vector.col(i);
+      }
+      return out;
+    };
+    cls  // BR
+        .def("multiply", multiply_vector, py::arg("vector"),
+            "Multiplication by a vector expressed in a frame")
+        .def("multiply", multiply_vector_list, py::arg("vector"),
+            "Multiplication by a list of vectors expressed in the same frame")
         .def("multiply",
-            [](const Class& self, const Vector3<T>& position) {
-              return self * position;
-            },
-            py::arg("position"),
-            "Multiplication of a vector expressed in a frame")
+            WrapDeprecated(doc_deprecated_position, multiply_vector),
+            py::arg("position"), doc_deprecated_position)
         .def("multiply",
-            [](const Class& self, const Matrix3X<T>& position) {
-              Matrix3X<T> out(position.rows(), position.cols());
-              for (int i = 0; i < position.cols(); ++i) {
-                out.col(i) = self * position.col(i);
-              }
-              return out;
-            },
-            py::arg("position"),
-            "Multiplication of a list of vectors expressed in the same frame")
+            WrapDeprecated(doc_deprecated_position, multiply_vector_list),
+            py::arg("position"), doc_deprecated_position)
         .def("inverse", [](const Class* self) { return self->inverse(); })
         .def("conjugate", [](const Class* self) { return self->conjugate(); });
     cls.attr("__matmul__") = cls.attr("multiply");

@@ -251,9 +251,9 @@ class TestMath(unittest.TestCase):
         v_A = [20., -10., 30]
         numpy_compare.assert_float_equal(R_AB.multiply(v_B=v_B), v_A)
         # N.B. Remember that this takes ndarray[3, n], NOT ndarray[n, 3]!
-        v_B_list = np.array([v_B, v_B]).T
-        v_A_list = np.array([v_A, v_A]).T
-        numpy_compare.assert_float_equal(R_AB.multiply(v_B=v_B_list), v_A_list)
+        vlist_B = np.array([v_B, v_B]).T
+        vlist_A = np.array([v_A, v_A]).T
+        numpy_compare.assert_float_equal(R_AB.multiply(v_B=vlist_B), vlist_A)
         # Matrix checks
         numpy_compare.assert_equal(R.IsValid(), True)
         R = RotationMatrix()
