@@ -7,7 +7,10 @@
 #include <gtest/gtest.h>
 
 #include "drake/solvers/fbstab/components/mpc_data.h"
+#include "drake/solvers/fbstab/components/mpc_feasibility.h"
+#include "drake/solvers/fbstab/components/mpc_residual.h"
 #include "drake/solvers/fbstab/components/mpc_variable.h"
+#include "drake/solvers/fbstab/components/riccati_linear_solver.h"
 
 namespace drake {
 namespace solvers {
@@ -23,9 +26,9 @@ using VectorXd = Eigen::VectorXd;
  * MpcVariable
  * MPCResidual
  * MPCFeasibiity
- * RicattiLinearSolver
+ * RiccatiLinearSolver
  */
-class MPCComponentUnitTests {
+class MpcComponentUnitTests {
  public:
   /**
    * Sets up the optimal control problem
@@ -34,7 +37,7 @@ class MPCComponentUnitTests {
    * The mathematical format can be found in
    * https://arxiv.org/pdf/1901.04046.pdf Eq. (29) or in mpc_data.h.
    */
-  MPCComponentUnitTests() {
+  MpcComponentUnitTests() {
     int N = 2;  // Use a horizon length of 2 throughout.
 
     MatrixXd Q(2, 2);
@@ -306,6 +309,156 @@ class MPCComponentUnitTests {
     for (int i = 0; i < y_expected.size(); i++) {
       ASSERT_EQ(x.y()(i), y_expected(i));
       ASSERT_EQ(x.v()(i), v_expected(i));
+    }
+  }
+
+  /**
+   * Tests against hand calculations.
+   */
+  void InnerResidual() {
+    MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
+
+    MpcVariable x(data.N_, data.nx_, data.nu_, data.nc_);
+    MpcVariable y(data.N_, data.nx_, data.nu_, data.nc_);
+    x.LinkData(&data);
+    y.LinkData(&data);
+
+    x.Fill(2.0);
+    y.Fill(-2.0);
+
+    double sigma = 1.0;
+
+    MpcResidual r(data.N_, data.nx_, data.nu_, data.nc_);
+    r.InnerResidual(x, y, sigma);
+
+    VectorXd rz_expected(data.nz_);
+    VectorXd rl_expected(data.nl_);
+    VectorXd rv_expected(data.nv_);
+
+    rz_expected << 8, 8, 14, 8, 8, 14, 6, 4, 12;
+    rl_expected << 6, 6, 2, 2, 2, 2;
+    rv_expected << 2.19167244568008, 2.19167244568008, 1.85147084275040,
+        1.85147084275040, 2.33389560518351, 1.62472628830921, 2.19167244568008,
+        2.19167244568008, 1.85147084275040, 1.85147084275040, 2.33389560518351,
+        1.62472628830921, 2.19167244568008, 2.19167244568008, 1.85147084275040,
+        1.85147084275040, 2.33389560518351, 1.62472628830921;
+
+    for (int i = 0; i < rz_expected.size(); i++) {
+      EXPECT_NEAR(r.z()(i), rz_expected(i), 1e-14);
+    }
+
+    for (int i = 0; i < rl_expected.size(); i++) {
+      EXPECT_NEAR(r.l()(i), rl_expected(i), 1e-14);
+    }
+
+    for (int i = 0; i < rv_expected.size(); i++) {
+      EXPECT_NEAR(r.v()(i), rv_expected(i), 1e-14);
+    }
+  }
+
+  // Checks to make sure the the feasibility routine
+  // executes correctly and with false positives.
+  void FeasibilitySanityCheck() {
+    MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
+
+    MpcVariable x(data.N_, data.nx_, data.nu_, data.nc_);
+    x.LinkData(&data);
+    x.Fill(0);
+    x.InitializeConstraintMargin();
+
+    MpcFeasibility f(data.N_, data.nx_, data.nu_, data.nc_);
+
+    f.ComputeFeasibility(x, 1e-8);
+
+    ASSERT_TRUE(f.IsDualFeasible());
+    ASSERT_TRUE(f.IsPrimalFeasible());
+  }
+
+  // Checks that the output of the
+  // Riccati recursion solver dx solves the system
+  //
+  // [Hs  G' A'][dz] = [rz]
+  // [-G  sI 0 ][dl] = [rl]
+  // [-CA 0  D ][dv] = [rv]
+  // where C = diag(gamma), D = diag(mus)
+  // Hs = H + s I, s = sigma, and dx = (dz,dl,dv).
+  //
+  // See (28) in https://arxiv.org/pdf/1901.04046.pdf
+  // for more details.
+  void RiccatiRecursion() {
+    MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
+
+    MpcVariable x(data.N_, data.nx_, data.nu_, data.nc_);
+    MpcVariable y(data.N_, data.nx_, data.nu_, data.nc_);
+    x.LinkData(&data);
+    y.LinkData(&data);
+
+    // These values are all arbitrary.
+    x.z().fill(1);
+    x.l().fill(2);
+    x.v().fill(4);
+    x.InitializeConstraintMargin();
+
+    y.z().fill(2);
+    y.l().fill(1);
+    y.v().fill(3);
+    y.InitializeConstraintMargin();
+
+    double sigma = 1.0;
+
+    RiccatiLinearSolver ls(data.N_, data.nx_, data.nu_, data.nc_);
+    ls.Initialize(x, y, sigma);
+
+    // Create the residual then solve.
+    MpcResidual r(data.N_, data.nx_, data.nu_, data.nc_);
+    r.Fill(2.50);  // arbitrary
+
+    MpcVariable dx(data.N_, data.nx_, data.nu_, data.nc_);
+    dx.LinkData(&data);
+    ls.Solve(r, &dx);
+
+    int nz = data.nz_;
+    int nl = data.nl_;
+    int nv = data.nv_;
+
+    const VectorXd& dz = dx.z();
+    const VectorXd& dl = dx.l();
+    const VectorXd& dv = dx.v();
+
+    // r1 = Hs*dz + G'*dl + A'*dv
+    VectorXd r1 = VectorXd::Zero(nz);
+    data.gemvH(dz, 1.0, 1.0, &r1);  //  r1 += H*dz
+    r1 += sigma * dz;
+    data.gemvGT(dl, 1.0, 1.0, &r1);  // r1 += G'*dl
+    data.gemvAT(dv, 1.0, 1.0, &r1);  // r1 += A'*dv
+    for (int i = 0; i < nz; i++) {
+      EXPECT_NEAR(r.z()(i) - r1(i), 0, 1e-14);
+    }
+
+    // r2 = -G*dz + sigma*dl
+    VectorXd r2 = VectorXd::Zero(nl);
+    data.gemvG(dz, -1.0, 1.0, &r2);  // r2 += -G*dz
+    r2 += sigma * dl;
+    for (int i = 0; i < nl; i++) {
+      EXPECT_NEAR(r.l()(i) - r2(i), 0, 1e-14);
+    }
+
+    // r3 = -C*A*dz + D*dv
+    VectorXd r3 = VectorXd::Zero(nv);
+    data.gemvA(dz, -1.0, 1.0, &r3);
+    r3 = ls.gamma_.asDiagonal() * r3;
+    r3 += ls.mus_.asDiagonal() * dv;
+    for (int i = 0; i < nv; i++) {
+      EXPECT_NEAR(r.v()(i) - r3(i), 0, 1e-14);
+    }
+
+    // The dx.y field should be b - A*dz
+    // after the Solve call.
+    VectorXd r4 = VectorXd::Zero(nv);
+    data.gemvA(dz, -1.0, 1.0, &r4);
+    data.axpyb(1.0, &r4);
+    for (int i = 0; i < nv; i++) {
+      EXPECT_NEAR(dx.y()(i) - r4(i), 0, 1e-14);
     }
   }
 

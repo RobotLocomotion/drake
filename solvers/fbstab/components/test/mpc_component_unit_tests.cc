@@ -13,48 +13,63 @@ namespace test {
  * mpc_component_unit_tests.h for documentation.
  */
 GTEST_TEST(MpcData, GEMVH) {
-  MPCComponentUnitTests test;
+  MpcComponentUnitTests test;
   test.GEMVH();
 }
 
 GTEST_TEST(MpcData, GEMVA) {
-  MPCComponentUnitTests test;
+  MpcComponentUnitTests test;
   test.GEMVA();
 }
 
 GTEST_TEST(MpcData, GEMVG) {
-  MPCComponentUnitTests test;
+  MpcComponentUnitTests test;
   test.GEMVG();
 }
 
 GTEST_TEST(MpcData, GEMVGT) {
-  MPCComponentUnitTests test;
+  MpcComponentUnitTests test;
   test.GEMVGT();
 }
 
 GTEST_TEST(MpcData, GEMVAT) {
-  MPCComponentUnitTests test;
+  MpcComponentUnitTests test;
   test.GEMVAT();
 }
 
 GTEST_TEST(MpcData, AXPYF) {
-  MPCComponentUnitTests test;
+  MpcComponentUnitTests test;
   test.AXPYF();
 }
 
 GTEST_TEST(MpcData, AXPYH) {
-  MPCComponentUnitTests test;
+  MpcComponentUnitTests test;
   test.AXPYH();
 }
 
 GTEST_TEST(MpcData, AXPYB) {
-  MPCComponentUnitTests test;
+  MpcComponentUnitTests test;
   test.AXPYB();
 }
 
 GTEST_TEST(MPCVariable, AXPY) {
-  MPCComponentUnitTests test;
+  MpcComponentUnitTests test;
   test.Variable();
+}
+
+GTEST_TEST(MPCResidual, InnerResidual) {
+  MpcComponentUnitTests test;
+  test.InnerResidual();
+}
+
+GTEST_TEST(MPCFeasibility, SanityCheck) {
+  MpcComponentUnitTests test;
+  test.FeasibilitySanityCheck();
+}
+
+GTEST_TEST(MPCLinearSolver, RiccatiRecursion) {
+  MpcComponentUnitTests test;
+  test.RiccatiRecursion();
 }
 
 }  // namespace test

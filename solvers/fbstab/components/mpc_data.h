@@ -12,7 +12,7 @@ namespace fbstab {
 
 // Forward declaration of testing class to enable a friend declaration.
 namespace test {
-class MPCComponentUnitTests;
+class MpcComponentUnitTests;
 }  // namespace test
 
 /**
@@ -43,7 +43,7 @@ class MPCComponentUnitTests;
  */
 class MpcData {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MpcData);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MpcData)
   /**
    * Creates problem data and performs input validation. Throws
    * a runtime_error if the problem data aren't consistently sized.
@@ -198,9 +198,9 @@ class MpcData {
   // Assumes that validate_length() has already been called.
   void validate_size() const;
 
-  friend class test::MPCComponentUnitTests;
-  friend class RicattiLinearSolver;
-  friend class FBstabMPC;
+  friend class test::MpcComponentUnitTests;
+  friend class RiccatiLinearSolver;
+  friend class FBstabMpc;
 };
 
 }  // namespace fbstab
