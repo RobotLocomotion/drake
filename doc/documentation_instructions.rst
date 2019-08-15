@@ -34,7 +34,9 @@ To generate the C++ API documentation::
 
     $ cd drake
     $ bazel build //doc:doxygen
-    $ bazel-bin/doc/doxygen [--quick]
+    $ bazel-bin/doc/doxygen [options]
+
+    $ bazel-bin/doc/doxygen --help  # To learn about the possible options.
 
 To generate the Python API documentation::
 
