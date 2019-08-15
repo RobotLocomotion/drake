@@ -152,6 +152,13 @@ def main():
         "most useful using shell globbing, e.g., "
         "bazel-bin/doc/doxygen --quick systems/framework/*leaf*.h.")
     args = parser.parse_args()
+    for x in args.inputs:
+        if x.startswith("//"):
+            print("Bazel labels ('{}') are not valid inputs.".format(x))
+            sys.exit(1)
+        if not os.path.exists(x):
+            print("The requested input '{}' does not exist.".format(x))
+            sys.exit(1)
     _run_doxygen(drake_workspace, args)
 
 
