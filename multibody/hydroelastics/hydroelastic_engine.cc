@@ -117,6 +117,7 @@ std::vector<ContactSurface<T>> HydroelasticEngine<T>::ComputeContactSurfaces(
     // corresponds to the soft (rigid) geometry, the order still is guaranteed
     // to be the same on successive calls.
     const RigidTransform<T> X_NM = X_WN.inverse() * X_WM;
+    const RigidTransform<T> X_WR = model_M->is_soft() ? X_WN : X_WM;
     const RigidTransform<T> X_RS = model_M->is_soft() ? X_NM : X_NM.inverse();
     const GeometryId id_S = model_M->is_soft() ? id_M : id_N;
     const GeometryId id_R = model_M->is_soft() ? id_N : id_M;
@@ -126,7 +127,7 @@ std::vector<ContactSurface<T>> HydroelasticEngine<T>::ComputeContactSurfaces(
         model_M->is_soft() ? *model_N : *model_M;
 
     optional<ContactSurface<T>> surface =
-        CalcContactSurface(id_S, model_S, id_R, model_R, X_RS);
+        CalcContactSurface(id_S, model_S, id_R, model_R, X_WR, X_RS);
     if (surface) all_contact_surfaces.emplace_back(std::move(*surface));
   }
 
@@ -137,38 +138,44 @@ template <typename T>
 optional<ContactSurface<T>> HydroelasticEngine<T>::CalcContactSurface(
     GeometryId id_S, const HydroelasticGeometry<T>& soft_model_S,
     GeometryId id_R, const HydroelasticGeometry<T>& rigid_model_R,
-    const RigidTransform<T>& X_RS) const {
+    const RigidTransform<T>& X_WR, const RigidTransform<T>& X_RS) const {
   DRAKE_DEMAND(soft_model_S.is_soft());
   DRAKE_DEMAND(!rigid_model_R.is_soft());
   const HydroelasticField<T>& soft_field_S = soft_model_S.hydroelastic_field();
-  std::vector<T> e_s_surface;
-  std::vector<Vector3<T>> grad_level_set_R_surface;
-  std::unique_ptr<SurfaceMesh<T>> surface_R = CalcZeroLevelSetInMeshDomain(
+  std::vector<T> p0_s_surface;
+  std::vector<Vector3<T>> grad_level_set_surface;
+
+  // Note that the surface and the gradient field will both be expressed in
+  // Frame R initially. They will later be transformed in place to the world
+  // frame.
+  std::unique_ptr<SurfaceMesh<T>> surface = CalcZeroLevelSetInMeshDomain(
       soft_field_S.volume_mesh(), rigid_model_R.level_set(), X_RS,
-      soft_field_S.scalar_field().values(), &e_s_surface,
-      &grad_level_set_R_surface);
-  if (surface_R->num_vertices() == 0) return nullopt;
+      soft_field_S.scalar_field().values(), &p0_s_surface,
+      &grad_level_set_surface);
+  if (surface->num_vertices() == 0) return nullopt;
+
+  // Transform the surface to the world frame.
+  surface->TransformVertices(X_WR);
+
   // Compute pressure field.
-  for (T& e_s : e_s_surface) e_s *= soft_model_S.elastic_modulus();
+  for (T& p0 : p0_s_surface) p0 *= soft_model_S.elastic_modulus();
 
   // ∇hₘₙ is a vector that points from N (in this case S) into M (in this case
   // R). However, the gradient of the level set function points into S (N).
-  // Therefore we flip its direction.
-  for (Vector3<T>& grad_level_set_R : grad_level_set_R_surface) {
-    grad_level_set_R = -grad_level_set_R;
+  // Therefore we flip its direction *and* re-express it in the world frame
+  // for the ContactSurface.
+  for (Vector3<T>& grad_level_set : grad_level_set_surface) {
+    grad_level_set = X_WR.rotation() * -grad_level_set;
   }
 
-  auto e_s = std::make_unique<geometry::SurfaceMeshFieldLinear<T, T>>(
-      "e_MN", std::move(e_s_surface), surface_R.get());
-  auto grad_level_set_R =
+  auto p0_s = std::make_unique<geometry::SurfaceMeshFieldLinear<T, T>>(
+      "p0_MN", std::move(p0_s_surface), surface.get());
+  auto grad_level_set =
       std::make_unique<geometry::SurfaceMeshFieldLinear<Vector3<T>, T>>(
-          "grad_h_MN_M", std::move(grad_level_set_R_surface), surface_R.get());
-  // Surface and gradients are measured and expressed in the rigid frame R.
-  // In consistency with ContactSurface's contract, the first id must belong
-  // to the geometry associated with the frame in which quantities are
-  // expressed, in this case id_R.
-  return ContactSurface<T>(id_R, id_S, std::move(surface_R), std::move(e_s),
-                           std::move(grad_level_set_R), X_RS);
+          "grad_h_MN_W", std::move(grad_level_set_surface), surface.get());
+
+  return ContactSurface<T>(id_R, id_S, std::move(surface), std::move(p0_s),
+                           std::move(grad_level_set));
 }
 
 template <typename T>

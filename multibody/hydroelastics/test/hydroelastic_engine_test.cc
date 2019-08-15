@@ -156,7 +156,7 @@ TEST_F(SphereVsPlaneTest, VerifyModelSizeAndResults) {
   EXPECT_GT(mesh_G.num_vertices(), 0);
   const double kTolerance = 5.0 * std::numeric_limits<double>::epsilon();
   // The expected value of ∇hₘₙ, which by definition points from N towards M.
-  const Vector3<double> expected_grad_h_mn_M =
+  const Vector3<double> expected_grad_h_mn_W =
       surface.id_M() == sphere_geometry_id_ ? Vector3<double>(0.0, 0.0, 1.0)
                                             : Vector3<double>(0.0, 0.0, -1.0);
   for (geometry::SurfaceVertexIndex v(0); v < mesh_G.num_vertices(); ++v) {
@@ -174,8 +174,8 @@ TEST_F(SphereVsPlaneTest, VerifyModelSizeAndResults) {
     EXPECT_LE(radius, surface_radius);
 
     // We expect ∇hₘₙ to point from N towards M.
-    const Vector3<double> grad_h_mn_M = surface.EvaluateGrad_h_MN_M(v);
-    EXPECT_TRUE(CompareMatrices(grad_h_mn_M, expected_grad_h_mn_M, kTolerance));
+    const Vector3<double> grad_h_mn_W = surface.EvaluateGrad_h_MN_W(v);
+    EXPECT_TRUE(CompareMatrices(grad_h_mn_W, expected_grad_h_mn_W, kTolerance));
   }
 
   // The number of models should not change on further queries.

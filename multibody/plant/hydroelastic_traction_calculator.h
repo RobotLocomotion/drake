@@ -37,11 +37,10 @@ class HydroelasticTractionCalculator {
         const math::RigidTransform<T>& X_WB_in,
         const SpatialVelocity<T>& V_WA_in,
         const SpatialVelocity<T>& V_WB_in,
-        const math::RigidTransform<T>& X_WM_in,
         const geometry::ContactSurface<T>* surface_in) :
             X_WA(X_WA_in), X_WB(X_WB_in), V_WA(V_WA_in), V_WB(V_WB_in),
-            X_WM(X_WM_in), surface(*surface_in),
-            p_WC(X_WM_in * surface_in->mesh().centroid()) {
+            surface(*surface_in),
+            p_WC(surface_in->mesh().centroid()) {
       DRAKE_DEMAND(surface_in);
     }
 
@@ -62,9 +61,6 @@ class HydroelasticTractionCalculator {
     /// `surface.N_id()` in the contact surface is affixed to) at the origin of
     /// B's frame, measured and expressed in the world frame.
     const SpatialVelocity<T> V_WB;
-
-    /// The pose of Geometry `surface.M_id()` in the world frame.
-    const math::RigidTransform<T> X_WM;
 
     /// A reference to the ContactSurface that must be maintained for the life
     /// of this object.

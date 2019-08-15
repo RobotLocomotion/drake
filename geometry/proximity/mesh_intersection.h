@@ -498,9 +498,9 @@ std::unique_ptr<SurfaceMeshField<Vector3<T>, T>> ComputeNormalField(
  a volume mesh and the manifold is the intersection of the volume mesh and a
  surface mesh. The resulting manifold's topology is a function of both the
  volume and surface mesh topologies and has normals drawn from the surface mesh.
- Computes the intersecting surface `surface_MN` between a soft geometry M
+ Computes the intersecting surface `surfacp0_MN` between a soft geometry M
  and a rigid geometry N, and sets the pressure field and the normal vector
- field on `surface_MN`.
+ field on `surfacp0_MN`.
  @param[in] volume_field_M
      The field to sample from. The field contains the volume mesh M that defines
      its domain. The vertex positions of the mesh are measured and expressed in
@@ -511,10 +511,10 @@ std::unique_ptr<SurfaceMeshField<Vector3<T>, T>> ComputeNormalField(
      domain. Its vertex positions are measured and expressed in frame N.
  @param[in] X_MN
      The pose of frame N in frame M.
- @param[out] surface_MN_M
+ @param[out] surfacp0_MN_M
      The intersecting surface between the volume mesh M and the surface N.
      Vertex positions are measured and expressed in M's frame.
- @param[out] e_MN
+ @param[out] p0_MN
      The sampled field values on the intersecting surface (samples to support
      a linear mesh field -- i.e., one per vertex).
  @param[out] grad_h_MN_M
@@ -529,8 +529,8 @@ void SampleVolumeFieldOnSurface(
     const VolumeMeshField<T, T>& volume_field_M,
     const SurfaceMesh<T>& surface_N,
     const math::RigidTransform<T>& X_MN,
-    std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
-    std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
+    std::unique_ptr<SurfaceMesh<T>>* surfacp0_MN_M,
+    std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* p0_MN,
     std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>>* grad_h_MN_M) {
   auto normal_field_N = ComputeNormalField(surface_N);
   // TODO(DamrongGuoy): Store normal_field_N in SurfaceMesh to avoid
@@ -586,12 +586,12 @@ void SampleVolumeFieldOnSurface(
   }
   DRAKE_DEMAND(surface_vertices_M.size() == surface_e.size());
   DRAKE_DEMAND(surface_vertices_M.size() == surface_normals_M.size());
-  *surface_MN_M = std::make_unique<SurfaceMesh<T>>(
+  *surfacp0_MN_M = std::make_unique<SurfaceMesh<T>>(
       std::move(surface_faces), std::move(surface_vertices_M));
-  *e_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
-      "e", std::move(surface_e), surface_MN_M->get());
+  *p0_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
+      "e", std::move(surface_e), surfacp0_MN_M->get());
   *grad_h_MN_M = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
-      "grad_h_MN_M", std::move(surface_normals_M), surface_MN_M->get());
+      "grad_h_MN_M", std::move(surface_normals_M), surfacp0_MN_M->get());
 }
 
 /** Computes the contact surface between a soft geometry S and a rigid
@@ -610,6 +610,8 @@ void SampleVolumeFieldOnSurface(
      The rigid geometry R is represented as a surface mesh, whose vertex
      positions are in R's frame. We assume that triangles are oriented
      outward.
+ @param[in] X_WS
+     The pose of the soft frame S in the world frame W.
  @param[in] X_SR
      The pose of the rigid frame R in the soft frame S.
  @return
@@ -635,16 +637,29 @@ std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId id_S, const VolumeMeshField<T, T>& field_S,
     const GeometryId id_R, const SurfaceMesh<T>& mesh_R,
+    const math::RigidTransform<T>& X_WS,
     const math::RigidTransform<T>& X_SR) {
-  std::unique_ptr<SurfaceMesh<T>> surface_SR_S;
-  std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_SR;
-  std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_SR_S;
-  SampleVolumeFieldOnSurface(field_S, mesh_R, X_SR, &surface_SR_S, &e_SR,
-                             &grad_h_SR_S);
+  // The mesh will be computed in Frame S and then transformed to the world
+  // frame.
+  std::unique_ptr<SurfaceMesh<T>> surface_SR;
+  std::unique_ptr<SurfaceMeshFieldLinear<T, T>> p0_SR;
+
+  // The gradient field will be computed as expressed in Frame S and then
+  // re-expressed in the world frame.
+  std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_SR;
+  SampleVolumeFieldOnSurface(field_S, mesh_R, X_SR, &surface_SR, &p0_SR,
+                             &grad_h_SR);
+
+  // Transform the mesh from the S frame to the world frame.
+  surface_SR->TransformVertices(X_WS);
+
+  // Re-express the gradient from the S frame to the world frame.
+  for (Vector3<T>& gradient_value : grad_h_SR->mutable_values())
+    gradient_value = X_WS.rotation() * gradient_value;
 
   return std::make_unique<ContactSurface<T>>(
-      id_S, id_R, std::move(surface_SR_S), std::move(e_SR),
-      std::move(grad_h_SR_S), X_SR);
+      id_S, id_R, std::move(surface_SR), std::move(p0_SR),
+      std::move(grad_h_SR));
 }
 
 #endif  // #ifndef DRAKE_DOXYGEN_CXX

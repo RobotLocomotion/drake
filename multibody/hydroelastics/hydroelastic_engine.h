@@ -161,11 +161,12 @@ class HydroelasticEngine final : public geometry::ShapeReifier {
   };
 
   // Helper method to compute the contact surface betwen a soft model S and a
-  // rigid model R with a relative pose X_RS.
+  // rigid model R with the pose of R in the world frame and relative pose X_RS.
   // Returns nullopt if soft_model_S and rigid_model_R do not intersect.
   optional<geometry::ContactSurface<T>> CalcContactSurface(
       geometry::GeometryId id_S, const HydroelasticGeometry<T>& soft_model_S,
       geometry::GeometryId id_R, const HydroelasticGeometry<T>& rigid_model_R,
+      const math::RigidTransform<T>& X_WR,
       const math::RigidTransform<T>& X_RS) const;
 
   // Implementation of ShapeReifier interface

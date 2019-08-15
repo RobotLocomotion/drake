@@ -82,9 +82,9 @@ const std::array<std::vector<EdgeIndex>, 16> kMarchingTetsTable = {
 // triangulation into `vertices_N` and `faces`, respectively and returns the
 // number of vertices added. The geometric interpretation of the tetrahedron is
 // described in the documentation for the parameter `tet_vertices_N`. Finally,
-// the input scalar field `e_m` evaluated at each vertex of the tetrahedron is
+// the input scalar field `p0` evaluated at each vertex of the tetrahedron is
 // linearly interpolated for each new vertex in `vertices_N` and placed in
-// `e_m_surface`.
+// `p0_surface`.
 //
 // @param[in] tet_vertices_N
 //   Vertices defining the tetrahedron. The first three vertices define the
@@ -93,15 +93,15 @@ const std::array<std::vector<EdgeIndex>, 16> kMarchingTetsTable = {
 // @param[in] phi
 //   The level set function evaluated at each of the four vertices in
 //   `tet_vertices_N`, in the same order.
-// @param[in] e_m
+// @param[in] p0
 //   A discrete, linear representation of a scalar field, defined by the value
 //   of the field at the tetrahedron vertices.
 // @param[out] vertices_N
 //   Adds the new vertices into `vertices`.
 // @param[out] faces
 //   Adds the new faces into `faces`.
-// @param[out] e_m_surface
-//   The scalar field `e_m` linearly interpolated onto each new vertex in
+// @param[out] p0_surface
+//   The scalar field `p0` linearly interpolated onto each new vertex in
 //   `vertices`, in the same order.
 // @returns The number of vertices added.
 // @note The convention used by this private method is different from the
@@ -114,11 +114,11 @@ const std::array<std::vector<EdgeIndex>, 16> kMarchingTetsTable = {
 template <typename T>
 int IntersectTetWithLevelSet(
     const std::array<Vector3<T>, 4>& tet_vertices_N, const Vector4<T>& phi,
-    const Vector4<T>& e_m, std::vector<geometry::SurfaceVertex<T>>* vertices_N,
-    std::vector<geometry::SurfaceFace>* faces, std::vector<T>* e_m_surface) {
+    const Vector4<T>& p0, std::vector<geometry::SurfaceVertex<T>>* vertices_N,
+    std::vector<geometry::SurfaceFace>* faces, std::vector<T>* p0_surface) {
   DRAKE_ASSERT(vertices_N != nullptr);
   DRAKE_ASSERT(faces != nullptr);
-  DRAKE_ASSERT(e_m_surface != nullptr);
+  DRAKE_ASSERT(p0_surface != nullptr);
 
   // Since this implementation does not cover the corner case of a face being in
   // the zero level set, we assert this condition does not happen within a given
@@ -179,9 +179,9 @@ int IntersectTetWithLevelSet(
     // The geometric center is only needed for Case II.
     if (num_intersections == 4) pc_N += pz_N;
 
-    // Interpolate the scalar field e_m at the zero crossing z.
-    const T e_m_at_z = w1 * e_m[v1] + w2 * e_m[v2];
-    e_m_surface->emplace_back(e_m_at_z);
+    // Interpolate the scalar field p0 at the zero crossing z.
+    const T p0_at_z = w1 * p0[v1] + w2 * p0[v2];
+    p0_surface->emplace_back(p0_at_z);
   }
 
   // Case I: A single vertex has different sign from the other three. A single
@@ -203,12 +203,12 @@ int IntersectTetWithLevelSet(
     pc_N /= 4.0;
     vertices_N->emplace_back(pc_N);
 
-    // Interpolate scalar field e_m at pc_N as the average of the values at the
+    // Interpolate scalar field p0 at pc_N as the average of the values at the
     // zero crossings.
-    const T e_m_at_c =
-        std::accumulate(e_m_surface->end() - 4, e_m_surface->end(), T(0)) /
+    const T p0_at_c =
+        std::accumulate(p0_surface->end() - 4, p0_surface->end(), T(0)) /
         T(4.0);
-    e_m_surface->emplace_back(e_m_at_c);
+    p0_surface->emplace_back(p0_at_c);
 
     // Make four triangles sharing the geometric center. All oriented such
     // that their right-handed normal points towards the positive side.
@@ -239,7 +239,7 @@ int IntersectTetWithLevelSet(
 /// domain of the volume mesh. The vertices of the surface lie on the zero level
 /// set and the normals at the vertices are the gradient of the level set at the
 /// vertex positions. Finally, each surface mesh vertex is associated with the
-/// value of the volume mesh field `e_m_volume` evaluated at the vertex
+/// value of the volume mesh field `p0_volume` evaluated at the vertex
 /// position.
 ///
 /// The resolution of the zero level set triangulation depends on the
@@ -257,15 +257,15 @@ int IntersectTetWithLevelSet(
 ///   same frame N. In code, φ(V) ≡ phi_N(p_NV).
 /// @param[in] X_NM
 ///   The pose of M in N.
-/// @param[in] e_m_volume
+/// @param[in] p0_volume
 ///   A discrete, linear representation of a scalar field, defined by the value
 ///   of the field at the mesh vertices.
-/// @param[out] e_m_surface
-///   The scalar field e_m_volume sampled on the vertices of the zero-level set
-///   contact surface. Because `e_m_volume` is itself a discrete, linear
+/// @param[out] p0_surface
+///   The scalar field p0_volume sampled on the vertices of the zero-level set
+///   contact surface. Because `p0_volume` is itself a discrete, linear
 ///   representation of a continuous scalar field, the values on the contact
 ///   surface will be an linear interpolation of those values.
-///   Any existing values in `e_m_surface` at input are cleared.
+///   Any existing values in `p0_surface` at input are cleared.
 /// @param[out] phi_gradient_N
 ///   The gradient `[∇φ]_N`, expressed in frame N, of `phi_N` sampled at
 ///   the surface vertices.
@@ -284,26 +284,26 @@ int IntersectTetWithLevelSet(
 template <typename T>
 std::unique_ptr<geometry::SurfaceMesh<T>> CalcZeroLevelSetInMeshDomain(
     const geometry::VolumeMesh<T>& mesh_M, const LevelSetField<T>& phi_N,
-    const math::RigidTransform<T>& X_NM, const std::vector<T>& e_m_volume,
-    std::vector<T>* e_m_surface, std::vector<Vector3<T>>* phi_gradient_N) {
-  DRAKE_DEMAND(e_m_surface != nullptr);
+    const math::RigidTransform<T>& X_NM, const std::vector<T>& p0_volume,
+    std::vector<T>* p0_surface, std::vector<Vector3<T>>* phi_gradient_N) {
+  DRAKE_DEMAND(p0_surface != nullptr);
   DRAKE_ASSERT(phi_gradient_N != nullptr);
   std::vector<geometry::SurfaceVertex<T>> vertices_N;
   std::vector<geometry::SurfaceFace> faces;
-  e_m_surface->clear();
+  p0_surface->clear();
 
   // We scan each tetrahedron in the mesh and compute the zero level set with
   // IntersectTetWithLevelSet().
   std::array<Vector3<T>, 4> tet_vertices_N;
   Vector4<T> phi;
-  Vector4<T> e_m;
+  Vector4<T> p0;
   for (const auto& tet : mesh_M.tetrahedra()) {
     // Collect data for each vertex of the tetrahedron.
     for (int i = 0; i < 4; ++i) {
       const auto& p_MV = mesh_M.vertex(tet.vertex(i)).r_MV();
       tet_vertices_N[i] = X_NM * p_MV;
       phi[i] = phi_N.value(tet_vertices_N[i]);
-      e_m[i] = e_m_volume[tet.vertex(i)];
+      p0[i] = p0_volume[tet.vertex(i)];
     }
     // IntersectTetWithLevelSet() uses a different convention than
     // geometry::VolumeMesh to index the vertices of a tetrahedra and therefore
@@ -312,9 +312,9 @@ std::unique_ptr<geometry::SurfaceMesh<T>> CalcZeroLevelSetInMeshDomain(
     // convention in geometry::VolumeMesh.
     std::swap(tet_vertices_N[1], tet_vertices_N[2]);
     std::swap(phi[1], phi[2]);
-    std::swap(e_m[1], e_m[2]);
-    IntersectTetWithLevelSet(tet_vertices_N, phi, e_m, &vertices_N, &faces,
-                             e_m_surface);
+    std::swap(p0[1], p0[2]);
+    IntersectTetWithLevelSet(tet_vertices_N, phi, p0, &vertices_N, &faces,
+                             p0_surface);
   }
 
   phi_gradient_N->resize(vertices_N.size());
