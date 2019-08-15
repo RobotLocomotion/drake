@@ -76,7 +76,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
           return Class::FromMatrix4(pose);
         }),
             py::arg("pose"), "Python-specific alias for ``FromMatrix4``.")
-        .def_static("FromMatrix4", &Class::MakeMatrix4, py::arg("pose"),
+        .def_static("FromMatrix4", &Class::FromMatrix4, py::arg("pose"),
             cls_doc.FromMatrix4.doc)
         .def("set", &Class::set, py::arg("R"), py::arg("p"), cls_doc.set.doc)
         .def("SetFromIsometry3", &Class::SetFromIsometry3, py::arg("pose"),
