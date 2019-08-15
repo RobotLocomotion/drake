@@ -498,9 +498,9 @@ std::unique_ptr<SurfaceMeshField<Vector3<T>, T>> ComputeNormalField(
  a volume mesh and the manifold is the intersection of the volume mesh and a
  surface mesh. The resulting manifold's topology is a function of both the
  volume and surface mesh topologies and has normals drawn from the surface mesh.
- Computes the intersecting surface `surfacp0_MN` between a soft geometry M
+ Computes the intersecting surface `surface_MN` between a soft geometry M
  and a rigid geometry N, and sets the pressure field and the normal vector
- field on `surfacp0_MN`.
+ field on `surface_MN`.
  @param[in] volume_field_M
      The field to sample from. The field contains the volume mesh M that defines
      its domain. The vertex positions of the mesh are measured and expressed in
@@ -511,7 +511,7 @@ std::unique_ptr<SurfaceMeshField<Vector3<T>, T>> ComputeNormalField(
      domain. Its vertex positions are measured and expressed in frame N.
  @param[in] X_MN
      The pose of frame N in frame M.
- @param[out] surfacp0_MN_M
+ @param[out] surface_MN_M
      The intersecting surface between the volume mesh M and the surface N.
      Vertex positions are measured and expressed in M's frame.
  @param[out] p0_MN
@@ -529,7 +529,7 @@ void SampleVolumeFieldOnSurface(
     const VolumeMeshField<T, T>& volume_field_M,
     const SurfaceMesh<T>& surface_N,
     const math::RigidTransform<T>& X_MN,
-    std::unique_ptr<SurfaceMesh<T>>* surfacp0_MN_M,
+    std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
     std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* p0_MN,
     std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>>* grad_h_MN_M) {
   auto normal_field_N = ComputeNormalField(surface_N);
@@ -586,12 +586,12 @@ void SampleVolumeFieldOnSurface(
   }
   DRAKE_DEMAND(surface_vertices_M.size() == surface_e.size());
   DRAKE_DEMAND(surface_vertices_M.size() == surface_normals_M.size());
-  *surfacp0_MN_M = std::make_unique<SurfaceMesh<T>>(
+  *surface_MN_M = std::make_unique<SurfaceMesh<T>>(
       std::move(surface_faces), std::move(surface_vertices_M));
   *p0_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
-      "e", std::move(surface_e), surfacp0_MN_M->get());
+      "e", std::move(surface_e), surface_MN_M->get());
   *grad_h_MN_M = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
-      "grad_h_MN_M", std::move(surface_normals_M), surfacp0_MN_M->get());
+      "grad_h_MN_M", std::move(surface_normals_M), surface_MN_M->get());
 }
 
 /** Computes the contact surface between a soft geometry S and a rigid

@@ -43,38 +43,38 @@ namespace geometry {
   space occupied by the geometry) in SceneGraph.
 
   We describe the contact surface 𝕊ₘₙ between two intersecting compact subsets
-  𝕄 and ℕ of ℝ³ with the scalar fields eₘ and eₙ defined on 𝕄 ⊂ ℝ³ and ℕ ⊂ ℝ³
+  𝕄 and ℕ of ℝ³ with the scalar fields p0ₘ and p0ₙ defined on 𝕄 ⊂ ℝ³ and ℕ ⊂ ℝ³
   respectively:
 
-                 eₘ : 𝕄 → ℝ,
-                 eₙ : ℕ → ℝ.
+                 p0ₘ : 𝕄 → ℝ,
+                 p0ₙ : ℕ → ℝ.
 
-  The _contact surface_ 𝕊ₘₙ is the surface of equilibrium eₘ = eₙ. It is the
-  locus of points Q where eₘ(Q) equals eₙ(Q):
+  The _contact surface_ 𝕊ₘₙ is the surface of equilibrium p0ₘ = p0ₙ. It is the
+  locus of points Q where p0ₘ(Q) equals p0ₙ(Q):
 
-               𝕊ₘₙ = { Q ∈ 𝕄 ∩ ℕ : eₘ(Q) = eₙ(Q) }.
+               𝕊ₘₙ = { Q ∈ 𝕄 ∩ ℕ : p0ₘ(Q) = p0ₙ(Q) }.
 
   We can define the scalar field p0ₘₙ on the surface 𝕊ₘₙ as a scalar function
-  that assigns Q ∈ 𝕊ₘₙ the value of eₘ(Q), which is the same as eₙ(Q):
+  that assigns Q ∈ 𝕊ₘₙ the value of p0ₘ(Q), which is the same as p0ₙ(Q):
 
                p0ₘₙ : 𝕊ₘₙ → ℝ,
-               p0ₘₙ(Q) = eₘ(Q) = eₙ(Q).
+               p0ₘₙ(Q) = p0ₘ(Q) = p0ₙ(Q).
 
   We can also define the scalar field hₘₙ on 𝕄 ∩ ℕ as the difference between
-  eₘ and eₙ:
+  p0ₘ and p0ₙ:
 
                hₘₙ : 𝕄 ∩ ℕ → ℝ,
-               hₘₙ(Q) = eₘ(Q) - eₙ(Q).
+               hₘₙ(Q) = p0ₘ(Q) - p0ₙ(Q).
 
   It follows that the gradient vector field ∇hₘₙ on 𝕄 ∩ ℕ equals the difference
-  between the the gradient vector fields ∇eₘ and ∇eₙ:
+  between the the gradient vector fields ∇p0ₘ and ∇p0ₙ:
 
                ∇hₘₙ : 𝕄 ∩ ℕ → ℝ³,
-               ∇hₘₙ(Q) = ∇eₘ(Q) - ∇eₙ(Q).
+               ∇hₘₙ(Q) = ∇p0ₘ(Q) - ∇p0ₙ(Q).
 
   By construction, Q ∈ 𝕊ₘₙ if and only if hₘₙ(Q) = 0. In other words, 𝕊ₘₙ is
   the zero level set of hₘₙ. It follows that, for Q ∈ 𝕊ₘₙ, ∇hₘₙ(Q) is
-  orthogonal to the surface 𝕊ₘₙ at Q in the direction of increasing eₘ - eₙ.
+  orthogonal to the surface 𝕊ₘₙ at Q in the direction of increasing p0ₘ - p0ₙ.
   <!-- Note from PR discussion
     1. `∇hₘₙ` *is* a well-behaved vector (subject to some assumptions -- see
         below).
