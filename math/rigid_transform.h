@@ -167,6 +167,7 @@ class RigidTransform {
   /// not a proper orthonormal 3x3 rotation matrix.
   /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
+  /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
   explicit RigidTransform(const Eigen::Matrix<T, 3, 4> pose) {
     set_rotation(RotationMatrix<T>(pose.template block<3, 3>(0, 0)));
     set_translation(pose.template block<3, 1>(0, 3));
@@ -188,6 +189,7 @@ class RigidTransform {
   /// homogeneous, i.e., the final row is not [0, 0, 0, 1].
   /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
+  /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
   explicit RigidTransform(const Matrix4<T>& pose) {
     DRAKE_ASSERT_VOID(ThrowIfNotHomogeneous(pose));
     set_rotation(RotationMatrix<T>(pose.template block<3, 3>(0, 0)));
@@ -218,6 +220,7 @@ class RigidTransform {
   ///          0, 0, 0, 1;
   /// const RigidTransform<double> X3(pose4 * pose4);
   /// @endcode
+  /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
   template <typename Derived>
   explicit RigidTransform(const Eigen::MatrixBase<Derived>& pose) {
     // TODO(Mitiguy) Consider C++ 17 if(constexpr) to specialize for each type.
@@ -253,9 +256,9 @@ class RigidTransform {
   /// homogeneous, i.e., the final row is not [0, 0, 0, 1].
   /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
-  static RigidTransform<T> FromMatrix4(const Matrix4<T>& pose) {
+  static RigidTransform<T> FromMatrix4(const Matrix4<T>& matrix) {
     // DRAKE_DEPRECATED("2019-12-31", "Use RigidTransform(pose) constructor.")
-    return RigidTransform<T>(pose);
+    return RigidTransform<T>(matrix);
   }
 
   /// Sets `this` %RigidTransform from a RotationMatrix and a position vector.
