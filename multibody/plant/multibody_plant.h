@@ -2889,10 +2889,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// </pre>
   /// that is, the hydroelastic model computes the contact patch assuming
   /// quasi-static equilibrium.
-  /// The separation speed `vₙ(x)` is computed as the component in the direction
-  /// of the contact surface's normal `n̂(x)` of the relative velocity between
-  /// points `Ax` and `Bx` at point `x` instantaneously moving with body frames
-  /// A and B respectively, i.e. `vₙ(x) = ᴬˣvᴮˣ⋅n̂(x)`, where the normal
+  /// The separation speed `vₙ(x)` is computed as the component in the
+  /// direction of the contact surface's normal `n̂(x)` of the relative velocity
+  /// between points `Ax` and `Bx` at point `x` instantaneously moving with body
+  /// frames A and B respectively, i.e. `vₙ(x) = ᴬˣvᴮˣ⋅n̂(x)`, where the normal
   /// `n̂(x)` points from body A into body B.
   /// @{
 
