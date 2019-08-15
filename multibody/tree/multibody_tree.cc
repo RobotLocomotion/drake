@@ -88,6 +88,13 @@ MultibodyTree<T>::MultibodyTree() {
 }
 
 template <typename T>
+VectorX<T> MultibodyTree<T>::GetActuationFromArray(
+    ModelInstanceIndex model_instance,
+    const Eigen::Ref<const VectorX<T>>& u) const {
+  return model_instances_.at(model_instance)->GetActuationFromArray(q);
+}
+
+template <typename T>
 void MultibodyTree<T>::SetActuationInArray(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& u_instance,

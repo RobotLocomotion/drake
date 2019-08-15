@@ -1039,6 +1039,11 @@ class MultibodyTree {
   /// @{
 
   /// See MultibodyPlant method.
+  VectorX<T> GetActuationFromArray(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& u) const;
+
+  /// See MultibodyPlant method.
   void SetActuationInArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& u_instance,
