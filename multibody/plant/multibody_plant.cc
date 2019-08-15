@@ -1280,7 +1280,7 @@ template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
     const Context<symbolic::Expression>&,
     std::vector<SpatialForce<symbolic::Expression>>*) const {
-  throw std::domain_error(
+  throw std::logic_error(
       "This method doesn't support T = symbolic::Expression.");
 }
 

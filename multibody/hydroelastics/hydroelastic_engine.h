@@ -105,6 +105,11 @@ class HydroelasticGeometry {
 ///
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
+///
+/// %HydroelasticEngine can be instantiated on symbolic::Expression to allow the
+/// compilation of calling code with this scalar type. However usage of any of
+/// the engine's APIs will throw a runtime exception when used with T =
+/// symbolic::Expression.
 template <typename T>
 class HydroelasticEngine final : public geometry::ShapeReifier {
  public:
@@ -178,6 +183,32 @@ class HydroelasticEngine final : public geometry::ShapeReifier {
   void ImplementGeometry(const geometry::Convex&, void*) override;
 
   ModelData model_data_;
+};
+
+// Specialization to support compilation and linking with T =
+// symbolic::Expression. Even though the Clang compiler does not need this, the
+// GCC compiler does need it at linking time.
+template <>
+class HydroelasticEngine<symbolic::Expression> {
+ public:
+  using T = symbolic::Expression;
+
+  void MakeModels(const geometry::SceneGraphInspector<T>&) {
+    Throw("MakeModels");
+  }
+
+  std::vector<geometry::ContactSurface<T>> ComputeContactSurfaces(
+      const geometry::QueryObject<T>&) const {
+    Throw("ComputeContactSurfaces");
+    return std::vector<geometry::ContactSurface<T>>();
+  }
+
+ private:
+  static void Throw(const char* operation_name) {
+    throw std::logic_error(fmt::format(
+        "Cannot call `{}` on a HydroelasticEngine<symbolic::Expression>",
+        operation_name));
+  }
 };
 
 }  // namespace internal
