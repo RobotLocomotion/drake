@@ -1295,6 +1295,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// those vectors which apply to a single model instance only.
   /// @{
 
+  /// Returns a vector of actuation values for `model_instance` from a
+  /// vector `u_array` of actuation values for the entire model
+  /// model.  This method throws an exception if `u` is not of size
+  /// MultibodyPlant::num_actuated_dofs().
+  VectorX<T> GetActuationFromArray(
+      ModelInstanceIndex model_instance,
+      const Eigen::Ref<const VectorX<T>>& u) const {
+    return internal_tree().GetActuationFromArray(model_instance, u);
+  }
+
   /// Given the actuation values `u_instance` for all actuators in
   /// `model_instance`, this method sets the actuation vector u for the entire
   /// model to which this actuator belongs to. This method throws
