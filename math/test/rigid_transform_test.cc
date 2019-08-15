@@ -230,31 +230,30 @@ GTEST_TEST(RigidTransform, ConstructorFromMatrix4) {
 // Valid expressions need to resolve to Vector3, 3x4, or 4x4 matrix.
 GTEST_TEST(RigidTransform, ConstructorFromEigenExpression) {
   // Test constructor with a Vector3 Eigen expression.
-  const Vector3<double> p(4, 5, 6);
-  const RigidTransform<double> X1(3 * p);
+  const Vector3<double> position(4, 5, 6);
+  const RigidTransform<double> X1(3 * position);
   EXPECT_TRUE(X1.rotation().IsExactlyIdentity());
-  EXPECT_TRUE(X1.translation() == 3 * p);
+  EXPECT_TRUE(X1.translation() == 3 * position);
 
   // Test constructor with a 3x4 matrix Eigen expression.
-  const RotationMatrixd R = GetRotationMatrixB();
-  const Vector3<double> position(4, 5, 6);
-  Eigen::Matrix<double, 3, 4> pose2;
-  pose2 << R.matrix(), position;
-  const RigidTransform<double> X2((1 + kEpsilon) * pose2);
-  EXPECT_TRUE(CompareMatrices(X2.GetAsMatrix34(), (1 + kEpsilon) * pose2));
+  const RotationMatrix<double> R(RollPitchYaw<double>(1, 2, 3));
+  Eigen::Matrix<double, 3, 4> pose34;
+  pose34 << R.matrix(), position;
+  const RigidTransform<double> X2((1 + kEpsilon) * pose34);
+  EXPECT_TRUE(CompareMatrices(X2.GetAsMatrix34(), (1 + kEpsilon) * pose34));
+
+  // Test constructor with a 4x4 matrix Eigen expression.
+  Eigen::Matrix<double, 4, 4> pose4;
+  pose4 << R.matrix(), position,
+           0, 0, 0, 1;
+  const RigidTransform<double> X3(pose4 * pose4);
+  EXPECT_TRUE(CompareMatrices(X3.GetAsMatrix4(), pose4 * pose4));
 
   // Test constructor with a 3x3 matrix Eigen expression (which should fail).
   if (kDrakeAssertIsArmed) {
-    const Matrix3<double> m3 = R.matrix();
-    EXPECT_THROW(RigidTransformd Xm((1 + kEpsilon) * m3);, std::logic_error);
+    const Matrix3<double> m3 = R.matrix();  // 3x3 matrix.
+    EXPECT_THROW(RigidTransformd Xm(1.0 * m3), std::logic_error);
   }
-
-  // Test constructor with a 4x4 matrix Eigen expression.
-  Matrix4<double> pose3;
-  pose3 << R.matrix(), position,
-           0, 0, 0, 1;
-  const RigidTransform<double> X3(pose3 * pose3);
-  EXPECT_TRUE(CompareMatrices(X3.GetAsMatrix4(), pose3 * pose3));
 }
 
 // Tests making a RigidTransform from a 4x4 matrix.

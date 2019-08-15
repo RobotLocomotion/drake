@@ -197,29 +197,39 @@ class RigidTransform {
   /// Constructs a %RigidTransform from an appropriate Eigen expression.
   /// @param[in] pose Eigen expression which resolves to one of the following:
   /// Vector3, 3x4 matrix, or 4x4 matrix.
-  /// @throws std::logic_error in debug builds if the rotational part of `pose`
-  /// is not a proper orthonormal 3x3 rotation matrix or if `pose` is a 4x4
-  /// matrix and is not homogeneous, i.e., the final row is not [0, 0, 0, 1].
+  /// @throws std::logic_error if pose is an invalid size or is not homogeneous
+  /// (the final row is not [0, 0, 0, 1]) or in debug builds, throws if the
+  /// rotational part of `pose` is not a proper orthonormal 3x3 rotation matrix.
   /// @throws std::logic_error if `pose` does not resolve to one of the
   /// following: Vector3, 3x4 matrix, or 4x4 matrix.
   /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
   /// @code{.cc}
-  /// const Vector3<double> p(4, 5, 6);
-  /// const RigidTransform<double> X_AB(3 * p);
-  /// Eigen::Matrix<double, 3, 4> pose;
-  /// pose << R.matrix(), position;
-  /// const RigidTransform<double> X_CD(1.0 * pose);
-  /// const RotationMatrix<double> R_AB(rpy);
-  /// Eigen::Matrix<double, 3, 2> v_B;
-  /// v_B.col(0) = Vector3d(4, 5, 6);
-  /// v_B.col(1) = Vector3d(9, 8, 7);
-  /// const Eigen::Matrix<double, 3, 2> v_A = R_AB * v_B;
+  /// const Vector3<double> position(4, 5, 6);
+  /// const RigidTransform<double> X1(3 * position);
+  /// ----------------------------------------------
+  //  const RotationMatrix<double> R(RollPitchYaw<double>(1, 2, 3));
+  /// Eigen::Matrix<double, 3, 4> pose34;
+  /// pose34 << R.matrix(), position;
+  /// const RigidTransform<double> X2(1.0 * pose34);
+  /// ----------------------------------------------
+  /// Eigen::Matrix<double, 4, 4> pose4;
+  /// pose4 << R.matrix(), position,
+  ///          0, 0, 0, 1;
+  /// const RigidTransform<double> X3(pose4 * pose4);
   /// @endcode
   template <typename Derived>
   explicit RigidTransform(const Eigen::MatrixBase<Derived>& pose) {
+    // TODO(Mitiguy) Consider C++ 17 if(constexpr) to specialize for each type.
     const int num_rows = pose.rows(), num_cols = pose.cols();
     if (num_rows == 3 && num_cols == 1) {
+      // The next line cannot use set_translation(pose.cols(0)) since this
+      // templated class must compile for 4x4 matrices.  If pose is a 4x4 matrix
+      // pose.cols(0) would be a 4x1 matrix --which would cause a compiler
+      // error since set_translation() requires a 3x1 matrix.
+      // Hence, the block method below must be used as it avoids Eigen static
+      // assertions that would otherwise cause a comopiler error.  In runtime,
+      // the line below is executed only if pose is actually a 3x1 matrix.
       set_translation(pose.template block<3, 1>(0, 0));
     } else if (num_rows == 3 && num_cols == 4) {
       set_rotation(RotationMatrix<T>(pose.template block<3, 3>(0, 0)));
@@ -243,8 +253,8 @@ class RigidTransform {
   /// homogeneous, i.e., the final row is not [0, 0, 0, 1].
   /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
-  // DRAKE_DEPRECATED("2019-12-31", "Use RigidTransform(pose) constructor.")
   static RigidTransform<T> FromMatrix4(const Matrix4<T>& pose) {
+    // DRAKE_DEPRECATED("2019-12-31", "Use RigidTransform(pose) constructor.")
     return RigidTransform<T>(pose);
   }
 
