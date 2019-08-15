@@ -54,7 +54,7 @@ class OcpGenerator {
    * Returns the data needed to simulate the linear time invariant systems
    * used in the examples.
    *
-   * @return problem data
+   * @return simulation inputs
    *
    * Throws a runtime_error if one of the problem creator methods hasn't been
    * called first.

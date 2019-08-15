@@ -1,5 +1,5 @@
 # FBstab
-This directory contains and implementation of FBstab the proximally regularized Fischer-Burmeister method for quadratic programming. FBstab solves convex quadratic programs of the form,
+This directory contains an implementation of FBstab the proximally regularized Fischer-Burmeister method for quadratic programming. FBstab solves convex quadratic programs of the form,
 
 ```
 min.  0.5 z'Hz + f'z
