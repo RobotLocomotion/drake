@@ -39,7 +39,7 @@ class OcpGenerator {
     int T = 0;
   };
 
-  OcpGenerator() {}
+  OcpGenerator() = default;
 
   /**
    * Returns problem data in the form accepted by FBstab.
@@ -51,7 +51,9 @@ class OcpGenerator {
   FBstabMpc::QPData GetFBstabInput() const;
 
   /**
-   * Returns data needed to perform a simulation.
+   * Returns the data needed to simulate the linear time invariant systems
+   * used in the examples.
+   *
    * @return problem data
    *
    * Throws a runtime_error if one of the problem creator methods hasn't been
