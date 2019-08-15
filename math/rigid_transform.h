@@ -219,17 +219,14 @@ class RigidTransform {
   template <typename Derived>
   explicit RigidTransform(const Eigen::MatrixBase<Derived>& pose) {
     const int num_rows = pose.rows(), num_cols = pose.cols();
-    // std::cout << "\n num_rows = " << num_rows <<
-    //              "\n num_cols = " << num_cols << "\n";
     if (num_rows == 3 && num_cols == 1) {
-      set_translation(pose.col(0));
+      set_translation(pose.template block<3, 1>(0, 0));
     } else if (num_rows == 3 && num_cols == 4) {
       set_rotation(RotationMatrix<T>(pose.template block<3, 3>(0, 0)));
       set_translation(pose.template block<3, 1>(0, 3));
     } else if (num_rows == 4 && num_cols == 4) {
-      // DRAKE_ASSERT_VOID(ThrowIfNotHomogeneous(pose));
-      // set_rotation(RotationMatrix<T>(pose.template block<3, 3>(0, 0)));
-      // set_translation(pose.template block<3, 1>(0, 3));
+      set_rotation(RotationMatrix<T>(pose.template block<3, 3>(0, 0)));
+      set_translation(pose.template block<3, 1>(0, 3));
     } else {
       throw std::logic_error("Error: RigidTransform constructor argument is "
                              "not a Vector3, 3x4 matrix or 4x4 matrix");

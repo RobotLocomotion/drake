@@ -245,21 +245,16 @@ GTEST_TEST(RigidTransform, ConstructorFromEigenExpression) {
 
   // Test constructor with a 3x3 matrix Eigen expression (which should fail).
   if (kDrakeAssertIsArmed) {
-    const Matrix3<double> m = R.matrix();
-    EXPECT_THROW(RigidTransformd Xm((1 + kEpsilon) * m);, std::logic_error);
+    const Matrix3<double> m3 = R.matrix();
+    EXPECT_THROW(RigidTransformd Xm((1 + kEpsilon) * m3);, std::logic_error);
   }
 
-#if 0
   // Test constructor with a 4x4 matrix Eigen expression.
-  Matrix4<double> pose3, pose4;
+  Matrix4<double> pose3;
   pose3 << R.matrix(), position,
            0, 0, 0, 1;
-  pose4 << GetRotationMatrixA().matrix(), 4 * position;
-  Matrix4<double> foo(pose3 * pose4);
-  const RigidTransform<double> X3(foo);
-  // const RigidTransform<double> X3((1 + kEpsilon) * pose3);
-  EXPECT_TRUE(CompareMatrices(X3.GetAsMatrix34(), pose3 * pose2));
-#endif
+  const RigidTransform<double> X3(pose3 * pose3);
+  EXPECT_TRUE(CompareMatrices(X3.GetAsMatrix4(), pose3 * pose3));
 }
 
 // Tests making a RigidTransform from a 4x4 matrix.
