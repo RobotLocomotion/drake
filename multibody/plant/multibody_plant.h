@@ -2861,7 +2861,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// 2019] for details.
   /// For brevity, here we limit ourselves to state the relationship between the
   /// material properties and the computation of the normal traction or
-  /// "pressure" p(x) at each point `x` in the contact patch.
+  /// "pressure" `p(x)` at each point `x` in the contact patch.
   /// Given two bodies A and B, with elastic moduli `Eᵃ` and `Eᵇ` respectively
   /// and dissipation `dᵃ` and `dᵇ` respectively, we define the effective
   /// material properties of the pair according to: <pre>
@@ -2889,9 +2889,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// </pre>
   /// that is, the hydroelastic model computes the contact patch assuming
   /// quasi-static equilibrium.
-  /// The normal velocity `vₙ(x)` is computed as the magnitude of the relative
-  /// velocity between points `Ax` and `Bx` instantaneously moving with body
-  /// frames A and B respectively, i.e. `vₙ(x) = ||ᴬˣvᴮˣ||`.
+  /// The separation speed `vₙ(x)` is computed as the component in the direction
+  /// of the contact surface's normal `n̂(x)` of the relative velocity between
+  /// points `Ax` and `Bx` at point `x` instantaneously moving with body frames
+  /// A and B respectively, i.e. `vₙ(x) = ᴬˣvᴮˣ⋅n̂(x)`, where the normal
+  /// `n̂(x)` points from body A into body B.
   /// @{
 
   /// Specifies the `elastic_modulus` for a geometry identified by its `id`.
