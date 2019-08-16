@@ -68,16 +68,19 @@ GeometryId FindGeometry(
 std::unique_ptr<ContactSurface<double>> CreateContactSurface(
     GeometryId halfspace_id, GeometryId block_id,
     const math::RigidTransform<double>& X_WH) {
-  // Create the surface mesh first (in the halfspace frame), and then transform
-  // it to the world frame.
+  // Create the surface mesh first (in the halfspace frame); we'll transform
+  // it to the world frame *after* we use the vertices in the halfspace frame
+  // to determine the hydroelastic pressure.
   auto mesh = CreateSurfaceMesh();
-  mesh->TransformVertices(X_WH);
 
-  // Create the "e" field values (i.e., "hydroelastic pressure") using
+  // Create the "p0" field values (i.e., "hydroelastic pressure") using
   // negated "z" values.
   std::vector<double> p0_MN(mesh->num_vertices());
   for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
     p0_MN[i] = -mesh->vertex(i).r_MV()[2];
+
+  // Now transform the mesh to the world frame, as ContactSurface specifies.
+  mesh->TransformVertices(X_WH);
 
   // Create the gradient of the "h" field, pointing toward what will be
   // geometry "M" (the halfspace). This field must be expressed in the world
@@ -575,7 +578,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     // Create the surface mesh first.
     auto mesh = CreateSurfaceMesh();
 
-    // Create the "e" field values (i.e., "hydroelastic pressure").
+    // Create the p0 field values (i.e., "hydroelastic pressure").
     std::vector<double> p0_MN(mesh->num_vertices());
     for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
       p0_MN[i] = pressure(mesh->vertex(i).r_MV());
