@@ -191,7 +191,7 @@ class RigidTransform {
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
   /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
   explicit RigidTransform(const Matrix4<T>& pose) {
-    DRAKE_ASSERT_VOID(ThrowIfNotHomogeneous(pose));
+    DRAKE_ASSERT_VOID(ThrowIfInvalidBottomRow(pose));
     set_rotation(RotationMatrix<T>(pose.template block<3, 3>(0, 0)));
     set_translation(pose.template block<3, 1>(0, 3));
   }
@@ -231,13 +231,14 @@ class RigidTransform {
       // pose.cols(0) would be a 4x1 matrix --which would cause a compiler
       // error since set_translation() requires a 3x1 matrix.
       // Hence, the block method below must be used as it avoids Eigen static
-      // assertions that would otherwise cause a comopiler error.  In runtime,
+      // assertions that would otherwise cause a compiler error.  In runtime,
       // the line below is executed only if pose is actually a 3x1 matrix.
       set_translation(pose.template block<3, 1>(0, 0));
     } else if (num_rows == 3 && num_cols == 4) {
       set_rotation(RotationMatrix<T>(pose.template block<3, 3>(0, 0)));
       set_translation(pose.template block<3, 1>(0, 3));
     } else if (num_rows == 4 && num_cols == 4) {
+      ThrowIfInvalidBottomRow(pose);
       set_rotation(RotationMatrix<T>(pose.template block<3, 3>(0, 0)));
       set_translation(pose.template block<3, 1>(0, 3));
     } else {
@@ -605,15 +606,17 @@ class RigidTransform {
   static constexpr double kInternalToleranceForHomogeneousCheck{
       4 * std::numeric_limits<double>::epsilon() };
 
-  static void ThrowIfNotHomogeneous(const Matrix4<T>& matrix) {
-    const RowVector4<T> expected_bottom(0, 0, 0, 1);
-    const T measure = (
-        expected_bottom - matrix.row(3)).template lpNorm<Eigen::Infinity>();
-    const double measure_double = ExtractDoubleOrThrow(measure);
-    if (measure_double > kInternalToleranceForHomogeneousCheck) {
+  // Throw an exception if the bottom row of a 4x4 matrix is not [0, 0, 0, 1].
+  template <typename Derived>
+  static void ThrowIfInvalidBottomRow(const Eigen::MatrixBase<Derived>& pose) {
+    const int num_rows = pose.rows(), num_cols = pose.cols();
+    if (num_rows != 4 || num_cols != 4) {
       throw std::logic_error(fmt::format(
-          "Error: 4x4 matrix is not homogeneous.\n"
-          "  Bottom row differs from [0, 0, 0, 1] by: {:G}", measure_double));
+          "Error: pose argument is not a 4x4 matrix"));
+    } else if (pose(3, 0) != 0 || pose(3, 1) != 0 ||
+               pose(3, 2) != 0 || pose(3, 3) != 1) {
+      throw std::logic_error(fmt::format(
+          "Error: Bottom row of 4x4 matrix differs from [0, 0, 0, 1]"));
     }
   }
 
