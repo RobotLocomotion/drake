@@ -68,7 +68,9 @@ class HydroelasticContactInfo {
         &contact_surface_, traction_A_W_->Clone(), vslip_AB_W_->Clone());
   }
 
-  /// Returns a reference to the ContactSurface data structure.
+  /// Returns a reference to the ContactSurface data structure. Note that
+  /// the mesh and gradient vector fields are defined/expressed in the
+  /// world frame.
   const geometry::ContactSurface<T>& contact_surface() const {
     return contact_surface_;
   }
@@ -94,8 +96,7 @@ class HydroelasticContactInfo {
   }
 
  private:
-  // Note that the mesh of the contact surface is defined in
-  // contact_surface.id_M()'s frame.
+  // Note that the mesh of the contact surface is defined in the world frame.
   const geometry::ContactSurface<T>& contact_surface_;
   std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_A_W_;
   std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_AB_W_;

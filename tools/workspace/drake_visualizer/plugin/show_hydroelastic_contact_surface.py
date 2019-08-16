@@ -62,7 +62,8 @@ class HydroelasticContactSurfaceVisualizer(object):
         # Recreates folder.
         folder = om.getOrCreateContainer(self._folder_name)
 
-        # DebugData() allows us to draw.
+        # Though strangely named, DebugData() is the object through which
+        # drawing is done in DrakeVisualizer.
         d = DebugData()
 
         # Iterate over all triangles, drawing the contact surface as a triangle

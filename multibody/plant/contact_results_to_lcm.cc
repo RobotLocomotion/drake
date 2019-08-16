@@ -115,8 +115,8 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
         geometry_id_to_body_index_map_.at(
             hydroelastic_contact_info.contact_surface().id_N()));
 
-    const auto& mesh = hydroelastic_contact_info.contact_surface().mesh();
-    surface_msg.num_triangles = mesh.num_faces();
+    const auto& mesh_W = hydroelastic_contact_info.contact_surface().mesh();
+    surface_msg.num_triangles = mesh_W.num_faces();
     surface_msg.triangles.resize(surface_msg.num_triangles);
 
     // Loop through each contact triangle on the contact surface.
@@ -126,10 +126,10 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
       tri_msg.timestamp = msg.timestamp;
 
       // Get the three vertices.
-      const auto& face = mesh.element(j);
-      const geometry::SurfaceVertex<T>& vA = mesh.vertex(face.vertex(0));
-      const geometry::SurfaceVertex<T>& vB = mesh.vertex(face.vertex(1));
-      const geometry::SurfaceVertex<T>& vC = mesh.vertex(face.vertex(2));
+      const auto& face = mesh_W.element(j);
+      const geometry::SurfaceVertex<T>& vA = mesh_W.vertex(face.vertex(0));
+      const geometry::SurfaceVertex<T>& vB = mesh_W.vertex(face.vertex(1));
+      const geometry::SurfaceVertex<T>& vC = mesh_W.vertex(face.vertex(2));
 
       write_double3(vA.r_MV(), tri_msg.a);
       write_double3(vB.r_MV(), tri_msg.b);
