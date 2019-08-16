@@ -319,6 +319,7 @@ Inertia matrix       |  I   |@f$I^{B/Bo}@f$            |`I_BBo`     |Body B's in
 Spatial inertia      |  M   |@f$M^{B/Bo}@f$            |`M_BBo`     |Body B's spatial inertia about Bo †
 Jacobian wrt q †††   | Jq   |@f$[J_{q}^{{}^Pp^Q}]_E@f$ |`Jq_p_PQ_E` |Q's position Jacobian from P <b>in</b> E wrt q
 Jacobian wrt q̇       | Jqdot|@f$J_{q̇}^{{}^Bv^Q}@f$     |`Jqdot_v_BQ`|Q's translational velocity Jacobian in B wrt q̇
+Jacobian wrt v       | Jv   |@f$J_{v}^{{}^Bv^Q}@f$     |`Jv_v_BQ`   |Q's translational velocity Jacobian in B wrt v
 Jacobian wrt v       | Jv   |@f$J_{v}^{{}^B\omega^C}@f$|`Jv_w_BC`   |C's angular velocity Jacobian in B wrt v
 
 † In code, a vector has an expressed-in-frame which appears after the quantity.
@@ -355,6 +356,13 @@ When a point Q's position vector originates at a point Bo <b>fixed</b> in frame
 B and when there are no motion constraints (no relationships between q̇₁ ... q̇ₙ),
 @f$\;[J_{q}^{{}^{Bo}p^Q}]_B = [J_{q̇}^{{}^Bv^Q}]_B\;@f$ i.e.,
 `(Jq_p_BoQ_B = Jqdot_v_BQ_B)`.
+
+Quantity              | Extension of standard notation       | Meaning (E is the expressed-in-frame)
+----------------------|:------------------------------------:|---------------------------------------------
+Position vector list  | p_PQi_E &nbsp; or &nbsp; p_PQlist_E  | Positions from point P to a list of points (e.g., Q1, Q2, ...)
+Velocity list         | v_BQi_E &nbsp; or &nbsp; v_BQlist_E  | Points Qi's (Q1, Q2, ...) translational velocities in frame B.
+Angular velocity list | w_BCi_E &nbsp; or &nbsp; w_BClist_E  | Frames Ci's (C1, C2, ...) angular velocities in frame B.
+Generic vector list   | vi_E    &nbsp; or &nbsp; vlist_E     | List of generic vectors (v1, v2, ...) expressed in frame E.
 
 Next topic: @ref Dt_multibody_quantities
 */
