@@ -2373,6 +2373,10 @@ class MathematicalProgram {
     solver_options_.SetOption(solver_id, solver_option, option_value);
   }
 
+  /**
+   * Overwrite the stored solver options inside MathematicalProgram with the
+   * provided solver options.
+   */
   void SetSolverOptions(const SolverOptions& solver_options) {
     solver_options_ = solver_options;
   }
