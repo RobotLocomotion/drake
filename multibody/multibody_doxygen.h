@@ -357,6 +357,9 @@ B and when there are no motion constraints (no relationships between q̇₁ ... 
 @f$\;[J_{q}^{{}^{Bo}p^Q}]_B = [J_{q̇}^{{}^Bv^Q}]_B\;@f$ i.e.,
 `(Jq_p_BoQ_B = Jqdot_v_BQ_B)`.
 
+For multiple quantities, standard notation is extended by modifying the monogram
+notation with "i" or "list" in close proximity to the symbol it modifies.
+Examples are shown below.
 Quantity              | Extension of standard notation       | Meaning (E is the expressed-in-frame)
 ----------------------|:------------------------------------:|---------------------------------------------
 Position vector list  | p_PQi_E &nbsp; or &nbsp; p_PQlist_E  | Positions from point P to a list of points (e.g., Q1, Q2, ...)
