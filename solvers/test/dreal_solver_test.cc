@@ -51,6 +51,17 @@ class DrealSolverTest : public ::testing::Test {
   DrealSolver solver_;
 };
 
+TEST_F(DrealSolverTest, Interval) {
+  const double low{-10.0};
+  const double high{10.0};
+  DrealSolver::Interval i{low, high};
+
+  EXPECT_EQ(i.low(), low);
+  EXPECT_EQ(i.high(), high);
+  EXPECT_EQ(i.mid(), 0.0);
+  EXPECT_EQ(i.diam(), 20.0);
+}
+
 TEST_F(DrealSolverTest, Available) {
   const auto result = DrealSolver::CheckSatisfiability(
       Expression{0.0} > Expression{1.0}, delta_);
