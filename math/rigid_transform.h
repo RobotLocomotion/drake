@@ -13,7 +13,7 @@ namespace drake {
 namespace math {
 
 /// This class represents a proper rigid transform between two frames which can
-/// be regarded in two ways.  A rigid transform describes the pose between two
+/// be regarded in two ways.  A rigid transform describes the "pose" between two
 /// frames A and B (i.e., the relative orientation and position of A to B).
 /// Alternately, it can be regarded as a distance-preserving operator that can
 /// rotate and/or translate a rigid body without changing its shape or size
@@ -184,9 +184,9 @@ class RigidTransform {
   ///  │   0      1     │
   ///  └                ┘
   /// </pre>
-  /// @throws std::logic_error in debug builds if the `R_AB` part of `pose` is
-  /// not a proper orthonormal 3x3 rotation matrix or if `pose` is not
-  /// homogeneous, i.e., the final row is not [0, 0, 0, 1].
+  /// @throws std::logic_error in debug builds if the `R_AB` part of `pose`
+  /// is not a proper orthonormal 3x3 rotation matrix or if `pose` is a 4x4
+  /// matrix whose final row is not `[0, 0, 0, 1]`.
   /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
   /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
@@ -196,21 +196,21 @@ class RigidTransform {
     set_translation(pose.template block<3, 1>(0, 3));
   }
 
-  /// Constructs a %RigidTransform from an appropriate Eigen expression.
-  /// @param[in] pose Eigen expression which resolves to one of the following:
-  /// Vector3, 3x4 matrix, or 4x4 matrix.
-  /// @throws std::logic_error if pose is an invalid size or is not homogeneous
-  /// (the final row is not [0, 0, 0, 1]) or in debug builds, throws if the
-  /// rotational part of `pose` is not a proper orthonormal 3x3 rotation matrix.
-  /// @throws std::logic_error if `pose` does not resolve to one of the
-  /// following: Vector3, 3x4 matrix, or 4x4 matrix.
+  /// Constructs a %RigidTransform from an appropriate Eigen <b>expression</b>.
+  /// Note: This constructor prevents ambiguity that would otherwise exist for a
+  /// %RigidTransform constructor whose argument is an Eigen <b>expression</b>.
+  /// @param[in] pose Generic Eigen matrix <b>expression</b>.
+  /// @throws std::logic_error if the Eigen <b>expression</b> in pose does not
+  /// resolve to a Vector3 or 3x4 matrix or 4x4 matrix or if the rotational part
+  /// of `pose` is not a proper orthonormal 3x3 rotation matrix or if `pose` is
+  /// a 4x4 matrix whose final row is not `[0, 0, 0, 1]`.
   /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
   /// @code{.cc}
   /// const Vector3<double> position(4, 5, 6);
   /// const RigidTransform<double> X1(3 * position);
   /// ----------------------------------------------
-  //  const RotationMatrix<double> R(RollPitchYaw<double>(1, 2, 3));
+  /// const RotationMatrix<double> R(RollPitchYaw<double>(1, 2, 3));
   /// Eigen::Matrix<double, 3, 4> pose34;
   /// pose34 << R.matrix(), position;
   /// const RigidTransform<double> X2(1.0 * pose34);
@@ -238,12 +238,13 @@ class RigidTransform {
       set_rotation(RotationMatrix<T>(pose.template block<3, 3>(0, 0)));
       set_translation(pose.template block<3, 1>(0, 3));
     } else if (num_rows == 4 && num_cols == 4) {
-      ThrowIfInvalidBottomRow(pose);
+      DRAKE_ASSERT_VOID(ThrowIfInvalidBottomRow(pose));
       set_rotation(RotationMatrix<T>(pose.template block<3, 3>(0, 0)));
       set_translation(pose.template block<3, 1>(0, 3));
     } else {
       throw std::logic_error("Error: RigidTransform constructor argument is "
-                             "not a Vector3, 3x4 matrix or 4x4 matrix");
+                             "not an Eigen expression that can resolve to"
+                             "a Vector3 or 3x4 matrix or 4x4 matrix.");
     }
   }
 
@@ -258,6 +259,7 @@ class RigidTransform {
   /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
   static RigidTransform<T> FromMatrix4(const Matrix4<T>& matrix) {
+    // TODO(eric.cousineau): Deprecate (or preferably delete) this method.
     // DRAKE_DEPRECATED("2019-12-31", "Use RigidTransform(pose) constructor.")
     return RigidTransform<T>(matrix);
   }
@@ -607,14 +609,15 @@ class RigidTransform {
       4 * std::numeric_limits<double>::epsilon() };
 
   // Throw an exception if the bottom row of a 4x4 matrix is not [0, 0, 0, 1].
+  // Note: To allow this method to be used with other %RigidTransform methods
+  // that use Eigen <b>expressions</b> (as distinct from Eigen <b>types</b>)
+  // the `pose` argument is an Eigen::MatrixBase<Derived> (not a Matrix4 type).
   template <typename Derived>
   static void ThrowIfInvalidBottomRow(const Eigen::MatrixBase<Derived>& pose) {
     const int num_rows = pose.rows(), num_cols = pose.cols();
-    if (num_rows != 4 || num_cols != 4) {
-      throw std::logic_error(fmt::format(
-          "Error: pose argument is not a 4x4 matrix"));
-    } else if (pose(3, 0) != 0 || pose(3, 1) != 0 ||
-               pose(3, 2) != 0 || pose(3, 3) != 1) {
+    DRAKE_DEMAND(num_rows == 4 && num_cols == 4);
+    if (pose(3, 0) != 0 || pose(3, 1) != 0 ||
+        pose(3, 2) != 0 || pose(3, 3) != 1) {
       throw std::logic_error(fmt::format(
           "Error: Bottom row of 4x4 matrix differs from [0, 0, 0, 1]"));
     }
