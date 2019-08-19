@@ -63,62 +63,72 @@ TEST_F(DrealSolverTest, Interval) {
 }
 
 TEST_F(DrealSolverTest, Available) {
-  const auto result = DrealSolver::CheckSatisfiability(
-      Expression{0.0} > Expression{1.0}, delta_);
-  ASSERT_FALSE(result);
+  if (solver_.available()) {
+    const auto result = DrealSolver::CheckSatisfiability(
+        Expression{0.0} > Expression{1.0}, delta_);
+    ASSERT_FALSE(result);
+  }
 }
 
 // 0.0 > 1.0 is trivially UNSAT.
 TEST_F(DrealSolverTest, CheckSatisfiabilityTrivialUnsat) {
-  const auto result = DrealSolver::CheckSatisfiability(
-      Expression{0.0} > Expression{1.0}, delta_);
-  ASSERT_FALSE(result);
+  if (solver_.available()) {
+    const auto result = DrealSolver::CheckSatisfiability(
+        Expression{0.0} > Expression{1.0}, delta_);
+    ASSERT_FALSE(result);
+  }
 }
 
 // 1.0 > 0.0 is trivially SAT.
 TEST_F(DrealSolverTest, CheckSatisfiabilityTrivialSat) {
-  const auto result = DrealSolver::CheckSatisfiability(
-      Expression{1.0} > Expression{0.0}, delta_);
-  ASSERT_TRUE(result);
-  // The result is an empty box.
-  EXPECT_EQ(result->size(), 0.0);
+  if (solver_.available()) {
+    const auto result = DrealSolver::CheckSatisfiability(
+        Expression{1.0} > Expression{0.0}, delta_);
+    ASSERT_TRUE(result);
+    // The result is an empty box.
+    EXPECT_EQ(result->size(), 0.0);
+  }
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityConjunction) {
-  const auto result =
-      DrealSolver::CheckSatisfiability(b1_ && !b2_ && !b3_, delta_);
-  ASSERT_TRUE(result);
-  const DrealSolver::IntervalBox& solution{*result};
-  // We should have a point solution (i.e. lower-bound == upper-bound).
-  EXPECT_EQ(solution.at(b1_).diam(), 0);
-  EXPECT_EQ(solution.at(b2_).diam(), 0);
-  EXPECT_EQ(solution.at(b3_).diam(), 0);
-  const double v1{solution.at(b1_).mid()};
-  const double v2{solution.at(b2_).mid()};
-  const double v3{solution.at(b3_).mid()};
-  // Should be either 1.0 (representing True) or 0.0 (False).
-  EXPECT_TRUE(v1 == 1.0 || v1 == 0.0);
-  EXPECT_TRUE(v2 == 1.0 || v2 == 0.0);
-  EXPECT_TRUE(v3 == 1.0 || v3 == 0.0);
-  EXPECT_TRUE(v1 && !v2 && !v3);
+  if (solver_.available()) {
+    const auto result =
+        DrealSolver::CheckSatisfiability(b1_ && !b2_ && !b3_, delta_);
+    ASSERT_TRUE(result);
+    const DrealSolver::IntervalBox& solution{*result};
+    // We should have a point solution (i.e. lower-bound == upper-bound).
+    EXPECT_EQ(solution.at(b1_).diam(), 0);
+    EXPECT_EQ(solution.at(b2_).diam(), 0);
+    EXPECT_EQ(solution.at(b3_).diam(), 0);
+    const double v1{solution.at(b1_).mid()};
+    const double v2{solution.at(b2_).mid()};
+    const double v3{solution.at(b3_).mid()};
+    // Should be either 1.0 (representing True) or 0.0 (False).
+    EXPECT_TRUE(v1 == 1.0 || v1 == 0.0);
+    EXPECT_TRUE(v2 == 1.0 || v2 == 0.0);
+    EXPECT_TRUE(v3 == 1.0 || v3 == 0.0);
+    EXPECT_TRUE(v1 && !v2 && !v3);
+  }
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityDisjunction) {
-  const auto result =
-      DrealSolver::CheckSatisfiability(b1_ || !b2_ || b3_, delta_);
-  const DrealSolver::IntervalBox& solution{*result};
-  // We should have a point solution (i.e. lower-bound == upper-bound).
-  EXPECT_EQ(solution.at(b1_).diam(), 0);
-  EXPECT_EQ(solution.at(b2_).diam(), 0);
-  EXPECT_EQ(solution.at(b3_).diam(), 0);
-  const double v1{solution.at(b1_).mid()};
-  const double v2{solution.at(b2_).mid()};
-  const double v3{solution.at(b3_).mid()};
-  // Should be either 1.0 (representing True) or 0.0 (False).
-  EXPECT_TRUE(v1 == 1.0 || v1 == 0.0);
-  EXPECT_TRUE(v2 == 1.0 || v2 == 0.0);
-  EXPECT_TRUE(v3 == 1.0 || v3 == 0.0);
-  EXPECT_TRUE(v1 || !v2 || v3);
+  if (solver_.available()) {
+    const auto result =
+        DrealSolver::CheckSatisfiability(b1_ || !b2_ || b3_, delta_);
+    const DrealSolver::IntervalBox& solution{*result};
+    // We should have a point solution (i.e. lower-bound == upper-bound).
+    EXPECT_EQ(solution.at(b1_).diam(), 0);
+    EXPECT_EQ(solution.at(b2_).diam(), 0);
+    EXPECT_EQ(solution.at(b3_).diam(), 0);
+    const double v1{solution.at(b1_).mid()};
+    const double v2{solution.at(b2_).mid()};
+    const double v3{solution.at(b3_).mid()};
+    // Should be either 1.0 (representing True) or 0.0 (False).
+    EXPECT_TRUE(v1 == 1.0 || v1 == 0.0);
+    EXPECT_TRUE(v2 == 1.0 || v2 == 0.0);
+    EXPECT_TRUE(v3 == 1.0 || v3 == 0.0);
+    EXPECT_TRUE(v1 || !v2 || v3);
+  }
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityLinearReal) {
@@ -126,39 +136,47 @@ TEST_F(DrealSolverTest, CheckSatisfiabilityLinearReal) {
   const Formula f2{0 <= y_ && y_ <= 5};
   const Formula f3{2 * x_ + 3 * y_ == 5 && -3 * x_ + 4 * y_ == 6};
 
-  const auto result = DrealSolver::CheckSatisfiability(f1 && f2 && f3, delta_);
-  ASSERT_TRUE(result);
+  if (solver_.available()) {
+    const auto result = DrealSolver::CheckSatisfiability(f1 && f2 && f3,
+                                                         delta_);
+    ASSERT_TRUE(result);
 
-  const DrealSolver::IntervalBox& solution{*result};
-  const double expected_x{2.0 / 17.0};
-  const double expected_y{27.0 / 17.0};
-  EXPECT_NEAR(solution.at(x_).mid(), expected_x, delta_);
-  EXPECT_NEAR(solution.at(y_).mid(), expected_y, delta_);
+    const DrealSolver::IntervalBox& solution{*result};
+    const double expected_x{2.0 / 17.0};
+    const double expected_y{27.0 / 17.0};
+    EXPECT_NEAR(solution.at(x_).mid(), expected_x, delta_);
+    EXPECT_NEAR(solution.at(y_).mid(), expected_y, delta_);
+  }
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityLinearInteger) {
   const Formula f1{0 <= i_ && i_ <= 5};
   const Formula f2{0 <= j_ && j_ <= 5};
   const Formula f3{2 * i_ + 3 * j_ == 5 && -3 * i_ + 4 * j_ == 6};
-  const auto result = DrealSolver::CheckSatisfiability(f1 && f2 && f3, delta_);
-  // Note that this has the same constraint as the previous,
-  // CheckSatisfiabilityLinearReal test. However, the domain constraint, i,j ∈
-  // Z, makes the problem unsatisfiable.
-  EXPECT_FALSE(result);
+  if (solver_.available()) {
+    const auto result = DrealSolver::CheckSatisfiability(f1 && f2 && f3,
+                                                         delta_);
+    // Note that this has the same constraint as the previous,
+    // CheckSatisfiabilityLinearReal test. However, the domain constraint, i,j ∈
+    // Z, makes the problem unsatisfiable.
+    EXPECT_FALSE(result);
+  }
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityBinaryVariables) {
   const Formula f{2 * binary1_ + 3 * binary2_ == 0};
-  const auto result = DrealSolver::CheckSatisfiability(f, delta_);
-  ASSERT_TRUE(result);
-  const DrealSolver::IntervalBox& solution{*result};
-  // Because of the domain constraints, the only solution is {binary1 ↦ 0,
-  // binary2 ↦ 0}.
-  EXPECT_EQ(solution.at(binary1_).mid(), 0.0);
-  EXPECT_EQ(solution.at(binary2_).mid(), 0.0);
-  // They are points.
-  EXPECT_EQ(solution.at(binary1_).diam(), 0.0);
-  EXPECT_EQ(solution.at(binary2_).diam(), 0.0);
+  if (solver_.available()) {
+    const auto result = DrealSolver::CheckSatisfiability(f, delta_);
+    ASSERT_TRUE(result);
+    const DrealSolver::IntervalBox& solution{*result};
+    // Because of the domain constraints, the only solution is {binary1 ↦ 0,
+    // binary2 ↦ 0}.
+    EXPECT_EQ(solution.at(binary1_).mid(), 0.0);
+    EXPECT_EQ(solution.at(binary2_).mid(), 0.0);
+    // They are points.
+    EXPECT_EQ(solution.at(binary1_).diam(), 0.0);
+    EXPECT_EQ(solution.at(binary2_).diam(), 0.0);
+  }
 }
 
 // Tests CheckSatisfiability (δ-SAT case).
@@ -173,17 +191,19 @@ TEST_F(DrealSolverTest, CheckSatisfiabilityDeltaSat) {
   const Formula f3{0 <= z_ && z_ <= 5};
   const Formula f4{2 * x_ * x_ + y_ == z_};
 
-  const auto result =
-      DrealSolver::CheckSatisfiability(f1 && f2 && f3 && f4, delta_);
-  ASSERT_TRUE(result);
+  if (solver_.available()) {
+    const auto result =
+        DrealSolver::CheckSatisfiability(f1 && f2 && f3 && f4, delta_);
+    ASSERT_TRUE(result);
 
-  const double x{result->at(x_).mid()};
-  const double y{result->at(y_).mid()};
-  const double z{result->at(z_).mid()};
-  EXPECT_TRUE(0 <= x && x <= 5);
-  EXPECT_TRUE(0 <= y && y <= 5);
-  EXPECT_TRUE(0 <= z && z <= 5);
-  EXPECT_NEAR(2 * x * x + y, z, delta_);
+    const double x{result->at(x_).mid()};
+    const double y{result->at(y_).mid()};
+    const double z{result->at(z_).mid()};
+    EXPECT_TRUE(0 <= x && x <= 5);
+    EXPECT_TRUE(0 <= y && y <= 5);
+    EXPECT_TRUE(0 <= z && z <= 5);
+    EXPECT_NEAR(2 * x * x + y, z, delta_);
+  }
 }
 
 // Tests CheckSatisfiability (UNSAT case).
@@ -194,8 +214,10 @@ TEST_F(DrealSolverTest, CheckSatisfiabilityUnsat) {
   const Formula f1{2 * x_ * x_ + 6 * x_ + 5 < 0};
   const Formula f2{-10 <= x_ && x_ <= 10};
 
-  const auto result = DrealSolver::CheckSatisfiability(f1 && f2, delta_);
-  EXPECT_FALSE(result);
+  if (solver_.available()) {
+    const auto result = DrealSolver::CheckSatisfiability(f1 && f2, delta_);
+    EXPECT_FALSE(result);
+  }
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityNonlinear) {
@@ -209,174 +231,204 @@ TEST_F(DrealSolverTest, CheckSatisfiabilityNonlinear) {
   const Formula f3{sqrt(y_) / 4 != 1};
   const Formula f4{y_ > 25};
 
-  const auto result =
-      DrealSolver::CheckSatisfiability(f1 && f2 && f3 && f4, delta_);
-  ASSERT_TRUE(result);
-  const DrealSolver::IntervalBox& solution{*result};
-  const double x{solution.at(x_).mid()};
-  const double y{solution.at(y_).mid()};
-  EXPECT_NEAR(x, 4.0, delta_);  // f1
-  EXPECT_TRUE(y >= std::abs(-x * x) - delta_);
+  if (solver_.available()) {
+    const auto result =
+        DrealSolver::CheckSatisfiability(f1 && f2 && f3 && f4, delta_);
+    ASSERT_TRUE(result);
+    const DrealSolver::IntervalBox& solution{*result};
+    const double x{solution.at(x_).mid()};
+    const double y{solution.at(y_).mid()};
+    EXPECT_NEAR(x, 4.0, delta_);  // f1
+    EXPECT_TRUE(y >= std::abs(-x * x) - delta_);
+  }
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityLog) {
-  const auto result =
-      DrealSolver::CheckSatisfiability(x_ == 4 && y_ == log(x_), delta_);
-  ASSERT_TRUE(result);
-  const DrealSolver::IntervalBox& solution{*result};
-  const double x{solution.at(x_).mid()};
-  const double y{solution.at(y_).mid()};
-  EXPECT_EQ(x, 4.0);
-  EXPECT_NEAR(y, std::log(4.0), delta_);
+  if (solver_.available()) {
+    const auto result =
+        DrealSolver::CheckSatisfiability(x_ == 4 && y_ == log(x_), delta_);
+    ASSERT_TRUE(result);
+    const DrealSolver::IntervalBox& solution{*result};
+    const double x{solution.at(x_).mid()};
+    const double y{solution.at(y_).mid()};
+    EXPECT_EQ(x, 4.0);
+    EXPECT_NEAR(y, std::log(4.0), delta_);
+  }
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityExp) {
-  const auto result =
-      DrealSolver::CheckSatisfiability(x_ == 4 && y_ == exp(x_), delta_);
-  ASSERT_TRUE(result);
-  const DrealSolver::IntervalBox& solution{*result};
-  const double x{solution.at(x_).mid()};
-  const double y{solution.at(y_).mid()};
-  EXPECT_EQ(x, 4.0);
-  EXPECT_NEAR(y, std::exp(4.0), delta_);
+  if (solver_.available()) {
+    const auto result =
+        DrealSolver::CheckSatisfiability(x_ == 4 && y_ == exp(x_), delta_);
+    ASSERT_TRUE(result);
+    const DrealSolver::IntervalBox& solution{*result};
+    const double x{solution.at(x_).mid()};
+    const double y{solution.at(y_).mid()};
+    EXPECT_EQ(x, 4.0);
+    EXPECT_NEAR(y, std::exp(4.0), delta_);
+  }
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilitySin) {
-  const auto result =
-      DrealSolver::CheckSatisfiability(x_ == 4 && y_ == sin(x_), delta_);
-  ASSERT_TRUE(result);
-  const DrealSolver::IntervalBox& solution{*result};
-  const double x{solution.at(x_).mid()};
-  const double y{solution.at(y_).mid()};
-  EXPECT_EQ(x, 4.0);
-  EXPECT_NEAR(y, std::sin(4.0), delta_);
+  if (solver_.available()) {
+    const auto result =
+        DrealSolver::CheckSatisfiability(x_ == 4 && y_ == sin(x_), delta_);
+    ASSERT_TRUE(result);
+    const DrealSolver::IntervalBox& solution{*result};
+    const double x{solution.at(x_).mid()};
+    const double y{solution.at(y_).mid()};
+    EXPECT_EQ(x, 4.0);
+    EXPECT_NEAR(y, std::sin(4.0), delta_);
+  }
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityCos) {
-  const auto result =
-      DrealSolver::CheckSatisfiability(x_ == 4 && y_ == cos(x_), delta_);
-  ASSERT_TRUE(result);
-  const DrealSolver::IntervalBox& solution{*result};
-  const double x{solution.at(x_).mid()};
-  const double y{solution.at(y_).mid()};
-  EXPECT_EQ(x, 4.0);
-  EXPECT_NEAR(y, std::cos(4.0), delta_);
+  if (solver_.available()) {
+    const auto result =
+        DrealSolver::CheckSatisfiability(x_ == 4 && y_ == cos(x_), delta_);
+    ASSERT_TRUE(result);
+    const DrealSolver::IntervalBox& solution{*result};
+    const double x{solution.at(x_).mid()};
+    const double y{solution.at(y_).mid()};
+    EXPECT_EQ(x, 4.0);
+    EXPECT_NEAR(y, std::cos(4.0), delta_);
+  }
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityTan) {
-  const auto result =
-      DrealSolver::CheckSatisfiability(x_ == 4 && y_ == tan(x_), delta_);
-  ASSERT_TRUE(result);
-  const DrealSolver::IntervalBox& solution{*result};
-  const double x{solution.at(x_).mid()};
-  const double y{solution.at(y_).mid()};
-  EXPECT_EQ(x, 4.0);
-  EXPECT_NEAR(y, std::tan(4.0), delta_);
+  if (solver_.available()) {
+    const auto result =
+        DrealSolver::CheckSatisfiability(x_ == 4 && y_ == tan(x_), delta_);
+    ASSERT_TRUE(result);
+    const DrealSolver::IntervalBox& solution{*result};
+    const double x{solution.at(x_).mid()};
+    const double y{solution.at(y_).mid()};
+    EXPECT_EQ(x, 4.0);
+    EXPECT_NEAR(y, std::tan(4.0), delta_);
+  }
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityAsin) {
-  const auto result =
-      DrealSolver::CheckSatisfiability(x_ == 0.5 && y_ == asin(x_), delta_);
-  ASSERT_TRUE(result);
-  const DrealSolver::IntervalBox& solution{*result};
-  const double x{solution.at(x_).mid()};
-  const double y{solution.at(y_).mid()};
-  EXPECT_EQ(x, 0.5);
-  EXPECT_NEAR(y, std::asin(0.5), delta_);
+  if (solver_.available()) {
+    const auto result =
+        DrealSolver::CheckSatisfiability(x_ == 0.5 && y_ == asin(x_), delta_);
+    ASSERT_TRUE(result);
+    const DrealSolver::IntervalBox& solution{*result};
+    const double x{solution.at(x_).mid()};
+    const double y{solution.at(y_).mid()};
+    EXPECT_EQ(x, 0.5);
+    EXPECT_NEAR(y, std::asin(0.5), delta_);
+  }
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityAcos) {
-  const auto result =
-      DrealSolver::CheckSatisfiability(x_ == 0.5 && y_ == acos(x_), delta_);
-  ASSERT_TRUE(result);
-  const DrealSolver::IntervalBox& solution{*result};
-  const double x{solution.at(x_).mid()};
-  const double y{solution.at(y_).mid()};
-  EXPECT_EQ(x, 0.5);
-  EXPECT_NEAR(y, std::acos(0.5), delta_);
+  if (solver_.available()) {
+    const auto result =
+        DrealSolver::CheckSatisfiability(x_ == 0.5 && y_ == acos(x_), delta_);
+    ASSERT_TRUE(result);
+    const DrealSolver::IntervalBox& solution{*result};
+    const double x{solution.at(x_).mid()};
+    const double y{solution.at(y_).mid()};
+    EXPECT_EQ(x, 0.5);
+    EXPECT_NEAR(y, std::acos(0.5), delta_);
+  }
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityAtan) {
-  const auto result =
-      DrealSolver::CheckSatisfiability(x_ == 4 && y_ == atan(x_), delta_);
-  ASSERT_TRUE(result);
-  const DrealSolver::IntervalBox& solution{*result};
-  const double x{solution.at(x_).mid()};
-  const double y{solution.at(y_).mid()};
-  EXPECT_EQ(x, 4.0);
-  EXPECT_NEAR(y, std::atan(4.0), delta_);
+  if (solver_.available()) {
+    const auto result =
+        DrealSolver::CheckSatisfiability(x_ == 4 && y_ == atan(x_), delta_);
+    ASSERT_TRUE(result);
+    const DrealSolver::IntervalBox& solution{*result};
+    const double x{solution.at(x_).mid()};
+    const double y{solution.at(y_).mid()};
+    EXPECT_EQ(x, 4.0);
+    EXPECT_NEAR(y, std::atan(4.0), delta_);
+  }
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityAtan2) {
-  const auto result = DrealSolver::CheckSatisfiability(
-      x_ == 4 && y_ == 3 && z_ == atan2(x_, y_), delta_);
-  ASSERT_TRUE(result);
-  const DrealSolver::IntervalBox& solution{*result};
-  const double x{solution.at(x_).mid()};
-  const double y{solution.at(y_).mid()};
-  const double z{solution.at(z_).mid()};
-  EXPECT_EQ(x, 4.0);
-  EXPECT_EQ(y, 3.0);
-  EXPECT_NEAR(z, std::atan2(4.0, 3.0), delta_);
+  if (solver_.available()) {
+    const auto result = DrealSolver::CheckSatisfiability(
+        x_ == 4 && y_ == 3 && z_ == atan2(x_, y_), delta_);
+    ASSERT_TRUE(result);
+    const DrealSolver::IntervalBox& solution{*result};
+    const double x{solution.at(x_).mid()};
+    const double y{solution.at(y_).mid()};
+    const double z{solution.at(z_).mid()};
+    EXPECT_EQ(x, 4.0);
+    EXPECT_EQ(y, 3.0);
+    EXPECT_NEAR(z, std::atan2(4.0, 3.0), delta_);
+  }
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilitySinh) {
-  const auto result =
-      DrealSolver::CheckSatisfiability(x_ == 0.5 && y_ == sinh(x_), delta_);
-  ASSERT_TRUE(result);
-  const DrealSolver::IntervalBox& solution{*result};
-  const double x{solution.at(x_).mid()};
-  const double y{solution.at(y_).mid()};
-  EXPECT_EQ(x, 0.5);
-  EXPECT_NEAR(y, std::sinh(0.5), delta_);
+  if (solver_.available()) {
+    const auto result =
+        DrealSolver::CheckSatisfiability(x_ == 0.5 && y_ == sinh(x_), delta_);
+    ASSERT_TRUE(result);
+    const DrealSolver::IntervalBox& solution{*result};
+    const double x{solution.at(x_).mid()};
+    const double y{solution.at(y_).mid()};
+    EXPECT_EQ(x, 0.5);
+    EXPECT_NEAR(y, std::sinh(0.5), delta_);
+  }
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityCosh) {
-  const auto result =
-      DrealSolver::CheckSatisfiability(x_ == 0.5 && y_ == cosh(x_), delta_);
-  ASSERT_TRUE(result);
-  const DrealSolver::IntervalBox& solution{*result};
-  const double x{solution.at(x_).mid()};
-  const double y{solution.at(y_).mid()};
-  EXPECT_EQ(x, 0.5);
-  EXPECT_NEAR(y, std::cosh(0.5), delta_);
+  if (solver_.available()) {
+    const auto result =
+        DrealSolver::CheckSatisfiability(x_ == 0.5 && y_ == cosh(x_), delta_);
+    ASSERT_TRUE(result);
+    const DrealSolver::IntervalBox& solution{*result};
+    const double x{solution.at(x_).mid()};
+    const double y{solution.at(y_).mid()};
+    EXPECT_EQ(x, 0.5);
+    EXPECT_NEAR(y, std::cosh(0.5), delta_);
+  }
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityTanh) {
-  const auto result =
-      DrealSolver::CheckSatisfiability(x_ == 4 && y_ == tanh(x_), delta_);
-  ASSERT_TRUE(result);
-  const DrealSolver::IntervalBox& solution{*result};
-  const double x{solution.at(x_).mid()};
-  const double y{solution.at(y_).mid()};
-  EXPECT_EQ(x, 4.0);
-  EXPECT_NEAR(y, std::tanh(4.0), delta_);
+  if (solver_.available()) {
+    const auto result =
+        DrealSolver::CheckSatisfiability(x_ == 4 && y_ == tanh(x_), delta_);
+    ASSERT_TRUE(result);
+    const DrealSolver::IntervalBox& solution{*result};
+    const double x{solution.at(x_).mid()};
+    const double y{solution.at(y_).mid()};
+    EXPECT_EQ(x, 4.0);
+    EXPECT_NEAR(y, std::tanh(4.0), delta_);
+  }
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityMin) {
-  const auto result = DrealSolver::CheckSatisfiability(
-      x_ == 4 && y_ == 3 && z_ == min(x_, y_), delta_);
-  ASSERT_TRUE(result);
-  const DrealSolver::IntervalBox& solution{*result};
-  const double x{solution.at(x_).mid()};
-  const double y{solution.at(y_).mid()};
-  const double z{solution.at(z_).mid()};
-  EXPECT_EQ(x, 4.0);
-  EXPECT_EQ(y, 3.0);
-  EXPECT_EQ(z, std::min(4.0, 3.0));
+  if (solver_.available()) {
+    const auto result = DrealSolver::CheckSatisfiability(
+        x_ == 4 && y_ == 3 && z_ == min(x_, y_), delta_);
+    ASSERT_TRUE(result);
+    const DrealSolver::IntervalBox& solution{*result};
+    const double x{solution.at(x_).mid()};
+    const double y{solution.at(y_).mid()};
+    const double z{solution.at(z_).mid()};
+    EXPECT_EQ(x, 4.0);
+    EXPECT_EQ(y, 3.0);
+    EXPECT_EQ(z, std::min(4.0, 3.0));
+  }
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityMax) {
-  const auto result = DrealSolver::CheckSatisfiability(
-      x_ == 4 && y_ == 3 && z_ == max(x_, y_), delta_);
-  ASSERT_TRUE(result);
-  const DrealSolver::IntervalBox& solution{*result};
-  const double x{solution.at(x_).mid()};
-  const double y{solution.at(y_).mid()};
-  const double z{solution.at(z_).mid()};
-  EXPECT_EQ(x, 4.0);
-  EXPECT_EQ(y, 3.0);
-  EXPECT_EQ(z, std::max(4.0, 3.0));
+  if (solver_.available()) {
+    const auto result = DrealSolver::CheckSatisfiability(
+        x_ == 4 && y_ == 3 && z_ == max(x_, y_), delta_);
+    ASSERT_TRUE(result);
+    const DrealSolver::IntervalBox& solution{*result};
+    const double x{solution.at(x_).mid()};
+    const double y{solution.at(y_).mid()};
+    const double z{solution.at(z_).mid()};
+    EXPECT_EQ(x, 4.0);
+    EXPECT_EQ(y, 3.0);
+    EXPECT_EQ(z, std::max(4.0, 3.0));
+  }
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityForall) {
@@ -386,14 +438,16 @@ TEST_F(DrealSolverTest, CheckSatisfiabilityForall) {
   //     min x² s.t. x ∈ [-3, 3].
   // ->  ∃x. (-3 ≤ x) ∧ (x ≤ 3) ∧ [∀y. ((-3 ≤ y) ∧ (y ≤ 3)) → (x² ≤ y²)]
   // ->  ∃x. (-3 ≤ x) ∧ (x ≤ 3) ∧ [∀y. ¬((-3 ≤ y) ∧ (y ≤ 3)) ∨ (x² ≤ y²)]
-  const auto result = DrealSolver::CheckSatisfiability(
-      (-3 <= x_) && (x_ <= 3) &&
-          forall({y_}, !((-3 <= y_) && (y_ <= 3)) || (x_ * x_ <= y_ * y_)),
-      delta_);
-  ASSERT_TRUE(result);
-  const DrealSolver::IntervalBox& solution{*result};
-  const double x{solution.at(x_).mid()};
-  EXPECT_NEAR(x, 0.0, delta_);
+  if (solver_.available()) {
+    const auto result = DrealSolver::CheckSatisfiability(
+        (-3 <= x_) && (x_ <= 3) &&
+            forall({y_}, !((-3 <= y_) && (y_ <= 3)) || (x_ * x_ <= y_ * y_)),
+        delta_);
+    ASSERT_TRUE(result);
+    const DrealSolver::IntervalBox& solution{*result};
+    const double x{solution.at(x_).mid()};
+    EXPECT_NEAR(x, 0.0, delta_);
+  }
 }
 
 TEST_F(DrealSolverTest, Minimize1) {
@@ -404,13 +458,15 @@ TEST_F(DrealSolverTest, Minimize1) {
   const double delta{0.01};
   const double known_minimum{0.5};
 
-  const auto result = DrealSolver::Minimize(
-      objective, constraint, delta, DrealSolver::LocalOptimization::kUse);
-  ASSERT_TRUE(result);
-  const DrealSolver::IntervalBox& solution{*result};
-  const double x{solution.at(x_).mid()};
-  EXPECT_TRUE(-10 <= x && x <= 10);
-  EXPECT_LT(2 * x * x + 6 * x + 5, known_minimum + delta);
+  if (solver_.available()) {
+    const auto result = DrealSolver::Minimize(
+        objective, constraint, delta, DrealSolver::LocalOptimization::kUse);
+    ASSERT_TRUE(result);
+    const DrealSolver::IntervalBox& solution{*result};
+    const double x{solution.at(x_).mid()};
+    EXPECT_TRUE(-10 <= x && x <= 10);
+    EXPECT_LT(2 * x * x + 6 * x + 5, known_minimum + delta);
+  }
 }
 
 TEST_F(DrealSolverTest, Minimize2) {
@@ -420,12 +476,14 @@ TEST_F(DrealSolverTest, Minimize2) {
   const Formula constraint{-3 <= x_ && x_ <= 3};
   const double delta{0.001};
   const double known_minimum{-2.77877};
-  const auto result = DrealSolver::Minimize(
-      objective, constraint, delta, DrealSolver::LocalOptimization::kUse);
-  ASSERT_TRUE(result);
-  const double x{result->at(x_).mid()};
-  EXPECT_TRUE(-3 <= x && x <= 3);
-  EXPECT_LT(sin(3 * x) - 2 * cos(x), known_minimum + delta);
+  if (solver_.available()) {
+    const auto result = DrealSolver::Minimize(
+        objective, constraint, delta, DrealSolver::LocalOptimization::kUse);
+    ASSERT_TRUE(result);
+    const double x{result->at(x_).mid()};
+    EXPECT_TRUE(-3 <= x && x <= 3);
+    EXPECT_LT(sin(3 * x) - 2 * cos(x), known_minimum + delta);
+  }
 }
 
 TEST_F(DrealSolverTest, Minimize3) {
@@ -433,55 +491,71 @@ TEST_F(DrealSolverTest, Minimize3) {
   // Note that the side constraints have no model.
   const Expression objective{sin(3 * x_)};
   const Formula constraint{-3 <= x_ && x_ <= 3 && (x_ * x_ - 16 == 0)};
-  const auto result = DrealSolver::Minimize(
-      objective, constraint, delta_, DrealSolver::LocalOptimization::kUse);
-  EXPECT_FALSE(result);
+  if (solver_.available()) {
+    const auto result = DrealSolver::Minimize(
+        objective, constraint, delta_, DrealSolver::LocalOptimization::kUse);
+    EXPECT_FALSE(result);
+  }
 }
 
 TEST_F(DrealSolverTest, UnsupportedFormulaIsnan) {
-  EXPECT_THROW(DrealSolver::CheckSatisfiability(isnan(x_), delta_),
-               std::runtime_error);
+  if (solver_.available()) {
+    EXPECT_THROW(DrealSolver::CheckSatisfiability(isnan(x_), delta_),
+                 std::runtime_error);
+  }
 }
 
 TEST_F(DrealSolverTest, UnsupportedFormulaCeil) {
-  EXPECT_THROW(DrealSolver::CheckSatisfiability(ceil(x_) == 0, delta_),
-               std::runtime_error);
+  if (solver_.available()) {
+    EXPECT_THROW(DrealSolver::CheckSatisfiability(ceil(x_) == 0, delta_),
+                 std::runtime_error);
+  }
 }
 
 TEST_F(DrealSolverTest, UnsupportedFormulaFloor) {
-  EXPECT_THROW(DrealSolver::CheckSatisfiability(floor(x_) == 0, delta_),
-               std::runtime_error);
+  if (solver_.available()) {
+    EXPECT_THROW(DrealSolver::CheckSatisfiability(floor(x_) == 0, delta_),
+                 std::runtime_error);
+  }
 }
 
 TEST_F(DrealSolverTest, IfThenElse1) {
   const Formula f{x_ == 3 && y_ == 2 && z_ == if_then_else(x_ > y_, x_, y_)};
-  const auto result = DrealSolver::CheckSatisfiability(f, delta_);
-  ASSERT_TRUE(result);
-  const double z{result->at(z_).mid()};
-  EXPECT_EQ(z, 3);
+  if (solver_.available()) {
+    const auto result = DrealSolver::CheckSatisfiability(f, delta_);
+    ASSERT_TRUE(result);
+    const double z{result->at(z_).mid()};
+    EXPECT_EQ(z, 3);
+  }
 }
 
 TEST_F(DrealSolverTest, IfThenElse2) {
   const Formula f{x_ == 2 && y_ == 3 && z_ == if_then_else(x_ > y_, x_, y_)};
-  const auto result = DrealSolver::CheckSatisfiability(f, delta_);
-  ASSERT_TRUE(result);
-  const double z{result->at(z_).mid()};
-  EXPECT_EQ(z, 3);
+  if (solver_.available()) {
+    const auto result = DrealSolver::CheckSatisfiability(f, delta_);
+    ASSERT_TRUE(result);
+    const double z{result->at(z_).mid()};
+    EXPECT_EQ(z, 3);
+  }
 }
 
 TEST_F(DrealSolverTest, UnsupportedFormulaUninterpretedFunction) {
-  EXPECT_THROW(
-      DrealSolver::CheckSatisfiability(
-          symbolic::uninterpreted_function("uf", {x_, y_}) == 0, delta_),
-      std::runtime_error);
+  if (solver_.available()) {
+    EXPECT_THROW(
+        DrealSolver::CheckSatisfiability(
+            symbolic::uninterpreted_function("uf", {x_, y_}) == 0, delta_),
+        std::runtime_error);
+  }
 }
 
 TEST_F(DrealSolverTest, UnsupportedFormulaPositiveSemidefinite) {
   Eigen::Matrix<Expression, 2, 2> m;
   m << (x_ + y_), -1.0, -1.0, y_;
-  EXPECT_THROW(
-      DrealSolver::CheckSatisfiability(positive_semidefinite(m), delta_),
-      std::runtime_error);
+  if (solver_.available()) {
+    EXPECT_THROW(
+        DrealSolver::CheckSatisfiability(positive_semidefinite(m), delta_),
+        std::runtime_error);
+  }
 }
 
 TEST_F(DrealSolverTest, SolveLinearProgramming) {
@@ -492,17 +566,18 @@ TEST_F(DrealSolverTest, SolveLinearProgramming) {
   prog_.AddConstraint(x1, 80, 170);
   prog_.AddConstraint(x1 >= -x0 + 200);
   prog_.AddCost(2 * x0 - 5 * x1);
-  ASSERT_TRUE(solver_.available());
-  auto result = solver_.Solve(prog_, {}, {});
-  ASSERT_TRUE(result.is_success());
-  const double delta{0.001};
-  const double v0{result.GetSolution(x0)};
-  const double v1{result.GetSolution(x1)};
-  EXPECT_TRUE(100 - delta <= v0 && v0 <= 200 + delta);
-  EXPECT_TRUE(80 - delta <= v1 && v1 <= 170 + delta);
-  EXPECT_TRUE(v1 >= -v0 + 200 - delta);
-  EXPECT_NEAR(2 * v0 - 5 * v1, 2 * 100 - 5 * 170 /* known minimum */,
-              delta * 5.0);
+  if (solver_.available()) {
+    auto result = solver_.Solve(prog_, {}, {});
+    ASSERT_TRUE(result.is_success());
+    const double delta{0.001};
+    const double v0{result.GetSolution(x0)};
+    const double v1{result.GetSolution(x1)};
+    EXPECT_TRUE(100 - delta <= v0 && v0 <= 200 + delta);
+    EXPECT_TRUE(80 - delta <= v1 && v1 <= 170 + delta);
+    EXPECT_TRUE(v1 >= -v0 + 200 - delta);
+    EXPECT_NEAR(2 * v0 - 5 * v1, 2 * 100 - 5 * 170 /* known minimum */,
+                delta * 5.0);
+  }
 }
 
 TEST_F(DrealSolverTest, SolveQuadraticProgramming) {
@@ -518,17 +593,19 @@ TEST_F(DrealSolverTest, SolveQuadraticProgramming) {
   const double delta{1e-5};
   prog_.SetSolverOption(DrealSolver::id(), "precision", delta);
   prog_.SetSolverOption(DrealSolver::id(), "use_local_optimization", 0);
-  auto result = solver_.Solve(prog_, {}, {});
-  ASSERT_TRUE(result.is_success());
-  const double v0{result.GetSolution(x0)};
-  const double v1{result.GetSolution(x1)};
-  EXPECT_TRUE(0 - delta <= v0 && v0 <= 20 + delta);
-  EXPECT_TRUE(0 - delta <= v1);
-  EXPECT_TRUE(2 * v0 + v1 >= 2 - delta);
-  EXPECT_NEAR(4 + 1.5 * v0 - 2 * v1 + 4 * v0 * v0 + 2 * v0 + v1 + 5 * v1 * v1,
-              4 + 1.5 * 0.71875 - 2 * 0.5625 + 4 * 0.71875 * 0.71875 +
-                  2 * 0.71875 + 0.5625 + 5 * 0.5625 * 0.5625,
-              delta * 5.0);
+  if (solver_.available()) {
+    auto result = solver_.Solve(prog_, {}, {});
+    ASSERT_TRUE(result.is_success());
+    const double v0{result.GetSolution(x0)};
+    const double v1{result.GetSolution(x1)};
+    EXPECT_TRUE(0 - delta <= v0 && v0 <= 20 + delta);
+    EXPECT_TRUE(0 - delta <= v1);
+    EXPECT_TRUE(2 * v0 + v1 >= 2 - delta);
+    EXPECT_NEAR(4 + 1.5 * v0 - 2 * v1 + 4 * v0 * v0 + 2 * v0 + v1 + 5 * v1 * v1,
+                4 + 1.5 * 0.71875 - 2 * 0.5625 + 4 * 0.71875 * 0.71875 +
+                    2 * 0.71875 + 0.5625 + 5 * 0.5625 * 0.5625,
+                delta * 5.0);
+  }
 }
 
 TEST_F(DrealSolverTest, SolveLinearEqualityConstraint) {
@@ -539,12 +616,14 @@ TEST_F(DrealSolverTest, SolveLinearEqualityConstraint) {
   prog_.AddConstraint(2 * x0 + 3 * x1 == 2);
   prog_.AddConstraint(-3 * x0 + 4 * x1 <= 0);
   const double delta{1e-3};
-  auto result = solver_.Solve(prog_, {}, {});
-  ASSERT_TRUE(result.is_success());
-  const double v0{result.GetSolution(x0)};
-  const double v1{result.GetSolution(x1)};
-  EXPECT_NEAR(2 * v0 + 3 * v1, 2.0, delta);
-  EXPECT_TRUE(-3 * v0 + 4 * v1 <= delta);
+  if (solver_.available()) {
+    auto result = solver_.Solve(prog_, {}, {});
+    ASSERT_TRUE(result.is_success());
+    const double v0{result.GetSolution(x0)};
+    const double v1{result.GetSolution(x1)};
+    EXPECT_NEAR(2 * v0 + 3 * v1, 2.0, delta);
+    EXPECT_TRUE(-3 * v0 + 4 * v1 <= delta);
+  }
 }
 
 TEST_F(DrealSolverTest, SolveQuadraticConstraint) {
@@ -556,10 +635,12 @@ TEST_F(DrealSolverTest, SolveQuadraticConstraint) {
   prog_.AddConstraint(x1 * x1 - 0.0001 <= x0);
   prog_.AddConstraint(x0 == 3.0);
   const double delta{1e-3};
-  auto result = solver_.Solve(prog_, {}, {});
-  ASSERT_TRUE(result.is_success());
-  const double v1{result.GetSolution(x1)};
-  EXPECT_NEAR(v1, 1.7320 /* sqrt(3.0) */, delta);
+  if (solver_.available()) {
+    auto result = solver_.Solve(prog_, {}, {});
+    ASSERT_TRUE(result.is_success());
+    const double v1{result.GetSolution(x1)};
+    EXPECT_NEAR(v1, 1.7320 /* sqrt(3.0) */, delta);
+  }
 }
 
 TEST_F(DrealSolverTest, SolveLorentzConeConstraint) {
@@ -575,12 +656,14 @@ TEST_F(DrealSolverTest, SolveLorentzConeConstraint) {
   prog_.AddCost(x2);
   const double delta{1e-5};
   prog_.SetSolverOption(DrealSolver::id(), "precision", delta);
-  auto result = solver_.Solve(prog_, {}, {});
-  ASSERT_TRUE(result.is_success());
-  const double v2{result.GetSolution(x2)};
-  // We check if the found minimum (solution for x2) is close to the one from
-  // SCS solver.
-  EXPECT_NEAR(v2, /* Solution from SCS Solver */ 0.414212, delta * 5);
+  if (solver_.available()) {
+    auto result = solver_.Solve(prog_, {}, {});
+    ASSERT_TRUE(result.is_success());
+    const double v2{result.GetSolution(x2)};
+    // We check if the found minimum (solution for x2) is close to the one from
+    // SCS solver.
+    EXPECT_NEAR(v2, /* Solution from SCS Solver */ 0.414212, delta * 5);
+  }
 }
 
 TEST_F(DrealSolverTest, SolveRotatedLorentzConeConstraint) {
@@ -595,16 +678,19 @@ TEST_F(DrealSolverTest, SolveRotatedLorentzConeConstraint) {
       Vector4<symbolic::Expression>(x0 + x1, x1 + x2, +x0, +x1));
   const double delta{1e-10};
   prog_.SetSolverOption(DrealSolver::id(), "precision", delta);
-  auto result = solver_.Solve(prog_, {}, {});
-  ASSERT_TRUE(result.is_success());
-  const double v0{result.GetSolution(x0)};
-  const double v1{result.GetSolution(x1)};
-  const double v2{result.GetSolution(x2)};
-  // We check if the found minimum (solution for 2x0 + 3x1 - 2x2) is close to
-  // the one from Gurobi solver.
-  EXPECT_NEAR(2 * v0 + 3 * v1 - 2 * v2,
-              /* Solution from Gurobi */ 2 * 0.0953487 + 3 * -0.0787482 - 2 * 1,
-              1e-5);
+  if (solver_.available()) {
+    auto result = solver_.Solve(prog_, {}, {});
+    ASSERT_TRUE(result.is_success());
+    const double v0{result.GetSolution(x0)};
+    const double v1{result.GetSolution(x1)};
+    const double v2{result.GetSolution(x2)};
+    // We check if the found minimum (solution for 2x0 + 3x1 - 2x2) is close to
+    // the one from Gurobi solver.
+    EXPECT_NEAR(2 * v0 + 3 * v1 - 2 * v2,
+                /* Solution from Gurobi */
+                2 * 0.0953487 + 3 * -0.0787482 - 2 * 1,
+                1e-5);
+  }
 }
 
 TEST_F(DrealSolverTest, SolveLinearComplementarityConstraint) {
@@ -643,12 +729,14 @@ TEST_F(DrealSolverTest, SolveLinearComplementarityConstraint) {
   prog_.AddLinearComplementarityConstraint(M, q, {x, y, l});
   const double delta{1e-5};
   prog_.SetSolverOption(DrealSolver::id(), "precision", delta);
-  auto result = solver_.Solve(prog_, {}, {});
-  ASSERT_TRUE(result.is_success());
-  const auto x_val = result.GetSolution(x);
-  const auto y_val = result.GetSolution(y);
-  EXPECT_NEAR(x_val(0), 1, 1E-6);
-  EXPECT_NEAR(y_val(0), 0, 1E-6);
+  if (solver_.available()) {
+    auto result = solver_.Solve(prog_, {}, {});
+    ASSERT_TRUE(result.is_success());
+    const auto x_val = result.GetSolution(x);
+    const auto y_val = result.GetSolution(y);
+    EXPECT_NEAR(x_val(0), 1, 1E-6);
+    EXPECT_NEAR(y_val(0), 0, 1E-6);
+  }
 }
 
 TEST_F(DrealSolverTest, SolveNonLinearConstraint) {
@@ -657,18 +745,20 @@ TEST_F(DrealSolverTest, SolveNonLinearConstraint) {
   prog_.AddConstraint(sin(x0) + cos(x0), 0.4, 0.41);
   const double delta{1e-5};
   prog_.SetSolverOption(DrealSolver::id(), "precision", delta);
-  auto result = solver_.Solve(prog_, {}, {});
-  ASSERT_TRUE(result.is_success());
-  const double v0{result.GetSolution(x0)};
-  EXPECT_TRUE(-3.141592 - delta <= v0 && v0 <= 3.141592 + delta);
-  EXPECT_TRUE(0.4 - delta <= sin(v0) + cos(v0));
-  EXPECT_TRUE(sin(v0) + cos(v0) <= 0.41 + delta);
-  // Add more constraints to make the problem infeasible.
-  prog_.AddConstraint(cos(x0) * sin(x0), 0.9, 0.91);
-  solver_.Solve(prog_, {}, {}, &result);
-  ASSERT_FALSE(result.is_success());
-  EXPECT_EQ(result.get_solution_result(),
-            SolutionResult::kInfeasibleConstraints);
+  if (solver_.available()) {
+    auto result = solver_.Solve(prog_, {}, {});
+    ASSERT_TRUE(result.is_success());
+    const double v0{result.GetSolution(x0)};
+    EXPECT_TRUE(-3.141592 - delta <= v0 && v0 <= 3.141592 + delta);
+    EXPECT_TRUE(0.4 - delta <= sin(v0) + cos(v0));
+    EXPECT_TRUE(sin(v0) + cos(v0) <= 0.41 + delta);
+    // Add more constraints to make the problem infeasible.
+    prog_.AddConstraint(cos(x0) * sin(x0), 0.9, 0.91);
+    solver_.Solve(prog_, {}, {}, &result);
+    ASSERT_FALSE(result.is_success());
+    EXPECT_EQ(result.get_solution_result(),
+              SolutionResult::kInfeasibleConstraints);
+  }
 }
 
 TEST_F(DrealSolverTest, SolvePositiveSemidefiniteConstraint) {
@@ -684,7 +774,9 @@ TEST_F(DrealSolverTest, SolveLinearMatrixInequalityConstraint) {
       {Eigen::Matrix2d::Identity(), Eigen::Matrix2d::Ones(),
        2 * Eigen::Matrix2d::Ones()},
       xvec_.head<2>());
-  EXPECT_THROW(solver_.Solve(prog_, {}, {}), logic_error);
+  if (solver_.available()) {
+    EXPECT_THROW(solver_.Solve(prog_, {}, {}), logic_error);
+  }
 }
 
 TEST_F(DrealSolverTest, SolveMultipleCostFunctions) {
@@ -692,11 +784,13 @@ TEST_F(DrealSolverTest, SolveMultipleCostFunctions) {
   prog_.AddConstraint(x, -10, 10);
   prog_.AddCost(-2 * x + 1);  // -2x + 1
   prog_.AddCost(x * x);       // x²
-  // Cost function = x² - 2x + 1 = (x-1)²
-  auto result = solver_.Solve(prog_, {}, {});
-  ASSERT_TRUE(result.is_success());
-  const double v{result.GetSolution(x)};
-  EXPECT_NEAR(v, 1, 0.005);
+  if (solver_.available()) {
+    // Cost function = x² - 2x + 1 = (x-1)²
+    auto result = solver_.Solve(prog_, {}, {});
+    ASSERT_TRUE(result.is_success());
+    const double v{result.GetSolution(x)};
+    EXPECT_NEAR(v, 1, 0.005);
+  }
 }
 
 TEST_F(DrealSolverTest, SolveGenericConstraint) {
@@ -712,21 +806,23 @@ TEST_F(DrealSolverTest, SolveGenericConstraint) {
       make_shared<test::GenericTrivialConstraint1>();
   prog_.AddConstraint(Binding<Constraint>(
       generic_trivial_constraint1, VectorDecisionVariable<3>(x0, x1, x2)));
-  auto result = solver_.Solve(prog_, {}, {});
-  ASSERT_TRUE(result.is_success());
-  const double v0{result.GetSolution(x0)};
-  const double v1{result.GetSolution(x1)};
-  const double v2{result.GetSolution(x2)};
-  EXPECT_LE(-10, v0);
-  EXPECT_LE(v0, 10);
-  EXPECT_LE(-10, v1);
-  EXPECT_LE(v1, 10);
-  EXPECT_LE(-10, v2);
-  EXPECT_LE(v2, 10);
-  EXPECT_LE(-1, v0 * v1 + v2 / v0 * 2);
-  EXPECT_LE(v0 * v1 + v2 / v0 * 2, 2);
-  EXPECT_LE(-2, v1 * v2 - v0);
-  EXPECT_LE(v1 * v2 - v0, 1);
+  if (solver_.available()) {
+    auto result = solver_.Solve(prog_, {}, {});
+    ASSERT_TRUE(result.is_success());
+    const double v0{result.GetSolution(x0)};
+    const double v1{result.GetSolution(x1)};
+    const double v2{result.GetSolution(x2)};
+    EXPECT_LE(-10, v0);
+    EXPECT_LE(v0, 10);
+    EXPECT_LE(-10, v1);
+    EXPECT_LE(v1, 10);
+    EXPECT_LE(-10, v2);
+    EXPECT_LE(v2, 10);
+    EXPECT_LE(-1, v0 * v1 + v2 / v0 * 2);
+    EXPECT_LE(v0 * v1 + v2 / v0 * 2, 2);
+    EXPECT_LE(-2, v1 * v2 - v0);
+    EXPECT_LE(v1 * v2 - v0, 1);
+  }
 }
 
 TEST_F(DrealSolverTest, SolveGenericCost) {
