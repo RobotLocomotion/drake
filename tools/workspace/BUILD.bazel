@@ -76,11 +76,13 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "u_msgpack_python",
     "vtk",
 ]] + ["//tools/workspace/%s:install" % p for p in [
-    "dreal",
     "net_sf_jchart2d",
     "find_protobuf_cmake",
     "optitrack_driver",
 ]] + select({
+    "//conditions:default": ["//tools/workspace/dreal:install"],
+    "//tools:no_dreal": [],
+}) + select({
     "//tools:with_gurobi": ["@gurobi//:install"],
     "//conditions:default": [],
 }) + select({
