@@ -164,6 +164,7 @@ drake_pybind_library(
     cc_deps = [
         ":cpp_template_pybind",
         ":default_scalars_pybind",
+        ":deprecation_pybind",
         ":eigen_geometry_pybind",
         ":type_pack",
     ],
@@ -475,7 +476,7 @@ drake_py_unittest(
     deps = [
         ":eigen_geometry_py",
         ":eigen_geometry_test_util_py",
-        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 
