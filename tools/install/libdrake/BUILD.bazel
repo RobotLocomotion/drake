@@ -93,6 +93,15 @@ install(
     allowed_externals = ["//:LICENSE.TXT"],
 )
 
+# Depend on dReal's shared library iff dReal is enabled.
+cc_library(
+    name = "dreal_deps",
+    deps = select({
+        "//conditions:default": ["@dreal"],
+        "//tools:no_dreal": [],
+    }),
+)
+
 # Depend on Gurobi's shared library iff Gurobi is enabled.
 cc_library(
     name = "gurobi_deps",
@@ -108,6 +117,15 @@ cc_library(
     deps = select({
         "//tools:with_mosek": ["@mosek"],
         "//conditions:default": [],
+    }),
+)
+
+# Depend on SCS's shared library iff SCS is enabled.
+cc_library(
+    name = "scs_deps",
+    deps = select({
+        "//conditions:default": ["@scs//:scsdir"],
+        "//tools:no_scs": [],
     }),
 )
 
@@ -158,16 +176,16 @@ cc_library(
         ":libdrake_headers_only_attic_cc_library",
         # The list of depended-on *.so files. These should ONLY be shared
         # libraries; do not add static dependencies here.
+        ":dreal_deps",
         ":gurobi_deps",
         ":mosek_deps",
+        ":scs_deps",
         ":vtk_deps",
         "//common:drake_marker_shared_library",
-        "@dreal",
         "@ignition_math",
         "@ignition_rndf",
         "@lcm",
         "@libprotobuf",
-        "@scs//:scsdir",
         "@tinyxml2",
         "@yaml_cpp",
     ] + [
