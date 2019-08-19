@@ -111,15 +111,19 @@ class HydroelasticTractionCalculator {
    @param dissipation the nonnegative coefficient (in s/m) for dissipating
           energy along the direction of the surface normals.
    @param mu_coulomb the nonnegative coefficient for Coulomb friction.
+   @param contact_surface the contact surface to be moved into the reporting
+          information data structure.
    @return the reporting information via the HydroelasticContactInfo data
            structure.
    */
   HydroelasticContactInfo<T> ComputeContactInfo(
-       const Data& data, double dissipation, double mu_coulomb) const {
+       const Data& data, double dissipation, double mu_coulomb,
+       std::unique_ptr<geometry::ContactSurface<T>> contact_surface) const {
+     DRAKE_DEMAND(&data.surface == contact_surface.get());
      ContactReportingFields fields =
          CreateReportingFields(data, dissipation, mu_coulomb);
      return HydroelasticContactInfo<T>(
-         &data.surface,
+         std::move(contact_surface),
          std::move(fields.traction_A_W),
          std::move(fields.vslip_AB_W));
   }

@@ -36,8 +36,8 @@ class HydroelasticContactInfo {
   HydroelasticContactInfo& operator=(const HydroelasticContactInfo&) = delete;
   HydroelasticContactInfo& operator=(HydroelasticContactInfo&&) = delete;
 
-  HydroelasticContactInfo(HydroelasticContactInfo&& contact_info) :
-      contact_surface_(contact_info.contact_surface_) {
+  HydroelasticContactInfo(HydroelasticContactInfo&& contact_info) {
+    contact_surface_ = std::move(contact_info.contact_surface_);
     traction_A_W_ = std::move(contact_info.traction_A_W_);
     vslip_AB_W_ = std::move(contact_info.vslip_AB_W_);
   }
@@ -53,20 +53,20 @@ class HydroelasticContactInfo {
       std::unique_ptr<geometry::ContactSurface<T>> contact_surface,
       std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_A_W,
       std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_AB_W) :
-      contact_surface_(*contact_surface),
+      contact_surface_(std::move(contact_surface)),
       traction_A_W_(std::move(traction_A_W)),
       vslip_AB_W_(std::move(vslip_AB_W)) {
-    DRAKE_DEMAND(contact_surface);
+    DRAKE_DEMAND(contact_surface_.get());
     DRAKE_DEMAND(traction_A_W_.get());
     DRAKE_DEMAND(vslip_AB_W_.get());
   }
 
-  /** Clones this data structure, making deep copies of the underlying mesh.
+  /** Clones this data structure, making deep copies of all underlying data.
    */
   std::unique_ptr<HydroelasticContactInfo<T>> Clone() const {
     std::unique_ptr<geometry::ContactSurface<T>> contact_surface_clone =
         contact_surface_->Clone();
-    const geometry::SurfaceMesh<T>* mesh = &contact_surface_clone.mesh();
+    const geometry::SurfaceMesh<T>* mesh = &contact_surface_clone->mesh();
     return std::make_unique<HydroelasticContactInfo<T>>(
         std::move(contact_surface_clone), traction_A_W_->CloneAndSetMesh(mesh),
         vslip_AB_W_->CloneAndSetMesh(mesh));

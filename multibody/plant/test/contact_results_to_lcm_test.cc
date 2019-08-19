@@ -247,8 +247,7 @@ std::unique_ptr<ContactSurface<double>> CreateContactSurface(
 // TODO(edrumwri) Remove this function when MultibodyPlant outputs hydroelastic
 // contact results.
 ContactResults<double> GenerateHydroelasticContactResults(
-    const MultibodyPlant<double>& plant,
-    std::unique_ptr<ContactSurface<double>>* contact_surface) {
+    const MultibodyPlant<double>& plant) {
   // Get the geometries for the two bodies.
   DRAKE_DEMAND(plant.num_bodies() == 2);
   const Body<double>& world_body = plant.world_body();
@@ -262,7 +261,7 @@ ContactResults<double> GenerateHydroelasticContactResults(
 
   // Create the contact surface using a duplicated arbitrary ID: geometry IDs
   // are irrelevant for this test.
-  *contact_surface =
+  auto contact_surface =
       CreateContactSurface(world_geoms.front(), block_geoms.front());
 
   // Create the calculator data, populated with dummy values since we're only
@@ -273,7 +272,7 @@ ContactResults<double> GenerateHydroelasticContactResults(
   const SpatialVelocity<double> V_WA = SpatialVelocity<double>::Zero();
   const SpatialVelocity<double> V_WB = SpatialVelocity<double>::Zero();
   HydroelasticTractionCalculator<double>::Data data(
-      X_WA, X_WB, V_WA, V_WB, X_WM, contact_surface->get());
+      X_WA, X_WB, V_WA, V_WB, X_WM, contact_surface.get());
 
   // Material properties are also dummies (the test will be unaffected by
   // their settings).
@@ -287,7 +286,8 @@ ContactResults<double> GenerateHydroelasticContactResults(
   ContactResults<double> output;
   output.AddHydroelasticContactInfo(
       std::make_unique<HydroelasticContactInfo<double>>(
-          calculator.ComputeContactInfo(data, dissipation, mu_coulomb)));
+          calculator.ComputeContactInfo(data, dissipation, mu_coulomb,
+          std::move(contact_surface))));
   return output;
 }
 
@@ -350,11 +350,10 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
 
   // TODO(edrumwri) Remove this code block when MultibodyPlant outputs
   // hydroelastic contact results.
-  std::unique_ptr<ContactSurface<double>> contact_surface;
   diagram_context->FixInputPort(
       contact_results_input_port_index,
       Value<ContactResults<double>>(
-          GenerateHydroelasticContactResults(*plant, &contact_surface)));
+          GenerateHydroelasticContactResults(*plant)));
 
   // Publish the first message so that this test can be interpreted in the
   // visualizer.
@@ -386,9 +385,9 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
       // Note that we do not want to predicate the correctness of this test on
       // the order in which the triangles are present in the message. We do
       // know that each element of each vertex is located at ± 0.5.
-      EXPECT_EQ(std::abs(surface_msg.triangles[i].a[j]), 0.5);
-      EXPECT_EQ(std::abs(surface_msg.triangles[i].b[j]), 0.5);
-      EXPECT_EQ(std::abs(surface_msg.triangles[i].c[j]), 0.5);
+      EXPECT_EQ(std::abs(surface_msg.triangles[i].a_W[j]), 0.5);
+      EXPECT_EQ(std::abs(surface_msg.triangles[i].b_W[j]), 0.5);
+      EXPECT_EQ(std::abs(surface_msg.triangles[i].c_W[j]), 0.5);
     }
   }
 }

@@ -779,6 +779,7 @@ GTEST_TEST(Hydroelastics, ContactInfo) {
   GeometryId arbitrary_id = GeometryId::get_new_id();
   std::unique_ptr<ContactSurface<double>> contact_surface =
       CreateContactSurface(arbitrary_id, arbitrary_id);
+  auto* contact_surface_raw = contact_surface.get();
 
   // Create the calculator data, populated with dummy values since we're only
   // testing that the structure can be created.
@@ -800,8 +801,8 @@ GTEST_TEST(Hydroelastics, ContactInfo) {
   // file.
   HydroelasticTractionCalculator<double> calculator;
   HydroelasticContactInfo<double> contact_info = calculator.ComputeContactInfo(
-      data, dissipation, mu_coulomb);
-  EXPECT_EQ(&contact_info.contact_surface(), contact_surface.get());
+      data, dissipation, mu_coulomb, std::move(contact_surface));
+  EXPECT_EQ(&contact_info.contact_surface(), contact_surface_raw);
 }
 
 }  // namespace internal

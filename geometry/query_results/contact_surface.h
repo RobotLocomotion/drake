@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/pointer_cast.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/mesh_field_linear.h"
 #include "drake/geometry/proximity/surface_mesh.h"
@@ -249,15 +250,17 @@ class ContactSurface {
   /** Clones this contact surface, copying the mesh and the mesh fields.
    */
   std::unique_ptr<ContactSurface<T>> Clone() const {
-    std::unique<ptr<SurfaceMesh<T>> mesh_clone = mesh_M_->Clone();
+    std::unique_ptr<SurfaceMesh<T>> mesh_clone = mesh_M_->Clone();
     const auto* mesh_clone_ptr = mesh_clone.get();
     return std::make_unique<ContactSurface<T>>(
         id_M_, id_N_, std::move(mesh_clone),
-        e_MN_->CloneWithMesh(mesh_clone_ptr),
-        grad_h_MN_M_->CloneWithMesh(mesh_clone_ptr));
+        static_pointer_cast<SurfaceMeshFieldLinear<T, T>>(
+            std::move(e_MN_->CloneAndSetMesh(mesh_clone_ptr))),
+        static_pointer_cast<SurfaceMeshFieldLinear<Vector3<T>, T>>(
+            std::move(grad_h_MN_M_->CloneAndSetMesh(mesh_clone_ptr))),
+        math::RigidTransform<T>::Identity());
   }
 
- private:
   // Swaps M and N (modifying the data in place to reflect the change in
   // frames).
   // @param X_NM  The pose of frame M in N.
