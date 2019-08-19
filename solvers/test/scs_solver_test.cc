@@ -324,17 +324,20 @@ GTEST_TEST(TestScs, SetOptions) {
   prog.AddQuadraticCost(x(0) * x(0) + x(1) * x(1));
 
   ScsSolver solver;
-  auto result = solver.Solve(prog, {}, {});
-  const int iter_solve = result.get_solver_details<ScsSolver>().iter;
-  const int solved_status = result.get_solver_details<ScsSolver>().scs_status;
-  DRAKE_DEMAND(iter_solve >= 2);
-  SolverOptions solver_options;
-  // Now we require that SCS can only take half of the iterations before
-  // termination. We expect now SCS cannot solve the problem.
-  solver_options.SetOption(solver.solver_id(), "max_iters", iter_solve / 2);
-  solver.Solve(prog, {}, solver_options, &result);
-  EXPECT_NE(result.get_solver_details<ScsSolver>().scs_status,
-            solved_status);
+  if (solver.available()) {
+    auto result = solver.Solve(prog, {}, {});
+    const int iter_solve = result.get_solver_details<ScsSolver>().iter;
+    const int solved_status =
+        result.get_solver_details<ScsSolver>().scs_status;
+    DRAKE_DEMAND(iter_solve >= 2);
+    SolverOptions solver_options;
+    // Now we require that SCS can only take half of the iterations before
+    // termination. We expect now SCS cannot solve the problem.
+    solver_options.SetOption(solver.solver_id(), "max_iters", iter_solve / 2);
+    solver.Solve(prog, {}, solver_options, &result);
+    EXPECT_NE(result.get_solver_details<ScsSolver>().scs_status,
+              solved_status);
+  }
 }
 }  // namespace test
 }  // namespace solvers
