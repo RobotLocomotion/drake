@@ -120,6 +120,15 @@ cc_library(
     }),
 )
 
+# Depend on SCS's shared library iff SCS is enabled.
+cc_library(
+    name = "scs_deps",
+    deps = select({
+        "//conditions:default": ["@scs//:scsdir"],
+        "//tools:no_scs": [],
+    }),
+)
+
 # Depend on the subset of VTK's shared libraries that Drake uses.
 cc_library(
     name = "vtk_deps",
@@ -170,13 +179,13 @@ cc_library(
         ":dreal_deps",
         ":gurobi_deps",
         ":mosek_deps",
+        ":scs_deps",
         ":vtk_deps",
         "//common:drake_marker_shared_library",
         "@ignition_math",
         "@ignition_rndf",
         "@lcm",
         "@libprotobuf",
-        "@scs//:scsdir",
         "@tinyxml2",
         "@yaml_cpp",
     ] + [
