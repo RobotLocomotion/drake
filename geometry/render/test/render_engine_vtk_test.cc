@@ -336,12 +336,14 @@ class RenderEngineVtkTest : public ::testing::Test {
     }
   }
 
-  // Creates a simple perception properties set for fixed, known results.
+  // Creates a simple perception properties set for fixed, known results. The
+  // material color can be modified by setting default_color_ prior to invoking
+  // this method.
   PerceptionProperties simple_material() const {
     PerceptionProperties material;
-    Vector4d color(kDefaultVisualColor.r / 255., kDefaultVisualColor.g / 255.,
-                   kDefaultVisualColor.b / 255., 1.);
-    material.AddProperty("phong", "diffuse", color);
+    Vector4d color_n(default_color_.r / 255., default_color_.g / 255.,
+                     default_color_.b / 255., default_color_.a / 255.);
+    material.AddProperty("phong", "diffuse", color_n);
     material.AddProperty("label", "id", expected_label_);
     return material;
   }
@@ -406,6 +408,7 @@ class RenderEngineVtkTest : public ::testing::Test {
   float expected_object_depth_{2.f};
   RenderLabel expected_label_;
   RenderLabel expected_outlier_label_{RenderLabel::kDontCare};
+  RgbaColor default_color_{kDefaultVisualColor, 255};
 
   const DepthCameraProperties camera_ = {kWidth, kHeight, kFovY, "unused",
                                          kZNear, kZFar};
@@ -549,6 +552,23 @@ TEST_F(RenderEngineVtkTest, SphereTest) {
   PopulateSphereTest(renderer_.get());
 
   PerformCenterShapeTest(renderer_.get(), "Sphere test");
+}
+
+// Performs the shape-centered-in-the-image test with a sphere.
+TEST_F(RenderEngineVtkTest, TransparentSphereTest) {
+  Init(X_WC_, true);
+
+  default_color_ = RgbaColor(kDefaultVisualColor, 128);
+  PopulateSphereTest(renderer_.get());
+
+  // The expected color should be a blend of the visual color and the ground
+  // plane color, but, because the ground plane is completely opaque, full
+  // alpha.
+  const ColorI blend{(kTerrainColorI.r + kDefaultVisualColor.r) / 2,
+                     (kTerrainColorI.g + kDefaultVisualColor.g) / 2,
+                     (kTerrainColorI.b + kDefaultVisualColor.b) / 2};
+  expected_color_ = RgbaColor(blend, 255);
+  PerformCenterShapeTest(renderer_.get(), "Transparent sphere test");
 }
 
 // Performs the shape-centered-in-the-image test  with a cylinder.
