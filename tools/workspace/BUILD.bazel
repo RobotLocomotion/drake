@@ -49,7 +49,6 @@ drake_py_binary(
 _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "bullet",
     "ccd",
-    "csdp",
     "drake_visualizer",
     "eigen",
     "fcl",
@@ -63,10 +62,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "meshcat",
     "meshcat_python",
     "octomap",
-    "osqp",
     "pybind11",
-    "qdldl",
-    "scs",
     "sdformat",
     "spdlog",
     "spruce",
@@ -80,6 +76,9 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "find_protobuf_cmake",
     "optitrack_driver",
 ]] + select({
+    "//conditions:default": ["@csdp//:install"],
+    "//tools:no_csdp": [],
+}) + select({
     "//conditions:default": ["//tools/workspace/dreal:install"],
     "//tools:no_dreal": [],
 }) + select({
@@ -88,6 +87,15 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
 }) + select({
     "//tools:with_mosek": ["@mosek//:install"],
     "//conditions:default": [],
+}) + select({
+    "//conditions:default": [
+        "@osqp//:install",
+        "@qdldl//:install",
+    ],
+    "//tools:no_osqp": [],
+}) + select({
+    "//conditions:default": ["@scs//:install"],
+    "//tools:no_scs": [],
 })
 
 install(
