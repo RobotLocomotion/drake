@@ -108,17 +108,30 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "ContactResults", param, cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
-        .def("num_contacts", &Class::num_point_pair_contacts,
-            "Deprecated. Use num_point_pair_contacts() instead.")
+        .def("num_contacts", [](Class* self) {
+            WarnDeprecated("Deprecated and will be removed on or around "
+            "12-01-2019. Use num_contacts() instead.");
+            return self->num_point_pair_contacts();
+        },
+        cls_doc.num_contacts.doc_deprecated)
         .def("num_point_pair_contacts", &Class::num_point_pair_contacts,
             cls_doc.num_point_pair_contacts.doc)
-        .def("AddContactInfo", &Class::AddPointPairContactInfo,
+        .def("AddContactInfo", [](
+            Class* self, const PointPairContactInfo<T>& contact_info) {
+                WarnDeprecated("Deprecated and will be removed on or around "
+                    "12-01-2019. Use AddPointPairContactInfo() instead.");
+                self->AddPointPairContactInfo(contact_info);
+            },
             py::arg("point_pair_info"),
-            "Deprecated. Use AddPointPairContactInfo() instead.")
+            cls_doc.AddContactInfo.doc_deprecated)
         .def("AddPointPairContactInfo", &Class::AddPointPairContactInfo,
             py::arg("point_pair_info"), cls_doc.AddPointPairContactInfo.doc)
-        .def("contact_info", &Class::point_pair_contact_info, py::arg("i"),
-            "Deprecated. Use point_pair_contact_info() instead.")
+        .def("contact_info", [](Class* self, int i) {
+              WarnDeprecated("Deprecated and will be removed on or around "
+                  "12-01-2019. Use point_pair_contact_info() instead.");
+              return self->point_pair_contact_info(i);
+            }, py::arg("i"),
+            cls_doc.contact_info.doc_deprecated)
         .def("point_pair_contact_info", &Class::point_pair_contact_info,
             py::arg("i"), cls_doc.point_pair_contact_info.doc);
     AddValueInstantiation<Class>(m);

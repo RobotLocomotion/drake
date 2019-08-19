@@ -35,7 +35,7 @@ class TimeVisualizer(object):
 
         lcmUtils.removeSubscriber(self._subscriber)
         self._subscriber = None
-        updateText('', 'Simulation time')
+        updateText('', 'Simulation time [s]')
 
     def is_enabled(self):
         return self._subscriber is not None

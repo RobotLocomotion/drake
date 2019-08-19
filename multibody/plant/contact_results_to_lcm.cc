@@ -2,23 +2,12 @@
 
 #include <memory>
 
-#include "drake/geometry/query_object.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
 
 namespace drake {
 namespace multibody {
 
 using systems::Context;
-
-namespace {
-// A dummy, placeholder type.
-struct SymbolicGeometryValue {};
-// An alias for QueryObject<T>, except when T = Expression.
-template <typename T>
-using ModelQueryObject = typename std::conditional<
-    std::is_same<T, symbolic::Expression>::value,
-    SymbolicGeometryValue, geometry::QueryObject<T>>::type;
-}  // namespace
 
 template <typename T>
 ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
@@ -42,9 +31,6 @@ ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
   this->set_name("ContactResultsToLcmSystem");
   contact_result_input_port_index_ =
       this->DeclareAbstractInputPort(Value<ContactResults<T>>()).get_index();
-
-  // Must be the first declared output port to be compatible with the constexpr
-  // declaration of message_output_port_index_.
   message_output_port_index_ = this->DeclareAbstractOutputPort(
       &ContactResultsToLcmSystem::CalcLcmContactOutput).get_index();
 }
@@ -131,9 +117,9 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
       const geometry::SurfaceVertex<T>& vB = mesh_W.vertex(face.vertex(1));
       const geometry::SurfaceVertex<T>& vC = mesh_W.vertex(face.vertex(2));
 
-      write_double3(vA.r_MV(), tri_msg.a);
-      write_double3(vB.r_MV(), tri_msg.b);
-      write_double3(vC.r_MV(), tri_msg.c);
+      write_double3(vA.r_MV(), tri_msg.a_W);
+      write_double3(vB.r_MV(), tri_msg.b_W);
+      write_double3(vC.r_MV(), tri_msg.c_W);
     }
   }
 }
@@ -167,7 +153,7 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
 
   builder->Connect(contact_results_port,
       contact_to_lcm->get_contact_result_input_port());
-  builder->Connect(contact_to_lcm->get_output_port(0),
+  builder->Connect(contact_to_lcm->get_lcm_message_output_port(),
       contact_results_publisher->get_input_port());
 
   return contact_results_publisher;
@@ -176,5 +162,5 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::ContactResultsToLcmSystem)

@@ -239,18 +239,23 @@ class ContactSurface {
     return grad_h_MN_M_->EvaluateAtVertex(vertex);
   }
 
-  DRAKE_DEPRECATED("2019-11-01", "Use mesh_M() instead.");
-  const SurfaceMesh<T>& mesh() const {
-    return mesh_M();
-  }
-
   /** Returns a reference to the surface mesh, which is defined in M's frame.
    */
-  const SurfaceMesh<T>& mesh_M() const {
+  const SurfaceMesh<T>& mesh() const {
     DRAKE_DEMAND(mesh_M_ != nullptr);
     return *mesh_M_;
   }
 
+  /** Clones this contact surface, copying the mesh and the mesh fields.
+   */
+  std::unique_ptr<ContactSurface<T>> Clone() const {
+    std::unique<ptr<SurfaceMesh<T>> mesh_clone = mesh_M_->Clone();
+    const auto* mesh_clone_ptr = mesh_clone.get();
+    return std::make_unique<ContactSurface<T>>(
+        id_M_, id_N_, std::move(mesh_clone),
+        e_MN_->CloneWithMesh(mesh_clone_ptr),
+        grad_h_MN_M_->CloneWithMesh(mesh_clone_ptr));
+  }
 
  private:
   // Swaps M and N (modifying the data in place to reflect the change in

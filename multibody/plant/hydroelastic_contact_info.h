@@ -43,16 +43,14 @@ class HydroelasticContactInfo {
   }
 
   /**
-   Constructs this structure using a pointer to the given contact surface,
-   traction field, and slip field.
+   Constructs this structure using the given contact surface, traction field,
+   and slip field.
    @see contact_surface()
    @see traction_A_W()
    @see vslip_AB_W()
-   @warning the pointer to `contact_surface` must remain valid for the life of
-            of this object.
    */
   HydroelasticContactInfo(
-      const geometry::ContactSurface<T>* contact_surface,
+      std::unique_ptr<geometry::ContactSurface<T>> contact_surface,
       std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_A_W,
       std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_AB_W) :
       contact_surface_(*contact_surface),
@@ -63,16 +61,22 @@ class HydroelasticContactInfo {
     DRAKE_DEMAND(vslip_AB_W_.get());
   }
 
+  /** Clones this data structure, making deep copies of the underlying mesh.
+   */
   std::unique_ptr<HydroelasticContactInfo<T>> Clone() const {
+    std::unique_ptr<geometry::ContactSurface<T>> contact_surface_clone =
+        contact_surface_->Clone();
+    const geometry::SurfaceMesh<T>* mesh = &contact_surface_clone.mesh();
     return std::make_unique<HydroelasticContactInfo<T>>(
-        &contact_surface_, traction_A_W_->Clone(), vslip_AB_W_->Clone());
+        std::move(contact_surface_clone), traction_A_W_->CloneAndSetMesh(mesh),
+        vslip_AB_W_->CloneAndSetMesh(mesh));
   }
 
   /// Returns a reference to the ContactSurface data structure. Note that
   /// the mesh and gradient vector fields are defined/expressed in the
   /// world frame.
   const geometry::ContactSurface<T>& contact_surface() const {
-    return contact_surface_;
+    return *contact_surface_;
   }
 
   /// Returns the field giving the traction acting on Body A, expressed in the
@@ -97,7 +101,7 @@ class HydroelasticContactInfo {
 
  private:
   // Note that the mesh of the contact surface is defined in the world frame.
-  const geometry::ContactSurface<T>& contact_surface_;
+  std::unique_ptr<geometry::ContactSurface<T>> contact_surface_;
   std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_A_W_;
   std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_AB_W_;
 };
