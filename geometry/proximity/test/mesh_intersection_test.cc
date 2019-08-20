@@ -396,16 +396,16 @@ std::unique_ptr<VolumeMeshFieldLinear<T, T>> TrivialVolumeMeshField(
   // of valid interpolation. I.e., interpolating values at v0, v1, v2
   // incorrectly will still produce zero. Provide more complex values.
 
-  // Pressure field value pᵢ at vertex vᵢ.
-  const T p0{0.};
-  const T p1{0.};
-  const T p2{0.};
-  const T p3{1.};
-  const T p4{1.};
-  std::vector<T> p_values = {p0, p1, p2, p3, p4};
+  // Strain field value εᵢ at vertex vᵢ.
+  const T e{0.};
+  const T e1{0.};
+  const T e2{0.};
+  const T e3{1.};
+  const T e4{1.};
+  std::vector<T> e_values = {e, e1, e2, e3, e4};
   DRAKE_DEMAND(5 == volume_mesh->num_vertices());
   auto volume_mesh_field = std::make_unique<VolumeMeshFieldLinear<T, T>>(
-      "pressure", std::move(p_values), volume_mesh);
+      "pressure", std::move(e_values), volume_mesh);
 
   return volume_mesh_field;
 }
@@ -674,15 +674,15 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedronIntoHeptagon) {
 GTEST_TEST(MeshIntersectionTest, SampleVolumeFieldOnSurface) {
   auto volume_M = TrivialVolumeMesh<double>();
   auto volume_field_M = TrivialVolumeMeshField<double>(volume_M.get());
-  auto rigid_N = TrivialSurfaceMesh<double>();
+  auto rigid_mesh = TrivialSurfaceMesh<double>();
   const auto X_MN = RigidTransformd(Vector3d(0, 0, 0.5));
 
   std::unique_ptr<SurfaceMesh<double>> surface;
   std::unique_ptr<SurfaceMeshFieldLinear<double, double>> e_field;
-  std::unique_ptr<SurfaceMeshFieldLinear<Vector3d, double>> grad_h_field;
+  std::unique_ptr<SurfaceMeshFieldLinear<Vector3d, double>> grad_e_field;
   mesh_intersection::SampleVolumeFieldOnSurface(
-      *volume_field_M, *rigid_N, X_MN,
-      &surface, &e_field, &grad_h_field);
+      *volume_field_M, *rigid_mesh, X_MN,
+      &surface, &e_field, &grad_e_field);
 
   const double kEps = std::numeric_limits<double>::epsilon();
   EXPECT_EQ(1, surface->num_faces());
@@ -695,9 +695,9 @@ GTEST_TEST(MeshIntersectionTest, SampleVolumeFieldOnSurface) {
   const double e = e_field->Evaluate(face0, centroid);
   const double expect_e = 0.5;
   EXPECT_NEAR(expect_e, e, kEps);
-  const auto grad_h = grad_h_field->Evaluate(face0, centroid);
-  const auto expect_grad_h = Vector3d::UnitZ();
-  EXPECT_NEAR((grad_h - expect_grad_h).norm(), 0., kEps);
+  const auto grad_e = grad_e_field->Evaluate(face0, centroid);
+  const auto expect_grad_e = Vector3d::UnitZ();
+  EXPECT_NEAR((grad_e - expect_grad_e).norm(), 0., kEps);
 }
 
 // Generates a volume mesh of an octahedron comprising of eight tetrahedral
@@ -747,13 +747,13 @@ std::unique_ptr<VolumeMesh<T>> OctahedronVolume() {
 }
 
 template<typename T>
-std::unique_ptr<VolumeMeshFieldLinear<T, T>> OctahedronPressureField(
+std::unique_ptr<VolumeMeshFieldLinear<T, T>> OctahedronStrainField(
     VolumeMesh<T>* volume_mesh) {
   // The field is 0 on the boundary and linearly increasing to 1 at the
   // center of the octahedron.
   std::vector<T> values{1, 0, 0, 0, 0, 0, 0};
   return std::make_unique<VolumeMeshFieldLinear<T, T>>(
-      "pressure", std::move(values), volume_mesh);
+      "strain", std::move(values), volume_mesh);
 }
 
 // Generates a simple surface mesh of a pyramid with vertices on the
@@ -821,7 +821,7 @@ void TestComputeContactSurfaceSoftRigid() {
   auto id_B = GeometryId::get_new_id();
   EXPECT_LT(id_A, id_B);
   auto mesh_S = OctahedronVolume<T>();
-  auto field_S = OctahedronPressureField<T>(mesh_S.get());
+  auto field_S = OctahedronStrainField<T>(mesh_S.get());
   auto surface_R = PyramidSurface<T>();
   // Move the rigid pyramid up, so only its square base intersects the top
   // part of the soft octahedron.
@@ -830,6 +830,7 @@ void TestComputeContactSurfaceSoftRigid() {
   // The relationship between the frames for the soft body and the
   // world frame is irrelevant for this test.
   const auto X_WS = RigidTransform<T>::Identity();
+  const auto X_WR = X_WS * X_SR;
 
   // Regardless of how we assign id_A and id_B to mesh_S and surface_R, the
   // contact surfaces will always have id_M = id_A and id_N = id_B (because
@@ -839,7 +840,7 @@ void TestComputeContactSurfaceSoftRigid() {
   // Confirm order
   auto contact_SR =
       mesh_intersection::ComputeContactSurfaceFromSoftVolumeRigidSurface(
-          id_A, *field_S, id_B, *surface_R, X_WS, X_SR);
+          id_A, *field_S, X_WS, id_B, *surface_R, X_WR);
   EXPECT_EQ(contact_SR->id_M(), id_A);
   EXPECT_EQ(contact_SR->id_N(), id_B);
 
@@ -848,7 +849,7 @@ void TestComputeContactSurfaceSoftRigid() {
   // (listed below).
   auto contact_RS =
       mesh_intersection::ComputeContactSurfaceFromSoftVolumeRigidSurface(
-          id_B, *field_S, id_A, *surface_R, X_WS, X_SR);
+          id_B, *field_S, X_WS, id_A, *surface_R, X_WR);
   EXPECT_EQ(contact_RS->id_M(), id_A);
   EXPECT_EQ(contact_RS->id_N(), id_B);
 
@@ -924,11 +925,11 @@ bool FindFaceVertex(Vector3d p_MQ, const SurfaceMesh<double>& surface_M,
 //  We should check the scalar field and the vector field in a more
 //  comprehensive way.
 GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
-  auto id_M = GeometryId::get_new_id();
-  auto id_N = GeometryId::get_new_id();
-  auto soft_mesh_M = OctahedronVolume<double>();
-  auto soft_M = OctahedronPressureField<double>(soft_mesh_M.get());
-  auto rigid_N = PyramidSurface<double>();
+  auto id_S = GeometryId::get_new_id();
+  auto id_R = GeometryId::get_new_id();
+  auto soft_mesh = OctahedronVolume<double>();
+  auto soft_epsilon = OctahedronStrainField<double>(soft_mesh.get());
+  auto rigid_mesh = PyramidSurface<double>();
 
   const double kEps = std::numeric_limits<double>::epsilon();
 
@@ -940,24 +941,25 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
   // center of the soft octahedron.  Check the field values at that point.
   // We expect that the contact surface must include the zero vertex.
   {
-    const auto X_MN = RigidTransformd(-Vector3d::UnitZ());
-    auto contact_MN_W =
+    const auto X_SR = RigidTransformd(-Vector3d::UnitZ());
+    const auto X_WR = X_WS * X_SR;
+    auto contact_SR_W =
         mesh_intersection::ComputeContactSurfaceFromSoftVolumeRigidSurface(
-            id_M, *soft_M, id_N, *rigid_N, X_WS, X_MN);
+            id_S, *soft_epsilon, X_WS, id_R, *rigid_mesh, X_WR);
     // TODO(DamrongGuoy): More comprehensive checks on the mesh of the contact
     //  surface. Here we only check the number of triangles.
-    EXPECT_EQ(4, contact_MN_W->mesh().num_faces());
+    EXPECT_EQ(4, contact_SR_W->mesh().num_faces());
 
     const Vector3d p_MQ = Vector3d::Zero();
     SurfaceFaceIndex face_Q;
     SurfaceMesh<double>::Barycentric b_Q;
-    bool found = FindFaceVertex(p_MQ, contact_MN_W->mesh(), &face_Q, &b_Q);
+    bool found = FindFaceVertex(p_MQ, contact_SR_W->mesh(), &face_Q, &b_Q);
     ASSERT_TRUE(found);
-    const auto p0_MN = contact_MN_W->EvaluateE_MN(face_Q, b_Q);
-    EXPECT_NEAR(1.0, p0_MN, kEps);
-    const auto grad_h_W = contact_MN_W->EvaluateGrad_h_MN_W(face_Q, b_Q);
-    const Vector3d expect_grad_h_W = Vector3d::UnitZ();
-    EXPECT_TRUE(CompareMatrices(expect_grad_h_W, grad_h_W, kEps));
+    const auto epsilon_SR = contact_SR_W->EvaluateE_MN(face_Q, b_Q);
+    EXPECT_NEAR(1.0, epsilon_SR, kEps);
+    const auto grad_e_W = contact_SR_W->EvaluateGrad_h_MN_W(face_Q, b_Q);
+    const Vector3d expect_grad_e_W = Vector3d::UnitZ();
+    EXPECT_TRUE(CompareMatrices(expect_grad_e_W, grad_e_W, kEps));
   }
   // Tests rotation. First we rotate the rigid pyramid 90 degrees around
   // X-axis, so it will fit the left half of the soft octahedron, instead of
@@ -981,26 +983,27 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
   // the -Y direction. The center of the contact surface will be at (0, -1/2, 0)
   // in the soft octahedron's frame.
   {
-    const auto X_MN =
+    const auto X_SR =
         RigidTransformd(RollPitchYawd(M_PI / 2., 0., 0.), Vector3d{0, -0.5, 0});
-    auto contact_MN_W =
+    const auto X_WR = X_WS * X_SR;
+    auto contact_SR_W =
         mesh_intersection::ComputeContactSurfaceFromSoftVolumeRigidSurface(
-            id_M, *soft_M, id_N, *rigid_N, X_WS, X_MN);
+            id_S, *soft_epsilon, X_WS, id_R, *rigid_mesh, X_WR);
     // TODO(DamrongGuoy): More comprehensive checks on the mesh of the contact
     //  surface.  Here we only check the number of triangles.
-    EXPECT_EQ(4, contact_MN_W->mesh().num_faces());
+    EXPECT_EQ(4, contact_SR_W->mesh().num_faces());
 
     const Vector3d p_MQ{0, -0.5,
                         0};  // The center vertex of the pyramid "bottom".
     SurfaceFaceIndex face_Q;
     SurfaceMesh<double>::Barycentric b_Q;
-    bool found = FindFaceVertex(p_MQ, contact_MN_W->mesh(), &face_Q, &b_Q);
+    bool found = FindFaceVertex(p_MQ, contact_SR_W->mesh(), &face_Q, &b_Q);
     ASSERT_TRUE(found);
-    const auto p0_MN = contact_MN_W->EvaluateE_MN(face_Q, b_Q);
-    EXPECT_NEAR(0.5, p0_MN, kEps);
-    const auto grad_h_M = contact_MN_W->EvaluateGrad_h_MN_W(face_Q, b_Q);
-    const Vector3d expect_grad_h_M = Vector3d::UnitY();
-    EXPECT_NEAR((expect_grad_h_M - grad_h_M).norm(), 0., kEps);
+    const auto epsilon_SR = contact_SR_W->EvaluateE_MN(face_Q, b_Q);
+    EXPECT_NEAR(0.5, epsilon_SR, kEps);
+    const auto grad_e_S = contact_SR_W->EvaluateGrad_h_MN_W(face_Q, b_Q);
+    const Vector3d expect_grad_e_S = Vector3d::UnitY();
+    EXPECT_NEAR((expect_grad_e_S - grad_e_S).norm(), 0., kEps);
   }
 }
 

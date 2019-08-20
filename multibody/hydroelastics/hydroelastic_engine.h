@@ -165,9 +165,9 @@ class HydroelasticEngine final : public geometry::ShapeReifier {
   // Returns nullopt if soft_model_S and rigid_model_R do not intersect.
   optional<geometry::ContactSurface<T>> CalcContactSurface(
       geometry::GeometryId id_S, const HydroelasticGeometry<T>& soft_model_S,
-      geometry::GeometryId id_R, const HydroelasticGeometry<T>& rigid_model_R,
       const math::RigidTransform<T>& X_WR,
-      const math::RigidTransform<T>& X_RS) const;
+      geometry::GeometryId id_R, const HydroelasticGeometry<T>& rigid_model_R,
+      const math::RigidTransform<T>& X_WS) const;
 
   // Implementation of ShapeReifier interface
   void ImplementGeometry(const geometry::Sphere& sphere,

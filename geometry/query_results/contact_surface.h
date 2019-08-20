@@ -94,7 +94,7 @@ namespace geometry {
   Even though p0ₘₙ and ∇hₘₙ are defined on different domains (𝕊ₘₙ and 𝕄 ∩ ℕ),
   our implementation only represents them on their common domain, i.e., 𝕊ₘₙ.
 
-  <h3> Barycentric Coordinates </h3>
+  <h2> Barycentric Coordinates </h2>
 
   For Point Q on the surface mesh of the contact surface between Geometry M and
   Geometry N, r_WQ = (x,y,z) is the displacement vector from the origin of the
@@ -234,7 +234,7 @@ class ContactSurface {
     // or the other. Alternatively, this should be documented and tested.
     mesh_W_->ReverseFaceWinding();
 
-    // Simply reverse the direction of the vectr field.
+    // Simply reverse the direction of the vector field.
     std::vector<Vector3<T>>& values = grad_h_MN_W_->mutable_values();
     for (SurfaceVertexIndex v(0); v < mesh_W_->num_vertices(); ++v) {
       values[v] = -values[v];

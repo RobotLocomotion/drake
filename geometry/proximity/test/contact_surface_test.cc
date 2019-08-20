@@ -105,29 +105,29 @@ ContactSurface<T> TestContactSurface() {
   // We record the reference for testing later.
   auto& surface_mesh_ref = *(surface_mesh.get());
 
-  // Increasing values of `e` from one vertex to the next.
+  // Increasing values of `p0` from one vertex to the next.
   // We give names to the values at vertices for testing later.
-  const T e0{0.};
-  const T e1{1.};
-  const T e2{2.};
-  const T e3{3.};
-  std::vector<T> e_values = {e0, e1, e2, e3};
-  auto e_field = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
-      "e", std::move(e_values), surface_mesh.get());
+  const T p0_a{0.};
+  const T p0_b{1.};
+  const T p0_c{2.};
+  const T p0_d{3.};
+  std::vector<T> p0_values = {p0_a, p0_b, p0_c, p0_d};
+  auto p0_field = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
+      "p0", std::move(p0_values), surface_mesh.get());
 
   // Slightly different values of grad_h_MN_W at each vertex.
   // We give names to the values at vertices for testing later.
-  const Vector3<T> g0(-0.1, -0.1, 1.);
-  const Vector3<T> g1(0.1, -0.1, 1.);
-  const Vector3<T> g2(0.1, 0.1, 1.);
-  const Vector3<T> g3(-0.1, 0.1, 1.);
-  std::vector<Vector3<T>> grad_h_MN_W_values = {g0, g1, g2, g3};
+  const Vector3<T> grad_a(-0.1, -0.1, 1.);
+  const Vector3<T> grad_b(0.1, -0.1, 1.);
+  const Vector3<T> grad_c(0.1, 0.1, 1.);
+  const Vector3<T> grad_d(-0.1, 0.1, 1.);
+  std::vector<Vector3<T>> grad_h_MN_W_values = {grad_a, grad_b, grad_c, grad_d};
   auto grad_h_MN_W_field =
       std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
           "grad_h_MN_W", std::move(grad_h_MN_W_values), surface_mesh.get());
 
   ContactSurface<T> contact_surface(id_M, id_N, std::move(surface_mesh),
-                                    std::move(e_field),
+                                    std::move(p0_field),
                                     std::move(grad_h_MN_W_field));
 
   // Start testing the ContactSurface<> data structure.
@@ -138,12 +138,12 @@ ContactSurface<T> TestContactSurface() {
   EXPECT_EQ(&surface_mesh_ref, &contact_surface.mesh());
   EXPECT_EQ(2, contact_surface.mesh().num_faces());
   EXPECT_EQ(4, contact_surface.mesh().num_vertices());
-  // Tests evaluation of `e` on face f0 {0, 1, 2}.
+  // Tests evaluation of `p0` on face f0 {0, 1, 2}.
   {
     const SurfaceFaceIndex f0(0);
     const typename SurfaceMesh<T>::Barycentric b{0.2, 0.3, 0.5};
-    const T expect_e = b(0) * e0 + b(1) * e1 + b(2) * e2;
-    EXPECT_EQ(expect_e, contact_surface.EvaluateE_MN(f0, b));
+    const T expect_p0 = b(0) * p0_a + b(1) * p0_b + b(2) * p0_c;
+    EXPECT_EQ(expect_p0, contact_surface.EvaluateE_MN(f0, b));
   }
   // Tests evaluation of `grad_h_MN_W` on face f1 {2, 3, 0}.
   {
@@ -153,12 +153,13 @@ ContactSurface<T> TestContactSurface() {
     //---+--------+----------+-----------------
     // v | vertex | grad_h_MN_W | barycentric
     //---+--------+-------------+--------------
-    // 0 |   v2   |      g2     |     0.6
-    // 1 |   v3   |      g3     |     0.3
-    // 2 |   v0   |      g0     |     0.1
+    // 0 |   v2   |    grad_c   |     0.6
+    // 1 |   v3   |    grad_d   |     0.3
+    // 2 |   v0   |    grad_a   |     0.1
     //---+--------+-------------+--------------
-    const Vector3<T> expect_g = T(0.6) * g2 + T(0.3) * g3 + T(0.1) * g0;
-    EXPECT_EQ(expect_g, contact_surface.EvaluateGrad_h_MN_W(f1, b));
+    const Vector3<T> expect_grad =
+        T(0.6) * grad_c + T(0.3) * grad_d + T(0.1) * grad_a;
+    EXPECT_EQ(expect_grad, contact_surface.EvaluateGrad_h_MN_W(f1, b));
   }
   // Tests area() of triangular faces.
   {
