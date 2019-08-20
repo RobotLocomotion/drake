@@ -198,7 +198,7 @@ class ForceElement : public
   /// an elastic spring between two bodies:
   /// @code
   ///   template <typename T>
-  ///   class SpringElement {
+  ///   class SpringElement : public ForceElement<T> {
   ///    public:
   ///     // Class's constructor.
   ///     SpringElement(
