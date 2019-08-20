@@ -5,51 +5,48 @@ from pydrake.perception import BaseField, Fields, PointCloud
 from pydrake.systems.framework import AbstractValue, LeafSystem
 
 
-def _TransformPoints(points_Ci, X_CiSi):
-    # Make homogenous copy of points.
-    points_h_Ci = np.vstack((points_Ci,
-                             np.ones((1, points_Ci.shape[1]))))
-
-    return X_CiSi.dot(points_h_Ci)[:3, :]
-
-
-def _TileColors(color, dim):
+def _tile_colors(color, count):
     # Need manual broadcasting.
-    return np.tile(np.array([color]).T, (1, dim))
+    color = np.asarray(color)
+    assert color.shape == (3,)
+    return np.tile(np.array([color]).T, (1, count))
 
 
-def _ConcatenatePointClouds(points_dict, colors_dict):
-    scene_points = None
-    scene_colors = None
+def _hstack_none(A, B):
+    # Concatenate, accommodating None.
+    if A is None:
+        return B
+    else:
+        return np.hstack((A, B))
 
-    for id in points_dict:
-        if scene_points is None:
-            scene_points = points_dict[id]
-        else:
-            scene_points = np.hstack((points_dict[id], scene_points))
 
-        if scene_colors is None:
-            scene_colors = colors_dict[id]
-        else:
-            scene_colors = np.hstack((colors_dict[id], scene_colors))
-
-    valid_indices = np.logical_not(np.isnan(scene_points))
-
-    scene_points = scene_points[:, valid_indices[0, :]]
-    scene_colors = scene_colors[:, valid_indices[0, :]]
-
-    return scene_points, scene_colors
+def _concatenate_point_clouds(p_FSilist_list, color_Silist_list):
+    n = len(p_FSilist_list)
+    assert n > 0
+    assert len(color_Silist_list) == n
+    p_FSlist = None
+    color_Slist = None
+    for p_FSilist, color_Silist in zip(p_FSilist_list, color_Silist_list):
+        p_FSlist = _hstack_none(p_FSlist, p_FSilist)
+        color_Slist = _hstack_none(color_Slist, color_Silist)
+    valid_indices = np.logical_not(np.isnan(p_FSlist).any(axis=0))
+    p_FSlist = p_FSlist[:, valid_indices]
+    color_Slist = color_Slist[:, valid_indices]
+    return p_FSlist, color_Slist
 
 
 class PointCloudConcatenation(LeafSystem):
 
     def __init__(self, id_list, default_rgb=[255., 255., 255.]):
         """
-        A system that takes in N point clouds of points Si in frame Ci, and N
-        RigidTransforms from frame Ci to F, to put each point cloud in a common
-        frame F. The system returns one point cloud combining all of the
-        transformed point clouds. Each point cloud must have XYZs. RGBs are
-        optional. If absent, those points will be the provided default color.
+        A system that takes in N point clouds, each a list of points Si in
+        frame Ci denoted as p_CiSilist, and N RigidTransforms representing the
+        pose of frame Ci relative to F, where F is the common frame to
+        transform clouds. The system returns one point cloud combining all of
+        the transformed point clouds as a list of points S (containing the
+        points of S0, ..., SN) in frame F. Each point cloud must have XYZs.
+        RGBs are optional. If absent, those points will be the provided default
+        color.
 
         @param id_list A list containing the string IDs of all of the point
             clouds. This is often the serial number of the camera they came
@@ -71,53 +68,45 @@ class PointCloudConcatenation(LeafSystem):
         }
         """
         LeafSystem.__init__(self)
-
         self._point_cloud_ports = {}
         self._transform_ports = {}
-
         self._id_list = id_list
-
         self._default_rgb = np.array(default_rgb)
-
         output_fields = Fields(BaseField.kXYZs | BaseField.kRGBs)
-
-        for id in self._id_list:
-            self._point_cloud_ports[id] = self.DeclareAbstractInputPort(
-                "point_cloud_CiSi_{}".format(id),
+        for i in self._id_list:
+            self._point_cloud_ports[i] = self.DeclareAbstractInputPort(
+                "point_cloud_CiSi_{}".format(i),
                 AbstractValue.Make(PointCloud(fields=output_fields)))
 
-            self._transform_ports[id] = self.DeclareAbstractInputPort(
-                "X_FCi_{}".format(id),
+            self._transform_ports[i] = self.DeclareAbstractInputPort(
+                "X_FCi_{}".format(i),
                 AbstractValue.Make(RigidTransform.Identity()))
-
         self.DeclareAbstractOutputPort("point_cloud_FS",
                                        lambda: AbstractValue.Make(
                                            PointCloud(fields=output_fields)),
                                        self.DoCalcOutput)
 
-    def _AlignPointClouds(self, context):
-        points = {}
-        colors = {}
+    def _align_point_clouds(self, context):
+        p_FSilist_list = []
+        color_Silist_list = []
+        for i in self._id_list:
+            point_cloud_CiSi = self._point_cloud_ports[i].Eval(context)
+            X_FCi = self._transform_ports[i].Eval(context)
+            p_CiSilist = point_cloud_CiSi.xyzs()
+            p_FSilist = X_FCi.multiply(p_CiSilist)
 
-        for id in self._id_list:
-            point_cloud = self.EvalAbstractInput(
-                context, self._point_cloud_ports[id].get_index()).get_value()
-            X_CiSi = self.EvalAbstractInput(
-                context, self._transform_ports[id].get_index()).get_value()
-
-            points[id] = _TransformPoints(point_cloud.xyzs(), X_CiSi.matrix())
-
-            if point_cloud.has_rgbs():
-                colors[id] = point_cloud.rgbs()
+            if point_cloud_CiSi.has_rgbs():
+                color_Silist = point_cloud_CiSi.rgbs()
             else:
-                colors[id] = _TileColors(
-                    self._default_rgb, point_cloud.xyzs().shape[1])
-
-        return _ConcatenatePointClouds(points, colors)
+                color_Silist = _tile_colors(
+                    self._default_rgb, point_cloud_CiSi.size())
+            p_FSilist_list.append(p_FSilist)
+            color_Silist_list.append(color_Silist)
+        return _concatenate_point_clouds(p_FSilist_list, color_Silist_list)
 
     def DoCalcOutput(self, context, output):
-        scene_points, scene_colors = self._AlignPointClouds(context)
-
-        output.get_mutable_value().resize(scene_points.shape[1])
-        output.get_mutable_value().mutable_xyzs()[:] = scene_points
-        output.get_mutable_value().mutable_rgbs()[:] = scene_colors
+        p_FSlist, color_Slist = self._align_point_clouds(context)
+        point_cloud_FS = output.get_mutable_value()
+        point_cloud_FS.resize(p_FSlist.shape[1])
+        point_cloud_FS.mutable_xyzs()[:] = p_FSlist
+        point_cloud_FS.mutable_rgbs()[:] = color_Slist

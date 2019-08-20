@@ -7,9 +7,11 @@ from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
 from pydrake.perception import BaseField, Fields, PointCloud
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import AbstractValue, DiagramBuilder
+# TODO(eric.cousineau): Remove use of private methods!
 from pydrake.systems.perception import (
-    PointCloudConcatenation, _ConcatenatePointClouds, _TileColors,
-    _TransformPoints)
+    PointCloudConcatenation, _concatenate_point_clouds, _tile_colors)
+# DNM PR DRAFT, TODO(eric.cousineau): Update notation pending review of main
+# code.
 
 
 class TestConcatenatePointClouds(unittest.TestCase):
@@ -20,15 +22,15 @@ class TestConcatenatePointClouds(unittest.TestCase):
         self.points_1 = np.array([[4.0], [5.0], [6.0]])
         self.colors_1 = np.array([[50], [100], [200]])
 
-        self.points_dict = {"0": self.points_0, "1": self.points_1}
-        self.colors_dict = {"0": self.colors_0, "1": self.colors_1}
+        self.points_list = [self.points_0, self.points_1]
+        self.colors_list = [self.colors_0, self.colors_1]
 
     def test_concatenation(self):
-        scene_points, scene_colors = _ConcatenatePointClouds(
-            self.points_dict, self.colors_dict)
+        scene_points, scene_colors = _concatenate_point_clouds(
+            self.points_list, self.colors_list)
 
-        self.assertEqual(scene_points.shape, (3, len(self.points_dict)))
-        self.assertEqual(scene_colors.shape, (3, len(self.colors_dict)))
+        self.assertEqual(scene_points.shape, (3, len(self.points_list)))
+        self.assertEqual(scene_colors.shape, (3, len(self.colors_list)))
         self.assertEqual(scene_points.shape, scene_colors.shape)
 
         for i, value in enumerate(self.points_0.flatten()):
@@ -50,12 +52,12 @@ class TestTileColors(unittest.TestCase):
         self.blue = [0, 0, 255]
 
     def test_one_dim(self):
-        tiled = _TileColors(self.red, 1)
+        tiled = _tile_colors(self.red, 1)
         expected_tiled = np.array([[255], [0], [0]])
         self.assertTrue(np.allclose(tiled, expected_tiled))
 
     def test_three_dims(self):
-        tiled = _TileColors(self.blue, 1)
+        tiled = _tile_colors(self.blue, 1)
         expected_tiled = np.array([[0, 0, 0], [0, 0, 0], [255, 255, 255]])
         self.assertTrue(np.allclose(tiled, expected_tiled))
 
@@ -68,16 +70,14 @@ class TestTransformPoints(unittest.TestCase):
             RotationMatrix(RollPitchYaw(0, 0, np.pi/2)))
 
     def test_translation(self):
-        transformed_points = _TransformPoints(
-            self.points, self.translation.matrix())
+        transformed_points = self.translation.multiply(self.points)
         expected_translated_points = np.array([[2, 3, 3], [3, 3, 3]]).T
 
         self.assertTrue(
             np.allclose(transformed_points, expected_translated_points))
 
     def test_rotation(self):
-        transformed_points = _TransformPoints(
-            self.points, self.rotation.matrix())
+        transformed_points = self.rotation.multiply(self.points)
         expected_rotated_points = np.array([[-1, 1, 0], [-1, 2, 0]]).T
 
         self.assertTrue(
