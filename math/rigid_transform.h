@@ -197,8 +197,6 @@ class RigidTransform {
   }
 
   /// Constructs a %RigidTransform from an appropriate Eigen <b>expression</b>.
-  /// Note: This constructor prevents ambiguity that would otherwise exist for a
-  /// %RigidTransform constructor whose argument is an Eigen <b>expression</b>.
   /// @param[in] pose Generic Eigen matrix <b>expression</b>.
   /// @throws std::logic_error if the Eigen <b>expression</b> in pose does not
   /// resolve to a Vector3 or 3x4 matrix or 4x4 matrix or if the rotational part
@@ -206,6 +204,8 @@ class RigidTransform {
   /// a 4x4 matrix whose final row is not `[0, 0, 0, 1]`.
   /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
+  /// @note This constructor prevents ambiguity that would otherwise exist for a
+  /// %RigidTransform constructor whose argument is an Eigen <b>expression</b>.
   /// @code{.cc}
   /// const Vector3<double> position(4, 5, 6);
   /// const RigidTransform<double> X1(3 * position);
