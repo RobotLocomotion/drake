@@ -93,6 +93,7 @@ drake_cc_library(
         "body_node_impl.cc",
         "fixed_offset_frame.cc",
         "joint_actuator.cc",
+        "linear_bushing_roll_pitch_yaw.cc",
         "linear_spring_damper.cc",
         "mobilizer_impl.cc",
         "model_instance.cc",
@@ -122,6 +123,7 @@ drake_cc_library(
         "frame_base.h",
         "joint.h",
         "joint_actuator.h",
+        "linear_bushing_roll_pitch_yaw.h",
         "linear_spring_damper.h",
         "mobilizer.h",
         "mobilizer_impl.h",
@@ -420,6 +422,16 @@ drake_cc_googletest(
     name = "articulated_body_algorithm_test",
     deps = [
         ":tree",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_bushing_roll_pitch_yaw_test",
+    deps = [
+        ":tree",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/framework",
     ],
 )
 

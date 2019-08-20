@@ -280,11 +280,11 @@ class RollPitchYaw {
   /// angles `[r; p; y]` relate the orientation of two generic frames A and D.
   /// @param[in] rpyDt Time-derivative of `[r; p; y]`, i.e., `[ṙ; ṗ; ẏ]`.
   /// @returns w_AD_A, frame D's angular velocity in frame A, expressed in A.
-  // TODO(Mitiguy) Improve speed -- last column of M is (0, 0, 1).
   Vector3<T> CalcAngularVelocityInParentFromRpyDt(
       const Vector3<T>& rpyDt) const {
     // Get the 3x3 coefficient matrix M that contains the partial derivatives of
     // w_AD_A with respect to ṙ, ṗ, ẏ.  In other words, `w_AD_A = M * rpyDt`.
+    // TODO(Mitiguy) Improve speed -- last column of M is (0, 0, 1).
     const Matrix3<T> M = CalcMatrixRelatingAngularVelocityInParentToRpyDt();
     return M * rpyDt;
   }
@@ -293,11 +293,11 @@ class RollPitchYaw {
   /// angles `[r; p; y]` relate the orientation of two generic frames A and D.
   /// @param[in] rpyDt Time-derivative of `[r; p; y]`, i.e., `[ṙ; ṗ; ẏ]`.
   /// @returns w_AD_D, frame D's angular velocity in frame A, expressed in D.
-  // TODO(Mitiguy) Improve speed -- first column of M is (1, 0, 0).
   Vector3<T> CalcAngularVelocityInChildFromRpyDt(
       const Vector3<T>& rpyDt) const {
     // Get the 3x3 coefficient matrix M that contains the partial derivatives of
     // w_AD_D with respect to ṙ, ṗ, ẏ.  In other words, `w_AD_D = M * rpyDt`.
+    // TODO(Mitiguy) Improve speed -- first column of M is (1, 0, 0).
     const Matrix3<T> M = CalcMatrixRelatingAngularVelocityInChildToRpyDt();
     return M * rpyDt;
   }
@@ -312,16 +312,34 @@ class RollPitchYaw {
   /// "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
   /// There are associated precision problems (inaccuracies) in the neighborhood
   /// of these pitch angles, i.e., when `cos(p) ≈ 0`.
-  // TODO(Mitiguy) Improve speed -- last column of M is (0, 0, 1).
-  // TODO(Mitiguy) Improve accuracy when `cos(p) ≈ 0`.
   Vector3<T> CalcRpyDtFromAngularVelocityInParent(
       const Vector3<T>& w_AD_A) const {
     // Get the 3x3 M matrix that contains the partial derivatives of `[ṙ, ṗ, ẏ]`
     // with respect to `[wx; wy; wz]ₐ` (which is w_AD_A expressed in A).
     // In other words, `rpyDt = M * w_AD_A`.
+    // TODO(Mitiguy) Improve speed -- last column of M is (0, 0, 1).
+    // TODO(Mitiguy) Improve accuracy when `cos(p) ≈ 0`.
     const Matrix3<T> M = CalcMatrixRelatingRpyDtToAngularVelocityInParent(
         __func__, __FILE__, __LINE__);
     return M * w_AD_A;
+  }
+
+  /// For `this` %RollPitchYaw with roll-pitch-yaw angles `[r; p; y]` which
+  /// relate the orientation of two generic frames A and D, returns the 3x3
+  /// matrix M that contains the partial derivatives of [ṙ, ṗ, ẏ] with respect
+  /// to `[wx; wy; wz]ₐ` (which is w_AD_A expressed in A).
+  /// In other words, `rpyDt = M * w_AD_A`.
+  /// @param[in] function_name name of the calling function/method.
+  /// @throws std::logic_error if `cos(p) ≈ 0` (`p` is near gimbal-lock).
+  /// @note This method has a divide-by-zero error (singularity) when the cosine
+  /// of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
+  /// "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
+  /// There are associated precision problems (inaccuracies) in the neighborhood
+  /// of these pitch angles, i.e., when `cos(p) ≈ 0`.
+  const Matrix3<T> CalcMatrixRelatingRpyDtToAngularVelocityInParent() const {
+    const Matrix3<T> M = CalcMatrixRelatingRpyDtToAngularVelocityInParent(
+        __func__, __FILE__, __LINE__);
+    return M;
   }
 
   /// Uses angular acceleration to compute the 2ⁿᵈ time-derivative of `this`
@@ -336,11 +354,11 @@ class RollPitchYaw {
   /// "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
   /// There are associated precision problems (inaccuracies) in the neighborhood
   /// of these pitch angles, i.e., when `cos(p) ≈ 0`.
-  // TODO(Mitiguy) Improve accuracy when `cos(p) ≈ 0`.
-  // TODO(Mitiguy) Improve speed: The last column of M is (0, 0, 1), the last
-  // column of MDt is (0, 0, 1) and there are repeated sine/cosine calculations.
   Vector3<T> CalcRpyDDtFromRpyDtAndAngularAccelInParent(
       const Vector3<T>& rpyDt, const Vector3<T>& alpha_AD_A) const {
+    // TODO(Mitiguy) Improve accuracy when `cos(p) ≈ 0`.
+    // TODO(Mitiguy) Improve speed: The last column of M is (0, 0, 1), the last
+    // column of MDt is (0, 0, 1) and there are repeated sin/cos calculations.
     const Matrix3<T> Minv = CalcMatrixRelatingRpyDtToAngularVelocityInParent(
         __func__, __FILE__, __LINE__);
     const Matrix3<T> MDt =
@@ -542,8 +560,8 @@ class RollPitchYaw {
 
   // For `this` %RollPitchYaw with roll-pitch-yaw angles `[r; p; y]` which
   // relate the orientation of two generic frames A and D, returns the 3x3
-  // matrix M that contains the partial derivatives of [ṙ, ṗ, ẏ] with respect to
-  // `[wx; wy; wz]ₐ` (which is w_AD_A expressed in A).
+  // matrix M that contains the partial derivatives of [ṙ, ṗ, ẏ] with respect
+  // to `[wx; wy; wz]ₐ` (which is w_AD_A expressed in A).
   // In other words, `rpyDt = M * w_AD_A`.
   // @param[in] function_name name of the calling function/method.
   // @param[in] file_name name of the file with the calling function/method.
@@ -554,7 +572,10 @@ class RollPitchYaw {
   // "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
   // There are associated precision problems (inaccuracies) in the neighborhood
   // of these pitch angles, i.e., when `cos(p) ≈ 0`.
-  // TODO(Mitiguy) Improve accuracy when `cos(p) ≈ 0`.
+  // @note This utility method typically gets called from a user-relevant API
+  // so it provides the ability to detect gimbal-lock and throws an error
+  // message that includes information from the calling function (rather than
+  // less useful information from within this method itself).
   const Matrix3<T> CalcMatrixRelatingRpyDtToAngularVelocityInParent(
       const char* function_name, const char* file_name, int line_number) const {
     using std::cos;
@@ -562,6 +583,7 @@ class RollPitchYaw {
     const T& p = pitch_angle();
     const T& y = yaw_angle();
     const T sp = sin(p), cp = cos(p);
+    // TODO(Mitiguy) Improve accuracy when `cos(p) ≈ 0`.
     if (DoesCosPitchAngleViolateGimbalLockTolerance(cp)) {
       ThrowPitchAngleViolatesGimbalLockTolerance(function_name, file_name,
                                                  line_number, p);
@@ -572,12 +594,13 @@ class RollPitchYaw {
     const T sy_over_cp = sy * one_over_cp;
     Matrix3<T> M;
     // clang-format on
-    M <<      cy_over_cp,       sy_over_cp,  T(0),
-                     -sy,               cy,  T(0),
-         cy_over_cp * sp,  sy_over_cp * sp,  T(1);
+    M <<     cy_over_cp,       sy_over_cp,  T(0),
+                    -sy,               cy,  T(0),
+        cy_over_cp * sp,  sy_over_cp * sp,  T(1);
     // clang-format off
     return M;
   }
+
 
   // Sets `this` %RollPitchYaw from a Vector3.
   // @param[in] rpy allegedly valid roll-pitch-yaw angles.
