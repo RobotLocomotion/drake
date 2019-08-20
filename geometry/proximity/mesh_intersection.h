@@ -643,7 +643,7 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId id_R, const SurfaceMesh<T>& mesh_R,
     const math::RigidTransform<T>& X_WR) {
   // Compute the transformation from the rigid frame to the soft frame.
-  const math::RigidTransform<T> X_SR = X_WS.inverse() * X_WR;
+  const math::RigidTransform<T> X_R = X_WS.inverse() * X_WR;
 
   // The mesh will be computed in Frame S and then transformed to the world
   // frame.
