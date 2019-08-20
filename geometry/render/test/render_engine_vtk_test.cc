@@ -556,19 +556,40 @@ TEST_F(RenderEngineVtkTest, SphereTest) {
 
 // Performs the shape-centered-in-the-image test with a sphere.
 TEST_F(RenderEngineVtkTest, TransparentSphereTest) {
-  Init(X_WC_, true);
+  RenderEngineVtk renderer;
+  InitializeRenderer(X_WC_, true /* add terrain */, &renderer);
+  const int int_alpha = 128;
+  default_color_ = RgbaColor(kDefaultVisualColor, int_alpha);
+  PopulateSphereTest(&renderer);
+  ImageRgba8U color(camera_.width, camera_.height);
+  renderer.RenderColorImage(camera_, kShowWindow, &color);
 
-  default_color_ = RgbaColor(kDefaultVisualColor, 128);
-  PopulateSphereTest(renderer_.get());
+  // Note: under CI this test runs with Xvfb - a virtual frame buffer. This does
+  // *not* use the OpenGL drivers and, empirically, it has shown a different
+  // alpha blending behavior.
+  // For an alpha of 128 (i.e., 50%), the correct pixel color would be a
+  // *linear* blend, i.e., 50% background and 50% foreground. However, the
+  // implementation in Xvfb seems to be a function alpha *squared*. So, we
+  // formulate this test to pass if the resultant pixel has one of two possible
+  // colors.
+  // In both cases, the resultant alpha will always be a full 255 (because the
+  // background is a full 255).
+  auto blend = [](const ColorI& c1, const ColorI& c2, double alpha) {
+    int r = static_cast<int>(c1.r * alpha + (c2.r * (1 - alpha)));
+    int g = static_cast<int>(c1.g * alpha + (c2.g * (1 - alpha)));
+    int b = static_cast<int>(c1.b * alpha + (c2.b * (1 - alpha)));
+    return ColorI{r, g, b};
+  };
+  const double linear_factor = int_alpha / 255.0;
+  const RgbaColor expect_linear{
+      blend(kDefaultVisualColor, kTerrainColorI, linear_factor), 255};
+  const double quad_factor = linear_factor * (-linear_factor + 2);
+  const RgbaColor expect_quad{
+      blend(kDefaultVisualColor, kTerrainColorI, quad_factor), 255};
 
-  // The expected color should be a blend of the visual color and the ground
-  // plane color, but, because the ground plane is completely opaque, full
-  // alpha.
-  const ColorI blend{(kTerrainColorI.r + kDefaultVisualColor.r) / 2,
-                     (kTerrainColorI.g + kDefaultVisualColor.g) / 2,
-                     (kTerrainColorI.b + kDefaultVisualColor.b) / 2};
-  expected_color_ = RgbaColor(blend, 255);
-  PerformCenterShapeTest(renderer_.get(), "Transparent sphere test");
+  const ScreenCoord inlier = GetInlier(camera_);
+  EXPECT_TRUE(CompareColor(expect_linear, color, inlier) ||
+              CompareColor(expect_quad, color, inlier));
 }
 
 // Performs the shape-centered-in-the-image test  with a cylinder.
