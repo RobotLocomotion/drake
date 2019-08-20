@@ -27,13 +27,15 @@ LinearBushingRollPitchYaw<T>::LinearBushingRollPitchYaw(
   DRAKE_THROW_UNLESS(stiffness >= 0);
   DRAKE_THROW_UNLESS(damping >= 0);
 }
+#endif
 
 template <typename T>
 void LinearBushingRollPitchYaw<T>::DoCalcAndAddForceContribution(
     const systems::Context<T>&,
-    const internal::PositionKinematicsCache<T>& pc,
-    const internal::VelocityKinematicsCache<T>& vc,
-    MultibodyForces<T>* forces) const {
+    const internal::PositionKinematicsCache<T>& /* pc */,
+    const internal::VelocityKinematicsCache<T>& /* vc */,
+    MultibodyForces<T>* /* forces */) const {
+#if 0
   using std::sqrt;
 
   const math::RigidTransform<T>& X_WA = pc.get_X_WB(bodyA().node_index());
@@ -74,12 +76,14 @@ void LinearBushingRollPitchYaw<T>::DoCalcAndAddForceContribution(
   const Vector3<T> p_QBo_W = X_WB.translation() - p_WQ;
   F_Bo_W_array[bodyB().node_index()] +=
       SpatialForce<T>(Vector3<T>::Zero(), -f_AP_W).Shift(p_QBo_W);
+#endif
 }
 
 template <typename T>
 T LinearBushingRollPitchYaw<T>::CalcPotentialEnergy(
     const systems::Context<T>&,
-    const internal::PositionKinematicsCache<T>& pc) const {
+    const internal::PositionKinematicsCache<T>& /* pc */) const {
+#if 0
   const math::RigidTransform<T>& X_WA = pc.get_X_WB(bodyA().node_index());
   const math::RigidTransform<T>& X_WB = pc.get_X_WB(bodyB().node_index());
 
@@ -93,13 +97,16 @@ T LinearBushingRollPitchYaw<T>::CalcPotentialEnergy(
   const T delta_length = SafeSoftNorm(p_PQ_W) - free_length();
 
   return 0.5 * stiffness() * delta_length * delta_length;
+#endif
+  return 0;
 }
 
 template <typename T>
 T LinearBushingRollPitchYaw<T>::CalcConservativePower(
     const systems::Context<T>&,
-    const internal::PositionKinematicsCache<T>& pc,
-    const internal::VelocityKinematicsCache<T>& vc) const {
+    const internal::PositionKinematicsCache<T>& /* pc */,
+    const internal::VelocityKinematicsCache<T>& /* vc */) const {
+#if 0
   // Since the potential energy is:
   //  V = 1/2⋅k⋅(ℓ-ℓ₀)²
   // The conservative power is defined as:
@@ -125,19 +132,25 @@ T LinearBushingRollPitchYaw<T>::CalcConservativePower(
   // Pc = -d(V)/dt = -k⋅(ℓ-ℓ₀)⋅dℓ/dt
   const T Pc = -stiffness() * delta_length * length_dot;
   return Pc;
+#endif
+  return 0;
 }
 
 template <typename T>
 T LinearBushingRollPitchYaw<T>::CalcNonConservativePower(
     const systems::Context<T>&,
-    const internal::PositionKinematicsCache<T>& pc,
-    const internal::VelocityKinematicsCache<T>& vc) const {
+    const internal::PositionKinematicsCache<T>& /* pc */,
+    const internal::VelocityKinematicsCache<T>& /* vc */) const {
+#if 0
   // The rate at which the length of the spring changes.
   const T length_dot = CalcLengthTimeDerivative(pc, vc);
   // Energy is dissipated at rate Pnc = -d⋅(dℓ/dt)²:
   return -damping() * length_dot * length_dot;
+#endif
+  return 0;
 }
 
+#if 0
 template <typename T>
 template <typename ToScalar>
 std::unique_ptr<ForceElement<ToScalar>>

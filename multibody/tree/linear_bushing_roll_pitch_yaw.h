@@ -114,6 +114,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   double stiffness() const { return stiffness_; }
 
   double damping() const { return damping_; }
+#endif
 
   T CalcPotentialEnergy(
       const systems::Context<T>& context,
@@ -145,6 +146,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   std::unique_ptr<ForceElement<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const override;
 
+#if 0
  private:
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
