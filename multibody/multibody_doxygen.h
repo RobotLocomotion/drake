@@ -281,17 +281,19 @@ case, the assumed expressed-in frame is frame F's basis. Alternately, to use a
 different expressed-in frame, say W, typeset with the bracket notation:
 @f$[^Fv^P]_W@f$.
 
+Kane/monogram notation was developed decades ago for kinematics and dynamics.
+It explicitly communicates the quantity being measured and how it is expressed.
 The typeset symbol @f$^Fv^P@f$ is translated to monogram notation as `v_FP`.
 The quantity type always comes first, then an underscore, then left and right
-superscripts.  The symbol `v_FP` implies the vector is expressed in frame F.
-Alternately, to express in frame W, we typeset as @f$[^Fv^P]_W@f$ and use the
-monogram notation `v_FP_W` (adding a final underscore and expressed-in frame W).
+superscripts.  By default, the symbol `v_FP` implies the vector is expressed in
+frame F. Alternately, to express in frame W, use the typeset @f$[^Fv^P]_W@f$ and
+monogram notation `v_FP_W` (add a final underscore and expressed-in frame W).
 We adhere to this pattern for all quantities and it is quite useful once you get
 familiar with it. As a second example, consider the position vector of point Bcm
 (body B's center of mass) from point Bo (the origin of frame B), expressed in B.
-In full typeset, this is @f$[^{B_o}p^{B_{cm}}]_B @f$ whereas in implicit typeset
-this can be abbreviated @f$^Bp^{B_{cm}}@f$ (where the left-superscript B denotes
-Bo and the expressed-in frame is implied to be B). The corresponding
+In explicit typeset, this is @f$[^{B_o}p^{B_{cm}}]_B @f$ whereas in implicit
+typeset this is abbreviated @f$^Bp^{B_{cm}}@f$ (where the left-superscript B
+denotes Bo and the expressed-in frame is implied to be B). The corresponding
 monogram equivalents are `p_BoBcm_B` and `p_BBcm`, respectively.
 
 Here are some more useful multibody quantities.
@@ -301,7 +303,7 @@ source file. However, each row must be specified on a single line of text. You
 can violate the 80-character style guide limit if you have to, but be
 reasonable! Alternately, use a footnote to avoid running over. -->
 
-Quantity             |Symbol|     Typeset              |   Code     | Meaning †
+Quantity             |Symbol|     Typeset              | Monogram   | Meaning †
 ---------------------|:----:|:------------------------:|:----------:|----------------------------
 Rotation matrix      |  R   |@f$^BR^C@f$               |`R_BC`      |Frame C's orientation in frame B
 Position vector      |  p   |@f$^Pp^Q@f$               |`p_PQ`      |Position from point P to point Q
@@ -358,14 +360,16 @@ B and when there are no motion constraints (no relationships between q̇₁ ... 
 `(Jq_p_BoQ_B = Jqdot_v_BQ_B)`.
 
 For multiple quantities, standard notation is extended by modifying the monogram
-notation with "i" or "list" in close proximity to the symbol it modifies.
-Examples are shown below.
-Quantity              | Extension of standard notation       | Meaning (E is the expressed-in-frame)
-----------------------|:------------------------------------:|---------------------------------------------
-Position vector list  | p_PQi_E &nbsp; or &nbsp; p_PQlist_E  | Positions from point P to a list of points (e.g., Q1, Q2, ...)
-Velocity list         | v_BQi_E &nbsp; or &nbsp; v_BQlist_E  | Points Qi's (Q1, Q2, ...) translational velocities in frame B.
-Angular velocity list | w_BCi_E &nbsp; or &nbsp; w_BClist_E  | Frames Ci's (C1, C2, ...) angular velocities in frame B.
-Generic vector list   | vi_E    &nbsp; or &nbsp; vlist_E     | List of generic vectors (v1, v2, ...) expressed in frame E.
+notation in a context-sensible way, e.g., with a single word such as "list" or
+"set" or a single letter such as "i" in close proximity to the symbol it
+modifies.  Examples are shown below.
+Quantity              | Extended monogram notation  || Meaning (E is the expressed-in-frame)
+:---------------------|:---------------------------:||---------------------------------------------
+Position vector list  | p_PQlist_E   | p_PQi_E       | Positions from point P to a list of points (e.g., Q1, Q2, ...)
+Velocity list         | v_BQlist_E   | v_BQi_E       | Points Qi's (Q1, Q2, ...) translational velocities in frame B.
+Angular velocity list | w_BClist_E   | w_BCi_E       | Frames Ci's (C1, C2, ...) angular velocities in frame B.
+Generic vector list   | vlist_E      | vi_E          | List of generic vectors (v1, v2, ...) expressed in frame E.
+Similarly for other quantities such as rotation matrices, rigid transform, acceleration, etc. ||||
 
 Next topic: @ref Dt_multibody_quantities
 */
