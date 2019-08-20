@@ -222,15 +222,15 @@ GTEST_TEST(RigidTransform, ConstructorFromMatrix4) {
 
   // Ensure the 4x4 constructor fails if the last row differs from [0, 0, 0, 1].
   if (kDrakeAssertIsArmed) {
-    EXPECT_NO_THROW(RigidTransformd::FromMatrix4(pose));
+    EXPECT_NO_THROW(RigidTransformd Xm(pose));
     pose(3, 0) = kEpsilon;
-    EXPECT_THROW(RigidTransformd::FromMatrix4(pose), std::logic_error);
+    EXPECT_THROW(RigidTransformd Xm(pose), std::logic_error);
     pose(3, 0) = 0;  pose(3, 1) = kEpsilon;
-    EXPECT_THROW(RigidTransformd::FromMatrix4(pose), std::logic_error);
+    EXPECT_THROW(RigidTransformd Xm(pose), std::logic_error);
     pose(3, 1) = 0;  pose(3, 2) = kEpsilon;
-    EXPECT_THROW(RigidTransformd::FromMatrix4(pose), std::logic_error);
+    EXPECT_THROW(RigidTransformd Xm(pose), std::logic_error);
     pose(3, 2) = 0;  pose(3, 3) = 1 + 2 * kEpsilon;
-    EXPECT_THROW(RigidTransformd::FromMatrix4(pose), std::logic_error);
+    EXPECT_THROW(RigidTransformd Xm(pose), std::logic_error);
   }
 }
 
@@ -259,15 +259,15 @@ GTEST_TEST(RigidTransform, ConstructorFromEigenExpression) {
 
   // Ensure the 4x4 constructor fails if the last row differs from [0, 0, 0, 1].
   if (kDrakeAssertIsArmed) {
-    EXPECT_NO_THROW(RigidTransformd::FromMatrix4(pose4 * pose4));
+    EXPECT_NO_THROW(RigidTransformd Xm(pose4 * pose4));
     pose4(3, 0) = kEpsilon;
-    EXPECT_THROW(RigidTransformd::FromMatrix4(pose4 * pose4), std::logic_error);
+    EXPECT_THROW(RigidTransformd Xm(pose4 * pose4), std::logic_error);
     pose4(3, 0) = 0;  pose4(3, 1) = kEpsilon;
-    EXPECT_THROW(RigidTransformd::FromMatrix4(pose4 * pose4), std::logic_error);
+    EXPECT_THROW(RigidTransformd Xm(pose4 * pose4), std::logic_error);
     pose4(3, 1) = 0;  pose4(3, 2) = kEpsilon;
-    EXPECT_THROW(RigidTransformd::FromMatrix4(pose4 * pose4), std::logic_error);
+    EXPECT_THROW(RigidTransformd Xm(pose4 * pose4), std::logic_error);
     pose4(3, 2) = 0;  pose4(3, 3) = 1 + 2 * kEpsilon;
-    EXPECT_THROW(RigidTransformd::FromMatrix4(pose4 * pose4), std::logic_error);
+    EXPECT_THROW(RigidTransformd Xm(pose4 * pose4), std::logic_error);
   }
 
   // Ensure calling the constructor with a 3x3 matrix Eigen expression fails.
@@ -284,6 +284,8 @@ GTEST_TEST(RigidTransform, FromMatrix4) {
   Matrix4<double> pose;
   pose << R.matrix(), position,
           0, 0, 0, 1;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   const RigidTransformd X = RigidTransformd::FromMatrix4(pose);
   EXPECT_TRUE(CompareMatrices(X.GetAsMatrix4(), pose));
 
@@ -291,6 +293,7 @@ GTEST_TEST(RigidTransform, FromMatrix4) {
     pose(3, 3) += 1E-5;  // Corrupt the final "1" element in the matrix.
     EXPECT_THROW((RigidTransformd::FromMatrix4(pose)), std::logic_error);
   }
+#pragma GCC diagnostic pop
 }
 
 // Tests getting a 4x4 and 3x4 matrix from a RigidTransform.
