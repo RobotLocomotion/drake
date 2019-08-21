@@ -1347,7 +1347,9 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
         inspector.GetProximityProperties(geometryM_id);
     const geometry::ProximityProperties* propertiesN =
         inspector.GetProximityProperties(geometryN_id);
-    // If we are here then these geometries must have proximity properties.
+    // If we are here then these geometries must have proximity properties since
+    // HydroelasticEngine only works with geometries assigned a
+    // geometry::ProximityProperties.
     DRAKE_DEMAND(propertiesM != nullptr);
     DRAKE_DEMAND(propertiesN != nullptr);
 

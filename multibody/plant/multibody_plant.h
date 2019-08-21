@@ -2857,7 +2857,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @name Hydroelastic model material properties
   ///
   /// To understand how material properties enter into the modeling of contact
-  /// traction in the hydroelastic model, the user is referredd to [R. Elandt
+  /// traction in the hydroelastic model, the user is referred to [R. Elandt
   /// 2019] for details.
   /// For brevity, here we limit ourselves to state the relationship between the
   /// material properties and the computation of the normal traction or
@@ -2869,15 +2869,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   d = E/Eᵃ⋅dᵃ + E/Eᵇ⋅dᵇ = Eᵇ/(Eᵃ+Eᵇ)⋅dᵃ + Eᵃ/(Eᵃ+Eᵇ)⋅dᵇ
   /// </pre>
   /// The effective modulus of elasticity is computed in accordance with the
-  /// Hertz theory of contact. Dissipation is weighted in accordance to the
+  /// Hertz theory of contact. Dissipation is weighted in accordance with the
   /// fact that the softer material will deform more and faster and thus the
   /// softer material dissipation is given more importance.
   /// The elastic modulus and dissipation can be specified with
-  /// set_elastic_modulus() and set_hydroelastics_dissipation() respectively.
-  /// Elastic modulus always has units of pressure, i.e. `Pa (N/m²)`, while the
-  /// dissipation is given in units of inverse of velocity, i.e. `s/m`.
-  /// With the effective properties of the pair defined as above, the
-  /// hydroelastic model pressure field is computed according to: <pre>
+  /// set_elastic_modulus() and set_hunt_crossley_dissipation() respectively.
+  /// Elastic modulus always has units of pressure, i.e. `Pa (N/m²)`. We use a
+  /// dissipation model inspired on the model in [Hunt and Crossley, 1975],
+  /// parametrized by a dissipation constant with units of inverse of velocity,
+  /// i.e. `s/m`. With the effective properties of the pair defined as above,
+  /// the hydroelastic model pressure field is computed according to: <pre>
   ///   p(x) = E⋅ε(x)⋅(1 - d⋅vₙ(x))₊
   /// </pre>
   /// where we defined the effective strain: <pre>
@@ -2894,22 +2895,33 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// between points `Ax` and `Bx` at point `x` instantaneously moving with body
   /// frames A and B respectively, i.e. `vₙ(x) = ᴬˣvᴮˣ⋅n̂(x)`, where the normal
   /// `n̂(x)` points from body A into body B.
+  ///
+  /// R. Elandt, E. Drumwright, M. Sherman, and A. Ruina. A pressure field model
+  ///   for fast, robust approximation of net contact force and moment between
+  ///   nominally rigid objects. Proc. IEEE/RSJ Intl. Conf. on Intelligent
+  ///   Robots and Systems (IROS), 2019.
+  /// Hunt, KH and Crossley, FRE, 1975. Coefficient of restitution interpreted
+  ///   as damping in vibroimpact. Journal of Applied Mechanics, vol. 42, pp.
+  ///   440–445.
   /// @{
 
   /// Specifies the `elastic_modulus` for a geometry identified by its `id`.
   /// `elastic_modulus` must be specified with units of Pa (N/m²). The elastic
-  /// modulus is often times estimated based on the Young's modulus of the
-  /// material though in the hydroelastic model it represents an effective
-  /// elastic property. For instance, [R. Elandt 2019] chooses to use the P-wave
-  /// elastic modulus `G = (1-ν)/(1+ν)/(1-2ν)E`, with ν the Poisson ratio,
-  /// consistent with the theory of layered solids in which plane sections
-  /// remain plane after compression. Another possibly is to specify the
-  /// effective elastic modulus given by the Hertz theory of contact,
-  /// `E* = E/(1-ν²)`. In all of this cases a good estimation of
-  /// `elastic_modulus` starts with the Young's modulus of the material.
-  /// See @ref mbp_hydroelastic_materials_properties "Hydroelastic model
-  /// material properties" for further details.
+  /// modulus is often estimated based on the Young's modulus of the material
+  /// though in the hydroelastic model it represents an effective elastic
+  /// property. For instance, [R. Elandt 2019] chooses to use the P-wave elastic
+  /// modulus `G = (1-ν)/(1+ν)/(1-2ν)E`, with ν the Poisson ratio, consistent
+  /// with the theory of layered solids in which plane sections remain plane
+  /// after compression. Another possibly is to specify the effective elastic
+  /// modulus given by the Hertz theory of contact, `E* = E/(1-ν²)`. In all of
+  /// these cases a sound estimation of `elastic_modulus` starts with the
+  /// Young's modulus of the material. See @ref
+  /// mbp_hydroelastic_materials_properties "Hydroelastic model material
+  /// properties" for further details.
+  /// By default geometries are assumed to be rigid, i.e. with an infinite
+  /// `elastic_modulus`.
   ///
+  /// @throws std::exception if `elastic_modulus` is negative or zero.
   /// @throws std::exception if `id` does not correspond to a collision
   /// geometry previously registered with this model.
   /// @throws std::exception if called post-finalize.
@@ -2927,11 +2939,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                     geometry::RoleAssign::kReplace);
   }
 
-  /// Specifies the material property related with volumetric dissipation in the
+  /// Specifies the Hunt & Crossley dissipation coefficient for the
   /// hydroelastic model. It has units of `s/m`, inverse of velocity.
   /// See @ref mbp_hydroelastic_materials_properties "Hydroelastic model
   /// material properties" for further details.
-  void set_hydroelastics_dissipation(geometry::GeometryId id,
+  /// By default dissipation is zero.
+  ///
+  /// @throws std::exception if `dissipation` is negative (it can be zero).
+  /// @throws std::exception if `id` does not correspond to a collision
+  /// geometry previously registered with this model.
+  /// @throws std::exception if called post-finalize.
+  void set_hunt_crossley_dissipation(geometry::GeometryId id,
                                      double dissipation) {
     // It must not be finalized so that member_scene_graph() is valid.
     DRAKE_MBP_THROW_IF_FINALIZED();

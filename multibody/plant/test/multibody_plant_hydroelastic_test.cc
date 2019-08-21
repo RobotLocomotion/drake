@@ -39,7 +39,7 @@ class HydroelasticModelTests : public ::testing::Test {
     DRAKE_DEMAND(geometries.size() == 1u);
     const geometry::GeometryId body_geometry_id = geometries[0];
     plant_->set_elastic_modulus(body_geometry_id, kElasticModulus_);
-    plant_->set_hydroelastics_dissipation(body_geometry_id, kDissipation_);
+    plant_->set_hunt_crossley_dissipation(body_geometry_id, kDissipation_);
     plant_->Finalize();
 
     diagram_ = builder.Build();
@@ -95,24 +95,24 @@ class HydroelasticModelTests : public ::testing::Test {
     plant_->SetFreeBodyPose(plant_context_, *body_, X_WB);
   }
 
-  // This method computes the repulsion force between a soft sophere and a
-  // rigid half-space as predicted by the hydroelastic model. The integral is
-  // performed analytically. For this case, as documented in
-  // multibody::hydroelastics::internal::MakeSphereHydroelasticField(), the
+  // This method computes the repulsion force between a soft sphere and a rigid
+  // half-space as predicted by the hydroelastic model, when dissipation is
+  // zero. The integral is performed analytically. For this case, as documented
+  // in multibody::hydroelastics::internal::MakeSphereHydroelasticField(), the
   // scalar strain field is specified to be ε(r) = 0.5 [1 - (r / R)²], where `r`
-  // is the radial spherical coordinate and `R` is the radius of the sphere.
-  // For a given penetration distance d, the hydroelastic model predicts a
-  // contact patch of radius `a` which is the intersection of the sphere with
-  // the half space. Using trigonometry the contact patch radius is given by
-  // a² = d (2R - d). The normal force is then computed by integrating the
-  // pressure p(r) = E ε(r) over the circular patch. Given the axial symmetry
-  // about the center of the patch, we can write this integral as:
-  //   F = 2π∫dρ⋅ρ ⋅ p(r)
+  // is the radial spherical coordinate and `R` is the radius of the sphere. For
+  // a given penetration distance d, the hydroelastic model predicts a contact
+  // patch of radius `a` which is the intersection of the sphere with the half
+  // space. Using trigonometry the contact patch radius is given by a² = d (2R -
+  // d). The normal force is then computed by integrating the pressure p(r) = E
+  // ε(r) over the circular patch. Given the axial symmetry about the center of
+  // the patch, we can write this integral as:
+  //   P = 2π∫dρ⋅ρ⋅p(r(ρ))
   // with `ρ` the radial (2D) coordinate in the patch and `r` as before the
   // spherical coordinate. Since `ρ` and `r` are related by ρ² + (R - d)² = r²
   // we can perform the integral in either variable `ρ` or `r`.
   // The result is:
-  //   F = π/2⋅E⋅a⁴/R²
+  //   P = π/4⋅E⋅a⁴/R²
   // with a² = d (2R - d) the contact patch radius.
   double CalcAnalyticalHydroelasticsForce(double d) {
     DRAKE_DEMAND(0.0 <= d && d < kSpaceDimension);
