@@ -616,9 +616,9 @@ void SampleVolumeFieldOnSurface(
      The contact surface between M and N. Geometries S and R map to M and N with
      a consistent mapping (as documented in ContactSurface) but without any
      guarantee as to what that mapping is. Positions of vertex coordinates are
-     expressed in M's frame. The pressure distribution comes from the soft
-     geometry S. The normal vector field, expressed in M's frame, comes from the
-     rigid geometry R, expressed in frame M.
+     expressed in the world frame. The pressure distribution comes from the soft
+     geometry S. The normal vector field, expressed in the world frame frame,
+     comes from the rigid geometry R.
 
                      ooo   soft S
                   o       o
