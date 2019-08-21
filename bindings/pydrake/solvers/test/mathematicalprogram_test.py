@@ -585,6 +585,11 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertDictEqual(
             options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
 
+        prog.SetSolverOptions(options_object)
+        prog_options = prog.GetSolverOptions(solver_id)
+        self.assertDictEqual(
+            prog_options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
+
     def test_infeasible_constraints(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(1)

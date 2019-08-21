@@ -121,10 +121,10 @@ class TestMath(unittest.TestCase):
                     X_actual.GetAsMatrix4(), X_expected_matrix)
 
         # - Constructors.
-        X_I = np.eye(4)
-        check_equality(RigidTransform(), X_I)
-        check_equality(RigidTransform(other=RigidTransform()), X_I)
-        check_equality(copy.copy(RigidTransform()), X_I)
+        X_I_np = np.eye(4)
+        check_equality(RigidTransform(), X_I_np)
+        check_equality(RigidTransform(other=RigidTransform()), X_I_np)
+        check_equality(copy.copy(RigidTransform()), X_I_np)
         R_I = RotationMatrix()
         p_I = np.zeros(3)
         rpy_I = RollPitchYaw(0, 0, 0)
@@ -132,21 +132,21 @@ class TestMath(unittest.TestCase):
         angle = np.pi * 0
         axis = [0, 0, 1]
         angle_axis = AngleAxis(angle=angle, axis=axis)
-        check_equality(RigidTransform(R=R_I, p=p_I), X_I)
-        check_equality(RigidTransform(rpy=rpy_I, p=p_I), X_I)
-        check_equality(RigidTransform(quaternion=quaternion_I, p=p_I), X_I)
-        check_equality(RigidTransform(theta_lambda=angle_axis, p=p_I), X_I)
-        check_equality(RigidTransform(R=R_I), X_I)
-        check_equality(RigidTransform(p=p_I), X_I)
-        check_equality(RigidTransform(matrix=X_I), X_I)
-        check_equality(RigidTransform.FromMatrix4(matrix=X_I), X_I)
+        check_equality(RigidTransform(R=R_I, p=p_I), X_I_np)
+        check_equality(RigidTransform(rpy=rpy_I, p=p_I), X_I_np)
+        check_equality(RigidTransform(quaternion=quaternion_I, p=p_I), X_I_np)
+        check_equality(RigidTransform(theta_lambda=angle_axis, p=p_I), X_I_np)
+        check_equality(RigidTransform(R=R_I), X_I_np)
+        check_equality(RigidTransform(p=p_I), X_I_np)
+        check_equality(RigidTransform(matrix=X_I_np), X_I_np)
+        check_equality(RigidTransform.FromMatrix4(matrix=X_I_np), X_I_np)
         # - Cast.
         self.check_cast(mut.RigidTransform_, T)
         # - Accessors, mutators, and general methods.
         X = RigidTransform()
         X.set(R=R_I, p=p_I)
         X.SetFromIsometry3(pose=Isometry3.Identity())
-        check_equality(RigidTransform.Identity(), X_I)
+        check_equality(RigidTransform.Identity(), X_I_np)
         self.assertIsInstance(X.rotation(), RotationMatrix)
         X.set_rotation(R=R_I)
         X.set_rotation(rpy=rpy_I)
@@ -154,17 +154,31 @@ class TestMath(unittest.TestCase):
         X.set_rotation(theta_lambda=angle_axis)
         self.assertIsInstance(X.translation(), np.ndarray)
         X.set_translation(p=np.zeros(3))
-        numpy_compare.assert_float_equal(X.GetAsMatrix4(), X_I)
-        numpy_compare.assert_float_equal(X.GetAsMatrix34(), X_I[:3])
+        numpy_compare.assert_float_equal(X.GetAsMatrix4(), X_I_np)
+        numpy_compare.assert_float_equal(X.GetAsMatrix34(), X_I_np[:3])
         self.assertIsInstance(X.GetAsIsometry3(), Isometry3)
-        check_equality(X.inverse(), X_I)
+        check_equality(X.inverse(), X_I_np)
         self.assertIsInstance(
             X.multiply(other=RigidTransform()), RigidTransform)
-        self.assertIsInstance(X.multiply(p_BoQ_B=p_I), np.ndarray)
         if six.PY3:
             self.assertIsInstance(
                 eval("X @ RigidTransform()"), RigidTransform)
             self.assertIsInstance(eval("X @ [0, 0, 0]"), np.ndarray)
+        # - Test vector multiplication.
+        R_AB = RotationMatrix([
+            [0., 1, 0],
+            [-1, 0, 0],
+            [0, 0, 1]])
+        p_AB = np.array([1., 2, 3])
+        X_AB = RigidTransform(R=R_AB, p=p_AB)
+        p_BQ = [10, 20, 30]
+        p_AQ = [21., -8, 33]
+        numpy_compare.assert_float_equal(X_AB.multiply(p_BoQ_B=p_BQ), p_AQ)
+        # N.B. Remember that this takes ndarray[3, n], NOT ndarray[n, 3]!
+        p_BQlist = np.array([p_BQ, p_BQ]).T
+        p_AQlist = np.array([p_AQ, p_AQ]).T
+        numpy_compare.assert_float_equal(
+            X_AB.multiply(p_BoQ_B=p_BQlist), p_AQlist)
 
     @numpy_compare.check_all_types
     def test_isometry_implicit(self, T):
@@ -221,18 +235,30 @@ class TestMath(unittest.TestCase):
         # - Inverse, transpose, projection
         R_I = R.inverse().multiply(R)
         numpy_compare.assert_float_equal(R_I.matrix(), np.eye(3))
+        if six.PY3:
+            numpy_compare.assert_float_equal(
+                    eval("R.inverse() @ R").matrix(), np.eye(3))
         R_T = R.transpose().multiply(R)
         numpy_compare.assert_float_equal(R_T.matrix(), np.eye(3))
         R_P = RotationMatrix.ProjectToRotationMatrix(M=2*np.eye(3))
         numpy_compare.assert_float_equal(R_P.matrix(), np.eye(3))
+        # - Multiplication.
+        R_AB = RotationMatrix([
+            [0., 1, 0],
+            [-1, 0, 0],
+            [0, 0, 1]])
+        v_B = [10, 20, 30]
+        v_A = [20., -10., 30]
+        numpy_compare.assert_float_equal(R_AB.multiply(v_B=v_B), v_A)
+        # N.B. Remember that this takes ndarray[3, n], NOT ndarray[n, 3]!
+        vlist_B = np.array([v_B, v_B]).T
+        vlist_A = np.array([v_A, v_A]).T
+        numpy_compare.assert_float_equal(R_AB.multiply(v_B=vlist_B), vlist_A)
         # Matrix checks
         numpy_compare.assert_equal(R.IsValid(), True)
         R = RotationMatrix()
         numpy_compare.assert_equal(R.IsExactlyIdentity(), True)
         numpy_compare.assert_equal(R.IsIdentityToInternalTolerance(), True)
-        if six.PY3:
-            numpy_compare.assert_float_equal(
-                    eval("R.inverse() @ R").matrix(), np.eye(3))
 
     @numpy_compare.check_all_types
     def test_roll_pitch_yaw(self, T):

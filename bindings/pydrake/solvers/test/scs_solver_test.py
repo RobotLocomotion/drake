@@ -31,6 +31,6 @@ class TestScsSolver(unittest.TestCase):
             result.get_solver_details().primal_objective, 1.0, atol=1E-7)
 
     def unavailable(self):
-        """Per the BUILD file, this test is only run when OSQP is disabled."""
+        """Per the BUILD file, this test is only run when SCS is disabled."""
         solver = ScsSolver()
         self.assertFalse(solver.available())

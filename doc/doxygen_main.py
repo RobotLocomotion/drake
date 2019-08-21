@@ -1,6 +1,6 @@
 """Command-line tool to generate Drake's Doxygen content.
 
-See drake/doc/documentation_instructions.rst for instructions and usage hints.
+See also drake/doc/documentation_instructions.rst.
 """
 
 from __future__ import print_function
@@ -148,10 +148,16 @@ def main():
         help="Output directory. Does not have to exist beforehand.")
     parser.add_argument(
         'inputs', nargs='*',
-        help="Process only these files and/or directories; "
-        "most useful using shell globbing, e.g., "
-        "bazel-bin/doc/doxygen --quick systems/framework/*leaf*.h.")
+        help="Process only these files and/or directories; e.g., "
+        "'bazel-bin/doc/doxygen --quick systems/framework' "
+        "or using shell globbing, e.g., "
+        "'bazel-bin/doc/doxygen --quick systems/framework/*leaf*.h'.")
     args = parser.parse_args()
+    for x in args.inputs:
+        if not os.path.exists(x):
+            print("Inputs must be files and/or directories, but "
+                  "'{}' does not exist".format(x))
+            sys.exit(1)
     _run_doxygen(drake_workspace, args)
 
 

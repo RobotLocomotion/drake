@@ -800,6 +800,8 @@ top-level documentation for :py:mod:`pydrake.math`.
           doc.MathematicalProgram.SetSolverOption.doc)
       .def("SetSolverOption", &SetSolverOptionBySolverType<string>,
           doc.MathematicalProgram.SetSolverOption.doc)
+      .def("SetSolverOptions", &MathematicalProgram::SetSolverOptions,
+          doc.MathematicalProgram.SetSolverOptions.doc)
       // TODO(m-chaturvedi) Add Pybind11 documentation.
       .def("GetSolverOptions",
           [](MathematicalProgram& prog, SolverId solver_id) {
