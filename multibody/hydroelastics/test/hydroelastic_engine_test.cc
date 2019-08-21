@@ -157,12 +157,14 @@ TEST_F(SphereVsPlaneTest, VerifyModelSizeAndResults) {
   const SurfaceMesh<double>& mesh_G = surface.mesh();
   EXPECT_GT(mesh_G.num_vertices(), 0);
   const double kTolerance = 5.0 * std::numeric_limits<double>::epsilon();
+
+  // TODO(edrumwri): This is the gradient of the strain field. It should be
+  // the gradient of the pressure field. Fix.
   // The expected value of ∇hₘₙ, which we expect to point from N towards M.
   const Vector3<double> expected_grad_h_MN_W =
       (surface.id_M() == sphere_geometry_id_
            ? Vector3<double>(0.0, 0.0, 1.0)
-           : Vector3<double>(0.0, 0.0, -1.0)) *
-      elastic_modulus();
+           : Vector3<double>(0.0, 0.0, -1.0));
 
   for (geometry::SurfaceVertexIndex v(0); v < mesh_G.num_vertices(); ++v) {
     // Position of a vertex V in the frame S of the soft sphere.

@@ -142,31 +142,23 @@ optional<ContactSurface<T>> HydroelasticEngine<T>::CalcContactSurface(
   DRAKE_DEMAND(soft_model_S.is_soft());
   DRAKE_DEMAND(!rigid_model_R.is_soft());
   const HydroelasticField<T>& soft_field_S = soft_model_S.hydroelastic_field();
-  std::vector<T> eps_S_surface;
-  std::vector<Vector3<T>> grad_level_set_surface;
+  std::vector<T> e_s_surface;
+  std::vector<Vector3<T>> grad_level_set_R_surface;
 
   const auto X_RS = X_WR.inverse() * X_WS;
-
-  // Note that the surface and the gradient field will both be expressed in
-  // Frame R initially. They will later be transformed in place to the world
-  // frame.
-  std::unique_ptr<SurfaceMesh<T>> surface = CalcZeroLevelSetInMeshDomain(
+  std::unique_ptr<SurfaceMesh<T>> surface_W = CalcZeroLevelSetInMeshDomain(
       soft_field_S.volume_mesh(), rigid_model_R.level_set(), X_RS,
-      soft_field_S.scalar_field().values(), &eps_S_surface,
-      &grad_level_set_surface);
-  if (surface->num_vertices() == 0) return nullopt;
+      soft_field_S.scalar_field().values(), &e_s_surface,
+      &grad_level_set_R_surface);
+  if (surface_W->num_vertices() == 0) return nullopt;
 
-  // Transform the surface to the world frame.
-  surface->TransformVertices(X_WR);
+  // TODO(edrumwri): This says that it is a pressure field, but notation
+  // reflects that it is a strain field. Fix.
+  // Compute pressure field.
+  for (T& e_s : e_s_surface) e_s *= soft_model_S.elastic_modulus();
 
-  // Compute pressure field. The pressure field on a rigid body will be infinite
-  // at everywhere but its surface, so the contact surface will not be the locus
-  // of equilibrium pressures. The pressure at the contact surface will be
-  // zero for the rigid surface and non-zero (specifically, Eε under the linear
-  // elasticity model) for the compliant surface.
-  std::vector<T> p0_S_surface = std::move(eps_S_surface);
-  for (T& p0 : p0_S_surface) p0 *= soft_model_S.elastic_modulus();
-
+  // TODO(edrumwri): h_RS should be the gradient of a pressure field, but it
+  // is currently the gradient of a strain field. Fix.
   // ∇hₘₙ is a vector that points from N (in this case S) into M (in this case
   // R); from the reasoning above, the rigid surface makes no contribution to
   // ∇hₘₙ. That field is defined using the gradient of the level set function
@@ -174,18 +166,18 @@ optional<ContactSurface<T>> HydroelasticEngine<T>::CalcContactSurface(
   // model we are using). Note that the gradient of the level set function
   // points into S (N), so we flip its direction. We also re-express this field
   // in the world frame in accordance with the ContactSurface specification.
-  std::vector<Vector3<T>> h_RS_R_vectors = std::move(grad_level_set_surface);
-  for (Vector3<T>& grad : h_RS_R_vectors)
-    grad = X_WR.rotation() * -grad * soft_model_S.elastic_modulus();
+  std::vector<Vector3<T>> h_RS_W_vectors = std::move(grad_level_set_R_surface);
+  for (Vector3<T>& grad : h_RS_W_vectors)
+    grad = X_WR.rotation() * -grad;
 
-  auto p0_S = std::make_unique<geometry::SurfaceMeshFieldLinear<T, T>>(
-      "p0_MN", std::move(p0_S_surface), surface.get());
-  auto h_RS_R =
+  auto e_s = std::make_unique<geometry::SurfaceMeshFieldLinear<T, T>>(
+      "e_MN", std::move(e_s_surface), surface_W.get());
+  auto h_RS_W =
       std::make_unique<geometry::SurfaceMeshFieldLinear<Vector3<T>, T>>(
-          "grad_h_MN_W", std::move(h_RS_R_vectors), surface.get());
+          "grad_h_MN_W", std::move(h_RS_W_vectors), surface_W.get());
 
-  return ContactSurface<T>(id_R, id_S, std::move(surface), std::move(p0_S),
-                           std::move(h_RS_R));
+  return ContactSurface<T>(id_R, id_S, std::move(surface_W), std::move(e_s),
+                           std::move(h_RS_W));
 }
 
 template <typename T>

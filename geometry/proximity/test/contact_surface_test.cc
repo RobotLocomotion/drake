@@ -18,16 +18,16 @@ namespace drake {
 namespace geometry {
 
 // TODO(DamrongGuoy): Remove this helper class when ContactSurface allows
-//  direct access to p0_MN_ and grad_h_MN_W_.
+//  direct access to e_MN_ and grad_h_MN_W_.
 template <typename T>
 class ContactSurfaceTester {
  public:
   explicit ContactSurfaceTester(const geometry::ContactSurface<T>& surface)
       : surface_(surface) {}
 
-  const SurfaceMeshFieldLinear<T, T>& p0_MN() const {
-    DRAKE_DEMAND(surface_.p0_MN_ != nullptr);
-    return *(surface_.p0_MN_);
+  const SurfaceMeshFieldLinear<T, T>& e_MN() const {
+    DRAKE_DEMAND(surface_.e_MN_ != nullptr);
+    return *(surface_.e_MN_);
   }
 
   const SurfaceMeshFieldLinear<Vector3<T>, T>& grad_h_MN_W() const {
@@ -110,31 +110,24 @@ ContactSurface<T> TestContactSurface() {
   const T e0{0.};
   const T e1{1.};
   const T e2{2.};
-  const T e4{3.};
-
-  // Transform the strains to pressures using an arbitrary Young's modulus.
-  const double E = 13.0;  // 13 Pa (tiny!).
-  std::vector<T> p0_values = {e0 * E, e1 * E, e2 * E, e4 * E};
-  auto p0_field = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
-      "p0", std::move(p0_values), surface_mesh.get());
+  const T e3{3.};
+  std::vector<T> e_values = {e0, e1, e2, e3};
+  auto e_field = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
+      "e", std::move(e_values), surface_mesh.get());
 
   // Slightly different values of grad_h_MN_W at each vertex.
   // We give names to the values at vertices for testing later.
-  const Vector3<T> grad_e0(-0.1, -0.1, 1.);
-  const Vector3<T> grad_e1(0.1, -0.1, 1.);
-  const Vector3<T> grad_e2(0.1, 0.1, 1.);
-  const Vector3<T> grad_e3(-0.1, 0.1, 1.);
-  std::vector<Vector3<T>> grad_p0_MN_W_values = {
-      grad_e0 * E, grad_e1 * E, grad_e2 * E, grad_e3 * E};
-
-  // Note that the pressure due to the rigid object is zero, since it doesn't
-  // deform. So grad_h_MN_W is just equal to the gradient of the soft object.
+  const Vector3<T> g0(-0.1, -0.1, 1.);
+  const Vector3<T> g1(0.1, -0.1, 1.);
+  const Vector3<T> g2(0.1, 0.1, 1.);
+  const Vector3<T> g3(-0.1, 0.1, 1.);
+  std::vector<Vector3<T>> grad_h_MN_W_values = {g0, g1, g2, g3};
   auto grad_h_MN_W_field =
       std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
-          "grad_h_MN_W", std::move(grad_p0_MN_W_values), surface_mesh.get());
+          "grad_h_MN_W", std::move(grad_h_MN_W_values), surface_mesh.get());
 
   ContactSurface<T> contact_surface(id_M, id_N, std::move(surface_mesh),
-                                    std::move(p0_field),
+                                    std::move(e_field),
                                     std::move(grad_h_MN_W_field));
 
   // Start testing the ContactSurface<> data structure.
@@ -145,14 +138,12 @@ ContactSurface<T> TestContactSurface() {
   EXPECT_EQ(&surface_mesh_ref, &contact_surface.mesh());
   EXPECT_EQ(2, contact_surface.mesh().num_faces());
   EXPECT_EQ(4, contact_surface.mesh().num_vertices());
-  // Tests evaluation of the pressure field on face f0 {0, 1, 2}.
+  // Tests evaluation of `e` on face f0 {0, 1, 2}.
   {
     const SurfaceFaceIndex f0(0);
     const typename SurfaceMesh<T>::Barycentric b{0.2, 0.3, 0.5};
-    const T expect_p0 = E * (b(0) * e0 + b(1) * e1 + b(2) * e2);
-    using std::abs;
-    EXPECT_LT(abs(expect_p0 - contact_surface.EvaluateP0_MN(f0, b)),
-        20 * std::numeric_limits<double>::epsilon());
+    const T expect_e = b(0) * e0 + b(1) * e1 + b(2) * e2;
+    EXPECT_EQ(expect_e, contact_surface.EvaluateE_MN(f0, b));
   }
   // Tests evaluation of `grad_h_MN_W` on face f1 {2, 3, 0}.
   {
@@ -162,14 +153,12 @@ ContactSurface<T> TestContactSurface() {
     //---+--------+----------+-----------------
     // v | vertex | grad_h_MN_W | barycentric
     //---+--------+-------------+--------------
-    // 0 |   v2   |   grad_e2   |     0.6
-    // 1 |   v3   |   grad_e3   |     0.3
-    // 2 |   v0   |   grad_e0   |     0.1
+    // 0 |   v2   |      g2     |     0.6
+    // 1 |   v3   |      g3     |     0.3
+    // 2 |   v0   |      g0     |     0.1
     //---+--------+-------------+--------------
-    const Vector3<T> expect_grad =
-        E * (T(0.6) * grad_e2 + T(0.3) * grad_e3 + T(0.1) * grad_e0);
-    EXPECT_LT((expect_grad - contact_surface.EvaluateGrad_h_MN_W(f1, b)).norm(),
-              20 * std::numeric_limits<double>::epsilon());
+    const Vector3<T> expect_g = T(0.6) * g2 + T(0.3) * g3 + T(0.1) * g0;
+    EXPECT_EQ(expect_g, contact_surface.EvaluateGrad_h_MN_W(f1, b));
   }
   // Tests area() of triangular faces.
   {
@@ -200,7 +189,7 @@ GTEST_TEST(ContactSurfaceTest, TestCopy) {
   // We check evaluation of field values only at one position.
   const SurfaceFaceIndex f(0);
   const typename SurfaceMesh<double>::Barycentric b{0.2, 0.3, 0.5};
-  EXPECT_EQ(original.EvaluateP0_MN(f, b), copy.EvaluateP0_MN(f, b));
+  EXPECT_EQ(original.EvaluateE_MN(f, b), copy.EvaluateE_MN(f, b));
   EXPECT_EQ(original.EvaluateGrad_h_MN_W(f, b), copy.EvaluateGrad_h_MN_W(f, b));
 }
 
@@ -214,7 +203,7 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
   // TODO(DamrongGuoy): Remove `original_tester` when ContactSurface allows
   //  direct access to e_MN and grad_h_MN_W.
   const ContactSurfaceTester<double> original_tester(original);
-  std::vector<double> p0_MN_values = original_tester.p0_MN().values();
+  std::vector<double> e_MN_values = original_tester.e_MN().values();
   std::vector<Vector3<double>> grad_h_MN_W_values =
       original_tester.grad_h_MN_W().values();
 
@@ -226,7 +215,7 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
   ContactSurface<double> dut(
       id_M, id_N, std::move(mesh),
       std::make_unique<SurfaceMeshFieldLinear<double, double>>(
-          "p0_MN", std::move(p0_MN_values), mesh_pointer),
+          "e_MN", std::move(e_MN_values), mesh_pointer),
       std::make_unique<SurfaceMeshFieldLinear<Vector3<double>, double>>(
           "grad_h_MN_W", std::move(grad_h_MN_W_values), mesh_pointer));
 
@@ -251,11 +240,11 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
 
   // Test the mesh fields by evaluating each field, once per face for an
   // arbitrary point Q on the interior of the triangle. We expect:
-  //    p0_MN function hasn't changed.
+  //    e_MN function hasn't changed.
   //    grad_H function has been mirrored.
   const SurfaceMesh<double>::Barycentric b_Q{0.25, 0.25, 0.5};
   for (SurfaceFaceIndex f(0); f < original.mesh().num_faces(); ++f) {
-    EXPECT_EQ(dut.EvaluateP0_MN(f, b_Q), original.EvaluateP0_MN(f, b_Q));
+    EXPECT_EQ(dut.EvaluateE_MN(f, b_Q), original.EvaluateE_MN(f, b_Q));
     const Vector3d expected_norm = -original.EvaluateGrad_h_MN_W(f, b_Q);
     EXPECT_TRUE(CompareMatrices(dut.EvaluateGrad_h_MN_W(f, b_Q), expected_norm,
                                 std::numeric_limits<double>::epsilon()));

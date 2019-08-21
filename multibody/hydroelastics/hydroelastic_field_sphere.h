@@ -65,10 +65,10 @@ std::unique_ptr<HydroelasticField<T>> MakeSphereHydroelasticField(
     grad_e_m_values[v] = -p_MV / sphere_radius_squared;
   }
   auto e_m = std::make_unique<geometry::VolumeMeshFieldLinear<T, T>>(
-      "Sphere Strain Field", std::move(e_m_values), mesh.get());
+      "Sphere Pressure Field", std::move(e_m_values), mesh.get());
   auto grad_e_m =
       std::make_unique<geometry::VolumeMeshFieldLinear<Vector3<T>, T>>(
-          "Sphere Strain Gradient Field", std::move(grad_e_m_values),
+          "Sphere Pressure Gradient Field", std::move(grad_e_m_values),
           mesh.get());
   return std::make_unique<HydroelasticField<T>>(
       std::move(mesh), std::move(e_m), std::move(grad_e_m));
