@@ -23,8 +23,10 @@ drake_cc_package_library(
         ":mesh_field",
         ":mesh_intersection",
         ":proximity_utilities",
+        ":sorted_triplet",
         ":surface_mesh",
         ":volume_mesh",
+        ":volume_to_surface_mesh",
     ],
 )
 
@@ -121,7 +123,9 @@ drake_cc_library(
     name = "make_box_mesh",
     hdrs = ["make_box_mesh.h"],
     deps = [
+        ":surface_mesh",
         ":volume_mesh",
+        ":volume_to_surface_mesh",
         "//geometry:shape_specification",
     ],
 )
@@ -146,6 +150,16 @@ drake_cc_library(
         "//geometry/proximity:volume_mesh",
         "//geometry/query_results:contact_surface",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "sorted_triplet",
+    srcs = ["sorted_triplet.cc"],
+    hdrs = ["sorted_triplet.h"],
+    deps = [
+        "//common:essential",
+        "//common:is_less_than_comparable",
     ],
 )
 
@@ -177,6 +191,19 @@ drake_cc_library(
         "//common",
         "//geometry:geometry_ids",
         "//geometry/proximity:mesh_field",
+    ],
+)
+
+drake_cc_library(
+    name = "volume_to_surface_mesh",
+    hdrs = [
+        "volume_to_surface_mesh.h",
+    ],
+    deps = [
+        "//common",
+        "//geometry/proximity:sorted_triplet",
+        "//geometry/proximity:surface_mesh",
+        "//geometry/proximity:volume_mesh",
     ],
 )
 
@@ -283,6 +310,21 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "proximity_utilities_test",
     deps = [":proximity_utilities"],
+)
+
+drake_cc_googletest(
+    name = "sorted_triplet_test",
+    deps = [
+        ":sorted_triplet",
+    ],
+)
+
+drake_cc_googletest(
+    name = "volume_to_surface_mesh_test",
+    deps = [
+        ":make_box_mesh",
+        ":volume_to_surface_mesh",
+    ],
 )
 
 add_lint_tests()
