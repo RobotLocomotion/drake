@@ -359,19 +359,19 @@ B and when there are no motion constraints (no relationships between q̇₁ ... 
 @f$\;[J_{q}^{{}^{Bo}p^Q}]_B = [J_{q̇}^{{}^Bv^Q}]_B\;@f$ i.e.,
 `(Jq_p_BoQ_B = Jqdot_v_BQ_B)`.
 
-For multiple quantities, standard notation is extended by modifying the monogram
-notation in a context-sensible way, e.g., with a single word such as "list" or
-"set" or a single letter such as "i" in close proximity to the symbol it
-modifies.  Examples are shown below.
-Quantity              | Extended monogram notation  || Meaning (E is the expressed-in-frame)
-:---------------------|:---------------------------:||---------------------------------------------
-Position vector list  | p_PQlist_E   | p_PQi_E       | Positions from point P to a list of points (e.g., Q1, Q2, ...)
-Velocity list         | v_BQlist_E   | v_BQi_E       | Points Qi's (Q1, Q2, ...) translational velocities in frame B.
-Angular velocity list | w_BClist_E   | w_BCi_E       | Frames Ci's (C1, C2, ...) angular velocities in frame B.
-Generic vector list   | vlist_E      | vi_E          | List of generic vectors (v1, v2, ...) expressed in frame E.
-Similarly for other quantities such as rotation matrices, rigid transform, acceleration, etc. ||||
+Monogram notation addresses frequently used kinematics.  In a context-sensible
+way (and in collaboration with reviewers), extend notation to related concepts.
+Some examples are shown below.
+Extended notation         || Description (herein E is the vectors' expressed-in-frame)
+:------------------------:||---------------------------------------------
+p_PQset_E  | p_PQlist_E   |  Set of position vectors from a point P to each of the points in the set Q = {Q₀, Q₁, Q₂, ...}
+v_BQset_E  | v_BQlist_E   |  Set of translational velocities in frame B for the set of points Q = {Q₀, Q₁, Q₂, ...}
+w_BCset_E  | w_BClist_E   |  Set of angular velocities in frame B for the frames in the set C = {C₀, C₁, C₂, ...}
+vset_E     | vlist_E      |  Set of generic vectors v = {v₀,  v₁,  v₂} expressed in frame E
+mesh_B                    || A mesh whose underlying vertices' positions are from Bo (frame B's origin), expressed in frame B
+point_cloud_B             || A point cloud whose underlying points' positions are from Bo (frame B's origin), expressed in frame B
 
-Next topic: @ref Dt_multibody_quantities
+ Next topic: @ref Dt_multibody_quantities
 */
 
 //------------------------------------------------------------------------------
