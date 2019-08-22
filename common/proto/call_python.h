@@ -3,8 +3,12 @@
 #include <string>
 #include <vector>
 
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
+
 #include "drake/common/copyable_unique_ptr.h"
-#include "drake/common/proto/call_matlab.h"
+#include "drake/common/eigen_types.h"
+#include "drake/common/proto/matlab_rpc.pb.h"
 
 /// @file
 /// @brief Utilities for calling Python from C++
@@ -22,10 +26,6 @@ namespace common {
 
 class PythonRemoteVariable;
 
-// TODO(eric.cousineau): Generalize RPC marshaling so that we do not need to
-// overload a function named `ToMatlabArray`.
-void ToMatlabArray(const PythonRemoteVariable& var, MatlabArray* matlab_array);
-
 template <typename... Types>
 PythonRemoteVariable CallPython(const std::string& function_name,
                                 Types... args);
@@ -35,6 +35,20 @@ PythonRemoteVariable ToPythonTuple(Types... args);
 
 template <typename T>
 PythonRemoteVariable NewPythonVariable(T value);
+
+// TODO(eric.cousineau): Generalize RPC marshaling so that we do not need to
+// overload a function named `ToMatlabArray`.
+void ToMatlabArray(const PythonRemoteVariable& var, MatlabArray* matlab_array);
+
+template <typename Derived>
+void ToMatlabArray(const Eigen::MatrixBase<Derived>& mat,
+                   MatlabArray* matlab_array);
+
+void ToMatlabArray(double scalar, MatlabArray* matlab_array);
+
+void ToMatlabArray(int scalar, MatlabArray* matlab_array);
+
+void ToMatlabArray(const std::string& str, MatlabArray* matlab_array);
 
 namespace internal {
 
@@ -190,6 +204,27 @@ PythonItemAccessor PythonApi<Derived>::slice(Types... args) const {
   return {derived(), CallPython("make_slice_arg", args...)};
 }
 
+inline void AssembleCallMatlabMsg(MatlabRPC*) {
+  // Intentionally left blank.  Base case for template recursion.
+}
+
+template <typename T, typename... Types>
+void AssembleCallMatlabMsg(MatlabRPC* msg, T first, Types... args) {
+  ToMatlabArray(first, msg->add_rhs());
+  AssembleCallMatlabMsg(msg, args...);
+}
+
+void ToMatlabArrayMatrix(
+    const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>>&
+        mat,
+    MatlabArray* matlab_array, bool is_vector);
+
+void ToMatlabArrayMatrix(const Eigen::Ref<const Eigen::MatrixXd>& mat,
+                         MatlabArray* matlab_array, bool is_vector);
+
+void ToMatlabArrayMatrix(const Eigen::Ref<const Eigen::MatrixXi>& mat,
+                         MatlabArray* matlab_array, bool is_vector);
+
 void PublishCallPython(const MatlabRPC& msg);
 
 }  // namespace internal
@@ -231,6 +266,13 @@ PythonRemoteVariable ToPythonKwargs(Types... args) {
 template <typename T>
 PythonRemoteVariable NewPythonVariable(T value) {
   return CallPython("pass_through", value);
+}
+
+template <typename Derived>
+void ToMatlabArray(const Eigen::MatrixBase<Derived>& mat,
+                   MatlabArray* matlab_array) {
+  const bool is_vector = (Derived::ColsAtCompileTime == 1);
+  return internal::ToMatlabArrayMatrix(mat, matlab_array, is_vector);
 }
 
 }  // namespace common

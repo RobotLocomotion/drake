@@ -25,7 +25,6 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "proto",
     deps = [
-        ":call_matlab",
         ":call_python",
         ":matlab_rpc",
         ":protobuf",
@@ -50,18 +49,6 @@ drake_py_proto_library(
 )
 
 drake_cc_library(
-    name = "call_matlab",
-    srcs = ["call_matlab.cc"],
-    hdrs = ["call_matlab.h"],
-    visibility = ["//visibility:private"],
-    deps = [
-        ":matlab_rpc",
-        ":rpc_pipe_temp_directory",
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
     name = "protobuf",
     srcs = ["protobuf.cc"],
     hdrs = ["protobuf.h"],
@@ -75,9 +62,10 @@ drake_cc_library(
     srcs = ["call_python.cc"],
     hdrs = ["call_python.h"],
     deps = [
-        ":call_matlab",
+        ":matlab_rpc",
         ":rpc_pipe_temp_directory",
         "//common:copyable_unique_ptr",
+        "//common:essential",
     ],
 )
 
