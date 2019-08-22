@@ -245,8 +245,9 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
   const SurfaceMesh<double>::Barycentric b_Q{0.25, 0.25, 0.5};
   for (SurfaceFaceIndex f(0); f < original.mesh().num_faces(); ++f) {
     EXPECT_EQ(dut.EvaluateE_MN(f, b_Q), original.EvaluateE_MN(f, b_Q));
-    const Vector3d expected_norm = -original.EvaluateGrad_h_MN_W(f, b_Q);
-    EXPECT_TRUE(CompareMatrices(dut.EvaluateGrad_h_MN_W(f, b_Q), expected_norm,
+    const Vector3d expected_normal = -original.EvaluateGrad_h_MN_W(f, b_Q);
+    EXPECT_TRUE(CompareMatrices(dut.EvaluateGrad_h_MN_W(f, b_Q),
+                                expected_normal,
                                 std::numeric_limits<double>::epsilon()));
   }
 }

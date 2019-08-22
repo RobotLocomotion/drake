@@ -604,6 +604,8 @@ void SampleVolumeFieldOnSurface(
      is, it can only be evaluated on points which have been measured and
      expressed in frame S). For hydroelastic contact, the scalar field is a
      "pressure" field.
+ @param[in] X_WS
+     The pose of the rigid frame S in the world frame W.
  @param[in] id_R
      Id of the rigid geometry R.
  @param[in] mesh_R

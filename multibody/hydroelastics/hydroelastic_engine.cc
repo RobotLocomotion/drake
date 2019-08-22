@@ -110,12 +110,7 @@ std::vector<ContactSurface<T>> HydroelasticEngine<T>::ComputeContactSurfaces(
     const RigidTransform<T>& X_WM = query_object.X_WG(id_M);
     const RigidTransform<T>& X_WN = query_object.X_WG(id_N);
 
-    // Pose of the soft model frame S in the rigid model frame R.
-    // N.B. For a given state, SceneGraph broadphase reports are guaranteed to
-    // always be in the same order that is, id_M < id_N.
-    // Therefore, even if we swap the id's below so that id_S (id_R) always
-    // corresponds to the soft (rigid) geometry, the order still is guaranteed
-    // to be the same on successive calls.
+    // Determine the poses in the world frame of the soft and rigid models.
     const RigidTransform<T> X_WR = model_M->is_soft() ? X_WN : X_WM;
     const RigidTransform<T> X_WS = model_M->is_soft() ? X_WM : X_WN;
     const GeometryId id_S = model_M->is_soft() ? id_M : id_N;

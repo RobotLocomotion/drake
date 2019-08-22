@@ -859,6 +859,11 @@ void TestComputeContactSurfaceSoftRigid() {
   EXPECT_EQ(contact_SR->mesh().num_vertices(),
             contact_RS->mesh().num_vertices());
 
+  //   Test one and assume all share the same property.
+  const SurfaceVertexIndex v_index(0);
+  EXPECT_TRUE(CompareMatrices(contact_SR->mesh().vertex(v_index).r_MV(),
+                              contact_RS->mesh().vertex(v_index).r_MV()));
+
   // TODO(SeanCurtis-TRI): Test that the face winding has been reversed, once
   //  that is officially documented as a property of the ContactSurface.
 

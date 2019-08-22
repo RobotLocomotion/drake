@@ -92,7 +92,7 @@ std::unique_ptr<ContactSurface<double>> CreateContactSurface(
   return std::make_unique<ContactSurface<double>>(
       halfspace_id, block_id, std::move(mesh),
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-          "p0_MN", std::move(p0_MN), mesh_pointer),
+          "E_MN", std::move(p0_MN), mesh_pointer),
       std::make_unique<MeshFieldLinear<Vector3<double>, SurfaceMesh<double>>>(
           "h_MN_M", std::move(h_MN_W), mesh_pointer));
 }
@@ -593,7 +593,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     contact_surface_ = std::make_unique<ContactSurface<double>>(
       null_id, null_id, std::move(mesh),
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-          "p0_MN", std::move(p0_MN), mesh_pointer),
+          "E_MN", std::move(p0_MN), mesh_pointer),
       std::make_unique<MeshFieldLinear<Vector3<double>, SurfaceMesh<double>>>(
           "h_MN_W", std::move(h_MN_W), mesh_pointer));
 
@@ -713,10 +713,10 @@ TEST_P(HydroelasticReportingTests, LinearSlipVelocity) {
     // Get the normal from Geometry M to Geometry N, expressed in the world
     // frame to the contact surface at Point Q. By extension, this means that
     // the normal points from Body A to Body B.
-    const Vector3<double> h_W =
+    const Vector3<double> grad_h_AB_W =
         calculator_data().surface.EvaluateGrad_h_MN_W(i);
-    ASSERT_TRUE(h_W.norm() > std::numeric_limits<double>::epsilon());
-    const Vector3<double> nhat_W = h_W.normalized();
+    ASSERT_TRUE(grad_h_AB_W.norm() > std::numeric_limits<double>::epsilon());
+    const Vector3<double> nhat_W = grad_h_AB_W.normalized();
 
     // First compute the spatial velocity of Body A at Av.
     const Vector3<double> p_AoAv_W =
