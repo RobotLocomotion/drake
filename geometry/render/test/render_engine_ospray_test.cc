@@ -306,6 +306,101 @@ class RenderEngineOsprayTest : public ::testing::Test {
   unique_ptr<RenderEngineOspray> renderer_;
 };
 
+// This confirms that geometries are correctly removed from the render engine.
+// We add two new geometries (testing the rendering after each addition).
+// By removing the first of the added geometries, we can confirm that the
+// remaining geometries are re-ordered appropriately. Then by removing the,
+// second we should restore the original default image.
+//
+// The default image is based on a sphere sitting on a plane at z = 0 with the
+// camera located above the sphere's center and aimed at that center.
+// THe default sphere is drawn with `●`, the first added sphere with `x`, and
+// the second with `o`. The height of the top of each sphere and its depth in
+// the camera's depth sensors are indicated as zᵢ and dᵢ, i ∈ {0, 1, 2},
+// respectively.
+//
+//             /|\       <---- camera_z = 3
+//              v
+//
+//
+//
+//
+//            ooooo       <---- z₂ = 4r = 2, d₂ = 1
+//          oo     oo
+//         o         o
+//        o           o
+//        o           o
+//        o   xxxxx   o   <---- z₁ = 3r = 1.5, d₁ = 1.5
+//         oxx     xxo
+//         xoo     oox
+//        x   ooooo   x
+//        x   ●●●●●   x   <---- z₀ = 2r = 1, d₀ = 2
+//        x ●●     ●● x
+//         ●         ●
+//        ● xx     xx ●
+// z      ●   xxxxx   ●
+// ^      ●           ●
+// |       ●         ●
+// |        ●●     ●●
+// |__________●●●●●____________
+//
+TEST_F(RenderEngineOsprayTest, RemoveVisual) {
+  Init(X_WC_, true);
+  PopulateSphereTest(renderer_.get());
+  RgbaColor default_color = expected_color_;
+
+  // Positions a sphere centered at <0, 0, z> with the given color.
+  auto add_sphere = [this](const RgbaColor& diffuse, double z,
+                           GeometryId geometry_id) {
+    const double kRadius = 0.5;
+    Sphere sphere{kRadius};
+    Vector4d norm_diffuse{diffuse.r / 255., diffuse.g / 255., diffuse.b / 255.,
+                          diffuse.a / 255.};
+    PerceptionProperties material;
+    material.AddProperty("phong", "diffuse", norm_diffuse);
+    // This will accept all registered geometries and therefore, (bool)index
+    // should always be true.
+    renderer_->RegisterVisual(geometry_id, sphere, material,
+                              RigidTransformd::Identity());
+    RigidTransformd X_WV{Vector3d{0, 0, z}};
+    X_WV_.insert({geometry_id, X_WV});
+    renderer_->UpdatePoses(X_WV_);
+  };
+
+  // Sets the expected values prior to calling PerformCenterShapeTest().
+  auto set_expectations = [this](const RgbaColor& color) {
+    expected_color_ = color;
+  };
+
+  // Add another sphere of a different color in front of the default sphere
+  const RgbaColor color1(Color<int>{128, 128, 255}, 255);
+  const GeometryId id1 = GeometryId::get_new_id();
+  add_sphere(color1, 0.75, id1);
+  set_expectations(color1);
+  PerformCenterShapeTest(renderer_.get(), "First sphere added in remove test");
+
+  // Add a _third_ sphere in front of the second.
+  const RgbaColor color2(Color<int>{128, 255, 128}, 255);
+  const GeometryId id2 = GeometryId::get_new_id();
+  add_sphere(color2, 1.0, id2);
+  set_expectations(color2);
+  PerformCenterShapeTest(renderer_.get(), "Second sphere added in remove test");
+
+  // Remove the first sphere added; should report "true" and the render test
+  // should pass without changing expectations.
+  bool removed = renderer_->RemoveGeometry(id1);
+  EXPECT_TRUE(removed);
+  PerformCenterShapeTest(renderer_.get(), "First added sphere removed");
+
+  // Remove the second added sphere; should report true and rendering should
+  // return to its default configuration.
+  removed = renderer_->RemoveGeometry(id2);
+  EXPECT_TRUE(removed);
+  set_expectations(default_color);
+  PerformCenterShapeTest(renderer_.get(),
+                         "Default image restored by removing extra geometries");
+}
+
 // Tests an empty image -- confirms that it clears to the "empty" color -- no
 // use of "inlier" or "outlier" pixel locations.
 TEST_F(RenderEngineOsprayTest, NoBodyTest) {
@@ -540,101 +635,6 @@ TEST_F(RenderEngineOsprayTest, ImpliedTextureMeshTest) {
   // changes, the expected color would likewise have to change.
   expected_color_ = RgbaColor(ColorI{4, 241, 33}, 255);
   PerformCenterShapeTest(renderer_.get(), "Implied textured mesh test");
-}
-
-// This confirms that geometries are correctly removed from the render engine.
-// We add two new geometries (testing the rendering after each addition).
-// By removing the first of the added geometries, we can confirm that the
-// remaining geometries are re-ordered appropriately. Then by removing the,
-// second we should restore the original default image.
-//
-// The default image is based on a sphere sitting on a plane at z = 0 with the
-// camera located above the sphere's center and aimed at that center.
-// THe default sphere is drawn with `●`, the first added sphere with `x`, and
-// the second with `o`. The height of the top of each sphere and its depth in
-// the camera's depth sensors are indicated as zᵢ and dᵢ, i ∈ {0, 1, 2},
-// respectively.
-//
-//             /|\       <---- camera_z = 3
-//              v
-//
-//
-//
-//
-//            ooooo       <---- z₂ = 4r = 2, d₂ = 1
-//          oo     oo
-//         o         o
-//        o           o
-//        o           o
-//        o   xxxxx   o   <---- z₁ = 3r = 1.5, d₁ = 1.5
-//         oxx     xxo
-//         xoo     oox
-//        x   ooooo   x
-//        x   ●●●●●   x   <---- z₀ = 2r = 1, d₀ = 2
-//        x ●●     ●● x
-//         ●         ●
-//        ● xx     xx ●
-// z      ●   xxxxx   ●
-// ^      ●           ●
-// |       ●         ●
-// |        ●●     ●●
-// |__________●●●●●____________
-//
-TEST_F(RenderEngineOsprayTest, RemoveVisual) {
-  Init(X_WC_, true);
-  PopulateSphereTest(renderer_.get());
-  RgbaColor default_color = expected_color_;
-
-  // Positions a sphere centered at <0, 0, z> with the given color.
-  auto add_sphere = [this](const RgbaColor& diffuse, double z,
-                           GeometryId geometry_id) {
-    const double kRadius = 0.5;
-    Sphere sphere{kRadius};
-    Vector4d norm_diffuse{diffuse.r / 255., diffuse.g / 255., diffuse.b / 255.,
-                          diffuse.a / 255.};
-    PerceptionProperties material;
-    material.AddProperty("phong", "diffuse", norm_diffuse);
-    // This will accept all registered geometries and therefore, (bool)index
-    // should always be true.
-    renderer_->RegisterVisual(geometry_id, sphere, material,
-                              RigidTransformd::Identity());
-    RigidTransformd X_WV{Vector3d{0, 0, z}};
-    X_WV_.insert({geometry_id, X_WV});
-    renderer_->UpdatePoses(X_WV_);
-  };
-
-  // Sets the expected values prior to calling PerformCenterShapeTest().
-  auto set_expectations = [this](const RgbaColor& color) {
-    expected_color_ = color;
-  };
-
-  // Add another sphere of a different color in front of the default sphere
-  const RgbaColor color1(Color<int>{128, 128, 255}, 255);
-  const GeometryId id1 = GeometryId::get_new_id();
-  add_sphere(color1, 0.75, id1);
-  set_expectations(color1);
-  PerformCenterShapeTest(renderer_.get(), "First sphere added in remove test");
-
-  // Add a _third_ sphere in front of the second.
-  const RgbaColor color2(Color<int>{128, 255, 128}, 255);
-  const GeometryId id2 = GeometryId::get_new_id();
-  add_sphere(color2, 1.0, id2);
-  set_expectations(color2);
-  PerformCenterShapeTest(renderer_.get(), "Second sphere added in remove test");
-
-  // Remove the first sphere added; should report "true" and the render test
-  // should pass without changing expectations.
-  bool removed = renderer_->RemoveGeometry(id1);
-  EXPECT_TRUE(removed);
-  PerformCenterShapeTest(renderer_.get(), "First added sphere removed");
-
-  // Remove the second added sphere; should report true and rendering should
-  // return to its default configuration.
-  removed = renderer_->RemoveGeometry(id2);
-  EXPECT_TRUE(removed);
-  set_expectations(default_color);
-  PerformCenterShapeTest(renderer_.get(),
-                         "Default image restored by removing extra geometries");
 }
 
 // All of the clone tests use the PerformCenterShapeTest() with the sphere setup
