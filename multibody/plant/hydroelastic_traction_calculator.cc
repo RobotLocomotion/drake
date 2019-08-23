@@ -1,6 +1,7 @@
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 
 #include <algorithm>
+#include <limits>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -119,14 +120,16 @@ HydroelasticTractionCalculator<T>::CalcTractionAtVertex(
     SurfaceVertexIndex vertex_index,
     double dissipation, double mu_coulomb) const {
   // Compute the point of contact in the world frame.
-  const Vector3<T> p_WQ = data.X_WM *
-      data.surface.mesh().vertex(vertex_index).r_MV();
+  const Vector3<T> p_WQ = data.surface.mesh().vertex(vertex_index).r_MV();
 
   const T e = data.surface.EvaluateE_MN(vertex_index);
 
-  const Vector3<T> h_M = data.surface.EvaluateGrad_h_MN_M(vertex_index);
-  const Vector3<T> nhat_M = h_M.normalized();
-  const Vector3<T> nhat_W = data.X_WM.rotation() * nhat_M;
+  const Vector3<T> grad_h_W = data.surface.EvaluateGrad_h_MN_W(vertex_index);
+  // TODO(edrumwri): Remove this TODO or update this code when we know whether
+  // h_W can ever be zero in expected cases.
+  const T norm_grad_h_W = grad_h_W.norm();
+  DRAKE_DEMAND(norm_grad_h_W > std::numeric_limits<double>::epsilon() * 10);
+  const Vector3<T> nhat_W = grad_h_W / norm_grad_h_W;
 
   return CalcTractionAtQHelper(data, e, nhat_W, dissipation, mu_coulomb, p_WQ);
 }
@@ -142,16 +145,18 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
     const typename SurfaceMesh<T>::Barycentric& Q_barycentric,
     double dissipation, double mu_coulomb) const {
   // Compute the point of contact in the world frame.
-  const Vector3<T> p_MQ = data.surface.mesh().CalcCartesianFromBarycentric(
+  const Vector3<T> p_WQ = data.surface.mesh().CalcCartesianFromBarycentric(
       face_index, Q_barycentric);
-  const Vector3<T> p_WQ = data.X_WM * p_MQ;
 
   const T e = data.surface.EvaluateE_MN(face_index, Q_barycentric);
 
-  const Vector3<T> h_M = data.surface.EvaluateGrad_h_MN_M(
+  const Vector3<T> grad_h_W = data.surface.EvaluateGrad_h_MN_W(
       face_index, Q_barycentric);
-  const Vector3<T> nhat_M = h_M.normalized();
-  const Vector3<T> nhat_W = data.X_WM.rotation() * nhat_M;
+  // TODO(edrumwri): Remove this TODO or update this code when we know whether
+  // h_W can ever be zero in expected cases.
+  const T norm_grad_h_W = grad_h_W.norm();
+  DRAKE_DEMAND(norm_grad_h_W > std::numeric_limits<double>::epsilon() * 10);
+  const Vector3<T> nhat_W = grad_h_W / norm_grad_h_W;
 
   return CalcTractionAtQHelper(data, e, nhat_W, dissipation, mu_coulomb, p_WQ);
 }

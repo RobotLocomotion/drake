@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/math/rigid_transform.h"
@@ -45,9 +46,14 @@ class SurfaceVertex {
    */
   const Vector3<T>& r_MV() const { return r_MV_; }
 
+  DRAKE_DEPRECATED("2019-12-01", "Use TransformInPlace() instead.")
+  void Transform(const math::RigidTransform<T>& X_NM) {
+    TransformInPlace(X_NM);
+  }
+
   /** Transforms this vertex position from its initial frame M to a new frame N.
    */
-  void Transform(const math::RigidTransform<T>& X_NM) {
+  void TransformInPlace(const math::RigidTransform<T>& X_NM) {
     r_MV_ = X_NM * r_MV_;
   }
 
@@ -206,7 +212,7 @@ class SurfaceMesh {
    */
   void TransformVertices(const math::RigidTransform<T>& X_NM) {
     for (auto& v : vertices_) {
-      v.Transform(X_NM);
+      v.TransformInPlace(X_NM);
     }
   }
 
