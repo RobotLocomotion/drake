@@ -73,11 +73,11 @@ std::unique_ptr<ContactSurface<double>> CreateContactSurface(
   // to determine the hydroelastic pressure.
   auto mesh = CreateSurfaceMesh();
 
-  // Create the "p0" field values (i.e., "hydroelastic pressure") using
+  // Create the "e" field values (i.e., "hydroelastic pressure") using
   // negated "z" values.
-  std::vector<double> p0_MN(mesh->num_vertices());
+  std::vector<double> e_MN(mesh->num_vertices());
   for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
-    p0_MN[i] = -mesh->vertex(i).r_MV()[2];
+    e_MN[i] = -mesh->vertex(i).r_MV()[2];
 
   // Now transform the mesh to the world frame, as ContactSurface specifies.
   mesh->TransformVertices(X_WH);
@@ -92,7 +92,7 @@ std::unique_ptr<ContactSurface<double>> CreateContactSurface(
   return std::make_unique<ContactSurface<double>>(
       halfspace_id, block_id, std::move(mesh),
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-          "E_MN", std::move(p0_MN), mesh_pointer),
+          "e_MN", std::move(e_MN), mesh_pointer),
       std::make_unique<MeshFieldLinear<Vector3<double>, SurfaceMesh<double>>>(
           "h_MN_M", std::move(h_MN_W), mesh_pointer));
 }
@@ -578,10 +578,10 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     // Create the surface mesh first.
     auto mesh = CreateSurfaceMesh();
 
-    // Create the p0 field values (i.e., "hydroelastic pressure").
-    std::vector<double> p0_MN(mesh->num_vertices());
+    // Create the e field values (i.e., "hydroelastic pressure").
+    std::vector<double> e_MN(mesh->num_vertices());
     for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
-      p0_MN[i] = pressure(mesh->vertex(i).r_MV());
+      e_MN[i] = pressure(mesh->vertex(i).r_MV());
 
     // Set the gradient of the "h" field. Note that even though this pressure
     // field is normalized, the "h" need not be (it's always normalized before
@@ -593,7 +593,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     contact_surface_ = std::make_unique<ContactSurface<double>>(
       null_id, null_id, std::move(mesh),
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
-          "E_MN", std::move(p0_MN), mesh_pointer),
+          "e_MN", std::move(e_MN), mesh_pointer),
       std::make_unique<MeshFieldLinear<Vector3<double>, SurfaceMesh<double>>>(
           "h_MN_W", std::move(h_MN_W), mesh_pointer));
 
