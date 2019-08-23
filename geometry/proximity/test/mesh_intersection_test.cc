@@ -812,7 +812,7 @@ std::unique_ptr<SurfaceMesh<T>> PyramidSurface() {
 // sure that the resulting ContactSurface satisfies the invariant id_M < id_N.
 // To that end, it computes the contact surface twice, with the ids reversed
 // and confirms the results reflect that: (i.e., vertex positions are different,
-// gradients are different.) The difference test is coarsely sampled and assumes
+// gradients are mirrored.) The difference test is coarsely sampled and assumes
 // that some good results are correlated with all good results based on the
 // unit tests for ContactSurface.
 template<typename T>

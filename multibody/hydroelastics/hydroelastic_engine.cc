@@ -121,7 +121,7 @@ std::vector<ContactSurface<T>> HydroelasticEngine<T>::ComputeContactSurfaces(
         model_M->is_soft() ? *model_N : *model_M;
 
     optional<ContactSurface<T>> surface =
-        CalcContactSurface(id_S, model_S, X_WR, id_R, model_R, X_WS);
+        CalcContactSurface(id_S, model_S, X_WS, id_R, model_R, X_WR);
     if (surface) all_contact_surfaces.emplace_back(std::move(*surface));
   }
 
@@ -131,9 +131,9 @@ std::vector<ContactSurface<T>> HydroelasticEngine<T>::ComputeContactSurfaces(
 template <typename T>
 optional<ContactSurface<T>> HydroelasticEngine<T>::CalcContactSurface(
     GeometryId id_S, const HydroelasticGeometry<T>& soft_model_S,
-    const RigidTransform<T>& X_WR,
+    const RigidTransform<T>& X_WS,
     GeometryId id_R, const HydroelasticGeometry<T>& rigid_model_R,
-    const RigidTransform<T>& X_WS) const {
+    const RigidTransform<T>& X_WR) const {
   DRAKE_DEMAND(soft_model_S.is_soft());
   DRAKE_DEMAND(!rigid_model_R.is_soft());
   const HydroelasticField<T>& soft_field_S = soft_model_S.hydroelastic_field();
@@ -148,19 +148,16 @@ optional<ContactSurface<T>> HydroelasticEngine<T>::CalcContactSurface(
   if (surface_W->num_vertices() == 0) return nullopt;
 
   // TODO(edrumwri): This says that it is a pressure field, but notation
-  // reflects that it is a strain field. Fix.
+  //                 reflects that it is a strain field. Fix.
   // Compute pressure field.
   for (T& e_s : e_s_surface) e_s *= soft_model_S.elastic_modulus();
 
   // TODO(edrumwri): h_RS should be the gradient of a pressure field, but it
-  // is currently the gradient of a strain field. Fix.
+  //                 is currently the gradient of a strain field. Fix.
   // ∇hₘₙ is a vector that points from N (in this case S) into M (in this case
-  // R); from the reasoning above, the rigid surface makes no contribution to
-  // ∇hₘₙ. That field is defined using the gradient of the level set function
-  // multiplied by the elastic modulus (according to the linear elasticity
-  // model we are using). Note that the gradient of the level set function
-  // points into S (N), so we flip its direction. We also re-express this field
-  // in the world frame in accordance with the ContactSurface specification.
+  // R). Note that the gradient of the level set function points into S (N), so
+  // we flip its direction. We also re-express this field in the world frame in
+  // accordance with the ContactSurface specification.
   std::vector<Vector3<T>> h_RS_W_vectors = std::move(grad_level_set_R_surface);
   for (Vector3<T>& grad : h_RS_W_vectors)
     grad = X_WR.rotation() * -grad;

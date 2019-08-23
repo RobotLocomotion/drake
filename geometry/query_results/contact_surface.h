@@ -225,8 +225,7 @@ class ContactSurface {
   }
 
  private:
-  // Swaps M and N (modifying the data in place to reflect the change in
-  // frames).
+  // Swaps M and N (modifying the data in place to reflect the change).
   void SwapMAndN() {
     std::swap(id_M_, id_N_);
     // TODO(SeanCurtis-TRI): Determine if this work is necessary. It is neither
@@ -240,7 +239,7 @@ class ContactSurface {
       values[v] = -values[v];
     }
 
-    // Note: the scalar field does not depend on frames.
+    // Note: the scalar field does not depend on the order of M and N.
   }
 
   // The id of the first geometry M.
