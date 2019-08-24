@@ -83,7 +83,7 @@ class HydroelasticContactInfo {
   std::unique_ptr<HydroelasticContactInfo<T>> Clone() const {
     auto contact_surface_clone =
         std::make_unique<geometry::ContactSurface<T>>(contact_surface());
-    const geometry::SurfaceMesh<T>* mesh = &contact_surface_clone->mesh();
+    const geometry::SurfaceMesh<T>* mesh = &contact_surface_clone->mesh_W();
     return std::make_unique<HydroelasticContactInfo<T>>(
         std::move(contact_surface_clone), traction_A_W_->CloneAndSetMesh(mesh),
         vslip_AB_W_->CloneAndSetMesh(mesh));

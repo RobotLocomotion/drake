@@ -644,7 +644,7 @@ TEST_P(HydroelasticReportingTests, LinearTraction) {
 
   // Test the traction at the vertices of the contact surface.
   for (SurfaceVertexIndex(i);
-      i < calculator_data().surface.mesh().num_vertices(); ++i) {
+      i < calculator_data().surface.mesh_W().num_vertices(); ++i) {
     // Evaluate the traction at vertex i on Body A (the body to which geometry
     // M is attached).
     const Vector3<double> traction_Av_W =
@@ -659,7 +659,7 @@ TEST_P(HydroelasticReportingTests, LinearTraction) {
 
     // Check the pressure is evaluated in accordance with how we constructed it.
     const Vector3<double>& r_WV =
-        calculator_data().surface.mesh().vertex(i).r_MV();
+        calculator_data().surface.mesh_W().vertex(i).r_MV();
     EXPECT_LT((traction_Av_W - normal_W * pressure(r_WV)).norm(), tol());
   }
 
@@ -669,16 +669,16 @@ TEST_P(HydroelasticReportingTests, LinearTraction) {
   // 1. Compute the mean of the tractions at the vertices.
   Vector3<double> expected_traction_A_W = Vector3<double>::Zero();
   for (SurfaceVertexIndex(i);
-      i < calculator_data().surface.mesh().num_vertices(); ++i) {
+      i < calculator_data().surface.mesh_W().num_vertices(); ++i) {
     expected_traction_A_W += fields.traction_A_W->EvaluateAtVertex(i);
   }
-  expected_traction_A_W /= calculator_data().surface.mesh().num_vertices();
+  expected_traction_A_W /= calculator_data().surface.mesh_W().num_vertices();
   // 2. Compute the traction at the centroid of the contact surface. Note that
   //    we use SurfaceFaceIndex zero arbitrarily- the centroid is located on
   //    both faces in this particular instance.
   const SurfaceMesh<double>::Barycentric b_WC =
-      calculator_data().surface.mesh().CalcBarycentric(
-          calculator_data().surface.mesh().centroid(), SurfaceFaceIndex(0));
+      calculator_data().surface.mesh_W().CalcBarycentric(
+          calculator_data().surface.mesh_W().centroid(), SurfaceFaceIndex(0));
   const Vector3<double> traction_Ac_W = fields.traction_A_W->Evaluate(
       SurfaceFaceIndex(0), b_WC);
 
@@ -705,7 +705,7 @@ TEST_P(HydroelasticReportingTests, LinearSlipVelocity) {
           calculator_data(), dissipation, mu_coulomb);
 
   // Test the slip velocity at the vertices of the contact surface.
-  const SurfaceMesh<double>& mesh = calculator_data().surface.mesh();
+  const SurfaceMesh<double>& mesh = calculator_data().surface.mesh_W();
   for (SurfaceVertexIndex(i); i < mesh.num_vertices(); ++i) {
     // Compute the vertex location (V) in the world frame.
     const Vector3<double>& p_WV = mesh.vertex(i).r_MV();

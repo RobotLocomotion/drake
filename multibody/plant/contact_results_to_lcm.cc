@@ -101,7 +101,7 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
         geometry_id_to_body_index_map_.at(
             hydroelastic_contact_info.contact_surface().id_N()));
 
-    const auto& mesh_W = hydroelastic_contact_info.contact_surface().mesh();
+    const auto& mesh_W = hydroelastic_contact_info.contact_surface().mesh_W();
     surface_msg.num_triangles = mesh_W.num_faces();
     surface_msg.triangles.resize(surface_msg.num_triangles);
 
