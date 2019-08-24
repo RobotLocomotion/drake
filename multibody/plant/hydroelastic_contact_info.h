@@ -34,12 +34,28 @@ class HydroelasticContactInfo {
   // Neither assignment nor copy construction is provided.
   HydroelasticContactInfo(const HydroelasticContactInfo&) = delete;
   HydroelasticContactInfo& operator=(const HydroelasticContactInfo&) = delete;
-  HydroelasticContactInfo& operator=(HydroelasticContactInfo&&) = delete;
 
-  HydroelasticContactInfo(HydroelasticContactInfo&& contact_info) {
-    contact_surface_ = std::move(contact_info.contact_surface_);
-    traction_A_W_ = std::move(contact_info.traction_A_W_);
-    vslip_AB_W_ = std::move(contact_info.vslip_AB_W_);
+  // Move assignment and move construction are supported.
+  HydroelasticContactInfo& operator=(HydroelasticContactInfo&&) = default;
+  HydroelasticContactInfo(HydroelasticContactInfo&&) = default;
+
+  /**
+   Constructs this structure using the given contact surface, traction field,
+   and slip field.
+   @see contact_surface()
+   @see traction_A_W()
+   @see vslip_AB_W()
+   */
+  HydroelasticContactInfo(
+      geometry::ContactSurface<T>* contact_surface,
+      std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_A_W,
+      std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_AB_W) :
+      shadowed_raw_contact_surface_ptr_(std::move(contact_surface)),
+      traction_A_W_(std::move(traction_A_W)),
+      vslip_AB_W_(std::move(vslip_AB_W)) {
+    DRAKE_DEMAND(shadowed_raw_contact_surface_ptr_);
+    DRAKE_DEMAND(traction_A_W_.get());
+    DRAKE_DEMAND(vslip_AB_W_.get());
   }
 
   /**
@@ -53,10 +69,10 @@ class HydroelasticContactInfo {
       std::unique_ptr<geometry::ContactSurface<T>> contact_surface,
       std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_A_W,
       std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_AB_W) :
-      contact_surface_(std::move(contact_surface)),
+      owned_contact_surface_(std::move(contact_surface)),
       traction_A_W_(std::move(traction_A_W)),
       vslip_AB_W_(std::move(vslip_AB_W)) {
-    DRAKE_DEMAND(contact_surface_.get());
+    DRAKE_DEMAND(owned_contact_surface_.get());
     DRAKE_DEMAND(traction_A_W_.get());
     DRAKE_DEMAND(vslip_AB_W_.get());
   }
@@ -65,7 +81,7 @@ class HydroelasticContactInfo {
    */
   std::unique_ptr<HydroelasticContactInfo<T>> Clone() const {
     std::unique_ptr<geometry::ContactSurface<T>> contact_surface_clone =
-        contact_surface_->Clone();
+        contact_surface().Clone();
     const geometry::SurfaceMesh<T>* mesh = &contact_surface_clone->mesh();
     return std::make_unique<HydroelasticContactInfo<T>>(
         std::move(contact_surface_clone), traction_A_W_->CloneAndSetMesh(mesh),
@@ -76,7 +92,10 @@ class HydroelasticContactInfo {
   /// the mesh and gradient vector fields are defined/expressed in the
   /// world frame.
   const geometry::ContactSurface<T>& contact_surface() const {
-    return *contact_surface_;
+    DRAKE_DEMAND(!(owned_contact_surface_.get() &&
+                   shadowed_raw_contact_surface_ptr_));
+    return owned_contact_surface_.get() ? *owned_contact_surface_
+                                        : *shadowed_raw_contact_surface_ptr_;
   }
 
   /// Returns the field giving the traction acting on Body A, expressed in the
@@ -101,7 +120,8 @@ class HydroelasticContactInfo {
 
  private:
   // Note that the mesh of the contact surface is defined in the world frame.
-  std::unique_ptr<geometry::ContactSurface<T>> contact_surface_;
+  geometry::ContactSurface<T>* shadowed_raw_contact_surface_ptr_{nullptr};
+  std::unique_ptr<geometry::ContactSurface<T>> owned_contact_surface_;
   std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_A_W_;
   std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_AB_W_;
 };
