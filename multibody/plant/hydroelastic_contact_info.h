@@ -38,7 +38,7 @@ class HydroelasticContactInfo {
 
   // Move assignment and move construction are supported.
   HydroelasticContactInfo& operator=(HydroelasticContactInfo&&) = default;
-  HydroelasticContactInfo(HydroelasticContactInfo&&) = default;
+  HydroelasticContactInfo(HydroelasticContactInfo&&);
 
   /**
    Constructs this structure using the given contact surface, traction field,
@@ -125,6 +125,13 @@ class HydroelasticContactInfo {
   std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_A_W_;
   std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_AB_W_;
 };
+
+// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
+// should be moved back into the class definition once we no longer need to
+// support GCC versions prior to 6.3.
+template <typename T>
+HydroelasticContactInfo<T>::HydroelasticContactInfo(
+    HydroelasticContactInfo&&) = default;
 
 }  // namespace multibody
 }  // namespace drake
