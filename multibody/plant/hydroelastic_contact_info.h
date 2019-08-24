@@ -6,6 +6,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_variant.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/query_results/contact_surface.h"
 
@@ -50,10 +51,10 @@ class HydroelasticContactInfo {
       geometry::ContactSurface<T> const* contact_surface,
       std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_A_W,
       std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_AB_W) :
-      shadowed_raw_contact_surface_ptr_(std::move(contact_surface)),
+      contact_surface_(contact_surface),
       traction_A_W_(std::move(traction_A_W)),
       vslip_AB_W_(std::move(vslip_AB_W)) {
-    DRAKE_DEMAND(shadowed_raw_contact_surface_ptr_);
+    DRAKE_DEMAND(contact_surface);
     DRAKE_DEMAND(traction_A_W_.get());
     DRAKE_DEMAND(vslip_AB_W_.get());
   }
@@ -69,10 +70,10 @@ class HydroelasticContactInfo {
       std::unique_ptr<geometry::ContactSurface<T>> contact_surface,
       std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_A_W,
       std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_AB_W) :
-      owned_contact_surface_(std::move(contact_surface)),
+      contact_surface_(std::move(contact_surface)),
       traction_A_W_(std::move(traction_A_W)),
       vslip_AB_W_(std::move(vslip_AB_W)) {
-    DRAKE_DEMAND(owned_contact_surface_.get());
+    DRAKE_DEMAND(drake::get<1>(contact_surface_).get());
     DRAKE_DEMAND(traction_A_W_.get());
     DRAKE_DEMAND(vslip_AB_W_.get());
   }
@@ -92,10 +93,9 @@ class HydroelasticContactInfo {
   /// the mesh and gradient vector fields are defined/expressed in the
   /// world frame.
   const geometry::ContactSurface<T>& contact_surface() const {
-    DRAKE_DEMAND(!(owned_contact_surface_.get() &&
-                   shadowed_raw_contact_surface_ptr_));
-    return owned_contact_surface_.get() ? *owned_contact_surface_
-                                        : *shadowed_raw_contact_surface_ptr_;
+    return (drake::holds_alternative<const geometry::ContactSurface<T>*>(
+        contact_surface_) ? *drake::get<0>(contact_surface_) :
+                            *drake::get<1>(contact_surface_));
   }
 
   /// Returns the field giving the traction acting on Body A, expressed in the
@@ -120,8 +120,8 @@ class HydroelasticContactInfo {
 
  private:
   // Note that the mesh of the contact surface is defined in the world frame.
-  geometry::ContactSurface<T> const* shadowed_raw_contact_surface_ptr_{nullptr};
-  std::unique_ptr<geometry::ContactSurface<T>> owned_contact_surface_;
+  drake::variant<geometry::ContactSurface<T> const*,
+                 std::unique_ptr<geometry::ContactSurface<T>>> contact_surface_;
   std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_A_W_;
   std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_AB_W_;
 };

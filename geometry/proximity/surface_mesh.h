@@ -193,14 +193,6 @@ class SurfaceMesh {
    */
   int num_vertices() const { return vertices_.size(); }
 
-  /** Clones this mesh, copying all vertices and faces. */
-  std::unique_ptr<SurfaceMesh<T>> Clone() const {
-    std::vector<SurfaceFace> faces = faces_;
-    std::vector<SurfaceVertex<T>> vertices = vertices_;
-    return std::make_unique<SurfaceMesh<T>>(
-        std::move(faces), std::move(vertices));
-  }
-
   //@}
 
   /**
