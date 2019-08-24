@@ -405,11 +405,12 @@ class RotationMatrix {
     return RotationMatrix<T>(matrix() * other.matrix(), true);
   }
 
-  /// Calculates `this` rotation matrix R multiplied by an arbitrary Vector3.
-  /// @param[in] v 3x1 vector that post-multiplies `this`.
-  /// @returns 3x1 vector that results from `R * v`.
-  Vector3<T> operator*(const Vector3<T>& v) const {
-    return Vector3<T>(matrix() * v);
+  /// Calculates `this` rotation matrix `R_AB` multiplied by an arbitrary
+  /// Vector3 expressed in the B frame.
+  /// @param[in] v_B 3x1 vector that post-multiplies `this`.
+  /// @returns 3x1 vector `v_A = R_AB * v_B`.
+  Vector3<T> operator*(const Vector3<T>& v_B) const {
+    return Vector3<T>(matrix() * v_B);
   }
 
   /// Multiplies `this` %RotationMatrix `R_AB` by the n vectors `v1`, ... `vn`,
@@ -567,7 +568,7 @@ class RotationMatrix {
   /// valid (orthonormal) rotation matrix.
   /// @note To orthonormalize a 3x3 matrix, use ProjectToRotationMatrix().
   static double get_internal_tolerance_for_orthonormality() {
-    return kInternalToleranceForOrthonormality_;
+    return kInternalToleranceForOrthonormality;
   }
 
   /// Returns a quaternion q that represents `this` %RotationMatrix.  Since the
@@ -637,7 +638,7 @@ class RotationMatrix {
 
   // Declares the allowable tolerance (small multiplier of double-precision
   // epsilon) used to check whether or not a rotation matrix is orthonormal.
-  static constexpr double kInternalToleranceForOrthonormality_{
+  static constexpr double kInternalToleranceForOrthonormality{
       128 * std::numeric_limits<double>::epsilon() };
 
   // Constructs a RotationMatrix without initializing the underlying 3x3 matrix.
@@ -1064,8 +1065,8 @@ RotationMatrix<T>::ThrowIfNotValid(const Matrix3<S>& R) {
     const T measure_of_orthonormality = GetMeasureOfOrthonormality(R);
     const double measure = ExtractDoubleOrThrow(measure_of_orthonormality);
     std::string message = fmt::format(
-        "Error: Rotation matrix is not orthonormal."
-        "  Measure of orthonormality error: {:G}  (near-zero is good)."
+        "Error: Rotation matrix is not orthonormal.\n"
+        "  Measure of orthonormality error: {:G}  (near-zero is good).\n"
         "  To calculate the proper orthonormal rotation matrix closest to"
         " the alleged rotation matrix, use the SVD (expensive) method"
         " RotationMatrix::ProjectToRotationMatrix(), or for a less expensive"

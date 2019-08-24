@@ -37,11 +37,10 @@ class HydroelasticTractionCalculator {
         const math::RigidTransform<T>& X_WB_in,
         const SpatialVelocity<T>& V_WA_in,
         const SpatialVelocity<T>& V_WB_in,
-        const math::RigidTransform<T>& X_WM_in,
         const geometry::ContactSurface<T>* surface_in) :
             X_WA(X_WA_in), X_WB(X_WB_in), V_WA(V_WA_in), V_WB(V_WB_in),
-            X_WM(X_WM_in), surface(*surface_in),
-            p_WC(X_WM_in * surface_in->mesh().centroid()) {
+            surface(*surface_in),
+            p_WC(surface_in->mesh().centroid()) {
       DRAKE_DEMAND(surface_in);
     }
 
@@ -62,9 +61,6 @@ class HydroelasticTractionCalculator {
     /// `surface.N_id()` in the contact surface is affixed to) at the origin of
     /// B's frame, measured and expressed in the world frame.
     const SpatialVelocity<T> V_WB;
-
-    /// The pose of Geometry `surface.M_id()` in the world frame.
-    const math::RigidTransform<T> X_WM;
 
     /// A reference to the ContactSurface that must be maintained for the life
     /// of this object.
@@ -111,19 +107,15 @@ class HydroelasticTractionCalculator {
    @param dissipation the nonnegative coefficient (in s/m) for dissipating
           energy along the direction of the surface normals.
    @param mu_coulomb the nonnegative coefficient for Coulomb friction.
-   @param contact_surface the contact surface to be moved into the reporting
-          information data structure.
    @return the reporting information via the HydroelasticContactInfo data
            structure.
    */
   HydroelasticContactInfo<T> ComputeContactInfo(
-       const Data& data, double dissipation, double mu_coulomb,
-       std::unique_ptr<geometry::ContactSurface<T>> contact_surface) const {
-     DRAKE_DEMAND(&data.surface == contact_surface.get());
+       const Data& data, double dissipation, double mu_coulomb) const {
      ContactReportingFields fields =
          CreateReportingFields(data, dissipation, mu_coulomb);
      return HydroelasticContactInfo<T>(
-         std::move(contact_surface),
+         &data.surface,
          std::move(fields.traction_A_W),
          std::move(fields.vslip_AB_W));
   }

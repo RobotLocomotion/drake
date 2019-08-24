@@ -9,8 +9,7 @@
 /// @file
 /// @brief Utilities for calling Python from C++
 ///
-/// Provides functionality similar to `call_matlab` (i.e., one-directional RPC),
-/// leveraging an API similar to `pybind11`.
+/// Provides one-directional RPC, leveraging an API similar to `pybind11`.
 ///
 /// For command-line examples, see the documentation in `call_python_client.py`.
 /// For C++ examples, see `call_python_test.cc`.

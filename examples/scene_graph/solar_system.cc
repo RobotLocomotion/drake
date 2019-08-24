@@ -17,6 +17,9 @@ namespace drake {
 namespace examples {
 namespace solar_system {
 
+using Eigen::AngleAxisd;
+using Eigen::Translation3d;
+using Eigen::Vector3d;
 using Eigen::Vector4d;
 using geometry::Box;
 using geometry::Convex;
@@ -31,6 +34,7 @@ using geometry::SceneGraph;
 using geometry::Mesh;
 using geometry::SourceId;
 using geometry::Sphere;
+using math::RigidTransformd;
 using systems::BasicVector;
 using systems::Context;
 using systems::ContinuousState;
@@ -123,15 +127,13 @@ void MakeArm(SourceId source_id, ParentId parent_id, double length,
              SceneGraph<double>* scene_graph) {
   // tilt it horizontally
   const math::RigidTransform<double> arm_pose(
-      Eigen::AngleAxis<double>(M_PI / 2, Vector3<double>::UnitY()),
-      Vector3<double>(length / 2, 0, 0));
+      AngleAxisd(M_PI / 2, Vector3d::UnitY()), Vector3d(length / 2, 0, 0));
   scene_graph->RegisterGeometry(
       source_id, parent_id,
       MakeShape<Cylinder>(arm_pose.GetAsIsometry3(), "HorzArm", material,
                           radius, length));
 
-  const math::RigidTransform<double> post_pose(
-      Vector3<double>(length, 0, height / 2));
+  const math::RigidTransform<double> post_pose(Vector3d(length, 0, height / 2));
   scene_graph->RegisterGeometry(
       source_id, parent_id,
       MakeShape<Cylinder>(post_pose.GetAsIsometry3(), "VertArm", material,
@@ -152,13 +154,13 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   // NOTE: we don't store the id of the sun geometry because we have no need
   // for subsequent access (the same is also true for dynamic geometries).
   scene_graph->RegisterAnchoredGeometry(
-      source_id_, MakeShape<Sphere>(Isometry3<double>::Identity(), "Sun",
+      source_id_, MakeShape<Sphere>(RigidTransformd::Identity(), "Sun",
                                     Vector4d(1, 1, 0, 1), 1.0 /* radius */));
 
   // The fixed post on which Sun sits and around which all planets rotate.
   const double post_height = 1;
-  Isometry3<double> post_pose = Isometry3<double>::Identity();
-  post_pose.translation() << 0, 0, (orrery_bottom + post_height / 2);
+  const RigidTransformd post_pose(
+      Translation3d{0, 0, orrery_bottom + post_height / 2});
   scene_graph->RegisterAnchoredGeometry(
       source_id_, MakeShape<Cylinder>(post_pose, "Post", post_material,
                                       pipe_radius, post_height));
@@ -171,18 +173,17 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   // Earth's orbital frame Oe lies directly *below* the sun (to account for the
   // orrery arm).
   const double kEarthBottom = orrery_bottom + 0.25;
-  Isometry3<double> X_SOe{Translation3<double>{0, 0, kEarthBottom}};
+  const RigidTransformd X_SOe{Translation3d{0, 0, kEarthBottom}};
   FrameId planet_id =
       scene_graph->RegisterFrame(source_id_, GeometryFrame("EarthOrbit"));
   body_ids_.push_back(planet_id);
   body_offset_.push_back(X_SOe);
-  axes_.push_back(Vector3<double>::UnitZ());
+  axes_.push_back(Vector3d::UnitZ());
 
   // The geometry is rigidly affixed to Earth's orbital frame so that it moves
   // in a circular path.
   const double kEarthOrbitRadius = 3.0;
-  Isometry3<double> X_OeE{
-      Translation3<double>{kEarthOrbitRadius, 0, -kEarthBottom}};
+  RigidTransformd X_OeE{Translation3d{kEarthOrbitRadius, 0, -kEarthBottom}};
   scene_graph->RegisterGeometry(
       source_id_, planet_id,
       MakeShape<Sphere>(X_OeE, "Earth", Vector4d(0, 0, 1, 1), 0.25));
@@ -192,12 +193,12 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
 
   // Luna's orbital frame Ol is at the center of Earth's geometry (E).
   // So, X_OeOl = X_OeE.
-  const Isometry3<double>& X_OeOl = X_OeE;
-  FrameId luna_id = scene_graph->RegisterFrame(source_id_, planet_id,
-                                               GeometryFrame("LunaOrbit"));
+  const RigidTransformd& X_OeOl = X_OeE;
+  FrameId luna_id = scene_graph->RegisterFrame(
+      source_id_, planet_id, GeometryFrame("LunaOrbit"));
   body_ids_.push_back(luna_id);
   body_offset_.push_back(X_OeOl);
-  const Vector3<double> luna_axis_Oe{1, 1, 1};
+  const Vector3d luna_axis_Oe{1, 1, 1};
   axes_.push_back(luna_axis_Oe.normalized());
 
   // The geometry is rigidly affixed to Luna's orbital frame so that it moves
@@ -206,9 +207,9 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   // Pick a position at kLunaOrbitRadius distance from the Earth's origin on
   // the plane _perpendicular_ to the moon's normal (<1, 1, 1>).
   // luna_position.dot(luna_axis_Oe) will be zero.
-  Vector3<double> luna_position =
-      Vector3<double>(-1, 0.5, 0.5).normalized() * kLunaOrbitRadius;
-  Isometry3<double> X_OlL{Translation3<double>{luna_position}};
+  Vector3d luna_position =
+      Vector3d(-1, 0.5, 0.5).normalized() * kLunaOrbitRadius;
+  RigidTransformd X_OlL{Translation3d{luna_position}};
   scene_graph->RegisterGeometry(
       source_id_, luna_id,
       MakeShape<Sphere>(X_OlL, "Luna", Vector4d(0.5, 0.5, 0.35, 1.0), 0.075));
@@ -243,28 +244,28 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
 
   // Mars's orbital frame Om lies directly *below* the sun (to account for the
   // orrery arm).
-  Isometry3<double> X_SOm{Translation3<double>{0, 0, orrery_bottom}};
+  RigidTransformd X_SOm{Translation3d{0, 0, orrery_bottom}};
   planet_id =
       scene_graph->RegisterFrame(source_id_, GeometryFrame("MarsOrbit"));
   body_ids_.push_back(planet_id);
   body_offset_.push_back(X_SOm);
-  Vector3<double> mars_axis_S{0, 0.1, 1};
+  Vector3d mars_axis_S{0, 0.1, 1};
   axes_.push_back(mars_axis_S.normalized());
 
   // The geometry is rigidly affixed to Mars's orbital frame so that it moves
   // in a circular path.
   const double kMarsOrbitRadius = 5.0;
   const double kMarsSize = 0.24;
-  Isometry3<double> X_OmM{
-      Translation3<double>{kMarsOrbitRadius, 0, -orrery_bottom}};
+  RigidTransformd X_OmM{
+      Translation3d{kMarsOrbitRadius, 0, -orrery_bottom}};
   GeometryId mars_geometry_id = scene_graph->RegisterGeometry(
       source_id_, planet_id,
       MakeShape<Sphere>(X_OmM, "Mars", Vector4d(0.9, 0.1, 0, 1), kMarsSize));
 
   std::string rings_absolute_path =
       FindResourceOrThrow("drake/examples/scene_graph/planet_rings.obj");
-  Vector3<double> axis = Vector3<double>(1, 1, 1).normalized();
-  Isometry3<double> X_MR(AngleAxis<double>(M_PI / 3, axis));
+  Vector3d axis = Vector3d(1, 1, 1).normalized();
+  RigidTransformd X_MR(AngleAxisd(M_PI / 3, axis), Vector3d{0, 0, 0});
   scene_graph->RegisterGeometry(
       source_id_, mars_geometry_id,
       MakeShape<Mesh>(X_MR, "MarsRings", Vector4d(0.45, 0.9, 0, 1),
@@ -277,7 +278,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   // Phobos's orbital frame Op is at the center of Mars (M).
   // So, X_OmOp = X_OmM. The normal of the plane is negated so it orbits in the
   // opposite direction.
-  const Isometry3<double>& X_OmOp = X_OmM;
+  const RigidTransformd& X_OmOp = X_OmM;
   FrameId phobos_id = scene_graph->RegisterFrame(source_id_, planet_id,
                                                  GeometryFrame("PhobosOrbit"));
   body_ids_.push_back(phobos_id);
@@ -287,7 +288,7 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
 
   // The geometry is displaced from the Phobos's frame so that it orbits.
   const double kPhobosOrbitRadius = 0.34;
-  Isometry3<double> X_OpP{Translation3<double>{kPhobosOrbitRadius, 0, 0}};
+  const RigidTransformd X_OpP{Translation3d{kPhobosOrbitRadius, 0, 0}};
   scene_graph->RegisterGeometry(
       source_id_, phobos_id,
       MakeShape<Sphere>(X_OpP, "Phobos", Vector4d(0.65, 0.6, 0.8, 1), 0.06));
@@ -306,7 +307,7 @@ void SolarSystem<T>::CalcFramePoseOutput(const Context<T>& context,
     // rotation value.
     T rotation{state[i]};
     pose.set_rotation(AngleAxis<T>(rotation, axes_[i]));
-    poses->set_value(body_ids_[i], pose.GetAsIsometry3());
+    poses->set_value(body_ids_[i], pose);
   }
 }
 

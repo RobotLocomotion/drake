@@ -12,8 +12,6 @@ static int py_globally_unique_id = 0;
 
 PythonRemoteVariable::PythonRemoteVariable()
     : unique_id_(py_globally_unique_id++)
-// TODO(eric.cousineau): Make this consistent with what `call_matlab` has when
-// it changes.
 {}
 
 void ToMatlabArray(const PythonRemoteVariable& var, MatlabArray* matlab_array) {

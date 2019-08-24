@@ -415,7 +415,9 @@ void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
   }
 
   for (FrameId f_id : dynamic_frames) {
-    output->set_pose(i, g_state.get_pose_in_world(f_id));
+    // TODO(#11888): Remove GetAsIsometry3() when PoseBundle supports
+    //  RigidTransform.
+    output->set_pose(i, g_state.get_pose_in_world(f_id).GetAsIsometry3());
     // TODO(SeanCurtis-TRI): Handle velocity.
     ++i;
   }

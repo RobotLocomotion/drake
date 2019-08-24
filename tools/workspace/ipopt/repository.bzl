@@ -13,8 +13,8 @@ def ipopt_repository(
         ],
         modname = "ipopt",
         pkg_config_paths = [
-            "/usr/local/opt/ipopt@3.12/lib/pkgconfig",
             "/usr/local/opt/ipopt/lib/pkgconfig",
+            "/usr/local/opt/ipopt@3.12/lib/pkgconfig",
         ],
         **kwargs):
     pkg_config_repository(

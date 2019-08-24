@@ -812,7 +812,7 @@ std::unique_ptr<SurfaceMesh<T>> PyramidSurface() {
 // sure that the resulting ContactSurface satisfies the invariant id_M < id_N.
 // To that end, it computes the contact surface twice, with the ids reversed
 // and confirms the results reflect that: (i.e., vertex positions are different,
-// gradients are different.) The difference test is coarsely sampled and assumes
+// gradients are mirrored.) The difference test is coarsely sampled and assumes
 // that some good results are correlated with all good results based on the
 // unit tests for ContactSurface.
 template<typename T>
@@ -827,38 +827,43 @@ void TestComputeContactSurfaceSoftRigid() {
   // part of the soft octahedron.
   const auto X_SR = RigidTransform<T>(Vector3<T>(0, 0, 0.5));
 
+  // The relationship between the frames for the soft body and the
+  // world frame is irrelevant for this test.
+  const auto X_WS = RigidTransform<T>::Identity();
+  const auto X_WR = X_WS * X_SR;
+
   // Regardless of how we assign id_A and id_B to mesh_S and surface_R, the
   // contact surfaces will always have id_M = id_A and id_N = id_B (because
   // of the ordering).
 
   // In this case, we assign id_A to soft and we already know that id_A < id_B.
   // Confirm order
-  auto contact_SR_S =
+  auto contact_SR =
       mesh_intersection::ComputeContactSurfaceFromSoftVolumeRigidSurface(
-          id_A, *field_S, id_B, *surface_R, X_SR);
-  EXPECT_EQ(contact_SR_S->id_M(), id_A);
-  EXPECT_EQ(contact_SR_S->id_N(), id_B);
+          id_A, *field_S, X_WS, id_B, *surface_R, X_WR);
+  EXPECT_EQ(contact_SR->id_M(), id_A);
+  EXPECT_EQ(contact_SR->id_N(), id_B);
 
   // Now reverse the ids. It should *still* be the case that the reported id_A
   // is less than id_B, but we should further satisfy various invariants
   // (listed below).
-  auto contact_RS_R =
+  auto contact_RS =
       mesh_intersection::ComputeContactSurfaceFromSoftVolumeRigidSurface(
-          id_B, *field_S, id_A, *surface_R, X_SR);
-  EXPECT_EQ(contact_RS_R->id_M(), id_A);
-  EXPECT_EQ(contact_RS_R->id_N(), id_B);
+          id_B, *field_S, X_WS, id_A, *surface_R, X_WR);
+  EXPECT_EQ(contact_RS->id_M(), id_A);
+  EXPECT_EQ(contact_RS->id_N(), id_B);
 
   // Mesh invariants:
   //   Meshes are the same "size" (topologically).
-  EXPECT_EQ(contact_SR_S->mesh().num_faces(), contact_RS_R->mesh().num_faces());
-  EXPECT_EQ(contact_SR_S->mesh().num_vertices(),
-            contact_RS_R->mesh().num_vertices());
-  //   The positions of the vertices in the two meshes are related by X_SR. (We
-  //   test one and assume all share the same property.)
+  EXPECT_EQ(contact_SR->mesh().num_faces(), contact_RS->mesh().num_faces());
+  EXPECT_EQ(contact_SR->mesh().num_vertices(),
+            contact_RS->mesh().num_vertices());
+
+  //   Test one and assume all share the same property.
   const SurfaceVertexIndex v_index(0);
-  EXPECT_TRUE(
-      CompareMatrices(contact_SR_S->mesh().vertex(v_index).r_MV(),
-                      X_SR * contact_RS_R->mesh().vertex(v_index).r_MV()));
+  EXPECT_TRUE(CompareMatrices(contact_SR->mesh().vertex(v_index).r_MV(),
+                              contact_RS->mesh().vertex(v_index).r_MV()));
+
   // TODO(SeanCurtis-TRI): Test that the face winding has been reversed, once
   //  that is officially documented as a property of the ContactSurface.
 
@@ -866,13 +871,13 @@ void TestComputeContactSurfaceSoftRigid() {
   const typename SurfaceMesh<T>::Barycentric centroid(1. / 3., 1. / 3.,
                                                       1. / 3.);
   const SurfaceFaceIndex f_index(0);
-  EXPECT_EQ(contact_SR_S->EvaluateE_MN(f_index, centroid),
-            contact_RS_R->EvaluateE_MN(f_index, centroid));
+  EXPECT_EQ(contact_SR->EvaluateE_MN(f_index, centroid),
+            contact_RS->EvaluateE_MN(f_index, centroid));
 
-  // The gradient fields are related by R_SR and a reflection around the origin.
+  // The gradient fields are related by only a reflection around the origin.
   EXPECT_TRUE(CompareMatrices(
-      contact_SR_S->EvaluateGrad_h_MN_M(f_index, centroid),
-      X_SR.rotation() * -contact_RS_R->EvaluateGrad_h_MN_M(f_index, centroid)));
+      contact_SR->EvaluateGrad_h_MN_W(f_index, centroid),
+      -contact_RS->EvaluateGrad_h_MN_W(f_index, centroid)));
 }
 
 GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidDouble) {
@@ -925,36 +930,43 @@ bool FindFaceVertex(Vector3d p_MQ, const SurfaceMesh<double>& surface_M,
 //  We should check the scalar field and the vector field in a more
 //  comprehensive way.
 GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
-  auto id_M = GeometryId::get_new_id();
-  auto id_N = GeometryId::get_new_id();
-  auto soft_mesh_M = OctahedronVolume<double>();
-  auto soft_M = OctahedronPressureField<double>(soft_mesh_M.get());
-  auto rigid_N = PyramidSurface<double>();
+  auto id_S = GeometryId::get_new_id();
+  auto id_R = GeometryId::get_new_id();
+  auto soft_mesh = OctahedronVolume<double>();
+  // TODO(edrumwri) Fix the disparity here: OctahedronPressureField claims to
+  // be a pressure field but it is treated like a strain field.
+  auto soft_epsilon = OctahedronPressureField<double>(soft_mesh.get());
+  auto rigid_mesh = PyramidSurface<double>();
 
   const double kEps = std::numeric_limits<double>::epsilon();
+
+  // The relationship between the frames for the soft body and the
+  // world frame is irrelevant for this test.
+  const auto X_WS = RigidTransformd::Identity();
 
   // Tests translation. Move the rigid pyramid down, so its apex is at the
   // center of the soft octahedron.  Check the field values at that point.
   // We expect that the contact surface must include the zero vertex.
   {
-    const auto X_MN = RigidTransformd(-Vector3d::UnitZ());
-    auto contact_MN_M =
+    const auto X_SR = RigidTransformd(-Vector3d::UnitZ());
+    const auto X_WR = X_WS * X_SR;
+    auto contact_SR_W =
         mesh_intersection::ComputeContactSurfaceFromSoftVolumeRigidSurface(
-            id_M, *soft_M, id_N, *rigid_N, X_MN);
+            id_S, *soft_epsilon, X_WS, id_R, *rigid_mesh, X_WR);
     // TODO(DamrongGuoy): More comprehensive checks on the mesh of the contact
     //  surface. Here we only check the number of triangles.
-    EXPECT_EQ(4, contact_MN_M->mesh().num_faces());
+    EXPECT_EQ(4, contact_SR_W->mesh().num_faces());
 
     const Vector3d p_MQ = Vector3d::Zero();
     SurfaceFaceIndex face_Q;
     SurfaceMesh<double>::Barycentric b_Q;
-    bool found = FindFaceVertex(p_MQ, contact_MN_M->mesh(), &face_Q, &b_Q);
+    bool found = FindFaceVertex(p_MQ, contact_SR_W->mesh(), &face_Q, &b_Q);
     ASSERT_TRUE(found);
-    const auto e_MN = contact_MN_M->EvaluateE_MN(face_Q, b_Q);
-    EXPECT_NEAR(1.0, e_MN, kEps);
-    const auto grad_h_M = contact_MN_M->EvaluateGrad_h_MN_M(face_Q, b_Q);
-    const Vector3d expect_grad_h_M = Vector3d::UnitZ();
-    EXPECT_TRUE(CompareMatrices(expect_grad_h_M, grad_h_M, kEps));
+    const auto epsilon_SR = contact_SR_W->EvaluateE_MN(face_Q, b_Q);
+    EXPECT_NEAR(1.0, epsilon_SR, kEps);
+    const auto grad_h_W = contact_SR_W->EvaluateGrad_h_MN_W(face_Q, b_Q);
+    const Vector3d expect_grad_h_W = Vector3d::UnitZ();
+    EXPECT_TRUE(CompareMatrices(expect_grad_h_W, grad_h_W, kEps));
   }
   // Tests rotation. First we rotate the rigid pyramid 90 degrees around
   // X-axis, so it will fit the left half of the soft octahedron, instead of
@@ -978,26 +990,27 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
   // the -Y direction. The center of the contact surface will be at (0, -1/2, 0)
   // in the soft octahedron's frame.
   {
-    const auto X_MN =
+    const auto X_SR =
         RigidTransformd(RollPitchYawd(M_PI / 2., 0., 0.), Vector3d{0, -0.5, 0});
-    auto contact_MN_M =
+    const auto X_WR = X_WS * X_SR;
+    auto contact_SR_W =
         mesh_intersection::ComputeContactSurfaceFromSoftVolumeRigidSurface(
-            id_M, *soft_M, id_N, *rigid_N, X_MN);
+            id_S, *soft_epsilon, X_WS, id_R, *rigid_mesh, X_WR);
     // TODO(DamrongGuoy): More comprehensive checks on the mesh of the contact
     //  surface.  Here we only check the number of triangles.
-    EXPECT_EQ(4, contact_MN_M->mesh().num_faces());
+    EXPECT_EQ(4, contact_SR_W->mesh().num_faces());
 
     const Vector3d p_MQ{0, -0.5,
                         0};  // The center vertex of the pyramid "bottom".
     SurfaceFaceIndex face_Q;
     SurfaceMesh<double>::Barycentric b_Q;
-    bool found = FindFaceVertex(p_MQ, contact_MN_M->mesh(), &face_Q, &b_Q);
+    bool found = FindFaceVertex(p_MQ, contact_SR_W->mesh(), &face_Q, &b_Q);
     ASSERT_TRUE(found);
-    const auto e_MN = contact_MN_M->EvaluateE_MN(face_Q, b_Q);
-    EXPECT_NEAR(0.5, e_MN, kEps);
-    const auto grad_h_M = contact_MN_M->EvaluateGrad_h_MN_M(face_Q, b_Q);
-    const Vector3d expect_grad_h_M = Vector3d::UnitY();
-    EXPECT_NEAR((expect_grad_h_M - grad_h_M).norm(), 0., kEps);
+    const auto e_SR = contact_SR_W->EvaluateE_MN(face_Q, b_Q);
+    EXPECT_NEAR(0.5, e_SR, kEps);
+    const auto grad_h_W = contact_SR_W->EvaluateGrad_h_MN_W(face_Q, b_Q);
+    const Vector3d expect_grad_h_W = X_WS * Vector3d::UnitY();
+    EXPECT_NEAR((expect_grad_h_W - grad_h_W).norm(), 0., kEps);
   }
 }
 

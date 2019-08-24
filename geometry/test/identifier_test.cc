@@ -8,6 +8,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/sorted_pair.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
 
@@ -93,6 +94,22 @@ TEST_F(IdentifierTests, ServeAsMapKey) {
   EXPECT_EQ(ids.size(), 2);
 
   EXPECT_EQ(ids.find(a3_), ids.end());
+}
+
+// Confirms that SortedPair<GeometryId> can serve as a key in STL containers.
+// This shows that Identifier is not just hashable, but implicitly shows that
+// it is compatible with the Drake hash mechanism (because it assumes that the
+// SortedPair is compatible).
+TEST_F(IdentifierTests, SortedPairAsKey) {
+  unordered_set<SortedPair<AId>> ids;
+
+  EXPECT_EQ(ids.size(), 0u);
+  ids.insert({a1_, a2_});
+  EXPECT_EQ(ids.size(), 1u);
+
+  // An equivalent pair to what was inserted.
+  SortedPair<AId> pair{a1_, a2_};
+  EXPECT_NE(ids.find(pair), ids.end());
 }
 
 // Confirms that ids are configured to serve as values in STL containers.
@@ -221,14 +238,14 @@ TEST_F(IdentifierTests, InvalidInequalityCompare) {
       std::exception, ".*is_valid.*failed.*");
 }
 
-// Hashing an invalid id is an error.
+// Hashing an invalid id is *not* an error.
 TEST_F(IdentifierTests, InvalidHash) {
-  if (kDrakeAssertIsDisarmed) { return; }
+  if (kDrakeAssertIsDisarmed) {
+    return;
+  }
   std::unordered_set<AId> ids;
   AId invalid;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      unused(ids.insert(invalid)),
-      std::exception, ".*is_valid.*failed.*");
+  EXPECT_NO_THROW(ids.insert(invalid));
 }
 
 // Streaming an invalid id is an error.

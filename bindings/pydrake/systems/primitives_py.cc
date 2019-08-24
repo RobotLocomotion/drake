@@ -13,6 +13,7 @@
 #include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/demultiplexer.h"
+#include "drake/systems/primitives/discrete_time_delay.h"
 #include "drake/systems/primitives/first_order_low_pass_filter.h"
 #include "drake/systems/primitives/gain.h"
 #include "drake/systems/primitives/integrator.h"
@@ -101,6 +102,18 @@ PYBIND11_MODULE(primitives, m) {
             py::arg("output_ports_size") = 1, doc.Demultiplexer.ctor.doc_2args)
         .def(py::init<const std::vector<int>&>(), py::arg("output_ports_sizes"),
             doc.Demultiplexer.ctor.doc_1args);
+
+    DefineTemplateClassWithDefault<DiscreteTimeDelay<T>, LeafSystem<T>>(
+        m, "DiscreteTimeDelay", GetPyParam<T>(), doc.DiscreteTimeDelay.doc)
+        .def(py::init<double, int, int>(), py::arg("update_sec"),
+            py::arg("delay_timesteps"), py::arg("vector_size"),
+            doc.DiscreteTimeDelay.ctor
+                .doc_3args_update_sec_delay_timesteps_vector_size)
+        .def(py::init<double, int, const AbstractValue&>(),
+            py::arg("update_sec"), py::arg("delay_timesteps"),
+            py::arg("abstract_model_value"),
+            doc.DiscreteTimeDelay.ctor
+                .doc_3args_update_sec_delay_timesteps_abstract_model_value);
 
     DefineTemplateClassWithDefault<                  // BR
         FirstOrderLowPassFilter<T>, LeafSystem<T>>(  //

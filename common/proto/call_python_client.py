@@ -212,6 +212,36 @@ def default_globals():
         """
         plt.pause(interval)
 
+    def box(bmin, bmax, rstride=1, cstride=1, **kwargs):
+        """Plots a box bmin[i] <= x[i] <= bmax[i] for i < 3."""
+        fig = plt.gcf()
+        ax = fig.gca(projection='3d')
+        u = np.linspace(1, 9, 5) * np.pi / 4
+        U, V = np.meshgrid(u, u)
+        cx, cy, cz = (bmax + bmin) / 2
+        dx, dy, dz = bmax - bmin
+        X = cx + dx * np.cos(U) * np.sin(V)
+        Y = cy + dy * np.sin(U) * np.sin(V)
+        Z = cz + dz * np.cos(V) / np.sqrt(2)
+        ax.plot_surface(X, Y, Z, rstride=rstride, cstride=cstride, **kwargs)
+
+    def plot3(x, y, z, **kwargs):
+        """Plots a 3d line plot."""
+        fig = plt.gcf()
+        ax = fig.gca(projection='3d')
+        ax.plot(x, y, z, **kwargs)
+
+    def sphere(n, rstride=1, cstride=1, **kwargs):
+        """Plots a sphere."""
+        fig = plt.gcf()
+        ax = fig.gca(projection='3d')
+        u = np.linspace(0, np.pi, n)
+        v = np.linspace(0, 2 * np.pi, n)
+        X = np.outer(np.sin(u), np.sin(v))
+        Y = np.outer(np.sin(u), np.cos(v))
+        Z = np.outer(np.cos(u), np.ones_like(v))
+        ax.plot_surface(X, Y, Z, rstride=rstride, cstride=cstride, **kwargs)
+
     def surf(x, y, Z, rstride=1, cstride=1, **kwargs):
         """Plots a 3d surface."""
         fig = plt.gcf()

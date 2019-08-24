@@ -8,16 +8,23 @@ list(APPEND CTEST_CUSTOM_COVERAGE_EXCLUDE
 
 string(ASCII 27 ESC)
 
-# DEBUG may be colored yellow (CSI 33m) and WARNING may be colored magenta
-# (CSI 35m).
+# Note that due to limitations in the CMake language there may only be one
+# element in each list containing mismatched opening square brackets
+# (i.e., [ without matching ]) and that element must be the last element of the
+# list.
+
+# "DEBUG" emitted by Bazel may be colored yellow (CSI 33m), "WARNING" emitted
+# by Bazel may be colored magenta (CSI 35m), and "warning" emitted by Clang may
+# be colored magenta (CSI 35m) and bolded (CSI 1m).
 list(APPEND CTEST_CUSTOM_ERROR_EXCEPTION
   "^DEBUG: "
   "^WARNING: "
+  ": warning: "
   ":[0-9]+: Failure$"
-  "^${ESC}\\[(33mDEBUG|35mWARNING): ${ESC}\\[0m"
+  "(^${ESC}\\[33mDEBUG|^${ESC}\\[35mWARNING|: ${ESC}\\[0m${ESC}\\[0\;1\;35mwarning): ${ESC}\\[0m"
 )
 
-# ERROR may be colored red (CSI 31m) and bolded (CSI 1m).
+# "ERROR" emitted by Bazel may be colored red (CSI 31m) and bolded (CSI 1m).
 list(APPEND CTEST_CUSTOM_ERROR_MATCH
   "^ERROR: "
   "^${ESC}\\[31m${ESC}\\[1mERROR: ${ESC}\\[0m"
@@ -31,10 +38,12 @@ list(APPEND CTEST_CUSTOM_WARNING_EXCEPTION
   "warning: '_FORTIFY_SOURCE' macro redefined \\[-Wmacro-redefined\\]"
 )
 
-# WARNING may be colored magenta (CSI 35m).
+# "WARNING" emitted by Bazel may be colored magenta (CSI 35m) and "warning"
+# emitted by Clang may be colored magenta (CSI 35m) and bolded (CSI 1m).
 list(APPEND CTEST_CUSTOM_WARNING_MATCH
   "^WARNING: "
-  "^${ESC}\\[35mWARNING: ${ESC}\\[0m"
+  ": warning: "
+  "(^${ESC}\\[35mWARNING|: ${ESC}\\[0m${ESC}\\[0\;1\;35mwarning): ${ESC}\\[0m"
 )
 
 set(CTEST_CUSTOM_MAXIMUM_NUMBER_OF_ERRORS 100)

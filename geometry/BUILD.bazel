@@ -227,6 +227,7 @@ drake_cc_library(
         ":shape_specification",
         "//common:copyable_unique_ptr",
         "//common:essential",
+        "//math:geometric_transform",
     ],
 )
 
@@ -234,14 +235,20 @@ drake_cc_library(
     name = "identifier",
     srcs = [],
     hdrs = ["identifier.h"],
-    deps = ["//common:essential"],
+    deps = [
+        "//common:essential",
+        "//common:hash",
+    ],
 )
 
 drake_cc_library(
     name = "shape_specification",
     srcs = ["shape_specification.cc"],
     hdrs = ["shape_specification.h"],
-    deps = ["//common:essential"],
+    deps = [
+        "//common:essential",
+        "//math:geometric_transform",
+    ],
 )
 
 drake_cc_library(
@@ -270,6 +277,7 @@ drake_cc_googletest(
     name = "proximity_engine_test",
     data = [
         "test/forbidden_two_cubes.obj",
+        "test/quad_cube.mtl",
         "test/quad_cube.obj",
     ],
     deps = [
@@ -364,6 +372,7 @@ drake_cc_googletest(
     name = "identifier_test",
     deps = [
         ":identifier",
+        "//common:sorted_pair",
         "//common:unused",
         "//common/test_utilities:expect_throws_message",
     ],

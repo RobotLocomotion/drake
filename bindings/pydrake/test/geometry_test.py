@@ -8,11 +8,9 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.eigen_geometry import Isometry3_
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.lcm import DrakeMockLcm
-from pydrake.math import RigidTransform
+from pydrake.math import RigidTransform_
 from pydrake.symbolic import Expression
 from pydrake.systems.framework import DiagramBuilder_, InputPort_, OutputPort_
 from pydrake.systems.sensors import (
@@ -76,21 +74,18 @@ class TestGeometry(unittest.TestCase):
     @numpy_compare.check_nonsymbolic_types
     def test_frame_pose_vector_api(self, T):
         FramePoseVector = mut.FramePoseVector_[T]
-        Isometry3 = Isometry3_[T]
+        RigidTransform = RigidTransform_[T]
         obj = FramePoseVector()
         frame_id = mut.FrameId.get_new_id()
 
-        obj.set_value(id=frame_id, value=Isometry3.Identity())
+        obj.set_value(id=frame_id, value=RigidTransform.Identity())
         self.assertEqual(obj.size(), 1)
-        self.assertIsInstance(obj.value(id=frame_id), Isometry3)
+        self.assertIsInstance(obj.value(id=frame_id), RigidTransform)
         self.assertTrue(obj.has_id(id=frame_id))
         self.assertIsInstance(obj.frame_ids(), list)
         self.assertIsInstance(obj.frame_ids()[0], mut.FrameId)
         obj.clear()
         self.assertEqual(obj.size(), 0)
-        with catch_drake_warnings(expected_count=1):
-            mut.FramePoseVector(source_id=mut.SourceId.get_new_id(),
-                                ids=[mut.FrameId.get_new_id()])
 
     def test_query_object_api(self):
         # TODO(eric.cousineau): Create self-contained unittests (#9899).
@@ -166,8 +161,8 @@ class TestGeometry(unittest.TestCase):
 
         label = mut.render.RenderLabel(10)
         diffuse = np.array((1.0, 0.0, 0.0, 0.0))
-        params.default_label = label
-        params.default_diffuse = diffuse
+        params = mut.render.RenderEngineVtkParams(
+            default_label=label, default_diffuse=diffuse)
         self.assertEqual(params.default_label, label)
         self.assertTrue((params.default_diffuse == diffuse).all())
 
@@ -201,6 +196,7 @@ class TestGeometry(unittest.TestCase):
 
     @numpy_compare.check_nonsymbolic_types
     def test_query_object(self, T):
+        RigidTransform = RigidTransform_[float]
         SceneGraph = mut.SceneGraph_[T]
         QueryObject = mut.QueryObject_[T]
         SceneGraphInspector = mut.SceneGraphInspector_[T]

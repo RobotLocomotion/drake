@@ -16,6 +16,25 @@
 namespace drake {
 namespace geometry {
 
+namespace internal {
+/** A helper class to add an Isometry3 overload for initializer_list. */
+template <class KinematicsValue>
+struct FrameIdAndValuePair : public std::pair<const FrameId, KinematicsValue> {
+  // Inherit all constructors.
+  using Base = std::pair<const FrameId, KinematicsValue>;
+  using Base::Base;
+
+  // Add an extra constructor overload for Eigen::Isometry3<T>.  Once this
+  // deprecated method is removed, we should nix FrameIdAndValuePair entirely
+  // and go back to using std::pair like we used to do.
+  using DeprecatedKinematicsValue =
+      decltype(std::declval<KinematicsValue>().GetAsIsometry3());
+  DRAKE_DEPRECATED("2019-11-01", "Use RigidTransform instead of Isometry3.")
+  FrameIdAndValuePair(const FrameId id, DeprecatedKinematicsValue value)
+      : Base(id, KinematicsValue(value)) {}
+};
+}  // namespace internal
+
 /** A %FrameKinematicsVector is used to report kinematics data for registered
  frames (identified by unique FrameId values) to SceneGraph.
  It serves as the basis of FramePoseVector, FrameVelocityVector, and
@@ -47,7 +66,7 @@ namespace geometry {
    }
 
    std::vector<FrameId> frame_ids_;
-   std::vector<Isometry3<T>> poses_;
+   std::vector<RigidTransform<T>> poses_;
  };
  ```
 
@@ -57,7 +76,7 @@ namespace geometry {
  ```
    void CalcFramePoseOutput(const Context<T>& context,
                             geometry::FramePoseVector<T>* poses) const {
-     const Isometry3<T>& pose = ...;
+     const RigidTransform<T>& pose = ...;
      *poses = {{frame_id_, pose}};
    }
  ```
@@ -75,19 +94,20 @@ namespace geometry {
  One should never interact with the %FrameKinematicsVector class directly.
  Instead, the FramePoseVector, FrameVelocityVector, and FrameAccelerationVector
  classes are aliases of the %FrameKinematicsVector instantiated on specific
- data types (Isometry3, SpatialVector, and SpatialAcceleration, respectively).
- Each of these data types are templated on Eigen scalars. All supported
- combinations of data type and scalar type are already available to link against
- in the containing library. No other values for KinematicsValue are supported.
+ data types (RigidTransform, SpatialVector, and SpatialAcceleration,
+ respectively). Each of these data types are templated on Eigen scalars. All
+ supported combinations of data type and scalar type are already available to
+ link against in the containing library. No other values for KinematicsValue are
+ supported.
 
  Currently, the following data types with the following scalar types are
  supported:
 
-  Alias           | Instantiation                            | Scalar types
- -----------------|------------------------------------------|--------------
-  FramePoseVector | FrameKinematicsVector<Isometry3<Scalar>> | double
-  FramePoseVector | FrameKinematicsVector<Isometry3<Scalar>> | AutoDiffXd
-  FramePoseVector | FrameKinematicsVector<Isometry3<Scalar>> | Expression
+  Alias           | Instantiation                                 | Scalar types
+ -----------------|-----------------------------------------------|-------------
+  FramePoseVector | FrameKinematicsVector<RigidTransform<Scalar>> | double
+  FramePoseVector | FrameKinematicsVector<RigidTransform<Scalar>> | AutoDiffXd
+  FramePoseVector | FrameKinematicsVector<RigidTransform<Scalar>> | Expression
   */
 template <class KinematicsValue>
 class FrameKinematicsVector {
@@ -97,19 +117,16 @@ class FrameKinematicsVector {
   /** Initializes the vector using an invalid SourceId with no frames .*/
   FrameKinematicsVector();
 
-  /** Initializes the vector to the given source ID and frame IDs, using a
-  default value for each frame. */
-  DRAKE_DEPRECATED("2019-08-01", "Simply use the default constructor.")
-  FrameKinematicsVector(SourceId source_id, const std::vector<FrameId>& ids);
-
   /** Initializes the vector using an invalid SourceId and the given frames and
   kinematics values. */
   FrameKinematicsVector(
-      std::initializer_list<std::pair<const FrameId, KinematicsValue>> init);
+      std::initializer_list<internal::FrameIdAndValuePair<KinematicsValue>>
+          init);
 
   /** Resets the vector to the given frames and kinematics values .*/
   FrameKinematicsVector& operator=(
-      std::initializer_list<std::pair<const FrameId, KinematicsValue>> init);
+      std::initializer_list<internal::FrameIdAndValuePair<KinematicsValue>>
+          init);
 
   /** Clears all values, resetting the size to zero. */
   void clear();
@@ -117,10 +134,13 @@ class FrameKinematicsVector {
   /** Sets the kinematics `value` for the frame indicated by the given `id`. */
   void set_value(FrameId id, const KinematicsValue& value);
 
-  DRAKE_DEPRECATED("2019-08-01",
-      "The source_id is being removed from FrameKinematicsVector; "
-      "the SceneGraph no longer requires that it be set.")
-  SourceId source_id() const { return source_id_; }
+  /** Sets the kinematics `value` for the frame indicated by the given `id`. */
+  DRAKE_DEPRECATED("2019-11-01", "Use RigidTransform instead of Isometry3.")
+  void set_value(
+      FrameId id,
+      const decltype(std::declval<KinematicsValue>().GetAsIsometry3())& iso3) {
+    set_value(id, KinematicsValue(iso3));
+  }
 
   /** Returns number of frame_ids(). */
   int size() const {
@@ -149,11 +169,6 @@ class FrameKinematicsVector {
 
  private:
   void CheckInvariants() const;
-
-  // TODO(jwnimmer-tri) This field is only here to support the deprecated
-  // source_id() method; when that method is removed, this field should be
-  // removed also.
-  SourceId source_id_;
 
   // Mapping from frame id to its current pose.  If the map's optional value is
   // nullopt, we treat it as if the map key were absent instead.  We do this in
@@ -185,7 +200,7 @@ class FrameKinematicsVector {
  No other values for T are currently supported.
  */
 template <typename T>
-using FramePoseVector = FrameKinematicsVector<Isometry3<T>>;
+using FramePoseVector = FrameKinematicsVector<math::RigidTransform<T>>;
 
 }  // namespace geometry
 }  // namespace drake

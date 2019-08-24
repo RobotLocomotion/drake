@@ -7,44 +7,27 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/symbolic.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
 
 namespace {
 template <typename T>
-void InitializeKinematicsValue(Isometry3<T>* value) {
-  value->setIdentity();
+void InitializeKinematicsValue(math::RigidTransform<T>* value) {
+  value->SetIdentity();
 }
 }  // namespace
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename KinematicsValue>
-FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector()
-    : FrameKinematicsVector<KinematicsValue>({}, {}) {}
-#pragma GCC diagnostic pop
-
-template <typename KinematicsValue>
-FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector(
-    SourceId source_id, const std::vector<FrameId>& ids)
-    : source_id_(source_id), values_(0) {
-  optional<KinematicsValue> default_value{KinematicsValue{}};
-  InitializeKinematicsValue(&default_value.value());
-  for (FrameId id : ids) {
-    bool is_unique = values_.emplace(id, default_value).second;
-    if (!is_unique) {
-      throw std::runtime_error(
-          fmt::format("At least one frame id appears multiple times: {}", id));
-    }
-    ++size_;
-  }
+FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector() {
   DRAKE_ASSERT_VOID(CheckInvariants());
 }
 
 template <typename KinematicsValue>
 FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector(
-    std::initializer_list<std::pair<const FrameId, KinematicsValue>> init) {
+    std::initializer_list<internal::FrameIdAndValuePair<KinematicsValue>>
+        init) {
   values_.insert(init.begin(), init.end());
   size_ = init.size();
   DRAKE_ASSERT_VOID(CheckInvariants());
@@ -53,7 +36,8 @@ FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector(
 template <typename KinematicsValue>
 FrameKinematicsVector<KinematicsValue>&
 FrameKinematicsVector<KinematicsValue>::operator=(
-    std::initializer_list<std::pair<const FrameId, KinematicsValue>> init) {
+    std::initializer_list<internal::FrameIdAndValuePair<KinematicsValue>>
+        init) {
   // N.B. We can't use unordered_map::insert in our operator= implementation
   // because it does not overwrite pre-existing keys.  (Our clear() doesn't
   // remove the keys, it only nulls the values.)
@@ -127,9 +111,10 @@ void FrameKinematicsVector<KinematicsValue>::CheckInvariants() const {
 }
 
 // Explicitly instantiates on the most common scalar types.
-template class FrameKinematicsVector<Isometry3<double>>;
-template class FrameKinematicsVector<Isometry3<AutoDiffXd>>;
-template class FrameKinematicsVector<Isometry3<symbolic::Expression>>;
+template class FrameKinematicsVector<math::RigidTransform<double>>;
+template class FrameKinematicsVector<math::RigidTransform<AutoDiffXd>>;
+template class FrameKinematicsVector<
+    math::RigidTransform<symbolic::Expression>>;
 
 }  // namespace geometry
 }  // namespace drake

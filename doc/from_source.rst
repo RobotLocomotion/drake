@@ -66,3 +66,13 @@ full details at:
     :maxdepth: 1
 
     bazel
+
+Historical Note
+===============
+
+Prior to 2016, Drake was built around a substantial base of MATLAB software. To
+view the original MATLAB implementation, you may use the tag
+`last_sha_with_original_matlab <https://github.com/RobotLocomotion/drake/tree/last_sha_with_original_matlab>`_.
+Note, however, that the dependencies on this branch are out of date and we do
+not expect that you will be able to easily compile/run the code, and do not
+provide support for this.

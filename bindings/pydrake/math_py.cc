@@ -70,6 +70,24 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.ctor.doc_1args_p)
         .def(py::init<const Isometry3<T>&>(), py::arg("pose"),
             cls_doc.ctor.doc_1args_pose)
+        .def(py::init<const MatrixX<T>&>(), py::arg("pose"),
+            cls_doc.ctor.doc_1args_constEigenMatrixBase);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    constexpr char deprecated_matrix_ctor_doc[] =
+        "Please use ``RigidTransfrom(pose=...)`` constructor. This will be "
+        "removed on or around 2019-11-15.";
+    cls  // BR
+        .def(py_init_deprecated(deprecated_matrix_ctor_doc,
+                 [](const Matrix4<T>& matrix) {
+                   return Class::FromMatrix4(matrix);
+                 }),
+            py::arg("matrix"), deprecated_matrix_ctor_doc)
+        .def_static("FromMatrix4",
+            WrapDeprecated(deprecated_matrix_ctor_doc, &Class::FromMatrix4),
+            py::arg("matrix"), deprecated_matrix_ctor_doc);
+#pragma GCC diagnostic pop
+    cls  // BR
         .def("set", &Class::set, py::arg("R"), py::arg("p"), cls_doc.set.doc)
         .def("SetFromIsometry3", &Class::SetFromIsometry3, py::arg("pose"),
             cls_doc.SetFromIsometry3.doc)
@@ -110,6 +128,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return *self * p_BoQ_B;
             },
             py::arg("p_BoQ_B"), cls_doc.operator_mul.doc_1args_p_BoQ_B)
+        .def("multiply",
+            [](const Class* self, const Matrix3X<T>& p_BoQ_B) {
+              return *self * p_BoQ_B;
+            },
+            py::arg("p_BoQ_B"),
+            cls_doc.operator_mul.doc_1args_constEigenMatrixBase)
         .def("matrix", &RigidTransform<T>::matrix,
             doc_rigid_transform_linear_matrix_deprecation)
         .def("linear", &RigidTransform<T>::linear, py_reference_internal,
@@ -153,7 +177,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("col", &Class::col, py::arg("index"), cls_doc.col.doc)
         .def("multiply",
             [](const Class& self, const Class& other) { return self * other; },
-            cls_doc.operator_mul.doc_1args_other)
+            py::arg("other"), cls_doc.operator_mul.doc_1args_other)
+        .def("multiply",
+            [](const Class& self, const Vector3<T>& v_B) { return self * v_B; },
+            py::arg("v_B"), cls_doc.operator_mul.doc_1args_v_B)
+        .def("multiply",
+            [](const Class& self, const Matrix3X<T>& v_B) {
+              return self * v_B;
+            },
+            py::arg("v_B"), cls_doc.operator_mul.doc_1args_constEigenMatrixBase)
         .def("IsValid", overload_cast_explicit<boolean<T>>(&Class::IsValid),
             cls_doc.IsValid.doc_0args)
         .def("IsExactlyIdentity", &Class::IsExactlyIdentity,

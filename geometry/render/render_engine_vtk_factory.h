@@ -37,16 +37,15 @@ struct RenderEngineVtkParams  {
 
  | Group name | Property Name | Required |  Property Type  | Property Description |
  | :--------: | :-----------: | :------: | :-------------: | :------------------- |
- |    phong   | diffuse       | no¹      | Eigen::Vector4d | The rgba² value of the object surface. |
- |    phong   | diffuse_map   | no³      | std::string     | The path to a texture to apply to the geometry.⁴ |
+ |    phong   | diffuse       | no¹      | Eigen::Vector4d | The rgba value of the object surface. |
+ |    phong   | diffuse_map   | no²      | std::string     | The path to a texture to apply to the geometry.³ |
 
  ¹ If no diffuse value is given, a default rgba value will be applied. The
    default color is a bright orange. This default value can be changed to a
    different value at construction. <br>
- ² WARNING: The alpha channel is currently ignored. <br>
- ³ If no path is specified, or the file cannot be read, the diffuse rgba value
+ ² If no path is specified, or the file cannot be read, the diffuse rgba value
    is used (or its default).
- ⁴ %RenderEngineVtk implements a legacy feature for associating textures with
+ ³ %RenderEngineVtk implements a legacy feature for associating textures with
    _meshes_. If _no_ `(phong, diffuse_map)` property is provided (or it refers
    to a file that doesn't exist), for a mesh named `/path/to/mesh.obj`,
    %RenderEngineVtk will search for a file `/path/to/mesh.png` (replacing "obj"

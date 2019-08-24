@@ -308,10 +308,6 @@ def linux_fix_rpaths(dst_full):
                 if lib_dirname not in ld_so_search_paths:
                     rpath.append(lib_dirname + '/')
 
-    # Ensure that system libraries get loaded instead of those bundled with
-    # MATLAB that are added to the LD_LIBRARY_PATH.
-    rpath.append('/usr/lib/x86_64-linux-gnu/')
-
     # The above may have duplicated some items into the list.  Uniquify it
     # here, preserving order.  Note that we do not just use a set() above,
     # since order matters.

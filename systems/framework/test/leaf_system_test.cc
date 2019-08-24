@@ -1840,47 +1840,6 @@ GTEST_TEST(FeedthroughTest, DefaultWithMultipleIoPorts) {
   EXPECT_EQ(feedthrough_pairs, expected);
 }
 
-// A MIMO system with manually-configured direct feedthrough properties: input
-// 0 affects only output 1, and input 1 affects only output 0.
-class ManualSparsitySystem : public DefaultFeedthroughSystem {
- public:
-  ManualSparsitySystem() {
-    this->AddAbstractInputPort();
-    this->AddAbstractInputPort();
-    this->AddAbstractOutputPort();
-    this->AddAbstractOutputPort();
-  }
-
- protected:
-  optional<bool> DoHasDirectFeedthrough(
-      int input_port, int output_port) const override {
-    if (input_port == 0 && output_port == 1) {
-      return true;
-    }
-    if (input_port == 1 && output_port == 0) {
-      return true;
-    }
-    return false;
-  }
-};
-
-GTEST_TEST(FeedthroughTest, ManualSparsity) {
-  ManualSparsitySystem system;
-  // Both the output ports have direct feedthrough from some input.
-  EXPECT_TRUE(system.HasAnyDirectFeedthrough());
-  EXPECT_TRUE(system.HasDirectFeedthrough(0));
-  EXPECT_TRUE(system.HasDirectFeedthrough(1));
-  // Check the entire matrix.
-  EXPECT_FALSE(system.HasDirectFeedthrough(0, 0));
-  EXPECT_TRUE(system.HasDirectFeedthrough(0, 1));
-  EXPECT_TRUE(system.HasDirectFeedthrough(1, 0));
-  EXPECT_FALSE(system.HasDirectFeedthrough(1, 1));
-  // Confirm all pairs are returned.
-  const std::multimap<int, int> expected{{1, 0}, {0, 1}};
-  auto feedthrough_pairs = system.GetDirectFeedthroughs();
-  EXPECT_EQ(feedthrough_pairs, expected);
-}
-
 // SymbolicSparsitySystem has the same sparsity matrix as ManualSparsitySystem,
 // but the matrix can be inferred from the symbolic form.
 template <typename T>

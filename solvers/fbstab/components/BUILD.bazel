@@ -5,7 +5,7 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-package(default_visibility = ["//visibility:private"])
+package(default_visibility = ["//solvers/fbstab:__pkg__"])
 
 drake_cc_library(
     name = "dense_data",
@@ -84,6 +84,81 @@ drake_cc_googletest(
         ":dense_residual",
         ":dense_variable",
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "mpc_data",
+    srcs = ["mpc_data.cc"],
+    hdrs = ["mpc_data.h"],
+    deps = [
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "mpc_variable",
+    srcs = ["mpc_variable.cc"],
+    hdrs = ["mpc_variable.h"],
+    deps = [
+        ":mpc_data",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "mpc_residual",
+    srcs = ["mpc_residual.cc"],
+    hdrs = ["mpc_residual.h"],
+    deps = [
+        ":mpc_data",
+        ":mpc_variable",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "mpc_feasibility",
+    srcs = ["mpc_feasibility.cc"],
+    hdrs = ["mpc_feasibility.h"],
+    deps = [
+        ":mpc_data",
+        ":mpc_variable",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "riccati_linear_solver",
+    srcs = ["riccati_linear_solver.cc"],
+    hdrs = ["riccati_linear_solver.h"],
+    deps = [
+        ":mpc_data",
+        ":mpc_residual",
+        ":mpc_variable",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mpc_component_unit_tests",
+    srcs = [
+        "test/mpc_component_unit_tests.cc",
+        "test/mpc_component_unit_tests.h",
+    ],
+    deps = [
+        ":mpc_data",
+        ":mpc_feasibility",
+        ":mpc_residual",
+        ":mpc_variable",
+        ":riccati_linear_solver",
+        "//common:essential",
+        "@eigen",
     ],
 )
 

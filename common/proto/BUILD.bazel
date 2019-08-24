@@ -38,6 +38,7 @@ drake_cc_proto_library(
     srcs = [
         "matlab_rpc.proto",
     ],
+    visibility = ["//visibility:private"],
 )
 
 drake_py_proto_library(
@@ -45,12 +46,14 @@ drake_py_proto_library(
     srcs = [
         "matlab_rpc.proto",
     ],
+    visibility = ["//visibility:private"],
 )
 
 drake_cc_library(
     name = "call_matlab",
     srcs = ["call_matlab.cc"],
     hdrs = ["call_matlab.h"],
+    visibility = ["//visibility:private"],
     deps = [
         ":matlab_rpc",
         ":rpc_pipe_temp_directory",
@@ -139,13 +142,6 @@ install(
 )
 
 # === test/ ===
-
-drake_cc_googletest(
-    name = "call_matlab_test",
-    deps = [
-        ":call_matlab",
-    ],
-)
 
 drake_cc_googletest(
     name = "call_python_server_test",

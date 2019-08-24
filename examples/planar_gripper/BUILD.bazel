@@ -21,12 +21,28 @@ load(
 
 drake_cc_library(
     name = "planar_gripper_common",
+    srcs = ["planar_gripper_common.cc"],
     hdrs = ["planar_gripper_common.h"],
     deps = [
         "//common:find_resource",
         "//multibody/plant",
         "//systems/lcm:lcm_interface_system",
         "@lcmtypes_robotlocomotion",
+    ],
+)
+
+drake_cc_library(
+    name = "brick_static_equilibrium_constraint",
+    srcs = ["brick_static_equilibrium_constraint.cc"],
+    hdrs = ["brick_static_equilibrium_constraint.h"],
+    deps = [
+        ":gripper_brick",
+        ":gripper_brick_planning_constraint_helper",
+        "//math:autodiff",
+        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//multibody/plant",
+        "//solvers:constraint",
+        "//solvers:mathematical_program_lite",
     ],
 )
 
@@ -38,6 +54,7 @@ drake_cc_library(
         "//examples/planar_gripper:planar_brick.sdf",
         "//examples/planar_gripper:planar_gripper.sdf",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//common:find_resource",
         "//examples/planar_gripper:planar_gripper_common",
@@ -49,11 +66,70 @@ drake_cc_library(
     ],
 )
 
+drake_cc_binary(
+    name = "planar_gripper_simulation",
+    srcs = ["planar_gripper_simulation.cc"],
+    add_test_rule = 1,
+    data = [
+        "//examples/planar_gripper:planar_brick.sdf",
+        "//examples/planar_gripper:planar_gripper.sdf",
+        "//examples/planar_gripper:postures.txt",
+    ],
+    test_rule_args = [
+        "--simulation_time=0.1",
+        "--target_realtime_rate=0",
+    ],
+    deps = [
+        ":planar_gripper_common",
+        "//common:find_resource",
+        "//common:text_logging_gflags",
+        "//common/trajectories:piecewise_polynomial",
+        "//geometry:geometry_visualization",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/controllers:inverse_dynamics_controller",
+        "//systems/framework:diagram",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:trajectory_source",
+        "@gflags",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
+drake_cc_library(
+    name = "gripper_brick_planning_constraint_helper",
+    srcs = ["gripper_brick_planning_constraint_helper.cc"],
+    hdrs = ["gripper_brick_planning_constraint_helper.h"],
+    deps = [
+        ":gripper_brick",
+        "//multibody/inverse_kinematics:kinematic_constraint",
+        "//solvers:mathematical_program_lite",
+    ],
+)
+
 drake_cc_googletest(
     name = "gripper_brick_test",
     deps = [
         ":gripper_brick",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "brick_static_equilibrium_constraint_test",
+    deps = [
+        ":brick_static_equilibrium_constraint",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:compute_numerical_gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "gripper_brick_planning_constraint_helper_test",
+    deps = [
+        ":gripper_brick_planning_constraint_helper",
+        "//solvers:solve",
     ],
 )
 

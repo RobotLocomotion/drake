@@ -18,8 +18,8 @@ namespace {
 
 using drake::geometry::internal::GeometryVisualizationImpl;
 using drake::systems::Context;
-using Eigen::Isometry3d;
 using Eigen::Vector4d;
+using math::RigidTransformd;
 using std::make_unique;
 using std::unique_ptr;
 
@@ -44,7 +44,7 @@ GTEST_TEST(GeometryVisualization, SimpleScene) {
   const float a = 0.125f;
   GeometryId sphere_id = scene_graph.RegisterGeometry(
       source_id, frame_id,
-      make_unique<GeometryInstance>(Isometry3d::Identity(),
+      make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                     make_unique<Sphere>(radius), "sphere"));
   Vector4<double> color{r, g, b, a};
   scene_graph.AssignRole(source_id, sphere_id,
@@ -57,7 +57,7 @@ GTEST_TEST(GeometryVisualization, SimpleScene) {
       scene_graph.RegisterFrame(source_id, GeometryFrame(collision_frame_name));
   GeometryId collision_id = scene_graph.RegisterGeometry(
       source_id, collision_frame_id,
-      make_unique<GeometryInstance>(Isometry3d::Identity(),
+      make_unique<GeometryInstance>(RigidTransformd::Identity(),
       make_unique<Sphere>(radius), "sphere_collision"));
   scene_graph.AssignRole(source_id, collision_id, ProximityProperties());
 

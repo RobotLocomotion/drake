@@ -37,6 +37,7 @@ using constant_pack = type_pack<type_pack<constant<T, kPixelTypes>>...>;
 using Eigen::Map;
 using Eigen::Vector3d;
 using geometry::FrameId;
+using geometry::render::CameraProperties;
 using geometry::render::DepthCameraProperties;
 using math::RigidTransformd;
 using math::RollPitchYawd;
@@ -53,6 +54,7 @@ PYBIND11_MODULE(sensors, m) {
   m.doc() = "Bindings for the sensors portion of the Systems framework.";
 
   py::module::import("pydrake.common.eigen_geometry");
+  py::module::import("pydrake.geometry.render");
   py::module::import("pydrake.systems.framework");
 
   // Expose only types that are used.
@@ -195,17 +197,24 @@ PYBIND11_MODULE(sensors, m) {
 
   py::class_<RgbdSensor::CameraPoses>(
       rgbd_sensor, "CameraPoses", doc.RgbdSensor.CameraPoses.doc)
-      .def(py::init<>())
+      .def(ParamInit<RgbdSensor::CameraPoses>())
       .def_readwrite("X_BC", &RgbdSensor::CameraPoses::X_BC)
       .def_readwrite("X_BD", &RgbdSensor::CameraPoses::X_BD);
 
   rgbd_sensor
+      .def(py::init<FrameId, const RigidTransformd&, const CameraProperties&,
+               const DepthCameraProperties&, const RgbdSensor::CameraPoses&,
+               bool>(),
+          py::arg("parent_id"), py::arg("X_PB"), py::arg("color_properties"),
+          py::arg("depth_properties"),
+          py::arg("camera_poses") = RgbdSensor::CameraPoses{},
+          py::arg("show_window") = false, doc.RgbdSensor.ctor.doc_6args)
       .def(py::init<FrameId, const RigidTransformd&,
                const DepthCameraProperties&, const RgbdSensor::CameraPoses&,
                bool>(),
           py::arg("parent_id"), py::arg("X_PB"), py::arg("properties"),
           py::arg("camera_poses") = RgbdSensor::CameraPoses{},
-          py::arg("show_window") = false, doc.RgbdSensor.ctor.doc)
+          py::arg("show_window") = false, doc.RgbdSensor.ctor.doc_5args)
       .def("color_camera_info", &RgbdSensor::color_camera_info,
           py_reference_internal, doc.RgbdSensor.color_camera_info.doc)
       .def("depth_camera_info", &RgbdSensor::depth_camera_info,
@@ -285,8 +294,6 @@ PYBIND11_MODULE(sensors, m) {
     };
     type_visit(def_image_input_port, PixelTypeList{});
   }
-
-  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake

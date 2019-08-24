@@ -10,6 +10,7 @@ from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
 import pydrake.common.test.eigen_geometry_test_util as test_util
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
 
 def normalize(x):
@@ -100,17 +101,32 @@ class TestEigenGeometry(unittest.TestCase):
             numpy_compare.assert_float_equal(q_other.rotation(), R_I)
 
         # Operations.
-        q = Quaternion(wxyz=[0.5, 0.5, 0.5, 0.5])
-        numpy_compare.assert_float_equal(
-                q.multiply(position=[1, 2, 3]), [3., 1, 2])
-        q_I = q.inverse().multiply(q)
+        q_AB = Quaternion(wxyz=[0.5, 0.5, 0.5, 0.5])
+        q_I = q_AB.inverse().multiply(q_AB)
         numpy_compare.assert_float_equal(q_I.wxyz(), [1., 0, 0, 0])
         if six.PY3:
             numpy_compare.assert_float_equal(
-                eval("q.inverse() @ q").wxyz(), [1., 0, 0, 0])
-        q_conj = q.conjugate()
+                eval("q_AB.inverse() @ q_AB").wxyz(), [1., 0, 0, 0])
+        v_B = np.array([1., 2, 3])
+        v_A = np.array([3., 1, 2])
+        numpy_compare.assert_float_allclose(q_AB.multiply(vector=v_B), v_A)
+        vlist_B = np.array([v_B, v_B]).T
+        vlist_A = np.array([v_A, v_A]).T
         numpy_compare.assert_float_equal(
-                q_conj.wxyz(), [0.5, -0.5, -0.5, -0.5])
+            q_AB.multiply(vector=vlist_B), vlist_A)
+        # Test deprecation.
+        with catch_drake_warnings(expected_count=2):
+            self.assertEqual(q_AB.multiply(position=v_B).shape, v_B.shape)
+            self.assertEqual(
+                q_AB.multiply(position=vlist_B).shape, vlist_B.shape)
+        with catch_drake_warnings(expected_count=0):
+            # No deprecation should happen with position arguments.
+            self.assertEqual(q_AB.multiply(v_B).shape, v_B.shape)
+            self.assertEqual(q_AB.multiply(vlist_B).shape, vlist_B.shape)
+
+        q_AB_conj = q_AB.conjugate()
+        numpy_compare.assert_float_equal(
+                q_AB_conj.wxyz(), [0.5, -0.5, -0.5, -0.5])
 
         # Test `type_caster`s.
         if T == float:
@@ -124,66 +140,75 @@ class TestEigenGeometry(unittest.TestCase):
         # - Default constructor
         transform = Isometry3()
         self.assertEqual(numpy_compare.resolve_type(transform.matrix()), T)
-        X = np.eye(4, 4)
-        numpy_compare.assert_float_equal(transform.matrix(), X)
-        numpy_compare.assert_float_equal(copy.copy(transform).matrix(), X)
+        X_I_np = np.eye(4, 4)
+        numpy_compare.assert_float_equal(transform.matrix(), X_I_np)
+        numpy_compare.assert_float_equal(copy.copy(transform).matrix(), X_I_np)
         if T == float:
-            self.assertEqual(str(transform), str(X))
-        # - Constructor with (X)
-        transform = Isometry3(matrix=X)
-        numpy_compare.assert_float_equal(transform.matrix(), X)
+            self.assertEqual(str(transform), str(X_I_np))
+        # - Constructor with (X_I_np)
+        transform = Isometry3(matrix=X_I_np)
+        numpy_compare.assert_float_equal(transform.matrix(), X_I_np)
         # - Copy constructor.
         cp = Isometry3(other=transform)
         numpy_compare.assert_equal(transform.matrix(), cp.matrix())
         # - Identity
         transform = Isometry3.Identity()
-        numpy_compare.assert_float_equal(transform.matrix(), X)
+        numpy_compare.assert_float_equal(transform.matrix(), X_I_np)
         # - Constructor with (R, p)
-        R = np.array([
+        R_AB = np.array([
             [0., 1, 0],
             [-1, 0, 0],
             [0, 0, 1]])
-        p = np.array([1., 2, 3])
-        X = np.vstack((np.hstack((R, p.reshape((-1, 1)))), [0, 0, 0, 1]))
-        transform = Isometry3(rotation=R, translation=p)
-        numpy_compare.assert_float_equal(transform.matrix(), X)
-        numpy_compare.assert_float_equal(transform.translation(), p)
-        transform.set_translation(-p)
-        numpy_compare.assert_float_equal(transform.translation(), -p)
-        numpy_compare.assert_float_equal(transform.rotation(), R)
-        transform.set_rotation(R.T)
-        numpy_compare.assert_float_equal(transform.rotation(), R.T)
+        p_AB = np.array([1., 2, 3])
+        X_AB_np = np.eye(4)
+        X_AB_np[:3, :3] = R_AB
+        X_AB_np[:3, 3] = p_AB
+        X_AB = Isometry3(rotation=R_AB, translation=p_AB)
+        numpy_compare.assert_float_equal(X_AB.matrix(), X_AB_np)
+        numpy_compare.assert_float_equal(X_AB.translation(), p_AB)
+        numpy_compare.assert_float_equal(X_AB.rotation(), R_AB)
+        # - Setters.
+        X_AB = Isometry3()
+        X_AB.set_translation(p_AB)
+        numpy_compare.assert_float_equal(X_AB.translation(), p_AB)
+        X_AB.set_rotation(R_AB)
+        numpy_compare.assert_float_equal(X_AB.rotation(), R_AB)
         # - Cast
         self.check_cast(mut.Isometry3_, T)
         # - Check transactions for bad values.
         if T != Expression:
-            transform = Isometry3(rotation=R, translation=p)
-            R_bad = np.copy(R)
+            X_temp = Isometry3(rotation=R_AB, translation=p_AB)
+            R_bad = np.copy(R_AB)
             R_bad[0, 0] = 10.
             with self.assertRaises(RuntimeError):
-                transform.set_rotation(R_bad)
-            numpy_compare.assert_float_equal(transform.rotation(), R)
-            X_bad = np.copy(X)
-            X_bad[:3, :3] = R_bad
+                X_temp.set_rotation(R_bad)
+            numpy_compare.assert_float_equal(X_temp.rotation(), R_AB)
+            X_bad_np = np.copy(X_I_np)
+            X_bad_np[:3, :3] = R_bad
             with self.assertRaises(RuntimeError):
-                transform.set_matrix(X_bad)
-            numpy_compare.assert_float_equal(transform.matrix(), X)
+                X_temp.set_matrix(X_bad_np)
+            numpy_compare.assert_float_equal(X_temp.matrix(), X_AB_np)
         # Test `type_caster`s.
         if T == float:
             value = test_util.create_isometry()
             self.assertTrue(isinstance(value, mut.Isometry3))
             test_util.check_isometry(value)
         # Operations.
-        transform = Isometry3(rotation=R, translation=p)
-        transform_I = transform.inverse().multiply(transform)
-        numpy_compare.assert_float_equal(transform_I.matrix(), np.eye(4))
+        X_AB = Isometry3(rotation=R_AB, translation=p_AB)
+        X_I = X_AB.inverse().multiply(X_AB)
+        numpy_compare.assert_float_equal(X_I.matrix(), X_I_np)
+        p_BQ = [10, 20, 30]
+        p_AQ = [21., -8, 33]
+        numpy_compare.assert_float_equal(X_AB.multiply(position=p_BQ), p_AQ)
+        p_BQlist = np.array([p_BQ, p_BQ]).T
+        p_AQlist = np.array([p_AQ, p_AQ]).T
         numpy_compare.assert_float_equal(
-            transform.multiply(position=[10, 20, 30]), [21., -8, 33])
+            X_AB.multiply(position=p_BQlist), p_AQlist)
         if six.PY3:
             numpy_compare.assert_float_equal(
-                eval("transform.inverse() @ transform").matrix(), np.eye(4))
+                eval("X_AB.inverse() @ X_AB").matrix(), X_I_np)
             numpy_compare.assert_float_equal(
-                eval("transform @ [10, 20, 30]"), [21., -8, 33])
+                eval("X_AB @ p_BQ"), p_AQ)
 
     def test_translation(self):
         # Test `type_caster`s.

@@ -120,8 +120,8 @@ GeometryState<T>::GeometryState()
                                  FrameIndex(0), world,
                                  InternalFrame::world_frame_clique());
   frame_index_to_id_map_.push_back(world);
-  X_WF_.push_back(Isometry3<T>::Identity());
-  X_PF_.push_back(Isometry3<T>::Identity());
+  X_WF_.push_back(RigidTransform<T>::Identity());
+  X_PF_.push_back(RigidTransform<T>::Identity());
 
   source_frame_id_map_[self_source_] = {world};
   source_root_frame_map_[self_source_] = {world};
@@ -343,14 +343,14 @@ const Shape& GeometryState<T>::GetShape(GeometryId id) const {
 }
 
 template <typename T>
-const Isometry3<double>& GeometryState<T>::GetPoseInFrame(
+const math::RigidTransform<double>& GeometryState<T>::GetPoseInFrame(
     GeometryId geometry_id) const {
   const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
   return geometry.X_FG();
 }
 
 template <typename T>
-const Isometry3<double>& GeometryState<T>::GetPoseInParent(
+const math::RigidTransform<double>& GeometryState<T>::GetPoseInParent(
     GeometryId geometry_id) const {
   const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
   return geometry.X_PG();
@@ -418,7 +418,7 @@ bool GeometryState<T>::CollisionFiltered(GeometryId id1, GeometryId id2) const {
 }
 
 template <typename T>
-const Isometry3<T>& GeometryState<T>::get_pose_in_world(
+const math::RigidTransform<T>& GeometryState<T>::get_pose_in_world(
     FrameId frame_id) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "No world pose available for invalid frame id: " +
@@ -428,7 +428,7 @@ const Isometry3<T>& GeometryState<T>::get_pose_in_world(
 }
 
 template <typename T>
-const Isometry3<T>& GeometryState<T>::get_pose_in_world(
+const math::RigidTransform<T>& GeometryState<T>::get_pose_in_world(
     GeometryId geometry_id) const {
   FindOrThrow(geometry_id, geometries_, [geometry_id]() {
     return "No world pose available for invalid geometry id: " +
@@ -438,7 +438,7 @@ const Isometry3<T>& GeometryState<T>::get_pose_in_world(
 }
 
 template <typename T>
-const Isometry3<T>& GeometryState<T>::get_pose_in_parent(
+const math::RigidTransform<T>& GeometryState<T>::get_pose_in_parent(
     FrameId frame_id) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "No pose available for invalid frame id: " + to_string(frame_id);
@@ -498,8 +498,8 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
 
   DRAKE_ASSERT(X_PF_.size() == frame_index_to_id_map_.size());
   FrameIndex index(X_PF_.size());
-  X_PF_.emplace_back(Isometry3<double>::Identity());
-  X_WF_.emplace_back(Isometry3<double>::Identity());
+  X_PF_.emplace_back(RigidTransform<T>::Identity());
+  X_WF_.emplace_back(RigidTransform<T>::Identity());
   frame_index_to_id_map_.push_back(frame_id);
   f_set.insert(frame_id);
   int clique = GeometryStateCollisionFilterAttorney::get_next_clique(
@@ -552,16 +552,14 @@ GeometryId GeometryState<T>::RegisterGeometry(
   InternalFrame& frame = frames_[frame_id];
   frame.add_child(geometry_id);
 
-  // NOTE: No implicit conversion from Isometry3<double> to Isometry3<AutoDiff>.
-  // However, we can implicitly assign Matrix<double> to Matrix<AutoDiff>.
-  Isometry3<T> X_WG;
-  X_WG.matrix() = geometry->pose().matrix();
-  X_WGs_[geometry_id] = X_WG;
+  // pose() is always RigidTransform<double>. To account for
+  // GeometryState<AutoDiff>, we need to cast it to the common type T.
+  X_WGs_[geometry_id] = geometry->pose().cast<T>();
 
-  geometries_.emplace(geometry_id,
-                      InternalGeometry(source_id, geometry->release_shape(),
-                                       frame_id, geometry_id, geometry->name(),
-                                       geometry->pose()));
+  geometries_.emplace(
+      geometry_id,
+      InternalGeometry(source_id, geometry->release_shape(), frame_id,
+                       geometry_id, geometry->name(), geometry->pose()));
 
   // Any roles defined on the geometry instance propagate through automatically.
   if (geometry->illustration_properties()) {
@@ -620,8 +618,8 @@ GeometryId GeometryState<T>::RegisterGeometryWithParent(
   // X_FG_ vector assuming the parent was the frame. Replace it by concatenating
   // its pose in parent, with its parent's pose in frame. NOTE: the pose is no
   // longer available from geometry because of the `move(geometry)`.
-  const Isometry3<double>& X_PG = new_geometry.X_FG();
-  const Isometry3<double>& X_FP = parent_geometry.X_FG();
+  const RigidTransform<double>& X_PG = new_geometry.X_FG();
+  const RigidTransform<double>& X_FP = parent_geometry.X_FG();
   new_geometry.set_geometry_parent(parent_id, X_FP * X_PG);
   parent_geometry.add_child(new_id);
   return new_id;
@@ -1024,7 +1022,7 @@ void GeometryState<T>::SetFramePoses(
   // TODO(SeanCurtis-TRI): Down the road, make this validation depend on
   // ASSERT_ARMED.
   ValidateFrameIds(source_id, poses);
-  const Isometry3<T> world_pose = Isometry3<T>::Identity();
+  const RigidTransform<T> world_pose = RigidTransform<T>::Identity();
   for (auto frame_id : source_root_frame_map_[source_id]) {
     UpdatePosesRecursively(frames_[frame_id], world_pose, poses);
   }
@@ -1058,15 +1056,8 @@ void GeometryState<T>::ValidateFrameIds(
 template <typename T>
 void GeometryState<T>::FinalizePoseUpdate() {
   geometry_engine_->UpdateWorldPoses(X_WGs_);
-  // TODO(SeanCurtis-TRI): Kill this horrible copy once Isometry3 is removed
-  // and X_WGs_ is RigidTransform typed.
-  std::unordered_map<GeometryId, RigidTransform<T>> Xrt_WG;
-  for (const auto& id_geometry_pair : geometries_) {
-    const GeometryId id = id_geometry_pair.first;
-    Xrt_WG[id] = RigidTransform<T>(X_WGs_[id]);
-  }
   for (auto& pair : render_engines_) {
-    pair.second->UpdatePoses(Xrt_WG);
+    pair.second->UpdatePoses(X_WGs_);
   }
 }
 
@@ -1130,30 +1121,21 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
 
 template <typename T>
 void GeometryState<T>::UpdatePosesRecursively(
-    const internal::InternalFrame& frame, const Isometry3<T>& X_WP,
+    const internal::InternalFrame& frame, const RigidTransform<T>& X_WP,
     const FramePoseVector<T>& poses) {
   const auto frame_id = frame.id();
   const auto& X_PF = poses.value(frame_id);
   // Cache this transform for later use.
   X_PF_[frame.index()] = X_PF;
-  Isometry3<T> X_WF = X_WP * X_PF;
-  // TODO(SeanCurtis-TRI): Replace this when we have a transform object that
-  // allows proper multiplication between an AutoDiff type and a double type.
-  // For now, it allows me to perform the multiplication by multiplying the
-  // fully-defined transformation (with [0 0 0 1] on the bottom row).
-  X_WF.makeAffine();
+  RigidTransform<T> X_WF = X_WP * X_PF;
   X_WF_[frame.index()] = X_WF;
   // Update the geometry which belong to *this* frame.
   for (auto child_id : frame.child_geometries()) {
     auto& child_geometry = geometries_[child_id];
-    // TODO(SeanCurtis-TRI): See note above about replacing this when we have a
-    // transform that supports autodiff * double.
-    Isometry3<double> X_FG(child_geometry.X_FG());
-    X_FG.makeAffine();
-    // TODO(SeanCurtis-TRI): These matrix() shenanigans are here because I can't
-    // assign a an Isometry3<double> to an Isometry3<AutoDiffXd>. Replace this
-    // when I can.
-    X_WGs_[child_id].matrix() = X_WF.matrix() * X_FG.matrix();
+    // X_FG() is always RigidTransform<double>, to account for
+    // GeometryState<AutoDiff>, we need to cast it to the common type T.
+    RigidTransform<double> X_FG(child_geometry.X_FG());
+    X_WGs_[child_id] = X_WF * X_FG.cast<T>();
   }
 
   // Update each child frame.
@@ -1365,7 +1347,7 @@ RigidTransformd GeometryState<T>::GetDoubleWorldPose(FrameId frame_id) const {
     return RigidTransformd::Identity();
   }
   const internal::InternalFrame& frame = GetValueOrThrow(frame_id, frames_);
-  return RigidTransformd(internal::convert_to_double(X_WF_[frame.index()]));
+  return internal::convert_to_double(X_WF_[frame.index()]);
 }
 
 }  // namespace geometry

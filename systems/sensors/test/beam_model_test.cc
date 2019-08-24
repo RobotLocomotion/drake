@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/proto/call_matlab.h"
+#include "drake/common/proto/call_python.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -135,19 +135,19 @@ GTEST_TEST(BeamModelTest, TestProbabilityDensity) {
   // All values are in [0.0, kMaxRange]
   EXPECT_TRUE((x.array() >= 0.0 && x.array() <= kMaxRange).all());
 
-  // Matlab visual debugging:
+  // Python visual debugging:
   const Eigen::VectorXd depth =
       Eigen::VectorXd::LinSpaced(1000, 0.0, kMaxRange - 1e-6);
   Eigen::VectorXd pdf(depth.size());
   for (int i = 0; i < static_cast<int>(depth.size()); i++) {
     pdf[i] = probability_density_function(depth[i]);
   }
-  using common::CallMatlab;
-  CallMatlab("clf");
-  CallMatlab("plot", depth, pdf);
-  CallMatlab("xlabel", "depth (m)");
-  CallMatlab("ylabel", "probability density");
-  CallMatlab("hold", "on");
+  using common::CallPython;
+  CallPython("figure", 1);
+  CallPython("clf");
+  CallPython("plot", depth, pdf);
+  CallPython("xlabel", "depth (m)");
+  CallPython("ylabel", "probability density");
 
   const double h = 0.2;
   // Evaluate all subintervals [a,a+h] in [0,kMaxRange).
@@ -159,7 +159,7 @@ GTEST_TEST(BeamModelTest, TestProbabilityDensity) {
                              .sum();
 
     EXPECT_NEAR(count / N, probability_density_function(a + h / 2) * h, 1.5e-2);
-    CallMatlab("plot", a + h / 2, count / N / h, "r.");
+    CallPython("plot", a + h / 2, count / N / h, "r.");
   }
 
   // Check the max returns.

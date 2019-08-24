@@ -2,6 +2,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/solvers/fbstab/components/dense_data.h"
 #include "drake/solvers/fbstab/components/dense_residual.h"
 #include "drake/solvers/fbstab/components/dense_variable.h"
@@ -41,6 +42,7 @@ class DenseComponentUnitTests;
  */
 class DenseLinearSolver {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseLinearSolver)
   /**
    * Allocates workspace memory.
    * @param [nz] Number of decision variables.
@@ -64,7 +66,8 @@ class DenseLinearSolver {
    * Throws a runtime_error if x and xbar aren't the correct size,
    * sigma is negative or the problem data isn't linked.
    */
-  bool Factor(const DenseVariable& x, const DenseVariable& xbar, double sigma);
+  bool Initialize(const DenseVariable& x, const DenseVariable& xbar,
+                  double sigma);
 
   /**
    * Solves the system V*x = r and stores the result in x.
@@ -73,7 +76,7 @@ class DenseLinearSolver {
    *
    * @param[in]   r   The right hand side vector
    * @param[out]  x   Overwritten with the solution
-   * @return        true if the solve succeeds, false otherwise
+   * @return true if successful, false otherwise
    *
    * Throws a runtime_error if x and r aren't the correct sizes,
    * if x is null or if the problem data isn't linked.

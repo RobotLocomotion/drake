@@ -102,7 +102,7 @@ double DenseResidual::min(double a, double b) { return a < b ? a : b; }
 
 double DenseResidual::pfb(double a, double b, double alpha) {
   const double fb = a + b - sqrt(a * a + b * b);
-  return alpha * fb + (1.0 - alpha) * max(0, a) * max(0, b); //NOLINT
+  return alpha * fb + (1.0 - alpha) * max(0, a) * max(0, b);  // NOLINT
 }
 
 }  // namespace fbstab

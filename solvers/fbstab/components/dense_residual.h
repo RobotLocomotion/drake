@@ -22,7 +22,7 @@ namespace fbstab {
  */
 class DenseResidual {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseResidual);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseResidual)
   /**
    * Allocates memory for computing and storing residual vectors.
    * Uses alpha = 0.95 (see (19) in https://arxiv.org/pdf/1901.04046.pdf)
@@ -34,7 +34,6 @@ class DenseResidual {
    * Throws an exception if any inputs aren't positive.
    */
   DenseResidual(int nz, int nv);
-
 
   /**
    * Performs the operation
@@ -149,10 +148,10 @@ class DenseResidual {
   static double pfb(double a, double b, double alpha);
 
   /* Scalar max function. */
-  static double max(double a, double b); //NOLINT
+  static double max(double a, double b);  // NOLINT
 
   /* Scalar min function. */
-  static double min(double a, double b); //NOLINT
+  static double min(double a, double b);  // NOLINT
 
   friend class DenseLinearSolver;
 };

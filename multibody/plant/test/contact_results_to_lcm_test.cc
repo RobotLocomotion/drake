@@ -231,7 +231,7 @@ std::unique_ptr<ContactSurface<double>> CreateContactSurface(
 
   // Create the gradient of the "h" field, pointing toward what will be
   // geometry "M" (the halfspace).
-  std::vector<Vector3<double>> h_MN_M(mesh->num_vertices(),
+  std::vector<Vector3<double>> h_MN_W(mesh->num_vertices(),
       Vector3<double>(0, 0, -1));
 
   SurfaceMesh<double>* mesh_pointer = mesh.get();
@@ -240,8 +240,7 @@ std::unique_ptr<ContactSurface<double>> CreateContactSurface(
       std::make_unique<MeshFieldLinear<double, SurfaceMesh<double>>>(
           "e_MN", std::move(e_MN), mesh_pointer),
       std::make_unique<MeshFieldLinear<Vector3<double>, SurfaceMesh<double>>>(
-          "h_MN_M", std::move(h_MN_M), mesh_pointer),
-      RigidTransform<double>::Identity());
+          "h_MN_W", std::move(h_MN_W), mesh_pointer));
 }
 
 // TODO(edrumwri) Remove this function when MultibodyPlant outputs hydroelastic
@@ -268,11 +267,10 @@ ContactResults<double> GenerateHydroelasticContactResults(
   // testing that the structure can be created.
   const RigidTransform<double> X_WA = RigidTransform<double>::Identity();
   const RigidTransform<double> X_WB = RigidTransform<double>::Identity();
-  const RigidTransform<double> X_WM = RigidTransform<double>::Identity();
   const SpatialVelocity<double> V_WA = SpatialVelocity<double>::Zero();
   const SpatialVelocity<double> V_WB = SpatialVelocity<double>::Zero();
   HydroelasticTractionCalculator<double>::Data data(
-      X_WA, X_WB, V_WA, V_WB, X_WM, contact_surface.get());
+      X_WA, X_WB, V_WA, V_WB, contact_surface.get());
 
   // Material properties are also dummies (the test will be unaffected by
   // their settings).
@@ -286,8 +284,7 @@ ContactResults<double> GenerateHydroelasticContactResults(
   ContactResults<double> output;
   output.AddHydroelasticContactInfo(
       std::make_unique<HydroelasticContactInfo<double>>(
-          calculator.ComputeContactInfo(data, dissipation, mu_coulomb,
-          std::move(contact_surface))));
+          calculator.ComputeContactInfo(data, dissipation, mu_coulomb)));
   return output;
 }
 

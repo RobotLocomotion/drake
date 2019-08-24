@@ -90,7 +90,8 @@ GripperBrickHelper<T>::GripperBrickHelper() {
       inspector.GetShape(finger_tip_geometry_id);
   finger_tip_radius_ =
       dynamic_cast<const geometry::Sphere&>(fingertip_shape).get_radius();
-  p_L2Tip_ = inspector.X_FG(finger_tip_geometry_id).translation();
+  p_L2Fingertip_ =
+      inspector.GetPoseInFrame(finger_tip_geometry_id).translation();
   const geometry::Shape& brick_shape =
       inspector.GetShape(inspector.GetGeometryIdByName(
           plant_->GetBodyFrameIdOrThrow(

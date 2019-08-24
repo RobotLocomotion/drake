@@ -106,7 +106,6 @@ class Sinusoid : public systems::LeafSystem<double> {
 // stepping approach.
 class SchunkWsgLiftTest : public ::testing::TestWithParam<bool> {
  protected:
-
   // Finds the single end-effector from a RigidBodyTree and returns it. Aborts
   // if there is more than one end-effector or more than one base link.
   RigidBody<double>* FindEndEffector(RigidBodyTree<double>* tree) {

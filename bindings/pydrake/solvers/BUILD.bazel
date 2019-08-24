@@ -246,7 +246,7 @@ drake_py_unittest(
 drake_py_unittest(
     name = "nlopt_solver_test",
     args = select({
-        "//tools:no_nlopt": ["TestIpoptSolver.unavailable"],
+        "//tools:no_nlopt": ["TestNloptSolver.unavailable"],
         "//conditions:default": [],
     }),
     deps = [
@@ -267,7 +267,7 @@ drake_py_unittest(
 drake_py_unittest(
     name = "scs_solver_test",
     args = select({
-        "//tools:no_scs": ["TestOsqpSolver.unavailable"],
+        "//tools:no_scs": ["TestScsSolver.unavailable"],
         "//conditions:default": [],
     }),
     deps = [

@@ -270,7 +270,7 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_cost_api(self):
         prog = mp.MathematicalProgram()
         x0, = prog.NewContinuousVariables(1, "x")
-        lc = prog.AddLinearCost(1*x0 + 2).evaluator()
+        lc = prog.AddLinearCost([1], 2, [x0]).evaluator()
         qc = prog.AddQuadraticCost(0.5*x0**2 + 2*x0 + 3).evaluator()
 
         def check_linear_cost(cost, a, b):
@@ -584,6 +584,11 @@ class TestMathematicalProgram(unittest.TestCase):
         options = options_object.GetOptions(solver_id)
         self.assertDictEqual(
             options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
+
+        prog.SetSolverOptions(options_object)
+        prog_options = prog.GetSolverOptions(solver_id)
+        self.assertDictEqual(
+            prog_options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
 
     def test_infeasible_constraints(self):
         prog = mp.MathematicalProgram()

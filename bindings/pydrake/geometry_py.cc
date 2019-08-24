@@ -93,7 +93,7 @@ void def_geometry_render(py::module m) {
 
   py::class_<RenderEngineVtkParams>(
       m, "RenderEngineVtkParams", doc.RenderEngineVtkParams.doc)
-      .def(py::init<>())
+      .def(ParamInit<RenderEngineVtkParams>())
       .def_readwrite("default_label", &RenderEngineVtkParams::default_label,
           doc.RenderEngineVtkParams.default_label.doc)
       .def_readwrite("default_diffuse", &RenderEngineVtkParams::default_diffuse,
@@ -176,16 +176,24 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "FramePoseVector", param, doc.FrameKinematicsVector.doc);
     cls  // BR
         .def(py::init<>(), doc.FrameKinematicsVector.ctor.doc_0args)
-        .def(py::init([](SourceId source_id, const std::vector<FrameId>& ids) {
-          WarnDeprecated("See API docs for deprecation notice.");
-          return std::make_unique<FramePoseVector<T>>(source_id, ids);
-        }),
-            py::arg("source_id"), py::arg("ids"),
-            doc.FrameKinematicsVector.ctor.doc_deprecated_2args)
         .def("clear", &FramePoseVector<T>::clear,
             doc.FrameKinematicsVector.clear.doc)
-        .def("set_value", &FramePoseVector<T>::set_value, py::arg("id"),
-            py::arg("value"), doc.FrameKinematicsVector.set_value.doc)
+        .def("set_value",
+            [](Class* self, FrameId id, const math::RigidTransform<T>& value) {
+              self->set_value(id, value);
+            },
+            py::arg("id"), py::arg("value"),
+            doc.FrameKinematicsVector.set_value.doc)
+        .def("set_value",
+            [](Class* self, FrameId id, const Isometry3<T>& value) {
+              WarnDeprecated("Use RigidTransform instead of Isometry3.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->set_value(id, value);
+#pragma GCC diagnostic pop
+            },
+            py::arg("id"), py::arg("value"),
+            doc.FrameKinematicsVector.set_value.doc_deprecated)
         .def("size", &FramePoseVector<T>::size,
             doc.FrameKinematicsVector.size.doc)
         // This intentionally copies the value to avoid segfaults from accessing
@@ -264,7 +272,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "SignedDistancePair", param, doc.SignedDistancePair.doc);
     cls  // BR
-        .def(py::init<>(), doc.SignedDistancePair.ctor.doc_7args)
+        .def(ParamInit<Class>(), doc.SignedDistancePair.ctor.doc_7args)
         .def_readwrite("id_A", &SignedDistancePair<T>::id_A,
             doc.SignedDistancePair.id_A.doc)
         .def_readwrite("id_B", &SignedDistancePair<T>::id_B,
@@ -291,7 +299,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "SignedDistanceToPoint", param, doc.SignedDistanceToPoint.doc);
     cls  // BR
-        .def(py::init<>(), doc.SignedDistanceToPoint.ctor.doc)
+        .def(ParamInit<Class>(), doc.SignedDistanceToPoint.ctor.doc)
         .def_readwrite("id_G", &SignedDistanceToPoint<T>::id_G,
             doc.SignedDistanceToPoint.id_G.doc)
         .def_readwrite("p_GN", &SignedDistanceToPoint<T>::p_GN,
@@ -310,7 +318,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class>(
         m, "PenetrationAsPointPair", param, doc.PenetrationAsPointPair.doc);
     cls  // BR
-        .def(py::init<>(), doc.PenetrationAsPointPair.ctor.doc)
+        .def(ParamInit<Class>(), doc.PenetrationAsPointPair.ctor.doc)
         .def_readwrite("id_A", &PenetrationAsPointPair<T>::id_A,
             doc.PenetrationAsPointPair.id_A.doc)
         .def_readwrite("id_B", &PenetrationAsPointPair<T>::id_B,

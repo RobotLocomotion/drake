@@ -245,7 +245,7 @@ Infrastructure Flake
 The machinery of the CI system itself sometimes fails for reasons unrelated to
 any code change. The most common infrastructure flakes include:
 
-* Unable to obtain a MATLAB license.
+* Unable to obtain a Gurobi license.
 * Broken connection to a Mac build agent.
 
 Infrastructure flakes will be red in Jenkins. If you believe you are looking at

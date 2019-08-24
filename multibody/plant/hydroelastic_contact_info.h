@@ -47,7 +47,7 @@ class HydroelasticContactInfo {
    @see vslip_AB_W()
    */
   HydroelasticContactInfo(
-      geometry::ContactSurface<T>* contact_surface,
+      geometry::ContactSurface<T> const* contact_surface,
       std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_A_W,
       std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_AB_W) :
       shadowed_raw_contact_surface_ptr_(std::move(contact_surface)),
@@ -80,8 +80,8 @@ class HydroelasticContactInfo {
   /** Clones this data structure, making deep copies of all underlying data.
    */
   std::unique_ptr<HydroelasticContactInfo<T>> Clone() const {
-    std::unique_ptr<geometry::ContactSurface<T>> contact_surface_clone =
-        contact_surface().Clone();
+    auto contact_surface_clone =
+        std::make_unique<geometry::ContactSurface<T>>(contact_surface());
     const geometry::SurfaceMesh<T>* mesh = &contact_surface_clone->mesh();
     return std::make_unique<HydroelasticContactInfo<T>>(
         std::move(contact_surface_clone), traction_A_W_->CloneAndSetMesh(mesh),
@@ -120,7 +120,7 @@ class HydroelasticContactInfo {
 
  private:
   // Note that the mesh of the contact surface is defined in the world frame.
-  geometry::ContactSurface<T>* shadowed_raw_contact_surface_ptr_{nullptr};
+  geometry::ContactSurface<T> const* shadowed_raw_contact_surface_ptr_{nullptr};
   std::unique_ptr<geometry::ContactSurface<T>> owned_contact_surface_;
   std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> traction_A_W_;
   std::unique_ptr<geometry::SurfaceMeshField<Vector3<T>, T>> vslip_AB_W_;

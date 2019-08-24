@@ -65,10 +65,8 @@ drake_py_unittest(
     deps = [
         "//bindings/pydrake/attic/multibody",
         "//bindings/pydrake/attic/solvers",
-        "//bindings/pydrake/attic/systems",
         "//bindings/pydrake/multibody",
         "//bindings/pydrake/solvers",
-        "//bindings/pydrake/systems",
     ],
 )
 

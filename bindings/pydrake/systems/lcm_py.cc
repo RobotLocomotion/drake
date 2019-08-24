@@ -10,7 +10,6 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/lcm/connect_lcm_scope.h"
-#include "drake/systems/lcm/lcm_driven_loop.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/lcm/serializer.h"
@@ -21,13 +20,7 @@ namespace pydrake {
 using lcm::DrakeLcm;
 using lcm::DrakeLcmInterface;
 using pysystems::pylcm::BindCppSerializers;
-using systems::lcm::LcmMessageToTimeInterface;
 using systems::lcm::SerializerInterface;
-
-constexpr const char* const kLcmDrivenLoopDeprecationString =
-    "LcmDrivenLoop is deprecated with no direct replacement; see "
-    "https://github.com/RobotLocomotion/drake/pull/11281 for suggestions. "
-    "This class will be removed on 2019-08-01.";
 
 namespace {
 
@@ -71,22 +64,6 @@ class PySerializerInterface : public py::wrapper<SerializerInterface> {
     std::copy(str.data(), str.data() + str.size(), message_bytes->data());
   }
 };
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-class PyLcmMessageToTimeInterface
-    : public py::wrapper<LcmMessageToTimeInterface> {
- public:
-  using Base = py::wrapper<LcmMessageToTimeInterface>;
-
-  PyLcmMessageToTimeInterface() : Base() {}
-
-  double GetTimeInSeconds(const AbstractValue& abstract_value) const override {
-    PYBIND11_OVERLOAD_PURE(
-        double, LcmMessageToTimeInterface, GetTimeInSeconds, &abstract_value);
-  }
-};
-#pragma GCC diagnostic pop
 
 }  // namespace
 
@@ -136,20 +113,6 @@ PYBIND11_MODULE(lcm, m) {
   }
 
   {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    using Class = LcmMessageToTimeInterface;
-    py::class_<Class, PyLcmMessageToTimeInterface>(
-        m, "LcmMessageToTimeInterface")
-        .def(py::init([]() {
-          WarnDeprecated(kLcmDrivenLoopDeprecationString);
-          return std::make_unique<PyLcmMessageToTimeInterface>();
-        }),
-            doc.LcmMessageToTimeInterface.doc_deprecated);
-#pragma GCC diagnostic pop
-  }
-
-  {
     using Class = LcmPublisherSystem;
     constexpr auto& cls_doc = doc.LcmPublisherSystem;
     py::class_<Class, LeafSystem<double>> cls(m, "LcmPublisherSystem");
@@ -176,47 +139,6 @@ PYBIND11_MODULE(lcm, m) {
         .def("WaitForMessage", &Class::WaitForMessage,
             py::arg("old_message_count"), py::arg("message") = nullptr,
             py::arg("timeout") = -1, cls_doc.WaitForMessage.doc);
-  }
-
-  {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    using Class = LcmDrivenLoop;
-    py::class_<Class>(m, "LcmDrivenLoop")
-        .def(
-            py::init(
-                [](const System<double>& system,
-                    const LcmSubscriberSystem& driving_subscriber,
-                    std::unique_ptr<Context<double>> context, DrakeLcm* lcm,
-                    std::unique_ptr<LcmMessageToTimeInterface> time_converter) {
-                  WarnDeprecated(kLcmDrivenLoopDeprecationString);
-                  return std::make_unique<LcmDrivenLoop>(system,
-                      driving_subscriber, std::move(context), lcm,
-                      std::move(time_converter));
-                }),
-            py::arg("system"), py::arg("driving_subscriber"),
-            py::arg("context"), py::arg("lcm"), py::arg("time_converter"),
-            // Keep alive, ownership: `Context` keeps `self` alive.
-            py::keep_alive<4, 1>(),
-            // Keep alive, reference: `self` keeps `DrakeLcm` alive.
-            py::keep_alive<1, 5>(),
-            // Keep alive, ownership: `time_converter` keeps `self` alive.
-            py::keep_alive<6, 1>(), doc.LcmDrivenLoop.ctor.doc_deprecated)
-        .def("WaitForMessage", &Class::WaitForMessage, py_reference_internal,
-            doc.LcmDrivenLoop.WaitForMessage.doc)
-        .def("RunToSecondsAssumingInitialized",
-            &Class::RunToSecondsAssumingInitialized,
-            py::arg("stop_time") = std::numeric_limits<double>::infinity(),
-            doc.LcmDrivenLoop.RunToSecondsAssumingInitialized.doc)
-        .def("set_publish_on_every_received_message",
-            &Class::set_publish_on_every_received_message,
-            doc.LcmDrivenLoop.set_publish_on_every_received_message.doc)
-        .def("get_mutable_context", &Class::get_mutable_context,
-            py_reference_internal, doc.LcmDrivenLoop.get_mutable_context.doc)
-        .def("get_message_to_time_converter",
-            &Class::get_message_to_time_converter, py_reference_internal,
-            doc.LcmDrivenLoop.get_message_to_time_converter.doc);
-#pragma GCC diagnostic pop
   }
 
   m.def("ConnectLcmScope", &ConnectLcmScope, py::arg("src"), py::arg("channel"),

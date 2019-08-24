@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <map>
 #include <memory>
 #include <string>
@@ -1006,14 +1007,22 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   already exists in the model. See HasJointActuatorNamed().
   /// @param[in] joint
   ///   The Joint to be actuated by the new JointActuator.
+  /// @param[in] effort_limit
+  ///   The maximum effort for the actuator. It must be strictly positive,
+  ///   otherwise an std::exception is thrown. If +∞, the actuator has no limit,
+  ///   which is the default. The effort limit has physical units in accordance
+  ///   to the joint type it actuates. For instance, it will have units of
+  ///   N⋅m (torque) for revolute joints while it will have units of N (force)
+  ///   for prismatic joints.
   /// @returns A constant reference to the new JointActuator just added, which
   /// will remain valid for the lifetime of `this` plant.
   /// @throws std::exception if `joint.num_velocities() > 1` since for now we
   /// only support actuators for single dof joints.
   const JointActuator<T>& AddJointActuator(
-      const std::string& name, const Joint<T>& joint) {
+      const std::string& name, const Joint<T>& joint,
+      double effort_limit = std::numeric_limits<double>::infinity()) {
     DRAKE_THROW_UNLESS(joint.num_velocities() == 1);
-    return this->mutable_tree().AddJointActuator(name, joint);
+    return this->mutable_tree().AddJointActuator(name, joint, effort_limit);
   }
 
   /// Creates a new model instance.  Returns the index for the model
@@ -2542,6 +2551,68 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   geometry::SourceId RegisterAsSourceForSceneGraph(
       geometry::SceneGraph<T>* scene_graph);
 
+  /// @name  Managing geometries for bodies
+  ///
+  /// The following methods provide a convenient means for associating
+  /// geometries with bodies. Ultimately, the geometries are owned by
+  /// @ref geometry::SceneGraph "SceneGraph". These methods do the work of
+  /// registering the requested geometries with SceneGraph and maintaining a
+  /// mapping between the body and the registered data. Particularly, SceneGraph
+  /// knows nothing about the concepts inherent in the %MultibodyPlant. These
+  /// methods account for those differences as documented below.
+  ///
+  /// <h4>Geometry registration with roles</h4>
+  ///
+  /// Geometries can be associated with bodies via the `RegisterXXXGeometry`
+  /// family of methods. In SceneGraph, geometries have @ref geometry_roles
+  /// "roles". The `RegisterCollisionGeometry()` methods register geometry with
+  /// SceneGraph and assign it the proximity role. The
+  /// `RegisterVisualGeometry()` methods do the same, but assign the
+  /// illustration role.
+  ///
+  /// All geometry registration methods return a @ref geometry::GeometryId
+  /// GeometryId. This is how SceneGraph refers to the geometries. The
+  /// properties of an individual geometry can be accessed with its id and
+  /// geometry::SceneGraphInspector and geometry::QueryObject (for its
+  /// state-dependent pose in world).
+  ///
+  /// <h4>%Body frames and SceneGraph frames</h4>
+  ///
+  /// The first time a geometry registration method is called on a particular
+  /// body, that body's frame B is registered with SceneGraph. As SceneGraph
+  /// knows nothing about bodies, in the SceneGraph domain, the frame is simply
+  /// notated as F; this is merely an alias for the body frame. Thus, the pose
+  /// of the geometry G in the SceneGraph frame F is the same as the pose of the
+  /// geometry in the body frame B; `X_FG = X_BG`.
+  ///
+  /// The model instance index of the body is passed to the SceneGraph frame as
+  /// its "frame group". This can be retrieved from the
+  /// geometry::SceneGraphInspector::GetFrameGroup(FrameId) method.
+  ///
+  /// Given a GeometryId, SceneGraph cannot report what _body_ it is affixed to.
+  /// It can only report the SceneGraph alias frame F. But the following idiom
+  /// can report the body:
+  ///
+  /// ```
+  /// const MultibodyPlant<T>& plant = ...;
+  /// const SceneGraphInspector<T>& inspector =  ...;
+  /// const GeometryId g_id = id_from_some_query;
+  /// const FrameId f_id = inspector.GetFrameId(g_id);
+  /// const Body<T>* body = plant.GetBodyFromFrameId(f_id);
+  /// ```
+  /// See documentation of geometry::SceneGraphInspector on where to get an
+  /// inspector.
+  ///
+  /// In %MultibodyPlant, frame names only have to be unique in a single
+  /// model instance. However, SceneGraph knows nothing of model instances. So,
+  /// to generate unique names for the corresponding frames in SceneGraph,
+  /// when %MultibodyPlant registers the corresponding SceneGraph frame, it is
+  /// named with a "scoped name". This is a concatenation of
+  /// `[model instance name]::[body name]`. Searching for a frame with just the
+  /// name `body name` will fail. (See Body::name() and GetModelInstanceName()
+  /// for those values.)
+  /// @{
+
   /// Registers geometry in a SceneGraph with a given geometry::Shape to be
   /// used for visualization of a given `body`.
   ///
@@ -2717,6 +2788,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called pre-finalize.
   geometry::GeometrySet CollectRegisteredGeometries(
       const std::vector<const Body<T>*>& bodies) const;
+  /// @}
 
   /// Returns all bodies that are transitively welded, or rigidly affixed, to
   /// `body`, per these two definitions:
@@ -2922,12 +2994,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @pre Finalize() was already called on `this` plant.
   const systems::OutputPort<T>& get_state_output_port() const;
 
-  /// Returns a constant reference to the output port for the full continuous
-  /// state `x = [q v]` of the model.
-  /// @pre Finalize() was already called on `this` plant.
-  DRAKE_DEPRECATED("2019-08-01", "Use get_state_output_port() instead.")
-  const systems::OutputPort<T>& get_continuous_state_output_port() const;
-
   /// Returns a constant reference to the output port for the state of a
   /// specific model instance.
   /// @pre Finalize() was already called on `this` plant.
@@ -2937,15 +3003,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const systems::OutputPort<T>& get_state_output_port(
       ModelInstanceIndex model_instance) const;
 
-  /// Returns a constant reference to the output port for the continuous
-  /// state of a specific model instance.
-  /// @pre Finalize() was already called on `this` plant.
-  /// @throws std::exception if called before Finalize() or if the model
-  /// instance does not have any state.
-  /// @throws std::exception if the model instance does not exist.
-  DRAKE_DEPRECATED("2019-08-01", "Use get_state_output_port() instead.")
-  const systems::OutputPort<T>& get_continuous_state_output_port(
-      ModelInstanceIndex model_instance) const;
   /// @}
   // Closes Doxygen section "Continuous state output"
 

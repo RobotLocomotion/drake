@@ -41,21 +41,6 @@ drake_py_library(
     ],
 )
 
-drake_cc_library(
-    name = "systems_pybind",
-    hdrs = ["systems_pybind.h"],
-    declare_installed_headers = 0,
-    deprecation = "This will be removed on or around 2019-08-01. Please " +
-                  "use constituent libraries instead.",
-    tags = ["manual"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//bindings/pydrake:pydrake_pybind",
-        "//bindings/pydrake/common:default_scalars_pybind",
-        "//bindings/pydrake/common:value_pybind",
-    ],
-)
-
 drake_pybind_library(
     name = "framework_py",
     cc_deps = [
@@ -149,7 +134,6 @@ drake_pybind_library(
         "//bindings/pydrake:symbolic_py",
         "//bindings/pydrake/multibody:plant_py",
     ],
-    py_srcs = ["_controllers_extra.py"],
 )
 
 drake_pybind_library(
@@ -185,8 +169,8 @@ drake_pybind_library(
         ":module_py",
         "//bindings/pydrake/common:cpp_template_py",
         "//bindings/pydrake/common:eigen_geometry_py",
+        "//bindings/pydrake:geometry_py",
     ],
-    py_srcs = ["_sensors_extra.py"],
 )
 
 drake_pybind_library(

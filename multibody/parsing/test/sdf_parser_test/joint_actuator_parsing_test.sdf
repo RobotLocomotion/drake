@@ -1,0 +1,102 @@
+<?xml version="1.0" ?>
+
+<!--
+Defines an SDF model with various types of joint limits used for testing the
+joint actuator parser. The only focus is the <effort> tag. Other values,
+therefore, are set arbitrarily.
+This is an accompanying file to detail_sdf_parser_test.cc and therefore they
+must be kept in sync with each other.
+-->
+
+<sdf version='1.6'>
+  <model name='joint_actuator_parsing_test'>
+    <link name='link1'>
+      <inertial>
+        <mass>1</mass>
+        <inertia>
+          <ixx>1.0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>1.0</iyy>
+          <iyz>0</iyz>
+          <izz>1.0</izz>
+        </inertia>
+      </inertial>
+    </link>
+    <link name='link2'>
+      <inertial>
+        <mass>1</mass>
+        <inertia>
+          <ixx>1.0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>1.0</iyy>
+          <iyz>0</iyz>
+          <izz>1.0</izz>
+        </inertia>
+      </inertial>
+    </link>
+    <joint name='revolute_joint_positive_limit' type='revolute'>
+      <child>link2</child>
+      <parent>link1</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1</lower>
+          <upper>2</upper>
+          <effort>100</effort>
+          <velocity>100</velocity>
+        </limit>
+      </axis>
+    </joint>
+    <link name='link3'>
+      <inertial>
+        <mass>1</mass>
+        <inertia>
+          <ixx>1.0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>1.0</iyy>
+          <iyz>0</iyz>
+          <izz>1.0</izz>
+        </inertia>
+      </inertial>
+    </link>
+    <joint name='prismatic_joint_zero_limit' type='prismatic'>
+      <child>link3</child>
+      <parent>link2</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-2</lower>
+          <upper>1</upper>
+          <effort>0</effort>
+          <velocity>5</velocity>
+        </limit>
+      </axis>
+    </joint>
+    <link name='link4'>
+      <inertial>
+        <mass>1</mass>
+        <inertia>
+          <ixx>1.0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>1.0</iyy>
+          <iyz>0</iyz>
+          <izz>1.0</izz>
+        </inertia>
+      </inertial>
+    </link>
+    <joint name='revolute_joint_no_limit' type='revolute'>
+      <child>link4</child>
+      <parent>link3</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <effort>-1</effort>
+        </limit>
+      </axis>
+    </joint>
+  </model>
+</sdf>

@@ -43,7 +43,7 @@ GTEST_TEST(RotationMatrix, RotationMatrixConstructor) {
          7, 8, -10;
     DRAKE_EXPECT_THROWS_MESSAGE(
         RotationMatrix<double>{m}, std::logic_error,
-        "Error: Rotation matrix is not orthonormal.*");
+        "Error: Rotation matrix is not orthonormal[\\s\\S]*");
 
     // Barely non-orthogonal matrix should throw an exception.
     m << 1, 9000*kEpsilon, 9000*kEpsilon,
@@ -51,7 +51,7 @@ GTEST_TEST(RotationMatrix, RotationMatrixConstructor) {
          0, -sin_theta, cos_theta;
     DRAKE_EXPECT_THROWS_MESSAGE(
         RotationMatrix<double>{m}, std::logic_error,
-        "Error: Rotation matrix is not orthonormal.*");
+        "Error: Rotation matrix is not orthonormal[\\s\\S]*");
 
     // Orthogonal matrix with determinant = -1 should throw an exception.
     m << 1, 0, 0,
@@ -129,10 +129,10 @@ GTEST_TEST(RotationMatrix, MakeFromOrthonormalRowsOrColumns) {
   // Non-orthogonal matrix should throw an exception (at least in debug builds).
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       R = RotationMatrix<double>::MakeFromOrthonormalRows(Fx, Fy, Fz),
-      std::logic_error, "Error: Rotation matrix is not orthonormal.*");
+      std::logic_error, "Error: Rotation matrix is not orthonormal[\\s\\S]*");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       R = RotationMatrix<double>::MakeFromOrthonormalColumns(Fx, Fy, Fz),
-      std::logic_error, "Error: Rotation matrix is not orthonormal.*");
+      std::logic_error, "Error: Rotation matrix is not orthonormal[\\s\\S]*");
 
   // Non-right handed matrix with determinant < 0 should throw an exception.
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
@@ -772,7 +772,7 @@ GTEST_TEST(RotationMatrixTest, OperatorMultiplyByMatrix3X) {
   const RollPitchYaw<double> rpy(r, p, y);
   const RotationMatrix<double> R_AB(rpy);
 
-  // Multiply the RigidTransform R_AB by two vectors to test operator* for a
+  // Multiply the RigidTransform R_AB by three vectors to test operator* for a
   // 3 x n matrix, where n = 3 is known before compilation.
   Eigen::Matrix3d v_B;
   const Vector3d v1_B(-12, -9, 7);   v_B.col(0) = v1_B;

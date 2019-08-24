@@ -918,7 +918,7 @@ drake_cc_googletest(
     tags = ["snopt"],
     deps = [
         ":simple_car",
-        "//common/proto:call_matlab",
+        "//common/proto:call_python",
         "//common/test_utilities:eigen_matrix_compare",
         "//solvers:solve",
         "//systems/trajectory_optimization:direct_collocation",

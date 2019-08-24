@@ -79,33 +79,14 @@ Vector3<double> convert_to_double(
   return result;
 }
 
-// TODO(SeanCurtis-TRI): Get rid of these when I finally swap for
-// RigidTransforms.
-
-inline const Isometry3<double>& convert_to_double(
-    const Isometry3<double>& transform) {
-  return transform;
-}
-
-template <class VectorType>
-Isometry3<double> convert_to_double(
-    const Isometry3<Eigen::AutoDiffScalar<VectorType>>& transform) {
-  Isometry3<double> result;
-  for (int r = 0; r < 4; ++r) {
-    for (int c = 0; c < 4; ++c) {
-      result.matrix()(r, c) = ExtractDoubleOrThrow(transform.matrix()(r, c));
-    }
-  }
-  return result;
-}
-
 // Don't needlessly copy transforms that are already scalar-valued.
-inline const math::RigidTransformd& convert(const math::RigidTransformd& X_AB) {
+inline const math::RigidTransformd& convert_to_double(
+    const math::RigidTransformd& X_AB) {
   return X_AB;
 }
 
 template <class VectorType>
-math::RigidTransformd convert(
+math::RigidTransformd convert_to_double(
     const math::RigidTransform<Eigen::AutoDiffScalar<VectorType>>& X_AB) {
   Matrix3<double> R_converted;
   Vector3<double> p_converted;

@@ -196,16 +196,17 @@ void AddJointActuatorFromSpecification(
         "An axis must be specified for joint '" + joint_spec.Name() + "'");
   }
 
-  double max_effort = axis->Effort();
+  // The effort_limit should always be non-negative. Negative effort will be
+  // treated as infinity as specified by the sdf standard.
+  const double effort_limit = axis->Effort() < 0
+                                  ? std::numeric_limits<double>::infinity()
+                                  : axis->Effort();
 
-  // The SDF specification defines this max_effort = -1 when no limit is
-  // provided (a non-zero value). In Drake we interpret a value of exactly zero
+  // In Drake we interpret a value of exactly zero
   // as a way to specify un-actuated joints. Thus, the user would say
   // <effort>0</effort> for un-actuated joints.
-  if (max_effort != 0) {
-    // TODO(amcastro-tri): For positive max_effort values, store it and use it
-    // to limit input actuation.
-    plant->AddJointActuator(joint_spec.Name(), joint);
+  if (effort_limit != 0) {
+    plant->AddJointActuator(joint_spec.Name(), joint, effort_limit);
   }
 }
 
@@ -436,8 +437,8 @@ void AddLinksFromSpecification(
               geometry_instance->illustration_properties() != nullptr);
 
           plant->RegisterVisualGeometry(
-              body, RigidTransformd(geometry_instance->pose()),
-              geometry_instance->shape(), geometry_instance->name(),
+              body, geometry_instance->pose(), geometry_instance->shape(),
+              geometry_instance->name(),
               *geometry_instance->illustration_properties());
         }
       }
