@@ -10,24 +10,22 @@
 namespace drake {
 namespace multibody {
 
-#if 0
 template <typename T>
 LinearBushingRollPitchYaw<T>::LinearBushingRollPitchYaw(
-    const Body<T>& bodyA, const Vector3<double>& p_AP,
-    const Body<T>& bodyB, const Vector3<double>& p_BQ,
-    double free_length, double stiffness, double damping) :
-    ForceElement<T>(bodyA.model_instance()),
-    bodyA_(bodyA),
-    p_AP_(p_AP),
-    bodyB_(bodyB),
-    p_BQ_(p_BQ),
-    free_length_(free_length),
-    stiffness_(stiffness), damping_(damping) {
-  DRAKE_THROW_UNLESS(free_length > 0);
-  DRAKE_THROW_UNLESS(stiffness >= 0);
-  DRAKE_THROW_UNLESS(damping >= 0);
+                          const Frame<T>& frameAb,
+                          const Frame<T>& frameBa,
+                          const Vector3<T>& torque_stiffness,
+                          const Vector3<T>& torque_damping,
+                          const Vector3<T>& force_stiffness,
+                          const Vector3<T>& force_damping) :
+    ForceElement<T>(frameAb.body().model_instance()),
+    frameAb_(frameAb),
+    frameBa_(frameBa),
+    torque_stiffness_(torque_stiffness),
+    torque_damping_(torque_damping),
+    force_stiffness_(force_stiffness),
+    force_damping_(force_damping) {
 }
-#endif
 
 template <typename T>
 void LinearBushingRollPitchYaw<T>::DoCalcAndAddForceContribution(
@@ -36,31 +34,44 @@ void LinearBushingRollPitchYaw<T>::DoCalcAndAddForceContribution(
     const internal::VelocityKinematicsCache<T>& /* vc */,
     MultibodyForces<T>* /* forces */) const {
 #if 0
-  using std::sqrt;
+  // Get the bushing frame's relative transform and relative spatial velocity.
+  math::RigidTransform<T> X_AbBa = frameBa().CalcPose(context, frameAb());
+  const SpatialVelocity<T> V_AbBa =
+      frameBa().CalcSpatialVelocity(context, frameAb(), frameAb());
 
-  const math::RigidTransform<T>& X_WA = pc.get_X_WB(bodyA().node_index());
-  const math::RigidTransform<T>& X_WB = pc.get_X_WB(bodyB().node_index());
+  // Extract the bushing frame's relative position and translational velocity.
+  const Vector3<T>& p_AbBa = X_AbBa.translation();
+  const Vector3<T>& v_AbBa = V_AbBa.translational();
 
-  const Vector3<T> p_WP = X_WA * p_AP_.template cast<T>();
-  const Vector3<T> p_WQ = X_WB * p_BQ_.template cast<T>();
+  // Calculate the bushing force on Ab, expressed in frame Ab.
+  const Vector3<T> f_Ab = force_stiffness.dot(p_AbBa)
+                        + force_damping.dot(v_AbBa);
 
-  // Vector from P to Q. It's length is the current length of the spring.
-  const Vector3<T> p_PQ_W = p_WQ - p_WP;
+  // Express the bushing force on Ab in the world frame.
+  const Frame<T>& world_frame = frameAb().get_parent_tree().world_frame();
 
-  // Using a "soft" norm we define a "soft length" as ℓₛ = ‖p_PQ‖ₛ.
-  const T length_soft = SafeSoftNorm(p_PQ_W);
+  // Calculate the bushing's roll-pitch-yaw angles q₀, q₁, q₂.
+  const math::RollPitchYaw<T> rpy(X_AbBa.rotation());
+  const<T> q0 = rpy(0),  q1 = rpy(1),  q2 = rpy(2);
 
-  const Vector3<T> r_PQ_W = p_PQ_W / length_soft;
+  // Calculate the bushing's roll-pitch-yaw rates  q̇₀, q̇₁, q̇₂
+  const T c0 = cos(q0), s0 = sin(q0);
+  const T c1 = cos(q1), s1 = sin(q1);
 
-  // Force on A, applied at P, expressed in the world frame.
-  Vector3<T> f_AP_W =
-      stiffness() * (length_soft - free_length()) * r_PQ_W;
+  // Calculate the bushing torque on Ab, expressed in frame Ab.
+  const T k0 = torque_stiffness(0);
+  const T k1 = torque_stiffness(1);
+  const T k2 = torque_stiffness(2);
+  const T b0 = torque_damping(0);
+  const T b1 = torque_damping(1);
+  const T b2 = torque_damping(2);
 
-  // The rate at which the length of the spring changes.
-  const T length_dot = CalcLengthTimeDerivative(pc, vc);
+  const T T0 = k0*q0 + b0*q0Dt;
+  const T T1 = k1*q1 + b1*q1Dt;
+  const T T2 = k2*q2 + b2*q2Dt;
 
-  // Add the damping force on A at P.
-  f_AP_W += damping() * length_dot * r_PQ_W;
+  const T tx = c0*c1*TB
+  const Vector3<T> t_Ab =
 
   // Shift to the corresponding body frame and add spring-damper contribution
   // to the output forces.
