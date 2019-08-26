@@ -256,16 +256,3 @@ class TestInverseKinematics(unittest.TestCase):
         result = mp.Solve(self.prog)
         self.assertTrue(result.is_success())
         self.assertTrue(np.allclose(result.GetSolution(ik.q()), q_val))
-
-    def test_constraints(self):
-        na_A = np.array([0.2, -0.4, 0.9])
-        nb_B = np.array([1.4, -0.1, 1.8])
-        mbp_float = mbp[float]
-
-        angle_lower = 0.2 * math.pi
-        angle_upper = 0.2 * math.pi
-        # AngleBetweenVectorsConstraint
-        angle_between_vectors_constraint = ik.AngleBetweenVectorsConstraint(
-                    plant=mbp_float, frameA=self.body1_frame, a_A=na_A,
-                    frameB=self.body2_frame, b_B=nb_B, angle_lower=angle_lower,
-                    angle_upper=angle_upper, context=self.plant_context)

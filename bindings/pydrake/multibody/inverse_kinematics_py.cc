@@ -27,8 +27,6 @@ void DoScalarDependentDefinitions(py::module m) {
     using Class = AngleBetweenVectorsConstraint;
     constexpr auto& cls_doc = doc.AngleBetweenVectorsConstraint;
 
-    // TODO(m-chaturvedi): Add doc strings when unambiguous names can be
-    // resolved.
     auto cls =
         py::class_<Class>(m, "AngleBetweenVectorsConstraint", cls_doc.doc);
     {
@@ -67,8 +65,6 @@ void DoScalarDependentDefinitions(py::module m) {
     }
   }
 
-  // TODO(m-chaturvedi): Add doc strings when unambiguous names can be
-  // resolved.
   {
     using Class = DistanceConstraint;
     constexpr auto& cls_doc = doc.DistanceConstraint;
@@ -107,8 +103,6 @@ void DoScalarDependentDefinitions(py::module m) {
     }
   }
 
-  // TODO(m-chaturvedi): Add doc strings when unambiguous names can be
-  // resolved.
   {
     using Class = GazeTargetConstraint;
     constexpr auto& cls_doc = doc.GazeTargetConstraint;
@@ -153,8 +147,6 @@ void DoScalarDependentDefinitions(py::module m) {
     }
   }
 
-  // TODO(m-chaturvedi): Add doc strings when unambiguous names can be
-  // resolved.
   {
     using Class = MinimumDistanceConstraint;
     constexpr auto& cls_doc = doc.MinimumDistanceConstraint;
@@ -194,8 +186,6 @@ void DoScalarDependentDefinitions(py::module m) {
     }
   }
 
-  // TODO(m-chaturvedi): Add doc strings when unambiguous names can be
-  // resolved.
   {
     using Class = PositionConstraint;
     constexpr auto& cls_doc = doc.PositionConstraint;
@@ -238,8 +228,6 @@ void DoScalarDependentDefinitions(py::module m) {
     }
   }
 
-  // TODO(m-chaturvedi): Add doc strings when unambiguous names can be
-  // resolved.
   {
     using Class = OrientationConstraint;
     constexpr auto& cls_doc = doc.OrientationConstraint;
