@@ -1,0 +1,27 @@
+# -*- mode: python -*-
+# vi: set ft=python :
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_py.bzl", "drake_py_library")
+load("//tools/jupyter:jupyter_py.bzl", "jupyter_py_binary")
+
+drake_py_library(
+    name = "jupyter_bazel_py",
+    srcs = ["jupyter_bazel.py"],
+    imports = ["."],
+    visibility = ["//visibility:public"],
+)
+
+drake_py_library(
+    name = "example_library",
+    srcs = ["example_library.py"],
+    imports = ["."],
+)
+
+jupyter_py_binary(
+    name = "example",
+    add_test_rule = 1,
+    deps = [":example_library"],
+)
+
+add_lint_tests()
