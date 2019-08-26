@@ -1,13 +1,264 @@
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
+#include "drake/multibody/inverse_kinematics/angle_between_vectors_constraint.h"
+#include "drake/multibody/inverse_kinematics/distance_constraint.h"
+#include "drake/multibody/inverse_kinematics/gaze_target_constraint.h"
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
+#include "drake/multibody/inverse_kinematics/minimum_distance_constraint.h"
+#include "drake/multibody/inverse_kinematics/orientation_constraint.h"
+#include "drake/multibody/inverse_kinematics/position_constraint.h"
 
 namespace drake {
 namespace pydrake {
+
+namespace {
+
+void DoScalarDependentDefinitions(py::module m) {
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::multibody;
+
+  constexpr auto& doc = pydrake_doc.drake.multibody;
+
+  {
+    using Class = AngleBetweenVectorsConstraint;
+    constexpr auto& cls_doc = doc.AngleBetweenVectorsConstraint;
+
+    auto cls =
+        py::class_<Class>(m, "AngleBetweenVectorsConstraint", cls_doc.doc);
+    {
+      using T = double;
+      cls  // BR
+          .def(py::init(
+                   [](const MultibodyPlant<T>* plant, const Frame<T>& frameA,
+                       const Eigen::Ref<const Eigen::Vector3d>& a_A,
+                       const Frame<T>& frameB,
+                       const Eigen::Ref<const Eigen::Vector3d>& b_B,
+                       double angle_lower, double angle_upper,
+                       systems::Context<T>* context) {
+                     return std::make_unique<Class>(plant, frameA, a_A, frameB,
+                         b_B, angle_lower, angle_upper, context);
+                   }),
+              py::arg("plant"), py::arg("frameA"), py::arg("a_A"),
+              py::arg("frameB"), py::arg("b_B"), py::arg("angle_lower"),
+              py::arg("angle_upper"), py::arg("context"));
+    }
+    {
+      using T = AutoDiffXd;
+      cls  // BR
+          .def(py::init(
+                   [](const MultibodyPlant<T>* plant, const Frame<T>& frameA,
+                       const Eigen::Ref<const Eigen::Vector3d>& a_A,
+                       const Frame<T>& frameB,
+                       const Eigen::Ref<const Eigen::Vector3d>& b_B,
+                       double angle_lower, double angle_upper,
+                       systems::Context<T>* context) {
+                     return std::make_unique<Class>(plant, frameA, a_A, frameB,
+                         b_B, angle_lower, angle_upper, context);
+                   }),
+              py::arg("plant"), py::arg("frameA"), py::arg("a_A"),
+              py::arg("frameB"), py::arg("b_B"), py::arg("angle_lower"),
+              py::arg("angle_upper"), py::arg("context"));
+    }
+  }
+
+  {
+    using Class = DistanceConstraint;
+    constexpr auto& cls_doc = doc.DistanceConstraint;
+    auto cls = py::class_<Class>(m, "DistanceConstraint", cls_doc.doc);
+
+    {
+      using T = double;
+      cls  // BR
+          .def(py::init([](const multibody::MultibodyPlant<T>* const plant,
+                            SortedPair<geometry::GeometryId> geometry_pair,
+                            systems::Context<T>* plant_context,
+                            double distance_lower, double distance_upper) {
+            return std::make_unique<Class>(plant, geometry_pair, plant_context,
+                distance_lower, distance_upper);
+          }),
+              py::arg("plant"), py::arg("geometry_pair"),
+              py::arg("plant_context"), py::arg("distance_lower"),
+              py::arg("distance_upper"));
+    }
+    {
+      using T = AutoDiffXd;
+      cls  // BR
+          .def(py::init([](const multibody::MultibodyPlant<T>* const plant,
+                            SortedPair<geometry::GeometryId> geometry_pair,
+                            systems::Context<T>* plant_context,
+                            double distance_lower, double distance_upper) {
+            return std::make_unique<Class>(plant, geometry_pair, plant_context,
+                distance_lower, distance_upper);
+          }),
+              py::arg("plant"), py::arg("geometry_pair"),
+              py::arg("plant_context"), py::arg("distance_lower"),
+              py::arg("distance_upper"));
+    }
+  }
+
+  {
+    using Class = GazeTargetConstraint;
+    constexpr auto& cls_doc = doc.GazeTargetConstraint;
+    auto cls = py::class_<Class>(m, "GazeTargetConstraint", cls_doc.doc);
+    {
+      using T = double;
+      cls  // BR
+          .def(py::init(
+                   [](const MultibodyPlant<T>* plant, const Frame<T>& frameA,
+                       const Eigen::Ref<const Eigen::Vector3d>& p_AS,
+                       const Eigen::Ref<const Eigen::Vector3d>& n_A,
+                       const Frame<T>& frameB,
+                       const Eigen::Ref<const Eigen::Vector3d>& p_BT,
+                       double cone_half_angle, systems::Context<T>* context) {
+                     return std::make_unique<Class>(plant, frameA, p_AS, n_A,
+                         frameB, p_BT, cone_half_angle, context);
+                   }),
+              py::arg("plant"), py::arg("frameA"), py::arg("p_AS"),
+              py::arg("n_A"), py::arg("frameB"), py::arg("p_BT"),
+              py::arg("cone_half_angle"), py::arg("context"));
+    }
+    {
+      using T = AutoDiffXd;
+      cls  // BR
+          .def(py::init(
+                   [](const MultibodyPlant<T>* plant, const Frame<T>& frameA,
+                       const Eigen::Ref<const Eigen::Vector3d>& p_AS,
+                       const Eigen::Ref<const Eigen::Vector3d>& n_A,
+                       const Frame<T>& frameB,
+                       const Eigen::Ref<const Eigen::Vector3d>& p_BT,
+                       double cone_half_angle, systems::Context<T>* context) {
+                     return std::make_unique<Class>(plant, frameA, p_AS, n_A,
+                         frameB, p_BT, cone_half_angle, context);
+                   }),
+              py::arg("plant"), py::arg("frameA"), py::arg("p_AS"),
+              py::arg("n_A"), py::arg("frameB"), py::arg("p_BT"),
+              py::arg("cone_half_angle"), py::arg("context"));
+    }
+  }
+
+  {
+    using Class = MinimumDistanceConstraint;
+    constexpr auto& cls_doc = doc.MinimumDistanceConstraint;
+    auto cls = py::class_<Class>(m, "MinimumDistanceConstraint", cls_doc.doc);
+    {
+      using T = double;
+      cls  // BR
+          .def(
+              py::init([](const multibody::MultibodyPlant<T>* const plant,
+                           double minimum_distance,
+                           systems::Context<T>* plant_context,
+                           MinimumDistancePenaltyFunction penalty_function = {},
+                           double influence_distance_offset = 1) {
+                return std::make_unique<Class>(plant, minimum_distance,
+                    plant_context, penalty_function, influence_distance_offset);
+              }),
+              py::arg("plant"), py::arg("minimum_distance"),
+              py::arg("plant_context"), py::arg("penalty_function"),
+              py::arg("influencedistance_offset"));
+    }
+    {
+      using T = AutoDiffXd;
+      cls  // BR
+          .def(
+              py::init([](const multibody::MultibodyPlant<T>* const plant,
+                           double minimum_distance,
+                           systems::Context<T>* plant_context,
+                           MinimumDistancePenaltyFunction penalty_function = {},
+                           double influence_distance_offset = 1) {
+                return std::make_unique<Class>(plant, minimum_distance,
+                    plant_context, penalty_function, influence_distance_offset);
+              }),
+              py::arg("plant"), py::arg("minimum_distance"),
+              py::arg("plant_context"), py::arg("penalty_function"),
+              py::arg("influence_distance_offset"));
+    }
+  }
+
+  {
+    using Class = PositionConstraint;
+    constexpr auto& cls_doc = doc.PositionConstraint;
+    auto cls = py::class_<Class>(m, "PositionConstraint", cls_doc.doc);
+    {
+      using T = double;
+      cls  // BR
+          .def(py::init(
+                   [](const MultibodyPlant<T>* plant, const Frame<T>& frameA,
+                       const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
+                       const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
+                       const Frame<T>& frameB,
+                       const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+                       systems::Context<T>* context) {
+                     return std::make_unique<Class>(plant, frameA, p_AQ_lower,
+                         p_AQ_upper, frameB, p_BQ, context);
+                   }),
+              py::arg("plant"), py::arg("frameA"), py::arg("p_AQ_lower"),
+              py::arg("p_AQ_upper"), py::arg("frameB"), py::arg("p_BQ"),
+              py::arg("context"));
+    }
+    {
+      using T = AutoDiffXd;
+      cls  // BR
+          .def(py::init(
+                   [](const MultibodyPlant<T>* plant, const Frame<T>& frameA,
+                       const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
+                       const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
+                       const Frame<T>& frameB,
+                       const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+                       systems::Context<T>* context) {
+                     return std::make_unique<Class>(plant, frameA, p_AQ_lower,
+                         p_AQ_upper, frameB, p_BQ, context);
+                   }),
+              py::arg("plant"), py::arg("frameA"), py::arg("p_AQ_lower"),
+              py::arg("p_AQ_upper"), py::arg("frameB"), py::arg("p_BQ"),
+              py::arg("context"));
+    }
+  }
+
+  {
+    using Class = OrientationConstraint;
+    constexpr auto& cls_doc = doc.OrientationConstraint;
+    auto cls = py::class_<Class>(m, "OrientationConstraint", cls_doc.doc);
+
+    {
+      using T = double;
+      cls  // BR
+          .def(py::init([](const MultibodyPlant<T>* const plant,
+                            const Frame<T>& frameAbar,
+                            const math::RotationMatrix<double>& R_AbarA,
+                            const Frame<T>& frameBbar,
+                            const math::RotationMatrix<double>& R_BbarB,
+                            double theta_bound, systems::Context<T>* context) {
+            return std::make_unique<Class>(plant, frameAbar, R_AbarA, frameBbar,
+                R_BbarB, theta_bound, context);
+          }),
+              py::arg("plant"), py::arg("frameAbar"), py::arg("R_AbarA"),
+              py::arg("frameBbar"), py::arg("R_BbarB"), py::arg("theta_bound"),
+              py::arg("context"));
+    }
+    {
+      using T = AutoDiffXd;
+      cls  // BR
+          .def(py::init([](const MultibodyPlant<T>* const plant,
+                            const Frame<T>& frameAbar,
+                            const math::RotationMatrix<double>& R_AbarA,
+                            const Frame<T>& frameBbar,
+                            const math::RotationMatrix<double>& R_BbarB,
+                            double theta_bound, systems::Context<T>* context) {
+            return std::make_unique<Class>(plant, frameAbar, R_AbarA, frameBbar,
+                R_BbarB, theta_bound, context);
+          }),
+              py::arg("plant"), py::arg("frameAbar"), py::arg("R_AbarA"),
+              py::arg("frameBbar"), py::arg("R_BbarB"), py::arg("theta_bound"),
+              py::arg("context"));
+    }
+  }
+}
+}  // namespace
 
 PYBIND11_MODULE(inverse_kinematics, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -61,6 +312,8 @@ PYBIND11_MODULE(inverse_kinematics, m) {
         .def("get_mutable_prog", &Class::get_mutable_prog,
             py_reference_internal, cls_doc.get_mutable_prog.doc);
   }
+
+  DoScalarDependentDefinitions(m);
 }
 
 }  // namespace pydrake

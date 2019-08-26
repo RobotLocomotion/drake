@@ -3,7 +3,6 @@ from pydrake.multibody import inverse_kinematics as ik
 from functools import partial
 import math
 import unittest
-import warnings
 
 import numpy as np
 from numpy.linalg import norm
@@ -14,9 +13,6 @@ from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.plant import (
     MultibodyPlant, AddMultibodyPlantSceneGraph)
 from pydrake.multibody.parsing import Parser
-from pydrake.multibody.benchmarks.acrobot import (
-    MakeAcrobotPlant,
-)
 import pydrake.solvers.mathematicalprogram as mp
 from pydrake.systems.framework import DiagramBuilder
 
@@ -34,7 +30,7 @@ class TestInverseKinematics(unittest.TestCase):
         builder = DiagramBuilder()
         self.plant, _ = AddMultibodyPlantSceneGraph(
             builder, MultibodyPlant(time_step=0.01))
-        model_instance = Parser(self.plant).AddModelFromFile(file_name)
+        _ = Parser(self.plant).AddModelFromFile(file_name)
         self.plant.Finalize()
         self.diagram = builder.Build()
         self.diagram_context = self.diagram.CreateDefaultContext()

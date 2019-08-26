@@ -123,6 +123,8 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
+        "//bindings/pydrake/common:cpp_template_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
     ],
     cc_srcs = ["inverse_kinematics_py.cc"],
     package_info = PACKAGE_INFO,
