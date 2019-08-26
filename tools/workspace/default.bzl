@@ -1,6 +1,7 @@
 # -*- python -*-
 
 load("@drake//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
+load("@drake//tools/workspace:os.bzl", "os_repository")
 load("@drake//tools/workspace/bazel_skylib:repository.bzl", "bazel_skylib_repository")  # noqa
 load("@drake//tools/workspace/blas:repository.bzl", "blas_repository")
 load("@drake//tools/workspace/boost:repository.bzl", "boost_repository")
@@ -120,6 +121,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         csdp_repository(name = "csdp", mirrors = mirrors)
     if "doxygen" not in excludes:
         doxygen_repository(name = "doxygen", mirrors = mirrors)
+    if "drake_detected_os" not in excludes:
+        os_repository(name = "drake_detected_os")
     if "drake_visualizer" not in excludes:
         drake_visualizer_repository(name = "drake_visualizer", mirrors = mirrors)  # noqa
     if "dreal" not in excludes:
