@@ -220,7 +220,6 @@ class RigidTransform {
   ///          0, 0, 0, 1;
   /// const RigidTransform<double> X3(pose4 * pose4);
   /// @endcode
-  /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
   template <typename Derived>
   explicit RigidTransform(const Eigen::MatrixBase<Derived>& pose) {
     // TODO(Mitiguy) Consider C++ 17 if(constexpr) to specialize for each type.
@@ -258,9 +257,8 @@ class RigidTransform {
   /// homogeneous, i.e., the final row is not [0, 0, 0, 1].
   /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
+  DRAKE_DEPRECATED("2019-11-15", "Use RigidTransform(pose) constructor.")
   static RigidTransform<T> FromMatrix4(const Matrix4<T>& matrix) {
-    // TODO(eric.cousineau): Deprecate (or preferably delete) this method.
-    // DRAKE_DEPRECATED("2019-12-31", "Use RigidTransform(pose) constructor.")
     return RigidTransform<T>(matrix);
   }
 

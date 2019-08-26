@@ -54,11 +54,11 @@ namespace geometry {
 
                𝕊ₘₙ = { Q ∈ 𝕄 ∩ ℕ : eₘ(Q) = eₙ(Q) }.
 
-  We can define the scalar field p0ₘₙ on the surface 𝕊ₘₙ as a scalar function
+  We can define the scalar field eₘₙ on the surface 𝕊ₘₙ as a scalar function
   that assigns Q ∈ 𝕊ₘₙ the value of eₘ(Q), which is the same as eₙ(Q):
 
-               p0ₘₙ : 𝕊ₘₙ → ℝ,
-               p0ₘₙ(Q) = eₘ(Q) = eₙ(Q).
+               eₘₙ : 𝕊ₘₙ → ℝ,
+               eₘₙ(Q) = eₘ(Q) = eₙ(Q).
 
   We can also define the scalar field hₘₙ on 𝕄 ∩ ℕ as the difference between
   eₘ and eₙ:
@@ -89,12 +89,12 @@ namespace geometry {
    3. Explicitly add the assumptions on `e` that make this interpretation valid.
   -->
 
-  Notice that the domain of p0ₘₙ is the two-dimensional surface 𝕊ₘₙ, while the
+  Notice that the domain of eₘₙ is the two-dimensional surface 𝕊ₘₙ, while the
   domain of ∇hₘₙ is the three-dimensional compact set 𝕄 ∩ ℕ.
-  Even though p0ₘₙ and ∇hₘₙ are defined on different domains (𝕊ₘₙ and 𝕄 ∩ ℕ),
+  Even though eₘₙ and ∇hₘₙ are defined on different domains (𝕊ₘₙ and 𝕄 ∩ ℕ),
   our implementation only represents them on their common domain, i.e., 𝕊ₘₙ.
 
-  <h3> Barycentric Coordinates </h3>
+  <h2> Barycentric Coordinates </h2>
 
   For Point Q on the surface mesh of the contact surface between Geometry M and
   Geometry N, r_WQ = (x,y,z) is the displacement vector from the origin of the
@@ -130,8 +130,8 @@ class ContactSurface {
 
     // We can't simply copy the mesh fields; the copies must contain pointers
     // to the new mesh. So, we use CloneAndSetMesh() instead.
-    p0_MN_.reset(static_cast<SurfaceMeshFieldLinear<T, T>*>(
-        surface.p0_MN_->CloneAndSetMesh(mesh_W_.get()).release()));
+    e_MN_.reset(static_cast<SurfaceMeshFieldLinear<T, T>*>(
+        surface.e_MN_->CloneAndSetMesh(mesh_W_.get()).release()));
     grad_h_MN_W_.reset(static_cast<SurfaceMeshFieldLinear<Vector3<T>, T>*>(
         surface.grad_h_MN_W_->CloneAndSetMesh(mesh_W_.get()).release()));
 
@@ -146,7 +146,7 @@ class ContactSurface {
    @param id_N         The id of the second geometry N.
    @param mesh_W       The surface mesh of the contact surface 𝕊ₘₙ between M
                        and N. The mesh vertices are defined in the world frame.
-   @param p0_MN         Represents the scalar field p0ₘₙ on the surface mesh.
+   @param e_MN         Represents the scalar field eₘₙ on the surface mesh.
    @param grad_h_MN_W  Represents the vector field ∇hₘₙ on the surface mesh,
                        expressed in the world frame. Due to discretization,
                        `grad_h_MN_W` at a vertex need not be strictly
@@ -158,12 +158,12 @@ class ContactSurface {
    */
   ContactSurface(
       GeometryId id_M, GeometryId id_N, std::unique_ptr<SurfaceMesh<T>> mesh_W,
-      std::unique_ptr<SurfaceMeshFieldLinear<T, T>> p0_MN,
+      std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN,
       std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_MN_W)
       : id_M_(id_M),
         id_N_(id_N),
         mesh_W_(std::move(mesh_W)),
-        p0_MN_(std::move(p0_MN)),
+        e_MN_(std::move(e_MN)),
         grad_h_MN_W_(std::move(grad_h_MN_W)) {
     if (id_N_ < id_M_) SwapMAndN();
   }
@@ -177,7 +177,7 @@ class ContactSurface {
   // TODO(damrongguoy) Consider removing these evaluation methods and instead
   // make the fields accessible, and then evaluate the fields directly.
 
-  /** Evaluates the scalar field p0ₘₙ at Point Q in a triangle.
+  /** Evaluates the scalar field eₘₙ at Point Q in a triangle.
     Point Q is specified by its barycentric coordinates.
     @param face         The face index of the triangle.
     @param barycentric  The barycentric coordinates of Q on the triangle.
@@ -185,15 +185,15 @@ class ContactSurface {
   T EvaluateE_MN(
       SurfaceFaceIndex face,
       const typename SurfaceMesh<T>::Barycentric& barycentric) const {
-    return p0_MN_->Evaluate(face, barycentric);
+    return e_MN_->Evaluate(face, barycentric);
   }
 
-  /** Evaluates the scalar field p0ₘₙ at the given vertex on the contact surface
+  /** Evaluates the scalar field eₘₙ at the given vertex on the contact surface
     mesh.
     @param vertex       The index of the vertex in the mesh.
    */
   T EvaluateE_MN(SurfaceVertexIndex vertex) const {
-    return p0_MN_->EvaluateAtVertex(vertex);
+    return e_MN_->EvaluateAtVertex(vertex);
   }
 
   /** Evaluates the vector field ∇hₘₙ at Point Q on a triangle.
@@ -225,8 +225,7 @@ class ContactSurface {
   }
 
  private:
-  // Swaps M and N (modifying the data in place to reflect the change in
-  // frames).
+  // Swaps M and N (modifying the data in place to reflect the change).
   void SwapMAndN() {
     std::swap(id_M_, id_N_);
     // TODO(SeanCurtis-TRI): Determine if this work is necessary. It is neither
@@ -234,13 +233,13 @@ class ContactSurface {
     // or the other. Alternatively, this should be documented and tested.
     mesh_W_->ReverseFaceWinding();
 
-    // Simply reverse the direction of the vectr field.
+    // Simply reverse the direction of the vector field.
     std::vector<Vector3<T>>& values = grad_h_MN_W_->mutable_values();
     for (SurfaceVertexIndex v(0); v < mesh_W_->num_vertices(); ++v) {
       values[v] = -values[v];
     }
 
-    // Note: the scalar field does not depend on frames.
+    // Note: the scalar field does not depend on the order of M and N.
   }
 
   // The id of the first geometry M.
@@ -252,12 +251,12 @@ class ContactSurface {
   // TODO(SeanCurtis-TRI): We can only construct from a linear field, so store
   //  it as such for now. This can be promoted once there's a construction that
   //  uses a different derivation.
-  // Represents the scalar field p0ₘₙ on the surface mesh.
-  std::unique_ptr<SurfaceMeshFieldLinear<T, T>> p0_MN_;
+  // Represents the scalar field eₘₙ on the surface mesh.
+  std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN_;
   // Represents the vector field ∇hₘₙ on the surface mesh, expressed in M's
   // frame.
   std::unique_ptr<SurfaceMeshFieldLinear<Vector3<T>, T>> grad_h_MN_W_;
-  // TODO(DamrongGuoy): Remove this when we allow direct access to p0_MN and
+  // TODO(DamrongGuoy): Remove this when we allow direct access to e_MN and
   //  grad_h_MN.
   template <typename U> friend class ContactSurfaceTester;
 };

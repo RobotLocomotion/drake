@@ -110,15 +110,9 @@ std::vector<ContactSurface<T>> HydroelasticEngine<T>::ComputeContactSurfaces(
     const RigidTransform<T>& X_WM = query_object.X_WG(id_M);
     const RigidTransform<T>& X_WN = query_object.X_WG(id_N);
 
-    // Pose of the soft model frame S in the rigid model frame R.
-    // N.B. For a given state, SceneGraph broadphase reports are guaranteed to
-    // always be in the same order that is, id_M < id_N.
-    // Therefore, even if we swap the id's below so that id_S (id_R) always
-    // corresponds to the soft (rigid) geometry, the order still is guaranteed
-    // to be the same on successive calls.
-    const RigidTransform<T> X_NM = X_WN.inverse() * X_WM;
+    // Determine the poses in the world frame of the soft and rigid models.
     const RigidTransform<T> X_WR = model_M->is_soft() ? X_WN : X_WM;
-    const RigidTransform<T> X_RS = model_M->is_soft() ? X_NM : X_NM.inverse();
+    const RigidTransform<T> X_WS = model_M->is_soft() ? X_WM : X_WN;
     const GeometryId id_S = model_M->is_soft() ? id_M : id_N;
     const GeometryId id_R = model_M->is_soft() ? id_N : id_M;
     const HydroelasticGeometry<T>& model_S =
@@ -127,7 +121,7 @@ std::vector<ContactSurface<T>> HydroelasticEngine<T>::ComputeContactSurfaces(
         model_M->is_soft() ? *model_N : *model_M;
 
     optional<ContactSurface<T>> surface =
-        CalcContactSurface(id_S, model_S, id_R, model_R, X_WR, X_RS);
+        CalcContactSurface(id_S, model_S, X_WS, id_R, model_R, X_WR);
     if (surface) all_contact_surfaces.emplace_back(std::move(*surface));
   }
 
@@ -137,45 +131,45 @@ std::vector<ContactSurface<T>> HydroelasticEngine<T>::ComputeContactSurfaces(
 template <typename T>
 optional<ContactSurface<T>> HydroelasticEngine<T>::CalcContactSurface(
     GeometryId id_S, const HydroelasticGeometry<T>& soft_model_S,
+    const RigidTransform<T>& X_WS,
     GeometryId id_R, const HydroelasticGeometry<T>& rigid_model_R,
-    const RigidTransform<T>& X_WR, const RigidTransform<T>& X_RS) const {
+    const RigidTransform<T>& X_WR) const {
   DRAKE_DEMAND(soft_model_S.is_soft());
   DRAKE_DEMAND(!rigid_model_R.is_soft());
   const HydroelasticField<T>& soft_field_S = soft_model_S.hydroelastic_field();
-  std::vector<T> p0_s_surface;
-  std::vector<Vector3<T>> grad_level_set_surface;
+  std::vector<T> e_s_surface;
+  std::vector<Vector3<T>> grad_level_set_R_surface;
 
-  // Note that the surface and the gradient field will both be expressed in
-  // Frame R initially. They will later be transformed in place to the world
-  // frame.
-  std::unique_ptr<SurfaceMesh<T>> surface = CalcZeroLevelSetInMeshDomain(
+  const auto X_RS = X_WR.inverse() * X_WS;
+  std::unique_ptr<SurfaceMesh<T>> surface_W = CalcZeroLevelSetInMeshDomain(
       soft_field_S.volume_mesh(), rigid_model_R.level_set(), X_RS,
-      soft_field_S.scalar_field().values(), &p0_s_surface,
-      &grad_level_set_surface);
-  if (surface->num_vertices() == 0) return nullopt;
+      soft_field_S.scalar_field().values(), &e_s_surface,
+      &grad_level_set_R_surface);
+  if (surface_W->num_vertices() == 0) return nullopt;
 
-  // Transform the surface to the world frame.
-  surface->TransformVertices(X_WR);
-
+  // TODO(edrumwri): This says that it is a pressure field, but notation
+  //                 reflects that it is a strain field. Fix.
   // Compute pressure field.
-  for (T& p0 : p0_s_surface) p0 *= soft_model_S.elastic_modulus();
+  for (T& e_s : e_s_surface) e_s *= soft_model_S.elastic_modulus();
 
+  // TODO(edrumwri): h_RS should be the gradient of a pressure field, but it
+  //                 is currently the gradient of a strain field. Fix.
   // ∇hₘₙ is a vector that points from N (in this case S) into M (in this case
-  // R). However, the gradient of the level set function points into S (N).
-  // Therefore we flip its direction *and* re-express it in the world frame
-  // for the ContactSurface.
-  for (Vector3<T>& grad_level_set : grad_level_set_surface) {
-    grad_level_set = X_WR.rotation() * -grad_level_set;
-  }
+  // R). Note that the gradient of the level set function points into S (N), so
+  // we flip its direction. We also re-express this field in the world frame in
+  // accordance with the ContactSurface specification.
+  std::vector<Vector3<T>> h_RS_W_vectors = std::move(grad_level_set_R_surface);
+  for (Vector3<T>& grad : h_RS_W_vectors)
+    grad = X_WR.rotation() * -grad;
 
-  auto p0_s = std::make_unique<geometry::SurfaceMeshFieldLinear<T, T>>(
-      "p0_MN", std::move(p0_s_surface), surface.get());
-  auto grad_level_set =
+  auto e_s = std::make_unique<geometry::SurfaceMeshFieldLinear<T, T>>(
+      "e_MN", std::move(e_s_surface), surface_W.get());
+  auto h_RS_W =
       std::make_unique<geometry::SurfaceMeshFieldLinear<Vector3<T>, T>>(
-          "grad_h_MN_W", std::move(grad_level_set_surface), surface.get());
+          "grad_h_MN_W", std::move(h_RS_W_vectors), surface_W.get());
 
-  return ContactSurface<T>(id_R, id_S, std::move(surface), std::move(p0_s),
-                           std::move(grad_level_set));
+  return ContactSurface<T>(id_R, id_S, std::move(surface_W), std::move(e_s),
+                           std::move(h_RS_W));
 }
 
 template <typename T>

@@ -6,6 +6,7 @@ from pydrake.math import (BarycentricMesh, wrap_to)
 from pydrake.common.eigen_geometry import Isometry3_, Quaternion_, AngleAxis_
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 import pydrake.common.test_utilities.numpy_compare as numpy_compare
 
 import copy
@@ -138,8 +139,12 @@ class TestMath(unittest.TestCase):
         check_equality(RigidTransform(theta_lambda=angle_axis, p=p_I), X_I_np)
         check_equality(RigidTransform(R=R_I), X_I_np)
         check_equality(RigidTransform(p=p_I), X_I_np)
-        check_equality(RigidTransform(matrix=X_I_np), X_I_np)
-        check_equality(RigidTransform.FromMatrix4(matrix=X_I_np), X_I_np)
+        check_equality(RigidTransform(pose=p_I), X_I_np)
+        check_equality(RigidTransform(pose=X_I_np), X_I_np)
+        check_equality(RigidTransform(pose=X_I_np[:3]), X_I_np)
+        with catch_drake_warnings(expected_count=2):
+            check_equality(RigidTransform(matrix=X_I_np), X_I_np)
+            check_equality(RigidTransform.FromMatrix4(matrix=X_I_np), X_I_np)
         # - Cast.
         self.check_cast(mut.RigidTransform_, T)
         # - Accessors, mutators, and general methods.
