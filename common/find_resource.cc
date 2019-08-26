@@ -8,6 +8,7 @@
 
 #include "drake/common/drake_marker.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/filesystem.h"
 #include "drake/common/find_loaded_library.h"
 #include "drake/common/find_runfiles.h"
 #include "drake/common/never_destroyed.h"

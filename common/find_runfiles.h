@@ -25,14 +25,5 @@ or else an error message when not found.  When HasRunfiles() is false, returns
 an error. */
 RlocationOrError FindRunfile(const std::string& resource_path);
 
-/** Returns true iff the given path is a file. */
-bool IsFile(const std::string& filesystem_path);
-
-/** Returns true iff the given path is a directory. */
-bool IsDir(const std::string& filesystem_path);
-
-/** A C++ wrapper for C's readlink(2). */
-std::string Readlink(const std::string& pathname);
-
 }  // namespace internal
 }  // namespace drake

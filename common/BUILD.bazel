@@ -31,6 +31,7 @@ drake_cc_package_library(
         ":dummy_value",
         ":essential",
         ":extract_double",
+        ":filesystem",
         ":find_resource",
         ":find_runfiles",
         ":hash",
@@ -301,11 +302,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "filesystem",
+    srcs = ["filesystem.cc"],
+    hdrs = ["filesystem.h"],
+    deps = [
+        "@fmt",
+    ],
+)
+
+drake_cc_library(
     name = "find_runfiles",
     srcs = ["find_runfiles.cc"],
     hdrs = ["find_runfiles.h"],
     deps = [
         ":essential",
+        ":filesystem",
         "@bazel_tools//tools/cpp/runfiles",
     ],
 )
@@ -331,6 +342,7 @@ drake_cc_library(
     deps = [
         ":drake_marker_shared_library",
         ":essential",
+        ":filesystem",
         ":find_runfiles",
     ],
 )
@@ -835,6 +847,15 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":extract_double",
+    ],
+)
+
+drake_cc_googletest(
+    name = "filesystem_test",
+    deps = [
+        ":filesystem",
+        ":temp_directory",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
