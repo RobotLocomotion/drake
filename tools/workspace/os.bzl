@@ -214,3 +214,30 @@ os_specific_alias_repository = repository_rule(
     },
     implementation = _os_specific_alias_impl,
 )
+
+def _os_impl(repo_ctx):
+    os_result = determine_os(repo_ctx)
+    repo_ctx.file("BUILD.bazel", "")
+
+    if os_result.error:
+        fail(os_result.error)
+
+    constants = """
+DISTRIBUTION = {distribution}
+UBUNTU_RELEASE = {ubuntu_release}
+MACOS_RELEASE = {macos_release}
+    """.format(
+        distribution = repr(os_result.distribution),
+        ubuntu_release = repr(os_result.ubuntu_release),
+        macos_release = repr(os_result.macos_release),
+    )
+    repo_ctx.file("os.bzl", constants)
+
+os_repository = repository_rule(
+    implementation = _os_impl,
+)
+
+"""
+Provides the fields `DISTRIBUTION`, `UBUNTU_RELEASE` and `MACOS_RELEASE` from
+`determine_os`.
+"""
