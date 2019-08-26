@@ -21,7 +21,9 @@
 #include "drake/examples/planar_gripper/planar_gripper_common.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -37,8 +39,10 @@ namespace planar_gripper {
 namespace {
 
 using geometry::SceneGraph;
+using lcm::DrakeLcm;
 using math::RigidTransform;
 using math::RollPitchYaw;
+using multibody::ConnectContactResultsToDrakeVisualizer;
 using multibody::JointActuatorIndex;
 using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
@@ -188,7 +192,12 @@ int DoMain() {
   builder.Connect(scene_graph.get_query_output_port(),
                   plant.get_geometry_query_input_port());
 
-  geometry::ConnectDrakeVisualizer(&builder, scene_graph);
+  DrakeLcm lcm;
+  geometry::ConnectDrakeVisualizer(&builder, scene_graph, &lcm);
+
+  // Publish contact results for visualization.
+  ConnectContactResultsToDrakeVisualizer(&builder, plant, &lcm);
+
   auto diagram = builder.Build();
 
   // Create a context for this system:
