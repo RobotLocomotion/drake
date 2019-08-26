@@ -23,60 +23,60 @@ void DoScalarDependentDefinitions(py::module m) {
   using namespace drake::multibody;
 
   constexpr auto& doc = pydrake_doc.drake.multibody;
-
   {
     using Class = AngleBetweenVectorsConstraint;
     constexpr auto& cls_doc = doc.AngleBetweenVectorsConstraint;
 
+    // TODO(m-chaturvedi): Add doc strings when unambiguous names can be
+    // resolved.
     auto cls =
         py::class_<Class>(m, "AngleBetweenVectorsConstraint", cls_doc.doc);
     {
-      using T = double;
       cls  // BR
-          .def(py::init(
-                   [](const MultibodyPlant<T>* plant, const Frame<T>& frameA,
-                       const Eigen::Ref<const Eigen::Vector3d>& a_A,
-                       const Frame<T>& frameB,
-                       const Eigen::Ref<const Eigen::Vector3d>& b_B,
-                       double angle_lower, double angle_upper,
-                       systems::Context<T>* context) {
-                     return std::make_unique<Class>(plant, frameA, a_A, frameB,
-                         b_B, angle_lower, angle_upper, context);
-                   }),
+          .def(py::init([](const MultibodyPlant<double>* plant,
+                            const Frame<double>& frameA,
+                            const Eigen::Ref<const Eigen::Vector3d>& a_A,
+                            const Frame<double>& frameB,
+                            const Eigen::Ref<const Eigen::Vector3d>& b_B,
+                            double angle_lower, double angle_upper,
+                            systems::Context<double>* context) {
+            return std::make_unique<Class>(plant, frameA, a_A, frameB, b_B,
+                angle_lower, angle_upper, context);
+          }),
               py::arg("plant"), py::arg("frameA"), py::arg("a_A"),
               py::arg("frameB"), py::arg("b_B"), py::arg("angle_lower"),
               py::arg("angle_upper"), py::arg("context"));
     }
     {
-      using T = AutoDiffXd;
       cls  // BR
-          .def(py::init(
-                   [](const MultibodyPlant<T>* plant, const Frame<T>& frameA,
-                       const Eigen::Ref<const Eigen::Vector3d>& a_A,
-                       const Frame<T>& frameB,
-                       const Eigen::Ref<const Eigen::Vector3d>& b_B,
-                       double angle_lower, double angle_upper,
-                       systems::Context<T>* context) {
-                     return std::make_unique<Class>(plant, frameA, a_A, frameB,
-                         b_B, angle_lower, angle_upper, context);
-                   }),
+          .def(py::init([](const MultibodyPlant<AutoDiffXd>* plant,
+                            const Frame<AutoDiffXd>& frameA,
+                            const Eigen::Ref<const Eigen::Vector3d>& a_A,
+                            const Frame<AutoDiffXd>& frameB,
+                            const Eigen::Ref<const Eigen::Vector3d>& b_B,
+                            double angle_lower, double angle_upper,
+                            systems::Context<AutoDiffXd>* context) {
+            return std::make_unique<Class>(plant, frameA, a_A, frameB, b_B,
+                angle_lower, angle_upper, context);
+          }),
               py::arg("plant"), py::arg("frameA"), py::arg("a_A"),
               py::arg("frameB"), py::arg("b_B"), py::arg("angle_lower"),
               py::arg("angle_upper"), py::arg("context"));
     }
   }
 
+  // TODO(m-chaturvedi): Add doc strings when unambiguous names can be
+  // resolved.
   {
     using Class = DistanceConstraint;
     constexpr auto& cls_doc = doc.DistanceConstraint;
     auto cls = py::class_<Class>(m, "DistanceConstraint", cls_doc.doc);
 
     {
-      using T = double;
       cls  // BR
-          .def(py::init([](const multibody::MultibodyPlant<T>* const plant,
+          .def(py::init([](const multibody::MultibodyPlant<double>* const plant,
                             SortedPair<geometry::GeometryId> geometry_pair,
-                            systems::Context<T>* plant_context,
+                            systems::Context<double>* plant_context,
                             double distance_lower, double distance_upper) {
             return std::make_unique<Class>(plant, geometry_pair, plant_context,
                 distance_lower, distance_upper);
@@ -86,72 +86,75 @@ void DoScalarDependentDefinitions(py::module m) {
               py::arg("distance_upper"));
     }
     {
-      using T = AutoDiffXd;
       cls  // BR
-          .def(py::init([](const multibody::MultibodyPlant<T>* const plant,
-                            SortedPair<geometry::GeometryId> geometry_pair,
-                            systems::Context<T>* plant_context,
-                            double distance_lower, double distance_upper) {
-            return std::make_unique<Class>(plant, geometry_pair, plant_context,
-                distance_lower, distance_upper);
-          }),
+          .def(py::init(
+                   [](const multibody::MultibodyPlant<AutoDiffXd>* const plant,
+                       SortedPair<geometry::GeometryId> geometry_pair,
+                       systems::Context<AutoDiffXd>* plant_context,
+                       double distance_lower, double distance_upper) {
+                     return std::make_unique<Class>(plant, geometry_pair,
+                         plant_context, distance_lower, distance_upper);
+                   }),
               py::arg("plant"), py::arg("geometry_pair"),
               py::arg("plant_context"), py::arg("distance_lower"),
               py::arg("distance_upper"));
     }
   }
 
+  // TODO(m-chaturvedi): Add doc strings when unambiguous names can be
+  // resolved.
   {
     using Class = GazeTargetConstraint;
     constexpr auto& cls_doc = doc.GazeTargetConstraint;
     auto cls = py::class_<Class>(m, "GazeTargetConstraint", cls_doc.doc);
     {
-      using T = double;
       cls  // BR
-          .def(py::init(
-                   [](const MultibodyPlant<T>* plant, const Frame<T>& frameA,
-                       const Eigen::Ref<const Eigen::Vector3d>& p_AS,
-                       const Eigen::Ref<const Eigen::Vector3d>& n_A,
-                       const Frame<T>& frameB,
-                       const Eigen::Ref<const Eigen::Vector3d>& p_BT,
-                       double cone_half_angle, systems::Context<T>* context) {
-                     return std::make_unique<Class>(plant, frameA, p_AS, n_A,
-                         frameB, p_BT, cone_half_angle, context);
-                   }),
+          .def(py::init([](const MultibodyPlant<double>* plant,
+                            const Frame<double>& frameA,
+                            const Eigen::Ref<const Eigen::Vector3d>& p_AS,
+                            const Eigen::Ref<const Eigen::Vector3d>& n_A,
+                            const Frame<double>& frameB,
+                            const Eigen::Ref<const Eigen::Vector3d>& p_BT,
+                            double cone_half_angle,
+                            systems::Context<double>* context) {
+            return std::make_unique<Class>(plant, frameA, p_AS, n_A, frameB,
+                p_BT, cone_half_angle, context);
+          }),
               py::arg("plant"), py::arg("frameA"), py::arg("p_AS"),
               py::arg("n_A"), py::arg("frameB"), py::arg("p_BT"),
               py::arg("cone_half_angle"), py::arg("context"));
     }
     {
-      using T = AutoDiffXd;
       cls  // BR
-          .def(py::init(
-                   [](const MultibodyPlant<T>* plant, const Frame<T>& frameA,
-                       const Eigen::Ref<const Eigen::Vector3d>& p_AS,
-                       const Eigen::Ref<const Eigen::Vector3d>& n_A,
-                       const Frame<T>& frameB,
-                       const Eigen::Ref<const Eigen::Vector3d>& p_BT,
-                       double cone_half_angle, systems::Context<T>* context) {
-                     return std::make_unique<Class>(plant, frameA, p_AS, n_A,
-                         frameB, p_BT, cone_half_angle, context);
-                   }),
+          .def(py::init([](const MultibodyPlant<AutoDiffXd>* plant,
+                            const Frame<AutoDiffXd>& frameA,
+                            const Eigen::Ref<const Eigen::Vector3d>& p_AS,
+                            const Eigen::Ref<const Eigen::Vector3d>& n_A,
+                            const Frame<AutoDiffXd>& frameB,
+                            const Eigen::Ref<const Eigen::Vector3d>& p_BT,
+                            double cone_half_angle,
+                            systems::Context<AutoDiffXd>* context) {
+            return std::make_unique<Class>(plant, frameA, p_AS, n_A, frameB,
+                p_BT, cone_half_angle, context);
+          }),
               py::arg("plant"), py::arg("frameA"), py::arg("p_AS"),
               py::arg("n_A"), py::arg("frameB"), py::arg("p_BT"),
               py::arg("cone_half_angle"), py::arg("context"));
     }
   }
 
+  // TODO(m-chaturvedi): Add doc strings when unambiguous names can be
+  // resolved.
   {
     using Class = MinimumDistanceConstraint;
     constexpr auto& cls_doc = doc.MinimumDistanceConstraint;
     auto cls = py::class_<Class>(m, "MinimumDistanceConstraint", cls_doc.doc);
     {
-      using T = double;
       cls  // BR
           .def(
-              py::init([](const multibody::MultibodyPlant<T>* const plant,
+              py::init([](const multibody::MultibodyPlant<double>* const plant,
                            double minimum_distance,
-                           systems::Context<T>* plant_context,
+                           systems::Context<double>* plant_context,
                            MinimumDistancePenaltyFunction penalty_function = {},
                            double influence_distance_offset = 1) {
                 return std::make_unique<Class>(plant, minimum_distance,
@@ -162,93 +165,95 @@ void DoScalarDependentDefinitions(py::module m) {
               py::arg("influencedistance_offset"));
     }
     {
-      using T = AutoDiffXd;
       cls  // BR
-          .def(
-              py::init([](const multibody::MultibodyPlant<T>* const plant,
-                           double minimum_distance,
-                           systems::Context<T>* plant_context,
-                           MinimumDistancePenaltyFunction penalty_function = {},
-                           double influence_distance_offset = 1) {
-                return std::make_unique<Class>(plant, minimum_distance,
-                    plant_context, penalty_function, influence_distance_offset);
-              }),
+          .def(py::init(
+                   [](const multibody::MultibodyPlant<AutoDiffXd>* const plant,
+                       double minimum_distance,
+                       systems::Context<AutoDiffXd>* plant_context,
+                       MinimumDistancePenaltyFunction penalty_function = {},
+                       double influence_distance_offset = 1) {
+                     return std::make_unique<Class>(plant, minimum_distance,
+                         plant_context, penalty_function,
+                         influence_distance_offset);
+                   }),
               py::arg("plant"), py::arg("minimum_distance"),
               py::arg("plant_context"), py::arg("penalty_function"),
               py::arg("influence_distance_offset"));
     }
   }
 
+  // TODO(m-chaturvedi): Add doc strings when unambiguous names can be
+  // resolved.
   {
     using Class = PositionConstraint;
     constexpr auto& cls_doc = doc.PositionConstraint;
     auto cls = py::class_<Class>(m, "PositionConstraint", cls_doc.doc);
     {
-      using T = double;
       cls  // BR
-          .def(py::init(
-                   [](const MultibodyPlant<T>* plant, const Frame<T>& frameA,
-                       const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
-                       const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
-                       const Frame<T>& frameB,
-                       const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
-                       systems::Context<T>* context) {
-                     return std::make_unique<Class>(plant, frameA, p_AQ_lower,
-                         p_AQ_upper, frameB, p_BQ, context);
-                   }),
+          .def(py::init([](const MultibodyPlant<double>* plant,
+                            const Frame<double>& frameA,
+                            const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
+                            const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
+                            const Frame<double>& frameB,
+                            const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+                            systems::Context<double>* context) {
+            return std::make_unique<Class>(
+                plant, frameA, p_AQ_lower, p_AQ_upper, frameB, p_BQ, context);
+          }),
               py::arg("plant"), py::arg("frameA"), py::arg("p_AQ_lower"),
               py::arg("p_AQ_upper"), py::arg("frameB"), py::arg("p_BQ"),
               py::arg("context"));
     }
     {
-      using T = AutoDiffXd;
       cls  // BR
-          .def(py::init(
-                   [](const MultibodyPlant<T>* plant, const Frame<T>& frameA,
-                       const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
-                       const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
-                       const Frame<T>& frameB,
-                       const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
-                       systems::Context<T>* context) {
-                     return std::make_unique<Class>(plant, frameA, p_AQ_lower,
-                         p_AQ_upper, frameB, p_BQ, context);
-                   }),
+          .def(py::init([](const MultibodyPlant<AutoDiffXd>* plant,
+                            const Frame<AutoDiffXd>& frameA,
+                            const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
+                            const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
+                            const Frame<AutoDiffXd>& frameB,
+                            const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+                            systems::Context<AutoDiffXd>* context) {
+            return std::make_unique<Class>(
+                plant, frameA, p_AQ_lower, p_AQ_upper, frameB, p_BQ, context);
+          }),
               py::arg("plant"), py::arg("frameA"), py::arg("p_AQ_lower"),
               py::arg("p_AQ_upper"), py::arg("frameB"), py::arg("p_BQ"),
               py::arg("context"));
     }
   }
 
+  // TODO(m-chaturvedi): Add doc strings when unambiguous names can be
+  // resolved.
   {
     using Class = OrientationConstraint;
     constexpr auto& cls_doc = doc.OrientationConstraint;
     auto cls = py::class_<Class>(m, "OrientationConstraint", cls_doc.doc);
 
     {
-      using T = double;
       cls  // BR
-          .def(py::init([](const MultibodyPlant<T>* const plant,
-                            const Frame<T>& frameAbar,
-                            const math::RotationMatrix<double>& R_AbarA,
-                            const Frame<T>& frameBbar,
-                            const math::RotationMatrix<double>& R_BbarB,
-                            double theta_bound, systems::Context<T>* context) {
-            return std::make_unique<Class>(plant, frameAbar, R_AbarA, frameBbar,
-                R_BbarB, theta_bound, context);
-          }),
+          .def(py::init(
+                   [](const MultibodyPlant<double>* const plant,
+                       const Frame<double>& frameAbar,
+                       const math::RotationMatrix<double>& R_AbarA,
+                       const Frame<double>& frameBbar,
+                       const math::RotationMatrix<double>& R_BbarB,
+                       double theta_bound, systems::Context<double>* context) {
+                     return std::make_unique<Class>(plant, frameAbar, R_AbarA,
+                         frameBbar, R_BbarB, theta_bound, context);
+                   }),
               py::arg("plant"), py::arg("frameAbar"), py::arg("R_AbarA"),
               py::arg("frameBbar"), py::arg("R_BbarB"), py::arg("theta_bound"),
               py::arg("context"));
     }
     {
-      using T = AutoDiffXd;
       cls  // BR
-          .def(py::init([](const MultibodyPlant<T>* const plant,
-                            const Frame<T>& frameAbar,
+          .def(py::init([](const MultibodyPlant<AutoDiffXd>* const plant,
+                            const Frame<AutoDiffXd>& frameAbar,
                             const math::RotationMatrix<double>& R_AbarA,
-                            const Frame<T>& frameBbar,
+                            const Frame<AutoDiffXd>& frameBbar,
                             const math::RotationMatrix<double>& R_BbarB,
-                            double theta_bound, systems::Context<T>* context) {
+                            double theta_bound,
+                            systems::Context<AutoDiffXd>* context) {
             return std::make_unique<Class>(plant, frameAbar, R_AbarA, frameBbar,
                 R_BbarB, theta_bound, context);
           }),
