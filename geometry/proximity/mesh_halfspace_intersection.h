@@ -110,7 +110,9 @@ std::vector<Vector3<T>> ConstructTriangleHalfspaceIntersectionPolygon(
   if (num_positive == 1) {
     if (num_negative == 2) {
       for (int i0 = 0; i0 < 3; ++i0) {
-        if (s[i0] < -zero_tol) {
+        // Note: this is modified from geometric tools code, which instead
+        // checks that s[i0] < 0.
+        if (s[i0] > zero_tol) {
           const int i1 = (i0 + 1) % 3, i2 = (i0 + 2) % 3;
           output_vertices.emplace_back(triangle_H[i1]);
           output_vertices.emplace_back(triangle_H[i2]);
@@ -138,7 +140,9 @@ std::vector<Vector3<T>> ConstructTriangleHalfspaceIntersectionPolygon(
             const T t1 = s[i1] / (s[i1] - s[i2]);
             const Vector3<T> p = triangle_H[i1] + t1 *
                 (triangle_H[i2] - triangle_H[i1]);
-            if (s[i1] > zero_tol) {
+            // Note: this is modified from geometric tools code, which instead
+            // checks that s[i1] > 0.
+            if (s[i1] < -zero_tol) {
               output_vertices.emplace_back(triangle_H[i1]);
               output_vertices.emplace_back(p);
             } else {
@@ -163,7 +167,9 @@ std::vector<Vector3<T>> ConstructTriangleHalfspaceIntersectionPolygon(
   if (num_positive == 2) {
     if (num_negative == 1) {
       for (int i0 = 0; i0 < 3; ++i0) {
-        if (s[i0] > zero_tol) {
+        // Note: this is modified from geometric tools code, which instead
+        // checks that s[i0] < 0.
+        if (s[i0] < -zero_tol) {
           const int i1 = (i0 + 1) % 3, i2 = (i0 + 2) % 3;
           output_vertices.emplace_back(triangle_H[i0]);
           const T t0 = s[i0] / (s[i0] - s[i1]);
@@ -183,7 +189,8 @@ std::vector<Vector3<T>> ConstructTriangleHalfspaceIntersectionPolygon(
     DRAKE_DEMAND(num_zero == 1);
     return output_vertices;
   } else {
-    // The triangle is outside the halfspace.  (num_negative == 3)
+    // Case 10: The triangle is outside the halfspace.
+    DRAKE_DEMAND(num_negative == 3);
     return output_vertices;
   }
 }
