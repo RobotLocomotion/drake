@@ -68,7 +68,7 @@ class OrientationConstraint : public solvers::Constraint {
    * Overloaded constructor.
    * Constructs the constraint using MultibodyPlant<AutoDiffXd>
    */
-  OrientationConstraint(const MultibodyPlant<AutoDiffXd>* const plant,
+  OrientationConstraint(const MultibodyPlant<AutoDiffXd>* const plant_ad,
                         const Frame<AutoDiffXd>& frameAbar,
                         const math::RotationMatrix<double>& R_AbarA,
                         const Frame<AutoDiffXd>& frameBbar,

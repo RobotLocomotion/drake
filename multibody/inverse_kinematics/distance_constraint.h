@@ -38,8 +38,8 @@ class DistanceConstraint : public solvers::Constraint {
    * Overloaded constructor. Constructs the constraint with
    * MultibodyPlant<AutoDiffXd>.
    */
-  DistanceConstraint(const multibody::MultibodyPlant<AutoDiffXd>* const plant,
-                     SortedPair<geometry::GeometryId> geometry_pair,
+  DistanceConstraint(const multibody::MultibodyPlant<AutoDiffXd>*
+      const plant_ad, SortedPair<geometry::GeometryId> geometry_pair,
                      systems::Context<AutoDiffXd>* plant_context,
                      double distance_lower, double distance_upper);
 

@@ -55,7 +55,7 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
    * Overloaded constructor. Use MultibodyPlant<AutoDiffXd> instead of
    * MultibodyPlant<double>.
    */
-  AngleBetweenVectorsConstraint(const MultibodyPlant<AutoDiffXd>* plant,
+  AngleBetweenVectorsConstraint(const MultibodyPlant<AutoDiffXd>* plant_ad,
                                 const Frame<AutoDiffXd>& frameA,
                                 const Eigen::Ref<const Eigen::Vector3d>& a_A,
                                 const Frame<AutoDiffXd>& frameB,

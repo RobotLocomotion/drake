@@ -96,7 +96,7 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
    Constructs the constraint using MultibodyPlant<AutoDiffXd>.
    */
   MinimumDistanceConstraint(
-      const multibody::MultibodyPlant<AutoDiffXd>* const plant,
+      const multibody::MultibodyPlant<AutoDiffXd>* const plant_ad,
       double minimum_distance, systems::Context<AutoDiffXd>* plant_context,
       MinimumDistancePenaltyFunction penalty_function = {},
       double influence_distance_offset = 1);

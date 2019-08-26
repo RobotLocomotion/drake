@@ -50,7 +50,7 @@ class PositionConstraint : public solvers::Constraint {
    * (using MultibodyPlant<double> and Context<double>. Except the gradient of
    * the constraint is computed from autodiff.
    */
-  PositionConstraint(const MultibodyPlant<AutoDiffXd>* plant,
+  PositionConstraint(const MultibodyPlant<AutoDiffXd>* plant_ad,
                      const Frame<AutoDiffXd>& frameA,
                      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
                      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,

@@ -62,7 +62,7 @@ class GazeTargetConstraint : public solvers::Constraint {
    * Construct from MultibodyPlant<AutoDiffXd> instead of
    * MultibodyPlant<double>.
    */
-  GazeTargetConstraint(const MultibodyPlant<AutoDiffXd>* plant,
+  GazeTargetConstraint(const MultibodyPlant<AutoDiffXd>* plant_ad,
                        const Frame<AutoDiffXd>& frameA,
                        const Eigen::Ref<const Eigen::Vector3d>& p_AS,
                        const Eigen::Ref<const Eigen::Vector3d>& n_A,
