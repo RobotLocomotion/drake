@@ -270,6 +270,32 @@ objects from one container to another (e.g. transferring all `System`s
 from `DiagramBuilder` to `Diagram` when calling
 `DiagramBuilder.Build()`).
 
+The `keep_alive` decorations should be added after `py::arg`s are specified,
+and should use either the argument names, `return`, or `self` (not `this`).
+
+Examples:
+
+~~~{.cc}
+    .def(py::init<const MultibodyPlant<double>&>(), py::arg("plant"),
+        // Keep alive, reference: `self` keeps `plant` alive.
+        py::keep_alive<1, 2>(),  // BR
+        cls_doc.ctor.doc_1args)
+    ...
+    .def("GetMutablePositionsAndVelocities",
+        ...,
+        py_reference, py::arg("context"),
+        // Keep alive, ownership: `return` keeps `context` alive.
+        py::keep_alive<0, 2>(),
+        cls_doc.GetMutablePositionsAndVelocities.doc)
+    ...
+    .def(py::init<const System<T>&, unique_ptr<Context<T>>>(),
+        py::arg("system"), py::arg("context") = nullptr,
+        // Keep alive, reference: `self` keeps `system` alive.
+        py::keep_alive<1, 2>(),
+        // Keep alive, ownership: `context` keeps `self` alive.
+        py::keep_alive<3, 1>(), doc.Simulator.ctor.doc)
+~~~
+
 @anchor PydrakeOverloads
 ## Function Overloads
 
