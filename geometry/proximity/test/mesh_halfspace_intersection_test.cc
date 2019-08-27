@@ -11,15 +11,33 @@ namespace {
 
 typedef double T;
 
-// The following tests all use halfspace normal [0 0 1], with point [0 0 0]
-// lying on the halfspace.
-const Vector3<T> normal_H(0, 0, 1);
-const Vector3<T> point_H(0, 0, 0);
-const T d = normal_H.dot(point_H);
+template <typename T>
+class MeshHalfspaceIntersectionTest : public ::testing::Test {
+ public:
+  void SetUp() {
+    // The tests all use halfspace normal [0 0 1], with point [0 0 0]
+    // lying on the halfspace.
+    normal_H_ = Vector3<T>(0, 0, 1);
+    const Vector3<T> point_H(0, 0, 0);
+    d_ = normal_H_.dot(point_H);
+  }
+
+  /// Returns the normal to the halfspace.
+  const Vector3<T>& normal_H() const { return normal_H_; }
+
+  /// Returns the constant d to the halfspace such that normal_H' * x = d,
+  /// where x is an arbitrary point on the surface of the halfspace.
+  const T& halfspace_constant() const { return d_; }
+
+  private:
+    Vector3<T> normal_H_;
+    T d_;
+};
+TYPED_TEST_CASE_P(MeshHalfspaceIntersectionTest);
 
 // Verifies that a triangle that lies fully outside of the halfspace yields an
 // empty intersection. This covers Case (10) in the code.
-GTEST_TEST(MeshHalfspaceIntersectionTest, NoIntersection) {
+TYPED_TEST_P(MeshHalfspaceIntersectionTest, NoIntersection) {
   // Construct the vertices of the triangle to lie outside the halfspace.
   const std::array<Vector3<T>, 3> triangle_vertices_H = {
     Vector3<T>(0, 0, 1), Vector3<T>(1, 0, 1), Vector3<T>(0, 1, 1)
@@ -28,16 +46,16 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, NoIntersection) {
   // Verify no intersection.
   std::vector<Vector3<T>> newly_created_vertices;
   std::vector<MeshIndex> intersection_indices;
-  ConstructTriangleHalfspaceIntersectionPolygon(triangle_vertices_H, normal_H,
-                                                d, &newly_created_vertices,
-                                                &intersection_indices);
+  ConstructTriangleHalfspaceIntersectionPolygon(
+      triangle_vertices_H, this->normal_H(), this->halfspace_constant(),
+      &newly_created_vertices, &intersection_indices);
   EXPECT_TRUE(newly_created_vertices.empty());
   EXPECT_TRUE(intersection_indices.empty());
 }
 
 // Verifies that a triangle that lies inside or on the halfspace yields
 // that same triangle. This covers Cases (1) and (4) in the code.
-GTEST_TEST(MeshHalfspaceIntersectionTest, InsideOrOnIntersection) {
+TYPED_TEST_P(MeshHalfspaceIntersectionTest, InsideOrOnIntersection) {
   // Construct the vertices of the triangle to lie inside the halfspace.
   const std::array<Vector3<T>, 3> triangle_vertices_inside_H = {
     Vector3<T>(0, 0, -1), Vector3<T>(1, 0, -1), Vector3<T>(0, 1, -1)
@@ -47,8 +65,8 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, InsideOrOnIntersection) {
   std::vector<Vector3<T>> newly_created_vertices;
   std::vector<MeshIndex> intersection_indices;
   ConstructTriangleHalfspaceIntersectionPolygon(
-      triangle_vertices_inside_H, normal_H, d, &newly_created_vertices,
-      &intersection_indices);
+      triangle_vertices_inside_H, this->normal_H(), this->halfspace_constant(),
+      &newly_created_vertices, &intersection_indices);
   EXPECT_TRUE(newly_created_vertices.empty());
   ASSERT_EQ(intersection_indices.size(), 3);
   for (int i = 0; i < 3; ++i) {
@@ -69,8 +87,8 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, InsideOrOnIntersection) {
   newly_created_vertices.clear();
   intersection_indices.clear();
   ConstructTriangleHalfspaceIntersectionPolygon(
-      triangle_vertices_on_H, normal_H, d, &newly_created_vertices,
-      &intersection_indices);
+      triangle_vertices_on_H, this->normal_H(), this->halfspace_constant(),
+      &newly_created_vertices, &intersection_indices);
   EXPECT_TRUE(newly_created_vertices.empty());
   ASSERT_EQ(intersection_indices.size(), 3);
   for (int i = 0; i < 3; ++i) {
@@ -83,7 +101,7 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, InsideOrOnIntersection) {
 // produces either (a) no intersection (if the other two vertices lie outside the
 // halfspace) or (b) the original triangle (if the other two vertices lie
 // within the halfspace). This covers Cases (9) and (2), respectively.
-GTEST_TEST(MeshHalfspaceIntersectionTest, VertexOnHalfspaceIntersection) {
+TYPED_TEST_P(MeshHalfspaceIntersectionTest, VertexOnHalfspaceIntersection) {
   // Construct two vertices of the triangle to lie outside the halfspace and the
   // other to lie on the halfspace.
   const std::array<Vector3<T>, 3> triangle_vertices_two_outside_H = {
@@ -94,8 +112,8 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, VertexOnHalfspaceIntersection) {
   std::vector<Vector3<T>> newly_created_vertices;
   std::vector<MeshIndex> intersection_indices;
   ConstructTriangleHalfspaceIntersectionPolygon(
-      triangle_vertices_two_outside_H, normal_H, d, &newly_created_vertices,
-      &intersection_indices);
+      triangle_vertices_two_outside_H, this->normal_H(), this->halfspace_constant(),
+      &newly_created_vertices, &intersection_indices);
   EXPECT_TRUE(newly_created_vertices.empty());
   EXPECT_TRUE(intersection_indices.empty());
 
@@ -109,8 +127,8 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, VertexOnHalfspaceIntersection) {
   newly_created_vertices.clear();
   intersection_indices.clear();
   ConstructTriangleHalfspaceIntersectionPolygon(
-      triangle_vertices_two_inside_H, normal_H, d, &newly_created_vertices,
-      &intersection_indices);
+      triangle_vertices_two_inside_H, this->normal_H(), this->halfspace_constant(),
+      &newly_created_vertices, &intersection_indices);
   EXPECT_TRUE(newly_created_vertices.empty());
   ASSERT_EQ(intersection_indices.size(), 3);
   for (int i = 0; i < 3; ++i) {
@@ -123,7 +141,7 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, VertexOnHalfspaceIntersection) {
 // produces either (a) no intersection (if the other vertex lies outside the
 // halfspace) or (b) the original triangle (if the other vertex lies
 // within the halfspace). This covers Cases (7) and (3), respectively.
-GTEST_TEST(MeshHalfspaceIntersectionTest, EdgeOnHalfspaceIntersection) {
+TYPED_TEST_P(MeshHalfspaceIntersectionTest, EdgeOnHalfspaceIntersection) {
   // Construct one vertex of the triangle to lie outside the halfspace and the
   // other two to lie on the halfspace.
   const std::array<Vector3<T>, 3> triangle_vertices_one_outside_H = {
@@ -134,8 +152,8 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, EdgeOnHalfspaceIntersection) {
   std::vector<Vector3<T>> newly_created_vertices;
   std::vector<MeshIndex> intersection_indices;
   ConstructTriangleHalfspaceIntersectionPolygon(
-      triangle_vertices_one_outside_H, normal_H, d, &newly_created_vertices,
-      &intersection_indices);
+      triangle_vertices_one_outside_H, this->normal_H(), this->halfspace_constant(),
+      &newly_created_vertices, &intersection_indices);
   EXPECT_TRUE(newly_created_vertices.empty());
   EXPECT_TRUE(intersection_indices.empty());
 
@@ -149,8 +167,8 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, EdgeOnHalfspaceIntersection) {
   newly_created_vertices.clear();
   intersection_indices.clear();
   ConstructTriangleHalfspaceIntersectionPolygon(
-      triangle_vertices_one_inside_H, normal_H, d, &newly_created_vertices,
-      &intersection_indices);
+      triangle_vertices_one_inside_H, this->normal_H(), this->halfspace_constant(),
+      &newly_created_vertices, &intersection_indices);
   EXPECT_TRUE(newly_created_vertices.empty());
   ASSERT_EQ(intersection_indices.size(), 3);
   for (int i = 0; i < 3; ++i) {
@@ -161,7 +179,7 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, EdgeOnHalfspaceIntersection) {
 
 // Verifies that a triangle that has two vertices within the halfspace and
 // another outside the halfspace produces a quadrilateral. This covers Case 5.
-GTEST_TEST(MeshHalfspaceIntersectionTest, QuadrilateralResults) {
+TYPED_TEST_P(MeshHalfspaceIntersectionTest, QuadrilateralResults) {
   // Construct one vertex of the triangle to lie outside the halfspace and the
   // other two to lie inside the halfspace.
   const std::array<Vector3<T>, 3> triangle_vertices_H = {
@@ -174,8 +192,8 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, QuadrilateralResults) {
   std::vector<Vector3<T>> newly_created_vertices;
   std::vector<MeshIndex> intersection_indices;
   ConstructTriangleHalfspaceIntersectionPolygon(
-      triangle_vertices_H, normal_H, d, &newly_created_vertices,
-      &intersection_indices);
+      triangle_vertices_H, this->normal_H(), this->halfspace_constant(),
+      &newly_created_vertices, &intersection_indices);
   ASSERT_EQ(intersection_indices.size(), 4);
   ASSERT_EQ(newly_created_vertices.size(), 2);
   // Two vertices will be drawn from inside the halfspace.
@@ -201,7 +219,7 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, QuadrilateralResults) {
 // Verifies that a triangle that has one vertex outside the halfspace, one
 // vertex inside the halfspace, and one vertex on the halfspace produces a
 // triangle. This test covers Case 6.
-GTEST_TEST(MeshHalfspaceIntersectionTest, OutsideInsideOn) {
+TYPED_TEST_P(MeshHalfspaceIntersectionTest, OutsideInsideOn) {
   const std::array<Vector3<T>, 3> triangle_vertices_H = {
     Vector3<T>(0, 0, 1), Vector3<T>(1, 0, 0), Vector3<T>(0, 1, -1)
   };
@@ -212,8 +230,8 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, OutsideInsideOn) {
   std::vector<Vector3<T>> newly_created_vertices;
   std::vector<MeshIndex> intersection_indices;
   ConstructTriangleHalfspaceIntersectionPolygon(
-      triangle_vertices_H, normal_H, d, &newly_created_vertices,
-      &intersection_indices);
+      triangle_vertices_H, this->normal_H(), this->halfspace_constant(),
+      &newly_created_vertices, &intersection_indices);
   ASSERT_EQ(intersection_indices.size(), 3);
   ASSERT_EQ(newly_created_vertices.size(), 1);
   // One vertex will be drawn from inside the halfspace.
@@ -233,7 +251,7 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, OutsideInsideOn) {
 // Verifies that a triangle with one vertex inside the halfspace and two
 // vertices outside of the halfspace produces a triangle. This test covers
 // Case 8.
-GTEST_TEST(MeshHalfspaceIntersectionTest, OneInsideTwoOutside) {
+TYPED_TEST_P(MeshHalfspaceIntersectionTest, OneInsideTwoOutside) {
   const std::array<Vector3<T>, 3> triangle_vertices_H = {
     Vector3<T>(0, 0, 1), Vector3<T>(1, 0, 1), Vector3<T>(0, 1, -1)
   };
@@ -244,8 +262,8 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, OneInsideTwoOutside) {
   std::vector<Vector3<T>> newly_created_vertices;
   std::vector<MeshIndex> intersection_indices;
   ConstructTriangleHalfspaceIntersectionPolygon(
-      triangle_vertices_H, normal_H, d, &newly_created_vertices,
-      &intersection_indices);
+      triangle_vertices_H, this->normal_H(), this->halfspace_constant(),
+      &newly_created_vertices, &intersection_indices);
   ASSERT_EQ(intersection_indices.size(), 3);
   ASSERT_EQ(newly_created_vertices.size(), 2);
   EXPECT_EQ(intersection_indices[0].index_into_triangle_vertices, true);
@@ -262,6 +280,68 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, OneInsideTwoOutside) {
              (triangle_vertices_H[1] + triangle_vertices_H[2]) * 0.5).norm(),
             zero_tol);
 }
+
+// Tests that a mesh of a box intersecting the halfspace like flotsam produces
+// an open box shape.
+TYPED_TEST_P(MeshHalfspaceIntersectionTest, BoxMesh) {
+  // Set the box vertices according to the following diagram. The box is
+  // centered at the origin.
+  //               v₁     v₃
+  //               ●------●
+  //              /|     /|
+  //             / |  v₇/ |
+  //         v₅ ●------●  |
+  //            |  |   |  |
+  //            |  ●---|--● v₂
+  //            | /v₀  | /
+  //            |/     |/
+  //    +Z   v₄ ●------● v₆
+  //     |
+  //     |
+  //     o------+Y
+  //    /
+  //   /
+  // +X
+  std::vector<Vector3<T>> vertices;
+  vertices.emplace_back(-1, -1, -1);
+  vertices.emplace_back(-1, -1, 1);
+  vertices.emplace_back(-1, 1, -1);
+  vertices.emplace_back(-1, 1, 1);
+  vertices.emplace_back(1, -1, -1);
+  vertices.emplace_back(1, -1, 1);
+  vertices.emplace_back(1, 1, -1);
+  vertices.emplace_back(1, 1, 1);
+
+  // Set the twelve box faces using a counter-clockwise winding.
+  std::vector<std::array<int, 3>> faces;
+  faces.push_back({4, 6, 7});  // +X face
+  faces.push_back({7, 5, 4});  // +X face
+  faces.push_back({1, 3, 2});  // -X face
+  faces.push_back({2, 0, 1});  // -X face
+  faces.push_back({2, 3, 7});  // +Y face
+  faces.push_back({7, 6, 2});  // +Y face
+  faces.push_back({4, 5, 1});  // -Y face
+  faces.push_back({1, 0, 4});  // -Y face
+  faces.push_back({7, 3, 1});  // +Z face
+  faces.push_back({1, 5, 7});  // +Z face
+  faces.push_back({4, 0, 2});  // -Z face
+  faces.push_back({2, 6, 4});  // -Z face
+
+  // Compute the intersection.
+  const SurfaceMesh<T> mesh = ConstructSurfaceMeshFromMeshHalfspaceIntersection(
+      vertices, faces, this->normal_H(), this->halfspace_constant());
+  ASSERT_EQ(mesh.num_vertices(), 8);
+  ASSERT_EQ(mesh.num_faces(), 10);
+}
+
+REGISTER_TYPED_TEST_CASE_P(MeshHalfspaceIntersectionTest, NoIntersection,
+                           InsideOrOnIntersection,
+                           VertexOnHalfspaceIntersection,
+                           EdgeOnHalfspaceIntersection, QuadrilateralResults,
+                           OutsideInsideOn, OneInsideTwoOutside, BoxMesh);
+
+typedef ::testing::Types<double> MyTypes;
+INSTANTIATE_TYPED_TEST_CASE_P(My, MeshHalfspaceIntersectionTest, MyTypes);
 
 }  // namespace
 }  // namespace geometry

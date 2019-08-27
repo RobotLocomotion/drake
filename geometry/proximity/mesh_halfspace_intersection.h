@@ -1,9 +1,11 @@
 #pragma once
 
+#include <array>
 #include <cmath>
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/geometry/proximity/surface_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -20,28 +22,111 @@ struct MeshIndex {
 };
 
 /**
+ Constructs the SurfaceMesh that results from intersecting a triangle mesh with
+ a halfspace.
+ @param mesh_vertices_M the vertices of the mesh, all measured and expressed
+        in an arbitrary frame, M.
+ @param mesh_indices the indices of the vertices comprising each triangle in
+        the mesh.
+ @param halfspace_normal_M the outward facing surface normal to the halfspace,
+        expressed in Frame M.
+ @param halfspace_constant the halfspace constant d, defined as
+        n'x = d for any point x that lies on the halfspace and given the
+        surface normal to the halfspace n.
+ @returns the SurfaceMesh corresponding to the intersection.
+ */
+template <typename T>
+SurfaceMesh<T> ConstructSurfaceMeshFromMeshHalfspaceIntersection(
+    const std::vector<Vector3<T>>& mesh_vertices_M,
+    const std::vector<std::array<int, 3>>& mesh_indices,
+    const Vector3<T>& halfspace_normal_M, const T& halfspace_constant) {
+  std::vector<SurfaceVertex<T>> vertices;
+  std::vector<SurfaceFace> faces;
+  std::vector<Vector3<T>> newly_created_vertices;
+  std::vector<MeshIndex> intersection_indices;
+  std::vector<SurfaceVertexIndex> true_indices;
+
+  for (const std::array<int, 3>& tri : mesh_indices) {
+    const std::array<Vector3<T>, 3> vertices_M = {
+      mesh_vertices_M[tri[0]],
+      mesh_vertices_M[tri[1]],
+      mesh_vertices_M[tri[2]]
+    };
+
+    // Both output vectors must be empty.
+    newly_created_vertices.clear();
+    intersection_indices.clear();
+
+    // Compute the intersection.
+    ConstructTriangleHalfspaceIntersectionPolygon(
+        vertices_M, halfspace_normal_M, halfspace_constant,
+        &newly_created_vertices, &intersection_indices);
+
+    // If there was no intersection, keep looping.
+    if (intersection_indices.empty())
+      continue;
+
+    // Convert vertex indices, adding new vertices as we go.
+    true_indices.resize(intersection_indices.size());
+    for (int i = 0; i < static_cast<int>(intersection_indices.size()); ++i) {
+      if (intersection_indices[i].index_into_triangle_vertices) {
+        true_indices[i] =
+            SurfaceVertexIndex(tri[intersection_indices[i].index]);
+      } else {
+        true_indices[i] = SurfaceVertexIndex(vertices.size());
+        vertices.emplace_back(
+            newly_created_vertices[intersection_indices[i].index]);
+      }
+    }
+
+    // Create new faces.
+    if (true_indices.size() == 3) {
+      faces.emplace_back(true_indices[0], true_indices[1], true_indices[2]);
+    } else {
+      if (true_indices.size() == 4) {
+        faces.emplace_back(true_indices[0], true_indices[1], true_indices[2]);
+        faces.emplace_back(true_indices[2], true_indices[2], true_indices[0]);
+      } else {
+        // There should be no polygons with more than 4 vertices and must not
+        // be any polygons with 1 or 2 vertices!
+        DRAKE_UNREACHABLE();
+      }
+    }
+    DRAKE_DEMAND(true_indices.size() == 3 || true_indices.size() == 4);
+  }
+
+  return SurfaceMesh<T>(std::move(faces), std::move(vertices));
+}
+
+/**
  Updates the SurfaceMesh describing the intersection between a triangle from
  @param triangle_H a triangle from the mesh, which each vertex described
-        as an offset vector expressed in the halfspace frame H. The triangle
+        as an offset vector expressed in a given frame, H. The triangle
         vertices should be ordered such that
         `(triangle_H[1] - triangle_H[0]) × (triangle_H[2] - triangle_H[1])`
         points out of the geometry that contains this triangle.
- @param halfspace_normal_H an outward facing normal to the halfspace,
-        expressed in the halfspace frame.
+ @param halfspace_normal_H the outward facing surface normal to the halfspace,
+        expressed in Frame H.
  @param halfspace_constant the halfspace constant d, defined as
         n'x = d for any point x that lies on the halfspace and given the
-        normal to the surface n.
+        surface normal to the halfspace n.
  @param zero_tol an optional tolerance that is used to determine when a point
         is on the halfspace; the default tolerance should work well if the
         inputs (`triangle_H` vertices and `halfspace_constant`) are on the
         order of unit magnitude.
- @returns an ordered polygon describing the intersection between the triangle
-          and the halfspace OR an empty vector, if the intersection is either
-          empty or does not correspond to a polygon. The polygon is ordered
-          such that the normal defined in a particular manner points toward
-          the halfspace. If the returned vector corresponds to four
-          vertices (a, b, c, and d, respectively), then the normal vector
-          (b - a) × (c - b) will point toward the halfspace.
+ @param[out] newly_created_vertices contains any vertices that resulted from the
+             intersection *and* that do not already correspond to one of the
+             triangle vertices.
+ @param[out] intersection_indices an ordered polygon describing the intersection
+             between the triangle and the halfspace OR an empty vector, if the
+             intersection is either empty or does not correspond to a polygon.
+             The polygon is ordered such that the normal defined in a particular
+             manner points toward the halfspace. If the returned vector
+             corresponds to four vertices (a, b, c, and d, respectively), then
+             the normal vector (b - a) × (c - b) will point toward the
+             halfspace.
+ @note Aborts if either `newly_created_vertices` or `intersection_indices` is
+       not empty.
  */
 template <typename T>
 void ConstructTriangleHalfspaceIntersectionPolygon(

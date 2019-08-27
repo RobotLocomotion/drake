@@ -113,6 +113,7 @@ drake_cc_library(
     ],
     deps = [
         "//common",
+        ":surface_mesh",
     ],
 )
 
