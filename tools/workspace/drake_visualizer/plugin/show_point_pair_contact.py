@@ -145,7 +145,7 @@ class ContactVisualizer(object):
         #  to dynamically modify the menu based on arbitrary plugins.
         contact_menu = plugin_menu.addMenu('&Contacts')
         self.configure_action = contact_menu.addAction(
-            "&Configure Force Vector")
+            "&Configure Force Vector for Point Contacts")
         self.configure_action.connect('triggered()', self.configure_via_dialog)
 
         self.set_enabled(True)

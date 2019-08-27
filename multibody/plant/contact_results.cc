@@ -22,7 +22,7 @@ template <typename T>
 const HydroelasticContactInfo<T>&
 ContactResults<T>::hydroelastic_contact_info(int i) const {
   DRAKE_DEMAND(i >= 0 && i < num_hydroelastic_contacts());
-  return *hydroelastic_contact_info_[i];
+  return hydroelastic_contact_info_[i];
 }
 
 }  // namespace multibody

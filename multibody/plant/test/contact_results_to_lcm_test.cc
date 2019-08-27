@@ -30,8 +30,8 @@ using geometry::SurfaceVertexIndex;
 using math::RigidTransform;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::benchmarks::acrobot::AcrobotParameters;
-// TODO(edrumwri) Remove the next line when MultibodyPlant outputs hydroelastic
-// contact results.
+// TODO(edrumwri) Remove the next line and the corresponding #include when
+// MultibodyPlant outputs hydroelastic contact results.
 using multibody::internal::HydroelasticTractionCalculator;
 using systems::Context;
 using systems::Diagram;
@@ -99,7 +99,7 @@ GTEST_TEST(ContactResultsToLcmSystem, NonEmptyMultibodyPlantEmptyContact) {
   PointPairContactInfo<double> pair_info{
       index1,           index2,     f_BC_W,          p_WC,
       separation_speed, slip_speed, penetration_data};
-  contacts.AddPointPairContactInfo(pair_info);
+  contacts.AddContactInfo(pair_info);
   Value<ContactResults<double>> contacts_value(contacts);
   auto lcm_context = lcm_system.AllocateContext();
   lcm_context->FixInputPort(
@@ -246,7 +246,8 @@ std::unique_ptr<ContactSurface<double>> CreateContactSurface(
 // TODO(edrumwri) Remove this function when MultibodyPlant outputs hydroelastic
 // contact results.
 ContactResults<double> GenerateHydroelasticContactResults(
-    const MultibodyPlant<double>& plant) {
+    const MultibodyPlant<double>& plant,
+    std::unique_ptr<ContactSurface<double>>* contact_surface) {
   // Get the geometries for the two bodies.
   DRAKE_DEMAND(plant.num_bodies() == 2);
   const Body<double>& world_body = plant.world_body();
@@ -258,9 +259,8 @@ ContactResults<double> GenerateHydroelasticContactResults(
   DRAKE_DEMAND(world_geoms.size() == 1);
   DRAKE_DEMAND(block_geoms.size() == 1);
 
-  // Create the contact surface using a duplicated arbitrary ID: geometry IDs
-  // are irrelevant for this test.
-  auto contact_surface =
+  // Create the contact surface using an arbitrary geometry from each body.
+  *contact_surface =
       CreateContactSurface(world_geoms.front(), block_geoms.front());
 
   // Create the calculator data, populated with dummy values since we're only
@@ -270,7 +270,7 @@ ContactResults<double> GenerateHydroelasticContactResults(
   const SpatialVelocity<double> V_WA = SpatialVelocity<double>::Zero();
   const SpatialVelocity<double> V_WB = SpatialVelocity<double>::Zero();
   HydroelasticTractionCalculator<double>::Data data(
-      X_WA, X_WB, V_WA, V_WB, contact_surface.get());
+      X_WA, X_WB, V_WA, V_WB, contact_surface->get());
 
   // Material properties are also dummies (the test will be unaffected by
   // their settings).
@@ -282,8 +282,8 @@ ContactResults<double> GenerateHydroelasticContactResults(
   // this file.
   HydroelasticTractionCalculator<double> calculator;
   ContactResults<double> output;
-  output.AddHydroelasticContactInfo(
-      std::make_unique<HydroelasticContactInfo<double>>(
+  output.AddContactInfo(
+      HydroelasticContactInfo<double>(
           calculator.ComputeContactInfo(data, dissipation, mu_coulomb)));
   return output;
 }
@@ -347,10 +347,11 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
 
   // TODO(edrumwri) Remove this code block when MultibodyPlant outputs
   // hydroelastic contact results.
+  std::unique_ptr<ContactSurface<double>> contact_surface;
   diagram_context->FixInputPort(
       contact_results_input_port_index,
       Value<ContactResults<double>>(
-          GenerateHydroelasticContactResults(*plant)));
+          GenerateHydroelasticContactResults(*plant, &contact_surface)));
 
   // Publish the first message so that this test can be interpreted in the
   // visualizer.
@@ -365,16 +366,14 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
   const lcmt_contact_results_for_viz& lcm_message =
       lcm_message_value.get_value();
 
-  // We haven't stepped, so we should assume the time is the context's default
-  // value.
-  EXPECT_EQ(lcm_message.timestamp, 0);
+  EXPECT_EQ(lcm_message.timestamp, diagram_context.get_time());
   EXPECT_EQ(lcm_message.num_point_pair_contacts, 0);
   ASSERT_EQ(lcm_message.num_hydroelastic_contacts, 1);
   const lcmt_hydroelastic_contact_surface_for_viz& surface_msg =
       lcm_message.hydroelastic_contacts[0];
   EXPECT_EQ(surface_msg.timestamp, 0);
-  EXPECT_EQ(surface_msg.body1_name, "WorldBody(0)");
-  EXPECT_EQ(surface_msg.body2_name, "BodyB(1)");
+  EXPECT_EQ(surface_msg.body1_name, "WorldBody");
+  EXPECT_EQ(surface_msg.body2_name, "BodyB");
 
   // Verify that the contact surface has the expected vertex locations.
   for (int i = 0; i < surface_msg.num_triangles; ++i) {

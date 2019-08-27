@@ -220,7 +220,7 @@ class ContactSurface {
   DRAKE_DEPRECATED("2019-12-01", "Use mesh_W() instead.")
   const SurfaceMesh<T>& mesh() const { return mesh_W(); }
 
-  /** Returns a reference to the surface mesh, the surface mesh whose vertex
+  /** Returns a reference to the surface mesh whose vertex
    positions are measured and expressed in the world frame.
    */
   const SurfaceMesh<T>& mesh_W() const {

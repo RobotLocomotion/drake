@@ -25,7 +25,7 @@ ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
     const std::vector<geometry::GeometryId>& geometries =
         plant.GetCollisionGeometriesForBody(body);
     for (auto geometry_id : geometries)
-      geometry_id_to_body_index_map_[geometry_id] = i;
+      geometry_id_to_body_name_map_[geometry_id] = body.name();
   }
 
   this->set_name("ContactResultsToLcmSystem");
@@ -88,20 +88,19 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
   for (int i = 0; i < contact_results.num_hydroelastic_contacts(); ++i) {
     lcmt_hydroelastic_contact_surface_for_viz& surface_msg =
         msg.hydroelastic_contacts[i];
-    surface_msg.timestamp = msg.timestamp;
 
     const HydroelasticContactInfo<T>& hydroelastic_contact_info =
         contact_results.hydroelastic_contact_info(i);
+    surface_msg.timestamp = msg.timestamp;
 
     // Get the two body names.
-    surface_msg.body1_name = body_names_.at(
-        geometry_id_to_body_index_map_.at(
-            hydroelastic_contact_info.contact_surface().id_M()));
-    surface_msg.body2_name = body_names_.at(
-        geometry_id_to_body_index_map_.at(
-            hydroelastic_contact_info.contact_surface().id_N()));
+    surface_msg.body1_name = geometry_id_to_body_name_map_.at(
+            hydroelastic_contact_info.contact_surface().id_M());
+    surface_msg.body2_name = geometry_id_to_body_name_map_.at(
+            hydroelastic_contact_info.contact_surface().id_N());
 
-    const auto& mesh_W = hydroelastic_contact_info.contact_surface().mesh_W();
+    const geometry::SurfaceMesh<T>& mesh_W =
+        hydroelastic_contact_info.contact_surface().mesh_W();
     surface_msg.num_triangles = mesh_W.num_faces();
     surface_msg.triangles.resize(surface_msg.num_triangles);
 
@@ -109,7 +108,6 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     for (geometry::SurfaceFaceIndex j(0); j < surface_msg.num_triangles; ++j) {
       lcmt_hydroelastic_contact_surface_tri_for_viz& tri_msg =
           surface_msg.triangles[j];
-      tri_msg.timestamp = msg.timestamp;
 
       // Get the three vertices.
       const auto& face = mesh_W.element(j);
@@ -117,9 +115,9 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
       const geometry::SurfaceVertex<T>& vB = mesh_W.vertex(face.vertex(1));
       const geometry::SurfaceVertex<T>& vC = mesh_W.vertex(face.vertex(2));
 
-      write_double3(vA.r_MV(), tri_msg.a_W);
-      write_double3(vB.r_MV(), tri_msg.b_W);
-      write_double3(vC.r_MV(), tri_msg.c_W);
+      write_double3(vA.r_MV(), tri_msg.p_WA);
+      write_double3(vB.r_MV(), tri_msg.p_WB);
+      write_double3(vC.r_MV(), tri_msg.p_WC);
     }
   }
 }
@@ -130,8 +128,7 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     lcm::DrakeLcmInterface* lcm) {
   return ConnectContactResultsToDrakeVisualizer(
       builder, multibody_plant,
-      multibody_plant.get_contact_results_output_port(),
-      lcm);
+      multibody_plant.get_contact_results_output_port(), lcm);
 }
 
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
@@ -152,9 +149,8 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
   contact_results_publisher->set_name("contact_results_publisher");
 
   builder->Connect(contact_results_port,
-      contact_to_lcm->get_contact_result_input_port());
-  builder->Connect(contact_to_lcm->get_lcm_message_output_port(),
-      contact_results_publisher->get_input_port());
+                   contact_to_lcm->get_contact_result_input_port());
+  builder->Connect(*contact_to_lcm, *contact_results_publisher);
 
   return contact_results_publisher;
 }

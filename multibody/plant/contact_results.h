@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "drake/common/copyable_unique_ptr.h"
@@ -44,22 +45,15 @@ class ContactResults {
     return static_cast<int>(hydroelastic_contact_info_.size());
   }
 
-  DRAKE_DEPRECATED("2019-10-01", "Use AddPointPairContactInfo() instead.")
-  void AddContactInfo(const PointPairContactInfo<T>& point_pair_info) {
-    AddPointPairContactInfo(point_pair_info);
-  }
-
   /** Add a new contact pair result to `this`. */
-  void AddPointPairContactInfo(const PointPairContactInfo<T>& point_pair_info) {
+  void AddContactInfo(const PointPairContactInfo<T>& point_pair_info) {
     point_pairs_info_.push_back(point_pair_info);
   }
 
   /** Add a new hydroelastic contact to `this`. */
-  void AddHydroelasticContactInfo(
-      std::unique_ptr<HydroelasticContactInfo<T>> hydroelastic_contact_info) {
-    hydroelastic_contact_info_.push_back(
-        copyable_unique_ptr<HydroelasticContactInfo<T>>(
-            hydroelastic_contact_info));
+  void AddContactInfo(
+      HydroelasticContactInfo<T>&& hydroelastic_contact_info) {
+    hydroelastic_contact_info_.push_back(std::move(hydroelastic_contact_info));
   }
 
   DRAKE_DEPRECATED("2019-10-01", "Use point_pair_contact_info() instead.")
@@ -79,8 +73,7 @@ class ContactResults {
 
  private:
   std::vector<PointPairContactInfo<T>> point_pairs_info_;
-  std::vector<copyable_unique_ptr<HydroelasticContactInfo<T>>>
-      hydroelastic_contact_info_;
+  std::vector<HydroelasticContactInfo<T>> hydroelastic_contact_info_;
 };
 
 // Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which

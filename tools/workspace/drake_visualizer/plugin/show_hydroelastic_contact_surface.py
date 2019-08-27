@@ -70,9 +70,9 @@ class HydroelasticContactSurfaceVisualizer(object):
         # outlined in blue.
         for surface in msg.hydroelastic_contacts:
             for tri in surface.triangles:
-                va = np.array([tri.a_W[0], tri.a_W[1], tri.a_W[2]])
-                vb = np.array([tri.b_W[0], tri.b_W[1], tri.b_W[2]])
-                vc = np.array([tri.c_W[0], tri.c_W[1], tri.c_W[2]])
+                va = np.array([tri.p_WA[0], tri.p_WA[1], tri.p_WA[2]])
+                vb = np.array([tri.p_WB[0], tri.p_WB[1], tri.p_WB[2]])
+                vc = np.array([tri.p_WC[0], tri.p_WC[1], tri.p_WC[2]])
                 d.addLine(p1=va, p2=vb, radius=0, color=[0, 0, 1])
                 d.addLine(p1=vb, p2=vc, radius=0, color=[0, 0, 1])
                 d.addLine(p1=va, p2=vc, radius=0, color=[0, 0, 1])

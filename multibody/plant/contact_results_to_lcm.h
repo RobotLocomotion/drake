@@ -8,7 +8,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/geometry/scene_graph.h"
+#include "drake/geometry/geometry_ids.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -59,8 +59,8 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
   systems::OutputPortIndex message_output_port_index_;
 
   // A mapping from geometry IDs to body indices.
-  std::unordered_map<geometry::GeometryId, multibody::BodyIndex>
-      geometry_id_to_body_index_map_;
+  std::unordered_map<geometry::GeometryId, std::string>
+      geometry_id_to_body_name_map_;
 
   // A mapping from body index values to body names.
   std::vector<std::string> body_names_;

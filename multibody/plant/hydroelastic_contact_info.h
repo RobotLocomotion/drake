@@ -18,8 +18,8 @@ namespace multibody {
  two geometries attached to a pair of bodies. This class provides the output
  from the Hydroelastic contact model and includes:
 
-    - The shared contact surface between the two geometries.
-    - The virtual pressure acting at every point on the contact surface.
+    - The shared contact surface between the two geometries, which includes
+      the virtual pressure acting at every point on the contact surface.
     - The traction acting at every point on the contact surface.
     - The slip speed at every point on the contact surface.
 
@@ -32,11 +32,10 @@ namespace multibody {
 template <typename T>
 class HydroelasticContactInfo {
  public:
-  // Neither assignment nor copy construction is provided.
-  HydroelasticContactInfo(const HydroelasticContactInfo&) = delete;
-  HydroelasticContactInfo& operator=(const HydroelasticContactInfo&) = delete;
+  HydroelasticContactInfo(const HydroelasticContactInfo& info) {
+    *this = info;
+  }
 
-  // Move assignment and move construction are supported.
   HydroelasticContactInfo& operator=(HydroelasticContactInfo&&) = default;
   HydroelasticContactInfo(HydroelasticContactInfo&&);
 
@@ -84,24 +83,28 @@ class HydroelasticContactInfo {
          original was constructed using a raw pointer referencing an existing
          ContactSurface.
    */
-  std::unique_ptr<HydroelasticContactInfo<T>> Clone() const {
-    auto contact_surface_clone =
-        std::make_unique<geometry::ContactSurface<T>>(contact_surface());
-    const geometry::SurfaceMesh<T>* mesh = &contact_surface_clone->mesh_W();
-    return std::make_unique<HydroelasticContactInfo<T>>(
-        std::move(contact_surface_clone), traction_A_W_->CloneAndSetMesh(mesh),
-        vslip_AB_W_->CloneAndSetMesh(mesh));
+  HydroelasticContactInfo& operator=(const HydroelasticContactInfo& info) {
+    contact_surface_ =
+        std::make_unique<geometry::ContactSurface<T>>(info.contact_surface());
+    const geometry::SurfaceMesh<T>& mesh = contact_surface().mesh_W();
+    traction_A_W_ = info.traction_A_W_->CloneAndSetMesh(&mesh);
+    vslip_AB_W_ = info.vslip_AB_W_->CloneAndSetMesh(&mesh);
+    return *this;
   }
 
   /// Returns a reference to the ContactSurface data structure. Note that
   /// the mesh and gradient vector fields are expressed in the world frame.
   const geometry::ContactSurface<T>& contact_surface() const {
-    return (
-        drake::holds_alternative<const geometry::ContactSurface<T>*>(
-            contact_surface_)
-            ? *drake::get<const geometry::ContactSurface<T>*>(contact_surface_)
-            : *drake::get<std::unique_ptr<geometry::ContactSurface<T>>>
-                  (contact_surface_));
+    if (drake::holds_alternative<const geometry::ContactSurface<T>*>(
+            contact_surface_)) {
+      return *drake::get<const geometry::ContactSurface<T>*>(contact_surface_);
+    } else {
+      DRAKE_DEMAND(
+          drake::holds_alternative<
+              std::unique_ptr<geometry::ContactSurface<T>>>(contact_surface_));
+      return *drake::get<std::unique_ptr<geometry::ContactSurface<T>>>
+                  (contact_surface_);
+    }
   }
 
   /// Returns the field giving the traction acting on Body A, expressed in the
