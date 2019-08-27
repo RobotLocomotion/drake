@@ -1,0 +1,10 @@
+package drake;
+
+struct lcmt_iiwa_status_telemetry {
+  // Host's timestamp in micro seconds when the status packet is received.
+  int64_t host_utime;
+  // Iiwa controller's timestamp in micro seconds for the status packet.
+  int64_t iiwa_utime;
+  // Estimated offset defined as: host - iiwa
+  int64_t estimated_dt_host_minus_iiwa;
+}
