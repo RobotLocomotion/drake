@@ -8,35 +8,54 @@
 namespace drake {
 namespace geometry {
 
-// Updates the contact surface using a triangle taken from the box.
-// @param triangle_H a triangle from the mesh, which each vertex described
-//        as an offset vector expressed in the halfspace frame H. The triangle
-//        vertices should be ordered such that
-//        `(triangle_H[1] - triangle_H[0]) × (triangle_H[2] - triangle_H[1])`
-//        points out of the geometry that contains this triangle.
-// @param halfspace_normal_H an outward facing normal to the halfspace,
-//        expressed in the halfspace frame.
-// @param halfspace_constant the halfspace constant d, defined as
-//        n'x = d for any point x that lies on the halfspace and given the
-//        normal to the surface n.
-// @param zero_tol an optional tolerance that is used to determine when a point
-//        is on the halfspace; the default tolerance should work well if the
-//        inputs (`triangle_H` vertices and `halfspace_constant`) are on the
-//        order of unit magnitude.
-// @returns an ordered polygon describing the intersection between the triangle
-//          and the halfspace OR an empty vector, if the intersection is either
-//          empty or does not correspond to a polygon. The polygon is ordered
-//          such that the normal defined in a particular manner points toward
-//          the halfspace. If the returned vector corresponds to four
-//          vertices (a, b, c, and d, respectively), then the normal vector
-//          (b - a) × (c - b) will point toward the halfspace.
-//
+struct MeshIndex {
+  /// The index of a vertex into either an array of triangle vertices or a
+  /// vector of newly created vertices.
+  int index;
+
+  /// If 'true', `index` refers to the position into an array of triangle
+  /// vertices (if `false`, `index` refers to the position into an array of
+  /// newly created vertices).
+  bool index_into_triangle_vertices;
+};
+
+/**
+ Updates the SurfaceMesh describing the intersection between a triangle from
+ @param triangle_H a triangle from the mesh, which each vertex described
+        as an offset vector expressed in the halfspace frame H. The triangle
+        vertices should be ordered such that
+        `(triangle_H[1] - triangle_H[0]) × (triangle_H[2] - triangle_H[1])`
+        points out of the geometry that contains this triangle.
+ @param halfspace_normal_H an outward facing normal to the halfspace,
+        expressed in the halfspace frame.
+ @param halfspace_constant the halfspace constant d, defined as
+        n'x = d for any point x that lies on the halfspace and given the
+        normal to the surface n.
+ @param zero_tol an optional tolerance that is used to determine when a point
+        is on the halfspace; the default tolerance should work well if the
+        inputs (`triangle_H` vertices and `halfspace_constant`) are on the
+        order of unit magnitude.
+ @returns an ordered polygon describing the intersection between the triangle
+          and the halfspace OR an empty vector, if the intersection is either
+          empty or does not correspond to a polygon. The polygon is ordered
+          such that the normal defined in a particular manner points toward
+          the halfspace. If the returned vector corresponds to four
+          vertices (a, b, c, and d, respectively), then the normal vector
+          (b - a) × (c - b) will point toward the halfspace.
+ */
 template <typename T>
-std::vector<Vector3<T>> ConstructTriangleHalfspaceIntersectionPolygon(
+void ConstructTriangleHalfspaceIntersectionPolygon(
     const std::array<Vector3<T>, 3>& triangle_H,
     const Vector3<T>& halfspace_normal_H,
     const T& halfspace_constant,
+    std::vector<Vector3<T>>* newly_created_vertices,
+    std::vector<MeshIndex>* intersection_indices,
     T zero_tol = 100 * std::numeric_limits<double>::epsilon()) {
+  DRAKE_DEMAND(newly_created_vertices);
+  DRAKE_DEMAND(newly_created_vertices->empty());
+  DRAKE_DEMAND(intersection_indices);
+  DRAKE_DEMAND(intersection_indices->empty());
+
   // NOLINTNEXTLINE(whitespace/line_length)
   // This code adapted from https://www.geometrictools.com/GTEngine/Include/Mathematics/GteIntrHalfspace3Triangle3.h
   // One significant change: the geometrictools code assumes that a point
@@ -92,17 +111,17 @@ std::vector<Vector3<T>> ConstructTriangleHalfspaceIntersectionPolygon(
   // Note: this is modified from the geometric tools code, which instead
   // checks that `num_negative == 0`.
   if (num_positive == 0) {
-    output_vertices.emplace_back(triangle_H[0]);
-    output_vertices.emplace_back(triangle_H[1]);
-    output_vertices.emplace_back(triangle_H[2]);
-    return output_vertices;
+    intersection_indices->push_back({.index = 0, .index_into_triangle_vertices = true});
+    intersection_indices->push_back({.index = 1, .index_into_triangle_vertices = true});
+    intersection_indices->push_back({.index = 2, .index_into_triangle_vertices = true});
+    return;
   }
 
   // Case 10: triangle lies completely outside of the halfspace.
   // Note: this is modified from the geometric tools code, which instead
   // checks that `num_negative == 3`.
   if (num_positive == 3)
-    return output_vertices;
+    return;
 
   // Case 5: The portion of the triangle in the halfspace is a quadrilateral.
   // Note: this is modified from the geometric tools code, which instead
@@ -114,15 +133,17 @@ std::vector<Vector3<T>> ConstructTriangleHalfspaceIntersectionPolygon(
         // checks that s[i0] < 0.
         if (s[i0] > zero_tol) {
           const int i1 = (i0 + 1) % 3, i2 = (i0 + 2) % 3;
-          output_vertices.emplace_back(triangle_H[i1]);
-          output_vertices.emplace_back(triangle_H[i2]);
+          intersection_indices->push_back({.index = i1, .index_into_triangle_vertices = true});
+          intersection_indices->push_back({.index = i2, .index_into_triangle_vertices = true});
           const T t2 = s[i2] / (s[i2] - s[i0]);
           const T t0 = s[i0] / (s[i0] - s[i1]);
-          output_vertices.emplace_back((triangle_H[i2] + t2 *
+          newly_created_vertices->push_back((triangle_H[i2] + t2 *
               (triangle_H[i0] - triangle_H[i2])));
-          output_vertices.emplace_back((triangle_H[i0] + t0 *
+          newly_created_vertices->push_back((triangle_H[i0] + t0 *
                       (triangle_H[i1] - triangle_H[i0])));
-          return output_vertices;
+          intersection_indices->push_back({.index = 0, .index_into_triangle_vertices = false});
+          intersection_indices->push_back({.index = 1, .index_into_triangle_vertices = false});
+          return;
         }
       }
       DRAKE_UNREACHABLE();
@@ -136,20 +157,22 @@ std::vector<Vector3<T>> ConstructTriangleHalfspaceIntersectionPolygon(
         for (int i0 = 0; i0 < 3; ++i0) {
           if (abs(s[i0]) <= zero_tol) {
             const int i1 = (i0 + 1) % 3, i2 = (i0 + 2) % 3;
-            output_vertices.emplace_back(triangle_H[i0]);
+            intersection_indices->push_back({.index = i0, .index_into_triangle_vertices = true});
             const T t1 = s[i1] / (s[i1] - s[i2]);
             const Vector3<T> p = triangle_H[i1] + t1 *
                 (triangle_H[i2] - triangle_H[i1]);
             // Note: this is modified from geometric tools code, which instead
             // checks that s[i1] > 0.
             if (s[i1] < -zero_tol) {
-              output_vertices.emplace_back(triangle_H[i1]);
-              output_vertices.emplace_back(p);
+              intersection_indices->push_back({.index = i1, .index_into_triangle_vertices = true});
+              newly_created_vertices->push_back(p);
+              intersection_indices->push_back({.index = 0, .index_into_triangle_vertices = false});
             } else {
-              output_vertices.emplace_back(p);
-              output_vertices.emplace_back(triangle_H[i2]);
+              newly_created_vertices->push_back(p);
+              intersection_indices->push_back({.index = 0, .index_into_triangle_vertices = false});
+              intersection_indices->push_back({.index = i2, .index_into_triangle_vertices = true});
             }
-            return output_vertices;
+            return;
           }
         }
         DRAKE_UNREACHABLE();
@@ -158,7 +181,7 @@ std::vector<Vector3<T>> ConstructTriangleHalfspaceIntersectionPolygon(
 
     // Case 7: Only an edge of the triangle is in the halfspace.
     DRAKE_DEMAND(num_zero == 2);
-    return output_vertices;
+    return;
   }
 
   // Case 8: The portion of the triangle in the halfspace is a triangle.
@@ -171,14 +194,16 @@ std::vector<Vector3<T>> ConstructTriangleHalfspaceIntersectionPolygon(
         // checks that s[i0] < 0.
         if (s[i0] < -zero_tol) {
           const int i1 = (i0 + 1) % 3, i2 = (i0 + 2) % 3;
-          output_vertices.emplace_back(triangle_H[i0]);
+          intersection_indices->push_back({.index = i0, .index_into_triangle_vertices = true});
           const T t0 = s[i0] / (s[i0] - s[i1]);
           const T t2 = s[i2] / (s[i2] - s[i0]);
-          output_vertices.emplace_back((triangle_H[i0] + t0 *
+          newly_created_vertices->push_back((triangle_H[i0] + t0 *
                     (triangle_H[i1] - triangle_H[i0])));
-          output_vertices.emplace_back((triangle_H[i2] + t2 *
+          newly_created_vertices->push_back((triangle_H[i2] + t2 *
                     (triangle_H[i0] - triangle_H[i2])));
-          return output_vertices;
+          intersection_indices->push_back({.index = 0, .index_into_triangle_vertices = false});
+          intersection_indices->push_back({.index = 1, .index_into_triangle_vertices = false});
+          return;
         }
       }
 
@@ -187,11 +212,11 @@ std::vector<Vector3<T>> ConstructTriangleHalfspaceIntersectionPolygon(
 
     // Case 9: Only a vertex of the triangle is in the halfspace.
     DRAKE_DEMAND(num_zero == 1);
-    return output_vertices;
+    return;
   } else {
     // Case 10: The triangle is outside the halfspace.
     DRAKE_DEMAND(num_negative == 3);
-    return output_vertices;
+    return;
   }
 }
 

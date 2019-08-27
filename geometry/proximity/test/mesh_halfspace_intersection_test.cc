@@ -26,10 +26,13 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, NoIntersection) {
   };
 
   // Verify no intersection.
-  std::vector<Vector3<T>> intersection =
-      ConstructTriangleHalfspaceIntersectionPolygon(
-          triangle_vertices_H, normal_H, d);
-  EXPECT_TRUE(intersection.empty());
+  std::vector<Vector3<T>> newly_created_vertices;
+  std::vector<MeshIndex> intersection_indices;
+  ConstructTriangleHalfspaceIntersectionPolygon(triangle_vertices_H, normal_H,
+                                                d, &newly_created_vertices,
+                                                &intersection_indices);
+  EXPECT_TRUE(newly_created_vertices.empty());
+  EXPECT_TRUE(intersection_indices.empty());
 }
 
 // Verifies that a triangle that lies inside or on the halfspace yields
@@ -41,12 +44,17 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, InsideOrOnIntersection) {
   };
 
   // Verify the intersection.
-  std::vector<Vector3<T>> intersection =
-      ConstructTriangleHalfspaceIntersectionPolygon(
-          triangle_vertices_inside_H, normal_H, d);
-  ASSERT_EQ(intersection.size(), 3);
-  for (int i = 0; i < 3; ++i)
-    EXPECT_EQ(intersection[i], triangle_vertices_inside_H[i]);
+  std::vector<Vector3<T>> newly_created_vertices;
+  std::vector<MeshIndex> intersection_indices;
+  ConstructTriangleHalfspaceIntersectionPolygon(
+      triangle_vertices_inside_H, normal_H, d, &newly_created_vertices,
+      &intersection_indices);
+  EXPECT_TRUE(newly_created_vertices.empty());
+  ASSERT_EQ(intersection_indices.size(), 3);
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_EQ(intersection_indices[i].index, i);
+    EXPECT_EQ(intersection_indices[i].index_into_triangle_vertices, true);
+  }
 
   // Construct the vertices of the triangle to lie on the halfspace, using a
   // distance very close to zero.
@@ -58,11 +66,17 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, InsideOrOnIntersection) {
 
   // Verify the intersection, loosening the tolerance only slightly so the
   // test will pass.
-  intersection = ConstructTriangleHalfspaceIntersectionPolygon(
-          triangle_vertices_on_H, normal_H, d, near_zero * 2);
-  ASSERT_EQ(intersection.size(), 3);
-  for (int i = 0; i < 3; ++i)
-    EXPECT_EQ(intersection[i], triangle_vertices_on_H[i]);
+  newly_created_vertices.clear();
+  intersection_indices.clear();
+  ConstructTriangleHalfspaceIntersectionPolygon(
+      triangle_vertices_on_H, normal_H, d, &newly_created_vertices,
+      &intersection_indices);
+  EXPECT_TRUE(newly_created_vertices.empty());
+  ASSERT_EQ(intersection_indices.size(), 3);
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_EQ(intersection_indices[i].index, i);
+    EXPECT_EQ(intersection_indices[i].index_into_triangle_vertices, true);
+  }
 }
 
 // Verifies that a triangle that has exactly one vertex lying on the halfspace
@@ -77,10 +91,13 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, VertexOnHalfspaceIntersection) {
   };
 
   // Verify that there is no intersection.
-  std::vector<Vector3<T>> intersection =
-      ConstructTriangleHalfspaceIntersectionPolygon(
-          triangle_vertices_two_outside_H, normal_H, d);
-  EXPECT_TRUE(intersection.empty());
+  std::vector<Vector3<T>> newly_created_vertices;
+  std::vector<MeshIndex> intersection_indices;
+  ConstructTriangleHalfspaceIntersectionPolygon(
+      triangle_vertices_two_outside_H, normal_H, d, &newly_created_vertices,
+      &intersection_indices);
+  EXPECT_TRUE(newly_created_vertices.empty());
+  EXPECT_TRUE(intersection_indices.empty());
 
   // Construct two vertices of the triangle to lie inside the halfspace and the
   // other to lie on the halfspace.
@@ -89,11 +106,17 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, VertexOnHalfspaceIntersection) {
   };
 
   // Verify the intersection.
-  intersection = ConstructTriangleHalfspaceIntersectionPolygon(
-          triangle_vertices_two_inside_H, normal_H, d);
-  ASSERT_EQ(intersection.size(), 3);
-  for (int i = 0; i < 3; ++i)
-    EXPECT_EQ(intersection[i], triangle_vertices_two_inside_H[i]);
+  newly_created_vertices.clear();
+  intersection_indices.clear();
+  ConstructTriangleHalfspaceIntersectionPolygon(
+      triangle_vertices_two_inside_H, normal_H, d, &newly_created_vertices,
+      &intersection_indices);
+  EXPECT_TRUE(newly_created_vertices.empty());
+  ASSERT_EQ(intersection_indices.size(), 3);
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_EQ(intersection_indices[i].index, i);
+    EXPECT_EQ(intersection_indices[i].index_into_triangle_vertices, true);
+  }
 }
 
 // Verifies that a triangle that has exactly two vertices lying on the halfspace
@@ -108,10 +131,13 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, EdgeOnHalfspaceIntersection) {
   };
 
   // Verify that there is no intersection.
-  std::vector<Vector3<T>> intersection =
-      ConstructTriangleHalfspaceIntersectionPolygon(
-          triangle_vertices_one_outside_H, normal_H, d);
-  EXPECT_TRUE(intersection.empty());
+  std::vector<Vector3<T>> newly_created_vertices;
+  std::vector<MeshIndex> intersection_indices;
+  ConstructTriangleHalfspaceIntersectionPolygon(
+      triangle_vertices_one_outside_H, normal_H, d, &newly_created_vertices,
+      &intersection_indices);
+  EXPECT_TRUE(newly_created_vertices.empty());
+  EXPECT_TRUE(intersection_indices.empty());
 
   // Construct one vertex of the triangle to lie inside the halfspace and the
   // other two to lie on the halfspace.
@@ -120,11 +146,17 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, EdgeOnHalfspaceIntersection) {
   };
 
   // Verify the intersection.
-  intersection = ConstructTriangleHalfspaceIntersectionPolygon(
-          triangle_vertices_one_inside_H, normal_H, d);
-  ASSERT_EQ(intersection.size(), 3);
-  for (int i = 0; i < 3; ++i)
-    EXPECT_EQ(intersection[i], triangle_vertices_one_inside_H[i]);
+  newly_created_vertices.clear();
+  intersection_indices.clear();
+  ConstructTriangleHalfspaceIntersectionPolygon(
+      triangle_vertices_one_inside_H, normal_H, d, &newly_created_vertices,
+      &intersection_indices);
+  EXPECT_TRUE(newly_created_vertices.empty());
+  ASSERT_EQ(intersection_indices.size(), 3);
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_EQ(intersection_indices[i].index, i);
+    EXPECT_EQ(intersection_indices[i].index_into_triangle_vertices, true);
+  }
 }
 
 // Verifies that a triangle that has two vertices within the halfspace and
@@ -139,23 +171,31 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, QuadrilateralResults) {
   // Verify the intersection. Note that the following test is overly specific
   // to the logic of the mesh-halfspace intersection routine: it is not actually
   // required that the vertices be output in the order inside.
-  const std::vector<Vector3<T>> intersection =
-      ConstructTriangleHalfspaceIntersectionPolygon(triangle_vertices_H,
-                                                    normal_H, d);
-
-  ASSERT_EQ(intersection.size(), 4);
+  std::vector<Vector3<T>> newly_created_vertices;
+  std::vector<MeshIndex> intersection_indices;
+  ConstructTriangleHalfspaceIntersectionPolygon(
+      triangle_vertices_H, normal_H, d, &newly_created_vertices,
+      &intersection_indices);
+  ASSERT_EQ(intersection_indices.size(), 4);
+  ASSERT_EQ(newly_created_vertices.size(), 2);
   // Two vertices will be drawn from inside the halfspace.
-  EXPECT_EQ(intersection[0], triangle_vertices_H[1]);
-  EXPECT_EQ(intersection[1], triangle_vertices_H[2]);
+  EXPECT_EQ(intersection_indices[0].index, 1);
+  EXPECT_EQ(intersection_indices[0].index_into_triangle_vertices, true);
+  EXPECT_EQ(intersection_indices[1].index, 2);
+  EXPECT_EQ(intersection_indices[1].index_into_triangle_vertices, true);
   // Two vertices will lie halfway between the vertex outside the halfspace
   // and each vertex inside the halfspace.
   const double zero_tol = 10 * std::numeric_limits<double>::epsilon();
-  EXPECT_LT((intersection[2] -
+  EXPECT_LT((newly_created_vertices[0] -
              (triangle_vertices_H[0] + triangle_vertices_H[2]) * 0.5).norm(),
             zero_tol);
-  EXPECT_LT((intersection[3] -
+  EXPECT_LT((newly_created_vertices[1] -
              (triangle_vertices_H[0] + triangle_vertices_H[1]) * 0.5).norm(),
             zero_tol);
+  EXPECT_EQ(intersection_indices[2].index_into_triangle_vertices, false);
+  EXPECT_EQ(intersection_indices[2].index, 0);
+  EXPECT_EQ(intersection_indices[3].index_into_triangle_vertices, false);
+  EXPECT_EQ(intersection_indices[3].index, 1);
 }
 
 // Verifies that a triangle that has one vertex outside the halfspace, one
@@ -169,17 +209,23 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, OutsideInsideOn) {
   // Verify the intersection. Note that the following test is overly specific
   // to the logic of the mesh-halfspace intersection routine: it is not actually
   // required that the vertices be output in the order inside.
-  const std::vector<Vector3<T>> intersection =
-      ConstructTriangleHalfspaceIntersectionPolygon(triangle_vertices_H,
-                                                    normal_H, d);
-
-  ASSERT_EQ(intersection.size(), 3);
+  std::vector<Vector3<T>> newly_created_vertices;
+  std::vector<MeshIndex> intersection_indices;
+  ConstructTriangleHalfspaceIntersectionPolygon(
+      triangle_vertices_H, normal_H, d, &newly_created_vertices,
+      &intersection_indices);
+  ASSERT_EQ(intersection_indices.size(), 3);
+  ASSERT_EQ(newly_created_vertices.size(), 1);
   // One vertex will be drawn from inside the halfspace.
-  EXPECT_EQ(intersection[1], triangle_vertices_H[2]);
+  EXPECT_EQ(intersection_indices[1].index_into_triangle_vertices, true);
+  EXPECT_EQ(intersection_indices[1].index, 2);
   // Two vertices will be drawn from the surface of the halfspace.
-  EXPECT_EQ(intersection[0], triangle_vertices_H[1]);
+  EXPECT_EQ(intersection_indices[0].index_into_triangle_vertices, true);
+  EXPECT_EQ(intersection_indices[0].index, 1);
   const double zero_tol = 10 * std::numeric_limits<double>::epsilon();
-  EXPECT_LT((intersection[2] -
+  EXPECT_EQ(intersection_indices[2].index_into_triangle_vertices, false);
+  EXPECT_EQ(intersection_indices[2].index, 0);
+  EXPECT_LT((newly_created_vertices[0] -
              (triangle_vertices_H[0] + triangle_vertices_H[2]) * 0.5).norm(),
             zero_tol);
 }
@@ -195,21 +241,24 @@ GTEST_TEST(MeshHalfspaceIntersectionTest, OneInsideTwoOutside) {
   // Verify the intersection. Note that the following test is overly specific
   // to the logic of the mesh-halfspace intersection routine: it is not actually
   // required that the vertices be output in the order inside.
-  const std::vector<Vector3<T>> intersection =
-      ConstructTriangleHalfspaceIntersectionPolygon(triangle_vertices_H,
-                                                    normal_H, d);
-
-  ASSERT_EQ(intersection.size(), 3);
-
-  // Verify the intersection. Note that the following test is overly specific
-  // to the logic of the mesh-halfspace intersection routine: it is not actually
-  // required that the vertices be output in the order inside.
-  EXPECT_EQ(intersection[0], triangle_vertices_H[2]);
+  std::vector<Vector3<T>> newly_created_vertices;
+  std::vector<MeshIndex> intersection_indices;
+  ConstructTriangleHalfspaceIntersectionPolygon(
+      triangle_vertices_H, normal_H, d, &newly_created_vertices,
+      &intersection_indices);
+  ASSERT_EQ(intersection_indices.size(), 3);
+  ASSERT_EQ(newly_created_vertices.size(), 2);
+  EXPECT_EQ(intersection_indices[0].index_into_triangle_vertices, true);
+  EXPECT_EQ(intersection_indices[0].index, 2);
   const double zero_tol = 10 * std::numeric_limits<double>::epsilon();
-  EXPECT_LT((intersection[1] -
+  EXPECT_EQ(intersection_indices[1].index_into_triangle_vertices, false);
+  EXPECT_EQ(intersection_indices[1].index, 0);
+  EXPECT_LT((newly_created_vertices[0] -
              (triangle_vertices_H[0] + triangle_vertices_H[2]) * 0.5).norm(),
             zero_tol);
-  EXPECT_LT((intersection[2] -
+  EXPECT_EQ(intersection_indices[2].index_into_triangle_vertices, false);
+  EXPECT_EQ(intersection_indices[2].index, 1);
+  EXPECT_LT((newly_created_vertices[1] -
              (triangle_vertices_H[1] + triangle_vertices_H[2]) * 0.5).norm(),
             zero_tol);
 }
