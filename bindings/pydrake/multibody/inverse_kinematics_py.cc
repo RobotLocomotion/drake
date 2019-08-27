@@ -44,7 +44,11 @@ void DoScalarDependentDefinitions(py::module m) {
               py::arg("plant"), py::arg("frameA"), py::arg("a_A"),
               py::arg("frameB"), py::arg("b_B"), py::arg("angle_lower"),
               py::arg("angle_upper"), py::arg("context"),
-              cls_doc.ctor.doc_8args_plant_frameA_a_A_frameB_b_B_angle_lower_angle_upper_context);
+              // `this` keeps `plant` and `context` alive.
+              py::keep_alive<1, 2>(),
+              py::keep_alive<1, 9>(),
+              cls_doc.ctor
+                  .doc_8args_plant_frameA_a_A_frameB_b_B_angle_lower_angle_upper_context);
     }
     {
       cls  // BR
@@ -61,7 +65,11 @@ void DoScalarDependentDefinitions(py::module m) {
               py::arg("plant"), py::arg("frameA"), py::arg("a_A"),
               py::arg("frameB"), py::arg("b_B"), py::arg("angle_lower"),
               py::arg("angle_upper"), py::arg("context"),
-              cls_doc.ctor.doc_8args_plant_ad_frameA_a_A_frameB_b_B_angle_lower_angle_upper_context);
+              // `this` keeps `plant` and `context` alive.
+              py::keep_alive<1, 2>(),
+              py::keep_alive<1, 9>(),
+              cls_doc.ctor
+                  .doc_8args_plant_ad_frameA_a_A_frameB_b_B_angle_lower_angle_upper_context);
     }
   }
 
@@ -82,8 +90,11 @@ void DoScalarDependentDefinitions(py::module m) {
               py::arg("plant"), py::arg("geometry_pair"),
               py::arg("plant_context"), py::arg("distance_lower"),
               py::arg("distance_upper"),
-              cls_doc.ctor.doc_5args_plant_geometry_pair_plant_context_distance_lower_distance_upper
-              );
+              // `this` keeps `plant` and `context` alive.
+              py::keep_alive<1, 2>(),
+              py::keep_alive<1, 4>(),
+              cls_doc.ctor
+                  .doc_5args_plant_geometry_pair_plant_context_distance_lower_distance_upper);
     }
     {
       cls  // BR
@@ -98,8 +109,11 @@ void DoScalarDependentDefinitions(py::module m) {
               py::arg("plant"), py::arg("geometry_pair"),
               py::arg("plant_context"), py::arg("distance_lower"),
               py::arg("distance_upper"),
-              cls_doc.ctor.doc_5args_plant_ad_geometry_pair_plant_context_distance_lower_distance_upper
-              );
+              // `this` keeps `plant` and `context` alive.
+              py::keep_alive<1, 2>(),
+              py::keep_alive<1, 4>(),
+              cls_doc.ctor
+                  .doc_5args_plant_ad_geometry_pair_plant_context_distance_lower_distance_upper);
     }
   }
 
@@ -123,8 +137,11 @@ void DoScalarDependentDefinitions(py::module m) {
               py::arg("plant"), py::arg("frameA"), py::arg("p_AS"),
               py::arg("n_A"), py::arg("frameB"), py::arg("p_BT"),
               py::arg("cone_half_angle"), py::arg("context"),
-              cls_doc.ctor.doc_8args_plant_frameA_p_AS_n_A_frameB_p_BT_cone_half_angle_context
-              );
+              // `this` keeps `plant` and `context` alive.
+              py::keep_alive<1, 2>(),
+              py::keep_alive<1, 9>(),
+              cls_doc.ctor
+                  .doc_8args_plant_frameA_p_AS_n_A_frameB_p_BT_cone_half_angle_context);
     }
     {
       cls  // BR
@@ -142,8 +159,11 @@ void DoScalarDependentDefinitions(py::module m) {
               py::arg("plant"), py::arg("frameA"), py::arg("p_AS"),
               py::arg("n_A"), py::arg("frameB"), py::arg("p_BT"),
               py::arg("cone_half_angle"), py::arg("context"),
-              cls_doc.ctor.doc_8args_plant_ad_frameA_p_AS_n_A_frameB_p_BT_cone_half_angle_context
-              );
+              // `this` keeps `plant` and `context` alive.
+              py::keep_alive<1, 2>(),
+              py::keep_alive<1, 9>(),
+              cls_doc.ctor
+                  .doc_8args_plant_ad_frameA_p_AS_n_A_frameB_p_BT_cone_half_angle_context);
     }
   }
 
@@ -165,7 +185,11 @@ void DoScalarDependentDefinitions(py::module m) {
               py::arg("plant"), py::arg("minimum_distance"),
               py::arg("plant_context"), py::arg("penalty_function"),
               py::arg("influence_distance_offset"),
-              cls_doc.ctor.doc_5args_plant_minimum_distance_plant_context_penalty_function_influence_distance_offset);
+              // `this` keeps `plant` and `context` alive.
+              py::keep_alive<1, 2>(),
+              py::keep_alive<1, 4>(),
+              cls_doc.ctor
+                  .doc_5args_plant_minimum_distance_plant_context_penalty_function_influence_distance_offset);
     }
     {
       cls  // BR
@@ -182,7 +206,11 @@ void DoScalarDependentDefinitions(py::module m) {
               py::arg("plant"), py::arg("minimum_distance"),
               py::arg("plant_context"), py::arg("penalty_function"),
               py::arg("influence_distance_offset"),
-              cls_doc.ctor.doc_5args_plant_ad_minimum_distance_plant_context_penalty_function_influence_distance_offset);
+              // `this` keeps `plant` and `context` alive.
+              py::keep_alive<1, 2>(),
+              py::keep_alive<1, 4>(),
+              cls_doc.ctor
+                  .doc_5args_plant_ad_minimum_distance_plant_context_penalty_function_influence_distance_offset);
     }
   }
 
@@ -205,8 +233,11 @@ void DoScalarDependentDefinitions(py::module m) {
               py::arg("plant"), py::arg("frameA"), py::arg("p_AQ_lower"),
               py::arg("p_AQ_upper"), py::arg("frameB"), py::arg("p_BQ"),
               py::arg("context"),
-              cls_doc.ctor.doc_7args_plant_frameA_p_AQ_lower_p_AQ_upper_frameB_p_BQ_context
-              );
+              // `this` keeps `plant` and `context` alive.
+              py::keep_alive<1, 2>(),
+              py::keep_alive<1, 8>(),
+              cls_doc.ctor
+                  .doc_7args_plant_frameA_p_AQ_lower_p_AQ_upper_frameB_p_BQ_context);
     }
     {
       cls  // BR
@@ -223,8 +254,11 @@ void DoScalarDependentDefinitions(py::module m) {
               py::arg("plant"), py::arg("frameA"), py::arg("p_AQ_lower"),
               py::arg("p_AQ_upper"), py::arg("frameB"), py::arg("p_BQ"),
               py::arg("context"),
-              cls_doc.ctor.doc_7args_plant_ad_frameA_p_AQ_lower_p_AQ_upper_frameB_p_BQ_context
-              );
+              // `this` keeps `plant` and `context` alive.
+              py::keep_alive<1, 2>(),
+              py::keep_alive<1, 8>(),
+              cls_doc.ctor
+                  .doc_7args_plant_ad_frameA_p_AQ_lower_p_AQ_upper_frameB_p_BQ_context);
     }
   }
 
@@ -248,8 +282,11 @@ void DoScalarDependentDefinitions(py::module m) {
               py::arg("plant"), py::arg("frameAbar"), py::arg("R_AbarA"),
               py::arg("frameBbar"), py::arg("R_BbarB"), py::arg("theta_bound"),
               py::arg("context"),
-              cls_doc.ctor.doc_7args_plant_frameAbar_R_AbarA_frameBbar_R_BbarB_theta_bound_context
-              );
+              // `this` keeps `plant` and `context` alive.
+              py::keep_alive<1, 2>(),
+              py::keep_alive<1, 8>(),
+              cls_doc.ctor
+                  .doc_7args_plant_frameAbar_R_AbarA_frameBbar_R_BbarB_theta_bound_context);
     }
     {
       cls  // BR
@@ -266,8 +303,11 @@ void DoScalarDependentDefinitions(py::module m) {
               py::arg("plant"), py::arg("frameAbar"), py::arg("R_AbarA"),
               py::arg("frameBbar"), py::arg("R_BbarB"), py::arg("theta_bound"),
               py::arg("context"),
-              cls_doc.ctor.doc_7args_plant_ad_frameAbar_R_AbarA_frameBbar_R_BbarB_theta_bound_context
-              );
+              // `this` keeps `plant` and `context` alive.
+              py::keep_alive<1, 2>(),
+              py::keep_alive<1, 8>(),
+              cls_doc.ctor
+                  .doc_7args_plant_ad_frameAbar_R_AbarA_frameBbar_R_BbarB_theta_bound_context);
     }
   }
 }
