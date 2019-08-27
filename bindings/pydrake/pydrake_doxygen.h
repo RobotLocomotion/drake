@@ -270,6 +270,11 @@ objects from one container to another (e.g. transferring all `System`s
 from `DiagramBuilder` to `Diagram` when calling
 `DiagramBuilder.Build()`).
 
+The `keep_alive` decorations should be added after `py::arg`s are specified,
+and should decode the meaning of the Nurse and Patient integers by spelling out
+either the py::arg name (for named arguments), `return` for index 0, or `self`
+(not `this`) for index 1 when dealing with methods / members.
+
 @anchor PydrakeOverloads
 ## Function Overloads
 
