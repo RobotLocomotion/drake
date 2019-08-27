@@ -256,9 +256,11 @@ be named `.doc_deprecated...` instead of just `.doc...`.
 `py::keep_alive` is used heavily throughout this code. For more
 information, please see [the pybind11 documentation](
 http://pybind11.readthedocs.io/en/stable/advanced/functions.html#keep-alive).
+In summary, keep-alive behavior should be used when the lifetime of C++ data
+is not already extendable by the Python object referencing it.
 
-Terse notes are added to method bindings to indicate the patient
-(object being kept alive by nurse) and the nurse (object keeping patient
+Terse notes should be added to method bindings to indicate the Patient
+(object being kept alive by nurse) and the Nurse (object keeping patient
 alive). To expand on them:
 - "Keep alive, ownership" implies that one argument is owned directly by
 one of the other arguments (`self` is included in those arguments, for
@@ -269,6 +271,44 @@ one of the other arguments (`self` is included in those arguments, for
 objects from one container to another (e.g. transferring all `System`s
 from `DiagramBuilder` to `Diagram` when calling
 `DiagramBuilder.Build()`).
+
+The `keep_alive` decorations should be added after `py::arg`s are specified,
+and should decode the meaning of the Nurse and Patient integers by spelling out
+either the py::arg name (for named arguments), `return` for index 0, or `self`
+(not `this`) for index 1 when dealing with methods / members.
+
+Some general circumstances in which you will see these are:
+- Returning (ownership) or accepting (reference) bare pointers.
+- Returning (ownership) or accepting (reference) references to data contained
+in an Eigen matrix, using `Eigen::Ref<>`, `Eigen::Matrix<>&`, `EigenPtr`, etc.
+- Accepting (ownership) `unique_ptr<>` objects (since the user may still have
+an external reference to it).
+- Transfering (transitive) `unique_ptr<>` objects to another container.
+- NOT when using `shared_ptr<>`, as the lifetime of the object can be
+automatically extended by pybind11 / Python.
+
+Examples:
+
+~~~{.cc}
+    .def(py::init<const MultibodyPlant<double>&>(), py::arg("plant"),
+        // Keep alive, reference: `self` keeps `plant` alive.
+        py::keep_alive<1, 2>(),
+        cls_doc.ctor.doc_1args)
+    ...
+    .def("GetMutablePositionsAndVelocities",
+        ...,
+        py_reference, py::arg("context"),
+        // Keep alive, ownership: `return` keeps `context` alive.
+        py::keep_alive<0, 2>(),
+        cls_doc.GetMutablePositionsAndVelocities.doc)
+    ...
+    .def(py::init<const System<T>&, unique_ptr<Context<T>>>(),
+        py::arg("system"), py::arg("context") = nullptr,
+        // Keep alive, reference: `self` keeps `system` alive.
+        py::keep_alive<1, 2>(),
+        // Keep alive, ownership: `context` keeps `self` alive.
+        py::keep_alive<3, 1>(), doc.Simulator.ctor.doc)
+~~~
 
 @anchor PydrakeOverloads
 ## Function Overloads
