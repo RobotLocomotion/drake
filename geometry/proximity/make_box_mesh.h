@@ -176,8 +176,8 @@ static std::vector<VolumeElement> GenerateElements(
      The box shape specification (see drake::geometry::Box).
  @param[in] target_edge_length
      Control the resolution of the mesh. The length of axis-aligned edges
-     of the mesh will be within this parameter.  The length of
-     non-axis-aligned edges will be within √2 or √3 of this parameter.
+     of the mesh will be less than or equal to this parameter.  The length of
+     non-axis-aligned edges will be less than or equal to √3 of this parameter.
  @retval volume_mesh
  @tparam T The underlying scalar type. Must be a valid Eigen scalar.
  @note The mesh has no guarantee on the inner boundary for a rigid core.
@@ -215,8 +215,8 @@ VolumeMesh<T> MakeBoxVolumeMesh(const Box& box, double target_edge_length) {
      The box shape specification (see drake::geometry::Box).
  @param[in] target_edge_length
      Control the resolution of the mesh. The length of axis-aligned edges
-     of the mesh will be within this parameter.  The length of
-     non-axis-aligned edges will be within √2 of this parameter.
+     of the mesh will be less than or equal to this parameter.  The length of
+     non-axis-aligned edges will be less than or equal to √2 of this parameter.
  @retval surface_mesh
  @tparam T The underlying scalar type. Must be a valid Eigen scalar.
  */

@@ -16,13 +16,17 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-#ifndef DRAKE_DOXYGEN_CXX
-
 /**
  Identify the triangular boundary faces of a tetrahedral volume mesh.
  @param tetrahedra   The tetrahedra of the mesh.
  @return             The boundary faces, each of which is represented as an
                      array of three indices of vertices of the volume mesh.
+                     Each face has its right-handed normal pointing outwards
+                     from the volume mesh.
+ @pre  1. The volume mesh cannot be a tetrahedron soup. If two tetrahedra
+          share a face, they must share vertex indices and not index into
+          duplicate vertices.
+       2. Any given face is shared by one or two tetrahedra only.
  */
 std::vector<std::array<VolumeVertexIndex, 3>> IdentifyBoundaryFaces(
     const std::vector<VolumeElement>& tetrahedra) {
@@ -42,8 +46,10 @@ std::vector<std::array<VolumeVertexIndex, 3>> IdentifyBoundaryFaces(
   //     In the end, the entries in the map corresponds to the triangular
   // faces on the boundary surface of the volume.
   //     We use `map` instead of `unordered_map` to guarantee the same
-  // ordering of triangular faces across library implementations. However,
-  // `map` is slower.
+  // ordering of triangular faces across library implementations, so we get
+  // the same result on different computers and operating systems. The
+  // canonical order of the entries in the map is also useful in debugging.
+  // However, `map` is slower.
   std::map<SortedTriplet<VolumeVertexIndex>, std::array<VolumeVertexIndex, 3>>
       face_map;
 
@@ -60,8 +66,11 @@ std::vector<std::array<VolumeVertexIndex, 3>> IdentifyBoundaryFaces(
     }
   };
 
-  //
-  // Four vertices of a tetrahedron are oriented inward like this:
+  // According to VolumeElement, the first three vertices of a tetrahedron
+  // define a triangle with its right-handed normal pointing inwards. The
+  // fourth vertex is on the positive side of this first triangle. An example
+  // of the four vertices v0,v1,v2,v3 of such a tetrahedron is shown in this
+  // picture:
   //
   //      +Z
   //       |
@@ -75,12 +84,13 @@ std::vector<std::array<VolumeVertexIndex, 3>> IdentifyBoundaryFaces(
   //   /
   // +X
   //
-  // The four triangles oriented outward are:
+  // From the picture above, we can see that each of the following four
+  // triangular faces:
   // v1 v2 v3
   // v3 v2 v0
   // v2 v1 v0
   // v1 v3 v0
-  //
+  // has its right-handed normal pointing outwards from the tetrahedron.
   const int tetrahedron_faces[4][3] = {
       {1, 2, 3},
       {3, 2, 0},
@@ -111,6 +121,11 @@ std::vector<std::array<VolumeVertexIndex, 3>> IdentifyBoundaryFaces(
  */
 std::vector<VolumeVertexIndex> CollectUniqueVertices(
     const std::vector<std::array<VolumeVertexIndex, 3>>& faces) {
+  // Instead of using `set`, we use `vector` for performance reasons. Usually
+  // `set` is implemented as a dynamic balanced tree which could be slower
+  // due to dynamic memory allocations. Here we know the total number of
+  // vertices from all the faces from the beginning, so we can pre-allocate
+  // the `vector`.
   std::vector<VolumeVertexIndex> vertices;
   vertices.reserve(3 * faces.size());
   for (const auto& face : faces) {
@@ -125,13 +140,13 @@ std::vector<VolumeVertexIndex> CollectUniqueVertices(
   return vertices;
 }
 
-#endif  // #ifndef DRAKE_DOXYGEN_CXX
-
 /**
  Converts a tetrahedral volume mesh to a triangulated surface mesh of the
  boundary surface of the volume.
- @param volume  The tetrahedral volume mesh.
- @return        The triangulated surface mesh.
+ @param volume  The tetrahedral volume mesh, whose vertex positions are
+                measured and expressed in some frame E.
+ @return        The triangulated surface mesh, whose vertex positions are
+                measured and expressed in the same frame E of the volume mesh.
  @pre           The vertices of the volume mesh are unique. Adjacent
                 tetrahedra share the same vertices, instead of repeating the
                 vertices with the same coordinates.
@@ -149,10 +164,9 @@ SurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume) {
   std::vector<SurfaceVertex<T>> surface_vertices;
   surface_vertices.reserve(boundary_vertices.size());
   std::unordered_map<VolumeVertexIndex, SurfaceVertexIndex> volume_to_surface;
-  int count = 0;
-  for (const VolumeVertexIndex boundary_vertex : boundary_vertices) {
-    surface_vertices.emplace_back(volume.vertex(boundary_vertex).r_MV());
-    volume_to_surface.emplace(boundary_vertex, SurfaceVertexIndex(count++));
+  for (SurfaceVertexIndex i(0); i < boundary_vertices.size(); ++i) {
+    surface_vertices.emplace_back(volume.vertex(boundary_vertices[i]).r_MV());
+    volume_to_surface.emplace(boundary_vertices[i], i);
   }
 
   std::vector<SurfaceFace> surface_faces;

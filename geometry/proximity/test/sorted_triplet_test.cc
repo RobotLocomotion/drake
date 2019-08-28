@@ -1,8 +1,5 @@
 #include "drake/geometry/proximity/sorted_triplet.h"
 
-#include <unordered_map>
-#include <vector>
-
 #include <gtest/gtest.h>
 
 namespace drake {
@@ -42,6 +39,17 @@ GTEST_TEST(SortedTriplet, Comparison) {
   SortedTriplet<int> x(1, 2, 3), y(2, 2, 2);
   EXPECT_FALSE(x < x);
   EXPECT_TRUE(x < y);
+}
+
+// Uses as a key in a map.
+GTEST_TEST(SortedTriplet, Map) {
+  std::map<SortedTriplet<int>, char> my_map;
+  SortedTriplet<int> triplet(1, 2, 3);
+  SortedTriplet<int> same_triplet(2, 1, 3);
+  my_map.emplace(triplet, 'A');
+  my_map.emplace(same_triplet, 'B');
+  EXPECT_EQ(1, my_map.size());
+  EXPECT_EQ('A', my_map.at(same_triplet));
 }
 
 }  // namespace

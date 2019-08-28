@@ -7,9 +7,6 @@
 #include "drake/common/hash.h"
 #include "drake/common/is_less_than_comparable.h"
 
-// TODO(DamrongGuoy) Make SortedTriplet on a par with SortedPair and move
-//  SortedTriplet to drake::common.
-
 namespace drake {
 namespace geometry {
 namespace internal {
@@ -17,9 +14,8 @@ namespace internal {
 /// This class is similar to the drake::SortedPair class. However, this class
 /// uses a triplet of homogeneous types. Both SortedPair and SortedTriplet
 /// sort the values such that one value is less than or equal to the next one.
-/// Note that the sort is a stable one. Thus the SortedTriplet class is able
-/// to be used to generate keys (e.g., for std::map, etc.) from triplets of
-/// objects.
+/// The SortedTriplet class can be used to generate keys for std::map from
+/// triplets of objects.
 ///
 /// @tparam T A template type that provides `operator<` and supports default
 ///           construction.

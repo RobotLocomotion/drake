@@ -25,7 +25,9 @@ Vector3<T> CalcFaceNormal(const SurfaceMesh<T>& surface,
   const Vector3<T>& r_MC = surface.vertex(face.vertex(2)).r_MV();
   const auto r_AB_M = r_MB - r_MA;
   const auto r_AC_M = r_MC - r_MA;
-  const auto cross_M = r_AB_M.cross(r_AC_M);
+  const auto rhat_AB_M = r_AB_M.normalized();
+  const auto rhat_AC_M = r_AC_M.normalized();
+  const auto cross_M = rhat_AB_M.cross(rhat_AC_M);
   return cross_M.normalized();
 }
 
