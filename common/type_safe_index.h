@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/hash.h"
 #include "drake/common/nice_type_name.h"
 
 namespace drake {
@@ -467,6 +468,14 @@ class TypeSafeIndex {
 
   ///@}
 
+  /// Implements the @ref hash_append concept.
+  template <class HashAlgorithm>
+  friend void hash_append(HashAlgorithm& hasher,
+                          const TypeSafeIndex& i) noexcept {
+    using drake::hash_append;
+    hash_append(hasher, i.index_);
+  }
+
  private:
   // Checks if this index lies in the valid range; throws an exception if not.
   // Invocations provide a string explaining the origin of the bad value.
@@ -551,4 +560,5 @@ struct hash<drake::TypeSafeIndex<Tag>> {
     return std::hash<int>()(index);
   }
 };
+
 }  // namespace std
