@@ -61,6 +61,8 @@ class GazeTargetConstraint : public solvers::Constraint {
    * Overloaded constructor.
    * Construct from MultibodyPlant<AutoDiffXd> instead of
    * MultibodyPlant<double>.
+   * @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
+   * Documentation string is manually recreated in Python.}
    */
   GazeTargetConstraint(const MultibodyPlant<AutoDiffXd>* plant,
                        const Frame<AutoDiffXd>& frameA,
