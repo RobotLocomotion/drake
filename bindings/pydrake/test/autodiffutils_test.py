@@ -12,9 +12,12 @@ from pydrake.autodiffutils import (
 )
 
 import copy
+from io import BytesIO
+import pickle
 import unittest
 
 import numpy as np
+import six
 import pydrake.math as drake_math
 
 from pydrake.test.algebra_test_util import ScalarAlgebra, VectorizedAlgebra
@@ -69,6 +72,13 @@ class TestAutoDiffXd(unittest.TestCase):
         # Ensure we can copy.
         numpy_compare.assert_equal(copy.copy(a), a)
         numpy_compare.assert_equal(copy.deepcopy(a), a)
+        # Ensure that we can pickle.
+        if six.PY3:
+            f = BytesIO()
+            pickle.dump(a, f)
+            f.seek(0)
+            a_anew = pickle.load(f)
+            numpy_compare.assert_equal(a, a_anew)
 
     def test_array_api(self):
         a = AD(1, [1., 0])
