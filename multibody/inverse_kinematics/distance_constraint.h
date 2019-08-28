@@ -37,6 +37,8 @@ class DistanceConstraint : public solvers::Constraint {
   /**
    * Overloaded constructor. Constructs the constraint with
    * MultibodyPlant<AutoDiffXd>.
+   * @exclude_from_pydrake_mkdoc{Doc string same as that of the lexically first
+   * overloaded constructor.}
    */
   DistanceConstraint(const multibody::MultibodyPlant<AutoDiffXd>* const plant,
                      SortedPair<geometry::GeometryId> geometry_pair,

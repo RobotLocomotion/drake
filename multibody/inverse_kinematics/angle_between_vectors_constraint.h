@@ -54,6 +54,8 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
   /**
    * Overloaded constructor. Use MultibodyPlant<AutoDiffXd> instead of
    * MultibodyPlant<double>.
+   * @exclude_from_pydrake_mkdoc{Doc string same as that of the lexically first
+   * overloaded constructor.}
    */
   AngleBetweenVectorsConstraint(const MultibodyPlant<AutoDiffXd>* plant,
                                 const Frame<AutoDiffXd>& frameA,

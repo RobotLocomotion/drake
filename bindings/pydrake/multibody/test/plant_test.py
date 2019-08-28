@@ -1178,3 +1178,7 @@ class TestPlant(unittest.TestCase):
         self.assertSetEqual(
             bodies,
             {plant.GetBodyByName("body1"), plant.GetBodyByName("body2")})
+
+        id_, = plant.GetCollisionGeometriesForBody(
+            body=plant.GetBodyByName("body1"))
+        self.assertIsInstance(id_, GeometryId)

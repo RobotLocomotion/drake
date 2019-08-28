@@ -67,6 +67,8 @@ class OrientationConstraint : public solvers::Constraint {
   /**
    * Overloaded constructor.
    * Constructs the constraint using MultibodyPlant<AutoDiffXd>
+   * @exclude_from_pydrake_mkdoc{Doc string same as that of the lexically first
+   * overloaded constructor.}
    */
   OrientationConstraint(const MultibodyPlant<AutoDiffXd>* const plant,
                         const Frame<AutoDiffXd>& frameAbar,

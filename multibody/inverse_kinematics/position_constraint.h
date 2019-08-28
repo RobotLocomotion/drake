@@ -49,6 +49,8 @@ class PositionConstraint : public solvers::Constraint {
    * Overloaded constructor. Same as the constructor with the double version
    * (using MultibodyPlant<double> and Context<double>. Except the gradient of
    * the constraint is computed from autodiff.
+   * @exclude_from_pydrake_mkdoc{Doc string same as that of the lexically first
+   * overloaded constructor.}
    */
   PositionConstraint(const MultibodyPlant<AutoDiffXd>* plant,
                      const Frame<AutoDiffXd>& frameA,

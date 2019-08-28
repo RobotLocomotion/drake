@@ -94,6 +94,8 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
   /**
    Overloaded constructor.
    Constructs the constraint using MultibodyPlant<AutoDiffXd>.
+   * @exclude_from_pydrake_mkdoc{Doc string same as that of the lexically first
+   * overloaded constructor.}
    */
   MinimumDistanceConstraint(
       const multibody::MultibodyPlant<AutoDiffXd>* const plant,
