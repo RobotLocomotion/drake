@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/lcm/drake_lcm.h"
@@ -299,7 +300,7 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
   const Vector3<double> block_dim(1.0, 1.0, 1.0);
   benchmarks::inclined_plane::AddInclinedPlaneWithBlockToPlant(
       gravity, plane_angle, {} /* default plane "dimensions" */,
-      mu_plane, mu_block, block_mass, block_dim, false // no spheres,
+      mu_plane, mu_block, block_mass, block_dim, false /* no spheres */,
       plant);
   plant->Finalize();
 
@@ -317,7 +318,7 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
   // Hook a publisher to the contact results system.
   auto& contact_results_publisher = *builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
-  //        "CONTACT_RESULTS", &lcm, 1.0 / 60 /* publish period */));
+          "CONTACT_RESULTS", &lcm, 1.0 / 60 /* publish period */));
   contact_results_publisher.set_name("contact_results_publisher");
   builder.Connect(contact_results_to_lcm_system.get_output_port(0),
                   contact_results_publisher.get_input_port());
@@ -325,8 +326,8 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
       builder.ExportInput(
           contact_results_to_lcm_system.get_contact_result_input_port());
   const systems::OutputPortIndex
-      lcm_hydroelastic_contact_surface_output_port_index =
-      builder.ExportOutput(lcm_system.get_lcm_message_output_port());
+      lcm_hydroelastic_contact_surface_output_port_index = builder.ExportOutput(
+          contact_results_to_lcm_system.get_lcm_message_output_port());
 
   // Finish constructing the diagram; note that we use the default pose for
   // the box, which will make the bottom of the box's surface lie at z=-0.5.
@@ -356,7 +357,6 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
   ASSERT_EQ(lcm_message.num_hydroelastic_contacts, 1);
   const lcmt_hydroelastic_contact_surface_for_viz& surface_msg =
       lcm_message.hydroelastic_contacts[0];
-  EXPECT_EQ(surface_msg.timestamp, 0);
   EXPECT_EQ(surface_msg.body1_name, "WorldBody");
   EXPECT_EQ(surface_msg.body2_name, "BodyB");
 

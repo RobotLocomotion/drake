@@ -396,6 +396,7 @@ drake_cc_googletest(
     deps = [
         ":contact_results_to_lcm",
         "//common/test_utilities:eigen_geometry_compare",
+        "//geometry:geometry_visualization",
         "//multibody/benchmarks/acrobot",
         "//multibody/benchmarks/inclined_plane",
     ],
