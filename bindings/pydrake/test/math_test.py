@@ -10,6 +10,8 @@ from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 import pydrake.common.test_utilities.numpy_compare as numpy_compare
 
 import copy
+import pickle
+from io import BytesIO
 import math
 import unittest
 
@@ -107,6 +109,23 @@ class TestMath(unittest.TestCase):
         for U in U_list:
             self.assertIsInstance(value.cast[U](), template[U], U)
 
+    def check_pickle(self, T, input, value_to_compare):
+        if six.PY2:
+            # Pickling explicitly disabled in Python 2.
+            with self.assertRaises(RuntimeError) as cm:
+                pickle.dump(input, BytesIO())
+            return
+        if T == Expression:
+            # Pickling not enabled for Expression.
+            return
+        f = BytesIO()
+        pickle.dump(input, f)
+        f.seek(0)
+        output = pickle.load(f)
+        input_value = value_to_compare(input)
+        output_value = value_to_compare(output)
+        numpy_compare.assert_equal(input_value, output_value)
+
     @numpy_compare.check_all_types
     def test_rigid_transform(self, T):
         RigidTransform = mut.RigidTransform_[T]
@@ -184,6 +203,8 @@ class TestMath(unittest.TestCase):
         p_AQlist = np.array([p_AQ, p_AQ]).T
         numpy_compare.assert_float_equal(
             X_AB.multiply(p_BoQ_B=p_BQlist), p_AQlist)
+        # Test pickling.
+        self.check_pickle(T, X_AB, RigidTransform.GetAsMatrix4)
 
     @numpy_compare.check_all_types
     def test_isometry_implicit(self, T):
@@ -264,6 +285,8 @@ class TestMath(unittest.TestCase):
         R = RotationMatrix()
         numpy_compare.assert_equal(R.IsExactlyIdentity(), True)
         numpy_compare.assert_equal(R.IsIdentityToInternalTolerance(), True)
+        # Test pickling.
+        self.check_pickle(T, R_AB, RotationMatrix.matrix)
 
     @numpy_compare.check_all_types
     def test_roll_pitch_yaw(self, T):
@@ -309,6 +332,8 @@ class TestMath(unittest.TestCase):
                 rpyDt=[0, 0, 0], alpha_AD_A=[0, 0, 0]), [0., 0., 0.])
         numpy_compare.assert_float_equal(rpy.CalcRpyDDtFromAngularAccelInChild(
             rpyDt=[0, 0, 0], alpha_AD_D=[0, 0, 0]), [0., 0., 0.])
+        # Test pickling.
+        self.check_pickle(T, rpy, RollPitchYaw.vector)
 
     def test_orthonormal_basis(self):
         R = mut.ComputeBasisFromAxis(axis_index=0, axis_W=[1, 0, 0])
