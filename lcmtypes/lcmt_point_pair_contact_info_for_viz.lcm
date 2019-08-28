@@ -1,6 +1,8 @@
 package drake;
 
 struct lcmt_point_pair_contact_info_for_viz {
+  // TODO(edrumwri) Consider removing this data which is already present in the
+  // structure in which this message is stored (lcmt_contact_results_for_viz).
   // In microseconds
   int64_t timestamp;
 

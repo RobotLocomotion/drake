@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/lcm/drake_lcm.h"
@@ -31,7 +30,7 @@ using math::RigidTransform;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 // TODO(edrumwri) Remove the next line and the corresponding #include when
-// MultibodyPlant outputs hydroelastic contact results.
+// hydroelastic contact results are factored out into test utilities.
 using multibody::internal::HydroelasticTractionCalculator;
 using systems::Context;
 using systems::Diagram;
@@ -144,14 +143,11 @@ GTEST_TEST(ConnectContactResultsToDrakeVisualizer, BasicTest) {
   systems::DiagramBuilder<double> builder;
 
   // Make a trivial plant with at least one body.
-  MultibodyPlant<double>* plant;
-  SceneGraph<double>* scene_graph;
-  std::tie(plant, scene_graph) = AddMultibodyPlantSceneGraph(&builder);
+  auto plant = builder.AddSystem<MultibodyPlant>();
   plant->AddRigidBody("link", SpatialInertia<double>());
   plant->Finalize();
 
-  auto publisher = ConnectContactResultsToDrakeVisualizer(
-      &builder, *plant);
+  auto publisher = ConnectContactResultsToDrakeVisualizer(&builder, *plant);
 
   // Confirm that we get a non-null result.
   EXPECT_NE(publisher, nullptr);
@@ -189,9 +185,9 @@ GTEST_TEST(ConnectContactResultsToDrakeVisualizer, NestedDiagramTest) {
   EXPECT_EQ(periodic_events.begin()->first.period_sec(), 1/60.0);
 }
 
-// TODO(edrumwri) Remove this function (which is a duplicate of that in
-// hydroelastic_traction_test.cc) when MultibodyPlant outputs hydroelastic
-// contact results.
+// TODO(edrumwri) Refactor these ContactSurface helper functions to be more
+// broadly available to unit tests that depend on ContactSurfaces.
+
 // Creates a surface mesh.
 std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() {
   std::vector<SurfaceVertex<double>> vertices;
@@ -214,9 +210,6 @@ std::unique_ptr<SurfaceMesh<double>> CreateSurfaceMesh() {
       std::move(faces), std::move(vertices));
 }
 
-// TODO(edrumwri) Remove this function (which is a duplicate of that in
-// hydroelastic_traction_test.cc) when MultibodyPlant outputs hydroelastic
-// contact results.
 // Creates a contact surface between the two given geometries.
 std::unique_ptr<ContactSurface<double>> CreateContactSurface(
     GeometryId halfspace_id, GeometryId block_id) {
@@ -243,8 +236,6 @@ std::unique_ptr<ContactSurface<double>> CreateContactSurface(
           "h_MN_W", std::move(h_MN_W), mesh_pointer));
 }
 
-// TODO(edrumwri) Remove this function when MultibodyPlant outputs hydroelastic
-// contact results.
 ContactResults<double> GenerateHydroelasticContactResults(
     const MultibodyPlant<double>& plant,
     std::unique_ptr<ContactSurface<double>>* contact_surface) {
@@ -263,8 +254,9 @@ ContactResults<double> GenerateHydroelasticContactResults(
   *contact_surface =
       CreateContactSurface(world_geoms.front(), block_geoms.front());
 
-  // Create the calculator data, populated with dummy values since we're only
-  // testing that the structure can be created.
+  // Create the calculator data populated with arbitrary dummy values since we
+  // only care that the values get transformed correctly (and their physical
+  // correctness is irrelevant).
   const RigidTransform<double> X_WA = RigidTransform<double>::Identity();
   const RigidTransform<double> X_WB = RigidTransform<double>::Identity();
   const SpatialVelocity<double> V_WA = SpatialVelocity<double>::Zero();
@@ -277,9 +269,7 @@ ContactResults<double> GenerateHydroelasticContactResults(
   const double dissipation = 0.0;
   const double mu_coulomb = 0.0;
 
-  // Create the HydroelasticContactInfo and validate the contact surface
-  // pointer is correct. Correctness of field values is validated elsewhere in
-  // this file.
+  // Create the HydroelasticContactInfo.
   HydroelasticTractionCalculator<double> calculator;
   ContactResults<double> output;
   output.AddContactInfo(
@@ -288,8 +278,6 @@ ContactResults<double> GenerateHydroelasticContactResults(
   return output;
 }
 
-// TODO(edrumwri) Update this test purpose when MultibodyPlant outputs
-// hydroelastic contact results.
 // Verifies that the LCM message is consistent with the hydroelastic contact
 // surface that we create.
 GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
@@ -311,7 +299,7 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
   const Vector3<double> block_dim(1.0, 1.0, 1.0);
   benchmarks::inclined_plane::AddInclinedPlaneWithBlockToPlant(
       gravity, plane_angle, {} /* default plane "dimensions" */,
-      mu_plane, mu_block, block_mass, block_dim, false /* no spheres */,
+      mu_plane, mu_block, block_mass, block_dim, false // no spheres,
       plant);
   plant->Finalize();
 
@@ -320,8 +308,7 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
   lcm::DrakeLcm lcm;
   geometry::ConnectDrakeVisualizer(&builder, *scene_graph, &lcm);
 
-  // Create the contact results to LCM system.
-  const auto& lcm_system =
+  const auto& contact_results_to_lcm_system =
       *builder.AddSystem<ContactResultsToLcmSystem<double>>(*plant);
 
   // TODO(edrumwri) Replace this code block when MultibodyPlant outputs
@@ -330,12 +317,13 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
   // Hook a publisher to the contact results system.
   auto& contact_results_publisher = *builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
-          "CONTACT_RESULTS", &lcm, 1.0 / 60 /* publish period */));
+  //        "CONTACT_RESULTS", &lcm, 1.0 / 60 /* publish period */));
   contact_results_publisher.set_name("contact_results_publisher");
-  builder.Connect(lcm_system.get_output_port(0),
+  builder.Connect(contact_results_to_lcm_system.get_output_port(0),
                   contact_results_publisher.get_input_port());
   const systems::InputPortIndex contact_results_input_port_index =
-      builder.ExportInput(lcm_system.get_contact_result_input_port());
+      builder.ExportInput(
+          contact_results_to_lcm_system.get_contact_result_input_port());
   const systems::OutputPortIndex
       lcm_hydroelastic_contact_surface_output_port_index =
       builder.ExportOutput(lcm_system.get_lcm_message_output_port());
@@ -345,8 +333,6 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
   std::unique_ptr<Diagram<double>> diagram = builder.Build();
   auto diagram_context = diagram->CreateDefaultContext();
 
-  // TODO(edrumwri) Remove this code block when MultibodyPlant outputs
-  // hydroelastic contact results.
   std::unique_ptr<ContactSurface<double>> contact_surface;
   diagram_context->FixInputPort(
       contact_results_input_port_index,
@@ -366,7 +352,6 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
   const lcmt_contact_results_for_viz& lcm_message =
       lcm_message_value.get_value();
 
-  EXPECT_EQ(lcm_message.timestamp, diagram_context.get_time());
   EXPECT_EQ(lcm_message.num_point_pair_contacts, 0);
   ASSERT_EQ(lcm_message.num_hydroelastic_contacts, 1);
   const lcmt_hydroelastic_contact_surface_for_viz& surface_msg =
@@ -381,9 +366,9 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
       // Note that we do not want to predicate the correctness of this test on
       // the order in which the triangles are present in the message. We do
       // know that each element of each vertex is located at ± 0.5.
-      EXPECT_EQ(std::abs(surface_msg.triangles[i].a_W[j]), 0.5);
-      EXPECT_EQ(std::abs(surface_msg.triangles[i].b_W[j]), 0.5);
-      EXPECT_EQ(std::abs(surface_msg.triangles[i].c_W[j]), 0.5);
+      EXPECT_EQ(std::abs(surface_msg.triangles[i].p_WA[j]), 0.5);
+      EXPECT_EQ(std::abs(surface_msg.triangles[i].p_WB[j]), 0.5);
+      EXPECT_EQ(std::abs(surface_msg.triangles[i].p_WC[j]), 0.5);
     }
   }
 }

@@ -1,9 +1,6 @@
 package drake;
 
 struct lcmt_hydroelastic_contact_surface_for_viz {
-  // The timestamp in microseconds.
-  int64_t timestamp;
-
   // Names of the colliding bodies
   string body1_name;
   string body2_name;

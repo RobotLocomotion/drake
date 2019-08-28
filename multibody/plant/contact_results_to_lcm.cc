@@ -91,7 +91,6 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
 
     const HydroelasticContactInfo<T>& hydroelastic_contact_info =
         contact_results.hydroelastic_contact_info(i);
-    surface_msg.timestamp = msg.timestamp;
 
     // Get the two body names.
     surface_msg.body1_name = geometry_id_to_body_name_map_.at(
