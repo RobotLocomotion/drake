@@ -5,21 +5,11 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/sorted_pair.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 
 namespace drake {
 namespace geometry {
-
-struct MeshIndex {
-  /// The index of a vertex into either an array of triangle vertices or a
-  /// vector of newly created vertices.
-  int index;
-
-  /// If 'true', `index` refers to the position into an array of triangle
-  /// vertices (if `false`, `index` refers to the position into an array of
-  /// newly created vertices).
-  bool index_into_triangle_vertices;
-};
 
 /**
  Constructs the SurfaceMesh that results from intersecting a triangle mesh with
@@ -35,6 +25,7 @@ struct MeshIndex {
         surface normal to the halfspace n.
  @returns the SurfaceMesh corresponding to the intersection.
  */
+/*
 template <typename T>
 SurfaceMesh<T> ConstructSurfaceMeshFromMeshHalfspaceIntersection(
     const std::vector<Vector3<T>>& mesh_vertices_M,
@@ -43,7 +34,7 @@ SurfaceMesh<T> ConstructSurfaceMeshFromMeshHalfspaceIntersection(
   std::vector<SurfaceVertex<T>> vertices;
   std::vector<SurfaceFace> faces;
   std::vector<Vector3<T>> newly_created_vertices;
-  std::vector<MeshIndex> intersection_indices;
+  std::vector<int> intersection_indices;
   std::vector<SurfaceVertexIndex> true_indices;
 
   for (const std::array<int, 3>& tri : mesh_indices) {
@@ -97,6 +88,7 @@ SurfaceMesh<T> ConstructSurfaceMeshFromMeshHalfspaceIntersection(
 
   return SurfaceMesh<T>(std::move(faces), std::move(vertices));
 }
+*/
 
 /**
  Updates the SurfaceMesh describing the intersection between a triangle from
@@ -130,14 +122,15 @@ SurfaceMesh<T> ConstructSurfaceMeshFromMeshHalfspaceIntersection(
  */
 template <typename T>
 void ConstructTriangleHalfspaceIntersectionPolygon(
-    const std::array<Vector3<T>, 3>& triangle_H,
+    const std::array<int, 3>& triangle,
     const Vector3<T>& halfspace_normal_H,
     const T& halfspace_constant,
-    std::vector<Vector3<T>>* newly_created_vertices,
-    std::vector<MeshIndex>* intersection_indices,
+    std::unordered_map<SortedPair<int>, int>* edges_to_newly_created_vertices,
+    std::vector<Vector3<T>>* vertices_H,
+    std::vector<int>* intersection_indices,
     T zero_tol = 100 * std::numeric_limits<double>::epsilon()) {
-  DRAKE_DEMAND(newly_created_vertices);
-  DRAKE_DEMAND(newly_created_vertices->empty());
+  DRAKE_DEMAND(vertices_H);
+  DRAKE_DEMAND(edges_to_newly_created_vertices);
   DRAKE_DEMAND(intersection_indices);
   DRAKE_DEMAND(intersection_indices->empty());
 
@@ -174,7 +167,8 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
   T s[3];
   int num_positive = 0, num_negative = 0, num_zero = 0;
   for (int i = 0; i < 3; ++i) {
-    s[i] = halfspace_normal_H.dot(triangle_H[i]) - halfspace_constant;
+    s[i] =
+        halfspace_normal_H.dot((*vertices_H)[triangle[i]]) - halfspace_constant;
     // Note: the geometrictools code checks against 0.0 rather than a
     // floating point tolerance. The code path from a check against 0.0 would
     // be unlikely to be triggered, so we introduced a robust check for zero.
@@ -190,15 +184,14 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
   }
 
   using std::abs;
-  std::vector<Vector3<T>> output_vertices;
   // Case 1: triangle lies completely within the halfspace. Preserve
   // the ordering of the triangle vertices.
   // Note: this is modified from the geometric tools code, which instead
   // checks that `num_negative == 0`.
   if (num_positive == 0) {
-    intersection_indices->push_back({.index = 0, .index_into_triangle_vertices = true});
-    intersection_indices->push_back({.index = 1, .index_into_triangle_vertices = true});
-    intersection_indices->push_back({.index = 2, .index_into_triangle_vertices = true});
+    intersection_indices->push_back(triangle[0]);
+    intersection_indices->push_back(triangle[1]);
+    intersection_indices->push_back(triangle[2]);
     return;
   }
 
@@ -218,16 +211,44 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
         // checks that s[i0] < 0.
         if (s[i0] > zero_tol) {
           const int i1 = (i0 + 1) % 3, i2 = (i0 + 2) % 3;
-          intersection_indices->push_back({.index = i1, .index_into_triangle_vertices = true});
-          intersection_indices->push_back({.index = i2, .index_into_triangle_vertices = true});
-          const T t2 = s[i2] / (s[i2] - s[i0]);
-          const T t0 = s[i0] / (s[i0] - s[i1]);
-          newly_created_vertices->push_back((triangle_H[i2] + t2 *
-              (triangle_H[i0] - triangle_H[i2])));
-          newly_created_vertices->push_back((triangle_H[i0] + t0 *
-                      (triangle_H[i1] - triangle_H[i0])));
-          intersection_indices->push_back({.index = 0, .index_into_triangle_vertices = false});
-          intersection_indices->push_back({.index = 1, .index_into_triangle_vertices = false});
+
+          // Get the vertex that results from intersecting edge i0/i1.
+          const auto edge_i0_i1 = MakeSortedPair(triangle[i0], triangle[i1]);
+          auto edge_i0_i1_intersection_iter =
+              edges_to_newly_created_vertices->find(edge_i0_i1);
+          if (edge_i0_i1_intersection_iter ==
+              edges_to_newly_created_vertices->end()) {
+            const T t0 = s[i0] / (s[i0] - s[i1]);
+            (*edges_to_newly_created_vertices)[edge_i0_i1] =
+                vertices_H->size();
+            edge_i0_i1_intersection_iter =
+                edges_to_newly_created_vertices->find(edge_i0_i1);
+            vertices_H->push_back((*vertices_H)[triangle[i0]] +
+                                  t0 * ((*vertices_H)[triangle[i1]] -
+                                        (*vertices_H)[triangle[i0]]));
+          }
+
+          // Get the vertex that results from intersecting edge i0/i2.
+          const auto edge_i0_i2 = MakeSortedPair(triangle[i0], triangle[i2]);
+          auto edge_i0_i2_intersection_iter =
+              edges_to_newly_created_vertices->find(edge_i0_i2);
+          if (edge_i0_i2_intersection_iter ==
+              edges_to_newly_created_vertices->end()) {
+            const T t2 = s[i2] / (s[i2] - s[i0]);
+            (*edges_to_newly_created_vertices)[edge_i0_i2] =
+                vertices_H->size();
+            edge_i0_i2_intersection_iter =
+                edges_to_newly_created_vertices->find(edge_i0_i2);
+            vertices_H->push_back((*vertices_H)[triangle[i2]] +
+                                  t2 * ((*vertices_H)[triangle[i0]] -
+                                        (*vertices_H)[triangle[i2]]));
+          }
+
+          // Add the face.
+          intersection_indices->push_back(i1);
+          intersection_indices->push_back(i2);
+          intersection_indices->push_back(edge_i0_i1_intersection_iter->second);
+          intersection_indices->push_back(edge_i0_i2_intersection_iter->second);
           return;
         }
       }
@@ -242,20 +263,34 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
         for (int i0 = 0; i0 < 3; ++i0) {
           if (abs(s[i0]) <= zero_tol) {
             const int i1 = (i0 + 1) % 3, i2 = (i0 + 2) % 3;
-            intersection_indices->push_back({.index = i0, .index_into_triangle_vertices = true});
+            intersection_indices->push_back(triangle[i0]);
+
+            // Get the vertex that results from intersecting edge i1/i2.
+            const auto edge_i1_i2 = MakeSortedPair(triangle[i1], triangle[i2]);
+            auto edge_i1_i2_intersection_iter =
+                edges_to_newly_created_vertices->find(edge_i1_i2);
             const T t1 = s[i1] / (s[i1] - s[i2]);
-            const Vector3<T> p = triangle_H[i1] + t1 *
-                (triangle_H[i2] - triangle_H[i1]);
+            if (edge_i1_i2_intersection_iter ==
+                edges_to_newly_created_vertices->end()) {
+              (*edges_to_newly_created_vertices)[edge_i1_i2] =
+                  vertices_H->size();
+              edge_i1_i2_intersection_iter =
+                  edges_to_newly_created_vertices->find(edge_i1_i2);
+              vertices_H->push_back((*vertices_H)[triangle[i1]] +
+                                    t1 * ((*vertices_H)[triangle[i2]] -
+                                          (*vertices_H)[triangle[i1]]));
+            }
+
             // Note: this is modified from geometric tools code, which instead
             // checks that s[i1] > 0.
             if (s[i1] < -zero_tol) {
-              intersection_indices->push_back({.index = i1, .index_into_triangle_vertices = true});
-              newly_created_vertices->push_back(p);
-              intersection_indices->push_back({.index = 0, .index_into_triangle_vertices = false});
+              intersection_indices->push_back(triangle[i1]);
+              intersection_indices->push_back(
+                  edge_i1_i2_intersection_iter->second);
             } else {
-              newly_created_vertices->push_back(p);
-              intersection_indices->push_back({.index = 0, .index_into_triangle_vertices = false});
-              intersection_indices->push_back({.index = i2, .index_into_triangle_vertices = true});
+              intersection_indices->push_back(
+                  edge_i1_i2_intersection_iter->second);
+              intersection_indices->push_back(triangle[i2]);
             }
             return;
           }
@@ -279,15 +314,42 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
         // checks that s[i0] < 0.
         if (s[i0] < -zero_tol) {
           const int i1 = (i0 + 1) % 3, i2 = (i0 + 2) % 3;
-          intersection_indices->push_back({.index = i0, .index_into_triangle_vertices = true});
-          const T t0 = s[i0] / (s[i0] - s[i1]);
-          const T t2 = s[i2] / (s[i2] - s[i0]);
-          newly_created_vertices->push_back((triangle_H[i0] + t0 *
-                    (triangle_H[i1] - triangle_H[i0])));
-          newly_created_vertices->push_back((triangle_H[i2] + t2 *
-                    (triangle_H[i0] - triangle_H[i2])));
-          intersection_indices->push_back({.index = 0, .index_into_triangle_vertices = false});
-          intersection_indices->push_back({.index = 1, .index_into_triangle_vertices = false});
+
+          // Get the vertex that results from intersecting edge i0/i1.
+          const auto edge_i0_i1 = MakeSortedPair(triangle[i0], triangle[i1]);
+          auto edge_i0_i1_intersection_iter =
+              edges_to_newly_created_vertices->find(edge_i0_i1);
+          if (edge_i0_i1_intersection_iter ==
+              edges_to_newly_created_vertices->end()) {
+            const T t0 = s[i0] / (s[i0] - s[i1]);
+            (*edges_to_newly_created_vertices)[edge_i0_i1] =
+                vertices_H->size();
+            edge_i0_i1_intersection_iter =
+                edges_to_newly_created_vertices->find(edge_i0_i1);
+            vertices_H->push_back((*vertices_H)[triangle[i0]] +
+                                  t0 * ((*vertices_H)[triangle[i1]] -
+                                        (*vertices_H)[triangle[i0]]));
+          }
+
+          // Get the vertex that results from intersecting edge i0/i2.
+          const auto edge_i0_i2 = MakeSortedPair(triangle[i0], triangle[i2]);
+          auto edge_i0_i2_intersection_iter =
+              edges_to_newly_created_vertices->find(edge_i0_i2);
+          if (edge_i0_i2_intersection_iter ==
+              edges_to_newly_created_vertices->end()) {
+            const T t2 = s[i2] / (s[i2] - s[i0]);
+            (*edges_to_newly_created_vertices)[edge_i0_i2] =
+                vertices_H->size();
+            edge_i0_i2_intersection_iter =
+                edges_to_newly_created_vertices->find(edge_i0_i2);
+            vertices_H->push_back((*vertices_H)[triangle[i2]] +
+                                  t2 * ((*vertices_H)[triangle[i0]] -
+                                        (*vertices_H)[triangle[i2]]));
+          }
+
+          intersection_indices->push_back(triangle[i0]);
+          intersection_indices->push_back(edge_i0_i1_intersection_iter->second);
+          intersection_indices->push_back(edge_i0_i2_intersection_iter->second);
           return;
         }
       }
