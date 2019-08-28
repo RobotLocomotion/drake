@@ -1,6 +1,8 @@
 import pydrake.common.eigen_geometry as mut
 
 import copy
+from io import BytesIO
+import pickle
 import unittest
 
 import numpy as np
@@ -27,6 +29,23 @@ class TestEigenGeometry(unittest.TestCase):
             U_list = [T]
         for U in U_list:
             self.assertIsInstance(value.cast[U](), template[U], U)
+
+    def check_pickle(self, T, input, value_to_compare):
+        if six.PY2:
+            # Pickling explicitly disabled in Python 2.
+            with self.assertRaises(RuntimeError) as cm:
+                pickle.dump(input, BytesIO())
+            return
+        if T == Expression:
+            # Pickling not enabled for Expression.
+            return
+        f = BytesIO()
+        pickle.dump(input, f)
+        f.seek(0)
+        output = pickle.load(f)
+        input_value = value_to_compare(input)
+        output_value = value_to_compare(output)
+        numpy_compare.assert_equal(input_value, output_value)
 
     @numpy_compare.check_all_types
     def test_argument_deduction(self, T):
@@ -134,6 +153,8 @@ class TestEigenGeometry(unittest.TestCase):
             self.assertTrue(isinstance(value, mut.Quaternion))
             test_util.check_quaternion(value)
 
+        self.check_pickle(T, q_AB, Quaternion.wxyz)
+
     @numpy_compare.check_all_types
     def test_isometry3(self, T):
         Isometry3 = mut.Isometry3_[T]
@@ -210,6 +231,8 @@ class TestEigenGeometry(unittest.TestCase):
             numpy_compare.assert_float_equal(
                 eval("X_AB @ p_BQ"), p_AQ)
 
+        self.check_pickle(T, X_AB, Isometry3.matrix)
+
     def test_translation(self):
         # Test `type_caster`s.
         value = test_util.create_translation()
@@ -275,3 +298,8 @@ class TestEigenGeometry(unittest.TestCase):
         numpy_compare.assert_equal(value.rotation(), value_sym.rotation())
         numpy_compare.assert_equal(value.angle(), -value_sym.angle())
         numpy_compare.assert_equal(value.axis(), -value_sym.axis())
+
+        def get_vector(value):
+            return np.hstack((value.angle(), value.axis()))
+
+        self.check_pickle(T, value, get_vector)
