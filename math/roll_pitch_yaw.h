@@ -636,7 +636,9 @@ class RollPitchYaw {
 // @param[in] R The %RotationMatrix corresponding to `quaternion`.
 // @return %RollPitchYaw containing angles `[r, p, y]` with range
 // `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
-// @note The caller of this function is responsible for ensure
+// @note The caller of this function is responsible for ensuring `quaternion`
+// satisfies `e0^2 + e1^2 + e2^2 + e3^2 = 1` and that the matrix `R` is the
+// rotation matrix that corresponds to `quaternion'.
 template <typename T>
 Vector3<T> CalcRollPitchYawFromQuaternionAndRotationMatrix(
     const Eigen::Quaternion<T>& quaternion, const Matrix3<T>& R);
