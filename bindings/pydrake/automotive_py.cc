@@ -70,8 +70,7 @@ PYBIND11_MODULE(automotive, m) {
         return std::make_unique<ClosestPose<T>>(odom, dist);
       }),
           py::arg("odom"), py::arg("dist"),
-          // Keep alive, transitive: `self` keeps `RoadOdometry` pointer
-          // members alive.
+          // Keep alive, reference (tr.): `self` keeps `odom` alive.
           py::keep_alive<1, 2>(), doc.ClosestPose.ctor.doc_2args)
       .def_readwrite("odometry", &ClosestPose<T>::odometry,
           py_reference_internal, doc.ClosestPose.odometry.doc)
@@ -94,8 +93,7 @@ PYBIND11_MODULE(automotive, m) {
                      road_position, frame_velocity);
                }),
           py::arg("road_position"), py::arg("frame_velocity"),
-          // Keep alive, transitive: `self` keeps `RoadPosition` pointer
-          // members alive.
+          // Keep alive, reference (tr.): `self` keeps `road_position` alive.
           py::keep_alive<1, 2>(), doc.RoadOdometry.ctor.doc_2args)
       .def(py::init(
                [](const maliput::api::Lane* lane,
@@ -106,7 +104,7 @@ PYBIND11_MODULE(automotive, m) {
                      lane, lane_position, frame_velocity);
                }),
           py::arg("lane"), py::arg("lane_position"), py::arg("frame_velocity"),
-          // Keep alive, reference: `self` keeps `Lane*` alive.
+          // Keep alive, reference: `self` keeps `lane` alive.
           py::keep_alive<1, 2>(), doc.RoadOdometry.ctor.doc_3args)
       .def_readwrite("pos", &RoadOdometry<T>::pos, doc.RoadOdometry.pos.doc)
       .def_readwrite("vel", &RoadOdometry<T>::vel, doc.RoadOdometry.vel.doc);

@@ -51,12 +51,13 @@ PYBIND11_MODULE(acrobot, m) {
       m, "AcrobotSpongController", doc.AcrobotSpongController.doc)
       .def(py::init<>(), doc.AcrobotSpongController.ctor.doc)
       .def("get_parameters", &AcrobotSpongController<T>::get_parameters,
-          py_reference,
-          // Keep alive, ownership: `return` keeps `Context` alive.
+          py_reference, py::arg("context"),
+          // Keep alive, ownership: `return` keeps `context` alive.
           py::keep_alive<0, 2>(), doc.AcrobotSpongController.get_parameters.doc)
       .def("get_mutable_parameters",
           &AcrobotSpongController<T>::get_mutable_parameters, py_reference,
-          // Keep alive, ownership: `return` keeps `Context` alive.
+          py::arg("context"),
+          // Keep alive, ownership: `return` keeps `context` alive.
           py::keep_alive<0, 2>(),
           doc.AcrobotSpongController.get_mutable_parameters.doc);
 
