@@ -12,7 +12,7 @@ OrientationConstraint::OrientationConstraint(
     const MultibodyPlant<double>* const plant, const Frame<double>& frameAbar,
     const math::RotationMatrix<double>& R_AbarA, const Frame<double>& frameBbar,
     const math::RotationMatrix<double>& R_BbarB, double theta_bound,
-    systems::Context<double>* context)
+    systems::Context<double>* plant_context)
     : solvers::Constraint(1, RefFromPtrOrThrow(plant).num_positions(),
                           Vector1d(2 * std::cos(theta_bound) + 1), Vector1d(3)),
       plant_double_{plant},
@@ -20,10 +20,11 @@ OrientationConstraint::OrientationConstraint(
       frameBbar_index_{frameBbar.index()},
       R_AbarA_{R_AbarA},
       R_BbarB_{R_BbarB},
-      context_double_(context),
+      context_double_(plant_context),
       plant_autodiff_{nullptr},
       context_autodiff_{nullptr} {
-  if (context == nullptr) throw std::invalid_argument("context is nullptr.");
+  if (plant_context == nullptr)
+    throw std::invalid_argument("plant_context is nullptr.");
   if (theta_bound < 0) {
     throw std::invalid_argument(
         "OrientationConstraint: theta_bound should be non-negative.\n");
@@ -36,7 +37,7 @@ OrientationConstraint::OrientationConstraint(
     const math::RotationMatrix<double>& R_AbarA,
     const Frame<AutoDiffXd>& frameBbar,
     const math::RotationMatrix<double>& R_BbarB, double theta_bound,
-    systems::Context<AutoDiffXd>* context)
+    systems::Context<AutoDiffXd>* plant_context)
     : solvers::Constraint(1, RefFromPtrOrThrow(plant).num_positions(),
                           Vector1d(2 * std::cos(theta_bound) + 1), Vector1d(3)),
       plant_double_{nullptr},
@@ -46,8 +47,9 @@ OrientationConstraint::OrientationConstraint(
       R_BbarB_{R_BbarB},
       context_double_(nullptr),
       plant_autodiff_{plant},
-      context_autodiff_{context} {
-  if (context == nullptr) throw std::invalid_argument("context is nullptr.");
+      context_autodiff_{plant_context} {
+  if (plant_context == nullptr)
+    throw std::invalid_argument("plant_context is nullptr.");
   if (theta_bound < 0) {
     throw std::invalid_argument(
         "OrientationConstraint: theta_bound should be non-negative.\n");

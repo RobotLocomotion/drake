@@ -248,6 +248,14 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "sorted_pair_pybind",
+    hdrs = ["sorted_pair_pybind.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
+    deps = ["//:drake_shared_library"],
+)
+
+drake_cc_library(
     name = "type_safe_index_pybind",
     hdrs = ["type_safe_index_pybind.h"],
     declare_installed_headers = 0,

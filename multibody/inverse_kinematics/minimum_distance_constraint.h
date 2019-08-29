@@ -92,9 +92,11 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
       double influence_distance_offset = 1);
 
   /**
-   Overloaded constructor.
-   Constructs the constraint using MultibodyPlant<AutoDiffXd>.
-   */
+  Overloaded constructor.
+  Constructs the constraint using MultibodyPlant<AutoDiffXd>.
+  @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
+  Documentation string is manually recreated in Python.}
+  */
   MinimumDistanceConstraint(
       const multibody::MultibodyPlant<AutoDiffXd>* const plant,
       double minimum_distance, systems::Context<AutoDiffXd>* plant_context,
