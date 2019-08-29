@@ -124,20 +124,12 @@ HydroelasticTractionCalculator<T>::CalcTractionAtVertex(
 
   const T e = data.surface.EvaluateE_MN(vertex_index);
 
-<<<<<<< HEAD
-  const Vector3<T> h_W = data.surface.EvaluateGrad_h_MN_W(vertex_index);
-  // TODO(edrumwri): Remove this TODO or update this code when we know whether
-  // h_W can ever be zero.
-  DRAKE_DEMAND(h_W.norm() > std::numeric_limits<double>::epsilon() * 10);
-  const Vector3<T> nhat_W = h_W.normalized();
-=======
   const Vector3<T> grad_h_W = data.surface.EvaluateGrad_h_MN_W(vertex_index);
   // TODO(edrumwri): Remove this TODO or update this code when we know whether
   // h_W can ever be zero in expected cases.
   const T norm_grad_h_W = grad_h_W.norm();
   DRAKE_DEMAND(norm_grad_h_W > std::numeric_limits<double>::epsilon() * 10);
   const Vector3<T> nhat_W = grad_h_W / norm_grad_h_W;
->>>>>>> b095d45ee80999f18435d7829c2adcfcd5dc9c0a
 
   return CalcTractionAtQHelper(data, e, nhat_W, dissipation, mu_coulomb, p_WQ);
 }
@@ -158,14 +150,6 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
 
   const T e = data.surface.EvaluateE_MN(face_index, Q_barycentric);
 
-<<<<<<< HEAD
-  const Vector3<T> h_W = data.surface.EvaluateGrad_h_MN_W(
-      face_index, Q_barycentric);
-  // TODO(edrumwri): Remove this TODO or update this code when we know whether
-  // h_W can ever be zero.
-  DRAKE_DEMAND(h_W.norm() > std::numeric_limits<double>::epsilon() * 10);
-  const Vector3<T> nhat_W = h_W.normalized();
-=======
   const Vector3<T> grad_h_W = data.surface.EvaluateGrad_h_MN_W(
       face_index, Q_barycentric);
   // TODO(edrumwri): Remove this TODO or update this code when we know whether
@@ -173,7 +157,6 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
   const T norm_grad_h_W = grad_h_W.norm();
   DRAKE_DEMAND(norm_grad_h_W > std::numeric_limits<double>::epsilon() * 10);
   const Vector3<T> nhat_W = grad_h_W / norm_grad_h_W;
->>>>>>> b095d45ee80999f18435d7829c2adcfcd5dc9c0a
 
   return CalcTractionAtQHelper(data, e, nhat_W, dissipation, mu_coulomb, p_WQ);
 }

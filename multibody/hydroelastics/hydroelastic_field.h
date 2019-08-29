@@ -23,24 +23,25 @@ class HydroelasticField {
   /// Constructor of a HydroelasticField.
   /// @param[in] mesh_M
   ///   The tetrahedral mesh representation of the geometry, with position
-  ///   vectors measured and expressed in the geometry frame M.
-  /// @param[in] p0
-  ///   The scalar virtual pressure field of the hydroelastic model.
-  /// @param[in] grad_p0_M
-  ///   The gradient of the scalar field p0, expressed in the geometry frame M.
+  ///   vectors measured and expressed in the frame M of the model.
+  /// @param[in] e_m
+  ///   The volumetric scalar field of the hydroelastic model.
+  /// @param[in] grad_e_m_M
+  ///   The gradient of the scalar field e_m, expressed in the frame M of the
+  ///   mesh.
   HydroelasticField(
       std::unique_ptr<geometry::VolumeMesh<T>> mesh_M,
-      std::unique_ptr<geometry::VolumeMeshFieldLinear<T, T>> p0,
+      std::unique_ptr<geometry::VolumeMeshFieldLinear<T, T>> e_m,
       std::unique_ptr<geometry::VolumeMeshFieldLinear<Vector3<T>, T>>
-          grad_p0_M)
+          grad_e_m_M)
       : mesh_M_(std::move(mesh_M)),
-        p0_(std::move(p0)),
-        grad_p0_M_(std::move(grad_p0_M)) {}
+        e_m_(std::move(e_m)),
+        grad_e_m_M_(std::move(grad_e_m_M)) {}
 
   const geometry::VolumeMesh<T>& volume_mesh() const { return *mesh_M_; }
 
   const geometry::VolumeMeshFieldLinear<T, T>& scalar_field() const {
-    return *p0_;
+    return *e_m_;
   }
 
   // TODO(amcastro-tri): when needed, add accessor:
@@ -49,11 +50,11 @@ class HydroelasticField {
  private:
   /** The volume mesh of M. */
   std::unique_ptr<geometry::VolumeMesh<T>> mesh_M_;
-  /** Represents the scalar field p0ₘ on the surface mesh. */
-  std::unique_ptr<geometry::VolumeMeshFieldLinear<T, T>> p0_;
-  /** Represents the vector field ∇p0ₘ on the surface mesh, expressed in M's
+  /** Represents the scalar field eₘ on the surface mesh. */
+  std::unique_ptr<geometry::VolumeMeshFieldLinear<T, T>> e_m_;
+  /** Represents the vector field ∇eₘ on the surface mesh, expressed in M's
     frame */
-  std::unique_ptr<geometry::VolumeMeshFieldLinear<Vector3<T>, T>> grad_p0_M_;
+  std::unique_ptr<geometry::VolumeMeshFieldLinear<Vector3<T>, T>> grad_e_m_M_;
 };
 
 }  // namespace internal
