@@ -20,7 +20,9 @@ class SurfaceMeshHalfspaceIntersection {
    Computes the SurfaceVertex and SurfaceFace objects that describe the
    intersection between a single face from an input mesh and a particular
    halfpsace and *updates* (i.e., does not clear) vectors of faces (`new_faces`)
-   and vertices (`new_vertices`).
+   and vertices (`new_vertices`). If the result from the intersection is a
+   a single point or an edge, no update will be performed and the output
+   arguments (below) will be unmodified.
 
    This method is sufficiently sophisticated such that it will not create
    a new SurfaceVertex if a vertex has already been created from intersection
