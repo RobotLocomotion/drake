@@ -1,13 +1,12 @@
 from __future__ import absolute_import, print_function
 
-from io import BytesIO
-import pickle
 import unittest
 from types import ModuleType
 
 import six
 
 import pydrake.common.cpp_template as m
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 
 _TEST_MODULE = "cpp_template_test"
 
@@ -38,16 +37,6 @@ class DummyC(object):
 
 class DummyD(object):
     pass
-
-
-def check_pickle(test, obj):
-    # Pickles and unpickles an object, and ensures the `__dict__` objects are
-    # the same.
-    f = BytesIO()
-    pickle.dump(obj, f)
-    f.seek(0)
-    obj_new = pickle.load(f)
-    test.assertEqual(obj.__dict__, obj_new.__dict__)
 
 
 class TestCppTemplate(unittest.TestCase):
@@ -102,7 +91,7 @@ class TestCppTemplate(unittest.TestCase):
             template.add_instantiations(instantiation_func, [dummy_c])
 
         with self.assertRaises(TypeError) as cm:
-            check_pickle(self, template)
+            assert_pickle(self, template)
         self.assertIn("can't pickle module objects", str(cm.exception))
 
     def test_class(self):
@@ -120,7 +109,7 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEqual(str(DummyB), "<class '{}.ClassTpl[float]'>".format(
             _TEST_MODULE))
 
-        check_pickle(self, template[int]())
+        assert_pickle(self, template[int]())
 
     def test_user_class(self):
         test = self
@@ -171,7 +160,7 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEqual(MyFloat().mangled_result, (float, 10))
         self.assertTrue(hasattr(MyFloat, "_Impl__mangled_method"))
 
-        check_pickle(self, MyTemplate[int]())
+        assert_pickle(self, MyTemplate[int]())
 
     def test_function(self):
         template = m.TemplateFunction("func")
@@ -185,7 +174,7 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEqual(str(template), "<TemplateFunction {}.func>".format(
             _TEST_MODULE))
 
-        check_pickle(self, template[int])
+        assert_pickle(self, template[int])
 
     def test_method(self):
         DummyC.method = m.TemplateMethod("method", DummyC)
@@ -218,7 +207,7 @@ class TestCppTemplate(unittest.TestCase):
 
         # Cannot pickle instancemethod's in Python 2.
         if not six.PY2:
-            check_pickle(self, DummyC.method[int])
+            assert_pickle(self, DummyC.method[int])
 
     def test_get_or_init(self):
         m_test = ModuleType("test_module")
