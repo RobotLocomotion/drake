@@ -41,36 +41,101 @@ class MeshHalfspaceIntersectionTest : public ::testing::Test {
         SurfaceVertexIndex(0), SurfaceVertexIndex(1), SurfaceVertexIndex(2))};
 
     return SurfaceMesh<T>(std::move(faces), std::move(vertices));
- }
+  }
 
- // Convenience function for verifying that the original triangle was output.
- void VerifyOriginalTriangleOutput(
-     const SurfaceMesh<T>& mesh,
-     const std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>&
-         vertices_to_newly_created_vertices,
-     const std::unordered_map<SortedPair<SurfaceVertexIndex>,
-                              SurfaceVertexIndex>&
-         edges_to_newly_created_vertices,
-     const std::vector<SurfaceVertex<T>>& new_vertices,
-     const std::vector<SurfaceFace>& new_faces) {
-   EXPECT_TRUE(edges_to_newly_created_vertices.empty());
-   ASSERT_EQ(new_vertices.size(), 3);
-   for (int i = 0; i < static_cast<int>(new_vertices.size()); ++i) {
-     EXPECT_EQ(new_vertices[i].r_MV(),
-               mesh.vertex(SurfaceVertexIndex(i)).r_MV());
-   }
-   ASSERT_EQ(new_faces.size(), 1);
-   ASSERT_EQ(vertices_to_newly_created_vertices.size(), 3);
-   for (int i = 0; i < 3; ++i) {
-     EXPECT_EQ(new_faces[0].vertex(i), SurfaceVertexIndex(i));
-     EXPECT_EQ(vertices_to_newly_created_vertices.at(SurfaceVertexIndex(i)),
-               SurfaceVertexIndex(i));
-   }
- }
+  // Checks whether two faces from two meshes are equivalent.
+  bool AreFacesClose(const SurfaceFace& fa, const SurfaceMesh<T>& mesh_a,
+                     const SurfaceFace& fb, const SurfaceMesh<T>& mesh_b,
+                     double tol) {
+    // Get the three vertices from each.
+    std::array<Vector3<T>, 3> vertices_a = {
+      mesh_a.vertex(fa.vertex(0)).r_MV(), mesh_a.vertex(fa.vertex(1)).r_MV(),
+      mesh_a.vertex(fa.vertex(2)).r_MV() };
+    std::array<Vector3<T>, 3> vertices_b = {
+      mesh_b.vertex(fb.vertex(0)).r_MV(), mesh_b.vertex(fb.vertex(1)).r_MV(),
+      mesh_b.vertex(fb.vertex(2)).r_MV() };
 
-  private:
-    Vector3<T> normal_H_;
-    T d_;
+    // Set an array of indices that will be used to determine how the two
+    // triangles align.
+    std::array<int, 3> indices = {0, 1, 2};
+
+    // Verify that at least one of the permutations is close to within the
+    // requested tolerancce.
+    double closest_dist = std::numeric_limits<double>::max();
+    do {
+      double dist = 0;
+      for (int i = 0; i < 3; ++i)
+        dist += (vertices_a[indices[i]] - vertices_b[i]).norm();
+      closest_dist = std::min(closest_dist, dist);
+      if (closest_dist < tol)
+        break;
+    } while (std::next_permutation(indices.begin(), indices.end()));
+    if (closest_dist > tol)
+      return false;
+
+    // Finally, ensure that the normals are pointing the same direction.
+    const Vector3<T> na =
+        (vertices_a[1] - vertices_a[0]).cross(vertices_a[2] - vertices_a[1]);
+    const Vector3<T> nb =
+        (vertices_b[1] - vertices_b[0]).cross(vertices_b[2] - vertices_b[1]);
+    return (na.dot(nb) > 0);
+  }
+
+  // Checks whether two meshes are equivalent, regardless of how
+  // vertices and faces are ordered.
+  void VerifyMeshesEquivalent(
+      const SurfaceMesh<T>& mesh1, const SurfaceMesh<T>& mesh2, double tol) {
+    // Simple checks first.
+    ASSERT_EQ(mesh1.num_faces(), mesh2.num_faces());
+    ASSERT_EQ(mesh1.num_vertices(), mesh2.num_vertices());
+
+    // Iterate through each face of the first mesh, looking for a face from the
+    // second mesh that is within the given tolerance. This is a quadratic
+    // time algorithm (in the number of faces of the meshes) but we expect the
+    // number of faces that this algorithm is run on to be small.
+    for (const SurfaceFace& f1 : mesh1.faces()) {
+      bool found_match = false;
+      for (const SurfaceFace& f2 : mesh2.faces()) {
+        if (AreFacesClose(f1, mesh1, f2, mesh2, tol)) {
+          found_match = true;
+          break;
+        }
+      }
+
+      EXPECT_TRUE(found_match);
+    }
+  }
+
+  // Convenience function for verifying that the original triangle was output.
+  void VerifyOriginalTriangleOutput(
+      const SurfaceMesh<T>& mesh,
+      const std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>&
+          vertices_to_newly_created_vertices,
+      const std::unordered_map<SortedPair<SurfaceVertexIndex>,
+                               SurfaceVertexIndex>&
+          edges_to_newly_created_vertices,
+      const std::vector<SurfaceVertex<T>>& new_vertices,
+      const std::vector<SurfaceFace>& new_faces) {
+    EXPECT_TRUE(edges_to_newly_created_vertices.empty());
+    ASSERT_EQ(new_vertices.size(), 3);
+    for (int i = 0; i < static_cast<int>(new_vertices.size()); ++i) {
+      EXPECT_EQ(new_vertices[i].r_MV(),
+                mesh.vertex(SurfaceVertexIndex(i)).r_MV());
+    }
+    ASSERT_EQ(new_faces.size(), 1);
+    ASSERT_EQ(vertices_to_newly_created_vertices.size(), 3);
+    for (int i = 0; i < 3; ++i) {
+      EXPECT_EQ(new_faces[0].vertex(i), SurfaceVertexIndex(i));
+      EXPECT_EQ(vertices_to_newly_created_vertices.at(SurfaceVertexIndex(i)),
+                SurfaceVertexIndex(i));
+    }
+  }
+
+
+
+ private:
+  Vector3<T> normal_H_;
+  T d_;
 };
 TYPED_TEST_CASE_P(MeshHalfspaceIntersectionTest);
 
@@ -261,29 +326,22 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, QuadrilateralResults) {
   ASSERT_EQ(new_vertices.size(), 4);
   ASSERT_EQ(edges_to_newly_created_vertices.size(), 2);
 
-  // Get the two vertices that are not new.
-  std::vector<SurfaceVertexIndex> remaining_indices;
-  for (int i = 0; i < static_cast<int>(new_vertices.size()); ++i)
-    remaining_indices.emplace_back(i);
-  for (const auto& vertex_pair : vertices_to_newly_created_vertices) {
-    remaining_indices.erase(std::find(remaining_indices.begin(),
-                                      remaining_indices.end(),
-                                      vertex_pair.second));
-  }
-
-/*
-  // Two vertices will lie halfway between the vertex outside the halfspace
-  // and each vertex inside the halfspace.
-  const double zero_tol = 10 * std::numeric_limits<double>::epsilon();
-  EXPECT_LT((triangle_vertices_H[4] -
-             (triangle_vertices_H[0] + triangle_vertices_H[2]) * 0.5).norm(),
-            zero_tol);
-  EXPECT_LT((triangle_vertices_H[3] -
-             (triangle_vertices_H[0] + triangle_vertices_H[1]) * 0.5).norm(),
-            zero_tol);
-*/
-  // TODO(edrumwri): Verify that the polygon winding yields a right handed
-  // normal.
+  // Check that the mesh that results is equivalent to the expected mesh.
+  std::vector<SurfaceVertex<T>> expected_vertices = {
+      SurfaceVertex<T>(Vector3<T>(1, 0, -1)),
+      SurfaceVertex<T>(Vector3<T>(0, 1, -1)),
+      SurfaceVertex<T>(Vector3<T>(0.5, 0, 0)),
+      SurfaceVertex<T>(Vector3<T>(0, 0.5, 0)) };
+  typedef SurfaceVertexIndex Index;
+  std::vector<SurfaceFace> expected_faces = {
+      SurfaceFace(Index(0), Index(1), Index(2)),
+      SurfaceFace(Index(2), Index(3), Index(0)) };
+  const SurfaceMesh<T> expected_mesh(std::move(expected_faces),
+                                     std::move(expected_vertices));
+  const SurfaceMesh<T> actual_mesh(std::move(new_faces),
+                                   std::move(new_vertices));
+  this->VerifyMeshesEquivalent(
+      expected_mesh, actual_mesh, 10 * std::numeric_limits<double>::epsilon());
 }
 
 // Verifies that a triangle that has one vertex outside the halfspace, one
@@ -307,19 +365,21 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, OutsideInsideOn) {
       this->halfspace_constant(), &new_vertices, &new_faces,
       &vertices_to_newly_created_vertices, &edges_to_newly_created_vertices);
   ASSERT_EQ(edges_to_newly_created_vertices.size(), 1);
-/*
-  // One vertex will be drawn from inside the halfspace.
-  EXPECT_EQ(intersection_indices[1], 2);
-  // Two vertices will be drawn from the surface of the halfspace.
-  EXPECT_EQ(intersection_indices[0], 1);
-  const double zero_tol = 10 * std::numeric_limits<double>::epsilon();
-  EXPECT_EQ(intersection_indices[2], 3);
-  EXPECT_LT((triangle_vertices_H[3] -
-             (triangle_vertices_H[0] + triangle_vertices_H[2]) * 0.5).norm(),
-            zero_tol);
-*/
-  // TODO(edrumwri): Verify that the polygon winding yields a right handed
-  // normal.
+
+  // Check that the mesh that results is equivalent to the expected mesh.
+  std::vector<SurfaceVertex<T>> expected_vertices = {
+      SurfaceVertex<T>(Vector3<T>(1, 0, 0)),
+      SurfaceVertex<T>(Vector3<T>(0, 1, -1)),
+      SurfaceVertex<T>(Vector3<T>(0, .5, 0)) };
+  typedef SurfaceVertexIndex Index;
+  std::vector<SurfaceFace> expected_faces = {
+      SurfaceFace(Index(0), Index(1), Index(2)) };
+  const SurfaceMesh<T> expected_mesh(std::move(expected_faces),
+                                     std::move(expected_vertices));
+  const SurfaceMesh<T> actual_mesh(std::move(new_faces),
+                                   std::move(new_vertices));
+  this->VerifyMeshesEquivalent(
+      expected_mesh, actual_mesh, 10 * std::numeric_limits<double>::epsilon());
 }
 
 // Verifies that a triangle with one vertex inside the halfspace and two
@@ -342,22 +402,21 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, OneInsideTwoOutside) {
       mesh.vertices(), mesh.element(SurfaceFaceIndex(0)), this->normal_H(),
       this->halfspace_constant(), &new_vertices, &new_faces,
       &vertices_to_newly_created_vertices, &edges_to_newly_created_vertices);
-/*
-  ASSERT_EQ(intersection_indices.size(), 3);
-  ASSERT_EQ(edges_to_newly_created_vertices.size(), 2);
-  EXPECT_EQ(intersection_indices[0], 2);
-  const double zero_tol = 10 * std::numeric_limits<double>::epsilon();
-  EXPECT_EQ(intersection_indices[1], 3);
-  EXPECT_LT((triangle_vertices_H[3] -
-             (triangle_vertices_H[0] + triangle_vertices_H[2]) * 0.5).norm(),
-            zero_tol);
-  EXPECT_EQ(intersection_indices[2], 4);
-  EXPECT_LT((triangle_vertices_H[4] -
-             (triangle_vertices_H[1] + triangle_vertices_H[2]) * 0.5).norm(),
-            zero_tol);
-*/
-  // TODO(edrumwri): Verify that the polygon winding yields a right handed
-  // normal.
+
+  // Check that the mesh that results is equivalent to the expected mesh.
+  std::vector<SurfaceVertex<T>> expected_vertices = {
+      SurfaceVertex<T>(Vector3<T>(0, 1, -1)),
+      SurfaceVertex<T>(Vector3<T>(0, .5, 0)),
+      SurfaceVertex<T>(Vector3<T>(.5, .5, 0)) };
+  typedef SurfaceVertexIndex Index;
+  std::vector<SurfaceFace> expected_faces = {
+      SurfaceFace(Index(0), Index(1), Index(2)) };
+  const SurfaceMesh<T> expected_mesh(std::move(expected_faces),
+                                     std::move(expected_vertices));
+  const SurfaceMesh<T> actual_mesh(std::move(new_faces),
+                                   std::move(new_vertices));
+  this->VerifyMeshesEquivalent(
+      expected_mesh, actual_mesh, 10 * std::numeric_limits<double>::epsilon());
 }
 
 // Tests that a mesh of a box intersecting the halfspace like flotsam produces
