@@ -32,16 +32,16 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
    *   denoted as θ_lower in the class documentation.
    * @param angle_upper The upper bound on the angle between `a` and `b`. it is
    *   denoted as θ_upper in the class documentation.
-   * @param context The Context that has been allocated for this `plant`. We
-   *   will update the context when evaluating the constraint. `context` should
-   *   be alive during the lifetime of this constraint.
+   * @param plant_context The Context that has been allocated for this
+   *   `plant`.  We will update the context when evaluating the constraint.
+   *   `plant_context` should be alive during the lifetime of this constraint.
    * @pre `frameA` and `frameB` must belong to `plant`.
    * @throws std::invalid_argument if `plant` is nullptr.
    * @throws std::invalid_argument if `a_A` is close to zero.
    * @throws std::invalid_argument if `b_B` is close to zero.
    * @throws std::invalid_argument if `angle_lower` is negative.
    * @throws std::invalid_argument if `angle_upper` ∉ [`angle_lower`, π].
-   * @throws std::invalid_argument if `context` is nullptr.
+   * @throws std::invalid_argument if `plant_context` is nullptr.
    */
   AngleBetweenVectorsConstraint(const MultibodyPlant<double>* plant,
                                 const Frame<double>& frameA,
@@ -49,11 +49,13 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
                                 const Frame<double>& frameB,
                                 const Eigen::Ref<const Eigen::Vector3d>& b_B,
                                 double angle_lower, double angle_upper,
-                                systems::Context<double>* context);
+                                systems::Context<double>* plant_context);
 
   /**
    * Overloaded constructor. Use MultibodyPlant<AutoDiffXd> instead of
    * MultibodyPlant<double>.
+   * @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
+   * Documentation string is manually recreated in Python.}
    */
   AngleBetweenVectorsConstraint(const MultibodyPlant<AutoDiffXd>* plant,
                                 const Frame<AutoDiffXd>& frameA,
@@ -61,7 +63,7 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
                                 const Frame<AutoDiffXd>& frameB,
                                 const Eigen::Ref<const Eigen::Vector3d>& b_B,
                                 double angle_lower, double angle_upper,
-                                systems::Context<AutoDiffXd>* context);
+                                systems::Context<AutoDiffXd>* plant_context);
 
   ~AngleBetweenVectorsConstraint() override {}
 
