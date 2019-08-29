@@ -53,6 +53,20 @@ GTEST_TEST(VolumeToSurfaceMeshTest, IdentifyBoundaryFaces) {
 
   const auto boundary_faces = IdentifyBoundaryFaces(tetrahedra);
 
+  // TODO(DamrongGuoy): Make this test independent of the ordering of the
+  //  triangles and the ordering of the vertices in each triangle. The strategy
+  //  could be:
+  //  1. For each triangle, put its three vertices into SortedTriplet.
+  //  2. Put all SortedTriplet into a `set`.
+  //  3. Check the `set`.
+  //  4. Check the orientation of all faces.
+  //  However, step 4 could be tricky since we do not have positions of
+  //  vertices. We have only indices.
+
+  // This test is valid only when the ordering of the triangles and the
+  // ordering of the vertices within each triangle are exactly as expected.
+  // Changes to the ordering in the code that otherwise defines the same set
+  // of triangles would fail.
   const std::vector<std::array<VolumeVertexIndex, 3>> expect_faces{
       {VolumeVertexIndex(1), VolumeVertexIndex(3), VolumeVertexIndex(0)},
       {VolumeVertexIndex(4), VolumeVertexIndex(1), VolumeVertexIndex(0)},
@@ -70,10 +84,16 @@ GTEST_TEST(VolumeToSurfaceMeshTest, CollectUniqueVertices) {
 
   const auto unique_vertices = CollectUniqueVertices(faces);
 
-  const std::vector<VolumeVertexIndex> expect_vertices{
+  // We copy the result into a `set` so that the test is independent of the
+  // ordering of vertices in `unique_vertices`.
+  const std::set<VolumeVertexIndex> vertex_set(unique_vertices.begin(),
+                                               unique_vertices.end());
+  // Check that there are no repeated vertices in `unique_vertices`.
+  EXPECT_EQ(vertex_set.size(), unique_vertices.size());
+  const std::set<VolumeVertexIndex> expect_vertex_set{
       VolumeVertexIndex(1), VolumeVertexIndex(2), VolumeVertexIndex(3),
       VolumeVertexIndex(4)};
-  EXPECT_EQ(expect_vertices, unique_vertices);
+  EXPECT_EQ(expect_vertex_set, vertex_set);
 }
 
 template <typename T>

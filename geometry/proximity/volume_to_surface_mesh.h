@@ -45,11 +45,12 @@ std::vector<std::array<VolumeVertexIndex, 3>> IdentifyBoundaryFaces(
   // {SortedTriplet(A,B,C), array{A,B,C}} into the map.
   //     In the end, the entries in the map corresponds to the triangular
   // faces on the boundary surface of the volume.
-  //     We use `map` instead of `unordered_map` to guarantee the same
-  // ordering of triangular faces across library implementations, so we get
-  // the same result on different computers and operating systems. The
-  // canonical order of the entries in the map is also useful in debugging.
-  // However, `map` is slower.
+  //     We use `map` instead of `unordered_map` so that we get the same
+  // result on different computers, operating systems, or compilers. It will
+  // help with repeatability between different users on different platforms.
+  // The canonical order of the entries in the map is also useful in
+  // debugging. However, `map` is slower, and we may change to
+  // `unordered_map` later if `map` is too slow.
   std::map<SortedTriplet<VolumeVertexIndex>, std::array<VolumeVertexIndex, 3>>
       face_map;
 
@@ -105,9 +106,11 @@ std::vector<std::array<VolumeVertexIndex, 3>> IdentifyBoundaryFaces(
     }
   }
 
-  std::vector<std::array<VolumeVertexIndex, 3>> boundary(face_map.size());
-  std::transform(face_map.begin(), face_map.end(), boundary.begin(),
-                 [](const auto& pair) { return pair.second; });
+  std::vector<std::array<VolumeVertexIndex, 3>> boundary;
+  boundary.reserve(face_map.size());
+  for (const auto& pair : face_map) {
+    boundary.emplace_back(pair.second);
+  }
 
   return boundary;
 }
@@ -121,22 +124,23 @@ std::vector<std::array<VolumeVertexIndex, 3>> IdentifyBoundaryFaces(
  */
 std::vector<VolumeVertexIndex> CollectUniqueVertices(
     const std::vector<std::array<VolumeVertexIndex, 3>>& faces) {
-  // Instead of using `set`, we use `vector` for performance reasons. Usually
-  // `set` is implemented as a dynamic balanced tree which could be slower
-  // due to dynamic memory allocations. Here we know the total number of
-  // vertices from all the faces from the beginning, so we can pre-allocate
-  // the `vector`.
-  std::vector<VolumeVertexIndex> vertices;
-  vertices.reserve(3 * faces.size());
+  // We use `set` instead of `unordered_set` so that we get the same
+  // result on different computers, operating systems, or compilers. It will
+  // help with repeatability between different users on different platforms.
+  // The canonical order of the vertices is also useful in debugging.
+  // However, `set` is slower, and we may change to `unordered_set` later if
+  // `set` is too slow.
+  std::set<VolumeVertexIndex> vertex_set;
   for (const auto& face : faces) {
     for (const auto& vertex : face) {
-      vertices.push_back(vertex);
+      vertex_set.insert(vertex);
     }
   }
-  std::sort(vertices.begin(), vertices.end());
-  auto it = std::unique(vertices.begin(), vertices.end());
-  vertices.resize(std::distance(vertices.begin(), it));
-
+  std::vector<VolumeVertexIndex> vertices;
+  vertices.reserve(vertex_set.size());
+  for (const auto& vertex : vertex_set) {
+    vertices.emplace_back(vertex);
+  }
   return vertices;
 }
 
