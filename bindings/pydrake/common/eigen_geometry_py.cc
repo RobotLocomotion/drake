@@ -180,6 +180,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("position"), "Position vector list multiplication")
         .def("inverse", [](const Class* self) { return self->inverse(); });
+    DefPickle(&cls, [](const Class& self) { return self.matrix(); },
+        [](const Matrix4<T>& matrix) { return Class(matrix); });
     cls.attr("__matmul__") = cls.attr("multiply");
     py::implicitly_convertible<Matrix4<T>, Class>();
     DefCopyAndDeepCopy(&cls);
@@ -295,6 +297,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
     DefCast<T>(&cls, kCastDoc);
+    DefPickle(&cls,
+        // Use Python methods to use `wxyz` form.
+        [](py::object self) { return self.attr("wxyz")(); },
+        [py_class_obj](py::object wxyz) -> Class {
+          return py_class_obj(wxyz).cast<Class>();
+        });
   }
 
   // Angle-axis.
@@ -377,6 +385,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
     DefCast<T>(&cls, kCastDoc);
+    DefPickle(&cls,
+        [](const Class& self) {
+          return py::make_tuple(self.angle(), self.axis());
+        },
+        [](py::tuple t) {
+          DRAKE_THROW_UNLESS(t.size() == 2);
+          return Class(t[0].cast<T>(), t[1].cast<Vector3<T>>());
+        });
   }
 }
 
