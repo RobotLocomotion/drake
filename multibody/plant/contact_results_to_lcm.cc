@@ -23,7 +23,7 @@ ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
     body_names_.push_back(body.name() + "(" + to_string(body.model_instance()) +
                           ")");
     for (auto geometry_id : plant.GetCollisionGeometriesForBody(body))
-      geometry_id_to_body_index_map_[geometry_id] = i;
+      geometry_id_to_body_name_map_[geometry_id] = body.name();
   }
 
   this->set_name("ContactResultsToLcmSystem");
