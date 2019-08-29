@@ -29,13 +29,13 @@ class PositionConstraint : public solvers::Constraint {
    * @param frameB The frame to which point Q is rigidly attached.
    * @param p_BQ The position of the point Q, rigidly attached to frame B,
    *   measured and expressed in frame B.
-   * @param context The Context that has been allocated for this `plant`. We
-   *   will update the context when evaluating the constraint. `context` should
+   * @param plant_context The Context that has been allocated for this `plant`. We
+   *   will update the context when evaluating the constraint. `plant_context` should
    *   be alive during the lifetime of this constraint.
    * @pre `frameA` and `frameB` must belong to `plant`.
    * @pre p_AQ_lower(i) <= p_AQ_upper(i) for i = 1, 2, 3.
    * @throws std::invalid_argument if `plant` is nullptr.
-   * @throws std::invalid_argument if `context` is nullptr.
+   * @throws std::invalid_argument if `plant_context` is nullptr.
    */
   PositionConstraint(const MultibodyPlant<double>* plant,
                      const Frame<double>& frameA,

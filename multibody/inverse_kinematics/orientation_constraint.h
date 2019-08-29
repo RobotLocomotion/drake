@@ -47,14 +47,14 @@ class OrientationConstraint : public solvers::Constraint {
    * @param theta_bound The bound on the angle difference between frame A's
    *   orientation and frame B's orientation. It is denoted as θ_bound in the
    *   class documentation. `theta_bound` is in radians.
-   * @param context The Context that has been allocated for this `tree`. We
-   *   will update the context when evaluating the constraint. `context` should
+   * @param plant_context The Context that has been allocated for this `tree`. We
+   *   will update the context when evaluating the constraint. `plant_context` should
    *   be alive during the lifetime of this constraint.
    * @throws std::invalid_argument if `plant` is nullptr.
    * @throws std::logic_error if `frameAbar` or `frameBbar` does not belong to
    *   `plant`.
    * @throws std::invalid_argument if angle_bound < 0.
-   * @throws std::invalid_argument if `context` is nullptr.
+   * @throws std::invalid_argument if `plant_context` is nullptr.
    */
   OrientationConstraint(
       const MultibodyPlant<double>* const plant,

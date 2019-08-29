@@ -39,14 +39,14 @@ class GazeTargetConstraint : public solvers::Constraint {
    *   frame B.
    * @param cone_half_angle The half angle of the cone. We denote it as θ in the
    *   class documentation. `cone_half_angle` is in radians.
-   * @param context The Context that has been allocated for this `plant`. We
-   *   will update the context when evaluating the constraint. `context` should
+   * @param plant_context The Context that has been allocated for this `plant`. We
+   *   will update the context when evaluating the constraint. `plant_context` should
    *   be alive during the lifetime of this constraint.
    * @pre `frameA` and `frameB` must belong to `plant`.
    * @throws std::invalid_argument if `plant` is nullptr.
    * @throws std::invalid_argument if `n_A` is close to zero.
    * @throws std::invalid_argument if `cone_half_angle` ∉ [0, π/2].
-   * @throws std::invalid_argument if `context` is nullptr.
+   * @throws std::invalid_argument if `plant_context` is nullptr.
    */
   GazeTargetConstraint(const MultibodyPlant<double>* plant,
                        const Frame<double>& frameA,
