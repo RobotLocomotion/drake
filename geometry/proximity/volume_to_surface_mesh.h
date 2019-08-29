@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <map>
 #include <set>
 #include <unordered_map>
@@ -136,12 +137,7 @@ std::vector<VolumeVertexIndex> CollectUniqueVertices(
       vertex_set.insert(vertex);
     }
   }
-  std::vector<VolumeVertexIndex> vertices;
-  vertices.reserve(vertex_set.size());
-  for (const auto& vertex : vertex_set) {
-    vertices.emplace_back(vertex);
-  }
-  return vertices;
+  return std::vector<VolumeVertexIndex>(vertex_set.begin(), vertex_set.end());
 }
 
 /**

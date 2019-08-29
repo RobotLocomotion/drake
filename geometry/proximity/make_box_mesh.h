@@ -217,8 +217,8 @@ VolumeMesh<T> MakeBoxVolumeMesh(const Box& box, double target_edge_length) {
      Control the resolution of the mesh. The length of axis-aligned edges
      of the mesh will be less than or equal to this parameter.  The length of
      non-axis-aligned edges will be less than or equal to √2 of this parameter.
-     If `target_edge_length` is larger than the size of the box, we will get
-     the coarsest surface mesh with only 8 vertices.
+     If `target_edge_length` is larger than all of the box's dimensions, we
+     will get the coarsest possible surface mesh with only 8 vertices.
  @retval surface_mesh
  @tparam T The underlying scalar type. Must be a valid Eigen scalar.
  */

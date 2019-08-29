@@ -1,5 +1,10 @@
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 
+#include <array>
+#include <cmath>
+#include <set>
+#include <tuple>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
@@ -82,7 +87,8 @@ GTEST_TEST(VolumeToSurfaceMeshTest, CollectUniqueVertices) {
       {VolumeVertexIndex(1), VolumeVertexIndex(2), VolumeVertexIndex(3)},
       {VolumeVertexIndex(2), VolumeVertexIndex(3), VolumeVertexIndex(4)}};
 
-  const auto unique_vertices = CollectUniqueVertices(faces);
+  const std::vector<VolumeVertexIndex> unique_vertices =
+      CollectUniqueVertices(faces);
 
   // We copy the result into a `set` so that the test is independent of the
   // ordering of vertices in `unique_vertices`.
@@ -98,46 +104,41 @@ GTEST_TEST(VolumeToSurfaceMeshTest, CollectUniqueVertices) {
 
 template <typename T>
 void TestVolumeToSurfaceMesh(void) {
-  // For this particular box and `target_edge_length`, the volume mesh
-  // should have:
-  // - 2x4x6 = 48 rectangular cells,
-  // - 6x48 = 288 tetrahedra,
-  // - 3x5x7 = 105 vertices.
-  // Its surface mesh should have:
-  // - 2x2x((2x4)+(2x6)+(4x6)) = 176 triangles,
-  // - 3x5x7 - 1x3x5 = 105 - 15 = 90 vertices.
   const Box box(0.2, 0.4, 0.6);
   const double target_edge_length = 0.1;
   const auto volume = MakeBoxVolumeMesh<T>(box, target_edge_length);
-  ASSERT_EQ(105, volume.num_vertices());
-  ASSERT_EQ(288, volume.num_elements());
+
+  // Go through the vertices on the boundary of the volume mesh. Keep their
+  // coordinates in a `set` for comparison with vertices of the surface
+  // mesh. We define `Coords` as `tuple<T, T, T>` instead of using Vector3<T>,
+  // so we can use `set`.
+  using Coords = std::tuple<T, T, T>;
+  std::set<Coords> boundary_vertex_coords;
+  for (const VolumeVertex<T> vertex : volume.vertices()) {
+    const Vector3<T>& r_MV = vertex.r_MV();
+    // A vertex is on the boundary of a box when one of its coordinates
+    // matches an extremal value.
+    using std::abs;
+    if (abs(r_MV.x()) == T(0.1) || abs(r_MV.y()) == T(0.2) ||
+        abs(r_MV.z()) == T(0.3)) {
+      boundary_vertex_coords.insert(Coords(r_MV.x(), r_MV.y(), r_MV.z()));
+    }
+  }
 
   const auto surface = ConvertVolumeToSurfaceMesh<T>(volume);
 
-  EXPECT_EQ(90, surface.num_vertices());
-  EXPECT_EQ(176, surface.num_faces());
-
-  // Check that the position vector of each surface vertex is the same as
-  // the position vector of the corresponding volume vertex.
-  SurfaceVertexIndex surface_vertex_index(0);
-  VolumeVertexIndex volume_vertex_index(0);
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 5; ++j) {
-      for (int k = 0; k < 7; ++k) {
-        if (i == 0 || i == 2 || j == 0 || j == 4 || k == 0 || k == 6) {
-          const Vector3<T> volume_r_MV =
-              volume.vertex(volume_vertex_index).r_MV();
-          const Vector3<T> surface_r_MV =
-              surface.vertex(surface_vertex_index).r_MV();
-          EXPECT_EQ(volume_r_MV, surface_r_MV);
-          ++surface_vertex_index;
-        }
-        ++volume_vertex_index;
-      }
-    }
+  // Keep coordinates of vertices of the surface mesh in a `set` and
+  // check that they are the same as vertices on the boundary of the
+  // volume mesh.
+  std::set<Coords> surface_vertex_coords;
+  for (SurfaceVertexIndex i(0); i < surface.num_vertices(); ++i) {
+    const Vector3<T>& r_MV = surface.vertex(i).r_MV();
+    surface_vertex_coords.insert(Coords(r_MV.x(), r_MV.y(), r_MV.z()));
   }
-  ASSERT_EQ(volume.num_vertices(), volume_vertex_index);
-  ASSERT_EQ(surface.num_vertices(), surface_vertex_index);
+  EXPECT_EQ(boundary_vertex_coords, surface_vertex_coords);
+
+  // Check that `surface` has no duplicated vertices.
+  EXPECT_EQ(surface_vertex_coords.size(), surface.num_vertices());
 
   // Check that the face normal vectors are in the outward direction.
   for (SurfaceFaceIndex f(0); f < surface.num_faces(); ++f) {

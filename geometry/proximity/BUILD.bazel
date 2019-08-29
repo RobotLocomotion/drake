@@ -158,7 +158,8 @@ drake_cc_library(
     srcs = ["sorted_triplet.cc"],
     hdrs = ["sorted_triplet.h"],
     deps = [
-        "//common",
+        "//common:essential",
+        "//common:is_less_than_comparable",
     ],
 )
 
