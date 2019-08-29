@@ -2,6 +2,8 @@
 
 #include <array>
 #include <cmath>
+#include <limits>
+#include <unordered_map>
 #include <vector>
 
 #include "drake/common/eigen_types.h"
@@ -13,41 +15,57 @@ namespace geometry {
 
 template <typename T>
 class SurfaceMeshHalfspaceIntersection {
- private;
+ public:
   /**
    Computes the SurfaceVertex and SurfaceFace objects that describe the
    intersection between a single face from an input mesh and a particular
-   halfpsace.
-  @param vertices_H the vector of vertices from the input mesh.
-  @param triangle a single face from the input mesh.
-  @param halfspace_normal_H the outward facing surface normal to the halfspace,
+   halfpsace and *updates* (i.e., does not clear) vectors of faces (`new_faces`)
+   and vertices (`new_vertices`).
+
+   This method is sufficiently sophisticated such that it will not create
+   a new SurfaceVertex if a vertex has already been created from intersection
+   against the halfspace. That vertex can be created when either a vertex lies
+   inside/on the halfspace or when an edge intersects the halfspace; the method
+   tracks such created vertices using `vertices_to_newly_created_vertices`
+   and `edges_to_newly_created_vertices`, respectively.
+
+   @param vertices_H the vector of vertices from the input mesh.
+   @param triangle a single face from the input mesh.
+   @param halfspace_normal_H the outward facing surface normal to the halfspace,
           expressed in Frame H.
-  @param halfspace_constant the halfspace constant d, defined as
+   @param halfspace_constant the halfspace constant d, defined as
           n'x = d for any point x that lies on the halfspace and given the
           surface normal to the halfspace n.
-  @param[out] new_vertices_H the vertices that resulted from the intersection
-              operation. Note that
-  @param[out]
-  @param[out] intersection_indices an ordered polygon describing the intersection
-              between the triangle and the halfspace OR an empty vector, if the
-              intersection is either empty or does not correspond to a polygon.
-              The polygon is ordered such that the normal defined in a particular
-              manner points toward the halfspace. If the returned vector
-              corresponds to four vertices (a, b, c, and d, respectively), then
-              the normal vector (b - a) × (c - b) will point toward the
-              halfspace.
+   @param[in,out] new_vertices_H the vertices that resulted from the
+                  intersection operation. When called on the first of many
+                  triangles of an input mesh, it is expected that this vector
+                  will be empty; on subsequent calls of this method, the updated
+                  vector should be passed back in.
+   @param[in,out] new_faces the faces that resulted from the intersection
+                  operation. When called on the first of many triangles of an
+                  input mesh, it is expected that this vector will be empty; on
+                  subsequent calls of this method, the updated vector should
+                  be passed back in.
+   @param[in,out] vertices_to_newly_created_vertices the mapping from indices
+                  in `vertices_H` to indices in `new_vertices_H`. When called
+                  on the first of many triangles of an input mesh, it is
+                  expected that this map will be empty; on subsequent calls
+                  of this method, the updated map should be passed back in.
+   @param[in,out] edges_to_newly_created_vertices the mapping from pairs of
+                  indices in `vertices_H` to indices in `new_vertices_H`. When
+                  called on the first of many triangles of an input mesh, it is
+                  expected that this map will be empty; on subsequent calls
+                  of this method, the updated map should be passed back in.
   @param zero_tol an optional tolerance that is used to determine when a point
           is on the halfspace; the default tolerance should work well if the
           inputs (`triangle_H` vertices and `halfspace_constant`) are on the
           order of unit magnitude.
-  @note Aborts if any of the output argument maps or vectors are not empty
-        on entry.
   */
-  template <typename T>
-  void ConstructTriangleHalfspaceIntersectionPolygon(
+  static void ConstructTriangleHalfspaceIntersectionPolygon(
       const std::vector<SurfaceVertex<T>>& vertices_H,
       const SurfaceFace& triangle, const Vector3<T>& halfspace_normal_H,
-      const T& halfspace_constant, std::vector<SurfaceVertex<T>>* new_vertices_H,
+      const T& halfspace_constant,
+      std::vector<SurfaceVertex<T>>* new_vertices_H,
       std::vector<SurfaceFace>* new_faces,
       std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
           vertices_to_newly_created_vertices,
@@ -55,13 +73,9 @@ class SurfaceMeshHalfspaceIntersection {
           edges_to_newly_created_vertices,
       T zero_tol = 100 * std::numeric_limits<double>::epsilon()) {
     DRAKE_DEMAND(new_vertices_H);
-    DRAKE_DEMAND(new_vertices_H->empty());
     DRAKE_DEMAND(new_faces);
-    DRAKE_DEMAND(new_faces->empty());
     DRAKE_DEMAND(vertices_to_newly_created_vertices);
-    DRAKE_DEMAND(vertices_to_newly_created_vertices->empty());
     DRAKE_DEMAND(edges_to_newly_created_vertices);
-    DRAKE_DEMAND(edges_to_newly_created_vertices->empty());
     DRAKE_DEMAND(zero_tol >= 0.0);
 
     // NOLINTNEXTLINE(whitespace/line_length)
@@ -154,15 +168,16 @@ class SurfaceMeshHalfspaceIntersection {
             const SurfaceVertexIndex i1((i0 + 1) % 3);
             const SurfaceVertexIndex i2((i0 + 2) % 3);
 
-            // Get the vertex that results from intersecting edge i0/i1 and i0/i2.
+            // Get the vertex that results from intersecting edge i0/i1 and
+            // i0/i2.
             const auto edge_i0_i1_intersection_iter =
-                GetIteratorAndAddVertexIfNeeded(i0, i1, s[i0], s[i1], vertices_H,
-                                                edges_to_newly_created_vertices,
-                                                new_vertices_H);
+                GetIteratorAndAddVertexIfNeeded(
+                    i0, i1, s[i0], s[i1], vertices_H,
+                    edges_to_newly_created_vertices, new_vertices_H);
             const auto edge_i0_i2_intersection_iter =
-                GetIteratorAndAddVertexIfNeeded(i0, i2, s[i0], s[i2], vertices_H,
-                                                edges_to_newly_created_vertices,
-                                                new_vertices_H);
+                GetIteratorAndAddVertexIfNeeded(
+                    i0, i2, s[i0], s[i2], vertices_H,
+                    edges_to_newly_created_vertices, new_vertices_H);
 
             // Get iterators to the new vertices (and add vertices if needed).
             auto v_to_new_v_iter_i1 = GetIteratorAndAddVertexIfNeeded(
@@ -255,15 +270,15 @@ class SurfaceMeshHalfspaceIntersection {
 
             // Get the vertex that results from intersecting edge i0/i1.
             const auto edge_i0_i1_intersection_iter =
-                GetIteratorAndAddVertexIfNeeded(i0, i1, s[i0], s[i1], vertices_H,
-                                                edges_to_newly_created_vertices,
-                                                new_vertices_H);
+                GetIteratorAndAddVertexIfNeeded(
+                    i0, i1, s[i0], s[i1], vertices_H,
+                    edges_to_newly_created_vertices, new_vertices_H);
 
             // Get the vertex that results from intersecting edge i0/i2.
             const auto edge_i0_i2_intersection_iter =
-                GetIteratorAndAddVertexIfNeeded(i0, i2, s[i0], s[i2], vertices_H,
-                                                edges_to_newly_created_vertices,
-                                                new_vertices_H);
+                GetIteratorAndAddVertexIfNeeded(
+                    i0, i2, s[i0], s[i2], vertices_H,
+                    edges_to_newly_created_vertices, new_vertices_H);
 
             new_faces->emplace_back(v_to_new_v_iter_i0->second,
                                     edge_i0_i1_intersection_iter->second,
@@ -285,8 +300,17 @@ class SurfaceMeshHalfspaceIntersection {
     }
   }
 
-  template <typename T>
-  std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>::iterator
+ private:
+  /*
+   Utility routine for getting the iterator to a key/element pair in the
+   `edges_to_newly_created_vertices` hashtable. If the key does not already
+   exist in the hashtable, a new vertex will be created using the signed
+   distances from the vertices with indices a and b; that new vertex will then
+   be used to create a new element in the hashtable, which the returned iterator
+   will point to.
+   */
+  static std::unordered_map<SortedPair<SurfaceVertexIndex>,
+                     SurfaceVertexIndex>::iterator
   GetIteratorAndAddVertexIfNeeded(
       SurfaceVertexIndex a, SurfaceVertexIndex b, double s_a, double s_b,
       const std::vector<SurfaceVertex<T>>& vertices_H,
@@ -296,8 +320,7 @@ class SurfaceMeshHalfspaceIntersection {
     SortedPair<SurfaceVertexIndex> edge_a_b(a, b);
     auto edge_a_b_intersection_iter =
         edges_to_newly_created_vertices->find(edge_a_b);
-    if (edge_a_b_intersection_iter ==
-        edges_to_newly_created_vertices->end()) {
+    if (edge_a_b_intersection_iter == edges_to_newly_created_vertices->end()) {
       const T t = s_a / (s_a - s_b);
       DRAKE_DEMAND(t >= 0);
       (*edges_to_newly_created_vertices)[edge_a_b] =
@@ -306,15 +329,20 @@ class SurfaceMeshHalfspaceIntersection {
           edges_to_newly_created_vertices->find(edge_a_b);
       new_vertices_H->push_back(
           SurfaceVertex<T>(vertices_H[a].r_MV() +
-                          t * (vertices_H[b].r_MV() - vertices_H[a].r_MV())));
+                           t * (vertices_H[b].r_MV() - vertices_H[a].r_MV())));
     }
 
     return edge_a_b_intersection_iter;
   }
 
-  // Gets the iterator
-  template <typename T>
-  std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>::iterator
+  /*
+   Utility routine for getting the iterator to a key/element pair in the
+   `vertices_to_newly_created_vertices` hashtable. If the key does not already
+   exist in the hashtable, a new vertex will be created using the vertex with
+   the given index; that new vertex will then be used to create a new element in
+   the hashtable, which the returned iterator will point to.
+   */
+  static std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>::iterator
   GetIteratorAndAddVertexIfNeeded(
       const std::vector<SurfaceVertex<T>>& vertices_H,
       SurfaceVertexIndex index,
@@ -331,7 +359,6 @@ class SurfaceMeshHalfspaceIntersection {
 
     return v_to_new_v_iter;
 }
-
 };
 
 }  // namespace geometry

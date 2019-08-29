@@ -112,6 +112,7 @@ drake_cc_library(
         "mesh_halfspace_intersection.h",
     ],
     deps = [
+        ":surface_mesh",
         "//common",
     ],
 )
