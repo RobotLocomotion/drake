@@ -149,6 +149,8 @@ drake_cc_googletest(
     data = [
         "//systems/sensors:test_models",
     ],
+    # This generally flakes on CI for unknown reasons.
+    flaky = 1,
     tags = vtk_test_tags(),
     deps = [
         ":render_engine_ospray",
