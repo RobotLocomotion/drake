@@ -171,6 +171,12 @@ class SurfaceMesh {
     return faces_[e];
   }
 
+  /** Returns the vector of faces. */
+  const std::vector<SurfaceFace>& faces() const { return faces_; }
+
+  /** Returns the vector of vertices. */
+  const std::vector<SurfaceVertex<T>>& vertices() const { return vertices_; }
+
   /**
    Returns the vertex identified by a given index.
    @param v  The index of the vertex.

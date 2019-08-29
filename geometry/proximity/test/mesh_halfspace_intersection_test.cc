@@ -270,7 +270,7 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, VertexOnHalfspaceIntersection) {
 TYPED_TEST_P(MeshHalfspaceIntersectionTest, EdgeOnHalfspaceIntersection) {
   // Construct one vertex of the triangle to lie outside the halfspace and the
   // other two to lie on the halfspace.
- const SurfaceMesh<T> mesh = this->CreateSurfaceMesh(
+  const SurfaceMesh<T> mesh = this->CreateSurfaceMesh(
      Vector3<T>(0, 0, 1), Vector3<T>(1, 0, 0), Vector3<T>(0, 1, 0));
 
   // Verify that there is no intersection.
