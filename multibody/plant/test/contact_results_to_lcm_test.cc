@@ -279,6 +279,57 @@ ContactResults<double> GenerateHydroelasticContactResults(
   return output;
 }
 
+double square(double x) { return x * x; }
+
+// Computes the distance between two triangles. The first triangle is given
+// by the vertices p_WA, p_WB, and p_WC. The second triangle is specified using
+// the array `vertices_W` as well as the permutation array that describes how
+// `vertices` should be indexed.
+double ComputeDistanceBetweenTriangles(
+    const double p_WA[3], const double p_WB[3], const double p_WC[3],
+    const std::array<Vector3<double>, 3>& vertices_W,
+    const std::array<int, 3>& vertex_vector_permutation) {
+  double dist = 0.0;
+
+  for (int j = 0; j < 3; ++j) {  // Loop over the three dimensions.
+      dist += square(p_WA[j] - vertices_W[vertex_vector_permutation[0]][j]);
+      dist += square(p_WB[j] - vertices_W[vertex_vector_permutation[1]][j]);
+      dist += square(p_WC[j] - vertices_W[vertex_vector_permutation[2]][j]);
+  }
+
+  return std::sqrt(dist);
+}
+
+void ValidateCloseToMeshTriangle(const double p_WA[3], const double p_WB[3],
+                                 const double p_WC[3],
+                                 const SurfaceMesh<double>& mesh_W,
+                                 double tol) {
+  double closest_distance = std::numeric_limits<double>::max();
+
+  for (geometry::SurfaceFaceIndex i(0); i < mesh_W.num_faces(); ++i) {
+    // Get the triangle as three vertices measured and expressed in the world
+    // frame.
+    const std::array<Vector3<double>, 3> vertices_W = {
+        mesh_W.vertex(mesh_W.element(i).vertex(0)).r_MV(),
+        mesh_W.vertex(mesh_W.element(i).vertex(1)).r_MV(),
+        mesh_W.vertex(mesh_W.element(i).vertex(2)).r_MV()};
+
+    // Set a vector of indices into the vector of vertices.
+    std::array<int, 3> indices = { 0, 1, 2 };
+
+    // Compute the distance using the various permutations.
+    do {
+      double distance = ComputeDistanceBetweenTriangles(p_WA, p_WB, p_WC,
+                                                        vertices_W, indices);
+      closest_distance = std::min(distance, closest_distance);
+      if (closest_distance < tol)
+        break;
+    } while (std::next_permutation(indices.begin(), indices.end()));
+  }
+
+  EXPECT_LT(closest_distance, tol);
+}
+
 // Verifies that the LCM message is consistent with the hydroelastic contact
 // surface that we create.
 GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
@@ -363,12 +414,10 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
   // Verify that the contact surface has the expected vertex locations.
   for (int i = 0; i < surface_msg.num_triangles; ++i) {
     for (int j = 0; j < 3; ++j) {
-      // Note that we do not want to predicate the correctness of this test on
-      // the order in which the triangles are present in the message. We do
-      // know that each element of each vertex is located at ± 0.5.
-      EXPECT_EQ(std::abs(surface_msg.triangles[i].p_WA[j]), 0.5);
-      EXPECT_EQ(std::abs(surface_msg.triangles[i].p_WB[j]), 0.5);
-      EXPECT_EQ(std::abs(surface_msg.triangles[i].p_WC[j]), 0.5);
+      ValidateCloseToMeshTriangle(
+          surface_msg.triangles[i].p_WA, surface_msg.triangles[i].p_WB,
+          surface_msg.triangles[i].p_WC, contact_surface->mesh_W(),
+          10 * std::numeric_limits<double>::epsilon());
     }
   }
 }
