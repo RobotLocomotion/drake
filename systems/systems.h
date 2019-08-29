@@ -28,7 +28,6 @@
 ///   @defgroup control_systems Controllers
 ///   @defgroup estimator_systems Estimators
 ///   @defgroup sensor_systems Sensors
-///   @defgroup automotive_systems Automotive Systems
 ///   @defgroup manipulation_systems Manipulation
 ///   @defgroup message_passing Message Passing
 ///   @defgroup perception_systems Perception
