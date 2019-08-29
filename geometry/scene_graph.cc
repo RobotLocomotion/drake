@@ -363,32 +363,9 @@ void SceneGraph<T>::CalcQueryObject(const Context<T>& context,
 template <typename T>
 PoseBundle<T> SceneGraph<T>::MakePoseBundle() const {
   const auto& g_state = *initial_state_;
-  // Collect only those frames that have illustration geometry -- based on the
-  // *model*.
-  // TODO(SeanCurtis-TRI): This happens *twice* now (once here and once in
-  // CalcPoseBundle); might be worth refactoring/caching it.
-  vector<FrameId> dynamic_frames;
-  for (const auto& pair : g_state.frames_) {
-    const FrameId frame_id = pair.first;
-    if (frame_id == world_frame_id()) continue;
-    if (g_state.NumGeometriesWithRole(frame_id, Role::kIllustration) > 0) {
-      dynamic_frames.push_back(frame_id);
-    }
-  }
-  PoseBundle<T> bundle(static_cast<int>(dynamic_frames.size()));
-  int i = 0;
-  for (FrameId f_id : dynamic_frames) {
-    int frame_group = g_state.get_frame_group(f_id);
-    bundle.set_model_instance_id(i, frame_group);
-
-    SourceId s_id = g_state.get_source_id(f_id);
-    const std::string& src_name = g_state.get_source_name(s_id);
-    const std::string& frm_name = g_state.get_frame_name(f_id);
-    std::string name = src_name + "::" + frm_name;
-    bundle.set_name(i, name);
-    ++i;
-  }
-  return bundle;
+  vector<FrameId> dynamic_frames =
+      GetDynamicFrames(g_state, Role::kIllustration);
+  return PoseBundle<T>(static_cast<int>(dynamic_frames.size()));
 }
 
 template <typename T>
@@ -398,29 +375,44 @@ void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
   // change the size/composition of the pose bundle. This calculation will *not*
   // explicitly test this. It is assumed the discrete update will also be
   // responsible for updating the bundle in the output port.
-  int i = 0;
-
   FullPoseUpdate(context);
   const auto& g_state = geometry_state(context);
 
-  // Collect only those frames that have illustration geometry -- based on the
-  // *model*.
-  vector<FrameId> dynamic_frames;
-  for (const auto& pair : g_state.frames_) {
-    const FrameId frame_id = pair.first;
-    if (frame_id == world_frame_id()) continue;
-    if (g_state.NumGeometriesWithRole(frame_id, Role::kIllustration) > 0) {
-      dynamic_frames.push_back(frame_id);
-    }
+  vector<FrameId> dynamic_frames =
+      GetDynamicFrames(g_state, Role::kIllustration);
+
+  if (output->get_num_poses() != static_cast<int>(dynamic_frames.size())) {
+    throw std::runtime_error(
+        "The number of dynamic frames with illustration geometry has *changed* "
+        "since allocating the pose bundle");
   }
 
-  for (FrameId f_id : dynamic_frames) {
+  for (int i = 0; i < output->get_num_poses(); ++i) {
+    const FrameId f_id = dynamic_frames[i];
+    SourceId s_id = g_state.get_source_id(f_id);
+    const std::string& src_name = g_state.get_source_name(s_id);
+    const std::string& frm_name = g_state.get_frame_name(f_id);
+    output->set_name(i, src_name + "::" + frm_name);
+    output->set_model_instance_id(i, g_state.get_frame_group(f_id));
     // TODO(#11888): Remove GetAsIsometry3() when PoseBundle supports
     //  RigidTransform.
     output->set_pose(i, g_state.get_pose_in_world(f_id).GetAsIsometry3());
     // TODO(SeanCurtis-TRI): Handle velocity.
-    ++i;
   }
+}
+
+template <typename T>
+std::vector<FrameId> SceneGraph<T>::GetDynamicFrames(
+    const GeometryState<T>& g_state, Role role) const {
+  vector<FrameId> dynamic_frames;
+  for (const auto& pair : g_state.frames_) {
+    const FrameId frame_id = pair.first;
+    if (frame_id == world_frame_id()) continue;
+    if (g_state.NumGeometriesWithRole(frame_id, role) > 0) {
+      dynamic_frames.push_back(frame_id);
+    }
+  }
+  return dynamic_frames;
 }
 
 template <typename T>
