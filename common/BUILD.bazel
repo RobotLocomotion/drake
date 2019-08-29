@@ -919,6 +919,15 @@ drake_py_unittest(
 )
 
 drake_cc_googletest(
+    name = "find_runfiles_stub_test",
+    srcs = [
+        "find_runfiles.h",
+        "find_runfiles_stub.cc",
+        "test/find_runfiles_stub_test.cc",
+    ],
+)
+
+drake_cc_googletest(
     name = "is_approx_equal_abstol_test",
     deps = [
         ":essential",
