@@ -281,7 +281,8 @@ ContactResults<double> GenerateHydroelasticContactResults(
 
 double square(double x) { return x * x; }
 
-// Computes the distance between two triangles. The first triangle is given
+// Computes the distance between two triangles, which we define as the largest
+// norm between two corresponding vertices. The first triangle is given
 // by the vertices p_WA, p_WB, and p_WC. The second triangle is specified using
 // the array `vertices_W` as well as the permutation array that describes how
 // `vertices` should be indexed.
@@ -289,17 +290,19 @@ double ComputeDistanceBetweenTriangles(
     const double p_WA[3], const double p_WB[3], const double p_WC[3],
     const std::array<Vector3<double>, 3>& vertices_W,
     const std::array<int, 3>& vertex_vector_permutation) {
-  double dist = 0.0;
+  double dist_A = 0.0, dist_B = 0.0, dist_C = 0.0;
 
   for (int j = 0; j < 3; ++j) {  // Loop over the three dimensions.
-      dist += square(p_WA[j] - vertices_W[vertex_vector_permutation[0]][j]);
-      dist += square(p_WB[j] - vertices_W[vertex_vector_permutation[1]][j]);
-      dist += square(p_WC[j] - vertices_W[vertex_vector_permutation[2]][j]);
+      dist_A += square(p_WA[j] - vertices_W[vertex_vector_permutation[0]][j]);
+      dist_B += square(p_WB[j] - vertices_W[vertex_vector_permutation[1]][j]);
+      dist_C += square(p_WC[j] - vertices_W[vertex_vector_permutation[2]][j]);
   }
 
-  return std::sqrt(dist);
+  return std::sqrt(std::max(dist_A, std::max(dist_B, dist_C)));
 }
 
+// Searches for a permutation of the vertices of each triangle T in `mesh_W`
+// such that a T is found to be equivalent to the triangle (p_WA, p_WB, p_WC).
 void ValidateCloseToMeshTriangle(const double p_WA[3], const double p_WB[3],
                                  const double p_WC[3],
                                  const SurfaceMesh<double>& mesh_W,
@@ -410,6 +413,9 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
       lcm_message.hydroelastic_contacts[0];
   EXPECT_EQ(surface_msg.body1_name, "WorldBody");
   EXPECT_EQ(surface_msg.body2_name, "BodyB");
+
+  // Verify that the total number of triangles match.
+  ASSERT_EQ(surface_msg.num_triangles, contact_surface->mesh_W().num_faces());
 
   // Verify that the contact surface has the expected vertex locations.
   for (int i = 0; i < surface_msg.num_triangles; ++i) {

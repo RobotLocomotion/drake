@@ -351,6 +351,7 @@ LCMTYPES_CC = [
     ":desired_dof_motions",
     ":drake_signal",
     ":hydroelastic_contact_surface_for_viz",
+    ":hydroelastic_contact_surface_tri_for_viz",
     ":iiwa",
     ":inverse_dynamics_debug_info",
     ":jaco",

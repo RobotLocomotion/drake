@@ -22,10 +22,8 @@ ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
     const Body<T>& body = plant.get_body(i);
     body_names_.push_back(body.name() + "(" + to_string(body.model_instance()) +
                           ")");
-    const std::vector<geometry::GeometryId>& geometries =
-        plant.GetCollisionGeometriesForBody(body);
-    for (auto geometry_id : geometries)
-      geometry_id_to_body_name_map_[geometry_id] = body.name();
+    for (auto geometry_id : plant.GetCollisionGeometriesForBody(body))
+      geometry_id_to_body_index_map_[geometry_id] = i;
   }
 
   this->set_name("ContactResultsToLcmSystem");

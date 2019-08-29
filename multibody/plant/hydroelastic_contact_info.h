@@ -54,7 +54,7 @@ class HydroelasticContactInfo {
 
   /**
    Constructs this structure using the given contact surface, traction field,
-   and slip field.  This constructor transfers ownership of the ContactSurface.
+   and slip field.  This constructor takes ownership of the ContactSurface.
    @see contact_surface()
    @see traction_A_W()
    @see vslip_AB_W()
