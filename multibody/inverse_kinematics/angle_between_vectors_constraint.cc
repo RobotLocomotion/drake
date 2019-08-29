@@ -13,7 +13,7 @@ AngleBetweenVectorsConstraint::AngleBetweenVectorsConstraint(
     const MultibodyPlant<double>* const plant, const Frame<double>& frameA,
     const Eigen::Ref<const Eigen::Vector3d>& a_A, const Frame<double>& frameB,
     const Eigen::Ref<const Eigen::Vector3d>& b_B, double angle_lower,
-    double angle_upper, systems::Context<double>* context)
+    double angle_upper, systems::Context<double>* plant_context)
     : solvers::Constraint(1, RefFromPtrOrThrow(plant).num_positions(),
                           Vector1d(std::cos(angle_upper)),
                           Vector1d(std::cos(angle_lower))),
@@ -22,10 +22,11 @@ AngleBetweenVectorsConstraint::AngleBetweenVectorsConstraint(
       frameB_index_(frameB.index()),
       a_unit_A_(NormalizeVector(a_A)),
       b_unit_B_(NormalizeVector(b_B)),
-      context_double_(context),
+      context_double_(plant_context),
       plant_autodiff_{nullptr},
       context_autodiff_{nullptr} {
-  if (context == nullptr) throw std::invalid_argument("context is nullptr.");
+  if (plant_context == nullptr)
+    throw std::invalid_argument("plant_context is nullptr.");
   if (!(angle_lower >= 0 && angle_upper >= angle_lower &&
         angle_upper <= M_PI)) {
     throw std::invalid_argument(
@@ -40,7 +41,7 @@ AngleBetweenVectorsConstraint::AngleBetweenVectorsConstraint(
     const Eigen::Ref<const Eigen::Vector3d>& a_A,
     const Frame<AutoDiffXd>& frameB,
     const Eigen::Ref<const Eigen::Vector3d>& b_B, double angle_lower,
-    double angle_upper, systems::Context<AutoDiffXd>* context)
+    double angle_upper, systems::Context<AutoDiffXd>* plant_context)
     : solvers::Constraint(1, RefFromPtrOrThrow(plant).num_positions(),
                           Vector1d(std::cos(angle_upper)),
                           Vector1d(std::cos(angle_lower))),
@@ -51,8 +52,9 @@ AngleBetweenVectorsConstraint::AngleBetweenVectorsConstraint(
       b_unit_B_(NormalizeVector(b_B)),
       context_double_(nullptr),
       plant_autodiff_{plant},
-      context_autodiff_{context} {
-  if (context == nullptr) throw std::invalid_argument("context is nullptr.");
+      context_autodiff_{plant_context} {
+  if (plant_context == nullptr)
+    throw std::invalid_argument("plant_context is nullptr.");
   if (!(angle_lower >= 0 && angle_upper >= angle_lower &&
         angle_upper <= M_PI)) {
     throw std::invalid_argument(

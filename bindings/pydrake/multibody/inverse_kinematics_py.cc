@@ -165,8 +165,8 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                           const Eigen::Ref<const Eigen::Vector3d>& p_BT,
                           double cone_half_angle,
                           systems::Context<double>* plant_context) {
-          return std::make_unique<Class>(
-              plant, frameA, p_AS, n_A, frameB, p_BT, cone_half_angle, plant_context);
+          return std::make_unique<Class>(plant, frameA, p_AS, n_A, frameB, p_BT,
+              cone_half_angle, plant_context);
         }),
             py::arg("plant"), py::arg("frameA"), py::arg("p_AS"),
             py::arg("n_A"), py::arg("frameB"), py::arg("p_BT"),
@@ -183,8 +183,8 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                           const Eigen::Ref<const Eigen::Vector3d>& p_BT,
                           double cone_half_angle,
                           systems::Context<AutoDiffXd>* plant_context) {
-          return std::make_unique<Class>(
-              plant, frameA, p_AS, n_A, frameB, p_BT, cone_half_angle, plant_context);
+          return std::make_unique<Class>(plant, frameA, p_AS, n_A, frameB, p_BT,
+              cone_half_angle, plant_context);
         }),
             py::arg("plant"), py::arg("frameA"), py::arg("p_AS"),
             py::arg("n_A"), py::arg("frameB"), py::arg("p_BT"),
@@ -249,8 +249,8 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                           const Frame<double>& frameB,
                           const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
                           systems::Context<double>* plant_context) {
-          return std::make_unique<Class>(
-              plant, frameA, p_AQ_lower, p_AQ_upper, frameB, p_BQ, plant_context);
+          return std::make_unique<Class>(plant, frameA, p_AQ_lower, p_AQ_upper,
+              frameB, p_BQ, plant_context);
         }),
             py::arg("plant"), py::arg("frameA"), py::arg("p_AQ_lower"),
             py::arg("p_AQ_upper"), py::arg("frameB"), py::arg("p_BQ"),
@@ -266,8 +266,8 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                           const Frame<AutoDiffXd>& frameB,
                           const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
                           systems::Context<AutoDiffXd>* plant_context) {
-          return std::make_unique<Class>(
-              plant, frameA, p_AQ_lower, p_AQ_upper, frameB, p_BQ, plant_context);
+          return std::make_unique<Class>(plant, frameA, p_AQ_lower, p_AQ_upper,
+              frameB, p_BQ, plant_context);
         }),
             py::arg("plant"), py::arg("frameA"), py::arg("p_AQ_lower"),
             py::arg("p_AQ_upper"), py::arg("frameB"), py::arg("p_BQ"),
@@ -283,16 +283,16 @@ PYBIND11_MODULE(inverse_kinematics, m) {
     constexpr auto& cls_doc = doc.OrientationConstraint;
     using Ptr = std::shared_ptr<Class>;
     py::class_<Class, Constraint, Ptr>(m, "OrientationConstraint", cls_doc.doc)
-        .def(py::init(
-                 [](const MultibodyPlant<double>* const plant,
-                     const Frame<double>& frameAbar,
-                     const math::RotationMatrix<double>& R_AbarA,
-                     const Frame<double>& frameBbar,
-                     const math::RotationMatrix<double>& R_BbarB,
-                     double theta_bound, systems::Context<double>* plant_context) {
-                   return std::make_unique<Class>(plant, frameAbar, R_AbarA,
-                       frameBbar, R_BbarB, theta_bound, plant_context);
-                 }),
+        .def(py::init([](const MultibodyPlant<double>* const plant,
+                          const Frame<double>& frameAbar,
+                          const math::RotationMatrix<double>& R_AbarA,
+                          const Frame<double>& frameBbar,
+                          const math::RotationMatrix<double>& R_BbarB,
+                          double theta_bound,
+                          systems::Context<double>* plant_context) {
+          return std::make_unique<Class>(plant, frameAbar, R_AbarA, frameBbar,
+              R_BbarB, theta_bound, plant_context);
+        }),
             py::arg("plant"), py::arg("frameAbar"), py::arg("R_AbarA"),
             py::arg("frameBbar"), py::arg("R_BbarB"), py::arg("theta_bound"),
             py::arg("plant_context"),
