@@ -258,8 +258,8 @@ PYBIND11_MODULE(rigid_body_plant, m) {
                 const Context<T>& context) -> Eigen::Ref<const VectorX<T>> {
               return self->GetStateVector(context);
             },
-            py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
+            py::arg("context"), py_reference,
+            // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), cls_doc.GetStateVector.doc)
         .def("is_state_discrete", &Class::is_state_discrete,
             cls_doc.is_state_discrete.doc)
@@ -272,9 +272,9 @@ PYBIND11_MODULE(rigid_body_plant, m) {
     py::class_<Class, LeafSystem<T>>(m, "DrakeVisualizer", cls_doc.doc)
         .def(py::init<const RigidBodyTree<T>&, DrakeLcmInterface*, bool>(),
             py::arg("tree"), py::arg("lcm"), py::arg("enable_playback") = false,
-            // Keep alive, reference: `this` keeps `tree` alive.
+            // Keep alive, reference: `self` keeps `tree` alive.
             py::keep_alive<1, 2>(),
-            // Keep alive, reference: `this` keeps `lcm` alive.
+            // Keep alive, reference: `self` keeps `lcm` alive.
             py::keep_alive<1, 3>(), cls_doc.ctor.doc)
         .def("set_publish_period", &Class::set_publish_period,
             py::arg("period"), cls_doc.set_publish_period.doc)

@@ -685,7 +685,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return self->GetMutablePositionsAndVelocities(context);
             },
             py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
+            // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), py::arg("context"),
             cls_doc.GetMutablePositionsAndVelocities.doc)
         .def("GetMutablePositions",
@@ -694,7 +694,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return self->GetMutablePositions(context);
             },
             py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
+            // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), py::arg("context"),
             cls_doc.GetMutablePositions.doc_1args)
         .def("GetMutableVelocities",
@@ -703,7 +703,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return self->GetMutableVelocities(context);
             },
             py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
+            // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), py::arg("context"),
             cls_doc.GetMutableVelocities.doc_1args)
         .def("GetPositions",
@@ -887,9 +887,9 @@ PYBIND11_MODULE(plant, m) {
       },
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 1>(),
-      // Keep alive, reference transfer: `plant` keeps `builder` alive.
+      // Keep alive, transitive: `plant` keeps `builder` alive.
       py::keep_alive<2, 1>(),
-      // Keep alive, reference transfer: `lcm` keeps `builder` alive.
+      // Keep alive, transitive: `lcm` keeps `builder` alive.
       py::keep_alive<3, 1>(), py_reference, py::arg("builder"),
       py::arg("plant"), py::arg("lcm") = nullptr,
       doc.ConnectContactResultsToDrakeVisualizer.doc_3args);

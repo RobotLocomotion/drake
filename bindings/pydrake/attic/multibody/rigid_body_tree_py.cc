@@ -515,7 +515,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
           doc.RigidBodyFrame.get_frame_index.doc)
       .def("get_rigid_body", &RigidBodyFrame<double>::get_rigid_body,
           py_reference,
-          // Keep alive: `this` keeps `return` alive.
+          // Keep alive: `self` keeps `return` alive.
           py::keep_alive<1, 0>(), doc.RigidBodyFrame.get_rigid_body.doc)
       .def("get_transform_to_body",
           &RigidBodyFrame<double>::get_transform_to_body,
