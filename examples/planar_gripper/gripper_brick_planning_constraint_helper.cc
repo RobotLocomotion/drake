@@ -9,8 +9,6 @@
 
 namespace drake {
 namespace examples {
-const double kInf = std::numeric_limits<double>::infinity();
-
 namespace planar_gripper {
 template <typename T>
 void AddFrictionConeConstraint(

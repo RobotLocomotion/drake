@@ -107,13 +107,14 @@ GTEST_TEST(TestAddFingerNoSlidingConstraint, Test) {
       &(gripper_brick.diagram().GetMutableSubsystemContext(
           gripper_brick.plant(), diagram_context_to.get()));
   const double face_shrink_factor{0.8};
+  const double depth{0.001};
   AddFingerTipInContactWithBrickFaceConstraint(
       gripper_brick, finger, face, &prog, q_from, plant_context_from,
-      face_shrink_factor);
+      face_shrink_factor, depth);
   const double rolling_angle_bound{0.1 * M_PI};
   AddFingerNoSlidingConstraint(gripper_brick, finger, face, rolling_angle_bound,
                                &prog, plant_context_from, plant_context_to,
-                               q_from, q_to, face_shrink_factor);
+                               q_from, q_to, face_shrink_factor, depth);
 
   // Now solve the problem.
   const auto result = solvers::Solve(prog);
@@ -122,7 +123,7 @@ GTEST_TEST(TestAddFingerNoSlidingConstraint, Test) {
   // Make sure both "from" posture and "to" postures are in contact with the
   // brick face.
   auto check_finger_in_contact =
-      [&gripper_brick, finger, &result, face_shrink_factor](
+      [&gripper_brick, depth, &result, face_shrink_factor](
           const VectorX<symbolic::Variable>& q,
           systems::Context<double>* plant_context) -> math::RigidTransformd {
     const Eigen::VectorXd q_sol = result.GetSolution(q);
@@ -133,7 +134,6 @@ GTEST_TEST(TestAddFingerNoSlidingConstraint, Test) {
             gripper_brick.finger_link2_frame(finger));
     const Eigen::Vector3d p_BTip = X_BL2 * gripper_brick.p_L2Fingertip();
     const Eigen::Vector3d brick_size = gripper_brick.brick_size();
-    const double depth = 1E-3;
     EXPECT_NEAR(p_BTip(2),
                 -brick_size(2) / 2 - gripper_brick.finger_tip_radius() + depth,
                 1E-4);
@@ -155,6 +155,8 @@ GTEST_TEST(TestAddFingerNoSlidingConstraint, Test) {
     theta = angle_axis.angle();
   } else if (angle_axis.axis().dot(-Eigen::Vector3d::UnitX()) > 1 - 1E-4) {
     theta = -angle_axis.angle();
+  } else {
+    throw std::runtime_error("The axis should be either x axis or -x axis.");
   }
   EXPECT_GE(theta, -rolling_angle_bound - 1E-5);
   EXPECT_LE(theta, rolling_angle_bound + 1E-5);

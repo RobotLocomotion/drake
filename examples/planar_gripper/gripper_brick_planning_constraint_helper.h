@@ -45,7 +45,7 @@ void AddFrictionConeConstraint(
  * 0 < face_shrink_factor < 1 corresponds to the scaled region of the face,
  * if face_shrink_factor = 0, then the region shrinks to the singleton centroid.
  * @param depth The penetration depth between the finger tip sphere and the
- * brick. @default to 1mm.
+ * brick.
  */
 void AddFingerTipInContactWithBrickFaceConstraint(
     const GripperBrickHelper<double>& gripper_brick_system, Finger finger,
