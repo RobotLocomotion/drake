@@ -20,6 +20,7 @@ from pydrake.multibody.tree import (
     JointActuator_,
     JointActuatorIndex,
     JointIndex,
+    LinearSpringDamper_,
     ModelInstanceIndex,
     MultibodyForces_,
     RevoluteJoint_,
@@ -317,6 +318,23 @@ class TestPlant(unittest.TestCase):
     def test_friction_api(self, T):
         CoulombFriction = CoulombFriction_[T]
         CoulombFriction(static_friction=0.7, dynamic_friction=0.6)
+
+    @numpy_compare.check_all_types
+    def test_multibody_force_element(self, T):
+        MultibodyPlant = MultibodyPlant_[T]
+        LinearSpringDamper = LinearSpringDamper_[T]
+        SpatialInertia = SpatialInertia_[float]
+
+        plant = MultibodyPlant()
+        spatial_inertia = SpatialInertia()
+        body_a = plant.AddRigidBody(name="body_a",
+                                    M_BBo_B=spatial_inertia)
+        body_b = plant.AddRigidBody(name="body_b",
+                                    M_BBo_B=spatial_inertia)
+        plant.AddForceElement(LinearSpringDamper(
+            body_a, [0., 0., 0.], body_b, [0., 0., 0.],
+            1., 2., 3.))
+        plant.Finalize()
 
     @numpy_compare.check_all_types
     def test_multibody_gravity_default(self, T):
