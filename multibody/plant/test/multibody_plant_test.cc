@@ -375,14 +375,8 @@ GTEST_TEST(ActuationPortsTest, CheckActuation) {
   EXPECT_NO_THROW(plant.CalcTimeDerivatives(*context, continuous_state.get()));
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// TODO(sammy-tri) Remove this test when the deprecated overload is removed.
 GTEST_TEST(MultibodyPlant, UniformGravityFieldElementTest) {
   MultibodyPlant<double> plant;
-
-  // Expect adding a default UniformFieldElementTest to pass.
-  EXPECT_NO_THROW(plant.AddForceElement<UniformGravityFieldElement>());
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.AddForceElement<UniformGravityFieldElement>(
@@ -390,7 +384,6 @@ GTEST_TEST(MultibodyPlant, UniformGravityFieldElementTest) {
       std::runtime_error,
       "This model already contains a gravity field element.*");
 }
-#pragma GCC diagnostic pop
 
 // Fixture to perform a number of computational tests on an acrobot model.
 class AcrobotPlantTests : public ::testing::Test {

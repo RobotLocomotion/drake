@@ -76,13 +76,8 @@ MultibodyTree<T>::MultibodyTree() {
       AddModelInstance("DefaultModelInstance");
   DRAKE_DEMAND(default_instance == default_model_instance());
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // TODO(sammy-tri) Move the custom handling logic for adding a
-  // UniformGravityFieldElement here once we remove the deprecated overload.
   const ForceElement<T>& new_field =
       AddForceElement<UniformGravityFieldElement>();
-#pragma GCC diagnostic pop
   DRAKE_DEMAND(num_force_elements() == 1);
   DRAKE_DEMAND(owned_force_elements_[0].get() == &new_field);
 }
