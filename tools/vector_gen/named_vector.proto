@@ -14,7 +14,7 @@ package tools;
 message NamedVector {
     repeated NamedVectorElement element = 1;
 
-    // A ::-separated namespace for this vector, such as "drake::automotive".
+    // A ::-separated namespace for this vector, such as "drake::manipulation".
     optional string namespace = 2;
 }
 
