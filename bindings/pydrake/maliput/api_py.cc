@@ -73,7 +73,7 @@ PYBIND11_MODULE(api, m) {
         return std::make_unique<RoadPosition>(lane, pos);
       }),
           py::arg("lane"), py::arg("pos"),
-          // Keep alive, reference: `self` keeps `Lane*` alive.
+          // Keep alive, reference: `self` keeps `lane` alive.
           py::keep_alive<1, 2>(), doc.RoadPosition.ctor.doc_2args)
       .def_readwrite("pos", &RoadPosition::pos, doc.RoadPosition.pos.doc);
   DefReadWriteKeepAlive(&road_position, "lane", &RoadPosition::lane);
