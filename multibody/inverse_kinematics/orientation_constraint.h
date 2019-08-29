@@ -62,7 +62,7 @@ class OrientationConstraint : public solvers::Constraint {
       const math::RotationMatrix<double>& R_AbarA,
       const Frame<double>& frameBbar,
       const math::RotationMatrix<double>& R_BbarB, double theta_bound,
-      systems::Context<double>* context);
+      systems::Context<double>* plant_context);
 
   /**
    * Overloaded constructor.
@@ -76,7 +76,7 @@ class OrientationConstraint : public solvers::Constraint {
                         const Frame<AutoDiffXd>& frameBbar,
                         const math::RotationMatrix<double>& R_BbarB,
                         double theta_bound,
-                        systems::Context<AutoDiffXd>* context);
+                        systems::Context<AutoDiffXd>* plant_context);
 
   ~OrientationConstraint() override {}
 

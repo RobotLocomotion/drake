@@ -43,7 +43,7 @@ class PositionConstraint : public solvers::Constraint {
                      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
                      const Frame<double>& frameB,
                      const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
-                     systems::Context<double>* context);
+                     systems::Context<double>* plant_context);
 
   /**
    * Overloaded constructor. Same as the constructor with the double version
@@ -58,7 +58,7 @@ class PositionConstraint : public solvers::Constraint {
                      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
                      const Frame<AutoDiffXd>& frameB,
                      const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
-                     systems::Context<AutoDiffXd>* context);
+                     systems::Context<AutoDiffXd>* plant_context);
 
   ~PositionConstraint() override {}
 

@@ -305,7 +305,7 @@ class TestConstraints(unittest.TestCase):
             b_B=[1.4, -0.1, 1.8],
             angle_lower=0.1 * math.pi,
             angle_upper=0.2 * math.pi,
-            context=variables.plant_context)
+            plant_context=variables.plant_context)
         self.assertIsInstance(constraint, mp.Constraint)
 
     @check_type_variables
@@ -333,7 +333,7 @@ class TestConstraints(unittest.TestCase):
             p_AS=[0.1, 0.2, 0.3], n_A=[0.3, 0.5, 1.2],
             frameB=variables.body2_frame, p_BT=[1.1, 0.2, 1.5],
             cone_half_angle=0.2 * math.pi,
-            context=variables.plant_context)
+            plant_context=variables.plant_context)
         self.assertIsInstance(constraint, mp.Constraint)
 
     @check_type_variables
@@ -352,7 +352,7 @@ class TestConstraints(unittest.TestCase):
             p_AQ_lower=[-0.1, -0.2, -0.3],
             p_AQ_upper=[-0.05, -0.12, -0.28],
             frameB=variables.body2_frame,
-            p_BQ=[0.2, 0.3, 0.5], context=variables.plant_context)
+            p_BQ=[0.2, 0.3, 0.5], plant_context=variables.plant_context)
         self.assertIsInstance(constraint, mp.Constraint)
 
     @check_type_variables
@@ -361,5 +361,5 @@ class TestConstraints(unittest.TestCase):
             plant=variables.plant,
             frameAbar=variables.body1_frame, R_AbarA=RotationMatrix(),
             frameBbar=variables.body2_frame, R_BbarB=RotationMatrix(),
-            theta_bound=0.2 * math.pi, context=variables.plant_context)
+            theta_bound=0.2 * math.pi, plant_context=variables.plant_context)
         self.assertIsInstance(constraint, mp.Constraint)

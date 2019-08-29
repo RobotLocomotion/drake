@@ -49,7 +49,7 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
                                 const Frame<double>& frameB,
                                 const Eigen::Ref<const Eigen::Vector3d>& b_B,
                                 double angle_lower, double angle_upper,
-                                systems::Context<double>* context);
+                                systems::Context<double>* plant_context);
 
   /**
    * Overloaded constructor. Use MultibodyPlant<AutoDiffXd> instead of
@@ -63,7 +63,7 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
                                 const Frame<AutoDiffXd>& frameB,
                                 const Eigen::Ref<const Eigen::Vector3d>& b_B,
                                 double angle_lower, double angle_upper,
-                                systems::Context<AutoDiffXd>* context);
+                                systems::Context<AutoDiffXd>* plant_context);
 
   ~AngleBetweenVectorsConstraint() override {}
 

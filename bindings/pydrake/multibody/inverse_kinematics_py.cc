@@ -87,13 +87,13 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                           const Frame<double>& frameB,
                           const Eigen::Ref<const Eigen::Vector3d>& b_B,
                           double angle_lower, double angle_upper,
-                          systems::Context<double>* context) {
+                          systems::Context<double>* plant_context) {
           return std::make_unique<Class>(plant, frameA, a_A, frameB, b_B,
-              angle_lower, angle_upper, context);
+              angle_lower, angle_upper, plant_context);
         }),
             py::arg("plant"), py::arg("frameA"), py::arg("a_A"),
             py::arg("frameB"), py::arg("b_B"), py::arg("angle_lower"),
-            py::arg("angle_upper"), py::arg("context"),
+            py::arg("angle_upper"), py::arg("plant_context"),
             // Keep alive, reference: `self` keeps `plant` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `context` alive.
@@ -104,13 +104,13 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                           const Frame<AutoDiffXd>& frameB,
                           const Eigen::Ref<const Eigen::Vector3d>& b_B,
                           double angle_lower, double angle_upper,
-                          systems::Context<AutoDiffXd>* context) {
+                          systems::Context<AutoDiffXd>* plant_context) {
           return std::make_unique<Class>(plant, frameA, a_A, frameB, b_B,
-              angle_lower, angle_upper, context);
+              angle_lower, angle_upper, plant_context);
         }),
             py::arg("plant"), py::arg("frameA"), py::arg("a_A"),
             py::arg("frameB"), py::arg("b_B"), py::arg("angle_lower"),
-            py::arg("angle_upper"), py::arg("context"),
+            py::arg("angle_upper"), py::arg("plant_context"),
             // Keep alive, reference: `self` keeps `plant` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `context` alive.
@@ -164,13 +164,13 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                           const Frame<double>& frameB,
                           const Eigen::Ref<const Eigen::Vector3d>& p_BT,
                           double cone_half_angle,
-                          systems::Context<double>* context) {
+                          systems::Context<double>* plant_context) {
           return std::make_unique<Class>(
-              plant, frameA, p_AS, n_A, frameB, p_BT, cone_half_angle, context);
+              plant, frameA, p_AS, n_A, frameB, p_BT, cone_half_angle, plant_context);
         }),
             py::arg("plant"), py::arg("frameA"), py::arg("p_AS"),
             py::arg("n_A"), py::arg("frameB"), py::arg("p_BT"),
-            py::arg("cone_half_angle"), py::arg("context"),
+            py::arg("cone_half_angle"), py::arg("plant_context"),
             // Keep alive, reference: `self` keeps `plant` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `context` alive.
@@ -182,13 +182,13 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                           const Frame<AutoDiffXd>& frameB,
                           const Eigen::Ref<const Eigen::Vector3d>& p_BT,
                           double cone_half_angle,
-                          systems::Context<AutoDiffXd>* context) {
+                          systems::Context<AutoDiffXd>* plant_context) {
           return std::make_unique<Class>(
-              plant, frameA, p_AS, n_A, frameB, p_BT, cone_half_angle, context);
+              plant, frameA, p_AS, n_A, frameB, p_BT, cone_half_angle, plant_context);
         }),
             py::arg("plant"), py::arg("frameA"), py::arg("p_AS"),
             py::arg("n_A"), py::arg("frameB"), py::arg("p_BT"),
-            py::arg("cone_half_angle"), py::arg("context"),
+            py::arg("cone_half_angle"), py::arg("plant_context"),
             // Keep alive, reference: `self` keeps `plant` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `context` alive.
@@ -248,13 +248,13 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                           const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
                           const Frame<double>& frameB,
                           const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
-                          systems::Context<double>* context) {
+                          systems::Context<double>* plant_context) {
           return std::make_unique<Class>(
-              plant, frameA, p_AQ_lower, p_AQ_upper, frameB, p_BQ, context);
+              plant, frameA, p_AQ_lower, p_AQ_upper, frameB, p_BQ, plant_context);
         }),
             py::arg("plant"), py::arg("frameA"), py::arg("p_AQ_lower"),
             py::arg("p_AQ_upper"), py::arg("frameB"), py::arg("p_BQ"),
-            py::arg("context"),
+            py::arg("plant_context"),
             // Keep alive, reference: `self` keeps `plant` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `context` alive.
@@ -265,13 +265,13 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                           const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
                           const Frame<AutoDiffXd>& frameB,
                           const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
-                          systems::Context<AutoDiffXd>* context) {
+                          systems::Context<AutoDiffXd>* plant_context) {
           return std::make_unique<Class>(
-              plant, frameA, p_AQ_lower, p_AQ_upper, frameB, p_BQ, context);
+              plant, frameA, p_AQ_lower, p_AQ_upper, frameB, p_BQ, plant_context);
         }),
             py::arg("plant"), py::arg("frameA"), py::arg("p_AQ_lower"),
             py::arg("p_AQ_upper"), py::arg("frameB"), py::arg("p_BQ"),
-            py::arg("context"),
+            py::arg("plant_context"),
             // Keep alive, reference: `self` keeps `plant` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `context` alive.
@@ -289,13 +289,13 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                      const math::RotationMatrix<double>& R_AbarA,
                      const Frame<double>& frameBbar,
                      const math::RotationMatrix<double>& R_BbarB,
-                     double theta_bound, systems::Context<double>* context) {
+                     double theta_bound, systems::Context<double>* plant_context) {
                    return std::make_unique<Class>(plant, frameAbar, R_AbarA,
-                       frameBbar, R_BbarB, theta_bound, context);
+                       frameBbar, R_BbarB, theta_bound, plant_context);
                  }),
             py::arg("plant"), py::arg("frameAbar"), py::arg("R_AbarA"),
             py::arg("frameBbar"), py::arg("R_BbarB"), py::arg("theta_bound"),
-            py::arg("context"),
+            py::arg("plant_context"),
             // Keep alive, reference: `self` keeps `plant` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `context` alive.
@@ -306,13 +306,13 @@ PYBIND11_MODULE(inverse_kinematics, m) {
                           const Frame<AutoDiffXd>& frameBbar,
                           const math::RotationMatrix<double>& R_BbarB,
                           double theta_bound,
-                          systems::Context<AutoDiffXd>* context) {
+                          systems::Context<AutoDiffXd>* plant_context) {
           return std::make_unique<Class>(plant, frameAbar, R_AbarA, frameBbar,
-              R_BbarB, theta_bound, context);
+              R_BbarB, theta_bound, plant_context);
         }),
             py::arg("plant"), py::arg("frameAbar"), py::arg("R_AbarA"),
             py::arg("frameBbar"), py::arg("R_BbarB"), py::arg("theta_bound"),
-            py::arg("context"),
+            py::arg("plant_context"),
             // Keep alive, reference: `self` keeps `plant` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `context` alive.

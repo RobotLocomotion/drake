@@ -55,7 +55,7 @@ class GazeTargetConstraint : public solvers::Constraint {
                        const Frame<double>& frameB,
                        const Eigen::Ref<const Eigen::Vector3d>& p_BT,
                        double cone_half_angle,
-                       systems::Context<double>* context);
+                       systems::Context<double>* plant_context);
 
   /**
    * Overloaded constructor.
@@ -71,7 +71,7 @@ class GazeTargetConstraint : public solvers::Constraint {
                        const Frame<AutoDiffXd>& frameB,
                        const Eigen::Ref<const Eigen::Vector3d>& p_BT,
                        double cone_half_angle,
-                       systems::Context<AutoDiffXd>* context);
+                       systems::Context<AutoDiffXd>* plant_context);
 
   ~GazeTargetConstraint() override{};
 
