@@ -23,9 +23,9 @@ namespace multibody {
 namespace internal {
 namespace {
 
-constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
-
 #if 0
+constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+
 class LinearBushingRollPitchYawTester : public ::testing::Test {
  public:
   void SetUp() override {
@@ -146,7 +146,7 @@ TEST_F(LinearBushingRollPitchYawTester, RestLength) {
   // Verify the potential energy is zero.
   const double potential_energy = bushing_->CalcPotentialEnergy(
       *context_, tree().EvalPositionKinematics(*context_));
-  EXPECT_NEAR(potential_energy, 0.0, kTolerance);
+  EXPECT_NEAR(potential_energy, 0.0, 8 * kEpsilon);
 }
 
 TEST_F(LinearBushingRollPitchYawTester, LengthApproachesZero) {
@@ -173,24 +173,24 @@ TEST_F(LinearBushingRollPitchYawTester, LengthLargerThanRestLength) {
       Vector3<double>(expected_force_magnitude, 0, 0));
   EXPECT_TRUE(CompareMatrices(
       F_A_W.get_coeffs(), F_A_W_expected.get_coeffs(),
-      kTolerance, MatrixCompareType::relative));
+      8 * kEpsilon, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(
       F_B_W.get_coeffs(), -F_A_W_expected.get_coeffs(),
-      kTolerance, MatrixCompareType::relative));
+      8 * kEpsilon, MatrixCompareType::relative));
 
   // Verify the value of the potential energy.
   const double potential_energy_expected =
       0.5 * stiffness_ * (length - free_length_) * (length - free_length_);
   const double potential_energy = bushing_->CalcPotentialEnergy(
       *context_, tree().EvalPositionKinematics(*context_));
-  EXPECT_NEAR(potential_energy, potential_energy_expected, kTolerance);
+  EXPECT_NEAR(potential_energy, potential_energy_expected, 8 * kEpsilon);
 
   // Since the spring configuration is static, that is velocities are zero, we
   // expect zero conservative and non-conservative power.
   const double conservative_power = bushing_->CalcConservativePower(
       *context_, tree().EvalPositionKinematics(*context_),
       tree().EvalVelocityKinematics(*context_));
-  EXPECT_NEAR(conservative_power, 0.0, kTolerance);
+  EXPECT_NEAR(conservative_power, 0.0, 8 * kEpsilon);
 }
 
 // Verify forces computation when the spring length is smaller than its rest
@@ -209,10 +209,10 @@ TEST_F(LinearBushingRollPitchYawTester, LengthSmallerThanRestLength) {
       Vector3<double>(expected_force_magnitude, 0, 0));
   EXPECT_TRUE(CompareMatrices(
       F_A_W.get_coeffs(), F_A_W_expected.get_coeffs(),
-      kTolerance, MatrixCompareType::relative));
+      8 * kEpsilon, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(
       F_B_W.get_coeffs(), -F_A_W_expected.get_coeffs(),
-      kTolerance, MatrixCompareType::relative));
+      8 * kEpsilon, MatrixCompareType::relative));
 }
 
 // Verify forces computation when the spring is at its rest length (zero spring
@@ -236,20 +236,20 @@ TEST_F(LinearBushingRollPitchYawTester, NonZeroVelocity) {
       Vector3<double>(expected_force_magnitude, 0, 0));
   EXPECT_TRUE(CompareMatrices(
       F_A_W.get_coeffs(), F_A_W_expected.get_coeffs(),
-      kTolerance, MatrixCompareType::relative));
+      8 * kEpsilon, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(
       F_B_W.get_coeffs(), -F_A_W_expected.get_coeffs(),
-      kTolerance, MatrixCompareType::relative));
+      8 * kEpsilon, MatrixCompareType::relative));
 
   // Spring is compressing.
   SetSliderState(free_length_, -length_dot);
   CalcLinearBushingRollPitchYawForces();
   EXPECT_TRUE(CompareMatrices(
       F_A_W.get_coeffs(), -F_A_W_expected.get_coeffs(),
-      kTolerance, MatrixCompareType::relative));
+      8 * kEpsilon, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(
       F_B_W.get_coeffs(), F_A_W_expected.get_coeffs(),
-      kTolerance, MatrixCompareType::relative));
+      8 * kEpsilon, MatrixCompareType::relative));
 }
 
 // This test verifies the computation of both conservative and non-conservative
@@ -264,7 +264,7 @@ TEST_F(LinearBushingRollPitchYawTester, Power) {
       tree().EvalVelocityKinematics(*context_));
   const double conservative_power_expected =
       -stiffness_ * (length - free_length_) * length_dot;
-  EXPECT_NEAR(conservative_power, conservative_power_expected, kTolerance);
+  EXPECT_NEAR(conservative_power, conservative_power_expected, 8 * kEpsilon);
 
   const double non_conservative_power =
       bushing_->CalcNonConservativePower(
@@ -275,7 +275,7 @@ TEST_F(LinearBushingRollPitchYawTester, Power) {
   // It should always be non-positive.
   EXPECT_LT(non_conservative_power, 0.0);
   EXPECT_NEAR(non_conservative_power, non_conservative_power_expected,
-              kTolerance);
+              8 * kEpsilon);
 }
 #endif
 
