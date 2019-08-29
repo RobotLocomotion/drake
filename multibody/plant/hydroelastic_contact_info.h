@@ -32,16 +32,10 @@ namespace multibody {
 template <typename T>
 class HydroelasticContactInfo {
  public:
-  HydroelasticContactInfo(const HydroelasticContactInfo& info) {
-    *this = info;
-  }
-
-  HydroelasticContactInfo& operator=(HydroelasticContactInfo&&) = default;
-  HydroelasticContactInfo(HydroelasticContactInfo&&);
-
   /**
    Constructs this structure using the given contact surface, traction field,
-   and slip field.
+   and slip field. This constructor does not own the ContactSurface; it points
+   to a ContactSurface that another owns.
    @see contact_surface()
    @see traction_A_W()
    @see vslip_AB_W()
@@ -60,7 +54,7 @@ class HydroelasticContactInfo {
 
   /**
    Constructs this structure using the given contact surface, traction field,
-   and slip field.
+   and slip field.  This constructor transfers ownership of the ContactSurface.
    @see contact_surface()
    @see traction_A_W()
    @see vslip_AB_W()
@@ -78,10 +72,24 @@ class HydroelasticContactInfo {
     DRAKE_DEMAND(vslip_AB_W_.get());
   }
 
+  /// @name Implements CopyConstructible, CopyAssignable, MoveConstructible,
+  /// MoveAssignable.
+  //@{
+
+
   /** Clones this data structure, making deep copies of all underlying data.
    @note The new object will contain a cloned ContactSurface even if the
          original was constructed using a raw pointer referencing an existing
          ContactSurface.
+   */
+  HydroelasticContactInfo(const HydroelasticContactInfo& info) {
+    *this = info;
+  }
+  HydroelasticContactInfo& operator=(HydroelasticContactInfo&&) = default;
+  HydroelasticContactInfo(HydroelasticContactInfo&&);
+
+  /** Clones this object in the same manner as the copy constructor.
+   @see HydroelasticContactInfo(const HydroelasticContactInfo&)
    */
   HydroelasticContactInfo& operator=(const HydroelasticContactInfo& info) {
     contact_surface_ =
@@ -91,6 +99,7 @@ class HydroelasticContactInfo {
     vslip_AB_W_ = info.vslip_AB_W_->CloneAndSetMesh(&mesh);
     return *this;
   }
+  //@}
 
   /// Returns a reference to the ContactSurface data structure. Note that
   /// the mesh and gradient vector fields are expressed in the world frame.
