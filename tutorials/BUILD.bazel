@@ -10,11 +10,19 @@ load(
 load("//tools/jupyter:jupyter_py.bzl", "jupyter_py_binary")
 
 jupyter_py_binary(
-	name="MathematicalProgram",
-	add_test_rule=1,
-	deps = [
-		"//bindings/pydrake",
-	]
+    name = "mathematical_program",
+    add_test_rule = 1,
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+jupyter_py_binary(
+    name = "solver_parameters",
+    add_test_rule = 1,
+    deps = [
+        "//bindings/pydrake",
+    ],
 )
 
 add_lint_tests()
