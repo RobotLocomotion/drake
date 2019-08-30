@@ -5,7 +5,6 @@
 #include <gtest/gtest.h>
 
 namespace drake {
-namespace internal {
 namespace {
 
 // Checks that find_runfiles_stub successfully compiles and links.
@@ -17,5 +16,4 @@ GTEST_TEST(FindRunfilesTest, AcceptanceTest) {
 }
 
 }  // namespace
-}  // namespace internal
 }  // namespace drake

@@ -169,7 +169,7 @@ optional<string> MaybeFindResourceInAttic(const string& resource_path) {
        }) {
     if (StartsWith(substr, directory)) {
       const auto rlocation_or_error =
-          internal::FindRunfile(prefix + string("attic/") + substr);
+          FindRunfile(prefix + string("attic/") + substr);
       if (rlocation_or_error.error.empty()) {
         return rlocation_or_error.abspath;
       }
@@ -269,8 +269,8 @@ Result FindResource(const string& resource_path) {
   }
 
   // (2) Check the Runfiles.
-  if (internal::HasRunfiles()) {
-    auto rlocation_or_error = internal::FindRunfile(resource_path);
+  if (HasRunfiles()) {
+    auto rlocation_or_error = FindRunfile(resource_path);
     if (rlocation_or_error.error.empty()) {
       return Result::make_success(
           resource_path, rlocation_or_error.abspath);
