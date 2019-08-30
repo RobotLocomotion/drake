@@ -114,7 +114,7 @@ class _ContactConfigDialog(QtGui.QDialog):
 
 class ContactVisualizer(object):
     def __init__(self):
-        self._folder_name = 'Contact Results'
+        self._folder_name = 'Point Pair Contact Results'
         self._name = "Contact Visualizer"
         self._enabled = False
         self._sub = None
@@ -145,7 +145,7 @@ class ContactVisualizer(object):
         #  to dynamically modify the menu based on arbitrary plugins.
         contact_menu = plugin_menu.addMenu('&Contacts')
         self.configure_action = contact_menu.addAction(
-            "&Configure Force Vector")
+            "&Configure Force Vector for Point Contacts")
         self.configure_action.connect('triggered()', self.configure_via_dialog)
 
         self.set_enabled(True)
@@ -223,7 +223,7 @@ class ContactVisualizer(object):
 
         # A map from pair of body names to a list of contact forces
         collision_pair_to_forces = {}
-        for contact in msg.contact_info:
+        for contact in msg.point_pair_contact_info:
             point = np.array([contact.contact_point[0],
                               contact.contact_point[1],
                               contact.contact_point[2]])

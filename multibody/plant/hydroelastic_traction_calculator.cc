@@ -48,7 +48,7 @@ ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
   F_Ac_W.SetZero();
 
   // Integrate the tractions over all triangles in the contact surface.
-  for (SurfaceFaceIndex i(0); i < data.surface.mesh().num_faces(); ++i) {
+  for (SurfaceFaceIndex i(0); i < data.surface.mesh_W().num_faces(); ++i) {
     // Construct the function to be integrated over triangle i.
     // TODO(sherm1) Pull functor creation out of the loop (not a good idea to
     //              create a new functor for every i).
@@ -65,7 +65,7 @@ ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
     // tractions (force/area) at the Gauss points (shifted to C).
     const SpatialForce<T> Fi_Ac_W =  // Force from triangle i.
         TriangleQuadrature<SpatialForce<T>, T>::Integrate(
-            traction_Ac_W, gaussian, data.surface.mesh().area(i));
+            traction_Ac_W, gaussian, data.surface.mesh_W().area(i));
 
     // Update the spatial force at body A's origin.
     F_Ac_W += Fi_Ac_W;
@@ -120,7 +120,7 @@ HydroelasticTractionCalculator<T>::CalcTractionAtVertex(
     SurfaceVertexIndex vertex_index,
     double dissipation, double mu_coulomb) const {
   // Compute the point of contact in the world frame.
-  const Vector3<T> p_WQ = data.surface.mesh().vertex(vertex_index).r_MV();
+  const Vector3<T> p_WQ = data.surface.mesh_W().vertex(vertex_index).r_MV();
 
   const T e = data.surface.EvaluateE_MN(vertex_index);
 
@@ -145,7 +145,7 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
     const typename SurfaceMesh<T>::Barycentric& Q_barycentric,
     double dissipation, double mu_coulomb) const {
   // Compute the point of contact in the world frame.
-  const Vector3<T> p_WQ = data.surface.mesh().CalcCartesianFromBarycentric(
+  const Vector3<T> p_WQ = data.surface.mesh_W().CalcCartesianFromBarycentric(
       face_index, Q_barycentric);
 
   const T e = data.surface.EvaluateE_MN(face_index, Q_barycentric);
@@ -248,7 +248,7 @@ HydroelasticTractionCalculator<T>::CalcTractionAtQHelper(
 // Creates linearly interpolated fields over the contact surface for use in
 // contact reporting.
 // @warning The newly created mesh fields retain a pointer to the surface mesh
-//         (i.e., `data.surface.mesh()`), so that pointer must remain valid
+//         (i.e., `data.surface.mesh_W()`), so that pointer must remain valid
 //        while this object is alive.
 template <typename T>
 typename HydroelasticTractionCalculator<T>::ContactReportingFields
@@ -259,10 +259,10 @@ HydroelasticTractionCalculator<T>::CreateReportingFields(
   const ContactSurface<T>& surface = data.surface;
 
   // Compute a value for each vertex.
-  std::vector<Vector3<T>> vt_BqAq_W(surface.mesh().num_vertices());
-  std::vector<Vector3<T>> traction_Aq_W(surface.mesh().num_vertices());
+  std::vector<Vector3<T>> vt_BqAq_W(surface.mesh_W().num_vertices());
+  std::vector<Vector3<T>> traction_Aq_W(surface.mesh_W().num_vertices());
 
-  for (SurfaceVertexIndex i(0); i < surface.mesh().num_vertices(); ++i) {
+  for (SurfaceVertexIndex i(0); i < surface.mesh_W().num_vertices(); ++i) {
     // Compute the traction and the slip velocity at the vertex.
     HydroelasticTractionCalculator<T>::TractionAtPointData output =
         CalcTractionAtVertex(data, i, dissipation, mu_coulomb);
@@ -273,9 +273,9 @@ HydroelasticTractionCalculator<T>::CreateReportingFields(
   // Create the field structure.
   ContactReportingFields fields;
   fields.traction_A_W = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
-      "traction", std::move(traction_Aq_W), &surface.mesh());
+      "traction", std::move(traction_Aq_W), &surface.mesh_W());
   fields.vslip_AB_W = std::make_unique<SurfaceMeshFieldLinear<Vector3<T>, T>>(
-      "slip_velocity", std::move(vt_BqAq_W), &surface.mesh());
+      "slip_velocity", std::move(vt_BqAq_W), &surface.mesh_W());
   return fields;
 }
 

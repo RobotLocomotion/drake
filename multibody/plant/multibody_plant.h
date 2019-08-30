@@ -3023,9 +3023,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // TODO(amcastro-tri): report contact results for plants modeled as a
   // continuous system as well.
   /// Returns a constant reference to the port that outputs ContactResults.
-  /// @throws std::exception if `this` plant is not modeled as a discrete system
-  /// with periodic updates.
   /// @throws std::exception if called pre-finalize, see Finalize().
+  /// @warning Point contacts are not currently reported for MultibodyPlant
+  ///          systems modeled using continuous variables (i.e., if
+  ///          `is_discrete() == false`).
   const systems::OutputPort<T>& get_contact_results_output_port() const;
 
   /// Returns a constant reference to the *world* body.

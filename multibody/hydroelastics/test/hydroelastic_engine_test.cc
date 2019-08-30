@@ -154,7 +154,7 @@ TEST_F(SphereVsPlaneTest, VerifyModelSizeAndResults) {
   // has thorough unit tests.
   // Since id_M corresponds to the ground geometry, the mesh is expressed in
   // frame G of the ground.
-  const SurfaceMesh<double>& mesh_G = surface.mesh();
+  const SurfaceMesh<double>& mesh_G = surface.mesh_W();
   EXPECT_GT(mesh_G.num_vertices(), 0);
   const double kTolerance = 5.0 * std::numeric_limits<double>::epsilon();
 

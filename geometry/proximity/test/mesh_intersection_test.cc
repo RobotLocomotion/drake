@@ -855,14 +855,14 @@ void TestComputeContactSurfaceSoftRigid() {
 
   // Mesh invariants:
   //   Meshes are the same "size" (topologically).
-  EXPECT_EQ(contact_SR->mesh().num_faces(), contact_RS->mesh().num_faces());
-  EXPECT_EQ(contact_SR->mesh().num_vertices(),
-            contact_RS->mesh().num_vertices());
+  EXPECT_EQ(contact_SR->mesh_W().num_faces(), contact_RS->mesh_W().num_faces());
+  EXPECT_EQ(contact_SR->mesh_W().num_vertices(),
+            contact_RS->mesh_W().num_vertices());
 
   //   Test one and assume all share the same property.
   const SurfaceVertexIndex v_index(0);
-  EXPECT_TRUE(CompareMatrices(contact_SR->mesh().vertex(v_index).r_MV(),
-                              contact_RS->mesh().vertex(v_index).r_MV()));
+  EXPECT_TRUE(CompareMatrices(contact_SR->mesh_W().vertex(v_index).r_MV(),
+                              contact_RS->mesh_W().vertex(v_index).r_MV()));
 
   // TODO(SeanCurtis-TRI): Test that the face winding has been reversed, once
   //  that is officially documented as a property of the ContactSurface.
@@ -955,12 +955,12 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
             id_S, *soft_epsilon, X_WS, id_R, *rigid_mesh, X_WR);
     // TODO(DamrongGuoy): More comprehensive checks on the mesh of the contact
     //  surface. Here we only check the number of triangles.
-    EXPECT_EQ(4, contact_SR_W->mesh().num_faces());
+    EXPECT_EQ(4, contact_SR_W->mesh_W().num_faces());
 
     const Vector3d p_MQ = Vector3d::Zero();
     SurfaceFaceIndex face_Q;
     SurfaceMesh<double>::Barycentric b_Q;
-    bool found = FindFaceVertex(p_MQ, contact_SR_W->mesh(), &face_Q, &b_Q);
+    bool found = FindFaceVertex(p_MQ, contact_SR_W->mesh_W(), &face_Q, &b_Q);
     ASSERT_TRUE(found);
     const auto epsilon_SR = contact_SR_W->EvaluateE_MN(face_Q, b_Q);
     EXPECT_NEAR(1.0, epsilon_SR, kEps);
@@ -998,13 +998,13 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
             id_S, *soft_epsilon, X_WS, id_R, *rigid_mesh, X_WR);
     // TODO(DamrongGuoy): More comprehensive checks on the mesh of the contact
     //  surface.  Here we only check the number of triangles.
-    EXPECT_EQ(4, contact_SR_W->mesh().num_faces());
+    EXPECT_EQ(4, contact_SR_W->mesh_W().num_faces());
 
     const Vector3d p_MQ{0, -0.5,
                         0};  // The center vertex of the pyramid "bottom".
     SurfaceFaceIndex face_Q;
     SurfaceMesh<double>::Barycentric b_Q;
-    bool found = FindFaceVertex(p_MQ, contact_SR_W->mesh(), &face_Q, &b_Q);
+    bool found = FindFaceVertex(p_MQ, contact_SR_W->mesh_W(), &face_Q, &b_Q);
     ASSERT_TRUE(found);
     const auto e_SR = contact_SR_W->EvaluateE_MN(face_Q, b_Q);
     EXPECT_NEAR(0.5, e_SR, kEps);
