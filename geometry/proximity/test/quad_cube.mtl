@@ -1,0 +1,5 @@
+newmtl CubeMaterial
+Kd 0.8 0.8 0.8
+Ka 0 0 0
+Ks 0.2 0.2 02
+illum 2
