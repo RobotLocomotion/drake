@@ -636,7 +636,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_reference_internal, cls_doc.GetBodyFromFrameId.doc)
         .def("GetBodyFrameIdIfExists", &Class::GetBodyFrameIdIfExists,
             py::arg("body_index"), py_reference_internal,
-            cls_doc.GetBodyFrameIdIfExists.doc);
+            cls_doc.GetBodyFrameIdIfExists.doc)
+        .def("GetCollisionGeometriesForBody",
+            &Class::GetCollisionGeometriesForBody, py::arg("body"),
+            cls_doc.GetCollisionGeometriesForBody.doc);
     // Port accessors.
     cls  // BR
         .def("get_actuation_input_port",
@@ -703,28 +706,26 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 Context<T>* context) -> Eigen::Ref<VectorX<T>> {
               return self->GetMutablePositionsAndVelocities(context);
             },
-            py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
-            py::keep_alive<0, 2>(), py::arg("context"),
+            py_reference, py::arg("context"),
+            // Keep alive, ownership: `return` keeps `context` alive.
+            py::keep_alive<0, 2>(),
             cls_doc.GetMutablePositionsAndVelocities.doc)
         .def("GetMutablePositions",
             [](const MultibodyPlant<T>* self,
                 Context<T>* context) -> Eigen::Ref<VectorX<T>> {
               return self->GetMutablePositions(context);
             },
-            py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
-            py::keep_alive<0, 2>(), py::arg("context"),
-            cls_doc.GetMutablePositions.doc_1args)
+            py_reference, py::arg("context"),
+            // Keep alive, ownership: `return` keeps `context` alive.
+            py::keep_alive<0, 2>(), cls_doc.GetMutablePositions.doc_1args)
         .def("GetMutableVelocities",
             [](const MultibodyPlant<T>* self,
                 Context<T>* context) -> Eigen::Ref<VectorX<T>> {
               return self->GetMutableVelocities(context);
             },
-            py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
-            py::keep_alive<0, 2>(), py::arg("context"),
-            cls_doc.GetMutableVelocities.doc_1args)
+            py_reference, py::arg("context"),
+            // Keep alive, ownership: `return` keeps `context` alive.
+            py::keep_alive<0, 2>(), cls_doc.GetMutableVelocities.doc_1args)
         .def("GetPositions",
             [](const MultibodyPlant<T>* self, const Context<T>& context)
                 -> VectorX<T> { return self->GetPositions(context); },
@@ -904,13 +905,14 @@ PYBIND11_MODULE(plant, m) {
         return drake::multibody::ConnectContactResultsToDrakeVisualizer(
             builder, plant, lcm);
       },
+      py::arg("builder"), py::arg("plant"), py::arg("lcm") = nullptr,
+      py_reference,
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 1>(),
-      // Keep alive, reference transfer: `plant` keeps `builder` alive.
+      // Keep alive, transitive: `plant` keeps `builder` alive.
       py::keep_alive<2, 1>(),
-      // Keep alive, reference transfer: `lcm` keeps `builder` alive.
-      py::keep_alive<3, 1>(), py_reference, py::arg("builder"),
-      py::arg("plant"), py::arg("lcm") = nullptr,
+      // Keep alive, transitive: `lcm` keeps `builder` alive.
+      py::keep_alive<3, 1>(),
       doc.ConnectContactResultsToDrakeVisualizer.doc_3args);
 }  // NOLINT(readability/fn_size)
 
