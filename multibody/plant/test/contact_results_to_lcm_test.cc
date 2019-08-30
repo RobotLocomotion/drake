@@ -290,15 +290,15 @@ double ComputeDistanceBetweenTriangles(
     const double p_WA[3], const double p_WB[3], const double p_WC[3],
     const std::array<Vector3<double>, 3>& vertices_W,
     const std::array<int, 3>& vertex_vector_permutation) {
-  double dist_A = 0.0, dist_B = 0.0, dist_C = 0.0;
+  double sq_dist_A = 0.0, sq_dist_B = 0.0, sq_dist_C = 0.0;
 
   for (int j = 0; j < 3; ++j) {  // Loop over the three dimensions.
-      dist_A += square(p_WA[j] - vertices_W[vertex_vector_permutation[0]][j]);
-      dist_B += square(p_WB[j] - vertices_W[vertex_vector_permutation[1]][j]);
-      dist_C += square(p_WC[j] - vertices_W[vertex_vector_permutation[2]][j]);
+    sq_dist_A += square(p_WA[j] - vertices_W[vertex_vector_permutation[0]][j]);
+    sq_dist_B += square(p_WB[j] - vertices_W[vertex_vector_permutation[1]][j]);
+    sq_dist_C += square(p_WC[j] - vertices_W[vertex_vector_permutation[2]][j]);
   }
 
-  return std::sqrt(std::max(dist_A, std::max(dist_B, dist_C)));
+  return std::sqrt(std::max(sq_dist_A, std::max(sq_dist_B, sq_dist_C)));
 }
 
 // Searches for a permutation of the vertices of each triangle T in `mesh_W`
@@ -333,9 +333,12 @@ void ValidateCloseToMeshTriangle(const double p_WA[3], const double p_WB[3],
   EXPECT_LT(closest_distance, tol);
 }
 
-// Verifies that the LCM message is consistent with the hydroelastic contact
-// surface that we create.
-GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
+// TODO(edrumwri) Remove the function below when hydroelastic plugins are all in
+// the codebase.
+// This is not a test, just some code that exists to visualize the contact
+// results while DrakeVisualizer plugins are still in development.
+#if 0
+GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResultsVisualization) {
   DiagramBuilder<double> builder;
 
   // Note: the plant will never be connected in the Diagram. It is used only to
@@ -404,6 +407,58 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
   diagram->get_output_port(
       lcm_hydroelastic_contact_surface_output_port_index).Calc(
           *diagram_context, &lcm_message_value);
+  const lcmt_contact_results_for_viz& lcm_message =
+      lcm_message_value.get_value();
+}
+#endif
+
+// Verifies that the LCM message is consistent with the hydroelastic contact
+// surface that we create.
+GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
+  // Note: the plant will never be connected in the Diagram. It is used only to
+  // set up the ContactResultsToLcmSystem. SceneGraph is necessary for
+  // AddInclinedPlaneWithBlockToPlant() to work properly.
+  DiagramBuilder<double> builder;
+  MultibodyPlant<double>* plant;
+  geometry::SceneGraph<double>* scene_graph;
+  std::tie(plant, scene_graph) = AddMultibodyPlantSceneGraph(&builder);
+
+  // We need some geometries for this test. Parameters below are selected
+  // arbitrarily and do not affect this test.
+  const double gravity = 0.0;
+  const double plane_angle = 0.0;
+  const CoulombFriction<double> mu_plane;
+  const CoulombFriction<double> mu_block;
+  const double block_mass = 1.0;
+  const Vector3<double> block_dim(1.0, 1.0, 1.0);
+  benchmarks::inclined_plane::AddInclinedPlaneWithBlockToPlant(
+      gravity, plane_angle, {} /* default plane "dimensions" */,
+      mu_plane, mu_block, block_mass, block_dim, false /* no spheres */,
+      plant);
+  plant->Finalize();
+
+  ContactResultsToLcmSystem<double> contact_results_to_lcm_system(*plant);
+
+  const systems::InputPortIndex contact_results_input_port_index =
+      contact_results_to_lcm_system.get_contact_result_input_port().get_index();
+  const systems::OutputPortIndex
+      lcm_hydroelastic_contact_surface_output_port_index =
+          contact_results_to_lcm_system.get_lcm_message_output_port()
+              .get_index();
+
+  std::unique_ptr<ContactSurface<double>> contact_surface;
+  std::unique_ptr<Context<double>> context =
+      contact_results_to_lcm_system.CreateDefaultContext();
+  context->FixInputPort(
+      contact_results_input_port_index,
+      Value<ContactResults<double>>(
+          GenerateHydroelasticContactResults(*plant, &contact_surface)));
+
+  // Get the LCM message that corresponds to the contact results.
+  Value<lcmt_contact_results_for_viz> lcm_message_value;
+  contact_results_to_lcm_system.get_output_port(
+      lcm_hydroelastic_contact_surface_output_port_index).Calc(
+          *context, &lcm_message_value);
   const lcmt_contact_results_for_viz& lcm_message =
       lcm_message_value.get_value();
 

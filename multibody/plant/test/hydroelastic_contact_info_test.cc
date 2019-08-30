@@ -1,31 +1,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
-#include "drake/geometry/proximity/surface_mesh.h"
-#include "drake/geometry/query_results/contact_surface.h"
-#include "drake/geometry/scene_graph.h"
-#include "drake/multibody/parsing/parser.h"
-#include "drake/multibody/plant/hydroelastic_traction_calculator.h"
-#include "drake/multibody/plant/multibody_plant.h"
-#include "drake/systems/framework/context.h"
-#include "drake/systems/framework/diagram_builder.h"
+#include "drake/multibody/plant/hydroelastic_contact_info.h"
 
 namespace drake {
-
-using geometry::ContactSurface;
-using geometry::GeometryId;
-using geometry::MeshFieldLinear;
-using geometry::SceneGraph;
-using geometry::SurfaceFaceIndex;
-using geometry::SurfaceFace;
-using geometry::SurfaceMesh;
-using geometry::SurfaceVertex;
-using geometry::SurfaceVertexIndex;
-using math::RigidTransform;
-using systems::Context;
-using systems::Diagram;
-using systems::DiagramBuilder;
 
 namespace multibody {
 namespace internal {
@@ -768,8 +746,6 @@ INSTANTIATE_TEST_CASE_P(PoseInstantiations,
                         MultibodyPlantHydroelasticTractionTests,
                         ::testing::ValuesIn(poses));
 
-// TODO(edrumwri) Break the tests below out into a separate file.
-
 HydroelasticContactInfo<double> CreateContactInfo(
     std::unique_ptr<ContactSurface<double>>* contact_surface) {
   // Create the contact surface using a duplicated arbitrary ID and identity
@@ -785,7 +761,7 @@ HydroelasticContactInfo<double> CreateContactInfo(
   const SpatialVelocity<double> V_WA = SpatialVelocity<double>::Zero();
   const SpatialVelocity<double> V_WB = SpatialVelocity<double>::Zero();
   HydroelasticTractionCalculator<double>::Data data(
-      X_WA, X_WB, V_WA, V_WB, contact_surface->get());
+      X_WA, X_WB, V_WA, V_WB, contact_surface.get());
 
   // Material properties are also dummies (the test will be unaffected by their
   // settings).
@@ -797,14 +773,6 @@ HydroelasticContactInfo<double> CreateContactInfo(
   // file.
   HydroelasticTractionCalculator<double> calculator;
   return calculator.ComputeContactInfo(data, dissipation, mu_coulomb);
-}
-
-// Verifies that the HydroelasticContactInfo structure uses the raw pointer.
-GTEST_TEST(HydroelasticContactInfo, Construction) {
-  std::unique_ptr<ContactSurface<double>> contact_surface;
-  HydroelasticContactInfo<double> contact_info =
-      CreateContactInfo(&contact_surface);
-  EXPECT_EQ(&contact_info.contact_surface(), contact_surface.get());
 }
 
 // Verifies that the HydroelasticContactInfo structure uses the raw pointer
@@ -819,17 +787,6 @@ GTEST_TEST(HydroelasticContactInfo, CopyConstruction) {
   // Copy it again and make sure that the surface is new.
   HydroelasticContactInfo<double> copy2 = copy;
   EXPECT_NE(contact_surface.get(), &copy2.contact_surface());
-}
-
-// Verifies that the HydroelasticContactInfo structure transfers ownership of
-// the ContactSurface.
-GTEST_TEST(HydroelasticContactInfo, MoveConstruction) {
-  std::unique_ptr<ContactSurface<double>> contact_surface;
-  HydroelasticContactInfo<double> copy = CreateContactInfo(&contact_surface);
-  HydroelasticContactInfo<double> moved_copy = std::move(copy);
-
-  // Verify that the move construction retained the raw pointer.
-  EXPECT_EQ(contact_surface.get(), &moved_copy.contact_surface());
 }
 
 }  // namespace internal
