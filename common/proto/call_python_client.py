@@ -55,7 +55,8 @@ import six
 from six import text_type as unicode
 from six.moves.queue import Queue
 
-from drake.common.proto.matlab_rpc_pb2 import MatlabArray, MatlabRPC
+from drake.common.proto.python_remote_message_pb2 import (
+    PythonRemoteData, PythonRemoteMessage)
 
 
 def _ensure_sigint_handler():
@@ -339,13 +340,14 @@ class CallPythonClient(object):
         # Converts a protobuf argument to the appropriate NumPy array (or
         # scalar).
         np_raw = np.frombuffer(arg.data, dtype=dtype)
-        if arg.shape_type == MatlabArray.SCALAR:
+        if arg.shape_type == PythonRemoteData.SCALAR:
             assert arg.cols == 1 and arg.rows == 1
             return np_raw[0]
-        elif arg.shape_type == MatlabArray.VECTOR:
+        elif arg.shape_type == PythonRemoteData.VECTOR:
             assert arg.cols == 1
             return np_raw.reshape(arg.rows)
-        elif arg.shape_type is None or arg.shape_type == MatlabArray.MATRIX:
+        elif arg.shape_type is None or \
+                arg.shape_type == PythonRemoteData.MATRIX:
             # TODO(eric.cousineau): Figure out how to ensure `np.frombuffer`
             # creates a column-major array?
             return np_raw.reshape(arg.cols, arg.rows).T
@@ -373,20 +375,20 @@ class CallPythonClient(object):
         for i, arg in enumerate(args):
             arg_raw = arg.data
             value = None
-            if arg.type == MatlabArray.REMOTE_VARIABLE_REFERENCE:
+            if arg.type == PythonRemoteData.REMOTE_VARIABLE_REFERENCE:
                 id = np.frombuffer(arg_raw, dtype=np.uint64).reshape(1)[0]
                 if id not in self._client_vars:
                     raise RuntimeError("Unknown local variable. " +
                                        "Dropping message.")
                 value = self._client_vars[id]
-            elif arg.type == MatlabArray.DOUBLE:
+            elif arg.type == PythonRemoteData.DOUBLE:
                 value = self._to_array(arg, np.double)
-            elif arg.type == MatlabArray.CHAR:
+            elif arg.type == PythonRemoteData.CHAR:
                 assert arg.rows == 1
                 value = arg_raw.decode('utf8')
-            elif arg.type == MatlabArray.LOGICAL:
+            elif arg.type == PythonRemoteData.LOGICAL:
                 value = self._to_array(arg, np.bool)
-            elif arg.type == MatlabArray.INT:
+            elif arg.type == PythonRemoteData.INT:
                 value = self._to_array(arg, np.int32)
             else:
                 assert False
@@ -527,7 +529,7 @@ class CallPythonClient(object):
         while not self._done:
             f = self._get_file()
             while not self._done:
-                msg = MatlabRPC()
+                msg = PythonRemoteMessage()
                 status = _read_next(f, msg)
                 if status == _READ_GOOD:
                     yield msg
