@@ -387,6 +387,7 @@ drake_py_unittest(
         ":autodiffutils_test_util_py",
         ":math_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+        "//bindings/pydrake/common/test_utilities:pickle_compare_py",
     ],
 )
 

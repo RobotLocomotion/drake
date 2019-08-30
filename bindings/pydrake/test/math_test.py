@@ -8,6 +8,7 @@ from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 import pydrake.common.test_utilities.numpy_compare as numpy_compare
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 
 import copy
 import math
@@ -184,6 +185,8 @@ class TestMath(unittest.TestCase):
         p_AQlist = np.array([p_AQ, p_AQ]).T
         numpy_compare.assert_float_equal(
             X_AB.multiply(p_BoQ_B=p_BQlist), p_AQlist)
+        # Test pickling.
+        assert_pickle(self, X_AB, RigidTransform.GetAsMatrix4, T=T)
 
     @numpy_compare.check_all_types
     def test_isometry_implicit(self, T):
@@ -264,6 +267,8 @@ class TestMath(unittest.TestCase):
         R = RotationMatrix()
         numpy_compare.assert_equal(R.IsExactlyIdentity(), True)
         numpy_compare.assert_equal(R.IsIdentityToInternalTolerance(), True)
+        # Test pickling.
+        assert_pickle(self, R_AB, RotationMatrix.matrix, T=T)
 
     @numpy_compare.check_all_types
     def test_roll_pitch_yaw(self, T):
@@ -309,6 +314,8 @@ class TestMath(unittest.TestCase):
                 rpyDt=[0, 0, 0], alpha_AD_A=[0, 0, 0]), [0., 0., 0.])
         numpy_compare.assert_float_equal(rpy.CalcRpyDDtFromAngularAccelInChild(
             rpyDt=[0, 0, 0], alpha_AD_D=[0, 0, 0]), [0., 0., 0.])
+        # Test pickling.
+        assert_pickle(self, rpy, RollPitchYaw.vector, T=T)
 
     def test_orthonormal_basis(self):
         R = mut.ComputeBasisFromAxis(axis_index=0, axis_W=[1, 0, 0])

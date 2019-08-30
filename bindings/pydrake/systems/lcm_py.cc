@@ -121,8 +121,10 @@ PYBIND11_MODULE(lcm, m) {
                  DrakeLcmInterface*, double>(),
             py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
             py::arg("publish_period") = 0.0,
-            // Keep alive: `self` keeps `DrakeLcmInterface` alive.
-            py::keep_alive<1, 3>(), cls_doc.ctor.doc_4args);
+            // Keep alive, ownership: `serializer` keeps `self` alive.
+            py::keep_alive<3, 1>(),
+            // Keep alive, reference: `self` keeps `lcm` alive.
+            py::keep_alive<1, 4>(), cls_doc.ctor.doc_4args);
   }
 
   {
@@ -132,9 +134,9 @@ PYBIND11_MODULE(lcm, m) {
         .def(py::init<const std::string&, std::unique_ptr<SerializerInterface>,
                  DrakeLcmInterface*>(),
             py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
-            // Keep alive: `self` keeps `SerializerInterface` alive.
-            py::keep_alive<1, 3>(),
-            // Keep alive: `self` keeps `DrakeLcmInterface` alive.
+            // Keep alive, ownership: `serializer` keeps `self` alive.
+            py::keep_alive<3, 1>(),
+            // Keep alive, reference: `self` keeps `lcm` alive.
             py::keep_alive<1, 4>(), doc.LcmSubscriberSystem.ctor.doc)
         .def("WaitForMessage", &Class::WaitForMessage,
             py::arg("old_message_count"), py::arg("message") = nullptr,

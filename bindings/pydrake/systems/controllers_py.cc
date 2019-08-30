@@ -77,7 +77,7 @@ PYBIND11_MODULE(controllers, m) {
                const VectorX<double>&, const VectorX<double>&, bool>(),
           py::arg("robot"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
           py::arg("has_reference_acceleration"),
-          // Keep alive, reference: `self` keeps `MultibodyPlant` alive.
+          // Keep alive, reference: `self` keeps `robot` alive.
           py::keep_alive<1, 2>(), doc.InverseDynamicsController.ctor.doc)
       .def("set_integral_value",
           &InverseDynamicsController<double>::set_integral_value,

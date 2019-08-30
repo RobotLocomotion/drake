@@ -13,17 +13,18 @@ PositionConstraint::PositionConstraint(
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
     const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
-    systems::Context<double>* context)
+    systems::Context<double>* plant_context)
     : solvers::Constraint(3, RefFromPtrOrThrow(plant).num_positions(),
                           p_AQ_lower, p_AQ_upper),
       plant_double_(plant),
       frameA_index_(frameA.index()),
       frameB_index_(frameB.index()),
       p_BQ_{p_BQ},
-      context_double_{context},
+      context_double_{plant_context},
       plant_autodiff_(nullptr),
       context_autodiff_(nullptr) {
-  if (context == nullptr) throw std::invalid_argument("context is nullptr.");
+  if (plant_context == nullptr)
+    throw std::invalid_argument("plant_context is nullptr.");
 }
 
 PositionConstraint::PositionConstraint(
@@ -33,7 +34,7 @@ PositionConstraint::PositionConstraint(
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
     const Frame<AutoDiffXd>& frameB,
     const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
-    systems::Context<AutoDiffXd>* context)
+    systems::Context<AutoDiffXd>* plant_context)
     : solvers::Constraint(3, RefFromPtrOrThrow(plant).num_positions(),
                           p_AQ_lower, p_AQ_upper),
       plant_double_(nullptr),
@@ -42,8 +43,9 @@ PositionConstraint::PositionConstraint(
       p_BQ_{p_BQ},
       context_double_{nullptr},
       plant_autodiff_(plant),
-      context_autodiff_(context) {
-  if (context == nullptr) throw std::invalid_argument("context is nullptr.");
+      context_autodiff_(plant_context) {
+  if (plant_context == nullptr)
+    throw std::invalid_argument("plant_context is nullptr.");
 }
 
 template <typename T>

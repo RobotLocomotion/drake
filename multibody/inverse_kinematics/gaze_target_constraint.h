@@ -39,14 +39,14 @@ class GazeTargetConstraint : public solvers::Constraint {
    *   frame B.
    * @param cone_half_angle The half angle of the cone. We denote it as θ in the
    *   class documentation. `cone_half_angle` is in radians.
-   * @param context The Context that has been allocated for this `plant`. We
-   *   will update the context when evaluating the constraint. `context` should
-   *   be alive during the lifetime of this constraint.
+   * @param plant_context The Context that has been allocated for this
+   *   `plant`.  We will update the context when evaluating the constraint.
+   *   `plant_context` should be alive during the lifetime of this constraint.
    * @pre `frameA` and `frameB` must belong to `plant`.
    * @throws std::invalid_argument if `plant` is nullptr.
    * @throws std::invalid_argument if `n_A` is close to zero.
    * @throws std::invalid_argument if `cone_half_angle` ∉ [0, π/2].
-   * @throws std::invalid_argument if `context` is nullptr.
+   * @throws std::invalid_argument if `plant_context` is nullptr.
    */
   GazeTargetConstraint(const MultibodyPlant<double>* plant,
                        const Frame<double>& frameA,
@@ -55,12 +55,14 @@ class GazeTargetConstraint : public solvers::Constraint {
                        const Frame<double>& frameB,
                        const Eigen::Ref<const Eigen::Vector3d>& p_BT,
                        double cone_half_angle,
-                       systems::Context<double>* context);
+                       systems::Context<double>* plant_context);
 
   /**
    * Overloaded constructor.
    * Construct from MultibodyPlant<AutoDiffXd> instead of
    * MultibodyPlant<double>.
+   * @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
+   * Documentation string is manually recreated in Python.}
    */
   GazeTargetConstraint(const MultibodyPlant<AutoDiffXd>* plant,
                        const Frame<AutoDiffXd>& frameA,
@@ -69,7 +71,7 @@ class GazeTargetConstraint : public solvers::Constraint {
                        const Frame<AutoDiffXd>& frameB,
                        const Eigen::Ref<const Eigen::Vector3d>& p_BT,
                        double cone_half_angle,
-                       systems::Context<AutoDiffXd>* context);
+                       systems::Context<AutoDiffXd>* plant_context);
 
   ~GazeTargetConstraint() override{};
 
