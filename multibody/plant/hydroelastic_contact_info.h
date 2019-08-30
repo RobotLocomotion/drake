@@ -76,7 +76,6 @@ class HydroelasticContactInfo {
   /// MoveAssignable.
   //@{
 
-
   /** Clones this data structure, making deep copies of all underlying data.
    @note The new object will contain a cloned ContactSurface even if the
          original was constructed using a raw pointer referencing an existing
@@ -85,8 +84,6 @@ class HydroelasticContactInfo {
   HydroelasticContactInfo(const HydroelasticContactInfo& info) {
     *this = info;
   }
-  HydroelasticContactInfo& operator=(HydroelasticContactInfo&&) = default;
-  HydroelasticContactInfo(HydroelasticContactInfo&&);
 
   /** Clones this object in the same manner as the copy constructor.
    @see HydroelasticContactInfo(const HydroelasticContactInfo&)
@@ -99,6 +96,10 @@ class HydroelasticContactInfo {
     vslip_AB_W_ = info.vslip_AB_W_->CloneAndSetMesh(&mesh);
     return *this;
   }
+
+  HydroelasticContactInfo(HydroelasticContactInfo&&);
+  HydroelasticContactInfo& operator=(HydroelasticContactInfo&&) = default;
+
   //@}
 
   /// Returns a reference to the ContactSurface data structure. Note that
@@ -108,9 +109,6 @@ class HydroelasticContactInfo {
             contact_surface_)) {
       return *drake::get<const geometry::ContactSurface<T>*>(contact_surface_);
     } else {
-      DRAKE_DEMAND(
-          drake::holds_alternative<
-              std::unique_ptr<geometry::ContactSurface<T>>>(contact_surface_));
       return *drake::get<std::unique_ptr<geometry::ContactSurface<T>>>
                   (contact_surface_);
     }
