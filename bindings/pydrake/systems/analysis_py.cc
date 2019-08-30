@@ -60,9 +60,9 @@ PYBIND11_MODULE(analysis, m) {
         .def(py::init<const System<T>&, const T&, Context<T>*>(),
             py::arg("system"), py::arg("max_step_size"),
             py::arg("context") = nullptr,
-            // Keep alive, reference: `self` keeps `System` alive.
+            // Keep alive, reference: `self` keeps `system` alive.
             py::keep_alive<1, 2>(),
-            // Keep alive, reference: `self` keeps `Context` alive.
+            // Keep alive, reference: `self` keeps `context` alive.
             py::keep_alive<1, 4>(), doc.RungeKutta2Integrator.ctor.doc);
 
     DefineTemplateClassWithDefault<RungeKutta3Integrator<T>, IntegratorBase<T>>(
@@ -70,18 +70,18 @@ PYBIND11_MODULE(analysis, m) {
         doc.RungeKutta3Integrator.doc)
         .def(py::init<const System<T>&, Context<T>*>(), py::arg("system"),
             py::arg("context") = nullptr,
-            // Keep alive, reference: `self` keeps `System` alive.
+            // Keep alive, reference: `self` keeps `system` alive.
             py::keep_alive<1, 2>(),
-            // Keep alive, reference: `self` keeps `Context` alive.
+            // Keep alive, reference: `self` keeps `context` alive.
             py::keep_alive<1, 3>(), doc.RungeKutta3Integrator.ctor.doc);
 
     DefineTemplateClassWithDefault<Simulator<T>>(
         m, "Simulator", GetPyParam<T>(), doc.Simulator.doc)
         .def(py::init<const System<T>&, unique_ptr<Context<T>>>(),
             py::arg("system"), py::arg("context") = nullptr,
-            // Keep alive, reference: `self` keeps `System` alive.
+            // Keep alive, reference: `self` keeps `system` alive.
             py::keep_alive<1, 2>(),
-            // Keep alive, ownership: `Context` keeps `self` alive.
+            // Keep alive, ownership: `context` keeps `self` alive.
             py::keep_alive<3, 1>(), doc.Simulator.ctor.doc)
         .def("Initialize", &Simulator<T>::Initialize,
             doc.Simulator.Initialize.doc)
@@ -100,7 +100,8 @@ PYBIND11_MODULE(analysis, m) {
                 std::unique_ptr<IntegratorBase<T>> integrator) {
               return self->reset_integrator(std::move(integrator));
             },
-            // Keep alive, ownership: `Integrator` keeps `self` alive.
+            py::arg("integrator"),
+            // Keep alive, ownership: `integrator` keeps `self` alive.
             py::keep_alive<2, 1>(),
             doc.Simulator.reset_integrator.doc_1args_stduniqueptr)
         .def("set_publish_every_time_step",
