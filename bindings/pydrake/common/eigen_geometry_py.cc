@@ -298,7 +298,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     DefCopyAndDeepCopy(&cls);
     DefCast<T>(&cls, kCastDoc);
     DefPickle(&cls,
-        // Use Python methods to use `wxyz` form.
+        // Leverage Python API so we can easily use `wxyz` form.
         [](py::object self) { return self.attr("wxyz")(); },
         [py_class_obj](py::object wxyz) -> Class {
           return py_class_obj(wxyz).cast<Class>();

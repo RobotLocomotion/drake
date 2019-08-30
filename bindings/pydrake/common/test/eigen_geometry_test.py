@@ -1,8 +1,6 @@
 import pydrake.common.eigen_geometry as mut
 
 import copy
-from io import BytesIO
-import pickle
 import unittest
 
 import numpy as np
@@ -13,6 +11,7 @@ from pydrake.symbolic import Expression
 import pydrake.common.test.eigen_geometry_test_util as test_util
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 
 
 def normalize(x):
@@ -29,23 +28,6 @@ class TestEigenGeometry(unittest.TestCase):
             U_list = [T]
         for U in U_list:
             self.assertIsInstance(value.cast[U](), template[U], U)
-
-    def check_pickle(self, T, input, value_to_compare):
-        if six.PY2:
-            # Pickling explicitly disabled in Python 2.
-            with self.assertRaises(RuntimeError) as cm:
-                pickle.dump(input, BytesIO())
-            return
-        if T == Expression:
-            # Pickling not enabled for Expression.
-            return
-        f = BytesIO()
-        pickle.dump(input, f)
-        f.seek(0)
-        output = pickle.load(f)
-        input_value = value_to_compare(input)
-        output_value = value_to_compare(output)
-        numpy_compare.assert_equal(input_value, output_value)
 
     @numpy_compare.check_all_types
     def test_argument_deduction(self, T):
@@ -153,7 +135,7 @@ class TestEigenGeometry(unittest.TestCase):
             self.assertTrue(isinstance(value, mut.Quaternion))
             test_util.check_quaternion(value)
 
-        self.check_pickle(T, q_AB, Quaternion.wxyz)
+        assert_pickle(self, q_AB, Quaternion.wxyz, T=T)
 
     @numpy_compare.check_all_types
     def test_isometry3(self, T):
@@ -231,7 +213,7 @@ class TestEigenGeometry(unittest.TestCase):
             numpy_compare.assert_float_equal(
                 eval("X_AB @ p_BQ"), p_AQ)
 
-        self.check_pickle(T, X_AB, Isometry3.matrix)
+        assert_pickle(self, X_AB, Isometry3.matrix, T=T)
 
     def test_translation(self):
         # Test `type_caster`s.
@@ -302,4 +284,4 @@ class TestEigenGeometry(unittest.TestCase):
         def get_vector(value):
             return np.hstack((value.angle(), value.axis()))
 
-        self.check_pickle(T, value, get_vector)
+        assert_pickle(self, value, get_vector, T=T)

@@ -446,6 +446,7 @@ drake_py_unittest(
     name = "cpp_template_test",
     deps = [
         ":cpp_template_py",
+        "//bindings/pydrake/common/test_utilities:pickle_compare_py",
     ],
 )
 
