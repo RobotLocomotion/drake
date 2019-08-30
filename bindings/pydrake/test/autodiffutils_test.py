@@ -24,6 +24,7 @@ from pydrake.test.autodiffutils_test_util import (
     autodiff_vector3_pass_through,
 )
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 
 # Use convenience abbreviation.
 AD = AutoDiffXd
@@ -69,6 +70,8 @@ class TestAutoDiffXd(unittest.TestCase):
         # Ensure we can copy.
         numpy_compare.assert_equal(copy.copy(a), a)
         numpy_compare.assert_equal(copy.deepcopy(a), a)
+        # Ensure that we can pickle.
+        assert_pickle(self, a, lambda x: x)
 
     def test_array_api(self):
         a = AD(1, [1., 0])

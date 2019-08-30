@@ -1,4 +1,6 @@
 boto3; python_version >= "3.3"
+ipywidgets; python_version >= "3.5"  # For Jupyter
+jupyter; python_version >= "3.5"
 pygame
 # Constrain Sphinx due to hack customizations for templates in
 # `pydrake_sphinx_extension`.

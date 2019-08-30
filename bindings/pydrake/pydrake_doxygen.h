@@ -253,22 +253,29 @@ be named `.doc_deprecated...` instead of just `.doc...`.
 @anchor PydrakeKeepAlive
 ## Keep Alive Behavior
 
-`py::keep_alive` is used heavily throughout this code. For more
-information, please see [the pybind11 documentation](
+`py::keep_alive<Nurse, Patient>()` is used heavily throughout this code. Please
+first review [the pybind11 documentation](
 http://pybind11.readthedocs.io/en/stable/advanced/functions.html#keep-alive).
 
-Terse notes are added to method bindings to indicate the patient
-(object being kept alive by nurse) and the nurse (object keeping patient
-alive). To expand on them:
-- "Keep alive, ownership" implies that one argument is owned directly by
-one of the other arguments (`self` is included in those arguments, for
-`py::init<>` and class methods).
-- "Keep alive, reference" implies a reference that is lifetime-sensitive
-(something that is not necessarily owned by the other arguments).
-- "Keep alive, transitive" implies a transfer of ownership of owned
-objects from one container to another (e.g. transferring all `System`s
-from `DiagramBuilder` to `Diagram` when calling
-`DiagramBuilder.Build()`).
+`py::keep_alive` decorations should be added after all `py::arg`s are
+specified. Terse comments should be added above these decorations to indicate
+the relationship between the Nurse and the Patient and decode the meaning of
+the Nurse and Patient integers by spelling out either the `py::arg` name (for
+named arguments), `return` for index 0, or `self` (not `this`) for index 1 when
+dealing with methods / members. The primary relationships:
+- "Keep alive, ownership" implies that a Patient owns the Nurse (or vice
+versa).
+- "Keep alive, reference" implies a Patient that is referred to by the Nurse.
+If there is an indirect / transitive relationship (storing a reference to
+an argument's member or a transfer of ownership, as with
+`DiagramBuilder.Build()`), append `(tr.)` to the relationship.
+
+Some example comments:
+
+```
+// Keep alive, reference: `self` keeps `context` alive.
+// Keep alive, ownership (tr.): `return` keeps `self` alive.
+```
 
 @anchor PydrakeOverloads
 ## Function Overloads

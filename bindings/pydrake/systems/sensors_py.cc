@@ -231,8 +231,8 @@ PYBIND11_MODULE(sensors, m) {
       .def(py::init<unique_ptr<RgbdSensor>, double, bool>(), py::arg("sensor"),
           py::arg("period") = double{RgbdSensorDiscrete::kDefaultPeriod},
           py::arg("render_label_image") = true,
-          // Keep alive, ownership: `RgbdSensorDiscrete` keeps `this` alive.
-          py::keep_alive<1, 2>(), doc.RgbdSensorDiscrete.ctor.doc)
+          // Keep alive, ownership: `sensor` keeps `self` alive.
+          py::keep_alive<2, 1>(), doc.RgbdSensorDiscrete.ctor.doc)
       // N.B. Since `camera` is already connected, we do not need additional
       // `keep_alive`s.
       .def("sensor", &RgbdSensorDiscrete::sensor, py_reference_internal,

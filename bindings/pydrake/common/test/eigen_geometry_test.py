@@ -11,6 +11,7 @@ from pydrake.symbolic import Expression
 import pydrake.common.test.eigen_geometry_test_util as test_util
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 
 
 def normalize(x):
@@ -134,6 +135,8 @@ class TestEigenGeometry(unittest.TestCase):
             self.assertTrue(isinstance(value, mut.Quaternion))
             test_util.check_quaternion(value)
 
+        assert_pickle(self, q_AB, Quaternion.wxyz, T=T)
+
     @numpy_compare.check_all_types
     def test_isometry3(self, T):
         Isometry3 = mut.Isometry3_[T]
@@ -210,6 +213,8 @@ class TestEigenGeometry(unittest.TestCase):
             numpy_compare.assert_float_equal(
                 eval("X_AB @ p_BQ"), p_AQ)
 
+        assert_pickle(self, X_AB, Isometry3.matrix, T=T)
+
     def test_translation(self):
         # Test `type_caster`s.
         value = test_util.create_translation()
@@ -275,3 +280,8 @@ class TestEigenGeometry(unittest.TestCase):
         numpy_compare.assert_equal(value.rotation(), value_sym.rotation())
         numpy_compare.assert_equal(value.angle(), -value_sym.angle())
         numpy_compare.assert_equal(value.axis(), -value_sym.axis())
+
+        def get_vector(value):
+            return np.hstack((value.angle(), value.axis()))
+
+        assert_pickle(self, value, get_vector, T=T)

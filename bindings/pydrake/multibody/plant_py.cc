@@ -911,7 +911,7 @@ PYBIND11_MODULE(plant, m) {
       // Keep alive, reference transfer: `lcm` keeps `builder` alive.
       py::keep_alive<3, 1>(), py_reference, py::arg("builder"),
       py::arg("plant"), py::arg("lcm") = nullptr,
-      doc.ConnectContactResultsToDrakeVisualizer.doc_4args);
+      doc.ConnectContactResultsToDrakeVisualizer.doc_3args);
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake

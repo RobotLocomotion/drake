@@ -41,7 +41,7 @@ def fortran_library(
         name = name + "_ar_genrule",
         srcs = objs,
         outs = [libname],
-        cmd = "$(AR) q $@ $(SRCS)",
+        cmd = "$(AR) qcD $@ $(SRCS)",
         toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
         visibility = ["//visibility:private"],
     )
