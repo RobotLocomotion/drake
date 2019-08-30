@@ -799,14 +799,6 @@ HydroelasticContactInfo<double> CreateContactInfo(
   return calculator.ComputeContactInfo(data, dissipation, mu_coulomb);
 }
 
-// Verifies that the HydroelasticContactInfo structure uses the raw pointer.
-GTEST_TEST(HydroelasticContactInfo, Construction) {
-  std::unique_ptr<ContactSurface<double>> contact_surface;
-  HydroelasticContactInfo<double> contact_info =
-      CreateContactInfo(&contact_surface);
-  EXPECT_EQ(&contact_info.contact_surface(), contact_surface.get());
-}
-
 // Verifies that the HydroelasticContactInfo structure uses the raw pointer
 // and the unique pointer, as appropriate, on copy construction.
 GTEST_TEST(HydroelasticContactInfo, CopyConstruction) {
