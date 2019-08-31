@@ -207,18 +207,24 @@ VolumeMesh<T> MakeBoxVolumeMesh(const Box& box, double target_edge_length) {
 //  mesh is convenient but not the most efficient. Other ways to consider is
 //  generating both the volume mesh and the surface mesh at the same time, or
 //  generating the surface mesh directly without the volume mesh.
+// TODO(DamrongGuoy): Document more precisely about the mesh pattern and its
+//  edge length after we finalize the algorithms. Right now the algorithm for
+//  the volume mesh is still evolving, so it's premature to promise a precise
+//  outcome of the extracted surface mesh.
 /**
- Generates a triangulated surface mesh of a given box. On each rectangular
- face of the box, the mesh vertices are on a rectangular grid controlled by
- `target_edge_length`.
+ Generates a triangulated surface mesh of a given box. The output mesh will
+ have these properties:
+ 1. The generated vertices are unique. There is no repeating vertices in the
+    list of vertex coordinates.
+ 2. The generated triangles are _conforming_. Two triangles intersect in
+    their shared edge, or shared vertices, or not at all. There is no partial
+    overlapping of two triangles.
  @param[in] box
      The box shape specification (see drake::geometry::Box).
  @param[in] target_edge_length
-     Control the resolution of the mesh. The length of axis-aligned edges
-     of the mesh will be less than or equal to this parameter.  The length of
-     non-axis-aligned edges will be less than or equal to √2 of this parameter.
-     If `target_edge_length` is larger than all of the box's dimensions, we
-     will get the coarsest possible surface mesh with only 8 vertices.
+     Control the resolution of the mesh. A smaller `target_edge_length`
+     tends to give a denser mesh. Majority of the edges should have their
+     lengths around this parameter.
  @retval surface_mesh
  @tparam T The underlying scalar type. Must be a valid Eigen scalar.
  */

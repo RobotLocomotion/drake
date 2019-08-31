@@ -144,20 +144,6 @@ GTEST_TEST(MakeBoxSurfaceMeshTest, GenerateSurface) {
   EXPECT_EQ(expect_num_vertices, surface_mesh.num_vertices());
 }
 
-// Checks that we get the coarsest mesh when the target edge length is larger
-// than the size of the box as documented in the API.
-GTEST_TEST(MakeBoxSurfaceMeshTest, GenerateCoarsestSurface) {
-  const Box box(0.2, 0.4, 0.8);
-  // By setting the target edge length larger than the size of the box, we
-  // expect the mesh to be coarsest, i.e., only 8 vertices.
-  const double target_edge_length = 1.0;
-  const SurfaceMesh<double> surface_mesh =
-      MakeBoxSurfaceMesh<double>(box, target_edge_length);
-
-  const int expect_num_vertices = 8;
-  EXPECT_EQ(expect_num_vertices, surface_mesh.num_vertices());
-}
-
 }  // namespace
 }  // namespace internal
 }  // namespace geometry

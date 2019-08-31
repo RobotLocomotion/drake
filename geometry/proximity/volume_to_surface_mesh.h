@@ -149,7 +149,9 @@ std::vector<VolumeVertexIndex> CollectUniqueVertices(
                 measured and expressed in the same frame E of the volume mesh.
  @pre           The vertices of the volume mesh are unique. Adjacent
                 tetrahedra share the same vertices, instead of repeating the
-                vertices with the same coordinates.
+                vertices with the same coordinates. Otherwise, the returned
+                surface mesh will have extra triangles in addition to the
+                boundary triangles of the volume.
  @tparam T      The underlying scalar type for coordinates, e.g., double
                 or AutoDiffXd. Must be a valid Eigen scalar.
  */

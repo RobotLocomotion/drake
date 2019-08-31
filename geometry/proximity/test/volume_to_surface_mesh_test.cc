@@ -103,7 +103,7 @@ GTEST_TEST(VolumeToSurfaceMeshTest, CollectUniqueVertices) {
 }
 
 template <typename T>
-void TestVolumeToSurfaceMesh(void) {
+void TestVolumeToSurfaceMesh() {
   const Box box(0.2, 0.4, 0.6);
   const double target_edge_length = 0.1;
   const auto volume = MakeBoxVolumeMesh<T>(box, target_edge_length);

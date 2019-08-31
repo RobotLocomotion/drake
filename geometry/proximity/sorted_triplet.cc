@@ -4,7 +4,7 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-// Some template instantiations.
+// Check compilation.
 template struct SortedTriplet<double>;
 template struct SortedTriplet<int>;
 

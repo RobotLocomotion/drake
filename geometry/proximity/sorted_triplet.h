@@ -12,11 +12,15 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+// TODO(DamrongGuoy): If we add hash_append, change the documentation below
+//  to say it can be used with std::unordered_map and std::unordered_set.
+
 /// This class is similar to the drake::SortedPair class. However, this class
 /// uses a triplet of homogeneous types. Both SortedPair and SortedTriplet
 /// sort the values such that one value is less than or equal to the next one.
-/// The SortedTriplet class can be used to generate keys for std::map from
-/// triplets of objects.
+/// The SortedTriplet class can be used to generate keys for std::map (or
+/// std::set) from triplets of objects. However, it cannot be used to
+/// generate keys for std::unordered_map (or std::unordered_set).
 ///
 /// @tparam T A template type that provides `operator<` and supports default
 ///           construction.
@@ -31,7 +35,7 @@ struct SortedTriplet {
   /// respective default constructors.
   SortedTriplet() = default;
 
-  // TODO(DamrongGuoy): Rvalue reference constructor, permits constructing
+  // TODO(DamrongGuoy): Add rvalue reference constructor, permits constructing
   //  with std::unique_ptr types, for example.
 
   /// Constructs a %SortedTriplet from three objects.
@@ -39,9 +43,9 @@ struct SortedTriplet {
     std::stable_sort(objects_.begin(), objects_.end());
   }
 
-  // TODO(DamrongGuoy): Type-converting copy constructor.
+  // TODO(DamrongGuoy): Add type-converting copy constructor.
 
-  // TODO(DamrongGuoy): Resets the stored objects.
+  // TODO(DamrongGuoy): Add set(a,b,c) to reset the stored objects.
 
   /// Gets the first (according to `operator<`) of the objects.
   const T& first() const { return objects_[0]; }
@@ -52,9 +56,10 @@ struct SortedTriplet {
   /// Gets the third (according to `operator<`) of the objects.
   const T& third() const { return objects_[2]; }
 
-  // TODO(DamrongGuoy): Swaps `this` and `t`.
+  // TODO(DamrongGuoy): Add Swap(t) to swap `this` and `t`.
 
-  // TODO(DamrongGuoy): Implements the @ref hash_append concept.
+  // TODO(DamrongGuoy): Add hash_append(HashAlgorithm&, SortedTriplet&) to
+  //  implement the hash_append concept.
 
  private:
   // The three objects in the order of T::operator<.
@@ -84,7 +89,7 @@ inline bool operator<(const SortedTriplet<T>& x, const SortedTriplet<T>& y) {
 }  // namespace geometry
 }  // namespace drake
 
-// TODO(DamrongGuoy): Implements std::swap().
+// TODO(DamrongGuoy): Implement std::swap().
 
-// TODO(DamrongGuoy): Provides std::hash<SortedTriplet<T>>.
+// TODO(DamrongGuoy): Implement std::hash<SortedTriplet<T>>.
 
