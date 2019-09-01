@@ -15,9 +15,8 @@ TEST_F(AutoDiffXdTest, Max) {
 TEST_F(AutoDiffXdTest, TieBreakingCheck) {
   // Given `max(v1, v2)`, Eigen autodiff's implementation of the max function
   // and our overload return the first argument `v1` when `v1 == v2` holds. In
-  // Drake, we rely on this implementation-detail (i.e. Maliput Dragway's
-  // Lane::ImplDoToLanePositionT method). This test checks if the property holds
-  // so that we can detect a possible change in future.
+  // Drake, we rely on this implementation-detail. This test checks if the
+  // property holds so that we can detect a possible change in future.
   const AutoDiffXd v1{1.0, Vector1<double>(1.)};
   const AutoDiffXd v2{1.0, Vector1<double>(2.)};
   EXPECT_EQ(max(v1, v2).derivatives()[0], 1.0);  // Returns v1, not v2.

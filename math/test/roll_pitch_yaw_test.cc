@@ -19,9 +19,9 @@ using Eigen::Matrix3d;
 
 const double kEpsilon = std::numeric_limits<double>::epsilon();
 
-// This data structure is used in symbolic and automotive code. If a `Matrix3`
-// overload is added to the constructors, then it creates an ambiguous overload
-// for types like this one (and things like `Eigen::Ref<>`).
+// This data structure is used in symbolic code. If a `Matrix3` overload is
+// added to the constructors, then it creates an ambiguous overload for types
+// like this one (and things like `Eigen::Ref<>`).
 using Vector3dUnaligned = Eigen::Matrix<double, 3, 1, Eigen::DontAlign>;
 
 // This tests the RollPitchYaw constructors and IsNearlyEqualTo().

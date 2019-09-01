@@ -64,15 +64,6 @@ TEST_F(RigidBodyTreeCloneTest, CloneAtlas) {
   EXPECT_TRUE(CompareToClone(*tree_));
 }
 
-// Tests RigidBodyTree::Clone() using a Prius.
-TEST_F(RigidBodyTreeCloneTest, ClonePrius) {
-  const std::string filename = FindResourceOrThrow(
-      "drake/automotive/models/prius/prius.sdf");
-  AddModelInstancesFromSdfFileToWorld(filename, multibody::joints::kQuaternion,
-      tree_.get());
-  EXPECT_TRUE(CompareToClone(*tree_));
-}
-
 // Tests RigidBodyTree::Clone() using Valkyrie.
 TEST_F(RigidBodyTreeCloneTest, CloneValkyrie) {
   const std::string filename = FindResourceOrThrow(

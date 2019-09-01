@@ -24,8 +24,7 @@ namespace geometry {
       together within a geometry source.
 
  @internal The "frame group" is intended as a generic synonym for the model
- instance id defined by the RigidBodyTree and used again in automotive to
- serve as unique car identifiers.
+ instance id defined by the RigidBodyTree.
 
  @see SceneGraph */
 class GeometryFrame {
