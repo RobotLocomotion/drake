@@ -606,7 +606,9 @@ class TestPlant(unittest.TestCase):
         # Ensure we can tick this system. If so, all type conversions
         # are working properly.
         simulator = Simulator(diagram)
-        simulator.StepTo(0.01)
+        simulator.AdvanceTo(0.01)
+        with catch_drake_warnings(expected_count=1):
+            simulator.StepTo(0.011)
 
     @numpy_compare.check_all_types
     def test_model_instance_state_access(self, T):
