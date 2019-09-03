@@ -46,7 +46,7 @@ if __name__ == "__main__":
     main()
 """.lstrip()
 
-def jupyter_py_binary(
+def drake_jupyter_py_binary(
         name,
         notebook = None,
         srcs = None,
