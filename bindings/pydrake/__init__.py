@@ -4,7 +4,7 @@
 from __future__ import absolute_import, division, print_function
 from os.path import abspath, dirname, join
 from platform import python_version_tuple
-from sys import stderr
+import sys
 
 import six
 
@@ -44,17 +44,17 @@ def getDrakePath():
 def _execute_extra_python_code(m):
     # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
     # rationale.
-    pydrake_dir = dirname(__file__)
-    orig_pieces = m.__name__.split(".")
-    assert orig_pieces[0] == __name__
-    pieces = [pydrake_dir] + orig_pieces[1:-1] + [
-        "_{}_extra.py".format(orig_pieces[-1])]
-    filename = join(*pieces)
+    module_path = m.__name__.split(".")
+    top_module_name = module_path[0]
+    top_module_dir = dirname(sys.modules[top_module_name].__file__)
+    extra_filename = join(
+        top_module_dir, *module_path[1:-1],
+        "_{}_extra.py".format(module_path[-1]))
     if six.PY2:
-        execfile(filename, m.__dict__)
+        execfile(extra_filename, m.__dict__)
     else:
-        with open(filename) as f:
-            _code = compile(f.read(), filename, 'exec')
+        with open(extra_filename) as f:
+            _code = compile(f.read(), extra_filename, 'exec')
             exec(_code, m.__dict__, m.__dict__)
 
 
