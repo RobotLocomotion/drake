@@ -7,9 +7,9 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
-load("//tools/jupyter:jupyter_py.bzl", "jupyter_py_binary")
+load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
 
-jupyter_py_binary(
+drake_jupyter_py_binary(
     name = "mathematical_program",
     add_test_rule = 1,
     deps = [
@@ -17,7 +17,7 @@ jupyter_py_binary(
     ],
 )
 
-jupyter_py_binary(
+drake_jupyter_py_binary(
     name = "solver_parameters",
     add_test_rule = 1,
     deps = [
