@@ -7,7 +7,6 @@
 #include "drake/common/text_logging.h"
 
 namespace drake {
-namespace internal {
 namespace {
 
 // Test error message codepaths.  We purposefully lobotomize the environment
@@ -30,5 +29,4 @@ GTEST_TEST(FindRunfilesFailTest, ErrorMessageTest) {
 }
 
 }  // namespace
-}  // namespace internal
 }  // namespace drake

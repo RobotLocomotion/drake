@@ -15,7 +15,6 @@
 // as called by Drake's CMakeLists.txt files).  It is nominally dead code.
 
 namespace drake {
-namespace internal {
 
 bool HasRunfiles() {
   return false;
@@ -27,5 +26,4 @@ RlocationOrError FindRunfile(const std::string& resource_path) {
   return result;
 }
 
-}  // namespace internal
 }  // namespace drake
