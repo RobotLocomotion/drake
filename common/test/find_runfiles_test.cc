@@ -8,7 +8,6 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
-namespace internal {
 namespace {
 
 GTEST_TEST(FindRunfilesTest, AcceptanceTest) {
@@ -16,7 +15,7 @@ GTEST_TEST(FindRunfilesTest, AcceptanceTest) {
   const auto result = FindRunfile(
       "drake/common/test/find_resource_test_data.txt");
   EXPECT_GT(result.abspath.size(), 0);
-  EXPECT_TRUE(IsFile(result.abspath));
+  EXPECT_TRUE(internal::IsFile(result.abspath));
   EXPECT_EQ(result.error, "");
 }
 
@@ -41,5 +40,4 @@ GTEST_TEST(FindRunfilesTest, EmptyPathTest) {
 };
 
 }  // namespace
-}  // namespace internal
 }  // namespace drake
