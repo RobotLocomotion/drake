@@ -1,0 +1,28 @@
+# -*- mode: python -*-
+# vi: set ft=python :
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+    "drake_py_unittest",
+)
+load("//tools/jupyter:jupyter_py.bzl", "jupyter_py_binary")
+
+jupyter_py_binary(
+    name = "mathematical_program",
+    add_test_rule = 1,
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+jupyter_py_binary(
+    name = "solver_parameters",
+    add_test_rule = 1,
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+add_lint_tests()
