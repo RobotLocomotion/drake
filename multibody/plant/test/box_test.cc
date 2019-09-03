@@ -123,7 +123,8 @@ GTEST_TEST(Box, UnderStiction) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // Verify the deprecated method still works.
+    // Verify the deprecated methods still work.
+    ASSERT_EQ(contact_results.num_contacts(), 1);
     ASSERT_EQ(
         &contact_results.contact_info(0),
         &contact_results.point_pair_contact_info(0));

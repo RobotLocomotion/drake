@@ -33,7 +33,9 @@ class ContactResults {
   void Clear();
 
   DRAKE_DEPRECATED("2019-10-01", "Use num_point_pair_contacts() instead.")
-  int num_contacts() const;
+  int num_contacts() const {
+    return num_point_pair_contacts();
+  }
 
   /** Returns the number of point pair contacts. */
   int num_point_pair_contacts() const {
