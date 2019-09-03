@@ -269,6 +269,8 @@ drake_cc_googletest(
     name = "make_unit_sphere_mesh_test",
     deps = [
         ":make_unit_sphere_mesh",
+        "//common:sorted_pair",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
