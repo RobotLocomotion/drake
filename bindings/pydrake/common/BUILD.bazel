@@ -94,6 +94,10 @@ drake_py_library(
     name = "deprecation_py",
     srcs = ["deprecation.py"],
     imports = PACKAGE_INFO.py_imports,
+    visibility = [
+        "//bindings/pydrake:__subpackages__",
+        "//tools/jupyter:__pkg__",
+    ],
 )
 
 # N.B. Since `module_py` incorporates `deprecation_py`, C++ Python libraries
@@ -398,7 +402,10 @@ drake_py_library(
     testonly = 1,
     srcs = glob(["test/deprecation_example/*.py"]),
     imports = ["test"],
-    visibility = ["//visibility:private"],
+    visibility = [
+        # N.B. Permit granularity, since this does not depend on libdrake.
+        "//tools/jupyter:__pkg__",
+    ],
     deps = [
         ":deprecation_example_cc_module_py",
         ":deprecation_py",
