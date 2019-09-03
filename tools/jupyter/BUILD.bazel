@@ -1,0 +1,53 @@
+# -*- mode: python -*-
+# vi: set ft=python :
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+    "drake_py_unittest",
+)
+load("//tools/jupyter:jupyter_py.bzl", "jupyter_py_binary")
+
+drake_py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    deps = ["//tools:module_py"],
+)
+
+drake_py_library(
+    name = "jupyter_bazel_py",
+    srcs = ["jupyter_bazel.py"],
+    visibility = ["//visibility:public"],
+    deps = [":module_py"],
+)
+
+drake_py_library(
+    name = "example_library",
+    srcs = ["example_library.py"],
+    imports = [":module_py"],
+)
+
+jupyter_py_binary(
+    name = "example",
+    add_test_rule = 1,
+    deps = [":example_library"],
+)
+
+# Add example failing notebook.
+jupyter_py_binary(
+    name = "failing_notebook",
+    testonly = 1,
+    # Do not test this on its own because it is a negative test fixture for
+    # `failing_notebook_test`.
+    add_test_rule = 0,
+    notebook = "test/failing_notebook.ipynb",
+)
+
+# Ensure the notebook fails as expected.
+drake_py_unittest(
+    name = "failing_notebook_test",
+    deps = [":failing_notebook"],
+)
+
+add_lint_tests()
