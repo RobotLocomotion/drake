@@ -183,6 +183,8 @@ class TestGeneral(unittest.TestCase):
         self.assertFalse(IsObservable(system))
 
         system = AffineSystem(A, B, f0, C, D, y0, .1)
+        self.assertEqual(system.get_input_port(0), system.get_input_port())
+        self.assertEqual(system.get_output_port(0), system.get_output_port())
         context = system.CreateDefaultContext()
         self.assertEqual(system.get_input_port(0).size(), 1)
         self.assertEqual(context.get_discrete_state_vector().size(), 2)
