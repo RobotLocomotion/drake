@@ -21,7 +21,7 @@ drake_cc_package_library(
         ":make_box_mesh",
         ":make_unit_sphere_mesh",
         ":mesh_field",
-        ":mesh_halfspace_intersection",
+        ":mesh_half_space_intersection",
         ":mesh_intersection",
         ":proximity_utilities",
         ":surface_mesh",
@@ -107,9 +107,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "mesh_halfspace_intersection",
+    name = "mesh_half_space_intersection",
     hdrs = [
-        "mesh_halfspace_intersection.h",
+        "mesh_half_space_intersection.h",
     ],
     deps = [
         ":surface_mesh",
@@ -270,9 +270,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "mesh_halfspace_intersection_test",
+    name = "mesh_half_space_intersection_test",
     deps = [
-        ":mesh_halfspace_intersection",
+        ":mesh_half_space_intersection",
     ],
 )
 

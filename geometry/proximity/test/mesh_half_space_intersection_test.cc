@@ -1,4 +1,4 @@
-#include "drake/geometry/proximity/mesh_halfspace_intersection.h"
+#include "drake/geometry/proximity/mesh_half_space_intersection.h"
 
 #include <gtest/gtest.h>
 
@@ -15,19 +15,19 @@ template <typename T>
 class MeshHalfspaceIntersectionTest : public ::testing::Test {
  public:
   void SetUp() {
-    // The tests all use halfspace normal [0 0 1], with point [0 0 0]
-    // lying on the halfspace.
+    // The tests all use half space normal [0 0 1], with point [0 0 0]
+    // lying on the half space.
     normal_H_ = Vector3<T>(0, 0, 1);
     const Vector3<T> point_H(0, 0, 0);
     d_ = normal_H_.dot(point_H);
   }
 
-  /// Returns the normal to the halfspace.
+  /// Returns the normal to the half space.
   const Vector3<T>& normal_H() const { return normal_H_; }
 
-  /// Returns the constant d to the halfspace such that normal_H' * x = d,
-  /// where x is an arbitrary point on the surface of the halfspace.
-  const T& halfspace_constant() const { return d_; }
+  /// Returns the constant d to the half space such that normal_H' * x = d,
+  /// where x is an arbitrary point on the surface of the half space.
+  const T& half_space_constant() const { return d_; }
 
   /// Creates the SurfaceMesh using the given vertices.
   SurfaceMesh<T> CreateSurfaceMesh(const Vector3<T>& v0, const Vector3<T>& v1,
@@ -73,12 +73,13 @@ class MeshHalfspaceIntersectionTest : public ::testing::Test {
     if (closest_dist > tol)
       return false;
 
-    // Finally, ensure that the normals are pointing the same direction.
+    // Finally, ensure that *either* the normals are pointing the same direction
+    // or the areas of both triangles are zero.
     const Vector3<T> na =
         (vertices_a[1] - vertices_a[0]).cross(vertices_a[2] - vertices_a[1]);
     const Vector3<T> nb =
         (vertices_b[1] - vertices_b[0]).cross(vertices_b[2] - vertices_b[1]);
-    return (na.dot(nb) > 0);
+    return (na.dot(nb) > 0 || (na.norm() == 0 && nb.norm() == 0));
   }
 
   // Checks whether two meshes are equivalent, regardless of how
@@ -137,11 +138,11 @@ class MeshHalfspaceIntersectionTest : public ::testing::Test {
 };
 TYPED_TEST_CASE_P(MeshHalfspaceIntersectionTest);
 
-// Verifies that a triangle that lies fully outside of the halfspace yields an
-// empty intersection. This covers Case (10) in the code.
+// Verifies that a triangle that lies fully outside of the half space yields an
+// empty intersection. This covers Case 4 in the code.
 TYPED_TEST_P(MeshHalfspaceIntersectionTest, NoIntersection) {
   // Create the mesh, constructing the vertices of the triangle to lie outside
-  // the halfspace.
+  // the half space.
   const SurfaceMesh<T> mesh = this->CreateSurfaceMesh(
       Vector3<T>(0, 0, 1), Vector3<T>(1, 0, 1), Vector3<T>(0, 1, 1));
 
@@ -152,23 +153,21 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, NoIntersection) {
       vertices_to_newly_created_vertices;
   std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>
       edges_to_newly_created_vertices;
-  SurfaceMeshHalfspaceIntersection<double>::
-      ConstructTriangleHalfspaceIntersectionPolygon(
-          mesh.vertices(), mesh.element(SurfaceFaceIndex(0)), this->normal_H(),
-          this->halfspace_constant(), &new_vertices, &new_faces,
-          &vertices_to_newly_created_vertices,
-          &edges_to_newly_created_vertices);
+  internal::ConstructTriangleHalfspaceIntersectionPolygon(
+      mesh.vertices(), mesh.element(SurfaceFaceIndex(0)), this->normal_H(),
+      this->half_space_constant(), &new_vertices, &new_faces,
+      &vertices_to_newly_created_vertices, &edges_to_newly_created_vertices);
   EXPECT_TRUE(new_vertices.empty());
   EXPECT_TRUE(new_faces.empty());
   EXPECT_TRUE(vertices_to_newly_created_vertices.empty());
   EXPECT_TRUE(edges_to_newly_created_vertices.empty());
 }
 
-// Verifies that a triangle that lies inside or on the halfspace yields
-// that same triangle. This covers Cases (1) and (4) in the code.
+// Verifies that a triangle that lies inside or on the half space yields
+// that same triangle. This covers Case 1 in the code.
 TYPED_TEST_P(MeshHalfspaceIntersectionTest, InsideOrOnIntersection) {
   // Create the mesh, constructing the vertices of the triangle to lie outside
-  // the halfspace.
+  // the half space.
   const SurfaceMesh<T> mesh = this->CreateSurfaceMesh(
     Vector3<T>(0, 0, -1), Vector3<T>(1, 0, -1), Vector3<T>(0, 1, -1));
 
@@ -179,71 +178,78 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, InsideOrOnIntersection) {
       vertices_to_newly_created_vertices;
   std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>
       edges_to_newly_created_vertices;
-  SurfaceMeshHalfspaceIntersection<double>::
-      ConstructTriangleHalfspaceIntersectionPolygon(
-          mesh.vertices(), mesh.element(SurfaceFaceIndex(0)), this->normal_H(),
-          this->halfspace_constant(), &new_vertices, &new_faces,
-          &vertices_to_newly_created_vertices,
-          &edges_to_newly_created_vertices);
+  internal::ConstructTriangleHalfspaceIntersectionPolygon(
+      mesh.vertices(), mesh.element(SurfaceFaceIndex(0)), this->normal_H(),
+      this->half_space_constant(), &new_vertices, &new_faces,
+      &vertices_to_newly_created_vertices, &edges_to_newly_created_vertices);
   this->VerifyOriginalTriangleOutput(mesh, vertices_to_newly_created_vertices,
-                               edges_to_newly_created_vertices, new_vertices,
-                               new_faces);
+                                     edges_to_newly_created_vertices,
+                                     new_vertices, new_faces);
 
-  // Construct the vertices of the triangle to lie on the halfspace, using a
-  // distance very close to zero.
-  const T near_zero = std::numeric_limits<double>::epsilon();
+  // Construct the vertices of the triangle to lie exactly on the half space.
   const SurfaceMesh<T> second_mesh = this->CreateSurfaceMesh(
-    Vector3<T>(0, 0, near_zero), Vector3<T>(1, 0, near_zero),
-    Vector3<T>(0, 1, near_zero));
+    Vector3<T>(0, 0, 0), Vector3<T>(1, 0, 0), Vector3<T>(0, 1, 0));
 
-  // Verify the intersection, loosening the tolerance only slightly so the
-  // test will pass.
+  // Verify the intersection.
   new_vertices.clear();
   new_faces.clear();
   vertices_to_newly_created_vertices.clear();
   edges_to_newly_created_vertices.clear();
-  SurfaceMeshHalfspaceIntersection<double>::
-      ConstructTriangleHalfspaceIntersectionPolygon(
-          second_mesh.vertices(), second_mesh.element(SurfaceFaceIndex(0)),
-          this->normal_H(), this->halfspace_constant(), &new_vertices,
-          &new_faces, &vertices_to_newly_created_vertices,
-          &edges_to_newly_created_vertices, near_zero * 10);
+  internal::ConstructTriangleHalfspaceIntersectionPolygon(
+      second_mesh.vertices(), second_mesh.element(SurfaceFaceIndex(0)),
+      this->normal_H(), this->half_space_constant(), &new_vertices, &new_faces,
+      &vertices_to_newly_created_vertices, &edges_to_newly_created_vertices);
   EXPECT_TRUE(edges_to_newly_created_vertices.empty());
   ASSERT_EQ(new_vertices.size(), 3);
   ASSERT_EQ(new_faces.size(), 1);
   ASSERT_EQ(vertices_to_newly_created_vertices.size(), 3);
 }
 
-// Verifies that a triangle that has exactly one vertex lying on the halfspace
-// produces either (a) no intersection (if the other two vertices lie outside
-// the halfspace) or (b) the original triangle (if the other two vertices lie
-// within the halfspace). This covers Cases (9) and (2), respectively.
+// Verifies that a triangle that has exactly one vertex lying on the half space
+// produces either (a) a degenerate intersection (if the other two vertices lie
+// outside the half space) or (b) the original triangle (if the other two
+// vertices lie within the half space). This covers Cases 3 and 1,
+// respectively.
 TYPED_TEST_P(MeshHalfspaceIntersectionTest, VertexOnHalfspaceIntersection) {
-  // Construct two vertices of the triangle to lie outside the halfspace and the
-  // other to lie on the halfspace.
+  // Construct two vertices of the triangle to lie outside the half space and
+  // the other to lie on the half space.
   const SurfaceMesh<T> mesh = this->CreateSurfaceMesh(
     Vector3<T>(0, 0, 0), Vector3<T>(1, 0, 1), Vector3<T>(0, 1, 1));
 
-  // Verify no intersection.
+  // Verify the degenerate intersection.
   std::vector<SurfaceVertex<T>> new_vertices;
   std::vector<SurfaceFace> new_faces;
   std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>
       vertices_to_newly_created_vertices;
   std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>
       edges_to_newly_created_vertices;
-  SurfaceMeshHalfspaceIntersection<double>::
-      ConstructTriangleHalfspaceIntersectionPolygon(
-          mesh.vertices(), mesh.element(SurfaceFaceIndex(0)), this->normal_H(),
-          this->halfspace_constant(), &new_vertices, &new_faces,
-          &vertices_to_newly_created_vertices,
-          &edges_to_newly_created_vertices);
-  EXPECT_TRUE(new_vertices.empty());
-  EXPECT_TRUE(new_faces.empty());
-  EXPECT_TRUE(vertices_to_newly_created_vertices.empty());
-  EXPECT_TRUE(edges_to_newly_created_vertices.empty());
+  internal::ConstructTriangleHalfspaceIntersectionPolygon(
+      mesh.vertices(), mesh.element(SurfaceFaceIndex(0)), this->normal_H(),
+      this->half_space_constant(), &new_vertices, &new_faces,
+      &vertices_to_newly_created_vertices, &edges_to_newly_created_vertices);
+  EXPECT_EQ(new_vertices.size(), 3);
+  EXPECT_EQ(new_faces.size(), 1);
+  EXPECT_EQ(vertices_to_newly_created_vertices.size(), 1);
+  EXPECT_EQ(edges_to_newly_created_vertices.size(), 2);
 
-  // Construct two vertices of the triangle to lie inside the halfspace and the
-  // other to lie on the halfspace.
+  // Check that the mesh that results is equivalent to the expected degenerate
+  // mesh.
+  std::vector<SurfaceVertex<T>> expected_vertices = {
+      SurfaceVertex<T>(Vector3<T>(0, 0, 0)),
+      SurfaceVertex<T>(Vector3<T>(0, 0, 0)),
+      SurfaceVertex<T>(Vector3<T>(0, 0, 0))};
+  typedef SurfaceVertexIndex Index;
+  std::vector<SurfaceFace> expected_faces = {
+      SurfaceFace(Index(0), Index(1), Index(2))};
+  const SurfaceMesh<T> expected_mesh(std::move(expected_faces),
+                                     std::move(expected_vertices));
+  const SurfaceMesh<T> actual_mesh(std::move(new_faces),
+                                   std::move(new_vertices));
+  this->VerifyMeshesEquivalent(
+      expected_mesh, actual_mesh, 10 * std::numeric_limits<double>::epsilon());
+
+  // Construct two vertices of the triangle to lie inside the half space and the
+  // other to lie on the half space.
   const SurfaceMesh<T> second_mesh = this->CreateSurfaceMesh(
     Vector3<T>(0, 0, 0), Vector3<T>(1, 0, -1), Vector3<T>(0, 1, -1));
 
@@ -252,24 +258,22 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, VertexOnHalfspaceIntersection) {
   new_faces.clear();
   vertices_to_newly_created_vertices.clear();
   edges_to_newly_created_vertices.clear();
-  SurfaceMeshHalfspaceIntersection<double>::
-      ConstructTriangleHalfspaceIntersectionPolygon(
-          second_mesh.vertices(), second_mesh.element(SurfaceFaceIndex(0)),
-          this->normal_H(), this->halfspace_constant(), &new_vertices,
-          &new_faces, &vertices_to_newly_created_vertices,
-          &edges_to_newly_created_vertices);
+  internal::ConstructTriangleHalfspaceIntersectionPolygon(
+      second_mesh.vertices(), second_mesh.element(SurfaceFaceIndex(0)),
+      this->normal_H(), this->half_space_constant(), &new_vertices, &new_faces,
+      &vertices_to_newly_created_vertices, &edges_to_newly_created_vertices);
   this->VerifyOriginalTriangleOutput(
       second_mesh, vertices_to_newly_created_vertices,
       edges_to_newly_created_vertices, new_vertices, new_faces);
 }
 
-// Verifies that a triangle that has exactly two vertices lying on the halfspace
-// produces either (a) no intersection (if the other vertex lies outside the
-// halfspace) or (b) the original triangle (if the other vertex lies
-// within the halfspace). This covers Cases (7) and (3), respectively.
+// Verifies that a triangle that has exactly two vertices lying on the half
+// space produces either (a) a degenerate intersection (if the remaining vertex
+// lies outside the half space) or (b) the original triangle (if the other
+// vertex lies within the half space). This covers Cases 2 and 1, respectively.
 TYPED_TEST_P(MeshHalfspaceIntersectionTest, EdgeOnHalfspaceIntersection) {
-  // Construct one vertex of the triangle to lie outside the halfspace and the
-  // other two to lie on the halfspace.
+  // Construct one vertex of the triangle to lie outside the half space and the
+  // other two to lie on the half space.
   const SurfaceMesh<T> mesh = this->CreateSurfaceMesh(
      Vector3<T>(0, 0, 1), Vector3<T>(1, 0, 0), Vector3<T>(0, 1, 0));
 
@@ -280,19 +284,35 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, EdgeOnHalfspaceIntersection) {
       vertices_to_newly_created_vertices;
   std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>
       edges_to_newly_created_vertices;
-  SurfaceMeshHalfspaceIntersection<double>::
-      ConstructTriangleHalfspaceIntersectionPolygon(
-          mesh.vertices(), mesh.element(SurfaceFaceIndex(0)), this->normal_H(),
-          this->halfspace_constant(), &new_vertices, &new_faces,
-          &vertices_to_newly_created_vertices,
-          &edges_to_newly_created_vertices);
-  EXPECT_TRUE(new_vertices.empty());
-  EXPECT_TRUE(new_faces.empty());
-  EXPECT_TRUE(vertices_to_newly_created_vertices.empty());
-  EXPECT_TRUE(edges_to_newly_created_vertices.empty());
+  internal::ConstructTriangleHalfspaceIntersectionPolygon(
+      mesh.vertices(), mesh.element(SurfaceFaceIndex(0)), this->normal_H(),
+      this->half_space_constant(), &new_vertices, &new_faces,
+      &vertices_to_newly_created_vertices, &edges_to_newly_created_vertices);
+  EXPECT_EQ(new_vertices.size(), 4);
+  EXPECT_EQ(new_faces.size(), 2);
+  EXPECT_EQ(vertices_to_newly_created_vertices.size(), 2);
+  EXPECT_EQ(edges_to_newly_created_vertices.size(), 2);
 
-  // Construct one vertex of the triangle to lie inside the halfspace and the
-  // other two to lie on the halfspace.
+  // Check that the mesh that results is equivalent to the expected degenerate
+  // mesh.
+  std::vector<SurfaceVertex<T>> expected_vertices = {
+      SurfaceVertex<T>(Vector3<T>(1, 0, 0)),
+      SurfaceVertex<T>(Vector3<T>(0, 1, 0)),
+      SurfaceVertex<T>(Vector3<T>(1, 0, 0)),
+      SurfaceVertex<T>(Vector3<T>(0, 1, 0))};
+  typedef SurfaceVertexIndex Index;
+  std::vector<SurfaceFace> expected_faces = {
+      SurfaceFace(Index(0), Index(1), Index(2)),
+      SurfaceFace(Index(2), Index(3), Index(0))};
+  const SurfaceMesh<T> expected_mesh(std::move(expected_faces),
+                                     std::move(expected_vertices));
+  const SurfaceMesh<T> actual_mesh(std::move(new_faces),
+                                   std::move(new_vertices));
+  this->VerifyMeshesEquivalent(
+      expected_mesh, actual_mesh, 10 * std::numeric_limits<double>::epsilon());
+
+  // Construct one vertex of the triangle to lie inside the half space and the
+  // other two to lie on the half space.
   const SurfaceMesh<T> second_mesh = this->CreateSurfaceMesh(
     Vector3<T>(0, 0, -1), Vector3<T>(1, 0, 0), Vector3<T>(0, 1, 0));
 
@@ -301,40 +321,34 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, EdgeOnHalfspaceIntersection) {
   new_faces.clear();
   vertices_to_newly_created_vertices.clear();
   edges_to_newly_created_vertices.clear();
-  SurfaceMeshHalfspaceIntersection<double>::
-      ConstructTriangleHalfspaceIntersectionPolygon(
-          second_mesh.vertices(), second_mesh.element(SurfaceFaceIndex(0)),
-          this->normal_H(), this->halfspace_constant(), &new_vertices,
-          &new_faces, &vertices_to_newly_created_vertices,
-          &edges_to_newly_created_vertices);
+  internal::ConstructTriangleHalfspaceIntersectionPolygon(
+      second_mesh.vertices(), second_mesh.element(SurfaceFaceIndex(0)),
+      this->normal_H(), this->half_space_constant(), &new_vertices, &new_faces,
+      &vertices_to_newly_created_vertices, &edges_to_newly_created_vertices);
   this->VerifyOriginalTriangleOutput(
       second_mesh, vertices_to_newly_created_vertices,
       edges_to_newly_created_vertices, new_vertices, new_faces);
 }
 
-// Verifies that a triangle that has two vertices within the halfspace and
-// another outside the halfspace produces a quadrilateral. This covers Case 5.
+// Verifies that a triangle that has two vertices within the half space and
+// another outside the half space produces a quadrilateral. This covers Case 2.
 TYPED_TEST_P(MeshHalfspaceIntersectionTest, QuadrilateralResults) {
-  // Construct one vertex of the triangle to lie outside the halfspace and the
-  // other two to lie inside the halfspace.
+  // Construct one vertex of the triangle to lie outside the half space and the
+  // other two to lie inside the half space.
   const SurfaceMesh<T> mesh = this->CreateSurfaceMesh(
     Vector3<T>(0, 0, 1), Vector3<T>(1, 0, -1), Vector3<T>(0, 1, -1));
 
-  // Verify the intersection. Note that the following test is overly specific
-  // to the logic of the mesh-halfspace intersection routine: it is not actually
-  // required that the vertices be output in the order inside.
+  // Verify the intersection.
   std::vector<SurfaceVertex<T>> new_vertices;
   std::vector<SurfaceFace> new_faces;
   std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>
       vertices_to_newly_created_vertices;
   std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>
       edges_to_newly_created_vertices;
-  SurfaceMeshHalfspaceIntersection<double>::
-      ConstructTriangleHalfspaceIntersectionPolygon(
-          mesh.vertices(), mesh.element(SurfaceFaceIndex(0)), this->normal_H(),
-          this->halfspace_constant(), &new_vertices, &new_faces,
-          &vertices_to_newly_created_vertices,
-          &edges_to_newly_created_vertices);
+  internal::ConstructTriangleHalfspaceIntersectionPolygon(
+      mesh.vertices(), mesh.element(SurfaceFaceIndex(0)), this->normal_H(),
+      this->half_space_constant(), &new_vertices, &new_faces,
+      &vertices_to_newly_created_vertices, &edges_to_newly_created_vertices);
   ASSERT_EQ(new_faces.size(), 2);
   ASSERT_EQ(new_vertices.size(), 4);
   ASSERT_EQ(edges_to_newly_created_vertices.size(), 2);
@@ -357,38 +371,36 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, QuadrilateralResults) {
       expected_mesh, actual_mesh, 10 * std::numeric_limits<double>::epsilon());
 }
 
-// Verifies that a triangle that has one vertex outside the halfspace, one
-// vertex inside the halfspace, and one vertex on the halfspace produces a
-// triangle. This test covers Case 6.
+// Verifies that a triangle that has one vertex outside the half space, one
+// vertex inside the half space, and one vertex on the half space produces two
+// triangles, one degenerate and one non-degenerate. This test covers Case 2.
 TYPED_TEST_P(MeshHalfspaceIntersectionTest, OutsideInsideOn) {
   const SurfaceMesh<T> mesh = this->CreateSurfaceMesh(
     Vector3<T>(0, 0, 1), Vector3<T>(1, 0, 0), Vector3<T>(0, 1, -1));
 
-  // Verify the intersection. Note that the following test is overly specific
-  // to the logic of the mesh-halfspace intersection routine: it is not actually
-  // required that the vertices be output in the order inside.
+  // Verify the intersection.
   std::vector<SurfaceVertex<T>> new_vertices;
   std::vector<SurfaceFace> new_faces;
   std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>
       vertices_to_newly_created_vertices;
   std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>
       edges_to_newly_created_vertices;
-  SurfaceMeshHalfspaceIntersection<double>::
-      ConstructTriangleHalfspaceIntersectionPolygon(
-          mesh.vertices(), mesh.element(SurfaceFaceIndex(0)), this->normal_H(),
-          this->halfspace_constant(), &new_vertices, &new_faces,
-          &vertices_to_newly_created_vertices,
-          &edges_to_newly_created_vertices);
-  ASSERT_EQ(edges_to_newly_created_vertices.size(), 1);
+  internal::ConstructTriangleHalfspaceIntersectionPolygon(
+      mesh.vertices(), mesh.element(SurfaceFaceIndex(0)), this->normal_H(),
+      this->half_space_constant(), &new_vertices, &new_faces,
+      &vertices_to_newly_created_vertices, &edges_to_newly_created_vertices);
+  ASSERT_EQ(edges_to_newly_created_vertices.size(), 2);
 
   // Check that the mesh that results is equivalent to the expected mesh.
   std::vector<SurfaceVertex<T>> expected_vertices = {
       SurfaceVertex<T>(Vector3<T>(1, 0, 0)),
-      SurfaceVertex<T>(Vector3<T>(0, 1, -1)),
-      SurfaceVertex<T>(Vector3<T>(0, .5, 0)) };
+      SurfaceVertex<T>(Vector3<T>(0, .5, 0)),
+      SurfaceVertex<T>(Vector3<T>(1, 0, 0)),
+      SurfaceVertex<T>(Vector3<T>(0, 1, -1))};
   typedef SurfaceVertexIndex Index;
   std::vector<SurfaceFace> expected_faces = {
-      SurfaceFace(Index(0), Index(1), Index(2)) };
+      SurfaceFace(Index(0), Index(1), Index(2)),
+      SurfaceFace(Index(2), Index(3), Index(0)) };
   const SurfaceMesh<T> expected_mesh(std::move(expected_faces),
                                      std::move(expected_vertices));
   const SurfaceMesh<T> actual_mesh(std::move(new_faces),
@@ -397,28 +409,24 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, OutsideInsideOn) {
       expected_mesh, actual_mesh, 10 * std::numeric_limits<double>::epsilon());
 }
 
-// Verifies that a triangle with one vertex inside the halfspace and two
-// vertices outside of the halfspace produces a triangle. This test covers
-// Case 8.
+// Verifies that a triangle with one vertex inside the half space and two
+// vertices outside of the half space produces a triangle. This test covers
+// Case 3.
 TYPED_TEST_P(MeshHalfspaceIntersectionTest, OneInsideTwoOutside) {
   const SurfaceMesh<T> mesh = this->CreateSurfaceMesh(
     Vector3<T>(0, 0, 1), Vector3<T>(1, 0, 1), Vector3<T>(0, 1, -1));
 
-  // Verify the intersection. Note that the following test is overly specific
-  // to the logic of the mesh-halfspace intersection routine: it is not actually
-  // required that the vertices be output in the order inside.
+  // Verify the intersection.
   std::vector<SurfaceVertex<T>> new_vertices;
   std::vector<SurfaceFace> new_faces;
   std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>
       vertices_to_newly_created_vertices;
   std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>
       edges_to_newly_created_vertices;
-  SurfaceMeshHalfspaceIntersection<double>::
-      ConstructTriangleHalfspaceIntersectionPolygon(
-          mesh.vertices(), mesh.element(SurfaceFaceIndex(0)), this->normal_H(),
-          this->halfspace_constant(), &new_vertices, &new_faces,
-          &vertices_to_newly_created_vertices,
-          &edges_to_newly_created_vertices);
+  internal::ConstructTriangleHalfspaceIntersectionPolygon(
+      mesh.vertices(), mesh.element(SurfaceFaceIndex(0)), this->normal_H(),
+      this->half_space_constant(), &new_vertices, &new_faces,
+      &vertices_to_newly_created_vertices, &edges_to_newly_created_vertices);
 
   // Check that the mesh that results is equivalent to the expected mesh.
   std::vector<SurfaceVertex<T>> expected_vertices = {
