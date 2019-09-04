@@ -26,6 +26,11 @@ namespace controllers {
  * </pre>
  * where `P_y` is the output projection matrix.
  *
+ * @system{PidController,
+ *    @input_port{estimated_state, desired_state},
+ *    @output_port{control}
+ * }
+ *
  * This system has one continuous state, which is the integral of position
  * error, two input ports: estimated state `x_in` and desired state `x_d`, and
  * one output port `y`. Note that this class assumes `|q_c| = |v_c|` and
