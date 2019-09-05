@@ -20,6 +20,8 @@ namespace planar_gripper {
  * @param brick_face The contact facet on the brick.
  * @param f_Cb_B The contact force applied on the brick contact point Cb,
  * expressed in the brick frame B.
+ * @param friction_cone_shrink_factor The factor to shrink the friction
+ * coefficient mu in the planning.
  * @param prog The program to which the constraint is added.
  */
 template <typename T>
@@ -64,16 +66,20 @@ Vector3<AutoDiffXd> ComputeFingerTipInBrickFrame(
     const Eigen::Ref<const AutoDiffVecXd>& q);
 
 /**
- * Impose the kinematic constraint that the finger is sticking to or rolling on
- * the face, but not sliding on the face.
+ * Impose a kinematic constraint which prohibits the fingertip sphere from
+ * sliding on the brick's face. That is, the fingertip sphere is only allowed to
+ * roll on the brick's surface . Note that zero rolling (i.e., sticking) is also
+ * allowed.
  * @param gripper_brick Contains the gripper brick diagram.
  * @param finger The finger that should not slide.
  * @param face The brick face that the finger sticks to (or rolls on).
+ * @param rolling_angle_bound The non-negative bound on the rolling angle (in
+ * radians).
  * @param prog The optimization program to which the constraint is added.
- * @param from_context The context containing posture, from which the finger
- * should stick to (or roll).
- * @param to_context The context that contains the value of the posture after
- * rolling (sticking).
+ * @param from_context The context that constains posture of the plant, before
+ * rolling occurs.
+ * @param to_context The context that constains posture of the plant, after
+ * rolling occurs.
  * @param q_from The variable representing the "from" posture.
  * @param q_to The variable representing the "to" posture.
  */
@@ -87,8 +93,11 @@ void AddFingerNoSlidingConstraint(
     double face_shrink_factor, double depth);
 
 /**
- * Impose the kinematic constraint that the finger can only roll (or stick) from
- * a given fixed posture with at most certain degree about the z axis.
+ * Impose the kinematic constraint that the finger can only roll (or stick)
+ * starting from a given fixed posture. The relative angle between finger link 2
+ * and the +z axis is limited to be within rolling_angle_upper and
+ * rolling_angle_lower. If you want to impose sticking contact (no rolling),
+ * then set rolling_angle_lower = rolling_angle_upper = 0.
  * @param gripper_brick Contains the gripper brick diagram.
  * @param finger The finger that should not slide.
  * @param face The brick face that the finger sticks to (or rolls on).
@@ -114,7 +123,7 @@ void AddFingerNoSlidingFromFixedPostureConstraint(
 
 namespace internal {
 /**
- * Impose the constraint that the finger slides along the line (coinciding with
+ * Impose the constraint that the finger rolls along the line (coinciding with
  * the face).
  * The formulation of the constraint is
  *
