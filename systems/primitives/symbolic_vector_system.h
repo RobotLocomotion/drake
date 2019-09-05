@@ -14,8 +14,8 @@ namespace systems {
 /// A LeafSystem that is defined by vectors of symbolic::Expression
 /// representing the dynamics and output.  The resulting system has only zero
 /// or one vector input ports, zero or one vector of continuous or discrete
-/// state (depending on the specified time_period), and only zero or one vector
-/// output ports.
+/// state (depending on the specified time_period), zero or one vector of
+/// numeric parameters, and only zero or one vector output ports.
 
 ///
 /// See SymbolicVectorSystemBuilder to make the construction a little nicer.
@@ -60,6 +60,10 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
   /// @param output a vector of Expressions representing the output of the
   /// system.  If empty, then no output port will be allocated.
   ///
+  /// @param parameter an (optional) vector of Variables representing the
+  /// numeric parameter. The order in this vector will determine the order of
+  /// the elements in the vector-valued parameter.  Each element must be unique.
+  ///
   /// @param time_period a scalar representing the period of a periodic update.
   /// time_period == 0.0 implies that the state variables will be declared as
   /// continuous state and the dynamics will be implemented as time
@@ -73,16 +77,17 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
       const Eigen::Ref<const VectorX<symbolic::Expression>>& dynamics,
       const Eigen::Ref<const VectorX<symbolic::Expression>>& output =
           Vector0<symbolic::Expression>{},
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& parameter =
+          Vector0<symbolic::Variable>{},
       double time_period = 0.0);
-
-  // TODO(russt): Add support for parameters.
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit SymbolicVectorSystem(const SymbolicVectorSystem<U>& other)
       : SymbolicVectorSystem<T>(other.time_var_, other.state_vars_,
                                 other.input_vars_, other.dynamics_,
-                                other.output_, other.time_period_) {}
+                                other.output_, other.parameter_vars_,
+                                other.time_period_) {}
 
   ~SymbolicVectorSystem() override = default;
 
@@ -122,6 +127,7 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
   const optional<symbolic::Variable> time_var_{nullopt};
   const VectorX<symbolic::Variable> state_vars_{};
   const VectorX<symbolic::Variable> input_vars_{};
+  const VectorX<symbolic::Variable> parameter_vars_{};
   const VectorX<symbolic::Expression> dynamics_{};
   const VectorX<symbolic::Expression> output_{};
 
@@ -187,6 +193,19 @@ class SymbolicVectorSystemBuilder {
     SymbolicVectorSystemBuilder result = *this;
     return result;
   }
+  /// Sets the parameter varaible (scalar version).
+  SymbolicVectorSystemBuilder parameter(const symbolic::Variable& v) {
+    parameter_vars_ = Vector1<symbolic::Variable>{v};
+    SymbolicVectorSystemBuilder result = *this;
+    return result;
+  }
+  /// Sets the parameter variables (vector version).
+  SymbolicVectorSystemBuilder parameter(
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& vars) {
+    parameter_vars_ = vars;
+    SymbolicVectorSystemBuilder result = *this;
+    return result;
+  }
   /// Sets the dynamics method (scalar version).
   SymbolicVectorSystemBuilder dynamics(const symbolic::Expression& e) {
     dynamics_ = Vector1<symbolic::Expression>{e};
@@ -225,7 +244,8 @@ class SymbolicVectorSystemBuilder {
   template <typename T = double>
   std::unique_ptr<SymbolicVectorSystem<T>> Build() {
     return std::make_unique<SymbolicVectorSystem<T>>(
-        time_var_, state_vars_, input_vars_, dynamics_, output_, time_period_);
+        time_var_, state_vars_, input_vars_, dynamics_, output_,
+        parameter_vars_, time_period_);
   }
 
   /// @name Accessor methods.
@@ -233,6 +253,9 @@ class SymbolicVectorSystemBuilder {
   const optional<symbolic::Variable>& time() const { return time_var_; }
   const VectorX<symbolic::Variable>& state() const { return state_vars_; }
   const VectorX<symbolic::Variable>& input() const { return input_vars_; }
+  const VectorX<symbolic::Variable>& parameter() const {
+    return parameter_vars_;
+  }
   const VectorX<symbolic::Expression>& dynamics() const { return dynamics_; }
   const VectorX<symbolic::Expression>& output() const { return output_; }
   double time_period() const { return time_period_; }
@@ -242,6 +265,7 @@ class SymbolicVectorSystemBuilder {
   optional<symbolic::Variable> time_var_{nullopt};
   VectorX<symbolic::Variable> state_vars_{};
   VectorX<symbolic::Variable> input_vars_{};
+  VectorX<symbolic::Variable> parameter_vars_{};
   VectorX<symbolic::Expression> dynamics_{};
   VectorX<symbolic::Expression> output_{};
   double time_period_{0.0};
