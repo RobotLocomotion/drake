@@ -20,11 +20,13 @@ SymbolicVectorSystem<T>::SymbolicVectorSystem(
     const optional<Variable>& time, const Ref<const VectorX<Variable>>& state,
     const Ref<const VectorX<Variable>>& input,
     const Ref<const VectorX<Expression>>& dynamics,
-    const Ref<const VectorX<Expression>>& output, double time_period)
+    const Ref<const VectorX<Expression>>& output,
+    const Ref<const VectorX<Variable>>& parameter, double time_period)
     : LeafSystem<T>(SystemTypeTag<systems::SymbolicVectorSystem>{}),
       time_var_(time),
       state_vars_(state),
       input_vars_(input),
+      parameter_vars_(parameter),
       dynamics_(dynamics),
       output_(output),
       time_period_(time_period) {  // Must have dynamics and/or output.
@@ -33,11 +35,11 @@ SymbolicVectorSystem<T>::SymbolicVectorSystem(
 
   // Construct set of all variables to check validity of dynamics and output.
   VectorX<Variable> vars_vec(state_vars_.size() + input_vars_.size() +
-                             (time_var_ ? 1 : 0));
+                             parameter_vars_.size() + (time_var_ ? 1 : 0));
   if (time_var_) {
-    vars_vec << state_vars_, input_vars_, *time_var_;
+    vars_vec << state_vars_, input_vars_, parameter_vars_, *time_var_;
   } else {
-    vars_vec << state_vars_, input_vars_;
+    vars_vec << state_vars_, input_vars_, parameter_vars_;
   }
   Variables all_vars(vars_vec);
   // Check that state and input variables were all unique.
@@ -56,6 +58,9 @@ SymbolicVectorSystem<T>::SymbolicVectorSystem(
       this->DeclareDiscreteState(state_vars_.rows());
       this->DeclarePeriodicDiscreteUpdate(time_period_, 0.0);
     }
+  }
+  if (parameter_vars_.rows() > 0) {
+    this->DeclareNumericParameter(BasicVector<T>(parameter_vars_.rows()));
   }
   if (output_.rows() > 0) {
     for (int i = 0; i < output_.rows(); i++) {
@@ -103,6 +108,12 @@ void SymbolicVectorSystem<T>::PopulateFromContext(const Context<T>& context,
       env[input_vars_[i]] = input[i];
     }
   }
+  if (parameter_vars_.size() > 0) {
+    const auto& parameter = context.get_numeric_parameter(0);
+    for (int i = 0; i < parameter_vars_.size(); i++) {
+      env[parameter_vars_[i]] = parameter[i];
+    }
+  }
 }
 
 // TODO(eric.cousineau): Consider decoupling output from `VectorBase` and use
@@ -140,6 +151,9 @@ void SymbolicVectorSystem<AutoDiffXd>::EvaluateWithContext(
           ? get_input_port().Eval<BasicVector<AutoDiffXd>>(context)
           : empty;
 
+  const BasicVector<AutoDiffXd>& parameter =
+      (parameter_vars_.rows() > 0) ? context.get_numeric_parameter(0) : empty;
+
   // Figure out the length of the derivative vector.  Some of the
   // derivatives may have length zero, but we assume (as always) that any
   // properly initialized derivatives in the Context will have a consistent
@@ -151,6 +165,9 @@ void SymbolicVectorSystem<AutoDiffXd>::EvaluateWithContext(
   if (input_vars_.rows() > 0)
     num_gradients = std::max(num_gradients,
                              static_cast<int>(input[0].derivatives().size()));
+  if (parameter_vars_.rows() > 0)
+    num_gradients = std::max(
+        num_gradients, static_cast<int>(parameter[0].derivatives().size()));
 
   Eigen::MatrixXd dvars(jacobian.cols(), num_gradients);
   Environment env = env_;
@@ -158,16 +175,23 @@ void SymbolicVectorSystem<AutoDiffXd>::EvaluateWithContext(
     env[*time_var_] = time.value();
     dvars.bottomRows<1>() = time.derivatives();
   }
+  size_t dvars_row_idx = 0;
   if (state_vars_.size() > 0) {
     for (int i = 0; i < state_vars_.size(); i++) {
       env[state_vars_[i]] = state[i].value();
-      dvars.row(i) = state[i].derivatives();
+      dvars.row(dvars_row_idx++) = state[i].derivatives();
     }
   }
   if (input_vars_.size() > 0) {
     for (int i = 0; i < input_vars_.size(); i++) {
       env[input_vars_[i]] = input[i].value();
-      dvars.row(state_vars_.size() + i) = input[i].derivatives();
+      dvars.row(dvars_row_idx++) = input[i].derivatives();
+    }
+  }
+  if (parameter_vars_.size() > 0) {
+    for (int i = 0; i < parameter_vars_.size(); i++) {
+      env[parameter_vars_[i]] = parameter[i].value();
+      dvars.row(dvars_row_idx++) = parameter[i].derivatives();
     }
   }
 
