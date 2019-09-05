@@ -94,6 +94,13 @@ drake_py_library(
     name = "deprecation_py",
     srcs = ["deprecation.py"],
     imports = PACKAGE_INFO.py_imports,
+    visibility = [
+        "//bindings/pydrake:__subpackages__",
+        # Allow Drake's Jupyter scaffolding to import this module directly,
+        # without also importing all of pydrake. This is only sound because
+        # none of the transitive `deps` of this target use C++ code.
+        "//tools/jupyter:__pkg__",
+    ],
 )
 
 # N.B. Since `module_py` incorporates `deprecation_py`, C++ Python libraries

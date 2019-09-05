@@ -50,6 +50,10 @@ def _jupyter_bazel_notebook_main(cur_dir, notebook_file, argv):
         # Ensure that we use the notebook's directory, since that is used for
         # interactive sessions.
         notebook_dir = os.path.dirname(notebook_path)
+        # Ensure that Drake deprecations are seen as errors.
+        # TODO(eric.cousineau): Rather than use environment variables, try
+        # injecting code into the kernel.
+        os.environ["_DRAKE_DEPRECATION_IS_ERROR"] = "1"
         # TODO(eric.cousineau): See if there is a way to redirect this to
         # stdout, rather than having the notebook capture the output.
         ep = ExecutePreprocessor(timeout=600, kernel_name='python3')

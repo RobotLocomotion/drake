@@ -15,17 +15,17 @@ illustrated below.
 
 ## Adding Bazel Targets
 
-The file `jupyter_py.bzl` contains the Skylark macro `jupyter_py_binary` which
-defines a Python target to run the notebook. As is always the case, ensure that
-you add the appropriate Python dependencies (`deps = [...]`) and data
-dependencies (`data = [...]`). All notebooks should be tested by using
+The file `jupyter_py.bzl` contains the Skylark macro `drake_jupyter_py_binary`
+which defines a Python target to run the notebook. As is always the case,
+ensure that you add the appropriate Python dependencies (`deps = [...]`) and
+data dependencies (`data = [...]`). All notebooks should be tested by using
 `add_test_rule = 1`.
 
 As an example:
 
-    load("//tools/jupyter:jupyter_py.bzl", "jupyter_py_binary")
+    load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
 
-    jupyter_py_binary(
+    drake_jupyter_py_binary(
         name = "example",
         add_test_rule = 1,
         deps = [":example_library"],
