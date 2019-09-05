@@ -2,6 +2,7 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -85,8 +86,12 @@ PYBIND11_MODULE(analysis, m) {
             py::keep_alive<3, 1>(), doc.Simulator.ctor.doc)
         .def("Initialize", &Simulator<T>::Initialize,
             doc.Simulator.Initialize.doc)
-        .def("AdvanceTo", &Simulator<T>::AdvanceTo, doc.Simulator.AdvanceTo.doc)
-        .def("StepTo", &Simulator<T>::StepTo, "Use AdvanceTo() instead.")
+        .def("AdvanceTo", &Simulator<T>::AdvanceTo, py::arg("boundary_time"),
+            doc.Simulator.AdvanceTo.doc)
+        .def("StepTo",
+            WrapDeprecated(
+                doc.Simulator.StepTo.doc_deprecated, &Simulator<T>::AdvanceTo),
+            doc.Simulator.StepTo.doc_deprecated)
         .def("get_context", &Simulator<T>::get_context, py_reference_internal,
             doc.Simulator.get_context.doc)
         .def("get_integrator", &Simulator<T>::get_integrator,
