@@ -28,11 +28,20 @@ SurfaceVertexIndex GetVertexAddIfNeeded(
     std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>*
         edges_to_newly_created_vertices,
     std::vector<SurfaceVertex<T>>* new_vertices_F) {
+  // Note: the next assertion is also covered by the following assertion.
+  using std::abs;
+  DRAKE_ASSERT(s_a * s_b <= 0 && abs(s_a) <= abs(s_a - s_b));
   SortedPair<SurfaceVertexIndex> edge_a_b(a, b);
   auto edge_a_b_intersection_iter =
       edges_to_newly_created_vertices->find(edge_a_b);
   if (edge_a_b_intersection_iter == edges_to_newly_created_vertices->end()) {
     const T t = s_a / (s_a - s_b);
+    // We know that (a) the magnitude of the denominator should always be at
+    // least as large as the magnitude of the numerator (implying that t should
+    // never be greater than unity) and (b) the product s_a and s_b should never
+    // be positive (implying that t should never be smaller than zero). Barring
+    // an (unlikely) machine epsilon remainder on division, the assertion
+    // below should hold.
     DRAKE_DEMAND(t >= 0 && t <= 1);
     bool inserted;
     std::tie(edge_a_b_intersection_iter, inserted) =
