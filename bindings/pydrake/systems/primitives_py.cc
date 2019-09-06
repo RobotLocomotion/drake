@@ -214,7 +214,18 @@ PYBIND11_MODULE(primitives, m) {
             py::arg("input") = Vector0<Variable>{},
             py::arg("dynamics") = Vector0<Expression>{},
             py::arg("output") = Vector0<Expression>{},
-            py::arg("time_period") = 0.0, doc.SymbolicVectorSystem.ctor.doc);
+            py::arg("time_period") = 0.0,
+            doc.SymbolicVectorSystem.ctor.doc_6args)
+        .def(py::init<optional<Variable>, VectorX<Variable>, VectorX<Variable>,
+                 VectorX<Variable>, VectorX<Expression>, VectorX<Expression>,
+                 double>(),
+            py::arg("time") = nullopt, py::arg("state") = Vector0<Variable>{},
+            py::arg("input") = Vector0<Variable>{},
+            py::arg("parameter") = Vector0<Variable>{},
+            py::arg("dynamics") = Vector0<Expression>{},
+            py::arg("output") = Vector0<Expression>{},
+            py::arg("time_period") = 0.0,
+            doc.SymbolicVectorSystem.ctor.doc_7args);
 
     DefineTemplateClassWithDefault<WrapToSystem<T>, LeafSystem<T>>(
         m, "WrapToSystem", GetPyParam<T>(), doc.WrapToSystem.doc)

@@ -306,6 +306,28 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(context.num_discrete_state_groups(), 0)
         self.assertEqual(system.get_input_port(0).size(), 2)
         self.assertEqual(system.get_output_port(0).size(), 1)
+        self.assertEqual(context.num_abstract_parameters(), 0)
+        self.assertEqual(context.num_numeric_parameter_groups(), 0)
+
+    def test_symbolic_vector_system_parameters(self):
+        t = Variable("t")
+        x = [Variable("x0"), Variable("x1")]
+        u = [Variable("u0"), Variable("u1")]
+        p = [Variable("p0"), Variable("p1")]
+        system = SymbolicVectorSystem(time=t, state=x, input=u,
+                                      parameter=p,
+                                      dynamics=[p[0] * x[0] + x[1] + p[1], t],
+                                      output=[u[1]],
+                                      time_period=0.0)
+        context = system.CreateDefaultContext()
+
+        self.assertEqual(context.num_continuous_states(), 2)
+        self.assertEqual(context.num_discrete_state_groups(), 0)
+        self.assertEqual(system.get_input_port(0).size(), 2)
+        self.assertEqual(system.get_output_port(0).size(), 1)
+        self.assertEqual(context.num_abstract_parameters(), 0)
+        self.assertEqual(context.num_numeric_parameter_groups(), 1)
+        self.assertEqual(context.get_numeric_parameter(0).size(), 2)
 
     def test_wrap_to_system(self):
         system = WrapToSystem(2)
