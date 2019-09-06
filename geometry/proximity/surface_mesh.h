@@ -171,10 +171,10 @@ class SurfaceMesh {
     return faces_[e];
   }
 
-  /** Returns the vector of faces. */
+  /** Returns the faces. */
   const std::vector<SurfaceFace>& faces() const { return faces_; }
 
-  /** Returns the vector of vertices. */
+  /** Returns the vertices. */
   const std::vector<SurfaceVertex<T>>& vertices() const { return vertices_; }
 
   /**

@@ -14,16 +14,16 @@ namespace drake {
 namespace geometry {
 
 namespace internal {
- /* Utility routine for getting the iterator to a key/element pair in the
-  `edges_to_newly_created_vertices` hashtable. If the key does not already
-  exist in the hashtable, a new vertex will be created using the signed
-  distances from the vertices with indices a and b; that new vertex will then
-  be used to create a new element in the hashtable, which the returned iterator
-  will point to.
-  */
+/* Utility routine for getting the vertex from the
+ `edges_to_newly_created_vertices` hashtable. Given an edge (defined by its two
+ end-point vertices a and b) and the signed distances from a plane (`s_a` and
+ `s_b`, respectively), returns the index of the vertex that splits the edge at a
+ crossing plane. The method creates the vertex if the edge hasn't previously
+ been split, and otherwise returns the cached index value.
+ */
 template <typename T>
 SurfaceVertexIndex GetVertexAddIfNeeded(
-    SurfaceVertexIndex a, SurfaceVertexIndex b, double s_a, double s_b,
+    SurfaceVertexIndex a, SurfaceVertexIndex b, const T& s_a, const T& s_b,
     const std::vector<SurfaceVertex<T>>& vertices_F,
     std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>*
         edges_to_newly_created_vertices,
@@ -33,38 +33,39 @@ SurfaceVertexIndex GetVertexAddIfNeeded(
       edges_to_newly_created_vertices->find(edge_a_b);
   if (edge_a_b_intersection_iter == edges_to_newly_created_vertices->end()) {
     const T t = s_a / (s_a - s_b);
-    DRAKE_DEMAND(t >= 0);
-    (*edges_to_newly_created_vertices)[edge_a_b] =
-        SurfaceVertexIndex(new_vertices_F->size());
-    edge_a_b_intersection_iter =
-        edges_to_newly_created_vertices->find(edge_a_b);
-    new_vertices_F->push_back(
-        SurfaceVertex<T>(vertices_F[a].r_MV() +
-                          t * (vertices_F[b].r_MV() - vertices_F[a].r_MV())));
+    DRAKE_DEMAND(t >= 0 && t <= 1);
+    bool inserted;
+    std::tie(edge_a_b_intersection_iter, inserted) =
+        edges_to_newly_created_vertices->insert(
+            {edge_a_b, SurfaceVertexIndex(new_vertices_F->size())});
+    DRAKE_DEMAND(inserted);
+    new_vertices_F->emplace_back(
+        vertices_F[a].r_MV() +
+        t * (vertices_F[b].r_MV() - vertices_F[a].r_MV()));
   }
 
   return edge_a_b_intersection_iter->second;
 }
 
-/* Utility routine for getting the iterator to a key/element pair in the
- `vertices_to_newly_created_vertices` hashtable. If the key does not already
- exist in the hashtable, a new vertex will be created using the vertex with
- the given index; that new vertex will then be used to create a new element in
- the hashtable, which the returned iterator will point to.
+/* Utility routine for getting the vertex from the
+ `vertices_to_newly_created_vertices` hashtable. Given a vertex `index` from the
+ input mesh, returns the corresponding vertex index in `new_vertices_F`. The
+ method creates the vertex in `new_vertices_F` if it hasn't already been added.
  */
 template <typename T>
 SurfaceVertexIndex GetVertexAddIfNeeded(
-    const std::vector<SurfaceVertex<T>>& vertices_F,
-    SurfaceVertexIndex index,
+    const std::vector<SurfaceVertex<T>>& vertices_F, SurfaceVertexIndex index,
     std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
         vertices_to_newly_created_vertices,
     std::vector<SurfaceVertex<T>>* new_vertices_F) {
   auto v_to_new_v_iter = vertices_to_newly_created_vertices->find(index);
   if (v_to_new_v_iter == vertices_to_newly_created_vertices->end()) {
-    (*vertices_to_newly_created_vertices)[index] =
-        SurfaceVertexIndex(new_vertices_F->size());
-    v_to_new_v_iter = vertices_to_newly_created_vertices->find(index);
-    (*new_vertices_F).emplace_back(vertices_F[index]);
+    bool inserted;
+    std::tie(v_to_new_v_iter, inserted) =
+        vertices_to_newly_created_vertices->insert(
+            {index, SurfaceVertexIndex(new_vertices_F->size())});
+    DRAKE_DEMAND(inserted);
+    new_vertices_F->emplace_back(vertices_F[index]);
   }
 
   return v_to_new_v_iter->second;
@@ -72,29 +73,28 @@ SurfaceVertexIndex GetVertexAddIfNeeded(
 
 /*
  Computes the intersection between a triangle and a half space.
- The intersecting geometry (e.g. vertices and triangles) are added to provided
- collections. This method does not require a floating point tolerance, which
- implies both that it may construct degenerate triangles and that it may fail to
- register an intersection with a triangle that is coplanar with the half space
- surface.
+ The intersecting geometry (e.g. vertices and triangles) are added to the
+ provided collections. This method is intended to be used in contexts where
+ zero area triangles and triangles coplanar with the half space boundary are
+ unimportant (see note below).
 
- This is a function is a component of the larger operation of clipping a
+ This function is a component of the larger operation of clipping a
  SurfaceMesh by a half space. When doing that, we don't want to introduce any
  duplicate vertices (beyond those already in the input mesh). This function
- uses bookeeping to prevent the addition of such duplicate vertices, which can
+ uses bookkeeping to prevent the addition of such duplicate vertices, which can
  be created when either a vertex lies inside/on the half space or when an edge
  intersects the half space. The method tracks these created vertices using
  `vertices_to_newly_created_vertices` and `edges_to_newly_created_vertices`,
  respectively.
 
- @param vertices_F the vector of vertices from the input mesh as position
-        vectors measured and expressed in Frame F.
+ @param vertices_F the vertices from the input mesh as position vectors measured
+        and expressed in Frame F.
  @param triangle a single face from the input mesh.
  @param half_space_normal_F the outward facing surface normal to the half space,
-       expressed in Frame F.
+        expressed in Frame F.
  @param half_space_constant the half space constant d, defined as
-       n'x = d for any point x that lies on the half space and given the
-       surface normal to the half space n.
+        nᵀx = d for any point x that lies on the boundary of the half space and
+        given the surface normal to the half space n.
  @param[in,out] new_vertices_F the accumulator for all of the vertices in the
                 intersecting mesh. It should be empty to start and will
                 gradually accumulate all of the vertices with each subsequent
@@ -111,13 +111,22 @@ SurfaceVertexIndex GetVertexAddIfNeeded(
                 pairs of indices in `vertices_F` to indices in `new_vertices_F`.
                 This mapping should be empty to start and will gradually
                 accumulate elements with each subsequent call to this method.
+
+ @note Unlike most geometric intersection routines, this method does not
+       require the user to provide (or the algorithm to compute) a reasonable
+       floating point tolerance for zero. This simple interface implies both
+       that the method may construct degenerate triangles and that it may
+       fail to register an intersection with a triangle that is coplanar with
+       the half space surface. In certain applications (e.g., hydroelastic
+       contact), both degenerate triangles and triangles coplanar with the
+       half space surface are inocuous (in hydroelastic contact, for example,
+       both cases contribute nothing to the contact wrench).
 */
 template <typename T>
 void ConstructTriangleHalfspaceIntersectionPolygon(
     const std::vector<SurfaceVertex<T>>& vertices_F,
     const SurfaceFace& triangle, const Vector3<T>& half_space_normal_F,
-    const T& half_space_constant,
-    std::vector<SurfaceVertex<T>>* new_vertices_F,
+    const T& half_space_constant, std::vector<SurfaceVertex<T>>* new_vertices_F,
     std::vector<SurfaceFace>* new_faces,
     std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
         vertices_to_newly_created_vertices,
@@ -129,34 +138,28 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
   DRAKE_DEMAND(edges_to_newly_created_vertices);
 
   // NOLINTNEXTLINE(whitespace/line_length)
-  // This code was inspired from https://www.geometrictools.com/GTEngine/Include/Mathematics/GteIntrHalfspace3Triangle3.h
+  // This code was inspired from
+  // https://www.geometrictools.com/GTEngine/Include/Mathematics/GteIntrHalfspace3Triangle3.h
   //
   // Compute the signed distance of each triangle vertex from the half space.
-  // The table of possibilities is listed next with n = num_non_positive and
-  // p = num_positive.
+  // The table of possibilities is listed next with p = num_positive.
   //
-  //     n p  intersection
+  //     p  intersection
   //     ---------------------------------
-  // 1.  3 0  triangle (original)
-  // 2.  2 1  quad (2 edges clipped)
-  // 8.  1 2  triangle (2 edges clipped)
-  // 10. 0 3  none
+  // 1.  0  triangle (original)
+  // 2.  1  quad (2 edges clipped)
+  // 3.  2  triangle (2 edges clipped)
+  // 4.  3  none
 
   // Compute the signed distance of each triangle vertex from the half space.
   T s[3];
-  int num_positive = 0, num_non_positive = 0;
+  int num_positive = 0;
   for (int i = 0; i < 3; ++i) {
     s[i] = half_space_normal_F.dot(vertices_F[triangle.vertex(i)].r_MV()) -
-          half_space_constant;
-
-    if (s[i] > 0) {
-      ++num_positive;
-    } else {
-        ++num_non_positive;
-    }
+           half_space_constant;
+    if (s[i] > 0) ++num_positive;
   }
 
-  using std::abs;
   // Case 1: triangle lies completely within the half space. Preserve
   // the ordering of the triangle vertices.
   if (num_positive == 0) {
@@ -183,30 +186,39 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
 
         // Get the vertices that result from intersecting edge i0/i1 and
         // i0/i2.
-        SurfaceVertexIndex edge_i0_i1_intersection_index =
-            GetVertexAddIfNeeded(
-                i0, i1, s[i0], s[i1], vertices_F,
-                edges_to_newly_created_vertices, new_vertices_F);
+        SurfaceVertexIndex edge_i0_i1_intersection_index = GetVertexAddIfNeeded(
+            i0, i1, s[i0], s[i1], vertices_F, edges_to_newly_created_vertices,
+            new_vertices_F);
         const SurfaceVertexIndex edge_i0_i2_intersection_index =
-            GetVertexAddIfNeeded(
-                i0, i2, s[i0], s[i2], vertices_F,
-                edges_to_newly_created_vertices, new_vertices_F);
+            GetVertexAddIfNeeded(i0, i2, s[i0], s[i2], vertices_F,
+                                 edges_to_newly_created_vertices,
+                                 new_vertices_F);
 
         // Get the indices of the new vertices, adding them if needed.
         const SurfaceVertexIndex i1_new_index = GetVertexAddIfNeeded(
-            vertices_F, i1, vertices_to_newly_created_vertices,
-            new_vertices_F);
+            vertices_F, i1, vertices_to_newly_created_vertices, new_vertices_F);
         const SurfaceVertexIndex i2_new_index = GetVertexAddIfNeeded(
-            vertices_F, i2, vertices_to_newly_created_vertices,
-            new_vertices_F);
+            vertices_F, i2, vertices_to_newly_created_vertices, new_vertices_F);
 
-        // Add faces.
-        new_faces->emplace_back(i1_new_index,
-                                i2_new_index,
+        // Add faces, according to the nice ascii art below (thanks Sean
+        // Curtis!):
+        //
+        //             i0
+        //            ╱╲
+        //       e01 ╱  ╲ e02
+        //    ______╱____╲___
+        //         ╱      ╲
+        //        ╱________╲
+        //      i1          i2
+        //
+        // New triangles to cover the quad and maintain the winding.
+        //   (i1, i2, e01)
+        //   (i2, e02, e01)
+        //
+        new_faces->emplace_back(i1_new_index, i2_new_index,
                                 edge_i0_i1_intersection_index);
-        new_faces->emplace_back(edge_i0_i1_intersection_index,
-                                edge_i0_i2_intersection_index,
-                                i1_new_index);
+        new_faces->emplace_back(i2_new_index, edge_i0_i2_intersection_index,
+                                edge_i0_i1_intersection_index);
         return;
       }
     }
@@ -223,23 +235,21 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
 
         // Get the vertex that corresponds to i0.
         const SurfaceVertexIndex i0_new_index = GetVertexAddIfNeeded(
-            vertices_F, i0, vertices_to_newly_created_vertices,
-            new_vertices_F);
+            vertices_F, i0, vertices_to_newly_created_vertices, new_vertices_F);
 
         // Get the vertex that results from intersecting edge i0/i1.
         const SurfaceVertexIndex edge_i0_i1_intersection_index =
-            GetVertexAddIfNeeded(
-                i0, i1, s[i0], s[i1], vertices_F,
-                edges_to_newly_created_vertices, new_vertices_F);
+            GetVertexAddIfNeeded(i0, i1, s[i0], s[i1], vertices_F,
+                                 edges_to_newly_created_vertices,
+                                 new_vertices_F);
 
         // Get the vertex that results from intersecting edge i0/i2.
         const SurfaceVertexIndex edge_i0_i2_intersection_index =
-            GetVertexAddIfNeeded(
-                i0, i2, s[i0], s[i2], vertices_F,
-                edges_to_newly_created_vertices, new_vertices_F);
+            GetVertexAddIfNeeded(i0, i2, s[i0], s[i2], vertices_F,
+                                 edges_to_newly_created_vertices,
+                                 new_vertices_F);
 
-        new_faces->emplace_back(i0_new_index,
-                                edge_i0_i1_intersection_index,
+        new_faces->emplace_back(i0_new_index, edge_i0_i1_intersection_index,
                                 edge_i0_i2_intersection_index);
         return;
       }
