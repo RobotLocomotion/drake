@@ -17,7 +17,7 @@ from pydrake.systems.controllers import (
     InverseDynamicsController, InverseDynamics,
     LinearQuadraticRegulator,
     LinearProgrammingApproximateDynamicProgramming,
-    PeriodicBoundaryCondition
+    PeriodicBoundaryCondition, PidControlledSystem, PidController
 )
 from pydrake.systems.framework import BasicVector
 from pydrake.systems.primitives import Integrator, LinearSystem
@@ -189,6 +189,42 @@ class TestControllers(unittest.TestCase):
         controller.CalcOutput(context, output)
         self.assertTrue(np.allclose(output.get_vector_data(0).CopyToVector(),
                                     tau_id))
+
+    def test_pid_controlled_system(self):
+        controller = PidControlledSystem(plant=PendulumPlant(), kp=1., ki=0.,
+                                         kd=2., state_output_port_index=0)
+        controller = PidControlledSystem(plant=PendulumPlant(), kp=[0], ki=[1],
+                                         kd=[2], state_output_port_index=0)
+        controller = PidControlledSystem(plant=PendulumPlant(),
+                                         feedback_selector=np.eye(2), kp=1.,
+                                         ki=0., kd=2.,
+                                         state_output_port_index=0)
+        controller = PidControlledSystem(plant=PendulumPlant(),
+                                         feedback_selector=np.eye(2),
+                                         kp=[0], ki=[1], kd=[2],
+                                         state_output_port_index=0)
+
+        self.assertIsNotNone(controller.get_control_input_port())
+        self.assertIsNotNone(controller.get_state_input_port())
+        self.assertIsNotNone(controller.get_state_output_port())
+
+    def test_pid_controller(self):
+        controller = PidController(kp=np.ones(3), ki=np.zeros(3),
+                                   kd=[1, 2, 3])
+        controller = PidController(state_projection=np.ones((6, 4)),
+                                   kp=np.ones(3), ki=np.zeros(3),
+                                   kd=[1, 2, 3])
+        controller = PidController(state_projection=np.ones((6, 4)),
+                                   output_projection=np.ones((4, 3)),
+                                   kp=np.ones(3), ki=np.zeros(3),
+                                   kd=[1, 2, 3])
+
+        self.assertEqual(len(controller.get_Kp_vector()), 3)
+        self.assertEqual(len(controller.get_Ki_vector()), 3)
+        self.assertEqual(len(controller.get_Kd_vector()), 3)
+        self.assertIsNotNone(controller.get_input_port_estimated_state())
+        self.assertIsNotNone(controller.get_input_port_desired_state())
+        self.assertIsNotNone(controller.get_output_port_control())
 
     def test_linear_quadratic_regulator(self):
         A = np.array([[0, 1], [0, 0]])
