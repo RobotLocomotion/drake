@@ -1,7 +1,6 @@
 #include "drake/common/drake_throw.h"
 
-#include <string>
-#include <vector>
+#include <stdexcept>
 
 #include <gtest/gtest.h>
 
