@@ -10,6 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/geometry/shape_specification.h"
 
 namespace drake {
 namespace geometry {
@@ -18,7 +19,7 @@ namespace internal {
 // Helper methods for MakeCylinderMesh().
 #ifndef DRAKE_DOXYGEN_CXX
 
-// Determines the boundary type of a vertex of the cylinder mesh
+// Determines the boundary type of a vertex of the cylinder mesh.
 // Vertices on the circular boundary of the cap are considered
 // CylinderVertexType::kSide vertices so that their children inherit the
 // CylinderVertexType::kSide type and are projected on the side.
@@ -135,10 +136,11 @@ void CreateNewVertex(const VolumeVertexIndex& a,
   split_is_boundary.emplace_back(p_vertex_type);
 }
 
+// Refines a tetrahedron into 8 tetrahedra.
 // @param[in,out] split_mesh_vertices_ptr
 //    Original vertices plus new vertices on return.
-// @param[in,out] split_mesh_tetrahedra_ptr
-//    Original tetrahedra plus new tetrahedra on return.
+// @param[out] split_mesh_tetrahedra_ptr
+//    New tetrahedra on return.
 // @param[in,out] split_is_boundary_ptr
 //    Types of original vertices plus types of new vertices on return.
 // @param[in,out] vertex_map_ptr
@@ -286,7 +288,6 @@ void RefineCylinderTetrahdron(
 template<typename T>
 Vector3<T> Average(const std::vector<Vector3<T>>& neighbors) {
   T number_neighbors(neighbors.size());
-
   return
       std::accumulate(neighbors.begin(), neighbors.end(), Vector3<T>(0, 0, 0))
           / number_neighbors;
@@ -305,7 +306,7 @@ std::pair<VolumeMesh<T>,
 DRAKE_DEMAND(number_iterations >= 0);
 
   std::vector<VolumeElement> smooth_mesh_tetrahedra = mesh.tetrahedra();
-  std::vector<VolumeVertex<T>> smooth_mesh_vertices = smooth_mesh_vertices;
+  std::vector<VolumeVertex<T>> smooth_mesh_vertices = mesh.vertices();
   std::vector<CylinderVertexType> smooth_is_boundary = is_boundary;
 
   std::vector<std::unordered_set<VolumeVertexIndex>>
@@ -446,7 +447,7 @@ std::pair<VolumeMesh<T>,
   //           +X    |
   //                -Z
 
-  // Groups of 5 vertices are a points on a slice of the rectangular prism
+  // Groups of 5 vertices are on a slice of the rectangular prism
   // with a plane perpendicular to the Z axisx at a given height "z".
   //
   // "subdivisions" is how many slices perpendicular to the Z axis we
@@ -468,7 +469,7 @@ std::pair<VolumeMesh<T>,
   using V = VolumeVertexIndex;
 
   // Each j-th iteration adds 12 tetrahedra of a rectangular prism of one
-  // subdivision. Every 5 vertices
+  // subdivision.
   // Each i-th iteration add 3 tetrahedra of a triangular prism, four of which
   // makes a rectangular prism.
   for (int j = 0; j < subdivisions; j++) {
@@ -509,12 +510,12 @@ std::pair<VolumeMesh<T>,
 /// the origin.
 ///
 /// This method implements a variant of the generator described in
-/// [Everett, 1997]. The algorithm has diverged a bit from the on in the paper,
+/// [Everett, 1997]. The algorithm has diverged a bit from the one in the paper,
 /// but the main ideas used from the paper are:
 ///   -the pattern of subdividing edges to create vertices
 ///   -the projection of surface vertices
-///   -the consideration of the combinatorics of how assign new subdivision
-///    tets to the newly created vertices.
+///   -the consideration of the combinatorics of how to associate new
+///    subdivision tetrahedra to the newly created vertices.
 ///
 /// It is based on a recursive refinement of an initial
 /// (refinement_level = 0) coarse mesh representation of a cylinder with
@@ -555,10 +556,12 @@ std::pair<VolumeMesh<T>,
 /// [Everett, 1997]  Everett, M.E., 1997. A three-dimensional spherical mesh
 /// generator. Geophysical Journal International, 130(1), pp.193-200.
 template<typename T>
-VolumeMesh<T> MakeCylinderMesh(double height,
-                               double radius,
+VolumeMesh<T> MakeCylinderMesh(const drake::geometry::Cylinder& cylinder,
                                int refinement_level,
                                int smoothing_level) {
+  double height = cylinder.get_length();
+  double radius = cylinder.get_radius();
+
   DRAKE_THROW_UNLESS(height > 0);
   DRAKE_THROW_UNLESS(radius > 0);
   DRAKE_THROW_UNLESS(refinement_level >= 0);
