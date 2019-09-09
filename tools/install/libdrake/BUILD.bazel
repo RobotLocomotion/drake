@@ -183,7 +183,6 @@ cc_library(
         ":vtk_deps",
         "//common:drake_marker_shared_library",
         "@ignition_math",
-        "@ignition_rndf",
         "@lcm",
         "@libprotobuf",
         "@tinyxml2",
