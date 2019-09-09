@@ -30,14 +30,14 @@ def _impl(repository_ctx):
     if os_result.error != None:
         fail(os_result.error)
 
-    version = "0.15.0"
+    version = "0.29.0"
 
     if os_result.is_macos:
-        filename = "buildifier.osx"
-        sha256 = "860378a2badba9517e523e20f152ef1ca16234e0ca462a1d71e5dbee7d506771"  # noqa
+        filename = "buildifier.mac"
+        sha256 = "9b108decaa9a624fbac65285e529994088c5d15fecc1a30866afc03a48619245"  # noqa
     elif os_result.is_ubuntu:
         filename = "buildifier"
-        sha256 = "0dea01a7a511797878f486e6ed8e549980c0710a0a116c8ee953d4e26de41515"  # noqa
+        sha256 = "4c985c883eafdde9c0e8cf3c8595b8bfdf32e77571c369bf8ddae83b042028d6"  # noqa
     else:
         fail("Operating system is NOT supported", attr = os_result)
 
