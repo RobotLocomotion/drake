@@ -54,7 +54,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "fcl",
     "fmt",
     "ignition_math",
-    "ignition_rndf",
     "json",
     "lcm",
     "lcmtypes_bot2_core",
