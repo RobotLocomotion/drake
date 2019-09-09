@@ -22,26 +22,14 @@ class MeshHalfspaceIntersectionTest : public ::testing::Test {
   const T& half_space_constant() const { return d_; }
 
   // Accessors for data structures used repeatedly.
-  const std::vector<SurfaceVertex<T>>& new_vertices() const {
-    return new_vertices_;
-  }
   std::vector<SurfaceVertex<T>>& new_vertices() { return new_vertices_; }
-  const std::vector<SurfaceFace>& new_faces() const { return new_faces_; }
   std::vector<SurfaceFace>& new_faces() { return new_faces_; }
   std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>&
   vertices_to_newly_created_vertices() {
     return vertices_to_newly_created_vertices_;
   }
-  const std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>&
-  vertices_to_newly_created_vertices() const {
-    return vertices_to_newly_created_vertices_;
-  }
   std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>&
   edges_to_newly_created_vertices() {
-    return edges_to_newly_created_vertices_;
-  }
-  const std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>&
-  edges_to_newly_created_vertices() const {
     return edges_to_newly_created_vertices_;
   }
 
@@ -81,8 +69,8 @@ class MeshHalfspaceIntersectionTest : public ::testing::Test {
         SurfaceFace(Index(1), Index(2), Index(0)),
         SurfaceFace(Index(2), Index(0), Index(1))};
 
-    // Verify that at least one of the permutations is close to within the
-    // requested tolerancce.
+    // Verify that at least one of the permutations gives exactly the vertices
+    // from fb. The tests permit this since
     using std::min;
     T closest_dist = std::numeric_limits<T>::max();
     for (const auto& face : permutations) {

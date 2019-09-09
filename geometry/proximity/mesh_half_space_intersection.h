@@ -14,12 +14,26 @@ namespace drake {
 namespace geometry {
 
 namespace internal {
-/* Utility routine for getting the vertex from the
+
+template <typename T>
+int sgn(const T& x) {
+  if (x > 0) {
+    return 1;
+  } else {
+    if (x < 0) return -1;
+    return 0;
+  }
+}
+
+/* Utility routine for getting the vertex index from the
  `edges_to_newly_created_vertices` hashtable. Given an edge (defined by its two
  end-point vertices a and b) and the signed distances from a plane (`s_a` and
  `s_b`, respectively), returns the index of the vertex that splits the edge at a
  crossing plane. The method creates the vertex if the edge hasn't previously
- been split, and otherwise returns the cached index value.
+ been split.
+
+ @pre s_a and s_b must not have the same sign (positive, negative, or zero) of
+      the plane.
  */
 template <typename T>
 SurfaceVertexIndex GetVertexAddIfNeeded(
@@ -28,20 +42,19 @@ SurfaceVertexIndex GetVertexAddIfNeeded(
     std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>*
         edges_to_newly_created_vertices,
     std::vector<SurfaceVertex<T>>* new_vertices_F) {
+  DRAKE_DEMAND(sgn(s_a) != sgn(s_b));
+
   // Note: the next assertion is also covered by the following assertion.
   using std::abs;
-  DRAKE_ASSERT(s_a * s_b <= 0 && abs(s_a) <= abs(s_a - s_b));
   SortedPair<SurfaceVertexIndex> edge_a_b(a, b);
   auto edge_a_b_intersection_iter =
       edges_to_newly_created_vertices->find(edge_a_b);
   if (edge_a_b_intersection_iter == edges_to_newly_created_vertices->end()) {
-    const T t = s_a / (s_a - s_b);
-    // We know that (a) the magnitude of the denominator should always be at
+    const T t = abs(s_a) / (abs(s_a) + abs(s_b));
+    // We know that the magnitude of the denominator should always be at
     // least as large as the magnitude of the numerator (implying that t should
-    // never be greater than unity) and (b) the product s_a and s_b should never
-    // be positive (implying that t should never be smaller than zero). Barring
-    // an (unlikely) machine epsilon remainder on division, the assertion
-    // below should hold.
+    // never be greater than unity). Barring an (unlikely) machine epsilon
+    // remainder on division, the assertion below should hold.
     DRAKE_DEMAND(t >= 0 && t <= 1);
     bool inserted;
     std::tie(edge_a_b_intersection_iter, inserted) =
@@ -56,7 +69,7 @@ SurfaceVertexIndex GetVertexAddIfNeeded(
   return edge_a_b_intersection_iter->second;
 }
 
-/* Utility routine for getting the vertex from the
+/* Utility routine for getting the vertex index from the
  `vertices_to_newly_created_vertices` hashtable. Given a vertex `index` from the
  input mesh, returns the corresponding vertex index in `new_vertices_F`. The
  method creates the vertex in `new_vertices_F` if it hasn't already been added.
@@ -128,7 +141,7 @@ SurfaceVertexIndex GetVertexAddIfNeeded(
        fail to register an intersection with a triangle that is coplanar with
        the half space surface. In certain applications (e.g., hydroelastic
        contact), both degenerate triangles and triangles coplanar with the
-       half space surface are inocuous (in hydroelastic contact, for example,
+       half space surface are innocuous (in hydroelastic contact, for example,
        both cases contribute nothing to the contact wrench).
 */
 template <typename T>
