@@ -5,3 +5,6 @@ Drake wraps formulating and solving optimization programs into a class `Mathemat
 ```
 bazel run //tutorials:mathematical_program
 ```
+
+## Maintainance
+For maintainers, if you modify a jupyter notebook, please also download it as an html file, and replace the html file with the same name as the jupyter notebook in this folder.
