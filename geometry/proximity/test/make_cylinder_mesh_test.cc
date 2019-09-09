@@ -19,7 +19,7 @@ namespace {
 // of each tetrahedron.
 double CalcTetrahedronMeshVolume(const VolumeMesh<double>& mesh) {
   double volume = 0.0;
-  for(int e = 0; e < mesh.num_elements(); e++) {
+  for (int e = 0; e < mesh.num_elements(); e++) {
     volume += mesh.CalcTetrahedronVolume(VolumeElementIndex(e));
   }
   return volume;
@@ -179,7 +179,7 @@ GTEST_TEST(MakeCylinderMesh, EulerCharacteristic) {
 }
 
 void CheckAllElementsPositive(const VolumeMesh<double>& mesh) {
-  for(int e = 0; e < mesh.num_elements(); e++) {
+  for (int e = 0; e < mesh.num_elements(); e++) {
     double element_volume = mesh.CalcTetrahedronVolume(VolumeElementIndex(e));
     EXPECT_GT(element_volume, 0.0);
   }
@@ -194,7 +194,7 @@ GTEST_TEST(MakeCylinderMesh, LaplacianSmoothingInterior) {
 
   const double height = 2;
   const double radius = 1;
-  const int refinement_level = 2;
+  const int refinement_level = 3;
 
   auto unsmoothed_mesh = MakeCylinderMesh<double>(
       drake::geometry::Cylinder(radius, height), refinement_level, 0);
@@ -202,7 +202,7 @@ GTEST_TEST(MakeCylinderMesh, LaplacianSmoothingInterior) {
   const double unsmoothed_mesh_volume =
       CalcTetrahedronMeshVolume(unsmoothed_mesh);
 
-  for(int smoothing_level = 1; smoothing_level <= 10; smoothing_level++) {
+  for (int smoothing_level = 1; smoothing_level <= 10; smoothing_level++) {
     auto smoothed_mesh = MakeCylinderMesh<double>(
         drake::geometry::Cylinder(radius, height), refinement_level,
         smoothing_level);
@@ -214,7 +214,6 @@ GTEST_TEST(MakeCylinderMesh, LaplacianSmoothingInterior) {
 
     EXPECT_NEAR(smoothed_mesh_volume, unsmoothed_mesh_volume, kTolerance);
   }
-
 }
 
 }  // namespace
