@@ -18,9 +18,9 @@ template <typename T> class Body;
 /// translational stiffness and damping properties.
 ///
 /// The bushing's rotational stiffness depends on the yaw-pitch-roll angles
-/// q₀, q₁, q₂ and its rotational damping depends on  q̇₀, q̇₁, q̇₂.  The angles
-/// are calculated from the orientation between frames Aʙ and Bᴀ and have the
-/// range `-π < q₀ <= π`, `-π/2 < q₁ <= π/2`, `-π < q₂ <= π`.
+/// q₀, q₁, q₂ and its rotational damping depends on q̇₀, q̇₁, q̇₂.  The angles
+/// q₀, q₁, q₂ are calculated from the orientation between frames Aʙ and Bᴀ and
+/// have the range `-π < q₀ <= π`, `-π/2 < q₁ <= π/2`, `-π < q₂ <= π`.
 ///
 /// The bushing's translational stiffness is linear in displacements x, y, z and
 /// the translational damping is linear in ẋ, ẏ, ż.  The displacements x, y, z
@@ -122,6 +122,58 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
       const internal::PositionKinematicsCache<T>& pc,
       const internal::VelocityKinematicsCache<T>& vc) const override;
 
+  /// Returns X_AʙBᴀ, the rigid transform that relates frames Aʙ and Bᴀ.
+  /// @param[in] context The state of the multibody system.
+  /// @note: `X_AʙBᴀ.rotation()` is the rotation matrix R_AʙBᴀ that relates
+  /// frames Aʙ and Bᴀ whereas `X_AʙBᴀ.translation()` is `p_AʙBᴀ = [x, y, z]`
+  /// (the position from Aʙₒ to Bᴀₒ expressed in Aʙ).
+  /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
+  math::RigidTransform<T> CalcBushingRigidTransform(
+      const systems::Context<T>& context) const {
+    return frameBa().CalcPose(context, frameAb());
+  }
+
+  /// Calculates the bushing's RollPitchYaw from the rotation matrix R_AʙBᴀ that
+  /// relates frames Aʙ and Bᴀ.  Note: `[q₀, q₁, q₂]` is `[yaw, pitch, roll]`.
+  /// @param[in] context The state of the multibody system.
+  /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
+  math::RollPitchYaw<T> CalcBushingRollPitchYawAngles(
+      const systems::Context<T>& context) const {
+    return math::RollPitchYaw<T>(CalcBushingRigidTransform(context).rotation());
+  }
+
+  /// Returns V_AʙBᴀ, frame Bᴀ's spatial velocity in frame Aʙ expressed in Aʙ.
+  /// @param[in] context The state of the multibody system.
+  /// @note: `V_AʙBᴀ.rotational()` is w_AʙBᴀ (Bᴀ's angular velocity in frame Aʙ
+  /// expressed in Aʙ) whereas `V_AʙBᴀ.translational()` is `v_AʙBᴀₒ = [ẋ, ẏ, ż]`
+  /// (point Bᴀₒ's translational velocity in Aʙ, expressed in frame Aʙ).
+  /// Note: w_AʙBᴀ is not equal to either `[q̇₀, q̇₁, q̇₂]` or `[q̇₂, q̇₁, q̇₀]`.
+  /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
+  SpatialVelocity<T> CalcBushingSpatialVelocity(
+      const systems::Context<T>& context) const {
+    return frameBa().CalcSpatialVelocity(context, frameAb(), frameAb());
+  }
+
+  /// Returns F_Ab_Ab, the spatial force on frame Aʙ expressed in frame Aʙ.
+  /// @param[in] context The state of the multibody system.
+  /// @note The set of forces exerted on body A by the bushing are replaced by
+  /// a force f_Aʙₒ equal to the set's resultant applied to point Aʙₒ and
+  /// a torque t_Aʙ Aequal to the moment of the set about point Aʙₒ.
+  /// F_Ab_Ab.rotational() is t_Aʙ whereas F_Ab_Ab.translational() is f_Aʙₒ.
+  SpatialForce<T> CalcBushingResultantSpatialForceOnAbo(
+      const systems::Context<T>& context) const {
+    // Form the torque that is equal to the moment of the bushing forces on
+    // body A about point Aʙₒ expressed in frame Aʙ.
+    const Vector3<T> t_Ab_Ab = CalcBushingTorqueStiffnessOnAb(context, true)
+                             + CalcBushingTorqueDampingOnAb(context, true);
+
+    // Form the bushing's resultant force on point Aʙₒ expressed in frame Aʙ.
+    const Vector3<T> f_Abo_Ab = CalcBushingForceStiffnessOnAbo(context)
+                              + CalcBushingForceDampingOnAbo(context);
+
+    return SpatialForce<T>(t_Ab_Ab, f_Abo_Ab);
+  }
+
  protected:
   void DoCalcAndAddForceContribution(
       const systems::Context<T>& context,
@@ -138,51 +190,6 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   std::unique_ptr<ForceElement<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const override;
 
-  // Returns X_AʙBᴀ, the rigid transform that relates frames Aʙ and Bᴀ.
-  math::RigidTransform<T> CalcBushingRigidTransform(
-      const systems::Context<T>& context) const {
-    return frameBa().CalcPose(context, frameAb());
-  }
-
-  // Returns R_AʙBᴀ, the rotation matrix that relates frames Aʙ and Bᴀ.
-  math::RotationMatrix<T> CalcBushingRotationMatrix(
-      const systems::Context<T>& context) const {
-    return CalcBushingRigidTransform(context).rotation();
-  }
-
-  // Calculates the bushing's RollPitchYaw from the rotation matrix R_AʙBᴀ that
-  // relates frames Aʙ and Bᴀ.  Note: `[q₀, q₁, q₂]` is `[yaw, pitch, roll]`.
-  math::RollPitchYaw<T> CalcBushingRollPitchYawAngles(
-      const systems::Context<T>& context) const {
-    return math::RollPitchYaw<T>(CalcBushingRotationMatrix(context));
-  }
-
-  // Returns p_AʙBᴀ = [x, y, z], the position from Aʙₒ to Bᴀₒ expressed in Aʙ.
-  Vector3<T> CalcBushingPositionVector(
-      const systems::Context<T>& context) const {
-    return CalcBushingRigidTransform(context).translation();
-  }
-
-  // Returns V_AʙBᴀ, frame Bᴀ's spatial velocity in frame Aʙ expressed in Aʙ.
-  SpatialVelocity<T> CalcBushingSpatialVelocity(
-      const systems::Context<T>& context) const {
-    return frameBa().CalcSpatialVelocity(context, frameAb(), frameAb());
-  }
-
-  // Returns v_AʙBᴀₒ = [ẋ, ẏ, ż], point Bᴀₒ's translational velocity in Aʙ
-  // expressed in frame Aʙ.
-  Vector3<T> CalcBushingTranslationalVelocity(
-      const systems::Context<T>& context) const {
-     return CalcBushingSpatialVelocity(context).translational();
-  }
-
-  // Returns w_AʙBᴀ, frame Bᴀ's angular velocity in frame Aʙ expressed in Aʙ.
-  // Note: w_AʙBᴀ is not equal to either [q̇₀, q̇₁, q̇₂] or [q̇₂, q̇₁, q̇₀].
-  Vector3<T> CalcBushingAngularVelocity(
-      const systems::Context<T>& context) const {
-    return CalcBushingSpatialVelocity(context).rotational();
-  }
-
   // Calculates the bushing's RollPitchYaw rates for frame Bᴀ in frame Aʙ.
   // @param[in] context The state of the multibody system.
   // @param[in] rpy RollPitchYaw orientation relating frames Aʙ and Bᴀ.
@@ -193,14 +200,14 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
       const systems::Context<T>& context,
       const math::RollPitchYaw<T>& rpy,
       const bool is_return_in_yaw_pitch_roll_order) const {
-    const Vector3<T> w_AbBa = CalcBushingAngularVelocity(context);
+    const Vector3<T> w_AbBa = CalcBushingSpatialVelocity(context).rotational();
     const Vector3<T> rpyDt = rpy.CalcRpyDtFromAngularVelocityInParent(w_AbBa);
     return is_return_in_yaw_pitch_roll_order == false ? rpyDt :
            Vector3<T>(rpyDt(2), rpyDt(1), rpyDt(0));
   }
 
   // Calculates the bushing's RollPitchYaw rates for frame Bᴀ in frame Aʙ.
-  // @see other CalcBushingRollPitchYawAngleRates() method for more information.
+  // @see related CalcBushingRollPitchYawAngleRates() method for information.
   Vector3<T> CalcBushingRollPitchYawAngleRates(
       const systems::Context<T>& context,
       const bool is_return_in_yaw_pitch_roll_order) const {
@@ -275,22 +282,29 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
            ConvertTorqueFromNonOrthogonalBasisToFrameAb(torque_biqiDt, rpy);
   }
 
-  // Use the bushing's force stiffness constants and p_AʙBᴀ (the position from
-  // point Aʙₒ to point Bᴀₒ expressed in frame Aʙ) to form [kx x, ky y, kz z],
-  // the bushing's stiffness force on point Aʙₒ expressed in frame Aʙ.
+  // Calculates [kx*x, ky*y, kz*z], the bushing's stiffness force on point Aʙₒ
+  // expressed in frame Aʙ.
+  // @param[in] context The state of the multibody system.
   Vector3<T> CalcBushingForceStiffnessOnAbo(
       const systems::Context<T>& context) const {
-    const Vector3<T> p_AbBa = CalcBushingPositionVector(context);
-    return force_stiffness_constants().cwiseProduct(p_AbBa);
+    // Use the bushing's force stiffness constants [kx, ky, kz] and
+    // `p_AʙBᴀ = [x, y, z]` (the position vector from point Aʙₒ to point Bᴀₒ
+    // expressed in frame Aʙ) to form [kx*x, ky*y, kz*z].
+    const Vector3<T> xyz = CalcBushingRigidTransform(context).translation();
+    return force_stiffness_constants().cwiseProduct(xyz);
   }
 
-  // Use the bushing's force damping constants and v_AʙBᴀₒ (Bᴀₒ's translational
-  // velocity in frame Aʙ expressed in frame Aʙ) to form [bx ẋ, by ẏ, bz ż],
-  // the bushing's damping force on point Aʙ expressed in frame Aʙ.
+  // Calculates [bx*ẋ, by*ẏ, bz*ż], the bushing's damping force on point Aʙₒ
+  // expressed in frame Aʙ.
+  // @param[in] context The state of the multibody system.
   Vector3<T> CalcBushingForceDampingOnAbo(
       const systems::Context<T>& context) const {
-    const Vector3<T> v_AbBa = CalcBushingTranslationalVelocity(context);
-    return force_damping_constants().cwiseProduct(v_AbBa);
+    // Use the bushing's force damping constants [bx, by, bz] and
+    // `v_AʙBᴀₒ = [ẋ, ẏ, ż]` (Bᴀₒ's translational velocity in frame Aʙ
+    // expressed in frame Aʙ) to form [bx*ẋ, by*ẏ, bz*ż].
+    const Vector3<T> xyzDt =
+        CalcBushingSpatialVelocity(context).translational();
+    return force_damping_constants().cwiseProduct(xyzDt);
   }
 
  private:
