@@ -23,42 +23,65 @@ Argument:
 """
 
 load("@drake//tools/workspace:os.bzl", "determine_os")
+load(
+    "@drake//tools/workspace:metadata.bzl",
+    "generate_repository_metadata",
+)
 
 def _impl(repository_ctx):
-    os_result = determine_os(repository_ctx)
+    # Enumerate the possible binaries.
+    version = "0.29.0"
+    mac_urls = [
+        x.format(version = version, filename = "buildifier.mac")
+        for x in repository_ctx.attr.mirrors.get("buildifier")
+    ]
+    mac_sha256 = "9b108decaa9a624fbac65285e529994088c5d15fecc1a30866afc03a48619245"  # noqa
+    ubuntu_urls = [
+        x.format(version = version, filename = "buildifier")
+        for x in repository_ctx.attr.mirrors.get("buildifier")
+    ]
+    ubuntu_sha256 = "4c985c883eafdde9c0e8cf3c8595b8bfdf32e77571c369bf8ddae83b042028d6"  # noqa
 
+    # Choose which binary to use on the current OS.
+    os_result = determine_os(repository_ctx)
     if os_result.error != None:
         fail(os_result.error)
-
-    version = "0.29.0"
-
     if os_result.is_macos:
-        filename = "buildifier.mac"
-        sha256 = "9b108decaa9a624fbac65285e529994088c5d15fecc1a30866afc03a48619245"  # noqa
+        urls = mac_urls
+        sha256 = mac_sha256
     elif os_result.is_ubuntu:
-        filename = "buildifier"
-        sha256 = "4c985c883eafdde9c0e8cf3c8595b8bfdf32e77571c369bf8ddae83b042028d6"  # noqa
+        urls = ubuntu_urls
+        sha256 = ubuntu_sha256
     else:
         fail("Operating system is NOT supported", attr = os_result)
 
-    urls = [
-        x.format(version = version, filename = filename)
-        for x in repository_ctx.attr.mirrors.get("buildifier")
-    ]
+    # Fetch the binary from mirrors.
     output = repository_ctx.path("buildifier")
-
     repository_ctx.download(urls, output, sha256, executable = True)
 
-    content = """# -*- python -*-
+    # Add the BUILD file.
+    repository_ctx.symlink(
+        Label("@drake//tools/workspace/buildifier:package.BUILD.bazel"),
+        "BUILD.bazel",
+    )
 
-licenses(["notice"])  # Apache-2.0
-
-exports_files(
-    ["buildifier"],
-)
-"""
-
-    repository_ctx.file("BUILD.bazel", content, executable = False)
+    # Create a summary file for for Drake maintainers.  We need to list all
+    # possible binaries so Drake's mirroring scripts will fetch everything.
+    generate_repository_metadata(
+        repository_ctx,
+        repository_rule_type = "manual",
+        version = version,
+        downloads = [
+            {
+                "urls": mac_urls,
+                "sha256": mac_sha256,
+            },
+            {
+                "urls": ubuntu_urls,
+                "sha256": ubuntu_sha256,
+            },
+        ],
+    )
 
 buildifier_repository = repository_rule(
     attrs = {
