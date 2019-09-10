@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":make_box_mesh",
         ":make_unit_sphere_mesh",
         ":mesh_field",
+        ":mesh_half_space_intersection",
         ":mesh_intersection",
         ":proximity_utilities",
         ":sorted_triplet",
@@ -104,6 +105,17 @@ drake_cc_library(
     deps = [
         "//common",
         "//geometry/proximity:surface_mesh",
+    ],
+)
+
+drake_cc_library(
+    name = "mesh_half_space_intersection",
+    hdrs = [
+        "mesh_half_space_intersection.h",
+    ],
+    deps = [
+        ":surface_mesh",
+        "//common",
     ],
 )
 
@@ -281,6 +293,13 @@ drake_cc_googletest(
     name = "mesh_field_linear_test",
     deps = [
         "//geometry/proximity:mesh_field",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mesh_half_space_intersection_test",
+    deps = [
+        ":mesh_half_space_intersection",
     ],
 )
 
