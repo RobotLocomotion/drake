@@ -492,8 +492,9 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, OneInsideTwoOutside) {
   this->VerifyMeshesEquivalent(expected_mesh, actual_mesh);
 }
 
-// Tests that a mesh of a box intersecting the halfspace like flotsam produces
-// an open box shape.
+// Tests that a mesh of a box bisected by the half space produces the expected
+// number of faces and vertices (other unit tests in this file assess the
+// correctness of various kinds of triangle/half space intersections).
 TYPED_TEST_P(MeshHalfspaceIntersectionTest, BoxMesh) {
   using T = TypeParam;
 
@@ -556,8 +557,8 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, BoxMesh) {
           mesh, half_space);
   ASSERT_EQ(intersection_mesh.num_vertices(), 8);
 
-  // Note: each face on the side of the box gets split into three triangles.
-  // 3 x 4 + 2 (for the faces on the bottom) = 14.
+  // Note: each side of the box (which comprises two triangles) gets split into
+  // three triangles. 3 x 4 + 2 (for the triangles on the bottom) = 14.
   ASSERT_EQ(intersection_mesh.num_faces(), 14);
 }
 

@@ -291,10 +291,10 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
 /**
  Constructs the SurfaceMesh that results from intersecting a triangle mesh with
  a half space.
- @param input_mesh_F the mesh, all measured and expressed in an arbitrary
+ @param input_mesh_F the mesh with vertices measured and expressed in some
         frame, F.
- @param half_space_F the half space, expressed in an arbitrary frame, F.
- @returns the SurfaceMesh corresponding to the intersection, the verices of
+ @param half_space_F the half space, expressed in Frame F.
+ @returns the SurfaceMesh corresponding to the intersection, the vertices of
           which will be measured and expressed in Frame F.
  */
 template <typename T>
