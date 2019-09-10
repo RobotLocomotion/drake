@@ -69,7 +69,7 @@ class MeshHalfspaceIntersectionTest : public ::testing::Test {
 
     // Verify that at least one of the permutations gives exactly the vertices
     // from fb. The unit tests permit this since all of the numbers used and
-    // computed have exactly floating point representations.
+    // computed have exact floating point representations.
     using std::min;
     T closest_dist = std::numeric_limits<T>::max();
     for (const auto& face : permutations) {
