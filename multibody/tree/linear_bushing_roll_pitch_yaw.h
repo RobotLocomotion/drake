@@ -100,7 +100,6 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     return force_stiffness_constants_;
   }
 
-  /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
   const Vector3<double>& force_damping_constants() const {
     return force_damping_constants_;
   }
