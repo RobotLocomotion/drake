@@ -17,7 +17,7 @@ bazel run //tutorials:mathematical_program
 The notebooks in this folder can be viewed using
 [nbviewer](https://nbviewer.jupyter.org). To see them on Drake `master` on
 GitHub, please visit:
-https://nbviewer.jupyter.org/github/RobotLocomotion/drake/tree/master/tutorials/
+https://nbviewer.jupyter.org/github/EricCousineau-TRI/drake/tree/issue/12028/tutorials/
 
 Presently, these notebooks are not yet set up to be runnable using online
 services. For more information, please see

@@ -32,7 +32,7 @@ Core Library
                 <img src="_images/systems.svg" width="195px"/>
             </td>
             <td style="text-align:center;vertical-align:top" width="200px">
-                <a target="_mathematical_program" href="https://nbviewer.jupyter.org/github/RobotLocomotion/drake/blob/master/tutorials/mathematical_program.ipynb">
+                <a target="_mathematical_program" href="https://nbviewer.jupyter.org/github/EricCousineau-TRI/drake/blob/issue/12028/tutorials/mathematical_program.ipynb">
                 Solving Mathematical Programs</a>
                 <p/>
                 <img src="_images/mathematical_program.svg" width="150px"/>
