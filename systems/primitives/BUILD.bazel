@@ -28,8 +28,6 @@ drake_cc_package_library(
         ":matrix_gain",
         ":multiplexer",
         ":pass_through",
-        ":piecewise_polynomial_affine_system",
-        ":piecewise_polynomial_linear_system",
         ":port_switch",
         ":random_source",
         ":saturation",
@@ -200,30 +198,6 @@ drake_cc_library(
     deps = [
         "//systems/framework",
     ],
-)
-
-drake_cc_library(
-    name = "piecewise_polynomial_affine_system",
-    hdrs = ["piecewise_polynomial_affine_system.h"],
-    deprecation = "This will be removed on or around 2019-09-01.  Use " +
-                  ":trajectory_affine_system instead.",
-    tags = [
-        # Avoid 'build //...' yelling at us.
-        "manual",
-    ],
-    deps = [":trajectory_affine_system"],
-)
-
-drake_cc_library(
-    name = "piecewise_polynomial_linear_system",
-    hdrs = ["piecewise_polynomial_linear_system.h"],
-    deprecation = "This will be removed on or around 2019-09-01.  Use " +
-                  ":trajectory_linear_system instead.",
-    tags = [
-        # Avoid 'build //...' yelling at us.
-        "manual",
-    ],
-    deps = [":trajectory_linear_system"],
 )
 
 drake_cc_library(

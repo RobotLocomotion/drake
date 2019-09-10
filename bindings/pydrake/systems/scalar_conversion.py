@@ -7,7 +7,7 @@ from pydrake.systems.framework import (
     SystemScalarConverter,
 )
 from pydrake.common.cpp_template import (
-    _get_module_name_from_stack,
+    _get_module_from_stack,
     TemplateClass,
 )
 
@@ -71,7 +71,7 @@ class TemplateSystem(TemplateClass):
     # TODO(eric.cousineau): Figure out if there is a way to avoid needing to
     # pass around converters in user code, avoiding the need to have Python
     # users deal with `SystemScalarConverter`.
-    def __init__(self, name, T_list=None, T_pairs=None, module_name=None):
+    def __init__(self, name, T_list=None, T_pairs=None, scope=None):
         """Constructs ``TemplateSystem``.
 
         Args:
@@ -81,12 +81,11 @@ class TemplateSystem(TemplateClass):
                 scalar type of U to T. If None, this will use all possible
                 pairs that the Python bindings of ``SystemScalarConverter``
                 support.
-            module_name: Defining ``module_name``, per ``TemplateClass``'s
-                constructor.
+            scope: Defining ``scope``, per ``TemplateClass``'s constructor.
         """
-        if module_name is None:
-            module_name = _get_module_name_from_stack()
-        TemplateClass.__init__(self, name, module_name=module_name)
+        if scope is None:
+            scope = _get_module_from_stack()
+        TemplateClass.__init__(self, name, scope=scope)
 
         # Check scalar types and conversions, using defaults if unspecified.
         if T_list is None:

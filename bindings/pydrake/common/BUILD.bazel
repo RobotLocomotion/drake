@@ -94,6 +94,13 @@ drake_py_library(
     name = "deprecation_py",
     srcs = ["deprecation.py"],
     imports = PACKAGE_INFO.py_imports,
+    visibility = [
+        "//bindings/pydrake:__subpackages__",
+        # Allow Drake's Jupyter scaffolding to import this module directly,
+        # without also importing all of pydrake. This is only sound because
+        # none of the transitive `deps` of this target use C++ code.
+        "//tools/jupyter:__pkg__",
+    ],
 )
 
 # N.B. Since `module_py` incorporates `deprecation_py`, C++ Python libraries
@@ -242,6 +249,14 @@ drake_cc_library(
 drake_cc_library(
     name = "drake_variant_pybind",
     hdrs = ["drake_variant_pybind.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
+    deps = ["//:drake_shared_library"],
+)
+
+drake_cc_library(
+    name = "sorted_pair_pybind",
+    hdrs = ["sorted_pair_pybind.h"],
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
     deps = ["//:drake_shared_library"],
@@ -438,6 +453,7 @@ drake_py_unittest(
     name = "cpp_template_test",
     deps = [
         ":cpp_template_py",
+        "//bindings/pydrake/common/test_utilities:pickle_compare_py",
     ],
 )
 

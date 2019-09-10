@@ -46,16 +46,6 @@ PYBIND11_MODULE(manipulation_station, m) {
           &ManipulationStation<T>::SetupManipulationClassStation,
           py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
           doc.ManipulationStation.SetupManipulationClassStation.doc)
-      .def("SetupDefaultStation",
-          [](ManipulationStation<T>* self, IiwaCollisionModel collision_model) {
-            WarnDeprecated(
-                "SetupDefaultStation is deprecated and will be removed on or"
-                "around 2019-09-01.  Please use SetupManipulationClassStation "
-                "instead.");
-            self->SetupManipulationClassStation(collision_model);
-          },
-          py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
-          doc.ManipulationStation.SetupDefaultStation.doc_deprecated)
       .def("SetupClutterClearingStation",
           &ManipulationStation<T>::SetupClutterClearingStation,
           py::arg("X_WCameraBody") = nullopt,

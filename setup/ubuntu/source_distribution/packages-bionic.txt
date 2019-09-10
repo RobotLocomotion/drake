@@ -33,7 +33,7 @@ libogg-dev
 libpng-dev
 libqt5opengl5-dev
 libqt5x11extras5-dev
-libstdc++6-8-dbg
+libstdc++6-7-dbg
 libtheora-dev
 libtiff5-dev
 libtinyxml-dev

@@ -135,9 +135,9 @@ ContactSurface<T> TestContactSurface() {
   EXPECT_EQ(id_N, contact_surface.id_N());
   // Check memory address of the mesh. We don't want to compare the mesh
   // objects themselves.
-  EXPECT_EQ(&surface_mesh_ref, &contact_surface.mesh());
-  EXPECT_EQ(2, contact_surface.mesh().num_faces());
-  EXPECT_EQ(4, contact_surface.mesh().num_vertices());
+  EXPECT_EQ(&surface_mesh_ref, &contact_surface.mesh_W());
+  EXPECT_EQ(2, contact_surface.mesh_W().num_faces());
+  EXPECT_EQ(4, contact_surface.mesh_W().num_vertices());
   // Tests evaluation of `e` on face f0 {0, 1, 2}.
   {
     const SurfaceFaceIndex f0(0);
@@ -162,8 +162,8 @@ ContactSurface<T> TestContactSurface() {
   }
   // Tests area() of triangular faces.
   {
-    EXPECT_EQ(T(0.5), contact_surface.mesh().area(SurfaceFaceIndex(0)));
-    EXPECT_EQ(T(0.5), contact_surface.mesh().area(SurfaceFaceIndex(1)));
+    EXPECT_EQ(T(0.5), contact_surface.mesh_W().area(SurfaceFaceIndex(0)));
+    EXPECT_EQ(T(0.5), contact_surface.mesh_W().area(SurfaceFaceIndex(1)));
   }
 
   return contact_surface;
@@ -178,13 +178,13 @@ GTEST_TEST(ContactSurfaceTest, TestCopy) {
 
   // Confirm that it was a deep copy, i.e., the `original` mesh and the `copy`
   // mesh are different objects.
-  EXPECT_NE(&original.mesh(), &copy.mesh());
+  EXPECT_NE(&original.mesh_W(), &copy.mesh_W());
 
   EXPECT_EQ(original.id_M(), copy.id_M());
   EXPECT_EQ(original.id_N(), copy.id_N());
   // We use `num_faces()` as a representative of the mesh. We do not check
   // everything in the mesh.
-  EXPECT_EQ(original.mesh().num_faces(), copy.mesh().num_faces());
+  EXPECT_EQ(original.mesh_W().num_faces(), copy.mesh_W().num_faces());
 
   // We check evaluation of field values only at one position.
   const SurfaceFaceIndex f(0);
@@ -198,7 +198,7 @@ GTEST_TEST(ContactSurfaceTest, TestCopy) {
 GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
   // Create the original contact surface for comparison later.
   const ContactSurface<double> original = TestContactSurface<double>();
-  auto mesh = std::make_unique<SurfaceMesh<double>>(original.mesh());
+  auto mesh = std::make_unique<SurfaceMesh<double>>(original.mesh_W());
   SurfaceMesh<double>* mesh_pointer = mesh.get();
   // TODO(DamrongGuoy): Remove `original_tester` when ContactSurface allows
   //  direct access to e_MN and grad_h_MN_W.
@@ -233,9 +233,9 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
            f1.vertex(2) == f2.vertex(2);
   };
   // Face winding is changed.
-  for (SurfaceFaceIndex f(0); f < original.mesh().num_faces(); ++f) {
+  for (SurfaceFaceIndex f(0); f < original.mesh_W().num_faces(); ++f) {
     EXPECT_FALSE(
-        are_identical(dut.mesh().element(f), original.mesh().element(f)));
+        are_identical(dut.mesh_W().element(f), original.mesh_W().element(f)));
   }
 
   // Test the mesh fields by evaluating each field, once per face for an
@@ -243,7 +243,7 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
   //    e_MN function hasn't changed.
   //    grad_H function has been mirrored.
   const SurfaceMesh<double>::Barycentric b_Q{0.25, 0.25, 0.5};
-  for (SurfaceFaceIndex f(0); f < original.mesh().num_faces(); ++f) {
+  for (SurfaceFaceIndex f(0); f < original.mesh_W().num_faces(); ++f) {
     EXPECT_EQ(dut.EvaluateE_MN(f, b_Q), original.EvaluateE_MN(f, b_Q));
     const Vector3d expected_normal = -original.EvaluateGrad_h_MN_W(f, b_Q);
     EXPECT_TRUE(CompareMatrices(dut.EvaluateGrad_h_MN_W(f, b_Q),

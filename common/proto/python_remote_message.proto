@@ -1,0 +1,44 @@
+syntax = "proto2";
+
+package drake.common;
+
+// Generic data structure to wrap Python data types. For historical reasons,
+// interface is modeled on mxArray (see
+// https://www.mathworks.com/help/matlab/matlab_external/matlab-data.html).
+message PythonRemoteData {
+  enum DataType {
+    REMOTE_VARIABLE_REFERENCE = 0;
+    DOUBLE = 1;
+    CHAR = 2;
+    LOGICAL = 3;
+    INT = 4;
+  }
+
+  enum ShapeType {
+    MATRIX = 0;
+    VECTOR = 1;
+    SCALAR = 2;
+  }
+
+  optional DataType type = 1;
+  optional int32 rows = 2;
+  optional int32 cols = 3;
+  optional bytes data = 4;
+  optional ShapeType shape_type = 5;
+}
+
+// Thin protobuf wrapper to support asynchronous remote procedure calls to a
+// Python client. For historical reasons, interface is modeled on mexCallMATLAB
+// (see https://www.mathworks.com/help/matlab/apiref/mexcallmatlab.html) but
+// with output arguments assigned in the remote client workspace due to the
+// asynchronous nature of the protocol.
+message PythonRemoteMessage {
+  // Unique id for variables held in the client workspace.
+  repeated int64 lhs = 1;
+
+  // Input argument data.
+  repeated PythonRemoteData rhs = 2;
+
+  // Any expression that resolves to a callable Python object.
+  optional string function_name = 3;
+}

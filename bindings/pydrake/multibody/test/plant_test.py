@@ -606,7 +606,9 @@ class TestPlant(unittest.TestCase):
         # Ensure we can tick this system. If so, all type conversions
         # are working properly.
         simulator = Simulator(diagram)
-        simulator.StepTo(0.01)
+        simulator.AdvanceTo(0.01)
+        with catch_drake_warnings(expected_count=1):
+            simulator.StepTo(0.011)
 
     @numpy_compare.check_all_types
     def test_model_instance_state_access(self, T):
@@ -1091,7 +1093,7 @@ class TestPlant(unittest.TestCase):
         # ContactResults
         contact_results = ContactResults()
         contact_results.AddContactInfo(contact_info)
-        self.assertTrue(contact_results.num_contacts() == 1)
+        self.assertTrue(contact_results.num_point_pair_contacts() == 1)
         self.assertTrue(
             isinstance(contact_results.point_pair_contact_info(0),
                        PointPairContactInfo))
@@ -1178,3 +1180,7 @@ class TestPlant(unittest.TestCase):
         self.assertSetEqual(
             bodies,
             {plant.GetBodyByName("body1"), plant.GetBodyByName("body2")})
+
+        id_, = plant.GetCollisionGeometriesForBody(
+            body=plant.GetBodyByName("body1"))
+        self.assertIsInstance(id_, GeometryId)

@@ -149,7 +149,12 @@ drake_cc_googletest(
     data = [
         "//systems/sensors:test_models",
     ],
-    tags = vtk_test_tags(),
+    # This generally flakes on CI for unknown reasons.
+    flaky = 1,
+    tags = vtk_test_tags() + [
+        # OSPRay uses TBB which is not tsan-friendly.
+        "no_tsan",
+    ],
     deps = [
         ":render_engine_ospray",
         "//common:find_resource",

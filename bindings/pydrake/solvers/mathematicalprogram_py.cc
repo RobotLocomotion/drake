@@ -417,6 +417,12 @@ top-level documentation for :py:mod:`pydrake.math`.
               const std::string&)>(&MathematicalProgram::NewIndeterminates),
           py::arg("rows"), py::arg("cols"), py::arg("name") = "X",
           doc.MathematicalProgram.NewIndeterminates.doc_3args)
+      .def("AddIndeterminates", &MathematicalProgram::AddIndeterminates,
+          py::arg("new_indeterminates"),
+          doc.MathematicalProgram.AddIndeterminates.doc)
+      .def("AddDecisionVariables", &MathematicalProgram::AddDecisionVariables,
+          py::arg("decision_variables"),
+          doc.MathematicalProgram.AddDecisionVariables.doc)
       .def("AddBoundingBoxConstraint",
           static_cast<Binding<BoundingBoxConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::VectorXd>&,
@@ -680,6 +686,10 @@ top-level documentation for :py:mod:`pydrake.math`.
           doc.MathematicalProgram.num_vars.doc)
       .def("decision_variables", &MathematicalProgram::decision_variables,
           doc.MathematicalProgram.decision_variables.doc)
+      .def("indeterminates", &MathematicalProgram::indeterminates,
+          doc.MathematicalProgram.indeterminates.doc)
+      .def("indeterminate", &MathematicalProgram::indeterminate, py::arg("i"),
+          doc.MathematicalProgram.indeterminate.doc)
       .def("EvalBinding",
           [](const MathematicalProgram& prog,
               const Binding<EvaluatorBase>& binding,

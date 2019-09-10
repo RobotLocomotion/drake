@@ -12,6 +12,7 @@ If you would like to disable all Drake-related warnings, you may use the
 `"ignore"` action for `warnings.simplefilter`.
 """
 
+import os
 import sys
 import traceback
 from types import ModuleType
@@ -214,5 +215,9 @@ def _forward_callables_as_deprecated(var_dict, m_new, date):
         var_dict[symbol] = old
 
 
-warnings.simplefilter('once', DrakeDeprecationWarning)
+if os.environ.get("_DRAKE_DEPRECATION_IS_ERROR") == "1":
+    # This is used for testing Jupyter notebooks in `jupyter_bazel`.
+    warnings.simplefilter('error', DrakeDeprecationWarning)
+else:
+    warnings.simplefilter('once', DrakeDeprecationWarning)
 _installed_numpy_warning_filters = False

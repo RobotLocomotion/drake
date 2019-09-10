@@ -204,7 +204,7 @@ PYBIND11_MODULE(symbolic, m) {
   });
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
-  py::class_<Expression> expr_cls(m, "Expression");
+  py::class_<Expression> expr_cls(m, "Expression", doc.Expression.doc);
   expr_cls.def(py::init<>(), doc.Expression.ctor.doc_0args)
       .def(py::init<double>(), doc.Expression.ctor.doc_1args_d)
       .def(py::init<const Variable&>(), doc.Expression.ctor.doc_1args_var)
@@ -451,7 +451,7 @@ PYBIND11_MODULE(symbolic, m) {
       .def("logical_not", [](const Formula& a) { return !a; });
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
-  py::class_<Monomial>(m, "Monomial")
+  py::class_<Monomial>(m, "Monomial", doc.Monomial.doc)
       .def(py::init<const Variable&>(), doc.Monomial.ctor.doc_1args_var)
       .def(py::init<const Variable&, int>(),
           doc.Monomial.ctor.doc_2args_var_exponent)

@@ -7,7 +7,7 @@ load(
     "install_cmake_config",
 )
 
-licenses(["notice"])  # BSD-2-Clause
+licenses(["notice"])  # MIT
 
 package(
     default_visibility = ["//visibility:public"],

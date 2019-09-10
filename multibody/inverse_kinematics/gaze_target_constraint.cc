@@ -16,7 +16,7 @@ GazeTargetConstraint::GazeTargetConstraint(
     const Eigen::Ref<const Eigen::Vector3d>& p_AS,
     const Eigen::Ref<const Eigen::Vector3d>& n_A, const Frame<double>& frameB,
     const Eigen::Ref<const Eigen::Vector3d>& p_BT, double cone_half_angle,
-    systems::Context<double>* context)
+    systems::Context<double>* plant_context)
     : solvers::Constraint(
           2, RefFromPtrOrThrow(plant).num_positions(), Eigen::Vector2d::Zero(),
           Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity())),
@@ -28,10 +28,11 @@ GazeTargetConstraint::GazeTargetConstraint(
       p_BT_{p_BT},
       cone_half_angle_{cone_half_angle},
       cos_cone_half_angle_{std::cos(cone_half_angle_)},
-      context_double_{context},
+      context_double_{plant_context},
       plant_autodiff_{nullptr},
       context_autodiff_{nullptr} {
-  if (context == nullptr) throw std::invalid_argument("context is nullptr.");
+  if (plant_context == nullptr)
+    throw std::invalid_argument("plant_context is nullptr.");
   if (cone_half_angle < 0 || cone_half_angle > M_PI_2) {
     throw std::invalid_argument(
         "GazeTargetConstraint: cone_half_angle should be within [0, pi/2]");
@@ -45,7 +46,7 @@ GazeTargetConstraint::GazeTargetConstraint(
     const Eigen::Ref<const Eigen::Vector3d>& n_A,
     const Frame<AutoDiffXd>& frameB,
     const Eigen::Ref<const Eigen::Vector3d>& p_BT, double cone_half_angle,
-    systems::Context<AutoDiffXd>* context)
+    systems::Context<AutoDiffXd>* plant_context)
     : solvers::Constraint(
           2, RefFromPtrOrThrow(plant).num_positions(), Eigen::Vector2d::Zero(),
           Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity())),
@@ -59,8 +60,9 @@ GazeTargetConstraint::GazeTargetConstraint(
       cos_cone_half_angle_{std::cos(cone_half_angle_)},
       context_double_{nullptr},
       plant_autodiff_{plant},
-      context_autodiff_{context} {
-  if (context == nullptr) throw std::invalid_argument("context is nullptr.");
+      context_autodiff_{plant_context} {
+  if (plant_context == nullptr)
+    throw std::invalid_argument("plant_context is nullptr.");
   if (cone_half_angle < 0 || cone_half_angle > M_PI_2) {
     throw std::invalid_argument(
         "GazeTargetConstraint: cone_half_angle should be within [0, pi/2]");

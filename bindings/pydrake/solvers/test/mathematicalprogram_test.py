@@ -17,6 +17,7 @@ import numpy as np
 
 import pydrake
 from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.forwarddiff import jacobian
 from pydrake.math import ge
 import pydrake.symbolic as sym
@@ -597,3 +598,16 @@ class TestMathematicalProgram(unittest.TestCase):
         infeasible = mp.GetInfeasibleConstraints(prog=prog, result=result,
                                                  tol=1e-4)
         self.assertEquals(len(infeasible), 0)
+
+    def test_add_indeterminates_and_decision_variables(self):
+        prog = mp.MathematicalProgram()
+        x0 = sym.Variable("x0")
+        x1 = sym.Variable("x1")
+        a0 = sym.Variable("a0")
+        a1 = sym.Variable("a1")
+        prog.AddIndeterminates(np.array([x0, x1]))
+        prog.AddDecisionVariables(np.array([a0, a1]))
+        numpy_compare.assert_equal(prog.decision_variables()[0], a0)
+        numpy_compare.assert_equal(prog.decision_variables()[1], a1)
+        numpy_compare.assert_equal(prog.indeterminates()[0], x0)
+        numpy_compare.assert_equal(prog.indeterminate(1), x1)

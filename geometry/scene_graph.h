@@ -783,6 +783,11 @@ class SceneGraph final : public systems::LeafSystem<T> {
   void CalcPoseBundle(const systems::Context<T>& context,
                       systems::rendering::PoseBundle<T>* output) const;
 
+  // Collects all of the *dynamic* frames that have geometries with the given
+  // role.
+  std::vector<FrameId> GetDynamicFrames(const GeometryState<T>& g_state,
+                                        Role role) const;
+
   // Refreshes the pose of the various engines which exploits the caching
   // infrastructure.
   void FullPoseUpdate(const systems::Context<T>& context) const {

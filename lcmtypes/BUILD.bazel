@@ -68,16 +68,13 @@ drake_lcm_cc_library(
 )
 
 drake_lcm_cc_library(
-    name = "contact_info_for_viz",
-    lcm_package = "drake",
-    lcm_srcs = ["lcmt_contact_info_for_viz.lcm"],
-)
-
-drake_lcm_cc_library(
     name = "contact_results_for_viz",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_contact_results_for_viz.lcm"],
-    deps = [":contact_info_for_viz"],
+    deps = [
+        ":hydroelastic_contact_surface_for_viz",
+        ":point_pair_contact_info_for_viz",
+    ],
 )
 
 drake_lcm_cc_library(
@@ -108,6 +105,19 @@ drake_lcm_cc_library(
 )
 
 drake_lcm_cc_library(
+    name = "hydroelastic_contact_surface_for_viz",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_hydroelastic_contact_surface_for_viz.lcm"],
+    deps = [":hydroelastic_contact_surface_tri_for_viz"],
+)
+
+drake_lcm_cc_library(
+    name = "hydroelastic_contact_surface_tri_for_viz",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_hydroelastic_contact_surface_tri_for_viz.lcm"],
+)
+
+drake_lcm_cc_library(
     name = "inverse_dynamics_debug_info",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_inverse_dynamics_debug_info.lcm"],
@@ -131,6 +141,12 @@ drake_lcm_cc_library(
     lcm_package = "drake",
     lcm_srcs = ["lcmt_piecewise_polynomial.lcm"],
     deps = [":polynomial_matrix"],
+)
+
+drake_lcm_cc_library(
+    name = "point_pair_contact_info_for_viz",
+    lcm_package = "drake",
+    lcm_srcs = ["lcmt_point_pair_contact_info_for_viz.lcm"],
 )
 
 drake_lcm_cc_library(
@@ -226,35 +242,6 @@ drake_lcm_cc_library(
     ],
 )
 
-# Keep this list in sync with the list of _LCM_ENABLED_NAMED_VECTORS within
-# ../automotive/BUILD.bazel. TODO(jwnimmer-tri) De-duplicate the two lists,
-# likely by moving the automotive lcmtypes into their own package.
-_AUTOMOTIVE_LCM_SRCS = [
-    "lcmt_bicycle_car_state_t.lcm",
-    "lcmt_driving_command_t.lcm",
-    "lcmt_maliput_railcar_state_t.lcm",
-    "lcmt_simple_car_state_t.lcm",
-    "lcmt_trajectory_car_state_t.lcm",
-]
-
-# Generate *.lcm sources from *.named_vector files.
-drake_vector_gen_lcm_sources(
-    name = "automotive_sources",
-    srcs = [
-        "//automotive:{}.named_vector".format(
-            x[len("lcmt_"):-len("_t.lcm")],
-        )
-        for x in _AUTOMOTIVE_LCM_SRCS
-    ],
-)
-
-# Generate C++ sources and a library from *.lcm sources.
-drake_lcm_cc_library(
-    name = "automotive",
-    lcm_package = "drake",
-    lcm_srcs = _AUTOMOTIVE_LCM_SRCS,
-)
-
 drake_lcm_cc_library(
     name = "allegro",
     lcm_package = "drake",
@@ -307,7 +294,7 @@ drake_lcm_py_library(
     add_current_package_to_imports = False,  # Use //:module_py instead.
     extra_srcs = ["__init__.py"],
     lcm_package = "drake",
-    lcm_srcs = glob(["*.lcm"]) + _AUTOMOTIVE_LCM_SRCS,
+    lcm_srcs = glob(["*.lcm"]),
     deps = [
         "//:module_py",
         "@lcmtypes_bot2_core//:lcmtypes_bot2_core_py",
@@ -317,25 +304,25 @@ drake_lcm_py_library(
 drake_lcm_java_library(
     name = "lcmtypes_drake_java",
     lcm_package = "drake",
-    lcm_srcs = glob(["*.lcm"]) + _AUTOMOTIVE_LCM_SRCS,
+    lcm_srcs = glob(["*.lcm"]),
     deps = ["@lcmtypes_bot2_core//:lcmtypes_bot2_core_java"],
 )
 
 # This should list every LCM type that is known to Drake.
 LCMTYPES_CC = [
     ":acrobot",
-    ":automotive",
     ":body_acceleration",
     ":body_motion_data",
     ":body_wrench_data",
     ":constrained_values",
-    ":contact_info_for_viz",
     ":contact_information",
     ":contact_results_for_viz",
     ":desired_body_motion",
     ":desired_centroidal_momentum_dot",
     ":desired_dof_motions",
     ":drake_signal",
+    ":hydroelastic_contact_surface_for_viz",
+    ":hydroelastic_contact_surface_tri_for_viz",
     ":iiwa",
     ":inverse_dynamics_debug_info",
     ":jaco",
@@ -343,6 +330,7 @@ LCMTYPES_CC = [
     ":manipulator_plan_move_end_effector",
     ":piecewise_polynomial",
     ":plan_eval_debug_info",
+    ":point_pair_contact_info_for_viz",
     ":polynomial",
     ":polynomial_matrix",
     ":qp_controller_input",
