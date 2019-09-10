@@ -13,6 +13,7 @@ namespace drake {
 namespace examples {
 namespace qp_inverse_dynamics {
 
+// N.B. Inheritance order must remain fixed for pydrake (#9243).
 /**
  * This class implements an example of a general purpose controller for a
  * fixed based manipulator based on qp inverse dynamics. It contains two main
@@ -32,8 +33,8 @@ namespace qp_inverse_dynamics {
  * implemented by different plan eval modules.
  */
 class ManipulatorJointSpaceController
-    : public systems::controllers::StateFeedbackControllerInterface<double>,
-      public systems::Diagram<double> {
+    : public systems::Diagram<double>,
+      public systems::controllers::StateFeedbackControllerInterface<double> {
  public:
   /**
    * Constructs a inverse dynamics controller for a fixed base manipulator that
