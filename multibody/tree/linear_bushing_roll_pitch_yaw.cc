@@ -36,19 +36,16 @@ void LinearBushingRollPitchYaw<T>::DoCalcAndAddForceContribution(
     const internal::PositionKinematicsCache<T>& /* pc */,
     const internal::VelocityKinematicsCache<T>& /* vc */,
     MultibodyForces<T>* forces) const {
-  // Form the bushing's resultant torque on frame Aʙ expressed in frame Aʙ.
-  const Vector3<T> t_Ab_Ab = CalcBushingTorqueStiffnessOnAb(context, true)
-                           + CalcBushingTorqueDampingOnAb(context, true);
 
-  // Form the bushing's resultant force on point Aʙₒ expressed in frame Aʙ.
-  const Vector3<T> f_Abo_Ab = CalcBushingForceStiffnessOnAbo(context)
-                            + CalcBushingForceDampingOnAbo(context);
+  // Form the bushing's resultant torque on frame Aʙ expressed in frame Aʙ
+  // and  the bushing's resultant force on point Aʙₒ expressed in frame Aʙ.
+  const SpatialForce<T> F_Ab_Ab =
+      CalcBushingResultantSpatialForceOnAbo(context);
 
-  // Combine the torque and force on frame Aʙ into a SpatialForce on frame Aʙ
-  // and then express that SpatialForce in the world frame W.
+  // Express the SpatialForce F_Ab_Ab in the world frame W.
   const RigidTransform<T> X_WAb = frameAb().CalcPoseInWorld(context);
   const RotationMatrix<T>& R_WAb = X_WAb.rotation();
-  const SpatialForce<T> F_Abo_W = R_WAb * SpatialForce<T>(t_Ab_Ab, f_Abo_Ab);
+  const SpatialForce<T> F_Abo_W = R_WAb * F_Ab_Ab;
 
   // The next calculation needs the position from Aʙₒ to Ao expressed in world.
   const Vector3<T> p_AoAbo_A =
@@ -81,18 +78,21 @@ template <typename T>
 T LinearBushingRollPitchYaw<T>::CalcPotentialEnergy(
     const systems::Context<T>& context,
     const internal::PositionKinematicsCache<T>& /* pc */) const {
-  // Calculate the yaw-pitch-roll angles q₀, q₁, q₂ and use them together with
-  // the torque stiffness constants to form the torque potential energy.
+  // Calculate the yaw-pitch-roll angles  and use them together with
+  // Use the torque stiffness constants [k₀, k₁, k₂] and the yaw-pitch-roll
+  // angles [q₀, q₁, q₂] to form torque potential energy
+  // `0.5*[k₀*q₀², k₁*q₁², k₂*q₂²]`.
   const math::RollPitchYaw<T> rpy = CalcBushingRollPitchYawAngles(context);
   const Vector3<T> q012 = rpy.ConvertAnglesToSequenceBodyZYXYawRollPitch();
   const Vector3<T> q012Squared = q012.cwiseProduct(q012);
   const T torque_potential_energy =
       0.5 * (torque_stiffness_constants().dot(q012Squared));
 
-  // Calculate p_AʙBᴀ = [x, y, z] (the position from point Aʙₒ to point Bᴀₒ
-  // expressed in frame Aʙ) and use it together with force stiffness constants
-  // to form the force potential energy.
-  const Vector3<T> xyz = CalcBushingPositionVector(context);
+  // Use the bushing's force stiffness constants [kx, ky, kz] and
+  // `p_AʙBᴀ = [x, y, z]` (the position vector from point Aʙₒ to point Bᴀₒ
+  // expressed in frame Aʙ) to form force potential energy
+  // `0.5*[kx*x², ky*y², kz*z²]`.
+  const Vector3<T> xyz = CalcBushingRigidTransform(context).translation();
   const Vector3<T> xyzSquared = xyz.cwiseProduct(xyz);
   const T force_potential_energy =
       0.5 * (force_stiffness_constants().dot(xyzSquared));
@@ -116,7 +116,7 @@ T LinearBushingRollPitchYaw<T>::CalcConservativePower(
   const T Pc_torque = -(torque_stiffness.dot(q012Dt));
 
   const Vector3<T> force_stiffness = CalcBushingForceStiffnessOnAbo(context);
-  const Vector3<T> xyzDt = CalcBushingTranslationalVelocity(context);
+  const Vector3<T> xyzDt = CalcBushingSpatialVelocity(context).translational();
   const T Pc_force = -(force_stiffness.dot(xyzDt));
 
   return Pc_torque + Pc_force;
@@ -136,7 +136,7 @@ T LinearBushingRollPitchYaw<T>::CalcNonConservativePower(
   const T Pn_torque = -(torque_damping.dot(q012Dt));
 
   const Vector3<T> force_damping = CalcBushingForceDampingOnAbo(context);
-  const Vector3<T> xyzDt = CalcBushingTranslationalVelocity(context);
+  const Vector3<T> xyzDt = CalcBushingSpatialVelocity(context).translational();
   const T Pn_force = -(force_damping.dot(xyzDt));
 
   return Pn_torque + Pn_force;
