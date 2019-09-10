@@ -129,32 +129,34 @@ class MeshHalfspaceIntersectionTest : public ::testing::Test {
   // half space normal and halfspace constant as well as the given mesh and
   // construction data structures.
   void ConstructTriangleHalfspaceIntersectionPolygon(
-      const SurfaceMesh<T>& mesh, std::vector<SurfaceVertex<T>>* new_vertices_F,
-      std::vector<SurfaceFace>* new_faces,
+      const SurfaceMesh<T>& mesh,
+      std::vector<SurfaceVertex<T>>* new_vertices_F_in,
+      std::vector<SurfaceFace>* new_faces_in,
       std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
-          vertices_to_newly_created_vertices,
+          vertices_to_newly_created_vertices_in,
       std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>*
-          edges_to_newly_created_vertices) {
+          edges_to_newly_created_vertices_in) {
     for (const SurfaceFace& face : mesh.faces()) {
       internal::ConstructTriangleHalfspaceIntersectionPolygon(
           mesh.vertices(), face, this->normal_H(), this->half_space_constant(),
-          new_vertices_F, new_faces, vertices_to_newly_created_vertices,
-          edges_to_newly_created_vertices);
+          new_vertices_F_in, new_faces_in,
+          vertices_to_newly_created_vertices_in,
+          edges_to_newly_created_vertices_in);
     }
   }
 
   // Convenience function for verifying that the original mesh was output.
   void VerifyOriginalMeshOutput(
       const SurfaceMesh<T>& mesh,
-      const std::vector<SurfaceVertex<T>>& new_vertices,
-      const std::vector<SurfaceFace>& new_faces) {
-    ASSERT_EQ(mesh.num_faces(), new_faces.size());
-    ASSERT_EQ(new_vertices.size(), mesh.num_vertices());
-    for (SurfaceVertexIndex i(0); i < new_vertices.size(); ++i)
-      EXPECT_EQ(new_vertices[i].r_MV(), mesh.vertex(i).r_MV());
+      const std::vector<SurfaceVertex<T>>& new_vertices_in,
+      const std::vector<SurfaceFace>& new_faces_in) {
+    ASSERT_EQ(mesh.num_faces(), new_faces_in.size());
+    ASSERT_EQ(new_vertices_in.size(), mesh.num_vertices());
+    for (SurfaceVertexIndex i(0); i < new_vertices_in.size(); ++i)
+      EXPECT_EQ(new_vertices_in[i].r_MV(), mesh.vertex(i).r_MV());
     for (SurfaceFaceIndex j(0); j < mesh.num_faces(); ++j) {
       const SurfaceFace& original_face = mesh.element(j);
-      const SurfaceFace& new_face = new_faces[j];
+      const SurfaceFace& new_face = new_faces_in[j];
       for (int i = 0; i < 3; ++i)
         EXPECT_EQ(new_face.vertex(i), original_face.vertex(i));
     }

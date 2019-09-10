@@ -44,7 +44,6 @@ SurfaceVertexIndex GetVertexAddIfNeeded(
     std::vector<SurfaceVertex<T>>* new_vertices_F) {
   DRAKE_DEMAND(sgn(s_a) != sgn(s_b));
 
-  // Note: the next assertion is also covered by the following assertion.
   using std::abs;
   SortedPair<SurfaceVertexIndex> edge_a_b(a, b);
   auto edge_a_b_intersection_iter =
