@@ -18,20 +18,16 @@ namespace drake {
 namespace geometry {
 
 // TODO(DamrongGuoy): Remove this helper class when ContactSurface allows
-<<<<<<< HEAD
-//  direct access to p0_MN_ and grad_h_MN_W_.
-=======
 //  direct access to e_MN_ and grad_h_MN_W_.
->>>>>>> b095d45ee80999f18435d7829c2adcfcd5dc9c0a
 template <typename T>
 class ContactSurfaceTester {
  public:
   explicit ContactSurfaceTester(const geometry::ContactSurface<T>& surface)
       : surface_(surface) {}
 
-  const SurfaceMeshFieldLinear<T, T>& p0_MN() const {
-    DRAKE_DEMAND(surface_.p0_MN_ != nullptr);
-    return *(surface_.p0_MN_);
+  const SurfaceMeshFieldLinear<T, T>& e_MN() const {
+    DRAKE_DEMAND(surface_.e_MN_ != nullptr);
+    return *(surface_.e_MN_);
   }
 
   const SurfaceMeshFieldLinear<Vector3<T>, T>& grad_h_MN_W() const {
@@ -205,15 +201,9 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
   auto mesh = std::make_unique<SurfaceMesh<double>>(original.mesh());
   SurfaceMesh<double>* mesh_pointer = mesh.get();
   // TODO(DamrongGuoy): Remove `original_tester` when ContactSurface allows
-<<<<<<< HEAD
-  //  direct access to p0_MN and grad_h_MN_W.
-  const ContactSurfaceTester<double> original_tester(original);
-  std::vector<double> p0_MN_values = original_tester.p0_MN().values();
-=======
   //  direct access to e_MN and grad_h_MN_W.
   const ContactSurfaceTester<double> original_tester(original);
   std::vector<double> e_MN_values = original_tester.e_MN().values();
->>>>>>> b095d45ee80999f18435d7829c2adcfcd5dc9c0a
   std::vector<Vector3<double>> grad_h_MN_W_values =
       original_tester.grad_h_MN_W().values();
 
@@ -225,7 +215,7 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
   ContactSurface<double> dut(
       id_M, id_N, std::move(mesh),
       std::make_unique<SurfaceMeshFieldLinear<double, double>>(
-          "p0_MN", std::move(p0_MN_values), mesh_pointer),
+          "e_MN", std::move(e_MN_values), mesh_pointer),
       std::make_unique<SurfaceMeshFieldLinear<Vector3<double>, double>>(
           "grad_h_MN_W", std::move(grad_h_MN_W_values), mesh_pointer));
 
@@ -250,23 +240,14 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
 
   // Test the mesh fields by evaluating each field, once per face for an
   // arbitrary point Q on the interior of the triangle. We expect:
-<<<<<<< HEAD
-  //    p0_MN function hasn't changed.
-=======
   //    e_MN function hasn't changed.
->>>>>>> b095d45ee80999f18435d7829c2adcfcd5dc9c0a
   //    grad_H function has been mirrored.
   const SurfaceMesh<double>::Barycentric b_Q{0.25, 0.25, 0.5};
   for (SurfaceFaceIndex f(0); f < original.mesh().num_faces(); ++f) {
     EXPECT_EQ(dut.EvaluateE_MN(f, b_Q), original.EvaluateE_MN(f, b_Q));
-<<<<<<< HEAD
-    const Vector3d expected_norm = -original.EvaluateGrad_h_MN_W(f, b_Q);
-    EXPECT_TRUE(CompareMatrices(dut.EvaluateGrad_h_MN_W(f, b_Q), expected_norm,
-=======
     const Vector3d expected_normal = -original.EvaluateGrad_h_MN_W(f, b_Q);
     EXPECT_TRUE(CompareMatrices(dut.EvaluateGrad_h_MN_W(f, b_Q),
                                 expected_normal,
->>>>>>> b095d45ee80999f18435d7829c2adcfcd5dc9c0a
                                 std::numeric_limits<double>::epsilon()));
   }
 }

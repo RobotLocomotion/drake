@@ -468,8 +468,11 @@ class TypeSafeIndex {
 
   ///@}
 
-  /// Implements the @ref hash_append concept.
-  template <class HashAlgorithm>
+  /// Implements the @ref hash_append concept. And invalid index will
+  /// successfully hash (in order to satisfy STL requirements), and it is up to
+  /// the user to confirm it is valid before using it as a key (or other hashing
+  /// application).
+  template <typename HashAlgorithm>
   friend void hash_append(HashAlgorithm& hasher,
                           const TypeSafeIndex& i) noexcept {
     using drake::hash_append;
@@ -553,12 +556,9 @@ operator>=(const U& value, const TypeSafeIndex<Tag>& tag) {
 }  // namespace drake
 
 namespace std {
-/// Specialization of std::hash for drake::TypeSafeIndex<Tag>.
-template <typename Tag>
-struct hash<drake::TypeSafeIndex<Tag>> {
-  size_t operator()(const drake::TypeSafeIndex<Tag>& index) const {
-    return std::hash<int>()(index);
-  }
-};
 
+/// Enables use of the type-safe index to serve as a key in STL containers.
+/// @relates TypeSafeIndex
+template <typename Tag>
+struct hash<drake::TypeSafeIndex<Tag>> : public drake::DefaultHash {};
 }  // namespace std

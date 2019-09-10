@@ -88,6 +88,12 @@ class HalfSpace {
     return signed_distance(p_FQ) > 0;
   }
 
+  /** Gets the normal expressed in frame F. */
+  const Vector3<T> nhat_F() const { return nhat_F_; }
+
+  /** Gets the displacement constant. */
+  const T& displacement() const { return displacement_; }
+
  private:
   Vector3<T> nhat_F_;
   T displacement_{};

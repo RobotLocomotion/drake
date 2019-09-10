@@ -157,16 +157,11 @@ TEST_F(SphereVsPlaneTest, VerifyModelSizeAndResults) {
   const SurfaceMesh<double>& mesh_G = surface.mesh();
   EXPECT_GT(mesh_G.num_vertices(), 0);
   const double kTolerance = 5.0 * std::numeric_limits<double>::epsilon();
-<<<<<<< HEAD
-  // The expected value of ∇hₘₙ, which by definition points from N towards M.
-  const Vector3<double> expected_grad_h_mn_W =
-=======
 
   // TODO(edrumwri): This is the gradient of the strain field. It should be
   // the gradient of the pressure field. Fix.
   // The expected value of ∇hₘₙ, which we expect to point from N towards M.
   const Vector3<double> expected_grad_h_MN_W =
->>>>>>> b095d45ee80999f18435d7829c2adcfcd5dc9c0a
       surface.id_M() == sphere_geometry_id_ ? Vector3<double>(0.0, 0.0, 1.0)
                                             : Vector3<double>(0.0, 0.0, -1.0);
 
@@ -185,13 +180,8 @@ TEST_F(SphereVsPlaneTest, VerifyModelSizeAndResults) {
     EXPECT_LE(radius, surface_radius);
 
     // We expect ∇hₘₙ to point from N towards M.
-<<<<<<< HEAD
-    const Vector3<double> grad_h_mn_W = surface.EvaluateGrad_h_MN_W(v);
-    EXPECT_TRUE(CompareMatrices(grad_h_mn_W, expected_grad_h_mn_W, kTolerance));
-=======
     const Vector3<double> grad_h_MN_W = surface.EvaluateGrad_h_MN_W(v);
     EXPECT_TRUE(CompareMatrices(grad_h_MN_W, expected_grad_h_MN_W, kTolerance));
->>>>>>> b095d45ee80999f18435d7829c2adcfcd5dc9c0a
   }
 
   // The number of models should not change on further queries.
