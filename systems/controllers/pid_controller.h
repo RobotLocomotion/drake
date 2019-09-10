@@ -43,8 +43,8 @@ namespace controllers {
  * @ingroup control_systems
  */
 template <typename T>
-class PidController : public StateFeedbackControllerInterface<T>,
-                      public LeafSystem<T> {
+class PidController : public LeafSystem<T>,
+                      public StateFeedbackControllerInterface<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PidController)
 

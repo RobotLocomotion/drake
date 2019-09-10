@@ -74,6 +74,8 @@ PYBIND11_MODULE(controllers, m) {
           doc.InverseDynamics.InverseDynamicsMode.kGravityCompensation.doc)
       .export_values();
 
+  // TODO(eric.cousineau): Expose multiple inheritance from
+  // StateFeedbackControllerInterface once #9243 is resolved.
   py::class_<InverseDynamicsController<double>, Diagram<double>>(
       m, "InverseDynamicsController", doc.InverseDynamicsController.doc)
       .def(py::init<const MultibodyPlant<double>&, const VectorX<double>&,
@@ -144,6 +146,8 @@ PYBIND11_MODULE(controllers, m) {
           py_reference_internal,
           doc.PidControlledSystem.get_state_output_port.doc);
 
+  // TODO(eric.cousineau): Expose multiple inheritance from
+  // StateFeedbackControllerInterface once #9243 is resolved.
   py::class_<PidController<double>, LeafSystem<double>>(
       m, "PidController", doc.PidController.doc)
       .def(py::init<const VectorX<double>&, const VectorX<double>&,
