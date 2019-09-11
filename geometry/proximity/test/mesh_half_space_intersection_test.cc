@@ -499,23 +499,22 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, BoxMesh) {
   // centered at the origin of Frame F. Introducing this frame makes it less
   // likely that all of the underlying tests might succeed because of some
   // fortuitous initial values. The halfspace normal points along F's +z axis.
-  //
-  //               v₁     v₃
-  //               ●------●
-  //              /|     /|
-  //             / |  v₇/ |
-  //         v₅ ●------●  |
-  //            |  |   |  |
-  //            |  ●---|--● v₂
-  //            | /v₀  | /
-  //            |/     |/
-  //    +Z   v₄ ●------● v₆
-  //     |
-  //     |
-  //     o------+Y
-  //    /
-  //   /
-  // +X
+  // Set the box vertices according to the following diagram. The box is
+  // centered at the origin.
+  //               v₁      +Z         v₃
+  //               ●───────┆─────────●
+  //              /│       ┆        /│
+  //             / │       ┆     v₇/ │
+  //         v₅ ●─────────────────●  │
+  //            │  │       ┆      │  │
+  //            │  │       o┄┄┄┄┄┄│┄┄┄┄┄ +Y
+  //            │  │      /       │  │
+  //            │  ●─────/────────│──● v₂
+  //            │ /v₀   /         │ /
+  //            │/     /          │/
+  //         v₄ ●─────────────────● v₆
+  //                 /
+  //                +X
 
   // Set F to an arbitrarily chosen pose relative to the world frame.
   math::RigidTransform<T> X_WF(math::RollPitchYaw<T>(M_PI_4, M_PI_4, M_PI_4),
@@ -561,8 +560,10 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, BoxMesh) {
           mesh, half_space);
   ASSERT_EQ(intersection_mesh.num_vertices(), 8);
 
-  // Note: each side of the box (which comprises two triangles) gets split into
-  // three triangles. 3 x 4 + 2 (for the triangles on the bottom) = 14.
+  // Note: The sides of the box facing the +/- X and +/- Y directions are each
+  // split into three triangles. The side of the box facing -Z is fully enclosed
+  // (two more triangles) yielding 4 x 3 + 2 = 14 triangles. (The side facing +Z
+  // is outside the half space.)
   ASSERT_EQ(intersection_mesh.num_faces(), 14);
 }
 

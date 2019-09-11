@@ -18,6 +18,8 @@
 
 namespace drake {
 namespace geometry {
+
+// TODO(sean-curtis) Move this to a more common namespace.
 namespace mesh_intersection {
 
 #ifndef DRAKE_DOXYGEN_CXX  // Hide from Doxygen for now.
