@@ -52,6 +52,8 @@ namespace mesh_intersection {
 template <typename T>
 class HalfSpace {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HalfSpace)
+
   /** Constructs a HalfSpace in frame F.
    @param nhat_F
        A unit-length vector perpendicular to the half space's planar boundary
