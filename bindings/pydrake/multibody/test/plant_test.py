@@ -20,6 +20,7 @@ from pydrake.multibody.tree import (
     JointActuator_,
     JointActuatorIndex,
     JointIndex,
+    LinearSpringDamper_,
     ModelInstanceIndex,
     MultibodyForces_,
     RevoluteJoint_,
@@ -319,14 +320,30 @@ class TestPlant(unittest.TestCase):
         CoulombFriction(static_friction=0.7, dynamic_friction=0.6)
 
     @numpy_compare.check_all_types
+    def test_multibody_force_element(self, T):
+        MultibodyPlant = MultibodyPlant_[T]
+        LinearSpringDamper = LinearSpringDamper_[T]
+        SpatialInertia = SpatialInertia_[float]
+
+        plant = MultibodyPlant()
+        spatial_inertia = SpatialInertia()
+        body_a = plant.AddRigidBody(name="body_a",
+                                    M_BBo_B=spatial_inertia)
+        body_b = plant.AddRigidBody(name="body_b",
+                                    M_BBo_B=spatial_inertia)
+        plant.AddForceElement(LinearSpringDamper(
+            bodyA=body_a, p_AP=[0., 0., 0.],
+            bodyB=body_b, p_BQ=[0., 0., 0.],
+            free_length=1., stiffness=2., damping=3.))
+        plant.Finalize()
+
+    @numpy_compare.check_all_types
     def test_multibody_gravity_default(self, T):
         MultibodyPlant = MultibodyPlant_[T]
         UniformGravityFieldElement = UniformGravityFieldElement_[T]
         plant = MultibodyPlant()
-        # Smoke test of deprecated methods.
-        with catch_drake_warnings(expected_count=1):
+        with self.assertRaises(RuntimeError) as cm:
             plant.AddForceElement(UniformGravityFieldElement())
-        plant.Finalize()
 
     @numpy_compare.check_all_types
     def test_multibody_tree_kinematics(self, T):

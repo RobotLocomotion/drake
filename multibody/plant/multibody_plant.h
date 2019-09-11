@@ -947,10 +947,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @tparam ForceElementType The type of the ForceElement to add.  As there
   /// is always a UniformGravityFieldElement present (accessible through
   /// gravity_field()), an exception will be thrown if this function is called
-  /// to add another UniformGravityFieldElement.  As there was not always a
-  /// default gravity field element, for compatibility purposes calling this
-  /// function to add a UniformGravityFieldElement which has the same value as
-  /// gravity_field() is not an error.
+  /// to add another UniformGravityFieldElement.
   /// @returns A constant reference to the new ForceElement just added, of type
   ///   `ForceElementType<T>` specialized on the scalar type T of `this`
   ///   %MultibodyPlant. It will remain valid for the lifetime of `this`
@@ -958,43 +955,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see The ForceElement class's documentation for further details on how a
   /// force element is defined.
   template<template<typename Scalar> class ForceElementType, typename... Args>
-#ifdef DRAKE_DOXYGEN_CXX
   const ForceElementType<T>&
-#else
-  typename std::enable_if<!std::is_same<
-      ForceElementType<T>,
-      UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
-#endif
   AddForceElement(Args&&... args) {
     DRAKE_MBP_THROW_IF_FINALIZED();
     return this->mutable_tree().template AddForceElement<ForceElementType>(
         std::forward<Args>(args)...);
   }
-
-#ifndef DRAKE_DOXYGEN_CXX
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // SFINAE overload for ForceElementType = UniformGravityFieldElement.
-  // This allow us to keep track of the gravity field parameters.
-  // TODO(amcastro-tri): This specialization pattern leads to difficult to
-  // mantain indirection layers between MBP/MBT and can cause difficult to find
-  // bugs, see #11051. It is bad practice and should removed, see #11080.
-  template <template <typename Scalar> class ForceElementType, typename... Args>
-  // TODO(sammy-tri): When removing this SFINAE overload along with its
-  // deprecation message, remove the "backwards compatibility" notes from
-  // MultibodyPlant::AddForceElement().
-  DRAKE_DEPRECATED("2019-09-01",
-                   "Use mutable_gravity_field().set_gravity_vector() instead.")
-  typename std::enable_if<
-      std::is_same<ForceElementType<T>, UniformGravityFieldElement<T>>::value,
-      const ForceElementType<T>&>::type
-  AddForceElement(Args&&... args) {
-    DRAKE_MBP_THROW_IF_FINALIZED();
-    return this->mutable_tree().template AddForceElement<ForceElementType>(
-        std::forward<Args>(args)...);
-  }
-#pragma GCC diagnostic pop
-#endif
 
   /// Creates and adds a JointActuator model for an actuator acting on a given
   /// `joint`.
