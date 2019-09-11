@@ -28,21 +28,17 @@ namespace internal {
 // the side. The order of the enumerators is important because a child of two
 // vertices with different types will inherit the first one in the enumerator
 // list.
-enum class CylinderVertexType {
-  kInternal,
-  kCap,
-  kSide
-};
+enum class CylinderVertexType { kInternal, kCap, kSide };
 
 // Project the point p to the side of the cylinder in the XY direction
 // The point p is projected along the line perpendicular to the center line
 // of the cylinder (z-axis).
 // @pre `p` is not on the center line of the cylinder
-template<typename T>
+template <typename T>
 Vector3<T> ProjectOntoCylinderSide(const Vector3<T>& p, const double radius) {
   Vector3<T> p_xy = Vector3<T>(p[0], p[1], 0.0);
 
-  DRAKE_DEMAND(p[0] != T(0) || p[1] != 0);
+  DRAKE_DEMAND(p[0] != T(0) || p[1] != T(0));
 
   p_xy.normalize();
   Vector3<T> cylinder_size_xy = radius * p_xy;
@@ -54,7 +50,7 @@ Vector3<T> ProjectOntoCylinderSide(const Vector3<T>& p, const double radius) {
 // from the center axis. The midpoint is projected along the line
 // perpendicular to the center axis of the cylinder (z-axis). The projection
 // does not change the z coordinate of the midpoint.
-template<typename T>
+template <typename T>
 Vector3<T> ProjectMidpointToMiddleCylinder(const Vector3<T>& p,
                                            const Vector3<T>& q) {
   Vector3<T> midpoint = (p + q) / 2.0;
@@ -76,11 +72,9 @@ Vector3<T> ProjectMidpointToMiddleCylinder(const Vector3<T>& p,
 }
 
 // Determine the correct projection based on the boundary type of the vertex
-template<typename T>
-Vector3<T> ChooseProjection(const Vector3<T>& x,
-                            const Vector3<T>& y,
-                            CylinderVertexType v_type,
-                            const double radius) {
+template <typename T>
+Vector3<T> ChooseProjection(const Vector3<T>& x, const Vector3<T>& y,
+                            CylinderVertexType v_type, const double radius) {
   // Project boundary vertices onto the surface of the cylinder.
   const Vector3<T> v = (x + y) / 2.0;
 
@@ -92,22 +86,21 @@ Vector3<T> ChooseProjection(const Vector3<T>& x,
     case CylinderVertexType::kCap:
     case CylinderVertexType::kInternal:
       return ProjectMidpointToMiddleCylinder(x, y);
-    default:return v;
+    default:
+      return v;
   }
 }
 
 // Bootstrapping for creating a new vertex in the mesh
-// Determinges the boundary type, chooses the type of projection (if any),
+// Determines the boundary type, chooses the type of projection (if any),
 // adds the vertex to the mesh data structures, and hashes the new
 // vertex in the parents -> child map
-template<typename T>
-void CreateNewVertex(const VolumeVertexIndex& a,
-                     const VolumeVertexIndex& b,
+template <typename T>
+void CreateNewVertex(const VolumeVertexIndex& a, const VolumeVertexIndex& b,
                      std::vector<VolumeVertex<T>>* split_mesh_vertices_ptr,
                      std::vector<CylinderVertexType>* split_is_boundary_ptr,
                      std::unordered_map<SortedPair<VolumeVertexIndex>,
-                                        VolumeVertexIndex>*
-                                        vertex_map_ptr,
+                                        VolumeVertexIndex>* vertex_map_ptr,
                      const double radius) {
   DRAKE_DEMAND(split_mesh_vertices_ptr != nullptr);
   DRAKE_DEMAND(split_is_boundary_ptr != nullptr);
@@ -119,12 +112,11 @@ void CreateNewVertex(const VolumeVertexIndex& a,
   std::unordered_map<SortedPair<VolumeVertexIndex>, VolumeVertexIndex>&
       vertex_map = *vertex_map_ptr;
 
+  const CylinderVertexType p_vertex_type =
+      std::min(split_is_boundary[a], split_is_boundary[b]);
 
-  const CylinderVertexType
-      p_vertex_type = std::min(split_is_boundary[a], split_is_boundary[b]);
-
-  const Vector3<T> &A = split_mesh_vertices[a].r_MV();
-  const Vector3<T> &B = split_mesh_vertices[b].r_MV();
+  const Vector3<T>& A = split_mesh_vertices[a].r_MV();
+  const Vector3<T>& B = split_mesh_vertices[b].r_MV();
 
   const Vector3<T> p = ChooseProjection(A, B, p_vertex_type, radius);
 
@@ -145,7 +137,7 @@ void CreateNewVertex(const VolumeVertexIndex& a,
 //    Types of original vertices plus types of new vertices on return.
 // @param[in,out] vertex_map_ptr
 //    Parents to child map. The mapping for new vertices are added on return.
-template<typename T>
+template <typename T>
 void RefineCylinderTetrahdron(
     const VolumeElement& tet,
     std::vector<VolumeVertex<T>>* split_mesh_vertices_ptr,
@@ -201,61 +193,37 @@ void RefineCylinderTetrahdron(
   // the storage vectors as well as the hash map
 
   if (e_index == vertex_map.end()) {
-    CreateNewVertex(a,
-                    b,
-                    &split_mesh_vertices,
-                    &split_is_boundary,
-                    &vertex_map,
+    CreateNewVertex(a, b, &split_mesh_vertices, &split_is_boundary, &vertex_map,
                     radius);
     e_index = vertex_map.find(e_parents);
   }
 
   if (f_index == vertex_map.end()) {
-    CreateNewVertex(a,
-                    c,
-                    &split_mesh_vertices,
-                    &split_is_boundary,
-                    &vertex_map,
+    CreateNewVertex(a, c, &split_mesh_vertices, &split_is_boundary, &vertex_map,
                     radius);
     f_index = vertex_map.find(f_parents);
   }
 
   if (g_index == vertex_map.end()) {
-    CreateNewVertex(a,
-                    d,
-                    &split_mesh_vertices,
-                    &split_is_boundary,
-                    &vertex_map,
+    CreateNewVertex(a, d, &split_mesh_vertices, &split_is_boundary, &vertex_map,
                     radius);
     g_index = vertex_map.find(g_parents);
   }
 
   if (h_index == vertex_map.end()) {
-    CreateNewVertex(b,
-                    c,
-                    &split_mesh_vertices,
-                    &split_is_boundary,
-                    &vertex_map,
+    CreateNewVertex(b, c, &split_mesh_vertices, &split_is_boundary, &vertex_map,
                     radius);
     h_index = vertex_map.find(h_parents);
   }
 
   if (i_index == vertex_map.end()) {
-    CreateNewVertex(b,
-                    d,
-                    &split_mesh_vertices,
-                    &split_is_boundary,
-                    &vertex_map,
+    CreateNewVertex(b, d, &split_mesh_vertices, &split_is_boundary, &vertex_map,
                     radius);
     i_index = vertex_map.find(i_parents);
   }
 
   if (j_index == vertex_map.end()) {
-    CreateNewVertex(c,
-                    d,
-                    &split_mesh_vertices,
-                    &split_is_boundary,
-                    &vertex_map,
+    CreateNewVertex(c, d, &split_mesh_vertices, &split_is_boundary, &vertex_map,
                     radius);
     j_index = vertex_map.find(j_parents);
   }
@@ -267,7 +235,6 @@ void RefineCylinderTetrahdron(
   const VolumeVertexIndex h = h_index->second;
   const VolumeVertexIndex i = i_index->second;
   const VolumeVertexIndex j = j_index->second;
-
 
   // The four tetrahedra at the corners.
   split_mesh_tetrahedra.emplace_back(a, e, f, g);
@@ -285,34 +252,33 @@ void RefineCylinderTetrahdron(
 }
 
 // Compute the average of the points in neighboring vertices
-template<typename T>
+template <typename T>
 Vector3<T> Average(const std::vector<Vector3<T>>& neighbors) {
   T number_neighbors(neighbors.size());
-  return
-      std::accumulate(neighbors.begin(), neighbors.end(), Vector3<T>(0, 0, 0))
-          / number_neighbors;
+  return std::accumulate(neighbors.begin(), neighbors.end(),
+                         Vector3<T>(0, 0, 0)) /
+         number_neighbors;
 }
 
 // Iterative Laplacian smoothing
 // Find all neighbors of each vertex, and store in a set for each vertex
 // If a vertex is an internal type vertex, replace it with the average position
 // of all of its neighbors.
-template<typename T>
-std::pair<VolumeMesh<T>,
-          std::vector<CylinderVertexType>> LaplacianSmoothingInterior(
-    const VolumeMesh<T>& mesh,
-    const std::vector<CylinderVertexType>& is_boundary,
-    int number_iterations) {
-DRAKE_DEMAND(number_iterations >= 0);
+template <typename T>
+std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>>
+LaplacianSmoothingInterior(const VolumeMesh<T>& mesh,
+                           const std::vector<CylinderVertexType>& is_boundary,
+                           int number_iterations) {
+  DRAKE_DEMAND(number_iterations >= 0);
 
   std::vector<VolumeElement> smooth_mesh_tetrahedra = mesh.tetrahedra();
   std::vector<VolumeVertex<T>> smooth_mesh_vertices = mesh.vertices();
   std::vector<CylinderVertexType> smooth_is_boundary = is_boundary;
 
-  std::vector<std::unordered_set<VolumeVertexIndex>>
-      neighbors(mesh.vertices().size());
+  std::vector<std::unordered_set<VolumeVertexIndex>> neighbors(
+      mesh.vertices().size());
 
-  for (const auto &t : smooth_mesh_tetrahedra) {
+  for (const auto& t : smooth_mesh_tetrahedra) {
     for (int i = 0; i < 4; i++) {
       for (int j = 1; j < 4; j++) {
         const VolumeVertexIndex a = t.vertex(i);
@@ -330,12 +296,11 @@ DRAKE_DEMAND(number_iterations >= 0);
 
     std::vector<VolumeVertex<T>> new_vertices;
 
-    for (; neighbor != neighbors.end(); neighbor++, boundary++, vertex++) {
+    for (; neighbor != neighbors.end(); ++neighbor, ++boundary, ++vertex) {
       if (*boundary == CylinderVertexType::kInternal) {
         std::vector<Vector3<T>> v_neighbors((*neighbor).size());
 
-        std::transform((*neighbor).begin(),
-                       (*neighbor).end(),
+        std::transform((*neighbor).begin(), (*neighbor).end(),
                        v_neighbors.begin(),
                        [&](const VolumeVertexIndex& index) -> Vector3<T> {
                          return smooth_mesh_vertices[index].r_MV();
@@ -357,12 +322,10 @@ DRAKE_DEMAND(number_iterations >= 0);
 // Splits a mesh by calling RefineCylinderTetrahdron() on each
 // tetrahedron of `mesh`. `is_boundary` is a vector describing the
 // CylinderVertexType of each vertex in `mesh`
-template<typename T>
+template <typename T>
 std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>> RefineCylinderMesh(
     const VolumeMesh<T>& mesh,
-    const std::vector<CylinderVertexType>& is_boundary,
-    const double radius) {
-
+    const std::vector<CylinderVertexType>& is_boundary, const double radius) {
   // Copy the vertex, and boundary information into the vectors for the
   // new subdivided mesh
   std::vector<VolumeVertex<T>> split_mesh_vertices = mesh.vertices();
@@ -375,16 +338,12 @@ std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>> RefineCylinderMesh(
   // A map from two parent vertices in the original mesh to the new vertex in
   // the refined mesh.
   auto vertex_map =
-      std::unordered_map<SortedPair<VolumeVertexIndex>,
-                         VolumeVertexIndex>(6 * mesh.tetrahedra().size());
+      std::unordered_map<SortedPair<VolumeVertexIndex>, VolumeVertexIndex>(
+          6 * mesh.tetrahedra().size());
 
-  for (const auto & t : mesh.tetrahedra()) {
-    RefineCylinderTetrahdron<T>(t,
-                                &split_mesh_vertices,
-                                &split_mesh_tetrahedra,
-                                &split_is_boundary,
-                                &vertex_map,
-                                radius);
+  for (const auto& t : mesh.tetrahedra()) {
+    RefineCylinderTetrahdron<T>(t, &split_mesh_vertices, &split_mesh_tetrahedra,
+                                &split_is_boundary, &vertex_map, radius);
   }
 
   return std::make_pair(VolumeMesh<T>(std::move(split_mesh_tetrahedra),
@@ -397,10 +356,9 @@ std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>> RefineCylinderMesh(
 // x,y,z dimensions: sqrt(2)*radius, sqrt(2)*radius, height
 // Initial subdivisions are made based on the aspect ratio
 // so that initial tetrahedra are somewhat regular in shape.
-template<typename T>
-std::pair<VolumeMesh<T>,
-          std::vector<CylinderVertexType>>
-          MakeCylinderMeshLevel0(const double& height, const double& radius) {
+template <typename T>
+std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>>
+MakeCylinderMeshLevel0(const double& height, const double& radius) {
   std::vector<VolumeElement> tetrahedra;
   std::vector<VolumeVertex<T>> vertices;
 
@@ -457,7 +415,7 @@ std::pair<VolumeMesh<T>,
   // bot_z <= z <= top_z.
   for (int i = 0; i <= subdivisions; i++) {
     const double t = (1.0 * i) / subdivisions;
-    const double z = (1 - t) * top_z + (t) * bot_z;
+    const double z = (1 - t) * top_z + (t)*bot_z;
 
     vertices.emplace_back(radius, 0.0, z);
     vertices.emplace_back(0.0, radius, z);
@@ -490,8 +448,8 @@ std::pair<VolumeMesh<T>,
   // Most vertices start on the side
   // Two are cap vertices
   // There are subdivisions - 1 internal vertices
-  std::vector<CylinderVertexType>
-      is_boundary(5 * (subdivisions + 1), CylinderVertexType::kSide);
+  std::vector<CylinderVertexType> is_boundary(5 * (subdivisions + 1),
+                                              CylinderVertexType::kSide);
   is_boundary[4] = CylinderVertexType::kCap;
   is_boundary[5 * subdivisions + 4] = CylinderVertexType::kCap;
 
@@ -520,7 +478,7 @@ std::pair<VolumeMesh<T>,
 /// It is based on a recursive refinement of an initial
 /// (refinement_level = 0) coarse mesh representation of a cylinder with
 /// given height and radius. The initial mesh discretizes a rectangular
-/// prism, subdividing to make roughly regular tetrahedra
+/// prism, subdividing to make roughly regular tetrahedra.
 /// At each refinement level each tetrahedron is split into eight new
 /// tetrahedra by splitting each edge in half.
 ///
@@ -535,11 +493,9 @@ std::pair<VolumeMesh<T>,
 /// a result, the mesh vertices are placed on the 2ⁿ concentric cylindrical
 /// surfaces inside the cylinder, where n is the `refinement_level`.
 ///
-/// @param[in] height
-///    The distance on the Z axis between the bottom cap and top cap. Both caps
-///    are perpendicular to Z.
-/// @param[ian] radius
-///    The distance from the Z axis to the side of the cylinder.
+/// @param[in] cylinder
+///    Specification of the parameterized cylinder the output mesh should
+///    approximate.
 /// @param[in] refinement_level
 ///    The number of subdivision steps to take. If the original mesh contains
 ///    N tetrahedra, the resulting mesh with refinement_level = L will contain
@@ -555,10 +511,9 @@ std::pair<VolumeMesh<T>,
 ///
 /// [Everett, 1997]  Everett, M.E., 1997. A three-dimensional spherical mesh
 /// generator. Geophysical Journal International, 130(1), pp.193-200.
-template<typename T>
+template <typename T>
 VolumeMesh<T> MakeCylinderMesh(const drake::geometry::Cylinder& cylinder,
-                               int refinement_level,
-                               int smoothing_level) {
+                               int refinement_level, int smoothing_level) {
   double height = cylinder.get_length();
   double radius = cylinder.get_radius();
 
@@ -567,11 +522,10 @@ VolumeMesh<T> MakeCylinderMesh(const drake::geometry::Cylinder& cylinder,
   DRAKE_THROW_UNLESS(refinement_level >= 0);
   DRAKE_THROW_UNLESS(smoothing_level >= 0);
 
-  std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>>
-      pair = MakeCylinderMeshLevel0<T>(height,
-                                       radius);
-  VolumeMesh<T> &mesh = pair.first;
-  std::vector<CylinderVertexType> &is_boundary = pair.second;
+  std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>> pair =
+      MakeCylinderMeshLevel0<T>(height, radius);
+  VolumeMesh<T>& mesh = pair.first;
+  std::vector<CylinderVertexType>& is_boundary = pair.second;
 
   for (int level = 1; level <= refinement_level; ++level) {
     auto split_pair = RefineCylinderMesh<T>(mesh, is_boundary, radius);

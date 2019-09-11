@@ -35,9 +35,9 @@ GTEST_TEST(MakeCylinderMesh, VolumeConvergence) {
   const int refinement_level = 0;
   const int smoothing_iterations = 0;
 
-  auto mesh0 = MakeCylinderMesh<double>(
-      drake::geometry::Cylinder(radius, height),
-      refinement_level, smoothing_iterations);
+  auto mesh0 =
+      MakeCylinderMesh<double>(drake::geometry::Cylinder(radius, height),
+                               refinement_level, smoothing_iterations);
 
   const double volume0 = CalcTetrahedronMeshVolume(mesh0);
   const double cylinder_volume = height * radius * radius * M_PI;
@@ -55,8 +55,7 @@ GTEST_TEST(MakeCylinderMesh, VolumeConvergence) {
 
   for (int level = 1; level < 6; ++level) {
     auto mesh = MakeCylinderMesh<double>(
-        drake::geometry::Cylinder(radius, height),
-        level, smoothing_iterations);
+        drake::geometry::Cylinder(radius, height), level, smoothing_iterations);
 
     // Verify the correct size. There are initially 24 tetrahedra that each
     // split into 8 sub tetrahedra.
@@ -80,7 +79,7 @@ GTEST_TEST(MakeCylinderMesh, VolumeConvergence) {
 int CountEdges(const VolumeMesh<double>& mesh) {
   std::unordered_set<SortedPair<VolumeVertexIndex>> edges;
 
-  for (auto &t : mesh.tetrahedra()) {
+  for (auto& t : mesh.tetrahedra()) {
     // 6 edges of a tetrahedron
     edges.insert(MakeSortedPair(t.vertex(0), t.vertex(1)));
     edges.insert(MakeSortedPair(t.vertex(1), t.vertex(2)));
@@ -96,13 +95,11 @@ int CountEdges(const VolumeMesh<double>& mesh) {
 // Currently we only have drake::SortedPair<T> that allows
 // std::unordered_set<SortedPair<T>>.
 struct FaceHashFunction {
-  std::size_t operator()(
-      const std::tuple<VolumeVertexIndex,
-                       VolumeVertexIndex,
-                       VolumeVertexIndex>& element) const {
+  std::size_t operator()(const std::tuple<VolumeVertexIndex, VolumeVertexIndex,
+                                          VolumeVertexIndex>& element) const {
     // Sort the vertex indices so that abc == cba == acb == etc...
-    std::vector<VolumeVertexIndex> v =
-        {std::get<0>(element), std::get<1>(element), std::get<2>(element)};
+    std::vector<VolumeVertexIndex> v = {
+        std::get<0>(element), std::get<1>(element), std::get<2>(element)};
     std::sort(v.begin(), v.end());
 
     return v[0] * 779230947 + v[1] * 247091631 + v[2] * 119428962;
@@ -110,16 +107,15 @@ struct FaceHashFunction {
 };
 
 struct FaceEqualsFunction {
-  bool operator() (
-      const std::tuple<VolumeVertexIndex, VolumeVertexIndex,
-      VolumeVertexIndex>& a,
-      const std::tuple<VolumeVertexIndex, VolumeVertexIndex,
-      VolumeVertexIndex>& b) const {
-    std::vector<VolumeVertexIndex> av =
-        {std::get<0>(a), std::get<1>(a), std::get<2>(a)};
+  bool operator()(const std::tuple<VolumeVertexIndex, VolumeVertexIndex,
+                                   VolumeVertexIndex>& a,
+                  const std::tuple<VolumeVertexIndex, VolumeVertexIndex,
+                                   VolumeVertexIndex>& b) const {
+    std::vector<VolumeVertexIndex> av = {std::get<0>(a), std::get<1>(a),
+                                         std::get<2>(a)};
 
-    std::vector<VolumeVertexIndex> bv =
-        {std::get<0>(b), std::get<1>(b), std::get<2>(b)};
+    std::vector<VolumeVertexIndex> bv = {std::get<0>(b), std::get<1>(b),
+                                         std::get<2>(b)};
 
     std::sort(av.begin(), av.end());
     std::sort(bv.begin(), bv.end());
@@ -132,10 +128,10 @@ struct FaceEqualsFunction {
 int CountFaces(const VolumeMesh<double>& mesh) {
   std::unordered_set<
       std::tuple<VolumeVertexIndex, VolumeVertexIndex, VolumeVertexIndex>,
-      FaceHashFunction,
-      FaceEqualsFunction> faces;
+      FaceHashFunction, FaceEqualsFunction>
+      faces;
 
-  for (const auto & t : mesh.tetrahedra()) {
+  for (const auto& t : mesh.tetrahedra()) {
     // 4 faces of a tetrahedron, all facing in
     faces.insert(std::make_tuple(t.vertex(0), t.vertex(1), t.vertex(2)));
     faces.insert(std::make_tuple(t.vertex(1), t.vertex(0), t.vertex(3)));
@@ -171,8 +167,7 @@ GTEST_TEST(MakeCylinderMesh, EulerCharacteristic) {
 
   for (int level = 0; level < 6; ++level) {
     auto mesh = MakeCylinderMesh<double>(
-        drake::geometry::Cylinder(radius, height),
-        level, smoothing_iterations);
+        drake::geometry::Cylinder(radius, height), level, smoothing_iterations);
 
     EXPECT_EQ(ComputeEulerCharacteristic(mesh), expected_euler_characteristic);
   }
@@ -190,22 +185,23 @@ void CheckAllElementsPositive(const VolumeMesh<double>& mesh) {
 // of the vertices. Also checks that the smoothed mesh has the same volume as
 // the mesh with no smoothing applied.
 GTEST_TEST(MakeCylinderMesh, LaplacianSmoothingInterior) {
-  const double kTolerance = 10e2 * std::numeric_limits<double>::epsilon();
+  const double kTolerance = 1e3 * std::numeric_limits<double>::epsilon();
 
   const double height = 2;
   const double radius = 1;
   const int refinement_level = 3;
 
   auto unsmoothed_mesh = MakeCylinderMesh<double>(
-      drake::geometry::Cylinder(radius, height), refinement_level, 0);
+      drake::geometry::Cylinder(radius, height), refinement_level,
+      /* smothing_level */ 0);
 
   const double unsmoothed_mesh_volume =
       CalcTetrahedronMeshVolume(unsmoothed_mesh);
 
   for (int smoothing_level = 1; smoothing_level <= 10; smoothing_level++) {
-    auto smoothed_mesh = MakeCylinderMesh<double>(
-        drake::geometry::Cylinder(radius, height), refinement_level,
-        smoothing_level);
+    auto smoothed_mesh =
+        MakeCylinderMesh<double>(drake::geometry::Cylinder(radius, height),
+                                 refinement_level, smoothing_level);
 
     CheckAllElementsPositive(smoothed_mesh);
 
