@@ -342,10 +342,8 @@ class TestPlant(unittest.TestCase):
         MultibodyPlant = MultibodyPlant_[T]
         UniformGravityFieldElement = UniformGravityFieldElement_[T]
         plant = MultibodyPlant()
-        # Smoke test of deprecated methods.
-        with catch_drake_warnings(expected_count=1):
+        with self.assertRaises(RuntimeError) as cm:
             plant.AddForceElement(UniformGravityFieldElement())
-        plant.Finalize()
 
     @numpy_compare.check_all_types
     def test_multibody_tree_kinematics(self, T):

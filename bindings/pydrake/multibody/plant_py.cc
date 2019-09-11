@@ -221,26 +221,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("A"), py::arg("B"), py::arg("X_AB"), py_reference_internal,
             doc_iso3_deprecation)
-        // N.B. This overload of `AddForceElement` is required to precede
-        // the generic overload below so we can use our internal specialization
-        // to label this as our unique gravity field, mimicking the C++ API.
-        .def("AddForceElement",
-            [](Class * self,
-                std::unique_ptr<UniformGravityFieldElement<T>> force_element)
-                -> auto& {
-              WarnDeprecated(
-                  "Use mutable_gravity_field().set_gravity_vector() instead.");
-      // N.B. We need to make sure we call the correct specialization in
-      // MultibodyPlant for it to take note we are adding gravity to the
-      // model. This is ugly API needs to be updated, see #11080.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-              return self->template AddForceElement<UniformGravityFieldElement>(
-                  force_element->gravity_vector());
-#pragma GCC diagnostic pop
-            },
-            py::arg("force_element"), py_reference_internal,
-            cls_doc.AddForceElement.doc)
         .def("AddForceElement",
             [](Class * self,
                 std::unique_ptr<ForceElement<T>> force_element) -> auto& {

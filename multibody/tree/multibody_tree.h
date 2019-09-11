@@ -382,6 +382,11 @@ class MultibodyTree {
   /// arguments to this method `args` are forwarded to `ForceElementType`'s
   /// constructor.
   ///
+  /// This method can only be called once for elements of type
+  /// UniformGravityFieldElement. That is, gravity can only be specified once
+  /// and std::runtime_error is thrown if the model already contains a gravity
+  /// field element.
+  ///
   /// The newly created `ForceElementType` object will be specialized on the
   /// scalar type T of this %MultibodyTree.
   template <template<typename Scalar> class ForceElementType>
@@ -409,27 +414,7 @@ class MultibodyTree {
   /// force element is defined.
   /// @throws std::exception if gravity was already added to the model.
   template<template<typename Scalar> class ForceElementType, typename... Args>
-#ifdef DRAKE_DOXYGEN_CXX
-  const ForceElementType<T>&
-#else
-  typename std::enable_if<!std::is_same<
-      ForceElementType<T>,
-      UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
-#endif
-  AddForceElement(Args&&... args);
-
-  // SFINAE overload for ForceElementType = UniformGravityFieldElement.
-  // This allow us to keep track of the gravity field parameters.
-  // TODO(amcastro-tri): This specialization pattern leads to difficult to
-  // mantain indirection layers between MBP/MBT and can cause difficult to find
-  // bugs, see #11051. It is bad practice and should removed, see #11080.
-  template<template<typename Scalar> class ForceElementType, typename... Args>
-  DRAKE_DEPRECATED("2019-09-01",
-                   "Use mutable_gravity_field().set_gravity_vector() instead.")
-  typename std::enable_if<std::is_same<
-      ForceElementType<T>,
-      UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
-  AddForceElement(Args&&... args);
+  const ForceElementType<T>& AddForceElement(Args&&... args);
 
   /// See MultibodyPlant documentation.
   template <template<typename Scalar> class JointType>
