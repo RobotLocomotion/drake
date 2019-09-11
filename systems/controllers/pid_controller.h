@@ -14,6 +14,7 @@ namespace controllers {
 // TODO(siyuanfeng): Lift the assumption that q and v have the same dimension.
 // TODO(siyuanfeng): Generalize "q_d - q", e.g. for rotation.
 
+// N.B. Inheritance order must remain fixed for pydrake (#9243).
 /**
  * Implements the PID controller. Given estimated state `x_in = (q_in, v_in)`,
  * the controlled state `x_c = (q_c, v_c)` is computed by `x_c = P_x * x_in`,
@@ -43,8 +44,8 @@ namespace controllers {
  * @ingroup control_systems
  */
 template <typename T>
-class PidController : public StateFeedbackControllerInterface<T>,
-                      public LeafSystem<T> {
+class PidController : public LeafSystem<T>,
+                      public StateFeedbackControllerInterface<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PidController)
 
