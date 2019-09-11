@@ -2,12 +2,14 @@
 
 #include <algorithm>
 #include <fstream>
+#include <set>
 #include <unordered_set>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/geometry/proximity/sorted_triplet.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 
 namespace drake {
@@ -91,52 +93,20 @@ int CountEdges(const VolumeMesh<double>& mesh) {
   return edges.size();
 }
 
-// TODO(DamrongGuoy): Use SortedTriplet<VolumeVertexIndex> when it is available.
-// Currently we only have drake::SortedPair<T> that allows
-// std::unordered_set<SortedPair<T>>.
-struct FaceHashFunction {
-  std::size_t operator()(const std::tuple<VolumeVertexIndex, VolumeVertexIndex,
-                                          VolumeVertexIndex>& element) const {
-    // Sort the vertex indices so that abc == cba == acb == etc...
-    std::vector<VolumeVertexIndex> v = {
-        std::get<0>(element), std::get<1>(element), std::get<2>(element)};
-    std::sort(v.begin(), v.end());
-
-    return v[0] * 779230947 + v[1] * 247091631 + v[2] * 119428962;
-  }
-};
-
-struct FaceEqualsFunction {
-  bool operator()(const std::tuple<VolumeVertexIndex, VolumeVertexIndex,
-                                   VolumeVertexIndex>& a,
-                  const std::tuple<VolumeVertexIndex, VolumeVertexIndex,
-                                   VolumeVertexIndex>& b) const {
-    std::vector<VolumeVertexIndex> av = {std::get<0>(a), std::get<1>(a),
-                                         std::get<2>(a)};
-
-    std::vector<VolumeVertexIndex> bv = {std::get<0>(b), std::get<1>(b),
-                                         std::get<2>(b)};
-
-    std::sort(av.begin(), av.end());
-    std::sort(bv.begin(), bv.end());
-
-    return av == bv;
-  }
-};
-
 // Counts the unique 2-simplices in the face
 int CountFaces(const VolumeMesh<double>& mesh) {
-  std::unordered_set<
-      std::tuple<VolumeVertexIndex, VolumeVertexIndex, VolumeVertexIndex>,
-      FaceHashFunction, FaceEqualsFunction>
-      faces;
+  std::set<SortedTriplet<VolumeVertexIndex>> faces;
 
   for (const auto& t : mesh.tetrahedra()) {
     // 4 faces of a tetrahedron, all facing in
-    faces.insert(std::make_tuple(t.vertex(0), t.vertex(1), t.vertex(2)));
-    faces.insert(std::make_tuple(t.vertex(1), t.vertex(0), t.vertex(3)));
-    faces.insert(std::make_tuple(t.vertex(2), t.vertex(1), t.vertex(3)));
-    faces.insert(std::make_tuple(t.vertex(0), t.vertex(2), t.vertex(3)));
+    faces.insert(SortedTriplet<VolumeVertexIndex>(t.vertex(0), t.vertex(1),
+                                                  t.vertex(2)));
+    faces.insert(SortedTriplet<VolumeVertexIndex>(t.vertex(1), t.vertex(0),
+                                                  t.vertex(3)));
+    faces.insert(SortedTriplet<VolumeVertexIndex>(t.vertex(2), t.vertex(1),
+                                                  t.vertex(3)));
+    faces.insert(SortedTriplet<VolumeVertexIndex>(t.vertex(0), t.vertex(2),
+                                                  t.vertex(3)));
   }
 
   return faces.size();

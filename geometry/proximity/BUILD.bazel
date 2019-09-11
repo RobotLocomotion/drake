@@ -314,6 +314,7 @@ drake_cc_googletest(
     name = "make_cylinder_mesh_test",
     deps = [
         ":make_cylinder_mesh",
+        ":sorted_triplet",
     ],
 )
 

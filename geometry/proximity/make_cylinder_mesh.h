@@ -470,16 +470,17 @@ MakeCylinderMeshLevel0(const double& height, const double& radius) {
 /// This method implements a variant of the generator described in
 /// [Everett, 1997]. The algorithm has diverged a bit from the one in the paper,
 /// but the main ideas used from the paper are:
-///   -the pattern of subdividing edges to create vertices
-///   -the projection of surface vertices
-///   -the consideration of the combinatorics of how to associate new
-///    subdivision tetrahedra to the newly created vertices.
+///
+///   - the pattern of subdividing edges to create vertices
+///   - the projection of surface vertices
+///   - the consideration of the combinatorics of how to associate new
+///     subdivision tetrahedra to the newly created vertices.
 ///
 /// It is based on a recursive refinement of an initial
 /// (refinement_level = 0) coarse mesh representation of a cylinder with
 /// given height and radius. The initial mesh discretizes a rectangular
 /// prism, subdividing to make roughly regular tetrahedra.
-/// At each refinement level each tetrahedron is split into eight new
+/// At each refinement level, each tetrahedron is split into eight new
 /// tetrahedra by splitting each edge in half.
 ///
 /// When splitting an edge, the midpoint of the edge is projected along the line
@@ -487,7 +488,7 @@ MakeCylinderMeshLevel0(const double& height, const double& radius) {
 /// the newly created vertex is placed on the side surface. For other kinds
 /// of edges, the projection places the newly created vertex at the distance
 /// from the z-axis equal to the average of the two distances from the z-axis
-/// of the two original vertices of the splitted edge.  If the two original
+/// of the two original vertices of the split edge.  If the two original
 /// vertices have the same distance from the z-axis, the newly created vertex
 /// will have the same distance from the z-axis as the original vertices.  As
 /// a result, the mesh vertices are placed on the 2ⁿ concentric cylindrical
@@ -504,21 +505,16 @@ MakeCylinderMeshLevel0(const double& height, const double& radius) {
 ///    Number of iterations of Laplacian smoothing of vertex positions.
 ///    No effect if it is zero.
 ///
-/// @throws std::exception if refinement_level is negative.
-/// @throws std::exception if smoothing_level is negative.
-/// @throws std::exception if height is non-positive.
-/// @throws std::exception if radius is non-positive.
+/// @throws std::exception if refinement_level or smoothing_level negative.
 ///
 /// [Everett, 1997]  Everett, M.E., 1997. A three-dimensional spherical mesh
 /// generator. Geophysical Journal International, 130(1), pp.193-200.
 template <typename T>
-VolumeMesh<T> MakeCylinderMesh(const drake::geometry::Cylinder& cylinder,
-                               int refinement_level, int smoothing_level) {
-  double height = cylinder.get_length();
-  double radius = cylinder.get_radius();
+VolumeMesh<T> MakeCylinderMesh(const Cylinder& cylinder, int refinement_level,
+                               int smoothing_level) {
+  const double height = cylinder.get_length();
+  const double radius = cylinder.get_radius();
 
-  DRAKE_THROW_UNLESS(height > 0);
-  DRAKE_THROW_UNLESS(radius > 0);
   DRAKE_THROW_UNLESS(refinement_level >= 0);
   DRAKE_THROW_UNLESS(smoothing_level >= 0);
 
