@@ -8,6 +8,7 @@
 namespace drake {
 namespace geometry {
 namespace internal {
+namespace {
 
 using fcl::CollisionGeometryd;
 using fcl::CollisionObjectd;
@@ -59,6 +60,7 @@ GTEST_TEST(EncodedData, ConstructionFromFclObject) {
   }
 }
 
+}  // namespace
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
