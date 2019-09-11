@@ -36,7 +36,7 @@ def read_repository_metadata():
     subprocess.check_call(["bazel", "fetch", "//..."])
 
     # Read the metadata.
-    for name in repositories:
+    for name in sorted(repositories):
         json_path = os.path.join(
             output_base, "external", name, "drake_repository_metadata.json")
         try:
