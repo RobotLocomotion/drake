@@ -4,10 +4,12 @@
 #include <cmath>
 #include <limits>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_pair.h"
+#include "drake/geometry/proximity/mesh_intersection.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 
 namespace drake {
@@ -111,11 +113,7 @@ SurfaceVertexIndex GetVertexAddIfNeeded(
  @param vertices_F the vertices from the input mesh as position vectors measured
         and expressed in Frame F.
  @param triangle a single face from the input mesh.
- @param half_space_normal_F the outward facing surface normal to the half space,
-        expressed in Frame F.
- @param half_space_constant the half space constant d, defined as
-        nᵀx = d for any point x that lies on the boundary of the half space and
-        given the surface normal to the half space n.
+ @param half_space_F the half space with normal to surface expressed in Frame F.
  @param[in,out] new_vertices_F the accumulator for all of the vertices in the
                 intersecting mesh. It should be empty to start and will
                 gradually accumulate all of the vertices with each subsequent
@@ -146,8 +144,9 @@ SurfaceVertexIndex GetVertexAddIfNeeded(
 template <typename T>
 void ConstructTriangleHalfspaceIntersectionPolygon(
     const std::vector<SurfaceVertex<T>>& vertices_F,
-    const SurfaceFace& triangle, const Vector3<T>& half_space_normal_F,
-    const T& half_space_constant, std::vector<SurfaceVertex<T>>* new_vertices_F,
+    const SurfaceFace& triangle,
+    const mesh_intersection::HalfSpace<T>& half_space_F,
+    std::vector<SurfaceVertex<T>>* new_vertices_F,
     std::vector<SurfaceFace>* new_faces,
     std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>*
         vertices_to_newly_created_vertices,
@@ -176,8 +175,8 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
   T s[3];
   int num_positive = 0;
   for (int i = 0; i < 3; ++i) {
-    s[i] = half_space_normal_F.dot(vertices_F[triangle.vertex(i)].r_MV()) -
-           half_space_constant;
+    s[i] =
+        half_space_F.CalcSignedDistance(vertices_F[triangle.vertex(i)].r_MV());
     if (s[i] > 0) ++num_positive;
   }
 
@@ -285,5 +284,36 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
 }
 
 }  // namespace internal
+
+/**
+ Constructs the SurfaceMesh that results from intersecting a triangle mesh with
+ a half space.
+ @param input_mesh_F the mesh with vertices measured and expressed in some
+        frame, F.
+ @param half_space_F the half space, expressed in Frame F.
+ @returns the SurfaceMesh corresponding to the intersection, the vertices of
+          which will be measured and expressed in Frame F.
+ */
+template <typename T>
+SurfaceMesh<T> ConstructSurfaceMeshFromMeshHalfspaceIntersection(
+    const SurfaceMesh<T>& input_mesh_F,
+    const mesh_intersection::HalfSpace<T>& half_space_F) {
+  std::vector<SurfaceVertex<T>> new_vertices_F;
+  std::vector<SurfaceFace> new_faces;
+  std::unordered_map<SurfaceVertexIndex, SurfaceVertexIndex>
+      vertices_to_newly_created_vertices;
+  std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>
+      edges_to_newly_created_vertices;
+
+  for (const SurfaceFace& face : input_mesh_F.faces()) {
+    internal::ConstructTriangleHalfspaceIntersectionPolygon(
+        input_mesh_F.vertices(), face, half_space_F, &new_vertices_F,
+        &new_faces, &vertices_to_newly_created_vertices,
+        &edges_to_newly_created_vertices);
+  }
+
+  return SurfaceMesh<T>(std::move(new_faces), std::move(new_vertices_F));
+}
+
 }  // namespace geometry
 }  // namespace drake

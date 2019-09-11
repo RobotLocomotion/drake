@@ -18,6 +18,8 @@
 
 namespace drake {
 namespace geometry {
+
+// TODO(sean-curtis) Move this to a more common namespace.
 namespace mesh_intersection {
 
 #ifndef DRAKE_DOXYGEN_CXX  // Hide from Doxygen for now.
@@ -50,6 +52,8 @@ namespace mesh_intersection {
 template <typename T>
 class HalfSpace {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HalfSpace)
+
   /** Constructs a HalfSpace in frame F.
    @param nhat_F
        A unit-length vector perpendicular to the half space's planar boundary
@@ -77,16 +81,22 @@ class HalfSpace {
    frame F). The point is strictly inside, on the boundary, or outside based on
    the return value being negative, zero, or positive, respectively.
    */
-  T signed_distance(const Vector3<T>& p_FQ) const {
+  T CalcSignedDistance(const Vector3<T>& p_FQ) const {
     return nhat_F_.dot(p_FQ) - displacement_;
   }
 
   /** Reports true if the point Q (measured and expressed in frame F),
    strictly lies outside this half space.
    */
-  bool point_is_outside(const Vector3<T>& p_FQ) const {
-    return signed_distance(p_FQ) > 0;
+  bool PointIsOutside(const Vector3<T>& p_FQ) const {
+    return CalcSignedDistance(p_FQ) > 0;
   }
+
+  /** Gets the normal expressed in frame F. */
+  const Vector3<T> nhat_F() const { return nhat_F_; }
+
+  /** Gets the displacement constant. */
+  const T& displacement() const { return displacement_; }
 
  private:
   Vector3<T> nhat_F_;
@@ -115,8 +125,8 @@ template <typename T>
 Vector3<T> CalcIntersection(const Vector3<T>& p_FA,
                             const Vector3<T>& p_FB,
                             const HalfSpace<T>& H_F) {
-  const T a = H_F.signed_distance(p_FA);
-  const T b = H_F.signed_distance(p_FB);
+  const T a = H_F.CalcSignedDistance(p_FA);
+  const T b = H_F.CalcSignedDistance(p_FB);
   // We require that A and B classify in opposite directions (one inside and one
   // outside). Outside has a strictly positive distance, inside is non-positive.
   // We confirm that their product is non-positive and that at least one of the
@@ -133,7 +143,7 @@ Vector3<T> CalcIntersection(const Vector3<T>& p_FA,
   //  if it turns out we need to perform this test at other sites.
   // Verify that the intersection point is on the plane of the half space.
   using std::abs;
-  DRAKE_DEMAND(abs(H_F.signed_distance(intersection)) < kEps);
+  DRAKE_DEMAND(abs(H_F.CalcSignedDistance(intersection)) < kEps);
   return intersection;
   // Justification.
   // 1. We set up the weights wa and wb such that wa + wb = 1, which
@@ -204,8 +214,8 @@ std::vector<Vector3<T>> ClipPolygonByHalfSpace(
   for (int i = 0; i < size; ++i) {
     const Vector3<T>& current = polygon_vertices_F[i];
     const Vector3<T>& previous = polygon_vertices_F[(i - 1 + size) % size];
-    const bool current_contained = !H_F.point_is_outside(current);
-    const bool previous_contained = !H_F.point_is_outside(previous);
+    const bool current_contained = !H_F.PointIsOutside(current);
+    const bool previous_contained = !H_F.PointIsOutside(previous);
     if (current_contained) {
       if (!previous_contained) {
         // Current is inside and previous is outside. Compute the point where

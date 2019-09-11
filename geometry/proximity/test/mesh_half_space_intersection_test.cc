@@ -9,15 +9,13 @@ namespace drake {
 namespace geometry {
 namespace {
 
+using mesh_intersection::HalfSpace;
+
 template <typename T>
 class MeshHalfspaceIntersectionTest : public ::testing::Test {
  public:
-  /// Returns the normal to the half space.
-  const Vector3<T>& normal_H() const { return normal_H_; }
-
-  /// Returns the constant d to the half space such that normal_Hᵀx = d,
-  /// where x is an arbitrary point on the surface of the half space.
-  const T& half_space_constant() const { return d_; }
+  /// Returns the half space with normal expressed in Frame H.
+  const HalfSpace<T> half_space_H() const { return *half_space_H_; }
 
   // Accessors for data structures used repeatedly.
   std::vector<SurfaceVertex<T>>& new_vertices() { return new_vertices_; }
@@ -126,8 +124,7 @@ class MeshHalfspaceIntersectionTest : public ::testing::Test {
   }
 
   // Calls the triangle-half space intersection routine using this object's
-  // half space normal and halfspace constant as well as the given mesh and
-  // construction data structures.
+  // half space as well as the given mesh and construction data structures.
   void ConstructTriangleHalfspaceIntersectionPolygon(
       const SurfaceMesh<T>& mesh,
       std::vector<SurfaceVertex<T>>* new_vertices_F_in,
@@ -138,7 +135,7 @@ class MeshHalfspaceIntersectionTest : public ::testing::Test {
           edges_to_newly_created_vertices_in) {
     for (const SurfaceFace& face : mesh.faces()) {
       internal::ConstructTriangleHalfspaceIntersectionPolygon(
-          mesh.vertices(), face, this->normal_H(), this->half_space_constant(),
+          mesh.vertices(), face, this->half_space_H(),
           new_vertices_F_in, new_faces_in,
           vertices_to_newly_created_vertices_in,
           edges_to_newly_created_vertices_in);
@@ -166,9 +163,10 @@ class MeshHalfspaceIntersectionTest : public ::testing::Test {
   void SetUp() {
     // The tests all use half space normal [0 0 1], with point [0 0 2]
     // lying on the half space.
-    normal_H_ = Vector3<T>(0, 0, 1);
+    Vector3<T> normal_H(0, 0, 1);
     const Vector3<T> point_H(0, 0, 2);
-    d_ = normal_H_.dot(point_H);
+    const T displacement = normal_H.dot(point_H);
+    half_space_H_ = std::make_unique<HalfSpace<T>>(normal_H, displacement);
   }
 
   std::vector<SurfaceVertex<T>> new_vertices_;
@@ -177,8 +175,7 @@ class MeshHalfspaceIntersectionTest : public ::testing::Test {
       vertices_to_newly_created_vertices_;
   std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>
       edges_to_newly_created_vertices_;
-  Vector3<T> normal_H_;
-  T d_;
+  std::unique_ptr<HalfSpace<T>> half_space_H_;
 };  // namespace
 TYPED_TEST_CASE_P(MeshHalfspaceIntersectionTest);
 
@@ -492,11 +489,89 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, OneInsideTwoOutside) {
   this->VerifyMeshesEquivalent(expected_mesh, actual_mesh);
 }
 
+// Tests that a mesh of a box bisected by the half space produces the expected
+// number of faces and vertices (other unit tests in this file assess the
+// correctness of various kinds of triangle/half space intersections).
+TYPED_TEST_P(MeshHalfspaceIntersectionTest, BoxMesh) {
+  using T = TypeParam;
+
+  // Set the box vertices according to the following diagram. The box is
+  // centered at the origin of Frame F. Introducing this frame makes it less
+  // likely that all of the underlying tests might succeed because of some
+  // fortuitous initial values. The halfspace normal points along F's +z axis.
+  // Set the box vertices according to the following diagram. The box is
+  // centered at the origin.
+  //               v₁      +Z         v₃
+  //               ●───────┆─────────●
+  //              /│       ┆        /│
+  //             / │       ┆     v₇/ │
+  //         v₅ ●─────────────────●  │
+  //            │  │       ┆      │  │
+  //            │  │       o┄┄┄┄┄┄│┄┄┄┄┄ +Y
+  //            │  │      /       │  │
+  //            │  ●─────/────────│──● v₂
+  //            │ /v₀   /         │ /
+  //            │/     /          │/
+  //         v₄ ●─────────────────● v₆
+  //                 /
+  //                +X
+
+  // Set F to an arbitrarily chosen pose relative to the world frame.
+  math::RigidTransform<T> X_WF(math::RollPitchYaw<T>(M_PI_4, M_PI_4, M_PI_4),
+                               Vector3<T>(1.0, 2.0, 3.0));
+
+  std::vector<SurfaceVertex<T>> vertices_W;
+  vertices_W.emplace_back(X_WF * Vector3<T>(-1, -1, -1));
+  vertices_W.emplace_back(X_WF * Vector3<T>(-1, -1, 1));
+  vertices_W.emplace_back(X_WF * Vector3<T>(-1, 1, -1));
+  vertices_W.emplace_back(X_WF * Vector3<T>(-1, 1, 1));
+  vertices_W.emplace_back(X_WF * Vector3<T>(1, -1, -1));
+  vertices_W.emplace_back(X_WF * Vector3<T>(1, -1, 1));
+  vertices_W.emplace_back(X_WF * Vector3<T>(1, 1, -1));
+  vertices_W.emplace_back(X_WF * Vector3<T>(1, 1, 1));
+
+  // Set the twelve box faces using a counter-clockwise winding.
+  typedef SurfaceVertexIndex Index;
+  std::vector<SurfaceFace> faces;
+  faces.emplace_back(Index(4), Index(6), Index(7));  // +X face
+  faces.emplace_back(Index(7), Index(5), Index(4));  // +X face
+  faces.emplace_back(Index(1), Index(3), Index(2));  // -X face
+  faces.emplace_back(Index(2), Index(0), Index(1));  // -X face
+  faces.emplace_back(Index(2), Index(3), Index(7));  // +Y face
+  faces.emplace_back(Index(7), Index(6), Index(2));  // +Y face
+  faces.emplace_back(Index(4), Index(5), Index(1));  // -Y face
+  faces.emplace_back(Index(1), Index(0), Index(4));  // -Y face
+  faces.emplace_back(Index(7), Index(3), Index(1));  // +Z face
+  faces.emplace_back(Index(1), Index(5), Index(7));  // +Z face
+  faces.emplace_back(Index(4), Index(0), Index(2));  // -Z face
+  faces.emplace_back(Index(2), Index(6), Index(4));  // -Z face
+
+  // Construct the mesh.
+  const SurfaceMesh<T> mesh(std::move(faces), std::move(vertices_W));
+
+  // Construct the half-space.
+  const Vector3<T> half_space_normal_W = X_WF.rotation() * Vector3<T>(0, 0, 1);
+  const T half_space_displacement = half_space_normal_W.dot(X_WF.translation());
+  const HalfSpace<T> half_space(half_space_normal_W, half_space_displacement);
+
+  // Compute the intersection.
+  const SurfaceMesh<T> intersection_mesh =
+      ConstructSurfaceMeshFromMeshHalfspaceIntersection(
+          mesh, half_space);
+  ASSERT_EQ(intersection_mesh.num_vertices(), 8);
+
+  // Note: The sides of the box facing the +/- X and +/- Y directions are each
+  // split into three triangles. The side of the box facing -Z is fully enclosed
+  // (two more triangles) yielding 4 x 3 + 2 = 14 triangles. (The side facing +Z
+  // is outside the half space.)
+  ASSERT_EQ(intersection_mesh.num_faces(), 14);
+}
+
 REGISTER_TYPED_TEST_CASE_P(MeshHalfspaceIntersectionTest, NoIntersection,
                            InsideOrOnIntersection,
                            VertexOnHalfspaceIntersection,
                            EdgeOnHalfspaceIntersection, QuadrilateralResults,
-                           OutsideInsideOn, OneInsideTwoOutside);
+                           OutsideInsideOn, OneInsideTwoOutside, BoxMesh);
 
 typedef ::testing::Types<double, AutoDiffXd> MyTypes;
 INSTANTIATE_TYPED_TEST_CASE_P(My, MeshHalfspaceIntersectionTest, MyTypes);
