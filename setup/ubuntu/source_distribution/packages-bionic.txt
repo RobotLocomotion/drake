@@ -14,6 +14,7 @@ gfortran
 git
 graphviz
 jupyter
+jupyter-notebook
 kcov-35
 libblas-dev
 libbz2-dev
