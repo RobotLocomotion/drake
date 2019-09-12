@@ -133,7 +133,7 @@ template <typename T>
 T BsplineBasis<T>::BasisFunctionValue(int index, T parameter_value) const {
   std::vector<T> delta(num_control_points(), 0.0);
   delta[index] = 1.0;
-  return DeBoor(delta, parameter_value);
+  return EvaluateCurve(delta, parameter_value);
 }
 
 template <typename T>
