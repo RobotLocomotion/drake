@@ -1,7 +1,11 @@
 #pragma once
 
 #include <memory>
+#include <stdexcept>
+#include <unordered_map>
 #include <vector>
+
+#include <fmt/format.h>
 
 #include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
@@ -141,6 +145,18 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
     return LeafSystem<T>::get_output_port(0);
   }
 
+  /// @name Accessor methods.
+  /// @{
+  const optional<symbolic::Variable>& time_var() const { return time_var_; }
+  const VectorX<symbolic::Variable>& state_vars() const { return state_vars_; }
+  const VectorX<symbolic::Variable>& input_vars() const { return input_vars_; }
+  const VectorX<symbolic::Variable>& parameter_vars() const {
+    return parameter_vars_;
+  }
+  const VectorX<symbolic::Expression>& dynamics() const { return dynamics_; }
+  const VectorX<symbolic::Expression>& output() const { return output_; }
+  /// @}
+
  private:
   template <typename Container>
   void PopulateFromContext(const Context<T>& context, Container* penv) const;
@@ -207,14 +223,15 @@ class SymbolicVectorSystemBuilder {
   }
   /// Sets the state variable (scalar version).
   SymbolicVectorSystemBuilder state(const symbolic::Variable& v) {
-    state_vars_ = Vector1<symbolic::Variable>{v};
-    SymbolicVectorSystemBuilder result = *this;
-    return result;
+    return state(Vector1<symbolic::Variable>{v});
   }
   /// Sets the state variables (vector version).
   SymbolicVectorSystemBuilder state(
       const Eigen::Ref<const VectorX<symbolic::Variable>>& vars) {
     state_vars_ = vars;
+    for (int i = 0; i < vars.size(); ++i) {
+      state_var_to_index_.emplace(state_vars_[i].get_id(), i);
+    }
     SymbolicVectorSystemBuilder result = *this;
     return result;
   }
@@ -288,17 +305,39 @@ class SymbolicVectorSystemBuilder {
 
   /// @name Accessor methods.
   /// @{
+  /// Returns the time variable if exists.
   const optional<symbolic::Variable>& time() const { return time_var_; }
+  /// Returns the state variables.
   const VectorX<symbolic::Variable>& state() const { return state_vars_; }
+  /// Returns the input variables.
   const VectorX<symbolic::Variable>& input() const { return input_vars_; }
+  /// Returns the parameter variables.
   const VectorX<symbolic::Variable>& parameter() const {
     return parameter_vars_;
   }
+  /// Returns the dynamics.
   const VectorX<symbolic::Expression>& dynamics() const { return dynamics_; }
+  /// Returns the dynamics for the variable @p var.
+  ///
+  /// @throw std::out_of_range if this builder has no corresponding dynamics for
+  /// the variable @p var.
+  const symbolic::Expression& dynamics_for_variable(
+      const symbolic::Variable& var) const {
+    auto it = state_var_to_index_.find(var.get_id());
+    if (it != state_var_to_index_.end()) {
+      return dynamics_[it->second];
+    } else {
+      throw std::out_of_range{fmt::format(
+          "This SymbolicVectorSystemBuilder does not have a dynamics for "
+          "the given variable {}",
+          var)};
+    }
+  }
+  /// Returns the output.
   const VectorX<symbolic::Expression>& output() const { return output_; }
+  /// Returns the time period.
   double time_period() const { return time_period_; }
   /// @}
-
  private:
   optional<symbolic::Variable> time_var_{nullopt};
   VectorX<symbolic::Variable> state_vars_{};
@@ -307,6 +346,7 @@ class SymbolicVectorSystemBuilder {
   VectorX<symbolic::Expression> dynamics_{};
   VectorX<symbolic::Expression> output_{};
   double time_period_{0.0};
+  std::unordered_map<symbolic::Variable::Id, int> state_var_to_index_;
 };
 
 #ifndef DRAKE_DOXYGEN_CXX

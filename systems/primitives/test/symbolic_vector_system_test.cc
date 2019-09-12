@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
@@ -16,6 +17,7 @@ using Eigen::Vector4d;
 using Eigen::VectorXd;
 using symbolic::Expression;
 using symbolic::Variable;
+using symbolic::test::ExprEqual;
 using Vector6d = Vector6<double>;
 
 class SymbolicVectorSystemTest : public ::testing::Test {
@@ -81,6 +83,24 @@ TEST_F(SymbolicVectorSystemTest, BuilderBasicPattern) {
                   .dynamics(-x_[0] + pow(x_[0], 3))
                   .state()[0]
                   .equal_to(x_[0]));
+
+  EXPECT_TRUE(SymbolicVectorSystemBuilder()
+                  .state(x_[0])
+                  .dynamics(-x_[0] + pow(x_[0], 3))
+                  .dynamics_for_variable(x_[0])
+                  .EqualTo(-x_[0] + pow(x_[0], 3)));
+
+  EXPECT_TRUE(SymbolicVectorSystemBuilder()
+                  .state(x_)
+                  .dynamics(Vector2<Expression>(-x_[1], -x_[0] + 3))
+                  .dynamics_for_variable(x_[1])
+                  .EqualTo(-x_[0] + 3));
+
+  EXPECT_THROW(SymbolicVectorSystemBuilder()
+                   .state(x_)
+                   .dynamics(Vector2<Expression>(-x_[1], -x_[0] + 3))
+                   .dynamics_for_variable(u_[0]),
+               std::out_of_range);
 }
 
 // This test will fail on valgrind if we have dangling references.
@@ -104,6 +124,22 @@ TEST_F(SymbolicVectorSystemTest, CubicPolyViaBuilder) {
                     .dynamics(-x + pow(x, 3) + p)
                     .output(x * p)
                     .Build();
+
+  EXPECT_FALSE(system->time_var());
+
+  ASSERT_EQ(system->state_vars().size(), 1);
+  EXPECT_EQ(system->state_vars()[0], x);
+
+  EXPECT_EQ(system->input_vars().size(), 0);
+
+  ASSERT_EQ(system->parameter_vars().size(), 1);
+  EXPECT_EQ(system->parameter_vars()[0], p);
+
+  ASSERT_EQ(system->dynamics().size(), 1);
+  EXPECT_EQ(system->dynamics()[0], -x + pow(x, 3) + p);
+
+  ASSERT_EQ(system->output().size(), 1);
+  EXPECT_EQ(system->output()[0], x * p);
 
   auto context = system->CreateDefaultContext();
   EXPECT_TRUE(context->has_only_continuous_state());
@@ -168,6 +204,20 @@ TEST_F(SymbolicVectorSystemTest, OutputScaledTime) {
   SymbolicVectorSystem<double> system(
       t_, Vector0<Variable>{}, Vector0<Variable>{}, Vector0<Expression>{},
       Vector1<Expression>{2. * t_});
+
+  ASSERT_TRUE(system.time_var());
+  EXPECT_TRUE(system.time_var()->equal_to(t_));
+
+  EXPECT_EQ(system.state_vars().size(), 0);
+
+  EXPECT_EQ(system.input_vars().size(), 0);
+
+  EXPECT_EQ(system.parameter_vars().size(), 0);
+
+  EXPECT_EQ(system.dynamics().size(), 0);
+
+  ASSERT_EQ(system.output().size(), 1);
+  EXPECT_EQ(system.output()[0], 2.0 * t_);
 
   auto context = system.CreateDefaultContext();
   EXPECT_TRUE(context->is_stateless());
@@ -245,6 +295,23 @@ TEST_F(SymbolicVectorSystemTest, ContinuousTimeSymbolic) {
                     .output(Vector2<Expression>{x_[0] + u_[0] + p_[0], t_})
                     .Build<Expression>();
 
+  ASSERT_TRUE(system->time_var());
+  EXPECT_TRUE(system->time_var()->equal_to(t_));
+
+  EXPECT_EQ(system->state_vars(), x_);
+
+  EXPECT_EQ(system->input_vars(), u_);
+
+  EXPECT_EQ(system->parameter_vars(), p_);
+
+  ASSERT_EQ(system->dynamics().size(), 2);
+  EXPECT_PRED2(ExprEqual, system->dynamics()[0], t_);
+  EXPECT_PRED2(ExprEqual, system->dynamics()[1], x_[1] + u_[1] + p_[1]);
+
+  ASSERT_EQ(system->output().size(), 2);
+  EXPECT_PRED2(ExprEqual, system->output()[0], x_[0] + u_[0] + p_[0]);
+  EXPECT_PRED2(ExprEqual, system->output()[1], t_);
+
   auto context = system->CreateDefaultContext();
 
   context->SetTime(tc_);
@@ -273,6 +340,23 @@ TEST_F(SymbolicVectorSystemTest, DiscreteTimeSymbolic) {
                     .output(Vector2<Expression>{x_[0] + u_[0] + p_[0], t_})
                     .time_period(1.0)
                     .Build<Expression>();
+
+  ASSERT_TRUE(system->time_var());
+  EXPECT_TRUE(system->time_var()->equal_to(t_));
+
+  EXPECT_EQ(system->state_vars(), x_);
+
+  EXPECT_EQ(system->input_vars(), u_);
+
+  EXPECT_EQ(system->parameter_vars(), p_);
+
+  ASSERT_EQ(system->dynamics().size(), 2);
+  EXPECT_PRED2(ExprEqual, system->dynamics()[0], t_);
+  EXPECT_PRED2(ExprEqual, system->dynamics()[1], x_[1] + u_[1] + p_[1]);
+
+  ASSERT_EQ(system->output().size(), 2);
+  EXPECT_PRED2(ExprEqual, system->output()[0], x_[0] + u_[0] + p_[0]);
+  EXPECT_PRED2(ExprEqual, system->output()[1], t_);
 
   auto context = system->CreateDefaultContext();
 
