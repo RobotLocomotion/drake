@@ -341,9 +341,11 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "obj_to_surface_mesh_test",
     data = [
-        "test/forbidden_two_cubes.obj",
-        "test/quad_cube.mtl",
-        "test/quad_cube.obj",
+        ":test/forbidden_empty.obj",
+        ":test/forbidden_face_outside_o.obj",
+        "//geometry:test/forbidden_two_cubes.obj",
+        "//geometry:test/quad_cube.mtl",
+        "//geometry:test/quad_cube.obj",
     ],
     deps = [
         ":obj_to_surface_mesh",

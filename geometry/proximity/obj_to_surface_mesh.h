@@ -67,16 +67,17 @@ std::vector<SurfaceFace> TinyObjToSurfaceFaces(const tinyobj::mesh_t& mesh) {
   // In general, tinyobj::mesh_t::num_face_vertices is a list of number
   // of vertices of each polygonal face like this:
   //     mesh.num_face_vertices = {n₀, n₁, n₂,...},
-  // where faceᵢ has nᵢ vertices. In this function, we assume every face is a
-  // triangle, so every nᵢ is 3 like this:
+  // where faceᵢ has nᵢ vertices. In this function, we require every face to
+  // be a triangle, so every nᵢ is 3 like this:
   //     mesh.num_face_vertices = {3, 3, 3,...}.
   //
   // In general, tinyobj::mesh_t::indices concatenates tinyobj::index_t of
   // vertices of each face like this:
   //     mesh.indices = {v0₀,v0₁,...,v0ₙ₀₋₁, v1₀,v1₁,...,v1ₙ₁₋₁, ...}.
   //                     -------face0------  -------face1------
-  // In this function, we assume each face is a triangle, so it looks like this:
-  //     mesh.indices = {v0₀,v0₁,v0₂, v1₀,v1₁,v1₂, ...}
+  // Because this function requires the faces to be triangles, it must look
+  // like this:
+  //     mesh.indices = {v0₀,v0₁,v0₂, v1₀,v1₁,v1₂, ...}.
   //                     ---face0---  ---face1---
   //
   // Each tinyobj::index_t consists of vertex_index, normal_index, and
@@ -84,6 +85,9 @@ std::vector<SurfaceFace> TinyObjToSurfaceFaces(const tinyobj::mesh_t& mesh) {
   //
   const int num_faces = mesh.num_face_vertices.size();
   const int num_indices = mesh.indices.size();
+  // Check that there are enough mesh.indices for all faces.
+  // mesh.num_face_vertices must be {3, 3,...}.
+  // mesh.indices must be {v0₀,v0₁,v0₂, v1₀,v1₁,v1₂, ...}.
   DRAKE_DEMAND(3 * num_faces == num_indices);
   std::vector<SurfaceFace> faces;
   faces.reserve(num_faces);
@@ -99,10 +103,13 @@ std::vector<SurfaceFace> TinyObjToSurfaceFaces(const tinyobj::mesh_t& mesh) {
 
 #endif  // #ifndef DRAKE_DOXYGEN_CXX
 
+// TODO(DamrongGuoy): Refactor the tinyobj usage between here and
+//  ProximityEngine.
+
 /**
  Constructs a surface mesh from a Wavefront .obj file located at the given
  _absolute_ file path and optionally scales coordinates by the given scale
- factor.
+ factor. Polygons will be triangulated if they are not triangles already.
  @param absolute_filename
      The file name with absolute path. We only support an .obj file with only
      one object.
@@ -140,7 +147,8 @@ SurfaceMesh<T> ReadObjToSurfaceMesh(const std::string& absolute_filename,
   if (shapes.size() != 1) {
     throw std::runtime_error("The Wavefront .obj file '" + absolute_filename +
                              "' must have one and only one object defined in "
-                             "it.");
+                             "it. Found " +
+                             std::to_string(shapes.size()) + " objects.");
   }
   std::vector<SurfaceVertex<T>> vertices =
       TinyObjToSurfaceVertices<T>(attrib.vertices, scale);

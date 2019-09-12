@@ -17,27 +17,25 @@ namespace internal {
 namespace {
 
 GTEST_TEST(ObjToSurfaceMeshTest, TinyObjToSurfaceVertices) {
-  // clang-format off
-  const std::vector<tinyobj::real_t> tinyobj_vertices {
+  const std::vector<tinyobj::real_t> tinyobj_vertices{
       1.0, -1.0, -1.0,  // first vertex.
-      1.0, -1.0,  1.0   // second vertex.
+      1.0, -1.0, 1.0    // second vertex.
   };
-  // clang-format on
 
-  const double scale = 2.0;
-  const std::vector<SurfaceVertex<double>> surface_vertices =
-      TinyObjToSurfaceVertices<double>(tinyobj_vertices, scale);
+  const double scales[3]{1.0, 2.0, 5.0};
+  for (const double scale : scales) {
+    const std::vector<SurfaceVertex<double>> surface_vertices =
+        TinyObjToSurfaceVertices<double>(tinyobj_vertices, scale);
 
-  EXPECT_EQ(2, surface_vertices.size());
-  // clang-format off
-  const std::vector<Vector3<double>> expect_vertices {
-      {2.0, -2.0, -2.0},  // first vertex scaled by 2.0.
-      {2.0, -2.0,  2.0}   // second vertex scaled by 2.0.
-  };
-  // clang-format on
+    EXPECT_EQ(2, surface_vertices.size());
+    const std::vector<Vector3<double>> expect_vertices{
+        scale * Vector3<double>{1.0, -1.0, -1.0},  // first vertex.
+        scale * Vector3<double>{1.0, -1.0, 1.0}    // second vertex.
+    };
 
-  for (int i = 0; i < 2; ++i) {
-    EXPECT_EQ(expect_vertices[i], surface_vertices[i].r_MV());
+    for (int i = 0; i < 2; ++i) {
+      EXPECT_EQ(expect_vertices[i], surface_vertices[i].r_MV());
+    }
   }
 }
 
@@ -81,7 +79,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, TinyObjToSurfaceFaces) {
 
 GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToSurfaceMesh) {
   const std::string filename =
-      FindResourceOrThrow("drake/geometry/proximity/test/quad_cube.obj");
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
   SurfaceMesh<double> surface = ReadObjToSurfaceMesh<double>(filename);
 
   ASSERT_EQ(surface.num_vertices(), 8);
@@ -110,9 +108,9 @@ GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToSurfaceMesh) {
   // last section of quad_cube.obj describes the six square faces of the cube.
   // We expect that each square is subdivided into two triangles. Note that
   // vertex indices in the file quad_cube.obj are from 1 to 8, but tinyobj
-  // has vertex indices from 0 to 7.
-  // clang-format off
-  int expect_faces[12][3] {
+  // has vertex indices from 0 to 7. We assume that tinyobj subdivides each
+  // square ABCD into triangles ABC and ACD.
+  int expect_faces[12][3]{
       {0, 1, 2}, {0, 2, 3},  // face 1 2 3 4 in quad_cube.obj
       {4, 7, 6}, {4, 6, 5},  // face 5 8 7 6 in quad_cube.obj
       {0, 4, 5}, {0, 5, 1},  // face 1 5 6 2 in quad_cube.obj
@@ -120,7 +118,6 @@ GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToSurfaceMesh) {
       {2, 6, 7}, {2, 7, 3},  // face 3 7 8 4 in quad_cube.obj
       {4, 0, 3}, {4, 3, 7}   // face 5 1 4 8 in quad_cube.obj
   };
-  // clang-format on
 
   auto face_equal = [](const SurfaceFace& f, const SurfaceFace& g) -> bool {
     return std::make_tuple(f.vertex(0), f.vertex(1), f.vertex(2)) ==
@@ -132,17 +129,36 @@ GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToSurfaceMesh) {
   }
 }
 
-GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForTwoObjects) {
+GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForEmptyFile) {
   const std::string filename = FindResourceOrThrow(
-      "drake/geometry/proximity/test/forbidden_two_cubes.obj");
+      "drake/geometry/proximity/test/forbidden_empty.obj");
   DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToSurfaceMesh<double>(filename),
                               std::runtime_error,
-                              ".*must have one and only one object defined.*");
+                              ".*must have one and only one object defined in"
+                              " it. Found 0 objects.");
+}
+
+GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForMultipleObjects) {
+  const std::string filename = FindResourceOrThrow(
+      "drake/geometry/test/forbidden_two_cubes.obj");
+  DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToSurfaceMesh<double>(filename),
+                              std::runtime_error,
+                              ".*must have one and only one object defined in"
+                              " it. Found 2 objects.");
+}
+
+GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForFaceOutsideObjectStatement) {
+  const std::string filename = FindResourceOrThrow(
+      "drake/geometry/proximity/test/forbidden_face_outside_o.obj");
+  DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToSurfaceMesh<double>(filename),
+                              std::runtime_error,
+                              ".*must have one and only one object defined in"
+                              " it. Found 2 objects.");
 }
 
 GTEST_TEST(ObjToSurfaceMeshTest, SmokeTestAutoDiffXd) {
   const std::string filename =
-      FindResourceOrThrow("drake/geometry/proximity/test/quad_cube.obj");
+      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
   SurfaceMesh<AutoDiffXd> surface = ReadObjToSurfaceMesh<AutoDiffXd>(filename);
   EXPECT_EQ(surface.num_vertices(), 8);
   EXPECT_EQ(surface.num_faces(), 12);
