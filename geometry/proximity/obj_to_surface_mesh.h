@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fstream>
+#include <istream>
 #include <string>
 #include <utility>
 #include <vector>
