@@ -54,7 +54,31 @@ std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::Clone() const {
 template <typename T>
 std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::MakeDerivative(
     int derivative_order) const {
-  return Derivative(derivative_order).Clone();
+  if (derivative_order == 0) {
+    return this->Clone();
+  } else if (derivative_order > 1) {
+    return MakeDerivative(1)->MakeDerivative(derivative_order - 1);
+  } else if (derivative_order == 1) {
+    std::vector<MatrixX<T>> derivative_control_points;
+    std::vector<double> derivative_knots;
+    const int num_derivative_knots = knots().size() - 1;
+    for (int i = 1; i < num_derivative_knots; ++i) {
+      derivative_knots.push_back(knots()[i]);
+    }
+    for (int i = 0; i < num_control_points() - 1; ++i) {
+      derivative_control_points.push_back(
+          degree() / (knots()[i + order()] - knots()[i + 1]) *
+          (control_points()[i + 1] - control_points()[i]));
+    }
+    return std::make_unique<BsplineTrajectory<T>>(
+        BsplineBasis<double>(order() - 1, derivative_knots),
+        derivative_control_points);
+  } else {
+    throw std::invalid_argument(
+        fmt::format("Invalid derivative order ({}). The derivative order must "
+                    "be greater than or equal to 0.",
+                    derivative_order));
+  }
 }
 
 template <typename T>
@@ -113,36 +137,6 @@ void BsplineTrajectory<T>::InsertKnots(
     new_control_points.push_back(this->control_points().back());
     control_points_ = new_control_points;
     basis_ = BsplineBasis<double>(order(), new_knots);
-  }
-}
-
-template <typename T>
-BsplineTrajectory<T> BsplineTrajectory<T>::Derivative(
-    int derivative_order) const {
-  if (derivative_order == 0) {
-    return *this;
-  } else if (derivative_order > 1) {
-    return Derivative(1).Derivative(derivative_order - 1);
-  } else if (derivative_order == 1) {
-    std::vector<MatrixX<T>> derivative_control_points;
-    std::vector<double> derivative_knots;
-    const int num_derivative_knots = knots().size() - 1;
-    for (int i = 1; i < num_derivative_knots; ++i) {
-      derivative_knots.push_back(knots()[i]);
-    }
-    for (int i = 0; i < num_control_points() - 1; ++i) {
-      derivative_control_points.push_back(
-          degree() / (knots()[i + order()] - knots()[i + 1]) *
-          (control_points()[i + 1] - control_points()[i]));
-    }
-    return BsplineTrajectory(
-        BsplineBasis<double>(order() - 1, derivative_knots),
-        derivative_control_points);
-  } else {
-    throw std::invalid_argument(
-        fmt::format("Invalid derivative order ({}). The derivative order must "
-                    "be greater than or equal to 0.",
-                    derivative_order));
   }
 }
 
