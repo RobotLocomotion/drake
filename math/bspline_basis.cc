@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <set>
+#include <utility>
 
 #include <fmt/format.h>
 
@@ -47,12 +48,14 @@ std::vector<T> ConstructDefaultKnots(int order, int num_control_points,
 
 template <typename T>
 BsplineBasis<T>::BsplineBasis(int order, std::vector<T> knots)
-    : order_(order), num_control_points_(knots.size() - order), knots_(knots) {
-  if (static_cast<int>(knots.size()) < 2 * order) {
+    : order_(order),
+      num_control_points_(knots.size() - order),
+      knots_(std::move(knots)) {
+  if (static_cast<int>(knots_.size()) < 2 * order) {
     throw std::invalid_argument(
         fmt::format("The number of knots ({}) should be greater than or "
                     "equal to twice the order ({}).",
-                    knots.size(), 2 * order));
+                    knots_.size(), 2 * order));
   }
   DRAKE_ASSERT(std::is_sorted(knots_.begin(), knots_.end()));
 }
@@ -67,26 +70,26 @@ template <typename T>
 bool BsplineBasis<T>::IsControlPointActive(
     int control_point_index, const std::array<T, 2>& parameter_interval) const {
   DRAKE_ASSERT(knots_.at(order() - 1) <= parameter_interval.front());
-  DRAKE_ASSERT(parameter_interval.back() <= knots_.at(num_control_points()));
-  DRAKE_ASSERT(parameter_interval.front() <= parameter_interval.back());
-  // If t ∈ [tᵣ, tᵣ₊₁), the only control points that contribute to the value of
-  // the curve at t are P[r - p], ..., P[r - 1], P[r], where p = order - 1 is
-  // the degree of the basis functions. We want to know which control points are
-  // active over the interval [tₛ,  tₑ]. If we find the corresponding rₛ and
-  // rₑ, then the active control points for the interval are
-  // P[rₛ - p], ..., P[rₑ]
+  DRAKE_ASSERT(parameter_interval.back() <= final_parameter_value());
+  DRAKE_ASSERT(initial_parameter_value() <= parameter_interval.back());
+  // Changing control point P[i] affects the curve on the interval (tᵢ, tᵢ₊ₖ).
+  // We want to know if P[i] affects the curve over the interval [tₛ, tₑ]. This
+  // is true if
+  //   (tᵢ, tᵢ₊ₖ) ∩ [tₛ,  tₑ] ≠ ∅
+  // or, equivalently, if
+  //   tᵢ ≤ tₑ ∧ tₛ ≤ tᵢ₊ₖ.
   //
   // Reference:
   // http://web.mit.edu/hyperbook/Patrikalakis-Maekawa-Cho/node17.html
 
   // Define short-hand references to match Patrikalakis et al.:
   const std::vector<T>& tt = knots();
-  const int& p = order() - 1;
+  const int& k = order();
   const T& t_s = parameter_interval[0];
   const T& t_e = parameter_interval[1];
-  const int& r = control_point_index;
+  const int& i = control_point_index;
 
-  return tt[r + p + 1] >= t_s && tt[r] <= t_e;
+  return tt[i] <= t_e && t_s <= tt[i + k];
 }
 
 template <typename T>
