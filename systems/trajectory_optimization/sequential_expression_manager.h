@@ -52,6 +52,29 @@ class SequentialExpressionManager {
       const std::string& name);
 
   /**
+   * Registers a placeholder variables and the associated sequential expression
+   * vector.
+   *
+   * @param placeholders Placeholder variables.
+   * @param sequential_expressions [size_of_placeholder_variables x num_samples]
+   *                               matrix of symbolic expressions.
+   *                               sequential_expressions(i, j) is the value of
+   *                               the i-th expression at the j-th index.
+   * @param name Name for the newly registered sequential expression vector.
+   * @throw std::runtime_error unless `sequential_expressions` has
+   *                           `placeholders.size()` rows.
+   * @throw std::runtime_error unless `sequential_expressions` has num_samples()
+   *                           columns.
+   * @throw std::runtime_error if it has an existing registration under the
+   *                           `name`.
+   */
+  void RegisterSequentialExpressions(
+      const VectorX<symbolic::Variable>& placeholders,
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>&
+          sequential_expressions,
+      const std::string& name);
+
+  /**
    * Returns a symbolic::Substitution for replacing all placeholder variables
    * with their respective `index`-th expression.
    * @pre 0 <= index < num_samples()
