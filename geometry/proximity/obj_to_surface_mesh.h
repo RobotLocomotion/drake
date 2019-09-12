@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -85,9 +86,9 @@ std::vector<SurfaceFace> TinyObjToSurfaceFaces(const tinyobj::mesh_t& mesh) {
   //
   const int num_faces = mesh.num_face_vertices.size();
   const int num_indices = mesh.indices.size();
-  // Check that there are enough mesh.indices for all faces.
-  // mesh.num_face_vertices must be {3, 3,...}.
-  // mesh.indices must be {v0₀,v0₁,v0₂, v1₀,v1₁,v1₂, ...}.
+  // Although we will validate each face as a triangle individually, we make
+  // sure that there are enough vertices for that to be true as an initial
+  // check.
   DRAKE_DEMAND(3 * num_faces == num_indices);
   std::vector<SurfaceFace> faces;
   faces.reserve(num_faces);
@@ -105,6 +106,54 @@ std::vector<SurfaceFace> TinyObjToSurfaceFaces(const tinyobj::mesh_t& mesh) {
 
 // TODO(DamrongGuoy): Refactor the tinyobj usage between here and
 //  ProximityEngine.
+
+/**
+ Constructs a surface mesh from a Wavefront .obj file in the given std::istream
+ and optionally scales coordinates by the given scale factor. Polygons will
+ be triangulated if they are not triangles already.
+ @param input_stream
+     We only support a std::istream with only one object.
+ @param scale
+     An optional scale to coordinates.
+ @throws std::runtime_error if `input_stream` doesn't define a single object.
+     This can happen if it is empty, if there are multiple object-name
+     statements (e.g., "o object name"), or if there are faces defined
+     outside a single object-name statement.
+ @return surface mesh
+ @tparam T
+     The underlying scalar type for coordinates, e.g., double or AutoDiffXd.
+     Must be a valid Eigen scalar.
+ */
+template <typename T>
+SurfaceMesh<T> ReadObjToSurfaceMesh(std::istream* input_stream,
+                                    const double scale = 1.0) {
+  tinyobj::attrib_t attrib;
+  std::vector<tinyobj::shape_t> shapes;
+  std::vector<tinyobj::material_t> materials;
+  std::string err;
+  // Ignore material-library file.
+  tinyobj::MaterialReader* readMatFn = nullptr;
+  // triangulate non-triangle faces.
+  bool triangulate = true;
+
+  bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, input_stream,
+                              readMatFn, triangulate);
+  if (!ret || !err.empty()) {
+    throw std::runtime_error("Error parsing Wavefront obj file : " + err);
+  }
+  if (shapes.size() != 1) {
+    throw std::runtime_error(
+        "The Wavefront obj file must have one and only one object defined in "
+        "it. Found " + std::to_string(shapes.size()) + " objects.");
+  }
+  std::vector<SurfaceVertex<T>> vertices =
+      TinyObjToSurfaceVertices<T>(attrib.vertices, scale);
+
+  std::vector<SurfaceFace> faces = TinyObjToSurfaceFaces(shapes[0].mesh);
+
+  return SurfaceMesh<T>(std::move(faces), std::move(vertices));
+}
+
 
 /**
  Constructs a surface mesh from a Wavefront .obj file located at the given
@@ -127,36 +176,13 @@ std::vector<SurfaceFace> TinyObjToSurfaceFaces(const tinyobj::mesh_t& mesh) {
 template <typename T>
 SurfaceMesh<T> ReadObjToSurfaceMesh(const std::string& absolute_filename,
                                     const double scale = 1.0) {
-  tinyobj::attrib_t attrib;
-  std::vector<tinyobj::shape_t> shapes;
-  std::vector<tinyobj::material_t> materials;
-  std::string err;
-  bool do_tinyobj_triangulation = true;  // triangulate non-triangle faces.
-
-  // Provide the base directory for the material-library file.
-  const size_t pos = absolute_filename.find_last_of('/');
-  const std::string mtl_basedir = absolute_filename.substr(0, pos + 1);
-
-  bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
-                              absolute_filename.c_str(), mtl_basedir.c_str(),
-                              do_tinyobj_triangulation);
-  if (!ret || !err.empty()) {
-    throw std::runtime_error("Error parsing file '" + absolute_filename +
-                             "' : " + err);
+  std::ifstream input_stream(absolute_filename);
+  if (!input_stream.is_open()) {
+    throw std::runtime_error("Cannot open file `" + absolute_filename +"'");
   }
-  if (shapes.size() != 1) {
-    throw std::runtime_error("The Wavefront .obj file '" + absolute_filename +
-                             "' must have one and only one object defined in "
-                             "it. Found " +
-                             std::to_string(shapes.size()) + " objects.");
-  }
-  std::vector<SurfaceVertex<T>> vertices =
-      TinyObjToSurfaceVertices<T>(attrib.vertices, scale);
-
-  std::vector<SurfaceFace> faces = TinyObjToSurfaceFaces(shapes[0].mesh);
-
-  return SurfaceMesh<T>(std::move(faces), std::move(vertices));
+  return ReadObjToSurfaceMesh<T>(&input_stream, scale);
 }
+
 
 }  // namespace internal
 }  // namespace geometry

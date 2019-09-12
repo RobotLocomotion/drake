@@ -1,5 +1,6 @@
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 
+#include <sstream>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -22,8 +23,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, TinyObjToSurfaceVertices) {
       1.0, -1.0, 1.0    // second vertex.
   };
 
-  const double scales[3]{1.0, 2.0, 5.0};
-  for (const double scale : scales) {
+  for (const double scale : {1.0, 2.0, 5.0}) {
     const std::vector<SurfaceVertex<double>> surface_vertices =
         TinyObjToSurfaceVertices<double>(tinyobj_vertices, scale);
 
@@ -108,8 +108,9 @@ GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToSurfaceMesh) {
   // last section of quad_cube.obj describes the six square faces of the cube.
   // We expect that each square is subdivided into two triangles. Note that
   // vertex indices in the file quad_cube.obj are from 1 to 8, but tinyobj
-  // has vertex indices from 0 to 7. We assume that tinyobj subdivides each
-  // square ABCD into triangles ABC and ACD.
+  // has vertex indices from 0 to 7. We assume that tinyobj subdivides a
+  // polygon into a triangle fan around the first vertex; polygon ABCDE...
+  // becomes triangles ABC, ACD, ADE, etc.
   int expect_faces[12][3]{
       {0, 1, 2}, {0, 2, 3},  // face 1 2 3 4 in quad_cube.obj
       {4, 7, 6}, {4, 6, 5},  // face 5 8 7 6 in quad_cube.obj
@@ -129,31 +130,48 @@ GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToSurfaceMesh) {
   }
 }
 
-GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForEmptyFile) {
-  const std::string filename = FindResourceOrThrow(
-      "drake/geometry/proximity/test/forbidden_empty.obj");
-  DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToSurfaceMesh<double>(filename),
-                              std::runtime_error,
-                              ".*must have one and only one object defined in"
-                              " it. Found 0 objects.");
+GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForEmptyObj) {
+  std::istringstream empty("");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ReadObjToSurfaceMesh<double>(&empty), std::runtime_error,
+      ".*must have one and only one object defined in it. Found 0 objects.");
 }
 
 GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForMultipleObjects) {
-  const std::string filename = FindResourceOrThrow(
-      "drake/geometry/test/forbidden_two_cubes.obj");
-  DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToSurfaceMesh<double>(filename),
-                              std::runtime_error,
-                              ".*must have one and only one object defined in"
-                              " it. Found 2 objects.");
+  std::istringstream two_objects{
+      "o first_object\n"
+      "v 1.0 0.0 0.0\n"
+      "v 0.0 1.0 0.0\n"
+      "v 0.0 0.0 1.0\n"
+      "f 1 2 3\n"
+      "\n"
+      "o second_object\n"
+      "v 2.0 0.0 0.0\n"
+      "v 0.0 2.0 0.0\n"
+      "v 0.0 0.0 2.0\n"
+      "f 4 5 6\n"};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ReadObjToSurfaceMesh<double>(&two_objects), std::runtime_error,
+      ".*must have one and only one object defined in it. Found 2 objects.");
 }
 
-GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForFaceOutsideObjectStatement) {
-  const std::string filename = FindResourceOrThrow(
-      "drake/geometry/proximity/test/forbidden_face_outside_o.obj");
-  DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToSurfaceMesh<double>(filename),
-                              std::runtime_error,
-                              ".*must have one and only one object defined in"
-                              " it. Found 2 objects.");
+GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForFaceOutsideObject) {
+  std::istringstream face_outside_o_statement{
+      "# extra face\n"
+      "v 3.0 0.0 0.0\n"
+      "v 0.0 3.0 0.0\n"
+      "v 0.0 0.0 3.0\n"
+      "f 1 2 3\n"
+      "\n"
+      "o main_object\n"
+      "v 1.0 0.0 0.0\n"
+      "v 0.0 1.0 0.0\n"
+      "v 0.0 0.0 1.0\n"
+      "f 4 5 6\n"};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ReadObjToSurfaceMesh<double>(&face_outside_o_statement),
+      std::runtime_error,
+      ".*must have one and only one object defined in it. Found 2 objects.");
 }
 
 GTEST_TEST(ObjToSurfaceMeshTest, SmokeTestAutoDiffXd) {
