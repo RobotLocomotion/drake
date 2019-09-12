@@ -118,6 +118,18 @@ std::vector<int> BsplineBasis<T>::ComputeActiveControlPointIndices(
 }
 
 template <typename T>
+int BsplineBasis<T>::FindContainingInterval(const T& parameter_value) const {
+  // Special handling is required for the case where
+  // t_bar == this->final_parameter_value().
+  const std::vector<T>& t = knots();
+  const T& t_bar = parameter_value;
+  return std::distance(
+      t.begin(), std::prev(t_bar < final_parameter_value()
+                               ? std::upper_bound(t.begin(), t.end(), t_bar)
+                               : std::lower_bound(t.begin(), t.end(), t_bar)));
+}
+
+template <typename T>
 T BsplineBasis<T>::BasisFunctionValue(int index, T parameter_value) const {
   std::vector<T> delta(num_control_points(), 0.0);
   delta[index] = 1.0;

@@ -198,14 +198,39 @@ GTEST_TEST(BsplineTrajectoryTests, InsertKnotsTest) {
     BsplineTrajectory<double> original_trajectory{
         BsplineBasis<double>{order, num_control_points, knot_vector_type},
         control_points};
-    // Create a vector of new knots to add
+    // Create a vector of new knots to add. Note that it contains a knot with a
+    // multiplicity of 2.
     std::vector<double> new_knots{original_trajectory.start_time(), M_PI_4,
           0.25, 0.25, original_trajectory.end_time()};
+    // Add the new knots.
     BsplineTrajectory<double> trajectory_with_new_knots = original_trajectory;
     trajectory_with_new_knots.InsertKnots({new_knots});
+
+    // Verify that the number of control points after insertion is equal to the
+    // original number of control points plus the number of added knots.
     EXPECT_EQ(trajectory_with_new_knots.num_control_points(),
               original_trajectory.num_control_points() + new_knots.size());
-    // Verify that value() returns the expected results.
+
+    // Add the new knots again to verify that nothing goes wrong if the
+    // trajectory into which knots are inserted has interior knots with
+    // multiplicity greater than 1.
+    trajectory_with_new_knots.InsertKnots({new_knots});
+
+    // Verify that the number of control points after insertion is equal to the
+    // original number of control points plus the number of added knots.
+    EXPECT_EQ(trajectory_with_new_knots.num_control_points(),
+              original_trajectory.num_control_points() + 2 * new_knots.size());
+
+    // Verify that start_time() and end_time() return the same results for the
+    // original trajectory and the one with additional knots.
+    EXPECT_EQ(trajectory_with_new_knots.start_time(),
+              original_trajectory.start_time());
+    EXPECT_EQ(trajectory_with_new_knots.end_time(),
+              original_trajectory.end_time());
+
+    // Verify that value() returns the same result for the original trajectory
+    // and the trajectory with additional knots for `num_times` sampled values
+    // of `t` between start_time() and end_time().
     const int num_times = 100;
     VectorX<double> t = VectorX<double>::LinSpaced(
         num_times, original_trajectory.start_time(),

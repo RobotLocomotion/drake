@@ -51,6 +51,9 @@ class BsplineBasis final {
   std::vector<int> ComputeActiveControlPointIndices(
       const T& parameter_value) const;
 
+  /** Find the knot index 𝑙 (ell in code) such that t[𝑙] ≤ t_bar < t[𝑙 + 1]. */
+  int FindContainingInterval(const T& parameter_value) const;
+
   /** Implements the de Boor algorithm. Uses the notation from Patrikalakis et
   al. [1]. Since the depth of recursion is known a-priori, the algorithm is
   flattened along the lines described in [2] to avoid duplicate computations.
@@ -77,13 +80,8 @@ class BsplineBasis final {
     const int& k = order();
 
     // Find the knot index 𝑙 (ell in code) such that t[𝑙] ≤ t_bar < t[𝑙 + 1].
-    // Special handling is required for the case where
-    // t_bar == this->final_parameter_value().
-    const int ell = std::distance(
-        t.begin(),
-        std::prev(t_bar < final_parameter_value()
-                      ? std::upper_bound(t.begin(), t.end(), t_bar)
-                      : std::lower_bound(t.begin(), t.end(), t_bar)));
+    const int ell = FindContainingInterval(t_bar);
+
     // The vector that stores the intermediate de Boor points (the
     // pᵢʲ in [1]).
     std::vector<T_control_point> p(order());

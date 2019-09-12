@@ -18,12 +18,8 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
 
   /** Constructs a B-spline trajectory with the given `basis` and
   `control_points`.*/
-  BsplineTrajectory(const BsplineBasis<double>& basis,
-                    const std::vector<MatrixX<T>>& control_points);
-
-  template <typename T_input>
-  BsplineTrajectory(const BsplineBasis<double>& basis,
-                    const std::vector<MatrixX<T_input>>& control_points);
+  BsplineTrajectory(BsplineBasis<double> basis,
+                    std::vector<MatrixX<T>> control_points);
 
   virtual ~BsplineTrajectory() = default;
 
