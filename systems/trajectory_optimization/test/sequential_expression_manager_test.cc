@@ -57,6 +57,27 @@ TEST_F(SequentialExpressionManagerTests, RegisterAndSubstituteExpressionTest) {
   }
 }
 
+TEST_F(SequentialExpressionManagerTests,
+       RegisterAndSubstituteExpressionTestWithPlaceholders) {
+  const MatrixX<Expression> x_sequential{
+      MakeVariableMatrix(num_variables_, num_samples_)};
+  x_sequential.cwiseSqrt();
+  const VectorX<Variable> x_placeholder{
+      symbolic::MakeVectorContinuousVariable(num_variables_, "x")};
+  dut_.RegisterSequentialExpressions(x_placeholder,
+                                     x_sequential.cast<Expression>(), "x");
+  EXPECT_EQ(dut_.num_rows("x"), num_variables_);
+  const MatrixX<Expression> placeholder_expression{x_placeholder *
+                                                   x_placeholder.transpose()};
+  for (int j = 0; j < num_samples_; ++j) {
+    const MatrixX<Expression> expected_expression{
+        x_sequential.col(j) * x_sequential.col(j).transpose()};
+    const Substitution subs{dut_.ConstructPlaceholderVariableSubstitution(j)};
+    EXPECT_EQ(symbolic::Substitute(placeholder_expression, subs),
+              expected_expression);
+  }
+}
+
 // Test with an Eigen::Map applied to a vector of Expressions.
 TEST_F(SequentialExpressionManagerTests, RegisterAndSubstituteMapTest) {
   VectorX<Expression> x_sequential =
