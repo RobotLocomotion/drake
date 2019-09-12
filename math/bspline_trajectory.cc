@@ -22,7 +22,10 @@ BsplineTrajectory<T>::BsplineTrajectory(BsplineBasis<double> basis,
 
 template <typename T>
 MatrixX<T> BsplineTrajectory<T>::value(double time) const {
-  return basis().DeBoor(control_points(), time);
+  using std::max;
+  using std::min;
+  return basis().EvaluateCurve(control_points(),
+                               min(max(time, start_time()), end_time()));
 }
 
 template <typename T>
