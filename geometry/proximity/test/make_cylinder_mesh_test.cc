@@ -35,11 +35,9 @@ GTEST_TEST(MakeCylinderMesh, VolumeConvergence) {
   const double height = 2;
   const double radius = 1;
   const int refinement_level = 0;
-  const int smoothing_iterations = 0;
 
-  auto mesh0 =
-      MakeCylinderMesh<double>(drake::geometry::Cylinder(radius, height),
-                               refinement_level, smoothing_iterations);
+  auto mesh0 = MakeCylinderMesh<double>(
+      drake::geometry::Cylinder(radius, height), refinement_level);
 
   const double volume0 = CalcTetrahedronMeshVolume(mesh0);
   const double cylinder_volume = height * radius * radius * M_PI;
@@ -57,7 +55,7 @@ GTEST_TEST(MakeCylinderMesh, VolumeConvergence) {
 
   for (int level = 1; level < 6; ++level) {
     auto mesh = MakeCylinderMesh<double>(
-        drake::geometry::Cylinder(radius, height), level, smoothing_iterations);
+        drake::geometry::Cylinder(radius, height), level);
 
     // Verify the correct size. There are initially 24 tetrahedra that each
     // split into 8 sub tetrahedra.
@@ -131,54 +129,14 @@ int ComputeEulerCharacteristic(const VolumeMesh<double>& mesh) {
 GTEST_TEST(MakeCylinderMesh, EulerCharacteristic) {
   const double height = 2;
   const double radius = 1;
-  const int smoothing_iterations = 0;
 
   const int expected_euler_characteristic = 1;
 
   for (int level = 0; level < 6; ++level) {
     auto mesh = MakeCylinderMesh<double>(
-        drake::geometry::Cylinder(radius, height), level, smoothing_iterations);
+        drake::geometry::Cylinder(radius, height), level);
 
     EXPECT_EQ(ComputeEulerCharacteristic(mesh), expected_euler_characteristic);
-  }
-}
-
-void CheckAllElementsPositive(const VolumeMesh<double>& mesh) {
-  for (int e = 0; e < mesh.num_elements(); e++) {
-    double element_volume = mesh.CalcTetrahedronVolume(VolumeElementIndex(e));
-    EXPECT_GT(element_volume, 0.0);
-  }
-}
-
-// Smoke tests LaplacianSmoothingInterior() through MakeCylinderMesh().
-// Checks that all tetrahedra have positive area after modifying the positions
-// of the vertices. Also checks that the smoothed mesh has the same volume as
-// the mesh with no smoothing applied.
-GTEST_TEST(MakeCylinderMesh, LaplacianSmoothingInterior) {
-  const double kTolerance = 1e3 * std::numeric_limits<double>::epsilon();
-
-  const double height = 2;
-  const double radius = 1;
-  const int refinement_level = 3;
-
-  auto unsmoothed_mesh = MakeCylinderMesh<double>(
-      drake::geometry::Cylinder(radius, height), refinement_level,
-      /* smothing_level */ 0);
-
-  const double unsmoothed_mesh_volume =
-      CalcTetrahedronMeshVolume(unsmoothed_mesh);
-
-  for (int smoothing_level = 1; smoothing_level <= 10; smoothing_level++) {
-    auto smoothed_mesh =
-        MakeCylinderMesh<double>(drake::geometry::Cylinder(radius, height),
-                                 refinement_level, smoothing_level);
-
-    CheckAllElementsPositive(smoothed_mesh);
-
-    const double smoothed_mesh_volume =
-        CalcTetrahedronMeshVolume(smoothed_mesh);
-
-    EXPECT_NEAR(smoothed_mesh_volume, unsmoothed_mesh_volume, kTolerance);
   }
 }
 

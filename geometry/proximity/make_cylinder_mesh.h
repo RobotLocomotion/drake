@@ -251,74 +251,6 @@ void RefineCylinderTetrahdron(
   split_mesh_tetrahedra.emplace_back(g, h, f, j);
 }
 
-// Compute the average of the points in neighboring vertices
-template <typename T>
-Vector3<T> Average(const std::vector<Vector3<T>>& neighbors) {
-  T number_neighbors(neighbors.size());
-  return std::accumulate(neighbors.begin(), neighbors.end(),
-                         Vector3<T>(0, 0, 0)) /
-         number_neighbors;
-}
-
-// Iterative Laplacian smoothing
-// Find all neighbors of each vertex, and store in a set for each vertex
-// If a vertex is an internal type vertex, replace it with the average position
-// of all of its neighbors.
-template <typename T>
-std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>>
-LaplacianSmoothingInterior(const VolumeMesh<T>& mesh,
-                           const std::vector<CylinderVertexType>& is_boundary,
-                           int number_iterations) {
-  DRAKE_DEMAND(number_iterations >= 0);
-
-  std::vector<VolumeElement> smooth_mesh_tetrahedra = mesh.tetrahedra();
-  std::vector<VolumeVertex<T>> smooth_mesh_vertices = mesh.vertices();
-  std::vector<CylinderVertexType> smooth_is_boundary = is_boundary;
-
-  std::vector<std::unordered_set<VolumeVertexIndex>> neighbors(
-      mesh.vertices().size());
-
-  for (const auto& t : smooth_mesh_tetrahedra) {
-    for (int i = 0; i < 4; i++) {
-      for (int j = 1; j < 4; j++) {
-        const VolumeVertexIndex a = t.vertex(i);
-        const VolumeVertexIndex b = t.vertex((i + j) % 4);
-
-        neighbors[a].emplace(b);
-      }
-    }
-  }
-
-  for (int n = 0; n < number_iterations; n++) {
-    auto neighbor = neighbors.begin();
-    auto boundary = smooth_is_boundary.begin();
-    auto vertex = smooth_mesh_vertices.begin();
-
-    std::vector<VolumeVertex<T>> new_vertices;
-
-    for (; neighbor != neighbors.end(); ++neighbor, ++boundary, ++vertex) {
-      if (*boundary == CylinderVertexType::kInternal) {
-        std::vector<Vector3<T>> v_neighbors((*neighbor).size());
-
-        std::transform((*neighbor).begin(), (*neighbor).end(),
-                       v_neighbors.begin(),
-                       [&](const VolumeVertexIndex& index) -> Vector3<T> {
-                         return smooth_mesh_vertices[index].r_MV();
-                       });
-
-        new_vertices.emplace_back(Average(v_neighbors));
-      } else {
-        new_vertices.emplace_back(*vertex);
-      }
-    }
-    smooth_mesh_vertices = new_vertices;
-  }
-
-  return std::make_pair(VolumeMesh<T>(std::move(smooth_mesh_tetrahedra),
-                                      std::move(smooth_mesh_vertices)),
-                        std::move(smooth_is_boundary));
-}
-
 // Splits a mesh by calling RefineCylinderTetrahdron() on each
 // tetrahedron of `mesh`. `is_boundary` is a vector describing the
 // CylinderVertexType of each vertex in `mesh`
@@ -501,22 +433,17 @@ MakeCylinderMeshLevel0(const double& height, const double& radius) {
 ///    The number of subdivision steps to take. If the original mesh contains
 ///    N tetrahedra, the resulting mesh with refinement_level = L will contain
 ///    N·8ᴸ tetrahedra.
-/// @param[in] smoothing_level
-///    Number of iterations of Laplacian smoothing of vertex positions.
-///    No effect if it is zero.
 ///
-/// @throws std::exception if refinement_level or smoothing_level negative.
+/// @throws std::exception if refinement_level is negative.
 ///
 /// [Everett, 1997]  Everett, M.E., 1997. A three-dimensional spherical mesh
 /// generator. Geophysical Journal International, 130(1), pp.193-200.
 template <typename T>
-VolumeMesh<T> MakeCylinderMesh(const Cylinder& cylinder, int refinement_level,
-                               int smoothing_level) {
+VolumeMesh<T> MakeCylinderMesh(const Cylinder& cylinder, int refinement_level) {
   const double height = cylinder.get_length();
   const double radius = cylinder.get_radius();
 
   DRAKE_THROW_UNLESS(refinement_level >= 0);
-  DRAKE_THROW_UNLESS(smoothing_level >= 0);
 
   std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>> pair =
       MakeCylinderMeshLevel0<T>(height, radius);
@@ -528,14 +455,6 @@ VolumeMesh<T> MakeCylinderMesh(const Cylinder& cylinder, int refinement_level,
     mesh = split_pair.first;
     is_boundary = split_pair.second;
     DRAKE_DEMAND(mesh.vertices().size() == is_boundary.size());
-  }
-
-  if (smoothing_level > 0) {
-    auto smooth_pair =
-        LaplacianSmoothingInterior(mesh, is_boundary, smoothing_level);
-
-    mesh = smooth_pair.first;
-    is_boundary = smooth_pair.second;
   }
 
   return std::move(mesh);
