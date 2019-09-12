@@ -1,6 +1,7 @@
 #include "drake/math/bspline_trajectory.h"
 
 #include <algorithm>
+#include <utility>
 
 #include <fmt/format.h>
 
@@ -14,32 +15,10 @@ using drake::trajectories::Trajectory;
 
 namespace drake {
 namespace math {
-namespace {
-template <typename T, typename T_input>
-std::vector<MatrixX<T>> CastControlPoints(
-    const std::vector<MatrixX<T_input>>& control_points) {
-  std::vector<MatrixX<T>> control_points_cast;
-  std::transform(control_points.begin(), control_points.end(),
-                 std::back_inserter(control_points_cast),
-                 [](const MatrixX<T_input>& var) -> MatrixX<T> {
-                   return var.template cast<T>();
-                 });
-  return control_points_cast;
-}
-}  // namespace
-
 template <typename T>
-BsplineTrajectory<T>::BsplineTrajectory(
-    const BsplineBasis<double>& basis,
-    const std::vector<MatrixX<T>>& control_points)
-    : basis_(basis), control_points_(control_points) {}
-
-template <typename T>
-template <typename T_input>
-BsplineTrajectory<T>::BsplineTrajectory(
-    const BsplineBasis<double>& basis,
-    const std::vector<MatrixX<T_input>>& control_points)
-    : BsplineTrajectory(basis, CastControlPoints<T>(control_points)) {}
+BsplineTrajectory<T>::BsplineTrajectory(BsplineBasis<double> basis,
+                                        std::vector<MatrixX<T>> control_points)
+    : basis_(std::move(basis)), control_points_(std::move(control_points)) {}
 
 template <typename T>
 MatrixX<T> BsplineTrajectory<T>::value(double time) const {
@@ -109,15 +88,14 @@ void BsplineTrajectory<T>::InsertKnots(
     const auto& t_bar = additional_knots.front();
     DRAKE_THROW_UNLESS(t.front() <= t_bar && t_bar <= t.back());
     const double& k = this->order();
-    // Find the knot index l (ell in code) such that t[l]  t_bar < t[l + 1].
-    const int ell = std::distance(
-        t.begin(), std::prev(std::lower_bound(t.begin(), t.end(), t_bar)));
+    // Find the knot index 𝑙 (ell in code) such that t[𝑙] ≤ t_bar < t[𝑙 + 1].
+    const int ell = basis().FindContainingInterval(t_bar);
     auto new_knots = t;
     new_knots.insert(std::next(new_knots.begin(), ell + 1), t_bar);
     std::vector<MatrixX<T>> new_control_points{this->control_points().front()};
     for (int i = 1; i < this->num_control_points(); ++i) {
       double a{0};
-      if (ell - k + 2 > i) {
+      if (i < ell - k + 2) {
         a = 1;
       } else if (i <= ell) {
         // Patrikalakis et al. have t[l + k - 1] in the denominator here ([1],
@@ -134,8 +112,11 @@ void BsplineTrajectory<T>::InsertKnots(
       new_control_points.push_back((1 - a) * control_points()[i - 1] +
                                    a * control_points()[i]);
     }
+    // Note that since a == 0 for i > ell in the loop above, the final control
+    // point from the original trajectory is never pushed back into
+    // new_control_points. Do that now.
     new_control_points.push_back(this->control_points().back());
-    control_points_ = new_control_points;
+    control_points_.swap(new_control_points);
     basis_ = BsplineBasis<double>(order(), new_knots);
   }
 }
@@ -167,10 +148,6 @@ math::BsplineTrajectory<T> BsplineTrajectory<T>::CopyBlock(
   });
 }
 
-/// Creates a math::BsplineTrajectory consisting of the first
-/// `n` elements of `original`.
-/// @returns the newly created math::BsplineTrajectory.
-/// @pre original.cols() == 1
 template <typename T>
 math::BsplineTrajectory<T> BsplineTrajectory<T>::CopyHead(int n) const {
   DRAKE_THROW_UNLESS(cols() == 1);
@@ -184,7 +161,5 @@ double BsplineTrajectory<T>::BasisFunctionValue(int index, double time) const {
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class BsplineTrajectory);
-template BsplineTrajectory<Expression>::BsplineTrajectory(
-    const BsplineBasis<double>& basis, const std::vector<MatrixX<Variable>>&);
 }  // namespace math
 }  // namespace drake
