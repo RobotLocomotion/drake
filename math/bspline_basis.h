@@ -54,29 +54,34 @@ class BsplineBasis final {
   /** Find the knot index 𝑙 (ell in code) such that t[𝑙] ≤ t_bar < t[𝑙 + 1]. */
   int FindContainingInterval(const T& parameter_value) const;
 
-  /** Implements the de Boor algorithm. Uses the notation from Patrikalakis et
-  al. [1]. Since the depth of recursion is known a-priori, the algorithm is
-  flattened along the lines described in [2] to avoid duplicate computations.
-
-   [1] https://web.mit.edu/hyperbook/Patrikalakis-Maekawa-Cho/node18.html
-   [2] De Boor, Carl. "On calculating with B-splines." Journal of
-       Approximation theory 6.1 (1972): 50-62.
-  @param control_points Control points of a B-spline curve. In the notation
-  of [1] this is p.
-  @param parameter_value Parameter value at which to evaluate the B-spline
-  curve defined by `this` and `control_points`. In the notation of [1] this
-  is \bar{t}. */
+  /** Evaluates the B-spline curve defined by `this` and `control_points` at the
+  given `parameter_value`.
+  @pre control_points.size() == this->num_control_points()
+  */
   template <typename T_control_point>
-  T_control_point DeBoor(const std::vector<T_control_point>& control_points,
-                         T parameter_value) const {
+  T_control_point EvaluateCurve(
+      const std::vector<T_control_point>& control_points,
+      T parameter_value) const {
+    // This function implements the de Boor algorithm. It uses the notation
+    // from Patrikalakis et al. [1]. Since the depth of recursion is known
+    // a-priori, the algorithm is flattened along the lines described in [2] to
+    // avoid duplicate computations.
+
+    //  [1] https://web.mit.edu/hyperbook/Patrikalakis-Maekawa-Cho/node18.html
+    //  [2] De Boor, Carl. "On calculating with B-splines." Journal of
+    //      Approximation theory 6.1 (1972): 50-62.
+    // @param control_points Control points of a B-spline curve. In the notation
+    // of [1] this is p.
+    // @param parameter_value Parameter value at which to evaluate the B-spline
+    // curve defined by `this` and `control_points`. In the notation of [1] this
+    // is \bar{t}.
+
     // NOTE: The implementation of this method is included in the header so that
     // it can be used with custom values of T_control_point.
-    using std::max;
-    using std::min;
+
     // Define short names to match notation in [1].
     const std::vector<T>& t = knots();
-    const T t_bar = min(max(parameter_value, initial_parameter_value()),
-                        final_parameter_value());
+    const T t_bar = parameter_value;
     const int& k = order();
 
     // Find the knot index 𝑙 (ell in code) such that t[𝑙] ≤ t_bar < t[𝑙 + 1].
