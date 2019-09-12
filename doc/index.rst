@@ -24,23 +24,37 @@ Core Library
 
 .. raw:: html
 
-    <table align="center" style="border-spacing: 50px">
+    <table align="center">
         <tr>
-            <td style="text-align:center;vertical-align:top" width="200px" height="150px">
-                <a href="https://drake.mit.edu/doxygen_cxx/group__systems.html">Modeling Dynamical Systems</a>
-                <p/>
+            <td style="text-align:center" width="220px">
+                Modeling Dynamical Systems
+            </td>
+            <td style="text-align:center"  width="220px">
+                Solving Mathematical Programs
+            <td style="text-align:center"  width="220px">
+                Multibody Kinematics and Dynamics
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align:center">
                 <img src="_images/systems.svg" width="195px"/>
             </td>
-            <td style="text-align:center;vertical-align:top" width="200px">
-                <a target="_mathematical_program" href="https://nbviewer.jupyter.org/github/RobotLocomotion/drake/blob/master/tutorials/mathematical_program.ipynb">
-                Solving Mathematical Programs</a>
-                <p/>
+            <td style="text-align:center">
                 <img src="_images/mathematical_program.svg" width="150px"/>
             </td>
-            <td style="text-align:center;vertical-align:top" width="200px">
-                <a href="https://drake.mit.edu/doxygen_cxx/group__multibody.html">Multibody Kinematics and Dynamics</a>
-                <p/>
+            <td style="text-align:center">
                 <img src="https://github.com/caelan/pddlstream/raw/d0eb256e88b8b5174fbd136a82867fd9e9cebc67/images/drake_kuka.png" width="195px"/>
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align:center">
+                <a target="_doc" href="https://drake.mit.edu/doxygen_cxx/group__systems.html">doc</a> | <a target="_tutorial" href="https://nbviewer.jupyter.org/github/RobotLocomotion/drake/blob/master/tutorials/dynamical_systems.ipynb">tutorial</a>
+            </td>
+            <td style="text-align:center">
+                <a target="_doc" href="https://drake.mit.edu/doxygen_cxx/group__solvers.html">doc</a> | <a target="_tutorial" href="https://nbviewer.jupyter.org/github/RobotLocomotion/drake/blob/master/tutorials/mathematical_program.ipynb">tutorial</a>
+            </td>
+            <td style="text-align:center">
+                <a target="_doc" href="https://drake.mit.edu/doxygen_cxx/group__multibody.html">doc</a>
             </td>
         </tr>
     </table>
@@ -91,14 +105,15 @@ Next steps
 .. toctree::
    :maxdepth: 1
 
-   installation
    gallery
-   getting_help
+   installation
+   Tutorials <https://nbviewer.jupyter.org/github/RobotLocomotion/drake/tree/master/tutorials/>
    API Documentation (C++) <doxygen_cxx/index.html#://>
    API Documentation (Python) <pydrake/index.html#://>
-   GitHub <https://github.com/RobotLocomotion/drake>
+   getting_help
    developers
    credits
+   GitHub <https://github.com/RobotLocomotion/drake>
 
 
 ********************************************
