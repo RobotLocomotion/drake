@@ -27,7 +27,7 @@ def _transform(line, definitions):
     match = _cmakedefine.match(line)
     if match:
         blank, maybe01, var, rest, newline = match.groups()
-        defined = var in definitions
+        defined = definitions.get(var) is not None
         if maybe01:
             return blank + '#define ' + var + [' 0', ' 1'][defined] + newline
         elif defined:
@@ -52,9 +52,11 @@ def _transform(line, definitions):
             var = xvarx[1:-1]
         assert len(var) > 0
 
+        if var not in definitions:
+            raise KeyError('Missing definition for ' + var)
         value = definitions.get(var)
         if value is None:
-            raise KeyError('Missing definition for ' + var)
+            break
         line = before + value + after + newline
 
     return line
@@ -90,6 +92,9 @@ def _setup_definitions(args):
         else:
             result[item] = 1
 
+    for item in args.undefines:
+        result[item] = None
+
     for filename in args.cmakelists:
         with open(filename, 'r') as cmakelist:
             for line in cmakelist.readlines():
@@ -105,6 +110,8 @@ def main():
     parser.add_argument('--output', metavar='FILE')
     parser.add_argument(
         '-D', metavar='NAME', dest='defines', action='append', default=[])
+    parser.add_argument(
+        '-U', metavar='NAME', dest='undefines', action='append', default=[])
     parser.add_argument(
         '--cmakelists', action='append', default=[])
     args = parser.parse_args()
