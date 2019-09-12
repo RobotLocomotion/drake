@@ -5,6 +5,7 @@
 
 #include "drake/common/proto/call_python.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/trajectories/trajectory.h"
 #include "drake/math/compute_numerical_gradient.h"
 
 DEFINE_bool(visualize, false,
@@ -12,6 +13,9 @@ DEFINE_bool(visualize, false,
 
 namespace drake {
 namespace math {
+
+using trajectories::Trajectory;
+
 namespace {
 MatrixX<double> NaiveBsplineTrajectoryValue(
     const BsplineTrajectory<double>& trajectory, double parameter_value) {
@@ -88,8 +92,8 @@ GTEST_TEST(BsplineTrajectoryTests, ValueTest) {
   }
 }
 
-// Verifies that Derivative() works as expected.
-GTEST_TEST(BsplineTrajectoryTests, DerivativeTest) {
+// Verifies that MakeDerivative() works as expected.
+GTEST_TEST(BsplineTrajectoryTests, MakeDerivativeTest) {
   const int order = 4;
   const int num_control_points = 11;
   const int rows = 2;
@@ -109,8 +113,9 @@ GTEST_TEST(BsplineTrajectoryTests, DerivativeTest) {
         BsplineBasis<double>{order, num_control_points, knot_vector_type},
         control_points};
 
-    // Verify that Derivative() returns the expected results.
-    BsplineTrajectory<double> derivative_trajectory = trajectory.Derivative();
+    // Verify that MakeDerivative() returns the expected results.
+    std::unique_ptr<Trajectory<double>> derivative_trajectory =
+        trajectory.MakeDerivative();
     std::function<void(const Vector1<double>&, VectorX<double>*)> calc_value =
         [&trajectory](const Vector1<double> t, VectorX<double>* value) {
           *value = trajectory.value(t(0));
@@ -119,7 +124,7 @@ GTEST_TEST(BsplineTrajectoryTests, DerivativeTest) {
     VectorX<double> t = VectorX<double>::LinSpaced(
         num_times, trajectory.start_time(), trajectory.end_time());
     for (int k = 0; k < num_times; ++k) {
-      MatrixX<double> derivative = derivative_trajectory.value(t(k));
+      MatrixX<double> derivative = derivative_trajectory->value(t(k));
       // To avoid evaluating the B-spline trajectory outside of its domain, we
       // use forward/backward finite differences at the start/end points.
       NumericalGradientMethod method = NumericalGradientMethod::kCentral;

@@ -70,9 +70,6 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   @pre this->knots.front() <= t <= this->knots().back() for all t in `times` */
   void InsertKnots(const std::vector<double>& times);
 
-  /** Returns the derivative of this trajectory as a B-spline trajectory */
-  BsplineTrajectory<T> Derivative(int derivative_order = 1) const;
-
   bool operator==(const BsplineTrajectory<T>& other) const;
 
   math::BsplineTrajectory<T> CopyWithSelector(
