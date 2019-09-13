@@ -17,6 +17,18 @@ using Eigen::Vector3d;
 
 namespace drake {
 namespace multibody {
+
+class MultibodyPlantTester {
+ public:
+  MultibodyPlantTester() = delete;
+
+  static const std::vector<SpatialForce<double>>& EvalHydroelasticContactForces(
+      const MultibodyPlant<double>& plant,
+      const systems::Context<double>& context) {
+    return plant.EvalHydroelasticContactForces(context);
+  }
+};
+
 namespace {
 
 // This fixture sets up a MultibodyPlant model of a compliant sphere and a rigid
@@ -152,8 +164,8 @@ TEST_F(HydroelasticModelTests, ContactForce) {
   auto calc_force = [this](double penetration) -> double {
     SetPose(penetration);
     const auto& F_BBo_W_array =
-        plant_->get_body_contact_forces_output_port()
-            .Eval<std::vector<SpatialForce<double>>>(*plant_context_);
+        MultibodyPlantTester::EvalHydroelasticContactForces(*plant_,
+                                                            *plant_context_);
     const SpatialForce<double>& F_BBo_W = F_BBo_W_array[body_->index()];
     return F_BBo_W.translational()[2];  // Normal force.
   };

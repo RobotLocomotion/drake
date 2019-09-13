@@ -1986,17 +1986,6 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                 {contact_results_cache_entry.ticket()})
             .get_index();
   }
-
-  // Body forces output port currently only supported for the hydroelastic
-  // model.
-  if (uses_hydroelastic_model()) {
-    contact_forces_port_ =
-        this->DeclareAbstractOutputPort(
-                "body_contact_forces", std::vector<SpatialForce<T>>(),
-                &MultibodyPlant<T>::CalcHydroelasticContactForces,
-                {this->kinematics_ticket()})
-            .get_index();
-  }
 }
 
 template <typename T>
@@ -2098,6 +2087,28 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
         {this->cache_entry_ticket(
             cache_indexes_.implicit_stribeck_solver_results)});
     cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
+  }
+
+  // Cache entry for spatial forces due to hydroelastic contact.
+  if (uses_hydroelastic_model()) {
+    auto& hydro_forces_cache_entry = this->DeclareCacheEntry(
+        std::string("Hydroelastic spatial forces (F_Bo_W)."),
+        [this]() {
+          return AbstractValue::Make(
+              std::vector<SpatialForce<T>>(this->num_bodies()));
+        },
+        [this](const systems::ContextBase& context_base,
+               AbstractValue* cache_value) {
+          auto& context = dynamic_cast<const Context<T>&>(context_base);
+          auto& hydro_forces_cache =
+              cache_value->get_mutable_value<std::vector<SpatialForce<T>>>();
+          this->CalcHydroelasticContactForces(context, &hydro_forces_cache);
+        },
+        // Compliant contact forces due to hydroelastics with Hunt & Crosseley
+        // are function of the kinematic variables q & v only.
+        {this->kinematics_ticket()});
+    cache_indexes_.hydro_contact_forces =
+        hydro_forces_cache_entry.cache_index();
   }
 }
 
@@ -2218,15 +2229,6 @@ const systems::OutputPort<T>&
 MultibodyPlant<T>::get_contact_results_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   return this->get_output_port(contact_results_port_);
-}
-
-template <typename T>
-const systems::OutputPort<T>&
-MultibodyPlant<T>::get_body_contact_forces_output_port() const {
-  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  DRAKE_THROW_UNLESS(use_hydroelastic_model_);
-  DRAKE_THROW_UNLESS(!is_discrete());
-  return this->get_output_port(contact_forces_port_);
 }
 
 namespace {

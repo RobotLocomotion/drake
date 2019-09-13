@@ -2963,14 +2963,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///          `is_discrete() == false`).
   const systems::OutputPort<T>& get_contact_results_output_port() const;
 
-  // TODO(amcastro-tri): Add support for point contact to this port.
-  /// Returns a constant reference to a port with value type of
-  /// std::vector<SpatialForce<T>> with each SpatialForce entry indexed by
-  /// BodyIndex corresponding to the spatial force `F_BBo_W` on the
-  /// corresponding body with frame B, about its origin Bo and expressed in the
-  /// world frame W.
-  const systems::OutputPort<T>& get_body_contact_forces_output_port() const;
-
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& world_body() const {
     return internal_tree().world_body();
@@ -3318,6 +3310,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   struct CacheIndexes {
     systems::CacheIndex contact_jacobians;
     systems::CacheIndex contact_results;
+    systems::CacheIndex hydro_contact_forces;
     systems::CacheIndex implicit_stribeck_solver_results;
     systems::CacheIndex point_pairs;
   };
@@ -3584,6 +3577,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void CalcHydroelasticContactForces(
       const systems::Context<T>& context,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
+
+  // Eval version of CalcHydroelasticContactForces().
+  const std::vector<SpatialForce<T>>& EvalHydroelasticContactForces(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.hydro_contact_forces)
+        .template Eval<std::vector<SpatialForce<T>>>(context);
+  }
 
   // Helper method to add the contribution of external actuation forces to the
   // set of multibody `forces`. External actuation is applied through the
