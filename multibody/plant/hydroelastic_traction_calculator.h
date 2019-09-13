@@ -96,11 +96,13 @@ class HydroelasticTractionCalculator {
    @param mu_coulomb the nonnegative coefficient for Coulomb friction.
    @param[output] F_Ao_W the spatial force on Body A, on return.
    @param[output] F_Bo_W the spatial force on Body B, on return.
+   @param[output] F_Ac_W the spatial force on Body A applied at the centroid of
+   the contact surface C, expressed in the world frame W.
    */
   void ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-       const Data& data, double dissipation, double mu_coulomb,
-       multibody::SpatialForce<T>* F_Ao_W,
-       multibody::SpatialForce<T>* F_Bo_W) const;
+      const Data& data, double dissipation, double mu_coulomb,
+      multibody::SpatialForce<T>* F_Ao_W, multibody::SpatialForce<T>* F_Bo_W,
+      SpatialForce<T>* F_Ac_W) const;
 
   /**
    Computes reporting information from the hydroelastic model.

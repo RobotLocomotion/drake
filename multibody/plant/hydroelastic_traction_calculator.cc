@@ -26,11 +26,11 @@ namespace internal {
 
 template <class T>
 void HydroelasticTractionCalculator<T>::
-ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-    const Data& data,
-    double dissipation, double mu_coulomb,
-    SpatialForce<T>* F_Ao_W, SpatialForce<T>* F_Bo_W) const {
-  DRAKE_DEMAND(F_Ao_W && F_Bo_W);
+    ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+        const Data& data, double dissipation, double mu_coulomb,
+        SpatialForce<T>* F_Ao_W, SpatialForce<T>* F_Bo_W,
+        SpatialForce<T>* F_Ac_W) const {
+  DRAKE_DEMAND(F_Ao_W && F_Bo_W && F_Ac_W);
 
   // Use a second-order Gaussian quadrature rule. For linear pressure fields,
   // the second-order rule allows exact computation (to floating point error)
@@ -44,8 +44,7 @@ ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
 
   // We'll be accumulating force on body A at the surface centroid C,
   // triangle-by-triangle.
-  SpatialForce<T> F_Ac_W;
-  F_Ac_W.SetZero();
+  F_Ac_W->SetZero();
 
   // Integrate the tractions over all triangles in the contact surface.
   for (SurfaceFaceIndex i(0); i < data.surface.mesh_W().num_faces(); ++i) {
@@ -68,7 +67,7 @@ ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
             traction_Ac_W, gaussian, data.surface.mesh_W().area(i));
 
     // Update the spatial force at body A's origin.
-    F_Ac_W += Fi_Ac_W;
+    *F_Ac_W += Fi_Ac_W;
   }
 
   // The spatial force on body A was accumulated at the surface centroid C. We
@@ -80,8 +79,8 @@ ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
   const Vector3<T> p_CAo_W = p_WAo - p_WC;
   const Vector3<T> p_CBo_W = p_WBo - p_WC;
 
-  *F_Ao_W = F_Ac_W.Shift(p_CAo_W);
-  *F_Bo_W = -(F_Ac_W.Shift(p_CBo_W));
+  *F_Ao_W = F_Ac_W->Shift(p_CAo_W);
+  *F_Bo_W = -(F_Ac_W->Shift(p_CBo_W));
 }
 
 // Computes the spatial force on body A acting at a point Ac coincident with

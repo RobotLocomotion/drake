@@ -1322,7 +1322,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     return d_star;
   };
 
-  SpatialForce<T> F_Ao_W, F_Bo_W;
+  SpatialForce<T> F_Ao_W, F_Bo_W, F_Ac_W;
   for (const ContactSurface<T>& surface : all_surfaces) {
     const GeometryId geometryM_id = surface.id_M();
     const GeometryId geometryN_id = surface.id_N();
@@ -1376,9 +1376,6 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     // Dissipation must be positive. It can be zero.
     const double dissipation = combine_dissipation(Estar, Em, En, dm, dn);
 
-    // Get the transform of the geometry for M to the world frame.
-    const RigidTransform<T> X_WM = query_object.X_WG(surface.id_M());
-
     // Get the bodies that the two geometries are affixed to. We'll call these
     // A and B.
     const BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryM_id);
@@ -1394,10 +1391,10 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
 
     // Pack everything for the calculator needs.
     typename internal::HydroelasticTractionCalculator<T>::Data data(
-        X_WA, X_WB, V_WA, V_WB, X_WM, &surface);
+        X_WA, X_WB, V_WA, V_WB, &surface);
 
     traction_calculator.ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-        data, dissipation, static_friction, &F_Ao_W, &F_Bo_W);
+        data, dissipation, static_friction, &F_Ao_W, &F_Bo_W, &F_Ac_W);
 
     if (bodyA_index != world_index()) {
       F_BBo_W_array->at(bodyA_index) += F_Ao_W;
@@ -1997,7 +1994,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
         this->DeclareAbstractOutputPort(
                 "body_contact_forces", std::vector<SpatialForce<T>>(),
                 &MultibodyPlant<T>::CalcHydroelasticContactForces,
-                {this->configuration_ticket()})
+                {this->kinematics_ticket()})
             .get_index();
   }
 }
