@@ -681,14 +681,14 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
     set_stiction_tolerance();
   // Make a contact solver when the plant is modeled as a discrete system.
   if (is_discrete()) {
-    implicit_stribeck_solver_ =
+    tamsi_solver_ =
         std::make_unique<TAMSISolver<T>>(num_velocities());
     // Set the stiction tolerance according to the values set by users with
     // set_stiction_tolerance().
     TAMSISolverParameters solver_parameters;
     solver_parameters.stiction_tolerance =
         stribeck_model_.stiction_tolerance();
-    implicit_stribeck_solver_->set_solver_parameters(solver_parameters);
+    tamsi_solver_->set_solver_parameters(solver_parameters);
   }
   SetUpJointLimitsParameters();
 }
@@ -1486,23 +1486,23 @@ TAMSISolverResult MultibodyPlant<T>::SolveUsingSubStepping(
     VectorX<T> p_star_substep = M0 * v0_substep - dt_substep * minus_tau;
 
     // Update the data.
-    implicit_stribeck_solver_->SetTwoWayCoupledProblemData(
+    tamsi_solver_->SetTwoWayCoupledProblemData(
         &M0, &Jn, &Jt,
         &p_star_substep, &phi0_substep,
         &stiffness, &damping, &mu);
 
-    info = implicit_stribeck_solver_->SolveWithGuess(dt_substep,
+    info = tamsi_solver_->SolveWithGuess(dt_substep,
                                                      v0_substep);
 
     // Break the sub-stepping loop on failure and return the info result.
     if (info != TAMSISolverResult::kSuccess) break;
 
     // Update previous time step to new solution.
-    v0_substep = implicit_stribeck_solver_->get_generalized_velocities();
+    v0_substep = tamsi_solver_->get_generalized_velocities();
 
     // Update penetration distance consistently with the solver update.
     const auto vn_substep =
-        implicit_stribeck_solver_->get_normal_velocities();
+        tamsi_solver_->get_normal_velocities();
     phi0_substep = phi0_substep - dt_substep * vn_substep;
   }
 
@@ -1614,11 +1614,11 @@ void MultibodyPlant<T>::CalcImplicitStribeckResults(
       TAMSISolverResult::kMaxIterationsReached};
 
   TAMSISolverParameters params =
-      implicit_stribeck_solver_->get_solver_parameters();
+      tamsi_solver_->get_solver_parameters();
   // A nicely converged NR iteration should not take more than 20 iterations.
   // Otherwise we attempt a smaller time step.
   params.max_iterations = 20;
-  implicit_stribeck_solver_->set_solver_parameters(params);
+  tamsi_solver_->set_solver_parameters(params);
 
   // We attempt to compute the update during the time interval dt using a
   // progressively larger number of sub-steps (i.e each using a smaller time
@@ -1643,13 +1643,13 @@ void MultibodyPlant<T>::CalcImplicitStribeckResults(
   // file for analysis.
 
   // Update the results.
-  results->v_next = implicit_stribeck_solver_->get_generalized_velocities();
-  results->fn = implicit_stribeck_solver_->get_normal_forces();
-  results->ft = implicit_stribeck_solver_->get_friction_forces();
-  results->vn = implicit_stribeck_solver_->get_normal_velocities();
-  results->vt = implicit_stribeck_solver_->get_tangential_velocities();
+  results->v_next = tamsi_solver_->get_generalized_velocities();
+  results->fn = tamsi_solver_->get_normal_forces();
+  results->ft = tamsi_solver_->get_friction_forces();
+  results->vn = tamsi_solver_->get_normal_velocities();
+  results->vt = tamsi_solver_->get_tangential_velocities();
   results->tau_contact =
-      implicit_stribeck_solver_->get_generalized_contact_forces();
+      tamsi_solver_->get_generalized_contact_forces();
 }
 
 // TODO(amcastro-tri): Consider splitting this method into smaller pieces.
@@ -1803,8 +1803,8 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     if (instance_num_velocities == 0) {
       continue;
     }
-    const auto& implicit_stribeck_solver_results_cache_entry =
-        this->get_cache_entry(cache_indexes_.implicit_stribeck_solver_results);
+    const auto& tamsi_solver_results_cache_entry =
+        this->get_cache_entry(cache_indexes_.tamsi_solver_results);
     auto calc = [this, model_instance_index](const systems::Context<T>& context,
                                              systems::BasicVector<T>* result) {
       const internal::TAMSISolverResults<T>& solver_results =
@@ -1817,7 +1817,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                 internal_tree().GetModelInstanceName(model_instance_index) +
                     "_generalized_contact_forces",
                 BasicVector<T>(instance_num_velocities), calc,
-                {implicit_stribeck_solver_results_cache_entry.ticket()})
+                {tamsi_solver_results_cache_entry.ticket()})
             .get_index();
   }
 
@@ -1874,7 +1874,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       contact_jacobians_cache_entry.cache_index();
 
   // Cache TAMSISolver computations.
-  auto& implicit_stribeck_solver_cache_entry = this->DeclareCacheEntry(
+  auto& tamsi_solver_cache_entry = this->DeclareCacheEntry(
       std::string("Implicit Stribeck solver computations."),
       []() {
         return AbstractValue::Make(
@@ -1883,10 +1883,10 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       [this](const systems::ContextBase& context_base,
              AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
-        auto& implicit_stribeck_solver_cache = cache_value->get_mutable_value<
+        auto& tamsi_solver_cache = cache_value->get_mutable_value<
             internal::TAMSISolverResults<T>>();
         this->CalcImplicitStribeckResults(context,
-                                          &implicit_stribeck_solver_cache);
+                                          &tamsi_solver_cache);
       },
       // The Correct Solution:
       // The Implicit Stribeck solver solution S is a function of state x,
@@ -1910,8 +1910,8 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // discrete update of these values as if zero-order held, which is what we
       // want.
       {this->xd_ticket()});
-  cache_indexes_.implicit_stribeck_solver_results =
-      implicit_stribeck_solver_cache_entry.cache_index();
+  cache_indexes_.tamsi_solver_results =
+      tamsi_solver_cache_entry.cache_index();
 
   // Cache contact results.
   auto& contact_results_cache_entry = this->DeclareCacheEntry(
@@ -1927,7 +1927,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // We explicitly declare the dependence on the implicit Stribeck solver
       // even though the Eval() above does the evaluation.
       {this->cache_entry_ticket(
-          cache_indexes_.implicit_stribeck_solver_results)});
+          cache_indexes_.tamsi_solver_results)});
   cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
 }
 

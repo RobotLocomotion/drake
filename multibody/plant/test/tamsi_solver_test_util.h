@@ -93,9 +93,9 @@ VectorX<U> CalcFrictionForces(
   return ft;
 }
 
-// Computes and returns the Newton-Raphson residual for the implicit Stribeck
-// solver. This templated method is used to automatically differentiate the
-// residual and compute its Jacobian J = ∇ᵥR.
+// Computes and returns the Newton-Raphson residual for the TAMSI solver. This
+// templated method is used to automatically differentiate the residual and
+// compute its Jacobian J = ∇ᵥR.
 // This same method is used to evaluate the residual for both the one-way (
 // normal forces are fixed) and two-way coupled schemes. two_way_coupling = true
 // indicates to compute the residual for the two-way coupled scheme. Call with

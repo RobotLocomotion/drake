@@ -21,8 +21,8 @@
 #include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
-#include "drake/multibody/plant/implicit_stribeck_solver.h"
-#include "drake/multibody/plant/implicit_stribeck_solver_results.h"
+#include "drake/multibody/plant/tamsi_solver.h"
+#include "drake/multibody/plant/tamsi_solver_results.h"
 #include "drake/multibody/topology/multibody_graph.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
@@ -3131,12 +3131,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     // modeled as a discrete system, we must update the solver's stiction
     // parameter. Pre-Finalize the solver is not yet created and therefore we
     // check for nullptr.
-    if (is_discrete() && implicit_stribeck_solver_ != nullptr) {
+    if (is_discrete() && tamsi_solver_ != nullptr) {
       TAMSISolverParameters solver_parameters =
-          implicit_stribeck_solver_->get_solver_parameters();
+          tamsi_solver_->get_solver_parameters();
       solver_parameters.stiction_tolerance =
           stribeck_model_.stiction_tolerance();
-      implicit_stribeck_solver_->set_solver_parameters(solver_parameters);
+      tamsi_solver_->set_solver_parameters(solver_parameters);
     }
   }
   /// @}
@@ -3200,7 +3200,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   struct CacheIndexes {
     systems::CacheIndex contact_jacobians;
     systems::CacheIndex contact_results;
-    systems::CacheIndex implicit_stribeck_solver_results;
+    systems::CacheIndex tamsi_solver_results;
     systems::CacheIndex point_pairs;
   };
 
@@ -3345,7 +3345,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const internal::TAMSISolverResults<T>& EvalImplicitStribeckResults(
       const systems::Context<T>& context) const {
     return this
-        ->get_cache_entry(cache_indexes_.implicit_stribeck_solver_results)
+        ->get_cache_entry(cache_indexes_.tamsi_solver_results)
         .template Eval<internal::TAMSISolverResults<T>>(context);
   }
 
@@ -3744,7 +3744,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   double time_step_{0};
 
   // The solver used when the plant is modeled as a discrete system.
-  std::unique_ptr<TAMSISolver<T>> implicit_stribeck_solver_;
+  std::unique_ptr<TAMSISolver<T>> tamsi_solver_;
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;

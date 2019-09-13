@@ -1,4 +1,4 @@
-#include "drake/multibody/plant/implicit_stribeck_solver_results.h"
+#include "drake/multibody/plant/tamsi_solver_results.h"
 
 #include "drake/common/default_scalars.h"
 
