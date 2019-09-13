@@ -79,7 +79,8 @@ class HydroelasticTractionCalculator {
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HydroelasticTractionCalculator)
 
-  HydroelasticTractionCalculator() {}
+  explicit HydroelasticTractionCalculator(double vslip_regularizer = 1e-6)
+      : vslip_regularizer_(vslip_regularizer) {}
 
   /**
    Gets the regularization parameter used for friction (in m/s). The closer
@@ -193,7 +194,7 @@ class HydroelasticTractionCalculator {
       const Vector3<T>& traction_Aq_W) const;
 
   // The parameter (in m/s) for regularizing the Coulomb friction model.
-  double vslip_regularizer_{1e-6};
+  double vslip_regularizer_;
 };
 
 }  // namespace internal
