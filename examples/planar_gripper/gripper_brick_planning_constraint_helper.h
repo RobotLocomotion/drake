@@ -76,9 +76,9 @@ Vector3<AutoDiffXd> ComputeFingerTipInBrickFrame(
  * @param rolling_angle_bound The non-negative bound on the rolling angle (in
  * radians).
  * @param prog The optimization program to which the constraint is added.
- * @param from_context The context that constains posture of the plant, before
- * rolling occurs.
- * @param to_context The context that constains posture of the plant, after
+ * @param from_context The context that contains the posture of the plant,
+ * before rolling occurs.
+ * @param to_context The context that contains the posture of the plant, after
  * rolling occurs.
  * @param q_from The variable representing the "from" posture.
  * @param q_to The variable representing the "to" posture.
@@ -94,10 +94,11 @@ void AddFingerNoSlidingConstraint(
 
 /**
  * Impose the kinematic constraint that the finger can only roll (or stick)
- * starting from a given fixed posture. The relative angle between finger link 2
- * and the +z axis is limited to be within rolling_angle_upper and
- * rolling_angle_lower. If you want to impose sticking contact (no rolling),
- * then set rolling_angle_lower = rolling_angle_upper = 0.
+ * starting from a given fixed posture. The change of angle (from starting
+ * posture to the ending posture) between finger link 2 and the +z axis is
+ * limited to be within rolling_angle_upper and rolling_angle_lower. If you want
+ * to impose sticking contact (no rolling), then set rolling_angle_lower =
+ * rolling_angle_upper = 0.
  * @param gripper_brick Contains the gripper brick diagram.
  * @param finger The finger that should not slide.
  * @param face The brick face that the finger sticks to (or rolls on).
