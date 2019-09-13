@@ -185,15 +185,15 @@ enum class TAMSISolverResult {
 /// These are the parameters controlling the iteration process of the
 /// TAMSISolver solver.
 struct TAMSISolverParameters {
-  /// The stiction tolerance vₛ for the slip velocity in the Stribeck
-  /// function, in m/s. Roughly, for an externally applied tangential forcing
-  /// fₜ and normal force fₙ, under "stiction", the slip velocity will be
-  /// approximately vₜ ≈ vₛ fₜ/(μfₙ). In other words, the maximum slip
-  /// error of the Stribeck approximation occurs at the edge of the friction
-  /// cone when fₜ = μfₙ and vₜ = vₛ.
-  /// The default of 0.1 mm/s is a very tight value that for most problems of
-  /// interest in robotics will result in simulation results with negligible
-  /// slip velocities introduced by the Stribeck approximation when in stiction.
+  /// The stiction tolerance vₛ for the slip velocity in the regularized
+  /// friction function, in m/s. Roughly, for an externally applied tangential
+  /// forcing fₜ and normal force fₙ, under "stiction", the slip velocity will
+  /// be approximately vₜ ≈ vₛ fₜ/(μfₙ). In other words, the maximum slip error
+  /// of the regularized friction approximation occurs at the edge of the
+  /// friction cone when fₜ = μfₙ and vₜ = vₛ. The default of 0.1 mm/s is a very
+  /// tight value that for most problems of interest in robotics will result in
+  /// simulation results with negligible slip velocities introduced by
+  /// regularizing friction when in stiction.
   double stiction_tolerance{1.0e-4};  // 0.1 mm/s
 
   /// The maximum number of iterations allowed for the Newton-Raphson
@@ -206,7 +206,7 @@ struct TAMSISolverParameters {
   /// relative to the value of the stiction_tolerance is necessary in order
   /// to capture transitions to stiction that would require an accuracy in the
   /// value of the tangential velocities smaller than that of the
-  /// "Stribeck stiction region" (the circle around the origin with radius
+  /// "stiction region" (the circle around the origin with radius
   /// stiction_tolerance).
   /// A value close to one could cause the solver to miss transitions from/to
   /// stiction. Small values approaching zero will result in a higher number of
@@ -267,9 +267,9 @@ struct TAMSISolverIterationStats {
   std::vector<double> residuals;
 };
 
-/** @anchor implicit_stribeck_class_intro
+/** @anchor tamsi_class_intro
 %TAMSISolver solves the equations below for mechanical systems
-with contact using a modified Stribeck model of friction:
+with contact using regularized friction:
 @verbatim
             q̇ = N(q) v
   (1)  M(q) v̇ = τ + Jₙᵀ(q) fₙ(q, v) + Jₜᵀ(q) fₜ(q, v)
@@ -285,11 +285,10 @@ This solver assumes a compliant law for the normal forces `fₙ(q, v)` and
 therefore the functional dependence of `fₙ(q, v)` with q and v is stated
 explicitly.
 
-Since %TAMSISolver uses a modified Stribeck model for friction,
-we explicitly emphasize the functional dependence of `fₜ(q, v)` with the
-generalized velocities. The functional dependence of `fₜ(q, v)` with the
-generalized positions stems from its direct dependence with the normal
-forces `fₙ(q, v)`.
+Since %TAMSISolver uses regularized friction, we explicitly emphasize the
+functional dependence of `fₜ(q, v)` with the generalized velocities. The
+functional dependence of `fₜ(q, v)` with the generalized positions stems from
+its direct dependence with the normal forces `fₙ(q, v)`.
 
 %TAMSISolver implements two different schemes. A "one-way
 coupling scheme" which solves for the friction forces given the normal
@@ -676,7 +675,7 @@ class TAMSISolver {
   /// Returns a constant reference to the most recent vector of friction forces.
   /// These friction forces are defined in accordance to the tangential
   /// velocities Jacobian Jₜ as documented in
-  /// @ref implicit_stribeck_class_intro "this class's documentation".
+  /// @ref tamsi_class_intro "this class's documentation".
   Eigen::VectorBlock<const VectorX<T>> get_friction_forces() const {
     return variable_size_workspace_.ft();
   }
@@ -1013,7 +1012,7 @@ class TAMSISolver {
       return v_slip_.segment(0, nc_);
     }
 
-    // Returns a mutable reference to the vector containing the stribeck
+    // Returns a mutable reference to the vector containing the regularized
     // friction, function of the slip velocity, at each contact point, of
     // size nc.
     Eigen::VectorBlock<VectorX<T>> mutable_mu() {
@@ -1044,7 +1043,7 @@ class TAMSISolver {
     VectorX<T> x_;         // xˢ⁺¹ = xˢ − δt vₙˢ
     VectorX<T> t_hat_;     // Tangential directions, t̂ᵏ. In ℝ²ⁿᶜ.
     VectorX<T> v_slip_;    // vₛᵏ = ‖vₜᵏ‖, in ℝⁿᶜ.
-    VectorX<T> mus_;       // (modified) Stribeck friction, in ℝⁿᶜ.
+    VectorX<T> mus_;       // (modified) regularized friction, in ℝⁿᶜ.
     // Vector of size nc storing ∂fₜ/∂vₜ (in ℝ²ˣ²) for each contact point.
     std::vector<Matrix2<T>> dft_dv_;
     MatrixX<T> Gn_;        // ∇ᵥfₙ(xˢ⁺¹, vₙˢ⁺¹), in ℝⁿᶜˣⁿᵛ
@@ -1073,13 +1072,13 @@ class TAMSISolver {
 
   // Helper to compute fₜ(vₜ) = −vₜ/‖vₜ‖ₛ μ(‖vₜ‖ₛ) fₙ, where ‖vₜ‖ₛ
   // is the "soft norm" of vₜ. In addition this method computes
-  // v_slip = ‖vₜ‖ₛ, t_hat = vₜ/‖vₜ‖ₛ and mu_stribeck = μ(‖vₜ‖ₛ).
+  // v_slip = ‖vₜ‖ₛ, t_hat = vₜ/‖vₜ‖ₛ and mu_regularized = μ(‖vₜ‖ₛ).
   void CalcFrictionForces(
       const Eigen::Ref<const VectorX<T>>& vt,
       const Eigen::Ref<const VectorX<T>>& fn,
       EigenPtr<VectorX<T>> v_slip,
       EigenPtr<VectorX<T>> t_hat,
-      EigenPtr<VectorX<T>> mu_stribeck,
+      EigenPtr<VectorX<T>> mu_regularized,
       EigenPtr<VectorX<T>> ft) const;
 
   // Helper to compute gradient dft_dvt = −∇ᵥₜfₜ(vₜ), as a function of the
@@ -1116,26 +1115,26 @@ class TAMSISolver {
   T CalcAlpha(const Eigen::Ref<const VectorX<T>>& vt,
               const Eigen::Ref<const VectorX<T>>& Delta_vt) const;
 
-  // Dimensionless modified Stribeck function defined as:
+  // Dimensionless regularized friction function defined as:
   // ms(s) = ⌈ mu * s * (2 − s),  s  < 1
   //         ⌊ mu              ,  s >= 1
   // where s corresponds to the dimensionless tangential speed
-  // s = ‖vᵏ‖ / vₛ, where vₛ is the Stribeck stiction tolerance.
-  // The solver uses this modified Stribeck function for two reasons:
+  // s = ‖vᵏ‖ / vₛ, where vₛ is the regularization parameter.
+  // The solver uses this continuous function for two reasons:
   //   1. Static and dynamic friction coefficients are the same. This avoids
   //      regions of negative slope. If the slope is always positive the
   //      implicit update is unconditionally stable.
   //   2. Non-zero derivative at s = 0 (zero slip velocity). This provides a
   //      good strong gradient in the neighborhood to zero slip velocities that
   //      aids in finding a good solution update.
-  static T ModifiedStribeck(const T& s, const T& mu);
+  static T RegularizedFriction(const T& s, const T& mu);
 
-  // Derivative of the dimensionless modified Stribeck function:
+  // Derivative of the dimensionless regularized friction function:
   // d/ds ms(s) = ⌈ mu * (2 * (1 − s)),  s  < 1
   //              ⌊ 0                 ,  s >= 1
   // where s corresponds to the dimensionless tangential speed
   // s = ‖v‖ / vₛ.
-  static T ModifiedStribeckDerivative(const T& speed_BcAc, const T& mu);
+  static T RegularizedFrictionDerivative(const T& speed_BcAc, const T& mu);
 
   int nv_;  // Number of generalized velocities.
   int nc_;  // Number of contact points.

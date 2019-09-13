@@ -58,7 +58,7 @@ VectorX<U> CalcFrictionForces(
   VectorX<U> t_hat(2 * nc);
   VectorX<U> v_slip(nc);
 
-  auto ModifiedStribeck = [](U x, double friction_coefficient) {
+  auto RegularizedFriction = [](U x, double friction_coefficient) {
     if (x >= 1) {
       return U(friction_coefficient);
     } else {
@@ -86,7 +86,7 @@ VectorX<U> CalcFrictionForces(
     // "soft" tangent vector:
     const Vector2<U> that_ic = vt_ic / v_slip(ic);
     t_hat.template segment<2>(ik) = that_ic;
-    mu_vt(ic) = ModifiedStribeck(v_slip(ic) / v_stiction, mu(ic));
+    mu_vt(ic) = RegularizedFriction(v_slip(ic) / v_stiction, mu(ic));
     // Friction force.
     ft.template segment<2>(ik) = -mu_vt(ic) * that_ic * fn(ic);
   }
