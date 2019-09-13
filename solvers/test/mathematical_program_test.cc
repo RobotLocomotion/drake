@@ -2792,6 +2792,19 @@ GTEST_TEST(TestMathematicalProgram, TestSolverOptions) {
   prog.SetSolverOption(solver_id, "string_name", "3");
   EXPECT_EQ(prog.GetSolverOptionsStr(solver_id).at("string_name"), "3");
   EXPECT_EQ(prog.GetSolverOptionsStr(wrong_solver_id).size(), 0);
+
+  const SolverId dummy_id("dummy_id");
+  SolverOptions dummy_options;
+  dummy_options.SetOption(dummy_id, "double_name", 10.0);
+  dummy_options.SetOption(dummy_id, "int_name", 20);
+  dummy_options.SetOption(dummy_id, "string_name", "30.0");
+  prog.SetSolverOptions(dummy_options);
+  EXPECT_EQ(prog.GetSolverOptionsDouble(dummy_id).at("double_name"), 10.0);
+  EXPECT_EQ(prog.GetSolverOptionsDouble(solver_id).size(), 0);
+  EXPECT_EQ(prog.GetSolverOptionsInt(dummy_id).at("int_name"), 20);
+  EXPECT_EQ(prog.GetSolverOptionsInt(solver_id).size(), 0);
+  EXPECT_EQ(prog.GetSolverOptionsStr(dummy_id).at("string_name"), "30.0");
+  EXPECT_EQ(prog.GetSolverOptionsStr(solver_id).size(), 0);
 }
 
 void CheckNewNonnegativePolynomial(

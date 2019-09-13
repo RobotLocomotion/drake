@@ -8,8 +8,8 @@ def stx_repository(
     github_archive(
         name = name,
         repository = "tcbrindle/cpp17_headers",
-        commit = "4f82af87fd97969a89ed0018ae72e5dacc8d308a",
-        sha256 = "7544aa3af121be49672e7dd227a4753bf063a10abda5c4cab9c094d423b6635e",  # noqa
+        commit = "6d8157a06159e49b90a23c6405598de4a017a86c",
+        sha256 = "6d9752c7f5ba4d31ac8c859d3787b04ffcb8321b874db8497e76d973145e2768",  # noqa
         build_file = "@drake//tools/workspace/stx:package.BUILD.bazel",
         mirrors = mirrors,
     )

@@ -1,8 +1,10 @@
 lxml
 matplotlib
+protobuf; python_version < "3.0"
 pydot
 PyYAML
 pyzmq
+scipy; python_version < "3.0"
 six
 tornado
 u-msgpack-python

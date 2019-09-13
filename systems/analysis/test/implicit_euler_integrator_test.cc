@@ -783,7 +783,8 @@ TEST_P(ImplicitIntegratorTest, DiscontinuousSpringMassDamper) {
   // Take all the defaults.
   integrator.Initialize();
 
-  // Establish tolerances for time and solution.
+  // Establish tolerances for time and solution. These tolerances are arbitrary
+  // but seem to work well.
   const double ttol = 1e2 * std::numeric_limits<double>::epsilon();
   const double sol_tol = 1e-8;
 

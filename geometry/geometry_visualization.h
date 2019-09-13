@@ -111,13 +111,6 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
     const systems::OutputPort<double>& pose_bundle_output_port,
     lcm::DrakeLcmInterface* lcm = nullptr, Role role = Role::kIllustration);
 
-/** Constructs an IllustrationProperties instance compatible with the
- ConnectDrakeVisualizer incorporating the given diffuse color.  */
-DRAKE_DEPRECATED("2019-09-01",
-    "Please use MakePhongIllustrationProperties() instead")
-IllustrationProperties MakeDrakeVisualizerProperties(
-    const Vector4<double>& diffuse);
-
 /** (Advanced) Explicitly dispatches an LCM load message based on the registered
  geometry. Normally this is done automatically at Simulator initialization. But
  if you have to do it yourself (likely because you are not using a Simulator),

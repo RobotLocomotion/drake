@@ -5,7 +5,9 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -174,8 +176,8 @@ static std::vector<VolumeElement> GenerateElements(
      The box shape specification (see drake::geometry::Box).
  @param[in] target_edge_length
      Control the resolution of the mesh. The length of axis-aligned edges
-     of the mesh will be within this parameter.  The length of
-     non-axis-aligned edges will be within √2 or √3 of this parameter.
+     of the mesh will be less than or equal to this parameter.  The length of
+     non-axis-aligned edges will be less than or equal to √3 of this parameter.
  @retval volume_mesh
  @tparam T The underlying scalar type. Must be a valid Eigen scalar.
  @note The mesh has no guarantee on the inner boundary for a rigid core.
@@ -198,6 +200,39 @@ VolumeMesh<T> MakeBoxVolumeMesh(const Box& box, double target_edge_length) {
   std::vector<VolumeElement> elements = GenerateElements(num_vertices);
 
   return VolumeMesh<T>(std::move(elements), std::move(vertices));
+}
+
+// TODO(DamrongGuoy): Consider advantage and disadvantage of other ways to
+//  generate the surface mesh. Right now extracting surface mesh from volume
+//  mesh is convenient but not the most efficient. Other ways to consider is
+//  generating both the volume mesh and the surface mesh at the same time, or
+//  generating the surface mesh directly without the volume mesh.
+// TODO(DamrongGuoy): Document more precisely about the mesh pattern and its
+//  edge length after we finalize the algorithms. Right now the algorithm for
+//  the volume mesh is still evolving, so it's premature to promise a precise
+//  outcome of the extracted surface mesh.
+/**
+ Generates a triangulated surface mesh of a given box. The output mesh will
+ have these properties:
+ 1. The generated vertices are unique. There is no repeating vertices in the
+    list of vertex coordinates.
+ 2. The generated triangles are _conforming_. Two triangles intersect in
+    their shared edge, or shared vertices, or not at all. There is no partial
+    overlapping of two triangles.
+ @param[in] box
+     The box shape specification (see drake::geometry::Box).
+ @param[in] target_edge_length
+     Control the resolution of the mesh. A smaller `target_edge_length`
+     tends to give a denser mesh. Majority of the edges should have their
+     lengths around this parameter.
+ @retval surface_mesh
+ @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+ */
+template <typename T>
+SurfaceMesh<T> MakeBoxSurfaceMesh(const Box& box, double target_edge_length) {
+  DRAKE_DEMAND(target_edge_length > 0.);
+  return ConvertVolumeToSurfaceMesh<T>(
+      MakeBoxVolumeMesh<T>(box, target_edge_length));
 }
 
 }  // namespace internal

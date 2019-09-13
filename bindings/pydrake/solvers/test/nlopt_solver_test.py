@@ -31,6 +31,6 @@ class TestNloptSolver(unittest.TestCase):
         self.assertEqual(result.get_solver_details().status, 4)
 
     def unavailable(self):
-        """Per the BUILD file, this test is only run when IPOPT is disabled."""
+        """Per the BUILD file, this test is only run when NLopt is disabled."""
         solver = NloptSolver()
         self.assertFalse(solver.available())

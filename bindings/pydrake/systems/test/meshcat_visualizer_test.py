@@ -183,7 +183,7 @@ class TestMeshcat(unittest.TestCase):
             contact_viz_context,
             contact_input_port.get_index()).get_value()
 
-        self.assertGreater(contact_results.num_contacts(), 0)
+        self.assertGreater(contact_results.num_point_pair_contacts(), 0)
         self.assertEqual(contact_viz._contact_key_counter, 4)
 
     def test_texture_override(self):

@@ -29,7 +29,7 @@ namespace fbstab {
  */
 class DenseVariable {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseVariable);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseVariable)
 
   /**
    * Allocates memory for a primal-dual variables.

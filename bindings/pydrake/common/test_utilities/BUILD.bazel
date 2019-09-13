@@ -46,6 +46,17 @@ drake_py_library(
     ],
 )
 
+drake_py_library(
+    name = "pickle_compare_py",
+    testonly = 1,
+    srcs = ["pickle_compare.py"],
+    deps = [
+        ":module_py",
+        ":numpy_compare_py",
+        "//bindings/pydrake:symbolic_py",
+    ],
+)
+
 # Package roll-up (for Bazel dependencies).
 drake_py_library(
     name = "test_utilities",
@@ -54,6 +65,7 @@ drake_py_library(
         ":deprecation_py",
         ":module_py",
         ":numpy_compare_py",
+        ":pickle_compare_py",
     ],
 )
 

@@ -22,7 +22,7 @@ namespace fbstab {
  */
 class DenseResidual {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseResidual);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseResidual)
   /**
    * Allocates memory for computing and storing residual vectors.
    * Uses alpha = 0.95 (see (19) in https://arxiv.org/pdf/1901.04046.pdf)

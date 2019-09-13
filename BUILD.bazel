@@ -55,7 +55,6 @@ install(
     install_tests_script = _INSTALL_TEST_COMMANDS,
     docs = ["LICENSE.TXT"],
     deps = [
-        "//automotive/models:install_data",
         "//bindings/pydrake:install",
         "//common:install",
         "//common/proto:install",

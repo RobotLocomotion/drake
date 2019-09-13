@@ -381,10 +381,11 @@ void DefineFrameworkPySemantics(py::module m) {
         m, "DiagramBuilder", GetPyParam<T>(), doc.DiagramBuilder.doc)
         .def(py::init<>(), doc.DiagramBuilder.ctor.doc)
         .def("AddSystem",
-            [](DiagramBuilder<T>* self, unique_ptr<System<T>> arg1) {
-              return self->AddSystem(std::move(arg1));
+            [](DiagramBuilder<T>* self, unique_ptr<System<T>> system) {
+              return self->AddSystem(std::move(system));
             },
-            // Keep alive, ownership: `System` keeps `self` alive.
+            py::arg("system"),
+            // Keep alive, ownership: `system` keeps `self` alive.
             py::keep_alive<2, 1>(), doc.DiagramBuilder.AddSystem.doc)
         .def("Connect",
             py::overload_cast<const OutputPort<T>&, const InputPort<T>&>(
@@ -397,10 +398,10 @@ void DefineFrameworkPySemantics(py::module m) {
             py::arg("output"), py::arg("name") = kUseDefaultName,
             py_reference_internal, doc.DiagramBuilder.ExportOutput.doc)
         .def("Build", &DiagramBuilder<T>::Build,
-            // Keep alive, transitive: `return` keeps `self` alive.
+            // Keep alive, ownership (tr.): `return` keeps `self` alive.
             py::keep_alive<1, 0>(), doc.DiagramBuilder.Build.doc)
-        .def("BuildInto", &DiagramBuilder<T>::BuildInto,
-            // Keep alive, transitive: `Diagram` keeps `self` alive.
+        .def("BuildInto", &DiagramBuilder<T>::BuildInto, py::arg("target"),
+            // Keep alive, ownership (tr.): `target` keeps `self` alive.
             py::keep_alive<2, 1>(), doc.DiagramBuilder.BuildInto.doc);
 
     DefineTemplateClassWithDefault<OutputPort<T>>(

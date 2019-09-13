@@ -121,7 +121,7 @@ genrule(
     srcs = _MAYBE_MATH_H0,
     outs = _MAYBE_F2MATH_H,
     cmd = "cp $< $(@)" if _MAYBE_F2MATH_H else ":",
-)
+) if _MAYBE_MATH_H0 else None
 
 filegroup(
     name = "generated_headers",

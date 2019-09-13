@@ -116,13 +116,15 @@ GTEST_TEST(Box, UnderStiction) {
         the_plant.get_contact_results_output_port()
             .Eval<ContactResults<double>>(the_context);
 
-    ASSERT_EQ(contact_results.num_contacts(), 1);  // only one contact pair.
+    // Only one contact pair.
+    ASSERT_EQ(contact_results.num_point_pair_contacts(), 1);
     const PointPairContactInfo<double>& point_pair_contact_info =
         contact_results.point_pair_contact_info(0);
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // Verify the deprecated method still works.
+    // Verify the deprecated methods still work.
+    ASSERT_EQ(contact_results.num_contacts(), 1);
     ASSERT_EQ(
         &contact_results.contact_info(0),
         &contact_results.point_pair_contact_info(0));

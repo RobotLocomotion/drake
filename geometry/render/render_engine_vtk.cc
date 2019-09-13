@@ -341,6 +341,7 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
 
       if (source.GetTexture() == nullptr) {
         clone.GetProperty()->SetColor(source.GetProperty()->GetColor());
+        clone.GetProperty()->SetOpacity(source.GetProperty()->GetOpacity());
       } else {
         clone.SetTexture(source.GetTexture());
       }
@@ -538,8 +539,13 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
         data.properties.GetPropertyOrDefault("phong", "diffuse",
                                              default_diffuse_);
     color_actor->GetProperty()->SetColor(diffuse(0), diffuse(1), diffuse(2));
-    // TODO(SeanCurtis-TRI): Make use of alpha.
+    color_actor->GetProperty()->SetOpacity(diffuse(3));
   }
+  // TODO(SeanCurtis-TRI): Determine if this precludes modulating the texture
+  //  with arbitrary rgba values (e.g., tinting red or making everything
+  //  slightly transparent). In other words, should opacity be set regardless
+  //  of whether a texture exists?
+
   connect_actor(ImageType::kColor);
 
   // Depth actor; always gets wired in with no additional work.

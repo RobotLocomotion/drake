@@ -1,7 +1,7 @@
 #include "drake/common/find_loaded_library.h"
 
 #include "drake/common/drake_throw.h"
-#include "drake/common/find_runfiles.h"
+#include "drake/common/filesystem.h"
 
 #ifdef __APPLE__
 #include <dlfcn.h>

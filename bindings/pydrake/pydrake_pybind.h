@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include "pybind11/pybind11.h"
 
 // N.B. Avoid including other headers, such as `pybind11/eigen.sh` or
@@ -139,6 +141,30 @@ inline void ExecuteExtraPythonCode(py::module m) {
 #define PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(variable) \
   { (void)variable; }
 #endif  // PY_MAJOR_VERSION >= 3
+
+// TODO(eric.cousineau): Remove this once Python 2 is gone, and inline
+// `.def(py::pickle(...))` calls.
+/// Define pickling routines, disabling pickling in Python 2.
+template <typename PyClass, typename... Args>
+void DefPickle(PyClass* ppy_class, Args&&... args) {
+#if PY_MAJOR_VERSION >= 3
+  ppy_class->def(py::pickle(std::forward<Args>(args)...));
+#else
+  using Class = typename PyClass::type;
+  (void)(sizeof...(args));
+  // In Python 2, copy_reg._reduce_ex (used for `get_state`) uses
+  // `s = getstate(); if s: ...`, which tries to call `__bool__` which
+  // does not work with NumPy arrays. This could be wrapped with a tuple, but
+  // still causes segfaults in Python 2. Since Python 2 support will soon be
+  // removed, we simply disable pickling.
+  constexpr char msg[] =
+      "Pickling in pydrake is disabled in Python 2. See the documentation of "
+      "`DefPickle` in `pydrake_pybind.h` for more information.";
+  ppy_class->def(py::pickle(
+      [msg](const Class&) -> py::object { throw std::runtime_error(msg); },
+      [msg](py::object) -> Class { throw std::runtime_error(msg); }));
+#endif
+}
 
 }  // namespace pydrake
 }  // namespace drake

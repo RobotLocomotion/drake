@@ -2,9 +2,8 @@
 """
 
 from __future__ import absolute_import, division, print_function
-from os.path import abspath, dirname, join
-from platform import python_version_tuple
-from sys import stderr
+import os
+import sys
 
 import six
 
@@ -38,23 +37,30 @@ common.set_assertion_failure_to_throw_exception()
 
 def getDrakePath():
     # Compatibility alias.
-    return abspath(common.GetDrakePath())
+    return os.path.abspath(common.GetDrakePath())
 
 
 def _execute_extra_python_code(m):
     # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
     # rationale.
-    pydrake_dir = dirname(__file__)
-    orig_pieces = m.__name__.split(".")
-    assert orig_pieces[0] == __name__
-    pieces = [pydrake_dir] + orig_pieces[1:-1] + [
-        "_{}_extra.py".format(orig_pieces[-1])]
-    filename = join(*pieces)
+    module_path = m.__name__.split(".")
+    if len(module_path) == 1:
+        raise RuntimeError((
+            "ExecuteExtraPythonCode cannot be used with the top-level "
+            "module `{}`. If you are writing modules in a downstream "
+            "project, please review this thread and ensure your import is "
+            "correct: https://stackoverflow.com/a/57858822/7829525"
+            ).format(m.__name__))
+    top_module_name = module_path[0]
+    top_module_dir = os.path.dirname(sys.modules[top_module_name].__file__)
+    extra_path = [top_module_dir] + module_path[1:-1] + [
+        "_{}_extra.py".format(module_path[-1])]
+    extra_filename = os.path.join(*extra_path)
     if six.PY2:
-        execfile(filename, m.__dict__)
+        execfile(extra_filename, m.__dict__)
     else:
-        with open(filename) as f:
-            _code = compile(f.read(), filename, 'exec')
+        with open(extra_filename) as f:
+            _code = compile(f.read(), extra_filename, 'exec')
             exec(_code, m.__dict__, m.__dict__)
 
 

@@ -305,7 +305,7 @@ class Simulator {
   }
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // To be deprecated -- use AdvanceTo() instead.
+  DRAKE_DEPRECATED("2020-01-01", "Use AdvanceTo() instead.")
   void StepTo(const T& boundary_time) { AdvanceTo(boundary_time); }
 #endif
 
@@ -907,7 +907,7 @@ void Simulator<T>::HandlePublish(
 }
 
 template <typename T>
-void Simulator<T>::AdvanceTo(const T &boundary_time) {
+void Simulator<T>::AdvanceTo(const T& boundary_time) {
   if (!initialization_done_) Initialize();
 
   DRAKE_THROW_UNLESS(boundary_time >= context_->get_time());

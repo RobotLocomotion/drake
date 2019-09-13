@@ -5,6 +5,19 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+# Make our package requirements (but not manual scripts) available to
+# downstream projects.
+exports_files([
+    "ubuntu/source_distribution/packages-bionic.txt",
+    "ubuntu/source_distribution/packages-xenial.txt",
+    "ubuntu/binary_distribution/packages-bionic.txt",
+    "ubuntu/binary_distribution/packages-xenial.txt",
+    "mac/source_distribution/requirements.txt",
+    "mac/source_distribution/Brewfile",
+    "mac/binary_distribution/requirements.txt",
+    "mac/binary_distribution/Brewfile",
+])
+
 install_files(
     name = "install",
     dest = "share/drake/setup",

@@ -421,7 +421,7 @@ class MeshcatContactVisualizer(LeafSystem):
         # If False, add the new contact to self._contacts
         vis = self._meshcat_viz.vis
         prefix = self._meshcat_viz.prefix
-        for i_contact in range(contact_results.num_contacts()):
+        for i_contact in range(contact_results.num_point_pair_contacts()):
             contact_info_i = contact_results.point_pair_contact_info(i_contact)
 
             # Do not display small forces.

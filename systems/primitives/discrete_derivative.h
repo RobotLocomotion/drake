@@ -107,6 +107,7 @@ class DiscreteDerivative final : public LeafSystem<T> {
 /// vector with positions and velocities stacked.  This assumes that the
 /// number of positions == the number of velocities.
 ///
+/// ```
 ///                                  ┌─────┐
 /// position ───┬───────────────────>│     │
 ///             │                    │ Mux ├──> state
@@ -114,6 +115,7 @@ class DiscreteDerivative final : public LeafSystem<T> {
 ///             └──>│  Discrete  ├──>│     │
 ///                 │ Derivative │   └─────┘
 ///                 └────────────┘
+/// ```
 ///
 /// @system{ StateInterpolatorWithDiscreteDerivative,
 ///          @input_port{position},

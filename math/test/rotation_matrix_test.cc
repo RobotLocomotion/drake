@@ -772,7 +772,7 @@ GTEST_TEST(RotationMatrixTest, OperatorMultiplyByMatrix3X) {
   const RollPitchYaw<double> rpy(r, p, y);
   const RotationMatrix<double> R_AB(rpy);
 
-  // Multiply the RigidTransform R_AB by two vectors to test operator* for a
+  // Multiply the RigidTransform R_AB by three vectors to test operator* for a
   // 3 x n matrix, where n = 3 is known before compilation.
   Eigen::Matrix3d v_B;
   const Vector3d v1_B(-12, -9, 7);   v_B.col(0) = v1_B;

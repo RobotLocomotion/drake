@@ -33,6 +33,7 @@ since contributed their talents to help make Drake successful.  Here's an alphab
 * Scott Kuindersma
 * Naveen Kuppuswamy
 * Benoit Landry
+* Dominic Liao-McPherson
 * Lucas Manuelli
 * Matt Marjanovic
 * Pat Marion

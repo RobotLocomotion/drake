@@ -336,12 +336,14 @@ class RenderEngineVtkTest : public ::testing::Test {
     }
   }
 
-  // Creates a simple perception properties set for fixed, known results.
+  // Creates a simple perception properties set for fixed, known results. The
+  // material color can be modified by setting default_color_ prior to invoking
+  // this method.
   PerceptionProperties simple_material() const {
     PerceptionProperties material;
-    Vector4d color(kDefaultVisualColor.r / 255., kDefaultVisualColor.g / 255.,
-                   kDefaultVisualColor.b / 255., 1.);
-    material.AddProperty("phong", "diffuse", color);
+    Vector4d color_n(default_color_.r / 255., default_color_.g / 255.,
+                     default_color_.b / 255., default_color_.a / 255.);
+    material.AddProperty("phong", "diffuse", color_n);
     material.AddProperty("label", "id", expected_label_);
     return material;
   }
@@ -406,6 +408,7 @@ class RenderEngineVtkTest : public ::testing::Test {
   float expected_object_depth_{2.f};
   RenderLabel expected_label_;
   RenderLabel expected_outlier_label_{RenderLabel::kDontCare};
+  RgbaColor default_color_{kDefaultVisualColor, 255};
 
   const DepthCameraProperties camera_ = {kWidth, kHeight, kFovY, "unused",
                                          kZNear, kZFar};
@@ -549,6 +552,44 @@ TEST_F(RenderEngineVtkTest, SphereTest) {
   PopulateSphereTest(renderer_.get());
 
   PerformCenterShapeTest(renderer_.get(), "Sphere test");
+}
+
+// Performs the shape-centered-in-the-image test with a sphere.
+TEST_F(RenderEngineVtkTest, TransparentSphereTest) {
+  RenderEngineVtk renderer;
+  InitializeRenderer(X_WC_, true /* add terrain */, &renderer);
+  const int int_alpha = 128;
+  default_color_ = RgbaColor(kDefaultVisualColor, int_alpha);
+  PopulateSphereTest(&renderer);
+  ImageRgba8U color(camera_.width, camera_.height);
+  renderer.RenderColorImage(camera_, kShowWindow, &color);
+
+  // Note: under CI this test runs with Xvfb - a virtual frame buffer. This does
+  // *not* use the OpenGL drivers and, empirically, it has shown a different
+  // alpha blending behavior.
+  // For an alpha of 128 (i.e., 50%), the correct pixel color would be a
+  // *linear* blend, i.e., 50% background and 50% foreground. However, the
+  // implementation in Xvfb seems to be a function alpha *squared*. So, we
+  // formulate this test to pass if the resultant pixel has one of two possible
+  // colors.
+  // In both cases, the resultant alpha will always be a full 255 (because the
+  // background is a full 255).
+  auto blend = [](const ColorI& c1, const ColorI& c2, double alpha) {
+    int r = static_cast<int>(c1.r * alpha + (c2.r * (1 - alpha)));
+    int g = static_cast<int>(c1.g * alpha + (c2.g * (1 - alpha)));
+    int b = static_cast<int>(c1.b * alpha + (c2.b * (1 - alpha)));
+    return ColorI{r, g, b};
+  };
+  const double linear_factor = int_alpha / 255.0;
+  const RgbaColor expect_linear{
+      blend(kDefaultVisualColor, kTerrainColorI, linear_factor), 255};
+  const double quad_factor = linear_factor * (-linear_factor + 2);
+  const RgbaColor expect_quad{
+      blend(kDefaultVisualColor, kTerrainColorI, quad_factor), 255};
+
+  const ScreenCoord inlier = GetInlier(camera_);
+  EXPECT_TRUE(CompareColor(expect_linear, color, inlier) ||
+              CompareColor(expect_quad, color, inlier));
 }
 
 // Performs the shape-centered-in-the-image test  with a cylinder.

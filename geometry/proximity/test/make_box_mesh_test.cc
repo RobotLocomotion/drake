@@ -132,6 +132,18 @@ GTEST_TEST(MakeBoxVolumeMeshTest, GenerateMesh) {
               2.0 * std::numeric_limits<double>::epsilon());
 }
 
+// Smoke test only. Assume correctness of MakeBoxVolumeMesh() and
+// ConvertVolumeToSurfaceMesh().
+GTEST_TEST(MakeBoxSurfaceMeshTest, GenerateSurface) {
+  const Box box(0.2, 0.4, 0.8);
+  const double target_edge_length = 0.1;
+  SurfaceMesh<double> surface_mesh =
+      MakeBoxSurfaceMesh<double>(box, target_edge_length);
+
+  const int expect_num_vertices = 114;
+  EXPECT_EQ(expect_num_vertices, surface_mesh.num_vertices());
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry

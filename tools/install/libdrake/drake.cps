@@ -25,11 +25,6 @@
       "Hints": ["@prefix@/lib/cmake/ignition-math4"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "ignition-rndf0": {
-      "Version": "0.1.5",
-      "Hints": ["@prefix@/lib/cmake/ignition-rndf0"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
     "lcm": {
       "Version": "1.3.95",
       "Hints": ["@prefix@/lib/cmake/lcm"],
@@ -72,7 +67,6 @@
         "Eigen3:Eigen",
         "fmt:fmt-header-only",
         "ignition-math4:ignition-math4",
-        "ignition-rndf0:ignition-rndf0",
         "lcm:lcm",
         "optitrack:optitrack-lcmtypes-cpp",
         "protobuf:libprotobuf",

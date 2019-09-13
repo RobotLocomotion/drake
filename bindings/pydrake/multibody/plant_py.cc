@@ -108,11 +108,30 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "ContactResults", param, cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
-        .def("num_contacts", &Class::num_contacts, cls_doc.num_contacts.doc)
-        .def("AddContactInfo", &Class::AddContactInfo,
-            py::arg("point_pair_info"), cls_doc.AddContactInfo.doc)
-        .def("contact_info", &Class::point_pair_contact_info, py::arg("i"),
-            "Deprecated. Use point_pair_contact_info() instead.")
+        .def("num_contacts",
+            [](Class* self) {
+              WarnDeprecated(
+                  "Deprecated and will be removed on or around "
+                  "12-01-2019. Use num_point_pair_contacts() instead.");
+              return self->num_point_pair_contacts();
+            },
+            cls_doc.num_contacts.doc_deprecated)
+        .def("num_point_pair_contacts", &Class::num_point_pair_contacts,
+            cls_doc.num_point_pair_contacts.doc)
+        .def("AddContactInfo",
+            [](Class* self, const PointPairContactInfo<T>& contact_info) {
+              self->AddContactInfo(contact_info);
+            },
+            py::arg("point_pair_info"),
+            cls_doc.AddContactInfo.doc_1args_point_pair_info)
+        .def("contact_info",
+            [](Class* self, int i) {
+              WarnDeprecated(
+                  "Deprecated and will be removed on or around "
+                  "12-01-2019. Use point_pair_contact_info() instead.");
+              return self->point_pair_contact_info(i);
+            },
+            py::arg("i"), cls_doc.contact_info.doc_deprecated)
         .def("point_pair_contact_info", &Class::point_pair_contact_info,
             py::arg("i"), cls_doc.point_pair_contact_info.doc);
     AddValueInstantiation<Class>(m);
@@ -202,26 +221,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("A"), py::arg("B"), py::arg("X_AB"), py_reference_internal,
             doc_iso3_deprecation)
-        // N.B. This overload of `AddForceElement` is required to precede
-        // the generic overload below so we can use our internal specialization
-        // to label this as our unique gravity field, mimicking the C++ API.
-        .def("AddForceElement",
-            [](Class * self,
-                std::unique_ptr<UniformGravityFieldElement<T>> force_element)
-                -> auto& {
-              WarnDeprecated(
-                  "Use mutable_gravity_field().set_gravity_vector() instead.");
-      // N.B. We need to make sure we call the correct specialization in
-      // MultibodyPlant for it to take note we are adding gravity to the
-      // model. This is ugly API needs to be updated, see #11080.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-              return self->template AddForceElement<UniformGravityFieldElement>(
-                  force_element->gravity_vector());
-#pragma GCC diagnostic pop
-            },
-            py::arg("force_element"), py_reference_internal,
-            cls_doc.AddForceElement.doc)
         .def("AddForceElement",
             [](Class * self,
                 std::unique_ptr<ForceElement<T>> force_element) -> auto& {
@@ -617,7 +616,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_reference_internal, cls_doc.GetBodyFromFrameId.doc)
         .def("GetBodyFrameIdIfExists", &Class::GetBodyFrameIdIfExists,
             py::arg("body_index"), py_reference_internal,
-            cls_doc.GetBodyFrameIdIfExists.doc);
+            cls_doc.GetBodyFrameIdIfExists.doc)
+        .def("GetCollisionGeometriesForBody",
+            &Class::GetCollisionGeometriesForBody, py::arg("body"),
+            cls_doc.GetCollisionGeometriesForBody.doc);
     // Port accessors.
     cls  // BR
         .def("get_actuation_input_port",
@@ -684,28 +686,26 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 Context<T>* context) -> Eigen::Ref<VectorX<T>> {
               return self->GetMutablePositionsAndVelocities(context);
             },
-            py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
-            py::keep_alive<0, 2>(), py::arg("context"),
+            py_reference, py::arg("context"),
+            // Keep alive, ownership: `return` keeps `context` alive.
+            py::keep_alive<0, 2>(),
             cls_doc.GetMutablePositionsAndVelocities.doc)
         .def("GetMutablePositions",
             [](const MultibodyPlant<T>* self,
                 Context<T>* context) -> Eigen::Ref<VectorX<T>> {
               return self->GetMutablePositions(context);
             },
-            py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
-            py::keep_alive<0, 2>(), py::arg("context"),
-            cls_doc.GetMutablePositions.doc_1args)
+            py_reference, py::arg("context"),
+            // Keep alive, ownership: `return` keeps `context` alive.
+            py::keep_alive<0, 2>(), cls_doc.GetMutablePositions.doc_1args)
         .def("GetMutableVelocities",
             [](const MultibodyPlant<T>* self,
                 Context<T>* context) -> Eigen::Ref<VectorX<T>> {
               return self->GetMutableVelocities(context);
             },
-            py_reference,
-            // Keep alive, ownership: `return` keeps `Context` alive.
-            py::keep_alive<0, 2>(), py::arg("context"),
-            cls_doc.GetMutableVelocities.doc_1args)
+            py_reference, py::arg("context"),
+            // Keep alive, ownership: `return` keeps `context` alive.
+            py::keep_alive<0, 2>(), cls_doc.GetMutableVelocities.doc_1args)
         .def("GetPositions",
             [](const MultibodyPlant<T>* self, const Context<T>& context)
                 -> VectorX<T> { return self->GetPositions(context); },
@@ -885,13 +885,14 @@ PYBIND11_MODULE(plant, m) {
         return drake::multibody::ConnectContactResultsToDrakeVisualizer(
             builder, plant, lcm);
       },
+      py::arg("builder"), py::arg("plant"), py::arg("lcm") = nullptr,
+      py_reference,
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 1>(),
-      // Keep alive, reference transfer: `plant` keeps `builder` alive.
+      // Keep alive, transitive: `plant` keeps `builder` alive.
       py::keep_alive<2, 1>(),
-      // Keep alive, reference transfer: `lcm` keeps `builder` alive.
-      py::keep_alive<3, 1>(), py_reference, py::arg("builder"),
-      py::arg("plant"), py::arg("lcm") = nullptr,
+      // Keep alive, transitive: `lcm` keeps `builder` alive.
+      py::keep_alive<3, 1>(),
       doc.ConnectContactResultsToDrakeVisualizer.doc_3args);
 }  // NOLINT(readability/fn_size)
 

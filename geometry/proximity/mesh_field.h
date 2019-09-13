@@ -55,7 +55,7 @@ class MeshField {
    mesh.
    */
   DRAKE_NODISCARD std::unique_ptr<MeshField> CloneAndSetMesh(
-      MeshType* new_mesh) const {
+      const MeshType* new_mesh) const {
     DRAKE_DEMAND(new_mesh != nullptr);
     DRAKE_DEMAND(new_mesh->num_vertices() == mesh_->num_vertices());
     // TODO(DamrongGuoy): Check that the `new_mesh` is equivalent to the

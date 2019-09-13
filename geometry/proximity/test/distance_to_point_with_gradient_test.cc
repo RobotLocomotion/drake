@@ -11,6 +11,7 @@
 namespace drake {
 namespace geometry {
 namespace internal {
+namespace {
 
 const double kEps = std::numeric_limits<double>::epsilon();
 
@@ -146,6 +147,8 @@ GTEST_TEST(DistanceToPointTest, TestHalfspace) {
   p_GQ = -0.1 * halfspace.n;
   CheckDistanceToHalfspace(halfspace, X_WG, p_GQ);
 }
+
+}  // namespace
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake

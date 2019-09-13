@@ -1,116 +1,25 @@
 #pragma once
 
 #include <algorithm>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/sorted_pair.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
 
-// Helper methods for MakeUnitSphereMesh().
-#ifndef DRAKE_DOXYGEN_CXX
-// Refines a tetrahedron defined by vertices A, B, C, and D
-// into 8 new tetrahedra. Vector is_boundary stores `true` at entries 0, 1, 2,
-// and 3 (corresponding to A, B, C, and D, respectively) for those vertices
-// that lie on the surface of the unit sphere. If an edge is formed by two
-// vertices that lie on the sphere, the new vertex created by splitting this
-// edge in half is projected so that it lies on the surface of the sphere as
-// well.
-// The return is a pair with: 1) a VolumeMesh including the original and
-// new vertices, and 2) a vector of booleans that, similar to is_boundary,
-// stores `true` iff the corresponding vertex on the new mesh lies on the
-// surface of the sphere.
-template <typename T>
-std::pair<VolumeMesh<T>, std::vector<bool>> RefineTetrahdron(
-    const Vector3<T>& A, const Vector3<T>& B, const Vector3<T>& C,
-    const Vector3<T>& D, const std::vector<bool>& is_boundary) {
-  // Aliases to the indexes, just to ease writing the code.
-  // That is, index a corresponds to vertex A, index b to vertex B, etc.
-  const VolumeVertexIndex a(0), b(1), c(2), d(3), e(4), f(5), g(6), h(7), i(8),
-      j(9);
-
-  // Each tetrahedra is split into 8 sub-tetrahedra.
-  std::vector<VolumeElement> tetrahedra;
-  std::vector<VolumeVertex<T>> vertices;  // Original 4 plus 6, one per edge.
-  Vector3<T> E = (A + B) / 2.0;
-  Vector3<T> F = (A + C) / 2.0;
-  Vector3<T> G = (A + D) / 2.0;
-  Vector3<T> H = (B + C) / 2.0;
-  Vector3<T> I = (B + D) / 2.0;
-  Vector3<T> J = (C + D) / 2.0;
-
-  // Mark which vertices belong to the boundary.
-  std::vector<bool> split_vertex_is_boundary(10);
-  split_vertex_is_boundary[a] = is_boundary[a];
-  split_vertex_is_boundary[b] = is_boundary[b];
-  split_vertex_is_boundary[c] = is_boundary[c];
-  split_vertex_is_boundary[d] = is_boundary[d];
-  split_vertex_is_boundary[e] = is_boundary[a] && is_boundary[b];
-  split_vertex_is_boundary[f] = is_boundary[a] && is_boundary[c];
-  split_vertex_is_boundary[g] = is_boundary[a] && is_boundary[d];
-  split_vertex_is_boundary[h] = is_boundary[b] && is_boundary[c];
-  split_vertex_is_boundary[i] = is_boundary[b] && is_boundary[d];
-  split_vertex_is_boundary[j] = is_boundary[c] && is_boundary[d];
-
-  //  Project boundary vertices onto the surface of the sphere.
-  if (split_vertex_is_boundary[e]) E.normalize();
-  if (split_vertex_is_boundary[f]) F.normalize();
-  if (split_vertex_is_boundary[g]) G.normalize();
-  if (split_vertex_is_boundary[h]) H.normalize();
-  if (split_vertex_is_boundary[i]) I.normalize();
-  if (split_vertex_is_boundary[j]) J.normalize();
-
-  // Place the new vertices in the vector of vertices.
-  vertices.emplace_back(A);
-  vertices.emplace_back(B);
-  vertices.emplace_back(C);
-  vertices.emplace_back(D);
-  vertices.emplace_back(E);
-  vertices.emplace_back(F);
-  vertices.emplace_back(G);
-  vertices.emplace_back(H);
-  vertices.emplace_back(I);
-  vertices.emplace_back(J);
-
-  // The four tetrahedra at the corners.
-  tetrahedra.emplace_back(a, e, f, g);
-  tetrahedra.emplace_back(b, h, e, i);
-  tetrahedra.emplace_back(f, h, c, j);
-  tetrahedra.emplace_back(j, g, i, d);
-
-  // TODO(amcastro-tri): Split along EJ, FI and GH and choose the partition with
-  // best quality factor as described in [Everett, 1997], see the class's
-  // documentation.
-  // Currently we arbitrarily choose to partition along the GH edge.
-  auto split_along_gh = [&]() {
-    std::vector<VolumeElement> inner_tets;
-    inner_tets.emplace_back(g, h, i, e);
-    inner_tets.emplace_back(g, f, h, e);
-    inner_tets.emplace_back(g, i, h, j);
-    inner_tets.emplace_back(g, h, f, j);
-    return inner_tets;
-  };
-
-  // Split the internal octahedron EFGHIJ into four sub-tetrahedra.
-  auto inner_tets = split_along_gh();
-  std::copy(inner_tets.begin(), inner_tets.end(), back_inserter(tetrahedra));
-
-  return std::make_pair(
-      VolumeMesh<T>(std::move(tetrahedra), std::move(vertices)),
-      split_vertex_is_boundary);
-}
-
-// Makes the initial mesh for refinement_level = 0.
-// It creates an octahedron by placing its six vertices on the surface of the
-// unit sphere and an additional vertex at the origin. The volume is then
-// tessellated into eight tetrahedra.
-// The additional vector of booleans indicates `true` if the corresponding
-// vertex lies on the surface of the sphere.
+/** Makes the initial mesh for refinement_level = 0.
+ It creates an octahedron by placing its six vertices on the surface of the
+ unit sphere and an additional vertex at the origin. The volume is then
+ tessellated into eight tetrahedra.
+ The additional vector of booleans indicates `true` if the corresponding
+ vertex lies on the surface of the sphere.  */
 template <typename T>
 std::pair<VolumeMesh<T>, std::vector<bool>> MakeSphereMeshLevel0() {
   std::vector<VolumeElement> tetrahedra;
@@ -166,78 +75,290 @@ std::pair<VolumeMesh<T>, std::vector<bool>> MakeSphereMeshLevel0() {
       VolumeMesh<T>(std::move(tetrahedra), std::move(vertices)), is_boundary);
 }
 
-// Splits a mesh by calling RefineTetrahdron() on each tetrahedron of `mesh`.
-// `is_boundary` is a vector with as many entries as vertices in the mesh
-// indicating if the vertex at the same index lies on the boundary of the
-// sphere.
+/** Given the six vertices that form the interior octohedron, decomposes the
+ octohedron into the "best" set of four tetrahedra. The vertices are encoded
+ by six vertex indices into the collection of vertex positions. The resulting
+ tetrahedra are appended to `tets`.
+
+ The input vertex indices must be ordered in a very particular order. Each
+ represents the vertex that splits the edge ij. So, using the edge name as
+ a synonym for the vertex that splits it, the order must be: ab, ac, ad, bc, bd,
+ and cd (otherwise known as e, f, g, h, i, and j in `SplitTetrahedron`).
+
+ @param vertex_indices      The ordered indices of the six vertices that form
+                            the octohedron.
+ @param p_MVs               The position vector of each vertex V in the mesh
+                            frame M -- indexed by `vertex_indices`.
+ @param[inout] tets         The collection of tetrahedra; the best four
+                            tetrahedra will be appended to this data.
+ @tparam T  The Eigen-compatible scalar for representing vertex positions.
+ */
 template <typename T>
-std::pair<VolumeMesh<T>, std::vector<bool>> RefineMesh(
-    const VolumeMesh<T>& mesh, const std::vector<bool>& is_boundary) {
-  std::vector<VolumeElement> split_mesh_tetrahedra;
-  std::vector<VolumeVertex<T>> split_mesh_vertices;
-  std::vector<bool> split_is_boundary;
-  for (const auto& t : mesh.tetrahedra()) {
-    const auto& A = mesh.vertex(t.vertex(0)).r_MV();
-    const auto& B = mesh.vertex(t.vertex(1)).r_MV();
-    const auto& C = mesh.vertex(t.vertex(2)).r_MV();
-    const auto& D = mesh.vertex(t.vertex(3)).r_MV();
+void SplitOctohedron(const std::array<VolumeVertexIndex, 6>& vertex_indices,
+                     const std::vector<VolumeVertex<T>>& p_MVs,
+                     std::vector<VolumeElement>* tets) {
+  // The interior octahedron can be split along three different axes: EJ, FI,
+  // or GH. Ideally, we should look at the decomposition that arises from each
+  // split axis and pick the axis that provides the best quality (as seen in
+  // [Everett, 1997]). Several important notes:
+  //
+  //   1. [Everett, 1997] has *two* mistakes in the quality metric. It gives
+  //      quality as: Q = 12(3V)^(3/2)⋅∑lᵢᵀ⋅lᵢ. The paper it cites presents it
+  //      as: η = 12(3v)^(2/3)/∑lᵢᵀ⋅lᵢ.
+  //      - note the incorrect exponent *and* the multiplication in place of
+  //        the division.
+  //      - In Everett's mistaken version, Q is *not* unitless. In the original,
+  //        it is.
+  //   2. Everett advocates maximizing the sum of Q across all four candidate
+  //      tetrahedra for the split axis.
+  //   3. For this purpose, the constants 12 and 3^(2/3) are pointless and can
+  //      be omitted to determine *relative* quality: Q = v^(2/3)/∑lᵢᵀ⋅lᵢ.
+  //   4. v^2 and ∑lᵢᵀ⋅lᵢ are strictly positive. So, we can get rid of the
+  //      cube-root by defining Q' = v²/(∑lᵢᵀ⋅lᵢ)³.
 
-    // Vector that flags A, B, C and D as boundary vertices or not.
-    std::vector<bool> tet_is_boundary;
-    tet_is_boundary.push_back(is_boundary[t.vertex(0)]);
-    tet_is_boundary.push_back(is_boundary[t.vertex(1)]);
-    tet_is_boundary.push_back(is_boundary[t.vertex(2)]);
-    tet_is_boundary.push_back(is_boundary[t.vertex(3)]);
+  using VIndex = VolumeVertexIndex;
 
-    const std::pair<VolumeMesh<T>, std::vector<bool>> split_pair =
-        RefineTetrahdron<T>(A, B, C, D, tet_is_boundary);
-    const VolumeMesh<T>& split_tet = split_pair.first;
-    const std::vector<bool>& split_tet_is_boundary = split_pair.second;
-    const int num_vertices = static_cast<int>(split_mesh_vertices.size());
-
-    std::copy(split_tet.vertices().begin(), split_tet.vertices().end(),
-              back_inserter(split_mesh_vertices));
-    std::copy(split_tet_is_boundary.begin(), split_tet_is_boundary.end(),
-              back_inserter(split_is_boundary));
-
-    // Add the new tets. Offset the vertex indexes to account for the indexing
-    // within the full mesh.
-    std::transform(split_tet.tetrahedra().begin(), split_tet.tetrahedra().end(),
-                   back_inserter(split_mesh_tetrahedra),
-                   [num_vertices](const VolumeElement& tet) {
-                     using V = VolumeVertexIndex;
-                     return VolumeElement(V(tet.vertex(0) + num_vertices),
-                                          V(tet.vertex(1) + num_vertices),
-                                          V(tet.vertex(2) + num_vertices),
-                                          V(tet.vertex(3) + num_vertices));
-                   });
+  // Pre-computes all squared edge lengths.
+  std::unordered_map<SortedPair<VIndex>, double> square_edge_len;
+  for (int i = 0; i < 6; ++i) {
+    for (int j = i + 1; j < 6; ++j) {
+      const VIndex a = vertex_indices[i];
+      const VIndex b = vertex_indices[j];
+      square_edge_len[SortedPair<VIndex>(a, b)] = ExtractDoubleOrThrow(
+          (p_MVs[a].r_MV() - p_MVs[b].r_MV()).squaredNorm());
+    }
   }
 
-  return std::make_pair(VolumeMesh<T>(std::move(split_mesh_tetrahedra),
-                                      std::move(split_mesh_vertices)),
-                        split_is_boundary);
-}
-#endif
+  // Computes the volume of a single tetrahedron.
+  auto volume = [&p_MVs](VIndex a, VIndex b, VIndex c, VIndex d) {
+    const Vector3<T> p_AB = p_MVs[b].r_MV() - p_MVs[a].r_MV();
+    const Vector3<T> p_AC = p_MVs[c].r_MV() - p_MVs[a].r_MV();
+    const Vector3<T> p_AD = p_MVs[d].r_MV() - p_MVs[a].r_MV();
+    return ExtractDoubleOrThrow(p_AB.cross(p_AC).dot(p_AD) / 6.0);
+  };
 
-/// This method implements a variant of the generator described in
-/// [Everett, 1997]. It is based on a recursive refinement of an initial
-/// (refinement_level = 0) coarse mesh representation of the unit sphere. The
-/// initial mesh discretizes an octahedron with its six vertices on the
-/// surface of the unit sphere and a seventh vertex at the origin to form a
-/// volume tessellation consisting of eight tetrahedra. At each refinement
-/// level each tetrahedron is split into eight new tetrahedra by splitting
-/// each edge in half. When splitting an edge formed by vertices on the
-/// surface of the sphere, the newly created vertex is projected back onto the
-/// surface of the sphere.
-/// See [Jakub Velímský, 2010] for additional implementation details and a
-/// series of very useful schematics.
-///
-/// @throws std::exception if refinement_level is negative.
-///
-/// [Everett, 1997]  Everett, M.E., 1997. A three-dimensional spherical mesh
-/// generator. Geophysical Journal International, 130(1), pp.193-200.
-/// [Jakub Velímský, 2010] GESTIKULATOR Generator of a tetrahedral mesh on a
-/// sphere. Department of Geophysics, Charles University in Prague.
+  // Computes the quality (Q') of a single tetrahedron given function-local
+  // vertex indices (i.e., in the range [0, 5]).
+  auto tet_quality = [&square_edge_len, &volume,
+                      &vertex_indices](const std::array<int, 4>& local_i) {
+    const VIndex a = vertex_indices[local_i[0]];
+    const VIndex b = vertex_indices[local_i[1]];
+    const VIndex c = vertex_indices[local_i[2]];
+    const VIndex d = vertex_indices[local_i[3]];
+    const double v = volume(a, b, c, d);
+    double denom = 0.0;
+    denom += square_edge_len.at(SortedPair<VIndex>(a, b));
+    denom += square_edge_len.at(SortedPair<VIndex>(a, c));
+    denom += square_edge_len.at(SortedPair<VIndex>(a, d));
+    denom += square_edge_len.at(SortedPair<VIndex>(b, c));
+    denom += square_edge_len.at(SortedPair<VIndex>(b, d));
+    denom += square_edge_len.at(SortedPair<VIndex>(c, d));
+    return v * v / (denom * denom * denom);
+  };
+
+  // Computes the quality of a split given the function-local tetrahedron
+  // indices for all four tetrahedra.
+  auto split_quality =
+      [&tet_quality](const std::array<std::array<int, 4>, 4>& tets_in) {
+        double cost = 0;
+        for (const auto& tet : tets_in) cost += tet_quality(tet);
+        return cost;
+      };
+
+  // These data structures enumerate the tets based on a splitting edge. They
+  // are indices into `vertex_indices`. Assuming `vertex_indices` is properly
+  // ordered, these local indices are invariant.
+  const int e(0), f(1), g(2), h(3), i(4), j(5);
+  // clang-format off
+  const std::array<std::array<int, 4>, 4> kGhTets{{{g, h, i, e},
+                                                   {g, f, h, e},
+                                                   {g, i, h, j},
+                                                   {g, h, f, j}}};
+  const std::array<std::array<int, 4>, 4> kFiTets{{{f, i, e, h},
+                                                   {f, i, h, j},
+                                                   {f, i, j, g},
+                                                   {f, e, i, g}}};
+  const std::array<std::array<int, 4>, 4> kEjTets{{{e, h, j, i},
+                                                   {e, i, j, g},
+                                                   {e, g, j, f},
+                                                   {e, f, j, h}}};
+  // clang-format on
+
+  // Find direction with best quality.
+  double max_quality = -1.0;
+  const std::array<std::array<int, 4>, 4>* best_tets = nullptr;
+  for (const auto* candidate_tets : {&kGhTets, &kFiTets, &kEjTets}) {
+    const double candidate_quality = split_quality(*candidate_tets);
+    if (candidate_quality > max_quality) {
+      max_quality = candidate_quality;
+      best_tets = candidate_tets;
+    }
+  }
+  DRAKE_DEMAND(max_quality > 0.0);
+  for (int t = 0; t < 4; ++t) {
+    const auto& local_tets = *best_tets;
+    tets->emplace_back(
+        vertex_indices[local_tets[t][0]], vertex_indices[local_tets[t][1]],
+        vertex_indices[local_tets[t][2]], vertex_indices[local_tets[t][3]]);
+  }
+}
+
+/** Splits the given tetrahedron into 8 tetrahedra which form a complete,
+ disjoint decomposition of the original tetrahedron's volume.
+ The input tetrahedron defines the indices of the original vertices. An edge
+ in the input tetrahedron is described by the two vertices at its ends
+ (e.g., (v0, v1), (v1, v3), etc.) The input `edge_map` defines a mapping from
+ each edge (vi, vj) to the index of the vertex previously defined at that edge's
+ midpoint.
+
+ @param t           The tetrahedron to split.
+ @param edge_map    The map from edges to each edge's splitting vertex index.
+ @return A vector of 8 tetrahedra.  */
+template <typename T>
+std::vector<VolumeElement> SplitTetrahedron(
+    const VolumeElement& t,
+    std::unordered_map<SortedPair<VolumeVertexIndex>, VolumeVertexIndex>&
+        edge_map,
+    const std::vector<VolumeVertex<T>>& p_MVs) {
+  using Key = SortedPair<VolumeVertexIndex>;
+  std::vector<VolumeElement> tets;
+  tets.reserve(8);
+  // Indices of the original four vertices.
+  const VolumeVertexIndex a(t.vertex(0)), b(t.vertex(1)), c(t.vertex(2)),
+      d(t.vertex(3));
+  // Indices of the vertices that split each of the edges.
+  const VolumeVertexIndex e(edge_map.at(Key(a, b)));
+  const VolumeVertexIndex f(edge_map.at(Key(a, c)));
+  const VolumeVertexIndex g(edge_map.at(Key(a, d)));
+  const VolumeVertexIndex h(edge_map.at(Key(b, c)));
+  const VolumeVertexIndex i(edge_map.at(Key(b, d)));
+  const VolumeVertexIndex j(edge_map.at(Key(c, d)));
+
+  //                +Z
+  //                 |
+  //                 d
+  //                 |
+  //                 g---j
+  //                /|   |
+  //               i a---f---c---+Y
+  //               |/   /
+  //               e---h
+  //              /
+  //             b
+  //            /
+  //          +X
+
+  // The four tetrahedra at the corners.
+  tets.emplace_back(a, e, f, g);
+  tets.emplace_back(b, h, e, i);
+  tets.emplace_back(f, h, c, j);
+  tets.emplace_back(j, g, i, d);
+
+  SplitOctohedron({e, f, g, h, i, j}, p_MVs, &tets);
+
+  return tets;
+}
+
+/** Creates a finer volume mesh approximating a unit sphere (not generally
+ applicable to refining other meshes). The refinement is achieved by decomposing
+ every tetrahedron into eight new tetrahedron which encompass the same volume.
+ The new tetrahedron are formed by splitting the six edges of the original
+ tetrahedron in half (adding six new vertices), and building eight new
+ tetrahedra topology in that region.
+
+ This algorithm has two interesting properties:
+
+   - It guarantees to introduce no duplicate vertices.
+   - If an edge of the input mesh has two vertices that are on the surface of
+     the unit sphere, the new vertex that splits that edge will likewise
+     lie on the surface of the unit sphere. In other words, with successive
+     refinement calls, the mesh's *surface* gets rounder. This property
+     precludes the use of this function on arbitrary meshes.
+
+ The position vectors to the new mesh's vertices are measured and expressed in
+ the same frame as the input mesh.
+
+ @param mesh            The mesh to refine -- must be a mesh generated either by
+                        MakeSphereMeshLevel0() or a previous invocation of
+                        RefineUnitSphereMesh().
+ @param is_boundary     Classification of vertices in `mesh`. For vertex with
+                        index v, `is_boundary[v]` will report true if the vertex
+                        lies on the surface of the sphere, or false for the
+                        interior.
+ @returns  A new mesh (the refined version of the input mesh) and the
+ corresponding classifications of the new mesh's vertices.
+
+ @tparam T  The Eigen scalar for the underlying vertex position representation.
+ */
+template <typename T>
+std::pair<VolumeMesh<T>, std::vector<bool>> RefineUnitSphereMesh(
+    const VolumeMesh<T>& mesh, const std::vector<bool>& is_boundary) {
+  // First generate all new unique vertices by splitting all edges.
+  std::vector<VolumeVertex<T>> all_vertices(mesh.vertices());
+  std::vector<bool> all_boundary(is_boundary);
+
+  using VIndex = VolumeVertexIndex;
+  // A map from the indices of two vertices on an edge to the index of the
+  // new vertex that sits in the middle of that same edge.
+  std::unordered_map<SortedPair<VIndex>, VIndex> edge_vertex_map;
+  // An enumeration of all of the edges of a tet.
+  const std::vector<std::pair<int, int>> kEdges{{0, 1}, {0, 2}, {0, 3},
+                                                {1, 2}, {1, 3}, {2, 3}};
+  for (const auto& t : mesh.tetrahedra()) {
+    for (const auto& v_pair : kEdges) {
+      const SortedPair<VIndex> key{t.vertex(v_pair.first),
+                                   t.vertex(v_pair.second)};
+      if (edge_vertex_map.count(key) == 0) {
+        // We haven't already split this edge; compute the vertex and determine
+        // its boundary condition.
+        const Vector3<T>& p_MA = mesh.vertex(key.first()).r_MV();
+        const Vector3<T>& p_MB = mesh.vertex(key.second()).r_MV();
+        Vector3<T> p_MV = (p_MA + p_MB) / 2.0;
+        VIndex split_index(static_cast<int>(all_vertices.size()));
+        const bool split_is_boundary =
+            is_boundary[key.first()] && is_boundary[key.second()];
+        if (split_is_boundary) p_MV.normalize();
+
+        all_boundary.push_back(split_is_boundary);
+        all_vertices.emplace_back(p_MV);
+        edge_vertex_map.insert({key, split_index});
+      }
+    }
+  }
+
+  // Now split the tetrahedra
+  std::vector<VolumeElement> all_tets;
+  // Every input tetrahedron becomes 8 smaller tetrahedra
+  all_tets.reserve(mesh.num_elements() * 8);
+  for (const auto& t : mesh.tetrahedra()) {
+    std::vector<VolumeElement> split_tets =
+        SplitTetrahedron(t, edge_vertex_map, all_vertices);
+    all_tets.insert(all_tets.end(), split_tets.begin(), split_tets.end());
+  }
+  return {VolumeMesh<T>(std::move(all_tets), std::move(all_vertices)),
+          all_boundary};
+}
+
+/** This method implements a variant of the generator described in
+ [Everett, 1997]. It is based on a recursive refinement of an initial
+ (refinement_level = 0) coarse mesh representation of the unit sphere. The
+ initial mesh discretizes an octahedron with its six vertices on the
+ surface of the unit sphere and a seventh vertex at the origin to form a
+ volume tessellation consisting of eight tetrahedra. At each refinement
+ level, each tetrahedron is split into eight new tetrahedra by splitting
+ each edge in half. When splitting an edge formed by vertices on the
+ surface of the sphere, the newly created vertex is projected back onto the
+ surface of the sphere.
+ See [Jakub Velímský, 2010] for additional implementation details and a
+ series of very useful schematics.
+
+ @throws std::exception if refinement_level is negative.
+
+ [Everett, 1997]  Everett, M.E., 1997. A three-dimensional spherical mesh
+ generator. Geophysical Journal International, 130(1), pp.193-200.
+ [Jakub Velímský, 2010] GESTIKULATOR Generator of a tetrahedral mesh on a
+ sphere. Department of Geophysics, Charles University in Prague.
+ */
 template <typename T>
 VolumeMesh<T> MakeUnitSphereMesh(int refinement_level) {
   DRAKE_THROW_UNLESS(refinement_level >= 0);
@@ -246,9 +367,7 @@ VolumeMesh<T> MakeUnitSphereMesh(int refinement_level) {
   std::vector<bool>& is_boundary = pair.second;
 
   for (int level = 1; level <= refinement_level; ++level) {
-    auto split_pair = RefineMesh<T>(mesh, is_boundary);
-    mesh = split_pair.first;
-    is_boundary = split_pair.second;
+    std::tie(mesh, is_boundary) = RefineUnitSphereMesh<T>(mesh, is_boundary);
     DRAKE_DEMAND(mesh.vertices().size() == is_boundary.size());
   }
 

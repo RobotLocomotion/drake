@@ -3,10 +3,12 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/geometry/geometry_ids.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -53,13 +55,16 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
                             lcmt_contact_results_for_viz* output) const;
 
   // Named indices for the i/o ports.
-  static constexpr int contact_result_input_port_index_{0};
-  static constexpr int message_output_port_index_{0};
+  systems::InputPortIndex contact_result_input_port_index_;
+  systems::OutputPortIndex message_output_port_index_;
+
+  // A mapping from geometry IDs to body indices.
+  std::unordered_map<geometry::GeometryId, std::string>
+      geometry_id_to_body_name_map_;
 
   // A mapping from body index values to body names.
   std::vector<std::string> body_names_;
 };
-
 
 /** Extends a Diagram with the required components to publish contact results
  to drake_visualizer. This must be called _during_ Diagram building and
@@ -95,11 +100,10 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     const MultibodyPlant<double>& multibody_plant,
     lcm::DrakeLcmInterface* lcm = nullptr);
 
-/** Implements ConnectContactResultsToDrakeVisualizer, but using @p
- contact_results_port to explicitly specify the output port used to get
- contact results for @p multibody_plant.  This is required, for instance,
- when the MultibodyPlant is inside a Diagram, and the Diagram exports the
- pose bundle port.
+/** Implements ConnectContactResultsToDrakeVisualizer, but using
+ explicitly specified `contact_results_port` and `geometry_input_port`
+ arguments.  This call is required, for instance, when the MultibodyPlant is
+ inside a Diagram, and the Diagram exports the pose bundle port.
 
  @pre contact_results_port must be connected to the contact_results_port of
  @p multibody_plant.

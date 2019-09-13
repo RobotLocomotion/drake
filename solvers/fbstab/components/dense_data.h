@@ -18,7 +18,7 @@ namespace fbstab {
  */
 class DenseData {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseData);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseData)
   /**
    * Stores the problem data and performs input validation.
    * This class assumes that the pointers to the data remain valid.

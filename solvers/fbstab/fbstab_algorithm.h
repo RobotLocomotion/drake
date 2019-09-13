@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -25,16 +26,20 @@ enum class ExitFlag {
 };
 
 /**
- * Packages the exit flag, overall residual,
+ * Packages the exit flag, overall residual, solve time,
  * and iteration counts.
+ *
+ * A negative valuve for solve_time indicates that no timing data is available.
  */
 struct SolverOut {
   ExitFlag eflag = ExitFlag::MAXITERATIONS;
   double residual = 0.0;
   int newton_iters = 0;
   int prox_iters = 0;
+  double solve_time = 0.0;  /// CPU time in s.
 };
 
+using clock = std::chrono::high_resolution_clock;
 /**
  * This class implements the FBstab solver for
  * convex quadratic programs, see
@@ -198,8 +203,10 @@ class FBstabAlgorithm {
     }
   }
   void UpdateOption(const char* option, bool value) {
-    if (strcmp(option, "check_feasibility")) {
+    if (std::strcmp(option, "check_feasibility") == 0) {
       check_feasibility_ = value;
+    } else if (std::strcmp(option, "record_solve_time") == 0) {
+      record_solve_time_ = value;
     } else {
       printf("%s is not an option, no action taken\n", option);
     }
@@ -211,6 +218,7 @@ class FBstabAlgorithm {
   void set_display_level(Display v) { display_level_ = v; }
 
  private:
+  using time_point = clock::time_point;
   // Codes for infeasibility detection.
   enum class InfeasibilityStatus {
     FEASIBLE = 0,
@@ -218,6 +226,8 @@ class FBstabAlgorithm {
     DUAL = 2,
     BOTH = 3
   };
+
+  bool record_solve_time_ = true;
 
   // Iteration counters.
   int newton_iters_ = 0;
@@ -291,6 +301,42 @@ class FBstabAlgorithm {
   double SolveProximalSubproblem(Variable* x, Variable* xbar, double tol,
                                  double sigma, double current_outer_residual);
 
+  /*
+   * Prepares a suitable output structure.
+   *
+   * @param[in] e exit flag
+   * @param[in] prox_iters
+   * @param[in] newton_iters
+   * @param[in] r
+   * @param[in] start time instant when the solve call started
+   */
+  SolverOut PrepareOutput(ExitFlag e, int prox_iters, int newton_iters,
+                          const Residual& r, time_point start) const {
+    struct SolverOut output = {
+        ExitFlag::MAXITERATIONS,  // exit flag
+        0.0,                      // residual
+        0,                        // prox iters
+        0,                        // newton iters
+        -1.0 / 1000.0,            // solve time
+                                  // (-ve value indicates no timing data
+                                  // available)
+    };
+
+    if (record_solve_time_) {
+      time_point now = clock::now();
+      std::chrono::duration<double> elapsed = now - start;
+      output.solve_time = elapsed.count();
+    }
+    output.eflag = e;
+    output.residual = r.Norm();
+    output.newton_iters = newton_iters;
+    output.prox_iters = prox_iters;
+
+    // Printing is in ms.
+    PrintFinal(prox_iters, newton_iters, e, r, 1000.0 * output.solve_time);
+    return output;
+  }
+
   /**
    * Checks if x certifies primal or dual infeasibility.
    * @param[in]  x
@@ -341,7 +387,7 @@ class FBstabAlgorithm {
   }
 
   // Prints a header line to stdout depending on display settings.
-  void PrintIterHeader() {
+  void PrintIterHeader() const {
     if (display_level_ == Display::ITER) {
       printf("%12s  %12s  %12s  %12s  %12s  %12s  %12s\n", "prox iter",
              "newton iters", "|rz|", "|rl|", "|rv|", "Inner res", "Inner tol");
@@ -350,7 +396,7 @@ class FBstabAlgorithm {
 
   // Prints an iteration progress line to stdout depending on display settings.
   void PrintIterLine(int prox_iters, int newton_iters, const Residual& rk,
-                     const Residual& ri, double itol) {
+                     const Residual& ri, double itol) const {
     if (display_level_ == Display::ITER) {
       printf("%12d  %12d  %12.4e  %12.4e  %12.4e  %12.4e  %12.4e\n", prox_iters,
              newton_iters, rk.z_norm(), rk.l_norm(), rk.v_norm(), ri.Norm(),
@@ -360,7 +406,7 @@ class FBstabAlgorithm {
 
   // Prints a detailed header line to stdout depending on display settings.
   void PrintDetailedHeader(int prox_iters, int newton_iters,
-                           const Residual& r) {
+                           const Residual& r) const {
     if (display_level_ == Display::ITER_DETAILED) {
       double t = r.Norm();
       printf("Begin Prox Iter: %d, Total Newton Iters: %d, Residual: %6.4e\n",
@@ -372,7 +418,8 @@ class FBstabAlgorithm {
 
   // Prints inner loop iterations details to stdout depending on display
   // settings.
-  void PrintDetailedLine(int iter, double step_length, const Residual& r) {
+  void PrintDetailedLine(int iter, double step_length,
+                         const Residual& r) const {
     if (display_level_ == Display::ITER_DETAILED) {
       printf("%10d  %10e  %10e  %10e  %10e\n", iter, step_length, r.z_norm(),
              r.l_norm(), r.v_norm());
@@ -380,18 +427,19 @@ class FBstabAlgorithm {
   }
 
   // Prints a footer to stdout depending on display settings.
-  void PrintDetailedFooter(double tol, const Residual& r) {
+  void PrintDetailedFooter(double tol, const Residual& r) const {
     if (display_level_ == Display::ITER_DETAILED) {
       printf(
-          "Exiting inner loop. Inner residual: %6.4e, Inner tolerance: %6.4e\n",
+          "Exiting inner loop. Inner residual: %6.4e, Inner tolerance: "
+          "%6.4e\n",
           r.Norm(), tol);
     }
   }
   // Prints a summary to stdout depending on display settings.
   void PrintFinal(int prox_iters, int newton_iters, ExitFlag eflag,
-                  const Residual& r) {
+                  const Residual& r, double t) const {
     if (display_level_ >= Display::FINAL) {
-      printf("Optimization completed!  Exit code:");
+      printf("\nOptimization completed!  Exit code:");
       switch (eflag) {
         case ExitFlag::SUCCESS:
           printf(" Success\n");
@@ -414,6 +462,7 @@ class FBstabAlgorithm {
         default:
           DRAKE_UNREACHABLE();
       }
+      printf("Time elapsed: %f ms (-1.0 indicates timing disabled)\n", t);
       printf("Proximal iterations: %d out of %d\n", prox_iters,
              max_prox_iters_);
       printf("Newton iterations: %d out of %d\n", newton_iters,
@@ -433,18 +482,14 @@ template <class Variable, class Residual, class Data, class LinearSolver,
 SolverOut FBstabAlgorithm<Variable, Residual, Data, LinearSolver,
                           Feasibility>::Solve(const Data* qp_data,
                                               Variable* x0) {
+  const time_point start_time{record_solve_time_ ? clock::now()
+                                                 : time_point{} /* dummy */};
+
   // Make sure the linear solver and residuals objects are using the same value
   // for the alpha parameter.
   rk_->SetAlpha(alpha_);
   ri_->SetAlpha(alpha_);
   linear_solver_->SetAlpha(alpha_);
-
-  struct SolverOut output = {
-      ExitFlag::MAXITERATIONS,  // exit flag
-      0.0,                      // residual
-      0,                        // prox iters
-      0                         // newton iters
-  };
 
   // Supply a pointer to the data object.
   xk_->LinkData(qp_data);
@@ -467,9 +512,12 @@ SolverOut FBstabAlgorithm<Variable, Residual, Data, LinearSolver,
   double Ek = E0;
   double inner_tol = saturate(E0, inner_tol_min_, inner_tol_max_);
 
+  // Reset iteration count.
   newton_iters_ = 0;
   prox_iters_ = 0;
+
   PrintIterHeader();
+
   // Main proximal loop.
   for (int k = 0; k < max_prox_iters_; k++) {
     // The solver stops if:
@@ -478,15 +526,10 @@ SolverOut FBstabAlgorithm<Variable, Residual, Data, LinearSolver,
     rk_->PenalizedNaturalResidual(*xk_);
     Ek = rk_->Norm();
     if (Ek <= abs_tol_ + E0 * rel_tol_ || dx_->Norm() <= stall_tol_) {
-      output.eflag = ExitFlag::SUCCESS;
-      output.residual = Ek;
-      output.newton_iters = newton_iters_;
-      output.prox_iters = prox_iters_;
-      x0->Copy(*xk_);
-
       PrintIterLine(prox_iters_, newton_iters_, *rk_, *ri_, inner_tol);
-      PrintFinal(prox_iters_, newton_iters_, output.eflag, *rk_);
-
+      SolverOut output = PrepareOutput(ExitFlag::SUCCESS, prox_iters_,
+                                       newton_iters_, *rk_, start_time);
+      x0->Copy(*xk_);
       return output;
     } else {
       PrintDetailedHeader(prox_iters_, newton_iters_, *rk_);
@@ -502,20 +545,20 @@ SolverOut FBstabAlgorithm<Variable, Residual, Data, LinearSolver,
     // Solve the proximal subproblem.
     xi_->Copy(*xk_);
     const double Eo = SolveProximalSubproblem(xi_, xk_, inner_tol, sigma, Ek);
+    // Iteration timeout check.
     if (newton_iters_ >= max_newton_iters_) {
-      output.eflag = ExitFlag::MAXITERATIONS;
       if (Eo < Ek) {
         x0->Copy(*xi_);
-        output.residual = Eo;
+        SolverOut output = PrepareOutput(ExitFlag::MAXITERATIONS, prox_iters_,
+                                         newton_iters_, *rk_, start_time);
+        return output;
       } else {
         x0->Copy(*xk_);
-        output.residual = Ek;
         rk_->PenalizedNaturalResidual(*xk_);
+        SolverOut output = PrepareOutput(ExitFlag::MAXITERATIONS, prox_iters_,
+                                         newton_iters_, *rk_, start_time);
+        return output;
       }
-      output.newton_iters = newton_iters_;
-      output.prox_iters = prox_iters_;
-      PrintFinal(prox_iters_, newton_iters_, output.eflag, *rk_);
-      return output;
     }
 
     // Compute dx <- x(k+1) - x(k).
@@ -526,18 +569,24 @@ SolverOut FBstabAlgorithm<Variable, Residual, Data, LinearSolver,
       InfeasibilityStatus status = CheckInfeasibility(*dx_);
       if (status != InfeasibilityStatus::FEASIBLE) {
         if (status == InfeasibilityStatus::PRIMAL) {
-          output.eflag = ExitFlag::PRIMAL_INFEASIBLE;
+          SolverOut output =
+              PrepareOutput(ExitFlag::PRIMAL_INFEASIBLE, prox_iters_,
+                            newton_iters_, *rk_, start_time);
+          x0->Copy(*dx_);
+          return output;
         } else if (status == InfeasibilityStatus::DUAL) {
-          output.eflag = ExitFlag::DUAL_INFEASIBLE;
-        } else if (status == InfeasibilityStatus::BOTH) {
-          output.eflag = ExitFlag::PRIMAL_DUAL_INFEASIBLE;
+          SolverOut output =
+              PrepareOutput(ExitFlag::DUAL_INFEASIBLE, prox_iters_,
+                            newton_iters_, *rk_, start_time);
+          x0->Copy(*dx_);
+          return output;
+        } else {
+          SolverOut output =
+              PrepareOutput(ExitFlag::PRIMAL_DUAL_INFEASIBLE, prox_iters_,
+                            newton_iters_, *rk_, start_time);
+          x0->Copy(*dx_);
+          return output;
         }
-        output.residual = Ek;
-        output.newton_iters = newton_iters_;
-        output.prox_iters = prox_iters_;
-        x0->Copy(*dx_);
-        PrintFinal(prox_iters_, newton_iters_, output.eflag, *rk_);
-        return output;
       }
     }
     // x(k+1) = x(i)
@@ -546,13 +595,9 @@ SolverOut FBstabAlgorithm<Variable, Residual, Data, LinearSolver,
   }  // end proximal loop
 
   // Timeout exit.
-  output.eflag = ExitFlag::MAXITERATIONS;
-  output.residual = Ek;
-  output.newton_iters = newton_iters_;
-  output.prox_iters = prox_iters_;
+  SolverOut output = PrepareOutput(ExitFlag::MAXITERATIONS, prox_iters_,
+                                   newton_iters_, *rk_, start_time);
   x0->Copy(*xk_);
-  PrintFinal(prox_iters_, newton_iters_, output.eflag, *rk_);
-
   return output;
 }
 

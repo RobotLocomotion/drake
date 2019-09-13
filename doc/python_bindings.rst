@@ -4,8 +4,8 @@
 Using Drake from Python
 ***********************
 
-A limited subset of the Drake C++ functionality is available from Python. The
-Drake Python bindings are generated using `pybind11
+A substantial subset of the Drake C++ functionality is available from Python.
+The Drake Python bindings are generated using `pybind11
 <https://github.com/pybind/pybind11>`_, which means that every function or
 class which is exposed to C++ has been explicitly enumerated in one of the
 source files inside the ``bindings/pydrake`` folder. These bindings are

@@ -230,8 +230,9 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& t0, const T& h,
   if (!this->get_reuse())
     return false;
 
-  // Try StepAbstract again, freshening Jacobians and iteration matrix
-  // factorizations as helpful.
+  // Try StepAbstract again, first resetting xtplus to xt0. That method will
+  // freshen Jacobians and iteration matrix factorizations as necessary.
+  *xtplus = xt0;
   return StepAbstract(
       t0, h, xt0, g, compute_and_factor_iteration_matrix, xtplus, trial+1);
 }

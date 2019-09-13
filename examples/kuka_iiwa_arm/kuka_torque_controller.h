@@ -12,6 +12,7 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
+// N.B. Inheritance order must remain fixed for pydrake (#9243).
 /**
  * Controller that take emulates the kuka_iiwa_arm when operated in torque
  * control mode. The controller specifies a stiffness and damping ratio at each

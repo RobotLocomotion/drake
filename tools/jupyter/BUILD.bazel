@@ -1,0 +1,76 @@
+# -*- mode: python -*-
+# vi: set ft=python :
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+    "drake_py_unittest",
+)
+load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
+
+drake_py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    deps = ["//tools:module_py"],
+)
+
+drake_py_library(
+    name = "jupyter_bazel_py",
+    srcs = ["jupyter_bazel.py"],
+    visibility = ["//visibility:public"],
+    deps = [":module_py"],
+)
+
+drake_py_library(
+    name = "example_library",
+    srcs = ["example_library.py"],
+    imports = [":module_py"],
+)
+
+drake_jupyter_py_binary(
+    name = "example",
+    add_test_rule = 1,
+    deps = [":example_library"],
+)
+
+drake_py_unittest(
+    name = "jupyter_notebook_test",
+    # N.B. This is purely for checking for platform support.
+    deps = [":failing_notebook"],
+)
+
+# Add example failing notebook.
+drake_jupyter_py_binary(
+    name = "failing_notebook",
+    testonly = 1,
+    # Do not test this on its own because it is a negative test fixture for
+    # `failing_notebook_test`.
+    add_test_rule = 0,
+    notebook = "test/failing_notebook.ipynb",
+)
+
+# Add example failing notebook due to deprecation.
+drake_jupyter_py_binary(
+    name = "failing_notebook_deprecation",
+    testonly = 1,
+    # Do not test this on its own because it is a negative test fixture for
+    # `failing_notebook_test`.
+    add_test_rule = 0,
+    notebook = "test/failing_notebook_deprecation.ipynb",
+    deps = [
+        # N.B. Use granular target which does not depend on C extensions.
+        "//bindings/pydrake/common:deprecation_py",
+    ],
+)
+
+# Ensure the notebook fails as expected.
+drake_py_unittest(
+    name = "failing_notebook_test",
+    deps = [
+        ":failing_notebook",
+        ":failing_notebook_deprecation",
+    ],
+)
+
+add_lint_tests()

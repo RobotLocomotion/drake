@@ -108,6 +108,43 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "mpc_residual",
+    srcs = ["mpc_residual.cc"],
+    hdrs = ["mpc_residual.h"],
+    deps = [
+        ":mpc_data",
+        ":mpc_variable",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "mpc_feasibility",
+    srcs = ["mpc_feasibility.cc"],
+    hdrs = ["mpc_feasibility.h"],
+    deps = [
+        ":mpc_data",
+        ":mpc_variable",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "riccati_linear_solver",
+    srcs = ["riccati_linear_solver.cc"],
+    hdrs = ["riccati_linear_solver.h"],
+    deps = [
+        ":mpc_data",
+        ":mpc_residual",
+        ":mpc_variable",
+        "//common:essential",
+        "@eigen",
+    ],
+)
+
 drake_cc_googletest(
     name = "mpc_component_unit_tests",
     srcs = [
@@ -116,7 +153,10 @@ drake_cc_googletest(
     ],
     deps = [
         ":mpc_data",
+        ":mpc_feasibility",
+        ":mpc_residual",
         ":mpc_variable",
+        ":riccati_linear_solver",
         "//common:essential",
         "@eigen",
     ],
