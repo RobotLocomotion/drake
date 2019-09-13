@@ -188,11 +188,11 @@ struct TAMSISolverParameters {
   /// The stiction tolerance vₛ for the slip velocity in the regularized
   /// friction function, in m/s. Roughly, for an externally applied tangential
   /// forcing fₜ and normal force fₙ, under "stiction", the slip velocity will
-  /// be approximately vₜ ≈ vₛ fₜ/(μfₙ). In other words, the maximum slip error
-  /// of the regularized friction approximation occurs at the edge of the
-  /// friction cone when fₜ = μfₙ and vₜ = vₛ. The default of 0.1 mm/s is a very
-  /// tight value that for most problems of interest in robotics will result in
-  /// simulation results with negligible slip velocities introduced by
+  /// be approximately vₜ ≈ vₛ fₜ/(μfₙ). In other words, the maximum slip
+  /// error of the regularized friction approximation occurs at the edge of the
+  /// friction cone when fₜ = μfₙ and vₜ = vₛ. The default of 0.1 mm/s is
+  /// a very tight value that for most problems of interest in robotics will
+  /// result in simulation results with negligible slip velocities introduced by
   /// regularizing friction when in stiction.
   double stiction_tolerance{1.0e-4};  // 0.1 mm/s
 
