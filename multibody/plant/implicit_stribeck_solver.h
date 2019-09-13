@@ -166,9 +166,9 @@ struct TALSLimiter {
 };
 }  // namespace internal
 
-/// The result from ImplicitStribeckSolver::SolveWithGuess() used to report the
+/// The result from TAMSISolver::SolveWithGuess() used to report the
 /// success or failure of the solver.
-enum class ImplicitStribeckSolverResult {
+enum class TAMSISolverResult {
   /// Successful computation.
   kSuccess = 0,
 
@@ -182,8 +182,8 @@ enum class ImplicitStribeckSolverResult {
 };
 
 /// These are the parameters controlling the iteration process of the
-/// ImplicitStribeckSolver solver.
-struct ImplicitStribeckSolverParameters {
+/// TAMSISolver solver.
+struct TAMSISolverParameters {
   /// The stiction tolerance vₛ for the slip velocity in the Stribeck
   /// function, in m/s. Roughly, for an externally applied tangential forcing
   /// fₜ and normal force fₙ, under "stiction", the slip velocity will be
@@ -213,11 +213,11 @@ struct ImplicitStribeckSolverParameters {
   /// Typical values lie within the 10⁻³ - 10⁻² range.
   double relative_tolerance{1.0e-2};
 
-  /// (Advanced) ImplicitStribeckSolver limits large angular changes between
+  /// (Advanced) TAMSISolver limits large angular changes between
   /// tangential velocities at two successive iterations vₜᵏ⁺¹ and vₜᵏ. This
   /// change is measured by the angle θ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)).
-  /// To aid convergence, ImplicitStribeckSolver, limits this angular change to
-  /// `theta_max`. Please refer to the documentation for ImplicitStribeckSolver
+  /// To aid convergence, TAMSISolver, limits this angular change to
+  /// `theta_max`. Please refer to the documentation for TAMSISolver
   /// for further details.
   ///
   /// Small values of `theta_max` will result in a larger number of iterations
@@ -231,9 +231,9 @@ struct ImplicitStribeckSolverParameters {
 };
 
 /// Struct used to store information about the iteration process performed by
-/// ImplicitStribeckSolver.
-struct ImplicitStribeckSolverIterationStats {
-  /// (Internal) Used by ImplicitStribeckSolver to reset statistics.
+/// TAMSISolver.
+struct TAMSISolverIterationStats {
+  /// (Internal) Used by TAMSISolver to reset statistics.
   void Reset() {
     num_iterations = 0;
     // Clear does not change a std::vector "capacity", and therefore there's
@@ -241,13 +241,13 @@ struct ImplicitStribeckSolverIterationStats {
     residuals.clear();
   }
 
-  /// (Internal) Used by ImplicitStribeckSolver to update statistics.
+  /// (Internal) Used by TAMSISolver to update statistics.
   void Update(double iteration_residual) {
     ++num_iterations;
     residuals.push_back(iteration_residual);
   }
 
-  /// The number of iterations performed by the last ImplicitStribeckSolver
+  /// The number of iterations performed by the last TAMSISolver
   /// solve.
   int num_iterations{0};
 
@@ -259,7 +259,7 @@ struct ImplicitStribeckSolverIterationStats {
   /// (Advanced) Residual in the tangential velocities, in m/s. The k-th entry
   /// in this vector corresponds to the residual for the k-th Newton-Raphson
   /// iteration performed by the solver.
-  /// After ImplicitStribeckSolver solved a problem, this vector will have size
+  /// After TAMSISolver solved a problem, this vector will have size
   /// num_iterations.
   /// The last entry in this vector, `residuals[num_iterations-1]`, corresponds
   /// to the residual upon completion of the solver, i.e. vt_residual.
@@ -267,7 +267,7 @@ struct ImplicitStribeckSolverIterationStats {
 };
 
 /** @anchor implicit_stribeck_class_intro
-%ImplicitStribeckSolver solves the equations below for mechanical systems
+%TAMSISolver solves the equations below for mechanical systems
 with contact using a modified Stribeck model of friction:
 @verbatim
             q̇ = N(q) v
@@ -284,13 +284,13 @@ This solver assumes a compliant law for the normal forces `fₙ(q, v)` and
 therefore the functional dependence of `fₙ(q, v)` with q and v is stated
 explicitly.
 
-Since %ImplicitStribeckSolver uses a modified Stribeck model for friction,
+Since %TAMSISolver uses a modified Stribeck model for friction,
 we explicitly emphasize the functional dependence of `fₜ(q, v)` with the
 generalized velocities. The functional dependence of `fₜ(q, v)` with the
 generalized positions stems from its direct dependence with the normal
 forces `fₙ(q, v)`.
 
-%ImplicitStribeckSolver implements two different schemes. A "one-way
+%TAMSISolver implements two different schemes. A "one-way
 coupling scheme" which solves for the friction forces given the normal
 forces are known. That is, normal forces affect the computation of the
 friction forces however, the normal forces are kept constant during the
@@ -329,7 +329,7 @@ The equation for the generalized velocities in Eq. (2) is rewritten as:
 where `p* = M vˢ + δt τˢ` is the generalized momentum that the
 system would have in the absence of contact forces and, for simplicity, we
 have only kept the functional dependencies in generalized velocities. Notice
-that %ImplicitStribeckSolver uses a precomputed value of the normal forces.
+that %TAMSISolver uses a precomputed value of the normal forces.
 These normal forces could be available for instance if
 using a compliant contact approach, for which normal forces are a function
 of the state.
@@ -397,14 +397,14 @@ vˢ⁺¹:
 with p* = `p* = M vˢ + δt τˢ` the generalized momentum that the system
 would have in the absence of contact forces.
 
-%ImplicitStribeckSolver uses a Newton-Raphson strategy to solve Eq. (10) in
+%TAMSISolver uses a Newton-Raphson strategy to solve Eq. (10) in
 the generalized velocities, limiting the iteration update with the scheme
 described in @ref iteration_limiter.
 
 @anchor iteration_limiter
 <h2>Limits in the Iteration Updates</h2>
 
-%ImplicitStribeckSolver solves for the generalized velocity at the next time
+%TAMSISolver solves for the generalized velocity at the next time
 step `vˢ⁺¹` with either a one-way or two-way coupled scheme as described in the
  previous sections.
 The solver uses a Newton-Raphson iteration to compute an update `Δvᵏ` at the
@@ -500,13 +500,13 @@ term exactly as needed in Eq. (16).
 @authors Drake team (see https://drake.mit.edu/credits).
 */
 template <typename T>
-class ImplicitStribeckSolver {
+class TAMSISolver {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImplicitStribeckSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TAMSISolver)
 
   /// Instantiates a solver for a problem with `nv` generalized velocities.
   /// @throws std::exception if nv is non-positive.
-  explicit ImplicitStribeckSolver(int nv);
+  explicit TAMSISolver(int nv);
 
   // TODO(amcastro-tri): submit a separate reformat PR changing /// by /**.
   /// Sets data for the problem to be solved as outlined by Eq. (3) in this
@@ -612,7 +612,7 @@ class ImplicitStribeckSolver {
   /// coupling is used. See this class's documentation for further details.
   /// To retrieve the solution, please refer to @ref retrieving_the_solution.
   /// @returns kSuccess if the iteration converges. All other values of
-  /// ImplicitStribeckSolverResult report different failure modes.
+  /// TAMSISolverResult report different failure modes.
   /// Uses `this` solver accessors to retrieve the last computed solution.
   /// @warning Always verify that the return value indicates success before
   /// retrieving the computed solution.
@@ -623,7 +623,7 @@ class ImplicitStribeckSolver {
   ///
   /// @throws std::logic_error if `v_guess` is not of size `nv`, the number of
   /// generalized velocities specified at construction.
-  ImplicitStribeckSolverResult SolveWithGuess(
+  TAMSISolverResult SolveWithGuess(
       double dt, const VectorX<T>& v_guess) const;
 
   /// @anchor retrieving_the_solution
@@ -684,20 +684,20 @@ class ImplicitStribeckSolver {
 
   /// Returns statistics recorded during the last call to SolveWithGuess().
   /// See IterationStats for details.
-  const ImplicitStribeckSolverIterationStats& get_iteration_statistics() const {
+  const TAMSISolverIterationStats& get_iteration_statistics() const {
     return statistics_;
   }
 
   /// Returns the current set of parameters controlling the iteration process.
   /// See Parameters for details.
-  const ImplicitStribeckSolverParameters& get_solver_parameters() const {
+  const TAMSISolverParameters& get_solver_parameters() const {
     return parameters_;
   }
 
   /// Sets the parameters to be used by the solver.
   /// See Parameters for details.
   void set_solver_parameters(
-      const ImplicitStribeckSolverParameters& parameters) {
+      const TAMSISolverParameters& parameters) {
     // cos_theta_max must be updated consistently with the new value of
     // theta_max.
     cos_theta_max_ = std::cos(parameters.theta_max);
@@ -706,7 +706,7 @@ class ImplicitStribeckSolver {
 
  private:
   // Helper class for unit testing.
-  friend class ImplicitStribeckSolverTester;
+  friend class TAMSISolverTester;
 
   // Contains all the references that define the problem to be solved.
   // These references must remain valid at least from the time they are set with
@@ -989,7 +989,7 @@ class ImplicitStribeckSolver {
     // Returns a constant reference to the vector containing the tangential
     // friction forces fₜ for all contact points. fₜ has size 2nc since it
     // stores the two tangential components of the friction force for each
-    // contact point. Refer to ImplicitStribeckSolver for details.
+    // contact point. Refer to TAMSISolver for details.
     Eigen::VectorBlock<const VectorX<T>> ft() const {
       return ft_.segment(0, 2 * nc_);
     }
@@ -1140,7 +1140,7 @@ class ImplicitStribeckSolver {
   int nc_;  // Number of contact points.
 
   // The parameters of the solver controlling the iteration strategy.
-  ImplicitStribeckSolverParameters parameters_;
+  TAMSISolverParameters parameters_;
   ProblemDataAliases problem_data_aliases_;
   mutable FixedSizeWorkspace fixed_size_workspace_;
   mutable VariableSizeWorkspace variable_size_workspace_;
@@ -1150,7 +1150,7 @@ class ImplicitStribeckSolver {
 
   // We save solver statistics such as number of iterations and residuals so
   // that we can report them if requested.
-  mutable ImplicitStribeckSolverIterationStats statistics_;
+  mutable TAMSISolverIterationStats statistics_;
 };
 
 }  // namespace multibody
@@ -1160,4 +1160,4 @@ DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     struct ::drake::multibody::internal::TALSLimiter)
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::ImplicitStribeckSolver)
+    class ::drake::multibody::TAMSISolver)

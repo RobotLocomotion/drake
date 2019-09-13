@@ -1,7 +1,7 @@
 #pragma once
 
 // This file implements a method to compute the  Newton-Raphson Jacobian
-// J = ∇ᵥR of the residual for the ImplicitStribeckSolver using automatic
+// J = ∇ᵥR of the residual for the TAMSISolver using automatic
 // differentiation. This separate implementation is used to verify the
 // analytical (and faster) Jacobian computed by the internal implementation of
 // the solver.
@@ -148,7 +148,7 @@ VectorX<U> CalcResidual(
 }
 
 // Computes the Jacobian J = ∇ᵥR of the residual for the two-way coupled scheme
-// of ImplicitStribeckSolver using automatic differentiation.
+// of TAMSISolver using automatic differentiation.
 MatrixX<double> CalcTwoWayCoupledJacobianWithAutoDiff(
     const MatrixX<double>& M,
     const MatrixX<double>& Jn,
@@ -172,7 +172,7 @@ MatrixX<double> CalcTwoWayCoupledJacobianWithAutoDiff(
 }
 
 // Computes the Jacobian J = ∇ᵥR of the residual for the one-way coupled scheme
-// of ImplicitStribeckSolver using automatic differentiation.
+// of TAMSISolver using automatic differentiation.
 MatrixX<double> CalcOneWayCoupledJacobianWithAutoDiff(
     const MatrixX<double>& M,
     const MatrixX<double>& Jn,

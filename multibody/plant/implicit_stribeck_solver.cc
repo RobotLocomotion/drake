@@ -245,7 +245,7 @@ T TALSLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
 }  // namespace internal
 
 template <typename T>
-ImplicitStribeckSolver<T>::ImplicitStribeckSolver(int nv) :
+TAMSISolver<T>::TAMSISolver(int nv) :
     nv_(nv),
     fixed_size_workspace_(nv),
     // Provide an initial (arbitrarily large enough for most applications)
@@ -256,7 +256,7 @@ ImplicitStribeckSolver<T>::ImplicitStribeckSolver(int nv) :
 }
 
 template <typename T>
-void ImplicitStribeckSolver<T>::SetOneWayCoupledProblemData(
+void TAMSISolver<T>::SetOneWayCoupledProblemData(
     EigenPtr<const MatrixX<T>> M,
     EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
     EigenPtr<const VectorX<T>> p_star,
@@ -273,7 +273,7 @@ void ImplicitStribeckSolver<T>::SetOneWayCoupledProblemData(
 }
 
 template <typename T>
-void ImplicitStribeckSolver<T>::SetTwoWayCoupledProblemData(
+void TAMSISolver<T>::SetTwoWayCoupledProblemData(
     EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> Jn,
     EigenPtr<const MatrixX<T>> Jt, EigenPtr<const VectorX<T>> p_star,
     EigenPtr<const VectorX<T>> x0, EigenPtr<const VectorX<T>> stiffness,
@@ -293,7 +293,7 @@ void ImplicitStribeckSolver<T>::SetTwoWayCoupledProblemData(
 }
 
 template <typename T>
-void ImplicitStribeckSolver<T>::CalcFrictionForces(
+void TAMSISolver<T>::CalcFrictionForces(
     const Eigen::Ref<const VectorX<T>>& vt,
     const Eigen::Ref<const VectorX<T>>& fn,
     EigenPtr<VectorX<T>> v_slip_ptr,
@@ -369,7 +369,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForces(
 }
 
 template <typename T>
-void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
+void TAMSISolver<T>::CalcFrictionForcesGradient(
     const Eigen::Ref<const VectorX<T>>& fn,
     const Eigen::Ref<const VectorX<T>>& mu_vt,
     const Eigen::Ref<const VectorX<T>>& t_hat,
@@ -451,7 +451,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
 }
 
 template <typename T>
-void ImplicitStribeckSolver<T>::CalcNormalForces(
+void TAMSISolver<T>::CalcNormalForces(
     const Eigen::Ref<const VectorX<T>>& x,
     const Eigen::Ref<const VectorX<T>>& vn,
     const Eigen::Ref<const MatrixX<T>>& Jn,
@@ -514,7 +514,7 @@ void ImplicitStribeckSolver<T>::CalcNormalForces(
 }
 
 template <typename T>
-void ImplicitStribeckSolver<T>::CalcJacobian(
+void TAMSISolver<T>::CalcJacobian(
     const Eigen::Ref<const MatrixX<T>>& M,
     const Eigen::Ref<const MatrixX<T>>& Jn,
     const Eigen::Ref<const MatrixX<T>>& Jt,
@@ -578,7 +578,7 @@ void ImplicitStribeckSolver<T>::CalcJacobian(
 }
 
 template <typename T>
-T ImplicitStribeckSolver<T>::CalcAlpha(
+T TAMSISolver<T>::CalcAlpha(
     const Eigen::Ref<const VectorX<T>>& vt,
     const Eigen::Ref<const VectorX<T>>& Delta_vt) const {
   using std::min;
@@ -599,7 +599,7 @@ T ImplicitStribeckSolver<T>::CalcAlpha(
 }
 
 template <typename T>
-ImplicitStribeckSolverResult ImplicitStribeckSolver<T>::SolveWithGuess(
+TAMSISolverResult TAMSISolver<T>::SolveWithGuess(
     double dt, const VectorX<T>& v_guess) const {
   DRAKE_THROW_UNLESS(v_guess.size() == nv_);
 
@@ -620,7 +620,7 @@ ImplicitStribeckSolverResult ImplicitStribeckSolver<T>::SolveWithGuess(
     v = M.ldlt().solve(p_star);
     // "One iteration" with exactly "zero" vt_error.
     statistics_.Update(0.0);
-    return ImplicitStribeckSolverResult::kSuccess;
+    return TAMSISolverResult::kSuccess;
   }
 
   // Solver parameters.
@@ -693,7 +693,7 @@ ImplicitStribeckSolverResult ImplicitStribeckSolver<T>::SolveWithGuess(
       // Update generalized forces and return.
       tau_f = Jt.transpose() * ft;
       tau = tau_f + Jn.transpose() * fn;
-      return ImplicitStribeckSolverResult::kSuccess;
+      return TAMSISolverResult::kSuccess;
     }
 
     // Newton-Raphson residual.
@@ -720,7 +720,7 @@ ImplicitStribeckSolverResult ImplicitStribeckSolver<T>::SolveWithGuess(
       auto& J_ldlt = fixed_size_workspace_.mutable_J_ldlt();
       J_ldlt.compute(J);  // Update factorization.
       if (J_ldlt.info() != Eigen::Success) {
-        return ImplicitStribeckSolverResult::kLinearSolverFailed;
+        return TAMSISolverResult::kLinearSolverFailed;
       }
       Delta_v = J_ldlt.solve(-residual);
     }
@@ -755,11 +755,11 @@ ImplicitStribeckSolverResult ImplicitStribeckSolver<T>::SolveWithGuess(
 
   // If we are here is because we reached the maximum number of iterations
   // without converging to the specified tolerance.
-  return ImplicitStribeckSolverResult::kMaxIterationsReached;
+  return TAMSISolverResult::kMaxIterationsReached;
 }
 
 template <typename T>
-T ImplicitStribeckSolver<T>::ModifiedStribeck(const T& s, const T& mu) {
+T TAMSISolver<T>::ModifiedStribeck(const T& s, const T& mu) {
   DRAKE_ASSERT(s >= 0);
   if (s >= 1) {
     return mu;
@@ -769,7 +769,7 @@ T ImplicitStribeckSolver<T>::ModifiedStribeck(const T& s, const T& mu) {
 }
 
 template <typename T>
-T ImplicitStribeckSolver<T>::ModifiedStribeckDerivative(
+T TAMSISolver<T>::ModifiedStribeckDerivative(
     const T& s, const T& mu) {
   DRAKE_ASSERT(s >= 0);
   if (s >= 1) {
@@ -786,4 +786,4 @@ DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     struct ::drake::multibody::internal::TALSLimiter)
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::ImplicitStribeckSolver)
+    class ::drake::multibody::TAMSISolver)

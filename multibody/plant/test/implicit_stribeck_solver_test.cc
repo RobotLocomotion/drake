@@ -10,12 +10,12 @@
 namespace drake {
 namespace multibody {
 
-// This class has friend access to ImplicitStribeckSolver so that we can test
+// This class has friend access to TAMSISolver so that we can test
 // its internals.
-class ImplicitStribeckSolverTester {
+class TAMSISolverTester {
  public:
   static MatrixX<double> CalcJacobian(
-      const ImplicitStribeckSolver<double>& solver,
+      const TAMSISolver<double>& solver,
       const Eigen::Ref<const VectorX<double>>& v,
       double dt) {
     const int nv = solver.nv_;
@@ -493,7 +493,7 @@ class PizzaSaver : public ::testing::Test {
   MatrixX<double> Jt_{2 * nc_, nv_};
 
   // The implicit Stribeck solver for this problem.
-  ImplicitStribeckSolver<double> solver_{nv_};
+  TAMSISolver<double> solver_{nv_};
 
   // Additional solver data that must outlive solver_ during solution.
   Vector3<double> p_star_;  // Generalized momentum.
@@ -523,13 +523,13 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
 
   SetProblem(v0, tau, mu, theta, dt);
 
-  ImplicitStribeckSolverParameters parameters;  // Default parameters.
+  TAMSISolverParameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
   parameters.relative_tolerance = 1.0e-4;
   solver_.set_solver_parameters(parameters);
 
-  ImplicitStribeckSolverResult info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, ImplicitStribeckSolverResult::kSuccess);
+  TAMSISolverResult info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, TAMSISolverResult::kSuccess);
 
   VectorX<double> tau_f = solver_.get_generalized_friction_forces();
 
@@ -582,7 +582,7 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   // Compute the Newton-Raphson Jacobian of the residual J = ∇ᵥR using the
   // solver's internal implementation.
   MatrixX<double> J =
-      ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
+      TAMSISolverTester::CalcJacobian(solver_, v, dt);
 
   // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
   // a completely separate implementation using automatic differentiation.
@@ -625,13 +625,13 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
 
   SetProblem(v0, tau, mu, theta, dt);
 
-  ImplicitStribeckSolverParameters parameters;  // Default parameters.
+  TAMSISolverParameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
   parameters.relative_tolerance = 1.0e-4;
   solver_.set_solver_parameters(parameters);
 
-  ImplicitStribeckSolverResult info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, ImplicitStribeckSolverResult::kSuccess);
+  TAMSISolverResult info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, TAMSISolverResult::kSuccess);
 
   VectorX<double> tau_f = solver_.get_generalized_friction_forces();
 
@@ -688,7 +688,7 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
   // Compute the Newton-Raphson Jacobian of the residual J = ∇ᵥR using the
   // solver's internal implementation.
   MatrixX<double> J =
-      ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
+      TAMSISolverTester::CalcJacobian(solver_, v, dt);
 
   // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
   // a completely separate implementation using automatic differentiation.
@@ -722,8 +722,8 @@ TEST_F(PizzaSaver, NoContact) {
 
   SetNoContactProblem(v0, tau, dt);
 
-  ImplicitStribeckSolverResult info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, ImplicitStribeckSolverResult::kSuccess);
+  TAMSISolverResult info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, TAMSISolverResult::kSuccess);
 
   EXPECT_EQ(solver_.get_generalized_friction_forces(), Vector3<double>::Zero());
 
@@ -817,7 +817,7 @@ class RollingCylinder : public ::testing::Test {
     return D;
   }
 
-  // Sets the ImplicitStribeckSolver to solve this cylinder case from the
+  // Sets the TAMSISolver to solve this cylinder case from the
   // input data:
   //   v0: velocity right before impact.
   //   tau: vector of externally applied generalized forces.
@@ -895,7 +895,7 @@ class RollingCylinder : public ::testing::Test {
   VectorX<double> x0_{nc_};
 
   // The implicit Stribeck solver for this problem.
-  ImplicitStribeckSolver<double> solver_{nv_};
+  TAMSISolver<double> solver_{nv_};
 
   // Additional solver data that must outlive solver_ during solution.
   VectorX<double> p_star_{nv_};  // Generalized momentum.
@@ -926,12 +926,12 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
 
   SetImpactProblem(v0, tau, mu, h0, dt);
 
-  ImplicitStribeckSolverParameters parameters;  // Default parameters.
+  TAMSISolverParameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
   solver_.set_solver_parameters(parameters);
 
-  ImplicitStribeckSolverResult info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, ImplicitStribeckSolverResult::kSuccess);
+  TAMSISolverResult info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, TAMSISolverResult::kSuccess);
 
   VectorX<double> tau_f = solver_.get_generalized_friction_forces();
 
@@ -967,7 +967,7 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
   // Compute the Newton-Raphson Jacobian of the residual J = ∇ᵥR using the
   // solver's internal implementation.
   MatrixX<double> J =
-      ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
+      TAMSISolverTester::CalcJacobian(solver_, v, dt);
 
   // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
   // a completely separate implementation using automatic differentiation.
@@ -1016,12 +1016,12 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
 
   SetImpactProblem(v0, tau, mu, h0, dt);
 
-  ImplicitStribeckSolverParameters parameters;  // Default parameters.
+  TAMSISolverParameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
   solver_.set_solver_parameters(parameters);
 
-  ImplicitStribeckSolverResult info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, ImplicitStribeckSolverResult::kSuccess);
+  TAMSISolverResult info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, TAMSISolverResult::kSuccess);
 
   VectorX<double> tau_f = solver_.get_generalized_friction_forces();
 
@@ -1060,7 +1060,7 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
   // Compute the Newton-Raphson Jacobian of the (two-way coupled)
   // residual J = ∇ᵥR using the solver's internal implementation.
   MatrixX<double> J =
-      ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
+      TAMSISolverTester::CalcJacobian(solver_, v, dt);
 
   // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
   // a completely separate implementation using automatic differentiation.

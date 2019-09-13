@@ -3132,7 +3132,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     // parameter. Pre-Finalize the solver is not yet created and therefore we
     // check for nullptr.
     if (is_discrete() && implicit_stribeck_solver_ != nullptr) {
-      ImplicitStribeckSolverParameters solver_parameters =
+      TAMSISolverParameters solver_parameters =
           implicit_stribeck_solver_->get_solver_parameters();
       solver_parameters.stiction_tolerance =
           stribeck_model_.stiction_tolerance();
@@ -3324,7 +3324,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // to perform the update using a step size dt_substep = dt/num_substeps.
   // During the time span dt the problem data M, Jn, Jt and minus_tau, are
   // approximated to be constant, a first order approximation.
-  ImplicitStribeckSolverResult SolveUsingSubStepping(
+  TAMSISolverResult SolveUsingSubStepping(
       int num_substeps,
       const MatrixX<T>& M0, const MatrixX<T>& Jn, const MatrixX<T>& Jt,
       const VectorX<T>& minus_tau,
@@ -3333,20 +3333,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const VectorX<T>& v0, const VectorX<T>& phi0) const;
 
   // This method uses the time stepping method described in
-  // ImplicitStribeckSolver to advance the model's state stored in
+  // TAMSISolver to advance the model's state stored in
   // `context0` taking a time step of size time_step().
   // Contact forces and velocities are computed and stored in `results`. See
-  // ImplicitStribeckSolverResults for further details on the returned data.
+  // TAMSISolverResults for further details on the returned data.
   void CalcImplicitStribeckResults(
       const drake::systems::Context<T>& context0,
-      internal::ImplicitStribeckSolverResults<T>* results) const;
+      internal::TAMSISolverResults<T>* results) const;
 
   // Eval version of the method CalcImplicitStribeckResults().
-  const internal::ImplicitStribeckSolverResults<T>& EvalImplicitStribeckResults(
+  const internal::TAMSISolverResults<T>& EvalImplicitStribeckResults(
       const systems::Context<T>& context) const {
     return this
         ->get_cache_entry(cache_indexes_.implicit_stribeck_solver_results)
-        .template Eval<internal::ImplicitStribeckSolverResults<T>>(context);
+        .template Eval<internal::TAMSISolverResults<T>>(context);
   }
 
   // Helper method to fill in the ContactResults given the current context.
@@ -3414,7 +3414,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Calc method to output per model instance vector of generalized contact
   // forces.
   void CopyGeneralizedContactForcesOut(
-      const internal::ImplicitStribeckSolverResults<T>&,
+      const internal::TAMSISolverResults<T>&,
       ModelInstanceIndex, systems::BasicVector<T>* tau_vector) const;
 
   // Helper method to declare output ports used by this plant to communicate
@@ -3744,7 +3744,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   double time_step_{0};
 
   // The solver used when the plant is modeled as a discrete system.
-  std::unique_ptr<ImplicitStribeckSolver<T>> implicit_stribeck_solver_;
+  std::unique_ptr<TAMSISolver<T>> implicit_stribeck_solver_;
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;
