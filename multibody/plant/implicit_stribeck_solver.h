@@ -60,7 +60,7 @@ namespace internal {
 /// appropriate for this particular problem. We use the methodology outlined in
 /// [Uchida et al., 2015] and describe particulars to our implementation below.
 ///
-/// LimitDirectionChange implements a specific strategy with knowledge of the
+/// TALSLimiter implements a specific strategy with knowledge of the
 /// implicit Stribeck iteration procedure. It is important to note that the
 /// implicit Stribeck uses "soft norms" to avoid divisions by zero. That is,
 /// friction forces are computed according to: <pre>
@@ -75,15 +75,15 @@ namespace internal {
 /// with other friction forces) has the potential to, mistakenly, force a
 /// transition from stiction to sliding. The solver will most likely recover
 /// from this, but this will result in a larger number of iterations.
-/// LimitDirectionChange considers any tangential velocity vₜ (or change Δvₜ)
+/// TALSLimiter considers any tangential velocity vₜ (or change Δvₜ)
 /// to be approximately zero if x = ‖vₜ‖/vₛ is smaller than `tolerance`
 /// (see docs below, this is a dimensionless number << 1). We define
 /// `εᵥ = tolerance⋅vₛ` (with units of m/s).
 ///
 /// In what follows we list a number of special scenarios dealt with by
-/// LimitDirectionChange. We use the observations made above.
+/// TALSLimiter. We use the observations made above.
 ///
-/// - LimitDirectionChange first deals with the case ‖vₜ‖ < εᵥ to avoid
+/// - TALSLimiter first deals with the case ‖vₜ‖ < εᵥ to avoid
 ///   divisions by zero in the subsequent cases. It essentially clips vₜᵏ⁺¹
 ///   to have magnitude vₛ/2 when the update Δvₜᵏ ≠ 0. For small updates
 ///   Δvₜᵏ leading to vₜᵏ⁺¹ within the stiction region, we take  α = 1.
@@ -103,7 +103,7 @@ namespace internal {
 ///   the line connecting vₜᵏ and vₜᵏ + Δvₜᵏ crosses the stiction region.
 ///   This situation implies that most likely a stiction transition could
 ///   happen but the pure Newton-Raphson would miss it. This situation is
-///   outlined in [Uchida et al., 2015]. In this case LimitDirectionChange
+///   outlined in [Uchida et al., 2015]. In this case TALSLimiter
 ///   computes α so that vₜᵏ⁺¹ =  vₜᵏ + αΔvₜᵏ is the closest vector to the
 ///   origin. This corresponds to the geometric condition
 ///   dot(vₜᵏ⁺¹, Δvₜᵏ) = 0.
@@ -120,11 +120,11 @@ namespace internal {
 ///   Making a meaningful impact: modelling simultaneous frictional collisions
 ///   in spatial multibody systems. Proc. R. Soc. A, 471(2177), p.20140859.
 ///
-/// %LimitDirectionChange implements the algorithm described above. We place it
+/// %TALSLimiter implements the algorithm described above. We place it
 /// inside a struct so that we can use Eigen::Ref arguments allowing different
 /// scalar types T.
 template <typename T>
-struct DirectionChangeLimiter {
+struct TALSLimiter {
   /// Implements the limiting algorithm described in the documentation above.
   /// @param[in] v the k-th iteration tangential velocity vₜᵏ, in m/s.
   /// @param[in] dv the k-th iteration tangential velocity update Δvₜᵏ, in m/s.
@@ -1145,7 +1145,7 @@ class ImplicitStribeckSolver {
   mutable FixedSizeWorkspace fixed_size_workspace_;
   mutable VariableSizeWorkspace variable_size_workspace_;
 
-  // Precomputed value of cos(theta_max), used by DirectionChangeLimiter.
+  // Precomputed value of cos(theta_max), used by TALSLimiter.
   double cos_theta_max_{std::cos(parameters_.theta_max)};
 
   // We save solver statistics such as number of iterations and residuals so
@@ -1157,7 +1157,7 @@ class ImplicitStribeckSolver {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    struct ::drake::multibody::internal::DirectionChangeLimiter)
+    struct ::drake::multibody::internal::TALSLimiter)
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::ImplicitStribeckSolver)

@@ -71,7 +71,7 @@ class ImplicitStribeckSolverTester {
 };
 namespace {
 
-// A test fixture to test DirectionChangeLimiter for a very standard
+// A test fixture to test TALSLimiter for a very standard
 // configuration of parameters.
 class DirectionLimiter : public ::testing::Test {
  protected:
@@ -80,7 +80,7 @@ class DirectionLimiter : public ::testing::Test {
     return Eigen::Rotation2D<double>(theta).toRotationMatrix();
   }
 
-  // Limiter parameters. See DirectionChangeLimiter for further details.
+  // Limiter parameters. See TALSLimiter for further details.
   const double v_stiction = 1.0e-4;  // m/s
   const double theta_max = M_PI / 6.0;  // radians.
   const double cos_min = std::cos(theta_max);
@@ -93,7 +93,7 @@ class DirectionLimiter : public ::testing::Test {
 TEST_F(DirectionLimiter, ZeroVandZeroDv) {
   const Vector2<double> vt = Vector2<double>::Zero();
   const Vector2<double> dvt = Vector2<double>::Zero();
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TALSLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
@@ -103,7 +103,7 @@ TEST_F(DirectionLimiter, ZeroVandZeroDv) {
 TEST_F(DirectionLimiter, ZeroVtoWithinStictionRegion) {
   const Vector2<double> vt = Vector2<double>::Zero();
   const Vector2<double> dvt = Vector2<double>(-0.5, 0.7) * v_stiction;
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TALSLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
@@ -112,7 +112,7 @@ TEST_F(DirectionLimiter, ZeroVtoWithinStictionRegion) {
 TEST_F(DirectionLimiter, ZeroVtoSlidingRegion) {
   const Vector2<double> vt = Vector2<double>::Zero();
   const Vector2<double> dvt = Vector2<double>(0.3, -0.1);
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TALSLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
   const Vector2<double> vt_alpha_expected = dvt.normalized() * v_stiction / 2.0;
   const Vector2<double> vt_alpha = vt + alpha * dvt;
@@ -124,9 +124,9 @@ TEST_F(DirectionLimiter, ZeroVtoSlidingRegion) {
 TEST_F(DirectionLimiter, SlidingRegiontoZero) {
   const Vector2<double> vt = Vector2<double>(0.3, -0.1);
   const Vector2<double> dvt = -vt;
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TALSLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
-  // DirectionChangeLimiter does not allow changes from outside the Stribeck
+  // TALSLimiter does not allow changes from outside the Stribeck
   // circle (where friction is constant) to exactly zero velocity, since this
   // would imply leaving the solver in a state where gradients are negligible
   // (not strong). The solver can recover from this, but placing the velocity
@@ -146,7 +146,7 @@ TEST_F(DirectionLimiter, SlidingRegionToStictionRegion) {
   const Vector2<double> vt_alpha_expected =
       Vector2<double>(-0.3, 0.45) * v_stiction;
   const Vector2<double> dvt = vt_alpha_expected - vt;
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TALSLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
@@ -157,7 +157,7 @@ TEST_F(DirectionLimiter, SlidingRegionToStictionRegion) {
 TEST_F(DirectionLimiter, WithinStictionRegionToSlidingRegion) {
   const Vector2<double> vt = Vector2<double>(-0.5, 0.7) * v_stiction;
   const Vector2<double> dvt = Vector2<double>(0.9, -0.3);
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TALSLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
@@ -169,10 +169,10 @@ TEST_F(DirectionLimiter, StictionToSliding) {
       Vector2<double>(-0.5, 0.3) * v_stiction * tolerance;
   const Vector2<double> dvt(0.3, 0.15);
 
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TALSLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
 
-  // For this case DirectionChangeLimiter neglects the very small initial vt
+  // For this case TALSLimiter neglects the very small initial vt
   // (since we always have tolerance << 1.0) so that:
   // vα = vt + αΔvt ≈ αΔvt = Δvt/‖Δvt‖⋅vₛ/2.
   // Therefore we expect α = 1 / ‖Δvt‖⋅vₛ/2.
@@ -186,7 +186,7 @@ TEST_F(DirectionLimiter, VerySmallDeltaV) {
   const Vector2<double> vt(0.1, 0.05);
   const Vector2<double> dvt =
       Vector2<double>(-0.5, 0.3) * v_stiction * tolerance;
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TALSLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
@@ -198,7 +198,7 @@ TEST_F(DirectionLimiter, StraightCrossThroughZero) {
   const Vector2<double> vt(0.1, 0.05);
   const Vector2<double> dvt(-0.3, -0.15);  // dvt = -3 * vt.
 
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TALSLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
 
   // Since the change crosses zero exactly, we expect
@@ -236,7 +236,7 @@ TEST_F(DirectionLimiter, CrossStictionRegionFromTheOutside) {
   // would compute).
   const Vector2<double> dvt = v1 - vt;
 
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TALSLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
 
   // Verify the result from the limiter.
@@ -261,7 +261,7 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion) {
   // Delta dvt that takes vt to v1.
   const Vector2<double> dvt = v1 - vt;
 
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TALSLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
 
   EXPECT_NEAR(alpha, 1.0, kTolerance);
@@ -287,7 +287,7 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_LargeTheta) {
   // Delta dvt that takes vt to v1.
   const Vector2<double> dvt = v1 - vt;
 
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TALSLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
 
   const Vector2<double> vt_alpha = vt + alpha * dvt;
@@ -320,7 +320,7 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_VeryLargeTheta) {
   // Delta dvt that takes vt to v1.
   const Vector2<double> dvt = v1 - vt;
 
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TALSLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
 
   const Vector2<double> vt_alpha = vt + alpha * dvt;
@@ -353,7 +353,7 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_SingleSolution) {
   double theta1 = std::cos(vt.dot(v1)/vt.norm()/v1.norm());
   ASSERT_GT(theta1, theta_max);
 
-  const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
+  const double alpha = internal::TALSLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stiction, tolerance);
 
   const Vector2<double> vt_alpha = vt + alpha * dvt;

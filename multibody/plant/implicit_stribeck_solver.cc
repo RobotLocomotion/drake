@@ -12,7 +12,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 template <typename T>
-T DirectionChangeLimiter<T>::CalcAlpha(
+T TALSLimiter<T>::CalcAlpha(
     const Eigen::Ref<const Vector2<T>>& v,
     const Eigen::Ref<const Vector2<T>>& dv,
     double cos_theta_max, double v_stiction, double relative_tolerance) {
@@ -158,7 +158,7 @@ T DirectionChangeLimiter<T>::CalcAlpha(
 }
 
 template <typename T>
-bool DirectionChangeLimiter<T>::CrossesTheStictionRegion(
+bool TALSLimiter<T>::CrossesTheStictionRegion(
     const Eigen::Ref<const Vector2<T>>& v,
     const Eigen::Ref<const Vector2<T>>& dv,
     const T& v_dot_dv,  const T& dv_norm, const T& dv_norm2,
@@ -193,7 +193,7 @@ bool DirectionChangeLimiter<T>::CrossesTheStictionRegion(
 }
 
 template <typename T>
-T DirectionChangeLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
+T TALSLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
     const T& a, const T& b, const T& c) {
   using std::abs;
   using std::max;
@@ -590,7 +590,7 @@ T ImplicitStribeckSolver<T>::CalcAlpha(
     const auto dvt_ic = Delta_vt.template segment<2>(ik);
     alpha = min(
         alpha,
-        internal::DirectionChangeLimiter<T>::CalcAlpha(
+        internal::TALSLimiter<T>::CalcAlpha(
             vt_ic, dvt_ic,
             cos_theta_max_, v_stiction, parameters_.relative_tolerance));
   }
@@ -783,7 +783,7 @@ T ImplicitStribeckSolver<T>::ModifiedStribeckDerivative(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    struct ::drake::multibody::internal::DirectionChangeLimiter)
+    struct ::drake::multibody::internal::TALSLimiter)
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::ImplicitStribeckSolver)
