@@ -162,6 +162,42 @@ class PyFunctionConstraint : public Constraint {
   const AutoDiffFunc autodiff_func_;
 };
 
+// pybind11 trampoline class to permit overriding virtual functions in Python.
+class PySolverInterface : public py::wrapper<solvers::SolverInterface> {
+ public:
+  using Base = py::wrapper<solvers::SolverInterface>;
+
+  PySolverInterface() : Base() {}
+
+  // The following methods are for the pybind11 trampoline class to permit C++
+  // to call the correct Python override. This code path is only activated for
+  // Python implementations of the class (whose inheritance will pass through
+  // `PySolverInterface`). C++ implementations will use the bindings on the
+  // interface below.
+
+  bool available() const override {
+    PYBIND11_OVERLOAD_PURE(bool, solvers::SolverInterface, available);
+  }
+
+  void Solve(const solvers::MathematicalProgram& prog,
+      const optional<Eigen::VectorXd>& initial_guess,
+      const optional<solvers::SolverOptions>& solver_options,
+      solvers::MathematicalProgramResult* result) const override {
+    PYBIND11_OVERLOAD_PURE(void, solvers::SolverInterface, Solve, prog,
+        initial_guess, solver_options, result);
+  }
+
+  solvers::SolverId solver_id() const override {
+    PYBIND11_OVERLOAD_PURE(
+        solvers::SolverId, solvers::SolverInterface, solver_id);
+  }
+
+  bool AreProgramAttributesSatisfied(
+      const solvers::MathematicalProgram& prog) const override {
+    PYBIND11_OVERLOAD_PURE(
+        bool, solvers::SolverInterface, AreProgramAttributesSatisfied, prog);
+  }
+};
 }  // namespace
 
 PYBIND11_MODULE(mathematicalprogram, m) {
@@ -181,20 +217,34 @@ top-level documentation for :py:mod:`pydrake.math`.
       py::module::import("pydrake.symbolic").attr("Expression");
   py::object formula = py::module::import("pydrake.symbolic").attr("Formula");
 
-  py::class_<SolverInterface>(m, "SolverInterface", doc.SolverInterface.doc)
+  py::class_<SolverInterface, PySolverInterface>(
+      m, "SolverInterface", doc.SolverInterface.doc)
+      .def(py::init([]() { return std::make_unique<PySolverInterface>(); }),
+          doc.SolverInterface.ctor.doc)
+      // The following bindings are present to allow Python to call C++
+      // implementations of this interface. Python implementations of the
+      // interface will call the trampoline implementation methods above.
       .def("available", &SolverInterface::available,
           doc.SolverInterface.available.doc)
+      .def("Solve",
+          [](const SolverInterface& self,
+              const solvers::MathematicalProgram& prog,
+              const optional<Eigen::VectorXd>& initial_guess,
+              const optional<solvers::SolverOptions>& solver_options,
+              solvers::MathematicalProgramResult* result) {
+            self.Solve(prog, initial_guess, solver_options, result);
+          },
+          py::arg("prog"), py::arg("initial_guess"), py::arg("solver_options"),
+          py::arg("result"), doc.SolverInterface.Solve.doc)
       .def("solver_id", &SolverInterface::solver_id,
           doc.SolverInterface.solver_id.doc)
       .def("AreProgramAttributesSatisfied",
-          &SolverInterface::AreProgramAttributesSatisfied, py::arg("prog"),
+          [](const SolverInterface& self,
+              const solvers::MathematicalProgram& prog) {
+            return self.AreProgramAttributesSatisfied(prog);
+          },
+          py::arg("prog"),
           doc.SolverInterface.AreProgramAttributesSatisfied.doc)
-      .def("Solve",
-          pydrake::overload_cast_explicit<void, const MathematicalProgram&,
-              const optional<Eigen::VectorXd>&, const optional<SolverOptions>&,
-              MathematicalProgramResult*>(&SolverInterface::Solve),
-          py::arg("prog"), py::arg("initial_guess"), py::arg("solver_options"),
-          py::arg("result"), doc.SolverInterface.Solve.doc)
       .def("Solve",
           // This method really lives on SolverBase, but we manually write it
           // out here to avoid all of the overloading / inheritance hassles.

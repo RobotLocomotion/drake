@@ -4,9 +4,11 @@ from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.gurobi import GurobiSolver
 from pydrake.solvers.snopt import SnoptSolver
 from pydrake.solvers.mathematicalprogram import (
+    MathematicalProgramResult,
     SolverOptions,
     SolverType,
-    SolverId
+    SolverId,
+    SolverInterface
     )
 
 from functools import partial
@@ -611,3 +613,27 @@ class TestMathematicalProgram(unittest.TestCase):
         numpy_compare.assert_equal(prog.decision_variables()[1], a1)
         numpy_compare.assert_equal(prog.indeterminates()[0], x0)
         numpy_compare.assert_equal(prog.indeterminate(1), x1)
+
+
+class DummySolverInterface(SolverInterface):
+    def __init__(self):
+        pass
+
+    def available(self):
+        return True
+
+    def solver_id(self):
+        return SolverId("dummy")
+
+    def Solve(prog, initial_guess, solver_options, result):
+        result = MathematicalProgramResult()
+
+    def AreProgramAttributesSatisfied(self, prog):
+        return True
+
+
+class DummySolverInterfaceTest(unittest.TestCase):
+    def test_dummy_solver_interface(self):
+        solver = DummySolverInterface()
+        self.assertTrue(solver.available())
+        self.assertEqual(solver.solver_id().name(), "dummy")
