@@ -230,8 +230,7 @@ Next topic: @ref contact_engineering
  @ref drake::multibody::MultibodyPlant "MultibodyPlant". In Drake we use a
  custom semi-implicit Euler scheme for multibody systems using the Stribeck
  approximation of Coulomb friction. Details for this solver are provided in the
- documentation for @ref drake::multibody::TAMSISolver
- "TAMSISolver".
+ documentation for @ref drake::multibody::TAMSISolver "TAMSISolver".
 
  @note For better numerical stability, the discrete model assumes
  both static and kinetic coefficients of friction to be equal, the kinetic
