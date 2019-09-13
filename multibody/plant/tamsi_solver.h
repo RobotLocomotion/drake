@@ -268,8 +268,8 @@ struct TAMSISolverIterationStats {
 };
 
 /** @anchor tamsi_class_intro
-%TAMSISolver solves the equations below for mechanical systems
-with contact using regularized friction:
+%TAMSISolver, [Castro et al., 2019], solves the equations below for mechanical
+systems with contact using regularized friction:
 @verbatim
             q̇ = N(q) v
   (1)  M(q) v̇ = τ + Jₙᵀ(q) fₙ(q, v) + Jₜᵀ(q) fₜ(q, v)
@@ -492,6 +492,10 @@ such as control forces and dampers. Notice that Eq. (12) introduces an
 expansion of `fₙ` with an order of approximation consistent with the
 first order scheme as needed. Therefore, it propagates into a `O(δt²)`
 term exactly as needed in Eq. (16).
+
+Castro, A.M, Qu, A., Kuppuswamy, N., Alspach, A., Sherman, M.A., 2019.
+   A Transition-Aware Method for the Simulation of Compliant Contact with
+   Regularized Friction. arXiv:1909.05700 [cs.RO].
 
 @tparam T Must be one of drake's default scalar types.
 
