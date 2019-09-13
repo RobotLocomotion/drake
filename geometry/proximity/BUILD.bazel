@@ -168,9 +168,11 @@ drake_cc_library(
 
 drake_cc_library(
     name = "obj_to_surface_mesh",
+    srcs = ["obj_to_surface_mesh.cc"],
     hdrs = ["obj_to_surface_mesh.h"],
     deps = [
         ":surface_mesh",
+        "//common:essential",
         "@tinyobjloader",
     ],
 )

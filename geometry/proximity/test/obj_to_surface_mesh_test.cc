@@ -25,7 +25,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, TinyObjToSurfaceVertices) {
 
   for (const double scale : {1.0, 2.0, 5.0}) {
     const std::vector<SurfaceVertex<double>> surface_vertices =
-        TinyObjToSurfaceVertices<double>(tinyobj_vertices, scale);
+        TinyObjToSurfaceVertices(tinyobj_vertices, scale);
 
     EXPECT_EQ(2, surface_vertices.size());
     const std::vector<Vector3<double>> expect_vertices{
@@ -80,7 +80,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, TinyObjToSurfaceFaces) {
 GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToSurfaceMesh) {
   const std::string filename =
       FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
-  SurfaceMesh<double> surface = ReadObjToSurfaceMesh<double>(filename);
+  SurfaceMesh<double> surface = ReadObjToSurfaceMesh(filename);
 
   ASSERT_EQ(surface.num_vertices(), 8);
   ASSERT_EQ(surface.num_faces(), 12);
@@ -133,7 +133,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToSurfaceMesh) {
 GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForEmptyObj) {
   std::istringstream empty("");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ReadObjToSurfaceMesh<double>(&empty), std::runtime_error,
+      ReadObjToSurfaceMesh(&empty), std::runtime_error,
       ".*must have one and only one object defined in it. Found 0 objects.");
 }
 
@@ -151,7 +151,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForMultipleObjects) {
       "v 0.0 0.0 2.0\n"
       "f 4 5 6\n"};
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ReadObjToSurfaceMesh<double>(&two_objects), std::runtime_error,
+      ReadObjToSurfaceMesh(&two_objects), std::runtime_error,
       ".*must have one and only one object defined in it. Found 2 objects.");
 }
 
@@ -169,17 +169,9 @@ GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForFaceOutsideObject) {
       "v 0.0 0.0 1.0\n"
       "f 4 5 6\n"};
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ReadObjToSurfaceMesh<double>(&face_outside_o_statement),
+      ReadObjToSurfaceMesh(&face_outside_o_statement),
       std::runtime_error,
       ".*must have one and only one object defined in it. Found 2 objects.");
-}
-
-GTEST_TEST(ObjToSurfaceMeshTest, SmokeTestAutoDiffXd) {
-  const std::string filename =
-      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
-  SurfaceMesh<AutoDiffXd> surface = ReadObjToSurfaceMesh<AutoDiffXd>(filename);
-  EXPECT_EQ(surface.num_vertices(), 8);
-  EXPECT_EQ(surface.num_faces(), 12);
 }
 
 }  // namespace
