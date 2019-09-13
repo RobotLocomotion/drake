@@ -13,8 +13,9 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/// This struct implements an internal (thus within `internal::`) detail of the
-/// implicit Stribeck solver. The implicit Stribeck solver performs a
+/// This struct implements the Transition-Aware Line Search TALS algorithm as
+/// described in [Castro et al., 2019].
+/// The implicit Stribeck solver performs a
 /// Newton-Raphson iteration, and at each kth iteration, it computes a
 /// tangential velocity update Δvₜᵏ. One Newton strategy would be to compute
 /// the tangential velocity at the next iteration (k+1) as
@@ -119,6 +120,9 @@ namespace internal {
 /// Uchida, T.K., Sherman, M.A. and Delp, S.L., 2015.
 ///   Making a meaningful impact: modelling simultaneous frictional collisions
 ///   in spatial multibody systems. Proc. R. Soc. A, 471(2177), p.20140859.
+/// Castro, A.M, Qu, A., Kuppuswamy, N., Alspach, A., Sherman, M.A., 2019.
+///   A Transition-Aware Method for the Simulation of Compliant Contact with
+///   Regularized Friction. arXiv:1909.05700 [cs.RO].
 ///
 /// %TALSLimiter implements the algorithm described above. We place it
 /// inside a struct so that we can use Eigen::Ref arguments allowing different
