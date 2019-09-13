@@ -15,44 +15,41 @@ namespace internal {
 
 /// This struct implements the Transition-Aware Line Search TALS algorithm as
 /// described in [Castro et al., 2019].
-/// The implicit Stribeck solver performs a
-/// Newton-Raphson iteration, and at each kth iteration, it computes a
-/// tangential velocity update Δvₜᵏ. One Newton strategy would be to compute
-/// the tangential velocity at the next iteration (k+1) as
-/// vₜᵏ⁺¹ = vₜᵏ + αΔvₜᵏ, where 0 < α < 1, is a coefficient obtained by line
-/// search to improve convergence.
-/// Line search works very well for smooth problems. However, even though the
-/// implicit Stribeck is solving the root of a continuous function, this
-/// function has very steep gradients only within the very small regions close
-/// to where the tangential velocities are zero. These regions are circles in
-/// ℝ² of radius equal to the stiction tolerance of the solver vₛ. We refer to
-/// these circular regions as the "stiction regions" and to their boundaries as
-/// the "stiction circles". We refer to the region of ℝ² outside the stiction
-/// region around the origin as the "sliding region".
-/// The implicit Stribeck solver uses the following modified Stribeck function
-/// describing the functional dependence of the Stribeck coefficient of friction
+/// TAMSISolver performs a Newton-Raphson iteration, and at each kth iteration,
+/// it computes a tangential velocity update Δvₜᵏ. One Newton strategy would be
+/// to compute the tangential velocity at the next iteration (k+1) as vₜᵏ⁺¹ =
+/// vₜᵏ + αΔvₜᵏ, where 0 < α < 1, is a coefficient obtained by line search to
+/// improve convergence.
+/// Line search works very well for smooth problems. However, even though TAMSI
+/// is solving the root of a continuous function, this function has very steep
+/// gradients only within the very small regions close to where the tangential
+/// velocities are zero. These regions are circles in ℝ² of radius equal to the
+/// stiction tolerance of the solver vₛ. We refer to these circular regions as
+/// the "stiction regions" and to their boundaries as the "stiction circles". We
+/// refer to the region of ℝ² outside the stiction region around the origin as
+/// the "sliding region".
+/// TAMSISolver uses the following regularized friction function
 /// μₛ with slip speed: <pre>
 ///     μₛ(x) = ⌈ μ x (2 - x),  x  < 1
 ///             ⌊ μ          ,  x >= 1
 /// </pre>
 /// where x corresponds to the dimensionless slip speed x = ‖vₜ‖ / vₛ and
-/// μ is the Coulomb's law coefficient of friction. The implicit Stribeck solver
-/// makes no distinction between static and dynamic coefficients of friction and
+/// μ is the Coulomb's law coefficient of friction. The TAMSI solver makes no
+/// distinction between static and dynamic coefficients of friction and
 /// therefore a single coefficient μ needs to be specified.
-/// The Stribeck function is highly nonlinear and difficult to solve with a
+/// Regularized friction is highly nonlinear and difficult to solve with a
 /// conventional Newton-Raphson method. However, it can be partitioned into
 /// regions based on how well the local gradients can be used to find a
 /// solution. We'll describe the algorithm below in terms of "strong" gradients
 /// (∂μ/∂v >> 0) and "weak" gradients (∂μ/∂v ≈ 0). Roughly, the gradients are
 /// strong during stiction and weak during sliding.
-/// These regions are so small compared to the velocity scales dealt with
-/// by the implicit Stribeck solver, that effectively, the Newton-Raphson
-/// iterate would only "see" a fixed dynamic coefficient of friction and it
-/// would never be able to predict stiction. That is, if search direction Δvₜᵏ
-/// computed by the Newton-Raphson algorithm is not limited in some way, the
-/// iteration would never fall within the stiction regions where gradients
-/// are "strong" to guide the convergence of the solution, to either stiction
-/// or sliding.
+/// These regions are so small compared to the velocity scales dealt with by the
+/// TAMSI solver, that effectively, the Newton-Raphson iterate would only "see"
+/// a fixed dynamic coefficient of friction and it would never be able to
+/// predict stiction. That is, if search direction Δvₜᵏ computed by the
+/// Newton-Raphson algorithm is not limited in some way, the iteration would
+/// never fall within the stiction regions where gradients are "strong" to guide
+/// the convergence of the solution, to either stiction or sliding.
 ///
 /// The remedy to this situation is to limit changes in the tangential
 /// velocities at each iteration. The situation described above, in which an
@@ -61,10 +58,10 @@ namespace internal {
 /// appropriate for this particular problem. We use the methodology outlined in
 /// [Uchida et al., 2015] and describe particulars to our implementation below.
 ///
-/// TALSLimiter implements a specific strategy with knowledge of the
-/// implicit Stribeck iteration procedure. It is important to note that the
-/// implicit Stribeck uses "soft norms" to avoid divisions by zero. That is,
-/// friction forces are computed according to: <pre>
+/// TALSLimiter implements a specific strategy with knowledge of the TAMSI
+/// solver iteration procedure. It is important to note that %TALSLimiter uses
+/// "soft norms" to avoid divisions by zero. That is, friction forces are
+/// computed according to: <pre>
 ///   fₜ(vₜ) = -μ(‖vₜ‖ₛ) vₜ/‖vₜ‖ₛ
 /// </pre>
 /// where, to avoid the singularity at zero velocity, we use a "soft norm"
