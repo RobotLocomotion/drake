@@ -7,6 +7,7 @@ namespace systems {
 namespace trajectory_optimization {
 namespace internal {
 
+using std::string;
 using symbolic::Expression;
 using symbolic::Substitution;
 using symbolic::Variable;
@@ -19,7 +20,7 @@ SequentialExpressionManager::SequentialExpressionManager(int num_samples)
 
 VectorX<Variable> SequentialExpressionManager::RegisterSequentialExpressions(
     const Eigen::Ref<const MatrixX<Expression>>& sequential_expressions,
-    const std::string& name) {
+    const string& name) {
   const int rows = sequential_expressions.rows();
   DRAKE_THROW_UNLESS(sequential_expressions.cols() == num_samples_);
   const VectorX<Variable> placeholders{
@@ -29,10 +30,9 @@ VectorX<Variable> SequentialExpressionManager::RegisterSequentialExpressions(
 }
 
 void SequentialExpressionManager::RegisterSequentialExpressions(
-    const VectorX<symbolic::Variable>& placeholders,
-    const Eigen::Ref<const MatrixX<symbolic::Expression>>&
-        sequential_expressions,
-    const std::string& name) {
+    const VectorX<Variable>& placeholders,
+    const Eigen::Ref<const MatrixX<Expression>>& sequential_expressions,
+    const string& name) {
   DRAKE_THROW_UNLESS(sequential_expressions.rows() == placeholders.size());
   DRAKE_THROW_UNLESS(sequential_expressions.cols() == num_samples_);
   const auto pair = name_to_placeholders_and_sequential_expressions_.insert(
@@ -59,7 +59,7 @@ SequentialExpressionManager::ConstructPlaceholderVariableSubstitution(
 }
 
 VectorX<Expression> SequentialExpressionManager::GetSequentialExpressionsByName(
-    const std::string& name, int index) const {
+    const string& name, int index) const {
   DRAKE_THROW_UNLESS(0 <= index && index < num_samples_);
   const auto it = name_to_placeholders_and_sequential_expressions_.find(name);
   DRAKE_THROW_UNLESS(it !=
@@ -68,7 +68,7 @@ VectorX<Expression> SequentialExpressionManager::GetSequentialExpressionsByName(
   return sequential_expressions.col(index);
 }
 
-int SequentialExpressionManager::num_rows(const std::string& name) const {
+int SequentialExpressionManager::num_rows(const string& name) const {
   const auto it = name_to_placeholders_and_sequential_expressions_.find(name);
   DRAKE_THROW_UNLESS(it !=
                      name_to_placeholders_and_sequential_expressions_.end());
