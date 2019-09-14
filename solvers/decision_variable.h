@@ -8,6 +8,9 @@
 
 namespace drake {
 namespace solvers {
+
+using DecisionVariable = symbolic::Variable;
+
 template <int rows, int cols>
 using MatrixDecisionVariable = Eigen::Matrix<symbolic::Variable, rows, cols>;
 template <int rows>
