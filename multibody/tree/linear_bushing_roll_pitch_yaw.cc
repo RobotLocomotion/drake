@@ -56,7 +56,7 @@ void LinearBushingRollPitchYaw<T>::DoCalcAndAddForceContribution(
   // Shift the force from Aʙₒ (frame Aʙ's origin) to Ao (body A's origin).
   const SpatialForce<T> F_Ao_W = F_Abo_W.Shift(p_AboAo_W);
 
-  // The next calculation needs the position from Ao to Bo, expressed in world.
+  // The next calculation needs the position from Ao to Bo expressed in world.
   const Vector3<T>& p_WoAo_W = bodyA().EvalPoseInWorld(context).translation();
   const Vector3<T>& p_WoBo_W = bodyB().EvalPoseInWorld(context).translation();
   const Vector3<T> p_AoBo_W = p_WoBo_W - p_WoAo_W;
@@ -78,20 +78,17 @@ template <typename T>
 T LinearBushingRollPitchYaw<T>::CalcPotentialEnergy(
     const systems::Context<T>& context,
     const internal::PositionKinematicsCache<T>& /* pc */) const {
-  // Calculate the yaw-pitch-roll angles  and use them together with
-  // Use the torque stiffness constants [k₀, k₁, k₂] and the yaw-pitch-roll
-  // angles [q₀, q₁, q₂] to form torque potential energy
-  // `0.5*[k₀*q₀², k₁*q₁², k₂*q₂²]`.
+  // Use the torque stiffness constants [k₀, k₁, k₂] and roll-pitch-yaw angles
+  // [q₀, q₁, q₂] to form torque potential energy 0.5*[k₀*q₀², k₁*q₁², k₂*q₂²].
   const math::RollPitchYaw<T> rpy = CalcBushingRollPitchYawAngles(context);
-  const Vector3<T> q012 = rpy.ConvertAnglesToSequenceBodyZYXYawRollPitch();
+  const Vector3<T>& q012 = rpy.vector();
   const Vector3<T> q012Squared = q012.cwiseProduct(q012);
   const T torque_potential_energy =
       0.5 * (torque_stiffness_constants().dot(q012Squared));
 
-  // Use the bushing's force stiffness constants [kx, ky, kz] and
-  // `p_AʙBᴀ = [x, y, z]` (the position vector from point Aʙₒ to point Bᴀₒ
-  // expressed in frame Aʙ) to form force potential energy
-  // `0.5*[kx*x², ky*y², kz*z²]`.
+  // Use the force stiffness constants [kx, ky, kz] and `p_AʙBᴀ = [x, y, z]`
+  // (the position vector from point Aʙₒ to point Bᴀₒ expressed in frame Aʙ)
+  // to form force potential energy 0.5 * [kx*x², ky*y², kz*z²].
   const Vector3<T> xyz = CalcBushingRigidTransform(context).translation();
   const Vector3<T> xyzSquared = xyz.cwiseProduct(xyz);
   const T force_potential_energy =
@@ -105,15 +102,14 @@ T LinearBushingRollPitchYaw<T>::CalcConservativePower(
     const systems::Context<T>& context,
     const internal::PositionKinematicsCache<T>& /* pc */,
     const internal::VelocityKinematicsCache<T>& /* vc */) const {
-  // One way to calculate conservative power Pc is from potential energy V,
+  // One way to calculate conservative power Pc is from potential energy V.
   // V = 1/2⋅k₀⋅q₀² + 1/2⋅k₁⋅q₁² + 1/2⋅k₂⋅q₂²
   //   + 1/2⋅kx⋅x²  + 1/2⋅ky⋅y²  + 1/2⋅kz⋅z²
   // Pc = -dV/dt = -(k₀⋅q₀⋅q̇₀ + k₁⋅q₁⋅q̇₁ + k₂⋅q₂⋅q̇₂
   //               + kx⋅x⋅ẋ   + ky⋅y⋅ẏ   + kz⋅z⋅ż)
-  const Vector3<T> torque_stiffness =
-      CalcBushingTorqueStiffnessOnAb(context, false);
-  const Vector3<T> q012Dt = CalcBushingRollPitchYawAngleRates(context, true);
-  const T Pc_torque = -(torque_stiffness.dot(q012Dt));
+  const Vector3<T> ki_qi = CalcBushingTorqueStiffnessOnAb(context, false);
+  const Vector3<T> q012Dt = CalcBushingRollPitchYawAngleRates(context);
+  const T Pc_torque = -(ki_qi.dot(q012Dt));
 
   const Vector3<T> force_stiffness = CalcBushingForceStiffnessOnAbo(context);
   const Vector3<T> xyzDt = CalcBushingSpatialVelocity(context).translational();
@@ -130,10 +126,9 @@ T LinearBushingRollPitchYaw<T>::CalcNonConservativePower(
   // Nonconservative power Pn comes from damping.
   // Pn = -(k₀⋅q̇₀⋅q̇₀ + k₁⋅q̇₁⋅q̇₁ + k₂⋅q̇₂⋅q̇₂
   //      + kx⋅ẋ⋅ẋ   + ky⋅ẏ⋅ẏ   + kz⋅ż⋅ż)
-  const Vector3<T> torque_damping =
-      CalcBushingTorqueDampingOnAb(context, false);
-  const Vector3<T> q012Dt = CalcBushingRollPitchYawAngleRates(context, true);
-  const T Pn_torque = -(torque_damping.dot(q012Dt));
+  const Vector3<T> bi_qiDt = CalcBushingTorqueDampingOnAb(context, false);
+  const Vector3<T> q012Dt = CalcBushingRollPitchYawAngleRates(context);
+  const T Pn_torque = -(bi_qiDt.dot(q012Dt));
 
   const Vector3<T> force_damping = CalcBushingForceDampingOnAbo(context);
   const Vector3<T> xyzDt = CalcBushingSpatialVelocity(context).translational();
