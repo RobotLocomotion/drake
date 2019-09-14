@@ -199,14 +199,6 @@ class RollPitchYaw {
     return ToRotationMatrix().matrix();
   }
 
-  /// Converts the angle sequence in this Space-fixed (extrinsic) X-Y-Z rotation
-  /// from "roll-pitch-yaw" angles `[r, p, y]` to a Body-fixed (intrinsic) Z-Y-X
-  /// rotation by "yaw-pitch-roll" angles `[y, p, r]`.
-  /// @retval 3x1 vector of angles with order `[y, p, r]' -- not `[r, p, y]'.
-  Vector3<T> ConvertAnglesToSequenceBodyZYXYawRollPitch() const {
-    return Vector3<T>(yaw_angle(), pitch_angle(), roll_angle());
-  }
-
   /// Compares each element of `this` to the corresponding element of `other`
   /// to check if they are the same to within a specified `tolerance`.
   /// @param[in] other %RollPitchYaw to compare to `this`.
