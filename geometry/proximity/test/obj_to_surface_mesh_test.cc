@@ -17,60 +17,57 @@ namespace geometry {
 namespace internal {
 namespace {
 
+// Tests TinyObjToSurfaceVertices through ReadObjToSurfaceMesh. We cannot
+// test TinyObjToSurfaceVertices directly because we hide tinyobj from
+// public API.
 GTEST_TEST(ObjToSurfaceMeshTest, TinyObjToSurfaceVertices) {
-  const std::vector<tinyobj::real_t> tinyobj_vertices{
-      1.0, -1.0, -1.0,  // first vertex.
-      1.0, -1.0, 1.0    // second vertex.
-  };
-
+  std::istringstream test_stream {
+      "v  1.0 -1.0 -1.0\n"
+      "v  1.0 -1.0  1.0\n"
+      "v -1.0 -1.0  1.0\n"
+      "f 1 2 3\n"};
   for (const double scale : {1.0, 2.0, 5.0}) {
-    const std::vector<SurfaceVertex<double>> surface_vertices =
-        TinyObjToSurfaceVertices(tinyobj_vertices, scale);
+    // Seek to the beginning of the stream in each iteration.
+    test_stream.seekg(0, test_stream.beg);
 
-    EXPECT_EQ(2, surface_vertices.size());
+    const std::vector<SurfaceVertex<double>> surface_vertices(
+        ReadObjToSurfaceMesh(&test_stream, scale).vertices());
+
+    EXPECT_EQ(3, surface_vertices.size());
     const std::vector<Vector3<double>> expect_vertices{
         scale * Vector3<double>{1.0, -1.0, -1.0},  // first vertex.
-        scale * Vector3<double>{1.0, -1.0, 1.0}    // second vertex.
+        scale * Vector3<double>{1.0, -1.0, 1.0},   // second vertex.
+        scale * Vector3<double>{-1.0, -1.0, 1.0}   // third vertex.
     };
 
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < 3; ++i) {
       EXPECT_EQ(expect_vertices[i], surface_vertices[i].r_MV());
     }
   }
 }
 
-GTEST_TEST(ObjToSurfaceMeshTest, TinyObjToSurfaceFaces) {
-  // clang-format off
-  const tinyobj::mesh_t tinyobj_mesh {
-      // indices
-      //     Each entry consists of vertex_index, normal_index, and
-      //     texcoord_index with -1 meaning not used. Here we use only
-      //     vertex_index and set normal_index and texcoord_index to -1.
-      //     Every three entries correspond to a triangle.
-      {{0, -1, -1}, {1, -1, -1}, {2, -1, -1},  // triangle 0 1 2
-       {0, -1, -1}, {2, -1, -1}, {3, -1, -1}   // triangle 0 2 3
-      },
-      // num_face_vertices
-      //     Here each face is a triangle, so we have the number of vertices
-      //     of each face equals 3.
-      {3, 3},
-      // material_ids
-      //     Per-face material ID for rendering. It's not used in this test.
-      {},
-      // tags
-      //     It's not used in this test.
-      {}
-  };
-  // clang-format on
 
-  const std::vector<SurfaceFace> surface_faces =
-      TinyObjToSurfaceFaces(tinyobj_mesh);
+// Tests TinyObjToSurfaceFaces through ReadObjToSurfaceMesh. We cannot test
+// TinyObjToSurfaceFaces directly because we hide tinyobj from public API.
+GTEST_TEST(ObjToSurfaceMeshTest, TinyObjToSurfaceFaces) {
+  std::istringstream test_stream{
+      "v  1.0 -1.0 -1.0\n"
+      "v  1.0 -1.0  1.0\n"
+      "v -1.0 -1.0  1.0\n"
+      "v -1.0 -1.0 -1.0\n"
+      "f 1 2 3\n"
+      "f 1 3 4\n"};
+
+  const std::vector<SurfaceFace> surface_faces(
+      ReadObjToSurfaceMesh(&test_stream).faces());
 
   EXPECT_EQ(2, surface_faces.size());
+  // Vertex indices in obj file start with 1, but vertex indices in our
+  // SurfaceMesh start with 0.
   const int expect_faces[2][3]{{0, 1, 2}, {0, 2, 3}};
   auto face_equal = [](const SurfaceFace& f, const SurfaceFace& g) -> bool {
     return std::make_tuple(f.vertex(0), f.vertex(1), f.vertex(2)) ==
-           std::make_tuple(g.vertex(0), g.vertex(1), g.vertex(2));
+        std::make_tuple(g.vertex(0), g.vertex(1), g.vertex(2));
   };
   for (int i = 0; i < 2; ++i) {
     EXPECT_TRUE(face_equal(SurfaceFace(expect_faces[i]), surface_faces[i]));
@@ -128,6 +125,12 @@ GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToSurfaceMesh) {
     EXPECT_TRUE(face_equal(SurfaceFace(expect_faces[i]),
                            surface.element(SurfaceFaceIndex(i))));
   }
+}
+
+GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionInvalidFilePath) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ReadObjToSurfaceMesh(std::string("invalid_file_path")),
+      std::runtime_error, "Cannot open file 'invalid_file_path'");
 }
 
 GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForEmptyObj) {

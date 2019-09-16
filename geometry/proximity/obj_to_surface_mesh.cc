@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
 #include <tiny_obj_loader.h>
 
 #include "drake/common/drake_assert.h"
@@ -15,8 +16,27 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+// TODO(DamrongGuoy): Refactor the tinyobj usage between here and
+//  ProximityEngine.
+
+// TODO(DamrongGuoy): Remove the guard DRAKE_DOXYGEN_CXX when we fixed
+//  issue#11130 "doxygen: Do not emit for `*.cc` files, also ignore
+//  `internal` namespace when appropriate".
+
 #ifndef DRAKE_DOXYGEN_CXX
 
+/**
+ Converts vertices of tinyobj to vertices of SurfaceMesh.
+ @param tinyobj_vertices
+     Vertices from tinyobj represented as `std::vector` of floating-point
+     numbers.
+ @param scale
+     A scale to coordinates.
+ @return
+     Vertices for SurfaceMesh.
+ @pre
+     The size of `tinyobj_vertices` is divisible by three.
+ */
 std::vector<SurfaceVertex<double>> TinyObjToSurfaceVertices(
     const std::vector<tinyobj::real_t>& tinyobj_vertices, const double scale) {
   // Vertices from tinyobj are in a vector of floating-point numbers like this:
@@ -40,6 +60,15 @@ std::vector<SurfaceVertex<double>> TinyObjToSurfaceVertices(
   return vertices;
 }
 
+/**
+ Converts faces of tinyobj::mesh_t to faces of SurfaceMesh.
+ @param mesh
+     The mesh from tinyobj.
+ @return
+     The triangular faces for SurfaceMesh.
+ @pre
+     Every face is a triangle.
+ */
 std::vector<SurfaceFace> TinyObjToSurfaceFaces(const tinyobj::mesh_t& mesh) {
   //
   // In general, tinyobj::mesh_t::num_face_vertices is a list of number
@@ -81,11 +110,20 @@ std::vector<SurfaceFace> TinyObjToSurfaceFaces(const tinyobj::mesh_t& mesh) {
 
 #endif  // #ifndef DRAKE_DOXYGEN_CXX
 
+SurfaceMesh<double> ReadObjToSurfaceMesh(const std::string& filename,
+                                         const double scale) {
+  std::ifstream input_stream(filename);
+  if (!input_stream.is_open()) {
+    throw std::runtime_error("Cannot open file '" + filename +"'");
+  }
+  return ReadObjToSurfaceMesh(&input_stream, scale);
+}
+
 SurfaceMesh<double> ReadObjToSurfaceMesh(std::istream* input_stream,
                                          const double scale) {
-  tinyobj::attrib_t attrib;
+  tinyobj::attrib_t attrib;  // Not used.
   std::vector<tinyobj::shape_t> shapes;
-  std::vector<tinyobj::material_t> materials;
+  std::vector<tinyobj::material_t> materials;  // Not used.
   std::string err;
   // Ignore material-library file.
   tinyobj::MaterialReader* readMatFn = nullptr;
@@ -97,10 +135,12 @@ SurfaceMesh<double> ReadObjToSurfaceMesh(std::istream* input_stream,
   if (!ret || !err.empty()) {
     throw std::runtime_error("Error parsing Wavefront obj file : " + err);
   }
+  // Currently our API does not support multiple objects.
   if (shapes.size() != 1) {
     throw std::runtime_error(
-        "The Wavefront obj file must have one and only one object defined in "
-        "it. Found " + std::to_string(shapes.size()) + " objects.");
+        fmt::format("The Wavefront obj file must have one and only one object"
+                    " defined in it. Found {} objects.",
+                    shapes.size()));
   }
   std::vector<SurfaceVertex<double>> vertices =
       TinyObjToSurfaceVertices(attrib.vertices, scale);
@@ -108,15 +148,6 @@ SurfaceMesh<double> ReadObjToSurfaceMesh(std::istream* input_stream,
   std::vector<SurfaceFace> faces = TinyObjToSurfaceFaces(shapes[0].mesh);
 
   return SurfaceMesh<double>(std::move(faces), std::move(vertices));
-}
-
-SurfaceMesh<double> ReadObjToSurfaceMesh(const std::string& absolute_filename,
-                                         const double scale) {
-  std::ifstream input_stream(absolute_filename);
-  if (!input_stream.is_open()) {
-    throw std::runtime_error("Cannot open file `" + absolute_filename +"'");
-  }
-  return ReadObjToSurfaceMesh(&input_stream, scale);
 }
 
 }  // namespace internal

@@ -173,6 +173,7 @@ drake_cc_library(
     deps = [
         ":surface_mesh",
         "//common:essential",
+        "@fmt",
         "@tinyobjloader",
     ],
 )
