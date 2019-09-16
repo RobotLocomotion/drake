@@ -696,7 +696,7 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   } else {
     // We only build hydroelastics if the user requested it AND if geometry was
     // registerd with a SceneGraph.
-    if (uses_hydroelastic_model() && get_source_id()) MakeHydroelasticModels();
+    if (use_hydroelastic_model_ && get_source_id()) MakeHydroelasticModels();
   }
   SetUpJointLimitsParameters();
   scene_graph_ = nullptr;  // must not be used after Finalize().
@@ -1104,6 +1104,18 @@ void MultibodyPlant<T>::CalcContactResults(
   contact_results->Clear();
   if (num_collision_geometries() == 0) return;
 
+  // Thus far we do not allow mixing hydroelastics with point contact and
+  // therefore we throw an exception.
+  // TODO(amcastro-tri): Update the computation of contact results to report
+  // both point and hydroelastic results.
+  if (use_hydroelastic_model_) {
+    throw std::runtime_error(
+        "Currently we do not support mixing point contact with hydroelastics. "
+        "You requested the hydroelastic model with calls to "
+        "set_elastic_modulus() and/or set_hunt_crossley_dissipation(). "
+        "Currently contact results are only supported for point contact.");
+  }
+
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
       EvalPointPairPenetrations(context);
   const std::vector<RotationMatrix<T>>& R_WC_set =
@@ -1322,7 +1334,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     return d_star;
   };
 
-  SpatialForce<T> F_Ao_W, F_Bo_W, F_Ac_W;
+  SpatialForce<T> F_Ao_W, F_Bo_W;
   for (const ContactSurface<T>& surface : all_surfaces) {
     const GeometryId geometryM_id = surface.id_M();
     const GeometryId geometryN_id = surface.id_N();
@@ -1394,7 +1406,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
         X_WA, X_WB, V_WA, V_WB, &surface);
 
     traction_calculator.ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-        data, dissipation, static_friction, &F_Ao_W, &F_Bo_W, &F_Ac_W);
+        data, dissipation, static_friction, &F_Ao_W, &F_Bo_W);
 
     if (bodyA_index != world_index()) {
       F_BBo_W_array->at(bodyA_index) += F_Ao_W;
@@ -1975,17 +1987,14 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
             .get_index();
   }
 
-  // Contact results output port for point contact.
-  if (!uses_hydroelastic_model()) {
-    const auto& contact_results_cache_entry =
-        this->get_cache_entry(cache_indexes_.contact_results);
-    contact_results_port_ =
-        this->DeclareAbstractOutputPort(
-                "contact_results", ContactResults<T>(),
-                &MultibodyPlant<T>::CopyContactResultsOutput,
-                {contact_results_cache_entry.ticket()})
-            .get_index();
-  }
+  // Contact results output port.
+  const auto& contact_results_cache_entry =
+      this->get_cache_entry(cache_indexes_.contact_results);
+  contact_results_port_ = this->DeclareAbstractOutputPort(
+                                  "contact_results", ContactResults<T>(),
+                                  &MultibodyPlant<T>::CopyContactResultsOutput,
+                                  {contact_results_cache_entry.ticket()})
+                              .get_index();
 }
 
 template <typename T>
@@ -2071,26 +2080,24 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       implicit_stribeck_solver_cache_entry.cache_index();
 
   // Cache contact results for point contact.
-  if (!uses_hydroelastic_model()) {
-    auto& contact_results_cache_entry = this->DeclareCacheEntry(
-        std::string("Contact results."),
-        []() { return AbstractValue::Make(ContactResults<T>()); },
-        [this](const systems::ContextBase& context_base,
-               AbstractValue* cache_value) {
-          auto& context = dynamic_cast<const Context<T>&>(context_base);
-          auto& contact_results_cache =
-              cache_value->get_mutable_value<ContactResults<T>>();
-          this->CalcContactResults(context, &contact_results_cache);
-        },
-        // We explicitly declare the dependence on the implicit Stribeck solver
-        // even though the Eval() above does the evaluation.
-        {this->cache_entry_ticket(
-            cache_indexes_.implicit_stribeck_solver_results)});
-    cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
-  }
+  auto& contact_results_cache_entry = this->DeclareCacheEntry(
+      std::string("Contact results."),
+      []() { return AbstractValue::Make(ContactResults<T>()); },
+      [this](const systems::ContextBase& context_base,
+             AbstractValue* cache_value) {
+        auto& context = dynamic_cast<const Context<T>&>(context_base);
+        auto& contact_results_cache =
+            cache_value->get_mutable_value<ContactResults<T>>();
+        this->CalcContactResults(context, &contact_results_cache);
+      },
+      // We explicitly declare the dependence on the implicit Stribeck solver
+      // even though the Eval() above does the evaluation.
+      {this->cache_entry_ticket(
+          cache_indexes_.implicit_stribeck_solver_results)});
+  cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
 
   // Cache entry for spatial forces due to hydroelastic contact.
-  if (uses_hydroelastic_model()) {
+  if (use_hydroelastic_model_) {
     auto& hydro_forces_cache_entry = this->DeclareCacheEntry(
         std::string("Hydroelastic spatial forces (F_Bo_W)."),
         [this]() {

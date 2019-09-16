@@ -101,8 +101,8 @@ class HydroelasticTractionCalculator {
    */
   void ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
       const Data& data, double dissipation, double mu_coulomb,
-      multibody::SpatialForce<T>* F_Ao_W, multibody::SpatialForce<T>* F_Bo_W,
-      SpatialForce<T>* F_Ac_W) const;
+      multibody::SpatialForce<T>* F_Ao_W,
+      multibody::SpatialForce<T>* F_Bo_W) const;
 
   /**
    Computes reporting information from the hydroelastic model.

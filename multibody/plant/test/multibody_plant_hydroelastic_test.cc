@@ -42,14 +42,13 @@ class HydroelasticModelTests : public ::testing::Test {
 
     AddGround(kFrictionCoefficient_, plant_);
     body_ = &AddObject(plant_, kSphereRadius_, kFrictionCoefficient_);
-    // By default MultibodyPlant uses a point contact model. We switch it to
-    // hydroelastic with this call.
-    plant_->set_to_use_hydroelastic_model(true);
 
     const std::vector<geometry::GeometryId>& geometries =
         plant_->GetCollisionGeometriesForBody(*body_);
     DRAKE_DEMAND(geometries.size() == 1u);
     const geometry::GeometryId body_geometry_id = geometries[0];
+    // Note: by setting material properties we allow the plant to use the
+    // hydroelastic contact model.
     plant_->set_elastic_modulus(body_geometry_id, kElasticModulus_);
     plant_->set_hunt_crossley_dissipation(body_geometry_id, kDissipation_);
     plant_->Finalize();

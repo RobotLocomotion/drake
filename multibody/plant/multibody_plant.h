@@ -2664,19 +2664,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return default_coulomb_friction_[collision_index];
   }
 
-  /// Returns `true` iff contact is modeled with the hydroelastic model.
-  bool uses_hydroelastic_model() const { return use_hydroelastic_model_; }
-
-  /// If `use_hydro` MBP uses the hydroelastic model. Otherwise it uses point
-  /// contact model.
-  void set_to_use_hydroelastic_model(bool use_hydro = true) {
-    if (is_discrete() && use_hydro) {
-      throw std::runtime_error(
-          "The hydroelastic model is only supported in continuous mode.");
-    }
-    use_hydroelastic_model_ = use_hydro;
-  }
-
   /// @anchor mbp_hydroelastic_materials_properties
   /// @name Hydroelastic model material properties
   ///
@@ -2754,6 +2741,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     DRAKE_MBP_THROW_IF_FINALIZED();
     DRAKE_THROW_UNLESS(is_collision_geometry(id));
     DRAKE_THROW_UNLESS(elastic_modulus > 0);
+    // A user is attempting to use the hydroelastic model. We recored it here.
+    use_hydroelastic_model_ = true;
     const geometry::ProximityProperties* old_props =
         member_scene_graph().model_inspector().GetProximityProperties(id);
     DRAKE_DEMAND(old_props);
@@ -2779,6 +2768,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     DRAKE_MBP_THROW_IF_FINALIZED();
     DRAKE_DEMAND(is_collision_geometry(id));
     DRAKE_THROW_UNLESS(dissipation >= 0);
+    // A user is attempting to use the hydroelastic model. We recored it here.
+    use_hydroelastic_model_ = true;
     const geometry::ProximityProperties* old_props =
         member_scene_graph().model_inspector().GetProximityProperties(id);
     DRAKE_DEMAND(old_props);
