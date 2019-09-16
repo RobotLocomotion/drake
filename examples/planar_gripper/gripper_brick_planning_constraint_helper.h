@@ -94,10 +94,11 @@ void AddFingerNoSlidingConstraint(
 
 /**
  * Impose the kinematic constraint that the finger can only roll (or stick)
- * starting from a given fixed posture. The change of angle (from starting
- * posture to the ending posture) between finger link 2 and the +z axis is
- * limited to be within rolling_angle_upper and rolling_angle_lower. If you want
- * to impose sticking contact (no rolling), then set rolling_angle_lower =
+ * starting from a given fixed posture. The angle of the finger is defined as
+ * the pitch angle of the finger link 2 (about +x axis). The change of finger
+ * angles from the starting posture to the ending posture is limited to be
+ * within rolling_angle_upper and rolling_angle_lower. If you want to impose
+ * sticking contact (no rolling), then set rolling_angle_lower =
  * rolling_angle_upper = 0.
  * @param gripper_brick Contains the gripper brick diagram.
  * @param finger The finger that should not slide.
