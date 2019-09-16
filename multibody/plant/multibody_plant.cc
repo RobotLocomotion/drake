@@ -1315,25 +1315,6 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
   internal::HydroelasticTractionCalculator<T> traction_calculator(
       stribeck_model_.stiction_tolerance());
 
-  auto combine_elastic_moduli = [](double E1, double E2) -> double {
-    if (E1 == std::numeric_limits<double>::infinity()) return E2;
-    if (E2 == std::numeric_limits<double>::infinity()) return E1;
-    return E1 * E2 / (E1 + E2);
-  };
-
-  auto combine_dissipation = [](double Estar, double E1, double E2, double d1,
-                                double d2) -> double {
-    // Both bodies are rigid. We simply return the arithmetic average.
-    if (Estar == std::numeric_limits<double>::infinity())
-      return 0.5 * (d1 + d2);
-    double d_star = 0;
-    if (E1 != std::numeric_limits<double>::infinity())
-      d_star += Estar / E1 * d1;
-    if (E2 != std::numeric_limits<double>::infinity())
-      d_star += Estar / E2 * d2;
-    return d_star;
-  };
-
   SpatialForce<T> F_Ao_W, F_Bo_W;
   for (const ContactSurface<T>& surface : all_surfaces) {
     const GeometryId geometryM_id = surface.id_M();
@@ -1365,29 +1346,6 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     DRAKE_DEMAND(propertiesM != nullptr);
     DRAKE_DEMAND(propertiesN != nullptr);
 
-    // Bodies are rigid by default, i.e. have an infinite elastic modulus.
-    const double Em = propertiesM->template GetPropertyOrDefault<double>(
-        "hydroelastics", "elastic modulus",
-        std::numeric_limits<double>::infinity());
-    DRAKE_DEMAND(Em > 0);
-    const double En = propertiesN->template GetPropertyOrDefault<double>(
-        "hydroelastics", "elastic modulus",
-        std::numeric_limits<double>::infinity());
-    DRAKE_DEMAND(En > 0);
-
-    // Bodies are perfectly elastic by default, i.e. have a zero coefficient of
-    // dissipation.
-    const double dm = propertiesM->template GetPropertyOrDefault<double>(
-        "hydroelastics", "dissipation", 0.0);
-    const double dn = propertiesN->template GetPropertyOrDefault<double>(
-        "hydroelastics", "dissipation", 0.0);
-
-    // Effective modulus of elasticity.
-    const double Estar = combine_elastic_moduli(Em, En);
-
-    // Dissipation must be positive. It can be zero.
-    const double dissipation = combine_dissipation(Estar, Em, En, dm, dn);
-
     // Get the bodies that the two geometries are affixed to. We'll call these
     // A and B.
     const BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryM_id);
@@ -1405,6 +1363,11 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     typename internal::HydroelasticTractionCalculator<T>::Data data(
         X_WA, X_WB, V_WA, V_WB, &surface);
 
+    // Combined Hunt & Crossley dissipation.
+    const double dissipation = hydroelastics_engine_->CalcCombinedDissipation(
+        geometryM_id, geometryN_id);
+
+    // Integrate the hydroelastic traction field over the contact surface.
     traction_calculator.ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
         data, dissipation, static_friction, &F_Ao_W, &F_Bo_W);
 

@@ -58,22 +58,32 @@ class HydroelasticGeometry {
   /// Iff infinity, the model is considered to be rigid.
   double elastic_modulus() const { return elastic_modulus_; }
 
+  /// Returns the Hunt & Crossley dissipation constant for `this` model.
+  double hunt_crossley_dissipation() const { return dissipation_; }
+
   /// Sets the modulus of elasticity for `this` model.
   /// If infinity, the model is considered to be rigid.
   /// @throws std::exception if the geometry is rigid.
   /// @throws std::exception if `elastic_modulus` is not strictly positive.
-  /// @throws std::exception if `elastic_modulus` is infinity.
   void set_elastic_modulus(double elastic_modulus) {
     DRAKE_THROW_UNLESS(is_soft());
     DRAKE_THROW_UNLESS(elastic_modulus > 0);
-    DRAKE_THROW_UNLESS(elastic_modulus !=
-                       std::numeric_limits<double>::infinity());
     elastic_modulus_ = elastic_modulus;
+  }
+
+  /// Sets the Hunt & Crossley dissipation for `this` model. It can be zero.
+  /// @throws std::exception if `dissipation` is negative.
+  void set_hunt_crossley_dissipation(double dissipation) {
+    DRAKE_THROW_UNLESS(is_soft());
+    DRAKE_THROW_UNLESS(dissipation >= 0);
+    dissipation_ = dissipation;
   }
 
  private:
   // Model is rigid by default.
   double elastic_modulus_{std::numeric_limits<double>::infinity()};
+  // Model has zero dissipation by default.
+  double dissipation_{0};
   std::unique_ptr<HydroelasticField<T>> mesh_field_;
   std::unique_ptr<LevelSetField<T>> level_set_;
 };
@@ -141,6 +151,19 @@ class HydroelasticEngine final : public geometry::ShapeReifier {
   /// hydroelastic model for this geometry.
   const HydroelasticGeometry<T>* get_model(geometry::GeometryId id) const;
 
+  /// Computes the combined elastic modulus for geometries with ids `id_A` and
+  /// `id_B`.
+  /// Refer to @ref mbp_hydroelastic_materials_properties "Hydroelastic model
+  /// material properties" for further details.
+  double CalcCombinedElasticModus(geometry::GeometryId id_A,
+                                  geometry::GeometryId id_B) const;
+
+  /// Computes the combined Hunt & Crossley dissipation for geometries with ids
+  /// `id_A` and `id_B`. Refer to @ref mbp_hydroelastic_materials_properties
+  /// "Hydroelastic model material properties" for further details.
+  double CalcCombinedDissipation(geometry::GeometryId id_A,
+                                 geometry::GeometryId id_B) const;
+
   /// For a given state of `query_object`, this method computes the contact
   /// surfaces for all geometries in contact.
   /// @warning Unsupported geometries are ignored unless the broadphase pass
@@ -155,6 +178,7 @@ class HydroelasticEngine final : public geometry::ShapeReifier {
   struct GeometryImplementationData {
     geometry::GeometryId id;
     double elastic_modulus;
+    double dissipation;
   };
 
   // This struct holds the engines's data, created by the call to MakeModels().
