@@ -423,10 +423,10 @@ class ExampleDiagram : public Diagram<double> {
                     integrator1_->get_input_port());
 
     builder.ExportInput(adder0_->get_input_port(0));
-    builder.ExportInput(adder0_->get_input_port(1));
+    builder.ExportInput(adder0_->get_input_port(1), "adder0");
     builder.ExportInput(adder1_->get_input_port(1));
     builder.ExportOutput(adder1_->get_output_port());
-    builder.ExportOutput(adder2_->get_output_port());
+    builder.ExportOutput(adder2_->get_output_port(), "adder2");
     builder.ExportOutput(integrator1_->get_output_port());
 
     if (use_abstract) {
@@ -712,9 +712,9 @@ TEST_F(DiagramTest, Graphviz) {
       "label=\"Unicode Snowman's Favorite Diagram!!1!☃!\";")) << dot;
   // Check that input ports are declared in blue, and output ports in green.
   EXPECT_NE(std::string::npos, dot.find(
-      "_" + id + "_u1[color=blue, label=\"u1\"")) << dot;
+    "_" + id + "_u1[color=blue, label=\"adder0\"")) << dot;
   EXPECT_NE(std::string::npos, dot.find(
-      "_" + id + "_y2[color=green, label=\"y2\"")) << dot;
+    "_" + id + "_y1[color=green, label=\"adder2\"")) << dot;
   // Check that subsystem records appear.
   EXPECT_NE(
       std::string::npos,

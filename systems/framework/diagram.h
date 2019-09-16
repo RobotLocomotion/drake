@@ -491,7 +491,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     for (int i = 0; i < this->num_input_ports(); ++i) {
       this->GetGraphvizInputPortToken(this->get_input_port(i), max_depth,
                                       dot);
-      *dot << "[color=blue, label=\"u" << i << "\"];" << std::endl;
+      *dot << "[color=blue, label=\"" << this->get_input_port(i).get_name()
+           << "\"];" << std::endl;
     }
     *dot << "}" << std::endl;
 
@@ -504,7 +505,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     for (int i = 0; i < this->num_output_ports(); ++i) {
       this->GetGraphvizOutputPortToken(this->get_output_port(i), max_depth,
                                        dot);
-      *dot << "[color=green, label=\"y" << i << "\"];" << std::endl;
+      *dot << "[color=green, label=\"" << this->get_output_port(i).get_name()
+           << "\"];" << std::endl;
     }
     *dot << "}" << std::endl;
 
