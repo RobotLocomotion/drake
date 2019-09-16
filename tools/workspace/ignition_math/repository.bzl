@@ -16,7 +16,7 @@ def ignition_math_repository(
         # commit = commit,
         # sha256 = "d8cb6eebd8db3eb60d1d7b8643b35e9275595b8ed9bf12e80854df1d6fdc6fda",  # noqa
         # strip_prefix = "ignitionrobotics-ign-math-%s" % (commit),
-        path = workspace_dir + "/tmp/repos/ign-math",
+        path = workspace_dir + "/tmp/repos/ign_math",
         build_file = "@drake//tools/workspace/ignition_math:package.BUILD.bazel",  # noqa
         # mirrors = mirrors,
     )

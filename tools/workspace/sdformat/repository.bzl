@@ -19,4 +19,4 @@ def sdformat_repository(
         path = workspace_dir + "/tmp/repos/sdformat",
         build_file = "@drake//tools/workspace/sdformat:package.BUILD.bazel",
     #     mirrors = mirrors,
-    # )
+    )

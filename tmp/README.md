@@ -22,3 +22,6 @@ First, test without Bazel overhead:
     cd drake/tmp
     colcon build
 
+Then try to build a minimal thing:
+
+    bazel build //multibody/parsing:detail_misc
