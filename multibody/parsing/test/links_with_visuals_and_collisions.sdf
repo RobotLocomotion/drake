@@ -122,13 +122,13 @@
 
     <!-- Test frames -->
     <!-- We will define this frame as `F1`. -->
-    <frame name='model_scope_link1_frame' affixed_to='link1'>
+    <frame name='model_scope_link1_frame' attached_to='link1'>
       <!-- This pose represents `X_L1F1`. -->
       <pose>0.1 0.2 0.3 0.4 0.5 0.6</pose>
     </frame>
     <!-- We will define this frame as `F2`. -->
     <frame name='model_scope_link1_frame_child'
-        affixed_to='model_scope_link1_frame'>
+        attached_to='model_scope_link1_frame'>
       <!-- This pose represents `X_F1F2`. -->
       <pose>0.1 0 0 0 0 0</pose>
     </frame>
@@ -140,11 +140,12 @@
       <pose>0.7 0.8 0.9 0 0 0</pose>
     </frame>
     <!-- We will define this frame as `F4`. -->
-    <!-- TODO(eric): Make this fail. -->
-    <frame name='model_scope_world_frame' affixed_to='world'>
-      <!-- This pose represents `X_WF4`. -->
+    <!-- TODO(eric): This now fails. Move it to pure negative tests.
+    <frame name='model_scope_world_frame' attached_to='world'>
+      <!- - This pose represents `X_WF4`. - ->
       <pose>1.1 1.2 1.3 0 0 0</pose>
     </frame>
+    -->
 
     <!-- IMPORTANT NOTE: The model frame is NOT affixed to any particular
          link's frame (e.g. a "base" frame). Thus, if you weld a joint between

@@ -478,7 +478,7 @@ RigidTransformd ResolveRigidTransform(
 
 // TODO(eric.cousineau): How to load a world???
 // TODO: Handle backwards compatibility.
-void AddFrameFromSpecification(
+const Frame<double>& AddFrameFromSpecification(
     const sdf::Frame& frame_spec, ModelInstanceIndex model_instance,
     const Frame<double>& model_frame, MultibodyPlant<double>* plant) {
   const RigidTransformd X_PF =
@@ -490,8 +490,10 @@ void AddFrameFromSpecification(
     parent_frame = &plant->GetFrameByName(
         frame_spec.AttachedTo(), model_instance);
   }
-  plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-      frame_spec.Name(), *parent_frame, X_PF));
+  const Frame<double>& frame =
+      plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+          frame_spec.Name(), *parent_frame, X_PF));
+  return frame;
 }
 
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
