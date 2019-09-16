@@ -222,10 +222,18 @@ top-level documentation for :py:mod:`pydrake.math`.
       .def(py::init([]() { return std::make_unique<PySolverInterface>(); }),
           doc.SolverInterface.ctor.doc)
       // The following bindings are present to allow Python to call C++
-      // implementations of this interface. Python implementations of the
-      // interface will call the trampoline implementation methods above.
+      // implementations of this interface.
       .def("available", &SolverInterface::available,
           doc.SolverInterface.available.doc)
+      .def("solver_id", &SolverInterface::solver_id,
+          doc.SolverInterface.solver_id.doc)
+      .def("AreProgramAttributesSatisfied",
+          [](const SolverInterface& self,
+              const solvers::MathematicalProgram& prog) {
+            return self.AreProgramAttributesSatisfied(prog);
+          },
+          py::arg("prog"),
+          doc.SolverInterface.AreProgramAttributesSatisfied.doc)
       .def("Solve",
           [](const SolverInterface& self,
               const solvers::MathematicalProgram& prog,
@@ -236,15 +244,6 @@ top-level documentation for :py:mod:`pydrake.math`.
           },
           py::arg("prog"), py::arg("initial_guess"), py::arg("solver_options"),
           py::arg("result"), doc.SolverInterface.Solve.doc)
-      .def("solver_id", &SolverInterface::solver_id,
-          doc.SolverInterface.solver_id.doc)
-      .def("AreProgramAttributesSatisfied",
-          [](const SolverInterface& self,
-              const solvers::MathematicalProgram& prog) {
-            return self.AreProgramAttributesSatisfied(prog);
-          },
-          py::arg("prog"),
-          doc.SolverInterface.AreProgramAttributesSatisfied.doc)
       .def("Solve",
           // This method really lives on SolverBase, but we manually write it
           // out here to avoid all of the overloading / inheritance hassles.
