@@ -7,7 +7,8 @@ workspace(name = "drake")
 
 load("//tools/workspace:default.bzl", "add_default_repositories")
 
-add_default_repositories()
+# HACK
+add_default_repositories(workspace_dir=__workspace_dir__)
 
 # These are test repositories only needed for local testing of `external_data`,
 # and should not be needed for downstream projects.

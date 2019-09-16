@@ -1,0 +1,18 @@
+# From Addisu.
+repositories:
+  ign_cmake:
+    type: hg
+    url: https://bitbucket.org/ignitionrobotics/ign-cmake
+    version: ign-cmake1
+  ign_math:
+    type: hg
+    url: https://bitbucket.org/ignitionrobotics/ign-math
+    version: ign-math5
+  sdformat:
+    type: hg
+    url: https://bitbucket.org/osrf/sdformat
+    version: spec2_prototype_7
+  ign_tools:
+    type: hg
+    url: https://bitbucket.org/ignitionrobotics/ign-tools
+    version: ign-tools0
