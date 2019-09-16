@@ -57,13 +57,14 @@ RotationalInertia<double> ExtractRotationalInertiaAboutBcmExpressedInBi(
 // unsupported location.
 // See https://bitbucket.org/osrf/sdformat/issues/200 (tracked by #10590).
 void ThrowIfPoseFrameSpecified(sdf::ElementPtr element) {
+  // TODO(eric.cousineau): Fix all call sites, and remove this function.
   if (element->HasElement("pose")) {
     sdf::ElementPtr pose = element->GetElement("pose");
-    const std::string frame_name = pose->Get<std::string>("frame");
+    const std::string frame_name = pose->Get<std::string>("relative_to");
     if (!frame_name.empty()) {
       throw std::runtime_error(
-          "<pose frame='{non-empty}'/> is presently not supported outside of "
-          "the <frame/> tag.");
+          "<pose relative_to='{non-empty}'/> is presently not supported "
+          "outside of the <frame/> tag.");
     }
   }
 }
@@ -517,6 +518,7 @@ ModelInstanceIndex AddModelFromSpecification(
   std::string canonical_link_name = model.CanonicalLinkName();
   if (canonical_link_name.empty()) {
     // TODO(eric.cousineau): Should libsdformat auto-resolve this?
+    DRAKE_DEMAND(model.LinkCount() > 0);
     canonical_link_name = model.LinkByIndex(0)->Name();
   }
   const Frame<double>& canonical_link_frame = plant->GetFrameByName(

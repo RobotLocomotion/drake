@@ -410,42 +410,43 @@ void ExpectUnsupportedFrame(const std::string& inner) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AddModelsFromSdfFile(filename, package_map, &plant),
       std::runtime_error,
-      R"(<pose frame='\{non-empty\}'/> is presently not supported )"
+      R"(<pose relative_to='\{non-empty\}'/> is presently not supported )"
       R"(outside of the <frame/> tag.)");
 }
 
 GTEST_TEST(SdfParser, TestUnsupportedFrames) {
   ExpectUnsupportedFrame(R"(
 <model name='bad'>
-  <pose frame='hello'/>
+  <pose relative_to='hello'/>
+  <link name='dont_crash_plz'/>  <!-- Need at least one frame -->
 </model>)");
   ExpectUnsupportedFrame(R"(
 <model name='bad'>
-  <link name='a'><pose frame='hello'/></link>
+  <link name='a'><pose relative_to='hello'/></link>
 </model>)");
   ExpectUnsupportedFrame(R"(
 <model name='bad'>
   <link name='a'>
-    <inertial><pose frame='hello'/></inertial>
+    <inertial><pose relative_to='hello'/></inertial>
   </link>
 </model>)");
   ExpectUnsupportedFrame(R"(
 <model name='bad'>
   <link name='a'>"
-    <visual name='b'><pose frame='hello'/></visual>
+    <visual name='b'><pose relative_to='hello'/></visual>
   </link>
 </model>)");
   ExpectUnsupportedFrame(R"(
 <model name='bad'>
   <link name='a'>"
-    <collision name='b'><pose frame='hello'/></collision>
+    <collision name='b'><pose relative_to='hello'/></collision>
   </link>
 </model>)");
   ExpectUnsupportedFrame(R"(
 <model name='bad'>
   <link name='a'/>
   <joint name='b' type='fixed'>"
-    <pose frame='hello'/>"
+    <pose relative_to='hello'/>"
     <parent>world</parent>
     <child>a</child>"
   </joint>
