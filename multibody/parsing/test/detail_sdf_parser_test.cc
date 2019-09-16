@@ -33,6 +33,11 @@ using math::RollPitchYaw;
 using math::RollPitchYawd;
 using systems::Context;
 
+// TODO(eric.cousineau): Make a simple test that parses SDFormat <=1.6 and 1.7
+// separately. See private Slack convo with Steve and Addisu,
+// 2019-09-16T4:30-0400; this may be complicated and require some code
+// duplication.
+
 // Verifies that the SDF loader can leverage a specified package map.
 GTEST_TEST(MultibodyPlantSdfParserTest, PackageMapSpecified) {
   // We start with the world and default model instances (model_instance.h

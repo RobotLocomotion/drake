@@ -356,6 +356,16 @@ void AddJointFromSpecification(
   }
 }
 
+void ThrowAnyErrors(const sdf::Errors& errors) {
+  // Check for any errors.
+  if (!errors.empty()) {
+    std::string error_accumulation("From AddModelFromSdfFile():\n");
+    for (const auto& e : errors)
+      error_accumulation += "Error: " + e.Message() + "\n";
+    throw std::runtime_error(error_accumulation);
+  }
+}
+
 // Helper method to load an SDF file and read the contents into an sdf::Root
 // object.
 std::string LoadSdf(
@@ -365,15 +375,7 @@ std::string LoadSdf(
   const std::string full_path = GetFullPath(file_name);
 
   // Load the SDF file.
-  sdf::Errors errors = root->Load(full_path);
-
-  // Check for any errors.
-  if (!errors.empty()) {
-    std::string error_accumulation("From AddModelFromSdfFile():\n");
-    for (const auto& e : errors)
-      error_accumulation += "Error: " + e.Message() + "\n";
-    throw std::runtime_error(error_accumulation);
-  }
+  ThrowAnyErrors(root->Load(full_path));
 
   // Uses the directory holding the SDF to be the root directory
   // in which to search for files referenced within the SDF file.
@@ -465,51 +467,30 @@ void AddLinksFromSpecification(
   }
 }
 
-template <typename T>
-const Frame<T>& GetFrameOrWorldByName(
-    const MultibodyPlant<T>& plant, const std::string& name,
-    ModelInstanceIndex model_instance) {
-  if (name == "world") {
-    return plant.world_frame();
-  } else {
-    return plant.GetFrameByName(name, model_instance);
-  }
+template <typename Class>
+RigidTransformd ResolveRigidTransform(
+    const Class& element, const std::string& relative_to) {
+  ignition::math::Pose3d pose;
+  ThrowAnyErrors(element.ResolvePose(relative_to, pose));
+  return ToRigidTransform(pose);
 }
 
-void AddFramesFromSpecification(
-    ModelInstanceIndex model_instance,
-    sdf::ElementPtr parent_element,
-    const Frame<double>& parent_frame,
-    MultibodyPlant<double>* plant) {
-  // Per its API documentation, `GetElement(...)` will create a new element if
-  // one does not already exist rather than return `nullptr`; use
-  // `HasElement(...)` instead.
-  // TODO: WARNING. Newer libsdformat breaks backwards compatibility; I can no
-  // longer acecss this attribute?
-  // TOOD(eric): Make it work?
-  if (parent_element->HasElement("frame")) {
-    sdf::ElementPtr frame_element = parent_element->GetElement("frame");
-    while (frame_element) {
-      std::string name = frame_element->Get<std::string>("name");
-      sdf::ElementPtr pose_element = frame_element->GetElement("pose");
-      const Frame<double>* pose_frame = &parent_frame;
-      // SDF makes frame have a value of '' by default, even if unspecified.
-      DRAKE_DEMAND(pose_element->HasAttribute("frame"));
-      const std::string pose_frame_name =
-          pose_element->Get<std::string>("frame");
-      if (!pose_frame_name.empty()) {
-        // TODO(eric.cousineau): Prevent instance name from leaking in? Throw
-        // an error if a user ever specifies it?
-        pose_frame = &GetFrameOrWorldByName(
-            *plant, pose_frame_name, model_instance);
-      }
-      const RigidTransformd X_PF =
-          ToRigidTransform(pose_element->Get<ignition::math::Pose3d>());
-      plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-          name, *pose_frame, X_PF));
-      frame_element = frame_element->GetNextElement("frame");
-    }
+// TODO(eric.cousineau): How to load a world???
+// TODO: Handle backwards compatibility.
+void AddFrameFromSpecification(
+    const sdf::Frame& frame_spec, ModelInstanceIndex model_instance,
+    const Frame<double>& model_frame, MultibodyPlant<double>* plant) {
+  const RigidTransformd X_PF =
+      ResolveRigidTransform(frame_spec, frame_spec.AttachedTo());
+  const Frame<double>* parent_frame{};
+  if (frame_spec.AttachedTo().empty()) {
+    parent_frame = &model_frame;
+  } else {
+    parent_frame = &plant->GetFrameByName(
+        frame_spec.AttachedTo(), model_instance);
   }
+  plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+      frame_spec.Name(), *parent_frame, X_PF));
 }
 
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
@@ -528,28 +509,37 @@ ModelInstanceIndex AddModelFromSpecification(
   // frame is not the world. At present, we assume the parent frame is the
   // world.
   ThrowIfPoseFrameSpecified(model.Element());
-  const RigidTransformd X_WM = ToRigidTransform(model.Pose());
-  // Add the SDF "model frame" given the model name so that way any frames added
-  // to the plant are associated with this current model instance.
-  // N.B. We mangle this name to dis-incentivize users from wanting to use
-  // this frame. At present, SDFormat does not concretely specify what the
-  // semantics of a "model frame" are. This current interpretation expects that
-  // the SDF "model frame" is where the model is *added*, and thus is going to
-  // be attached to the world, and cannot be welded to another body. This means
-  // the SDF "model frame" will not "follow" the other link of a body if that
-  // link is welded elsewhere.
-  const std::string sdf_model_frame_name =
-      "_" + model_name + "_sdf_model_frame";
-  const Frame<double>& sdf_model_frame =
-      plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-          sdf_model_frame_name, plant->world_frame(), X_WM, model_instance));
 
   // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
   AddLinksFromSpecification(
       model_instance, model, plant, package_map, root_dir);
 
+  std::string canonical_link_name = model.CanonicalLinkName();
+  if (canonical_link_name.empty()) {
+    // TODO(eric.cousineau): Should libsdformat auto-resolve this?
+    canonical_link_name = model.LinkByIndex(0)->Name();
+  }
+  const Frame<double>& canonical_link_frame = plant->GetFrameByName(
+      canonical_link_name, model_instance);
+  const RigidTransformd X_MLc =
+      ResolveRigidTransform(*model.LinkByName(canonical_link_name), "");
+
+  // Add the SDF "model frame" given the model name so that way any frames added
+  // to the plant are associated with this current model instance.
+  // N.B. We mangle this name to dis-incentivize users from wanting to use
+  // this frame. At present, SDFormat does not concretely specify what the
+  // semantics of a "model frame" are. Note that this is welded to the
+  // canonical link.
+  // TODO(eric.cousineau): Use same name mangling as what libsdformat (or the
+  // spec itself) uses.
+  const std::string sdf_model_frame_name =
+      "_" + model_name + "_sdf_model_frame";
+  const Frame<double>& model_frame =
+      plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
+          sdf_model_frame_name, canonical_link_frame, X_MLc.inverse(),
+          model_instance));
+
   // Add all the joints
-  // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
   for (uint64_t joint_index = 0; joint_index < model.JointCount();
        ++joint_index) {
     // Get a pointer to the SDF joint, and the joint axis information.
@@ -558,13 +548,11 @@ ModelInstanceIndex AddModelFromSpecification(
   }
 
   // Add frames at root-level of <model>.
-  // TODO(eric.cousineau): Address additional items:
-  // - adding frames nested in other elements (joints, visuals, etc.)
-  // - implicit frames for other elements (joints, visuals, etc.)
-  // - explicitly referring to SDF model frame?
-  // See: https://bitbucket.org/osrf/sdformat/issues/200
-  AddFramesFromSpecification(
-      model_instance, model.Element(), sdf_model_frame, plant);
+  for (uint64_t frame_index = 0; frame_index < model.FrameCount();
+      ++frame_index) {
+    const sdf::Frame& frame = *model.FrameByIndex(frame_index);
+    AddFrameFromSpecification(frame, model_instance, model_frame, plant);
+  }
 
   return model_instance;
 }
@@ -649,6 +637,15 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
   } else {
     // Load the world and all the models in the world.
     const sdf::World& world = *root.WorldByIndex(0);
+
+    // TODO(eric.cousineau): Er... where do world joints get added???
+
+    for (uint64_t frame_index = 0; frame_index < world.FrameCount();
+        ++frame_index) {
+      const sdf::Frame& frame = *world.FrameByIndex(frame_index);
+      AddFrameFromSpecification(
+          frame, world_model_instance(), plant->world_frame(), plant);
+    }
 
     for (uint64_t model_index = 0; model_index < world.ModelCount();
         ++model_index) {

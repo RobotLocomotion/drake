@@ -140,6 +140,7 @@
       <pose>0.7 0.8 0.9 0 0 0</pose>
     </frame>
     <!-- We will define this frame as `F4`. -->
+    <!-- TODO(eric): Make this fail. -->
     <frame name='model_scope_world_frame' affixed_to='world'>
       <!-- This pose represents `X_WF4`. -->
       <pose>1.1 1.2 1.3 0 0 0</pose>
