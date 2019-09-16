@@ -617,7 +617,7 @@ class TestMathematicalProgram(unittest.TestCase):
 
 class DummySolverInterface(SolverInterface):
     def __init__(self):
-        pass
+        SolverInterface.__init__(self)
 
     def available(self):
         return True
@@ -625,15 +625,23 @@ class DummySolverInterface(SolverInterface):
     def solver_id(self):
         return SolverId("dummy")
 
-    def Solve(prog, initial_guess, solver_options, result):
-        result = MathematicalProgramResult()
+    def Solve(self, prog, initial_guess, solver_options, result):
+        raise Exception("Dummy solver cannot solve")
 
     def AreProgramAttributesSatisfied(self, prog):
         return True
 
 
-class DummySolverInterfaceTest(unittest.TestCase):
+class TestSolverInterface(unittest.TestCase):
     def test_dummy_solver_interface(self):
         solver = DummySolverInterface()
         self.assertTrue(solver.available())
         self.assertEqual(solver.solver_id().name(), "dummy")
+        self.assertIsInstance(solver, SolverInterface)
+        prog = mp.MathematicalProgram()
+        result = mp.MathematicalProgramResult()
+        with self.assertRaises(Exception) as context:
+            solver.Solve(prog, None, None, result)
+        self.assertTrue("Dummy solver cannot solve" in str(context.exception))
+        self.assertIsInstance(result, mp.MathematicalProgramResult)
+        self.assertTrue(solver.AreProgramAttributesSatisfied(prog))
