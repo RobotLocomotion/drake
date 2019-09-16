@@ -25,3 +25,7 @@ First, test without Bazel overhead:
 Then try to build a minimal thing:
 
     bazel build //multibody/parsing:detail_misc
+
+Then try other things:
+
+    bazel test //multibody/parsing:detail_sdf_parser_test

@@ -484,6 +484,9 @@ void AddFramesFromSpecification(
   // Per its API documentation, `GetElement(...)` will create a new element if
   // one does not already exist rather than return `nullptr`; use
   // `HasElement(...)` instead.
+  // TODO: WARNING. Newer libsdformat breaks backwards compatibility; I can no
+  // longer acecss this attribute?
+  // TOOD(eric): Make it work?
   if (parent_element->HasElement("frame")) {
     sdf::ElementPtr frame_element = parent_element->GetElement("frame");
     while (frame_element) {
