@@ -396,53 +396,85 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointActuatorParsingTest) {
       std::logic_error, "There is no joint actuator named '.*' in the model.");
 }
 
-void ExpectUnsupportedFrame(const std::string& inner) {
+void ParseTestString(const std::string& inner) {
   const std::string filename = temp_directory() + "/bad.sdf";
   std::ofstream file(filename);
   file << "<sdf version='1.6'>" << inner << "\n</sdf>\n";
   file.close();
-
   MultibodyPlant<double> plant;
   SceneGraph<double> scene_graph;
   PackageMap package_map;
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
   drake::log()->debug("inner: {}", inner);
+  AddModelsFromSdfFile(filename, package_map, &plant);
+}
+
+void FailWithNonemptyRelativeTo(const std::string& inner) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AddModelsFromSdfFile(filename, package_map, &plant),
+      ParseTestString(inner),
       std::runtime_error,
       R"(<pose relative_to='\{non-empty\}'/> is presently not supported )"
       R"(outside of the <frame/> tag.)");
 }
 
+void FailWithInvalidWorld(const std::string& inner) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(inner),
+      std::runtime_error,
+      R"([\s\S]*Sink vertex found with name \[.*\], but its name should )"
+      R"(be empty[\s\S]*)");
+  // The error `Unique vertex with name \[world\] not found in graph` is more
+  // understandable, but doesn't get triggered when specifying
+  // `//pose[@relative_to="world"]`...
+}
+
 GTEST_TEST(SdfParser, TestUnsupportedFrames) {
-  ExpectUnsupportedFrame(R"(
+  // Model frames cannnot attach to / nor be relative to the world frame.
+  FailWithInvalidWorld(R"(
+<model name='bad'>
+  <link name='dont_crash_plz'/>  <!-- Need at least one link -->
+  <frame name='model_scope_world_frame' attached_to='world'>
+    <pose>0 0 0 0 0 0</pose>
+  </frame>
+</model>
+)");
+  FailWithInvalidWorld(R"(
+<model name='bad'>
+  <link name='dont_crash_plz'/>  <!-- Need at least one link -->
+  <frame name='model_scope_world_relative_frame'>
+    <pose relative_to='world'>0 0 0 0 0 0</pose>
+  </frame>
+</model>
+)");
+  // TODO(eric.cousineau): Support the rest of these...
+  FailWithNonemptyRelativeTo(R"(
 <model name='bad'>
   <pose relative_to='hello'/>
   <link name='dont_crash_plz'/>  <!-- Need at least one frame -->
 </model>)");
-  ExpectUnsupportedFrame(R"(
+  FailWithNonemptyRelativeTo(R"(
 <model name='bad'>
   <link name='a'><pose relative_to='hello'/></link>
 </model>)");
-  ExpectUnsupportedFrame(R"(
+  FailWithNonemptyRelativeTo(R"(
 <model name='bad'>
   <link name='a'>
     <inertial><pose relative_to='hello'/></inertial>
   </link>
 </model>)");
-  ExpectUnsupportedFrame(R"(
+  FailWithNonemptyRelativeTo(R"(
 <model name='bad'>
   <link name='a'>"
     <visual name='b'><pose relative_to='hello'/></visual>
   </link>
 </model>)");
-  ExpectUnsupportedFrame(R"(
+  FailWithNonemptyRelativeTo(R"(
 <model name='bad'>
   <link name='a'>"
     <collision name='b'><pose relative_to='hello'/></collision>
   </link>
 </model>)");
-  ExpectUnsupportedFrame(R"(
+  FailWithNonemptyRelativeTo(R"(
 <model name='bad'>
   <link name='a'/>
   <joint name='b' type='fixed'>"
