@@ -17,6 +17,11 @@ Then update repositories:
     mkdir -p repos
     vcs import ./repos < vcs.repo
 
+**NOTE**: Before updating, consider capturuing exact versions:
+
+    cd drake/tmp
+    vcs export --exact ./repos > vcs-exact.repo
+
 First, test without Bazel overhead:
 
     cd drake/tmp
