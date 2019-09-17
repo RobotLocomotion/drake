@@ -7,9 +7,9 @@ Defines an SDF model with various types of joints used for testing the parser.
 <sdf version='1.6'>
   <model name='joint_parsing_test'>
     <link name='link1'>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+      <pose>0 0 0 0 -0 0</pose>
       <inertial>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose>0 0 0 0 -0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>0.1</ixx>
@@ -22,9 +22,9 @@ Defines an SDF model with various types of joints used for testing the parser.
       </inertial>
     </link>
     <link name='link2'>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+      <pose>0 0 0 0 -0 0</pose>
       <inertial>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose>0 0 0 0 -0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>0.1</ixx>
@@ -55,9 +55,9 @@ Defines an SDF model with various types of joints used for testing the parser.
       </axis>
     </joint>
     <link name='link3'>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+      <pose>0 0 0 0 -0 0</pose>
       <inertial>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose>0 0 0 0 -0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>0.1</ixx>
@@ -88,9 +88,9 @@ Defines an SDF model with various types of joints used for testing the parser.
       </axis>
     </joint>
     <link name='link4'>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+      <pose>0 0 0 0 -0 0</pose>
       <inertial>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose>0 0 0 0 -0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>0.1</ixx>

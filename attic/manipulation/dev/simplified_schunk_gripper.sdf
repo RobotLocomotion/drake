@@ -3,7 +3,7 @@
   <model name='Schunk_Gripper'>
 
 	  <link name="body">
-      <pose frame=''>0 -0.049 0 0 -0 0</pose>
+      <pose>0 -0.049 0 0 -0 0</pose>
 	    <visual>
 	      <geometry>
 	        <box>
@@ -27,7 +27,7 @@
 
 
 	  <link name="left_finger">
-      <pose frame=''>-0.008 0.025 0 0 -0 0</pose>
+      <pose>-0.008 0.025 0 0 -0 0</pose>
 
 	  	<visual>
         <geometry>
@@ -59,7 +59,7 @@
 	  </link>
 
 	  <link name="right_finger">
-      <pose frame=''>0.008 0.025 0 0 -0 0</pose>
+      <pose>0.008 0.025 0 0 -0 0</pose>
 	  	<visual>
         <geometry>
           <box>
@@ -90,7 +90,7 @@
 	  </link>
 
 	  <joint name="left_finger_sliding" type="prismatic">
-      <pose frame=''>0 0 0 0 -0 0</pose>
+      <pose>0 0 0 0 -0 0</pose>
 	  	<parent>body</parent>
 	  	<child>left_finger</child>
 	  	<axis>
@@ -101,7 +101,7 @@
 	  </joint>
 
 	  <joint name="right_finger_sliding" type="prismatic">
-      <pose frame=''>0 0 0 0 -0 0</pose>
+      <pose>0 0 0 0 -0 0</pose>
 	  	<parent>body</parent>
 	  	<child>right_finger</child>
 	  	<axis>

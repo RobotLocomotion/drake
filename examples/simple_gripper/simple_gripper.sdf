@@ -24,7 +24,7 @@
     </joint>
 
     <link name='y_translate_link'>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+      <pose>0 0 0 0 -0 0</pose>
       <inertial>
         <mass>0.0001</mass>
         <inertia>
@@ -35,14 +35,14 @@
           <iyz>0</iyz>
           <izz>0.0001</izz>
         </inertia>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose>0 0 0 0 -0 0</pose>
       </inertial>
     </link>
 
     <joint name='translate_joint' type='prismatic'>
       <parent>y_translate_link</parent>
       <child>body</child>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+      <pose>0 0 0 0 -0 0</pose>
       <axis>
         <xyz>0 0 1</xyz>
         <use_parent_model_frame>1</use_parent_model_frame>
@@ -55,7 +55,7 @@
     </joint>
 
     <link name='body'>
-      <pose frame=''>0 -0.049133 0 0 -0 0</pose>
+      <pose>0 -0.049133 0 0 -0 0</pose>
       <inertial>
         <mass>0.988882</mass>
         <inertia>
@@ -66,10 +66,10 @@
           <iyz>0</iyz>
           <izz>0.164814</izz>
         </inertia>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose>0 0 0 0 -0 0</pose>
       </inertial>
       <visual name='visual'>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.146 0.0725 0.049521</size>
@@ -79,7 +79,7 @@
     </link>
 
     <link name='left_finger'>
-      <pose frame=''>0.040 0.029 0 0 -0 0</pose>
+      <pose>0.040 0.029 0 0 -0 0</pose>
       <inertial>
         <mass>0.05</mass>
         <inertia>
@@ -90,10 +90,10 @@
           <iyz>0</iyz>
           <izz>0.16</izz>
         </inertia>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose>0 0 0 0 -0 0</pose>
       </inertial>
       <visual name='visual'>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.007 0.081 0.028</size>
@@ -102,7 +102,7 @@
       </visual>
     </link>
     <link name='right_finger'>
-      <pose frame=''>0.047 0.029 0 0 0 0</pose>
+      <pose>0.047 0.029 0 0 0 0</pose>
       <inertial>
         <mass>0.05</mass>
         <inertia>
@@ -113,10 +113,10 @@
           <iyz>0</iyz>
           <izz>0.16</izz>
         </inertia>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose>0 0 0 0 -0 0</pose>
       </inertial>
       <visual name='visual'>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.007 0.081 0.028</size>
@@ -134,7 +134,7 @@
     <joint name='finger_sliding_joint' type='prismatic'>
       <parent>right_finger</parent>
       <child>left_finger</child>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+      <pose>0 0 0 0 -0 0</pose>
       <axis>
         <xyz>1 0 0</xyz>
         <use_parent_model_frame>0</use_parent_model_frame>
