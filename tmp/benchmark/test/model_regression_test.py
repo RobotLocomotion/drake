@@ -27,7 +27,7 @@ iiwa14_no_collision = "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_
 
 checks = {
     "MyModel: Regression for SDF changes": Check(
-        file="tmp/benchmark/data/iiwa14_no_cliision.sdf.yaml",
+        file="tmp/benchmark/data/iiwa14_no_collision.sdf.yaml",
         expr=Expression("make_plant(iiwa14_no_collision)", __name__),
     ),
 }

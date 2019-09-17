@@ -405,6 +405,8 @@ def add_new_configurations(benchmark, adaptor):
     add(q_raw, "Ones")
     q_raw[:] = np.arange(nq) * 0.1 + 0.1
     add(q_raw, "Incrementing")
+    q_raw[:] = np.pi / 2
+    add(q_raw, "Pi/2")
 
 
 def add_old_configurations(benchmark, adaptor, benchmark_old):
