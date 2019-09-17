@@ -288,8 +288,7 @@ class Benchmark(object):
     def __init__(self, expression, type_name, configurations=None):
         """
         Args:
-            expression: Python expression used to create tree. Evaluated in
-                scope of this module.
+            expression: Python expression used to create tree.
             type_name: Direct type name (no module) of tree.
             configurations: List[Configuration]
         """
@@ -303,7 +302,7 @@ class Benchmark(object):
     def from_yaml(cls, d):
         """Creates from a dict (from YAML)."""
         return cls(
-            expression=d["expression"],
+            expression=Expression.from_yaml(d["expression"]),
             type_name=d["type_name"],
             configurations=[
                 Configuration.from_yaml(x) for x in d["configurations"]],
@@ -312,7 +311,7 @@ class Benchmark(object):
     def to_yaml(self):
         """Serializes to YAML-friendly dict."""
         return dict(
-            expression=self.expression,
+            expression=self.expression.to_yaml(),
             type_name=self.type_name,
             configurations=[x.to_yaml() for x in self.configurations],
         )
@@ -320,7 +319,7 @@ class Benchmark(object):
     def _info(self):
         # Provides brief overview of this benchmark for traceability.
         return dict(
-            expression=self.expression,
+            expression=str(self.expression),
             type_name=self.type_name,
             filename=self.filename or "<new>",
         )
@@ -428,15 +427,15 @@ def add_old_configurations(benchmark, adaptor, benchmark_old):
 
 
 def create_benchmark(
-        expr, benchmark_old=None, return_adaptor=False, locals_=None):
-    """Creates a benchmark from (str) `expr`.
+        expr, benchmark_old=None, return_adaptor=False):
+    """Creates a benchmark from Expression.
     Args:
         expr: Expression to evaluate tree.
         benchmark_old: Benchmark that shall be compared against.
             If None, uses new values (for generating a fresh benchmark).
             If not None, uses `benchmark_old`s semantic configuration values.
     """
-    value = eval(expr, globals(), locals_ or locals())
+    value = expr()
     if isinstance(value, tuple) and isinstance(value[0], MultibodyPlant):
         adaptor = MbpAdaptor(*value)
     else:
@@ -514,10 +513,10 @@ class MbpAdaptor(Adaptor):
         return config_frames
 
 
-def make_plant(model_directive_path):
+def make_plant(model_path):
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder)
-    InsertCorrectLoadingMethodHere(model_directive_path, plant)
+    Parser(plant).AddModelFromFile(FindResourceOrThrow(model_path))
     plant.Finalize()
     ConnectDrakeVisualizer(
         builder=builder, scene_graph=scene_graph)
@@ -525,16 +524,26 @@ def make_plant(model_directive_path):
     return plant, scene_graph, diagram
 
 
-def simple_mbp():
-    builder = DiagramBuilder()
-    plant, scene_graph = AddMultibodyPlantSceneGraph(builder)
-    Parser(plant).AddModelFromFile(
-        FindResourceOrThrow("drake/examples/double_pendulum/models/double_pendulum.sdf"))
-    plant.Finalize()
-    ConnectDrakeVisualizer(
-        builder=builder, scene_graph=scene_graph)
-    diagram = builder.Build()
-    return plant, scene_graph, diagram
+class Expression:
+    def __init__(self, expr, module):
+        self.expr = expr
+        self.module = module
+
+    def to_yaml(self):
+        return dict(expr=self.expr, module=self.module)
+
+    @classmethod
+    def from_yaml(cls, d):
+        return cls(d["expr"], d["module"])
+
+    def __call__(self):
+        m = sys.modules[self.module]
+        globals_ = m.__dict__
+        locals_ = dict()
+        return eval(self.expr, globals_, locals_)
+
+    def __str__(self):
+        return self.expr
 
 
 def main():

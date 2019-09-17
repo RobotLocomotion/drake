@@ -26,6 +26,7 @@ checks = {
     "MyModel: Regression for SDF changes": Check(
         file="stuff.yaml",
         expr="load_model(biscuit)",  # noqa
+        scope=globals(),
     ),
 }
 

@@ -13,12 +13,15 @@ from pydrake.common.eigen_geometry import Isometry3, AngleAxis
 
 import model_benchmark as mut
 from model_benchmark import (
-    Benchmark, SemanticQ, create_benchmark,
+    make_plant, Expression, Benchmark, SemanticQ, create_benchmark,
     KinematicError, PositionValueMismatch, PositionNameMismatch)
 
 
-simple_expr = "simple_mbp()"
-script = mut.__file__[:-len(".py")]
+simple_expr = Expression("simple_mbp()", __name__)
+
+
+def simple_mbp():
+    return make_plant("drake/examples/double_pendulum/models/double_pendulum.sdf")
 
 
 def corrupt_frame(frame):
@@ -60,13 +63,6 @@ class TestModelBenchmark(unittest.TestCase):
         baseline.save_yaml(saved_file)
         saved = Benchmark.load_yaml(saved_file)
         self.assert_good(baseline.compare(saved))
-        # - Commandline.
-        cmdline_file = join(environ["TEST_TMPDIR"], "cmdline.yaml")
-        check_call([
-            script, "create", "--expr", simple_expr,
-            "--output", cmdline_file])
-        cmdline = Benchmark.load_yaml(cmdline_file)
-        self.assert_good(baseline.compare(cmdline))
 
     def test_corruption(self):
         baseline = create_benchmark(expr=simple_expr)
