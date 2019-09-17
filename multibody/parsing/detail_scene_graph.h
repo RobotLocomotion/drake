@@ -28,7 +28,7 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
  This method returns nullptr when the given SDF specification corresponds
  to a geometry of type `sdf::GeometryType::EMPTY` (<empty/> SDF tag.)  */
 std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
-    const sdf::Visual& sdf_visual);
+    const sdf::Visual& sdf_visual, const math::RigidTransformd& X_LG);
 
 /** Extracts the material properties from the given sdf::Visual object.
  The sdf::Visual object represents a corresponding <visual> tag from an SDF
@@ -82,7 +82,7 @@ geometry::IllustrationProperties MakeVisualPropertiesFromSdfVisual(
  in an SDF file, this method makes the pose `X_LG` of frame G for the geometry
  of that collision element in the frame L of the link it belongs to.  */
 math::RigidTransformd MakeGeometryPoseFromSdfCollision(
-    const sdf::Collision& sdf_collision);
+    const sdf::Collision& sdf_collision, const math::RigidTransformd& X_LG);
 
 /** Parses friction coefficients from `sdf_collision`.
  This method looks for the definitions specific to ODE, as given by the SDF

@@ -234,6 +234,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     default_coulomb_friction_ = other.default_coulomb_friction_;
     visual_geometries_ = other.visual_geometries_;
     collision_geometries_ = other.collision_geometries_;
+    for (const auto& X_WB : other.X_WB_free_body_only_list_) {
+      if (!X_WB) {
+        X_WB_free_body_only_list_.emplace_back();
+      } else {
+        X_WB_free_body_only_list_.emplace_back(
+            ExtractDoubleOrThrow(*X_WB).template cast<T>());
+      }
+    }
     if (geometry_source_is_registered())
       DeclareSceneGraphPorts();
 
@@ -768,6 +776,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     visual_geometries_.emplace_back();
     DRAKE_DEMAND(collision_geometries_.size() == body.index());
     collision_geometries_.emplace_back();
+    DRAKE_DEMAND(X_WB_free_body_only_list_.size() == body.index());
+    X_WB_free_body_only_list_.emplace_back();
     return body;
   }
 
@@ -3157,13 +3167,32 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
             context);
   }
 
-  /// Sets the `state` so that generalized positions and velocities are zero.
+  /// (Advanced)
+  /// @param[in] X_WB_disconnected_initial
+  ///   Initial pose of a body if it is entirely disonnected; this will be
+  ///   ignored if there are *any* other bodies that are connected to this via
+  ///   a physical joint. This is to accommodate SDFormat parsing.
+  void InternalSetFreeBodyOnlyPose(
+      const Body<T>& body, const math::RigidTransform<T>& X_WB_initial) {
+    auto& X_WB_initial_actual = X_WB_free_body_only_list_[body.index()];
+    DRAKE_DEMAND(!X_WB_initial_actual.has_value());
+    X_WB_initial_actual = X_WB_initial;
+  }
+
+  /// Sets the `state` so that generalized positions (modulo explicitly
+  /// specified body poses) and velocities are zero.
   /// @throws std::exception if called pre-finalize. See Finalize().
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     CheckValidState(state);
     internal_tree().SetDefaultState(context, state);
+    for (const auto* body : GetFreeBodies()) {
+      auto X_WB = X_WB_free_body_only_list_[body->index()];
+      if (X_WB) {
+        SetFreeBodyPose(context, state, *body, *X_WB);
+      }
+    }
   }
 
   /// Assigns random values to all elements of the state, by drawing samples
@@ -3556,6 +3585,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                               joint.child_body().index());
   }
 
+  std::vector<const Body<T>*> GetFreeBodies() const {
+    std::vector<const Body<T>*> bodies;
+    for (internal::MobilizerIndex index{0};
+         index < internal_tree().num_mobilizers(); ++index) {
+      auto& mobilizer = internal_tree().get_mobilizer(index);
+      if (mobilizer.is_floating()) {
+        DRAKE_DEMAND(&mobilizer.inboard_body() == &world_body());
+        bodies.push_back(&mobilizer.outboard_body());
+      }
+    }
+    return bodies;
+  }
+
   // Geometry source identifier for this system to interact with geometry
   // system. It is made optional for plants that do not register geometry
   // (dynamics only).
@@ -3748,6 +3790,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;
+
+  std::vector<optional<math::RigidTransform<T>>> X_WB_free_body_only_list_;
 };
 
 /// @cond

@@ -166,16 +166,12 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
 }
 
 std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
-    const sdf::Visual& sdf_visual) {
+    const sdf::Visual& sdf_visual, const math::RigidTransformd& X_LG) {
   const sdf::Geometry& sdf_geometry = *sdf_visual.Geom();
   if (sdf_geometry.Type() == sdf::GeometryType::EMPTY) {
     // The file specifies an EMPTY geometry.
     return std::unique_ptr<GeometryInstance>(nullptr);
   }
-
-  // Retrieve the pose of the visual frame G in the parent link L in which
-  // geometry gets defined.
-  const RigidTransformd X_LG = ToRigidTransform(sdf_visual.Pose());
 
   // GeometryInstance defines its shapes in a "canonical frame" C. For instance:
   // - A half-space's normal is directed along the Cz axis,
@@ -269,11 +265,7 @@ IllustrationProperties MakeVisualPropertiesFromSdfVisual(
 }
 
 RigidTransformd MakeGeometryPoseFromSdfCollision(
-    const sdf::Collision& sdf_collision) {
-  // Retrieve the pose of the collision frame G in the parent link L in which
-  // geometry gets defined.
-  const RigidTransformd X_LG = ToRigidTransform(sdf_collision.Pose());
-
+    const sdf::Collision& sdf_collision, const RigidTransformd& X_LG) {
   // GeometryInstance defines its shapes in a "canonical frame" C. The canonical
   // frame C is the frame in which the geometry is defined and it generally
   // coincides with the geometry frame G (G is specified in the SDF file).

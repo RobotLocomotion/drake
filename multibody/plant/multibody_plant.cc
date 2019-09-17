@@ -254,8 +254,11 @@ MultibodyPlant<T>::MultibodyPlant(
           std::move(tree_in), time_step > 0),
       time_step_(time_step) {
   DRAKE_THROW_UNLESS(time_step >= 0);
+  // TODO(eric.cousineau): Combine all of these elements into one struct, make
+  // it less brittle.
   visual_geometries_.emplace_back();  // Entries for the "world" body.
   collision_geometries_.emplace_back();
+  X_WB_free_body_only_list_.emplace_back();
   // Add the world body to the graph.
   multibody_graph_.AddBody(world_body().name(), world_body().model_instance());
 }

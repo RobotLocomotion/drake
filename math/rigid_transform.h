@@ -634,4 +634,13 @@ class RigidTransform {
 using RigidTransformd = RigidTransform<double>;
 
 }  // namespace math
+
+template <typename T>
+math::RigidTransform<double>
+ExtractDoubleOrThrow(const math::RigidTransform<T> X) {
+  return math::RigidTransform<double>(
+      X.GetAsMatrix34().unaryExpr(
+          [](T value) { return ExtractDoubleOrThrow(value); }));
+}
+
 }  // namespace drake

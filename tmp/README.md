@@ -26,6 +26,8 @@ First, test without Bazel overhead:
 
     cd drake/tmp
     colcon build
+    colcon test
+    # Or just go the build package, and run `make test` / `ctest`.
 
 Then try to build a minimal thing:
 
