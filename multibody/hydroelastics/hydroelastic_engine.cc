@@ -81,7 +81,7 @@ const HydroelasticGeometry<T>* HydroelasticEngine<T>::get_model(
 }
 
 template <typename T>
-double HydroelasticEngine<T>::CalcCombinedElasticModus(
+double HydroelasticEngine<T>::CalcCombinedElasticModulus(
     geometry::GeometryId id_A, geometry::GeometryId id_B) const {
   const HydroelasticGeometry<T>* geometry_A = get_model(id_A);
   const HydroelasticGeometry<T>* geometry_B = get_model(id_B);
@@ -105,7 +105,7 @@ double HydroelasticEngine<T>::CalcCombinedDissipation(
   const double E_B = geometry_B->elastic_modulus();
   const double d_A = geometry_A->hunt_crossley_dissipation();
   const double d_B = geometry_B->hunt_crossley_dissipation();
-  const double Estar = CalcCombinedElasticModus(id_A, id_B);
+  const double Estar = CalcCombinedElasticModulus(id_A, id_B);
 
   // Both bodies are rigid. We simply return the arithmetic average.
   if (Estar == std::numeric_limits<double>::infinity())

@@ -1334,18 +1334,6 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
                                                  geometryN_friction);
     const double static_friction = combined_friction.static_friction();
 
-    const geometry::SceneGraphInspector<T>& inspector =
-        query_object.inspector();
-    const geometry::ProximityProperties* propertiesM =
-        inspector.GetProximityProperties(geometryM_id);
-    const geometry::ProximityProperties* propertiesN =
-        inspector.GetProximityProperties(geometryN_id);
-    // If we are here then these geometries must have proximity properties since
-    // HydroelasticEngine only works with geometries assigned a
-    // geometry::ProximityProperties.
-    DRAKE_DEMAND(propertiesM != nullptr);
-    DRAKE_DEMAND(propertiesN != nullptr);
-
     // Get the bodies that the two geometries are affixed to. We'll call these
     // A and B.
     const BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryM_id);

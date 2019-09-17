@@ -2741,7 +2741,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     DRAKE_MBP_THROW_IF_FINALIZED();
     DRAKE_THROW_UNLESS(is_collision_geometry(id));
     DRAKE_THROW_UNLESS(elastic_modulus > 0);
-    // A user is attempting to use the hydroelastic model. We recored it here.
+    // A user is attempting to use the hydroelastic model. We record it here.
     use_hydroelastic_model_ = true;
     const geometry::ProximityProperties* old_props =
         member_scene_graph().model_inspector().GetProximityProperties(id);
@@ -2768,7 +2768,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     DRAKE_MBP_THROW_IF_FINALIZED();
     DRAKE_DEMAND(is_collision_geometry(id));
     DRAKE_THROW_UNLESS(dissipation >= 0);
-    // A user is attempting to use the hydroelastic model. We recored it here.
+    // A user is attempting to use the hydroelastic model. We record it here.
     use_hydroelastic_model_ = true;
     const geometry::ProximityProperties* old_props =
         member_scene_graph().model_inspector().GetProximityProperties(id);

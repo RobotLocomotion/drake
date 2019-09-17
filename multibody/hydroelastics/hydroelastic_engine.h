@@ -155,8 +155,8 @@ class HydroelasticEngine final : public geometry::ShapeReifier {
   /// `id_B`.
   /// Refer to @ref mbp_hydroelastic_materials_properties "Hydroelastic model
   /// material properties" for further details.
-  double CalcCombinedElasticModus(geometry::GeometryId id_A,
-                                  geometry::GeometryId id_B) const;
+  double CalcCombinedElasticModulus(geometry::GeometryId id_A,
+                                    geometry::GeometryId id_B) const;
 
   /// Computes the combined Hunt & Crossley dissipation for geometries with ids
   /// `id_A` and `id_B`. Refer to @ref mbp_hydroelastic_materials_properties

@@ -67,9 +67,9 @@ GTEST_TEST(HydroelasticEngine, CombineSoftAndRigidMaterialProperties) {
   engine.MakeModels(scene_graph.model_inspector());
 
   // The combination must be symmetric.
-  EXPECT_EQ(engine.CalcCombinedElasticModus(geometry_A, geometry_B), E_A);
+  EXPECT_EQ(engine.CalcCombinedElasticModulus(geometry_A, geometry_B), E_A);
   EXPECT_EQ(engine.CalcCombinedDissipation(geometry_A, geometry_B), d_A);
-  EXPECT_EQ(engine.CalcCombinedElasticModus(geometry_B, geometry_A), E_A);
+  EXPECT_EQ(engine.CalcCombinedElasticModulus(geometry_B, geometry_A), E_A);
   EXPECT_EQ(engine.CalcCombinedDissipation(geometry_B, geometry_A), d_A);
 }
 
@@ -96,11 +96,11 @@ GTEST_TEST(HydroelasticEngine, CombineSoftAndSoftMaterialProperties) {
   engine.MakeModels(scene_graph.model_inspector());
 
   // The combination must be symmetric.
-  EXPECT_NEAR(engine.CalcCombinedElasticModus(geometry_A, geometry_B), Estar,
+  EXPECT_NEAR(engine.CalcCombinedElasticModulus(geometry_A, geometry_B), Estar,
               std::numeric_limits<double>::epsilon());
   EXPECT_NEAR(engine.CalcCombinedDissipation(geometry_A, geometry_B), dstar,
               std::numeric_limits<double>::epsilon());
-  EXPECT_NEAR(engine.CalcCombinedElasticModus(geometry_B, geometry_A), Estar,
+  EXPECT_NEAR(engine.CalcCombinedElasticModulus(geometry_B, geometry_A), Estar,
               std::numeric_limits<double>::epsilon());
   EXPECT_NEAR(engine.CalcCombinedDissipation(geometry_B, geometry_A), dstar,
               std::numeric_limits<double>::epsilon());
