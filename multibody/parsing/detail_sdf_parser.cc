@@ -271,6 +271,23 @@ std::tuple<double, double, double> ParseJointLimits(
   return std::make_tuple(lower_limit, upper_limit, velocity_limit);
 }
 
+std::string pretty(const Vector3d& x) {
+  return fmt::format("[{:.4f}, {:.4f}, {:.4f}]", x[0], x[1], x[2]);
+}
+
+std::string pretty(const RigidTransformd& X) {
+  return fmt::format(
+      "(xyz=[{}], rpy=[{}])",
+      pretty(X.translation()),
+      pretty(math::RollPitchYawd(X.rotation()).vector()));
+}
+
+template <typename T>
+std::string pretty(const optional<T>& x) {
+  if (x) { return pretty(*x); }
+  else { return "None"; }
+}
+
 // Helper method to add joints to a MultibodyPlant given an sdf::Joint
 // specification object.
 void AddJointFromSpecification(
@@ -347,6 +364,9 @@ void AddJointFromSpecification(
       Vector3d axis_J = ExtractJointAxis(model_spec, joint_spec);
       std::tie(lower_limit, upper_limit, velocity_limit) =
           ParseJointLimits(joint_spec);
+      drake::log()->info(
+          "joint: {}\n  X_PJ: {}\n  X_CJ: {}\n  axis_J: {}",
+          joint_spec.Name(), pretty(X_PJ), pretty(X_CJ), pretty(axis_J));
       const auto& joint = plant->AddJoint<RevoluteJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
