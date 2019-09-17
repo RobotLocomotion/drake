@@ -1,0 +1,26 @@
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+    "drake_py_test",
+    "drake_py_unittest",
+)
+
+drake_py_library(
+    name = "model_benchmark_py",
+    srcs = ["model_benchmark.py"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_unittest(
+    name = "model_benchmark_test",
+    deps = [":model_benchmark_py"],
+)
+
+drake_py_unittest(
+    name = "model_regression_test",
+    data = [":data"],
+    deps = [":model_benchmark_py"],
+)

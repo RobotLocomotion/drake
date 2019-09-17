@@ -420,8 +420,9 @@ void AddLinksFromSpecification(
     // N.B. If a body is completely disconnected (no inboard / outboard
     // joints), then we lose information from the SDFormat spec. This hack is
     // one way to preserve this information.
-    const RigidTransformd X_ML = ResolveRigidTransform(link, kModelFrame);
-    plant->InternalSetFreeBodyOnlyPose(body, X_WM * X_ML);
+    unused(X_WM);
+    // const RigidTransformd X_ML = ResolveRigidTransform(link, kModelFrame);
+    // plant->InternalSetFreeBodyOnlyPose(body, X_WM * X_ML);
 
     ResolveFilename resolve_filename =
       [&package_map, &root_dir](std::string uri) {
