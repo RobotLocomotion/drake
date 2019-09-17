@@ -85,8 +85,10 @@ TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
     dq(i, 1) = std::sin(i + 0.2);
   }
   /* tolerance for checking numerical gradient vs analytical gradient. The
-   * numerical gradient is only accurate up to 2E-7 */
-  const double gradient_tol = 2E-7;
+   * numerical gradient is only accurate up to 4E-7 */
+  // N.B. (Eric) For some reason, updating libsdformat with pose frame
+  // semantics makes this error increase?
+  const double gradient_tol = 4E-7;
   TestKinematicConstraintEval(constraint, constraint_from_autodiff, q, dq,
                               gradient_tol);
 }

@@ -324,7 +324,7 @@ class Benchmark(object):
             filename=self.filename or "<new>",
         )
 
-    def compare(self, b, cmp_=None):
+    def compare(self, b, cmp_=None, all_configurations=False):
         """Compares to another benchmark `b` given `tol`
         Returns:
             Comparison with errors (and tolerance).
@@ -349,8 +349,8 @@ class Benchmark(object):
                 continue
             # Check all configurations.
             if not config.compare(config_b, cmp_, path):
-                # break
-                pass
+                if not all_configurations:
+                    break
         return cmp_
 
     @classmethod

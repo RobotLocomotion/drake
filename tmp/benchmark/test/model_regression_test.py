@@ -47,7 +47,7 @@ class TestModelRegression(unittest.TestCase):
             old = Benchmark.load_yaml(check.file)
             new = create_benchmark(check.expr, old)
             cmp_ = Comparison(tol=2e-5)  # Yuck!
-            new.compare(old, cmp_)
+            new.compare(old, cmp_, all_configurations=True)
             self.assertEqual(len(cmp_.errors), 0, note)
 
 
