@@ -14,13 +14,16 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+// Used for resolving URIs / filenames.
+using ResolveFilename = std::function<std::string (std::string)>;
+
 /** Given an sdf::Geometry object representing a <geometry> element from an SDF
  file, this method makes a new drake::geometry::Shape object from this
  specification.
  For `sdf_geometry.Type() == sdf::GeometryType::EMPTY`, corresponding to the
  <empty/> SDF tag, it returns `nullptr`.  */
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
-    const sdf::Geometry& sdf_geometry);
+    const sdf::Geometry& sdf_geometry, ResolveFilename resolve_filename);
 
 /** Given an sdf::Visual object representing a <visual> element from an SDF
  file, this method makes a new drake::geometry::GeometryInstance object from
@@ -28,7 +31,8 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
  This method returns nullptr when the given SDF specification corresponds
  to a geometry of type `sdf::GeometryType::EMPTY` (<empty/> SDF tag.)  */
 std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
-    const sdf::Visual& sdf_visual, const math::RigidTransformd& X_LG);
+    const sdf::Visual& sdf_visual, ResolveFilename resolve_filename,
+    const math::RigidTransformd& X_LG);
 
 /** Extracts the material properties from the given sdf::Visual object.
  The sdf::Visual object represents a corresponding <visual> tag from an SDF
@@ -106,22 +110,6 @@ math::RigidTransformd MakeGeometryPoseFromSdfCollision(
  are required and an exception is thrown if not present.  */
 CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
     const sdf::Collision& sdf_collision);
-
-// TODO(sam.creasey) Making this operate specifically on sdf::Visual
-// is overly specific since we're going to be parsing collision meshes
-// at some point.
-
-/** Given an sdf::Visual object representing a <visual> element from
- an SDF file, this method makes a new Visual object which resolves
- the uri for the mesh element, if present.  If the mesh element is
- not present, the new object will be identical to the original.
- See parsers::ResolveFilename() for more detail on this operation.
-
- @throws std::runtime_error if the <mesh> tag is present but
- missing <uri> or if the file referenced in <uri> can not be found.  */
-sdf::Visual ResolveVisualUri(const sdf::Visual& original,
-                             const multibody::PackageMap& package_map,
-                             const std::string& root_dir);
 
 }  // namespace internal
 }  // namespace multibody

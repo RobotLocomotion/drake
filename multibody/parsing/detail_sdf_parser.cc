@@ -425,15 +425,28 @@ void AddLinksFromSpecification(
     const RigidTransformd X_ML = ResolveRigidTransform(link, kModelFrame);
     plant->InternalSetFreeBodyOnlyPose(body, X_WM * X_ML);
 
+    ResolveFilename resolve_filename =
+      [&package_map, &root_dir](std::string uri) {
+        const std::string resolved_name =
+            ResolveUri(uri, package_map, root_dir);
+        if (resolved_name.empty()) {
+          throw std::runtime_error(
+              std::string(__FILE__) + ": " + __func__ +
+              ": ERROR: Mesh file name could not be resolved from the "
+              "provided uri \"" + uri + "\".");
+        }
+        return resolved_name;
+      };
+
     if (plant->geometry_source_is_registered()) {
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
            ++visual_index) {
-        const sdf::Visual sdf_visual = ResolveVisualUri(
-            *link.VisualByIndex(visual_index), package_map, root_dir);
+        const sdf::Visual& sdf_visual = *link.VisualByIndex(visual_index);
         const RigidTransformd X_LG = ResolveRigidTransform(
             sdf_visual, link.Name());
         unique_ptr<GeometryInstance> geometry_instance =
-            MakeGeometryInstanceFromSdfVisual(sdf_visual, X_LG);
+            MakeGeometryInstanceFromSdfVisual(
+                sdf_visual, resolve_filename, X_LG);
         // We check for nullptr in case someone decided to specify an SDF
         // <empty/> geometry.
         if (geometry_instance) {
@@ -461,7 +474,7 @@ void AddLinksFromSpecification(
           const RigidTransformd X_LG =
               MakeGeometryPoseFromSdfCollision(sdf_collision, X_LG_init);
           std::unique_ptr<geometry::Shape> shape =
-              MakeShapeFromSdfGeometry(sdf_geometry);
+              MakeShapeFromSdfGeometry(sdf_geometry, resolve_filename);
           const CoulombFriction<double> coulomb_friction =
               MakeCoulombFrictionFromSdfCollisionOde(sdf_collision);
           plant->RegisterCollisionGeometry(body, X_LG, *shape,

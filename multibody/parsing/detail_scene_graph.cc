@@ -60,18 +60,6 @@ const sdf::Element& GetChildElementOrThrow(
   return *const_cast<sdf::Element &>(element).GetElement(child_name);
 }
 
-// Helper to return the mutable child element of `element` named
-// `child_name`.  Returns nullptr if not present.
-sdf::Element* MaybeGetChildElement(
-    sdf::Element* element, const std::string &child_name) {
-  // First verify <child_name> is present (otherwise GetElement() has the
-  // side effect of adding new elements if not present!!).
-  if (element->HasElement(child_name)) {
-    return element->GetElement(child_name).get();
-  }
-  return nullptr;
-}
-
 // Helper to return the value of a child of `element` named `child_name`.
 // A std::runtime_error is thrown if the `<child_name>` tag is missing from the
 // SDF file, or the tag has a bad or missing value.
@@ -98,7 +86,7 @@ T GetChildElementValueOrThrow(const sdf::Element& element,
 }  // namespace
 
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
-    const sdf::Geometry& sdf_geometry) {
+    const sdf::Geometry& sdf_geometry, ResolveFilename resolve_filename) {
   // TODO(amcastro-tri): unit tests for different error paths are needed.
 
   switch (sdf_geometry.Type()) {
@@ -136,7 +124,8 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
           MaybeGetChildElement(*geometry_element, "mesh");
       DRAKE_DEMAND(mesh_element != nullptr);
       const std::string file_name =
-          GetChildElementValueOrThrow<std::string>(*mesh_element, "uri");
+          resolve_filename(
+              GetChildElementValueOrThrow<std::string>(*mesh_element, "uri"));
       double scale = 1.0;
       if (mesh_element->HasElement("scale")) {
         const ignition::math::Vector3d& scale_vector =
@@ -166,7 +155,8 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
 }
 
 std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
-    const sdf::Visual& sdf_visual, const math::RigidTransformd& X_LG) {
+    const sdf::Visual& sdf_visual, ResolveFilename resolve_filename,
+    const math::RigidTransformd& X_LG) {
   const sdf::Geometry& sdf_geometry = *sdf_visual.Geom();
   if (sdf_geometry.Type() == sdf::GeometryType::EMPTY) {
     // The file specifies an EMPTY geometry.
@@ -216,7 +206,8 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
   }
 
   auto instance = make_unique<GeometryInstance>(
-      X_LC, MakeShapeFromSdfGeometry(sdf_geometry), sdf_visual.Name());
+      X_LC, MakeShapeFromSdfGeometry(sdf_geometry, resolve_filename),
+      sdf_visual.Name());
   instance->set_illustration_properties(
       MakeVisualPropertiesFromSdfVisual(sdf_visual));
   return instance;
@@ -344,41 +335,6 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
       GetChildElementValueOrThrow<double>(ode_element, "mu2");
 
   return CoulombFriction<double>(static_friction, dynamic_friction);
-}
-
-sdf::Visual ResolveVisualUri(const sdf::Visual& original,
-                             const PackageMap& package_map,
-                             const std::string& root_dir) {
-  std::shared_ptr<sdf::Element> visual_element = original.Element()->Clone();
-  sdf::Element* geom_element =
-      MaybeGetChildElement(visual_element.get(), "geometry");
-  if (geom_element) {
-    sdf::Element* mesh_element = MaybeGetChildElement(geom_element, "mesh");
-    if (mesh_element) {
-      sdf::Element* uri_element = MaybeGetChildElement(mesh_element, "uri");
-      if (uri_element) {
-        const std::string uri = uri_element->Get<std::string>();
-        const std::string resolved_name =
-            ResolveUri(uri, package_map, root_dir);
-        if (!resolved_name.empty()) {
-          uri_element->Set(resolved_name);
-        } else {
-          throw std::runtime_error(
-              std::string(__FILE__) + ": " + __func__ +
-              ": ERROR: Mesh file name could not be resolved from the "
-              "provided uri \"" + uri + "\".");
-        }
-      } else {
-        throw std::runtime_error(
-            std::string(__FILE__) + ": " + __func__ +
-            ": ERROR: <mesh> tag specified without <uri?>");
-      }
-    }
-  }
-
-  sdf::Visual visual;
-  visual.Load(visual_element);
-  return visual;
 }
 
 }  // namespace internal
