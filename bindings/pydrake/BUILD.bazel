@@ -52,27 +52,27 @@ drake_py_library(
     ],
 )
 
-generate_pybind_documentation_header(
-    name = "generate_pybind_documentation_header",
-    out = "documentation_pybind.h",
-    exclude_hdr_patterns = [
-        "drake/common/text_logging_gflags.h",
-        # Exclude LCM-generated classes to reduce size of generated
-        # docstrings.
-        "drake/lcmtypes/**",
-    ],
-    root_name = "pydrake_doc",
-    targets = [
-        "//:drake_shared_library",
-        "//examples/compass_gait:compass_gait",
-        "//examples/manipulation_station:manipulation_station",
-        "//examples/manipulation_station:manipulation_station_hardware_interface",  # noqa
-        "//examples/pendulum:pendulum_plant",
-        "//examples/quadrotor:quadrotor_plant",
-        "//examples/rimless_wheel:rimless_wheel",
-        "//examples/van_der_pol:van_der_pol",
-    ],
-)
+# generate_pybind_documentation_header(
+#     name = "generate_pybind_documentation_header",
+#     out = "documentation_pybind.h",
+#     exclude_hdr_patterns = [
+#         "drake/common/text_logging_gflags.h",
+#         # Exclude LCM-generated classes to reduce size of generated
+#         # docstrings.
+#         "drake/lcmtypes/**",
+#     ],
+#     root_name = "pydrake_doc",
+#     targets = [
+#         "//:drake_shared_library",
+#         "//examples/compass_gait:compass_gait",
+#         "//examples/manipulation_station:manipulation_station",
+#         "//examples/manipulation_station:manipulation_station_hardware_interface",  # noqa
+#         "//examples/pendulum:pendulum_plant",
+#         "//examples/quadrotor:quadrotor_plant",
+#         "//examples/rimless_wheel:rimless_wheel",
+#         "//examples/van_der_pol:van_der_pol",
+#     ],
+# )
 
 drake_cc_library(
     name = "documentation_pybind",

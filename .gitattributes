@@ -11,3 +11,5 @@ WORKSPACE diff=python
 *.obj -diff
 # VTK polygon data
 *.vtp -diff
+
+/bindings/pydrake/documentation_pybind.h -diff
