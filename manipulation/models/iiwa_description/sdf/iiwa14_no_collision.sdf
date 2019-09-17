@@ -4,7 +4,7 @@ SDF automatically generated with: gz sdf -p /my_urdf.urdf > /my_sdf.sdf
 
 Later edited by hand to rename the base link and remove damping from the joints.
 -->
-<sdf version='1.6'>
+<sdf version='1.7'>
   <model name='iiwa14'>
     <link name='iiwa_link_0'>
       <pose>0 0 0 0 -0 0</pose>
@@ -84,7 +84,6 @@ Later edited by hand to rename the base link and remove damping from the joints.
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name='iiwa_link_2'>
@@ -133,7 +132,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
       <child>iiwa_link_2</child>
       <parent>iiwa_link_1</parent>
       <axis>
-        <xyz>-0 1 0</xyz>
+        <xyz>0 0 1</xyz>
         <limit>
           <lower>-2.0944</lower>
           <upper>2.0944</upper>
@@ -146,7 +145,6 @@ Later edited by hand to rename the base link and remove damping from the joints.
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name='iiwa_link_3'>
@@ -220,7 +218,6 @@ Later edited by hand to rename the base link and remove damping from the joints.
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name='iiwa_link_4'>
@@ -269,7 +266,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
       <child>iiwa_link_4</child>
       <parent>iiwa_link_3</parent>
       <axis>
-        <xyz>0 -1 0</xyz>
+        <xyz>0 0 1</xyz>
         <limit>
           <lower>-2.0944</lower>
           <upper>2.0944</upper>
@@ -282,7 +279,6 @@ Later edited by hand to rename the base link and remove damping from the joints.
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name='iiwa_link_5'>
@@ -356,7 +352,6 @@ Later edited by hand to rename the base link and remove damping from the joints.
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name='iiwa_link_6'>
@@ -405,7 +400,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
       <child>iiwa_link_6</child>
       <parent>iiwa_link_5</parent>
       <axis>
-        <xyz>-0 1 -0</xyz>
+        <xyz>0 0 1</xyz>
         <limit>
           <lower>-2.0944</lower>
           <upper>2.0944</upper>
@@ -418,7 +413,6 @@ Later edited by hand to rename the base link and remove damping from the joints.
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name='iiwa_link_7'>
@@ -468,7 +462,6 @@ Later edited by hand to rename the base link and remove damping from the joints.
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <static>0</static>
