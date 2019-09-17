@@ -349,7 +349,8 @@ class Benchmark(object):
                 continue
             # Check all configurations.
             if not config.compare(config_b, cmp_, path):
-                break
+                # break
+                pass
         return cmp_
 
     @classmethod
