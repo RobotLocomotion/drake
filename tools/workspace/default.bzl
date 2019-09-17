@@ -84,9 +84,7 @@ load("@drake//tools/workspace/vtk:repository.bzl", "vtk_repository")
 load("@drake//tools/workspace/yaml_cpp:repository.bzl", "yaml_cpp_repository")
 load("@drake//tools/workspace/zlib:repository.bzl", "zlib_repository")
 
-def add_default_repositories(
-        workspace_dir,  # HACK
-        excludes = [], mirrors = DEFAULT_MIRRORS):
+def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     """Declares workspace repositories for all externals needed by drake (other
     than those built into Bazel, of course).  This is intended to be loaded and
     called from a WORKSPACE file.
@@ -155,7 +153,7 @@ def add_default_repositories(
     if "gurobi" not in excludes:
         gurobi_repository(name = "gurobi")
     if "ignition_math" not in excludes:
-        ignition_math_repository(name = "ignition_math", workspace_dir=workspace_dir)#mirrors = mirrors)
+        ignition_math_repository(name = "ignition_math", mirrors = mirrors)
     if "ipopt" not in excludes:
         ipopt_repository(name = "ipopt")
     if "json" not in excludes:
@@ -227,7 +225,7 @@ def add_default_repositories(
     if "scs" not in excludes:
         scs_repository(name = "scs", mirrors = mirrors)
     if "sdformat" not in excludes:
-        sdformat_repository(name = "sdformat", workspace_dir=workspace_dir)#mirrors = mirrors)
+        sdformat_repository(name = "sdformat", mirrors = mirrors)
     if "semantic_version" not in excludes:
         semantic_version_repository(name = "semantic_version", mirrors = mirrors)  # noqa
     if "snopt" not in excludes:
