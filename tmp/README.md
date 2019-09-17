@@ -11,16 +11,11 @@ For Ubuntu Bionic (may need ROS repos...)
     sudo apt install \
         libtinyxml-dev python3-vcstool python3-colcon-common-extensions
 
-Then update repositories:
+Then update repositories (and record the exact versions afterwards):
 
     cd drake/tmp
     mkdir -p repos
-    vcs import ./repos < vcs.repo
-
-**NOTE**: Before updating, consider capturuing exact versions:
-
-    cd drake/tmp
-    vcs export --exact ./repos > vcs-exact.repo
+    vcs import ./repos < vcs.repo && vcs export --exact ./repos > vcs-exact.repo
 
 First, test without Bazel overhead:
 
