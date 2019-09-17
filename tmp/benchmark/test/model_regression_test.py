@@ -12,7 +12,7 @@ import sys
 import unittest
 
 from pydrake.systems.analysis import Simulator
-from .model_benchmark import (
+from model_benchmark import (
     Benchmark, create_benchmark, Comparison, FrameNameMismatch)
 
 

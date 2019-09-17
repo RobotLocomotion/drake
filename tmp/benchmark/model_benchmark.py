@@ -15,6 +15,7 @@ import sys
 import numpy as np
 import yaml
 
+from pydrake.common import FindResourceOrThrow
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.geometry import (
     ConnectDrakeVisualizer, SceneGraph, DispatchLoadMessage)
@@ -524,14 +525,11 @@ def make_plant(model_directive_path):
     return plant, scene_graph, diagram
 
 
-# Re-do RBT stuff
-
-
 def simple_mbp():
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder)
     Parser(plant).AddModelFromFile(
-        "common/test/models/double_pendulum.sdf")
+        FindResourceOrThrow("drake/examples/double_pendulum/models/double_pendulum.sdf"))
     plant.Finalize()
     ConnectDrakeVisualizer(
         builder=builder, scene_graph=scene_graph)

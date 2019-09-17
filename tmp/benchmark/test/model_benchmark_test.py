@@ -10,11 +10,15 @@ import unittest
 import numpy as np
 
 from pydrake.common.eigen_geometry import Isometry3, AngleAxis
-from .model_benchmark import (
+
+import model_benchmark as mut
+from model_benchmark import (
     Benchmark, SemanticQ, create_benchmark,
     KinematicError, PositionValueMismatch, PositionNameMismatch)
 
+
 simple_expr = "simple_mbp()"
+script = mut.__file__[:-len(".py")]
 
 
 def corrupt_frame(frame):
@@ -99,8 +103,3 @@ class TestModelBenchmark(unittest.TestCase):
             errors[0],
             "/configuration[@note='Zeros']/frame[@name='WorldBody']",
             KinematicError)
-
-
-if __name__ == "__main__":
-    sys.stdout = sys.stderr
-    unittest.main()

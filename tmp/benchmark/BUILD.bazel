@@ -1,26 +1,29 @@
 load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
-    "drake_py_library",
     "drake_py_test",
     "drake_py_unittest",
 )
 
-drake_py_library(
-    name = "model_benchmark_py",
+drake_py_binary(
+    name = "model_benchmark",
     srcs = ["model_benchmark.py"],
+    data = ["//examples/double_pendulum:models"],
+    testonly = 1,
     deps = [
         "//bindings/pydrake",
     ],
+    imports = ["."],  # HACK
 )
 
 drake_py_unittest(
     name = "model_benchmark_test",
-    deps = [":model_benchmark_py"],
+    deps = [":model_benchmark"],
 )
 
-drake_py_unittest(
+drake_py_test(
     name = "model_regression_test",
     data = [":data"],
-    deps = [":model_benchmark_py"],
+    deps = [":model_benchmark"],
+    allow_import_unittest = True,
 )
