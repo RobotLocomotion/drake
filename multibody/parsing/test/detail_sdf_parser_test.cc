@@ -409,6 +409,51 @@ void ParseTestString(const std::string& inner) {
   AddModelsFromSdfFile(filename, package_map, &plant);
 }
 
+GTEST_TEST(SdfParser, TestSupportedFrames) {
+  // Test `//link/pose[@relative_to]`.
+  ParseTestString(R"(
+<model name='good'>
+  <frame name='my_frame'/>
+  <link name='my_link'>
+    <pose relative_to='my_frame'/>
+  </link>
+</model>
+)");
+  // Test `//link/visual/pose[@relative_to]`.
+  ParseTestString(R"(
+<model name='good'>
+  <frame name='my_frame'/>
+  <link name='my_link'>
+    <visual name='my_visual'>
+      <pose relative_to='my_frame'/>
+    </visual>
+  </link>
+</model>
+)");
+  // Test `//link/collision/pose[@relative_to]`.
+  ParseTestString(R"(
+<model name='good'>
+  <frame name='my_frame'/>
+  <link name='my_link'>
+    <collision name='my_collision'>
+      <pose relative_to='my_frame'/>
+    </collision>
+  </link>
+</model>
+)");
+  // Test `//joint/pose[@relative_to]`.
+  ParseTestString(R"(
+<model name='good'>
+  <link name='a'/>
+  <frame name='my_frame'/>
+  <joint name='b' type='fixed'>"
+    <pose relative_to='my_frame'/>"
+    <parent>world</parent>
+    <child>a</child>"
+  </joint>
+</model>)");
+}
+
 void FailWithNonemptyRelativeTo(const std::string& inner) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       ParseTestString(inner),
@@ -421,7 +466,7 @@ void FailWithInvalidWorld(const std::string& inner) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       ParseTestString(inner),
       std::runtime_error,
-      R"([\s\S]*Sink vertex found with name \[.*\], but its name should )"
+      R"([\s\S]*Source vertex found with name \[.*\], but its name should )"
       R"(be empty[\s\S]*)");
   // The error `Unique vertex with name \[world\] not found in graph` is more
   // understandable, but doesn't get triggered when specifying
@@ -449,39 +494,16 @@ GTEST_TEST(SdfParser, TestUnsupportedFrames) {
   // TODO(eric.cousineau): Support the rest of these...
   FailWithNonemptyRelativeTo(R"(
 <model name='bad'>
-  <pose relative_to='hello'/>
+  <pose relative_to='my_frame'/>
+  <frame name='my_frame'/>
   <link name='dont_crash_plz'/>  <!-- Need at least one frame -->
 </model>)");
   FailWithNonemptyRelativeTo(R"(
 <model name='bad'>
-  <link name='a'><pose relative_to='hello'/></link>
-</model>)");
-  FailWithNonemptyRelativeTo(R"(
-<model name='bad'>
+  <frame name='my_frame'/>
   <link name='a'>
-    <inertial><pose relative_to='hello'/></inertial>
+    <inertial><pose relative_to='my_frame'/></inertial>
   </link>
-</model>)");
-  FailWithNonemptyRelativeTo(R"(
-<model name='bad'>
-  <link name='a'>"
-    <visual name='b'><pose relative_to='hello'/></visual>
-  </link>
-</model>)");
-  FailWithNonemptyRelativeTo(R"(
-<model name='bad'>
-  <link name='a'>"
-    <collision name='b'><pose relative_to='hello'/></collision>
-  </link>
-</model>)");
-  FailWithNonemptyRelativeTo(R"(
-<model name='bad'>
-  <link name='a'/>
-  <joint name='b' type='fixed'>"
-    <pose relative_to='hello'/>"
-    <parent>world</parent>
-    <child>a</child>"
-  </joint>
 </model>)");
 }
 
