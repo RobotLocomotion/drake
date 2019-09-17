@@ -419,9 +419,7 @@ void AddLinksFromSpecification(
 
     // N.B. If a body is completely disconnected (no inboard / outboard
     // joints), then we lose information from the SDFormat spec. This hack is
-    // the only way to preserve this information.
-    // joints), then *nothing* will catch it's initial pose value. That 
-    // violates the SDFormat spec. Add API 
+    // one way to preserve this information.
     const RigidTransformd X_ML = ResolveRigidTransform(link, kModelFrame);
     plant->InternalSetFreeBodyOnlyPose(body, X_WM * X_ML);
 
@@ -486,8 +484,7 @@ void AddLinksFromSpecification(
   }
 }
 
-// TODO(eric.cousineau): How to load a world???
-// TODO: Handle backwards compatibility.
+// TODO(eric.cousineau): Handle backwards compatibility.
 const Frame<double>& AddFrameFromSpecification(
     const sdf::Frame& frame_spec, ModelInstanceIndex model_instance,
     const Frame<double>& model_frame, MultibodyPlant<double>* plant) {
@@ -653,7 +650,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     // Load the world and all the models in the world.
     const sdf::World& world = *root.WorldByIndex(0);
 
-    // TODO(eric.cousineau): Er... where do world joints get added???
+    // TODO(eric.cousineau): Er... where and how do world joints get added???
 
     for (uint64_t frame_index = 0; frame_index < world.FrameCount();
         ++frame_index) {
