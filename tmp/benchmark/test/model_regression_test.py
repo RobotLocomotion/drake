@@ -13,7 +13,7 @@ import unittest
 
 from pydrake.systems.analysis import Simulator
 from model_benchmark import (
-    Benchmark, create_benchmark, Comparison, FrameNameMismatch)
+    make_plant, Expression, Benchmark, create_benchmark, Comparison, FrameNameMismatch)
 
 
 class Check(object):
@@ -22,11 +22,13 @@ class Check(object):
         self.expr = expr
 
 
+iiwa14_no_collision = "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf"
+
+
 checks = {
     "MyModel: Regression for SDF changes": Check(
-        file="stuff.yaml",
-        expr="load_model(biscuit)",  # noqa
-        scope=globals(),
+        file="tmp/benchmark/data/iiwa14_no_cliision.sdf.yaml",
+        expr=Expression("make_plant(iiwa14_no_collision)", __name__),
     ),
 }
 

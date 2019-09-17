@@ -8,7 +8,6 @@ load(
 drake_py_binary(
     name = "model_benchmark",
     srcs = ["model_benchmark.py"],
-    data = ["//examples/double_pendulum:models"],
     testonly = 1,
     deps = [
         "//bindings/pydrake",
@@ -18,7 +17,13 @@ drake_py_binary(
 
 drake_py_unittest(
     name = "model_benchmark_test",
+    data = ["//examples/double_pendulum:models"],
     deps = [":model_benchmark"],
+)
+
+filegroup(
+    name = "data",
+    srcs = glob(["data/*.yaml"]),
 )
 
 drake_py_test(
