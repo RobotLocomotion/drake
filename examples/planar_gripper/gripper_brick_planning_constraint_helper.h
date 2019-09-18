@@ -68,7 +68,7 @@ Vector3<AutoDiffXd> ComputeFingerTipInBrickFrame(
 /**
  * Impose a kinematic constraint which prohibits the fingertip sphere from
  * sliding on the brick's face. That is, the fingertip sphere is only allowed to
- * roll on the brick's surface . Note that zero rolling (i.e., sticking) is also
+ * roll on the brick's surface. Note that zero rolling (i.e., sticking) is also
  * allowed.
  * @param gripper_brick Contains the gripper brick diagram.
  * @param finger The finger that should not slide.
@@ -130,7 +130,14 @@ namespace internal {
  * The formulation of the constraint is
  *
  *     p_translation_to - p_translation_from - radius * (θ_to - θ_from) = 0
- * The variables are (q_from, q_to)
+ * where θ_to and θ_from are the pitch angle of the finger tip in the "from"
+ * and "to" postures respectively.
+ * The variables are (q_from, q_to).
+ * This constraint only has 1 row. It only constrains that in the tangential
+ * direction along the brick surface, the translation of the finger tip matches
+ * with the rolling angle. This constraint does NOT constrain that in the
+ * normal direction, the finger remains in contact. The user should impose
+ * the constraint in the normal direction separately.
  */
 class FingerNoSlidingConstraint : public solvers::Constraint {
  public:

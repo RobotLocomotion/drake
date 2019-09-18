@@ -137,7 +137,9 @@ FingerNoSlidingConstraint::FingerNoSlidingConstraint(
     const GripperBrickHelper<double>* gripper_brick, Finger finger,
     BrickFace face, systems::Context<double>* from_context,
     systems::Context<double>* to_context)
-    : solvers::Constraint(1, 2 * gripper_brick->plant().num_positions(),
+    : solvers::Constraint(1 /* number of constraint */,
+                          2 * gripper_brick->plant()
+                                  .num_positions() /* Number of variables */,
                           Vector1d(0), Vector1d(0),
                           "finger_no_sliding_constraint"),
       gripper_brick_(gripper_brick),
