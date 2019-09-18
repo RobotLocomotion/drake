@@ -108,7 +108,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, ReadObjToSurfaceMesh) {
   // has vertex indices from 0 to 7. We assume that tinyobj subdivides a
   // polygon into a triangle fan around the first vertex; polygon ABCDE...
   // becomes triangles ABC, ACD, ADE, etc.
-  int expect_faces[12][3]{
+  int expect_faces[12][3] {
       {0, 1, 2}, {0, 2, 3},  // face 1 2 3 4 in quad_cube.obj
       {4, 7, 6}, {4, 6, 5},  // face 5 8 7 6 in quad_cube.obj
       {0, 4, 5}, {0, 5, 1},  // face 1 5 6 2 in quad_cube.obj
@@ -137,10 +137,11 @@ GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForEmptyObj) {
   std::istringstream empty("");
   DRAKE_EXPECT_THROWS_MESSAGE(
       ReadObjToSurfaceMesh(&empty), std::runtime_error,
-      ".*must have one and only one object defined in it. Found 0 objects.");
+      "The Wavefront obj file has no object.");
 }
 
-GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForMultipleObjects) {
+// Confirms that we can accept multiple objects in one obj file.
+GTEST_TEST(ObjToSurfaceMeshTest, AcceptMultipleObjects) {
   std::istringstream two_objects{
       "o first_object\n"
       "v 1.0 0.0 0.0\n"
@@ -153,28 +154,22 @@ GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForMultipleObjects) {
       "v 0.0 2.0 0.0\n"
       "v 0.0 0.0 2.0\n"
       "f 4 5 6\n"};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ReadObjToSurfaceMesh(&two_objects), std::runtime_error,
-      ".*must have one and only one object defined in it. Found 2 objects.");
-}
-
-GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForFaceOutsideObject) {
-  std::istringstream face_outside_o_statement{
-      "# extra face\n"
-      "v 3.0 0.0 0.0\n"
-      "v 0.0 3.0 0.0\n"
-      "v 0.0 0.0 3.0\n"
-      "f 1 2 3\n"
-      "\n"
-      "o main_object\n"
-      "v 1.0 0.0 0.0\n"
-      "v 0.0 1.0 0.0\n"
-      "v 0.0 0.0 1.0\n"
-      "f 4 5 6\n"};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ReadObjToSurfaceMesh(&face_outside_o_statement),
-      std::runtime_error,
-      ".*must have one and only one object defined in it. Found 2 objects.");
+  SurfaceMesh<double> surface = ReadObjToSurfaceMesh(&two_objects);
+  ASSERT_EQ(6, surface.num_vertices());
+  std::vector<Vector3<double>> expect_vertices{
+      {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0},
+      {2.0, 0.0, 0.0}, {0.0, 2.0, 0.0}, {0.0, 0.0, 2.0}};
+  for (int i = 0; i < 6; ++i) {
+    EXPECT_EQ(expect_vertices[i], surface.vertex(SurfaceVertexIndex(i)).r_MV());
+  }
+  ASSERT_EQ(2, surface.num_faces());
+  int expect_faces[2][3]{{0, 1, 2}, {3, 4, 5}};
+  for (int f = 0; f < 2; ++f) {
+    for (int v = 0; v < 3; ++v) {
+      EXPECT_EQ(expect_faces[f][v],
+                surface.element(SurfaceFaceIndex(f)).vertex(v));
+    }
+  }
 }
 
 }  // namespace

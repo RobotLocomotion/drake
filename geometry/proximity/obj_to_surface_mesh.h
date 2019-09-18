@@ -13,19 +13,15 @@ namespace internal {
 /**
  Constructs a surface mesh from a Wavefront .obj file and optionally scales
  coordinates by the given scale factor. Polygons will be triangulated if they
- are not triangles already.
+ are not triangles already. All objects in the .obj file will be merged into
+ the surface mesh.
  @param filename
      A valid file name with absolute path or relative path.
  @param scale
      An optional scale to coordinates.
- @throws std::runtime_error if `filename` doesn't have a valid file path or the
-     .obj file doesn't define a single object. This can happen if it is
-     empty, if there are multiple object-name statements (e.g., "o object
-     name"), or if there are faces defined outside a single object-name
-     statement.
+ @throws std::runtime_error if `filename` doesn't have a valid file path, or the
+     file has no object.
  @return surface mesh
- @note
-     We only support .obj files with a single object.
  */
 SurfaceMesh<double> ReadObjToSurfaceMesh(const std::string& filename,
                                          double scale = 1.0);
