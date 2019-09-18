@@ -228,9 +228,14 @@ Next topic: @ref contact_engineering
  `time_step`. This can essentially be seen as a time-stepping strategy with a
  fixed `time_step`. The value of `time_step` is provided at construction of the
  @ref drake::multibody::MultibodyPlant "MultibodyPlant". In Drake we use a
- custom semi-implicit Euler scheme for multibody systems using the Stribeck
- approximation of Coulomb friction. Details for this solver are provided in the
- documentation for @ref drake::multibody::TAMSISolver "TAMSISolver".
+ custom semi-implicit Euler scheme, TAMSI, for multibody systems with
+ regularized friction. Details for this solver are provided in the documentation
+ for @ref drake::multibody::TAMSISolver "TAMSISolver" and in
+ [Castro et al., 2019].
+
+ [Castro et al., 2019] Castro, A.M, Qu, A., Kuppuswamy, N., Alspach, A., Sherman,
+   M.A., 2019. A Transition-Aware Method for the Simulation of Compliant Contact
+   with Regularized Friction. arXiv:1909.05700 [cs.RO].
 
  @note For better numerical stability, the discrete model assumes
  both static and kinetic coefficients of friction to be equal, the kinetic

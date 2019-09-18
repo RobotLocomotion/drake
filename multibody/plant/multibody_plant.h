@@ -3126,7 +3126,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// See also @ref stribeck_approximation.
   /// @throws std::exception if `v_stiction` is non-positive.
   void set_stiction_tolerance(double v_stiction = 0.001) {
-    stribeck_model_.set_stiction_tolerance(v_stiction);
+    friction_model_.set_stiction_tolerance(v_stiction);
     // We allow calling this method post-finalize. Therefore, if the plant is
     // modeled as a discrete system, we must update the solver's stiction
     // parameter. Pre-Finalize the solver is not yet created and therefore we
@@ -3135,7 +3135,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       TAMSISolverParameters solver_parameters =
           tamsi_solver_->get_solver_parameters();
       solver_parameters.stiction_tolerance =
-          stribeck_model_.stiction_tolerance();
+          friction_model_.stiction_tolerance();
       tamsi_solver_->set_solver_parameters(solver_parameters);
     }
   }
@@ -3337,12 +3337,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // `context0` taking a time step of size time_step().
   // Contact forces and velocities are computed and stored in `results`. See
   // TAMSISolverResults for further details on the returned data.
-  void CalcImplicitStribeckResults(
+  void CalcTAMSIResults(
       const drake::systems::Context<T>& context0,
       internal::TAMSISolverResults<T>* results) const;
 
-  // Eval version of the method CalcImplicitStribeckResults().
-  const internal::TAMSISolverResults<T>& EvalImplicitStribeckResults(
+  // Eval version of the method CalcTAMSIResults().
+  const internal::TAMSISolverResults<T>& EvalTAMSIResults(
       const systems::Context<T>& context) const {
     return this
         ->get_cache_entry(cache_indexes_.tamsi_solver_results)
@@ -3351,7 +3351,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Helper method to fill in the ContactResults given the current context.
   // If cached contact solver results are not up-to-date with `context`,
-  // they'll be  recomputed, see EvalImplicitStribeckResults(). The solver
+  // they'll be  recomputed, see EvalTAMSIResults(). The solver
   // results are then used to compute contact results into `contacts`.
   void CalcContactResults(const systems::Context<T>& context,
                           ContactResults<T>* contacts) const;
@@ -3636,7 +3636,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     // A negative value indicates it was not properly initialized.
     double inv_v_stiction_tolerance_{-1};
   };
-  StribeckModel stribeck_model_;
+  StribeckModel friction_model_;
 
   // This structure aids in the bookkeeping of parameters associated with joint
   // limits and the penalty method parameters used to enforce them.

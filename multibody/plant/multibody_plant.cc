@@ -677,7 +677,7 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
       penalty_method_contact_parameters_.time_scale < 0)
     set_penetration_allowance();
   if (num_collision_geometries() > 0 &&
-      stribeck_model_.stiction_tolerance() < 0)
+      friction_model_.stiction_tolerance() < 0)
     set_stiction_tolerance();
   // Make a contact solver when the plant is modeled as a discrete system.
   if (is_discrete()) {
@@ -687,7 +687,7 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
     // set_stiction_tolerance().
     TAMSISolverParameters solver_parameters;
     solver_parameters.stiction_tolerance =
-        stribeck_model_.stiction_tolerance();
+        friction_model_.stiction_tolerance();
     tamsi_solver_->set_solver_parameters(solver_parameters);
   }
   SetUpJointLimitsParameters();
@@ -1100,7 +1100,7 @@ void MultibodyPlant<T>::CalcContactResults(
   const std::vector<RotationMatrix<T>>& R_WC_set =
       EvalContactJacobians(context).R_WC_list;
   const internal::TAMSISolverResults<T>& solver_results =
-      EvalImplicitStribeckResults(context);
+      EvalTAMSIResults(context);
 
   const VectorX<T>& fn = solver_results.fn;
   const VectorX<T>& ft = solver_results.ft;
@@ -1221,7 +1221,7 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
       if (vt_squared > kNonZeroSqd) {
         const T vt = sqrt(vt_squared);
         // Stribeck friction coefficient.
-        const T mu_stribeck = stribeck_model_.ComputeFrictionCoefficient(
+        const T mu_stribeck = friction_model_.ComputeFrictionCoefficient(
             vt, combined_friction_pairs[icontact]);
         // Tangential direction.
         const Vector3<T> that_W = vt_AcBc_W / vt;
@@ -1510,7 +1510,7 @@ TAMSISolverResult MultibodyPlant<T>::SolveUsingSubStepping(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcImplicitStribeckResults(
+void MultibodyPlant<T>::CalcTAMSIResults(
     const drake::systems::Context<T>& context0,
     internal::TAMSISolverResults<T>* results) const {
   // Assert this method was called on a context storing discrete state.
@@ -1669,7 +1669,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // Solve for contact.
   const internal::TAMSISolverResults<T>& solver_results =
-      EvalImplicitStribeckResults(context0);
+      EvalTAMSIResults(context0);
 
   // Retrieve the solution velocity for the next time step.
   const VectorX<T>& v_next = solver_results.v_next;
@@ -1808,7 +1808,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     auto calc = [this, model_instance_index](const systems::Context<T>& context,
                                              systems::BasicVector<T>* result) {
       const internal::TAMSISolverResults<T>& solver_results =
-          EvalImplicitStribeckResults(context);
+          EvalTAMSIResults(context);
       this->CopyGeneralizedContactForcesOut(
           solver_results, model_instance_index, result);
     };
@@ -1885,7 +1885,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& tamsi_solver_cache = cache_value->get_mutable_value<
             internal::TAMSISolverResults<T>>();
-        this->CalcImplicitStribeckResults(context,
+        this->CalcTAMSIResults(context,
                                           &tamsi_solver_cache);
       },
       // The Correct Solution:

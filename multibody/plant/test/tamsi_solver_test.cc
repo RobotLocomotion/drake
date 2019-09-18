@@ -502,9 +502,10 @@ class PizzaSaver : public ::testing::Test {
 };
 
 // This tests the solver when we apply a moment Mz about COM to the pizza saver.
-// If Mz < mu * m * g * R, the saver should be in stiction (within the
-// regularized friction approximation). Otherwise the saver will start sliding.
-// For this setup the transition occurs at M_transition = mu * m * g * R = 5.0
+// If Mz < mu * m * g * R, the saver should be in stiction (that is, the sliding
+// velocity should be smaller than the regularization parameter). Otherwise the
+// saver will start sliding. For this setup the transition occurs at
+// M_transition = mu * m * g * R = 5.0
 TEST_F(PizzaSaver, SmallAppliedMoment) {
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
   const double dt = 1.0e-3;  // time step in seconds.
@@ -567,7 +568,7 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   EXPECT_NEAR(v_slipC, v_slipB, kTolerance);
 
   // For this case where Mz < M_transition, we expect stiction (slip velocities
-  // smaller than the regularization parameter)
+  // are smaller than the regularization parameter)
   EXPECT_LT(v_slipA, parameters.stiction_tolerance);
   EXPECT_LT(v_slipB, parameters.stiction_tolerance);
   EXPECT_LT(v_slipC, parameters.stiction_tolerance);
