@@ -1393,70 +1393,10 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   const auto x =
       dynamic_cast<const systems::BasicVector<T>&>(
           context.get_continuous_state_vector()).get_value();
-  const int nv = this->num_velocities();
+  const auto v = x.bottomRows(this->num_velocities());
 
-  // Allocate workspace. We might want to cache these to avoid allocations.
-  // Mass matrix.
-  MatrixX<T> M(nv, nv);
-  // Forces.
-  MultibodyForces<T> forces(internal_tree());
-  // Bodies' accelerations, ordered by BodyNodeIndex.
-  std::vector<SpatialAcceleration<T>> A_WB_array(internal_tree().num_bodies());
-  // Generalized accelerations.
-  VectorX<T> vdot = VectorX<T>::Zero(nv);
+  const VectorX<T>& vdot = EvalGeneralizedAccelerations(context);
 
-  const internal::PositionKinematicsCache<T>& pc =
-      EvalPositionKinematics(context);
-  const internal::VelocityKinematicsCache<T>& vc =
-      EvalVelocityKinematics(context);
-
-  // Compute forces applied through force elements. This effectively resets
-  // the forces to zero and adds in contributions due to force elements.
-  internal_tree().CalcForceElementsContribution(context, pc, vc, &forces);
-
-  // Externally applied forces.
-  AddJointActuationForces(context, &forces);
-  AddAppliedExternalSpatialForces(context, &forces);
-
-  // If there are applied generalized forces, add them.
-  const InputPort<T>& applied_generalized_force_input =
-      this->get_input_port(applied_generalized_force_input_port_);
-  if (applied_generalized_force_input.HasValue(context)) {
-    forces.mutable_generalized_forces() +=
-        applied_generalized_force_input.Eval(context);
-  }
-
-  internal_tree().CalcMassMatrixViaInverseDynamics(context, &M);
-
-  // WARNING: to reduce memory foot-print, we use the input applied arrays also
-  // as output arrays. This means that both the array of applied body forces and
-  // the array of applied generalized forces get overwritten on output. This is
-  // not important in this case since we don't need their values anymore.
-  // Please see the documentation for CalcInverseDynamics() for details.
-
-  // With vdot = 0, this computes:
-  //   tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
-  std::vector<SpatialForce<T>>& F_BBo_W_array = forces.mutable_body_forces();
-  VectorX<T>& tau_array = forces.mutable_generalized_forces();
-
-  // Compute contact forces on each body by penalty method.
-  if (num_collision_geometries() > 0) {
-    const std::vector<PenetrationAsPointPair<T>>& point_pairs =
-        EvalPointPairPenetrations(context);
-    CalcAndAddContactForcesByPenaltyMethod(
-        context, pc, vc, point_pairs, &F_BBo_W_array);
-  }
-
-  internal_tree().CalcInverseDynamics(
-      context, vdot,
-      F_BBo_W_array, tau_array,
-      &A_WB_array,
-      &F_BBo_W_array, /* Notice these arrays gets overwritten on output. */
-      &tau_array);
-
-  vdot = M.ldlt().solve(-tau_array);
-
-  auto v = x.bottomRows(nv);
   VectorX<T> xdot(this->num_multibody_states());
   VectorX<T> qdot(this->num_positions());
   internal_tree().MapVelocityToQDot(context, v, &qdot);
@@ -1655,27 +1595,124 @@ void MultibodyPlant<T>::CalcImplicitStribeckResults(
       implicit_stribeck_solver_->get_generalized_contact_forces();
 }
 
-// TODO(amcastro-tri): Consider splitting this method into smaller pieces.
-template<typename T>
-void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
-    const drake::systems::Context<T>& context0,
-    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
-    drake::systems::DiscreteValues<T>* updates) const {
-  const int nq = this->num_positions();
+template <typename T>
+void MultibodyPlant<T>::CalcGeneralizedAccelerations(
+    const drake::systems::Context<T>& context, VectorX<T>* vdot) const {
+  DRAKE_DEMAND(vdot != nullptr);
+  DRAKE_DEMAND(vdot->size() == num_velocities());
+  if (is_discrete())
+    CalcGeneralizedAccelerationsDiscrete(context, vdot);
+  else
+    CalcGeneralizedAccelerationsContinuous(context, vdot);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcGeneralizedAccelerationsContinuous(
+    const drake::systems::Context<T>& context, VectorX<T>* vdot) const {
+  DRAKE_DEMAND(vdot != nullptr);
+  DRAKE_DEMAND(vdot->size() == num_velocities());
+  DRAKE_DEMAND(!is_discrete());
   const int nv = this->num_velocities();
 
-  // Get the system state as raw Eigen vectors
-  // (solution at the previous time step).
-  auto x0 = context0.get_discrete_state(0).get_value();
-  VectorX<T> q0 = x0.topRows(nq);
-  VectorX<T> v0 = x0.bottomRows(nv);
+  // Allocate workspace. We might want to cache these to avoid allocations.
+  // Mass matrix.
+  MatrixX<T> M(nv, nv);
+  // Forces.
+  MultibodyForces<T> forces(internal_tree());
+  // Bodies' accelerations, ordered by BodyNodeIndex.
+  std::vector<SpatialAcceleration<T>> A_WB_array(internal_tree().num_bodies());
+  // Generalized accelerations.
+  VectorX<T> zero_vdot = VectorX<T>::Zero(nv);
 
-  // Solve for contact.
+  const internal::PositionKinematicsCache<T>& pc =
+      EvalPositionKinematics(context);
+  const internal::VelocityKinematicsCache<T>& vc =
+      EvalVelocityKinematics(context);
+
+  // Compute forces applied through force elements. This effectively resets
+  // the forces to zero and adds in contributions due to force elements.
+  internal_tree().CalcForceElementsContribution(context, pc, vc, &forces);
+
+  // Externally applied forces.
+  AddJointActuationForces(context, &forces);
+  AddAppliedExternalSpatialForces(context, &forces);
+
+  // If there are applied generalized forces, add them.
+  const InputPort<T>& applied_generalized_force_input =
+      this->get_input_port(applied_generalized_force_input_port_);
+  if (applied_generalized_force_input.HasValue(context)) {
+    forces.mutable_generalized_forces() +=
+        applied_generalized_force_input.Eval(context);
+  }
+
+  internal_tree().CalcMassMatrixViaInverseDynamics(context, &M);
+
+  // WARNING: to reduce memory foot-print, we use the input applied arrays also
+  // as output arrays. This means that both the array of applied body forces and
+  // the array of applied generalized forces get overwritten on output. This is
+  // not important in this case since we don't need their values anymore.
+  // Please see the documentation for CalcInverseDynamics() for details.
+
+  // With vdot = 0, this computes:
+  //   tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
+  std::vector<SpatialForce<T>>& F_BBo_W_array = forces.mutable_body_forces();
+  VectorX<T>& tau_array = forces.mutable_generalized_forces();
+
+  // Compute contact forces on each body by penalty method.
+  if (num_collision_geometries() > 0) {
+    const std::vector<PenetrationAsPointPair<T>>& point_pairs =
+        EvalPointPairPenetrations(context);
+    CalcAndAddContactForcesByPenaltyMethod(context, pc, vc, point_pairs,
+                                           &F_BBo_W_array);
+  }
+
+  internal_tree().CalcInverseDynamics(
+      context, zero_vdot, F_BBo_W_array, tau_array, &A_WB_array,
+      &F_BBo_W_array, /* Notice these arrays gets overwritten on output. */
+      &tau_array);
+
+  *vdot = M.ldlt().solve(-tau_array);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcGeneralizedAccelerationsDiscrete(
+    const drake::systems::Context<T>& context0, VectorX<T>* vdot) const {
+  DRAKE_DEMAND(vdot != nullptr);
+  DRAKE_DEMAND(vdot->size() == num_velocities());
+  DRAKE_DEMAND(is_discrete());
+
+  // Evaluate contact results.
   const internal::ImplicitStribeckSolverResults<T>& solver_results =
       EvalImplicitStribeckResults(context0);
 
   // Retrieve the solution velocity for the next time step.
   const VectorX<T>& v_next = solver_results.v_next;
+
+  auto x0 = context0.get_discrete_state(0).get_value();
+  const VectorX<T> v0 = x0.bottomRows(this->num_velocities());
+
+  *vdot = (v_next - v0) / time_step();
+}
+
+template<typename T>
+void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
+    const drake::systems::Context<T>& context0,
+    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
+    drake::systems::DiscreteValues<T>* updates) const {
+  // Get the system state as raw Eigen vectors
+  // (solution at the previous time step).
+  auto x0 = context0.get_discrete_state(0).get_value();
+  VectorX<T> q0 = x0.topRows(this->num_positions());
+  VectorX<T> v0 = x0.bottomRows(this->num_velocities());
+
+  // For a discrete model this evaluates vdot = (v_next - v0)/time_step() and
+  // includes contact forces.
+  const VectorX<T>& vdot = EvalGeneralizedAccelerations(context0);
+
+  // TODO(amcastro-tri): Consider replacing this by:
+  //   const VectorX<T>& v_next = solver_results.v_next;
+  // to avoid additional vector operations.
+  const VectorX<T>& v_next = v0 + time_step() * vdot;
 
   VectorX<T> qdot_next(this->num_positions());
   internal_tree().MapVelocityToQDot(context0, v_next, &qdot_next);
@@ -1932,6 +1969,22 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       {this->cache_entry_ticket(
           cache_indexes_.implicit_stribeck_solver_results)});
   cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
+
+  // Cache generalized accelerations.
+  auto& vdot_cache_entry = this->DeclareCacheEntry(
+      std::string("Generalized Accelerations (vdot)."),
+      [this]() { return AbstractValue::Make(VectorX<T>(num_velocities())); },
+      [this](const systems::ContextBase& context_base,
+             AbstractValue* cache_value) {
+        auto& context = dynamic_cast<const Context<T>&>(context_base);
+        auto& vdot_cache = cache_value->get_mutable_value<VectorX<T>>();
+        this->CalcGeneralizedAccelerations(context, &vdot_cache);
+      },
+      // Generalized accelerations depend on both state and inputs.
+      // All sources include: time, accuracy, state, input ports, and
+      // parameters.
+      {this->all_sources_ticket()});
+  cache_indexes_.generalized_accelerations = vdot_cache_entry.cache_index();
 }
 
 template <typename T>

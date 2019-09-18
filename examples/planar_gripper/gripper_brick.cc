@@ -81,17 +81,19 @@ GripperBrickHelper<T>::GripperBrickHelper() {
 
   const geometry::SceneGraphInspector<T>& inspector =
       scene_graph_->model_inspector();
-  const geometry::GeometryId finger_tip_geometry_id =
-      inspector.GetGeometryIdByName(
-          plant_->GetBodyFrameIdOrThrow(
-              plant_->GetBodyByName("finger1_link2").index()),
-          geometry::Role::kProximity, "gripper::link2_pad_collision");
+  for (int i = 0; i < 3; ++i) {
+    finger_tip_sphere_geometry_ids_[i] = inspector.GetGeometryIdByName(
+        plant_->GetBodyFrameIdOrThrow(
+            plant_->GetBodyByName("finger" + std::to_string(i + 1) + "_link2")
+                .index()),
+        geometry::Role::kProximity, "gripper::link2_pad_collision");
+  }
   const geometry::Shape& fingertip_shape =
-      inspector.GetShape(finger_tip_geometry_id);
+      inspector.GetShape(finger_tip_sphere_geometry_ids_[0]);
   finger_tip_radius_ =
       dynamic_cast<const geometry::Sphere&>(fingertip_shape).get_radius();
-  p_L2Fingertip_ =
-      inspector.GetPoseInFrame(finger_tip_geometry_id).translation();
+  p_L2Fingertip_ = inspector.GetPoseInFrame(finger_tip_sphere_geometry_ids_[0])
+                       .translation();
   const geometry::Shape& brick_shape =
       inspector.GetShape(inspector.GetGeometryIdByName(
           plant_->GetBodyFrameIdOrThrow(
@@ -164,6 +166,38 @@ int GripperBrickHelper<T>::finger_mid_position_index(Finger finger) const {
       throw std::invalid_argument(
           "finger_mid_position_index(): unknown finger");
   }
+}
+
+template <typename T>
+geometry::GeometryId GripperBrickHelper<T>::finger_tip_sphere_geometry_id(
+    Finger finger) const {
+  switch (finger) {
+    case Finger::kFinger1: {
+      return finger_tip_sphere_geometry_ids_[0];
+    }
+    case Finger::kFinger2: {
+      return finger_tip_sphere_geometry_ids_[1];
+    }
+    case Finger::kFinger3: {
+      return finger_tip_sphere_geometry_ids_[2];
+    }
+    default: {
+      throw std::invalid_argument(
+          "finger_tip_sphere_geometry_id(): unknown finger.");
+    }
+  }
+}
+
+template <typename T>
+multibody::CoulombFriction<T>
+GripperBrickHelper<T>::GetFingerTipBrickCoulombFriction(Finger finger) const {
+  const multibody::CoulombFriction<T>& brick_friction =
+      plant_->default_coulomb_friction(
+          plant_->GetCollisionGeometriesForBody(brick_frame().body())[0]);
+  const multibody::CoulombFriction<double>& finger_tip_friction =
+      plant_->default_coulomb_friction(finger_tip_sphere_geometry_id(finger));
+  return multibody::CalcContactFrictionFromSurfaceProperties(
+      brick_friction, finger_tip_friction);
 }
 
 // Explicit instantiation

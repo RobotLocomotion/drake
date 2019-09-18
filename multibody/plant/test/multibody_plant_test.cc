@@ -472,6 +472,10 @@ class AcrobotPlantTests : public ::testing::Test {
     shoulder_->set_angle(plant_context_, theta1);
     elbow_->set_angle(plant_context_, theta2);
 
+    // Set arbitrary non-zero velocities to test they do not affect the results.
+    shoulder_->set_angular_rate(plant_context_, 10.0);
+    elbow_->set_angular_rate(plant_context_, 10.0);
+
     // Calculate the generalized forces due to gravity.
     const VectorX<double> tau_g =
         plant_->CalcGravityGeneralizedForces(*plant_context_);
