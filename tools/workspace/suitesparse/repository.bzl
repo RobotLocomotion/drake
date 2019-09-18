@@ -12,8 +12,10 @@ def _impl(repo_ctx):
         fail(os_result.error)
     if os_result.is_ubuntu:
         include = "/usr/include/suitesparse"
-    elif os_result.is_mac:
-        include = "/usr/local/include/suitesparse"
+        lib = "/usr/lib"
+    elif os_result.is_macos:
+        include = "/usr/local/include"
+        lib = "/usr/local/lib"
     else:
         fail("Unknown OS")
 
@@ -25,6 +27,13 @@ def _impl(repo_ctx):
     ]
     for hdr in hdrs:
         repo_ctx.symlink(include + "/" + hdr, "include/" + hdr)
+
+    # Declare the libdir.
+    repo_ctx.file(
+        "vars.bzl",
+        content = "LIBDIR = \"{}\"\n".format(lib),
+        executable = False,
+    )
 
     # Add the BUILD file.
     repo_ctx.symlink(

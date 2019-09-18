@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load(":vars.bzl", "LIBDIR")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -12,6 +14,7 @@ cc_library(
         "include",
     ],
     linkopts = [
+        "-L" + LIBDIR,
         "-lamd",
     ],
     licenses = ["notice"],  # BSD-3-Clause
@@ -27,6 +30,7 @@ cc_library(
         "include",
     ],
     linkopts = [
+        "-L" + LIBDIR,
         "-lldl",
     ],
     licenses = ["restricted"],  # LGPL-2.1+
