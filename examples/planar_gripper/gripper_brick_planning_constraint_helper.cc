@@ -139,7 +139,9 @@ FingerNoSlidingConstraint::FingerNoSlidingConstraint(
     systems::Context<double>* to_context)
     : solvers::Constraint(1 /* number of constraint */,
                           2 * gripper_brick->plant()
-                                  .num_positions() /* Number of variables */,
+                                  .num_positions(),  // Number of variables,
+                                                     // the variables are q_to
+                                                     // and q_from.
                           Vector1d(0), Vector1d(0),
                           "finger_no_sliding_constraint"),
       gripper_brick_(gripper_brick),
