@@ -26,10 +26,9 @@ namespace internal {
 
 template <class T>
 void HydroelasticTractionCalculator<T>::
-ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-    const Data& data,
-    double dissipation, double mu_coulomb,
-    SpatialForce<T>* F_Ao_W, SpatialForce<T>* F_Bo_W) const {
+    ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
+        const Data& data, double dissipation, double mu_coulomb,
+        SpatialForce<T>* F_Ao_W, SpatialForce<T>* F_Bo_W) const {
   DRAKE_DEMAND(F_Ao_W && F_Bo_W);
 
   // Use a second-order Gaussian quadrature rule. For linear pressure fields,
