@@ -1,0 +1,33 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "amd",
+    hdrs = [
+        "include/SuiteSparse_config.h",
+        "include/amd.h",
+    ],
+    includes = [
+        "include",
+    ],
+    linkopts = [
+        "-lamd",
+    ],
+    licenses = ["notice"],  # BSD-3-Clause
+)
+
+cc_library(
+    name = "ldl",
+    hdrs = [
+        "include/SuiteSparse_config.h",
+        "include/ldl.h",
+    ],
+    includes = [
+        "include",
+    ],
+    linkopts = [
+        "-lldl",
+    ],
+    licenses = ["restricted"],  # LGPL-2.1+
+)
