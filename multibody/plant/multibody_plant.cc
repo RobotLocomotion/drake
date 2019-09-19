@@ -1097,7 +1097,7 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
       EvalPointPairPenetrations(context);
 
-  std::vector<CoulombFriction<double>> combined_friction_pairs =
+  const std::vector<CoulombFriction<double>> combined_friction_pairs =
       CalcCombinedFrictionCoefficients(point_pairs);
 
   const internal::PositionKinematicsCache<T>& pc =
@@ -1196,7 +1196,6 @@ void MultibodyPlant<T>::CalcContactResultsDiscrete(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
-  contact_results->Clear();
   if (num_collision_geometries() == 0) return;
 
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
@@ -1223,8 +1222,8 @@ void MultibodyPlant<T>::CalcContactResultsDiscrete(
     const GeometryId geometryA_id = pair.id_A;
     const GeometryId geometryB_id = pair.id_B;
 
-    BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
-    BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
+    const BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
+    const BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
 
     const Vector3<T> p_WC = 0.5 * (pair.p_WCa + pair.p_WCb);
 
@@ -1268,8 +1267,8 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     const GeometryId geometryA_id = pair.id_A;
     const GeometryId geometryB_id = pair.id_B;
 
-    BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
-    BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
+    const BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
+    const BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
 
     internal::BodyNodeIndex bodyA_node_index =
         internal_tree().get_body(bodyA_index).node_index();
@@ -1290,18 +1289,16 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     const Vector3<T> f_Bc_W = contact_info.contact_force();
     const SpatialForce<T> F_AC_W(Vector3<T>::Zero(), -f_Bc_W);
 
-    if (F_BBo_W_array != nullptr) {
-      if (bodyA_index != world_index()) {
-        // Spatial force on body A at Ao, expressed in W.
-        const SpatialForce<T> F_AAo_W = F_AC_W.Shift(p_CoAo_W);
-        F_BBo_W_array->at(bodyA_node_index) += F_AAo_W;
-      }
+    if (bodyA_index != world_index()) {
+      // Spatial force on body A at Ao, expressed in W.
+      const SpatialForce<T> F_AAo_W = F_AC_W.Shift(p_CoAo_W);
+      F_BBo_W_array->at(bodyA_node_index) += F_AAo_W;
+    }
 
-      if (bodyB_index != world_index()) {
-        // Spatial force on body B at Bo, expressed in W.
-        const SpatialForce<T> F_BBo_W = -F_AC_W.Shift(p_CoBo_W);
-        F_BBo_W_array->at(bodyB_node_index) += F_BBo_W;
-      }
+    if (bodyB_index != world_index()) {
+      // Spatial force on body B at Bo, expressed in W.
+      const SpatialForce<T> F_BBo_W = -F_AC_W.Shift(p_CoBo_W);
+      F_BBo_W_array->at(bodyB_node_index) += F_BBo_W;
     }
   }
 }

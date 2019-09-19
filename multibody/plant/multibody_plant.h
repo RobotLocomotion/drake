@@ -3347,13 +3347,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Helper method to fill in the ContactResults given the current context when
   // the model is continuous.
   void CalcContactResultsContinuous(const systems::Context<T>& context,
-                                    ContactResults<T>* contacts) const;
+                                    ContactResults<T>* contact_results) const;
 
   // Helper method to fill in the ContactResults given the current context when
   // the model is discrete. If cached contact solver results are not up-to-date
   // with `context`, they'll be  recomputed, see EvalImplicitStribeckResults().
   // The solver results are then used to compute contact results into
-  // `contacts`.
+  // `contact_results`.
   void CalcContactResultsDiscrete(const systems::Context<T>& context,
                                   ContactResults<T>* contact_results) const;
 
