@@ -8,6 +8,7 @@ import sys
 
 from drake.tools.workspace.drake_visualizer.plugin import (
     show_frame,
+    show_hydroelastic_contact_pressure,
     show_hydroelastic_contact_surface,
     show_image,
     show_point_pair_contact,
@@ -22,6 +23,8 @@ def init_visualizer():
         ("frame", show_frame.init_visualizer),
         ("hydroelastic_contact_surface",
             show_hydroelastic_contact_surface.init_visualizer),
+        ("hydroelastic_contact_pressure",
+            show_hydroelastic_contact_pressure.init_visualizer),
         ("image", show_image.init_visualizer),
         ("point_pair_contact", show_point_pair_contact.init_visualizer),
         ("time", show_time.init_visualizer),

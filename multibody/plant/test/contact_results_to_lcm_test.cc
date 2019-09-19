@@ -218,10 +218,10 @@ std::unique_ptr<ContactSurface<double>> CreateContactSurface(
   auto mesh = CreateSurfaceMesh();
 
   // Create the "e" field values (i.e., "hydroelastic pressure") using
-  // negated "z" values.
+  // the absolute value of the sum of the "x" and "y" values.
   std::vector<double> e_MN(mesh->num_vertices());
   for (SurfaceVertexIndex i(0); i < mesh->num_vertices(); ++i)
-    e_MN[i] = -mesh->vertex(i).r_MV()[2];
+    e_MN[i] = std::abs(mesh->vertex(i).r_MV()[0] + mesh->vertex(i).r_MV()[1]);
 
   // Create the gradient of the "h" field, pointing toward what will be
   // geometry "M" (the halfspace).
@@ -337,7 +337,7 @@ void ValidateCloseToMeshTriangle(const double p_WA[3], const double p_WB[3],
 // the codebase.
 // This is not a test, just some code that exists to visualize the contact
 // results while DrakeVisualizer plugins are still in development.
-#if 0
+#if 1
 GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResultsVisualization) {
   DiagramBuilder<double> builder;
 
@@ -407,8 +407,8 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResultsVisualization) {
   diagram->get_output_port(
       lcm_hydroelastic_contact_surface_output_port_index).Calc(
           *diagram_context, &lcm_message_value);
-  const lcmt_contact_results_for_viz& lcm_message =
-      lcm_message_value.get_value();
+  //const lcmt_contact_results_for_viz& lcm_message =
+  //    lcm_message_value.get_value();
 }
 #endif
 

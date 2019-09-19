@@ -12,6 +12,7 @@ py_library(
     srcs = [
         "show_frame.py",
         "show_hydroelastic_contact_surface.py",
+        "show_hydroelastic_contact_pressure.py",
         "show_image.py",
         "show_point_pair_contact.py",
         "show_time.py",
