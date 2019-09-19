@@ -703,7 +703,7 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
     // We only build hydroelastics if the user requested it AND if geometry was
     // registered with a SceneGraph. Since by default bodies are rigid, we use
     // point contact unless the user specifies otherwise.
-    if (contact_model_ == ContactModel::kHydroelasticsOnly && get_source_id())
+    if (contact_model_ != ContactModel::kPointContactOnly && get_source_id())
       MakeHydroelasticModels();
   }
   SetUpJointLimitsParameters();
@@ -1116,11 +1116,11 @@ void MultibodyPlant<T>::CalcContactResults(
   // therefore we throw an exception.
   // TODO(amcastro-tri): Update the computation of contact results to report
   // both point and hydroelastic results.
-  if (contact_model_ == ContactModel::kHydroelasticsOnly) {
+  if (contact_model_  != ContactModel::kPointContactOnly) {
     throw std::runtime_error(
         "Currently we do not support mixing point contact with hydroelastics. "
-        "You requested the hydroelastic model with calls to "
-        "set_elastic_modulus() and/or set_hunt_crossley_dissipation(). "
+        "You requested the hydroelastic model with a call to "
+        "set_contact_model(). "
         "Currently contact results are only supported for point contact.");
   }
 
