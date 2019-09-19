@@ -8,16 +8,123 @@ from director.debugVis import DebugData
 import director.vtkAll as vtk
 import numpy as np
 from six import iteritems
+from PythonQt import QtCore, QtGui
 
 import drake as lcmdrakemsg
 
 from drake.tools.workspace.drake_visualizer.plugin import scoped_singleton_func
 
+# TODO(edrumwri) Refactor this.
 def getParentObj(parent):
     if isinstance(parent, str):
         return om.getOrCreateContainer(parent)
     else:
         return parent
+
+class ColorMapModes:
+    '''Common specification of color map modes'''
+    @staticmethod
+    def get_mode_string(mode):
+        if mode == ColorMapModes.kFlameMap:
+            return "Flame"
+        elif mode == ColorMapModes.kTwoToneMap:
+            return "Two-tone"
+        elif mode == ColorMapModes.kIntensityMap:
+            return "Intensity"
+        else:
+            return "Unrecognized mode"
+
+    @staticmethod
+    def get_modes():
+        return (ColorMapModes.kFlameMap, ColorMapModes.kTwoToneMap,
+                ColorMapModes.kIntensityMap)
+
+    @staticmethod
+    def get_mode_docstring(mode):
+        if mode == ColorMapModes.kFlameMap:
+            return "Color map that maps [min_val, max_val] -> black, blue, "\
+                   "magenta, orange, yellow, white linearly. Saturates to "\
+                   "black and white for values below min_val or above "\
+                   "max_val, respectively"
+        elif mode == ColorMapModes.kTwoToneMap:
+            return "simply scaled by global scale"
+        elif mode == ColorMapModes.kIntensityMap:
+            return "largest force has fixed length and all other "\
+                   "forces with proportional length on a per-message basis"
+        else:
+            return "unrecognized mode"
+
+    kFlameMap = 0
+    kTwoToneMap = 1
+    kIntensityMap = 2
+
+class _ColorMapConfigurationDialog(QtGui.QDialog):
+    '''A simple dialog for configuring the color map used in pressure
+       visualization'''
+    def __init__(self, visualizer, parent=None):
+        QtGui.QDialog.__init__(self, parent)
+        self.setWindowTitle("Pressure color map visualization settings")
+        layout = QtGui.QGridLayout()
+        layout.setColumnStretch(0, 0)
+        layout.setColumnStretch(1, 1)
+
+        row = 0
+
+        # Color map selection.
+        layout.addWidget(QtGui.QLabel("Color map"), row, 0)
+        self.color_map_mode = QtGui.QComboBox()
+        modes = ColorMapModes.get_modes()
+        mode_labels = [ColorMapModes.get_mode_string(m) for m in modes]
+        self.color_map_mode.addItems(mode_labels)
+        self.color_map_mode.setCurrentIndex(visualizer.color_map_mode)
+        mode_tool_tip = 'Determines the mapping from pressures to colors:\n'
+        for m in modes:
+            mode_tool_tip += '  - {}: {}\n'.format(
+                ColorMapModes.get_mode_string(m),
+                ColorMapModes.get_mode_docstring(m))
+        self.color_map_mode.setToolTip(mode_tool_tip)
+        layout.addWidget(self.color_map_mode, row, 1)
+        row += 1
+
+        # Minimum pressure.
+        layout.addWidget(QtGui.QLabel("Minimum pressure"), row, 0)
+        self.min_pressure = QtGui.QLineEdit()
+        self.min_pressure.setToolTip('Pressures at or less than this value '
+                                      'will be visualized as the color defined'
+                                      ' at the minimum value of the color map '
+                                      '(must be at least zero).')
+        validator = QtGui.QDoubleValidator(0, 1e20, 2, self.min_pressure)
+        validator.setNotation(QtGui.QDoubleValidator.StandardNotation)
+        self.min_pressure.setValidator(validator)
+        self.min_pressure.setText("{:.3g}".format(visualizer.min_pressure))
+        layout.addWidget(self.min_pressure, row, 1)
+        row += 1
+
+        # Maximum pressure.
+        layout.addWidget(QtGui.QLabel("Maximum pressure"), row, 0)
+        self.max_pressure = QtGui.QLineEdit()
+        self.max_pressure.setToolTip('Pressures at or greater than this value '
+                                      'will be visualized as the color defined'
+                                      ' at the maximum value of the color map '
+                                      '(must be larger than the minimum '
+                                      'pressure).')
+        validator = QtGui.QDoubleValidator(float(self.min_pressure.text), 1e20, 2,
+                                           self.max_pressure)
+        validator.setNotation(QtGui.QDoubleValidator.StandardNotation)
+        self.max_pressure.setValidator(validator)
+        self.max_pressure.setText("{:.3g}".format(visualizer.max_pressure))
+        layout.addWidget(self.max_pressure, row, 1)
+        row += 1
+
+        # Accept/cancel.
+        btns = QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel
+        buttons = QtGui.QDialogButtonBox(btns, QtCore.Qt.Horizontal, self)
+        buttons.connect('accepted()', self.accept)
+        buttons.connect('rejected()', self.reject)
+        layout.addWidget(buttons, row, 0, 1, 2)
+
+        self.setLayout(layout)
+
 
 class ColorMap:
     '''Color map that maps
@@ -125,6 +232,11 @@ class TwoToneMap(ColorMap):
         b += m
         return r, g, b
 
+def get_sub_menu_or_make(menu, menu_name):
+    for a in menu.actions():
+        if a.text == menu_name:
+            return a.menu()
+    return menu.addMenu(menu_name)
 
 class HydroelasticContactPressureVisualizer(object):
     def __init__(self):
@@ -134,6 +246,42 @@ class HydroelasticContactPressureVisualizer(object):
         self._sub = None
 
         self.set_enabled(True)
+
+        # Visualization parameters
+        # TODO(SeanCurtis-TRI): Find some way to persist these settings across
+        #  invocations of drake visualizer. Config file, environment settings,
+        #  something.
+        self.color_map_mode = ColorMapModes.kFlameMap
+        self.min_pressure = 0
+        self.max_pressure = 10
+
+        menu_bar = applogic.getMainWindow().menuBar()
+        plugin_menu = get_sub_menu_or_make(menu_bar, '&Plugins')
+        contact_menu = get_sub_menu_or_make(plugin_menu, '&Contacts')
+        self.configure_action = contact_menu.addAction(
+            "Configure Color Map for Hydroelastic &Pressure")
+        self.configure_action.connect('triggered()', self.configure_via_dialog)
+        self.set_enabled(True)
+
+    def create_color_map(self):
+        if self.color_map_mode == ColorMapModes.kFlameMap:
+            return FlameMap([self.min_pressure, self.max_pressure])
+        if self.color_map_mode == ColorMapModes.kIntensityMap:
+            return IntensityMap([self.min_pressure, self.max_pressure])
+        if self.color_map_mode == ColorMapModes.kTwoToneMap:
+            return TwoToneMap([self.min_pressure, self.max_pressure])
+        # Should never be here.
+        assert False
+
+    def configure_via_dialog(self):
+        '''Configures the visualization'''
+        dlg = _ColorMapConfigurationDialog(self)
+        if dlg.exec_() == QtGui.QDialog.Accepted:
+            # TODO(edrumwri): Cause this to redraw any pressures that are
+            #  currently visualized.
+            self.color_map_mode = dlg.color_map_mode.currentIndex
+            self.min_pressure = float(dlg.min_pressure.text)
+            self.max_pressure = float(dlg.max_pressure.text)
 
     def add_subscriber(self):
         if self._sub is not None:
@@ -180,7 +328,7 @@ class HydroelasticContactPressureVisualizer(object):
         d = DebugData()
 
         # Set the color map.
-        color_map = FlameMap()
+        color_map = self.create_color_map()
 
         # Iterate over all triangles, drawing the contact surface as a triangle
         # outlined in blue.
