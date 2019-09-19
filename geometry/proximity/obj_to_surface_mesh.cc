@@ -137,7 +137,7 @@ SurfaceMesh<double> ReadObjToSurfaceMesh(std::istream* input_stream,
     throw std::runtime_error("Error parsing Wavefront obj file : " + err);
   }
   if (shapes.size() == 0) {
-    throw std::runtime_error("The Wavefront obj file has no object.");
+    throw std::runtime_error("The Wavefront obj file has no faces.");
   }
   std::vector<SurfaceVertex<double>> vertices =
       TinyObjToSurfaceVertices(attrib.vertices, scale);

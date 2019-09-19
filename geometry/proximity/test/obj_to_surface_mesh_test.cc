@@ -133,27 +133,76 @@ GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionInvalidFilePath) {
       std::runtime_error, "Cannot open file 'invalid_file_path'");
 }
 
-GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForEmptyObj) {
+GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForEmptyFile) {
   std::istringstream empty("");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ReadObjToSurfaceMesh(&empty), std::runtime_error,
-      "The Wavefront obj file has no object.");
+  DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToSurfaceMesh(&empty),
+                              std::runtime_error,
+                              "The Wavefront obj file has no faces.");
+}
+
+GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionFileHasNoFaces) {
+  std::istringstream no_faces{R"(
+v 1.0 0.0 0.0
+v 0.0 1.0 0.0
+v 0.0 0.0 1.0
+)"};
+  DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToSurfaceMesh(&no_faces),
+                              std::runtime_error,
+                              "The Wavefront obj file has no faces.");
+}
+
+GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionObjectHasNoFaces) {
+  std::istringstream no_faces{R"(
+o object_without_faces
+v 1.0 0.0 0.0
+v 0.0 1.0 0.0
+v 0.0 0.0 1.0
+)"};
+  DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToSurfaceMesh(&no_faces),
+                              std::runtime_error,
+                              "The Wavefront obj file has no faces.");
+}
+
+// Confirms that we can accept an obj file with faces (f lines) without
+// objects (o lines).
+GTEST_TEST(ObjToSurfaceMeshTest, AcceptFacesWithoutObject) {
+  std::istringstream faces_without_objects{R"(
+v 1.0 0.0 0.0
+v 0.0 1.0 0.0
+v 0.0 0.0 1.0
+f 1 2 3
+)"};
+  SurfaceMesh<double> surface = ReadObjToSurfaceMesh(&faces_without_objects);
+  ASSERT_EQ(3, surface.num_vertices());
+  std::vector<Vector3<double>> expect_vertices {
+    {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, { 0.0, 0.0, 1.0 }
+  };
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_EQ(expect_vertices[i], surface.vertex(SurfaceVertexIndex(i)).r_MV());
+  }
+  ASSERT_EQ(1, surface.num_faces());
+  int expect_face[3] = {0, 1, 2};
+  for (int v = 0; v < 3; ++v) {
+    EXPECT_EQ(expect_face[v],
+              surface.element(SurfaceFaceIndex(0)).vertex(v));
+  }
 }
 
 // Confirms that we can accept multiple objects in one obj file.
 GTEST_TEST(ObjToSurfaceMeshTest, AcceptMultipleObjects) {
-  std::istringstream two_objects{
-      "o first_object\n"
-      "v 1.0 0.0 0.0\n"
-      "v 0.0 1.0 0.0\n"
-      "v 0.0 0.0 1.0\n"
-      "f 1 2 3\n"
-      "\n"
-      "o second_object\n"
-      "v 2.0 0.0 0.0\n"
-      "v 0.0 2.0 0.0\n"
-      "v 0.0 0.0 2.0\n"
-      "f 4 5 6\n"};
+  std::istringstream two_objects{R"(
+o first_object
+v 1.0 0.0 0.0
+v 0.0 1.0 0.0
+v 0.0 0.0 1.0
+f 1 2 3
+
+o second_object
+v 2.0 0.0 0.0
+v 0.0 2.0 0.0
+v 0.0 0.0 2.0
+f 4 5 6
+)"};
   SurfaceMesh<double> surface = ReadObjToSurfaceMesh(&two_objects);
   ASSERT_EQ(6, surface.num_vertices());
   std::vector<Vector3<double>> expect_vertices{
