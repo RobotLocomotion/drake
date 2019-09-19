@@ -34,8 +34,8 @@ GeometryId AddSoftBody(MultibodyPlant<double>* plant,
   GeometryId geometry_id = plant->RegisterCollisionGeometry(
       body, RigidTransformd(), geometry::Sphere(1.0), body_name + "_geometry",
       CoulombFriction<double>());
-  plant->set_hydroelastic_elasticity(geometry_id, elastic_modulus);
-  plant->set_hydroelastic_dissipation(geometry_id, dissipation);
+  plant->set_elastic_modulus(geometry_id, elastic_modulus);
+  plant->set_hunt_crossley_dissipation(geometry_id, dissipation);
   return geometry_id;
 }
 
@@ -124,7 +124,7 @@ class SphereVsPlaneTest : public ::testing::Test {
     ground_geometry_id_ = plant_->GetCollisionGeometriesForBody(*ground_)[0];
 
     // Set elastic properties pre-finalize.
-    plant_->set_hydroelastic_elasticity(sphere_geometry_id_, elastic_modulus());
+    plant_->set_elastic_modulus(sphere_geometry_id_, elastic_modulus());
 
     plant_->Finalize();
     diagram_ = builder.Build();

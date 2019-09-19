@@ -49,8 +49,8 @@ class HydroelasticModelTests : public ::testing::Test {
     const geometry::GeometryId body_geometry_id = geometries[0];
     // Note: by setting material properties we allow the plant to use the
     // hydroelastic contact model.
-    plant_->set_hydroelastic_elasticity(body_geometry_id, kElasticModulus_);
-    plant_->set_hydroelastic_dissipation(body_geometry_id, kDissipation_);
+    plant_->set_elastic_modulus(body_geometry_id, kElasticModulus_);
+    plant_->set_hunt_crossley_dissipation(body_geometry_id, kDissipation_);
     plant_->Finalize();
 
     diagram_ = builder.Build();

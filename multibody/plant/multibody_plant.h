@@ -2684,7 +2684,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// fact that the softer material will deform more and faster and thus the
   /// softer material dissipation is given more importance.
   /// The elastic modulus and dissipation can be specified with
-  /// set_hydroelastic_elasticity() and set_hydroelastic_dissipation()
+  /// set_elastic_modulus() and set_hunt_crossley_dissipation()
   /// respectively. Elastic modulus has units of pressure, i.e. `Pa (N/m²)`. We
   /// use a dissipation model inspired by the model in [Hunt and Crossley,
   /// 1975], parameterized by a dissipation constant with units of inverse of
@@ -2737,8 +2737,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `id` does not correspond to a collision
   /// geometry previously registered with this model.
   /// @throws std::exception if called post-finalize.
-  void set_hydroelastic_elasticity(geometry::GeometryId id,
-                                   double elastic_modulus) {
+  void set_elastic_modulus(geometry::GeometryId id, double elastic_modulus) {
     // It must not be finalized so that member_scene_graph() is valid.
     DRAKE_MBP_THROW_IF_FINALIZED();
     DRAKE_THROW_UNLESS(is_collision_geometry(id));
@@ -2749,7 +2748,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         member_scene_graph().model_inspector().GetProximityProperties(id);
     DRAKE_DEMAND(old_props);
     geometry::ProximityProperties new_props(*old_props);
-    new_props.AddProperty("hydroelastics", "elastic modulus", elastic_modulus);
+    new_props.AddProperty("Material", "elastic modulus", elastic_modulus);
     member_scene_graph().AssignRole(*get_source_id(), id, new_props,
                                     geometry::RoleAssign::kReplace);
   }
@@ -2764,8 +2763,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `id` does not correspond to a collision
   /// geometry previously registered with this model.
   /// @throws std::exception if called post-finalize.
-  void set_hydroelastic_dissipation(geometry::GeometryId id,
-                                    double dissipation) {
+  void set_hunt_crossley_dissipation(geometry::GeometryId id,
+                                     double dissipation) {
     // It must not be finalized so that member_scene_graph() is valid.
     DRAKE_MBP_THROW_IF_FINALIZED();
     DRAKE_DEMAND(is_collision_geometry(id));
@@ -2776,7 +2775,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         member_scene_graph().model_inspector().GetProximityProperties(id);
     DRAKE_DEMAND(old_props);
     geometry::ProximityProperties new_props(*old_props);
-    new_props.AddProperty("hydroelastics", "dissipation", dissipation);
+    new_props.AddProperty("Material", "dissipation", dissipation);
     member_scene_graph().AssignRole(*get_source_id(), id, new_props,
                                     geometry::RoleAssign::kReplace);
   }
