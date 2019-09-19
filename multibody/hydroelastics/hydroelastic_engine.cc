@@ -1,5 +1,6 @@
 #include "drake/multibody/hydroelastics/hydroelastic_engine.h"
 
+#include <cmath>
 #include <limits>
 #include <memory>
 #include <string>
@@ -33,8 +34,16 @@ namespace internal {
 
 template <typename T>
 HydroelasticGeometry<T>::HydroelasticGeometry(
-    std::unique_ptr<HydroelasticField<T>> mesh_field)
-    : mesh_field_(std::move(mesh_field)) {}
+    std::unique_ptr<HydroelasticField<T>> mesh_field, double elastic_modulus,
+    double hunt_crossley_dissipation)
+    : mesh_field_(std::move(mesh_field)),
+      elastic_modulus_(elastic_modulus),
+      hunt_crossley_dissipation_(hunt_crossley_dissipation) {
+  DRAKE_THROW_UNLESS(std::isfinite(elastic_modulus));
+  DRAKE_THROW_UNLESS(std::isfinite(hunt_crossley_dissipation));
+  DRAKE_THROW_UNLESS(elastic_modulus > 0);
+  DRAKE_THROW_UNLESS(hunt_crossley_dissipation >= 0);
+}
 
 template <typename T>
 HydroelasticGeometry<T>::HydroelasticGeometry(
@@ -238,11 +247,8 @@ void HydroelasticEngine<T>::ImplementGeometry(const Sphere& sphere,
   const int refinement_level = 2;
   auto sphere_field =
       MakeSphereHydroelasticField<T>(refinement_level, sphere.get_radius());
-  auto model =
-      std::make_unique<HydroelasticGeometry<T>>(std::move(sphere_field));
-  model->set_elastic_modulus(elastic_modulus);
-  model->set_hunt_crossley_dissipation(dissipation);
-
+  auto model = std::make_unique<HydroelasticGeometry<T>>(
+      std::move(sphere_field), elastic_modulus, dissipation);
   model_data_.geometry_id_to_model_[specs.id] = std::move(model);
 }
 

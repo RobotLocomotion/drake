@@ -25,9 +25,17 @@ class HydroelasticGeometry {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HydroelasticGeometry)
 
-  /// Creates a soft model from a given %HydroelasticField object.
-  explicit HydroelasticGeometry(
-      std::unique_ptr<HydroelasticField<T>> mesh_field);
+  /// Creates a soft model from a given %HydroelasticField object, elastic
+  /// modulus and dissipation.
+  /// `elastic_modulus` must be strictly positive and have units of Pa.
+  /// `hunt_crossley_dissipation` must be non-negative and have units of s/m.
+  /// @throws std::exception iff `elastic_modulus` is not a finite and strictly
+  /// positive numeric value.
+  /// @throws std::exception iff `hunt_crossley_dissipation` is not a finite and
+  /// non-negative numeric value.
+  HydroelasticGeometry(
+      std::unique_ptr<HydroelasticField<T>> mesh_field, double elastic_modulus,
+      double hunt_crossley_dissipation);
 
   /// Constructor for a rigid model with its geometry represented by the
   /// zero-level of a level set function.
@@ -54,40 +62,23 @@ class HydroelasticGeometry {
     return *level_set_;
   }
 
-  /// Sets the modulus of elasticity for `this` model, with units of Pa.
-  /// If infinity, the model is considered to be rigid.
-  /// @throws std::exception if the geometry is rigid.
-  /// @throws std::exception if `elastic_modulus` is not strictly positive.
-  void set_elastic_modulus(double elastic_modulus) {
-    DRAKE_THROW_UNLESS(is_soft());
-    DRAKE_THROW_UNLESS(elastic_modulus > 0);
-    elastic_modulus_ = elastic_modulus;
-  }
-
-  /// Sets the Hunt & Crossley dissipation for `this` model, with units of s/m.
-  /// It can be zero.
-  /// @throws std::exception if `dissipation` is negative.
-  void set_hunt_crossley_dissipation(double dissipation) {
-    DRAKE_THROW_UNLESS(is_soft());
-    DRAKE_THROW_UNLESS(dissipation >= 0);
-    dissipation_ = dissipation;
-  }
-
   /// Returns the modulus of elasticity for `this` model, with units of Pa.
   /// Iff infinity, the model is considered to be rigid.
   double elastic_modulus() const { return elastic_modulus_; }
 
   /// Returns the Hunt & Crossley dissipation constant for `this` model, with
   /// units of s/m.
-  double hunt_crossley_dissipation() const { return dissipation_; }
+  double hunt_crossley_dissipation() const {
+    return hunt_crossley_dissipation_;
+  }
 
  private:
+  std::unique_ptr<HydroelasticField<T>> mesh_field_;
+  std::unique_ptr<LevelSetField<T>> level_set_;
   // Model is rigid by default.
   double elastic_modulus_{std::numeric_limits<double>::infinity()};
   // Model has zero dissipation by default.
-  double dissipation_{0};
-  std::unique_ptr<HydroelasticField<T>> mesh_field_;
-  std::unique_ptr<LevelSetField<T>> level_set_;
+  double hunt_crossley_dissipation_{0};
 };
 
 /// The underlying engine to perform the geometric computations needed by the
