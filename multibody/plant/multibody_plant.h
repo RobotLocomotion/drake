@@ -2763,7 +2763,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         member_scene_graph().model_inspector().GetProximityProperties(id);
     DRAKE_DEMAND(old_props);
     geometry::ProximityProperties new_props(*old_props);
-    new_props.AddProperty("Material", "elastic modulus", elastic_modulus);
+    new_props.AddProperty("material", "elastic modulus", elastic_modulus);
     member_scene_graph().AssignRole(*get_source_id(), id, new_props,
                                     geometry::RoleAssign::kReplace);
   }
@@ -2788,7 +2788,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         member_scene_graph().model_inspector().GetProximityProperties(id);
     DRAKE_DEMAND(old_props);
     geometry::ProximityProperties new_props(*old_props);
-    new_props.AddProperty("Material", "dissipation", dissipation);
+    new_props.AddProperty("material", "hunt_crossley_dissipation", dissipation);
     member_scene_graph().AssignRole(*get_source_id(), id, new_props,
                                     geometry::RoleAssign::kReplace);
   }

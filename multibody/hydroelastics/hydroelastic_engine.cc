@@ -60,11 +60,11 @@ void HydroelasticEngine<T>::MakeModels(
       const Shape& shape = inspector.GetShape(geometry_id);
       const double elastic_modulus =
           properties->template GetPropertyOrDefault<double>(
-              "Material", "elastic modulus",
+              "material", "elastic_modulus",
               std::numeric_limits<double>::infinity());
       const double dissipation =
-          properties->template GetPropertyOrDefault<double>("Material",
-                                                            "dissipation", 0.0);
+          properties->template GetPropertyOrDefault<double>(
+              "material", "hunt_crossley_dissipation", 0.0);
       GeometryImplementationData specs{geometry_id, elastic_modulus,
                                        dissipation};
       shape.Reify(this, &specs);
