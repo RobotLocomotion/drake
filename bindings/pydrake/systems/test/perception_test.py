@@ -6,7 +6,7 @@ import numpy as np
 from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
 from pydrake.perception import BaseField, Fields, PointCloud
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import DiagramBuilder
+from pydrake.systems.framework import AbstractValue, DiagramBuilder
 from pydrake.systems.perception import (
     PointCloudConcatenation, _ConcatenatePointClouds, _TileColors,
     _TransformPoints)
@@ -124,9 +124,9 @@ class TestPointCloudConcatenation(unittest.TestCase):
 
     def test_no_rgb(self):
         self.pc_concat.GetInputPort("point_cloud_CiSi_0").FixValue(
-            self.context, self.pc_no_rgbs)
+            self.context, AbstractValue.Make(self.pc_no_rgbs))
         self.pc_concat.GetInputPort("point_cloud_CiSi_1").FixValue(
-            self.context, self.pc_no_rgbs)
+            self.context, AbstractValue.Make(self.pc_no_rgbs))
 
         fused_pc = self.pc_concat.GetOutputPort("point_cloud_FS").Eval(
             self.context)
@@ -170,9 +170,9 @@ class TestPointCloudConcatenation(unittest.TestCase):
 
     def test_mix_rgb(self):
         self.pc_concat.GetInputPort("point_cloud_CiSi_0").FixValue(
-            self.context, self.pc)
+            self.context, AbstractValue.Make(self.pc))
         self.pc_concat.GetInputPort("point_cloud_CiSi_1").FixValue(
-            self.context, self.pc_no_rgbs)
+            self.context, AbstractValue.Make(self.pc_no_rgbs))
 
         fused_pc = self.pc_concat.GetOutputPort("point_cloud_FS").Eval(
             self.context)

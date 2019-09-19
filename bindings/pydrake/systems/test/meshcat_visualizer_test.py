@@ -25,7 +25,7 @@ from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph)
 from pydrake.multibody.parsing import Parser
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import DiagramBuilder
+from pydrake.systems.framework import AbstractValue, DiagramBuilder
 from pydrake.systems.meshcat_visualizer import (
     MeshcatVisualizer,
     MeshcatContactVisualizer,
@@ -252,11 +252,13 @@ class TestMeshcat(unittest.TestCase):
             diagram_context = diagram.CreateDefaultContext()
             context = diagram.GetMutableSubsystemContext(
                 pc_viz, diagram_context)
-            pc_viz.GetInputPort("point_cloud_P").FixValue(context, pc)
+            pc_viz.GetInputPort("point_cloud_P").FixValue(
+                context, AbstractValue.Make(pc))
             if pc2:
                 context = diagram.GetMutableSubsystemContext(
                     pc_viz2, diagram_context)
-                pc_viz2.GetInputPort("point_cloud_P").FixValue(context, pc2)
+                pc_viz2.GetInputPort("point_cloud_P").FixValue(
+                    context, AbstractValue.Make(pc2))
             simulator = Simulator(diagram, diagram_context)
             simulator.set_publish_every_time_step(False)
             simulator.AdvanceTo(sim_time)

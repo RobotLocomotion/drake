@@ -667,6 +667,7 @@ class TestCustom(unittest.TestCase):
         system = ParseFloatSystem()
         context = system.CreateDefaultContext()
         output = system.AllocateOutput()
-        system.get_input_port(0).FixValue(context, ["22.2"])
+        system.get_input_port(0).FixValue(context,
+                                          AbstractValue.Make(["22.2"]))
         system.CalcOutput(context, output)
         self.assertEqual(output.get_vector_data(0).GetAtIndex(0), 22.2)
