@@ -226,7 +226,7 @@ class TestSensors(unittest.TestCase):
             port = dut.GetInputPort(name)
             self._check_input(port)
             image = mut.Image[pixel_type](width=1, height=1)
-            context.FixInputPort(port.get_index(), AbstractValue.Make(image))
+            port.FixValue(context, image)
         output = dut.AllocateOutput()
         dut.CalcOutput(context, output)
         # N.B. This Value[] is a C++ LCM object. See

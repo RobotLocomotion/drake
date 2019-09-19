@@ -128,10 +128,10 @@ class TestCustom(unittest.TestCase):
         system = CustomAdder(2, 3)
         return system
 
-    def _fix_adder_inputs(self, context):
+    def _fix_adder_inputs(self, system, context):
         self.assertEqual(context.num_input_ports(), 2)
-        context.FixInputPort(0, BasicVector([1, 2, 3]))
-        context.FixInputPort(1, BasicVector([4, 5, 6]))
+        system.get_input_port(0).FixValue(context, [1, 2, 3])
+        system.get_input_port(1).FixValue(context, [4, 5, 6])
 
     def test_diagram_adder(self):
         system = CustomDiagram(2, 3)
@@ -144,7 +144,7 @@ class TestCustom(unittest.TestCase):
         system = self._create_adder_system()
         context = system.CreateDefaultContext()
         self.assertEqual(context.num_output_ports(), 1)
-        self._fix_adder_inputs(context)
+        self._fix_adder_inputs(system, context)
         output = system.AllocateOutput()
         self.assertEqual(output.num_ports(), 1)
         system.CalcOutput(context, output)
@@ -164,7 +164,7 @@ class TestCustom(unittest.TestCase):
         builder.Connect(adder.get_output_port(0), zoh.get_input_port(0))
         diagram = builder.Build()
         context = diagram.CreateDefaultContext()
-        self._fix_adder_inputs(context)
+        self._fix_adder_inputs(diagram, context)
 
         simulator = Simulator(diagram, context)
         simulator.Initialize()
@@ -434,7 +434,7 @@ class TestCustom(unittest.TestCase):
             context = system.CreateDefaultContext()
 
             u = np.array([1.])
-            context.FixInputPort(0, BasicVector(u))
+            system.get_input_port(0).FixValue(context, u)
 
             # Dispatch virtual calls from C++.
             output = call_vector_system_overrides(
@@ -636,7 +636,7 @@ class TestCustom(unittest.TestCase):
             context = system.CreateDefaultContext()
 
             self.assertEqual(context.num_input_ports(), 1)
-            context.FixInputPort(0, AbstractValue.Make(expected_input_value))
+            system.get_input_port(0).FixValue(context, expected_input_value)
             output = system.AllocateOutput()
             self.assertEqual(output.num_ports(), 1)
             system.CalcOutput(context, output)
@@ -667,6 +667,6 @@ class TestCustom(unittest.TestCase):
         system = ParseFloatSystem()
         context = system.CreateDefaultContext()
         output = system.AllocateOutput()
-        context.FixInputPort(0, AbstractValue.Make(["22.2"]))
+        system.get_input_port(0).FixValue(context, ["22.2"])
         system.CalcOutput(context, output)
         self.assertEqual(output.get_vector_data(0).GetAtIndex(0), 22.2)

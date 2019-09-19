@@ -40,6 +40,7 @@ since contributed their talents to help make Drake successful.  Here's an alphab
 * Betsy McPhail
 * Paul Mitiguy
 * Jeremy Nimmer
+* Mark Petersen
 * Michael Posa
 * Rick Poyner
 * Michael Sherman

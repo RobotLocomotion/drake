@@ -269,7 +269,7 @@ class TestGeneral(unittest.TestCase):
     def test_scalar_type_conversion(self):
         float_system = Adder(1, 1)
         float_context = float_system.CreateDefaultContext()
-        float_context.FixInputPort(0, [1.])
+        float_system.get_input_port(0).FixValue(float_context, 1.)
         for T in [float, AutoDiffXd, Expression]:
             system = Adder_[T](1, 1)
             # N.B. Current scalar conversion does not permit conversion to and
@@ -397,11 +397,12 @@ class TestGeneral(unittest.TestCase):
         # TODO(eric.cousineau): Not seeing any assertions being printed if no
         # inputs are connected. Need to check this behavior.
         input0 = np.array([0.1, 0.2, 0.3])
-        context.FixInputPort(0, input0)
+        diagram.get_input_port(0).FixValue(context, input0)
         input1 = np.array([0.02, 0.03, 0.04])
-        context.FixInputPort(1, input1)
+        diagram.get_input_port(1).FixValue(context, input1)
+        # Test the BasicVector overload.
         input2 = BasicVector([0.003, 0.004, 0.005])
-        context.FixInputPort(2, input2)  # Test the BasicVector overload.
+        diagram.get_input_port(2).FixValue(context, input2)
 
         # Test __str__ methods.
         self.assertRegexpMatches(str(context), "integrator")
@@ -527,7 +528,8 @@ class TestGeneral(unittest.TestCase):
         model_value = AbstractValue.Make("Hello World")
         system = PassThrough(copy.copy(model_value))
         context = system.CreateDefaultContext()
-        fixed = context.FixInputPort(0, copy.copy(model_value))
+        fixed = system.get_input_port(0).FixValue(context,
+                                                  copy.copy(model_value))
         self.assertIsInstance(fixed.GetMutableData(), AbstractValue)
         input_port = system.get_input_port(0)
 
@@ -544,7 +546,7 @@ class TestGeneral(unittest.TestCase):
         model_value = AbstractValue.Make(BasicVector(np_value))
         system = PassThrough(len(np_value))
         context = system.CreateDefaultContext()
-        context.FixInputPort(0, np_value)
+        system.get_input_port(0).FixValue(context, np_value)
         input_port = system.get_input_port(0)
 
         value = input_port.Eval(context)
