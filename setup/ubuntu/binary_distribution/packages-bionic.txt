@@ -2,6 +2,7 @@ coinor-libclp1
 coinor-libcoinutils3v5
 coinor-libipopt1v5
 default-jre
+libamd2
 libblas3
 libboost-all-dev
 libexpat1
@@ -13,6 +14,7 @@ libhdf5-100
 libjpeg8
 libjsoncpp1
 liblapack3
+libldl2
 libnetcdf13
 libnlopt0
 libogg0

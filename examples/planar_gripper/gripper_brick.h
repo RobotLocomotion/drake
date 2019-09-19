@@ -103,17 +103,31 @@ class GripperBrickHelper {
     return base_theta + base_joint_angle + middle_joint_angle;
   }
 
+  geometry::GeometryId finger_tip_sphere_geometry_id(Finger finger) const;
+
+  geometry::GeometryId brick_geometry_id() const {
+    return plant_->GetCollisionGeometriesForBody(brick_frame().body())[0];
+  }
+
+  multibody::CoulombFriction<T> GetFingerTipBrickCoulombFriction(
+      Finger finger) const;
+
+
  private:
   std::unique_ptr<systems::Diagram<T>> diagram_;
   multibody::MultibodyPlant<T>* plant_;
   geometry::SceneGraph<T>* scene_graph_;
-  std::array<int, 3> finger_base_position_indices_;
-  std::array<int, 3> finger_mid_position_indices_;
+  static constexpr int kNumFingers{3};
+  std::array<int, kNumFingers> finger_base_position_indices_;
+  std::array<int, kNumFingers> finger_mid_position_indices_;
   int brick_translate_y_position_index_;
   int brick_translate_z_position_index_;
   int brick_revolute_x_position_index_;
   const multibody::Frame<double>* brick_frame_;
-  std::array<const multibody::Frame<double>*, 3> finger_link2_frames_;
+  std::array<const multibody::Frame<double>*, kNumFingers>
+      finger_link2_frames_;
+  std::array<geometry::GeometryId, kNumFingers>
+      finger_tip_sphere_geometry_ids_;
 
   Eigen::Vector3d p_L2Fingertip_;
   double finger_tip_radius_;
