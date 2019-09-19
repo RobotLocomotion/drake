@@ -37,6 +37,17 @@
 namespace drake {
 namespace multibody {
 
+/// Enumeration for contact model options.
+enum class ContactModel {
+  /// Contact forces are computed using the Hydroelastic model. Conctact between
+  /// unsupported geometries will cause a runtime exception.
+  kHydroelasticsOnly,
+
+  /// Contact forces are computed using a point contact model, see @ref
+  /// point_contact_approximation "Numerical Approximation of Point Contact".
+  kPointContactOnly
+};
+
 /// @cond
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
@@ -235,7 +246,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     default_coulomb_friction_ = other.default_coulomb_friction_;
     visual_geometries_ = other.visual_geometries_;
     collision_geometries_ = other.collision_geometries_;
-    use_hydroelastic_model_ = other.use_hydroelastic_model_;
+    contact_model_ = other.contact_model_;
     if (geometry_source_is_registered())
       DeclareSceneGraphPorts();
 
@@ -244,6 +255,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     // internals (and not the MultibodyTree).
     FinalizePlantOnly();
   }
+
+  /// Sets the contact model to be used by `this` %MultibodyPlant, see
+  /// ContactModel for available options.
+  /// The default contact model is ContactModel::kPointContactOnly.
+  /// @throws std::exception iff called post-finalize.
+  void set_contact_model(ContactModel model);
 
   /// Returns the number of Frame objects in this model.
   /// Frames include body frames associated with each of the bodies,
@@ -2742,8 +2759,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     DRAKE_MBP_THROW_IF_FINALIZED();
     DRAKE_THROW_UNLESS(is_collision_geometry(id));
     DRAKE_THROW_UNLESS(elastic_modulus > 0);
-    // A user is attempting to use the hydroelastic model. We record it here.
-    use_hydroelastic_model_ = true;
     const geometry::ProximityProperties* old_props =
         member_scene_graph().model_inspector().GetProximityProperties(id);
     DRAKE_DEMAND(old_props);
@@ -2769,8 +2784,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     DRAKE_MBP_THROW_IF_FINALIZED();
     DRAKE_DEMAND(is_collision_geometry(id));
     DRAKE_THROW_UNLESS(dissipation >= 0);
-    // A user is attempting to use the hydroelastic model. We record it here.
-    use_hydroelastic_model_ = true;
     const geometry::ProximityProperties* old_props =
         member_scene_graph().model_inspector().GetProximityProperties(id);
     DRAKE_DEMAND(old_props);
@@ -3813,7 +3826,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::vector<CoulombFriction<double>> default_coulomb_friction_;
 
   // If true we use the hydroelastic model. Only available in continuous mode.
-  bool use_hydroelastic_model_{false};
+  ContactModel contact_model_{ContactModel::kPointContactOnly};
 
   // Port handles for geometry:
   systems::InputPortIndex geometry_query_port_;

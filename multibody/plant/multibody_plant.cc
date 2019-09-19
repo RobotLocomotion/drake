@@ -266,6 +266,12 @@ MultibodyPlant<T>::MultibodyPlant(
 }
 
 template <typename T>
+void MultibodyPlant<T>::set_contact_model(ContactModel model) {
+  DRAKE_MBP_THROW_IF_FINALIZED();
+  contact_model_ = model;
+}
+
+template <typename T>
 void MultibodyPlant<T>::SetFreeBodyRandomRotationDistributionToUniform(
     const Body<T>& body) {
   RandomGenerator generator;
@@ -695,9 +701,10 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
     implicit_stribeck_solver_->set_solver_parameters(solver_parameters);
   } else {
     // We only build hydroelastics if the user requested it AND if geometry was
-    // registerd with a SceneGraph. Since by default bodies are rigid, we use
+    // registered with a SceneGraph. Since by default bodies are rigid, we use
     // point contact unless the user specifies otherwise.
-    if (use_hydroelastic_model_ && get_source_id()) MakeHydroelasticModels();
+    if (contact_model_ == ContactModel::kHydroelasticsOnly && get_source_id())
+      MakeHydroelasticModels();
   }
   SetUpJointLimitsParameters();
   scene_graph_ = nullptr;  // must not be used after Finalize().
@@ -1109,7 +1116,7 @@ void MultibodyPlant<T>::CalcContactResults(
   // therefore we throw an exception.
   // TODO(amcastro-tri): Update the computation of contact results to report
   // both point and hydroelastic results.
-  if (use_hydroelastic_model_) {
+  if (contact_model_ == ContactModel::kHydroelasticsOnly) {
     throw std::runtime_error(
         "Currently we do not support mixing point contact with hydroelastics. "
         "You requested the hydroelastic model with calls to "
@@ -2049,7 +2056,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
 
   // Cache entry for spatial forces due to hydroelastic contact.
-  if (use_hydroelastic_model_) {
+  if (contact_model_ == ContactModel::kHydroelasticsOnly) {
     auto& hydro_forces_cache_entry = this->DeclareCacheEntry(
         std::string("Hydroelastic spatial forces (F_Bo_W)."),
         [this]() {

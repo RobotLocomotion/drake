@@ -51,6 +51,10 @@ class HydroelasticModelTests : public ::testing::Test {
     // hydroelastic contact model.
     plant_->set_elastic_modulus(body_geometry_id, kElasticModulus_);
     plant_->set_hunt_crossley_dissipation(body_geometry_id, kDissipation_);
+
+    // Tell the plant to use the hydroelastic model.
+    plant_->set_contact_model(ContactModel::kHydroelasticsOnly);
+
     plant_->Finalize();
 
     diagram_ = builder.Build();
