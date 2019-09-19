@@ -35,6 +35,7 @@ libpng-dev
 libqt5opengl5-dev
 libqt5x11extras5-dev
 libstdc++6-7-dbg
+libsuitesparse-dev
 libtheora-dev
 libtiff5-dev
 libtinyxml-dev
