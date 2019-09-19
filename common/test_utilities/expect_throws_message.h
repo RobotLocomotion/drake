@@ -61,10 +61,13 @@ do { \
 try { \
   expression; \
   if (must_throw) { \
+    std::string message = "\tExpected: " #expression " throws an exception " \
+                          "of type " #exception ".\n Actual: it throws " \
+                          "nothing"; \
     if (fatal_failure) { \
-      GTEST_FATAL_FAILURE_("\t" #expression " failed to throw " #exception); \
+      GTEST_FATAL_FAILURE_(message.c_str()); \
     } else { \
-      GTEST_NONFATAL_FAILURE_("\t" #expression " failed to throw " #exception);\
+      GTEST_NONFATAL_FAILURE_(message.c_str());\
     } \
   } \
 } catch (const exception& err) { \
@@ -74,6 +77,14 @@ try { \
     ASSERT_PRED2(matcher, err.what(), regexp); \
   } else { \
     EXPECT_PRED2(matcher, err.what(), regexp); \
+  } \
+} catch (...) { \
+  std::string message = "\tExpected: " #expression " throws an exception of " \
+      "type " #exception  ".\n Actual: it throws a different type."; \
+  if (fatal_failure) { \
+    GTEST_FATAL_FAILURE_(message.c_str()); \
+  } else { \
+    GTEST_NONFATAL_FAILURE_(message.c_str()); \
   } \
 } \
 } while (0)
