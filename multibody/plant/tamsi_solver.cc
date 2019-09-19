@@ -246,7 +246,7 @@ T TALSLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
 }  // namespace internal
 
 template <typename T>
-TAMSISolver<T>::TAMSISolver(int nv) :
+TamsiSolver<T>::TamsiSolver(int nv) :
     nv_(nv),
     fixed_size_workspace_(nv),
     // Provide an initial (arbitrarily large enough for most applications)
@@ -257,7 +257,7 @@ TAMSISolver<T>::TAMSISolver(int nv) :
 }
 
 template <typename T>
-void TAMSISolver<T>::SetOneWayCoupledProblemData(
+void TamsiSolver<T>::SetOneWayCoupledProblemData(
     EigenPtr<const MatrixX<T>> M,
     EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
     EigenPtr<const VectorX<T>> p_star,
@@ -274,7 +274,7 @@ void TAMSISolver<T>::SetOneWayCoupledProblemData(
 }
 
 template <typename T>
-void TAMSISolver<T>::SetTwoWayCoupledProblemData(
+void TamsiSolver<T>::SetTwoWayCoupledProblemData(
     EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> Jn,
     EigenPtr<const MatrixX<T>> Jt, EigenPtr<const VectorX<T>> p_star,
     EigenPtr<const VectorX<T>> x0, EigenPtr<const VectorX<T>> stiffness,
@@ -294,7 +294,7 @@ void TAMSISolver<T>::SetTwoWayCoupledProblemData(
 }
 
 template <typename T>
-void TAMSISolver<T>::CalcFrictionForces(
+void TamsiSolver<T>::CalcFrictionForces(
     const Eigen::Ref<const VectorX<T>>& vt,
     const Eigen::Ref<const VectorX<T>>& fn,
     EigenPtr<VectorX<T>> v_slip_ptr,
@@ -370,7 +370,7 @@ void TAMSISolver<T>::CalcFrictionForces(
 }
 
 template <typename T>
-void TAMSISolver<T>::CalcFrictionForcesGradient(
+void TamsiSolver<T>::CalcFrictionForcesGradient(
     const Eigen::Ref<const VectorX<T>>& fn,
     const Eigen::Ref<const VectorX<T>>& mu_vt,
     const Eigen::Ref<const VectorX<T>>& t_hat,
@@ -452,7 +452,7 @@ void TAMSISolver<T>::CalcFrictionForcesGradient(
 }
 
 template <typename T>
-void TAMSISolver<T>::CalcNormalForces(
+void TamsiSolver<T>::CalcNormalForces(
     const Eigen::Ref<const VectorX<T>>& x,
     const Eigen::Ref<const VectorX<T>>& vn,
     const Eigen::Ref<const MatrixX<T>>& Jn,
@@ -515,7 +515,7 @@ void TAMSISolver<T>::CalcNormalForces(
 }
 
 template <typename T>
-void TAMSISolver<T>::CalcJacobian(
+void TamsiSolver<T>::CalcJacobian(
     const Eigen::Ref<const MatrixX<T>>& M,
     const Eigen::Ref<const MatrixX<T>>& Jn,
     const Eigen::Ref<const MatrixX<T>>& Jt,
@@ -579,7 +579,7 @@ void TAMSISolver<T>::CalcJacobian(
 }
 
 template <typename T>
-T TAMSISolver<T>::CalcAlpha(
+T TamsiSolver<T>::CalcAlpha(
     const Eigen::Ref<const VectorX<T>>& vt,
     const Eigen::Ref<const VectorX<T>>& Delta_vt) const {
   using std::min;
@@ -600,7 +600,7 @@ T TAMSISolver<T>::CalcAlpha(
 }
 
 template <typename T>
-TAMSISolverResult TAMSISolver<T>::SolveWithGuess(
+TamsiSolverResult TamsiSolver<T>::SolveWithGuess(
     double dt, const VectorX<T>& v_guess) const {
   DRAKE_THROW_UNLESS(v_guess.size() == nv_);
 
@@ -621,7 +621,7 @@ TAMSISolverResult TAMSISolver<T>::SolveWithGuess(
     v = M.ldlt().solve(p_star);
     // "One iteration" with exactly "zero" vt_error.
     statistics_.Update(0.0);
-    return TAMSISolverResult::kSuccess;
+    return TamsiSolverResult::kSuccess;
   }
 
   // Solver parameters.
@@ -694,7 +694,7 @@ TAMSISolverResult TAMSISolver<T>::SolveWithGuess(
       // Update generalized forces and return.
       tau_f = Jt.transpose() * ft;
       tau = tau_f + Jn.transpose() * fn;
-      return TAMSISolverResult::kSuccess;
+      return TamsiSolverResult::kSuccess;
     }
 
     // Newton-Raphson residual.
@@ -721,7 +721,7 @@ TAMSISolverResult TAMSISolver<T>::SolveWithGuess(
       auto& J_ldlt = fixed_size_workspace_.mutable_J_ldlt();
       J_ldlt.compute(J);  // Update factorization.
       if (J_ldlt.info() != Eigen::Success) {
-        return TAMSISolverResult::kLinearSolverFailed;
+        return TamsiSolverResult::kLinearSolverFailed;
       }
       Delta_v = J_ldlt.solve(-residual);
     }
@@ -756,11 +756,11 @@ TAMSISolverResult TAMSISolver<T>::SolveWithGuess(
 
   // If we are here is because we reached the maximum number of iterations
   // without converging to the specified tolerance.
-  return TAMSISolverResult::kMaxIterationsReached;
+  return TamsiSolverResult::kMaxIterationsReached;
 }
 
 template <typename T>
-T TAMSISolver<T>::RegularizedFriction(const T& s, const T& mu) {
+T TamsiSolver<T>::RegularizedFriction(const T& s, const T& mu) {
   DRAKE_ASSERT(s >= 0);
   if (s >= 1) {
     return mu;
@@ -770,7 +770,7 @@ T TAMSISolver<T>::RegularizedFriction(const T& s, const T& mu) {
 }
 
 template <typename T>
-T TAMSISolver<T>::RegularizedFrictionDerivative(
+T TamsiSolver<T>::RegularizedFrictionDerivative(
     const T& s, const T& mu) {
   DRAKE_ASSERT(s >= 0);
   if (s >= 1) {
@@ -787,4 +787,4 @@ DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     struct ::drake::multibody::internal::TALSLimiter)
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::TAMSISolver)
+    class ::drake::multibody::TamsiSolver)

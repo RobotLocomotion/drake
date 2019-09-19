@@ -230,7 +230,7 @@ Next topic: @ref contact_engineering
  @ref drake::multibody::MultibodyPlant "MultibodyPlant". In Drake we use a
  custom semi-implicit Euler scheme, TAMSI, for multibody systems with
  regularized friction. Details for this solver are provided in the documentation
- for @ref drake::multibody::TAMSISolver "TAMSISolver" and in
+ for @ref drake::multibody::TamsiSolver "TamsiSolver" and in
  [Castro et al., 2019].
 
  [Castro et al., 2019] Castro, A.M, Qu, A., Kuppuswamy, N., Alspach, A., Sherman,
