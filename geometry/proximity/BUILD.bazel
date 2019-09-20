@@ -149,6 +149,7 @@ drake_cc_library(
     deps = [
         ":volume_mesh",
         "//common:essential",
+        "//geometry:shape_specification",
     ],
 )
 
