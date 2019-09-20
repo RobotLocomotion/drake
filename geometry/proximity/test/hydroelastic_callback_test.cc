@@ -68,6 +68,7 @@ GTEST_TEST(HydroelasticCallbackAutodiff, AutoDiffBlanketFailure) {
 
 // Infrastructure to repeat tests on both double and AutoDiffXd.
 using ScalarTypes = ::testing::Types<double>;
+TYPED_TEST_CASE(HydroelasticCallbackTyped, ScalarTypes);
 
 template <typename T>
 class HydroelasticCallbackTyped : public ::testing::Test {
@@ -104,27 +105,11 @@ class HydroelasticCallbackTyped : public ::testing::Test {
   unique_ptr<CollisionObjectd> box_;
 };
 
-TYPED_TEST_CASE(HydroelasticCallbackTyped, ScalarTypes);
-#if 0
-// Confirms that if the world contains unsupported geometry, as long as they are
-// filtered, they don't pose a problem.
-TYPED_TEST(HydroelasticCallbackTyped, RespectsCollisionFilter) {
-  using T = TypeParam;
+// TODO(SeanCurtis-TRI): This test relies on the hackiness of the code when it
+//  it was introduced -- I.e., the *only* support that exists is for a soft
+//  sphere and rigid box. Update/replace this test when the geneeral support
+//  for evaluating hydroelastic contact is introduced.
 
-  // Assign both geometries to clique 1 -- this will cause the pair to be
-  // filtered.
-  EncodedData data_A(this->id_A_, true);
-  EncodedData data_B(this->id_B_, true);
-  this->collision_filter_.AddToCollisionClique(data_A.encoding(), 1);
-  this->collision_filter_.AddToCollisionClique(data_B.encoding(), 1);
-
-  vector<ContactSurface<T>> surfaces;
-  CallbackData<T> data(&this->collision_filter_, &this->X_WGs_, &surfaces);
-  EXPECT_NO_THROW(
-      Callback<T>(this->sphere_A_.get(), this->sphere_B_.get(), &data));
-  EXPECT_EQ(surfaces.size(), 0u);
-}
-#endif
 // Confirms that a colliding collision pair (with supported hydroelastic
 // representations) produces a result. This doesn't test the actual data -- it
 // assumes the function responsible for computing that result has been
