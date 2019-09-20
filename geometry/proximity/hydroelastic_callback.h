@@ -65,8 +65,8 @@ struct CallbackData {
   std::vector<ContactSurface<T>>& surfaces{};
 };
 
-/** Given an object_ptr whose geometry is a box, create a coarse surface mesh for
- that box.  */
+/** Given an object_ptr whose geometry is a box, create a coarse surface mesh
+ for that box.  */
 SurfaceMesh<double> MakeBoxMeshFromFcl(fcl::CollisionObjectd* object_ptr) {
   const fcl::Boxd* box_ptr = dynamic_cast<const fcl::Boxd*>(
       object_ptr->collisionGeometry().get());
@@ -94,7 +94,7 @@ SoftGeometry MakeSphereFromFcl(
   // Edge length is the chord length around the equator where each span is 45
   // degrees.
   SoftGeometry geometry;
-  const double edge_length = 4 * r * M_PI / 16;
+  const double edge_length = r * M_PI / 4.0;
   geometry.mesh = std::make_unique<VolumeMesh<double>>(
       MakeSphereVolumeMesh<double>(sphere, edge_length));
 
@@ -102,7 +102,7 @@ SoftGeometry MakeSphereFromFcl(
   for (const auto& v : geometry.mesh->vertices()) {
     const Eigen::Vector3d& p_MV = v.r_MV();
     const double p_MV_len = p_MV.norm();
-    p0_values.push_back(1.0 - p_MV_len / r);
+    p0_values.push_back(1e8 * (1.0 - p_MV_len / r));
   }
   geometry.p0 = std::make_unique<VolumeMeshFieldLinear<double, double>>(
       "p0", move(p0_values), geometry.mesh.get());

@@ -53,6 +53,24 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "simple_contact_surface_vis",
+    srcs = ["simple_contact_surface_vis.cc"],
+    add_test_rule = 1,
+    test_rule_args = [
+        "--simulation_time=0.01",
+    ],
+    deps = [
+        "//geometry:geometry_visualization",
+        "//geometry:scene_graph",
+        "//lcmtypes:contact_results_for_viz",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/lcm:lcm_pubsub_system",
+        "@gflags",
+    ],
+)
+
 filegroup(
     name = "models",
     srcs = glob([
