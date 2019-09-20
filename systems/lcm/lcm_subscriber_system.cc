@@ -122,6 +122,7 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
                         const systems::UnrestrictedUpdateEvent<double>&,
                         State<double>* s) {
         this->ProcessMessageAndStoreToAbstractState(c, s);
+        return EventStatus::Succeeded();
       };
 
   // Schedule an update event at the current time.

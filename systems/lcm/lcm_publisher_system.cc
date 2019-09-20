@@ -69,9 +69,10 @@ LcmPublisherSystem::LcmPublisherSystem(
       // publish and a periodic publish if a user constructs the publisher
       // the "old" way (construction followed by set_publish_period()).
       if (this->disable_internal_per_step_publish_events_)
-        return;
+        return EventStatus::DidNothing();
 
       this->PublishInputAsLcmMessage(context);
+      return EventStatus::Succeeded();
     }));
   }
 }
@@ -99,6 +100,7 @@ void LcmPublisherSystem::AddInitializationMessage(
       [this](const systems::Context<double>& context,
              const systems::PublishEvent<double>&) {
         this->initialization_publisher_(context, this->lcm_);
+        return EventStatus::Succeeded();
       }));
 }
 

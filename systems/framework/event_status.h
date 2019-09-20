@@ -61,6 +61,15 @@ class EventStatus {
     return EventStatus(kFailed, system, std::move(message));
   }
 
+  /** Returns `true` if severity() == kDidNothing. */
+  bool did_nothing() const { return severity_ == kDidNothing; }
+
+  /** Returns `true` if severity() == kReachedTermination. */
+  bool reached_termination() const { return severity_ == kReachedTermination; }
+
+  /** Returns `true` if severity() == kFailed. */
+  bool failed() const { return severity_ == kFailed; }
+
   /** Returns the severity of the current status. */
   Severity severity() const { return severity_; }
 

@@ -1137,7 +1137,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // For each subsystem, if there is a publish event in its corresponding
   // subevent collection, calls its Publish method with the appropriate
   // subcontext and subevent collection.
-  void DispatchPublishHandler(
+  EventStatus DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& event_info) const final {
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
@@ -1146,22 +1146,24 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
         dynamic_cast<const DiagramEventCollection<PublishEvent<T>>&>(
             event_info);
 
+    EventStatus status = EventStatus::DidNothing();
     for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
       const EventCollection<PublishEvent<T>>& subinfo =
           info.get_subevent_collection(i);
-
-      if (subinfo.HasEvents()) {
-        const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
-        registered_systems_[i]->Publish(subcontext, subinfo);
-      }
+      if (!subinfo.HasEvents()) continue;
+      const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
+      if (status.KeepMoreSevere(
+              registered_systems_[i]->Publish(subcontext, subinfo)).failed())
+        break;
     }
+    return status;
   }
 
   // For each subsystem, if there is a discrete update event in its
   // corresponding subevent collection, calls its CalcDiscreteVariableUpdates
   // method with the appropriate subcontext, subevent collection and
   // substate.
-  void DispatchDiscreteVariableUpdateHandler(
+  EventStatus DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const final {
@@ -1175,19 +1177,22 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
         dynamic_cast<const DiagramEventCollection<DiscreteUpdateEvent<T>>&>(
             events);
 
+    EventStatus status = EventStatus::DidNothing();
     for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
       const EventCollection<DiscreteUpdateEvent<T>>& subevents =
           diagram_events.get_subevent_collection(i);
+      if (!subevents.HasEvents()) continue;
 
-      if (subevents.HasEvents()) {
-        const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
-        DiscreteValues<T>& subdiscrete =
-            diagram_discrete->get_mutable_subdiscrete(i);
-
-        registered_systems_[i]->CalcDiscreteVariableUpdates(
-            subcontext, subevents, &subdiscrete);
-      }
+      const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
+      DiscreteValues<T>& subdiscrete =
+          diagram_discrete->get_mutable_subdiscrete(i);
+      if (status.KeepMoreSevere(
+              registered_systems_[i]->CalcDiscreteVariableUpdates(
+                  subcontext, subevents, &subdiscrete))
+              .failed())
+        break;
     }
+    return status;
   }
 
   void DoApplyDiscreteVariableUpdate(
@@ -1219,7 +1224,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // For each subsystem, if there is an unrestricted update event in its
   // corresponding subevent collection, calls its CalcUnrestrictedUpdate
   // method with the appropriate subcontext, subevent collection and substate.
-  void DispatchUnrestrictedUpdateHandler(
+  EventStatus DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const final {
@@ -1232,18 +1237,22 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
         dynamic_cast<const DiagramEventCollection<UnrestrictedUpdateEvent<T>>&>(
             events);
 
+    EventStatus status = EventStatus::DidNothing();
     for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
       const EventCollection<UnrestrictedUpdateEvent<T>>& subevents =
           diagram_events.get_subevent_collection(i);
+      if (!subevents.HasEvents()) continue;
 
-      if (subevents.HasEvents()) {
-        const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
-        State<T>& substate = diagram_state->get_mutable_substate(i);
+      const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
+      State<T>& substate = diagram_state->get_mutable_substate(i);
 
-        registered_systems_[i]->CalcUnrestrictedUpdate(subcontext, subevents,
-                                                       &substate);
-      }
+      if (status.KeepMoreSevere(
+              registered_systems_[i]->CalcUnrestrictedUpdate(
+                  subcontext, subevents, &substate))
+              .failed())
+        break;
     }
+    return status;
   }
 
   void DoApplyUnrestrictedUpdate(

@@ -121,9 +121,11 @@ class TestSystem : public System<double> {
   }
 
   // The default publish function.
-  void MyPublish(const Context<double>& context,
-                 const std::vector<const PublishEvent<double>*>& events) const {
+  EventStatus MyPublish(
+      const Context<double>& context,
+      const std::vector<const PublishEvent<double>*>& events) const {
     ++publish_count_;
+    return EventStatus::Succeeded();
   }
 
  protected:
@@ -141,27 +143,25 @@ class TestSystem : public System<double> {
       const Context<double>& context,
       ContinuousState<double>* derivatives) const override {}
 
-  void DispatchPublishHandler(
+  EventStatus DispatchPublishHandler(
       const Context<double>& context,
       const EventCollection<PublishEvent<double>>& events) const final {
     const LeafEventCollection<PublishEvent<double>>& leaf_events =
        dynamic_cast<const LeafEventCollection<PublishEvent<double>>&>(events);
-    if (leaf_events.HasEvents()) {
-      this->MyPublish(context, leaf_events.get_events());
-    }
+    if (!leaf_events.HasEvents()) return EventStatus::DidNothing();
+    return this->MyPublish(context, leaf_events.get_events());
   }
 
-  void DispatchDiscreteVariableUpdateHandler(
+  EventStatus DispatchDiscreteVariableUpdateHandler(
       const Context<double>& context,
       const EventCollection<DiscreteUpdateEvent<double>>& events,
       DiscreteValues<double>* discrete_state) const final {
     const LeafEventCollection<DiscreteUpdateEvent<double>>& leaf_events =
         dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<double>>&>(
             events);
-    if (leaf_events.HasEvents()) {
-      this->MyCalcDiscreteVariableUpdates(context, leaf_events.get_events(),
-          discrete_state);
-    }
+    if (!leaf_events.HasEvents()) return EventStatus::DidNothing();
+    return this->MyCalcDiscreteVariableUpdates(
+        context, leaf_events.get_events(), discrete_state);
   }
 
   void DoApplyDiscreteVariableUpdate(
@@ -171,11 +171,12 @@ class TestSystem : public System<double> {
     ADD_FAILURE() << "Implementation is required, but unused here.";
   }
 
-  void DispatchUnrestrictedUpdateHandler(
+  EventStatus DispatchUnrestrictedUpdateHandler(
       const Context<double>&,
       const EventCollection<UnrestrictedUpdateEvent<double>>&,
       State<double>*) const final {
     ADD_FAILURE() << "Implementation is required, but unused here.";
+    return EventStatus::Succeeded();
   }
 
   void DoApplyUnrestrictedUpdate(
@@ -201,11 +202,12 @@ class TestSystem : public System<double> {
   }
 
   // The default update function.
-  void MyCalcDiscreteVariableUpdates(
+  EventStatus MyCalcDiscreteVariableUpdates(
       const Context<double>& context,
       const std::vector<const DiscreteUpdateEvent<double>*>& events,
       DiscreteValues<double>* discrete_state) const {
     ++update_count_;
+    return EventStatus::Succeeded();
   }
 
   std::unique_ptr<EventCollection<PublishEvent<double>>>
@@ -623,17 +625,19 @@ class ValueIOTestSystem : public System<T> {
     vec_out.get_mutable_value() = 2 * vec_in->get_value();
   }
 
-  void DispatchPublishHandler(
+  EventStatus DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& event_info) const final {
     ADD_FAILURE() << "Implementation is required, but unused here.";
+    return EventStatus::Succeeded();
   }
 
-  void DispatchDiscreteVariableUpdateHandler(
+  EventStatus DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& event_info,
       DiscreteValues<T>* discrete_state) const final {
     ADD_FAILURE() << "Implementation is required, but unused here.";
+    return EventStatus::Succeeded();
   }
 
   void DoApplyDiscreteVariableUpdate(
@@ -643,11 +647,12 @@ class ValueIOTestSystem : public System<T> {
     ADD_FAILURE() << "Implementation is required, but unused here.";
   }
 
-  void DispatchUnrestrictedUpdateHandler(
+  EventStatus DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& event_info,
       State<T>* state) const final {
     ADD_FAILURE() << "Implementation is required, but unused here.";
+    return EventStatus::Succeeded();
   }
 
   void DoApplyUnrestrictedUpdate(
@@ -984,16 +989,18 @@ class ComputationTestSystem final : public System<double> {
       const InputPort<double>&) const final {
     return {};
   }
-  void DispatchPublishHandler(
+  EventStatus DispatchPublishHandler(
       const Context<double>& context,
       const EventCollection<PublishEvent<double>>& events) const final {
     ADD_FAILURE() << "Implementation is required, but unused here.";
+    return EventStatus::Succeeded();
   }
-  void DispatchDiscreteVariableUpdateHandler(
+  EventStatus DispatchDiscreteVariableUpdateHandler(
       const Context<double>& context,
       const EventCollection<DiscreteUpdateEvent<double>>& events,
       DiscreteValues<double>* discrete_state) const final {
     ADD_FAILURE() << "Implementation is required, but unused here.";
+    return EventStatus::Succeeded();
   }
 
   void DoApplyDiscreteVariableUpdate(
@@ -1003,11 +1010,12 @@ class ComputationTestSystem final : public System<double> {
     ADD_FAILURE() << "Implementation is required, but unused here.";
   }
 
-  void DispatchUnrestrictedUpdateHandler(
+  EventStatus DispatchUnrestrictedUpdateHandler(
       const Context<double>&,
       const EventCollection<UnrestrictedUpdateEvent<double>>&,
       State<double>*) const final {
     ADD_FAILURE() << "Implementation is required, but unused here.";
+    return EventStatus::Succeeded();
   }
 
   void DoApplyUnrestrictedUpdate(

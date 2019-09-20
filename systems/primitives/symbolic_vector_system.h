@@ -173,7 +173,7 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const final;
 
-  void DoCalcDiscreteVariableUpdates(
+  drake::systems::EventStatus DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<T>& context,
       const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
       drake::systems::DiscreteValues<T>* updates) const final;

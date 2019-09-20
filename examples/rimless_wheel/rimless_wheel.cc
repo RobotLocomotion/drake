@@ -69,7 +69,7 @@ T RimlessWheel<T>::StepForwardGuard(const systems::Context<T>& context) const {
 }
 
 template <typename T>
-void RimlessWheel<T>::StepForwardReset(
+systems::EventStatus RimlessWheel<T>::StepForwardReset(
     const systems::Context<T>& context,
     const systems::UnrestrictedUpdateEvent<T>&,
     systems::State<T>* state) const {
@@ -105,11 +105,14 @@ void RimlessWheel<T>::StepForwardReset(
   // closer to zero will not cause the wheel to miss an event, but will cause
   // the simulator to perform arbitrarily more event detection calculations.
   // The threshold is multiplied by sqrt(g/l) to make it dimensionless.
-  if (next_state.thetadot() < 0.01*sqrt(params.gravity()/params.length())) {
+  if (next_state.thetadot() < 0.01 * sqrt(params.gravity() / params.length())) {
     bool& double_support = get_mutable_double_support(state);
     double_support = true;
     next_state.set_thetadot(0.0);
+    return systems::EventStatus::ReachedTermination(
+        this, "StepForwardReset() reached double-support.");
   }
+  return systems::EventStatus::Succeeded();
 }
 
 template <typename T>
@@ -123,7 +126,7 @@ T RimlessWheel<T>::StepBackwardGuard(const systems::Context<T>& context) const {
 }
 
 template <typename T>
-void RimlessWheel<T>::StepBackwardReset(
+systems::EventStatus RimlessWheel<T>::StepBackwardReset(
     const systems::Context<T>& context,
     const systems::UnrestrictedUpdateEvent<T>&,
     systems::State<T>* state) const {
@@ -158,11 +161,15 @@ void RimlessWheel<T>::StepBackwardReset(
   // closer to zero will not cause the wheel to miss an event, but will cause
   // the simulator to perform arbitrarily more event detection calculations.
   // The threshold is multiplied by sqrt(g/l) to make it dimensionless.
-  if (next_state.thetadot() > -0.01*sqrt(params.gravity()/params.length())) {
+  if (next_state.thetadot() >
+      -0.01 * sqrt(params.gravity() / params.length())) {
     bool& double_support = get_mutable_double_support(state);
     double_support = true;
     next_state.set_thetadot(0.0);
+    return systems::EventStatus::ReachedTermination(
+        this, "StepBackwardReset() reached double-support.");
   }
+  return systems::EventStatus::Succeeded();
 }
 
 template <typename T>
