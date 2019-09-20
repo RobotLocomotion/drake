@@ -236,9 +236,13 @@ class ProximityEngine {
    map to `id_A` and `id_B` in a fixed, repeatable manner, where `id_A` and
    `id_B` are GeometryId's of geometries g_A and g_B respectively.
 
+   @param[in] X_WGs           The pose of all geometries in world, keyed by
+                              each geometry's GeometryId.
    @returns A vector populated with all detected intersections characterized as
             contact surfaces.  */
-  std::vector<ContactSurface<T>> ComputeContactSurfaces() const;
+  std::vector<ContactSurface<T>> ComputeContactSurfaces(
+      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
+      const;
 
   //@}
 
