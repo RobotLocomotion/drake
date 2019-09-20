@@ -273,13 +273,19 @@ drake_cc_library(
 
 # -----------------------------------------------------
 
-drake_cc_googletest(
-    name = "proximity_engine_test",
-    data = [
+filegroup(
+    name = "test_obj_files",
+    testonly = 1,
+    srcs = [
         "test/forbidden_two_cubes.obj",
         "test/quad_cube.mtl",
         "test/quad_cube.obj",
     ],
+)
+
+drake_cc_googletest(
+    name = "proximity_engine_test",
+    data = [":test_obj_files"],
     deps = [
         ":proximity_engine",
         ":shape_specification",
