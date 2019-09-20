@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include "drake/geometry/proximity/make_unit_sphere_mesh.h"
+#include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/multibody/hydroelastics/hydroelastic_field.h"
 
 namespace drake {
