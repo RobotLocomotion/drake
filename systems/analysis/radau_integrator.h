@@ -473,6 +473,7 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
   // the corresponding xt+).
   Z_.setZero(state_dim * num_stages);
   *xtplus = xt0;
+  SPDLOG_DEBUG(drake::log(), "Starting state: {}", xtplus->transpose());
 
   // Set the iteration matrix construction method.
   auto construct_iteration_matrix = [this](const MatrixX<T>& J, const T& dt,
@@ -644,6 +645,7 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
   // O(h) accurate, depending on the number of stages) to the true solution and
   // hence should be an excellent starting point.
   *xtplus = radau_xtplus;
+  SPDLOG_DEBUG(drake::log(), "Starting state: {}", xtplus->transpose());
 
   SPDLOG_DEBUG(drake::log(), "StepImplicitTrapezoidDetail() entered for t={}, "
       "h={}, trial={}", t0, h, trial);
