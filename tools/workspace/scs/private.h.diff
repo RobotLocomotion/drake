@@ -1,0 +1,13 @@
+--- linsys/direct/private.h.orig	2017-11-30 18:03:00.000000000 -0500
++++ linsys/direct/private.h	2019-09-18 15:47:31.254231211 -0400
+@@ -8,8 +8,8 @@
+ #include "glbopts.h"
+ #include "scs.h"
+ #include "cs.h"
+-#include "external/amd.h"
+-#include "external/ldl.h"
++#include "amd.h"
++#include "ldl.h"
+ #include "common.h"
+ 
+ struct SCS_LIN_SYS_WORK {
