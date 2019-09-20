@@ -16,6 +16,7 @@
 #include "drake/geometry/proximity/distance_to_point_with_gradient.h"
 #include "drake/geometry/proximity/distance_to_shape_callback.h"
 #include "drake/geometry/proximity/find_collision_candidates_callback.h"
+#include "drake/geometry/proximity/hydroelastic_callback.h"
 #include "drake/geometry/utilities.h"
 
 static_assert(std::is_same<tinyobj::real_t, double>::value,
@@ -620,6 +621,20 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return pairs;
   }
 
+  std::vector<ContactSurface<T>> ComputeContactSurfaces(
+      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
+    std::vector<ContactSurface<T>> surfaces;
+    // All these quantities are aliased in the callback data.
+    hydroelastic::CallbackData<T> data{&collision_filter_, &X_WGs, &surfaces};
+
+    dynamic_tree_.collide(&data, hydroelastic::Callback<T>);
+    dynamic_tree_.collide(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &anchored_tree_),
+        &data, hydroelastic::Callback<T>);
+    return surfaces;
+  }
+
   // TODO(SeanCurtis-TRI): Update this with the new collision filter method.
   void ExcludeCollisionsWithin(
       const std::unordered_set<GeometryId>& dynamic,
@@ -959,10 +974,9 @@ ProximityEngine<T>::ComputePointPairPenetration() const {
 }
 
 template <typename T>
-std::vector<ContactSurface<T>> ProximityEngine<T>::ComputeContactSurfaces()
-    const {
-  throw std::runtime_error("ComputeContactSurfaces() is not implemented yet.");
-  // TODO(DamrongGuoy): Compute contact surfaces and remove the above throw.
+std::vector<ContactSurface<T>> ProximityEngine<T>::ComputeContactSurfaces(
+    const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
+  return impl_->ComputeContactSurfaces(X_WGs);
 }
 
 template <typename T>

@@ -179,9 +179,25 @@ class QueryObject {
    intersection as a ContactSurface. The computation is subject to collision
    filtering.
 
-   @returns A vector populated with contact surfaces of all detected
-            intersecting pairs of geometries.
-   @note  This function is not implemented yet. */
+   In the current incarnation, this function represents the most bare-bones
+   implementation possible.
+
+     - Only collision between spheres and boxes is supported. If an unfiltered
+       geometry pair of any other type pairing cannot be culled in the
+       broadphase an error will be thrown.
+     - The sphere will *always* be considered soft, and the box rigid.
+     - The elasticity modulus for the sphere is hard-coded and arbitrary (but
+       consistent with being a medium rubber).
+     - The sphere's pressure function is is simply: p_0(e) = e.
+     - The tesselation of the corresponding meshes will be coarse.
+     - Attempting to invoke this method with T = AutoDiffXd will throw an
+       exception if there are *any* geometry pairs that couldn't be culled.
+
+   In the near future, this behavior will extend to be configurable and more
+   general.
+
+   @returns The contact surfaces of all detected intersecting pairs of
+            geometries. */
   std::vector<ContactSurface<T>> ComputeContactSurfaces() const;
 
   //@}
