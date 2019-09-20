@@ -45,6 +45,7 @@ from pydrake.systems.test.test_util import (
     call_vector_system_overrides,
     )
 
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
 
@@ -604,6 +605,13 @@ class TestCustom(unittest.TestCase):
 
     def test_abstract_io_port(self):
         test = self
+
+        def assert_value_equal(a, b):
+            a_name, a_value = a
+            b_name, b_value = b
+            self.assertEqual(a_name, b_name)
+            numpy_compare.assert_equal(a_value, b_value)
+
         # N.B. Since this has trivial operations, we can test all scalar types.
         for T in [float, AutoDiffXd, Expression]:
             default_value = ("default", T(0.))
@@ -627,10 +635,10 @@ class TestCustom(unittest.TestCase):
                         context, 0).get_value()
                     # The allocator function will populate the output with
                     # the "input"
-                    test.assertTupleEqual(input_value, expected_input_value)
+                    assert_value_equal(input_value, expected_input_value)
                     y_data.set_value(expected_output_value)
-                    test.assertTupleEqual(y_data.get_value(),
-                                          expected_output_value)
+                    assert_value_equal(
+                        y_data.get_value(), expected_output_value)
 
             system = CustomAbstractSystem()
             context = system.CreateDefaultContext()

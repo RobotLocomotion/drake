@@ -252,6 +252,8 @@ class TestMeshcat(unittest.TestCase):
             diagram_context = diagram.CreateDefaultContext()
             context = diagram.GetMutableSubsystemContext(
                 pc_viz, diagram_context)
+            # TODO(eric.cousineau): Replace `AbstractValue.Make(pc)` with just
+            # `pc` (#12086).
             pc_viz.GetInputPort("point_cloud_P").FixValue(
                 context, AbstractValue.Make(pc))
             if pc2:
