@@ -247,6 +247,8 @@ This is useful to help dismiss unbound overloads, so that mkdoc's choice of
 `_something` name suffix is simpler for the remaining overloads, especially if
 you see the symbol `.doc_was_unable_to_choose_unambiguous_names` in the
 generated documentation.
+- To manually specify the `.doc_foobar` identifier name, add the line
+\c \@pydrake_mkdoc_identifier{foobar} to the Doxygen comment.
 - The docstring for a method that is marked as deprecated in C++ Doxygen will
 be named `.doc_deprecated...` instead of just `.doc...`.
 
