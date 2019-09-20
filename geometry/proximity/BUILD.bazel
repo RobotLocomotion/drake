@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":mesh_field",
         ":mesh_half_space_intersection",
         ":mesh_intersection",
+        ":obj_to_surface_mesh",
         ":proximity_utilities",
         ":sorted_triplet",
         ":surface_mesh",
@@ -163,6 +164,18 @@ drake_cc_library(
         "//geometry/proximity:volume_mesh",
         "//geometry/query_results:contact_surface",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "obj_to_surface_mesh",
+    srcs = ["obj_to_surface_mesh.cc"],
+    hdrs = ["obj_to_surface_mesh.h"],
+    deps = [
+        ":surface_mesh",
+        "//common:essential",
+        "@fmt",
+        "@tinyobjloader",
     ],
 )
 
@@ -326,6 +339,18 @@ drake_cc_googletest(
     deps = [
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry/proximity:mesh_intersection",
+    ],
+)
+
+drake_cc_googletest(
+    name = "obj_to_surface_mesh_test",
+    data = [
+        "//geometry:test_obj_files",
+    ],
+    deps = [
+        ":obj_to_surface_mesh",
+        "//common:find_resource",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
