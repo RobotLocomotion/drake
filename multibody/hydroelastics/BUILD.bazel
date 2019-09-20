@@ -73,7 +73,7 @@ drake_cc_library(
     deps = [
         ":hydroelastic_field",
         "//common:essential",
-        "//geometry/proximity:make_unit_sphere_mesh",
+        "//geometry/proximity:make_sphere_mesh",
     ],
 )
 
@@ -89,7 +89,7 @@ drake_cc_googletest(
         ":contact_surface_from_level_set",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-        "//geometry/proximity:make_unit_sphere_mesh",
+        "//geometry/proximity:make_sphere_mesh",
         "//math",
     ],
 )

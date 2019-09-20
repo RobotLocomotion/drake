@@ -1,4 +1,4 @@
-#include "drake/geometry/proximity/make_unit_sphere_mesh.h"
+#include "drake/geometry/proximity/make_sphere_mesh.h"
 
 #include <algorithm>
 #include <vector>
@@ -225,17 +225,9 @@ GTEST_TEST(MakeSphereVolumeMesh, ConfirmEdgeLength) {
     // going to count all the 1-bits in `v_count` and confirm there is exactly
     // one.
     const int v_count = static_cast<int>(equator_vertices.size());
-    // Confirm divisible by 4 -- least significant 2 bits must be zero.
-    EXPECT_EQ(v_count & 0x3, 0)
-        << "Equator count not divisible by 4 for edge_length: " << edge_length;
-    const int bit_count = static_cast<int>(sizeof(int)) * 8 - 1;
-    int one_count = 0;
-    for (int i = 2; i < bit_count; ++i) {
-      one_count += (v_count >> i) & 0x1;
-    }
-    EXPECT_EQ(one_count, 1)
-              << "Equator count not of the form 4 * 2 ^ L for edge_length: "
-              << edge_length;
+    EXPECT_GE(v_count, 4);
+    // Compiler built-in for counting number of bits set to one.
+    EXPECT_EQ(__builtin_popcount(v_count), 1);
 
     // Given radial ordering of vertices, confirm that the edge between two
     // sequential vertices does not exceed the target edge_length.
