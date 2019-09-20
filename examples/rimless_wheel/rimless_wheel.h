@@ -134,9 +134,10 @@ class RimlessWheel final : public systems::LeafSystem<T> {
 
   // Handles the impact dynamics, including resetting theta to the angle of the
   // new stance leg, and updating the toe position by the step length.
-  void StepForwardReset(const systems::Context<T>& context,
-                        const systems::UnrestrictedUpdateEvent<T>&,
-                        systems::State<T>* state) const;
+  systems::EventStatus StepForwardReset(
+      const systems::Context<T>& context,
+      const systems::UnrestrictedUpdateEvent<T>&,
+      systems::State<T>* state) const;
 
   // Check when the foot hits the ramp (rolling uphill).  This occurs when
   //   θ = slope - the interleg angle (α).
@@ -144,9 +145,10 @@ class RimlessWheel final : public systems::LeafSystem<T> {
 
   // Handles the impact dynamics, including resetting theta to the angle of the
   // new stance leg, and updating the toe position by the step length.
-  void StepBackwardReset(const systems::Context<T>& context,
-                         const systems::UnrestrictedUpdateEvent<T>&,
-                         systems::State<T>* state) const;
+  systems::EventStatus StepBackwardReset(
+      const systems::Context<T>& context,
+      const systems::UnrestrictedUpdateEvent<T>&,
+      systems::State<T>* state) const;
 
   void MinimalStateOut(const systems::Context<T>& context,
                        RimlessWheelContinuousState<T>* output) const;

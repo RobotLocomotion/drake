@@ -30,7 +30,7 @@ class LogisticSystem : public LeafSystem<T> {
   }
 
   void set_publish_callback(
-      std::function<void(const Context<double>&)> callback) {
+      std::function<EventStatus(const Context<double>&)> callback) {
     publish_callback_ = callback;
   }
 
@@ -55,14 +55,16 @@ class LogisticSystem : public LeafSystem<T> {
     w->push_back(witness_.get());
   }
 
-  void InvokePublishCallback(const Context<T>& context,
-                             const PublishEvent<T>&) const {
-    if (this->publish_callback_ != nullptr) this->publish_callback_(context);
+  systems::EventStatus InvokePublishCallback(const Context<T>& context,
+                                             const PublishEvent<T>&) const {
+    if (this->publish_callback_ == nullptr)
+      return systems::EventStatus::DidNothing();
+    return this->publish_callback_(context);
   }
 
  private:
   std::unique_ptr<WitnessFunction<T>> witness_;
-  std::function<void(const Context<double>&)> publish_callback_{nullptr};
+  std::function<EventStatus(const Context<double>&)> publish_callback_{nullptr};
 
   T GetStateValue(const Context<T>& context) const {
     return context.get_continuous_state()[0];

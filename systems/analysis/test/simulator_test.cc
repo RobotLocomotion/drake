@@ -87,7 +87,7 @@ class StatelessDiagram : public Diagram<double> {
   }
 
   void set_publish_callback(
-      std::function<void(const Context<double>&)> callback) {
+      std::function<EventStatus(const Context<double>&)> callback) {
     stateless_->set_publish_callback(callback);
   }
 
@@ -110,7 +110,7 @@ class ExampleDiagram : public Diagram<double> {
   }
 
   void set_publish_callback(
-      std::function<void(const Context<double>&)> callback) {
+      std::function<EventStatus(const Context<double>&)> callback) {
     stateless_diag_->set_publish_callback(callback);
   }
 
@@ -182,6 +182,7 @@ GTEST_TEST(SimulatorTest, DiagramWitness) {
   system.set_publish_callback([&](const Context<double>& context) {
     num_publishes++;
     publish_time = context.get_time();
+    return EventStatus::Succeeded();
   });
 
   const double dt = 1;
@@ -246,9 +247,9 @@ class CompositeSystem : public analysis_test::LogisticSystem<double> {
     return context.get_time() - trigger_time_;
   }
 
-  void CallLogisticsCallback(const Context<double>& context,
-                            const PublishEvent<double>& event) const {
-    LogisticSystem<double>::InvokePublishCallback(context, event);
+  EventStatus CallLogisticsCallback(const Context<double>& context,
+                                    const PublishEvent<double>& event) const {
+    return LogisticSystem<double>::InvokePublishCallback(context, event);
   }
 
   const double trigger_time_;
@@ -274,7 +275,7 @@ class TwoWitnessStatelessSystem : public LeafSystem<double> {
   }
 
   void set_publish_callback(
-      std::function<void(const Context<double>&)> callback) {
+      std::function<EventStatus(const Context<double>&)> callback) {
     publish_callback_ = callback;
   }
 
@@ -286,10 +287,12 @@ class TwoWitnessStatelessSystem : public LeafSystem<double> {
     w->push_back(witness2_.get());
   }
 
-  void DoPublish(
+  EventStatus DoPublish(
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
-    if (publish_callback_ != nullptr) publish_callback_(context);
+    if (publish_callback_ == nullptr)
+      return EventStatus::DidNothing();
+    return publish_callback_(context);
   }
 
  private:
@@ -306,7 +309,7 @@ class TwoWitnessStatelessSystem : public LeafSystem<double> {
   std::unique_ptr<WitnessFunction<double>> witness1_, witness2_;
   const double offset1_;
   const double offset2_;
-  std::function<void(const Context<double>&)> publish_callback_{nullptr};
+  std::function<EventStatus(const Context<double>&)> publish_callback_{nullptr};
 };
 
 // Disables non-witness based publishing for witness function testing.
@@ -344,6 +347,7 @@ GTEST_TEST(SimulatorTest, FixedStepNoIsolation) {
   double publish_time = 0;
   system.set_publish_callback([&](const Context<double>& context) {
     publish_time = context.get_time();
+    return EventStatus::Succeeded();
   });
 
   const double dt = 1e-3;
@@ -377,6 +381,7 @@ GTEST_TEST(SimulatorTest, VariableStepIsolation) {
   double publish_time = 0;
   system.set_publish_callback([&](const Context<double>& context){
     publish_time = context.get_time();
+    return EventStatus::Succeeded();
   });
 
   Simulator<double> simulator(system);
@@ -419,6 +424,7 @@ GTEST_TEST(SimulatorTest, FixedStepIncreasingIsolationAccuracy) {
   double publish_time = 0;
   system.set_publish_callback([&](const Context<double>& context){
     publish_time = context.get_time();
+    return EventStatus::Succeeded();
   });
 
   const double dt = 10;
@@ -489,6 +495,7 @@ GTEST_TEST(SimulatorTest, MultipleWitnesses) {
       DRAKE_ASSERT(std::abs(logistic_eval - clock_eval) > tol);
       triggers.emplace_back(context.get_time(), witnesses.back());
     }
+    return EventStatus::Succeeded();
   });
 
   const double dt = 1e-3;
@@ -549,6 +556,7 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesIdentical) {
 
     // Indicate that the method has been called.
     published = true;
+    return EventStatus::Succeeded();
   });
 
   const double dt = 2;
@@ -588,6 +596,7 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesStaggered) {
   std::vector<double> publish_times;
   system.set_publish_callback([&](const Context<double> &context) {
     publish_times.push_back(context.get_time());
+    return EventStatus::Succeeded();
   });
 
   const double dt = 3;
@@ -625,6 +634,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegToZero) {
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
     num_publishes++;
+    return EventStatus::Succeeded();
   });
 
   const double dt = 1;
@@ -649,6 +659,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleZeroToPos) {
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
     num_publishes++;
+    return EventStatus::Succeeded();
   });
 
   const double dt = 1;
@@ -672,6 +683,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimplePositiveToNegative) {
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
     num_publishes++;
+    return EventStatus::Succeeded();
   });
 
   const double dt = 1;
@@ -695,6 +707,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegativeToPositive) {
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
     num_publishes++;
+    return EventStatus::Succeeded();
   });
 
   const double dt = 1;
@@ -718,6 +731,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountChallenging) {
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context){
     num_publishes++;
+    return EventStatus::Succeeded();
   });
 
   const double dt = 1e-6;
@@ -774,10 +788,11 @@ class PeriodicPublishWithTimedWitnessSystem final : public LeafSystem<double> {
     periodic_publish_time_ = context.get_time();
   }
 
-  void PublishWitness(const Context<double>& context,
+  EventStatus PublishWitness(const Context<double>& context,
       const PublishEvent<double>&) const {
-    ASSERT_LT(witness_publish_time_, 0.0);
+    EXPECT_LT(witness_publish_time_, 0.0);
     witness_publish_time_ = context.get_time();
+    return EventStatus::Succeeded();
   }
 };
 
@@ -1358,6 +1373,7 @@ class DiscreteInputAccumulator : public LeafSystem<double> {
                                            DiscreteValues<double>* x_0) {
           x_0->get_mutable_vector()[0] = 0.;
           result_.clear();
+          return EventStatus::Succeeded();
         }));
 
     // Output y_n using a Drake "publish" event (occurs at the end of step n).
@@ -1367,6 +1383,7 @@ class DiscreteInputAccumulator : public LeafSystem<double> {
             [this](const Context<double>& context,
                    const PublishEvent<double>&) {
               result_.push_back(get_x(context));  // y_n = x_n
+              return EventStatus::Succeeded();
             }));
 
     // Update to x_{n+1} (x_np1), using a Drake "discrete update" event (occurs
@@ -1379,6 +1396,7 @@ class DiscreteInputAccumulator : public LeafSystem<double> {
           const double x_n = get_x(context);
           const double u = get_input_port(0).Eval(context)[0];
           x_np1->get_mutable_vector()[0] = x_n + u;  // x_{n+1} = x_n + u(t)
+          return EventStatus::Succeeded();
         }));
   }
 
@@ -1453,12 +1471,13 @@ class UnrestrictedUpdater : public LeafSystem<double> {
     event.AddToComposite(event_info);
   }
 
-  void DoCalcUnrestrictedUpdate(
+  EventStatus DoCalcUnrestrictedUpdate(
       const Context<double>& context,
       const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
       State<double>* state) const override {
-    if (unrestricted_update_callback_ != nullptr)
-      unrestricted_update_callback_(context, state);
+    if (unrestricted_update_callback_ == nullptr)
+      return EventStatus::DidNothing();
+    return unrestricted_update_callback_(context, state);
   }
 
   void DoCalcTimeDerivatives(
@@ -1468,7 +1487,8 @@ class UnrestrictedUpdater : public LeafSystem<double> {
   }
 
   void set_unrestricted_update_callback(
-      std::function<void(const Context<double>&, State<double>*)> callback) {
+      std::function<EventStatus(const Context<double>&, State<double>*)>
+          callback) {
     unrestricted_update_callback_ = callback;
   }
 
@@ -1479,7 +1499,7 @@ class UnrestrictedUpdater : public LeafSystem<double> {
 
  private:
   const double t_upd_{0.0};
-  std::function<void(const Context<double>&, State<double>*)>
+  std::function<EventStatus(const Context<double>&, State<double>*)>
       unrestricted_update_callback_{nullptr};
   std::function<void(const Context<double>&)> derivatives_callback_{nullptr};
 };
@@ -1501,6 +1521,7 @@ GTEST_TEST(SimulatorTest, ExactUpdateTime) {
   unrest_upd.set_unrestricted_update_callback(
       [&updates](const Context<double>& context, State<double>* state) {
         updates.push_back(context.get_time());
+        return EventStatus::Succeeded();
       });
 
   // Simulate forward.
@@ -1635,17 +1656,21 @@ class MixedContinuousDiscreteSystem : public LeafSystem<double> {
 
   ~MixedContinuousDiscreteSystem() override {}
 
-  void DoCalcDiscreteVariableUpdates(
+  EventStatus DoCalcDiscreteVariableUpdates(
       const Context<double>& context,
       const std::vector<const DiscreteUpdateEvent<double>*>& events,
       DiscreteValues<double>* updates) const override {
-    if (update_callback_ != nullptr) update_callback_(context);
+    if (update_callback_ == nullptr)
+      return EventStatus::DidNothing();
+    return update_callback_(context);
   }
 
-  void DoPublish(
+  EventStatus DoPublish(
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
-    if (publish_callback_ != nullptr) publish_callback_(context);
+    if (publish_callback_ == nullptr)
+      return EventStatus::DidNothing();
+    return publish_callback_(context);
   }
 
   void DoCalcTimeDerivatives(
@@ -1655,12 +1680,12 @@ class MixedContinuousDiscreteSystem : public LeafSystem<double> {
   }
 
   void set_update_callback(
-      std::function<void(const Context<double>&)> callback) {
+      std::function<EventStatus(const Context<double>&)> callback) {
     update_callback_ = callback;
   }
 
   void set_publish_callback(
-      std::function<void(const Context<double>&)> callback) {
+      std::function<EventStatus(const Context<double>&)> callback) {
     publish_callback_ = callback;
   }
 
@@ -1675,8 +1700,8 @@ class MixedContinuousDiscreteSystem : public LeafSystem<double> {
  private:
   const double kUpdatePeriod{0.001};
   const double kPublishPeriod{0.0025};
-  std::function<void(const Context<double>&)> update_callback_{nullptr};
-  std::function<void(const Context<double>&)> publish_callback_{nullptr};
+  std::function<EventStatus(const Context<double>&)> update_callback_{nullptr};
+  std::function<EventStatus(const Context<double>&)> publish_callback_{nullptr};
   std::function<void(const Context<double>&)> derivatives_callback_{nullptr};
 };
 
@@ -1695,13 +1720,15 @@ GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
   MixedContinuousDiscreteSystem system;
   int num_disc_updates = 0;
   system.set_update_callback([&](const Context<double>& context) {
-    ASSERT_TRUE(CheckSampleTime(context, system.update_period()));
+    EXPECT_TRUE(CheckSampleTime(context, system.update_period()));
     num_disc_updates++;
+    return EventStatus::Succeeded();
   });
   int num_publishes = 0;
   system.set_publish_callback([&](const Context<double>& context) {
-    ASSERT_TRUE(CheckSampleTime(context, system.publish_period()));
+    EXPECT_TRUE(CheckSampleTime(context, system.publish_period()));
     num_publishes++;
+    return EventStatus::Succeeded();
   });
 
   Simulator<double> simulator(system);
@@ -1732,10 +1759,12 @@ GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
   system.set_publish_callback(
       [&events, &simulator](const Context<double>& context) {
         events[simulator.get_num_steps_taken()].push_back(kPublish);
+        return EventStatus::Succeeded();
       });
   system.set_update_callback(
       [&events, &simulator](const Context<double>& context) {
         events[simulator.get_num_steps_taken()].push_back(kUpdate);
+        return EventStatus::Succeeded();
       });
   system.set_derivatives_callback(
       [&events, &simulator](const Context<double>& context) {
@@ -2059,24 +2088,27 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
       derivatives->get_mutable_vector().SetAtIndex(0, 0.0);
     }
 
-    void DoCalcDiscreteVariableUpdates(
+    EventStatus DoCalcDiscreteVariableUpdates(
         const Context<double>& context,
         const std::vector<const DiscreteUpdateEvent<double>*>& events,
         DiscreteValues<double>* discrete_state) const override {
       discrete_update_times_.push_back(context.get_time());
+      return EventStatus::Succeeded();
     }
 
-    void DoCalcUnrestrictedUpdate(
+    EventStatus DoCalcUnrestrictedUpdate(
         const Context<double>& context,
         const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
         State<double>* state) const override {
       unrestricted_update_times_.push_back(context.get_time());
+      return EventStatus::Succeeded();
     }
 
-    void DoPublish(
+    EventStatus DoPublish(
         const Context<double>& context,
         const std::vector<const PublishEvent<double>*>& events) const override {
       publish_times_.push_back(context.get_time());
+      return EventStatus::Succeeded();
     }
 
     // A hack to test actions easily.
@@ -2167,15 +2199,16 @@ GTEST_TEST(SimulatorTest, Initialization) {
     bool get_unres_update_init() const { return unres_update_init_; }
 
    private:
-    void InitPublish(const Context<double>& context,
+    EventStatus InitPublish(const Context<double>& context,
                      const PublishEvent<double>& event) const {
       EXPECT_EQ(context.get_time(), 0);
       EXPECT_EQ(event.get_trigger_type(),
                 TriggerType::kInitialization);
       pub_init_ = true;
+      return EventStatus::Succeeded();
     }
 
-    void DoCalcDiscreteVariableUpdates(
+    EventStatus DoCalcDiscreteVariableUpdates(
         const Context<double>& context,
         const std::vector<const DiscreteUpdateEvent<double>*>& events,
         DiscreteValues<double>*) const final {
@@ -2187,9 +2220,10 @@ GTEST_TEST(SimulatorTest, Initialization) {
       } else {
         EXPECT_TRUE(dis_update_init_);
       }
+      return EventStatus::Succeeded();
     }
 
-    void DoCalcUnrestrictedUpdate(
+    EventStatus DoCalcUnrestrictedUpdate(
         const Context<double>& context,
         const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
         State<double>*) const final {
@@ -2201,6 +2235,7 @@ GTEST_TEST(SimulatorTest, Initialization) {
       } else {
         EXPECT_TRUE(unres_update_init_);
       }
+      return EventStatus::Succeeded();
     }
 
     mutable bool pub_init_{false};

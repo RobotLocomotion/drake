@@ -36,7 +36,7 @@ class StatelessSystem final : public LeafSystem<T> {
                            other.witness_->direction_type()) {}
 
   void set_publish_callback(
-      std::function<void(const Context<T>&)> callback) {
+      std::function<EventStatus(const Context<T>&)> callback) {
     publish_callback_ = callback;
   }
 
@@ -59,14 +59,16 @@ class StatelessSystem final : public LeafSystem<T> {
     return context.get_time() - offset_;
   }
 
-  void InvokePublishCallback(const Context<T>& context,
-                             const PublishEvent<T>&) const {
-    if (this->publish_callback_ != nullptr) this->publish_callback_(context);
+  EventStatus InvokePublishCallback(const Context<T>& context,
+                                    const PublishEvent<T>&) const {
+    if (this->publish_callback_ == nullptr)
+      return EventStatus::DidNothing();
+    return this->publish_callback_(context);
   }
 
   const double offset_;
   std::unique_ptr<WitnessFunction<T>> witness_;
-  std::function<void(const Context<T>&)> publish_callback_{nullptr};
+  std::function<EventStatus(const Context<T>&)> publish_callback_{nullptr};
 };
 
 }  // namespace analysis_test

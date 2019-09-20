@@ -49,24 +49,26 @@ class ForcedDispatchOverrideSystem : public LeafSystem<double> {
   }
 
  private:
-  void DoPublish(
+  EventStatus DoPublish(
       const Context<double>&,
       const std::vector<const PublishEvent<double>*>& events) const final {
     got_publish_event_ = (events.size() == 1);
     if (got_publish_event_)
       publish_event_trigger_type_ = events.front()->get_trigger_type();
+    return EventStatus::Succeeded();
   }
 
-  void DoCalcDiscreteVariableUpdates(
+  EventStatus DoCalcDiscreteVariableUpdates(
       const Context<double>&,
       const std::vector<const DiscreteUpdateEvent<double>*>& events,
       DiscreteValues<double>*) const final {
     got_discrete_update_event_ = (events.size() == 1);
     if (got_discrete_update_event_)
       discrete_update_event_trigger_type_ = events.front()->get_trigger_type();
+    return EventStatus::Succeeded();
   }
 
-  void DoCalcUnrestrictedUpdate(
+  EventStatus DoCalcUnrestrictedUpdate(
       const Context<double>&,
       const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
       State<double>*) const final {
@@ -75,6 +77,7 @@ class ForcedDispatchOverrideSystem : public LeafSystem<double> {
       unrestricted_update_event_trigger_type_ =
           events.front()->get_trigger_type();
     }
+    return EventStatus::Succeeded();
   }
 
   // Variables used to determine whether the handlers have been called with
@@ -319,22 +322,25 @@ class TestSystem : public LeafSystem<T> {
 
   // Publish callback function, which serves to test whether the appropriate
   // MakeWitnessFunction() interface works as promised.
-  void PublishCallback(const Context<T>&, const PublishEvent<T>&) const {
+  EventStatus PublishCallback(const Context<T>&, const PublishEvent<T>&) const {
     publish_callback_called_ = true;
+    return EventStatus::Succeeded();
   }
 
   // Discrete update callback function, which serves to test whether the
   // appropriate MakeWitnessFunction() interface works as promised.
-  void DiscreteUpdateCallback(const Context<T>&,
+  EventStatus DiscreteUpdateCallback(const Context<T>&,
       const DiscreteUpdateEvent<T>&, DiscreteValues<T>*) const {
     discrete_update_callback_called_ = true;
+    return EventStatus::Succeeded();
   }
 
   // Unrestricted update callback function, which serves to test whether the
   // appropriate MakeWitnessFunction() interface works as promised.
-  void UnrestrictedUpdateCallback(const Context<T>&,
+  EventStatus UnrestrictedUpdateCallback(const Context<T>&,
       const UnrestrictedUpdateEvent<T>&, State<T>*) const {
     unrestricted_update_callback_called_ = true;
+    return EventStatus::Succeeded();
   }
 
   // Indicators for which callbacks have been called, made mutable as
@@ -1599,6 +1605,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
         const Context<double>& c, const Event<double>&, State<double>* s) {
       s->SetFrom(*c.CloneState());
+      return EventStatus::Succeeded();
     };
 
     UnrestrictedUpdateEvent<double> event(TriggerType::kPeriodic, callback);
@@ -1619,6 +1626,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
       s->SetFrom(*c.CloneState());
       s->set_continuous_state(std::make_unique<ContinuousState<double>>(
           std::make_unique<BasicVector<double>>(4), 4, 0, 0));
+      return EventStatus::Succeeded();
     };
 
     UnrestrictedUpdateEvent<double> event(TriggerType::kPeriodic, callback);
@@ -1647,6 +1655,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
       disc_data.push_back(std::make_unique<BasicVector<double>>(1));
       s->set_discrete_state(
           std::make_unique<DiscreteValues<double>>(std::move(disc_data)));
+      return EventStatus::Succeeded();
     };
 
     UnrestrictedUpdateEvent<double> event(TriggerType::kPeriodic, callback);
@@ -1671,6 +1680,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
         const Context<double>& c, const Event<double>&, State<double>* s) {
       s->SetFrom(*c.CloneState());
       s->set_abstract_state(std::make_unique<AbstractValues>());
+      return EventStatus::Succeeded();
     };
 
     UnrestrictedUpdateEvent<double> event(TriggerType::kPeriodic, callback);
@@ -2044,7 +2054,7 @@ class TestTriggerSystem : public LeafSystem<double> {
  public:
   TestTriggerSystem() {}
 
-  void DoPublish(
+  EventStatus DoPublish(
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
     for (const PublishEvent<double>* event : events) {
@@ -2056,6 +2066,7 @@ class TestTriggerSystem : public LeafSystem<double> {
     }
 
     publish_count_++;
+    return EventStatus::Succeeded();
   }
 
   void DoGetPerStepEvents(
@@ -2087,15 +2098,18 @@ class TestTriggerSystem : public LeafSystem<double> {
 
  private:
   // Pass data by a shared_ptr<const stuff>.
-  void StringCallback(const Context<double>&, const PublishEvent<double>&,
-      std::shared_ptr<const std::string> data) const {
+  EventStatus StringCallback(const Context<double>&,
+                             const PublishEvent<double>&,
+                             std::shared_ptr<const std::string> data) const {
     string_data_.push_back(*data);
+    return EventStatus::Succeeded();
   }
 
   // Pass data by value.
-  void IntCallback(const Context<double>&, const PublishEvent<double>&,
+  EventStatus IntCallback(const Context<double>&, const PublishEvent<double>&,
       int data) const {
     int_data_.push_back(data);
+    return EventStatus::Succeeded();
   }
 
   // Stores data copied from the abstract values in handled events.
@@ -2519,13 +2533,14 @@ GTEST_TEST(InitializationTest, InitializationTest) {
     bool get_unres_update_init() const { return unres_update_init_; }
 
    private:
-    void InitPublish(const Context<double>&,
+    EventStatus InitPublish(const Context<double>&,
                      const PublishEvent<double>& event) const {
       EXPECT_EQ(event.get_trigger_type(), TriggerType::kInitialization);
       pub_init_ = true;
+      return EventStatus::Succeeded();
     }
 
-    void DoCalcDiscreteVariableUpdates(
+    EventStatus DoCalcDiscreteVariableUpdates(
         const Context<double>&,
         const std::vector<const DiscreteUpdateEvent<double>*>& events,
         DiscreteValues<double>*) const final {
@@ -2533,9 +2548,10 @@ GTEST_TEST(InitializationTest, InitializationTest) {
       EXPECT_EQ(events.front()->get_trigger_type(),
                 TriggerType::kInitialization);
       dis_update_init_ = true;
+      return EventStatus::Succeeded();
     }
 
-    void DoCalcUnrestrictedUpdate(
+    EventStatus DoCalcUnrestrictedUpdate(
         const Context<double>&,
         const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
         State<double>*) const final {
@@ -2543,6 +2559,7 @@ GTEST_TEST(InitializationTest, InitializationTest) {
       EXPECT_EQ(events.front()->get_trigger_type(),
                 TriggerType::kInitialization);
       unres_update_init_ = true;
+      return EventStatus::Succeeded();
     }
 
     mutable bool pub_init_{false};
