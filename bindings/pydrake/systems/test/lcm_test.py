@@ -131,7 +131,7 @@ class TestSystemsLcm(unittest.TestCase):
 
     def _fix_and_publish(self, dut, value):
         context = dut.CreateDefaultContext()
-        context.FixInputPort(0, value)
+        dut.get_input_port(0).FixValue(context, value)
         dut.Publish(context)
 
     def test_publisher(self):

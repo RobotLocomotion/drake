@@ -1124,7 +1124,8 @@ class TestPlant(unittest.TestCase):
         plant.Finalize()
         contact_results_to_lcm = ContactResultsToLcmSystem(plant)
         context = contact_results_to_lcm.CreateDefaultContext()
-        context.FixInputPort(0, AbstractValue.Make(ContactResults_[float]()))
+        contact_results_to_lcm.get_input_port(0).FixValue(
+            context, ContactResults_[float]())
         output = contact_results_to_lcm.AllocateOutput()
         contact_results_to_lcm.CalcOutput(context, output)
         result = output.get_data(0)

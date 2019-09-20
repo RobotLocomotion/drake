@@ -119,20 +119,14 @@ class TestPointCloudConcatenation(unittest.TestCase):
         self.context = diagram.GetMutableSubsystemContext(
             self.pc_concat, simulator.get_mutable_context())
 
-        self.context.FixInputPort(
-            self.pc_concat.GetInputPort("X_FCi_0").get_index(),
-            AbstractValue.Make(X_WP_0))
-        self.context.FixInputPort(
-            self.pc_concat.GetInputPort("X_FCi_1").get_index(),
-            AbstractValue.Make(X_WP_1))
+        self.pc_concat.GetInputPort("X_FCi_0").FixValue(self.context, X_WP_0)
+        self.pc_concat.GetInputPort("X_FCi_1").FixValue(self.context, X_WP_1)
 
     def test_no_rgb(self):
-        self.context.FixInputPort(
-            self.pc_concat.GetInputPort("point_cloud_CiSi_0").get_index(),
-            AbstractValue.Make(self.pc_no_rgbs))
-        self.context.FixInputPort(
-            self.pc_concat.GetInputPort("point_cloud_CiSi_1").get_index(),
-            AbstractValue.Make(self.pc_no_rgbs))
+        self.pc_concat.GetInputPort("point_cloud_CiSi_0").FixValue(
+            self.context, AbstractValue.Make(self.pc_no_rgbs))
+        self.pc_concat.GetInputPort("point_cloud_CiSi_1").FixValue(
+            self.context, AbstractValue.Make(self.pc_no_rgbs))
 
         fused_pc = self.pc_concat.GetOutputPort("point_cloud_FS").Eval(
             self.context)
@@ -153,12 +147,10 @@ class TestPointCloudConcatenation(unittest.TestCase):
             np.all(fused_pc.rgbs()[:, -1] == np.array([255, 255, 255])))
 
     def test_rgb(self):
-        self.context.FixInputPort(
-            self.pc_concat.GetInputPort("point_cloud_CiSi_0").get_index(),
-            AbstractValue.Make(self.pc))
-        self.context.FixInputPort(
-            self.pc_concat.GetInputPort("point_cloud_CiSi_1").get_index(),
-            AbstractValue.Make(self.pc))
+        self.pc_concat.GetInputPort("point_cloud_CiSi_0").FixValue(
+            self.context, self.pc)
+        self.pc_concat.GetInputPort("point_cloud_CiSi_1").FixValue(
+            self.context, self.pc)
 
         fused_pc = self.pc_concat.GetOutputPort("point_cloud_FS").Eval(
             self.context)
@@ -177,12 +169,10 @@ class TestPointCloudConcatenation(unittest.TestCase):
             np.all(fused_pc.rgbs()[:, -1] != np.array([255, 255, 255])))
 
     def test_mix_rgb(self):
-        self.context.FixInputPort(
-            self.pc_concat.GetInputPort("point_cloud_CiSi_0").get_index(),
-            AbstractValue.Make(self.pc))
-        self.context.FixInputPort(
-            self.pc_concat.GetInputPort("point_cloud_CiSi_1").get_index(),
-            AbstractValue.Make(self.pc_no_rgbs))
+        self.pc_concat.GetInputPort("point_cloud_CiSi_0").FixValue(
+            self.context, AbstractValue.Make(self.pc))
+        self.pc_concat.GetInputPort("point_cloud_CiSi_1").FixValue(
+            self.context, AbstractValue.Make(self.pc_no_rgbs))
 
         fused_pc = self.pc_concat.GetOutputPort("point_cloud_FS").Eval(
             self.context)

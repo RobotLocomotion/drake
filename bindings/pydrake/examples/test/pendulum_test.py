@@ -54,7 +54,7 @@ class TestPendulum(unittest.TestCase):
         # Set an input torque.
         input = PendulumInput()
         input.set_tau(1.)
-        context.FixInputPort(0, input)
+        pendulum.get_input_port().FixValue(context, input)
 
         # Set the initial state.
         state = context.get_mutable_continuous_state_vector()

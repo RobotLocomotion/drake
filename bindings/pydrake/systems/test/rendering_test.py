@@ -172,10 +172,10 @@ class TestRendering(unittest.TestCase):
         bundle.set_pose(0, Isometry3(q3, p3))
         bundle_value = AbstractValue.Make(bundle)
 
-        context.FixInputPort(0, pose1)
-        context.FixInputPort(1, pose2)
-        context.FixInputPort(2, velocity)
-        context.FixInputPort(3, bundle_value)
+        aggregator.get_input_port(0).FixValue(context, pose1)
+        aggregator.get_input_port(1).FixValue(context, pose2)
+        aggregator.get_input_port(2).FixValue(context, velocity)
+        aggregator.get_input_port(3).FixValue(context, bundle_value)
 
         aggregator.CalcOutput(context, output)
 
