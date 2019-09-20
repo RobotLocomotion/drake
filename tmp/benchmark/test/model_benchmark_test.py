@@ -39,6 +39,7 @@ def change_q_order(b):
         config.q = SemanticQ(names, q_old.get_values(names))
 
 
+@unittest.skipIf(sys.version_info.major == 2, "Don't care about Python 2")
 class TestModelBenchmark(unittest.TestCase):
     """Tests benchmark code and some simple stuff."""
     def check_error(self, err, path, type_):
