@@ -112,8 +112,13 @@ ComputeAndFactorImplicitTrapezoidIterationMatrix(
 // @param h the integration step size (> 0) to attempt.
 // @param xt0 the continuous state at t0.
 // @param g the particular implicit function to compute the root of.
-// @param [in, out] the starting guess for x(t0+h); the value for x(t0+h) on
-//        return.
+// @param compute_and_factor_iteration_matrix the function for computing and
+//        factorizing the iteration matrix.
+// @param xtplus_guess the starting guess for x(t0+h)
+// @param[out] the iteration matrix to be used for the particular integration
+//             scheme (implicit Euler, implicit trapezoid), which will be
+//             computed and factored, if necessary.
+// @param[out] the value for x(t0+h) on return.
 // @param trial the attempt for this approach (1-4). StepAbstract() uses more
 //        computationally expensive methods as the trial numbers increase.
 // @returns `true` if the method was successfully able to take an integration
@@ -129,8 +134,9 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
     const std::function<void(const MatrixX<T>&, const T&,
                              typename ImplicitIntegrator<T>::IterationMatrix*)>&
         compute_and_factor_iteration_matrix,
+    const VectorX<T>& xtplus_guess,
     typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
-    const VectorX<T>& xtplus_guess, VectorX<T>* xtplus, int trial) {
+    VectorX<T>* xtplus, int trial) {
   using std::max;
   using std::min;
 
@@ -239,7 +245,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
   // Try StepAbstract again. That method will freshen Jacobians and iteration
   // matrix factorizations as necessary.
   return StepAbstract(t0, h, xt0, g, compute_and_factor_iteration_matrix,
-                      iteration_matrix, xtplus_guess, xtplus, trial + 1);
+                      xtplus_guess, iteration_matrix, xtplus, trial + 1);
 }
 
 // Steps the system forward by a single step of at most h using the implicit
@@ -247,9 +253,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
 // @param t0 the time at the left end of the integration interval.
 // @param h the maximum time increment to step forward.
 // @param xt0 the continuous state at t0.
-// @param [in,out] xtplus a guess for the continuous state at the right end of
-//                 the integration interval (i.e., `x(t0+h)`), on entry, and
-//                 the computed value for `x(t0+h)` on successful return.
+// @param[out] the computed value for `x(t0+h)` on successful return.
 // @returns `true` if the step of size `h` was successful, `false` otherwise.
 // @note The time and continuous state in the context are indeterminate upon
 //       exit.
@@ -275,7 +279,7 @@ bool ImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0, const T& h,
   // Attempt the step.
   return StepAbstract(t0, h, xt0, g,
                       ComputeAndFactorImplicitEulerIterationMatrix,
-                      &ie_iteration_matrix_, xtplus_guess, &*xtplus);
+                      xtplus_guess, &ie_iteration_matrix_, &*xtplus);
 }
 
 // Steps forward by a single step of `h` using the implicit trapezoid
@@ -283,10 +287,8 @@ bool ImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0, const T& h,
 // @param t0 the time at the left end of the integration interval.
 // @param h the maximum time increment to step forward.
 // @param dx0 the time derivatives computed at time and state (t0, xt0).
-// @param [in,out] xtplus the continuous state at the right end of the
-//                 integration (i.e., x(t0+h)) computed by implicit Euler
-//                 on entry; x(t0+h) computed by the implicit trapezoid method
-//                 on successful return.
+// @param[out] x(t0+h) computed by the implicit trapezoid method on successful
+//             return.
 // @returns `true` if the step was successful and `false` otherwise.
 // @note The time and continuous state in the context are indeterminate upon
 //       exit.
@@ -324,7 +326,7 @@ bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(
   // Attempt to step.
   bool success = StepAbstract(t0, h, xt0, g,
                               ComputeAndFactorImplicitTrapezoidIterationMatrix,
-                              &itr_iteration_matrix_, xtplus_ie, xtplus);
+                              xtplus_ie, &itr_iteration_matrix_, xtplus);
 
   // Move statistics to implicit trapezoid-specific.
   num_err_est_jacobian_reforms_ +=

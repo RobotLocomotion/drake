@@ -136,9 +136,9 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                         void(const MatrixX<T>&, const T&,
                              typename ImplicitIntegrator<T>::IterationMatrix*)>&
                         compute_and_factor_iteration_matrix,
+                    const VectorX<T>& xtplus_guess,
                     typename ImplicitIntegrator<T>::IterationMatrix*,
-                    const VectorX<T>& xtplus_guess, VectorX<T>* xtplus,
-                    int trial = 1);
+                    VectorX<T>* xtplus, int trial = 1);
   bool DoImplicitIntegratorStep(const T& h) final;
   bool StepImplicitEuler(const T& t0, const T& h, const VectorX<T>& xt0,
       VectorX<T>* xtplus);
