@@ -65,8 +65,11 @@ struct CallbackData {
   std::vector<ContactSurface<T>>& surfaces{};
 };
 
-/** Given an object_ptr whose geometry is a box, create a coarse surface mesh for
- that box.  */
+// TODO(SeanCurtis-TRI): Remove these two functions (MakeBoxMeshFromFcl and
+//  MakeSphereFromFcl) when the real infrastructure is in place.
+
+/** Given an object_ptr whose geometry is a box, create a coarse surface mesh
+ for that box.  */
 SurfaceMesh<double> MakeBoxMeshFromFcl(fcl::CollisionObjectd* object_ptr) {
   const fcl::Boxd* box_ptr = dynamic_cast<const fcl::Boxd*>(
       object_ptr->collisionGeometry().get());
@@ -91,10 +94,11 @@ SoftGeometry MakeSphereFromFcl(
   DRAKE_DEMAND(sphere_ptr != nullptr);
   const double r = sphere_ptr->radius;
   Sphere sphere(r);
-  // Edge length is the chord length around the equator where each span is 45
-  // degrees.
+  // We arbitrarly choose to a coarse sphere approximation that has eight edges
+  // around the equator. The length of such an edge, is the length of the chord
+  // that spans 45 degrees (for a circle of radius r).
   SoftGeometry geometry;
-  const double edge_length = 4 * r * M_PI / 16;
+  const double edge_length = 2 * r * std::sin(M_PI / 8.0);
   geometry.mesh = std::make_unique<VolumeMesh<double>>(
       MakeSphereVolumeMesh<double>(sphere, edge_length));
 
@@ -102,7 +106,7 @@ SoftGeometry MakeSphereFromFcl(
   for (const auto& v : geometry.mesh->vertices()) {
     const Eigen::Vector3d& p_MV = v.r_MV();
     const double p_MV_len = p_MV.norm();
-    p0_values.push_back(1.0 - p_MV_len / r);
+    p0_values.push_back(1e8 * (1.0 - p_MV_len / r));
   }
   geometry.p0 = std::make_unique<VolumeMeshFieldLinear<double, double>>(
       "p0", move(p0_values), geometry.mesh.get());
@@ -134,6 +138,9 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
       encoding_a.encoding(), encoding_b.encoding());
 
   if (can_collide) {
+    // TODO(SeanCurtis-TRI): This logic will be replaced by real logic that
+    //  makes more complex decisions about shapes rather than all of the hard-
+    //  coded hacks.
     fcl::NODE_TYPE a_type = object_A_ptr->getNodeType();
     fcl::NODE_TYPE b_type = object_B_ptr->getNodeType();
 
