@@ -1,4 +1,4 @@
-#include "drake/geometry/proximity/make_unit_sphere_mesh.h"
+#include "drake/geometry/proximity/make_sphere_mesh.h"
 
 #include <algorithm>
 #include <vector>
@@ -220,22 +220,12 @@ GTEST_TEST(MakeSphereVolumeMesh, ConfirmEdgeLength) {
               });
 
     // The number of equator vertices should be 4 * 2^L. However, we don't know
-    // a priori what L is. But what we *know* is that such a number, in binary,
-    // will be 0..010...000. I.e., there should be a single set bit. So, we're
-    // going to count all the 1-bits in `v_count` and confirm there is exactly
-    // one.
+    // a priori what L is. So, we infer L from the vertex count and confirm that
+    // it produces the observed vertex count.
     const int v_count = static_cast<int>(equator_vertices.size());
-    // Confirm divisible by 4 -- least significant 2 bits must be zero.
-    EXPECT_EQ(v_count & 0x3, 0)
-        << "Equator count not divisible by 4 for edge_length: " << edge_length;
-    const int bit_count = static_cast<int>(sizeof(int)) * 8 - 1;
-    int one_count = 0;
-    for (int i = 2; i < bit_count; ++i) {
-      one_count += (v_count >> i) & 0x1;
-    }
-    EXPECT_EQ(one_count, 1)
-              << "Equator count not of the form 4 * 2 ^ L for edge_length: "
-              << edge_length;
+    EXPECT_GE(v_count, 4);
+    const int apparent_L = static_cast<int>(std::log2(v_count / 4));
+    EXPECT_EQ(4.0 * std::pow(2.0, apparent_L), v_count);
 
     // Given radial ordering of vertices, confirm that the edge between two
     // sequential vertices does not exceed the target edge_length.
@@ -258,6 +248,16 @@ GTEST_TEST(MakeSphereVolumeMesh, ConfirmEdgeLength) {
     previous_tet_count = current_tet_count;
     test_equator(mesh, edge_length);
   }
+}
+
+// Confirms that edge length larger than sphere diameter still produces the
+// octohedron.
+GTEST_TEST(MakeSphereVolumeMesh, MassiveEdgeLength) {
+  const Sphere sphere(1.5);
+  const double edge_length = 3 * sphere.get_radius();
+  VolumeMesh<double> mesh = MakeSphereVolumeMesh<double>(sphere, edge_length);
+  EXPECT_EQ(mesh.num_elements(), 8);
+  EXPECT_EQ(mesh.num_vertices(), 7);
 }
 
 }  // namespace

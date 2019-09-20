@@ -11,10 +11,6 @@
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
 
-// TODO(SeanCurtis-TRI): With the inclusion of MakeSphereVolumeMesh() this
-//  should probably be renamed `make_sphere_mesh.h` to reflect the more general
-//  case.
-
 namespace drake {
 namespace geometry {
 namespace internal {
@@ -387,18 +383,19 @@ VolumeMesh<T> MakeUnitSphereMesh(int refinement_level) {
  mesh is guaranteed that edge lengths along the *equator* of the sphere will be
  less than or equal to the given `edge_length`.
 
- The resolution fo the final mesh will change discontinuously. Small changes to
+ The resolution of the final mesh will change discontinuously. Small changes to
  the `edge_length` parameter will likely produce the same mesh. However, in the
  current implementation, cutting the `edge_length` in half _will_ increase
  the number of tetrahdra.
 
  Ultimately, successively smaller values of `edge_length` will no longer change
  the output mesh. This algorithm will not produce a tetrahedral mesh with more
- than approximately 100 million tetrahedra.
+ than approximately 100 million tetrahedra. Similarly, for arbitrarily large
+ values of `edge_length`, the coarsest possible mesh is a tesselated octohedron.
 
  @param sphere          The sphere for which a mesh is created.
- @param edge_length     The characteristic edge length for the sphere (same
-                        units of length as `sphere.radius()`).
+ @param edge_length     The positive characteristic edge length for the sphere
+                        (same units of length as `sphere.radius()`).
  @return The volume mesh for the given sphere.
  @tparam T  The Eigen-compatible scalar for representing the mesh vertex
             positions.
@@ -435,10 +432,14 @@ VolumeMesh<T> MakeSphereVolumeMesh(const Sphere& sphere, double edge_length) {
        ℒ = log₂(π / 2⋅sin⁻¹(e/2⋅r)) - 1
        ℒ = ⌈log₂(π / sin⁻¹(e/2⋅r))⌉ - 2
    */
+  DRAKE_DEMAND(edge_length > 0.0);
   const double r = sphere.get_radius();
+  // Make sure the arcsin doesn't blow up.
+  edge_length = std::min(edge_length, 2.0 * r);
   const int L = std::max(
-      0, static_cast<int>(
-             std::ceil(std::log2(M_PI / asin(edge_length / (2.0 * r)))) - 2));
+      0,
+      static_cast<int>(
+          std::ceil(std::log2(M_PI / std::asin(edge_length / (2.0 * r)))) - 2));
   // TODO(SeanCurtis-TRI): Consider pushing the radius into the sphere creation
   //  so that copying vertices and tets is no longer necessary.
   // Note: With refinement L = 8, we'd get 8 ^(8 + 1) = 134M tetrahedra,
