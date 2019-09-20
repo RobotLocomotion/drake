@@ -192,6 +192,74 @@ GTEST_TEST(MakeSphereMesh, SplitOctohedron) {
   }
 }
 
+// Confirms that for the given edge length, that the resulting sphere mesh's
+// equator edge length is at or below the specified edge length.
+GTEST_TEST(MakeSphereVolumeMesh, ConfirmEdgeLength) {
+  const double r = 1.5;
+  const double r_squared = r * r;
+  Sphere sphere(r);
+  auto test_equator = [r_squared](const VolumeMesh<double>& mesh,
+                                  double edge_length) {
+    // We arbitrarily pick the z = 0 equator (although x = 0 or y = 0 would work
+    // equally well).
+    std::vector<Vector3d> equator_vertices;
+    for (const auto& vertex : mesh.vertices()) {
+      const Vector3d& p_MV = vertex.r_MV();
+      const double d_squared = p_MV(0) * p_MV(0) + p_MV(1) * p_MV(1);
+      if (p_MV(2) == 0.0 && d_squared >= r_squared - 1e-14) {
+        equator_vertices.push_back(p_MV);
+      }
+    }
+    // Sort the vertices according to radial angle - we rely on the algorithm
+    // producing strictly unique vertices (no duplicates).
+    std::sort(equator_vertices.begin(), equator_vertices.end(),
+              [](const auto& v1, const auto& v2) {
+                const double theta1 = std::atan2(v1(1), v1(0));
+                const double theta2 = std::atan2(v2(1), v2(0));
+                return theta1 < theta2;
+              });
+
+    // The number of equator vertices should be 4 * 2^L. However, we don't know
+    // a priori what L is. But what we *know* is that such a number, in binary,
+    // will be 0..010...000. I.e., there should be a single set bit. So, we're
+    // going to count all the 1-bits in `v_count` and confirm there is exactly
+    // one.
+    const int v_count = static_cast<int>(equator_vertices.size());
+    // Confirm divisible by 4 -- least significant 2 bits must be zero.
+    EXPECT_EQ(v_count & 0x3, 0)
+        << "Equator count not divisible by 4 for edge_length: " << edge_length;
+    const int bit_count = static_cast<int>(sizeof(int)) * 8 - 1;
+    int one_count = 0;
+    for (int i = 2; i < bit_count; ++i) {
+      one_count += (v_count >> i) & 0x1;
+    }
+    EXPECT_EQ(one_count, 1)
+              << "Equator count not of the form 4 * 2 ^ L for edge_length: "
+              << edge_length;
+
+    // Given radial ordering of vertices, confirm that the edge between two
+    // sequential vertices does not exceed the target edge_length.
+    for (int i = 0; i < v_count; ++i) {
+      const double chord_length =
+          (equator_vertices[i] - equator_vertices[(i + 1) % v_count]).norm();
+      ASSERT_LE(chord_length, edge_length);
+    }
+  };
+
+  // Note: at level zero, the longest edge lengths are sqrt(2) * r. So, we pick
+  // a length slightly longer (1.5 * r) to test the base case. After that simply
+  // values that decrease by half. We also confirm tet count increases when we
+  // cut things in half.
+  int previous_tet_count = 0;
+  for (const double edge_length : {1.5 * r, r, r / 2, r / 4}) {
+    VolumeMesh<double> mesh = MakeSphereVolumeMesh<double>(sphere, edge_length);
+    int current_tet_count = mesh.num_elements();
+    EXPECT_LT(previous_tet_count, current_tet_count);
+    previous_tet_count = current_tet_count;
+    test_equator(mesh, edge_length);
+  }
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry
