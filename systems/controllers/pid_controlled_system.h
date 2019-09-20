@@ -76,8 +76,7 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] state_output_port_index identifies the output port on the
   /// plant that contains the (full) state information.
   ///
-  /// @exclude_from_pydrake_mkdoc{This overload's signatures is too ambiguous
-  /// TODO(mpetersen94): Remove once #12016 is resolved.}
+  /// @pydrake_mkdoc_identifier{5args_double_gains}
   PidControlledSystem(std::unique_ptr<System<T>> plant, double Kp, double Ki,
                       double Kd, int state_output_port_index = 0);
 
@@ -90,6 +89,8 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] Kd the derivative vector constant.
   /// @param[in] state_output_port_index identifies the output port on the
   /// plant that contains the (full) state information.
+  ///
+  /// @pydrake_mkdoc_identifier{5args_vector_gains}
   PidControlledSystem(std::unique_ptr<System<T>> plant,
                       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
                       const Eigen::VectorXd& Kd,
@@ -109,8 +110,7 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] state_output_port_index identifies the output port on the
   /// plant that contains the (full) state information.
   ///
-  /// @exclude_from_pydrake_mkdoc{This overload's signatures is too ambiguous
-  /// TODO(mpetersen94): Remove once #12016 is resolved.}
+  /// @pydrake_mkdoc_identifier{6args_double_gains}
   PidControlledSystem(std::unique_ptr<System<T>> plant,
                       const MatrixX<double>& feedback_selector, double Kp,
                       double Ki, double Kd, int state_output_port_index = 0);
@@ -128,6 +128,8 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] Kd the derivative vector constant.
   /// @param[in] state_output_port_index identifies the output port on the
   /// plant that contains the (full) state information.
+  ///
+  /// @pydrake_mkdoc_identifier{6args_vector_gains}
   PidControlledSystem(std::unique_ptr<System<T>> plant,
                       const MatrixX<double>& feedback_selector,
                       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
