@@ -330,10 +330,11 @@ class MeshcatVisualizer(LeafSystem):
                 # draw frames
                 robot_name, link_name = self._parse_name(frame_name)
                 if (robot_name in self.frames_to_draw.keys() and
-                    link_name in self.frames_to_draw[robot_name]):
+                        link_name in self.frames_to_draw[robot_name]):
                     prefix = (self.prefix + '/' + source_name + '/' +
                         str(link.robot_num) + '/' + frame_name)
-                    AddTriad(self.vis,
+                    AddTriad(
+                        self.vis,
                         name="frame",
                         prefix=prefix,
                         length=self.axis_length,
