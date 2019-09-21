@@ -314,7 +314,7 @@ GTEST_TEST(ManipulationStationTest, RegisterRgbdCameraTest) {
     auto set_default_camera_poses = [&default_poses]() {
       default_poses.emplace(
           "0", math::RigidTransform<double>(
-                   math::RollPitchYaw<double>(2.549607, 1.357609, 2 .971679),
+                   math::RollPitchYaw<double>(2.549607, 1.357609, 2.971679),
                    Eigen::Vector3d(-0.228895, -0.452176, 0.486308)));
 
       default_poses.emplace(
