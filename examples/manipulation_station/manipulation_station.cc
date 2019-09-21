@@ -112,16 +112,16 @@ SpatialInertia<double> MakeCompositeGripperInertia(
 // TODO(russt): Get these from SDF instead of having them hard-coded (#10022).
 void get_camera_poses(std::map<std::string, RigidTransform<double>>* pose_map) {
   pose_map->emplace("0", RigidTransform<double>(
-                             RollPitchYaw<double>(1.69101, 0.176488, 0.432721),
-                             Vector3d(-0.233066, -0.451461, 0.466761)));
+                             RollPitchYaw<double>(2.549607, 1.357609, 2.971679),
+                             Vector3d(-0.228895, -0.452176,  0.486308)));
 
   pose_map->emplace("1", RigidTransform<double>(
-                             RollPitchYaw<double>(-1.68974, 0.20245, -0.706783),
-                             Vector3d(-0.197236, 0.468471, 0.436499)));
+                             RollPitchYaw<double>(2.617427, -1.336404, -0.170522),
+                             Vector3d(-0.201813,  0.469259,  0.417045)));
 
   pose_map->emplace("2", RigidTransform<double>(
-                             RollPitchYaw<double>(0.0438918, 1.03776, -3.13612),
-                             Vector3d(0.786905, -0.0284378, 1.04287)));
+                             RollPitchYaw<double>(-2.608978, 0.022298, 1.538460),
+                             Vector3d(0.786258, -0.048422,  1.043315)));
 }
 
 // Load a SDF model and weld it to the MultibodyPlant.
