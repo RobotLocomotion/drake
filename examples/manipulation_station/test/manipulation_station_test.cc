@@ -312,19 +312,20 @@ GTEST_TEST(ManipulationStationTest, RegisterRgbdCameraTest) {
     std::map<std::string, math::RigidTransform<double>> default_poses;
 
     auto set_default_camera_poses = [&default_poses]() {
-      default_poses.emplace("0", RigidTransform<double>(
-                             RollPitchYaw<double>(2.549607, 1.357609, 2.971679),
-                             Vector3d(-0.228895, -0.452176, 0.486308)));
+      default_poses.emplace(
+          "0", math::RigidTransform<double>(
+                   math::RollPitchYaw<double>(2.549607, 1.357609, 2 .971679),
+                   Eigen::Vector3d(-0.228895, -0.452176, 0.486308)));
 
-      default_poses.emplace("1",
-                    RigidTransform<double>(
-                        RollPitchYaw<double>(2.617427, -1.336404, -0.170522),
-                        Vector3d(-0.201813, 0.469259, 0.417045)));
+      default_poses.emplace(
+          "1", math::RigidTransform<double>(
+                   math::RollPitchYaw<double>(2.617427, -1.336404, -0.170522),
+                   Eigen::Vector3d(-0.201813, 0.469259, 0.417045)));
 
-      default_poses.emplace("2",
-                    RigidTransform<double>(
-                        RollPitchYaw<double>(-2.608978, 0.022298, 1.538460),
-                        Vector3d(0.786258, -0.048422, 1.043315)));
+      default_poses.emplace(
+          "2", math::RigidTransform<double>(
+                   math::RollPitchYaw<double>(-2.608978, 0.022298, 1.538460),
+                   Eigen::Vector3d(0.786258, -0.048422, 1.043315)));
     };
 
     ManipulationStation<double> dut;
