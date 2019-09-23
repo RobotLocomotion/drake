@@ -17,8 +17,15 @@
 // to `-Wall`, which generates warnings on Pybind11's operator-overloading idiom
 // that is using py::self (example: `def(py::self + py::self)`).
 // Here, we suppress the warning using `#pragma diagnostic`.
-#if (__APPLE__) && (__clang__) && (__clang_major__ >= 10) && \
-    (__clang_minor__ >= 0) && (__clang_patchlevel__ >= 1)
+//
+// The following condition checks if the Apple LLVM version is either >= 11 or
+// exactly 10.0.1 because 10.0.1 is the last release in Apple LLVM 10
+// family. See https://gist.github.com/yamaya/2924292#file-xcode-clang-vers for
+// information regarding the Apple LLVM versions.
+#if (__APPLE__) && (__clang__) &&                             \
+    ((__clang_major__ >= 11) ||                               \
+        ((__clang_major__ == 10) && (__clang_minor__ == 0) && \
+            (__clang_patchlevel__ == 1)))
 #pragma GCC diagnostic ignored "-Wself-assign-overloaded"
 #endif
 
