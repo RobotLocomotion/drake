@@ -1,6 +1,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 
 #include <algorithm>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <set>
@@ -1782,12 +1783,24 @@ void MultibodyPlant<T>::CalcGeneralizedAccelerationsContinuous(
   std::vector<SpatialForce<T>>& F_BBo_W_array = forces.mutable_body_forces();
   VectorX<T>& tau_array = forces.mutable_generalized_forces();
 
-  // Compute contact forces on each body by penalty method.
-  if (num_collision_geometries() > 0) {
-    const std::vector<PenetrationAsPointPair<T>>& point_pairs =
-        EvalPointPairPenetrations(context);
-    CalcAndAddContactForcesByPenaltyMethod(context, pc, vc, point_pairs,
-                                           &F_BBo_W_array);
+  if (contact_model_ == ContactModel::kPointContactOnly) {
+    // Compute contact forces on each body by penalty method.
+    if (num_collision_geometries() > 0) {
+      const std::vector<PenetrationAsPointPair<T>>& point_pairs =
+          EvalPointPairPenetrations(context);
+      CalcAndAddContactForcesByPenaltyMethod(context, pc, vc, point_pairs,
+                                             &F_BBo_W_array);
+    }
+  } else if (contact_model_ == ContactModel::kHydroelasticsOnly) {
+    // Compute contact forces using hydroelastics.
+    const std::vector<SpatialForce<T>>& Fhydro_BBo_W =
+        EvalHydroelasticContactForces(context);
+    std::transform(F_BBo_W_array.begin(), F_BBo_W_array.end(),
+                   Fhydro_BBo_W.begin(),
+                   F_BBo_W_array.begin(),
+                   std::plus<SpatialForce<T>>());
+  } else {
+    DRAKE_UNREACHABLE();
   }
 
   internal_tree().CalcInverseDynamics(
