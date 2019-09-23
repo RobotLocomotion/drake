@@ -18,6 +18,7 @@
 #include "drake/common/random.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/hydroelastics/hydroelastic_engine.h"
 #include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
@@ -35,6 +36,19 @@
 
 namespace drake {
 namespace multibody {
+
+// TODO(amcastro-tri): Add a section on contact models in
+// contact_model_doxygen.h.
+/// Enumeration for contact model options.
+enum class ContactModel {
+  /// Contact forces are computed using the Hydroelastic model. Conctact between
+  /// unsupported geometries will cause a runtime exception.
+  kHydroelasticsOnly,
+
+  /// Contact forces are computed using a point contact model, see @ref
+  /// point_contact_approximation "Numerical Approximation of Point Contact".
+  kPointContactOnly
+};
 
 /// @cond
 // Helper macro to throw an exception within methods that should not be called
@@ -234,6 +248,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     default_coulomb_friction_ = other.default_coulomb_friction_;
     visual_geometries_ = other.visual_geometries_;
     collision_geometries_ = other.collision_geometries_;
+    contact_model_ = other.contact_model_;
     if (geometry_source_is_registered())
       DeclareSceneGraphPorts();
 
@@ -242,6 +257,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     // internals (and not the MultibodyTree).
     FinalizePlantOnly();
   }
+
+  /// Sets the contact model to be used by `this` %MultibodyPlant, see
+  /// ContactModel for available options.
+  /// The default contact model is ContactModel::kPointContactOnly.
+  /// @throws std::exception iff called post-finalize.
+  void set_contact_model(ContactModel model);
+
+  /// Returns the model used for contact. See documentation for ContactModel.
+  ContactModel get_contact_model() const;
 
   /// Returns the number of Frame objects in this model.
   /// Frames include body frames associated with each of the bodies,
@@ -2662,7 +2686,76 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return default_coulomb_friction_[collision_index];
   }
 
-  /// Specifies the `elastic_modulus` for a geometry identified by its `id`.
+  /// @anchor mbp_hydroelastic_materials_properties
+  /// @name Hydroelastic model material properties
+  ///
+  /// To understand how material properties enter into the modeling of contact
+  /// traction in the hydroelastic model, the user is referred to [R. Elandt
+  /// 2019] for details.
+  /// For brevity, here we limit ourselves to state the relationship between the
+  /// material properties and the computation of the normal traction or
+  /// "pressure" `p(x)` at each point `x` in the contact patch.
+  /// Given two bodies A and B, with elastic moduli `Eᵃ` and `Eᵇ` respectively
+  /// and dissipation `dᵃ` and `dᵇ` respectively, we define the effective
+  /// material properties of the pair according to: <pre>
+  ///   E = Eᵃ⋅Eᵇ/(Eᵃ + Eᵇ),
+  ///   d = E/Eᵃ⋅dᵃ + E/Eᵇ⋅dᵇ = Eᵇ/(Eᵃ+Eᵇ)⋅dᵃ + Eᵃ/(Eᵃ+Eᵇ)⋅dᵇ
+  /// </pre>
+  /// The effective modulus of elasticity is computed in accordance with the
+  /// Hertz theory of contact. Dissipation is weighted in accordance with the
+  /// fact that the softer material will deform more and faster and thus the
+  /// softer material dissipation is given more importance.
+  /// The elastic modulus and dissipation can be specified with
+  /// set_elastic_modulus() and set_hunt_crossley_dissipation()
+  /// respectively. Elastic modulus has units of pressure, i.e. `Pa (N/m²)`. We
+  /// use a dissipation model inspired by the model in [Hunt and Crossley,
+  /// 1975], parameterized by a dissipation constant with units of inverse of
+  /// velocity, i.e. `s/m`. With the effective properties of the pair defined as
+  /// above, the hydroelastic model pressure field is computed according to:
+  /// <pre>
+  ///   p(x) = E⋅ε(x)⋅(1 - d⋅vₙ(x))₊
+  /// </pre>
+  /// where we defined the effective strain: <pre>
+  ///   ε(x) = εᵃ(x) + εᵇ(x)
+  /// </pre>
+  /// which relates to the quasi-static pressure field p₀(x) (i.e. when velocity
+  /// is neglected) by: <pre>
+  ///   p₀(x) = E⋅ε(x) = Eᵃ⋅εᵃ(x) = Eᵇ⋅εᵇ(x)
+  /// </pre>
+  /// that is, the hydroelastic model computes the contact patch assuming
+  /// quasi-static equilibrium.
+  /// The separation speed `vₙ(x)` is computed as the component in the
+  /// direction of the contact surface's normal `n̂(x)` of the relative velocity
+  /// between points `Ax` and `Bx` at point `x` instantaneously moving with body
+  /// frames A and B respectively, i.e. `vₙ(x) = ᴬˣvᴮˣ⋅n̂(x)`, where the normal
+  /// `n̂(x)` points from body A into body B.
+  ///
+  /// [Elandt 2019] R. Elandt, E. Drumwright, M. Sherman, and A. Ruina. A
+  ///   pressure field model for fast, robust approximation of net contact force
+  ///   and moment between nominally rigid objects. Proc. IEEE/RSJ Intl. Conf.
+  ///   on Intelligent Robots and Systems (IROS), 2019.
+  /// [Hunt and Crossley 1975] Hunt, KH and Crossley, FRE, 1975. Coefficient
+  ///   of restitution interpreted as damping in vibroimpact. Journal of Applied
+  ///   Mechanics, vol. 42, pp. 440–445.
+  /// @{
+
+  /// Specifies the `elastic_modulus` E for a geometry identified by its `id`.
+  /// `elastic_modulus` must be specified with units of Pa (N/m²). The elastic
+  /// modulus is often estimated based on the Young's modulus of the material
+  /// though in the hydroelastic model it represents an effective elastic
+  /// property. For instance, [R. Elandt 2019] chooses to use `E = G`, with `G`
+  /// the P-wave elastic modulus `G = (1-ν)/(1+ν)/(1-2ν)E`, with ν the Poisson
+  /// ratio, consistent with the theory of layered solids in which plane
+  /// sections remain planar after compression. Another possibly is to specify
+  /// `E = E*`, with `E*` the effective elastic modulus given by the Hertz
+  /// theory of contact, `E* = E/(1-ν²)`. In all of these cases a sound
+  /// estimation of `elastic_modulus` starts with the Young's modulus of the
+  /// material. See
+  /// @ref mbp_hydroelastic_materials_properties "Hydroelastic model material
+  /// properties" for further details. By default geometries are assumed to be
+  /// rigid, i.e. with an infinite `elastic_modulus`.
+  ///
+  /// @throws std::exception if `elastic_modulus` is negative or zero.
   /// @throws std::exception if `id` does not correspond to a collision
   /// geometry previously registered with this model.
   /// @throws std::exception if called post-finalize.
@@ -2670,15 +2763,42 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     // It must not be finalized so that member_scene_graph() is valid.
     DRAKE_MBP_THROW_IF_FINALIZED();
     DRAKE_THROW_UNLESS(is_collision_geometry(id));
-
+    DRAKE_THROW_UNLESS(elastic_modulus > 0);
     const geometry::ProximityProperties* old_props =
         member_scene_graph().model_inspector().GetProximityProperties(id);
     DRAKE_DEMAND(old_props);
     geometry::ProximityProperties new_props(*old_props);
-    new_props.AddProperty("hydroelastics", "elastic modulus", elastic_modulus);
+    new_props.AddProperty("material", "elastic_modulus", elastic_modulus);
     member_scene_graph().AssignRole(*get_source_id(), id, new_props,
                                     geometry::RoleAssign::kReplace);
   }
+
+  /// Specifies the Hunt & Crossley dissipation coefficient for the
+  /// hydroelastic model. It has units of `s/m`, inverse of velocity.
+  /// See @ref mbp_hydroelastic_materials_properties "Hydroelastic model
+  /// material properties" for further details.
+  /// By default dissipation is zero.
+  ///
+  /// @throws std::exception if `dissipation` is negative (it can be zero).
+  /// @throws std::exception if `id` does not correspond to a collision
+  /// geometry previously registered with this model.
+  /// @throws std::exception if called post-finalize.
+  void set_hunt_crossley_dissipation(geometry::GeometryId id,
+                                     double dissipation) {
+    // It must not be finalized so that member_scene_graph() is valid.
+    DRAKE_MBP_THROW_IF_FINALIZED();
+    DRAKE_DEMAND(is_collision_geometry(id));
+    DRAKE_THROW_UNLESS(dissipation >= 0);
+    const geometry::ProximityProperties* old_props =
+        member_scene_graph().model_inspector().GetProximityProperties(id);
+    DRAKE_DEMAND(old_props);
+    geometry::ProximityProperties new_props(*old_props);
+    new_props.AddProperty("material", "hunt_crossley_dissipation", dissipation);
+    member_scene_graph().AssignRole(*get_source_id(), id, new_props,
+                                    geometry::RoleAssign::kReplace);
+  }
+
+  /// @}
 
   /// @name Retrieving ports for communication with a SceneGraph.
   /// @{
@@ -3201,6 +3321,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex contact_jacobians;
     systems::CacheIndex contact_results;
     systems::CacheIndex generalized_accelerations;
+    systems::CacheIndex hydro_contact_forces;
     systems::CacheIndex implicit_stribeck_solver_results;
     systems::CacheIndex point_pairs;
   };
@@ -3478,6 +3599,23 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
+  // Helper to create the underlying hydroelastic fields used in the
+  // hydroelastic model.
+  void MakeHydroelasticModels();
+
+  // Helper method to compute contact forces using the hydroelastic model.
+  // F_BBo_W_array is indexed by BodyIndex and is cleared on input.
+  void CalcHydroelasticContactForces(
+      const systems::Context<T>& context,
+      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
+
+  // Eval version of CalcHydroelasticContactForces().
+  const std::vector<SpatialForce<T>>& EvalHydroelasticContactForces(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.hydro_contact_forces)
+        .template Eval<std::vector<SpatialForce<T>>>(context);
+  }
+
   // Helper method to add the contribution of external actuation forces to the
   // set of multibody `forces`. External actuation is applied through the
   // plant's input ports.
@@ -3713,6 +3851,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // See geometry_id_to_collision_index_.
   std::vector<CoulombFriction<double>> default_coulomb_friction_;
 
+  // The model used by the plant to compute contact forces.
+  ContactModel contact_model_{ContactModel::kPointContactOnly};
+
   // Port handles for geometry:
   systems::InputPortIndex geometry_query_port_;
   systems::OutputPortIndex geometry_pose_port_;
@@ -3748,6 +3889,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Index for the output port of ContactResults.
   systems::OutputPortIndex contact_results_port_;
 
+  // Index for the output port for contact forces per body.
+  systems::OutputPortIndex contact_forces_port_;
+
   // A vector containing the index for the generalized contact forces port for
   // each model instance. This vector is indexed by ModelInstanceIndex. An
   // invalid value indicates that the model instance has no generalized
@@ -3766,6 +3910,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // The solver used when the plant is modeled as a discrete system.
   std::unique_ptr<ImplicitStribeckSolver<T>> implicit_stribeck_solver_;
+
+  hydroelastics::internal::HydroelasticEngine<T> hydroelastics_engine_;
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;
@@ -3900,6 +4046,12 @@ template <>
 std::vector<geometry::PenetrationAsPointPair<AutoDiffXd>>
 MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
     const systems::Context<AutoDiffXd>&) const;
+template <>
+void MultibodyPlant<symbolic::Expression>::MakeHydroelasticModels();
+template <>
+void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
+    const systems::Context<symbolic::Expression>&,
+    std::vector<SpatialForce<symbolic::Expression>>*) const;
 #endif
 
 }  // namespace multibody
