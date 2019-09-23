@@ -18,7 +18,8 @@
 // that is using py::self (example: `def(py::self + py::self)`).
 // Here, we suppress the warning using `#pragma diagnostic`.
 #if (__APPLE__) && (__clang__) && (__clang_major__ >= 10) && \
-    (__clang_minor__ >= 0) && (__clang_patchlevel__ >= 1)
+    !((__clang_major__ == 10) && (__clang_minor__ == 0) &&   \
+        (__clang_patchlevel__ == 0))
 #pragma GCC diagnostic ignored "-Wself-assign-overloaded"
 #endif
 
