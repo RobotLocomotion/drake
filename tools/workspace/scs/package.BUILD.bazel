@@ -26,7 +26,12 @@ cc_library(
     hdrs = glob([
         "include/*.h",
     ]),
-    defines = ["USE_LAPACK=1"],
+    defines = [
+        "USE_LAPACK=1",
+        # Keep the default primitive size of `double` and `int`.  Don't define
+        # 'SFLOAT' nor 'DLONG' unless @qdldl and @osqp are also changed to use
+        # those primitive sizes.
+    ],
     includes = [
         "include",
         "linsys",
@@ -44,8 +49,8 @@ cc_library(
     deps = [
         "@blas",
         "@lapack",
+        "@qdldl",
         "@suitesparse//:amd",
-        "@suitesparse//:ldl",
     ],
 )
 

@@ -23,7 +23,6 @@ def _impl(repo_ctx):
     hdrs = [
         "SuiteSparse_config.h",
         "amd.h",
-        "ldl.h",
     ]
     for hdr in hdrs:
         repo_ctx.symlink(include + "/" + hdr, "include/" + hdr)
