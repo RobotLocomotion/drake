@@ -1,4 +1,4 @@
-#include "drake/geometry/proximity/make_unit_sphere_mesh.h"
+#include "drake/geometry/proximity/make_sphere_mesh.h"
 
 #include <algorithm>
 #include <vector>
@@ -190,6 +190,74 @@ GTEST_TEST(MakeSphereMesh, SplitOctohedron) {
     EXPECT_EQ(split_count[(axis + 1) % 3], 0);
     EXPECT_EQ(split_count[(axis + 2) % 3], 0);
   }
+}
+
+// Confirms that for the given edge length, that the resulting sphere mesh's
+// equator edge length is at or below the specified edge length.
+GTEST_TEST(MakeSphereVolumeMesh, ConfirmEdgeLength) {
+  const double r = 1.5;
+  const double r_squared = r * r;
+  Sphere sphere(r);
+  auto test_equator = [r_squared](const VolumeMesh<double>& mesh,
+                                  double edge_length) {
+    // We arbitrarily pick the z = 0 equator (although x = 0 or y = 0 would work
+    // equally well).
+    std::vector<Vector3d> equator_vertices;
+    for (const auto& vertex : mesh.vertices()) {
+      const Vector3d& p_MV = vertex.r_MV();
+      const double d_squared = p_MV(0) * p_MV(0) + p_MV(1) * p_MV(1);
+      if (p_MV(2) == 0.0 && d_squared >= r_squared - 1e-14) {
+        equator_vertices.push_back(p_MV);
+      }
+    }
+    // Sort the vertices according to radial angle - we rely on the algorithm
+    // producing strictly unique vertices (no duplicates).
+    std::sort(equator_vertices.begin(), equator_vertices.end(),
+              [](const auto& v1, const auto& v2) {
+                const double theta1 = std::atan2(v1(1), v1(0));
+                const double theta2 = std::atan2(v2(1), v2(0));
+                return theta1 < theta2;
+              });
+
+    // The number of equator vertices should be 4 * 2^L. However, we don't know
+    // a priori what L is. So, we infer L from the vertex count and confirm that
+    // it produces the observed vertex count.
+    const int v_count = static_cast<int>(equator_vertices.size());
+    EXPECT_GE(v_count, 4);
+    const int apparent_L = static_cast<int>(std::log2(v_count / 4));
+    EXPECT_EQ(4.0 * std::pow(2.0, apparent_L), v_count);
+
+    // Given radial ordering of vertices, confirm that the edge between two
+    // sequential vertices does not exceed the target edge_length.
+    for (int i = 0; i < v_count; ++i) {
+      const double chord_length =
+          (equator_vertices[i] - equator_vertices[(i + 1) % v_count]).norm();
+      ASSERT_LE(chord_length, edge_length);
+    }
+  };
+
+  // Note: at level zero, the longest edge lengths are sqrt(2) * r. So, we pick
+  // a length slightly longer (1.5 * r) to test the base case. After that simply
+  // values that decrease by half. We also confirm tet count increases when we
+  // cut things in half.
+  int previous_tet_count = 0;
+  for (const double edge_length : {1.5 * r, r, r / 2, r / 4}) {
+    VolumeMesh<double> mesh = MakeSphereVolumeMesh<double>(sphere, edge_length);
+    int current_tet_count = mesh.num_elements();
+    EXPECT_LT(previous_tet_count, current_tet_count);
+    previous_tet_count = current_tet_count;
+    test_equator(mesh, edge_length);
+  }
+}
+
+// Confirms that edge length larger than sphere diameter still produces the
+// octohedron.
+GTEST_TEST(MakeSphereVolumeMesh, MassiveEdgeLength) {
+  const Sphere sphere(1.5);
+  const double edge_length = 3 * sphere.get_radius();
+  VolumeMesh<double> mesh = MakeSphereVolumeMesh<double>(sphere, edge_length);
+  EXPECT_EQ(mesh.num_elements(), 8);
+  EXPECT_EQ(mesh.num_vertices(), 7);
 }
 
 }  // namespace
