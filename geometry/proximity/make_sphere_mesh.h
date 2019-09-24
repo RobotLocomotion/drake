@@ -9,6 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/proximity/volume_mesh.h"
+#include "drake/geometry/shape_specification.h"
 
 namespace drake {
 namespace geometry {
@@ -372,6 +373,85 @@ VolumeMesh<T> MakeUnitSphereMesh(int refinement_level) {
   }
 
   return std::move(mesh);
+}
+
+/** Creates a volume mesh for the given `sphere` with the given characteristic
+ `edge_length`.
+
+ The `edge_length` controls the resolution of the mesh. Smaller values create
+ higher-resolution meshes with smaller tetrahedra. In this case, the resulting
+ mesh is guaranteed that edge lengths along the *equator* of the sphere will be
+ less than or equal to the given `edge_length`.
+
+ The resolution of the final mesh will change discontinuously. Small changes to
+ the `edge_length` parameter will likely produce the same mesh. However, in the
+ current implementation, cutting the `edge_length` in half _will_ increase
+ the number of tetrahdra.
+
+ Ultimately, successively smaller values of `edge_length` will no longer change
+ the output mesh. This algorithm will not produce a tetrahedral mesh with more
+ than approximately 100 million tetrahedra. Similarly, for arbitrarily large
+ values of `edge_length`, the coarsest possible mesh is a tesselated octohedron.
+
+ @param sphere          The sphere for which a mesh is created.
+ @param edge_length     The positive characteristic edge length for the sphere
+                        (same units of length as `sphere.radius()`).
+ @return The volume mesh for the given sphere.
+ @tparam T  The Eigen-compatible scalar for representing the mesh vertex
+            positions.
+ */
+template <typename T>
+VolumeMesh<T> MakeSphereVolumeMesh(const Sphere& sphere, double edge_length) {
+  /*
+    The volume mesh is formed by successively refining an octohedron. At the
+    equator, that means we go from 4 edges, to 8 edges, to 16 edges, etc.,
+    doubling at each level of refinement. These edges are simply chords across
+    fixed-length arcs of the sphere. Based on that we can easily compute the
+    length of the chord and bound it by edge_length.
+
+              /|
+           r / |
+            /  |
+           <θ  | e
+            \  |
+           r \ |
+              \|
+
+     The length of e = 2⋅r⋅sin(θ/2). Solving for θ we get: θ = 2⋅sin⁻¹(e/2⋅r).
+     We can relate θ with the refinement level ℒ.
+
+       θ = 2π / 4⋅2ᴸ
+         = π / 2⋅2ᴸ
+         = π / 2ᴸ⁺¹
+
+     Substituting for θ, we get:
+
+       π / 2ᴸ⁺¹ = 2⋅sin⁻¹(e/2⋅r)
+       2ᴸ⁺¹ = π / 2⋅sin⁻¹(e/2⋅r)
+       ℒ + 1 = log₂(π / 2⋅sin⁻¹(e/2⋅r))
+       ℒ = log₂(π / 2⋅sin⁻¹(e/2⋅r)) - 1
+       ℒ = ⌈log₂(π / sin⁻¹(e/2⋅r))⌉ - 2
+   */
+  DRAKE_DEMAND(edge_length > 0.0);
+  const double r = sphere.get_radius();
+  // Make sure the arcsin doesn't blow up.
+  edge_length = std::min(edge_length, 2.0 * r);
+  const int L = std::max(
+      0,
+      static_cast<int>(
+          std::ceil(std::log2(M_PI / std::asin(edge_length / (2.0 * r)))) - 2));
+  // TODO(SeanCurtis-TRI): Consider pushing the radius into the sphere creation
+  //  so that copying vertices and tets is no longer necessary.
+  // Note: With refinement L = 8, we'd get 8 ^(8 + 1) = 134M tetrahedra,
+  // satisfying the promise that we won't produce unlimited tetrahedra.
+  VolumeMesh<T> unit_mesh = MakeUnitSphereMesh<T>(std::min(L, 8));
+  std::vector<VolumeVertex<T>> vertices;
+  vertices.reserve(unit_mesh.vertices().size());
+  for (auto& v : unit_mesh.vertices()) {
+    vertices.emplace_back(v.r_MV() * r);
+  }
+  std::vector<VolumeElement> elements(unit_mesh.tetrahedra());
+  return VolumeMesh<T>(std::move(elements), std::move(vertices));
 }
 
 }  // namespace internal
