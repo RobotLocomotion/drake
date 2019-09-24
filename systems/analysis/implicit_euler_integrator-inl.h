@@ -167,8 +167,12 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
   T last_dx_norm = std::numeric_limits<double>::infinity();
 
   // Calculate Jacobian and iteration matrices (and factorizations), as needed,
-  // around (tf, xtplus).
-  if (!this->MaybeFreshenMatrices(tf, *xtplus, h, trial,
+  // around (tf, xt0).
+  // TODO(edrumwri) Consider computing the Jacobian matrix around xtplus. This
+  //                would give a better Jacobian, but would complicate the
+  //                logic, since the Jacobian would no longer (necessarily) be
+  //                fresh upon fallback to a smaller step size.
+  if (!this->MaybeFreshenMatrices(tf, xt0, h, trial,
       compute_and_factor_iteration_matrix, iteration_matrix)) {
     return false;
   }
