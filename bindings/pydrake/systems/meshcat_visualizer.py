@@ -119,7 +119,10 @@ def _convert_mesh(geom):
 def AddTriad(vis, name, prefix, length=1., radius=0.04, opacity=1.):
     """
     Initializes coordinate axes of a frame T. The x-axis is drawn red,
-    y-axis green and z-axis blue.
+    y-axis green and z-axis blue. The axes point in +x, +y and +z directions,
+    respectively.
+    TODO(pangtao22): replace cylinder primitives with ArrowHelper or AxesHelper
+    one they are bound in meshcat-python.
     Args:
         vis: a meshcat.Visualizer object.
         name: (string) the name of the triad in meshcat.
@@ -202,7 +205,7 @@ class MeshcatVisualizer(LeafSystem):
                  frames_to_draw={},
                  frames_opacity=1.,
                  axis_length=0.15,
-                 axis_raidus=0.006):
+                 axis_radius=0.006):
         """
         Args:
             scene_graph: A SceneGraph object.
@@ -223,11 +226,13 @@ class MeshcatVisualizer(LeafSystem):
                 browser iff a new meshcat server is created as a subprocess.
                 Set to False to disable this.
             frames_to_draw: a dictionary describing which body frames to draw.
-                It is keyd on the names of model instances, and the values are
+                It is keyed on the names of model instances, and the values are
                 sets of the names of the bodies whose body frames are shown.
                 For example, if we want to draw the frames of body "A" and
                 "B" in model instance "1", then frames_to_draw is
                     {"1": {"A", "B"}}.
+            frames_opacity, axis_length and axis_radius are the opacity, length
+                and radius of the coordinate axes to be drawn.
         Note:
             This call will not return until it connects to the
             ``meshcat-server``.
@@ -273,7 +278,7 @@ class MeshcatVisualizer(LeafSystem):
         self.frames_to_draw = frames_to_draw
         self.frames_opacity = frames_opacity
         self.axis_length = axis_length
-        self.axis_raidus = axis_raidus
+        self.axis_radius = axis_radius
 
     def _parse_name(self, name):
         # Parse name, split on the first (required) occurrence of `::` to get
@@ -327,7 +332,7 @@ class MeshcatVisualizer(LeafSystem):
                     cur_vis.set_object(meshcat_geom, material)
                     cur_vis.set_transform(element_local_tf)
 
-                # draw frames
+                # Draw the frames in self.frames_to_draw.
                 robot_name, link_name = self._parse_name(frame_name)
                 if (robot_name in self.frames_to_draw.keys() and
                         link_name in self.frames_to_draw[robot_name]):
@@ -338,7 +343,7 @@ class MeshcatVisualizer(LeafSystem):
                         name="frame",
                         prefix=prefix,
                         length=self.axis_length,
-                        radius=self.axis_raidus,
+                        radius=self.axis_radius,
                         opacity=self.frames_opacity)
 
     def DoPublish(self, context, event):
