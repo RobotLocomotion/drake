@@ -196,8 +196,11 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
     // at least one Newton-Raphson update has been applied to ensure that there
     // is at least some change to the state, no matter how small, on a
     // non-stationary system.
-    if (i > 0 && this->IsUpdateZero(*xtplus, dx))
+    if (i > 0 && this->IsUpdateZero(*xtplus, dx)) {
       return true;
+      SPDLOG_DEBUG(drake::log(), "Converged with zero update. xt+: {}",
+                   xtplus->transpose());
+    }
 
     // Update the state vector.
     *xtplus += dx;
@@ -226,8 +229,9 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
       const double kappa = 0.05;
       const double k_dot_tol = kappa * this->get_accuracy_in_use();
       if (eta * dx_norm < k_dot_tol) {
-        SPDLOG_DEBUG(drake::log(), "Newton-Raphson converged; η = {}, h = {}",
-                     eta, h);
+        SPDLOG_DEBUG(drake::log(),
+                     "Newton-Raphson converged; η = {}, h = {}, xt+ = {}", eta,
+                     h, xtplus->transpose());
         return true;
       }
     }

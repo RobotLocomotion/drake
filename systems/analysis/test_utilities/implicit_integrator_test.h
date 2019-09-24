@@ -5,6 +5,8 @@
 
 #include <gtest/gtest.h>
 
+// TODO(edrumwri) Delete these.
+#include "drake/common/text_logging.h"
 #include "drake/systems/analysis/implicit_integrator.h"
 #include "drake/systems/analysis/test_utilities/discontinuous_spring_mass_damper_system.h"
 #include "drake/systems/analysis/test_utilities/linear_scalar_system.h"
@@ -31,9 +33,13 @@ class ImplicitIntegratorTest : public ::testing::Test {
     spring_damper_ = std::make_unique<
         implicit_integrator_test::SpringMassDamperSystem<double>>(
         stiff_spring_k_, stiff_damping_b_, mass_);
+
+    // The discontinuous spring-mass-damper is critically damped.
     mod_spring_damper_ = std::make_unique<
         implicit_integrator_test::DiscontinuousSpringMassDamperSystem<double>>(
-        stiff_spring_k_, damping_b_, mass_, constant_force_mag_);
+        semistiff_spring_k_, std::sqrt(semistiff_spring_k_ / mass_), mass_,
+        constant_force_mag_);
+
     stiff_double_system_ =
         std::make_unique<analysis::test::StiffDoubleMassSpringSystem<double>>();
 
@@ -220,14 +226,14 @@ class ImplicitIntegratorTest : public ::testing::Test {
   void DiscontinuousSpringMassDamperTest(ReuseType type) {
     // Create the integrator.
     T integrator(*mod_spring_damper_, context_.get());
-    integrator.set_maximum_step_size(1e-5);
+    integrator.set_maximum_step_size(dt_);
     integrator.set_throw_on_minimum_step_size_violation(false);
     integrator.set_target_accuracy(1e-5);
     integrator.set_reuse(reuse_type_to_bool(type));
 
     // Setting the minimum step size speeds the unit test without (in this case)
     // affecting solution accuracy.
-    integrator.set_requested_minimum_step_size(1e-5);
+    integrator.set_requested_minimum_step_size(1e-8);
 
     // Set the initial position and initial velocity.
     const double initial_position = 1e-8;
@@ -239,11 +245,16 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Take all the defaults.
     integrator.Initialize();
-
+/*
+context_->get_mutable_continuous_state().get_mutable_vector()[0] =
+    -4.88681e-6;
+context_->get_mutable_continuous_state().get_mutable_vector()[1] =
+    -0.0291419;
+*/
     // Establish tolerances for time and solution. These tolerances are
     // arbitrary but seem to work well.
     const double ttol = 1e2 * std::numeric_limits<double>::epsilon();
-    const double sol_tol = 1e-8;
+    const double sol_tol = 1e-12;
 
     // Integrate for 1 second.
     const double t_final = 1.0;
@@ -252,13 +263,23 @@ class ImplicitIntegratorTest : public ::testing::Test {
     // Check the time.
     EXPECT_NEAR(context_->get_time(), t_final, ttol);
 
-    // Get the final position.
+    // Get the final position and velocity.
     double x_final =
         context_->get_continuous_state().get_vector().GetAtIndex(0);
+    double xdot_final =
+        context_->get_continuous_state().get_vector().GetAtIndex(1);
 
-    // Verify that solution and integrator statistics are valid and reset the
-    // statistics.
-    EXPECT_NEAR(0.0, x_final, sol_tol);
+    // TODO(edrumwri) accurate x_final should be the equilibrium solution, where
+    // the velocity is zero and the spring and external forces are equal (and
+    // opposite).
+    const double equilibrium_position =
+        -constant_force_magnitude() / semistiff_spring_stiffness();
+    const double equilibrium_velocity = 0.0;
+
+    // Verify that solution and integrator statistics are valid and reset
+    // the statistics.
+    EXPECT_NEAR(equilibrium_position, x_final, sol_tol);
+    EXPECT_NEAR(equilibrium_velocity, xdot_final, sol_tol);
     CheckGeneralStatsValidity(&integrator);
 
     // Switch the Jacobian scheme to central differencing.
@@ -275,8 +296,10 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Check the solution and the time again, and reset the statistics again.
     x_final = context_->get_continuous_state().get_vector().GetAtIndex(0);
+    xdot_final = context_->get_continuous_state().get_vector().GetAtIndex(1);
     EXPECT_NEAR(context_->get_time(), t_final, ttol);
-    EXPECT_NEAR(0.0, x_final, sol_tol);
+    EXPECT_NEAR(equilibrium_position, x_final, sol_tol);
+    EXPECT_NEAR(equilibrium_velocity, xdot_final, sol_tol);
     CheckGeneralStatsValidity(&integrator);
 
     // Switch the Jacobian scheme to automatic differentiation.
@@ -293,8 +316,10 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Check the solution and the time again.
     x_final = context_->get_continuous_state().get_vector().GetAtIndex(0);
+    xdot_final = context_->get_continuous_state().get_vector().GetAtIndex(1);
     EXPECT_NEAR(context_->get_time(), t_final, ttol);
-    EXPECT_NEAR(0.0, x_final, sol_tol);
+    EXPECT_NEAR(equilibrium_position, x_final, sol_tol);
+    EXPECT_NEAR(equilibrium_velocity, xdot_final, sol_tol);
     CheckGeneralStatsValidity(&integrator);
   }
 
@@ -539,6 +564,8 @@ class ImplicitIntegratorTest : public ::testing::Test {
   double dt() const { return dt_; }
   const SpringMassSystem<double>& spring() const { return *spring_; }
   Context<double>& context() { return *context_; }
+  double constant_force_magnitude() const { return constant_force_mag_; }
+  double semistiff_spring_stiffness() const { return semistiff_spring_k_; }
 
  private:
   bool reuse_type_to_bool(ReuseType type ) {
@@ -598,6 +625,12 @@ class ImplicitIntegratorTest : public ::testing::Test {
   /// f = sqrt(k/mass)/(2*pi), where k is the spring constant, and f is the
   /// frequency in cycles per second).
   const double spring_k_ = 1.0;
+
+  /// Default spring constant for a semi-stiff spring. Corresponds to a
+  /// frequency of 35.588 cycles per second without damping, assuming that mass
+  /// = 2 (using formula f = sqrt(k/mass)/(2*pi), where k is the spring
+  /// constant, and f is the requency in cycles per second).
+  const double semistiff_spring_k_ = 1e5;
 
   /// Default spring constant for a stiff spring. Corresponds to a frequency
   /// of 11,254 cycles per second without damping, assuming that mass = 2
