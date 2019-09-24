@@ -116,6 +116,41 @@ def _convert_mesh(geom):
     return meshcat_geom, material, element_local_tf
 
 
+def AddTriad(vis, name, prefix, length=1., radius=0.04, opacity=1.):
+    """
+    Initializes coordinate axes of a frame T. The x-axis is drawn red,
+    y-axis green and z-axis blue. The axes point in +x, +y and +z directions,
+    respectively.
+    TODO(pangtao22): replace cylinder primitives with ArrowHelper or AxesHelper
+    one they are bound in meshcat-python.
+    Args:
+        vis: a meshcat.Visualizer object.
+        name: (string) the name of the triad in meshcat.
+        prefix: (string) name of the node in the meshcat tree to which this
+            triad is added.
+        length: the length of each axis in meters.
+        radius: the radius of each axis in meters.
+        opacity: the opacity of the coordinate axes, between 0 and 1.
+    """
+    delta_xyz = np.array([[length / 2, 0, 0],
+                          [0, length / 2, 0],
+                          [0, 0, length / 2]])
+
+    axes_name = ['x', 'y', 'z']
+    colors = [0xff0000, 0x00ff00, 0x0000ff]
+    rotation_axes = [[0, 0, 1], [0, 1, 0], [1, 0, 0]]
+
+    for i in range(3):
+        material = meshcat.geometry.MeshLambertMaterial(
+            color=colors[i], opacity=opacity)
+        vis[prefix][name][axes_name[i]].set_object(
+            meshcat.geometry.Cylinder(length, radius), material)
+        X = meshcat.transformations.rotation_matrix(
+            np.pi/2, rotation_axes[i])
+        X[0:3, 3] = delta_xyz[i]
+        vis[prefix][name][axes_name[i]].set_transform(X)
+
+
 class MeshcatVisualizer(LeafSystem):
     """
     MeshcatVisualizer is a System block that connects to the pose bundle output
@@ -166,7 +201,11 @@ class MeshcatVisualizer(LeafSystem):
                  draw_period=_DEFAULT_PUBLISH_PERIOD,
                  prefix="drake",
                  zmq_url="default",
-                 open_browser=None):
+                 open_browser=None,
+                 frames_to_draw={},
+                 frames_opacity=1.,
+                 axis_length=0.15,
+                 axis_radius=0.006):
         """
         Args:
             scene_graph: A SceneGraph object.
@@ -186,7 +225,14 @@ class MeshcatVisualizer(LeafSystem):
                 default web browser.  The default value of None will open the
                 browser iff a new meshcat server is created as a subprocess.
                 Set to False to disable this.
-
+            frames_to_draw: a dictionary describing which body frames to draw.
+                It is keyed on the names of model instances, and the values are
+                sets of the names of the bodies whose body frames are shown.
+                For example, if we want to draw the frames of body "A" and
+                "B" in model instance "1", then frames_to_draw is
+                    {"1": {"A", "B"}}.
+            frames_opacity, axis_length and axis_radius are the opacity, length
+                and radius of the coordinate axes to be drawn.
         Note:
             This call will not return until it connects to the
             ``meshcat-server``.
@@ -227,6 +273,12 @@ class MeshcatVisualizer(LeafSystem):
             event=PublishEvent(
                 trigger_type=TriggerType.kInitialization,
                 callback=on_initialize))
+
+        # drawing coordinate frames
+        self.frames_to_draw = frames_to_draw
+        self.frames_opacity = frames_opacity
+        self.axis_length = axis_length
+        self.axis_radius = axis_radius
 
     def _parse_name(self, name):
         # Parse name, split on the first (required) occurrence of `::` to get
@@ -279,6 +331,20 @@ class MeshcatVisualizer(LeafSystem):
                         [frame_name][str(j)])
                     cur_vis.set_object(meshcat_geom, material)
                     cur_vis.set_transform(element_local_tf)
+
+                # Draw the frames in self.frames_to_draw.
+                robot_name, link_name = self._parse_name(frame_name)
+                if (robot_name in self.frames_to_draw.keys() and
+                        link_name in self.frames_to_draw[robot_name]):
+                    prefix = (self.prefix + '/' + source_name + '/' +
+                              str(link.robot_num) + '/' + frame_name)
+                    AddTriad(
+                        self.vis,
+                        name="frame",
+                        prefix=prefix,
+                        length=self.axis_length,
+                        radius=self.axis_radius,
+                        opacity=self.frames_opacity)
 
     def DoPublish(self, context, event):
         # TODO(russt): Change this to declare a periodic event with a
