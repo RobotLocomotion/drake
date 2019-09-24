@@ -320,6 +320,39 @@ GTEST_TEST(MultibodyPlantTest, AddMultibodyPlantSceneGraph) {
   // AddMultibodyPlantSceneGraphResult<double> extra{*plant, *scene_graph};
 }
 
+GTEST_TEST(MultibodyPlantTest, EmptyWorldDiscrete) {
+  const double discrete_update_period = 1.0e-3;
+  MultibodyPlant<double> plant(discrete_update_period);
+  plant.Finalize();
+  EXPECT_EQ(plant.num_velocities(), 0);
+  EXPECT_EQ(plant.num_positions(), 0);
+  // Compute discrete update.
+  auto context = plant.CreateDefaultContext();
+  auto& discrete_state_vector = context->get_discrete_state_vector();
+  EXPECT_EQ(discrete_state_vector.size(), 0);
+  auto new_discrete_state = plant.AllocateDiscreteVariables();
+  const systems::VectorBase<double>& new_discrete_state_vector =
+      new_discrete_state->get_vector();
+  EXPECT_EQ(new_discrete_state_vector.size(), 0);
+  EXPECT_NO_THROW(
+      plant.CalcDiscreteVariableUpdates(*context, new_discrete_state.get()));
+}
+
+GTEST_TEST(MultibodyPlantTest, EmptyWorldContinuous) {
+  MultibodyPlant<double> plant;
+  plant.Finalize();
+  EXPECT_EQ(plant.num_velocities(), 0);
+  EXPECT_EQ(plant.num_positions(), 0);
+  // Compute continuous derivatives.
+  auto context = plant.CreateDefaultContext();
+  auto& continuous_state_vector = context->get_continuous_state_vector();
+  EXPECT_EQ(continuous_state_vector.size(), 0);
+  auto new_derivatives = plant.AllocateTimeDerivatives();
+  EXPECT_EQ(new_derivatives->size(), 0);
+  EXPECT_NO_THROW(
+      plant.CalcTimeDerivatives(*context, new_derivatives.get()));
+}
+
 GTEST_TEST(ActuationPortsTest, CheckActuation) {
   // Create a MultibodyPlant consisting of two model instances, one actuated
   // and the other unactuated.
