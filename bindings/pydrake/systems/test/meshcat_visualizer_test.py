@@ -88,7 +88,12 @@ class TestMeshcat(unittest.TestCase):
         Parser(plant=kuka).AddModelFromFile(file_name)
         kuka.Finalize()
 
-        frames_to_draw = {"iiwa": {"iiwa_link_7", "iiwa_link_6"}}
+        # Make sure that the frames to visualize exist.
+        kuka.GetModelInstanceByName("iiwa14")
+        kuka.GetFrameByName("iiwa_link_7")
+        kuka.GetFrameByName("iiwa_link_6")
+
+        frames_to_draw = {"iiwa14": {"iiwa_link_7", "iiwa_link_6"}}
         visualizer = builder.AddSystem(MeshcatVisualizer(
             scene_graph,
             zmq_url=ZMQ_URL,
