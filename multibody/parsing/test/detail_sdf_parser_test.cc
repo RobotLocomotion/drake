@@ -467,7 +467,7 @@ void FailWithInvalidWorld(const std::string& inner) {
       ParseTestString(inner),
       std::runtime_error,
       R"([\s\S]*Source vertex found with name \[.*\], but its name should )"
-      R"(be empty[\s\S]*)");
+      R"(be __model__[\s\S]*)");
   // The error `Unique vertex with name \[world\] not found in graph` is more
   // understandable, but doesn't get triggered when specifying
   // `//pose[@relative_to="world"]`...

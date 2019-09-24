@@ -79,13 +79,11 @@ void ThrowAnyErrors(const sdf::Errors& errors) {
   }
 }
 
-const char kModelFrame[] = "";
-
-template <typename Class>
+template <typename Class, typename... Args>
 math::RigidTransformd ResolveRigidTransform(
-    const Class& element, std::string relative_to) {
+    const Class& element, Args... args) {
   ignition::math::Pose3d pose;
-  ThrowAnyErrors(element.ResolvePose(relative_to, pose));
+  ThrowAnyErrors(element.ResolvePose(args..., pose));
   return ToRigidTransform(pose);
 }
 
@@ -291,7 +289,7 @@ void AddJointFromSpecification(
   // TODO(eric.cousineau): Figure out how to use link poses when they are NOT
   // connected to a joint.
   const RigidTransformd X_MC = ResolveRigidTransform(
-      *model_spec.LinkByName(joint_spec.ChildLinkName()), kModelFrame);
+      *model_spec.LinkByName(joint_spec.ChildLinkName()));
 
   // Pose of the joint frame J in the model frame M.
   const RigidTransformd X_MJ = X_MC * X_CJ;
@@ -306,7 +304,7 @@ void AddJointFromSpecification(
   } else {
     // Get the pose of the parent link P in the model frame M.
     const RigidTransformd X_MP = ResolveRigidTransform(
-        *model_spec.LinkByName(joint_spec.ParentLinkName()), kModelFrame);
+        *model_spec.LinkByName(joint_spec.ParentLinkName()));
     X_PJ = X_MP.inverse() * X_MJ;
   }
 
@@ -420,9 +418,8 @@ void AddLinksFromSpecification(
     // N.B. If a body is completely disconnected (no inboard / outboard
     // joints), then we lose information from the SDFormat spec. This hack is
     // one way to preserve this information.
-    unused(X_WM);
-    // const RigidTransformd X_ML = ResolveRigidTransform(link, kModelFrame);
-    // plant->InternalSetFreeBodyOnlyPose(body, X_WM * X_ML);
+    const RigidTransformd X_ML = ResolveRigidTransform(link);
+    plant->InternalSetFreeBodyOnlyPose(body, X_WM * X_ML);
 
     ResolveFilename resolve_filename =
       [&package_map, &root_dir](std::string uri) {
@@ -442,7 +439,7 @@ void AddLinksFromSpecification(
            ++visual_index) {
         const sdf::Visual& sdf_visual = *link.VisualByIndex(visual_index);
         const RigidTransformd X_LG = ResolveRigidTransform(
-            sdf_visual, link.Name());
+            sdf_visual);
         unique_ptr<GeometryInstance> geometry_instance =
             MakeGeometryInstanceFromSdfVisual(
                 sdf_visual, resolve_filename, X_LG);
@@ -469,7 +466,7 @@ void AddLinksFromSpecification(
         if (sdf_geometry.Type() != sdf::GeometryType::EMPTY) {
           // ... Yuck?
           const RigidTransformd X_LG_init = ResolveRigidTransform(
-              sdf_collision, link.Name());
+              sdf_collision);
           const RigidTransformd X_LG =
               MakeGeometryPoseFromSdfCollision(sdf_collision, X_LG_init);
           std::unique_ptr<geometry::Shape> shape =
@@ -489,12 +486,15 @@ void AddLinksFromSpecification(
 const Frame<double>& AddFrameFromSpecification(
     const sdf::Frame& frame_spec, ModelInstanceIndex model_instance,
     const Frame<double>& model_frame, MultibodyPlant<double>* plant) {
-  const RigidTransformd X_PF =
-      ResolveRigidTransform(frame_spec, frame_spec.AttachedTo());
+  // TODO(eric.cousineau): Would be nice if "" defaulted to `__model__` /
+  // `__world__`?
+  RigidTransformd X_PF;
   const Frame<double>* parent_frame{};
   if (frame_spec.AttachedTo().empty()) {
+    X_PF = ResolveRigidTransform(frame_spec);
     parent_frame = &model_frame;
   } else {
+    X_PF = ResolveRigidTransform(frame_spec, frame_spec.AttachedTo());
     parent_frame = &plant->GetFrameByName(
         frame_spec.AttachedTo(), model_instance);
   }
@@ -523,9 +523,11 @@ ModelInstanceIndex AddModelFromSpecification(
   // world.
   ThrowIfPoseFrameSpecified(model.Element());
 
+  drake::log()->trace("sdf_parser: Add links");
   AddLinksFromSpecification(
       model_instance, model, X_WM, plant, package_map, root_dir);
 
+  drake::log()->trace("sdf_parser: Resolve canonical link");
   std::string canonical_link_name = model.CanonicalLinkName();
   if (canonical_link_name.empty()) {
     // TODO(eric.cousineau): Should libsdformat auto-resolve this?
@@ -535,7 +537,7 @@ ModelInstanceIndex AddModelFromSpecification(
   const Frame<double>& canonical_link_frame = plant->GetFrameByName(
       canonical_link_name, model_instance);
   const RigidTransformd X_MLc = ResolveRigidTransform(
-      *model.LinkByName(canonical_link_name), kModelFrame);
+      *model.LinkByName(canonical_link_name));
 
   // Add the SDF "model frame" given the model name so that way any frames added
   // to the plant are associated with this current model instance.
@@ -552,6 +554,7 @@ ModelInstanceIndex AddModelFromSpecification(
           sdf_model_frame_name, canonical_link_frame, X_MLc.inverse(),
           model_instance));
 
+  drake::log()->trace("sdf_parser: Add joints");
   // Add all the joints
   for (uint64_t joint_index = 0; joint_index < model.JointCount();
        ++joint_index) {
@@ -560,6 +563,7 @@ ModelInstanceIndex AddModelFromSpecification(
     AddJointFromSpecification(model, X_WM, joint, model_instance, plant);
   }
 
+  drake::log()->trace("sdf_parser: Add explicit frames");
   // Add frames at root-level of <model>.
   for (uint64_t frame_index = 0; frame_index < model.FrameCount();
       ++frame_index) {

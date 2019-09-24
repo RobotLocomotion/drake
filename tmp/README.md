@@ -19,7 +19,7 @@ Then update repositories (and record the exact versions afterwards):
 
 First, test without Bazel overhead:
 
-    cd drake/tmp
+    cd drake/tmp/repos
     colcon build
     colcon test
     # Or just go the build package, and run `make test` / `ctest`.
