@@ -1386,6 +1386,8 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
     systems::ContinuousState<T>* derivatives) const {
   // No derivatives to compute if state is discrete.
   if (is_discrete()) return;
+  // No derivatives to compute if state is empty. (Will segfault otherwise.)
+  if (this->num_multibody_states() == 0) return;
 
   const auto x =
       dynamic_cast<const systems::BasicVector<T>&>(
