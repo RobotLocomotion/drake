@@ -491,6 +491,15 @@ GTEST_TEST(SdfParser, TestUnsupportedFrames) {
   </frame>
 </model>
 )");
+  for (std::string bad_name : {"world", "__model__", "__world__"}) {
+    FailWithInvalidWorld(fmt::format(R"(
+<model name='bad'>
+  <link name='dont_crash_plz'/>  <!-- Need at least one link -->
+  <frame name='{}'/>  <!-- Invalid name -->
+</model>
+)", bad_name));
+  }
+
   // TODO(eric.cousineau): Support the rest of these...
   FailWithNonemptyRelativeTo(R"(
 <model name='bad'>
