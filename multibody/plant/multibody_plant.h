@@ -3604,7 +3604,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void MakeHydroelasticModels();
 
   // Helper method to compute contact forces using the hydroelastic model.
-  // F_BBo_W_array is indexed by BodyIndex and is cleared on input.
+  // F_BBo_W_array is indexed by BodyNodeIndex and it gets overwritten on
+  // output. F_BBo_W_array must be of size num_bodies() or an exception is
+  // thrown.
   void CalcHydroelasticContactForces(
       const systems::Context<T>& context,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;

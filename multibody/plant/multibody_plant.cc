@@ -1,6 +1,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 
 #include <algorithm>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <set>
@@ -1311,8 +1312,9 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     const Context<T>& context,
     std::vector<SpatialForce<T>>* F_BBo_W_array) const {
   DRAKE_DEMAND(F_BBo_W_array != nullptr);
-  F_BBo_W_array->clear();
-  F_BBo_W_array->resize(num_bodies(), SpatialForce<T>::Zero());
+  DRAKE_DEMAND(static_cast<int>(F_BBo_W_array->size()) == num_bodies());
+  // Initialize to zero.
+  F_BBo_W_array->assign(num_bodies(), SpatialForce<T>::Zero());
   if (num_collision_geometries() == 0) return;
 
   const auto& query_object =
@@ -1370,11 +1372,11 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
         data, dissipation, static_friction, &F_Ao_W, &F_Bo_W);
 
     if (bodyA_index != world_index()) {
-      F_BBo_W_array->at(bodyA_index) += F_Ao_W;
+      F_BBo_W_array->at(bodyA.node_index()) += F_Ao_W;
     }
 
     if (bodyB_index != world_index()) {
-      F_BBo_W_array->at(bodyB_index) += F_Bo_W;
+      F_BBo_W_array->at(bodyB.node_index()) += F_Bo_W;
     }
   }
 }
@@ -1782,12 +1784,24 @@ void MultibodyPlant<T>::CalcGeneralizedAccelerationsContinuous(
   std::vector<SpatialForce<T>>& F_BBo_W_array = forces.mutable_body_forces();
   VectorX<T>& tau_array = forces.mutable_generalized_forces();
 
-  // Compute contact forces on each body by penalty method.
-  if (num_collision_geometries() > 0) {
-    const std::vector<PenetrationAsPointPair<T>>& point_pairs =
-        EvalPointPairPenetrations(context);
-    CalcAndAddContactForcesByPenaltyMethod(context, pc, vc, point_pairs,
-                                           &F_BBo_W_array);
+  if (contact_model_ == ContactModel::kPointContactOnly) {
+    // Compute contact forces on each body by penalty method.
+    if (num_collision_geometries() > 0) {
+      const std::vector<PenetrationAsPointPair<T>>& point_pairs =
+          EvalPointPairPenetrations(context);
+      CalcAndAddContactForcesByPenaltyMethod(context, pc, vc, point_pairs,
+                                             &F_BBo_W_array);
+    }
+  } else if (contact_model_ == ContactModel::kHydroelasticsOnly) {
+    // Compute contact forces using hydroelastics.
+    const std::vector<SpatialForce<T>>& Fhydro_BBo_W =
+        EvalHydroelasticContactForces(context);
+    std::transform(F_BBo_W_array.begin(), F_BBo_W_array.end(),
+                   Fhydro_BBo_W.begin(),
+                   F_BBo_W_array.begin(),
+                   std::plus<SpatialForce<T>>());
+  } else {
+    DRAKE_UNREACHABLE();
   }
 
   internal_tree().CalcInverseDynamics(
