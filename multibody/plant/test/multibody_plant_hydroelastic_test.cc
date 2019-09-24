@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -83,12 +84,11 @@ class HydroelasticModelTests : public ::testing::Test {
   const RigidBody<double>& AddObject(MultibodyPlant<double>* plant,
                                      double radius,
                                      double friction_coefficient) {
-    // Inertial properties are arbitrary since hydro forces are only state
-    // dependent.
-    const double mass = 1.0;
+    // Inertial properties are only needed when verifying accelerations since
+    // hydro forces are only a function of state.
     const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
     const UnitInertia<double> G_BBcm = UnitInertia<double>::SolidSphere(radius);
-    const SpatialInertia<double> M_BBcm_B(mass, p_BoBcm_B, G_BBcm);
+    const SpatialInertia<double> M_BBcm_B(kMass_, p_BoBcm_B, G_BBcm);
 
     // Create a rigid body B with the mass properties of a uniform sphere.
     const RigidBody<double>& body = plant->AddRigidBody("body", M_BBcm_B);
@@ -144,6 +144,7 @@ class HydroelasticModelTests : public ::testing::Test {
   const double kSphereRadius_{0.05};        // [m]
   const double kElasticModulus_{1.e5};      // [Pa]
   const double kDissipation_{0.0};          // [s/m]
+  const double kMass_{1.2};                 // [kg]
 
   MultibodyPlant<double>* plant_{nullptr};
   SceneGraph<double>* scene_graph_{nullptr};
@@ -170,7 +171,7 @@ TEST_F(HydroelasticModelTests, ContactForce) {
     const auto& F_BBo_W_array =
         MultibodyPlantTester::EvalHydroelasticContactForces(*plant_,
                                                             *plant_context_);
-    const SpatialForce<double>& F_BBo_W = F_BBo_W_array[body_->index()];
+    const SpatialForce<double>& F_BBo_W = F_BBo_W_array[body_->node_index()];
     return F_BBo_W.translational()[2];  // Normal force.
   };
 
@@ -200,6 +201,37 @@ TEST_F(HydroelasticModelTests, ContactForce) {
     EXPECT_GT(percentile_error, 0.0);
     EXPECT_LT(percentile_error, observed_percentile_error);
   }
+}
+
+// The computation of hydroelastic forces and the effect external forces have on
+// accelerations is tested elsewhere. This test merely verifies the proper
+// wiring of the hydroelastic model into the computation of accelerations.
+// Therefore we only test the acceleration of the CoM and ignore angular
+// accelerations.
+TEST_F(HydroelasticModelTests, ContactDynamics) {
+  const double penetration = 0.02;
+  SetPose(penetration);
+  const auto& F_BBo_W_array =
+      MultibodyPlantTester::EvalHydroelasticContactForces(*plant_,
+                                                          *plant_context_);
+  const SpatialForce<double>& F_BBo_W = F_BBo_W_array[body_->node_index()];
+  // Contact force by hydroelastics.
+  const Vector3<double> fhydro_BBo_W = F_BBo_W.translational();
+
+  auto derivatives = plant_->AllocateTimeDerivatives();
+  plant_->CalcTimeDerivatives(*plant_context_, derivatives.get());
+  const VectorX<double> vdot =
+      derivatives->get_generalized_velocity().CopyToVector();
+  std::vector<SpatialAcceleration<double>> A_WBo(plant_->num_bodies());
+  plant_->CalcSpatialAccelerationsFromVdot(*plant_context_, vdot, &A_WBo);
+  // Translational acceleration of Bo.
+  const Vector3<double> a_WBo = A_WBo[body_->index()].translational();
+
+  // Expected acceleration, including gravity.
+  const Vector3<double> a_WBo_expected =
+      fhydro_BBo_W / kMass_ + plant_->gravity_field().gravity_vector();
+  EXPECT_TRUE(CompareMatrices(a_WBo_expected, a_WBo,
+                              10 * std::numeric_limits<double>::epsilon()));
 }
 
 }  // namespace
