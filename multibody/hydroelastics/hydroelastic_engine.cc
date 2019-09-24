@@ -197,11 +197,15 @@ optional<ContactSurface<T>> HydroelasticEngine<T>::CalcContactSurface(
   std::vector<Vector3<T>> grad_level_set_R_surface;
 
   const auto X_RS = X_WR.inverse() * X_WS;
+  // Surface is measured and expressed in frame R. We'll transform to frame W
+  // below if non-empty.
   std::unique_ptr<SurfaceMesh<T>> surface_W = CalcZeroLevelSetInMeshDomain(
       soft_field_S.volume_mesh(), rigid_model_R.level_set(), X_RS,
       soft_field_S.scalar_field().values(), &e_s_surface,
       &grad_level_set_R_surface);
   if (surface_W->num_vertices() == 0) return nullopt;
+  // Transform with vertices measured and expressed in frame W.
+  surface_W->TransformVertices(X_WR);
 
   // TODO(edrumwri): This says that it is a pressure field, but notation
   //                 reflects that it is a strain field. Fix.

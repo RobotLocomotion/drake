@@ -276,9 +276,9 @@ int IntersectTetWithLevelSet(
 /// Graphics Gems IV, pp. 324-349.
 ///
 /// @returns A triangulation of the zero level set of `φ(V)` in the volume
-/// defined by `mesh_M`.  The triangulation is expressed in frame N. The
-/// right handed normal of each triangle points towards the positive side of the
-/// level set function `φ(V)`.
+/// defined by `mesh_M`.  The triangulation is measured and expressed in frame
+/// N. The right handed normal of each triangle points towards the positive side
+/// of the level set function `φ(V)`.
 ///
 /// @note  The geometry::SurfaceMesh may have duplicate vertices.
 template <typename T>
