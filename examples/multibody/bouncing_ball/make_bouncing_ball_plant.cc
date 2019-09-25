@@ -17,11 +17,10 @@ using geometry::Sphere;
 using geometry::HalfSpace;
 using geometry::SceneGraph;
 
-std::unique_ptr<drake::multibody::MultibodyPlant<double>>
-MakeBouncingBallPlant(double radius, double mass,
-                      const CoulombFriction<double>& surface_friction,
-                      const Vector3<double>& gravity_W,
-                      SceneGraph<double>* scene_graph) {
+std::unique_ptr<drake::multibody::MultibodyPlant<double>> MakeBouncingBallPlant(
+    double radius, double mass, double elastic_modulus, double dissipation,
+    const CoulombFriction<double>& surface_friction,
+    const Vector3<double>& gravity_W, SceneGraph<double>* scene_graph) {
   auto plant = std::make_unique<MultibodyPlant<double>>();
 
   UnitInertia<double> G_Bcm = UnitInertia<double>::SolidSphere(radius);
@@ -47,19 +46,51 @@ MakeBouncingBallPlant(double radius, double mass,
     // Add sphere geometry for the ball.
     // Pose of sphere geometry S in body frame B.
     const RigidTransformd X_BS = RigidTransformd::Identity();
-    plant->RegisterCollisionGeometry(ball, X_BS, Sphere(radius), "collision",
-                                     surface_friction);
+    geometry::GeometryId sphere_geometry = plant->RegisterCollisionGeometry(
+        ball, X_BS, Sphere(radius), "collision", surface_friction);
+
+    // Set material properties for hydroelastics.
+    plant->set_elastic_modulus(sphere_geometry, elastic_modulus);
+    plant->set_hunt_crossley_dissipation(sphere_geometry, dissipation);
 
     // Add visual for the ball.
     const Vector4<double> orange(1.0, 0.55, 0.0, 1.0);
     plant->RegisterVisualGeometry(ball, X_BS, Sphere(radius), "visual", orange);
+
+    // We add a few purple spots so that we can appreciate the sphere's
+    // rotation.
+    const Vector4<double> red(1.0, 0.0, 0.0, 1.0);
+    const Vector4<double> green(0.0, 1.0, 0.0, 1.0);
+    const Vector4<double> blue(0.0, 0.0, 1.0, 1.0);
+    const double visual_radius = 0.2 * radius;
+    const geometry::Cylinder spot(visual_radius, visual_radius);
+    // N.B. We do not place the cylinder's cap exactly on the sphere surface to
+    // avoid visualization artifacts when the surfaces are kissing.
+    const double radial_offset = radius - 0.45 * visual_radius;
+    auto spot_pose = [](const Vector3<double>& position) {
+      // The cylinder's z-axis is defined as the normalized vector from the
+      // sphere's origin to the cylinder's center `position`.
+      const Vector3<double> axis = position.normalized();
+      return RigidTransformd(
+          Eigen::Quaterniond::FromTwoVectors(Vector3<double>::UnitZ(), axis),
+          position);
+    };
+    plant->RegisterVisualGeometry(ball, spot_pose({radial_offset, 0., 0.}),
+                                  spot, "sphere_x+", red);
+    plant->RegisterVisualGeometry(ball, spot_pose({-radial_offset, 0., 0.}),
+                                  spot, "sphere_x-", red);
+    plant->RegisterVisualGeometry(ball, spot_pose({0., radial_offset, 0.}),
+                                  spot, "sphere_y+", green);
+    plant->RegisterVisualGeometry(ball, spot_pose({0., -radial_offset, 0.}),
+                                  spot, "sphere_y-", green);
+    plant->RegisterVisualGeometry(ball, spot_pose({0., 0., radial_offset}),
+                                  spot, "sphere_z+", blue);
+    plant->RegisterVisualGeometry(ball, spot_pose({0., 0., -radial_offset}),
+                                  spot, "sphere_z-", blue);
   }
 
   // Gravity acting in the -z direction.
   plant->mutable_gravity_field().set_gravity_vector(gravity_W);
-
-  // We are done creating the plant.
-  plant->Finalize();
 
   return plant;
 }
