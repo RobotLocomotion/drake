@@ -14,10 +14,10 @@ drake_cc_package_library(
     name = "proximity",
     deps = [
         ":collision_filter_legacy",
-        ":distance_to_point",
+        ":distance_to_point_callback",
         ":distance_to_point_with_gradient",
-        ":distance_to_shape",
-        ":find_collision_candidates",
+        ":distance_to_shape_callback",
+        ":find_collision_candidates_callback",
         ":make_box_mesh",
         ":make_sphere_mesh",
         ":mesh_field",
@@ -33,9 +33,9 @@ drake_cc_package_library(
 )
 
 drake_cc_library(
-    name = "find_collision_candidates",
-    srcs = ["find_collision_candidates.cc"],
-    hdrs = ["find_collision_candidates.h"],
+    name = "find_collision_candidates_callback",
+    srcs = ["find_collision_candidates_callback.cc"],
+    hdrs = ["find_collision_candidates_callback.h"],
     deps = [
         ":collision_filter_legacy",
         ":proximity_utilities",
@@ -56,8 +56,8 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "distance_to_point",
-    hdrs = ["distance_to_point.h"],
+    name = "distance_to_point_callback",
+    hdrs = ["distance_to_point_callback.h"],
     deps = [
         ":proximity_utilities",
         "//common:essential",
@@ -73,7 +73,7 @@ drake_cc_library(
     srcs = ["distance_to_point_with_gradient.cc"],
     hdrs = ["distance_to_point_with_gradient.h"],
     deps = [
-        ":distance_to_point",
+        ":distance_to_point_callback",
         ":proximity_utilities",
         "//geometry:geometry_ids",
         "//geometry/query_results:signed_distance_to_point_with_gradient",
@@ -83,11 +83,11 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "distance_to_shape",
-    hdrs = ["distance_to_shape.h"],
+    name = "distance_to_shape_callback",
+    hdrs = ["distance_to_shape_callback.h"],
     deps = [
         ":collision_filter_legacy",
-        ":distance_to_point",
+        ":distance_to_point_callback",
         ":proximity_utilities",
         "//geometry/query_results:signed_distance_pair",
     ],
@@ -236,9 +236,9 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "find_collision_candidates_test",
+    name = "find_collision_candidates_callback_test",
     deps = [
-        ":find_collision_candidates",
+        ":find_collision_candidates_callback",
     ],
 )
 
@@ -252,9 +252,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "distance_to_point_test",
+    name = "distance_to_point_callback_test",
     deps = [
-        ":distance_to_point",
+        ":distance_to_point_callback",
         "//common/test_utilities",
         "//geometry:utilities",
         "//math",
@@ -272,7 +272,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "distance_sphere_to_shape_test",
     deps = [
-        ":distance_to_shape",
+        ":distance_to_shape_callback",
         "//common/test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry:geometry_ids",

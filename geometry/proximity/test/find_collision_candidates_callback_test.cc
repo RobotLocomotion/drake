@@ -1,4 +1,4 @@
-#include "drake/geometry/proximity/find_collision_candidates.h"
+#include "drake/geometry/proximity/find_collision_candidates_callback.h"
 
 #include <utility>
 #include <vector>
