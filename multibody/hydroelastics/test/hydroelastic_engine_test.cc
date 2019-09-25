@@ -248,17 +248,17 @@ TEST_F(SphereVsPlaneTest, VerifyModelSizeAndResults) {
                                             : Vector3<double>(0.0, 0.0, -1.0);
 
   for (geometry::SurfaceVertexIndex v(0); v < mesh_G.num_vertices(); ++v) {
-    // Position of a vertex V in the frame S of the soft sphere.
-    const Vector3d p_SV = mesh_G.vertex(v).r_MV();
+    // Position of a vertex V in the ground frame G.
+    const Vector3d p_GV = mesh_G.vertex(v).r_MV();
 
     // We verify that the positions were correctly interpolated to lie on the
     // plane.
-    EXPECT_NEAR(p_SV[2], 0.0, kTolerance);
+    EXPECT_NEAR(p_GV[2], 0.0, kTolerance);
 
     // Verify surface vertices lie within a circle of the expected radius.
     const double surface_radius =
         std::sqrt(radius_ * radius_ - height_ * height_);
-    const double radius = p_SV.norm();  // since z component is zero.
+    const double radius = p_GV.norm();  // since z component is zero.
     EXPECT_LE(radius, surface_radius);
 
     // We expect ∇hₘₙ to point from N towards M.
