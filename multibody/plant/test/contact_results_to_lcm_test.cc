@@ -337,7 +337,7 @@ void ValidateCloseToMeshTriangle(const double p_WA[3], const double p_WB[3],
 // the codebase.
 // This is not a test, just some code that exists to visualize the contact
 // results while DrakeVisualizer plugins are still in development.
-#if 1
+#if 0
 GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResultsVisualization) {
   DiagramBuilder<double> builder;
 
@@ -382,9 +382,6 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResultsVisualization) {
   const systems::InputPortIndex contact_results_input_port_index =
       builder.ExportInput(
           contact_results_to_lcm_system.get_contact_result_input_port());
-  const systems::OutputPortIndex
-      lcm_hydroelastic_contact_surface_output_port_index = builder.ExportOutput(
-          contact_results_to_lcm_system.get_lcm_message_output_port());
 
   // Finish constructing the diagram; note that we use the default pose for
   // the box, which will make the bottom of the box's surface lie at z=-0.5.
@@ -401,14 +398,6 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResultsVisualization) {
   // visualizer.
   geometry::DispatchLoadMessage(*scene_graph, &lcm);
   diagram->Publish(*diagram_context);
-
-  // Get the LCM message that corresponds to the contact results.
-  Value<lcmt_contact_results_for_viz> lcm_message_value;
-  diagram->get_output_port(
-      lcm_hydroelastic_contact_surface_output_port_index).Calc(
-          *diagram_context, &lcm_message_value);
-  //const lcmt_contact_results_for_viz& lcm_message =
-  //    lcm_message_value.get_value();
 }
 #endif
 
