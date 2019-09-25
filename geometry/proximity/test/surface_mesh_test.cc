@@ -188,6 +188,29 @@ GTEST_TEST(SurfaceMeshTest, TestArea) {
   EXPECT_NEAR(GenerateZeroAreaMesh()->total_area(), 0.0, tol);
 }
 
+// Checks the face normal calculations.
+GTEST_TEST(SurfaceMeshTest, TestFaceNormal) {
+  const math::RigidTransform<double> X_WM(
+      math::RollPitchYaw<double>(M_PI / 6.0, M_PI / 3.0, M_PI / 4.0),
+      Vector3<double>(1.0, 2.0, 3.0));
+  // We estimate the rounding errors from rotation (multiply a vector by a
+  // 3x3 matrix) about 3 machine epsilons.
+  const double tol = 3.0 * std::numeric_limits<double>::epsilon();
+  auto surface_mesh = TestSurfaceMesh<double>(X_WM);
+  const Vector3<double> expect_normal =
+      X_WM.rotation() * Vector3<double>::UnitZ();
+  EXPECT_TRUE(CompareMatrices(
+      expect_normal, surface_mesh->face_normal(SurfaceFaceIndex(0)), tol));
+  EXPECT_TRUE(CompareMatrices(
+      expect_normal, surface_mesh->face_normal(SurfaceFaceIndex(1)), tol));
+
+  // Verify that the zero-area mesh has zero-vector face normal.
+  auto zero_mesh = GenerateZeroAreaMesh();
+  const Vector3<double> zero_normal = Vector3<double>::Zero();
+  EXPECT_EQ(zero_normal, zero_mesh->face_normal(SurfaceFaceIndex(0)));
+  EXPECT_EQ(zero_normal, zero_mesh->face_normal(SurfaceFaceIndex(1)));
+}
+
 // Checks the centroid calculations.
 GTEST_TEST(SurfaceMeshTest, TestCentroid) {
   const double tol = 10 * std::numeric_limits<double>::epsilon();
@@ -324,6 +347,11 @@ GTEST_TEST(SurfaceMeshTest, ReverseFaceWinding) {
     SurfaceFaceIndex i(value);
     EXPECT_TRUE(winding_reversed(ref_mesh->element(i), test_mesh->element(i)));
   }
+
+  for (int value : {0, 1}) {
+    SurfaceFaceIndex i(value);
+    EXPECT_EQ(ref_mesh->face_normal(i), - test_mesh->face_normal(i));
+  }
 }
 
 GTEST_TEST(SurfaceMeshTest, TransformVertices) {
@@ -342,6 +370,18 @@ GTEST_TEST(SurfaceMeshTest, TransformVertices) {
     const Vector3d p_FV_ref = X_FM * p_MV_ref;
     EXPECT_TRUE(CompareMatrices(p_FV_test, p_FV_ref));
   }
+
+  for (SurfaceFaceIndex f(0); f < test_mesh->num_faces(); ++f) {
+    const Vector3d& nhat_F_test = test_mesh->face_normal(f);
+    const Vector3d& nhat_M_ref = ref_mesh->face_normal(f);
+    const Vector3d nhat_F_ref = X_FM.rotation() * nhat_M_ref;
+    EXPECT_TRUE(CompareMatrices(nhat_F_test, nhat_F_ref));
+  }
+
+  const Vector3d& p_FSc_test = test_mesh->centroid();
+  const Vector3d& p_MSc_ref = ref_mesh->centroid();
+  const Vector3d p_FSc_ref = X_FM * p_MSc_ref;
+  EXPECT_TRUE(CompareMatrices(p_FSc_test, p_FSc_ref));
 }
 
 }  // namespace
