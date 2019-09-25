@@ -19,19 +19,3 @@ cc_library(
     ],
     licenses = ["notice"],  # BSD-3-Clause
 )
-
-cc_library(
-    name = "ldl",
-    hdrs = [
-        "include/SuiteSparse_config.h",
-        "include/ldl.h",
-    ],
-    includes = [
-        "include",
-    ],
-    linkopts = [
-        "-L" + LIBDIR,
-        "-lldl",
-    ],
-    licenses = ["restricted"],  # LGPL-2.1+
-)

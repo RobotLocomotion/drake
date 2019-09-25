@@ -14,6 +14,15 @@
 namespace drake {
 namespace solvers {
 namespace test {
+
+namespace {
+
+// SCS uses `eps = 1e-5` by default.  For testing, we'll allow for some
+// small cumulative error beyond that.
+constexpr double kTol = 1e-4;
+
+}  // namespace
+
 GTEST_TEST(LinearProgramTest, Test0) {
   // Test a linear program with only equality constraint.
   // min x(0) + 2 * x(1)
@@ -41,7 +50,6 @@ GTEST_TEST(LinearProgramTest, Test0) {
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
   }
 
-  const double tol{1E-5};
   // Now add the constraint x(0) <= 5. The problem is
   // min x(0) + 2x(1)
   // s.t x(0) + x(1) = 2
@@ -53,9 +61,9 @@ GTEST_TEST(LinearProgramTest, Test0) {
   if (solver.available()) {
     auto result = solver.Solve(prog, {}, {});
     EXPECT_TRUE(result.is_success());
-    EXPECT_NEAR(result.get_optimal_cost(), -1, tol);
+    EXPECT_NEAR(result.get_optimal_cost(), -1, kTol);
     const Eigen::Vector2d x_expected(5, -3);
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, tol,
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, kTol,
                                 MatrixCompareType::absolute));
   }
 
@@ -71,9 +79,9 @@ GTEST_TEST(LinearProgramTest, Test0) {
   if (solver.available()) {
     auto result = solver.Solve(prog, {}, {});
     EXPECT_TRUE(result.is_success());
-    EXPECT_NEAR(result.get_optimal_cost(), 11, tol);
+    EXPECT_NEAR(result.get_optimal_cost(), 11, kTol);
     const Eigen::Vector2d x_expected(2, 0);
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, tol,
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, kTol,
                                 MatrixCompareType::absolute));
   }
 }
@@ -131,12 +139,11 @@ GTEST_TEST(LinearProgramTest, Test2) {
 
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    const double tol{2E-5};
     auto result = scs_solver.Solve(prog, {}, {});
     EXPECT_TRUE(result.is_success());
-    EXPECT_NEAR(result.get_optimal_cost(), 8, tol);
+    EXPECT_NEAR(result.get_optimal_cost(), 8, kTol);
     EXPECT_TRUE(CompareMatrices(result.GetSolution(x), Eigen::Vector3d(1, 1, 1),
-                                tol, MatrixCompareType::absolute));
+                                kTol, MatrixCompareType::absolute));
   }
 }
 
@@ -174,7 +181,7 @@ TEST_F(UnboundedLinearProgramTest0, TestUnbounded) {
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    SolveAndCheckSolution(scs_solver, 1E-5);
+    SolveAndCheckSolution(scs_solver, kTol);
   }
 }
 
@@ -184,7 +191,7 @@ INSTANTIATE_TEST_CASE_P(SCSTest, TestEllipsoidsSeparation,
 TEST_P(TestQPasSOCP, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    SolveAndCheckSolution(scs_solver, 1E-5);
+    SolveAndCheckSolution(scs_solver, kTol);
   }
 }
 
@@ -194,7 +201,7 @@ INSTANTIATE_TEST_CASE_P(SCSTest, TestQPasSOCP,
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    SolveAndCheckSolution(scs_solver, 1E-5);
+    SolveAndCheckSolution(scs_solver, kTol);
   }
 }
 
@@ -250,70 +257,70 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
 GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    TestTrivialSDP(scs_solver, 1E-5);
+    TestTrivialSDP(scs_solver, kTol);
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, CommonLyapunov) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    FindCommonLyapunov(scs_solver, 1E-5);
+    FindCommonLyapunov(scs_solver, kTol);
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    FindOuterEllipsoid(scs_solver, 1E-5);
+    FindOuterEllipsoid(scs_solver, kTol);
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    SolveEigenvalueProblem(scs_solver, 1E-5);
+    SolveEigenvalueProblem(scs_solver, kTol);
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithSecondOrderConeExample1) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    SolveSDPwithSecondOrderConeExample1(scs_solver, 1E-5);
+    SolveSDPwithSecondOrderConeExample1(scs_solver, kTol);
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithSecondOrderConeExample2) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    SolveSDPwithSecondOrderConeExample2(scs_solver, 1E-5);
+    SolveSDPwithSecondOrderConeExample2(scs_solver, kTol);
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithOverlappingVariables) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    SolveSDPwithOverlappingVariables(scs_solver, 1E-5);
+    SolveSDPwithOverlappingVariables(scs_solver, kTol);
   }
 }
 
 GTEST_TEST(TestExponentialConeProgram, ExponentialConeTrivialExample) {
   ScsSolver solver;
   if (solver.available()) {
-    ExponentialConeTrivialExample(solver, 1E-5);
+    ExponentialConeTrivialExample(solver, kTol);
   }
 }
 
 GTEST_TEST(TestExponentialConeProgram, MinimizeKLDivengence) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    MinimizeKLDivergence(scs_solver, 1E-5);
+    MinimizeKLDivergence(scs_solver, kTol);
   }
 }
 
 GTEST_TEST(TestExponentialConeProgram, MinimalEllipsoidConveringPoints) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    MinimalEllipsoidCoveringPoints(scs_solver, 1E-5);
+    MinimalEllipsoidCoveringPoints(scs_solver, kTol);
   }
 }
 
