@@ -470,6 +470,19 @@ GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResults) {
           10 * std::numeric_limits<double>::epsilon());
     }
   }
+
+  // Verify that the pressure values match those set.
+  for (int i = 0; i < surface_msg.num_triangles; ++i) {
+    EXPECT_EQ(surface_msg.triangles[i].pressure_A,
+              std::abs(surface_msg.triangles[i].p_WA[0] +
+                       surface_msg.triangles[i].p_WA[1]));
+    EXPECT_EQ(surface_msg.triangles[i].pressure_B,
+              std::abs(surface_msg.triangles[i].p_WB[0] +
+                       surface_msg.triangles[i].p_WB[1]));
+    EXPECT_EQ(surface_msg.triangles[i].pressure_C,
+              std::abs(surface_msg.triangles[i].p_WC[0] +
+                       surface_msg.triangles[i].p_WC[1]));
+  }
 }
 
 }  // namespace

@@ -372,7 +372,7 @@ class HydroelasticContactPressureVisualizer(object):
             cls = vis.PolyDataItem
             view = applogic.getCurrentRenderView()
             item = cls(str(key), d.getPolyData(), view)
-            om.addToObjectModel(item, getParentObj(folder))
+            om.addToObjectModel(item, folder)
             item.setProperty('Visible', True)
             item.setProperty('Alpha', 1.0)
             item.colorBy('RGB255')
