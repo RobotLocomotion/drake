@@ -663,12 +663,13 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
   T last_dx_norm = std::numeric_limits<double>::infinity();
 
   // Calculate Jacobian and iteration matrices (and factorizations), as needed.
-  // Note that this method computes the Jacobian matrix around (tf, *xtplus),
-  // where *xtplus is the solution computed by the Radau method, whereas the
-  // Radau3 method computes it around (t0, xt0).
-  if (!this->MaybeFreshenMatrices(t0, *xtplus, h, trial,
-      ComputeImplicitTrapezoidIterationMatrix,
-      &iteration_matrix_implicit_trapezoid_)) {
+  // TODO(edrumwri) Consider computing the Jacobian matrix around xtplus. This
+  //                would give a better Jacobian, but would complicate the
+  //                logic, since the Jacobian would no longer (necessarily) be
+  //                fresh upon fallback to a smaller step size.
+  if (!this->MaybeFreshenMatrices(t0, xt0, h, trial,
+                                  ComputeImplicitTrapezoidIterationMatrix,
+                                  &iteration_matrix_implicit_trapezoid_)) {
     return false;
   }
 
