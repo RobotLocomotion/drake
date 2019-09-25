@@ -1387,6 +1387,8 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   // No derivatives to compute if state is discrete.
   if (is_discrete()) return;
   // No derivatives to compute if state is empty. (Will segfault otherwise.)
+  // TODO(amcastro-tri): When nv = 0 we should not declare state or cache
+  // entries at all and the system framework will never call this.
   if (this->num_multibody_states() == 0) return;
 
   const auto x =
