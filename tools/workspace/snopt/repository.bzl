@@ -23,8 +23,6 @@ Arguments:
         branch, commit, or tag must be provided.
     branch: Branch in the remote git repository to be checked out. At most one
         of branch, commit, or tag must be provided.
-    use_drake_build_rules: When obtaining SNOPT via git, controls whether or
-        not Drake's BUILD file should supplant the file(s) in git.
 """
 
 load(
@@ -52,8 +50,7 @@ def snopt_repository(
         commit = None,
         shallow_since = None,
         tag = None,
-        branch = None,
-        use_drake_build_rules = True):
+        branch = None):
     if not branch and not commit and not tag:
         commit = "0254e961cb8c60193b0862a0428fd6a42bfb5243"
         shallow_since = "1546539374 -0500"
@@ -65,21 +62,7 @@ def snopt_repository(
         shallow_since = shallow_since,
         tag = tag,
         branch = branch,
-        use_drake_build_rules = use_drake_build_rules,
     )
-
-def _delete_bazel_files(repo_ctx):
-    # Delete any existing BUILD, BUILD.bazel, or WORKSPACE files from the
-    # archive or cloned repository.
-    bash = repo_ctx.os.environ.get("BAZEL_SH", "bash")
-    execute_or_fail(repo_ctx, [bash, "-c", """
-        set -euxo pipefail
-        find . \
-            -name BUILD -print0 -o \
-            -name BUILD.bazel -print0 -o \
-            -name WORKSPACE -print0 |
-            xargs -t -n1 -0 -I{} mv {} {}.upstream-ignored
-        """])
 
 def _setup_git(repo_ctx):
     # Download the snopt sources from an access-controlled git repository.
@@ -97,11 +80,7 @@ def _setup_git(repo_ctx):
         fail("Exactly one of branch, commit, or tag must be provided")
 
     git_repo_info = git_repo(repo_ctx, str(repo_ctx.path(".")))
-
-    if repo_ctx.attr.use_drake_build_rules:
-        _delete_bazel_files(repo_ctx)
-        repo_ctx.symlink(repo_ctx.attr.build_file, "BUILD.bazel")
-
+    repo_ctx.symlink(repo_ctx.attr.build_file, "BUILD.bazel")
     patch(repo_ctx)
     repo_ctx.delete(repo_ctx.path(".git"))
 
@@ -168,7 +147,6 @@ def _setup_deferred_failure(repo_ctx, error_message):
             error_message,
         ),
     )
-    _delete_bazel_files(repo_ctx)
     repo_ctx.symlink(
         Label("@drake//tools/workspace/snopt:package-error.BUILD.bazel"),
         "BUILD.bazel",
@@ -177,7 +155,6 @@ def _setup_deferred_failure(repo_ctx, error_message):
 def _setup_local_archive(repo_ctx, snopt_path):
     error = _extract_local_archive(repo_ctx, snopt_path)
     if error == None:
-        _delete_bazel_files(repo_ctx)
         repo_ctx.symlink(repo_ctx.attr.build_file, "BUILD.bazel")
     else:
         _setup_deferred_failure(repo_ctx, error)
@@ -244,7 +221,6 @@ _attrs = {
         allow_single_file = True,
         default = "@drake//tools/workspace/snopt:package.BUILD.bazel",
     ),
-    "use_drake_build_rules": attr.bool(default = True),
 }
 
 _snopt_repository = repository_rule(
