@@ -2964,13 +2964,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const systems::OutputPort<T>& get_generalized_contact_forces_output_port(
       ModelInstanceIndex model_instance) const;
 
-  // TODO(amcastro-tri): report contact results for plants modeled as a
-  // continuous system as well.
   /// Returns a constant reference to the port that outputs ContactResults.
   /// @throws std::exception if called pre-finalize, see Finalize().
-  /// @warning Point contacts are not currently reported for MultibodyPlant
-  ///          systems modeled using continuous variables (i.e., if
-  ///          `is_discrete() == false`).
   const systems::OutputPort<T>& get_contact_results_output_port() const;
 
   /// Returns a constant reference to the *world* body.
@@ -3471,14 +3466,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         .template Eval<internal::ImplicitStribeckSolverResults<T>>(context);
   }
 
-  // Helper method to fill in the ContactResults given the current context.
-  // If cached contact solver results are not up-to-date with `context`,
-  // they'll be  recomputed, see EvalImplicitStribeckResults(). The solver
-  // results are then used to compute contact results into `contacts`.
-  void CalcContactResults(const systems::Context<T>& context,
-                          ContactResults<T>* contacts) const;
+  // Helper method to fill in the ContactResults given the current context when
+  // the model is continuous.
+  void CalcContactResultsContinuous(const systems::Context<T>& context,
+                                    ContactResults<T>* contact_results) const;
 
-  // Eval version of the method CalcContactResults().
+  // Helper method to fill in the ContactResults given the current context when
+  // the model is discrete. If cached contact solver results are not up-to-date
+  // with `context`, they'll be  recomputed, see EvalImplicitStribeckResults().
+  // The solver results are then used to compute contact results into
+  // `contact_results`.
+  void CalcContactResultsDiscrete(const systems::Context<T>& context,
+                                  ContactResults<T>* contact_results) const;
+
+  // Evaluate contact results.
   const ContactResults<T>& EvalContactResults(
       const systems::Context<T>& context) const {
     return this->get_cache_entry(cache_indexes_.contact_results)
@@ -3594,9 +3595,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // using a penalty method.
   void CalcAndAddContactForcesByPenaltyMethod(
       const systems::Context<T>& context,
-      const internal::PositionKinematicsCache<T>& pc,
-      const internal::VelocityKinematicsCache<T>& vc,
-      const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
   // Helper to create the underlying hydroelastic fields used in the
