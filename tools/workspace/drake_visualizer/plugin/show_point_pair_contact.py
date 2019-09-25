@@ -111,11 +111,13 @@ class _ContactConfigDialog(QtGui.QDialog):
 
         self.setLayout(layout)
 
+
 def get_sub_menu_or_make(menu, menu_name):
     for a in menu.actions():
         if a.text == menu_name:
             return a.menu()
     return menu.addMenu(menu_name)
+
 
 class ContactVisualizer(object):
     def __init__(self):

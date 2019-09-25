@@ -14,12 +14,6 @@ import drake as lcmdrakemsg
 
 from drake.tools.workspace.drake_visualizer.plugin import scoped_singleton_func
 
-# TODO(edrumwri) Refactor this.
-def getParentObj(parent):
-    if isinstance(parent, str):
-        return om.getOrCreateContainer(parent)
-    else:
-        return parent
 
 class ColorMapModes:
     '''Common specification of color map modes'''
@@ -58,6 +52,7 @@ class ColorMapModes:
     kTwoToneMap = 1
     kIntensityMap = 2
 
+
 class _ColorMapConfigurationDialog(QtGui.QDialog):
     '''A simple dialog for configuring the color map used in pressure
        visualization'''
@@ -90,9 +85,9 @@ class _ColorMapConfigurationDialog(QtGui.QDialog):
         layout.addWidget(QtGui.QLabel("Minimum pressure"), row, 0)
         self.min_pressure = QtGui.QLineEdit()
         self.min_pressure.setToolTip('Pressures at or less than this value '
-                                      'will be visualized as the color defined'
-                                      ' at the minimum value of the color map '
-                                      '(must be at least zero).')
+                                     'will be visualized as the color defined'
+                                     ' at the minimum value of the color map '
+                                     '(must be at least zero).')
         validator = QtGui.QDoubleValidator(0, 1e20, 2, self.min_pressure)
         validator.setNotation(QtGui.QDoubleValidator.StandardNotation)
         self.min_pressure.setValidator(validator)
@@ -104,12 +99,12 @@ class _ColorMapConfigurationDialog(QtGui.QDialog):
         layout.addWidget(QtGui.QLabel("Maximum pressure"), row, 0)
         self.max_pressure = QtGui.QLineEdit()
         self.max_pressure.setToolTip('Pressures at or greater than this value '
-                                      'will be visualized as the color defined'
-                                      ' at the maximum value of the color map '
-                                      '(must be larger than the minimum '
-                                      'pressure).')
-        validator = QtGui.QDoubleValidator(float(self.min_pressure.text), 1e20, 2,
-                                           self.max_pressure)
+                                     'will be visualized as the color defined'
+                                     ' at the maximum value of the color map '
+                                     '(must be larger than the minimum '
+                                     'pressure).')
+        validator = QtGui.QDoubleValidator(float(self.min_pressure.text),
+                                           1e20, 2, self.max_pressure)
         validator.setNotation(QtGui.QDoubleValidator.StandardNotation)
         self.max_pressure.setValidator(validator)
         self.max_pressure.setText("{:.3g}".format(visualizer.max_pressure))
@@ -157,13 +152,15 @@ class ColorMap:
         """Returns an affine mapped version of the data based on the data range
          provided"""
         if (min_val > max_val):
-            raise AttributeError("Bad range: [{}, {}]".format(min_val, max_val))
+            raise AttributeError(
+                "Bad range: [{}, {}]".format(min_val, max_val))
         assert(max_val >= min_val)
         range = max_val - min_val
-        if ( range > 0.00001 ):
+        if (range > 0.00001):
             return np.clip((data - min_val) / (max_val - min_val), 0.0, 1.0)
         else:
             return np.zeros_like(data)
+
 
 class FlameMap(ColorMap):
     '''Color map that maps
@@ -182,9 +179,11 @@ class FlameMap(ColorMap):
             color[2] = np.clip(1.0 - (norm_data - 0.25) * 4.0, 0.0, 1.0)
         return color
 
+
 class IntensityMap(ColorMap):
     def _do_get_color(selfself, norm_data):
         return np.array((0.0, 1.0, 0.0), dtype=np.float) * norm_data
+
 
 class TwoToneMap(ColorMap):
     def __init__(self):
@@ -206,21 +205,21 @@ class TwoToneMap(ColorMap):
         r = g = b = 0.0
         c = s * v
         h /= 60.0
-        x = c * (1 - abs( ( h % 2 ) - 1 ) )
+        x = c * (1 - abs((h % 2) - 1))
 
-        if ( h >= 0 and h < 1 ):
+        if (h >= 0 and h < 1):
             r = c
             g = x
-        elif ( h >= 1 and h < 2 ):
+        elif (h >= 1 and h < 2):
             r = x
             g = c
-        elif ( h >= 2 and h < 3 ):
+        elif (h >= 2 and h < 3):
             g = c
             b = x
-        elif ( h >= 3 and h < 4 ):
+        elif (h >= 3 and h < 4):
             g = x
             b = c
-        elif ( h >= 4 and h < 5 ):
+        elif (h >= 4 and h < 5):
             r = x
             b = c
         else:
@@ -232,11 +231,13 @@ class TwoToneMap(ColorMap):
         b += m
         return r, g, b
 
+
 def get_sub_menu_or_make(menu, menu_name):
     for a in menu.actions():
         if a.text == menu_name:
             return a.menu()
     return menu.addMenu(menu_name)
+
 
 class HydroelasticContactPressureVisualizer(object):
     def __init__(self):
@@ -345,8 +346,8 @@ class HydroelasticContactPressureVisualizer(object):
                 # triangles slightly offset to both sides of the contact
                 # surface.
 
-                # Note that if the area of this triangle is very small, we won't
-                # waste time visualizing it, which also means that
+                # Note that if the area of this triangle is very small, we
+                # won't waste time visualizing it, which also means that
                 # won't have to worry about degenerate triangles).
 
                 # TODO(edrumwri) Consider allowing the user to set these next
@@ -360,13 +361,13 @@ class HydroelasticContactPressureVisualizer(object):
                     offset = unit_normal * offset_scalar
 
                     d.addPolygon([va + offset, vb + offset, vc + offset],
-                        color=[color_map.get_color(tri.pressure_A),
-                               color_map.get_color(tri.pressure_B),
-                               color_map.get_color(tri.pressure_C)])
+                                 color=[color_map.get_color(tri.pressure_A),
+                                        color_map.get_color(tri.pressure_B),
+                                        color_map.get_color(tri.pressure_C)])
                     d.addPolygon([va - offset, vb - offset, vc - offset],
-                        color=[color_map.get_color(tri.pressure_A),
-                               color_map.get_color(tri.pressure_B),
-                               color_map.get_color(tri.pressure_C)])
+                                 color=[color_map.get_color(tri.pressure_A),
+                                        color_map.get_color(tri.pressure_B),
+                                        color_map.get_color(tri.pressure_C)])
 
             key = (str(surface.body1_name), str(surface.body2_name))
             cls = vis.PolyDataItem
@@ -376,6 +377,7 @@ class HydroelasticContactPressureVisualizer(object):
             item.setProperty('Visible', True)
             item.setProperty('Alpha', 1.0)
             item.colorBy('RGB255')
+
 
 @scoped_singleton_func
 def init_visualizer():
