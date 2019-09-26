@@ -4,6 +4,7 @@
 from __future__ import absolute_import, division, print_function
 import os
 import sys
+import warnings
 
 import six
 
@@ -68,3 +69,22 @@ def _setattr_kwargs(obj, kwargs):
     # For `ParamInit` in `pydrake_pybind.h`.
     for name, value in kwargs.items():
         setattr(obj, name, value)
+
+
+class _DrakeImportWarning(Warning):
+    pass
+
+
+_RTLD_GLOBAL_WARNING = r"""
+You may have already (directly or indirectly) imported `torch` which uses
+`RTLD_GLOBAL`. Using `RTLD_GLOBAL` may cause symbol collisions which manifest
+themselves in bugs like "free(): invalid pointer". Please consider importing
+`pydrake` (and related C++-wrapped libraries like `cv2`, `open3d`, etc.)
+*before* importing `torch`. For more details, see:
+https://github.com/pytorch/pytorch/issues/3059#issuecomment-534676459
+"""
+
+
+if "torch._C" in sys.modules:
+    warnings.warn(
+        _RTLD_GLOBAL_WARNING, category=_DrakeImportWarning, stacklevel=3)
