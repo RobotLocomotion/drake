@@ -343,6 +343,7 @@ drake_cc_googletest(
     name = "multibody_plant_hydroelastic_test",
     deps = [
         ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
         "//systems/framework:diagram",
     ],
@@ -398,6 +399,7 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
+        "//systems/analysis:implicit_euler_integrator",
         "//systems/analysis:simulator",
     ],
 )

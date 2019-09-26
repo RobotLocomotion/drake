@@ -1,4 +1,4 @@
-#include "drake/geometry/proximity/distance_to_point.h"
+#include "drake/geometry/proximity/distance_to_point_callback.h"
 
 #include <fcl/fcl.h>
 #include <gtest/gtest.h>

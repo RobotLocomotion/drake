@@ -26,6 +26,10 @@
       </inertial>
 
       <collision name='plane'>
+        <!-- To test forces are frame invariant, we define the frame of the
+        geometry with an arbitrary non-identity pose in the frame of the link.
+        -->
+        <pose>1 0 0 0 0 1.57079632679490</pose>
         <geometry>
           <plane>
             <normal>0.0 0.0 1.0</normal>

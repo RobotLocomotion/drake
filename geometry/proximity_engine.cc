@@ -12,10 +12,10 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/proximity/collision_filter_legacy.h"
-#include "drake/geometry/proximity/distance_to_point.h"
+#include "drake/geometry/proximity/distance_to_point_callback.h"
 #include "drake/geometry/proximity/distance_to_point_with_gradient.h"
-#include "drake/geometry/proximity/distance_to_shape.h"
-#include "drake/geometry/proximity/find_collision_candidates.h"
+#include "drake/geometry/proximity/distance_to_shape_callback.h"
+#include "drake/geometry/proximity/find_collision_candidates_callback.h"
 #include "drake/geometry/utilities.h"
 
 static_assert(std::is_same<tinyobj::real_t, double>::value,
