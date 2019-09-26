@@ -18,6 +18,7 @@ drake_cc_package_library(
         ":distance_to_point_with_gradient",
         ":distance_to_shape_callback",
         ":find_collision_candidates_callback",
+        ":hydroelastic_callback",
         ":make_box_mesh",
         ":make_sphere_mesh",
         ":mesh_field",
@@ -90,6 +91,27 @@ drake_cc_library(
         ":distance_to_point_callback",
         ":proximity_utilities",
         "//geometry/query_results:signed_distance_pair",
+    ],
+)
+
+drake_cc_library(
+    name = "hydroelastic_callback",
+    hdrs = [
+        "hydroelastic_callback.h",
+    ],
+    deps = [
+        ":collision_filter_legacy",
+        ":make_box_mesh",
+        ":make_sphere_mesh",
+        ":mesh_intersection",
+        ":proximity_utilities",
+        ":surface_mesh",
+        ":volume_mesh",
+        "//common:hash",
+        "//geometry/query_results:contact_surface",
+        "//math:geometric_transform",
+        "@fcl",
+        "@fmt",
     ],
 )
 
@@ -278,6 +300,15 @@ drake_cc_googletest(
         "//geometry:geometry_ids",
         "//geometry:utilities",
         "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "hydroelastic_callback_test",
+    deps = [
+        ":hydroelastic_callback",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
