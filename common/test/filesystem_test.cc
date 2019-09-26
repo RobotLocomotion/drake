@@ -1,6 +1,5 @@
 #include "drake/common/filesystem.h"
 
-#include <sys/stat.h>
 #include <unistd.h>
 
 #include <fstream>
@@ -12,9 +11,32 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
+namespace {
+
+// Sanity check a few operations to make sure that the namespace aliasing is
+// working correctly.
+GTEST_TEST(NamespaceAliasSmokeTest, ExistTest) {
+  EXPECT_FALSE(filesystem::is_regular_file({"."}));
+  EXPECT_FALSE(filesystem::is_regular_file({"common"}));
+  EXPECT_TRUE(filesystem::is_regular_file({"common/filesystem_test"}));
+  EXPECT_FALSE(filesystem::is_regular_file({"/no/such/path"}));
+
+  EXPECT_TRUE(filesystem::is_directory({"."}));
+  EXPECT_TRUE(filesystem::is_directory({"common"}));
+  EXPECT_FALSE(filesystem::is_directory({"common/filesystem_test"}));
+  EXPECT_FALSE(filesystem::is_directory({"/no/such/path"}));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      filesystem::read_symlink({"/no_such_readlink"}), std::exception,
+      "Invalid argument: '/no_such_readlink'");
+}
+
+}  // namespace
 namespace internal {
 namespace {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(FilesystemTest, ExistTest) {
   EXPECT_FALSE(IsFile("."));
   EXPECT_FALSE(IsFile("common"));
@@ -26,7 +48,10 @@ GTEST_TEST(FilesystemTest, ExistTest) {
   EXPECT_FALSE(IsDir("common/filesystem_test"));
   EXPECT_FALSE(IsDir("/no/such/path"));
 }
+#pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(FilesystemTest, ReadlinkTest) {
   std::string tmp = temp_directory();
   std::string rel_file = tmp + "/rel_file";
@@ -51,8 +76,9 @@ GTEST_TEST(FilesystemTest, ReadlinkTest) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       Readlink("/no_such_readlink"), std::exception,
-      "Could not open /no_such_readlink");
+      "Invalid argument: '/no_such_readlink'");
 }
+#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace internal
