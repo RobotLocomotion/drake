@@ -31,6 +31,7 @@ drake_cc_package_library(
         ":scalar_dense_output",
         ":scalar_initial_value_problem",
         ":scalar_view_dense_output",
+        ":second_order_implicit_euler_integrator",
         ":semi_explicit_euler_integrator",
         ":simulator",
         ":simulator_status",
@@ -179,6 +180,20 @@ drake_cc_library(
     hdrs = [
         "implicit_euler_integrator.h",
         "implicit_euler_integrator-inl.h",
+    ],
+    deps = [
+        ":implicit_integrator",
+        ":runge_kutta2_integrator",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_library(
+    name = "second_order_implicit_euler_integrator",
+    srcs = ["second_order_implicit_euler_integrator.cc"],
+    hdrs = [
+        "second_order_implicit_euler_integrator.h",
+        "second_order_implicit_euler_integrator-inl.h",
     ],
     deps = [
         ":implicit_integrator",
@@ -375,6 +390,21 @@ drake_cc_googletest(
     ],
     deps = [
         ":implicit_euler_integrator",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/analysis/test_utilities",
+        "//systems/plants/spring_mass_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "second_order_implicit_euler_integrator_test",
+    timeout = "moderate",
+    shard_count = 2,
+    tags = [
+        "no_memcheck",
+    ],
+    deps = [
+        ":second_order_implicit_euler_integrator",
         "//common/test_utilities:expect_throws_message",
         "//systems/analysis/test_utilities",
         "//systems/plants/spring_mass_system",
