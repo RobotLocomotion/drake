@@ -4,6 +4,7 @@
 from __future__ import absolute_import, division, print_function
 import os
 import sys
+import warnings
 
 import six
 
@@ -68,3 +69,37 @@ def _setattr_kwargs(obj, kwargs):
     # For `ParamInit` in `pydrake_pybind.h`.
     for name, value in kwargs.items():
         setattr(obj, name, value)
+
+
+class _DrakeImportWarning(Warning):
+    pass
+
+
+_RTLD_GLOBAL_WARNING = r"""
+You may have already (directly or indirectly) imported `torch` which uses
+`RTLD_GLOBAL`. Using `RTLD_GLOBAL` may cause symbol collisions which manifest
+themselves in bugs like "free(): invalid pointer". Please consider importing
+`pydrake` (and related C++-wrapped libraries like `cv2`, `open3d`, etc.)
+*before* importing `torch`. For more details, see:
+https://github.com/pytorch/pytorch/issues/3059#issuecomment-534676459
+"""
+
+
+def _check_for_rtld_global_usages():
+    # Naively check if `torch` is using RTLD_GLOBAL.
+    torch = sys.modules.get("torch")
+    if torch is None:
+        return False
+    init_file = getattr(torch, "__file__")
+    if init_file.endswith(".pyc"):
+        init_file = init_file[:-1]
+    if not init_file.endswith(".py"):
+        return False
+    with open(init_file) as f:
+        init_source = f.read()
+    return "sys.setdlopenflags(_dl_flags.RTLD_GLOBAL" in init_source
+
+
+if _check_for_rtld_global_usages():
+    warnings.warn(
+        _RTLD_GLOBAL_WARNING, category=_DrakeImportWarning, stacklevel=3)
