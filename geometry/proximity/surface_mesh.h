@@ -252,8 +252,9 @@ class SurfaceMesh {
    */
   const T& total_area() const { return total_area_; }
 
-  /** Returns the face normal vector of a triangle. It respects the
-   right-handed normal rule.
+  /** Returns the unit face normal vector of a triangle. It respects the
+   right-handed normal rule. A near-zero-area triangle may get an unreliable
+   normal vector.
    @pre f ∈ {0, 1, 2,..., num_faces()-1}.
    */
   const Vector3<T>& face_normal(SurfaceFaceIndex f) const {
@@ -418,6 +419,12 @@ void SurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
     const T face_area = T(0.5) * norm;
     area_[f] = face_area;
     total_area_ += face_area;
+
+    // TODO(DamrongGuoy): Provide a mechanism for users to set the face
+    //  normals of skinny triangles since this calculation is not reliable.
+    //  For example, the code that creates ContactSurface by
+    //  triangle-tetrahedron intersection can set more reliable normal vectors
+    //  for the skinny intersecting triangles.  Related to issue# 12110.
     face_normals_[f] = (norm != T(0.0))? cross / norm : cross;
 
     // Accumulate area-weighted surface centroid; must be divided by 3X the
