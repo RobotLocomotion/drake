@@ -20,7 +20,6 @@ drake_cc_package_library(
         ":find_collision_candidates_callback",
         ":make_box_mesh",
         ":make_cylinder_mesh",
-        ":make_unit_sphere_mesh",
         ":make_sphere_mesh",
         ":mesh_field",
         ":mesh_half_space_intersection",
