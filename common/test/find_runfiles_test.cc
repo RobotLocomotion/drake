@@ -15,7 +15,7 @@ GTEST_TEST(FindRunfilesTest, AcceptanceTest) {
   const auto result = FindRunfile(
       "drake/common/test/find_resource_test_data.txt");
   EXPECT_GT(result.abspath.size(), 0);
-  EXPECT_TRUE(internal::IsFile(result.abspath));
+  EXPECT_TRUE(filesystem::is_regular_file({result.abspath}));
   EXPECT_EQ(result.error, "");
 }
 

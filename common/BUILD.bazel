@@ -305,8 +305,14 @@ drake_cc_library(
     name = "filesystem",
     srcs = ["filesystem.cc"],
     hdrs = ["filesystem.h"],
+    copts = [
+        # The drake::filesystem support is intended ONLY for use within Drake's
+        # *.cc files -- it is not a public dependency of Drake.
+        "-fvisibility=hidden",
+    ],
     deps = [
-        "@fmt",
+        ":essential",
+        "@ghc_filesystem",
     ],
 )
 

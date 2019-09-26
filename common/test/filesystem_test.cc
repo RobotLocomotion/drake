@@ -15,6 +15,8 @@ namespace drake {
 namespace internal {
 namespace {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(FilesystemTest, ExistTest) {
   EXPECT_FALSE(IsFile("."));
   EXPECT_FALSE(IsFile("common"));
@@ -26,7 +28,10 @@ GTEST_TEST(FilesystemTest, ExistTest) {
   EXPECT_FALSE(IsDir("common/filesystem_test"));
   EXPECT_FALSE(IsDir("/no/such/path"));
 }
+#pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(FilesystemTest, ReadlinkTest) {
   std::string tmp = temp_directory();
   std::string rel_file = tmp + "/rel_file";
@@ -51,8 +56,9 @@ GTEST_TEST(FilesystemTest, ReadlinkTest) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       Readlink("/no_such_readlink"), std::exception,
-      "Could not open /no_such_readlink");
+      "Invalid argument: '/no_such_readlink'");
 }
+#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace internal
