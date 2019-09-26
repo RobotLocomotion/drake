@@ -3471,6 +3471,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void CalcContactResultsContinuous(const systems::Context<T>& context,
                                     ContactResults<T>* contact_results) const;
 
+  // Helper method for the discrete mode plant, to fill in the ContactResults
+  // for the point pair model, given the current context.
+  void CalcContactResultsContinuousPointPair(const systems::Context<T>& context,
+                                    ContactResults<T>* contact_results) const;
+
+  // Helper method for the continuous mode plant, to fill in the ContactResults
+  // for the hydroelastic model, given the current context.
+  void CalcContactResultsContinuousHydroelastic(
+      const systems::Context<T>& context,
+      ContactResults<T>* contact_results) const;
+
   // Helper method to fill in the ContactResults given the current context when
   // the model is discrete. If cached contact solver results are not up-to-date
   // with `context`, they'll be  recomputed, see EvalImplicitStribeckResults().
@@ -4052,6 +4063,11 @@ template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
     const systems::Context<symbolic::Expression>&,
     std::vector<SpatialForce<symbolic::Expression>>*) const;
+template <>
+void MultibodyPlant<symbolic::Expression>::
+    CalcContactResultsContinuousHydroelastic(
+        const systems::Context<symbolic::Expression>&,
+        ContactResults<symbolic::Expression>*) const;
 #endif
 
 }  // namespace multibody

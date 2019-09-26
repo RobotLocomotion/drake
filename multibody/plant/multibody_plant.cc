@@ -1114,19 +1114,87 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
+  contact_results->Clear();
   if (num_collision_geometries() == 0) return;
 
-  // Thus far we do not allow mixing hydroelastics with point contact and
-  // therefore we throw an exception.
-  // TODO(amcastro-tri): Update the computation of contact results to report
-  // both point and hydroelastic results.
-  if (contact_model_  != ContactModel::kPointContactOnly) {
-    throw std::runtime_error(
-        "Currently we do not support mixing point contact with hydroelastics. "
-        "You requested the hydroelastic model with a call to "
-        "set_contact_model(). "
-        "Currently contact results are only supported for point contact.");
+  CalcContactResultsContinuousHydroelastic(context, contact_results);
+  CalcContactResultsContinuousPointPair(context, contact_results);
+}
+
+template <>
+void MultibodyPlant<symbolic::Expression>::
+    CalcContactResultsContinuousHydroelastic(
+        const Context<symbolic::Expression>&,
+        ContactResults<symbolic::Expression>*) const {
+  throw std::logic_error(
+      "This method doesn't support T = symbolic::Expression.");
+}
+
+// TODO(edrumwri) Convert this function to use a cached HydroelasticTractionInfo
+// once that structure can serve to both compute contact wrenches and report
+// contact details.
+template <typename T>
+void MultibodyPlant<T>::CalcContactResultsContinuousHydroelastic(
+    const systems::Context<T>& context,
+    ContactResults<T>* contact_results) const {
+  const auto& query_object =
+      this->get_geometry_query_input_port()
+          .template Eval<geometry::QueryObject<T>>(context);
+
+  const std::vector<ContactSurface<T>> all_surfaces =
+      hydroelastics_engine_.ComputeContactSurfaces(query_object);
+
+  internal::HydroelasticTractionCalculator<T> traction_calculator(
+      stribeck_model_.stiction_tolerance());
+
+  for (const ContactSurface<T>& surface : all_surfaces) {
+    const GeometryId geometryM_id = surface.id_M();
+    const GeometryId geometryN_id = surface.id_N();
+    const int collision_indexM =
+        geometry_id_to_collision_index_.at(geometryM_id);
+    const int collision_indexN =
+        geometry_id_to_collision_index_.at(geometryN_id);
+    const CoulombFriction<double>& geometryM_friction =
+        default_coulomb_friction_[collision_indexM];
+    const CoulombFriction<double>& geometryN_friction =
+        default_coulomb_friction_[collision_indexN];
+
+    // Compute combined friction coefficient.
+    const CoulombFriction<double> combined_friction =
+        CalcContactFrictionFromSurfaceProperties(geometryM_friction,
+                                                 geometryN_friction);
+    const double dynamic_friction = combined_friction.dynamic_friction();
+
+    // Get the bodies that the two geometries are affixed to. We'll call these
+    // A and B.
+    const BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryM_id);
+    const BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryN_id);
+    const Body<T>& bodyA = internal_tree().get_body(bodyA_index);
+    const Body<T>& bodyB = internal_tree().get_body(bodyB_index);
+
+    // The the poses and spatial velocities of bodies A and B.
+    const RigidTransform<T>& X_WA = bodyA.EvalPoseInWorld(context);
+    const RigidTransform<T>& X_WB = bodyB.EvalPoseInWorld(context);
+    const SpatialVelocity<T>& V_WA = bodyA.EvalSpatialVelocityInWorld(context);
+    const SpatialVelocity<T>& V_WB = bodyB.EvalSpatialVelocityInWorld(context);
+
+    // Pack everything for the calculator needs.
+    typename internal::HydroelasticTractionCalculator<T>::Data data(
+        X_WA, X_WB, V_WA, V_WB, &surface);
+
+    // Combined Hunt & Crossley dissipation.
+    const double dissipation = hydroelastics_engine_.CalcCombinedDissipation(
+        geometryM_id, geometryN_id);
+
+    contact_results->AddContactInfo(traction_calculator.ComputeContactInfo(
+       data, dissipation, dynamic_friction));
   }
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
+    const systems::Context<T>& context,
+    ContactResults<T>* contact_results) const {
 
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
       EvalPointPairPenetrations(context);
@@ -1139,7 +1207,6 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
   const internal::VelocityKinematicsCache<T>& vc =
       EvalVelocityKinematics(context);
 
-  contact_results->Clear();
   for (size_t icontact = 0; icontact < point_pairs.size(); ++icontact) {
     const auto& pair = point_pairs[icontact];
     const GeometryId geometryA_id = pair.id_A;
@@ -1394,7 +1461,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     const CoulombFriction<double> combined_friction =
         CalcContactFrictionFromSurfaceProperties(geometryM_friction,
                                                  geometryN_friction);
-    const double static_friction = combined_friction.static_friction();
+    const double dynamic_friction = combined_friction.dynamic_friction();
 
     // Get the bodies that the two geometries are affixed to. We'll call these
     // A and B.
@@ -1420,7 +1487,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     // Integrate the hydroelastic traction field over the contact surface.
     SpatialForce<T> F_Ao_W, F_Bo_W;
     traction_calculator.ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-        data, dissipation, static_friction, &F_Ao_W, &F_Bo_W);
+        data, dissipation, dynamic_friction, &F_Ao_W, &F_Bo_W);
 
     if (bodyA_index != world_index()) {
       F_BBo_W_array->at(bodyA.node_index()) += F_Ao_W;
