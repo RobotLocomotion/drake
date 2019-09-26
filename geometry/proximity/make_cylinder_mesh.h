@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <limits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -66,19 +67,20 @@ Vector3<T> ProjectMidpointToMiddleCylinder(const Vector3<T>& p,
                                            const Vector3<T>& q) {
   Vector3<T> midpoint = (p + q) / 2.0;
 
-  // The midpoint is on the center axis of the cylinder. No projection.
-  if (midpoint.x() == T(0) && midpoint.y() == T(0)) {
+  Vector2<T> v_xy = Vector2<T>(midpoint[0], midpoint[1]);
+  // The midpoint is on or near the center axis of the cylinder. No projection.
+  T kEps = std::numeric_limits<double>::epsilon();
+  if (v_xy.norm() <= kEps) {
     return midpoint;
   }
 
-  Vector3<T> v_xy = Vector3<T>(midpoint[0], midpoint[1], 0.0);
-  Vector3<T> p_xy = Vector3<T>(p[0], p[1], 0.0);
-  Vector3<T> q_xy = Vector3<T>(q[0], q[1], 0.0);
+  Vector2<T> p_xy = Vector2<T>(p[0], p[1]);
+  Vector2<T> q_xy = Vector2<T>(q[0], q[1]);
 
   auto desired_length = (p_xy.norm() + q_xy.norm()) / 2.0;
 
   v_xy.normalize();
-  Vector3<T> middle_circle_xy = desired_length * v_xy;
+  Vector2<T> middle_circle_xy = desired_length * v_xy;
   return Vector3<T>(middle_circle_xy.x(), middle_circle_xy.y(), midpoint.z());
 }
 
@@ -112,19 +114,19 @@ Vector3<T> ProjectMidPoint(const Vector3<T>& x, const Vector3<T>& y,
 // adds the vertex to the mesh data structures, and hashes the new
 // vertex in the parents -> child map
 template <typename T>
-void CreateNewVertex(VolumeVertexIndex a, VolumeVertexIndex b,
-                     std::vector<VolumeVertex<T>>* split_mesh_vertices_ptr,
-                     std::vector<CylinderVertexType>* split_vertex_type_ptr,
-                     std::unordered_map<SortedPair<VolumeVertexIndex>,
-                                        VolumeVertexIndex>* vertex_map_ptr,
-                     const double radius) {
+VolumeVertexIndex CreateNewVertex(
+    VolumeVertexIndex a, VolumeVertexIndex b,
+    std::vector<VolumeVertex<T>>* split_mesh_vertices_ptr,
+    std::vector<CylinderVertexType>* split_vertex_type_ptr,
+    std::unordered_map<SortedPair<VolumeVertexIndex>, VolumeVertexIndex>*
+        vertex_map_ptr,
+    const double radius) {
   DRAKE_DEMAND(split_mesh_vertices_ptr != nullptr);
   DRAKE_DEMAND(split_vertex_type_ptr != nullptr);
   DRAKE_DEMAND(vertex_map_ptr != nullptr);
 
   std::vector<VolumeVertex<T>>& split_mesh_vertices = *split_mesh_vertices_ptr;
   std::vector<CylinderVertexType>& split_vertex_type = *split_vertex_type_ptr;
-
   std::unordered_map<SortedPair<VolumeVertexIndex>, VolumeVertexIndex>&
       vertex_map = *vertex_map_ptr;
 
@@ -138,10 +140,13 @@ void CreateNewVertex(VolumeVertexIndex a, VolumeVertexIndex b,
 
   const SortedPair<VolumeVertexIndex> p_parents = MakeSortedPair(a, b);
 
-  vertex_map[p_parents] = VolumeVertexIndex(split_mesh_vertices.size());
+  const VolumeVertexIndex new_vertex_index(split_mesh_vertices.size());
+  vertex_map[p_parents] = new_vertex_index;
 
   split_mesh_vertices.emplace_back(p);
   split_vertex_type.push_back(p_vertex_type);
+
+  return new_vertex_index;
 }
 
 // Refines a tetrahedron into 8 tetrahedra.
@@ -194,66 +199,24 @@ void RefineCylinderTetrahdron(
   // commutative, that is the key (a,b) hashes to the same index as the key
   // (b,a) and returns true when checking for equivalence of the keys.
 
-  const SortedPair<VolumeVertexIndex> e_parents = MakeSortedPair(a, b);
-  const SortedPair<VolumeVertexIndex> f_parents = MakeSortedPair(a, c);
-  const SortedPair<VolumeVertexIndex> g_parents = MakeSortedPair(a, d);
-  const SortedPair<VolumeVertexIndex> h_parents = MakeSortedPair(b, c);
-  const SortedPair<VolumeVertexIndex> i_parents = MakeSortedPair(b, d);
-  const SortedPair<VolumeVertexIndex> j_parents = MakeSortedPair(c, d);
-
-  auto e_index = vertex_map.find(e_parents);
-  auto f_index = vertex_map.find(f_parents);
-  auto g_index = vertex_map.find(g_parents);
-  auto h_index = vertex_map.find(h_parents);
-  auto i_index = vertex_map.find(i_parents);
-  auto j_index = vertex_map.find(j_parents);
-
-  // If the vertex does not exist in the map, create a new vertex and add it to
-  // the storage vectors as well as the hash map
-
-  if (e_index == vertex_map.end()) {
-    CreateNewVertex(a, b, &split_mesh_vertices, &split_vertex_type, &vertex_map,
-                    radius);
-    e_index = vertex_map.find(e_parents);
-  }
-
-  if (f_index == vertex_map.end()) {
-    CreateNewVertex(a, c, &split_mesh_vertices, &split_vertex_type, &vertex_map,
-                    radius);
-    f_index = vertex_map.find(f_parents);
-  }
-
-  if (g_index == vertex_map.end()) {
-    CreateNewVertex(a, d, &split_mesh_vertices, &split_vertex_type, &vertex_map,
-                    radius);
-    g_index = vertex_map.find(g_parents);
-  }
-
-  if (h_index == vertex_map.end()) {
-    CreateNewVertex(b, c, &split_mesh_vertices, &split_vertex_type, &vertex_map,
-                    radius);
-    h_index = vertex_map.find(h_parents);
-  }
-
-  if (i_index == vertex_map.end()) {
-    CreateNewVertex(b, d, &split_mesh_vertices, &split_vertex_type, &vertex_map,
-                    radius);
-    i_index = vertex_map.find(i_parents);
-  }
-
-  if (j_index == vertex_map.end()) {
-    CreateNewVertex(c, d, &split_mesh_vertices, &split_vertex_type, &vertex_map,
-                    radius);
-    j_index = vertex_map.find(j_parents);
-  }
+  auto get_child_vertex = [&vertex_map, &split_mesh_vertices,
+                           &split_vertex_type,
+                           &radius](VolumeVertexIndex p, VolumeVertexIndex q) {
+    SortedPair<VolumeVertexIndex> parents{p, q};
+    auto iter = vertex_map.find(parents);
+    if (iter != vertex_map.end()) return iter->second;
+    return CreateNewVertex(parents.first(), parents.second(),
+                           &split_mesh_vertices, &split_vertex_type,
+                           &vertex_map, radius);
+  };
 
   // The index of each of the child vertices
-  const VolumeVertexIndex e = e_index->second;
-  const VolumeVertexIndex f = f_index->second;
-  const VolumeVertexIndex g = g_index->second;
-  const VolumeVertexIndex h = h_index->second;
-  const VolumeVertexIndex i = i_index->second;
-  const VolumeVertexIndex j = j_index->second;
+  const VolumeVertexIndex e = get_child_vertex(a, b);
+  const VolumeVertexIndex f = get_child_vertex(a, c);
+  const VolumeVertexIndex g = get_child_vertex(a, d);
+  const VolumeVertexIndex h = get_child_vertex(b, c);
+  const VolumeVertexIndex i = get_child_vertex(b, d);
+  const VolumeVertexIndex j = get_child_vertex(c, d);
 
   // The four tetrahedra at the corners.
   split_mesh_tetrahedra.emplace_back(a, e, f, g);
@@ -270,9 +233,21 @@ void RefineCylinderTetrahdron(
   split_mesh_tetrahedra.emplace_back(g, h, f, j);
 }
 
-// Splits a mesh by calling RefineCylinderTetrahdron() on each
-// tetrahedron of `mesh`. `vertex_type` is a vector describing the
-// CylinderVertexType of each vertex in `mesh`
+/// Splits a mesh by calling RefineCylinderTetrahdron() on each
+/// tetrahedron of `mesh`. `vertex_type` is a vector describing the
+/// CylinderVertexType of each vertex in `mesh`
+///
+/// When splitting an edge, the midpoint of the edge is projected along the line
+/// orthogonal to the z-axis. For an edge on the side surface of the cylinder,
+/// the newly created vertex is placed on the side surface. For other kinds
+/// of edges, the projection places the newly created vertex at the distance
+/// from the z-axis equal to the average of the two distances from the z-axis
+/// of the two original vertices of the split edge.  If the two original
+/// vertices have the same distance from the z-axis, the newly created vertex
+/// will have the same distance from the z-axis as the original vertices.  As
+/// a result, the mesh vertices are placed on the 2ⁿ concentric cylindrical
+/// surfaces inside the cylinder, where n is the `refinement_level`.
+///
 template <typename T>
 std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>> RefineCylinderMesh(
     const VolumeMesh<T>& mesh,
@@ -288,9 +263,8 @@ std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>> RefineCylinderMesh(
 
   // A map from two parent vertices in the original mesh to the new vertex in
   // the refined mesh.
-  auto vertex_map =
-      std::unordered_map<SortedPair<VolumeVertexIndex>, VolumeVertexIndex>(
-          6 * mesh.tetrahedra().size());
+  std::unordered_map<SortedPair<VolumeVertexIndex>, VolumeVertexIndex>
+      vertex_map(6 * mesh.num_elements());
 
   for (const auto& t : mesh.tetrahedra()) {
     RefineCylinderTetrahdron<T>(t, &split_mesh_vertices, &split_mesh_tetrahedra,
@@ -304,20 +278,24 @@ std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>> RefineCylinderMesh(
 
 // Creates the initial mesh for refinement_level = 0.
 // The initial mesh is a rectangular prism with
-// x,y,z dimensions: sqrt(2)*radius, sqrt(2)*radius, height
-// Initial subdivisions are made based on the aspect ratio
-// so that initial tetrahedra are somewhat regular in shape.
+// x,y,z dimensions: sqrt(2)*radius, sqrt(2)*radius, height,
+// so that the diagonal on the xy plane has length 2 * radius.
 template <typename T>
 std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>>
 MakeCylinderMeshLevel0(const double& height, const double& radius) {
   std::vector<VolumeElement> tetrahedra;
   std::vector<VolumeVertex<T>> vertices;
 
+  // Initial subdivisions along the length of the cylinder are made based on
+  // the aspect ratio so that, for a long cylinder, initial tetrahedra are
+  // somewhat regular in shape. However, for a short cylinder (like a disk),
+  // there are 2 subdivisions, so we have at least one interior vertex and
+  // avoid forcing the extent field to be zero everywhere.
   int subdivisions =
       static_cast<int>(std::max(2.0, std::floor(height / radius)));
 
-  const double top_z = (height / 2.0);
-  const double bot_z = -(height / 2.0);
+  const double top_z = height / 2.0;
+  const double bot_z = -top_z;
 
   // Initial configuration of a set of vertices for a
   // level 0 cylinder with 2 subdivisions
@@ -348,32 +326,36 @@ MakeCylinderMeshLevel0(const double& height, const double& radius) {
   //                 |  v12
   //                 | /
   //                 |/
-  //  -Y---v13------v14+------v11---+Y
+  //  -Y---v13----v14+------v11---+Y
   //                /|
   //               / |
-  //             v10  |
+  //             v10 |
   //             /   |
   //           +X    |
   //                -Z
 
   // Groups of 5 vertices are on a slice of the rectangular prism
-  // with a plane perpendicular to the Z axisx at a given height "z".
+  // with a plane perpendicular to the Z axis at a given height "z".
   //
   // "subdivisions" is how many slices perpendicular to the Z axis we
   // make.
   //
-  // Every 5th vertex is exactly at (0, 0, z) for a given  height "z" where:
+  // Every 5th vertex is exactly at (0, 0, z) for a given height "z" where:
   // bot_z <= z <= top_z.
-  for (int i = 0; i <= subdivisions; i++) {
-    const double t = (1.0 * i) / subdivisions;
-    const double z = (1 - t) * top_z + (t)*bot_z;
-
+  auto add_slice_vertices = [&vertices, &radius](double z) {
     vertices.emplace_back(radius, 0.0, z);
     vertices.emplace_back(0.0, radius, z);
     vertices.emplace_back(-radius, 0.0, z);
     vertices.emplace_back(0.0, -radius, z);
     vertices.emplace_back(0.0, 0.0, z);
+  };
+  const double slab_height = height / subdivisions;
+  double z = top_z;
+  for (int i = 0; i < subdivisions; i++) {
+    add_slice_vertices(z);
+    z -= slab_height;
   }
+  add_slice_vertices(bot_z);
 
   using V = VolumeVertexIndex;
 
@@ -434,16 +416,8 @@ MakeCylinderMeshLevel0(const double& height, const double& radius) {
 /// At each refinement level, each tetrahedron is split into eight new
 /// tetrahedra by splitting each edge in half.
 ///
-/// When splitting an edge, the midpoint of the edge is projected along the line
-/// orthogonal to the z-axis. For an edge on the side surface of the cylinder,
-/// the newly created vertex is placed on the side surface. For other kinds
-/// of edges, the projection places the newly created vertex at the distance
-/// from the z-axis equal to the average of the two distances from the z-axis
-/// of the two original vertices of the split edge.  If the two original
-/// vertices have the same distance from the z-axis, the newly created vertex
-/// will have the same distance from the z-axis as the original vertices.  As
-/// a result, the mesh vertices are placed on the 2ⁿ concentric cylindrical
-/// surfaces inside the cylinder, where n is the `refinement_level`.
+/// As edges get split, cylindrical shells are created. Each shell layer
+/// conforms to a cylindrical offset surface of the outer cylindrical surface.
 ///
 /// @param[in] cylinder
 ///    Specification of the parameterized cylinder the output mesh should

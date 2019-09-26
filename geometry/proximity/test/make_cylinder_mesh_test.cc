@@ -17,6 +17,8 @@ namespace geometry {
 namespace internal {
 namespace {
 
+// TODO(DamrongGuoy): Move this function to VolumeMesh.
+
 // Computes the total volume of a VolumeMesh by summing up the contribution
 // of each tetrahedron.
 double CalcTetrahedronMeshVolume(const VolumeMesh<double>& mesh) {
@@ -49,9 +51,9 @@ GTEST_TEST(MakeCylinderMesh, VolumeConvergence) {
   // of size l x w and height h is V = lwh.
   // For our level zero cylinder, we have a prism of height 2 and
   // l = w = sqrt(2) and height = 2.0. Thus its volume is 4.
-  const double expected_volume = 4.0;
+  const double expected_volume_0 = 4.0;
 
-  EXPECT_NEAR(volume0, expected_volume, kTolerance);
+  EXPECT_NEAR(volume0, expected_volume_0, kTolerance);
 
   for (int level = 1; level < 6; ++level) {
     auto mesh = MakeCylinderMesh<double>(
@@ -119,8 +121,10 @@ int ComputeEulerCharacteristic(const VolumeMesh<double>& mesh) {
   return k0 - k1 + k2 - k3;
 }
 
-// Looking at the tetrahedral mesh as a convex 4 dimensional
-// simplicial complex, this test computes the generalized euler characteristic:
+// Confirm that the mesh is well formed (i.e., with no duplicate vertices or
+// tetrahedra) by computing its Euler characteristic. Looking at the
+// tetrahedral mesh as a convex 4 dimensional simplicial complex, this test
+// computes the generalized euler characteristic:
 //
 // χ = k_0 - k_1 + k_2 - k_3
 //
