@@ -70,7 +70,7 @@ Vector3<T> ProjectMidpointToMiddleCylinder(const Vector3<T>& p,
   Vector2<T> v_xy = Vector2<T>(midpoint[0], midpoint[1]);
   // The midpoint is on or near the center axis of the cylinder. No projection.
   T kEps = std::numeric_limits<double>::epsilon();
-  if (v_xy.norm() <= kEps) {
+  if (v_xy.squaredNorm() <= kEps * kEps) {
     return midpoint;
   }
 
@@ -350,10 +350,8 @@ MakeCylinderMeshLevel0(const double& height, const double& radius) {
     vertices.emplace_back(0.0, 0.0, z);
   };
   const double slab_height = height / subdivisions;
-  double z = top_z;
   for (int i = 0; i < subdivisions; i++) {
-    add_slice_vertices(z);
-    z -= slab_height;
+    add_slice_vertices(top_z - i * slab_height);
   }
   add_slice_vertices(bot_z);
 
