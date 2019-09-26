@@ -7,8 +7,9 @@
 #include <string>
 
 // Alias drake::filesystem as either std::filesystem or ghc::filesystem.
+// Until apple ships a working implementation, we'll avoid apple filesystem.
 // Keep this sequence in sync with drake/common/filesystem.cc.
-#if __has_include(<filesystem>)
+#if __has_include(<filesystem>) && !defined(__APPLE__)
 #include <filesystem>
 namespace drake { namespace filesystem = std::filesystem; }
 #else  // !has_include(<filesystem>)
