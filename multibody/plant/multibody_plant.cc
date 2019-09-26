@@ -1566,6 +1566,10 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
     systems::ContinuousState<T>* derivatives) const {
   // No derivatives to compute if state is discrete.
   if (is_discrete()) return;
+  // No derivatives to compute if state is empty. (Will segfault otherwise.)
+  // TODO(amcastro-tri): When nv = 0 we should not declare state or cache
+  // entries at all and the system framework will never call this.
+  if (this->num_multibody_states() == 0) return;
 
   const auto x =
       dynamic_cast<const systems::BasicVector<T>&>(
@@ -1639,6 +1643,9 @@ void MultibodyPlant<T>::CalcImplicitStribeckResults(
 
   const int nq = this->num_positions();
   const int nv = this->num_velocities();
+
+  // Quick exit if there are no moving objects.
+  if (nv == 0) return;
 
   // Get the system state as raw Eigen vectors
   // (solution at the previous time step).
