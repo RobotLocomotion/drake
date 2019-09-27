@@ -14,7 +14,7 @@ namespace multibody {
 namespace internal {
 
 /// This struct implements the Transition-Aware Line Search (TALS) algorithm as
-/// described in [Castro et al., 2019].
+/// described in @ref castro_etal_2019 "[Castro et al., 2019]".
 /// TamsiSolver performs a Newton-Raphson iteration, and at each kth iteration,
 /// it computes a tangential velocity update Δvₜᵏ. One Newton strategy would be
 /// to compute the tangential velocity at the next iteration (k+1) as vₜᵏ⁺¹ =
@@ -56,7 +56,8 @@ namespace internal {
 /// update  Δvₜᵏ "misses" the stiction circle can be described in purely
 /// geometric terms. We exploit this fact to devise a strategy that is
 /// appropriate for this particular problem. We use the methodology outlined in
-/// [Uchida et al., 2015] and describe particulars to our implementation below.
+/// @ref uchida_etal_2015 "[Uchida et al., 2015]" and describe particulars to
+/// our implementation below.
 ///
 /// %TalsLimiter implements a specific strategy with knowledge of the TAMSI
 /// solver iteration procedure. It is important to note that %TalsLimiter uses
@@ -101,25 +102,18 @@ namespace internal {
 ///   the line connecting vₜᵏ and vₜᵏ + Δvₜᵏ crosses the stiction region.
 ///   This situation implies that most likely a stiction transition could
 ///   happen but the pure Newton-Raphson would miss it. This situation is
-///   outlined in [Uchida et al., 2015]. In this case %TalsLimiter
-///   computes α so that vₜᵏ⁺¹ =  vₜᵏ + αΔvₜᵏ is the closest vector to the
-///   origin. This corresponds to the geometric condition
-///   dot(vₜᵏ⁺¹, Δvₜᵏ) = 0.
+///   outlined in @ref uchida_etal_2015 "[Uchida et al., 2015]". In this case
+///   %TalsLimiter computes α so that vₜᵏ⁺¹ =  vₜᵏ + αΔvₜᵏ is the closest vector
+///   to the origin. This corresponds to the geometric condition dot(vₜᵏ⁺¹,
+///   Δvₜᵏ) = 0.
 /// - Velocity change Δvₜᵏ does not intersect the stiction circle, i.e.
 ///   changes happen in a region away from stiction (within the sliding
 ///   region). However, large angular changes (measured by the angle
 ///   θ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)) between vₜᵏ⁺¹ and vₜᵏ)
 ///   might indicate a solution that is attempting to reach a stiction region.
 ///   In order to aid convergence, we limit the angle change to θₘₐₓ, and
-///   therefore (see [Uchida et al., 2015]) we compute α so that
-///   θₘₐₓ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)).
-///
-/// - Uchida, T.K., Sherman, M.A. and Delp, S.L., 2015.
-///   Making a meaningful impact: modelling simultaneous frictional collisions
-///   in spatial multibody systems. Proc. R. Soc. A, 471(2177), p.20140859.
-/// - Castro, A.M, Qu, A., Kuppuswamy, N., Alspach, A., Sherman, M.A., 2019.
-///   A Transition-Aware Method for the Simulation of Compliant Contact with
-///   Regularized Friction. arXiv:1909.05700 [cs.RO].
+///   therefore (see @ref uchida_etal_2015 "[Uchida et al., 2015]") we compute α
+///   so that θₘₐₓ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)).
 ///
 /// %TalsLimiter implements the algorithm described above. We place it
 /// inside a struct so that we can use Eigen::Ref arguments allowing different
@@ -269,8 +263,8 @@ struct TamsiSolverIterationStats {
 
 /** @anchor tamsi_class_intro
 %TamsiSolver uses the Transition-Aware Modified Semi-Implicit (TAMSI) method,
-[Castro et al., 2019], to solve the equations below for mechanical systems in
-contact with regularized friction:
+@ref castro_etal_2019 "[Castro et al., 2019]", to solve the equations below for
+mechanical systems in contact with regularized friction:
 @verbatim
             q̇ = N(q) v
   (1)  M(q) v̇ = τ + Jₙᵀ(q) fₙ(q, v) + Jₜᵀ(q) fₜ(q, v)
@@ -411,12 +405,10 @@ step `vˢ⁺¹` with either a one-way or two-way coupled scheme as described in 
 The solver uses a Newton-Raphson iteration to compute an update `Δvᵏ` at the
 k-th Newton-Raphson iteration. Once `Δvᵏ` is computed, the solver limits the
 change in the tangential velocities `Δvₜᵏ = Jₜᵀ Δvᵏ` using the approach
-described in [Uchida et al., 2015]. This approach limits the maximum angle
-change θ between two successive iterations in the tangential velocity.
-
-Uchida, T.K., Sherman, M.A. and Delp, S.L., 2015.
-  Making a meaningful impact: modelling simultaneous frictional collisions
-  in spatial multibody systems. Proc. R. Soc. A, 471(2177), p.20140859.
+described in @ref uchida_etal_2015 "[Uchida et al., 2015]". This approach limits
+the maximum angle change θ between two successive iterations in the tangential
+velocity. Details of our implementation are provided in
+@ref castro_etal_2019 "[Castro et al., 2019]".
 
 @anchor one_way_coupling_derivation
 <h2>Derivation of the one-way coupling scheme</h2>
@@ -494,9 +486,15 @@ expansion of `fₙ` with an order of approximation consistent with the
 first order scheme as needed. Therefore, it propagates into a `O(δt²)`
 term exactly as needed in Eq. (16).
 
-[Castro et al., 2019] Castro, A.M, Qu, A., Kuppuswamy, N., Alspach, A., Sherman,
-   M.A., 2019. A Transition-Aware Method for the Simulation of Compliant Contact
-   with Regularized Friction. arXiv:1909.05700 [cs.RO].
+<h2>References</h2>
+
+- @anchor castro_etal_2019 [Castro et al., 2019] Castro, A.M, Qu, A.,
+   Kuppuswamy, N., Alspach, A., Sherman, M.A., 2019. A Transition-Aware Method
+   for the Simulation of Compliant Contact with Regularized Friction.
+   arXiv:1909.05700 [cs.RO].
+- @anchor uchida_etal_2015 Uchida, T.K., Sherman, M.A. and Delp, S.L., 2015.
+  Making a meaningful impact: modelling simultaneous frictional collisions
+  in spatial multibody systems. Proc. R. Soc. A, 471(2177), p.20140859.   
 
 @tparam T Must be one of drake's default scalar types.
 
@@ -1133,10 +1131,10 @@ class TamsiSolver {
   //      good strong gradient in the neighborhood to zero slip velocities that
   //      aids in finding a good solution update.
   // N.B. While this original implementation uses quadratic regularized
-  //      friction, [Castro et al., 2019] finds that a linear regularized
-  //      friction function works best for implicit integration with TALS. More
-  //      precisely, the work precision plots are better behaved when using
-  //      linear regularized friction.
+  //      friction, @ref castro_etal_2019 "[Castro et al., 2019]". finds that a
+  //      linear regularized friction function works best for implicit
+  //      integration with TALS. More precisely, the work precision plots are
+  //      better behaved when using linear regularized friction.
   static T RegularizedFriction(const T& s, const T& mu);
 
   // Derivative of the dimensionless regularized friction function:
