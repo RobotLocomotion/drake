@@ -15,7 +15,7 @@ namespace internal {
 
 /// This struct implements the Transition-Aware Line Search (TALS) algorithm as
 /// described in [Castro et al., 2019].
-/// TAMSISolver performs a Newton-Raphson iteration, and at each kth iteration,
+/// TamsiSolver performs a Newton-Raphson iteration, and at each kth iteration,
 /// it computes a tangential velocity update Δvₜᵏ. One Newton strategy would be
 /// to compute the tangential velocity at the next iteration (k+1) as vₜᵏ⁺¹ =
 /// vₜᵏ + αΔvₜᵏ, where 0 < α < 1, is a coefficient obtained by line search to
@@ -28,7 +28,7 @@ namespace internal {
 /// the "stiction regions" and to their boundaries as the "stiction circles". We
 /// refer to the region of ℝ² outside the stiction region around the origin as
 /// the "sliding region".
-/// TAMSISolver uses the following regularized friction function
+/// TamsiSolver uses the following regularized friction function
 /// μₛ with slip speed: <pre>
 ///     μₛ(x) = ⌈ μ x (2 - x),  x  < 1
 ///             ⌊ μ          ,  x >= 1
@@ -167,9 +167,9 @@ struct TalsLimiter {
 };
 }  // namespace internal
 
-/// The result from TAMSISolver::SolveWithGuess() used to report the
+/// The result from TamsiSolver::SolveWithGuess() used to report the
 /// success or failure of the solver.
-enum class TAMSISolverResult {
+enum class TamsiSolverResult {
   /// Successful computation.
   kSuccess = 0,
 
@@ -183,8 +183,8 @@ enum class TAMSISolverResult {
 };
 
 /// These are the parameters controlling the iteration process of the
-/// TAMSISolver solver.
-struct TAMSISolverParameters {
+/// TamsiSolver solver.
+struct TamsiSolverParameters {
   /// The stiction tolerance vₛ for the slip velocity in the regularized
   /// friction function, in m/s. Roughly, for an externally applied tangential
   /// forcing fₜ and normal force fₙ, under "stiction", the slip velocity will
@@ -214,11 +214,11 @@ struct TAMSISolverParameters {
   /// Typical values lie within the 10⁻³ - 10⁻² range.
   double relative_tolerance{1.0e-2};
 
-  /// (Advanced) TAMSISolver limits large angular changes between
+  /// (Advanced) TamsiSolver limits large angular changes between
   /// tangential velocities at two successive iterations vₜᵏ⁺¹ and vₜᵏ. This
   /// change is measured by the angle θ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)).
-  /// To aid convergence, TAMSISolver, limits this angular change to
-  /// `theta_max`. Please refer to the documentation for TAMSISolver
+  /// To aid convergence, TamsiSolver, limits this angular change to
+  /// `theta_max`. Please refer to the documentation for TamsiSolver
   /// for further details.
   ///
   /// Small values of `theta_max` will result in a larger number of iterations
@@ -232,9 +232,9 @@ struct TAMSISolverParameters {
 };
 
 /// Struct used to store information about the iteration process performed by
-/// TAMSISolver.
-struct TAMSISolverIterationStats {
-  /// (Internal) Used by TAMSISolver to reset statistics.
+/// TamsiSolver.
+struct TamsiSolverIterationStats {
+  /// (Internal) Used by TamsiSolver to reset statistics.
   void Reset() {
     num_iterations = 0;
     // Clear does not change a std::vector "capacity", and therefore there's
@@ -242,13 +242,13 @@ struct TAMSISolverIterationStats {
     residuals.clear();
   }
 
-  /// (Internal) Used by TAMSISolver to update statistics.
+  /// (Internal) Used by TamsiSolver to update statistics.
   void Update(double iteration_residual) {
     ++num_iterations;
     residuals.push_back(iteration_residual);
   }
 
-  /// The number of iterations performed by the last TAMSISolver
+  /// The number of iterations performed by the last TamsiSolver
   /// solve.
   int num_iterations{0};
 
@@ -260,7 +260,7 @@ struct TAMSISolverIterationStats {
   /// (Advanced) Residual in the tangential velocities, in m/s. The k-th entry
   /// in this vector corresponds to the residual for the k-th Newton-Raphson
   /// iteration performed by the solver.
-  /// After TAMSISolver solved a problem, this vector will have size
+  /// After TamsiSolver solved a problem, this vector will have size
   /// num_iterations.
   /// The last entry in this vector, `residuals[num_iterations-1]`, corresponds
   /// to the residual upon completion of the solver, i.e. vt_residual.
@@ -286,12 +286,12 @@ This solver assumes a compliant law for the normal forces `fₙ(q, v)` and
 therefore the functional dependence of `fₙ(q, v)` with q and v is stated
 explicitly.
 
-Since %TAMSISolver uses regularized friction, we explicitly emphasize the
+Since %TamsiSolver uses regularized friction, we explicitly emphasize the
 functional dependence of `fₜ(q, v)` with the generalized velocities. The
 functional dependence of `fₜ(q, v)` with the generalized positions stems from
 its direct dependence with the normal forces `fₙ(q, v)`.
 
-%TAMSISolver implements two different schemes. A "one-way
+%TamsiSolver implements two different schemes. A "one-way
 coupling scheme" which solves for the friction forces given the normal
 forces are known. That is, normal forces affect the computation of the
 friction forces however, the normal forces are kept constant during the
@@ -330,7 +330,7 @@ The equation for the generalized velocities in Eq. (2) is rewritten as:
 where `p* = M vˢ + δt τˢ` is the generalized momentum that the
 system would have in the absence of contact forces and, for simplicity, we
 have only kept the functional dependencies in generalized velocities. Notice
-that %TAMSISolver uses a precomputed value of the normal forces.
+that %TamsiSolver uses a precomputed value of the normal forces.
 These normal forces could be available for instance if
 using a compliant contact approach, for which normal forces are a function
 of the state.
@@ -398,14 +398,14 @@ vˢ⁺¹:
 with p* = `p* = M vˢ + δt τˢ` the generalized momentum that the system
 would have in the absence of contact forces.
 
-%TAMSISolver uses a Newton-Raphson strategy to solve Eq. (10) in
+%TamsiSolver uses a Newton-Raphson strategy to solve Eq. (10) in
 the generalized velocities, limiting the iteration update with the scheme
 described in @ref iteration_limiter.
 
 @anchor iteration_limiter
 <h2>Limits in the Iteration Updates</h2>
 
-%TAMSISolver solves for the generalized velocity at the next time
+%TamsiSolver solves for the generalized velocity at the next time
 step `vˢ⁺¹` with either a one-way or two-way coupled scheme as described in the
  previous sections.
 The solver uses a Newton-Raphson iteration to compute an update `Δvᵏ` at the
@@ -505,13 +505,13 @@ term exactly as needed in Eq. (16).
 @authors Drake team (see https://drake.mit.edu/credits).
 */
 template <typename T>
-class TAMSISolver {
+class TamsiSolver {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TAMSISolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TamsiSolver)
 
   /// Instantiates a solver for a problem with `nv` generalized velocities.
   /// @throws std::exception if nv is non-positive.
-  explicit TAMSISolver(int nv);
+  explicit TamsiSolver(int nv);
 
   // TODO(amcastro-tri): submit a separate reformat PR changing /// by /**.
   /// Sets data for the problem to be solved as outlined by Eq. (3) in this
@@ -617,7 +617,7 @@ class TAMSISolver {
   /// coupling is used. See this class's documentation for further details.
   /// To retrieve the solution, please refer to @ref retrieving_the_solution.
   /// @returns kSuccess if the iteration converges. All other values of
-  /// TAMSISolverResult report different failure modes.
+  /// TamsiSolverResult report different failure modes.
   /// Uses `this` solver accessors to retrieve the last computed solution.
   /// @warning Always verify that the return value indicates success before
   /// retrieving the computed solution.
@@ -628,7 +628,7 @@ class TAMSISolver {
   ///
   /// @throws std::logic_error if `v_guess` is not of size `nv`, the number of
   /// generalized velocities specified at construction.
-  TAMSISolverResult SolveWithGuess(
+  TamsiSolverResult SolveWithGuess(
       double dt, const VectorX<T>& v_guess) const;
 
   /// @anchor retrieving_the_solution
@@ -689,20 +689,20 @@ class TAMSISolver {
 
   /// Returns statistics recorded during the last call to SolveWithGuess().
   /// See IterationStats for details.
-  const TAMSISolverIterationStats& get_iteration_statistics() const {
+  const TamsiSolverIterationStats& get_iteration_statistics() const {
     return statistics_;
   }
 
   /// Returns the current set of parameters controlling the iteration process.
   /// See Parameters for details.
-  const TAMSISolverParameters& get_solver_parameters() const {
+  const TamsiSolverParameters& get_solver_parameters() const {
     return parameters_;
   }
 
   /// Sets the parameters to be used by the solver.
   /// See Parameters for details.
   void set_solver_parameters(
-      const TAMSISolverParameters& parameters) {
+      const TamsiSolverParameters& parameters) {
     // cos_theta_max must be updated consistently with the new value of
     // theta_max.
     cos_theta_max_ = std::cos(parameters.theta_max);
@@ -711,7 +711,7 @@ class TAMSISolver {
 
  private:
   // Helper class for unit testing.
-  friend class TAMSISolverTester;
+  friend class TamsiSolverTester;
 
   // Contains all the references that define the problem to be solved.
   // These references must remain valid at least from the time they are set with
@@ -994,7 +994,7 @@ class TAMSISolver {
     // Returns a constant reference to the vector containing the tangential
     // friction forces fₜ for all contact points. fₜ has size 2nc since it
     // stores the two tangential components of the friction force for each
-    // contact point. Refer to TAMSISolver for details.
+    // contact point. Refer to TamsiSolver for details.
     Eigen::VectorBlock<const VectorX<T>> ft() const {
       return ft_.segment(0, 2 * nc_);
     }
@@ -1150,7 +1150,7 @@ class TAMSISolver {
   int nc_;  // Number of contact points.
 
   // The parameters of the solver controlling the iteration strategy.
-  TAMSISolverParameters parameters_;
+  TamsiSolverParameters parameters_;
   ProblemDataAliases problem_data_aliases_;
   mutable FixedSizeWorkspace fixed_size_workspace_;
   mutable VariableSizeWorkspace variable_size_workspace_;
@@ -1160,7 +1160,7 @@ class TAMSISolver {
 
   // We save solver statistics such as number of iterations and residuals so
   // that we can report them if requested.
-  mutable TAMSISolverIterationStats statistics_;
+  mutable TamsiSolverIterationStats statistics_;
 };
 
 }  // namespace multibody
@@ -1170,4 +1170,4 @@ DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     struct ::drake::multibody::internal::TalsLimiter)
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::TAMSISolver)
+    class ::drake::multibody::TamsiSolver)

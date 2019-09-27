@@ -10,12 +10,12 @@
 namespace drake {
 namespace multibody {
 
-// This class has friend access to TAMSISolver so that we can test
+// This class has friend access to TamsiSolver so that we can test
 // its internals.
-class TAMSISolverTester {
+class TamsiSolverTester {
  public:
   static MatrixX<double> CalcJacobian(
-      const TAMSISolver<double>& solver,
+      const TamsiSolver<double>& solver,
       const Eigen::Ref<const VectorX<double>>& v,
       double dt) {
     const int nv = solver.nv_;
@@ -493,7 +493,7 @@ class PizzaSaver : public ::testing::Test {
   MatrixX<double> Jt_{2 * nc_, nv_};
 
   // The TAMSI solver for this problem.
-  TAMSISolver<double> solver_{nv_};
+  TamsiSolver<double> solver_{nv_};
 
   // Additional solver data that must outlive solver_ during solution.
   Vector3<double> p_star_;  // Generalized momentum.
@@ -524,13 +524,13 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
 
   SetProblem(v0, tau, mu, theta, dt);
 
-  TAMSISolverParameters parameters;  // Default parameters.
+  TamsiSolverParameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
   parameters.relative_tolerance = 1.0e-4;
   solver_.set_solver_parameters(parameters);
 
-  TAMSISolverResult info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, TAMSISolverResult::kSuccess);
+  TamsiSolverResult info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, TamsiSolverResult::kSuccess);
 
   VectorX<double> tau_f = solver_.get_generalized_friction_forces();
 
@@ -583,7 +583,7 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   // Compute the Newton-Raphson Jacobian of the residual J = ∇ᵥR using the
   // solver's internal implementation.
   MatrixX<double> J =
-      TAMSISolverTester::CalcJacobian(solver_, v, dt);
+      TamsiSolverTester::CalcJacobian(solver_, v, dt);
 
   // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
   // a completely separate implementation using automatic differentiation.
@@ -626,13 +626,13 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
 
   SetProblem(v0, tau, mu, theta, dt);
 
-  TAMSISolverParameters parameters;  // Default parameters.
+  TamsiSolverParameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
   parameters.relative_tolerance = 1.0e-4;
   solver_.set_solver_parameters(parameters);
 
-  TAMSISolverResult info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, TAMSISolverResult::kSuccess);
+  TamsiSolverResult info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, TamsiSolverResult::kSuccess);
 
   VectorX<double> tau_f = solver_.get_generalized_friction_forces();
 
@@ -689,7 +689,7 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
   // Compute the Newton-Raphson Jacobian of the residual J = ∇ᵥR using the
   // solver's internal implementation.
   MatrixX<double> J =
-      TAMSISolverTester::CalcJacobian(solver_, v, dt);
+      TamsiSolverTester::CalcJacobian(solver_, v, dt);
 
   // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
   // a completely separate implementation using automatic differentiation.
@@ -723,8 +723,8 @@ TEST_F(PizzaSaver, NoContact) {
 
   SetNoContactProblem(v0, tau, dt);
 
-  TAMSISolverResult info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, TAMSISolverResult::kSuccess);
+  TamsiSolverResult info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, TamsiSolverResult::kSuccess);
 
   EXPECT_EQ(solver_.get_generalized_friction_forces(), Vector3<double>::Zero());
 
@@ -818,7 +818,7 @@ class RollingCylinder : public ::testing::Test {
     return D;
   }
 
-  // Sets the TAMSISolver to solve this cylinder case from the
+  // Sets the TamsiSolver to solve this cylinder case from the
   // input data:
   //   v0: velocity right before impact.
   //   tau: vector of externally applied generalized forces.
@@ -896,7 +896,7 @@ class RollingCylinder : public ::testing::Test {
   VectorX<double> x0_{nc_};
 
   // TAMSI solver for this problem.
-  TAMSISolver<double> solver_{nv_};
+  TamsiSolver<double> solver_{nv_};
 
   // Additional solver data that must outlive solver_ during solution.
   VectorX<double> p_star_{nv_};  // Generalized momentum.
@@ -927,12 +927,12 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
 
   SetImpactProblem(v0, tau, mu, h0, dt);
 
-  TAMSISolverParameters parameters;  // Default parameters.
+  TamsiSolverParameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
   solver_.set_solver_parameters(parameters);
 
-  TAMSISolverResult info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, TAMSISolverResult::kSuccess);
+  TamsiSolverResult info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, TamsiSolverResult::kSuccess);
 
   VectorX<double> tau_f = solver_.get_generalized_friction_forces();
 
@@ -968,7 +968,7 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
   // Compute the Newton-Raphson Jacobian of the residual J = ∇ᵥR using the
   // solver's internal implementation.
   MatrixX<double> J =
-      TAMSISolverTester::CalcJacobian(solver_, v, dt);
+      TamsiSolverTester::CalcJacobian(solver_, v, dt);
 
   // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
   // a completely separate implementation using automatic differentiation.
@@ -1017,12 +1017,12 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
 
   SetImpactProblem(v0, tau, mu, h0, dt);
 
-  TAMSISolverParameters parameters;  // Default parameters.
+  TamsiSolverParameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
   solver_.set_solver_parameters(parameters);
 
-  TAMSISolverResult info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, TAMSISolverResult::kSuccess);
+  TamsiSolverResult info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, TamsiSolverResult::kSuccess);
 
   VectorX<double> tau_f = solver_.get_generalized_friction_forces();
 
@@ -1061,7 +1061,7 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
   // Compute the Newton-Raphson Jacobian of the (two-way coupled)
   // residual J = ∇ᵥR using the solver's internal implementation.
   MatrixX<double> J =
-      TAMSISolverTester::CalcJacobian(solver_, v, dt);
+      TamsiSolverTester::CalcJacobian(solver_, v, dt);
 
   // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
   // a completely separate implementation using automatic differentiation.
@@ -1083,7 +1083,7 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
 
 GTEST_TEST(EmptyWorld, Solve) {
   const int nv = 0;
-  TAMSISolver<double> solver{nv};
+  TamsiSolver<double> solver{nv};
 
   // (Empty) problem data.
   VectorX<double> p_star, mu_vector, x0, stiffness, dissipation;
