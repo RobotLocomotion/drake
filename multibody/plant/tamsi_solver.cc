@@ -1,4 +1,4 @@
-#include "drake/multibody/plant/implicit_stribeck_solver.h"
+#include "drake/multibody/plant/tamsi_solver.h"
 
 #include <algorithm>
 #include <limits>
@@ -12,7 +12,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 template <typename T>
-T DirectionChangeLimiter<T>::CalcAlpha(
+T TalsLimiter<T>::CalcAlpha(
     const Eigen::Ref<const Vector2<T>>& v,
     const Eigen::Ref<const Vector2<T>>& dv,
     double cos_theta_max, double v_stiction, double relative_tolerance) {
@@ -65,7 +65,7 @@ T DirectionChangeLimiter<T>::CalcAlpha(
   if (x < 1.0) {
     // Another quick exit. Two possibilities (both of which yield the same
     // action):
-    // x1 < 1: we go from within the Stribeck circle back into it. Since this
+    // x1 < 1: we go from within the stiction region back into it. Since this
     //         region has strong gradients, we allow it. i.e. alpha = 1.0
     // x1 > 1: If we go from a region of strong gradients (x < 1) to sliding
     //         (x1 > 1), we allow it. Notice that the case from weak gradients
@@ -89,8 +89,9 @@ T DirectionChangeLimiter<T>::CalcAlpha(
     //  - x1 > 1.0 (we went through Case IV)
     //  - dv_norm > epsilon_v (we went through Case I, i.e. non-zero)
     // Here we are checking for the case when the line connecting v and v1
-    // intersects the Stribeck circle. For this case we compute alpha so that
-    // the update corresponds to the velocity closest to the origin.
+    // intersects the boundary of the stiction region. For this case we
+    // compute alpha so that the update corresponds to the velocity closest
+    // to the origin.
     T alpha;
     const T v_dot_dv = v.dot(dv);
     if (CrossesTheStictionRegion(
@@ -102,7 +103,7 @@ T DirectionChangeLimiter<T>::CalcAlpha(
     //  - x > 1.0
     //  - x1 > 1.0
     //  - dv_norm > epsilon_v
-    //  - line connecting v with v1 never goes through the Stribeck circle.
+    //  - line connecting v with v1 never goes through the stiction region.
     //
     // Case VI:
     // Therefore we know changes happen entirely outside the circle of radius
@@ -158,7 +159,7 @@ T DirectionChangeLimiter<T>::CalcAlpha(
 }
 
 template <typename T>
-bool DirectionChangeLimiter<T>::CrossesTheStictionRegion(
+bool TalsLimiter<T>::CrossesTheStictionRegion(
     const Eigen::Ref<const Vector2<T>>& v,
     const Eigen::Ref<const Vector2<T>>& dv,
     const T& v_dot_dv,  const T& dv_norm, const T& dv_norm2,
@@ -183,7 +184,7 @@ bool DirectionChangeLimiter<T>::CrossesTheStictionRegion(
         DRAKE_ASSERT(0 < alpha && alpha <= 1);
         return true;  // Crosses the stiction region.
       } else if (v_alpha_norm < v_stiction) {
-        // v_alpha falls within the Stribeck circle but its magnitude is
+        // v_alpha falls within the stiction region but its magnitude is
         // larger than epsilon_v.
         return true;  // Crosses the stiction region.
       }
@@ -193,7 +194,7 @@ bool DirectionChangeLimiter<T>::CrossesTheStictionRegion(
 }
 
 template <typename T>
-T DirectionChangeLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
+T TalsLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
     const T& a, const T& b, const T& c) {
   using std::abs;
   using std::max;
@@ -245,7 +246,7 @@ T DirectionChangeLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
 }  // namespace internal
 
 template <typename T>
-ImplicitStribeckSolver<T>::ImplicitStribeckSolver(int nv) :
+TamsiSolver<T>::TamsiSolver(int nv) :
     nv_(nv),
     fixed_size_workspace_(nv),
     // Provide an initial (arbitrarily large enough for most applications)
@@ -257,7 +258,7 @@ ImplicitStribeckSolver<T>::ImplicitStribeckSolver(int nv) :
 }
 
 template <typename T>
-void ImplicitStribeckSolver<T>::SetOneWayCoupledProblemData(
+void TamsiSolver<T>::SetOneWayCoupledProblemData(
     EigenPtr<const MatrixX<T>> M,
     EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
     EigenPtr<const VectorX<T>> p_star,
@@ -274,7 +275,7 @@ void ImplicitStribeckSolver<T>::SetOneWayCoupledProblemData(
 }
 
 template <typename T>
-void ImplicitStribeckSolver<T>::SetTwoWayCoupledProblemData(
+void TamsiSolver<T>::SetTwoWayCoupledProblemData(
     EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> Jn,
     EigenPtr<const MatrixX<T>> Jt, EigenPtr<const VectorX<T>> p_star,
     EigenPtr<const VectorX<T>> x0, EigenPtr<const VectorX<T>> stiffness,
@@ -294,12 +295,12 @@ void ImplicitStribeckSolver<T>::SetTwoWayCoupledProblemData(
 }
 
 template <typename T>
-void ImplicitStribeckSolver<T>::CalcFrictionForces(
+void TamsiSolver<T>::CalcFrictionForces(
     const Eigen::Ref<const VectorX<T>>& vt,
     const Eigen::Ref<const VectorX<T>>& fn,
     EigenPtr<VectorX<T>> v_slip_ptr,
     EigenPtr<VectorX<T>> t_hat_ptr,
-    EigenPtr<VectorX<T>> mu_stribeck_ptr,
+    EigenPtr<VectorX<T>> mu_regularized_ptr,
     EigenPtr<VectorX<T>> ft) const {
   using std::sqrt;
 
@@ -309,7 +310,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForces(
   const auto& mu = problem_data_aliases_.mu();
 
   // Convenient aliases.
-  auto mu_stribeck = *mu_stribeck_ptr;
+  auto mu_regularized = *mu_regularized_ptr;
   auto v_slip = *v_slip_ptr;
   auto t_hat = *t_hat_ptr;
 
@@ -363,14 +364,14 @@ void ImplicitStribeckSolver<T>::CalcFrictionForces(
     // "soft" tangent vector:
     const Vector2<T> that_ic = vt_ic / v_slip(ic);
     t_hat.template segment<2>(ik) = that_ic;
-    mu_stribeck(ic) = ModifiedStribeck(v_slip(ic) / v_stiction, mu(ic));
+    mu_regularized(ic) = RegularizedFriction(v_slip(ic) / v_stiction, mu(ic));
     // Friction force.
-    ft->template segment<2>(ik) = -mu_stribeck(ic) * that_ic * fn(ic);
+    ft->template segment<2>(ik) = -mu_regularized(ic) * that_ic * fn(ic);
   }
 }
 
 template <typename T>
-void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
+void TamsiSolver<T>::CalcFrictionForcesGradient(
     const Eigen::Ref<const VectorX<T>>& fn,
     const Eigen::Ref<const VectorX<T>>& mu_vt,
     const Eigen::Ref<const VectorX<T>>& t_hat,
@@ -396,7 +397,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
     // Compute dmu/dv = (1/v_stiction) * dmu/dx
     // where x = v_slip / v_stiction is the dimensionless slip velocity.
     const T x = v_slip(ic) / v_stiction;
-    const T dmudv = ModifiedStribeckDerivative(x, mu(ic)) / v_stiction;
+    const T dmudv = RegularizedFrictionDerivative(x, mu(ic)) / v_stiction;
 
     const auto t_hat_ic = t_hat.template segment<2>(ik);
 
@@ -423,8 +424,8 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
     // ∇ᵥₜfₜ(vₜ) as (recall that fₜ(vₜ) = vₜ/‖vₜ‖ₛμ(‖vₜ‖ₛ),
     // with ‖v‖ₛ the soft norm ‖v‖ₛ ≜ sqrt(vᵀv + εᵥ²)):
     //   ∇ᵥₜfₜ = −dft_dvt = −fn * (
-    //     mu_stribeck(‖vₜ‖ₛ) / ‖vₜ‖ₛ * Pperp(t̂) +
-    //     dmu_stribeck/dx * P(t̂) / v_stiction )
+    //     mu_regularized(‖vₜ‖ₛ) / ‖vₜ‖ₛ * Pperp(t̂) +
+    //     dmu_regularized/dx * P(t̂) / v_stiction )
     // where x = ‖vₜ‖ₛ / vₛ is the dimensionless slip velocity and we
     // have defined dft_dvt = −∇ᵥₜfₜ.
     // Therefore dft_dvt (in ℝ²ˣ²) is a linear combination of PSD matrices
@@ -441,7 +442,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
     // expression for dft_dvt above).
     dft_dvt[ic] = Pperp_ic * mu_vt(ic) / v_slip(ic);
 
-    // Changes in the magnitude of vt (which in turn makes mu_stribeck
+    // Changes in the magnitude of vt (which in turn makes mu_regularized
     // change), in the direction of t_hat.
     dft_dvt[ic] += P_ic * dmudv;
 
@@ -452,7 +453,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
 }
 
 template <typename T>
-void ImplicitStribeckSolver<T>::CalcNormalForces(
+void TamsiSolver<T>::CalcNormalForces(
     const Eigen::Ref<const VectorX<T>>& x,
     const Eigen::Ref<const VectorX<T>>& vn,
     const Eigen::Ref<const MatrixX<T>>& Jn,
@@ -515,7 +516,7 @@ void ImplicitStribeckSolver<T>::CalcNormalForces(
 }
 
 template <typename T>
-void ImplicitStribeckSolver<T>::CalcJacobian(
+void TamsiSolver<T>::CalcJacobian(
     const Eigen::Ref<const MatrixX<T>>& M,
     const Eigen::Ref<const MatrixX<T>>& Jn,
     const Eigen::Ref<const MatrixX<T>>& Jt,
@@ -579,7 +580,7 @@ void ImplicitStribeckSolver<T>::CalcJacobian(
 }
 
 template <typename T>
-T ImplicitStribeckSolver<T>::CalcAlpha(
+T TamsiSolver<T>::CalcAlpha(
     const Eigen::Ref<const VectorX<T>>& vt,
     const Eigen::Ref<const VectorX<T>>& Delta_vt) const {
   using std::min;
@@ -591,7 +592,7 @@ T ImplicitStribeckSolver<T>::CalcAlpha(
     const auto dvt_ic = Delta_vt.template segment<2>(ik);
     alpha = min(
         alpha,
-        internal::DirectionChangeLimiter<T>::CalcAlpha(
+        internal::TalsLimiter<T>::CalcAlpha(
             vt_ic, dvt_ic,
             cos_theta_max_, v_stiction, parameters_.relative_tolerance));
   }
@@ -600,7 +601,7 @@ T ImplicitStribeckSolver<T>::CalcAlpha(
 }
 
 template <typename T>
-ImplicitStribeckSolverResult ImplicitStribeckSolver<T>::SolveWithGuess(
+TamsiSolverResult TamsiSolver<T>::SolveWithGuess(
     double dt, const VectorX<T>& v_guess) const {
   DRAKE_THROW_UNLESS(v_guess.size() == nv_);
 
@@ -621,7 +622,7 @@ ImplicitStribeckSolverResult ImplicitStribeckSolver<T>::SolveWithGuess(
     v = M.ldlt().solve(p_star);
     // "One iteration" with exactly "zero" vt_error.
     statistics_.Update(0.0);
-    return ImplicitStribeckSolverResult::kSuccess;
+    return TamsiSolverResult::kSuccess;
   }
 
   // Solver parameters.
@@ -694,7 +695,7 @@ ImplicitStribeckSolverResult ImplicitStribeckSolver<T>::SolveWithGuess(
       // Update generalized forces and return.
       tau_f = Jt.transpose() * ft;
       tau = tau_f + Jn.transpose() * fn;
-      return ImplicitStribeckSolverResult::kSuccess;
+      return TamsiSolverResult::kSuccess;
     }
 
     // Newton-Raphson residual.
@@ -721,7 +722,7 @@ ImplicitStribeckSolverResult ImplicitStribeckSolver<T>::SolveWithGuess(
       auto& J_ldlt = fixed_size_workspace_.mutable_J_ldlt();
       J_ldlt.compute(J);  // Update factorization.
       if (J_ldlt.info() != Eigen::Success) {
-        return ImplicitStribeckSolverResult::kLinearSolverFailed;
+        return TamsiSolverResult::kLinearSolverFailed;
       }
       Delta_v = J_ldlt.solve(-residual);
     }
@@ -756,11 +757,11 @@ ImplicitStribeckSolverResult ImplicitStribeckSolver<T>::SolveWithGuess(
 
   // If we are here is because we reached the maximum number of iterations
   // without converging to the specified tolerance.
-  return ImplicitStribeckSolverResult::kMaxIterationsReached;
+  return TamsiSolverResult::kMaxIterationsReached;
 }
 
 template <typename T>
-T ImplicitStribeckSolver<T>::ModifiedStribeck(const T& s, const T& mu) {
+T TamsiSolver<T>::RegularizedFriction(const T& s, const T& mu) {
   DRAKE_ASSERT(s >= 0);
   if (s >= 1) {
     return mu;
@@ -770,7 +771,7 @@ T ImplicitStribeckSolver<T>::ModifiedStribeck(const T& s, const T& mu) {
 }
 
 template <typename T>
-T ImplicitStribeckSolver<T>::ModifiedStribeckDerivative(
+T TamsiSolver<T>::RegularizedFrictionDerivative(
     const T& s, const T& mu) {
   DRAKE_ASSERT(s >= 0);
   if (s >= 1) {
@@ -784,7 +785,7 @@ T ImplicitStribeckSolver<T>::ModifiedStribeckDerivative(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    struct ::drake::multibody::internal::DirectionChangeLimiter)
+    struct ::drake::multibody::internal::TalsLimiter)
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::ImplicitStribeckSolver)
+    class ::drake::multibody::TamsiSolver)

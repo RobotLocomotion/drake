@@ -1,7 +1,7 @@
 #pragma once
 
 // This file implements a method to compute the  Newton-Raphson Jacobian
-// J = ∇ᵥR of the residual for the ImplicitStribeckSolver using automatic
+// J = ∇ᵥR of the residual for the TamsiSolver using automatic
 // differentiation. This separate implementation is used to verify the
 // analytical (and faster) Jacobian computed by the internal implementation of
 // the solver.
@@ -58,7 +58,7 @@ VectorX<U> CalcFrictionForces(
   VectorX<U> t_hat(2 * nc);
   VectorX<U> v_slip(nc);
 
-  auto ModifiedStribeck = [](U x, double friction_coefficient) {
+  auto RegularizedFriction = [](U x, double friction_coefficient) {
     if (x >= 1) {
       return U(friction_coefficient);
     } else {
@@ -86,16 +86,16 @@ VectorX<U> CalcFrictionForces(
     // "soft" tangent vector:
     const Vector2<U> that_ic = vt_ic / v_slip(ic);
     t_hat.template segment<2>(ik) = that_ic;
-    mu_vt(ic) = ModifiedStribeck(v_slip(ic) / v_stiction, mu(ic));
+    mu_vt(ic) = RegularizedFriction(v_slip(ic) / v_stiction, mu(ic));
     // Friction force.
     ft.template segment<2>(ik) = -mu_vt(ic) * that_ic * fn(ic);
   }
   return ft;
 }
 
-// Computes and returns the Newton-Raphson residual for the implicit Stribeck
-// solver. This templated method is used to automatically differentiate the
-// residual and compute its Jacobian J = ∇ᵥR.
+// Computes and returns the Newton-Raphson residual for the TAMSI solver. This
+// templated method is used to automatically differentiate the residual and
+// compute its Jacobian J = ∇ᵥR.
 // This same method is used to evaluate the residual for both the one-way (
 // normal forces are fixed) and two-way coupled schemes. two_way_coupling = true
 // indicates to compute the residual for the two-way coupled scheme. Call with
@@ -148,7 +148,7 @@ VectorX<U> CalcResidual(
 }
 
 // Computes the Jacobian J = ∇ᵥR of the residual for the two-way coupled scheme
-// of ImplicitStribeckSolver using automatic differentiation.
+// of TamsiSolver using automatic differentiation.
 MatrixX<double> CalcTwoWayCoupledJacobianWithAutoDiff(
     const MatrixX<double>& M,
     const MatrixX<double>& Jn,
@@ -172,7 +172,7 @@ MatrixX<double> CalcTwoWayCoupledJacobianWithAutoDiff(
 }
 
 // Computes the Jacobian J = ∇ᵥR of the residual for the one-way coupled scheme
-// of ImplicitStribeckSolver using automatic differentiation.
+// of TamsiSolver using automatic differentiation.
 MatrixX<double> CalcOneWayCoupledJacobianWithAutoDiff(
     const MatrixX<double>& M,
     const MatrixX<double>& Jn,
