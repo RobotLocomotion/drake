@@ -7,12 +7,12 @@ def sdformat_repository(
         mirrors = None):
     # From the following branch:
     # https://bitbucket.org/osrf/sdformat/commits/branch/default
-    commit = "4d7186e0b85e"  # vx.y.z DNM non-default!
+    commit = "c1ac6eb4bb2c"  # vx.y.z DNM non-default!
     bitbucket_archive(
         name = name,
         repository = "osrf/sdformat",
         commit = commit,
-        sha256 = "a4bb32c1d708b5940c40388d53f7ad4f64a4754705b7d362c90973134eca9417",  # noqa
+        sha256 = "023dbb6f5d91c971c2b28b0985bb320efe63e8ad966485fd6438609b360ae53a",  # noqa
         strip_prefix = "osrf-sdformat-%s" % (commit),
         build_file = "@drake//tools/workspace/sdformat:package.BUILD.bazel",
         mirrors = mirrors,
