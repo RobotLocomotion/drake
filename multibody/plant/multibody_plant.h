@@ -3454,12 +3454,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // `context0` taking a time step of size time_step().
   // Contact forces and velocities are computed and stored in `results`. See
   // TamsiSolverResults for further details on the returned data.
-  void CalcTAMSIResults(
+  void CalcTamsiResults(
       const drake::systems::Context<T>& context0,
       internal::TamsiSolverResults<T>* results) const;
 
-  // Eval version of the method CalcTAMSIResults().
-  const internal::TamsiSolverResults<T>& EvalTAMSIResults(
+  // Eval version of the method CalcTamsiResults().
+  const internal::TamsiSolverResults<T>& EvalTamsiResults(
       const systems::Context<T>& context) const {
     return this
         ->get_cache_entry(cache_indexes_.tamsi_solver_results)
@@ -3473,7 +3473,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Helper method to fill in the ContactResults given the current context when
   // the model is discrete. If cached contact solver results are not up-to-date
-  // with `context`, they'll be  recomputed, see EvalTAMSIResults(). The solver
+  // with `context`, they'll be  recomputed, see EvalTamsiResults(). The solver
   // results are then used to compute contact results into `contacts`.
   void CalcContactResultsDiscrete(const systems::Context<T>& context,
                                   ContactResults<T>* contact_results) const;

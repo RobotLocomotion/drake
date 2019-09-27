@@ -1237,7 +1237,7 @@ void MultibodyPlant<T>::CalcContactResultsDiscrete(
   const std::vector<RotationMatrix<T>>& R_WC_set =
       EvalContactJacobians(context).R_WC_list;
   const internal::TamsiSolverResults<T>& solver_results =
-      EvalTAMSIResults(context);
+      EvalTamsiResults(context);
 
   const VectorX<T>& fn = solver_results.fn;
   const VectorX<T>& ft = solver_results.ft;
@@ -1634,7 +1634,7 @@ TamsiSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcTAMSIResults(
+void MultibodyPlant<T>::CalcTamsiResults(
     const drake::systems::Context<T>& context0,
     internal::TamsiSolverResults<T>* results) const {
   // Assert this method was called on a context storing discrete state.
@@ -1876,7 +1876,7 @@ void MultibodyPlant<T>::CalcGeneralizedAccelerationsDiscrete(
 
   // Evaluate contact results.
   const internal::TamsiSolverResults<T>& solver_results =
-      EvalTAMSIResults(context0);
+      EvalTamsiResults(context0);
 
   // Retrieve the solution velocity for the next time step.
   const VectorX<T>& v_next = solver_results.v_next;
@@ -2041,7 +2041,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     auto calc = [this, model_instance_index](const systems::Context<T>& context,
                                              systems::BasicVector<T>* result) {
       const internal::TamsiSolverResults<T>& solver_results =
-          EvalTAMSIResults(context);
+          EvalTamsiResults(context);
       this->CopyGeneralizedContactForcesOut(
           solver_results, model_instance_index, result);
     };
@@ -2118,7 +2118,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& tamsi_solver_cache = cache_value->get_mutable_value<
             internal::TamsiSolverResults<T>>();
-        this->CalcTAMSIResults(context,
+        this->CalcTamsiResults(context,
                                           &tamsi_solver_cache);
       },
       // The Correct Solution:
