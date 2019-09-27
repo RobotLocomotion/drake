@@ -8,12 +8,12 @@ namespace multibody {
 namespace internal {
 
 /// This struct stores the results from a computation performed with
-/// ImplicitStribeckSolver. See the ImplicitStribeckSolver class's documentation
+/// TamsiSolver. See the TamsiSolver class's documentation
 /// for further details.
 /// We denote `nv` the size of the vector of generalized velocities and `nc` the
 /// number of contact points.
 template <class T>
-struct ImplicitStribeckSolverResults {
+struct TamsiSolverResults {
   /// Vector of generalized velocities at the next time step.
   VectorX<T> v_next;
 
@@ -39,4 +39,4 @@ struct ImplicitStribeckSolverResults {
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    struct ::drake::multibody::internal::ImplicitStribeckSolverResults)
+    struct ::drake::multibody::internal::TamsiSolverResults)
