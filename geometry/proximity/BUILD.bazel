@@ -20,6 +20,7 @@ drake_cc_package_library(
         ":find_collision_candidates_callback",
         ":hydroelastic_callback",
         ":make_box_mesh",
+        ":make_cylinder_mesh",
         ":make_sphere_mesh",
         ":mesh_field",
         ":mesh_half_space_intersection",
@@ -170,6 +171,16 @@ drake_cc_library(
 drake_cc_library(
     name = "make_sphere_mesh",
     hdrs = ["make_sphere_mesh.h"],
+    deps = [
+        ":volume_mesh",
+        "//common:essential",
+        "//geometry:shape_specification",
+    ],
+)
+
+drake_cc_library(
+    name = "make_cylinder_mesh",
+    hdrs = ["make_cylinder_mesh.h"],
     deps = [
         ":volume_mesh",
         "//common:essential",
@@ -364,6 +375,14 @@ drake_cc_googletest(
         ":make_sphere_mesh",
         "//common:sorted_pair",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "make_cylinder_mesh_test",
+    deps = [
+        ":make_cylinder_mesh",
+        ":sorted_triplet",
     ],
 )
 
