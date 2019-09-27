@@ -12,7 +12,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 template <typename T>
-T TALSLimiter<T>::CalcAlpha(
+T TalsLimiter<T>::CalcAlpha(
     const Eigen::Ref<const Vector2<T>>& v,
     const Eigen::Ref<const Vector2<T>>& dv,
     double cos_theta_max, double v_stiction, double relative_tolerance) {
@@ -159,7 +159,7 @@ T TALSLimiter<T>::CalcAlpha(
 }
 
 template <typename T>
-bool TALSLimiter<T>::CrossesTheStictionRegion(
+bool TalsLimiter<T>::CrossesTheStictionRegion(
     const Eigen::Ref<const Vector2<T>>& v,
     const Eigen::Ref<const Vector2<T>>& dv,
     const T& v_dot_dv,  const T& dv_norm, const T& dv_norm2,
@@ -194,7 +194,7 @@ bool TALSLimiter<T>::CrossesTheStictionRegion(
 }
 
 template <typename T>
-T TALSLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
+T TalsLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
     const T& a, const T& b, const T& c) {
   using std::abs;
   using std::max;
@@ -592,7 +592,7 @@ T TAMSISolver<T>::CalcAlpha(
     const auto dvt_ic = Delta_vt.template segment<2>(ik);
     alpha = min(
         alpha,
-        internal::TALSLimiter<T>::CalcAlpha(
+        internal::TalsLimiter<T>::CalcAlpha(
             vt_ic, dvt_ic,
             cos_theta_max_, v_stiction, parameters_.relative_tolerance));
   }
@@ -785,7 +785,7 @@ T TAMSISolver<T>::RegularizedFrictionDerivative(
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    struct ::drake::multibody::internal::TALSLimiter)
+    struct ::drake::multibody::internal::TalsLimiter)
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::TAMSISolver)
