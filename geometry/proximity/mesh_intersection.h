@@ -433,20 +433,13 @@ void AddPolygonToMeshData(
 
   const int num_original_vertices = static_cast<int>(vertices_F->size());
 
-  // If the polygon is a triangle, simply add it.
-  if (polygon_size == 3) {
-    int vertex_index[3];
-    for (int i = 0; i < 3; ++i) {
-      vertices_F->emplace_back(polygon_vertices_F[i]);
-      vertex_index[i] = i + num_original_vertices;
-    }
-    faces->emplace_back(vertex_index);
-    return;
-  }
-
   // Triangulate the polygon by creating a fan around the polygon's centroid.
   // This is important because it gives us a smoothly changing tesselation as
-  // the polygon itself smoothly changes.
+  // the polygon itself smoothly changes. Even if the polygon is already a
+  // triangle, we still add its centroid because the triangular polygon can
+  // smoothly change to a quadrilateral polygon. Therefore, an intersection
+  // triangle will contribute 3 triangles to the ContactSurface and smoothly
+  // change to 4 triangles from an intersection quadrilateral.
   Vector3<T> centroid = Vector3<T>::Zero();
   for (int i = 0; i < polygon_size; ++i) {
     vertices_F->emplace_back(polygon_vertices_F[i]);

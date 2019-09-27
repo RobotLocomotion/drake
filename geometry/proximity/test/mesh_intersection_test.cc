@@ -687,10 +687,10 @@ GTEST_TEST(MeshIntersectionTest, SampleVolumeFieldOnSurface) {
       &surface, &e_field, &grad_h_field);
 
   const double kEps = std::numeric_limits<double>::epsilon();
-  EXPECT_EQ(1, surface->num_faces());
+  EXPECT_EQ(3, surface->num_faces());
   // TODO(DamrongGuoy): More comprehensive checks.
   const double area = surface->area(SurfaceFaceIndex(0));
-  const double expect_area = (1. / 2.) * 0.5 * 0.5;
+  const double expect_area = 1. / 24.;
   EXPECT_NEAR(expect_area, area, kEps);
   const SurfaceFaceIndex face0(0);
   const SurfaceMesh<double>::Barycentric centroid(1. / 3., 1. / 3., 1. / 3.);
@@ -957,7 +957,7 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
             id_S, *soft_epsilon, X_WS, id_R, *rigid_mesh, X_WR);
     // TODO(DamrongGuoy): More comprehensive checks on the mesh of the contact
     //  surface. Here we only check the number of triangles.
-    EXPECT_EQ(4, contact_SR_W->mesh_W().num_faces());
+    EXPECT_EQ(12, contact_SR_W->mesh_W().num_faces());
 
     const Vector3d p_MQ = Vector3d::Zero();
     SurfaceFaceIndex face_Q;
@@ -1000,7 +1000,7 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidMoving) {
             id_S, *soft_epsilon, X_WS, id_R, *rigid_mesh, X_WR);
     // TODO(DamrongGuoy): More comprehensive checks on the mesh of the contact
     //  surface.  Here we only check the number of triangles.
-    EXPECT_EQ(4, contact_SR_W->mesh_W().num_faces());
+    EXPECT_EQ(12, contact_SR_W->mesh_W().num_faces());
 
     const Vector3d p_MQ{0, -0.5,
                         0};  // The center vertex of the pyramid "bottom".
