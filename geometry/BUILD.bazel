@@ -27,6 +27,7 @@ drake_cc_package_library(
         ":internal_frame",
         ":internal_geometry",
         ":proximity_engine",
+        ":proximity_properties",
         ":scene_graph",
         ":scene_graph_inspector",
         ":shape_specification",
@@ -159,6 +160,15 @@ drake_cc_library(
         ":proximity_engine",
         ":utilities",
         "//geometry/render:render_engine",
+    ],
+)
+
+drake_cc_library(
+    name = "proximity_properties",
+    srcs = ["proximity_properties.cc"],
+    hdrs = ["proximity_properties.h"],
+    deps = [
+        ":geometry_roles",
     ],
 )
 
@@ -348,6 +358,14 @@ drake_cc_googletest(
         ":geometry_state",
         "//common/test_utilities",
         "//geometry/test_utilities:dummy_render_engine",
+    ],
+)
+
+drake_cc_googletest(
+    name = "proximity_properties_test",
+    deps = [
+        ":geometry_roles",
+        ":proximity_properties",
     ],
 )
 

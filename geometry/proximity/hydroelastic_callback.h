@@ -10,11 +10,14 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/internal_geometry.h"
 #include "drake/geometry/proximity/collision_filter_legacy.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/geometry/proximity/mesh_intersection.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
@@ -30,6 +33,7 @@ namespace hydroelastic {
     - A collision filter instance.
     - The T-valued poses of _all_ geometries in the corresponding SceneGraph,
       each indexed by its corresponding geometry's GeometryId.
+    - The geometries stored in SceneGraph.
     - A vector of contact surfaces -- one instance of ContactSurface for
       every supported, unfiltered penetrating pair.
 
@@ -42,16 +46,21 @@ struct CallbackData {
 
    @param collision_filter_in     The collision filter system. Aliased.
    @param X_WGs_in                The T-valued poses. Aliased.
+   @param geometries_in           The geometries. Aliased.
    @param surfaces_in             The output results. Aliased.  */
   CallbackData(
       const CollisionFilterLegacy* collision_filter_in,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs_in,
+      const std::unordered_map<GeometryId, internal::InternalGeometry>*
+          geometries_in,
       std::vector<ContactSurface<T>>* surfaces_in)
       : collision_filter(*collision_filter_in),
         X_WGs(*X_WGs_in),
+        geometries(*geometries_in),
         surfaces(*surfaces_in) {
     DRAKE_DEMAND(collision_filter_in);
     DRAKE_DEMAND(X_WGs_in);
+    DRAKE_DEMAND(geometries_in);
     DRAKE_DEMAND(surfaces_in);
   }
 
@@ -61,22 +70,27 @@ struct CallbackData {
   /** The T-valued poses of all geometries.  */
   const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs;
 
+  /** The geometries in scene graph -- not just those with proximity role.  */
+  const std::unordered_map<GeometryId, internal::InternalGeometry>& geometries;
+
   /** The results of the distance query.  */
-  std::vector<ContactSurface<T>>& surfaces{};
+  std::vector<ContactSurface<T>>& surfaces;
 };
 
 // TODO(SeanCurtis-TRI): Remove these two functions (MakeBoxMeshFromFcl and
 //  MakeSphereFromFcl) when the real infrastructure is in place.
-
 /** Given an object_ptr whose geometry is a box, create a coarse surface mesh
  for that box.  */
-SurfaceMesh<double> MakeBoxMeshFromFcl(fcl::CollisionObjectd* object_ptr) {
-  const fcl::Boxd* box_ptr = dynamic_cast<const fcl::Boxd*>(
-      object_ptr->collisionGeometry().get());
+SurfaceMesh<double> MakeBoxMeshFromFcl(fcl::CollisionObjectd* object_ptr,
+                                       const ProximityProperties& properties) {
+  const fcl::Boxd* box_ptr =
+      dynamic_cast<const fcl::Boxd*>(object_ptr->collisionGeometry().get());
   DRAKE_DEMAND(box_ptr != nullptr);
   Box box(box_ptr->side(0), box_ptr->side(1), box_ptr->side(2));
   // Edge length as long as the longest side guarantees the coarsest mesh.
-  const double edge_length = box_ptr->side.maxCoeff();
+  double edge_length = box_ptr->side.maxCoeff();
+  edge_length =
+      properties.GetPropertyOrDefault(kHydroGroup, kRezHint, edge_length);
   return MakeBoxSurfaceMesh<double>(box, edge_length);
 }
 
@@ -87,10 +101,10 @@ struct SoftGeometry {
 
 /** Given an object_ptr whose geometry is a sphere, creates a coarse volume mesh
  field for that sphere.  */
-SoftGeometry MakeSphereFromFcl(
-    fcl::CollisionObjectd* object_ptr) {
-  const fcl::Sphered* sphere_ptr = dynamic_cast<const fcl::Sphered*>(
-      object_ptr->collisionGeometry().get());
+SoftGeometry MakeSphereFromFcl(fcl::CollisionObjectd* object_ptr,
+                               const ProximityProperties& properties) {
+  const fcl::Sphered* sphere_ptr =
+      dynamic_cast<const fcl::Sphered*>(object_ptr->collisionGeometry().get());
   DRAKE_DEMAND(sphere_ptr != nullptr);
   const double r = sphere_ptr->radius;
   Sphere sphere(r);
@@ -98,15 +112,23 @@ SoftGeometry MakeSphereFromFcl(
   // around the equator. The length of such an edge, is the length of the chord
   // that spans 45 degrees (for a circle of radius r).
   SoftGeometry geometry;
-  const double edge_length = 2 * r * std::sin(M_PI / 8.0);
+  double edge_length = 2 * r * std::sin(M_PI / 8.0);
+  edge_length =
+      properties.GetPropertyOrDefault(kHydroGroup, kRezHint, edge_length);
   geometry.mesh = std::make_unique<VolumeMesh<double>>(
       MakeSphereVolumeMesh<double>(sphere, edge_length));
 
+  // Currently default to linear pressure with the given elastic_modulus (if it
+  // exists, or default value).
+  const double default_elastic_modulus = 1e8;
+  const double elastic_modulus = properties.GetPropertyOrDefault(
+      kHydroGroup, kElastic, default_elastic_modulus);
+  auto pressure = [elastic_modulus](double e) { return elastic_modulus * e; };
   std::vector<double> p0_values;
   for (const auto& v : geometry.mesh->vertices()) {
     const Eigen::Vector3d& p_MV = v.r_MV();
     const double p_MV_len = p_MV.norm();
-    p0_values.push_back(1e8 * (1.0 - p_MV_len / r));
+    p0_values.push_back(pressure(1.0 - p_MV_len / r));
   }
   geometry.p0 = std::make_unique<VolumeMeshFieldLinear<double, double>>(
       "p0", move(p0_values), geometry.mesh.get());
@@ -170,9 +192,14 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
       sphere_id = encoding_a.id();
     }
 
-    SurfaceMesh<double> box_mesh = MakeBoxMeshFromFcl(object_box_ptr);
-    // Build the sphere.
-    SoftGeometry soft_sphere = MakeSphereFromFcl(object_sphere_ptr);
+    DRAKE_DEMAND(data.geometries.at(box_id).proximity_properties());
+    DRAKE_DEMAND(data.geometries.at(sphere_id).proximity_properties());
+    SurfaceMesh<double> box_mesh = MakeBoxMeshFromFcl(
+        object_box_ptr, *data.geometries.at(box_id).proximity_properties());
+    SoftGeometry soft_sphere = MakeSphereFromFcl(
+        object_sphere_ptr,
+        *data.geometries.at(sphere_id).proximity_properties());
+
     std::unique_ptr<ContactSurface<T>> surface =
         mesh_intersection::ComputeContactSurfaceFromSoftVolumeRigidSurface(
             sphere_id, *soft_sphere.p0, data.X_WGs.at(sphere_id), box_id,
