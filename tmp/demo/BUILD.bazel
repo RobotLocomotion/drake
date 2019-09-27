@@ -1,0 +1,20 @@
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+)
+
+
+drake_cc_binary(
+    name = "iiwa_visualize",
+    srcs = ["iiwa_visualize.cc"],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        "//common",
+        "//geometry",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis",
+    ],
+)
