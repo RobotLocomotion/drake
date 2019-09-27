@@ -18,6 +18,7 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/scene_graph.h"
@@ -47,6 +48,9 @@ using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
+using geometry::AddRigidHydroelasticProperties;
+using geometry::AddSoftHydroelasticProperties;
+using geometry::PressureModel;
 using geometry::IllustrationProperties;
 using geometry::ProximityProperties;
 using geometry::QueryObject;
@@ -58,6 +62,7 @@ using geometry::SurfaceFaceIndex;
 using geometry::SurfaceVertex;
 using lcm::DrakeLcm;
 using math::RigidTransformd;
+using multibody::CoulombFriction;
 using std::make_unique;
 using systems::BasicVector;
 using systems::Context;
@@ -69,7 +74,10 @@ using systems::Simulator;
 
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
-DEFINE_bool(real_time, true, "Set to true to run no faster than realtime");
+DEFINE_bool(real_time, true, "Set to false to run as fast as possible");
+DEFINE_double(length, 1.0,
+              "Measure of sphere edge length -- smaller numbers produce a "
+              "denser, more expensive mesh");
 
 /** Places a ball at the world's origin and defines its velocity as being
  sinusoidal in time in the z direction.
@@ -92,7 +100,11 @@ class MovingBall final : public LeafSystem<double> {
         make_unique<GeometryInstance>(RigidTransformd(),
                                       make_unique<Sphere>(1.0), "ball"));
 
-    scene_graph->AssignRole(source_id_, geometry_id_, ProximityProperties());
+    ProximityProperties prox_props;
+    prox_props.AddProperty(geometry::kMaterialGroup, geometry::kElastic, 1e8);
+    AddSoftHydroelasticProperties(FLAGS_length, PressureModel::kLinear,
+                                  &prox_props);
+    scene_graph->AssignRole(source_id_, geometry_id_, prox_props);
 
     IllustrationProperties illus_props;
     illus_props.AddProperty("phong", "diffuse", Vector4d(0.8, 0.1, 0.1, 0.25));
@@ -235,7 +247,9 @@ int do_main() {
       source_id,
       make_unique<GeometryInstance>(
           X_WB, make_unique<Box>(edge_len, edge_len, edge_len), "box"));
-  scene_graph.AssignRole(source_id, ground_id, ProximityProperties());
+  ProximityProperties rigid_props;
+  AddRigidHydroelasticProperties(edge_len, &rigid_props);
+  scene_graph.AssignRole(source_id, ground_id, rigid_props);
   IllustrationProperties illus_props;
   illus_props.AddProperty("phong", "diffuse", Vector4d{0.5, 0.5, 0.45, 1.0});
   scene_graph.AssignRole(source_id, ground_id, illus_props);
