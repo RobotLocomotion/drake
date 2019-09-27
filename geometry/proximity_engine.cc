@@ -637,10 +637,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   std::vector<ContactSurface<T>> ComputeContactSurfaces(
-      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
+      const unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
+      const unordered_map<GeometryId, InternalGeometry>& geometries) const {
     std::vector<ContactSurface<T>> surfaces;
     // All these quantities are aliased in the callback data.
-    hydroelastic::CallbackData<T> data{&collision_filter_, &X_WGs, &surfaces};
+    hydroelastic::CallbackData<T> data{&collision_filter_, &X_WGs, &geometries,
+                                       &surfaces};
 
     // Perform a query of the dynamic objects against themselves.
     dynamic_tree_.collide(&data, hydroelastic::Callback<T>);
@@ -996,8 +998,9 @@ ProximityEngine<T>::ComputePointPairPenetration() const {
 
 template <typename T>
 std::vector<ContactSurface<T>> ProximityEngine<T>::ComputeContactSurfaces(
-    const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
-  return impl_->ComputeContactSurfaces(X_WGs);
+    const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
+    const std::unordered_map<GeometryId, InternalGeometry>& geometries) const {
+  return impl_->ComputeContactSurfaces(X_WGs, geometries);
 }
 
 template <typename T>
