@@ -690,6 +690,10 @@ GTEST_TEST(MeshIntersectionTest, SampleVolumeFieldOnSurface) {
   EXPECT_EQ(3, surface->num_faces());
   // TODO(DamrongGuoy): More comprehensive checks.
   const double area = surface->area(SurfaceFaceIndex(0));
+  // The geometries M and N intersect in a right triangle ABC with edge
+  // lengths 0.5, 0.5, 0.5√2 with area 1/8. Then, ABC is subdivided into three
+  // smaller triangles of equal area, so each of the triangle in the contact
+  // surface has area (1/8)/3.
   const double expect_area = 1. / 24.;
   EXPECT_NEAR(expect_area, area, kEps);
   const SurfaceFaceIndex face0(0);
