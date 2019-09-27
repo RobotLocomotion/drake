@@ -655,9 +655,6 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
   const T tf = t0 + h;
   context->SetTimeAndContinuousState(tf, *xtplus);
 
-  // Evaluate the residual error using the current x(t+h).
-  VectorX<T> goutput = g();
-
   // Initialize the "last" state update norm; this will be used to detect
   // convergence.
   T last_dx_norm = std::numeric_limits<double>::infinity();
@@ -676,6 +673,9 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
   for (int iter = 0; iter < this->max_newton_raphson_iterations(); ++iter) {
     SPDLOG_DEBUG(drake::log(), "Newton-Raphson iteration {}", iter);
     ++num_nr_iterations_;
+
+    // Evaluate the residual error using the current x(t+h).
+    VectorX<T> goutput = g();
 
     // Compute the state update using the equation A*x = -g(), where A is the
     // iteration matrix.
@@ -700,9 +700,6 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
 
     // Update the norm of the state update.
     last_dx_norm = dx_norm;
-
-    // Update the state in the context and compute g(xⁱ⁺¹).
-    goutput = g();
   }
 
   SPDLOG_DEBUG(drake::log(), "StepImplicitTrapezoidDetail() convergence "

@@ -160,10 +160,6 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
   Context<T>* context = this->get_mutable_context();
   context->SetTimeAndContinuousState(tf, *xtplus);
 
-  // Evaluate the residual error using:
-  // g(x(t0+h)) = x(t0+h) - x(t0) - h f(t0+h,x(t0+h)).
-  VectorX<T> goutput = g();
-
   // Initialize the "last" state update norm; this will be used to detect
   // convergence.
   T last_dx_norm = std::numeric_limits<double>::infinity();
@@ -174,13 +170,17 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
   //                would give a better Jacobian, but would complicate the
   //                logic, since the Jacobian would no longer (necessarily) be
   //                fresh upon fallback to a smaller step size.
-  if (!this->MaybeFreshenMatrices(tf, xt0, h, trial,
+  if (!this->MaybeFreshenMatrices(t0, xt0, h, trial,
       compute_and_factor_iteration_matrix, iteration_matrix)) {
     return false;
   }
 
   // Do the Newton-Raphson iterations.
   for (int i = 0; i < this->max_newton_raphson_iterations(); ++i) {
+    // Evaluate the residual error using:
+    // g(x(t0+h)) = x(t0+h) - x(t0) - h f(t0+h,x(t0+h)).
+    VectorX<T> goutput = g();
+
     // Update the number of Newton-Raphson iterations.
     num_nr_iterations_++;
 
@@ -240,9 +240,6 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
 
     // Update the norm of the state update.
     last_dx_norm = dx_norm;
-
-    // Update the state in the context and compute g(xⁱ⁺¹).
-    goutput = g();
   }
 
   SPDLOG_DEBUG(drake::log(), "StepAbstract() convergence failed");
