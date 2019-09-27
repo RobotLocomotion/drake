@@ -114,7 +114,9 @@ ComputeAndFactorImplicitTrapezoidIterationMatrix(
 // @param g the particular implicit function to compute the root of.
 // @param compute_and_factor_iteration_matrix the function for computing and
 //        factorizing the iteration matrix.
-// @param xtplus_guess the starting guess for x(t0+h)
+// @param xtplus_guess the starting guess for x(t0+h) -- implicit Euler passes
+//        x(t0) since it has no better guess; implicit trapezoid passes
+//        implicit Euler's result for x(t0+h).
 // @param[out] the iteration matrix to be used for the particular integration
 //             scheme (implicit Euler, implicit trapezoid), which will be
 //             computed and factored, if necessary.
@@ -295,8 +297,9 @@ bool ImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0, const T& h,
 // @param t0 the time at the left end of the integration interval.
 // @param h the maximum time increment to step forward.
 // @param dx0 the time derivatives computed at time and state (t0, xt0).
-// @param[out] x(t0+h) computed by the implicit trapezoid method on successful
-//             return.
+// @param xtplus_ie x(t0+h) computed by the implicit Euler method.
+// @param[out] xtplus x(t0+h) computed by the implicit trapezoid method on
+//             successful return.
 // @returns `true` if the step was successful and `false` otherwise.
 // @note The time and continuous state in the context are indeterminate upon
 //       exit.

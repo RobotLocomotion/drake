@@ -5,8 +5,6 @@
 
 #include <gtest/gtest.h>
 
-// TODO(edrumwri) Delete these.
-#include "drake/common/text_logging.h"
 #include "drake/systems/analysis/implicit_integrator.h"
 #include "drake/systems/analysis/test_utilities/discontinuous_spring_mass_damper_system.h"
 #include "drake/systems/analysis/test_utilities/linear_scalar_system.h"
@@ -245,12 +243,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Take all the defaults.
     integrator.Initialize();
-/*
-context_->get_mutable_continuous_state().get_mutable_vector()[0] =
-    -4.88681e-6;
-context_->get_mutable_continuous_state().get_mutable_vector()[1] =
-    -0.0291419;
-*/
+
     // Establish tolerances for time and solution. These tolerances are
     // arbitrary but seem to work well.
     const double ttol = 1e2 * std::numeric_limits<double>::epsilon();
