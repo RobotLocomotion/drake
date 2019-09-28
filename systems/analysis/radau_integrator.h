@@ -94,12 +94,12 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   }
 
   int64_t do_get_num_error_estimator_derivative_evaluations() const final {
-    return num_err_est_iter_factorizations_;
+    return num_err_est_function_evaluations_;
   }
 
   int64_t do_get_num_error_estimator_derivative_evaluations_for_jacobian()
       const final {
-    return num_err_est_function_evaluations_;
+    return num_err_est_jacobian_function_evaluations_;
   }
 
   int64_t do_get_num_error_estimator_newton_raphson_iterations()

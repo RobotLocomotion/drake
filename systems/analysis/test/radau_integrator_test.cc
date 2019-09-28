@@ -407,6 +407,37 @@ GTEST_TEST(RadauIntegratorTest, Radau1MatchesImplicitEuler) {
   EXPECT_NEAR(context_radau1->get_continuous_state().get_vector().GetAtIndex(1),
               context_ie->get_continuous_state().get_vector().GetAtIndex(1),
               tol);
+
+  // Verify that the statistics are identical.
+  EXPECT_EQ(radau1.get_largest_step_size_taken(),
+            ie.get_largest_step_size_taken());
+  EXPECT_EQ(radau1.get_num_derivative_evaluations(),
+            ie.get_num_derivative_evaluations());
+  EXPECT_EQ(radau1.get_num_derivative_evaluations_for_jacobian(),
+            ie.get_num_derivative_evaluations_for_jacobian());
+  EXPECT_EQ(radau1.get_num_error_estimator_derivative_evaluations(),
+            ie.get_num_error_estimator_derivative_evaluations());
+  EXPECT_EQ(
+      radau1.get_num_error_estimator_derivative_evaluations_for_jacobian(),
+      ie.get_num_error_estimator_derivative_evaluations_for_jacobian());
+  EXPECT_EQ(radau1.get_num_error_estimator_iteration_matrix_factorizations(),
+            ie.get_num_error_estimator_iteration_matrix_factorizations());
+  EXPECT_EQ(radau1.get_num_error_estimator_jacobian_evaluations(),
+            ie.get_num_error_estimator_jacobian_evaluations());
+  EXPECT_EQ(radau1.get_num_error_estimator_newton_raphson_iterations(),
+            ie.get_num_error_estimator_newton_raphson_iterations());
+  EXPECT_EQ(radau1.get_num_iteration_matrix_factorizations(),
+            ie.get_num_iteration_matrix_factorizations());
+  EXPECT_EQ(radau1.get_num_jacobian_evaluations(),
+            ie.get_num_jacobian_evaluations());
+  EXPECT_EQ(radau1.get_num_newton_raphson_iterations(),
+            ie.get_num_newton_raphson_iterations());
+  EXPECT_EQ(radau1.get_num_step_shrinkages_from_error_control(),
+            ie.get_num_step_shrinkages_from_error_control());
+  EXPECT_EQ(radau1.get_num_step_shrinkages_from_substep_failures(),
+            ie.get_num_step_shrinkages_from_substep_failures());
+  EXPECT_EQ(radau1.get_num_steps_taken(), ie.get_num_steps_taken());
+  EXPECT_EQ(radau1.get_num_substep_failures(), ie.get_num_substep_failures());
 }
 
 // Test both 1-stage (1st order) and 2-stage (3rd order) Radau integrators.
