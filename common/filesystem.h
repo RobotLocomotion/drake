@@ -1,18 +1,28 @@
 #pragma once
 
-#include <string>
+// Alias drake::filesystem to either std::filesystem or ghc::filesystem.
+//
+// The drake::filesystem support is intended ONLY for use within Drake's *.cc
+// files -- it is not a public dependency of Drake; do not include this file
+// from Drake header files.
+//
+// Note that until apple ships a working std::filesystem implementation, we
+// need to force-disable it.
+//
+// Keep this if-sequence in sync with drake/common/filesystem.cc.
+#if __has_include(<filesystem>) && !defined(__APPLE__)
 
-namespace drake {
-namespace internal {
+#include <filesystem>
+namespace drake { namespace filesystem = std::filesystem; }
 
-/** Returns true iff the given path is a file. */
-bool IsFile(const std::string& filesystem_path);
+#else
 
-/** Returns true iff the given path is a directory. */
-bool IsDir(const std::string& filesystem_path);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#define GHC_FILESYSTEM_FWD
+#include "ghc/filesystem.hpp"
+#undef GHC_FILESYSTEM_FWD
+#pragma GCC diagnostic pop
+namespace drake { namespace filesystem = ghc::filesystem; }
 
-/** A C++ wrapper for C's readlink(2). */
-std::string Readlink(const std::string& pathname);
-
-}  // namespace internal
-}  // namespace drake
+#endif
