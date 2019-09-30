@@ -1080,6 +1080,18 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
       J, J_expected, J_tolerance, MatrixCompareType::absolute));
 }
 
+GTEST_TEST(EmptyWorld, Solve) {
+  const int nv = 0;
+  ImplicitStribeckSolver<double> solver{nv};
+
+  // (Empty) problem data.
+  VectorX<double> p_star, mu_vector, x0, stiffness, dissipation;
+  MatrixX<double> M, Jn, Jt;
+
+  EXPECT_NO_THROW(solver.SetTwoWayCoupledProblemData(
+      &M, &Jn, &Jt, &p_star, &x0, &stiffness, &dissipation, &mu_vector));
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

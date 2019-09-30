@@ -24,6 +24,7 @@ load("@drake//tools/workspace/fmt:repository.bzl", "fmt_repository")
 load("@drake//tools/workspace/freetype2:repository.bzl", "freetype2_repository")  # noqa
 load("@drake//tools/workspace/gflags:repository.bzl", "gflags_repository")
 load("@drake//tools/workspace/gfortran:repository.bzl", "gfortran_repository")
+load("@drake//tools/workspace/ghc_filesystem:repository.bzl", "ghc_filesystem_repository")  # noqa
 load("@drake//tools/workspace/github3_py:repository.bzl", "github3_py_repository")  # noqa
 load("@drake//tools/workspace/glew:repository.bzl", "glew_repository")
 load("@drake//tools/workspace/glib:repository.bzl", "glib_repository")
@@ -141,6 +142,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         gflags_repository(name = "gflags")
     if "gfortran" not in excludes:
         gfortran_repository(name = "gfortran")
+    if "ghc_filesystem" not in excludes:
+        ghc_filesystem_repository(name = "ghc_filesystem", mirrors = mirrors)
     if "github3_py" not in excludes:
         github3_py_repository(name = "github3_py", mirrors = mirrors)
     if "glew" not in excludes:

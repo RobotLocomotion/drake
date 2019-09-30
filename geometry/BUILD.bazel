@@ -46,6 +46,8 @@ drake_cc_library(
     deps = [
         ":geometry_ids",
         ":geometry_index",
+        ":geometry_roles",
+        ":internal_geometry",
         ":shape_specification",
         ":utilities",
         "//common",
@@ -54,6 +56,7 @@ drake_cc_library(
         "//geometry/query_results",
         "//math",
         "@fcl",
+        "@fmt",
         "@tinyobjloader",
     ],
 )

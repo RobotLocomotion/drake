@@ -3917,9 +3917,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Index for the output port of ContactResults.
   systems::OutputPortIndex contact_results_port_;
 
-  // Index for the output port for contact forces per body.
-  systems::OutputPortIndex contact_forces_port_;
-
   // A vector containing the index for the generalized contact forces port for
   // each model instance. This vector is indexed by ModelInstanceIndex. An
   // invalid value indicates that the model instance has no generalized
