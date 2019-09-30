@@ -473,6 +473,13 @@ void FailWithInvalidWorld(const std::string& inner) {
   // `//pose[@relative_to="world"]`...
 }
 
+void FailWithReservedName(const std::string& inner) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(inner),
+      std::runtime_error,
+      R"([\s\S]*The supplied frame name \[.*\] is reserved.[\s\S]*)");
+}
+
 GTEST_TEST(SdfParser, TestUnsupportedFrames) {
   // Model frames cannnot attach to / nor be relative to the world frame.
   FailWithInvalidWorld(R"(
@@ -491,8 +498,8 @@ GTEST_TEST(SdfParser, TestUnsupportedFrames) {
   </frame>
 </model>
 )");
-  for (std::string bad_name : {"world", "__model__", "__world__"}) {
-    FailWithInvalidWorld(fmt::format(R"(
+  for (std::string bad_name : {"world", "__model__", "__anything__"}) {
+    FailWithReservedName(fmt::format(R"(
 <model name='bad'>
   <link name='dont_crash_plz'/>  <!-- Need at least one link -->
   <frame name='{}'/>  <!-- Invalid name -->
