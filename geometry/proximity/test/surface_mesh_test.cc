@@ -196,7 +196,7 @@ GTEST_TEST(SurfaceMeshTest, TestFaceNormal) {
   // We estimate the rounding errors from rotation (multiply a vector by a
   // 3x3 matrix) about 3 machine epsilons.
   const double tol = 3.0 * std::numeric_limits<double>::epsilon();
-  auto surface_mesh = TestSurfaceMesh<double>(X_WM);
+  const auto surface_mesh = TestSurfaceMesh<double>(X_WM);
   const Vector3<double> expect_normal =
       X_WM.rotation() * Vector3<double>::UnitZ();
   EXPECT_TRUE(CompareMatrices(
@@ -205,7 +205,7 @@ GTEST_TEST(SurfaceMeshTest, TestFaceNormal) {
       expect_normal, surface_mesh->face_normal(SurfaceFaceIndex(1)), tol));
 
   // Verify that the zero-area mesh has zero-vector face normal.
-  auto zero_mesh = GenerateZeroAreaMesh();
+  const auto zero_mesh = GenerateZeroAreaMesh();
   const Vector3<double> zero_normal = Vector3<double>::Zero();
   EXPECT_EQ(zero_normal, zero_mesh->face_normal(SurfaceFaceIndex(0)));
   EXPECT_EQ(zero_normal, zero_mesh->face_normal(SurfaceFaceIndex(1)));
