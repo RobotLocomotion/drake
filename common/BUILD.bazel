@@ -305,8 +305,13 @@ drake_cc_library(
     name = "filesystem",
     srcs = ["filesystem.cc"],
     hdrs = ["filesystem.h"],
+    copts = [
+        # The drake::filesystem support is intended ONLY for use within Drake's
+        # *.cc files -- it is not a public dependency of Drake.
+        "-fvisibility=hidden",
+    ],
     deps = [
-        "@fmt",
+        "@ghc_filesystem",
     ],
 )
 
@@ -854,7 +859,6 @@ drake_cc_googletest(
     name = "filesystem_test",
     deps = [
         ":filesystem",
-        ":temp_directory",
         "//common/test_utilities:expect_throws_message",
     ],
 )

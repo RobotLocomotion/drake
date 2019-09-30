@@ -102,7 +102,8 @@ optional<string> LoadedLibraryPath(const std::string& library_name) {
     if (pos_slash && !strcmp(pos_slash + 1, library_name.c_str())) {
       // Check if path is relative. If so, make it absolute.
       if (map->l_name[0] != '/') {
-        std::string argv0 = internal::Readlink("/proc/self/exe");
+        std::string argv0 = filesystem::read_symlink({
+            "/proc/self/exe"}).string();
         return string(dirname(&argv0[0])) + "/" +
               string(map->l_name, pos_slash - map->l_name);
       } else {
