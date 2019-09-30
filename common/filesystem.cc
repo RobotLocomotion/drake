@@ -11,6 +11,7 @@
 
 // Compile ghc::filesystem into object code.
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated"
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #define GHC_FILESYSTEM_IMPLEMENTATION
 #include "ghc/filesystem.hpp"  // NOLINT(build/include)
