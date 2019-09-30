@@ -362,8 +362,8 @@ drake_cc_library(
     visibility = ["//tools/install/libdrake:__pkg__"],
     deps = [
         ":essential",
+        ":filesystem",
         ":find_resource",
-        "@spruce",
     ],
 )
 
@@ -443,7 +443,7 @@ drake_cc_library(
     hdrs = ["temp_directory.h"],
     deps = [
         ":essential",
-        "@spruce",
+        ":filesystem",
     ],
 )
 
@@ -1218,8 +1218,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "temp_directory_test",
     deps = [
+        ":filesystem",
         ":temp_directory",
-        "@spruce",
     ],
 )
 
