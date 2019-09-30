@@ -1117,8 +1117,15 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
   contact_results->Clear();
   if (num_collision_geometries() == 0) return;
 
-  CalcContactResultsContinuousHydroelastic(context, contact_results);
-  CalcContactResultsContinuousPointPair(context, contact_results);
+  if (contact_model_ == ContactModel::kPointContactOnly) {
+    CalcContactResultsContinuousPointPair(context, contact_results);
+  } else {
+    if (contact_model_ == ContactModel::kHydroelasticsOnly) {
+      CalcContactResultsContinuousHydroelastic(context, contact_results);
+    } else {
+      DRAKE_UNREACHABLE();
+    }
+  }
 }
 
 template <>
@@ -1137,12 +1144,8 @@ template <typename T>
 void MultibodyPlant<T>::CalcContactResultsContinuousHydroelastic(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
-  const auto& query_object =
-      this->get_geometry_query_input_port()
-          .template Eval<geometry::QueryObject<T>>(context);
-
-  const std::vector<ContactSurface<T>> all_surfaces =
-      hydroelastics_engine_.ComputeContactSurfaces(query_object);
+  const std::vector<ContactSurface<T>>& all_surfaces =
+      EvalContactSurfaces(context);
 
   internal::HydroelasticTractionCalculator<T> traction_calculator(
       stribeck_model_.stiction_tolerance());
@@ -1435,12 +1438,8 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
   F_BBo_W_array->assign(num_bodies(), SpatialForce<T>::Zero());
   if (num_collision_geometries() == 0) return;
 
-  const auto& query_object =
-      this->get_geometry_query_input_port()
-          .template Eval<geometry::QueryObject<T>>(context);
-
-  const std::vector<ContactSurface<T>> all_surfaces =
-      hydroelastics_engine_.ComputeContactSurfaces(query_object);
+  const std::vector<ContactSurface<T>>& all_surfaces =
+      EvalContactSurfaces(context);
 
   internal::HydroelasticTractionCalculator<T> traction_calculator(
       stribeck_model_.stiction_tolerance());
@@ -1697,6 +1696,20 @@ ImplicitStribeckSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
 }
 
 template <typename T>
+void MultibodyPlant<T>::CalcContactSurfaces(
+    const drake::systems::Context<T>& context,
+    std::vector<ContactSurface<T>>* contact_surfaces) const {
+  DRAKE_DEMAND(contact_surfaces);
+
+  const auto& query_object =
+      this->get_geometry_query_input_port()
+          .template Eval<geometry::QueryObject<T>>(context);
+
+  *contact_surfaces =
+      hydroelastics_engine_.ComputeContactSurfaces(query_object);
+}
+
+template <typename T>
 void MultibodyPlant<T>::CalcImplicitStribeckResults(
     const drake::systems::Context<T>& context0,
     internal::ImplicitStribeckSolverResults<T>* results) const {
@@ -1768,7 +1781,7 @@ void MultibodyPlant<T>::CalcImplicitStribeckResults(
   const internal::ContactJacobians<T>& contact_jacobians =
       EvalContactJacobians(context0);
 
-  // Get friction coefficient into a single vector. Dynamic friction is ignored
+  // Get friction coefficient into a single vector. Static friction is ignored
   // by the time stepping scheme.
   std::vector<CoulombFriction<double>> combined_friction_pairs =
       CalcCombinedFrictionCoefficients(point_pairs0);
@@ -1776,7 +1789,7 @@ void MultibodyPlant<T>::CalcImplicitStribeckResults(
   std::transform(combined_friction_pairs.begin(), combined_friction_pairs.end(),
                  mu.data(),
                  [](const CoulombFriction<double>& coulomb_friction) {
-                   return coulomb_friction.static_friction();
+                   return coulomb_friction.dynamic_friction();
                  });
 
   // Place all the penetration depths within a single vector as required by
@@ -2144,6 +2157,23 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       },
       {this->configuration_ticket()});
   cache_indexes_.point_pairs = point_pairs_cache_entry.cache_index();
+
+  // Cache entry for hydroelastic contact surfaces.
+  auto& contact_surfaces_cache_entry = this->DeclareCacheEntry(
+      std::string("Hydroelastic contact surfaces."),
+      []() {
+        return AbstractValue::Make(
+            std::vector<ContactSurface<T>>());
+      },
+      [this](const systems::ContextBase& context_base,
+             AbstractValue* cache_value) {
+        auto& context = dynamic_cast<const Context<T>&>(context_base);
+        auto& contact_surfaces_cache = cache_value->get_mutable_value<
+            std::vector<ContactSurface<T>>>();
+        this->CalcContactSurfaces(context, &contact_surfaces_cache);
+      },
+      {this->configuration_ticket()});
+  cache_indexes_.contact_surfaces = contact_surfaces_cache_entry.cache_index();
 
   // Cache contact Jacobians.
   auto& contact_jacobians_cache_entry = this->DeclareCacheEntry(

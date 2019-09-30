@@ -3315,6 +3315,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   struct CacheIndexes {
     systems::CacheIndex contact_jacobians;
     systems::CacheIndex contact_results;
+    systems::CacheIndex contact_surfaces;
     systems::CacheIndex generalized_accelerations;
     systems::CacheIndex hydro_contact_forces;
     systems::CacheIndex implicit_stribeck_solver_results;
@@ -3466,18 +3467,34 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         .template Eval<internal::ImplicitStribeckSolverResults<T>>(context);
   }
 
+  // Computes the vector of ContactSurfaces for hydroelastic contact.
+  void CalcContactSurfaces(
+      const drake::systems::Context<T>& context,
+      std::vector<geometry::ContactSurface<T>>* contact_surfaces) const;
+
+  // Eval version of the method CalcContactSurfaces().
+  const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
+      const systems::Context<T>& context) const {
+    return this
+        ->get_cache_entry(cache_indexes_.contact_surfaces)
+        .template Eval<std::vector<geometry::ContactSurface<T>>>(context);
+  }
+
   // Helper method to fill in the ContactResults given the current context when
   // the model is continuous.
   void CalcContactResultsContinuous(const systems::Context<T>& context,
                                     ContactResults<T>* contact_results) const;
 
-  // Helper method for the discrete mode plant, to fill in the ContactResults
-  // for the point pair model, given the current context.
-  void CalcContactResultsContinuousPointPair(const systems::Context<T>& context,
-                                    ContactResults<T>* contact_results) const;
+  // Helper method for the continuous mode plant, to fill in the ContactResults
+  // for the point pair model, given the current context. Called by
+  // CalcContactResultsContinuous.
+  void CalcContactResultsContinuousPointPair(
+      const systems::Context<T>& context,
+      ContactResults<T>* contact_results) const;
 
   // Helper method for the continuous mode plant, to fill in the ContactResults
-  // for the hydroelastic model, given the current context.
+  // for the hydroelastic model, given the current context. Called by
+  // CalcContactResultsContinuous.
   void CalcContactResultsContinuousHydroelastic(
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const;
