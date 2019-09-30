@@ -198,6 +198,12 @@ class SurfaceMesh {
    */
   int num_vertices() const { return vertices_.size(); }
 
+  /** Returns the number of triangles in the mesh. For %SurfaceMesh, an
+   element is a triangle. Returns the same number as num_faces() and enables
+   mesh consumers to be templated on mesh type.
+   */
+  int num_elements() const { return num_faces(); }
+
   //@}
 
   /**
