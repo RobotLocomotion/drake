@@ -18,6 +18,7 @@ namespace drake { namespace filesystem = std::filesystem; }
 #else
 
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated"
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #define GHC_FILESYSTEM_FWD
 #include "ghc/filesystem.hpp"
