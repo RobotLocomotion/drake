@@ -659,6 +659,7 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
   // convergence.
   T last_dx_norm = std::numeric_limits<double>::infinity();
 
+  // TODO(edrumwri) Consider computing the Jacobian matrix around tf.
   // Calculate Jacobian and iteration matrices (and factorizations), as needed.
   // TODO(edrumwri) Consider computing the Jacobian matrix around xtplus. This
   //                would give a better Jacobian, but would complicate the
