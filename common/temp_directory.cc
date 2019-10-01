@@ -4,13 +4,14 @@
 
 #include <cstdlib>
 
+#include <spruce.hh>
+
 #include "drake/common/drake_throw.h"
-#include "drake/common/filesystem.h"
 
 namespace drake {
 
 std::string temp_directory() {
-  filesystem::path path;
+  spruce::path path;
 
   const char* test_tmpdir = std::getenv("TEST_TMPDIR");
 
@@ -18,26 +19,22 @@ std::string temp_directory() {
     const char* tmpdir = nullptr;
     (tmpdir = std::getenv("TMPDIR")) || (tmpdir = "/tmp");
 
-    filesystem::path path_template(tmpdir);
+    spruce::path path_template(tmpdir);
     path_template.append("robotlocomotion_drake_XXXXXX");
 
-    std::string path_template_str = path_template.string();
+    std::string path_template_str = path_template.getStr();
     const char* dtemp = ::mkdtemp(&path_template_str[0]);
     DRAKE_THROW_UNLESS(dtemp != nullptr);
 
-    path = dtemp;
+    path.setStr(dtemp);
   } else {
-    path = test_tmpdir;
+    path.setStr(test_tmpdir);
   }
 
-  DRAKE_THROW_UNLESS(filesystem::is_directory(path));
+  DRAKE_THROW_UNLESS(path.isDir());
 
-  // Strip any trailing /.
-  std::string result = path.string();
-  if (result.back() == '/') {
-    result.pop_back();
-  }
-  return result;
+  // Spruce normalizes the path and strips any trailing /.
+  return path.getStr();
 }
 
 }  // namespace drake

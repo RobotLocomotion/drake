@@ -3,11 +3,8 @@
 #include <cstdlib>
 #include <string>
 
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
-
-#include "drake/common/drake_assert.h"
-#include "drake/common/filesystem.h"
+#include <spruce.hh>
 
 namespace drake {
 namespace {
@@ -22,48 +19,33 @@ GTEST_TEST(TempDirectoryTest, TestTmpdirSet) {
 }
 
 GTEST_TEST(TempDirectoryTest, TestTmpdirUnset) {
-  // Temporarily set TMP to TEST_TMPDIR and unset TEST_TMPDIR, and then see
-  // what temp_directory() returns.
+  const char* test_tmpdir = std::getenv("TEST_TMPDIR");
+  ASSERT_STRNE(nullptr, test_tmpdir);
+
   const char* tmpdir = std::getenv("TMPDIR");
-  const char* test_tmpdir = std::getenv("TEST_TMPDIR");
-  ASSERT_STRNE(nullptr, test_tmpdir);
-  DRAKE_DEMAND(::setenv("TMPDIR", test_tmpdir, 1) == 0);
-  DRAKE_DEMAND(::unsetenv("TEST_TMPDIR") == 0);
-  const std::string temp_directory_result = temp_directory();
+  const int setenv_tmpdir_result_pre = ::setenv("TMPDIR", test_tmpdir, 1);
+  ASSERT_EQ(0, setenv_tmpdir_result_pre);
 
-  // Revert the environment changes.
-  DRAKE_DEMAND(::setenv("TEST_TMPDIR", test_tmpdir, 1) == 0);
+  const int unset_test_tmpdir_result = ::unsetenv("TEST_TMPDIR");
+  ASSERT_EQ(0, unset_test_tmpdir_result);
+
+  spruce::path temp_directory_prefix(test_tmpdir);
+  temp_directory_prefix.append("robotlocomotion_drake_");
+
+  const std::string temp_directory_with_test_tmpdir_unset = temp_directory();
+  EXPECT_EQ(0, temp_directory_with_test_tmpdir_unset.find(
+      temp_directory_prefix.getStr()));
+
+  const int setenv_test_tmpdir_result = ::setenv("TEST_TMPDIR", test_tmpdir, 1);
+  ASSERT_EQ(0, setenv_test_tmpdir_result);
+
   if (tmpdir == nullptr) {
-    DRAKE_DEMAND(::unsetenv("TMPDIR") == 0);
+    const int unset_tmpdir_result = ::unsetenv("TMPDIR");
+    ASSERT_EQ(0, unset_tmpdir_result);
   } else {
-    DRAKE_DEMAND(::setenv("TMPDIR", tmpdir, 1) == 0);
+    const int setenv_tmpdir_result_post = ::setenv("TMPDIR", tmpdir, 1);
+    ASSERT_EQ(0, setenv_tmpdir_result_post);
   }
-
-  // Check the expected result.
-  filesystem::path expected_prefix(test_tmpdir);
-  expected_prefix.append("robotlocomotion_drake_");
-  EXPECT_THAT(temp_directory_result,
-              ::testing::StartsWith(expected_prefix.string()));
-}
-
-GTEST_TEST(TempDirectoryTest, TestTmpdirTrailingSlash) {
-  // Temporarily append a '/' to test_tmpdir, and then see what
-  // temp_directory() returns.
-  const char* test_tmpdir = std::getenv("TEST_TMPDIR");
-  ASSERT_STRNE(nullptr, test_tmpdir);
-  std::string new_value(test_tmpdir);
-  new_value.push_back('/');
-  DRAKE_DEMAND(::setenv("TEST_TMPDIR", new_value.c_str(), 1) == 0);
-  const std::string temp_directory_result = temp_directory();
-
-  // Revert the environment change.
-  DRAKE_DEMAND(::setenv("TEST_TMPDIR", test_tmpdir, 1) == 0);
-
-  // Check the expected result.
-  filesystem::path expected_prefix(test_tmpdir);
-  expected_prefix.append("robotlocomotion_drake_");
-  EXPECT_THAT(temp_directory_result,
-              testing::Not(testing::EndsWith("/")));
 }
 
 }  // namespace

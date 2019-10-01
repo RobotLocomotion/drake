@@ -10,11 +10,11 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <spruce.hh>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/drake_throw.h"
-#include "drake/common/filesystem.h"
 
 using std::string;
 
@@ -113,10 +113,9 @@ GTEST_TEST(GetDrakePathTest, PathIncludesDrake) {
   // Tests that the path returned includes the root of drake.
   const auto& result = MaybeGetDrakePath();
   ASSERT_TRUE(result);
-  const filesystem::path expected =
-      filesystem::path(*result) /
-      filesystem::path("common/test/find_resource_test_data.txt");
-  EXPECT_TRUE(filesystem::exists(expected));
+  const spruce::path expected(*result +
+                              "/common/test/find_resource_test_data.txt");
+  EXPECT_TRUE(expected.exists());
 }
 
 }  // namespace
