@@ -1217,6 +1217,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "temp_directory_test",
+    # Run each test case in a different process, to avoid environment variable
+    # changes from one accidentally polluting the others.
+    shard_count = 3,
     deps = [
         ":filesystem",
         ":temp_directory",
