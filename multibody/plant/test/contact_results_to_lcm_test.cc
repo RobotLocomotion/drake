@@ -337,7 +337,7 @@ void ValidateCloseToMeshTriangle(const double p_WA[3], const double p_WB[3],
 // the codebase.
 // This is not a test, just some code that exists to visualize the contact
 // results while DrakeVisualizer plugins are still in development.
-#if 0
+#if 1
 GTEST_TEST(ContactResultsToLcmTest, HydroelasticContactResultsVisualization) {
   DiagramBuilder<double> builder;
 

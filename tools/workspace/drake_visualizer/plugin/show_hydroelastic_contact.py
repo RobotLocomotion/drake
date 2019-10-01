@@ -54,11 +54,12 @@ class ColorMapModes:
 
 
 class _ColorMapConfigurationDialog(QtGui.QDialog):
-    '''A simple dialog for configuring the color map used in pressure
+    '''A simple dialog for configuring the hydroelastic
        visualization'''
-    def __init__(self, visualizer, parent=None):
+    def __init__(self, visualizer, show_contact_surface_state,
+                 show_pressure_state, parent=None):
         QtGui.QDialog.__init__(self, parent)
-        self.setWindowTitle("Pressure color map visualization settings")
+        self.setWindowTitle("Hydroelastic contact visualization settings")
         layout = QtGui.QGridLayout()
         layout.setColumnStretch(0, 0)
         layout.setColumnStretch(1, 1)
@@ -111,6 +112,30 @@ class _ColorMapConfigurationDialog(QtGui.QDialog):
         layout.addWidget(self.max_pressure, row, 1)
         row += 1
 
+        # Whether to show pressure.
+        layout.addWidget(QtGui.QLabel("Render contact surface with pressure"),
+                         row, 0)
+        self.show_pressure = QtGui.QCheckBox()
+        if show_pressure_state:
+            self.show_pressure.setCheckState(2)
+        else:
+            self.show_pressure.setCheckState(0)
+        self.show_pressure.setToolTip('Blah')
+        layout.addWidget(self.show_pressure, row, 1)
+        row += 1
+
+        # Whether to show the contact surface as a wireframe.
+        layout.addWidget(QtGui.QLabel("Render contact surface wireframe"),
+                         row, 0)
+        self.show_contact_surface = QtGui.QCheckBox()
+        if show_contact_surface_state:
+            self.show_contact_surface.setCheckState(2)
+        else:
+            self.show_contact_surface.setCheckState(0)
+        self.show_contact_surface.setToolTip('Blah')
+        layout.addWidget(self.show_contact_surface, row, 1)
+        row += 1
+
         # Accept/cancel.
         btns = QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel
         buttons = QtGui.QDialogButtonBox(btns, QtCore.Qt.Horizontal, self)
@@ -137,6 +162,12 @@ class ColorMap:
             range = self.data_range
         norm_data = self._normalize(value, range)
         return self._do_get_color(norm_data)
+
+    def get_inverted_color(self, value, range=None):
+        if range is None:
+            range = self.data_range
+        norm_data = self._normalize(value, range)
+        return self._do_get_color(1 - norm_data)
 
     def _do_get_color(self, norm_value):
         raise NotImplementedError("Subclasses need to implement this")
@@ -239,10 +270,10 @@ def get_sub_menu_or_make(menu, menu_name):
     return menu.addMenu(menu_name)
 
 
-class HydroelasticContactPressureVisualizer(object):
+class HydroelasticContactVisualizer(object):
     def __init__(self):
-        self._folder_name = 'Hydroelastic Contact Pressure'
-        self._name = "Hydroelastic Contact Pressure Visualizer"
+        self._folder_name = 'Hydroelastic Contact'
+        self._name = "Hydroelastic Contact Visualizer"
         self._enabled = False
         self._sub = None
 
@@ -255,12 +286,14 @@ class HydroelasticContactPressureVisualizer(object):
         self.color_map_mode = ColorMapModes.kFlameMap
         self.min_pressure = 0
         self.max_pressure = 10
+        self.show_contact_surface = True
+        self.show_pressure = True
 
         menu_bar = applogic.getMainWindow().menuBar()
         plugin_menu = get_sub_menu_or_make(menu_bar, '&Plugins')
         contact_menu = get_sub_menu_or_make(plugin_menu, '&Contacts')
         self.configure_action = contact_menu.addAction(
-            "Configure Color Map for Hydroelastic &Pressure")
+            "Configure &Hydroelastic Contact Visualization")
         self.configure_action.connect('triggered()', self.configure_via_dialog)
         self.set_enabled(True)
 
@@ -276,13 +309,18 @@ class HydroelasticContactPressureVisualizer(object):
 
     def configure_via_dialog(self):
         '''Configures the visualization'''
-        dlg = _ColorMapConfigurationDialog(self)
+        dlg = _ColorMapConfigurationDialog(self,
+                                           self.show_contact_surface,
+                                           self.show_pressure)
         if dlg.exec_() == QtGui.QDialog.Accepted:
             # TODO(edrumwri): Cause this to redraw any pressures that are
             #  currently visualized.
             self.color_map_mode = dlg.color_map_mode.currentIndex
             self.min_pressure = float(dlg.min_pressure.text)
             self.max_pressure = float(dlg.max_pressure.text)
+            self.show_contact_surface =\
+                (dlg.show_contact_surface.checkState() > 0)
+            self.show_pressure = (dlg.show_pressure.checkState() > 0)
 
     def add_subscriber(self):
         if self._sub is not None:
@@ -331,43 +369,59 @@ class HydroelasticContactPressureVisualizer(object):
         # Set the color map.
         color_map = self.create_color_map()
 
-        # Iterate over all triangles, drawing the contact surface as a triangle
-        # outlined in blue.
+        # TODO(drum) Consider exiting early if no visualization options are
+        # enabled.
+        # Iterate over all triangles.
         for surface in msg.hydroelastic_contacts:
             for tri in surface.triangles:
                 va = np.array([tri.p_WA[0], tri.p_WA[1], tri.p_WA[2]])
                 vb = np.array([tri.p_WB[0], tri.p_WB[1], tri.p_WB[2]])
                 vc = np.array([tri.p_WC[0], tri.p_WC[1], tri.p_WC[2]])
 
-                # Compute a normal to the triangle. We need this normal because
-                # the visualized pressure surface can be coplanar with parts of
-                # the visualized geometry, in which case a dithering type
-                # effect would appear. So we use the normal to draw two
-                # triangles slightly offset to both sides of the contact
-                # surface.
+                # Get the colors at the vertices.
+                color_a = color_map.get_color(tri.pressure_A)
+                color_b = color_map.get_color(tri.pressure_B)
+                color_c = color_map.get_color(tri.pressure_C)
 
-                # Note that if the area of this triangle is very small, we
-                # won't waste time visualizing it, which also means that
-                # won't have to worry about degenerate triangles).
+                # Get the inverted colors.
+                inv_color_a = color_map.get_inverted_color(tri.pressure_A)
+                inv_color_b = color_map.get_inverted_color(tri.pressure_B)
+                inv_color_c = color_map.get_inverted_color(tri.pressure_C)
 
-                # TODO(edrumwri) Consider allowing the user to set these next
-                # two values programmatically.
-                min_area = 1e-8
-                offset_scalar = 1e-4
-                normal = np.cross(vb - va, vc - vb)
-                norm_normal = np.linalg.norm(normal)
-                if norm_normal >= min_area:
-                    unit_normal = normal / np.linalg.norm(normal)
-                    offset = unit_normal * offset_scalar
+                if self.show_pressure:
+                    # Compute a normal to the triangle. We need this normal
+                    # because the visualized pressure surface can be coplanar
+                    # with parts of the visualized geometry, in which case a
+                    # dithering type effect would appear. So we use the normal
+                    # to draw two triangles slightly offset to both sides of
+                    # the contact surface.
 
-                    d.addPolygon([va + offset, vb + offset, vc + offset],
-                                 color=[color_map.get_color(tri.pressure_A),
-                                        color_map.get_color(tri.pressure_B),
-                                        color_map.get_color(tri.pressure_C)])
-                    d.addPolygon([va - offset, vb - offset, vc - offset],
-                                 color=[color_map.get_color(tri.pressure_A),
-                                        color_map.get_color(tri.pressure_B),
-                                        color_map.get_color(tri.pressure_C)])
+                    # Note that if the area of this triangle is very small, we
+                    # won't waste time visualizing it, which also means that
+                    # won't have to worry about degenerate triangles).
+
+                    # TODO(edrumwri) Consider allowing the user to set these
+                    # next two values programmatically.
+                    min_area = 1e-8
+                    offset_scalar = 1e-4
+                    normal = np.cross(vb - va, vc - vb)
+                    norm_normal = np.linalg.norm(normal)
+                    if norm_normal >= min_area:
+                        unit_normal = normal / np.linalg.norm(normal)
+                        offset = unit_normal * offset_scalar
+
+                        d.addPolygon([va + offset, vb + offset, vc + offset],
+                                    color=[color_a, color_b, color_c])
+                        d.addPolygon([va - offset, vb - offset, vc - offset],
+                                    color=[color_a, color_b, color_c])
+
+                if self.show_contact_surface:
+                    d.addLine(p1=va, p2=vb, radius=0,
+                              color=[inv_color_a, inv_color_b])
+                    d.addLine(p1=vb, p2=vc, radius=0,
+                              color=[inv_color_b, inv_color_c])
+                    d.addLine(p1=va, p2=vc, radius=0,
+                              color=[inv_color_a, inv_color_c])
 
             key = (str(surface.body1_name), str(surface.body2_name))
             cls = vis.PolyDataItem
@@ -382,7 +436,7 @@ class HydroelasticContactPressureVisualizer(object):
 @scoped_singleton_func
 def init_visualizer():
     # Create a visualizer instance.
-    my_visualizer = HydroelasticContactPressureVisualizer()
+    my_visualizer = HydroelasticContactVisualizer()
     # Adds to the "Tools" menu.
     applogic.MenuActionToggleHelper(
         'Tools', my_visualizer._name,
