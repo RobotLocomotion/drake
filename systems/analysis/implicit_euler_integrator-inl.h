@@ -200,9 +200,9 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
     // is at least some change to the state, no matter how small, on a
     // non-stationary system.
     if (i > 0 && this->IsUpdateZero(*xtplus, dx)) {
-      return true;
       SPDLOG_DEBUG(drake::log(), "Converged with zero update. xt+: {}",
                    xtplus->transpose());
+      return true;
     }
 
     // Update the state vector.
