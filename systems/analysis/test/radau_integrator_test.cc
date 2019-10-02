@@ -335,7 +335,7 @@ GTEST_TEST(RadauIntegratorTest, Radau1MatchesImplicitEuler) {
   std::unique_ptr<Context<double>> context_;
 
   // The mass of the particle connected by the spring and damper to the world.
-  const double mass = 2.0;  // Particle mass.
+  const double mass = 2.0;
 
   // The magnitude of the constant force pushing the particle toward -inf.
   const double constant_force_mag = 10;
@@ -343,7 +343,7 @@ GTEST_TEST(RadauIntegratorTest, Radau1MatchesImplicitEuler) {
   // Spring constant for a semi-stiff spring. Corresponds to a frequency of
   // 35.588 cycles per second without damping, assuming that mass = 2 (using
   // formula f = sqrt(k/mass)/(2*pi), where k is the spring constant, and f is
-  // the requency in cycles per second).
+  // the frequency in cycles per second).
   const double semistiff_spring_k = 1e5;
 
   // Construct the discontinuous mass-spring-damper system, using critical
@@ -399,8 +399,10 @@ GTEST_TEST(RadauIntegratorTest, Radau1MatchesImplicitEuler) {
   radau1.IntegrateWithMultipleStepsToTime(t_final);
   ie.IntegrateWithMultipleStepsToTime(t_final);
 
-  // Verify the final position and accuracy are nearly identical.
-  const double tol = 10 * std::numeric_limits<double>::epsilon();
+  // TODO(edrumwri) Investigate why these are not bitwise identical (hypothesis
+  //                is different order of operations).
+  // Verify the final position and accuracy are identical to machine precision.
+  const double tol = std::numeric_limits<double>::epsilon();
   EXPECT_NEAR(context_radau1->get_continuous_state().get_vector().GetAtIndex(0),
               context_ie->get_continuous_state().get_vector().GetAtIndex(0),
               tol);
