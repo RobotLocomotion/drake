@@ -375,39 +375,45 @@ VolumeMesh<T> MakeUnitSphereMesh(int refinement_level) {
   return std::move(mesh);
 }
 
-/** Creates a volume mesh for the given `sphere` with the given characteristic
- `edge_length`.
+/** Creates a volume mesh for the given `sphere`; the level of tesselation is
+ guided by the `resolution_hint` parameter.
 
- The `edge_length` controls the resolution of the mesh. Smaller values create
- higher-resolution meshes with smaller tetrahedra. In this case, the resulting
- mesh is guaranteed that edge lengths along the *equator* of the sphere will be
- less than or equal to the given `edge_length`.
+ `resolution_hint` influences the resolution of the mesh. Smaller values create
+ higher-resolution meshes with smaller tetrahedra. The resolution hint is
+ interpreted as an edge length and the sphere is subdivided to guarantee that
+ edge lengths along the *equator* of the sphere will be less than or equal to
+ that edge length.
 
  The resolution of the final mesh will change discontinuously. Small changes to
- the `edge_length` parameter will likely produce the same mesh. However, in the
- current implementation, cutting the `edge_length` in half _will_ increase
- the number of tetrahdra.
+ `resolution_hint` will likely produce the same mesh. However, in the current
+ implementation, cutting `resolution_hint` in half _will_ increase the number of
+ tetrahdra.
 
- Ultimately, successively smaller values of `edge_length` will no longer change
- the output mesh. This algorithm will not produce a tetrahedral mesh with more
- than approximately 100 million tetrahedra. Similarly, for arbitrarily large
- values of `edge_length`, the coarsest possible mesh is a tesselated octohedron.
+ Ultimately, successively smaller values of `resolution_hint` will no longer
+ change the output mesh. This algorithm will not produce a tetrahedral mesh with
+ more than approximately 100 million tetrahedra. Similarly, for arbitrarily
+ large values of `resolution_hint`, the coarsest possible mesh is a tesselated
+ octohedron.
 
- @param sphere          The sphere for which a mesh is created.
- @param edge_length     The positive characteristic edge length for the sphere
-                        (same units of length as `sphere.radius()`).
+ @param sphere              The sphere for which a mesh is created.
+ @param resolution_hint     The positive characteristic edge length for the
+                            sphere (same units of length as `sphere.radius()`).
+                            The coarsest possible mesh (an octohedron) is
+                            guaranteed for any value of `resolution_hint`
+                            greater than or equal to the `sphere`'s diameter.
  @return The volume mesh for the given sphere.
  @tparam T  The Eigen-compatible scalar for representing the mesh vertex
             positions.
  */
 template <typename T>
-VolumeMesh<T> MakeSphereVolumeMesh(const Sphere& sphere, double edge_length) {
+VolumeMesh<T> MakeSphereVolumeMesh(const Sphere& sphere,
+                                   double resolution_hint) {
   /*
     The volume mesh is formed by successively refining an octohedron. At the
     equator, that means we go from 4 edges, to 8 edges, to 16 edges, etc.,
     doubling at each level of refinement. These edges are simply chords across
     fixed-length arcs of the sphere. Based on that we can easily compute the
-    length of the chord and bound it by edge_length.
+    length of the chord and bound it by resolution_hint.
 
               /|
            r / |
@@ -432,10 +438,10 @@ VolumeMesh<T> MakeSphereVolumeMesh(const Sphere& sphere, double edge_length) {
        ℒ = log₂(π / 2⋅sin⁻¹(e/2⋅r)) - 1
        ℒ = ⌈log₂(π / sin⁻¹(e/2⋅r))⌉ - 2
    */
-  DRAKE_DEMAND(edge_length > 0.0);
+  DRAKE_DEMAND(resolution_hint > 0.0);
   const double r = sphere.get_radius();
   // Make sure the arcsin doesn't blow up.
-  edge_length = std::min(edge_length, 2.0 * r);
+  const double edge_length = std::min(resolution_hint, 2.0 * r);
   const int L = std::max(
       0,
       static_cast<int>(
