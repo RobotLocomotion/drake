@@ -433,20 +433,13 @@ void AddPolygonToMeshData(
 
   const int num_original_vertices = static_cast<int>(vertices_F->size());
 
-  // If the polygon is a triangle, simply add it.
-  if (polygon_size == 3) {
-    int vertex_index[3];
-    for (int i = 0; i < 3; ++i) {
-      vertices_F->emplace_back(polygon_vertices_F[i]);
-      vertex_index[i] = i + num_original_vertices;
-    }
-    faces->emplace_back(vertex_index);
-    return;
-  }
-
   // Triangulate the polygon by creating a fan around the polygon's centroid.
   // This is important because it gives us a smoothly changing tesselation as
-  // the polygon itself smoothly changes.
+  // the polygon itself smoothly changes. Even if the polygon is already a
+  // triangle, we still add its centroid because the triangular polygon can
+  // smoothly change to a quadrilateral polygon. Therefore, an intersection
+  // triangle will contribute 3 triangles to the ContactSurface and smoothly
+  // change to 4 triangles from an intersection quadrilateral.
   Vector3<T> centroid = Vector3<T>::Zero();
   for (int i = 0; i < polygon_size; ++i) {
     vertices_F->emplace_back(polygon_vertices_F[i]);
@@ -649,6 +642,17 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const math::RigidTransform<T>& X_WS,
     const GeometryId id_R, const SurfaceMesh<T>& mesh_R,
     const math::RigidTransform<T>& X_WR) {
+  // TODO(SeanCurtis-TRI): This function is insufficiently templated. Generally,
+  //  there are three types of scalars: the pose scalar, the mesh field *value*
+  //  scalar, and the mesh vertex-position scalar. However, short term, it is
+  //  probably unnecessary to distinguish all three here. If we assume that this
+  //  function is *only* called to find the contact surface between two declared
+  //  geometries, then the volume mesh values and vertex positions will always
+  //  be in double. However, even dividing between pose and mesh scalars has
+  //  *huge* downstream implications on how the meshes and mesh fields are
+  //  defined. We're deferring this work by simply disallowing invocation of
+  //  this method on AutoDiffXd (see below). It compiles, but throws.
+
   // Compute the transformation from the rigid frame to the soft frame.
   const math::RigidTransform<T> X_SR = X_WS.inverse() * X_WR;
 
@@ -674,6 +678,17 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
       id_S, id_R, std::move(surface_SR), std::move(e_SR),
       std::move(grad_h_SR));
 }
+
+// NOTE: This is a short-term hack to allow ProximityEngine to compile when
+// invoking this method. There are currently a host of issues preventing us from
+// doing contact surface computation with AutoDiffXd. This curtails those
+// issues for now by short-circuiting the functionality. (See the note on the
+// templated version of this function.)
+std::unique_ptr<ContactSurface<AutoDiffXd>>
+ComputeContactSurfaceFromSoftVolumeRigidSurface(
+    const GeometryId, const VolumeMeshField<double, double>&,
+    const math::RigidTransform<AutoDiffXd>&, const GeometryId,
+    const SurfaceMesh<double>&, const math::RigidTransform<AutoDiffXd>&);
 
 #endif  // #ifndef DRAKE_DOXYGEN_CXX
 

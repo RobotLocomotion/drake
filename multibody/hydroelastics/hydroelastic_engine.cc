@@ -1,5 +1,6 @@
 #include "drake/multibody/hydroelastics/hydroelastic_engine.h"
 
+#include <cmath>
 #include <limits>
 #include <memory>
 #include <string>
@@ -33,8 +34,16 @@ namespace internal {
 
 template <typename T>
 HydroelasticGeometry<T>::HydroelasticGeometry(
-    std::unique_ptr<HydroelasticField<T>> mesh_field)
-    : mesh_field_(std::move(mesh_field)) {}
+    std::unique_ptr<HydroelasticField<T>> mesh_field, double elastic_modulus,
+    double hunt_crossley_dissipation)
+    : mesh_field_(std::move(mesh_field)),
+      elastic_modulus_(elastic_modulus),
+      hunt_crossley_dissipation_(hunt_crossley_dissipation) {
+  DRAKE_THROW_UNLESS(std::isfinite(elastic_modulus));
+  DRAKE_THROW_UNLESS(std::isfinite(hunt_crossley_dissipation));
+  DRAKE_THROW_UNLESS(elastic_modulus > 0);
+  DRAKE_THROW_UNLESS(hunt_crossley_dissipation >= 0);
+}
 
 template <typename T>
 HydroelasticGeometry<T>::HydroelasticGeometry(
@@ -51,9 +60,13 @@ void HydroelasticEngine<T>::MakeModels(
       const Shape& shape = inspector.GetShape(geometry_id);
       const double elastic_modulus =
           properties->template GetPropertyOrDefault<double>(
-              "hydroelastics", "elastic modulus",
+              "material", "elastic_modulus",
               std::numeric_limits<double>::infinity());
-      GeometryImplementationData specs{geometry_id, elastic_modulus};
+      const double dissipation =
+          properties->template GetPropertyOrDefault<double>(
+              "material", "hunt_crossley_dissipation", 0.0);
+      GeometryImplementationData specs{geometry_id, elastic_modulus,
+                                       dissipation};
       shape.Reify(this, &specs);
     }
   }
@@ -74,6 +87,49 @@ const HydroelasticGeometry<T>* HydroelasticEngine<T>::get_model(
   auto it = model_data_.geometry_id_to_model_.find(id);
   if (it != model_data_.geometry_id_to_model_.end()) return it->second.get();
   return nullptr;
+}
+
+template <typename T>
+double HydroelasticEngine<T>::CalcCombinedElasticModulus(
+    geometry::GeometryId id_A, geometry::GeometryId id_B) const {
+  const HydroelasticGeometry<T>* geometry_A = get_model(id_A);
+  const HydroelasticGeometry<T>* geometry_B = get_model(id_B);
+  // We demand id_A and id_B to correspond to hydroelastic model.
+  DRAKE_DEMAND(geometry_A && geometry_B);
+  const double E_A = geometry_A->elastic_modulus();
+  const double E_B = geometry_B->elastic_modulus();
+  if (E_A == std::numeric_limits<double>::infinity()) return E_B;
+  if (E_B == std::numeric_limits<double>::infinity()) return E_A;
+  return E_A * E_B / (E_A + E_B);
+}
+
+// TODO(amcastro-tri): as of 09/18/2019 we still are discussing how to combine
+// these material properties. Update this method once the discussion is
+// resolved.
+template <typename T>
+double HydroelasticEngine<T>::CalcCombinedDissipation(
+    geometry::GeometryId id_A, geometry::GeometryId id_B) const {
+  const HydroelasticGeometry<T>* geometry_A = get_model(id_A);
+  const HydroelasticGeometry<T>* geometry_B = get_model(id_B);
+  // We demand id_A and id_B to correspond to hydroelastic model.
+  DRAKE_DEMAND(geometry_A && geometry_B);
+  const double E_A = geometry_A->elastic_modulus();
+  const double E_B = geometry_B->elastic_modulus();
+  const double d_A = geometry_A->hunt_crossley_dissipation();
+  const double d_B = geometry_B->hunt_crossley_dissipation();
+  const double Estar = CalcCombinedElasticModulus(id_A, id_B);
+
+  // Both bodies are rigid. We simply return the arithmetic average.
+  if (Estar == std::numeric_limits<double>::infinity())
+    return 0.5 * (d_A + d_B);
+
+  // At least one body is soft.
+  double d_star = 0;
+  if (E_A != std::numeric_limits<double>::infinity())
+    d_star += Estar / E_A * d_A;
+  if (E_B != std::numeric_limits<double>::infinity())
+    d_star += Estar / E_B * d_B;
+  return d_star;
 }
 
 template <typename T>
@@ -141,11 +197,15 @@ optional<ContactSurface<T>> HydroelasticEngine<T>::CalcContactSurface(
   std::vector<Vector3<T>> grad_level_set_R_surface;
 
   const auto X_RS = X_WR.inverse() * X_WS;
+  // Surface is measured and expressed in frame R. We'll transform to frame W
+  // below if non-empty.
   std::unique_ptr<SurfaceMesh<T>> surface_W = CalcZeroLevelSetInMeshDomain(
       soft_field_S.volume_mesh(), rigid_model_R.level_set(), X_RS,
       soft_field_S.scalar_field().values(), &e_s_surface,
       &grad_level_set_R_surface);
   if (surface_W->num_vertices() == 0) return nullopt;
+  // Transform with vertices measured and expressed in frame W.
+  surface_W->TransformVertices(X_WR);
 
   // TODO(edrumwri): This says that it is a pressure field, but notation
   //                 reflects that it is a strain field. Fix.
@@ -178,6 +238,7 @@ void HydroelasticEngine<T>::ImplementGeometry(const Sphere& sphere,
   const GeometryImplementationData& specs =
       *reinterpret_cast<GeometryImplementationData*>(user_data);
   const double elastic_modulus = specs.elastic_modulus;
+  const double dissipation = specs.dissipation;
   if (elastic_modulus == std::numeric_limits<double>::infinity()) {
     drake::log()->warn(
         "HydroelasticEngine. The current hydroelastic model implementation "
@@ -190,10 +251,8 @@ void HydroelasticEngine<T>::ImplementGeometry(const Sphere& sphere,
   const int refinement_level = 2;
   auto sphere_field =
       MakeSphereHydroelasticField<T>(refinement_level, sphere.get_radius());
-  auto model =
-      std::make_unique<HydroelasticGeometry<T>>(std::move(sphere_field));
-  model->set_elastic_modulus(elastic_modulus);
-
+  auto model = std::make_unique<HydroelasticGeometry<T>>(
+      std::move(sphere_field), elastic_modulus, dissipation);
   model_data_.geometry_id_to_model_[specs.id] = std::move(model);
 }
 

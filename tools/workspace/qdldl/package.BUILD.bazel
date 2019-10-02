@@ -22,10 +22,10 @@ cmake_configure_file(
     out = "include/qdldl_types.h",
     defines = [
         "QDLDL_BOOL_TYPE=unsigned char",
-        # Keep the `int` type sync'd with the @osqp build.
+        # Keep the `int` type sync'd with the @osqp and @scs build.
         # See drake/tools/workspace/qdldl/README.md.
         "QDLDL_INT_TYPE=int",
-        # Keep the `double` type sync'd with the @osqp build.
+        # Keep the `double` type sync'd with the @osqp and @scs build.
         # See drake/tools/workspace/qdldl/README.md.
         "QDLDL_FLOAT_TYPE=double",
         # Match this to QDLDL_INT_TYPE above.

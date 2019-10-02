@@ -164,8 +164,9 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
   // convergence.
   T last_dx_norm = std::numeric_limits<double>::infinity();
 
+  // TODO(edrumwri) Consider computing the Jacobian matrix around tf.
   // Calculate Jacobian and iteration matrices (and factorizations), as needed,
-  // around (tf, xt0).
+  // around (t0, xt0).
   // TODO(edrumwri) Consider computing the Jacobian matrix around xtplus. This
   //                would give a better Jacobian, but would complicate the
   //                logic, since the Jacobian would no longer (necessarily) be
@@ -199,9 +200,9 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
     // is at least some change to the state, no matter how small, on a
     // non-stationary system.
     if (i > 0 && this->IsUpdateZero(*xtplus, dx)) {
-      return true;
       SPDLOG_DEBUG(drake::log(), "Converged with zero update. xt+: {}",
                    xtplus->transpose());
+      return true;
     }
 
     // Update the state vector.

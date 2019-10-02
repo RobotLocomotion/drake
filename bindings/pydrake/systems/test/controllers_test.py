@@ -19,7 +19,6 @@ from pydrake.systems.controllers import (
     LinearProgrammingApproximateDynamicProgramming,
     PeriodicBoundaryCondition, PidControlledSystem, PidController
 )
-from pydrake.systems.framework import BasicVector
 from pydrake.systems.primitives import Integrator, LinearSystem
 
 
@@ -140,20 +139,15 @@ class TestControllers(unittest.TestCase):
         context = controller.CreateDefaultContext()
         output = controller.AllocateOutput()
 
-        estimated_state_port = 0
-        desired_state_port = 1
-        desired_acceleration_port = 2
-        control_port = 0
+        estimated_state_port = controller.get_input_port(0)
+        desired_state_port = controller.get_input_port(1)
+        desired_acceleration_port = controller.get_input_port(2)
+        control_port = controller.get_output_port(0)
 
-        self.assertEqual(
-            controller.get_input_port(desired_acceleration_port).size(),
-            kNumVelocities)
-        self.assertEqual(
-            controller.get_input_port(estimated_state_port).size(), kStateSize)
-        self.assertEqual(
-            controller.get_input_port(desired_state_port).size(), kStateSize)
-        self.assertEqual(
-            controller.get_output_port(control_port).size(), kNumVelocities)
+        self.assertEqual(desired_acceleration_port.size(), kNumVelocities)
+        self.assertEqual(estimated_state_port.size(), kStateSize)
+        self.assertEqual(desired_state_port.size(), kStateSize)
+        self.assertEqual(control_port.size(), kNumVelocities)
 
         # Current state.
         q = np.array([-0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3])
@@ -170,9 +164,9 @@ class TestControllers(unittest.TestCase):
 
         vd_d = vd_r + kp*(q_r-q) + kd*(v_r-v) + ki*integral_term
 
-        context.FixInputPort(estimated_state_port, BasicVector(x))
-        context.FixInputPort(desired_state_port, BasicVector(x_r))
-        context.FixInputPort(desired_acceleration_port, BasicVector(vd_r))
+        estimated_state_port.FixValue(context, x)
+        desired_state_port.FixValue(context, x_r)
+        desired_acceleration_port.FixValue(context, vd_r)
         controller.set_integral_value(context, integral_term)
 
         # Set the plant's context.
@@ -253,7 +247,7 @@ class TestControllers(unittest.TestCase):
         np.testing.assert_almost_equal(controller.D(), -K_expected)
 
         context = double_integrator.CreateDefaultContext()
-        context.FixInputPort(0, BasicVector([0]))
+        double_integrator.get_input_port(0).FixValue(context, [0])
         controller = LinearQuadraticRegulator(double_integrator, context, Q, R)
         np.testing.assert_almost_equal(controller.D(), -K_expected)
 

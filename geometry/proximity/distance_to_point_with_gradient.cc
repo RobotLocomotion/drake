@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-#include "drake/geometry/proximity/distance_to_point.h"
+#include "drake/geometry/proximity/distance_to_point_callback.h"
 
 namespace drake {
 namespace geometry {

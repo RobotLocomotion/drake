@@ -561,7 +561,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
   double semistiff_spring_stiffness() const { return semistiff_spring_k_; }
 
  private:
-  bool reuse_type_to_bool(ReuseType type ) {
+  bool reuse_type_to_bool(ReuseType type) {
     if (type == kNoReuse) {
       return false;
     } else {

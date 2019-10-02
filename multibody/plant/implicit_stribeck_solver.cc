@@ -252,7 +252,8 @@ ImplicitStribeckSolver<T>::ImplicitStribeckSolver(int nv) :
     // workspace size so that we avoid re-allocations afterwards as much as we
     // can.
     variable_size_workspace_(128, nv) {
-  DRAKE_THROW_UNLESS(nv > 0);
+  // We allow empty worlds, with a trivial solution.
+  DRAKE_THROW_UNLESS(nv >= 0);
 }
 
 template <typename T>

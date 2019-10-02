@@ -779,6 +779,18 @@ def choose_doc_var_names(symbols):
                 # needs, such as various kinds of Eigen<> template magic.)
                 result[i] = None
                 continue
+            elif "@pydrake_mkdoc_identifier" in symbols[i].comment:
+                comment = symbols[i].comment
+                # Allow the user to manually specify a doc_foo identifier.
+                match = re.search(
+                    r"@pydrake_mkdoc_identifier\{(.*?)\}",
+                    comment)
+                if not match:
+                    raise RuntimeError(
+                        "Malformed pydrake_mkdoc_identifier in " + comment)
+                (identifier,) = match.groups()
+                result[i] = "doc_" + identifier
+                continue
             elif len(symbols[i].comment) == 0 and not (
                     cursor.is_default_constructor() and (
                         len(cursor.type.argument_types()) == 0)):
@@ -944,12 +956,15 @@ def print_symbols(f, name, node, level=0):
         if doc_var is None:
             continue
         assert name_chain == symbol.name_chain
+        comment = re.sub(
+            r'@pydrake_mkdoc[a-z_]*\{.*\}', '',
+            symbol.comment)
         delim = "\n"
-        if "\n" not in symbol.comment and len(symbol.comment) < 40:
+        if "\n" not in comment and len(comment) < 40:
             delim = " "
         iprint('  // Source: {}:{}'.format(symbol.include, symbol.line))
         iprint('  const char* {} ={}R"""({})""";'.format(
-            doc_var, delim, symbol.comment))
+            doc_var, delim, comment.strip()))
     # Recurse into child elements.
     keys = sorted(node.children_map.keys())
     for key in keys:

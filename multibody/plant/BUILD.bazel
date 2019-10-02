@@ -53,6 +53,7 @@ drake_cc_library(
         ":contact_results",
         ":coulomb_friction",
         ":externally_applied_spatial_force",
+        ":hydroelastic_traction",
         ":implicit_stribeck_solver",
         ":implicit_stribeck_solver_results",
         "//common:default_scalars",
@@ -61,6 +62,7 @@ drake_cc_library(
         "//geometry:scene_graph",
         "//math:geometric_transform",
         "//math:orthonormal_basis",
+        "//multibody/hydroelastics:hydroelastic_engine",
         "//multibody/topology:multibody_graph",
         "//multibody/tree",
         "//systems/framework:diagram_builder",
@@ -338,6 +340,16 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "multibody_plant_hydroelastic_test",
+    deps = [
+        ":plant",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//systems/framework:diagram",
+    ],
+)
+
+drake_cc_googletest(
     name = "multibody_plant_jacobians_test",
     data = [
         "//examples/kuka_iiwa_arm/models",
@@ -387,6 +399,7 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
+        "//systems/analysis:implicit_euler_integrator",
         "//systems/analysis:simulator",
     ],
 )

@@ -61,7 +61,7 @@ class TestAcrobot(unittest.TestCase):
         # Set an input torque.
         input = AcrobotInput()
         input.set_tau(1.)
-        context.FixInputPort(0, input)
+        acrobot.GetInputPort("elbow_torque").FixValue(context, input)
 
         # Set the initial state.
         state = context.get_mutable_continuous_state_vector()
