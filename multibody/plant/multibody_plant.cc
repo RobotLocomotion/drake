@@ -695,18 +695,18 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
       penalty_method_contact_parameters_.time_scale < 0)
     set_penetration_allowance();
   if (num_collision_geometries() > 0 &&
-      stribeck_model_.stiction_tolerance() < 0)
+      friction_model_.stiction_tolerance() < 0)
     set_stiction_tolerance();
   // Make a contact solver when the plant is modeled as a discrete system.
   if (is_discrete()) {
-    implicit_stribeck_solver_ =
-        std::make_unique<ImplicitStribeckSolver<T>>(num_velocities());
+    tamsi_solver_ =
+        std::make_unique<TamsiSolver<T>>(num_velocities());
     // Set the stiction tolerance according to the values set by users with
     // set_stiction_tolerance().
-    ImplicitStribeckSolverParameters solver_parameters;
+    TamsiSolverParameters solver_parameters;
     solver_parameters.stiction_tolerance =
-        stribeck_model_.stiction_tolerance();
-    implicit_stribeck_solver_->set_solver_parameters(solver_parameters);
+        friction_model_.stiction_tolerance();
+    tamsi_solver_->set_solver_parameters(solver_parameters);
   } else {
     // We only build hydroelastics if the user requested it AND if geometry was
     // registered with a SceneGraph. Since by default bodies are rigid, we use
@@ -1208,7 +1208,7 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
       if (vt_squared > kNonZeroSqd) {
         slip_velocity = sqrt(vt_squared);
         // Stribeck friction coefficient.
-        const T mu_stribeck = stribeck_model_.ComputeFrictionCoefficient(
+        const T mu_stribeck = friction_model_.ComputeFrictionCoefficient(
             slip_velocity, combined_friction_pairs[icontact]);
         // Tangential direction.
         const Vector3<T> that_W = vt_AcBc_W / slip_velocity;
@@ -1239,8 +1239,8 @@ void MultibodyPlant<T>::CalcContactResultsDiscrete(
       EvalPointPairPenetrations(context);
   const std::vector<RotationMatrix<T>>& R_WC_set =
       EvalContactJacobians(context).R_WC_list;
-  const internal::ImplicitStribeckSolverResults<T>& solver_results =
-      EvalImplicitStribeckResults(context);
+  const internal::TamsiSolverResults<T>& solver_results =
+      EvalTamsiResults(context);
 
   const VectorX<T>& fn = solver_results.fn;
   const VectorX<T>& ft = solver_results.ft;
@@ -1288,6 +1288,7 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     const systems::Context<T>& context,
     std::vector<SpatialForce<T>>* F_BBo_W_array) const {
   DRAKE_DEMAND(F_BBo_W_array != nullptr);
+  DRAKE_DEMAND(static_cast<int>(F_BBo_W_array->size()) == num_bodies());
   if (num_collision_geometries() == 0) return;
 
   const ContactResults<T>& contact_results = EvalContactResults(context);
@@ -1379,7 +1380,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
       hydroelastics_engine_.ComputeContactSurfaces(query_object);
 
   internal::HydroelasticTractionCalculator<T> traction_calculator(
-      stribeck_model_.stiction_tolerance());
+      friction_model_.stiction_tolerance());
 
   for (const ContactSurface<T>& surface : all_surfaces) {
     const GeometryId geometryM_id = surface.id_M();
@@ -1589,7 +1590,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 }
 
 template<typename T>
-ImplicitStribeckSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
+TamsiSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
     int num_substeps,
     const MatrixX<T>& M0, const MatrixX<T>& Jn, const MatrixX<T>& Jt,
     const VectorX<T>& minus_tau,
@@ -1603,8 +1604,8 @@ ImplicitStribeckSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
   VectorX<T> phi0_substep = phi0;
 
   // Initialize info to an unsuccessful result.
-  ImplicitStribeckSolverResult info{
-      ImplicitStribeckSolverResult::kMaxIterationsReached};
+  TamsiSolverResult info{
+      TamsiSolverResult::kMaxIterationsReached};
 
   for (int substep = 0; substep < num_substeps; ++substep) {
     // Discrete update before applying friction forces.
@@ -1613,23 +1614,23 @@ ImplicitStribeckSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
     VectorX<T> p_star_substep = M0 * v0_substep - dt_substep * minus_tau;
 
     // Update the data.
-    implicit_stribeck_solver_->SetTwoWayCoupledProblemData(
+    tamsi_solver_->SetTwoWayCoupledProblemData(
         &M0, &Jn, &Jt,
         &p_star_substep, &phi0_substep,
         &stiffness, &damping, &mu);
 
-    info = implicit_stribeck_solver_->SolveWithGuess(dt_substep,
+    info = tamsi_solver_->SolveWithGuess(dt_substep,
                                                      v0_substep);
 
     // Break the sub-stepping loop on failure and return the info result.
-    if (info != ImplicitStribeckSolverResult::kSuccess) break;
+    if (info != TamsiSolverResult::kSuccess) break;
 
     // Update previous time step to new solution.
-    v0_substep = implicit_stribeck_solver_->get_generalized_velocities();
+    v0_substep = tamsi_solver_->get_generalized_velocities();
 
     // Update penetration distance consistently with the solver update.
     const auto vn_substep =
-        implicit_stribeck_solver_->get_normal_velocities();
+        tamsi_solver_->get_normal_velocities();
     phi0_substep = phi0_substep - dt_substep * vn_substep;
   }
 
@@ -1637,9 +1638,40 @@ ImplicitStribeckSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcImplicitStribeckResults(
+void MultibodyPlant<T>::CalcAppliedForces(
+    const drake::systems::Context<T>& context,
+    MultibodyForces<T>* forces) const {
+  DRAKE_DEMAND(forces != nullptr);
+  DRAKE_DEMAND(forces->CheckHasRightSizeForModel(*this));
+
+  const internal::PositionKinematicsCache<T>& pc =
+      EvalPositionKinematics(context);
+  const internal::VelocityKinematicsCache<T>& vc =
+      EvalVelocityKinematics(context);
+
+  // Compute forces applied through force elements.
+  internal_tree().CalcForceElementsContribution(context, pc, vc, forces);
+
+  // Externally applied forces.
+  AddJointActuationForces(context, forces);
+  AddAppliedExternalSpatialForces(context, forces);
+
+  // Only discrete models support joint limits.
+  if (is_discrete()) AddJointLimitsPenaltyForces(context, forces);
+
+  // If there are applied generalized forces, add them.
+  const InputPort<T>& applied_generalized_force_input =
+      this->get_input_port(applied_generalized_force_input_port_);
+  if (applied_generalized_force_input.HasValue(context)) {
+    forces->mutable_generalized_forces() +=
+        applied_generalized_force_input.Eval(context);
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcTamsiResults(
     const drake::systems::Context<T>& context0,
-    internal::ImplicitStribeckSolverResults<T>* results) const {
+    internal::TamsiSolverResults<T>* results) const {
   // Assert this method was called on a context storing discrete state.
   DRAKE_ASSERT(context0.num_discrete_state_groups() == 1);
   DRAKE_ASSERT(context0.num_continuous_states() == 0);
@@ -1664,27 +1696,7 @@ void MultibodyPlant<T>::CalcImplicitStribeckResults(
   // Forces at the previous time step.
   MultibodyForces<T> forces0(internal_tree());
 
-  const internal::PositionKinematicsCache<T>& pc0 =
-      EvalPositionKinematics(context0);
-  const internal::VelocityKinematicsCache<T>& vc0 =
-      EvalVelocityKinematics(context0);
-
-  // Compute forces applied through force elements.
-  internal_tree().CalcForceElementsContribution(context0, pc0, vc0, &forces0);
-
-  // Externally applied forces.
-  AddJointActuationForces(context0, &forces0);
-  AddAppliedExternalSpatialForces(context0, &forces0);
-
-  AddJointLimitsPenaltyForces(context0, &forces0);
-
-  // If there are applied generalized forces, add them.
-  const InputPort<T>& applied_generalized_force_input =
-      this->get_input_port(applied_generalized_force_input_port_);
-  if (applied_generalized_force_input.HasValue(context0)) {
-    forces0.mutable_generalized_forces() +=
-        applied_generalized_force_input.Eval(context0);
-  }
+  CalcAppliedForces(context0, &forces0);
 
   // Workspace for inverse dynamics:
   // Bodies' accelerations, ordered by BodyNodeIndex.
@@ -1740,15 +1752,15 @@ void MultibodyPlant<T>::CalcImplicitStribeckResults(
       num_contacts, penalty_method_contact_parameters_.damping);
 
   // Solve for v and the contact forces.
-  ImplicitStribeckSolverResult info{
-      ImplicitStribeckSolverResult::kMaxIterationsReached};
+  TamsiSolverResult info{
+      TamsiSolverResult::kMaxIterationsReached};
 
-  ImplicitStribeckSolverParameters params =
-      implicit_stribeck_solver_->get_solver_parameters();
+  TamsiSolverParameters params =
+      tamsi_solver_->get_solver_parameters();
   // A nicely converged NR iteration should not take more than 20 iterations.
   // Otherwise we attempt a smaller time step.
   params.max_iterations = 20;
-  implicit_stribeck_solver_->set_solver_parameters(params);
+  tamsi_solver_->set_solver_parameters(params);
 
   // We attempt to compute the update during the time interval dt using a
   // progressively larger number of sub-steps (i.e each using a smaller time
@@ -1764,22 +1776,22 @@ void MultibodyPlant<T>::CalcImplicitStribeckResults(
     info = SolveUsingSubStepping(num_substeps, M0, contact_jacobians.Jn,
                                  contact_jacobians.Jt, minus_tau, stiffness,
                                  damping, mu, v0, phi0);
-  } while (info != ImplicitStribeckSolverResult::kSuccess &&
+  } while (info != TamsiSolverResult::kSuccess &&
            num_substeps < kNumMaxSubTimeSteps);
 
-  DRAKE_DEMAND(info == ImplicitStribeckSolverResult::kSuccess);
+  DRAKE_DEMAND(info == TamsiSolverResult::kSuccess);
 
   // TODO(amcastro-tri): implement capability to dump solver statistics to a
   // file for analysis.
 
   // Update the results.
-  results->v_next = implicit_stribeck_solver_->get_generalized_velocities();
-  results->fn = implicit_stribeck_solver_->get_normal_forces();
-  results->ft = implicit_stribeck_solver_->get_friction_forces();
-  results->vn = implicit_stribeck_solver_->get_normal_velocities();
-  results->vt = implicit_stribeck_solver_->get_tangential_velocities();
+  results->v_next = tamsi_solver_->get_generalized_velocities();
+  results->fn = tamsi_solver_->get_normal_forces();
+  results->ft = tamsi_solver_->get_friction_forces();
+  results->vn = tamsi_solver_->get_normal_velocities();
+  results->vt = tamsi_solver_->get_tangential_velocities();
   results->tau_contact =
-      implicit_stribeck_solver_->get_generalized_contact_forces();
+      tamsi_solver_->get_generalized_contact_forces();
 }
 
 template <typename T>
@@ -1811,26 +1823,7 @@ void MultibodyPlant<T>::CalcGeneralizedAccelerationsContinuous(
   // Generalized accelerations.
   VectorX<T> zero_vdot = VectorX<T>::Zero(nv);
 
-  const internal::PositionKinematicsCache<T>& pc =
-      EvalPositionKinematics(context);
-  const internal::VelocityKinematicsCache<T>& vc =
-      EvalVelocityKinematics(context);
-
-  // Compute forces applied through force elements. This effectively resets
-  // the forces to zero and adds in contributions due to force elements.
-  internal_tree().CalcForceElementsContribution(context, pc, vc, &forces);
-
-  // Externally applied forces.
-  AddJointActuationForces(context, &forces);
-  AddAppliedExternalSpatialForces(context, &forces);
-
-  // If there are applied generalized forces, add them.
-  const InputPort<T>& applied_generalized_force_input =
-      this->get_input_port(applied_generalized_force_input_port_);
-  if (applied_generalized_force_input.HasValue(context)) {
-    forces.mutable_generalized_forces() +=
-        applied_generalized_force_input.Eval(context);
-  }
+  CalcAppliedForces(context, &forces);
 
   internal_tree().CalcMassMatrixViaInverseDynamics(context, &M);
 
@@ -1878,8 +1871,8 @@ void MultibodyPlant<T>::CalcGeneralizedAccelerationsDiscrete(
   DRAKE_DEMAND(is_discrete());
 
   // Evaluate contact results.
-  const internal::ImplicitStribeckSolverResults<T>& solver_results =
-      EvalImplicitStribeckResults(context0);
+  const internal::TamsiSolverResults<T>& solver_results =
+      EvalTamsiResults(context0);
 
   // Retrieve the solution velocity for the next time step.
   const VectorX<T>& v_next = solver_results.v_next;
@@ -2039,21 +2032,21 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     if (instance_num_velocities == 0) {
       continue;
     }
-    const auto& implicit_stribeck_solver_results_cache_entry =
-        this->get_cache_entry(cache_indexes_.implicit_stribeck_solver_results);
+    const auto& tamsi_solver_results_cache_entry =
+        this->get_cache_entry(cache_indexes_.tamsi_solver_results);
     auto calc = [this, model_instance_index](const systems::Context<T>& context,
                                              systems::BasicVector<T>* result) {
-      const internal::ImplicitStribeckSolverResults<T>& solver_results =
-          EvalImplicitStribeckResults(context);
-      this->CopyGeneralizedContactForcesOut(solver_results,
-                                            model_instance_index, result);
+      const internal::TamsiSolverResults<T>& solver_results =
+          EvalTamsiResults(context);
+      this->CopyGeneralizedContactForcesOut(
+          solver_results, model_instance_index, result);
     };
     instance_generalized_contact_forces_output_ports_[model_instance_index] =
         this->DeclareVectorOutputPort(
                 internal_tree().GetModelInstanceName(model_instance_index) +
                     "_generalized_contact_forces",
                 BasicVector<T>(instance_num_velocities), calc,
-                {implicit_stribeck_solver_results_cache_entry.ticket()})
+                {tamsi_solver_results_cache_entry.ticket()})
             .get_index();
   }
 
@@ -2065,6 +2058,16 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                                   &MultibodyPlant<T>::CopyContactResultsOutput,
                                   {contact_results_cache_entry.ticket()})
                               .get_index();
+
+  // Joint reaction forces are a function of accelerations, which in turn depend
+  // on both state and inputs.
+  reaction_forces_port_ =
+      this->DeclareAbstractOutputPort(
+              "reaction_forces", std::vector<SpatialForce<T>>(num_joints()),
+              &MultibodyPlant<T>::CalcReactionForces,
+              {this->cache_entry_ticket(
+                  cache_indexes_.generalized_accelerations)})
+          .get_index();
 }
 
 template <typename T>
@@ -2109,20 +2112,20 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   cache_indexes_.contact_jacobians =
       contact_jacobians_cache_entry.cache_index();
 
-  // Cache ImplicitStribeckSolver computations.
-  auto& implicit_stribeck_solver_cache_entry = this->DeclareCacheEntry(
+  // Cache TamsiSolver computations.
+  auto& tamsi_solver_cache_entry = this->DeclareCacheEntry(
       std::string("Implicit Stribeck solver computations."),
       []() {
         return AbstractValue::Make(
-            internal::ImplicitStribeckSolverResults<T>());
+            internal::TamsiSolverResults<T>());
       },
       [this](const systems::ContextBase& context_base,
              AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
-        auto& implicit_stribeck_solver_cache = cache_value->get_mutable_value<
-            internal::ImplicitStribeckSolverResults<T>>();
-        this->CalcImplicitStribeckResults(context,
-                                          &implicit_stribeck_solver_cache);
+        auto& tamsi_solver_cache = cache_value->get_mutable_value<
+            internal::TamsiSolverResults<T>>();
+        this->CalcTamsiResults(context,
+                                          &tamsi_solver_cache);
       },
       // The Correct Solution:
       // The Implicit Stribeck solver solution S is a function of state x,
@@ -2131,7 +2134,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // as S = S(t, x, u).
       // Even though this variables can change continuously with time, we want
       // the solver solution to be updated periodically (with period
-      // time_step()) only. That is, ImplicitStribeckSolverResults should be
+      // time_step()) only. That is, TamsiSolverResults should be
       // handled as an abstract state with periodic updates. In the systems::
       // framework terminology, we'd like to have an "unrestricted update" with
       // a periodic event trigger.
@@ -2146,8 +2149,8 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // discrete update of these values as if zero-order held, which is what we
       // want.
       {this->xd_ticket()});
-  cache_indexes_.implicit_stribeck_solver_results =
-      implicit_stribeck_solver_cache_entry.cache_index();
+  cache_indexes_.tamsi_solver_results =
+      tamsi_solver_cache_entry.cache_index();
 
   // Cache contact results.
   // In discrete mode contact forces computation requires to advance the system
@@ -2155,7 +2158,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   // In continuous mode contact forces are simply a function of state.
   const systems::DependencyTicket& dependency_ticket =
       is_discrete() ? this->cache_entry_ticket(
-                          cache_indexes_.implicit_stribeck_solver_results)
+                          cache_indexes_.tamsi_solver_results)
                     : this->kinematics_ticket();
   auto& contact_results_cache_entry = this->DeclareCacheEntry(
       std::string("Contact results."),
@@ -2244,7 +2247,7 @@ void MultibodyPlant<T>::CopyContinuousStateOut(
 
 template <typename T>
 void MultibodyPlant<T>::CopyGeneralizedContactForcesOut(
-    const internal::ImplicitStribeckSolverResults<T>& solver_results,
+    const internal::TamsiSolverResults<T>& solver_results,
     ModelInstanceIndex model_instance, BasicVector<T>* tau_vector) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(is_discrete());
@@ -2332,6 +2335,13 @@ MultibodyPlant<T>::get_contact_results_output_port() const {
   return this->get_output_port(contact_results_port_);
 }
 
+template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_reaction_forces_output_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return this->get_output_port(reaction_forces_port_);
+}
+
 namespace {
 // A dummy, placeholder type.
 struct SymbolicGeometryValue {};
@@ -2374,6 +2384,100 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
     // frame, so we report poses in the world frame.
     poses->set_value(body_index_to_frame_id_.at(body_index),
                      pc.get_X_WB(body.node_index()));
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcReactionForces(
+    const systems::Context<T>& context,
+    std::vector<SpatialForce<T>>* F_CJc_Jc_array) const {
+  DRAKE_DEMAND(F_CJc_Jc_array != nullptr);
+  DRAKE_DEMAND(static_cast<int>(F_CJc_Jc_array->size()) == num_joints());
+
+  const VectorX<T>& vdot = EvalGeneralizedAccelerations(context);
+
+  MultibodyForces<T> applied_forces(*this);
+  CalcAppliedForces(context, &applied_forces);
+  auto& Fapplied_Bo_W_array = applied_forces.mutable_body_forces();
+  auto& tau_applied = applied_forces.mutable_generalized_forces();
+
+  CalcAndAddContactForcesByPenaltyMethod(context, &Fapplied_Bo_W_array);
+
+  // Compute reaction forces at each mobilizer.
+  std::vector<SpatialAcceleration<T>> A_WB_vector(num_bodies());
+  std::vector<SpatialForce<T>> F_BMo_W_vector(num_bodies());
+  VectorX<T> tau_id(num_velocities());
+  internal_tree().CalcInverseDynamics(context, vdot, Fapplied_Bo_W_array,
+                                      tau_applied, &A_WB_vector,
+                                      &F_BMo_W_vector, &tau_id);
+  // Since vdot is the result of Fapplied and tau_applied we expect the result
+  // from inverse dynamics to be zero.
+  // TODO(amcastro-tri): find a better estimation for this bound. For instance,
+  // we can make an estimation based on the trace of the mass matrix (Jain 2011,
+  // Eq. 4.21). For now we only ASSERT though with a better estimation we could
+  // promote this to a DEMAND.
+  DRAKE_ASSERT(tau_id.norm() <
+               100 * num_velocities() * std::numeric_limits<double>::epsilon());
+
+  // Map mobilizer reaction forces to joint reaction forces and perform the
+  // necessary frame conversions.
+  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
+    const Joint<T>& joint = get_joint(joint_index);
+    const internal::MobilizerIndex mobilizer_index =
+        internal_tree().get_joint_mobilizer(joint_index);
+    const internal::Mobilizer<T>& mobilizer =
+        internal_tree().get_mobilizer(mobilizer_index);
+    const internal::BodyNodeIndex body_node_index =
+        mobilizer.get_topology().body_node;
+
+    // Force on mobilized body B at mobilized frame's origin Mo, expressed in
+    // world frame.
+    const SpatialForce<T>& F_BMo_W = F_BMo_W_vector[body_node_index];
+
+    // Frames:
+    const Frame<T>& frame_Jp = joint.frame_on_parent();
+    const Frame<T>& frame_Jc = joint.frame_on_child();
+    const FrameIndex F_index = mobilizer.inboard_frame().index();
+    const FrameIndex M_index = mobilizer.outboard_frame().index();
+    const FrameIndex Jp_index = frame_Jp.index();
+    const FrameIndex Jc_index = frame_Jc.index();
+
+    // In Drake we have either:
+    //  - Jp == F and Jc == M (typical case)
+    //  - Jp == M and Jc == F (mobilizer was inverted)
+    // We verify this:
+    DRAKE_DEMAND((Jp_index == F_index && Jc_index == M_index) ||
+                 (Jp_index == M_index && Jc_index == F_index));
+
+    SpatialForce<T> F_CJc_W;
+    if (Jc_index == M_index) {
+      // Given we now Mo == Jc and B == C.
+      F_CJc_W = F_BMo_W;
+    } else if (joint.frame_on_child().index() ==
+               mobilizer.inboard_frame().index()) {
+      // Given we now Mo == Jc and B == C.
+      const SpatialForce<T>& F_PJp_W = F_BMo_W;
+
+      // Newton's third law allows to find the reaction on the child body as
+      // required.
+      const SpatialForce<T> F_CJp_W = -F_PJp_W;
+
+      // Now we need to shift the application point from Jp to Jc.
+      // First we need to find the position vector p_JpJc_W.
+      const RigidTransform<T> X_WJp = frame_Jp.CalcPoseInWorld(context);
+      const RotationMatrix<T>& R_WJp = X_WJp.rotation();
+      const RigidTransform<T> X_JpJc = frame_Jc.CalcPose(context, frame_Jp);
+      const Vector3<T> p_JpJc_Jp = X_JpJc.translation();
+      const Vector3<T> p_JpJc_W = R_WJp * p_JpJc_Jp;
+
+      // Finally, we shift the spatial force at Jp.
+      F_CJc_W = F_CJp_W.Shift(p_JpJc_W);
+    }
+
+    // Re-express in the joint's child frame Jc.
+    const RigidTransform<T> X_WJc = frame_Jc.CalcPoseInWorld(context);
+    const RotationMatrix<T> R_JcW = X_WJc.rotation().transpose();
+    F_CJc_Jc_array->at(joint_index) = R_JcW * F_CJc_W;
   }
 }
 

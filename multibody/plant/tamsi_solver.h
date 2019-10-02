@@ -13,57 +13,56 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/// This struct implements an internal (thus within `internal::`) detail of the
-/// implicit Stribeck solver. The implicit Stribeck solver performs a
-/// Newton-Raphson iteration, and at each kth iteration, it computes a
-/// tangential velocity update Δvₜᵏ. One Newton strategy would be to compute
-/// the tangential velocity at the next iteration (k+1) as
-/// vₜᵏ⁺¹ = vₜᵏ + αΔvₜᵏ, where 0 < α < 1, is a coefficient obtained by line
-/// search to improve convergence.
-/// Line search works very well for smooth problems. However, even though the
-/// implicit Stribeck is solving the root of a continuous function, this
-/// function has very steep gradients only within the very small regions close
-/// to where the tangential velocities are zero. These regions are circles in
-/// ℝ² of radius equal to the stiction tolerance of the solver vₛ. We refer to
-/// these circular regions as the "stiction regions" and to their boundaries as
-/// the "stiction circles". We refer to the region of ℝ² outside the stiction
-/// region around the origin as the "sliding region".
-/// The implicit Stribeck solver uses the following modified Stribeck function
-/// describing the functional dependence of the Stribeck coefficient of friction
+/// This struct implements the Transition-Aware Line Search (TALS) algorithm as
+/// described in @ref castro_etal_2019 "[Castro et al., 2019]".
+/// TamsiSolver performs a Newton-Raphson iteration, and at each kth iteration,
+/// it computes a tangential velocity update Δvₜᵏ. One Newton strategy would be
+/// to compute the tangential velocity at the next iteration (k+1) as vₜᵏ⁺¹ =
+/// vₜᵏ + αΔvₜᵏ, where 0 < α < 1, is a coefficient obtained by line search to
+/// improve convergence.
+/// Line search works very well for smooth problems. However, even though TAMSI
+/// is solving the root of a continuous function, this function has very steep
+/// gradients only within the very small regions close to where the tangential
+/// velocities are zero. These regions are circles in ℝ² of radius equal to the
+/// stiction tolerance of the solver vₛ. We refer to these circular regions as
+/// the "stiction regions" and to their boundaries as the "stiction circles". We
+/// refer to the region of ℝ² outside the stiction region around the origin as
+/// the "sliding region".
+/// TamsiSolver uses the following regularized friction function
 /// μₛ with slip speed: <pre>
 ///     μₛ(x) = ⌈ μ x (2 - x),  x  < 1
 ///             ⌊ μ          ,  x >= 1
 /// </pre>
 /// where x corresponds to the dimensionless slip speed x = ‖vₜ‖ / vₛ and
-/// μ is the Coulomb's law coefficient of friction. The implicit Stribeck solver
-/// makes no distinction between static and dynamic coefficients of friction and
+/// μ is the Coulomb's law coefficient of friction. The TAMSI solver makes no
+/// distinction between static and dynamic coefficients of friction and
 /// therefore a single coefficient μ needs to be specified.
-/// The Stribeck function is highly nonlinear and difficult to solve with a
+/// Regularized friction is highly nonlinear and difficult to solve with a
 /// conventional Newton-Raphson method. However, it can be partitioned into
 /// regions based on how well the local gradients can be used to find a
 /// solution. We'll describe the algorithm below in terms of "strong" gradients
 /// (∂μ/∂v >> 0) and "weak" gradients (∂μ/∂v ≈ 0). Roughly, the gradients are
 /// strong during stiction and weak during sliding.
-/// These regions are so small compared to the velocity scales dealt with
-/// by the implicit Stribeck solver, that effectively, the Newton-Raphson
-/// iterate would only "see" a fixed dynamic coefficient of friction and it
-/// would never be able to predict stiction. That is, if search direction Δvₜᵏ
-/// computed by the Newton-Raphson algorithm is not limited in some way, the
-/// iteration would never fall within the stiction regions where gradients
-/// are "strong" to guide the convergence of the solution, to either stiction
-/// or sliding.
+/// These regions are so small compared to the velocity scales dealt with by the
+/// TAMSI solver, that effectively, the Newton-Raphson iterate would only "see"
+/// a fixed dynamic coefficient of friction and it would never be able to
+/// predict stiction. That is, if search direction Δvₜᵏ computed by the
+/// Newton-Raphson algorithm is not limited in some way, the iteration would
+/// never fall within the stiction regions where gradients are "strong" to guide
+/// the convergence of the solution, to either stiction or sliding.
 ///
 /// The remedy to this situation is to limit changes in the tangential
 /// velocities at each iteration. The situation described above, in which an
 /// update  Δvₜᵏ "misses" the stiction circle can be described in purely
 /// geometric terms. We exploit this fact to devise a strategy that is
 /// appropriate for this particular problem. We use the methodology outlined in
-/// [Uchida et al., 2015] and describe particulars to our implementation below.
+/// @ref uchida_etal_2015 "[Uchida et al., 2015]" and describe particulars to
+/// our implementation below.
 ///
-/// LimitDirectionChange implements a specific strategy with knowledge of the
-/// implicit Stribeck iteration procedure. It is important to note that the
-/// implicit Stribeck uses "soft norms" to avoid divisions by zero. That is,
-/// friction forces are computed according to: <pre>
+/// %TalsLimiter implements a specific strategy with knowledge of the TAMSI
+/// solver iteration procedure. It is important to note that %TalsLimiter uses
+/// "soft norms" to avoid divisions by zero. That is, friction forces are
+/// computed according to: <pre>
 ///   fₜ(vₜ) = -μ(‖vₜ‖ₛ) vₜ/‖vₜ‖ₛ
 /// </pre>
 /// where, to avoid the singularity at zero velocity, we use a "soft norm"
@@ -75,15 +74,15 @@ namespace internal {
 /// with other friction forces) has the potential to, mistakenly, force a
 /// transition from stiction to sliding. The solver will most likely recover
 /// from this, but this will result in a larger number of iterations.
-/// LimitDirectionChange considers any tangential velocity vₜ (or change Δvₜ)
+/// %TalsLimiter considers any tangential velocity vₜ (or change Δvₜ)
 /// to be approximately zero if x = ‖vₜ‖/vₛ is smaller than `tolerance`
 /// (see docs below, this is a dimensionless number << 1). We define
 /// `εᵥ = tolerance⋅vₛ` (with units of m/s).
 ///
 /// In what follows we list a number of special scenarios dealt with by
-/// LimitDirectionChange. We use the observations made above.
+/// %TalsLimiter. We use the observations made above.
 ///
-/// - LimitDirectionChange first deals with the case ‖vₜ‖ < εᵥ to avoid
+/// - %TalsLimiter first deals with the case ‖vₜ‖ < εᵥ to avoid
 ///   divisions by zero in the subsequent cases. It essentially clips vₜᵏ⁺¹
 ///   to have magnitude vₛ/2 when the update Δvₜᵏ ≠ 0. For small updates
 ///   Δvₜᵏ leading to vₜᵏ⁺¹ within the stiction region, we take  α = 1.
@@ -103,9 +102,9 @@ namespace internal {
 ///   the line connecting vₜᵏ and vₜᵏ + Δvₜᵏ crosses the stiction region.
 ///   This situation implies that most likely a stiction transition could
 ///   happen but the pure Newton-Raphson would miss it. This situation is
-///   outlined in [Uchida et al., 2015]. In this case LimitDirectionChange
-///   computes α so that vₜᵏ⁺¹ =  vₜᵏ + αΔvₜᵏ is the closest vector to the
-///   origin. This corresponds to the geometric condition
+///   outlined in @ref uchida_etal_2015 "[Uchida et al., 2015]". In this case
+///   %TalsLimiter computes α so that vₜᵏ⁺¹ =  vₜᵏ + αΔvₜᵏ is the closest
+///   vector to the origin. This corresponds to the geometric condition
 ///   dot(vₜᵏ⁺¹, Δvₜᵏ) = 0.
 /// - Velocity change Δvₜᵏ does not intersect the stiction circle, i.e.
 ///   changes happen in a region away from stiction (within the sliding
@@ -113,18 +112,14 @@ namespace internal {
 ///   θ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)) between vₜᵏ⁺¹ and vₜᵏ)
 ///   might indicate a solution that is attempting to reach a stiction region.
 ///   In order to aid convergence, we limit the angle change to θₘₐₓ, and
-///   therefore (see [Uchida et al., 2015]) we compute α so that
-///   θₘₐₓ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)).
+///   therefore (see @ref uchida_etal_2015 "[Uchida et al., 2015]") we compute α
+///   so that θₘₐₓ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)).
 ///
-/// Uchida, T.K., Sherman, M.A. and Delp, S.L., 2015.
-///   Making a meaningful impact: modelling simultaneous frictional collisions
-///   in spatial multibody systems. Proc. R. Soc. A, 471(2177), p.20140859.
-///
-/// %LimitDirectionChange implements the algorithm described above. We place it
+/// %TalsLimiter implements the algorithm described above. We place it
 /// inside a struct so that we can use Eigen::Ref arguments allowing different
 /// scalar types T.
 template <typename T>
-struct DirectionChangeLimiter {
+struct TalsLimiter {
   /// Implements the limiting algorithm described in the documentation above.
   /// @param[in] v the k-th iteration tangential velocity vₜᵏ, in m/s.
   /// @param[in] dv the k-th iteration tangential velocity update Δvₜᵏ, in m/s.
@@ -166,9 +161,9 @@ struct DirectionChangeLimiter {
 };
 }  // namespace internal
 
-/// The result from ImplicitStribeckSolver::SolveWithGuess() used to report the
+/// The result from TamsiSolver::SolveWithGuess() used to report the
 /// success or failure of the solver.
-enum class ImplicitStribeckSolverResult {
+enum class TamsiSolverResult {
   /// Successful computation.
   kSuccess = 0,
 
@@ -182,17 +177,17 @@ enum class ImplicitStribeckSolverResult {
 };
 
 /// These are the parameters controlling the iteration process of the
-/// ImplicitStribeckSolver solver.
-struct ImplicitStribeckSolverParameters {
-  /// The stiction tolerance vₛ for the slip velocity in the Stribeck
-  /// function, in m/s. Roughly, for an externally applied tangential forcing
-  /// fₜ and normal force fₙ, under "stiction", the slip velocity will be
-  /// approximately vₜ ≈ vₛ fₜ/(μfₙ). In other words, the maximum slip
-  /// error of the Stribeck approximation occurs at the edge of the friction
-  /// cone when fₜ = μfₙ and vₜ = vₛ.
-  /// The default of 0.1 mm/s is a very tight value that for most problems of
-  /// interest in robotics will result in simulation results with negligible
-  /// slip velocities introduced by the Stribeck approximation when in stiction.
+/// TamsiSolver solver.
+struct TamsiSolverParameters {
+  /// The stiction tolerance vₛ for the slip velocity in the regularized
+  /// friction function, in m/s. Roughly, for an externally applied tangential
+  /// forcing fₜ and normal force fₙ, under "stiction", the slip velocity will
+  /// be approximately vₜ ≈ vₛ fₜ/(μfₙ). In other words, the maximum slip
+  /// error of the regularized friction approximation occurs at the edge of the
+  /// friction cone when fₜ = μfₙ and vₜ = vₛ. The default of 0.1 mm/s is
+  /// a very tight value that for most problems of interest in robotics will
+  /// result in simulation results with negligible slip velocities introduced by
+  /// regularizing friction when in stiction.
   double stiction_tolerance{1.0e-4};  // 0.1 mm/s
 
   /// The maximum number of iterations allowed for the Newton-Raphson
@@ -205,7 +200,7 @@ struct ImplicitStribeckSolverParameters {
   /// relative to the value of the stiction_tolerance is necessary in order
   /// to capture transitions to stiction that would require an accuracy in the
   /// value of the tangential velocities smaller than that of the
-  /// "Stribeck stiction region" (the circle around the origin with radius
+  /// "stiction region" (the circle around the origin with radius
   /// stiction_tolerance).
   /// A value close to one could cause the solver to miss transitions from/to
   /// stiction. Small values approaching zero will result in a higher number of
@@ -213,11 +208,11 @@ struct ImplicitStribeckSolverParameters {
   /// Typical values lie within the 10⁻³ - 10⁻² range.
   double relative_tolerance{1.0e-2};
 
-  /// (Advanced) ImplicitStribeckSolver limits large angular changes between
+  /// (Advanced) TamsiSolver limits large angular changes between
   /// tangential velocities at two successive iterations vₜᵏ⁺¹ and vₜᵏ. This
   /// change is measured by the angle θ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)).
-  /// To aid convergence, ImplicitStribeckSolver, limits this angular change to
-  /// `theta_max`. Please refer to the documentation for ImplicitStribeckSolver
+  /// To aid convergence, TamsiSolver, limits this angular change to
+  /// `theta_max`. Please refer to the documentation for TamsiSolver
   /// for further details.
   ///
   /// Small values of `theta_max` will result in a larger number of iterations
@@ -231,9 +226,9 @@ struct ImplicitStribeckSolverParameters {
 };
 
 /// Struct used to store information about the iteration process performed by
-/// ImplicitStribeckSolver.
-struct ImplicitStribeckSolverIterationStats {
-  /// (Internal) Used by ImplicitStribeckSolver to reset statistics.
+/// TamsiSolver.
+struct TamsiSolverIterationStats {
+  /// (Internal) Used by TamsiSolver to reset statistics.
   void Reset() {
     num_iterations = 0;
     // Clear does not change a std::vector "capacity", and therefore there's
@@ -241,13 +236,13 @@ struct ImplicitStribeckSolverIterationStats {
     residuals.clear();
   }
 
-  /// (Internal) Used by ImplicitStribeckSolver to update statistics.
+  /// (Internal) Used by TamsiSolver to update statistics.
   void Update(double iteration_residual) {
     ++num_iterations;
     residuals.push_back(iteration_residual);
   }
 
-  /// The number of iterations performed by the last ImplicitStribeckSolver
+  /// The number of iterations performed by the last TamsiSolver
   /// solve.
   int num_iterations{0};
 
@@ -259,16 +254,17 @@ struct ImplicitStribeckSolverIterationStats {
   /// (Advanced) Residual in the tangential velocities, in m/s. The k-th entry
   /// in this vector corresponds to the residual for the k-th Newton-Raphson
   /// iteration performed by the solver.
-  /// After ImplicitStribeckSolver solved a problem, this vector will have size
+  /// After TamsiSolver solved a problem, this vector will have size
   /// num_iterations.
   /// The last entry in this vector, `residuals[num_iterations-1]`, corresponds
   /// to the residual upon completion of the solver, i.e. vt_residual.
   std::vector<double> residuals;
 };
 
-/** @anchor implicit_stribeck_class_intro
-%ImplicitStribeckSolver solves the equations below for mechanical systems
-with contact using a modified Stribeck model of friction:
+/** @anchor tamsi_class_intro
+%TamsiSolver uses the Transition-Aware Modified Semi-Implicit (TAMSI) method,
+@ref castro_etal_2019 "[Castro et al., 2019]", to solve the equations below for
+mechanical systems in contact with regularized friction:
 @verbatim
             q̇ = N(q) v
   (1)  M(q) v̇ = τ + Jₙᵀ(q) fₙ(q, v) + Jₜᵀ(q) fₜ(q, v)
@@ -284,13 +280,12 @@ This solver assumes a compliant law for the normal forces `fₙ(q, v)` and
 therefore the functional dependence of `fₙ(q, v)` with q and v is stated
 explicitly.
 
-Since %ImplicitStribeckSolver uses a modified Stribeck model for friction,
-we explicitly emphasize the functional dependence of `fₜ(q, v)` with the
-generalized velocities. The functional dependence of `fₜ(q, v)` with the
-generalized positions stems from its direct dependence with the normal
-forces `fₙ(q, v)`.
+Since %TamsiSolver uses regularized friction, we explicitly emphasize the
+functional dependence of `fₜ(q, v)` with the generalized velocities. The
+functional dependence of `fₜ(q, v)` with the generalized positions stems from
+its direct dependence with the normal forces `fₙ(q, v)`.
 
-%ImplicitStribeckSolver implements two different schemes. A "one-way
+%TamsiSolver implements two different schemes. A "one-way
 coupling scheme" which solves for the friction forces given the normal
 forces are known. That is, normal forces affect the computation of the
 friction forces however, the normal forces are kept constant during the
@@ -329,7 +324,7 @@ The equation for the generalized velocities in Eq. (2) is rewritten as:
 where `p* = M vˢ + δt τˢ` is the generalized momentum that the
 system would have in the absence of contact forces and, for simplicity, we
 have only kept the functional dependencies in generalized velocities. Notice
-that %ImplicitStribeckSolver uses a precomputed value of the normal forces.
+that %TamsiSolver uses a precomputed value of the normal forces.
 These normal forces could be available for instance if
 using a compliant contact approach, for which normal forces are a function
 of the state.
@@ -397,25 +392,23 @@ vˢ⁺¹:
 with p* = `p* = M vˢ + δt τˢ` the generalized momentum that the system
 would have in the absence of contact forces.
 
-%ImplicitStribeckSolver uses a Newton-Raphson strategy to solve Eq. (10) in
+%TamsiSolver uses a Newton-Raphson strategy to solve Eq. (10) in
 the generalized velocities, limiting the iteration update with the scheme
 described in @ref iteration_limiter.
 
 @anchor iteration_limiter
 <h2>Limits in the Iteration Updates</h2>
 
-%ImplicitStribeckSolver solves for the generalized velocity at the next time
+%TamsiSolver solves for the generalized velocity at the next time
 step `vˢ⁺¹` with either a one-way or two-way coupled scheme as described in the
  previous sections.
 The solver uses a Newton-Raphson iteration to compute an update `Δvᵏ` at the
 k-th Newton-Raphson iteration. Once `Δvᵏ` is computed, the solver limits the
 change in the tangential velocities `Δvₜᵏ = Jₜᵀ Δvᵏ` using the approach
-described in [Uchida et al., 2015]. This approach limits the maximum angle
-change θ between two successive iterations in the tangential velocity.
-
-Uchida, T.K., Sherman, M.A. and Delp, S.L., 2015.
-  Making a meaningful impact: modelling simultaneous frictional collisions
-  in spatial multibody systems. Proc. R. Soc. A, 471(2177), p.20140859.
+described in @ref uchida_etal_2015 "[Uchida et al., 2015]". This approach limits
+the maximum angle change θ between two successive iterations in the tangential
+velocity. Details of our implementation are provided in
+@ref castro_etal_2019 "[Castro et al., 2019]".
 
 @anchor one_way_coupling_derivation
 <h2>Derivation of the one-way coupling scheme</h2>
@@ -493,6 +486,16 @@ expansion of `fₙ` with an order of approximation consistent with the
 first order scheme as needed. Therefore, it propagates into a `O(δt²)`
 term exactly as needed in Eq. (16).
 
+<h2>References</h2>
+
+- @anchor castro_etal_2019 [Castro et al., 2019] Castro, A.M, Qu, A.,
+  Kuppuswamy, N., Alspach, A., Sherman, M.A., 2019. A Transition-Aware Method
+  for the Simulation of Compliant Contact with Regularized Friction.
+  arXiv:1909.05700 [cs.RO].
+- @anchor uchida_etal_2015 Uchida, T.K., Sherman, M.A. and Delp, S.L., 2015.
+  Making a meaningful impact: modelling simultaneous frictional collisions
+  in spatial multibody systems. Proc. R. Soc. A, 471(2177), p.20140859.   
+
 @tparam T Must be one of drake's default scalar types.
 
 @authors Alejandro Castro (2018) Original author.
@@ -500,13 +503,13 @@ term exactly as needed in Eq. (16).
 @authors Drake team (see https://drake.mit.edu/credits).
 */
 template <typename T>
-class ImplicitStribeckSolver {
+class TamsiSolver {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImplicitStribeckSolver)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TamsiSolver)
 
   /// Instantiates a solver for a problem with `nv` generalized velocities.
   /// @throws std::exception if nv is non-positive.
-  explicit ImplicitStribeckSolver(int nv);
+  explicit TamsiSolver(int nv);
 
   // TODO(amcastro-tri): submit a separate reformat PR changing /// by /**.
   /// Sets data for the problem to be solved as outlined by Eq. (3) in this
@@ -612,7 +615,7 @@ class ImplicitStribeckSolver {
   /// coupling is used. See this class's documentation for further details.
   /// To retrieve the solution, please refer to @ref retrieving_the_solution.
   /// @returns kSuccess if the iteration converges. All other values of
-  /// ImplicitStribeckSolverResult report different failure modes.
+  /// TamsiSolverResult report different failure modes.
   /// Uses `this` solver accessors to retrieve the last computed solution.
   /// @warning Always verify that the return value indicates success before
   /// retrieving the computed solution.
@@ -623,7 +626,7 @@ class ImplicitStribeckSolver {
   ///
   /// @throws std::logic_error if `v_guess` is not of size `nv`, the number of
   /// generalized velocities specified at construction.
-  ImplicitStribeckSolverResult SolveWithGuess(
+  TamsiSolverResult SolveWithGuess(
       double dt, const VectorX<T>& v_guess) const;
 
   /// @anchor retrieving_the_solution
@@ -675,7 +678,7 @@ class ImplicitStribeckSolver {
   /// Returns a constant reference to the most recent vector of friction forces.
   /// These friction forces are defined in accordance to the tangential
   /// velocities Jacobian Jₜ as documented in
-  /// @ref implicit_stribeck_class_intro "this class's documentation".
+  /// @ref tamsi_class_intro "this class's documentation".
   Eigen::VectorBlock<const VectorX<T>> get_friction_forces() const {
     return variable_size_workspace_.ft();
   }
@@ -684,20 +687,20 @@ class ImplicitStribeckSolver {
 
   /// Returns statistics recorded during the last call to SolveWithGuess().
   /// See IterationStats for details.
-  const ImplicitStribeckSolverIterationStats& get_iteration_statistics() const {
+  const TamsiSolverIterationStats& get_iteration_statistics() const {
     return statistics_;
   }
 
   /// Returns the current set of parameters controlling the iteration process.
   /// See Parameters for details.
-  const ImplicitStribeckSolverParameters& get_solver_parameters() const {
+  const TamsiSolverParameters& get_solver_parameters() const {
     return parameters_;
   }
 
   /// Sets the parameters to be used by the solver.
   /// See Parameters for details.
   void set_solver_parameters(
-      const ImplicitStribeckSolverParameters& parameters) {
+      const TamsiSolverParameters& parameters) {
     // cos_theta_max must be updated consistently with the new value of
     // theta_max.
     cos_theta_max_ = std::cos(parameters.theta_max);
@@ -706,7 +709,7 @@ class ImplicitStribeckSolver {
 
  private:
   // Helper class for unit testing.
-  friend class ImplicitStribeckSolverTester;
+  friend class TamsiSolverTester;
 
   // Contains all the references that define the problem to be solved.
   // These references must remain valid at least from the time they are set with
@@ -989,7 +992,7 @@ class ImplicitStribeckSolver {
     // Returns a constant reference to the vector containing the tangential
     // friction forces fₜ for all contact points. fₜ has size 2nc since it
     // stores the two tangential components of the friction force for each
-    // contact point. Refer to ImplicitStribeckSolver for details.
+    // contact point. Refer to TamsiSolver for details.
     Eigen::VectorBlock<const VectorX<T>> ft() const {
       return ft_.segment(0, 2 * nc_);
     }
@@ -1012,7 +1015,7 @@ class ImplicitStribeckSolver {
       return v_slip_.segment(0, nc_);
     }
 
-    // Returns a mutable reference to the vector containing the stribeck
+    // Returns a mutable reference to the vector containing the regularized
     // friction, function of the slip velocity, at each contact point, of
     // size nc.
     Eigen::VectorBlock<VectorX<T>> mutable_mu() {
@@ -1043,7 +1046,7 @@ class ImplicitStribeckSolver {
     VectorX<T> x_;         // xˢ⁺¹ = xˢ − δt vₙˢ
     VectorX<T> t_hat_;     // Tangential directions, t̂ᵏ. In ℝ²ⁿᶜ.
     VectorX<T> v_slip_;    // vₛᵏ = ‖vₜᵏ‖, in ℝⁿᶜ.
-    VectorX<T> mus_;       // (modified) Stribeck friction, in ℝⁿᶜ.
+    VectorX<T> mus_;       // (modified) regularized friction, in ℝⁿᶜ.
     // Vector of size nc storing ∂fₜ/∂vₜ (in ℝ²ˣ²) for each contact point.
     std::vector<Matrix2<T>> dft_dv_;
     MatrixX<T> Gn_;        // ∇ᵥfₙ(xˢ⁺¹, vₙˢ⁺¹), in ℝⁿᶜˣⁿᵛ
@@ -1072,13 +1075,13 @@ class ImplicitStribeckSolver {
 
   // Helper to compute fₜ(vₜ) = −vₜ/‖vₜ‖ₛ μ(‖vₜ‖ₛ) fₙ, where ‖vₜ‖ₛ
   // is the "soft norm" of vₜ. In addition this method computes
-  // v_slip = ‖vₜ‖ₛ, t_hat = vₜ/‖vₜ‖ₛ and mu_stribeck = μ(‖vₜ‖ₛ).
+  // v_slip = ‖vₜ‖ₛ, t_hat = vₜ/‖vₜ‖ₛ and mu_regularized = μ(‖vₜ‖ₛ).
   void CalcFrictionForces(
       const Eigen::Ref<const VectorX<T>>& vt,
       const Eigen::Ref<const VectorX<T>>& fn,
       EigenPtr<VectorX<T>> v_slip,
       EigenPtr<VectorX<T>> t_hat,
-      EigenPtr<VectorX<T>> mu_stribeck,
+      EigenPtr<VectorX<T>> mu_regularized,
       EigenPtr<VectorX<T>> ft) const;
 
   // Helper to compute gradient dft_dvt = −∇ᵥₜfₜ(vₜ), as a function of the
@@ -1115,49 +1118,54 @@ class ImplicitStribeckSolver {
   T CalcAlpha(const Eigen::Ref<const VectorX<T>>& vt,
               const Eigen::Ref<const VectorX<T>>& Delta_vt) const;
 
-  // Dimensionless modified Stribeck function defined as:
+  // Dimensionless regularized friction function defined as:
   // ms(s) = ⌈ mu * s * (2 − s),  s  < 1
   //         ⌊ mu              ,  s >= 1
   // where s corresponds to the dimensionless tangential speed
-  // s = ‖vᵏ‖ / vₛ, where vₛ is the Stribeck stiction tolerance.
-  // The solver uses this modified Stribeck function for two reasons:
+  // s = ‖vᵏ‖ / vₛ, where vₛ is the regularization parameter.
+  // The solver uses this continuous function for two reasons:
   //   1. Static and dynamic friction coefficients are the same. This avoids
   //      regions of negative slope. If the slope is always positive the
   //      implicit update is unconditionally stable.
   //   2. Non-zero derivative at s = 0 (zero slip velocity). This provides a
   //      good strong gradient in the neighborhood to zero slip velocities that
   //      aids in finding a good solution update.
-  static T ModifiedStribeck(const T& s, const T& mu);
+  // N.B. While this original implementation uses quadratic regularized
+  //      friction, @ref castro_etal_2019 "[Castro et al., 2019]". finds that a
+  //      linear regularized friction function works best for implicit
+  //      integration with TALS. More precisely, the work precision plots are
+  //      better behaved when using linear regularized friction.
+  static T RegularizedFriction(const T& s, const T& mu);
 
-  // Derivative of the dimensionless modified Stribeck function:
+  // Derivative of the dimensionless regularized friction function:
   // d/ds ms(s) = ⌈ mu * (2 * (1 − s)),  s  < 1
   //              ⌊ 0                 ,  s >= 1
   // where s corresponds to the dimensionless tangential speed
   // s = ‖v‖ / vₛ.
-  static T ModifiedStribeckDerivative(const T& speed_BcAc, const T& mu);
+  static T RegularizedFrictionDerivative(const T& speed_BcAc, const T& mu);
 
   int nv_;  // Number of generalized velocities.
   int nc_;  // Number of contact points.
 
   // The parameters of the solver controlling the iteration strategy.
-  ImplicitStribeckSolverParameters parameters_;
+  TamsiSolverParameters parameters_;
   ProblemDataAliases problem_data_aliases_;
   mutable FixedSizeWorkspace fixed_size_workspace_;
   mutable VariableSizeWorkspace variable_size_workspace_;
 
-  // Precomputed value of cos(theta_max), used by DirectionChangeLimiter.
+  // Precomputed value of cos(theta_max), used by TalsLimiter.
   double cos_theta_max_{std::cos(parameters_.theta_max)};
 
   // We save solver statistics such as number of iterations and residuals so
   // that we can report them if requested.
-  mutable ImplicitStribeckSolverIterationStats statistics_;
+  mutable TamsiSolverIterationStats statistics_;
 };
 
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    struct ::drake::multibody::internal::DirectionChangeLimiter)
+    struct ::drake::multibody::internal::TalsLimiter)
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::ImplicitStribeckSolver)
+    class ::drake::multibody::TamsiSolver)
