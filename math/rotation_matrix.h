@@ -137,8 +137,9 @@ class RotationMatrix {
   /// @li 3rd rotation R_AB: Frames D, C, B (collectively -- as if welded)
   /// rotate relative to frame A by a roll angle `y` about `Bz = Az`.
   /// Note: B and A are no longer aligned.
-  /// @related There is a constructor in the RollPitchYaw class that converts
-  /// a rotation matrix to roll-pitch-yaw angles.
+  /// @related This method constructs a RotationMatrix from a RollPitchYaw.
+  /// Vice-versa, there are high-accuracy RollPitchYaw constructor/methods that
+  /// form a RollPitchYaw from a rotation matrix.
   explicit RotationMatrix(const RollPitchYaw<T>& rpy) {
     // TODO(@mitiguy) Add publically viewable documentation on how Sherm and
     // Goldstein like to visualize/conceptualize rotation sequences.
