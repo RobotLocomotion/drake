@@ -411,9 +411,9 @@ class HydroelasticContactVisualizer(object):
                         offset = unit_normal * offset_scalar
 
                         d.addPolygon([va + offset, vb + offset, vc + offset],
-                                    color=[color_a, color_b, color_c])
+                                     color=[color_a, color_b, color_c])
                         d.addPolygon([va - offset, vb - offset, vc - offset],
-                                    color=[color_a, color_b, color_c])
+                                     color=[color_a, color_b, color_c])
 
                 if self.show_contact_surface:
                     d.addLine(p1=va, p2=vb, radius=0,
